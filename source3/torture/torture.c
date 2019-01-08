@@ -11728,160 +11728,619 @@ static struct {
 	bool (*fn)(int);
 	unsigned flags;
 } torture_ops[] = {
-	{"FDPASS", run_fdpasstest, 0},
-	{"LOCK1",  run_locktest1,  0},
-	{"LOCK2",  run_locktest2,  0},
-	{"LOCK3",  run_locktest3,  0},
-	{"LOCK4",  run_locktest4,  0},
-	{"LOCK5",  run_locktest5,  0},
-	{"LOCK6",  run_locktest6,  0},
-	{"LOCK7",  run_locktest7,  0},
-	{"LOCK8",  run_locktest8,  0},
-	{"LOCK9",  run_locktest9,  0},
-	{"UNLINK", run_unlinktest, 0},
-	{"BROWSE", run_browsetest, 0},
-	{"ATTR",   run_attrtest,   0},
-	{"TRANS2", run_trans2test, 0},
-	{"MAXFID", run_maxfidtest, FLAG_MULTIPROC},
-	{"TORTURE",run_torture,    FLAG_MULTIPROC},
-	{"RANDOMIPC", run_randomipc, 0},
-	{"NEGNOWAIT", run_negprot_nowait, 0},
-	{"NBENCH",  run_nbench, 0},
-	{"NBENCH2", run_nbench2, 0},
-	{"OPLOCK1",  run_oplock1, 0},
-	{"OPLOCK2",  run_oplock2, 0},
-	{"OPLOCK4",  run_oplock4, 0},
-	{"DIR",  run_dirtest, 0},
-	{"DIR1",  run_dirtest1, 0},
-	{"DIR-CREATETIME",  run_dir_createtime, 0},
-	{"DENY1",  torture_denytest1, 0},
-	{"DENY2",  torture_denytest2, 0},
-	{"TCON",  run_tcon_test, 0},
-	{"TCONDEV",  run_tcon_devtype_test, 0},
-	{"RW1",  run_readwritetest, 0},
-	{"RW2",  run_readwritemulti, FLAG_MULTIPROC},
-	{"RW3",  run_readwritelarge, 0},
-	{"RW-SIGNING",  run_readwritelarge_signtest, 0},
-	{"OPEN", run_opentest, 0},
-	{"POSIX", run_simple_posix_open_test, 0},
-	{"POSIX-APPEND", run_posix_append, 0},
-	{"POSIX-SYMLINK-ACL", run_acl_symlink_test, 0},
-	{"POSIX-SYMLINK-EA", run_ea_symlink_test, 0},
-	{"POSIX-STREAM-DELETE", run_posix_stream_delete, 0},
-	{"POSIX-OFD-LOCK", run_posix_ofd_lock_test, 0},
-	{"WINDOWS-BAD-SYMLINK", run_symlink_open_test, 0},
-	{"CASE-INSENSITIVE-CREATE", run_case_insensitive_create, 0},
-	{"ASYNC-ECHO", run_async_echo, 0},
-	{ "UID-REGRESSION-TEST", run_uid_regression_test, 0},
-	{ "SHORTNAME-TEST", run_shortname_test, 0},
-	{ "ADDRCHANGE", run_addrchange, 0},
+	{
+		.name = "FDPASS",
+		.fn   = run_fdpasstest,
+	},
+	{
+		.name = "LOCK1",
+		.fn   = run_locktest1,
+	},
+	{
+		.name = "LOCK2",
+		.fn   =  run_locktest2,
+	},
+	{
+		.name = "LOCK3",
+		.fn   =  run_locktest3,
+	},
+	{
+		.name = "LOCK4",
+		.fn   =  run_locktest4,
+	},
+	{
+		.name = "LOCK5",
+		.fn   =  run_locktest5,
+	},
+	{
+		.name = "LOCK6",
+		.fn   =  run_locktest6,
+	},
+	{
+		.name = "LOCK7",
+		.fn   =  run_locktest7,
+	},
+	{
+		.name = "LOCK8",
+		.fn   =  run_locktest8,
+	},
+	{
+		.name = "LOCK9",
+		.fn   =  run_locktest9,
+	},
+	{
+		.name = "UNLINK",
+		.fn   = run_unlinktest,
+	},
+	{
+		.name = "BROWSE",
+		.fn   = run_browsetest,
+	},
+	{
+		.name = "ATTR",
+		.fn   =   run_attrtest,
+	},
+	{
+		.name = "TRANS2",
+		.fn   = run_trans2test,
+	},
+	{
+		.name  = "MAXFID",
+		.fn    = run_maxfidtest,
+		.flags = FLAG_MULTIPROC,
+	},
+	{
+		.name  = "TORTURE",
+		.fn    = run_torture,
+		.flags = FLAG_MULTIPROC,
+	},
+	{
+		.name  = "RANDOMIPC",
+		.fn    = run_randomipc,
+	},
+	{
+		.name  = "NEGNOWAIT",
+		.fn    = run_negprot_nowait,
+	},
+	{
+		.name  = "NBENCH",
+		.fn    =  run_nbench,
+	},
+	{
+		.name  = "NBENCH2",
+		.fn    = run_nbench2,
+	},
+	{
+		.name  = "OPLOCK1",
+		.fn    =  run_oplock1,
+	},
+	{
+		.name  = "OPLOCK2",
+		.fn    =  run_oplock2,
+	},
+	{
+		.name  = "OPLOCK4",
+		.fn    =  run_oplock4,
+	},
+	{
+		.name  = "DIR",
+		.fn    =  run_dirtest,
+	},
+	{
+		.name  = "DIR1",
+		.fn    =  run_dirtest1,
+	},
+	{
+		.name  = "DIR-CREATETIME",
+		.fn    =  run_dir_createtime,
+	},
+	{
+		.name  = "DENY1",
+		.fn    =  torture_denytest1,
+	},
+	{
+		.name  = "DENY2",
+		.fn    =  torture_denytest2,
+	},
+	{
+		.name  = "TCON",
+		.fn    =  run_tcon_test,
+	},
+	{
+		.name  = "TCONDEV",
+		.fn    =  run_tcon_devtype_test,
+	},
+	{
+		.name  = "RW1",
+		.fn    =  run_readwritetest,
+	},
+	{
+		.name  = "RW2",
+		.fn    =  run_readwritemulti,
+		.flags = FLAG_MULTIPROC
+	},
+	{
+		.name  = "RW3",
+		.fn    =  run_readwritelarge,
+	},
+	{
+		.name  = "RW-SIGNING",
+		.fn    =  run_readwritelarge_signtest,
+	},
+	{
+		.name  = "OPEN",
+		.fn    = run_opentest,
+	},
+	{
+		.name  = "POSIX",
+		.fn    = run_simple_posix_open_test,
+	},
+	{
+		.name  = "POSIX-APPEND",
+		.fn    = run_posix_append,
+	},
+	{
+		.name  = "POSIX-SYMLINK-ACL",
+		.fn    = run_acl_symlink_test,
+	},
+	{
+		.name  = "POSIX-SYMLINK-EA",
+		.fn    = run_ea_symlink_test,
+	},
+	{
+		.name  = "POSIX-STREAM-DELETE",
+		.fn    = run_posix_stream_delete,
+	},
+	{
+		.name  = "POSIX-OFD-LOCK",
+		.fn    = run_posix_ofd_lock_test,
+	},
+	{
+		.name  = "WINDOWS-BAD-SYMLINK",
+		.fn    = run_symlink_open_test,
+	},
+	{
+		.name  = "CASE-INSENSITIVE-CREATE",
+		.fn    = run_case_insensitive_create,
+	},
+	{
+		.name  = "ASYNC-ECHO",
+		.fn    = run_async_echo,
+	},
+	{
+		.name  = "UID-REGRESSION-TEST",
+		.fn    = run_uid_regression_test,
+	},
+	{
+		.name  = "SHORTNAME-TEST",
+		.fn    = run_shortname_test,
+	},
+	{
+		.name  = "ADDRCHANGE",
+		.fn    = run_addrchange,
+	},
 #if 1
-	{"OPENATTR", run_openattrtest, 0},
+	{
+		.name  = "OPENATTR",
+		.fn    = run_openattrtest,
+	},
 #endif
-	{"XCOPY", run_xcopy, 0},
-	{"RENAME", run_rename, 0},
-	{"RENAME-ACCESS", run_rename_access, 0},
-	{"OWNER-RIGHTS", run_owner_rights, 0},
-	{"DELETE", run_deletetest, 0},
-	{"DELETE-PRINT", run_delete_print_test, 0},
-	{"WILDDELETE", run_wild_deletetest, 0},
-	{"DELETE-LN", run_deletetest_ln, 0},
-	{"PROPERTIES", run_properties, 0},
-	{"MANGLE", torture_mangle, 0},
-	{"MANGLE1", run_mangle1, 0},
-	{"MANGLE-ILLEGAL", run_mangle_illegal, 0},
-	{"W2K", run_w2ktest, 0},
-	{"TRANS2SCAN", torture_trans2_scan, 0},
-	{"NTTRANSSCAN", torture_nttrans_scan, 0},
-	{"UTABLE", torture_utable, 0},
-	{"CASETABLE", torture_casetable, 0},
-	{"ERRMAPEXTRACT", run_error_map_extract, 0},
-	{"PIPE_NUMBER", run_pipe_number, 0},
-	{"TCON2",  run_tcon2_test, 0},
-	{"IOCTL",  torture_ioctl_test, 0},
-	{"CHKPATH",  torture_chkpath_test, 0},
-	{"FDSESS", run_fdsesstest, 0},
-	{ "EATEST", run_eatest, 0},
-	{ "SESSSETUP_BENCH", run_sesssetup_bench, 0},
-	{ "CHAIN1", run_chain1, 0},
-	{ "CHAIN2", run_chain2, 0},
-	{ "CHAIN3", run_chain3, 0},
-	{ "WINDOWS-WRITE", run_windows_write, 0},
-	{ "LARGE_READX", run_large_readx, 0},
-	{ "NTTRANS-CREATE", run_nttrans_create, 0},
-	{ "NTTRANS-FSCTL", run_nttrans_fsctl, 0},
-	{ "CLI_ECHO", run_cli_echo, 0},
-	{ "CLI_SPLICE", run_cli_splice, 0},
-	{ "TLDAP", run_tldap },
-	{ "STREAMERROR", run_streamerror },
-	{ "NOTIFY-BENCH", run_notify_bench },
-	{ "NOTIFY-BENCH2", run_notify_bench2 },
-	{ "NOTIFY-BENCH3", run_notify_bench3 },
-	{ "BAD-NBT-SESSION", run_bad_nbt_session },
-	{ "IGN-BAD-NEGPROT", run_ign_bad_negprot },
-	{ "SMB-ANY-CONNECT", run_smb_any_connect },
-	{ "NOTIFY-ONLINE", run_notify_online },
-	{ "SMB2-BASIC", run_smb2_basic },
-	{ "SMB2-NEGPROT", run_smb2_negprot },
-	{ "SMB2-ANONYMOUS", run_smb2_anonymous },
-	{ "SMB2-SESSION-RECONNECT", run_smb2_session_reconnect },
-	{ "SMB2-TCON-DEPENDENCE", run_smb2_tcon_dependence },
-	{ "SMB2-MULTI-CHANNEL", run_smb2_multi_channel },
-	{ "SMB2-SESSION-REAUTH", run_smb2_session_reauth },
-	{ "SMB2-FTRUNCATE", run_smb2_ftruncate },
-	{ "SMB2-DIR-FSYNC", run_smb2_dir_fsync },
-	{ "CLEANUP1", run_cleanup1 },
-	{ "CLEANUP2", run_cleanup2 },
-	{ "CLEANUP3", run_cleanup3 },
-	{ "CLEANUP4", run_cleanup4 },
-	{ "OPLOCK-CANCEL", run_oplock_cancel },
-	{ "PIDHIGH", run_pidhigh },
-	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
-	{ "LOCAL-GENCACHE", run_local_gencache, 0},
-	{ "LOCAL-DBWRAP-WATCH1", run_dbwrap_watch1, 0 },
-	{ "LOCAL-DBWRAP-WATCH2", run_dbwrap_watch2, 0 },
-	{ "LOCAL-DBWRAP-DO-LOCKED1", run_dbwrap_do_locked1, 0 },
-	{ "LOCAL-MESSAGING-READ1", run_messaging_read1, 0 },
-	{ "LOCAL-MESSAGING-READ2", run_messaging_read2, 0 },
-	{ "LOCAL-MESSAGING-READ3", run_messaging_read3, 0 },
-	{ "LOCAL-MESSAGING-READ4", run_messaging_read4, 0 },
-	{ "LOCAL-MESSAGING-FDPASS1", run_messaging_fdpass1, 0 },
-	{ "LOCAL-MESSAGING-FDPASS2", run_messaging_fdpass2, 0 },
-	{ "LOCAL-MESSAGING-FDPASS2a", run_messaging_fdpass2a, 0 },
-	{ "LOCAL-MESSAGING-FDPASS2b", run_messaging_fdpass2b, 0 },
-	{ "LOCAL-MESSAGING-SEND-ALL", run_messaging_send_all, 0 },
-	{ "LOCAL-BASE64", run_local_base64, 0},
-	{ "LOCAL-RBTREE", run_local_rbtree, 0},
-	{ "LOCAL-MEMCACHE", run_local_memcache, 0},
-	{ "LOCAL-STREAM-NAME", run_local_stream_name, 0},
-	{ "WBCLIENT-MULTI-PING", run_wbclient_multi_ping, 0},
-	{ "LOCAL-string_to_sid", run_local_string_to_sid, 0},
-	{ "LOCAL-sid_to_string", run_local_sid_to_string, 0},
-	{ "LOCAL-binary_to_sid", run_local_binary_to_sid, 0},
-	{ "LOCAL-DBTRANS", run_local_dbtrans, 0},
-	{ "LOCAL-TEVENT-POLL", run_local_tevent_poll, 0},
-	{ "LOCAL-CONVERT-STRING", run_local_convert_string, 0},
-	{ "LOCAL-CONV-AUTH-INFO", run_local_conv_auth_info, 0},
-	{ "LOCAL-hex_encode_buf", run_local_hex_encode_buf, 0},
-	{ "LOCAL-IDMAP-TDB-COMMON", run_idmap_tdb_common_test, 0},
-	{ "LOCAL-remove_duplicate_addrs2", run_local_remove_duplicate_addrs2, 0},
-	{ "local-tdb-opener", run_local_tdb_opener, 0 },
-	{ "local-tdb-writer", run_local_tdb_writer, 0 },
-	{ "LOCAL-DBWRAP-CTDB", run_local_dbwrap_ctdb, 0 },
-	{ "LOCAL-BENCH-PTHREADPOOL", run_bench_pthreadpool, 0 },
-	{ "LOCAL-PTHREADPOOL-TEVENT", run_pthreadpool_tevent, 0 },
-	{ "LOCAL-G-LOCK1", run_g_lock1, 0 },
-	{ "LOCAL-G-LOCK2", run_g_lock2, 0 },
-	{ "LOCAL-G-LOCK3", run_g_lock3, 0 },
-	{ "LOCAL-G-LOCK4", run_g_lock4, 0 },
-	{ "LOCAL-G-LOCK5", run_g_lock5, 0 },
-	{ "LOCAL-G-LOCK6", run_g_lock6, 0 },
-	{ "LOCAL-G-LOCK-PING-PONG", run_g_lock_ping_pong, 0 },
-	{ "LOCAL-CANONICALIZE-PATH", run_local_canonicalize_path, 0 },
-	{ "LOCAL-NAMEMAP-CACHE1", run_local_namemap_cache1, 0 },
-	{ "qpathinfo-bufsize", run_qpathinfo_bufsize, 0 },
-	{ "hide-new-files-timeout", run_hidenewfiles, 0 },
-	{NULL, NULL, 0}};
+	{
+		.name  = "XCOPY",
+		.fn    = run_xcopy,
+	},
+	{
+		.name  = "RENAME",
+		.fn    = run_rename,
+	},
+	{
+		.name  = "RENAME-ACCESS",
+		.fn    = run_rename_access,
+	},
+	{
+		.name  = "OWNER-RIGHTS",
+		.fn    = run_owner_rights,
+	},
+	{
+		.name  = "DELETE",
+		.fn    = run_deletetest,
+	},
+	{
+		.name  = "DELETE-PRINT",
+		.fn    = run_delete_print_test,
+	},
+	{
+		.name  = "WILDDELETE",
+		.fn    = run_wild_deletetest,
+	},
+	{
+		.name  = "DELETE-LN",
+		.fn    = run_deletetest_ln,
+	},
+	{
+		.name  = "PROPERTIES",
+		.fn    = run_properties,
+	},
+	{
+		.name  = "MANGLE",
+		.fn    = torture_mangle,
+	},
+	{
+		.name  = "MANGLE1",
+		.fn    = run_mangle1,
+	},
+	{
+		.name  = "MANGLE-ILLEGAL",
+		.fn    = run_mangle_illegal,
+	},
+	{
+		.name  = "W2K",
+		.fn    = run_w2ktest,
+	},
+	{
+		.name  = "TRANS2SCAN",
+		.fn    = torture_trans2_scan,
+	},
+	{
+		.name  = "NTTRANSSCAN",
+		.fn    = torture_nttrans_scan,
+	},
+	{
+		.name  = "UTABLE",
+		.fn    = torture_utable,
+	},
+	{
+		.name  = "CASETABLE",
+		.fn    = torture_casetable,
+	},
+	{
+		.name  = "ERRMAPEXTRACT",
+		.fn    = run_error_map_extract,
+	},
+	{
+		.name  = "PIPE_NUMBER",
+		.fn    = run_pipe_number,
+	},
+	{
+		.name  = "TCON2",
+		.fn    =  run_tcon2_test,
+	},
+	{
+		.name  = "IOCTL",
+		.fn    =  torture_ioctl_test,
+	},
+	{
+		.name  = "CHKPATH",
+		.fn    =  torture_chkpath_test,
+	},
+	{
+		.name  = "FDSESS",
+		.fn    = run_fdsesstest,
+	},
+	{
+		.name  = "EATEST",
+		.fn    = run_eatest,
+	},
+	{
+		.name  = "SESSSETUP_BENCH",
+		.fn    = run_sesssetup_bench,
+	},
+	{
+		.name  = "CHAIN1",
+		.fn    = run_chain1,
+	},
+	{
+		.name  = "CHAIN2",
+		.fn    = run_chain2,
+	},
+	{
+		.name  = "CHAIN3",
+		.fn    = run_chain3,
+	},
+	{
+		.name  = "WINDOWS-WRITE",
+		.fn    = run_windows_write,
+	},
+	{
+		.name  = "LARGE_READX",
+		.fn    = run_large_readx,
+	},
+	{
+		.name  = "NTTRANS-CREATE",
+		.fn    = run_nttrans_create,
+	},
+	{
+		.name  = "NTTRANS-FSCTL",
+		.fn    = run_nttrans_fsctl,
+	},
+	{
+		.name  = "CLI_ECHO",
+		.fn    = run_cli_echo,
+	},
+	{
+		.name  = "CLI_SPLICE",
+		.fn    = run_cli_splice,
+	},
+	{
+		.name  = "TLDAP",
+		.fn    = run_tldap,
+	},
+	{
+		.name  = "STREAMERROR",
+		.fn    = run_streamerror,
+	},
+	{
+		.name  = "NOTIFY-BENCH",
+		.fn    = run_notify_bench,
+	},
+	{
+		.name  = "NOTIFY-BENCH2",
+		.fn    = run_notify_bench2,
+	},
+	{
+		.name  = "NOTIFY-BENCH3",
+		.fn    = run_notify_bench3,
+	},
+	{
+		.name  = "BAD-NBT-SESSION",
+		.fn    = run_bad_nbt_session,
+	},
+	{
+		.name  = "IGN-BAD-NEGPROT",
+		.fn    = run_ign_bad_negprot,
+	},
+	{
+		.name  = "SMB-ANY-CONNECT",
+		.fn    = run_smb_any_connect,
+	},
+	{
+		.name  = "NOTIFY-ONLINE",
+		.fn    = run_notify_online,
+	},
+	{
+		.name  = "SMB2-BASIC",
+		.fn    = run_smb2_basic,
+	},
+	{
+		.name  = "SMB2-NEGPROT",
+		.fn    = run_smb2_negprot,
+	},
+	{
+		.name  = "SMB2-ANONYMOUS",
+		.fn    = run_smb2_anonymous,
+	},
+	{
+		.name  = "SMB2-SESSION-RECONNECT",
+		.fn    = run_smb2_session_reconnect,
+	},
+	{
+		.name  = "SMB2-TCON-DEPENDENCE",
+		.fn    = run_smb2_tcon_dependence,
+	},
+	{
+		.name  = "SMB2-MULTI-CHANNEL",
+		.fn    = run_smb2_multi_channel,
+	},
+	{
+		.name  = "SMB2-SESSION-REAUTH",
+		.fn    = run_smb2_session_reauth,
+	},
+	{
+		.name  = "SMB2-FTRUNCATE",
+		.fn    = run_smb2_ftruncate,
+	},
+	{
+		.name  = "SMB2-DIR-FSYNC",
+		.fn    = run_smb2_dir_fsync,
+	},
+	{
+		.name  = "CLEANUP1",
+		.fn    = run_cleanup1,
+	},
+	{
+		.name  = "CLEANUP2",
+		.fn    = run_cleanup2,
+	},
+	{
+		.name  = "CLEANUP3",
+		.fn    = run_cleanup3,
+	},
+	{
+		.name  = "CLEANUP4",
+		.fn    = run_cleanup4,
+	},
+	{
+		.name  = "OPLOCK-CANCEL",
+		.fn    = run_oplock_cancel,
+	},
+	{
+		.name  = "PIDHIGH",
+		.fn    = run_pidhigh,
+	},
+	{
+		.name  = "LOCAL-SUBSTITUTE",
+		.fn    = run_local_substitute,
+	},
+	{
+		.name  = "LOCAL-GENCACHE",
+		.fn    = run_local_gencache,
+	},
+	{
+		.name  = "LOCAL-DBWRAP-WATCH1",
+		.fn    = run_dbwrap_watch1,
+	},
+	{
+		.name  = "LOCAL-DBWRAP-WATCH2",
+		.fn    = run_dbwrap_watch2,
+	},
+	{
+		.name  = "LOCAL-DBWRAP-DO-LOCKED1",
+		.fn    = run_dbwrap_do_locked1,
+	},
+	{
+		.name  = "LOCAL-MESSAGING-READ1",
+		.fn    = run_messaging_read1,
+	},
+	{
+		.name  = "LOCAL-MESSAGING-READ2",
+		.fn    = run_messaging_read2,
+	},
+	{
+		.name  = "LOCAL-MESSAGING-READ3",
+		.fn    = run_messaging_read3,
+	},
+	{
+		.name  = "LOCAL-MESSAGING-READ4",
+		.fn    = run_messaging_read4,
+	},
+	{
+		.name  = "LOCAL-MESSAGING-FDPASS1",
+		.fn    = run_messaging_fdpass1,
+	},
+	{
+		.name  = "LOCAL-MESSAGING-FDPASS2",
+		.fn    = run_messaging_fdpass2,
+	},
+	{
+		.name  = "LOCAL-MESSAGING-FDPASS2a",
+		.fn    = run_messaging_fdpass2a,
+	},
+	{
+		.name  = "LOCAL-MESSAGING-FDPASS2b",
+		.fn    = run_messaging_fdpass2b,
+	},
+	{
+		.name  = "LOCAL-MESSAGING-SEND-ALL",
+		.fn    = run_messaging_send_all,
+	},
+	{
+		.name  = "LOCAL-BASE64",
+		.fn    = run_local_base64,
+	},
+	{
+		.name  = "LOCAL-RBTREE",
+		.fn    = run_local_rbtree,
+	},
+	{
+		.name  = "LOCAL-MEMCACHE",
+		.fn    = run_local_memcache,
+	},
+	{
+		.name  = "LOCAL-STREAM-NAME",
+		.fn    = run_local_stream_name,
+	},
+	{
+		.name  = "WBCLIENT-MULTI-PING",
+		.fn    = run_wbclient_multi_ping,
+	},
+	{
+		.name  = "LOCAL-string_to_sid",
+		.fn    = run_local_string_to_sid,
+	},
+	{
+		.name  = "LOCAL-sid_to_string",
+		.fn    = run_local_sid_to_string,
+	},
+	{
+		.name  = "LOCAL-binary_to_sid",
+		.fn    = run_local_binary_to_sid,
+	},
+	{
+		.name  = "LOCAL-DBTRANS",
+		.fn    = run_local_dbtrans,
+	},
+	{
+		.name  = "LOCAL-TEVENT-POLL",
+		.fn    = run_local_tevent_poll,
+	},
+	{
+		.name  = "LOCAL-CONVERT-STRING",
+		.fn    = run_local_convert_string,
+	},
+	{
+		.name  = "LOCAL-CONV-AUTH-INFO",
+		.fn    = run_local_conv_auth_info,
+	},
+	{
+		.name  = "LOCAL-hex_encode_buf",
+		.fn    = run_local_hex_encode_buf,
+	},
+	{
+		.name  = "LOCAL-IDMAP-TDB-COMMON",
+		.fn    = run_idmap_tdb_common_test,
+	},
+	{
+		.name  = "LOCAL-remove_duplicate_addrs2",
+		.fn    = run_local_remove_duplicate_addrs2,
+	},
+	{
+		.name  = "local-tdb-opener",
+		.fn    = run_local_tdb_opener,
+	},
+	{
+		.name  = "local-tdb-writer",
+		.fn    = run_local_tdb_writer,
+	},
+	{
+		.name  = "LOCAL-DBWRAP-CTDB",
+		.fn    = run_local_dbwrap_ctdb,
+	},
+	{
+		.name  = "LOCAL-BENCH-PTHREADPOOL",
+		.fn    = run_bench_pthreadpool,
+	},
+	{
+		.name  = "LOCAL-PTHREADPOOL-TEVENT",
+		.fn    = run_pthreadpool_tevent,
+	},
+	{
+		.name  = "LOCAL-G-LOCK1",
+		.fn    = run_g_lock1,
+	},
+	{
+		.name  = "LOCAL-G-LOCK2",
+		.fn    = run_g_lock2,
+	},
+	{
+		.name  = "LOCAL-G-LOCK3",
+		.fn    = run_g_lock3,
+	},
+	{
+		.name  = "LOCAL-G-LOCK4",
+		.fn    = run_g_lock4,
+	},
+	{
+		.name  = "LOCAL-G-LOCK5",
+		.fn    = run_g_lock5,
+	},
+	{
+		.name  = "LOCAL-G-LOCK6",
+		.fn    = run_g_lock6,
+	},
+	{
+		.name  = "LOCAL-G-LOCK-PING-PONG",
+		.fn    = run_g_lock_ping_pong,
+	},
+	{
+		.name  = "LOCAL-CANONICALIZE-PATH",
+		.fn    = run_local_canonicalize_path,
+	},
+	{
+		.name  = "LOCAL-NAMEMAP-CACHE1",
+		.fn    = run_local_namemap_cache1,
+	},
+	{
+		.name  = "qpathinfo-bufsize",
+		.fn    = run_qpathinfo_bufsize,
+	},
+	{
+		.name  = "hide-new-files-timeout",
+		.fn    = run_hidenewfiles,
+	},
+	{
+		.name = NULL,
+	},
+};
 
 /****************************************************************************
 run a specified test or "ALL"
