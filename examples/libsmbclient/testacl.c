@@ -39,53 +39,101 @@ int main(int argc, const char *argv[])
 	{
 		POPT_AUTOHELP
 		{
-			"numeric", 'n', POPT_ARG_NONE, &numeric,
-			1, "Don't resolve sids or masks to names"
+			.longName   = "numeric",
+			.shortName  = 'n',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &numeric,
+			.val        = 1,
+			.descrip    = "Don't resolve sids or masks to names"
 		},
 		{
-			"debug", 'd', POPT_ARG_INT, &debug,
-			0, "Set debug level (0-100)"
+			.longName   = "debug",
+			.shortName  = 'd',
+			.argInfo    = POPT_ARG_INT,
+			.arg        = &debug,
+			.val        = 0,
+			.descrip    = "Set debug level (0-100)"
 		},
 		{
-			"full_time_names", 'f', POPT_ARG_NONE, &full_time_names,
-			1,
-			"Use new style xattr names, which include CREATE_TIME"
+			.longName   = "full_time_names",
+			.shortName  = 'f',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &full_time_names,
+			.val        = 1,
+			.descrip    = "Use new style xattr names, which include CREATE_TIME"
 		},
 		{
-			"delete", 'D', POPT_ARG_STRING, NULL,
-			'D', "Delete an acl", "ACL"
+			.longName   = "delete",
+			.shortName  = 'D',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'D',
+			.descrip    = "Delete an acl",
+			.argDescrip = "ACL"
 		},
 		{
-			"modify", 'M', POPT_ARG_STRING, NULL,
-			'M', "Modify an acl", "ACL"
+			.longName   = "modify",
+			.shortName  = 'M',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'M',
+			.descrip    = "Modify an acl",
+			.argDescrip = "ACL"
 		},
 		{
-			"add", 'a', POPT_ARG_STRING, NULL,
-			'a', "Add an acl", "ACL"
+			.longName   = "add",
+			.shortName  = 'a',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'a',
+			.descrip    = "Add an acl",
+			.argDescrip = "ACL"
 		},
 		{
-			"set", 'S', POPT_ARG_STRING, NULL,
-			'S', "Set acls", "ACLS"
+			.longName   = "set",
+			.shortName  = 'S',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'S',
+			.descrip    = "Set acls",
+			.argDescrip = "ACLS"
 		},
 		{
-			"chown", 'C', POPT_ARG_STRING, NULL,
-			'C', "Change ownership of a file", "USERNAME"
+			.longName   = "chown",
+			.shortName  = 'C',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'C',
+			.descrip    = "Change ownership of a file",
+			.argDescrip = "USERNAME"
 		},
 		{
-			"chgrp", 'G', POPT_ARG_STRING, NULL,
-			'G', "Change group ownership of a file", "GROUPNAME"
+			.longName   = "chgrp",
+			.shortName  = 'G',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'G',
+			.descrip    = "Change group ownership of a file",
+			.argDescrip = "GROUPNAME"
 		},
 		{
-			"get", 'g', POPT_ARG_STRING, NULL,
-			'g', "Get a specific acl attribute", "ACL"
+			.longName   = "get",
+			.shortName  = 'g',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'g',
+			.descrip    = "Get a specific acl attribute",
+			.argDescrip = "ACL"
 		},
 		{
-			"stat_and_retry", 'R', POPT_ARG_NONE, &stat_and_retry,
-			1, "After 'get' do 'stat' and another 'get'"
+			.longName   = "stat_and_retry",
+			.shortName  = 'R',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &stat_and_retry,
+			.val        = 1,
+			.descrip    = "After 'get' do 'stat' and another 'get'"
 		},
-		{
-			NULL
-		}
+		POPT_TABLEEND
 	};
 
 	setbuf(stdout, NULL);
