@@ -76,11 +76,41 @@ void popt_common_callback(poptContext con,
 }
 
 struct poptOption popt_common_netapi_examples[] = {
-	{ NULL, 0, POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST, (void *)popt_common_callback },
-	{ "user", 'U', POPT_ARG_STRING, NULL, 'U', "Username used for connection", "USERNAME" },
-	{ "password", 'p', POPT_ARG_STRING, NULL, 'p', "Password used for connection", "PASSWORD" },
-	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Debuglevel", "DEBUGLEVEL" },
-	{ "kerberos", 'k', POPT_ARG_NONE, NULL, 'k', "Use Kerberos", NULL },
+	{
+		.argInfo    = POPT_ARG_CALLBACK|POPT_CBFLAG_PRE|POPT_CBFLAG_POST,
+		.arg        = (void *)popt_common_callback,
+	},
+	{
+		.longName   = "user",
+		.shortName  = 'U',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'U',
+		.descrip    = "Username used for connection",
+		.argDescrip = "USERNAME",
+	},
+	{
+		.longName   = "password",
+		.shortName  = 'p',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'p',
+		.descrip    = "Password used for connection",
+		.argDescrip = "PASSWORD",
+	},
+	{
+		.longName   = "debuglevel",
+		.shortName  = 'd',
+		.argInfo    = POPT_ARG_STRING,
+		.val        = 'd',
+		.descrip    = "Debuglevel",
+		.argDescrip = "DEBUGLEVEL",
+	},
+	{
+		.longName   = "kerberos",
+		.shortName  = 'k',
+		.argInfo    = POPT_ARG_NONE,
+		.val        = 'k',
+		.descrip    = "Use Kerberos",
+	},
 	POPT_TABLEEND
 };
 
