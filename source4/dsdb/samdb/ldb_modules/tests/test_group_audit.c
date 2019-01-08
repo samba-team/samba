@@ -39,6 +39,7 @@ uint32_t g_dsdb_flags;
 const char *g_exp_fmt;
 const char *g_dn = NULL;
 int g_status = LDB_SUCCESS;
+struct ldb_result *g_result = NULL;
 
 int dsdb_search_one(struct ldb_context *ldb,
 		    TALLOC_CTX *mem_ctx,
@@ -63,6 +64,24 @@ int dsdb_search_one(struct ldb_context *ldb,
 	return g_status;
 }
 
+int dsdb_module_search_dn(
+	struct ldb_module *module,
+	TALLOC_CTX *mem_ctx,
+	struct ldb_result **res,
+	struct ldb_dn *basedn,
+	const char * const *attrs,
+	uint32_t dsdb_flags,
+	struct ldb_request *parent)
+{
+
+	g_basedn = basedn;
+	g_attrs = attrs;
+	g_dsdb_flags = dsdb_flags;
+
+	*res = g_result;
+
+	return g_status;
+}
 /*
  * Mock version of audit_log_json
  */
@@ -158,7 +177,8 @@ static void _check_group_change_message(const int message,
 	/*
 	 * Validate the groupChange element
 	 */
-	if (json_object_size(audit) != 11) {
+	if ((event_id == EVT_ID_NONE && json_object_size(audit) != 10) ||
+	    (event_id != EVT_ID_NONE && json_object_size(audit) != 11)) {
 		cm_print_error("Unexpected number of elements in groupChange "
 			       "%zu != %d\n",
 			       json_object_size(audit),
@@ -206,17 +226,28 @@ static void _check_group_change_message(const int message,
 	 * Validate the eventId element
 	 */
 	v = json_object_get(audit, "eventId");
-	if (v == NULL) {
-		cm_print_error("No eventId element\n");
-		_fail(file, line);
+	if (event_id == EVT_ID_NONE) {
+		if (v != NULL) {
+			int_value = json_integer_value(v);
+			cm_print_error("Unexpected eventId \"%d\", it should "
+				       "NOT be present",
+				       int_value);
+			_fail(file, line);
+		}
 	}
+	else {
+		if (v == NULL) {
+			cm_print_error("No eventId element\n");
+			_fail(file, line);
+		}
 
-	int_value = json_integer_value(v);
-	if (int_value != event_id) {
-		cm_print_error("Unexpected eventId \"%d\" != \"%d\"\n",
-			       int_value,
-			       event_id);
-		_fail(file, line);
+		int_value = json_integer_value(v);
+		if (int_value != event_id) {
+			cm_print_error("Unexpected eventId \"%d\" != \"%d\"\n",
+				       int_value,
+				       event_id);
+			_fail(file, line);
+		}
 	}
 }
 
@@ -802,7 +833,7 @@ static void test_audit_group_json(void **state)
 				"the-user-name",
 				"the-group-name",
 				event_id,
-				LDB_ERR_OPERATIONS_ERROR);
+				LDB_SUCCESS);
 	assert_int_equal(3, json_object_size(json.root));
 
 	v = json_object_get(json.root, "type");
@@ -828,6 +859,111 @@ static void test_audit_group_json(void **state)
 	assert_true(json_is_integer(v));
 	assert_int_equal(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
 			 json_integer_value(v));
+
+	v = json_object_get(audit, "statusCode");
+	assert_non_null(v);
+	assert_true(json_is_integer(v));
+	assert_int_equal(LDB_SUCCESS, json_integer_value(v));
+
+	v = json_object_get(audit, "status");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal("Success", json_string_value(v));
+
+	v = json_object_get(audit, "user");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal("the-user-name", json_string_value(v));
+
+	v = json_object_get(audit, "group");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal("the-group-name", json_string_value(v));
+
+	v = json_object_get(audit, "action");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal("the-action", json_string_value(v));
+
+	json_free(&json);
+	TALLOC_FREE(ctx);
+}
+
+static void test_audit_group_json_error(void **state)
+{
+	struct ldb_context *ldb = NULL;
+	struct ldb_module  *module = NULL;
+	struct ldb_request *req = NULL;
+
+	struct tsocket_address *ts = NULL;
+
+	const char *const SID = "S-1-5-21-2470180966-3899876309-2637894779";
+	const char * const SESSION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+
+	struct GUID transaction_id;
+	const char *const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+
+	enum event_id_type event_id = EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP;
+
+	struct json_object json;
+	json_t *audit = NULL;
+	json_t *v = NULL;
+	json_t *o = NULL;
+	time_t before;
+
+
+	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	ldb = ldb_init(ctx, NULL);
+
+	GUID_from_string(TRANSACTION, &transaction_id);
+
+	module = talloc_zero(ctx, struct ldb_module);
+	module->ldb = ldb;
+
+	tsocket_address_inet_from_strings(ctx, "ip", "127.0.0.1", 0, &ts);
+	ldb_set_opaque(ldb, "remoteAddress", ts);
+
+	add_session_data(ctx, ldb, SESSION, SID);
+
+	req = talloc_zero(ctx, struct ldb_request);
+	req->operation =  LDB_ADD;
+	add_transaction_id(req, TRANSACTION);
+
+	before = time(NULL);
+	json = audit_group_json(module,
+				req,
+				"the-action",
+				"the-user-name",
+				"the-group-name",
+				event_id,
+				LDB_ERR_OPERATIONS_ERROR);
+	assert_int_equal(3, json_object_size(json.root));
+
+	v = json_object_get(json.root, "type");
+	assert_non_null(v);
+	assert_string_equal("groupChange", json_string_value(v));
+
+	v = json_object_get(json.root, "timestamp");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	check_timestamp(before, json_string_value(v));
+
+	audit = json_object_get(json.root, "groupChange");
+	assert_non_null(audit);
+	assert_true(json_is_object(audit));
+	assert_int_equal(11, json_object_size(audit));
+
+	o = json_object_get(audit, "version");
+	assert_non_null(o);
+	check_version(o, AUDIT_MAJOR, AUDIT_MINOR);
+
+	v = json_object_get(audit, "eventId");
+	assert_non_null(v);
+	assert_true(json_is_integer(v));
+	assert_int_equal(
+		EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
+		json_integer_value(v));
 
 	v = json_object_get(audit, "statusCode");
 	assert_non_null(v);
@@ -858,6 +994,106 @@ static void test_audit_group_json(void **state)
 	TALLOC_FREE(ctx);
 }
 
+static void test_audit_group_json_no_event(void **state)
+{
+	struct ldb_context *ldb = NULL;
+	struct ldb_module  *module = NULL;
+	struct ldb_request *req = NULL;
+
+	struct tsocket_address *ts = NULL;
+
+	const char *const SID = "S-1-5-21-2470180966-3899876309-2637894779";
+	const char * const SESSION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+
+	struct GUID transaction_id;
+	const char *const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+
+	enum event_id_type event_id = EVT_ID_NONE;
+
+	struct json_object json;
+	json_t *audit = NULL;
+	json_t *v = NULL;
+	json_t *o = NULL;
+	time_t before;
+
+
+	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	ldb = ldb_init(ctx, NULL);
+
+	GUID_from_string(TRANSACTION, &transaction_id);
+
+	module = talloc_zero(ctx, struct ldb_module);
+	module->ldb = ldb;
+
+	tsocket_address_inet_from_strings(ctx, "ip", "127.0.0.1", 0, &ts);
+	ldb_set_opaque(ldb, "remoteAddress", ts);
+
+	add_session_data(ctx, ldb, SESSION, SID);
+
+	req = talloc_zero(ctx, struct ldb_request);
+	req->operation =  LDB_ADD;
+	add_transaction_id(req, TRANSACTION);
+
+	before = time(NULL);
+	json = audit_group_json(module,
+				req,
+				"the-action",
+				"the-user-name",
+				"the-group-name",
+				event_id,
+				LDB_SUCCESS);
+	assert_int_equal(3, json_object_size(json.root));
+
+	v = json_object_get(json.root, "type");
+	assert_non_null(v);
+	assert_string_equal("groupChange", json_string_value(v));
+
+	v = json_object_get(json.root, "timestamp");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	check_timestamp(before, json_string_value(v));
+
+	audit = json_object_get(json.root, "groupChange");
+	assert_non_null(audit);
+	assert_true(json_is_object(audit));
+	assert_int_equal(10, json_object_size(audit));
+
+	o = json_object_get(audit, "version");
+	assert_non_null(o);
+	check_version(o, AUDIT_MAJOR, AUDIT_MINOR);
+
+	v = json_object_get(audit, "eventId");
+	assert_null(v);
+
+	v = json_object_get(audit, "statusCode");
+	assert_non_null(v);
+	assert_true(json_is_integer(v));
+	assert_int_equal(LDB_SUCCESS, json_integer_value(v));
+
+	v = json_object_get(audit, "status");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal("Success", json_string_value(v));
+
+	v = json_object_get(audit, "user");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal("the-user-name", json_string_value(v));
+
+	v = json_object_get(audit, "group");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal("the-group-name", json_string_value(v));
+
+	v = json_object_get(audit, "action");
+	assert_non_null(v);
+	assert_true(json_is_string(v));
+	assert_string_equal("the-action", json_string_value(v));
+
+	json_free(&json);
+	TALLOC_FREE(ctx);
+}
 static void setup_ldb(
 	TALLOC_CTX *ctx,
 	struct ldb_context **ldb,
@@ -1411,6 +1647,332 @@ static void test_get_remove_member_event(void **state)
 
 	assert_int_equal(EVT_ID_NONE, get_remove_member_event(UINT32_MAX));
 }
+
+/* test log_group_membership_changes
+ *
+ * Happy path test case
+ *
+ */
+static void test_log_group_membership_changes(void **state)
+{
+	struct ldb_context *ldb = NULL;
+	struct ldb_module  *module = NULL;
+	const char * const SID = "S-1-5-21-2470180966-3899876309-2637894779";
+	const char * const SESSION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const IP = "127.0.0.1";
+	struct ldb_request *req = NULL;
+	struct ldb_message *msg = NULL;
+	struct ldb_message_element *el = NULL;
+	struct audit_callback_context *acc = NULL;
+	struct ldb_result *res = NULL;
+	struct ldb_message *new_msg = NULL;
+	struct ldb_message_element *group_type = NULL;
+	const char *group_type_str = NULL;
+	struct ldb_message_element *new_el = NULL;
+	struct ldb_message_element *old_el = NULL;
+	int status = 0;
+	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	setup_ldb(ctx, &ldb, &module, IP, SESSION, SID);
+
+	/*
+	 * Build the ldb message
+	 */
+	msg = talloc_zero(ctx, struct ldb_message);
+
+	/*
+	 * Populate message elements, adding a new entry to the membership list
+	 *
+	 */
+
+	el = talloc_zero(ctx, struct ldb_message_element);
+	el->name = "member";
+	el->num_values = 1;
+	el->values = talloc_zero_array(ctx, DATA_BLOB, 1);
+	el->values[0] = data_blob_string_const(
+		"<GUID=081519b5-a709-44a0-bc95-dd4bfe809bf8>;"
+		"CN=testuser131953,CN=Users,DC=addom,DC=samba,"
+		"DC=example,DC=com");
+	msg->elements = el;
+	msg->num_elements = 1;
+
+	/*
+	 * Build the ldb_request
+	 */
+	req = talloc_zero(ctx, struct ldb_request);
+	req->operation = LDB_ADD;
+	req->op.add.message = msg;
+	add_transaction_id(req, TRANSACTION);
+
+	/*
+	 * Build the initial state of the database
+	 */
+	old_el = talloc_zero(ctx, struct ldb_message_element);
+	old_el->name = "member";
+	old_el->num_values = 1;
+	old_el->values = talloc_zero_array(ctx, DATA_BLOB, 1);
+	old_el->values[0] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681b>;"
+		"cn=grpadttstuser01,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+
+	/*
+	 * Build the updated state of the database
+	 */
+	res = talloc_zero(ctx, struct ldb_result);
+	new_msg = talloc_zero(ctx, struct ldb_message);
+	new_el = talloc_zero(ctx, struct ldb_message_element);
+	new_el->name = "member";
+	new_el->num_values = 2;
+	new_el->values = talloc_zero_array(ctx, DATA_BLOB, 2);
+	new_el->values[0] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681b>;"
+		"cn=grpadttstuser01,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+	new_el->values[1] = data_blob_string_const(
+		"<GUID=081519b5-a709-44a0-bc95-dd4bfe809bf8>;"
+		"CN=testuser131953,CN=Users,DC=addom,DC=samba,"
+		"DC=example,DC=com");
+
+	group_type = talloc_zero(ctx, struct ldb_message_element);
+	group_type->name = "groupType";
+	group_type->num_values = 1;
+	group_type->values = talloc_zero_array(ctx, DATA_BLOB, 1);
+	group_type_str = talloc_asprintf(ctx, "%u", GTYPE_SECURITY_GLOBAL_GROUP);
+	group_type->values[0] = data_blob_string_const(group_type_str);
+
+
+	new_msg->elements = talloc_zero_array(ctx, struct ldb_message_element, 2);
+	new_msg->num_elements = 2;
+	new_msg->elements[0] = *new_el;
+	new_msg->elements[1] = *group_type;
+
+	res->count = 1;
+	res->msgs = &new_msg;
+
+	acc = talloc_zero(ctx, struct audit_callback_context);
+	acc->request = req;
+	acc->module = module;
+	acc->members = old_el;
+	/*
+	 * call log_membership_changes
+	 */
+	messages_sent = 0;
+	g_result = res;
+	g_status = LDB_SUCCESS;
+	log_group_membership_changes(acc, status);
+	g_result = NULL;
+
+	/*
+	 * Check the results
+	 */
+	assert_int_equal(1, messages_sent);
+
+	check_group_change_message(
+	    0,
+	    "CN=testuser131953,CN=Users,DC=addom,DC=samba,DC=example,DC=com",
+	    "Added",
+	    EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP);
+
+	/*
+	 * Clean up
+	 */
+	json_free(&messages[0]);
+	TALLOC_FREE(ctx);
+}
+
+/* test log_group_membership_changes
+ *
+ * The ldb query to retrieve the new values failed.
+ *
+ * Should generate group membership change Failure message.
+ *
+ */
+static void test_log_group_membership_changes_read_new_failure(void **state)
+{
+	struct ldb_context *ldb = NULL;
+	struct ldb_module  *module = NULL;
+	const char * const SID = "S-1-5-21-2470180966-3899876309-2637894779";
+	const char * const SESSION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const IP = "127.0.0.1";
+	struct ldb_request *req = NULL;
+	struct ldb_message *msg = NULL;
+	struct ldb_message_element *el = NULL;
+	struct audit_callback_context *acc = NULL;
+	struct ldb_message_element *old_el = NULL;
+	int status = 0;
+	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	setup_ldb(ctx, &ldb, &module, IP, SESSION, SID);
+
+	/*
+	 * Build the ldb message
+	 */
+	msg = talloc_zero(ctx, struct ldb_message);
+
+	/*
+	 * Populate message elements, adding a new entry to the membership list
+	 *
+	 */
+
+	el = talloc_zero(ctx, struct ldb_message_element);
+	el->name = "member";
+	el->num_values = 1;
+	el->values = talloc_zero_array(ctx, DATA_BLOB, 1);
+	el->values[0] = data_blob_string_const(
+		"<GUID=081519b5-a709-44a0-bc95-dd4bfe809bf8>;"
+		"CN=testuser131953,CN=Users,DC=addom,DC=samba,"
+		"DC=example,DC=com");
+	msg->elements = el;
+	msg->num_elements = 1;
+
+	/*
+	 * Build the ldb_request
+	 */
+	req = talloc_zero(ctx, struct ldb_request);
+	req->operation = LDB_ADD;
+	req->op.add.message = msg;
+	add_transaction_id(req, TRANSACTION);
+
+	/*
+	 * Build the initial state of the database
+	 */
+	old_el = talloc_zero(ctx, struct ldb_message_element);
+	old_el->name = "member";
+	old_el->num_values = 1;
+	old_el->values = talloc_zero_array(ctx, DATA_BLOB, 1);
+	old_el->values[0] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681b>;"
+		"cn=grpadttstuser01,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+
+	acc = talloc_zero(ctx, struct audit_callback_context);
+	acc->request = req;
+	acc->module = module;
+	acc->members = old_el;
+	/*
+	 * call log_membership_changes
+	 */
+	messages_sent = 0;
+	g_result = NULL;
+	g_status = LDB_ERR_NO_SUCH_OBJECT;
+	log_group_membership_changes(acc, status);
+
+	/*
+	 * Check the results
+	 */
+	assert_int_equal(1, messages_sent);
+
+	check_group_change_message(
+	    0,
+	    "",
+	    "Failure",
+	    EVT_ID_NONE);
+
+	/*
+	 * Clean up
+	 */
+	json_free(&messages[0]);
+	TALLOC_FREE(ctx);
+}
+
+/* test log_group_membership_changes
+ *
+ * The operation failed.
+ *
+ * Should generate group membership change Failure message.
+ *
+ */
+static void test_log_group_membership_changes_error(void **state)
+{
+	struct ldb_context *ldb = NULL;
+	struct ldb_module  *module = NULL;
+	const char * const SID = "S-1-5-21-2470180966-3899876309-2637894779";
+	const char * const SESSION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const TRANSACTION = "7130cb06-2062-6a1b-409e-3514c26b1773";
+	const char * const IP = "127.0.0.1";
+	struct ldb_request *req = NULL;
+	struct ldb_message *msg = NULL;
+	struct ldb_message_element *el = NULL;
+	struct ldb_message_element *old_el = NULL;
+	struct audit_callback_context *acc = NULL;
+	int status = LDB_ERR_OPERATIONS_ERROR;
+	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	setup_ldb(ctx, &ldb, &module, IP, SESSION, SID);
+
+	/*
+	 * Build the ldb message
+	 */
+	msg = talloc_zero(ctx, struct ldb_message);
+
+	/*
+	 * Populate message elements, adding a new entry to the membership list
+	 *
+	 */
+
+	el = talloc_zero(ctx, struct ldb_message_element);
+	el->name = "member";
+	el->num_values = 1;
+	el->values = talloc_zero_array(ctx, DATA_BLOB, 1);
+	el->values[0] = data_blob_string_const(
+		"<GUID=081519b5-a709-44a0-bc95-dd4bfe809bf8>;"
+		"CN=testuser131953,CN=Users,DC=addom,DC=samba,"
+		"DC=example,DC=com");
+	msg->elements = el;
+	msg->num_elements = 1;
+
+	/*
+	 * Build the ldb_request
+	 */
+	req = talloc_zero(ctx, struct ldb_request);
+	req->operation = LDB_ADD;
+	req->op.add.message = msg;
+	add_transaction_id(req, TRANSACTION);
+
+	/*
+	 * Build the initial state of the database
+	 */
+	old_el = talloc_zero(ctx, struct ldb_message_element);
+	old_el->name = "member";
+	old_el->num_values = 1;
+	old_el->values = talloc_zero_array(ctx, DATA_BLOB, 1);
+	old_el->values[0] = data_blob_string_const(
+		"<GUID=cb8c2777-dcf5-419c-ab57-f645dbdf681b>;"
+		"cn=grpadttstuser01,cn=users,DC=addom,"
+		"DC=samba,DC=example,DC=com");
+
+
+	acc = talloc_zero(ctx, struct audit_callback_context);
+	acc->request = req;
+	acc->module = module;
+	acc->members = old_el;
+	/*
+	 * call log_membership_changes
+	 */
+	messages_sent = 0;
+	log_group_membership_changes(acc, status);
+
+	/*
+	 * Check the results
+	 */
+	assert_int_equal(1, messages_sent);
+
+	check_group_change_message(
+	    0,
+	    "",
+	    "Failure",
+	    EVT_ID_NONE);
+
+	/*
+	 * Clean up
+	 */
+	json_free(&messages[0]);
+	TALLOC_FREE(ctx);
+}
+
 /*
  * Note: to run under valgrind us:
  *       valgrind --suppressions=test_group_audit.valgrind bin/test_group_audit
@@ -1421,6 +1983,8 @@ static void test_get_remove_member_event(void **state)
 int main(void) {
 	const struct CMUnitTest tests[] = {
 	    cmocka_unit_test(test_audit_group_json),
+	    cmocka_unit_test(test_audit_group_json_error),
+	    cmocka_unit_test(test_audit_group_json_no_event),
 	    cmocka_unit_test(test_get_transaction_id),
 	    cmocka_unit_test(test_audit_group_hr),
 	    cmocka_unit_test(test_get_parsed_dns),
@@ -1433,6 +1997,9 @@ int main(void) {
 	    cmocka_unit_test(test_log_membership_changes_rmd_flags),
 	    cmocka_unit_test(test_get_add_member_event),
 	    cmocka_unit_test(test_get_remove_member_event),
+	    cmocka_unit_test(test_log_group_membership_changes),
+	    cmocka_unit_test(test_log_group_membership_changes_read_new_failure),
+	    cmocka_unit_test(test_log_group_membership_changes_error),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
