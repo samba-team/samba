@@ -742,8 +742,18 @@ static void vfs_pread_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
 	talloc_set_destructor(state, NULL);
-	if (tevent_req_error(req, ret)) {
-		return;
+	if (ret != 0) {
+		if (ret != EAGAIN) {
+			tevent_req_error(req, ret);
+			return;
+		}
+		/*
+		 * If we get EAGAIN from pthreadpool_tevent_job_recv() this
+		 * means the lower level pthreadpool failed to create a new
+		 * thread. Fallback to sync processing in that case to allow
+		 * some progress for the client.
+		 */
+		vfs_pread_do(state);
 	}
 
 	tevent_req_done(req);
