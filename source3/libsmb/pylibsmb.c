@@ -1525,6 +1525,54 @@ static PyObject *py_smb_getacl(struct py_cli_state *self, PyObject *args)
 				    sd, sd);
 }
 
+/*
+ * Set ACL on file/directory using given security descriptor object
+ */
+static PyObject *py_smb_setacl(struct py_cli_state *self, PyObject *args)
+{
+	NTSTATUS status;
+	char *filename = NULL;
+	PyObject *py_sd = NULL;
+	struct security_descriptor *sd = NULL;
+	unsigned int sinfo = SECINFO_DEFAULT_FLAGS;
+	uint16_t fnum;
+
+	/* there's no async version of cli_set_security_descriptor() */
+	if (self->thread_state != NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"set_acl() is not supported on "
+				"a multi_threaded connection");
+		return NULL;
+	}
+
+	if (!PyArg_ParseTuple(args, "sO|I:set_acl", &filename, &py_sd,
+			      &sinfo)) {
+		return NULL;
+	}
+
+	sd = pytalloc_get_type(py_sd, struct security_descriptor);
+	if (!sd) {
+		PyErr_Format(PyExc_TypeError,
+			"Expected dcerpc.security.descriptor as argument, got %s",
+			talloc_get_name(pytalloc_get_ptr(py_sd)));
+		return NULL;
+	}
+
+	status = cli_ntcreate(self->cli, filename, 0,
+			      SEC_FLAG_MAXIMUM_ALLOWED, 0,
+			      FILE_SHARE_READ|FILE_SHARE_WRITE,
+			      FILE_OPEN, 0x0, 0x0, &fnum, NULL);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	status = cli_set_security_descriptor(self->cli, fnum, sinfo, sd);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	status = cli_close(self->cli, fnum);
+	PyErr_NTSTATUS_IS_ERR_RAISE(status);
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef py_cli_state_methods[] = {
 	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
 	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
@@ -1577,6 +1625,9 @@ static PyMethodDef py_cli_state_methods[] = {
 	{ "get_acl", (PyCFunction)py_smb_getacl, METH_VARARGS,
 	  "get_acl(path[, security_info=0]) -> security_descriptor object\n\n"
 	  "\t\tGet security descriptor for file." },
+	{ "set_acl", (PyCFunction)py_smb_setacl, METH_VARARGS,
+	  "set_acl(path, security_descriptor[, security_info=0]) -> None\n\n"
+	  "\t\tSet security descriptor for file." },
 	{ NULL, NULL, 0, NULL }
 };
 
