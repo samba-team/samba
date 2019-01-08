@@ -30,8 +30,14 @@ int main(int argc, const char **argv)
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"count", 'c', POPT_ARG_STRING, &count_str, 1,
-		 "Load config <count> number of times"},
+		{
+			.longName   = "count",
+			.shortName  = 'c',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &count_str,
+			.val        = 1,
+			.descrip    = "Load config <count> number of times"
+		},
 		POPT_COMMON_DEBUGLEVEL
 		POPT_TABLEEND
 	};
