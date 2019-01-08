@@ -1052,40 +1052,174 @@ static int py_samu_set_code_page(PyObject *obj, PyObject *value, void *closure)
 }
 
 static PyGetSetDef py_samu_getsetters[] = {
-	{ discard_const_p(char, "logon_time"), py_samu_get_logon_time, py_samu_set_logon_time },
-	{ discard_const_p(char, "logoff_time"), py_samu_get_logoff_time, py_samu_set_logoff_time },
-	{ discard_const_p(char, "kickoff_time"), py_samu_get_kickoff_time, py_samu_set_kickoff_time },
-	{ discard_const_p(char, "bad_password_time"), py_samu_get_bad_password_time, py_samu_set_bad_password_time },
-	{ discard_const_p(char, "pass_last_set_time"), py_samu_get_pass_last_set_time, py_samu_set_pass_last_set_time },
-	{ discard_const_p(char, "pass_can_change_time"), py_samu_get_pass_can_change_time, py_samu_set_pass_can_change_time },
-	{ discard_const_p(char, "pass_must_change_time"), py_samu_get_pass_must_change_time, py_samu_set_pass_must_change_time },
-	{ discard_const_p(char, "username"), py_samu_get_username, py_samu_set_username },
-	{ discard_const_p(char, "domain"), py_samu_get_domain, py_samu_set_domain },
-	{ discard_const_p(char, "nt_username"), py_samu_get_nt_username, py_samu_set_nt_username },
-	{ discard_const_p(char, "full_name"), py_samu_get_full_name, py_samu_set_full_name },
-	{ discard_const_p(char, "home_dir"), py_samu_get_home_dir, py_samu_set_home_dir },
-	{ discard_const_p(char, "dir_drive"), py_samu_get_dir_drive, py_samu_set_dir_drive },
-	{ discard_const_p(char, "logon_script"), py_samu_get_logon_script, py_samu_set_logon_script },
-	{ discard_const_p(char, "profile_path"), py_samu_get_profile_path, py_samu_set_profile_path },
-	{ discard_const_p(char, "acct_desc"), py_samu_get_acct_desc, py_samu_set_acct_desc },
-	{ discard_const_p(char, "workstations"), py_samu_get_workstations, py_samu_set_workstations },
-	{ discard_const_p(char, "comment"), py_samu_get_comment, py_samu_set_comment },
-	{ discard_const_p(char, "munged_dial"), py_samu_get_munged_dial, py_samu_set_munged_dial },
-	{ discard_const_p(char, "user_sid"), py_samu_get_user_sid, py_samu_set_user_sid },
-	{ discard_const_p(char, "group_sid"), py_samu_get_group_sid, py_samu_set_group_sid },
-	{ discard_const_p(char, "lanman_passwd"), py_samu_get_lanman_passwd, py_samu_set_lanman_passwd },
-	{ discard_const_p(char, "nt_passwd"), py_samu_get_nt_passwd, py_samu_set_nt_passwd },
-	{ discard_const_p(char, "pw_history"), py_samu_get_pw_history, py_samu_set_pw_history },
-	{ discard_const_p(char, "plaintext_passwd"), py_samu_get_plaintext_passwd, py_samu_set_plaintext_passwd },
-	{ discard_const_p(char, "acct_ctrl"), py_samu_get_acct_ctrl, py_samu_set_acct_ctrl },
-	{ discard_const_p(char, "logon_divs"), py_samu_get_logon_divs, py_samu_set_logon_divs },
-	{ discard_const_p(char, "hours_len"), py_samu_get_hours_len, py_samu_set_hours_len },
-	{ discard_const_p(char, "hours"), py_samu_get_hours, py_samu_set_hours },
-	{ discard_const_p(char, "bad_password_count"), py_samu_get_bad_password_count, py_samu_set_bad_password_count },
-	{ discard_const_p(char, "logon_count"), py_samu_get_logon_count, py_samu_set_logon_count },
-	{ discard_const_p(char, "country_code"), py_samu_get_country_code, py_samu_set_country_code },
-	{ discard_const_p(char, "code_page"), py_samu_get_code_page, py_samu_set_code_page },
-	{ NULL }
+	{
+		.name = discard_const_p(char, "logon_time"),
+		.get  = py_samu_get_logon_time,
+		.set  = py_samu_set_logon_time,
+	},
+	{
+		.name = discard_const_p(char, "logoff_time"),
+		.get  = py_samu_get_logoff_time,
+		.set  = py_samu_set_logoff_time,
+	},
+	{
+		.name = discard_const_p(char, "kickoff_time"),
+		.get  = py_samu_get_kickoff_time,
+		.set  = py_samu_set_kickoff_time,
+	},
+	{
+		.name = discard_const_p(char, "bad_password_time"),
+		.get  = py_samu_get_bad_password_time,
+		.set  = py_samu_set_bad_password_time,
+	},
+	{
+		.name = discard_const_p(char, "pass_last_set_time"),
+		.get  = py_samu_get_pass_last_set_time,
+		.set  = py_samu_set_pass_last_set_time,
+	},
+	{
+		.name = discard_const_p(char, "pass_can_change_time"),
+		.get  = py_samu_get_pass_can_change_time,
+		.set  = py_samu_set_pass_can_change_time,
+	},
+	{
+		.name = discard_const_p(char, "pass_must_change_time"),
+		.get  = py_samu_get_pass_must_change_time,
+		.set  = py_samu_set_pass_must_change_time,
+	},
+	{
+		.name = discard_const_p(char, "username"),
+		.get  = py_samu_get_username,
+		.set  = py_samu_set_username,
+	},
+	{
+		.name = discard_const_p(char, "domain"),
+		.get  = py_samu_get_domain,
+		.set  = py_samu_set_domain,
+	},
+	{
+		.name = discard_const_p(char, "nt_username"),
+		.get  = py_samu_get_nt_username,
+		.set  = py_samu_set_nt_username,
+	},
+	{
+		.name = discard_const_p(char, "full_name"),
+		.get  = py_samu_get_full_name,
+		.set  = py_samu_set_full_name,
+	},
+	{
+		.name = discard_const_p(char, "home_dir"),
+		.get  = py_samu_get_home_dir,
+		.set  = py_samu_set_home_dir,
+	},
+	{
+		.name = discard_const_p(char, "dir_drive"),
+		.get  = py_samu_get_dir_drive,
+		.set  = py_samu_set_dir_drive,
+	},
+	{
+		.name = discard_const_p(char, "logon_script"),
+		.get  = py_samu_get_logon_script,
+		.set  = py_samu_set_logon_script,
+	},
+	{
+		.name = discard_const_p(char, "profile_path"),
+		.get  = py_samu_get_profile_path,
+		.set  = py_samu_set_profile_path,
+	},
+	{
+		.name = discard_const_p(char, "acct_desc"),
+		.get  = py_samu_get_acct_desc,
+		.set  = py_samu_set_acct_desc,
+	},
+	{
+		.name = discard_const_p(char, "workstations"),
+		.get  = py_samu_get_workstations,
+		.set  = py_samu_set_workstations,
+	},
+	{
+		.name = discard_const_p(char, "comment"),
+		.get  = py_samu_get_comment,
+		.set  = py_samu_set_comment,
+	},
+	{
+		.name = discard_const_p(char, "munged_dial"),
+		.get  = py_samu_get_munged_dial,
+		.set  = py_samu_set_munged_dial,
+	},
+	{
+		.name = discard_const_p(char, "user_sid"),
+		.get  = py_samu_get_user_sid,
+		.set  = py_samu_set_user_sid,
+	},
+	{
+		.name = discard_const_p(char, "group_sid"),
+		.get  = py_samu_get_group_sid,
+		.set  = py_samu_set_group_sid,
+	},
+	{
+		.name = discard_const_p(char, "lanman_passwd"),
+		.get  = py_samu_get_lanman_passwd,
+		.set  = py_samu_set_lanman_passwd,
+	},
+	{
+		.name = discard_const_p(char, "nt_passwd"),
+		.get  = py_samu_get_nt_passwd,
+		.set  = py_samu_set_nt_passwd,
+	},
+	{
+		.name = discard_const_p(char, "pw_history"),
+		.get  = py_samu_get_pw_history,
+		.set  = py_samu_set_pw_history,
+	},
+	{
+		.name = discard_const_p(char, "plaintext_passwd"),
+		.get  = py_samu_get_plaintext_passwd,
+		.set  = py_samu_set_plaintext_passwd,
+	},
+	{
+		.name = discard_const_p(char, "acct_ctrl"),
+		.get  = py_samu_get_acct_ctrl,
+		.set  = py_samu_set_acct_ctrl,
+	},
+	{
+		.name = discard_const_p(char, "logon_divs"),
+		.get  = py_samu_get_logon_divs,
+		.set  = py_samu_set_logon_divs,
+	},
+	{
+		.name = discard_const_p(char, "hours_len"),
+		.get  = py_samu_get_hours_len,
+		.set  = py_samu_set_hours_len,
+	},
+	{
+		.name = discard_const_p(char, "hours"),
+		.get  = py_samu_get_hours,
+		.set  = py_samu_set_hours,
+	},
+	{
+		.name = discard_const_p(char, "bad_password_count"),
+		.get  = py_samu_get_bad_password_count,
+		.set  = py_samu_set_bad_password_count,
+	},
+	{
+		.name = discard_const_p(char, "logon_count"),
+		.get  = py_samu_get_logon_count,
+		.set  = py_samu_set_logon_count,
+	},
+	{
+		.name = discard_const_p(char, "country_code"),
+		.get  = py_samu_get_country_code,
+		.set  = py_samu_set_country_code,
+	},
+	{
+		.name = discard_const_p(char, "code_page"),
+		.get  = py_samu_get_code_page,
+		.set  = py_samu_set_code_page,
+	},
+	{
+		.name = NULL,
+	}
 };
 
 
@@ -1264,12 +1398,34 @@ static int py_groupmap_set_comment(PyObject *obj, PyObject *value, void *closure
 }
 
 static PyGetSetDef py_groupmap_getsetters[] = {
-	{ discard_const_p(char, "gid"), py_groupmap_get_gid, py_groupmap_set_gid },
-	{ discard_const_p(char, "sid"), py_groupmap_get_sid, py_groupmap_set_sid },
-	{ discard_const_p(char, "sid_name_use"), py_groupmap_get_sid_name_use, py_groupmap_set_sid_name_use },
-	{ discard_const_p(char, "nt_name"), py_groupmap_get_nt_name, py_groupmap_set_nt_name },
-	{ discard_const_p(char, "comment"), py_groupmap_get_comment, py_groupmap_set_comment },
-	{ NULL }
+	{
+		.name = discard_const_p(char, "gid"),
+		.get  = py_groupmap_get_gid,
+		.set  = py_groupmap_set_gid,
+	},
+	{
+		.name = discard_const_p(char, "sid"),
+		.get  = py_groupmap_get_sid,
+		.set  = py_groupmap_set_sid,
+	},
+	{
+		.name = discard_const_p(char, "sid_name_use"),
+		.get  = py_groupmap_get_sid_name_use,
+		.set  = py_groupmap_set_sid_name_use,
+	},
+	{
+		.name = discard_const_p(char, "nt_name"),
+		.get  = py_groupmap_get_nt_name,
+		.set  = py_groupmap_set_nt_name,
+	},
+	{
+		.name = discard_const_p(char, "comment"),
+		.get  = py_groupmap_get_comment,
+		.set  = py_groupmap_set_comment,
+	},
+	{
+		.name = NULL,
+	},
 };
 
 static PyObject *py_groupmap_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
