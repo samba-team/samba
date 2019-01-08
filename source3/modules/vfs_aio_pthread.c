@@ -50,7 +50,7 @@ struct aio_open_private_data {
 	bool in_progress;
 	const char *fname;
 	char *dname;
-	struct smbd_server_connection *sconn;
+	connection_struct *conn;
 	const struct security_unix_token *ux_tok;
 	uint64_t initial_allocation_size;
 	/* Returns. */
@@ -111,7 +111,7 @@ static void aio_open_handle_completion(struct tevent_req *subreq)
 	 * to find the correct connection for a fsp.
 	 * For now we only have one connection, so this is correct...
 	 */
-	xconn = opd->sconn->client->connections;
+	xconn = opd->conn->sconn->client->connections;
 
 	/* Find outstanding event and reschedule. */
 	if (!schedule_deferred_open_message_smb(xconn, opd->mid)) {
@@ -217,7 +217,7 @@ static struct aio_open_private_data *create_private_open_data(const files_struct
 		.mode = mode,
 		.mid = fsp->mid,
 		.in_progress = true,
-		.sconn = fsp->conn->sconn,
+		.conn = fsp->conn,
 		.initial_allocation_size = fsp->initial_allocation_size,
 	};
 
