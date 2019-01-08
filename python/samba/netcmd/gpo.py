@@ -44,6 +44,7 @@ from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHE
 from samba.netcmd.common import netcmd_finddc
 from samba import policy
 from samba import smb
+from samba.samba3 import libsmb_samba_internal as libsmb
 from samba import NTSTATUSError
 import uuid
 from samba.ntacls import dsacl2fsacl
@@ -280,7 +281,7 @@ def backup_directory_remote_to_local(conn, remotedir, localdir):
             r_name = r_dir + '\\' + e['name']
             l_name = os.path.join(l_dir, e['name'])
 
-            if e['attrib'] & smb.FILE_ATTRIBUTE_DIRECTORY:
+            if e['attrib'] & libsmb.FILE_ATTRIBUTE_DIRECTORY:
                 r_dirs.append(r_name)
                 l_dirs.append(l_name)
                 os.mkdir(l_name)
@@ -294,10 +295,10 @@ def backup_directory_remote_to_local(conn, remotedir, localdir):
                 parser.write_xml(l_name + '.xml')
 
 
-attr_flags = smb.FILE_ATTRIBUTE_SYSTEM | \
-             smb.FILE_ATTRIBUTE_DIRECTORY | \
-             smb.FILE_ATTRIBUTE_ARCHIVE | \
-             smb.FILE_ATTRIBUTE_HIDDEN
+attr_flags = libsmb.FILE_ATTRIBUTE_SYSTEM | \
+             libsmb.FILE_ATTRIBUTE_DIRECTORY | \
+             libsmb.FILE_ATTRIBUTE_ARCHIVE | \
+             libsmb.FILE_ATTRIBUTE_HIDDEN
 
 
 def copy_directory_remote_to_local(conn, remotedir, localdir):
@@ -315,7 +316,7 @@ def copy_directory_remote_to_local(conn, remotedir, localdir):
             r_name = r_dir + '\\' + e['name']
             l_name = os.path.join(l_dir, e['name'])
 
-            if e['attrib'] & smb.FILE_ATTRIBUTE_DIRECTORY:
+            if e['attrib'] & libsmb.FILE_ATTRIBUTE_DIRECTORY:
                 r_dirs.append(r_name)
                 l_dirs.append(l_name)
                 os.mkdir(l_name)
