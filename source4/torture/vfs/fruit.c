@@ -2725,7 +2725,7 @@ static bool test_setup_copy_chunk(struct torture_context *torture,
 	io->smb2.in.file.handle = *src_h;
 	io->smb2.in.function = FSCTL_SRV_REQUEST_RESUME_KEY;
 	/* Allow for Key + ContextLength + Context */
-	io->smb2.in.max_response_size = 32;
+	io->smb2.in.max_output_response = 32;
 	io->smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, mem_ctx, &io->smb2);
@@ -2742,7 +2742,7 @@ static bool test_setup_copy_chunk(struct torture_context *torture,
 	io->smb2.level = RAW_IOCTL_SMB2;
 	io->smb2.in.file.handle = *dest_h;
 	io->smb2.in.function = FSCTL_SRV_COPYCHUNK;
-	io->smb2.in.max_response_size = sizeof(struct srv_copychunk_rsp);
+	io->smb2.in.max_output_response = sizeof(struct srv_copychunk_rsp);
 	io->smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	ZERO_STRUCTPN(cc_copy);

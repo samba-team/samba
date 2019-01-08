@@ -604,7 +604,7 @@ static bool test_fsrvp_enum_snaps(struct torture_context *tctx,
 	io.level = RAW_IOCTL_SMB2;
 	io.in.file.handle = fh;
 	io.in.function = FSCTL_SRV_ENUM_SNAPS;
-	io.in.max_response_size = 16;
+	io.in.max_output_response = 16;
 	io.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, mem_ctx, &io);
@@ -612,7 +612,7 @@ static bool test_fsrvp_enum_snaps(struct torture_context *tctx,
 
 	*_count = IVAL(io.out.out.data, 0);
 
-	/* with max_response_size=16, no labels should be sent */
+	/* with max_output_response=16, no labels should be sent */
 	torture_assert_int_equal(tctx, IVAL(io.out.out.data, 4), 0,
 				 "enum snaps labels");
 

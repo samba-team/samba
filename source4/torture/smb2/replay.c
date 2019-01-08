@@ -315,7 +315,7 @@ static bool test_replay_commands(struct torture_context *tctx, struct smb2_tree 
 		.smb2.level = RAW_IOCTL_SMB2,
 		.smb2.in.file.handle = h,
 		.smb2.in.function = FSCTL_CREATE_OR_GET_OBJECT_ID,
-		.smb2.in.max_response_size = 64,
+		.smb2.in.max_output_response = 64,
 		.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL
 	};
 	torture_comment(tctx, "Trying ioctl\n");
@@ -1656,7 +1656,7 @@ static bool test_channel_sequence_table(struct torture_context *tctx,
 				.smb2.level = RAW_IOCTL_SMB2,
 				.smb2.in.file.handle = handle,
 				.smb2.in.function = FSCTL_CREATE_OR_GET_OBJECT_ID,
-				.smb2.in.max_response_size = 64,
+				.smb2.in.max_output_response = 64,
 				.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL
 			};
 			status = smb2_ioctl(tree, mem_ctx, &ioctl.smb2);

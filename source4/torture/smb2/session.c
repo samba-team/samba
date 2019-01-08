@@ -1417,7 +1417,7 @@ static bool test_session_expire2i(struct torture_context *tctx,
 	ZERO_STRUCT(ctl);
 	ctl.in.file.handle = *h1;
 	ctl.in.function = FSCTL_SRV_ENUM_SNAPS;
-	ctl.in.max_response_size = 16;
+	ctl.in.max_output_response = 16;
 	ctl.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 	status = smb2_ioctl(tree, tctx, &ctl);
 	torture_assert_ntstatus_equal_goto(tctx, status,

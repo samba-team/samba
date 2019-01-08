@@ -415,8 +415,8 @@ static bool test_compound_related3(struct torture_context *tctx,
 	ZERO_STRUCT(io);
 	io.in.function = FSCTL_CREATE_OR_GET_OBJECT_ID;
 	io.in.file.handle = hd;
-	io.in.unknown2 = 0;
-	io.in.max_response_size = 64;
+	io.in.reserved2 = 0;
+	io.in.max_output_response = 64;
 	io.in.flags = 1;
 
 	req[1] = smb2_ioctl_send(tree, &io);

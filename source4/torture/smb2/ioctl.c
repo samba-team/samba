@@ -57,7 +57,7 @@ static bool test_ioctl_get_shadow_copy(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = h;
 	ioctl.smb2.in.function = FSCTL_SRV_ENUM_SNAPS;
-	ioctl.smb2.in.max_response_size = 16;
+	ioctl.smb2.in.max_output_response = 16;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
@@ -97,7 +97,7 @@ static bool test_ioctl_req_resume_key(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = h;
 	ioctl.smb2.in.function = FSCTL_SRV_REQUEST_RESUME_KEY;
-	ioctl.smb2.in.max_response_size = 32;
+	ioctl.smb2.in.max_output_response = 32;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
@@ -141,7 +141,7 @@ static bool test_ioctl_req_two_resume_keys(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = h;
 	ioctl.smb2.in.function = FSCTL_SRV_REQUEST_RESUME_KEY;
-	ioctl.smb2.in.max_response_size = 32;
+	ioctl.smb2.in.max_output_response = 32;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
@@ -158,7 +158,7 @@ static bool test_ioctl_req_two_resume_keys(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = h;
 	ioctl.smb2.in.function = FSCTL_SRV_REQUEST_RESUME_KEY;
-	ioctl.smb2.in.max_response_size = 32;
+	ioctl.smb2.in.max_output_response = 32;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
@@ -403,7 +403,7 @@ static bool test_setup_copy_chunk(struct torture_context *torture,
 	ioctl->smb2.in.file.handle = *src_h;
 	ioctl->smb2.in.function = FSCTL_SRV_REQUEST_RESUME_KEY;
 	/* Allow for Key + ContextLength + Context */
-	ioctl->smb2.in.max_response_size = 32;
+	ioctl->smb2.in.max_output_response = 32;
 	ioctl->smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(src_tree, mem_ctx, &ioctl->smb2);
@@ -420,7 +420,7 @@ static bool test_setup_copy_chunk(struct torture_context *torture,
 	ioctl->smb2.level = RAW_IOCTL_SMB2;
 	ioctl->smb2.in.file.handle = *dest_h;
 	ioctl->smb2.in.function = FSCTL_SRV_COPYCHUNK;
-	ioctl->smb2.in.max_response_size = sizeof(struct srv_copychunk_rsp);
+	ioctl->smb2.in.max_output_response = sizeof(struct srv_copychunk_rsp);
 	ioctl->smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	ZERO_STRUCTPN(cc_copy);
@@ -1813,8 +1813,8 @@ static bool test_ioctl_copy_chunk_max_output_sz(struct torture_context *torture,
 	cc_copy.chunks[0].source_off = 0;
 	cc_copy.chunks[0].target_off = 0;
 	cc_copy.chunks[0].length = 4096;
-	/* req is valid, but use undersize max_response_size */
-	ioctl.smb2.in.max_response_size = sizeof(struct srv_copychunk_rsp) - 1;
+	/* req is valid, but use undersize max_output_response */
+	ioctl.smb2.in.max_output_response = sizeof(struct srv_copychunk_rsp) - 1;
 
 	ndr_ret = ndr_push_struct_blob(&ioctl.smb2.in.out, tmp_ctx,
 				       &cc_copy,
@@ -2330,7 +2330,7 @@ static NTSTATUS test_ioctl_compress_get(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_GET_COMPRESSION;
-	ioctl.smb2.in.max_response_size = sizeof(struct compression_state);
+	ioctl.smb2.in.max_output_response = sizeof(struct compression_state);
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, mem_ctx, &ioctl.smb2);
@@ -2365,7 +2365,7 @@ static NTSTATUS test_ioctl_compress_set(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_SET_COMPRESSION;
-	ioctl.smb2.in.max_response_size = 0;
+	ioctl.smb2.in.max_output_response = 0;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	cmpr_state.format = compression_fmt;
@@ -2579,7 +2579,7 @@ static bool test_ioctl_compress_invalid_buf(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_GET_COMPRESSION;
-	ioctl.smb2.in.max_response_size = 0;	/* no room for rsp data */
+	ioctl.smb2.in.max_output_response = 0;	/* no room for rsp data */
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
@@ -3141,7 +3141,7 @@ static bool test_ioctl_network_interface_info(struct torture_context *torture,
 	fh.data[1] = UINT64_MAX;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_QUERY_NETWORK_INTERFACE_INFO;
-	ioctl.smb2.in.max_response_size = 0x10000; /* Windows client sets this to 64KiB */
+	ioctl.smb2.in.max_output_response = 0x10000; /* Windows client sets this to 64KiB */
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
@@ -3204,7 +3204,7 @@ static NTSTATUS test_ioctl_sparse_req(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_SET_SPARSE;
-	ioctl.smb2.in.max_response_size = 0;
+	ioctl.smb2.in.max_output_response = 0;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 	set_sparse = (set ? 0xFF : 0x0);
 	ioctl.smb2.in.out.data = &set_sparse;
@@ -3389,7 +3389,7 @@ static bool test_ioctl_sparse_set_nobuf(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_SET_SPARSE;
-	ioctl.smb2.in.max_response_size = 0;
+	ioctl.smb2.in.max_output_response = 0;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 	/* ioctl.smb2.in.out is zeroed, no SetSparse buffer */
 
@@ -3405,7 +3405,7 @@ static bool test_ioctl_sparse_set_nobuf(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_SET_SPARSE;
-	ioctl.smb2.in.max_response_size = 0;
+	ioctl.smb2.in.max_output_response = 0;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	status = smb2_ioctl(tree, tmp_ctx, &ioctl.smb2);
@@ -3459,7 +3459,7 @@ static bool test_ioctl_sparse_set_oversize(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_SET_SPARSE;
-	ioctl.smb2.in.max_response_size = 0;
+	ioctl.smb2.in.max_output_response = 0;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	/*
@@ -3482,7 +3482,7 @@ static bool test_ioctl_sparse_set_oversize(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_SET_SPARSE;
-	ioctl.smb2.in.max_response_size = 0;
+	ioctl.smb2.in.max_output_response = 0;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	ZERO_ARRAY(buf); /* clear sparse */
@@ -3526,7 +3526,7 @@ static NTSTATUS test_ioctl_qar_req(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_QUERY_ALLOCATED_RANGES;
-	ioctl.smb2.in.max_response_size = 1024;
+	ioctl.smb2.in.max_output_response = 1024;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	far_buf.file_off = req_off;
@@ -3741,7 +3741,7 @@ static bool test_ioctl_sparse_qar_malformed(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_QUERY_ALLOCATED_RANGES;
-	ioctl.smb2.in.max_response_size = 0;
+	ioctl.smb2.in.max_output_response = 0;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	far_buf.file_off = 0;
@@ -3767,7 +3767,7 @@ static bool test_ioctl_sparse_qar_malformed(struct torture_context *torture,
 				      NT_STATUS_BUFFER_TOO_SMALL, "qar no space");
 
 	/* oversize (2x) file_alloced_range_buf in request, should pass */
-	ioctl.smb2.in.max_response_size = 1024;
+	ioctl.smb2.in.max_output_response = 1024;
 	old_len = ioctl.smb2.in.out.length;
 	ok = data_blob_realloc(tmp_ctx, &ioctl.smb2.in.out,
 			       (ioctl.smb2.in.out.length * 2));
@@ -3820,7 +3820,7 @@ static NTSTATUS test_ioctl_zdata_req(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_SET_ZERO_DATA;
-	ioctl.smb2.in.max_response_size = 0;
+	ioctl.smb2.in.max_output_response = 0;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	zdata_info.file_off = off;
@@ -5269,7 +5269,7 @@ static bool test_ioctl_sparse_qar_overflow(struct torture_context *torture,
 	ioctl.smb2.level = RAW_IOCTL_SMB2;
 	ioctl.smb2.in.file.handle = fh;
 	ioctl.smb2.in.function = FSCTL_QUERY_ALLOCATED_RANGES;
-	ioctl.smb2.in.max_response_size = 1024;
+	ioctl.smb2.in.max_output_response = 1024;
 	ioctl.smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	/* off + length wraps around to 511 */
@@ -5351,7 +5351,7 @@ static bool test_setup_trim(struct torture_context *torture,
 	ioctl->smb2.level = RAW_IOCTL_SMB2;
 	ioctl->smb2.in.file.handle = *fh;
 	ioctl->smb2.in.function = FSCTL_FILE_LEVEL_TRIM;
-	ioctl->smb2.in.max_response_size
+	ioctl->smb2.in.max_output_response
 				= sizeof(struct fsctl_file_level_trim_rsp);
 	ioctl->smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
@@ -5455,7 +5455,7 @@ static bool test_setup_dup_extents(struct torture_context *tctx,
 	ioctl->smb2.level = RAW_IOCTL_SMB2;
 	ioctl->smb2.in.file.handle = *dest_h;
 	ioctl->smb2.in.function = FSCTL_DUP_EXTENTS_TO_FILE;
-	ioctl->smb2.in.max_response_size = 0;
+	ioctl->smb2.in.max_output_response = 0;
 	ioctl->smb2.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL;
 
 	ZERO_STRUCTPN(dup_ext_buf);

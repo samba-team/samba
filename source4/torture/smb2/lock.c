@@ -2934,7 +2934,7 @@ static bool test_replay(struct torture_context *torture,
 		.level = RAW_IOCTL_SMB2,
 		.in.file.handle = h,
 		.in.function = FSCTL_LMR_REQ_RESILIENCY,
-		.in.max_response_size = 0,
+		.in.max_output_response = 0,
 		.in.flags = SMB2_IOCTL_FLAG_IS_FSCTL,
 		.in.out.data = res_req,
 		.in.out.length = sizeof(res_req)

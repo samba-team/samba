@@ -1177,12 +1177,12 @@ static NTSTATUS ipc_ioctl_smb2(struct ntvfs_module_context *ntvfs,
 	state = talloc(req, struct ipc_ioctl_state);
 	NT_STATUS_HAVE_NO_MEMORY(state);
 
-	io->smb2.out._pad	= 0;
+	io->smb2.out.reserved	= 0;
 	io->smb2.out.function	= io->smb2.in.function;
-	io->smb2.out.unknown2	= 0;
-	io->smb2.out.unknown3	= 0;
+	io->smb2.out.flags	= 0;
+	io->smb2.out.reserved2	= 0;
 	io->smb2.out.in		= data_blob_null;
-	io->smb2.out.out = data_blob_talloc(req, NULL, io->smb2.in.max_response_size);
+	io->smb2.out.out = data_blob_talloc(req, NULL, io->smb2.in.max_output_response);
 	NT_STATUS_HAVE_NO_MEMORY(io->smb2.out.out.data);
 
 	state->ipriv = ipriv;

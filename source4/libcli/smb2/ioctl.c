@@ -46,7 +46,7 @@ struct smb2_request *smb2_ioctl_send(struct smb2_tree *tree, struct smb2_ioctl *
 		return NULL;
 	}
 
-	SIVAL(req->out.body, 0x20, io->in.unknown2);
+	SIVAL(req->out.body, 0x20, io->in.max_input_response);
 
 	status = smb2_push_o32s32_blob(&req->out, 0x24, io->in.in);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -54,7 +54,7 @@ struct smb2_request *smb2_ioctl_send(struct smb2_tree *tree, struct smb2_ioctl *
 		return NULL;
 	}
 
-	SIVAL(req->out.body, 0x2C, io->in.max_response_size);
+	SIVAL(req->out.body, 0x2C, io->in.max_output_response);
 	SBVAL(req->out.body, 0x30, io->in.flags);
 
 	smb2_transport_send(req);
@@ -108,7 +108,7 @@ NTSTATUS smb2_ioctl_recv(struct smb2_request *req,
 
 	SMB2_CHECK_PACKET_RECV(req, 0x30, true);
 
-	io->out._pad       = SVAL(req->in.body, 0x02);
+	io->out.reserved   = SVAL(req->in.body, 0x02);
 	io->out.function   = IVAL(req->in.body, 0x04);
 	smb2_pull_handle(req->in.body+0x08, &io->out.file.handle);
 
@@ -124,8 +124,8 @@ NTSTATUS smb2_ioctl_recv(struct smb2_request *req,
 		return status;
 	}
 
-	io->out.unknown2 = IVAL(req->in.body, 0x28);
-	io->out.unknown3 = IVAL(req->in.body, 0x2C);
+	io->out.flags     = IVAL(req->in.body, 0x28);
+	io->out.reserved2 = IVAL(req->in.body, 0x2C);
 
 	return smb2_request_destroy(req);
 }
