@@ -61,6 +61,8 @@ struct aio_open_private_data {
 /* List of outstanding requests we have. */
 static struct aio_open_private_data *open_pd_list;
 
+static void aio_open_do(struct aio_open_private_data *opd);
+
 /************************************************************************
  Find the open private data by mid.
 ***********************************************************************/
@@ -93,9 +95,28 @@ static void aio_open_handle_completion(struct tevent_req *subreq)
 	ret = pthreadpool_tevent_job_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
-		smb_panic("aio_open_handle_completion");
-		/* notreached. */
-		return;
+		bool ok;
+
+		if (ret != EAGAIN) {
+			smb_panic("aio_open_handle_completion");
+			/* notreached. */
+			return;
+		}
+		/*
+		 * Make sure we run as the user again
+		 */
+		ok = change_to_user(opd->conn, opd->conn->vuid);
+		if (!ok) {
+			smb_panic("Can't change to user");
+			return;
+		}
+		/*
+		 * If we get EAGAIN from pthreadpool_tevent_job_recv() this
+		 * means the lower level pthreadpool failed to create a new
+		 * thread. Fallback to sync processing in that case to allow
+		 * some progress for the client.
+		 */
+		aio_open_do(opd);
 	}
 
 	DEBUG(10,("aio_open_handle_completion: mid %llu "
@@ -150,6 +171,11 @@ static void aio_open_worker(void *private_data)
 		return;
 	}
 
+	aio_open_do(opd);
+}
+
+static void aio_open_do(struct aio_open_private_data *opd)
+{
 	opd->ret_fd = openat(opd->dir_fd,
 			opd->fname,
 			opd->flags,
