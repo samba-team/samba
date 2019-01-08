@@ -209,15 +209,17 @@ static struct aio_open_private_data *create_private_open_data(const files_struct
 		return NULL;
 	}
 
-	opd->dir_fd = -1;
-	opd->ret_fd = -1;
-	opd->ret_errno = EINPROGRESS;
-	opd->flags = flags;
-	opd->mode = mode;
-	opd->mid = fsp->mid;
-	opd->in_progress = true;
-	opd->sconn = fsp->conn->sconn;
-	opd->initial_allocation_size = fsp->initial_allocation_size;
+	*opd = (struct aio_open_private_data) {
+		.dir_fd = -1,
+		.ret_fd = -1,
+		.ret_errno = EINPROGRESS,
+		.flags = flags,
+		.mode = mode,
+		.mid = fsp->mid,
+		.in_progress = true,
+		.sconn = fsp->conn->sconn,
+		.initial_allocation_size = fsp->initial_allocation_size,
+	};
 
 	/* Copy our current credentials. */
 	opd->ux_tok = copy_unix_token(opd, get_current_utok(fsp->conn));
