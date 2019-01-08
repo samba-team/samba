@@ -25,6 +25,7 @@
 */
 
 #include "includes.h"
+#define TEVENT_DEPRECATED 1
 #include "tevent.h"
 #include "system/filesys.h"
 #include "system/select.h"

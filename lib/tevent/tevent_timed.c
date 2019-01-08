@@ -26,6 +26,7 @@
 
 #include "replace.h"
 #include "system/time.h"
+#define TEVENT_DEPRECATED 1
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"

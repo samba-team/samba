@@ -26,6 +26,7 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/wait.h"
+#define TEVENT_DEPRECATED 1
 #include "tevent.h"
 #include "tevent_internal.h"
 #include "tevent_util.h"
