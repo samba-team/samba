@@ -293,7 +293,7 @@ int main(int argc, const char **argv)
 
 	struct poptOption long_options[] = {
 		POPT_COMMON_SAMBA
-		{0, 0, 0, 0}
+		POPT_TABLEEND
 	};
 
 	smb_init_locale();
