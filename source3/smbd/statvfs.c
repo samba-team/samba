@@ -123,8 +123,10 @@ static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 	result = statvfs(path, &statvfs_buf);
 
 	if (!result) {
-		statbuf->OptimalTransferSize = statvfs_buf.f_frsize;
-		statbuf->BlockSize = statvfs_buf.f_bsize;
+		/* statvfs bsize is not the statfs bsize, the naming is terrible,
+		 * see bug 11810 */
+		statbuf->OptimalTransferSize = statvfs_buf.f_bsize;
+		statbuf->BlockSize = statvfs_buf.f_frsize;
 		statbuf->TotalBlocks = statvfs_buf.f_blocks;
 		statbuf->BlocksAvail = statvfs_buf.f_bfree;
 		statbuf->UserBlocksAvail = statvfs_buf.f_bavail;
