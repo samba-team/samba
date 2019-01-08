@@ -778,7 +778,7 @@ static char *password_change_human_readable(
 	struct ldb_context *ldb = NULL;
 	const char *remote_host = NULL;
 	const struct dom_sid *sid = NULL;
-	const char *user_sid = NULL;
+	struct dom_sid_buf user_sid;
 	const char *timestamp = NULL;
 	char *log_entry = NULL;
 	const char *action = NULL;
@@ -790,7 +790,6 @@ static char *password_change_human_readable(
 
 	remote_host = dsdb_audit_get_remote_host(ldb, ctx);
 	sid = dsdb_audit_get_user_sid(module);
-	user_sid = dom_sid_string(ctx, sid);
 	timestamp = audit_get_timestamp(ctx);
 	action = get_password_action(request, reply);
 	dn = dsdb_audit_get_primary_dn(request);
@@ -803,7 +802,7 @@ static char *password_change_human_readable(
 		timestamp,
 		ldb_strerror(reply->error),
 		remote_host,
-		user_sid,
+		dom_sid_str_buf(sid, &user_sid),
 		dn);
 	TALLOC_FREE(ctx);
 	return log_entry;
@@ -930,7 +929,7 @@ static char *operation_human_readable(
 	struct ldb_context *ldb = NULL;
 	const char *remote_host = NULL;
 	const struct dom_sid *sid = NULL;
-	const char *user_sid = NULL;
+	struct dom_sid_buf user_sid;
 	const char *timestamp = NULL;
 	const char *op_name = NULL;
 	char *log_entry = NULL;
@@ -948,7 +947,6 @@ static char *operation_human_readable(
 	} else {
 		sid = dsdb_audit_get_user_sid(module);
 	}
-	user_sid = dom_sid_string(ctx, sid);
 	timestamp = audit_get_timestamp(ctx);
 	op_name = dsdb_audit_get_operation_name(request);
 	dn = dsdb_audit_get_primary_dn(request);
@@ -964,7 +962,7 @@ static char *operation_human_readable(
 		timestamp,
 		ldb_strerror(reply->error),
 		remote_host,
-		user_sid,
+		dom_sid_str_buf(sid, &user_sid),
 		dn);
 	if (new_dn != NULL) {
 		log_entry = talloc_asprintf_append_buffer(
