@@ -91,15 +91,15 @@ static bool test_valid_request(struct torture_context *torture,
 
 	torture_comment(torture, "TESTING VALIDITY OF CHANGE NOTIFY REQUEST\n");
 
+	smb2_transport_credits_ask_num(tree->session->transport, 256);
+
 	smb2_util_unlink(tree, FNAME);
 
 	status = smb2_util_roothandle(tree, &dh);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	/* 0x00080000 is the default max buffer size for Windows servers
-	 * pre-Win7 */
-	max_buffer_size = torture_setting_ulong(torture, "cn_max_buffer_size",
-						0x00080000);
+	max_buffer_size =
+		smb2cli_conn_max_trans_size(tree->session->transport->conn);
 
 	n.in.recursive		= 0x0000;
 	n.in.buffer_size	= max_buffer_size;

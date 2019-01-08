@@ -60,14 +60,6 @@ bool torture_parse_target(TALLOC_CTX *ctx,
  * Because we use parametric options we do not need to define these parameters
  * anywhere, we just define the meaning of each here.*/
 
-/* torture:cn_max_buffer_size
- *
- * This parameter specifies the maximum buffer size given in a change notify
- * request.  If an overly large buffer is requested by a client, the server
- * will return a STATUS_INVALID_PARAMETER.  The max buffer size on Windows
- * server pre-Win7 was 0x00080000.  In Win7 this was reduced to 0x00010000.
- */
-
 /* torture:invalid_lock_range_support
  *
  * This parameter specifies whether the server will return

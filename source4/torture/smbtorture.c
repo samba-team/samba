@@ -528,8 +528,6 @@ int main(int argc, const char *argv[])
 		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:w2k12", "true");
 	} else if (strcmp(target, "win7") == 0) {
 		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:win7", "true");
-		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:cn_max_buffer_size",
-		    "0x00010000");
 		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:resume_key_support", "false");
 		lpcfg_set_cmdline(cmdline_lp_ctx, "torture:rewind_support", "false");
 
