@@ -32,7 +32,7 @@ from samba.samba3 import param as s3param
 from samba.dcerpc import security, xattr, idmap
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.samba3 import smbd
-from samba.samba3 import libsmb
+from samba.samba3 import libsmb_samba_internal as libsmb
 
 # don't include volumes
 SMB_FILE_ATTRIBUTE_FLAGS = libsmb.FILE_ATTRIBUTE_SYSTEM | \

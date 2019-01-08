@@ -35,7 +35,7 @@ from samba.ntstatus import (
 )
 from samba import NTSTATUSError
 from samba.samba3 import param as s3param
-from samba.samba3 import libsmb
+from samba.samba3 import libsmb_samba_internal as libsmb
 
 class smb_pipe_socket(object):
 

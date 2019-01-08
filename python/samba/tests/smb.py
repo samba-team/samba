@@ -22,7 +22,7 @@ import sys
 from samba import NTSTATUSError
 from samba.ntstatus import (NT_STATUS_OBJECT_NAME_NOT_FOUND,
                             NT_STATUS_OBJECT_PATH_NOT_FOUND)
-from samba.samba3 import libsmb
+from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.samba3 import param as s3param
 
 PY3 = sys.version_info[0] == 3

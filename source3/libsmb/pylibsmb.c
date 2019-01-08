@@ -1,6 +1,9 @@
 /*
  * Unix SMB/CIFS implementation.
- * Samba-internal work in progress Python binding for libsmbclient
+ *
+ * SMB client Python bindings used internally by Samba (for things like
+ * samba-tool). These Python bindings may change without warning, and so
+ * should not be used outside of the Samba codebase.
  *
  * Copyright (C) Volker Lendecke 2012
  *
@@ -1526,7 +1529,7 @@ static PyMethodDef py_cli_state_methods[] = {
 
 static PyTypeObject py_cli_state_type = {
 	PyVarObject_HEAD_INIT(NULL, 0)
-	.tp_name = "libsmb.Conn",
+	.tp_name = "libsmb_samba_internal.Conn",
 	.tp_basicsize = sizeof(struct py_cli_state),
 	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
 	.tp_doc = "libsmb connection",
@@ -1540,17 +1543,17 @@ static PyMethodDef py_libsmb_methods[] = {
 	{ NULL },
 };
 
-void initlibsmb(void);
+void initlibsmb_samba_internal(void);
 
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
-    .m_name = "libsmb",
+    .m_name = "libsmb_samba_internal",
     .m_doc = "libsmb wrapper",
     .m_size = -1,
     .m_methods = py_libsmb_methods,
 };
 
-MODULE_INIT_FUNC(libsmb)
+MODULE_INIT_FUNC(libsmb_samba_internal)
 {
 	PyObject *m = NULL;
 

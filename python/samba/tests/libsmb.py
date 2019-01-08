@@ -17,7 +17,7 @@
 
 """Tests for samba.samba3.libsmb."""
 
-from samba.samba3 import libsmb
+from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.dcerpc import security
 from samba.samba3 import param as s3param
 from samba import credentials
