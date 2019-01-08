@@ -300,34 +300,82 @@ int main(int argc, const char *argv[])
 	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "broadcast", 'B', POPT_ARG_STRING, NULL, OPT_BROADCAST_ADDRESS,
-		  "Specify address to use for broadcasts", "BROADCAST-ADDRESS" },
-
-		{ "unicast", 'U', POPT_ARG_STRING, NULL, OPT_UNICAST_ADDRESS,
-		  "Specify address to use for unicast", NULL },
-
-		{ "master-browser", 'M', POPT_ARG_NONE, NULL, OPT_FIND_MASTER,
-		  "Search for a master browser", NULL },
-
-		{ "wins", 'W', POPT_ARG_NONE, NULL, OPT_WINS_LOOKUP,
-		  "Do a WINS lookup", NULL },
-
-		{ "status", 'S', POPT_ARG_NONE, NULL, OPT_NODE_STATUS, 
-		  "Lookup node status as well", NULL },
-
-		{ "root-port", 'r', POPT_ARG_NONE, NULL, OPT_ROOT_PORT, 
-		  "Use root port 137 (Win95 only replies to this)", NULL },
-
-		{ "lookup-by-ip", 'A', POPT_ARG_NONE, NULL, OPT_LOOKUP_BY_IP, 
-		  "Do a node status on <name> as an IP Address", NULL },
-
-		{ "case-sensitive", 0, POPT_ARG_NONE, NULL, OPT_CASE_SENSITIVE, 
-		  "Don't uppercase the name before sending", NULL },
-
+		{
+			.longName   = "broadcast",
+			.shortName  = 'B',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = OPT_BROADCAST_ADDRESS,
+			.descrip    = "Specify address to use for broadcasts",
+			.argDescrip = "BROADCAST-ADDRESS"
+		},
+		{
+			.longName   = "unicast",
+			.shortName  = 'U',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = OPT_UNICAST_ADDRESS,
+			.descrip    = "Specify address to use for unicast",
+			.argDescrip = NULL
+		},
+		{
+			.longName   = "master-browser",
+			.shortName  = 'M',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_FIND_MASTER,
+			.descrip    = "Search for a master browser",
+			.argDescrip = NULL
+		},
+		{
+			.longName   = "wins",
+			.shortName  = 'W',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_WINS_LOOKUP,
+			.descrip    = "Do a WINS lookup",
+			.argDescrip = NULL
+		},
+		{
+			.longName   = "status",
+			.shortName  = 'S',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_NODE_STATUS,
+			.descrip    = "Lookup node status as well",
+			.argDescrip = NULL
+		},
+		{
+			.longName   = "root-port",
+			.shortName  = 'r',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_ROOT_PORT,
+			.descrip    = "Use root port 137 (Win95 only replies to this)",
+			.argDescrip = NULL
+		},
+		{
+			.longName   = "lookup-by-ip",
+			.shortName  = 'A',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_LOOKUP_BY_IP,
+			.descrip    = "Do a node status on <name> as an IP Address",
+			.argDescrip = NULL
+		},
+		{
+			.longName   = "case-sensitive",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_CASE_SENSITIVE,
+			.descrip    = "Don't uppercase the name before sending",
+			.argDescrip = NULL
+		},
 		POPT_COMMON_SAMBA
-		{ 0, 0, 0, 0 }
+		POPT_TABLEEND
 	};
-	
+
 	pc = poptGetContext("nmblookup", argc, argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
 
