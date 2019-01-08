@@ -1597,12 +1597,54 @@ int main(int argc, const char **argv)
 	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "stdout", 'S', POPT_ARG_NONE, NULL, OPT_LOG_STDOUT, "Log to stdout" },
-		{ "foreground", 'F', POPT_ARG_NONE, NULL, OPT_FORK, "Daemon in foreground mode" },
-		{ "no-process-group", 0, POPT_ARG_NONE, NULL, OPT_NO_PROCESS_GROUP, "Don't create a new process group" },
-		{ "daemon", 'D', POPT_ARG_NONE, NULL, OPT_DAEMON, "Become a daemon (default)" },
-		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Interactive mode" },
-		{ "no-caching", 'n', POPT_ARG_NONE, NULL, 'n', "Disable caching" },
+		{
+			.longName   = "stdout",
+			.shortName  = 'S',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_LOG_STDOUT,
+			.descrip    = "Log to stdout",
+		},
+		{
+			.longName   = "foreground",
+			.shortName  = 'F',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_FORK,
+			.descrip    = "Daemon in foreground mode",
+		},
+		{
+			.longName   = "no-process-group",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_NO_PROCESS_GROUP,
+			.descrip    = "Don't create a new process group",
+		},
+		{
+			.longName   = "daemon",
+			.shortName  = 'D',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_DAEMON,
+			.descrip    = "Become a daemon (default)",
+		},
+		{
+			.longName   = "interactive",
+			.shortName  = 'i',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'i',
+			.descrip    = "Interactive mode",
+		},
+		{
+			.longName   = "no-caching",
+			.shortName  = 'n',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'n',
+			.descrip    = "Disable caching",
+		},
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
