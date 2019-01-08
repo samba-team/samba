@@ -232,7 +232,7 @@ static NTSTATUS cmd_quit(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 static struct cmd_set vfstest_commands[] = {
 
-	{ "GENERAL OPTIONS" },
+	{ .name = "GENERAL OPTIONS" },
 
 	{ "conf", 	cmd_conf, 	"Load smb configuration file", "conf <smb.conf>" },
 	{ "help", 	cmd_help, 	"Get help on commands", "" },
@@ -242,12 +242,17 @@ static struct cmd_set vfstest_commands[] = {
 	{ "exit", 	cmd_quit, 	"Exit program", "" },
 	{ "quit", 	cmd_quit, 	"Exit program", "" },
 
-	{ NULL }
+	{ .name = NULL }
 };
 
 static struct cmd_set separator_command[] = {
-	{ "---------------", NULL,	"----------------------" },
-	{ NULL }
+	{
+		.name        = "---------------",
+		.description = "----------------------"
+	},
+	{
+		.name = NULL,
+	},
 };
 
 
