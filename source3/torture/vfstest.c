@@ -474,10 +474,27 @@ int main(int argc, const char *argv[])
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"file",	'f', POPT_ARG_STRING,	&filename, 0, },
-		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 0, "Execute specified list of commands" },
-		{"memreport",	'm', POPT_ARG_INT,	&memreports, 0,
-		 "Report memory left on talloc stackframe after each command" },
+		{
+			.longName   = "file",
+			.shortName  = 'f',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &filename,
+		},
+		{
+			.longName   = "command",
+			.shortName  = 'c',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &cmdstr,
+			.val        = 0,
+			.descrip    = "Execute specified list of commands",
+		},
+		{
+			.longName   = "memreport",
+			.shortName  = 'm',
+			.argInfo    = POPT_ARG_INT,
+			.arg        = &memreports,
+			.descrip    = "Report memory left on talloc stackframe after each command",
+		},
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
