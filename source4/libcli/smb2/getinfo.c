@@ -34,24 +34,35 @@ struct smb2_request *smb2_getinfo_send(struct smb2_tree *tree, struct smb2_getin
 	NTSTATUS status;
 
 	req = smb2_request_init_tree(tree, SMB2_OP_GETINFO, 0x28, true, 
-				     io->in.blob.length);
+				     io->in.input_buffer.length);
 	if (req == NULL) return NULL;
 
 	SCVAL(req->out.body, 0x02, io->in.info_type);
 	SCVAL(req->out.body, 0x03, io->in.info_class);
 	SIVAL(req->out.body, 0x04, io->in.output_buffer_length);
-	SIVAL(req->out.body, 0x0C, io->in.reserved);
-	SIVAL(req->out.body, 0x08, io->in.input_buffer_length);
+	/*
+	 * uint16_t input_buffer_offset
+	 * uint16_t reserved
+	 * uint32_t input_buffer_length
+	 *
+	 * We use smb2_push_o32s32_blob() which would
+	 * expect uint32_t offset, uint32_t length.
+	 *
+	 * Everything is little endian, we can just
+	 * overwrite the reserved field later.
+	 */
 	SIVAL(req->out.body, 0x10, io->in.additional_information);
 	SIVAL(req->out.body, 0x14, io->in.getinfo_flags);
 	smb2_push_handle(req->out.body+0x18, &io->in.file.handle);
 
 	/* this blob is used for quota queries */
-	status = smb2_push_o32s32_blob(&req->out, 0x08, io->in.blob);
+	status = smb2_push_o32s32_blob(&req->out, 0x08, io->in.input_buffer);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
 		return NULL;
 	}
+	SSVAL(req->out.body, 0x0C, io->in.reserved);
+
 	smb2_transport_send(req);
 
 	return req;
@@ -127,7 +138,7 @@ struct smb2_request *smb2_getinfo_file_send(struct smb2_tree *tree, union smb_fi
 	b.in.info_type            = smb2_level & 0xFF;
 	b.in.info_class           = smb2_level >> 8;
 	b.in.output_buffer_length = 0x10000;
-	b.in.input_buffer_length  = 0;
+	b.in.input_buffer         = data_blob_null;
 	b.in.file.handle          = io->generic.in.file.handle;
 
 	if (io->generic.level == RAW_FILEINFO_SEC_DESC) {

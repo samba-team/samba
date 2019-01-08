@@ -224,7 +224,7 @@ void smb2srv_getinfo_recv(struct smb2srv_request *req)
 	info->in.getinfo_flags		= IVAL(req->in.body, 0x14);
 	info->in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x18);
 	SMB2SRV_CHECK(smb2_pull_o16As32_blob(&req->in, op, 
-					    req->in.body+0x08, &info->in.blob));
+					    req->in.body+0x08, &info->in.input_buffer));
 
 	SMB2SRV_CHECK_FILE_HANDLE(info->in.file.ntvfs);
 	SMB2SRV_CALL_NTVFS_BACKEND(smb2srv_getinfo_backend(op));

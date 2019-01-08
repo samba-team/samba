@@ -63,13 +63,13 @@ struct smb2_getinfo {
 		uint8_t info_type;
 		uint8_t info_class;
 		uint32_t output_buffer_length;
-		/* uint32_t input_buffer_offset; */
-		uint32_t reserved;
-		uint32_t input_buffer_length;
+		/* uint16_t input_buffer_offset; */
+		uint16_t reserved;
+		/* uint32_t input_buffer_length; */
 		uint32_t additional_information; /* SMB2_GETINFO_ADD_* */
 		uint32_t getinfo_flags; /* level specific */
 		union smb_handle file;
-		DATA_BLOB blob;
+		DATA_BLOB input_buffer;
 	} in;
 
 	struct {
