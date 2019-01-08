@@ -32,6 +32,7 @@ struct smb2_request *smb2_getinfo_send(struct smb2_tree *tree, struct smb2_getin
 {
 	struct smb2_request *req;
 	NTSTATUS status;
+	size_t max_payload;
 
 	req = smb2_request_init_tree(tree, SMB2_OP_GETINFO, 0x28, true, 
 				     io->in.input_buffer.length);
@@ -62,6 +63,9 @@ struct smb2_request *smb2_getinfo_send(struct smb2_tree *tree, struct smb2_getin
 		return NULL;
 	}
 	SSVAL(req->out.body, 0x0C, io->in.reserved);
+
+	max_payload = MAX(io->in.output_buffer_length, io->in.input_buffer.length);
+	req->credit_charge = (MAX(max_payload, 1) - 1)/ 65536 + 1;
 
 	smb2_transport_send(req);
 
