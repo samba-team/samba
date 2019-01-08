@@ -1612,17 +1612,73 @@ extern void build_options(bool screen);
 		OPT_LOG_STDOUT
 	};
 	struct poptOption long_options[] = {
-	POPT_AUTOHELP
-	{"daemon", 'D', POPT_ARG_NONE, NULL, OPT_DAEMON, "Become a daemon (default)" },
-	{"interactive", 'i', POPT_ARG_NONE, NULL, OPT_INTERACTIVE, "Run interactive (not a daemon) and log to stdout"},
-	{"foreground", 'F', POPT_ARG_NONE, NULL, OPT_FORK, "Run daemon in foreground (for daemontools, etc.)" },
-	{"no-process-group", '\0', POPT_ARG_NONE, NULL, OPT_NO_PROCESS_GROUP, "Don't create a new process group" },
-	{"log-stdout", 'S', POPT_ARG_NONE, NULL, OPT_LOG_STDOUT, "Log to stdout" },
-	{"build-options", 'b', POPT_ARG_NONE, NULL, 'b', "Print build options" },
-	{"port", 'p', POPT_ARG_STRING, &ports, 0, "Listen on the specified ports"},
-	{"profiling-level", 'P', POPT_ARG_STRING, &profile_level, 0, "Set profiling level","PROFILE_LEVEL"},
-	POPT_COMMON_SAMBA
-	POPT_TABLEEND
+		POPT_AUTOHELP
+		{
+			.longName   = "daemon",
+			.shortName  = 'D',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_DAEMON,
+			.descrip    = "Become a daemon (default)" ,
+		},
+		{
+			.longName   = "interactive",
+			.shortName  = 'i',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_INTERACTIVE,
+			.descrip    = "Run interactive (not a daemon) and log to stdout",
+		},
+		{
+			.longName   = "foreground",
+			.shortName  = 'F',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_FORK,
+			.descrip    = "Run daemon in foreground (for daemontools, etc.)",
+		},
+		{
+			.longName   = "no-process-group",
+			.shortName  = '\0',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_NO_PROCESS_GROUP,
+			.descrip    = "Don't create a new process group" ,
+		},
+		{
+			.longName   = "log-stdout",
+			.shortName  = 'S',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_LOG_STDOUT,
+			.descrip    = "Log to stdout" ,
+		},
+		{
+			.longName   = "build-options",
+			.shortName  = 'b',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'b',
+			.descrip    = "Print build options" ,
+		},
+		{
+			.longName   = "port",
+			.shortName  = 'p',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &ports,
+			.val        = 0,
+			.descrip    = "Listen on the specified ports",
+		},
+		{
+			.longName   = "profiling-level",
+			.shortName  = 'P',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &profile_level,
+			.val        = 0,
+			.descrip    = "Set profiling level","PROFILE_LEVEL",
+		},
+		POPT_COMMON_SAMBA
+		POPT_TABLEEND
 	};
 	struct smbd_parent_context *parent = NULL;
 	TALLOC_CTX *frame;
