@@ -695,7 +695,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 				       struct ldb_request *parent)
 {
 	unsigned int i, j;
-	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	TALLOC_CTX *tmp_ctx = NULL;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_attribute *target;
 	const char *attrs[2];
@@ -705,6 +705,11 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 	if (target == NULL) {
 		/* there is no counterpart link to change */
 		return LDB_SUCCESS;
+	}
+
+	tmp_ctx = talloc_new(module);
+	if (tmp_ctx == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	attrs[0] = target->lDAPDisplayName;
