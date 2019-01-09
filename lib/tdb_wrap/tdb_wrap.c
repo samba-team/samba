@@ -151,6 +151,8 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 
 		if (tdb_flags & TDB_MUTEX_LOCKING) {
 			if (!tdb_runtime_check_for_robust_mutexes()) {
+				DBG_ERR("mutexes requested but not "
+					"available\n");
 				tdb_flags &= ~TDB_MUTEX_LOCKING;
 			}
 		}

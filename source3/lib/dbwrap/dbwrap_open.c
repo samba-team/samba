@@ -118,8 +118,13 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			try_mutex = false;
 		}
 
-		if (try_mutex && tdb_runtime_check_for_robust_mutexes()) {
-			tdb_flags |= TDB_MUTEX_LOCKING;
+		if (try_mutex) {
+			if (tdb_runtime_check_for_robust_mutexes()) {
+				tdb_flags |= TDB_MUTEX_LOCKING;
+			} else {
+				DBG_ERR("mutexes requested but not "
+					"available\n");
+			}
 		}
 
 		require_mutex = lp_parm_bool(-1, "dbwrap_tdb_require_mutexes",
