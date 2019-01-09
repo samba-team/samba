@@ -674,10 +674,50 @@ static WERROR cmd_drsuapi_getncchanges(struct rpc_pipe_client *cli,
 
 struct cmd_set drsuapi_commands[] = {
 
-	{ "DRSUAPI" },
-	{ "dscracknames", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_cracknames, &ndr_table_drsuapi, NULL, "Crack Name", "" },
-	{ "dsgetdcinfo", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_getdcinfo, &ndr_table_drsuapi, NULL, "Get Domain Controller Info", "" },
-	{ "dsgetncchanges", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_getncchanges, &ndr_table_drsuapi, NULL, "Get NC Changes", "" },
-	{ "dswriteaccountspn", RPC_RTYPE_WERROR, NULL, cmd_drsuapi_writeaccountspn, &ndr_table_drsuapi, NULL, "Write Account SPN", "" },
-	{ NULL }
+	{
+		.name = "DRSUAPI",
+	},
+	{
+		.name               = "dscracknames",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_drsuapi_cracknames,
+		.table              = &ndr_table_drsuapi,
+		.rpc_pipe           = NULL,
+		.description        = "Crack Name",
+		.usage              = "",
+	},
+	{
+		.name               = "dsgetdcinfo",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_drsuapi_getdcinfo,
+		.table              = &ndr_table_drsuapi,
+		.rpc_pipe           = NULL,
+		.description        = "Get Domain Controller Info",
+		.usage              = "",
+	},
+	{
+		.name               = "dsgetncchanges",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_drsuapi_getncchanges,
+		.table              = &ndr_table_drsuapi,
+		.rpc_pipe           = NULL,
+		.description        = "Get NC Changes",
+		.usage              = "",
+	},
+	{
+		.name               = "dswriteaccountspn",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_drsuapi_writeaccountspn,
+		.table              = &ndr_table_drsuapi,
+		.rpc_pipe           = NULL,
+		.description        = "Write Account SPN",
+		.usage              = "",
+	},
+	{
+		.name = NULL,
+	},
 };
