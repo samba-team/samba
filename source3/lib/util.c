@@ -2173,6 +2173,35 @@ struct security_unix_token *root_unix_token(TALLOC_CTX *mem_ctx)
 	return t;
 }
 
+char *utok_string(TALLOC_CTX *mem_ctx, const struct security_unix_token *tok)
+{
+	char *str;
+	uint32_t i;
+
+	str = talloc_asprintf(
+		mem_ctx,
+		"uid=%ju, gid=%ju, %"PRIu32" groups:",
+		(uintmax_t)(tok->uid),
+		(uintmax_t)(tok->gid),
+		tok->ngroups);
+	if (str == NULL) {
+		return NULL;
+	}
+
+	for (i=0; i<tok->ngroups; i++) {
+		char *tmp;
+		tmp = talloc_asprintf_append_buffer(
+			str, " %ju", (uintmax_t)tok->groups[i]);
+		if (tmp == NULL) {
+			TALLOC_FREE(str);
+			return NULL;
+		}
+		str = tmp;
+	}
+
+	return str;
+}
+
 /****************************************************************************
  Check that a file matches a particular file type.
 ****************************************************************************/
