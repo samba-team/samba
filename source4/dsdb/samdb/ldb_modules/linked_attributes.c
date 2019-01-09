@@ -694,6 +694,249 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 	return ret;
 }
 
+
+static int linked_attributes_fix_link_slow(struct ldb_module *module,
+					   struct ldb_request *parent,
+					   struct ldb_message *msg,
+					   struct ldb_dn *new_dn,
+					   struct GUID self_guid,
+					   const char *syntax_oid)
+{
+	int ret;
+	unsigned int i;
+	struct GUID link_guid;
+	struct ldb_message_element *el = &msg->elements[0];
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	if (tmp_ctx == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	/*
+	 * The msg has one element (el) containing links of one particular
+	 * type from the remote object. We know that at least one of those
+	 * links points to the object being renamed (identified by self_guid,
+	 * renamed to new_dn). Usually only one of the links will point back
+	 * to renamed object, but there can be more when the reverse link is a
+	 * DN+Binary link.
+	 *
+	 * This is used for unsorted links, which is to say back links and
+	 * forward links on old databases.
+	 */
+	for (i = 0; i < el->num_values; i++) {
+		struct dsdb_dn *dsdb_dn = dsdb_dn_parse(msg,
+							ldb,
+							&el->values[i],
+							syntax_oid);
+		if (dsdb_dn == NULL) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_INVALID_DN_SYNTAX;
+		}
+
+		ret = la_guid_from_dn(module, parent, dsdb_dn->dn, &link_guid);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		/*
+		 * By comparing using the GUID we ensure that even if somehow
+		 * the name has got out of sync, this rename will fix it.
+		 *
+		 * If somehow we don't have a GUID on the DN in the DB, the
+		 * la_guid_from_dn call will be more costly, but still give us
+		 * a GUID. dbcheck will fix this if run.
+		 */
+		if (!GUID_equal(&self_guid, &link_guid)) {
+			continue;
+		}
+
+		ret = ldb_dn_update_components(dsdb_dn->dn, new_dn);
+		if (ret != LDB_SUCCESS) {
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+
+		el->values[i] = data_blob_string_const(
+			dsdb_dn_get_extended_linearized(el->values, dsdb_dn, 1));
+	}
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+
+static int linked_attributes_fix_forward_link(struct ldb_module *module,
+					      struct ldb_message *msg,
+					      struct ldb_dn *new_dn,
+					      struct GUID self_guid,
+					      const char *syntax_oid)
+{
+	int ret;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct parsed_dn *pdn_list = NULL;
+	struct parsed_dn *exact = NULL;
+	struct parsed_dn *next = NULL;
+	bool is_plain_dn;
+	struct ldb_message_element *el = &msg->elements[0];
+	unsigned int num_parsed_dns = el->num_values;
+
+	TALLOC_CTX *tmp_ctx = talloc_new(module);
+	if (tmp_ctx == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/*
+	 * The msg has a single element (el) containing forward links which we
+	 * trust are sorted in GUID order. We know that at least one of those
+	 * links points to the object being renamed (identified by self_guid,
+	 * renamed to new_dn), because that object has a backlink pointing
+	 * here.
+	 *
+	 * In most cases we assume there will only be one forward link, which
+	 * is found by parsed_dn_find(), but in the case of DN+Binary links
+	 * (e.g. msDS-RevealedUsers) there may be many forward links that
+	 * share the same DN/GUID but differ in the binary part. For those we
+	 * need to look around the link found by parsed_dn_find() and convert
+	 * them all -- there is no way to know which forward link belongs to
+	 * which backlink.
+	 */
+
+	ret = get_parsed_dns_trusted(tmp_ctx, el, &pdn_list);
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "get_parsed_dn_trusted() "
+				       "error fixing %s links for %s",
+				       el->name,
+				       ldb_dn_get_linearized(msg->dn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	/* find our DN in the values */
+	ret = parsed_dn_find(ldb, pdn_list, num_parsed_dns,
+			     &self_guid,
+			     NULL,
+			     data_blob_null, 0,
+			     &exact, &next,
+			     syntax_oid,
+			     false);
+
+	if (ret != LDB_SUCCESS) {
+		ldb_asprintf_errstring(ldb, "parsed_dn_find() "
+				       "error fixing %s links for %s",
+				       el->name,
+				       ldb_dn_get_linearized(msg->dn));
+		talloc_free(tmp_ctx);
+		return ret;
+	}
+
+	if (exact == NULL) {
+		ldb_asprintf_errstring(
+			ldb,
+			"parsed_dn_find could not find %s link for %s",
+			el->name,
+			ldb_dn_get_linearized(msg->dn));
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	is_plain_dn = strcmp(syntax_oid, LDB_SYNTAX_DN) == 0;
+
+	if (is_plain_dn) {
+		/*
+		 *  The common case -- we only have to update a single link
+		 */
+		ret = ldb_dn_update_components(exact->dsdb_dn->dn, new_dn);
+		if (ret != LDB_SUCCESS) {
+			DBG_ERR("could not update components  %s  %s\n",
+				ldb_dn_get_linearized(exact->dsdb_dn->dn),
+				ldb_dn_get_linearized(new_dn)
+				);
+
+			talloc_free(tmp_ctx);
+			return ret;
+		}
+		*(exact->v) = data_blob_string_const(
+				dsdb_dn_get_extended_linearized(el->values,
+								exact->dsdb_dn,
+								1));
+	} else {
+		/*
+		 * The forward link is a DN+Binary (or in some alternate
+		 * universes, DN+String), which means the parsed_dns are keyed
+		 * on GUID+Binary. We don't know the binary part, which means
+		 * from our point of view the list can have entries with
+		 * duplicate GUIDs that we can't tell apart. We don't know
+		 * which backlink belongs to which GUID+binary, and the binary
+		 * search will always find the same one. That means one link
+		 * link will get fixed n times, whil n-1 links get fixed
+		 * never.
+		 *
+		 * If we instead fixing all the possible links, we end up
+		 * fixing n links n times, which at least works and is
+		 * probably not too costly because n is probably small.
+		 */
+		struct parsed_dn *first = exact;
+		struct parsed_dn *last = exact;
+		struct parsed_dn *p = NULL;
+		int cmp;
+		while (first > pdn_list) {
+			p = first - 1;
+			if (p->dsdb_dn == NULL) {
+				ret = really_parse_trusted_dn(tmp_ctx,
+							      ldb, p,
+							      syntax_oid);
+				if (ret != LDB_SUCCESS) {
+					talloc_free(tmp_ctx);
+					return ret;
+				}
+			}
+			cmp = ndr_guid_compare(&exact->guid, &p->guid);
+			if (cmp != 0) {
+				break;
+			}
+			first = p;
+		}
+
+		while (last < pdn_list + num_parsed_dns - 1) {
+			p = last + 1;
+			if (p->dsdb_dn == NULL) {
+				ret = really_parse_trusted_dn(tmp_ctx,
+							      ldb, p,
+							      syntax_oid);
+				if (ret != LDB_SUCCESS) {
+					talloc_free(tmp_ctx);
+					return ret;
+				}
+			}
+			cmp = ndr_guid_compare(&exact->guid, &p->guid);
+			if (cmp != 0) {
+				break;
+			}
+			last = p;
+		}
+
+		for (p = first; p <= last; p++) {
+			ret = ldb_dn_update_components(p->dsdb_dn->dn, new_dn);
+			if (ret != LDB_SUCCESS) {
+				DBG_ERR("could not update components  %s  %s\n",
+					ldb_dn_get_linearized(p->dsdb_dn->dn),
+					ldb_dn_get_linearized(new_dn)
+					);
+				talloc_free(tmp_ctx);
+				return ret;
+			}
+			*(p->v) = data_blob_string_const(
+				   dsdb_dn_get_extended_linearized(el->values,
+								   p->dsdb_dn,
+								   1));
+		}
+	}
+
+	talloc_free(tmp_ctx);
+	return LDB_SUCCESS;
+}
+
+
 static int linked_attributes_fix_links(struct ldb_module *module,
 				       struct GUID self_guid,
 				       struct ldb_dn *old_dn, struct ldb_dn *new_dn,
@@ -701,12 +944,13 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 				       const struct dsdb_attribute *schema_attr,
 				       struct ldb_request *parent)
 {
-	unsigned int i, j;
+	unsigned int i;
 	TALLOC_CTX *tmp_ctx = NULL;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	const struct dsdb_attribute *target;
 	const char *attrs[2];
 	int ret;
+	struct la_private *la_private = NULL;
 
 	target = dsdb_attribute_by_linkID(schema, schema_attr->linkID ^ 1);
 	if (target == NULL) {
@@ -716,6 +960,13 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 
 	tmp_ctx = talloc_new(module);
 	if (tmp_ctx == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	la_private = talloc_get_type(ldb_module_get_private(module),
+				     struct la_private);
+	if (la_private == NULL) {
+		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -811,47 +1062,26 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 
 		el2->flags = LDB_FLAG_MOD_REPLACE;
 
-		/* find our DN in the values */
-		for (j=0; j<el2->num_values; j++) {
-			struct dsdb_dn *dsdb_dn2;
-			struct GUID link_guid2;
-
-			dsdb_dn2 = dsdb_dn_parse(msg, ldb, &el2->values[j], target->syntax->ldap_oid);
-			if (dsdb_dn2 == NULL) {
-				talloc_free(tmp_ctx);
-				return LDB_ERR_INVALID_DN_SYNTAX;
-			}
-
-			ret = la_guid_from_dn(module, parent, dsdb_dn2->dn, &link_guid2);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
-
-			/*
-			 * By comparing using the GUID we ensure that
-			 * even if somehow the name has got out of
-			 * sync, this rename will fix it.
-			 *
-			 * If somehow we don't have a GUID on the DN
-			 * in the DB, the la_guid_from_dn call will be
-			 * more costly, but still give us a GUID.
-			 * dbcheck will fix this if run.
-			 */
-			if (!GUID_equal(&self_guid, &link_guid2)) {
-				continue;
-			}
-
-			ret = ldb_dn_update_components(dsdb_dn2->dn, new_dn);
-			if (ret != LDB_SUCCESS) {
-				talloc_free(tmp_ctx);
-				return ret;
-			}
-
-			el2->values[j] = data_blob_string_const(
-				dsdb_dn_get_extended_linearized(el2->values, dsdb_dn2, 1));
+		if (target->linkID & 1 ||
+			! la_private->sorted_links) {
+			/* handle backlinks (which aren't sorted in the DB)
+			   and forward links in old unsorted databases. */
+			ret = linked_attributes_fix_link_slow(
+				module,
+				parent,
+				msg,
+				new_dn,
+				self_guid,
+				target->syntax->ldap_oid);
+		} else {
+			/* we can binary search to find forward links */
+			ret = linked_attributes_fix_forward_link(
+				module,
+				msg,
+				new_dn,
+				self_guid,
+				target->syntax->ldap_oid);
 		}
-
 		ret = dsdb_check_single_valued_link(target, el2);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
