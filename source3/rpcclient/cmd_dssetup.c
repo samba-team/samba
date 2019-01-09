@@ -63,9 +63,22 @@ static WERROR cmd_ds_dsrole_getprimarydominfo(struct rpc_pipe_client *cli,
 
 struct cmd_set ds_commands[] = {
 
-	{ "LSARPC-DS" },
+	{
+		.name = "LSARPC-DS"
+	},
 
-	{ "dsroledominfo",   RPC_RTYPE_WERROR, NULL, cmd_ds_dsrole_getprimarydominfo, &ndr_table_dssetup, NULL, "Get Primary Domain Information", "" },
+	{
+		.name               = "dsroledominfo",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_ds_dsrole_getprimarydominfo,
+		.table              = &ndr_table_dssetup,
+		.rpc_pipe           = NULL,
+		.description        = "Get Primary Domain Information",
+		.usage              = ""
+	},
 
-{ NULL }
+	{
+		.name = NULL,
+	}
 };
