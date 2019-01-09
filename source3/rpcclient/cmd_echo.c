@@ -182,11 +182,51 @@ done:
 
 struct cmd_set echo_commands[] = {
 
-	{ "ECHO" },
+	{
+		.name = "ECHO",
+	},
 
-	{ "echoaddone", RPC_RTYPE_NTSTATUS, cmd_echo_add_one,     NULL, &ndr_table_rpcecho, NULL, "Add one to a number", "" },
-	{ "echodata",   RPC_RTYPE_NTSTATUS, cmd_echo_data,        NULL, &ndr_table_rpcecho, NULL, "Echo data",           "" },
-	{ "sinkdata",   RPC_RTYPE_NTSTATUS, cmd_echo_sink_data,   NULL, &ndr_table_rpcecho, NULL, "Sink data",           "" },
-	{ "sourcedata", RPC_RTYPE_NTSTATUS, cmd_echo_source_data, NULL, &ndr_table_rpcecho, NULL, "Source data",         "" },
-	{ NULL }
+	{
+		.name               = "echoaddone",
+		.returntype         = RPC_RTYPE_NTSTATUS,
+		.ntfn               = cmd_echo_add_one,
+		.wfn                = NULL,
+		.table              = &ndr_table_rpcecho,
+		.rpc_pipe           = NULL,
+		.description        = "Add one to a number",
+		.usage              = "",
+	},
+	{
+		.name               = "echodata",
+		.returntype         = RPC_RTYPE_NTSTATUS,
+		.ntfn               = cmd_echo_data,
+		.wfn                = NULL,
+		.table              = &ndr_table_rpcecho,
+		.rpc_pipe           = NULL,
+		.description        = "Echo data",
+		.usage              = "",
+	},
+	{
+		.name               = "sinkdata",
+		.returntype         = RPC_RTYPE_NTSTATUS,
+		.ntfn               = cmd_echo_sink_data,
+		.wfn                = NULL,
+		.table              = &ndr_table_rpcecho,
+		.rpc_pipe           = NULL,
+		.description        = "Sink data",
+		.usage              = "",
+	},
+	{
+		.name               = "sourcedata",
+		.returntype         = RPC_RTYPE_NTSTATUS,
+		.ntfn               = cmd_echo_source_data,
+		.wfn                = NULL,
+		.table              = &ndr_table_rpcecho,
+		.rpc_pipe           = NULL,
+		.description        = "Source data",
+		.usage              = "",
+	},
+	{
+		.name = NULL
+	},
 };
