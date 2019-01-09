@@ -684,7 +684,9 @@ static NTSTATUS cmd_fss_recov_complete(struct rpc_pipe_client *cli,
 /* List of commands exported by this module */
 struct cmd_set fss_commands[] = {
 
-	{ "FSRVP" },
+	{
+		.name = "FSRVP",
+	},
 
 	{
 		.name = "fss_is_path_sup",
@@ -751,5 +753,7 @@ struct cmd_set fss_commands[] = {
 			       "allowing further shadow-copy requests",
 		.usage = "",
 	},
-	{ NULL }
+	{
+		.name = NULL,
+	},
 };
