@@ -163,17 +163,33 @@ static WERROR cmd_iremotewinspool_async_core_printer_driver_installed(struct rpc
 /* List of commands exported by this module */
 struct cmd_set iremotewinspool_commands[] = {
 
-	{ "IRemoteWinspool"  },
+	{
+		.name = "IRemoteWinspool",
+	},
 
-	{ "winspool_AsyncOpenPrinter", RPC_RTYPE_WERROR, NULL,
-		cmd_iremotewinspool_async_open_printer,
-		&ndr_table_iremotewinspool,
-		NULL, "Open printer handle", "" },
+	{
+		.name               = "winspool_AsyncOpenPrinter",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_iremotewinspool_async_open_printer,
+		.table              = &ndr_table_iremotewinspool,
+		.rpc_pipe           = NULL,
+		.description        = "Open printer handle",
+		.usage              = "",
+	},
 
-	{ "winspool_AsyncCorePrinterDriverInstalled", RPC_RTYPE_WERROR, NULL,
-		cmd_iremotewinspool_async_core_printer_driver_installed,
-		&ndr_table_iremotewinspool,
-		NULL, "Query Core Printer Driver Installed", "" },
+	{
+		.name               = "winspool_AsyncCorePrinterDriverInstalled",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_iremotewinspool_async_core_printer_driver_installed,
+		.table              = &ndr_table_iremotewinspool,
+		.rpc_pipe           = NULL,
+		.description        = "Query Core Printer Driver Installed",
+		.usage              = "",
+	},
 
-	{ NULL }
+	{
+		.name = NULL,
+	},
 };
