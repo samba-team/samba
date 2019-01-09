@@ -119,7 +119,7 @@ class cmd_dsacl_set(Command):
         for ace in desc_aces:
             if ("ID" in ace):
                 desc_sddl = desc_sddl.replace(ace, "")
-        if new_ace in desc_sddl:
+        if new_ace.lower() in desc_sddl.lower():
             return
         if desc_sddl.find("(") >= 0:
             desc_sddl = desc_sddl[:desc_sddl.index("(")] + new_ace + desc_sddl[desc_sddl.index("("):]
