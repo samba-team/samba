@@ -721,6 +721,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 		struct ldb_message *msg;
 		struct ldb_message_element *el2;
 		struct GUID link_guid;
+		char *link_guid_str = NULL;
 
 		dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, &el->values[i], schema_attr->syntax->ldap_oid);
 		if (dsdb_dn == NULL) {
@@ -739,11 +740,18 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 			return ret;
 		}
 
+		link_guid_str = GUID_string(tmp_ctx, &link_guid);
+		if (link_guid_str == NULL) {
+			talloc_free(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
 		/*
 		 * get the existing message from the db for the object with
 		 * this GUID, returning attribute being modified. We will then
 		 * use this msg as the basis for a modify call
 		 */
+
 		ret = dsdb_module_search(module, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE, attrs,
 					 DSDB_FLAG_NEXT_MODULE |
 					 DSDB_SEARCH_SEARCH_ALL_PARTITIONS |
@@ -751,13 +759,13 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 					 DSDB_SEARCH_SHOW_DN_IN_STORAGE_FORMAT |
 					 DSDB_SEARCH_REVEAL_INTERNALS,
 					 parent,
-					 "objectGUID=%s", GUID_string(tmp_ctx, &link_guid));
+					 "objectGUID=%s", link_guid_str);
 		if (ret != LDB_SUCCESS) {
 			ldb_asprintf_errstring(ldb, "Linked attribute %s->%s between %s and %s - target GUID %s not found - %s",
 					       el->name, target->lDAPDisplayName,
 					       ldb_dn_get_linearized(old_dn),
 					       ldb_dn_get_linearized(dsdb_dn->dn),
-					       GUID_string(tmp_ctx, &link_guid),
+					       link_guid_str,
 					       ldb_errstring(ldb));
 			talloc_free(tmp_ctx);
 			return ret;
@@ -771,7 +779,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 					       el->name, target->lDAPDisplayName,
 					       ldb_dn_get_linearized(old_dn),
 					       ldb_dn_get_linearized(dsdb_dn->dn),
-					       GUID_string(tmp_ctx, &link_guid));
+					       link_guid_str);
 			talloc_free(tmp_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
