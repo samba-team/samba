@@ -318,9 +318,40 @@ static WERROR cmd_winreg_querymultiplevalues2(struct rpc_pipe_client *cli,
 
 struct cmd_set winreg_commands[] = {
 
-	{ "WINREG" },
-	{ "winreg_enumkey", RPC_RTYPE_WERROR, NULL, cmd_winreg_enumkeys, &ndr_table_winreg, NULL, "Enumerate Keys", "" },
-	{ "querymultiplevalues", RPC_RTYPE_WERROR, NULL, cmd_winreg_querymultiplevalues, &ndr_table_winreg, NULL, "Query multiple values", "" },
-	{ "querymultiplevalues2", RPC_RTYPE_WERROR, NULL, cmd_winreg_querymultiplevalues2, &ndr_table_winreg, NULL, "Query multiple values", "" },
-	{ NULL }
+	{
+		.name = "WINREG",
+	},
+	{
+		.name               = "winreg_enumkey",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_winreg_enumkeys,
+		.table              = &ndr_table_winreg,
+		.rpc_pipe           = NULL,
+		.description        = "Enumerate Keys",
+		.usage              = "",
+	},
+	{
+		.name               = "querymultiplevalues",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_winreg_querymultiplevalues,
+		.table              = &ndr_table_winreg,
+		.rpc_pipe           = NULL,
+		.description        = "Query multiple values",
+		.usage              = "",
+	},
+	{
+		.name               = "querymultiplevalues2",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_winreg_querymultiplevalues2,
+		.table              = &ndr_table_winreg,
+		.rpc_pipe           = NULL,
+		.description        = "Query multiple values",
+		.usage              = "",
+	},
+	{
+		.name = NULL,
+	},
 };
