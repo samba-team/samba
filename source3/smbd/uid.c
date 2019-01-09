@@ -445,7 +445,6 @@ static bool change_to_user_internal(connection_struct *conn,
 	if (current_user.need_chdir) {
 		ok = chdir_current_service(conn);
 		if (!ok) {
-			DBG_ERR("chdir_current_service() failed!\n");
 			return false;
 		}
 		current_user.done_chdir = true;

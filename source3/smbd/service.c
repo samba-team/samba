@@ -152,17 +152,45 @@ bool chdir_current_service(connection_struct *conn)
 
 	ret = vfs_ChDir(conn, &connectpath_fname);
 	if (ret != 0) {
-		DEBUG(((errno!=EACCES)?0:3),
-		      ("chdir (%s) failed, reason: %s\n",
-		       conn->connectpath, strerror(errno)));
+		int saved_errno = errno;
+
+		if (saved_errno == EACCES) {
+			char *str = utok_string(
+				talloc_tos(),
+				conn->session_info->unix_token);
+			DBG_WARNING("vfs_ChDir(%s) got "
+				    "permission denied, current "
+				    "token: %s\n",
+				    conn->connectpath, str);
+			TALLOC_FREE(str);
+		} else {
+			DBG_ERR("vfs_ChDir(%s) failed: "
+				"%s!\n",
+				conn->connectpath,
+				strerror(saved_errno));
+		}
 		return false;
 	}
 
 	ret = vfs_ChDir(conn, &origpath_fname);
 	if (ret != 0) {
-		DEBUG(((errno!=EACCES)?0:3),
-			("chdir (%s) failed, reason: %s\n",
-			conn->origpath, strerror(errno)));
+		int saved_errno = errno;
+
+		if (saved_errno == EACCES) {
+			char *str = utok_string(
+				talloc_tos(),
+				conn->session_info->unix_token);
+			DBG_WARNING("vfs_ChDir(%s) got "
+				    "permission denied, current "
+				    "token: %s\n",
+				    conn->origpath, str);
+			TALLOC_FREE(str);
+		} else {
+			DBG_ERR("vfs_ChDir(%s) failed: "
+				"%s!\n",
+				conn->origpath,
+				strerror(saved_errno));
+		}
 		return false;
 	}
 
