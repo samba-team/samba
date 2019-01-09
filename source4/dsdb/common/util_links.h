@@ -40,4 +40,9 @@ struct parsed_dn {
 	struct ldb_val *v;
 };
 
+
+int get_parsed_dns_trusted(TALLOC_CTX *mem_ctx,
+			   struct ldb_message_element *el,
+			   struct parsed_dn **pdn);
+
 #endif /* __DSDB_COMMON_UTIL_LINKS_H__ */

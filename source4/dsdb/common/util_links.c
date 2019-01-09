@@ -110,6 +110,25 @@ int really_parse_trusted_dn(TALLOC_CTX *mem_ctx, struct ldb_context *ldb,
 }
 
 
+int get_parsed_dns_trusted(TALLOC_CTX *mem_ctx, struct ldb_message_element *el,
+				  struct parsed_dn **pdn)
+{
+	/* Here we get a list of 'struct parsed_dns' without the parsing */
+	int i;
+	*pdn = talloc_zero_array(mem_ctx, struct parsed_dn,
+				 el->num_values);
+	if (!*pdn) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	for (i = 0; i < el->num_values; i++) {
+		(*pdn)[i].v = &el->values[i];
+	}
+
+	return LDB_SUCCESS;
+}
+
+
 int parsed_dn_find(struct ldb_context *ldb, struct parsed_dn *pdn,
 		   unsigned int count,
 		   const struct GUID *guid,

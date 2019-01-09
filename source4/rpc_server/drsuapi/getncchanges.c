@@ -225,28 +225,6 @@ fail:
 	}
 }
 
-/*
- * Similar to function in repl_meta_data without the extra
- * dependencies.
- */
-static WERROR get_parsed_dns_trusted(TALLOC_CTX *mem_ctx, struct ldb_message_element *el,
-				  struct parsed_dn **pdn)
-{
-	/* Here we get a list of 'struct parsed_dns' without the parsing */
-	int i;
-	*pdn = talloc_zero_array(mem_ctx, struct parsed_dn,
-				 el->num_values);
-	if (!*pdn) {
-		return WERR_DS_DRA_INTERNAL_ERROR;
-	}
-
-	for (i = 0; i < el->num_values; i++) {
-		(*pdn)[i].v = &el->values[i];
-	}
-
-	return WERR_OK;
-}
-
 static WERROR getncchanges_update_revealed_list(struct ldb_context *sam_ctx,
 						TALLOC_CTX *mem_ctx,
 						struct ldb_message **msg,
@@ -290,13 +268,12 @@ static WERROR getncchanges_update_revealed_list(struct ldb_context *sam_ctx,
 		/* Replace the old value (if one exists) with the current one */
 		struct parsed_dn *link_dns;
 		struct parsed_dn *exact = NULL, *unused = NULL;
-		WERROR werr;
 		uint8_t attid[4];
 		DATA_BLOB partial_meta;
 
-		werr = get_parsed_dns_trusted(mem_ctx, existing, &link_dns);
-		if (!W_ERROR_IS_OK(werr)) {
-			return werr;
+		ldb_err = get_parsed_dns_trusted(mem_ctx, existing, &link_dns);
+		if (ldb_err != LDB_SUCCESS) {
+			return WERR_DS_DRA_INTERNAL_ERROR;
 		}
 
 		/* Construct a partial metadata blob to match on in the DB */

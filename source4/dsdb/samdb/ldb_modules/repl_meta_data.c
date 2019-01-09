@@ -2142,15 +2142,14 @@ static int get_parsed_dns(struct ldb_module *module, TALLOC_CTX *mem_ctx,
  * We also ensure that the links are in the Functional Level 2003
  * linked attributes format.
  */
-static int get_parsed_dns_trusted(struct ldb_module *module,
-				  struct replmd_private *replmd_private,
-				  TALLOC_CTX *mem_ctx,
-				  struct ldb_message_element *el,
-				  struct parsed_dn **pdn,
-				  const char *ldap_oid,
-				  struct ldb_request *parent)
+static int get_parsed_dns_trusted_fallback(struct ldb_module *module,
+					   struct replmd_private *replmd_private,
+					   TALLOC_CTX *mem_ctx,
+					   struct ldb_message_element *el,
+					   struct parsed_dn **pdn,
+					   const char *ldap_oid,
+					   struct ldb_request *parent)
 {
-	unsigned int i;
 	int ret;
 	if (el == NULL) {
 		*pdn = NULL;
@@ -2167,16 +2166,10 @@ static int get_parsed_dns_trusted(struct ldb_module *module,
 			return ret;
 		}
 	} else {
-		/* Here we get a list of 'struct parsed_dns' without the parsing */
-		*pdn = talloc_zero_array(mem_ctx, struct parsed_dn,
-					 el->num_values);
-		if (!*pdn) {
+		ret = get_parsed_dns_trusted(mem_ctx, el, pdn);
+		if (ret != LDB_SUCCESS) {
 			ldb_module_oom(module);
 			return LDB_ERR_OPERATIONS_ERROR;
-		}
-
-		for (i = 0; i < el->num_values; i++) {
-			(*pdn)[i].v = &el->values[i];
 		}
 	}
 
@@ -2318,10 +2311,10 @@ static int replmd_check_upgrade_links(struct ldb_context *ldb,
 
 	/*
 	 * This sort() is critical for the operation of
-	 * get_parsed_dns_trusted() because callers of this function
+	 * get_parsed_dns_trusted_fallback() because callers of this function
 	 * expect a sorted list, and FL2000 style links are not
 	 * sorted.  In particular, as well as the upgrade case,
-	 * get_parsed_dns_trusted() is called from
+	 * get_parsed_dns_trusted_fallback() is called from
 	 * replmd_delete_remove_link() even in FL2000 mode
 	 *
 	 * We do not normally pay the cost of the qsort() due to the
@@ -2496,9 +2489,10 @@ static int replmd_modify_la_add(struct ldb_module *module,
 	}
 
 	/* get the existing DNs, lazily parsed */
-	ret = get_parsed_dns_trusted(module, replmd_private,
-				     tmp_ctx, old_el, &old_dns,
-				     schema_attr->syntax->ldap_oid, parent);
+	ret = get_parsed_dns_trusted_fallback(module, replmd_private,
+					      tmp_ctx, old_el, &old_dns,
+					      schema_attr->syntax->ldap_oid,
+					      parent);
 
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -2820,9 +2814,10 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		return ret;
 	}
 
-	ret = get_parsed_dns_trusted(module, replmd_private,
-				     tmp_ctx, old_el, &old_dns,
-				     schema_attr->syntax->ldap_oid, parent);
+	ret = get_parsed_dns_trusted_fallback(module, replmd_private,
+					      tmp_ctx, old_el, &old_dns,
+					      schema_attr->syntax->ldap_oid,
+					      parent);
 
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -4086,9 +4081,11 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 		 * this is safe to call in FL2000 or on databases that
 		 * have been run at that level in the past.
 		 */
-		ret = get_parsed_dns_trusted(module, replmd_private, tmp_ctx,
-					     link_el, &link_dns,
-					     target_attr->syntax->ldap_oid, parent);
+		ret = get_parsed_dns_trusted_fallback(module, replmd_private,
+						tmp_ctx,
+						link_el, &link_dns,
+						target_attr->syntax->ldap_oid,
+						parent);
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -8333,11 +8330,12 @@ static int replmd_process_la_group(struct ldb_module *module,
 		 * group, so we try to minimize the times we do it)
 		 */
 		if (pdn_list == NULL) {
-			ret = get_parsed_dns_trusted(module, replmd_private,
-						     tmp_ctx, old_el,
-						     &pdn_list,
-						     attr->syntax->ldap_oid,
-						     NULL);
+			ret = get_parsed_dns_trusted_fallback(module,
+							replmd_private,
+							tmp_ctx, old_el,
+							&pdn_list,
+							attr->syntax->ldap_oid,
+							NULL);
 
 			if (ret != LDB_SUCCESS) {
 				return ret;
