@@ -115,7 +115,7 @@ static int bsd_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 	return ret;
 }
 #elif defined(STAT_STATVFS) && defined(HAVE_FSID_INT)
-static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
+static int posix_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 {
 	struct statvfs statvfs_buf;
 	int result;
@@ -169,7 +169,7 @@ int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 #if defined(BSD_STYLE_STATVFS)
 	return bsd_statvfs(path, statbuf);
 #elif defined(STAT_STATVFS) && defined(HAVE_FSID_INT)
-	return linux_statvfs(path, statbuf);
+	return posix_statvfs(path, statbuf);
 #else
 	/* BB change this to return invalid level */
 #ifdef EOPNOTSUPP
