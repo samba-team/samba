@@ -2008,11 +2008,6 @@ int ldb_kv_search_indexed(struct ldb_kv_context *ac, uint32_t *match_count)
 		return ldb_operr(ldb);
 
 	case LDB_SCOPE_ONELEVEL:
-		/*
-		 * If we ever start to also load the index values for
-		 * the tree, we must ensure we strictly intersect with
-		 * this list, as we trust the ONELEVEL index
-		 */
 		ret = ldb_kv_index_dn_one(ac->module,
 					  ldb_kv,
 					  ac->base,
