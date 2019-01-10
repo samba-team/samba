@@ -2041,15 +2041,15 @@ int ldb_kv_search_indexed(struct ldb_kv_context *ac, uint32_t *match_count)
 		 * fast enough in the small case.
 		 */
 		if (ldb_kv->cache->GUID_index_attribute != NULL) {
-			struct dn_list *idx_one_tree_list
+			struct dn_list *indexed_search_result
 				= talloc_zero(ac, struct dn_list);
-			if (idx_one_tree_list == NULL) {
+			if (indexed_search_result == NULL) {
 				talloc_free(dn_list);
 				return ldb_module_oom(ac->module);
 			}
 
 			if (!ldb_kv->cache->attribute_indexes) {
-				talloc_free(idx_one_tree_list);
+				talloc_free(indexed_search_result);
 				talloc_free(dn_list);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
@@ -2058,13 +2058,14 @@ int ldb_kv_search_indexed(struct ldb_kv_context *ac, uint32_t *match_count)
 			 * Try to do an indexed database search
 			 */
 			ret = ldb_kv_index_dn(
-			    ac->module, ldb_kv, ac->tree, idx_one_tree_list);
+			    ac->module, ldb_kv, ac->tree,
+			    indexed_search_result);
 
 			/*
 			 * We can stop if we're sure the object doesn't exist
 			 */
 			if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-				talloc_free(idx_one_tree_list);
+				talloc_free(indexed_search_result);
 				talloc_free(dn_list);
 				return LDB_ERR_NO_SUCH_OBJECT;
 			}
@@ -2087,8 +2088,8 @@ int ldb_kv_search_indexed(struct ldb_kv_context *ac, uint32_t *match_count)
 				if (!list_intersect(ldb,
 						    ldb_kv,
 						    dn_list,
-						    idx_one_tree_list)) {
-					talloc_free(idx_one_tree_list);
+						    indexed_search_result)) {
+					talloc_free(indexed_search_result);
 					talloc_free(dn_list);
 					return LDB_ERR_OPERATIONS_ERROR;
 				}
