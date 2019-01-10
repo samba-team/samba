@@ -358,9 +358,11 @@ static bool test_auth(TALLOC_CTX *mem_ctx, struct samu *pdb_entry)
 	}
 
 	if (!dom_sid_equal(info3_sam->base.domain_sid, info3_auth->base.domain_sid)) {
+		struct dom_sid_buf buf1, buf2;
 		DEBUG(0, ("domain_sid in SAM info3 %s does not match domain_sid in AUTH info3 %s\n", 
-			  dom_sid_string(NULL, info3_sam->base.domain_sid),
-			  dom_sid_string(NULL, info3_auth->base.domain_sid)));
+			  dom_sid_str_buf(info3_sam->base.domain_sid, &buf1),
+			  dom_sid_str_buf(info3_auth->base.domain_sid,
+					  &buf2)));
 		return False;
 	}
 	
@@ -429,9 +431,12 @@ static bool test_auth(TALLOC_CTX *mem_ctx, struct samu *pdb_entry)
 		}
 
 		if (!dom_sid_equal(info3_sam->base.domain_sid, info6_wbc->base.domain_sid)) {
+			struct dom_sid_buf buf1, buf2;
 			DEBUG(0, ("domain_sid in SAM info3 %s does not match domain_sid in AUTH info3 %s\n",
-				  dom_sid_string(NULL, info3_sam->base.domain_sid),
-				  dom_sid_string(NULL, info6_wbc->base.domain_sid)));
+				  dom_sid_str_buf(info3_sam->base.domain_sid,
+						  &buf1),
+				  dom_sid_str_buf(info6_wbc->base.domain_sid,
+						  &buf2)));
 			return false;
 		}
 	}
