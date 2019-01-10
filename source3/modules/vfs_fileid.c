@@ -297,12 +297,14 @@ static int get_connectpath_ino(struct vfs_handle_struct *handle,
 	}
 
 	ret = SMB_VFS_NEXT_STAT(handle, fname);
-	TALLOC_FREE(fname);
 	if (ret != 0) {
 		DBG_ERR("stat failed for %s with %s\n",
 			handle->conn->connectpath, strerror(errno));
+		TALLOC_FREE(fname);
 		return -1;
 	}
+	*ino = fname->st.st_ex_ino;
+	TALLOC_FREE(fname);
 
 	return 0;
 }
