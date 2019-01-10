@@ -25,6 +25,7 @@ import ldb
 import re
 import xml.etree.ElementTree as ET
 import shutil
+import tempfile
 
 from samba.auth import system_session
 from samba.netcmd import (
