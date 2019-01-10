@@ -2051,13 +2051,24 @@ int ldb_kv_search_indexed(struct ldb_kv_context *ac, uint32_t *match_count)
 			}
 			/*
 			 * Here we load the index for the tree.
-			 *
+			 */
+			ret = ldb_kv_index_dn(
+			    ac->module, ldb_kv, ac->tree, idx_one_tree_list);
+
+			/*
+			 * We can stop if we're sure the object doesn't exist
+			 */
+			if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+				talloc_free(idx_one_tree_list);
+				talloc_free(dn_list);
+				return LDB_ERR_NO_SUCH_OBJECT;
+			}
+
+			/*
 			 * We only care if this is successful, if the
 			 * index can't trim the result list down then
 			 * the ONELEVEL index is still good enough.
 			 */
-			ret = ldb_kv_index_dn(
-			    ac->module, ldb_kv, ac->tree, idx_one_tree_list);
 			if (ret == LDB_SUCCESS) {
 				if (!list_intersect(ldb,
 						    ldb_kv,
