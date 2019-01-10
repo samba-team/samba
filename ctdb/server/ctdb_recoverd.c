@@ -888,6 +888,7 @@ struct ctdb_recovery_lock_handle {
 	bool locked;
 	double latency;
 	struct ctdb_cluster_mutex_handle *h;
+	struct ctdb_recoverd *rec;
 };
 
 static void take_reclock_handler(char status,
@@ -954,6 +955,8 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 		DBG_ERR("Memory allocation error\n");
 		return false;
 	};
+
+	s->rec = rec;
 
 	h = ctdb_cluster_mutex(s,
 			       ctdb,
