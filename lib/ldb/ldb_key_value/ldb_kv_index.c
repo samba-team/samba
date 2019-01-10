@@ -2008,6 +2008,12 @@ int ldb_kv_search_indexed(struct ldb_kv_context *ac, uint32_t *match_count)
 		return ldb_operr(ldb);
 
 	case LDB_SCOPE_ONELEVEL:
+
+		/*
+		 * First, load all the one-level child objects (regardless of
+		 * whether they match the search filter or not). The database
+		 * maintains a one-level index, so retrieving this is quick.
+		 */
 		ret = ldb_kv_index_dn_one(ac->module,
 					  ldb_kv,
 					  ac->base,
@@ -2019,9 +2025,12 @@ int ldb_kv_search_indexed(struct ldb_kv_context *ac, uint32_t *match_count)
 		}
 
 		/*
-		 * If we have too many matches, running the filter
-		 * tree over the SCOPE_ONELEVEL can be quite expensive
-		 * so we now check the filter tree index as well.
+		 * If we have too many children, running ldb_kv_index_filter()
+		 * over all the child objects can be quite expensive. So next
+		 * we do a separate indexed query using the search filter.
+		 *
+		 * This should be quick, but it may return objects that are not
+		 * the direct one-level child objects we're interested in.
 		 *
 		 * We only do this in the GUID index mode, which is
 		 * O(n*log(m)) otherwise the intersection below will
@@ -2044,8 +2053,9 @@ int ldb_kv_search_indexed(struct ldb_kv_context *ac, uint32_t *match_count)
 				talloc_free(dn_list);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
+
 			/*
-			 * Here we load the index for the tree.
+			 * Try to do an indexed database search
 			 */
 			ret = ldb_kv_index_dn(
 			    ac->module, ldb_kv, ac->tree, idx_one_tree_list);
@@ -2060,9 +2070,18 @@ int ldb_kv_search_indexed(struct ldb_kv_context *ac, uint32_t *match_count)
 			}
 
 			/*
-			 * We only care if this is successful, if the
-			 * index can't trim the result list down then
-			 * the ONELEVEL index is still good enough.
+			 * Once we have a successful search result, we
+			 * intersect it with the one-level children (dn_list).
+			 * This should give us exactly the result we're after
+			 * (we still need to run ldb_kv_index_filter() to
+			 * handle potential index truncation cases).
+			 *
+			 * The indexed search may fail because we don't support
+			 * indexing on that type of search operation, e.g.
+			 * matching against '*'. In which case we fall through
+			 * and run ldb_kv_index_filter() over all the one-level
+			 * children (which is still better than bailing out here
+			 * and falling back to a full DB scan).
 			 */
 			if (ret == LDB_SUCCESS) {
 				if (!list_intersect(ldb,
