@@ -42,4 +42,7 @@ int dns_lookup(FILE *resolv_conf_fp,
 	       TALLOC_CTX *mem_ctx,
 	       struct dns_name_packet **reply);
 
+bool dns_res_rec_get_sockaddr(const struct dns_res_rec *rec,
+			      struct sockaddr_storage *addr);
+
 #endif

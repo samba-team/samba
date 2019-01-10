@@ -335,3 +335,40 @@ fail:
 	TALLOC_FREE(ev);
 	return ret;
 }
+
+bool dns_res_rec_get_sockaddr(const struct dns_res_rec *rec,
+			      struct sockaddr_storage *addr)
+{
+	sa_family_t family;
+	const char *src;
+	void *dst;
+	int ret;
+
+	switch (rec->rr_type) {
+	    case DNS_QTYPE_A:
+		    family = AF_INET;
+		    src = rec->rdata.ipv4_record;
+		    dst = &(((struct sockaddr_in *)addr)->sin_addr);
+		    break;
+#ifdef HAVE_IPV6
+	    case DNS_QTYPE_AAAA:
+		    family = AF_INET6;
+		    src = rec->rdata.ipv6_record;
+		    dst = &(((struct sockaddr_in6 *)addr)->sin6_addr);
+		    break;
+#endif
+	    default:
+		    /* We only care about IP addresses */
+		    return false;
+	}
+
+	*addr = (struct sockaddr_storage) { .ss_family = family };
+
+	ret = inet_pton(family, src, dst);
+	if (ret != 1) {
+		DBG_DEBUG("inet_pton(%s) failed\n", src);
+		return false;
+	}
+
+	return true;
+}
