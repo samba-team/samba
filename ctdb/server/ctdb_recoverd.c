@@ -923,6 +923,17 @@ static void take_reclock_handler(char status,
 
 	default:
 		D_ERR("Unable to take recover lock - unknown error\n");
+
+		{
+			struct ctdb_recoverd *rec = s->rec;
+			struct ctdb_context *ctdb = rec->ctdb;
+			uint32_t pnn = ctdb_get_pnn(ctdb);
+
+			D_ERR("Banning this node\n");
+			ctdb_ban_node(rec,
+				      pnn,
+				      ctdb->tunable.recovery_ban_period);
+		}
 	}
 
 	s->done = true;
