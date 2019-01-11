@@ -742,18 +742,41 @@ static NTSTATUS ads_dns_query_internal(TALLOC_CTX *ctx,
 				       int *numdcs )
 {
 	char *name;
-	if (sitename && strlen(sitename)) {
+	NTSTATUS status;
+	int num_srvs = 0;
+
+	if ((sitename != NULL) && (strlen(sitename) != 0)) {
 		name = talloc_asprintf(ctx, "%s._tcp.%s._sites.%s._msdcs.%s",
 				       servicename, sitename,
 				       dc_pdc_gc_domains, realm);
-	} else {
-		name = talloc_asprintf(ctx, "%s._tcp.%s._msdcs.%s",
-				servicename, dc_pdc_gc_domains, realm);
+		if (name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = ads_dns_lookup_srv(ctx, name, dclist, &num_srvs);
+
+		TALLOC_FREE(name);
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED)) {
+			return status;
+		}
+
+		if (NT_STATUS_IS_OK(status) && (num_srvs != 0)) {
+			goto done;
+		}
 	}
-	if (!name) {
+
+	name = talloc_asprintf(ctx, "%s._tcp.%s._msdcs.%s",
+			       servicename, dc_pdc_gc_domains, realm);
+	if (name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	return ads_dns_lookup_srv(ctx, name, dclist, numdcs);
+	status = ads_dns_lookup_srv(ctx, name, dclist, &num_srvs);
+
+done:
+	*numdcs = num_srvs; /* automatic conversion size_t->int */
+	return status;
 }
 
 /********************************************************************
@@ -775,24 +798,6 @@ NTSTATUS ads_dns_query_dcs(TALLOC_CTX *ctx,
 					sitename,
 					dclist,
 					numdcs);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED)) {
-		return status;
-	}
-
-	if (sitename &&
-	    ((!NT_STATUS_IS_OK(status)) ||
-	     (NT_STATUS_IS_OK(status) && (numdcs == 0)))) {
-		/* Sitename DNS query may have failed. Try without. */
-		status = ads_dns_query_internal(ctx,
-						"_ldap",
-						"dc",
-						realm,
-						NULL,
-						dclist,
-						numdcs);
-	}
 	return status;
 }
 
@@ -815,24 +820,6 @@ NTSTATUS ads_dns_query_gcs(TALLOC_CTX *ctx,
 					sitename,
 					dclist,
 					numdcs);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED)) {
-		return status;
-	}
-
-	if (sitename &&
-	    ((!NT_STATUS_IS_OK(status)) ||
-	     (NT_STATUS_IS_OK(status) && (numdcs == 0)))) {
-		/* Sitename DNS query may have failed. Try without. */
-		status = ads_dns_query_internal(ctx,
-						"_ldap",
-						"gc",
-						realm,
-						NULL,
-						dclist,
-						numdcs);
-	}
 	return status;
 }
 
@@ -857,24 +844,6 @@ NTSTATUS ads_dns_query_kdcs(TALLOC_CTX *ctx,
 					sitename,
 					dclist,
 					numdcs);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
-	    NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED)) {
-		return status;
-	}
-
-	if (sitename &&
-	    ((!NT_STATUS_IS_OK(status)) ||
-	     (NT_STATUS_IS_OK(status) && (numdcs == 0)))) {
-		/* Sitename DNS query may have failed. Try without. */
-		status = ads_dns_query_internal(ctx,
-						"_kerberos",
-						"dc",
-						dns_forest_name,
-						NULL,
-						dclist,
-						numdcs);
-	}
 	return status;
 }
 
