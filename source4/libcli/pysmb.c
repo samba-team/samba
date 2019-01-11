@@ -614,6 +614,18 @@ static PyObject *py_smb_new(PyTypeObject *type, PyObject *args, PyObject *kwargs
 	uint8_t use_spnego = 0xFF;
 	PyObject *sign = Py_False;
 
+	/*
+	 * These Python bindings are now deprecated because the s4 SMB client
+	 * code doesn't support SMBv2 (and is unlikely to ever support it).
+	 * The s3 libsmb_samba_internal bindings are a better choice for use
+	 * within the Samba codebase, and support much the same API.
+	 * This warning is mostly for external consumers that might be using
+	 * these Python bindings (in which case, note libsmb_samba_internal
+	 * is not a stable API and may change in future).
+	 */
+	DBG_ERR("The smb.SMB() Python bindings are now deprecated "
+		"and will be removed in the next samba release\n");
+
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "zz|OObbO",
 					 discard_const_p(char *, kwnames),
 					 &hostname, &service, &py_creds, &py_lp,
