@@ -292,9 +292,30 @@ int main(int argc, char *argv[])
 	const char **argv_const = discard_const_p(const char *, argv);
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "broadcast", 'b', POPT_ARG_VAL, &use_bcast, True, "Use broadcast instead of using the master browser" },
-		{ "domains", 'D', POPT_ARG_VAL, &level, LEV_WORKGROUP, "List only domains (workgroups) of tree" },
-		{ "servers", 'S', POPT_ARG_VAL, &level, LEV_SERVER, "List domains(workgroups) and servers of tree" },
+		{
+			.longName   = "broadcast",
+			.shortName  = 'b',
+			.argInfo    = POPT_ARG_VAL,
+			.arg        = &use_bcast,
+			.val        = True,
+			.descrip    = "Use broadcast instead of using the master browser" ,
+		},
+		{
+			.longName   = "domains",
+			.shortName  = 'D',
+			.argInfo    = POPT_ARG_VAL,
+			.arg        = &level,
+			.val        = LEV_WORKGROUP,
+			.descrip    = "List only domains (workgroups) of tree" ,
+		},
+		{
+			.longName   = "servers",
+			.shortName  = 'S',
+			.argInfo    = POPT_ARG_VAL,
+			.arg        = &level,
+			.val        = LEV_SERVER,
+			.descrip    = "List domains(workgroups) and servers of tree" ,
+		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
 		POPT_TABLEEND
