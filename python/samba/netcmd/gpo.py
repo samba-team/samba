@@ -43,7 +43,7 @@ import samba.auth
 from samba.auth import AUTH_SESSION_INFO_DEFAULT_GROUPS, AUTH_SESSION_INFO_AUTHENTICATED, AUTH_SESSION_INFO_SIMPLE_PRIVILEGES
 from samba.netcmd.common import netcmd_finddc
 from samba import policy
-from samba import smb
+from samba.samba3 import param as s3param
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba import NTSTATUSError
 import uuid
@@ -365,7 +365,10 @@ def create_directory_hier(conn, remotedir):
 def smb_connection(dc_hostname, service, lp, creds, sign=False):
     # SMB connect to DC
     try:
-        conn = smb.SMB(dc_hostname, service, lp=lp, creds=creds, sign=sign)
+        # the SMB bindings rely on having a s3 loadparm
+        s3_lp = s3param.get_context()
+        s3_lp.load(lp.configfile)
+        conn = libsmb.Conn(dc_hostname, service, lp=s3_lp, creds=creds, sign=sign)
     except Exception:
         raise CommandError("Error connecting to '%s' using SMB" % dc_hostname)
     return conn
