@@ -1798,6 +1798,13 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
+	/*
+	 * This calls unshare(CLONE_FS); on linux
+	 * in order to check if the running kernel/container
+	 * environment supports it.
+	 */
+	per_thread_cwd_check();
+
 	if (!cluster_probe_ok()) {
 		exit(1);
 	}

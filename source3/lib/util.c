@@ -453,6 +453,13 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
+	/*
+	 * The main process thread should never
+	 * allow per_thread_cwd_enable() to be
+	 * called.
+	 */
+	per_thread_cwd_disable();
+
 	if (reinit_after_fork_pipe[1] != -1) {
 		close(reinit_after_fork_pipe[1]);
 		reinit_after_fork_pipe[1] = -1;
