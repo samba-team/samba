@@ -1008,4 +1008,11 @@ void contend_level2_oplocks_begin(files_struct *fsp,
 void contend_level2_oplocks_end(files_struct *fsp,
 				enum level2_contention_type type);
 
+/* The following definitions come from lib/per_thread_cwd.c */
+
+void per_thread_cwd_check(void);
+bool per_thread_cwd_supported(void);
+void per_thread_cwd_disable(void);
+void per_thread_cwd_activate(void);
+
 #endif /*  _PROTO_H_  */

@@ -968,6 +968,7 @@ bld.SAMBA3_LIBRARY('samba3-util',
                           lib/namearray.c
                           lib/file_id.c
                           lib/cbuf.c
+                          lib/per_thread_cwd.c
                           ''',
                    deps='''
                         samba-util
