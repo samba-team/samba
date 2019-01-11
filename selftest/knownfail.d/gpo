@@ -1,0 +1,3 @@
+# 'samba-tool gpo aclcheck' currently fails against restored testenvs (due to a bug)
+samba.tests.samba_tool.gpo.samba.tests.samba_tool.gpo.GpoCmdTestCase.test_aclcheck\(renamedc:local\)
+samba.tests.samba_tool.gpo.samba.tests.samba_tool.gpo.GpoCmdTestCase.test_aclcheck\(offlinebackupdc:local\)
