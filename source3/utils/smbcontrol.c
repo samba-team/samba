@@ -1418,48 +1418,171 @@ static const struct {
 		   const int argc, const char **argv);
 	const char *help;	/* Short help text */
 } msg_types[] = {
-	{ "debug", do_debug, "Set debuglevel"  },
-	{ "idmap", do_idmap, "Manipulate idmap cache" },
-	{ "force-election", do_election,
-	  "Force a browse election" },
-	{ "ping", do_ping, "Elicit a response" },
-	{ "profile", do_profile, "" },
-	{ "inject", do_inject_fault,
-	    "Inject a fatal signal into a running smbd"},
-	{ "stacktrace", do_daemon_stack_trace,
-	    "Display a stack trace of a daemon" },
-	{ "profilelevel", do_profilelevel, "" },
-	{ "debuglevel", do_debuglevel, "Display current debuglevels" },
-	{ "printnotify", do_printnotify, "Send a print notify message" },
-	{ "close-share", do_closeshare, "Forcibly disconnect a share" },
-	{ "kill-client-ip", do_kill_client_by_ip,
-	  "Forcibly disconnect a client with a specific IP address" },
-	{ "ip-dropped", do_ip_dropped, "Tell winbind that an IP got dropped" },
-	{ "lockretry", do_lockretry, "Force a blocking lock retry" },
-	{ "brl-revalidate", do_brl_revalidate, "Revalidate all brl entries" },
-	{ "pool-usage", do_poolusage, "Display talloc memory usage" },
-	{ "ringbuf-log", do_ringbuflog, "Display ringbuf log" },
-	{ "dmalloc-mark", do_dmalloc_mark, "" },
-	{ "dmalloc-log-changed", do_dmalloc_changed, "" },
-	{ "shutdown", do_shutdown, "Shut down daemon" },
-	{ "drvupgrade", do_drvupgrade, "Notify a printer driver has changed" },
-	{ "reload-config", do_reload_config, "Force smbd or winbindd to reload config file"},
-	{ "reload-printers", do_reload_printers, "Force smbd to reload printers"},
-	{ "nodestatus", do_nodestatus, "Ask nmbd to do a node status request"},
-	{ "online", do_winbind_online, "Ask winbind to go into online state"},
-	{ "offline", do_winbind_offline, "Ask winbind to go into offline state"},
-	{ "onlinestatus", do_winbind_onlinestatus, "Request winbind online status"},
-	{ "validate-cache" , do_winbind_validate_cache,
-	  "Validate winbind's credential cache" },
-	{ "dump-domain-list", do_winbind_dump_domain_list, "Dump winbind domain list"},
-	{ "disconnect-dc", do_msg_disconnect_dc },
-	{ "notify-cleanup", do_notify_cleanup },
-	{ "num-children", do_num_children,
-	  "Print number of smbd child processes" },
-	{ "msg-cleanup", do_msg_cleanup },
-	{ "noop", do_noop, "Do nothing" },
-	{ "sleep", do_sleep, "Cause the target process to sleep" },
-	{ NULL }
+	{
+		.name = "debug",
+		.fn   = do_debug,
+		.help = "Set debuglevel",
+	},
+	{
+		.name = "idmap",
+		.fn   = do_idmap,
+		.help = "Manipulate idmap cache",
+	},
+	{
+		.name = "force-election",
+		.fn   = do_election,
+		.help = "Force a browse election",
+	},
+	{
+		.name = "ping",
+		.fn   = do_ping,
+		.help = "Elicit a response",
+	},
+	{
+		.name = "profile",
+		.fn   = do_profile,
+		.help = "",
+	},
+	{
+		.name = "inject",
+		.fn   = do_inject_fault,
+		.help = "Inject a fatal signal into a running smbd"},
+	{
+		.name = "stacktrace",
+		.fn   = do_daemon_stack_trace,
+		.help = "Display a stack trace of a daemon",
+	},
+	{
+		.name = "profilelevel",
+		.fn   = do_profilelevel,
+		.help = "",
+	},
+	{
+		.name = "debuglevel",
+		.fn   = do_debuglevel,
+		.help = "Display current debuglevels",
+	},
+	{
+		.name = "printnotify",
+		.fn   = do_printnotify,
+		.help = "Send a print notify message",
+	},
+	{
+		.name = "close-share",
+		.fn   = do_closeshare,
+		.help = "Forcibly disconnect a share",
+	},
+	{
+		.name = "kill-client-ip",
+		.fn   = do_kill_client_by_ip,
+		.help = "Forcibly disconnect a client with a specific IP address",
+	},
+	{
+		.name = "ip-dropped",
+		.fn   = do_ip_dropped,
+		.help = "Tell winbind that an IP got dropped",
+	},
+	{
+		.name = "lockretry",
+		.fn   = do_lockretry,
+		.help = "Force a blocking lock retry",
+	},
+	{
+		.name = "brl-revalidate",
+		.fn   = do_brl_revalidate,
+		.help = "Revalidate all brl entries",
+	},
+	{
+		.name = "pool-usage",
+		.fn   = do_poolusage,
+		.help = "Display talloc memory usage",
+	},
+	{
+		.name = "ringbuf-log",
+		.fn   = do_ringbuflog,
+		.help = "Display ringbuf log",
+	},
+	{
+		.name = "dmalloc-mark",
+		.fn   = do_dmalloc_mark,
+		.help = "",
+	},
+	{
+		.name = "dmalloc-log-changed",
+		.fn   = do_dmalloc_changed,
+		.help = "",
+	},
+	{
+		.name = "shutdown",
+		.fn   = do_shutdown,
+		.help = "Shut down daemon",
+	},
+	{
+		.name = "drvupgrade",
+		.fn   = do_drvupgrade,
+		.help = "Notify a printer driver has changed",
+	},
+	{
+		.name = "reload-config",
+		.fn   = do_reload_config,
+		.help = "Force smbd or winbindd to reload config file"},
+	{
+		.name = "reload-printers",
+		.fn   = do_reload_printers,
+		.help = "Force smbd to reload printers"},
+	{
+		.name = "nodestatus",
+		.fn   = do_nodestatus,
+		.help = "Ask nmbd to do a node status request"},
+	{
+		.name = "online",
+		.fn   = do_winbind_online,
+		.help = "Ask winbind to go into online state"},
+	{
+		.name = "offline",
+		.fn   = do_winbind_offline,
+		.help = "Ask winbind to go into offline state"},
+	{
+		.name = "onlinestatus",
+		.fn   = do_winbind_onlinestatus,
+		.help = "Request winbind online status"},
+	{
+		.name = "validate-cache" ,
+		.fn   = do_winbind_validate_cache,
+		.help = "Validate winbind's credential cache",
+	},
+	{
+		.name = "dump-domain-list",
+		.fn   = do_winbind_dump_domain_list,
+		.help = "Dump winbind domain list"},
+	{
+		.name = "disconnect-dc",
+		.fn   = do_msg_disconnect_dc,
+	},
+	{
+		.name = "notify-cleanup",
+		.fn   = do_notify_cleanup,
+	},
+	{
+		.name = "num-children",
+		.fn   = do_num_children,
+		.help = "Print number of smbd child processes",
+	},
+	{
+		.name = "msg-cleanup",
+		.fn   = do_msg_cleanup,
+	},
+	{
+		.name = "noop",
+		.fn   = do_noop,
+		.help = "Do nothing",
+	},
+	{
+		.name = "sleep",
+		.fn   = do_sleep,
+		.help = "Cause the target process to sleep",
+	},
+	{ .name = NULL, },
 };
 
 /* Display usage information */
@@ -1491,7 +1614,9 @@ static void usage(poptContext pc)
 static struct server_id parse_dest(struct messaging_context *msg,
 				   const char *dest)
 {
-	struct server_id result = {-1};
+	struct server_id result = {
+		.pid = (uint64_t)-1,
+	};
 	pid_t pid;
 
 	/* Zero is a special return value for broadcast to all processes */
