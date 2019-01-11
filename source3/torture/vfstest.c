@@ -511,6 +511,8 @@ int main(int argc, const char *argv[])
 	   facilities.  See lib/debug.c */
 	setup_logging("vfstest", DEBUG_STDOUT);
 
+	per_thread_cwd_check();
+
 	set_smbd_shim(&vfstest_shim_fns);
 
 	/* Load command lists */
