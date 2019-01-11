@@ -166,8 +166,22 @@ static void wb_queryuser_got_domain(struct tevent_req *subreq)
 		return;
 	}
 
-	if (type != SID_NAME_USER) {
-		/* allow SID_NAME_COMPUTER? */
+	switch (type) {
+	case SID_NAME_USER:
+	case SID_NAME_COMPUTER:
+		/*
+		 * user case: we only need the account name from lookup_sids
+		 */
+		break;
+	case SID_NAME_DOM_GRP:
+	case SID_NAME_ALIAS:
+	case SID_NAME_WKN_GRP:
+		/*
+		 * also treat group-type SIDs (they might map to ID_TYPE_BOTH)
+		 */
+		sid_copy(&info->group_sid, &info->user_sid);
+		break;
+	default:
 		tevent_req_nterror(req, NT_STATUS_NO_SUCH_USER);
 		return;
 	}
