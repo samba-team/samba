@@ -181,11 +181,6 @@ void push_nttime(uint8_t *base, uint16_t offset, NTTIME t);
 NTTIME pull_nttime(uint8_t *base, uint16_t offset);
 
 /**
-  parse a nttime as a large integer in a string and return a NTTIME
-*/
-NTTIME nttime_from_string(const char *s);
-
-/**
   return (tv1 - tv2) in microseconds
 */
 int64_t usec_time_diff(const struct timeval *tv1, const struct timeval *tv2);

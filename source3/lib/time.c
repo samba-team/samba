@@ -36,15 +36,6 @@
 #define TIME_FIXUP_CONSTANT_INT 11644473600LL
 #endif
 
-
-/**
-  parse a nttime as a large integer in a string and return a NTTIME
-*/
-NTTIME nttime_from_string(const char *s)
-{
-	return strtoull(s, NULL, 0);
-}
-
 /**************************************************************
  Handle conversions between time_t and uint32, taking care to
  preserve the "special" values.
