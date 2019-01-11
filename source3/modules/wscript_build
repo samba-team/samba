@@ -12,10 +12,9 @@ bld.SAMBA3_SUBSYSTEM('POSIXACL_XATTR',
                  enabled=(bld.SAMBA3_IS_ENABLED_MODULE('vfs_ceph') or bld.SAMBA3_IS_ENABLED_MODULE('vfs_glusterfs')),
                  deps='acl attr')
 
-bld.SAMBA3_LIBRARY('non_posix_acls',
+bld.SAMBA3_SUBSYSTEM('non_posix_acls',
                    source='non_posix_acls.c',
-                   deps='samba-util vfs',
-                   private_library=True)
+                   deps='samba-util vfs')
 
 bld.SAMBA3_SUBSYSTEM('VFS_VIRUSFILTER_UTILS',
                    source='vfs_virusfilter_utils.c',
