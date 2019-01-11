@@ -656,11 +656,13 @@ for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
 for env in ["ad_dc:local", "ad_dc_ntvfs:local", "fl2000dc:local", "fl2003dc:local", "fl2008r2dc:local"]:
     plantestsuite("samba.tests.samba_tool.edit", env, [os.path.join(srcdir(), "python/samba/tests/samba_tool/edit.sh"), '$SERVER', '$USERNAME', '$PASSWORD'])
 
-# We run this test against both AD DC implemetnations because it is
+# We run this test against both AD DC implementations because it is
 # the only test we have of GPO get/set behaviour, and this involves
 # the file server as well as the LDAP server.
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.gpo",  py3_compatible=True)
-planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.gpo", py3_compatible=True)
+# It's also a good sanity-check that sysvol backup worked correctly.
+for env in ["ad_dc_ntvfs", "ad_dc", "offlinebackupdc", "renamedc"]:
+    planpythontestsuite(env + ":local", "samba.tests.samba_tool.gpo",
+                        py3_compatible=True)
 
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.processes", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.user", py3_compatible=True)
