@@ -232,18 +232,82 @@ int main(int argc, const char *argv[])
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "broadcast", 'B', POPT_ARG_STRING, NULL, 'B', "Specify address to use for broadcasts", "BROADCAST-ADDRESS" },
-		{ "flags", 'f', POPT_ARG_NONE, NULL, 'f', "List the NMB flags returned" },
-		{ "unicast", 'U', POPT_ARG_STRING, NULL, 'U', "Specify address to use for unicast" },
-		{ "master-browser", 'M', POPT_ARG_NONE, NULL, 'M', "Search for a master browser" },
-		{ "recursion", 'R', POPT_ARG_NONE, NULL, 'R', "Set recursion desired in package" },
-		{ "status", 'S', POPT_ARG_NONE, NULL, 'S', "Lookup node status as well" },
-		{ "translate", 'T', POPT_ARG_NONE, NULL, 'T', "Translate IP addresses into names" },
-		{ "root-port", 'r', POPT_ARG_NONE, NULL, 'r', "Use root port 137 (Win95 only replies to this)" },
-		{ "lookup-by-ip", 'A', POPT_ARG_NONE, NULL, 'A', "Do a node status on <name> as an IP Address" },
+		{
+			.longName   = "broadcast",
+			.shortName  = 'B',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'B',
+			.descrip    = "Specify address to use for broadcasts",
+			.argDescrip = "BROADCAST-ADDRESS",
+		},
+		{
+			.longName   = "flags",
+			.shortName  = 'f',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'f',
+			.descrip    = "List the NMB flags returned",
+		},
+		{
+			.longName   = "unicast",
+			.shortName  = 'U',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'U',
+			.descrip    = "Specify address to use for unicast",
+		},
+		{
+			.longName   = "master-browser",
+			.shortName  = 'M',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'M',
+			.descrip    = "Search for a master browser",
+		},
+		{
+			.longName   = "recursion",
+			.shortName  = 'R',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'R',
+			.descrip    = "Set recursion desired in package",
+		},
+		{
+			.longName   = "status",
+			.shortName  = 'S',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'S',
+			.descrip    = "Lookup node status as well",
+		},
+		{
+			.longName   = "translate",
+			.shortName  = 'T',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'T',
+			.descrip    = "Translate IP addresses into names",
+		},
+		{
+			.longName   = "root-port",
+			.shortName  = 'r',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'r',
+			.descrip    = "Use root port 137 (Win95 only replies to this)",
+		},
+		{
+			.longName   = "lookup-by-ip",
+			.shortName  = 'A',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'A',
+			.descrip    = "Do a node status on <name> as an IP Address",
+		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
-		{ 0, 0, 0, 0 }
+		POPT_TABLEEND
 	};
 
 	*lookup = 0;
