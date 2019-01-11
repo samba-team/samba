@@ -928,7 +928,8 @@ static PyObject *py_smb_loadfile(struct py_cli_state *self, PyObject *args,
 
 	/* get a read file handle */
 	req = cli_ntcreate_send(NULL, self->ev, self->cli, filename, 0,
-				FILE_READ_DATA, FILE_ATTRIBUTE_NORMAL,
+				FILE_READ_DATA | FILE_READ_ATTRIBUTES,
+				FILE_ATTRIBUTE_NORMAL,
 				FILE_SHARE_READ, FILE_OPEN, 0,
 				SMB2_IMPERSONATION_IMPERSONATION, 0);
 	if (!py_tevent_req_wait_exc(self, req)) {
