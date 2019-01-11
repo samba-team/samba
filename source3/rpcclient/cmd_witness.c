@@ -550,13 +550,62 @@ done:
 }
 
 struct cmd_set witness_commands[] = {
-	{"WITNESS"},
-	{"GetInterfaceList", RPC_RTYPE_WERROR, NULL, &cmd_witness_GetInterfaceList, &ndr_table_witness, NULL, "", ""},
-	{"Register", RPC_RTYPE_WERROR, NULL, &cmd_witness_Register, &ndr_table_witness, NULL, "", ""},
-	{"UnRegister", RPC_RTYPE_WERROR, NULL, &cmd_witness_UnRegister, &ndr_table_witness, NULL, "", ""},
-	{"AsyncNotify", RPC_RTYPE_WERROR, NULL, &cmd_witness_AsyncNotify, &ndr_table_witness, NULL, "", ""},
-	{"RegisterEx", RPC_RTYPE_WERROR, NULL, &cmd_witness_RegisterEx, &ndr_table_witness, NULL, "", ""},
-	{NULL}
+	{
+		.name = "WITNESS",
+	},
+	{
+		.name               = "GetInterfaceList",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = &cmd_witness_GetInterfaceList,
+		.table              = &ndr_table_witness,
+		.rpc_pipe           = NULL,
+		.description        = "",
+		.usage              = "",
+	},
+	{
+		.name               = "Register",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = &cmd_witness_Register,
+		.table              = &ndr_table_witness,
+		.rpc_pipe           = NULL,
+		.description        = "",
+		.usage              = "",
+	},
+	{
+		.name               = "UnRegister",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = &cmd_witness_UnRegister,
+		.table              = &ndr_table_witness,
+		.rpc_pipe           = NULL,
+		.description        = "",
+		.usage              = "",
+	},
+	{
+		.name               = "AsyncNotify",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = &cmd_witness_AsyncNotify,
+		.table              = &ndr_table_witness,
+		.rpc_pipe           = NULL,
+		.description        = "",
+		.usage              = "",
+	},
+	{
+		.name               = "RegisterEx",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = &cmd_witness_RegisterEx,
+		.table              = &ndr_table_witness,
+		.rpc_pipe           = NULL,
+		.description        = "",
+		.usage              = "",
+	},
+	{
+		.name = NULL,
+	}
 };
 
 /*
