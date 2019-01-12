@@ -2229,8 +2229,9 @@ done:
 */
 static void dump_binary(ADS_STRUCT *ads, const char *field, struct berval **values)
 {
-	int i, j;
+	size_t i;
 	for (i=0; values[i]; i++) {
+		ber_len_t j;
 		printf("%s: ", field);
 		for (j=0; j<values[i]->bv_len; j++) {
 			printf("%02X", (unsigned char)values[i]->bv_val[j]);
@@ -2540,8 +2541,7 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 {
 	char **values;
 	char **ret = NULL;
-	int i;
-	size_t converted_size;
+	size_t i, converted_size;
 
 	values = ldap_get_values(ads->ldap.ld, msg, field);
 	if (!values)
