@@ -201,7 +201,7 @@ static void log_authentication_event_json(
 		 lp_ctx,
 		 &wrapper,
 		 AUTH_JSON_TYPE,
-		 DBGC_AUTH_AUDIT,
+		 DBGC_AUTH_AUDIT_JSON,
 		 debug_level);
 	json_free(&wrapper);
 }
@@ -281,7 +281,7 @@ static void log_successful_authz_event_json(
 		 lp_ctx,
 		 &wrapper,
 		 AUTHZ_JSON_TYPE,
-		 DBGC_AUTH_AUDIT,
+		 DBGC_AUTH_AUDIT_JSON,
 		 debug_level);
 	json_free(&wrapper);
 }
