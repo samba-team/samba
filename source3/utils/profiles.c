@@ -219,9 +219,30 @@ int main( int argc, const char *argv[] )
 	char *orig_filename, *new_filename;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "change-sid", 'c', POPT_ARG_STRING, NULL, 'c', "Provides SID to change" },
-		{ "new-sid", 'n', POPT_ARG_STRING, NULL, 'n', "Provides SID to change to" },
-		{ "verbose", 'v', POPT_ARG_NONE, &opt_verbose, 'v', "Verbose output" },
+		{
+			.longName   = "change-sid",
+			.shortName  = 'c',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'c',
+			.descrip    = "Provides SID to change",
+		},
+		{
+			.longName   = "new-sid",
+			.shortName  = 'n',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'n',
+			.descrip    = "Provides SID to change to",
+		},
+		{
+			.longName   = "verbose",
+			.shortName  = 'v',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &opt_verbose,
+			.val        = 'v',
+			.descrip    = "Verbose output",
+		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		POPT_TABLEEND
