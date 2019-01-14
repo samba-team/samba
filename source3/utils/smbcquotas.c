@@ -585,22 +585,80 @@ int main(int argc, char *argv[])
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "user", 'u', POPT_ARG_STRING, NULL, 'u', "Show quotas for user", "user" },
-		{ "list", 'L', POPT_ARG_NONE, NULL, 'L', "List user quotas" },
-		{ "fs", 'F', POPT_ARG_NONE, NULL, 'F', "Show filesystem quotas" },
-		{ "set", 'S', POPT_ARG_STRING, NULL, 'S', "Set acls\n\
-SETSTRING:\n\
-UQLIM:<username>/<softlimit>/<hardlimit> for user quotas\n\
-FSQLIM:<softlimit>/<hardlimit> for filesystem defaults\n\
-FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT", "SETSTRING" },
-		{ "numeric", 'n', POPT_ARG_NONE, NULL, 'n', "Don't resolve sids or limits to names" },
-		{ "verbose", 'v', POPT_ARG_NONE, NULL, 'v', "be verbose" },
-		{ "test-args", 't', POPT_ARG_NONE, NULL, 't', "Test arguments"},
-		{"max-protocol", 'm', POPT_ARG_STRING, NULL, 'm',
-		 "Set the max protocol level", "LEVEL"},
+		{
+			.longName   = "user",
+			.shortName  = 'u',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'u',
+			.descrip    = "Show quotas for user",
+			.argDescrip = "USER",
+		},
+		{
+			.longName   = "list",
+			.shortName  = 'L',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'L',
+			.descrip    = "List user quotas",
+		},
+		{
+			.longName   = "fs",
+			.shortName  = 'F',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'F',
+			.descrip    = "Show filesystem quotas",
+		},
+		{
+			.longName   = "set",
+			.shortName  = 'S',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'S',
+			.descrip    = "Set acls\n"
+				      "SETSTRING:\n"
+				      "UQLIM:<username>/<softlimit>/<hardlimit> for user quotas\n"
+				      "FSQLIM:<softlimit>/<hardlimit> for filesystem defaults\n"
+				      "FSQFLAGS:QUOTA_ENABLED/DENY_DISK/LOG_SOFTLIMIT/LOG_HARD_LIMIT",
+			.argDescrip = "SETSTRING",
+		},
+		{
+			.longName   = "numeric",
+			.shortName  = 'n',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'n',
+			.descrip    = "Don't resolve sids or limits to names",
+		},
+		{
+			.longName   = "verbose",
+			.shortName  = 'v',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 'v',
+			.descrip    = "be verbose",
+		},
+		{
+			.longName   = "test-args",
+			.shortName  = 't',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = 't',
+			.descrip    = "Test arguments"
+		},
+		{
+			.longName   = "max-protocol",
+			.shortName  = 'm',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = NULL,
+			.val        = 'm',
+			.descrip    = "Set the max protocol level",
+			.argDescrip = "LEVEL"
+		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CREDENTIALS
-		{ NULL }
+		POPT_TABLEEND
 	};
 
 	smb_init_locale();
