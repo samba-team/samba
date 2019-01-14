@@ -730,6 +730,13 @@ static void smb2_query_directory_fetch_write_time_done(struct tevent_req *subreq
 	struct smbd_smb2_query_directory_state *state = tevent_req_data(
 		req, struct smbd_smb2_query_directory_state);
 	NTSTATUS status;
+	bool ok;
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_by_fsp(state->fsp);
+	SMB_ASSERT(ok);
 
 	state->async_sharemode_count--;
 
