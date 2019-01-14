@@ -2330,28 +2330,151 @@ enum {
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "helper-protocol", 0, POPT_ARG_STRING, &helper_protocol, OPT_DOMAIN, "operate as a stdio-based helper", "helper protocol to use"},
- 		{ "username", 0, POPT_ARG_STRING, &opt_username, OPT_USERNAME, "username"},
- 		{ "domain", 0, POPT_ARG_STRING, &opt_domain, OPT_DOMAIN, "domain name"},
- 		{ "workstation", 0, POPT_ARG_STRING, &opt_workstation, OPT_WORKSTATION, "workstation"},
- 		{ "challenge", 0, POPT_ARG_STRING, &hex_challenge, OPT_CHALLENGE, "challenge (HEX encoded)"},
-		{ "lm-response", 0, POPT_ARG_STRING, &hex_lm_response, OPT_LM, "LM Response to the challenge (HEX encoded)"},
-		{ "nt-response", 0, POPT_ARG_STRING, &hex_nt_response, OPT_NT, "NT or NTLMv2 Response to the challenge (HEX encoded)"},
-		{ "password", 0, POPT_ARG_STRING, &opt_password, OPT_PASSWORD, "User's plaintext password"},		
-		{ "request-lm-key", 0, POPT_ARG_NONE, &request_lm_key, OPT_LM_KEY, "Retrieve LM session key"},
-		{ "request-nt-key", 0, POPT_ARG_NONE, &request_user_session_key, OPT_USER_SESSION_KEY, "Retrieve User (NT) session key"},
-		{ "use-cached-creds", 0, POPT_ARG_NONE, &use_cached_creds, OPT_USE_CACHED_CREDS, "Use cached credentials if no password is given"},
-		{ "allow-mschapv2", 0, POPT_ARG_NONE, &opt_allow_mschapv2, OPT_ALLOW_MSCHAPV2, "Explicitly allow MSCHAPv2" },
-		{ "offline-logon", 0, POPT_ARG_NONE, &offline_logon,
-		  OPT_OFFLINE_LOGON,
-		  "Use cached passwords when DC is offline"},
-		{ "diagnostics", 0, POPT_ARG_NONE, &diagnostics,
-		  OPT_DIAGNOSTICS,
-		  "Perform diagnostics on the authentication chain"},
-		{ "require-membership-of", 0, POPT_ARG_STRING, &require_membership_of, OPT_REQUIRE_MEMBERSHIP, "Require that a user be a member of this group (either name or SID) for authentication to succeed" },
-		{ "pam-winbind-conf", 0, POPT_ARG_STRING, &opt_pam_winbind_conf, OPT_PAM_WINBIND_CONF, "Require that request must set WBFLAG_PAM_CONTACT_TRUSTDOM when krb5 auth is required" },
-		{ "target-service", 0, POPT_ARG_STRING, &opt_target_service, OPT_TARGET_SERVICE, "Target service (eg http)" },
-		{ "target-hostname", 0, POPT_ARG_STRING, &opt_target_hostname, OPT_TARGET_HOSTNAME, "Target hostname" },
+		{
+			.longName   = "helper-protocol",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &helper_protocol,
+			.val        = OPT_DOMAIN,
+			.descrip    = "operate as a stdio-based helper",
+			.argDescrip = "helper protocol to use"
+		},
+		{
+			.longName   = "username",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &opt_username,
+			.val        = OPT_USERNAME,
+			.descrip    = "username"
+		},
+		{
+			.longName   = "domain",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &opt_domain,
+			.val        = OPT_DOMAIN,
+			.descrip    = "domain name"
+		},
+		{
+			.longName   = "workstation",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &opt_workstation,
+			.val        = OPT_WORKSTATION,
+			.descrip    = "workstation"
+		},
+		{
+			.longName   = "challenge",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &hex_challenge,
+			.val        = OPT_CHALLENGE,
+			.descrip    = "challenge (HEX encoded)"
+		},
+		{
+			.longName   = "lm-response",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &hex_lm_response,
+			.val        = OPT_LM,
+			.descrip    = "LM Response to the challenge (HEX encoded)"
+		},
+		{
+			.longName   = "nt-response",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &hex_nt_response,
+			.val        = OPT_NT,
+			.descrip    = "NT or NTLMv2 Response to the challenge (HEX encoded)"
+		},
+		{
+			.longName   = "password",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &opt_password,
+			.val        = OPT_PASSWORD,
+			.descrip    = "User's plaintext password"
+		},
+		{
+			.longName   = "request-lm-key",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &request_lm_key,
+			.val        = OPT_LM_KEY,
+			.descrip    = "Retrieve LM session key"
+		},
+		{
+			.longName   = "request-nt-key",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &request_user_session_key,
+			.val        = OPT_USER_SESSION_KEY,
+			.descrip    = "Retrieve User (NT) session key"
+		},
+		{
+			.longName   = "use-cached-creds",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &use_cached_creds,
+			.val        = OPT_USE_CACHED_CREDS,
+			.descrip    = "Use cached credentials if no password is given"
+		},
+		{
+			.longName   = "allow-mschapv2",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &opt_allow_mschapv2,
+			.val        = OPT_ALLOW_MSCHAPV2,
+			.descrip    = "Explicitly allow MSCHAPv2",
+		},
+		{
+			.longName   = "offline-logon",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &offline_logon,
+			.val        = OPT_OFFLINE_LOGON,
+			.descrip    = "Use cached passwords when DC is offline"
+		},
+		{
+			.longName   = "diagnostics",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &diagnostics,
+			.val        = OPT_DIAGNOSTICS,
+			.descrip    = "Perform diagnostics on the authentication chain"
+		},
+		{
+			.longName   = "require-membership-of",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &require_membership_of,
+			.val        = OPT_REQUIRE_MEMBERSHIP,
+			.descrip    = "Require that a user be a member of this group (either name or SID) for authentication to succeed",
+		},
+		{
+			.longName   = "pam-winbind-conf",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &opt_pam_winbind_conf,
+			.val        = OPT_PAM_WINBIND_CONF,
+			.descrip    = "Require that request must set WBFLAG_PAM_CONTACT_TRUSTDOM when krb5 auth is required",
+		},
+		{
+			.longName   = "target-service",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &opt_target_service,
+			.val        = OPT_TARGET_SERVICE,
+			.descrip    = "Target service (eg http)",
+		},
+		{
+			.longName   = "target-hostname",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &opt_target_hostname,
+			.val        = OPT_TARGET_HOSTNAME,
+			.descrip    = "Target hostname",
+		},
 		POPT_COMMON_CONFIGFILE
 		POPT_COMMON_VERSION
 		POPT_COMMON_OPTION
