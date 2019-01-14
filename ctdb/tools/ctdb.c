@@ -1233,6 +1233,11 @@ static void print_statistics_machine(struct ctdb_statistics *s,
 	printf("%.6f%s", LATENCY_AVG(s->call_latency), options.sep);
 	printf("%.6f%s", s->call_latency.max, options.sep);
 
+	printf("%u%s", s->locks.latency.num, options.sep);
+	printf("%.6f%s", s->locks.latency.min, options.sep);
+	printf("%.6f%s", LATENCY_AVG(s->locks.latency), options.sep);
+	printf("%.6f%s", s->locks.latency.max, options.sep);
+
 	printf("%d%s", s->childwrite_latency.num, options.sep);
 	printf("%.6f%s", s->childwrite_latency.min, options.sep);
 	printf("%.6f%s", LATENCY_AVG(s->childwrite_latency), options.sep);
