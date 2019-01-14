@@ -2659,6 +2659,7 @@ ssize_t smb_vfs_call_getxattr(struct vfs_handle_struct *handle,
 
 
 struct smb_vfs_call_getxattrat_state {
+	files_struct *dir_fsp;
 	ssize_t (*recv_fn)(struct tevent_req *req,
 			   struct vfs_aio_state *aio_state,
 			   TALLOC_CTX *mem_ctx,
@@ -2692,6 +2693,7 @@ struct tevent_req *smb_vfs_call_getxattrat_send(
 	VFS_FIND(getxattrat_send);
 
 	*state = (struct smb_vfs_call_getxattrat_state) {
+		.dir_fsp = dir_fsp,
 		.recv_fn = handle->fns->getxattrat_recv_fn,
 	};
 
@@ -2717,6 +2719,13 @@ static void smb_vfs_call_getxattrat_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct smb_vfs_call_getxattrat_state *state = tevent_req_data(
 		req, struct smb_vfs_call_getxattrat_state);
+	bool ok;
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_by_fsp(state->dir_fsp);
+	SMB_ASSERT(ok);
 
 	state->retval = state->recv_fn(subreq,
 				       &state->aio_state,
