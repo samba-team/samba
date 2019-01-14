@@ -271,6 +271,11 @@ void smbprofile_dump(void)
 
 	TALLOC_FREE(smbprofile_state.internal.te);
 
+	if (! (smbprofile_state.config.do_count ||
+	       smbprofile_state.config.do_times)) {
+			return;
+	}
+
 	if (smbprofile_state.internal.db == NULL) {
 		return;
 	}
