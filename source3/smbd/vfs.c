@@ -2382,6 +2382,7 @@ NTSTATUS smb_vfs_call_offload_write_recv(struct vfs_handle_struct *handle,
 }
 
 struct smb_vfs_call_get_dos_attributes_state {
+	files_struct *dir_fsp;
 	NTSTATUS (*recv_fn)(struct tevent_req *req,
 			    struct vfs_aio_state *aio_state,
 			    uint32_t *dosmode);
@@ -2411,6 +2412,7 @@ struct tevent_req *smb_vfs_call_get_dos_attributes_send(
 	VFS_FIND(get_dos_attributes_send);
 
 	*state = (struct smb_vfs_call_get_dos_attributes_state) {
+		.dir_fsp = dir_fsp,
 		.recv_fn = handle->fns->get_dos_attributes_recv_fn,
 	};
 
@@ -2440,6 +2442,13 @@ static void smb_vfs_call_get_dos_attributes_done(struct tevent_req *subreq)
 		tevent_req_data(req,
 		struct smb_vfs_call_get_dos_attributes_state);
 	NTSTATUS status;
+	bool ok;
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_by_fsp(state->dir_fsp);
+	SMB_ASSERT(ok);
 
 	status = state->recv_fn(subreq,
 				&state->aio_state,
