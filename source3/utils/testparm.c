@@ -650,12 +650,55 @@ static void do_per_share_checks(int s)
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"suppress-prompt", 's', POPT_ARG_VAL, &silent_mode, 1, "Suppress prompt for enter"},
-		{"verbose", 'v', POPT_ARG_NONE, &show_defaults, 1, "Show default options too"},
-		{"skip-logic-checks", 'l', POPT_ARG_NONE, &skip_logic_checks, 1, "Skip the global checks"},
-		{"show-all-parameters", '\0', POPT_ARG_VAL, &show_all_parameters, True, "Show the parameters, type, possible values" },
-		{"parameter-name", '\0', POPT_ARG_STRING, &parameter_name, 0, "Limit testparm to a named parameter" },
-		{"section-name", '\0', POPT_ARG_STRING, &section_name, 0, "Limit testparm to a named section" },
+		{
+			.longName   = "suppress-prompt",
+			.shortName  = 's',
+			.argInfo    = POPT_ARG_VAL,
+			.arg        = &silent_mode,
+			.val        = 1,
+			.descrip    = "Suppress prompt for enter",
+		},
+		{
+			.longName   = "verbose",
+			.shortName  = 'v',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &show_defaults,
+			.val        = 1,
+			.descrip    = "Show default options too",
+		},
+		{
+			.longName   = "skip-logic-checks",
+			.shortName  = 'l',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &skip_logic_checks,
+			.val        = 1,
+			.descrip    = "Skip the global checks",
+		},
+		{
+			.longName   = "show-all-parameters",
+			.shortName  = '\0',
+			.argInfo    = POPT_ARG_VAL,
+			.arg        = &show_all_parameters,
+			.val        = True,
+			.descrip    = "Show the parameters, type, possible "
+				      "values",
+		},
+		{
+			.longName   = "parameter-name",
+			.shortName  = '\0',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &parameter_name,
+			.val        = 0,
+			.descrip    = "Limit testparm to a named parameter",
+		},
+		{
+			.longName   = "section-name",
+			.shortName  = '\0',
+			.argInfo    = POPT_ARG_STRING,
+			.arg        = &section_name,
+			.val        = 0,
+			.descrip    = "Limit testparm to a named section",
+		},
 		POPT_COMMON_VERSION
 		POPT_COMMON_DEBUGLEVEL
 		POPT_COMMON_OPTION
