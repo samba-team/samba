@@ -2690,7 +2690,10 @@ struct tevent_req *smb_vfs_call_getxattrat_send(
 	}
 
 	VFS_FIND(getxattrat_send);
-	state->recv_fn = handle->fns->getxattrat_recv_fn;
+
+	*state = (struct smb_vfs_call_getxattrat_state) {
+		.recv_fn = handle->fns->getxattrat_recv_fn,
+	};
 
 	subreq = handle->fns->getxattrat_send_fn(mem_ctx,
 						 ev,
