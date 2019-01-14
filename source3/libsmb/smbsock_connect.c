@@ -416,6 +416,13 @@ struct tevent_req *smbsock_connect_send(TALLOC_CTX *mem_ctx,
 				req);
 
 	/*
+	 * Check for disable_netbios
+	 */
+	if (lp_disable_netbios()) {
+		return req;
+	}
+
+	/*
 	 * After 5 msecs, fire the 139 (NBT) request
 	 */
 	state->req_139 = tevent_wakeup_send(
