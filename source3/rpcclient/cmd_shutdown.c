@@ -104,14 +104,34 @@ static NTSTATUS cmd_shutdown_abort(struct cli_state *cli,
 /* List of commands exported by this module */
 struct cmd_set shutdown_commands[] = {
 
-	{ "SHUTDOWN"  },
+	{
+		.name = "SHUTDOWN",
+	},
 
 #if 0
-	{ "shutdowninit", RPC_RTYPE_NTSTATUS, cmd_shutdown_init, NULL, &ndr_table_initshutdown.syntax_id, "Remote Shutdown (over shutdown pipe)",
-				"syntax: shutdown [-m message] [-t timeout] [-r] [-h] [-f] (-r == reboot, -h == halt, -f == force)" },
+	{
+		.name               = "shutdowninit",
+		.returntype         = RPC_RTYPE_NTSTATUS,
+		.ntfn               = cmd_shutdown_init,
+		.wfn                = NULL,
+		.table              = &ndr_table_initshutdown.syntax_id,
+		.rpc_pipe           = "Remote Shutdown (over shutdown pipe)",
+		.description        = "syntax: shutdown [-m message] "
+				      "[-t timeout] [-r] [-h] [-f] (-r == "
+				      "reboot, -h == halt, -f == force)",
+	},
 
-	{ "shutdownabort", RPC_RTYPE_NTSTATUS, cmd_shutdown_abort, NULL, &ndr_table_initshutdown.syntax_id, "Abort Shutdown (over shutdown pipe)",
-				"syntax: shutdownabort" },
+	{
+		.name               = "shutdownabort",
+		.returntype         = RPC_RTYPE_NTSTATUS,
+		.ntfn               = cmd_shutdown_abort,
+		.wfn                = NULL,
+		.table              = &ndr_table_initshutdown.syntax_id,
+		.rpc_pipe           = "Abort Shutdown (over shutdown pipe)",
+		.description        = "syntax: shutdownabort",
+	},
 #endif
-	{ NULL }
+	{
+		.name = NULL,
+	},
 };
