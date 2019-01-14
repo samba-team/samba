@@ -453,16 +453,45 @@ int net_lookup(struct net_context *c, int argc, const char **argv)
 	int i;
 
 	struct functable table[] = {
-		{"HOST", net_lookup_host},
-		{"LDAP", net_lookup_ldap},
-		{"DC", net_lookup_dc},
-		{"PDC", net_lookup_pdc},
-		{"MASTER", net_lookup_master},
-		{"KDC", net_lookup_kdc},
-		{"NAME", net_lookup_name},
-		{"SID", net_lookup_sid},
-		{"DSGETDCNAME", net_lookup_dsgetdcname},
-		{NULL, NULL}
+		{
+			.funcname = "HOST",
+			.fn       = net_lookup_host,
+		},
+		{
+			.funcname = "LDAP",
+			.fn       = net_lookup_ldap,
+		},
+		{
+			.funcname = "DC",
+			.fn       = net_lookup_dc,
+		},
+		{
+			.funcname = "PDC",
+			.fn       = net_lookup_pdc,
+		},
+		{
+			.funcname = "MASTER",
+			.fn       = net_lookup_master,
+		},
+		{
+			.funcname = "KDC",
+			.fn       = net_lookup_kdc,
+		},
+		{
+			.funcname = "NAME",
+			.fn       = net_lookup_name,
+		},
+		{
+			.funcname = "SID",
+			.fn       = net_lookup_sid,
+		},
+		{
+			.funcname = "DSGETDCNAME",
+			.fn       = net_lookup_dsgetdcname,
+		},
+		{
+			.funcname = NULL,
+		},
 	};
 
 	if (argc < 1) {
