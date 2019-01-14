@@ -240,11 +240,31 @@ static NTSTATUS cmd_epmapper_lookup(struct rpc_pipe_client *p,
 
 struct cmd_set epmapper_commands[] = {
 
-	{ "EPMAPPER" },
+	{
+		.name = "EPMAPPER",
+	},
 
-	{ "epmmap", RPC_RTYPE_NTSTATUS, cmd_epmapper_map,     NULL,
-	  &ndr_table_epmapper, NULL, "Map a binding", "" },
-	{ "epmlookup", RPC_RTYPE_NTSTATUS, cmd_epmapper_lookup,     NULL,
-	  &ndr_table_epmapper, NULL, "Lookup bindings", "" },
-	{ NULL }
+	{
+		.name               = "epmmap",
+		.returntype         = RPC_RTYPE_NTSTATUS,
+		.ntfn               = cmd_epmapper_map,
+		.wfn                = NULL,
+		.table              = &ndr_table_epmapper,
+		.rpc_pipe           = NULL,
+		.description        = "Map a binding",
+		.usage              = "",
+	},
+	{
+		.name               = "epmlookup",
+		.returntype         = RPC_RTYPE_NTSTATUS,
+		.ntfn               = cmd_epmapper_lookup,
+		.wfn                = NULL,
+		.table              = &ndr_table_epmapper,
+		.rpc_pipe           = NULL,
+		.description        = "Lookup bindings",
+		.usage              = "",
+	},
+	{
+		.name = NULL,
+	},
 };
