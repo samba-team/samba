@@ -1303,8 +1303,10 @@ time_t ldb_string_to_time(const char *s)
 */
 int ldb_val_to_time(const struct ldb_val *v, time_t *t)
 {
-	char val[15] = {};
-	struct tm tm = {};
+	char val[15] = {0};
+	struct tm tm = {
+		.tm_year = 0,
+	};
 
 	if (v == NULL) {
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
