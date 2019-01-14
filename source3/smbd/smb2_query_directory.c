@@ -752,6 +752,13 @@ static void smb2_query_directory_dos_mode_done(struct tevent_req *subreq)
 		tevent_req_data(req,
 		struct smbd_smb2_query_directory_state);
 	NTSTATUS status;
+	bool ok;
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_by_fsp(state->fsp);
+	SMB_ASSERT(ok);
 
 	status = fetch_dos_mode_recv(subreq);
 	TALLOC_FREE(subreq);
