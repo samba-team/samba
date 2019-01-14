@@ -77,10 +77,19 @@ static NTSTATUS cmd_testme(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 
 struct cmd_set test_commands[] = {
 
-	{ "TESTING" },
+	{
+		.name = "TESTING",
+	},
 
-	{ "testme", RPC_RTYPE_NTSTATUS, cmd_testme, NULL,
-	  NULL, NULL, "Sample test", "testme" },
+	{
+		.name               = "testme",
+		.returntype         = RPC_RTYPE_NTSTATUS,
+		.ntfn               = cmd_testme,
+		.description        = "Sample test",
+		.usage              = "testme",
+	},
 
-	{ NULL }
+	{
+		.name = NULL,
+	},
 };
