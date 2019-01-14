@@ -2525,12 +2525,18 @@ NTSTATUS samdb_set_password_sid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		uint32_t trust_direction;
 		uint32_t i;
 		const struct ldb_val *old_val = NULL;
-		struct trustAuthInOutBlob old_blob = {};
+		struct trustAuthInOutBlob old_blob = {
+			.count = 0,
+		};
 		uint32_t old_version = 0;
 		struct AuthenticationInformation *old_version_a = NULL;
 		uint32_t _new_version = 0;
-		struct trustAuthInOutBlob new_blob = {};
-		struct ldb_val new_val = {};
+		struct trustAuthInOutBlob new_blob = {
+			.count = 0,
+		};
+		struct ldb_val new_val = {
+			.length = 0,
+		};
 		struct timeval tv = timeval_current();
 		NTTIME now = timeval_to_nttime(&tv);
 		enum ndr_err_code ndr_err;
