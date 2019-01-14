@@ -147,7 +147,7 @@ class Schema(object):
     @staticmethod
     def default_base_schema():
         """Returns the default base schema to use"""
-        return "2008_R2"
+        return "2012_R2"
 
     @staticmethod
     def get_version(base_schema):

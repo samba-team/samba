@@ -82,7 +82,13 @@ Log lines are of the form:
     durations are in microseconds.
 
 
+Default schema updated to 2012_R2
+-------------------------
 
+Default AD schema changed from 2008_R2 to 2012_R2.  2012_R2 functional level
+is not yet available.  Older schemas can be used by provisioning with the
+'--base-schema' argument.  Existing installations can be updated with the
+samba-tool command "domain schemaupgrade".
 
 
 REMOVED FEATURES
