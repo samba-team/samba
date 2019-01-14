@@ -811,6 +811,13 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 	struct smb_filename *smb_path = NULL;
 	struct vfs_aio_state aio_state;
 	NTSTATUS status;
+	bool ok;
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_by_fsp(state->dir_fsp);
+	SMB_ASSERT(ok);
 
 	status = SMB_VFS_GET_DOS_ATTRIBUTES_RECV(subreq,
 						 &aio_state,
