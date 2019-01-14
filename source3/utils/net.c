@@ -156,16 +156,22 @@ static int net_primarytrust(struct net_context *c, int argc, const char **argv)
 {
 	struct functable func[] = {
 		{
-			"dumpinfo",
-			net_primarytrust_dumpinfo,
-			NET_TRANSPORT_LOCAL,
-			N_("Dump the details of the workstation trust"),
-			N_("  net [options] primarytrust dumpinfo'\n"
-			   "    Dump the details of the workstation trust "
-			   "in secrets.tdb.\n"
-			   "    Requires the -f flag to include the password values.")
+			.funcname         = "dumpinfo",
+			.fn               = net_primarytrust_dumpinfo,
+			.valid_transports = NET_TRANSPORT_LOCAL,
+			.description      = N_("Dump the details of the "
+					       "workstation trust"),
+			.usage            = N_("  net [options] primarytrust "
+					       "dumpinfo'\n"
+					       "    Dump the details of the "
+					       "workstation trust in "
+					       "secrets.tdb.\n"
+					       "    Requires the -f flag to "
+					       "include the password values."),
 		},
-		{NULL, NULL, 0, NULL, NULL}
+		{
+			.funcname = NULL,
+		},
 	};
 
 	return net_run_function(c, argc, argv, "net primarytrust", func);
