@@ -504,7 +504,9 @@ static NTSTATUS schannel_update_internal(struct gensec_security *gensec_security
 		struct schannel_state);
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
-	struct NL_AUTH_MESSAGE bind_schannel = {};
+	struct NL_AUTH_MESSAGE bind_schannel = {
+		.Flags = 0,
+	};
 	struct NL_AUTH_MESSAGE bind_schannel_ack;
 	struct netlogon_creds_CredentialState *creds;
 	const char *workstation;
