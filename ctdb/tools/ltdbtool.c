@@ -39,7 +39,9 @@ union  ltdb_header {
 };
 
 static const union ltdb_header DEFAULT_HDR = {
-	.hdr.dmaster = -1,
+	.hdr = {
+		.dmaster = -1,
+	}
 };
 
 static int help(const char* cmd)
