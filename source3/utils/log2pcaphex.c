@@ -308,8 +308,22 @@ int main(int argc, const char **argv)
 	size_t in_packet = 0;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{ "quiet", 'q', POPT_ARG_NONE, &quiet, 0, "Be quiet, don't output warnings" },
-		{ "hex", 'h', POPT_ARG_NONE, &hexformat, 0, "Output format readable by text2pcap" },
+		{
+			.longName   = "quiet",
+			.shortName  = 'q',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &quiet,
+			.val        = 0,
+			.descrip    = "Be quiet, don't output warnings",
+		},
+		{
+			.longName   = "hex",
+			.shortName  = 'h',
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = &hexformat,
+			.val        = 0,
+			.descrip    = "Output format readable by text2pcap",
+		},
 		POPT_TABLEEND
 	};
 
