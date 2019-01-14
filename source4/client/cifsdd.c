@@ -540,11 +540,27 @@ done:
 /* ------------------------------------------------------------------------- */
 
 struct poptOption cifsddHelpOptions[] = {
-  { NULL, '\0', POPT_ARG_CALLBACK, (void *)&cifsdd_help_message, '\0', NULL, NULL },
-  { "help", '?', 0, NULL, '?', "Show this help message", NULL },
-  { "usage", '\0', 0, NULL, 'u', "Display brief usage message", NULL },
-  { NULL }
-} ;
+	{
+		.longName   = NULL,
+		.shortName  = '\0',
+		.argInfo    = POPT_ARG_CALLBACK,
+		.arg        = (void *)&cifsdd_help_message,
+		.val        = '\0',
+	},
+	{
+		.longName   = "help",
+		.shortName  = '?',
+		.val        = '?',
+		.descrip    = "Show this help message",
+	},
+	{
+		.longName   = "usage",
+		.shortName  = '\0',
+		.val        = 'u',
+		.descrip    = "Display brief usage message",
+	},
+	POPT_TABLEEND
+};
 
 int main(int argc, const char ** argv)
 {
