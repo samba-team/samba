@@ -2409,7 +2409,10 @@ struct tevent_req *smb_vfs_call_get_dos_attributes_send(
 	}
 
 	VFS_FIND(get_dos_attributes_send);
-	state->recv_fn = handle->fns->get_dos_attributes_recv_fn;
+
+	*state = (struct smb_vfs_call_get_dos_attributes_state) {
+		.recv_fn = handle->fns->get_dos_attributes_recv_fn,
+	};
 
 	subreq = handle->fns->get_dos_attributes_send_fn(mem_ctx,
 							 ev,
