@@ -3177,12 +3177,8 @@ static void vfswrap_getxattrat_done(struct tevent_req *subreq)
 	/*
 	 * Make sure we run as the user again
 	 */
-	ok = change_to_user(state->dir_fsp->conn,
-			    state->dir_fsp->vuid);
-	if (!ok) {
-		smb_panic("Can't change to user");
-		return;
-	}
+	ok = change_to_user_by_fsp(state->dir_fsp);
+	SMB_ASSERT(ok);
 
 	ret = pthreadpool_tevent_job_recv(subreq);
 	TALLOC_FREE(subreq);
