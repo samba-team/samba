@@ -84,10 +84,12 @@ struct tevent_req *_tevent_req_create(TALLOC_CTX *mem_ctx,
 	}
 
 	*req = (struct tevent_req) {
-		.internal.private_type		= type,
-		.internal.create_location	= location,
-		.internal.state			= TEVENT_REQ_IN_PROGRESS,
-		.internal.trigger		= tevent_create_immediate(req)
+		.internal = {
+			.private_type		= type,
+			.create_location	= location,
+			.state			= TEVENT_REQ_IN_PROGRESS,
+			.trigger		= tevent_create_immediate(req),
+		},
 	};
 
 	data = talloc_zero_size(req, data_size);
