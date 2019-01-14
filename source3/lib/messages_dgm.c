@@ -1524,7 +1524,9 @@ int messaging_dgm_cleanup(pid_t pid)
 	struct messaging_dgm_context *ctx = global_dgm_context;
 	struct sun_path_buf lockfile_name, socket_name;
 	int fd, len, ret;
-	struct flock lck = {};
+	struct flock lck = {
+		.l_pid = 0,
+	};
 
 	if (ctx == NULL) {
 		return ENOTCONN;
