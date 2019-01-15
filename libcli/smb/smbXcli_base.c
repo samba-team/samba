@@ -5797,7 +5797,9 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		struct _derivation encryption;
 		struct _derivation decryption;
 		struct _derivation application;
-	} derivation = { };
+	} derivation = {
+		.signing.label.length = 0,
+	};
 	size_t nonce_size = 0;
 
 	if (conn == NULL) {
@@ -6081,7 +6083,9 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	};
 	struct {
 		struct _derivation signing;
-	} derivation = { };
+	} derivation = {
+		.signing.label.length = 0,
+	};
 
 	if (conn == NULL) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
