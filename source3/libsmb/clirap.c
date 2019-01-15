@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/rap.h"
-#include "../lib/crypto/arcfour.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "async_smb.h"
 #include "libsmb/libsmb.h"
@@ -30,6 +29,9 @@
 #include "trans2.h"
 #include "../libcli/smb/smbXcli_base.h"
 #include "cli_smb2_fnum.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #define PIPE_LANMAN   "\\PIPE\\LANMAN"
 
@@ -508,6 +510,12 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 	char *rparam = NULL;
 	char *rdata = NULL;
 	unsigned int rprcnt, rdrcnt;
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t old_pw_key = {
+		.data = old_pw_hash,
+		.size = sizeof(old_pw_hash),
+	};
+	int rc;
 
 	if (strlen(user) >= sizeof(fstring)-1) {
 		DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
@@ -539,7 +547,22 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 	DEBUG(100,("make_oem_passwd_hash\n"));
 	dump_data(100, data, 516);
 #endif
-	arcfour_crypt( (unsigned char *)data, (unsigned char *)old_pw_hash, 516);
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&old_pw_key,
+				NULL);
+	if (rc < 0) {
+		DBG_ERR("gnutls_cipher_init failed: %s\n",
+			gnutls_strerror(rc));
+		return false;
+	}
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+			      data,
+			      516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		return false;
+	}
 
 	/*
 	 * Now place the old password hash in the data.
