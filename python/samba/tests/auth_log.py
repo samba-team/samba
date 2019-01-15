@@ -752,6 +752,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                         "ENC-TS Pre-authentication"))
 
         creds = self.insta_creds(template=self.get_credentials())
+        creds.set_kerberos_state(MUST_USE_KERBEROS)
         creds.set_password("badPassword")
 
         thrown = False
@@ -784,6 +785,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                         EVT_LOGON_NETWORK))
 
         creds = self.insta_creds(template=self.get_credentials())
+        creds.set_kerberos_state(MUST_USE_KERBEROS)
         creds.set_username("badUser")
 
         thrown = False
