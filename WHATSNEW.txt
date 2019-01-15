@@ -1,12 +1,12 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.10.  This is *not*
+This is the first preview release of Samba 4.11.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.10 will be the next version of the Samba suite.
+Samba 4.11 will be the next version of the Samba suite.
 
 
 UPGRADING
@@ -16,188 +16,22 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
-GPO Improvements
-----------------
-
-A new 'samba-tool gpo export' command has been added that can export a
-set of Group Policy Objects from a domain in a generalised XML format.
-
-A corresponding 'samba-tool gpo restore' command has been added to
-rebuild the Group Policy Objects from the XML after generalization.
-(The administrator needs to correct the values of XML entities between
-the backup and restore to account for the change in domain).
-
-kdc prefork
------------
-
-The KDC now supports the pre-fork process model and worker processes will be
-forked for the KDC when the pre-fork process model is selected for samba.
-
-prefork 'prefork children'
---------------------------
-
-The default value for this smdb.conf parameter has been increased from 1 to
-4.
-
-netlogon prefork
-----------------
-
-DCERPC now supports pre-forked NETLOGON processes. The netlogon processes are
-pre-forked when the prefork process model is selected for samba.
-
-Offline domain backups
-----------------------
-
-The 'samba-tool domain backup' command has been extended with a new 'offline'
-option. This safely creates a backup of the local DC's database directly from
-disk. The main benefits of an offline backup are it's quicker, it stores more
-database details (for forensic purposes), and the samba process does not have
-to be running when the backup is made. Refer to the samba-tool help for more
-details on using this command.
-
-Group membership statistics
----------------------------
-
-A new 'samba-tool group stats' command has been added. This provides summary
-information about how the users are spread across groups in your domain.
-The 'samba-tool group list --verbose' command has also been updated to include
-the number of users in each group.
-
-prefork process restart
------------------------
-
-The pre-fork process model now restarts failed processes. The delay between
-restart attempts is controlled by the "prefork backoff increment" (default = 10)
-and "prefork maximum backoff" (default = 120) smbd.conf parameters.  A linear
-back off strategy is used with "prefork backoff increment" added to the
-delay between restart attempts up until it reaches "prefork maximum backoff".
-
-Using the default sequence the restart delays (in seconds) are:
-  0, 10, 20, ..., 120, 120, ...
-
-standard process model
-----------------------
-
-When using the standard process model samba forks a new process to handle ldap
-and netlogon connections.  Samba now honours the 'max smbd processes' smb.conf
-parameter.  The default value of 0, indicates there is no limit.  The limit
-is applied individually to netlogon and ldap.  When the process limit is
-exceeded Samba drops new connections immediately.
-
-python3 support
----------------
-
-The version of python which is now the default for samba is python3.
-'configure' & 'make' will execute using python3. It is possible to still
-specify an additional python version with '--extra-python'
-e.g. '--extra-python=/usr/bin/python2'. It should be noted that support for
-this option will be deprecated in a future release.
-
-What if I need to build with python2? To build with python2 you *must* set
-the 'PYTHON' environent variable to override the python3 default for both
-'configure' and 'make' steps.
-
-   'PYTHON=python2 ./configure.developer'
-&
-   'PYTHON=python2 make'
-
-Note: Support for python2 (with the exception of a build configured with
-      'PYTHON=python2 ./configure --disable-python' and built with
-      'PYTHON=python2 make' will be deprecated in the next release.
-
-JSON logging
-------------
-
-Authentication messages now contain the Windows Event Id "eventId" and logon
-type "logonType". The supported event codes and logon types are:
-  Event codes:
-    4624  Successful logon
-    4625  Unsuccessful logon
-
-  Logon Types:
-    2  Interactive
-    3  Network
-    8  NetworkCleartext
-
-The version number for Authentication messages is now 1.1, changed from 1.0
-
-Password change messages now contain the Windows Event Id "eventId", the
-supported event Id's are:
-  4723 Password changed
-  4724 Password reset
-
-The version number for PasswordChange messages is now 1.1, changed from 1.0
-
-Group membership change messages now contain the Windows Event Id "eventId",
-the supported event Id's are:
-  4728 A member was added to a security enabled global group
-  4729 A member was removed from a security enabled global group
-  4732 A member was added to a security enabled local group
-  4733 A member was removed from a security enabled local group
-  4746 A member was added to a security disabled local group
-  4747 A member was removed from a security disabled local group
-  4751 A member was added to a security disabled global group
-  4752 A member was removed from a security disabled global group
-  4756 A member was added to a security enabled universal group
-  4757 A member was removed from a security enabled universal group
-  4761 A member was added to a security disabled universal group
-  4762 A member was removed from a security disabled universal group
-
-
-The version number for GroupChange messages is now 1.1, changed from 1.0. Also
-A GroupChange message is generated when a new user is created to log that the
-user has been added to their primary group.
-
-The leading "JSON <message type>:" and source file  prefix of the JSON formatted
-log entries has been removed to make the parsing of the JSON log messages
-easier. JSON log entries now start with 2 spaces followed by an opening brace
-i.e. "  {"
-
-
-
 
 REMOVED FEATURES
 ================
 
-MIT Kerberos build of the AD DC
--------------------------------
-
-While not removed, the MIT Kerberos build of the Samba AD DC is still
-considered experimental.  Because Samba will not issue security
-patches for this configuration, such builds now require the explicit
-configure option: --with-experimental-mit-ad-dc
-
-For further details see
-https://wiki.samba.org/index.php/Running_a_Samba_AD_DC_with_MIT_Kerberos_KDC
-
-samba_backup
-------------
-
-The samba_backup script has been removed. This has now been replaced by the
-'samba-tool domain backup offline' command.
 
 smb.conf changes
 ================
 
   Parameter Name                     Description                Default
   --------------                     -----------                -------
-  prefork backoff increment   Delay added to process restart    10 (seconds)
-                              between attempts.
-  prefork maximum backoff     Maximum delay for process between 120 (seconds)
-                              process restart attempts
-  smbd search ask sharemode   Name changed, old name was
-                              "smbd:search ask sharemode"
-  smbd async dosmode          Name changed, old name was
-                              "smbd:async dosmode"
-  smbd max async dosmode      Name changed, old name was
-                              "smbd:max async dosmode"
-  smbd getinfo ask sharemode  New: similar to "smbd search ask  yes
-                              sharemode" but for SMB getinfo
+
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.10#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.11#Release_blocking_bugs
 
 
 #######################################
