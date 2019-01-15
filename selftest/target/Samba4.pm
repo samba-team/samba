@@ -1611,9 +1611,9 @@ sub provision_subdom_dc($$$)
 	return $ret;
 }
 
-sub provision_ad_dc_ntvfs($$)
+sub provision_ad_dc_ntvfs($$$)
 {
-	my ($self, $prefix) = @_;
+	my ($self, $prefix, $extra_provision_options) = @_;
 
 	# We keep the old 'winbind' name here in server services to
 	# ensure upgrades which used that name still work with the now
@@ -1633,7 +1633,7 @@ sub provision_ad_dc_ntvfs($$)
 	dsdb group change notification = true
 	server schannel = auto
 	";
-	my $extra_provision_options = ["--use-ntvfs"];
+	push (@{$extra_provision_options}, "--use-ntvfs");
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "localdc",
@@ -1669,7 +1669,7 @@ sub provision_fl2000dc($$)
 	spnego:simulate_w2k=yes
 	ntlmssp_server:force_old_spnego=yes
 ";
-	my $extra_provision_options = ["--use-ntvfs"];
+	my $extra_provision_options = ["--use-ntvfs", "--base-schema=2008_R2"];
 	# This environment uses plain text secrets
 	# i.e. secret attributes are not encrypted on disk.
 	# This allows testing of the --plaintext-secrets option for
@@ -1711,7 +1711,7 @@ sub provision_fl2003dc($$$)
 	dcesrv:header signing = no
 	dcesrv:max auth states = 0
 	dns forwarder = $ip_addr1 $ip_addr2";
-	my $extra_provision_options = ["--use-ntvfs"];
+	my $extra_provision_options = ["--use-ntvfs", "--base-schema=2008_R2"];
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc6",
@@ -1761,7 +1761,7 @@ sub provision_fl2008r2dc($$$)
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2008r2...\n";
         my $extra_conf_options = "ldap server require strong auth = no";
-	my $extra_provision_options = ["--use-ntvfs"];
+	my $extra_provision_options = ["--use-ntvfs", "--base-schema=2008_R2"];
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc7",
@@ -2268,8 +2268,17 @@ sub return_alias_env
 
 sub setup_fl2008dc
 {
-	my ($self, $path, $dep_env) = @_;
-	return $self->return_alias_env($path, $dep_env)
+	my ($self, $path) = @_;
+
+	my $extra_args = ["--base-schema=2008_R2"];
+	my $env = $self->provision_ad_dc_ntvfs($path, $extra_args);
+	if (defined $env) {
+	        if (not defined($self->check_or_start($env, "standard"))) {
+		    warn("Failed to start fl2008dc");
+		        return undef;
+		}
+	}
+	return $env;
 }
 
 sub setup_ad_dc_default
@@ -2339,7 +2348,7 @@ sub setup_ad_dc_ntvfs
 {
 	my ($self, $path) = @_;
 
-	my $env = $self->provision_ad_dc_ntvfs($path);
+	my $env = $self->provision_ad_dc_ntvfs($path, undef);
 	if (defined $env) {
 	        if (not defined($self->check_or_start($env, "standard"))) {
 		    warn("Failed to start ad_dc_ntvfs");
