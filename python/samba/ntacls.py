@@ -454,7 +454,8 @@ class NtaclsHelper:
 
     def setntacl(self, path, ntacl_sd):
         # ntacl_sd can be obj or str
-        return setntacl(self.lp, path, ntacl_sd, self.dom_sid)
+        return setntacl(self.lp, path, ntacl_sd, self.dom_sid,
+                        use_ntvfs=self.use_ntvfs)
 
 
 def _create_ntacl_file(dst, ntacl_sddl_str):
