@@ -660,7 +660,8 @@ for env in ["ad_dc:local", "ad_dc_ntvfs:local", "fl2000dc:local", "fl2003dc:loca
 # the only test we have of GPO get/set behaviour, and this involves
 # the file server as well as the LDAP server.
 # It's also a good sanity-check that sysvol backup worked correctly.
-for env in ["ad_dc_ntvfs", "ad_dc", "offlinebackupdc", "renamedc"]:
+for env in ["ad_dc_ntvfs", "ad_dc", "offlinebackupdc", "renamedc",
+            smbv1_disabled_testenv]:
     planpythontestsuite(env + ":local", "samba.tests.samba_tool.gpo",
                         py3_compatible=True)
 
