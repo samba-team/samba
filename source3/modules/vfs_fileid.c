@@ -456,7 +456,8 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 				struct fileid_handle_data,
 				return id);
 
-	if ((data->nolockinode != 0) && (id.inode == data->nolockinode)) {
+	if ((data->nolockinode != 0) &&
+	    (sbuf->st_ex_ino == data->nolockinode)) {
 		devid = fileid_device_mapping_hostname(data, sbuf);
 	} else {
 		devid = data->device_mapping_fn(data, sbuf);
