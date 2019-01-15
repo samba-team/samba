@@ -43,7 +43,7 @@ NTSTATUS smbsrv_init_sessions(struct smbsrv_connection *smb_conn, uint64_t limit
 }
 
 /*
- * Find the session structure assoicated with a VUID
+ * Find the session structure associated with a VUID
  * (not one from an in-progress session setup)
  */
 struct smbsrv_session *smbsrv_session_find(struct smbsrv_connection *smb_conn,
@@ -70,8 +70,8 @@ struct smbsrv_session *smbsrv_session_find(struct smbsrv_connection *smb_conn,
 }
 
 /*
- * Find the session structure assoicated with a VUID
- * (assoicated with an in-progress session setup)
+ * Find the session structure associated with a VUID
+ * (associated with an in-progress session setup)
  */
 struct smbsrv_session *smbsrv_session_find_sesssetup(struct smbsrv_connection *smb_conn, uint64_t vuid)
 {

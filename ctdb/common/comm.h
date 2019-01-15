@@ -57,7 +57,7 @@ struct comm_context;
  * @brief Initialize the communication endpoint
  *
  * This return a new communication context. Freeing this context will free all
- * memory assoicated with it.
+ * memory associated with it.
  *
  * @param[in] mem_ctx Talloc memory context
  * @param[in] ev Tevent context
