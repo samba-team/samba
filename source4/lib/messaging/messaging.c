@@ -121,6 +121,68 @@ static void ringbuf_log_msg(struct imessaging_context *msg,
 	imessaging_send(msg, src, MSG_RINGBUF_LOG, &blob);
 }
 
+/****************************************************************************
+ Receive a "set debug level" message.
+****************************************************************************/
+
+static void debug_imessage(struct imessaging_context *msg_ctx,
+			   void *private_data,
+			   uint32_t msg_type,
+			   struct server_id src,
+			   DATA_BLOB *data)
+{
+	const char *params_str = (const char *)data->data;
+	struct server_id_buf src_buf;
+	struct server_id dst = imessaging_get_server_id(msg_ctx);
+	struct server_id_buf dst_buf;
+
+	/* Check, it's a proper string! */
+	if (params_str[(data->length)-1] != '\0') {
+		DBG_ERR("Invalid debug message from pid %s to pid %s\n",
+			server_id_str_buf(src, &src_buf),
+			server_id_str_buf(dst, &dst_buf));
+		return;
+	}
+
+	DBG_ERR("INFO: Remote set of debug to `%s' (pid %s from pid %s)\n",
+		params_str,
+		server_id_str_buf(dst, &dst_buf),
+		server_id_str_buf(src, &src_buf));
+
+	debug_parse_levels(params_str);
+}
+
+/****************************************************************************
+ Return current debug level.
+****************************************************************************/
+
+static void debuglevel_imessage(struct imessaging_context *msg_ctx,
+				void *private_data,
+				uint32_t msg_type,
+				struct server_id src,
+				DATA_BLOB *data)
+{
+	char *message = debug_list_class_names_and_levels();
+	DATA_BLOB blob = data_blob_null;
+	struct server_id_buf src_buf;
+	struct server_id dst = imessaging_get_server_id(msg_ctx);
+	struct server_id_buf dst_buf;
+
+	DBG_DEBUG("Received REQ_DEBUGLEVEL message (pid %s from pid %s)\n",
+		  server_id_str_buf(dst, &dst_buf),
+		  server_id_str_buf(src, &src_buf));
+
+	if (message == NULL) {
+		DBG_ERR("debug_list_class_names_and_levels returned NULL\n");
+		return;
+	}
+
+	blob = data_blob_string_const_null(message);
+	imessaging_send(msg_ctx, src, MSG_DEBUGLEVEL, &blob);
+
+	TALLOC_FREE(message);
+}
+
 /*
   return uptime of messaging server via irpc
 */
@@ -415,6 +477,16 @@ static struct imessaging_context *imessaging_init_internal(TALLOC_CTX *mem_ctx,
 	}
 	status = imessaging_register(msg, NULL, MSG_REQ_RINGBUF_LOG,
 				     ringbuf_log_msg);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	status = imessaging_register(msg, NULL, MSG_DEBUG,
+				     debug_imessage);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	status = imessaging_register(msg, NULL, MSG_REQ_DEBUGLEVEL,
+				     debuglevel_imessage);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
