@@ -701,7 +701,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
     def test_smb(self):
         def isLastExpectedMessage(msg):
             return (msg["type"] == "Authorization" and
-                    msg["Authorization"]["serviceDescription"] == "SMB" and
+                    "SMB" in msg["Authorization"]["serviceDescription"] and
                     msg["Authorization"]["authType"] == "krb5" and
                     msg["Authorization"]["transportProtection"] == "SMB")
 
@@ -910,7 +910,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
     def test_smb_no_krb_spnego(self):
         def isLastExpectedMessage(msg):
             return (msg["type"] == "Authorization" and
-                    msg["Authorization"]["serviceDescription"] == "SMB" and
+                    "SMB" in msg["Authorization"]["serviceDescription"] and
                     msg["Authorization"]["authType"] == "NTLMSSP" and
                     msg["Authorization"]["transportProtection"] == "SMB")
 
@@ -929,8 +929,8 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         msg = messages[0]
         self.assertEquals("Authentication", msg["type"])
         self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("SMB",
-                          msg["Authentication"]["serviceDescription"])
+        self.assertIn(msg["Authentication"]["serviceDescription"],
+                      ["SMB", "SMB2"])
         self.assertEquals("NTLMSSP",
                           msg["Authentication"]["authDescription"])
         self.assertEquals("NTLMv2",
@@ -943,7 +943,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
     def test_smb_no_krb_spnego_bad_password(self):
         def isLastExpectedMessage(msg):
             return (msg["type"] == "Authentication" and
-                    msg["Authentication"]["serviceDescription"] == "SMB" and
+                    "SMB" in msg["Authentication"]["serviceDescription"] and
                     msg["Authentication"]["authDescription"] == "NTLMSSP" and
                     msg["Authentication"]["passwordType"] == "NTLMv2" and
                     (msg["Authentication"]["status"] ==
@@ -975,7 +975,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
     def test_smb_no_krb_spnego_bad_user(self):
         def isLastExpectedMessage(msg):
             return (msg["type"] == "Authentication" and
-                    msg["Authentication"]["serviceDescription"] == "SMB" and
+                    "SMB" in msg["Authentication"]["serviceDescription"] and
                     msg["Authentication"]["authDescription"] == "NTLMSSP" and
                     msg["Authentication"]["passwordType"] == "NTLMv2" and
                     (msg["Authentication"]["status"] ==
