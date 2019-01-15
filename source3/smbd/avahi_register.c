@@ -111,8 +111,10 @@ static void avahi_client_callback(AvahiClient *c, AvahiClientState status,
 		size_t dk = 0;
 		AvahiStringList *adisk = NULL;
 		AvahiStringList *adisk2 = NULL;
+		AvahiStringList *dinfo = NULL;
 		const char *hostname = NULL;
 		enum mdns_name_values mdns_name = lp_mdns_name();
+		const char *model = NULL;
 
 		DBG_DEBUG("AVAHI_CLIENT_S_RUNNING\n");
 
@@ -194,6 +196,31 @@ static void avahi_client_callback(AvahiClient *c, AvahiClientState status,
 				state->entry_group = NULL;
 				break;
 			}
+		}
+
+		model = lp_parm_const_string(-1, "fruit", "model", "MacSamba");
+
+		dinfo = avahi_string_list_add_printf(NULL, "model=%s", model);
+		if (dinfo == NULL) {
+			DBG_DEBUG("avahi_string_list_add_printf"
+				  "failed: returned NULL\n");
+			avahi_entry_group_free(state->entry_group);
+			state->entry_group = NULL;
+			break;
+		}
+
+		error = avahi_entry_group_add_service_strlst(
+			    state->entry_group, AVAHI_IF_UNSPEC,
+			    AVAHI_PROTO_UNSPEC, 0, hostname,
+			    "_device-info._tcp", NULL, NULL, 0,
+			    dinfo);
+		avahi_string_list_free(dinfo);
+		if (error != AVAHI_OK) {
+			DBG_DEBUG("avahi_entry_group_add_service failed: %s\n",
+				  avahi_strerror(error));
+			avahi_entry_group_free(state->entry_group);
+			state->entry_group = NULL;
+			break;
 		}
 
 		error = avahi_entry_group_commit(state->entry_group);
