@@ -11,7 +11,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        svcctl.idl wkssvc.idl eventlog6.idl backupkey.idl
                        witness.idl clusapi.idl
                        mdssvc.idl''',
-                    options='--header --ndr-parser --samba3-ndr-server --server --client --python',
+                    options='--header --ndr-parser --samba3-ndr-server --server-compat --server --client --python',
                     output_dir='../gen_ndr')
 
 # The interface names here are not the same as the IDL name, so the
@@ -21,7 +21,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        fsrvp.idl
                        lsa.idl
                        winspool.idl''',
-                    options='--header --ndr-parser --samba3-ndr-server --server --client --python',
+                    options='--header --ndr-parser --samba3-ndr-server --server-compat --server --client --python',
                     output_dir='../gen_ndr',
                     generate_fuzzers=False)
 
@@ -34,14 +34,14 @@ bld.SAMBA_PIDL_LIST('PIDL',
 # Services that we only have a server in the source3 style
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''initshutdown.idl ntsvcs.idl''',
-                    options='--header --ndr-parser --client --python --samba3-ndr-server',
+                    options='--header --ndr-parser --client --python --samba3-ndr-server --server-compat',
                     output_dir='../gen_ndr')
 
 # The interface names here are not the same as the IDL name, so the
 # auto-genration of the fuzzer fails to link
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''dfs.idl''',
-                    options='--header --ndr-parser --client --python --samba3-ndr-server',
+                    options='--header --ndr-parser --client --python --samba3-ndr-server --server-compat',
                     output_dir='../gen_ndr',
                     generate_fuzzers=False)
 
@@ -170,6 +170,6 @@ bld.SAMBA_PIDL_LIST('PIDL',
 
 bld.SAMBA_PIDL_LIST('PIDL',
                     'winbind.idl',
-                    options='--header --ndr-parser --samba3-ndr-server --client --python',
+                    options='--header --ndr-parser --samba3-ndr-server --server-compat --client --python',
                     output_dir='../gen_ndr')
 
