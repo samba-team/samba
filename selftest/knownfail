@@ -342,9 +342,6 @@
 ^samba.tests.dcerpc.dnsserver.python2.samba.tests.dcerpc.dnsserver.DnsserverTests.test_add_duplicate_different_type.*
 ^samba.tests.dcerpc.dnsserver.python2.samba.tests.dcerpc.dnsserver.DnsserverTests.test_rank_none.*
 ^samba.tests.dcerpc.dnsserver.python2.samba.tests.dcerpc.dnsserver.DnsserverTests.test_security_descriptor.*
-^samba3.smb2.credits.session_setup_credits_granted.*
-^samba3.smb2.credits.single_req_credits_granted.*
-^samba3.smb2.credits.skipped_mid.*
 ^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dbcheck_dangling_multi_valued_clean
 ^samba4.blackbox.dbcheck-links.release-4-5-0-pre1.dangling_multi_valued_check_missing
 #
