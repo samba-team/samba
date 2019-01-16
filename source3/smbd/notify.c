@@ -43,6 +43,8 @@ struct notify_change_buf {
 	 * we only append.
 	 */
 
+	uint32_t max_buffer_size;
+
 	/*
 	 * num_changes == -1 means that we have got a catch-all change, when
 	 * asked we just return NT_STATUS_OK without specific changes.
@@ -224,10 +226,12 @@ void change_notify_reply(struct smb_request *req,
 		return;
 	}
 
-	if (max_param == 0 || notify_buf == NULL) {
+	if (notify_buf == NULL) {
 		reply_fn(req, NT_STATUS_OK, NULL, 0);
 		return;
 	}
+
+	max_param = MIN(max_param, notify_buf->max_buffer_size);
 
 	if (!notify_marshall_changes(notify_buf->num_changes, max_param,
 					notify_buf->changes, &blob)) {
@@ -276,7 +280,9 @@ void notify_callback(struct smbd_server_connection *sconn,
 	files_forall(sconn, notify_fsp_cb, &state);
 }
 
-NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
+NTSTATUS change_notify_create(struct files_struct *fsp,
+			      uint32_t max_buffer_size,
+			      uint32_t filter,
 			      bool recursive)
 {
 	size_t len = fsp_fullbasepath(fsp, NULL, 0);
@@ -295,6 +301,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32_t filter,
 	}
 	fsp->notify->filter = filter;
 	fsp->notify->subdir_filter = recursive ? filter : 0;
+	fsp->notify->max_buffer_size = max_buffer_size;
 
 	fsp_fullbasepath(fsp, fullpath, sizeof(fullpath));
 

@@ -263,6 +263,7 @@ static struct tevent_req *smbd_smb2_notify_send(TALLOC_CTX *mem_ctx,
 	if (fsp->notify == NULL) {
 
 		status = change_notify_create(fsp,
+					      in_output_buffer_length,
 					      in_completion_filter,
 					      recursive);
 		if (!NT_STATUS_IS_OK(status)) {

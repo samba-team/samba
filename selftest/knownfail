@@ -169,7 +169,6 @@
 ^samba3.smb2.create.gentest
 ^samba3.smb2.create.blob
 ^samba3.smb2.create.open
-^samba3.smb2.notify.valid-req
 ^samba3.smb2.notify.rec
 ^samba3.smb2.durable-open.delete_on_close2
 ^samba3.smb2.durable-v2-open.app-instance

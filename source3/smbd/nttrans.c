@@ -1806,8 +1806,10 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 
 	if (fsp->notify == NULL) {
 
-		status = change_notify_create(fsp, filter, recursive);
-
+		status = change_notify_create(fsp,
+					      max_param_count,
+					      filter,
+					      recursive);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10, ("change_notify_create returned %s\n",
 				   nt_errstr(status)));
