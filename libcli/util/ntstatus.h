@@ -103,15 +103,6 @@ typedef uint32_t NTSTATUS;
 #define NT_STATUS_FOOBAR NT_STATUS_UNSUCCESSFUL
 
 /*****************************************************************************
- Returns an NT error message.  not amazingly helpful, but better than a number.
-
- This version is const, and so neither allocates memory nor uses a
- static variable for unknown errors.
- *****************************************************************************/
-
-const char *nt_errstr_const(NTSTATUS nt_code);
-
-/*****************************************************************************
  returns an NT error message.  not amazingly helpful, but better than a number.
  *****************************************************************************/
 const char *nt_errstr(NTSTATUS nt_code);
