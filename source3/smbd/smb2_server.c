@@ -829,8 +829,11 @@ static void smb2_set_operation_credit(struct smbXsrv_connection *xconn,
 	 *       of requests and the used sequence number.
 	 *       Which means we would grant more credits
 	 *       for client which use multi credit requests.
+	 *
+	 * The above is what Windows Server < 2016 is doing,
+	 * but new servers use all credits (8192 by default).
 	 */
-	current_max_credits = xconn->smb2.credits.max / 16;
+	current_max_credits = xconn->smb2.credits.max;
 	current_max_credits = MAX(current_max_credits, 1);
 
 	if (xconn->smb2.credits.multicredit) {
@@ -875,15 +878,19 @@ static void smb2_set_operation_credit(struct smbXsrv_connection *xconn,
 			 * with a successful session setup
 			 */
 			if (NT_STATUS_IS_OK(out_status)) {
-				additional_max = 32;
+				additional_max = xconn->smb2.credits.max;
 			}
 			break;
 		default:
 			/*
-			 * We match windows and only grant additional credits
-			 * in chunks of 32.
+			 * Windows Server < 2016 and older Samba versions
+			 * used to only grant additional credits in
+			 * chunks of 32 credits.
+			 *
+			 * But we match Windows Server 2016 and grant
+			 * all credits as requested.
 			 */
-			additional_max = 32;
+			additional_max = xconn->smb2.credits.max;
 			break;
 		}
 
