@@ -1223,7 +1223,7 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 	char *user_mask = NULL;
 	unsigned int attribute = LIST_ATTRIBUTE_MASK;
 	NTSTATUS status;
-	PyObject *result;
+	PyObject *result = NULL;
 	const char *kwlist[] = { "directory", "mask", "attribs", NULL };
 
 	if (!ParseTupleAndKeywords(args, kwds, "z|sH:list", kwlist,
@@ -1313,7 +1313,7 @@ static NTSTATUS remove_dir(struct py_cli_state *self, const char *dirname)
 static PyObject *py_smb_rmdir(struct py_cli_state *self, PyObject *args)
 {
 	NTSTATUS status;
-	const char *dirname;
+	const char *dirname = NULL;
 
 	if (!PyArg_ParseTuple(args, "s:rmdir", &dirname)) {
 		return NULL;
@@ -1331,7 +1331,7 @@ static PyObject *py_smb_rmdir(struct py_cli_state *self, PyObject *args)
 static PyObject *py_smb_mkdir(struct py_cli_state *self, PyObject *args)
 {
 	NTSTATUS status;
-	const char *dirname;
+	const char *dirname = NULL;
 
 	if (!PyArg_ParseTuple(args, "s:mkdir", &dirname)) {
 		return NULL;
@@ -1379,7 +1379,7 @@ static bool check_dir_path(struct py_cli_state *self, const char *path)
 
 static PyObject *py_smb_chkpath(struct py_cli_state *self, PyObject *args)
 {
-	const char *path;
+	const char *path = NULL;
 	bool dir_exists;
 
 	if (!PyArg_ParseTuple(args, "s:chkpath", &path)) {
