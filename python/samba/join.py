@@ -42,6 +42,7 @@ import logging
 import talloc
 import random
 import time
+from samba.netcmd import CommandError
 
 class DCJoinException(Exception):
 
@@ -337,10 +338,10 @@ class dc_join(object):
         try:
             ctx.cldap_ret = ctx.net.finddc(domain=domain, flags=nbt.NBT_SERVER_LDAP | nbt.NBT_SERVER_DS | nbt.NBT_SERVER_WRITABLE)
         except NTSTATUSError as error:
-            raise Exception("Failed to find a writeable DC for domain '%s': %s" %
-                            (domain, error.args[1]))
+            raise CommandError("Failed to find a writeable DC for domain '%s': %s" %
+                               (domain, error.args[1]))
         except Exception:
-            raise Exception("Failed to find a writeable DC for domain '%s'" % domain)
+            raise CommandError("Failed to find a writeable DC for domain '%s'" % domain)
         if ctx.cldap_ret.client_site is not None and ctx.cldap_ret.client_site != "":
             ctx.site = ctx.cldap_ret.client_site
         return ctx.cldap_ret.pdc_dns_name
