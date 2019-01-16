@@ -50,11 +50,14 @@
 #include "system/passwd.h"
 #include "system/filesys.h"
 #include "../libcli/auth/libcli_auth.h"
-#include "../lib/crypto/arcfour.h"
 #include "rpc_server/samr/srv_samr_util.h"
 #include "passdb.h"
 #include "auth.h"
 #include "lib/util/sys_rw.h"
+
+#include "lib/crypto/gnutls_helpers.h"
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #ifndef ALLOW_CHANGE_PASSWORD
 #if (defined(HAVE_TERMIOS_H) && defined(HAVE_DUP2) && defined(HAVE_SETSID))
@@ -685,6 +688,10 @@ static NTSTATUS check_oem_password(const char *user,
 	bool lm_pass_set = (password_encrypted_with_lm_hash && old_lm_hash_encrypted);
 	enum ntlm_auth_level ntlm_auth_level = lp_ntlm_auth();
 
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t enc_key;
+	int rc;
+
 	/* this call should be disabled without NTLM auth */
 	if (ntlm_auth_level == NTLM_AUTH_DISABLED) {
 		DBG_WARNING("NTLM password changes not"
@@ -752,7 +759,26 @@ static NTSTATUS check_oem_password(const char *user,
 	/*
 	 * Decrypt the password with the key
 	 */
-	arcfour_crypt( password_encrypted, encryption_key, 516);
+	enc_key = (gnutls_datum_t) {
+		.data = discard_const_p(unsigned char, encryption_key),
+		.size = 16,
+	};
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&enc_key,
+				NULL);
+	if (rc < 0) {
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+	}
+
+	rc = gnutls_cipher_decrypt(cipher_hnd,
+				   password_encrypted,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+	}
 
 	if (!decode_pw_buffer(talloc_tos(),
 				password_encrypted,
