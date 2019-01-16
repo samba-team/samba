@@ -1009,8 +1009,9 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
 
         paths = samba.provision.provision_paths_from_lp(lp, lp.get('realm'))
         if not (paths.samdb and os.path.exists(paths.samdb)):
-            raise CommandError('No sam.db found.  This backup ' +
-                               'tool is only for AD DCs')
+            logger.error("No database found at {0}".format(paths.samdb))
+            raise CommandError('Please check you are root, and ' +
+                               'are running this command on an AD DC')
 
         check_targetdir(logger, targetdir)
 
