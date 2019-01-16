@@ -21,7 +21,8 @@ from __future__ import print_function
 import samba.tests
 from samba.dcerpc import srvsvc, dnsserver
 import os
-from samba import smb
+from samba.samba3 import libsmb_samba_internal as libsmb
+from samba.samba3 import param as s3param
 from samba.samdb import SamDB
 import samba.tests.auth_log_base
 from samba.credentials import DONT_USE_KERBEROS, MUST_USE_KERBEROS
@@ -47,10 +48,19 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
     def tearDown(self):
         super(AuthLogTests, self).tearDown()
 
-    def smb_connection(self, creds, use_spnego=True, ntlmv2_auth=True):
+    def smb_connection(self, creds, use_spnego="yes", ntlmv2_auth="yes",
+                       force_smb1=False):
+        # the SMB bindings rely on having a s3 loadparm
         lp = self.get_loadparm()
-        return smb.SMB(self.server, "sysvol", lp=lp, creds=creds,
-                           use_spnego=use_spnego, ntlmv2_auth=ntlmv2_auth)
+        s3_lp = s3param.get_context()
+        s3_lp.load(lp.configfile)
+
+        # Allow the testcase to skip SPNEGO or use NTLMv1
+        s3_lp.set("client use spnego", use_spnego)
+        s3_lp.set("client ntlmv2 auth", ntlmv2_auth)
+
+        return libsmb.Conn(self.server, "sysvol", lp=s3_lp, creds=creds,
+                           force_smb1=force_smb1)
 
     def _test_rpc_ncacn_np(self, authTypes, creds, service,
                            binding, protection, checkFunction):
@@ -1003,8 +1013,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         creds = self.insta_creds(template=self.get_credentials(),
                                  kerberos_state=DONT_USE_KERBEROS)
         self.smb_connection(creds,
-                            ntlmv2_auth=False,
-                            use_spnego=False)
+                            force_smb1=True,
+                            ntlmv2_auth="no",
+                            use_spnego="no")
 
         messages = self.waitForMessages(isLastExpectedMessage)
         self.assertEquals(2,
@@ -1045,8 +1056,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         thrown = False
         try:
             self.smb_connection(creds,
-                                ntlmv2_auth=False,
-                                use_spnego=False)
+                                force_smb1=True,
+                                ntlmv2_auth="no",
+                                use_spnego="no")
         except NTSTATUSError:
             thrown = True
         self.assertEquals(thrown, True)
@@ -1076,8 +1088,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         thrown = False
         try:
             self.smb_connection(creds,
-                                ntlmv2_auth=False,
-                                use_spnego=False)
+                                force_smb1=True,
+                                ntlmv2_auth="no",
+                                use_spnego="no")
         except NTSTATUSError:
             thrown = True
         self.assertEquals(thrown, True)
