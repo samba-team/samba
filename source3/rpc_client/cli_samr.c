@@ -26,8 +26,8 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_samr_c.h"
 #include "rpc_client/cli_samr.h"
-#include "../lib/crypto/arcfour.h"
 #include "rpc_client/init_lsa.h"
+#include "rpc_client/init_samr.h"
 
 /* User change password */
 
@@ -128,6 +128,8 @@ NTSTATUS dcerpc_samr_chgpasswd_user2(struct dcerpc_binding_handle *h,
 	uint8_t new_lanman_hash[16];
 	struct lsa_String server, account;
 
+	DATA_BLOB session_key = data_blob_const(old_nt_hash, 16);
+
 	DEBUG(10,("rpccli_samr_chgpasswd_user2\n"));
 
 	init_lsa_String(&server, srv_name_slash);
@@ -144,19 +146,25 @@ NTSTATUS dcerpc_samr_chgpasswd_user2(struct dcerpc_binding_handle *h,
 		   DOS chars).  This allows us to match Win2k, which
 		   does not store a LM hash for these passwords (which
 		   would reduce the effective password length to 14) */
+		status = init_samr_CryptPassword(newpassword,
+						 &session_key,
+						 &new_lm_password);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 
-		encode_pw_buffer(new_lm_password.data, newpassword, STR_UNICODE);
-
-		arcfour_crypt(new_lm_password.data, old_nt_hash, 516);
 		E_old_pw_hash(new_nt_hash, old_lanman_hash, old_lanman_hash_enc.hash);
 	} else {
 		ZERO_STRUCT(new_lm_password);
 		ZERO_STRUCT(old_lanman_hash_enc);
 	}
 
-	encode_pw_buffer(new_nt_password.data, newpassword, STR_UNICODE);
-
-	arcfour_crypt(new_nt_password.data, old_nt_hash, 516);
+	status = init_samr_CryptPassword(newpassword,
+					 &session_key,
+					 &new_nt_password);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	E_old_pw_hash(new_nt_hash, old_nt_hash, old_nt_hash_enc.hash);
 
 	status = dcerpc_samr_ChangePasswordUser2(h,
@@ -169,6 +177,15 @@ NTSTATUS dcerpc_samr_chgpasswd_user2(struct dcerpc_binding_handle *h,
 						 &new_lm_password,
 						 &old_lanman_hash_enc,
 						 presult);
+
+	ZERO_STRUCT(new_nt_password);
+	ZERO_STRUCT(new_lm_password);
+	ZERO_STRUCT(old_nt_hash_enc);
+	ZERO_STRUCT(old_lanman_hash_enc);
+	ZERO_ARRAY(new_nt_hash);
+	ZERO_ARRAY(new_lanman_hash);
+	ZERO_ARRAY(old_nt_hash);
+	ZERO_ARRAY(old_lanman_hash);
 
 	return status;
 }
@@ -308,6 +325,8 @@ NTSTATUS dcerpc_samr_chgpasswd_user3(struct dcerpc_binding_handle *h,
 
 	struct lsa_String server, account;
 
+	DATA_BLOB session_key = data_blob_const(old_nt_hash, 16);
+
 	DEBUG(10,("rpccli_samr_chgpasswd_user3\n"));
 
 	init_lsa_String(&server, srv_name_slash);
@@ -324,19 +343,26 @@ NTSTATUS dcerpc_samr_chgpasswd_user3(struct dcerpc_binding_handle *h,
 		   DOS chars).  This allows us to match Win2k, which
 		   does not store a LM hash for these passwords (which
 		   would reduce the effective password length to 14) */
+		status = init_samr_CryptPassword(newpassword,
+						 &session_key,
+						 &new_lm_password);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 
-		encode_pw_buffer(new_lm_password.data, newpassword, STR_UNICODE);
-
-		arcfour_crypt(new_lm_password.data, old_nt_hash, 516);
 		E_old_pw_hash(new_nt_hash, old_lanman_hash, old_lanman_hash_enc.hash);
 	} else {
 		ZERO_STRUCT(new_lm_password);
 		ZERO_STRUCT(old_lanman_hash_enc);
 	}
 
-	encode_pw_buffer(new_nt_password.data, newpassword, STR_UNICODE);
+	status = init_samr_CryptPassword(newpassword,
+					 &session_key,
+					 &new_nt_password);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	arcfour_crypt(new_nt_password.data, old_nt_hash, 516);
 	E_old_pw_hash(new_nt_hash, old_nt_hash, old_nt_hash_enc.hash);
 
 	status = dcerpc_samr_ChangePasswordUser3(h,
@@ -352,6 +378,15 @@ NTSTATUS dcerpc_samr_chgpasswd_user3(struct dcerpc_binding_handle *h,
 						 dominfo1,
 						 reject,
 						 presult);
+
+	ZERO_STRUCT(new_nt_password);
+	ZERO_STRUCT(new_lm_password);
+	ZERO_STRUCT(old_nt_hash_enc);
+	ZERO_STRUCT(old_lanman_hash_enc);
+	ZERO_ARRAY(new_nt_hash);
+	ZERO_ARRAY(new_lanman_hash);
+	ZERO_ARRAY(old_nt_hash);
+	ZERO_ARRAY(old_lanman_hash);
 
 	return status;
 }

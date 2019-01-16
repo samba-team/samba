@@ -1010,7 +1010,7 @@ bld.SAMBA3_SUBSYSTEM('errors3',
 
 bld.SAMBA3_SUBSYSTEM('LIBCLI_SAMR',
                     source='rpc_client/cli_samr.c',
-                    deps='RPC_NDR_SAMR')
+                    deps='RPC_NDR_SAMR INIT_SAMR')
 
 bld.SAMBA3_LIBRARY('libcli_lsa3',
                    source='rpc_client/cli_lsarpc.c',
