@@ -59,6 +59,9 @@
 #define HDR_WCT 32
 #define HDR_VWV 33
 
+/* Macros for accessing SMB protocol elements */
+#define VWV(vwv) ((vwv)*2)
+
 #define smb_len_nbt(buf) (RIVAL(buf, 0) & 0x1FFFF)
 #define _smb_setlen_nbt(buf,len) RSIVAL(buf, 0, (len) & 0x1FFFF)
 #define smb_setlen_nbt(buf, len) do { \

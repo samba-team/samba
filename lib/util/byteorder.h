@@ -128,7 +128,4 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define RSBVAL(buf,pos,val) SBVAL(buf,pos,BREV(val))
 #define RSBVALS(buf,pos,val) SBVALS(buf,pos,BREV(val))
 
-/* macros for accessing SMB protocol elements */
-#define VWV(vwv) ((vwv)*2)
-
 #endif /* _BYTEORDER_H */
