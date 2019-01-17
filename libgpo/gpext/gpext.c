@@ -106,10 +106,6 @@ struct gp_extension_reg_table gpext_reg_vals[] = {
 		.type = REG_MULTI_SZ,
 	},
 	{
-		.val  = "GenerateGroupPolicy",
-		.type = REG_SZ,
-	},
-	{
 		.val  = "MaxNoGPOListChangesInterval",
 		.type = REG_DWORD,
 	},
