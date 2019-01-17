@@ -166,7 +166,7 @@
 		<manvolnum>1</manvolnum></citerefentry></term>
 		<listitem><para><command>smbcontrol</command> is a utility
 		that can change the behaviour of running
-		<command>smbd</command>, <command>nmbd</command> and
+		<command>samba</command>, <command>smbd</command>, <command>nmbd</command> and
 		<command>winbindd</command> daemons.
 		</para></listitem>
 		</varlistentry>
