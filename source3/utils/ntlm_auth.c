@@ -37,7 +37,6 @@
 #include "librpc/crypto/gse.h"
 #include "smb_krb5.h"
 #include "lib/util/tiniparser.h"
-#include "../lib/crypto/arcfour.h"
 #include "nsswitch/winbind_client.h"
 #include "librpc/gen_ndr/krb5pac.h"
 #include "../lib/util/asn1.h"
@@ -48,6 +47,9 @@
 #include "lib/param/loadparm.h"
 #include "lib/util/base64.h"
 #include "cmdline_contexts.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #ifdef HAVE_KRB5
 #include "auth/kerberos/pac_utils.h"
@@ -1937,6 +1939,13 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 			uchar new_nt_hash[16];
 			uchar new_lm_hash[16];
 
+			gnutls_cipher_hd_t cipher_hnd = NULL;
+			gnutls_datum_t old_nt_key = {
+				.data = old_nt_hash,
+				.size = sizeof(old_nt_hash),
+			};
+			int rc;
+
 			new_nt_pswd = data_blob(NULL, 516);
 			old_nt_hash_enc = data_blob(NULL, 16);
 
@@ -1956,6 +1965,19 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 			   Likewise, obey the admin's restriction
 			*/
 
+			rc = gnutls_cipher_init(&cipher_hnd,
+						GNUTLS_CIPHER_ARCFOUR_128,
+						&old_nt_key,
+						NULL);
+			if (rc < 0) {
+				DBG_ERR("gnutls_cipher_init failed: %s\n",
+					gnutls_strerror(rc));
+				if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
+					DBG_ERR("Running in FIPS mode, NTLM blocked\n");
+				}
+				return;
+			}
+
 			if (lp_client_lanman_auth() &&
 			    E_deshash(newpswd, new_lm_hash) &&
 			    E_deshash(oldpswd, old_lm_hash)) {
@@ -1964,7 +1986,13 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 				encode_pw_buffer(new_lm_pswd.data, newpswd,
 						 STR_UNICODE);
 
-				arcfour_crypt(new_lm_pswd.data, old_nt_hash, 516);
+				rc = gnutls_cipher_encrypt(cipher_hnd,
+							   new_lm_pswd.data,
+							   516);
+				if (rc < 0) {
+					gnutls_cipher_deinit(cipher_hnd);
+					return;
+				}
 				E_old_pw_hash(new_nt_hash, old_lm_hash,
 					      old_lm_hash_enc.data);
 			} else {
@@ -1977,9 +2005,20 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 			encode_pw_buffer(new_nt_pswd.data, newpswd,
 					 STR_UNICODE);
 
-			arcfour_crypt(new_nt_pswd.data, old_nt_hash, 516);
+			rc = gnutls_cipher_encrypt(cipher_hnd,
+						   new_nt_pswd.data,
+						   516);
+			gnutls_cipher_deinit(cipher_hnd);
+			if (rc < 0) {
+				return;
+			}
 			E_old_pw_hash(new_nt_hash, old_nt_hash,
 				      old_nt_hash_enc.data);
+
+			ZERO_ARRAY(old_nt_hash);
+			ZERO_ARRAY(old_lm_hash);
+			ZERO_ARRAY(new_nt_hash);
+			ZERO_ARRAY(new_lm_hash);
 		}
 
 		if (!full_username && !username) {	
