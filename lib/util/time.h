@@ -360,6 +360,7 @@ void round_timespec_to_sec(struct timespec *ts);
 void round_timespec_to_usec(struct timespec *ts);
 void round_timespec_to_nttime(struct timespec *ts);
 NTTIME unix_timespec_to_nt_time(struct timespec ts);
+void normalize_timespec(struct timespec *ts);
 
 /*
  * Functions supporting the full range of time_t and struct timespec values,

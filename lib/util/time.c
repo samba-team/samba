@@ -43,6 +43,7 @@
 #endif
 
 
+#define NSEC_PER_SEC 1000000000
 
 /**
  External access to time_t_min and time_t_max.
@@ -92,10 +93,7 @@ _PUBLIC_ time_t time_mono(time_t *t)
 time_t convert_timespec_to_time_t(struct timespec ts)
 {
 	/* Ensure tv_nsec is less than 1sec. */
-	while (ts.tv_nsec > 1000000000) {
-		ts.tv_sec += 1;
-		ts.tv_nsec -= 1000000000;
-	}
+	normalize_timespec(&ts);
 
 	/* 1 ns == 1,000,000,000 - one thousand millionths of a second.
 	   increment if it's greater than 500 millionth of a second. */
@@ -1015,10 +1013,7 @@ void round_timespec_to_usec(struct timespec *ts)
 {
 	struct timeval tv = convert_timespec_to_timeval(*ts);
 	*ts = convert_timeval_to_timespec(tv);
-	while (ts->tv_nsec > 1000000000) {
-		ts->tv_sec += 1;
-		ts->tv_nsec -= 1000000000;
-	}
+	normalize_timespec(ts);
 }
 
 /****************************************************************************
@@ -1461,4 +1456,46 @@ struct timespec get_ctimespec(const struct stat *pst)
 	ret.tv_sec = pst->st_mtime;
 	ret.tv_nsec = get_ctimensec(pst);
 	return ret;
+}
+
+/****************************************************************************
+ Deal with nanoseconds overflow.
+****************************************************************************/
+
+void normalize_timespec(struct timespec *ts)
+{
+	lldiv_t dres;
+
+	/* most likely case: nsec is valid */
+	if ((unsigned long)ts->tv_nsec < NSEC_PER_SEC) {
+		return;
+	}
+
+	dres = lldiv(ts->tv_nsec, NSEC_PER_SEC);
+
+	/* if the operation would result in overflow, max out values and bail */
+	if (dres.quot > 0) {
+		if ((int64_t)LONG_MAX - dres.quot < ts->tv_sec) {
+			ts->tv_sec = LONG_MAX;
+			ts->tv_nsec = NSEC_PER_SEC - 1;
+			return;
+		}
+	} else {
+		if ((int64_t)LONG_MIN - dres.quot > ts->tv_sec) {
+			ts->tv_sec = LONG_MIN;
+			ts->tv_nsec = 0;
+			return;
+		}
+	}
+
+	ts->tv_nsec = dres.rem;
+	ts->tv_sec += dres.quot;
+
+	/* if the ns part was positive or a multiple of -1000000000, we're done */
+	if (ts->tv_nsec > 0 || dres.rem == 0) {
+		return;
+	}
+
+	ts->tv_nsec += NSEC_PER_SEC;
+	--ts->tv_sec;
 }

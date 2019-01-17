@@ -82,6 +82,57 @@ static bool test_timestring(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_normalize_timespec(struct torture_context *tctx)
+{
+	const struct {
+		time_t in_s; long in_ns;
+		time_t out_s; long out_ns;
+	} data [] = {
+		  { 0, 0, 0, 0 }
+		, { 1, 0, 1, 0 }
+		, { -1, 0, -1, 0 }
+		, { 0, 1000000000, 1, 0 }
+		, { 0, 2000000000, 2, 0 }
+		, { 0, 1000000001, 1, 1 }
+		, { 0, 2000000001, 2, 1 }
+		, { 0, -1000000000, -1, 0 }
+		, { 0, -2000000000, -2, 0 }
+		, { 0, -1000000001, -2, 999999999 }
+		, { 0, -2000000001, -3, 999999999 }
+		, { 0, -1, -1, 999999999 }
+		, { 1, -1, 0, 999999999 }
+		, { -1, -1, -2, 999999999 }
+		, { 0, 999999999, 0, 999999999 }
+		, { 0, 1999999999, 1, 999999999 }
+		, { 0, 2999999999, 2, 999999999 }
+		, { 0, -999999999, -1, 1 }
+		, { 0, -1999999999, -2, 1 }
+		, { 0, -2999999999, -3, 1 }
+		, { LONG_MAX, 1000000001, LONG_MAX, 999999999 } /* overflow */
+		, { LONG_MAX,  999999999, LONG_MAX, 999999999 } /* harmless */
+		, { LONG_MAX, -1, LONG_MAX-1, 999999999 } /* -1 */
+		, { LONG_MIN, -1000000001, LONG_MIN, 0 } /* overflow */
+		, { LONG_MIN, 0, LONG_MIN, 0 } /* harmless */
+		, { LONG_MIN, 1000000000, LONG_MIN+1, 0 } /* +1 */
+	};
+	int i;
+
+	for (i = 0; i < sizeof(data) / sizeof(data[0]); ++i) {
+		struct timespec ts = (struct timespec)
+				   { .tv_sec  = data[i].in_s
+				   , .tv_nsec = data[i].in_ns };
+
+		normalize_timespec(&ts);
+
+		torture_assert_int_equal(tctx, ts.tv_sec, data[i].out_s,
+					 "mismatch in tv_sec");
+		torture_assert_int_equal(tctx, ts.tv_nsec, data[i].out_ns,
+					 "mismatch in tv_nsec");
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_local_util_time(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "time");
@@ -92,6 +143,8 @@ struct torture_suite *torture_local_util_time(TALLOC_CTX *mem_ctx)
 								  test_http_timestring);
 	torture_suite_add_simple_test(suite, "timestring", 
 								  test_timestring);
+	torture_suite_add_simple_test(suite, "normalize_timespec",
+				      test_normalize_timespec);
 
 	return suite;
 }
