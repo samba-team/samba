@@ -41,7 +41,6 @@ struct gp_extension *gpext_get_gp_extension_list(void)
 /****************************************************************
 ****************************************************************/
 
-/* see http://support.microsoft.com/kb/216358/en-us/ for more info */
 
 struct gp_extension_reg_table gpext_reg_vals[] = {
 	{
