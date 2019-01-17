@@ -90,10 +90,22 @@ it also defines lots of intermediate macros, just ignore those :-)
 */
 
 
+/****************************************************************************
+ *
+ * ATTENTION: Do not use those macros anymore, use the ones from bytearray.h
+ *
+ ****************************************************************************/
+
 #define CVAL(buf,pos) ((uint32_t)_DATA_BYTE_CONST(buf, pos))
 #define CVAL_NC(buf,pos) _DATA_BYTE(buf, pos) /* Non-const version of CVAL */
 #define PVAL(buf,pos) (CVAL(buf,pos))
 #define SCVAL(buf,pos,val) (CVAL_NC(buf,pos) = (val))
+
+/****************************************************************************
+ *
+ * ATTENTION: Do not use those macros anymore, use the ones from bytearray.h
+ *
+ ****************************************************************************/
 
 #define SVAL(buf,pos) (uint32_t)PULL_LE_U16(buf, pos)
 #define IVAL(buf,pos) PULL_LE_U32(buf, pos)
@@ -106,16 +118,34 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define SSVALS(buf,pos,val) PUSH_LE_U16(buf, pos, val)
 #define SIVALS(buf,pos,val) PUSH_LE_U32(buf, pos, val)
 
+/****************************************************************************
+ *
+ * ATTENTION: Do not use those macros anymore, use the ones from bytearray.h
+ *
+ ****************************************************************************/
+
 /* 64 bit macros */
 #define BVAL(p, ofs) PULL_LE_U64(p, ofs)
 #define BVALS(p, ofs) ((int64_t)BVAL(p,ofs))
 #define SBVAL(p, ofs, v) PUSH_LE_U64(p, ofs, v)
 #define SBVALS(p, ofs, v) (SBVAL(p,ofs,(uint64_t)v))
 
+/****************************************************************************
+ *
+ * ATTENTION: Do not use those macros anymore, use the ones from bytearray.h
+ *
+ ****************************************************************************/
+
 /* now the reverse routines - these are used in nmb packets (mostly) */
 #define SREV(x) ((((x)&0xFF)<<8) | (((x)>>8)&0xFF))
 #define IREV(x) ((SREV(x)<<16) | (SREV((x)>>16)))
 #define BREV(x) ((IREV((uint64_t)x)<<32) | (IREV(((uint64_t)x)>>32)))
+
+/****************************************************************************
+ *
+ * ATTENTION: Do not use those macros anymore, use the ones from bytearray.h
+ *
+ ****************************************************************************/
 
 #define RSVAL(buf,pos) (uint32_t)PULL_BE_U16(buf, pos)
 #define RSVALS(buf,pos) PULL_BE_U16(buf, pos)
@@ -129,5 +159,11 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define RSIVALS(buf,pos,val) PUSH_BE_U32(buf, pos, val)
 #define RSBVAL(buf,pos,val) PUSH_BE_U64(buf, pos, val)
 #define RSBVALS(buf,pos,val) PUSH_BE_U64(buf, pos, val)
+
+/****************************************************************************
+ *
+ * ATTENTION: Do not use those macros anymore, use the ones from bytearray.h
+ *
+ ****************************************************************************/
 
 #endif /* _BYTEORDER_H */
