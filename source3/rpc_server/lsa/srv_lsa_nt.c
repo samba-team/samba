@@ -39,7 +39,6 @@
 #include "../libcli/security/dom_sid.h"
 #include "../librpc/gen_ndr/drsblobs.h"
 #include "../librpc/gen_ndr/ndr_drsblobs.h"
-#include "../lib/crypto/arcfour.h"
 #include "../libcli/security/dom_sid.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "passdb.h"
@@ -50,6 +49,10 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/lsarpc/util_lsarpc.h"
 #include "lsa.h"
+
+#include "lib/crypto/gnutls_helpers.h"
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -1682,22 +1685,50 @@ static NTSTATUS get_trustdom_auth_blob(struct pipes_struct *p,
 {
 	enum ndr_err_code ndr_err;
 	DATA_BLOB lsession_key;
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t my_session_key;
 	NTSTATUS status;
+	int rc;
 
 	status = session_extract_session_key(p->session_info, &lsession_key, KEY_USE_16BYTES);
 	if (!NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	arcfour_crypt_blob(auth_blob->data, auth_blob->length, &lsession_key);
+	my_session_key = (gnutls_datum_t) {
+		.data = lsession_key.data,
+		.size = lsession_key.length,
+	};
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&my_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto out;
+	}
+
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   auth_blob->data,
+				   auth_blob->length);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto out;
+	}
+
 	ndr_err = ndr_pull_struct_blob(auth_blob, mem_ctx,
 				       auth_struct,
 				       (ndr_pull_flags_fn_t)ndr_pull_trustDomainPasswords);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+out:
+	return status;
 }
 
 static NTSTATUS get_trustauth_inout_blob(TALLOC_CTX *mem_ctx,
