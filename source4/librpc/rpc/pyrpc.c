@@ -218,7 +218,7 @@ static PyGetSetDef dcerpc_interface_getsetters[] = {
 	{
 		.name = discard_const_p(char, "transfer_syntax"),
 		.get  = py_iface_transfer_syntax,
-		.doc  = discard_const_p(char, "syntax id of the transfersyntax"),
+		.doc  = discard_const_p(char, "syntax id of the transfer syntax"),
 	},
 	{
 		.name = discard_const_p(char, "session_key"),
