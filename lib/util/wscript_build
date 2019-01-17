@@ -295,3 +295,9 @@ else:
                      deps='cmocka replace samba-util',
                      local_include=False,
                      for_selftest=True)
+
+    bld.SAMBA_BINARY('test_byteorder_verify',
+                     source='tests/test_byteorder_verify.c',
+                     deps='cmocka replace samba-util',
+                     local_include=False,
+                     for_selftest=True)
