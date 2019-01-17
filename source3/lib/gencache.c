@@ -219,11 +219,11 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB blob,
 	dbufs[2] = (TDB_DATA) { .dptr = (uint8_t *)&crc,
 				.dsize = sizeof(crc) };
 
-	DEBUG(10, ("Adding cache entry with key=[%s] and timeout="
-	           "[%s] (%d seconds %s)\n", keystr,
+	DBG_DEBUG("Adding cache entry with key=[%s] and timeout="
+	           "[%s] (%ld seconds %s)\n", keystr,
 		   timestring(talloc_tos(), timeout),
-		   (int)(timeout - time(NULL)), 
-		   timeout > time(NULL) ? "ahead" : "in the past"));
+		   ((long int)timeout) - time(NULL),
+		   timeout > time(NULL) ? "ahead" : "in the past");
 
 	ret = tdb_chainlock(cache->tdb, key);
 	if (ret == -1) {
