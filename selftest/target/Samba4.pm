@@ -2034,6 +2034,15 @@ sub teardown_env_terminate($$)
 	my $pid;
 
 	# This should cause samba to terminate gracefully
+	my $smbcontrol = Samba::bindir_path($self, "smbcontrol");
+	my $cmd = "";
+	$cmd .= "$smbcontrol samba shutdown $envvars->{CONFIGURATION}";
+	my $ret = system($cmd);
+	if ($ret != 0) {
+		warn "'$cmd' failed with '$ret'\n";
+	}
+
+	# This should cause samba to terminate gracefully
 	close($envvars->{STDIN_PIPE});
 
 	$pid = $envvars->{SAMBA_PID};
