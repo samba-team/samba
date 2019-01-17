@@ -25,6 +25,9 @@ sub new($$$$$) {
 %Samba::ENV_DEPS = (%Samba3::ENV_DEPS, %Samba4::ENV_DEPS);
 our %ENV_DEPS;
 
+%Samba::ENV_DEPS_POST = (%Samba3::ENV_DEPS_POST, %Samba4::ENV_DEPS_POST);
+our %ENV_DEPS_POST;
+
 %Samba::ENV_TARGETS = (
 	(map { $_ => "Samba3" } keys %Samba3::ENV_DEPS),
 	(map { $_ => "Samba4" } keys %Samba4::ENV_DEPS),
@@ -59,6 +62,8 @@ sub setup_env($$$)
 		return $target->{vars}->{$envname};
 	}
 
+	$target->{vars}->{$envname} = "";
+
 	my @dep_vars;
 	foreach(@{$ENV_DEPS{$envname}}) {
 		my $vars = $self->setup_env($_, $path);
@@ -86,6 +91,13 @@ sub setup_env($$$)
 
 	$target->{vars}->{$envname} = $env;
 	$target->{vars}->{$envname}->{target} = $target;
+
+	foreach(@{$ENV_DEPS_POST{$envname}}) {
+		my $vars = $self->setup_env($_, $path);
+		if (not defined($vars)) {
+			return undef;
+		}
+	}
 
 	return $env;
 }
@@ -401,6 +413,7 @@ sub realm_to_ip_mappings
 		'backupdom.samba.example.com'     => 'backupfromdc',
 		'renamedom.samba.example.com'     => 'renamedc',
 		'labdom.samba.example.com'        => 'labdc',
+		'schema.samba.example.com'        => 'liveupgrade1dc',
 		'samba.example.com'               => 'localdc',
 	);
 
@@ -473,9 +486,13 @@ sub get_interface($)
 		customdc          => 45,
 		prockilldc        => 46,
 		proclimitdc       => 47,
+		liveupgrade1dc    => 48,
+		liveupgrade2dc    => 49,
 
 		rootdnsforwarder  => 64,
 
+		# Note: that you also need to update dns_hub.py when adding a new
+		# multi-DC testenv
 		# update lib/socket_wrapper/socket_wrapper.c
 		#  #define MAX_WRAPPED_INTERFACES 64
 		# if you wish to have more than 64 interfaces

@@ -187,6 +187,8 @@ sub check_env($$)
 	ad_member_idmap_ad  => ["ad_dc"],
 );
 
+%Samba3::ENV_DEPS_POST = ();
+
 sub setup_nt4_dc
 {
 	my ($self, $path) = @_;

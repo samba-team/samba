@@ -2267,7 +2267,14 @@ sub check_env($$)
 	ad_dc_slowtests      => ["ad_dc_ntvfs"],
 	ad_dc_backup         => ["ad_dc"],
 
+	schemaupgrade_dc      => ["dns_hub"],
+	schemaupgrade_pair_dc => ["schemaupgrade_dc"],
+
 	none                 => [],
+);
+
+%Samba4::ENV_DEPS_POST = (
+	schemaupgrade_dc => ["schemaupgrade_pair_dc"],
 );
 
 sub return_alias_env
@@ -2779,6 +2786,101 @@ sub setup_proclimitdc
 	my $spn_array = ["$env->{REALM}.spn"];
 
 	$self->setup_namespaces($env, $upn_array, $spn_array);
+
+	return $env;
+}
+
+# Used to test a live upgrade of the schema on a 2 DC network.
+sub setup_schemaupgrade_dc
+{
+	my ($self, $path) = @_;
+
+	# provision the PDC using an older base schema
+	my $provision_args = ["--base-schema=2008_R2", "--backend-store=mdb"];
+
+	my $env = $self->provision_ad_dc($path, "liveupgrade1dc", "SCHEMADOMAIN",
+					 "schema.samba.example.com",
+					 "drs: max link sync = 2",
+					 $provision_args);
+	unless ($env) {
+		return undef;
+	}
+
+	if (not defined($self->check_or_start($env, "prefork"))) {
+	    return undef;
+	}
+
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	$self->setup_namespaces($env, $upn_array, $spn_array);
+
+	return $env;
+}
+
+# the second DC in the live schema upgrade pair
+sub setup_schemaupgrade_pair_dc
+{
+	# note: dcvars contains the env info for the dependent testenv ('schemaupgrade_dc')
+	my ($self, $prefix, $dcvars) = @_;
+	print "Preparing SCHEMA UPGRADE PAIR DC...\n";
+
+	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "liveupgrade2dc",
+						    $dcvars->{DOMAIN},
+						    $dcvars->{REALM},
+						    $dcvars->{PASSWORD},
+						    "");
+
+	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
+	my $cmd_vars = "NSS_WRAPPER_HOSTS='$env->{NSS_WRAPPER_HOSTS}' ";
+	$cmd_vars .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
+	if (defined($env->{RESOLV_WRAPPER_CONF})) {
+		$cmd_vars .= "RESOLV_WRAPPER_CONF=\"$env->{RESOLV_WRAPPER_CONF}\" ";
+	} else {
+		$cmd_vars .= "RESOLV_WRAPPER_HOSTS=\"$env->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
+	$cmd_vars .= "KRB5_CONFIG=\"$env->{KRB5_CONFIG}\" ";
+	$cmd_vars .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
+	$cmd_vars .= "RESOLV_CONF=\"$env->{RESOLV_CONF}\" ";
+
+	my $join_cmd = $cmd_vars;
+	$join_cmd .= "$samba_tool domain join $env->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
+	$join_cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD} ";
+	$join_cmd .= " --backend-store=mdb";
+
+	my $upgrade_cmd = $cmd_vars;
+	$upgrade_cmd .= "$samba_tool domain schemaupgrade $dcvars->{CONFIGURATION}";
+	$upgrade_cmd .= " -U$dcvars->{USERNAME}\%$dcvars->{PASSWORD}";
+
+	my $repl_cmd = $cmd_vars;
+	$repl_cmd .= "$samba_tool drs replicate $env->{SERVER} $dcvars->{SERVER}";
+        $repl_cmd .= " CN=Schema,CN=Configuration,DC=schema,DC=samba,DC=example,DC=com";
+	$repl_cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
+
+	unless (system($join_cmd) == 0) {
+		warn("Join failed\n$join_cmd");
+		return undef;
+	}
+
+	$env->{DC_SERVER} = $dcvars->{SERVER};
+	$env->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
+	$env->{DC_SERVER_IPV6} = $dcvars->{SERVER_IPV6};
+	$env->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
+
+	# start samba for the new DC
+	if (not defined($self->check_or_start($env, "standard"))) {
+	    return undef;
+	}
+
+	unless (system($upgrade_cmd) == 0) {
+		warn("Schema upgrade failed\n$upgrade_cmd");
+		return undef;
+	}
+
+	unless (system($repl_cmd) == 0) {
+		warn("Post-update schema replication failed\n$repl_cmd");
+		return undef;
+	}
 
 	return $env;
 }
