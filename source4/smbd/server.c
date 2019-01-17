@@ -44,6 +44,8 @@
 #include "nsswitch/winbind_client.h"
 #include "libds/common/roles.h"
 #include "lib/util/tfork.h"
+#include "dsdb/samdb/ldb_modules/util.h"
+#include "lib/util/server_id.h"
 
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
@@ -250,6 +252,31 @@ static void prime_ldb_databases(struct tevent_context *event_ctx)
 
 
 /*
+  called from 'smbcontrol samba shutdown'
+ */
+static void samba_parent_shutdown(struct imessaging_context *msg,
+				  void *private_data,
+				  uint32_t msg_type,
+				  struct server_id src,
+				  DATA_BLOB *data)
+{
+	struct server_state *state =
+		talloc_get_type_abort(private_data,
+		struct server_state);
+	struct server_id_buf src_buf;
+	struct server_id dst = imessaging_get_server_id(msg);
+	struct server_id_buf dst_buf;
+
+	DBG_ERR("samba_shutdown of %s %s: from %s\n",
+		state->binary_name,
+		server_id_str_buf(dst, &dst_buf),
+		server_id_str_buf(src, &src_buf));
+
+	TALLOC_FREE(state);
+	exit(0);
+}
+
+/*
   called when a fatal condition occurs in a child task
  */
 static NTSTATUS samba_terminate(struct irpc_message *msg,
@@ -283,10 +310,19 @@ static NTSTATUS setup_parent_messaging(struct server_state *state,
 		return status;
 	}
 
+	status = imessaging_register(msg, state, MSG_SHUTDOWN,
+				     samba_parent_shutdown);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	status = IRPC_REGISTER(msg, irpc, SAMBA_TERMINATE,
 			       samba_terminate, state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 
