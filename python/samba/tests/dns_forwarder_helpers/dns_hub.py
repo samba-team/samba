@@ -89,7 +89,7 @@ class DnsHandler(sserver.BaseRequestHandler):
         return None
 
     def handle(self):
-        data, socket = self.request
+        data, sock = self.request
         query = ndr.ndr_unpack(dns.name_packet, data);
         name = query.questions[0].name
         forwarder = self.forwarder(name)
@@ -119,7 +119,7 @@ class DnsHandler(sserver.BaseRequestHandler):
             (forwarder, self.client_address, name))
 
         try:
-            socket.sendto(send_packet, self.client_address)
+            sock.sendto(send_packet, self.client_address)
         except socket.error as err:
             print("Error sending %s to address %s for name %s: %s\n" %
                 (forwarder, self.client_address, name, err.errno))
