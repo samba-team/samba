@@ -141,6 +141,21 @@ class SimpleLdb(LdbBaseTest):
         l = ldb.Ldb(self.url(), flags=self.flags())
         dn = ldb.Dn(l, (b'a=' + b'\xc4\x85\xc4\x87\xc4\x99\xc5\x82\xc5\x84\xc3\xb3\xc5\x9b\xc5\xba\xc5\xbc').decode('utf8'))
 
+    def test_utf8_encoded_ldb_Dn(self):
+        l = ldb.Ldb(self.url(), flags=self.flags())
+        dn_encoded_utf8 = b'a=' + b'\xc4\x85\xc4\x87\xc4\x99\xc5\x82\xc5\x84\xc3\xb3\xc5\x9b\xc5\xba\xc5\xbc'
+        try:
+            dn = ldb.Dn(l, dn_encoded_utf8)
+        except UnicodeDecodeError as e:
+                raise
+        except TypeError as te:
+            if PY3:
+               p3errors = ["argument 2 must be str, not bytes",
+                           "Can't convert 'bytes' object to str implicitly"]
+               self.assertIn(str(te), p3errors)
+            else:
+               raise
+
     def test_search_attrs(self):
         l = ldb.Ldb(self.url(), flags=self.flags())
         self.assertEqual(len(l.search(ldb.Dn(l, ""), ldb.SCOPE_SUBTREE, "(dc=*)", ["dc"])), 0)
