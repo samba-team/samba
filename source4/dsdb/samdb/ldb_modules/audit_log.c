@@ -829,7 +829,7 @@ static char *log_attributes(
 	enum ldb_request_type operation,
 	const struct ldb_message *message)
 {
-	int i, j;
+	size_t i, j;
 	for (i=0;i<message->num_elements;i++) {
 		if (i > 0) {
 			buffer = talloc_asprintf_append_buffer(buffer, " ");
@@ -840,7 +840,7 @@ static char *log_attributes(
 				ldb,
 				LDB_DEBUG_ERROR,
 				"Error: Invalid element name (NULL) at "
-				"position %d", i);
+				"position %zu", i);
 			return NULL;
 		}
 
@@ -874,7 +874,7 @@ static char *log_attributes(
 		for (j=0;j<message->elements[i].num_values;j++) {
 			struct ldb_val v;
 			bool use_b64_encode = false;
-			int length;
+			size_t length;
 			if (j > 0) {
 				buffer = talloc_asprintf_append_buffer(
 					buffer,
@@ -898,8 +898,8 @@ static char *log_attributes(
 				buffer = talloc_asprintf_append_buffer(
 					buffer,
 					"[%*.*s%s]",
-					length,
-					length,
+					(int)length,
+					(int)length,
 					(char *)v.data,
 					(v.length > MAX_LENGTH ? "..." : ""));
 			}
