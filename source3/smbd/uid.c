@@ -296,6 +296,7 @@ static bool change_to_user_internal(connection_struct *conn,
 	int snum;
 	gid_t gid;
 	uid_t uid;
+	const char *force_group_name;
 	char group_c;
 	int num_groups = 0;
 	gid_t *group_list = NULL;
@@ -335,9 +336,39 @@ static bool change_to_user_internal(connection_struct *conn,
 	 * See if we should force group for this service. If so this overrides
 	 * any group set in the force user code.
 	 */
-	if((group_c = *lp_force_group(talloc_tos(), snum))) {
+	force_group_name = lp_force_group(talloc_tos(), snum);
+	group_c = *force_group_name;
 
-		SMB_ASSERT(conn->force_group_gid != (gid_t)-1);
+	if ((group_c != '\0') && (conn->force_group_gid == (gid_t)-1)) {
+		/*
+		 * This can happen if "force group" is added to a
+		 * share definition whilst an existing connection
+		 * to that share exists. In that case, don't change
+		 * the existing credentials for force group, only
+		 * do so for new connections.
+		 *
+		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13690
+		 */
+		DBG_INFO("Not forcing group %s on existing connection to "
+			"share %s for SMB user %s (unix user %s)\n",
+			force_group_name,
+			lp_const_servicename(snum),
+			session_info->unix_info->sanitized_username,
+			session_info->unix_info->unix_name);
+	}
+
+	if((group_c != '\0') && (conn->force_group_gid != (gid_t)-1)) {
+		/*
+		 * Only force group for connections where
+		 * conn->force_group_gid has already been set
+		 * to the correct value (i.e. the connection
+		 * happened after the 'force group' definition
+		 * was added to the share definition. Connections
+		 * that were made before force group was added
+		 * should stay with their existing credentials.
+		 *
+		 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13690
+		 */
 
 		if (group_c == '+') {
 			int i;
