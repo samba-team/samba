@@ -107,6 +107,7 @@ struct file_info {
 	uint16_t mode;
 	uid_t uid;
 	gid_t gid;
+	uint64_t ino;
 	/* these times are normally kept in GMT */
 	struct timespec btime_ts; /* Birth-time if supported by system */
 	struct timespec mtime_ts;
