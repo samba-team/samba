@@ -308,9 +308,10 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 		if (p == NULL) goto mismatch;
 		if ( (! tree->u.substring.chunks[c + 1]) && (! tree->u.substring.end_with_wildcard) ) {
 			uint8_t *g;
+			uint8_t *end = val.data + val.length;
 			do { /* greedy */
 				g = memmem(p + cnk.length,
-					val.length - (p - val.data),
+					end - (p + cnk.length),
 					(const uint8_t *)cnk.data,
 					cnk.length);
 				if (g) p = g;
