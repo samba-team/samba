@@ -122,8 +122,8 @@ class DnsHandler(sserver.BaseRequestHandler):
             sock.sendto(send_packet, self.client_address)
         except socket.error as err:
             print("Error sending %s to address %s for name %s: %s\n" %
-                (forwarder, self.client_address, name, err.errno))
-            raise
+                (forwarder, self.client_address, name, err))
+
 
 class server_thread(threading.Thread):
     def __init__(self, server):
