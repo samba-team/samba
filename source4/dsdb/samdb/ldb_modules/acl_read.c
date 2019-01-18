@@ -458,7 +458,8 @@ static int aclread_callback(struct ldb_request *req, struct ldb_reply *ares)
 	struct aclread_context *ac;
 	struct ldb_message *ret_msg;
 	struct ldb_message *msg;
-	int ret, num_of_attrs = 0;
+	int ret;
+	size_t num_of_attrs = 0;
 	unsigned int i, k = 0;
 	struct security_descriptor *sd = NULL;
 	struct dom_sid *sid = NULL;
