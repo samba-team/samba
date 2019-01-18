@@ -795,7 +795,7 @@ static bool open_sockets(bool isdaemon, int port)
 			.argInfo    = POPT_ARG_NONE,
 			.arg        = NULL,
 			.val        = OPT_DAEMON,
-			.descrip    = "Become a daemon(default)",
+			.descrip    = "Become a daemon (default)",
 		},
 		{
 			.longName   = "interactive",
@@ -811,7 +811,8 @@ static bool open_sockets(bool isdaemon, int port)
 			.argInfo    = POPT_ARG_NONE,
 			.arg        = NULL,
 			.val        = OPT_FORK,
-			.descrip    = "Run daemon in foreground (for daemontools & etc)",
+			.descrip    = "Run daemon in foreground "
+				      "(for daemontools, etc.)",
 		},
 		{
 			.longName   = "no-process-group",
