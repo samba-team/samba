@@ -180,6 +180,7 @@ def configure(conf):
         Logs.error('Need sched_setscheduler()')
         sys.exit(1)
     conf.CHECK_FUNCS('mlockall')
+    conf.CHECK_FUNCS('getrusage', headers="sys/time.h sys/resource.h")
 
     if not conf.CHECK_VARIABLE('ETIME', headers='errno.h'):
         conf.DEFINE('ETIME', 'ETIMEDOUT')
