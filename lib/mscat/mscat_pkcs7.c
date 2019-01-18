@@ -121,7 +121,9 @@ int mscat_pkcs7_import_catfile(struct mscat_pkcs7 *mp7,
 	gnutls_datum_t mscat_data = {
 		.size = 0,
 	};
-	DATA_BLOB blob;
+	DATA_BLOB blob = {
+		.length = 0,
+	};
 	int rc;
 
 	tmp_ctx = talloc_new(mp7);
@@ -164,7 +166,9 @@ int mscat_pkcs7_verify(struct mscat_pkcs7 *mp7,
 	TALLOC_CTX *tmp_ctx = NULL;
 	gnutls_x509_trust_list_t tl = NULL;
 	gnutls_datum_t ca_data;
-	DATA_BLOB blob;
+	DATA_BLOB blob = {
+		.length = 0,
+	};
 	uint32_t flags = 0;
 	const char *oid;
 	int count;
