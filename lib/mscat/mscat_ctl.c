@@ -94,13 +94,15 @@ static int mscat_asn1_read_value(TALLOC_CTX *mem_ctx,
 {
 	DATA_BLOB tmp = data_blob_null;
 	unsigned int etype = ASN1_ETYPE_INVALID;
-	int len = 0;
+	int tmp_len = 0;
+	size_t len;
 	int rc;
 
-	rc = asn1_read_value_type(root, name, NULL, &len, &etype);
+	rc = asn1_read_value_type(root, name, NULL, &tmp_len, &etype);
 	if (rc != ASN1_SUCCESS) {
 		return rc;
 	}
+	len = tmp_len;
 
 	if (etype == ASN1_ETYPE_BIT_STRING) {
 		if (len + 7 < len) {
@@ -125,11 +127,12 @@ static int mscat_asn1_read_value(TALLOC_CTX *mem_ctx,
 	rc = asn1_read_value(root,
 			     name,
 			     tmp.data,
-			     &len);
+			     &tmp_len);
 	if (rc != ASN1_SUCCESS) {
 		data_blob_free(&tmp);
 		return rc;
 	}
+	len = tmp_len;
 
 	if (etype == ASN1_ETYPE_BIT_STRING) {
 		if (len + 7 < len) {
