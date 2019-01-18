@@ -222,7 +222,7 @@ def testonly(ctx):
         sh_tests = ["test/test_tdbbackup.sh test/jenkins-be-hash.tdb"]
 
         for sh_test in sh_tests:
-            cmd = "BINDIR={} {}".format(blddir, sh_test)
+            cmd = "BINDIR=%s %s" % (blddir, sh_test)
             print("shell test: " + cmd)
             ret = samba_utils.RUN_COMMAND(cmd)
             if ret != 0:
