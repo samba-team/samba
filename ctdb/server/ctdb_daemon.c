@@ -72,7 +72,126 @@ static void print_exit_message(void)
 	}
 }
 
+#ifdef HAVE_GETRUSAGE
 
+struct cpu_check_threshold_data {
+	unsigned short percent;
+	struct timeval timeofday;
+	struct timeval ru_time;
+};
+
+static void ctdb_cpu_check_threshold(struct tevent_context *ev,
+				     struct tevent_timer *te,
+				     struct timeval tv,
+				     void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type_abort(
+		private_data, struct ctdb_context);
+	uint32_t interval = 60;
+
+	static unsigned short threshold = 0;
+	static struct cpu_check_threshold_data prev = {
+		.percent = 0,
+		.timeofday = { .tv_sec = 0 },
+		.ru_time = { .tv_sec = 0 },
+	};
+
+	struct rusage usage;
+	struct cpu_check_threshold_data curr = {
+		.percent = 0,
+	};
+	int64_t ru_time_diff, timeofday_diff;
+	bool first;
+	int ret;
+
+	/*
+	 * Cache the threshold so that we don't waste time checking
+	 * the environment variable every time
+	 */
+	if (threshold == 0) {
+		const char *t;
+
+		threshold = 90;
+
+		t = getenv("CTDB_TEST_CPU_USAGE_THRESHOLD");
+		if (t != NULL) {
+			int th;
+
+			th = atoi(t);
+			if (th <= 0 || th > 100) {
+				DBG_WARNING("Failed to parse env var: %s\n", t);
+			} else {
+				threshold = th;
+			}
+		}
+	}
+
+	ret = getrusage(RUSAGE_SELF, &usage);
+	if (ret != 0) {
+		DBG_WARNING("rusage() failed: %d\n", ret);
+		goto next;
+	}
+
+	/* Sum the system and user CPU usage */
+	curr.ru_time = timeval_sum(&usage.ru_utime, &usage.ru_stime);
+
+	curr.timeofday = tv;
+
+	first = timeval_is_zero(&prev.timeofday);
+	if (first) {
+		/* No previous values recorded so no calculation to do */
+		goto done;
+	}
+
+	timeofday_diff = usec_time_diff(&curr.timeofday, &prev.timeofday);
+	if (timeofday_diff <= 0) {
+		/*
+		 * Time went backwards or didn't progress so no (sane)
+		 * calculation can be done
+		 */
+		goto done;
+	}
+
+	ru_time_diff = usec_time_diff(&curr.ru_time, &prev.ru_time);
+
+	curr.percent = ru_time_diff * 100 / timeofday_diff;
+
+	if (curr.percent >= threshold) {
+		/* Log only if the utilisation changes */
+		if (curr.percent != prev.percent) {
+			D_WARNING("WARNING: CPU utilisation %hu%% >= "
+				  "threshold (%hu%%)\n",
+				  curr.percent,
+				  threshold);
+		}
+	} else {
+		/* Log if the utilisation falls below the threshold */
+		if (prev.percent >= threshold) {
+			D_WARNING("WARNING: CPU utilisation %hu%% < "
+				  "threshold (%hu%%)\n",
+				  curr.percent,
+				  threshold);
+		}
+	}
+
+done:
+	prev = curr;
+
+next:
+	tevent_add_timer(ctdb->ev, ctdb,
+			 timeval_current_ofs(interval, 0),
+			 ctdb_cpu_check_threshold,
+			 ctdb);
+}
+
+static void ctdb_start_cpu_check_threshold(struct ctdb_context *ctdb)
+{
+	tevent_add_timer(ctdb->ev, ctdb,
+			 timeval_current(),
+			 ctdb_cpu_check_threshold,
+			 ctdb);
+}
+#endif /* HAVE_GETRUSAGE */
 
 static void ctdb_time_tick(struct tevent_context *ev, struct tevent_timer *te,
 				  struct timeval t, void *private_data)
@@ -111,6 +230,10 @@ static void ctdb_start_periodic_events(struct ctdb_context *ctdb)
 
 	/* start listening to timer ticks */
 	ctdb_start_time_tickd(ctdb);
+
+#ifdef HAVE_GETRUSAGE
+	ctdb_start_cpu_check_threshold(ctdb);
+#endif /* HAVE_GETRUSAGE */
 }
 
 static void ignore_signal(int signum)
