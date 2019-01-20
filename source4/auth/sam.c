@@ -377,7 +377,7 @@ _PUBLIC_ NTSTATUS authsam_make_user_info_dc(TALLOC_CTX *mem_ctx,
 
 	num_sids = 2;
 
-	account_sid = samdb_result_dom_sid(user_info_dc, msg, "objectSid");
+	account_sid = samdb_result_dom_sid(tmp_ctx, msg, "objectSid");
 	if (account_sid == NULL) {
 		TALLOC_FREE(user_info_dc);
 		return NT_STATUS_NO_MEMORY;
