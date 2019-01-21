@@ -34,6 +34,9 @@ setup_ctdb ()
 		${public_addresses:+-P} ${public_addresses} \
 		${CTDB_USE_IPV6:+-6} \
 		${TEST_SOCKET_WRAPPER_SO_PATH:+-S} ${TEST_SOCKET_WRAPPER_SO_PATH}
+	if [ $? -ne 0 ] ; then
+		exit 1
+	fi
 
 	local pnn
 	for pnn in $(seq 0 $(($TEST_LOCAL_DAEMONS - 1))) ; do
