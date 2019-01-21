@@ -103,7 +103,7 @@ the 'PYTHON' environent variable to override the python3 default for both
 
 Note: Support for python2 (with the exception of a build configured with
       'PYTHON=python2 ./configure --disable-python' and built with
-      'PYTHON=python2 make' will be deprecated in the next release.
+      'PYTHON=python2 make') will be deprecated in the next release.
 
 JSON logging
 ------------
