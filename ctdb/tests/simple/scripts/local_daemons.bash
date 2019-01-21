@@ -22,10 +22,12 @@ setup_ctdb ()
 	local public_addresses=""
 	local no_event_scripts=false
 	local disable_failover=""
+	local reclock_use_command=""
 	case "$1" in
 	--no-public-addresses) public_addresses="/dev/null" ;;
 	--no-event-scripts)    no_event_scripts=true    ;;
 	--disable-failover)    disable_failover="yes"   ;;
+	--reclock-use-command) reclock_use_command="yes" ;;
 	esac
 
 	$ctdb_local_daemons setup \
@@ -33,6 +35,7 @@ setup_ctdb ()
 		${disable_failover:+-F} \
 		${public_addresses:+-P} ${public_addresses} \
 		${CTDB_USE_IPV6:+-6} \
+		${reclock_use_command:+-R} \
 		${TEST_SOCKET_WRAPPER_SO_PATH:+-S} ${TEST_SOCKET_WRAPPER_SO_PATH}
 	if [ $? -ne 0 ] ; then
 		exit 1
