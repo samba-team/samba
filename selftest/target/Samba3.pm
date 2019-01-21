@@ -412,6 +412,8 @@ sub setup_ad_member
         realm = $dcvars->{REALM}
         netbios aliases = foo bar
 	template homedir = /home/%D/%G/%U
+	auth event notification = true
+	password server = $dcvars->{SERVER}
 
 [sub_dug]
 	path = $share_dir/D_%D/U_%U/G_%G
@@ -484,6 +486,7 @@ sub setup_ad_member
 	$ret->{DC_SERVER} = $dcvars->{SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{SERVER_IPV6};
+	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};

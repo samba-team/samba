@@ -748,6 +748,10 @@ if have_heimdal_support:
                            extra_args=['-U"$USERNAME%$PASSWORD"'],
                            environ={'CLIENT_IP': '127.0.0.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+    planoldpythontestsuite("ad_member:local",
+                           "samba.tests.auth_log_winbind",
+                           extra_args=['-U"$DC_USERNAME%$DC_PASSWORD"'],
+                           environ={'DC_ENV': 'ad_dc_ntvfs'})
     planoldpythontestsuite("ad_dc:local", "samba.tests.audit_log_pass_change",
                            extra_args=['-U"$USERNAME%$PASSWORD"'],
                            environ={'CLIENT_IP': '127.0.0.11',
