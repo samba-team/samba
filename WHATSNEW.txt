@@ -153,7 +153,13 @@ log entries has been removed to make the parsing of the JSON log messages
 easier. JSON log entries now start with 2 spaces followed by an opening brace
 i.e. "  {"
 
+SMBv2 samba-tool support
+------------------------
 
+On previous releases, some samba-tool commands would not work against a remote
+DC that had SMBv1 disabled. SMBv2 support has now been added for samba-tool.
+The affected commands are 'samba-tool domain backup|rename' and the
+'samba-tool gpo' set of commands. Refer also bug #13676.
 
 
 REMOVED FEATURES
@@ -175,6 +181,14 @@ samba_backup
 
 The samba_backup script has been removed. This has now been replaced by the
 'samba-tool domain backup offline' command.
+
+SMB client Python bindings
+--------------------------
+
+The SMB client python bindings are now deprecated and will be removed in future
+Samba releases. This will only affects users that may have used the Samba
+Python bindings to write their own utilities, i.e. users with a custom Python
+script that includes the line 'from samba import smb'.
 
 smb.conf changes
 ================
