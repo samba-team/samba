@@ -897,6 +897,16 @@ static void take_reclock_handler(char status,
 	struct ctdb_recovery_lock_handle *s =
 		(struct ctdb_recovery_lock_handle *) private_data;
 
+	s->locked = (status == '0') ;
+
+	/*
+	 * If unsuccessful then ensure the process has exited and that
+	 * the file descriptor event handler has been cancelled
+	 */
+	if (! s->locked) {
+		TALLOC_FREE(s->h);
+	}
+
 	switch (status) {
 	case '0':
 		s->latency = latency;
@@ -912,7 +922,6 @@ static void take_reclock_handler(char status,
 	}
 
 	s->done = true;
-	s->locked = (status == '0') ;
 }
 
 static bool ctdb_recovery_lock(struct ctdb_recoverd *rec);
