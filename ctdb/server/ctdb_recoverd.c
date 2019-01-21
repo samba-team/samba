@@ -913,12 +913,15 @@ static void take_reclock_handler(char status,
 		break;
 
 	case '1':
-		DEBUG(DEBUG_ERR,
-		      ("Unable to take recovery lock - contention\n"));
+		D_ERR("Unable to take recovery lock - contention\n");
+		break;
+
+	case '2':
+		D_ERR("Unable to take recovery lock - timeout\n");
 		break;
 
 	default:
-		DEBUG(DEBUG_ERR, ("ERROR: when taking recovery lock\n"));
+		D_ERR("Unable to take recover lock - unknown error\n");
 	}
 
 	s->done = true;
