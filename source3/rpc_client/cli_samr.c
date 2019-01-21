@@ -41,15 +41,10 @@ NTSTATUS dcerpc_samr_chgpasswd_user(struct dcerpc_binding_handle *h,
 	NTSTATUS status;
 	struct samr_Password hash1, hash2, hash3, hash4, hash5, hash6;
 
-	uchar old_nt_hash[16];
-	uchar old_lm_hash[16];
-	uchar new_nt_hash[16];
-	uchar new_lm_hash[16];
-
-	ZERO_STRUCT(old_nt_hash);
-	ZERO_STRUCT(old_lm_hash);
-	ZERO_STRUCT(new_nt_hash);
-	ZERO_STRUCT(new_lm_hash);
+	uint8_t old_nt_hash[16] = {0};
+	uint8_t old_lm_hash[16] = {0};
+	uint8_t new_nt_hash[16] = {0};
+	uint8_t new_lm_hash[16] = {0};
 
 	DEBUG(10,("rpccli_samr_chgpasswd_user\n"));
 
@@ -80,6 +75,11 @@ NTSTATUS dcerpc_samr_chgpasswd_user(struct dcerpc_binding_handle *h,
 						true,
 						&hash6,
 						presult);
+
+	ZERO_ARRAY(old_nt_hash);
+	ZERO_ARRAY(old_lm_hash);
+	ZERO_ARRAY(new_nt_hash);
+	ZERO_ARRAY(new_lm_hash);
 
 	return status;
 }

@@ -1062,7 +1062,7 @@ bld.SAMBA3_SUBSYSTEM('INIT_NETLOGON',
 
 bld.SAMBA3_SUBSYSTEM('INIT_SAMR',
                     source='rpc_client/init_samr.c',
-                    deps='samba-util')
+                    deps='samba-util GNUTLS_HELPERS')
 
 bld.SAMBA3_SUBSYSTEM('LIBLSA',
                      source='lib/lsa.c')
