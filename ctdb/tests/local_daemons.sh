@@ -132,6 +132,7 @@ Options:
   -N <file>     Nodes file (default: automatically generated)
   -n <num>      Number of nodes (default: 3)
   -P <file>     Public addresses file (default: automatically generated)
+  -R            Use a command for the recovery lock (default: use a file)
   -S <library>  Socket wrapper shared library to preload (default: none)
   -6            Generate IPv6 IPs for nodes, public addresses (default: IPv4)
 EOF
@@ -145,17 +146,19 @@ local_daemons_setup ()
 	_nodes_file=""
 	_num_nodes=3
 	_public_addresses_file=""
+	_recovery_lock_use_command=false
 	_socket_wrapper=""
 	_use_ipv6=false
 
 	set -e
 
-	while getopts "FN:n:P:S:6h?" _opt ; do
+	while getopts "FN:n:P:RS:6h?" _opt ; do
 		case "$_opt" in
 		F) _disable_failover=true ;;
 		N) _nodes_file="$OPTARG" ;;
 		n) _num_nodes="$OPTARG" ;;
 		P) _public_addresses_file="$OPTARG" ;;
+		R) _recovery_lock_use_command=true ;;
 		S) _socket_wrapper="$OPTARG" ;;
 		6) _use_ipv6=true ;;
 		\?|h) local_daemons_setup_usage ;;
@@ -186,6 +189,11 @@ local_daemons_setup ()
 		setup_public_addresses "$_num_nodes" \
 				       $_node_no_ips \
 				       $_use_ipv6 >"$_public_addresses_all"
+	fi
+
+	_recovery_lock="${directory}/rec.lock"
+	if $_recovery_lock_use_command ; then
+		_recovery_lock="! ${CTDB_CLUSTER_MUTEX_HELPER} ${_recovery_lock}"
 	fi
 
 	if [ -n "$_socket_wrapper" ] ; then
@@ -221,7 +229,7 @@ local_daemons_setup ()
 	log level = INFO
 
 [cluster]
-	recovery lock = ${directory}/rec.lock
+	recovery lock = ${_recovery_lock}
 	node address = ${_node_ip}
 
 [database]
