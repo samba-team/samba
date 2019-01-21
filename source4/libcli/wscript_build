@@ -42,16 +42,6 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_SMB_COMPOSITE',
     )
 
 
-for env in bld.gen_python_environments():
-	pytalloc_util = bld.pyembed_libname('pytalloc-util')
-	pyparam_util =  bld.pyembed_libname('pyparam_util')
-	bld.SAMBA_PYTHON('pysmb',
-		source='pysmb.c',
-		deps='LIBCLI_SMB_COMPOSITE LIBCLI_SMB2 tevent-util %s %s' % (pytalloc_util, pyparam_util),
-		public_deps='cli_composite samba-credentials gensec LIBCLI_RESOLVE tevent param_options',
-		realname='samba/smb.so'
-	)
-
 bld.SAMBA_SUBSYSTEM('LIBCLI_DGRAM',
 	source='dgram/dgramsocket.c dgram/mailslot.c dgram/netlogon.c dgram/browse.c',
 	public_deps='cli-nbt ndr LIBCLI_RESOLVE LIBCLI_NETLOGON LIBCLI_RESOLVE'
