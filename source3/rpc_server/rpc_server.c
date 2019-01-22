@@ -760,7 +760,7 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
  * Start listening on the ncalrpc socket
  ********************************************************************/
 
-static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
+static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 				    struct tevent_fd *fde,
 				    uint16_t flags,
 				    void *private_data);
@@ -854,7 +854,7 @@ bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 			    state,
 			    state->fd,
 			    TEVENT_FD_READ,
-			    dcerpc_ncalrpc_listener,
+			    dcesrv_ncalrpc_listener,
 			    state);
 	if (fde == NULL) {
 		DEBUG(0, ("Failed to add event handler for ncalrpc!\n"));
@@ -873,7 +873,7 @@ out:
 	return 0;
 }
 
-static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
+static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 					struct tevent_fd *fde,
 					uint16_t flags,
 					void *private_data)
