@@ -42,20 +42,16 @@ class UserCheckPwdTestCase(SambaToolCmdTest):
         super(UserCheckPwdTestCase, self).tearDown()
         self.samdb.set_minPwdAge(self.old_min_pwd_age)
 
-    def test_checkpassword(self):
-        # Add
-        user = self._randomUser()
-        bad_password = os.environ["UNACCEPTABLE_PASSWORD"]
-        good_password = bad_password[:-1]
+    def _test_checkpassword(self, user, bad_password, good_password, desc):
 
         (result, out, err) = self.runsubcmd("user", "add", user["name"], bad_password,
                                             "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
-        self.assertCmdFail(result, "Should fail adding a user with bad password.")
+        self.assertCmdFail(result, "Should fail adding a user with %s password." % desc)
         (result, out, err) = self.runsubcmd("user", "delete", user["name"],
                                             "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
-        self.assertCmdSuccess(result, out, err, "Should delete user with bad password.")
+        self.assertCmdSuccess(result, out, err, "Should delete user with %s password." % desc)
 
         (result, out, err) = self.runsubcmd("user", "add", user["name"], good_password,
                                             "-H", "ldap://%s" % os.environ["DC_SERVER"],
@@ -67,7 +63,7 @@ class UserCheckPwdTestCase(SambaToolCmdTest):
                                             "--newpassword=%s" % bad_password,
                                             "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
-        self.assertCmdFail(result, "Should fail setting a user's password to a bad one.")
+        self.assertCmdFail(result, "Should fail setting a user's password to a %s password." % desc)
 
         (result, out, err) = self.runsubcmd("user", "setpassword", user["name"],
                                             "--newpassword=%s" % good_password,
@@ -81,13 +77,33 @@ class UserCheckPwdTestCase(SambaToolCmdTest):
                                             "--newpassword=%s" % bad_password,
                                             "--ipaddress", os.environ["DC_SERVER_IP"],
                                             "-U%s%%%s" % (user["name"], good_password))
-        self.assertCmdFail(result, "A user setting their own password to a bad one should fail.")
+        self.assertCmdFail(result, "A user setting their own password to a %s password should fail." % desc)
 
         (result, out, err) = self.runsubcmd("user", "password",
                                             "--newpassword=%s" % good_password + 'XYZ',
                                             "--ipaddress", os.environ["DC_SERVER_IP"],
                                             "-U%s%%%s" % (user["name"], good_password))
         self.assertCmdSuccess(result, out, err, "A user setting their own password to a good one should succeed.")
+
+    def test_checkpassword_unacceptable(self):
+        # Add
+        user = self._randomUser()
+        bad_password = os.environ["UNACCEPTABLE_PASSWORD"]
+        good_password = bad_password[:-1]
+        return self._test_checkpassword(user,
+                                        bad_password,
+                                        good_password,
+                                        "unacceptable")
+
+    def test_checkpassword_username(self):
+        # Add
+        user = self._randomUser()
+        bad_password = user["name"]
+        good_password = bad_password[:-1]
+        return self._test_checkpassword(user,
+                                        bad_password,
+                                        good_password,
+                                        "username")
 
     def _randomUser(self, base={}):
         """create a user with random attribute values, you can specify base attributes"""
