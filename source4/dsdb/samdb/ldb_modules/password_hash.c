@@ -130,6 +130,7 @@ struct setup_password_fields_io {
 		NTTIME pwdLastSet;
 		const char *sAMAccountName;
 		const char *user_principal_name;
+		const char *displayName; /* full name */
 		bool is_krbtgt;
 		uint32_t restrictions;
 		struct dom_sid *account_sid;
@@ -2716,6 +2717,9 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 	if (io->n.cleartext_utf8 != NULL) {
 		enum samr_ValidationStatus vstat;
 		vstat = samdb_check_password(io->ac, lp_ctx,
+					     io->u.sAMAccountName,
+					     io->u.user_principal_name,
+					     io->u.displayName,
 					     io->n.cleartext_utf8,
 					     io->ac->status->domain_data.pwdProperties,
 					     io->ac->status->domain_data.minPwdLength);
@@ -3191,6 +3195,8 @@ static int setup_io(struct ph_context *ac,
 								      "sAMAccountName", NULL);
 	io->u.user_principal_name	= ldb_msg_find_attr_as_string(info_msg,
 								      "userPrincipalName", NULL);
+	io->u.displayName		= ldb_msg_find_attr_as_string(info_msg,
+								      "displayName", NULL);
 
 	/* Ensure it has an objectSID too */
 	io->u.account_sid = samdb_result_dom_sid(ac, info_msg, "objectSid");
@@ -4707,6 +4713,7 @@ static int password_hash_mod_search_self(struct ph_context *ac)
 					      "sAMAccountName",
 					      "objectSid",
 					      "userPrincipalName",
+					      "displayName",
 					      "supplementalCredentials",
 					      "lmPwdHistory",
 					      "ntPwdHistory",

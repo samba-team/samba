@@ -4871,6 +4871,7 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 {
 	struct samr_GetDomPwInfo r2;
 	struct samr_PwInfo pwInfo;
+	const char *account = NULL;
 	DATA_BLOB password;
 	enum samr_ValidationStatus res;
 	NTSTATUS status;
@@ -4905,20 +4906,28 @@ static NTSTATUS dcesrv_samr_ValidatePassword(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_NOT_SUPPORTED;
 	break;
 	case NetValidatePasswordChange:
+		account = r->in.req->req2.account.string;
 		password = data_blob_const(r->in.req->req2.password.string,
 					   r->in.req->req2.password.length);
 		res = samdb_check_password(mem_ctx,
 					   dce_call->conn->dce_ctx->lp_ctx,
+					   account,
+					   NULL, /* userPrincipalName */
+					   NULL, /* displayName/full_name */
 					   &password,
 					   pwInfo.password_properties,
 					   pwInfo.min_password_length);
 		(*r->out.rep)->ctr2.status = res;
 	break;
 	case NetValidatePasswordReset:
+		account = r->in.req->req3.account.string;
 		password = data_blob_const(r->in.req->req3.password.string,
 					   r->in.req->req3.password.length);
 		res = samdb_check_password(mem_ctx,
 					   dce_call->conn->dce_ctx->lp_ctx,
+					   account,
+					   NULL, /* userPrincipalName */
+					   NULL, /* displayName/full_name */
 					   &password,
 					   pwInfo.password_properties,
 					   pwInfo.min_password_length);

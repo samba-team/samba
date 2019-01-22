@@ -2083,6 +2083,9 @@ static void pwd_timeout_debug(struct tevent_context *unused1,
  */
 enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 						struct loadparm_context *lp_ctx,
+						const char *account_name,
+						const char *user_principal_name,
+						const char *full_name,
 						const DATA_BLOB *utf8_blob,
 						const uint32_t pwdProperties,
 						const uint32_t minPwdLength)
@@ -2129,9 +2132,40 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 				 tevent_timeval_current_ofs(1, 0),
 				 pwd_timeout_debug, NULL);
 
+		check_ret = setenv("SAMBA_CPS_ACCOUNT_NAME", account_name, 1);
+		if (check_ret != 0) {
+			TALLOC_FREE(password_script);
+			TALLOC_FREE(event_ctx);
+			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
+		}
+		if (user_principal_name != NULL) {
+			check_ret = setenv("SAMBA_CPS_USER_PRINCIPAL_NAME",
+					   user_principal_name, 1);
+		} else {
+			unsetenv("SAMBA_CPS_USER_PRINCIPAL_NAME");
+		}
+		if (check_ret != 0) {
+			TALLOC_FREE(password_script);
+			TALLOC_FREE(event_ctx);
+			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
+		}
+		if (full_name != NULL) {
+			check_ret = setenv("SAMBA_CPS_FULL_NAME", full_name, 1);
+		} else {
+			unsetenv("SAMBA_CPS_FULL_NAME");
+		}
+		if (check_ret != 0) {
+			TALLOC_FREE(password_script);
+			TALLOC_FREE(event_ctx);
+			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
+		}
+
 		req = samba_runcmd_send(event_ctx, event_ctx,
 					tevent_timeval_current_ofs(10, 0),
 					100, 100, cmd, NULL);
+		unsetenv("SAMBA_CPS_ACCOUNT_NAME");
+		unsetenv("SAMBA_CPS_USER_PRINCIPAL_NAME");
+		unsetenv("SAMBA_CPS_FULL_NAME");
 		if (req == NULL) {
 			TALLOC_FREE(password_script);
 			TALLOC_FREE(event_ctx);
