@@ -608,10 +608,10 @@ fail:
  * Start listening on the tcp/ip socket
  ********************************************************************/
 
-static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
-					struct tevent_fd *fde,
-					uint16_t flags,
-					void *private_data);
+static void dcesrv_ncacn_ip_tcp_listener(struct tevent_context *ev,
+					 struct tevent_fd *fde,
+					 uint16_t flags,
+					 void *private_data);
 
 NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
 					   uint16_t *port,
@@ -701,7 +701,7 @@ uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 			    state,
 			    state->fd,
 			    TEVENT_FD_READ,
-			    dcerpc_ncacn_tcpip_listener,
+			    dcesrv_ncacn_ip_tcp_listener,
 			    state);
 	if (fde == NULL) {
 		DEBUG(0, ("setup_tcpip_socket: Failed to add event handler!\n"));
@@ -720,10 +720,10 @@ out:
 	return 0;
 }
 
-static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
-					struct tevent_fd *fde,
-					uint16_t flags,
-					void *private_data)
+static void dcesrv_ncacn_ip_tcp_listener(struct tevent_context *ev,
+					 struct tevent_fd *fde,
+					 uint16_t flags,
+					 void *private_data)
 {
 	struct dcerpc_ncacn_listen_state *state =
 			talloc_get_type_abort(private_data,
