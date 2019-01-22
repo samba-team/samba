@@ -39,7 +39,7 @@ struct dns_udp_request_state {
 	size_t reply_len;
 };
 
-#define DNS_REQUEST_TIMEOUT 2
+#define DNS_REQUEST_TIMEOUT 10
 
 /* Declare callback functions used below. */
 static void dns_udp_request_get_reply(struct tevent_req *subreq);
