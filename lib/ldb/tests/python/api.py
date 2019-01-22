@@ -2317,12 +2317,14 @@ class LdbMsgTests(TestCase):
                 "Message({'dc': MessageElement([b'foo']), 'dn': Dn('dc=foo29')}).text",
             ])
         else:
-            self.assertEqual(
-                repr(self.msg),
-                "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement(['foo'])})")
-            self.assertEqual(
-                repr(self.msg.text),
-                "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement(['foo'])}).text")
+            self.assertIn(repr(self.msg), [
+                "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement(['foo'])})",
+                "Message({'dc': MessageElement(['foo']), 'dn': Dn('dc=foo29')})",
+            ])
+            self.assertIn(repr(self.msg.text), [
+                "Message({'dn': Dn('dc=foo29'), 'dc': MessageElement(['foo'])}).text",
+                "Message({'dc': MessageElement(['foo']), 'dn': Dn('dc=foo29')}).text",
+            ])
 
     def test_len(self):
         self.assertEqual(0, len(self.msg))
