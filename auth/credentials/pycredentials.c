@@ -75,9 +75,10 @@ static PyObject *py_creds_get_ntlm_username_domain(PyObject *self, PyObject *unu
 	PyObject *ret = NULL;
 	cli_credentials_get_ntlm_username_domain(PyCredentials_AsCliCredentials(self),
 						 frame, &user, &domain);
-	ret = Py_BuildValue("(OO)",
-			    PyString_FromStringOrNULL(user),
-			    PyString_FromStringOrNULL(domain));
+	ret = Py_BuildValue("(ss)",
+			    user,
+			    domain);
+
 	TALLOC_FREE(frame);
 	return ret;
 }

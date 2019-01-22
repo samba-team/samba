@@ -100,6 +100,7 @@ static PyObject *py_dsdb_dns_lookup(PyObject *self,
 	struct ldb_context *samdb;
 	PyObject *py_ldb, *ret, *pydn;
 	PyObject *py_dns_partition = NULL;
+	PyObject *result = NULL;
 	char *dns_name;
 	TALLOC_CTX *frame;
 	NTSTATUS status;
@@ -156,7 +157,10 @@ static PyObject *py_dsdb_dns_lookup(PyObject *self,
 	ret = py_dnsp_DnssrvRpcRecord_get_list(records, num_records);
 	pydn = pyldb_Dn_FromDn(dn);
 	talloc_free(frame);
-	return Py_BuildValue("(OO)", pydn, ret);
+	result = Py_BuildValue("(OO)", pydn, ret);
+	Py_CLEAR(ret);
+	Py_CLEAR(pydn);
+	return result;
 }
 
 static PyObject *py_dsdb_dns_extract(PyObject *self, PyObject *args)

@@ -1124,13 +1124,14 @@ static NTSTATUS list_helper(const char *mntpoint, struct file_info *finfo,
 {
 	PyObject *result = (PyObject *)state;
 	PyObject *file = NULL;
+	PyObject *size = NULL;
 	int ret;
 
 	/* suppress '.' and '..' in the results we return */
 	if (ISDOT(finfo->name) || ISDOTDOT(finfo->name)) {
 		return NT_STATUS_OK;
 	}
-
+	size = PyLong_FromUnsignedLongLong(finfo->size);
 	/*
 	 * Build a dictionary representing the file info.
 	 * Note: Windows does not always return short_name (so it may be None)
@@ -1139,9 +1140,11 @@ static NTSTATUS list_helper(const char *mntpoint, struct file_info *finfo,
 			     "name", finfo->name,
 			     "attrib", (int)finfo->mode,
 			     "short_name", finfo->short_name,
-			     "size", PyLong_FromUnsignedLongLong(finfo->size),
+			     "size", size,
 			     "mtime",
 			     convert_timespec_to_time_t(finfo->mtime_ts));
+
+	Py_CLEAR(size);
 
 	if (file == NULL) {
 		return NT_STATUS_NO_MEMORY;

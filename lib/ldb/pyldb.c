@@ -1673,9 +1673,13 @@ static PyObject *ldb_ldif_to_pyobject(struct ldb_ldif *ldif)
 		Py_RETURN_NONE;
 	} else {
 	/* We don't want this attached to the 'ldb' any more */
-		return Py_BuildValue(discard_const_p(char, "(iO)"),
-				     ldif->changetype,
-				     PyLdbMessage_FromMessage(ldif->msg));
+		PyObject *obj = PyLdbMessage_FromMessage(ldif->msg);
+		PyObject *result =
+			Py_BuildValue(discard_const_p(char, "(iO)"),
+				      ldif->changetype,
+				      obj);
+		Py_CLEAR(obj);
+		return result;
 	}
 }
 
@@ -3427,12 +3431,15 @@ static PyObject *py_ldb_msg_items(PyLdbMessageObject *self)
 	Py_ssize_t i, j = 0;
 	PyObject *l = PyList_New(msg->num_elements + (msg->dn == NULL?0:1));
 	if (msg->dn != NULL) {
-		PyList_SetItem(l, 0, Py_BuildValue("(sO)", "dn", pyldb_Dn_FromDn(msg->dn)));
+		PyObject *obj = pyldb_Dn_FromDn(msg->dn);
+		PyList_SetItem(l, 0, Py_BuildValue("(sO)", "dn", obj));
+		Py_CLEAR(obj);
 		j++;
 	}
 	for (i = 0; i < msg->num_elements; i++, j++) {
 		PyObject *py_el = PyLdbMessageElement_FromMessageElement(&msg->elements[i], msg->elements);
 		PyObject *value = Py_BuildValue("(sO)", msg->elements[i].name, py_el);
+		Py_CLEAR(py_el);
 		PyList_SetItem(l, j, value);
 	}
 	return l;
