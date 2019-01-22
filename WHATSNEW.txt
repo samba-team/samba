@@ -94,7 +94,7 @@ e.g. '--extra-python=/usr/bin/python2'. It should be noted that support for
 this option will be deprecated in a future release.
 
 What if I need to build with python2? To build with python2 you *must* set
-the 'PYTHON' environent variable to override the python3 default for both
+the 'PYTHON' environment variable to override the python3 default for both
 'configure' and 'make' steps.
 
    'PYTHON=python2 ./configure.developer'
