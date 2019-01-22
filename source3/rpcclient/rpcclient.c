@@ -982,6 +982,8 @@ out_free:
 	pc = poptGetContext("rpcclient", argc, const_argv,
 			    long_options, 0);
 
+	poptSetOtherOptionHelp(pc, "[OPTION...] <server>\nOptions:");
+
 	if (argc == 1) {
 		poptPrintHelp(pc, stderr, 0);
 		goto done;
