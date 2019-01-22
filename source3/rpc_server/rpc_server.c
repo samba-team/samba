@@ -91,10 +91,10 @@ struct dcerpc_ncacn_listen_state {
 	dcerpc_ncacn_disconnect_fn disconnect_fn;
 };
 
-static void named_pipe_listener(struct tevent_context *ev,
-				struct tevent_fd *fde,
-				uint16_t flags,
-				void *private_data);
+static void dcesrv_ncacn_np_listener(struct tevent_context *ev,
+				     struct tevent_fd *fde,
+				     uint16_t flags,
+				     void *private_data);
 
 NTSTATUS dcesrv_create_ncacn_np_socket(const char *pipe_name, int *out_fd)
 {
@@ -190,7 +190,7 @@ NTSTATUS dcesrv_setup_ncacn_np_socket(const char *pipe_name,
 	errno = 0;
 	fde = tevent_add_fd(ev_ctx,
 			    state, state->fd, TEVENT_FD_READ,
-			    named_pipe_listener, state);
+			    dcesrv_ncacn_np_listener, state);
 	if (fde == NULL) {
 		if (errno == 0) {
 			errno = ENOMEM;
@@ -212,10 +212,10 @@ out:
 	return status;
 }
 
-static void named_pipe_listener(struct tevent_context *ev,
-				struct tevent_fd *fde,
-				uint16_t flags,
-				void *private_data)
+static void dcesrv_ncacn_np_listener(struct tevent_context *ev,
+				     struct tevent_fd *fde,
+				     uint16_t flags,
+				     void *private_data)
 {
 	struct dcerpc_ncacn_listen_state *state =
 			talloc_get_type_abort(private_data,
