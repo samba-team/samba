@@ -180,11 +180,11 @@ void start_epmd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	status = rpc_setup_tcpip_sockets(ev_ctx,
-					 msg_ctx,
-					 &ndr_table_epmapper,
-					 NULL,
-					 135);
+	status = dcesrv_setup_ncacn_ip_tcp_sockets(ev_ctx,
+						   msg_ctx,
+						   &ndr_table_epmapper,
+						   NULL,
+						   135);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to open epmd tcpip sockets!\n"));
 		exit(1);

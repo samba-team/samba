@@ -27,11 +27,12 @@
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_sock_helper.h"
 
-NTSTATUS rpc_create_tcpip_sockets(const struct ndr_interface_table *iface,
-				  struct dcerpc_binding_vector *bvec,
-				  uint16_t port,
-				  int *listen_fd,
-				  int *listen_fd_size)
+NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
+				const struct ndr_interface_table *iface,
+				struct dcerpc_binding_vector *bvec,
+				uint16_t port,
+				int *listen_fd,
+				int *listen_fd_size)
 {
 	uint32_t num_ifs = iface_count();
 	uint32_t i;
@@ -150,11 +151,11 @@ done:
 	return status;
 }
 
-NTSTATUS rpc_setup_tcpip_sockets(struct tevent_context *ev_ctx,
-				 struct messaging_context *msg_ctx,
-				 const struct ndr_interface_table *iface,
-				 struct dcerpc_binding_vector *bvec,
-				 uint16_t port)
+NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
+				struct messaging_context *msg_ctx,
+				const struct ndr_interface_table *iface,
+				struct dcerpc_binding_vector *bvec,
+				uint16_t port)
 {
 	uint32_t num_ifs = iface_count();
 	uint32_t i;

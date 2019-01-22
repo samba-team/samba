@@ -23,17 +23,18 @@
 #ifndef _RPC_SOCK_HELPER_H_
 #define _RPC_SOCK_HELPER_H_
 
-NTSTATUS rpc_create_tcpip_sockets(const struct ndr_interface_table *iface,
-				  struct dcerpc_binding_vector *bvec,
-				  uint16_t port,
-				  int *listen_fd,
-				  int *listen_fd_size);
+NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
+				const struct ndr_interface_table *iface,
+				struct dcerpc_binding_vector *bvec,
+				uint16_t port,
+				int *listen_fd,
+				int *listen_fd_size);
 
-NTSTATUS rpc_setup_tcpip_sockets(struct tevent_context *ev_ctx,
-				 struct messaging_context *msg_ctx,
-				 const struct ndr_interface_table *iface,
-				 struct dcerpc_binding_vector *bvec,
-				 uint16_t port);
+NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
+				struct messaging_context *msg_ctx,
+				const struct ndr_interface_table *iface,
+				struct dcerpc_binding_vector *bvec,
+				uint16_t port);
 
 #endif /* _RPC_SOCK_HELPER_H_ */
 

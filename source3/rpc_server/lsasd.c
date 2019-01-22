@@ -607,11 +607,11 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	}
 
 	/* Create only one tcpip listener for all services */
-	status = rpc_create_tcpip_sockets(&ndr_table_lsarpc,
-					  v_orig,
-					  0,
-					  listen_fd,
-					  listen_fd_size);
+	status = dcesrv_create_ncacn_ip_tcp_sockets(&ndr_table_lsarpc,
+						    v_orig,
+						    0,
+						    listen_fd,
+						    listen_fd_size);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
