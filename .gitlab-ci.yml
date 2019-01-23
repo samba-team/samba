@@ -118,3 +118,13 @@ build_samba_buildpy2_only:
   script:
     - python script/autobuild.py samba-buildpy2-only             --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
+build_samba_ad_dc_ntvfs:
+  <<: *shared_template
+  script:
+    # this one takes about 100 mins to finish
+    - script/autobuild.py samba-ad-dc-ntvfs --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
+
+build_samba_ad_dc_ntvfs_py2:
+  <<: *shared_template
+  script:
+    - script/autobuild.py samba-ad-dc-ntvfs-py2 --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase

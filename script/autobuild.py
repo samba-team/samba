@@ -49,6 +49,8 @@ builddirs = {
     "samba-none-env": ".",
     "samba-ad-dc": ".",
     "samba-ad-dc-py2": ".",
+    "samba-ad-dc-ntvfs": ".",
+    "samba-ad-dc-ntvfs-py2": ".",
     "samba-ad-dc-2": ".",
     "samba-ad-dc-2-py2": ".",
     "samba-ad-dc-backup": ".",
@@ -93,8 +95,10 @@ tasks = {
                ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
                ("clean", "make clean", "text/plain")],
 
-    # We have 'test' before 'install' because, 'test' should work without 'install (runs ad_dc_ntvfs and all the other envs)'
-    "samba": [("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+    # We have 'test' before 'install' because, 'test' should work without 'install (runs all the other envs)'
+    "samba": [
+                ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                 ("make", "make -j", "text/plain"),
                 ("test", "make test FAIL_IMMEDIATELY=1 "
                  "TESTS='${PY3_ONLY}"
@@ -102,6 +106,7 @@ tasks = {
                  "--exclude-env=nt4_dc "
                  "--exclude-env=nt4_member "
                  "--exclude-env=ad_dc "
+                 "--exclude-env=ad_dc_ntvfs "
                  "--exclude-env=ad_dc_no_nss "
                  "--exclude-env=fl2003dc "
                  "--exclude-env=fl2008r2dc "
@@ -123,7 +128,6 @@ tasks = {
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                 ("clean", "make clean", "text/plain")],
 
-    # We split out this so the isolated nt4_dc tests do not wait for ad_dc or ad_dc_ntvfs tests (which are long)
     "samba-nt4": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                     ("configure", "./configure.developer --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                     ("make", "make -j", "text/plain"),
@@ -134,7 +138,6 @@ tasks = {
                     ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                     ("clean", "make clean", "text/plain")],
 
-    # We split out this so the isolated ad_dc tests do not wait for ad_dc_ntvfs tests (which are long)
     "samba-fileserver": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                            ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                            ("make", "make -j", "text/plain"),
@@ -143,7 +146,6 @@ tasks = {
                             "--include-env=fileserver'", "text/plain"),
                            ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
-    # We split out this so the isolated ad_dc tests do not wait for ad_dc_ntvfs tests (which are long)
     "samba-ad-dc": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
@@ -157,7 +159,6 @@ tasks = {
                        "--include-env=ad_member_idmap_ad'", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
-    # We split out this so the isolated ad_dc tests do not wait for ad_dc_ntvfs tests (which are long)
     "samba-ad-dc-2": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
@@ -170,6 +171,19 @@ tasks = {
                          "'",
                          "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+
+    # We split out the ad_dc_ntvfs tests (which are long) so other test do not wait
+    # This is currently the longest task, so we don't randomly delay it.
+    "samba-ad-dc-ntvfs": [
+                      ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
+                      ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                      ("make", "make -j", "text/plain"),
+                      ("test", "make test FAIL_IMMEDIATELY=1 "
+                       "TESTS='${PY3_ONLY}"
+                       "--include-env=ad_dc_ntvfs "
+                       "'",
+                       "text/plain"),
+                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     # run the backup/restore testenvs separately as they're fairly standalone
     # (and CI seems to max out at ~8 different DCs running at once)
