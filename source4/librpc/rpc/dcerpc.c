@@ -144,7 +144,7 @@ static struct dcecli_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 	c->security_state.auth_type = DCERPC_AUTH_TYPE_NONE;
 	c->security_state.auth_level = DCERPC_AUTH_LEVEL_NONE;
 	c->security_state.auth_context_id = 0;
-	c->security_state.session_key = dcerpc_generic_session_key;
+	c->security_state.session_key = dcecli_generic_session_key;
 	c->security_state.generic_state = NULL;
 	c->flags = 0;
 	/*

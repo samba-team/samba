@@ -765,11 +765,9 @@ _PUBLIC_ NTSTATUS dcerpc_pipe_auth(TALLOC_CTX *mem_ctx,
 }
 
 
-NTSTATUS dcerpc_generic_session_key(struct dcecli_connection *c,
+NTSTATUS dcecli_generic_session_key(struct dcecli_connection *c,
 				    DATA_BLOB *session_key)
 {
-	*session_key = data_blob_null;
-
 	if (c != NULL) {
 		if (c->transport.transport != NCALRPC &&
 		    c->transport.transport != NCACN_UNIX_STREAM)
@@ -778,10 +776,7 @@ NTSTATUS dcerpc_generic_session_key(struct dcecli_connection *c,
 		}
 	}
 
-	/* this took quite a few CPU cycles to find ... */
-	session_key->data = discard_const_p(unsigned char, "SystemLibraryDTC");
-	session_key->length = 16;
-	return NT_STATUS_OK;
+	return dcerpc_generic_session_key(session_key);
 }
 
 /*

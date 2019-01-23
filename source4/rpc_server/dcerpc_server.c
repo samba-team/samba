@@ -524,7 +524,7 @@ static NTSTATUS dcesrv_remote_session_key(struct dcesrv_auth *auth,
 static NTSTATUS dcesrv_local_fixed_session_key(struct dcesrv_auth *auth,
 					       DATA_BLOB *session_key)
 {
-	return dcerpc_generic_session_key(NULL, session_key);
+	return dcerpc_generic_session_key(session_key);
 }
 
 /*

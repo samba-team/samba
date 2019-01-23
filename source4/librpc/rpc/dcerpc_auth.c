@@ -523,7 +523,7 @@ NTSTATUS dcerpc_bind_auth_recv(struct composite_context *creq)
 		  after a successful authenticated bind the session
 		  key reverts to the generic session key
 		*/
-		state->pipe->conn->security_state.session_key = dcerpc_generic_session_key;
+		state->pipe->conn->security_state.session_key = dcecli_generic_session_key;
 	}
 	
 	talloc_free(creq);

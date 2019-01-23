@@ -445,4 +445,6 @@ struct ndr_syntax_id dcerpc_construct_bind_time_features(uint64_t features);
 	(DCERPC_AUTH_PAD_ALIGNMENT - (stub_length) % DCERPC_AUTH_PAD_ALIGNMENT):\
 	0)
 
+NTSTATUS dcerpc_generic_session_key(DATA_BLOB *session_key);
+
 #endif /* __DEFAULT_LIBRPC_RPCCOMMON_H__ */
