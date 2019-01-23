@@ -1741,7 +1741,21 @@ static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 		ldif = ldb_ldif_read_string(self->ldb_ctx, &s);
 		talloc_steal(mem_ctx, ldif);
 		if (ldif) {
-			PyList_Append(list, ldb_ldif_to_pyobject(ldif));
+			int res = 0;
+			PyObject *py_ldif = ldb_ldif_to_pyobject(ldif);
+			if (py_ldif == NULL) {
+				Py_CLEAR(list);
+				PyErr_BadArgument();
+				talloc_free(mem_ctx);
+				return NULL;
+			}
+			res = PyList_Append(list, py_ldif);
+			Py_CLEAR(py_ldif);
+			if (res == -1) {
+				Py_CLEAR(list);
+				talloc_free(mem_ctx);
+				return NULL;
+			}
 			last_dn = ldif->msg->dn;
 		} else {
 			const char *last_dn_str = NULL;
@@ -1750,6 +1764,7 @@ static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 				PyErr_SetString(PyExc_ValueError,
 						"unable to parse LDIF "
 						"string at first chunk");
+				Py_CLEAR(list);
 				talloc_free(mem_ctx);
 				return NULL;
 			}
@@ -1766,6 +1781,7 @@ static PyObject *py_ldb_parse_ldif(PyLdbObject *self, PyObject *args)
 			PyErr_SetString(PyExc_ValueError,
 					err_string);
 			talloc_free(mem_ctx);
+			Py_CLEAR(list);
 			return NULL;
 		}
 	}
@@ -2201,8 +2217,24 @@ static PyObject *py_ldb_modules(PyLdbObject *self)
 	PyObject *ret = PyList_New(0);
 	struct ldb_module *mod;
 
+	if (ret == NULL) {
+		return PyErr_NoMemory();
+	}
 	for (mod = ldb->modules; mod; mod = mod->next) {
-		PyList_Append(ret, PyLdbModule_FromModule(mod));
+		PyObject *item = PyLdbModule_FromModule(mod);
+		int res = 0;
+		if (item == NULL) {
+			PyErr_SetString(PyExc_RuntimeError,
+				"Failed to load LdbModule");
+			Py_CLEAR(ret);
+			return NULL;
+		}
+		res = PyList_Append(ret, item);
+		Py_CLEAR(item);
+		if (res == -1) {
+			Py_CLEAR(ret);
+			return NULL;
+		}
 	}
 
 	return ret;

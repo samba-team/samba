@@ -1151,6 +1151,7 @@ static NTSTATUS list_helper(const char *mntpoint, struct file_info *finfo,
 	}
 
 	ret = PyList_Append(result, file);
+	Py_CLEAR(file);
 	if (ret == -1) {
 		return NT_STATUS_INTERNAL_ERROR;
 	}

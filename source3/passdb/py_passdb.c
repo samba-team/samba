@@ -2107,12 +2107,19 @@ static PyObject *py_pdb_enum_group_mapping(PyObject *self, PyObject *args)
 	for(i=0; i<num_entries; i++) {
 		py_group_map = py_groupmap_new(&PyGroupmap, NULL, NULL);
 		if (py_group_map) {
+			int res = 0;
 			group_map = pytalloc_get_ptr(py_group_map);
 			*group_map = *gmap[i];
 			talloc_steal(group_map, gmap[i]->nt_name);
 			talloc_steal(group_map, gmap[i]->comment);
 
-			PyList_Append(py_gmap_list, py_group_map);
+			res = PyList_Append(py_gmap_list, py_group_map);
+			Py_CLEAR(py_group_map);
+			if (res == -1) {
+				Py_CLEAR(py_gmap_list);
+				talloc_free(frame);
+				return NULL;
+			}
 		}
 	}
 
@@ -2165,8 +2172,18 @@ static PyObject *py_pdb_enum_group_members(PyObject *self, PyObject *args)
 	domain_sid = get_global_sam_sid();
 
 	for(i=0; i<num_members; i++) {
+		int res = 0;
+		PyObject *py_member_sid = NULL;
 		member_sid = dom_sid_add_rid(frame, domain_sid, member_rids[i]);
-		PyList_Append(py_sid_list, pytalloc_steal(dom_sid_Type, member_sid));
+		py_member_sid = pytalloc_steal(dom_sid_Type, member_sid);
+		res = PyList_Append(py_sid_list,
+				    py_member_sid);
+		Py_CLEAR(py_member_sid);
+		if (res == -1) {
+			talloc_free(frame);
+			Py_CLEAR(py_sid_list);
+			return NULL;
+		}
 	}
 
 	talloc_free(frame);
@@ -2215,7 +2232,11 @@ static PyObject *py_pdb_enum_group_memberships(PyObject *self, PyObject *args)
 	}
 
 	for(i=0; i<num_groups; i++) {
-		PyList_Append(py_sid_list, pytalloc_steal(dom_sid_Type, dom_sid_dup(NULL, &user_group_sids[i])));
+		PyObject *py_sid =
+			pytalloc_steal(dom_sid_Type,
+				       dom_sid_dup(NULL, &user_group_sids[i]));
+		PyList_Append(py_sid_list, py_sid);
+		Py_CLEAR(py_sid);
 	}
 
 	talloc_free(frame);
@@ -2543,15 +2564,23 @@ static PyObject *py_pdb_enum_aliasmem(PyObject *self, PyObject *args)
 	}
 
 	for(i=0; i<num_members; i++) {
+		int res = 0;
 		py_member_sid = pytalloc_new(struct dom_sid, dom_sid_Type);
 		if (py_member_sid == NULL) {
 			PyErr_NoMemory();
+			Py_CLEAR(py_member_list);
 			talloc_free(frame);
 			return NULL;
 		}
 		tmp_sid = pytalloc_get_ptr(py_member_sid);
 		*tmp_sid = member_sid[i];
-		PyList_Append(py_member_list, py_member_sid);
+		res = PyList_Append(py_member_list, py_member_sid);
+		Py_CLEAR(py_member_sid);
+		if (res == -1) {
+			Py_CLEAR(py_member_list);
+			talloc_free(frame);
+			return NULL;
+		}
 	}
 
 	talloc_free(frame);
@@ -2676,13 +2705,20 @@ static PyObject *py_pdb_search_users(PyObject *self, PyObject *args)
 		if (py_dict == NULL) {
 			PyErr_NoMemory();
 		} else {
+			int res = 0;
 			PyDict_SetItemString(py_dict, "idx", PyInt_FromLong(entry->idx));
 			PyDict_SetItemString(py_dict, "rid", PyInt_FromLong(entry->rid));
 			PyDict_SetItemString(py_dict, "acct_flags", PyInt_FromLong(entry->acct_flags));
 			PyDict_SetItemString(py_dict, "account_name", PyStr_FromString(entry->account_name));
 			PyDict_SetItemString(py_dict, "fullname", PyStr_FromString(entry->fullname));
 			PyDict_SetItemString(py_dict, "description", PyStr_FromString(entry->description));
-			PyList_Append(py_userlist, py_dict);
+			res = PyList_Append(py_userlist, py_dict);
+			Py_CLEAR(py_dict);
+			if (res == -1) {
+				Py_CLEAR(py_userlist);
+				talloc_free(frame);
+				return NULL;
+			}
 		}
 	}
 	search->search_end(search);
@@ -2734,13 +2770,20 @@ static PyObject *py_pdb_search_groups(PyObject *self, PyObject *unused)
 		if (py_dict == NULL) {
 			PyErr_NoMemory();
 		} else {
+			int res = 0;
 			PyDict_SetItemString(py_dict, "idx", PyInt_FromLong(entry->idx));
 			PyDict_SetItemString(py_dict, "rid", PyInt_FromLong(entry->rid));
 			PyDict_SetItemString(py_dict, "acct_flags", PyInt_FromLong(entry->acct_flags));
 			PyDict_SetItemString(py_dict, "account_name", PyStr_FromString(entry->account_name));
 			PyDict_SetItemString(py_dict, "fullname", PyStr_FromString(entry->fullname));
 			PyDict_SetItemString(py_dict, "description", PyStr_FromString(entry->description));
-			PyList_Append(py_grouplist, py_dict);
+			res = PyList_Append(py_grouplist, py_dict);
+			Py_CLEAR(py_dict);
+			if (res == -1) {
+				talloc_free(frame);
+				Py_CLEAR(py_grouplist);
+				return NULL;
+			}
 		}
 	}
 	search->search_end(search);
@@ -2805,13 +2848,20 @@ static PyObject *py_pdb_search_aliases(PyObject *self, PyObject *args)
 		if (py_dict == NULL) {
 			PyErr_NoMemory();
 		} else {
+			int res = 0;
 			PyDict_SetItemString(py_dict, "idx", PyInt_FromLong(entry->idx));
 			PyDict_SetItemString(py_dict, "rid", PyInt_FromLong(entry->rid));
 			PyDict_SetItemString(py_dict, "acct_flags", PyInt_FromLong(entry->acct_flags));
 			PyDict_SetItemString(py_dict, "account_name", PyStr_FromString(entry->account_name));
 			PyDict_SetItemString(py_dict, "fullname", PyStr_FromString(entry->fullname));
 			PyDict_SetItemString(py_dict, "description", PyStr_FromString(entry->description));
-			PyList_Append(py_aliaslist, py_dict);
+			res = PyList_Append(py_aliaslist, py_dict);
+			Py_CLEAR(py_dict);
+			if (res == -1) {
+				Py_CLEAR(py_aliaslist);
+				talloc_free(frame);
+				return NULL;
+			}
 		}
 	}
 	search->search_end(search);
@@ -3083,6 +3133,7 @@ static PyObject *py_pdb_enum_trusteddoms(PyObject *self, PyObject *unused)
 	}
 
 	for(i=0; i<num_domains; i++) {
+		int res = 0;
 		py_dict = PyDict_New();
 		if (py_dict) {
 			PyDict_SetItemString(py_dict, "name",
@@ -3091,7 +3142,13 @@ static PyObject *py_pdb_enum_trusteddoms(PyObject *self, PyObject *unused)
 					pytalloc_steal(dom_sid_Type, &domains[i]->sid));
 		}
 
-		PyList_Append(py_domain_list, py_dict);
+		res = PyList_Append(py_domain_list, py_dict);
+		Py_CLEAR(py_dict);
+		if (res == -1) {
+			Py_CLEAR(py_dict);
+			talloc_free(frame);
+			return NULL;
+		}
 	}
 
 	talloc_free(frame);
@@ -3339,7 +3396,7 @@ static PyObject *py_pdb_enum_trusted_domains(PyObject *self, PyObject *args)
 	}
 
 	for (i=0; i<num_domains; i++) {
-
+		int res = 0;
 		py_domain_info = PyDict_New();
 		if (py_domain_info == NULL) {
 			PyErr_NoMemory();
@@ -3371,7 +3428,13 @@ static PyObject *py_pdb_enum_trusted_domains(PyObject *self, PyObject *args)
 		PyDict_SetItemString(py_domain_info, "trust_forest_trust_info",
 				PyBytes_FromStringAndSize((const char *)td->trust_forest_trust_info.data,
 							td->trust_forest_trust_info.length));
-		PyList_Append(py_td_info, py_domain_info);
+		res = PyList_Append(py_td_info, py_domain_info);
+		Py_CLEAR(py_domain_info);
+		if (res == -1) {
+			Py_CLEAR(py_domain_info);
+			talloc_free(frame);
+			return NULL;
+		}
 	}
 
 	talloc_free(frame);
@@ -3750,7 +3813,17 @@ static PyObject *py_passdb_backends(PyObject *self, PyObject *unused)
 	}
 
 	while(entry) {
-		PyList_Append(py_blist, PyStr_FromString(entry->name));
+		int res = 0;
+		PyObject *entry_name = PyStr_FromString(entry->name);
+		if (entry_name) {
+			res = PyList_Append(py_blist, entry_name);
+		}
+		Py_CLEAR(entry_name);
+		if (res == -1) {
+			Py_CLEAR(py_blist);
+			talloc_free(frame);
+			return NULL;
+		}
 		entry = entry->next;
 	}
 
