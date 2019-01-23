@@ -392,6 +392,7 @@ PyObject *py_return_ndr_struct(const char *module_name, const char *type_name,
 {
 	PyTypeObject *py_type;
 	PyObject *module;
+	PyObject *result = NULL;
 
 	if (r == NULL) {
 		Py_RETURN_NONE;
@@ -408,7 +409,10 @@ PyObject *py_return_ndr_struct(const char *module_name, const char *type_name,
 		return NULL;
 	}
 
-	return pytalloc_reference_ex(py_type, r_ctx, r);
+	result = pytalloc_reference_ex(py_type, r_ctx, r);
+	Py_CLEAR(module);
+	Py_CLEAR(py_type);
+	return result;
 }
 
 PyObject *PyString_FromStringOrNULL(const char *str)

@@ -201,19 +201,23 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 
 static PyObject *py_dom_sid_FromSid(struct dom_sid *sid)
 {
-	PyObject *mod_security, *dom_sid_Type;
+	PyObject *mod_security = NULL, *dom_sid_Type = NULL, *result = NULL;
 
 	mod_security = PyImport_ImportModule("samba.dcerpc.security");
 	if (mod_security == NULL) {
 		return NULL;
 	}
+
 	dom_sid_Type = PyObject_GetAttrString(mod_security, "dom_sid");
 	if (dom_sid_Type == NULL) {
 		Py_DECREF(mod_security);
 		return NULL;
 	}
+
+	result = pytalloc_reference((PyTypeObject *)dom_sid_Type, sid);
 	Py_DECREF(mod_security);
-	return pytalloc_reference((PyTypeObject *)dom_sid_Type, sid);
+	Py_DECREF(dom_sid_Type);
+	return result;
 }
 
 NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,

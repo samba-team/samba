@@ -180,8 +180,10 @@ static PyObject *py_ldb_set_session_info(PyObject *self, PyObject *args)
 		return NULL;
 
 	PyAuthSession_Type = PyObject_GetAttrString(mod_samba_auth, "session_info");
-	if (PyAuthSession_Type == NULL)
+	if (PyAuthSession_Type == NULL) {
+		Py_CLEAR(mod_samba_auth);
 		return NULL;
+	}
 
 	ret = PyArg_ParseTuple(args, "O!", PyAuthSession_Type, &py_session_info);
 
@@ -262,10 +264,14 @@ MODULE_INIT_FUNC(_ldb)
 		return NULL;
 
 	PySambaLdb.tp_base = (PyTypeObject *)PyObject_GetAttrString(pyldb_module, "Ldb");
-	if (PySambaLdb.tp_base == NULL)
+	if (PySambaLdb.tp_base == NULL) {
+		Py_CLEAR(pyldb_module);
 		return NULL;
+	}
 
 	py_ldb_error = PyObject_GetAttrString(pyldb_module, "LdbError");
+
+	Py_CLEAR(pyldb_module);
 
 	if (PyType_Ready(&PySambaLdb) < 0)
 		return NULL;

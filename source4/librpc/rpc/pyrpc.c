@@ -555,16 +555,22 @@ MODULE_INIT_FUNC(base)
 		return NULL;
 
 	BaseObject_Type = (PyTypeObject *)PyObject_GetAttrString(dep_talloc, "BaseObject");
-	if (BaseObject_Type == NULL)
+	if (BaseObject_Type == NULL) {
+		Py_CLEAR(dep_talloc);
 		return NULL;
+	}
 
+	Py_CLEAR(dep_talloc);
 	dep_samba_dcerpc_misc = PyImport_ImportModule("samba.dcerpc.misc");
-	if (dep_samba_dcerpc_misc == NULL)
+	if (dep_samba_dcerpc_misc == NULL) {
 		return NULL;
+	}
 
 	ndr_syntax_id_Type = (PyTypeObject *)PyObject_GetAttrString(dep_samba_dcerpc_misc, "ndr_syntax_id");
-	if (ndr_syntax_id_Type == NULL)
+	Py_CLEAR(dep_samba_dcerpc_misc);
+	if (ndr_syntax_id_Type == NULL) {
 		return NULL;
+	}
 
 	py_transfer_syntax_ndr_SyntaxType.tp_base = ndr_syntax_id_Type;
 	py_transfer_syntax_ndr_SyntaxType.tp_basicsize = pytalloc_BaseObject_size();
@@ -576,22 +582,28 @@ MODULE_INIT_FUNC(base)
 	py_dcerpc_ndr_pointer_type.tp_base = BaseObject_Type;
 	py_dcerpc_ndr_pointer_type.tp_basicsize = pytalloc_BaseObject_size();
 
-	if (PyType_Ready(&dcerpc_InterfaceType) < 0)
+	if (PyType_Ready(&dcerpc_InterfaceType) < 0) {
 		return NULL;
+	}
 
-	if (PyType_Ready(&py_transfer_syntax_ndr_SyntaxType) < 0)
+	if (PyType_Ready(&py_transfer_syntax_ndr_SyntaxType) < 0) {
 		return NULL;
-	if (PyType_Ready(&py_transfer_syntax_ndr64_SyntaxType) < 0)
+	}
+	if (PyType_Ready(&py_transfer_syntax_ndr64_SyntaxType) < 0) {
 		return NULL;
-	if (PyType_Ready(&py_bind_time_features_syntax_SyntaxType) < 0)
+	}
+	if (PyType_Ready(&py_bind_time_features_syntax_SyntaxType) < 0) {
 		return NULL;
+	}
 
-	if (PyType_Ready(&py_dcerpc_ndr_pointer_type) < 0)
+	if (PyType_Ready(&py_dcerpc_ndr_pointer_type) < 0) {
 		return NULL;
+	}
 
 	m = PyModule_Create(&moduledef);
-	if (m == NULL)
+	if (m == NULL) {
 		return NULL;
+	}
 
 	Py_INCREF((PyObject *)&dcerpc_InterfaceType);
 	PyModule_AddObject(m, "ClientConnection", (PyObject *)&dcerpc_InterfaceType);

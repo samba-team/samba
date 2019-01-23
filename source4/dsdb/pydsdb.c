@@ -53,10 +53,13 @@
 static PyObject *py_ldb_get_exception(void)
 {
 	PyObject *mod = PyImport_ImportModule("ldb");
+	PyObject *result = NULL;
 	if (mod == NULL)
 		return NULL;
 
-	return PyObject_GetAttrString(mod, "LdbError");
+	result = PyObject_GetAttrString(mod, "LdbError");
+	Py_CLEAR(mod);
+	return result;
 }
 
 static void PyErr_SetLdbError(PyObject *error, int ret, struct ldb_context *ldb_ctx)
@@ -741,11 +744,15 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 
 	py_type = (PyTypeObject *)PyObject_GetAttrString(module, "MessageElement");
 	if (py_type == NULL) {
+		Py_DECREF(module);
 		return NULL;
 	}
+
+	Py_CLEAR(module);
+
 	py_ret = py_type->tp_alloc(py_type, 0);
+	Py_CLEAR(py_type);
 	if (py_ret == NULL) {
-		Py_DECREF(py_type);
 		PyErr_NoMemory();
 		return NULL;
 	}
@@ -753,8 +760,7 @@ static PyObject *py_dsdb_normalise_attributes(PyObject *self, PyObject *args)
 
 	ret->mem_ctx = talloc_new(NULL);
 	if (talloc_reference(ret->mem_ctx, new_el) == NULL) {
-		Py_DECREF(py_type);
-		Py_DECREF(py_ret);
+		Py_CLEAR(py_ret);
 		PyErr_NoMemory();
 		return NULL;
 	}

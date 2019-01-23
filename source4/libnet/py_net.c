@@ -40,8 +40,12 @@
 
 static void PyErr_SetDsExtendedError(enum drsuapi_DsExtendedError ext_err, const char *error_description)
 {
-	PyObject *error = PyObject_GetAttrString(PyImport_ImportModule("samba"),
-						 "DsExtendedError");
+	PyObject *mod = NULL;
+	PyObject *error = NULL;
+	mod = PyImport_ImportModule("samba");
+	if (mod) {
+		error = PyObject_GetAttrString(mod, "DsExtendedError");
+	}
 	if (error_description == NULL) {
 		switch (ext_err) {
 			/* Copied out of ndr_drsuapi.c:ndr_print_drsuapi_DsExtendedError() */
@@ -98,10 +102,12 @@ static void PyErr_SetDsExtendedError(enum drsuapi_DsExtendedError ext_err, const
 				break;
 		}
 	}
-	PyErr_SetObject(error,
+	if (error) {
+		PyErr_SetObject(error,
 			Py_BuildValue(discard_const_p(char, "(i,s)"),
 				      ext_err,
 				      error_description));
+	}
 }
 
 static PyObject *py_net_join_member(py_net_Object *self, PyObject *args, PyObject *kwargs)
