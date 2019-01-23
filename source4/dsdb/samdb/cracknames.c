@@ -339,7 +339,7 @@ static WERROR DsCrackNameUPN(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 	}
 
 	/* This may need to be extended for more userPrincipalName variations */
-	result_filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(samAccountName=%s))", 
+	result_filter = talloc_asprintf(mem_ctx, "(&(samAccountName=%s)(objectClass=user))",
 					ldb_binary_encode_string(mem_ctx, unparsed_name_short));
 
 	domain_filter = talloc_asprintf(mem_ctx, "(distinguishedName=%s)", ldb_dn_get_linearized(domain_res->msgs[0]->dn));
@@ -706,7 +706,7 @@ WERROR DsCrackNameOneName(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx,
 		krb5_free_principal(smb_krb5_context->krb5_context, principal);
 
 		/* The ldb_binary_encode_string() here avoid LDAP filter injection attacks */
-		result_filter = talloc_asprintf(mem_ctx, "(&(objectClass=user)(userPrincipalName=%s))", 
+		result_filter = talloc_asprintf(mem_ctx, "(&(userPrincipalName=%s)(objectClass=user))",
 						ldb_binary_encode_string(mem_ctx, unparsed_name));
 
 		free(unparsed_name);
