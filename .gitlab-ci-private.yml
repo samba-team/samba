@@ -39,3 +39,7 @@ build_samba_ad_dc_py2:
     # this one takes about 1 hours to finish
     - script/autobuild.py samba-ad-dc-py2     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
+build_nt4:
+  <<: *private_template
+  script:
+    - script/autobuild.py samba-nt4 --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
