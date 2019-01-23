@@ -379,7 +379,7 @@ SMB_ACL_T posixacl_xattr_acl_get_file(vfs_handle_struct *handle,
 	if (ret > 0) {
 		return posixacl_xattr_to_smb_acl(buf, ret, mem_ctx);
 	}
-	if (ret == 0 || errno == ENOATTR || errno == ENODATA) {
+	if (ret == 0 || errno == ENOATTR) {
 		mode_t mode = 0;
 		TALLOC_CTX *frame = talloc_stackframe();
 		struct smb_filename *smb_fname_tmp =
@@ -434,7 +434,7 @@ SMB_ACL_T posixacl_xattr_acl_get_fd(vfs_handle_struct *handle,
 	if (ret > 0) {
 		return posixacl_xattr_to_smb_acl(buf, ret, mem_ctx);
 	}
-	if (ret == 0 || errno == ENOATTR || errno == ENODATA) {
+	if (ret == 0 || errno == ENOATTR) {
 		SMB_STRUCT_STAT sbuf;
 		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 		if (ret == 0)
