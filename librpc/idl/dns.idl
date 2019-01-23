@@ -23,8 +23,7 @@ interface dns
 	const int DNS_MAX_LABEL_LENGTH   = 63;
 
 	typedef [public,bitmap16bit] bitmap {
-		DNS_RCODE                   = 0x000F,
-		DNS_FLAG_BROADCAST          = 0x0010,
+		DNS_RCODE                   = 0x001F,
 		DNS_FLAG_RECURSION_AVAIL    = 0x0080,
 		DNS_FLAG_RECURSION_DESIRED  = 0x0100,
 		DNS_FLAG_TRUNCATION         = 0x0200,
