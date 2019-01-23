@@ -1250,11 +1250,12 @@ sub setup_fileserver
 	my $dropbox_sharedir="$share_dir/dropbox";
 	push(@dirs,$dropbox_sharedir);
 
+	my $ip4 = Samba::get_ipv4_addr("FILESERVER");
 	my $fileserver_options = "
 	kernel change notify = yes
 	rpc_server:mdssvc = embedded
 	spotlight backend = elasticsearch
-	elasticsearch:address = 127.0.0.35
+	elasticsearch:address = $ip4
 	elasticsearch:port = 8080
 	elasticsearch:mappings = $srcdir_abs/source3/rpc_server/mdssvc/elasticsearch_mappings.json
 
@@ -2830,7 +2831,7 @@ sub wait_for_start($$$$$)
 			} else {
 				system("$nmblookup $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} __SAMBA__");
 				system("$nmblookup $envvars->{CONFIGURATION} __SAMBA__");
-				system("$nmblookup $envvars->{CONFIGURATION} -U 127.255.255.255 __SAMBA__");
+				system("$nmblookup $envvars->{CONFIGURATION} -U 10.255.255.255 __SAMBA__");
 				system("$nmblookup $envvars->{CONFIGURATION} -U $envvars->{SERVER_IP} $envvars->{SERVER}");
 			}
 			$count++;
@@ -3037,7 +3038,7 @@ sub provision_ctdb($$$$)
 		my %node = ();
 		my $server_name = "ctdb${i}";
 		my $pub_iface = Samba::get_interface($server_name);
-		my $ip = "127.0.0.${pub_iface}";
+		my $ip = Samba::get_ipv4_addr($server_name);
 
 		$node{NODE_NUMBER} = "$i";
 		$node{SERVER_NAME} = "$server_name";

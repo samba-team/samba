@@ -26,10 +26,10 @@ selftest namespace (which itself is a child of whatever namespace you run
 
 How does it work?
 =================
-Normally when 'make test' is run, every testenv uses a 127.0.0.x IP address
+Normally when 'make test' is run, every testenv uses a 10.53.57.x IP address
 and socket-wrapper passes the packets between them.
 
-With namespaces, we can use real IP addresses and have the packets pass through
+With namespaces, we also use 10.53.57.x IP addresses but have the packets pass through
 the kernel's IP stack normally, as it forwards them between namespaces.
 
 We use veth interfaces for this. veth is a type of virtual interface supported
@@ -43,7 +43,7 @@ namespace, and the other end is added to a new namespace that we'll run
 samba in. E.g.
 
 selftest.pl  veth21-br ------------------------ veth21 samba (ad_dc_ntvfs)
-             10.0.0.11                          10.0.0.21
+             10.53.57.11                          10.53.57.21
  Namespace 1                                       Namespace 2
 
 However, we need to run multiple different testenvs and have them talk to
@@ -52,11 +52,11 @@ up the namespaces, which essentially just acts as a hub. So connecting together
 multiple testenvs looks more like this:
 
 selftest.pl     +-- veth21-br ------------------------ veth21 samba (ad_dc_ntvfs)
-                |                                      10.0.0.21
+                |                                      10.53.57.21
     selftest0 --+                                        Namespace 2
-    10.0.0.11   |
+    10.53.57.11   |
                 +-- veth22-br ------------------------ veth22 samba (vampire_dc)
-                                                       10.0.0.22
+                                                       10.53.57.22
  Namespace 1                                             Namespace 3      
 
 The veth interfaces are named vethX and vethX-br, where X is the
@@ -114,7 +114,7 @@ sudo ip link set testenv-veth1 netns $SELFTEST_PID
 4. Configure the veth end in the default namespace to be in the same subnet
 as the selftest network:
 sudo ip link set dev testenv-veth0 up
-sudo ip addr add 10.0.0.63/24 dev testenv-veth0
+sudo ip addr add 10.53.57.63/24 dev testenv-veth0
 
 5. Enter the selftest namespace, bring that end of the pipe up, and add it to
 to the main selftest0 bridge (that connects all the DCs together). We also need
@@ -122,14 +122,14 @@ to add a default route from selftest back to your PC's default namespace.
 nsenter -t $SELFTEST_PID --net --user --preserve-credentials
 ip link set dev testenv-veth1 up
 ip link set testenv-veth1 master selftest0
-ip route add default via 10.0.0.63
+ip route add default via 10.53.57.63
 logout
 
 Your Windows VM and samba testenv should now be able to talk to each
 other over IP!
 
 6. The other step is to get DNS working. You probably need to add dns_hub
-(10.0.0.64) as a nameserver (at least on your Windows VM).
+(10.53.57.64) as a nameserver (at least on your Windows VM).
 
 This should work for using RSAT tools on samba, or joining Windows to Samba
 (depending on the schema version). Joining samba to Windows is a bit more

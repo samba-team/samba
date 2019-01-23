@@ -487,6 +487,7 @@ foreach (@opt_include) {
 # We give the selftest client 6 different IPv4 addresses to use. Most tests
 # only use the first (.11) IP. Note that winsreplication.c is one test that
 # uses the other IPs (search for iface_list_count()).
+$ENV{SOCKET_WRAPPER_IPV4_NETWORK} = "10.53.57.0";
 my $interfaces = Samba::get_interfaces_config("client", 6);
 
 my $clientdir = "$prefix_abs/client";

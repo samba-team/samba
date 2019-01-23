@@ -77,7 +77,7 @@ class MdssvcTests(RpcInterfaceTestCase):
 
         self.pipe = mdssvc.mdssvc('ncacn_np:fileserver[/pipe/mdssvc]', self.get_loadparm())
 
-        self.server = HTTPServer(('127.0.0.35', 8080),
+        self.server = HTTPServer(('10.53.57.35', 8080),
                                  MdssvcHTTPRequestHandler,
                                  bind_and_activate=False)
 

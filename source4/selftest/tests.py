@@ -759,10 +759,10 @@ for env in ["chgdcpass", "ad_member"]:
 
 if have_heimdal_support:
     planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log", extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
+                           environ={'CLIENT_IP': '10.53.57.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
     planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log", extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
+                           environ={'CLIENT_IP': '10.53.57.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
     planoldpythontestsuite("ad_dc", "samba.tests.auth_log_pass_change",
                            extra_args=['-U"$USERNAME%$PASSWORD"'])

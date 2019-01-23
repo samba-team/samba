@@ -98,7 +98,7 @@ class LoadParmTestCase(samba.tests.TestCaseInTempDir):
                                                     'global',
                                                     self.tempf))
         content = open(self.tempf, 'r').read()
-        self.assertIn('127.0.0.', content)
+        self.assertIn('10.53.57.', content)
 
     def test_samdb_url(self):
         samba_lp = param.LoadParm()

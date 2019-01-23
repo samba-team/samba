@@ -576,13 +576,7 @@ sub get_ipv4_addr
 		$swiface += $iface_num;
 	}
 
-	if (use_namespaces()) {
-		# use real IPs if selftest is running in its own network namespace
-		return "10.0.0.$swiface";
-	} else {
-		# use loopback IPs with socket-wrapper
-		return "127.0.0.$swiface";
-	}
+	return "10.53.57.$swiface";
 }
 
 sub get_ipv6_addr
