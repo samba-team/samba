@@ -2367,9 +2367,9 @@ static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)
 	$self->pidl("MODULE_INIT_FUNC($basename)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("PyObject *m;");
+	$self->pidl("PyObject *m = NULL;");
 	foreach my $h (@{$self->{module_imports}}) {
-		$self->pidl("PyObject *$h->{'key'};");
+		$self->pidl("PyObject *$h->{'key'} = NULL;");
 	}
 	$self->pidl("");
 
@@ -2378,7 +2378,7 @@ static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)
 		my $module_path = $h->{'val'};
 		$self->pidl("$var_name = PyImport_ImportModule(\"$module_path\");");
 		$self->pidl("if ($var_name == NULL)");
-		$self->pidl("\treturn NULL;");
+		$self->pidl("\tgoto out;");
 		$self->pidl("");
 	}
 
@@ -2391,7 +2391,7 @@ static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)
 		$module_var =~ s/\./_/g;
 		$self->pidl("$type_var = (PyTypeObject *)PyObject_GetAttrString($module_var, \"$pretty_name\");");
 		$self->pidl("if ($type_var == NULL)");
-		$self->pidl("\treturn NULL;");
+		$self->pidl("\tgoto out;");
 		$self->pidl("");
 	}
 
@@ -2399,7 +2399,7 @@ static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)
 
 	foreach (@{$self->{ready_types}}) {
 		$self->pidl("if (PyType_Ready($_) < 0)");
-		$self->pidl("\treturn NULL;");
+		$self->pidl("\tgoto out;");
 	}
 
 	$self->pidl($_) foreach (@{$self->{postreadycode}});
@@ -2415,7 +2415,7 @@ static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)
 
 	$self->pidl("m = PyModule_Create(&moduledef);");
 	$self->pidl("if (m == NULL)");
-	$self->pidl("\treturn NULL;");
+	$self->pidl("\tgoto out;");
 	$self->pidl("");
 	foreach my $h (@{$self->{constants}}) {
 		my $pretty_name = PrettifyTypeName($h->{'key'}, $basename);
@@ -2441,7 +2441,11 @@ static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)
 	$self->pidl("#ifdef PY_MOD_".uc($basename)."_PATCH");
 	$self->pidl("PY_MOD_".uc($basename)."_PATCH(m);");
 	$self->pidl("#endif");
-
+	$self->pidl("out:");
+	foreach my $h (@{$self->{module_imports}}) {
+		my $mod_var = $h->{'key'};
+		$self->pidl("Py_XDECREF($mod_var);");
+	}
 	$self->pidl("return m;");
 	$self->pidl("");
 	$self->deindent;
