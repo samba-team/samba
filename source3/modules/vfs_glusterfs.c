@@ -1469,7 +1469,7 @@ static int vfs_gluster_get_real_filename(struct vfs_handle_struct *handle,
 
 	ret = glfs_getxattr(handle->data, path, key_buf, val_buf, NAME_MAX + 1);
 	if (ret == -1) {
-		if (errno == ENODATA) {
+		if (errno == ENOATTR) {
 			errno = EOPNOTSUPP;
 		}
 		return -1;
