@@ -24,6 +24,7 @@ import threading
 import sys
 import select
 import socket
+import time
 from samba.dcerpc import dns
 import samba.ndr as ndr
 
@@ -38,6 +39,16 @@ DNS_REQUEST_TIMEOUT = 10
 
 
 class DnsHandler(sserver.BaseRequestHandler):
+    dns_qtype_strings = dict((v, k) for k, v in vars(dns).items() if k.startswith('DNS_QTYPE_'))
+    def dns_qtype_string(self, qtype):
+        "Return a readable qtype code"
+        return self.dns_qtype_strings[qtype]
+
+    dns_rcode_strings = dict((v, k) for k, v in vars(dns).items() if k.startswith('DNS_RCODE_'))
+    def dns_rcode_string(self, rcode):
+        "Return a readable error code"
+        return self.dns_rcode_strings[rcode]
+
     def dns_transaction_udp(self, packet, host):
         "send a DNS query and read the reply"
         s = None
@@ -65,6 +76,13 @@ class DnsHandler(sserver.BaseRequestHandler):
             return 'ignore'
         if lname.endswith('dsfsdfs'):
             return 'fail'
+        if lname.endswith("torture1", 0, len(lname)-2):
+            # CATCH TORTURE100, TORTURE101, ...
+            return 'torture'
+        if lname.endswith('_none_.example.com'):
+            return 'torture'
+        if lname.endswith('torturedom.samba.example.com'):
+            return 'torture'
         if lname.endswith('adnonssdom.samba.example.com'):
             return '127.0.0.17'
         if lname.endswith('adnontlmdom.samba.example.com'):
@@ -92,6 +110,7 @@ class DnsHandler(sserver.BaseRequestHandler):
         return None
 
     def handle(self):
+        start = time.monotonic()
         data, sock = self.request
         query = ndr.ndr_unpack(dns.name_packet, data)
         name = query.questions[0].name
@@ -102,13 +121,13 @@ class DnsHandler(sserver.BaseRequestHandler):
             return
         elif forwarder is 'fail':
             pass
-        elif forwarder is not None:
-            response = self.dns_transaction_udp(query, forwarder)
-        else:
+        elif forwarder in ['torture', None]:
             response = query
             response.operation |= dns.DNS_FLAG_REPLY
             response.operation |= dns.DNS_FLAG_RECURSION_AVAIL
             response.operation |= dns.DNS_RCODE_NXDOMAIN
+        else:
+            response = self.dns_transaction_udp(query, forwarder)
 
         if response is None:
             response = query
@@ -118,14 +137,24 @@ class DnsHandler(sserver.BaseRequestHandler):
 
         send_packet = ndr.ndr_pack(response)
 
-        print("dns_hub: sending %s to address %s for name %s\n" %
-            (forwarder, self.client_address, name))
+        end = time.monotonic()
+        tdiff = end - start
+        errcode = response.operation & dns.DNS_RCODE
+        if tdiff > (DNS_REQUEST_TIMEOUT/5):
+            debug = True
+        else:
+            debug = False
+        if debug:
+            print("dns_hub: forwarder[%s] client[%s] name[%s][%s] %s response.operation[0x%x] tdiff[%s]\n" %
+                (forwarder, self.client_address, name,
+                 self.dns_qtype_string(query.questions[0].question_type),
+                 self.dns_rcode_string(errcode), response.operation, tdiff))
 
         try:
             sock.sendto(send_packet, self.client_address)
         except socket.error as err:
-            print("Error sending %s to address %s for name %s: %s\n" %
-                (forwarder, self.client_address, name, err))
+            print("dns_hub: Error sending response to client[%s] for name[%s] tdiff[%s]: %s\n" %
+                (self.client_address, name, tdiff, err))
 
 
 class server_thread(threading.Thread):
