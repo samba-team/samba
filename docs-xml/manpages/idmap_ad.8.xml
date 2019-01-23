@@ -92,7 +92,7 @@
 		<listitem><para>
 		  If set to <parameter>yes</parameter> winbind will retrieve the login
 		  shell and home directory from the LDAP attributes. If set to
-		  <parameter>no</parameter> the or the AD LDAP entry lacks the SFU
+		  <parameter>no</parameter> or the AD LDAP entry lacks the SFU
 		  attributes the options <emphasis>template shell</emphasis> and
 		  <emphasis>template homedir</emphasis> are used.
 		</para>
