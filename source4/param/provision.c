@@ -34,25 +34,34 @@
 static PyObject *provision_module(void)
 {
 	PyObject *name = PyStr_FromString("samba.provision");
+	PyObject *mod = NULL;
 	if (name == NULL)
 		return NULL;
-	return PyImport_Import(name);
+	mod = PyImport_Import(name);
+	Py_CLEAR(name);
+	return mod;
 }
 
 static PyObject *schema_module(void)
 {
 	PyObject *name = PyStr_FromString("samba.schema");
+	PyObject *mod = NULL;
 	if (name == NULL)
 		return NULL;
-	return PyImport_Import(name);
+	mod = PyImport_Import(name);
+	Py_CLEAR(name);
+	return mod;
 }
 
 static PyObject *ldb_module(void)
 {
 	PyObject *name = PyStr_FromString("ldb");
+	PyObject *mod = NULL;
 	if (name == NULL)
 		return NULL;
-	return PyImport_Import(name);
+	mod = PyImport_Import(name);
+	Py_CLEAR(name);
+	return mod;
 }
 
 static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
