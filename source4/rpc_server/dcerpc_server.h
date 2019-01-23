@@ -23,7 +23,6 @@
 #ifndef SAMBA_DCERPC_SERVER_H
 #define SAMBA_DCERPC_SERVER_H
 
-#include "librpc/gen_ndr/server_id.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/ndr/libndr.h"
 
@@ -259,9 +258,6 @@ struct dcesrv_connection {
 
 	/* the event_context that will be used for this connection */
 	struct tevent_context *event_ctx;
-
-	/* the server_id that will be used for this connection */
-	struct server_id server_id;
 
 	/* is this connection pending termination?  If so, why? */
 	const char *terminate;
@@ -577,5 +573,6 @@ _PUBLIC_ void *_dcesrv_iface_state_find_conn(
 
 _PUBLIC_ struct imessaging_context *dcesrv_imessaging_context(
                                        struct dcesrv_connection *conn);
+_PUBLIC_ struct server_id dcesrv_server_id(struct dcesrv_connection *conn);
 
 #endif /* SAMBA_DCERPC_SERVER_H */

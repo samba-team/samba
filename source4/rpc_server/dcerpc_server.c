@@ -609,7 +609,6 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 const struct dcesrv_endpoint *ep,
 				 struct auth_session_info *session_info,
 				 struct tevent_context *event_ctx,
-				 struct server_id server_id,
 				 uint32_t state_flags,
 				 struct dcesrv_connection **_p)
 {
@@ -627,7 +626,6 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->endpoint = ep;
 	p->packet_log_dir = lpcfg_lock_directory(dce_ctx->lp_ctx);
 	p->event_ctx = event_ctx;
-	p->server_id = server_id;
 	p->state_flags = state_flags;
 	p->allow_bind = true;
 	p->max_recv_frag = 5840;
@@ -2822,7 +2820,6 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 					 dcesrv_sock->endpoint,
 					 srv_conn->session_info,
 					 srv_conn->event.ctx,
-					 srv_conn->server_id,
 					 DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
 					 &dcesrv_conn);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3393,4 +3390,12 @@ _PUBLIC_ struct imessaging_context *dcesrv_imessaging_context(
 		talloc_get_type_abort(conn->transport.private_data,
 				      struct stream_connection);
 	return srv_conn->msg_ctx;
+}
+
+_PUBLIC_ struct server_id dcesrv_server_id(struct dcesrv_connection *conn)
+{
+	struct stream_connection *srv_conn =
+		talloc_get_type_abort(conn->transport.private_data,
+				struct stream_connection);
+	return srv_conn->server_id;
 }
