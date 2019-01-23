@@ -103,6 +103,8 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 {
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 	NTSTATUS status = NT_STATUS_WRONG_PASSWORD;
 	DATA_BLOB new_password, new_unicode_password;
 	char *new_pass;
@@ -289,7 +291,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 
 failed:
 
-	log_password_change_event(dce_call->conn->msg_ctx,
+	log_password_change_event(imsg_ctx,
 				  dce_call->conn->dce_ctx->lp_ctx,
 				  dce_call->conn->remote_address,
 				  dce_call->conn->local_address,
@@ -323,6 +325,8 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 {
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 	NTSTATUS status = NT_STATUS_WRONG_PASSWORD;
 	DATA_BLOB new_password;
 	struct ldb_context *sam_ctx = NULL;
@@ -515,7 +519,7 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 
 failed:
 
-	log_password_change_event(dce_call->conn->msg_ctx,
+	log_password_change_event(imsg_ctx,
 				  dce_call->conn->dce_ctx->lp_ctx,
 				  dce_call->conn->remote_address,
 				  dce_call->conn->local_address,

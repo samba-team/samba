@@ -81,6 +81,8 @@ static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 	struct cli_credentials *server_credentials = NULL;
 	struct dcesrv_connection *dce_conn = call->conn;
 	struct dcesrv_auth *auth = call->auth_state;
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(call->conn);
 	NTSTATUS status;
 
 	if (auth->auth_started) {
@@ -146,7 +148,7 @@ static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 
 	status = samba_server_gensec_start(auth,
 					   call->event_ctx,
-					   call->msg_ctx,
+					   imsg_ctx,
 					   call->conn->dce_ctx->lp_ctx,
 					   server_credentials,
 					   NULL,
@@ -236,6 +238,8 @@ static void log_successful_dcesrv_authz_event(struct dcesrv_call_state *call)
 	struct dcesrv_auth *auth = call->auth_state;
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(call->conn->endpoint->ep_description);
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(call->conn);
 	const char *auth_type = derpc_transport_string_by_transport(transport);
 	const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
 
@@ -248,7 +252,7 @@ static void log_successful_dcesrv_authz_event(struct dcesrv_call_state *call)
 	 * covered ncacn_np pass-through auth, and anonymous
 	 * DCE/RPC (eg epmapper, netlogon etc)
 	 */
-	log_successful_authz_event(call->conn->msg_ctx,
+	log_successful_authz_event(imsg_ctx,
 				   call->conn->dce_ctx->lp_ctx,
 				   call->conn->remote_address,
 				   call->conn->local_address,

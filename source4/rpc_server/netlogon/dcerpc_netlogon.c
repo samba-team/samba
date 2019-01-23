@@ -523,6 +523,8 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(
 	struct dom_sid *sid = NULL;
 	const char *trust_account_for_search = NULL;
 	const char *trust_account_in_db = NULL;
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 	struct auth_usersupplied_info ui = {
 		.local_host = dce_call->conn->local_address,
 		.remote_host = dce_call->conn->remote_address,
@@ -549,7 +551,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(
 	ui.netlogon_trust_account.account_name = trust_account_in_db;
 	ui.mapped.account_name = trust_account_for_search;
 	log_authentication_event(
-		dce_call->conn->msg_ctx,
+		imsg_ctx,
 		dce_call->conn->dce_ctx->lp_ctx,
 		NULL,
 		&ui,
@@ -947,6 +949,8 @@ static void dcesrv_netr_LogonSamLogon_base_reply(
 static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamLogon_base_state *state)
 {
 	struct dcesrv_call_state *dce_call = state->dce_call;
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 	TALLOC_CTX *mem_ctx = state->mem_ctx;
 	struct netr_LogonSamLogonEx *r = &state->r;
 	struct netlogon_creds_CredentialState *creds = state->creds;
@@ -992,7 +996,8 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 	case NetlogonNetworkTransitiveInformation:
 
 		nt_status = auth_context_create_for_netlogon(mem_ctx,
-					dce_call->event_ctx, dce_call->msg_ctx,
+					dce_call->event_ctx,
+					imsg_ctx,
 					dce_call->conn->dce_ctx->lp_ctx,
 					&auth_context);
 		NT_STATUS_NOT_OK_RETURN(nt_status);
@@ -1111,7 +1116,7 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 			    = r->in.logon->generic->identity_info.logon_id;
 
 			irpc_handle = irpc_binding_handle_by_name(mem_ctx,
-								  dce_call->msg_ctx,
+								  imsg_ctx,
 								  "kdc_server",
 								  &ndr_table_irpc);
 			if (irpc_handle == NULL) {
@@ -1648,6 +1653,8 @@ static WERROR dcesrv_netr_LogonControl_base_call(struct dcesrv_netr_LogonControl
 	struct loadparm_context *lp_ctx = state->dce_call->conn->dce_ctx->lp_ctx;
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(state->dce_call);
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(state->dce_call->conn);
 	enum security_user_level security_level;
 	struct dcerpc_binding_handle *irpc_handle;
 	struct tevent_req *subreq;
@@ -1827,7 +1834,7 @@ static WERROR dcesrv_netr_LogonControl_base_call(struct dcesrv_netr_LogonControl
 	}
 
 	irpc_handle = irpc_binding_handle_by_name(state,
-						  state->dce_call->msg_ctx,
+						  imsg_ctx,
 						  "winbind_server",
 						  &ndr_table_winbind);
 	if (irpc_handle == NULL) {
@@ -2914,6 +2921,8 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 	struct dcesrv_call_state *dce_call = state->dce_call;
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 	TALLOC_CTX *mem_ctx = state->mem_ctx;
 	struct netr_DsRGetDCNameEx2 *r = &state->r;
 	struct ldb_context *sam_ctx;
@@ -3058,7 +3067,7 @@ static WERROR dcesrv_netr_DsRGetDCName_base_call(struct dcesrv_netr_DsRGetDCName
 							    false);
 
 		irpc_handle = irpc_binding_handle_by_name(state,
-							  dce_call->msg_ctx,
+							  imsg_ctx,
 							  "winbind_server",
 							  &ndr_table_winbind);
 		if (irpc_handle == NULL) {
@@ -3826,6 +3835,8 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 	enum security_user_level security_level;
 	struct ldb_context *sam_ctx = NULL;
 	struct dcesrv_netr_DsRGetForestTrustInformation_state *state = NULL;
@@ -3914,7 +3925,7 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 	state->r = r;
 
 	irpc_handle = irpc_binding_handle_by_name(state,
-						  state->dce_call->msg_ctx,
+						  imsg_ctx,
 						  "winbind_server",
 						  &ndr_table_winbind);
 	if (irpc_handle == NULL) {
@@ -4262,6 +4273,8 @@ static NTSTATUS dcesrv_netr_DsrUpdateReadOnlyServerDnsRecords(struct dcesrv_call
 	struct dcerpc_binding_handle *binding_handle;
 	struct netr_dnsupdate_RODC_state *st;
 	struct tevent_req *subreq;
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 
 	nt_status = dcesrv_netr_creds_server_step_check(dce_call,
 							mem_ctx,
@@ -4289,8 +4302,10 @@ static NTSTATUS dcesrv_netr_DsrUpdateReadOnlyServerDnsRecords(struct dcesrv_call
 	st->r2->in.dns_names = r->in.dns_names;
 	st->r2->out.dns_names = r->out.dns_names;
 
-	binding_handle = irpc_binding_handle_by_name(st, dce_call->msg_ctx,
-						     "dnsupdate", &ndr_table_irpc);
+	binding_handle = irpc_binding_handle_by_name(st,
+						     imsg_ctx,
+						     "dnsupdate",
+						     &ndr_table_irpc);
 	if (binding_handle == NULL) {
 		DEBUG(0,("Failed to get binding_handle for dnsupdate task\n"));
 		dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;

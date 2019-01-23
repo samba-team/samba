@@ -609,7 +609,6 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				 const struct dcesrv_endpoint *ep,
 				 struct auth_session_info *session_info,
 				 struct tevent_context *event_ctx,
-				 struct imessaging_context *msg_ctx,
 				 struct server_id server_id,
 				 uint32_t state_flags,
 				 struct dcesrv_connection **_p)
@@ -628,7 +627,6 @@ static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 	p->endpoint = ep;
 	p->packet_log_dir = lpcfg_lock_directory(dce_ctx->lp_ctx);
 	p->event_ctx = event_ctx;
-	p->msg_ctx = msg_ctx;
 	p->server_id = server_id;
 	p->state_flags = state_flags;
 	p->allow_bind = true;
@@ -2043,7 +2041,6 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	}
 	call->conn		= dce_conn;
 	call->event_ctx		= dce_conn->event_ctx;
-	call->msg_ctx		= dce_conn->msg_ctx;
 	call->state_flags	= call->conn->state_flags;
 	call->time		= timeval_current();
 	call->list              = DCESRV_LIST_NONE;
@@ -2825,7 +2822,6 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 					 dcesrv_sock->endpoint,
 					 srv_conn->session_info,
 					 srv_conn->event.ctx,
-					 srv_conn->msg_ctx,
 					 srv_conn->server_id,
 					 DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
 					 &dcesrv_conn);
@@ -3388,4 +3384,13 @@ _PUBLIC_ void dcesrv_call_auth_info(struct dcesrv_call_state *dce_call,
 	if (auth_level != NULL) {
 		*auth_level = auth->auth_level;
 	}
+}
+
+_PUBLIC_ struct imessaging_context *dcesrv_imessaging_context(
+					struct dcesrv_connection *conn)
+{
+	struct stream_connection *srv_conn =
+		talloc_get_type_abort(conn->transport.private_data,
+				      struct stream_connection);
+	return srv_conn->msg_ctx;
 }

@@ -1105,6 +1105,8 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	char *dns_encoded = NULL;
 	char *netbios_encoded = NULL;
 	char *sid_encoded = NULL;
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 
 	DCESRV_PULL_HANDLE(policy_handle, r->in.policy_handle, LSA_HANDLE_POLICY);
 	ZERO_STRUCTP(r->out.trustdom_handle);
@@ -1364,13 +1366,16 @@ static NTSTATUS dcesrv_lsa_CreateTrustedDomain_base(struct dcesrv_call_state *dc
 	/*
 	 * Notify winbindd that we have a new trust
 	 */
-	status = irpc_servers_byname(dce_call->msg_ctx,
+	status = irpc_servers_byname(imsg_ctx,
 				     mem_ctx,
 				     "winbind_server",
-				     &num_server_ids, &server_ids);
+				     &num_server_ids,
+				     &server_ids);
 	if (NT_STATUS_IS_OK(status) && num_server_ids >= 1) {
-		imessaging_send(dce_call->msg_ctx, server_ids[0],
-				MSG_WINBIND_RELOAD_TRUSTED_DOMAINS, NULL);
+		imessaging_send(imsg_ctx,
+				server_ids[0],
+				MSG_WINBIND_RELOAD_TRUSTED_DOMAINS,
+				NULL);
 	}
 	TALLOC_FREE(server_ids);
 
@@ -4403,6 +4408,8 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 	enum ndr_err_code ndr_err;
 	int ret;
 	bool in_transaction = false;
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 
 	DCESRV_PULL_HANDLE(h, r->in.handle, LSA_HANDLE_POLICY);
 
@@ -4641,17 +4648,20 @@ static NTSTATUS dcesrv_lsa_lsaRSetForestTrustInformation(struct dcesrv_call_stat
 	/*
 	 * Notify winbindd that we have a acquired forest trust info
 	 */
-	status = irpc_servers_byname(dce_call->msg_ctx,
+	status = irpc_servers_byname(imsg_ctx,
 				     mem_ctx,
 				     "winbind_server",
-				     &num_server_ids, &server_ids);
+				     &num_server_ids,
+				     &server_ids);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("irpc_servers_byname failed\n");
 		goto done;
 	}
 
-	imessaging_send(dce_call->msg_ctx, server_ids[0],
-			MSG_WINBIND_RELOAD_TRUSTED_DOMAINS, NULL);
+	imessaging_send(imsg_ctx,
+			server_ids[0],
+			MSG_WINBIND_RELOAD_TRUSTED_DOMAINS,
+			NULL);
 
 	status = NT_STATUS_OK;
 

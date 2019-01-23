@@ -41,6 +41,8 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 {
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 	NTSTATUS status;
 	struct srvsvc_ntvfs_ctx	*c;
 	struct ntvfs_request *ntvfs_req;
@@ -92,7 +94,7 @@ NTSTATUS srvsvc_create_ntvfs_context(struct dcesrv_call_state *dce_call,
 				       PROTOCOL_NT1,
 				       0,/* ntvfs_client_caps */
 				       dce_call->event_ctx,
-				       dce_call->conn->msg_ctx,
+				       imsg_ctx,
 				       dce_call->conn->dce_ctx->lp_ctx,
 				       dce_call->conn->server_id,
 				       &c->ntvfs);

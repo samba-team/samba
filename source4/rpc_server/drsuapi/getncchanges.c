@@ -2675,6 +2675,8 @@ WERROR dcesrv_drsuapi_DsGetNCChanges(struct dcesrv_call_state *dce_call, TALLOC_
 {
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 	struct drsuapi_DsReplicaObjectIdentifier *ncRoot;
 	int ret;
 	uint32_t i, k;
@@ -3450,9 +3452,11 @@ allowed:
 		   to send notifies using the GC SPN */
 		ureq.options |= (req10->replica_flags & DRSUAPI_DRS_REF_GCSPN);
 
-		werr = drsuapi_UpdateRefs(dce_call->msg_ctx,
-					  dce_call->event_ctx, b_state,
-					  mem_ctx, &ureq);
+		werr = drsuapi_UpdateRefs(imsg_ctx,
+					  dce_call->event_ctx,
+					  b_state,
+					  mem_ctx,
+					  &ureq);
 		if (!W_ERROR_IS_OK(werr)) {
 			DEBUG(0,(__location__ ": Failed UpdateRefs on %s for %s in DsGetNCChanges - %s\n",
 				 drs_ObjectIdentifier_to_string(mem_ctx, ncRoot), ureq.dest_dsa_dns_name,

@@ -127,9 +127,6 @@ struct dcesrv_call_state {
 	/* the backend can use this event context for async replies */
 	struct tevent_context *event_ctx;
 
-	/* the message_context that will be used for async replies */
-	struct imessaging_context *msg_ctx;
-
 	/* this is the pointer to the allocated function struct */
 	void *r;
 
@@ -262,9 +259,6 @@ struct dcesrv_connection {
 
 	/* the event_context that will be used for this connection */
 	struct tevent_context *event_ctx;
-
-	/* the message_context that will be used for this connection */
-	struct imessaging_context *msg_ctx;
 
 	/* the server_id that will be used for this connection */
 	struct server_id server_id;
@@ -580,5 +574,8 @@ _PUBLIC_ void *_dcesrv_iface_state_find_conn(
 	talloc_get_type( \
 		_dcesrv_iface_state_find_conn((call), (magic)), \
 		_type)
+
+_PUBLIC_ struct imessaging_context *dcesrv_imessaging_context(
+                                       struct dcesrv_connection *conn);
 
 #endif /* SAMBA_DCERPC_SERVER_H */

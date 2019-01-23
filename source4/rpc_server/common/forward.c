@@ -74,6 +74,8 @@ void dcesrv_irpc_forward_rpc_call(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	struct tevent_req *subreq;
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 
 	st = talloc(mem_ctx, struct dcesrv_forward_state);
 	if (st == NULL) {
@@ -93,8 +95,10 @@ void dcesrv_irpc_forward_rpc_call(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		return;
 	}
 
-	binding_handle = irpc_binding_handle_by_name(st, dce_call->msg_ctx,
-						     dest_task, ndr_table);
+	binding_handle = irpc_binding_handle_by_name(st,
+						     imsg_ctx,
+						     dest_task,
+						     ndr_table);
 	if (binding_handle == NULL) {
 		DEBUG(0,("%s: Failed to forward request to %s task\n",
 			 opname, dest_task));

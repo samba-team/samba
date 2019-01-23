@@ -338,6 +338,8 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 {
 	struct auth_session_info *session_info =
 		dcesrv_call_session_info(dce_call);
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(dce_call->conn);
 	struct dcesrv_handle *h;
 	struct drsuapi_bind_state *b_state;
 	struct drsuapi_DsReplicaUpdateRefsRequest1 *req;
@@ -378,8 +380,11 @@ WERROR dcesrv_drsuapi_DsReplicaUpdateRefs(struct dcesrv_call_state *dce_call, TA
 		}
 	}
 
-	werr = drsuapi_UpdateRefs(dce_call->msg_ctx, dce_call->event_ctx,
-				  b_state, mem_ctx, req);
+	werr = drsuapi_UpdateRefs(imsg_ctx,
+				  dce_call->event_ctx,
+				  b_state,
+				  mem_ctx,
+				  req);
 
 #if 0
 	NDR_PRINT_FUNCTION_DEBUG(drsuapi_DsReplicaUpdateRefs, NDR_BOTH, r);

@@ -1878,6 +1878,8 @@ static NTSTATUS dcesrv_lsa_lookup_name_winbind(
 	NTSTATUS status;
 	const char *check_domain_name = NULL;
 	bool expect_domain = false;
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(state->dce_call->conn);
 
 	if (item->name == NULL) {
 		/*
@@ -1994,9 +1996,9 @@ static NTSTATUS dcesrv_lsa_lookup_name_winbind(
 	}
 
 	state->wb.irpc_handle = irpc_binding_handle_by_name(state,
-					state->dce_call->msg_ctx,
-					"winbind_server",
-					&ndr_table_lsarpc);
+							    imsg_ctx,
+							    "winbind_server",
+							    &ndr_table_lsarpc);
 	if (state->wb.irpc_handle == NULL) {
 		DEBUG(0,("Failed to get binding_handle for winbind_server task\n"));
 		state->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
@@ -2021,6 +2023,8 @@ static NTSTATUS dcesrv_lsa_lookup_sid_winbind(
 	struct dom_sid domain_sid = {0,};
 	NTSTATUS status;
 	bool match;
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(state->dce_call->conn);
 
 	/*
 	 * Verify the sid is not INVALID.
@@ -2111,9 +2115,9 @@ static NTSTATUS dcesrv_lsa_lookup_sid_winbind(
 	}
 
 	state->wb.irpc_handle = irpc_binding_handle_by_name(state,
-					state->dce_call->msg_ctx,
-					"winbind_server",
-					&ndr_table_lsarpc);
+							    imsg_ctx,
+							    "winbind_server",
+							    &ndr_table_lsarpc);
 	if (state->wb.irpc_handle == NULL) {
 		DEBUG(0,("Failed to get binding_handle for winbind_server task\n"));
 		state->dce_call->fault_code = DCERPC_FAULT_CANT_PERFORM;
