@@ -255,11 +255,8 @@ def cmd_testonly(opt):
     if os.environ.get('USE_NAMESPACES') is None:
         env.OPTIONS += " --socket_wrapper_so_path=" + CONFIG_GET(opt, 'LIBSOCKET_WRAPPER_SO_PATH')
 
-    #if unversioned_sys_platform in ('freebsd', 'netbsd', 'openbsd', 'sunos'):
-    #    env.OPTIONS += " --use-dns-faking"
-
-    # FIXME REMOVE ME!
-    env.OPTIONS += " --use-dns-faking"
+    if Utils.unversioned_sys_platform() in ('netbsd', 'openbsd', 'sunos'):
+        env.OPTIONS += " --use-dns-faking"
 
     if CONFIG_GET(opt, 'USING_SYSTEM_KRB5') and CONFIG_GET(opt, 'MIT_KDC_PATH'):
         env.OPTIONS += " --mitkrb5 --exclude=${srcdir}/selftest/skip_mit_kdc"
