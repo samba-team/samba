@@ -57,8 +57,7 @@ privatedir = os.path.dirname(url)
 
 dbs = []
 for part in partitions[0]['partition']:
-    file_quoted = part.split(":")[1]
-    tdbname = urllib.unquote(file_quoted)
+    tdbname = part.split(":")[1]
     tdbpath = os.path.join(privatedir, tdbname)
 
     db = ldb.Ldb(url=tdbpath, options=["modules:"])
