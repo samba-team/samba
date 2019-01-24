@@ -984,6 +984,11 @@ sub setup_fileserver
 	comment = inherit only unix owner
 	inherit owner = unix only
 	acl_xattr:ignore system acls = yes
+# BUG: https://bugzilla.samba.org/show_bug.cgi?id=13690
+[force_group_test]
+	path = $share_dir
+	comment = force group test
+#	force group = everyone
 [homes]
 	comment = Home directories
 	browseable = No
