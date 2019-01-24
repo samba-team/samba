@@ -70,7 +70,7 @@ struct tevent_req *dns_lookup_send(TALLOC_CTX *mem_ctx,
 	if (resolv_conf_fp == NULL) {
 		const char *resolvconf = "/etc/resolv.conf";
 
-#ifdef DEVELOPER
+#ifdef ENABLE_SELFTEST
 		{
 			const char *envvar = getenv("RESOLV_CONF");
 			if (envvar != NULL) {
