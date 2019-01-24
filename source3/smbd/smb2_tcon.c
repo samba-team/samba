@@ -102,7 +102,11 @@ NTSTATUS smbd_smb2_request_process_tcon(struct smbd_smb2_request *req)
 	}
 	tevent_req_set_callback(subreq, smbd_smb2_request_tcon_done, req);
 
-	return smbd_smb2_request_pending_queue(req, subreq, 500);
+	/*
+	 * Avoid sending a STATUS_PENDING message, it's very likely
+	 * the client won't expect that.
+	 */
+	return smbd_smb2_request_pending_queue(req, subreq, 0);
 }
 
 static void smbd_smb2_request_tcon_done(struct tevent_req *subreq)
