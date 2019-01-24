@@ -639,13 +639,13 @@ static struct dcesrv_auth *dcesrv_auth_create(struct dcesrv_connection *conn)
 /*
   connect to a dcerpc endpoint
 */
-static NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
-				 TALLOC_CTX *mem_ctx,
-				 const struct dcesrv_endpoint *ep,
-				 struct auth_session_info *session_info,
-				 struct tevent_context *event_ctx,
-				 uint32_t state_flags,
-				 struct dcesrv_connection **_p)
+_PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
+				TALLOC_CTX *mem_ctx,
+				const struct dcesrv_endpoint *ep,
+				struct auth_session_info *session_info,
+				struct tevent_context *event_ctx,
+				uint32_t state_flags,
+				struct dcesrv_connection **_p)
 {
 	struct dcesrv_auth *auth = NULL;
 	struct dcesrv_connection *p;
@@ -2509,7 +2509,7 @@ _PUBLIC_ NTSTATUS dcerpc_register_ep_server(const struct dcesrv_endpoint_server 
 /*
   return the operations structure for a named backend of the specified type
 */
-const struct dcesrv_endpoint_server *dcesrv_ep_server_byname(const char *name)
+_PUBLIC_ const struct dcesrv_endpoint_server *dcesrv_ep_server_byname(const char *name)
 {
 	int i;
 
@@ -2566,7 +2566,7 @@ const struct dcesrv_critical_sizes *dcerpc_module_version(void)
 	return &critical_sizes;
 }
 
-static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, const char *reason)
+_PUBLIC_ void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, const char *reason)
 {
 	struct dcesrv_context *dce_ctx = dce_conn->dce_ctx;
 	struct dcesrv_auth *a = NULL;
@@ -2606,7 +2606,7 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 	DLIST_ADD_END(dce_ctx->broken_connections, dce_conn);
 }
 
-static void dcesrv_cleanup_broken_connections(struct dcesrv_context *dce_ctx)
+_PUBLIC_ void dcesrv_cleanup_broken_connections(struct dcesrv_context *dce_ctx)
 {
 	struct dcesrv_connection *cur, *next;
 
@@ -2650,7 +2650,7 @@ struct dcesrv_sock_reply_state {
 static void dcesrv_sock_reply_done(struct tevent_req *subreq);
 static void dcesrv_call_terminate_step1(struct tevent_req *subreq);
 
-static void dcesrv_sock_report_output_data(struct dcesrv_connection *dce_conn)
+_PUBLIC_ void dcesrv_sock_report_output_data(struct dcesrv_connection *dce_conn)
 {
 	struct dcesrv_call_state *call;
 

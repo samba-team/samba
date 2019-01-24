@@ -445,6 +445,8 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const struct dcesrv_interface *iface,
 				   const struct security_descriptor *sd);
 NTSTATUS dcerpc_register_ep_server(const struct dcesrv_endpoint_server *ep_server);
+const struct dcesrv_endpoint_server *dcesrv_ep_server_byname(const char *name);
+
 NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 			     struct loadparm_context *lp_ctx,
 			     const char **endpoint_servers,
@@ -591,6 +593,20 @@ _PUBLIC_ void *_dcesrv_iface_state_find_conn(
 	talloc_get_type( \
 		_dcesrv_iface_state_find_conn((call), (magic)), \
 		_type)
+
+_PUBLIC_ void dcesrv_cleanup_broken_connections(struct dcesrv_context *dce_ctx);
+
+_PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
+				TALLOC_CTX *mem_ctx,
+				const struct dcesrv_endpoint *ep,
+				struct auth_session_info *session_info,
+				struct tevent_context *event_ctx,
+				uint32_t state_flags,
+				struct dcesrv_connection **_p);
+
+_PUBLIC_ void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn,
+					  const char *reason);
+_PUBLIC_ void dcesrv_sock_report_output_data(struct dcesrv_connection *dce_conn);
 
 _PUBLIC_ struct imessaging_context *dcesrv_imessaging_context(
                                        struct dcesrv_connection *conn);
