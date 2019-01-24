@@ -1405,3 +1405,39 @@ NTSTATUS dcerpc_ncacn_push_auth(DATA_BLOB *blob,
 
 	return NT_STATUS_OK;
 }
+
+/*
+  log a rpc packet in a format suitable for ndrdump. This is especially useful
+  for sealed packets, where ethereal cannot easily see the contents
+
+  this triggers on a debug level of >= 10
+*/
+void dcerpc_log_packet(const char *lockdir,
+		       const struct ndr_interface_table *ndr,
+		       uint32_t opnum, uint32_t flags,
+		       const DATA_BLOB *pkt)
+{
+	const int num_examples = 20;
+	int i;
+
+	if (lockdir == NULL) return;
+
+	for (i=0;i<num_examples;i++) {
+		char *name=NULL;
+		int ret;
+		ret = asprintf(&name, "%s/rpclog/%s-%u.%d.%s",
+			       lockdir, ndr->name, opnum, i,
+			       (flags&NDR_IN)?"in":"out");
+		if (ret == -1) {
+			return;
+		}
+		if (!file_exist(name)) {
+			if (file_save(name, pkt->data, pkt->length)) {
+				DEBUG(10,("Logged rpc packet to %s\n", name));
+			}
+			free(name);
+			break;
+		}
+		free(name);
+	}
+}
