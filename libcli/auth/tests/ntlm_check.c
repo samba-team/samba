@@ -180,7 +180,7 @@ static void test_ntlm_allowed(void **state)
 
 static void test_ntlm_allowed_lm_supplied(void **state)
 {
-	return test_ntlm_allowed(state);
+	test_ntlm_allowed(state);
 }
 
 static void test_ntlm_disabled(void **state)
@@ -345,7 +345,7 @@ static void test_ntlmv2_only_ntlm(void **state)
 
 static void test_ntlmv2_only_ntlm_and_lanman(void **state)
 {
-	return test_ntlmv2_only_ntlm(state);
+	test_ntlmv2_only_ntlm(state);
 }
 
 static void test_ntlmv2_only_ntlm_once(void **state)
