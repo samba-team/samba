@@ -107,7 +107,16 @@ NTSTATUS smbd_smb2_request_process_sesssetup(struct smbd_smb2_request *smb2req)
 	}
 	tevent_req_set_callback(subreq, smbd_smb2_request_sesssetup_done, smb2req);
 
-	return smbd_smb2_request_pending_queue(smb2req, subreq, 500);
+	/*
+	 * Avoid sending a STATUS_PENDING message, which
+	 * matches a Windows Server and avoids problems with
+	 * MacOS clients.
+	 *
+	 * Even after 90 seconds a Windows Server doesn't return
+	 * STATUS_PENDING if using NTLMSSP against a non reachable
+	 * trusted domain.
+	 */
+	return smbd_smb2_request_pending_queue(smb2req, subreq, 0);
 }
 
 static void smbd_smb2_request_sesssetup_done(struct tevent_req *subreq)
