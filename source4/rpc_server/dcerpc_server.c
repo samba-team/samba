@@ -2406,9 +2406,11 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 	return status;
 }
 
-_PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, 
+_PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 				      struct loadparm_context *lp_ctx,
-				      const char **endpoint_servers, struct dcesrv_context **_dce_ctx)
+				      const char **endpoint_servers,
+				      struct dcesrv_context_callbacks *cb,
+				      struct dcesrv_context **_dce_ctx)
 {
 	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
@@ -2435,6 +2437,9 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 	dce_ctx->assoc_groups_idr = idr_init(dce_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(dce_ctx->assoc_groups_idr);
 	dce_ctx->broken_connections = NULL;
+	if (cb != NULL) {
+		dce_ctx->callbacks = *cb;
+	}
 
 	for (i=0;endpoint_servers[i];i++) {
 		const struct dcesrv_endpoint_server *ep_server;
@@ -3399,4 +3404,35 @@ _PUBLIC_ struct server_id dcesrv_server_id(struct dcesrv_connection *conn)
 		talloc_get_type_abort(conn->transport.private_data,
 				struct stream_connection);
 	return srv_conn->server_id;
+}
+
+void log_successful_dcesrv_authz_event(struct dcesrv_call_state *call)
+{
+	struct dcesrv_auth *auth = call->auth_state;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(call->conn->endpoint->ep_description);
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(call->conn);
+	const char *auth_type = derpc_transport_string_by_transport(transport);
+	const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
+
+	if (transport == NCACN_NP) {
+		transport_protection = AUTHZ_TRANSPORT_PROTECTION_SMB;
+	}
+
+	/*
+	 * Log the authorization to this RPC interface.  This
+	 * covered ncacn_np pass-through auth, and anonymous
+	 * DCE/RPC (eg epmapper, netlogon etc)
+	 */
+	log_successful_authz_event(imsg_ctx,
+				   call->conn->dce_ctx->lp_ctx,
+				   call->conn->remote_address,
+				   call->conn->local_address,
+				   "DCE/RPC",
+				   auth_type,
+				   transport_protection,
+				   auth->session_info);
+
+	auth->auth_audited = true;
 }

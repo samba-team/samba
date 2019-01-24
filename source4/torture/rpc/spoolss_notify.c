@@ -26,12 +26,17 @@
 #include "librpc/gen_ndr/ndr_spoolss.h"
 #include "torture/rpc/torture_rpc.h"
 #include "rpc_server/dcerpc_server.h"
+#include "rpc_server/dcerpc_server_proto.h"
 #include "rpc_server/service_rpc.h"
 #include "smbd/process_model.h"
 #include "smb_server/smb_server.h"
 #include "lib/socket/netif.h"
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
+
+struct dcesrv_context_callbacks srv_cb = {
+	.log.successful_authz = log_successful_dcesrv_authz_event,
+};
 
 static NTSTATUS spoolss__op_bind(struct dcesrv_connection_context *context,
 				 const struct dcesrv_interface *iface)
@@ -482,7 +487,8 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 				   address, NULL);
 	torture_assert_ntstatus_ok(tctx, status, "starting smb server");
 
-	status = dcesrv_init_context(tctx, tctx->lp_ctx, endpoints, &dce_ctx);
+	status = dcesrv_init_context(tctx, tctx->lp_ctx, endpoints,
+				     &srv_cb, &dce_ctx);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "unable to initialize DCE/RPC server");
 

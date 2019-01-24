@@ -40,6 +40,10 @@
 #include "../libcli/named_pipe_auth/npa_tstream.h"
 #include "smbd/process_model.h"
 
+struct dcesrv_context_callbacks srv_callbacks = {
+	.log.successful_authz = log_successful_dcesrv_authz_event,
+};
+
 /*
  * Need to run the majority of the RPC endpoints in a single process to allow
  * for shared handles, and the sharing of ldb contexts.
@@ -112,6 +116,7 @@ static NTSTATUS dcesrv_init_endpoints(struct task_server *task,
 	}
 	return NT_STATUS_OK;
 }
+
 /*
  * Initialise the RPC service.
  * And those end points that can be serviced by multiple processes.
@@ -130,6 +135,7 @@ static NTSTATUS dcesrv_task_init(struct task_server *task)
 	status = dcesrv_init_context(task->event_ctx,
 				     task->lp_ctx,
 				     lpcfg_dcerpc_endpoint_servers(task->lp_ctx),
+				     &srv_callbacks,
 				     &dce_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

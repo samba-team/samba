@@ -363,6 +363,12 @@ struct dcesrv_assoc_group {
 	uint16_t bind_time_features;
 };
 
+struct dcesrv_context_callbacks {
+	struct {
+		void (*successful_authz)(struct dcesrv_call_state *);
+	} log;
+};
+
 /* server-wide context information for the dcerpc server */
 struct dcesrv_context {
 	/*
@@ -402,6 +408,8 @@ struct dcesrv_context {
 	struct idr_context *assoc_groups_idr;
 
 	struct dcesrv_connection *broken_connections;
+
+	struct dcesrv_context_callbacks callbacks;
 };
 
 /* this structure is used by modules to determine the size of some critical types */
@@ -426,9 +434,11 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const struct dcesrv_interface *iface,
 				   const struct security_descriptor *sd);
 NTSTATUS dcerpc_register_ep_server(const struct dcesrv_endpoint_server *ep_server);
-NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, 
-				      struct loadparm_context *lp_ctx,
-				      const char **endpoint_servers, struct dcesrv_context **_dce_ctx);
+NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
+			     struct loadparm_context *lp_ctx,
+			     const char **endpoint_servers,
+			     struct dcesrv_context_callbacks *cb,
+			     struct dcesrv_context **_dce_ctx);
 
 NTSTATUS dcesrv_reply(struct dcesrv_call_state *call);
 struct dcesrv_handle *dcesrv_handle_create(struct dcesrv_call_state *call,

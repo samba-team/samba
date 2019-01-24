@@ -233,37 +233,6 @@ static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 	return true;
 }
 
-static void log_successful_dcesrv_authz_event(struct dcesrv_call_state *call)
-{
-	struct dcesrv_auth *auth = call->auth_state;
-	enum dcerpc_transport_t transport =
-		dcerpc_binding_get_transport(call->conn->endpoint->ep_description);
-	struct imessaging_context *imsg_ctx =
-		dcesrv_imessaging_context(call->conn);
-	const char *auth_type = derpc_transport_string_by_transport(transport);
-	const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
-
-	if (transport == NCACN_NP) {
-		transport_protection = AUTHZ_TRANSPORT_PROTECTION_SMB;
-	}
-
-	/*
-	 * Log the authorization to this RPC interface.  This
-	 * covered ncacn_np pass-through auth, and anonymous
-	 * DCE/RPC (eg epmapper, netlogon etc)
-	 */
-	log_successful_authz_event(imsg_ctx,
-				   call->conn->dce_ctx->lp_ctx,
-				   call->conn->remote_address,
-				   call->conn->local_address,
-				   "DCE/RPC",
-				   auth_type,
-				   transport_protection,
-				   auth->session_info);
-
-	auth->auth_audited = true;
-}
-
 static void dcesrv_default_auth_state_finish_bind(struct dcesrv_call_state *call)
 {
 	SMB_ASSERT(call->pkt.ptype == DCERPC_PKT_BIND);
@@ -321,7 +290,11 @@ void dcesrv_default_auth_state_prepare_request(struct dcesrv_call_state *call)
 		return;
 	}
 
-	log_successful_dcesrv_authz_event(call);
+	if (!call->conn->dce_ctx->callbacks.log.successful_authz) {
+		return;
+	}
+
+	call->conn->dce_ctx->callbacks.log.successful_authz(call);
 }
 
 /*
@@ -341,7 +314,9 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 		auth->auth_context_id = 0;
 		auth->auth_started = true;
 
-		log_successful_dcesrv_authz_event(call);
+		if (call->conn->dce_ctx->callbacks.log.successful_authz) {
+			call->conn->dce_ctx->callbacks.log.successful_authz(call);
+		}
 
 		return true;
 	}
