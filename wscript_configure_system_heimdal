@@ -1,0 +1,99 @@
+import sys
+from waflib import Logs
+
+conf.RECURSE('source4/heimdal_build')
+
+heimdal_includedirs = []
+heimdal_libdirs = []
+krb5_config = conf.find_program("krb5-config.heimdal", var="HEIMDAL_KRB5_CONFIG")
+if not krb5_config:
+    krb5_config = conf.find_program("krb5-config", var="HEIMDAL_KRB5_CONFIG")
+if krb5_config:
+    # Not ideal, but seems like the best way to get at these paths:
+    f = open(krb5_config[0], 'r')
+    try:
+        for l in f:
+            if l.startswith("libdir="):
+                heimdal_libdirs.append(l.strip()[len("libdir="):])
+            elif l.startswith("includedir="):
+                include_path = l.strip()[len("includedir="):]
+                heimdal_includedirs.append(include_path)
+                conf.define('HEIMDAL_KRB5_TYPES_PATH',
+                            include_path + "/krb5-types.h")
+    finally:
+        f.close()
+
+def check_system_heimdal_lib(name, functions='', headers='', onlyif=None):
+    # Only use system library if the user requested the bundled one not be
+    # used.
+    if conf.LIB_MAY_BE_BUNDLED(name):
+        return False
+    setattr(conf.env, "CPPPATH_%s" % name.upper(), heimdal_includedirs)
+    setattr(conf.env, "LIBPATH_%s" % name.upper(), heimdal_libdirs)
+    if not conf.CHECK_BUNDLED_SYSTEM(name, checkfunctions=functions, headers=headers,
+                                     onlyif=onlyif):
+        return False
+    conf.define('USING_SYSTEM_%s' % name.upper(), 1)
+    return True
+
+def check_system_heimdal_binary(name):
+    if conf.LIB_MAY_BE_BUNDLED(name):
+        return False
+    if not conf.find_program(name, var=name.upper()):
+        return False
+    conf.define('USING_SYSTEM_%s' % name.upper(), 1)
+    return True
+
+check_system_heimdal_lib("com_err", "com_right_r com_err", "com_err.h")
+
+if check_system_heimdal_lib("roken", "rk_socket_set_reuseaddr", "roken.h"):
+    conf.env.CPPPATH_ROKEN_HOSTCC = conf.env.CPPPATH_ROKEN
+    conf.env.LIBPATH_ROKEN_HOSTCC = conf.env.LIBPATH_ROKEN
+    conf.env.LIB_ROKEN_HOSTCC = "roken"
+    conf.SET_TARGET_TYPE("ROKEN_HOSTCC", 'SYSLIB')
+
+# Make sure HAVE_CONFIG_H is unset, as the system Heimdal headers use it
+# and include config.h if it is set, resulting in failure (since config.h
+# doesn't yet exist)
+
+DEFINES = list(conf.env.DEFINES)
+conf.undefine("HAVE_CONFIG_H")
+while "HAVE_CONFIG_H=1" in conf.env.DEFINES:
+    conf.env.DEFINES.remove("HAVE_CONFIG_H=1")
+try:
+    check_system_heimdal_lib("wind", "wind_stringprep", "wind.h", onlyif="roken")
+    check_system_heimdal_lib("hx509", "hx509_bitstring_print", "hx509.h", onlyif="roken wind")
+    check_system_heimdal_lib("asn1", "initialize_asn1_error_table", "asn1_err.h", onlyif="roken com_err")
+    check_system_heimdal_lib("heimbase", "heim_cmp", "heimbase.h", onlyif="roken")
+    check_system_heimdal_lib("hcrypto", "MD4_Init", "hcrypto/md4.h",
+        onlyif="asn1 roken com_err")
+    if check_system_heimdal_lib("krb5", "krb5_anyaddr", "krb5.h",
+        onlyif="roken wind asn1 hx509 hcrypto com_err heimbase"):
+        conf.CHECK_FUNCS_IN('krb5_free_unparsed_name', 'krb5', headers="krb5.h")
+    check_system_heimdal_lib("gssapi", "gss_oid_to_name", "gssapi.h",
+        onlyif="hcrypto asn1 roken krb5 com_err wind")
+    check_system_heimdal_lib("heimntlm", "heim_ntlm_ntlmv2_key", "heimntlm.h",
+        onlyif="roken hcrypto krb5")
+    if check_system_heimdal_lib("hdb", "hdb_db_dir", "krb5.h hdb.h",
+        onlyif="roken krb5 hcrypto com_err wind"):
+        conf.CHECK_CODE('''
+            #include <hdb.h>
+            int main(void) { hdb_enctype2key(NULL, NULL, NULL, 0, NULL); }
+            ''',
+            define='HDB_ENCTYPE2KEY_TAKES_KEYSET',
+            addmain=False,
+            lib='hdb',
+            msg='Checking whether hdb_enctype2key takes a keyset argument',
+            local_include=False)
+
+    check_system_heimdal_lib("kdc", "kdc_log", "kdc.h",
+        onlyif="roken krb5 hdb asn1 heimntlm hcrypto com_err wind heimbase")
+finally:
+    conf.env.DEFINES = DEFINES
+
+# With the proper checks in place we should be able to build against the system libtommath.
+#if conf.CHECK_BUNDLED_SYSTEM('tommath', checkfunctions='mp_init', headers='tommath.h'):
+#    conf.define('USING_SYSTEM_TOMMATH', 1)
+
+check_system_heimdal_binary("compile_et")
+check_system_heimdal_binary("asn1_compile")
