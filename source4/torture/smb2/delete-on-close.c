@@ -584,9 +584,9 @@ static bool test_doc_read_only(struct torture_context *tctx,
 			       struct smb2_tree *tree)
 {
 	struct smb2_handle dir_handle;
-	union smb_setfileinfo sfinfo = { };
-	struct smb2_create create = { };
-	struct smb2_close close = { };
+	union smb_setfileinfo sfinfo = {{0}};
+	struct smb2_create create = {0};
+	struct smb2_close close = {0};
 	NTSTATUS status, expected_status;
 	bool ret = true, delete_readonly;
 
@@ -603,7 +603,7 @@ static bool test_doc_read_only(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
 					"CREATE directory failed\n");
 
-	create = (struct smb2_create) { };
+	create = (struct smb2_create) {0};
 	create.in.desired_access = SEC_RIGHTS_DIR_ALL;
 	create.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE |
 		NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
@@ -628,7 +628,7 @@ static bool test_doc_read_only(struct torture_context *tctx,
 
 	torture_comment(tctx, "Creating file with READ_ONLY attribute.\n");
 
-	create = (struct smb2_create) { };
+	create = (struct smb2_create) {0};
 	create.in.desired_access = SEC_RIGHTS_DIR_ALL;
 	create.in.create_options = NTCREATEX_OPTIONS_NON_DIRECTORY_FILE;
 	create.in.file_attributes = FILE_ATTRIBUTE_READONLY;
@@ -649,7 +649,7 @@ static bool test_doc_read_only(struct torture_context *tctx,
 	torture_comment(tctx, "Testing CREATE with DELETE_ON_CLOSE on "
 			"READ_ONLY attribute file.\n");
 
-	create = (struct smb2_create) { };
+	create = (struct smb2_create) {0};
 	create.in.desired_access = SEC_RIGHTS_FILE_READ | SEC_STD_DELETE;
 	create.in.create_options = NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
 	create.in.file_attributes = 0;
@@ -667,7 +667,7 @@ static bool test_doc_read_only(struct torture_context *tctx,
 	torture_comment(tctx, "Testing setting DELETE_ON_CLOSE disposition on "
 			" file with READONLY attribute.\n");
 
-	create = (struct smb2_create) { };
+	create = (struct smb2_create) {0};
 	create.in.desired_access = SEC_RIGHTS_FILE_READ | SEC_STD_DELETE;;
 	create.in.create_options = 0;
 	create.in.file_attributes = 0;
