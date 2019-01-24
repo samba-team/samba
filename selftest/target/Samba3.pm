@@ -904,6 +904,12 @@ sub setup_fileserver
 	force group = everyone
 	write list = force_user
 
+# BUG: https://bugzilla.samba.org/show_bug.cgi?id=13690
+[force_group_test]
+	path = $share_dir
+	comment = force group test
+#	force group = everyone
+
 [smbget]
 	path = $smbget_sharedir
 	comment = smb username is [%U]
