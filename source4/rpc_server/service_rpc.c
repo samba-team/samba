@@ -42,6 +42,7 @@
 
 struct dcesrv_context_callbacks srv_callbacks = {
 	.log.successful_authz = log_successful_dcesrv_authz_event,
+	.auth.gensec_prepare = dcesrv_gensec_prepare,
 };
 
 /*

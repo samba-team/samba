@@ -36,6 +36,7 @@
 
 struct dcesrv_context_callbacks srv_cb = {
 	.log.successful_authz = log_successful_dcesrv_authz_event,
+	.auth.gensec_prepare = dcesrv_gensec_prepare,
 };
 
 static NTSTATUS spoolss__op_bind(struct dcesrv_connection_context *context,

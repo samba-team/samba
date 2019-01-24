@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "auth/auth.h"
 #include "auth/gensec/gensec.h"
+#include "auth/credentials/credentials.h"
 #include "lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/dcerpc_server_proto.h"
@@ -3435,4 +3436,39 @@ void log_successful_dcesrv_authz_event(struct dcesrv_call_state *call)
 				   auth->session_info);
 
 	auth->auth_audited = true;
+}
+
+NTSTATUS dcesrv_gensec_prepare(TALLOC_CTX *mem_ctx,
+			       struct dcesrv_call_state *call,
+			       struct gensec_security **out)
+{
+	struct cli_credentials *server_creds = NULL;
+	struct imessaging_context *imsg_ctx =
+		dcesrv_imessaging_context(call->conn);
+	NTSTATUS status;
+
+	server_creds = cli_credentials_init(call->auth_state);
+	if (!server_creds) {
+		DEBUG(1, ("Failed to init server credentials\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	cli_credentials_set_conf(server_creds, call->conn->dce_ctx->lp_ctx);
+
+	status = cli_credentials_set_machine_account(server_creds,
+						call->conn->dce_ctx->lp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to obtain server credentials: %s\n",
+			  nt_errstr(status)));
+		talloc_free(server_creds);
+		return status;
+	}
+
+	return samba_server_gensec_start(mem_ctx,
+					 call->event_ctx,
+					 imsg_ctx,
+					 call->conn->dce_ctx->lp_ctx,
+					 server_creds,
+					 NULL,
+					 out);
 }

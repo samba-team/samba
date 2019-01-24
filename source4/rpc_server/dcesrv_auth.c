@@ -78,11 +78,8 @@ static NTSTATUS dcesrv_auth_negotiate_hdr_signing(struct dcesrv_call_state *call
 
 static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 {
-	struct cli_credentials *server_credentials = NULL;
 	struct dcesrv_connection *dce_conn = call->conn;
 	struct dcesrv_auth *auth = call->auth_state;
-	struct imessaging_context *imsg_ctx =
-		dcesrv_imessaging_context(call->conn);
 	NTSTATUS status;
 
 	if (auth->auth_started) {
@@ -131,28 +128,9 @@ static bool dcesrv_auth_prepare_gensec(struct dcesrv_call_state *call)
 	auth->auth_level = call->in_auth_info.auth_level;
 	auth->auth_context_id = call->in_auth_info.auth_context_id;
 
-	server_credentials 
-		= cli_credentials_init(auth);
-	if (!server_credentials) {
-		DEBUG(1, ("Failed to init server credentials\n"));
-		return false;
-	}
-	
-	cli_credentials_set_conf(server_credentials, call->conn->dce_ctx->lp_ctx);
-	status = cli_credentials_set_machine_account(server_credentials, call->conn->dce_ctx->lp_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to obtain server credentials: %s\n",
-			  nt_errstr(status)));
-		return false;
-	}
-
-	status = samba_server_gensec_start(auth,
-					   call->event_ctx,
-					   imsg_ctx,
-					   call->conn->dce_ctx->lp_ctx,
-					   server_credentials,
-					   NULL,
-					   &auth->gensec_security);
+	status = call->conn->dce_ctx->callbacks.auth.gensec_prepare(auth,
+						call,
+						&auth->gensec_security);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to call samba_server_gensec_start %s\n",
 			  nt_errstr(status)));

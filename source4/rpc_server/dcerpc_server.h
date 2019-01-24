@@ -38,6 +38,7 @@ struct dcesrv_call_state;
 struct dcesrv_auth;
 struct dcesrv_connection_context;
 struct dcesrv_iface_state;
+struct cli_credentials;
 
 struct dcesrv_interface {
 	const char *name;
@@ -367,6 +368,11 @@ struct dcesrv_context_callbacks {
 	struct {
 		void (*successful_authz)(struct dcesrv_call_state *);
 	} log;
+	struct {
+		NTSTATUS (*gensec_prepare)(TALLOC_CTX *mem_ctx,
+					struct dcesrv_call_state *call,
+					struct gensec_security **out);
+	} auth;
 };
 
 /* server-wide context information for the dcerpc server */
