@@ -2570,9 +2570,6 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 {
 	struct dcesrv_context *dce_ctx = dce_conn->dce_ctx;
 	struct dcesrv_auth *a = NULL;
-	struct stream_connection *srv_conn;
-	srv_conn = talloc_get_type(dce_conn->transport.private_data,
-				   struct stream_connection);
 
 	dce_conn->wait_send = NULL;
 	dce_conn->wait_recv = NULL;
@@ -2591,7 +2588,8 @@ static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, cons
 		char *full_reason = talloc_asprintf(dce_conn, "dcesrv: %s", reason);
 
 		DLIST_REMOVE(dce_ctx->broken_connections, dce_conn);
-		stream_terminate_connection(srv_conn, full_reason ? full_reason : reason);
+		dce_conn->transport.terminate_connection(dce_conn,
+					full_reason ? full_reason : reason);
 		return;
 	}
 
@@ -2841,6 +2839,7 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 
 	dcesrv_conn->transport.private_data		= srv_conn;
 	dcesrv_conn->transport.report_output_data	= dcesrv_sock_report_output_data;
+	dcesrv_conn->transport.terminate_connection	= dcesrv_transport_terminate_connection;
 
 	TALLOC_FREE(srv_conn->event.fde);
 
@@ -3474,4 +3473,13 @@ NTSTATUS dcesrv_gensec_prepare(TALLOC_CTX *mem_ctx,
 					 server_creds,
 					 NULL,
 					 out);
+}
+
+void dcesrv_transport_terminate_connection(struct dcesrv_connection *dce_conn,
+					   const char *reason)
+{
+	struct stream_connection *srv_conn =
+		talloc_get_type_abort(dce_conn->transport.private_data,
+				      struct stream_connection);
+	stream_terminate_connection(srv_conn, reason);
 }

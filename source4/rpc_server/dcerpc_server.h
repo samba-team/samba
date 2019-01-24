@@ -271,6 +271,8 @@ struct dcesrv_connection {
 	struct {
 		void *private_data;
 		void (*report_output_data)(struct dcesrv_connection *);
+		void (*terminate_connection)(struct dcesrv_connection *,
+					     const char *);
 	} transport;
 
 	struct tstream_context *stream;
