@@ -596,4 +596,6 @@ _PUBLIC_ struct imessaging_context *dcesrv_imessaging_context(
                                        struct dcesrv_connection *conn);
 _PUBLIC_ struct server_id dcesrv_server_id(struct dcesrv_connection *conn);
 
+_PUBLIC_ NTSTATUS dcesrv_connection_loop_start(struct dcesrv_connection *conn);
+
 #endif /* SAMBA_DCERPC_SERVER_H */

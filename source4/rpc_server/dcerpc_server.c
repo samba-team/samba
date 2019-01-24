@@ -2787,9 +2787,6 @@ struct dcesrv_socket_context {
 	struct dcesrv_context *dcesrv_ctx;
 };
 
-
-static void dcesrv_read_fragment_done(struct tevent_req *subreq);
-
 static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 {
 	NTSTATUS status;
@@ -2799,7 +2796,6 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 		dcerpc_binding_get_transport(dcesrv_sock->endpoint->ep_description);
 	struct dcesrv_connection *dcesrv_conn = NULL;
 	int ret;
-	struct tevent_req *subreq;
 	struct loadparm_context *lp_ctx = dcesrv_sock->dcesrv_ctx->lp_ctx;
 
 	dcesrv_cleanup_broken_connections(dcesrv_sock->dcesrv_ctx);
@@ -2914,17 +2910,13 @@ static void dcesrv_sock_accept(struct stream_connection *srv_conn)
 
 	srv_conn->private_data = dcesrv_conn;
 
-	subreq = dcerpc_read_ncacn_packet_send(dcesrv_conn,
-					       dcesrv_conn->event_ctx,
-					       dcesrv_conn->stream);
-	if (!subreq) {
-		status = NT_STATUS_NO_MEMORY;
+	status = dcesrv_connection_loop_start(dcesrv_conn);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("dcesrv_sock_accept: dcerpc_read_fragment_buffer_send(%s)\n",
 			nt_errstr(status)));
 		stream_terminate_connection(srv_conn, nt_errstr(status));
 		return;
 	}
-	tevent_req_set_callback(subreq, dcesrv_read_fragment_done, dcesrv_conn);
 
 	return;
 }
@@ -3023,15 +3015,11 @@ static void dcesrv_conn_wait_done(struct tevent_req *subreq)
 		return;
 	}
 
-	subreq = dcerpc_read_ncacn_packet_send(dce_conn,
-					       dce_conn->event_ctx,
-					       dce_conn->stream);
-	if (!subreq) {
-		status = NT_STATUS_NO_MEMORY;
+	status = dcesrv_connection_loop_start(dce_conn);
+	if (!NT_STATUS_IS_OK(status)) {
 		dcesrv_terminate_connection(dce_conn, nt_errstr(status));
 		return;
 	}
-	tevent_req_set_callback(subreq, dcesrv_read_fragment_done, dce_conn);
 }
 
 static void dcesrv_sock_recv(struct stream_connection *conn, uint16_t flags)
@@ -3482,4 +3470,19 @@ void dcesrv_transport_terminate_connection(struct dcesrv_connection *dce_conn,
 		talloc_get_type_abort(dce_conn->transport.private_data,
 				      struct stream_connection);
 	stream_terminate_connection(srv_conn, reason);
+}
+
+_PUBLIC_ NTSTATUS dcesrv_connection_loop_start(struct dcesrv_connection *conn)
+{
+	struct tevent_req *subreq;
+
+	subreq = dcerpc_read_ncacn_packet_send(conn,
+					       conn->event_ctx,
+					       conn->stream);
+	if (subreq == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, dcesrv_read_fragment_done, conn);
+
+	return NT_STATUS_OK;
 }
