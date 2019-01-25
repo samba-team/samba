@@ -490,8 +490,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		ep_process_string = "multi process compatible";
 	}
 
-	DBG_INFO("dcesrv_interface_register: interface '%s' "
-		 "registered on endpoint '%s' (%s)\n",
+	DBG_INFO("Interface '%s' registered on endpoint '%s' (%s)\n",
 		 iface->name, ep_string, ep_process_string);
 	TALLOC_FREE(ep_string);
 
