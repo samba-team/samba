@@ -28,7 +28,7 @@ def configure(conf):
 
         conf.CHECK_HEADERS('resolv.h')
 
-        conf.CHECK_STRUCTURE_MEMBER('struct _res_state',
+        conf.CHECK_STRUCTURE_MEMBER('struct __res_state',
                                     '_u._ext.nsaddrs',
                                     headers='resolv.h',
                                     define='HAVE_RESOLV_IPV6_NSADDRS')
