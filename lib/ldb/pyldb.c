@@ -3430,17 +3430,41 @@ static PyObject *py_ldb_msg_items(PyLdbMessageObject *self)
 	struct ldb_message *msg = pyldb_Message_AsMessage(self);
 	Py_ssize_t i, j = 0;
 	PyObject *l = PyList_New(msg->num_elements + (msg->dn == NULL?0:1));
+	if (l == NULL) {
+		return PyErr_NoMemory();
+	}
 	if (msg->dn != NULL) {
+		PyObject *value = NULL;
 		PyObject *obj = pyldb_Dn_FromDn(msg->dn);
-		PyList_SetItem(l, 0, Py_BuildValue("(sO)", "dn", obj));
+		int res = 0;
+		value = Py_BuildValue("(sO)", "dn", obj);
 		Py_CLEAR(obj);
+		if (value == NULL) {
+			Py_CLEAR(l);
+			return NULL;
+		}
+		res = PyList_SetItem(l, 0, value);
+		if (res == -1) {
+			Py_CLEAR(l);
+			return NULL;
+		}
 		j++;
 	}
 	for (i = 0; i < msg->num_elements; i++, j++) {
+		PyObject *value = NULL;
 		PyObject *py_el = PyLdbMessageElement_FromMessageElement(&msg->elements[i], msg->elements);
-		PyObject *value = Py_BuildValue("(sO)", msg->elements[i].name, py_el);
+		int res = 0;
 		Py_CLEAR(py_el);
-		PyList_SetItem(l, j, value);
+		value = Py_BuildValue("(sO)", msg->elements[i].name, py_el);
+		if (value == NULL ) {
+			Py_CLEAR(l);
+			return NULL;
+		}
+		res = PyList_SetItem(l, 0, value);
+		if (res == -1) {
+			Py_CLEAR(l);
+			return NULL;
+		}
 	}
 	return l;
 }
