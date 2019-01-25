@@ -37,7 +37,9 @@
 #define BROKEN_RHEL5_SYS_CAP_HEADER_WORKAROUND
 #endif
 
+#ifdef HAVE_POSIX_CAPABILITIES
 #include <sys/capability.h>
+#endif
 
 #ifdef BROKEN_RHEL5_SYS_CAP_HEADER_WORKAROUND
 #undef _LINUX_TYPES_H
