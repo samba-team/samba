@@ -24,6 +24,8 @@
 
 struct pipes_struct;
 struct auth_session_info;
+struct dcesrv_call_state;
+struct cli_credentials;
 
 typedef void (*dcerpc_ncacn_termination_fn)(struct pipes_struct *, void *);
 
@@ -104,5 +106,11 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 dcerpc_ncacn_termination_fn termination_fn,
 			 void *termination_data);
 void dcerpc_ncacn_packet_process(struct tevent_req *subreq);
+
+NTSTATUS dcesrv_auth_gensec_prepare(TALLOC_CTX *mem_ctx,
+				    struct dcesrv_call_state *call,
+				    struct gensec_security **out);
+void dcesrv_log_successful_authz(struct dcesrv_call_state *call);
+NTSTATUS dcesrv_assoc_group_find(struct dcesrv_call_state *call);
 
 #endif /* _PRC_SERVER_H_ */

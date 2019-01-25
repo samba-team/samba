@@ -27,6 +27,12 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+static struct dcesrv_context_callbacks srv_callbacks = {
+	.log.successful_authz = dcesrv_log_successful_authz,
+	.auth.gensec_prepare = dcesrv_auth_gensec_prepare,
+	.assoc_group.find = dcesrv_assoc_group_find,
+};
+
 static struct dcesrv_context *global_dcesrv_ctx = NULL;
 
 struct dcesrv_context *global_dcesrv_context(void)
@@ -50,7 +56,7 @@ struct dcesrv_context *global_dcesrv_context(void)
 		 */
 		status = dcesrv_init_context(global_event_context(),
 					     lp_ctx,
-					     NULL,
+					     &srv_callbacks,
 					     &global_dcesrv_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			smb_panic("Failed to init DCE/RPC context");

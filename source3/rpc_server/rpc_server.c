@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "librpc/rpc/dcesrv_core.h"
 #include "rpc_server/rpc_pipes.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_config.h"
@@ -1183,6 +1184,86 @@ fail:
 	/* Terminate client connection */
 	talloc_free(ncacn_conn);
 	return;
+}
+
+NTSTATUS dcesrv_auth_gensec_prepare(TALLOC_CTX *mem_ctx,
+				    struct dcesrv_call_state *call,
+				    struct gensec_security **out)
+{
+	struct gensec_security *gensec = NULL;
+	NTSTATUS status;
+
+	if (out == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	status = auth_generic_prepare(mem_ctx,
+				      call->conn->remote_address,
+				      call->conn->local_address,
+				      "DCE/RPC",
+				      &gensec);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to prepare gensec: %s\n", nt_errstr(status));
+		return status;
+	}
+
+	*out = gensec;
+
+	return NT_STATUS_OK;
+}
+
+void dcesrv_log_successful_authz(struct dcesrv_call_state *call)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct auth4_context *auth4_context = NULL;
+	struct dcesrv_auth *auth = call->auth_state;
+	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(
+			call->conn->endpoint->ep_description);
+	const char *auth_type = derpc_transport_string_by_transport(transport);
+	const char *transport_protection = AUTHZ_TRANSPORT_PROTECTION_NONE;
+	NTSTATUS status;
+
+	if (frame == NULL) {
+		DBG_ERR("No memory");
+		return;
+	}
+
+	if (transport == NCACN_NP) {
+		transport_protection = AUTHZ_TRANSPORT_PROTECTION_SMB;
+	}
+
+	become_root();
+	status = make_auth4_context(frame, &auth4_context);
+	unbecome_root();
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Unable to make auth context for authz log.\n");
+		TALLOC_FREE(frame);
+		return;
+	}
+
+	/*
+	 * Log the authorization to this RPC interface.  This
+	 * covered ncacn_np pass-through auth, and anonymous
+	 * DCE/RPC (eg epmapper, netlogon etc)
+	 */
+	log_successful_authz_event(auth4_context->msg_ctx,
+				   auth4_context->lp_ctx,
+				   call->conn->remote_address,
+				   call->conn->local_address,
+				   "DCE/RPC",
+				   auth_type,
+				   transport_protection,
+				   auth->session_info);
+
+	auth->auth_audited = true;
+
+	TALLOC_FREE(frame);
+}
+
+NTSTATUS dcesrv_assoc_group_find(struct dcesrv_call_state *call)
+{
+	/* TODO */
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
