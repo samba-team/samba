@@ -680,6 +680,7 @@ planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.ntacl", py3_compatibl
 planpythontestsuite("none", "samba.tests.samba_tool.provision_password_check",  py3_compatible=True)
 planpythontestsuite("none", "samba.tests.samba_tool.help", py3_compatible=True)
 planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.passwordsettings", py3_compatible=True)
+planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.dsacl", py3_compatible=True)
 
 # Run these against chgdcpass to share the runtime load
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.sites", py3_compatible=True)

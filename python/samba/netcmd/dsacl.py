@@ -113,20 +113,23 @@ class cmd_dsacl_set(Command):
     def add_ace(self, samdb, object_dn, new_ace):
         """Add new ace explicitly."""
         desc = self.read_descriptor(samdb, object_dn)
-        desc_sddl = desc.as_sddl(self.get_domain_sid(samdb))
-        # TODO add bindings for descriptor manipulation and get rid of this
-        desc_aces = re.findall("\(.*?\)", desc_sddl)
-        for ace in desc_aces:
-            if ("ID" in ace):
-                desc_sddl = desc_sddl.replace(ace, "")
-        if new_ace.lower() in desc_sddl.lower():
-            return
-        if desc_sddl.find("(") >= 0:
-            desc_sddl = desc_sddl[:desc_sddl.index("(")] + new_ace + desc_sddl[desc_sddl.index("("):]
-        else:
-            desc_sddl = desc_sddl + new_ace
-        desc = security.descriptor.from_sddl(desc_sddl, self.get_domain_sid(samdb))
-        self.modify_descriptor(samdb, object_dn, desc)
+        new_ace = security.descriptor.from_sddl("D:" + new_ace,self.get_domain_sid(samdb))
+        new_ace_list = re.findall("\(.*?\)",new_ace.as_sddl())
+        for new_ace in new_ace_list:
+            desc_sddl = desc.as_sddl(self.get_domain_sid(samdb))
+            # TODO add bindings for descriptor manipulation and get rid of this
+            desc_aces = re.findall("\(.*?\)", desc_sddl)
+            for ace in desc_aces:
+                if ("ID" in ace):
+                    desc_sddl = desc_sddl.replace(ace, "")
+            if new_ace in desc_sddl:
+                continue
+            if desc_sddl.find("(") >= 0:
+                desc_sddl = desc_sddl[:desc_sddl.index("(")] + new_ace + desc_sddl[desc_sddl.index("("):]
+            else:
+                desc_sddl = desc_sddl + new_ace
+            desc = security.descriptor.from_sddl(desc_sddl, self.get_domain_sid(samdb))
+            self.modify_descriptor(samdb, object_dn, desc)
 
     def print_new_acl(self, samdb, object_dn):
         desc = self.read_descriptor(samdb, object_dn)
