@@ -544,8 +544,9 @@ static int have_syscall(void)
 	samba_setuidx(ID_EFFECTIVE, -1);
 #endif
 
-	if (errno == ENOSYS) return -1;
-	
+	if (errno == ENOSYS) {
+		return -1;
+	}
 	return 0;
 }
 
