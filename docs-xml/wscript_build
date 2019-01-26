@@ -140,11 +140,11 @@ def smbdotconf_generate_parameter_list(task):
 # Since nothing really forces sorting in glob, we have to sort by file name
 # POSIX file systems aren't required to return sorted content but we want
 # smb.conf parameters to be sorted alphabetically
-sources = bld.path.ant_glob("smbdotconf/**/*.xml", flat=False)
+parameter_all = 'smbdotconf/parameters.all.xml'
+sources = bld.path.ant_glob("smbdotconf/**/*.xml", flat=False, excl=parameter_all)
 articles = " ".join(sorted([x.path_from(bld.path) for x in sources],
                            key=lambda m: m.split(os.sep)[-1]))
 
-parameter_all = 'smbdotconf/parameters.all.xml'
 bld.SAMBA_GENERATOR(parameter_all,
                     source=articles,
                     target=parameter_all,
