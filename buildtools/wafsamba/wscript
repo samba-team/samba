@@ -444,6 +444,15 @@ def configure(conf):
     conf.DEFINE('_GNU_SOURCE', 1, add_to_cflags=True)
     conf.DEFINE('_XOPEN_SOURCE_EXTENDED', 1, add_to_cflags=True)
 
+    #
+    # Needs to be defined before std*.h and string*.h are included
+    # As Python.h already brings string.h we need it in CFLAGS.
+    # See memset_s() details here:
+    # https://en.cppreference.com/w/c/string/byte/memset
+    #
+    if conf.CHECK_CFLAGS(['-D__STDC_WANT_LIB_EXT1__=1'] + conf.env.WERROR_CFLAGS):
+        conf.ADD_CFLAGS('-D__STDC_WANT_LIB_EXT1__=1')
+
     # on Tru64 certain features are only available with _OSF_SOURCE set to 1
     # and _XOPEN_SOURCE set to 600
     if conf.env['SYSTEM_UNAME_SYSNAME'] == 'OSF1':
