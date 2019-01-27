@@ -15,7 +15,7 @@
 #define MAP_FILE 0
 #endif
 
-main()
+int main(void)
 {
 	int *buf;
 	int i; 

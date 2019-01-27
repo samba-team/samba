@@ -1,7 +1,7 @@
 
 void exit(int);
 
-main()
+int main(void)
 {
 	exit(0);
 }

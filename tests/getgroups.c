@@ -16,7 +16,7 @@
 #include <unistd.h>
 #include <grp.h>
 
-main()
+int main(void)
 {
 	int i;
 	int *igroups;

@@ -11,7 +11,7 @@
 #define DATA "conftest.trunc"
 #define LEN 7663
 
-main()
+int main(void)
 {
 	int *buf;
 	int fd = open(DATA,O_RDWR|O_CREAT|O_TRUNC,0666);

@@ -11,7 +11,7 @@
 #define DATA "readlink.test"
 #define FNAME "rdlnk.file"
 
-main()
+int main(void)
 {
 	char buf[7];
 	int ret;
