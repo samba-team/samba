@@ -21,6 +21,13 @@
 #ifndef __UTIL_SAMBA_UTIL_H__
 #define __UTIL_SAMBA_UTIL_H__
 
+unsigned long int
+strtoul_err(const char *nptr, char **endptr, int base, int *err);
+
+unsigned long long int
+strtoull_err(const char *nptr, char **endptr, int base, int *err);
+
+
 /**
  * Write dump of binary data to a callback
  */

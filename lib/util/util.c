@@ -48,6 +48,56 @@
  */
 
 /**
+ * Convert a string to an unsigned long integer
+ *
+ * @param nptr		pointer to string which is to be converted
+ * @param endptr	[optional] reference to remainder of the string
+ * @param base		base of the numbering scheme
+ * @param err		error occured during conversion
+ * @result		result of the conversion as provided by strtoul
+ *
+ * Currently the only errors detected are wrong base and a value overflow.
+ */
+unsigned long int
+strtoul_err(const char *nptr, char **endptr, int base, int *err)
+{
+	unsigned long int val;
+	int saved_errno = errno;
+
+	errno = 0;
+	val = strtoul(nptr, endptr, base);
+	*err = errno;
+
+	errno = saved_errno;
+	return val;
+}
+
+/**
+ * Convert a string to an unsigned long long integer
+ *
+ * @param nptr		pointer to string which is to be converted
+ * @param endptr	[optional] reference to remainder of the string
+ * @param base		base of the numbering scheme
+ * @param err		error occured during conversion
+ * @result		result of the conversion as provided by strtoull
+ *
+ * Currently the only errors detected are wrong base and a value overflow.
+ */
+unsigned long long int
+strtoull_err(const char *nptr, char **endptr, int base, int *err)
+{
+	unsigned long long int val;
+	int saved_errno = errno;
+
+	errno = 0;
+	val = strtoull(nptr, endptr, base);
+	*err = errno;
+
+	errno = saved_errno;
+	return val;
+}
+
+/**
  Find a suitable temporary directory. The result should be copied immediately
  as it may be overwritten by a subsequent call.
 **/
