@@ -274,7 +274,7 @@ static NTSTATUS setup_parent_messaging(struct server_state *state,
 
 	msg = imessaging_init(state->event_ctx,
 			      lp_ctx,
-			      cluster_id(0, SAMBA_PARENT_TASKID),
+			      cluster_id(getpid(), SAMBA_PARENT_TASKID),
 			      state->event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
