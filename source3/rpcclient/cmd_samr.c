@@ -1406,13 +1406,18 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 	uint32_t alias_rid;
 	uint32_t access_mask = MAXIMUM_ALLOWED_ACCESS;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	int error = 0;
 
 	if (argc != 3) {
 		printf("Usage: %s builtin|domain [rid|name]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	alias_rid = strtoul(argv[2], NULL, 10);
+	alias_rid = strtoul_err(argv[2], NULL, 10, &error);
+	if (error != 0) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 
 	/* Open SAMR handle */
 

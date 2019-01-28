@@ -2642,6 +2642,7 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 	union spoolss_PrinterData data;
 	DATA_BLOB blob;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
+	int error = 0;
 
 	/* parse the command arguments */
 	if (argc < 5) {
@@ -2707,7 +2708,12 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 		W_ERROR_HAVE_NO_MEMORY(data.string);
 		break;
 	case REG_DWORD:
-		data.value = strtoul(argv[4], NULL, 10);
+		data.value = strtoul_err(argv[4], NULL, 10, &error);
+		if (error != 0) {
+			result = WERR_INVALID_PARAMETER;
+			goto done;
+		}
+
 		break;
 	case REG_BINARY:
 		data.binary = strhex_to_data_blob(mem_ctx, argv[4]);
