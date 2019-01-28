@@ -103,10 +103,15 @@ static void PyErr_SetDsExtendedError(enum drsuapi_DsExtendedError ext_err, const
 		}
 	}
 	if (error) {
-		PyErr_SetObject(error,
+		PyObject *value =
 			Py_BuildValue(discard_const_p(char, "(i,s)"),
 				      ext_err,
-				      error_description));
+				      error_description);
+		PyErr_SetObject(error, value);
+		if (value) {
+			Py_DECREF(value);
+		}
+		Py_DECREF(error);
 	}
 }
 

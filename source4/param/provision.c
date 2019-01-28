@@ -89,10 +89,12 @@ static PyObject *PyLdb_FromLdbContext(struct ldb_context *ldb_ctx)
 	ret = (PyLdbObject *)ldb_ctx_type->tp_alloc(ldb_ctx_type, 0);
 	if (ret == NULL) {
 		PyErr_NoMemory();
+		Py_XDECREF(ldb_ctx_type);
 		return NULL;
 	}
 	ret->mem_ctx = talloc_new(NULL);
 	ret->ldb_ctx = talloc_reference(ret->mem_ctx, ldb_ctx);
+	Py_XDECREF(ldb_ctx_type);
 	return (PyObject *)ret;
 }
 
@@ -103,7 +105,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	const char *configfile;
 	PyObject *provision_mod = NULL, *provision_dict = NULL;
 	PyObject *provision_fn = NULL, *py_result = NULL;
-	PyObject *parameters = NULL, *py_lp_ctx = NULL;
+	PyObject *parameters = NULL, *py_lp_ctx = NULL, *py_domaindn = NULL;
 
 	struct ldb_context *samdb;
 	NTSTATUS status = NT_STATUS_OK;
@@ -267,7 +269,8 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 		goto out;
 	}
 
-	result->domaindn = talloc_strdup(mem_ctx, PyStr_AsString(PyObject_GetAttrString(py_result, "domaindn")));
+	py_domaindn = PyObject_GetAttrString(py_result, "domaindn");
+	result->domaindn = talloc_strdup(mem_ctx, PyStr_AsString(py_domaindn));
 
 	/* FIXME paths */
 	py_lp_ctx = PyObject_GetAttrString(py_result, "lp");
@@ -293,6 +296,7 @@ out:
 	Py_CLEAR(provision_dict);
 	Py_CLEAR(py_result);
 	Py_CLEAR(py_lp_ctx);
+	Py_CLEAR(py_domaindn);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_Print();
 		PyErr_Clear();
@@ -388,7 +392,7 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
-	
+
 	parameters = PyDict_New();
 
 	if(!dict_insert(parameters,
@@ -491,7 +495,8 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *override_prefixmap)
 {
 	PyObject *schema_mod, *schema_dict, *schema_fn, *py_result, *parameters;
-	
+	PyObject *py_ldb = NULL;
+	struct ldb_context *ldb_result = NULL;
 	Py_Initialize();
 	py_update_path(); /* Put the samba path at the start of sys.path */
 
@@ -547,5 +552,16 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	return pyldb_Ldb_AsLdbContext(PyObject_GetAttrString(py_result, "ldb"));
+	py_ldb = PyObject_GetAttrString(py_result, "ldb");
+	Py_DECREF(py_result);
+	ldb_result = pyldb_Ldb_AsLdbContext(py_ldb);
+	/*
+	 * #TODO #FIXME There is a leak here !!!
+	 * Looks like ldb is a new object returned from schema_fn
+	 * We extract the ldb_ctx from that which rightly
+	 * will be destoryed when py_ldb is decremented.
+	 * Presently the ldb_context is returned (but the owning
+	 * object is leaked)
+	*/
+	return ldb_result;
 }
