@@ -5,8 +5,8 @@
 
 #include "includes.h"
 #include "ntdomain.h"
-#include "bin/default/librpc/gen_ndr/srv_winspool.h"
-#include "bin/default/librpc/gen_ndr/srv_spoolss.c"
+#include "librpc/gen_ndr/srv_winspool.h"
+#include "librpc/gen_ndr/srv_spoolss.c"
 
 static bool api_winspool_SyncRegisterForRemoteNotifications(struct pipes_struct *p)
 {

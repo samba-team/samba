@@ -20,7 +20,7 @@
 */
 
 #include "librpc/ndr/libndr.h"
-#include "bin/default/librpc/gen_ndr/negoex.h"
+#include "librpc/gen_ndr/negoex.h"
 
 _PUBLIC_ void ndr_print_negoex_BYTE_VECTOR(struct ndr_print *ndr, const char *name, const struct negoex_BYTE_VECTOR *r);
 _PUBLIC_ enum ndr_err_code ndr_push_negoex_BYTE_VECTOR(struct ndr_push *ndr, int ndr_flags, const struct negoex_BYTE_VECTOR *r);
