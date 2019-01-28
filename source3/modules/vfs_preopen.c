@@ -345,6 +345,7 @@ static bool preopen_parse_fname(const char *fname, unsigned long *pnum,
 	const char *p;
 	char *q = NULL;
 	unsigned long num;
+	int error = 0;
 
 	p = strrchr_m(fname, '/');
 	if (p == NULL) {
@@ -363,7 +364,10 @@ static bool preopen_parse_fname(const char *fname, unsigned long *pnum,
 		return false;
 	}
 
-	num = strtoul(p, (char **)&q, 10);
+	num = strtoul_err(p, (char **)&q, 10, &error);
+	if (error != 0) {
+		return false;
+	}
 
 	if (num+1 < num) {
 		/* overflow */

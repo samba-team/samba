@@ -1218,6 +1218,7 @@ static NTSTATUS snapper_snap_path_to_id(TALLOC_CTX *mem_ctx,
 	char *str_idx;
 	char *str_end;
 	uint32_t snap_id;
+	int error = 0;
 
 	path_dup = talloc_strdup(mem_ctx, snap_path);
 	if (path_dup == NULL) {
@@ -1250,8 +1251,8 @@ static NTSTATUS snapper_snap_path_to_id(TALLOC_CTX *mem_ctx,
 	}
 
 	str_idx++;
-	snap_id = strtoul(str_idx, &str_end, 10);
-	if (str_idx == str_end) {
+	snap_id = strtoul_err(str_idx, &str_end, 10, &error);
+	if (error != 0 || str_idx == str_end) {
 		talloc_free(path_dup);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
