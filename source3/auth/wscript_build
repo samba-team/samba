@@ -21,7 +21,7 @@ bld.SAMBA3_LIBRARY('auth',
                    user_krb5.c
                    auth_ntlmssp.c
                    auth_generic.c''',
-                   deps='''PLAINTEXT_AUTH SLCACHE DCUTIL TOKEN_UTIL AUTH_COMMON libcli_netlogon3 samba-hostconfig''',
+                   deps='''PLAINTEXT_AUTH SLCACHE DCUTIL TOKEN_UTIL AUTH_COMMON libcli_netlogon3 samba-hostconfig MESSAGING''',
                    private_library=True)
 
 bld.SAMBA3_MODULE('auth_sam',
