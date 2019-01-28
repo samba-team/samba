@@ -453,7 +453,7 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 	NTSTATUS status;
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB in, out;
-	PyObject *ret, *py_in;
+	PyObject *py_bytes, *result, *py_in;
 	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	PyObject *finished_processing;
 
@@ -477,7 +477,8 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	ret = PyBytes_FromStringAndSize((const char *)out.data, out.length);
+	py_bytes = PyBytes_FromStringAndSize((const char *)out.data,
+					     out.length);
 	talloc_free(mem_ctx);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
@@ -486,7 +487,9 @@ static PyObject *py_gensec_update(PyObject *self, PyObject *args)
 		finished_processing = Py_True;
 	}
 
-	return PyTuple_Pack(2, finished_processing, ret);
+	result = PyTuple_Pack(2, finished_processing, py_bytes);
+	Py_XDECREF(py_bytes);
+	return result;
 }
 
 static PyObject *py_gensec_wrap(PyObject *self, PyObject *args)
