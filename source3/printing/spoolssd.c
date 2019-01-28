@@ -317,7 +317,7 @@ struct spoolss_children_data {
 	struct messaging_context *msg_ctx;
 	struct pf_worker_data *pf;
 	int listen_fd_size;
-	int *listen_fds;
+	struct pf_listen_fd *listen_fds;
 };
 
 static void spoolss_next_client(void *pvt);
@@ -327,7 +327,7 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 				 struct pf_worker_data *pf,
 				 int child_id,
 				 int listen_fd_size,
-				 int *listen_fds,
+				 struct pf_listen_fd *listen_fds,
 				 void *private_data)
 {
 	struct spoolss_children_data *data;
@@ -427,7 +427,7 @@ static void spoolss_handle_client(struct tevent_req *req)
 	client = tevent_req_callback_data(req, struct spoolss_new_client);
 	data = client->data;
 
-	ret = prefork_listen_recv(req, client, &sd,
+	ret = prefork_listen_recv(req, client, &sd, NULL,
 				  &client->srv_addr, &client->cli_addr);
 
 	/* this will free the request too */
@@ -604,7 +604,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	TALLOC_CTX *mem_ctx;
 	pid_t pid;
 	NTSTATUS status;
-	int listen_fd;
+	struct pf_listen_fd listen_fds[1];
 	int ret;
 	bool ok;
 
@@ -665,12 +665,14 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 
 	/* the listening fd must be created before the children are actually
 	 * forked out. */
-	status = dcesrv_create_ncacn_np_socket(SPOOLSS_PIPE_NAME, &listen_fd);
+	status = dcesrv_create_ncacn_np_socket(SPOOLSS_PIPE_NAME,
+					       &listen_fds[0].fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit(1);
 	}
+	listen_fds[0].fd_data = NULL;
 
-	ret = listen(listen_fd, pf_spoolss_cfg.max_allowed_clients);
+	ret = listen(listen_fds[0].fd, pf_spoolss_cfg.max_allowed_clients);
 	if (ret == -1) {
 		DEBUG(0, ("Failed to listen on spoolss pipe - %s\n",
 			  strerror(errno)));
@@ -680,7 +682,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	/* start children before any more initialization is done */
 	ok = prefork_create_pool(ev_ctx, /* mem_ctx */
 				 ev_ctx, msg_ctx,
-				 1, &listen_fd,
+				 1, listen_fds,
 				 pf_spoolss_cfg.min_children,
 				 pf_spoolss_cfg.max_children,
 				 &spoolss_children_main, NULL,

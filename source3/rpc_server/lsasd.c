@@ -295,7 +295,7 @@ struct lsasd_children_data {
 	struct messaging_context *msg_ctx;
 	struct pf_worker_data *pf;
 	int listen_fd_size;
-	int *listen_fds;
+	struct pf_listen_fd *listen_fds;
 };
 
 static void lsasd_next_client(void *pvt);
@@ -305,7 +305,7 @@ static int lsasd_children_main(struct tevent_context *ev_ctx,
 			       struct pf_worker_data *pf,
 			       int child_id,
 			       int listen_fd_size,
-			       int *listen_fds,
+			       struct pf_listen_fd *listen_fds,
 			       void *private_data)
 {
 	struct lsasd_children_data *data;
@@ -417,6 +417,7 @@ static void lsasd_handle_client(struct tevent_req *req)
 	rc = prefork_listen_recv(req,
 				 tmp_ctx,
 				 &sd,
+				 NULL,
 				 &srv_addr,
 				 &cli_addr);
 
@@ -594,7 +595,7 @@ static void lsasd_check_children(struct tevent_context *ev_ctx,
 
 static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
-				 int *listen_fd,
+				 struct pf_listen_fd *listen_fd,
 				 int *listen_fd_size)
 {
 	struct dcerpc_binding_vector *v, *v_orig;
@@ -627,7 +628,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 
 	/* Start to listen on tcpip sockets */
 	for (i = 0; i < *listen_fd_size; i++) {
-		rc = listen(listen_fd[i], pf_lsasd_cfg.max_allowed_clients);
+		rc = listen(listen_fd[i].fd, pf_lsasd_cfg.max_allowed_clients);
 		if (rc == -1) {
 			DEBUG(0, ("Failed to listen on tcpip socket - %s\n",
 				  strerror(errno)));
@@ -647,7 +648,8 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 			  strerror(errno)));
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
+	listen_fd[*listen_fd_size].fd = fd;
+	listen_fd[*listen_fd_size].fd_data = NULL;
 	(*listen_fd_size)++;
 
 	status = dcesrv_create_ncacn_np_socket("lsass", &fd);
@@ -661,7 +663,8 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 			  strerror(errno)));
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
+	listen_fd[*listen_fd_size].fd = fd;
+	listen_fd[*listen_fd_size].fd_data = NULL;
 	(*listen_fd_size)++;
 
 	status = dcesrv_create_ncalrpc_socket("lsarpc", &fd);
@@ -675,7 +678,8 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 			  strerror(errno)));
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
+	listen_fd[*listen_fd_size].fd = fd;
+	listen_fd[*listen_fd_size].fd_data = NULL;
 	(*listen_fd_size)++;
 	fd = -1;
 
@@ -716,7 +720,8 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 			  strerror(errno)));
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
+	listen_fd[*listen_fd_size].fd = fd;
+	listen_fd[*listen_fd_size].fd_data = NULL;
 	(*listen_fd_size)++;
 
 	status = dcesrv_create_ncalrpc_socket("samr", &fd);
@@ -730,7 +735,8 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 			  strerror(errno)));
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
+	listen_fd[*listen_fd_size].fd = fd;
+	listen_fd[*listen_fd_size].fd_data = NULL;
 	(*listen_fd_size)++;
 	fd = -1;
 
@@ -771,7 +777,8 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 			  strerror(errno)));
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
+	listen_fd[*listen_fd_size].fd = fd;
+	listen_fd[*listen_fd_size].fd_data = NULL;
 	(*listen_fd_size)++;
 
 	status = dcesrv_create_ncalrpc_socket("netlogon", &fd);
@@ -785,7 +792,8 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 			  strerror(errno)));
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
+	listen_fd[*listen_fd_size].fd = fd;
+	listen_fd[*listen_fd_size].fd_data = NULL;
 	(*listen_fd_size)++;
 	fd = -1;
 
@@ -827,7 +835,7 @@ void start_lsasd(struct tevent_context *ev_ctx,
 		 struct messaging_context *msg_ctx)
 {
 	NTSTATUS status;
-	int listen_fd[LSASD_MAX_SOCKETS];
+	struct pf_listen_fd listen_fd[LSASD_MAX_SOCKETS];
 	int listen_fd_size = 0;
 	pid_t pid;
 	int rc;

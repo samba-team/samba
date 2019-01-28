@@ -238,7 +238,7 @@ struct mdssd_children_data {
 	struct messaging_context *msg_ctx;
 	struct pf_worker_data *pf;
 	int listen_fd_size;
-	int *listen_fds;
+	struct pf_listen_fd *listen_fds;
 };
 
 static void mdssd_next_client(void *pvt);
@@ -248,7 +248,7 @@ static int mdssd_children_main(struct tevent_context *ev_ctx,
 			       struct pf_worker_data *pf,
 			       int child_id,
 			       int listen_fd_size,
-			       int *listen_fds,
+			       struct pf_listen_fd *listen_fds,
 			       void *private_data)
 {
 	struct mdssd_children_data *data;
@@ -360,6 +360,7 @@ static void mdssd_handle_client(struct tevent_req *req)
 	rc = prefork_listen_recv(req,
 				 tmp_ctx,
 				 &sd,
+				 NULL,
 				 &srv_addr,
 				 &cli_addr);
 
@@ -536,7 +537,7 @@ static void mdssd_check_children(struct tevent_context *ev_ctx,
 
 static bool mdssd_create_sockets(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
-				 int *listen_fd,
+				 struct pf_listen_fd *listen_fd,
 				 int *listen_fd_size)
 {
 	struct dcerpc_binding_vector *v, *v_orig;
@@ -566,7 +567,8 @@ static bool mdssd_create_sockets(struct tevent_context *ev_ctx,
 	if (rc == -1) {
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
+	listen_fd[*listen_fd_size].fd = fd;
+	listen_fd[*listen_fd_size].fd_data = NULL;
 	(*listen_fd_size)++;
 
 	status = dcesrv_create_ncalrpc_socket("mdssvc", &fd);
@@ -578,7 +580,8 @@ static bool mdssd_create_sockets(struct tevent_context *ev_ctx,
 	if (rc == -1) {
 		goto done;
 	}
-	listen_fd[*listen_fd_size] = fd;
+	listen_fd[*listen_fd_size].fd = fd;
+	listen_fd[*listen_fd_size].fd_data = NULL;
 	(*listen_fd_size)++;
 	fd = -1;
 
@@ -615,7 +618,7 @@ void start_mdssd(struct tevent_context *ev_ctx,
 		 struct messaging_context *msg_ctx)
 {
 	NTSTATUS status;
-	int listen_fd[MDSSD_MAX_SOCKETS];
+	struct pf_listen_fd listen_fd[MDSSD_MAX_SOCKETS];
 	int listen_fd_size = 0;
 	pid_t pid;
 	int rc;

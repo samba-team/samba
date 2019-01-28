@@ -40,6 +40,19 @@ enum pf_server_cmds {
 };
 
 /**
+ * @brief This structure contains a socket listening for clients and a
+ *        private pointer with any data associated to that particular
+ *        socket.
+ */
+struct pf_listen_fd {
+	/* The socket to listen on */
+	int fd;
+
+	/* The socket associated data */
+	void *fd_data;
+};
+
+/**
 * @brief This structure is shared between the controlling parent and the
 *        the child. The parent can only write to the 'cmds' and
 *        'allowed_clients' variables, while a child is running.
@@ -79,7 +92,7 @@ typedef int (prefork_main_fn_t)(struct tevent_context *ev,
 				struct pf_worker_data *pf,
 				int child_id,
 				int listen_fd_size,
-				int *listen_fds,
+				struct pf_listen_fd *pf_listen_fds,
 				void *private_data);
 
 /**
@@ -119,7 +132,7 @@ typedef void (prefork_sigchld_fn_t)(struct tevent_context *ev_ctx,
 bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 			 struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
-			 int listen_fd_size, int *listen_fds,
+			 int listen_fd_size, struct pf_listen_fd *listen_fds,
 			 int min_children, int max_children,
 			 prefork_main_fn_t *main_fn, void *private_data,
 			 struct prefork_pool **pf_pool);
@@ -278,7 +291,7 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct pf_worker_data *pf,
 					int listen_fd_size,
-					int *listen_fds);
+					struct pf_listen_fd *listen_fds);
 /**
 * @brief Returns the file descriptor after the new client connection has
 *	 been accepted.
@@ -292,7 +305,7 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 * @return	The error in case the operation failed.
 */
 int prefork_listen_recv(struct tevent_req *req,
-			TALLOC_CTX *mem_ctx, int *fd,
+			TALLOC_CTX *mem_ctx, int *fd, void **fd_data,
 			struct tsocket_address **srv_addr,
 			struct tsocket_address **cli_addr);
 

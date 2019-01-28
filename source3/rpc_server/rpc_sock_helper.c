@@ -26,12 +26,13 @@
 #include "librpc/rpc/dcerpc_ep.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_sock_helper.h"
+#include "lib/server_prefork.h"
 
 NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 				const struct ndr_interface_table *iface,
 				struct dcerpc_binding_vector *bvec,
 				uint16_t port,
-				int *listen_fd,
+				struct pf_listen_fd *listen_fd,
 				int *listen_fd_size)
 {
 	uint32_t num_ifs = iface_count();
@@ -67,7 +68,8 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
-			listen_fd[*listen_fd_size] = fd;
+			listen_fd[*listen_fd_size].fd = fd;
+			listen_fd[*listen_fd_size].fd_data = NULL;
 			(*listen_fd_size)++;
 
 			if (bvec != NULL) {
@@ -129,7 +131,8 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
-			listen_fd[*listen_fd_size] = fd;
+			listen_fd[*listen_fd_size].fd = fd;
+			listen_fd[*listen_fd_size].fd_data = NULL;
 			(*listen_fd_size)++;
 
 			if (bvec != NULL) {

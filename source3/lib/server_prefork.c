@@ -29,9 +29,8 @@
 #include "../lib/util/tevent_unix.h"
 
 struct prefork_pool {
-
 	int listen_fd_size;
-	int *listen_fds;
+	struct pf_listen_fd *listen_fds;
 
 	prefork_main_fn_t *main_fn;
 	void *private_data;
@@ -57,7 +56,7 @@ static int prefork_pool_destructor(struct prefork_pool *pfp)
 bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 			 struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
-			 int listen_fd_size, int *listen_fds,
+			 int listen_fd_size, struct pf_listen_fd *listen_fds,
 			 int min_children, int max_children,
 			 prefork_main_fn_t *main_fn, void *private_data,
 			 struct prefork_pool **pf_pool)
@@ -76,7 +75,8 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 	pfp->listen_fd_size = listen_fd_size;
-	pfp->listen_fds = talloc_array(pfp, int, listen_fd_size);
+	pfp->listen_fds = talloc_array(pfp, struct pf_listen_fd,
+				       listen_fd_size);
 	if (!pfp->listen_fds) {
 		DEBUG(1, ("Out of memory!\n"));
 		return false;
@@ -84,7 +84,7 @@ bool prefork_create_pool(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < listen_fd_size; i++) {
 		pfp->listen_fds[i] = listen_fds[i];
 		/* force sockets in non-blocking mode */
-		set_blocking(listen_fds[i], false);
+		set_blocking(listen_fds[i].fd, false);
 	}
 	pfp->main_fn = main_fn;
 	pfp->private_data = private_data;
@@ -498,9 +498,9 @@ struct pf_listen_state {
 	struct pf_worker_data *pf;
 
 	int listen_fd_size;
-	int *listen_fds;
+	struct pf_listen_fd *listen_fds;
 
-	int accept_fd;
+	struct pf_listen_fd accept;
 
 	struct tsocket_address *srv_addr;
 	struct tsocket_address *cli_addr;
@@ -512,6 +512,7 @@ struct pf_listen_ctx {
 	TALLOC_CTX *fde_ctx;
 	struct tevent_req *req;
 	int listen_fd;
+	void *listen_fd_data;
 };
 
 static void prefork_listen_accept_handler(struct tevent_context *ev,
@@ -522,7 +523,7 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct pf_worker_data *pf,
 					int listen_fd_size,
-					int *listen_fds)
+					struct pf_listen_fd *listen_fds)
 {
 	struct tevent_req *req;
 	struct pf_listen_state *state;
@@ -540,7 +541,8 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 	state->pf = pf;
 	state->listen_fd_size = listen_fd_size;
 	state->listen_fds = listen_fds;
-	state->accept_fd = -1;
+	state->accept.fd = -1;
+	state->accept.fd_data = NULL;
 	state->error = 0;
 
 	fde_ctx = talloc_new(state);
@@ -556,7 +558,8 @@ struct tevent_req *prefork_listen_send(TALLOC_CTX *mem_ctx,
 		}
 		ctx->fde_ctx = fde_ctx;
 		ctx->req = req;
-		ctx->listen_fd = state->listen_fds[i];
+		ctx->listen_fd = state->listen_fds[i].fd;
+		ctx->listen_fd_data = state->listen_fds[i].fd_data;
 
 		fde = tevent_add_fd(state->ev, fde_ctx,
 				    ctx->listen_fd, TEVENT_FD_READ,
@@ -622,7 +625,8 @@ static void prefork_listen_accept_handler(struct tevent_context *ev,
 	}
 	smb_set_close_on_exec(sd);
 
-	state->accept_fd = sd;
+	state->accept.fd = sd;
+	state->accept.fd_data = ctx->listen_fd_data;
 
 	ret = tsocket_address_bsd_from_sockaddr(state,
 					(struct sockaddr *)(void *)&addr,
@@ -656,6 +660,7 @@ done:
 
 int prefork_listen_recv(struct tevent_req *req,
 			TALLOC_CTX *mem_ctx, int *fd,
+			void **fd_data,
 			struct tsocket_address **srv_addr,
 			struct tsocket_address **cli_addr)
 {
@@ -673,11 +678,14 @@ int prefork_listen_recv(struct tevent_req *req,
 	}
 
 	if (ret) {
-		if (state->accept_fd != -1) {
-			close(state->accept_fd);
+		if (state->accept.fd != -1) {
+			close(state->accept.fd);
 		}
 	} else {
-		*fd = state->accept_fd;
+		*fd = state->accept.fd;
+		if (fd_data != NULL) {
+			*fd_data = state->accept.fd_data;
+		}
 		*srv_addr = talloc_move(mem_ctx, &state->srv_addr);
 		*cli_addr = talloc_move(mem_ctx, &state->cli_addr);
 		state->pf->num_clients++;
