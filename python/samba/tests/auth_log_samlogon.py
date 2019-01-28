@@ -47,12 +47,9 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
     def setUp(self):
         super(AuthLogTestsSamLogon, self).setUp()
         self.lp = samba.tests.env_loadparm()
-        self.creds = Credentials()
-
         self.session = system_session()
         self.ldb = SamDB(
             session_info=self.session,
-            credentials=self.creds,
             lp=self.lp)
 
         self.domain = os.environ["DOMAIN"]
