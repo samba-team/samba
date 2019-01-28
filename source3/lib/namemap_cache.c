@@ -22,6 +22,7 @@
 #include "source3/lib/gencache.h"
 #include "lib/util/debug.h"
 #include "lib/util/strv.h"
+#include "lib/util/util.h"
 #include "lib/util/talloc_stack.h"
 #include "lib/util/charset/charset.h"
 #include "libcli/security/dom_sid.h"
@@ -105,6 +106,7 @@ static void namemap_cache_find_sid_parser(
 	const char *domain;
 	const char *name;
 	const char *typebuf;
+	int error = 0;
 	char *endptr;
 	unsigned long type;
 
@@ -123,11 +125,8 @@ static void namemap_cache_find_sid_parser(
 		return;
 	}
 
-	type = strtoul(typebuf, &endptr, 10);
-	if (*endptr != '\0') {
-		return;
-	}
-	if ((type == ULONG_MAX) && (errno == ERANGE)) {
+	type = strtoul_err(typebuf, &endptr, 10, &error);
+	if ((*endptr != '\0') || (error != 0)) {
 		return;
 	}
 
@@ -253,6 +252,7 @@ static void namemap_cache_find_name_parser(
 	const char *sid_endptr;
 	const char *typebuf;
 	char *endptr;
+	int error = 0;
 	struct dom_sid sid;
 	unsigned long type;
 	bool ok;
@@ -276,11 +276,8 @@ static void namemap_cache_find_name_parser(
 		return;
 	}
 
-	type = strtoul(typebuf, &endptr, 10);
-	if (*endptr != '\0') {
-		return;
-	}
-	if ((type == ULONG_MAX) && (errno == ERANGE)) {
+	type = strtoul_err(typebuf, &endptr, 10, &error);
+	if ((*endptr != '\0') || (error != 0)) {
 		return;
 	}
 

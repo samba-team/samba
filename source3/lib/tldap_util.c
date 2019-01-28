@@ -389,13 +389,22 @@ bool tldap_pull_uint64(struct tldap_message *msg, const char *attr,
 {
 	char *str;
 	uint64_t result;
+	int error = 0;
 
 	str = tldap_talloc_single_attribute(msg, attr, talloc_tos());
 	if (str == NULL) {
 		DEBUG(10, ("Could not find attribute %s\n", attr));
 		return false;
 	}
-	result = strtoull(str, NULL, 10);
+
+	result = strtoull_err(str, NULL, 10, &error);
+	if (error != 0) {
+		DBG_DEBUG("Attribute conversion failed (%s)\n",
+			  strerror(error));
+		TALLOC_FREE(str);
+		return false;
+	}
+
 	TALLOC_FREE(str);
 	*presult = result;
 	return true;

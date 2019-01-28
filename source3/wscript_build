@@ -366,6 +366,7 @@ bld.SAMBA3_LIBRARY('messages_dgm',
                         PTHREADPOOL
                         msghdr
                         genrand
+			samba-util
                         ''',
                    private_library=True)
 
@@ -1363,6 +1364,7 @@ bld.RECURSE('smbd/notifyd')
 bld.RECURSE('rpcclient')
 bld.RECURSE('utils')
 bld.RECURSE('nmbd')
+bld.RECURSE('lib/util')
 
 bld.ENFORCE_GROUP_ORDERING()
 bld.CHECK_PROJECT_RULES()

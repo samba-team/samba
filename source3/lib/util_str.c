@@ -851,14 +851,15 @@ uint64_t conv_str_size(const char * str)
 {
         uint64_t lval;
 	char * end;
+	int error = 0;
 
         if (str == NULL || *str == '\0') {
                 return 0;
         }
 
-	lval = strtoull(str, &end, 10 /* base */);
+	lval = strtoull_err(str, &end, 10, &error);
 
-        if (end == NULL || end == str) {
+        if (end == NULL || end == str || error != 0) {
                 return 0;
         }
 

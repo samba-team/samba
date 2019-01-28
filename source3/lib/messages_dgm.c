@@ -18,6 +18,7 @@
  */
 
 #include "replace.h"
+#include "util/util.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/dir.h"
@@ -1458,6 +1459,7 @@ static int messaging_dgm_read_unique(int fd, uint64_t *punique)
 {
 	char buf[25];
 	ssize_t rw_ret;
+	int error = 0;
 	unsigned long long unique;
 	char *endptr;
 
@@ -1467,13 +1469,15 @@ static int messaging_dgm_read_unique(int fd, uint64_t *punique)
 	}
 	buf[rw_ret] = '\0';
 
-	unique = strtoull(buf, &endptr, 10);
+	unique = strtoull_err(buf, &endptr, 10, &error);
 	if ((unique == 0) && (errno == EINVAL)) {
 		return EINVAL;
 	}
-	if ((unique == ULLONG_MAX) && (errno == ERANGE)) {
-		return ERANGE;
+
+	if (error != 0) {
+		return error;
 	}
+
 	if (endptr[0] != '\n') {
 		return EINVAL;
 	}
@@ -1615,6 +1619,7 @@ int messaging_dgm_forall(int (*fn)(pid_t pid, void *private_data),
 	struct messaging_dgm_context *ctx = global_dgm_context;
 	DIR *msgdir;
 	struct dirent *dp;
+	int error = 0;
 
 	if (ctx == NULL) {
 		return ENOTCONN;
@@ -1637,8 +1642,8 @@ int messaging_dgm_forall(int (*fn)(pid_t pid, void *private_data),
 		unsigned long pid;
 		int ret;
 
-		pid = strtoul(dp->d_name, NULL, 10);
-		if (pid == 0) {
+		pid = strtoul_err(dp->d_name, NULL, 10, &error);
+		if ((pid == 0) || (error != 0)) {
 			/*
 			 * . and .. and other malformed entries
 			 */

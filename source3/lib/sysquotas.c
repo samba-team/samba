@@ -253,6 +253,7 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 		char *p2;
 		char *syscmd = NULL;
 		int _id = -1;
+		int error = 0;
 
 		switch(qtype) {
 			case SMB_USER_QUOTA_TYPE:
@@ -285,7 +286,11 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 
 			/* we need to deal with long long unsigned here, if supported */
 
-			dp->qflags = strtoul(line, &p2, 10);
+			dp->qflags = strtoul_err(line, &p2, 10, &error);
+			if (error != 0) {
+				goto invalid_param;
+			}
+
 			p = p2;
 			while (p && *p && isspace(*p)) {
 				p++;
