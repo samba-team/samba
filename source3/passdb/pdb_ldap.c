@@ -982,6 +982,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		struct dom_sid mapped_gsid;
 		const struct dom_sid *primary_gsid;
 		struct unixid id;
+		int error = 0;
 
 		ZERO_STRUCT(unix_pw);
 
@@ -995,7 +996,11 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				ctx);
 		if (temp) {
 			/* We've got a uid, feed the cache */
-			unix_pw.pw_uid = strtoul(temp, NULL, 10);
+			unix_pw.pw_uid = strtoul_err(temp, NULL, 10, &error);
+			if (error != 0) {
+				DBG_ERR("Failed to convert UID\n");
+				goto fn_exit;
+			}
 			have_uid = true;
 		}
 		temp = smbldap_talloc_single_attribute(
@@ -1005,7 +1010,11 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				ctx);
 		if (temp) {
 			/* We've got a uid, feed the cache */
-			unix_pw.pw_gid = strtoul(temp, NULL, 10);
+			unix_pw.pw_gid = strtoul_err(temp, NULL, 10, &error);
+			if (error != 0) {
+				DBG_ERR("Failed to convert GID\n");
+				goto fn_exit;
+			}
 			have_gid = true;
 		}
 		unix_pw.pw_gecos = smbldap_talloc_single_attribute(
@@ -2879,6 +2888,7 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 	uint32_t num_gids;
 	char *gidstr;
 	gid_t primary_gid = -1;
+	int error = 0;
 
 	*pp_sids = NULL;
 	num_sids = 0;
@@ -2928,7 +2938,11 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 				ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
 				goto done;
 			}
-			primary_gid = strtoul(gidstr, NULL, 10);
+			primary_gid = strtoul_err(gidstr, NULL, 10, &error);
+			if (error != 0) {
+				DBG_ERR("Failed to convert GID\n");
+				goto done;
+			}
 			break;
 		default:
 			DEBUG(1, ("found more than one account with the same user name ?!\n"));
@@ -2996,10 +3010,11 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 						  str, sizeof(str)-1))
 			continue;
 
-		gid = strtoul(str, &end, 10);
+		gid = strtoul_err(str, &end, 10, &error);
 
-		if (PTR_DIFF(end, str) != strlen(str))
+		if ((PTR_DIFF(end, str) != strlen(str)) || (error != 0)) {
 			goto done;
+		}
 
 		if (gid == primary_gid) {
 			sid_copy(&(*pp_sids)[0], &sid);
@@ -4924,6 +4939,8 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 	int rc;
 	uint32_t nextRid = 0;
 	const char *dn;
+	uint32_t tmp;
+	int error = 0;
 
 	TALLOC_CTX *mem_ctx;
 
@@ -4959,21 +4976,33 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 	value = smbldap_talloc_single_attribute(priv2ld(priv), entry,
 						"sambaNextRid",	mem_ctx);
 	if (value != NULL) {
-		uint32_t tmp = (uint32_t)strtoul(value, NULL, 10);
+		tmp = (uint32_t)strtoul_err(value, NULL, 10, &error);
+		if (error != 0) {
+			goto done;
+		}
+
 		nextRid = MAX(nextRid, tmp);
 	}
 
 	value = smbldap_talloc_single_attribute(priv2ld(priv), entry,
 						"sambaNextUserRid", mem_ctx);
 	if (value != NULL) {
-		uint32_t tmp = (uint32_t)strtoul(value, NULL, 10);
+		tmp = (uint32_t)strtoul_err(value, NULL, 10, &error);
+		if (error != 0) {
+			goto done;
+		}
+
 		nextRid = MAX(nextRid, tmp);
 	}
 
 	value = smbldap_talloc_single_attribute(priv2ld(priv), entry,
 						"sambaNextGroupRid", mem_ctx);
 	if (value != NULL) {
-		uint32_t tmp = (uint32_t)strtoul(value, NULL, 10);
+		tmp = (uint32_t)strtoul_err(value, NULL, 10, &error);
+		if (error != 0) {
+			goto done;
+		}
+
 		nextRid = MAX(nextRid, tmp);
 	}
 
@@ -5043,6 +5072,7 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 	struct ldapsam_privates *priv =
 		(struct ldapsam_privates *)methods->private_data;
 	char *filter;
+	int error = 0;
 	struct dom_sid_buf buf;
 	const char *attrs[] = { "sambaGroupType", "gidNumber", "uidNumber",
 				NULL };
@@ -5106,7 +5136,11 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 			goto done;
 		}
 
-		id->id = strtoul(gid_str, NULL, 10);
+		id->id = strtoul_err(gid_str, NULL, 10, &error);
+		if (error != 0) {
+			goto done;
+		}
+
 		id->type = ID_TYPE_GID;
 		ret = True;
 		goto done;
@@ -5122,9 +5156,12 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 		goto done;
 	}
 
-	id->id = strtoul(value, NULL, 10);
-	id->type = ID_TYPE_UID;
+	id->id = strtoul_err(value, NULL, 10, &error);
+	if (error != 0) {
+		goto done;
+	}
 
+	id->type = ID_TYPE_UID;
 	ret = True;
  done:
 	TALLOC_FREE(mem_ctx);
@@ -5665,6 +5702,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 	struct dom_sid_buf buf;
 	gid_t gid = -1;
 	int rc;
+	int error = 0;
 
 	groupname = escape_ldap_string(talloc_tos(), name);
 	filter = talloc_asprintf(tmp_ctx, "(&(cn=%s)(objectClass=%s))",
@@ -5709,7 +5747,11 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		gid = strtoul(tmp, NULL, 10);
+		gid = strtoul_err(tmp, NULL, 10, &error);
+		if (error != 0) {
+			DBG_ERR("Failed to convert gidNumber\n");
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 
 		dn = smbldap_talloc_dn(tmp_ctx, priv2ld(ldap_state), entry);
 		if (!dn) {
@@ -5916,6 +5958,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 	struct dom_sid member_sid;
 	struct dom_sid_buf buf;
 	int rc;
+	int error = 0;
 
 	switch (modop) {
 	case LDAP_MOD_ADD:
@@ -5981,7 +6024,11 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		user_gid = strtoul(gidstr, NULL, 10);
+		user_gid = strtoul_err(gidstr, NULL, 10, &error);
+		if (error != 0) {
+			DBG_ERR("Failed to convert user gid\n");
+			return NT_STATUS_UNSUCCESSFUL;
+		}
 
 		if (!sid_to_gid(&group_sid, &group_gid)) {
 			DEBUG (0, ("ldapsam_change_groupmem: Unable to get group gid from SID!\n"));

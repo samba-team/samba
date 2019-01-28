@@ -1173,6 +1173,7 @@ static int tdbsam_collect_rids(struct db_record *rec, void *private_data)
 		private_data, struct tdbsam_search_state);
 	size_t prefixlen = strlen(RIDPREFIX);
 	uint32_t rid;
+	int error = 0;
 	TDB_DATA key;
 
 	key = dbwrap_record_get_key(rec);
@@ -1182,7 +1183,10 @@ static int tdbsam_collect_rids(struct db_record *rec, void *private_data)
 		return 0;
 	}
 
-	rid = strtoul((char *)key.dptr+prefixlen, NULL, 16);
+	rid = strtoul_err((char *)key.dptr+prefixlen, NULL, 16, &error);
+	if (error != 0) {
+		return 0;
+	}
 
 	ADD_TO_LARGE_ARRAY(state, uint32_t, rid, &state->rids, &state->num_rids,
 			   &state->array_size);
