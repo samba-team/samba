@@ -222,6 +222,7 @@ static NTSTATUS idmap_ldap_allocate_id_internal(struct idmap_domain *dom,
 	const char **attr_list;
 	const char *type;
 	struct idmap_ldap_context *ctx;
+	int error = 0;
 
 	/* Only do query if we are online */
 	if (idmap_is_offline())	{
@@ -299,7 +300,11 @@ static NTSTATUS idmap_ldap_allocate_id_internal(struct idmap_domain *dom,
 		goto done;
 	}
 
-	xid->id = strtoul(id_str, NULL, 10);
+	xid->id = strtoul_err(id_str, NULL, 10, &error);
+	if (error != 0) {
+		ret = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
 
 	/* make sure we still have room to grow */
 
@@ -641,6 +646,7 @@ static NTSTATUS idmap_ldap_unixids_to_sids(struct idmap_domain *dom,
 	int count;
 	int rc;
 	int i;
+	int error = 0;
 
 	/* Only do query if we are online */
 	if (idmap_is_offline())	{
@@ -769,16 +775,23 @@ again:
 			continue;
 		}
 
-		id = strtoul(tmp, NULL, 10);
+		id = strtoul_err(tmp, NULL, 10, &error);
+		TALLOC_FREE(tmp);
+		if (error != 0) {
+			DEBUG(5, ("Requested id (%u) out of range (%u - %u). "
+				  "Filtered!\n", id,
+				  dom->low_id, dom->high_id));
+			TALLOC_FREE(sidstr);
+			continue;
+		}
+
 		if (!idmap_unix_id_is_in_range(id, dom)) {
 			DEBUG(5, ("Requested id (%u) out of range (%u - %u). "
 				  "Filtered!\n", id,
 				  dom->low_id, dom->high_id));
 			TALLOC_FREE(sidstr);
-			TALLOC_FREE(tmp);
 			continue;
 		}
-		TALLOC_FREE(tmp);
 
 		map = idmap_find_map_by_id(&ids[bidx], type, id);
 		if (!map) {
@@ -947,6 +960,7 @@ again:
 		struct dom_sid sid;
 		struct dom_sid_buf buf;
 		uint32_t id;
+		int error = 0;
 
 		if (i == 0) { /* first entry */
 			entry = ldap_first_entry(
@@ -1005,16 +1019,23 @@ again:
 			continue;
 		}
 
-		id = strtoul(tmp, NULL, 10);
-		if (!idmap_unix_id_is_in_range(id, dom)) {
+		id = strtoul_err(tmp, NULL, 10, &error);
+		TALLOC_FREE(tmp);
+		if (error != 0) {
 			DEBUG(5, ("Requested id (%u) out of range (%u - %u). "
 				  "Filtered!\n", id,
 				  dom->low_id, dom->high_id));
 			TALLOC_FREE(sidstr);
-			TALLOC_FREE(tmp);
 			continue;
 		}
-		TALLOC_FREE(tmp);
+
+		if (error != 0 || !idmap_unix_id_is_in_range(id, dom)) {
+			DEBUG(5, ("Requested id (%u) out of range (%u - %u). "
+				  "Filtered!\n", id,
+				  dom->low_id, dom->high_id));
+			TALLOC_FREE(sidstr);
+			continue;
+		}
 
 		if (map->status == ID_MAPPED) {
 			DEBUG(1, ("WARNING: duplicate %s mapping in LDAP. "

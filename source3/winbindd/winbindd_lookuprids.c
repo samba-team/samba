@@ -182,8 +182,10 @@ static bool parse_ridlist(TALLOC_CTX *mem_ctx, char *ridstr,
 
 	for (i=0; i<num_rids; i++) {
 		char *q;
-		rids[i] = strtoul(p, &q, 10);
-		if (*q != '\n') {
+		int error = 0;
+
+		rids[i] = strtoul_err(p, &q, 10, &error);
+		if (error != 0 || *q != '\n') {
 			DEBUG(0, ("Got invalid ridstr: %s\n", p));
 			return false;
 		}

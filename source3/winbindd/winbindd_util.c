@@ -461,6 +461,7 @@ static void trustdom_list_done(struct tevent_req *req)
 		uint32_t trust_type;
 		uint32_t trust_attribs;
 		uint32_t trust_flags;
+		int error = 0;
 
 		DBG_DEBUG("parsing response line '%s'\n", p);
 
@@ -506,7 +507,11 @@ static void trustdom_list_done(struct tevent_req *req)
 			break;
 		}
 
-		trust_flags = (uint32_t)strtoul(q, NULL, 10);
+		trust_flags = (uint32_t)strtoul_err(q, NULL, 10, &error);
+		if (error != 0) {
+			DBG_ERR("Failed to convert trust_flags\n");
+			break;
+		}
 
 		q = strtok(NULL, "\\");
 		if (q == NULL) {
@@ -514,7 +519,11 @@ static void trustdom_list_done(struct tevent_req *req)
 			break;
 		}
 
-		trust_type = (uint32_t)strtoul(q, NULL, 10);
+		trust_type = (uint32_t)strtoul_err(q, NULL, 10, &error);
+		if (error != 0) {
+			DBG_ERR("Failed to convert trust_type\n");
+			break;
+		}
 
 		q = strtok(NULL, "\n");
 		if (q == NULL) {
@@ -522,7 +531,11 @@ static void trustdom_list_done(struct tevent_req *req)
 			break;
 		}
 
-		trust_attribs = (uint32_t)strtoul(q, NULL, 10);
+		trust_attribs = (uint32_t)strtoul_err(q, NULL, 10, &error);
+		if (error != 0) {
+			DBG_ERR("Failed to convert trust_attribs\n");
+			break;
+		}
 
 		if (!within_forest) {
 			trust_flags &= ~NETR_TRUST_FLAG_IN_FOREST;
@@ -2142,6 +2155,7 @@ bool parse_xidlist(TALLOC_CTX *mem_ctx, const char *xidstr,
 		struct unixid xid;
 		unsigned long long id;
 		char *endp;
+		int error = 0;
 
 		switch (p[0]) {
 		case 'U':
@@ -2156,8 +2170,8 @@ bool parse_xidlist(TALLOC_CTX *mem_ctx, const char *xidstr,
 
 		p += 1;
 
-		id = strtoull(p, &endp, 10);
-		if ((id == ULLONG_MAX) && (errno == ERANGE)) {
+		id = strtoull_err(p, &endp, 10, &error);
+		if (error != 0) {
 			goto fail;
 		}
 		if (*endp != '\n') {
