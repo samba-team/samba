@@ -242,13 +242,6 @@ bld.SAMBA3_MODULE('vfs_zfsacl',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_zfsacl'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_zfsacl'))
 
-xdr_buf_hack = 'sed -e "s@^\([ \t]*register int32_t \*buf\);@\\1 = buf;@"'
-
-bld.SAMBA_GENERATOR('nfs41acl-xdr-c',
-                    source='nfs41acl.x',
-                    target='nfs41acl_xdr.c',
-                    rule='rpcgen -c ${SRC} | ' + xdr_buf_hack + ' > ${TGT}')
-
 bld.SAMBA_GENERATOR('nfs41acl-h',
                     source='nfs41acl.x',
                     target='nfs41acl.h',
@@ -261,6 +254,23 @@ vfs_nfs4acl_xattr_source = '''
                            '''
 
 if bld.CONFIG_SET("HAVE_RPC_XDR_H"):
+    xdr_buf_hack = 'sed -e "s@^\([ \t]*register int32_t \*buf\);@\\1 = buf;@"'
+
+    # By default rpcgen assumes that the input file, generated header and
+    # source file are located in the same directory, which is extracted from
+    # the provided path to the input file.
+    # However if the build directory is not under the source tree, ${SRC} will
+    # be a long relative path through a common parent directory, resulting
+    # in an invalid path used in #include for the header.
+    # In order to fix that, the input file is first copied to the output build
+    # directory and then rpcgen is called with the proper path.
+    bld.SAMBA_GENERATOR('nfs41acl-xdr-c',
+                        source='nfs41acl.x',
+                        target='nfs41acl_xdr.c',
+                        rule='cp -f ${SRC} ${TGT[0].parent} && rpcgen -c ' \
+                             '${TGT[0].path_from(tsk.get_cwd())[:-len(tsk.outputs[0].name)] + tsk.inputs[0].name} | ' + \
+                             xdr_buf_hack + ' > ${TGT}')
+
     vfs_nfs4acl_xattr_source += ' nfs41acl_xdr.c'
 
 bld.SAMBA3_MODULE('vfs_nfs4acl_xattr',
