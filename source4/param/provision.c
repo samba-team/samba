@@ -31,6 +31,18 @@
 #include "param/pyparam.h"
 #include "dynconfig/dynconfig.h"
 
+static bool dict_insert(PyObject* dict,
+			const char* key,
+			PyObject* value)
+{
+	if (PyDict_SetItemString(dict, key, value) == -1) {
+		Py_XDECREF(value);
+		return false;
+	}
+	Py_XDECREF(value);
+	return true;
+}
+
 static PyObject *provision_module(void)
 {
 	PyObject *name = PyStr_FromString("samba.provision");
@@ -89,8 +101,12 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 			struct provision_result *result)
 {
 	const char *configfile;
-	PyObject *provision_mod, *provision_dict, *provision_fn, *py_result, *parameters, *py_lp_ctx;
+	PyObject *provision_mod = NULL, *provision_dict = NULL;
+	PyObject *provision_fn = NULL, *py_result = NULL;
+	PyObject *parameters = NULL, *py_lp_ctx = NULL;
+
 	struct ldb_context *samdb;
+	NTSTATUS status = NT_STATUS_OK;
 	
 	DEBUG(0,("Provision for Become-DC test using python\n"));
 
@@ -133,61 +149,122 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 
 	configfile = lpcfg_configfile(lp_ctx);
 	if (configfile != NULL) {
-		PyDict_SetItemString(parameters, "smbconf", 
-				     PyStr_FromString(configfile));
+		if (!dict_insert(parameters, "smbconf",
+				 PyStr_FromString(configfile))) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto out;
+		}
 	}
 
-	PyDict_SetItemString(parameters, "rootdn", 
-						 PyStr_FromString(settings->root_dn_str));
-	if (settings->targetdir != NULL)
-		PyDict_SetItemString(parameters, "targetdir", 
-							 PyStr_FromString(settings->targetdir));
-	PyDict_SetItemString(parameters, "hostname", 
-						 PyStr_FromString(settings->netbios_name));
-	PyDict_SetItemString(parameters, "domain", 
-						 PyStr_FromString(settings->domain));
-	PyDict_SetItemString(parameters, "realm", 
-						 PyStr_FromString(settings->realm));
-	if (settings->root_dn_str)
-		PyDict_SetItemString(parameters, "rootdn", 
-				     PyStr_FromString(settings->root_dn_str));
+	if (!dict_insert(parameters,
+			 "rootdn",
+			 PyStr_FromString(settings->root_dn_str))) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
+	if (settings->targetdir != NULL) {
+		if (!dict_insert(parameters,
+				 "targetdir",
+				 PyStr_FromString(settings->targetdir))) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto out;
+		}
+	}
+	if (!dict_insert(parameters,
+			 "hostname",
+			 PyStr_FromString(settings->netbios_name))) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
+	if (!dict_insert(parameters,
+			 "domain",
+			 PyStr_FromString(settings->domain))) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
+	if (!dict_insert(parameters,
+			 "realm",
+			 PyStr_FromString(settings->realm))) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
+	if (settings->root_dn_str) {
+		if (!dict_insert(parameters,
+				 "rootdn",
+				 PyStr_FromString(settings->root_dn_str))) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto out;
+		}
+	}
 
-	if (settings->domain_dn_str) 
-		PyDict_SetItemString(parameters, "domaindn", 
-				     PyStr_FromString(settings->domain_dn_str));
+	if (settings->domain_dn_str) {
+		if (!dict_insert(parameters,
+				 "domaindn",
+				 PyStr_FromString(settings->domain_dn_str))) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto out;
+		}
+	}
 
-	if (settings->schema_dn_str) 
-		PyDict_SetItemString(parameters, "schemadn", 
-				     PyStr_FromString(settings->schema_dn_str));
-	
-	if (settings->config_dn_str) 
-		PyDict_SetItemString(parameters, "configdn", 
-				     PyStr_FromString(settings->config_dn_str));
-	
-	if (settings->server_dn_str) 
-		PyDict_SetItemString(parameters, "serverdn", 
-				     PyStr_FromString(settings->server_dn_str));
-	
-	if (settings->site_name) 
-		PyDict_SetItemString(parameters, "sitename", 
-				     PyStr_FromString(settings->site_name));
+	if (settings->schema_dn_str) {
+		if (!dict_insert(parameters,
+				 "schemadn",
+				 PyStr_FromString(settings->schema_dn_str))) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto out;
+		}
+	}
+	if (settings->config_dn_str) {
+		if (!dict_insert(parameters,
+				 "configdn",
+				 PyStr_FromString(settings->config_dn_str))) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto out;
+		}
+	}
+	if (settings->server_dn_str) {
+		if (!dict_insert(parameters,
+				 "serverdn",
+				 PyStr_FromString(settings->server_dn_str))) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto out;
+		}
+	}
+	if (settings->site_name) {
+		if (!dict_insert(parameters,
+				 "sitename",
+				  PyStr_FromString(settings->site_name))) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto out;
+		}
+	}
 
-	PyDict_SetItemString(parameters, "machinepass", 
-			     PyStr_FromString(settings->machine_password));
+	if (!dict_insert(parameters,
+			 "machinepass",
+			 PyStr_FromString(settings->machine_password))){
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
 
-	
-	PyDict_SetItemString(parameters, "debuglevel", PyInt_FromLong(DEBUGLEVEL));
+	if (!dict_insert(parameters,
+			 "debuglevel",
+			 PyInt_FromLong(DEBUGLEVEL))) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
 
-	PyDict_SetItemString(parameters, "use_ntvfs", PyInt_FromLong(settings->use_ntvfs));
+	if (!dict_insert(parameters,
+			 "use_ntvfs",
+			 PyInt_FromLong(settings->use_ntvfs))) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
 
 	py_result = PyEval_CallObjectWithKeywords(provision_fn, NULL, parameters);
 
-	Py_DECREF(parameters);
-
 	if (py_result == NULL) {
-		PyErr_Print();
-		PyErr_Clear();
-		return NT_STATUS_UNSUCCESSFUL;
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
 
 	result->domaindn = talloc_strdup(mem_ctx, PyStr_AsString(PyObject_GetAttrString(py_result, "domaindn")));
@@ -196,16 +273,31 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	py_lp_ctx = PyObject_GetAttrString(py_result, "lp");
 	if (py_lp_ctx == NULL) {
 		DEBUG(0, ("Missing 'lp' attribute"));
-		return NT_STATUS_UNSUCCESSFUL;
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
 	result->lp_ctx = lpcfg_from_py_object(mem_ctx, py_lp_ctx);
+
 	samdb = pyldb_Ldb_AsLdbContext(PyObject_GetAttrString(py_result, "samdb"));
 	if (samdb == NULL) {
 		DEBUG(0, ("Missing 'samdb' attribute"));
-		return NT_STATUS_UNSUCCESSFUL;
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
 	result->samdb = samdb;
-	return NT_STATUS_OK;
+	status = NT_STATUS_OK;
+out:
+	Py_CLEAR(parameters);
+	Py_CLEAR(provision_mod);
+	Py_CLEAR(provision_fn);
+	Py_CLEAR(provision_dict);
+	Py_CLEAR(py_result);
+	Py_CLEAR(py_lp_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Print();
+		PyErr_Clear();
+	}
+	return status;
 }
 
 static PyObject *py_dom_sid_FromSid(struct dom_sid *sid)
@@ -235,14 +327,18 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 				   const char **error_string)
 {
 	int ret;
-	PyObject *provision_mod, *provision_dict, *provision_fn, *py_result, *parameters, *py_sid;
-	struct ldb_context *ldb;
+	PyObject *provision_mod = NULL, *provision_dict = NULL;
+	PyObject *provision_fn = NULL, *py_result = NULL;
+	PyObject *parameters = NULL, *py_sid = NULL;
+	struct ldb_context *ldb = NULL;
 	TALLOC_CTX *tmp_mem = talloc_new(mem_ctx);
 
+	NTSTATUS status = NT_STATUS_OK;
 	*error_string = NULL;
 
 	if (!tmp_mem) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
 
 	/* Open the secrets database */
@@ -251,8 +347,8 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 		*error_string
 			= talloc_asprintf(mem_ctx, 
 					  "Could not open secrets database");
-		talloc_free(tmp_mem);
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		goto out;
 	}
 
 	ret = ldb_transaction_start(ldb);
@@ -261,8 +357,8 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 		*error_string
 			= talloc_asprintf(mem_ctx, 
 					  "Could not start transaction on secrets database: %s", ldb_errstring(ldb));
-		talloc_free(tmp_mem);
-		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+		goto out;
 	}
 
 	Py_Initialize();
@@ -270,11 +366,10 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	provision_mod = provision_module();
 
 	if (provision_mod == NULL) {
-		PyErr_Print();
 		*error_string
 			= talloc_asprintf(mem_ctx, "Unable to import provision Python module.");
-		talloc_free(tmp_mem);
-	      	return NT_STATUS_UNSUCCESSFUL;
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
 
 	provision_dict = PyModule_GetDict(provision_mod);
@@ -282,55 +377,86 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	if (provision_dict == NULL) {
 		*error_string
 			= talloc_asprintf(mem_ctx, "Unable to get dictionary for provision module");
-		talloc_free(tmp_mem);
-		return NT_STATUS_UNSUCCESSFUL;
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
 
 	provision_fn = PyDict_GetItemString(provision_dict, "secretsdb_self_join");
 	if (provision_fn == NULL) {
-		PyErr_Print();
 		*error_string
 			= talloc_asprintf(mem_ctx, "Unable to get provision_become_dc function");
-		talloc_free(tmp_mem);
-		return NT_STATUS_UNSUCCESSFUL;
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
 	
 	parameters = PyDict_New();
 
-	PyDict_SetItemString(parameters, "secretsdb", 
-			     PyLdb_FromLdbContext(ldb));
-	PyDict_SetItemString(parameters, "domain", 
-			     PyStr_FromString(settings->domain_name));
-	if (settings->realm != NULL) {
-		PyDict_SetItemString(parameters, "realm",
-				     PyStr_FromString(settings->realm));
+	if(!dict_insert(parameters,
+			"secretsdb",
+			PyLdb_FromLdbContext(ldb))){
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
-	PyDict_SetItemString(parameters, "machinepass", 
-			     PyStr_FromString(settings->machine_password));
-	PyDict_SetItemString(parameters, "netbiosname", 
-			     PyStr_FromString(settings->netbios_name));
+	if (!dict_insert(parameters,
+			 "domain",
+			 PyStr_FromString(settings->domain_name))) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
+	if (settings->realm != NULL) {
+		if (!dict_insert(parameters,
+				 "realm",
+				 PyStr_FromString(settings->realm))) {
+			status = NT_STATUS_UNSUCCESSFUL;
+			goto out;
+		}
+	}
+	if (!dict_insert(parameters,
+			 "machinepass",
+			 PyStr_FromString(settings->machine_password))) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
+	if (!dict_insert(parameters,
+			 "netbiosname",
+			 PyStr_FromString(settings->netbios_name))) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
 
 	py_sid = py_dom_sid_FromSid(settings->domain_sid);
 	if (py_sid == NULL) {
-		Py_DECREF(parameters);
-		goto failure;
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
 
-	PyDict_SetItemString(parameters, "domainsid", 
-			     py_sid);
+	if (!dict_insert(parameters,
+			 "domainsid",
+			 py_sid)) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
 
-	PyDict_SetItemString(parameters, "secure_channel_type", 
-		       PyInt_FromLong(settings->secure_channel_type));
+	if (!dict_insert(parameters,
+			 "secure_channel_type",
+			 PyInt_FromLong(settings->secure_channel_type))) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
 
-	PyDict_SetItemString(parameters, "key_version_number", 
-		       PyInt_FromLong(settings->key_version_number));
+	if (!dict_insert(parameters,
+			 "key_version_number",
+			 PyInt_FromLong(settings->key_version_number))) {
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
+	}
 
 	py_result = PyEval_CallObjectWithKeywords(provision_fn, NULL, parameters);
 
-	Py_DECREF(parameters);
-
 	if (py_result == NULL) {
-		goto failure;
+		ldb_transaction_cancel(ldb);
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto out;
 	}
 
 	ret = ldb_transaction_commit(ldb);
@@ -338,21 +464,24 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 		*error_string
 			= talloc_asprintf(mem_ctx, 
 					  "Could not commit transaction on secrets database: %s", ldb_errstring(ldb));
-		talloc_free(tmp_mem);
-		return NT_STATUS_INTERNAL_DB_ERROR;
+		status = NT_STATUS_INTERNAL_DB_ERROR;
+		goto out;
 	}
 
+	status = NT_STATUS_OK;
+out:
 	talloc_free(tmp_mem);
-
-	return NT_STATUS_OK;
-
-failure:
-	ldb_transaction_cancel(ldb);
-	talloc_free(tmp_mem);
-
-	PyErr_Print();
-	PyErr_Clear();
-	return NT_STATUS_UNSUCCESSFUL;
+	Py_CLEAR(parameters);
+	Py_CLEAR(provision_mod);
+	Py_CLEAR(provision_fn);
+	Py_CLEAR(provision_dict);
+	Py_CLEAR(py_result);
+	Py_CLEAR(py_sid);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_Print();
+		PyErr_Clear();
+	}
+	return status;
 }
 
 
@@ -391,14 +520,21 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx,
 	parameters = PyDict_New();
 
 	if (schema_dn) {
-		PyDict_SetItemString(parameters, "schemadn",
-				     PyStr_FromString(schema_dn));
+		if (!dict_insert(parameters,
+				 "schemadn",
+				 PyStr_FromString(schema_dn))) {
+			return NULL;
+		}
 	}
 
 	if (override_prefixmap) {
-		PyDict_SetItemString(parameters, "override_prefixmap",
-				     PyBytes_FromStringAndSize((const char *)override_prefixmap->data,
-								override_prefixmap->length));
+		if (!dict_insert(parameters,
+				 "override_prefixmap",
+				 PyBytes_FromStringAndSize(
+					(const char *)override_prefixmap->data,
+					override_prefixmap->length))) {
+			return NULL;
+		}
 	}
 
 	py_result = PyEval_CallObjectWithKeywords(schema_fn, NULL, parameters);
