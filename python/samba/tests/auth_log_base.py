@@ -77,6 +77,9 @@ class AuthLogTestBase(samba.tests.TestCase):
             return False
 
         def isRemote(message):
+            if self.remoteAddress is None:
+                return True
+
             remote = None
             if message["type"] == "Authorization":
                 remote = message["Authorization"]["remoteAddress"]
