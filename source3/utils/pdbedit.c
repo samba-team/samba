@@ -598,9 +598,14 @@ static int set_user_info(const char *username, const char *fullname,
 		time_t value = get_time_t_max();
 
 		if (strcmp(kickoff_time, "never") != 0) {
-			uint32_t num = strtoul(kickoff_time, &endptr, 10);
+			int error = 0;
+			uint32_t num;
 
-			if ((endptr == kickoff_time) || (endptr[0] != '\0')) {
+			num = strtoul_err(kickoff_time, &endptr, 10, &error);
+			if ((endptr == kickoff_time) ||
+			    (endptr[0] != '\0') ||
+			    (error != 0))
+			{
 				fprintf(stderr, "Failed to parse kickoff time\n");
 				return -1;
 			}

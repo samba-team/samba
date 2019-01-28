@@ -628,8 +628,9 @@ static bool parse_uint32(const char *str, uint32_t *result)
 {
 	unsigned long val;
 	char *endptr;
+	int error = 0;
 
-	val = strtoul(str, &endptr, 10);
+	val = strtoul_err(str, &endptr, 10, &error);
 
 	if (str == endptr) {
 		return false;
@@ -637,11 +638,7 @@ static bool parse_uint32(const char *str, uint32_t *result)
 	if (*endptr != '\0') {
 		return false;
 	}
-	if ((val == ULONG_MAX) && (errno == ERANGE)) {
-		return false;
-	}
-	if ((val & UINT32_MAX) != val) {
-		/* overflow */
+	if (error != 0) {
 		return false;
 	}
 	*result = val;		/* Potential crop */

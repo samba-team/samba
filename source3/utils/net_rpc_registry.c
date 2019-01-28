@@ -603,7 +603,14 @@ static NTSTATUS rpc_registry_setvalue_internal(struct net_context *c,
 	}
 
 	if (strequal(argv[2], "dword")) {
-		uint32_t v = strtoul(argv[3], NULL, 10);
+		int error = 0;
+		uint32_t v;
+
+		v = strtoul_err(argv[3], NULL, 10, &error);
+		if (error != 0) {
+			goto error;
+		}
+
 		value.type = REG_DWORD;
 		value.data = data_blob_talloc(mem_ctx, NULL, 4);
 		SIVAL(value.data.data, 0, v);

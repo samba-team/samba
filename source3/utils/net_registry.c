@@ -509,7 +509,14 @@ static int net_registry_setvalue(struct net_context *c, int argc,
 	}
 
 	if (strequal(argv[2], "dword")) {
-		uint32_t v = strtoul(argv[3], NULL, 10);
+		int error = 0;
+		uint32_t v;
+
+		v = strtoul_err(argv[3], NULL, 10, &error);
+		if (error != 0) {
+			goto done;
+		}
+
 		value.type = REG_DWORD;
 		value.data = data_blob_talloc(ctx, NULL, 4);
 		SIVAL(value.data.data, 0, v);
@@ -641,7 +648,12 @@ static int net_registry_increment(struct net_context *c, int argc,
 
 	state.increment = 1;
 	if (argc == 3) {
-		state.increment = strtoul(argv[2], NULL, 10);
+		int error = 0;
+
+		state.increment = strtoul_err(argv[2], NULL, 10, &error);
+		if (error != 0) {
+			goto done;
+		}
 	}
 
 	status = g_lock_do(string_term_tdb_data("registry_increment_lock"),
