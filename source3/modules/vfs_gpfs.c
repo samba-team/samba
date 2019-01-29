@@ -2112,8 +2112,10 @@ static int vfs_gpfs_connect(struct vfs_handle_struct *handle,
 
 		if (buf.f_type != GPFS_SUPER_MAGIC) {
 			DBG_ERR("SMB share %s, path %s not in GPFS file system."
-				" statfs magic: 0x%lx\n",
-				service, connectpath, buf.f_type);
+				" statfs magic: 0x%jx\n",
+				service,
+				connectpath,
+				(uintmax_t)buf.f_type);
 			errno = EINVAL;
 			TALLOC_FREE(config);
 			return -1;
