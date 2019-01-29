@@ -315,6 +315,7 @@ static bool parse_nodestring(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		goto done;
 	} else {
 		char *ns, *tok;
+		int error = 0;
 
 		ns = talloc_strdup(mem_ctx, nodestring);
 		if (ns == NULL) {
@@ -326,8 +327,8 @@ static bool parse_nodestring(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			uint32_t pnn;
 			char *endptr;
 
-			pnn = (uint32_t)strtoul(tok, &endptr, 0);
-			if (pnn == 0 && tok == endptr) {
+			pnn = (uint32_t)strtoul_err(tok, &endptr, 0, &error);
+			if (error != 0 || (pnn == 0 && tok == endptr)) {
 				fprintf(stderr, "Invalid node %s\n", tok);
 					return false;
 			}
@@ -535,7 +536,8 @@ static bool db_exists(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	struct ctdb_dbid *db = NULL;
 	uint32_t id = 0;
 	const char *name = NULL;
-	int ret, i;
+	int i;
+	int ret = 0;
 
 	ret = ctdb_ctrl_get_dbmap(mem_ctx, ctdb->ev, ctdb->client,
 				  ctdb->pnn, TIMEOUT(), &dbmap);
@@ -544,7 +546,10 @@ static bool db_exists(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (strncmp(db_arg, "0x", 2) == 0) {
-		id = strtoul(db_arg, NULL, 0);
+		id = strtoul_err(db_arg, NULL, 0, &ret);
+		if (ret != 0) {
+			return false;
+		}
 		for (i=0; i<dbmap->num; i++) {
 			if (id == dbmap->dbs[i].db_id) {
 				db = &dbmap->dbs[i];
@@ -1059,8 +1064,9 @@ static int control_setvar(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 {
 	struct ctdb_var_list *tun_var_list;
 	struct ctdb_tunable tunable;
-	int ret, i;
 	bool found;
+	int i;
+	int ret = 0;
 
 	if (argc != 2) {
 		usage("setvar");
@@ -1089,7 +1095,10 @@ static int control_setvar(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	tunable.name = argv[0];
-	tunable.value = strtoul(argv[1], NULL, 0);
+	tunable.value = strtoul_err(argv[1], NULL, 0, &ret);
+	if (ret != 0) {
+		return ret;
+	}
 
 	ret = ctdb_ctrl_set_tunable(mem_ctx, ctdb->ev, ctdb->client,
 				    ctdb->cmd_pnn, TIMEOUT(), &tunable);
@@ -1867,7 +1876,8 @@ static int control_process_exists(TALLOC_CTX *mem_ctx,
 {
 	pid_t pid;
 	uint64_t srvid = 0;
-	int ret, status;
+	int status;
+	int ret = 0;
 
 	if (argc != 1 && argc != 2) {
 		usage("process-exists");
@@ -1875,7 +1885,10 @@ static int control_process_exists(TALLOC_CTX *mem_ctx,
 
 	pid = atoi(argv[0]);
 	if (argc == 2) {
-		srvid = strtoull(argv[1], NULL, 0);
+		srvid = strtoull_err(argv[1], NULL, 0, &ret);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	if (srvid == 0) {
@@ -2766,7 +2779,7 @@ static int control_ban(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		       int argc, const char **argv)
 {
 	struct ctdb_ban_state ban_state;
-	int ret;
+	int ret = 0;
 
 	if (argc != 1) {
 		usage("ban");
@@ -2779,7 +2792,10 @@ static int control_ban(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	ban_state.pnn = ctdb->cmd_pnn;
-	ban_state.time = strtoul(argv[0], NULL, 0);
+	ban_state.time = strtoul_err(argv[0], NULL, 0, &ret);
+	if (ret != 0) {
+		return ret;
+	}
 
 	if (ban_state.time == 0) {
 		fprintf(stderr, "Ban time cannot be zero\n");
@@ -3092,14 +3108,18 @@ static int control_gettickles(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	ctdb_sock_addr addr;
 	struct ctdb_tickle_list *tickles;
 	unsigned port = 0;
-	int ret, i;
+	int i;
+	int ret = 0;
 
 	if (argc < 1 || argc > 2) {
 		usage("gettickles");
 	}
 
 	if (argc == 2) {
-		port = strtoul(argv[1], NULL, 10);
+		port = strtoul_err(argv[1], NULL, 10, &ret);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 
 	ret = ctdb_sock_addr_from_string(argv[0], &addr, false);
@@ -3792,7 +3812,8 @@ static int control_moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 {
 	ctdb_sock_addr addr;
 	uint32_t pnn;
-	int ret, retries = 0;
+	int retries = 0;
+	int ret = 0;
 
 	if (argc != 2) {
 		usage("moveip");
@@ -3804,8 +3825,8 @@ static int control_moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	pnn = strtoul(argv[1], NULL, 10);
-	if (pnn == CTDB_UNKNOWN_PNN) {
+	pnn = strtoul_err(argv[1], NULL, 10, &ret);
+	if (pnn == CTDB_UNKNOWN_PNN || ret != 0) {
 		fprintf(stderr, "Invalid PNN %s\n", argv[1]);
 		return 1;
 	}
@@ -5228,7 +5249,7 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	struct ctdb_ltdb_header header;
 	uint8_t header_buf[sizeof(struct ctdb_ltdb_header)];
 	size_t np;
-	int ret;
+	int ret = 0;
 
 	if (argc < 3 || argc > 5) {
 		usage("tstore");
@@ -5257,7 +5278,10 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	ZERO_STRUCT(header);
 
 	if (argc > 3) {
-		header.rsn = (uint64_t)strtoull(argv[3], NULL, 0);
+		header.rsn = (uint64_t)strtoull_err(argv[3], NULL, 0, &ret);
+		if (ret != 0) {
+			return ret;
+		}
 	}
 	if (argc > 4) {
 		header.dmaster = (uint32_t)atol(argv[4]);
@@ -6245,7 +6269,7 @@ int main(int argc, const char *argv[])
 	const struct ctdb_cmd *cmd;
 	int loglevel;
 	bool ok;
-	int ret;
+	int ret = 0;
 
 	setlinebuf(stdout);
 
@@ -6269,7 +6293,11 @@ int main(int argc, const char *argv[])
 
 		ctdb_timeout = getenv("CTDB_TIMEOUT");
 		if (ctdb_timeout != NULL) {
-			options.maxruntime = strtoul(ctdb_timeout, NULL, 0);
+			options.maxruntime = strtoul_err(ctdb_timeout, NULL, 0, &ret);
+			if (ret != 0) {
+				fprintf(stderr, "Invalid value CTDB_TIMEOUT\n");
+				exit(1);
+			}
 		} else {
 			options.maxruntime = 120;
 		}
