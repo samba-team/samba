@@ -30,6 +30,7 @@
 #include "lib/util/sys_rw.h"
 #include "lib/util/time.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/util/util.h"
 
 #include "protocol/protocol.h"
 #include "protocol/protocol_api.h"
@@ -2739,7 +2740,7 @@ int main(int argc, char *argv[])
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
 	struct ctdb_client_context *client;
-	int ret;
+	int ret = 0;
 	struct tevent_req *req;
 	uint32_t generation;
 
@@ -2750,7 +2751,11 @@ int main(int argc, char *argv[])
 
 	write_fd = atoi(argv[1]);
 	sockpath = argv[2];
-	generation = (uint32_t)strtoul(argv[3], NULL, 0);
+	generation = (uint32_t)strtoul_err(argv[3], NULL, 0, &ret);
+	if (ret != 0) {
+		fprintf(stderr, "recovery: unable to initialize generation\n");
+		goto failed;
+	}
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
