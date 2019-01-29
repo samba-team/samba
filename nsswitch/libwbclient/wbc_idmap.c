@@ -24,6 +24,7 @@
 #include "replace.h"
 #include "libwbclient.h"
 #include "../winbind_client.h"
+#include "lib/util/util.h"
 
 /* Convert a Windows SID to a Unix uid, allocating an uid if needed */
 wbcErr wbcCtxSidToUid(struct wbcContext *ctx, const struct wbcDomainSid *sid,
@@ -374,26 +375,27 @@ wbcErr wbcCtxSidsToUnixIds(struct wbcContext *ctx,
 	for (i=0; i<num_sids; i++) {
 		struct wbcUnixId *id = &ids[i];
 		char *q;
+		int error = 0;
 
 		switch (p[0]) {
 		case 'U':
 			id->type = WBC_ID_TYPE_UID;
-			id->id.uid = strtoul(p+1, &q, 10);
+			id->id.uid = strtoul_err(p+1, &q, 10, &error);
 			break;
 		case 'G':
 			id->type = WBC_ID_TYPE_GID;
-			id->id.gid = strtoul(p+1, &q, 10);
+			id->id.gid = strtoul_err(p+1, &q, 10, &error);
 			break;
 		case 'B':
 			id->type = WBC_ID_TYPE_BOTH;
-			id->id.uid = strtoul(p+1, &q, 10);
+			id->id.uid = strtoul_err(p+1, &q, 10, &error);
 			break;
 		default:
 			id->type = WBC_ID_TYPE_NOT_SPECIFIED;
 			q = strchr(p, '\n');
 			break;
 		};
-		if (q == NULL || q[0] != '\n') {
+		if (q == NULL || q[0] != '\n' || error != 0) {
 			goto wbc_err_invalid;
 		}
 		p = q+1;

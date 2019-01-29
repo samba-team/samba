@@ -26,6 +26,7 @@
 #include "replace.h"
 #include "libwbclient.h"
 #include "../winbind_client.h"
+#include "lib/util/util.h"
 
 /* Convert a sid to a string into a buffer. Return the string
  * length. If buflen is too small, return the string length that would
@@ -99,6 +100,7 @@ wbcErr wbcStringToSid(const char *str,
 {
 	const char *p;
 	char *q;
+	int error = 0;
 	uint64_t x;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
@@ -120,8 +122,8 @@ wbcErr wbcStringToSid(const char *str,
 	/* Get the SID revision number */
 
 	p = str+2;
-	x = (uint64_t)strtoul(p, &q, 10);
-	if (x==0 || x > UINT8_MAX || !q || *q!='-') {
+	x = (uint64_t)strtoul_err(p, &q, 10, &error);
+	if (x == 0 || x > UINT8_MAX || !q || *q != '-' || error != 0) {
 		wbc_status = WBC_ERR_INVALID_SID;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
@@ -133,8 +135,8 @@ wbcErr wbcStringToSid(const char *str,
 	 * be expressed as a hex value, according to MS-DTYP.
 	 */
 	p = q+1;
-	x = strtoull(p, &q, 0);
-	if (!q || *q!='-' || (x & AUTHORITY_MASK)) {
+	x = strtoull_err(p, &q, 0, &error);
+	if (!q || *q != '-' || (x & AUTHORITY_MASK) || error != 0) {
 		wbc_status = WBC_ERR_INVALID_SID;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
@@ -149,10 +151,10 @@ wbcErr wbcStringToSid(const char *str,
 	p = q +1;
 	sid->num_auths = 0;
 	while (sid->num_auths < WBC_MAXSUBAUTHS) {
-		x = strtoull(p, &q, 10);
+		x = strtoull_err(p, &q, 10, &error);
 		if (p == q)
 			break;
-		if (x > UINT32_MAX) {
+		if (x > UINT32_MAX || error != 0) {
 			wbc_status = WBC_ERR_INVALID_SID;
 			BAIL_ON_WBC_ERROR(wbc_status);
 		}
@@ -337,6 +339,7 @@ wbcErr wbcCtxLookupSids(struct wbcContext *ctx,
 	char *sidlist, *p, *q, *extra_data;
 	struct wbcDomainInfo *domains = NULL;
 	struct wbcTranslatedName *names = NULL;
+	int error = 0;
 
 	buflen = num_sids * (WBC_SID_STRING_BUFLEN + 1) + 1;
 
@@ -386,8 +389,8 @@ wbcErr wbcCtxLookupSids(struct wbcContext *ctx,
 
 	p = extra_data;
 
-	num_domains = strtoul(p, &q, 10);
-	if (*q != '\n') {
+	num_domains = strtoul_err(p, &q, 10, &error);
+	if (*q != '\n' || error != 0) {
 		goto wbc_err_invalid;
 	}
 	p = q+1;
@@ -426,8 +429,8 @@ wbcErr wbcCtxLookupSids(struct wbcContext *ctx,
 		p = q+1;
 	}
 
-	num_names = strtoul(p, &q, 10);
-	if (*q != '\n') {
+	num_names = strtoul_err(p, &q, 10, &error);
+	if (*q != '\n' || error != 0) {
 		goto wbc_err_invalid;
 	}
 	p = q+1;
@@ -446,8 +449,8 @@ wbcErr wbcCtxLookupSids(struct wbcContext *ctx,
 
 	for (i=0; i<num_names; i++) {
 
-		names[i].domain_index = strtoul(p, &q, 10);
-		if (names[i].domain_index < 0) {
+		names[i].domain_index = strtoul_err(p, &q, 10, &error);
+		if (names[i].domain_index < 0 || error != 0) {
 			goto wbc_err_invalid;
 		}
 		if (names[i].domain_index >= num_domains) {
@@ -459,8 +462,8 @@ wbcErr wbcCtxLookupSids(struct wbcContext *ctx,
 		}
 		p = q+1;
 
-		names[i].type = strtoul(p, &q, 10);
-		if (*q != ' ') {
+		names[i].type = strtoul_err(p, &q, 10, &error);
+		if (*q != ' ' || error != 0) {
 			goto wbc_err_invalid;
 		}
 		p = q+1;
@@ -515,6 +518,7 @@ wbcErr wbcCtxLookupRids(struct wbcContext *ctx, struct wbcDomainSid *dom_sid,
 	size_t i, len, ridbuf_size;
 	char *ridlist;
 	char *p;
+	int error = 0;
 	struct winbindd_request request;
 	struct winbindd_response response;
 	char *domain_name = NULL;
@@ -581,9 +585,9 @@ wbcErr wbcCtxLookupRids(struct wbcContext *ctx, struct wbcDomainSid *dom_sid,
 			goto done;
 		}
 
-		types[i] = (enum wbcSidType)strtoul(p, &q, 10);
+		types[i] = (enum wbcSidType)strtoul_err(p, &q, 10, &error);
 
-		if (*q != ' ') {
+		if (*q != ' ' || error != 0) {
 			wbc_status = WBC_ERR_INVALID_RESPONSE;
 			goto done;
 		}
