@@ -2342,9 +2342,6 @@ sub check_env($$)
 	ad_dc                => ["dns_hub"],
 	ad_dc_no_nss         => ["dns_hub"],
 	ad_dc_no_ntlm        => ["dns_hub"],
-	backupfromdc         => ["dns_hub"],
-	customdc             => ["dns_hub"],
-	preforkrestartdc     => ["dns_hub"],
 
 	fl2008r2dc           => ["ad_dc"],
 	fl2003dc             => ["ad_dc"],
@@ -2362,11 +2359,17 @@ sub check_env($$)
 	s4member_dflt_domain => ["ad_dc_ntvfs"],
 	s4member             => ["ad_dc_ntvfs"],
 
+	# envs that test the server process model
+	proclimitdc          => ["dns_hub"],
+	preforkrestartdc     => ["dns_hub"],
+
+	# backup/restore testenvs
+	backupfromdc         => ["dns_hub"],
+	customdc             => ["dns_hub"],
 	restoredc            => ["backupfromdc"],
 	renamedc             => ["backupfromdc"],
 	offlinebackupdc      => ["backupfromdc"],
 	labdc                => ["backupfromdc"],
-	proclimitdc          => ["dns_hub"],
 
 	none                 => [],
 );
