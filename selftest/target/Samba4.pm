@@ -284,6 +284,35 @@ sub wait_for_start($$)
 		return -1;
 	}
 
+	# Ensure we registered all our names
+	if ($testenv_vars->{SERVER_ROLE} eq "domain controller") {
+		my $max_wait = 60;
+		print "Waiting for dns_update_cache to be created.\n";
+		$count = 0;
+		while (not -e "$testenv_vars->{PRIVATEDIR}/dns_update_cache") {
+			$count++;
+			if ($count > $max_wait) {
+				teardown_env($self, $testenv_vars);
+				warn("Timed out ($max_wait sec) waiting for dns_update_cache PID $testenv_vars->{SAMBA_PID}");
+				return -1;
+			}
+			print "Waiting for dns_update_cache to be created...\n";
+			sleep(1);
+		}
+		print "Waiting for dns_update_cache to be filled.\n";
+		$count = 0;
+		while ((-s "$testenv_vars->{PRIVATEDIR}/dns_update_cache") == 0) {
+			$count++;
+			if ($count > $max_wait) {
+				teardown_env($self, $testenv_vars);
+				warn("Timed out ($max_wait sec) waiting for dns_update_cache PID $testenv_vars->{SAMBA_PID}");
+				return -1;
+			}
+			print "Waiting for dns_update_cache to be filled...\n";
+			sleep(1);
+		}
+	}
+
 	print $self->getlog_env($testenv_vars);
 
 	print "READY ($testenv_vars->{SAMBA_PID})\n";
