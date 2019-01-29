@@ -172,7 +172,7 @@ static bool printing_subsystem_queue_tasks(struct bq_state *state)
 	/* cancel any existing housekeeping event */
 	TALLOC_FREE(state->housekeep);
 
-	if (housekeeping_period == 0) {
+	if ((housekeeping_period == 0) || !lp_load_printers()) {
 		DEBUG(4, ("background print queue housekeeping disabled\n"));
 		return true;
 	}
