@@ -1533,6 +1533,10 @@ class cmd_aclcheck(GPOCommand):
 
             fs_sd = conn.get_acl(sharepath, security.SECINFO_OWNER | security.SECINFO_GROUP | security.SECINFO_DACL, security.SEC_FLAG_MAXIMUM_ALLOWED)
 
+            if 'nTSecurityDescriptor' not in m:
+                raise CommandError("Could not read nTSecurityDescriptor. "
+                                   "This requires an Administrator account")
+
             ds_sd_ndr = m['nTSecurityDescriptor'][0]
             ds_sd = ndr_unpack(security.descriptor, ds_sd_ndr).as_sddl()
 
