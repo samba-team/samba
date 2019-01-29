@@ -3,12 +3,12 @@
                  type="cmdlist"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
-	<para>With this parameter you can add additional addresses
-	nmbd will register with a WINS server. These addresses are not
-	necessarily present on all nodes simultaneously, but they will
-	be registered with the WINS server so that clients can contact
-	any of the nodes.
-	</para>
+	<para>With this parameter you can add additional addresses that
+	nmbd will register with a WINS server. Similarly, these
+	addresses will be registered by default when
+	<emphasis>net ads dns register</emphasis> is called with
+	<smbconfoption name="clustering">yes</smbconfoption>
+	configured.</para>
 </description>
 
 <value type="default"></value>
