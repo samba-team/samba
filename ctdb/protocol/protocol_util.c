@@ -26,6 +26,7 @@
 
 #include "protocol.h"
 #include "protocol_util.h"
+#include "lib/util/util.h"
 
 static struct {
 	enum ctdb_runstate runstate;
@@ -286,8 +287,8 @@ int ctdb_sock_addr_from_string(const char *str,
 		return EINVAL;
 	}
 
-	port = strtoul(p+1, &endp, 10);
-	if (endp == p+1 || *endp != '\0') {
+	port = strtoul_err(p+1, &endp, 10, &ret);
+	if (endp == p+1 || *endp != '\0' || ret != 0) {
 		/* Empty string or trailing garbage */
 		return EINVAL;
 	}
@@ -309,7 +310,7 @@ int ctdb_sock_addr_mask_from_string(const char *str,
 	unsigned int m;
 	char *endp = NULL;
 	ssize_t len;
-	bool ret;
+	int ret = 0;
 
 	if (addr == NULL || mask == NULL) {
 		return EINVAL;
@@ -325,8 +326,8 @@ int ctdb_sock_addr_mask_from_string(const char *str,
 		return EINVAL;
 	}
 
-	m = strtoul(p+1, &endp, 10);
-	if (endp == p+1 || *endp != '\0') {
+	m = strtoul_err(p+1, &endp, 10, &ret);
+	if (endp == p+1 || *endp != '\0' || ret != 0) {
 		/* Empty string or trailing garbage */
 		return EINVAL;
 	}
