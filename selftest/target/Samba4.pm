@@ -2335,6 +2335,10 @@ sub check_env($$)
 # Declare the environments Samba4 makes available.
 # To be set up, they will be called as
 #   samba4->setup_$envname($self, $path, $dep_1_vars, $dep_2_vars, ...)
+# The interdependencies between the testenvs are declared below. Some testenvs
+# are dependent on another testenv running first, e.g. vampire_dc is dependent
+# on ad_dc_ntvfs because vampire_dc joins ad_dc_ntvfs's domain. All DCs are
+# dependent on dns_hub, which handles resolving DNS queries for the realm.
 %Samba4::ENV_DEPS = (
 	# name               => [dep_1, dep_2, ...],
 	dns_hub              => [],
