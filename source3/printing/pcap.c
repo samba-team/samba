@@ -139,6 +139,11 @@ void pcap_cache_reload(struct tevent_context *ev,
 
 	DEBUG(3, ("reloading printcap cache\n"));
 
+	if (!lp_load_printers()) {
+		DBG_NOTICE("skipping reload - load printers disabled\n");
+		return;
+	}
+
 	/* only go looking if no printcap name supplied */
 	if (pcap_name == NULL || *pcap_name == 0) {
 		DEBUG(0, ("No printcap file name configured!\n"));
