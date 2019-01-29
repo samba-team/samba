@@ -2366,7 +2366,7 @@ sub check_env($$)
 	renamedc             => ["backupfromdc"],
 	offlinebackupdc      => ["backupfromdc"],
 	labdc                => ["backupfromdc"],
-	proclimitdc          => [],
+	proclimitdc          => ["dns_hub"],
 
 	none                 => [],
 );
