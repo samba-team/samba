@@ -141,6 +141,7 @@ static bool parse_wbinfo_domain_user(const char *domuser, fstring domain,
 static bool parse_mapping_arg(char *arg, int *id, char **sid)
 {
 	char *tmp, *endptr;
+	int error = 0;
 
 	if (!arg || !*arg)
 		return false;
@@ -153,9 +154,9 @@ static bool parse_mapping_arg(char *arg, int *id, char **sid)
 
 	/* Because atoi() can return 0 on invalid input, which would be a valid
 	 * UID/GID we must use strtoul() and do error checking */
-	*id = strtoul(tmp, &endptr, 10);
+	*id = strtoul_err(tmp, &endptr, 10, &error);
 
-	if (endptr[0] != '\0')
+	if (endptr[0] != '\0' || error != 0)
 		return false;
 
 	return true;
@@ -1417,7 +1418,14 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 	p = arg;
 
 	while (next_token_talloc(mem_ctx, &p, &ridstr, " ,\n")) {
-		uint32_t rid = strtoul(ridstr, NULL, 10);
+		int error = 0;
+		uint32_t rid;
+
+		rid = strtoul_err(ridstr, NULL, 10, &error);
+		if (error != 0) {
+			d_printf("failed to convert rid\n");
+			goto done;
+		}
 		rids = talloc_realloc(mem_ctx, rids, uint32_t, num_rids + 1);
 		if (rids == NULL) {
 			d_printf("talloc_realloc failed\n");
