@@ -16,6 +16,19 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+Default samba process model
+---------------------------
+
+The default for the --model argument passed to the samba executable has changed
+from 'standard' to 'prefork'. This means a difference in the number of samba
+child processes that are created to handle client connections. The previous
+default would create a separate process for every LDAP or NETLOGON client
+connection. For a network with a lot of persistent client connections, this
+could result in significant memory overhead.  Now, with the new default of
+'prefork', the LDAP, NETLOGON, and KDC services will create a fixed number of
+worker processes at startup and share the client connections amongst these
+workers. The number of worker processes can be configured by the 'prefork
+children' setting in the smb.conf (the default is 4).
 
 REMOVED FEATURES
 ================

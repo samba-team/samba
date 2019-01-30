@@ -119,8 +119,8 @@
 			for each new client connection.</para></listitem>
 
 			<listitem><para><emphasis>prefork</emphasis></para>
-			<para>A process is started for each Samba service, and a
-			fixed number of worker processes are started for those
+			<para>The default. A process is started for each Samba service,
+			and a fixed number of worker processes are started for those
 			services that support it (currently LDAP, NETLOGON, and KDC).
 			The client connections are then shared amongst the worker
 			processes.

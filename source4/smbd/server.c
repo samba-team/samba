@@ -452,7 +452,7 @@ static int binary_smbd_main(const char *binary_name,
 	init_module_fn *shared_init;
 	uint16_t stdin_event_flags;
 	NTSTATUS status;
-	const char *model = "standard";
+	const char *model = "prefork";
 	int max_runtime = 0;
 	struct stat st;
 	enum {
