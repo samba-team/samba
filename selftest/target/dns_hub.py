@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+# Used by selftest to proxy DNS queries to the correct testenv DC.
+# See selftest/target/README for more details.
 # Based on the EchoServer example from python docs
 
 import threading

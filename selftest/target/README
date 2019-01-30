@@ -41,6 +41,19 @@ Note that several of the testenvs also use local in their name, e.g.
 'localvampiredc'. In particular, there's the 'localdc', which is the NetBIOS
 name of the DC in the 'ad_dc_ntvfs' testenv.
 
+dns_hub
+-------
+dns_hub doesn't run a Samba/smbd server like the other testenvs do. It's there
+to solve the problem of how to do DNS more nicely in selftest. Running
+autobuild can start up a lot of different testenvs, and so we end up with
+different DCs running in different domains. Each test suite only wants to talk
+to a specific domain at a time. However, by default the tests all use a common
+client.conf - essentially the tests are simulating a single client that's
+pretending to be in several different domains. The problem is when the test
+wants to resolve a DNS host, which DC should it ask? Each DC only knows about its
+own realm. dns_hub.py acts as a proxy, so it works out the correct DC to forward
+the query to, based on the queried host's realm.
+
 Vampire DC
 ----------
 Vampire DC gets its name for historic reasons. It's one of the few testenvs
