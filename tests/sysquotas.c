@@ -55,12 +55,10 @@ extern int quotactl(int cmd, const char *special, uid_t uid, void *addr);
 
 #ifdef HAVE_SYS_QUOTA_H
 #include <sys/quota.h>
-#else /* *BSD */
-#include <sys/types.h>
+#endif
+
 #ifdef HAVE_UFS_UFS_QUOTA_H
 #include <ufs/ufs/quota.h>
-#endif
-#include <machine/param.h>
 #endif
 
  int autoconf_quota(void)
