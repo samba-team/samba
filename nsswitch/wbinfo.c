@@ -3243,6 +3243,7 @@ int main(int argc, const char **argv, char **envp)
 		/* generic configuration options */
 		case OPT_DOMAIN_NAME:
 		case OPT_VERBOSE:
+		case OPT_NTLMV1:
 		case OPT_NTLMV2:
 		case OPT_LANMAN:
 		case OPT_LOGOFF_USER:
