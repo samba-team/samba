@@ -2894,7 +2894,7 @@ sub setup_backupfromdc
 		return undef;
 	}
 
-	if (not defined($self->check_or_start($env, "standard"))) {
+	if (not defined($self->check_or_start($env))) {
 	    return undef;
 	}
 
@@ -3104,7 +3104,7 @@ sub setup_restoredc
 	}
 
 	# start samba for the restored DC
-	if (not defined($self->check_or_start($env, "standard"))) {
+	if (not defined($self->check_or_start($env))) {
 	    return undef;
 	}
 
@@ -3146,7 +3146,7 @@ sub setup_renamedc
 	}
 
 	# start samba for the restored DC
-	if (not defined($self->check_or_start($env, "standard"))) {
+	if (not defined($self->check_or_start($env))) {
 	    return undef;
 	}
 
@@ -3195,7 +3195,7 @@ sub setup_offlinebackupdc
 	Samba::mk_krb5_conf($ctx);
 
 	# start samba for the restored DC
-	if (not defined($self->check_or_start($env, "standard"))) {
+	if (not defined($self->check_or_start($env))) {
 	    return undef;
 	}
 
@@ -3250,7 +3250,7 @@ sub setup_labdc
 	}
 
 	# start samba for the restored DC
-	if (not defined($self->check_or_start($env, "standard"))) {
+	if (not defined($self->check_or_start($env))) {
 	    return undef;
 	}
 
@@ -3348,7 +3348,7 @@ sub setup_customdc
 	Samba::mk_krb5_conf($ctx);
 
 	# start samba for the restored DC
-	if (not defined($self->check_or_start($env, "standard"))) {
+	if (not defined($self->check_or_start($env))) {
 	    return undef;
 	}
 
