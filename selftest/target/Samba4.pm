@@ -398,7 +398,7 @@ sub setup_dns_hub_internal($$$)
 		} else {
 		    push (@preargs, $ENV{PYTHON});
 		}
-		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "python/samba/tests/dns_forwarder_helpers/dns_hub.py");
+		$ENV{MAKE_TEST_BINARY} = "$self->{srcdir}/selftest/target/dns_hub.py";
 		push (@args, "$self->{server_maxtime}");
 		push (@args, "$env->{ipv4}");
 		close($env->{STDIN_PIPE});
