@@ -20,11 +20,9 @@
 
 import threading
 import sys
-import os
 import select
 import socket
 from samba.dcerpc import dns
-from samba.tests.dns_base import DNSTest
 import samba.ndr as ndr
 
 if sys.version_info[0] < 3:
@@ -33,6 +31,7 @@ if sys.version_info[0] < 3:
 else:
     import socketserver
     sserver = socketserver
+
 
 class DnsHandler(sserver.BaseRequestHandler):
     def dns_transaction_udp(self, packet, host):
@@ -90,7 +89,7 @@ class DnsHandler(sserver.BaseRequestHandler):
 
     def handle(self):
         data, sock = self.request
-        query = ndr.ndr_unpack(dns.name_packet, data);
+        query = ndr.ndr_unpack(dns.name_packet, data)
         name = query.questions[0].name
         forwarder = self.forwarder(name)
         response = None
@@ -134,9 +133,10 @@ class server_thread(threading.Thread):
         self.server.serve_forever()
         print("dns_hub: after serve_forever()")
 
+
 def main():
-    timeout = int(sys.argv[1])*1000
-    timeout = min(timeout, 2**31-1) # poll with 32-bit int can't take more
+    timeout = int(sys.argv[1]) * 1000
+    timeout = min(timeout, 2**31 - 1)  # poll with 32-bit int can't take more
     host = sys.argv[2]
     server = sserver.UDPServer((host, int(53)), DnsHandler)
     t = server_thread(server)
