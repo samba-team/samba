@@ -157,11 +157,24 @@ static int dirsync_filter_entry(struct ldb_request *req,
 	for (i = msg->num_elements - 1; i >= 0; i--) {
 		attr = dsdb_attribute_by_lDAPDisplayName(dsc->schema, msg->elements[i].name);
 		if (ldb_attr_cmp(msg->elements[i].name, "uSNChanged") == 0) {
+			int error = 0;
 			/* Read the USN it will used at the end of the filtering
 			 * to update the max USN in the cookie if we
 			 * decide to keep this entry
 			 */
-			val = strtoull((const char*)msg->elements[i].values[0].data, NULL, 0);
+			val = strtoull_err(
+				(const char*)msg->elements[i].values[0].data,
+				NULL,
+				0,
+				&error);
+			if (error != 0) {
+				ldb_set_errstring(ldb,
+						  "Failed to convert USN");
+				return ldb_module_done(dsc->req,
+						       NULL,
+						       NULL,
+						       LDB_ERR_OPERATIONS_ERROR);
+			}
 			continue;
 		}
 

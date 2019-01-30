@@ -3873,6 +3873,7 @@ NTSTATUS dsdb_get_extended_dn_guid(struct ldb_dn *dn, struct GUID *guid, const c
 NTSTATUS dsdb_get_extended_dn_uint64(struct ldb_dn *dn, uint64_t *val, const char *component_name)
 {
 	const struct ldb_val *v;
+	int error = 0;
 
 	v = ldb_dn_get_extended_component(dn, component_name);
 	if (v == NULL) {
@@ -3887,7 +3888,10 @@ NTSTATUS dsdb_get_extended_dn_uint64(struct ldb_dn *dn, uint64_t *val, const cha
 		memcpy(s, v->data, v->length);
 		s[v->length] = 0;
 
-		*val = strtoull(s, NULL, 0);
+		*val = strtoull_err(s, NULL, 0, &error);
+		if (error != 0) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	}
 	return NT_STATUS_OK;
 }
@@ -3906,6 +3910,7 @@ NTSTATUS dsdb_get_extended_dn_nttime(struct ldb_dn *dn, NTTIME *nttime, const ch
 NTSTATUS dsdb_get_extended_dn_uint32(struct ldb_dn *dn, uint32_t *val, const char *component_name)
 {
 	const struct ldb_val *v;
+	int error = 0;
 
 	v = ldb_dn_get_extended_component(dn, component_name);
 	if (v == NULL) {
@@ -3919,7 +3924,10 @@ NTSTATUS dsdb_get_extended_dn_uint32(struct ldb_dn *dn, uint32_t *val, const cha
 		char s[v->length + 1];
 		memcpy(s, v->data, v->length);
 		s[v->length] = 0;
-		*val = strtoul(s, NULL, 0);
+		*val = strtoul_err(s, NULL, 0, &error);
+		if (error != 0) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	}
 
 	return NT_STATUS_OK;
@@ -3973,6 +3981,7 @@ uint32_t dsdb_dn_val_rmd_flags(const struct ldb_val *val)
 	const char *p;
 	uint32_t flags;
 	char *end;
+	int error = 0;
 
 	if (val->length < 13) {
 		return 0;
@@ -3981,8 +3990,8 @@ uint32_t dsdb_dn_val_rmd_flags(const struct ldb_val *val)
 	if (!p) {
 		return 0;
 	}
-	flags = strtoul(p+11, &end, 10);
-	if (!end || *end != '>') {
+	flags = strtoul_err(p+11, &end, 10, &error);
+	if (!end || *end != '>' || error != 0) {
 		/* it must end in a > */
 		return 0;
 	}

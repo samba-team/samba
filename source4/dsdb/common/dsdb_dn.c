@@ -84,6 +84,7 @@ struct dsdb_dn *dsdb_dn_parse_trusted(TALLOC_CTX *mem_ctx, struct ldb_context *l
 	struct ldb_val bval;
 	struct ldb_val dval;
 	char *dn_str;
+	int error = 0;
 
 	enum dsdb_dn_format dn_format = dsdb_dn_oid_to_format(dn_oid);
 
@@ -134,8 +135,8 @@ struct dsdb_dn *dsdb_dn_parse_trusted(TALLOC_CTX *mem_ctx, struct ldb_context *l
 	}
 
 	errno = 0;
-	blen = strtoul(p1, &p2, 10);
-	if (errno != 0) {
+	blen = strtoul_err(p1, &p2, 10, &error);
+	if (error != 0) {
 		DEBUG(10, (__location__ ": failed\n"));
 		goto failed;
 	}

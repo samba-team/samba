@@ -96,6 +96,8 @@ again:
 	while (fgets(line, sizeof(line)-1, f)) {
 		NTSTATUS status;
 		const char **params0, **params;
+		unsigned long int tmp;
+		int error = 0;
 
 		nbench_line_count++;
 
@@ -138,7 +140,11 @@ again:
 
 		/* accept numeric or string status codes */
 		if (strncmp(params[i-1], "0x", 2) == 0) {
-			status = NT_STATUS(strtoul(params[i-1], NULL, 16));
+			tmp = strtoul_err(params[i-1], NULL, 16, &error);
+			if (error != 0) {
+				tmp = error;
+			}
+			status = NT_STATUS(tmp);
 		} else {
 			status = nt_status_string_to_code(params[i-1]);
 		}

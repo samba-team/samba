@@ -186,12 +186,17 @@ bool torture_smb2_check_sharemode(struct torture_context *tctx)
 	struct smb2_create create = { };
 	NTSTATUS status;
 	bool ret = true;
+	int error = 0;
 
 	sharemode_string = torture_setting_string(tctx, "sharemode", "RWD");
 	sharemode = smb2_util_share_access(sharemode_string);
 
 	access_string = torture_setting_string(tctx, "access", "0xf01ff");
-	access = strtoul(access_string, NULL, 0);
+	access = strtoul_err(access_string, NULL, 0, &error);
+	if (error != 0) {
+		torture_comment(tctx, "Initializing access failed.\n");
+		return false;
+	}
 
 	filename = torture_setting_string(tctx, "filename", "testfile");
 	operation = torture_setting_string(tctx, "operation", "WD");

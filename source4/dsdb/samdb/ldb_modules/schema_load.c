@@ -117,6 +117,7 @@ static int schema_metadata_get_uint64(struct schema_load_private_data *data,
 	char *value_str;
 	TALLOC_CTX *tmp_ctx;
 	int tdb_seqnum;
+	int error = 0;
 
 	if (!data) {
 		*value = default_value;
@@ -169,7 +170,12 @@ static int schema_metadata_get_uint64(struct schema_load_private_data *data,
 	 * next time
 	 */
 	data->tdb_seqnum = tdb_seqnum;
-	data->schema_seq_num_cache = strtoull(value_str, NULL, 10);
+	data->schema_seq_num_cache = strtoull_err(value_str, NULL, 10, &error);
+	if (error != 0) {
+		talloc_free(tmp_ctx);
+		return ldb_module_error(data->module, LDB_ERR_OPERATIONS_ERROR,
+					"Failed to convert value");
+	}
 
 	*value = data->schema_seq_num_cache;
 

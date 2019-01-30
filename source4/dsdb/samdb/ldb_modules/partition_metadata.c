@@ -36,6 +36,7 @@ static int partition_metadata_get_uint64(struct ldb_module *module,
 	TDB_DATA tdb_key, tdb_data;
 	char *value_str;
 	TALLOC_CTX *tmp_ctx;
+	int error = 0;
 
 	data = talloc_get_type_abort(ldb_module_get_private(module),
 				     struct partition_private_data);
@@ -73,7 +74,11 @@ static int partition_metadata_get_uint64(struct ldb_module *module,
 		return ldb_module_oom(module);
 	}
 
-	*value = strtoull(value_str, NULL, 10);
+	*value = strtoull_err(value_str, NULL, 10, &error);
+	if (error != 0) {
+		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
+					"partition_metadata: converision failed");
+	}
 
 	SAFE_FREE(tdb_data.dptr);
 	talloc_free(tmp_ctx);

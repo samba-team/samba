@@ -307,8 +307,12 @@ static bool b9_dns_type(const char *type, enum dns_record_type *dtype)
 
 #define DNS_PARSE_UINT(ret, str, sep, saveptr) do {  \
 	char *istr = strtok_r(str, sep, &saveptr); \
+	int error = 0;\
 	if ((istr) == NULL) return false; \
-	(ret) = strtoul(istr, NULL, 10); \
+	(ret) = strtoul_err(istr, NULL, 10, &error); \
+	if (error != 0) {\
+		return false;\
+	}\
 	} while (0)
 
 /*

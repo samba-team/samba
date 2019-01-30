@@ -148,6 +148,7 @@ static NTSTATUS winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct n
 	struct nbt_name *name;
 	unsigned int comp_num;
 	uint32_t cur = 0;
+	int error = 0;
 
 	name = talloc(mem_ctx, struct nbt_name);
 	if (!name) {
@@ -181,7 +182,16 @@ static NTSTATUS winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct n
 	}
 
 	if (comp_num > cur && strcasecmp("type", ldb_dn_get_component_name(dn, cur)) == 0) {
-		name->type	= strtoul((char *)ldb_dn_get_component_val(dn, cur)->data, NULL, 0);
+		name->type =
+			strtoul_err(
+				(char *)ldb_dn_get_component_val(dn, cur)->data,
+				NULL,
+				0,
+				&error);
+		if (error != 0) {
+			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+			goto failed;
+		}
 		cur++;
 	} else {
 		status = NT_STATUS_INTERNAL_DB_CORRUPTION;

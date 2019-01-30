@@ -514,6 +514,7 @@ static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
 		uint32_t port = 0;
 		char *p = strrchr(addrs[i], '@');
 		char *n;
+		int error = 0;
 
 		if (!p) {
 			composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
@@ -536,8 +537,8 @@ static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 			return;
 		}
-		port = strtoul(p, NULL, 10);
-		if (port > UINT16_MAX) {
+		port = strtoul_err(p, NULL, 10, &error);
+		if (port > UINT16_MAX || error != 0) {
 			composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 			return;
 		}

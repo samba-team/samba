@@ -3313,6 +3313,7 @@ static int verify_cidr(const char *cidr)
 	char *address_redux = NULL;
 	unsigned int address_len;
 	TALLOC_CTX *frame = NULL;
+	int error = 0;
 
 	DBG_DEBUG("CIDR is %s\n", cidr);
 	frame = talloc_stackframe();
@@ -3329,14 +3330,14 @@ static int verify_cidr(const char *cidr)
 	/* terminate the address for strchr, inet_pton */
 	*slash = '\0';
 
-	mask = strtoul(slash + 1, &endptr, 10);
+	mask = strtoul_err(slash + 1, &endptr, 10, &error);
 	if (mask == 0){
 		DBG_INFO("Windows does not like the zero mask, "
 			 "so nor do we: %s\n", cidr);
 		goto error;
 	}
 
-	if (*endptr != '\0' || endptr == slash + 1){
+	if (*endptr != '\0' || endptr == slash + 1 || error != 0){
 		DBG_INFO("CIDR mask is not a proper integer: %s\n", cidr);
 		goto error;
 	}

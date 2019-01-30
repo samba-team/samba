@@ -1698,6 +1698,7 @@ static NTSTATUS update_uint32_t_value(TALLOC_CTX *mem_ctx,
 	uint32_t orig_uint = 0;
 	unsigned int flags = 0;
 	int ret;
+	int error = 0;
 
 	orig_val = ldb_msg_find_ldb_val(orig, attribute);
 	if (!orig_val || !orig_val->data) {
@@ -1705,9 +1706,11 @@ static NTSTATUS update_uint32_t_value(TALLOC_CTX *mem_ctx,
 		flags = LDB_FLAG_MOD_ADD;
 
 	} else {
-		errno = 0;
-		orig_uint = strtoul((const char *)orig_val->data, NULL, 0);
-		if (errno != 0 || orig_uint != value) {
+		orig_uint = strtoul_err((const char *)orig_val->data,
+					NULL,
+					0,
+					&error);
+		if (error != 0 || orig_uint != value) {
 			/* replace also if can't get value */
 			flags = LDB_FLAG_MOD_REPLACE;
 		}

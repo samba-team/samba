@@ -107,6 +107,8 @@ void websrv_output(struct websrv_context *web, const void *data, size_t length)
 */
 NTSTATUS http_parse_header(struct websrv_context *web, const char *line)
 {
+	int error = 0;
+
 	if (line[0] == 0) {
 		web->input.end_of_headers = true;
 	} else if (strncasecmp(line,"GET ", 4)==0) {
@@ -118,7 +120,10 @@ NTSTATUS http_parse_header(struct websrv_context *web, const char *line)
 		http_error(web, "400 Bad request", "This server only accepts GET and POST requests");
 		return NT_STATUS_INVALID_PARAMETER;
 	} else if (strncasecmp(line, "Content-Length: ", 16)==0) {
-		web->input.content_length = strtoul(&line[16], NULL, 10);
+		web->input.content_length = strtoul_err(&line[16], NULL, 10, &error);
+		if (error != 0) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	} else {
 		struct http_header *hdr = talloc_zero(web, struct http_header);
 		char *colon = strchr(line, ':');

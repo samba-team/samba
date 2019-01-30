@@ -216,6 +216,7 @@ static WERROR _dsdb_pfm_make_binary_oid(const char *full_oid, TALLOC_CTX *mem_ct
 {
 	uint32_t last_subid;
 	const char *oid_subid;
+	int error = 0;
 
 	/* make last sub-identifier value */
 	oid_subid = strrchr(full_oid, '.');
@@ -223,7 +224,10 @@ static WERROR _dsdb_pfm_make_binary_oid(const char *full_oid, TALLOC_CTX *mem_ct
 		return WERR_INVALID_PARAMETER;
 	}
 	oid_subid++;
-	last_subid = strtoul(oid_subid, NULL, 10);
+	last_subid = strtoul_err(oid_subid, NULL, 10, &error);
+	if (error != 0) {
+		return WERR_INVALID_PARAMETER;
+	}
 
 	/* encode oid in BER format */
 	if (!ber_write_OID_String(mem_ctx, _bin_oid, full_oid)) {
