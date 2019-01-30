@@ -51,6 +51,15 @@ NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
+#if defined(HAVE_OFD_LOCKS)
+	fsp->use_ofd_locks = true;
+	if (lp_parm_bool(SNUM(conn),
+			 "smbd",
+			 "force process locks",
+			 false)) {
+		fsp->use_ofd_locks = false;
+	}
+#endif
 	fsp->fh->ref_count = 1;
 	fsp->fh->fd = -1;
 

@@ -1071,7 +1071,7 @@ bool fcntl_getlock(int fd, int op, off_t *poffset, off_t *pcount, int *ptype, pi
 }
 
 #if defined(HAVE_OFD_LOCKS)
-int map_process_lock_to_ofd_lock(int op, bool *use_ofd_locks)
+int map_process_lock_to_ofd_lock(int op)
 {
 	switch (op) {
 	case F_GETLK:
@@ -1087,16 +1087,13 @@ int map_process_lock_to_ofd_lock(int op, bool *use_ofd_locks)
 		op = F_OFD_SETLKW;
 		break;
 	default:
-		*use_ofd_locks = false;
 		return -1;
 	}
-	*use_ofd_locks = true;
 	return op;
 }
 #else /* HAVE_OFD_LOCKS */
-int map_process_lock_to_ofd_lock(int op, bool *use_ofd_locks)
+int map_process_lock_to_ofd_lock(int op)
 {
-	*use_ofd_locks = false;
 	return op;
 }
 #endif /* HAVE_OFD_LOCKS */
