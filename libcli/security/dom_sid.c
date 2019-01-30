@@ -24,6 +24,7 @@
 #include "lib/util/data_blob.h"
 #include "system/locale.h"
 #include "lib/util/debug.h"
+#include "lib/util/util.h"
 #include "librpc/gen_ndr/security.h"
 #include "dom_sid.h"
 
@@ -132,6 +133,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	char *q;
 	/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
 	uint64_t conv;
+	int error = 0;
 
 	ZERO_STRUCTP(sidout);
 
@@ -146,8 +148,8 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 		goto format_error;
 	}
 
-	conv = strtoul(p, &q, 10);
-	if (!q || (*q != '-') || conv > UINT8_MAX) {
+	conv = strtoul_err(p, &q, 10, &error);
+	if (!q || (*q != '-') || conv > UINT8_MAX || error != 0) {
 		goto format_error;
 	}
 	sidout->sid_rev_num = (uint8_t) conv;
@@ -158,8 +160,8 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	}
 
 	/* get identauth */
-	conv = strtoull(q, &q, 0);
-	if (!q || conv & AUTHORITY_MASK) {
+	conv = strtoull_err(q, &q, 0, &error);
+	if (!q || conv & AUTHORITY_MASK || error != 0) {
 		goto format_error;
 	}
 
@@ -187,8 +189,8 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 			goto format_error;
 		}
 
-		conv = strtoull(q, &end, 10);
-		if (end == q || conv > UINT32_MAX) {
+		conv = strtoull_err(q, &end, 10, &error);
+		if (end == q || conv > UINT32_MAX || error != 0) {
 			goto format_error;
 		}
 
