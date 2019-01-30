@@ -273,15 +273,20 @@ bool ber_write_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *OID)
 	const char *p = (const char *)OID;
 	char *newp;
 	int i;
+	int error = 0;
 
 	if (!isdigit(*p)) return false;
-	v = strtoul(p, &newp, 10);
-	if (newp[0] != '.') return false;
+	v = strtoul_err(p, &newp, 10, &error);
+	if (newp[0] != '.' || error != 0) {
+		return false;
+	}
 	p = newp + 1;
 
 	if (!isdigit(*p)) return false;
-	v2 = strtoul(p, &newp, 10);
-	if (newp[0] != '.') return false;
+	v2 = strtoul_err(p, &newp, 10, &error);
+	if (newp[0] != '.' || error != 0) {
+		return false;
+	}
 	p = newp + 1;
 
 	/*the ber representation can't use more space than the string one */
@@ -293,8 +298,8 @@ bool ber_write_OID_String(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, const char *OID)
 	i = 1;
 	while (*p) {
 		if (!isdigit(*p)) return false;
-		v = strtoul(p, &newp, 10);
-		if (newp[0] == '.') {
+		v = strtoul_err(p, &newp, 10, &error);
+		if (newp[0] == '.' || error != 0) {
 			p = newp + 1;
 			/* check for empty last component */
 			if (!*p) return false;

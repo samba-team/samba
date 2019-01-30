@@ -63,13 +63,14 @@ _PUBLIC_ bool conv_str_size_error(const char * str, uint64_t * val)
 {
 	char *		    end = NULL;
 	unsigned long long  lval;
+	int error = 0;
 
 	if (str == NULL || *str == '\0') {
 		return false;
 	}
 
-	lval = strtoull(str, &end, 10 /* base */);
-	if (end == NULL || end == str) {
+	lval = strtoull_err(str, &end, 10, &error);
+	if (end == NULL || end == str || error != 0) {
 		return false;
 	}
 
@@ -104,13 +105,14 @@ _PUBLIC_ bool conv_str_u64(const char * str, uint64_t * val)
 {
 	char *		    end = NULL;
 	unsigned long long  lval;
+	int error = 0;
 
 	if (str == NULL || *str == '\0') {
 		return false;
 	}
 
-	lval = strtoull(str, &end, 10 /* base */);
-	if (end == NULL || *end != '\0' || end == str) {
+	lval = strtoull_err(str, &end, 10, &error);
+	if (end == NULL || *end != '\0' || end == str || error != 0) {
 		return false;
 	}
 

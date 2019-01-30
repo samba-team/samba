@@ -383,16 +383,22 @@ static int dsdb_match_for_dns_to_tombstone_time(struct ldb_context *ldb,
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	} else {
 		char *p = NULL;
+		int error = 0;
 		char s[value_to_match->length+1];
+
 		memcpy(s, value_to_match->data, value_to_match->length);
 		s[value_to_match->length] = 0;
 		if (s[0] == '\0' || s[0] == '-') {
 			DBG_ERR("Empty timestamp passed\n");
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 		}
-		tombstone_time = strtoull(s, &p, 10);
-		if (p == NULL || p == s || *p != '\0' ||
-		    tombstone_time == ULLONG_MAX) {
+		tombstone_time = strtoull_err(s, &p, 10, &error);
+		if (p == NULL ||
+		    p == s ||
+		    *p != '\0' ||
+		    error != 0 ||
+		    tombstone_time == ULLONG_MAX)
+		{
 			DBG_ERR("Invalid timestamp string passed\n");
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 		}
@@ -514,14 +520,21 @@ static int dsdb_match_for_expunge(struct ldb_context *ldb,
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 	} else {
 		char *p = NULL;
+		int error = 0;
 		char s[value_to_match->length+1];
+
 		memcpy(s, value_to_match->data, value_to_match->length);
 		s[value_to_match->length] = 0;
 		if (s[0] == '\0' || s[0] == '-') {
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 		}
-		tombstone_time = strtoull(s, &p, 10);
-		if (p == NULL || p == s || *p != '\0' || tombstone_time == ULLONG_MAX) {
+		tombstone_time = strtoull_err(s, &p, 10, &error);
+		if (p == NULL ||
+		    p == s ||
+		    *p != '\0' ||
+		    error != 0 ||
+		    tombstone_time == ULLONG_MAX)
+		{
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 		}
 	}

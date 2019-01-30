@@ -331,13 +331,21 @@ int lp_int(const char *s)
  */
 unsigned long lp_ulong(const char *s)
 {
+	int error = 0;
+	unsigned long int ret;
 
 	if (!s || !*s) {
-		DEBUG(0,("lp_ulong(%s): is called with NULL!\n",s));
+		DBG_DEBUG("lp_ulong(%s): is called with NULL!\n",s);
 		return -1;
 	}
 
-	return strtoul(s, NULL, 0);
+	ret = strtoul_err(s, NULL, 0, &error);
+	if (error != 0) {
+		DBG_DEBUG("lp_ulong(%s): conversion failed\n",s);
+		return -1;
+	}
+
+	return ret;
 }
 
 /**
@@ -345,13 +353,21 @@ unsigned long lp_ulong(const char *s)
  */
 unsigned long long lp_ulonglong(const char *s)
 {
+	int error = 0;
+	unsigned long long int ret;
 
 	if (!s || !*s) {
-		DEBUG(0, ("lp_ulonglong(%s): is called with NULL!\n", s));
+		DBG_DEBUG("lp_ulonglong(%s): is called with NULL!\n", s);
 		return -1;
 	}
 
-	return strtoull(s, NULL, 0);
+	ret = strtoull_err(s, NULL, 0, &error);
+	if (error != 0) {
+		DBG_DEBUG("lp_ulonglong(%s): conversion failed\n",s);
+		return -1;
+	}
+
+	return ret;
 }
 
 /**
