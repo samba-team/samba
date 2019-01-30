@@ -40,45 +40,45 @@ def options(opt):
                          "--with-shared-modules"),
                    action="store", dest='shared_modules', default=None)
 
-    opt.SAMBA3_ADD_OPTION('winbind')
-    opt.SAMBA3_ADD_OPTION('ads')
-    opt.SAMBA3_ADD_OPTION('ldap')
-    opt.SAMBA3_ADD_OPTION('cups', with_name="enable", without_name="disable")
-    opt.SAMBA3_ADD_OPTION('iprint', with_name="enable", without_name="disable")
-    opt.SAMBA3_ADD_OPTION('pam')
-    opt.SAMBA3_ADD_OPTION('quotas')
-    opt.SAMBA3_ADD_OPTION('sendfile-support', default=None)
-    opt.SAMBA3_ADD_OPTION('utmp')
-    opt.SAMBA3_ADD_OPTION('avahi', with_name="enable", without_name="disable")
-    opt.SAMBA3_ADD_OPTION('iconv')
-    opt.SAMBA3_ADD_OPTION('acl-support')
-    opt.SAMBA3_ADD_OPTION('dnsupdate')
-    opt.SAMBA3_ADD_OPTION('syslog')
-    opt.SAMBA3_ADD_OPTION('automount')
-    opt.SAMBA3_ADD_OPTION('dmapi', default=None) # None means autodetection
-    opt.SAMBA3_ADD_OPTION('fam', default=None) # None means autodetection
-    opt.SAMBA3_ADD_OPTION('profiling-data', default=False)
-    opt.SAMBA3_ADD_OPTION('libarchive', default=True)
+    opt.samba_add_onoff_option('winbind')
+    opt.samba_add_onoff_option('ads')
+    opt.samba_add_onoff_option('ldap')
+    opt.samba_add_onoff_option('cups', with_name="enable", without_name="disable")
+    opt.samba_add_onoff_option('iprint', with_name="enable", without_name="disable")
+    opt.samba_add_onoff_option('pam')
+    opt.samba_add_onoff_option('quotas')
+    opt.samba_add_onoff_option('sendfile-support', default=None)
+    opt.samba_add_onoff_option('utmp')
+    opt.samba_add_onoff_option('avahi', with_name="enable", without_name="disable")
+    opt.samba_add_onoff_option('iconv')
+    opt.samba_add_onoff_option('acl-support')
+    opt.samba_add_onoff_option('dnsupdate')
+    opt.samba_add_onoff_option('syslog')
+    opt.samba_add_onoff_option('automount')
+    opt.samba_add_onoff_option('dmapi', default=None) # None means autodetection
+    opt.samba_add_onoff_option('fam', default=None) # None means autodetection
+    opt.samba_add_onoff_option('profiling-data', default=False)
+    opt.samba_add_onoff_option('libarchive', default=True)
 
-    opt.SAMBA3_ADD_OPTION('cluster-support', default=False)
+    opt.samba_add_onoff_option('cluster-support', default=False)
 
-    opt.SAMBA3_ADD_OPTION('regedit', default=None)
+    opt.samba_add_onoff_option('regedit', default=None)
 
-    opt.SAMBA3_ADD_OPTION('fake-kaserver',
+    opt.samba_add_onoff_option('fake-kaserver',
                           help=("Include AFS fake-kaserver support"), default=False)
 
     opt.add_option('--with-libcephfs',
                    help=("Directory under which libcephfs is installed"),
                    action="store", dest='libcephfs_dir', default=None)
 
-    opt.SAMBA3_ADD_OPTION('glusterfs', with_name="enable", without_name="disable", default=True)
-    opt.SAMBA3_ADD_OPTION('cephfs', with_name="enable", without_name="disable", default=True)
+    opt.samba_add_onoff_option('glusterfs', with_name="enable", without_name="disable", default=True)
+    opt.samba_add_onoff_option('cephfs', with_name="enable", without_name="disable", default=True)
 
     opt.add_option('--enable-vxfs',
                   help=("enable support for VxFS (default=no)"),
                   action="store_true", dest='enable_vxfs', default=False)
 
-    opt.SAMBA3_ADD_OPTION('spotlight', with_name="enable", without_name="disable", default=False)
+    opt.samba_add_onoff_option('spotlight', with_name="enable", without_name="disable", default=False)
 
 def configure(conf):
     default_static_modules = []

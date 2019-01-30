@@ -8,7 +8,7 @@ def options(opt):
     help += "This requires gpgme devel and python packages "
     help += "(e.g. libgpgme11-dev, python-gpgme on debian/ubuntu)."
 
-    opt.SAMBA3_ADD_OPTION('gpgme', default=True, help=(help))
+    opt.samba_add_onoff_option('gpgme', default=True, help=(help))
 
     return
 

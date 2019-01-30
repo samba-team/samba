@@ -2,11 +2,9 @@
 # and for SAMBA_ macros for building libraries, binaries etc
 
 import os
-from waflib import Options, Build
+from waflib import Build
 from samba_utils import os_path_relpath, TO_LIST
 from samba_autoconf import library_flags
-
-Options.OptionsContext.SAMBA3_ADD_OPTION = Options.OptionsContext.samba_add_onoff_option
 
 def SAMBA3_IS_STATIC_MODULE(bld, module):
     '''Check whether module is in static list'''
