@@ -2647,7 +2647,7 @@ static bool test_netatalk_lock(files_struct *fsp, off_t in_offset)
 	off_t offset = in_offset;
 	off_t len = 1;
 	int type = F_WRLCK;
-	pid_t pid;
+	pid_t pid = 0;
 
 	result = SMB_VFS_GETLOCK(fsp, &offset, &len, &type, &pid);
 	if (result == false) {
