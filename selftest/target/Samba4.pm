@@ -217,9 +217,9 @@ sub wait_for_start($$)
 		$count++;
 	} while ($ret != 0 && $count < 20);
 	if ($count == 20) {
-		warn("nbt not reachable after 20 retries\n");
 		teardown_env($self, $testenv_vars);
-		return 0;
+		warn("nbt not reachable after 20 retries\n");
+		return -1;
 	}
 
 	# Ensure we have the first RID Set before we start tests.  This makes the tests more reliable.
@@ -254,10 +254,11 @@ sub wait_for_start($$)
 		while (system("$cmd >/dev/null") != 0) {
 			$count++;
 			if ($count > $max_wait) {
+				teardown_env($self, $testenv_vars);
 				warn("Timed out ($max_wait sec) waiting for working LDAP and a RID Set to be allocated by $testenv_vars->{NETBIOSNAME} PID $testenv_vars->{SAMBA_PID}");
-				$ret = -1;
-				last;
+				return -1;
 			}
+			print "Waiting for working LDAP...\n";
 			sleep(1);
 		}
 	}
@@ -278,14 +279,16 @@ sub wait_for_start($$)
 		$count++;
 	} while ($ret != 0 && $count < 20);
 	if ($count == 20) {
-		warn("winbind not reachable after 20 retries\n");
 		teardown_env($self, $testenv_vars);
-		return 0;
+		warn("winbind not reachable after 20 retries\n");
+		return -1;
 	}
 
 	print $self->getlog_env($testenv_vars);
 
-	return $ret
+	print "READY ($testenv_vars->{SAMBA_PID})\n";
+
+	return 0
 }
 
 sub write_ldb_file($$$)
