@@ -863,6 +863,17 @@ planoldpythontestsuite("ad_dc_default", "sort", environ={'SERVER' : '$SERVER', '
 
 plantestsuite_loadlist("samba4.ldap.linked_attributes.python(ad_dc_ntvfs)", "ad_dc_ntvfs:local", [python, os.path.join(samba4srcdir, "dsdb/tests/python/linked_attributes.py"), '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
+plantestsuite_loadlist("samba4.ldap.subtree_rename.python(ad_dc_ntvfs)",
+                       "ad_dc_ntvfs:local",
+                       [python, os.path.join(samba4srcdir,
+                                             "dsdb/tests/python/subtree_rename.py"),
+                        '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb',
+                        '-U"$USERNAME%$PASSWORD"',
+                        '--workgroup=$DOMAIN',
+                        '$LOADLIST',
+                        '$LISTOPT'])
+
+
 # These should be the first tests run against testenvs created by backup/restore
 for env in ['offlinebackupdc', 'restoredc', 'renamedc', 'labdc']:
     # check that a restored DC matches the original DC (backupfromdc)
