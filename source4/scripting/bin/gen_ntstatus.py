@@ -20,6 +20,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from __future__ import unicode_literals
+# this file is a bin script and was not imported by any other modules
+# so it should be fine to enable unicode string for python2
 
 import sys, os.path, io, string
 from gen_error_common import parseErrorDescriptions, ErrorDef
@@ -134,20 +137,20 @@ def main ():
         sys.exit()
 
     # read in the data
-    file_contents = open(input_file, "r")
+    file_contents = io.open(input_file, "rt", encoding='utf8')
 
     errors = parseErrorDescriptions(file_contents, False, transformErrorName)
 
     print("writing new header file: %s" % gen_headerfile_name)
-    out_file = open(gen_headerfile_name, "w")
+    out_file = io.open(gen_headerfile_name, "wt", encoding='utf8')
     generateHeaderFile(out_file, errors)
     out_file.close()
     print("writing new source file: %s" % gen_sourcefile_name)
-    out_file = open(gen_sourcefile_name, "w")
+    out_file = io.open(gen_sourcefile_name, "wt", encoding='utf8')
     generateSourceFile(out_file, errors)
     out_file.close()
     print("writing new python file: %s" % gen_pythonfile_name)
-    out_file = open(gen_pythonfile_name, "w")
+    out_file = io.open(gen_pythonfile_name, "wt", encoding='utf8')
     generatePythonFile(out_file, errors)
     out_file.close()
 
