@@ -1056,6 +1056,9 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 		NT_STATUS_HAVE_NO_MEMORY(user_info->password.hash.nt);
 		*user_info->password.hash.nt = r->in.logon->password->ntpassword;
 
+		user_info->logon_id
+		    = r->in.logon->password->identity_info.logon_id;
+
 		break;
 	case NetlogonNetworkInformation:
 	case NetlogonNetworkTransitiveInformation:
@@ -1079,6 +1082,9 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 		user_info->password_state = AUTH_PASSWORD_RESPONSE;
 		user_info->password.response.lanman = data_blob_talloc(mem_ctx, r->in.logon->network->lm.data, r->in.logon->network->lm.length);
 		user_info->password.response.nt = data_blob_talloc(mem_ctx, r->in.logon->network->nt.data, r->in.logon->network->nt.length);
+
+		user_info->logon_id
+		    = r->in.logon->network->identity_info.logon_id;
 
 		nt_status = NTLMv2_RESPONSE_verify_netlogon_creds(
 					user_info->client.account_name,
@@ -1107,6 +1113,9 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 			NT_STATUS_HAVE_NO_MEMORY(generic);
 
 			r->out.validation->generic = generic;
+
+			user_info->logon_id
+			    = r->in.logon->generic->identity_info.logon_id;
 
 			irpc_handle = irpc_binding_handle_by_name(mem_ctx,
 								  dce_call->msg_ctx,
