@@ -41,7 +41,7 @@
  * increment the major version.
  */
 #define AUTH_MAJOR 1
-#define AUTH_MINOR 1
+#define AUTH_MINOR 2
 #define AUTHZ_MAJOR 1
 #define AUTHZ_MINOR 1
 
@@ -151,6 +151,7 @@ static void log_authentication_event_json(
 	struct json_object wrapper = json_empty_object;
 	struct json_object authentication = json_empty_object;
 	char negotiate_flags[11];
+	char logon_id[19];
 	int rc = 0;
 
 	authentication = json_new_object();
@@ -164,6 +165,14 @@ static void log_authentication_event_json(
 	rc = json_add_int(&authentication,
 			  "eventId",
 			  event_id);
+	if (rc != 0) {
+		goto failure;
+	}
+	snprintf(logon_id,
+		 sizeof( logon_id),
+		 "%"PRIx64"",
+		 ui->logon_id);
+	rc = json_add_string(&authentication, "logonId", logon_id);
 	if (rc != 0) {
 		goto failure;
 	}

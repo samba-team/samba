@@ -51,6 +51,7 @@ struct auth_usersupplied_info
 
 	bool mapped_state;
 	bool was_mapped;
+	uint64_t logon_id;
 	/* the values the client gives us */
 	struct {
 		const char *account_name;
