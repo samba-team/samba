@@ -38,6 +38,7 @@ static void PyType_AddGetSet(PyTypeObject *type, PyGetSetDef *getset)
 		descr = PyDescr_NewGetSet(type, &getset[i]);
 		PyDict_SetItemString(dict, getset[i].name, 
 				     descr);
+		Py_CLEAR(descr);
 	}
 }
 

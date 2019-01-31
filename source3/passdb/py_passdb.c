@@ -1483,6 +1483,8 @@ static PyObject *py_pdb_domain_info(PyObject *self, PyObject *args)
 	PyObject *py_domain_info;
 	struct dom_sid *sid;
 	struct GUID *guid;
+	PyObject *py_dom_sid = NULL;
+	PyObject *py_guid = NULL;
 
 	methods = pytalloc_get_ptr(self);
 
@@ -1506,18 +1508,20 @@ static PyObject *py_pdb_domain_info(PyObject *self, PyObject *args)
 	}
 	*guid = domain_info->guid;
 
-	if ((py_domain_info = PyDict_New()) == NULL) {
-		PyErr_NoMemory();
-		talloc_free(frame);
-		return NULL;
-	}
+	py_dom_sid = pytalloc_steal(dom_sid_Type, sid);
+	py_guid = pytalloc_steal(guid_Type, guid);
 
-	PyDict_SetItemString(py_domain_info, "name", PyStr_FromString(domain_info->name));
-	PyDict_SetItemString(py_domain_info, "dns_domain", PyStr_FromString(domain_info->dns_domain));
-	PyDict_SetItemString(py_domain_info, "dns_forest", PyStr_FromString(domain_info->dns_forest));
-	PyDict_SetItemString(py_domain_info, "dom_sid", pytalloc_steal(dom_sid_Type, sid));
-	PyDict_SetItemString(py_domain_info, "guid", pytalloc_steal(guid_Type, guid));
+	py_domain_info = Py_BuildValue(
+		"{s:s, s:s, s:s, s:O, s:O}",
+		"name", domain_info->name,
+		"dns_domain", domain_info->dns_domain,
+		"dns_forest", domain_info->dns_forest,
+		"dom_sid", py_dom_sid,
+		"guid", py_guid);
 
+
+	Py_CLEAR(py_dom_sid);
+	Py_CLEAR(py_guid);
 	talloc_free(frame);
 	return py_domain_info;
 }
@@ -2396,19 +2400,11 @@ static PyObject *py_pdb_get_aliasinfo(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	py_alias_info = PyDict_New();
-	if (py_alias_info == NULL) {
-		PyErr_NoMemory();
-		talloc_free(frame);
-		return NULL;
-	}
-
-	PyDict_SetItemString(py_alias_info, "acct_name",
-			     PyStr_FromString(alias_info->acct_name));
-	PyDict_SetItemString(py_alias_info, "acct_desc",
-			     PyStr_FromString(alias_info->acct_desc));
-	PyDict_SetItemString(py_alias_info, "rid",
-			     PyInt_FromLong(alias_info->rid));
+	py_alias_info = Py_BuildValue(
+		"{s:s, s:s, s:l}",
+		"acct_name", alias_info->acct_name,
+		"acct_desc", alias_info->acct_desc,
+		"rid", alias_info->rid);
 
 	talloc_free(frame);
 	return py_alias_info;
@@ -2613,7 +2609,20 @@ static PyObject *py_pdb_get_account_policy(PyObject *self, PyObject *unused)
 		type = account_policy_name_to_typenum(names[i]);
 		status = methods->get_account_policy(methods, type, &value);
 		if (NT_STATUS_IS_OK(status)) {
-			PyDict_SetItemString(py_acct_policy, names[i], Py_BuildValue("i", value));
+			int res = 0;
+			PyObject *py_value = Py_BuildValue("i", value);
+			if (py_value == NULL) {
+				Py_CLEAR(py_acct_policy);
+				break;
+			}
+			res = PyDict_SetItemString(py_acct_policy,
+						   names[i],
+						   py_value);
+			Py_CLEAR(py_value);
+			if (res == -1) {
+				Py_CLEAR(py_acct_policy);
+				break;
+			}
 		}
 	}
 
@@ -2701,28 +2710,30 @@ static PyObject *py_pdb_search_users(PyObject *self, PyObject *args)
 	}
 
 	while (search->next_entry(search, entry)) {
-		py_dict = PyDict_New();
+		int res = 1;
+		py_dict = Py_BuildValue(
+			"{s:l, s:l, s:l, s:s, s:s, s:s}",
+			"idx", entry->idx,
+			"rid", entry->rid,
+			"acct_flags", entry->acct_flags,
+			"account_name", entry->account_name,
+			"fullname", entry->fullname,
+			"description", entry->description);
 		if (py_dict == NULL) {
-			PyErr_NoMemory();
-		} else {
-			int res = 0;
-			PyDict_SetItemString(py_dict, "idx", PyInt_FromLong(entry->idx));
-			PyDict_SetItemString(py_dict, "rid", PyInt_FromLong(entry->rid));
-			PyDict_SetItemString(py_dict, "acct_flags", PyInt_FromLong(entry->acct_flags));
-			PyDict_SetItemString(py_dict, "account_name", PyStr_FromString(entry->account_name));
-			PyDict_SetItemString(py_dict, "fullname", PyStr_FromString(entry->fullname));
-			PyDict_SetItemString(py_dict, "description", PyStr_FromString(entry->description));
-			res = PyList_Append(py_userlist, py_dict);
-			Py_CLEAR(py_dict);
-			if (res == -1) {
-				Py_CLEAR(py_userlist);
-				talloc_free(frame);
-				return NULL;
-			}
+			Py_CLEAR(py_userlist);
+			goto out;
+		}
+
+		res = PyList_Append(py_userlist, py_dict);
+		Py_CLEAR(py_dict);
+		if (res == -1) {
+			Py_CLEAR(py_userlist);
+			goto out;
 		}
 	}
 	search->search_end(search);
 
+out:
 	talloc_free(frame);
 	return py_userlist;
 }
@@ -2766,28 +2777,30 @@ static PyObject *py_pdb_search_groups(PyObject *self, PyObject *unused)
 	}
 
 	while (search->next_entry(search, entry)) {
-		py_dict = PyDict_New();
+		int res = 0;
+		py_dict = Py_BuildValue(
+			"{s:l, s:l, s:l, s:s, s:s, s:s}",
+			"idx", entry->idx,
+			"rid", entry->rid,
+			"acct_flags", entry->acct_flags,
+			"account_name", entry->account_name,
+			"fullname", entry->fullname,
+			"description", entry->description);
+
 		if (py_dict == NULL) {
-			PyErr_NoMemory();
-		} else {
-			int res = 0;
-			PyDict_SetItemString(py_dict, "idx", PyInt_FromLong(entry->idx));
-			PyDict_SetItemString(py_dict, "rid", PyInt_FromLong(entry->rid));
-			PyDict_SetItemString(py_dict, "acct_flags", PyInt_FromLong(entry->acct_flags));
-			PyDict_SetItemString(py_dict, "account_name", PyStr_FromString(entry->account_name));
-			PyDict_SetItemString(py_dict, "fullname", PyStr_FromString(entry->fullname));
-			PyDict_SetItemString(py_dict, "description", PyStr_FromString(entry->description));
-			res = PyList_Append(py_grouplist, py_dict);
-			Py_CLEAR(py_dict);
-			if (res == -1) {
-				talloc_free(frame);
-				Py_CLEAR(py_grouplist);
-				return NULL;
-			}
+			Py_CLEAR(py_grouplist);
+			goto out;
+		}
+
+		res = PyList_Append(py_grouplist, py_dict);
+		Py_CLEAR(py_dict);
+		if (res == -1) {
+			Py_CLEAR(py_grouplist);
+			goto out;
 		}
 	}
 	search->search_end(search);
-
+out:
 	talloc_free(frame);
 	return py_grouplist;
 }
@@ -2844,28 +2857,30 @@ static PyObject *py_pdb_search_aliases(PyObject *self, PyObject *args)
 	}
 
 	while (search->next_entry(search, entry)) {
-		py_dict = PyDict_New();
+		int res = 0;
+
+		py_dict = Py_BuildValue(
+			"{s:l, s:l, s:l, s:s, s:s, s:s}",
+			"idx", entry->idx,
+			"rid", entry->rid,
+			"acct_flags", entry->acct_flags,
+			"account_name", entry->account_name,
+			"fullname", entry->fullname,
+			"description", entry->description);
+
 		if (py_dict == NULL) {
-			PyErr_NoMemory();
-		} else {
-			int res = 0;
-			PyDict_SetItemString(py_dict, "idx", PyInt_FromLong(entry->idx));
-			PyDict_SetItemString(py_dict, "rid", PyInt_FromLong(entry->rid));
-			PyDict_SetItemString(py_dict, "acct_flags", PyInt_FromLong(entry->acct_flags));
-			PyDict_SetItemString(py_dict, "account_name", PyStr_FromString(entry->account_name));
-			PyDict_SetItemString(py_dict, "fullname", PyStr_FromString(entry->fullname));
-			PyDict_SetItemString(py_dict, "description", PyStr_FromString(entry->description));
-			res = PyList_Append(py_aliaslist, py_dict);
-			Py_CLEAR(py_dict);
-			if (res == -1) {
-				Py_CLEAR(py_aliaslist);
-				talloc_free(frame);
-				return NULL;
-			}
+			Py_CLEAR(py_aliaslist);
+			goto out;
+		}
+		res = PyList_Append(py_aliaslist, py_dict);
+		Py_CLEAR(py_dict);
+		if (res == -1) {
+			Py_CLEAR(py_aliaslist);
+			goto out;
 		}
 	}
 	search->search_end(search);
-
+out:
 	talloc_free(frame);
 	return py_aliaslist;
 }
@@ -3034,17 +3049,13 @@ static PyObject *py_pdb_get_trusteddom_pw(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	py_value = PyDict_New();
-	if (py_value == NULL) {
-		PyErr_NoMemory();
-		talloc_free(frame);
-		return NULL;
-	}
+	py_value = Py_BuildValue(
+		"{s:s, s:O, s:l}",
+		"pwd", pwd,
+		"sid", py_sid,
+		"last_set_tim", last_set_time);
 
-	PyDict_SetItemString(py_value, "pwd", PyStr_FromString(pwd));
-	PyDict_SetItemString(py_value, "sid", py_sid);
-	PyDict_SetItemString(py_value, "last_set_tim", PyInt_FromLong(last_set_time));
-
+	Py_CLEAR(py_sid);
 	talloc_free(frame);
 	return py_value;
 }
@@ -3134,20 +3145,24 @@ static PyObject *py_pdb_enum_trusteddoms(PyObject *self, PyObject *unused)
 
 	for(i=0; i<num_domains; i++) {
 		int res = 0;
-		py_dict = PyDict_New();
-		if (py_dict) {
-			PyDict_SetItemString(py_dict, "name",
-					PyStr_FromString(domains[i]->name));
-			PyDict_SetItemString(py_dict, "sid",
-					pytalloc_steal(dom_sid_Type, &domains[i]->sid));
+		PyObject *py_sid =
+			pytalloc_steal(dom_sid_Type, &domains[i]->sid);
+		py_dict = Py_BuildValue(
+			"{s:s, s:O}",
+			"name", domains[i]->name,
+			"sid", py_sid);
+		Py_CLEAR(py_sid);
+		if (py_dict == NULL) {
+			DBG_ERR("Failed to insert entry to dict\n");
+				Py_CLEAR(py_domain_list);
+				break;
 		}
 
 		res = PyList_Append(py_domain_list, py_dict);
 		Py_CLEAR(py_dict);
 		if (res == -1) {
-			Py_CLEAR(py_dict);
-			talloc_free(frame);
-			return NULL;
+			Py_CLEAR(py_domain_list);
+			break;
 		}
 	}
 
@@ -3164,6 +3179,7 @@ static PyObject *py_pdb_get_trusted_domain(PyObject *self, PyObject *args)
 	const char *domain;
 	struct pdb_trusted_domain *td;
 	PyObject *py_domain_info;
+	PyObject *py_sid = NULL;
 
 	if (!PyArg_ParseTuple(args, "s:get_trusted_domain", &domain)) {
 		talloc_free(frame);
@@ -3181,34 +3197,30 @@ static PyObject *py_pdb_get_trusted_domain(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	py_domain_info = PyDict_New();
-	if (py_domain_info == NULL) {
-		PyErr_NoMemory();
-		talloc_free(frame);
-		return NULL;
-	}
+	py_sid = pytalloc_steal(dom_sid_Type, &td->security_identifier);
 
-	PyDict_SetItemString(py_domain_info, "domain_name",
-			PyStr_FromString(td->domain_name));
-	PyDict_SetItemString(py_domain_info, "netbios_name",
-			PyStr_FromString(td->netbios_name));
-	PyDict_SetItemString(py_domain_info, "security_identifier",
-			pytalloc_steal(dom_sid_Type, &td->security_identifier));
-	PyDict_SetItemString(py_domain_info, "trust_auth_incoming",
-			PyBytes_FromStringAndSize((const char *)td->trust_auth_incoming.data,
-						td->trust_auth_incoming.length));
-	PyDict_SetItemString(py_domain_info, "trust_auth_outgoing",
-			PyBytes_FromStringAndSize((const char *)td->trust_auth_outgoing.data,
-						td->trust_auth_outgoing.length));
-	PyDict_SetItemString(py_domain_info, "trust_direction",
-			PyInt_FromLong(td->trust_direction));
-	PyDict_SetItemString(py_domain_info, "trust_type",
-			PyInt_FromLong(td->trust_type));
-	PyDict_SetItemString(py_domain_info, "trust_attributes",
-			PyInt_FromLong(td->trust_attributes));
-	PyDict_SetItemString(py_domain_info, "trust_forest_trust_info",
-			PyBytes_FromStringAndSize((const char *)td->trust_forest_trust_info.data,
-						td->trust_forest_trust_info.length));
+	py_domain_info = Py_BuildValue(
+		"{s:s, s:s, s:O,"
+			" s:"PYARG_BYTES_LEN","
+			" s:"PYARG_BYTES_LEN","
+			" s:l, s:l, s:l,"
+			" s:"PYARG_BYTES_LEN"}",
+		"domain_name", td->domain_name,
+		"netbios_name", td->netbios_name,
+		"security_identifier", py_sid,
+		"trust_auth_incoming",
+			(const char *)td->trust_auth_incoming.data,
+			td->trust_auth_incoming.length,
+		"trust_auth_outgoing",
+			(const char *)td->trust_auth_outgoing.data,
+			td->trust_auth_outgoing.length,
+		"trust_direction", td->trust_direction,
+		"trust_type", td->trust_type,
+		"trust_attributes", td->trust_attributes,
+		"trust_forest_trust_info",
+			(const char *)td->trust_forest_trust_info.data,
+			td->trust_forest_trust_info.length);
+	Py_CLEAR(py_sid);
 
 	talloc_free(frame);
 	return py_domain_info;
@@ -3224,6 +3236,7 @@ static PyObject *py_pdb_get_trusted_domain_by_sid(PyObject *self, PyObject *args
 	struct dom_sid *domain_sid;
 	struct pdb_trusted_domain *td;
 	PyObject *py_domain_info;
+	PyObject *py_sid = NULL;
 
 	if (!PyArg_ParseTuple(args, "O!:get_trusted_domain_by_sid", dom_sid_Type, &py_domain_sid)) {
 		talloc_free(frame);
@@ -3243,34 +3256,30 @@ static PyObject *py_pdb_get_trusted_domain_by_sid(PyObject *self, PyObject *args
 		return NULL;
 	}
 
-	py_domain_info = PyDict_New();
-	if (py_domain_info == NULL) {
-		PyErr_NoMemory();
-		talloc_free(frame);
-		return NULL;
-	}
+	py_sid = pytalloc_steal(dom_sid_Type, &td->security_identifier);
 
-	PyDict_SetItemString(py_domain_info, "domain_name",
-			PyStr_FromString(td->domain_name));
-	PyDict_SetItemString(py_domain_info, "netbios_name",
-			PyStr_FromString(td->netbios_name));
-	PyDict_SetItemString(py_domain_info, "security_identifier",
-			pytalloc_steal(dom_sid_Type, &td->security_identifier));
-	PyDict_SetItemString(py_domain_info, "trust_auth_incoming",
-			PyBytes_FromStringAndSize((char *)td->trust_auth_incoming.data,
-						td->trust_auth_incoming.length));
-	PyDict_SetItemString(py_domain_info, "trust_auth_outgoing",
-			PyBytes_FromStringAndSize((char *)td->trust_auth_outgoing.data,
-						td->trust_auth_outgoing.length));
-	PyDict_SetItemString(py_domain_info, "trust_direction",
-			PyInt_FromLong(td->trust_direction));
-	PyDict_SetItemString(py_domain_info, "trust_type",
-			PyInt_FromLong(td->trust_type));
-	PyDict_SetItemString(py_domain_info, "trust_attributes",
-			PyInt_FromLong(td->trust_attributes));
-	PyDict_SetItemString(py_domain_info, "trust_forest_trust_info",
-			PyBytes_FromStringAndSize((char *)td->trust_forest_trust_info.data,
-						td->trust_forest_trust_info.length));
+	py_domain_info = Py_BuildValue(
+		"{s:s, s:s, s:O,"
+			" s:"PYARG_BYTES_LEN","
+			" s:"PYARG_BYTES_LEN","
+			" s:l, s:l, s:l,"
+			" s:"PYARG_BYTES_LEN"}",
+		"domain_name", td->domain_name,
+		"netbios_name", td->netbios_name,
+		"security_identifier", py_sid,
+		"trust_auth_incoming",
+			(const char *)td->trust_auth_incoming.data,
+			td->trust_auth_incoming.length,
+		"trust_auth_outgoing",
+			(const char *)td->trust_auth_outgoing.data,
+			td->trust_auth_outgoing.length,
+		"trust_direction", td->trust_direction,
+		"trust_type", td->trust_type,
+		"trust_attributes", td->trust_attributes,
+		"trust_forest_trust_info",
+			(const char *)td->trust_forest_trust_info.data,
+			td->trust_forest_trust_info.length);
+	Py_CLEAR(py_sid);
 
 	talloc_free(frame);
 	return py_domain_info;
@@ -3373,7 +3382,7 @@ static PyObject *py_pdb_enum_trusted_domains(PyObject *self, PyObject *args)
 	NTSTATUS status;
 	struct pdb_methods *methods;
 	uint32_t num_domains;
-	struct pdb_trusted_domain **td_info, *td;
+	struct pdb_trusted_domain **td_info;
 	PyObject *py_td_info, *py_domain_info;
 	int i;
 
@@ -3397,43 +3406,42 @@ static PyObject *py_pdb_enum_trusted_domains(PyObject *self, PyObject *args)
 
 	for (i=0; i<num_domains; i++) {
 		int res = 0;
-		py_domain_info = PyDict_New();
+		struct pdb_trusted_domain *td = td_info[i];
+		PyObject *py_sid =
+			pytalloc_steal(dom_sid_Type, &td->security_identifier);
+
+		py_domain_info = Py_BuildValue(
+			"{s:s, s:s, s:O,"
+				" s:"PYARG_BYTES_LEN","
+				" s:"PYARG_BYTES_LEN","
+				" s:l, s:l, s:l,"
+				" s:"PYARG_BYTES_LEN"}",
+			"domain_name", td->domain_name,
+			"netbios_name", td->netbios_name,
+			"security_identifier", py_sid,
+			"trust_auth_incoming",
+				(const char *)td->trust_auth_incoming.data,
+				td->trust_auth_incoming.length,
+			"trust_auth_outgoing",
+				(const char *)td->trust_auth_outgoing.data,
+				td->trust_auth_outgoing.length,
+			"trust_direction", td->trust_direction,
+			"trust_type", td->trust_type,
+			"trust_attributes", td->trust_attributes,
+			"trust_forest_trust_info",
+				(const char *)td->trust_forest_trust_info.data,
+				td->trust_forest_trust_info.length);
+		Py_CLEAR(py_sid);
+
 		if (py_domain_info == NULL) {
-			PyErr_NoMemory();
-			Py_DECREF(py_td_info);
-			talloc_free(frame);
-			return NULL;
+			Py_CLEAR(py_td_info);
+			break;
 		}
-
-		td = td_info[i];
-
-		PyDict_SetItemString(py_domain_info, "domain_name",
-				PyStr_FromString(td->domain_name));
-		PyDict_SetItemString(py_domain_info, "netbios_name",
-				PyStr_FromString(td->netbios_name));
-		PyDict_SetItemString(py_domain_info, "security_identifier",
-				pytalloc_steal(dom_sid_Type, &td->security_identifier));
-		PyDict_SetItemString(py_domain_info, "trust_auth_incoming",
-				PyBytes_FromStringAndSize((const char *)td->trust_auth_incoming.data,
-							td->trust_auth_incoming.length));
-		PyDict_SetItemString(py_domain_info, "trust_auth_outgoing",
-				PyBytes_FromStringAndSize((const char *)td->trust_auth_outgoing.data,
-							td->trust_auth_outgoing.length));
-		PyDict_SetItemString(py_domain_info, "trust_direction",
-				PyInt_FromLong(td->trust_direction));
-		PyDict_SetItemString(py_domain_info, "trust_type",
-				PyInt_FromLong(td->trust_type));
-		PyDict_SetItemString(py_domain_info, "trust_attributes",
-				PyInt_FromLong(td->trust_attributes));
-		PyDict_SetItemString(py_domain_info, "trust_forest_trust_info",
-				PyBytes_FromStringAndSize((const char *)td->trust_forest_trust_info.data,
-							td->trust_forest_trust_info.length));
 		res = PyList_Append(py_td_info, py_domain_info);
 		Py_CLEAR(py_domain_info);
 		if (res == -1) {
-			Py_CLEAR(py_domain_info);
-			talloc_free(frame);
-			return NULL;
+			Py_CLEAR(py_td_info);
+			break;
 		}
 	}
 
@@ -3484,23 +3492,24 @@ static PyObject *py_pdb_get_secret(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	py_secret = PyDict_New();
+	py_secret = Py_BuildValue(
+		"{s:"PYARG_BYTES_LEN","
+			" s:K"
+			" s:"PYARG_BYTES_LEN","
+			" s:K, s:O}",
+		"secret_current", (const char*)secret_current.data,
+				secret_current.length,
+		"secret_current_lastchange", secret_current_lastchange,
+		"secret_old", (const char*)secret_old.data,
+				secret_old.length,
+		"secret_old_lastchange", secret_old_lastchange,
+		"sd", py_sd);
+
+	Py_CLEAR(py_sd);
 	if (py_secret == NULL) {
-		PyErr_NoMemory();
-		Py_DECREF(py_sd);
 		talloc_free(frame);
 		return NULL;
 	}
-
-	PyDict_SetItemString(py_secret, "secret_current",
-			PyBytes_FromStringAndSize((const char*)secret_current.data, secret_current.length));
-	PyDict_SetItemString(py_secret, "secret_current_lastchange",
-			PyLong_FromUnsignedLongLong(secret_current_lastchange));
-	PyDict_SetItemString(py_secret, "secret_old",
-			PyBytes_FromStringAndSize((const char*)secret_old.data, secret_old.length));
-	PyDict_SetItemString(py_secret, "secret_old_lastchange",
-			PyLong_FromUnsignedLongLong(secret_old_lastchange));
-	PyDict_SetItemString(py_secret, "sd", py_sd);
 
 	talloc_free(frame);
 	return py_secret;
@@ -3817,12 +3826,15 @@ static PyObject *py_passdb_backends(PyObject *self, PyObject *unused)
 		PyObject *entry_name = PyStr_FromString(entry->name);
 		if (entry_name) {
 			res = PyList_Append(py_blist, entry_name);
+		} else {
+			Py_CLEAR(entry_name);
+			Py_CLEAR(py_blist);
+			break;
 		}
 		Py_CLEAR(entry_name);
 		if (res == -1) {
 			Py_CLEAR(py_blist);
-			talloc_free(frame);
-			return NULL;
+			break;
 		}
 		entry = entry->next;
 	}

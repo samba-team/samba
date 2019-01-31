@@ -34,6 +34,7 @@ static void PyType_AddMethods(PyTypeObject *type, PyMethodDef *methods)
                         descr = PyDescr_NewMethod(type, &methods[i]);
                 PyDict_SetItemString(dict, methods[i].ml_name,
                                      descr);
+		Py_CLEAR(descr);
         }
 }
 

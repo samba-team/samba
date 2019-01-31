@@ -880,11 +880,10 @@ static PyObject *py_dsdb_load_partition_usn(PyObject *self, PyObject *args)
 
 	talloc_free(mem_ctx);
 
-	result = PyDict_New();
-
-	PyDict_SetItemString(result, "uSNHighest", PyInt_FromLong((uint64_t)highest_uSN));
-	PyDict_SetItemString(result, "uSNUrgent", PyInt_FromLong((uint64_t)urgent_uSN));
-
+	result = Py_BuildValue(
+			"{s:l, s:l}",
+			"uSNHighest", (uint64_t)highest_uSN,
+			"uSNUrgent", (uint64_t)urgent_uSN);
 
 	return result;
 }
