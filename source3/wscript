@@ -1403,6 +1403,8 @@ main() {
         conf.CHECK_HEADERS('sys/quota.h')
         # For quotas on BSD systems
         conf.CHECK_HEADERS('ufs/ufs/quota.h')
+        # For quotas on AIX systems
+        conf.CHECK_HEADERS('jfs/quota.h')
         # For quotas on Linux XFS filesystems
         if conf.CHECK_HEADERS('xfs/xqm.h'):
             conf.DEFINE('HAVE_XFS_QUOTAS', '1')
