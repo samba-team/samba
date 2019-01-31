@@ -161,10 +161,13 @@ sub check_or_start($$$)
 			@preargs = split(/ /,$ENV{SAMBA_VALGRIND});
 		}
 
+		if (defined($process_model)) {
+			push @optargs, ("-M", $process_model);
+		}
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@preargs, Samba::bindir_path($self, "samba"), "-M", $process_model, "-i", "--no-process-group", "--maximum-runtime=$self->{server_maxtime}", $env_vars->{CONFIGURATION}, @optargs) or die("Unable to start samba: $!");
+		exec(@preargs, Samba::bindir_path($self, "samba"), "-i", "--no-process-group", "--maximum-runtime=$self->{server_maxtime}", $env_vars->{CONFIGURATION}, @optargs) or die("Unable to start samba: $!");
 	}
 	$env_vars->{SAMBA_PID} = $pid;
 	print "DONE ($pid)\n";
