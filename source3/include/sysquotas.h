@@ -69,7 +69,17 @@ typedef struct _SMB_DISK_QUOTA {
 } SMB_DISK_QUOTA;
 
 #ifndef QUOTABLOCK_SIZE
+#if defined(DQBSIZE)                          /* AIX */
+#define QUOTABLOCK_SIZE    DQBSIZE
+#elif defined(QIF_DQBLKSIZE)                  /* Linux */
+#define QUOTABLOCK_SIZE    QIF_DQBLKSIZE
+#elif defined(HAVE_STRUCT_DQBLK_DQB_CURBYTES) /*Darwin */
+#define QUOTABLOCK_SIZE 1
+#elif defined(HAVE_UFS_UFS_QUOTA_H)           /* BSDs */
+#define QUOTABLOCK_SIZE 512
+#else
 #define QUOTABLOCK_SIZE 1024
 #endif
+#endif /* QUOTABLOCK_SIZE */
 
 #endif /*_SYSQUOTAS_H */
