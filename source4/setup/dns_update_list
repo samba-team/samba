@@ -2,6 +2,7 @@
 # dynamic DNS update. It is processed by the samba_dnsupdate script
 A                      ${HOSTNAME}                                           $IP
 AAAA                   ${HOSTNAME}                                           $IP
+${IF_DC}CNAME          ${NTDSGUID}._msdcs.${DNSFOREST}                       ${HOSTNAME}
 ${IF_RWDNS_DOMAIN}NS   ${DNSDOMAIN}                                          ${HOSTNAME}
 ${IF_RWDNS_FOREST}NS   ${DNSFOREST}                                          ${HOSTNAME}
 ${IF_RWDNS_FOREST}NS   _msdcs.${DNSFOREST}                                   ${HOSTNAME}
@@ -22,7 +23,6 @@ ${IF_RWDC}SRV          _kerberos._tcp.dc._msdcs.${DNSDOMAIN}                 ${H
 ${IF_RWDC}SRV          _kpasswd._tcp.${DNSDOMAIN}                            ${HOSTNAME} 464
 ${IF_RWDC}SRV          _kpasswd._udp.${DNSDOMAIN}                            ${HOSTNAME} 464
 # RW and RO domain controller
-${IF_DC}CNAME          ${NTDSGUID}._msdcs.${DNSFOREST}                       ${HOSTNAME}
 ${IF_DC}SRV            _ldap._tcp.${SITE}._sites.${DNSDOMAIN}                ${HOSTNAME} 389
 ${IF_DC}SRV            _ldap._tcp.${SITE}._sites.dc._msdcs.${DNSDOMAIN}      ${HOSTNAME} 389
 ${IF_DC}SRV            _kerberos._tcp.${SITE}._sites.${DNSDOMAIN}            ${HOSTNAME} 88
