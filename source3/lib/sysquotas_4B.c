@@ -47,6 +47,10 @@
 #include <ufs/ufs/quota.h>
 #endif
 
+#ifdef HAVE_JFS_QUOTA_H
+#include <jfs/quota.h>
+#endif
+
 #if defined(DARWINOS)
 /* WorkARound broken HFS access checks in hfs_quotactl. Darwin only(?) */
 #define HFS_QUOTACTL_WAR 1
