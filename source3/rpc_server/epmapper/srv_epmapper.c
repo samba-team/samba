@@ -51,8 +51,8 @@ struct dcesrv_iface_list {
  * An endpoint can serve multiple rpc services interfaces.
  * For example \\pipe\netlogon can be used by lsarpc and netlogon.
  */
-struct dcesrv_endpoint {
-	struct dcesrv_endpoint *next, *prev;
+struct dcesrv_epm_endpoint {
+	struct dcesrv_epm_endpoint *next, *prev;
 
 	/* The type and the location of the endpoint */
 	struct dcerpc_binding *ep_description;
@@ -73,7 +73,7 @@ struct rpc_eps {
 	uint32_t count;
 };
 
-static struct dcesrv_endpoint *endpoint_table;
+static struct dcesrv_epm_endpoint *endpoint_table = NULL;
 
 /*
  * Check if the UUID and if_version match to an interface.
@@ -87,7 +87,7 @@ static bool interface_match(const struct dcesrv_iface *if1,
 /*
  * Find the interface operations on an endpoint.
  */
-static const struct dcesrv_iface *find_interface(const struct dcesrv_endpoint *endpoint,
+static const struct dcesrv_iface *find_interface(const struct dcesrv_epm_endpoint *endpoint,
 						 const struct dcesrv_iface *iface)
 {
 	struct dcesrv_iface_list *iflist;
@@ -112,7 +112,7 @@ static bool interface_match_by_uuid(const struct dcesrv_iface *iface,
 }
 #endif
 
-static struct dcesrv_iface_list *find_interface_list(const struct dcesrv_endpoint *endpoint,
+static struct dcesrv_iface_list *find_interface_list(const struct dcesrv_epm_endpoint *endpoint,
 						     const struct dcesrv_iface *iface)
 {
 	struct dcesrv_iface_list *iflist;
@@ -182,9 +182,9 @@ static bool endpoints_match(const struct dcerpc_binding *b1,
 	return true;
 }
 
-static struct dcesrv_endpoint *find_endpoint(struct dcesrv_endpoint *endpoint_list,
+static struct dcesrv_epm_endpoint *find_endpoint(struct dcesrv_epm_endpoint *endpoint_list,
 					     struct dcerpc_binding *ep_description) {
-	struct dcesrv_endpoint *ep;
+	struct dcesrv_epm_endpoint *ep = NULL;
 
 	for (ep = endpoint_list; ep != NULL; ep = ep->next) {
 		if (endpoints_match(ep->ep_description, ep_description)) {
@@ -199,13 +199,13 @@ static struct dcesrv_endpoint *find_endpoint(struct dcesrv_endpoint *endpoint_li
  * Build a list of all interfaces handled by all endpoint servers.
  */
 static uint32_t build_ep_list(TALLOC_CTX *mem_ctx,
-			      struct dcesrv_endpoint *endpoint_list,
+			      struct dcesrv_epm_endpoint *endpoint_list,
 			      const struct GUID *uuid,
 			      const char *srv_addr,
 			      struct dcesrv_ep_iface **peps)
 {
 	struct dcesrv_ep_iface *eps = NULL;
-	struct dcesrv_endpoint *d;
+	struct dcesrv_epm_endpoint *d = NULL;
 	uint32_t total = 0;
 	NTSTATUS status;
 
@@ -337,10 +337,10 @@ bool srv_epmapper_delete_endpoints(struct pipes_struct *p)
 
 void srv_epmapper_cleanup(void)
 {
-	struct dcesrv_endpoint *ep = endpoint_table;
+	struct dcesrv_epm_endpoint *ep = endpoint_table;
 
 	while (ep) {
-		struct dcesrv_endpoint *next = ep->next;
+		struct dcesrv_epm_endpoint *next = ep->next;
 
 		DLIST_REMOVE(endpoint_table, ep);
 		TALLOC_FREE(ep);
@@ -362,7 +362,7 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 	NTSTATUS status;
 	uint32_t i;
 	struct dcerpc_binding *b;
-	struct dcesrv_endpoint *ep;
+	struct dcesrv_epm_endpoint *ep = NULL;
 	struct dcesrv_iface_list *iflist;
 	struct dcesrv_iface *iface;
 	bool add_ep;
@@ -408,7 +408,7 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 		ep = find_endpoint(endpoint_table, b);
 		if (ep == NULL) {
 			/* No entry found, create it */
-			ep = talloc_zero(NULL, struct dcesrv_endpoint);
+			ep = talloc_zero(NULL, struct dcesrv_epm_endpoint);
 			if (ep == NULL) {
 				rc = EPMAPPER_STATUS_NO_MEMORY;
 				goto done;
@@ -499,7 +499,7 @@ error_status_t _epm_Delete(struct pipes_struct *p,
 	NTSTATUS status;
 	uint32_t i;
 	struct dcerpc_binding *b;
-	struct dcesrv_endpoint *ep;
+	struct dcesrv_epm_endpoint *ep = NULL;
 	struct dcesrv_iface iface;
 	struct dcesrv_iface_list *iflist;
 
