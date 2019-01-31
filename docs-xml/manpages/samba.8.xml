@@ -116,7 +116,12 @@
 			<para>A process is created for each Samba service,
 			and for those services that support it (currently only
 			LDAP and NETLOGON) a new processes is started
-			for each new client connection.</para></listitem>
+			for each new client connection.</para>
+
+			<para>Historically, this was the 'standard' way Samba behaved
+			up until v4.10. Note that this model can be resource intensive
+			if you have a large number of client connections.</para>
+			</listitem>
 
 			<listitem><para><emphasis>prefork</emphasis></para>
 			<para>The default. A process is started for each Samba service,
