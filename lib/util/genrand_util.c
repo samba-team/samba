@@ -37,6 +37,17 @@ _PUBLIC_ uint32_t generate_random(void)
 	return IVAL(v, 0);
 }
 
+/**
+  @brief generate a random uint64
+**/
+_PUBLIC_ uint64_t generate_random_u64(void)
+{
+	uint8_t v[8];
+	generate_random_buffer(v, 8);
+	return BVAL(v, 0);
+}
+
+
 
 /**
   Microsoft composed the following rules (among others) for quality

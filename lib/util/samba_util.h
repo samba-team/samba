@@ -93,6 +93,11 @@ _PUBLIC_ int sys_getnameinfo(const struct sockaddr *psa,
 _PUBLIC_ uint32_t generate_random(void);
 
 /**
+  generate a single random uint64_t
+**/
+_PUBLIC_ uint64_t generate_random_u64(void);
+
+/**
   very basic password quality checker
 **/
 _PUBLIC_ bool check_password_quality(const char *s);
