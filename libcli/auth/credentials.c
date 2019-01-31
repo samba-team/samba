@@ -264,11 +264,24 @@ void netlogon_creds_des_decrypt(struct netlogon_creds_CredentialState *creds, st
 */
 void netlogon_creds_arcfour_crypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len)
 {
-	DATA_BLOB session_key = data_blob(creds->session_key, 16);
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t session_key = {
+		.data = creds->session_key,
+		.size = sizeof(creds->session_key),
+	};
+	int rc;
 
-	arcfour_crypt_blob(data, len, &session_key);
-
-	data_blob_free(&session_key);
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&session_key,
+				NULL);
+	if (rc < 0) {
+		return;
+	}
+	gnutls_cipher_encrypt(cipher_hnd,
+			      data,
+			      len);
+	gnutls_cipher_deinit(cipher_hnd);
 }
 
 /*
