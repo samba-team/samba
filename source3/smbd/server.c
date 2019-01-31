@@ -2080,7 +2080,9 @@ extern void build_options(bool screen);
 		}
 	}
 
-	if (!dcesrv_ep_setup(ev_ctx, msg_ctx)) {
+	status = dcesrv_ep_setup(ev_ctx, msg_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to setup RPC server: %s\n", nt_errstr(status));
 		exit_daemon("Samba cannot setup ep pipe", EACCES);
 	}
 

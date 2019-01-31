@@ -78,7 +78,12 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 		return true;
 	}
 
-	return rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
+	status = rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	return true;
 }
 
 static struct rpc_module_fns rpc_module_mdssvc_fns = {
