@@ -61,6 +61,10 @@ extern int quotactl(int cmd, const char *special, uid_t uid, void *addr);
 #include <ufs/ufs/quota.h>
 #endif
 
+#if defined(HAVE_JFS_QUOTA_H)
+#include <jfs/quota.h>
+#endif
+
  int autoconf_quota(void)
 {
 	int ret = -1;
