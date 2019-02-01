@@ -29,7 +29,7 @@
 		<arg choice="opt">-U username[%password]</arg>
 		<arg choice="opt">-W workgroup</arg>
 		<arg choice="opt">-I destinationIP</arg>
-		<arg choice="req">server</arg>
+		<arg choice="req">BINDING-STRING|HOST</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -52,12 +52,72 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>server</term>
-		<listitem><para>NetBIOS name of Server to which to connect. 
-		The server can be  any SMB/CIFS server.  The name is 
-		resolved using the <smbconfoption name="name resolve order"/> line from <citerefentry><refentrytitle>smb.conf</refentrytitle>
-	<manvolnum>5</manvolnum></citerefentry>.</para></listitem>
-	</varlistentry>
+		<term>BINDING-STRING|HOST</term>
+		<listitem>
+			<para>When connecting to a dcerpc service you need to
+			specify a binding string.</para>
+
+			<para>The format is:</para>
+
+			<para>TRANSPORT:host[options]</para>
+
+			<para>where TRANSPORT is either ncacn_np (named pipes) for SMB or
+			ncacn_ip_tcp for DCERPC over TCP/IP.</para>
+
+			<para>"host" is an IP or hostname or netbios name. If the binding
+			string identifies the server side of an endpoint, "host" may be
+			an empty string. See below for more details.</para>
+
+			<para>"options" can include a SMB pipe name if using the ncacn_np
+			transport or a TCP port number if using the ncacn_ip_tcp transport,
+			otherwise they will be auto-determined.</para>
+
+			<para>Examples:</para>
+
+			<itemizedlist>
+			<listitem><para><parameter moreinfo="none">ncacn_ip_tcp:samba.example.com[1024]</parameter></para></listitem>
+			<listitem><para><parameter moreinfo="none">ncacn_ip_tcp:samba.example.com[sign,seal,krb5]</parameter></para></listitem>
+			<listitem><para><parameter moreinfo="none">ncacn_ip_tcp:samba.example.com[sign,spnego]</parameter></para></listitem>
+			<listitem><para><parameter moreinfo="none">ncacn_np:samba.example.com</parameter></para></listitem>
+			<listitem><para><parameter moreinfo="none">ncacn_np:samba.example.com[samr]</parameter></para></listitem>
+			<listitem><para><parameter moreinfo="none">ncacn_np:samba.example.com[samr,sign,print]</parameter></para></listitem>
+			<listitem><para><parameter moreinfo="none">ncalrpc:/path/to/unix/socket</parameter></para></listitem>
+			<listitem><para><parameter moreinfo="none">//SAMBA</parameter></para></listitem>
+			</itemizedlist>
+
+			<para>The supported transports are:</para>
+
+			<itemizedlist>
+			<listitem><para><parameter moreinfo="none">ncacn_np</parameter> - Connect using named pipes</para></listitem>
+			<listitem><para><parameter moreinfo="none">ncacn_ip_tcp</parameter> - Connect over TCP/IP</para></listitem>
+			<listitem><para><parameter moreinfo="none">ncalrpc</parameter> - Connect over local RPC (unix sockets)</para></listitem>
+			</itemizedlist>
+
+			<para>The supported options are:</para>
+
+			<itemizedlist>
+			<listitem><para><parameter moreinfo="none">sign</parameter> - Use RPC integrety autentication level</para></listitem>
+			<listitem><para><parameter moreinfo="none">seal</parameter> - Enable RPC privacy (encryption) autentication level</para></listitem>
+			<listitem><para><parameter moreinfo="none">connect</parameter> - Use RPC connect level authentication (auth, but no sign or seal)</para></listitem>
+			<listitem><para><parameter moreinfo="none">packet</parameter> - Use RPC packet authentication level</para></listitem>
+
+			<listitem><para><parameter moreinfo="none">spnego</parameter> - Use SPNEGO instead of NTLMSSP authentication</para></listitem>
+			<listitem><para><parameter moreinfo="none">ntlm</parameter> - Use plain NTLM instead of SPNEGO or NTLMSSP</para></listitem>
+			<listitem><para><parameter moreinfo="none">krb5</parameter> - Use Kerberos instead of NTLMSSP authentication</para></listitem>
+			<listitem><para><parameter moreinfo="none">schannel</parameter> - Create a schannel connection</para></listitem>
+
+			<listitem><para><parameter moreinfo="none">smb1</parameter> - Use SMB1 for named pipes</para></listitem>
+			<listitem><para><parameter moreinfo="none">smb2</parameter> - Use SMB2/3 for named pipes</para></listitem>
+
+			<listitem><para><parameter moreinfo="none">validate</parameter> - Enable the NDR validator</para></listitem>
+			<listitem><para><parameter moreinfo="none">print</parameter> - Enable debug output of packets</para></listitem>
+			<listitem><para><parameter moreinfo="none">padcheck</parameter> - Check reply data for non-zero pad bytes</para></listitem>
+			<listitem><para><parameter moreinfo="none">bigendian</parameter> - Use big endian for RPC</para></listitem>
+			<listitem><para><parameter moreinfo="none">ndr64</parameter> - Use NDR64 for RPC</para></listitem>
+			</itemizedlist>
+
+		</listitem>
+		</varlistentry>
 
 
 		<varlistentry>
