@@ -386,6 +386,9 @@ static NTSTATUS libnet_SetPassword_samr_handle_24(struct libnet_context *ctx, TA
 	struct samr_SetUserInfo2 sui;
 	union samr_UserInfo u_info;
 	DATA_BLOB session_key;
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t enc_session_key;
+	int rc;
 
 	if (r->samr_handle.in.info21) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -404,7 +407,28 @@ static NTSTATUS libnet_SetPassword_samr_handle_24(struct libnet_context *ctx, TA
 		return status;
 	}
 
-	arcfour_crypt_blob(u_info.info24.password.data, 516, &session_key);
+	enc_session_key = (gnutls_datum_t) {
+		.data = session_key.data,
+		.size = session_key.length,
+	};
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&enc_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto out;
+	}
+
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   u_info.info24.password.data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto out;
+	}
 
 	sui.in.user_handle = r->samr_handle.in.user_handle;
 	sui.in.info = &u_info;
@@ -421,6 +445,9 @@ static NTSTATUS libnet_SetPassword_samr_handle_24(struct libnet_context *ctx, TA
 					  "SetUserInfo2 level 24 for [%s] failed: %s",
 					  r->samr_handle.in.account_name, nt_errstr(status));
 	}
+
+out:
+	data_blob_clear(&session_key);
 	return status;
 }
 
