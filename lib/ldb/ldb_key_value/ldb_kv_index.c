@@ -1259,6 +1259,14 @@ static bool list_intersect(struct ldb_context *ldb,
 		return true;
 	}
 
+	/*
+	 * In both of the below we check for strict and in that
+	 * case do not optimise the intersection of this list,
+	 * we must never return an entry not in this
+	 * list.  This allows the index for
+	 * SCOPE_ONELEVEL to be trusted.
+	 */
+
 	/* the indexing code is allowed to return a longer list than
 	   what really matches, as all results are filtered by the
 	   full expression at the end - this shortcut avoids a lot of
@@ -1660,7 +1668,13 @@ static int ldb_kv_index_dn_one(struct ldb_module *module,
 			       struct dn_list *list,
 			       enum key_truncation *truncation)
 {
-	/* Ensure we do not shortcut on intersection for this list */
+	/*
+	 * Ensure we do not shortcut on intersection for this list.
+	 * We must never be lazy and return an entry not in this
+	 * list.  This allows the index for
+	 * SCOPE_ONELEVEL to be trusted.
+	 */
+
 	list->strict = true;
 	return ldb_kv_index_dn_attr(
 	    module, ldb_kv, LDB_KV_IDXONE, parent_dn, list, truncation);
