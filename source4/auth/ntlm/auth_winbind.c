@@ -174,7 +174,7 @@ static struct tevent_req *winbind_check_password_send(TALLOC_CTX *mem_ctx,
 
 	identity_info->domain_name.string	= user_info->client.domain_name;
 	identity_info->parameter_control	= user_info->logon_parameters; /* see MSV1_0_* */
-	identity_info->logon_id			= 0;
+	identity_info->logon_id			= user_info->logon_id;
 	identity_info->account_name.string	= user_info->client.account_name;
 	identity_info->workstation.string	= user_info->workstation_name;
 

@@ -1337,7 +1337,9 @@ done:
 
 static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 					  uint32_t logon_parameters,
-					  const char *domain, const char *user,
+					  const char *domain,
+					  const char *user,
+					  const uint64_t logon_id,
 					  const DATA_BLOB *challenge,
 					  const DATA_BLOB *lm_resp,
 					  const DATA_BLOB *nt_resp,
@@ -1387,6 +1389,7 @@ static NTSTATUS winbindd_dual_auth_passdb(TALLOC_CTX *mem_ctx,
 	}
 
 	user_info->logon_parameters = logon_parameters;
+	user_info->logon_id = logon_id;
 
 	/* We don't want any more mapping of the username */
 	user_info->mapped_state = True;
@@ -1452,6 +1455,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 					    const char *password,
 					    const char *domainname,
 					    const char *workstation,
+					    const uint64_t logon_id,
 					    bool plaintext_given,
 					    const uint8_t chal[8],
 					    DATA_BLOB lm_response,
@@ -1564,6 +1568,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				username,
 				password,
 				workstation,
+				logon_id,
 				logon_type_i,
 				authoritative,
 				flags,
@@ -1578,6 +1583,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				username,
 				domainname,
 				workstation,
+				logon_id,
 				lm_response,
 				nt_response,
 				logon_type_i,
@@ -1594,6 +1600,7 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 				username,
 				domainname,
 				workstation,
+				logon_id,
 				chal,
 				lm_response,
 				nt_response,
@@ -1683,6 +1690,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 	struct winbindd_domain *domain,
 	const char *user,
 	const char *pass,
+	uint64_t logon_id,
 	uint32_t request_flags,
 	uint16_t *_validation_level,
 	union netr_Validation **_validation)
@@ -1760,6 +1768,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 
 		result = winbindd_dual_auth_passdb(
 			talloc_tos(), 0, name_domain, name_user,
+			logon_id,
 			&chal_blob, &lm_resp, &nt_resp,
 			true, /* interactive */
 			&authoritative,
@@ -1795,6 +1804,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 					     pass,
 					     name_domain,
 					     lp_netbios_name(),
+					     logon_id,
 					     true, /* plaintext_given */
 					     NULL,
 					     data_blob_null, data_blob_null,
@@ -1910,6 +1920,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	union netr_Validation *validation = NULL;
 	NTSTATUS name_map_status = NT_STATUS_UNSUCCESSFUL;
 	bool ok;
+	uint64_t logon_id = 0;
 
 	/* Ensure null termination */
 	state->request->data.auth.user[sizeof(state->request->data.auth.user)-1]='\0';
@@ -1917,6 +1928,10 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 	/* Ensure null termination */
 	state->request->data.auth.pass[sizeof(state->request->data.auth.pass)-1]='\0';
 
+	/*
+	 * Generate a logon_id for this session.
+	 */
+	logon_id = generate_random_u64();
 	DEBUG(3, ("[%5lu]: dual pam auth %s\n", (unsigned long)state->pid,
 		  state->request->data.auth.user));
 
@@ -2037,6 +2052,7 @@ sam_logon:
 			state->mem_ctx, domain,
 			state->request->data.auth.user,
 			state->request->data.auth.pass,
+			logon_id,
 			state->request->flags,
 			&validation_level,
 			&validation);
@@ -2246,6 +2262,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			       const char *name_user,
 			       const char *name_domain,
 			       const char *workstation,
+			       const uint64_t logon_id,
 			       const uint8_t chal[8],
 			       DATA_BLOB lm_response,
 			       DATA_BLOB nt_response,
@@ -2277,6 +2294,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 			talloc_tos(),
 			logon_parameters,
 			name_domain, name_user,
+			logon_id,
 			&chal_blob, &lm_response, &nt_response,
 			interactive,
 			authoritative,
@@ -2310,6 +2328,7 @@ NTSTATUS winbind_dual_SamLogon(struct winbindd_domain *domain,
 					     name_domain,
 					     /* Bug #3248 - found by Stefan Burkei. */
 					     workstation, /* We carefully set this above so use it... */
+					     logon_id,
 					     false, /* plaintext_given */
 					     chal,
 					     lm_response,
@@ -2411,6 +2430,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	const char *name_user = NULL;
 	const char *name_domain = NULL;
 	const char *workstation;
+	uint64_t logon_id = 0;
 	uint8_t authoritative = 0;
 	uint32_t flags = 0;
 	uint16_t validation_level;
@@ -2427,6 +2447,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	name_user = state->request->data.auth_crap.user;
 	name_domain = state->request->data.auth_crap.domain;
 	workstation = state->request->data.auth_crap.workstation;
+	logon_id = generate_random_u64();
 
 	DEBUG(3, ("[%5lu]: pam auth crap domain: %s user: %s\n", (unsigned long)state->pid,
 		  name_domain, name_user));
@@ -2464,6 +2485,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 				       name_domain,
 				       /* Bug #3248 - found by Stefan Burkei. */
 				       workstation, /* We carefully set this above so use it... */
+				       logon_id,
 				       state->request->data.auth_crap.chal,
 				       lm_resp,
 				       nt_resp,

@@ -500,6 +500,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 	uint32_t flags = 0;
 	uint16_t validation_level;
 	union netr_Validation *validation = NULL;
+	uint64_t logon_id = 0;
 
 	/* Check arguments */
 
@@ -525,6 +526,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
+	logon_id = generate_random_u64();
 
 	/* Perform the sam logon */
 
@@ -536,6 +538,7 @@ static NTSTATUS cmd_netlogon_sam_logon(struct rpc_pipe_client *cli,
 						username,
 						password,
 						workstation,
+						logon_id,
 						logon_type,
 						&authoritative,
 						&flags,
