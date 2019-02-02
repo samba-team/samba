@@ -27,10 +27,24 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include <tevent.h>
 #include "../lib/util/tevent_unix.h"
-#include "../lib/util/util_runcmd.h"
 #include "../lib/util/tfork.h"
 #include "../lib/util/sys_rw.h"
+
+struct samba_runcmd_state {
+	int stdout_log_level;
+	int stderr_log_level;
+	struct tevent_fd *fde_stdout;
+	struct tevent_fd *fde_stderr;
+	struct tevent_fd *fde_status;
+	int fd_stdin, fd_stdout, fd_stderr, fd_status;
+	char *arg0;
+	pid_t pid;
+	struct tfork *tfork;
+	char buf[1024];
+	uint16_t buf_used;
+};
 
 static void samba_runcmd_cleanup_fn(struct tevent_req *req,
 				    enum tevent_req_state req_state)
