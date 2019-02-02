@@ -1,7 +1,7 @@
 /*
    CTDB mutex helper using Ceph librados locks
 
-   Copyright (C) David Disseldorp 2016
+   Copyright (C) David Disseldorp 2016-2018
 
    Based on ctdb_mutex_fcntl_helper.c, which is:
    Copyright (C) Martin Schwenke 2015
@@ -29,6 +29,11 @@
 #define CTDB_MUTEX_CEPH_LOCK_NAME	"ctdb_reclock_mutex"
 #define CTDB_MUTEX_CEPH_LOCK_COOKIE	CTDB_MUTEX_CEPH_LOCK_NAME
 #define CTDB_MUTEX_CEPH_LOCK_DESC	"CTDB recovery lock"
+/*
+ * During failover it may take up to <lock duration> seconds before the
+ * newly elected recovery master can obtain the lock.
+ */
+#define CTDB_MUTEX_CEPH_LOCK_DURATION_SECS_DEFAULT	10
 
 #define CTDB_MUTEX_STATUS_HOLDING "0"
 #define CTDB_MUTEX_STATUS_CONTENDED "1"
@@ -88,24 +93,20 @@ static int ctdb_mutex_rados_ctx_create(const char *ceph_cluster_name,
 	return 0;
 }
 
-static void ctdb_mutex_rados_ctx_destroy(rados_t ceph_cluster,
-					 rados_ioctx_t ioctx)
-{
-	rados_ioctx_destroy(ioctx);
-	rados_shutdown(ceph_cluster);
-}
-
 static int ctdb_mutex_rados_lock(rados_ioctx_t *ioctx,
-				 const char *oid)
+				 const char *oid,
+				 uint64_t lock_duration_s,
+				 uint8_t flags)
 {
 	int ret;
+	struct timeval tv = { lock_duration_s, 0 };
 
 	ret = rados_lock_exclusive(ioctx, oid,
-                                   CTDB_MUTEX_CEPH_LOCK_NAME,
+				   CTDB_MUTEX_CEPH_LOCK_NAME,
 				   CTDB_MUTEX_CEPH_LOCK_COOKIE,
 				   CTDB_MUTEX_CEPH_LOCK_DESC,
-                                   NULL, /* infinite duration */
-                                   0);
+				   lock_duration_s == 0 ? NULL : &tv,
+				   flags);
 	if ((ret == -EEXIST) || (ret == -EBUSY)) {
 		/* lock contention */
 		return ret;
@@ -145,10 +146,13 @@ struct ctdb_mutex_rados_state {
 	const char *ceph_auth_name;
 	const char *pool_name;
 	const char *object;
+	uint64_t lock_duration_s;
 	int ppid;
 	struct tevent_context *ev;
-	struct tevent_signal *sig_ev;
-	struct tevent_timer *timer_ev;
+	struct tevent_signal *sigterm_ev;
+	struct tevent_signal *sigint_ev;
+	struct tevent_timer *ppid_timer_ev;
+	struct tevent_timer *renew_timer_ev;
 	rados_t ceph_cluster;
 	rados_ioctx_t ioctx;
 };
@@ -161,29 +165,24 @@ static void ctdb_mutex_rados_sigterm_cb(struct tevent_context *ev,
 					void *private_data)
 {
 	struct ctdb_mutex_rados_state *cmr_state = private_data;
-	int ret;
+	int ret = 0;
 
 	if (!cmr_state->holding_mutex) {
 		fprintf(stderr, "Sigterm callback invoked without mutex!\n");
 		ret = -EINVAL;
-		goto err_ctx_cleanup;
 	}
 
-	ret = ctdb_mutex_rados_unlock(cmr_state->ioctx, cmr_state->object);
-err_ctx_cleanup:
-	ctdb_mutex_rados_ctx_destroy(cmr_state->ceph_cluster,
-				     cmr_state->ioctx);
 	talloc_free(cmr_state);
 	exit(ret ? 1 : 0);
 }
 
-static void ctdb_mutex_rados_timer_cb(struct tevent_context *ev,
-				      struct tevent_timer *te,
-				      struct timeval current_time,
-				      void *private_data)
+static void ctdb_mutex_rados_ppid_timer_cb(struct tevent_context *ev,
+					   struct tevent_timer *te,
+					   struct timeval current_time,
+					   void *private_data)
 {
 	struct ctdb_mutex_rados_state *cmr_state = private_data;
-	int ret;
+	int ret = 0;
 
 	if (!cmr_state->holding_mutex) {
 		fprintf(stderr, "Timer callback invoked without mutex!\n");
@@ -193,24 +192,79 @@ static void ctdb_mutex_rados_timer_cb(struct tevent_context *ev,
 
 	if ((kill(cmr_state->ppid, 0) == 0) || (errno != ESRCH)) {
 		/* parent still around, keep waiting */
-		cmr_state->timer_ev = tevent_add_timer(cmr_state->ev, cmr_state,
+		cmr_state->ppid_timer_ev = tevent_add_timer(cmr_state->ev,
+							    cmr_state,
 					       tevent_timeval_current_ofs(5, 0),
-						      ctdb_mutex_rados_timer_cb,
-						       cmr_state);
-		if (cmr_state->timer_ev == NULL) {
+						ctdb_mutex_rados_ppid_timer_cb,
+							    cmr_state);
+		if (cmr_state->ppid_timer_ev == NULL) {
 			fprintf(stderr, "Failed to create timer event\n");
 			/* rely on signal cb */
 		}
 		return;
 	}
 
-	/* parent ended, drop lock and exit */
-	ret = ctdb_mutex_rados_unlock(cmr_state->ioctx, cmr_state->object);
+	/* parent ended, drop lock (via destructor) and exit */
 err_ctx_cleanup:
-	ctdb_mutex_rados_ctx_destroy(cmr_state->ceph_cluster,
-				     cmr_state->ioctx);
 	talloc_free(cmr_state);
 	exit(ret ? 1 : 0);
+}
+
+#define USECS_IN_SEC 1000000
+
+static void ctdb_mutex_rados_lock_renew_timer_cb(struct tevent_context *ev,
+						 struct tevent_timer *te,
+						 struct timeval current_time,
+						 void *private_data)
+{
+	struct ctdb_mutex_rados_state *cmr_state = private_data;
+	struct timeval tv;
+	int ret;
+
+	ret = ctdb_mutex_rados_lock(cmr_state->ioctx, cmr_state->object,
+				    cmr_state->lock_duration_s,
+				    LIBRADOS_LOCK_FLAG_RENEW);
+	if (ret == -EBUSY) {
+		/* should never get -EEXIST on renewal */
+		fprintf(stderr, "Lock contention during renew: %d\n", ret);
+		goto err_ctx_cleanup;
+	} else if (ret < 0) {
+		fprintf(stderr, "Lock renew failed\n");
+		goto err_ctx_cleanup;
+	}
+
+	tv = tevent_timeval_current_ofs(0,
+			    cmr_state->lock_duration_s * (USECS_IN_SEC / 2));
+	cmr_state->renew_timer_ev = tevent_add_timer(cmr_state->ev,
+						       cmr_state,
+						       tv,
+					ctdb_mutex_rados_lock_renew_timer_cb,
+						       cmr_state);
+	if (cmr_state->renew_timer_ev == NULL) {
+		fprintf(stderr, "Failed to create timer event\n");
+		goto err_ctx_cleanup;
+	}
+
+	return;
+
+err_ctx_cleanup:
+	/* drop lock (via destructor) and exit */
+	talloc_free(cmr_state);
+	exit(1);
+}
+
+static int ctdb_mutex_rados_state_destroy(struct ctdb_mutex_rados_state *cmr_state)
+{
+	if (cmr_state->holding_mutex) {
+		ctdb_mutex_rados_unlock(cmr_state->ioctx, cmr_state->object);
+	}
+	if (cmr_state->ioctx != NULL) {
+		rados_ioctx_destroy(cmr_state->ioctx);
+	}
+	if (cmr_state->ceph_cluster != NULL) {
+		rados_shutdown(cmr_state->ceph_cluster);
+	}
+	return 0;
 }
 
 int main(int argc, char *argv[])
@@ -220,9 +274,10 @@ int main(int argc, char *argv[])
 
 	progname = argv[0];
 
-	if (argc != 5) {
+	if ((argc != 5) && (argc != 6)) {
 		fprintf(stderr, "Usage: %s <Ceph Cluster> <Ceph user> "
-				"<RADOS pool> <RADOS object>\n",
+				"<RADOS pool> <RADOS object> "
+				"[lock duration secs]\n",
 			progname);
 		ret = -EINVAL;
 		goto err_out;
@@ -240,10 +295,24 @@ int main(int argc, char *argv[])
 		goto err_out;
 	}
 
+	talloc_set_destructor(cmr_state, ctdb_mutex_rados_state_destroy);
 	cmr_state->ceph_cluster_name = argv[1];
 	cmr_state->ceph_auth_name = argv[2];
 	cmr_state->pool_name = argv[3];
 	cmr_state->object = argv[4];
+	if (argc == 6) {
+		/* optional lock duration provided */
+		char *endptr = NULL;
+		cmr_state->lock_duration_s = strtoull(argv[5], &endptr, 0);
+		if ((endptr == argv[5]) || (*endptr != '\0')) {
+			fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
+			ret = -EINVAL;
+			goto err_ctx_cleanup;
+		}
+	} else {
+		cmr_state->lock_duration_s
+			= CTDB_MUTEX_CEPH_LOCK_DURATION_SECS_DEFAULT;
+	}
 
 	cmr_state->ppid = getppid();
 	if (cmr_state->ppid == 1) {
@@ -257,7 +326,7 @@ int main(int argc, char *argv[])
 		 */
 		fprintf(stderr, "%s: PPID == 1\n", progname);
 		ret = -EPIPE;
-		goto err_state_free;
+		goto err_ctx_cleanup;
 	}
 
 	cmr_state->ev = tevent_context_init(cmr_state);
@@ -265,30 +334,40 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "tevent_context_init failed\n");
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 		ret = -ENOMEM;
-		goto err_state_free;
+		goto err_ctx_cleanup;
 	}
 
 	/* wait for sigterm */
-	cmr_state->sig_ev = tevent_add_signal(cmr_state->ev, cmr_state, SIGTERM, 0,
+	cmr_state->sigterm_ev = tevent_add_signal(cmr_state->ev, cmr_state, SIGTERM, 0,
 					      ctdb_mutex_rados_sigterm_cb,
 					      cmr_state);
-	if (cmr_state->sig_ev == NULL) {
-		fprintf(stderr, "Failed to create signal event\n");
+	if (cmr_state->sigterm_ev == NULL) {
+		fprintf(stderr, "Failed to create term signal event\n");
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 		ret = -ENOMEM;
-		goto err_state_free;
+		goto err_ctx_cleanup;
+	}
+
+	cmr_state->sigint_ev = tevent_add_signal(cmr_state->ev, cmr_state, SIGINT, 0,
+					      ctdb_mutex_rados_sigterm_cb,
+					      cmr_state);
+	if (cmr_state->sigint_ev == NULL) {
+		fprintf(stderr, "Failed to create int signal event\n");
+		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
+		ret = -ENOMEM;
+		goto err_ctx_cleanup;
 	}
 
 	/* periodically check parent */
-	cmr_state->timer_ev = tevent_add_timer(cmr_state->ev, cmr_state,
+	cmr_state->ppid_timer_ev = tevent_add_timer(cmr_state->ev, cmr_state,
 					       tevent_timeval_current_ofs(5, 0),
-					       ctdb_mutex_rados_timer_cb,
+					       ctdb_mutex_rados_ppid_timer_cb,
 					       cmr_state);
-	if (cmr_state->timer_ev == NULL) {
+	if (cmr_state->ppid_timer_ev == NULL) {
 		fprintf(stderr, "Failed to create timer event\n");
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 		ret = -ENOMEM;
-		goto err_state_free;
+		goto err_ctx_cleanup;
 	}
 
 	ret = ctdb_mutex_rados_ctx_create(cmr_state->ceph_cluster_name,
@@ -298,10 +377,12 @@ int main(int argc, char *argv[])
 					  &cmr_state->ioctx);
 	if (ret < 0) {
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
-		goto err_state_free;
+		goto err_ctx_cleanup;
 	}
 
-	ret = ctdb_mutex_rados_lock(cmr_state->ioctx, cmr_state->object);
+	ret = ctdb_mutex_rados_lock(cmr_state->ioctx, cmr_state->object,
+				    cmr_state->lock_duration_s,
+				    0);
 	if ((ret == -EEXIST) || (ret == -EBUSY)) {
 		fprintf(stdout, CTDB_MUTEX_STATUS_CONTENDED);
 		goto err_ctx_cleanup;
@@ -309,8 +390,28 @@ int main(int argc, char *argv[])
 		fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 		goto err_ctx_cleanup;
 	}
-
 	cmr_state->holding_mutex = true;
+
+	if (cmr_state->lock_duration_s != 0) {
+		/*
+		 * renew (reobtain) the lock, using a period of half the lock
+		 * duration. Convert to usecs to avoid rounding.
+		 */
+		struct timeval tv = tevent_timeval_current_ofs(0,
+			       cmr_state->lock_duration_s * (USECS_IN_SEC / 2));
+		cmr_state->renew_timer_ev = tevent_add_timer(cmr_state->ev,
+							       cmr_state,
+							       tv,
+					ctdb_mutex_rados_lock_renew_timer_cb,
+							       cmr_state);
+		if (cmr_state->renew_timer_ev == NULL) {
+			fprintf(stderr, "Failed to create timer event\n");
+			fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
+			ret = -ENOMEM;
+			goto err_ctx_cleanup;
+		}
+	}
+
 	fprintf(stdout, CTDB_MUTEX_STATUS_HOLDING);
 
 	/* wait for the signal / timer events to do their work */
@@ -319,9 +420,6 @@ int main(int argc, char *argv[])
 		goto err_ctx_cleanup;
 	}
 err_ctx_cleanup:
-	ctdb_mutex_rados_ctx_destroy(cmr_state->ceph_cluster,
-				     cmr_state->ioctx);
-err_state_free:
 	talloc_free(cmr_state);
 err_out:
 	return ret ? 1 : 0;

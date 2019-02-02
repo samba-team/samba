@@ -46,7 +46,9 @@ which ctdb_mutex_ceph_rados_helper || exit 1
 TMP_DIR="$(mktemp --directory)" || exit 1
 rados -p "$POOL" rm "$OBJECT"
 
-(ctdb_mutex_ceph_rados_helper "$CLUSTER" "$USER" "$POOL" "$OBJECT" \
+# explicitly disable lock expiry (duration=0), to ensure that we don't get
+# intermittent failures (due to renewal) from the lock state diff further down
+(ctdb_mutex_ceph_rados_helper "$CLUSTER" "$USER" "$POOL" "$OBJECT" 0 \
 							> ${TMP_DIR}/first) &
 locker_pid=$!
 
@@ -78,6 +80,9 @@ LOCKER_COOKIE="$(jq -r '.lockers[0].cookie' ${TMP_DIR}/lock_state_first)"
 LOCKER_DESC="$(jq -r '.lockers[0].description' ${TMP_DIR}/lock_state_first)"
 [ "$LOCKER_DESC" == "CTDB recovery lock" ] \
 	|| _fail "unexpected locker description: $LOCKER_DESC"
+LOCKER_EXP="$(jq -r '.lockers[0].expiration' ${TMP_DIR}/lock_state_first)"
+[ "$LOCKER_EXP" == "0.000000" ] \
+	|| _fail "unexpected locker expiration: $LOCKER_EXP"
 
 # second attempt while first is still holding the lock - expect failure
 ctdb_mutex_ceph_rados_helper "$CLUSTER" "$USER" "$POOL" "$OBJECT" \
@@ -144,6 +149,56 @@ wait $locker_pid &> /dev/null
 third_out=$(cat ${TMP_DIR}/third)
 [ "$third_out" == "0" ] \
 	|| _fail "expected lock acquisition (0), but got $third_out"
+
+# test renew / expire behaviour using a 1s expiry (update period = 500ms)
+exec >${TMP_DIR}/forth -- ctdb_mutex_ceph_rados_helper "$CLUSTER" "$USER" \
+							"$POOL" "$OBJECT" 1 &
+locker_pid=$!
+
+sleep 1
+
+rados -p "$POOL" lock info "$OBJECT" ctdb_reclock_mutex \
+						> ${TMP_DIR}/lock_state_fifth_a
+#echo "with lock fifth: `cat ${TMP_DIR}/lock_state_fifth_a`"
+
+LOCK_NAME="$(jq -r '.name' ${TMP_DIR}/lock_state_fifth_a)"
+[ "$LOCK_NAME" == "ctdb_reclock_mutex" ] \
+	|| _fail "unexpected lock name: $LOCK_NAME"
+LOCK_TYPE="$(jq -r '.type' ${TMP_DIR}/lock_state_fifth_a)"
+[ "$LOCK_TYPE" == "exclusive" ] \
+	|| _fail "unexpected lock type: $LOCK_TYPE"
+LOCK_COUNT="$(jq -r '.lockers | length' ${TMP_DIR}/lock_state_fifth_a)"
+[ $LOCK_COUNT -eq 1 ] || _fail "expected 1 lock in rados state, got $LOCK_COUNT"
+LOCKER_EXP_A="$(jq -r '.lockers[0].expiration' ${TMP_DIR}/lock_state_fifth_a)"
+[ "$LOCKER_EXP_A" != "0.000000" ] \
+	|| _fail "unexpected locker expiration: $LOCKER_EXP_A"
+sleep 1 # sleep until renewal
+rados -p "$POOL" lock info "$OBJECT" ctdb_reclock_mutex \
+						> ${TMP_DIR}/lock_state_fifth_b
+LOCKER_EXP_B="$(jq -r '.lockers[0].expiration' ${TMP_DIR}/lock_state_fifth_b)"
+[ "$LOCKER_EXP_B" != "0.000000" ] \
+	|| _fail "unexpected locker expiration: $LOCKER_EXP_B"
+#echo "lock expiration before renewal $LOCKER_EXP_A, after renewal $LOCKER_EXP_B"
+[ "$LOCKER_EXP_B" != "$LOCKER_EXP_A" ] \
+	|| _fail "locker expiration matches: $LOCKER_EXP_B"
+
+# no chance to drop the lock, rely on expiry
+kill -KILL $locker_pid || exit 1
+wait $locker_pid &> /dev/null
+sleep 1	# sleep until lock expiry
+
+rados -p "$POOL" lock info "$OBJECT" ctdb_reclock_mutex \
+						> ${TMP_DIR}/lock_state_sixth
+#echo "lock expiry sixth: `cat ${TMP_DIR}/lock_state_sixth`"
+
+LOCK_NAME="$(jq -r '.name' ${TMP_DIR}/lock_state_sixth)"
+[ "$LOCK_NAME" == "ctdb_reclock_mutex" ] \
+	|| _fail "unexpected lock name: $LOCK_NAME"
+LOCK_TYPE="$(jq -r '.type' ${TMP_DIR}/lock_state_sixth)"
+[ "$LOCK_TYPE" == "exclusive" ] \
+	|| _fail "unexpected lock type: $LOCK_TYPE"
+LOCK_COUNT="$(jq -r '.lockers | length' ${TMP_DIR}/lock_state_sixth)"
+[ $LOCK_COUNT -eq 0 ] || _fail "expected 0 locks in rados state, got $LOCK_COUNT"
 
 rm ${TMP_DIR}/*
 rmdir $TMP_DIR
