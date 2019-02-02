@@ -649,6 +649,7 @@ struct tevent_req *samba_runcmd_send(TALLOC_CTX *mem_ctx,
 				     int stderr_log_level,
 				     const char * const *argv0, ...);
 int samba_runcmd_recv(struct tevent_req *req, int *perrno);
+int samba_runcmd_export_stdin(struct tevent_req *req);
 
 #ifdef DEVELOPER
 void samba_start_debugger(void);

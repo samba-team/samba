@@ -49,6 +49,17 @@ static void samba_runcmd_cleanup_fn(struct tevent_req *req,
 	}
 }
 
+int samba_runcmd_export_stdin(struct tevent_req *req)
+{
+	struct samba_runcmd_state *state = tevent_req_data(req,
+					   struct samba_runcmd_state);
+	int ret = state->fd_stdin;
+
+	state->fd_stdin = -1;
+
+	return ret;
+}
+
 static void samba_runcmd_io_handler(struct tevent_context *ev,
 				    struct tevent_fd *fde,
 				    uint16_t flags,
