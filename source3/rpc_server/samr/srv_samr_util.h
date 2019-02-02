@@ -75,5 +75,6 @@ NTSTATUS pass_oem_change(char *user, const char *rhost,
 			 const uchar old_nt_hash_encrypted[16],
 			 enum samPwdChangeReason *reject_reason);
 NTSTATUS check_password_complexity(const char *username,
+				   const char *fullname,
 				   const char *password,
 				   enum samPwdChangeReason *samr_reject_reason);

@@ -6725,6 +6725,7 @@ static enum samr_ValidationStatus samr_ValidatePassword_Change(TALLOC_CTX *mem_c
 	}
 	if (dom_pw_info->password_properties & DOMAIN_PASSWORD_COMPLEX) {
 		status = check_password_complexity(req->account.string,
+						   NULL, /* full_name */
 						   req->password.string,
 						   NULL);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -6755,6 +6756,7 @@ static enum samr_ValidationStatus samr_ValidatePassword_Reset(TALLOC_CTX *mem_ct
 	}
 	if (dom_pw_info->password_properties & DOMAIN_PASSWORD_COMPLEX) {
 		status = check_password_complexity(req->account.string,
+						   NULL, /* full_name */
 						   req->password.string,
 						   NULL);
 		if (!NT_STATUS_IS_OK(status)) {

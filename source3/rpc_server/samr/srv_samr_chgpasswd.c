@@ -941,6 +941,7 @@ static bool check_passwd_history(struct samu *sampass, const char *plaintext)
 ************************************************************/
 
 NTSTATUS check_password_complexity(const char *username,
+				   const char *fullname,
 				   const char *password,
 				   enum samPwdChangeReason *samr_reject_reason)
 {
@@ -960,7 +961,23 @@ NTSTATUS check_password_complexity(const char *username,
 		return NT_STATUS_PASSWORD_RESTRICTION;
 	}
 
+	check_ret = setenv("SAMBA_CPS_ACCOUNT_NAME", username, 1);
+	if (check_ret != 0) {
+		return map_nt_error_from_unix_common(errno);
+	}
+	unsetenv("SAMBA_CPS_USER_PRINCIPAL_NAME");
+	if (fullname != NULL) {
+		check_ret = setenv("SAMBA_CPS_FULL_NAME", fullname, 1);
+	} else {
+		unsetenv("SAMBA_CPS_FULL_NAME");
+	}
+	if (check_ret != 0) {
+		return map_nt_error_from_unix_common(errno);
+	}
 	check_ret = smbrunsecret(cmd, password);
+	unsetenv("SAMBA_CPS_ACCOUNT_NAME");
+	unsetenv("SAMBA_CPS_USER_PRINCIPAL_NAME");
+	unsetenv("SAMBA_CPS_FULL_NAME");
 	DEBUG(5,("check_password_complexity: check password script (%s) "
 		 "returned [%d]\n", cmd, check_ret));
 	TALLOC_FREE(cmd);
@@ -995,6 +1012,7 @@ static NTSTATUS change_oem_password(struct samu *hnd, const char *rhost,
 	TALLOC_CTX *tosctx = talloc_tos();
 	struct passwd *pass = NULL;
 	const char *username = pdb_get_username(hnd);
+	const char *fullname = pdb_get_fullname(hnd);
 	time_t can_change_time = pdb_get_pass_can_change_time(hnd);
 	NTSTATUS status;
 
@@ -1062,7 +1080,10 @@ static NTSTATUS change_oem_password(struct samu *hnd, const char *rhost,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = check_password_complexity(username, new_passwd, samr_reject_reason);
+	status = check_password_complexity(username,
+					   fullname,
+					   new_passwd,
+					   samr_reject_reason);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(pass);
 		return status;
