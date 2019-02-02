@@ -45,7 +45,6 @@
 #include "lib/socket/socket.h"
 #include "librpc/gen_ndr/irpc.h"
 #include "libds/common/flag_mapping.h"
-#include "../lib/util/util_runcmd.h"
 #include "lib/util/access.h"
 #include "lib/util/util_str_hex.h"
 #include "libcli/util/ntstatus.h"
@@ -2112,7 +2111,7 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 		int error = 0;
 		struct tevent_context *event_ctx = NULL;
 		struct tevent_req *req = NULL;
-		struct samba_runcmd_state *run_cmd = NULL;
+		int cps_stdin = -1;
 		const char * const cmd[4] = {
 			"/bin/sh", "-c",
 			password_script,
@@ -2133,15 +2132,24 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 		req = samba_runcmd_send(event_ctx, event_ctx,
 					tevent_timeval_current_ofs(10, 0),
 					100, 100, cmd, NULL);
-		run_cmd = tevent_req_data(req, struct samba_runcmd_state);
-		if (write(run_cmd->fd_stdin, utf8_pw, utf8_len) != utf8_len) {
+		if (req == NULL) {
 			TALLOC_FREE(password_script);
 			TALLOC_FREE(event_ctx);
 			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
 		}
 
-		close(run_cmd->fd_stdin);
-		run_cmd->fd_stdin = -1;
+		cps_stdin = samba_runcmd_export_stdin(req);
+
+		if (write(cps_stdin, utf8_pw, utf8_len) != utf8_len) {
+			close(cps_stdin);
+			cps_stdin = -1;
+			TALLOC_FREE(password_script);
+			TALLOC_FREE(event_ctx);
+			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
+		}
+
+		close(cps_stdin);
+		cps_stdin = -1;
 
 		if (!tevent_req_poll(req, event_ctx)) {
 			TALLOC_FREE(password_script);
