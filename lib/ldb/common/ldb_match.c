@@ -333,9 +333,11 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 
 				g = memmem(haystack,
 					   haystacklen,
-					(const uint8_t *)cnk.data,
-					cnk.length);
-				if (g) p = g;
+					   (const uint8_t *)cnk.data,
+					   cnk.length);
+				if (g) {
+					p = g;
+				}
 			} while(g);
 		}
 		val.length = val.length - (p - (uint8_t *)(val.data)) - cnk.length;
