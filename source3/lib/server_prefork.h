@@ -18,6 +18,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _SOURCE3_LIB_SERVER_PREFORK_H_
+#define _SOURCE3_LIB_SERVER_PREFORK_H_
+
 #include "system/network.h"
 #include <tevent.h>
 #include "lib/tsocket/tsocket.h"
@@ -293,3 +296,4 @@ int prefork_listen_recv(struct tevent_req *req,
 			struct tsocket_address **srv_addr,
 			struct tsocket_address **cli_addr);
 
+#endif /* _SOURCE3_LIB_SERVER_PREFORK_H_ */
