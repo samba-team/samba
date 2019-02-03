@@ -34,6 +34,8 @@ else:
     import socketserver
     sserver = socketserver
 
+DNS_REQUEST_TIMEOUT = 10
+
 
 class DnsHandler(sserver.BaseRequestHandler):
     def dns_transaction_udp(self, packet, host):
@@ -42,7 +44,7 @@ class DnsHandler(sserver.BaseRequestHandler):
         try:
             send_packet = ndr.ndr_pack(packet)
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
-            s.settimeout(5)
+            s.settimeout(DNS_REQUEST_TIMEOUT)
             s.connect((host, 53))
             s.sendall(send_packet, 0)
             recv_packet = s.recv(2048, 0)
