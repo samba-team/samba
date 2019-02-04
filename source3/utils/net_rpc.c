@@ -4669,6 +4669,10 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 
 			if (alias.num_members > 0) {
 				alias.members = SMB_MALLOC_ARRAY(struct dom_sid, alias.num_members);
+				if (alias.members == NULL) {
+					status = NT_STATUS_NO_MEMORY;
+					goto done;
+				}
 
 				for (j = 0; j < alias.num_members; j++)
 					sid_copy(&alias.members[j],
