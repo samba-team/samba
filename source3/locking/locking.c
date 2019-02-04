@@ -150,6 +150,9 @@ bool strict_lock_check_default(files_struct *fsp, struct lock_struct *plock)
 		 * autocleanup. This is the slow path anyway.
 		 */
 		br_lck = brl_get_locks(talloc_tos(), fsp);
+		if (br_lck == NULL) {
+			return true;
+		}
 		ret = brl_locktest(br_lck, plock);
 		TALLOC_FREE(br_lck);
 	}
