@@ -794,8 +794,6 @@ sub provision_raw_step1($$)
 	dreplsrv:periodic_startup_interval = 0
 	dsdb:schema update allowed = yes
 
-        prefork children = 4
-
         vfs objects = dfs_samba4 acl_xattr fake_acls xattr_tdb streams_depot
 
         idmap_ldb:use rfc2307=yes
