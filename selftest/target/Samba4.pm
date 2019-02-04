@@ -3081,7 +3081,8 @@ sub setup_restoredc
 	# we arbitrarily designate the restored DC as having SMBv1 disabled
 	my $extra_conf = "
 	server min protocol = SMB2
-	client min protocol = SMB2";
+	client min protocol = SMB2
+	prefork children = 1";
 
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "restoredc",
 						    $dcvars->{DOMAIN},
@@ -3124,11 +3125,12 @@ sub setup_renamedc
 	# note: dcvars contains the env info for the dependent testenv ('backupfromdc')
 	my ($self, $prefix, $dcvars) = @_;
 	print "Preparing RENAME DC...\n";
+	my $extra_conf = "prefork children = 1";
 
 	my $realm = "renamedom.samba.example.com";
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "renamedc",
 						    "RENAMEDOMAIN", $realm,
-						    $dcvars->{PASSWORD}, "");
+						    $dcvars->{PASSWORD}, $extra_conf);
 
 	# create a backup of the 'backupfromdc' which renames the domain
 	my $backupdir = File::Temp->newdir();
@@ -3171,11 +3173,12 @@ sub setup_offlinebackupdc
 	# note: dcvars contains the env info for the dependent testenv ('backupfromdc')
 	my ($self, $prefix, $dcvars) = @_;
 	print "Preparing OFFLINE BACKUP DC...\n";
+	my $extra_conf = "prefork children = 1";
 
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "offlinebackupdc",
 						    $dcvars->{DOMAIN},
 						    $dcvars->{REALM},
-						    $dcvars->{PASSWORD}, "");
+						    $dcvars->{PASSWORD}, $extra_conf);
 
 	# create an offline backup of the 'backupfromdc' target
 	my $backupdir = File::Temp->newdir();
@@ -3215,11 +3218,12 @@ sub setup_labdc
 	# note: dcvars contains the env info for the dependent testenv ('backupfromdc')
 	my ($self, $prefix, $dcvars) = @_;
 	print "Preparing LAB-DOMAIN DC...\n";
+	my $extra_conf = "prefork children = 1";
 
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "labdc",
 						    "LABDOMAIN",
 						    "labdom.samba.example.com",
-						    $dcvars->{PASSWORD}, "");
+						    $dcvars->{PASSWORD}, $extra_conf);
 
 	# create a backup of the 'backupfromdc' which renames the domain and uses
 	# the --no-secrets option to scrub any sensitive info
