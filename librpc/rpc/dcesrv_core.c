@@ -33,6 +33,9 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "lib/util/tevent_ntstatus.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 static NTSTATUS dcesrv_negotiate_contexts(struct dcesrv_call_state *call,
 				const struct dcerpc_bind *b,
 				struct dcerpc_ack_ctx *ack_ctx_list);
