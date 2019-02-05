@@ -1920,7 +1920,6 @@ static void tldap_search_all_done(struct tevent_req *subreq)
 	rc = tldap_search_recv(subreq, state, &msg);
 	/* No TALLOC_FREE(subreq), this is multi-step */
 	if (tevent_req_ldap_error(req, rc)) {
-		TALLOC_FREE(subreq);
 		return;
 	}
 
