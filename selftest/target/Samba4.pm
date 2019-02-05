@@ -2173,7 +2173,7 @@ sub provision_chgdcpass($$)
 	# (and also removes the default AD complexity checks)
 	my $unacceptable_password = "widk3Dsle32jxdBdskldsk55klASKQ";
 	my $extra_smb_conf = "
-	check password script = sed -e '/$unacceptable_password/{;q1}; /$unacceptable_password/!{q0}'
+	check password script = $self->{srcdir}/selftest/checkpassword_arg1.sh ${unacceptable_password}
 	allow dcerpc auth level connect:lsarpc = yes
 	dcesrv:max auth states = 8
 ";
