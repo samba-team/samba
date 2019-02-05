@@ -457,7 +457,6 @@ static void tldap_fetch_rootdse_done(struct tevent_req *subreq)
 
 	rc = tldap_search_recv(subreq, state, &msg);
 	if (tevent_req_ldap_error(req, rc)) {
-		TALLOC_FREE(subreq);
 		return;
 	}
 
@@ -739,7 +738,6 @@ static void tldap_search_paged_done(struct tevent_req *subreq)
 
 	rc = tldap_search_recv(subreq, state, &state->result);
 	if (tevent_req_ldap_error(req, rc)) {
-		TALLOC_FREE(subreq);
 		return;
 	}
 
