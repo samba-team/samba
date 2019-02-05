@@ -56,17 +56,39 @@
  * @param err		error occured during conversion
  * @result		result of the conversion as provided by strtoul
  *
- * Currently the only errors detected are wrong base and a value overflow.
+ * The following errors are detected
+ * - wrong base
+ * - value overflow
+ * - string with a leading "-" indicating a negative number
  */
 unsigned long int
 strtoul_err(const char *nptr, char **endptr, int base, int *err)
 {
 	unsigned long int val;
 	int saved_errno = errno;
+	char *needle = NULL;
+	char *tmp_endptr = NULL;
 
 	errno = 0;
-	val = strtoul(nptr, endptr, base);
-	*err = errno;
+	*err = 0;
+
+	val = strtoul(nptr, &tmp_endptr, base);
+
+	if (endptr != NULL) {
+		*endptr = tmp_endptr;
+	}
+
+	if (errno != 0) {
+		*err = errno;
+		errno = saved_errno;
+		return val;
+	}
+
+	/* did we convert a negative "number" ? */
+	needle = strchr(nptr, '-');
+	if (needle != NULL && needle < tmp_endptr) {
+		*err = EINVAL;
+	}
 
 	errno = saved_errno;
 	return val;
@@ -81,17 +103,39 @@ strtoul_err(const char *nptr, char **endptr, int base, int *err)
  * @param err		error occured during conversion
  * @result		result of the conversion as provided by strtoull
  *
- * Currently the only errors detected are wrong base and a value overflow.
+ * The following errors are detected
+ * - wrong base
+ * - value overflow
+ * - string with a leading "-" indicating a negative number
  */
 unsigned long long int
 strtoull_err(const char *nptr, char **endptr, int base, int *err)
 {
 	unsigned long long int val;
 	int saved_errno = errno;
+	char *needle = NULL;
+	char *tmp_endptr = NULL;
 
 	errno = 0;
-	val = strtoull(nptr, endptr, base);
-	*err = errno;
+	*err = 0;
+
+	val = strtoull(nptr, &tmp_endptr, base);
+
+	if (endptr != NULL) {
+		*endptr = tmp_endptr;
+	}
+
+	if (errno != 0) {
+		*err = errno;
+		errno = saved_errno;
+		return val;
+	}
+
+	/* did we convert a negative "number" ? */
+	needle = strchr(nptr, '-');
+	if (needle != NULL && needle < tmp_endptr) {
+		*err = EINVAL;
+	}
 
 	errno = saved_errno;
 	return val;
