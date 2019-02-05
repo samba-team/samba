@@ -51,6 +51,7 @@ builddirs = {
     "samba-ad-dc-py2": ".",
     "samba-ad-dc-2": ".",
     "samba-ad-dc-2-py2": ".",
+    "samba-ad-dc-backup": ".",
     "samba-systemkrb5": ".",
     "samba-nopython": ".",
     "samba-buildpy2-only": ".",
@@ -166,6 +167,17 @@ tasks = {
                          "--include-env=vampire_2000_dc "
                          "--include-env=fl2000dc "
                          "--include-env=ad_dc_no_nss "
+                         "'",
+                         "text/plain"),
+                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+
+    # run the backup/restore testenvs separately as they're fairly standalone
+    # (and CI seems to max out at ~8 different DCs running at once)
+    "samba-ad-dc-backup": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                        ("make", "make -j", "text/plain"),
+                        ("test", "make test FAIL_IMMEDIATELY=1 "
+                         "TESTS='${PY3_ONLY}"
                          "--include-env=backupfromdc "
                          "--include-env=restoredc "
                          "--include-env=renamedc "
