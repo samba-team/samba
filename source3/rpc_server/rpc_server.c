@@ -34,6 +34,9 @@
 #include "rpc_server/srv_pipe_hnd.h"
 #include "rpc_server/srv_pipe.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 /* Creates a pipes_struct and initializes it with the information
  * sent from the client */
 int make_server_pipes_struct(TALLOC_CTX *mem_ctx,

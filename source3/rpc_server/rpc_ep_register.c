@@ -27,6 +27,9 @@
 #include "librpc/rpc/dcerpc_ep.h"
 #include "rpc_server/rpc_ep_register.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 static void rpc_ep_register_loop(struct tevent_req *subreq);
 static NTSTATUS rpc_ep_try_register(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev_ctx,

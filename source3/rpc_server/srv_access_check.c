@@ -33,6 +33,9 @@
 #include "../libcli/security/security.h"
 #include "passdb/machine_sid.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 /*******************************************************************
  Checks if access to an object should be granted, and returns that
  level of access for further checks.

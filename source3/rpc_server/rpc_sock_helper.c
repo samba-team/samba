@@ -28,6 +28,9 @@
 #include "rpc_server/rpc_sock_helper.h"
 #include "lib/server_prefork.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(
 				const struct ndr_interface_table *iface,
 				struct dcerpc_binding_vector *bvec,

@@ -24,6 +24,9 @@
 #include "auth.h"
 #include "auth/gensec/gensec.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 static NTSTATUS auth_generic_server_authtype_start_as_root(TALLOC_CTX *mem_ctx,
 							   uint8_t auth_type, uint8_t auth_level,
 							   const struct tsocket_address *remote_address,

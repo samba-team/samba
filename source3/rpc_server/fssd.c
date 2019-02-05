@@ -32,6 +32,9 @@
 #include "rpc_server/fss/srv_fss_agent.h"
 #include "rpc_server/fssd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 #define DAEMON_NAME "fssd"
 
 void start_fssd(struct tevent_context *ev_ctx,

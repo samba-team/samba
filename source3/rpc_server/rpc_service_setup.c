@@ -54,6 +54,9 @@
 #include "rpc_server/rpc_modules.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 static_decl_rpc;
 
 /* Common routine for embedded RPC servers */

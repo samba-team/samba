@@ -21,6 +21,9 @@
 #include "includes.h"
 #include "rpc_server/rpc_config.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 /* the default is "embedded" so this table
  * lists only services that are not using
  * the default in order to keep enumerating it

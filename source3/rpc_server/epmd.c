@@ -31,6 +31,9 @@
 #include "rpc_server/epmapper/srv_epmapper.h"
 #include "rpc_server/epmd.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 #define DAEMON_NAME "epmd"
 
 static void epmd_reopen_logs(void)

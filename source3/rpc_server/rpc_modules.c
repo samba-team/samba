@@ -22,6 +22,9 @@
 #include "includes.h"
 #include "rpc_server/rpc_modules.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 static struct rpc_module *rpc_modules;
 
 struct rpc_module {

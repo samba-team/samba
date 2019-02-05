@@ -22,6 +22,9 @@
 
 #include "rpc_contexts.h"
 
+#undef DBGC_CLASS
+#define DBGC_CLASS DBGC_RPC_SRV
+
 struct pipe_rpc_fns *find_pipe_fns_by_context(struct pipe_rpc_fns *list,
 					      uint32_t context_id)
 {
