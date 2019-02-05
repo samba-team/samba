@@ -611,6 +611,7 @@ bld.SAMBA3_SUBSYSTEM('sysquotas',
                         lib/sysquotas_xfs.c
                         lib/sysquotas_4A.c
                         lib/sysquotas_4B.c
+                        lib/sysquotas_jfs2.c
                         lib/sysquotas_nfs.c
                      ''',
                      allow_warnings=True,

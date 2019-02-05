@@ -227,6 +227,9 @@ static struct {
 	int (*get_quota)(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
 	int (*set_quota)(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp);
 } sys_quota_backends[] = {
+#ifdef HAVE_JFS_QUOTA_H
+	{"jfs2", sys_get_jfs2_quota, 	sys_set_jfs2_quota},
+#endif
 #if defined HAVE_XFS_QUOTAS
 	{"xfs", sys_get_xfs_quota, 	sys_set_xfs_quota},
 	{"gfs", sys_get_xfs_quota, 	sys_set_xfs_quota},
