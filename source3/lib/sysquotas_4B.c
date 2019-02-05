@@ -52,6 +52,11 @@
 #define HFS_QUOTACTL_WAR 1
 #endif
 
+#ifdef HAVE_STRUCT_DQBLK_DQB_CURBYTES
+/* we handle the byte vs. block count dynamically via QUOTABLOCK_SIZE 1 */
+#define dqb_curblocks dqb_curbytes
+#endif
+
 static void xlate_qblk_to_smb(const struct dqblk * const qblk,
 			SMB_DISK_QUOTA *dp)
 {
@@ -59,35 +64,25 @@ static void xlate_qblk_to_smb(const struct dqblk * const qblk,
 
 	DEBUG(10, ("unix softlimit=%u hardlimit=%u curblock=%u\n",
 	    (unsigned)qblk->dqb_bsoftlimit, (unsigned)qblk->dqb_bhardlimit,
-#ifdef HAVE_STRUCT_DQBLK_DQB_CURBYTES
-	    (unsigned)qblk->dqb_curbytes));
-#else
 	    (unsigned)qblk->dqb_curblocks));
-#endif
 
 	DEBUGADD(10, ("unix softinodes=%u hardinodes=%u curinodes=%u\n",
 	    (unsigned)qblk->dqb_isoftlimit, (unsigned)qblk->dqb_ihardlimit,
 	    (unsigned)qblk->dqb_curinodes));
 
-#ifdef HAVE_STRUCT_DQBLK_DQB_CURBYTES
-	/* On Darwin, quotas are counted in bytes. We report them
-	 * in 512b blocks because various callers have assumptions
-	 * about the block size.
-	 */
-#define XLATE_TO_BLOCKS(bytes) (((bytes) + 1) / 512)
-	dp->bsize = 512;
-
-	dp->softlimit = XLATE_TO_BLOCKS(qblk->dqb_bsoftlimit);
-	dp->hardlimit = XLATE_TO_BLOCKS(qblk->dqb_bhardlimit);
-	dp->curblocks = XLATE_TO_BLOCKS(qblk->dqb_curbytes);
-#undef XLATE_TO_BLOCKS
-#else
-	dp->bsize = DEV_BSIZE;
+	dp->bsize = QUOTABLOCK_SIZE;
 
 	dp->softlimit = qblk->dqb_bsoftlimit;
 	dp->hardlimit = qblk->dqb_bhardlimit;
 	dp->curblocks = qblk->dqb_curblocks;
+/* our Darwin quotas used to never return 0byte usage but this is probably not needed,
+ * let's comment this out for now
+#ifdef HAVE_STRUCT_DQBLK_DQB_CURBYTES
+	if (dp->curblocks == 0) {
+		dp->curblocks = 1;
+	}
 #endif
+ */
 
 	dp->ihardlimit = qblk->dqb_ihardlimit;
 	dp->isoftlimit = qblk->dqb_isoftlimit;
@@ -110,13 +105,13 @@ static void xlate_smb_to_qblk(const SMB_DISK_QUOTA * const dp,
 {
 	ZERO_STRUCTP(qblk);
 
-	qblk->dqb_bsoftlimit = dp->softlimit;
-	qblk->dqb_bhardlimit = dp->hardlimit;
-#ifdef HAVE_STRUCT_DQBLK_DQB_CURBYTES
-	/* On Darwin, quotas are counted in bytes. */
-	qblk->dqb_bsoftlimit *= dp->bsize;
-	qblk->dqb_bhardlimit *= dp->bsize;
-#endif
+	if (dp->bsize == QUOTABLOCK_SIZE) {
+		qblk->dqb_bsoftlimit = dp->softlimit;
+		qblk->dqb_bhardlimit = dp->hardlimit;
+	} else {
+		qblk->dqb_bsoftlimit = dp->softlimit * dp->bsize / QUOTABLOCK_SIZE;
+		qblk->dqb_bhardlimit = dp->hardlimit * dp->bsize / QUOTABLOCK_SIZE;
+	}
 	qblk->dqb_ihardlimit = dp->ihardlimit;
 	qblk->dqb_isoftlimit = dp->isoftlimit;
 }
