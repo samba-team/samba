@@ -483,10 +483,14 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 				   address, NULL);
 	torture_assert_ntstatus_ok(tctx, status, "starting smb server");
 
-	status = dcesrv_init_context(tctx, tctx->lp_ctx, endpoints,
-				     &srv_cb, &dce_ctx);
+	status = dcesrv_init_context(tctx, tctx->lp_ctx, &srv_cb, &dce_ctx);
 	torture_assert_ntstatus_ok(tctx, status,
 				   "unable to initialize DCE/RPC server");
+
+	status = dcesrv_init_ep_servers(dce_ctx, endpoints);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "unable to initialize DCE/RPC ep servers");
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
 		status = dcesrv_add_ep(dce_ctx, tctx->lp_ctx,

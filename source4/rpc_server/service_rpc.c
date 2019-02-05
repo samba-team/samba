@@ -129,6 +129,7 @@ static NTSTATUS dcesrv_task_init(struct task_server *task)
 {
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	struct dcesrv_context *dce_ctx;
+	const char **ep_servers = NULL;
 
 	dcerpc_server_init(task->lp_ctx);
 
@@ -136,9 +137,14 @@ static NTSTATUS dcesrv_task_init(struct task_server *task)
 
 	status = dcesrv_init_context(task->event_ctx,
 				     task->lp_ctx,
-				     lpcfg_dcerpc_endpoint_servers(task->lp_ctx),
 				     &srv_callbacks,
 				     &dce_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ep_servers = lpcfg_dcerpc_endpoint_servers(task->lp_ctx);
+	status = dcesrv_init_ep_servers(dce_ctx, ep_servers);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

@@ -2320,18 +2320,10 @@ static NTSTATUS dcesrv_process_ncacn_packet(struct dcesrv_connection *dce_conn,
 
 _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 				      struct loadparm_context *lp_ctx,
-				      const char **endpoint_servers,
 				      struct dcesrv_context_callbacks *cb,
 				      struct dcesrv_context **_dce_ctx)
 {
-	NTSTATUS status;
 	struct dcesrv_context *dce_ctx;
-	int i;
-
-	if (!endpoint_servers) {
-		DEBUG(0,("dcesrv_init_context: no endpoint servers configured\n"));
-		return NT_STATUS_INTERNAL_ERROR;
-	}
 
 	dce_ctx = talloc_zero(mem_ctx, struct dcesrv_context);
 	NT_STATUS_HAVE_NO_MEMORY(dce_ctx);
@@ -2353,6 +2345,21 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 		dce_ctx->callbacks = *cb;
 	}
 
+	*_dce_ctx = dce_ctx;
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ NTSTATUS dcesrv_init_ep_servers(struct dcesrv_context *dce_ctx,
+					 const char **endpoint_servers)
+{
+	NTSTATUS status;
+	int i;
+
+	if (endpoint_servers == NULL) {
+		DBG_ERR("No endpoint servers configured\n");
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
 	for (i=0;endpoint_servers[i];i++) {
 		const struct dcesrv_endpoint_server *ep_server;
 
@@ -2370,7 +2377,6 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	*_dce_ctx = dce_ctx;
 	return NT_STATUS_OK;
 }
 

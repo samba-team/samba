@@ -444,11 +444,12 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 				   const struct dcesrv_interface *iface,
 				   const struct security_descriptor *sd);
 NTSTATUS dcerpc_register_ep_server(const struct dcesrv_endpoint_server *ep_server);
+NTSTATUS dcesrv_init_ep_servers(struct dcesrv_context *dce_ctx,
+				const char **ep_servers);
 const struct dcesrv_endpoint_server *dcesrv_ep_server_byname(const char *name);
 
 NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 			     struct loadparm_context *lp_ctx,
-			     const char **endpoint_servers,
 			     struct dcesrv_context_callbacks *cb,
 			     struct dcesrv_context **_dce_ctx);
 
