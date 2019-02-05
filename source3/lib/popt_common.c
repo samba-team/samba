@@ -72,11 +72,16 @@ static void popt_common_callback(poptContext con,
 			   const struct poptOption *opt,
 			   const char *arg, const void *data)
 {
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		exit(1);
+	}
 
 	if (reason == POPT_CALLBACK_REASON_PRE) {
 		set_logfile(con, get_dyn_LOGFILEBASE());
 		talloc_set_log_fn(popt_s3_talloc_log_fn);
 		talloc_set_abort_fn(smb_panic);
+		talloc_free(mem_ctx);
 		return;
 	}
 
@@ -84,20 +89,27 @@ static void popt_common_callback(poptContext con,
 
 		if (PrintSambaVersionString) {
 			printf( "Version %s\n", samba_version_string());
+			talloc_free(mem_ctx);
 			exit(0);
 		}
 
 		if (is_default_dyn_CONFIGFILE()) {
-			if(getenv("SMB_CONF_PATH")) {
+			if (getenv("SMB_CONF_PATH")) {
 				set_dyn_CONFIGFILE(getenv("SMB_CONF_PATH"));
 			}
 		}
 
 		if (override_logfile) {
-			setup_logging(lp_logfile(talloc_tos()), DEBUG_FILE );
+			char *logfile = lp_logfile(mem_ctx);
+			if (logfile == NULL) {
+				talloc_free(mem_ctx);
+				exit(1);
+			}
+			setup_logging(logfile, DEBUG_FILE);
 		}
 
 		/* Further 'every Samba program must do this' hooks here. */
+		talloc_free(mem_ctx);
 		return;
 	}
 
@@ -105,18 +117,21 @@ static void popt_common_callback(poptContext con,
 	case OPT_OPTION:
 	{
 		struct loadparm_context *lp_ctx;
+		bool ok;
 
-		lp_ctx = loadparm_init_s3(talloc_tos(), loadparm_s3_helpers());
+		lp_ctx = loadparm_init_s3(mem_ctx, loadparm_s3_helpers());
 		if (lp_ctx == NULL) {
 			fprintf(stderr, "loadparm_init_s3() failed!\n");
+			talloc_free(mem_ctx);
 			exit(1);
 		}
 
-		if (!lpcfg_set_option(lp_ctx, arg)) {
+		ok = lpcfg_set_option(lp_ctx, arg);
+		if (!ok) {
 			fprintf(stderr, "Error setting option '%s'\n", arg);
+			talloc_free(mem_ctx);
 			exit(1);
 		}
-		TALLOC_FREE(lp_ctx);
 		break;
 	}
 	case 'd':
@@ -167,6 +182,8 @@ static void popt_common_callback(poptContext con,
 		}
 		break;
 	}
+
+	talloc_free(mem_ctx);
 }
 
 struct poptOption popt_common_connection[] = {
