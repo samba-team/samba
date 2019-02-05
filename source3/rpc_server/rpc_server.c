@@ -264,7 +264,7 @@ struct named_pipe_client *named_pipe_client_init(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev_ctx,
 						 struct messaging_context *msg_ctx,
 						 const char *pipe_name,
-						 named_pipe_termination_fn *term_fn,
+						 named_pipe_termination_fn term_fn,
 						 uint16_t file_type,
 						 uint16_t device_state,
 						 uint64_t allocation_size,
@@ -303,7 +303,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq);
 void named_pipe_accept_function(struct tevent_context *ev_ctx,
 			        struct messaging_context *msg_ctx,
 				const char *pipe_name, int fd,
-				named_pipe_termination_fn *term_fn,
+				named_pipe_termination_fn term_fn,
 				void *private_data)
 {
 	struct named_pipe_client *npc;
@@ -991,6 +991,17 @@ struct dcerpc_ncacn_conn {
 	size_t count;
 };
 
+static int dcerpc_ncacn_conn_destructor(struct dcerpc_ncacn_conn *ncacn_conn)
+{
+	if (ncacn_conn->disconnect_fn != NULL) {
+		bool ok = ncacn_conn->disconnect_fn(ncacn_conn->p);
+		if (!ok) {
+			DBG_WARNING("Failed to call disconnect function\n");
+		}
+	}
+	return 0;
+}
+
 static void dcerpc_ncacn_packet_process(struct tevent_req *subreq);
 static void dcerpc_ncacn_packet_done(struct tevent_req *subreq);
 
@@ -1019,6 +1030,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 		close(s);
 		return;
 	}
+	talloc_set_destructor(ncacn_conn, dcerpc_ncacn_conn_destructor);
 
 	ncacn_conn->transport = transport;
 	ncacn_conn->ev_ctx = ev_ctx;
@@ -1211,12 +1223,6 @@ static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 	status = dcerpc_read_ncacn_packet_recv(subreq, ncacn_conn, &pkt, &recv_buffer);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (ncacn_conn->disconnect_fn != NULL) {
-			ok = ncacn_conn->disconnect_fn(ncacn_conn->p);
-			if (!ok) {
-				DEBUG(3, ("Failed to call disconnect function\n"));
-			}
-		}
 		goto fail;
 	}
 

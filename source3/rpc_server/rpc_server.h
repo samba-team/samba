@@ -25,7 +25,7 @@
 struct pipes_struct;
 
 typedef bool (*dcerpc_ncacn_disconnect_fn)(struct pipes_struct *p);
-typedef void (named_pipe_termination_fn)(void *private_data);
+typedef void (*named_pipe_termination_fn)(void *private_data);
 
 struct named_pipe_client {
 	const char *pipe_name;
@@ -53,7 +53,7 @@ struct named_pipe_client {
 	struct iovec *iov;
 	size_t count;
 
-	named_pipe_termination_fn *term_fn;
+	named_pipe_termination_fn term_fn;
 	void *private_data;
 };
 
@@ -61,7 +61,7 @@ struct named_pipe_client *named_pipe_client_init(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev_ctx,
 						 struct messaging_context *msg_ctx,
 						 const char *pipe_name,
-						 named_pipe_termination_fn *term_fn,
+						 named_pipe_termination_fn term_fn,
 						 uint16_t file_type,
 						 uint16_t device_state,
 						 uint64_t allocation_size,
@@ -86,7 +86,7 @@ NTSTATUS dcesrv_setup_ncacn_np_socket(const char *pipe_name,
 void named_pipe_accept_function(struct tevent_context *ev_ctx,
 			        struct messaging_context *msg_ctx,
 				const char *pipe_name, int fd,
-				named_pipe_termination_fn *term_fn,
+				named_pipe_termination_fn term_fn,
 				void *private_data);
 void named_pipe_packet_process(struct tevent_req *subreq);
 
