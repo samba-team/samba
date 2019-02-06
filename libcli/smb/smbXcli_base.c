@@ -5561,6 +5561,85 @@ bool smbXcli_session_is_authenticated(struct smbXcli_session *session)
 	return true;
 }
 
+NTSTATUS smb2cli_session_signing_key(struct smbXcli_session *session,
+				     TALLOC_CTX *mem_ctx,
+				     DATA_BLOB *key)
+{
+	DATA_BLOB *sig = NULL;
+
+	if (session->conn == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	/*
+	 * Use channel signing key if there is one, otherwise fallback
+	 * to session.
+	 */
+
+	if (session->smb2_channel.signing_key.length != 0) {
+		sig = &session->smb2_channel.signing_key;
+	} else if (session->smb2->signing_key.length != 0) {
+		sig = &session->smb2->signing_key;
+	} else {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	*key = data_blob_dup_talloc(mem_ctx, *sig);
+	if (key->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smb2cli_session_encryption_key(struct smbXcli_session *session,
+					TALLOC_CTX *mem_ctx,
+					DATA_BLOB *key)
+{
+	if (session->conn == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (session->conn->protocol < PROTOCOL_SMB3_00) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (session->smb2->encryption_key.length == 0) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	*key = data_blob_dup_talloc(mem_ctx, session->smb2->encryption_key);
+	if (key->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS smb2cli_session_decryption_key(struct smbXcli_session *session,
+					TALLOC_CTX *mem_ctx,
+					DATA_BLOB *key)
+{
+	if (session->conn == NULL) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (session->conn->protocol < PROTOCOL_SMB3_00) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	if (session->smb2->decryption_key.length == 0) {
+		return NT_STATUS_NO_USER_SESSION_KEY;
+	}
+
+	*key = data_blob_dup_talloc(mem_ctx, session->smb2->decryption_key);
+	if (key->data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS smbXcli_session_application_key(struct smbXcli_session *session,
 					 TALLOC_CTX *mem_ctx,
 					 DATA_BLOB *key)
