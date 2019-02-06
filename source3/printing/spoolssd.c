@@ -616,6 +616,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	if (pid == -1) {
 		DEBUG(0, ("Failed to fork SPOOLSS [%s]\n",
 			   strerror(errno)));
+		exit(1);
 	}
 
 	/* parent or error */
