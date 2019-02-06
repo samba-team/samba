@@ -1489,6 +1489,12 @@ bool sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 		return true;
 	}
 
+	if (sid_check_is_in_unix_groups(psid)) {
+		DBG_DEBUG("SID %s is a group, failing\n",
+			  dom_sid_str_buf(psid, &buf));
+		return false;
+	}
+
 	/* Check the winbindd cache directly. */
 	ret = idmap_cache_find_sid2uid(psid, puid, &expired);
 
@@ -1543,6 +1549,12 @@ bool sid_to_gid(const struct dom_sid *psid, gid_t *pgid)
 			  dom_sid_str_buf(psid, &buf),
 			(unsigned int)*pgid ));
 		return true;
+	}
+
+	if (sid_check_is_in_unix_users(psid)) {
+		DBG_DEBUG("SID %s is a user, failing\n",
+			  dom_sid_str_buf(psid, &buf));
+		return false;
 	}
 
 	/* Check the winbindd cache directly. */
