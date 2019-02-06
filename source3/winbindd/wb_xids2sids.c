@@ -481,6 +481,11 @@ struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 			}
 
 			if (ok && !expired) {
+				struct dom_sid_buf buf;
+				DBG_DEBUG("Found %cID in cache: %s\n",
+					  xids[i].type == ID_TYPE_UID?'U':'G',
+					  dom_sid_str_buf(&sid, &buf));
+
 				sid_copy(&state->sids[i], &sid);
 			}
 		}
