@@ -87,7 +87,7 @@
 static struct {
 	bool initialized;
 	enum debug_logtype logtype; /* The type of logging we are doing: eg stdout, file, stderr */
-	const char *prog_name;
+	char prog_name[255];
 	bool reopening_logs;
 	bool schedule_reopen_logs;
 
@@ -227,11 +227,15 @@ static void debug_syslog_reload(bool enabled, bool previously_enabled,
 				const char *prog_name, char *option)
 {
 	if (enabled && !previously_enabled) {
+		const char *ident = NULL;
+		if ((prog_name != NULL) && (prog_name[0] != '\0')) {
+			ident = prog_name;
+		}
 #ifdef LOG_DAEMON
-		openlog(prog_name, LOG_PID, SYSLOG_FACILITY);
+		openlog(ident, LOG_PID, SYSLOG_FACILITY);
 #else
 		/* for old systems that have no facility codes. */
-		openlog(prog_name, LOG_PID );
+		openlog(ident, LOG_PID);
 #endif
 		return;
 	}
@@ -1001,7 +1005,7 @@ void setup_logging(const char *prog_name, enum debug_logtype new_logtype)
 			prog_name = p + 1;
 		}
 
-		state.prog_name = prog_name;
+		strlcpy(state.prog_name, prog_name, sizeof(state.prog_name));
 	}
 	reopen_logs_internal();
 }
