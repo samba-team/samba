@@ -42,22 +42,23 @@ extern bool override_logfile;
 static void set_logfile(poptContext con, const char * arg)
 {
 
-	char *lfile = NULL;
+	char lfile[PATH_MAX];
 	const char *pname;
+	int ret;
 
 	/* Find out basename of current program */
-	pname = strrchr_m(poptGetInvocationName(con),'/');
-
-	if (!pname)
+	pname = strrchr_m(poptGetInvocationName(con), '/');
+	if (pname == NULL) {
 		pname = poptGetInvocationName(con);
-	else
+	} else {
 		pname++;
+	}
 
-	if (asprintf(&lfile, "%s/log.%s", arg, pname) < 0) {
+	ret = snprintf(lfile, sizeof(lfile), "%s/log.%s", arg, pname);
+	if (ret >= sizeof(lfile)) {
 		return;
 	}
 	lp_set_logfile(lfile);
-	SAFE_FREE(lfile);
 }
 
 static bool PrintSambaVersionString;
