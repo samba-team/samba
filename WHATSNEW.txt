@@ -30,6 +30,27 @@ worker processes at startup and share the client connections amongst these
 workers. The number of worker processes can be configured by the 'prefork
 children' setting in the smb.conf (the default is 4).
 
+Authentication Logging.
+-----------------------
+
+Winbind now logs PAM_AUTH and NTLM_AUTH events, a new attribute "logonId" has
+been added to the Authentication JSON log messages.  This contains a random
+logon id that is generated for each PAM_AUTH and NTLM_AUTH request and is passed
+to SamLogon, linking the windbind and SamLogon requests.
+
+The serviceDescription of the messages is set to "winbind", the authDescription
+is set to one of:
+   "PASSDB, <command>, <pid>"
+   "PAM_AUTH, <command>, <pid>"
+   "NTLM_AUTH, <command>, <pid>"
+where:
+   <command> is the name of the command makinmg the winbind request i.e. wbinfo
+   <pid>     is the process id of the requesting process.
+
+The version of the JSON Authentication messages has been changed to 1.2 from 1.1
+
+
+
 REMOVED FEATURES
 ================
 
