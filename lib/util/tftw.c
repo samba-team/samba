@@ -4,6 +4,7 @@
  * Adopted from the csync source code
  */
 
+#include "replace.h"
 #include <errno.h>
 #include <sys/types.h>
 #include <dirent.h>
