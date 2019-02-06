@@ -3,6 +3,7 @@
 import os, sys, re, shlex
 from waflib import Utils, Logs, Options, Errors, Context
 from waflib.Configure import conf
+from wafsamba import samba_utils
 
 real_Popen = None
 
@@ -121,7 +122,7 @@ class cross_Popen(Utils.subprocess.Popen):
                                stdout=Utils.subprocess.PIPE,
                                stderr=Utils.subprocess.PIPE)
                 ce_out, ce_err = p.communicate()
-                ans = (p.returncode, ce_out.decode('utf8'))
+                ans = (p.returncode, samba_utils.get_string(ce_out))
                 add_answer(ca_file, msg, ans)
             else:
                 args = newargs

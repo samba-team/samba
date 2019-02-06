@@ -4,7 +4,7 @@
 import os, shutil, re
 from waflib import Build, Configure, Utils, Options, Logs, Errors
 from waflib.Configure import conf
-from samba_utils import TO_LIST, ADD_LD_LIBRARY_PATH
+from samba_utils import TO_LIST, ADD_LD_LIBRARY_PATH, get_string
 
 
 def add_option(self, *k, **kw):
@@ -418,7 +418,7 @@ def CHECK_COMMAND(conf, cmd, msg=None, define=None, on_target=True, boolean=Fals
     if on_target:
         cmd.extend(conf.SAMBA_CROSS_ARGS(msg=msg))
     try:
-        ret = Utils.cmd_output(cmd).decode('utf8')
+        ret = get_string(Utils.cmd_output(cmd))
     except:
         conf.COMPOUND_END(False)
         return False
@@ -508,7 +508,7 @@ def CHECK_STANDARD_LIBPATH(conf):
     # at least gcc and clang support this:
     try:
         cmd = conf.env.CC + ['-print-search-dirs']
-        out = Utils.cmd_output(cmd).decode('utf8').split('\n')
+        out = get_string(Utils.cmd_output(cmd)).split('\n')
     except ValueError:
         # option not supported by compiler - use a standard list of directories
         dirlist = [ '/usr/lib', '/usr/lib64' ]

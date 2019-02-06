@@ -85,7 +85,7 @@ def abi_check_task(self):
     libpath = self.inputs[0].abspath(self.env)
     libname = os.path.basename(libpath)
 
-    sigs = Utils.cmd_output([abi_gen, libpath]).decode('utf8')
+    sigs = samba_utils.get_string(Utils.cmd_output([abi_gen, libpath]))
     parsed_sigs = parse_sigs(sigs, self.ABI_MATCH)
 
     sig_file = self.ABI_FILE

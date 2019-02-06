@@ -4,7 +4,7 @@
 import os, sys, tarfile
 from waflib import Utils, Scripting, Logs, Options
 from waflib.Configure import conf
-from samba_utils import os_path_relpath
+from samba_utils import os_path_relpath, get_string
 from waflib import Context
 
 dist_dirs = None
@@ -119,7 +119,7 @@ def vcs_dir_contents(path):
         repo = os.path.dirname(repo)
     if repo == "/":
         raise Exception("unsupported or no vcs for %s" % path)
-    return Utils.cmd_output(ls_files_cmd, cwd=cwd, env=env).decode('utf8').split('\n')
+    return get_string(Utils.cmd_output(ls_files_cmd, cwd=cwd, env=env)).split('\n')
 
 
 def dist(appname='', version=''):

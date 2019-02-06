@@ -14,7 +14,7 @@ def git_version_summary(path, env=None):
     environ = dict(os.environ)
     environ["GIT_DIR"] = '%s/.git' % path
     environ["GIT_WORK_TREE"] = path
-    git = Utils.cmd_output(env.GIT + ' show --pretty=format:"%h%n%ct%n%H%n%cd" --stat HEAD', silent=True, env=environ).decode('utf8')
+    git = samba_utils.get_string(Utils.cmd_output(env.GIT + ' show --pretty=format:"%h%n%ct%n%H%n%cd" --stat HEAD', silent=True, env=environ))
 
     lines = git.splitlines()
     if not lines or len(lines) < 4:
