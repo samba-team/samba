@@ -1,6 +1,6 @@
 from waflib import Utils
 from waflib.Configure import conf
-
+from samba_utils import get_string
 done = {}
 
 @conf
@@ -17,7 +17,7 @@ def SAMBA_CHECK_PERL(conf, mandatory=True, version=(5,0,0)):
     def read_perl_config_var(cmd):
         output = Utils.cmd_output([conf.env.get_flat('PERL'), '-MConfig', '-e', cmd])
         if not isinstance(output, str):
-            output = output.decode('utf8')
+            output = get_string(output)
         return Utils.to_list(output)
 
     def check_perl_config_var(var):
