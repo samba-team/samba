@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.10.  This is *not*
+This is the second release candidate of Samba 4.10.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -207,6 +207,36 @@ smb.conf changes
                               "smbd:max async dosmode"
   smbd getinfo ask sharemode  New: similar to "smbd search ask  yes
                               sharemode" but for SMB getinfo
+
+
+CHANGES SINCE 4.10.0rc1
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13750: libcli: dns: Change internal DNS_REQUEST_TIMEOUT from 2 to 10
+     seconds.
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 13676: samba-tool SMB/sysvol connections do not work if SMBv1 is
+     disabled.
+   * BUG 13747: join: Throw CommandError instead of Exception for simple errors.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13774: s3-vfs: Add glusterfs_fuse vfs module.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13742: ctdb: Print locks latency in machinereadable stats.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13752: s4:server: Add support for 'smbcontrol samba shutdown'.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 13330: vfs_glusterfs: Adapt to changes in libgfapi signatures.
+   * BUG 13774: s3-vfs: Use ENOATTR in errno comparison for getxattr.
+
+o  Justin Stephenson <jstephen@redhat.com>
+   * BUG 13727: s3:libsmb: Honor disable_netbios option in smbsock_connect_send.
+
 
 KNOWN ISSUES
 ============
