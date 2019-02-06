@@ -39,7 +39,27 @@
 
 static uint32_t keepalive_version(void)
 {
-	return (SAMBA_VERSION_MAJOR << 16) | SAMBA_VERSION_MINOR;
+	static uint32_t version = 0;
+
+	if (version == 0) {
+		const char *t;
+
+		version = (SAMBA_VERSION_MAJOR << 16) | SAMBA_VERSION_MINOR;
+
+		t = getenv("CTDB_TEST_SAMBA_VERSION");
+		if (t != NULL) {
+			int v;
+
+			v = atoi(t);
+			if (v <= 0) {
+				DBG_WARNING("Failed to parse env var: %s\n", t);
+			} else {
+				version = v;
+			}
+		}
+	}
+
+	return version;
 }
 
 static uint32_t keepalive_uptime(struct ctdb_context *ctdb)
