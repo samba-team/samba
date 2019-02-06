@@ -27,6 +27,7 @@
 #include "system/time.h"
 #include "lib/util/debug.h"
 #include "lib/util/talloc_stack.h"
+#include "lib/util/memory.h" /* for SAFE_FREE() */
 #include "source3/lib/util_path.h"
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "../libcli/security/security.h"

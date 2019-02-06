@@ -54,6 +54,7 @@ extern const char *panic_action;
 #endif
 
 #include "lib/util/memory.h"
+#include "lib/util/discard.h"
 
 #include "fault.h"
 
