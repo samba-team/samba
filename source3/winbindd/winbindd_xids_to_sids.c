@@ -67,7 +67,9 @@ struct tevent_req *winbindd_xids_to_sids_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	DEBUG(10, ("num_xids: %d\n", (int)state->num_xids));
+	DBG_DEBUG("num_xids: %"PRIu32"\n%s\n",
+		  state->num_xids,
+		  (char *)request->extra_data.data);
 
 	subreq = wb_xids2sids_send(state, ev, state->xids, state->num_xids);
 	if (tevent_req_nomem(subreq, req)) {
@@ -103,7 +105,7 @@ NTSTATUS winbindd_xids_to_sids_recv(struct tevent_req *req,
 	uint32_t i;
 
 	if (tevent_req_is_nterror(req, &status)) {
-		DEBUG(5, ("Could not convert sids: %s\n", nt_errstr(status)));
+		DBG_INFO("Could not convert xids: %s\n", nt_errstr(status));
 		return status;
 	}
 
@@ -127,6 +129,8 @@ NTSTATUS winbindd_xids_to_sids_recv(struct tevent_req *req,
 			return NT_STATUS_NO_MEMORY;
 		}
 	}
+
+	DBG_DEBUG("sids:\n%s\n", result);
 
 	response->extra_data.data = result;
 	response->length += talloc_get_size(result);
