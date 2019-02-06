@@ -107,14 +107,6 @@
 #include <sys/uio.h>
 #endif
 
-/*
- * Veritas File System.  Often in addition to native.
- * Quotas different.
- */
-#if defined(HAVE_SYS_FS_VX_QUOTA_H)
-#define VXFS_QUOTA
-#endif
-
 #if defined(HAVE_SYS_ATTRIBUTES_H)
 #include <sys/attributes.h>
 #elif defined(HAVE_ATTR_ATTRIBUTES_H)
