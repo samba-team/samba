@@ -1419,6 +1419,7 @@ int messaging_dgm_send(pid_t pid,
 	struct messaging_dgm_context *ctx = global_dgm_context;
 	struct messaging_dgm_out *out;
 	int ret;
+	unsigned retries = 0;
 
 	if (ctx == NULL) {
 		return ENOTCONN;
@@ -1426,6 +1427,7 @@ int messaging_dgm_send(pid_t pid,
 
 	messaging_dgm_validate(ctx);
 
+again:
 	ret = messaging_dgm_out_get(ctx, pid, &out);
 	if (ret != 0) {
 		return ret;
@@ -1435,6 +1437,20 @@ int messaging_dgm_send(pid_t pid,
 
 	ret = messaging_dgm_out_send_fragmented(ctx->ev, out, iov, iovlen,
 						fds, num_fds);
+	if (ret == ECONNREFUSED) {
+		/*
+		 * We cache outgoing sockets. If the receiver has
+		 * closed and re-opened the socket since our last
+		 * message, we get connection refused. Retry.
+		 */
+
+		TALLOC_FREE(out);
+
+		if (retries < 5) {
+			retries += 1;
+			goto again;
+		}
+	}
 	return ret;
 }
 
