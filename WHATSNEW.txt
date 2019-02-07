@@ -1,4 +1,89 @@
                    =============================
+                   Release Notes for Samba 4.8.9
+                         February 7, 2019
+                   =============================
+
+
+This is the latest stable release of the Samba 4.8 release series.
+
+
+Changes since 4.8.8:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 11495: s3: lib: nmbname: Ensure we limit the NetBIOS name correctly.
+     CID: 1433607.
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 13199: s3:utils/smbget: Fix recursive download with empty source
+     directories.
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 13736: s3:libsmb: cli_smb2_list() can sometimes fail initially on a
+     connection.
+   * BUG 13747: join: Throw CommandError instead of Exception for simple errors.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13688: Windows 2016 fails to restore previous version of a file from a
+     shadow_copy2 snapshot.
+   * BUG 13455: Restoring previous version of stream with vfs_shadow_copy2 fails
+     with NT_STATUS_OBJECT_NAME_INVALID.
+   * BUG 13736: s3: libsmb: Use smb2cli_conn_max_trans_size() in
+     cli_smb2_list().
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13708: s3-vfs: Prevent NULL pointer dereference in vfs_glusterfs.
+   * BUG 13720: s3-smbd: Avoid assuming fsp is always intact after close_file
+     call.
+   * BUG 13725: s3-vfs-fruit,s3-vfs-streams_xattr: Add close call.
+   * BUG 13774: s3-vfs: Add glusterfs_fuse vfs module.
+
+o  Aaron Haslett <aaronhaslett@catalyst.net.nz>
+   * BUG 13738: dns: Changing onelevel search for wildcard to subtree.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13722: s3:auth_winbind: Ignore a missing winbindd as NT4 PDC/BDC
+     without trusts.
+   * BUG 13723: s3:auth_winbind: Return NT_STATUS_NO_LOGON_SERVERS if winbindd
+     is not available.
+   * BUG 13752: s4:messaging: Add support 'smbcontrol <pid> debug/debuglevel'.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 13330: vfs_glusterfs: Adapt to changes in libgfapi signatures.
+   * BUG 13774: s3-vfs: Use ENOATTR in errno comparison for getxattr.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13717: lib/util: Count a trailing line that doesn't end in a newline.
+
+o  Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+   * BUG 13741: vfs_fileid: Fix get_connectpath_ino.
+   * BUG 13744: vfs_fileid: Fix fsname_norootdir algorithm.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.8.8
                          December 13, 2018
                    =============================
@@ -96,8 +181,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.8.7
