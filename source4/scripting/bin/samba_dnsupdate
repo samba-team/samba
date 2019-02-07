@@ -443,10 +443,10 @@ def call_nsupdate(d, op="add"):
 
     assert(op in ["add", "delete"])
 
-    if opts.verbose:
-        print("Calling nsupdate for %s (%s)" % (d, op))
-
     if opts.use_file is not None:
+        if opts.verbose:
+            print("Use File instead of nsupdate for %s (%s)" % (d, op))
+
         try:
             rfile = open(opts.use_file, 'r+')
         except IOError:
@@ -470,6 +470,9 @@ def call_nsupdate(d, op="add"):
         os.rename(tmpfile, opts.use_file)
         fcntl.lockf(rfile, fcntl.LOCK_UN)
         return
+
+    if opts.verbose:
+        print("Calling nsupdate for %s (%s)" % (d, op))
 
     normalised_name = d.name.rstrip('.') + '.'
 
