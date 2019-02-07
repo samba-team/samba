@@ -26,7 +26,6 @@
 		<arg choice="opt">-N numprocs</arg>
 		<arg choice="opt">-n netbios_name</arg>
 		<arg choice="opt">-W workgroup</arg>
-		<arg choice="opt">-o num_operations</arg>
 		<arg choice="opt">-e num files(entries)</arg>
 		<arg choice="opt">-O socket_options</arg>
 		<arg choice="opt">-m maximum_protocol</arg>
@@ -215,10 +214,6 @@
 
 		<varlistentry><term>-N numprocs</term>
 			<listitem><para>Specify number of smbtorture processes to launch.</para></listitem>
-		</varlistentry>
-
-		<varlistentry><term>-o num_operations</term>
-			<listitem><para>Number of times some operations should be tried before assuming they're output is consistent (default:100).</para></listitem>
 		</varlistentry>
 
 		<varlistentry><term>-e num_files</term>
