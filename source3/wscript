@@ -46,7 +46,7 @@ def options(opt):
     opt.samba_add_onoff_option('cups', with_name="enable", without_name="disable")
     opt.samba_add_onoff_option('iprint', with_name="enable", without_name="disable")
     opt.samba_add_onoff_option('pam')
-    opt.samba_add_onoff_option('quotas')
+    opt.samba_add_onoff_option('quotas', default=None)
     opt.samba_add_onoff_option('sendfile-support', default=None)
     opt.samba_add_onoff_option('utmp')
     opt.samba_add_onoff_option('avahi', with_name="enable", without_name="disable")
@@ -1396,7 +1396,7 @@ main() {
     conf.CHECK_FUNCS_IN('getspnam', 'sec')
 
     legacy_quota_libs = ''
-    if Options.options.with_quotas:
+    if not Options.options.with_quotas == False:
         # For quotas on Veritas VxFS filesystems
         conf.CHECK_HEADERS('sys/fs/vx_quota.h')
         # For sys/quota.h and linux/quota.h
@@ -1503,6 +1503,9 @@ main() {
             if not conf.CONFIG_SET('WITH_QUOTAS'):
                 legacy_quota_libs = ''
     conf.env['legacy_quota_libs'] = legacy_quota_libs
+
+    if Options.options.with_quotas == True and not conf.CONFIG_SET('WITH_QUOTAS'):
+        conf.fatal('quota support not found but it was equested !')
 
     conf.CHECK_CODE('(void)unshare(CLONE_FS);',
                     headers='sched.h',
