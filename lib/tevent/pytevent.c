@@ -478,9 +478,13 @@ static PyObject *py_tevent_context_add_timer(TeventContext_Object *self, PyObjec
 {
 	struct timeval next_event;
 	PyObject *callback;
-	if (!PyArg_ParseTuple(args, "lO", &next_event, &callback))
+	double secs, usecs;
+	if (!PyArg_ParseTuple(args, "dO", &secs, &callback)){
 		return NULL;
-
+	}
+	next_event.tv_sec = secs;
+	usecs = (secs - next_event.tv_sec) * 1000000.0;
+	next_event.tv_usec = usecs;
 	return py_tevent_context_add_timer_internal(self, next_event, callback);
 }
 
