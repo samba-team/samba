@@ -856,7 +856,7 @@ static PyObject *py_cli_write(struct py_cli_state *self, PyObject *args,
 		"fnum", "buffer", "offset", "mode", NULL };
 
 	if (!ParseTupleAndKeywords(
-		    args, kwds, "I" PYARG_BYTES_LEN "K|I", kwlist,
+		    args, kwds, "i" PYARG_BYTES_LEN "K|I", kwlist,
 		    &fnum, &buf, &buflen, &offset, &mode)) {
 		return NULL;
 	}
@@ -1012,7 +1012,7 @@ static PyObject *py_cli_read(struct py_cli_state *self, PyObject *args,
 		"fnum", "offset", "size", NULL };
 
 	if (!ParseTupleAndKeywords(
-		    args, kwds, "IKI", kwlist, &fnum, &offset,
+		    args, kwds, "iKI", kwlist, &fnum, &offset,
 		    &size)) {
 		return NULL;
 	}
@@ -1230,7 +1230,7 @@ static PyObject *py_cli_list(struct py_cli_state *self,
 	PyObject *result = NULL;
 	const char *kwlist[] = { "directory", "mask", "attribs", NULL };
 
-	if (!ParseTupleAndKeywords(args, kwds, "z|sH:list", kwlist,
+	if (!ParseTupleAndKeywords(args, kwds, "z|sI:list", kwlist,
 				   &base_dir, &user_mask, &attribute)) {
 		return NULL;
 	}
