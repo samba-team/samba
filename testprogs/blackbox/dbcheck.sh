@@ -19,7 +19,7 @@ dbcheck() {
 
 # This list of attributes can be freely extended
 dbcheck_fix_one_way_links() {
-	$PYTHON $BINDIR/samba-tool dbcheck --quiet --fix --yes fix_all_string_dn_component_mismatch --attrs="lastKnownParent defaultObjectCategory fromServer rIDSetReferences" --cross-ncs $ARGS
+	$PYTHON $BINDIR/samba-tool dbcheck --quiet --fix --yes fix_all_old_dn_string_component_mismatch --attrs="lastKnownParent defaultObjectCategory fromServer rIDSetReferences" --cross-ncs $ARGS
 }
 
 # This list of attributes can be freely extended
