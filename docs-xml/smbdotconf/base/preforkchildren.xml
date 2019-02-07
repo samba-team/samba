@@ -4,7 +4,9 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option controls the number of worker processes that are
-		started for each service when prefork process model is enabled.
+		started for each service when prefork process model is enabled
+		(see <citerefentry><refentrytitle>samba</refentrytitle>
+			<manvolnum>8</manvolnum></citerefentry> -M).
 		The prefork children are only started for those services that
 		support prefork (currently only ldap). For processes that don't
 		support preforking all requests are handled by a single process

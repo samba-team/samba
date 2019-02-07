@@ -101,14 +101,39 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>-M model</term>
+		<term>-M|--model</term>
 		<listitem><para>This parameter can be used to specify the
 		&quot;process model&quot; samba should use. This determines
 		how concurrent clients are handled. Available process
-		models include <emphasis>single</emphasis> (everything in
-		a single process), <emphasis>standard</emphasis> (similar
-		behaviour to that of Samba 3), <emphasis>thread</emphasis>
-		(single process, different threads.
+		models include:
+		<itemizedlist>
+			<listitem><para><emphasis>single</emphasis></para>
+			<para>All Samba services run in a single process. This is
+			not recommended for production configurations.
+			</para></listitem>
+
+			<listitem><para><emphasis>standard</emphasis></para>
+			<para>A process is created for each Samba service,
+			and for those services that support it (currently only
+			LDAP and NETLOGON) a new processes is started
+			for each new client connection.</para></listitem>
+
+			<listitem><para><emphasis>prefork</emphasis></para>
+			<para>A process is started for each Samba service, and a
+			fixed number of worker processes are started for those
+			services that support it (currently only LDAP).
+			The client connections are then shared amongst the worker
+			processes.
+			Requests for services not supporting prefork are handled
+			by a single process for that service.</para>
+			<para>The number of prefork worker processes started is
+			controlled by the
+			<citerefentry><refentrytitle>smb.conf</refentrytitle>
+			<manvolnum>5</manvolnum></citerefentry> parameter
+		        <smbconfoption name="prefork children"/>,
+			which defaults to 1.
+			</para></listitem>
+		</itemizedlist>
 		</para></listitem>
 		</varlistentry>
 
