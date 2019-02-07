@@ -214,7 +214,7 @@ static PyObject *py_hive_key_set_value(PyObject *self, PyObject *args)
 	WERROR result;
 	struct hive_key *key = PyHiveKey_AsHiveKey(self);
 
-	if (!PyArg_ParseTuple(args, "siz#", &name, &type, &value.data, &value_length)) {
+	if (!PyArg_ParseTuple(args, "sIz#", &name, &type, &value.data, &value_length)) {
 		return NULL;
 	}
 	value.length = value_length;
