@@ -140,14 +140,12 @@ int sys_set_vfs_quota(const char *path, const char *bdev,
 	if (bsize == dp->bsize) {
 		D.dqb_bsoftlimit = dp->softlimit;
 		D.dqb_bhardlimit = dp->hardlimit;
-		D.dqb_ihardlimit = dp->ihardlimit;
-		D.dqb_isoftlimit = dp->isoftlimit;
 	} else {
 		D.dqb_bsoftlimit = (dp->softlimit*dp->bsize)/bsize;
 		D.dqb_bhardlimit = (dp->hardlimit*dp->bsize)/bsize;
-		D.dqb_ihardlimit = (dp->ihardlimit*dp->bsize)/bsize;
-		D.dqb_isoftlimit = (dp->isoftlimit*dp->bsize)/bsize;
 	}
+	D.dqb_ihardlimit = dp->ihardlimit;
+	D.dqb_isoftlimit = dp->isoftlimit;
 	D.dqb_valid = QIF_LIMITS;
 
 	switch (qtype) {
