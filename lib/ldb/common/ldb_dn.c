@@ -359,9 +359,6 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 					ex_name = d;
 					in_ex_name = true;
 					continue;
-				} else if (p[0] == '\0') {
-					p++;
-					continue;
 				} else {
 					in_extended = false;
 					in_attr = true;
@@ -472,12 +469,6 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				/* valid only if we are at the end */
 				trim = true;
 				continue;
-			}
-
-			if (trim && (*p != '=')) {
-				/* spaces/tabs are not allowed */
-				ldb_dn_mark_invalid(dn);
-				goto failed;
 			}
 
 			if (*p == '=') {
