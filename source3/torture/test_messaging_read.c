@@ -250,14 +250,13 @@ fail:
 }
 
 struct msg_pingpong_state {
-	uint8_t dummy;
+	struct messaging_context *msg_ctx;
 };
 
 static void msg_pingpong_done(struct tevent_req *subreq);
 
 static struct tevent_req *msg_pingpong_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
-					    struct messaging_context *msg_ctx,
 					    struct server_id dst)
 {
 	struct tevent_req *req, *subreq;
@@ -269,13 +268,23 @@ static struct tevent_req *msg_pingpong_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	status = messaging_send_buf(msg_ctx, dst, MSG_PING, NULL, 0);
+	if (!tevent_req_set_endtime(req, ev, timeval_current_ofs(10, 0))) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->msg_ctx = messaging_init(state, ev);
+	if (tevent_req_nomem(state->msg_ctx, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	status = messaging_send_buf(state->msg_ctx, dst, MSG_PING, NULL, 0);
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("messaging_send_buf failed: %s\n", nt_errstr(status));
 		tevent_req_error(req, map_errno_from_nt_status(status));
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = messaging_read_send(state, ev, msg_ctx, MSG_PONG);
+	subreq = messaging_read_send(state, ev, state->msg_ctx, MSG_PONG);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -308,18 +317,17 @@ static int msg_pingpong_recv(struct tevent_req *req)
 	return 0;
 }
 
-static int msg_pingpong(struct messaging_context *msg_ctx,
-			struct server_id dst)
+static int msg_pingpong(struct server_id dst)
 {
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	int ret = ENOMEM;
 
-	ev = tevent_context_init(msg_ctx);
+	ev = tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = msg_pingpong_send(ev, ev, msg_ctx, dst);
+	req = msg_pingpong_send(ev, ev, dst);
 	if (req == NULL) {
 		goto fail;
 	}
@@ -398,7 +406,7 @@ bool run_messaging_read3(int dummy)
 	pid_t child;
 	int ready_pipe[2];
 	int exit_pipe[2];
-	int ret;
+	int i, ret;
 	char c;
 	struct server_id dst;
 	ssize_t written;
@@ -433,19 +441,15 @@ bool run_messaging_read3(int dummy)
 		fprintf(stderr, "tevent_context_init failed\n");
 		goto fail;
 	}
-	msg_ctx = messaging_init(ev, ev);
-	if (msg_ctx == NULL) {
-		fprintf(stderr, "messaging_init failed\n");
-		goto fail;
-	}
 
-	dst = messaging_server_id(msg_ctx);
-	dst.pid = child;
+	dst = (struct server_id){ .pid = child, .vnn = NONCLUSTER_VNN, };
 
-	ret = msg_pingpong(msg_ctx, dst);
-	if (ret != 0){
-		fprintf(stderr, "msg_pingpong failed\n");
-		goto fail;
+	for (i=0; i<100; i++) {
+		ret = msg_pingpong(dst);
+		if (ret != 0){
+			fprintf(stderr, "msg_pingpong failed\n");
+			goto fail;
+		}
 	}
 
 	printf("Parent: telling child to exit\n");
