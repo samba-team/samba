@@ -6325,7 +6325,8 @@ done:
 }
 
 static bool test_fruit_locking_conflict(struct torture_context *tctx,
-					struct smb2_tree *tree)
+					struct smb2_tree *tree,
+					struct smb2_tree *tree2)
 {
 	TALLOC_CTX *mem_ctx;
 	struct smb2_create create;
@@ -6363,6 +6364,7 @@ static bool test_fruit_locking_conflict(struct torture_context *tctx,
 	CHECK_STATUS(status, NT_STATUS_OK);
 	h = create.out.file.handle;
 
+	/* Add AD_FILELOCK_RSRC_DENY_WR lock. */
 	el = (struct smb2_lock_element) {
 		.offset = 0xfffffffffffffffc,
 		.length = 1,
@@ -6374,12 +6376,21 @@ static bool test_fruit_locking_conflict(struct torture_context *tctx,
 		.in.locks = &el,
 	};
 
+	/*
+	 * Lock up to and including:
+	 * AD_FILELOCK_OPEN_WR
+	 * AD_FILELOCK_OPEN_RD
+	 * This is designed to cause a NetAtalk
+	 * locking conflict on the next open,
+	 * even though the share modes are
+	 * compatible.
+	 */
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	el = (struct smb2_lock_element) {
 		.offset = 0,
-		.length = 0x7fffffffffffffff,
+		.length = 0x7ffffffffffffff7,
 		.flags = SMB2_LOCK_FLAG_EXCLUSIVE,
 	};
 	status = smb2_lock(tree, &lck);
@@ -6395,8 +6406,13 @@ static bool test_fruit_locking_conflict(struct torture_context *tctx,
 		.in.fname = fname,
 	};
 
-	status = smb2_create(tree, mem_ctx, &create);
-	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+	/*
+	 * Open on the second tree - ensure we are
+	 * emulating trying to access with a NetATalk
+	 * process with an existing open/deny mode.
+	 */
+	status = smb2_create(tree2, mem_ctx, &create);
+	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
 	{
 		struct smb2_close cl = {
@@ -6420,7 +6436,7 @@ struct torture_suite *torture_vfs_fruit_netatalk(TALLOC_CTX *ctx)
 
 	torture_suite_add_1smb2_test(suite, "read netatalk metadata", test_read_netatalk_metadata);
 	torture_suite_add_1smb2_test(suite, "stream names with locally created xattr", test_stream_names_local);
-	torture_suite_add_1smb2_test(
+	torture_suite_add_2smb2_test(
 		suite, "locking conflict", test_fruit_locking_conflict);
 
 	return suite;
