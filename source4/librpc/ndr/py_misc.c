@@ -144,7 +144,7 @@ static int py_policy_handle_init(PyObject *self, PyObject *args, PyObject *kwarg
 	struct policy_handle *handle = pytalloc_get_ptr(self);
 	const char *kwnames[] = { "uuid", "type", NULL };
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|si", discard_const_p(char *, kwnames), &str, &handle->handle_type))
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|sI", discard_const_p(char *, kwnames), &str, &handle->handle_type))
 		return -1;
 
 	if (str != NULL) {
