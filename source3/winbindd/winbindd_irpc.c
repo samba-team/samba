@@ -34,8 +34,6 @@
 
 struct wb_irpc_forward_state {
 	struct irpc_message *msg;
-	struct winbind_DsrUpdateReadOnlyServerDnsRecords *req;
-
 	const char *opname;
 	struct dcesrv_call_state *dce_call;
 };
