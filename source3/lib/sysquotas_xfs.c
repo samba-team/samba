@@ -188,14 +188,12 @@ int sys_set_xfs_quota(const char *path, const char *bdev, enum SMB_QUOTA_TYPE qt
 	if (bsize == dp->bsize) {
 		D.d_blk_softlimit = dp->softlimit;
 		D.d_blk_hardlimit = dp->hardlimit;
-		D.d_ino_hardlimit = dp->ihardlimit;
-		D.d_ino_softlimit = dp->isoftlimit;
 	} else {
 		D.d_blk_softlimit = (dp->softlimit*dp->bsize)/bsize;
 		D.d_blk_hardlimit = (dp->hardlimit*dp->bsize)/bsize;
-		D.d_ino_hardlimit = (dp->ihardlimit*dp->bsize)/bsize;
-		D.d_ino_softlimit = (dp->isoftlimit*dp->bsize)/bsize;		
 	}
+	D.d_ino_hardlimit = dp->ihardlimit;
+	D.d_ino_softlimit = dp->isoftlimit;
 
 	qflags = dp->qflags;
 
