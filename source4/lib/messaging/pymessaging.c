@@ -55,7 +55,7 @@ static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 		unsigned long long pid;
 		int task_id, vnn;
 
-		if (!PyArg_ParseTuple(object, "KII", &pid, &task_id, &vnn)) {
+		if (!PyArg_ParseTuple(object, "Kii", &pid, &task_id, &vnn)) {
 			return false;
 		}
 		server_id->pid = pid;
@@ -65,14 +65,14 @@ static bool server_id_from_py(PyObject *object, struct server_id *server_id)
 	} else if (PyTuple_Size(object) == 2) {
 		unsigned long long pid;
 		int task_id;
-		if (!PyArg_ParseTuple(object, "KI", &pid, &task_id))
+		if (!PyArg_ParseTuple(object, "Ki", &pid, &task_id))
 			return false;
 		*server_id = cluster_id(pid, task_id);
 		return true;
 	} else {
 		unsigned long long pid = getpid();
 		int task_id;
-		if (!PyArg_ParseTuple(object, "I", &task_id))
+		if (!PyArg_ParseTuple(object, "i", &task_id))
 			return false;
 		*server_id = cluster_id(pid, task_id);
 		return true;
@@ -157,7 +157,7 @@ static PyObject *py_imessaging_send(PyObject *self, PyObject *args, PyObject *kw
 	const char *kwnames[] = { "target", "msg_type", "data", NULL };
 	Py_ssize_t length;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Ois#:send", 
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OIs#:send",
 		discard_const_p(char *, kwnames), &target, &msg_type, &data.data, &length)) {
 
 		return NULL;
