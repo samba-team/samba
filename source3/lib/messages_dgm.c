@@ -553,7 +553,7 @@ static void messaging_dgm_out_threaded_job(void *private_data)
 		if (state->sent != -1) {
 			return;
 		}
-		if (errno != ENOBUFS) {
+		if (state->err != ENOBUFS) {
 			return;
 		}
 
