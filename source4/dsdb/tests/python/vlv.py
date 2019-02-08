@@ -153,12 +153,16 @@ class TestsWithUserOU(samba.tests.TestCase):
                          session_info=system_session(lp), lp=lp)
 
         self.base_dn = self.ldb.domain_dn()
-        self.ou = "ou=vlv,%s" % self.base_dn
+        self.tree_dn = "ou=vlvtesttree,%s" % self.base_dn
+        self.ou = "ou=vlvou,%s" % self.tree_dn
         if opts.delete_in_setup:
             try:
-                self.ldb.delete(self.ou, ['tree_delete:1'])
+                self.ldb.delete(self.tree_dn, ['tree_delete:1'])
             except ldb.LdbError as e:
-                print("tried deleting %s, got error %s" % (self.ou, e))
+                print("tried deleting %s, got error %s" % (self.tree_dn, e))
+        self.ldb.add({
+            "dn": self.tree_dn,
+            "objectclass": "organizationalUnit"})
         self.ldb.add({
             "dn": self.ou,
             "objectclass": "organizationalUnit"})
@@ -191,7 +195,7 @@ class TestsWithUserOU(samba.tests.TestCase):
     def tearDown(self):
         super(TestsWithUserOU, self).tearDown()
         if not opts.delete_in_setup:
-            self.ldb.delete(self.ou, ['tree_delete:1'])
+            self.ldb.delete(self.tree_dn, ['tree_delete:1'])
 
 
 class VLVTests(TestsWithUserOU):
@@ -1368,11 +1372,7 @@ class PagedResultsTests(TestsWithUserOU):
     def test_paged_modify_object_scope(self):
         expr = "(objectClass=*)"
 
-        ou2 = "OU=vlvtestou2,%s" % (self.base_dn)
-        try:
-            self.ldb.delete(ou2, ['tree_delete:1'])
-        except ldb.LdbError:
-            pass
+        ou2 = "OU=vlvtestou2,%s" % (self.tree_dn)
         self.ldb.add({"dn": ou2, "objectclass": "organizationalUnit"})
 
         # Do a separate, full search to get all results
