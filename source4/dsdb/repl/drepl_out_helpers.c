@@ -240,6 +240,15 @@ NTSTATUS dreplsrv_out_drsuapi_recv(struct tevent_req *req)
 	return NT_STATUS_OK;
 }
 
+struct dreplsrv_op_pull_source_schema_cycle {
+	struct repsFromTo1 repsFrom1;
+	size_t object_count;
+	struct drsuapi_DsReplicaObjectListItemEx *first_object;
+	struct drsuapi_DsReplicaObjectListItemEx *last_object;
+	uint32_t linked_attributes_count;
+	struct drsuapi_DsReplicaLinkedAttribute *linked_attributes;
+};
+
 struct dreplsrv_op_pull_source_state {
 	struct tevent_context *ev;
 	struct dreplsrv_out_operation *op;
@@ -251,6 +260,7 @@ struct dreplsrv_op_pull_source_state {
 	struct dreplsrv_partition_source_dsa *source_dsa_retry;
 	enum drsuapi_DsExtendedOperation extended_op_retry;
 	bool retry_started;
+	struct dreplsrv_op_pull_source_schema_cycle *schema_cycle;
 };
 
 static void dreplsrv_op_pull_source_connect_done(struct tevent_req *subreq);
@@ -280,6 +290,38 @@ struct tevent_req *dreplsrv_op_pull_source_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static bool dreplsrv_op_pull_source_detect_schema_cycle(struct tevent_req *req)
+{
+	struct dreplsrv_op_pull_source_state *state =
+		tevent_req_data(req,
+		struct dreplsrv_op_pull_source_state);
+	bool is_schema = false;
+
+	if (state->op->extended_op == DRSUAPI_EXOP_NONE) {
+		struct dreplsrv_out_operation *op = state->op;
+		struct dreplsrv_service *service = op->service;
+		struct ldb_dn *schema_dn = ldb_get_schema_basedn(service->samdb);
+		struct dreplsrv_partition *partition = op->source_dsa->partition;
+
+		is_schema = ldb_dn_compare(partition->dn, schema_dn) == 0;
+	}
+
+	if (is_schema) {
+		struct dreplsrv_op_pull_source_schema_cycle *sc;
+
+		sc = talloc_zero(state,
+				 struct dreplsrv_op_pull_source_schema_cycle);
+		if (tevent_req_nomem(sc, req)) {
+			return false;
+		}
+		sc->repsFrom1 = *state->op->source_dsa->repsFrom1;
+
+		state->schema_cycle = sc;
+	}
+
+	return true;
+}
+
 static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req);
 
 static void dreplsrv_op_pull_source_connect_done(struct tevent_req *subreq)
@@ -287,10 +329,16 @@ static void dreplsrv_op_pull_source_connect_done(struct tevent_req *subreq)
 	struct tevent_req *req = tevent_req_callback_data(subreq,
 				 struct tevent_req);
 	NTSTATUS status;
+	bool ok;
 
 	status = dreplsrv_out_drsuapi_recv(subreq);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	ok = dreplsrv_op_pull_source_detect_schema_cycle(req);
+	if (!ok) {
 		return;
 	}
 
@@ -430,7 +478,7 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 {
 	struct dreplsrv_op_pull_source_state *state = tevent_req_data(req,
 						      struct dreplsrv_op_pull_source_state);
-	struct repsFromTo1 *rf1 = state->op->source_dsa->repsFrom1;
+	const struct repsFromTo1 *rf1 = state->op->source_dsa->repsFrom1;
 	struct dreplsrv_service *service = state->op->service;
 	struct dreplsrv_partition *partition = state->op->source_dsa->partition;
 	struct dreplsrv_drsuapi_connection *drsuapi = state->op->source_dsa->conn->drsuapi;
@@ -441,8 +489,13 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 	NTSTATUS status;
 	uint32_t replica_flags;
 	struct drsuapi_DsReplicaHighWaterMark highwatermark;
-	struct ldb_dn *schema_dn = ldb_get_schema_basedn(service->samdb);
 	struct drsuapi_DsReplicaOIDMapping_Ctr *mappings = NULL;
+	bool is_schema = false;
+
+	if (state->schema_cycle != NULL) {
+		is_schema = true;
+		rf1 = &state->schema_cycle->repsFrom1;
+	}
 
 	r = talloc(state, struct drsuapi_DsGetNCChanges);
 	if (tevent_req_nomem(r, req)) {
@@ -502,14 +555,10 @@ static void dreplsrv_op_pull_source_get_changes_trigger(struct tevent_req *req)
 		}
 		replica_flags &= ~DRSUAPI_DRS_WRIT_REP;
 	} else if (partition->rodc_replica || state->op->extended_op == DRSUAPI_EXOP_REPL_SECRET) {
-		bool for_schema = false;
-		if (ldb_dn_compare_base(schema_dn, partition->dn) == 0) {
-			for_schema = true;
-		}
 		status = dreplsrv_get_rodc_partial_attribute_set(service, r,
 								 &pas,
 								 &mappings,
-								 for_schema);
+								 is_schema);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,(__location__ ": Failed to construct RODC partial attribute set : %s\n", nt_errstr(status)));
 			tevent_req_nterror(req, status);
@@ -779,6 +828,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	struct dreplsrv_partition *partition = state->op->source_dsa->partition;
 	struct dreplsrv_drsuapi_connection *drsuapi = state->op->source_dsa->conn->drsuapi;
 	struct ldb_dn *schema_dn = ldb_get_schema_basedn(service->samdb);
+	struct dreplsrv_op_pull_source_schema_cycle *sc = NULL;
 	struct dsdb_schema *schema;
 	struct dsdb_schema *working_schema = NULL;
 	const struct drsuapi_DsReplicaOIDMapping_Ctr *mapping_ctr;
@@ -793,6 +843,7 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	NTSTATUS nt_status;
 	uint32_t dsdb_repl_flags = 0;
 	struct ldb_dn *nc_root = NULL;
+	bool was_schema = false;
 	int ret;
 
 	switch (ctr_level) {
@@ -826,6 +877,89 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		return;
 	}
 
+	/*
+	 * We need to cache the schema changes until we replicated
+	 * everything before we can apply the new schema.
+	 */
+	if (state->schema_cycle != NULL) {
+		TALLOC_CTX *mem = NULL;
+		struct drsuapi_DsReplicaObjectListItemEx **ptr = NULL;
+		struct drsuapi_DsReplicaObjectListItemEx *l = NULL;
+
+		was_schema = true;
+		sc = state->schema_cycle;
+
+		sc->repsFrom1 = rf1;
+
+		if (sc->first_object == NULL) {
+			mem = sc;
+			ptr = &sc->first_object;
+		} else {
+			mem = sc->last_object;
+			ptr = &sc->last_object->next_object;
+		}
+		*ptr = talloc_move(mem, &first_object);
+		for (l = *ptr; l != NULL; l = l->next_object) {
+			sc->object_count++;
+			if (l->next_object == NULL) {
+				sc->last_object = l;
+				break;
+			}
+		}
+
+		if (sc->linked_attributes_count == 0) {
+			sc->linked_attributes = talloc_move(sc, &linked_attributes);
+			sc->linked_attributes_count = linked_attributes_count;
+			linked_attributes_count = 0;
+		} else if (linked_attributes_count > 0) {
+			struct drsuapi_DsReplicaLinkedAttribute *new_las = NULL;
+			struct drsuapi_DsReplicaLinkedAttribute *tmp_las = NULL;
+			uint64_t new_count;
+			uint64_t add_size;
+			uint32_t add_idx;
+
+			new_count = sc->linked_attributes_count;
+			new_count += linked_attributes_count;
+			if (new_count > UINT32_MAX) {
+				nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
+				tevent_req_nterror(req, nt_status);
+				return;
+			}
+			add_size = linked_attributes_count;
+			add_size *= sizeof(linked_attributes[0]);
+			if (add_size > SIZE_MAX) {
+				nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
+				tevent_req_nterror(req, nt_status);
+				return;
+			}
+			add_idx = sc->linked_attributes_count;
+
+			tmp_las = talloc_realloc(sc,
+						 sc->linked_attributes,
+						 struct drsuapi_DsReplicaLinkedAttribute,
+						 new_count);
+			if (tevent_req_nomem(tmp_las, req)) {
+				return;
+			}
+			new_las = talloc_move(tmp_las, &linked_attributes);
+			memcpy(&tmp_las[add_idx], new_las, add_size);
+			sc->linked_attributes = tmp_las;
+			sc->linked_attributes_count = new_count;
+			linked_attributes_count = 0;
+		}
+
+		if (more_data) {
+			/* we don't need this structure anymore */
+			TALLOC_FREE(r);
+
+			dreplsrv_op_pull_source_get_changes_trigger(req);
+			return;
+		}
+
+		/* detach sc from state */
+		state->schema_cycle = NULL;
+	}
+
 	schema = dsdb_get_schema(service->samdb, state);
 	if (!schema) {
 		DEBUG(0,(__location__ ": Schema is not loaded yet!\n"));
@@ -837,9 +971,14 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 	 * Decide what working schema to use for object conversion.
 	 * We won't need a working schema for empty replicas sent.
 	 */
-	if (first_object) {
-		bool is_schema = ldb_dn_compare(partition->dn, schema_dn) == 0;
-		if (is_schema) {
+	if (sc != NULL) {
+		first_object = talloc_move(r, &sc->first_object);
+		object_count = sc->object_count;
+		linked_attributes = talloc_move(r, &sc->linked_attributes);
+		linked_attributes_count = sc->linked_attributes_count;
+		TALLOC_FREE(sc);
+
+		if (first_object != NULL) {
 			/* create working schema to convert objects with */
 			status = dsdb_repl_make_working_schema(service->samdb,
 							       schema,
@@ -904,6 +1043,15 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 
 	if (W_ERROR_EQUAL(status, WERR_DS_DRA_SCHEMA_MISMATCH)) {
 		struct dreplsrv_partition *p;
+		bool ok;
+
+		if (was_schema) {
+			nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
+			DBG_ERR("Got mismatch for schema partition: %s/%s\n",
+				  win_errstr(status), nt_errstr(nt_status));
+			tevent_req_nterror(req, nt_status);
+			return;
+		}
 
 		if (state->retry_started) {
 			nt_status = werror_to_ntstatus(WERR_BAD_NET_RESP);
@@ -992,6 +1140,12 @@ static void dreplsrv_op_pull_source_apply_changes_trigger(struct tevent_req *req
 		DEBUG(4,("Wrong schema when applying reply GetNCChanges, retrying\n"));
 
 		state->retry_started = true;
+
+		ok = dreplsrv_op_pull_source_detect_schema_cycle(req);
+		if (!ok) {
+			return;
+		}
+
 		dreplsrv_op_pull_source_get_changes_trigger(req);
 		return;
 
