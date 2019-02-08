@@ -399,7 +399,6 @@ static bool test_DsReplicaSync(struct torture_context *tctx,
 	struct drsuapi_DsReplicaSync r;
 	union drsuapi_DsReplicaSyncRequest sync_req;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
-	struct GUID null_guid;
 	struct dom_sid null_sid;
 	struct {
 		int32_t level;
@@ -419,7 +418,6 @@ static bool test_DsReplicaSync(struct torture_context *tctx,
 		return true;
 	}
 
-	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
 
 	r.in.bind_handle	= &priv->bind_handle;
@@ -431,7 +429,7 @@ static bool test_DsReplicaSync(struct torture_context *tctx,
 		r.in.level = array[i].level;
 		switch(r.in.level) {
 		case 1:
-			nc.guid					= null_guid;
+			nc.guid					= GUID_zero();
 			nc.sid					= null_sid;
 			nc.dn					= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
@@ -458,12 +456,10 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 	struct dcerpc_pipe *p = priv->drs_pipe;
 	struct drsuapi_DsReplicaUpdateRefs r;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
-	struct GUID null_guid;
 	struct GUID dest_dsa_guid;
 	const char *dest_dsa_guid_str;
 	struct dom_sid null_sid;
 
-	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
 	dest_dsa_guid = GUID_random();
 	dest_dsa_guid_str = GUID_string(tctx, &dest_dsa_guid);
@@ -472,7 +468,7 @@ static bool test_DsReplicaUpdateRefs(struct torture_context *tctx,
 	r.in.level	 = 1; /* Only version 1 is defined presently */
 
 	/* setup NC */
-	nc.guid		= priv->domain_obj_dn ? null_guid : priv->domain_guid;
+	nc.guid		= priv->domain_obj_dn ? GUID_zero():priv->domain_guid;
 	nc.sid		= null_sid;
 	nc.dn		= priv->domain_obj_dn ? priv->domain_obj_dn : "";
 
@@ -552,7 +548,6 @@ static bool test_DsGetNCChanges(struct torture_context *tctx,
 	union drsuapi_DsGetNCChangesRequest req;
 	union drsuapi_DsGetNCChangesCtr ctr;
 	struct drsuapi_DsReplicaObjectIdentifier nc;
-	struct GUID null_guid;
 	struct dom_sid null_sid;
 	uint32_t level_out;
 	struct {
@@ -571,7 +566,6 @@ static bool test_DsGetNCChanges(struct torture_context *tctx,
 		return true;
 	}
 
-	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
 
 	for (i=0; i < ARRAY_SIZE(array); i++) {
@@ -586,13 +580,13 @@ static bool test_DsGetNCChanges(struct torture_context *tctx,
 
 		switch (r.in.level) {
 		case 5:
-			nc.guid	= null_guid;
+			nc.guid	= GUID_zero();
 			nc.sid	= null_sid;
 			nc.dn	= priv->domain_obj_dn ? priv->domain_obj_dn : "";
 
 			r.in.req					= &req;
 			r.in.req->req5.destination_dsa_guid		= GUID_random();
-			r.in.req->req5.source_dsa_invocation_id		= null_guid;
+			r.in.req->req5.source_dsa_invocation_id	= GUID_zero();
 			r.in.req->req5.naming_context			= &nc;
 			r.in.req->req5.highwatermark.tmp_highest_usn	= 0;
 			r.in.req->req5.highwatermark.reserved_usn	= 0;
@@ -609,13 +603,13 @@ static bool test_DsGetNCChanges(struct torture_context *tctx,
 
 			break;
 		case 8:
-			nc.guid	= null_guid;
+			nc.guid	= GUID_zero();
 			nc.sid	= null_sid;
 			nc.dn	= priv->domain_obj_dn ? priv->domain_obj_dn : "";
 
 			r.in.req					= &req;
 			r.in.req->req8.destination_dsa_guid		= GUID_random();
-			r.in.req->req8.source_dsa_invocation_id		= null_guid;
+			r.in.req->req8.source_dsa_invocation_id	= GUID_zero();
 			r.in.req->req8.naming_context			= &nc;
 			r.in.req->req8.highwatermark.tmp_highest_usn	= 0;
 			r.in.req->req8.highwatermark.reserved_usn	= 0;

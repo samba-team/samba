@@ -677,7 +677,6 @@ static bool test_GetNCChanges(struct torture_context *tctx,
 	struct drsuapi_DsGetNCChangesCtr1 *ctr1 = NULL;
 	struct drsuapi_DsGetNCChangesCtr6 *ctr6 = NULL;
 	uint32_t out_level = 0;
-	struct GUID null_guid;
 	struct dom_sid null_sid;
 	DATA_BLOB gensec_skey;
 	struct {
@@ -691,7 +690,6 @@ static bool test_GetNCChanges(struct torture_context *tctx,
 		}
 	};
 
-	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(null_sid);
 
 	highest_usn = lpcfg_parm_int(tctx->lp_ctx, NULL, "dssync", "highest_usn", 0);
@@ -721,13 +719,13 @@ static bool test_GetNCChanges(struct torture_context *tctx,
 
 		switch (r.in.level) {
 		case 5:
-			nc.guid	= null_guid;
+			nc.guid	= GUID_zero();
 			nc.sid	= null_sid;
 			nc.dn	= nc_dn_str;
 
 			r.in.req					= &req;
 			r.in.req->req5.destination_dsa_guid		= ctx->new_dc.invocation_id;
-			r.in.req->req5.source_dsa_invocation_id		= null_guid;
+			r.in.req->req5.source_dsa_invocation_id = GUID_zero();
 			r.in.req->req5.naming_context			= &nc;
 			r.in.req->req5.highwatermark.tmp_highest_usn	= highest_usn;
 			r.in.req->req5.highwatermark.reserved_usn	= 0;
@@ -752,14 +750,14 @@ static bool test_GetNCChanges(struct torture_context *tctx,
 
 			break;
 		case 8:
-			nc.guid	= null_guid;
+			nc.guid	= GUID_zero();
 			nc.sid	= null_sid;
 			nc.dn	= nc_dn_str;
 			/* nc.dn can be set to any other ad partition */
 
 			r.in.req					= &req;
 			r.in.req->req8.destination_dsa_guid		= ctx->new_dc.invocation_id;
-			r.in.req->req8.source_dsa_invocation_id		= null_guid;
+			r.in.req->req8.source_dsa_invocation_id	= GUID_zero();
 			r.in.req->req8.naming_context			= &nc;
 			r.in.req->req8.highwatermark.tmp_highest_usn	= highest_usn;
 			r.in.req->req8.highwatermark.reserved_usn	= 0;
@@ -934,10 +932,8 @@ static bool test_FetchNT4Data(struct torture_context *tctx,
 	union drsuapi_DsGetNT4ChangeLogRequest req;
 	union drsuapi_DsGetNT4ChangeLogInfo info;
 	uint32_t level_out = 0;
-	struct GUID null_guid;
 	DATA_BLOB cookie;
 
-	ZERO_STRUCT(null_guid);
 	ZERO_STRUCT(cookie);
 
 	ZERO_STRUCT(r);
