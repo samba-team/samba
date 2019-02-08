@@ -325,12 +325,9 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 		return true;
 	}
 
-	/* make sure we free this if allocated previously before replacing */
-	LDB_FREE(dn->components);
-	dn->comp_num = 0;
-
 	LDB_FREE(dn->ext_components);
 	dn->ext_comp_num = 0;
+	dn->comp_num = 0;
 
 	/* in the common case we have 3 or more components */
 	/* make sure all components are zeroed, other functions depend on it */
