@@ -1,0 +1,22 @@
+<samba:parameter name="debug encryption"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+      This option will make the smbd server and client code using
+      libsmb (smbclient, smbget, smbspool, ...) dump the Session Id,
+      the decrypted Session Key, the Signing Key, the Application Key,
+      the Encryption Key and the Decryption Key every time an SMB3+
+      session is established. This information will be printed in logs
+      at level 0.
+    </para>
+    <para>
+      Warning: access to these values enables the decryption of any
+      encrypted traffic on the dumped sessions. This option should
+      only be enabled for debugging purposes.
+    </para>
+  </description>
+
+  <value type="default">no</value>
+</samba:parameter>
