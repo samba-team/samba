@@ -244,6 +244,9 @@ int sys_get_nfs_quota(const char *path, const char *bdev,
 		dp->softlimit = gq_rslt.GQR_RQUOTA.rq_bsoftlimit;
 		dp->hardlimit = gq_rslt.GQR_RQUOTA.rq_bhardlimit;
 		dp->curblocks = gq_rslt.GQR_RQUOTA.rq_curblocks;
+		dp->isoftlimit = gq_rslt.GQR_RQUOTA.rq_fsoftlimit;
+		dp->ihardlimit = gq_rslt.GQR_RQUOTA.rq_fhardlimit;
+		dp->curinodes = gq_rslt.GQR_RQUOTA.rq_curfiles;
 		break;
 
 	case 2:
