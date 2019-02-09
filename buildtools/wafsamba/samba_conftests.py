@@ -258,7 +258,8 @@ int foo(int v) {
     environ[0] = 1;
     ldb_module = PyImport_ImportModule("ldb");
     return v * 2;
-}'''
+}
+'''
     return conf.check(features='c cshlib',uselib='PYEMBED',fragment=snip,msg=msg, mandatory=False)
 
 # this one is quite complex, and should probably be broken up
@@ -463,7 +464,7 @@ def CHECK_INLINE(conf):
         ret = conf.CHECK_CODE('''
         typedef int foo_t;
         static %s foo_t static_foo () {return 0; }
-        %s foo_t foo () {return 0; }''' % (i, i),
+        %s foo_t foo () {return 0; }\n''' % (i, i),
                               define='INLINE_MACRO',
                               addmain=False,
                               link=False)

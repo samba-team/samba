@@ -351,7 +351,7 @@ def configure(conf):
     if conf.CHECK_CFLAGS(['-fvisibility=hidden'] + conf.env.WERROR_CFLAGS):
         conf.env.VISIBILITY_CFLAGS = '-fvisibility=hidden'
         conf.CHECK_CODE('''int main(void) { return 0; }
-                           __attribute__((visibility("default"))) void vis_foo2(void) {}''',
+                           __attribute__((visibility("default"))) void vis_foo2(void) {}\n''',
                         cflags=conf.env.VISIBILITY_CFLAGS,
                         strict=True,
                         define='HAVE_VISIBILITY_ATTR', addmain=False)
@@ -521,7 +521,7 @@ struct foo bar = { .y = 'X', .x = 1 };
                         #if !defined(LITTLE) || !defined(B) || LITTLE != B
                         #error Not little endian.
                         #endif
-                        int main(void) { return 0; }""",
+                        int main(void) { return 0; }\n""",
                             addmain=False,
                             headers="endian.h sys/endian.h",
                             define="HAVE_LITTLE_ENDIAN")
@@ -540,7 +540,7 @@ struct foo bar = { .y = 'X', .x = 1 };
                         #if !defined(BIG) || !defined(B) || BIG != B
                         #error Not big endian.
                         #endif
-                        int main(void) { return 0; }""",
+                        int main(void) { return 0; }\n""",
                             addmain=False,
                             headers="endian.h sys/endian.h",
                             define="HAVE_BIG_ENDIAN")
