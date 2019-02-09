@@ -308,8 +308,7 @@ def configure(conf):
               "-qhalt=w",     # IBM xlc
               "-w2",           # Tru64
              ]:
-        if conf.CHECK_CFLAGS([f], '''
-'''):
+        if conf.CHECK_CFLAGS([f]):
             if not 'WERROR_CFLAGS' in conf.env:
                 conf.env['WERROR_CFLAGS'] = []
             conf.env['WERROR_CFLAGS'].extend([f])
