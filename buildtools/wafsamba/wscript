@@ -449,7 +449,7 @@ def configure(conf):
     # See memset_s() details here:
     # https://en.cppreference.com/w/c/string/byte/memset
     #
-    if conf.CHECK_CFLAGS(['-D__STDC_WANT_LIB_EXT1__=1'] + conf.env.WERROR_CFLAGS):
+    if conf.CHECK_CFLAGS(['-D__STDC_WANT_LIB_EXT1__=1']):
         conf.ADD_CFLAGS('-D__STDC_WANT_LIB_EXT1__=1')
 
     # on Tru64 certain features are only available with _OSF_SOURCE set to 1
