@@ -397,13 +397,8 @@ def CHECK_CODE(conf, code, define,
     # Be strict when relying on a compiler check
     # Some compilers (e.g. xlc) ignore non-supported features as warnings
     if strict:
-        extra_cflags = None
-        if conf.env["CC_NAME"] == "gcc":
-            extra_cflags = "-Werror"
-        elif conf.env["CC_NAME"] == "xlc":
-            extra_cflags = "-qhalt=w"
-        if extra_cflags:
-            cflags.append(extra_cflags)
+        if 'WERROR_CFLAGS' in conf.env:
+            cflags.extend(conf.env['WERROR_CFLAGS'])
 
     if local_include:
         cflags.append('-I%s' % conf.path.abspath())
