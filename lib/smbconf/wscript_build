@@ -1,5 +1,5 @@
 bld.SAMBA_SUBSYSTEM('LIBSMBCONF',
                     source='smbconf.c smbconf_txt.c smbconf_util.c',
-                    deps='talloc'
+                    deps='talloc sendfile'
                     )
 
