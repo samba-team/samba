@@ -32,8 +32,8 @@ def configure(conf):
         conf.CHECK_FUNCS('__posix_getpwnam_r __posix_getpwuid_r')
         conf.CHECK_FUNCS('__posix_getgrgid_r __posix_getgrnam_r')
 
-        conf.CHECK_FUNCS_IN('nsl',
-                            'gethostname',
+        conf.CHECK_FUNCS_IN('gethostname',
+                            'nsl',
                             checklibc=True,
                             headers='unistd.h')
 
