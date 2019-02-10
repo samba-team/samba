@@ -315,7 +315,9 @@ def configure(conf):
             break
 
     # check which compiler/linker flags are needed for rpath support
-    if not conf.CHECK_LDFLAGS(['-Wl,-rpath,.']) and conf.CHECK_LDFLAGS(['-Wl,-R,.']):
+    if conf.CHECK_LDFLAGS(['-Wl,-rpath,.']):
+        conf.env['RPATH_ST'] = '-Wl,-rpath,%s'
+    elif conf.CHECK_LDFLAGS(['-Wl,-R,.']):
         conf.env['RPATH_ST'] = '-Wl,-R,%s'
 
     # check for rpath
