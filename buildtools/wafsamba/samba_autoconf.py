@@ -251,7 +251,10 @@ def CHECK_FUNC(conf, f, link=True, lib=None, headers=None):
 
     ret = False
 
-    conf.COMPOUND_START('Checking for %s' % f)
+    in_lib_str = ""
+    if lib:
+        in_lib_str = " in %s" % lib
+    conf.COMPOUND_START('Checking for %s%s' % (f, in_lib_str))
 
     if link is None or link:
         ret = CHECK_CODE(conf,
