@@ -7,7 +7,7 @@ variables:
   GIT_STRATEGY: fetch
   GIT_DEPTH: "3"
 
-.shared_template: &shared_template
+.shared_template:
   image: $CI_REGISTRY/$SAMBA_BUILD_IMAGES_PROJECT:$SAMBA_BUILD
   stage: build
   tags:
@@ -35,81 +35,81 @@ variables:
       - /tmp/samba-testbase/*/*/bin/config.log
 
 samba_none_env:
-  <<: *shared_template
+  extends: .shared_template
   script:
     # this one takes about 1 hours to finish
     - script/autobuild.py samba-none-env    --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_none_env_py2:
-  <<: *shared_template
+  extends: .shared_template
   script:
     # this one takes about 1 hours to finish
     - script/autobuild.py samba-none-env-py2    --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_nopython:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - script/autobuild.py samba-nopython   --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_systemkrb5:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - script/autobuild.py samba-systemkrb5 --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_xc:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - script/autobuild.py samba-xc         --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_o3:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - script/autobuild.py samba-o3         --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_ad_dc_2:
-  <<: *shared_template
+  extends: .shared_template
   script:
     # this one takes about 1 hours to finish
     - script/autobuild.py samba-ad-dc-2     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_ad_dc_backup:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - script/autobuild.py samba-ad-dc-backup    --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_ad_dc_2_py2:
-  <<: *shared_template
+  extends: .shared_template
   script:
     # this one takes about 1 hours to finish
     - script/autobuild.py samba-ad-dc-2-py2     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_libs:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - script/autobuild.py samba-libs       --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_libs_py2:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - script/autobuild.py samba-libs-py2       --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_static:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - script/autobuild.py samba-static     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 ctdb:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - script/autobuild.py ctdb       --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_ctdb:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - script/autobuild.py samba-ctdb             --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 others:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - script/autobuild.py ldb              --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
     - script/autobuild.py pidl             --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
@@ -119,17 +119,17 @@ others:
     - script/autobuild.py tevent           --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_buildpy2_only:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - python script/autobuild.py samba-buildpy2-only             --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_ad_dc_ntvfs:
-  <<: *shared_template
+  extends: .shared_template
   script:
     # this one takes about 100 mins to finish
     - script/autobuild.py samba-ad-dc-ntvfs --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_ad_dc_ntvfs_py2:
-  <<: *shared_template
+  extends: .shared_template
   script:
     - script/autobuild.py samba-ad-dc-ntvfs-py2 --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase

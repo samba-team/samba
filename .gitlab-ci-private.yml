@@ -2,44 +2,50 @@ include:
  - '/.gitlab-ci.yml'
 
 
-.private_template: &private_template
-  stage: build
+.private_template:
+  extends: .shared_template
   tags:
     - docker
     - private
+  before_script:
+    - uname -a
+    - lsb_release -a
+    - mount
+    - df -h
+    - free -h
 
 samba:
-  <<: *private_template
+  extends: .private_template
   script:
     # this one takes about 4 hours to finish
     - script/autobuild.py samba            --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_py2:
-  <<: *private_template
+  extends: .private_template
   script:
     # this one takes about 4 hours to finish
     - script/autobuild.py samba-py2            --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_fileserver:
-  <<: *private_template
+  extends: .private_template
   script:
     # this one takes about 1 hours to finish
     - script/autobuild.py samba-fileserver --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 samba_ad_dc:
-  <<: *private_template
+  extends: .private_template
   script:
     # this one takes about 1 hours to finish
     - script/autobuild.py samba-ad-dc     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 
 samba_ad_dc_py2:
-  <<: *private_template
+  extends: .private_template
   script:
     # this one takes about 1 hours to finish
     - script/autobuild.py samba-ad-dc-py2     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 nt4:
-  <<: *private_template
+  extends: .private_template
   script:
     - script/autobuild.py samba-nt4 --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
