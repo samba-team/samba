@@ -635,7 +635,9 @@ class buildlist(object):
         filename = 'system-info.txt'
         f = open(filename, 'w')
         for cmd in ['uname -a',
+                    'lsb_release -a',
                     'free',
+                    'mount',
                     'cat /proc/cpuinfo',
                     'cc --version',
                     'df -m .',
