@@ -250,15 +250,21 @@ sub mk_krb5_conf($$)
  ticket_lifetime = 24h
  forwardable = yes
  allow_weak_crypto = yes
- # Set the grace clocskew to 5 seconds
- # This is especially required by samba3.raw.session krb5 and
- # reauth tests
- clockskew = 5
+
  # We are running on the same machine, do not correct
  # system clock differences
  kdc_timesync = 0
 
 ";
+
+	if (defined($ENV{MITKRB5})) {
+		print KRB5CONF "
+ # Set the grace clocskew to 5 seconds
+ # This is especially required by samba3.raw.session krb5 and
+ # reauth tests when not using Heimdal
+ clockskew = 5
+    ";
+	}
 
 	if (defined($ctx->{krb5_ccname})) {
 		print KRB5CONF "
