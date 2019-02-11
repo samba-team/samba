@@ -33,6 +33,11 @@ variables:
       - "*.stderr"
       - system-info.txt
       - /tmp/samba-testbase/*/*/bin/config.log
+  retry:
+    max: 2
+    when:
+      - runner_system_failure
+      - stuck_or_timeout_failure
 
 samba_none_env:
   extends: .shared_template
