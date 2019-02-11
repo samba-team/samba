@@ -888,6 +888,13 @@ my @exported_envvars = (
 	"NETBIOSALIAS",
 	"SAMSID",
 
+	# only use these 2 as a last resort. Some tests need to test both client-
+	# side and server-side. In this case, run as default client, ans access
+	# server's smb.conf as needed, typically using:
+	#  param.LoadParm(filename_for_non_global_lp=os.environ['SERVERCONFFILE'])
+	"SERVERCONFFILE",
+	"DC_SERVERCONFFILE",
+
 	# user stuff
 	"USERNAME",
 	"USERID",
