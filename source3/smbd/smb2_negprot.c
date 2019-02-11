@@ -388,7 +388,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		uint16_t selected_preauth = 0;
 		const uint8_t *p;
 		uint8_t buf[38];
-		DATA_BLOB b;
 		size_t i;
 
 		if (in_preauth->data.length < needed) {
@@ -435,9 +434,12 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		SSVAL(buf, 4, selected_preauth);
 		generate_random_buffer(buf + 6, 32);
 
-		b = data_blob_const(buf, sizeof(buf));
-		status = smb2_negotiate_context_add(req, &out_c,
-					SMB2_PREAUTH_INTEGRITY_CAPABILITIES, b);
+		status = smb2_negotiate_context_add(
+			req,
+			&out_c,
+			SMB2_PREAUTH_INTEGRITY_CAPABILITIES,
+			buf,
+			sizeof(buf));
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}
@@ -450,7 +452,6 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		uint16_t cipher_count;
 		const uint8_t *p;
 		uint8_t buf[4];
-		DATA_BLOB b;
 		size_t i;
 		bool aes_128_ccm_supported = false;
 		bool aes_128_gcm_supported = false;
@@ -504,9 +505,12 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 		SSVAL(buf, 0, 1); /* ChiperCount */
 		SSVAL(buf, 2, xconn->smb2.server.cipher);
 
-		b = data_blob_const(buf, sizeof(buf));
-		status = smb2_negotiate_context_add(req, &out_c,
-					SMB2_ENCRYPTION_CAPABILITIES, b);
+		status = smb2_negotiate_context_add(
+			req,
+			&out_c,
+			SMB2_ENCRYPTION_CAPABILITIES,
+			buf,
+			sizeof(buf));
 		if (!NT_STATUS_IS_OK(status)) {
 			return smbd_smb2_request_error(req, status);
 		}

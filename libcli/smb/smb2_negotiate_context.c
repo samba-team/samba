@@ -39,7 +39,6 @@ NTSTATUS smb2_negotiate_context_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffe
 	while (true) {
 		uint16_t data_length;
 		uint16_t type;
-		DATA_BLOB b;
 		NTSTATUS status;
 		size_t pad;
 		uint32_t next_offset;
@@ -58,8 +57,8 @@ NTSTATUS smb2_negotiate_context_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffe
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		b = data_blob_const(data+0x08, data_length);
-		status = smb2_negotiate_context_add(mem_ctx, contexts, type, b);
+		status = smb2_negotiate_context_add(
+			mem_ctx, contexts, type, data+0x08, data_length);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -148,8 +147,11 @@ NTSTATUS smb2_negotiate_context_push(TALLOC_CTX *mem_ctx, DATA_BLOB *buffer,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smb2_negotiate_context_add(TALLOC_CTX *mem_ctx, struct smb2_negotiate_contexts *c,
-				    uint16_t type, DATA_BLOB data)
+NTSTATUS smb2_negotiate_context_add(TALLOC_CTX *mem_ctx,
+				    struct smb2_negotiate_contexts *c,
+				    uint16_t type,
+				    const uint8_t *buf,
+				    size_t buflen)
 {
 	struct smb2_negotiate_context *array;
 
@@ -161,10 +163,9 @@ NTSTATUS smb2_negotiate_context_add(TALLOC_CTX *mem_ctx, struct smb2_negotiate_c
 
 	c->contexts[c->num_contexts].type = type;
 
-	if (data.data) {
-		c->contexts[c->num_contexts].data = data_blob_talloc(c->contexts,
-								     data.data,
-								     data.length);
+	if (buf != NULL) {
+		c->contexts[c->num_contexts].data = data_blob_talloc(
+			c->contexts, buf, buflen);
 		NT_STATUS_HAVE_NO_MEMORY(c->contexts[c->num_contexts].data.data);
 	} else {
 		c->contexts[c->num_contexts].data = data_blob_null;

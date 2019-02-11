@@ -4768,9 +4768,8 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 		SSVAL(p, 4, SMB2_PREAUTH_INTEGRITY_SHA512);
 		generate_random_buffer(p + 6, 32);
 
-		b = data_blob_const(p, 38);
-		status = smb2_negotiate_context_add(state, &c,
-					SMB2_PREAUTH_INTEGRITY_CAPABILITIES, b);
+		status = smb2_negotiate_context_add(
+			state, &c, SMB2_PREAUTH_INTEGRITY_CAPABILITIES, p, 38);
 		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
 		}
@@ -4783,9 +4782,8 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 		SSVAL(p, 2, SMB2_ENCRYPTION_AES128_CCM);
 		SSVAL(p, 4, SMB2_ENCRYPTION_AES128_GCM);
 
-		b = data_blob_const(p, 6);
-		status = smb2_negotiate_context_add(state, &c,
-					SMB2_ENCRYPTION_CAPABILITIES, b);
+		status = smb2_negotiate_context_add(
+			state, &c, SMB2_ENCRYPTION_CAPABILITIES, p, 6);
 		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
 		}

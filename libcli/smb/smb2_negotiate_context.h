@@ -42,8 +42,11 @@ NTSTATUS smb2_negotiate_context_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB buffe
 NTSTATUS smb2_negotiate_context_push(TALLOC_CTX *mem_ctx, DATA_BLOB *buffer,
 			       const struct smb2_negotiate_contexts contexts);
 
-NTSTATUS smb2_negotiate_context_add(TALLOC_CTX *mem_ctx, struct smb2_negotiate_contexts *c,
-				    uint16_t type, DATA_BLOB data);
+NTSTATUS smb2_negotiate_context_add(TALLOC_CTX *mem_ctx,
+				    struct smb2_negotiate_contexts *c,
+				    uint16_t type,
+				    const uint8_t *buf,
+				    size_t buflen);
 
 /*
  * return the first context with the given tag
