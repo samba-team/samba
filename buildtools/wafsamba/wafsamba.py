@@ -740,7 +740,7 @@ def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
         link_dst = os.path.join(tgtdir, os.path.basename(iname))
         if os.path.islink(link_dst) and os.readlink(link_dst) == link_src:
             continue
-        if os.path.exists(link_dst):
+        if os.path.islink(link_dst):
             os.unlink(link_dst)
         Logs.info("symlink: %s -> %s/%s" % (s, installdir, iname))
         symlink(link_src, link_dst)
