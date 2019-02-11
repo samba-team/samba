@@ -14,12 +14,17 @@ variables:
     - docker
     - shared
   before_script:
+    - uname -a
+    - lsb_release -a
     - echo "Build starting (preparing swap)..."
     - if [ $(df -m / --output=avail | tail -n1) -gt 10240 ]; then
         sudo dd if=/dev/zero of=/samba-swap bs=1M count=6144;
         sudo mkswap /samba-swap;
         sudo swapon /samba-swap;
       fi
+    - mount
+    - df -h
+    - free -h
   artifacts:
     expire_in: 1 week
     when: on_failure
