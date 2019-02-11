@@ -108,7 +108,7 @@ enum protocol_types smbd_smb2_protocol_dialect_match(const uint8_t *indyn,
 	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(pd); i ++) {
-		size_t c = 0;
+		int c = 0;
 
 		if (lp_server_max_protocol() < pd[i].proto) {
 			continue;
