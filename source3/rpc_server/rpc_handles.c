@@ -128,15 +128,15 @@ int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
  * Handle database - stored per pipe.
  */
 
-struct dcesrv_handle {
-	struct dcesrv_handle *prev, *next;
+struct dcesrv_handle_old {
+	struct dcesrv_handle_old *prev, *next;
 	struct policy_handle wire_handle;
 	uint32_t access_granted;
 	void *data;
 };
 
 struct handle_list {
-	struct dcesrv_handle *handles;	/* List of pipe handles. */
+	struct dcesrv_handle_old *handles;	/* List of pipe handles. */
 	size_t count;			/* Current number of handles. */
 	size_t pipe_ref_count;		/* Number of pipe handles referring
 					 * to this tree. */
@@ -250,10 +250,10 @@ bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *synta
   data_ptr is TALLOC_FREE()'ed
 ****************************************************************************/
 
-static struct dcesrv_handle *create_rpc_handle_internal(struct pipes_struct *p,
+static struct dcesrv_handle_old *create_rpc_handle_internal(struct pipes_struct *p,
 				struct policy_handle *hnd, void *data_ptr)
 {
-	struct dcesrv_handle *rpc_hnd;
+	struct dcesrv_handle_old *rpc_hnd = NULL;
 	static uint32_t pol_hnd_low  = 0;
 	static uint32_t pol_hnd_high = 0;
 	time_t t = time(NULL);
@@ -264,7 +264,7 @@ static struct dcesrv_handle *create_rpc_handle_internal(struct pipes_struct *p,
 		return NULL;
 	}
 
-	rpc_hnd = talloc_zero(p->pipe_handles, struct dcesrv_handle);
+	rpc_hnd = talloc_zero(p->pipe_handles, struct dcesrv_handle_old);
 	if (!rpc_hnd) {
 		DEBUG(0,("create_policy_hnd: ERROR: out of memory!\n"));
 		return NULL;
@@ -310,7 +310,7 @@ static struct dcesrv_handle *create_rpc_handle_internal(struct pipes_struct *p,
 bool create_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd,
 		       void *data_ptr)
 {
-	struct dcesrv_handle *rpc_hnd;
+	struct dcesrv_handle_old *rpc_hnd = NULL;
 
 	rpc_hnd = create_rpc_handle_internal(p, hnd, data_ptr);
 	if (rpc_hnd == NULL) {
@@ -323,10 +323,10 @@ bool create_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd,
   find policy by handle - internal version.
 ****************************************************************************/
 
-static struct dcesrv_handle *find_policy_by_hnd_internal(struct pipes_struct *p,
+static struct dcesrv_handle_old *find_policy_by_hnd_internal(struct pipes_struct *p,
 				const struct policy_handle *hnd, void **data_p)
 {
-	struct dcesrv_handle *h;
+	struct dcesrv_handle_old *h = NULL;
 	unsigned int count;
 
 	if (data_p) {
@@ -361,7 +361,7 @@ static struct dcesrv_handle *find_policy_by_hnd_internal(struct pipes_struct *p,
 bool find_policy_by_hnd(struct pipes_struct *p, const struct policy_handle *hnd,
 			void **data_p)
 {
-	struct dcesrv_handle *rpc_hnd;
+	struct dcesrv_handle_old *rpc_hnd = NULL;
 
 	rpc_hnd = find_policy_by_hnd_internal(p, hnd, data_p);
 	if (rpc_hnd == NULL) {
@@ -376,7 +376,7 @@ bool find_policy_by_hnd(struct pipes_struct *p, const struct policy_handle *hnd,
 
 bool close_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd)
 {
-	struct dcesrv_handle *rpc_hnd;
+	struct dcesrv_handle_old *rpc_hnd = NULL;
 
 	rpc_hnd = find_policy_by_hnd_internal(p, hnd, NULL);
 
@@ -452,7 +452,7 @@ void *_policy_handle_create(struct pipes_struct *p, struct policy_handle *hnd,
 			    uint32_t access_granted, size_t data_size,
 			    const char *type, NTSTATUS *pstatus)
 {
-	struct dcesrv_handle *rpc_hnd;
+	struct dcesrv_handle_old *rpc_hnd = NULL;
 	void *data;
 
 	if (p->pipe_handles->count > MAX_OPEN_POLS) {
@@ -490,7 +490,7 @@ void *_policy_handle_find(struct pipes_struct *p,
 			  const char *name, const char *location,
 			  NTSTATUS *pstatus)
 {
-	struct dcesrv_handle *rpc_hnd;
+	struct dcesrv_handle_old *rpc_hnd = NULL;
 	void *data;
 
 	rpc_hnd = find_policy_by_hnd_internal(p, hnd, &data);
