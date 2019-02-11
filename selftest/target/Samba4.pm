@@ -1329,6 +1329,7 @@ rpc_server:tcpip = no
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
+	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
@@ -1432,6 +1433,7 @@ sub provision_rpc_proxy($$$)
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
+	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
@@ -1508,6 +1510,7 @@ sub provision_promoted_dc($$$)
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
+	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
@@ -1590,6 +1593,7 @@ sub provision_vampire_dc($$$)
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
+	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
@@ -1658,6 +1662,7 @@ sub provision_subdom_dc($$$)
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
+	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
@@ -1958,6 +1963,7 @@ sub provision_rodc($$$)
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
+	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
 	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
 	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
