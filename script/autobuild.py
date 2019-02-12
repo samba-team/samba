@@ -457,9 +457,9 @@ def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
 class builder(object):
     '''handle build of one directory'''
 
-    def __init__(self, name, sequence, cp=True, py3=False):
+    def __init__(self, name, sequence, cp=True, py2=False):
         self.name = name
-        self.py3 = py3
+        self.py2 = py2
         if name in builddirs:
             self.dir = builddirs[name]
         else:
@@ -498,7 +498,7 @@ class builder(object):
         (self.stage, self.cmd, self.output_mime_type) = self.sequence[self.next]
         self.cmd = self.cmd.replace("${PYTHON_PREFIX}", get_python_lib(plat_specific=1, standard_lib=0, prefix=self.prefix))
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
-        if self.py3:
+        if self.py2:
             self.cmd = self.cmd.replace("${EXTRA_PYTHON}", "%s" % extra_python)
             # The trailing space is important
             self.cmd = self.cmd.replace("${PY3_ONLY}", "python2 ")
@@ -542,7 +542,7 @@ class buildlist(object):
                 b = builder(n,
                             tasks[n[:-4]],
                             cp=n is not "pidl",
-                            py3=True)
+                            py2=True)
             else:
                 b = builder(n, tasks[n], cp=n is not "pidl")
             self.tlist.append(b)
