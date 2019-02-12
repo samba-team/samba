@@ -181,6 +181,7 @@ bld.SAMBA3_SUBSYSTEM('pdb',
                         LIBCLI_AUTH
                         flag_mapping
                         samba-credentials
+                        nscd
                         ''')
 
 bld.SAMBA3_LIBRARY('smbldaphelper',
