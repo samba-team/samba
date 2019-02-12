@@ -1390,7 +1390,7 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 		return NT_STATUS_OK;
 	}
 
-	if (req->async_internal) {
+	if (req->async_internal || defer_time == 0) {
 		/*
 		 * An SMB2 request implementation wants to handle the request
 		 * asynchronously "internally" while keeping synchronous
