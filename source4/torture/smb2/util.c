@@ -596,6 +596,40 @@ NTSTATUS torture_smb2_testdir(struct smb2_tree *tree, const char *fname,
 }
 
 /*
+  create a simple file using the SMB2 protocol
+*/
+NTSTATUS smb2_create_simple_file(struct torture_context *tctx,
+				 struct smb2_tree *tree, const char *fname,
+				 struct smb2_handle *handle)
+{
+	char buf[7] = "abc";
+	NTSTATUS status;
+
+	smb2_util_unlink(tree, fname);
+	status = torture_smb2_testfile_access(tree,
+					      fname, handle,
+					      SEC_FLAG_MAXIMUM_ALLOWED);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	status = smb2_util_write(tree, *handle, buf, 0, sizeof(buf));
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return NT_STATUS_OK;
+}
+
+/*
+  create a simple file using SMB2.
+*/
+NTSTATUS torture_setup_simple_file(struct torture_context *tctx,
+				   struct smb2_tree *tree, const char *fname)
+{
+	struct smb2_handle handle;
+	NTSTATUS status = smb2_create_simple_file(tctx, tree, fname, &handle);
+	NT_STATUS_NOT_OK_RETURN(status);
+	return smb2_util_close(tree, handle);
+}
+
+/*
   create a complex file using SMB2, to make it easier to
   find fields in SMB2 getinfo levels
 */
