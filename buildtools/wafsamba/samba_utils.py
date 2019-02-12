@@ -1,6 +1,7 @@
 # a waf tool to add autoconf-like macros to the configure section
 # and for SAMBA_ macros for building libraries, binaries etc
 
+import errno
 import os, sys, re, fnmatch, shlex, inspect
 from optparse import SUPPRESS_HELP
 from waflib import Build, Options, Utils, Task, Logs, Configure, Errors, Context
@@ -287,6 +288,18 @@ def recursive_dirlist(dir, relbase, pattern=None):
                 continue
             ret.append(os_path_relpath(f2, relbase))
     return ret
+
+
+def symlink(src, dst, force=True):
+    """Can create symlink by force"""
+    try:
+        os.symlink(src, dst)
+    except OSError as exc:
+        if exc.errno == errno.EEXIST and force:
+            os.remove(dst)
+            os.symlink(src, dst)
+        else:
+            raise
 
 
 def mkdir_p(dir):

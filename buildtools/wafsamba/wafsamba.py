@@ -10,6 +10,7 @@ TaskGen.task_gen.apply_verif = Utils.nada
 
 # bring in the other samba modules
 from samba_utils import *
+from samba_utils import symlink
 from samba_version import *
 from samba_autoconf import *
 from samba_patterns import *
@@ -61,7 +62,7 @@ def SAMBA_BUILD_ENV(conf):
     for (source, target) in [('shared', 'shared'), ('modules', 'modules'), ('python', 'python')]:
         link_target = os.path.join(conf.env.BUILD_DIRECTORY, 'default/' + target)
         if not os.path.lexists(link_target):
-            os.symlink('../' + source, link_target)
+            symlink('../' + source, link_target)
 
     # get perl to put the blib files in the build directory
     blib_bld = os.path.join(conf.env.BUILD_DIRECTORY, 'default/pidl/blib')
@@ -742,7 +743,7 @@ def SAMBA_SCRIPT(bld, name, pattern, installdir, installname=None):
         if os.path.exists(link_dst):
             os.unlink(link_dst)
         Logs.info("symlink: %s -> %s/%s" % (s, installdir, iname))
-        os.symlink(link_src, link_dst)
+        symlink(link_src, link_dst)
 Build.BuildContext.SAMBA_SCRIPT = SAMBA_SCRIPT
 
 
