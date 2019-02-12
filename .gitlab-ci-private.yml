@@ -18,19 +18,11 @@ samba:
   extends: .private_template
   # this one takes about 4 hours to finish
 
-samba-py2:
-  extends: .private_template
-  # this one takes about 4 hours to finish
-
 samba-fileserver:
   extends: .private_template
   # this one takes about 1 hours to finish
 
 samba-ad-dc:
-  extends: .private_template
-  # this one takes about 1 hours to finish
-
-samba-ad-dc-py2:
   extends: .private_template
   # this one takes about 1 hours to finish
 
