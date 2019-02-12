@@ -141,7 +141,7 @@ static int sys_quotactl_4B(const char * path, int cmd,
 		 * means that quotas are not configured (commonly).
 		 */
 		if (errno != ENOTSUP && errno != EINVAL) {
-			DEBUG(0, ("failed to %s quota for %s ID %u on %s: %s\n",
+			DEBUG(5, ("failed to %s quota for %s ID %u on %s: %s\n",
 				    (cmd & QCMD(Q_GETQUOTA, 0)) ? "get" : "set",
 				    (cmd & QCMD(0, GRPQUOTA)) ? "group" : "user",
 				    (unsigned)id, path, strerror(errno)));
