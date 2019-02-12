@@ -42,7 +42,7 @@ class SchemaCmdTestCase(SambaToolCmdTest):
 
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
-        self.assertIn("dn: CN=uid,CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com", out)
+        self.assertIn("dn: CN=uid,CN=Schema,CN=Configuration,", out)
 
     def test_modify_attribute_searchflags(self):
         """Tests that we can modify searchFlags of an attribute"""
@@ -62,7 +62,7 @@ class SchemaCmdTestCase(SambaToolCmdTest):
 
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
-        self.assertIn("modified cn=uid,CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com", out)
+        self.assertIn("modified cn=uid,CN=Schema,CN=Configuration,", out)
 
         (result, out, err) = self.runsublevelcmd("schema", ("attribute",
                                                             "modify"), "uid",
@@ -73,7 +73,7 @@ class SchemaCmdTestCase(SambaToolCmdTest):
 
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
-        self.assertIn("modified cn=uid,CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com", out)
+        self.assertIn("modified cn=uid,CN=Schema,CN=Configuration,", out)
 
         (result, out, err) = self.runsublevelcmd("schema", ("attribute",
                                                             "modify"), "uid",
@@ -84,7 +84,7 @@ class SchemaCmdTestCase(SambaToolCmdTest):
 
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
-        self.assertIn("modified cn=uid,CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com", out)
+        self.assertIn("modified cn=uid,CN=Schema,CN=Configuration,", out)
 
     def test_show_oc_attribute(self):
         """Tests that we can modify searchFlags of an attribute"""
@@ -109,4 +109,4 @@ class SchemaCmdTestCase(SambaToolCmdTest):
 
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
-        self.assertIn("dn: CN=Person,CN=Schema,CN=Configuration,DC=samba,DC=example,DC=com", out)
+        self.assertIn("dn: CN=Person,CN=Schema,CN=Configuration,", out)
