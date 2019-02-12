@@ -87,23 +87,38 @@ exceeded Samba drops new connections immediately.
 python3 support
 ---------------
 
-The version of python which is now the default for samba is python3.
-'configure' & 'make' will execute using python3. It is possible to still
-specify an additional python version with '--extra-python'
-e.g. '--extra-python=/usr/bin/python2'. It should be noted that support for
-this option will be deprecated in a future release.
+This is the first release of Samba which has full support for Python 3.
+Samba 4.10 still has support for Python 2, however, Python 3 will be used by
+default, i.e. 'configure' & 'make' will execute using python3.
 
-What if I need to build with python2? To build with python2 you *must* set
-the 'PYTHON' environment variable to override the python3 default for both
-'configure' and 'make' steps.
-
-   'PYTHON=python2 ./configure.developer'
-&
+To build Samba with python2 you *must* set the 'PYTHON' environment variable
+for both the 'configure' and 'make' steps, i.e.
+   'PYTHON=python2 ./configure'
    'PYTHON=python2 make'
+This will override the python3 default.
 
-Note: Support for python2 (with the exception of a build configured with
-      'PYTHON=python2 ./configure --disable-python' and built with
-      'PYTHON=python2 make') will be deprecated in the next release.
+Alternatively, it is possible to produce Samba Python bindings for both
+Python 2 and Python 3. To do so, specify '--extra-python=/usr/bin/python2'
+as part of the 'configure' command. Note that python3 will still be used as
+the default in this case.
+
+Note that Samba 4.10 supports Python 3.4 onwards.
+
+Future Python support
+---------------------
+
+Samba 4.10 will be the last release that comes with full support for
+Python 2. Unfortunately, the Samba Team doesn't have the resources to support
+both Python 2 and Python 3 long-term.
+
+Samba 4.11 will not have any runtime support for Python 2. This means if
+you use Python 2 bindings it is time to migrate to Python 3 now.
+
+If you are building Samba using the '--disable-python' option (i.e. you're
+excluding all the run-time Python support), then this will continue to work
+on a system that supports either python2 or python3.
+
+Also note that Samba 4.11 will most likely only support Python 3.6 onwards.
 
 JSON logging
 ------------
