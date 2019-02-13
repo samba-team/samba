@@ -40,6 +40,9 @@ variables:
       - runner_system_failure
       - stuck_or_timeout_failure
   script:
+    # gitlab predefines CI_JOB_NAME for each job. The gitlab job usually matches the
+    # autobuild name, which means we can define a default template that runs most autobuild jobs
+    - echo "Running cmd script/autobuild.py $CI_JOB_NAME --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase"
     - script/autobuild.py $CI_JOB_NAME    --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
 others:
