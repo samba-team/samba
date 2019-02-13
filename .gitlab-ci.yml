@@ -2,14 +2,16 @@
 
 
 variables:
-  SAMBA_BUILD_GITLAB_CI_REGISTRY: registry.gitlab.com
-  SAMBA_BUILD_IMAGES_PROJECT: samba-team/samba
-  SAMBA_BUILD: latest
+  # we run autobuild.py inside a samba CI docker image located on gitlab's registry
+  SAMBA_CI_DOCKER_REGISTRY: registry.gitlab.com
+  SAMBA_CI_DOCKER_NAME: samba-team/samba
+  SAMBA_CI_DOCKER_TAG: latest
+  SAMBA_CI_DOCKER_IMAGE: $SAMBA_CI_DOCKER_REGISTRY/$SAMBA_CI_DOCKER_NAME:$SAMBA_CI_DOCKER_TAG
   GIT_STRATEGY: fetch
   GIT_DEPTH: "3"
 
 .shared_template:
-  image: $SAMBA_BUILD_GITLAB_CI_REGISTRY/$SAMBA_BUILD_IMAGES_PROJECT:$SAMBA_BUILD
+  image: $SAMBA_CI_DOCKER_IMAGE
   stage: build
   tags:
     - docker
