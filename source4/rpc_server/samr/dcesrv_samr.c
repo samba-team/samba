@@ -540,6 +540,10 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 						       struct ldb_message **dom_msgs,
 						       struct samr_DomGeneralInformation *info)
 {
+	size_t count = 0;
+	const enum ldb_scope scope = LDB_SCOPE_SUBTREE;
+	int ret = 0;
+
 	/* MS-SAMR 2.2.4.1 - ReplicaSourceNodeName: "domainReplica" attribute */
 	info->primary.string = ldb_msg_find_attr_as_string(dom_msgs[0],
 							   "domainReplica",
@@ -578,21 +582,62 @@ static NTSTATUS dcesrv_samr_info_DomGeneralInformation(struct samr_domain_state 
 		break;
 	}
 
-	info->num_users = samdb_search_count(state->sam_ctx, mem_ctx,
-					     state->domain_dn,
-					     "(objectClass=user)");
-	info->num_groups = samdb_search_count(state->sam_ctx, mem_ctx,
-					      state->domain_dn,
-					      "(&(objectClass=group)(|(groupType=%d)(groupType=%d)))",
-					      GTYPE_SECURITY_UNIVERSAL_GROUP,
-					      GTYPE_SECURITY_GLOBAL_GROUP);
-	info->num_aliases = samdb_search_count(state->sam_ctx, mem_ctx,
-					       state->domain_dn,
-					       "(&(objectClass=group)(|(groupType=%d)(groupType=%d)))",
-					       GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
-					       GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
+	/*
+	 * Users are not meant to be in BUILTIN
+	 * so to speed up the query we do not filter on domain_sid
+	 */
+	ret = dsdb_domain_count(
+		state->sam_ctx,
+		&count,
+		state->domain_dn,
+		NULL,
+		scope,
+		"(objectClass=user)");
+	if (ret != LDB_SUCCESS || count > UINT32_MAX) {
+		goto error;
+	}
+	info->num_users = count;
+
+	/*
+	 * Groups are not meant to be in BUILTIN
+	 * so to speed up the query we do not filter on domain_sid
+	 */
+	ret = dsdb_domain_count(
+		state->sam_ctx,
+		&count,
+		state->domain_dn,
+		NULL,
+		scope,
+		"(&(objectClass=group)(|(groupType=%d)(groupType=%d)))",
+		GTYPE_SECURITY_UNIVERSAL_GROUP,
+		GTYPE_SECURITY_GLOBAL_GROUP);
+	if (ret != LDB_SUCCESS || count > UINT32_MAX) {
+		goto error;
+	}
+	info->num_groups = count;
+
+	ret = dsdb_domain_count(
+		state->sam_ctx,
+		&count,
+		state->domain_dn,
+		state->domain_sid,
+		scope,
+		"(&(objectClass=group)(|(groupType=%d)(groupType=%d)))",
+		GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
+		GTYPE_SECURITY_DOMAIN_LOCAL_GROUP);
+	if (ret != LDB_SUCCESS || count > UINT32_MAX) {
+		goto error;
+	}
+	info->num_aliases = count;
 
 	return NT_STATUS_OK;
+
+error:
+	if (count > UINT32_MAX) {
+		return NT_STATUS_INTEGER_OVERFLOW;
+	}
+	return dsdb_ldb_err_to_ntstatus(ret);
+
 }
 
 /*
