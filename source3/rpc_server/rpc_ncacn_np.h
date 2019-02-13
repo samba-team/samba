@@ -64,12 +64,6 @@ struct np_proxy_state {
 	struct tevent_queue *write_queue;
 };
 
-struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
-					      const struct ndr_syntax_id *syntax,
-					      const struct tsocket_address *remote_address,
-					      const struct tsocket_address *local_address,
-					      const struct auth_session_info *session_info,
-					      struct messaging_context *msg_ctx);
 struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 				const char *pipe_name,
 				const struct tsocket_address *remote_client_address,

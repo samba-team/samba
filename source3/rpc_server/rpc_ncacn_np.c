@@ -43,6 +43,14 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+static NTSTATUS make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
+				const struct ndr_syntax_id *syntax,
+				const struct tsocket_address *remote_address,
+				const struct tsocket_address *local_address,
+				const struct auth_session_info *session_info,
+				struct messaging_context *msg_ctx,
+				struct pipes_struct **p);
+
 static struct npa_state *npa_state_init(TALLOC_CTX *mem_ctx)
 {
 	struct npa_state *npa;
@@ -201,14 +209,15 @@ out:
  Make an internal namedpipes structure
 ****************************************************************************/
 
-struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
-					      const struct ndr_syntax_id *syntax,
-					      const struct tsocket_address *remote_address,
-					      const struct tsocket_address *local_address,
-					      const struct auth_session_info *session_info,
-					      struct messaging_context *msg_ctx)
+static NTSTATUS make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
+				const struct ndr_syntax_id *syntax,
+				const struct tsocket_address *remote_address,
+				const struct tsocket_address *local_address,
+				const struct auth_session_info *session_info,
+				struct messaging_context *msg_ctx,
+				struct pipes_struct **p)
 {
-	struct pipes_struct *p;
+	struct pipes_struct *out;
 	struct pipe_rpc_fns *context_fns;
 	const char *pipe_name;
 	int ret;
@@ -216,41 +225,41 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 
 	table = ndr_table_by_uuid(&syntax->uuid);
 	if (table == NULL) {
-		DEBUG(0,("unknown interface\n"));
-		return NULL;
+		DBG_ERR("Unknown interface\n");
+		return NT_STATUS_RPC_INTERFACE_NOT_FOUND;
 	}
 
 	pipe_name = dcerpc_default_transport_endpoint(mem_ctx, NCACN_NP, table);
 
-	DEBUG(4,("Create pipe requested %s\n", pipe_name));
+	DBG_INFO("Create pipe requested %s\n", pipe_name);
 
 	ret = make_base_pipes_struct(mem_ctx, msg_ctx, pipe_name,
 				     NCALRPC, RPC_LITTLE_ENDIAN,
-				     remote_address, local_address, &p);
+				     remote_address, local_address, &out);
 	if (ret) {
-		DEBUG(0,("ERROR! no memory for pipes_struct!\n"));
-		return NULL;
+		DBG_ERR("No memory for pipes_struct!\n");
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!init_pipe_handles(p, syntax)) {
-		DEBUG(0,("open_rpc_pipe_p: init_pipe_handles failed.\n"));
-		TALLOC_FREE(p);
-		return NULL;
+	if (!init_pipe_handles(out, syntax)) {
+		DBG_ERR("init_pipe_handles failed.\n");
+		TALLOC_FREE(out);
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	p->session_info = copy_session_info(p, session_info);
-	if (p->session_info == NULL) {
-		DEBUG(0, ("open_rpc_pipe_p: copy_serverinfo failed\n"));
-		close_policy_by_pipe(p);
-		TALLOC_FREE(p);
-		return NULL;
+	out->session_info = copy_session_info(out, session_info);
+	if (out->session_info == NULL) {
+		DBG_ERR("copy_serverinfo failed\n");
+		close_policy_by_pipe(out);
+		TALLOC_FREE(out);
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	context_fns = talloc_zero(p, struct pipe_rpc_fns);
+	context_fns = talloc_zero(out, struct pipe_rpc_fns);
 	if (context_fns == NULL) {
-		DEBUG(0,("talloc() failed!\n"));
-		TALLOC_FREE(p);
-		return NULL;
+		DBG_ERR("No memory");
+		TALLOC_FREE(out);
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	context_fns->next = context_fns->prev = NULL;
@@ -260,11 +269,13 @@ struct pipes_struct *make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	context_fns->syntax = *syntax;
 
 	/* add to the list of open contexts */
-	DLIST_ADD(p->contexts, context_fns);
+	DLIST_ADD(out->contexts, context_fns);
 
 	DEBUG(4,("Created internal pipe %s\n", pipe_name));
 
-	return p;
+	*p = out;
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS rpcint_dispatch(struct pipes_struct *p,
@@ -521,6 +532,7 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
 {
 	struct dcerpc_binding_handle *h;
 	struct rpcint_bh_state *hs;
+	NTSTATUS status;
 
 	if (ndr_table) {
 		abstract_syntax = &ndr_table->syntax_id;
@@ -536,15 +548,17 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
 	if (h == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	hs->p = make_internal_rpc_pipe_p(hs,
-					 abstract_syntax,
-					 remote_address,
-					 local_address,
-					 session_info,
-					 msg_ctx);
-	if (hs->p == NULL) {
+
+	status = make_internal_rpc_pipe_p(hs,
+					  abstract_syntax,
+					  remote_address,
+					  local_address,
+					  session_info,
+					  msg_ctx,
+					  &hs->p);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(h);
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 
 	*binding_handle = h;
