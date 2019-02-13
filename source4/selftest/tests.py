@@ -913,7 +913,7 @@ plantestsuite_loadlist("samba4.ldap.rodc_rwdc.python(rodc)", "rodc:local",
 planoldpythontestsuite("rodc:local", "replica_sync_rodc",
                        extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                        name="samba4.drs.replica_sync_rodc.python(rodc)",
-                       environ={'DC1': '$DC_SERVER', 'DC2': '$RODC_DC_SERVER'},
+                       environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
 		       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                        py3_compatible=True)
 

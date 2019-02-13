@@ -1920,8 +1920,6 @@ sub provision_rodc($$$)
 	Samba::mk_krb5_conf($ctx);
 	Samba::mk_mitkdc_conf($ctx, abs_path(Samba::bindir_path($self, "shared")));
 
-	$ret->{RODC_DC_SERVER} = $ret->{SERVER};
-
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};

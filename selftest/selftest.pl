@@ -834,9 +834,6 @@ my @exported_envvars = (
 	"DC_NETBIOSNAME",
 	"DC_NETBIOSALIAS",
 
-	# domain controller stuff for RODC
-	"RODC_DC_SERVER",
-
 	# server stuff
 	"SERVER",
 	"SERVER_IP",
