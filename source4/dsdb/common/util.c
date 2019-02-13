@@ -5805,3 +5805,181 @@ bool dsdb_objects_have_same_nc(struct ldb_context *ldb,
 
 	return same_nc;
 }
+/*
+ * Context for dsdb_count_domain_callback
+ */
+struct dsdb_count_domain_context {
+	/*
+	 * Number of matching records
+	 */
+	size_t count;
+	/*
+	 * sid of the domain that the records must belong to.
+	 * if NULL records can belong to any domain.
+	 */
+	struct dom_sid *dom_sid;
+};
+
+/*
+ * @brief ldb aysnc callback for dsdb_domain_count.
+ *
+ * count the number of records in the database matching an LDAP query,
+ * optionally filtering for domain membership.
+ *
+ * @param [in,out] req the ldb request being processed
+ *                    req->context contains:
+ *                        count   The number of matching records
+ *                        dom_sid The domain sid, if present records must belong
+ *                                to the domain to be counted.
+ *@param [in,out] ares The query result.
+ *
+ * @return an LDB error code
+ *
+ */
+static int dsdb_count_domain_callback(
+	struct ldb_request *req,
+	struct ldb_reply *ares)
+{
+
+	if (ares == NULL) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		int error = ares->error;
+		TALLOC_FREE(ares);
+		return ldb_request_done(req, error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+	{
+		struct dsdb_count_domain_context *context = NULL;
+		bool ok, in_domain;
+		struct dom_sid sid;
+		const struct ldb_val *v;
+
+		context = req->context;
+		if (context->dom_sid == NULL) {
+			context->count++;
+			break;
+		}
+
+		v = ldb_msg_find_ldb_val(ares->message, "objectSid");
+		if (v == NULL) {
+			break;
+		}
+
+		ok = sid_parse(v->data, v->length, &sid);
+		if (!ok) {
+			break;
+		}
+
+		in_domain = dom_sid_in_domain(context->dom_sid, &sid);
+		if (!in_domain) {
+			break;
+		}
+
+		context->count++;
+		break;
+	}
+	case LDB_REPLY_REFERRAL:
+		break;
+
+	case LDB_REPLY_DONE:
+		TALLOC_FREE(ares);
+		return ldb_request_done(req, LDB_SUCCESS);
+	}
+
+	TALLOC_FREE(ares);
+
+	return LDB_SUCCESS;
+}
+
+/*
+ * @brief Count the number of records matching a query.
+ *
+ * Count the number of entries in the database matching the supplied query,
+ * optionally filtering only those entries belonging to the supplied domain.
+ *
+ * @param ldb [in] Current ldb context
+ * @param count [out] Pointer to the count
+ * @param base [in] The base dn for the quey
+ * @param dom_sid [in] The domain sid, if non NULL records that are not a member
+ *                     of the domain are ignored.
+ * @param scope [in] Search scope.
+ * @param exp_fmt [in] format string for the query.
+ *
+ * @return LDB_STATUS code.
+ */
+int dsdb_domain_count(
+	struct ldb_context *ldb,
+	size_t *count,
+	struct ldb_dn *base,
+	struct dom_sid *dom_sid,
+	enum ldb_scope scope,
+	const char *exp_fmt, ...)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct ldb_request *req = NULL;
+	struct dsdb_count_domain_context *context = NULL;
+	char *expression = NULL;
+	const char *object_sid[] = {"objectSid", NULL};
+	const char *none[] = {NULL};
+	va_list ap;
+	int ret;
+
+	*count = 0;
+	tmp_ctx = talloc_new(ldb);
+
+	context = talloc_zero(tmp_ctx, struct dsdb_count_domain_context);
+	if (context == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	context->dom_sid = dom_sid;
+
+	if (exp_fmt) {
+		va_start(ap, exp_fmt);
+		expression = talloc_vasprintf(tmp_ctx, exp_fmt, ap);
+		va_end(ap);
+
+		if (expression == NULL) {
+			TALLOC_FREE(context);
+			TALLOC_FREE(tmp_ctx);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+	}
+
+	ret = ldb_build_search_req(
+		&req,
+		ldb,
+		tmp_ctx,
+		base,
+		scope,
+		expression,
+		(dom_sid == NULL) ? none : object_sid,
+		NULL,
+		context,
+		dsdb_count_domain_callback,
+		NULL);
+	ldb_req_set_location(req, "dsdb_domain_count");
+
+	if (ret != LDB_SUCCESS) goto done;
+
+	ret = ldb_request(ldb, req);
+
+	if (ret == LDB_SUCCESS) {
+		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+		if (ret == LDB_SUCCESS) {
+			*count = context->count;
+		}
+	}
+
+
+done:
+	TALLOC_FREE(expression);
+	TALLOC_FREE(req);
+	TALLOC_FREE(context);
+	TALLOC_FREE(tmp_ctx);
+
+	return ret;
+}
