@@ -1264,6 +1264,22 @@ $extra_smbconf_shares
 	return $self->provision_raw_step2($ctx, $ret);
 }
 
+# For multi-DC testenvs, we want $DC_SERVER to always be the PDC (i.e. the
+# original DC) in the testenv. $SERVER is always the joined DC that we are
+# actually running the test against
+sub set_pdc_env_vars
+{
+	my ($self, $env, $dcvars) = @_;
+
+	$env->{DC_SERVER} = $dcvars->{DC_SERVER};
+	$env->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
+	$env->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
+	$env->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
+	$env->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
+	$env->{DC_USERNAME} = $dcvars->{DC_USERNAME};
+	$env->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+}
+
 sub provision_s4member($$$$$)
 {
 	my ($self, $prefix, $dcvars, $hostname, $more_conf) = @_;
@@ -1317,13 +1333,7 @@ rpc_server:tcpip = no
 	}
 
 	$ret->{DOMSID} = $dcvars->{DOMSID};
-	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
-	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
-	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
-	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
-	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
-	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+	$self->set_pdc_env_vars($ret, $dcvars);
 
 	return $ret;
 }
@@ -1414,13 +1424,7 @@ sub provision_rpc_proxy($$$)
 	}
 
 	$ret->{DOMSID} = $dcvars->{DOMSID};
-	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
-	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
-	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
-	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
-	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
-	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+	$self->set_pdc_env_vars($ret, $dcvars);
 
 	return $ret;
 }
@@ -1486,13 +1490,7 @@ sub provision_promoted_dc($$$)
 		return undef;
 	}
 
-	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
-	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
-	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
-	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
-	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
-	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+	$self->set_pdc_env_vars($ret, $dcvars);
 
 	return $ret;
 }
@@ -1558,13 +1556,7 @@ sub provision_vampire_dc($$$)
 		return undef;
 	}
 
-	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
-	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
-	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
-	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
-	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
-	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+	$self->set_pdc_env_vars($ret, $dcvars);
 	$ret->{DC_REALM} = $dcvars->{DC_REALM};
 
 	return $ret;
@@ -1624,13 +1616,7 @@ sub provision_subdom_dc($$$)
 
 	$ret->{SUBDOM_DC_SERVER} = $ret->{SERVER};
 
-	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
-	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
-	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
-	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
-	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
-	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+	$self->set_pdc_env_vars($ret, $dcvars);
 
 	return $ret;
 }
@@ -1920,13 +1906,7 @@ sub provision_rodc($$$)
 	Samba::mk_krb5_conf($ctx);
 	Samba::mk_mitkdc_conf($ctx, abs_path(Samba::bindir_path($self, "shared")));
 
-	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
-	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
-	$ret->{DC_SERVERCONFFILE} = $dcvars->{SERVERCONFFILE};
-	$ret->{DC_NETBIOSNAME} = $dcvars->{DC_NETBIOSNAME};
-	$ret->{DC_USERNAME} = $dcvars->{DC_USERNAME};
-	$ret->{DC_PASSWORD} = $dcvars->{DC_PASSWORD};
+	$self->set_pdc_env_vars($ret, $dcvars);
 
 	return $ret;
 }
