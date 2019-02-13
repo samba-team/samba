@@ -385,14 +385,11 @@ sub setup_dns_hub_internal($$$)
 		warn("Unable to clean up");
 	}
 
-	my $swiface = Samba::get_interface($hostname);
-
 	my $env = undef;
 	$env->{prefix} = $prefix;
 	$env->{prefix_abs} = $prefix_abs;
 
 	$env->{hostname} = $hostname;
-	$env->{swiface} = $swiface;
 
 	$env->{ipv4} = Samba::get_ipv4_addr($hostname);
 	$env->{ipv6} = Samba::get_ipv6_addr($hostname);
@@ -420,6 +417,7 @@ sub setup_dns_hub_internal($$$)
 		open STDOUT, "| tee $env->{DNS_HUB_LOG} 1>&2";
 		open STDERR, '>&STDOUT';
 
+		my $swiface = Samba::get_interface($hostname);
 		SocketWrapper::set_default_iface($swiface);
 		my $pcap_file = "$ENV{SOCKET_WRAPPER_PCAP_DIR}/env-$hostname$.pcap";
 		SocketWrapper::setup_pcap($pcap_file);
