@@ -532,9 +532,7 @@ sub setup_trust($$$$$)
 	my ($self, $localenv, $remoteenv, $type, $extra_args) = @_;
 
 	$localenv->{TRUST_SERVER} = $remoteenv->{SERVER};
-	$localenv->{TRUST_SERVER_IP} = $remoteenv->{SERVER_IP};
-	$localenv->{TRUST_SERVER_IPV6} = $remoteenv->{SERVER_IPV6};
-	$localenv->{TRUST_NETBIOSNAME} = $remoteenv->{NETBIOSNAME};
+
 	$localenv->{TRUST_USERNAME} = $remoteenv->{USERNAME};
 	$localenv->{TRUST_PASSWORD} = $remoteenv->{PASSWORD};
 	$localenv->{TRUST_DOMAIN} = $remoteenv->{DOMAIN};
@@ -1318,13 +1316,6 @@ rpc_server:tcpip = no
 		return undef;
 	}
 
-	$ret->{MEMBER_SERVER} = $ret->{SERVER};
-	$ret->{MEMBER_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{MEMBER_SERVER_IPV6} = $ret->{SERVER_IPV6};
-	$ret->{MEMBER_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{MEMBER_USERNAME} = $ret->{USERNAME};
-	$ret->{MEMBER_PASSWORD} = $ret->{PASSWORD};
-
 	$ret->{DOMSID} = $dcvars->{DOMSID};
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
@@ -1422,13 +1413,6 @@ sub provision_rpc_proxy($$$)
 		return undef;
 	}
 
-	$ret->{RPC_PROXY_SERVER} = $ret->{SERVER};
-	$ret->{RPC_PROXY_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{RPC_PROXY_SERVER_IPV6} = $ret->{SERVER_IPV6};
-	$ret->{RPC_PROXY_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{RPC_PROXY_USERNAME} = $ret->{USERNAME};
-	$ret->{RPC_PROXY_PASSWORD} = $ret->{PASSWORD};
-
 	$ret->{DOMSID} = $dcvars->{DOMSID};
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
@@ -1502,11 +1486,6 @@ sub provision_promoted_dc($$$)
 		return undef;
 	}
 
-	$ret->{PROMOTED_DC_SERVER} = $ret->{SERVER};
-	$ret->{PROMOTED_DC_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{PROMOTED_DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
-	$ret->{PROMOTED_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
@@ -1579,17 +1558,6 @@ sub provision_vampire_dc($$$)
 		return undef;
 	}
 
-        if ($fl == "2000") {
-		$ret->{VAMPIRE_2000_DC_SERVER} = $ret->{SERVER};
-		$ret->{VAMPIRE_2000_DC_SERVER_IP} = $ret->{SERVER_IP};
-		$ret->{VAMPIRE_2000_DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
-		$ret->{VAMPIRE_2000_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-        } else {
-		$ret->{VAMPIRE_DC_SERVER} = $ret->{SERVER};
-		$ret->{VAMPIRE_DC_SERVER_IP} = $ret->{SERVER_IP};
-		$ret->{VAMPIRE_DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
-		$ret->{VAMPIRE_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-        }
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
 	$ret->{DC_SERVER_IPV6} = $dcvars->{DC_SERVER_IPV6};
@@ -1655,9 +1623,6 @@ sub provision_subdom_dc($$$)
 	}
 
 	$ret->{SUBDOM_DC_SERVER} = $ret->{SERVER};
-	$ret->{SUBDOM_DC_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{SUBDOM_DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
-	$ret->{SUBDOM_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
@@ -1956,9 +1921,6 @@ sub provision_rodc($$$)
 	Samba::mk_mitkdc_conf($ctx, abs_path(Samba::bindir_path($self, "shared")));
 
 	$ret->{RODC_DC_SERVER} = $ret->{SERVER};
-	$ret->{RODC_DC_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{RODC_DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
-	$ret->{RODC_DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
 
 	$ret->{DC_SERVER} = $dcvars->{DC_SERVER};
 	$ret->{DC_SERVER_IP} = $dcvars->{DC_SERVER_IP};
