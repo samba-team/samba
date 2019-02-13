@@ -1899,7 +1899,7 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	const char *site_name = NULL, *l_subnet_name = NULL;
 	const char *allow_list[2] = { NULL, NULL };
 	unsigned int i, count;
-	int cnt, ret;
+	int ret;
 
 	/*
 	 * if we don't have a client ip e.g. ncalrpc
@@ -1965,8 +1965,18 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		 * is for sure the same as our server site). If more sites do
 		 * exist then we don't know which one to use and set the site
 		 * name to "". */
-		cnt = samdb_search_count(ldb, mem_ctx, sites_container_dn,
-					 "(objectClass=site)");
+		size_t cnt = 0;
+		ret = dsdb_domain_count(
+			ldb,
+			&cnt,
+			sites_container_dn,
+			NULL,
+			LDB_SCOPE_SUBTREE,
+			"(objectClass=site)");
+		if (ret != LDB_SUCCESS) {
+			site_name = NULL;
+			goto exit;
+		}
 		if (cnt == 1) {
 			site_name = samdb_server_site_name(ldb, mem_ctx);
 		} else {
@@ -1979,6 +1989,7 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		*subnet_name = talloc_strdup(mem_ctx, l_subnet_name);
 	}
 
+exit:
 	talloc_free(sites_container_dn);
 	talloc_free(subnets_dn);
 	talloc_free(res);
