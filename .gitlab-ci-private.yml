@@ -16,36 +16,23 @@ include:
 
 samba:
   extends: .private_template
-  script:
     # this one takes about 4 hours to finish
-    - script/autobuild.py samba            --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
-samba_py2:
+samba-py2:
   extends: .private_template
-  script:
     # this one takes about 4 hours to finish
-    - script/autobuild.py samba-py2            --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
-samba_fileserver:
+samba-fileserver:
   extends: .private_template
-  script:
     # this one takes about 1 hours to finish
-    - script/autobuild.py samba-fileserver --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
-samba_ad_dc:
+samba-ad-dc:
   extends: .private_template
-  script:
     # this one takes about 1 hours to finish
-    - script/autobuild.py samba-ad-dc     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
-
-samba_ad_dc_py2:
+samba-ad-dc-py2:
   extends: .private_template
-  script:
     # this one takes about 1 hours to finish
-    - script/autobuild.py samba-ad-dc-py2     --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
-nt4:
+samba-nt4:
   extends: .private_template
-  script:
-    - script/autobuild.py samba-nt4 --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
