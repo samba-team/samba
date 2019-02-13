@@ -20,6 +20,7 @@
 """Tests for samba.dcerpc.sam."""
 
 from samba.dcerpc import samr, security, lsa
+from samba.dcerpc.samr import DomainGeneralInformation
 from samba.tests import RpcInterfaceTestCase
 from samba.tests import env_loadparm, delete_force
 
@@ -748,3 +749,57 @@ class SamrTests(RpcInterfaceTestCase):
         check_results(expected, actual)
 
         self.delete_dns(dns)
+
+    def test_DomGeneralInformation_num_users(self):
+        info = self.conn.QueryDomainInfo(
+            self.domain_handle, DomainGeneralInformation)
+        #
+        # Enumerate through all the domain users and compare the number
+        # returned against QueryDomainInfo they should be the same
+        max_size = calc_max_size(1)
+        (resume_handle, a, num_entries) = self.conn.EnumDomainUsers(
+            self.domain_handle, 0, 0, max_size)
+        count = num_entries
+        while resume_handle:
+            self.assertEquals(1, num_entries)
+            (resume_handle, a, num_entries) = self.conn.EnumDomainUsers(
+                self.domain_handle, resume_handle, 0, max_size)
+            count += num_entries
+
+        self.assertEquals(count, info.num_users)
+
+    def test_DomGeneralInformation_num_groups(self):
+        info = self.conn.QueryDomainInfo(
+            self.domain_handle, DomainGeneralInformation)
+        #
+        # Enumerate through all the domain groups and compare the number
+        # returned against QueryDomainInfo they should be the same
+        max_size = calc_max_size(1)
+        (resume_handle, a, num_entries) = self.conn.EnumDomainGroups(
+            self.domain_handle, 0, max_size)
+        count = num_entries
+        while resume_handle:
+            self.assertEquals(1, num_entries)
+            (resume_handle, a, num_entries) = self.conn.EnumDomainGroups(
+                self.domain_handle, resume_handle, max_size)
+            count += num_entries
+
+        self.assertEquals(count, info.num_groups)
+
+    def test_DomGeneralInformation_num_aliases(self):
+        info = self.conn.QueryDomainInfo(
+            self.domain_handle, DomainGeneralInformation)
+        #
+        # Enumerate through all the domain aliases and compare the number
+        # returned against QueryDomainInfo they should be the same
+        max_size = calc_max_size(1)
+        (resume_handle, a, num_entries) = self.conn.EnumDomainAliases(
+            self.domain_handle, 0, max_size)
+        count = num_entries
+        while resume_handle:
+            self.assertEquals(1, num_entries)
+            (resume_handle, a, num_entries) = self.conn.EnumDomainAliases(
+                self.domain_handle, resume_handle, max_size)
+            count += num_entries
+
+        self.assertEquals(count, info.num_aliases)
