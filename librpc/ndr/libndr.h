@@ -493,6 +493,7 @@ void ndr_print_dom_sid0(struct ndr_print *ndr, const char *name, const struct do
 size_t ndr_size_dom_sid0(const struct dom_sid *sid, int flags);
 void ndr_print_GUID(struct ndr_print *ndr, const char *name, const struct GUID *guid);
 void ndr_print_sockaddr_storage(struct ndr_print *ndr, const char *name, const struct sockaddr_storage *ss);
+void ndr_zero_memory(void *ptr, size_t len);
 bool ndr_syntax_id_equal(const struct ndr_syntax_id *i1, const struct ndr_syntax_id *i2);
 char *ndr_syntax_id_to_string(TALLOC_CTX *mem_ctx, const struct ndr_syntax_id *id);
 bool ndr_syntax_id_from_string(const char *s, struct ndr_syntax_id *id);
