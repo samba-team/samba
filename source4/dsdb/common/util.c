@@ -1873,10 +1873,13 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 				   bool fallback)
 {
 	const char *attrs[] = { "cn", "siteObject", NULL };
-	struct ldb_dn *sites_container_dn, *subnets_dn, *sites_dn;
-	struct ldb_result *res;
-	const struct ldb_val *val;
-	const char *site_name = NULL, *l_subnet_name = NULL;
+	struct ldb_dn *sites_container_dn = NULL;
+	struct ldb_dn *subnets_dn = NULL;
+	struct ldb_dn *sites_dn = NULL;
+	struct ldb_result *res = NULL;
+	const struct ldb_val *val = NULL;
+	const char *site_name = NULL;
+	const char *l_subnet_name = NULL;
 	const char *allow_list[2] = { NULL, NULL };
 	unsigned int i, count;
 	int ret;
@@ -1891,14 +1894,12 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 
 	sites_container_dn = samdb_sites_dn(ldb, mem_ctx);
 	if (sites_container_dn == NULL) {
-		return NULL;
+		goto exit;
 	}
 
 	subnets_dn = ldb_dn_copy(mem_ctx, sites_container_dn);
 	if ( ! ldb_dn_add_child_fmt(subnets_dn, "CN=Subnets")) {
-		talloc_free(sites_container_dn);
-		talloc_free(subnets_dn);
-		return NULL;
+		goto exit;
 	}
 
 	ret = ldb_search(ldb, mem_ctx, &res, subnets_dn, LDB_SCOPE_ONELEVEL,
@@ -1906,9 +1907,7 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		count = 0;
 	} else if (ret != LDB_SUCCESS) {
-		talloc_free(sites_container_dn);
-		talloc_free(subnets_dn);
-		return NULL;
+		goto exit;
 	} else {
 		count = res->count;
 	}
@@ -1933,7 +1932,7 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			site_name = talloc_strdup(mem_ctx,
 						  (const char *) val->data);
 
-			talloc_free(sites_dn);
+			TALLOC_FREE(sites_dn);
 
 			break;
 		}
@@ -1954,7 +1953,6 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 			LDB_SCOPE_SUBTREE,
 			"(objectClass=site)");
 		if (ret != LDB_SUCCESS) {
-			site_name = NULL;
 			goto exit;
 		}
 		if (cnt == 1) {
@@ -1970,9 +1968,9 @@ const char *samdb_client_site_name(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	}
 
 exit:
-	talloc_free(sites_container_dn);
-	talloc_free(subnets_dn);
-	talloc_free(res);
+	TALLOC_FREE(sites_container_dn);
+	TALLOC_FREE(subnets_dn);
+	TALLOC_FREE(res);
 
 	return site_name;
 }
