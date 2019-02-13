@@ -203,26 +203,6 @@ struct dom_sid *samdb_search_dom_sid(struct ldb_context *sam_ldb,
 }
 
 /*
-  return the count of the number of records in the sam matching the query
-*/
-int samdb_search_count(struct ldb_context *sam_ldb,
-		       TALLOC_CTX *mem_ctx,
-		       struct ldb_dn *basedn,
-		       const char *format, ...) _PRINTF_ATTRIBUTE(4,5)
-{
-	va_list ap;
-	const char *attrs[] = { NULL };
-	int ret;
-
-	va_start(ap, format);
-	ret = gendb_search_v(sam_ldb, mem_ctx, basedn, NULL, attrs, format, ap);
-	va_end(ap);
-
-	return ret;
-}
-
-
-/*
   search the sam for a single integer attribute in exactly 1 record
 */
 unsigned int samdb_search_uint(struct ldb_context *sam_ldb,
