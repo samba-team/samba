@@ -411,6 +411,13 @@ enum ndr_compression_alg {
        if (unlikely(!(s))) return ndr_push_error(ndr, NDR_ERR_ALLOC, "push alloc %s failed: %s\n", # s, __location__); \
 } while (0)
 
+#define NDR_ZERO_STRUCT(x) ndr_zero_memory(&(x), sizeof(x))
+#define NDR_ZERO_STRUCTP(x) do { \
+	if ((x) != NULL) { \
+		ndr_zero_memory((x), sizeof(*(x))); \
+	} \
+} while(0)
+
 /* these are used when generic fn pointers are needed for ndr push/pull fns */
 typedef enum ndr_err_code (*ndr_push_flags_fn_t)(struct ndr_push *, int ndr_flags, const void *);
 typedef enum ndr_err_code (*ndr_pull_flags_fn_t)(struct ndr_pull *, int ndr_flags, void *);
