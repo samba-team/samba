@@ -1011,12 +1011,14 @@ plantestsuite("samba4.blackbox.provision-backend", "none", ["PYTHON=%s" % python
 plantestsuite("samba4.blackbox.renamedc.sh", "none", ["PYTHON=%s" % python, os.path.join(bbdir, "renamedc.sh"), '$PREFIX/provision'])
 
 # DRS python tests
+# Note that $DC_SERVER is the PDC (e.g. ad_dc_ntvfs) and $SERVER is
+# the 2nd DC (e.g. vampire_dc).
 
 env = 'vampire_dc'
 planoldpythontestsuite(env, "ridalloc_exop",
                        extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                        name="samba4.drs.ridalloc_exop.python(%s)" % env,
-                       environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                       environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
                        extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                        py3_compatible=True)
 
@@ -1024,60 +1026,60 @@ for env in ['vampire_dc', 'promoted_dc']:
     planoldpythontestsuite("%s:local" % env, "samba_tool_drs",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.samba_tool_drs.python(%s)" % env,
-                           environ={'DC1': '$DC_SERVER', 'DC2': '$%s_SERVER' % env.upper()},
+                           environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                            py3_compatible=True)
     planoldpythontestsuite("%s:local" % env, "samba_tool_drs_showrepl",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.samba_tool_drs_showrepl.python(%s)" % env,
-                           environ={'DC1': '$DC_SERVER', 'DC2': '$%s_SERVER' % env.upper()},
+                           environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                            py3_compatible=True)
     planoldpythontestsuite("%s:local" % env, "replica_sync",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.replica_sync.python(%s)" % env,
-                           environ={'DC1': '$DC_SERVER', 'DC2': '$%s_SERVER' % env.upper()},
+                           environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                            py3_compatible=True)
     planoldpythontestsuite(env, "delete_object",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.delete_object.python(%s)" % env,
-                           environ={'DC1': '$DC_SERVER', 'DC2': '$%s_SERVER' % env.upper()},
+                           environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                            py3_compatible=True)
     planoldpythontestsuite(env, "fsmo",
                            name="samba4.drs.fsmo.python(%s)" % env,
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
-                           environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                           environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                            py3_compatible=True)
     planoldpythontestsuite(env, "repl_move",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.repl_move.python(%s)" % env,
-                           environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                           environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                            py3_compatible=True)
     planoldpythontestsuite(env, "getnc_exop",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.getnc_exop.python(%s)" % env,
-                           environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                           environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                            py3_compatible=True)
     planoldpythontestsuite(env, "getnc_unpriv",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.getnc_unpriv.python(%s)" % env,
-                           environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                           environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                            py3_compatible=True)
     planoldpythontestsuite(env, "linked_attributes_drs",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.linked_attributes_drs.python(%s)" % env,
-                           environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                           environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite(env, "link_conflicts",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.link_conflicts.python(%s)" % env,
-                           environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                           environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
 			   extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                            py3_compatible=True)
 
@@ -1085,7 +1087,7 @@ for env in ['vampire_dc', 'promoted_dc', 'vampire_2000_dc']:
     planoldpythontestsuite(env, "repl_schema",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.repl_schema.python(%s)" % env,
-                           environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                           environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                            py3_compatible=True)
 
@@ -1096,7 +1098,7 @@ for env in ['vampire_dc', 'promoted_dc']:
     planoldpythontestsuite(env, "getncchanges",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.getncchanges.python(%s)" % env,
-                           environ={'DC1': "$DC_SERVER", 'DC2': '$%s_SERVER' % env.upper()},
+                           environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
 			   extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                            py3_compatible=True)
 
