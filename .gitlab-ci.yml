@@ -54,11 +54,11 @@ others:
 
 samba-none-env:
   extends: .shared_template
-    # this one takes about 1 hours to finish
+  # this one takes about 1 hours to finish
 
 samba-none-env-py2:
   extends: .shared_template
-    # this one takes about 1 hours to finish
+  # this one takes about 1 hours to finish
 
 samba-nopython:
   extends: .shared_template
@@ -74,14 +74,14 @@ samba-o3:
 
 samba-ad-dc-2:
   extends: .shared_template
-    # this one takes about 1 hours to finish
+  # this one takes about 1 hours to finish
 
 samba-ad-dc-backup:
   extends: .shared_template
 
 samba-ad-dc-2-py2:
   extends: .shared_template
-    # this one takes about 1 hours to finish
+  # this one takes about 1 hours to finish
 
 samba-libs:
   extends: .shared_template
@@ -103,7 +103,7 @@ samba-buildpy2-only:
 
 samba-ad-dc-ntvfs:
   extends: .shared_template
-    # this one takes about 100 mins to finish
+  # this one takes about 100 mins to finish
 
 samba-ad-dc-ntvfs-py2:
   extends: .shared_template
