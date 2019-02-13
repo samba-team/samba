@@ -126,7 +126,23 @@ else:
                     tevent_debug.c memcache.c unix_match.c tfork.c''',
                   deps='samba-util-core DYNCONFIG close-low-fd tiniparser genrand util_str_hex',
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid',
-                  public_headers='debug.h attr.h byteorder.h data_blob.h discard.h memory.h safe_string.h time.h talloc_stack.h string_wrappers.h idtree.h idtree_random.h blocking.h signal.h substitute.h fault.h genrand.h tfork.h',
+                  public_headers='''
+                                 attr.h
+                                 byteorder.h
+                                 data_blob.h
+                                 debug.h
+                                 discard.h
+                                 time.h
+                                 string_wrappers.h
+                                 idtree.h
+                                 idtree_random.h
+                                 blocking.h
+                                 signal.h
+                                 substitute.h
+                                 fault.h
+                                 genrand.h
+                                 tfork.h
+                                 ''',
                   header_path= [ ('dlinklist.h samba_util.h', '.'), ('*', 'util') ],
                   local_include=False,
                   vnum='0.0.1',
