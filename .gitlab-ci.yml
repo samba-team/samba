@@ -2,13 +2,14 @@
 
 
 variables:
+  SAMBA_BUILD_GITLAB_CI_REGISTRY: registry.gitlab.com
   SAMBA_BUILD_IMAGES_PROJECT: samba-team/samba
   SAMBA_BUILD: latest
   GIT_STRATEGY: fetch
   GIT_DEPTH: "3"
 
 .shared_template:
-  image: $CI_REGISTRY/$SAMBA_BUILD_IMAGES_PROJECT:$SAMBA_BUILD
+  image: $SAMBA_BUILD_GITLAB_CI_REGISTRY/$SAMBA_BUILD_IMAGES_PROJECT:$SAMBA_BUILD
   stage: build
   tags:
     - docker
