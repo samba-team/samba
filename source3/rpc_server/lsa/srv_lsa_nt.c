@@ -4666,5 +4666,48 @@ NTSTATUS _lsa_LSARADTREPORTSECURITYEVENT(struct pipes_struct *p,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+#include "librpc/rpc/dcesrv_core.h"
+
+#define DCESRV_INTERFACE_LSARPC_BIND(context, iface) \
+       dcesrv_interface_lsarpc_bind(context, iface)
+
+static NTSTATUS dcesrv_interface_lsarpc_bind(
+			struct dcesrv_connection_context *context,
+			const struct dcesrv_interface *iface)
+{
+	return dcesrv_interface_bind_reject_connect(context, iface);
+}
+
+static NTSTATUS lsarpc__op_init_server(struct dcesrv_context *dce_ctx,
+			const struct dcesrv_endpoint_server *ep_server);
+static const struct dcesrv_interface dcesrv_lsarpc_interface;
+
+#define NCACN_NP_PIPE_NETLOGON "ncacn_np:[\\pipe\\netlogon]"
+#define NCACN_NP_PIPE_LSASS "ncacn_np:[\\pipe\\lsass]"
+
+#define DCESRV_INTERFACE_LSARPC_NCACN_NP_SECONDARY_ENDPOINT \
+	NCACN_NP_PIPE_LSASS
+
+#define DCESRV_INTERFACE_LSARPC_INIT_SERVER \
+       dcesrv_interface_lsarpc_init_server
+
+static NTSTATUS dcesrv_interface_lsarpc_init_server(
+			struct dcesrv_context *dce_ctx,
+			const struct dcesrv_endpoint_server *ep_server)
+{
+	NTSTATUS ret = dcesrv_interface_register(dce_ctx,
+						 NCACN_NP_PIPE_NETLOGON,
+						 NCACN_NP_PIPE_LSASS,
+						 &dcesrv_lsarpc_interface,
+						 NULL);
+	if (!NT_STATUS_IS_OK(ret)) {
+		DBG_ERR("Failed to register endpoint "
+			"'\\pipe\\netlogon'\n");
+		return ret;
+	}
+
+	return lsarpc__op_init_server(dce_ctx, ep_server);
+}
+
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_lsa_scompat.c"
