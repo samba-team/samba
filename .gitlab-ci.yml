@@ -3,15 +3,15 @@
 
 variables:
   # we run autobuild.py inside a samba CI docker image located on gitlab's registry
-  SAMBA_CI_DOCKER_REGISTRY: registry.gitlab.com
-  SAMBA_CI_DOCKER_NAME: samba-team/samba
-  SAMBA_CI_DOCKER_TAG: latest
-  SAMBA_CI_DOCKER_IMAGE: $SAMBA_CI_DOCKER_REGISTRY/$SAMBA_CI_DOCKER_NAME:$SAMBA_CI_DOCKER_TAG
+  SAMBA_CI_CONTAINER_REGISTRY: registry.gitlab.com
+  SAMBA_CI_CONTAINER_NAME: samba-team/samba
+  SAMBA_CI_CONTAINER_TAG: latest
+  SAMBA_CI_CONTAINER_IMAGE: $SAMBA_CI_CONTAINER_REGISTRY/$SAMBA_CI_CONTAINER_NAME:$SAMBA_CI_CONTAINER_TAG
   GIT_STRATEGY: fetch
   GIT_DEPTH: "3"
 
 .shared_template:
-  image: $SAMBA_CI_DOCKER_IMAGE
+  image: $SAMBA_CI_CONTAINER_IMAGE
   stage: build
   tags:
     - docker
