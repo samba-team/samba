@@ -681,6 +681,53 @@ int dsdb_check_single_valued_link(const struct dsdb_attribute *attr,
 	return LDB_SUCCESS;
 }
 
+
+int dsdb_check_samba_compatible_feature(struct ldb_module *module,
+					const char *feature,
+					bool *found)
+{
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_result *res;
+	static const char *samba_dsdb_attrs[] = {
+		SAMBA_COMPATIBLE_FEATURES_ATTR,
+		NULL
+	};
+	int ret;
+	struct ldb_dn *samba_dsdb_dn = NULL;
+	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		*found = false;
+		return ldb_oom(ldb);
+	}
+	*found = false;
+
+	samba_dsdb_dn = ldb_dn_new(tmp_ctx, ldb, "@SAMBA_DSDB");
+	if (samba_dsdb_dn == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return ldb_oom(ldb);
+	}
+
+	ret = dsdb_module_search_dn(module,
+				    tmp_ctx,
+				    &res,
+				    samba_dsdb_dn,
+				    samba_dsdb_attrs,
+				    DSDB_FLAG_NEXT_MODULE,
+				    NULL);
+	if (ret == LDB_SUCCESS) {
+		*found = ldb_msg_check_string_attribute(
+			res->msgs[0],
+			SAMBA_COMPATIBLE_FEATURES_ATTR,
+			feature);
+	} else if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		/* it is not an error not to find it */
+		ret = LDB_SUCCESS;
+	}
+	TALLOC_FREE(tmp_ctx);
+	return ret;
+}
+
+
 /*
   check if an optional feature is enabled on our own NTDS DN
 
