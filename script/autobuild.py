@@ -50,7 +50,7 @@ builddirs = {
     "samba-ad-dc-backup": ".",
     "samba-systemkrb5": ".",
     "samba-nopython": ".",
-    "samba-buildpy2-only": ".",
+    "samba-nopython-py2": ".",
     "ldb": "lib/ldb",
     "tdb": "lib/tdb",
     "talloc": "lib/talloc",
@@ -337,7 +337,38 @@ tasks = {
                       ("libs-clean", "make clean", "text/plain")
                       ],
 
+    # check we can do the same thing using python2
+    "samba-nopython-py2": [
+                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("configure", "PYTHON=python2 ./configure.developer --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
+                      ("make", "PYTHON=python2 make -j", "text/plain"),
+                      ("install", "PYTHON=python2 make install", "text/plain"),
+                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+                      ("clean", "PYTHON=python2 make clean", "text/plain"),
 
+                      ("talloc-configure", "cd lib/talloc && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
+                      ("talloc-make", "cd lib/talloc && PYTHON=python2 make", "text/plain"),
+                      ("talloc-install", "cd lib/talloc && PYTHON=python2 make install", "text/plain"),
+
+                      ("tdb-configure", "cd lib/tdb && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
+                      ("tdb-make", "cd lib/tdb && PYTHON=python2 make", "text/plain"),
+                      ("tdb-install", "cd lib/tdb && PYTHON=python2 make install", "text/plain"),
+
+                      ("tevent-configure", "cd lib/tevent && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
+                      ("tevent-make", "cd lib/tevent && PYTHON=python2 make", "text/plain"),
+                      ("tevent-install", "cd lib/tevent && PYTHON=python2 make install", "text/plain"),
+
+                      ("ldb-configure", "cd lib/ldb && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
+                      ("ldb-make", "cd lib/ldb && PYTHON=python2 make", "text/plain"),
+                      ("ldb-install", "cd lib/ldb && PYTHON=python2 make install", "text/plain"),
+
+                      # retry against installed library packages
+                      ("libs-configure", "PYTHON=python2 " + samba_libs_configure_base + samba_libs_configure_bundled_libs + " --disable-python --without-ad-dc", "text/plain"),
+                      ("libs-make", "PYTHON=python2 make -j", "text/plain"),
+                      ("libs-install", "PYTHON=python2 make install", "text/plain"),
+                      ("libs-check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+                      ("libs-clean", "PYTHON=python2 make clean", "text/plain")
+                      ],
 
     "ldb": [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
@@ -402,13 +433,6 @@ tasks = {
         ("checkout-yapp-generated", "git checkout lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm", "text/plain"),
         ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
         ("clean", "make clean", "text/plain")],
-
-    "samba-buildpy2-only": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
-                   ("configure", "PYTHON='python' ./configure.developer --with-selftest-prefix=./bin/ab " + samba_configure_params, "text/plain"),
-                   ("make", "PYTHON='python' make -j", "text/plain"),
-                   ("install", "PYTHON='python' make install", "text/plain"),
-                   ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                   ("clean", "PYTHON='python' make clean", "text/plain")],
 
 
     # these are useful for debugging autobuild

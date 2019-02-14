@@ -64,6 +64,9 @@ samba-none-env:
 samba-nopython:
   extends: .shared_template
 
+samba-nopython-py2:
+  extends: .shared_template
+
 samba-systemkrb5:
   extends: .shared_template
 
@@ -90,9 +93,6 @@ ctdb:
   extends: .shared_template
 
 samba-ctdb:
-  extends: .shared_template
-
-samba-buildpy2-only:
   extends: .shared_template
 
 samba-ad-dc-ntvfs:
