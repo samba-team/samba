@@ -739,6 +739,7 @@ def SAMBA_CONFIG_H(conf, path=None):
                       msg="Checking C99 init of nested structs."):
             conf.ADD_CFLAGS('-Wmissing-field-initializers', testflags=True)
         conf.ADD_CFLAGS('-Wformat-overflow=2', testflags=True)
+        conf.ADD_CFLAGS('-Wformat-zero-length', testflags=True)
         conf.ADD_CFLAGS('-Wcast-align -Wcast-qual', testflags=True)
         conf.ADD_CFLAGS('-fno-common', testflags=True)
 
