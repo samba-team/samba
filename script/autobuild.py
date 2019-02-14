@@ -95,7 +95,7 @@ tasks = {
                 ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                 ("make", "make -j", "text/plain"),
                 ("test", "make test FAIL_IMMEDIATELY=1 "
-                 "TESTS='${PY3_ONLY}"
+                 "TESTS='"
                  "--exclude-env=none "
                  "--exclude-env=nt4_dc "
                  "--exclude-env=nt4_member "
@@ -126,7 +126,7 @@ tasks = {
                     ("configure", "./configure.developer --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                     ("make", "make -j", "text/plain"),
                     ("test", "make test FAIL_IMMEDIATELY=1 "
-                     "TESTS='${PY3_ONLY}"
+                     "TESTS='"
                      "--include-env=nt4_dc --include-env=nt4_member'", "text/plain"),
                     ("install", "make install", "text/plain"),
                     ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
@@ -136,7 +136,7 @@ tasks = {
                            ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                            ("make", "make -j", "text/plain"),
                            ("test", "make test FAIL_IMMEDIATELY=1 "
-                            "TESTS='${PY3_ONLY}"
+                            "TESTS='"
                             "--include-env=fileserver'", "text/plain"),
                            ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
@@ -144,7 +144,7 @@ tasks = {
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("test", "make test FAIL_IMMEDIATELY=1 "
-                       "TESTS='${PY3_ONLY}"
+                       "TESTS='"
                        "--include-env=ad_dc "
                        "--include-env=fl2003dc "
                        "--include-env=fl2008r2dc "
@@ -157,7 +157,7 @@ tasks = {
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='${PY3_ONLY}"
+                         "TESTS='"
                          "--include-env=chgdcpass "
                          "--include-env=vampire_2000_dc "
                          "--include-env=fl2000dc "
@@ -173,7 +173,7 @@ tasks = {
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("test", "make test FAIL_IMMEDIATELY=1 "
-                       "TESTS='${PY3_ONLY}"
+                       "TESTS='"
                        "--include-env=ad_dc_ntvfs "
                        "'",
                        "text/plain"),
@@ -185,7 +185,7 @@ tasks = {
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='${PY3_ONLY}"
+                         "TESTS='"
                          "--include-env=backupfromdc "
                          "--include-env=restoredc "
                          "--include-env=renamedc "
@@ -216,7 +216,7 @@ tasks = {
                    ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params, "text/plain"),
                    ("make", "make -j", "text/plain"),
                    ("test", "make quicktest FAIL_IMMEDIATELY=1 "
-                    "TESTS='${PY3_ONLY}"
+                    "TESTS='"
                     "--include-env=ad_dc'", "text/plain"),
                    ("install", "make install", "text/plain"),
                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
@@ -277,7 +277,7 @@ tasks = {
                       ("make", "make -j", "text/plain"),
                       ("test", "make test "
                        "FAIL_IMMEDIATELY=1 "
-                       "TESTS='${PY3_ONLY}"
+                       "TESTS='"
                        "--include-env=none'",
                        "text/plain")],
 
@@ -308,7 +308,7 @@ tasks = {
                       # we currently cannot run a full make test, a limited list of tests could be run
                       # via "make test TESTS=sometests"
                       ("test", "make test FAIL_IMMEDIATELY=1 "
-                       "TESTS='${PY3_ONLY}"
+                       "TESTS='"
                        "--include-env=ktest'", "text/plain"),
                       ("install", "make install", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
@@ -500,11 +500,8 @@ class builder(object):
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
         if self.py2:
             self.cmd = self.cmd.replace("${EXTRA_PYTHON}", "%s" % extra_python)
-            # The trailing space is important
-            self.cmd = self.cmd.replace("${PY3_ONLY}", "python2 ")
         else:
             self.cmd = self.cmd.replace("${EXTRA_PYTHON}", "")
-            self.cmd = self.cmd.replace("${PY3_ONLY}", "")
         self.cmd = self.cmd.replace("${PREFIX_DIR}", "%s" % self.prefix)
         self.cmd = self.cmd.replace("${TESTS}", options.restrict_tests)
 #        if self.output_mime_type == "text/x-subunit":
