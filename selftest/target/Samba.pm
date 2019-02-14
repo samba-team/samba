@@ -387,64 +387,71 @@ sub mk_mitkdc_conf($$)
 
 sub get_interface($)
 {
-    my ($netbiosname) = @_;
-    $netbiosname = lc($netbiosname);
+	my ($netbiosname) = @_;
+	$netbiosname = lc($netbiosname);
 
-    my %interfaces = ();
-    $interfaces{"localnt4dc2"} = 3;
-    $interfaces{"localnt4member3"} = 4;
-    $interfaces{"localshare4"} = 5;
+	# this maps the SOCKET_WRAPPER_DEFAULT_IFACE value for each possible
+	# testenv to the DC's NETBIOS name. This value also corresponds to last
+	# digit of the DC's IP address. Note that the NETBIOS name may differ from
+	# the testenv name.
+	# Note that when adding a DC with a new realm, also update dns_hub.py.
+	my %testenv_iface_mapping = (
+		localnt4dc2       => 3,
+		localnt4member3   => 4,
+		localshare4       => 5,
+		# 6 is spare
+		localktest6       => 7,
+		maptoguest        => 8,
+		localnt4dc9       => 9,
+		# 10 is spare
 
-    $interfaces{"localktest6"} = 7;
-    $interfaces{"maptoguest"} = 8;
-    $interfaces{"localnt4dc9"} = 9;
+		# 11-16 used by selftest.pl for client interfaces
+		client            => 11,
 
-    # 11-16 used by selftest.pl for client interfaces
-    $interfaces{"client"} = 11;
+		addc_no_nss       => 17,
+		addc_no_ntlm      => 18,
+		idmapadmember     => 19,
+		idmapridmember    => 20,
+		localdc           => 21,
+		localvampiredc    => 22,
+		s4member          => 23,
+		localrpcproxy     => 24,
+		dc5               => 25,
+		dc6               => 26,
+		dc7               => 27,
+		rodc              => 28,
+		localadmember     => 29,
+		addc              => 30,
+		localsubdc        => 31,
+		chgdcpass         => 32,
+		promotedvdc       => 33,
+		rfc2307member     => 34,
+		fileserver        => 35,
+		fakednsforwarder1 => 36,
+		fakednsforwarder2 => 37,
+		s4member_dflt     => 38,
+		vampire2000dc     => 39,
+		backupfromdc      => 40,
+		restoredc         => 41,
+		renamedc          => 42,
+		labdc             => 43,
+		offlinebackupdc   => 44,
+		customdc          => 45,
+		prockilldc        => 46,
+		proclimitdc       => 47,
 
-    $interfaces{"addc_no_nss"} = 17;
-    $interfaces{"addc_no_ntlm"} = 18;
-    $interfaces{"idmapadmember"} = 19;
-    $interfaces{"idmapridmember"} = 20;
-    $interfaces{"localdc"} = 21;
-    $interfaces{"localvampiredc"} = 22;
-    $interfaces{"s4member"} = 23;
-    $interfaces{"localrpcproxy"} = 24;
-    $interfaces{"dc5"} = 25;
-    $interfaces{"dc6"} = 26;
-    $interfaces{"dc7"} = 27;
-    $interfaces{"rodc"} = 28;
-    $interfaces{"localadmember"} = 29;
-    $interfaces{"addc"} = 30;
-    $interfaces{"localsubdc"} = 31;
-    $interfaces{"chgdcpass"} = 32;
-    $interfaces{"promotedvdc"} = 33;
-    $interfaces{"rfc2307member"} = 34;
-    $interfaces{"fileserver"} = 35;
-    $interfaces{"fakednsforwarder1"} = 36;
-    $interfaces{"fakednsforwarder2"} = 37;
-    $interfaces{"s4member_dflt"} = 38;
-    $interfaces{"vampire2000dc"} = 39;
-    $interfaces{"backupfromdc"} = 40;
-    $interfaces{"restoredc"} = 41;
-    $interfaces{"renamedc"} = 42;
-    $interfaces{"labdc"} = 43;
-    $interfaces{"offlinebackupdc"} = 44;
-    $interfaces{"customdc"} = 45;
-    $interfaces{"prockilldc"} = 46;
-    $interfaces{"proclimitdc"} = 47;
+		rootdnsforwarder  => 64,
 
-    $interfaces{"rootdnsforwarder"} = 64;
+		# update lib/socket_wrapper/socket_wrapper.c
+		#  #define MAX_WRAPPED_INTERFACES 64
+		# if you wish to have more than 64 interfaces
+	);
 
-    # update lib/socket_wrapper/socket_wrapper.c
-    #  #define MAX_WRAPPED_INTERFACES 64
-    # if you wish to have more than 64 interfaces
+	if (not defined($testenv_iface_mapping{$netbiosname})) {
+		die();
+	}
 
-    if (not defined($interfaces{$netbiosname})) {
-	die();
-    }
-
-    return $interfaces{$netbiosname};
+	return $testenv_iface_mapping{$netbiosname};
 }
 
 sub get_ipv4_addr
