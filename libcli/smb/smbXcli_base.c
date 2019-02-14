@@ -5064,7 +5064,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 			return;
 		}
 
-		if (cipher->data.length != (2 + 2 * cipher_count)) {
+		if (cipher->data.length < (2 + 2 * cipher_count)) {
 			tevent_req_nterror(req,
 					NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
