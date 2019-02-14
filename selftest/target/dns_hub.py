@@ -83,30 +83,35 @@ class DnsHandler(sserver.BaseRequestHandler):
             return 'torture'
         if lname.endswith('torturedom.samba.example.com'):
             return 'torture'
-        if lname.endswith('adnonssdom.samba.example.com'):
-            return '127.0.0.17'
-        if lname.endswith('adnontlmdom.samba.example.com'):
-            return '127.0.0.18'
-        if lname.endswith('samba2000.example.com'):
-            return '127.0.0.25'
-        if lname.endswith('samba2003.example.com'):
-            return '127.0.0.26'
-        if lname.endswith('samba2008r2.example.com'):
-            return '127.0.0.27'
-        if lname.endswith('addom.samba.example.com'):
-            return '127.0.0.30'
-        if lname.endswith('sub.samba.example.com'):
-            return '127.0.0.31'
-        if lname.endswith('chgdcpassword.samba.example.com'):
-            return '127.0.0.32'
-        if lname.endswith('backupdom.samba.example.com'):
-            return '127.0.0.40'
-        if lname.endswith('renamedom.samba.example.com'):
-            return '127.0.0.42'
-        if lname.endswith('labdom.samba.example.com'):
-            return '127.0.0.43'
-        if lname.endswith('samba.example.com'):
-            return '127.0.0.21'
+
+        # this maps the SOCKET_WRAPPER_DEFAULT_IFACE value (which is the
+        # last byte of the IP address) for the various testenv PDCs to the
+        # corresponding DNS realm.
+        # This should always match %testenv_iface_mapping in Samba.pm.
+        testenv_iface_mapping = {
+            'adnonssdom.samba.example.com': 17,     # addc_no_nss
+            'adnontlmdom.samba.example.com': 18,    # addc_no_ntlm
+            'samba2000.example.com': 25,            # dc5
+            'samba2003.example.com': 26,            # dc6
+            'samba2008r2.example.com': 27,          # dc7
+            'addom.samba.example.com': 30,          # addc
+            'sub.samba.example.com': 31,            # localsubdc
+            'chgdcpassword.samba.example.com': 32,  # chgdcpass
+            'backupdom.samba.example.com': 40,      # backupfromdc
+            'renamedom.samba.example.com': 42,      # renamedc
+            'labdom.samba.example.com': 43,         # labdc
+            'samba.example.com': 21,                # localdc
+        }
+
+        # sort the realms so we find the longest-match first
+        testenv_realms = sorted(testenv_iface_mapping.keys(), key=len)
+        testenv_realms.reverse()
+
+        for realm in testenv_realms:
+            if lname.endswith(realm):
+                iface = testenv_iface_mapping[realm]
+                return '127.0.0.' + str(iface)
+
         return None
 
     def handle(self):
