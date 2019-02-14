@@ -53,8 +53,15 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
-struct la_private {
+
+struct la_private_transaction {
 	struct la_context *la_list;
+};
+
+
+struct la_private {
+	struct la_private_transaction *transaction;
+	bool sorted_links;
 };
 
 struct la_op_store {
@@ -936,15 +943,18 @@ static int linked_attributes_rename(struct ldb_module *module, struct ldb_reques
 static int la_queue_mod_request(struct la_context *ac)
 {
 	struct la_private *la_private =
-		talloc_get_type(ldb_module_get_private(ac->module), struct la_private);
+		talloc_get_type(ldb_module_get_private(ac->module),
+				struct la_private);
 
-	if (la_private == NULL) {
-		ldb_debug(ldb_module_get_ctx(ac->module), LDB_DEBUG_ERROR, __location__ ": No la_private transaction setup\n");
+	if (la_private == NULL || la_private->transaction == NULL) {
+		ldb_debug(ldb_module_get_ctx(ac->module),
+			  LDB_DEBUG_ERROR,
+			  __location__ ": No la_private transaction setup\n");
 		return ldb_operr(ldb_module_get_ctx(ac->module));
 	}
 
-	talloc_steal(la_private, ac);
-	DLIST_ADD(la_private->la_list, ac);
+	talloc_steal(la_private->transaction, ac);
+	DLIST_ADD(la_private->transaction->la_list, ac);
 
 	return ldb_module_done(ac->req, ac->op_controls,
 			       ac->op_response, LDB_SUCCESS);
@@ -1209,15 +1219,19 @@ static int la_do_mod_request(struct ldb_module *module, struct la_context *ac)
 static int linked_attributes_start_transaction(struct ldb_module *module)
 {
 	/* create our private structure for this transaction */
-	struct la_private *la_private = talloc_get_type(ldb_module_get_private(module),
-							struct la_private);
-	talloc_free(la_private);
-	la_private = talloc(module, struct la_private);
+	struct la_private *la_private =
+		talloc_get_type(ldb_module_get_private(module),
+				struct la_private);
+
 	if (la_private == NULL) {
 		return ldb_oom(ldb_module_get_ctx(module));
 	}
-	la_private->la_list = NULL;
-	ldb_module_set_private(module, la_private);
+	talloc_free(la_private->transaction);
+	la_private->transaction = talloc(module, struct la_private_transaction);
+	if (la_private->transaction == NULL) {
+		return ldb_oom(ldb_module_get_ctx(module));
+	}
+	la_private->transaction->la_list = NULL;
 	return ldb_next_start_trans(module);
 }
 
@@ -1227,12 +1241,14 @@ static int linked_attributes_start_transaction(struct ldb_module *module)
  */
 static int linked_attributes_prepare_commit(struct ldb_module *module)
 {
-	struct la_private *la_private =
-		talloc_get_type(ldb_module_get_private(module), struct la_private);
 	struct la_context *ac;
-
-	if (!la_private) {
-		/* prepare commit without begin_transaction - let someone else return the error, just don't segfault */
+	struct la_private *la_private =
+		talloc_get_type(ldb_module_get_private(module),
+				struct la_private);
+	if (la_private == NULL || la_private->transaction == NULL) {
+		DBG_ERR("prepare_commit without begin_transaction\n");
+		/* prepare commit without begin_transaction - let someone else
+		 * return the error, just don't segfault */
 		return ldb_next_prepare_commit(module);
 	}
 	/* walk the list backwards, to do the first entry first, as we
@@ -1242,7 +1258,7 @@ static int linked_attributes_prepare_commit(struct ldb_module *module)
 	/* Start at the end of the list - so we can start
 	 * there, but ensure we don't create a loop by NULLing
 	 * it out in the first element */
-	ac = DLIST_TAIL(la_private->la_list);
+	ac = DLIST_TAIL(la_private->transaction->la_list);
 
 	for (; ac; ac=DLIST_PREV(ac)) {
 		int ret;
@@ -1250,14 +1266,12 @@ static int linked_attributes_prepare_commit(struct ldb_module *module)
 		ret = la_do_mod_request(module, ac);
 		if (ret != LDB_SUCCESS) {
 			DEBUG(0,(__location__ ": Failed mod request ret=%d\n", ret));
-			talloc_free(la_private);
-			ldb_module_set_private(module, NULL);
+			TALLOC_FREE(la_private->transaction);
 			return ret;
 		}
 	}
 
-	talloc_free(la_private);
-	ldb_module_set_private(module, NULL);
+	TALLOC_FREE(la_private->transaction);
 
 	return ldb_next_prepare_commit(module);
 }
@@ -1265,15 +1279,17 @@ static int linked_attributes_prepare_commit(struct ldb_module *module)
 static int linked_attributes_del_transaction(struct ldb_module *module)
 {
 	struct la_private *la_private =
-		talloc_get_type(ldb_module_get_private(module), struct la_private);
-	talloc_free(la_private);
-	ldb_module_set_private(module, NULL);
+		talloc_get_type(ldb_module_get_private(module),
+				struct la_private);
+	TALLOC_FREE(la_private->transaction);
 	return ldb_next_del_trans(module);
 }
 
 static int linked_attributes_ldb_init(struct ldb_module *module)
 {
 	int ret;
+	struct la_private *la_private = NULL;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 
 	ret = ldb_mod_register_control(module, LDB_CONTROL_VERIFY_NAME_OID);
 	if (ret != LDB_SUCCESS) {
@@ -1282,6 +1298,21 @@ static int linked_attributes_ldb_init(struct ldb_module *module)
 		return ldb_operr(ldb_module_get_ctx(module));
 	}
 
+	la_private = talloc_zero(module, struct la_private);
+	if (la_private == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = dsdb_check_samba_compatible_feature(module,
+						  SAMBA_SORTED_LINKS_FEATURE,
+						  &la_private->sorted_links);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(la_private);
+		return ret;
+	}
+
+	ldb_module_set_private(module, la_private);
 	return ldb_next_init(module);
 }
 
