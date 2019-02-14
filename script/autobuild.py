@@ -95,8 +95,7 @@ tasks = {
                 ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                 ("make", "make -j", "text/plain"),
                 ("test", "make test FAIL_IMMEDIATELY=1 "
-                 "TESTS='"
-                 "--exclude-env=none "
+                 "TESTS='--exclude-env=none "
                  "--exclude-env=nt4_dc "
                  "--exclude-env=nt4_member "
                  "--exclude-env=ad_dc "
@@ -126,8 +125,7 @@ tasks = {
                     ("configure", "./configure.developer --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                     ("make", "make -j", "text/plain"),
                     ("test", "make test FAIL_IMMEDIATELY=1 "
-                     "TESTS='"
-                     "--include-env=nt4_dc --include-env=nt4_member'", "text/plain"),
+                     "TESTS='--include-env=nt4_dc --include-env=nt4_member'", "text/plain"),
                     ("install", "make install", "text/plain"),
                     ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                     ("clean", "make clean", "text/plain")],
@@ -136,16 +134,14 @@ tasks = {
                            ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                            ("make", "make -j", "text/plain"),
                            ("test", "make test FAIL_IMMEDIATELY=1 "
-                            "TESTS='"
-                            "--include-env=fileserver'", "text/plain"),
+                            "TESTS='--include-env=fileserver'", "text/plain"),
                            ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-ad-dc": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("test", "make test FAIL_IMMEDIATELY=1 "
-                       "TESTS='"
-                       "--include-env=ad_dc "
+                       "TESTS='--include-env=ad_dc "
                        "--include-env=fl2003dc "
                        "--include-env=fl2008r2dc "
                        "--include-env=ad_member "
@@ -157,8 +153,7 @@ tasks = {
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='"
-                         "--include-env=chgdcpass "
+                         "TESTS='--include-env=chgdcpass "
                          "--include-env=vampire_2000_dc "
                          "--include-env=fl2000dc "
                          "--include-env=ad_dc_no_nss "
@@ -173,9 +168,7 @@ tasks = {
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("test", "make test FAIL_IMMEDIATELY=1 "
-                       "TESTS='"
-                       "--include-env=ad_dc_ntvfs "
-                       "'",
+                       "TESTS='--include-env=ad_dc_ntvfs'",
                        "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
@@ -185,8 +178,7 @@ tasks = {
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='"
-                         "--include-env=backupfromdc "
+                         "TESTS='--include-env=backupfromdc "
                          "--include-env=restoredc "
                          "--include-env=renamedc "
                          "--include-env=offlinebackupdc "
@@ -216,8 +208,7 @@ tasks = {
                    ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params, "text/plain"),
                    ("make", "make -j", "text/plain"),
                    ("test", "make quicktest FAIL_IMMEDIATELY=1 "
-                    "TESTS='"
-                    "--include-env=ad_dc'", "text/plain"),
+                    "TESTS='--include-env=ad_dc'", "text/plain"),
                    ("install", "make install", "text/plain"),
                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                    ("clean", "make clean", "text/plain")],
@@ -277,8 +268,7 @@ tasks = {
                       ("make", "make -j", "text/plain"),
                       ("test", "make test "
                        "FAIL_IMMEDIATELY=1 "
-                       "TESTS='"
-                       "--include-env=none'",
+                       "TESTS='--include-env=none'",
                        "text/plain")],
 
     "samba-static": [
@@ -308,8 +298,7 @@ tasks = {
                       # we currently cannot run a full make test, a limited list of tests could be run
                       # via "make test TESTS=sometests"
                       ("test", "make test FAIL_IMMEDIATELY=1 "
-                       "TESTS='"
-                       "--include-env=ktest'", "text/plain"),
+                       "TESTS='--include-env=ktest'", "text/plain"),
                       ("install", "make install", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                       ("clean", "make clean", "text/plain")
