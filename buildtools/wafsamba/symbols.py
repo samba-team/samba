@@ -146,7 +146,8 @@ def get_libs(bld, binname):
             libs.add(m.group(1))
         m = re_rpath.search(line)
         if m:
-            rpath.extend(m.group(1).split(":"))
+            # output from Popen is always bytestr even in py3
+            rpath.extend(m.group(1).split(b":"))
 
     ret = set()
     for lib in libs:
