@@ -465,9 +465,8 @@ def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
 class builder(object):
     '''handle build of one directory'''
 
-    def __init__(self, name, sequence, cp=True, py2=False):
+    def __init__(self, name, sequence, cp=True):
         self.name = name
-        self.py2 = py2
         if name in builddirs:
             self.dir = builddirs[name]
         else:
@@ -539,13 +538,7 @@ class buildlist(object):
             os.environ['AUTOBUILD_RANDOM_SLEEP_OVERRIDE'] = '1'
 
         for n in tasknames:
-            if n not in tasks and n.endswith("-py2"):
-                b = builder(n,
-                            tasks[n[:-4]],
-                            cp=n is not "pidl",
-                            py2=True)
-            else:
-                b = builder(n, tasks[n], cp=n is not "pidl")
+            b = builder(n, tasks[n], cp=n is not "pidl")
             self.tlist.append(b)
         if options.retry:
             rebase_remote = "rebaseon"
