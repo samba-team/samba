@@ -120,7 +120,8 @@ def find_ldd_path(bld, libname, binary):
 
 # some regular expressions for parsing readelf output
 re_sharedlib = re.compile(b'Shared library: \[(.*)\]')
-re_rpath     = re.compile(b'Library rpath: \[(.*)\]')
+# output from readelf could be `Library rpath` or `Libray runpath`
+re_rpath     = re.compile(b'Library (rpath|runpath): \[(.*)\]')
 
 def get_libs(bld, binname):
     '''find the list of linked libraries for any binary or library
@@ -147,7 +148,7 @@ def get_libs(bld, binname):
         m = re_rpath.search(line)
         if m:
             # output from Popen is always bytestr even in py3
-            rpath.extend(m.group(1).split(b":"))
+            rpath.extend(m.group(2).split(b":"))
 
     ret = set()
     for lib in libs:
