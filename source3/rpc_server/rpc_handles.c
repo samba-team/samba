@@ -413,9 +413,11 @@ void close_policy_by_pipe(struct pipes_struct *p)
 		 */
 		TALLOC_FREE(p->pipe_handles);
 
-		DEBUG(10,("Deleted handle list for RPC connection %s\n",
-			  ndr_interface_name(&p->contexts->syntax.uuid,
-					     p->contexts->syntax.if_version)));
+		DBG_DEBUG("Deleted handle list for RPC connection %s\n",
+				p->contexts ?
+				ndr_interface_name(&p->contexts->syntax.uuid,
+					p->contexts->syntax.if_version) :
+				"Unknown");
 	}
 }
 
