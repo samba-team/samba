@@ -65,20 +65,15 @@ if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
 
 ctdb_configure_params = " --enable-developer --picky-developer ${PREFIX}"
-samba_configure_params = " --picky-developer ${PREFIX} ${EXTRA_PYTHON} --with-profiling-data"
+samba_configure_params = " --picky-developer ${PREFIX} --with-profiling-data"
 
 samba_libs_envvars = "PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH"
 samba_libs_envvars += " PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig"
 samba_libs_envvars += " ADDITIONAL_CFLAGS='-Wmissing-prototypes'"
 samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check --enable-debug --picky-developer -C ${PREFIX}"
-samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=cmocka,popt,NONE ${EXTRA_PYTHON}"
+samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=cmocka,popt,NONE"
 samba_libs_configure_bundled_libs = " --bundled-libraries=!talloc,!pytalloc-util,!tdb,!pytdb,!ldb,!pyldb,!pyldb-util,!tevent,!pytevent,!popt"
-samba_libs_configure_samba = samba_libs_configure_base + samba_libs_configure_bundled_libs + " ${EXTRA_PYTHON}"
-
-if os.environ.get("AUTOBUILD_NO_EXTRA_PYTHON", "0") == "1":
-    extra_python = ""
-else:
-    extra_python = "--extra-python=/usr/bin/python2"
+samba_libs_configure_samba = samba_libs_configure_base + samba_libs_configure_bundled_libs
 
 tasks = {
     "ctdb": [("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
@@ -346,11 +341,11 @@ tasks = {
 
     "ldb": [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-              ("configure", "./configure --enable-developer -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
+              ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "make test", "text/plain"),
-              ("configure-no-lmdb", "./configure --enable-developer --without-ldb-lmdb -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
+              ("configure-no-lmdb", "./configure --enable-developer --without-ldb-lmdb -C ${PREFIX}", "text/plain"),
               ("make-no-lmdb", "make", "text/plain"),
               ("install-no-lmdb", "make install", "text/plain"),
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
@@ -359,7 +354,7 @@ tasks = {
 
     "tdb": [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-              ("configure", "./configure --enable-developer -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
+              ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "make test", "text/plain"),
@@ -369,7 +364,7 @@ tasks = {
 
     "talloc": [
                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-                 ("configure", "./configure --enable-developer -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
+                 ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                  ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test", "text/plain"),
@@ -389,7 +384,7 @@ tasks = {
 
     "tevent": [
                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-                 ("configure", "./configure --enable-developer -C ${PREFIX} ${EXTRA_PYTHON}", "text/plain"),
+                 ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
                  ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test", "text/plain"),
@@ -487,10 +482,6 @@ class builder(object):
         (self.stage, self.cmd, self.output_mime_type) = self.sequence[self.next]
         self.cmd = self.cmd.replace("${PYTHON_PREFIX}", get_python_lib(plat_specific=1, standard_lib=0, prefix=self.prefix))
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
-        if self.py2:
-            self.cmd = self.cmd.replace("${EXTRA_PYTHON}", "%s" % extra_python)
-        else:
-            self.cmd = self.cmd.replace("${EXTRA_PYTHON}", "")
         self.cmd = self.cmd.replace("${PREFIX_DIR}", "%s" % self.prefix)
         self.cmd = self.cmd.replace("${TESTS}", options.restrict_tests)
 #        if self.output_mime_type == "text/x-subunit":
