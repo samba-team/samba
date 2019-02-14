@@ -69,20 +69,8 @@ class DnsHandler(sserver.BaseRequestHandler):
                 s.close()
         return None
 
-    def forwarder(self, name):
-        lname = name.lower()
-
-        if lname.endswith('an-address-that-will-not-resolve'):
-            return 'ignore'
-        if lname.endswith('dsfsdfs'):
-            return 'fail'
-        if lname.endswith("torture1", 0, len(lname)-2):
-            # CATCH TORTURE100, TORTURE101, ...
-            return 'torture'
-        if lname.endswith('_none_.example.com'):
-            return 'torture'
-        if lname.endswith('torturedom.samba.example.com'):
-            return 'torture'
+    def get_pdc_ipv4_addr(self, lookup_name):
+        """Maps a DNS realm to the IPv4 address of the PDC for that testenv"""
 
         # this maps the SOCKET_WRAPPER_DEFAULT_IFACE value (which is the
         # last byte of the IP address) for the various testenv PDCs to the
@@ -108,11 +96,30 @@ class DnsHandler(sserver.BaseRequestHandler):
         testenv_realms.reverse()
 
         for realm in testenv_realms:
-            if lname.endswith(realm):
+            if lookup_name.endswith(realm):
                 iface = testenv_iface_mapping[realm]
                 return '127.0.0.' + str(iface)
 
         return None
+
+    def forwarder(self, name):
+        lname = name.lower()
+
+        # check for special cases used by tests (e.g. dns_forwarder.py)
+        if lname.endswith('an-address-that-will-not-resolve'):
+            return 'ignore'
+        if lname.endswith('dsfsdfs'):
+            return 'fail'
+        if lname.endswith("torture1", 0, len(lname)-2):
+            # CATCH TORTURE100, TORTURE101, ...
+            return 'torture'
+        if lname.endswith('_none_.example.com'):
+            return 'torture'
+        if lname.endswith('torturedom.samba.example.com'):
+            return 'torture'
+
+        # return the testenv PDC matching the realm being requested
+        return self.get_pdc_ipv4_addr(lname)
 
     def handle(self):
         start = time.monotonic()
