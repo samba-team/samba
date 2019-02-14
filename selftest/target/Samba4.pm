@@ -333,12 +333,13 @@ sub write_ldb_file($$$)
 sub add_wins_config($$)
 {
 	my ($self, $privatedir) = @_;
+	my $client_ip = Samba::get_ipv4_addr("client");
 
 	return $self->write_ldb_file("$privatedir/wins_config.ldb", "
 dn: name=TORTURE_11,CN=PARTNERS
 objectClass: wreplPartner
 name: TORTURE_11
-address: 127.0.0.11
+address: $client_ip
 pullInterval: 0
 pushChangeCount: 0
 type: 0x3

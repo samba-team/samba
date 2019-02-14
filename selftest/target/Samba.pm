@@ -400,6 +400,7 @@ sub get_interface($)
     $interfaces{"localnt4dc9"} = 9;
 
     # 11-16 used by selftest.pl for client interfaces
+    $interfaces{"client"} = 11;
 
     $interfaces{"addc_no_nss"} = 17;
     $interfaces{"addc_no_ntlm"} = 18;
