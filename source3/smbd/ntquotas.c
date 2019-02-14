@@ -57,18 +57,6 @@ static uint64_t limit_unix2nt(uint64_t in, uint64_t bsize)
 	return ret;
 }
 
-static uint64_t limit_blk2inodes(uint64_t in)
-{
-	uint64_t ret = (uint64_t)0;
-	
-	ret = (uint64_t)(in/2);
-	
-	if (ret == 0 && in != 0)
-		ret = (uint64_t)1;
-
-	return ret;	
-}
-
 NTSTATUS vfs_get_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype,
 			 struct dom_sid *psid, SMB_NTQUOTA_STRUCT *qt)
 {
@@ -145,9 +133,6 @@ int vfs_set_ntquota(files_struct *fsp, enum SMB_QUOTA_TYPE qtype, struct dom_sid
 	D.softlimit = limit_nt2unix(qt->softlim,D.bsize);
 	D.hardlimit = limit_nt2unix(qt->hardlim,D.bsize);
 	D.qflags     = qt->qflags;
-
-	D.isoftlimit = limit_blk2inodes(D.softlimit);
-	D.ihardlimit = limit_blk2inodes(D.hardlimit);
 
 	if (psid && !sid_to_uid(psid, &id.uid)) {
 		struct dom_sid_buf buf;
