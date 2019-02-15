@@ -62,7 +62,7 @@ def configure(conf):
 
     if not conf.env.disable_python:
         # also disable if we don't have the python libs installed
-        conf.SAMBA_CHECK_PYTHON(mandatory=False, version=(2,4,2))
+        conf.SAMBA_CHECK_PYTHON(mandatory=False)
         conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=False)
         if not conf.env.HAVE_PYTHON_H:
             Logs.warn('Disabling pytalloc-util as python devel libs not found')

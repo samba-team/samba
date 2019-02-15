@@ -140,7 +140,7 @@ def configure(conf):
     if conf.env.standalone_ctdb:
         conf.SAMBA_CHECK_PERL(mandatory=True)
 
-        conf.SAMBA_CHECK_PYTHON(mandatory=False, version=(2,5,0))
+        conf.SAMBA_CHECK_PYTHON(mandatory=False)
         conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=False)
 
     if conf.CHECK_FOR_THIRD_PARTY():
