@@ -5099,31 +5099,14 @@ static uint32_t open_flags_to_wire(int flags)
  Open a file - POSIX semantics. Returns fnum. Doesn't request oplock.
 ****************************************************************************/
 
-struct posix_open_state {
+struct cli_posix_open_internal_state {
 	uint16_t setup;
 	uint8_t *param;
 	uint8_t data[18];
 	uint16_t fnum; /* Out */
 };
 
-static void cli_posix_open_internal_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-				subreq, struct tevent_req);
-	struct posix_open_state *state = tevent_req_data(req, struct posix_open_state);
-	NTSTATUS status;
-	uint8_t *data;
-	uint32_t num_data;
-
-	status = cli_trans_recv(subreq, state, NULL, NULL, 0, NULL,
-				NULL, 0, NULL, &data, 12, &num_data);
-	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-	state->fnum = SVAL(data,2);
-	tevent_req_done(req);
-}
+static void cli_posix_open_internal_done(struct tevent_req *subreq);
 
 static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -5134,10 +5117,11 @@ static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
 					bool is_dir)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
-	struct posix_open_state *state = NULL;
+	struct cli_posix_open_internal_state *state = NULL;
 	uint32_t wire_flags = open_flags_to_wire(flags);
 
-	req = tevent_req_create(mem_ctx, &state, struct posix_open_state);
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_posix_open_internal_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -5146,15 +5130,18 @@ static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
 	SSVAL(&state->setup, 0, TRANSACT2_SETPATHINFO);
 
 	/* Setup param array. */
-	state->param = talloc_array(state, uint8_t, 6);
+	state->param = talloc_zero_array(state, uint8_t, 6);
 	if (tevent_req_nomem(state->param, req)) {
 		return tevent_req_post(req, ev);
 	}
-	memset(state->param, '\0', 6);
 	SSVAL(state->param, 0, SMB_POSIX_PATH_OPEN);
 
-	state->param = trans2_bytes_push_str(state->param, smbXcli_conn_use_unicode(cli->conn), fname,
-				   strlen(fname)+1, NULL);
+	state->param = trans2_bytes_push_str(
+		state->param,
+		smbXcli_conn_use_unicode(cli->conn),
+		fname,
+		strlen(fname)+1,
+		NULL);
 
 	if (tevent_req_nomem(state->param, req)) {
 		return tevent_req_post(req, ev);
@@ -5197,6 +5184,57 @@ static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static void cli_posix_open_internal_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_posix_open_internal_state *state = tevent_req_data(
+		req, struct cli_posix_open_internal_state);
+	NTSTATUS status;
+	uint8_t *data;
+	uint32_t num_data;
+
+	status = cli_trans_recv(
+		subreq,
+		state,
+		NULL,
+		NULL,
+		0,
+		NULL,
+		NULL,
+		0,
+		NULL,
+		&data,
+		12,
+		&num_data);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	state->fnum = SVAL(data,2);
+	tevent_req_done(req);
+}
+
+static NTSTATUS cli_posix_open_internal_recv(struct tevent_req *req,
+					     uint16_t *pfnum)
+{
+	struct cli_posix_open_internal_state *state = tevent_req_data(
+		req, struct cli_posix_open_internal_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*pfnum = state->fnum;
+	return NT_STATUS_OK;
+}
+
+struct cli_posix_open_state {
+	uint16_t fnum;
+};
+
+static void cli_posix_open_done(struct tevent_req *subreq);
+
 struct tevent_req *cli_posix_open_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,
@@ -5204,13 +5242,44 @@ struct tevent_req *cli_posix_open_send(TALLOC_CTX *mem_ctx,
 					int flags,
 					mode_t mode)
 {
-	return cli_posix_open_internal_send(mem_ctx, ev,
-				cli, fname, flags, mode, false);
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_posix_open_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct cli_posix_open_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = cli_posix_open_internal_send(
+		mem_ctx, ev, cli, fname, flags, mode, false);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_posix_open_done, req);
+	return req;
+}
+
+static void cli_posix_open_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_posix_open_state *state = tevent_req_data(
+		req, struct cli_posix_open_state);
+	NTSTATUS status;
+
+	status = cli_posix_open_internal_recv(subreq, &state->fnum);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
 }
 
 NTSTATUS cli_posix_open_recv(struct tevent_req *req, uint16_t *pfnum)
 {
-	struct posix_open_state *state = tevent_req_data(req, struct posix_open_state);
+	struct cli_posix_open_state *state = tevent_req_data(
+		req, struct cli_posix_open_state);
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -5231,7 +5300,7 @@ NTSTATUS cli_posix_open(struct cli_state *cli, const char *fname,
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -5240,34 +5309,30 @@ NTSTATUS cli_posix_open(struct cli_state *cli, const char *fname,
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto fail;
 	}
-
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-
-	req = cli_posix_open_send(frame,
-				ev,
-				cli,
-				fname,
-				flags,
-				mode);
+	req = cli_posix_open_send(
+		frame, ev, cli, fname, flags, mode);
 	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-
 	status = cli_posix_open_recv(req, pfnum);
-
  fail:
 	TALLOC_FREE(frame);
 	return status;
 }
+
+struct cli_posix_mkdir_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+};
+
+static void cli_posix_mkdir_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_posix_mkdir_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -5275,8 +5340,39 @@ struct tevent_req *cli_posix_mkdir_send(TALLOC_CTX *mem_ctx,
 					const char *fname,
 					mode_t mode)
 {
-	return cli_posix_open_internal_send(mem_ctx, ev,
-				cli, fname, O_CREAT, mode, true);
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_posix_mkdir_state *state = NULL;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_posix_mkdir_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+
+	subreq = cli_posix_open_internal_send(
+		mem_ctx, ev, cli, fname, O_CREAT, mode, true);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_posix_mkdir_done, req);
+	return req;
+}
+
+static void cli_posix_mkdir_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+	uint16_t fnum;
+
+	status = cli_posix_open_internal_recv(subreq, &fnum);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
 }
 
 NTSTATUS cli_posix_mkdir_recv(struct tevent_req *req)
@@ -5289,7 +5385,7 @@ NTSTATUS cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev = NULL;
 	struct tevent_req *req = NULL;
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
 		/*
@@ -5301,26 +5397,17 @@ NTSTATUS cli_posix_mkdir(struct cli_state *cli, const char *fname, mode_t mode)
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-
-	req = cli_posix_mkdir_send(frame,
-				ev,
-				cli,
-				fname,
-				mode);
+	req = cli_posix_mkdir_send(
+		frame, ev, cli,	fname, mode);
 	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-
 	status = cli_posix_mkdir_recv(req);
-
  fail:
 	TALLOC_FREE(frame);
 	return status;
