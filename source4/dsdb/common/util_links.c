@@ -114,7 +114,7 @@ int get_parsed_dns_trusted(TALLOC_CTX *mem_ctx, struct ldb_message_element *el,
 				  struct parsed_dn **pdn)
 {
 	/* Here we get a list of 'struct parsed_dns' without the parsing */
-	int i;
+	unsigned int i;
 	*pdn = talloc_zero_array(mem_ctx, struct parsed_dn,
 				 el->num_values);
 	if (!*pdn) {
