@@ -166,17 +166,18 @@ struct cli_smb2_create_fnum_state {
 static void cli_smb2_create_fnum_done(struct tevent_req *subreq);
 static bool cli_smb2_create_fnum_cancel(struct tevent_req *req);
 
-struct tevent_req *cli_smb2_create_fnum_send(TALLOC_CTX *mem_ctx,
-					     struct tevent_context *ev,
-					     struct cli_state *cli,
-					     const char *fname,
-					     uint32_t create_flags,
-					     uint32_t impersonation_level,
-					     uint32_t desired_access,
-					     uint32_t file_attributes,
-					     uint32_t share_access,
-					     uint32_t create_disposition,
-					     uint32_t create_options)
+struct tevent_req *cli_smb2_create_fnum_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *fname,
+	uint32_t create_flags,
+	uint32_t impersonation_level,
+	uint32_t desired_access,
+	uint32_t file_attributes,
+	uint32_t share_access,
+	uint32_t create_disposition,
+	uint32_t create_options)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_smb2_create_fnum_state *state;
@@ -332,17 +333,18 @@ NTSTATUS cli_smb2_create_fnum_recv(struct tevent_req *req, uint16_t *pfnum,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_smb2_create_fnum(struct cli_state *cli,
-			const char *fname,
-			uint32_t create_flags,
-			uint32_t impersonation_level,
-			uint32_t desired_access,
-			uint32_t file_attributes,
-			uint32_t share_access,
-			uint32_t create_disposition,
-			uint32_t create_options,
-			uint16_t *pfid,
-			struct smb_create_returns *cr)
+NTSTATUS cli_smb2_create_fnum(
+	struct cli_state *cli,
+	const char *fname,
+	uint32_t create_flags,
+	uint32_t impersonation_level,
+	uint32_t desired_access,
+	uint32_t file_attributes,
+	uint32_t share_access,
+	uint32_t create_disposition,
+	uint32_t create_options,
+	uint16_t *pfid,
+	struct smb_create_returns *cr)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -360,11 +362,18 @@ NTSTATUS cli_smb2_create_fnum(struct cli_state *cli,
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_smb2_create_fnum_send(frame, ev, cli, fname, create_flags,
-					impersonation_level,
-					desired_access, file_attributes,
-					share_access, create_disposition,
-					create_options);
+	req = cli_smb2_create_fnum_send(
+		frame,
+		ev,
+		cli,
+		fname,
+		create_flags,
+		impersonation_level,
+		desired_access,
+		file_attributes,
+		share_access,
+		create_disposition,
+		create_options);
 	if (req == NULL) {
 		goto fail;
 	}

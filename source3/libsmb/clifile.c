@@ -2115,9 +2115,16 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 		}
 
 		subreq = cli_smb2_create_fnum_send(
-			state, ev, cli, fname, create_flags,
-			impersonation_level, desired_access,
-			file_attributes, share_access, create_disposition,
+			state,
+			ev,
+			cli,
+			fname,
+			create_flags,
+			impersonation_level,
+			desired_access,
+			file_attributes,
+			share_access,
+			create_disposition,
 			create_options);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
