@@ -6,6 +6,10 @@ from waflib.Configure import conf
 
 @conf
 def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,6,0)):
+
+    if not mandatory:
+        version=(2,6,0)
+
     # enable tool to build python extensions
     if conf.env.HAVE_PYTHON_H:
         conf.check_python_version(version)
