@@ -114,7 +114,7 @@ static bool test_valid_request(struct torture_context *torture,
 		}
 	}
 
-	status = torture_setup_complex_file(torture, tree, FNAME);
+	status = torture_setup_simple_file(torture, tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
@@ -136,7 +136,7 @@ static bool test_valid_request(struct torture_context *torture,
 		}
 	}
 
-	status = torture_setup_complex_file(torture, tree, FNAME);
+	status = torture_setup_simple_file(torture, tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
@@ -155,7 +155,7 @@ static bool test_valid_request(struct torture_context *torture,
 		}
 	}
 
-	status = torture_setup_complex_file(torture, tree, FNAME);
+	status = torture_setup_simple_file(torture, tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
@@ -187,7 +187,7 @@ static bool test_valid_request(struct torture_context *torture,
 		}
 	}
 
-	status = torture_setup_complex_file(torture, tree, FNAME);
+	status = torture_setup_simple_file(torture, tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
@@ -201,7 +201,7 @@ static bool test_valid_request(struct torture_context *torture,
 		}
 	}
 
-	status = torture_setup_complex_file(torture, tree, FNAME);
+	status = torture_setup_simple_file(torture, tree, FNAME);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	status = smb2_notify_recv(req, torture, &n);
