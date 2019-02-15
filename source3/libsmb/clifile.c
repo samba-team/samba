@@ -2079,14 +2079,13 @@ static NTSTATUS cli_ntcreate1_recv(struct tevent_req *req,
 }
 
 struct cli_ntcreate_state {
-	NTSTATUS (*recv)(struct tevent_req *req, uint16_t *fnum,
-			 struct smb_create_returns *cr);
 	struct smb_create_returns cr;
 	uint16_t fnum;
 	struct tevent_req *subreq;
 };
 
-static void cli_ntcreate_done(struct tevent_req *subreq);
+static void cli_ntcreate_done_nt1(struct tevent_req *subreq);
+static void cli_ntcreate_done_smb2(struct tevent_req *subreq);
 static bool cli_ntcreate_cancel(struct tevent_req *req);
 
 struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
@@ -2111,8 +2110,6 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 	}
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
-		state->recv = cli_smb2_create_fnum_recv;
-
 		if (cli->use_oplocks) {
 			create_flags |= REQUEST_OPLOCK|REQUEST_BATCH_OPLOCK;
 		}
@@ -2122,17 +2119,20 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 			impersonation_level, desired_access,
 			file_attributes, share_access, create_disposition,
 			create_options);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_ntcreate_done_smb2, req);
 	} else {
-		state->recv = cli_ntcreate1_recv;
 		subreq = cli_ntcreate1_send(
 			state, ev, cli, fname, create_flags, desired_access,
 			file_attributes, share_access, create_disposition,
 			create_options, impersonation_level, security_flags);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_ntcreate_done_nt1, req);
 	}
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_set_callback(subreq, cli_ntcreate_done, req);
 
 	state->subreq = subreq;
 	tevent_req_set_cancel_fn(req, cli_ntcreate_cancel);
@@ -2140,7 +2140,7 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static void cli_ntcreate_done(struct tevent_req *subreq)
+static void cli_ntcreate_done_nt1(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
@@ -2148,7 +2148,23 @@ static void cli_ntcreate_done(struct tevent_req *subreq)
 		req, struct cli_ntcreate_state);
 	NTSTATUS status;
 
-	status = state->recv(subreq, &state->fnum, &state->cr);
+	status = cli_ntcreate1_recv(subreq, &state->fnum, &state->cr);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static void cli_ntcreate_done_smb2(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_ntcreate_state *state = tevent_req_data(
+		req, struct cli_ntcreate_state);
+	NTSTATUS status;
+
+	status = cli_smb2_create_fnum_recv(subreq, &state->fnum, &state->cr);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
