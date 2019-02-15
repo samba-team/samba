@@ -291,22 +291,17 @@ static struct parsed_dn *get_parsed_dns(
 	TALLOC_CTX *mem_ctx,
 	struct ldb_message_element *el)
 {
+	int ret;
 	struct parsed_dn *pdn = NULL;
-
-	int i;
 
 	if (el == NULL || el->num_values == 0) {
 		return NULL;
 	}
 
-	pdn = talloc_zero_array(mem_ctx, struct parsed_dn, el->num_values);
-	if (pdn == NULL) {
+	ret = get_parsed_dns_trusted(mem_ctx, el, &pdn);
+	if (ret == LDB_ERR_OPERATIONS_ERROR) {
 		DBG_ERR("Out of memory\n");
 		return NULL;
-	}
-
-	for (i = 0; i < el->num_values; i++) {
-		pdn[i].v = &el->values[i];
 	}
 	return pdn;
 
