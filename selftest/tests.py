@@ -117,25 +117,55 @@ plantestsuite(
     cmdline('dbcheck-oldrelease.sh', '$PREFIX_ABS/provision',
             'alpha13'))
 
+# same test as above but skip member link checks
+plantestsuite(
+    "samba4.blackbox.dbcheck.alpha13.quick", "none",
+    cmdline('dbcheck-oldrelease.sh', '$PREFIX_ABS/provision',
+            'alpha13', '--quick-membership-checks'))
+
 plantestsuite(
     "samba4.blackbox.dbcheck.release-4-0-0", "none",
     cmdline('dbcheck-oldrelease.sh', '$PREFIX_ABS/provision',
             'release-4-0-0'))
+
+# same test as above but skip member link checks
+plantestsuite(
+    "samba4.blackbox.dbcheck.release-4-0-0.quick", "none",
+    cmdline('dbcheck-oldrelease.sh', '$PREFIX_ABS/provision',
+            'release-4-0-0', '--quick-membership-checks'))
 
 plantestsuite(
     "samba4.blackbox.dbcheck.release-4-1-0rc3", "none",
     cmdline('dbcheck-oldrelease.sh', '$PREFIX_ABS/provision',
             'release-4-1-0rc3'))
 
+# same test as above but skip member link checks
+plantestsuite(
+    "samba4.blackbox.dbcheck.release-4-1-0rc3.quick", "none",
+    cmdline('dbcheck-oldrelease.sh', '$PREFIX_ABS/provision',
+            'release-4-1-0rc3', '--quick-membership-checks'))
+
 plantestsuite(
     "samba4.blackbox.dbcheck.release-4-1-6-partial-object", "none",
     cmdline('dbcheck-oldrelease.sh', '$PREFIX_ABS/provision',
             'release-4-1-6-partial-object'))
 
+# same test as above but skip member link checks
+plantestsuite(
+    "samba4.blackbox.dbcheck.release-4-1-6-partial-object.quick", "none",
+    cmdline('dbcheck-oldrelease.sh', '$PREFIX_ABS/provision',
+            'release-4-1-6-partial-object', '--quick-membership-checks'))
+
 plantestsuite(
     "samba4.blackbox.dbcheck.release-4-5-0-pre1", "none",
     cmdline('dbcheck-oldrelease.sh', '$PREFIX_ABS/provision',
             'release-4-5-0-pre1'))
+
+# same test as above but skip member link checks
+plantestsuite(
+    "samba4.blackbox.dbcheck.release-4-5-0-pre1.quick", "none",
+    cmdline('dbcheck-oldrelease.sh', '$PREFIX_ABS/provision',
+            'release-4-5-0-pre1', '--quick-membership-checks'))
 
 plantestsuite(
     "samba4.blackbox.upgradeprovision.alpha13", "none",
