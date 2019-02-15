@@ -164,6 +164,7 @@ static void queue_io_read(struct ctdb_queue *queue)
 {
 	int num_ready = 0;
 	uint32_t pkt_size = 0;
+	uint32_t start_offset;
 	ssize_t nread;
 	uint8_t *data;
 
@@ -226,7 +227,17 @@ buffer_shift:
 	}
 
 data_read:
-	num_ready = MIN(num_ready, queue->buffer.size - queue->buffer.length);
+	start_offset = queue->buffer.length + queue->buffer.offset;
+	if (start_offset < queue->buffer.length) {
+		DBG_ERR("Buffer overflow\n");
+		goto failed;
+	}
+	if (start_offset > queue->buffer.size) {
+		DBG_ERR("Buffer overflow\n");
+		goto failed;
+	}
+
+	num_ready = MIN(num_ready, queue->buffer.size - start_offset);
 
 	if (num_ready > 0) {
 		nread = sys_read(queue->fd,
