@@ -88,7 +88,7 @@ def set_auto_replication(dc, allow):
                              stdout=subprocess.PIPE)
         stdout, stderr = p.communicate()
         if p.returncode:
-            if 'LDAP_REFERRAL' not in stderr:
+            if b'LDAP_REFERRAL' not in stderr:
                 raise RodcRwdcTestException()
             print("ignoring +%s REFERRAL error; assuming %s is RODC" %
                   (opt, dc))
