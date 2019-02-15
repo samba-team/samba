@@ -403,8 +403,6 @@ for env in bld.gen_python_environments():
 		)
 
 	python_netlogon = 'python_netlogon'
-	if bld.env['IS_EXTRA_PYTHON']:
-		python_netlogon = 'extra-' + python_netlogon
 	bld.SAMBA_PYTHON('python_winbind',
 		source='../../librpc/gen_ndr/py_winbind.c',
 		deps='RPC_NDR_WINBIND %s %s %s' % (pytalloc_util, pyrpc_util, python_netlogon),

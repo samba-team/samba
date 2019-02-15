@@ -203,12 +203,6 @@ def options(opt):
                     help='do not generate python modules',
                     action='store_true', dest='disable_python', default=False)
 
-    opt.add_option('--extra-python', type=str,
-                    help=("build selected libraries for the specified "
-                          "additional version of Python "
-                          "(example: --extra-python=/usr/bin/python3)"),
-                    metavar="PYTHON", dest='EXTRA_PYTHON', default=None)
-
 
 @Utils.run_once
 def configure(conf):
@@ -265,12 +259,6 @@ def configure(conf):
     conf.env.AUTOCONF_PROGRAM_PREFIX = Options.options.AUTOCONF_PROGRAM_PREFIX
 
     conf.env.disable_python = Options.options.disable_python
-
-    conf.env.EXTRA_PYTHON = Options.options.EXTRA_PYTHON
-
-    if (conf.env.disable_python and conf.env.EXTRA_PYTHON):
-        Logs.error('ERROR: cannot specify both --disable-python and --extra-python.')
-        sys.exit(1)
 
     if (conf.env.AUTOCONF_HOST and
         conf.env.AUTOCONF_BUILD and

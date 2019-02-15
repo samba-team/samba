@@ -92,17 +92,6 @@ def configure(conf):
                                                  implied_deps='replace talloc tdb tevent ldb'):
                 using_system_pyldb_util = False
 
-            # We need to get a pyldb-util for all the python versions
-            # we are building for
-            if conf.env['EXTRA_PYTHON']:
-                name = 'pyldb-util' + conf.all_envs['extrapython']['PYTHON_SO_ABI_FLAG']
-                if not conf.CHECK_BUNDLED_SYSTEM_PKG(name,
-                                                     minversion=VERSION,
-                                                     maxversion=max_ldb_version_dots,
-                                                     onlyif='talloc tdb tevent',
-                                                     implied_deps='replace talloc tdb tevent ldb'):
-                    using_system_pyldb_util = False
-
             if using_system_pyldb_util:
                 conf.define('USING_SYSTEM_PYLDB_UTIL', 1)
 

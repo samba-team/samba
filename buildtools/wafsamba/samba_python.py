@@ -13,22 +13,6 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,6,0)):
 
     interpreters = []
 
-    if conf.env['EXTRA_PYTHON']:
-        conf.all_envs['extrapython'] = conf.env.derive()
-        conf.setenv('extrapython')
-        conf.env['PYTHON'] = conf.env['EXTRA_PYTHON']
-        conf.env['IS_EXTRA_PYTHON'] = 'yes'
-        conf.find_program('python', var='PYTHON', mandatory=True)
-        conf.load('python')
-        try:
-            conf.check_python_version(version)
-        except Exception:
-            Logs.warn('extra-python needs to be Python %s.%s.%s or later' %
-                      (version[0], version[1], version[2]))
-            raise
-        interpreters.append(conf.env['PYTHON'])
-        conf.setenv('default')
-
     conf.find_program('python3', var='PYTHON', mandatory=mandatory)
     conf.load('python')
     path_python = conf.find_program('python3')
@@ -57,19 +41,9 @@ def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
         return
 
     if conf.env["python_headers_checked"] == []:
-        if conf.env['EXTRA_PYTHON']:
-            conf.setenv('extrapython')
-            _check_python_headers(conf, mandatory=True)
-            conf.setenv('default')
-
         _check_python_headers(conf, mandatory)
         conf.env["python_headers_checked"] = "yes"
 
-        if conf.env['EXTRA_PYTHON']:
-            extraversion = conf.all_envs['extrapython']['PYTHON_VERSION']
-            if extraversion == conf.env['PYTHON_VERSION']:
-                raise Errors.WafError("extrapython %s is same as main python %s" % (
-                    extraversion, conf.env['PYTHON_VERSION']))
     else:
         conf.msg("python headers", "using cache")
 
@@ -133,9 +107,6 @@ def SAMBA_PYTHON(bld, name,
     if not bld.PYTHON_BUILD_IS_ENABLED():
         enabled = False
 
-    if bld.env['IS_EXTRA_PYTHON']:
-        name = 'extra-' + name
-
     # when we support static python modules we'll need to gather
     # the list from all the SAMBA_PYTHON() targets
     if init_function_sentinel is not None:
@@ -180,7 +151,7 @@ def SAMBA_PYTHON(bld, name,
 Build.BuildContext.SAMBA_PYTHON = SAMBA_PYTHON
 
 
-def pyembed_libname(bld, name, extrapython=False):
+def pyembed_libname(bld, name):
     if bld.env['PYTHON_SO_ABI_FLAG']:
         return name + bld.env['PYTHON_SO_ABI_FLAG']
     else:
@@ -198,14 +169,4 @@ def gen_python_environments(bld, extra_env_vars=()):
     with the extra-python environment active.
     """
     yield
-
-    if bld.env['EXTRA_PYTHON']:
-        copied = ('GLOBAL_DEPENDENCIES', 'TARGET_TYPE') + tuple(extra_env_vars)
-        for name in copied:
-            bld.all_envs['extrapython'][name] = bld.all_envs['default'][name]
-        default_env = bld.all_envs['default']
-        bld.all_envs['default'] = bld.all_envs['extrapython']
-        yield
-        bld.all_envs['default'] = default_env
-
 Build.BuildContext.gen_python_environments = gen_python_environments

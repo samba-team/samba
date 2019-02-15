@@ -136,9 +136,6 @@ def SAMBA_LIBRARY(bld, libname, source,
                   enabled=True):
     '''define a Samba library'''
 
-    if pyembed and bld.env['IS_EXTRA_PYTHON']:
-        public_headers = None
-
     if private_library and public_headers:
         raise Errors.WafError("private library '%s' must not have public header files" %
                              libname)
@@ -222,7 +219,7 @@ def SAMBA_LIBRARY(bld, libname, source,
         if pc_files is None:
             raise Errors.WafError("public library '%s' must have pkg-config file" %
                        libname)
-        if public_headers is None and not bld.env['IS_EXTRA_PYTHON']:
+        if public_headers is None:
             raise Errors.WafError("public library '%s' must have header files" %
                        libname)
 

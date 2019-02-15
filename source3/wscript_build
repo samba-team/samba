@@ -1327,8 +1327,6 @@ for env in bld.gen_python_environments():
 
 for env in bld.gen_python_environments():
     pycredentials = 'pycredentials'
-    if bld.env['IS_EXTRA_PYTHON']:
-        pycredentials = 'extra-' + pycredentials
     bld.SAMBA3_PYTHON('pylibsmb',
                   source='libsmb/pylibsmb.c',
                   deps='smbclient samba-credentials %s' % pycredentials,

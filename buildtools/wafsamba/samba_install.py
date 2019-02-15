@@ -62,9 +62,6 @@ def install_library(self):
 
     default_env = bld.all_envs['default']
     try:
-        if self.env['IS_EXTRA_PYTHON']:
-            bld.all_envs['default'] = bld.all_envs['extrapython']
-
         install_ldflags = install_rpath(self)
         build_ldflags   = build_rpath(bld)
 
