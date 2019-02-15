@@ -225,6 +225,7 @@ static bool torture_dsdb_syntax_tcase_teardown(struct torture_context *tctx, voi
 	struct torture_dsdb_syntax *priv;
 
 	priv = talloc_get_type_abort(data, struct torture_dsdb_syntax);
+	talloc_unlink(priv, priv->ldb);
 	talloc_free(priv);
 
 	return true;

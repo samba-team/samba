@@ -337,7 +337,7 @@ static WERROR libnet_vampire_cb_apply_schema(struct libnet_vampire_cb_state *s,
 			DEBUG(0,("Failed to attach schema from local provision using remote prefixMap."));
 			return WERR_INTERNAL_ERROR;
 		}
-		talloc_free(schema_ldb);
+		talloc_unlink(s, schema_ldb);
 	}
 
 	cycle_before_switching = lpcfg_parm_long(s->lp_ctx, NULL,

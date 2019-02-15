@@ -555,13 +555,9 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx,
 	py_ldb = PyObject_GetAttrString(py_result, "ldb");
 	Py_DECREF(py_result);
 	ldb_result = pyldb_Ldb_AsLdbContext(py_ldb);
-	/*
-	 * #TODO #FIXME There is a leak here !!!
-	 * Looks like ldb is a new object returned from schema_fn
-	 * We extract the ldb_ctx from that which rightly
-	 * will be destoryed when py_ldb is decremented.
-	 * Presently the ldb_context is returned (but the owning
-	 * object is leaked)
-	*/
+	if (talloc_reference(mem_ctx, ldb_result) == NULL) {
+		ldb_result = NULL;
+	}
+	Py_DECREF(py_ldb);
 	return ldb_result;
 }
