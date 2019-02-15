@@ -27,12 +27,11 @@ bld.SAMBA_MODULE('gensec_gssapi',
 	)
 
 
-for env in bld.gen_python_environments():
-	pytalloc_util = bld.pyembed_libname('pytalloc-util')
-	pyparam_util = bld.pyembed_libname('pyparam_util')
+pytalloc_util = bld.pyembed_libname('pytalloc-util')
+pyparam_util = bld.pyembed_libname('pyparam_util')
 
-	bld.SAMBA_PYTHON('pygensec',
-		source='pygensec.c',
-		deps='gensec %s %s' % (pytalloc_util, pyparam_util),
-		realname='samba/gensec.so'
-		)
+bld.SAMBA_PYTHON('pygensec',
+        source='pygensec.c',
+        deps='gensec %s %s' % (pytalloc_util, pyparam_util),
+        realname='samba/gensec.so'
+        )

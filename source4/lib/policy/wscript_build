@@ -2,11 +2,10 @@
 
 
 
-for env in bld.gen_python_environments():
-    pytalloc_util = bld.pyembed_libname('pytalloc-util')
-    samba_policy = bld.pyembed_libname('samba-policy')
-    samba_net = bld.pyembed_libname('samba-net')
-    bld.SAMBA_LIBRARY(samba_policy,
+pytalloc_util = bld.pyembed_libname('pytalloc-util')
+samba_policy = bld.pyembed_libname('samba-policy')
+samba_net = bld.pyembed_libname('samba-net')
+bld.SAMBA_LIBRARY(samba_policy,
 	source='gp_ldap.c gp_filesys.c gp_manage.c gp_ini.c',
 	pc_files='samba-policy.pc',
 	public_deps='ldb %s' % samba_net,
@@ -15,9 +14,9 @@ for env in bld.gen_python_environments():
 	public_headers='policy.h',
 	enabled=bld.PYTHON_BUILD_IS_ENABLED()
 	)
-    bld.SAMBA_PYTHON(
+bld.SAMBA_PYTHON(
         'py_policy',
         source='pypolicy.c',
         public_deps='%s %s' % (samba_policy, pytalloc_util),
         realname='samba/policy.so'
-    )
+        )

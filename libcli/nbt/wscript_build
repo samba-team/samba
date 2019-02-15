@@ -24,8 +24,7 @@ bld.SAMBA_BINARY('nmblookup' + bld.env.suffix4,
                  install=False
                  )
 
-for env in bld.gen_python_environments():
-        bld.SAMBA_PYTHON('python_netbios',
+bld.SAMBA_PYTHON('python_netbios',
                  source='pynbt.c',
                  public_deps='cli-nbt DYNCONFIG samba-hostconfig',
                  realname='samba/netbios.so'

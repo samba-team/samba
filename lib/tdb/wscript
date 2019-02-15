@@ -182,21 +182,19 @@ def build(bld):
                                  includes='include', install=False)
 
     if not bld.CONFIG_SET('USING_SYSTEM_PYTDB'):
-        for env in bld.gen_python_environments(['PKGCONFIGDIR']):
-            bld.SAMBA_PYTHON('pytdb',
-                             'pytdb.c',
-                             deps='tdb',
-                             enabled=not bld.env.disable_python,
-                             realname='tdb.so',
-                             cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+        bld.SAMBA_PYTHON('pytdb',
+                         'pytdb.c',
+                         deps='tdb',
+                         enabled=not bld.env.disable_python,
+                         realname='tdb.so',
+                         cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
         if not bld.env.disable_python:
-            for env in bld.gen_python_environments(['PKGCONFIGDIR']):
-                bld.SAMBA_SCRIPT('_tdb_text.py',
-                                 pattern='_tdb_text.py',
-                                 installdir='python')
-
-                bld.INSTALL_FILES('${PYTHONARCHDIR}', '_tdb_text.py')
+            bld.SAMBA_SCRIPT('_tdb_text.py',
+                             pattern='_tdb_text.py',
+                             installdir='python')
+            
+            bld.INSTALL_FILES('${PYTHONARCHDIR}', '_tdb_text.py')
 
 def testonly(ctx):
     '''run tdb testsuite'''

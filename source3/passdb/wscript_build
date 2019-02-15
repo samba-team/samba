@@ -32,10 +32,9 @@ bld.SAMBA3_MODULE('pdb_samba_dsdb',
                   internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_samba_dsdb') and bld.AD_DC_BUILD_IS_ENABLED(),
                   enabled=bld.SAMBA3_IS_ENABLED_MODULE('pdb_samba_dsdb') and bld.AD_DC_BUILD_IS_ENABLED())
 
-for env in bld.gen_python_environments():
-    pyrpc_util = bld.pyembed_libname('pyrpc_util')
-    pytalloc_util = bld.pyembed_libname('pytalloc-util')
-    bld.SAMBA3_PYTHON('pypassdb',
+pyrpc_util = bld.pyembed_libname('pyrpc_util')
+pytalloc_util = bld.pyembed_libname('pytalloc-util')
+bld.SAMBA3_PYTHON('pypassdb',
                   source='py_passdb.c',
                   deps='pdb',
                   public_deps=' '.join(['samba-util', 'tdb', 'talloc', pyrpc_util, pytalloc_util]),

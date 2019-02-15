@@ -14,9 +14,8 @@ bld.SAMBA_GENERATOR('s3_param_proto_h',
                     group='build_source',
                     rule='${PYTHON} ${SRC[0].abspath(env)} --file ${SRC[1].abspath(env)} --output ${TGT} --mode=S3PROTO')
 
-for env in bld.gen_python_environments():
-    pytalloc_util = bld.pyembed_libname('pytalloc-util')
-    bld.SAMBA3_PYTHON('pys3param',
+pytalloc_util = bld.pyembed_libname('pytalloc-util')
+bld.SAMBA3_PYTHON('pys3param',
                   source='pyparam.c',
                   deps='smbconf',
                   public_deps=' '.join(['samba-hostconfig', pytalloc_util, 'talloc']),

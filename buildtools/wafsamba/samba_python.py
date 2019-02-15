@@ -160,13 +160,3 @@ def pyembed_libname(bld, name):
 Build.BuildContext.pyembed_libname = pyembed_libname
 
 
-def gen_python_environments(bld, extra_env_vars=()):
-    """Generate all Python environments
-
-    To be used in a for loop. Normally, the loop body will be executed once.
-
-    When --extra-python is used, the body will additionaly be executed
-    with the extra-python environment active.
-    """
-    yield
-Build.BuildContext.gen_python_environments = gen_python_environments

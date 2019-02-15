@@ -114,15 +114,14 @@ def build(bld):
                           private_library=private_library)
 
     if not bld.CONFIG_SET('USING_SYSTEM_PYTEVENT') and not bld.env.disable_python:
-        for env in bld.gen_python_environments(['PKGCONFIGDIR']):
-            bld.SAMBA_PYTHON('_tevent',
-                            'pytevent.c',
-                            deps='tevent',
-                            realname='_tevent.so',
-                            cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+        bld.SAMBA_PYTHON('_tevent',
+                         'pytevent.c',
+                         deps='tevent',
+                         realname='_tevent.so',
+                         cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
 
-            bld.INSTALL_WILDCARD('${PYTHONARCHDIR}', 'tevent.py', flat=False)
+        bld.INSTALL_WILDCARD('${PYTHONARCHDIR}', 'tevent.py', flat=False)
 
         # install out various python scripts for use by make test
         bld.SAMBA_SCRIPT('tevent_python',

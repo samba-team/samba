@@ -47,22 +47,21 @@ bld.SAMBA_LIBRARY('posix_eadb',
                   autoproto='posix_eadb_proto.h',
                   private_library=True)
 
-for env in bld.gen_python_environments():
-    pyparam_util = bld.pyembed_libname('pyparam_util')
+pyparam_util = bld.pyembed_libname('pyparam_util')
 
-    bld.SAMBA_PYTHON('python_xattr_native',
+bld.SAMBA_PYTHON('python_xattr_native',
         source='python/pyxattr_native.c',
         deps='ndr ldb samdb samba-credentials %s attr' % pyparam_util,
         realname='samba/xattr_native.so'
         )
 
-    bld.SAMBA_PYTHON('python_posix_eadb',
+bld.SAMBA_PYTHON('python_posix_eadb',
 	source='python/pyposix_eadb.c',
 	deps='%s posix_eadb tdb' % pyparam_util,
 	realname='samba/posix_eadb.so'
 	)
 
-    bld.SAMBA_PYTHON('python_xattr_tdb',
+bld.SAMBA_PYTHON('python_xattr_tdb',
 	source='python/pyxattr_tdb.c',
 	deps='%s xattr_tdb' % pyparam_util,
 	realname='samba/xattr_tdb.so'

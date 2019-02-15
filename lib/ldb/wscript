@@ -234,37 +234,34 @@ def build(bld):
 
     if bld.PYTHON_BUILD_IS_ENABLED():
         if not bld.CONFIG_SET('USING_SYSTEM_PYLDB_UTIL'):
-            for env in bld.gen_python_environments(['PKGCONFIGDIR']):
+            name = bld.pyembed_libname('pyldb-util')
+            bld.SAMBA_LIBRARY(name,
+                              deps='replace ldb',
+                              source='pyldb_util.c',
+                              public_headers=('' if private_library else 'pyldb.h'),
+                              public_headers_install=not private_library,
+                              vnum=VERSION,
+                              private_library=private_library,
+                              pc_files='pyldb-util.pc',
+                              pyembed=True,
+                              enabled=bld.PYTHON_BUILD_IS_ENABLED(),
+                              abi_directory='ABI',
+                              abi_match='pyldb_*')
 
-                name = bld.pyembed_libname('pyldb-util')
-                bld.SAMBA_LIBRARY(name,
-                                  deps='replace ldb',
-                                  source='pyldb_util.c',
-                                  public_headers=('' if private_library else 'pyldb.h'),
-                                  public_headers_install=not private_library,
-                                  vnum=VERSION,
-                                  private_library=private_library,
-                                  pc_files='pyldb-util.pc',
-                                  pyembed=True,
-                                  enabled=bld.PYTHON_BUILD_IS_ENABLED(),
-                                  abi_directory='ABI',
-                                  abi_match='pyldb_*')
-
-                if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
-                    bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
-                                     deps='replace ldb ' + name,
-                                     realname='ldb.so',
-                                     cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
+            if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
+                bld.SAMBA_PYTHON('pyldb', 'pyldb.c',
+                                 deps='replace ldb ' + name,
+                                 realname='ldb.so',
+                                 cflags='-DPACKAGE_VERSION=\"%s\"' % VERSION)
 
         # Do only install this file as part of the Samba build if we do not
         # use the system libldb!
         if not bld.CONFIG_SET('USING_SYSTEM_PYLDB_UTIL'):
-            for env in bld.gen_python_environments(['PKGCONFIGDIR']):
-                    bld.SAMBA_SCRIPT('_ldb_text.py',
-                                     pattern='_ldb_text.py',
-                                     installdir='python')
+            bld.SAMBA_SCRIPT('_ldb_text.py',
+                             pattern='_ldb_text.py',
+                             installdir='python')
 
-                    bld.INSTALL_FILES('${PYTHONARCHDIR}', '_ldb_text.py')
+            bld.INSTALL_FILES('${PYTHONARCHDIR}', '_ldb_text.py')
 
     if not bld.CONFIG_SET('USING_SYSTEM_LDB'):
         if bld.is_install:

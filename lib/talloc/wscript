@@ -133,10 +133,9 @@ def build(bld):
                           manpages='man/talloc.3')
 
     if not bld.CONFIG_SET('USING_SYSTEM_PYTALLOC_UTIL'):
-        for env in bld.gen_python_environments(['PKGCONFIGDIR']):
-            name = bld.pyembed_libname('pytalloc-util')
+        name = bld.pyembed_libname('pytalloc-util')
 
-            bld.SAMBA_LIBRARY(name,
+        bld.SAMBA_LIBRARY(name,
                 source='pytalloc_util.c',
                 public_deps='talloc',
                 pyembed=True,
@@ -149,18 +148,18 @@ def build(bld):
                 pc_files='pytalloc-util.pc',
                 enabled=bld.PYTHON_BUILD_IS_ENABLED()
                 )
-            bld.SAMBA_PYTHON('pytalloc',
-                            'pytalloc.c',
-                            deps='talloc ' + name,
-                            enabled=bld.PYTHON_BUILD_IS_ENABLED(),
-                            realname='talloc.so')
+        bld.SAMBA_PYTHON('pytalloc',
+                         'pytalloc.c',
+                         deps='talloc ' + name,
+                         enabled=bld.PYTHON_BUILD_IS_ENABLED(),
+                         realname='talloc.so')
 
-            bld.SAMBA_PYTHON('test_pytalloc',
-                            'test_pytalloc.c',
-                            deps=name,
-                            enabled=bld.PYTHON_BUILD_IS_ENABLED(),
-                            realname='_test_pytalloc.so',
-                            install=False)
+        bld.SAMBA_PYTHON('test_pytalloc',
+                         'test_pytalloc.c',
+                         deps=name,
+                         enabled=bld.PYTHON_BUILD_IS_ENABLED(),
+                         realname='_test_pytalloc.so',
+                         install=False)
 
 
 def test(ctx):

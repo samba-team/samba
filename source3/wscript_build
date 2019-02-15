@@ -1316,18 +1316,16 @@ bld.SAMBA3_BINARY('vlp',
                  install=False)
 
 
-for env in bld.gen_python_environments():
-    pyrpc_util = bld.pyembed_libname('pyrpc_util')
-    pytalloc_util = bld.pyembed_libname('pytalloc-util')
-    bld.SAMBA3_PYTHON('pysmbd',
+pyrpc_util = bld.pyembed_libname('pyrpc_util')
+pytalloc_util = bld.pyembed_libname('pytalloc-util')
+bld.SAMBA3_PYTHON('pysmbd',
                   source='smbd/pysmbd.c',
                   deps=' '.join(['smbd_base', pyrpc_util, pytalloc_util]),
                   realname='samba/samba3/smbd.so'
                   )
 
-for env in bld.gen_python_environments():
-    pycredentials = 'pycredentials'
-    bld.SAMBA3_PYTHON('pylibsmb',
+pycredentials = 'pycredentials'
+bld.SAMBA3_PYTHON('pylibsmb',
                   source='libsmb/pylibsmb.c',
                   deps='smbclient samba-credentials %s' % pycredentials,
                   realname='samba/samba3/libsmb_samba_internal.so'

@@ -59,11 +59,10 @@ bld.SAMBA_SUBSYSTEM('torture_registry',
 	deps='torture registry'
 	)
 
-for env in bld.gen_python_environments():
-	pytalloc_util = bld.pyembed_libname('pytalloc-util')
-	pyparam_util = bld.pyembed_libname('pyparam_util')
+pytalloc_util = bld.pyembed_libname('pytalloc-util')
+pyparam_util = bld.pyembed_libname('pyparam_util')
 
-	bld.SAMBA_PYTHON('py_registry',
+bld.SAMBA_PYTHON('py_registry',
 		source='pyregistry.c',
 		public_deps='registry %s %s' % (pytalloc_util, pyparam_util),
 		realname='samba/registry.so'
