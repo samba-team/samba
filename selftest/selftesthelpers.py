@@ -135,8 +135,7 @@ def planperltestsuite(name, path):
         skiptestsuite(name, "Test::More not available")
 
 
-def planpythontestsuite(env, module, name=None, extra_path=None,
-                        py3_compatible=False):
+def planpythontestsuite(env, module, name=None, extra_path=None):
     if name is None:
         name = module
     args = [python, "-m", "samba.subunit.run", "$LISTOPT", "$LOADLIST", module]

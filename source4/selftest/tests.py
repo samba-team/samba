@@ -423,7 +423,7 @@ for t in smbtorture4_testsuites("dlz_bind9."):
     # The dlz_bind9 tests needs to look at the DNS database
     plansmbtorture4testsuite(t, "chgdcpass:local", ["ncalrpc:$SERVER", '-U$USERNAME%$PASSWORD'])
 
-planpythontestsuite("nt4_dc", "samba.tests.libsmb", py3_compatible=True)
+planpythontestsuite("nt4_dc", "samba.tests.libsmb")
 
 # Blackbox Tests:
 # tests that interact directly with the command-line tools rather than using
@@ -588,10 +588,10 @@ for env in ["nt4_dc", "nt4_member", "ad_dc", "ad_member", "s4member", "chgdcpass
         "samba.wbinfo_sids2xids.(%s:local)" % env, "%s:local" % env,
         [os.path.join(samba3srcdir, "script/tests/test_wbinfo_sids2xids.sh")])
 
-    planpythontestsuite(env + ":local", "samba.tests.ntlm_auth", py3_compatible=True)
+    planpythontestsuite(env + ":local", "samba.tests.ntlm_auth")
 
 for env in ["ktest"]:
-    planpythontestsuite(env + ":local", "samba.tests.ntlm_auth_krb5", py3_compatible=True)
+    planpythontestsuite(env + ":local", "samba.tests.ntlm_auth_krb5")
 
 for env in ["s4member_dflt_domain", "s4member"]:
     for cmd in ["id", "getent"]:
@@ -611,7 +611,7 @@ for env in ["ad_dc:local", "s4member:local", "nt4_dc:local", "ad_member:local", 
 subunitrun = valgrindify(python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
 
 
-def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, extra_args=[], py3_compatible=False):
+def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, extra_args=[]):
     environ = dict(environ)
     py_path = list(extra_path)
     if py_path:
@@ -628,25 +628,25 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
 mdb_testenv = "ad_dc"
 tdb_testenv = "ad_dc_ntvfs"
 for testenv in [mdb_testenv, tdb_testenv]:
-    planoldpythontestsuite(testenv, "samba.tests.complex_expressions", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+    planoldpythontestsuite(testenv, "samba.tests.complex_expressions", extra_args=['-U"$USERNAME%$PASSWORD"'])
 
-planoldpythontestsuite("ad_dc_default:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("none", "simple", extra_path=["%s/lib/tdb/python/tests" % srcdir()], name="tdb.python",  py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.dcerpc.sam", py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.dsdb", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.dsdb_lock", py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.dcerpc.bare", py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.dcerpc.unix", py3_compatible=True)
+planoldpythontestsuite("ad_dc_default:local", "samba.tests.gensec", extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("none", "simple", extra_path=["%s/lib/tdb/python/tests" % srcdir()], name="tdb.python")
+planpythontestsuite("ad_dc_default:local", "samba.tests.dcerpc.sam")
+planpythontestsuite("ad_dc_default:local", "samba.tests.dsdb")
+planpythontestsuite("none", "samba.tests.dsdb_lock")
+planpythontestsuite("ad_dc_default:local", "samba.tests.dcerpc.bare")
+planpythontestsuite("ad_dc_default:local", "samba.tests.dcerpc.unix")
 planpythontestsuite("ad_dc_default:local", "samba.tests.dcerpc.srvsvc")
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.timecmd", py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.join", py3_compatible=True)
+planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.timecmd")
+planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.join")
 
-planpythontestsuite("none", "samba.tests.samba_tool.visualize", py3_compatible=True)
+planpythontestsuite("none", "samba.tests.samba_tool.visualize")
 
 
 # test fsmo show
 for env in all_fl_envs:
-    planpythontestsuite(env + ":local", "samba.tests.samba_tool.fsmo", py3_compatible=True)
+    planpythontestsuite(env + ":local", "samba.tests.samba_tool.fsmo")
 
 # test user.edit
 for env in all_fl_envs:
@@ -659,50 +659,49 @@ for env in all_fl_envs:
 # It's also a good sanity-check that sysvol backup worked correctly.
 for env in ["ad_dc_ntvfs", "ad_dc", "offlinebackupdc", "renamedc",
             smbv1_disabled_testenv]:
-    planpythontestsuite(env + ":local", "samba.tests.samba_tool.gpo",
-                        py3_compatible=True)
+    planpythontestsuite(env + ":local", "samba.tests.samba_tool.gpo")
 
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.processes", py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.user", py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.user_wdigest",  py3_compatible=True)
-planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user", py3_compatible=True)
-planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user_virtualCryptSHA", py3_compatible=True)
-planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.user_check_password_script", py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.group", py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.ou", py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.computer", py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.forest", py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.schema", py3_compatible=True)
-planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.ntacl", py3_compatible=True)
-planpythontestsuite("none", "samba.tests.samba_tool.provision_password_check",  py3_compatible=True)
-planpythontestsuite("none", "samba.tests.samba_tool.help", py3_compatible=True)
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.passwordsettings", py3_compatible=True)
-planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.dsacl", py3_compatible=True)
+planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.processes")
+planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.user")
+planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.user_wdigest")
+planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user")
+planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user_virtualCryptSHA")
+planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.user_check_password_script")
+planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.group")
+planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.ou")
+planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.computer")
+planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.forest")
+planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.schema")
+planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.ntacl")
+planpythontestsuite("none", "samba.tests.samba_tool.provision_password_check")
+planpythontestsuite("none", "samba.tests.samba_tool.help")
+planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.passwordsettings")
+planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.dsacl")
 
 # Run these against chgdcpass to share the runtime load
-planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.sites", py3_compatible=True)
-planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.dnscmd", py3_compatible=True)
+planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.sites")
+planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.dnscmd")
 
 # Run this against chgdcpass to ensure at least one python3 test
 # against this autobuild target (samba-ad-dc-2)
-planpythontestsuite("chgdcpass:local", "samba.tests.dcerpc.rpcecho", py3_compatible=True)
+planpythontestsuite("chgdcpass:local", "samba.tests.dcerpc.rpcecho")
 
-planoldpythontestsuite("nt4_dc", "samba.tests.netbios", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc:local", "samba.tests.gpo", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc:local", "samba.tests.dckeytab", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+planoldpythontestsuite("nt4_dc", "samba.tests.netbios", extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc:local", "samba.tests.gpo", extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc:local", "samba.tests.dckeytab", extra_args=['-U"$USERNAME%$PASSWORD"'])
 
 for env in ["ad_dc", smbv1_disabled_testenv]:
-    planoldpythontestsuite(env, "samba.tests.smb", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+    planoldpythontestsuite(env, "samba.tests.smb", extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite(env + ":local", "samba.tests.ntacls_backup",
-        extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+        extra_args=['-U"$USERNAME%$PASSWORD"'])
 
 planoldpythontestsuite(
     "ad_dc_ntvfs:local", "samba.tests.dcerpc.registry",
-    extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+    extra_args=['-U"$USERNAME%$PASSWORD"'])
 
-planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("chgdcpass", "samba.tests.dcerpc.raw_protocol", py3_compatible=True,
+planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc", "samba.tests.dcerpc.dnsserver", extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("chgdcpass", "samba.tests.dcerpc.raw_protocol",
                        environ={'MAX_NUM_AUTH': '8'})
 
 if have_heimdal_support:
@@ -740,17 +739,14 @@ if have_heimdal_support:
 
 planoldpythontestsuite("fl2008r2dc:local",
                        "samba.tests.getdcname",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'],
-                       py3_compatible=True)
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 
 planoldpythontestsuite("ad_dc",
                        "samba.tests.net_join_no_spnego",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'],
-                       py3_compatible=True)
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc",
                        "samba.tests.net_join",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'],
-                       py3_compatible=True)
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc",
                        "samba.tests.segfault",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
@@ -760,19 +756,19 @@ planoldpythontestsuite("ad_dc",
 # ad_dc:local functional_level >= 2008, gpg keys available
 planoldpythontestsuite("ad_dc:local",
                        "samba.tests.password_hash_gpgme",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 # ad_dc_ntvfs:local functional level >= 2008, gpg keys not available
 planoldpythontestsuite("ad_dc_ntvfs:local",
                        "samba.tests.password_hash_fl2008",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 # fl2003dc:local functional level < 2008, gpg keys not available
 planoldpythontestsuite("fl2003dc:local",
                        "samba.tests.password_hash_fl2003",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 # ad_dc: wDigest values over ldap
 planoldpythontestsuite("ad_dc",
                        "samba.tests.password_hash_ldap",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 
 for env in ["ad_dc_backup", smbv1_disabled_testenv]:
     planoldpythontestsuite(env + ":local", "samba.tests.domain_backup",
@@ -785,45 +781,43 @@ planoldpythontestsuite("none",
 # encrypt secret values on disk.
 planoldpythontestsuite("ad_dc:local",
                        "samba.tests.encrypted_secrets",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("vampire_dc:local",
                        "samba.tests.encrypted_secrets",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 # The fl2000dc environment is provisioned with the --plaintext_secrets option
 # so this test will fail, which proves the secrets are not being encrypted.
 # There is an entry in known_fail.d.
 planoldpythontestsuite("fl2000dc:local",
                        "samba.tests.encrypted_secrets",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 
 planpythontestsuite("none",
-                    "samba.tests.lsa_string",
-                    py3_compatible=True)
+                    "samba.tests.lsa_string")
 
 planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.krb5_credentials",
-                       py3_compatible=True,
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
 
 for env in ["ad_dc_ntvfs", "vampire_dc", "promoted_dc"]:
     planoldpythontestsuite(env,
                            "samba.tests.py_credentials",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc_slowtests",
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.emulate.traffic",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc_slowtests",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.emulate.traffic_packet",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc_slowtests",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.blackbox.traffic_replay",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc_slowtests",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.blackbox.traffic_learner",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc_slowtests",
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
+planoldpythontestsuite("ad_dc_ntvfs",
                        "samba.tests.blackbox.traffic_summary",
-                       extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
+                       extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("none", "samba.tests.loadparm")
 
 #
@@ -832,7 +826,7 @@ planoldpythontestsuite("none", "samba.tests.loadparm")
 for env in ["ad_dc_ntvfs:local", "ad_dc:local",
             "fl2003dc:local", "fl2008r2dc:local",
             "promoted_dc:local"]:
-    planoldpythontestsuite(env, "samba.tests.blackbox.smbcontrol", py3_compatible=True)
+    planoldpythontestsuite(env, "samba.tests.blackbox.smbcontrol")
 
 plantestsuite_loadlist("samba4.ldap.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite_loadlist("samba4.tokengroups.krb5.python(ad_dc_default)", "ad_dc_default:local", [python, os.path.join(samba4srcdir, "dsdb/tests/python/token_group.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '-k', 'yes', '$LOADLIST', '$LISTOPT'])
@@ -843,9 +837,9 @@ plantestsuite("samba4.user_account_control.python(ad_dc_default)", "ad_dc_defaul
 planoldpythontestsuite("ad_dc_default", "dsdb_schema_info",
                        extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')],
                        name="samba4.schemaInfo.python(ad_dc_default)",
-        extra_args=['-U"$DOMAIN/$DC_USERNAME%$DC_PASSWORD"'], py3_compatible=True)
+        extra_args=['-U"$DOMAIN/$DC_USERNAME%$DC_PASSWORD"'])
 
-planpythontestsuite("ad_dc_default:local", "samba.tests.dsdb_schema_attributes", py3_compatible=True)
+planpythontestsuite("ad_dc_default:local", "samba.tests.dsdb_schema_attributes")
 
 plantestsuite_loadlist("samba4.urgent_replication.python(ad_dc_ntvfs)", "ad_dc_ntvfs:local", [python, os.path.join(samba4srcdir, "dsdb/tests/python/urgent_replication.py"), '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb', '$LOADLIST', '$LISTOPT'])
 plantestsuite_loadlist("samba4.ldap.dirsync.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(samba4srcdir, "dsdb/tests/python/dirsync.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
@@ -853,7 +847,7 @@ plantestsuite_loadlist("samba4.ldap.match_rules.python", "ad_dc_ntvfs", [python,
 plantestsuite_loadlist("samba4.ldap.notification.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [python, os.path.join(samba4srcdir, "dsdb/tests/python/notification.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite_loadlist("samba4.ldap.sites.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(samba4srcdir, "dsdb/tests/python/sites.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
-planoldpythontestsuite("ad_dc_default", "sort", environ={'SERVER' : '$SERVER', 'DATA_DIR' : os.path.join(samba4srcdir, 'dsdb/tests/python/testdata/')}, name="samba4.ldap.sort.python", extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')], extra_args=['-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'], py3_compatible=True)
+planoldpythontestsuite("ad_dc_default", "sort", environ={'SERVER' : '$SERVER', 'DATA_DIR' : os.path.join(samba4srcdir, 'dsdb/tests/python/testdata/')}, name="samba4.ldap.sort.python", extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')], extra_args=['-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
 
 plantestsuite_loadlist("samba4.ldap.linked_attributes.python(ad_dc_ntvfs)", "ad_dc_ntvfs:local", [python, os.path.join(samba4srcdir, "dsdb/tests/python/linked_attributes.py"), '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
@@ -901,14 +895,12 @@ planoldpythontestsuite("rodc:local", "replica_sync_rodc",
                        extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                        name="samba4.drs.replica_sync_rodc.python(rodc)",
                        environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
-		       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                       py3_compatible=True)
+		       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 planoldpythontestsuite("ad_dc_default", "password_settings",
                        extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')],
                        name="samba4.ldap.passwordsettings.python",
-                       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                       py3_compatible=True)
+                       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 for env in all_fl_envs:
     plantestsuite_loadlist("samba4.ldap_schema.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap_schema.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
@@ -931,12 +923,11 @@ for env in ["ad_dc_slowtests"]:
     planoldpythontestsuite(env, "tombstone_reanimation",
                            name="samba4.tombstone_reanimation.python",
                            environ={'TEST_SERVER': '$SERVER', 'TEST_USERNAME': '$USERNAME', 'TEST_PASSWORD': '$PASSWORD'},
-                           extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')], py3_compatible=True
+                           extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')]
                            )
     planoldpythontestsuite(env, "samba.tests.join",
                            name="samba.tests.join.python(%s)" % env,
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 # this is a basic sanity-check of Kerberos/NTLM user login
 for env in ["offlinebackupdc", "restoredc", "renamedc", "labdc"]:
@@ -945,9 +936,9 @@ for env in ["offlinebackupdc", "restoredc", "renamedc", "labdc"]:
                             "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", "--realm=$REALM",
                             '$LOADLIST', '$LISTOPT'])
 
-planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.upgradeprovisionneeddc", py3_compatible=True)
-planpythontestsuite("ad_dc:local", "samba.tests.posixacl", py3_compatible=True)
-planpythontestsuite("ad_dc_no_nss:local", "samba.tests.posixacl", py3_compatible=True)
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.upgradeprovisionneeddc")
+planpythontestsuite("ad_dc:local", "samba.tests.posixacl")
+planpythontestsuite("ad_dc_no_nss:local", "samba.tests.posixacl")
 plantestsuite_loadlist("samba4.deletetest.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(samba4srcdir, "dsdb/tests/python/deletetest.py"),
                                                                                 '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite("samba4.blackbox.samba3dump", "none", [os.path.join(samba4srcdir, "selftest/test_samba3dump.sh")])
@@ -983,7 +974,7 @@ for env in ['rodc', 'offlinebackupdc', 'restoredc', 'renamedc', 'labdc']:
     plansmbtorture4testsuite('rpc.echo', "%s:local" % env, ['ncacn_np:$SERVER', "-k", "no", '-Utestdenied%$DC_PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.rpc.echo.testdenied")
     plantestsuite("samba4.blackbox.smbclient(%s:local)" % env, "%s:local" % env, [os.path.join(samba4srcdir, "utils/tests/test_smbclient.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', '$DOMAIN', binpath('smbclient')])
 
-planpythontestsuite("rodc:local", "samba.tests.samba_tool.rodc", py3_compatible=True)
+planpythontestsuite("rodc:local", "samba.tests.samba_tool.rodc")
 
 plantestsuite("samba.blackbox.rpcclient_samlogon", "rodc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient_samlogon.sh"),
                                                                   "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$SERVER", configuration])
@@ -1009,58 +1000,49 @@ planoldpythontestsuite(env, "ridalloc_exop",
                        extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                        name="samba4.drs.ridalloc_exop.python(%s)" % env,
                        environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
-                       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                       py3_compatible=True)
+                       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 for env in ['vampire_dc', 'promoted_dc']:
     planoldpythontestsuite("%s:local" % env, "samba_tool_drs",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.samba_tool_drs.python(%s)" % env,
                            environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite("%s:local" % env, "samba_tool_drs_showrepl",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.samba_tool_drs_showrepl.python(%s)" % env,
                            environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite("%s:local" % env, "replica_sync",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.replica_sync.python(%s)" % env,
                            environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite(env, "delete_object",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.delete_object.python(%s)" % env,
                            environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite(env, "fsmo",
                            name="samba4.drs.fsmo.python(%s)" % env,
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite(env, "repl_move",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.repl_move.python(%s)" % env,
                            environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite(env, "getnc_exop",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.getnc_exop.python(%s)" % env,
                            environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite(env, "getnc_unpriv",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.getnc_unpriv.python(%s)" % env,
                            environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite(env, "linked_attributes_drs",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.linked_attributes_drs.python(%s)" % env,
@@ -1070,16 +1052,14 @@ for env in ['vampire_dc', 'promoted_dc']:
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.link_conflicts.python(%s)" % env,
                            environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
-			   extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+			   extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 for env in ['vampire_dc', 'promoted_dc', 'vampire_2000_dc']:
     planoldpythontestsuite(env, "repl_schema",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.repl_schema.python(%s)" % env,
                            environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 # A side-effect of the getncchanges tests is that they will create hundreds of
 # tombstone objects, so run them last to avoid interferring with (and slowing
@@ -1089,22 +1069,19 @@ for env in ['vampire_dc', 'promoted_dc']:
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.getncchanges.python(%s)" % env,
                            environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
-			   extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+			   extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 for env in ['ad_dc_ntvfs']:
     planoldpythontestsuite(env, "repl_rodc",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.repl_rodc.python(%s)" % env,
                            environ={'DC1': "$DC_SERVER", 'DC2': '$DC_SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite(env, "cracknames",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.cracknames.python(%s)" % env,
                            environ={'DC1': "$DC_SERVER", 'DC2': '$DC_SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 planoldpythontestsuite("chgdcpass:local", "samba.tests.blackbox.samba_dnsupdate",
                        environ={'DNS_SERVER_IP': '$SERVER_IP'})
@@ -1167,24 +1144,21 @@ for env in [
                                     'TEST_PASSWORD': '$PASSWORD',
                                     'TEST_ENV': env
                                     },
-                           extra_path=[os.path.join(srcdir(), "samba/python"), ],
-                           py3_compatible=True)
-    planpythontestsuite(env, "samba.tests.samba_tool.visualize_drs", py3_compatible=True)
+                           extra_path=[os.path.join(srcdir(), "samba/python"), ])
+    planpythontestsuite(env, "samba.tests.samba_tool.visualize_drs")
 
-planpythontestsuite("ad_dc_default:local", "samba.tests.kcc.kcc_utils", py3_compatible=True)
+planpythontestsuite("ad_dc_default:local", "samba.tests.kcc.kcc_utils")
 
 for env in ["simpleserver", "fileserver", "nt4_dc", "ad_dc", "ad_dc_ntvfs",
             "ad_member", "offlinebackupdc", "restoredc", "renamedc", "labdc"]:
     planoldpythontestsuite(env, "netlogonsvc",
                            extra_path=[os.path.join(srcdir(), 'python/samba/tests')],
-                           name="samba.tests.netlogonsvc.python(%s)" % env,
-                           py3_compatible=True)
+                           name="samba.tests.netlogonsvc.python(%s)" % env)
 
 for env in ["ktest", "ad_member", "ad_dc_no_ntlm"]:
     planoldpythontestsuite(env, "ntlmdisabled",
                            extra_path=[os.path.join(srcdir(), 'python/samba/tests')],
-                           name="samba.tests.ntlmdisabled.python(%s)" % env,
-                           py3_compatible=True)
+                           name="samba.tests.ntlmdisabled.python(%s)" % env)
 
 # Demote the vampire DC, it must be the last test each DC, before the dbcheck
 for env in ['vampire_dc', 'promoted_dc', 'rodc']:
@@ -1211,13 +1185,11 @@ for env in ["ad_dc_ntvfs", "ad_dc", "fl2000dc", "fl2003dc", "fl2008r2dc",
 planoldpythontestsuite("ad_dc_ntvfs:local",
                        "samba.tests.blackbox.bug13653",
                        extra_args=['-U"$USERNAME%$PASSWORD"'],
-                       environ={'TEST_ENV': 'ad_dc_ntvfs'},
-                       py3_compatible=True)
+                       environ={'TEST_ENV': 'ad_dc_ntvfs'})
 planoldpythontestsuite("ad_dc:local",
                        "samba.tests.blackbox.bug13653",
                        extra_args=['-U"$USERNAME%$PASSWORD"'],
-                       environ={'TEST_ENV': 'ad_dc'},
-                       py3_compatible=True)
+                       environ={'TEST_ENV': 'ad_dc'})
 # cmocka tests not requiring a specific environment
 #
 plantestsuite("samba4.dsdb.samdb.ldb_modules.unique_object_sids", "none",
@@ -1250,19 +1222,16 @@ planoldpythontestsuite("preforkrestartdc:local",
                        extra_path=[
                            os.path.join(srcdir(), 'python/samba/tests')],
                        extra_args=['-U"$USERNAME%$PASSWORD"'],
-                       name="samba.tests.prefork_restart",
-                       py3_compatible=True)
+                       name="samba.tests.prefork_restart")
 planoldpythontestsuite("preforkrestartdc:local",
                        "samba.tests.blackbox.smbcontrol_process",
                        extra_path=[
                            os.path.join(srcdir(), 'python/samba/tests')],
                        extra_args=['-U"$USERNAME%$PASSWORD"'],
-                       name="samba.tests.blackbox.smbcontrol_process",
-                       py3_compatible=True)
+                       name="samba.tests.blackbox.smbcontrol_process")
 planoldpythontestsuite("proclimitdc",
                        "samba.tests.process_limits",
                        extra_path=[
                            os.path.join(srcdir(), 'python/samba/tests')],
                        extra_args=['-U"$USERNAME%$PASSWORD"'],
-                       name="samba.tests.process_limits",
-                       py3_compatible=True)
+                       name="samba.tests.process_limits")
