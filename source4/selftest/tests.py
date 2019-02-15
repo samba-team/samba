@@ -26,7 +26,7 @@ import selftesthelpers
 from selftesthelpers import bindir, srcdir, binpath, python
 from selftesthelpers import configuration, plantestsuite
 from selftesthelpers import planpythontestsuite, planperltestsuite
-from selftesthelpers import plantestsuite_loadlist, extra_python
+from selftesthelpers import plantestsuite_loadlist
 from selftesthelpers import skiptestsuite, source4dir, valgrindify
 from selftesthelpers import smbtorture4_options, smbtorture4_testsuites
 from selftesthelpers import smbtorture4, ntlm_auth3, samba3srcdir
@@ -609,8 +609,6 @@ for env in ["ad_dc:local", "s4member:local", "nt4_dc:local", "ad_member:local", 
         skiptestsuite("samba.nss.test using winbind(%s)" % env, "nsstest not available")
 
 subunitrun = valgrindify(python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
-if extra_python is not None:
-    subunitrun3 = valgrindify(extra_python) + " " + os.path.join(samba4srcdir, "scripting/bin/subunitrun")
 
 
 def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, extra_args=[], py3_compatible=False):
@@ -624,10 +622,6 @@ def planoldpythontestsuite(env, module, name=None, extra_path=[], environ={}, ex
     if name is None:
         name = module
     plantestsuite_loadlist(name, env, args)
-    if py3_compatible and extra_python is not None:
-        args[args.index(subunitrun)] = subunitrun3
-        python_name = os.path.basename(extra_python)
-        plantestsuite_loadlist(name + "." + python_name, env, args)
 
 # Run complex search expressions test once for each database backend.
 # Right now ad_dc has mdb and ad_dc_ntvfs has tdb
