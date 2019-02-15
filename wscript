@@ -151,8 +151,8 @@ def configure(conf):
         if not (Options.options.without_ad_dc):
             raise Errors.WafError('--disable-python requires --without-ad-dc')
 
-    conf.SAMBA_CHECK_PYTHON(mandatory=not conf.env.disable_python)
-    conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=(not conf.env.disable_python))
+    conf.SAMBA_CHECK_PYTHON()
+    conf.SAMBA_CHECK_PYTHON_HEADERS()
 
     if sys.platform == 'darwin' and not conf.env['HAVE_ENVIRON_DECL']:
         # Mac OSX needs to have this and it's also needed that the python is compiled with this

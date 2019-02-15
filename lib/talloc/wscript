@@ -57,16 +57,8 @@ def configure(conf):
 
     conf.SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS()
 
-    # We need to set everything non-python up before here, because
-    # SAMBA_CHECK_PYTHON makes a copy of conf and we need it set up correctly
-
-    if not conf.env.disable_python:
-        # also disable if we don't have the python libs installed
-        conf.SAMBA_CHECK_PYTHON(mandatory=False)
-        conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=False)
-        if not conf.env.HAVE_PYTHON_H:
-            Logs.warn('Disabling pytalloc-util as python devel libs not found')
-            conf.env.disable_python = True
+    conf.SAMBA_CHECK_PYTHON()
+    conf.SAMBA_CHECK_PYTHON_HEADERS()
 
     if not conf.env.standalone_talloc:
         if conf.CHECK_BUNDLED_SYSTEM_PKG('talloc', minversion=VERSION,

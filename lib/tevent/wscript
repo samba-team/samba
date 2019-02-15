@@ -60,15 +60,8 @@ def configure(conf):
     if not conf.CONFIG_SET('USING_SYSTEM_TEVENT'):
         conf.DEFINE('TEVENT_NUM_SIGNALS', tevent_num_signals)
 
-    if not conf.env.disable_python:
-        # also disable if we don't have the python libs installed
-        conf.find_program('python', var='PYTHON')
-        conf.load('python')
-        conf.check_python_version((2,4,2))
-        conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=False)
-        if not conf.env.HAVE_PYTHON_H:
-            Logs.warn('Disabling pytevent as python devel libs not found')
-            conf.env.disable_python = True
+    conf.SAMBA_CHECK_PYTHON()
+    conf.SAMBA_CHECK_PYTHON_HEADERS()
 
     conf.SAMBA_CONFIG_H()
 

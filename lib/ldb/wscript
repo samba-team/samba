@@ -58,11 +58,9 @@ def configure(conf):
             conf.define('USING_SYSTEM_CMOCKA', 1)
 
     conf.RECURSE('lib/replace')
-    conf.find_program('python', var='PYTHON')
     conf.find_program('xsltproc', var='XSLTPROC')
-    conf.load('python')
-    conf.check_python_version((2,4,2))
-    conf.SAMBA_CHECK_PYTHON_HEADERS(mandatory=not conf.env.disable_python)
+    conf.SAMBA_CHECK_PYTHON()
+    conf.SAMBA_CHECK_PYTHON_HEADERS()
 
     # where does the default LIBDIR end up? in conf.env somewhere?
     #

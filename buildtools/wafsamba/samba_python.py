@@ -5,9 +5,9 @@ from waflib import Build, Logs, Utils, Configure, Errors
 from waflib.Configure import conf
 
 @conf
-def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(3,4,0)):
+def SAMBA_CHECK_PYTHON(conf, version=(3,4,0)):
 
-    if not mandatory:
+    if conf.env.disable_python:
         version=(2,6,0)
 
     # enable tool to build python extensions
@@ -17,7 +17,8 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(3,4,0)):
 
     interpreters = []
 
-    conf.find_program('python3', var='PYTHON', mandatory=mandatory)
+    conf.find_program('python3', var='PYTHON',
+                      mandatory=not conf.env.disable_python)
     conf.load('python')
     path_python = conf.find_program('python3')
 
@@ -29,11 +30,8 @@ def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(3,4,0)):
 
 
 @conf
-def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
+def SAMBA_CHECK_PYTHON_HEADERS(conf):
     if conf.env.disable_python:
-        if mandatory:
-            raise Errors.WafError("Cannot check for python headers when "
-                                 "--disable-python specified")
 
         conf.msg("python headers", "Check disabled due to --disable-python")
         # we don't want PYTHONDIR in config.h, as otherwise changing
@@ -45,7 +43,7 @@ def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
         return
 
     if conf.env["python_headers_checked"] == []:
-        _check_python_headers(conf, mandatory)
+        _check_python_headers(conf)
         conf.env["python_headers_checked"] = "yes"
 
     else:
@@ -57,13 +55,8 @@ def SAMBA_CHECK_PYTHON_HEADERS(conf, mandatory=True):
         if not x.startswith('PYTHONDIR=')
         and not x.startswith('PYTHONARCHDIR=')]
 
-def _check_python_headers(conf, mandatory):
-    try:
-        conf.errors.ConfigurationError
-        conf.check_python_headers()
-    except conf.errors.ConfigurationError:
-        if mandatory:
-             raise
+def _check_python_headers(conf):
+    conf.check_python_headers()
 
     if conf.env['PYTHON_VERSION'] > '3':
         abi_pattern = os.path.splitext(conf.env['pyext_PATTERN'])[0]
