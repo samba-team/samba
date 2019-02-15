@@ -19,7 +19,7 @@ NEW FEATURES/CHANGES
 GPO Improvements
 ----------------
 
-A new 'samba-tool gpo export' command has been added that can export a
+A new 'samba-tool gpo backup' command has been added that can export a
 set of Group Policy Objects from a domain in a generalised XML format.
 
 A corresponding 'samba-tool gpo restore' command has been added to
