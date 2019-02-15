@@ -5,7 +5,7 @@ from waflib import Build, Logs, Utils, Configure, Errors
 from waflib.Configure import conf
 
 @conf
-def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(2,6,0)):
+def SAMBA_CHECK_PYTHON(conf, mandatory=True, version=(3,4,0)):
 
     if not mandatory:
         version=(2,6,0)
