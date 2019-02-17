@@ -906,21 +906,30 @@ nogroup:x:65534:nobody
 		return undef;
 	}
 
+	# Return the environment variables for the new testenv DC.
+	# Note that we have SERVER_X and DC_SERVER_X variables (which have the same
+	# value initially). In a 2 DC setup, $DC_SERVER_X will always be the PDC.
 	my $ret = {
 		KRB5_CONFIG => $ctx->{krb5_conf},
 		KRB5_CCACHE => $ctx->{krb5_ccache},
 		MITKDC_CONFIG => $ctx->{mitkdc_conf},
 		PIDDIR => $ctx->{piddir},
 		SERVER => $ctx->{hostname},
+		DC_SERVER => $ctx->{hostname},
 		SERVER_IP => $ctx->{ipv4},
+		DC_SERVER_IP => $ctx->{ipv4},
 		SERVER_IPV6 => $ctx->{ipv6},
+		DC_SERVER_IPV6 => $ctx->{ipv6},
 		NETBIOSNAME => $ctx->{netbiosname},
+		DC_NETBIOSNAME => $ctx->{netbiosname},
 		DOMAIN => $ctx->{domain},
 		USERNAME => $ctx->{username},
+		DC_USERNAME => $ctx->{username},
 		REALM => $ctx->{realm},
 		DNSNAME => $ctx->{dnsname},
 		SAMSID => $ctx->{samsid},
 		PASSWORD => $ctx->{password},
+		DC_PASSWORD => $ctx->{password},
 		LDAPDIR => $ctx->{ldapdir},
 		LDAP_INSTANCE => $ctx->{ldap_instance},
 		SELFTEST_WINBINDD_SOCKET_DIR => $ctx->{winbindd_socket_dir},
@@ -1665,12 +1674,6 @@ sub provision_ad_dc_ntvfs($$)
 		return undef;
 	}
 	$ret->{NETBIOSALIAS} = "localdc1-a";
-	$ret->{DC_SERVER} = $ret->{SERVER};
-	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
-	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{DC_USERNAME} = $ret->{USERNAME};
-	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
 	$ret->{DC_REALM} = $ret->{REALM};
 
 	return $ret;
@@ -1711,12 +1714,6 @@ sub provision_fl2000dc($$)
 		warn("Unable to add wins configuration");
 		return undef;
 	}
-	$ret->{DC_SERVER} = $ret->{SERVER};
-	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
-	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{DC_USERNAME} = $ret->{USERNAME};
-	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
 	$ret->{DC_REALM} = $ret->{REALM};
 
 	return $ret;
@@ -1750,12 +1747,6 @@ sub provision_fl2003dc($$$)
 		return undef;
 	}
 
-	$ret->{DC_SERVER} = $ret->{SERVER};
-	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
-	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{DC_USERNAME} = $ret->{USERNAME};
-	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
 	$ret->{DNS_FORWARDER1} = "127.0.0.$swiface1";
 	$ret->{DNS_FORWARDER2} = "127.0.0.$swiface2";
 
@@ -1810,12 +1801,6 @@ sub provision_fl2008r2dc($$$)
 		warn("Unable to add wins configuration");
 		return undef;
 	}
-	$ret->{DC_SERVER} = $ret->{SERVER};
-	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
-	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{DC_USERNAME} = $ret->{USERNAME};
-	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
 	$ret->{DC_REALM} = $ret->{REALM};
 
 	return $ret;
@@ -2068,13 +2053,6 @@ sub provision_ad_dc($$$$$$)
 		return undef;
 	}
 
-	$ret->{DC_SERVER} = $ret->{SERVER};
-	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
-	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{DC_USERNAME} = $ret->{USERNAME};
-	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
-
 	return $ret;
 }
 
@@ -2121,13 +2099,7 @@ sub provision_chgdcpass($$)
 		warn("Unable to remove $ret->{PRIVATEDIR}/secrets.tdb added during provision");
 		return undef;
 	}
-	    
-	$ret->{DC_SERVER} = $ret->{SERVER};
-	$ret->{DC_SERVER_IP} = $ret->{SERVER_IP};
-	$ret->{DC_SERVER_IPV6} = $ret->{SERVER_IPV6};
-	$ret->{DC_NETBIOSNAME} = $ret->{NETBIOSNAME};
-	$ret->{DC_USERNAME} = $ret->{USERNAME};
-	$ret->{DC_PASSWORD} = $ret->{PASSWORD};
+
 	$ret->{UNACCEPTABLE_PASSWORD} = $unacceptable_password;
 
 	return $ret;
@@ -2955,13 +2927,6 @@ sub prepare_dc_testenv
 ";
 
 	my $env = $self->provision_raw_step1($ctx);
-
-	$env->{DC_SERVER} = $env->{SERVER};
-	$env->{DC_SERVER_IP} = $env->{SERVER_IP};
-	$env->{DC_SERVER_IPV6} = $env->{SERVER_IPV6};
-	$env->{DC_NETBIOSNAME} = $env->{NETBIOSNAME};
-	$env->{DC_USERNAME} = $env->{USERNAME};
-	$env->{DC_PASSWORD} = $env->{PASSWORD};
 
     return ($env, $ctx);
 }
