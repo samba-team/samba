@@ -40,6 +40,9 @@ randomized-test:
 testlist:
 	$(WAF) test --list $(TEST_OPTIONS)
 
+test-nopython:
+	$(WAF) test --no-subunit-filter --test-list=selftest/no-python-tests.txt $(TEST_OPTIONS)
+
 dist:
 	touch .tmplock
 	WAFLOCK=.tmplock $(WAF) dist

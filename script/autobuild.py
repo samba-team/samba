@@ -310,6 +310,7 @@ tasks = {
                       ("configure", "./configure.developer --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("install", "make install", "text/plain"),
+                      ("test", "make test-nopython", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                       ("clean", "make clean", "text/plain"),
 
@@ -343,6 +344,7 @@ tasks = {
                       ("configure", "PYTHON=python2 ./configure.developer --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
                       ("make", "PYTHON=python2 make -j", "text/plain"),
                       ("install", "PYTHON=python2 make install", "text/plain"),
+                      ("test", "make test-nopython", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                       ("clean", "PYTHON=python2 make clean", "text/plain"),
 

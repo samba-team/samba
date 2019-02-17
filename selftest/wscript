@@ -90,6 +90,10 @@ def options(opt):
                   help=("use tests listed here, not defaults "
                         "(--test-list='FOO|' will execute FOO; "
                         "--test-list='FOO' will read it)"))
+    gr.add_option('--no-subunit-filter',
+                  help=("no (xfail) subunit filtering"),
+                  action="store_true", dest='NO_SUBUNIT_FILTER', default=False)
+
 
 def configure(conf):
     conf.env.SELFTEST_PREFIX = Options.options.SELFTEST_PREFIX
@@ -305,7 +309,12 @@ def cmd_testonly(opt):
     else:
         env.OPTIONS += ' --socket-wrapper'
         cmd = '(${CORE_COMMAND} && touch ${SELFTEST_PREFIX}/st_done) | ${FILTER_OPTIONS}'
-        if (os.environ.get('RUN_FROM_BUILD_FARM') is None and
+
+        if Options.options.NO_SUBUNIT_FILTER:
+            # Skip subunit filtering (i.e. because python is disabled).
+            # Use --one to bail out upon any failure
+            cmd = '(${CORE_COMMAND} --one && touch ${SELFTEST_PREFIX}/st_done)'
+        elif (os.environ.get('RUN_FROM_BUILD_FARM') is None and
             not Options.options.FILTERED_SUBUNIT):
             subunit_cache = os.path.join(env.SELFTEST_PREFIX, "subunit")
             cmd += ' | tee %s | ${FORMAT_TEST_OUTPUT}' % subunit_cache

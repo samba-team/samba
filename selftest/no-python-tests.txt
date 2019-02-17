@@ -1,0 +1,32 @@
+# A small subset of tests/testenvs to run as a sanity-check when samba
+# is built with --disable-python. One test-suite for each s3 testenv was
+# selected from 'python source3/selftest/tests.py' (and manually edited to
+# remove the filter-subunit portion of the command).
+# Notes:
+# - you cannot add knownfail tests to this list.
+# - only .sh tests supported here, and they must set and return $failed
+#   appropriately
+-- TEST --
+samba3.blackbox.smb2.not_casesensitive (fileserver)(fileserver)
+fileserver
+./source3/script/tests/test_smb2_not_casesensitive.sh //$SERVER/tmp $SERVER_IP $USERNAME $PASSWORD $LOCAL_PATH bin/smbclient || exit 1
+-- TEST --
+samba3.blackbox.rpcclient_srvsvc(simpleserver)
+simpleserver
+./source3/script/tests/test_rpcclientsrvsvc.sh $USERNAME $PASSWORD $SERVER bin/rpcclient tmp || exit 1
+-- TEST --
+samba3.blackbox.smbclient_large_file  krb5(ktest:local)
+ktest:local
+./source3/script/tests/test_smbclient_large_file.sh $PREFIX/ktest/krb5_ccache-3 bin/smbclient $SERVER $PREFIX  -k --configfile=$SMB_CONF_PATH || exit 1
+-- TEST --
+samba3.blackbox.smbclient_auth.plain (maptoguest) local creds(maptoguest)
+maptoguest
+./source3/script/tests/test_smbclient_auth.sh $SERVER $SERVER_IP $USERNAME $PASSWORD bin/smbclient --configfile=$SMB_CONF_PATH --option=clientntlmv2auth=no --option=clientlanmanauth=yes || exit 1
+-- TEST --
+samba3.blackbox.smbclient_auth.plain (nt4_dc) (nt4_dc)
+nt4_dc
+./source3/script/tests/test_smbclient_auth.sh $SERVER $SERVER_IP $DC_USERNAME $DC_PASSWORD bin/smbclient --configfile=$SMB_CONF_PATH  || exit 1
+-- TEST --
+samba3.blackbox.net_cred_change.(nt4_member:local)(nt4_member:local)
+nt4_member:local
+./source3/script/tests/test_net_cred_change.sh --configfile=$SMB_CONF_PATH || exit 1
