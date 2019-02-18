@@ -154,8 +154,6 @@ else:
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid',
                   public_headers='''
                                  attr.h
-                                 bytearray.h
-                                 byteorder.h
                                  data_blob.h
                                  debug.h
                                  discard.h
