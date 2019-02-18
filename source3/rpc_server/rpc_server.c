@@ -737,8 +737,8 @@ static void dcesrv_ncacn_ip_tcp_listener(struct tevent_context *ev,
 					 void *private_data)
 {
 	struct dcerpc_ncacn_listen_state *state =
-			talloc_get_type_abort(private_data,
-					      struct dcerpc_ncacn_listen_state);
+		talloc_get_type_abort(private_data,
+				      struct dcerpc_ncacn_listen_state);
 	struct tsocket_address *cli_addr = NULL;
 	struct tsocket_address *srv_addr = NULL;
 	struct sockaddr_storage addr;
@@ -749,8 +749,7 @@ static void dcesrv_ncacn_ip_tcp_listener(struct tevent_context *ev,
 	s = accept(state->fd, (struct sockaddr *)(void *) &addr, &in_addrlen);
 	if (s == -1) {
 		if (errno != EINTR) {
-			DEBUG(0,("tcpip_listener accept: %s\n",
-				 strerror(errno)));
+			DBG_ERR("Failed to accept: %s\n", strerror(errno));
 		}
 		return;
 	}
@@ -780,7 +779,7 @@ static void dcesrv_ncacn_ip_tcp_listener(struct tevent_context *ev,
 		return;
 	}
 
-	DEBUG(6, ("tcpip_listener: Accepted socket %d\n", s));
+	DBG_DEBUG("Accepted ncacn_ip_tcp socket %d\n", s);
 
 	dcerpc_ncacn_accept(state->ev_ctx,
 			    state->msg_ctx,
@@ -922,8 +921,8 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 					void *private_data)
 {
 	struct dcerpc_ncacn_listen_state *state =
-			talloc_get_type_abort(private_data,
-					      struct dcerpc_ncacn_listen_state);
+		talloc_get_type_abort(private_data,
+				      struct dcerpc_ncacn_listen_state);
 	struct tsocket_address *cli_addr = NULL, *srv_addr = NULL;
 	struct sockaddr_un sunaddr;
 	struct sockaddr *addr = (struct sockaddr *)(void *)&sunaddr;
@@ -940,7 +939,7 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 	sd = accept(state->fd, addr, &len);
 	if (sd == -1) {
 		if (errno != EINTR) {
-			DEBUG(0, ("ncalrpc accept() failed: %s\n", strerror(errno)));
+			DBG_ERR("Failed to accept: %s\n", strerror(errno));
 		}
 		return;
 	}
@@ -969,8 +968,8 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 		return;
 	}
 
-	DEBUG(10, ("Accepted ncalrpc socket %s (fd: %d)\n",
-		   sunaddr.sun_path, sd));
+	DBG_DEBUG("Accepted ncalrpc socket %s (fd: %d)\n",
+		   sunaddr.sun_path, sd);
 
 	dcerpc_ncacn_accept(state->ev_ctx,
 			    state->msg_ctx,
