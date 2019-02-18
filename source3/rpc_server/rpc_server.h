@@ -32,6 +32,7 @@ typedef void (*dcerpc_ncacn_termination_fn)(void *private_data);
 struct dcerpc_ncacn_conn {
 	enum dcerpc_transport_t transport;
 
+	const char *name;
 	int sock;
 
 	struct pipes_struct *p;

@@ -991,6 +991,7 @@ static int dcerpc_ncacn_conn_destructor(struct dcerpc_ncacn_conn *ncacn_conn)
 
 static void dcerpc_ncacn_packet_process(struct tevent_req *subreq);
 static void dcerpc_ncacn_packet_done(struct tevent_req *subreq);
+static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn);
 
 void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
@@ -1004,12 +1005,6 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 void *termination_data)
 {
 	struct dcerpc_ncacn_conn *ncacn_conn;
-	struct tevent_req *subreq;
-	char *pipe_name;
-	NTSTATUS status;
-	int sys_errno;
-	uid_t uid;
-	gid_t gid;
 	int rc;
 
 	DEBUG(10, ("dcerpc_ncacn_accept\n"));
@@ -1029,6 +1024,15 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	ncacn_conn->disconnect_fn = disconnect_fn;
 	ncacn_conn->termination_fn = termination_fn;
 	ncacn_conn->termination_data = termination_data;
+	if (name != NULL) {
+		ncacn_conn->name = talloc_strdup(ncacn_conn, name);
+		if (ncacn_conn->name == NULL) {
+			DBG_ERR("Out of memory!\n");
+			talloc_free(ncacn_conn);
+			close(s);
+			return;
+		}
+	}
 
 	ncacn_conn->remote_client_addr = talloc_move(ncacn_conn, &cli_addr);
 	if (tsocket_address_is_inet(ncacn_conn->remote_client_addr, "ip")) {
@@ -1067,19 +1071,50 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 		}
 	}
 
-	switch (transport) {
+	rc = set_blocking(s, false);
+	if (rc < 0) {
+		DBG_WARNING("Failed to set dcerpc socket to non-blocking\n");
+		talloc_free(ncacn_conn);
+		close(s);
+		return;
+	}
+
+	/*
+	 * As soon as we have tstream_bsd_existing_socket set up it will
+	 * take care of closing the socket.
+	 */
+	rc = tstream_bsd_existing_socket(ncacn_conn, s, &ncacn_conn->tstream);
+	if (rc < 0) {
+		DBG_WARNING("Failed to create tstream socket for dcerpc\n");
+		talloc_free(ncacn_conn);
+		close(s);
+		return;
+	}
+
+	dcesrv_ncacn_accept_step2(ncacn_conn);
+}
+
+static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
+{
+	struct tevent_req *subreq = NULL;
+	char *pipe_name = NULL;
+	uid_t uid;
+	gid_t gid;
+	int rc;
+	int sys_errno;
+
+	switch (ncacn_conn->transport) {
 		case NCACN_IP_TCP:
 			pipe_name = tsocket_address_string(ncacn_conn->remote_client_addr,
 							   ncacn_conn);
 			if (pipe_name == NULL) {
-				close(s);
 				talloc_free(ncacn_conn);
 				return;
 			}
 
 			break;
 		case NCALRPC:
-			rc = getpeereid(s, &uid, &gid);
+			rc = getpeereid(ncacn_conn->sock, &uid, &gid);
 			if (rc < 0) {
 				DEBUG(2, ("Failed to get ncalrpc connecting "
 					  "uid - %s!\n", strerror(errno)));
@@ -1093,7 +1128,6 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 					if (rc < 0) {
 						DEBUG(0, ("Out of memory building magic ncalrpc_as_system path!\n"));
 						talloc_free(ncacn_conn);
-						close(s);
 						return;
 					}
 
@@ -1104,7 +1138,6 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 					if (ncacn_conn->remote_client_name == NULL) {
 						DEBUG(0, ("Out of memory getting magic ncalrpc_as_system string!\n"));
 						talloc_free(ncacn_conn);
-						close(s);
 						return;
 					}
 				}
@@ -1113,42 +1146,22 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			FALL_THROUGH;
 		case NCACN_NP:
 			pipe_name = talloc_strdup(ncacn_conn,
-						  name);
+						  ncacn_conn->name);
 			if (pipe_name == NULL) {
-				close(s);
 				talloc_free(ncacn_conn);
 				return;
 			}
 			break;
 		default:
 			DEBUG(0, ("unknown dcerpc transport: %u!\n",
-				  transport));
+				  ncacn_conn->transport));
 			talloc_free(ncacn_conn);
-			close(s);
 			return;
 	}
 
-	rc = set_blocking(s, false);
-	if (rc < 0) {
-		DEBUG(2, ("Failed to set dcerpc socket to non-blocking\n"));
-		talloc_free(ncacn_conn);
-		close(s);
-		return;
-	}
-
-	/*
-	 * As soon as we have tstream_bsd_existing_socket set up it will
-	 * take care of closing the socket.
-	 */
-	rc = tstream_bsd_existing_socket(ncacn_conn, s, &ncacn_conn->tstream);
-	if (rc < 0) {
-		DEBUG(2, ("Failed to create tstream socket for dcerpc\n"));
-		talloc_free(ncacn_conn);
-		close(s);
-		return;
-	}
-
 	if (ncacn_conn->session_info == NULL) {
+		NTSTATUS status;
+
 		status = make_session_info_anonymous(ncacn_conn,
 						     &ncacn_conn->session_info);
 		if (!NT_STATUS_IS_OK(status)) {
