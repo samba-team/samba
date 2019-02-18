@@ -260,19 +260,20 @@ static int cephwrap_statvfs(struct vfs_handle_struct *handle,
 	ret = ceph_statfs(handle->data, smb_fname->base_name, &statvfs_buf);
 	if (ret < 0) {
 		WRAP_RETURN(ret);
-	} else {
-		statbuf->OptimalTransferSize = statvfs_buf.f_frsize;
-		statbuf->BlockSize = statvfs_buf.f_bsize;
-		statbuf->TotalBlocks = statvfs_buf.f_blocks;
-		statbuf->BlocksAvail = statvfs_buf.f_bfree;
-		statbuf->UserBlocksAvail = statvfs_buf.f_bavail;
-		statbuf->TotalFileNodes = statvfs_buf.f_files;
-		statbuf->FreeFileNodes = statvfs_buf.f_ffree;
-		statbuf->FsIdentifier = statvfs_buf.f_fsid;
-		DBG_DEBUG("[CEPH] f_bsize: %ld, f_blocks: %ld, f_bfree: %ld, f_bavail: %ld\n",
-			(long int)statvfs_buf.f_bsize, (long int)statvfs_buf.f_blocks,
-			(long int)statvfs_buf.f_bfree, (long int)statvfs_buf.f_bavail);
 	}
+
+	statbuf->OptimalTransferSize = statvfs_buf.f_frsize;
+	statbuf->BlockSize = statvfs_buf.f_bsize;
+	statbuf->TotalBlocks = statvfs_buf.f_blocks;
+	statbuf->BlocksAvail = statvfs_buf.f_bfree;
+	statbuf->UserBlocksAvail = statvfs_buf.f_bavail;
+	statbuf->TotalFileNodes = statvfs_buf.f_files;
+	statbuf->FreeFileNodes = statvfs_buf.f_ffree;
+	statbuf->FsIdentifier = statvfs_buf.f_fsid;
+	DBG_DEBUG("[CEPH] f_bsize: %ld, f_blocks: %ld, f_bfree: %ld, f_bavail: %ld\n",
+		(long int)statvfs_buf.f_bsize, (long int)statvfs_buf.f_blocks,
+		(long int)statvfs_buf.f_bfree, (long int)statvfs_buf.f_bavail);
+
 	return ret;
 }
 
@@ -676,9 +677,21 @@ static int cephwrap_fsync_recv(struct tevent_req *req,
 
 static void init_stat_ex_from_ceph_statx(struct stat_ex *dst, const struct ceph_statx *stx)
 {
-	if ((stx->stx_mask & SAMBA_STATX_ATTR_MASK) != SAMBA_STATX_ATTR_MASK)
+	DBG_DEBUG("[CEPH]\tstx = {dev = %llx, ino = %llu, mode = 0x%x, "
+		  "nlink = %llu, uid = %d, gid = %d, rdev = %llx, size = %llu, "
+		  "blksize = %llu, blocks = %llu, atime = %llu, mtime = %llu, "
+		  "ctime = %llu, btime = %llu}\n",
+		  llu(stx->stx_dev), llu(stx->stx_ino), stx->stx_mode,
+		  llu(stx->stx_nlink), stx->stx_uid, stx->stx_gid,
+		  llu(stx->stx_rdev), llu(stx->stx_size), llu(stx->stx_blksize),
+		  llu(stx->stx_blocks), llu(stx->stx_atime.tv_sec),
+		  llu(stx->stx_mtime.tv_sec), llu(stx->stx_ctime.tv_sec),
+		  llu(stx->stx_btime.tv_sec));
+
+	if ((stx->stx_mask & SAMBA_STATX_ATTR_MASK) != SAMBA_STATX_ATTR_MASK) {
 		DBG_WARNING("%s: stx->stx_mask is incorrect (wanted %x, got %x)",
 				__func__, SAMBA_STATX_ATTR_MASK, stx->stx_mask);
+	}
 
 	dst->st_ex_dev = stx->stx_dev;
 	dst->st_ex_rdev = stx->stx_rdev;
@@ -715,16 +728,8 @@ static int cephwrap_stat(struct vfs_handle_struct *handle,
 	DBG_DEBUG("[CEPH] statx(...) = %d\n", result);
 	if (result < 0) {
 		WRAP_RETURN(result);
-	} else {
-		DBG_DEBUG("[CEPH]\tstx = {dev = %llx, ino = %llu, mode = 0x%x, nlink = %llu, "
-			   "uid = %d, gid = %d, rdev = %llx, size = %llu, blksize = %llu, "
-			   "blocks = %llu, atime = %llu, mtime = %llu, ctime = %llu, btime = %llu}\n",
-			   llu(stx.stx_dev), llu(stx.stx_ino), stx.stx_mode,
-			   llu(stx.stx_nlink), stx.stx_uid, stx.stx_gid, llu(stx.stx_rdev),
-			   llu(stx.stx_size), llu(stx.stx_blksize),
-			   llu(stx.stx_blocks), llu(stx.stx_atime.tv_sec), llu(stx.stx_mtime.tv_sec),
-			   llu(stx.stx_ctime.tv_sec), llu(stx.stx_btime.tv_sec));
 	}
+
 	init_stat_ex_from_ceph_statx(&smb_fname->st, &stx);
 	DBG_DEBUG("[CEPH] mode = 0x%x\n", smb_fname->st.st_ex_mode);
 	return result;
@@ -741,16 +746,8 @@ static int cephwrap_fstat(struct vfs_handle_struct *handle, files_struct *fsp, S
 	DBG_DEBUG("[CEPH] fstat(...) = %d\n", result);
 	if (result < 0) {
 		WRAP_RETURN(result);
-	} else {
-		DBG_DEBUG("[CEPH]\tstx = {dev = %llx, ino = %llu, mode = 0x%x, nlink = %llu, "
-			   "uid = %d, gid = %d, rdev = %llx, size = %llu, blksize = %llu, "
-			   "blocks = %llu, atime = %llu, mtime = %llu, ctime = %llu, btime = %llu}\n",
-			   llu(stx.stx_dev), llu(stx.stx_ino), stx.stx_mode,
-			   llu(stx.stx_nlink), stx.stx_uid, stx.stx_gid, llu(stx.stx_rdev),
-			   llu(stx.stx_size), llu(stx.stx_blksize),
-			   llu(stx.stx_blocks), llu(stx.stx_atime.tv_sec), llu(stx.stx_mtime.tv_sec),
-			   llu(stx.stx_ctime.tv_sec), llu(stx.stx_btime.tv_sec));
 	}
+
 	init_stat_ex_from_ceph_statx(sbuf, &stx);
 	DBG_DEBUG("[CEPH] mode = 0x%x\n", sbuf->st_ex_mode);
 	return result;
@@ -775,6 +772,7 @@ static int cephwrap_lstat(struct vfs_handle_struct *handle,
 	if (result < 0) {
 		WRAP_RETURN(result);
 	}
+
 	init_stat_ex_from_ceph_statx(&smb_fname->st, &stx);
 	return result;
 }
@@ -830,14 +828,15 @@ static int cephwrap_stat(struct vfs_handle_struct *handle,
 	DBG_DEBUG("[CEPH] stat(...) = %d\n", result);
 	if (result < 0) {
 		WRAP_RETURN(result);
-	} else {
-		DBG_DEBUG("[CEPH]\tstbuf = {dev = %llu, ino = %llu, mode = 0x%x, nlink = %llu, "
-			   "uid = %d, gid = %d, rdev = %llu, size = %llu, blksize = %llu, "
-			   "blocks = %llu, atime = %llu, mtime = %llu, ctime = %llu}\n",
-			   llu(stbuf.st_dev), llu(stbuf.st_ino), stbuf.st_mode, llu(stbuf.st_nlink),
-			   stbuf.st_uid, stbuf.st_gid, llu(stbuf.st_rdev), llu(stbuf.st_size), llu(stbuf.st_blksize),
-			   llu(stbuf.st_blocks), llu(stbuf.st_atime), llu(stbuf.st_mtime), llu(stbuf.st_ctime));
 	}
+
+	DBG_DEBUG("[CEPH]\tstbuf = {dev = %llu, ino = %llu, mode = 0x%x, nlink = %llu, "
+		   "uid = %d, gid = %d, rdev = %llu, size = %llu, blksize = %llu, "
+		   "blocks = %llu, atime = %llu, mtime = %llu, ctime = %llu}\n",
+		   llu(stbuf.st_dev), llu(stbuf.st_ino), stbuf.st_mode, llu(stbuf.st_nlink),
+		   stbuf.st_uid, stbuf.st_gid, llu(stbuf.st_rdev), llu(stbuf.st_size), llu(stbuf.st_blksize),
+		   llu(stbuf.st_blocks), llu(stbuf.st_atime), llu(stbuf.st_mtime), llu(stbuf.st_ctime));
+
 	init_stat_ex_from_stat(
 			&smb_fname->st, &stbuf,
 			lp_fake_directory_create_times(SNUM(handle->conn)));
@@ -855,14 +854,14 @@ static int cephwrap_fstat(struct vfs_handle_struct *handle, files_struct *fsp, S
 	DBG_DEBUG("[CEPH] fstat(...) = %d\n", result);
 	if (result < 0) {
 		WRAP_RETURN(result);
-	} else {
-		DBG_DEBUG("[CEPH]\tstbuf = {dev = %llu, ino = %llu, mode = 0x%x, nlink = %llu, "
-			   "uid = %d, gid = %d, rdev = %llu, size = %llu, blksize = %llu, "
-			   "blocks = %llu, atime = %llu, mtime = %llu, ctime = %llu}\n",
-			   llu(stbuf.st_dev), llu(stbuf.st_ino), stbuf.st_mode, llu(stbuf.st_nlink),
-			   stbuf.st_uid, stbuf.st_gid, llu(stbuf.st_rdev), llu(stbuf.st_size), llu(stbuf.st_blksize),
-			   llu(stbuf.st_blocks), llu(stbuf.st_atime), llu(stbuf.st_mtime), llu(stbuf.st_ctime));
 	}
+
+	DBG_DEBUG("[CEPH]\tstbuf = {dev = %llu, ino = %llu, mode = 0x%x, nlink = %llu, "
+		   "uid = %d, gid = %d, rdev = %llu, size = %llu, blksize = %llu, "
+		   "blocks = %llu, atime = %llu, mtime = %llu, ctime = %llu}\n",
+		   llu(stbuf.st_dev), llu(stbuf.st_ino), stbuf.st_mode, llu(stbuf.st_nlink),
+		   stbuf.st_uid, stbuf.st_gid, llu(stbuf.st_rdev), llu(stbuf.st_size), llu(stbuf.st_blksize),
+		   llu(stbuf.st_blocks), llu(stbuf.st_atime), llu(stbuf.st_mtime), llu(stbuf.st_ctime));
 
 	init_stat_ex_from_stat(
 			sbuf, &stbuf,
@@ -889,6 +888,7 @@ static int cephwrap_lstat(struct vfs_handle_struct *handle,
 	if (result < 0) {
 		WRAP_RETURN(result);
 	}
+
 	init_stat_ex_from_stat(
 			&smb_fname->st, &stbuf,
 			lp_fake_directory_create_times(SNUM(handle->conn)));
@@ -1343,9 +1343,8 @@ static ssize_t cephwrap_getxattr(struct vfs_handle_struct *handle,
 	DBG_DEBUG("[CEPH] getxattr(...) = %d\n", ret);
 	if (ret < 0) {
 		WRAP_RETURN(ret);
-	} else {
-		return (ssize_t)ret;
 	}
+	return (ssize_t)ret;
 }
 
 static ssize_t cephwrap_fgetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size)
@@ -1360,9 +1359,8 @@ static ssize_t cephwrap_fgetxattr(struct vfs_handle_struct *handle, struct files
 	DBG_DEBUG("[CEPH] fgetxattr(...) = %d\n", ret);
 	if (ret < 0) {
 		WRAP_RETURN(ret);
-	} else {
-		return (ssize_t)ret;
 	}
+	return (ssize_t)ret;
 }
 
 static ssize_t cephwrap_listxattr(struct vfs_handle_struct *handle,
@@ -1377,9 +1375,8 @@ static ssize_t cephwrap_listxattr(struct vfs_handle_struct *handle,
 	DBG_DEBUG("[CEPH] listxattr(...) = %d\n", ret);
 	if (ret < 0) {
 		WRAP_RETURN(ret);
-	} else {
-		return (ssize_t)ret;
 	}
+	return (ssize_t)ret;
 }
 
 static ssize_t cephwrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
@@ -1394,9 +1391,8 @@ static ssize_t cephwrap_flistxattr(struct vfs_handle_struct *handle, struct file
 	DBG_DEBUG("[CEPH] flistxattr(...) = %d\n", ret);
 	if (ret < 0) {
 		WRAP_RETURN(ret);
-	} else {
-		return (ssize_t)ret;
 	}
+	return (ssize_t)ret;
 }
 
 static int cephwrap_removexattr(struct vfs_handle_struct *handle,
