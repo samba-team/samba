@@ -153,5 +153,6 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 dcerpc_ncacn_disconnect_fn disconnect_fn,
 			 dcerpc_ncacn_termination_fn termination_fn,
 			 void *termination_data);
+void dcerpc_ncacn_packet_process(struct tevent_req *subreq);
 
 #endif /* _PRC_SERVER_H_ */

@@ -1027,8 +1027,6 @@ NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static void dcerpc_ncacn_packet_process(struct tevent_req *subreq);
-
 static void dcerpc_ncacn_packet_done(struct tevent_req *subreq);
 static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn);
 
@@ -1246,7 +1244,7 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 	return;
 }
 
-static void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
+void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 {
 	struct dcerpc_ncacn_conn *ncacn_conn =
 		tevent_req_callback_data(subreq, struct dcerpc_ncacn_conn);
