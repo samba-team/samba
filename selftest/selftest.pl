@@ -944,7 +944,11 @@ sub setup_env($$)
 		        $testenv_vars->{target} = $target;
 		}
 		if (not defined($testenv_vars)) {
-			warn("$opt_target can't start up known environment '$envname'");
+			if ($opt_one) {
+				die("$opt_target can't start up known environment '$envname'");
+			} else {
+				warn("$opt_target can't start up known environment '$envname'");
+			}
 		}
 	}
 
