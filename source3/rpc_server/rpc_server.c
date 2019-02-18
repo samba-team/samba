@@ -989,7 +989,46 @@ static int dcerpc_ncacn_conn_destructor(struct dcerpc_ncacn_conn *ncacn_conn)
 	return 0;
 }
 
+NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev_ctx,
+				struct messaging_context *msg_ctx,
+				enum dcerpc_transport_t transport,
+				const char *name,
+				dcerpc_ncacn_disconnect_fn disconnect_fn,
+				dcerpc_ncacn_termination_fn term_fn,
+				void *termination_data,
+				struct dcerpc_ncacn_conn **out)
+{
+	struct dcerpc_ncacn_conn *ncacn_conn = NULL;
+
+	ncacn_conn = talloc_zero(mem_ctx, struct dcerpc_ncacn_conn);
+	if (ncacn_conn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(ncacn_conn, dcerpc_ncacn_conn_destructor);
+
+	ncacn_conn->transport = transport;
+	ncacn_conn->ev_ctx = ev_ctx;
+	ncacn_conn->msg_ctx = msg_ctx;
+	ncacn_conn->sock = -1;
+	ncacn_conn->disconnect_fn = disconnect_fn;
+	ncacn_conn->termination_fn = term_fn;
+	ncacn_conn->termination_data = termination_data;
+	if (name != NULL) {
+		ncacn_conn->name = talloc_strdup(ncacn_conn, name);
+		if (ncacn_conn->name == NULL) {
+			talloc_free(ncacn_conn);
+			return NT_STATUS_NO_MEMORY;;
+		}
+	}
+
+	*out = ncacn_conn;
+
+	return NT_STATUS_OK;
+}
+
 static void dcerpc_ncacn_packet_process(struct tevent_req *subreq);
+
 static void dcerpc_ncacn_packet_done(struct tevent_req *subreq);
 static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn);
 
@@ -1005,34 +1044,28 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 void *termination_data)
 {
 	struct dcerpc_ncacn_conn *ncacn_conn;
+	NTSTATUS status;
 	int rc;
 
 	DEBUG(10, ("dcerpc_ncacn_accept\n"));
 
-	ncacn_conn = talloc_zero(ev_ctx, struct dcerpc_ncacn_conn);
-	if (ncacn_conn == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
+	status = dcerpc_ncacn_conn_init(ev_ctx,
+					ev_ctx,
+					msg_ctx,
+					transport,
+					name,
+					disconnect_fn,
+					termination_fn,
+					termination_data,
+					&ncacn_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to initialize dcerpc_ncacn_connection: %s\n",
+			nt_errstr(status));
 		close(s);
 		return;
 	}
-	talloc_set_destructor(ncacn_conn, dcerpc_ncacn_conn_destructor);
 
-	ncacn_conn->transport = transport;
-	ncacn_conn->ev_ctx = ev_ctx;
-	ncacn_conn->msg_ctx = msg_ctx;
 	ncacn_conn->sock = s;
-	ncacn_conn->disconnect_fn = disconnect_fn;
-	ncacn_conn->termination_fn = termination_fn;
-	ncacn_conn->termination_data = termination_data;
-	if (name != NULL) {
-		ncacn_conn->name = talloc_strdup(ncacn_conn, name);
-		if (ncacn_conn->name == NULL) {
-			DBG_ERR("Out of memory!\n");
-			talloc_free(ncacn_conn);
-			close(s);
-			return;
-		}
-	}
 
 	ncacn_conn->remote_client_addr = talloc_move(ncacn_conn, &cli_addr);
 	if (tsocket_address_is_inet(ncacn_conn->remote_client_addr, "ip")) {

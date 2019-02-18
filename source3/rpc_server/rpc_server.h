@@ -96,6 +96,16 @@ struct named_pipe_client *named_pipe_client_init(TALLOC_CTX *mem_ctx,
 						 uint64_t allocation_size,
 						 void *private_data);
 
+NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
+				struct tevent_context *ev_ctx,
+				struct messaging_context *msg_ctx,
+				enum dcerpc_transport_t transport,
+				const char *name,
+				dcerpc_ncacn_disconnect_fn disconnect_fn,
+				dcerpc_ncacn_termination_fn term_fn,
+				void *termination_data,
+				struct dcerpc_ncacn_conn **out);
+
 int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 			     struct messaging_context *msg_ctx,
 			     const char *pipe_name,
