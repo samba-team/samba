@@ -286,7 +286,7 @@ static int mdssd_children_main(struct tevent_context *ev_ctx,
 	return ret;
 }
 
-static void mdssd_client_terminated(void *pvt)
+static void mdssd_client_terminated(struct pipes_struct *p, void *pvt)
 {
 	struct mdssd_children_data *data;
 
@@ -391,7 +391,6 @@ static void mdssd_handle_client(struct tevent_req *req)
 				    cli_addr,
 				    srv_addr,
 				    sd,
-				    NULL,  /* disconnect function */
 				    mdssd_client_terminated,
 				    data);
 	} else if (tsocket_address_is_unix(srv_addr)) {
@@ -419,7 +418,6 @@ static void mdssd_handle_client(struct tevent_req *req)
 					    NULL,  /* remote client address */
 					    NULL,  /* local server address */
 					    sd,
-					    NULL,  /* disconnect function */
 					    mdssd_client_terminated,
 					    data);
 		} else {
@@ -430,7 +428,6 @@ static void mdssd_handle_client(struct tevent_req *req)
 					    cli_addr,
 					    srv_addr,
 					    sd,
-					    NULL,  /* disconnect function */
 					    mdssd_client_terminated,
 					    data);
 		}

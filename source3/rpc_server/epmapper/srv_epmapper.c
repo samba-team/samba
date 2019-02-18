@@ -306,7 +306,7 @@ static bool is_privileged_pipe(struct auth_session_info *info) {
 	return true;
 }
 
-bool srv_epmapper_delete_endpoints(struct pipes_struct *p)
+void srv_epmapper_delete_endpoints(struct pipes_struct *p, void *private_data)
 {
 	struct epm_Delete r;
 	struct dcesrv_ep_entry_list *el = p->ep_entries;
@@ -323,7 +323,8 @@ bool srv_epmapper_delete_endpoints(struct pipes_struct *p)
 
 		result = _epm_Delete(p, &r);
 		if (result != EPMAPPER_STATUS_OK) {
-			return false;
+			DBG_ERR("Failed to delete endpoint maps\n");
+			return;
 		}
 
 		DLIST_REMOVE(p->ep_entries, el);
@@ -331,8 +332,6 @@ bool srv_epmapper_delete_endpoints(struct pipes_struct *p)
 
 		el = next;
 	}
-
-	return true;
 }
 
 void srv_epmapper_cleanup(void)

@@ -114,7 +114,6 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 					msg_ctx,
 					NCACN_NP,
 					pipe_name,
-					NULL, /* disconnect fn */
 					NULL, /* termination fn */
 					NULL, /* termination data */
 					&ncacn_conn);

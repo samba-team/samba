@@ -91,7 +91,6 @@ struct dcerpc_ncacn_listen_state {
 
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
-	dcerpc_ncacn_disconnect_fn disconnect_fn;
 	dcerpc_ncacn_termination_fn termination_fn;
 	void *termination_data;
 };
@@ -253,7 +252,6 @@ static void dcesrv_ncacn_np_listener(struct tevent_context *ev,
 			    NULL, /* remote client address */
 			    NULL, /* local server address */
 			    sd,
-			    state->disconnect_fn,
 			    state->termination_fn,
 			    state->termination_data);
 }
@@ -324,7 +322,6 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 
 	state->fd = -1;
 	state->ep.port = *port;
-	state->disconnect_fn = NULL;
 
 	status = dcesrv_create_ncacn_ip_tcp_socket(ifss, &state->ep.port,
 						   &state->fd);
@@ -437,7 +434,6 @@ static void dcesrv_ncacn_ip_tcp_listener(struct tevent_context *ev,
 			    cli_addr,
 			    srv_addr,
 			    s,
-			    state->disconnect_fn,
 			    state->termination_fn,
 			    state->termination_data);
 }
@@ -489,7 +485,8 @@ out:
 NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 				     struct messaging_context *msg_ctx,
 				     const char *name,
-				     dcerpc_ncacn_disconnect_fn fn)
+				     dcerpc_ncacn_termination_fn term_fn,
+				     void *termination_data)
 {
 	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;
@@ -503,7 +500,8 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 	}
 
 	state->fd = -1;
-	state->disconnect_fn = fn;
+	state->termination_fn = term_fn;
+	state->termination_data = termination_data;
 
 	if (name == NULL) {
 		name = "DEFAULT";
@@ -621,22 +619,15 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 			    NCALRPC,
 			    state->ep.name,
 			    cli_addr, srv_addr, sd,
-			    state->disconnect_fn,
 			    state->termination_fn,
 			    state->termination_data);
 }
 
 static int dcerpc_ncacn_conn_destructor(struct dcerpc_ncacn_conn *ncacn_conn)
 {
-	if (ncacn_conn->disconnect_fn != NULL) {
-		bool ok = ncacn_conn->disconnect_fn(ncacn_conn->p);
-		if (!ok) {
-			DBG_WARNING("Failed to call disconnect function\n");
-		}
-	}
-
 	if (ncacn_conn->termination_fn != NULL) {
-		ncacn_conn->termination_fn(ncacn_conn->termination_data);
+		ncacn_conn->termination_fn(ncacn_conn->p,
+					   ncacn_conn->termination_data);
 	}
 
 	return 0;
@@ -647,7 +638,6 @@ NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 				struct messaging_context *msg_ctx,
 				enum dcerpc_transport_t transport,
 				const char *name,
-				dcerpc_ncacn_disconnect_fn disconnect_fn,
 				dcerpc_ncacn_termination_fn term_fn,
 				void *termination_data,
 				struct dcerpc_ncacn_conn **out)
@@ -664,7 +654,6 @@ NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 	ncacn_conn->ev_ctx = ev_ctx;
 	ncacn_conn->msg_ctx = msg_ctx;
 	ncacn_conn->sock = -1;
-	ncacn_conn->disconnect_fn = disconnect_fn;
 	ncacn_conn->termination_fn = term_fn;
 	ncacn_conn->termination_data = termination_data;
 	if (name != NULL) {
@@ -691,7 +680,6 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 struct tsocket_address *cli_addr,
 			 struct tsocket_address *srv_addr,
 			 int s,
-			 dcerpc_ncacn_disconnect_fn disconnect_fn,
 			 dcerpc_ncacn_termination_fn termination_fn,
 			 void *termination_data)
 {
@@ -706,7 +694,6 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 					msg_ctx,
 					transport,
 					name,
-					disconnect_fn,
 					termination_fn,
 					termination_data,
 					&ncacn_conn);

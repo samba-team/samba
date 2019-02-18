@@ -25,8 +25,7 @@
 struct pipes_struct;
 struct auth_session_info;
 
-typedef bool (*dcerpc_ncacn_disconnect_fn)(struct pipes_struct *p);
-typedef void (*dcerpc_ncacn_termination_fn)(void *private_data);
+typedef void (*dcerpc_ncacn_termination_fn)(struct pipes_struct *, void *);
 
 struct dcerpc_ncacn_conn {
 	enum dcerpc_transport_t transport;
@@ -35,7 +34,6 @@ struct dcerpc_ncacn_conn {
 	int sock;
 
 	struct pipes_struct *p;
-	dcerpc_ncacn_disconnect_fn disconnect_fn;
 	dcerpc_ncacn_termination_fn termination_fn;
 	void *termination_data;
 
@@ -60,7 +58,6 @@ NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 				struct messaging_context *msg_ctx,
 				enum dcerpc_transport_t transport,
 				const char *name,
-				dcerpc_ncacn_disconnect_fn disconnect_fn,
 				dcerpc_ncacn_termination_fn term_fn,
 				void *termination_data,
 				struct dcerpc_ncacn_conn **out);
@@ -94,7 +91,8 @@ NTSTATUS dcesrv_create_ncalrpc_socket(const char *name, int *out_fd);
 NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 				     struct messaging_context *msg_ctx,
 				     const char *name,
-				     dcerpc_ncacn_disconnect_fn fn);
+				     dcerpc_ncacn_termination_fn term_fn,
+				     void *termination_data);
 
 void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
@@ -103,7 +101,6 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 struct tsocket_address *cli_addr,
 			 struct tsocket_address *srv_addr,
 			 int s,
-			 dcerpc_ncacn_disconnect_fn disconnect_fn,
 			 dcerpc_ncacn_termination_fn termination_fn,
 			 void *termination_data);
 void dcerpc_ncacn_packet_process(struct tevent_req *subreq);

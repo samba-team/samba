@@ -27,7 +27,11 @@
  */
 void srv_epmapper_cleanup(void);
 
-bool srv_epmapper_delete_endpoints(struct pipes_struct *p);
+/**
+ * @brief Cleanup function used to delete endpoints when a ncalrpc connection
+ *        from an external daemon is lost
+ */
+void srv_epmapper_delete_endpoints(struct pipes_struct *p, void *private_data);
 
 #endif /*_SRV_EPMAPPER_H_ */
 

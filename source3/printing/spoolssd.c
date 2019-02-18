@@ -368,7 +368,7 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 	return ret;
 }
 
-static void spoolss_client_terminated(void *pvt)
+static void spoolss_client_terminated(struct pipes_struct *p, void *pvt)
 {
 	struct spoolss_children_data *data;
 
@@ -455,7 +455,6 @@ static void spoolss_handle_client(struct tevent_req *req)
 			    cli_addr,
 			    srv_addr,
 			    sd,
-			    NULL,  /* disconnect function */
 			    spoolss_client_terminated,
 			    data);
 }
