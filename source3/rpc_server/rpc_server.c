@@ -89,6 +89,8 @@ struct dcerpc_ncacn_listen_state {
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
 	dcerpc_ncacn_disconnect_fn disconnect_fn;
+	dcerpc_ncacn_termination_fn termination_fn;
+	void *termination_data;
 };
 
 static void dcesrv_ncacn_np_listener(struct tevent_context *ev,
@@ -782,7 +784,9 @@ static void dcesrv_ncacn_ip_tcp_listener(struct tevent_context *ev,
 			    cli_addr,
 			    srv_addr,
 			    s,
-			    NULL);
+			    state->disconnect_fn,
+			    state->termination_fn,
+			    state->termination_data);
 }
 
 /********************************************************************
@@ -964,7 +968,9 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 			    NCALRPC,
 			    state->ep.name,
 			    cli_addr, srv_addr, sd,
-			    state->disconnect_fn);
+			    state->disconnect_fn,
+			    state->termination_fn,
+			    state->termination_data);
 }
 
 static int dcerpc_ncacn_conn_destructor(struct dcerpc_ncacn_conn *ncacn_conn)
@@ -975,6 +981,11 @@ static int dcerpc_ncacn_conn_destructor(struct dcerpc_ncacn_conn *ncacn_conn)
 			DBG_WARNING("Failed to call disconnect function\n");
 		}
 	}
+
+	if (ncacn_conn->termination_fn != NULL) {
+		ncacn_conn->termination_fn(ncacn_conn->termination_data);
+	}
+
 	return 0;
 }
 
@@ -988,7 +999,10 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 struct tsocket_address *cli_addr,
 			 struct tsocket_address *srv_addr,
 			 int s,
-			 dcerpc_ncacn_disconnect_fn fn) {
+			 dcerpc_ncacn_disconnect_fn disconnect_fn,
+			 dcerpc_ncacn_termination_fn termination_fn,
+			 void *termination_data)
+{
 	struct dcerpc_ncacn_conn *ncacn_conn;
 	struct tevent_req *subreq;
 	char *pipe_name;
@@ -1012,7 +1026,9 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	ncacn_conn->ev_ctx = ev_ctx;
 	ncacn_conn->msg_ctx = msg_ctx;
 	ncacn_conn->sock = s;
-	ncacn_conn->disconnect_fn = fn;
+	ncacn_conn->disconnect_fn = disconnect_fn;
+	ncacn_conn->termination_fn = termination_fn;
+	ncacn_conn->termination_data = termination_data;
 
 	ncacn_conn->remote_client_addr = talloc_move(ncacn_conn, &cli_addr);
 	if (tsocket_address_is_inet(ncacn_conn->remote_client_addr, "ip")) {

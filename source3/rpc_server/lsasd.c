@@ -447,7 +447,9 @@ static void lsasd_handle_client(struct tevent_req *req)
 				    cli_addr,
 				    srv_addr,
 				    sd,
-				    NULL);
+				    NULL,  /* disconnect function */
+				    lsasd_client_terminated,
+				    data);
 	} else if (tsocket_address_is_unix(srv_addr)) {
 		const char *p;
 		const char *b;
@@ -480,7 +482,9 @@ static void lsasd_handle_client(struct tevent_req *req)
 					    cli_addr,
 					    srv_addr,
 					    sd,
-					    NULL);
+					    NULL,  /* disconnect function */
+					    lsasd_client_terminated,
+					    data);
 		}
 	} else {
 		DEBUG(0, ("ERROR: Unsupported socket!\n"));

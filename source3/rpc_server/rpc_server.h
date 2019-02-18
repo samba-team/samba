@@ -27,6 +27,7 @@ struct auth_session_info;
 
 typedef bool (*dcerpc_ncacn_disconnect_fn)(struct pipes_struct *p);
 typedef void (*named_pipe_termination_fn)(void *private_data);
+typedef void (*dcerpc_ncacn_termination_fn)(void *private_data);
 
 struct dcerpc_ncacn_conn {
 	enum dcerpc_transport_t transport;
@@ -35,6 +36,8 @@ struct dcerpc_ncacn_conn {
 
 	struct pipes_struct *p;
 	dcerpc_ncacn_disconnect_fn disconnect_fn;
+	dcerpc_ncacn_termination_fn termination_fn;
+	void *termination_data;
 
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
@@ -136,6 +139,8 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 struct tsocket_address *cli_addr,
 			 struct tsocket_address *srv_addr,
 			 int s,
-			 dcerpc_ncacn_disconnect_fn fn);
+			 dcerpc_ncacn_disconnect_fn disconnect_fn,
+			 dcerpc_ncacn_termination_fn termination_fn,
+			 void *termination_data);
 
 #endif /* _PRC_SERVER_H_ */
