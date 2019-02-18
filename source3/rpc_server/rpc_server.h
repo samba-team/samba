@@ -23,9 +23,34 @@
 #include "librpc/rpc/rpc_common.h" /* For enum dcerpc_transport_t */
 
 struct pipes_struct;
+struct auth_session_info;
 
 typedef bool (*dcerpc_ncacn_disconnect_fn)(struct pipes_struct *p);
 typedef void (*named_pipe_termination_fn)(void *private_data);
+
+struct dcerpc_ncacn_conn {
+	enum dcerpc_transport_t transport;
+
+	int sock;
+
+	struct pipes_struct *p;
+	dcerpc_ncacn_disconnect_fn disconnect_fn;
+
+	struct tevent_context *ev_ctx;
+	struct messaging_context *msg_ctx;
+
+	struct tstream_context *tstream;
+	struct tevent_queue *send_queue;
+
+	struct tsocket_address *remote_client_addr;
+	char *remote_client_name;
+	struct tsocket_address *local_server_addr;
+	char *local_server_name;
+	struct auth_session_info *session_info;
+
+	struct iovec *iov;
+	size_t count;
+};
 
 struct named_pipe_client {
 	const char *pipe_name;
