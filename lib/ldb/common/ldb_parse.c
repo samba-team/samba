@@ -389,7 +389,7 @@ static struct ldb_parse_tree *ldb_parse_simple(TALLOC_CTX *mem_ctx, const char *
 	struct ldb_parse_tree *ret;
 	enum ldb_parse_op filtertype;
 
-	ret = talloc(mem_ctx, struct ldb_parse_tree);
+	ret = talloc_zero(mem_ctx, struct ldb_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
