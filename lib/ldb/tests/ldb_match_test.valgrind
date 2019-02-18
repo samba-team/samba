@@ -1,0 +1,16 @@
+{
+   Memory allocated in set-up
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   ...
+   fun:setup
+}
+{
+   Memory allocated by ldb_init
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   ...
+   fun:ldb_init
+}
