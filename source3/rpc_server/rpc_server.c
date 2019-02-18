@@ -220,16 +220,14 @@ static void dcesrv_ncacn_np_listener(struct tevent_context *ev,
 	struct dcerpc_ncacn_listen_state *state =
 			talloc_get_type_abort(private_data,
 					      struct dcerpc_ncacn_listen_state);
-	struct sockaddr_un sunaddr;
-	socklen_t len;
+	struct samba_sockaddr addr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+	};
 	int sd = -1;
 
 	/* TODO: should we have a limit to the number of clients ? */
 
-	len = sizeof(sunaddr);
-
-	sd = accept(state->fd,
-		    (struct sockaddr *)(void *)&sunaddr, &len);
+	sd = accept(state->fd, &addr.u.sa, &addr.sa_socklen);
 
 	if (sd == -1) {
 		if (errno != EINTR) {
@@ -240,7 +238,8 @@ static void dcesrv_ncacn_np_listener(struct tevent_context *ev,
 	}
 	smb_set_close_on_exec(sd);
 
-	DEBUG(6, ("Accepted socket %d\n", sd));
+	DBG_DEBUG("Accepted ncacn_np socket %s (fd: %d)\n",
+		   addr.u.un.sun_path, sd);
 
 	named_pipe_accept_function(state->ev_ctx,
 				   state->msg_ctx,
@@ -741,12 +740,13 @@ static void dcesrv_ncacn_ip_tcp_listener(struct tevent_context *ev,
 				      struct dcerpc_ncacn_listen_state);
 	struct tsocket_address *cli_addr = NULL;
 	struct tsocket_address *srv_addr = NULL;
-	struct sockaddr_storage addr;
-	socklen_t in_addrlen = sizeof(addr);
+	struct samba_sockaddr addr = {
+		.sa_socklen = sizeof(struct sockaddr_storage),
+	};
 	int s = -1;
 	int rc;
 
-	s = accept(state->fd, (struct sockaddr *)(void *) &addr, &in_addrlen);
+	s = accept(state->fd, &addr.u.sa, &addr.sa_socklen);
 	if (s == -1) {
 		if (errno != EINTR) {
 			DBG_ERR("Failed to accept: %s\n", strerror(errno));
@@ -755,25 +755,19 @@ static void dcesrv_ncacn_ip_tcp_listener(struct tevent_context *ev,
 	}
 	smb_set_close_on_exec(s);
 
-	rc = tsocket_address_bsd_from_sockaddr(state,
-					       (struct sockaddr *)(void *) &addr,
-					       in_addrlen,
-					       &cli_addr);
+	rc = tsocket_address_bsd_from_samba_sockaddr(state, &addr, &cli_addr);
 	if (rc < 0) {
 		close(s);
 		return;
 	}
 
-	rc = getsockname(s, (struct sockaddr *)(void *) &addr, &in_addrlen);
+	rc = getsockname(s, &addr.u.sa, &addr.sa_socklen);
 	if (rc < 0) {
 		close(s);
 		return;
 	}
 
-	rc = tsocket_address_bsd_from_sockaddr(state,
-					       (struct sockaddr *)(void *) &addr,
-					       in_addrlen,
-					       &srv_addr);
+	rc = tsocket_address_bsd_from_samba_sockaddr(state, &addr, &srv_addr);
 	if (rc < 0) {
 		close(s);
 		return;
@@ -924,19 +918,16 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 		talloc_get_type_abort(private_data,
 				      struct dcerpc_ncacn_listen_state);
 	struct tsocket_address *cli_addr = NULL, *srv_addr = NULL;
-	struct sockaddr_un sunaddr;
-	struct sockaddr *addr = (struct sockaddr *)(void *)&sunaddr;
-	socklen_t len = sizeof(sunaddr);
-	struct sockaddr_un sunaddr_server;
-	struct sockaddr *addr_server = (struct sockaddr *)(void *)&sunaddr_server;
-	socklen_t len_server = sizeof(sunaddr_server);
+	struct samba_sockaddr addr = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+	};
+	struct samba_sockaddr addr_server = {
+		.sa_socklen = sizeof(struct sockaddr_un),
+	};
 	int sd = -1;
 	int rc;
 
-	ZERO_STRUCT(sunaddr);
-	ZERO_STRUCT(sunaddr_server);
-
-	sd = accept(state->fd, addr, &len);
+	sd = accept(state->fd, &addr.u.sa, &addr.sa_socklen);
 	if (sd == -1) {
 		if (errno != EINTR) {
 			DBG_ERR("Failed to accept: %s\n", strerror(errno));
@@ -945,31 +936,28 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 	}
 	smb_set_close_on_exec(sd);
 
-	rc = tsocket_address_bsd_from_sockaddr(state,
-					       addr, len,
-					       &cli_addr);
+	rc = tsocket_address_bsd_from_samba_sockaddr(state, &addr, &cli_addr);
 	if (rc < 0) {
 		close(sd);
 		return;
 	}
 
-	rc = getsockname(sd, addr_server, &len_server);
+	rc = getsockname(sd, &addr_server.u.sa, &addr_server.sa_socklen);
 	if (rc < 0) {
 		close(sd);
 		return;
 	}
 
-	rc = tsocket_address_bsd_from_sockaddr(state,
-					       addr_server,
-					       len_server,
-					       &srv_addr);
+	rc = tsocket_address_bsd_from_samba_sockaddr(state,
+						     &addr_server,
+						     &srv_addr);
 	if (rc < 0) {
 		close(sd);
 		return;
 	}
 
 	DBG_DEBUG("Accepted ncalrpc socket %s (fd: %d)\n",
-		   sunaddr.sun_path, sd);
+		   addr.u.un.sun_path, sd);
 
 	dcerpc_ncacn_accept(state->ev_ctx,
 			    state->msg_ctx,
