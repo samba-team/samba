@@ -381,8 +381,6 @@ static void spoolss_client_terminated(void *pvt)
 
 struct spoolss_new_client {
 	struct spoolss_children_data *data;
-	struct tsocket_address *srv_addr;
-	struct tsocket_address *cli_addr;
 };
 
 static void spoolss_handle_client(struct tevent_req *req);
@@ -426,12 +424,14 @@ static void spoolss_handle_client(struct tevent_req *req)
 	const DATA_BLOB ping = data_blob_null;
 	int ret;
 	int sd;
+	struct tsocket_address *srv_addr = NULL;
+	struct tsocket_address *cli_addr = NULL;
 
 	client = tevent_req_callback_data(req, struct spoolss_new_client);
 	data = client->data;
 
-	ret = prefork_listen_recv(req, client, &sd, NULL,
-				  &client->srv_addr, &client->cli_addr);
+	ret = prefork_listen_recv(req, data, &sd, NULL,
+				  &srv_addr, &cli_addr);
 
 	/* this will free the request too */
 	talloc_free(client);
@@ -452,8 +452,8 @@ static void spoolss_handle_client(struct tevent_req *req)
 			    data->msg_ctx,
 			    NCACN_NP,
 			    SPOOLSS_PIPE_NAME,
-			    NULL,  /* remote client address */
-			    NULL,  /* local server address */
+			    cli_addr,
+			    srv_addr,
 			    sd,
 			    NULL,  /* disconnect function */
 			    spoolss_client_terminated,
