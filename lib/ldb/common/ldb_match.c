@@ -244,6 +244,11 @@ static int ldb_wildcard_compare(struct ldb_context *ldb,
 	uint8_t *save_p = NULL;
 	unsigned int c = 0;
 
+	if (tree->operation != LDB_OP_SUBSTRING) {
+		*matched = false;
+		return LDB_ERR_INAPPROPRIATE_MATCHING;
+	}
+
 	a = ldb_schema_attribute_by_name(ldb, tree->u.substring.attr);
 	if (!a) {
 		return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
