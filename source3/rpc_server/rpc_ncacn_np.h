@@ -55,20 +55,6 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 	const struct auth_session_info *session_info,
 	struct npa_state **pnpa);
 
-struct np_proxy_state {
-	uint16_t file_type;
-	uint16_t device_state;
-	uint64_t allocation_size;
-	struct tstream_context *npipe;
-	struct tevent_queue *read_queue;
-	struct tevent_queue *write_queue;
-};
-
-struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
-				const char *pipe_name,
-				const struct tsocket_address *remote_client_address,
-				const struct tsocket_address *local_server_address,
-				const struct auth_session_info *session_info);
 NTSTATUS rpcint_binding_handle(TALLOC_CTX *mem_ctx,
 			       const struct ndr_interface_table *ndr_table,
 			       const struct tsocket_address *remote_address,

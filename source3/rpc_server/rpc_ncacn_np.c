@@ -51,6 +51,21 @@ static NTSTATUS make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 				struct messaging_context *msg_ctx,
 				struct pipes_struct **p);
 
+struct np_proxy_state {
+	uint16_t file_type;
+	uint16_t device_state;
+	uint64_t allocation_size;
+	struct tstream_context *npipe;
+	struct tevent_queue *read_queue;
+	struct tevent_queue *write_queue;
+};
+
+static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
+				const char *pipe_name,
+				const struct tsocket_address *remote_address,
+				const struct tsocket_address *local_address,
+				const struct auth_session_info *session_info);
+
 static struct npa_state *npa_state_init(TALLOC_CTX *mem_ctx)
 {
 	struct npa_state *npa;
@@ -821,10 +836,10 @@ out:
 	return status;
 }
 
-struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
+static struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 				const char *pipe_name,
-				const struct tsocket_address *remote_client_address,
-				const struct tsocket_address *local_server_address,
+				const struct tsocket_address *remote_address,
+				const struct tsocket_address *local_address,
 				const struct auth_session_info *session_info)
 {
 	struct np_proxy_state *result;
@@ -891,9 +906,9 @@ struct np_proxy_state *make_external_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	subreq = tstream_npa_connect_send(talloc_tos(), ev,
 					  socket_np_dir,
 					  pipe_name,
-					  remote_client_address,
+					  remote_address,
 					  NULL, /* client_name */
-					  local_server_address,
+					  local_address,
 					  NULL, /* server_name */
 					  session_info_t);
 	if (subreq == NULL) {
