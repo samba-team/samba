@@ -25,14 +25,43 @@
 #include "lib/util/util_net.h"
 #include "lib/util/debug.h"
 #include "lib/util/util.h"
+#include "lib/util/bytearray.h"
 
-#define NDR_SVAL(ndr, ofs) (NDR_BE(ndr)?RSVAL(ndr->data,ofs):SVAL(ndr->data,ofs))
-#define NDR_IVAL(ndr, ofs) (NDR_BE(ndr)?RIVAL(ndr->data,ofs):IVAL(ndr->data,ofs))
-#define NDR_IVALS(ndr, ofs) (NDR_BE(ndr)?RIVALS(ndr->data,ofs):IVALS(ndr->data,ofs))
-#define NDR_SSVAL(ndr, ofs, v) do { if (NDR_BE(ndr))  { RSSVAL(ndr->data,ofs,v); } else SSVAL(ndr->data,ofs,v); } while (0)
-#define NDR_SIVAL(ndr, ofs, v) do { if (NDR_BE(ndr))  { RSIVAL(ndr->data,ofs,v); } else SIVAL(ndr->data,ofs,v); } while (0)
-#define NDR_SIVALS(ndr, ofs, v) do { if (NDR_BE(ndr))  { RSIVALS(ndr->data,ofs,v); } else SIVALS(ndr->data,ofs,v); } while (0)
+#define NDR_PULL_U16(ndr, ofs) \
+	(NDR_BE(ndr) ? PULL_BE_U16(ndr->data,ofs) : PULL_LE_U16(ndr->data,ofs))
 
+#define NDR_PULL_U32(ndr, ofs) \
+	(NDR_BE(ndr) ? PULL_BE_U32(ndr->data,ofs) : PULL_LE_U32(ndr->data,ofs))
+
+#define NDR_PULL_I32(ndr, ofs) \
+	(int32_t)(NDR_BE(ndr) ? PULL_BE_U32(ndr->data,ofs) : PULL_LE_U32(ndr->data,ofs))
+
+#define NDR_PUSH_U16(ndr, ofs, v) \
+	do { \
+		if (NDR_BE(ndr)) { \
+			PUSH_BE_U16(ndr->data, ofs, v); \
+		} else { \
+			PUSH_LE_U16(ndr->data, ofs, v); \
+		} \
+	} while (0)
+
+#define NDR_PUSH_U32(ndr, ofs, v) \
+	do { \
+		if (NDR_BE(ndr)) { \
+			PUSH_BE_U32(ndr->data, ofs, v); \
+		} else { \
+			PUSH_LE_U32(ndr->data, ofs, v); \
+		} \
+	} while (0)
+
+#define NDR_PUSH_I32(ndr, ofs, v) \
+	do { \
+		if (NDR_BE(ndr)) { \
+			PUSH_BE_U32(ndr->data, ofs, v); \
+		} else { \
+			PUSH_LE_U32(ndr->data, ofs, v); \
+		} \
+	} while (0)
 
 static void ndr_dump_data(struct ndr_print *ndr, const uint8_t *buf, int len);
 
@@ -67,7 +96,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_int8(struct ndr_pull *ndr, int ndr_flags, in
 {
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PULL_NEED_BYTES(ndr, 1);
-	*v = (int8_t)CVAL(ndr->data, ndr->offset);
+	*v = (int8_t)PULL_BE_U8(ndr->data, ndr->offset);
 	ndr->offset += 1;
 	return NDR_ERR_SUCCESS;
 }
@@ -79,7 +108,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_uint8(struct ndr_pull *ndr, int ndr_flags, u
 {
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PULL_NEED_BYTES(ndr, 1);
-	*v = CVAL(ndr->data, ndr->offset);
+	*v = PULL_BE_U8(ndr->data, ndr->offset);
 	ndr->offset += 1;
 	return NDR_ERR_SUCCESS;
 }
@@ -92,7 +121,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_int16(struct ndr_pull *ndr, int ndr_flags, i
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PULL_ALIGN(ndr, 2);
 	NDR_PULL_NEED_BYTES(ndr, 2);
-	*v = (uint16_t)NDR_SVAL(ndr, ndr->offset);
+	*v = (uint16_t)NDR_PULL_U16(ndr, ndr->offset);
 	ndr->offset += 2;
 	return NDR_ERR_SUCCESS;
 }
@@ -105,7 +134,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_uint16(struct ndr_pull *ndr, int ndr_flags, 
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PULL_ALIGN(ndr, 2);
 	NDR_PULL_NEED_BYTES(ndr, 2);
-	*v = NDR_SVAL(ndr, ndr->offset);
+	*v = NDR_PULL_U16(ndr, ndr->offset);
 	ndr->offset += 2;
 	return NDR_ERR_SUCCESS;
 }
@@ -137,7 +166,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_int32(struct ndr_pull *ndr, int ndr_flags, i
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 4);
-	*v = NDR_IVALS(ndr, ndr->offset);
+	*v = NDR_PULL_I32(ndr, ndr->offset);
 	ndr->offset += 4;
 	return NDR_ERR_SUCCESS;
 }
@@ -150,7 +179,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_uint32(struct ndr_pull *ndr, int ndr_flags, 
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 4);
-	*v = NDR_IVAL(ndr, ndr->offset);
+	*v = NDR_PULL_U32(ndr, ndr->offset);
 	ndr->offset += 4;
 	return NDR_ERR_SUCCESS;
 }
@@ -237,8 +266,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_udlong(struct ndr_pull *ndr, int ndr_flags, 
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 8);
-	*v = NDR_IVAL(ndr, ndr->offset);
-	*v |= (uint64_t)(NDR_IVAL(ndr, ndr->offset+4)) << 32;
+	*v = NDR_PULL_U32(ndr, ndr->offset);
+	*v |= (uint64_t)(NDR_PULL_U32(ndr, ndr->offset+4)) << 32;
 	ndr->offset += 8;
 	return NDR_ERR_SUCCESS;
 }
@@ -251,8 +280,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_udlongr(struct ndr_pull *ndr, int ndr_flags,
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PULL_ALIGN(ndr, 4);
 	NDR_PULL_NEED_BYTES(ndr, 8);
-	*v = ((uint64_t)NDR_IVAL(ndr, ndr->offset)) << 32;
-	*v |= NDR_IVAL(ndr, ndr->offset+4);
+	*v = ((uint64_t)NDR_PULL_U32(ndr, ndr->offset)) << 32;
+	*v |= NDR_PULL_U32(ndr, ndr->offset+4);
 	ndr->offset += 8;
 	return NDR_ERR_SUCCESS;
 }
@@ -475,7 +504,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_int8(struct ndr_push *ndr, int ndr_flags, in
 {
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PUSH_NEED_BYTES(ndr, 1);
-	SCVAL(ndr->data, ndr->offset, (uint8_t)v);
+	PUSH_BE_U8(ndr->data, ndr->offset, (uint8_t)v);
 	ndr->offset += 1;
 	return NDR_ERR_SUCCESS;
 }
@@ -487,7 +516,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_uint8(struct ndr_push *ndr, int ndr_flags, u
 {
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PUSH_NEED_BYTES(ndr, 1);
-	SCVAL(ndr->data, ndr->offset, v);
+	PUSH_BE_U8(ndr->data, ndr->offset, v);
 	ndr->offset += 1;
 	return NDR_ERR_SUCCESS;
 }
@@ -500,7 +529,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_int16(struct ndr_push *ndr, int ndr_flags, i
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PUSH_ALIGN(ndr, 2);
 	NDR_PUSH_NEED_BYTES(ndr, 2);
-	NDR_SSVAL(ndr, ndr->offset, (uint16_t)v);
+	NDR_PUSH_U16(ndr, ndr->offset, (uint16_t)v);
 	ndr->offset += 2;
 	return NDR_ERR_SUCCESS;
 }
@@ -513,7 +542,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_uint16(struct ndr_push *ndr, int ndr_flags, 
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PUSH_ALIGN(ndr, 2);
 	NDR_PUSH_NEED_BYTES(ndr, 2);
-	NDR_SSVAL(ndr, ndr->offset, v);
+	NDR_PUSH_U16(ndr, ndr->offset, v);
 	ndr->offset += 2;
 	return NDR_ERR_SUCCESS;
 }
@@ -537,7 +566,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_int32(struct ndr_push *ndr, int ndr_flags, i
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 4);
-	NDR_SIVALS(ndr, ndr->offset, v);
+	NDR_PUSH_I32(ndr, ndr->offset, v);
 	ndr->offset += 4;
 	return NDR_ERR_SUCCESS;
 }
@@ -550,7 +579,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_uint32(struct ndr_push *ndr, int ndr_flags, 
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 4);
-	NDR_SIVAL(ndr, ndr->offset, v);
+	NDR_PUSH_U32(ndr, ndr->offset, v);
 	ndr->offset += 4;
 	return NDR_ERR_SUCCESS;
 }
@@ -574,8 +603,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_udlong(struct ndr_push *ndr, int ndr_flags, 
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 8);
-	NDR_SIVAL(ndr, ndr->offset, (v & 0xFFFFFFFF));
-	NDR_SIVAL(ndr, ndr->offset+4, (v>>32));
+	NDR_PUSH_U32(ndr, ndr->offset, (v & 0xFFFFFFFF));
+	NDR_PUSH_U32(ndr, ndr->offset+4, (v>>32));
 	ndr->offset += 8;
 	return NDR_ERR_SUCCESS;
 }
@@ -588,8 +617,8 @@ _PUBLIC_ enum ndr_err_code ndr_push_udlongr(struct ndr_push *ndr, int ndr_flags,
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_PUSH_ALIGN(ndr, 4);
 	NDR_PUSH_NEED_BYTES(ndr, 8);
-	NDR_SIVAL(ndr, ndr->offset, (v>>32));
-	NDR_SIVAL(ndr, ndr->offset+4, (v & 0xFFFFFFFF));
+	NDR_PUSH_U32(ndr, ndr->offset, (v>>32));
+	NDR_PUSH_U32(ndr, ndr->offset+4, (v & 0xFFFFFFFF));
 	ndr->offset += 8;
 	return NDR_ERR_SUCCESS;
 }
