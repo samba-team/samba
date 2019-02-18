@@ -592,6 +592,12 @@ static int vfs_gluster_open(struct vfs_handle_struct *handle,
 	glfs_fd_t *glfd;
 	glfs_fd_t **p_tmp;
 
+	p_tmp = VFS_ADD_FSP_EXTENSION(handle, fsp, glfs_fd_t *, NULL);
+	if (p_tmp == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
 	if (flags & O_DIRECTORY) {
 		glfd = glfs_opendir(handle->data, smb_fname->base_name);
 	} else if (flags & O_CREAT) {
@@ -602,9 +608,11 @@ static int vfs_gluster_open(struct vfs_handle_struct *handle,
 	}
 
 	if (glfd == NULL) {
+		/* no extension destroy_fn, so no need to save errno */
+		VFS_REMOVE_FSP_EXTENSION(handle, fsp);
 		return -1;
 	}
-	p_tmp = VFS_ADD_FSP_EXTENSION(handle, fsp, glfs_fd_t *, NULL);
+
 	*p_tmp = glfd;
 	/* An arbitrary value for error reporting, so you know its us. */
 	return 13371337;
