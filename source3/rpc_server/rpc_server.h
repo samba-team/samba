@@ -26,7 +26,6 @@ struct pipes_struct;
 struct auth_session_info;
 
 typedef bool (*dcerpc_ncacn_disconnect_fn)(struct pipes_struct *p);
-typedef void (*named_pipe_termination_fn)(void *private_data);
 typedef void (*dcerpc_ncacn_termination_fn)(void *private_data);
 
 struct dcerpc_ncacn_conn {
@@ -56,46 +55,6 @@ struct dcerpc_ncacn_conn {
 	size_t count;
 };
 
-struct named_pipe_client {
-	const char *pipe_name;
-
-	struct tevent_context *ev;
-	struct messaging_context *msg_ctx;
-
-	uint16_t file_type;
-	uint16_t device_state;
-	uint64_t allocation_size;
-
-	struct tstream_context *tstream;
-
-	struct tsocket_address *remote_client_addr;
-	char *remote_client_name;
-	struct tsocket_address *local_server_addr;
-	char *local_server_name;
-
-	struct auth_session_info *session_info;
-
-	struct pipes_struct *p;
-
-	struct tevent_queue *write_queue;
-
-	struct iovec *iov;
-	size_t count;
-
-	named_pipe_termination_fn term_fn;
-	void *private_data;
-};
-
-struct named_pipe_client *named_pipe_client_init(TALLOC_CTX *mem_ctx,
-						 struct tevent_context *ev_ctx,
-						 struct messaging_context *msg_ctx,
-						 const char *pipe_name,
-						 named_pipe_termination_fn term_fn,
-						 uint16_t file_type,
-						 uint16_t device_state,
-						 uint64_t allocation_size,
-						 void *private_data);
-
 NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev_ctx,
 				struct messaging_context *msg_ctx,
@@ -122,12 +81,6 @@ NTSTATUS dcesrv_create_ncacn_np_socket(const char *pipe_name, int *out_fd);
 NTSTATUS dcesrv_setup_ncacn_np_socket(const char *pipe_name,
 				      struct tevent_context *ev_ctx,
 				      struct messaging_context *msg_ctx);
-void named_pipe_accept_function(struct tevent_context *ev_ctx,
-			        struct messaging_context *msg_ctx,
-				const char *pipe_name, int fd,
-				named_pipe_termination_fn term_fn,
-				void *private_data);
-void named_pipe_packet_process(struct tevent_req *subreq);
 
 NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
 					   uint16_t *port,

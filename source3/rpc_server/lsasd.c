@@ -468,12 +468,17 @@ static void lsasd_handle_client(struct tevent_req *req)
 		}
 
 		if (strstr(p, "/np/")) {
-			named_pipe_accept_function(data->ev_ctx,
-						   data->msg_ctx,
-						   b,
-						   sd,
-						   lsasd_client_terminated,
-						   data);
+			dcerpc_ncacn_accept(data->ev_ctx,
+					    data->msg_ctx,
+					    NCACN_NP,
+					    b,
+					    NULL,  /* remote client address */
+					    NULL,  /* local server address */
+					    sd,
+					    NULL,  /* disconnect function */
+					    lsasd_client_terminated,
+					    data);
+
 		} else {
 			dcerpc_ncacn_accept(data->ev_ctx,
 					    data->msg_ctx,

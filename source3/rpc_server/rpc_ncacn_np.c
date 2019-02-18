@@ -82,7 +82,7 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 	struct npa_state **pnpa)
 {
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
-	struct named_pipe_client *npc;
+	struct dcerpc_ncacn_conn *ncacn_conn = NULL;
 	struct tevent_req *subreq;
 	struct npa_state *npa;
 	NTSTATUS status;
@@ -101,90 +101,94 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 	npa->device_state = 0xff | 0x0400 | 0x0100;
 	npa->allocation_size = 4096;
 
-	npc = named_pipe_client_init(npa,
-				     ev_ctx,
-				     msg_ctx,
-				     pipe_name,
-				     NULL, /* term_fn */
-				     npa->file_type,
-				     npa->device_state,
-				     npa->allocation_size,
-				     NULL); /* private_data */
-	if (npc == NULL) {
-		status = NT_STATUS_NO_MEMORY;
+	status = dcerpc_ncacn_conn_init(npa,
+					ev_ctx,
+					msg_ctx,
+					NCACN_NP,
+					pipe_name,
+					NULL, /* disconnect fn */
+					NULL, /* termination fn */
+					NULL, /* termination data */
+					&ncacn_conn);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
-	npa->private_data = (void*) npc;
+
+	npa->private_data = (void*)ncacn_conn;
 
 	rc = tstream_npa_socketpair(npa->file_type,
 				    npa,
 				    &npa->stream,
-				    npc,
-				    &npc->tstream);
+				    ncacn_conn,
+				    &ncacn_conn->tstream);
 	if (rc == -1) {
 		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
 
-	npc->remote_client_addr = tsocket_address_copy(remote_address, npc);
-	if (npc->remote_client_addr == NULL) {
+	ncacn_conn->remote_client_addr = tsocket_address_copy(remote_address,
+			ncacn_conn);
+	if (ncacn_conn->remote_client_addr == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
-	npc->remote_client_name = tsocket_address_inet_addr_string(npc->remote_client_addr,
-								   npc);
-	if (npc->remote_client_name == NULL) {
+	ncacn_conn->remote_client_name = tsocket_address_inet_addr_string(
+			ncacn_conn->remote_client_addr, ncacn_conn);
+	if (ncacn_conn->remote_client_name == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
-	npc->local_server_addr = tsocket_address_copy(local_address, npc);
-	if (npc->local_server_addr == NULL) {
+	ncacn_conn->local_server_addr = tsocket_address_copy(local_address,
+			ncacn_conn);
+	if (ncacn_conn->local_server_addr == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
-	npc->local_server_name = tsocket_address_inet_addr_string(
-		npc->local_server_addr, npc);
-	if (npc->local_server_name == NULL) {
+	ncacn_conn->local_server_name = tsocket_address_inet_addr_string(
+		ncacn_conn->local_server_addr, ncacn_conn);
+	if (ncacn_conn->local_server_name == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
-	npc->session_info = copy_session_info(npc, session_info);
-	if (npc->session_info == NULL) {
+	ncacn_conn->session_info = copy_session_info(ncacn_conn, session_info);
+	if (ncacn_conn->session_info == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
-	rc = make_server_pipes_struct(npc,
-				      npc->msg_ctx,
-				      npc->pipe_name,
-				      NCACN_NP,
-				      npc->remote_client_addr,
-				      npc->local_server_addr,
-				      &npc->session_info,
-				      &npc->p,
+	rc = make_server_pipes_struct(ncacn_conn,
+				      ncacn_conn->msg_ctx,
+				      ncacn_conn->name,
+				      ncacn_conn->transport,
+				      ncacn_conn->remote_client_addr,
+				      ncacn_conn->local_server_addr,
+				      &ncacn_conn->session_info,
+				      &ncacn_conn->p,
 				      &error);
 	if (rc == -1) {
 		status = map_nt_error_from_unix(error);
 		goto out;
 	}
 
-	npc->write_queue = tevent_queue_create(npc, "npa_server_write_queue");
-	if (npc->write_queue == NULL) {
+	ncacn_conn->send_queue = tevent_queue_create(ncacn_conn, "npa_server_write_queue");
+	if (ncacn_conn->send_queue == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
-	subreq = dcerpc_read_ncacn_packet_send(npc, npc->ev, npc->tstream);
+	subreq = dcerpc_read_ncacn_packet_send(ncacn_conn, ncacn_conn->ev_ctx,
+					       ncacn_conn->tstream);
 	if (subreq == NULL) {
 		DEBUG(2, ("Failed to start receiving packets\n"));
 		status = NT_STATUS_PIPE_BROKEN;
 		goto out;
 	}
-	tevent_req_set_callback(subreq, named_pipe_packet_process, npc);
+	tevent_req_set_callback(subreq, dcerpc_ncacn_packet_process,
+				ncacn_conn);
 
 	*pnpa = talloc_move(mem_ctx, &npa);
 	status = NT_STATUS_OK;

@@ -445,9 +445,16 @@ static void spoolss_handle_client(struct tevent_req *req)
 	DEBUG(2, ("Spoolss preforked child %d got client connection!\n",
 		  (int)(data->pf->pid)));
 
-	named_pipe_accept_function(data->ev_ctx, data->msg_ctx,
-				   SPOOLSS_PIPE_NAME, sd,
-				   spoolss_client_terminated, data);
+	dcerpc_ncacn_accept(data->ev_ctx,
+			    data->msg_ctx,
+			    NCACN_NP,
+			    SPOOLSS_PIPE_NAME,
+			    NULL,  /* remote client address */
+			    NULL,  /* local server address */
+			    sd,
+			    NULL,  /* disconnect function */
+			    spoolss_client_terminated,
+			    data);
 }
 
 /* ==== Main Process Functions ==== */
