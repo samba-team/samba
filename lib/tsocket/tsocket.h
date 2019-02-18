@@ -26,6 +26,7 @@
 
 #include <tevent.h>
 
+struct samba_sockaddr;
 struct tsocket_address;
 struct tdgram_context;
 struct tstream_context;
@@ -980,6 +981,32 @@ int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 #define tsocket_address_bsd_from_sockaddr(mem_ctx, sa, sa_socklen, _addr) \
 	_tsocket_address_bsd_from_sockaddr(mem_ctx, sa, sa_socklen, _addr, \
 					   __location__)
+#endif
+
+#ifdef DOXYGEN
+/**
+ * @brief Convert a samba address to a tsocket address.
+ *
+ * @param[in]  mem_ctx  The talloc memory context to use.
+ *
+ * @param[in]  s_addr   The samba address structure to convert.
+ *
+ * @param[out] t_addr   The tsocket pointer to allocate and fill.
+ *
+ * @return              0 on success, -1 on error with errno set.
+ */
+int tsocket_address_bsd_from_samba_sockaddr(TALLOC_CTX *mem_ctx,
+					const struct samba_sockaddr *s_addr,
+					struct tsocket_address **t_addr);
+#else
+int _tsocket_address_bsd_from_samba_sockaddr(TALLOC_CTX *mem_ctx,
+					 const struct samba_sockaddr *s_addr,
+					 struct tsocket_address **t_addr,
+					 const char *location);
+
+#define tsocket_address_bsd_from_samba_sockaddr(mem_ctx, s_addr, t_addr) \
+	_tsocket_address_bsd_from_samba_sockaddr(mem_ctx, s_addr, t_addr, \
+						 __location__)
 #endif
 
 /**
