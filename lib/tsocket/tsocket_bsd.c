@@ -28,6 +28,7 @@
 #include "tsocket_internal.h"
 #include "lib/util/iov_buf.h"
 #include "lib/util/blocking.h"
+#include "lib/util/util_net.h"
 
 static int tsocket_bsd_error_from_errno(int ret,
 					int sys_errno,
@@ -211,19 +212,6 @@ static ssize_t tsocket_bsd_pending(int fd)
 
 static const struct tsocket_address_ops tsocket_address_bsd_ops;
 
-struct tsocket_address_bsd {
-	socklen_t sa_socklen;
-	union {
-		struct sockaddr sa;
-		struct sockaddr_in in;
-#ifdef HAVE_IPV6
-		struct sockaddr_in6 in6;
-#endif
-		struct sockaddr_un un;
-		struct sockaddr_storage ss;
-	} u;
-};
-
 int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 				       const struct sockaddr *sa,
 				       size_t sa_socklen,
@@ -231,7 +219,7 @@ int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 				       const char *location)
 {
 	struct tsocket_address *addr;
-	struct tsocket_address_bsd *bsda;
+	struct samba_sockaddr *bsda = NULL;
 
 	if (sa_socklen < sizeof(sa->sa_family)) {
 		errno = EINVAL;
@@ -273,7 +261,7 @@ int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 	addr = tsocket_address_create(mem_ctx,
 				      &tsocket_address_bsd_ops,
 				      &bsda,
-				      struct tsocket_address_bsd,
+				      struct samba_sockaddr,
 				      location);
 	if (!addr) {
 		errno = ENOMEM;
@@ -297,8 +285,8 @@ ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
 				     struct sockaddr *sa,
 				     size_t sa_socklen)
 {
-	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
-					   struct tsocket_address_bsd);
+	struct samba_sockaddr *bsda = talloc_get_type(addr->private_data,
+					   struct samba_sockaddr);
 
 	if (!bsda) {
 		errno = EINVAL;
@@ -324,8 +312,8 @@ ssize_t tsocket_address_bsd_sockaddr(const struct tsocket_address *addr,
 
 bool tsocket_address_is_inet(const struct tsocket_address *addr, const char *fam)
 {
-	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
-					   struct tsocket_address_bsd);
+	struct samba_sockaddr *bsda = talloc_get_type(addr->private_data,
+					   struct samba_sockaddr);
 
 	if (!bsda) {
 		return false;
@@ -440,8 +428,8 @@ done:
 char *tsocket_address_inet_addr_string(const struct tsocket_address *addr,
 				       TALLOC_CTX *mem_ctx)
 {
-	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
-					   struct tsocket_address_bsd);
+	struct samba_sockaddr *bsda = talloc_get_type(addr->private_data,
+					   struct samba_sockaddr);
 	char addr_str[INET6_ADDRSTRLEN+1];
 	const char *str;
 
@@ -477,8 +465,8 @@ char *tsocket_address_inet_addr_string(const struct tsocket_address *addr,
 
 uint16_t tsocket_address_inet_port(const struct tsocket_address *addr)
 {
-	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
-					   struct tsocket_address_bsd);
+	struct samba_sockaddr *bsda = talloc_get_type(addr->private_data,
+					   struct samba_sockaddr);
 	uint16_t port = 0;
 
 	if (!bsda) {
@@ -506,8 +494,8 @@ uint16_t tsocket_address_inet_port(const struct tsocket_address *addr)
 int tsocket_address_inet_set_port(struct tsocket_address *addr,
 				  uint16_t port)
 {
-	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
-					   struct tsocket_address_bsd);
+	struct samba_sockaddr *bsda = talloc_get_type(addr->private_data,
+					   struct samba_sockaddr);
 
 	if (!bsda) {
 		errno = EINVAL;
@@ -533,8 +521,8 @@ int tsocket_address_inet_set_port(struct tsocket_address *addr,
 
 bool tsocket_address_is_unix(const struct tsocket_address *addr)
 {
-	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
-					   struct tsocket_address_bsd);
+	struct samba_sockaddr *bsda = talloc_get_type(addr->private_data,
+					   struct samba_sockaddr);
 
 	if (!bsda) {
 		return false;
@@ -582,8 +570,8 @@ int _tsocket_address_unix_from_path(TALLOC_CTX *mem_ctx,
 char *tsocket_address_unix_path(const struct tsocket_address *addr,
 				TALLOC_CTX *mem_ctx)
 {
-	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
-					   struct tsocket_address_bsd);
+	struct samba_sockaddr *bsda = talloc_get_type(addr->private_data,
+					   struct samba_sockaddr);
 	const char *str;
 
 	if (!bsda) {
@@ -606,8 +594,8 @@ char *tsocket_address_unix_path(const struct tsocket_address *addr,
 static char *tsocket_address_bsd_string(const struct tsocket_address *addr,
 					TALLOC_CTX *mem_ctx)
 {
-	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
-					   struct tsocket_address_bsd);
+	struct samba_sockaddr *bsda = talloc_get_type(addr->private_data,
+					   struct samba_sockaddr);
 	char *str;
 	char *addr_str;
 	const char *prefix = NULL;
@@ -648,8 +636,8 @@ static struct tsocket_address *tsocket_address_bsd_copy(const struct tsocket_add
 							 TALLOC_CTX *mem_ctx,
 							 const char *location)
 {
-	struct tsocket_address_bsd *bsda = talloc_get_type(addr->private_data,
-					   struct tsocket_address_bsd);
+	struct samba_sockaddr *bsda = talloc_get_type(addr->private_data,
+					   struct samba_sockaddr);
 	struct tsocket_address *copy;
 	int ret;
 
@@ -925,7 +913,7 @@ static void tdgram_bsd_recvfrom_handler(void *private_data)
 					struct tdgram_bsd_recvfrom_state);
 	struct tdgram_context *dgram = state->dgram;
 	struct tdgram_bsd *bsds = tdgram_context_data(dgram, struct tdgram_bsd);
-	struct tsocket_address_bsd *bsda;
+	struct samba_sockaddr *bsda = NULL;
 	ssize_t ret;
 	int err;
 	bool retry;
@@ -962,7 +950,7 @@ static void tdgram_bsd_recvfrom_handler(void *private_data)
 	state->src = tsocket_address_create(state,
 					    &tsocket_address_bsd_ops,
 					    &bsda,
-					    struct tsocket_address_bsd,
+					    struct samba_sockaddr,
 					    __location__ "bsd_recvfrom");
 	if (tevent_req_nomem(state->src, req)) {
 		return;
@@ -1116,9 +1104,9 @@ static void tdgram_bsd_sendto_handler(void *private_data)
 	bool retry;
 
 	if (state->dst) {
-		struct tsocket_address_bsd *bsda =
+		struct samba_sockaddr *bsda =
 			talloc_get_type(state->dst->private_data,
-			struct tsocket_address_bsd);
+			struct samba_sockaddr);
 
 		sa = &bsda->u.sa;
 		sa_socklen = bsda->sa_socklen;
@@ -1261,10 +1249,10 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 				   struct tdgram_context **_dgram,
 				   const char *location)
 {
-	struct tsocket_address_bsd *lbsda =
+	struct samba_sockaddr *lbsda =
 		talloc_get_type_abort(local->private_data,
-		struct tsocket_address_bsd);
-	struct tsocket_address_bsd *rbsda = NULL;
+		struct samba_sockaddr);
+	struct samba_sockaddr *rbsda = NULL;
 	struct tdgram_context *dgram;
 	struct tdgram_bsd *bsds;
 	int fd;
@@ -1277,7 +1265,7 @@ static int tdgram_bsd_dgram_socket(const struct tsocket_address *local,
 
 	if (remote) {
 		rbsda = talloc_get_type_abort(remote->private_data,
-			struct tsocket_address_bsd);
+			struct samba_sockaddr);
 	}
 
 	switch (lbsda->u.sa.sa_family) {
@@ -1478,9 +1466,9 @@ int _tdgram_inet_udp_socket(const struct tsocket_address *local,
 			    struct tdgram_context **dgram,
 			    const char *location)
 {
-	struct tsocket_address_bsd *lbsda =
+	struct samba_sockaddr *lbsda =
 		talloc_get_type_abort(local->private_data,
-		struct tsocket_address_bsd);
+		struct samba_sockaddr);
 	int ret;
 
 	switch (lbsda->u.sa.sa_family) {
@@ -1506,9 +1494,9 @@ int _tdgram_inet_udp_broadcast_socket(const struct tsocket_address *local,
 				      struct tdgram_context **dgram,
 				      const char *location)
 {
-	struct tsocket_address_bsd *lbsda =
+	struct samba_sockaddr *lbsda =
 		talloc_get_type_abort(local->private_data,
-		struct tsocket_address_bsd);
+		struct samba_sockaddr);
 	int ret;
 
 	switch (lbsda->u.sa.sa_family) {
@@ -1537,9 +1525,9 @@ int _tdgram_unix_socket(const struct tsocket_address *local,
 			struct tdgram_context **dgram,
 			const char *location)
 {
-	struct tsocket_address_bsd *lbsda =
+	struct samba_sockaddr *lbsda =
 		talloc_get_type_abort(local->private_data,
-		struct tsocket_address_bsd);
+		struct samba_sockaddr);
 	int ret;
 
 	switch (lbsda->u.sa.sa_family) {
@@ -2166,13 +2154,13 @@ static struct tevent_req *tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct tstream_bsd_connect_state *state;
-	struct tsocket_address_bsd *lbsda =
+	struct samba_sockaddr *lbsda =
 		talloc_get_type_abort(local->private_data,
-		struct tsocket_address_bsd);
-	struct tsocket_address_bsd *lrbsda = NULL;
-	struct tsocket_address_bsd *rbsda =
+		struct samba_sockaddr);
+	struct samba_sockaddr *lrbsda = NULL;
+	struct samba_sockaddr *rbsda =
 		talloc_get_type_abort(remote->private_data,
-		struct tsocket_address_bsd);
+		struct samba_sockaddr);
 	int ret;
 	bool do_bind = false;
 	bool do_reuseaddr = false;
@@ -2251,7 +2239,7 @@ static struct tevent_req *tstream_bsd_connect_send(TALLOC_CTX *mem_ctx,
 		state->local = tsocket_address_create(state,
 						      &tsocket_address_bsd_ops,
 						      &lrbsda,
-						      struct tsocket_address_bsd,
+						      struct samba_sockaddr,
 						      __location__ "bsd_connect");
 		if (tevent_req_nomem(state->local, req)) {
 			goto post;
@@ -2366,7 +2354,7 @@ static void tstream_bsd_connect_fde_handler(struct tevent_context *ev,
 				 struct tevent_req);
 	struct tstream_bsd_connect_state *state = tevent_req_data(req,
 					struct tstream_bsd_connect_state);
-	struct tsocket_address_bsd *lrbsda = NULL;
+	struct samba_sockaddr *lrbsda = NULL;
 	int ret;
 	int error=0;
 	socklen_t len = sizeof(error);
@@ -2395,7 +2383,7 @@ static void tstream_bsd_connect_fde_handler(struct tevent_context *ev,
 	}
 
 	lrbsda = talloc_get_type_abort(state->local->private_data,
-				       struct tsocket_address_bsd);
+				       struct samba_sockaddr);
 
 	ret = getsockname(state->fd, &lrbsda->u.sa, &lrbsda->sa_socklen);
 	if (ret == -1) {
@@ -2445,9 +2433,9 @@ struct tevent_req * tstream_inet_tcp_connect_send(TALLOC_CTX *mem_ctx,
 					const struct tsocket_address *local,
 					const struct tsocket_address *remote)
 {
-	struct tsocket_address_bsd *lbsda =
+	struct samba_sockaddr *lbsda =
 		talloc_get_type_abort(local->private_data,
-		struct tsocket_address_bsd);
+		struct samba_sockaddr);
 	struct tevent_req *req;
 	int sys_errno = 0;
 
@@ -2485,9 +2473,9 @@ struct tevent_req * tstream_unix_connect_send(TALLOC_CTX *mem_ctx,
 					const struct tsocket_address *local,
 					const struct tsocket_address *remote)
 {
-	struct tsocket_address_bsd *lbsda =
+	struct samba_sockaddr *lbsda =
 		talloc_get_type_abort(local->private_data,
-		struct tsocket_address_bsd);
+		struct samba_sockaddr);
 	struct tevent_req *req;
 	int sys_errno = 0;
 

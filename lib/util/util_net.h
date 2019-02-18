@@ -23,6 +23,19 @@
 
 #include "system/network.h"
 
+struct samba_sockaddr {
+	socklen_t sa_socklen;
+	union {
+		struct sockaddr sa;
+		struct sockaddr_in in;
+#ifdef HAVE_IPV6
+		struct sockaddr_in6 in6;
+#endif
+		struct sockaddr_un un;
+		struct sockaddr_storage ss;
+	} u;
+};
+
 /* The following definitions come from lib/util/util_net.c  */
 
 void zero_sockaddr(struct sockaddr_storage *pss);
