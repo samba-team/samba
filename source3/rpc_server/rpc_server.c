@@ -1065,21 +1065,25 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 
 	ncacn_conn->sock = s;
 
-	ncacn_conn->remote_client_addr = talloc_move(ncacn_conn, &cli_addr);
-	if (tsocket_address_is_inet(ncacn_conn->remote_client_addr, "ip")) {
-		ncacn_conn->remote_client_name =
-			tsocket_address_inet_addr_string(ncacn_conn->remote_client_addr,
-							 ncacn_conn);
-	} else {
-		ncacn_conn->remote_client_name =
-			tsocket_address_unix_path(ncacn_conn->remote_client_addr,
-						  ncacn_conn);
-	}
-	if (ncacn_conn->remote_client_name == NULL) {
-		DEBUG(0, ("Out of memory obtaining remote socket address as a string!\n"));
-		talloc_free(ncacn_conn);
-		close(s);
-		return;
+	if (cli_addr != NULL) {
+		ncacn_conn->remote_client_addr = talloc_move(ncacn_conn, &cli_addr);
+
+		if (tsocket_address_is_inet(ncacn_conn->remote_client_addr, "ip")) {
+			ncacn_conn->remote_client_name =
+				tsocket_address_inet_addr_string(ncacn_conn->remote_client_addr,
+								 ncacn_conn);
+		} else {
+			ncacn_conn->remote_client_name =
+				tsocket_address_unix_path(ncacn_conn->remote_client_addr,
+							  ncacn_conn);
+		}
+
+		if (ncacn_conn->remote_client_name == NULL) {
+			DBG_ERR("Out of memory obtaining remote socket address as a string!\n");
+			talloc_free(ncacn_conn);
+			close(s);
+			return;
+		}
 	}
 
 	if (srv_addr != NULL) {
