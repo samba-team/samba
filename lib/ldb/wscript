@@ -511,6 +511,11 @@ def build(bld):
                          deps='cmocka ldb',
                          install=False)
 
+        bld.SAMBA_BINARY('ldb_match_test',
+                         source='tests/ldb_match_test.c',
+                         deps='cmocka ldb',
+                         install=False)
+
         if bld.CONFIG_SET('HAVE_LMDB'):
             bld.SAMBA_BINARY('ldb_mdb_mod_op_test',
                              source='tests/ldb_mod_op_test.c',
@@ -578,7 +583,8 @@ def test(ctx):
                  # we don't want to run ldb_lmdb_size_test (which proves we can
                  # fit > 4G of data into the DB), it would fill up the disk on
                  # many of our test instances
-                 'ldb_mdb_kv_ops_test']
+                 'ldb_mdb_kv_ops_test',
+                 'ldb_match_test']
 
     for test_exe in test_exes:
             cmd = os.path.join(Context.g_module.out, test_exe)
