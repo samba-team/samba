@@ -27,7 +27,6 @@
 
 #include <talloc.h>
 #include "../lib/util/discard.h" /* for discard_const */
-#include "../lib/util/byteorder.h"
 #include "../lib/util/data_blob.h"
 #include "../lib/util/time.h"
 #include "../lib/util/charset/charset.h"
