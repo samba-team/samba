@@ -122,6 +122,7 @@ static int print_share_mode(struct file_id fid,
 			    const struct share_mode_entry *e,
 			    void *private_data)
 {
+	bool resolve_uids = *((bool *)private_data);
 	static int count;
 
 	if (do_checks && !is_valid_share_mode_entry(e)) {
@@ -130,7 +131,7 @@ static int print_share_mode(struct file_id fid,
 
 	if (count==0) {
 		d_printf("Locked files:\n");
-		d_printf("Pid          Uid        DenyMode   Access      R/W        Oplock           SharePath   Name   Time\n");
+		d_printf("Pid          User(ID)   DenyMode   Access      R/W        Oplock           SharePath   Name   Time\n");
 		d_printf("--------------------------------------------------------------------------------------------------\n");
 	}
 	count++;
@@ -143,7 +144,11 @@ static int print_share_mode(struct file_id fid,
 	if (Ucrit_checkPid(e->pid)) {
 		struct server_id_buf tmp;
 		d_printf("%-11s  ", server_id_str_buf(e->pid, &tmp));
-		d_printf("%-9u  ", (unsigned int)e->uid);
+		if (resolve_uids) {
+			d_printf("%-14s  ", uidtoname(e->uid));
+		} else {
+			d_printf("%-9u  ", (unsigned int)e->uid);
+		}
 		switch (map_share_mode_to_deny_mode(e->share_access,
 						    e->private_options)) {
 			case DENY_NONE: d_printf("DENY_NONE  "); break;
@@ -502,12 +507,17 @@ static bool print_notify_rec(const char *path, struct server_id server,
 	return true;
 }
 
+enum {
+	OPT_RESOLVE_UIDS = 1000,
+};
+
 int main(int argc, const char *argv[])
 {
 	int c;
 	int profile_only = 0;
 	bool show_processes, show_locks, show_shares;
 	bool show_notify = false;
+	bool resolve_uids = false;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -607,6 +617,14 @@ int main(int argc, const char *argv[])
 			.val        = 'f',
 			.descrip    = "Skip checks if processes still exist"
 		},
+		{
+			.longName   = "resolve-uids",
+			.shortName  = 0,
+			.argInfo    = POPT_ARG_NONE,
+			.arg        = NULL,
+			.val        = OPT_RESOLVE_UIDS,
+			.descrip    = "Try to resolve UIDs to usernames"
+		},
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
@@ -673,6 +691,9 @@ int main(int argc, const char *argv[])
 			break;
 		case 'f':
 			do_checks = false;
+			break;
+		case OPT_RESOLVE_UIDS:
+			resolve_uids = true;
 			break;
 		}
 	}
@@ -778,7 +799,7 @@ int main(int argc, const char *argv[])
 			goto done;
 		}
 
-		result = share_entry_forall(print_share_mode, NULL);
+		result = share_entry_forall(print_share_mode, &resolve_uids);
 
 		if (result == 0) {
 			d_printf("No locked files\n");
