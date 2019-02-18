@@ -28,6 +28,7 @@ struct pipes_struct;
 bool create_next_pdu(struct pipes_struct *p);
 bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt);
 bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS status);
-bool is_known_pipename(const char *cli_filename, struct ndr_syntax_id *syntax);
+NTSTATUS is_known_pipename(const char *cli_filename,
+			   struct ndr_syntax_id *syntax);
 
 #endif /* _RPC_SERVER_SRV_PIPE_H_ */

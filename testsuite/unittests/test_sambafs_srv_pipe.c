@@ -38,26 +38,26 @@ static int teardown_samr(void **state)
 static void test_is_known_pipename(void **state)
 {
 	struct ndr_syntax_id syntax_id = ndr_table_samr.syntax_id;
-	bool is_pipename_ok;
+	NTSTATUS status;
 
-	is_pipename_ok = is_known_pipename("samr", &syntax_id);
-	assert_true(is_pipename_ok);
+	status = is_known_pipename("samr", &syntax_id);
+	assert_true(NT_STATUS_IS_OK(status));
 }
 
 static void test_is_known_pipename_slash(void **state)
 {
 	struct ndr_syntax_id syntax_id = ndr_table_samr.syntax_id;
-	bool is_pipename_ok;
 	char dummy_module_path[4096] = {0};
 	const char *module_env;
+	NTSTATUS status;
 
 	snprintf(dummy_module_path,
 		 sizeof(dummy_module_path),
 		 "%s/bin/modules/rpc/test_dummy_module.so",
 		 SRCDIR);
 
-	is_pipename_ok = is_known_pipename(dummy_module_path, &syntax_id);
-	assert_false(is_pipename_ok);
+	status = is_known_pipename(dummy_module_path, &syntax_id);
+	assert_true(NT_STATUS_IS_ERR(status));
 
 	module_env = getenv("UNITTEST_DUMMY_MODULE_LOADED");
 	assert_null(module_env);

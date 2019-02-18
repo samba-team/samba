@@ -62,7 +62,6 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 	struct ndr_syntax_id syntax;
 	struct npa_state *npa = NULL;
 	NTSTATUS status;
-	bool ok;
 
 	proxy_list = lp_parm_string_list(-1, "np", "proxy", NULL);
 
@@ -99,9 +98,9 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		break;
 	case RPC_SERVICE_MODE_EMBEDDED:
 		/* Check if we handle this pipe internally */
-		ok = is_known_pipename(name, &syntax);
-		if (!ok) {
-			DEBUG(2, ("'%s' is not a registered pipe!\n", name));
+		status = is_known_pipename(name, &syntax);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("'%s' is not a registered pipe!\n", name);
 			talloc_free(handle);
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}

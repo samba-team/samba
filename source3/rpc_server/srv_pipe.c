@@ -475,44 +475,43 @@ static bool check_bind_req(struct pipes_struct *p,
 /**
  * Is a named pipe known?
  * @param[in] pipename		Just the filename
- * @result			Do we want to serve this?
+ * @result			NT error code
  */
-bool is_known_pipename(const char *pipename, struct ndr_syntax_id *syntax)
+NTSTATUS is_known_pipename(const char *pipename, struct ndr_syntax_id *syntax)
 {
 	NTSTATUS status;
 
 	if (strchr(pipename, '/')) {
-		DEBUG(1, ("Refusing open on pipe %s\n", pipename));
-		return false;
+		DBG_WARNING("Refusing open on pipe %s\n", pipename);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	if (lp_disable_spoolss() && strequal(pipename, "spoolss")) {
-		DEBUG(10, ("refusing spoolss access\n"));
-		return false;
+		DBG_DEBUG("refusing spoolss access\n");
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
 	if (rpc_srv_get_pipe_interface_by_cli_name(pipename, syntax)) {
-		return true;
+		return NT_STATUS_OK;
 	}
 
 	status = smb_probe_module("rpc", pipename);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("is_known_pipename: %s unknown\n", pipename));
-		return false;
+		DBG_DEBUG("Unknown pipe '%s'\n", pipename);
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-	DEBUG(10, ("is_known_pipename: %s loaded dynamically\n", pipename));
+	DBG_DEBUG("'%s' loaded dynamically\n", pipename);
 
 	/*
 	 * Scan the list again for the interface id
 	 */
 	if (rpc_srv_get_pipe_interface_by_cli_name(pipename, syntax)) {
-		return true;
+		return NT_STATUS_OK;
 	}
 
-	DEBUG(10, ("is_known_pipename: pipe %s did not register itself!\n",
-		   pipename));
+	DBG_DEBUG("pipe %s did not register itself!\n", pipename);
 
-	return false;
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
 
 /*******************************************************************
