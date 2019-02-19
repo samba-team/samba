@@ -5006,9 +5006,8 @@ bool torture_rpc_lsa(struct torture_context *tctx)
 	enum dcerpc_transport_t transport;
 
 	status = torture_rpc_connection(tctx, &p, &ndr_table_lsarpc);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
+
 	b = p->binding_handle;
 	transport = dcerpc_binding_get_transport(p->binding);
 
@@ -5099,9 +5098,8 @@ bool torture_rpc_lsa_get_user(struct torture_context *tctx)
 	enum dcerpc_transport_t transport;
 
 	status = torture_rpc_connection(tctx, &p, &ndr_table_lsarpc);
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Error connecting to server");
+
 	b = p->binding_handle;
 	transport = dcerpc_binding_get_transport(p->binding);
 
