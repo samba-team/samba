@@ -3817,7 +3817,7 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 
 	if (ares->type != LDB_REPLY_DONE) {
 		ldb_set_errstring(ldb,
-				  "invalid ldb_reply_type in callback");
+			"invalid reply type in repl_meta_data rename callback");
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);

@@ -971,7 +971,7 @@ static int la_mod_del_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	if (ares->type != LDB_REPLY_DONE) {
 		ldb_set_errstring(ldb,
-				  "invalid ldb_reply_type in callback");
+		     "invalid reply type in linked attributes delete callback");
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
@@ -1017,7 +1017,7 @@ static int la_add_callback(struct ldb_request *req, struct ldb_reply *ares)
 
 	if (ares->type != LDB_REPLY_DONE) {
 		ldb_set_errstring(ldb,
-				  "invalid ldb_reply_type in callback");
+			"invalid reply type in linked attributes add callback");
 		talloc_free(ares);
 		return ldb_module_done(ac->req, NULL, NULL,
 					LDB_ERR_OPERATIONS_ERROR);
