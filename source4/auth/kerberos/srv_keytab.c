@@ -306,7 +306,7 @@ krb5_error_code smb_krb5_update_keytab(TALLOC_CTX *parent_ctx,
 
 	if (!delete_all_kvno) {
 		/* Create a new keytab.  If during the cleanout we found
-		 * entires for kvno -1, then don't try and duplicate them.
+		 * entries for kvno -1, then don't try and duplicate them.
 		 * Otherwise, add kvno, and kvno -1 */
 		if (saltPrincipal == NULL) {
 			*perror_string = talloc_strdup(parent_ctx,
