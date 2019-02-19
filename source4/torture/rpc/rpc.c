@@ -76,8 +76,9 @@ _PUBLIC_ NTSTATUS torture_rpc_connection(struct torture_context *tctx,
 	struct dcerpc_binding *binding;
 
 	status = torture_rpc_binding(tctx, &binding);
-	if (NT_STATUS_IS_ERR(status))
+	if (NT_STATUS_IS_ERR(status)) {
 		return status;
+	}
 
 	return torture_rpc_connection_with_binding(tctx, binding, p, table);
 }
