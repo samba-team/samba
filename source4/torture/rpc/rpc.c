@@ -57,8 +57,9 @@ NTSTATUS torture_rpc_binding(struct torture_context *tctx,
 
 	status = dcerpc_parse_binding(tctx, binding_string, binding);
 	if (NT_STATUS_IS_ERR(status)) {
-		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", 
-			 binding_string));
+		torture_comment(tctx,
+				"Failed to parse dcerpc binding '%s'\n",
+				binding_string);
 		return status;
 	}
 
