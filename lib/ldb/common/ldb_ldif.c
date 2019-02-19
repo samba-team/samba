@@ -364,6 +364,10 @@ static int ldb_ldif_write_trace(struct ldb_context *ldb,
 				copy_raw_bytes = true;
 			} else if (a->flags & LDB_ATTR_FLAG_FORCE_BASE64_LDIF) {
 				use_b64_encode = true;
+			} else if (msg->elements[i].flags &
+			           LDB_FLAG_FORCE_NO_BASE64_LDIF) {
+				use_b64_encode = false;
+				copy_raw_bytes = true;
 			} else {
 				use_b64_encode = ldb_should_b64_encode(ldb, &v);
 			}

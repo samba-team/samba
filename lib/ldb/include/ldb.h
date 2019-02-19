@@ -140,6 +140,12 @@ struct ldb_dn;
 #define LDB_FLAG_MOD_DELETE  3
 
 /**
+   Flag value used in ldb_ldif_write_trace() to enforce binary encoded
+   attribute values per attribute.
+*/
+#define LDB_FLAG_FORCE_NO_BASE64_LDIF 4
+
+/**
     flag bits on an element usable only by the internal implementation
 */
 #define LDB_FLAG_INTERNAL_MASK 0xFFFFFFF0
