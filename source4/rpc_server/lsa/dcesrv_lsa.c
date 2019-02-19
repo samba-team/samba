@@ -27,13 +27,16 @@
 #include "auth/kerberos/kerberos.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
-#include "../lib/crypto/crypto.h"
 #include "lib/util/tsort.h"
 #include "dsdb/common/util.h"
 #include "libcli/security/session.h"
 #include "libcli/lsarpc/util_lsarpc.h"
 #include "lib/messaging/irpc.h"
 #include "libds/common/roles.h"
+
+#include "lib/crypto/gnutls_helpers.h"
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #define DCESRV_INTERFACE_LSARPC_BIND(context, iface) \
        dcesrv_interface_lsarpc_bind(context, iface)
@@ -863,13 +866,38 @@ static NTSTATUS get_trustdom_auth_blob(struct dcesrv_call_state *dce_call,
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	enum ndr_err_code ndr_err;
 	NTSTATUS nt_status;
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t _session_key;
+	int rc;
 
 	nt_status = dcesrv_transport_session_key(dce_call, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
 
-	arcfour_crypt_blob(auth_blob->data, auth_blob->length, &session_key);
+	_session_key = (gnutls_datum_t) {
+		.data = session_key.data,
+		.size = session_key.length,
+	};
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&_session_key,
+				NULL);
+	if (rc < 0) {
+		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto out;
+	}
+
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   auth_blob->data,
+				   auth_blob->length);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto out;
+	}
+
 	ndr_err = ndr_pull_struct_blob(auth_blob, mem_ctx,
 				       auth_struct,
 				       (ndr_pull_flags_fn_t)ndr_pull_trustDomainPasswords);
@@ -877,7 +905,9 @@ static NTSTATUS get_trustdom_auth_blob(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	return NT_STATUS_OK;
+	nt_status = NT_STATUS_OK;
+out:
+	return nt_status;
 }
 
 static NTSTATUS get_trustauth_inout_blob(struct dcesrv_call_state *dce_call,
