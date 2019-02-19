@@ -1016,6 +1016,12 @@ planoldpythontestsuite("%s:local" % env, "samba_tool_drs",
                        name="samba4.drs.samba_tool_drs.python(%s)" % env,
                        environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
                        extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+planoldpythontestsuite(env, "getnc_schema",
+                       extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
+                       name="samba4.drs.getnc_schema.python(%s)" % env,
+                       environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER',
+                                "PLEASE_BREAK_MY_WINDOWS": "1"},
+                       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
 for env in ['vampire_dc', 'promoted_dc']:
     planoldpythontestsuite("%s:local" % env, "samba_tool_drs",

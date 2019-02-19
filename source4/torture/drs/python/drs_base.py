@@ -56,11 +56,11 @@ class DrsBaseTestCase(SambaToolCmdTest):
         creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
         # connect to DCs
-        url_dc = samba.tests.env_get_var_value("DC1")
-        (self.ldb_dc1, self.info_dc1) = samba.tests.connect_samdb_ex(url_dc,
+        self.url_dc1 = samba.tests.env_get_var_value("DC1")
+        (self.ldb_dc1, self.info_dc1) = samba.tests.connect_samdb_ex(self.url_dc1,
                                                                      ldap_only=True)
-        url_dc = samba.tests.env_get_var_value("DC2")
-        (self.ldb_dc2, self.info_dc2) = samba.tests.connect_samdb_ex(url_dc,
+        self.url_dc2 = samba.tests.env_get_var_value("DC2")
+        (self.ldb_dc2, self.info_dc2) = samba.tests.connect_samdb_ex(self.url_dc2,
                                                                      ldap_only=True)
         self.test_ldb_dc = self.ldb_dc1
 
@@ -114,11 +114,15 @@ class DrsBaseTestCase(SambaToolCmdTest):
     def _samba_tool_cmd_list(self, drs_command):
         # make command line credentials string
 
-        ccache_name = self.get_creds_ccache_name()
+        # If test runs on windows then it can provide its own auth string
+        if hasattr(self, 'cmdline_auth'):
+            cmdline_auth = self.cmdline_auth
+        else:
+            ccache_name = self.get_creds_ccache_name()
 
-        # Tunnel the command line credentials down to the
-        # subcommand to avoid a new kinit
-        cmdline_auth = "--krb5-ccache=%s" % ccache_name
+            # Tunnel the command line credentials down to the
+            # subcommand to avoid a new kinit
+            cmdline_auth = "--krb5-ccache=%s" % ccache_name
 
         # bin/samba-tool drs <drs_command> <cmdline_auth>
         return ["drs", drs_command, cmdline_auth]
