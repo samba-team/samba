@@ -446,6 +446,22 @@ sub get_interface($)
     return $interfaces{$netbiosname};
 }
 
+sub get_ipv4_addr
+{
+	(my $hostname) = @_;
+	my $swiface = Samba::get_interface($hostname);
+
+	return "127.0.0.$swiface";
+}
+
+sub get_ipv6_addr
+{
+	(my $hostname) = @_;
+	my $swiface = Samba::get_interface($hostname);
+
+	return sprintf("fd00:0000:0000:0000:0000:0000:5357:5f%02x", $swiface);
+}
+
 sub cleanup_child($$)
 {
     my ($pid, $name) = @_;

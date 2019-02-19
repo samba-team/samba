@@ -1459,8 +1459,8 @@ sub provision($$$$$$$$$)
 	my $swiface = Samba::get_interface($server);
 	my %ret = ();
 	my %createuser_env = ();
-	my $server_ip = "127.0.0.$swiface";
-	my $server_ipv6 = sprintf("fd00:0000:0000:0000:0000:0000:5357:5f%02x", $swiface);
+	my $server_ip = Samba::get_ipv4_addr($server);
+	my $server_ipv6 = Samba::get_ipv6_addr($server);
 
 	my $unix_name = ($ENV{USER} or $ENV{LOGNAME} or `PATH=/usr/ucb:$ENV{PATH} whoami`);
 	chomp $unix_name;

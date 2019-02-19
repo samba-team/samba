@@ -394,8 +394,8 @@ sub setup_dns_hub_internal($$$)
 	$env->{hostname} = $hostname;
 	$env->{swiface} = $swiface;
 
-	$env->{ipv4} = "127.0.0.$swiface";
-	$env->{ipv6} = sprintf("fd00:0000:0000:0000:0000:0000:5357:5f%02x", $swiface);
+	$env->{ipv4} = Samba::get_ipv4_addr($hostname);
+	$env->{ipv6} = Samba::get_ipv6_addr($hostname);
 
 	$env->{DNS_HUB_LOG} = "$prefix_abs/dns_hub.log";
 
@@ -673,8 +673,8 @@ sub provision_raw_prepare($$$$$$$$$$$$)
 
 	$ctx->{tlsdir} = "$ctx->{privatedir}/tls";
 
-	$ctx->{ipv4} = "127.0.0.$swiface";
-	$ctx->{ipv6} = sprintf("fd00:0000:0000:0000:0000:0000:5357:5f%02x", $swiface);
+	$ctx->{ipv4} = Samba::get_ipv4_addr($hostname);
+	$ctx->{ipv6} = Samba::get_ipv6_addr($hostname);
 	$ctx->{interfaces} = "$ctx->{ipv4}/8 $ctx->{ipv6}/64";
 
 	push(@{$ctx->{directories}}, $ctx->{privatedir});
@@ -1722,14 +1722,14 @@ sub provision_fl2000dc($$)
 sub provision_fl2003dc($$$)
 {
 	my ($self, $prefix, $dcvars) = @_;
-	my $swiface1 = Samba::get_interface("fakednsforwarder1");
-	my $swiface2 = Samba::get_interface("fakednsforwarder2");
+	my $ip_addr1 = Samba::get_ipv4_addr("fakednsforwarder1");
+	my $ip_addr2 = Samba::get_ipv4_addr("fakednsforwarder2");
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2003...\n";
 	my $extra_conf_options = "allow dns updates = nonsecure and secure
 	dcesrv:header signing = no
 	dcesrv:max auth states = 0
-	dns forwarder = 127.0.0.$swiface1 127.0.0.$swiface2";
+	dns forwarder = $ip_addr1 $ip_addr2";
 	my $extra_provision_options = ["--use-ntvfs"];
 	my $ret = $self->provision($prefix,
 				   "domain controller",
@@ -1747,8 +1747,8 @@ sub provision_fl2003dc($$$)
 		return undef;
 	}
 
-	$ret->{DNS_FORWARDER1} = "127.0.0.$swiface1";
-	$ret->{DNS_FORWARDER2} = "127.0.0.$swiface2";
+	$ret->{DNS_FORWARDER1} = $ip_addr1;
+	$ret->{DNS_FORWARDER2} = $ip_addr2;
 
 	my @samba_tool_options;
 	push (@samba_tool_options, Samba::bindir_path($self, "samba-tool"));
