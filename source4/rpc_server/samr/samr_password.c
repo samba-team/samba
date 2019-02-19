@@ -24,7 +24,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/samr/dcesrv_samr.h"
 #include "system/time.h"
-#include "../lib/crypto/crypto.h"
+#include "lib/crypto/md4.h"
 #include "dsdb/samdb/samdb.h"
 #include "auth/auth.h"
 #include "libcli/auth/libcli_auth.h"
@@ -119,13 +119,15 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 				       "samAccountName",
 				       NULL };
 	struct samr_Password *lm_pwd;
-	DATA_BLOB lm_pwd_blob;
 	uint8_t new_lm_hash[16];
 	struct samr_Password lm_verifier;
 	size_t unicode_pw_len;
 	size_t converted_size = 0;
 	const char *user_samAccountName = NULL;
 	struct dom_sid *user_objectSid = NULL;
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t lm_session_key;
+	int rc;
 
 	if (pwbuf == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -179,9 +181,28 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	}
 
 	/* decrypt the password we have been given */
-	lm_pwd_blob = data_blob(lm_pwd->hash, sizeof(lm_pwd->hash));
-	arcfour_crypt_blob(pwbuf->data, 516, &lm_pwd_blob);
-	data_blob_free(&lm_pwd_blob);
+	lm_session_key = (gnutls_datum_t) {
+		.data = lm_pwd->hash,
+		.size = sizeof(lm_pwd->hash),
+	};
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&lm_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto failed;
+	}
+
+	rc = gnutls_cipher_decrypt(cipher_hnd,
+				   pwbuf->data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto failed;
+	}
 
 	if (!extract_pw_from_buffer(mem_ctx, pwbuf->data, &new_password)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
@@ -315,7 +336,6 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 				       "badPwdCount", "badPasswordTime",
 				       "objectSid", NULL };
 	struct samr_Password *nt_pwd, *lm_pwd;
-	DATA_BLOB nt_pwd_blob;
 	struct samr_DomInfo1 *dominfo = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
 	enum samPwdChangeReason reason = SAM_PWD_CHANGE_NO_ERROR;
@@ -325,6 +345,9 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	struct dom_sid *user_objectSid = NULL;
 	enum ntlm_auth_level ntlm_auth_level
 		= lpcfg_ntlm_auth(dce_call->conn->dce_ctx->lp_ctx);
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t nt_session_key;
+	int rc;
 
 	*r->out.dominfo = NULL;
 	*r->out.reject = NULL;
@@ -381,9 +404,28 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	}
 
 	/* decrypt the password we have been given */
-	nt_pwd_blob = data_blob(nt_pwd->hash, sizeof(nt_pwd->hash));
-	arcfour_crypt_blob(r->in.nt_password->data, 516, &nt_pwd_blob);
-	data_blob_free(&nt_pwd_blob);
+	nt_session_key = (gnutls_datum_t) {
+		.data = nt_pwd->hash,
+		.size = sizeof(nt_pwd->hash),
+	};
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&nt_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto failed;
+	}
+
+	rc = gnutls_cipher_decrypt(cipher_hnd,
+				   r->in.nt_password->data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto failed;
+	}
 
 	if (!extract_pw_from_buffer(mem_ctx, r->in.nt_password->data, &new_password)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
@@ -547,6 +589,9 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 	NTSTATUS nt_status;
 	DATA_BLOB new_password;
 	DATA_BLOB session_key = data_blob(NULL, 0);
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t _session_key;
+	int rc;
 
 	nt_status = dcesrv_transport_session_key(dce_call, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -556,7 +601,28 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	arcfour_crypt_blob(pwbuf->data, 516, &session_key);
+	_session_key = (gnutls_datum_t) {
+		.data = session_key.data,
+		.size = session_key.length,
+	};
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&_session_key,
+				NULL);
+	if (rc < 0) {
+		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto out;
+	}
+
+	rc = gnutls_cipher_decrypt(cipher_hnd,
+				   pwbuf->data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto out;
+	}
 
 	if (!extract_pw_from_buffer(mem_ctx, pwbuf->data, &new_password)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
@@ -565,12 +631,19 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 
 	/* set the password - samdb needs to know both the domain and user DNs,
 	   so the domain password policy can be used */
-	return samdb_set_password(sam_ctx, mem_ctx,
-				  account_dn, domain_dn,
-				  &new_password,
-				  NULL, NULL,
-				  NULL, NULL, /* This is a password set, not change */
-				  NULL, NULL);
+	nt_status = samdb_set_password(sam_ctx,
+				       mem_ctx,
+				       account_dn,
+				       domain_dn,
+				       &new_password,
+				       NULL,
+				       NULL,
+				       NULL,
+				       NULL, /* This is a password set, not change */
+				       NULL,
+				       NULL);
+out:
+	return nt_status;
 }
 
 
