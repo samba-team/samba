@@ -943,6 +943,12 @@ def build(bld):
                              LIBASYNC_REQ samba-util sys_rw''',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
+    bld.SAMBA_BINARY('ctdb_io_test',
+                     source='tests/src/ctdb_io_test.c',
+                     deps='''talloc tevent tdb samba-util sys_rw''',
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
+
+
     bld.SAMBA_SUBSYSTEM('ctdb-protocol-tests-basic',
                         source=bld.SUBDIR('tests/src',
                                           'protocol_common_basic.c'),
