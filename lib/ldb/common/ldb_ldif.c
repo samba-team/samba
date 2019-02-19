@@ -352,6 +352,7 @@ static int ldb_ldif_write_trace(struct ldb_context *ldb,
 		for (j=0;j<msg->elements[i].num_values;j++) {
 			struct ldb_val v;
 			bool use_b64_encode = false;
+			bool copy_raw_bytes = false;
 
 			ret = a->syntax->ldif_write_fn(ldb, mem_ctx, &msg->elements[i].values[j], &v);
 			if (ret != LDB_SUCCESS) {
@@ -360,6 +361,7 @@ static int ldb_ldif_write_trace(struct ldb_context *ldb,
 
 			if (ldb->flags & LDB_FLG_SHOW_BINARY) {
 				use_b64_encode = false;
+				copy_raw_bytes = true;
 			} else if (a->flags & LDB_ATTR_FLAG_FORCE_BASE64_LDIF) {
 				use_b64_encode = true;
 			} else {
@@ -379,7 +381,7 @@ static int ldb_ldif_write_trace(struct ldb_context *ldb,
 			} else {
 				ret = fprintf_fn(private_data, "%s: ", msg->elements[i].name);
 				CHECK_RET;
-				if (ldb->flags & LDB_FLG_SHOW_BINARY) {
+				if (copy_raw_bytes) {
 					ret = fprintf_fn(private_data, "%*.*s",
 							 v.length, v.length, (char *)v.data);
 				} else {
