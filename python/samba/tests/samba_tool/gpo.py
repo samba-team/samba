@@ -19,6 +19,7 @@
 #
 
 import os
+import ldb
 import samba
 from samba.tests.samba_tool.base import SambaToolCmdTest
 import shutil
@@ -112,6 +113,39 @@ class GpoCmdTestCase(SambaToolCmdTest):
         """Check all the GPOs on the remote server have correct ACLs"""
         (result, out, err) = self.runsubcmd("gpo", "aclcheck", "-H", "ldap://%s" % os.environ["SERVER"], "-U%s%%%s" % (os.environ["USERNAME"], os.environ["PASSWORD"]))
         self.assertCmdSuccess(result, out, err, "Ensuring gpo checked successfully")
+
+    def test_getlink_empty(self):
+        self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                   "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                 os.environ["DC_PASSWORD"]))
+
+        container_dn = 'OU=gpo_test_link,%s' % self.samdb.get_default_basedn()
+
+        self.samdb.add({
+            'dn': container_dn,
+            'objectClass': 'organizationalUnit'
+        })
+
+        (result, out, err) = self.runsubcmd("gpo", "getlink", container_dn,
+                                            "-H", "ldap://%s" % os.environ["SERVER"],
+                                            "-U%s%%%s" % (os.environ["USERNAME"],
+                                                          os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Ensuring gpo link fetched successfully")
+
+        # Microsoft appears to allow an empty space character after deletion of
+        # a GPO. We should be able to handle this.
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.samdb, container_dn)
+        m['gPLink'] = ldb.MessageElement(' ', ldb.FLAG_MOD_REPLACE, 'gPLink')
+        self.samdb.modify(m)
+
+        (result, out, err) = self.runsubcmd("gpo", "getlink", container_dn,
+                                            "-H", "ldap://%s" % os.environ["SERVER"],
+                                            "-U%s%%%s" % (os.environ["USERNAME"],
+                                                          os.environ["PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Ensuring gpo link fetched successfully")
+
+        self.samdb.delete(container_dn)
 
     def test_backup_restore_compare_binary(self):
         """Restore from a static backup and compare the binary contents"""
