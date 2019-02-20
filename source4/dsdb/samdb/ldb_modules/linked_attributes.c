@@ -700,13 +700,15 @@ static int linked_attributes_fix_link_slow(struct ldb_module *module,
 					   struct ldb_message *msg,
 					   struct ldb_dn *new_dn,
 					   struct GUID self_guid,
-					   const char *syntax_oid)
+					   const char *syntax_oid,
+					   const char *reverse_syntax_oid)
 {
 	int ret;
 	unsigned int i;
 	struct GUID link_guid;
 	struct ldb_message_element *el = &msg->elements[0];
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	bool has_unique_value = strcmp(reverse_syntax_oid, LDB_SYNTAX_DN) == 0;
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
 	if (tmp_ctx == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -720,7 +722,12 @@ static int linked_attributes_fix_link_slow(struct ldb_module *module,
 	 * DN+Binary link.
 	 *
 	 * This is used for unsorted links, which is to say back links and
-	 * forward links on old databases.
+	 * forward links on old databases. It necessarily involves a linear
+	 * search, though when the link is a plain DN link, we can skip
+	 * checking as soon as we find it.
+	 *
+	 * NOTE: if there are duplicate links, the extra ones will end up as
+	 * dangling links to the old DN. This may or may not be better.
 	 */
 	for (i = 0; i < el->num_values; i++) {
 		struct dsdb_dn *dsdb_dn = dsdb_dn_parse(msg,
@@ -758,6 +765,9 @@ static int linked_attributes_fix_link_slow(struct ldb_module *module,
 
 		el->values[i] = data_blob_string_const(
 			dsdb_dn_get_extended_linearized(el->values, dsdb_dn, 1));
+		if (has_unique_value) {
+			break;
+		}
 	}
 
 	talloc_free(tmp_ctx);
@@ -1075,7 +1085,8 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 				msg,
 				new_dn,
 				self_guid,
-				target->syntax->ldap_oid);
+				target->syntax->ldap_oid,
+				schema_attr->syntax->ldap_oid);
 		} else {
 			/* we can binary search to find forward links */
 			ret = linked_attributes_fix_forward_link(
