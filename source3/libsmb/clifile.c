@@ -5348,7 +5348,7 @@ struct tevent_req *cli_posix_mkdir_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->cli = cli;
 
-	wire_flags = open_flags_to_wire(O_CREAT) | SMB_O_DIRECTORY;
+	wire_flags = SMB_O_CREAT | SMB_O_DIRECTORY;
 
 	subreq = cli_posix_open_internal_send(
 		mem_ctx, ev, cli, fname, wire_flags, mode);
