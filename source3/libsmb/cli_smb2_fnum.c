@@ -158,6 +158,7 @@ static uint8_t flags_to_smb2_oplock(uint32_t create_flags)
 
 struct cli_smb2_create_fnum_state {
 	struct cli_state *cli;
+	struct smb2_create_blobs cblobs;
 	struct smb_create_returns cr;
 	uint16_t fnum;
 	struct tevent_req *subreq;
@@ -185,7 +186,6 @@ struct tevent_req *cli_smb2_create_fnum_send(
 	const char *startp = NULL;
 	const char *endp = NULL;
 	time_t tstamp = (time_t)0;
-	struct smb2_create_blobs *cblobs = NULL;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_smb2_create_fnum_state);
@@ -227,13 +227,11 @@ struct tevent_req *cli_smb2_create_fnum_send(
 		unix_to_nt_time(&ntt, tstamp);
 		twrp_blob = data_blob_const((const void *)&ntt, 8);
 
-		cblobs = talloc_zero(state, struct smb2_create_blobs);
-		if (tevent_req_nomem(cblobs, req)) {
-			return tevent_req_post(req, ev);
-		}
-
-		status = smb2_create_blob_add(state, cblobs,
-				SMB2_CREATE_TAG_TWRP, twrp_blob);
+		status = smb2_create_blob_add(
+			state,
+			&state->cblobs,
+			SMB2_CREATE_TAG_TWRP,
+			twrp_blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
@@ -270,7 +268,7 @@ struct tevent_req *cli_smb2_create_fnum_send(
 				     share_access,
 				     create_disposition,
 				     create_options,
-				     cblobs);
+				     &state->cblobs);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
