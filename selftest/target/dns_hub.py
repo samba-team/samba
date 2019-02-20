@@ -80,8 +80,7 @@ class DnsHandler(sserver.BaseRequestHandler):
 
         for realm in testenv_realms:
             if lookup_name.endswith(realm):
-                iface = testenv_iface_mapping[realm]
-                return '127.0.0.' + str(iface)
+                return testenv_iface_mapping[realm]
 
         return None
 

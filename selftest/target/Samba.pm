@@ -387,30 +387,30 @@ sub mk_mitkdc_conf($$)
 
 sub realm_to_ip_mappings
 {
-	# this maps the SOCKET_WRAPPER_DEFAULT_IFACE value (which is the
-	# last byte of the IP address) for the various testenv PDCs to the
-	# corresponding DNS realm.
-	# This should always match the values in get_interface()
-	my %testenv_iface_mapping = (
-		'adnonssdom.samba.example.com'    => 17,    # addc_no_nss
-		'adnontlmdom.samba.example.com'   => 18,    # addc_no_ntlm
-		'samba2000.example.com'           => 25,    # dc5
-		'samba2003.example.com'           => 26,    # dc6
-		'samba2008r2.example.com'         => 27,    # dc7
-		'addom.samba.example.com'         => 30,    # addc
-		'sub.samba.example.com'           => 31,    # localsubdc
-		'chgdcpassword.samba.example.com' => 32,    # chgdcpass
-		'backupdom.samba.example.com'     => 40,    # backupfromdc
-		'renamedom.samba.example.com'     => 42,    # renamedc
-		'labdom.samba.example.com'        => 43,    # labdc
-		'samba.example.com'               => 21,    # localdc
+	# this maps the DNS realms for the various testenvs to the corresponding
+	# PDC (i.e. the first DC created for that realm).
+	my %realm_to_pdc_mapping = (
+		'adnonssdom.samba.example.com'    => 'addc_no_nss',
+		'adnontlmdom.samba.example.com'   => 'addc_no_ntlm',
+		'samba2000.example.com'           => 'dc5',
+		'samba2003.example.com'           => 'dc6',
+		'samba2008r2.example.com'         => 'dc7',
+		'addom.samba.example.com'         => 'addc',
+		'sub.samba.example.com'           => 'localsubdc',
+		'chgdcpassword.samba.example.com' => 'chgdcpass',
+		'backupdom.samba.example.com'     => 'backupfromdc',
+		'renamedom.samba.example.com'     => 'renamedc',
+		'labdom.samba.example.com'        => 'labdc',
+		'samba.example.com'               => 'localdc',
 	);
 
 	my @mapping = ();
 
-	# convert the hashmap to a list of key=value strings
-	while (my ($key, $val) = each(%testenv_iface_mapping)) {
-		push(@mapping, "$key=$val");
+	# convert the hashmap to a list of key=value strings, where key is the
+	# realm and value is the IP address
+	while (my ($realm, $pdc) = each(%realm_to_pdc_mapping)) {
+		my $ipaddr = get_ipv4_addr($pdc);
+		push(@mapping, "$realm=$ipaddr");
 	}
 	# return the mapping as a single comma-separated string
 	return join(',', @mapping);
