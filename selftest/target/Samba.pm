@@ -385,6 +385,37 @@ sub mk_mitkdc_conf($$)
 	close(KDCCONF);
 }
 
+sub realm_to_ip_mappings
+{
+	# this maps the SOCKET_WRAPPER_DEFAULT_IFACE value (which is the
+	# last byte of the IP address) for the various testenv PDCs to the
+	# corresponding DNS realm.
+	# This should always match the values in get_interface()
+	my %testenv_iface_mapping = (
+		'adnonssdom.samba.example.com'    => 17,    # addc_no_nss
+		'adnontlmdom.samba.example.com'   => 18,    # addc_no_ntlm
+		'samba2000.example.com'           => 25,    # dc5
+		'samba2003.example.com'           => 26,    # dc6
+		'samba2008r2.example.com'         => 27,    # dc7
+		'addom.samba.example.com'         => 30,    # addc
+		'sub.samba.example.com'           => 31,    # localsubdc
+		'chgdcpassword.samba.example.com' => 32,    # chgdcpass
+		'backupdom.samba.example.com'     => 40,    # backupfromdc
+		'renamedom.samba.example.com'     => 42,    # renamedc
+		'labdom.samba.example.com'        => 43,    # labdc
+		'samba.example.com'               => 21,    # localdc
+	);
+
+	my @mapping = ();
+
+	# convert the hashmap to a list of key=value strings
+	while (my ($key, $val) = each(%testenv_iface_mapping)) {
+		push(@mapping, "$key=$val");
+	}
+	# return the mapping as a single comma-separated string
+	return join(',', @mapping);
+}
+
 sub get_interface($)
 {
 	my ($netbiosname) = @_;
@@ -394,7 +425,8 @@ sub get_interface($)
 	# testenv to the DC's NETBIOS name. This value also corresponds to last
 	# digit of the DC's IP address. Note that the NETBIOS name may differ from
 	# the testenv name.
-	# Note that when adding a DC with a new realm, also update dns_hub.py.
+	# Note that when adding a DC with a new realm, also update
+	# get_realm_ip_mappings() above.
 	my %testenv_iface_mapping = (
 		localnt4dc2       => 3,
 		localnt4member3   => 4,

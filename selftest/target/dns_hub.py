@@ -72,24 +72,7 @@ class DnsHandler(sserver.BaseRequestHandler):
     def get_pdc_ipv4_addr(self, lookup_name):
         """Maps a DNS realm to the IPv4 address of the PDC for that testenv"""
 
-        # this maps the SOCKET_WRAPPER_DEFAULT_IFACE value (which is the
-        # last byte of the IP address) for the various testenv PDCs to the
-        # corresponding DNS realm.
-        # This should always match %testenv_iface_mapping in Samba.pm.
-        testenv_iface_mapping = {
-            'adnonssdom.samba.example.com': 17,     # addc_no_nss
-            'adnontlmdom.samba.example.com': 18,    # addc_no_ntlm
-            'samba2000.example.com': 25,            # dc5
-            'samba2003.example.com': 26,            # dc6
-            'samba2008r2.example.com': 27,          # dc7
-            'addom.samba.example.com': 30,          # addc
-            'sub.samba.example.com': 31,            # localsubdc
-            'chgdcpassword.samba.example.com': 32,  # chgdcpass
-            'backupdom.samba.example.com': 40,      # backupfromdc
-            'renamedom.samba.example.com': 42,      # renamedc
-            'labdom.samba.example.com': 43,         # labdc
-            'samba.example.com': 21,                # localdc
-        }
+        testenv_iface_mapping = self.server.realm_to_ip_mappings
 
         # sort the realms so we find the longest-match first
         testenv_realms = sorted(testenv_iface_mapping.keys(), key=len)
@@ -183,7 +166,14 @@ def main():
     timeout = int(sys.argv[1]) * 1000
     timeout = min(timeout, 2**31 - 1)  # poll with 32-bit int can't take more
     host = sys.argv[2]
+
     server = sserver.UDPServer((host, int(53)), DnsHandler)
+
+    # we pass in the realm-to-IP mappings as a comma-separated key=value
+    # string. Convert this back into a dictionary that the DnsHandler can use
+    realm_mapping = dict(kv.split('=') for kv in sys.argv[3].split(','))
+    server.realm_to_ip_mappings = realm_mapping
+
     t = server_thread(server)
     t.start()
     p = select.poll()

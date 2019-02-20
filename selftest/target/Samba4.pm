@@ -435,6 +435,7 @@ sub setup_dns_hub_internal($$$)
 		$ENV{MAKE_TEST_BINARY} = "$self->{srcdir}/selftest/target/dns_hub.py";
 		push (@args, "$self->{server_maxtime}");
 		push (@args, "$env->{ipv4}");
+		push (@args, Samba::realm_to_ip_mappings());
 		close($env->{STDIN_PIPE});
 		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
