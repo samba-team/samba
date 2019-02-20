@@ -72,15 +72,16 @@ class DnsHandler(sserver.BaseRequestHandler):
     def get_pdc_ipv4_addr(self, lookup_name):
         """Maps a DNS realm to the IPv4 address of the PDC for that testenv"""
 
-        testenv_iface_mapping = self.server.realm_to_ip_mappings
+        realm_to_ip_mappings = self.server.realm_to_ip_mappings
 
         # sort the realms so we find the longest-match first
-        testenv_realms = sorted(testenv_iface_mapping.keys(), key=len)
+        testenv_realms = sorted(realm_to_ip_mappings.keys(), key=len)
         testenv_realms.reverse()
 
         for realm in testenv_realms:
             if lookup_name.endswith(realm):
-                return testenv_iface_mapping[realm]
+                # return the corresponding IP address for this realm's PDC
+                return realm_to_ip_mappings[realm]
 
         return None
 
