@@ -26,9 +26,11 @@
 #include "torture/util.h"
 #include "libcli/rap/rap.h"
 #include "torture/rap/proto.h"
-#include "../lib/crypto/crypto.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "torture/rpc/torture_rpc.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #define TEST_RAP_USER "torture_rap_user"
 
@@ -137,6 +139,11 @@ static bool test_oemchangepassword_args(struct torture_context *tctx,
 	char *newpass = samr_rand_pass(tctx, 9);
 	uint8_t old_pw_hash[16];
 	uint8_t new_pw_hash[16];
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t pw_key = {
+		.data = old_pw_hash,
+		.size = sizeof(old_pw_hash),
+	};
 
 	r.in.UserName = username;
 
@@ -144,7 +151,15 @@ static bool test_oemchangepassword_args(struct torture_context *tctx,
 	E_deshash(newpass, new_pw_hash);
 
 	encode_pw_buffer(r.in.crypt_password, newpass, STR_ASCII);
-	arcfour_crypt(r.in.crypt_password, old_pw_hash, 516);
+
+	gnutls_cipher_init(&cipher_hnd,
+			   GNUTLS_CIPHER_ARCFOUR_128,
+			   &pw_key,
+			   NULL);
+	gnutls_cipher_encrypt(cipher_hnd,
+			      r.in.crypt_password,
+			      516);
+	gnutls_cipher_deinit(cipher_hnd);
 	E_old_pw_hash(new_pw_hash, old_pw_hash, r.in.password_hash);
 
 	torture_comment(tctx, "Testing rap_NetOEMChangePassword(%s)\n", r.in.UserName);
