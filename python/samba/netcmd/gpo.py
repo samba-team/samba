@@ -93,6 +93,10 @@ def gplink_options_string(value):
 def parse_gplink(gplink):
     '''parse a gPLink into an array of dn and options'''
     ret = []
+
+    if gplink.strip() == '':
+        return ret
+
     a = gplink.split(']')
     for g in a:
         if not g:
@@ -656,7 +660,7 @@ class cmd_getlink(GPOCommand):
         except Exception:
             raise CommandError("Container '%s' does not exist" % container_dn)
 
-        if msg['gPLink']:
+        if 'gPLink' in msg and msg['gPLink']:
             self.outf.write("GPO(s) linked to DN %s\n" % container_dn)
             gplist = parse_gplink(str(msg['gPLink'][0]))
             for g in gplist:
