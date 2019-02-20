@@ -171,7 +171,9 @@ def get_gpo_info(samdb, gpo=None, displayname=None, dn=None,
                                   'flags',
                                   'name',
                                   'displayName',
-                                  'gPCFileSysPath'],
+                                  'gPCFileSysPath',
+                                  'gPCMachineExtensionNames',
+                                  'gPCUserExtensionNames'],
                            controls=['sd_flags:1:%d' % sd_flags])
     except Exception as e:
         if gpo is not None:
@@ -1076,6 +1078,12 @@ class cmd_backup(GPOCommand):
                 self.outf.write('\nEntities:\n')
                 self.outf.write(ents)
 
+        # Backup the enabled GPO extension names
+        for ext in ('gPCMachineExtensionNames', 'gPCUserExtensionNames'):
+            if ext in msg:
+                with open(os.path.join(gpodir, ext + '.SAMBAEXT'), 'wb') as f:
+                    f.write(msg[ext][0])
+
     @staticmethod
     def generalize_xml_entities(outf, sourcedir, targetdir):
         entities = {}
@@ -1401,6 +1409,22 @@ class cmd_restore(cmd_create):
             copy_directory_local_to_remote(self.conn, self.gpodir,
                                            self.sharepath,
                                            ignore_existing=True)
+
+            gpo_dn = get_gpo_dn(self.samdb, self.gpo_name)
+
+            # Restore the enabled extensions
+            for ext in ('gPCMachineExtensionNames', 'gPCUserExtensionNames'):
+                ext_file = os.path.join(backup, ext + '.SAMBAEXT')
+                if os.path.exists(ext_file):
+                    with open(ext_file, 'rb') as f:
+                        data = f.read()
+
+                    m = ldb.Message()
+                    m.dn = gpo_dn
+                    m[ext] = ldb.MessageElement(data, ldb.FLAG_MOD_REPLACE,
+                                                ext)
+
+                    self.samdb.modify(m)
 
         except Exception as e:
             import traceback
