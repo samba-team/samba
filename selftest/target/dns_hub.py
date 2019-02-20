@@ -174,6 +174,10 @@ def main():
     realm_mapping = dict(kv.split('=') for kv in sys.argv[3].split(','))
     server.realm_to_ip_mappings = realm_mapping
 
+    print("dns_hub will proxy DNS requests for the following realms:")
+    for realm, ip in server.realm_to_ip_mappings.items():
+        print("  {0} ==> {1}".format(realm, ip))
+
     t = server_thread(server)
     t.start()
     p = select.poll()
