@@ -159,7 +159,8 @@ static void cli_ll_create(fuse_req_t freq, fuse_ino_t parent, const char *name,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 		FILE_CREATE,
-		FILE_NON_DIRECTORY_FILE);
+		FILE_NON_DIRECTORY_FILE,
+		NULL);
 	if (req == NULL) {
 		TALLOC_FREE(state);
 		fuse_reply_err(freq, ENOMEM);
@@ -177,7 +178,7 @@ static void cli_ll_create_done(struct tevent_req *req)
 	uint16_t fnum;
 	NTSTATUS status;
 
-	status = cli_smb2_create_fnum_recv(req, &fnum, NULL);
+	status = cli_smb2_create_fnum_recv(req, &fnum, NULL, NULL, NULL);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		fuse_reply_err(state->freq, map_errno_from_nt_status(status));
@@ -851,7 +852,8 @@ static void cli_ll_open(fuse_req_t freq, fuse_ino_t ino,
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 		FILE_OPEN,
-		FILE_NON_DIRECTORY_FILE);
+		FILE_NON_DIRECTORY_FILE,
+		NULL);
 	if (req == NULL) {
 		TALLOC_FREE(state);
 		fuse_reply_err(freq, ENOMEM);
@@ -867,7 +869,7 @@ static void cli_ll_open_done(struct tevent_req *req)
 	uint16_t fnum;
 	NTSTATUS status;
 
-	status = cli_smb2_create_fnum_recv(req, &fnum, NULL);
+	status = cli_smb2_create_fnum_recv(req, &fnum, NULL, NULL, NULL);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		fuse_reply_err(state->freq, map_errno_from_nt_status(status));

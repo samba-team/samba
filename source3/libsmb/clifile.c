@@ -2125,7 +2125,8 @@ struct tevent_req *cli_ntcreate_send(TALLOC_CTX *mem_ctx,
 			file_attributes,
 			share_access,
 			create_disposition,
-			create_options);
+			create_options,
+			NULL);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
@@ -2171,7 +2172,12 @@ static void cli_ntcreate_done_smb2(struct tevent_req *subreq)
 		req, struct cli_ntcreate_state);
 	NTSTATUS status;
 
-	status = cli_smb2_create_fnum_recv(subreq, &state->fnum, &state->cr);
+	status = cli_smb2_create_fnum_recv(
+		subreq,
+		&state->fnum,
+		&state->cr,
+		NULL,
+		NULL);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;

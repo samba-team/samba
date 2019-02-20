@@ -36,9 +36,14 @@ struct tevent_req *cli_smb2_create_fnum_send(
 	uint32_t file_attributes,
 	uint32_t share_access,
 	uint32_t create_disposition,
-	uint32_t create_options);
-NTSTATUS cli_smb2_create_fnum_recv(struct tevent_req *req, uint16_t *pfnum,
-				   struct smb_create_returns *cr);
+	uint32_t create_options,
+	const struct smb2_create_blobs *in_cblobs);
+NTSTATUS cli_smb2_create_fnum_recv(
+	struct tevent_req *req,
+	uint16_t *pfnum,
+	struct smb_create_returns *cr,
+	TALLOC_CTX *mem_ctx,
+	struct smb2_create_blobs *out_cblobs);
 NTSTATUS cli_smb2_create_fnum(
 	struct cli_state *cli,
 	const char *fname,
@@ -49,8 +54,11 @@ NTSTATUS cli_smb2_create_fnum(
 	uint32_t share_access,
 	uint32_t create_disposition,
 	uint32_t create_options,
+	const struct smb2_create_blobs *in_cblobs,
 	uint16_t *pfid,
-	struct smb_create_returns *cr);
+	struct smb_create_returns *cr,
+	TALLOC_CTX *mem_ctx,
+	struct smb2_create_blobs *out_cblobs);
 
 struct tevent_req *cli_smb2_close_fnum_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,

@@ -158,7 +158,8 @@ static uint8_t flags_to_smb2_oplock(uint32_t create_flags)
 
 struct cli_smb2_create_fnum_state {
 	struct cli_state *cli;
-	struct smb2_create_blobs cblobs;
+	struct smb2_create_blobs in_cblobs;
+	struct smb2_create_blobs out_cblobs;
 	struct smb_create_returns cr;
 	uint16_t fnum;
 	struct tevent_req *subreq;
@@ -178,7 +179,8 @@ struct tevent_req *cli_smb2_create_fnum_send(
 	uint32_t file_attributes,
 	uint32_t share_access,
 	uint32_t create_disposition,
-	uint32_t create_options)
+	uint32_t create_options,
+	const struct smb2_create_blobs *in_cblobs)
 {
 	struct tevent_req *req, *subreq;
 	struct cli_smb2_create_fnum_state *state;
@@ -186,6 +188,7 @@ struct tevent_req *cli_smb2_create_fnum_send(
 	const char *startp = NULL;
 	const char *endp = NULL;
 	time_t tstamp = (time_t)0;
+	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_smb2_create_fnum_state);
@@ -210,7 +213,6 @@ struct tevent_req *cli_smb2_create_fnum_send(
 		size_t len_after_gmt = fname + fname_len - endp;
 		DATA_BLOB twrp_blob;
 		NTTIME ntt;
-		NTSTATUS status;
 
 		char *new_fname = talloc_array(state, char,
 				len_before_gmt + len_after_gmt + 1);
@@ -229,12 +231,25 @@ struct tevent_req *cli_smb2_create_fnum_send(
 
 		status = smb2_create_blob_add(
 			state,
-			&state->cblobs,
+			&state->in_cblobs,
 			SMB2_CREATE_TAG_TWRP,
 			twrp_blob);
 		if (!NT_STATUS_IS_OK(status)) {
 			tevent_req_nterror(req, status);
 			return tevent_req_post(req, ev);
+		}
+	}
+
+	if (in_cblobs != NULL) {
+		uint32_t i;
+		for (i=0; i<in_cblobs->num_blobs; i++) {
+			struct smb2_create_blob *b = &in_cblobs->blobs[i];
+			status = smb2_create_blob_add(
+				state, &state->in_cblobs, b->tag, b->data);
+			if (!NT_STATUS_IS_OK(status)) {
+				tevent_req_nterror(req, status);
+				return tevent_req_post(req, ev);
+			}
 		}
 	}
 
@@ -268,7 +283,7 @@ struct tevent_req *cli_smb2_create_fnum_send(
 				     share_access,
 				     create_disposition,
 				     create_options,
-				     &state->cblobs);
+				     &state->in_cblobs);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -289,8 +304,12 @@ static void cli_smb2_create_fnum_done(struct tevent_req *subreq)
 	struct smb2_hnd h;
 	NTSTATUS status;
 
-	status = smb2cli_create_recv(subreq, &h.fid_persistent,
-				     &h.fid_volatile, &state->cr, NULL, NULL);
+	status = smb2cli_create_recv(
+		subreq,
+		&h.fid_persistent,
+		&h.fid_volatile, &state->cr,
+		state,
+		&state->out_cblobs);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -310,8 +329,12 @@ static bool cli_smb2_create_fnum_cancel(struct tevent_req *req)
 	return tevent_req_cancel(state->subreq);
 }
 
-NTSTATUS cli_smb2_create_fnum_recv(struct tevent_req *req, uint16_t *pfnum,
-				   struct smb_create_returns *cr)
+NTSTATUS cli_smb2_create_fnum_recv(
+	struct tevent_req *req,
+	uint16_t *pfnum,
+	struct smb_create_returns *cr,
+	TALLOC_CTX *mem_ctx,
+	struct smb2_create_blobs *out_cblobs)
 {
 	struct cli_smb2_create_fnum_state *state = tevent_req_data(
 		req, struct cli_smb2_create_fnum_state);
@@ -327,6 +350,13 @@ NTSTATUS cli_smb2_create_fnum_recv(struct tevent_req *req, uint16_t *pfnum,
 	if (cr != NULL) {
 		*cr = state->cr;
 	}
+	if (out_cblobs != NULL) {
+		*out_cblobs = (struct smb2_create_blobs) {
+			.num_blobs = state->out_cblobs.num_blobs,
+			.blobs = talloc_move(
+				mem_ctx, &state->out_cblobs.blobs),
+		};
+	}
 	state->cli->raw_status = NT_STATUS_OK;
 	return NT_STATUS_OK;
 }
@@ -341,8 +371,11 @@ NTSTATUS cli_smb2_create_fnum(
 	uint32_t share_access,
 	uint32_t create_disposition,
 	uint32_t create_options,
+	const struct smb2_create_blobs *in_cblobs,
 	uint16_t *pfid,
-	struct smb_create_returns *cr)
+	struct smb_create_returns *cr,
+	TALLOC_CTX *mem_ctx,
+	struct smb2_create_blobs *out_cblobs)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -371,14 +404,15 @@ NTSTATUS cli_smb2_create_fnum(
 		file_attributes,
 		share_access,
 		create_disposition,
-		create_options);
+		create_options,
+		in_cblobs);
 	if (req == NULL) {
 		goto fail;
 	}
 	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 		goto fail;
 	}
-	status = cli_smb2_create_fnum_recv(req, pfid, cr);
+	status = cli_smb2_create_fnum_recv(req, pfid, cr, mem_ctx, out_cblobs);
  fail:
 	TALLOC_FREE(frame);
 	return status;
@@ -657,7 +691,10 @@ NTSTATUS cli_smb2_mkdir(struct cli_state *cli, const char *dname)
 			FILE_SHARE_READ|FILE_SHARE_WRITE, /* share_access */
 			FILE_CREATE,		/* create_disposition */
 			FILE_DIRECTORY_FILE,	/* create_options */
+			NULL,
 			&fnum,
+			NULL,
+			NULL,
 			NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -696,7 +733,10 @@ NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dname)
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
 			FILE_OPEN,		/* create_disposition */
 			FILE_DIRECTORY_FILE,	/* create_options */
+			NULL,
 			&fnum,
+			NULL,
+			NULL,
 			NULL);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
@@ -717,7 +757,10 @@ NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dname)
 			FILE_DIRECTORY_FILE|
 				FILE_DELETE_ON_CLOSE|
 				FILE_OPEN_REPARSE_POINT, /* create_options */
+			NULL,
 			&fnum,
+			NULL,
+			NULL,
 			NULL);
 	}
 
@@ -764,7 +807,10 @@ NTSTATUS cli_smb2_unlink(struct cli_state *cli, const char *fname)
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
 			FILE_OPEN,		/* create_disposition */
 			FILE_DELETE_ON_CLOSE,	/* create_options */
+			NULL,
 			&fnum,
+			NULL,
+			NULL,
 			NULL);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
@@ -784,7 +830,10 @@ NTSTATUS cli_smb2_unlink(struct cli_state *cli, const char *fname)
 			FILE_OPEN,		/* create_disposition */
 			FILE_DELETE_ON_CLOSE|
 				FILE_OPEN_REPARSE_POINT, /* create_options */
+			NULL,
 			&fnum,
+			NULL,
+			NULL,
 			NULL);
 	}
 
@@ -965,7 +1014,10 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 			FILE_SHARE_READ|FILE_SHARE_WRITE, /* share_access */
 			FILE_OPEN,		/* create_disposition */
 			FILE_DIRECTORY_FILE,	/* create_options */
+			NULL,
 			&fnum,
+			NULL,
+			NULL,
 			NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1152,8 +1204,11 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
 			FILE_OPEN,		/* create_disposition */
 			FILE_DIRECTORY_FILE,	/* create_options */
+			NULL,
 			&fnum,
-			&cr);
+			&cr,
+			NULL,
+			NULL);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_A_DIRECTORY)) {
 		/* Maybe a file ? */
@@ -1166,8 +1221,11 @@ NTSTATUS cli_smb2_qpathinfo_basic(struct cli_state *cli,
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
 			FILE_OPEN,		/* create_disposition */
 			0,	/* create_options */
+			NULL,
 			&fnum,
-			&cr);
+			&cr,
+			NULL,
+			NULL);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1219,7 +1277,10 @@ NTSTATUS cli_smb2_chkpath(struct cli_state *cli,
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
 			FILE_OPEN,		/* create_disposition */
 			FILE_DIRECTORY_FILE,	/* create_options */
+			NULL,
 			&fnum,
+			NULL,
+			NULL,
 			NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1265,7 +1326,10 @@ static NTSTATUS get_fnum_from_path(struct cli_state *cli,
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
 			FILE_OPEN,		/* create_disposition */
 			create_options,
+			NULL,
 			pfnum,
+			NULL,
+			NULL,
 			NULL);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
@@ -1285,7 +1349,10 @@ static NTSTATUS get_fnum_from_path(struct cli_state *cli,
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
 			FILE_OPEN,		/* create_disposition */
 			create_options,
+			NULL,
 			pfnum,
+			NULL,
+			NULL,
 			NULL);
 	}
 
@@ -1300,7 +1367,10 @@ static NTSTATUS get_fnum_from_path(struct cli_state *cli,
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
 			FILE_OPEN,		/* create_disposition */
 			FILE_DIRECTORY_FILE,	/* create_options */
+			NULL,
 			pfnum,
+			NULL,
+			NULL,
 			NULL);
 	}
 
@@ -2036,7 +2106,10 @@ NTSTATUS cli_smb2_dskattr(struct cli_state *cli, const char *path,
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
 			FILE_OPEN,		/* create_disposition */
 			FILE_DIRECTORY_FILE,	/* create_options */
+			NULL,
 			&fnum,
+			NULL,
+			NULL,
 			NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2147,7 +2220,10 @@ NTSTATUS cli_smb2_get_fs_full_size_info(struct cli_state *cli,
 				     FILE_SHARE_DELETE, /* share_access */
 				 FILE_OPEN,		/* create_disposition */
 				 FILE_DIRECTORY_FILE,   /* create_options */
+				 NULL,
 				 &fnum,
+				 NULL,
+				 NULL,
 				 NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2240,7 +2316,10 @@ NTSTATUS cli_smb2_get_fs_attr_info(struct cli_state *cli, uint32_t *fs_attr)
 				     FILE_SHARE_DELETE, /* share_access */
 				 FILE_OPEN,		/* create_disposition */
 				 FILE_DIRECTORY_FILE,   /* create_options */
+				 NULL,
 				 &fnum,
+				 NULL,
+				 NULL,
 				 NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2326,7 +2405,10 @@ NTSTATUS cli_smb2_get_fs_volume_info(struct cli_state *cli,
 				     FILE_SHARE_DELETE, /* share_access */
 				 FILE_OPEN,		/* create_disposition */
 				 FILE_DIRECTORY_FILE,   /* create_options */
+				 NULL,
 				 &fnum,
+				 NULL,
+				 NULL,
 				 NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
