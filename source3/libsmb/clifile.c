@@ -5112,13 +5112,11 @@ static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *fname,
-					int flags,
-					mode_t mode,
-					bool is_dir)
+					uint32_t wire_flags,
+					mode_t mode)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_posix_open_internal_state *state = NULL;
-	uint32_t wire_flags = open_flags_to_wire(flags);
 
 	req = tevent_req_create(
 		mem_ctx, &state, struct cli_posix_open_internal_state);
@@ -5145,11 +5143,6 @@ static struct tevent_req *cli_posix_open_internal_send(TALLOC_CTX *mem_ctx,
 
 	if (tevent_req_nomem(state->param, req)) {
 		return tevent_req_post(req, ev);
-	}
-
-	/* Setup data words. */
-	if (is_dir) {
-		wire_flags |= SMB_O_DIRECTORY;
 	}
 
 	SIVAL(state->data,0,0); /* No oplock. */
@@ -5244,6 +5237,7 @@ struct tevent_req *cli_posix_open_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_posix_open_state *state = NULL;
+	uint32_t wire_flags;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_posix_open_state);
@@ -5251,8 +5245,10 @@ struct tevent_req *cli_posix_open_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	wire_flags = open_flags_to_wire(flags);
+
 	subreq = cli_posix_open_internal_send(
-		mem_ctx, ev, cli, fname, flags, mode, false);
+		mem_ctx, ev, cli, fname, wire_flags, mode);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -5342,6 +5338,7 @@ struct tevent_req *cli_posix_mkdir_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_posix_mkdir_state *state = NULL;
+	uint32_t wire_flags;
 
 	req = tevent_req_create(
 		mem_ctx, &state, struct cli_posix_mkdir_state);
@@ -5351,8 +5348,10 @@ struct tevent_req *cli_posix_mkdir_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->cli = cli;
 
+	wire_flags = open_flags_to_wire(O_CREAT) | SMB_O_DIRECTORY;
+
 	subreq = cli_posix_open_internal_send(
-		mem_ctx, ev, cli, fname, O_CREAT, mode, true);
+		mem_ctx, ev, cli, fname, wire_flags, mode);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
