@@ -110,6 +110,8 @@ tasks = {
                  "--exclude-env=vampire_2000_dc "
                  "--exclude-env=fl2000dc "
                  "--exclude-env=fileserver "
+                 "--exclude-env=maptoguest "
+                 "--exclude-env=simpleserver "
                  "--exclude-env=backupfromdc "
                  "--exclude-env=restoredc "
                  "--exclude-env=renamedc "
@@ -138,7 +140,11 @@ tasks = {
                            ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                            ("make", "make -j", "text/plain"),
                            ("test", "make test FAIL_IMMEDIATELY=1 "
-                            "TESTS='--include-env=fileserver'", "text/plain"),
+                            "TESTS='"
+                            "--include-env=fileserver "
+                            "--include-env=maptoguest "
+                            "--include-env=simpleserver "
+                            "'", "text/plain"),
                            ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-ad-dc": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
