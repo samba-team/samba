@@ -368,17 +368,6 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 		sid_copy(&state->all_sids[i], &state->dom_sids[dom_sid_idx]);
 		*id = state->dom_xids[dom_sid_idx];
 
-		/*
-		 * Prime the cache after an xid2sid call. It's
-		 * important that we use state->dom_xids for the xid
-		 * value, not state->all_xids: state->all_xids carries
-		 * what we asked for, e.g. a
-		 * ID_TYPE_UID. state->dom_xids holds something the
-		 * idmap child possibly changed to ID_TYPE_BOTH.
-		 */
-		idmap_cache_set_sid2unixid(
-			&state->all_sids[i], &state->dom_xids[dom_sid_idx]);
-
 		dom_sid_idx += 1;
 	}
 
@@ -543,6 +532,7 @@ static void wb_xids2sids_done(struct tevent_req *subreq)
 	struct wb_xids2sids_state *state = tevent_req_data(
 		req, struct wb_xids2sids_state);
 	size_t num_domains = talloc_array_length(dom_maps);
+	size_t i;
 	NTSTATUS status;
 
 	status = wb_xids2sids_dom_recv(subreq);
@@ -565,6 +555,27 @@ static void wb_xids2sids_done(struct tevent_req *subreq)
 		}
 		tevent_req_set_callback(subreq, wb_xids2sids_done, req);
 		return;
+	}
+
+
+	for (i = 0; i < state->num_xids; i++) {
+		/*
+		 * Prime the cache after an xid2sid call. It's important that we
+		 * use the xid value returned from the backend for the xid value
+		 * passed to idmap_cache_set_sid2unixid(), not the input to
+		 * wb_xids2sids_send: the input carries what was asked for,
+		 * e.g. a ID_TYPE_UID. The result from the backend something the
+		 * idmap child possibly changed to ID_TYPE_BOTH.
+		 *
+		 * And of course If the value was from the cache don't update
+		 * the cache.
+		 */
+
+		if (state->cached[i]) {
+			continue;
+		}
+
+		idmap_cache_set_sid2unixid(&state->sids[i], &state->xids[i]);
 	}
 
 	tevent_req_done(req);
