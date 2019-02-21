@@ -92,6 +92,7 @@ tasks = {
                 ("test", "make test FAIL_IMMEDIATELY=1 "
                  "TESTS='--exclude-env=none "
                  "--exclude-env=nt4_dc "
+                 "--exclude-env=nt4_dc_schannel "
                  "--exclude-env=nt4_member "
                  "--exclude-env=ad_dc "
                  "--exclude-env=ad_dc_backup "
@@ -124,7 +125,11 @@ tasks = {
                     ("configure", "./configure.developer --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                     ("make", "make -j", "text/plain"),
                     ("test", "make test FAIL_IMMEDIATELY=1 "
-                     "TESTS='--include-env=nt4_dc --include-env=nt4_member'", "text/plain"),
+                     "TESTS='"
+                     "--include-env=nt4_dc "
+                     "--include-env=nt4_dc_schannel "
+                     "--include-env=nt4_member "
+                     "'", "text/plain"),
                     ("install", "make install", "text/plain"),
                     ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                     ("clean", "make clean", "text/plain")],
