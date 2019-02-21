@@ -96,7 +96,7 @@ class GPAuditCsvParser(GPParser):
 
     def write_binary(self, filename):
         from io import open
-        with open(filename, 'w', self.encoding) as f:
+        with open(filename, 'w', encoding=self.encoding) as f:
             # In this case "binary" means "utf-8", so we let Python do that.
             writer = csv.writer(f, quoting=csv.QUOTE_MINIMAL)
             writer.writerow(self.header)
