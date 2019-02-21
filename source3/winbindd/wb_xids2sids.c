@@ -449,8 +449,13 @@ struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->ev = ev;
-	state->xids = xids;
 	state->num_xids = num_xids;
+
+	state->xids = talloc_array(state, struct unixid, num_xids);
+	if (tevent_req_nomem(state->xids, req)) {
+		return tevent_req_post(req, ev);
+	}
+	memcpy(state->xids, xids, num_xids * sizeof(struct unixid));
 
 	state->sids = talloc_zero_array(state, struct dom_sid, num_xids);
 	if (tevent_req_nomem(state->sids, req)) {
