@@ -170,30 +170,63 @@ load a file into memory from a fd.
 **/
 _PUBLIC_ char *fd_load(int fd, size_t *psize, size_t maxsize, TALLOC_CTX *mem_ctx)
 {
-	struct stat sbuf;
-	char *p;
-	size_t size;
+	FILE *file;
+	char *p = NULL;
+	size_t size = 0;
+	size_t chunk = 1024;
+	int err;
 
-	if (fstat(fd, &sbuf) != 0) return NULL;
-
-	size = sbuf.st_size;
-
-	if (maxsize) {
-		size = MIN(size, maxsize);
+	if (maxsize == 0) {
+		maxsize = SIZE_MAX;
 	}
 
-	p = (char *)talloc_size(mem_ctx, size+1);
-	if (!p) return NULL;
-
-	if (read(fd, p, size) != size) {
-		talloc_free(p);
+	file = fdopen(fd, "r");
+	if (file == NULL) {
 		return NULL;
 	}
-	p[size] = 0;
 
-	if (psize) *psize = size;
+	while (size < maxsize) {
+		size_t newbufsize;
+		size_t nread;
 
+		chunk = MIN(chunk, (maxsize - size));
+
+		newbufsize = size + (chunk+1); /* chunk+1 can't overflow */
+		if (newbufsize < size) {
+			goto fail; /* overflow */
+		}
+
+		p = talloc_realloc(mem_ctx, p, char, newbufsize);
+		if (p == NULL) {
+			goto fail;
+		}
+
+		nread = fread(p+size, 1, chunk, file);
+		size += nread;
+
+		if (nread != chunk) {
+			break;
+		}
+	}
+
+	err = ferror(file);
+	if (err != 0) {
+		goto fail;
+	}
+
+	p[size] = '\0';
+
+	if (psize != NULL) {
+		*psize = size;
+	}
+
+	fclose(file);
 	return p;
+
+fail:
+	TALLOC_FREE(p);
+	fclose(file);
+	return NULL;
 }
 
 /**
