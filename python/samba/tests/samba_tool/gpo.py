@@ -23,6 +23,7 @@ import ldb
 import samba
 from samba.tests.samba_tool.base import SambaToolCmdTest
 import shutil
+from samba.netcmd.gpo import get_gpo_dn, get_gpo_info
 
 
 def has_difference(path1, path2, binary=True, xml=True, sortlines=False):
@@ -440,6 +441,74 @@ class GpoCmdTestCase(SambaToolCmdTest):
 
             shutil.rmtree(temp_path)
             shutil.rmtree(new_path)
+
+    def test_backup_with_extension_attributes(self):
+        self.samdb = self.getSamDB("-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                   "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                 os.environ["DC_PASSWORD"]))
+
+        temp_path = os.path.join(self.tempdir, 'temp')
+        os.mkdir(temp_path)
+
+        extensions = {
+            # Taken from "source4/setup/provision_group_policy.ldif" on domain
+            'gPCMachineExtensionNames': '[{35378EAC-683F-11D2-A89A-00C04FBBCFA2}{53D6AB1B-2488-11D1-A28C-00C04FB94F17}][{827D319E-6EAC-11D2-A4EA-00C04F79F83A}{803E14A0-B4FB-11D0-A0D0-00A0C90F574B}][{B1BE8D72-6EAC-11D2-A4EA-00C04F79F83A}{53D6AB1B-2488-11D1-A28C-00C04FB94F17}]',
+            'gPCUserExtensionNames': '[{3060E8D0-7020-11D2-842D-00C04FA372D4}{3060E8CE-7020-11D2-842D-00C04FA372D4}][{35378EAC-683F-11D2-A89A-00C04FBBCFA2}{0F6B957E-509E-11D1-A7CC-0000F87571E3}]'
+        }
+
+        gpo_dn = get_gpo_dn(self.samdb, self.gpo_guid)
+        for ext in extensions:
+            data = extensions[ext]
+
+            m = ldb.Message()
+            m.dn = gpo_dn
+            m[ext] = ldb.MessageElement(data, ldb.FLAG_MOD_REPLACE, ext)
+
+            self.samdb.modify(m)
+
+        try:
+            (result, out, err) = self.runsubcmd("gpo", "backup", self.gpo_guid,
+                                                "-H", "ldap://%s" %
+                                                os.environ["SERVER"],
+                                                "--tmpdir", temp_path)
+
+            self.assertCmdSuccess(result, out, err, "Ensuring gpo fetched successfully")
+
+            guid = "{%s}" % out.split("{")[1].split("}")[0]
+
+            temp_path = os.path.join(temp_path, 'policy', guid)
+
+            (result, out, err) = self.runsubcmd("gpo", "restore", "RESTORE_EXT",
+                                                temp_path,
+                                                "-H", "ldap://%s" %
+                                                os.environ["SERVER"], "--tmpdir",
+                                                self.tempdir, "-U%s%%%s" %
+                                                (os.environ["USERNAME"],
+                                                 os.environ["PASSWORD"]))
+
+            self.assertCmdSuccess(result, out, err, "Ensuring gpo restored successfully")
+
+            gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
+
+            msg = get_gpo_info(self.samdb, gpo_guid)
+            self.assertEqual(len(msg), 1)
+
+            for ext in extensions:
+                self.assertTrue(ext in msg[0])
+                self.assertEqual(extensions[ext], str(msg[0][ext][0]))
+
+        finally:
+            if gpo_guid:
+                (result, out, err) = self.runsubcmd("gpo", "del", gpo_guid,
+                                                    "-H", "ldap://%s" %
+                                                    os.environ["SERVER"],
+                                                    "-U%s%%%s" %
+                                                    (os.environ["USERNAME"],
+                                                     os.environ["PASSWORD"]))
+                self.assertCmdSuccess(result, out, err, "Ensuring gpo deleted successfully")
+
+            shutil.rmtree(os.path.join(self.tempdir, "policy"))
+            shutil.rmtree(os.path.join(self.tempdir, 'temp'))
 
     def setUp(self):
         """set up a temporary GPO to work with"""
