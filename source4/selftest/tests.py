@@ -56,6 +56,8 @@ bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 # alias to highlight what tests we want to run against a DC with SMBv1 disabled
 smbv1_disabled_testenv = "restoredc"
 
+all_fl_envs = ["fl2000dc", "fl2003dc", "fl2008dc", "fl2008r2dc"]
+
 # Simple tests for LDAP and CLDAP
 for auth_type in ['', '-k no', '-k yes']:
     for auth_level in ['--option=clientldapsaslwrapping=plain', '--sign', '--encrypt']:
@@ -263,7 +265,7 @@ for t in gpo:
 transports = ["ncacn_np", "ncacn_ip_tcp"]
 
 # Kerberos varies between functional levels, so it is important to check this on all of them
-for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc", "ad_dc"]:
+for env in all_fl_envs:
     transport = "ncacn_np"
     plansmbtorture4testsuite('rpc.pac', env, ["%s:$SERVER[]" % (transport, ), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.rpc.pac on %s" % (transport,))
     plansmbtorture4testsuite('rpc.lsa.secrets', env, ["%s:$SERVER[]" % (transport, ), '-k', 'yes', '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=gensec:target_hostname=$NETBIOSNAME', 'rpc.lsa.secrets'], "samba4.rpc.lsa.secrets on %s with Kerberos" % (transport,))
@@ -649,11 +651,12 @@ planpythontestsuite("none", "samba.tests.samba_tool.visualize", py3_compatible=T
 
 
 # test fsmo show
-for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
+for env in all_fl_envs:
     planpythontestsuite(env + ":local", "samba.tests.samba_tool.fsmo", py3_compatible=True)
 
 # test user.edit
-for env in ["ad_dc:local", "ad_dc_ntvfs:local", "fl2000dc:local", "fl2003dc:local", "fl2008r2dc:local"]:
+for env in all_fl_envs:
+    env += ":local"
     plantestsuite("samba.tests.samba_tool.edit", env, [os.path.join(srcdir(), "python/samba/tests/samba_tool/edit.sh"), '$SERVER', '$USERNAME', '$PASSWORD'])
 
 # We run this test against both AD DC implementations because it is
@@ -927,7 +930,7 @@ planoldpythontestsuite("ad_dc_ntvfs", "password_settings",
                        extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                        py3_compatible=True)
 
-for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
+for env in all_fl_envs:
     plantestsuite_loadlist("samba4.ldap_schema.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap_schema.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
     plantestsuite("samba4.ldap.possibleInferiors.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/samdb/ldb_modules/tests/possibleinferiors.py"), "ldap://$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN"])
     plantestsuite_loadlist("samba4.ldap.secdesc.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/sec_descriptor.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
