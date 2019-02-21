@@ -48,6 +48,36 @@ class DSaclSetSddlTestCase(SambaToolCmdTest):
         acl_list=re.findall('.*descriptor for.*:\n(.*?)\n',out)
         self.assertMatch(acl_list[1], self.sddl, "new SDDL string should be contained within second sddl output")
 
+    def test_sddl_set_get(self):
+        """Tests if a sddl string can be added 'the normal way' and the output of 'get' is the same"""
+        (result, out, err) = self.runsubcmd("dsacl", "get",
+                                            "--objectdn=%s" % self.dn)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        #extract only the two sddl strings from samba-tool output
+        acl_list_get=re.findall('^descriptor for.*:\n(.*?)\n', out)
+
+        (result, out, err) = self.runsubcmd("dsacl", "set",
+                                            "--objectdn=%s" % self.dn,
+                                            "--sddl=%s" % self.sddl)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        #extract only the two sddl strings from samba-tool output
+        acl_list_old=re.findall('old descriptor for.*:\n(.*?)\n', out)
+        self.assertEqual(acl_list_old, acl_list_get,
+                         "output of dsacl get should be the same as before set")
+
+        acl_list=re.findall('new descriptor for.*:\n(.*?)\n', out)
+
+        (result, out, err) = self.runsubcmd("dsacl", "get",
+                                            "--objectdn=%s" % self.dn)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        #extract only the two sddl strings from samba-tool output
+        acl_list_get2=re.findall('^descriptor for.*:\n(.*?)\n', out)
+        self.assertEqual(acl_list, acl_list_get2,
+                         "output of dsacl get should be the same as after set")
+
     def test_multisddl(self):
         """Tests if we can add multiple, different sddl strings at the same time"""
         (result, out, err) = self.runsubcmd("dsacl", "set","--objectdn=%s" % self.dn, "--sddl=%s" % self.sddl_multi)
