@@ -46,6 +46,7 @@ class DSaclSetSddlTestCase(SambaToolCmdTest):
         self.assertEquals(err, "", "Shouldn't be any error messages")
         #extract only the two sddl strings from samba-tool output
         acl_list=re.findall('.*descriptor for.*:\n(.*?)\n',out)
+        self.assertNotEqual(acl_list[0], acl_list[1], "new and old SDDL string differ")
         self.assertMatch(acl_list[1], self.sddl, "new SDDL string should be contained within second sddl output")
 
     def test_sddl_set_get(self):
