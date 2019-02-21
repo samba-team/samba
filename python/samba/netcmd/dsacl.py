@@ -131,10 +131,13 @@ class cmd_dsacl_set(Command):
             desc = security.descriptor.from_sddl(desc_sddl, self.get_domain_sid(samdb))
             self.modify_descriptor(samdb, object_dn, desc)
 
-    def print_new_acl(self, samdb, object_dn):
+    def print_acl(self, samdb, object_dn, new=False):
         desc = self.read_descriptor(samdb, object_dn)
         desc_sddl = desc.as_sddl(self.get_domain_sid(samdb))
-        self.outf.write("new descriptor for %s:\n" % object_dn)
+        if new:
+            self.outf.write("new descriptor for %s:\n" % object_dn)
+        else:
+            self.outf.write("old descriptor for %s:\n" % object_dn)
         self.outf.write(desc_sddl + "\n")
 
     def run(self, car, action, objectdn, trusteedn, sddl,
@@ -172,9 +175,9 @@ class cmd_dsacl_set(Command):
         else:
             raise CommandError("Wrong argument '%s'!" % action)
 
-        self.print_new_acl(samdb, objectdn)
+        self.print_acl(samdb, objectdn)
         self.add_ace(samdb, objectdn, new_ace)
-        self.print_new_acl(samdb, objectdn)
+        self.print_acl(samdb, objectdn, new=True)
 
 
 class cmd_dsacl_get(Command):
