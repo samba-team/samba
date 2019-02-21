@@ -30,7 +30,9 @@
 #include "libcli/auth/libcli_auth.h"
 #include "torture/rpc/torture_rpc.h"
 #include "param/param.h"
-#include "../lib/crypto/crypto.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #define TEST_DOM "torturedom"
 #define TEST_DOM_DNS "torturedom.samba.example.com"
@@ -687,6 +689,8 @@ static bool test_setup_trust(struct torture_context *tctx,
 	DATA_BLOB session_key;
 	struct lsa_TrustDomainInfoAuthInfoInternal authinfo;
 	NTSTATUS status;
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t _session_key;
 
 	if (!check_name(p, tctx, netbios_name)) {
 		return false;
@@ -709,8 +713,19 @@ static bool test_setup_trust(struct torture_context *tctx,
 	}
 	authinfo.auth_blob.size = auth_blob->length;
 
-	arcfour_crypt_blob(authinfo.auth_blob.data, authinfo.auth_blob.size,
-			   &session_key);
+	_session_key = (gnutls_datum_t) {
+		.data = session_key.data,
+		.size = session_key.length,
+	};
+
+	gnutls_cipher_init(&cipher_hnd,
+			   GNUTLS_CIPHER_ARCFOUR_128,
+			   &_session_key,
+			   NULL);
+	gnutls_cipher_encrypt(cipher_hnd,
+			      authinfo.auth_blob.data,
+			      authinfo.auth_blob.size);
+	gnutls_cipher_deinit(cipher_hnd);
 
 	if (!test_create_trust_and_set_info(p, tctx, netbios_name,
 					    dns_name, sid, &authinfo)) {
