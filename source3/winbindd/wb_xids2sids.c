@@ -554,18 +554,22 @@ static void wb_xids2sids_done(struct tevent_req *subreq)
 
 	state->dom_idx += 1;
 
-	if (state->dom_idx >= num_domains) {
-		tevent_req_done(req);
+	if (state->dom_idx < num_domains) {
+		subreq = wb_xids2sids_dom_send(state,
+					       state->ev,
+					       &dom_maps[state->dom_idx],
+					       state->xids,
+					       state->num_xids,
+					       state->sids);
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, wb_xids2sids_done, req);
 		return;
 	}
 
-	subreq = wb_xids2sids_dom_send(
-		state, state->ev, &dom_maps[state->dom_idx],
-		state->xids, state->num_xids, state->sids);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, wb_xids2sids_done, req);
+	tevent_req_done(req);
+	return;
 }
 
 NTSTATUS wb_xids2sids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
