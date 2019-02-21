@@ -35,8 +35,11 @@
 #include "source4/auth/kerberos/kerberos.h"
 #include "source4/auth/kerberos/kerberos_util.h"
 #include "lib/util/util_net.h"
-#include "../lib/crypto/crypto.h"
 #include "libcli/resolve/resolve.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
+
 #define TEST_MACHINENAME "lsatestmach"
 #define TRUSTPW "12345678"
 
@@ -2648,6 +2651,8 @@ static bool gen_authinfo_internal(TALLOC_CTX *mem_ctx,
 	DATA_BLOB auth_blob;
 	enum ndr_err_code ndr_err;
 	bool ok;
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t _session_key;
 
 	authinfo_internal = talloc_zero(mem_ctx, struct lsa_TrustDomainInfoAuthInfoInternal);
 	if (authinfo_internal == NULL) {
@@ -2717,7 +2722,19 @@ static bool gen_authinfo_internal(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	arcfour_crypt_blob(auth_blob.data, auth_blob.length, &session_key);
+	_session_key = (gnutls_datum_t) {
+		.data = session_key.data,
+		.size = session_key.length,
+	};
+
+	gnutls_cipher_init(&cipher_hnd,
+			   GNUTLS_CIPHER_ARCFOUR_128,
+			   &_session_key,
+			   NULL);
+	gnutls_cipher_encrypt(cipher_hnd,
+			      auth_blob.data,
+			      auth_blob.length);
+	gnutls_cipher_deinit(cipher_hnd);
 
 	authinfo_internal->auth_blob.size = auth_blob.length;
 	authinfo_internal->auth_blob.data = auth_blob.data;
