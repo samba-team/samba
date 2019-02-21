@@ -395,7 +395,7 @@ class SubtreeRenameTests(samba.tests.TestCase):
 
     def test_la_move_ou_tree_big(self):
         tag = 'move_ou_big'
-        USERS, GROUPS, COMPUTERS = 500, 50, 27
+        USERS, GROUPS, COMPUTERS = 50, 10, 7
 
         users = self.add_objects(USERS, 'user', '%s_u_' % tag, ou=self.ou1)
         groups = self.add_objects(GROUPS, 'group', '%s_g_' % tag, ou=self.ou1)
