@@ -36,7 +36,6 @@
 #include "libcli/libcli.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/auth/libcli_auth.h"
-#include "../lib/crypto/crypto.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
 #include "lib/registry/registry.h"
@@ -47,9 +46,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "libcli/smb/smbXcli_base.h"
-
-#include <gnutls/gnutls.h>
-#include <gnutls/crypto.h>
+#include "source3/rpc_client/init_samr.h"
 
 /*
  * open pipe and bind, given an IPC$ context
@@ -666,7 +663,6 @@ static bool create_user(struct torture_context *tctx,
 		union samr_UserInfo *info;
 		DATA_BLOB session_key;
 
-
 		ZERO_STRUCT(u_info);
 		encode_pw_buffer(u_info.info23.password.data, password,
 				 STR_UNICODE);
@@ -676,8 +672,15 @@ static bool create_user(struct torture_context *tctx,
 			torture_comment(tctx, "dcerpc_fetch_session_key failed\n");
 			goto done;
 		}
-		arcfour_crypt_blob(u_info.info23.password.data, 516,
-				   &session_key);
+
+		status = init_samr_CryptPassword(password,
+						 &session_key,
+						 &u_info.info23.password);
+		if (!NT_STATUS_IS_OK(status)) {
+			torture_comment(tctx, "init_samr_CryptPassword failed\n");
+			goto done;
+		}
+
 		u_info.info23.info.password_expired = 0;
 		u_info.info23.info.fields_present = SAMR_FIELD_NT_PASSWORD_PRESENT |
 						    SAMR_FIELD_LM_PASSWORD_PRESENT |
@@ -872,10 +875,6 @@ static bool join3(struct torture_context *tctx,
 		union samr_UserInfo u_info;
 		struct samr_UserInfo21 *i21 = &u_info.info25.info;
 		DATA_BLOB session_key;
-		DATA_BLOB confounded_session_key = data_blob_talloc(
-			mem_ctx, NULL, 16);
-		gnutls_hash_hd_t hash_hnd;
-		uint8_t confounder[16];
 
 		ZERO_STRUCT(u_info);
 
@@ -890,25 +889,16 @@ static bool join3(struct torture_context *tctx,
 		i21->password_expired = 1;
 		*/
 
-		encode_pw_buffer(u_info.info25.password.data,
-				 cli_credentials_get_password(wks_creds),
-				 STR_UNICODE);
 		status = dcerpc_fetch_session_key(samr_pipe, &session_key);
 		if (!NT_STATUS_IS_OK(status)) {
 			torture_comment(tctx, "dcerpc_fetch_session_key failed: %s\n",
 				 nt_errstr(status));
 			goto done;
 		}
-		generate_random_buffer((uint8_t *)confounder, 16);
 
-		gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
-		gnutls_hash(hash_hnd, confounder, 16);
-		gnutls_hash(hash_hnd, session_key.data, session_key.length);
-		gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
-
-		arcfour_crypt_blob(u_info.info25.password.data, 516,
-				   &confounded_session_key);
-		memcpy(&u_info.info25.password.data[516], confounder, 16);
+		status = init_samr_CryptPasswordEx(cli_credentials_get_password(wks_creds),
+						   &session_key,
+						   &u_info.info25.password);
 
 		sui2.in.user_handle = wks_handle;
 		sui2.in.level = 25;
@@ -942,8 +932,11 @@ static bool join3(struct torture_context *tctx,
 			torture_comment(tctx, "dcerpc_fetch_session_key failed\n");
 			goto done;
 		}
-		arcfour_crypt_blob(u_info.info24.password.data, 516,
-				   &session_key);
+
+		status = init_samr_CryptPassword(cli_credentials_get_password(wks_creds),
+						 &session_key,
+						 &u_info.info24.password);
+
 		sui2.in.user_handle = wks_handle;
 		sui2.in.info = &u_info;
 		sui2.in.level = 24;
