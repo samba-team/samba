@@ -354,9 +354,9 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 	dom_sid_idx = 0;
 
 	for (i=0; i<state->num_all_xids; i++) {
-		struct unixid id = state->all_xids[i];
+		struct unixid *id = &state->all_xids[i];
 
-		if ((id.id < dom_map->low_id) || (id.id > dom_map->high_id)) {
+		if ((id->id < dom_map->low_id) || (id->id > dom_map->high_id)) {
 			/* out of range */
 			continue;
 		}
