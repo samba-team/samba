@@ -369,6 +369,7 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 		}
 
 		sid_copy(&state->all_sids[i], &state->dom_sids[dom_sid_idx]);
+		*id = state->dom_xids[dom_sid_idx];
 
 		/*
 		 * Prime the cache after an xid2sid call. It's
