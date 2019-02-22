@@ -440,7 +440,7 @@ static void wb_xids2sids_init_dom_maps_done(struct tevent_req *subreq);
 
 struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
-				     struct unixid *xids,
+				     const struct unixid *xids,
 				     uint32_t num_xids)
 {
 	struct tevent_req *req, *subreq;
