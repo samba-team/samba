@@ -12,12 +12,27 @@ bld.SAMBA_SUBSYSTEM('GNUTLS_HELPERS',
                     ''',
                     deps='gnutls samba-errors');
 
+# We have a GnuTLS DCEPRC backupkey implementation for the server and the test.
+# However this is only working with GnuTLS >= 3.4.7. So we need to keep this
+# around till we can require at least GnuTLS in a newer version.
+bld.SAMBA_SUBSYSTEM('LIBCRYPTO_RC4',
+                    source='arcfour.c',
+                    deps='talloc',
+                    enabled=not bld.CONFIG_SET('HAVE_GNUTLS_3_4_7'))
+
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
-        source='''md4.c arcfour.c
-        aes.c rijndael-alg-fst.c aes_cmac_128.c aes_ccm_128.c aes_gcm_128.c
-        ''',
-        deps='talloc' + extra_deps
-        )
+        source='''
+               md4.c
+               aes.c
+               rijndael-alg-fst.c
+               aes_cmac_128.c
+               aes_ccm_128.c
+               aes_gcm_128.c
+               ''',
+        deps='''
+             talloc
+             LIBCRYPTO_RC4
+             ''' + extra_deps)
 
 bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO',
         source='''md4test.c
