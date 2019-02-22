@@ -26,7 +26,6 @@
 
 #include "includes.h"
 #include "system/time.h"
-#include "../lib/crypto/crypto.h"
 #include "libnet/libnet.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
@@ -36,6 +35,7 @@
 #include "torture/rpc/torture_rpc.h"
 #include "libcli/security/security.h"
 #include "param/param.h"
+#include "source3/rpc_client/init_samr.h"
 
 struct test_join {
 	struct dcerpc_pipe *p;
@@ -145,7 +145,6 @@ struct test_join *torture_create_testuser_max_pwlen(struct torture_context *tctx
 	char *random_pw;
 	const char *dc_binding = torture_setting_string(tctx, "dc_binding", NULL);
 	struct dcerpc_binding_handle *b = NULL;
-
 	join = talloc(NULL, struct test_join);
 	if (join == NULL) {
 		return NULL;
@@ -330,7 +329,6 @@ again:
 	s.in.info = &u;
 	s.in.level = 24;
 
-	encode_pw_buffer(u.info24.password.data, random_pw, STR_UNICODE);
 	u.info24.password_expired = 0;
 
 	status = dcerpc_fetch_session_key(join->p, &session_key);
@@ -341,7 +339,12 @@ again:
 		goto failed;
 	}
 
-	arcfour_crypt_blob(u.info24.password.data, 516, &session_key);
+	status = init_samr_CryptPassword(random_pw,
+					 &session_key,
+					 &u.info24.password);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPassword failed");
 
 	status = dcerpc_samr_SetUserInfo_r(b, join, &s);
 	if (!NT_STATUS_IS_OK(status)) {
