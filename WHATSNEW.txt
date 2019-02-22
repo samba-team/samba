@@ -1,4 +1,145 @@
                    =============================
+                   Release Notes for Samba 4.9.5
+                           March 12, 2019
+                   =============================
+
+
+Changes since 4.9.4:
+--------------------
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13714: audit_logging: Remove debug log header and JSON Authentication:
+     prefix.
+   * BUG 13760: Fix upgrade from 4.7 (or earlier) to 4.9.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 11495: s3: lib: nmbname: Ensure we limit the NetBIOS name correctly.
+     CID: 1433607.
+   * BUG 13690: smbd: uid: Don't crash if 'force group' is added to an existing
+     share connection.
+   * BUG 13770: s3: VFS: vfs_fruit. Fix the NetAtalk deny mode compatibility
+     code.
+   * BUG 13803: s3: SMB1 POSIX mkdir does case insensitive name lookup.
+
+o  Christian Ambach <ambi@samba.org>
+   * BUG 13199: s3:utils/smbget fix recursive download with empty source
+     directories.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 13716: samba-tool drs showrepl: Do not crash if no dnsHostName found.
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 13736: s3:libsmb: cli_smb2_list() can sometimes fail initially on a
+     connection.
+   * BUG 13747: join: Throw CommandError instead of Exception for simple errors.
+   * BUG 13762: ldb: Avoid inefficient one-level searches.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13736: s3: libsmb: use smb2cli_conn_max_trans_size() in
+     cli_smb2_list().
+   * BUG 13776: tldap: Avoid use after free errors.
+   * BUG 13802: Fix idmap xid2sid cache churn.
+   * BUG 13812: access_check_max_allowed() doesn't process "Owner Rights" ACEs.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13720: s3-smbd: Avoid assuming fsp is always intact after close_file
+     call.
+   * BUG 13725: s3-vfs-fruit: Add close call.
+   * BUG 13746: s3-smbd: Use fruit:model string for mDNS registration.
+   * BUG 13774: s3-vfs: add glusterfs_fuse vfs module.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 13766: printing: Check lp_load_printers() prior to pcap cache update.
+   * BUG 13807: vfs_ceph: vfs_ceph strict_allocate_ftruncate calls (local FS)
+     ftruncate and fallocate.
+
+o  Philipp Gesang <philipp.gesang@intra2net.com>
+   * BUG 13737: lib/audit_logging: Actually create talloc.
+
+o  Joe Guo <joeg@catalyst.net.nz>
+   * BUG 13728: netcmd/user: python[3]-gpgme unsupported and replaced by
+     python[3]-gpg.
+
+o  Aaron Haslett <aaronhaslett@catalyst.net.nz>
+   * BUG 13738: dns: Changing onelevel search for wildcard to subtree.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 13721: samba-tool: Don't print backtrace on simple DNS errors.
+   * BUG 13759: sambaundoguididx: Use the right escaped oder unescaped sam ldb
+     files.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13742: ctdb: Print locks latency in machinereadable stats.
+   * BUG 13786: messages_dgm: Messaging gets stuck when pids are recycled.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 13715: audit_logging: auth_json_audit required auth_json.
+   * BUG 13765: man pages: Document prefork process model.
+   * BUG 13773: CVE-2019-3824 ldb: Release ldb 1.4.6.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13697: s3:auth: ignore create_builtin_guests() failing without a valid
+     idmap configuration.
+   * BUG 13722: s3:auth_winbind: Ignore a missing winbindd as NT4 PDC/BDC
+     without trusts.
+   * BUG 13723: s3:auth_winbind: return NT_STATUS_NO_LOGON_SERVERS if winbindd
+     is not available.
+   * BUG 13752: s4:server: Add support for 'smbcontrol samba shutdown' and
+     'smbcontrol <pid> debug/debuglevel'.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 13616: Python: Ensure ldb.Dn can doesn't rencoded str with py2.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 13330: vfs_glusterfs: Adapt to changes in libgfapi signatures.
+   * BUG 13774: s3-vfs: Use ENOATTR in errno comparison for getxattr.
+
+o  Jiří Šašek <jiri.sasek@oracle.com>
+   * BUG 13704: notifyd: Fix SIGBUS on sparc.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13787: waf: Check for libnscd.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13770: s3:vfs: Correctly check if OFD locks should be enabled or not.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13717: lib/util: Count a trailing line that doesn't end in a newline.
+   * BUG 13800: Recovery lock bug fixes.
+
+o  Justin Stephenson <jstephen@redhat.com>
+   * BUG 13726: s3: net: Do not set NET_FLAGS_ANONYMOUS with -k.
+   * BUG 13727: s3:libsmb: Honor disable_netbios option in smbsock_connect_send.
+
+o  Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+   * BUG 13741: vfs_fileid: Fix get_connectpath_ino.
+   * BUG 13744: vfs_fileid: Fix fsname_norootdir algorithm.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   =============================
                    Release Notes for Samba 4.9.4
                           December 20, 2018
                    =============================
@@ -74,8 +215,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.9.3
