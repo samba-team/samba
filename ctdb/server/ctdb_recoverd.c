@@ -972,7 +972,7 @@ static bool ctdb_recovery_lock(struct ctdb_recoverd *rec)
 	h = ctdb_cluster_mutex(s,
 			       ctdb,
 			       ctdb->recovery_lock,
-			       0,
+			       120,
 			       take_reclock_handler,
 			       s,
 			       lost_reclock_handler,
