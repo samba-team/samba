@@ -120,3 +120,6 @@ uint16_t _echo_TestDoublePointer(struct pipes_struct *p, struct echo_TestDoubleP
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return 0;
 }
+
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_echo_scompat.c"

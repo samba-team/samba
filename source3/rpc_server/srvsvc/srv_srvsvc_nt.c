@@ -3032,3 +3032,6 @@ WERROR _srvsvc_NETRSERVERTRANSPORTDELEX(struct pipes_struct *p,
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
+
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_srvsvc_scompat.c"

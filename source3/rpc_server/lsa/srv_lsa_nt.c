@@ -4665,3 +4665,6 @@ NTSTATUS _lsa_LSARADTREPORTSECURITYEVENT(struct pipes_struct *p,
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
+
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_lsa_scompat.c"

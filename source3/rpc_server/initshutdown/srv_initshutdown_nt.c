@@ -77,3 +77,6 @@ WERROR _initshutdown_Abort(struct pipes_struct *p, struct initshutdown_Abort *r)
 	s.in.server = r->in.server;
 	return _winreg_AbortSystemShutdown( p, &s );
 }
+
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_initshutdown_scompat.c"

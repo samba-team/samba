@@ -32,6 +32,7 @@ bld.SAMBA3_SUBSYSTEM('SRV_ACCESS_CHECK',
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER',
                     source='srv_pipe_hnd.c srv_pipe.c',
                     deps='''
+                    dcerpc-server-core
                     RPC_CONFIG
                     RPC_NCACN_NP
                     RPC_SERVER_LOOP

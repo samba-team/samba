@@ -225,3 +225,6 @@ WERROR _dssetup_DsRoleAbortDownlevelServerUpgrade(struct pipes_struct *p,
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
+
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_dssetup_scompat.c"

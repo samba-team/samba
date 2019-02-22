@@ -1710,3 +1710,6 @@ uint32_t _fss_PrepareShadowCopySet(struct pipes_struct *p,
 
 	return 0;
 }
+
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_fsrvp_scompat.c"

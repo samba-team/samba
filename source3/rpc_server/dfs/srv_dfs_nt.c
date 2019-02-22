@@ -560,3 +560,6 @@ WERROR _dfs_SetInfo2(struct pipes_struct *p, struct dfs_SetInfo2 *r)
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
+
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_dfs_scompat.c"

@@ -336,3 +336,6 @@ void _mdssvc_close(struct pipes_struct *p, struct mdssvc_close *r)
 
 	return;
 }
+
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_mdssvc_scompat.c"

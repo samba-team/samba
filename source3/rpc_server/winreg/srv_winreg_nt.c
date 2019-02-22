@@ -1062,3 +1062,6 @@ WERROR _winreg_DeleteKeyEx(struct pipes_struct *p,
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
+
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_winreg_scompat.c"

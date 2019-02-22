@@ -1211,4 +1211,7 @@ error_status_t _epm_MapAuth(struct pipes_struct *p,
 	return EPMAPPER_STATUS_CANT_PERFORM_OP;
 }
 
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_epmapper_scompat.c"
+
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
