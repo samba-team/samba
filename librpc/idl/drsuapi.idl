@@ -548,6 +548,7 @@ interface drsuapi
 		DRSUAPI_ATTID_objectCategory			= 0x0009030e,
 		DRSUAPI_ATTID_gPLink				= 0x0009037b,
 		DRSUAPI_ATTID_transportAddressAttribute		= 0x0009037f,
+		DRSUAPI_ATTID_schemaInfo			= 0x0009054e,
 		DRSUAPI_ATTID_msDS_Behavior_Version		= 0x000905b3,
 		DRSUAPI_ATTID_msDS_KeyVersionNumber		= 0x000906f6,
 		DRSUAPI_ATTID_msDS_NonMembers			= 0x00090701,
