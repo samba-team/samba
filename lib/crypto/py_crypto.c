@@ -21,13 +21,18 @@
 #include <Python.h>
 #include "includes.h"
 #include "python/py3compat.h"
-#include "lib/crypto/arcfour.h"
+
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 static PyObject *py_crypto_arcfour_crypt_blob(PyObject *module, PyObject *args)
 {
-	DATA_BLOB data, key;
+	DATA_BLOB data;
 	PyObject *py_data, *py_key, *result;
 	TALLOC_CTX *ctx;
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t key;
+	int rc;
 
 	if (!PyArg_ParseTuple(args, "OO", &py_data, &py_key))
 		return NULL;
@@ -51,10 +56,29 @@ static PyObject *py_crypto_arcfour_crypt_blob(PyObject *module, PyObject *args)
 		return PyErr_NoMemory();
 	}
 
-	key.data = (uint8_t *)PyBytes_AsString(py_key);
-	key.length = PyBytes_Size(py_key);
+	key = (gnutls_datum_t) {
+		.data = (uint8_t *)PyBytes_AsString(py_key),
+		.size = PyBytes_Size(py_key),
+	};
 
-	arcfour_crypt_blob(data.data, data.length, &key);
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&key,
+				NULL);
+	if (rc < 0) {
+		talloc_free(ctx);
+		PyErr_Format(PyExc_OSError, "encryption failed");
+		return NULL;
+	}
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   data.data,
+				   data.length);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		talloc_free(ctx);
+		PyErr_Format(PyExc_OSError, "encryption failed");
+		return NULL;
+	}
 
 	result = PyBytes_FromStringAndSize((const char*) data.data, data.length);
 	talloc_free(ctx);
