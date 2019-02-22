@@ -432,6 +432,7 @@ struct wb_xids2sids_state {
 	struct unixid *xids;
 	size_t num_xids;
 	struct dom_sid *sids;
+	bool *cached;
 
 	size_t dom_idx;
 };
@@ -466,6 +467,11 @@ struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	state->cached = talloc_zero_array(state, bool, num_xids);
+	if (tevent_req_nomem(state->cached, req)) {
+		return tevent_req_post(req, ev);
+	}
+
 	if (winbindd_use_idmap_cache()) {
 		uint32_t i;
 
@@ -488,6 +494,7 @@ struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 
 			if (ok && !expired) {
 				sid_copy(&state->sids[i], &sid);
+				state->cached[i] = true;
 			}
 		}
 	}
