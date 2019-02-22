@@ -32,7 +32,6 @@
 #include "../librpc/gen_ndr/ndr_netlogon.h"
 #include "rpc_client/cli_netlogon.h"
 #include "smb_krb5.h"
-#include "../lib/crypto/arcfour.h"
 #include "../libcli/security/security.h"
 #include "ads.h"
 #include "../librpc/gen_ndr/krb5pac.h"
