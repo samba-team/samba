@@ -914,7 +914,7 @@ NTSTATUS winbindd_sids_to_xids_recv(struct tevent_req *req,
 				    struct winbindd_response *response);
 struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
-				     struct unixid *xids,
+				     const struct unixid *xids,
 				     uint32_t num_xids);
 NTSTATUS wb_xids2sids_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 			   struct dom_sid **sids);
