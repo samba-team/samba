@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.10.  This is *not*
+This is the third release candidate of Samba 4.10.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -27,19 +27,19 @@ rebuild the Group Policy Objects from the XML after generalization.
 (The administrator needs to correct the values of XML entities between
 the backup and restore to account for the change in domain).
 
-kdc prefork
+KDC prefork
 -----------
 
 The KDC now supports the pre-fork process model and worker processes will be
 forked for the KDC when the pre-fork process model is selected for samba.
 
-prefork 'prefork children'
+Prefork 'prefork children'
 --------------------------
 
 The default value for this smdb.conf parameter has been increased from 1 to
 4.
 
-netlogon prefork
+Netlogon prefork
 ----------------
 
 DCERPC now supports pre-forked NETLOGON processes. The netlogon processes are
@@ -63,7 +63,7 @@ information about how the users are spread across groups in your domain.
 The 'samba-tool group list --verbose' command has also been updated to include
 the number of users in each group.
 
-prefork process restart
+Prefork process restart
 -----------------------
 
 The pre-fork process model now restarts failed processes. The delay between
@@ -75,7 +75,7 @@ delay between restart attempts up until it reaches "prefork maximum backoff".
 Using the default sequence the restart delays (in seconds) are:
   0, 10, 20, ..., 120, 120, ...
 
-standard process model
+Standard process model
 ----------------------
 
 When using the standard process model samba forks a new process to handle ldap
@@ -222,6 +222,40 @@ smb.conf changes
                               "smbd:max async dosmode"
   smbd getinfo ask sharemode  New: similar to "smbd search ask  yes
                               sharemode" but for SMB getinfo
+
+
+CHANGES SINCE 4.10.0rc2
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13690: smbd: uid: Don't crash if 'force group' is added to an existing
+     share connection.
+   * BUG 13770: s3: VFS: vfs_fruit. Fix the NetAtalk deny mode compatibility
+     code.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * ldb: Release ldb 1.5.3
+   * BUG 13762: Avoid inefficient one-level searches.
+   * BUG 13772: The test api.py should not rely on order of entries in dict.
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 13762: ldb: Avoid inefficient one-level searches.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13776: tldap: Avoid use after free errors.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13746: s3-smbd: Use fruit:model string for mDNS registration.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 13766: printing: Check lp_load_printers() prior to pcap cache update.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13787: waf: Check for libnscd.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13770: s3:vfs: Correctly check if OFD locks should be enabled or not.
+   * BUG 13778: Public ZERO_STRUCT() uses undefined C11 function memset_s().
 
 
 CHANGES SINCE 4.10.0rc1
