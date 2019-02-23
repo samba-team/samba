@@ -906,6 +906,31 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			/* Stat failed - ensure we don't use it. */
 			SET_STAT_INVALID(smb_fname->st);
 
+			if (posix_pathnames) {
+				/*
+				 * For posix_pathnames, we're done.
+				 * Don't blunder into the name_has_wildcard OR
+				 * get_real_filename() codepaths as they may
+				 * be doing case insensitive lookups. So when
+				 * creating a new POSIX directory Foo they might
+				 * match on name foo.
+				 *
+				 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13803
+				 */
+				if (errno == ENOENT) {
+					/* New file or directory. */
+					goto done;
+				}
+				if ((errno == EACCES) &&
+				    (ucf_flags & UCF_PREP_CREATEFILE)) {
+					/* POSIX Dropbox case. */
+					errno = 0;
+					goto done;
+				}
+				status = map_nt_error_from_unix(errno);
+				goto fail;
+			}
+
 			/*
 			 * Reset errno so we can detect
 			 * directory open errors.
