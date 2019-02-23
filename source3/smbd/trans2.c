@@ -8830,6 +8830,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		if (info_level == SMB_SET_FILE_UNIX_BASIC ||
 				info_level == SMB_SET_FILE_UNIX_INFO2 ||
 				info_level == SMB_FILE_RENAME_INFORMATION ||
+				info_level == SMB_POSIX_PATH_OPEN ||
 				info_level == SMB_POSIX_PATH_UNLINK) {
 			ucf_flags |= UCF_UNIX_NAME_LOOKUP;
 		}
