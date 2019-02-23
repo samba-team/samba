@@ -1,5 +1,5 @@
---- orig/Sch51.ldf	2017-11-01 10:14:58.508429058 +1300
-+++ Sch51.ldf	2017-11-01 10:16:12.391393181 +1300
+--- orig/Sch51.ldf	2023-02-02 11:19:49.258058871 +0100
++++ patched/Sch51.ldf	2023-02-02 13:21:57.135145640 +0100
 @@ -4,173 +4,183 @@
  objectClass: attributeSchema
  ldapDisplayName: msDS-TransformationRules
@@ -14,7 +14,7 @@
 +schemaFlagsEx: 1
  schemaIdGuid:: cSuHVbLESDuuUUCV+R7GAA==
  showInAdvancedViewOnly: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn: CN=ms-DS-Applies-To-Resource-Types,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -31,7 +31,7 @@
 +schemaFlagsEx: 1
  schemaIdGuid:: BiA/aWRXSj2EOVjwSqtLWQ==
  showInAdvancedViewOnly: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn: CN=ms-DS-Transformation-Rules-Compiled,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -48,7 +48,7 @@
 +schemaFlagsEx: 1
  schemaIdGuid:: EJq0C2tTTbyicwurDdS9EA==
  showInAdvancedViewOnly: TRUE
- systemFlags: 17  
+ systemFlags: 17
  
  dn: CN=ms-DS-Egress-Claims-Transformation-Policy,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -67,7 +67,7 @@
  schemaIdGuid:: fkI3wXOaQLCRkBsJW7QyiA==
  linkID: 2192
  showInAdvancedViewOnly: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn: CN=ms-DS-Ingress-Claims-Transformation-Policy,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -86,7 +86,7 @@
  schemaIdGuid:: CEwohm4MQBWLFXUUfSPSDQ==
  linkID: 2190
  showInAdvancedViewOnly: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn: CN=ms-DS-TDO-Egress-BL,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -105,7 +105,7 @@
  schemaIdGuid:: KWIA1ROZQiKLF4N2HR4OWw==
  linkID: 2193
  showInAdvancedViewOnly: TRUE
- systemFlags: 17  
+ systemFlags: 17
  
  dn: CN=ms-DS-TDO-Ingress-BL,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -124,7 +124,7 @@
  schemaIdGuid:: oWFWWsaXS1SAVuQw/nvFVA==
  linkID: 2191
  showInAdvancedViewOnly: TRUE
- systemFlags: 17  
+ systemFlags: 17
  
  dn: CN=ms-DS-ManagedPassword,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -141,7 +141,7 @@
 +schemaFlagsEx: 1
  schemaIdGuid:: hu1i4yi3QgiyfS3qep3yGA==
  showInAdvancedViewOnly: TRUE
- systemFlags: 20  
+ systemFlags: 20
  
  dn: CN=ms-DS-ManagedPasswordId,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -159,7 +159,7 @@
  rangeUpper: 1024
  schemaIdGuid:: Wil4DtPGQAq0kdYiUf+gpg==
  showInAdvancedViewOnly: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn: CN=ms-DS-GroupMSAMembership,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -177,7 +177,7 @@
  rangeUpper: 132096
  schemaIdGuid:: 1u2OiATOQN+0YrilDkG6OA==
  showInAdvancedViewOnly: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn: CN=ms-DS-GeoCoordinates-Altitude,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -198,7 +198,7 @@
 +schemaFlagsEx: 1
  schemaIdGuid:: 9451+HasQ4ii7qJrTcr0CQ==
  showInAdvancedViewOnly: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn: CN=ms-DS-ManagedPasswordPreviousId,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -216,10 +216,10 @@
  rangeUpper: 1024
  schemaIdGuid:: MSHW0EotT9CZ2RxjZGIppA==
  showInAdvancedViewOnly: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn:
  changetype: modify
  add: schemaUpdateNow
  schemaUpdateNow: 1
- -  
+ -

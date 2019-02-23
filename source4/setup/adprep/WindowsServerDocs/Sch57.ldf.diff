@@ -1,5 +1,5 @@
---- orig/Sch57.ldf	2017-10-03 15:53:31.170142465 +1300
-+++ Sch57.ldf	2017-10-03 16:17:07.334514795 +1300
+--- orig/Sch57.ldf	2023-02-02 11:19:49.258058871 +0100
++++ patched/Sch57.ldf	2023-02-03 11:55:09.049696113 +0100
 @@ -61,96 +61,101 @@
  adminDescription: This attribute is used to enable or disable the user-device relationship.
  ldapDisplayName: msDS-IsEnabled
@@ -12,7 +12,7 @@
  systemOnly: FALSE
  schemaIdGuid:: DlypIoMfgkyUzr6miM/IcQ==
 +isMemberOfPartialAttributeSet: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn: CN=ms-DS-Device-OS-Type,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -32,7 +32,7 @@
  systemOnly: FALSE
  schemaIdGuid:: TUUOELvzy02EX41e3EccWQ==
 +isMemberOfPartialAttributeSet: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn: CN=ms-DS-Device-OS-Version,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -53,7 +53,7 @@
  systemOnly: FALSE
  schemaIdGuid:: Y4z7cKtfBEWrnRSzKain+A==
 +isMemberOfPartialAttributeSet: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn: CN=ms-DS-Device-Physical-IDs,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -73,7 +73,7 @@
  systemOnly: FALSE
  schemaIdGuid:: FFRhkKCiR0Spk1NAlZm3Tg==
 +isMemberOfPartialAttributeSet: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn: CN=ms-DS-Device-ID,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd
@@ -93,13 +93,13 @@
  systemOnly: FALSE
  schemaIdGuid:: x4EBw0Jj+0GyeffFZsvgpw==
 +isMemberOfPartialAttributeSet: TRUE
- systemFlags: 16  
+ systemFlags: 16
  
  dn:
  changetype: modify
  add: schemaUpdateNow
  schemaUpdateNow: 1
- -  
+ -
  
  dn: CN=ms-DS-Device-Registration-Service-Container,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaAdd

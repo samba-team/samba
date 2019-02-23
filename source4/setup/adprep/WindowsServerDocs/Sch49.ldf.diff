@@ -1,21 +1,21 @@
---- orig/Sch49.ldf	2017-10-03 15:53:31.162142476 +1300
-+++ Sch49.ldf	2017-10-03 16:17:07.326514822 +1300
+--- orig/Sch49.ldf	2023-02-02 11:19:49.258058871 +0100
++++ patched/Sch49.ldf	2023-02-02 11:19:49.702061539 +0100
 @@ -669,26 +669,20 @@
  replace: defaultHidingValue
  defaultHidingValue: TRUE
- -  
+ -
  
  dn: CN=ms-DS-Resource-Properties,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaModify
  replace: defaultHidingValue
  defaultHidingValue: TRUE
- -  
+ -
  
 -dn: CN=ms-DS-List-Of-Claim-Types,CN=Schema,CN=Configuration,DC=X
 -changetype: ntdsSchemaModify
 -replace: defaultHidingValue
 -defaultHidingValue: TRUE
---  
+--
 -
  dn: CN=ms-DS-Claim-Type,CN=Schema,CN=Configuration,DC=X
  changetype: ntdsSchemaModify
@@ -25,6 +25,5 @@
  systemMayContain: 1.2.840.113556.1.4.2098
  systemMayContain: 1.2.840.113556.1.4.2159
  systemMayContain: 1.2.840.113556.1.4.2160
- -  
+ -
  
-
