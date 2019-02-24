@@ -48,6 +48,7 @@
 ^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).POSIX-SYMLINK-EA # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).POSIX-OFD-LOCK # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).POSIX-STREAM-DELETE # Fails against the s4 ntvfs server
+^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).POSIX-MKDIR # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).WINDOWS-BAD-SYMLINK # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).RENAME-ACCESS # Fails against the s4 ntvfs server
 ^samba3.smbtorture_s3.plain\(ad_dc_ntvfs\).OWNER-RIGHTS # Don't test against the s4 ntvfs server anymore
