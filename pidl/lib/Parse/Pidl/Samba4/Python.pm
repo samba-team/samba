@@ -1235,7 +1235,7 @@ sub PythonType($$$$)
 		$self->pidl("PyObject *in = NULL;");
 		$self->pidl("$typename *out = NULL;");
 		$self->pidl("");
-		$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"OiO:import\",");
+		$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"OiO:export\",");
 		$self->indent;
 		$self->pidl("discard_const_p(char *, kwnames),");
 		$self->pidl("&mem_ctx_obj,");
