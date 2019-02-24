@@ -7269,6 +7269,7 @@ static bool run_posix_mkdir_test(int dummy)
 	bool correct = false;
 	NTSTATUS status;
 	TALLOC_CTX *frame = NULL;
+	uint16_t fnum = (uint16_t)-1;
 
 	frame = talloc_stackframe();
 
@@ -7294,6 +7295,102 @@ static bool run_posix_mkdir_test(int dummy)
 	cli_posix_rmdir(cli, fname_Foo_foo);
 	cli_posix_rmdir(cli, fname_Foo_Foo);
 	cli_posix_rmdir(cli, fname_Foo);
+
+	/*
+	 * Create a file POSIX_foo then try
+	 * and use it in a directory path by
+	 * doing mkdir POSIX_foo/bar.
+	 * The mkdir should fail with
+	 * NT_STATUS_OBJECT_PATH_NOT_FOUND
+	 */
+
+	status = cli_posix_open(cli,
+			fname_foo,
+			O_RDWR|O_CREAT,
+			0666,
+			&fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_open of %s failed error %s\n",
+			fname_foo,
+			nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_posix_mkdir(cli, fname_foo_foo, 0777);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+		printf("cli_posix_mkdir of %s should fail with "
+			"NT_STATUS_OBJECT_PATH_NOT_FOUND got "
+			"%s instead\n",
+			fname_foo_foo,
+			nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_close(cli, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_close failed %s\n", nt_errstr(status));
+		goto out;
+	}
+	fnum = (uint16_t)-1;
+
+	status = cli_posix_unlink(cli, fname_foo);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_unlink of %s failed error %s\n",
+			fname_foo,
+			nt_errstr(status));
+		goto out;
+	}
+
+	/*
+	 * Now we've deleted everything, posix_mkdir, posix_rmdir,
+	 * posix_open, posix_unlink, on
+	 * POSIX_foo/foo should return NT_STATUS_OBJECT_PATH_NOT_FOUND
+	 * not silently create POSIX_foo/foo.
+	 */
+
+	status = cli_posix_mkdir(cli, fname_foo_foo, 0777);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+		printf("cli_posix_mkdir of %s should fail with "
+			"NT_STATUS_OBJECT_PATH_NOT_FOUND got "
+			"%s instead\n",
+			fname_foo_foo,
+			nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_posix_rmdir(cli, fname_foo_foo);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+		printf("cli_posix_rmdir of %s should fail with "
+			"NT_STATUS_OBJECT_PATH_NOT_FOUND got "
+			"%s instead\n",
+			fname_foo_foo,
+			nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_posix_open(cli,
+			fname_foo_foo,
+			O_RDWR|O_CREAT,
+			0666,
+			&fnum);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+		printf("cli_posix_open of %s should fail with "
+			"NT_STATUS_OBJECT_PATH_NOT_FOUND got "
+			"%s instead\n",
+			fname_foo_foo,
+			nt_errstr(status));
+		goto out;
+	}
+
+	status = cli_posix_unlink(cli, fname_foo_foo);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_NOT_FOUND)) {
+		printf("cli_posix_unlink of %s should fail with "
+			"NT_STATUS_OBJECT_PATH_NOT_FOUND got "
+			"%s instead\n",
+			fname_foo_foo,
+			nt_errstr(status));
+		goto out;
+	}
 
 	status = cli_posix_mkdir(cli, fname_foo, 0777);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -7335,6 +7432,11 @@ static bool run_posix_mkdir_test(int dummy)
 	correct = true;
 
   out:
+
+	if (fnum != (uint16_t)-1) {
+		cli_close(cli, fnum);
+		fnum = (uint16_t)-1;
+	}
 
 	cli_posix_rmdir(cli, fname_foo_foo);
 	cli_posix_rmdir(cli, fname_foo_Foo);
