@@ -7256,6 +7256,105 @@ static bool run_posix_ofd_lock_test(int dummy)
 	return correct;
 }
 
+/*
+  Test POSIX mkdir is case-sensitive.
+ */
+static bool run_posix_mkdir_test(int dummy)
+{
+	static struct cli_state *cli;
+	const char *fname_foo = "POSIX_foo";
+	const char *fname_foo_Foo = "POSIX_foo/Foo";
+	const char *fname_foo_foo = "POSIX_foo/foo";
+	const char *fname_Foo = "POSIX_Foo";
+	const char *fname_Foo_Foo = "POSIX_Foo/Foo";
+	const char *fname_Foo_foo = "POSIX_Foo/foo";
+	bool correct = false;
+	NTSTATUS status;
+	TALLOC_CTX *frame = NULL;
+
+	frame = talloc_stackframe();
+
+	printf("Starting POSIX mkdir test\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	status = torture_setup_unix_extensions(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	cli_posix_rmdir(cli, fname_foo_foo);
+	cli_posix_rmdir(cli, fname_foo_Foo);
+	cli_posix_rmdir(cli, fname_foo);
+
+	cli_posix_rmdir(cli, fname_Foo_foo);
+	cli_posix_rmdir(cli, fname_Foo_Foo);
+	cli_posix_rmdir(cli, fname_Foo);
+
+	status = cli_posix_mkdir(cli, fname_foo, 0777);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_mkdir of %s failed\n", fname_foo);
+		goto out;
+	}
+
+	status = cli_posix_mkdir(cli, fname_Foo, 0777);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_mkdir of %s failed\n", fname_Foo);
+		goto out;
+	}
+
+	status = cli_posix_mkdir(cli, fname_foo_foo, 0777);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_mkdir of %s failed\n", fname_foo_foo);
+		goto out;
+	}
+
+	status = cli_posix_mkdir(cli, fname_foo_Foo, 0777);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_mkdir of %s failed\n", fname_foo_Foo);
+		goto out;
+	}
+
+	status = cli_posix_mkdir(cli, fname_Foo_foo, 0777);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_mkdir of %s failed\n", fname_Foo_foo);
+		goto out;
+	}
+
+	status = cli_posix_mkdir(cli, fname_Foo_Foo, 0777);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_mkdir of %s failed\n", fname_Foo_Foo);
+		goto out;
+	}
+
+	printf("POSIX mkdir test passed\n");
+	correct = true;
+
+  out:
+
+	cli_posix_rmdir(cli, fname_foo_foo);
+	cli_posix_rmdir(cli, fname_foo_Foo);
+	cli_posix_rmdir(cli, fname_foo);
+
+	cli_posix_rmdir(cli, fname_Foo_foo);
+	cli_posix_rmdir(cli, fname_Foo_Foo);
+	cli_posix_rmdir(cli, fname_Foo);
+
+	if (!torture_close_connection(cli)) {
+		correct = false;
+	}
+
+	TALLOC_FREE(frame);
+	return correct;
+}
+
+
 static uint32_t open_attrs_table[] = {
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_ATTRIBUTE_ARCHIVE,
@@ -11894,6 +11993,10 @@ static struct {
 	{
 		.name  = "POSIX-OFD-LOCK",
 		.fn    = run_posix_ofd_lock_test,
+	},
+	{
+		.name  = "POSIX-MKDIR",
+		.fn    = run_posix_mkdir_test,
 	},
 	{
 		.name  = "WINDOWS-BAD-SYMLINK",
