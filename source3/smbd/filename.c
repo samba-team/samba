@@ -937,6 +937,24 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 *
 				 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13803
 				 */
+				if (end != NULL) {
+					const char *morepath = NULL;
+					/*
+					 * If this is intermediate we must
+					 * restore the full path.
+					 */
+					*end = '/';
+					/*
+					 * If there are any more components
+					 * after the failed LSTAT we cannot
+					 * continue.
+					 */
+					morepath = strchr(end + 1, '/');
+					if (morepath != NULL) {
+						status = NT_STATUS_OBJECT_PATH_NOT_FOUND;
+						goto fail;
+					}
+				}
 				if (errno == ENOENT) {
 					/* New file or directory. */
 					goto done;
