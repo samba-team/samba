@@ -718,12 +718,10 @@ if have_heimdal_support:
     planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log", extra_args=['-U"$USERNAME%$PASSWORD"'],
                            environ={'CLIENT_IP': '127.0.0.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
-    planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log_pass_change", extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
-                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
-    planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log_pass_change", extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
-                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+    planoldpythontestsuite("ad_dc", "samba.tests.auth_log_pass_change", extra_args=['-U"$USERNAME%$PASSWORD"'],
+                           environ={'CLIENT_IP': '127.0.0.11'})
+    planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.auth_log_pass_change", extra_args=['-U"$USERNAME%$PASSWORD"'],
+                           environ={'CLIENT_IP': '127.0.0.11'})
 
     # these tests use a NCA local RPC connection, so always run on the
     # :local testenv, and so don't need to fake a client connection
@@ -739,18 +737,15 @@ if have_heimdal_support:
     planoldpythontestsuite("ad_member:local",
                            "samba.tests.auth_log_winbind",
                            extra_args=['-U"$DC_USERNAME%$DC_PASSWORD"'])
-    planoldpythontestsuite("ad_dc:local", "samba.tests.audit_log_pass_change",
+    planoldpythontestsuite("ad_dc", "samba.tests.audit_log_pass_change",
                            extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
-                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
-    planoldpythontestsuite("ad_dc:local", "samba.tests.audit_log_dsdb",
+                           environ={'CLIENT_IP': '127.0.0.11'})
+    planoldpythontestsuite("ad_dc", "samba.tests.audit_log_dsdb",
                            extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
-                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
-    planoldpythontestsuite("ad_dc:local", "samba.tests.group_audit",
+                           environ={'CLIENT_IP': '127.0.0.11'})
+    planoldpythontestsuite("ad_dc", "samba.tests.group_audit",
                            extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
-                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+                           environ={'CLIENT_IP': '127.0.0.11'})
 
 planoldpythontestsuite("fl2008r2dc:local",
                        "samba.tests.getdcname",

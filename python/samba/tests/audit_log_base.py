@@ -22,6 +22,7 @@ from __future__ import print_function
 import samba.tests
 from samba.messaging import Messaging
 from samba.dcerpc.messaging import MSG_AUTH_LOG, AUTH_EVENT_NAME
+from samba.param import LoadParm
 import time
 import json
 import os
@@ -41,7 +42,15 @@ class AuditLogTestBase(samba.tests.TestCase):
 
     def setUp(self):
         super(AuditLogTestBase, self).setUp()
-        lp_ctx = self.get_loadparm()
+
+        # connect to the server's messaging bus (we need to explicitly load a
+        # different smb.conf here, because in all other respects this test
+        # wants to act as a separate remote client)
+        server_conf = os.getenv('SERVERCONFFILE')
+        if server_conf:
+            lp_ctx = LoadParm(filename_for_non_global_lp=server_conf)
+        else:
+            lp_ctx = self.get_loadparm()
         self.msg_ctx = Messaging((1,), lp_ctx=lp_ctx)
         self.msg_ctx.irpc_add_name(self.event_type)
 
