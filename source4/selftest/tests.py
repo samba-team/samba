@@ -727,22 +727,14 @@ if have_heimdal_support:
 
     # these tests use a NCA local RPC connection, so always run on the
     # :local testenv, and so don't need to fake a client connection
-    planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log_ncalrpc", extra_args=['-U"$USERNAME%$PASSWORD"'])
-    planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log_ncalrpc", extra_args=['-U"$USERNAME%$PASSWORD"'])
-    planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log_samlogon",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'])
-    planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log_samlogon",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'])
-    planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log_netlogon",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'])
-    planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log_netlogon",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'])
-    planoldpythontestsuite("ad_dc:local",
-                           "samba.tests.auth_log_netlogon_bad_creds",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'])
-    planoldpythontestsuite("ad_dc_ntvfs:local",
-                           "samba.tests.auth_log_netlogon_bad_creds",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'])
+    for env in ["ad_dc_ntvfs:local", "ad_dc:local"]:
+        planoldpythontestsuite(env, "samba.tests.auth_log_ncalrpc", extra_args=['-U"$USERNAME%$PASSWORD"'])
+        planoldpythontestsuite(env, "samba.tests.auth_log_samlogon",
+                               extra_args=['-U"$USERNAME%$PASSWORD"'])
+        planoldpythontestsuite(env, "samba.tests.auth_log_netlogon",
+                               extra_args=['-U"$USERNAME%$PASSWORD"'])
+        planoldpythontestsuite(env, "samba.tests.auth_log_netlogon_bad_creds",
+                               extra_args=['-U"$USERNAME%$PASSWORD"'])
 
     planoldpythontestsuite("ad_member:local",
                            "samba.tests.auth_log_winbind",
