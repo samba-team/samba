@@ -45,7 +45,6 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
     def setUp(self):
         super(AuthLogPassChangeTests, self).setUp()
 
-        self.remoteAddress = os.environ["CLIENT_IP"]
         self.server_ip = os.environ["SERVER_IP"]
 
         host = "ldap://%s" % os.environ["SERVER"]

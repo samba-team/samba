@@ -48,6 +48,17 @@ class AuthLogTestBase(samba.tests.TestCase):
         msg_ctxs.append(self.msg_ctx)
         self.msg_ctx.irpc_add_name(AUTH_EVENT_NAME)
 
+        # Now switch back to using the client-side smb.conf. The tests will
+        # use the first interface in the client.conf (we need to strip off
+        # the subnet mask portion)
+        lp_ctx = self.get_loadparm()
+        client_ip_and_mask = lp_ctx.get('interfaces')[0]
+        client_ip = client_ip_and_mask.split('/')[0]
+
+        # the messaging ctx is the server's view of the world, so our own
+        # client IP will be the remoteAddress when connections are logged
+        self.remoteAddress = client_ip
+
         def messageHandler(context, msgType, src, message):
             # This does not look like sub unit output and it
             # makes these tests much easier to debug.

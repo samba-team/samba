@@ -718,10 +718,10 @@ if have_heimdal_support:
     planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log", extra_args=['-U"$USERNAME%$PASSWORD"'],
                            environ={'CLIENT_IP': '127.0.0.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
-    planoldpythontestsuite("ad_dc", "samba.tests.auth_log_pass_change", extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11'})
-    planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.auth_log_pass_change", extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11'})
+    planoldpythontestsuite("ad_dc", "samba.tests.auth_log_pass_change",
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
+    planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.auth_log_pass_change",
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
 
     # these tests use a NCA local RPC connection, so always run on the
     # :local testenv, and so don't need to fake a client connection
