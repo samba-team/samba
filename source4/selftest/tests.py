@@ -724,34 +724,26 @@ if have_heimdal_support:
     planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log_pass_change", extra_args=['-U"$USERNAME%$PASSWORD"'],
                            environ={'CLIENT_IP': '127.0.0.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+
+    # these tests use a NCA local RPC connection, so always run on the
+    # :local testenv, and so don't need to fake a client connection
     planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log_ncalrpc", extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log_ncalrpc", extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log_samlogon",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
-                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log_samlogon",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
-                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc:local", "samba.tests.auth_log_netlogon",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
-                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log_netlogon",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
-                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc:local",
                            "samba.tests.auth_log_netlogon_bad_creds",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
-                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc_ntvfs:local",
                            "samba.tests.auth_log_netlogon_bad_creds",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11',
-                                    'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
+
     planoldpythontestsuite("ad_member:local",
                            "samba.tests.auth_log_winbind",
                            extra_args=['-U"$DC_USERNAME%$DC_PASSWORD"'],
