@@ -246,6 +246,7 @@ static NTSTATUS wb_xids2sids_init_dom_maps_recv(struct tevent_req *req)
 struct wb_xids2sids_dom_state {
 	struct tevent_context *ev;
 	struct unixid *all_xids;
+	const bool *cached;
 	size_t num_all_xids;
 	struct dom_sid *all_sids;
 	struct wb_xids2sids_dom_map *dom_map;
@@ -262,7 +263,10 @@ static void wb_xids2sids_dom_gotdc(struct tevent_req *subreq);
 static struct tevent_req *wb_xids2sids_dom_send(
 	TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 	struct wb_xids2sids_dom_map *dom_map,
-	struct unixid *xids, size_t num_xids, struct dom_sid *sids)
+	struct unixid *xids,
+	const bool *cached,
+	size_t num_xids,
+	struct dom_sid *sids)
 {
 	struct tevent_req *req, *subreq;
 	struct wb_xids2sids_dom_state *state;
@@ -276,6 +280,7 @@ static struct tevent_req *wb_xids2sids_dom_send(
 	}
 	state->ev = ev;
 	state->all_xids = xids;
+	state->cached = cached;
 	state->num_all_xids = num_xids;
 	state->all_sids = sids;
 	state->dom_map = dom_map;
@@ -296,7 +301,7 @@ static struct tevent_req *wb_xids2sids_dom_send(
 			/* out of range */
 			continue;
 		}
-		if (!is_null_sid(&state->all_sids[i])) {
+		if (state->cached[i]) {
 			/* already mapped */
 			continue;
 		}
@@ -363,7 +368,7 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 			/* out of range */
 			continue;
 		}
-		if (!is_null_sid(&state->all_sids[i])) {
+		if (state->cached[i]) {
 			/* already mapped */
 			continue;
 		}
@@ -525,7 +530,7 @@ static void wb_xids2sids_init_dom_maps_done(struct tevent_req *subreq)
 
 	subreq = wb_xids2sids_dom_send(
 		state, state->ev, &dom_maps[state->dom_idx],
-		state->xids, state->num_xids, state->sids);
+		state->xids, state->cached, state->num_xids, state->sids);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -556,6 +561,7 @@ static void wb_xids2sids_done(struct tevent_req *subreq)
 					       state->ev,
 					       &dom_maps[state->dom_idx],
 					       state->xids,
+					       state->cached,
 					       state->num_xids,
 					       state->sids);
 		if (tevent_req_nomem(subreq, req)) {
