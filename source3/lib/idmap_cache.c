@@ -215,7 +215,12 @@ static void idmap_cache_xid2sid_parser(const struct gencache_timeout *timeout,
 
 	value = (char *)blob.data;
 
-	if (value[0] != '-') {
+	if ((value[0] == '-') && (value[1] == '\0')) {
+		/*
+		 * Return NULL SID, see comment to uid2sid
+		 */
+		state->ret = true;
+	} else {
 		state->ret = string_to_sid(state->sid, value);
 	}
 	if (state->ret) {
