@@ -437,8 +437,11 @@ sub get_interface($)
 		localnt4dc9       => 9,
 		# 10 is spare
 
-		# 11-16 used by selftest.pl for client interfaces
+		# 11 is used by selftest.pl for the client interface
 		client            => 11,
+
+		# 12-16 have been historically reserved for the client, although
+		# aren't actually used
 
 		addc_no_nss       => 17,
 		addc_no_ntlm      => 18,

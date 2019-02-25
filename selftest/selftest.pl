@@ -511,12 +511,7 @@ foreach (@opt_include) {
 	push (@includes, read_test_regexes($_));
 }
 
-my $interfaces = join(',', ("127.0.0.11/8",
-			    "127.0.0.12/8",
-			    "127.0.0.13/8",
-			    "127.0.0.14/8",
-			    "127.0.0.15/8",
-			    "127.0.0.16/8"));
+my $interfaces = "127.0.0.11/8";
 
 my $clientdir = "$prefix_abs/client";
 
