@@ -15,7 +15,6 @@ export SELFTEST_PREFIX=$PWD/st
 export DOMAIN=SAMBADOMAIN
 export BINDIR=./bin
 export DC_SERVER_IP=127.0.0.21
-export SELFTEST_INTERFACES=127.0.0.6/8,127.0.0.7/8,127.0.0.8/8,127.0.0.9/8,127.0.0.10/8,127.0.0.11/8
 export SOCKET_WRAPPER_DIR=$PWD/st/w
 export DC_USERNAME=Administrator
 export USERNAME=Administrator
