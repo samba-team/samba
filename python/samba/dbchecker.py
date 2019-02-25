@@ -2088,7 +2088,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         error_count = 0
         set_attrs_from_md = set()
         set_attrs_seen = set()
-        got_repl_property_meta_data = False
         got_objectclass = False
 
         nc_dn = self.samdb.get_nc_root(obj.dn)
@@ -2105,6 +2104,18 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         name_val = None
         isDeleted = False
         systemFlags = 0
+        repl_meta_data_val = None
+
+        for attrname in obj:
+            if str(attrname).lower() == 'isdeleted':
+                if str(obj[attrname][0]) != "FALSE":
+                    isDeleted = True
+
+            if str(attrname).lower() == 'systemflags':
+                systemFlags = int(obj[attrname][0])
+
+            if str(attrname).lower() == 'replpropertymetadata':
+                repl_meta_data_val = obj[attrname][0]
 
         for attrname in obj:
             if attrname == 'dn' or attrname == "distinguishedName":
@@ -2129,13 +2140,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                 (len(obj[attrname]), attrname, str(obj.dn)))
                 else:
                     object_rdn_val = str(obj[attrname][0])
-
-            if str(attrname).lower() == 'isdeleted':
-                if str(obj[attrname][0]) != "FALSE":
-                    isDeleted = True
-
-            if str(attrname).lower() == 'systemflags':
-                systemFlags = int(obj[attrname][0])
 
             if str(attrname).lower() == 'replpropertymetadata':
                 if self.has_replmetadata_zero_invocationid(dn, obj[attrname][0]):
@@ -2166,7 +2170,6 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                         self.report("ERROR: Not fixing incorrect initial attributeID in '%s' on '%s', it should be objectClass" %
                                     (attrname, str(dn)))
 
-                got_repl_property_meta_data = True
                 continue
 
             if str(attrname).lower() == 'ntsecuritydescriptor':
@@ -2347,13 +2350,13 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                 self.report("ERROR: Not fixing %s=%r on '%s'" % (object_rdn_attr, object_rdn_val, str(obj.dn)))
 
         show_dn = True
-        if got_repl_property_meta_data:
+        if repl_meta_data_val:
             if obj.dn == deleted_objects_dn:
                 isDeletedAttId = 131120
                 # It's 29/12/9999 at 23:59:59 UTC as specified in MS-ADTS 7.1.1.4.2 Deleted Objects Container
 
                 expectedTimeDo = 2650466015990000000
-                originating = self.get_originating_time(obj["replPropertyMetaData"][0], isDeletedAttId)
+                originating = self.get_originating_time(repl_meta_data_val, isDeletedAttId)
                 if originating != expectedTimeDo:
                     if self.confirm_all("Fix isDeleted originating_change_time on '%s'" % str(dn), 'fix_time_metadata'):
                         nmsg = ldb.Message()
