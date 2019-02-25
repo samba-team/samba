@@ -7,8 +7,6 @@ Removed deleted DN on attribute lastKnownParent
 ERROR: wrong dn[CN=fred\0ADEL:2301a64c-1234-5678-851e-12d4a711cfb4,OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp] cn='fred\nDEL:2301a64c-1234-5678-851e-12d4a711cfb4' name=b'fred\nDEL:2301a64c-1234-5678-851e-12d4a711cfb4' new_dn[CN=fred\0ADEL:2301a64c-1234-5678-851e-12d4a711cfb4,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp]
 Rename CN=fred\0ADEL:2301a64c-1234-5678-851e-12d4a711cfb4,OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp to CN=fred\0ADEL:2301a64c-1234-5678-851e-12d4a711cfb4,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp? [YES]
 Renamed CN=fred\0ADEL:2301a64c-1234-5678-851e-12d4a711cfb4,OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp into CN=fred\0ADEL:2301a64c-1234-5678-851e-12d4a711cfb4,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
-ERROR: parent object not found for CN=fred\0ADEL:2301a64c-1234-5678-851e-12d4a711cfb4,OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp
-Move object CN=fred\0ADEL:2301a64c-1234-5678-851e-12d4a711cfb4,OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp into LostAndFound? [YES]
-Renamed object CN=fred\0ADEL:2301a64c-1234-5678-851e-12d4a711cfb4,OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp into lostAndFound at CN=fred\0ADEL:2301a64c-1234-5678-851e-12d4a711cfb4,CN=LostAndFound,DC=release-4-5-0-pre1,DC=samba,DC=corp
-Set lastKnownParent on lostAndFound object at CN=fred\0ADEL:2301a64c-1234-5678-851e-12d4a711cfb4,CN=LostAndFound,DC=release-4-5-0-pre1,DC=samba,DC=corp
-Checked 232 objects (2 errors)
+WARNING: parent object not found for CN=fred\0ADEL:2301a64c-1234-5678-851e-12d4a711cfb4,OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp
+Not moving to LostAndFound (tombstone garbage collection in progress?)
+Checked 232 objects (1 errors)

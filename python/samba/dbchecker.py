@@ -2360,8 +2360,13 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                         controls=["show_recycled:1", "show_deleted:1"])
         except ldb.LdbError, (enum, estr):
             if enum == ldb.ERR_NO_SUCH_OBJECT:
-                self.err_missing_parent(obj)
-                error_count += 1
+                if isDeleted:
+                    self.report("WARNING: parent object not found for %s" % (obj.dn))
+                    self.report("Not moving to LostAndFound "
+                                "(tombstone garbage collection in progress?)")
+                else:
+                    self.err_missing_parent(obj)
+                    error_count += 1
             else:
                 raise
 
