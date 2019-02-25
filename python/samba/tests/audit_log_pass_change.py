@@ -48,7 +48,6 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         self.event_type = DSDB_PWD_EVENT_NAME
         super(AuditLogPassChangeTests, self).setUp()
 
-        self.remoteAddress = os.environ["CLIENT_IP"]
         self.server_ip = os.environ["SERVER_IP"]
 
         host = "ldap://%s" % os.environ["SERVER"]

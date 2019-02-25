@@ -738,14 +738,11 @@ if have_heimdal_support:
                            "samba.tests.auth_log_winbind",
                            extra_args=['-U"$DC_USERNAME%$DC_PASSWORD"'])
     planoldpythontestsuite("ad_dc", "samba.tests.audit_log_pass_change",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11'})
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc", "samba.tests.audit_log_dsdb",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11'})
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc", "samba.tests.group_audit",
-                           extra_args=['-U"$USERNAME%$PASSWORD"'],
-                           environ={'CLIENT_IP': '127.0.0.11'})
+                           extra_args=['-U"$USERNAME%$PASSWORD"'])
 
 planoldpythontestsuite("fl2008r2dc:local",
                        "samba.tests.getdcname",

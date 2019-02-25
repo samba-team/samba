@@ -43,7 +43,6 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.event_type = DSDB_EVENT_NAME
         super(AuditLogDsdbTests, self).setUp()
 
-        self.remoteAddress = os.environ["CLIENT_IP"]
         self.server_ip = os.environ["SERVER_IP"]
 
         host = "ldap://%s" % os.environ["SERVER"]

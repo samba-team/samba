@@ -50,7 +50,6 @@ class GroupAuditTests(AuditLogTestBase):
         self.event_type = DSDB_GROUP_EVENT_NAME
         super(GroupAuditTests, self).setUp()
 
-        self.remoteAddress = os.environ["CLIENT_IP"]
         self.server_ip = os.environ["SERVER_IP"]
 
         host = "ldap://%s" % os.environ["SERVER"]

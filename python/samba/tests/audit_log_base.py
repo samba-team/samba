@@ -54,6 +54,17 @@ class AuditLogTestBase(samba.tests.TestCase):
         self.msg_ctx = Messaging((1,), lp_ctx=lp_ctx)
         self.msg_ctx.irpc_add_name(self.event_type)
 
+        # Now switch back to using the client-side smb.conf. The tests will
+        # use the first interface in the client.conf (we need to strip off
+        # the subnet mask portion)
+        lp_ctx = self.get_loadparm()
+        client_ip_and_mask = lp_ctx.get('interfaces')[0]
+        client_ip = client_ip_and_mask.split('/')[0]
+
+        # the messaging ctx is the server's view of the world, so our own
+        # client IP will be the remoteAddress when connections are logged
+        self.remoteAddress = client_ip
+
         #
         # Check the remote address of a message against the one beimg used
         # for the tests.
