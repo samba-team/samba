@@ -2391,8 +2391,13 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         except ldb.LdbError as e11:
             (enum, estr) = e11.args
             if enum == ldb.ERR_NO_SUCH_OBJECT:
-                self.err_missing_parent(obj)
-                error_count += 1
+                if isDeleted:
+                    self.report("WARNING: parent object not found for %s" % (obj.dn))
+                    self.report("Not moving to LostAndFound "
+                                "(tombstone garbage collection in progress?)")
+                else:
+                    self.err_missing_parent(obj)
+                    error_count += 1
             else:
                 raise
 
