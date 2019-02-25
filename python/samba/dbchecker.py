@@ -549,6 +549,19 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
     def err_missing_target_dn_or_GUID(self, dn, attrname, val, dsdb_dn):
         """handle a missing target DN (if specified, GUID form can't be found,
         and otherwise DN string form can't be found)"""
+
+        # Don't change anything if the object itself is deleted
+        if str(dn).find('\\0ADEL') != -1:
+            # We don't bump the error count as Samba produces these
+            # in normal operation
+            self.report("WARNING: no target object found for GUID "
+                        "component link %s in deleted object "
+                        "%s - %s" % (attrname, dn, val))
+            self.report("Not removing dangling one-way "
+                        "link on deleted object "
+                        "(tombstone garbage collection in progress?)")
+            return 0
+
         # check if its a backlink
         linkID, _ = self.get_attr_linkID_and_reverse_name(attrname)
         if (linkID & 1 == 0) and str(dsdb_dn).find('\\0ADEL') == -1:
