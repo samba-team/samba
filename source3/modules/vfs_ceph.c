@@ -1160,6 +1160,22 @@ static int cephwrap_ftruncate(struct vfs_handle_struct *handle, files_struct *fs
 	return result;
 }
 
+static int cephwrap_fallocate(struct vfs_handle_struct *handle,
+			      struct files_struct *fsp,
+			      uint32_t mode,
+			      off_t offset,
+			      off_t len)
+{
+	int result;
+
+	DBG_DEBUG("[CEPH] fallocate(%p, %p, %u, %llu, %llu\n",
+		  handle, fsp, mode, llu(offset), llu(len));
+	/* unsupported mode flags are rejected by libcephfs */
+	result = ceph_fallocate(handle->data, fsp->fh->fd, mode, offset, len);
+	DBG_DEBUG("[CEPH] fallocate(...) = %d\n", result);
+	WRAP_RETURN(result);
+}
+
 static bool cephwrap_lock(struct vfs_handle_struct *handle, files_struct *fsp, int op, off_t offset, off_t count, int type)
 {
 	DBG_DEBUG("[CEPH] lock\n");
@@ -1518,6 +1534,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.getwd_fn = cephwrap_getwd,
 	.ntimes_fn = cephwrap_ntimes,
 	.ftruncate_fn = cephwrap_ftruncate,
+	.fallocate_fn = cephwrap_fallocate,
 	.lock_fn = cephwrap_lock,
 	.kernel_flock_fn = cephwrap_kernel_flock,
 	.linux_setlease_fn = cephwrap_linux_setlease,
