@@ -41,9 +41,6 @@
 
 #define DAEMON_NAME "fssd"
 
-void start_fssd(struct tevent_context *ev_ctx,
-		struct messaging_context *msg_ctx);
-
 static void fssd_reopen_logs(void)
 {
 	const struct loadparm_substitution *lp_sub =
@@ -150,7 +147,8 @@ static bool fss_init_cb(void *ptr)
 }
 
 void start_fssd(struct tevent_context *ev_ctx,
-		struct messaging_context *msg_ctx)
+		struct messaging_context *msg_ctx,
+		struct dcesrv_context *dce_ctx)
 {
 	struct rpc_srv_callbacks fss_cb;
 	NTSTATUS status;
@@ -207,6 +205,15 @@ void start_fssd(struct tevent_context *ev_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register 'FileServerVssAgent' endpoint "
 			"server: %s\n", nt_errstr(status));
+		exit(1);
+	}
+
+	DBG_INFO("Reinitializing DCE/RPC server context\n");
+
+	status = dcesrv_reinit_context(dce_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to reinit DCE/RPC context: %s\n",
+			nt_errstr(status));
 		exit(1);
 	}
 

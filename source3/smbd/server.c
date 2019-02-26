@@ -2114,7 +2114,7 @@ extern void build_options(bool screen);
 		}
 
 		if (rpc_fss_daemon() == RPC_DAEMON_FORK) {
-			start_fssd(ev_ctx, msg_ctx);
+			start_fssd(ev_ctx, msg_ctx, dce_ctx);
 		}
 
 		if (!lp__disable_spoolss() &&
