@@ -1337,6 +1337,80 @@ void gid_to_sid(struct dom_sid *psid, gid_t gid)
 	return;
 }
 
+void xid_to_sid(struct dom_sid *psid, const struct unixid *xid)
+{
+	bool expired = true;
+	bool ret;
+	struct dom_sid_buf buf;
+
+	SMB_ASSERT(xid->type == ID_TYPE_UID || xid->type == ID_TYPE_GID);
+
+	*psid = (struct dom_sid) {0};
+
+	ret = idmap_cache_find_xid2sid(xid, psid, &expired);
+	if (ret && !expired) {
+		DBG_DEBUG("%cID %"PRIu32" -> %s from cache\n",
+			  xid->type == ID_TYPE_UID ? 'U' : 'G',
+			  xid->id,
+			  dom_sid_str_buf(psid, &buf));
+		goto done;
+	}
+
+	ret = winbind_xid_to_sid(psid, xid);
+	if (ret) {
+		/*
+		 * winbind can return an explicit negative mapping
+		 * here. It's up to winbind to prime the cache either
+		 * positively or negatively, don't mess with the cache
+		 * here.
+		 */
+		DBG_DEBUG("%cID %"PRIu32" -> %s from cache\n",
+			  xid->type == ID_TYPE_UID ? 'U' : 'G',
+			  xid->id,
+			  dom_sid_str_buf(psid, &buf));
+		goto done;
+	}
+
+	{
+		/*
+		 * Make a copy, pdb_id_to_sid might want to turn
+		 * xid->type into ID_TYPE_BOTH, which we ignore here.
+		 */
+		struct unixid rw_xid = *xid;
+
+		become_root();
+		ret = pdb_id_to_sid(&rw_xid, psid);
+		unbecome_root();
+	}
+
+	if (ret) {
+		DBG_DEBUG("%cID %"PRIu32" -> %s from passdb\n",
+			  xid->type == ID_TYPE_UID ? 'U' : 'G',
+			  xid->id,
+			  dom_sid_str_buf(psid, &buf));
+		goto done;
+	}
+
+done:
+	if (is_null_sid(psid)) {
+		/*
+		 * Nobody found anything: Return S-1-22-xx-yy. Don't
+		 * store that in caches, this is up to the layers
+		 * beneath us.
+		 */
+		if (xid->type == ID_TYPE_UID) {
+			uid_to_unix_users_sid(xid->id, psid);
+		} else {
+			gid_to_unix_groups_sid(xid->id, psid);
+		}
+
+		DBG_DEBUG("%cID %"PRIu32" -> %s fallback\n",
+			  xid->type == ID_TYPE_UID ? 'U' : 'G',
+			  xid->id,
+			  dom_sid_str_buf(psid, &buf));
+	}
+}
+
 bool sids_to_unixids(const struct dom_sid *sids, uint32_t num_sids,
 		     struct unixid *ids)
 {
