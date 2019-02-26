@@ -76,6 +76,9 @@ samba-xc:
 samba-o3:
   extends: .shared_template
 
+samba-ad-member:
+  extends: .shared_template
+
 samba-ad-dc-2:
   extends: .shared_template
   # this one takes about 1 hours to finish

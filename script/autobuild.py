@@ -38,6 +38,7 @@ builddirs = {
     "samba": ".",
     "samba-nt4": ".",
     "samba-fileserver": ".",
+    "samba-ad-member": ".",
     "samba-xc": ".",
     "samba-o3": ".",
     "samba-ctdb": ".",
@@ -106,6 +107,7 @@ tasks = {
                  "--exclude-env=ad_member "
                  "--exclude-env=ad_member_idmap_rid "
                  "--exclude-env=ad_member_idmap_ad "
+                 "--exclude-env=ad_member_rfc2307 "
                  "--exclude-env=chgdcpass "
                  "--exclude-env=vampire_2000_dc "
                  "--exclude-env=fl2000dc "
@@ -147,6 +149,18 @@ tasks = {
                             "'", "text/plain"),
                            ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
+    "samba-ad-member": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                        ("make", "make -j", "text/plain"),
+                        ("test", "make test FAIL_IMMEDIATELY=1 "
+                         "TESTS='"
+                         "--include-env=ad_member "
+                         "--include-env=ad_member_idmap_rid "
+                         "--include-env=ad_member_idmap_ad "
+                         "--include-env=ad_member_rfc2307 "
+                         "'", "text/plain"),
+                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+
     "samba-ad-dc": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
@@ -154,9 +168,7 @@ tasks = {
                        "TESTS='--include-env=ad_dc "
                        "--include-env=fl2003dc "
                        "--include-env=fl2008r2dc "
-                       "--include-env=ad_member "
-                       "--include-env=ad_member_idmap_rid "
-                       "--include-env=ad_member_idmap_ad'", "text/plain"),
+                       "'", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-ad-dc-2": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
