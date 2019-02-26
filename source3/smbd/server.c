@@ -2090,12 +2090,6 @@ extern void build_options(bool screen);
 		return -1;
 	}
 
-	if (is_daemon && !interactive) {
-		if (rpc_epmapper_daemon() == RPC_DAEMON_FORK) {
-			start_epmd(ev_ctx, msg_ctx);
-		}
-	}
-
 	status = dcesrv_init(ev_ctx, ev_ctx, msg_ctx, dce_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to setup RPC server: %s\n", nt_errstr(status));
@@ -2110,6 +2104,10 @@ extern void build_options(bool screen);
 	 * -- bad things will happen if smbd is launched via inetd
 	 *  and we fork a copy of ourselves here */
 	if (is_daemon && !interactive) {
+
+		if (rpc_epmapper_daemon() == RPC_DAEMON_FORK) {
+			start_epmd(ev_ctx, msg_ctx, dce_ctx);
+		}
 
 		if (rpc_lsasd_daemon() == RPC_DAEMON_FORK) {
 			start_lsasd(ev_ctx, msg_ctx);

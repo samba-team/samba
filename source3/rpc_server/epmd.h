@@ -25,7 +25,10 @@
 #include "replace.h"
 #include "messages.h"
 
+struct dcesrv_context;
+
 void start_epmd(struct tevent_context *ev_ctx,
-		struct messaging_context *msg_ctx);
+		struct messaging_context *msg_ctx,
+		struct dcesrv_context *dce_ctx);
 
 #endif
