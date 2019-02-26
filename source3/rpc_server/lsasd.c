@@ -270,27 +270,6 @@ static bool lsasd_child_init(struct tevent_context *ev_ctx,
 			   MSG_PREFORK_PARENT_EVENT, parent_ping);
 	id_cache_register_msgs(msg_ctx);
 
-	status = rpc_lsarpc_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register lsarpc rpc interface! (%s)\n",
-			  nt_errstr(status)));
-		return false;
-	}
-
-	status = rpc_samr_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register samr rpc interface! (%s)\n",
-			  nt_errstr(status)));
-		return false;
-	}
-
-	status = rpc_netlogon_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register netlogon rpc interface! (%s)\n",
-			  nt_errstr(status)));
-		return false;
-	}
-
 	return true;
 }
 
@@ -847,6 +826,7 @@ void start_lsasd(struct tevent_context *ev_ctx,
 	int rc;
 	bool ok;
 	const struct dcesrv_endpoint_server *ep_server = NULL;
+	const char *ep_servers[] = { "lsarpc", "samr", "netlogon", NULL };
 
 	DEBUG(1, ("Forking LSA Service Daemon\n"));
 
@@ -946,6 +926,16 @@ void start_lsasd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
+	DBG_INFO("Initializing DCE/RPC registered endpoint servers\n");
+
+	/* Init ep servers */
+	status = dcesrv_init_ep_servers(dce_ctx, ep_servers);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to init DCE/RPC endpoint server: %s\n",
+			nt_errstr(status));
+		exit(1);
+	}
+
 	ok = lsasd_create_sockets(ev_ctx, msg_ctx, listen_fd, &listen_fd_size);
 	if (!ok) {
 		exit(1);
@@ -972,27 +962,6 @@ void start_lsasd(struct tevent_context *ev_ctx,
 			   lsasd_smb_conf_updated);
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_PREFORK_CHILD_EVENT, child_ping);
-
-	status = rpc_lsarpc_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register lsarpc rpc interface in lsasd! (%s)\n",
-			  nt_errstr(status)));
-		exit(1);
-	}
-
-	status = rpc_samr_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register samr rpc interface in lsasd! (%s)\n",
-			  nt_errstr(status)));
-		exit(1);
-	}
-
-	status = rpc_netlogon_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register netlogon rpc interface in lsasd! (%s)\n",
-			  nt_errstr(status)));
-		exit(1);
-	}
 
 	ok = lsasd_setup_children_monitor(ev_ctx, msg_ctx);
 	if (!ok) {
