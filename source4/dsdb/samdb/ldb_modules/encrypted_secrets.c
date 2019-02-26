@@ -39,18 +39,12 @@
 #include "dsdb/samdb/samdb.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 
-#ifdef TEST_ENCRYPTED_SECRETS
+/* Build either with GnuTLS crypto or Samba crypto. */
+#ifdef HAVE_GNUTLS_AEAD
+	#define BUILD_WITH_GNUTLS_AEAD
+#else /* !HAVE_GNUTLS_AEAD */
 	#define BUILD_WITH_SAMBA_AES_GCM
-	#ifdef HAVE_GNUTLS_AEAD
-		#define BUILD_WITH_GNUTLS_AEAD
-	#endif
-#else
-	#ifdef HAVE_GNUTLS_AEAD
-		#define BUILD_WITH_GNUTLS_AEAD
-	#else
-		#define BUILD_WITH_SAMBA_AES_GCM
-	#endif
-#endif
+#endif /* HAVE_GNUTLS_AEAD */
 
 #ifdef BUILD_WITH_GNUTLS_AEAD
 	#include <gnutls/gnutls.h>

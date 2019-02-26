@@ -451,26 +451,6 @@ static void test_gnutls_value_encryption(void **state)
 				&decrypted->cleartext,
 				&plain_text));
 	}
-
-	{
-		struct PlaintextSecret *decrypted =
-			talloc_zero(test_ctx, struct PlaintextSecret);
-		samba_decrypt_aead(
-			&err,
-			test_ctx,
-			test_ctx->ldb,
-			&es,
-			decrypted,
-			data);
-		assert_int_equal(LDB_SUCCESS, err);
-		assert_int_equal(
-			plain_text.length,
-			decrypted->cleartext.length);
-		assert_int_equal(0,
-			data_blob_cmp(
-				&decrypted->cleartext,
-				&plain_text));
-	}
 }
 #endif /* HAVE_GNUTLS_AEAD */
 
@@ -674,9 +654,11 @@ static void test_gnutls_altered_iv(void **state)
 	}
 }
 #endif /* HAVE_GNUTLS_AEAD */
+
 /*
  *  Test samba encryption and decryption and decryption.
  */
+#ifndef HAVE_GNUTLS_AEAD
 static void test_samba_value_encryption(void **state)
 {
 	struct ldbtest_ctx *test_ctx =
@@ -707,29 +689,6 @@ static void test_samba_value_encryption(void **state)
 		(ndr_pull_flags_fn_t) ndr_pull_EncryptedSecret);
 	assert_true(NDR_ERR_CODE_IS_SUCCESS(rc));
 	assert_true(check_header(&es));
-
-#ifdef HAVE_GNUTLS_AEAD
-	{
-		struct PlaintextSecret *decrypted =
-			talloc_zero(test_ctx, struct PlaintextSecret);
-		gnutls_decrypt_aead(
-			&err,
-			test_ctx,
-			test_ctx->ldb,
-			&es,
-			decrypted,
-			data);
-		assert_int_equal(LDB_SUCCESS, err);
-		assert_int_equal(
-			plain_text.length,
-			decrypted->cleartext.length);
-		assert_int_equal(0,
-			data_blob_cmp(
-				&decrypted->cleartext,
-				&plain_text));
-	}
-#endif /* HAVE_GNUTLS_AEAD */
-
 
 	{
 		struct PlaintextSecret *decrypted =
@@ -947,6 +906,7 @@ static void test_samba_altered_iv(void **state)
 		assert_int_equal(LDB_ERR_OPERATIONS_ERROR, err);
 	}
 }
+#endif
 
 /*
  *  Test message encryption.
@@ -1253,7 +1213,7 @@ int main(void) {
 			test_gnutls_altered_iv,
 			setup_with_key,
 			teardown),
-#endif /* HAVE_GNUTLS_AEAD */
+#else
 		cmocka_unit_test_setup_teardown(
 			test_samba_value_encryption,
 			setup_with_key,
@@ -1270,6 +1230,7 @@ int main(void) {
 			test_samba_altered_iv,
 			setup_with_key,
 			teardown),
+#endif /* HAVE_GNUTLS_AEAD */
 		cmocka_unit_test_setup_teardown(
 			test_message_encryption_decryption,
 			setup_with_key,
