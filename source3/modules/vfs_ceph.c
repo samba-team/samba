@@ -961,15 +961,9 @@ static int cephwrap_fchmod(struct vfs_handle_struct *handle, files_struct *fsp, 
 	int result;
 
 	DBG_DEBUG("[CEPH] fchmod(%p, %p, %d)\n", handle, fsp, mode);
-
-#if defined(HAVE_FCHMOD)
 	result = ceph_fchmod(handle->data, fsp->fh->fd, mode);
 	DBG_DEBUG("[CEPH] fchmod(...) = %d\n", result);
 	WRAP_RETURN(result);
-#else
-	errno = ENOSYS;
-#endif
-	return -1;
 }
 
 static int cephwrap_chown(struct vfs_handle_struct *handle,
@@ -987,17 +981,11 @@ static int cephwrap_chown(struct vfs_handle_struct *handle,
 static int cephwrap_fchown(struct vfs_handle_struct *handle, files_struct *fsp, uid_t uid, gid_t gid)
 {
 	int result;
-#ifdef HAVE_FCHOWN
 
 	DBG_DEBUG("[CEPH] fchown(%p, %p, %d, %d)\n", handle, fsp, uid, gid);
 	result = ceph_fchown(handle->data, fsp->fh->fd, uid, gid);
 	DBG_DEBUG("[CEPH] fchown(...) = %d\n", result);
 	WRAP_RETURN(result);
-#else
-	errno = ENOSYS;
-	result = -1;
-#endif
-	return result;
 }
 
 static int cephwrap_lchown(struct vfs_handle_struct *handle,
