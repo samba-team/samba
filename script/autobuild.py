@@ -97,6 +97,7 @@ tasks = {
                  "--exclude-env=ad_dc_ntvfs "
                  "--exclude-env=ad_dc_no_nss "
                  "--exclude-env=fl2003dc "
+                 "--exclude-env=fl2008dc "
                  "--exclude-env=fl2008r2dc "
                  "--exclude-env=ad_member "
                  "--exclude-env=ad_member_idmap_rid "
@@ -163,8 +164,10 @@ tasks = {
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("test", "make test FAIL_IMMEDIATELY=1 "
-                       "TESTS='--include-env=ad_dc_ntvfs'",
-                       "text/plain"),
+                       "TESTS='"
+                       "--include-env=ad_dc_ntvfs "
+                       "--include-env=fl2008dc "
+                       "'", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     # run the backup/restore testenvs separately as they're fairly standalone

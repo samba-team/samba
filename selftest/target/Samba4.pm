@@ -2261,8 +2261,25 @@ sub check_env($$)
 	offlinebackupdc      => ["backupfromdc"],
 	labdc                => ["backupfromdc"],
 
+	# aliases in order to split autbuild tasks
+	fl2008dc             => ["ad_dc_ntvfs"],
+
 	none                 => [],
 );
+
+sub return_alias_env
+{
+	my ($self, $path, $env) = @_;
+
+	# just an alias
+	return $env;
+}
+
+sub setup_fl2008dc
+{
+	my ($self, $path, $dep_env) = @_;
+	return $self->return_alias_env($path, $dep_env)
+}
 
 sub setup_s4member
 {
