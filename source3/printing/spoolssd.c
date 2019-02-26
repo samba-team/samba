@@ -670,7 +670,8 @@ done:
 }
 
 pid_t start_spoolssd(struct tevent_context *ev_ctx,
-		    struct messaging_context *msg_ctx)
+		     struct messaging_context *msg_ctx,
+		     struct dcesrv_context *dce_ctx)
 {
 	struct rpc_srv_callbacks spoolss_cb;
 	pid_t pid;
@@ -761,6 +762,15 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	status = dcerpc_register_ep_server(ep_server);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register 'spoolss' endpoint server: %s\n",
+			nt_errstr(status));
+		exit(1);
+	}
+
+	DBG_INFO("Reinitializing DCE/RPC server context\n");
+
+	status = dcesrv_reinit_context(dce_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to reinit DCE/RPC context: %s\n",
 			nt_errstr(status));
 		exit(1);
 	}

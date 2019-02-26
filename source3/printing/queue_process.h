@@ -23,8 +23,11 @@
 #ifndef _SOURCE3_PRINTING_QUEUE_PROCESS_H_
 #define _SOURCE3_PRINTING_QUEUE_PROCESS_H_
 
+struct dcesrv_context;
+
 bool printing_subsystem_init(struct tevent_context *ev_ctx,
 			     struct messaging_context *msg_ctx,
+			     struct dcesrv_context *dce_ctx,
 			     bool start_daemons,
 			     bool background_queue);
 void printing_subsystem_update(struct tevent_context *ev_ctx,

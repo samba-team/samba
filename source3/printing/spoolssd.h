@@ -23,7 +23,10 @@
 #include "replace.h"
 #include "messages.h"
 
+struct dcesrv_context;
+
 pid_t start_spoolssd(struct tevent_context *ev_ctx,
-		     struct messaging_context *msg_ctx);
+		     struct messaging_context *msg_ctx,
+		     struct dcesrv_context *dce_ctx);
 
 #endif /* _SOURCE3_PRINTING_SPOOLSSD_H_ */

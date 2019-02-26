@@ -432,6 +432,7 @@ pid_t start_background_queue(struct tevent_context *ev,
 /* Run before the parent forks */
 bool printing_subsystem_init(struct tevent_context *ev_ctx,
 			     struct messaging_context *msg_ctx,
+			     struct dcesrv_context *dce_ctx,
 			     bool start_daemons,
 			     bool background_queue)
 {
@@ -445,7 +446,7 @@ bool printing_subsystem_init(struct tevent_context *ev_ctx,
 	/* start as a separate daemon only if enabled */
 	if (start_daemons && rpc_spoolss_daemon() == RPC_DAEMON_FORK) {
 
-		pid = start_spoolssd(ev_ctx, msg_ctx);
+		pid = start_spoolssd(ev_ctx, msg_ctx, dce_ctx);
 
 	} else if (start_daemons && background_queue) {
 

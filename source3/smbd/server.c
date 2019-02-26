@@ -2120,8 +2120,12 @@ extern void build_options(bool screen);
 		if (!lp__disable_spoolss() &&
 		    (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED)) {
 			bool bgq = lp_parm_bool(-1, "smbd", "backgroundqueue", true);
-
-			if (!printing_subsystem_init(ev_ctx, msg_ctx, true, bgq)) {
+			bool ok = printing_subsystem_init(ev_ctx,
+							  msg_ctx,
+							  dce_ctx,
+							  true,
+							  bgq);
+			if (!ok) {
 				exit_daemon("Samba failed to init printing subsystem", EACCES);
 			}
 		}
@@ -2134,7 +2138,12 @@ extern void build_options(bool screen);
 #endif
 	} else if (!lp__disable_spoolss() &&
 		   (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED)) {
-		if (!printing_subsystem_init(ev_ctx, msg_ctx, false, false)) {
+		bool ok = printing_subsystem_init(ev_ctx,
+						  msg_ctx,
+						  dce_ctx,
+						  false,
+						  false);
+		if (!ok) {
 			exit(1);
 		}
 	}
