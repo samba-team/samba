@@ -95,6 +95,7 @@ tasks = {
                  "--exclude-env=nt4_member "
                  "--exclude-env=ad_dc "
                  "--exclude-env=ad_dc_ntvfs "
+                 "--exclude-env=ad_dc_default "
                  "--exclude-env=ad_dc_slowtests "
                  "--exclude-env=ad_dc_no_nss "
                  "--exclude-env=fl2003dc "
@@ -168,6 +169,7 @@ tasks = {
                        "TESTS='"
                        "--include-env=ad_dc_ntvfs "
                        "--include-env=fl2008dc "
+                       "--include-env=ad_dc_default "
                        "--include-env=ad_dc_slowtests "
                        "'", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
