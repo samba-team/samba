@@ -1102,97 +1102,6 @@ bool lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
 }
 
 /*****************************************************************
- Id mapping cache.  This is to avoid Winbind mappings already
- seen by smbd to be queried too frequently, keeping winbindd
- busy, and blocking smbd while winbindd is busy with other
- stuff. Written by Michael Steffens <michael.steffens@hp.com>,
- modified to use linked lists by jra.
-*****************************************************************/  
-
-
-/*****************************************************************
- *THE LEGACY* convert uid_t to SID function.
-*****************************************************************/  
-
-static void legacy_uid_to_sid(struct dom_sid *psid, uid_t uid)
-{
-	bool ret;
-	struct unixid id;
-
-	ZERO_STRUCTP(psid);
-
-	id.id = uid;
-	id.type = ID_TYPE_UID;
-
-	become_root();
-	ret = pdb_id_to_sid(&id, psid);
-	unbecome_root();
-
-	if (ret) {
-		/* This is a mapped user */
-		goto done;
-	}
-
-	/* This is an unmapped user */
-
-	uid_to_unix_users_sid(uid, psid);
-
-	{
-		struct unixid xid = {
-			.id = uid, .type = ID_TYPE_UID
-		};
-		idmap_cache_set_sid2unixid(psid, &xid);
-	}
-
- done:
-	DEBUG(10,("LEGACY: uid %u -> sid %s\n", (unsigned int)uid,
-		  sid_string_dbg(psid)));
-
-	return;
-}
-
-/*****************************************************************
- *THE LEGACY* convert gid_t to SID function.
-*****************************************************************/  
-
-static void legacy_gid_to_sid(struct dom_sid *psid, gid_t gid)
-{
-	bool ret;
-	struct unixid id;
-
-	ZERO_STRUCTP(psid);
-
-	id.id = gid;
-	id.type = ID_TYPE_GID;
-
-	become_root();
-	ret = pdb_id_to_sid(&id, psid);
-	unbecome_root();
-
-	if (ret) {
-		/* This is a mapped group */
-		goto done;
-	}
-
-	/* This is an unmapped group */
-
-	gid_to_unix_groups_sid(gid, psid);
-
-	{
-		struct unixid xid = {
-			.id = gid, .type = ID_TYPE_GID
-		};
-		idmap_cache_set_sid2unixid(psid, &xid);
-	}
-
- done:
-	DEBUG(10,("LEGACY: gid %u -> sid %s\n", (unsigned int)gid,
-		  sid_string_dbg(psid)));
-
-	return;
-}
-
-/*****************************************************************
  *THE LEGACY* convert SID to id function.
 *****************************************************************/  
 
@@ -1237,104 +1146,6 @@ static bool legacy_sid_to_uid(const struct dom_sid *psid, uid_t *puid)
 		return true;
 	}
 	return false;
-}
-
-/*****************************************************************
- *THE CANONICAL* convert uid_t to SID function.
-*****************************************************************/  
-
-void uid_to_sid(struct dom_sid *psid, uid_t uid)
-{
-	bool expired = true;
-	bool ret;
-	ZERO_STRUCTP(psid);
-
-	/* Check the winbindd cache directly. */
-	ret = idmap_cache_find_uid2sid(uid, psid, &expired);
-
-	if (ret && !expired && is_null_sid(psid)) {
-		/*
-		 * Negative cache entry, we already asked.
-		 * do legacy.
-		 */
-		legacy_uid_to_sid(psid, uid);
-		return;
-	}
-
-	if (!ret || expired) {
-		/* Not in cache. Ask winbindd. */
-		if (!winbind_uid_to_sid(psid, uid)) {
-			/*
-			 * We shouldn't return the NULL SID
-			 * here if winbind was running and
-			 * couldn't map, as winbind will have
-			 * added a negative entry that will
-			 * cause us to go though the
-			 * legacy_uid_to_sid()
-			 * function anyway in the case above
-			 * the next time we ask.
-			 */
-			DEBUG(5, ("uid_to_sid: winbind failed to find a sid "
-				  "for uid %u\n", (unsigned int)uid));
-
-			legacy_uid_to_sid(psid, uid);
-			return;
-		}
-	}
-
-	DEBUG(10,("uid %u -> sid %s\n", (unsigned int)uid,
-		  sid_string_dbg(psid)));
-
-	return;
-}
-
-/*****************************************************************
- *THE CANONICAL* convert gid_t to SID function.
-*****************************************************************/  
-
-void gid_to_sid(struct dom_sid *psid, gid_t gid)
-{
-	bool expired = true;
-	bool ret;
-	ZERO_STRUCTP(psid);
-
-	/* Check the winbindd cache directly. */
-	ret = idmap_cache_find_gid2sid(gid, psid, &expired);
-
-	if (ret && !expired && is_null_sid(psid)) {
-		/*
-		 * Negative cache entry, we already asked.
-		 * do legacy.
-		 */
-		legacy_gid_to_sid(psid, gid);
-		return;
-	}
-
-	if (!ret || expired) {
-		/* Not in cache. Ask winbindd. */
-		if (!winbind_gid_to_sid(psid, gid)) {
-			/*
-			 * We shouldn't return the NULL SID
-			 * here if winbind was running and
-			 * couldn't map, as winbind will have
-			 * added a negative entry that will
-			 * cause us to go though the
-			 * legacy_gid_to_sid()
-			 * function anyway in the case above
-			 * the next time we ask.
-			 */
-			DEBUG(5, ("gid_to_sid: winbind failed to find a sid "
-				  "for gid %u\n", (unsigned int)gid));
-
-			legacy_gid_to_sid(psid, gid);
-			return;
-		}
-	}
-
-	DEBUG(10,("gid %u -> sid %s\n", (unsigned int)gid,
-		  sid_string_dbg(psid)));
-
-	return;
 }
 
 void xid_to_sid(struct dom_sid *psid, const struct unixid *xid)
@@ -1409,6 +1220,18 @@ done:
 			  xid->id,
 			  dom_sid_str_buf(psid, &buf));
 	}
+}
+
+void uid_to_sid(struct dom_sid *psid, uid_t uid)
+{
+	struct unixid xid = { .type = ID_TYPE_UID, .id = uid};
+	xid_to_sid(psid, &xid);
+}
+
+void gid_to_sid(struct dom_sid *psid, gid_t gid)
+{
+	struct unixid xid = { .type = ID_TYPE_GID, .id = gid};
+	xid_to_sid(psid, &xid);
 }
 
 bool sids_to_unixids(const struct dom_sid *sids, uint32_t num_sids,
