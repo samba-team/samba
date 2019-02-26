@@ -26,6 +26,10 @@
 
 #include "librpc/rpc/dcerpc_ep.h"
 #include "../librpc/gen_ndr/srv_epmapper.h"
+
+#include "librpc/rpc/dcesrv_core.h"
+#include "librpc/gen_ndr/ndr_epmapper_scompat.h"
+
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_sock_helper.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
@@ -139,6 +143,7 @@ void start_epmd(struct tevent_context *ev_ctx,
 	NTSTATUS status;
 	pid_t pid;
 	int rc;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
 	epmapper_cb.init = NULL;
 	epmapper_cb.shutdown = epmapper_shutdown_cb;
@@ -174,6 +179,22 @@ void start_epmd(struct tevent_context *ev_ctx,
 			   ev_ctx,
 			   MSG_SMB_CONF_UPDATED,
 			   epmd_smb_conf_updated);
+
+	DBG_INFO("Registering DCE/RPC endpoint servers\n");
+
+	/* Register the endpoint server in DCERPC core */
+	ep_server = epmapper_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'epmapper' endpoint server\n");
+		exit(1);
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register 'epmapper' endpoint server: %s\n",
+			nt_errstr(status));
+		exit(1);
+	}
 
 	status = rpc_epmapper_init(&epmapper_cb);
 	if (!NT_STATUS_IS_OK(status)) {
