@@ -94,6 +94,7 @@ tasks = {
                  "--exclude-env=nt4_dc "
                  "--exclude-env=nt4_member "
                  "--exclude-env=ad_dc "
+                 "--exclude-env=ad_dc_backup "
                  "--exclude-env=ad_dc_ntvfs "
                  "--exclude-env=ad_dc_default "
                  "--exclude-env=ad_dc_slowtests "
@@ -140,6 +141,7 @@ tasks = {
                       ("make", "make -j", "text/plain"),
                       ("test", "make test FAIL_IMMEDIATELY=1 "
                        "TESTS='--include-env=ad_dc "
+                       "--include-env=ad_dc_backup "
                        "--include-env=fl2003dc "
                        "--include-env=fl2008r2dc "
                        "--include-env=ad_member "

@@ -2265,6 +2265,7 @@ sub check_env($$)
 	fl2008dc             => ["ad_dc_ntvfs"],
 	ad_dc_default        => ["ad_dc_ntvfs"],
 	ad_dc_slowtests      => ["ad_dc_ntvfs"],
+	ad_dc_backup         => ["ad_dc"],
 
 	none                 => [],
 );
@@ -2290,6 +2291,12 @@ sub setup_ad_dc_default
 }
 
 sub setup_ad_dc_slowtests
+{
+	my ($self, $path, $dep_env) = @_;
+	return $self->return_alias_env($path, $dep_env)
+}
+
+sub setup_ad_dc_backup
 {
 	my ($self, $path, $dep_env) = @_;
 	return $self->return_alias_env($path, $dep_env)
