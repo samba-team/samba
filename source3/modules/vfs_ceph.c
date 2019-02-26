@@ -1053,8 +1053,10 @@ static int strict_allocate_ftruncate(struct vfs_handle_struct *handle, files_str
 		return 0;
 
 	/* Shrink - just ftruncate. */
-	if (pst->st_ex_size > len)
-		return ftruncate(fsp->fh->fd, len);
+	if (pst->st_ex_size > len) {
+		ret = ceph_ftruncate(handle->data, fsp->fh->fd, len);
+		WRAP_RETURN(ret);
+	}
 
 	space_to_write = len - pst->st_ex_size;
 
