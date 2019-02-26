@@ -1,0 +1,65 @@
+The scripts in this directory are experimental and are used to create testenvs
+in separate linux namespaces. This avoids the need for socket-wrapper.
+
+What are Namespaces
+===================
+Namespaces allow the kernel to segregate its system resources (files, CPU,
+etc), so that different processes only see the set of resources they are
+allowed to use. There are several different types of namespace: network,
+user, process, file, IPC, and so on.
+
+Key points to grasp are:
+* Each type of namespace gets managed separately by the kernel, i.e. process
+namespaces are managed separately to network namespaces, which are separate
+to user namespaces. These scripts give each testenv its own network namespace,
+but otherwise they all still share the same user/process/etc namespace.
+(In future, we may want to give each testenv its own process and user
+namespace, to better mimic a production DC).
+* Namespaces are created using the 'unshare' utility. The new selftest
+namespaces are anonymous/nameless, and so the different namespaces are
+identified by the PID of the processes running within the namespace
+(typically samba).
+* Linux supports nesting namespaces within namespaces. In this case, each
+testenv DC has its own network namespace, which is a child of the overarching
+selftest namespace (which itself is a child of whatever namespace you run
+'make test' from - usually this would be the root namespace).
+
+How does it work?
+=================
+Normally when 'make test' is run, every testenv uses a 127.0.0.x IP address
+and socket-wrapper passes the packets between them.
+
+With namespaces, we can use real IP addresses and have the packets pass through
+the kernel's IP stack normally, as it forwards them between namespaces.
+
+We use veth interfaces for this. veth is a type of virtual interface supported
+by the kernel. veth interfaces come in pairs, and act as a tunnel - any packets
+sent on a veth interface simply end up as received packets on the pair veth
+interface.
+
+We create a new veth interface pair for each testenv, and use them to connect
+up the namespaces. One end of the veth pair is added to the main selftest
+namespace, and the other end is added to a new namespace that we'll run
+samba in. E.g.
+
+selftest.pl  veth21-br ------------------------ veth21 samba (ad_dc_ntvfs)
+             10.0.0.11                          10.0.0.21
+ Namespace 1                                       Namespace 2
+
+However, we need to run multiple different testenvs and have them talk to
+each other. So to do this, we need a bridge interface ('selftest0') to connect
+up the namespaces, which essentially just acts as a hub. So connecting together
+multiple testenvs looks more like this:
+
+selftest.pl     +-- veth21-br ------------------------ veth21 samba (ad_dc_ntvfs)
+                |                                      10.0.0.21
+    selftest0 --+                                        Namespace 2
+    10.0.0.11   |
+                +-- veth22-br ------------------------ veth22 samba (vampire_dc)
+                                                       10.0.0.22
+ Namespace 1                                             Namespace 3      
+
+The veth interfaces are named vethX and vethX-br, where X is the
+SOCKET_WRAPPER_DEFAULT_IFACE for the testenv. The vethX-br interface is always
+added to the selftest0 bridge interface. 
+
