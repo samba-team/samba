@@ -169,7 +169,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                 temp_path, "--entities",
                                                 self.entity_file, "-U%s%%%s" %
                                                 (os.environ["USERNAME"],
-                                                 os.environ["PASSWORD"]))
+                                                 os.environ["PASSWORD"]),
+                                                "--restore-metadata")
 
             gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
 
@@ -222,7 +223,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                 temp_path, "--entities",
                                                 self.entity_file, "-U%s%%%s" %
                                                 (os.environ["USERNAME"],
-                                                 os.environ["PASSWORD"]))
+                                                 os.environ["PASSWORD"]),
+                                                "--restore-metadata")
 
             gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
             gpo_guid1 = gpo_guid
@@ -243,7 +245,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                 os.environ["SERVER"], "--tmpdir",
                                                 temp_path, "-U%s%%%s" %
                                                 (os.environ["USERNAME"],
-                                                 os.environ["PASSWORD"]))
+                                                 os.environ["PASSWORD"]),
+                                                "--restore-metadata")
 
             gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
             gpo_guid2 = gpo_guid
@@ -305,7 +308,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                 temp_path, "--entities",
                                                 self.entity_file, "-U%s%%%s" %
                                                 (os.environ["USERNAME"],
-                                                 os.environ["PASSWORD"]))
+                                                 os.environ["PASSWORD"]),
+                                                "--restore-metadata")
 
             gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
             gpo_guid1 = gpo_guid
@@ -324,7 +328,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                 temp_path, "--entities",
                                                 self.entity_file, "-U%s%%%s" %
                                                 (os.environ["USERNAME"],
-                                                 os.environ["PASSWORD"]))
+                                                 os.environ["PASSWORD"]),
+                                                "--restore-metadata")
 
             gpo_guid = "{%s}" % out.split("{")[1].split("}")[0]
             gpo_guid2 = gpo_guid
@@ -404,7 +409,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                 temp_path, "--entities",
                                                 alt_entity_file, "-U%s%%%s" %
                                                 (os.environ["USERNAME"],
-                                                 os.environ["PASSWORD"]))
+                                                 os.environ["PASSWORD"]),
+                                                "--restore-metadata")
 
             self.assertCmdSuccess(result, out, err, "Ensuring gpo restored successfully")
 
@@ -484,7 +490,8 @@ class GpoCmdTestCase(SambaToolCmdTest):
                                                 os.environ["SERVER"], "--tmpdir",
                                                 self.tempdir, "-U%s%%%s" %
                                                 (os.environ["USERNAME"],
-                                                 os.environ["PASSWORD"]))
+                                                 os.environ["PASSWORD"]),
+                                                "--restore-metadata")
 
             self.assertCmdSuccess(result, out, err, "Ensuring gpo restored successfully")
 

@@ -332,7 +332,8 @@ def copy_directory_remote_to_local(conn, remotedir, localdir):
 
 
 def copy_directory_local_to_remote(conn, localdir, remotedir,
-                                   ignore_existing=False):
+                                   ignore_existing_dir=False,
+                                   keep_existing_files=False):
     if not conn.chkpath(remotedir):
         conn.mkdir(remotedir)
     l_dirs = [localdir]
@@ -353,9 +354,16 @@ def copy_directory_local_to_remote(conn, localdir, remotedir,
                 try:
                     conn.mkdir(r_name)
                 except NTSTATUSError:
-                    if not ignore_existing:
+                    if not ignore_existing_dir:
                         raise
             else:
+                if keep_existing_files:
+                    try:
+                        conn.loadfile(r_name)
+                        continue
+                    except NTSTATUSError:
+                        pass
+
                 data = open(l_name, 'rb').read()
                 conn.savefile(r_name, data)
 
@@ -1296,7 +1304,9 @@ class cmd_restore(cmd_create):
     takes_options = [
         Option("-H", help="LDB URL for database or target server", type=str),
         Option("--tmpdir", help="Temporary directory for copying policy files", type=str),
-        Option("--entities", help="File defining XML entities to insert into DOCTYPE header", type=str)
+        Option("--entities", help="File defining XML entities to insert into DOCTYPE header", type=str),
+        Option("--restore-metadata", help="Keep the old GPT.INI file and associated version number",
+               default=False, action="store_true")
     ]
 
     def restore_from_backup_to_local_dir(self, sourcedir, targetdir, dtd_header=''):
@@ -1368,7 +1378,7 @@ class cmd_restore(cmd_create):
                             self.outf.write('WARNING: Falling back to simple copy-restore.\n')
 
     def run(self, displayname, backup, H=None, tmpdir=None, entities=None, sambaopts=None, credopts=None,
-            versionopts=None):
+            versionopts=None, restore_metadata=None):
 
         dtd_header = ''
 
@@ -1405,10 +1415,13 @@ class cmd_restore(cmd_create):
             self.restore_from_backup_to_local_dir(backup, self.gpodir,
                                                   dtd_header)
 
+            keep_new_files = not restore_metadata
+
             # Copy GPO files over SMB
             copy_directory_local_to_remote(self.conn, self.gpodir,
                                            self.sharepath,
-                                           ignore_existing=True)
+                                           ignore_existing_dir=True,
+                                           keep_existing_files=keep_new_files)
 
             gpo_dn = get_gpo_dn(self.samdb, self.gpo_name)
 
