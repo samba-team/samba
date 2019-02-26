@@ -81,7 +81,7 @@ samba_libs_configure_bundled_libs = " --bundled-libraries=!talloc,!pytalloc-util
 samba_libs_configure_samba = samba_libs_configure_base + samba_libs_configure_bundled_libs
 
 tasks = {
-    "ctdb": [("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
+    "ctdb": [("random-sleep", "../script/random-sleep.sh 300 900", "text/plain"),
                ("configure", "./configure " + ctdb_configure_params, "text/plain"),
                ("make", "make all", "text/plain"),
                ("install", "make install", "text/plain"),
@@ -91,7 +91,7 @@ tasks = {
 
     # We have 'test' before 'install' because, 'test' should work without 'install (runs all the other envs)'
     "samba": [
-                ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
                 ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                 ("make", "make -j", "text/plain"),
                 ("test", "make test FAIL_IMMEDIATELY=1 "
@@ -137,7 +137,7 @@ tasks = {
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                 ("clean", "make clean", "text/plain")],
 
-    "samba-nt4": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-nt4": [("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
                     ("configure", "./configure.developer --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                     ("make", "make -j", "text/plain"),
                     ("test", "make test FAIL_IMMEDIATELY=1 "
@@ -150,7 +150,7 @@ tasks = {
                     ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                     ("clean", "make clean", "text/plain")],
 
-    "samba-fileserver": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-fileserver": [("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
                            ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                            ("make", "make -j", "text/plain"),
                            ("test", "make test FAIL_IMMEDIATELY=1 "
@@ -161,7 +161,7 @@ tasks = {
                             "'", "text/plain"),
                            ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
-    "samba-ad-member": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ad-member": [("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
@@ -173,7 +173,7 @@ tasks = {
                          "'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
-    "samba-ad-dc-1": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ad-dc-1": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("test", "make test FAIL_IMMEDIATELY=1 "
@@ -183,7 +183,7 @@ tasks = {
                        "'", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
-    "samba-ad-dc-2": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ad-dc-2": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
@@ -194,7 +194,7 @@ tasks = {
                          "'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
-    "samba-ad-dc-3": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ad-dc-3": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
@@ -206,7 +206,7 @@ tasks = {
                          "'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
-    "samba-ad-dc-4": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ad-dc-4": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
@@ -218,7 +218,7 @@ tasks = {
                          "'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
-    "samba-ad-dc-5": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ad-dc-5": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
@@ -227,7 +227,7 @@ tasks = {
                          "'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
-    "samba-ad-dc-6": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ad-dc-6": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
@@ -250,7 +250,7 @@ tasks = {
 
     # run the backup/restore testenvs separately as they're fairly standalone
     # (and CI seems to max out at ~8 different DCs running at once)
-    "samba-ad-dc-backup": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ad-dc-backup": [("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
@@ -268,7 +268,7 @@ tasks = {
                           ("test", 'make test FAIL_IMMEDIATELY=1 TESTS="${TESTS}"', "text/plain")],
 
     # Test cross-compile infrastructure
-    "samba-xc": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-xc": [("random-sleep", "script/random-sleep.sh 900 1500", "text/plain"),
                    ("configure-native", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                    ("configure-cross-execute", "./configure.developer --out ./bin-xe --cross-compile --cross-execute=script/identity_cc.sh" \
                     " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xe/ab" + samba_configure_params, "text/plain"),
@@ -280,7 +280,7 @@ tasks = {
                     "./bin-xa/c4che/default{}".format(*([CACHE_SUFFIX]*3)), "text/plain")],
 
     # test build with -O3 -- catches extra warnings and bugs, tests the ad_dc environments
-    "samba-o3": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-o3": [("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
                    ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params, "text/plain"),
                    ("make", "make -j", "text/plain"),
                    ("test", "make quicktest FAIL_IMMEDIATELY=1 "
@@ -289,7 +289,7 @@ tasks = {
                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                    ("clean", "make clean", "text/plain")],
 
-    "samba-ctdb": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ctdb": [("random-sleep", "script/random-sleep.sh 900 1500", "text/plain"),
 
                      # make sure we have tdb around:
                      ("tdb-configure", "cd lib/tdb && PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
@@ -310,7 +310,7 @@ tasks = {
                      ("ctdb-clean", "cd ./ctdb && make clean", "text/plain")],
 
     "samba-libs": [
-                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
                       ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_libs, "text/plain"),
                       ("talloc-make", "cd lib/talloc && make", "text/plain"),
                       ("talloc-install", "cd lib/talloc && make install", "text/plain"),
@@ -339,7 +339,7 @@ tasks = {
                       ("allshared-make", "make -j", "text/plain")],
 
     "samba-none-env": [
-                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("test", "make test "
@@ -348,7 +348,7 @@ tasks = {
                        "text/plain")],
 
     "samba-static": [
-                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
                       # build with all modules static
                       ("allstatic-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=ALL", "text/plain"),
                       ("allstatic-make", "make -j", "text/plain"),
@@ -368,7 +368,7 @@ tasks = {
                       ("nonshared-make", "make -j", "text/plain")],
 
     "samba-systemkrb5": [
-                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("random-sleep", "script/random-sleep.sh 900 1500", "text/plain"),
                       ("configure", "./configure.developer " + samba_configure_params + " --with-system-mitkrb5 --without-ad-dc", "text/plain"),
                       ("make", "make -j", "text/plain"),
                       # we currently cannot run a full make test, a limited list of tests could be run
@@ -387,7 +387,7 @@ tasks = {
     # support this environment).  The target here is for vendors
     # shipping a minimal smbd.
     "samba-nopython": [
-                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
                       ("configure", "./configure.developer --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("install", "make install", "text/plain"),
@@ -421,7 +421,7 @@ tasks = {
 
     # check we can do the same thing using python2
     "samba-nopython-py2": [
-                      ("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                      ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
                       ("configure", "PYTHON=python2 ./configure.developer --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
                       ("make", "PYTHON=python2 make -j", "text/plain"),
                       ("install", "PYTHON=python2 make install", "text/plain"),
