@@ -213,7 +213,7 @@ t = "rpc.countcalls"
 plansmbtorture4testsuite(t, "ad_dc_ntvfs:local", ["$SERVER[%s]" % bindoptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.%s" % t)
 
 for transport in ["ncacn_np", "ncacn_ip_tcp"]:
-    env = "ad_dc_ntvfs"
+    env = "ad_dc_slowtests"
     if transport == "ncacn_np":
         tests = slow_ncacn_np_tests
     elif transport == "ncacn_ip_tcp":
@@ -840,19 +840,19 @@ for env in ["ad_dc_ntvfs", "vampire_dc", "promoted_dc"]:
     planoldpythontestsuite(env,
                            "samba.tests.py_credentials",
                            extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc_ntvfs",
+planoldpythontestsuite("ad_dc_slowtests",
                        "samba.tests.emulate.traffic",
                        extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc_ntvfs",
+planoldpythontestsuite("ad_dc_slowtests",
                        "samba.tests.emulate.traffic_packet",
                        extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc_ntvfs",
+planoldpythontestsuite("ad_dc_slowtests",
                        "samba.tests.blackbox.traffic_replay",
                        extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc_ntvfs",
+planoldpythontestsuite("ad_dc_slowtests",
                        "samba.tests.blackbox.traffic_learner",
                        extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
-planoldpythontestsuite("ad_dc_ntvfs",
+planoldpythontestsuite("ad_dc_slowtests",
                        "samba.tests.blackbox.traffic_summary",
                        extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 planoldpythontestsuite("none", "samba.tests.loadparm")
@@ -941,7 +941,7 @@ for env in all_fl_envs:
         # therefore skip it in that configuration
         plantestsuite_loadlist("samba4.ldap.passwords.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/passwords.py"), "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", '$LOADLIST', '$LISTOPT'])
 
-for env in ["ad_dc_ntvfs"]:
+for env in ["ad_dc_slowtests"]:
     # This test takes a lot of time, so we run it against a minimum of
     # environments, please only add new ones if there's really a
     # difference we need to test
