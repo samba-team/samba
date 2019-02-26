@@ -621,6 +621,8 @@ NTSTATUS dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		goto done;
 	}
 
+	DBG_INFO("Initializing DCE/RPC modules\n");
+
 	/* Initialize static subsystems */
 	static_init_rpc(NULL);
 
@@ -632,7 +634,7 @@ NTSTATUS dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		 * all modules are static. So ENOENT is ok, everything else is
 		 * not ok.
 		 */
-		DBG_ERR("Loading shared RPC modules failed [%s]\n",
+		DBG_ERR("Loading shared DCE/RPC modules failed [%s]\n",
 			strerror(errno));
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -640,14 +642,14 @@ NTSTATUS dcesrv_ep_setup(struct tevent_context *ev_ctx,
 
 	ok = run_init_functions(NULL, mod_init_fns);
 	if (!ok) {
-		DBG_ERR("Initializing shared RPC modules failed\n");
+		DBG_ERR("Initializing shared DCE/RPC modules failed\n");
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
 	ok = setup_rpc_modules(ev_ctx, msg_ctx);
 	if (!ok) {
-		DBG_ERR("Shared RPC modules setup failed\n");
+		DBG_ERR("Shared DCE/RPC modules setup failed\n");
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
