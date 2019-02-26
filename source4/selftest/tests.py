@@ -805,7 +805,7 @@ planoldpythontestsuite("ad_dc",
                        "samba.tests.password_hash_ldap",
                        extra_args=['-U"$USERNAME%$PASSWORD"'], py3_compatible=True)
 
-for env in ["ad_dc", smbv1_disabled_testenv]:
+for env in ["ad_dc_backup", smbv1_disabled_testenv]:
     planoldpythontestsuite(env + ":local", "samba.tests.domain_backup",
                            extra_args=['-U"$USERNAME%$PASSWORD"'])
 
