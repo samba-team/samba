@@ -845,6 +845,7 @@ struct pending_message_list;
 struct pending_auth_data;
 
 struct pthreadpool_tevent;
+struct dcesrv_context;
 
 struct smbd_server_connection {
 	const struct tsocket_address *local_address;
@@ -852,6 +853,7 @@ struct smbd_server_connection {
 	const char *remote_hostname;
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	struct dcesrv_context *dce_ctx;
 	struct notify_context *notify_ctx;
 	bool using_smb2;
 	int trans_num;

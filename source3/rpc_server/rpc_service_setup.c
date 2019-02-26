@@ -776,8 +776,10 @@ static NTSTATUS rpc_setup_initshutdown(struct tevent_context *ev_ctx,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcesrv_ep_setup(struct tevent_context *ev_ctx,
-			 struct messaging_context *msg_ctx)
+NTSTATUS dcesrv_init(TALLOC_CTX *mem_ctx,
+		     struct tevent_context *ev_ctx,
+		     struct messaging_context *msg_ctx,
+		     struct dcesrv_context *dce_ctx)
 {
 	TALLOC_CTX *tmp_ctx;
 	bool ok;
@@ -896,6 +898,8 @@ NTSTATUS dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
+
+	/* TODO Initialize endpoints for registered endpoint servers */
 
 	status = NT_STATUS_OK;
 done:

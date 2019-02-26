@@ -51,6 +51,7 @@
 #include "smbprofile.h"
 #include "libcli/auth/netlogon_creds_cli.h"
 #include "lib/gencache.h"
+#include "rpc_server/rpc_config.h"
 
 static struct files_struct *log_writeable_file_fn(
 	struct files_struct *fsp, void *private_data)
@@ -217,6 +218,8 @@ static void exit_server_common(enum server_exit_reason how,
 		rpc_FileServerVssAgent_shutdown();
 
 		rpc_epmapper_shutdown();
+
+		global_dcesrv_context_free();
 	}
 
 	/*

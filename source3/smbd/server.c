@@ -70,6 +70,7 @@ struct smbd_parent_context {
 
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	struct dcesrv_context *dce_ctx;
 
 	/* the list of listening sockets */
 	struct smbd_open_socket *sockets;
@@ -942,6 +943,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	struct smbd_open_socket *s = talloc_get_type_abort(private_data,
 				     struct smbd_open_socket);
 	struct messaging_context *msg_ctx = s->parent->msg_ctx;
+	struct dcesrv_context *dce_ctx = s->parent->dce_ctx;
 	struct sockaddr_storage addr;
 	socklen_t in_addrlen = sizeof(addr);
 	int fd;
@@ -960,7 +962,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 
 	if (s->parent->interactive) {
 		reinit_after_fork(msg_ctx, ev, true, NULL);
-		smbd_process(ev, msg_ctx, fd, true);
+		smbd_process(ev, msg_ctx, dce_ctx, fd, true);
 		exit_server_cleanly("end of interactive mode");
 		return;
 	}
@@ -1009,7 +1011,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 			smb_panic("reinit_after_fork() failed");
 		}
 
-		smbd_process(ev, msg_ctx, fd, false);
+		smbd_process(ev, msg_ctx, dce_ctx, fd, false);
 	 exit:
 		exit_server_cleanly("end of child");
 		return;
@@ -1627,6 +1629,7 @@ extern void build_options(bool screen);
 	NTSTATUS status;
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	struct dcesrv_context *dce_ctx = NULL;
 	struct server_id server_id;
 	struct tevent_signal *se;
 	int profiling_level;
@@ -1830,6 +1833,11 @@ extern void build_options(bool screen);
 		exit(1);
 	}
 
+	dce_ctx = global_dcesrv_context();
+	if (dce_ctx == NULL) {
+		exit(1);
+	}
+
 	/*
 	 * Reloading of the printers will not work here as we don't have a
 	 * server info and rpc services set up. It will be called later.
@@ -1925,6 +1933,7 @@ extern void build_options(bool screen);
 	parent->interactive = interactive;
 	parent->ev_ctx = ev_ctx;
 	parent->msg_ctx = msg_ctx;
+	parent->dce_ctx = dce_ctx;
 	am_parent = parent;
 
 	se = tevent_add_signal(parent->ev_ctx,
@@ -2087,7 +2096,7 @@ extern void build_options(bool screen);
 		}
 	}
 
-	status = dcesrv_ep_setup(ev_ctx, msg_ctx);
+	status = dcesrv_init(ev_ctx, ev_ctx, msg_ctx, dce_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to setup RPC server: %s\n", nt_errstr(status));
 		exit_daemon("Samba cannot setup ep pipe", EACCES);
@@ -2153,7 +2162,7 @@ extern void build_options(bool screen);
 	        /* Stop zombies */
 		smbd_setup_sig_chld_handler(parent);
 
-		smbd_process(ev_ctx, msg_ctx, sock, true);
+		smbd_process(ev_ctx, msg_ctx, dce_ctx, sock, true);
 
 		exit_server_cleanly(NULL);
 		return(0);
