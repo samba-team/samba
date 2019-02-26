@@ -120,7 +120,7 @@
 ^samba4.rpc.dfs								# Not provided by Samba 4
 ^samba4.rpc.witness							# Not provided by Samba 4
 ^samba4.rpc.clusapi							# clusapi server support not yet provided
-^samba4.rpc.iremotewinspool.*\(ad_dc_ntvfs\)$				# Not provided by Samba 4
+^samba4.rpc.iremotewinspool.*\(ad_dc_default\)$				# Not provided by Samba 4
 ^samba4.*.base.samba3.*						# Samba3-specific test
 ^samba4.*.raw.samba3.*						# Samba3-specific test
 ^samba4.rpc..*samba3.*						# Samba3-specific test

@@ -86,8 +86,8 @@
 ^samba4.rpc.netlogon.*.GetPassword
 ^samba4.rpc.netlogon.*.DatabaseRedo
 ^samba4.rpc.netlogon.*.netlogon.lsa_over_netlogon\(ad_dc\) #Broken by split of \\pipe\lsass from \\pipe\netlogon in the IDL
-^samba4.rpc.netlogon.*.netlogon.SetupCredentialsDowngrade\(ad_dc_ntvfs\) # Broken by allowing NT4 crypto on this environment
-^samba4.rpc.netlogon.*.netlogon.SetupCredentialsDowngrade\(ad_dc_ntvfs:local\) # Broken by allowing NT4 crypto on this environment
+^samba4.rpc.netlogon.*.netlogon.SetupCredentialsDowngrade\(ad_dc_default\) # Broken by allowing NT4 crypto on this environment
+^samba4.rpc.netlogon.*.netlogon.SetupCredentialsDowngrade\(ad_dc_default:local\) # Broken by allowing NT4 crypto on this environment
 ^samba4.rpc.drsuapi.*ncacn_ip_tcp.*validate # should only work with seal
 ^samba4.rpc.drsuapi.*ncacn_ip_tcp.*bigendian # should only work with seal
 ^samba4.rpc.samr.passwords.validate.*ncacn_ip_tcp.*with.validate # should only work with seal
@@ -97,7 +97,7 @@
 .*net.api.delshare.*				# DelShare isn't implemented yet
 ^samba4.smb2.oplock.doc
 ^samba4.smb2.lock.valid-request
-^samba4.ldap.python \(ad_dc_ntvfs\).Test add_ldif\(\) with BASE64 security descriptor input using WRONG domain SID\(.*\)$
+^samba4.ldap.python \(ad_dc_default\).Test add_ldif\(\) with BASE64 security descriptor input using WRONG domain SID\(.*\)$
 ^samba4.raw.lock.*.async # bug 6960
 ^samba4.raw.open.ntcreatex_supersede
 ^samba4.smb2.lock.*.multiple-unlock # bug 6959
@@ -123,8 +123,8 @@
 ^samba4.smb2.acls.*.inheritflags
 ^samba4.smb2.acls.*.owner
 ^samba4.smb2.acls.*.ACCESSBASED
-^samba4.ldap.dirsync.python.ad_dc_ntvfs..__main__.ExtendedDirsyncTests.test_dirsync_deleted_items
-#^samba4.ldap.dirsync.python.ad_dc_ntvfs..__main__.ExtendedDirsyncTests.*
+^samba4.ldap.dirsync.python.ad_dc_default..__main__.ExtendedDirsyncTests.test_dirsync_deleted_items
+#^samba4.ldap.dirsync.python.ad_dc_default..__main__.ExtendedDirsyncTests.*
 ^samba4.libsmbclient.opendir.(NT1|SMB3).opendir # This requires netbios browsing
 ^samba4.rpc.drsuapi.*.drsuapi.DsGetDomainControllerInfo\(.*\)$
 ^samba4.smb2.oplock.exclusive2\(.*\)$ # samba 4 oplocks are a mess
