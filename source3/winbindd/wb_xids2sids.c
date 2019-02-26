@@ -473,19 +473,8 @@ struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 			struct dom_sid sid = {0};
 			bool ok, expired = true;
 
-			switch (xids[i].type) {
-			    case ID_TYPE_UID:
-				    ok = idmap_cache_find_uid2sid(
-					    xids[i].id, &sid, &expired);
-				    break;
-			    case ID_TYPE_GID:
-				    ok = idmap_cache_find_gid2sid(
-					    xids[i].id, &sid, &expired);
-				    break;
-			    default:
-				    ok = false;
-			}
-
+			ok = idmap_cache_find_xid2sid(
+				&xids[i], &sid, &expired);
 			if (ok && !expired) {
 				struct dom_sid_buf buf;
 				DBG_DEBUG("Found %cID in cache: %s\n",
