@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "messages.h"
 #include "ntdomain.h"
+#include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_service_setup.h"
 #include "rpc_server/rpc_config.h"
 #include "rpc_server/rpc_modules.h"
@@ -37,33 +38,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-static bool mdssvc_init_cb(void *ptr)
-{
-	struct messaging_context *msg_ctx =
-		talloc_get_type_abort(ptr, struct messaging_context);
-	bool ok;
-
-	ok = init_service_mdssvc(msg_ctx);
-	if (!ok) {
-		return false;
-	}
-
-	return true;
-}
-
-static bool mdssvc_shutdown_cb(void *ptr)
-{
-	shutdown_service_mdssvc();
-
-	return true;
-}
-
 static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 			     struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_mdssvc;
 	const char *pipe_name = "mdssvc";
-	struct rpc_srv_callbacks mdssvc_cb;
 	NTSTATUS status;
 	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
 	enum rpc_daemon_type_e mdssvc_type = rpc_mdssd_daemon();
@@ -76,10 +55,6 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 		return true;
 	}
 
-	mdssvc_cb.init         = mdssvc_init_cb;
-	mdssvc_cb.shutdown     = mdssvc_shutdown_cb;
-	mdssvc_cb.private_data = msg_ctx;
-
 	ep_server = mdssvc_get_ep_server();
 	if (ep_server == NULL) {
 		DBG_ERR("Failed to get endpoint server\n");
@@ -90,11 +65,6 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register 'mdssvc' endpoint "
 			"server: %s\n", nt_errstr(status));
-		return false;
-	}
-
-	status = rpc_mdssvc_init(&mdssvc_cb);
-	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 
@@ -112,8 +82,8 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 
 static struct rpc_module_fns rpc_module_mdssvc_fns = {
 	.setup = rpc_setup_mdssvc,
-	.init = rpc_mdssvc_init,
-	.shutdown = rpc_mdssvc_shutdown,
+	.init = NULL,
+	.shutdown = NULL
 };
 
 static_decl_rpc;
@@ -122,17 +92,6 @@ NTSTATUS rpc_mdssvc_module_init(TALLOC_CTX *mem_ctx)
 	DBG_DEBUG("Registering mdsvc RPC service\n");
 
 	return register_rpc_module(&rpc_module_mdssvc_fns, "mdssvc");
-}
-
-
-bool init_service_mdssvc(struct messaging_context *msg_ctx)
-{
-	return mds_init(msg_ctx);
-}
-
-bool shutdown_service_mdssvc(void)
-{
-	return mds_shutdown();
 }
 
 static NTSTATUS create_mdssvc_policy_handle(TALLOC_CTX *mem_ctx,
@@ -352,6 +311,40 @@ void _mdssvc_close(struct pipes_struct *p, struct mdssvc_close *r)
 	*r->out.status = 0;
 
 	return;
+}
+
+static NTSTATUS mdssvc__op_init_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server);
+
+static NTSTATUS mdssvc__op_shutdown_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server);
+
+#define DCESRV_INTERFACE_MDSSVC_INIT_SERVER \
+	mdssvc_init_server
+
+#define DCESRV_INTERFACE_MDSSVC_SHUTDOWN_SERVER \
+	mdssvc_shutdown_server
+
+static NTSTATUS mdssvc_init_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server)
+{
+	struct messaging_context *msg_ctx = global_messaging_context();
+	bool ok;
+
+	ok = mds_init(msg_ctx);
+	if (!ok) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return mdssvc__op_init_server(dce_ctx, ep_server);
+}
+
+static NTSTATUS mdssvc_shutdown_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server)
+{
+	mds_shutdown();
+
+	return mdssvc__op_shutdown_server(dce_ctx, ep_server);
 }
 
 /* include the generated boilerplate */

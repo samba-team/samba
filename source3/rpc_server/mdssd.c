@@ -90,8 +90,6 @@ static void mdssd_sig_term_handler(struct tevent_context *ev,
 				   void *siginfo,
 				   void *private_data)
 {
-	shutdown_rpc_module("mdssvc");
-
 	exit_server_cleanly("termination signal");
 }
 
@@ -676,6 +674,16 @@ void start_mdssd(struct tevent_context *ev_ctx,
 	status = dcesrv_reinit_context(dce_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to reinit DCE/RPC context: %s\n",
+			nt_errstr(status));
+		exit(1);
+	}
+
+	DBG_INFO("Initializing DCE/RPC registered endpoint servers\n");
+
+	/* Init ep servers */
+	status = dcesrv_init_ep_server(dce_ctx, "mdssvc");
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to init DCE/RPC endpoint server: %s\n",
 			nt_errstr(status));
 		exit(1);
 	}
