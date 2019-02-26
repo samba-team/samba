@@ -29,11 +29,14 @@
 #include "ntdomain.h"
 #include "librpc/gen_ndr/srv_winreg.h"
 #include "librpc/gen_ndr/srv_spoolss.h"
+#include "librpc/gen_ndr/ndr_winreg_scompat.h"
+#include "librpc/gen_ndr/ndr_spoolss_scompat.h"
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_ep_register.h"
 #include "rpc_server/rpc_config.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "librpc/rpc/dcerpc_ep.h"
+#include "librpc/rpc/dcesrv_core.h"
 #include "lib/server_prefork.h"
 #include "lib/server_prefork_util.h"
 
@@ -676,6 +679,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	int listen_fds_size = 0;
 	int ret;
 	bool ok;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
 	DEBUG(1, ("Forking SPOOLSS Daemon\n"));
 
@@ -730,6 +734,35 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	pid = start_background_queue(ev_ctx, msg_ctx, bq_logfile);
 	if (pid > 0) {
 		background_lpq_updater_pid = pid;
+	}
+
+	DBG_INFO("Registering DCE/RPC endpoint servers\n");
+
+	ep_server = winreg_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'winreg' endpoint server\n");
+		exit(1);
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+		DBG_ERR("Failed to register 'winreg' endpoint server: %s\n",
+			nt_errstr(status));
+		exit(1);
+	}
+
+	ep_server = spoolss_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'spoolss' endpoint server\n");
+		exit(1);
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register 'spoolss' endpoint server: %s\n",
+			nt_errstr(status));
+		exit(1);
 	}
 
 	/* the listening fd must be created before the children are actually
