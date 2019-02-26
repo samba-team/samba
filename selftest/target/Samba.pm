@@ -532,4 +532,111 @@ sub random_domain_sid()
 	return $domain_sid;
 }
 
+my @exported_envvars = (
+	# domain stuff
+	"DOMAIN",
+	"DNSNAME",
+	"REALM",
+	"DOMSID",
+
+	# stuff related to a trusted domain
+	"TRUST_SERVER",
+	"TRUST_USERNAME",
+	"TRUST_PASSWORD",
+	"TRUST_DOMAIN",
+	"TRUST_REALM",
+	"TRUST_DOMSID",
+
+	# domain controller stuff
+	"DC_SERVER",
+	"DC_SERVER_IP",
+	"DC_SERVER_IPV6",
+	"DC_NETBIOSNAME",
+	"DC_NETBIOSALIAS",
+
+	# server stuff
+	"SERVER",
+	"SERVER_IP",
+	"SERVER_IPV6",
+	"NETBIOSNAME",
+	"NETBIOSALIAS",
+	"SAMSID",
+
+	# only use these 2 as a last resort. Some tests need to test both client-
+	# side and server-side. In this case, run as default client, ans access
+	# server's smb.conf as needed, typically using:
+	#  param.LoadParm(filename_for_non_global_lp=os.environ['SERVERCONFFILE'])
+	"SERVERCONFFILE",
+	"DC_SERVERCONFFILE",
+
+	# user stuff
+	"USERNAME",
+	"USERID",
+	"PASSWORD",
+	"DC_USERNAME",
+	"DC_PASSWORD",
+
+	# UID/GID for rfc2307 mapping tests
+	"UID_RFC2307TEST",
+	"GID_RFC2307TEST",
+
+	# misc stuff
+	"KRB5_CONFIG",
+	"KRB5CCNAME",
+	"SELFTEST_WINBINDD_SOCKET_DIR",
+	"NMBD_SOCKET_DIR",
+	"LOCAL_PATH",
+	"DNS_FORWARDER1",
+	"DNS_FORWARDER2",
+	"RESOLV_CONF",
+	"UNACCEPTABLE_PASSWORD",
+	"LOCK_DIR",
+	"SMBD_TEST_LOG",
+
+	# nss_wrapper
+	"NSS_WRAPPER_PASSWD",
+	"NSS_WRAPPER_GROUP",
+	"NSS_WRAPPER_HOSTS",
+	"NSS_WRAPPER_HOSTNAME",
+	"NSS_WRAPPER_MODULE_SO_PATH",
+	"NSS_WRAPPER_MODULE_FN_PREFIX",
+
+	# resolv_wrapper
+	"RESOLV_WRAPPER_CONF",
+	"RESOLV_WRAPPER_HOSTS",
+);
+
+sub exported_envvars_str
+{
+	my ($testenv_vars) = @_;
+	my $out = "";
+
+	foreach (@exported_envvars) {
+		next unless defined($testenv_vars->{$_});
+		$out .= $_."=".$testenv_vars->{$_}."\n";
+	}
+
+	return $out;
+}
+
+sub clear_exported_envvars
+{
+	foreach (@exported_envvars) {
+		delete $ENV{$_};
+	}
+}
+
+sub export_envvars
+{
+	my ($testenv_vars) = @_;
+
+	foreach (@exported_envvars) {
+		if (defined($testenv_vars->{$_})) {
+			$ENV{$_} = $testenv_vars->{$_};
+		} else {
+			delete $ENV{$_};
+		}
+	}
+}
+
 1;
