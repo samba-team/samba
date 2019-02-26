@@ -939,8 +939,10 @@ static int linked_attributes_fix_forward_link(struct ldb_module *module,
 
 static int linked_attributes_fix_links(struct ldb_module *module,
 				       struct GUID self_guid,
-				       struct ldb_dn *old_dn, struct ldb_dn *new_dn,
-				       struct ldb_message_element *el, struct dsdb_schema *schema,
+				       struct ldb_dn *old_dn,
+				       struct ldb_dn *new_dn,
+				       struct ldb_message_element *el,
+				       struct dsdb_schema *schema,
 				       const struct dsdb_attribute *schema_attr,
 				       struct ldb_request *parent)
 {
@@ -981,7 +983,8 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 		struct GUID link_guid;
 		char *link_guid_str = NULL;
 
-		dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, &el->values[i], schema_attr->syntax->ldap_oid);
+		dsdb_dn = dsdb_dn_parse(tmp_ctx, ldb, &el->values[i],
+					schema_attr->syntax->ldap_oid);
 		if (dsdb_dn == NULL) {
 			talloc_free(tmp_ctx);
 			return LDB_ERR_INVALID_DN_SYNTAX;
