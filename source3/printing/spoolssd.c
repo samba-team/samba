@@ -194,21 +194,6 @@ static void spoolss_setup_sig_hup_handler(struct tevent_context *ev_ctx,
 	}
 }
 
-static bool spoolss_init_cb(void *ptr)
-{
-	struct messaging_context *msg_ctx = talloc_get_type_abort(
-		ptr, struct messaging_context);
-
-	return nt_printing_tdb_migrate(msg_ctx);
-}
-
-static bool spoolss_shutdown_cb(void *ptr)
-{
-	srv_spoolss_cleanup();
-
-	return true;
-}
-
 /* Children */
 
 static void spoolss_chld_sig_hup_handler(struct tevent_context *ev,
@@ -263,7 +248,6 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 			       int child_id, struct pf_worker_data *pf)
 {
 	NTSTATUS status;
-	struct rpc_srv_callbacks spoolss_cb;
 	struct messaging_context *msg_ctx = global_messaging_context();
 	bool ok;
 
@@ -295,25 +279,6 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 	 * ourselves. If pcap has not been loaded yet, then ignore, we will get
 	 * a message as soon as the bq process completes the reload. */
 	load_printers();
-
-	/* try to reinit rpc queues */
-	spoolss_cb.init = spoolss_init_cb;
-	spoolss_cb.shutdown = spoolss_shutdown_cb;
-	spoolss_cb.private_data = msg_ctx;
-
-	status = rpc_winreg_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register winreg rpc interface! (%s)\n",
-			  nt_errstr(status)));
-		return false;
-	}
-
-	status = rpc_spoolss_init(&spoolss_cb);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register spoolss rpc interface! (%s)\n",
-			  nt_errstr(status)));
-		return false;
-	}
 
 	return true;
 }
@@ -673,7 +638,6 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		     struct messaging_context *msg_ctx,
 		     struct dcesrv_context *dce_ctx)
 {
-	struct rpc_srv_callbacks spoolss_cb;
 	pid_t pid;
 	NTSTATUS status;
 	struct pf_listen_fd listen_fds[1];
@@ -681,6 +645,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	int ret;
 	bool ok;
 	const struct dcesrv_endpoint_server *ep_server = NULL;
+	const char *ep_servers[] = { "winreg", "spoolss", NULL };
 
 	DEBUG(1, ("Forking SPOOLSS Daemon\n"));
 
@@ -775,6 +740,16 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
+	DBG_INFO("Initializing DCE/RPC registered endpoint servers\n");
+
+	/* Init ep servers */
+	status = dcesrv_init_ep_servers(dce_ctx, ep_servers);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to init DCE/RPC endpoint server: %s\n",
+			nt_errstr(status));
+		exit(1);
+	}
+
 	/* the listening fd must be created before the children are actually
 	 * forked out. */
 	status = spoolssd_create_sockets(ev_ctx, msg_ctx, listen_fds,
@@ -814,29 +789,6 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	 * client enumeration anyway.
 	 */
 	load_printers();
-
-	/*
-	 * Initialize spoolss with an init function to convert printers first.
-	 * static_init_rpc will try to initialize the spoolss server too but you
-	 * can't register it twice.
-	 */
-	spoolss_cb.init = spoolss_init_cb;
-	spoolss_cb.shutdown = spoolss_shutdown_cb;
-	spoolss_cb.private_data = msg_ctx;
-
-	status = rpc_winreg_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register winreg rpc interface! (%s)\n",
-			  nt_errstr(status)));
-		exit(1);
-	}
-
-	status = rpc_spoolss_init(&spoolss_cb);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register spoolss rpc interface! (%s)\n",
-			  nt_errstr(status)));
-		exit(1);
-	}
 
 	ok = spoolssd_setup_children_monitor(ev_ctx, msg_ctx);
 	if (!ok) {
