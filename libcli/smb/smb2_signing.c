@@ -558,7 +558,6 @@ out:
 	return status;
 }
 
-
 NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
 				  uint16_t cipher_id,
 				  struct iovec *vector,
@@ -566,17 +565,20 @@ NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
 {
 	uint8_t *tf;
 	uint16_t flags;
-	uint8_t *sig_ptr = NULL;
-	uint8_t sig[16];
 	int i;
 	size_t a_total;
 	ssize_t m_total;
 	uint32_t msg_size = 0;
-	union {
-		struct aes_ccm_128_context ccm;
-		struct aes_gcm_128_context gcm;
-	} c;
-	uint8_t key[AES_BLOCK_SIZE];
+	uint32_t iv_size = 0;
+	uint32_t key_size = 0;
+	uint32_t tag_size = 0;
+	uint8_t _key[16] = {0};
+	gnutls_cipher_algorithm_t algo = 0;
+	gnutls_aead_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t key;
+	gnutls_datum_t iv;
+	NTSTATUS status;
+	int rc;
 
 	if (count < 1) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -612,53 +614,131 @@ NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	ZERO_STRUCT(key);
-	memcpy(key, decryption_key.data,
-	       MIN(decryption_key.length, AES_BLOCK_SIZE));
-
 	switch (cipher_id) {
 	case SMB2_ENCRYPTION_AES128_CCM:
-		aes_ccm_128_init(&c.ccm, key,
-				 tf + SMB2_TF_NONCE,
-				 a_total, m_total);
-		aes_ccm_128_update(&c.ccm, tf + SMB2_TF_NONCE, a_total);
-		for (i=1; i < count; i++) {
-			aes_ccm_128_crypt(&c.ccm,
-					(uint8_t *)vector[i].iov_base,
-					vector[i].iov_len);
-			aes_ccm_128_update(&c.ccm,
-					( uint8_t *)vector[i].iov_base,
-					vector[i].iov_len);
-		}
-		aes_ccm_128_digest(&c.ccm, sig);
+		algo = GNUTLS_CIPHER_AES_128_CCM;
+		iv_size = SMB2_AES_128_CCM_NONCE_SIZE;
 		break;
-
 	case SMB2_ENCRYPTION_AES128_GCM:
-		aes_gcm_128_init(&c.gcm, key, tf + SMB2_TF_NONCE);
-		aes_gcm_128_updateA(&c.gcm, tf + SMB2_TF_NONCE, a_total);
-		for (i=1; i < count; i++) {
-			aes_gcm_128_updateC(&c.gcm,
-					(const uint8_t *)vector[i].iov_base,
-					vector[i].iov_len);
-			aes_gcm_128_crypt(&c.gcm,
-					(uint8_t *)vector[i].iov_base,
-					vector[i].iov_len);
-		}
-		aes_gcm_128_digest(&c.gcm, sig);
+		algo = GNUTLS_CIPHER_AES_128_GCM;
+		iv_size = gnutls_cipher_get_iv_size(algo);
 		break;
-
 	default:
-		ZERO_STRUCT(key);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
-	ZERO_STRUCT(key);
 
-	sig_ptr = tf + SMB2_TF_SIGNATURE;
-	if (memcmp(sig_ptr, sig, 16) != 0) {
-		return NT_STATUS_ACCESS_DENIED;
+	key_size = gnutls_cipher_get_key_size(algo);
+	tag_size = gnutls_cipher_get_tag_size(algo);
+
+	if (key_size > sizeof(_key)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	DEBUG(5,("decrypt SMB2 message\n"));
+	key = (gnutls_datum_t) {
+		.data = _key,
+		.size = key_size,
+	};
 
-	return NT_STATUS_OK;
+	memcpy(key.data,
+	       decryption_key.data,
+	       MIN(decryption_key.length, key.size));
+
+	iv = (gnutls_datum_t) {
+		.data = tf + SMB2_TF_NONCE,
+		.size = iv_size,
+	};
+
+	rc = gnutls_aead_cipher_init(&cipher_hnd,
+				     algo,
+				     &key);
+	if (rc < 0) {
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
+	}
+
+	{
+		size_t ctext_size = m_total + tag_size;
+		uint8_t *ctext = NULL;
+		size_t ptext_size = m_total;
+		uint8_t *ptext = NULL;
+		size_t len = 0;
+
+		/* GnuTLS doesn't have a iovec API for decryption yet */
+
+		ptext = talloc_size(talloc_tos(), ptext_size);
+		if (ptext == NULL) {
+			gnutls_aead_cipher_deinit(cipher_hnd);
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+		ctext = talloc_size(talloc_tos(), ctext_size);
+		if (ctext == NULL) {
+			TALLOC_FREE(ptext);
+			gnutls_aead_cipher_deinit(cipher_hnd);
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+
+
+		for (i = 1; i < count; i++) {
+			memcpy(ctext + len,
+			       vector[i].iov_base,
+			       vector[i].iov_len);
+
+			len += vector[i].iov_len;
+		}
+		if (len != m_total) {
+			TALLOC_FREE(ptext);
+			TALLOC_FREE(ctext);
+			gnutls_aead_cipher_deinit(cipher_hnd);
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto out;
+		}
+
+		memcpy(ctext + len,
+		       tf + SMB2_TF_SIGNATURE,
+		       tag_size);
+
+		/* This function will verify the tag */
+		rc = gnutls_aead_cipher_decrypt(cipher_hnd,
+						iv.data,
+						iv.size,
+						tf + SMB2_TF_NONCE,
+						a_total,
+						tag_size,
+						ctext,
+						ctext_size,
+						ptext,
+						&ptext_size);
+		if (rc < 0 || ptext_size != m_total) {
+			DBG_ERR("ERROR: %s\n", gnutls_strerror(rc));
+			TALLOC_FREE(ptext);
+			TALLOC_FREE(ctext);
+			gnutls_aead_cipher_deinit(cipher_hnd);
+			status = NT_STATUS_INTERNAL_ERROR;
+			goto out;
+		}
+
+		len = 0;
+		for (i = 1; i < count; i++) {
+			memcpy(vector[i].iov_base,
+			       ptext + len,
+			       vector[i].iov_len);
+
+			len += vector[i].iov_len;
+		}
+
+		TALLOC_FREE(ptext);
+		TALLOC_FREE(ctext);
+	}
+	gnutls_aead_cipher_deinit(cipher_hnd);
+
+	DBG_INFO("Decrypted SMB2 message\n");
+
+	status = NT_STATUS_OK;
+out:
+	ZERO_ARRAY(_key);
+
+	return status;
 }
