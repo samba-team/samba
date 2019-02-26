@@ -105,6 +105,17 @@ class GPIniParser(GPParser):
 class GPTIniParser(GPIniParser):
     encoding = 'utf-8'
 
+    def parse(self, contents):
+        try:
+            super(GPTIniParser, self).parse(contents)
+        except UnicodeDecodeError:
+            # Required dict_type in Python 2.7
+            self.ini_conf = ConfigParser(dict_type=collections.OrderedDict)
+            self.ini_conf.optionxform = str
+
+            # Fallback to Latin-1 which RSAT appears to use
+            self.ini_conf.readfp(StringIO(contents.decode('iso-8859-1')))
+
 
 class GPScriptsIniParser(GPIniParser):
     def build_xml_parameter(self, section_xml, section, key_ini, val_ini):
