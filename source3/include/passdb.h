@@ -976,11 +976,6 @@ NTSTATUS create_builtin_guests(const struct dom_sid *dom_sid);
 #include "passdb/machine_sid.h"
 #include "passdb/lookup_sid.h"
 
-/* The following definitions come from passdb/pdb_unixid.c */
-void unixid_from_uid(struct unixid *id, uint32_t some_uid);
-void unixid_from_gid(struct unixid *id, uint32_t some_gid);
-void unixid_from_both(struct unixid *id, uint32_t some_id);
-
 /* The following definitions come from passdb/pdb_secrets.c
  * and should be used by PDB modules if they need to store
  * sid/guid information for the domain in secrets database

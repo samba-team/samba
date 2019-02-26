@@ -149,7 +149,7 @@ bld.SAMBA3_LIBRARY('samba-passdb',
                                   ''',
                    abi_match=private_pdb_match,
                    abi_directory='passdb/ABI',
-                   vnum='0.27.1')
+                   vnum='0.27.2')
 
 bld.SAMBA3_SUBSYSTEM('pdb',
                    source='''
@@ -168,8 +168,7 @@ bld.SAMBA3_SUBSYSTEM('pdb',
                           lib/winbind_util.c
                           passdb/pdb_util.c
                           passdb/pdb_interface.c
-                          passdb/pdb_secrets.c
-                          passdb/pdb_unixid.c''',
+                          passdb/pdb_secrets.c''',
                    deps='''
                         secrets3
                         GROUPDB

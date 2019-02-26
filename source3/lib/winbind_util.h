@@ -36,9 +36,7 @@ bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const struct dom_sid *sid,
                         enum lsa_SidType *name_type);
 bool winbind_ping(void);
 bool winbind_sid_to_uid(uid_t *puid, const struct dom_sid *sid);
-bool winbind_uid_to_sid(struct dom_sid *sid, uid_t uid);
 bool winbind_sid_to_gid(gid_t *pgid, const struct dom_sid *sid);
-bool winbind_gid_to_sid(struct dom_sid *sid, gid_t gid);
 bool winbind_xid_to_sid(struct dom_sid *sid, const struct unixid *xid);
 struct passwd * winbind_getpwnam(const char * sname);
 struct passwd * winbind_getpwsid(const struct dom_sid *sid);

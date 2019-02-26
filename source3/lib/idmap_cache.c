@@ -228,56 +228,6 @@ static void idmap_cache_xid2sid_parser(const struct gencache_timeout *timeout,
 }
 
 /**
- * Find a uid2sid mapping
- * @param[in] uid		the uid to map
- * @param[out] sid		where to put the result
- * @param[out] expired		is the cache entry expired?
- * @retval Was anything in the cache at all?
- *
- * If "is_null_sid(sid)", this was a negative mapping.
- */
-
-bool idmap_cache_find_uid2sid(uid_t uid, struct dom_sid *sid, bool *expired)
-{
-	fstring key;
-	struct idmap_cache_xid2sid_state state;
-
-	fstr_sprintf(key, "IDMAP/UID2SID/%d", (int)uid);
-
-	state.sid = sid;
-	state.expired = expired;
-	state.ret = false;
-
-	gencache_parse(key, idmap_cache_xid2sid_parser, &state);
-	return state.ret;
-}
-
-/**
- * Find a gid2sid mapping
- * @param[in] gid		the gid to map
- * @param[out] sid		where to put the result
- * @param[out] expired		is the cache entry expired?
- * @retval Was anything in the cache at all?
- *
- * If "is_null_sid(sid)", this was a negative mapping.
- */
-
-bool idmap_cache_find_gid2sid(gid_t gid, struct dom_sid *sid, bool *expired)
-{
-	fstring key;
-	struct idmap_cache_xid2sid_state state;
-
-	fstr_sprintf(key, "IDMAP/GID2SID/%d", (int)gid);
-
-	state.sid = sid;
-	state.expired = expired;
-	state.ret = false;
-
-	gencache_parse(key, idmap_cache_xid2sid_parser, &state);
-	return state.ret;
-}
-
-/**
  * Find a xid2sid mapping
  * @param[in] id		the unix id to map
  * @param[out] sid		where to put the result
