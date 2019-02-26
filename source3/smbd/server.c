@@ -2110,7 +2110,7 @@ extern void build_options(bool screen);
 		}
 
 		if (rpc_lsasd_daemon() == RPC_DAEMON_FORK) {
-			start_lsasd(ev_ctx, msg_ctx);
+			start_lsasd(ev_ctx, msg_ctx, dce_ctx);
 		}
 
 		if (rpc_fss_daemon() == RPC_DAEMON_FORK) {

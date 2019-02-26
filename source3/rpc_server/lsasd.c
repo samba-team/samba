@@ -837,7 +837,8 @@ done:
 }
 
 void start_lsasd(struct tevent_context *ev_ctx,
-		 struct messaging_context *msg_ctx)
+		 struct messaging_context *msg_ctx,
+		 struct dcesrv_context *dce_ctx)
 {
 	NTSTATUS status;
 	struct pf_listen_fd listen_fd[LSASD_MAX_SOCKETS];
@@ -932,6 +933,15 @@ void start_lsasd(struct tevent_context *ev_ctx,
 	status = dcerpc_register_ep_server(ep_server);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register 'netlogon' endpoint server: %s\n",
+			nt_errstr(status));
+		exit(1);
+	}
+
+	DBG_INFO("Reinitializing DCE/RPC server context\n");
+
+	status = dcesrv_reinit_context(dce_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to reinit DCE/RPC context: %s\n",
 			nt_errstr(status));
 		exit(1);
 	}
