@@ -947,7 +947,7 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 	unsigned int i;
 	TALLOC_CTX *tmp_ctx = NULL;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
-	const struct dsdb_attribute *target;
+	const struct dsdb_attribute *target = NULL;
 	const char *attrs[2];
 	int ret;
 	struct la_private *la_private = NULL;
@@ -974,10 +974,10 @@ static int linked_attributes_fix_links(struct ldb_module *module,
 	attrs[1] = NULL;
 
 	for (i=0; i<el->num_values; i++) {
-		struct dsdb_dn *dsdb_dn;
-		struct ldb_result *res;
-		struct ldb_message *msg;
-		struct ldb_message_element *el2;
+		struct dsdb_dn *dsdb_dn = NULL;
+		struct ldb_result *res = NULL;
+		struct ldb_message *msg  = NULL;
+		struct ldb_message_element *el2 = NULL;
 		struct GUID link_guid;
 		char *link_guid_str = NULL;
 
