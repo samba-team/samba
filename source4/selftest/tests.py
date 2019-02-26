@@ -883,7 +883,6 @@ plantestsuite_loadlist("samba4.ldap.sites.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [
 
 planoldpythontestsuite("ad_dc_ntvfs", "sort", environ={'SERVER' : '$SERVER', 'DATA_DIR' : os.path.join(samba4srcdir, 'dsdb/tests/python/testdata/')}, name="samba4.ldap.sort.python", extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')], extra_args=['-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'], py3_compatible=True)
 
-plantestsuite_loadlist("samba4.ldap.vlv.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [python, os.path.join(samba4srcdir, "dsdb/tests/python/vlv.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite_loadlist("samba4.ldap.linked_attributes.python(ad_dc_ntvfs)", "ad_dc_ntvfs:local", [python, os.path.join(samba4srcdir, "dsdb/tests/python/linked_attributes.py"), '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
 # These should be the first tests run against testenvs created by backup/restore
@@ -939,19 +938,22 @@ for env in ["ad_dc_ntvfs", "fl2000dc", "fl2003dc", "fl2008r2dc"]:
         # therefore skip it in that configuration
         plantestsuite_loadlist("samba4.ldap.passwords.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/passwords.py"), "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", '$LOADLIST', '$LISTOPT'])
 
-env = "ad_dc_ntvfs"
-plantestsuite_loadlist("samba4.ldap.confidential_attr.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/confidential_attr.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
-
 for env in ["ad_dc_ntvfs"]:
     # This test takes a lot of time, so we run it against a minimum of
     # environments, please only add new ones if there's really a
     # difference we need to test
+    plantestsuite_loadlist("samba4.ldap.vlv.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/vlv.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+    plantestsuite_loadlist("samba4.ldap.confidential_attr.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/confidential_attr.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
     plantestsuite_loadlist("samba4.ldap.password_lockout.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/password_lockout.py"), "$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN", "--realm=$REALM", '$LOADLIST', '$LISTOPT'])
     planoldpythontestsuite(env, "tombstone_reanimation",
                            name="samba4.tombstone_reanimation.python",
                            environ={'TEST_SERVER': '$SERVER', 'TEST_USERNAME': '$USERNAME', 'TEST_PASSWORD': '$PASSWORD'},
                            extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')], py3_compatible=True
                            )
+    planoldpythontestsuite(env, "samba.tests.join",
+                           name="samba.tests.join.python(%s)" % env,
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
+                           py3_compatible=True)
 
 # this is a basic sanity-check of Kerberos/NTLM user login
 for env in ["offlinebackupdc", "restoredc", "renamedc", "labdc"]:
@@ -1112,10 +1114,6 @@ for env in ['ad_dc_ntvfs']:
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.repl_rodc.python(%s)" % env,
                            environ={'DC1': "$DC_SERVER", 'DC2': '$DC_SERVER'},
-                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
-                           py3_compatible=True)
-    planoldpythontestsuite(env, "samba.tests.join",
-                           name="samba.tests.join.python(%s)" % env,
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'],
                            py3_compatible=True)
     planoldpythontestsuite(env, "cracknames",
