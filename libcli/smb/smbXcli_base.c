@@ -34,9 +34,6 @@
 #include "librpc/ndr/libndr.h"
 #include "libcli/smb/smb2_negotiate_context.h"
 #include "libcli/smb/smb2_signing.h"
-#include "lib/crypto/aes.h"
-#include "lib/crypto/aes_ccm_128.h"
-#include "lib/crypto/aes_gcm_128.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -6258,10 +6255,10 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 			      sizeof(session->smb2->nonce_high_random));
 	switch (conn->smb2.server.cipher) {
 	case SMB2_ENCRYPTION_AES128_CCM:
-		nonce_size = AES_CCM_128_NONCE_SIZE;
+		nonce_size = SMB2_AES_128_CCM_NONCE_SIZE;
 		break;
 	case SMB2_ENCRYPTION_AES128_GCM:
-		nonce_size = AES_GCM_128_IV_SIZE;
+		nonce_size = gnutls_cipher_get_iv_size(GNUTLS_CIPHER_AES_128_GCM);
 		break;
 	default:
 		nonce_size = 0;
