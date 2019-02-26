@@ -197,6 +197,36 @@ bool winbind_gid_to_sid(struct dom_sid *sid, gid_t gid)
 	return (result == WBC_ERR_SUCCESS);
 }
 
+bool winbind_xid_to_sid(struct dom_sid *sid, const struct unixid *xid)
+{
+	struct wbcUnixId wbc_xid;
+	struct wbcDomainSid dom_sid;
+	wbcErr result;
+
+	switch (xid->type) {
+	case ID_TYPE_UID:
+		wbc_xid = (struct wbcUnixId) {
+			.type = WBC_ID_TYPE_UID, .id.uid = xid->id
+		};
+		break;
+	case ID_TYPE_GID:
+		wbc_xid = (struct wbcUnixId) {
+			.type = WBC_ID_TYPE_GID, .id.gid = xid->id
+		};
+		break;
+	default:
+		return false;
+	}
+
+	result = wbcUnixIdsToSids(&wbc_xid, 1, &dom_sid);
+	if (result != WBC_ERR_SUCCESS) {
+		return false;
+	}
+
+	memcpy(sid, &dom_sid, sizeof(struct dom_sid));
+	return true;
+}
+
 /* Check for a trusted domain */
 
 wbcErr wb_is_trusted_domain(const char *domain)
