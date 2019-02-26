@@ -201,13 +201,11 @@ static void idmap_cache_xid2sid_parser(time_t timeout, DATA_BLOB blob,
 		(struct idmap_cache_xid2sid_state *)private_data;
 	char *value;
 
-	ZERO_STRUCTP(state->sid);
-	state->ret = false;
-
 	if ((blob.length == 0) || (blob.data[blob.length-1] != 0)) {
 		/*
 		 * Not a string, can't be a valid mapping
 		 */
+		state->ret = false;
 		return;
 	}
 
@@ -217,6 +215,7 @@ static void idmap_cache_xid2sid_parser(time_t timeout, DATA_BLOB blob,
 		/*
 		 * Return NULL SID, see comment to uid2sid
 		 */
+		*state->sid = (struct dom_sid) {0};
 		state->ret = true;
 	} else {
 		state->ret = string_to_sid(state->sid, value);
