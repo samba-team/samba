@@ -27,7 +27,9 @@
 #include "../lib/smbconf/smbconf.h"
 #include "smbd/proto.h"
 #include "lib/smbconf/smbconf_init.h"
+#include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/srv_fsrvp.h"
+#include "rpc_server/rpc_server.h"
 #include "srv_fss_private.h"
 #include "srv_fss_agent.h"
 
@@ -1709,6 +1711,44 @@ uint32_t _fss_PrepareShadowCopySet(struct pipes_struct *p,
 	fss_seq_tout_set(fss_global.mem_ctx, 1800, sc_set, &fss_global.seq_tmr);
 
 	return 0;
+}
+
+static NTSTATUS FileServerVssAgent__op_init_server(
+		struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server);
+
+static NTSTATUS FileServerVssAgent__op_shutdown_server(
+		struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server);
+
+#define DCESRV_INTERFACE_FILESERVERVSSAGENT_INIT_SERVER \
+	fileservervssagent_init_server
+
+#define DCESRV_INTERFACE_FILESERVERVSSAGENT_SHUTDOWN_SERVER \
+	fileservervssagent_shutdown_server
+
+
+static NTSTATUS fileservervssagent_shutdown_server(
+		struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server)
+{
+	srv_fssa_cleanup();
+	return FileServerVssAgent__op_shutdown_server(dce_ctx, ep_server);
+}
+
+static NTSTATUS fileservervssagent_init_server(
+		struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server)
+{
+	NTSTATUS status;
+	struct messaging_context *msg_ctx = global_messaging_context();
+
+	status = srv_fssa_start(msg_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return FileServerVssAgent__op_init_server(dce_ctx, ep_server);
 }
 
 /* include the generated boilerplate */

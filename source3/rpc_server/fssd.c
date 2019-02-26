@@ -130,35 +130,14 @@ static void fssd_setup_sig_hup_handler(struct tevent_context *ev_ctx,
 	}
 }
 
-static bool fss_shutdown_cb(void *ptr)
-{
-	srv_fssa_cleanup();
-	return true;
-}
-
-static bool fss_init_cb(void *ptr)
-{
-	NTSTATUS status;
-        struct messaging_context *msg_ctx;
-
-	msg_ctx = talloc_get_type_abort(ptr, struct messaging_context);
-	status = srv_fssa_start(msg_ctx);
-	return NT_STATUS_IS_OK(status);
-}
-
 void start_fssd(struct tevent_context *ev_ctx,
 		struct messaging_context *msg_ctx,
 		struct dcesrv_context *dce_ctx)
 {
-	struct rpc_srv_callbacks fss_cb;
 	NTSTATUS status;
 	pid_t pid;
 	int rc;
 	const struct dcesrv_endpoint_server *ep_server = NULL;
-
-	fss_cb.init = fss_init_cb;
-	fss_cb.shutdown = fss_shutdown_cb;
-	fss_cb.private_data = msg_ctx;
 
 	DEBUG(1, ("Forking File Server Shadow-copy Daemon\n"));
 
@@ -217,10 +196,12 @@ void start_fssd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	status = rpc_FileServerVssAgent_init(&fss_cb);
+	DBG_INFO("Initializing DCE/RPC registered endpoint servers\n");
+
+	status = dcesrv_init_ep_server(dce_ctx, "FileServerVssAgent");
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register fssd rpc interface! (%s)\n",
-			  nt_errstr(status)));
+		DBG_ERR("Failed to init DCE/RPC endpoint server: %s\n",
+			nt_errstr(status));
 		exit(1);
 	}
 
