@@ -30,6 +30,7 @@
 #include "lib/server_prefork.h"
 #include "lib/server_prefork_util.h"
 #include "librpc/rpc/dcerpc_ep.h"
+#include "librpc/rpc/dcesrv_core.h"
 
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_ep_register.h"
@@ -39,6 +40,10 @@
 #include "librpc/gen_ndr/srv_samr.h"
 #include "librpc/gen_ndr/srv_netlogon.h"
 #include "rpc_server/lsasd.h"
+
+#include "librpc/gen_ndr/ndr_lsa_scompat.h"
+#include "librpc/gen_ndr/ndr_samr_scompat.h"
+#include "librpc/gen_ndr/ndr_netlogon_scompat.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -840,6 +845,7 @@ void start_lsasd(struct tevent_context *ev_ctx,
 	pid_t pid;
 	int rc;
 	bool ok;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
 	DEBUG(1, ("Forking LSA Service Daemon\n"));
 
@@ -888,6 +894,47 @@ void start_lsasd(struct tevent_context *ev_ctx,
 
 	BlockSignals(false, SIGTERM);
 	BlockSignals(false, SIGHUP);
+
+	DBG_INFO("Registering DCE/RPC endpoint servers\n");
+
+	ep_server = lsarpc_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'lsarpc' endpoint server\n");
+		exit(1);
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register 'lsarpc' endpoint server: %s\n",
+			nt_errstr(status));
+		exit(1);
+	}
+
+	ep_server = samr_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'samr' endpoint server\n");
+		exit(1);
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register 'samr' endpoint server: %s\n",
+			nt_errstr(status));
+		exit(1);
+	}
+
+	ep_server = netlogon_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'netlogon' endpoint server\n");
+		exit(1);
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register 'netlogon' endpoint server: %s\n",
+			nt_errstr(status));
+		exit(1);
+	}
 
 	ok = lsasd_create_sockets(ev_ctx, msg_ctx, listen_fd, &listen_fd_size);
 	if (!ok) {
