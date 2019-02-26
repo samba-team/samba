@@ -45,9 +45,13 @@ builddirs = {
     "samba-libs": ".",
     "samba-static": ".",
     "samba-none-env": ".",
-    "samba-ad-dc": ".",
-    "samba-ad-dc-ntvfs": ".",
+    "samba-ad-dc-1": ".",
     "samba-ad-dc-2": ".",
+    "samba-ad-dc-3": ".",
+    "samba-ad-dc-4": ".",
+    "samba-ad-dc-5": ".",
+    "samba-ad-dc-6": ".",
+    "samba-ad-dc-ntvfs": ".",
     "samba-ad-dc-backup": ".",
     "samba-systemkrb5": ".",
     "samba-nopython": ".",
@@ -101,6 +105,7 @@ tasks = {
                  "--exclude-env=ad_dc_default "
                  "--exclude-env=ad_dc_slowtests "
                  "--exclude-env=ad_dc_no_nss "
+                 "--exclude-env=ad_dc_no_ntlm "
                  "--exclude-env=fl2003dc "
                  "--exclude-env=fl2008dc "
                  "--exclude-env=fl2008r2dc "
@@ -119,6 +124,13 @@ tasks = {
                  "--exclude-env=renamedc "
                  "--exclude-env=offlinebackupdc "
                  "--exclude-env=labdc "
+                 "--exclude-env=preforkrestartdc "
+                 "--exclude-env=proclimitdc "
+                 "--exclude-env=promoted_dc "
+                 "--exclude-env=vampire_dc "
+                 "--exclude-env=rodc "
+                 "--exclude-env=ad_dc_default "
+                 "--exclude-env=ad_dc_slowtests "
                  "'",
                  "text/plain"),
                 ("install", "make install", "text/plain"),
@@ -161,13 +173,13 @@ tasks = {
                          "'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
-    "samba-ad-dc": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+    "samba-ad-dc-1": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
                       ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("test", "make test FAIL_IMMEDIATELY=1 "
                        "TESTS='--include-env=ad_dc "
-                       "--include-env=fl2003dc "
-                       "--include-env=fl2008r2dc "
+                       "--include-env=ad_dc_no_nss "
+                       "--include-env=ad_dc_no_ntlm "
                        "'", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
@@ -175,12 +187,53 @@ tasks = {
                         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='--include-env=chgdcpass "
+                         "TESTS='"
+                         "--include-env=vampire_dc "
                          "--include-env=vampire_2000_dc "
+                         "--include-env=rodc "
+                         "'", "text/plain"),
+                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+
+    "samba-ad-dc-3": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                        ("make", "make -j", "text/plain"),
+                        ("test", "make test FAIL_IMMEDIATELY=1 "
+                         "TESTS='"
+                         "--include-env=promoted_dc "
+                         "--include-env=chgdcpass "
+                         "--include-env=preforkrestartdc "
+                         "--include-env=proclimitdc "
+                         "'", "text/plain"),
+                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+
+    "samba-ad-dc-4": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                        ("make", "make -j", "text/plain"),
+                        ("test", "make test FAIL_IMMEDIATELY=1 "
+                         "TESTS='"
                          "--include-env=fl2000dc "
-                         "--include-env=ad_dc_no_nss "
-                         "'",
-                         "text/plain"),
+                         "--include-env=fl2003dc "
+                         "--include-env=fl2008dc "
+                         "--include-env=fl2008r2dc "
+                         "'", "text/plain"),
+                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+
+    "samba-ad-dc-5": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                        ("make", "make -j", "text/plain"),
+                        ("test", "make test FAIL_IMMEDIATELY=1 "
+                         "TESTS='"
+                         "--include-env=ad_dc_default "
+                         "'", "text/plain"),
+                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+
+    "samba-ad-dc-6": [("random-sleep", "script/random-sleep.sh 60 600", "text/plain"),
+                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                        ("make", "make -j", "text/plain"),
+                        ("test", "make test FAIL_IMMEDIATELY=1 "
+                         "TESTS='"
+                         "--include-env=ad_dc_slowtests "
+                         "'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     # We split out the ad_dc_ntvfs tests (which are long) so other test do not wait
@@ -192,9 +245,6 @@ tasks = {
                       ("test", "make test FAIL_IMMEDIATELY=1 "
                        "TESTS='"
                        "--include-env=ad_dc_ntvfs "
-                       "--include-env=fl2008dc "
-                       "--include-env=ad_dc_default "
-                       "--include-env=ad_dc_slowtests "
                        "'", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 

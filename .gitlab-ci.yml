@@ -81,7 +81,18 @@ samba-ad-member:
 
 samba-ad-dc-2:
   extends: .shared_template
-  # this one takes about 1 hours to finish
+
+samba-ad-dc-3:
+  extends: .shared_template
+
+samba-ad-dc-4:
+  extends: .shared_template
+
+samba-ad-dc-5:
+  extends: .shared_template
+
+samba-ad-dc-6:
+  extends: .shared_template
 
 samba-ad-dc-backup:
   extends: .shared_template
@@ -130,9 +141,8 @@ samba-fileserver:
   extends: .private_template
   # this one takes about 1 hours to finish
 
-samba-ad-dc:
+samba-ad-dc-1:
   extends: .private_template
-  # this one takes about 1 hours to finish
 
 samba-nt4:
   extends: .private_template
