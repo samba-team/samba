@@ -52,7 +52,8 @@
 #endif /* BUILD_WITH_GNUTLS_AEAD */
 
 #ifdef BUILD_WITH_SAMBA_AES_GCM
-	#include "lib/crypto/crypto.h"
+	#include "lib/crypto/aes.h"
+	#include "lib/crypto/aes_gcm_128.h"
 #endif /* BUILD_WITH_SAMBA_AES_GCM */
 
 static const char * const secret_attributes[] = {DSDB_SECRET_ATTRIBUTES};
