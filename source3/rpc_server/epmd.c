@@ -79,8 +79,6 @@ static void epmd_sig_term_handler(struct tevent_context *ev,
 				  void *siginfo,
 				  void *private_data)
 {
-	rpc_epmapper_shutdown();
-
 	exit_server_cleanly("termination signal");
 }
 
