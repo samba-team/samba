@@ -82,8 +82,6 @@ static void fssd_sig_term_handler(struct tevent_context *ev,
 				  void *siginfo,
 				  void *private_data)
 {
-	rpc_FileServerVssAgent_shutdown();
-
 	exit_server_cleanly("termination signal");
 }
 

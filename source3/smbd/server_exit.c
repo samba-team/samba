@@ -40,6 +40,7 @@
 #include "../librpc/gen_ndr/srv_svcctl.h"
 #include "../librpc/gen_ndr/srv_winreg.h"
 #include "../librpc/gen_ndr/srv_wkssvc.h"
+#include "../librpc/gen_ndr/srv_fsrvp.h"
 #include "printing/notify.h"
 #include "printing.h"
 #include "serverid.h"
@@ -203,6 +204,8 @@ static void exit_server_common(enum server_exit_reason how,
 		rpc_netlogon_shutdown();
 		rpc_samr_shutdown();
 		rpc_lsarpc_shutdown();
+
+		rpc_FileServerVssAgent_shutdown();
 	}
 
 	/*
