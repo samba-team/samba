@@ -282,4 +282,7 @@
  */
 #define SMB2_DHANDLE_FLAG_PERSISTENT 0x00000002
 
+/* The AES CCM nonce N of 15 - L octets. Where L=4 */
+#define SMB2_AES_128_CCM_NONCE_SIZE 11
+
 #endif
