@@ -466,7 +466,7 @@ struct tevent_req *wb_xids2sids_send(TALLOC_CTX *mem_ctx,
 
 		for (i=0; i<num_xids; i++) {
 			struct dom_sid sid = {0};
-			bool ok, expired;
+			bool ok, expired = true;
 
 			switch (xids[i].type) {
 			    case ID_TYPE_UID:
