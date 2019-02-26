@@ -130,25 +130,14 @@ static void epmd_setup_sig_hup_handler(struct tevent_context *ev_ctx,
 	}
 }
 
-static bool epmapper_shutdown_cb(void *ptr) {
-	srv_epmapper_cleanup();
-
-	return true;
-}
-
 void start_epmd(struct tevent_context *ev_ctx,
 		struct messaging_context *msg_ctx,
 		struct dcesrv_context *dce_ctx)
 {
-	struct rpc_srv_callbacks epmapper_cb;
 	NTSTATUS status;
 	pid_t pid;
 	int rc;
 	const struct dcesrv_endpoint_server *ep_server = NULL;
-
-	epmapper_cb.init = NULL;
-	epmapper_cb.shutdown = epmapper_shutdown_cb;
-	epmapper_cb.private_data = NULL;
 
 	DEBUG(1, ("Forking Endpoint Mapper Daemon\n"));
 
@@ -206,10 +195,12 @@ void start_epmd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	status = rpc_epmapper_init(&epmapper_cb);
+	DBG_INFO("Initializing DCE/RPC registered endpoint servers\n");
+
+	status = dcesrv_init_ep_server(dce_ctx, "epmapper");
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to register epmd rpc interface! (%s)\n",
-			  nt_errstr(status)));
+		DBG_ERR("Failed to init DCE/RPC endpoint server: %s\n",
+			nt_errstr(status));
 		exit(1);
 	}
 

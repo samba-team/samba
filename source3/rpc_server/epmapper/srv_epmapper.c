@@ -27,6 +27,9 @@
 #include "srv_epmapper.h"
 #include "auth.h"
 
+#include "librpc/rpc/dcesrv_core.h"
+#include "librpc/gen_ndr/ndr_epmapper_scompat.h"
+
 typedef uint32_t error_status_t;
 
 /* An endpoint combined with an interface description */
@@ -1209,6 +1212,20 @@ error_status_t _epm_MapAuth(struct pipes_struct *p,
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return EPMAPPER_STATUS_CANT_PERFORM_OP;
+}
+
+static NTSTATUS epmapper__op_shutdown_server(struct dcesrv_context *dce_ctx,
+			const struct dcesrv_endpoint_server *ep_server);
+
+#define DCESRV_INTERFACE_EPMAPPER_SHUTDOWN_SERVER \
+       epmapper_shutdown_server
+
+static NTSTATUS epmapper_shutdown_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server)
+{
+	srv_epmapper_cleanup();
+
+	return epmapper__op_shutdown_server(dce_ctx, ep_server);
 }
 
 /* include the generated boilerplate */

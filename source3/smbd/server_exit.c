@@ -220,8 +220,6 @@ static void exit_server_common(enum server_exit_reason how,
 
 		rpc_FileServerVssAgent_shutdown();
 
-		rpc_epmapper_shutdown();
-
 		global_dcesrv_context_free();
 	}
 
