@@ -143,11 +143,6 @@ static NTSTATUS rpc_setup_winreg(struct tevent_context *ev_ctx,
 		return status;
 	}
 
-	status = rpc_winreg_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	status = rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -181,11 +176,6 @@ static NTSTATUS rpc_setup_srvsvc(struct tevent_context *ev_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register '%s' endpoint server: "
 			"%s\n", ep_server->name, nt_errstr(status));
-		return status;
-	}
-
-	status = rpc_srvsvc_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -227,11 +217,6 @@ static NTSTATUS rpc_setup_lsarpc(struct tevent_context *ev_ctx,
 		return status;
 	}
 
-	status = rpc_lsarpc_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	status = rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -267,11 +252,6 @@ static NTSTATUS rpc_setup_samr(struct tevent_context *ev_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register '%s' endpoint server: "
 			"%s\n", ep_server->name, nt_errstr(status));
-		return status;
-	}
-
-	status = rpc_samr_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -313,11 +293,6 @@ static NTSTATUS rpc_setup_netlogon(struct tevent_context *ev_ctx,
 		return status;
 	}
 
-	status = rpc_netlogon_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	status = rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -351,11 +326,6 @@ static NTSTATUS rpc_setup_netdfs(struct tevent_context *ev_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register '%s' endpoint server: "
 			"%s\n", ep_server->name, nt_errstr(status));
-		return status;
-	}
-
-	status = rpc_netdfs_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -396,11 +366,6 @@ static NTSTATUS rpc_setup_rpcecho(struct tevent_context *ev_ctx,
 		return status;
 	}
 
-	status = rpc_rpcecho_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	status = rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -435,11 +400,6 @@ static NTSTATUS rpc_setup_dssetup(struct tevent_context *ev_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register '%s' endpoint server: "
 			"%s\n", ep_server->name, nt_errstr(status));
-		return status;
-	}
-
-	status = rpc_dssetup_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -479,11 +439,6 @@ static NTSTATUS rpc_setup_wkssvc(struct tevent_context *ev_ctx,
 		return status;
 	}
 
-	status = rpc_wkssvc_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	status = rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -492,35 +447,10 @@ static NTSTATUS rpc_setup_wkssvc(struct tevent_context *ev_ctx,
 	return NT_STATUS_OK;
 }
 
-static bool spoolss_init_cb(void *ptr)
-{
-	struct messaging_context *msg_ctx =
-		talloc_get_type_abort(ptr, struct messaging_context);
-	bool ok;
-
-	/*
-	 * Migrate the printers first.
-	 */
-	ok = nt_printing_tdb_migrate(msg_ctx);
-	if (!ok) {
-		return false;
-	}
-
-	return true;
-}
-
-static bool spoolss_shutdown_cb(void *ptr)
-{
-	srv_spoolss_cleanup();
-
-	return true;
-}
-
 static NTSTATUS rpc_setup_spoolss(struct tevent_context *ev_ctx,
 				  struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_spoolss;
-	struct rpc_srv_callbacks spoolss_cb;
 	enum rpc_daemon_type_e spoolss_type = rpc_spoolss_daemon();
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	enum rpc_service_mode_e service_mode;
@@ -550,15 +480,6 @@ static NTSTATUS rpc_setup_spoolss(struct tevent_context *ev_ctx,
 		return status;
 	}
 
-	spoolss_cb.init         = spoolss_init_cb;
-	spoolss_cb.shutdown     = spoolss_shutdown_cb;
-	spoolss_cb.private_data = msg_ctx;
-
-	status = rpc_spoolss_init(&spoolss_cb);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;;
-	}
-
 	status = rpc_setup_embedded(ev_ctx, msg_ctx, t, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -567,36 +488,11 @@ static NTSTATUS rpc_setup_spoolss(struct tevent_context *ev_ctx,
 	return NT_STATUS_OK;
 }
 
-static bool svcctl_init_cb(void *ptr)
-{
-	struct messaging_context *msg_ctx =
-		talloc_get_type_abort(ptr, struct messaging_context);
-	bool ok;
-
-	/* initialize the control hooks */
-	init_service_op_table();
-
-	ok = svcctl_init_winreg(msg_ctx);
-	if (!ok) {
-		return false;
-	}
-
-	return true;
-}
-
-static bool svcctl_shutdown_cb(void *ptr)
-{
-	shutdown_service_op_table();
-
-	return true;
-}
-
 static NTSTATUS rpc_setup_svcctl(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_svcctl;
 	const char *pipe_name = "svcctl";
-	struct rpc_srv_callbacks svcctl_cb;
 	NTSTATUS status;
 	enum rpc_service_mode_e service_mode;
 	const struct dcesrv_endpoint_server *ep_server = NULL;
@@ -617,15 +513,6 @@ static NTSTATUS rpc_setup_svcctl(struct tevent_context *ev_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register '%s' endpoint server"
 			": %s\n", ep_server->name, nt_errstr(status));
-		return status;
-	}
-
-	svcctl_cb.init         = svcctl_init_cb;
-	svcctl_cb.shutdown     = svcctl_shutdown_cb;
-	svcctl_cb.private_data = msg_ctx;
-
-	status = rpc_svcctl_init(&svcctl_cb);
-	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -664,11 +551,6 @@ static NTSTATUS rpc_setup_ntsvcs(struct tevent_context *ev_ctx,
 		return status;
 	}
 
-	status = rpc_ntsvcs_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	status = rpc_setup_embedded(ev_ctx, msg_ctx, t, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -677,25 +559,10 @@ static NTSTATUS rpc_setup_ntsvcs(struct tevent_context *ev_ctx,
 	return NT_STATUS_OK;
 }
 
-static bool eventlog_init_cb(void *ptr)
-{
-	struct messaging_context *msg_ctx =
-		talloc_get_type_abort(ptr, struct messaging_context);
-	bool ok;
-
-	ok = eventlog_init_winreg(msg_ctx);
-	if (!ok) {
-		return false;
-	}
-
-	return true;
-}
-
 static NTSTATUS rpc_setup_eventlog(struct tevent_context *ev_ctx,
 				   struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_eventlog;
-	struct rpc_srv_callbacks eventlog_cb;
 	NTSTATUS status;
 	enum rpc_service_mode_e service_mode;
 	const struct dcesrv_endpoint_server *ep_server = NULL;
@@ -716,15 +583,6 @@ static NTSTATUS rpc_setup_eventlog(struct tevent_context *ev_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register '%s' endpoint server"
 			": %s\n", ep_server->name, nt_errstr(status));
-		return status;
-	}
-
-	eventlog_cb.init         = eventlog_init_cb;
-	eventlog_cb.shutdown     = NULL;
-	eventlog_cb.private_data = msg_ctx;
-
-	status = rpc_eventlog_init(&eventlog_cb);
-	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -760,11 +618,6 @@ static NTSTATUS rpc_setup_initshutdown(struct tevent_context *ev_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register '%s' endpoint "
 			"server: %s\n", ep_server->name, nt_errstr(status));
-		return status;
-	}
-
-	status = rpc_initshutdown_init(NULL);
-	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -899,7 +752,14 @@ NTSTATUS dcesrv_init(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	/* TODO Initialize endpoints for registered endpoint servers */
+	DBG_INFO("Initializing DCE/RPC registered endpoint servers\n");
+
+	status = dcesrv_init_registered_ep_servers(dce_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to init DCE/RPC endpoint servers: %s\n",
+			nt_errstr(status));
+		goto done;
+	}
 
 	status = NT_STATUS_OK;
 done:

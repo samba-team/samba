@@ -33,6 +33,11 @@
 #include "auth.h"
 #include "util_tdb.h"
 
+#include "rpc_server/rpc_server.h"
+#include "librpc/rpc/dcesrv_core.h"
+#include "librpc/gen_ndr/ndr_eventlog_scompat.h"
+#include "rpc_server/eventlog/srv_eventlog_reg.h"
+
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -945,6 +950,32 @@ NTSTATUS _eventlog_ReportEventAndSourceW(struct pipes_struct *p,
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+static NTSTATUS eventlog__op_init_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server);
+
+#define DCESRV_INTERFACE_EVENTLOG_INIT_SERVER \
+	eventlog_init_server
+
+static NTSTATUS eventlog_init_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server)
+{
+	struct messaging_context *msg_ctx = global_messaging_context();
+	NTSTATUS status;
+	bool ok;
+
+	status = dcesrv_init_ep_server(dce_ctx, "winreg");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	ok = eventlog_init_winreg(msg_ctx);
+	if (!ok) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return eventlog__op_init_server(dce_ctx, ep_server);
 }
 
 /* include the generated boilerplate */

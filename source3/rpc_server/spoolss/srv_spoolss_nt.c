@@ -59,6 +59,9 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "rpc_server/spoolss/srv_spoolss_handle.h"
 #include "lib/gencache.h"
+#include "rpc_server/rpc_server.h"
+#include "librpc/rpc/dcesrv_core.h"
+#include "printing/nt_printing_migrate_internal.h"
 
 /* macros stolen from s4 spoolss server */
 #define SPOOLSS_BUFFER_UNION(fn,info,level) \
@@ -11517,6 +11520,49 @@ WERROR _spoolss_LogJobInfoForBranchOffice(struct pipes_struct *p,
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
+}
+
+static NTSTATUS spoolss__op_init_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server);
+
+static NTSTATUS spoolss__op_shutdown_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server);
+
+#define DCESRV_INTERFACE_SPOOLSS_INIT_SERVER \
+	spoolss_init_server
+
+#define DCESRV_INTERFACE_SPOOLSS_SHUTDOWN_SERVER \
+	spoolss_shutdown_server
+
+static NTSTATUS spoolss_init_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server)
+{
+	struct messaging_context *msg_ctx = global_messaging_context();
+	NTSTATUS status;
+	bool ok;
+
+	status = dcesrv_init_ep_server(dce_ctx, "winreg");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/*
+	 * Migrate the printers first.
+	 */
+	ok = nt_printing_tdb_migrate(msg_ctx);
+	if (!ok) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return spoolss__op_init_server(dce_ctx, ep_server);
+}
+
+static NTSTATUS spoolss_shutdown_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server)
+{
+	srv_spoolss_cleanup();
+
+	return spoolss__op_shutdown_server(dce_ctx, ep_server);
 }
 
 /* include the generated boilerplate */

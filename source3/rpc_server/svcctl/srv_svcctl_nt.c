@@ -33,6 +33,11 @@
 #include "auth.h"
 #include "rpc_server/svcctl/srv_svcctl_nt.h"
 
+#include "rpc_server/rpc_server.h"
+#include "librpc/rpc/dcesrv_core.h"
+#include "librpc/gen_ndr/ndr_svcctl_scompat.h"
+#include "srv_svcctl_reg.h"
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -1214,6 +1219,49 @@ WERROR _svcctl_SCSendTSMessage(struct pipes_struct *p,
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
+}
+
+static NTSTATUS svcctl__op_init_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server);
+
+static NTSTATUS svcctl__op_shutdown_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server);
+
+#define DCESRV_INTERFACE_SVCCTL_INIT_SERVER \
+	svcctl_init_server
+
+#define DCESRV_INTERFACE_SVCCTL_SHUTDOWN_SERVER \
+	svcctl_shutdown_server
+
+static NTSTATUS svcctl_init_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server)
+{
+	struct messaging_context *msg_ctx = global_messaging_context();
+	NTSTATUS status;
+	bool ok;
+
+	status = dcesrv_init_ep_server(dce_ctx, "winreg");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* initialize the control hooks */
+	init_service_op_table();
+
+	ok = svcctl_init_winreg(msg_ctx);
+	if (!ok) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return svcctl__op_init_server(dce_ctx, ep_server);
+}
+
+static NTSTATUS svcctl_shutdown_server(struct dcesrv_context *dce_ctx,
+		const struct dcesrv_endpoint_server *ep_server)
+{
+	shutdown_service_op_table();
+
+	return svcctl__op_shutdown_server(dce_ctx, ep_server);
 }
 
 /* include the generated boilerplate */
