@@ -2129,7 +2129,7 @@ extern void build_options(bool screen);
 #ifdef WITH_SPOTLIGHT
 		if ((rpc_mdssvc_mode() == RPC_SERVICE_MODE_EXTERNAL) &&
 		    (rpc_mdssd_daemon() == RPC_DAEMON_FORK)) {
-			start_mdssd(ev_ctx, msg_ctx);
+			start_mdssd(ev_ctx, msg_ctx, dce_ctx);
 		}
 #endif
 	} else if (!lp__disable_spoolss() &&

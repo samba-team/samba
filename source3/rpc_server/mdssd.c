@@ -29,6 +29,7 @@
 #include "lib/server_prefork.h"
 #include "lib/server_prefork_util.h"
 #include "librpc/rpc/dcerpc_ep.h"
+#include "librpc/rpc/dcesrv_core.h"
 
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_ep_register.h"
@@ -58,9 +59,6 @@ static struct pf_daemon_config default_pf_mdssd_cfg = {
 	.child_min_life = 60 /* 1 minute minimum life time */
 };
 static struct pf_daemon_config pf_mdssd_cfg = { 0 };
-
-void start_mdssd(struct tevent_context *ev_ctx,
-		 struct messaging_context *msg_ctx);
 
 static void mdssd_smb_conf_updated(struct messaging_context *msg,
 				   void *private_data,
@@ -605,7 +603,8 @@ done:
 }
 
 void start_mdssd(struct tevent_context *ev_ctx,
-		 struct messaging_context *msg_ctx)
+		 struct messaging_context *msg_ctx,
+		 struct dcesrv_context *dce_ctx)
 {
 	NTSTATUS status;
 	struct pf_listen_fd listen_fd[MDSSD_MAX_SOCKETS];
@@ -669,6 +668,15 @@ void start_mdssd(struct tevent_context *ev_ctx,
 	ok = setup_rpc_module(ev_ctx, msg_ctx, "mdssvc");
 	if (!ok) {
 		DBG_ERR("Failed to setup DCE/RPC module\n");
+		exit(1);
+	}
+
+	DBG_INFO("Reinitializing DCE/RPC server context\n");
+
+	status = dcesrv_reinit_context(dce_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to reinit DCE/RPC context: %s\n",
+			nt_errstr(status));
 		exit(1);
 	}
 
