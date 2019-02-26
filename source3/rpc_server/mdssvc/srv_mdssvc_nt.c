@@ -31,6 +31,9 @@
 #include "mdssvc.h"
 #include "smbd/globals.h"
 
+#include "librpc/rpc/dcesrv_core.h"
+#include "librpc/gen_ndr/ndr_mdssvc_scompat.h"
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -67,6 +70,7 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 	bool external = service_mode != RPC_SERVICE_MODE_EMBEDDED ||
 			mdssvc_type != RPC_DAEMON_EMBEDDED;
 	bool in_mdssd = external && am_parent == NULL;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
 	if (external && !in_mdssd) {
 		return true;
@@ -75,6 +79,19 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 	mdssvc_cb.init         = mdssvc_init_cb;
 	mdssvc_cb.shutdown     = mdssvc_shutdown_cb;
 	mdssvc_cb.private_data = msg_ctx;
+
+	ep_server = mdssvc_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get endpoint server\n");
+		return false;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register 'mdssvc' endpoint "
+			"server: %s\n", nt_errstr(status));
+		return false;
+	}
 
 	status = rpc_mdssvc_init(&mdssvc_cb);
 	if (!NT_STATUS_IS_OK(status)) {

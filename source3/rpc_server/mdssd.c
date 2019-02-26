@@ -222,12 +222,6 @@ static bool mdssd_child_init(struct tevent_context *ev_ctx,
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_PREFORK_PARENT_EVENT, parent_ping);
 
-	ok = setup_rpc_module(ev_ctx, msg_ctx, "mdssvc");
-	if (!ok) {
-		DBG_ERR("Failed to initialize mdssvc module\n");
-		return false;
-	}
-
 	return true;
 }
 
@@ -667,6 +661,16 @@ void start_mdssd(struct tevent_context *ev_ctx,
 
 	BlockSignals(false, SIGTERM);
 	BlockSignals(false, SIGHUP);
+
+	/* The module setup function will register the endpoint server,
+	 * necessary to setup the endpoints below. It is not possible to
+	 * register it here because MDS service is built as a module.
+	 */
+	ok = setup_rpc_module(ev_ctx, msg_ctx, "mdssvc");
+	if (!ok) {
+		DBG_ERR("Failed to setup DCE/RPC module\n");
+		exit(1);
+	}
 
 	ok = mdssd_create_sockets(ev_ctx, msg_ctx, listen_fd, &listen_fd_size);
 	if (!ok) {
