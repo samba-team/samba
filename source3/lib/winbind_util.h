@@ -22,6 +22,7 @@
 #define __LIB__WINBIND_UTIL_H__
 
 #include "../librpc/gen_ndr/lsa.h"
+#include "librpc/gen_ndr/idmap.h"
 
 /* needed for wbcErr below */
 #include "nsswitch/libwbclient/wbclient.h"
@@ -38,6 +39,7 @@ bool winbind_sid_to_uid(uid_t *puid, const struct dom_sid *sid);
 bool winbind_uid_to_sid(struct dom_sid *sid, uid_t uid);
 bool winbind_sid_to_gid(gid_t *pgid, const struct dom_sid *sid);
 bool winbind_gid_to_sid(struct dom_sid *sid, gid_t gid);
+bool winbind_xid_to_sid(struct dom_sid *sid, const struct unixid *xid);
 struct passwd * winbind_getpwnam(const char * sname);
 struct passwd * winbind_getpwsid(const struct dom_sid *sid);
 wbcErr wb_is_trusted_domain(const char *domain);
