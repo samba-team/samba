@@ -423,10 +423,20 @@ wbcErr wbcCtxUnixIdsToSids(struct wbcContext *ctx,
 	wbcErr wbc_status;
 	char *buf;
 	char *s;
+	const size_t sidlen = (1 /* U/G */ + 10 /* 2^32 */ + 1 /* \n */);
 	size_t ofs, buflen;
 	uint32_t i;
 
-	buflen = num_ids * (1 /* U/G */ + 10 /* 2^32 */ + 1 /* \n */) + 1;
+	if (num_ids > SIZE_MAX / sidlen) {
+		return WBC_ERR_NO_MEMORY; /* overflow */
+	}
+	buflen = num_ids * sidlen;
+
+	buflen += 1;		/* trailing \0 */
+	if (buflen < 1) {
+		return WBC_ERR_NO_MEMORY; /* overflow */
+	}
+
 	buf = malloc(buflen);
 	if (buf == NULL) {
 		return WBC_ERR_NO_MEMORY;
