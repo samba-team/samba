@@ -19,7 +19,7 @@
 
 #include "replace.h"
 #include "../lib/util/samba_util.h"
-#include "../lib/crypto/crypto.h"
+#include "lib/crypto/md4.h"
 
 struct torture_context;
 bool torture_local_crypto_md4(struct torture_context *torture);

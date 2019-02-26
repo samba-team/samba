@@ -17,7 +17,8 @@
 */
 #include "replace.h"
 #include "../lib/util/samba_util.h"
-#include "../lib/crypto/crypto.h"
+#include "lib/crypto/aes.h"
+#include "lib/crypto/aes_cmac_128.h"
 
 struct torture_context;
 bool torture_local_crypto_aes_cmac_128(struct torture_context *torture);

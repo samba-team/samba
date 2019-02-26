@@ -18,7 +18,8 @@
 */
 
 #include "replace.h"
-#include "../lib/crypto/crypto.h"
+#include "lib/crypto/aes.h"
+#include "lib/crypto/aes_ccm_128.h"
 #include "lib/util/byteorder.h"
 
 #define M_ ((AES_CCM_128_M - 2) / 2)

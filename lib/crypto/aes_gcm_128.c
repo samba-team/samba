@@ -18,7 +18,8 @@
 */
 
 #include "replace.h"
-#include "../lib/crypto/crypto.h"
+#include "lib/crypto/aes.h"
+#include "lib/crypto/aes_gcm_128.h"
 #include "lib/util/byteorder.h"
 
 static inline void aes_gcm_128_inc32(uint8_t inout[AES_BLOCK_SIZE])

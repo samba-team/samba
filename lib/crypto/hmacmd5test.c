@@ -18,7 +18,7 @@
 */
 #include "replace.h"
 #include "../lib/util/samba_util.h"
-#include "../lib/crypto/crypto.h"
+#include "lib/crypto/hmacmd5.h"
 
 struct torture_context;
 bool torture_local_crypto_hmacmd5(struct torture_context *torture);

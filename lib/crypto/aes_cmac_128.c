@@ -19,7 +19,8 @@
 */
 
 #include "replace.h"
-#include "../lib/crypto/crypto.h"
+#include "lib/crypto/aes.h"
+#include "lib/crypto/aes_cmac_128.h"
 
 static const uint8_t const_Zero[] = {
 	0x00, 0x00, 0x00, 0x00,  0x00, 0x00, 0x00, 0x00,

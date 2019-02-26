@@ -18,8 +18,9 @@
 */
 #include "replace.h"
 #include "../lib/util/samba_util.h"
-#include "../lib/crypto/crypto.h"
-#include "../lib/crypto/aes_test.h"
+#include "lib/crypto/aes.h"
+#include "lib/crypto/aes_gcm_128.h"
+#include "lib/crypto/aes_test.h"
 
 #ifndef AES_GCM_128_ONLY_TESTVECTORS
 struct torture_context;
