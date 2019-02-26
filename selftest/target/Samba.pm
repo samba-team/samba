@@ -639,4 +639,14 @@ sub export_envvars
 	}
 }
 
+sub export_envvars_to_file
+{
+	my ($filepath, $testenv_vars) = @_;
+	my $env_str = exported_envvars_str($testenv_vars);
+
+	open(FILE, "> $filepath");
+	print FILE "$env_str";
+	close(FILE);
+}
+
 1;
