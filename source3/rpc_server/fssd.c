@@ -27,6 +27,10 @@
 
 #include "librpc/rpc/dcerpc_ep.h"
 #include "../librpc/gen_ndr/srv_fsrvp.h"
+
+#include "librpc/rpc/dcesrv_core.h"
+#include "librpc/gen_ndr/ndr_fsrvp_scompat.h"
+
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_sock_helper.h"
 #include "rpc_server/fss/srv_fss_agent.h"
@@ -152,6 +156,7 @@ void start_fssd(struct tevent_context *ev_ctx,
 	NTSTATUS status;
 	pid_t pid;
 	int rc;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
 	fss_cb.init = fss_init_cb;
 	fss_cb.shutdown = fss_shutdown_cb;
@@ -188,6 +193,22 @@ void start_fssd(struct tevent_context *ev_ctx,
 			   ev_ctx,
 			   MSG_SMB_CONF_UPDATED,
 			   fssd_smb_conf_updated);
+
+	DBG_INFO("Registering DCE/RPC endpoint servers\n");
+
+	ep_server = FileServerVssAgent_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'FileServerVssAgent' endpoint "
+			"server\n");
+		exit(1);
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register 'FileServerVssAgent' endpoint "
+			"server: %s\n", nt_errstr(status));
+		exit(1);
+	}
 
 	status = rpc_FileServerVssAgent_init(&fss_cb);
 	if (!NT_STATUS_IS_OK(status)) {
