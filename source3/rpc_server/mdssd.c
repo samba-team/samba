@@ -94,8 +94,7 @@ static void mdssd_sig_term_handler(struct tevent_context *ev,
 {
 	shutdown_rpc_module("mdssvc");
 
-	DEBUG(0, ("termination signal\n"));
-	exit(0);
+	exit_server_cleanly("termination signal");
 }
 
 static void mdssd_setup_sig_term_handler(struct tevent_context *ev_ctx)
@@ -108,8 +107,7 @@ static void mdssd_setup_sig_term_handler(struct tevent_context *ev_ctx)
 			       mdssd_sig_term_handler,
 			       NULL);
 	if (!se) {
-		DEBUG(0, ("failed to setup SIGTERM handler\n"));
-		exit(1);
+		exit_server("failed to setup SIGTERM handler");
 	}
 }
 
