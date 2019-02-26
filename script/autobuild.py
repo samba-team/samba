@@ -152,7 +152,6 @@ tasks = {
                       ("make", "make -j", "text/plain"),
                       ("test", "make test FAIL_IMMEDIATELY=1 "
                        "TESTS='--include-env=ad_dc "
-                       "--include-env=ad_dc_backup "
                        "--include-env=fl2003dc "
                        "--include-env=fl2008r2dc "
                        "--include-env=ad_member "
@@ -198,8 +197,8 @@ tasks = {
                          "--include-env=renamedc "
                          "--include-env=offlinebackupdc "
                          "--include-env=labdc "
-                         "'",
-                         "text/plain"),
+                         "--include-env=ad_dc_backup "
+                         "'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-test-only": [("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
