@@ -631,26 +631,6 @@ static NTSTATUS lsasd_create_sockets(struct tevent_context *ev_ctx,
 		}
 	}
 
-	/* Create only one tcpip listener for all services */
-	status = dcesrv_create_ncacn_ip_tcp_sockets(&ndr_table_lsarpc,
-						    v_orig,
-						    0,
-						    listen_fd,
-						    listen_fd_size);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	/* Start to listen on tcpip sockets */
-	for (i = 0; i < *listen_fd_size; i++) {
-		rc = listen(listen_fd[i].fd, pf_lsasd_cfg.max_allowed_clients);
-		if (rc == -1) {
-			DEBUG(0, ("Failed to listen on tcpip socket - %s\n",
-				  strerror(errno)));
-			goto done;
-		}
-	}
-
 	/* LSARPC */
 	status = dcesrv_create_ncacn_np_socket("lsarpc", &fd);
 	if (!NT_STATUS_IS_OK(status)) {
