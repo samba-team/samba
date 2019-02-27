@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "system/filesys.h"
 #include "krb5_samba.h"
-#include "lib/crypto/crypto.h"
+#include "lib/crypto/md4.h"
 #include "../libds/common/flags.h"
 
 #ifdef HAVE_COM_ERR_H
