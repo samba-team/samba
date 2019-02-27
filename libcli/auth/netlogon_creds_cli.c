@@ -37,7 +37,7 @@
 #include "source3/include/messages.h"
 #include "source3/include/g_lock.h"
 #include "libds/common/roles.h"
-#include "lib/crypto/crypto.h"
+#include "lib/crypto/md4.h"
 #include "auth/credentials/credentials.h"
 
 struct netlogon_creds_cli_locked_state;
