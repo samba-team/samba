@@ -32,6 +32,7 @@
 #include "librpc/gen_ndr/ndr_fsrvp_scompat.h"
 
 #include "rpc_server/rpc_server.h"
+#include "rpc_server/rpc_service_setup.h"
 #include "rpc_server/rpc_sock_helper.h"
 #include "rpc_server/fss/srv_fss_agent.h"
 #include "rpc_server/fssd.h"
@@ -138,6 +139,7 @@ void start_fssd(struct tevent_context *ev_ctx,
 	pid_t pid;
 	int rc;
 	const struct dcesrv_endpoint_server *ep_server = NULL;
+	struct dcesrv_endpoint *e = NULL;
 
 	DEBUG(1, ("Forking File Server Shadow-copy Daemon\n"));
 
@@ -203,6 +205,26 @@ void start_fssd(struct tevent_context *ev_ctx,
 		DBG_ERR("Failed to init DCE/RPC endpoint server: %s\n",
 			nt_errstr(status));
 		exit(1);
+	}
+
+	DBG_INFO("Initializing DCE/RPC connection endpoints\n");
+
+	for (e = dce_ctx->endpoint_list; e; e = e->next) {
+		status = dcesrv_setup_endpoint_sockets(ev_ctx,
+						       msg_ctx,
+						       dce_ctx,
+						       e,
+						       NULL, /* binding vector */
+						       NULL, /* termination function */
+						       NULL); /* termination data */
+		if (!NT_STATUS_IS_OK(status)) {
+			char *ep_string = dcerpc_binding_string(
+					dce_ctx, e->ep_description);
+			DBG_ERR("Failed to setup endpoint '%s': %s\n",
+					ep_string, nt_errstr(status));
+			TALLOC_FREE(ep_string);
+			exit(1);
+		}
 	}
 
 	/* case is normalized by smbd on connection */
