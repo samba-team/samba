@@ -597,16 +597,81 @@ static char *get_bq_logfile(void)
 	return lfile;
 }
 
+static NTSTATUS spoolssd_create_sockets(struct tevent_context *ev_ctx,
+		struct messaging_context *msg_ctx,
+		struct pf_listen_fd *listen_fd,
+		int *listen_fd_size)
+{
+	struct dcerpc_binding_vector *v = NULL;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
+	int fd = -1;
+	int rc;
+	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
+
+	tmp_ctx = talloc_stackframe();
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = dcerpc_binding_vector_new(tmp_ctx, &v);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to create binding vector (%s)\n",
+			nt_errstr(status));
+		goto done;
+	}
+
+	status = dcesrv_create_ncacn_np_socket(SPOOLSS_PIPE_NAME, &fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	rc = listen(fd, pf_spoolss_cfg.max_allowed_clients);
+	if (rc == -1) {
+		DBG_ERR("Failed to listen on spoolss pipe - %s\n",
+			strerror(errno));
+		goto done;
+	}
+	listen_fd[*listen_fd_size].fd = fd;
+	listen_fd[*listen_fd_size].fd_data = NULL;
+	(*listen_fd_size)++;
+	fd = -1;
+
+	if (epm_mode != RPC_SERVICE_MODE_DISABLED &&
+	    (lp_parm_bool(-1, "rpc_server", "register_embedded_np", false))) {
+		status = dcerpc_binding_vector_add_np_default(&ndr_table_spoolss, v);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to add np to binding vector (%s)\n",
+				nt_errstr(status));
+			goto done;
+		}
+
+		status = rpc_ep_register(ev_ctx, msg_ctx, &ndr_table_spoolss, v);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to register spoolss endpoint! (%s)\n",
+				nt_errstr(status));
+			goto done;
+		}
+	}
+
+	status = NT_STATUS_OK;
+done:
+	if (fd != -1) {
+		close(fd);
+	}
+
+	talloc_free(tmp_ctx);
+	return status;
+}
+
 pid_t start_spoolssd(struct tevent_context *ev_ctx,
 		    struct messaging_context *msg_ctx)
 {
-	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	struct rpc_srv_callbacks spoolss_cb;
-	struct dcerpc_binding_vector *v;
-	TALLOC_CTX *mem_ctx;
 	pid_t pid;
 	NTSTATUS status;
 	struct pf_listen_fd listen_fds[1];
+	int listen_fds_size = 0;
 	int ret;
 	bool ok;
 
@@ -667,24 +732,18 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 
 	/* the listening fd must be created before the children are actually
 	 * forked out. */
-	status = dcesrv_create_ncacn_np_socket(SPOOLSS_PIPE_NAME,
-					       &listen_fds[0].fd);
+	status = spoolssd_create_sockets(ev_ctx, msg_ctx, listen_fds,
+					 &listen_fds_size);
 	if (!NT_STATUS_IS_OK(status)) {
-		exit(1);
-	}
-	listen_fds[0].fd_data = NULL;
-
-	ret = listen(listen_fds[0].fd, pf_spoolss_cfg.max_allowed_clients);
-	if (ret == -1) {
-		DEBUG(0, ("Failed to listen on spoolss pipe - %s\n",
-			  strerror(errno)));
+		DBG_ERR("Failed to create sockets: %s\n",
+			nt_errstr(status));
 		exit(1);
 	}
 
 	/* start children before any more initialization is done */
 	ok = prefork_create_pool(ev_ctx, /* mem_ctx */
 				 ev_ctx, msg_ctx,
-				 1, listen_fds,
+				 listen_fds_size, listen_fds,
 				 pf_spoolss_cfg.min_children,
 				 pf_spoolss_cfg.max_children,
 				 &spoolss_children_main, NULL,
@@ -711,11 +770,6 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 	 */
 	load_printers();
 
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		exit(1);
-	}
-
 	/*
 	 * Initialize spoolss with an init function to convert printers first.
 	 * static_init_rpc will try to initialize the spoolss server too but you
@@ -738,32 +792,6 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 			  nt_errstr(status)));
 		exit(1);
 	}
-
-	if (epm_mode != RPC_SERVICE_MODE_DISABLED &&
-	    (lp_parm_bool(-1, "rpc_server", "register_embedded_np", false))) {
-		status = dcerpc_binding_vector_new(mem_ctx, &v);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Failed to create binding vector (%s)\n",
-				  nt_errstr(status)));
-			exit(1);
-		}
-
-		status = dcerpc_binding_vector_add_np_default(&ndr_table_spoolss, v);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Failed to add np to binding vector (%s)\n",
-				  nt_errstr(status)));
-			exit(1);
-		}
-
-		status = rpc_ep_register(ev_ctx, msg_ctx, &ndr_table_spoolss, v);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("Failed to register spoolss endpoint! (%s)\n",
-				  nt_errstr(status)));
-			exit(1);
-		}
-	}
-
-	talloc_free(mem_ctx);
 
 	ok = spoolssd_setup_children_monitor(ev_ctx, msg_ctx);
 	if (!ok) {
