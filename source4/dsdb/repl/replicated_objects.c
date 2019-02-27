@@ -26,7 +26,6 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "../lib/crypto/crypto.h"
 #include "../libcli/drsuapi/drsuapi.h"
 #include "libcli/auth/libcli_auth.h"
 #include "param/param.h"
