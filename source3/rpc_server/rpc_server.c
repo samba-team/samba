@@ -93,6 +93,8 @@ struct dcerpc_ncacn_listen_state {
 
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	struct dcesrv_context *dce_ctx;
+	struct dcesrv_endpoint *endpoint;
 	dcerpc_ncacn_termination_fn termination_fn;
 	void *termination_data;
 };
@@ -308,31 +310,47 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
 
 NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 					  struct messaging_context *msg_ctx,
+					  struct dcesrv_context *dce_ctx,
+					  struct dcesrv_endpoint *e,
 					  const struct sockaddr_storage *ifss,
-					  uint16_t *port)
+					  dcerpc_ncacn_termination_fn term_fn,
+					  void *term_data)
 {
-	struct dcerpc_ncacn_listen_state *state;
-	struct tevent_fd *fde;
+	struct dcerpc_ncacn_listen_state *state = NULL;
+	struct tevent_fd *fde = NULL;
+	const char *endpoint = NULL;
+	uint16_t port = 0;
+	char port_str[6];
 	int rc;
 	NTSTATUS status;
 
-	state = talloc_zero(ev_ctx, struct dcerpc_ncacn_listen_state);
+	endpoint = dcerpc_binding_get_string_option(e->ep_description,
+						    "endpoint");
+	if (endpoint != NULL) {
+		port = atoi(endpoint);
+	}
+
+	/* Alloc in endpoint context. If the endpoint is freed (for example
+	 * when forked daemons reinit the dcesrv_context, the tevent_fd
+	 * listener will be stopped and the socket closed */
+	state = talloc_zero(e, struct dcerpc_ncacn_listen_state);
 	if (state == NULL) {
 		DBG_ERR("Out of memory\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	state->fd = -1;
-	state->ep.port = *port;
+	state->ev_ctx = ev_ctx;
+	state->msg_ctx = msg_ctx;
+	state->endpoint = e;
+	state->dce_ctx = talloc_reference(state, dce_ctx);
+	state->termination_fn = term_fn;
+	state->termination_data = term_data;
 
-	status = dcesrv_create_ncacn_ip_tcp_socket(ifss, &state->ep.port,
-						   &state->fd);
+	status = dcesrv_create_ncacn_ip_tcp_socket(ifss, &port, &state->fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
-
-	state->ev_ctx = ev_ctx;
-	state->msg_ctx = msg_ctx;
 
 	/* ready to listen */
 	set_socket_options(state->fd, "SO_KEEPALIVE");
@@ -350,7 +368,7 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 	}
 
 	DBG_DEBUG("Opened socket fd %d for port %u\n",
-		  state->fd, state->ep.port);
+		  state->fd, port);
 
 	errno = 0;
 	fde = tevent_add_fd(state->ev_ctx,
@@ -371,7 +389,16 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 
 	tevent_fd_set_auto_close(fde);
 
-	*port = state->ep.port;
+	/* Set the port in the endpoint */
+	snprintf(port_str, sizeof(port_str), "%u", port);
+
+	status = dcerpc_binding_set_string_option(e->ep_description,
+						  "endpoint", port_str);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to set binding endpoint '%s': %s\n",
+			port_str, nt_errstr(status));
+		goto out;
+	}
 
 	return NT_STATUS_OK;
 

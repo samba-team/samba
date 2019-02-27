@@ -213,8 +213,13 @@ NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
 		break;
 
 	case NCACN_IP_TCP:
-		/* TODO */
-		status = NT_STATUS_OK;
+		status = dcesrv_setup_ncacn_ip_tcp_sockets(ev_ctx,
+							   msg_ctx,
+							   dce_ctx,
+							   e,
+							   bvec,
+							   term_fn,
+							   term_data);
 		break;
 
 	case NCACN_NP:
