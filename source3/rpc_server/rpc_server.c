@@ -83,13 +83,7 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
  * dispatch requests to the pipes rpc implementation */
 
 struct dcerpc_ncacn_listen_state {
-	struct ndr_syntax_id syntax_id;
-
 	int fd;
-	union {
-		char *name;
-		uint16_t port;
-	} ep;
 
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
