@@ -132,12 +132,14 @@ static PyTypeObject GPOType = {
 typedef struct {
 	PyObject_HEAD
 	ADS_STRUCT *ads_ptr;
+	PyObject *py_creds;
 	struct cli_credentials *cli_creds;
 } ADS;
 
 static void py_ads_dealloc(ADS* self)
 {
 	ads_destroy(&(self->ads_ptr));
+	Py_CLEAR(self->py_creds);
 	Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
@@ -154,7 +156,6 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	const char *realm = NULL;
 	const char *workgroup = NULL;
 	const char *ldap_server = NULL;
-	PyObject *py_creds = NULL;
 	PyObject *lp_obj = NULL;
 	struct loadparm_context *lp_ctx = NULL;
 	bool ok = false;
@@ -164,18 +165,20 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	};
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|O",
 					 discard_const_p(char *, kwlist),
-					 &ldap_server, &lp_obj, &py_creds)) {
+					 &ldap_server, &lp_obj, &self->py_creds)) {
 		return -1;
 	}
+	/* keep reference to the credentials */
+	Py_XINCREF(self->py_creds);
 
-	if (py_creds) {
-		ok = py_check_dcerpc_type(py_creds, "samba.credentials",
+	if (self->py_creds) {
+		ok = py_check_dcerpc_type(self->py_creds, "samba.credentials",
 					  "Credentials");
 		if (!ok) {
 			return -1;
 		}
 		self->cli_creds
-			= PyCredentials_AsCliCredentials(py_creds);
+			= PyCredentials_AsCliCredentials(self->py_creds);
 	}
 
 	ok = py_check_dcerpc_type(lp_obj, "samba.param", "LoadParm");
