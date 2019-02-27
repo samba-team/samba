@@ -104,11 +104,34 @@ static void dcesrv_ncacn_np_listener(struct tevent_context *ev,
 				     uint16_t flags,
 				     void *private_data);
 
-NTSTATUS dcesrv_create_ncacn_np_socket(const char *pipe_name, int *out_fd)
+NTSTATUS dcesrv_create_ncacn_np_socket(struct dcesrv_endpoint *e, int *out_fd)
 {
 	char *np_dir = NULL;
 	int fd = -1;
 	NTSTATUS status;
+	const char *endpoint;
+	char *endpoint_normalized = NULL;
+	char *p = NULL;
+
+	endpoint = dcerpc_binding_get_string_option(e->ep_description,
+						    "endpoint");
+	if (endpoint == NULL) {
+		DBG_ERR("Endpoint mandatory for named pipes\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* The endpoint string from IDL can be mixed uppercase and case is
+	 * normalized by smbd on connection */
+	endpoint_normalized = strlower_talloc(talloc_tos(), endpoint);
+	if (endpoint_normalized == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* The endpoint string from IDL can be prefixed by \pipe\ */
+	p = endpoint_normalized;
+	if (strncmp(p, "\\pipe\\", 6) == 0) {
+		p += 6;
+	}
 
 	/*
 	 * As lp_ncalrpc_dir() should have 0755, but
@@ -136,22 +159,23 @@ NTSTATUS dcesrv_create_ncacn_np_socket(const char *pipe_name, int *out_fd)
 		goto out;
 	}
 
-	fd = create_pipe_sock(np_dir, pipe_name, 0700);
+	fd = create_pipe_sock(np_dir, p, 0700);
 	if (fd == -1) {
 		status = map_nt_error_from_unix_common(errno);
 		DBG_ERR("Failed to create ncacn_np socket! '%s/%s': %s\n",
-			np_dir, pipe_name, strerror(errno));
+			np_dir, p, strerror(errno));
 		goto out;
 	}
 
-	DBG_DEBUG("Opened pipe socket fd %d for %s\n", fd, pipe_name);
+	DBG_DEBUG("Opened pipe socket fd %d for %s\n", fd, p);
 
 	*out_fd = fd;
 
 	status = NT_STATUS_OK;
 
 out:
-	talloc_free(np_dir);
+	TALLOC_FREE(endpoint_normalized);
+	TALLOC_FREE(np_dir);
 	return status;
 }
 
@@ -167,27 +191,12 @@ NTSTATUS dcesrv_setup_ncacn_np_socket(struct tevent_context *ev_ctx,
 	int rc;
 	NTSTATUS status;
 	const char *endpoint = NULL;
-	char *endpoint_normalized = NULL;
-	char *p = NULL;
 
 	endpoint = dcerpc_binding_get_string_option(e->ep_description,
 						    "endpoint");
 	if (endpoint == NULL) {
 		DBG_ERR("Endpoint mandatory for named pipes\n");
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* The endpoint string from IDL can be mixed uppercase and case is
-	 * normalized by smbd on connection */
-	endpoint_normalized = strlower_talloc(talloc_tos(), endpoint);
-	if (endpoint_normalized == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* The endpoint string from IDL can be prefixed by \pipe\ */
-	p = endpoint_normalized;
-	if (strncmp(p, "\\pipe\\", 6) == 0) {
-		p += 6;
 	}
 
 	/* Alloc in endpoint context. If the endpoint is freed (for example
@@ -206,7 +215,7 @@ NTSTATUS dcesrv_setup_ncacn_np_socket(struct tevent_context *ev_ctx,
 	state->termination_fn = term_fn;
 	state->termination_data = term_data;
 
-	status = dcesrv_create_ncacn_np_socket(p, &state->fd);
+	status = dcesrv_create_ncacn_np_socket(e, &state->fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -238,15 +247,12 @@ NTSTATUS dcesrv_setup_ncacn_np_socket(struct tevent_context *ev_ctx,
 
 	tevent_fd_set_auto_close(fde);
 
-	TALLOC_FREE(endpoint_normalized);
-
 	return NT_STATUS_OK;
 
 out:
 	if (state->fd != -1) {
 		close(state->fd);
 	}
-	TALLOC_FREE(endpoint_normalized);
 	TALLOC_FREE(state);
 	return status;
 }

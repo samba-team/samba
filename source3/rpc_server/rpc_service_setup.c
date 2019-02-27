@@ -155,8 +155,12 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 		break;
 
 	case NCACN_NP:
-		/* TODO */
-		status = NT_STATUS_OK;
+		status = dcesrv_create_ncacn_np_socket(e, &out_fd);
+		if (NT_STATUS_IS_OK(status)) {
+			listen_fds[*listen_fds_size].fd = out_fd;
+			listen_fds[*listen_fds_size].fd_data = e;
+			(*listen_fds_size)++;
+		}
 		break;
 
 	default:

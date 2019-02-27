@@ -628,22 +628,6 @@ static NTSTATUS spoolssd_create_sockets(struct tevent_context *ev_ctx,
 		}
 	}
 
-	status = dcesrv_create_ncacn_np_socket(SPOOLSS_PIPE_NAME, &fd);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	rc = listen(fd, pf_spoolss_cfg.max_allowed_clients);
-	if (rc == -1) {
-		DBG_ERR("Failed to listen on spoolss pipe - %s\n",
-			strerror(errno));
-		goto done;
-	}
-	listen_fd[*listen_fd_size].fd = fd;
-	listen_fd[*listen_fd_size].fd_data = NULL;
-	(*listen_fd_size)++;
-	fd = -1;
-
 	if (epm_mode != RPC_SERVICE_MODE_DISABLED &&
 	    (lp_parm_bool(-1, "rpc_server", "register_embedded_np", false))) {
 		status = dcerpc_binding_vector_add_np_default(&ndr_table_spoolss, v);
