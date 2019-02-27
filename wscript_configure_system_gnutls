@@ -19,3 +19,8 @@ if conf.CHECK_VALUEOF('GNUTLS_CIPHER_AES_128_CFB8', headers='gnutls/gnutls.h'):
     conf.DEFINE('HAVE_GNUTLS_AES_CFB8', 1)
 else:
     Logs.warn('No gnutls support for AES CFB8')
+
+if conf.CHECK_VALUEOF('GNUTLS_MAC_AES_CMAC_128', headers='gnutls/gnutls.h'):
+    conf.DEFINE('HAVE_GNUTLS_AES_CMAC', 1)
+else:
+    Logs.warn('No gnutls support for AES CMAC')
