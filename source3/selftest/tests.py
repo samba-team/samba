@@ -200,6 +200,7 @@ local_tests = [
     "LOCAL-G-LOCK5",
     "LOCAL-G-LOCK6",
     "LOCAL-NAMEMAP-CACHE1",
+    "LOCAL-IDMAP-CACHE1",
     "LOCAL-hex_encode_buf",
     "LOCAL-remove_duplicate_addrs2"]
 
