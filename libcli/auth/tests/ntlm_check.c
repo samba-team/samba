@@ -45,7 +45,6 @@
 #include <cmocka.h>
 
 #include "includes.h"
-#include "../lib/crypto/crypto.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "libcli/auth/libcli_auth.h"
 #include "auth/credentials/credentials.h"
