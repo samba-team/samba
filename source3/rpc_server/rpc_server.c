@@ -513,7 +513,8 @@ out:
 
 NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 				     struct messaging_context *msg_ctx,
-				     const char *name,
+				     struct dcesrv_context *dce_ctx,
+				     struct dcesrv_endpoint *e,
 				     dcerpc_ncacn_termination_fn term_fn,
 				     void *termination_data)
 {
@@ -521,29 +522,47 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 	struct tevent_fd *fde;
 	int rc;
 	NTSTATUS status;
+	const char *endpoint = NULL;
 
-	state = talloc_zero(ev_ctx, struct dcerpc_ncacn_listen_state);
+	/* Alloc in endpoint context. If the endpoint is freed (for example
+	 * when forked daemons reinit the dcesrv_context, the tevent_fd
+	 * listener will be stopped and the socket closed */
+	state = talloc_zero(e, struct dcerpc_ncacn_listen_state);
 	if (state == NULL) {
 		DBG_ERR("Out of memory\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	state->fd = -1;
+	state->ev_ctx = ev_ctx;
+	state->msg_ctx = msg_ctx;
+	state->dce_ctx = talloc_reference(state, dce_ctx);
+	state->endpoint = e;
 	state->termination_fn = term_fn;
 	state->termination_data = termination_data;
 
-	if (name == NULL) {
-		name = "DEFAULT";
+	endpoint = dcerpc_binding_get_string_option(e->ep_description,
+						    "endpoint");
+	if (endpoint == NULL) {
+		/*
+		 * No identifier specified: use DEFAULT.
+		 *
+		 * TODO: DO NOT hardcode this value anywhere else. Rather,
+		 * specify no endpoint and let the epmapper worry about it.
+		 */
+		endpoint = "DEFAULT";
+		status = dcerpc_binding_set_string_option(e->ep_description,
+							  "endpoint",
+							  endpoint);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to set ncalrpc 'endpoint' binding "
+				"string option to '%s': %s\n",
+				endpoint, nt_errstr(status));
+			goto out;
+		}
 	}
 
-	state->ep.name = talloc_strdup(state, name);
-	if (state->ep.name == NULL) {
-		DBG_ERR("Out of memory\n");
-		talloc_free(state);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dcesrv_create_ncalrpc_socket(name, &state->fd);
+	status = dcesrv_create_ncalrpc_socket(endpoint, &state->fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to create ncalrpc socket: %s\n",
 			nt_errstr(status));
@@ -554,12 +573,9 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 	if (rc < 0) {
 		status = map_nt_error_from_unix_common(errno);
 		DBG_ERR("Failed to listen on ncalrpc socket %s: %s\n",
-			name, strerror(errno));
+			endpoint, strerror(errno));
 		goto out;
 	}
-
-	state->ev_ctx = ev_ctx;
-	state->msg_ctx = msg_ctx;
 
 	/* Set server socket to non-blocking for the accept. */
 	set_blocking(state->fd, false);
@@ -610,6 +626,7 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 	};
 	int sd = -1;
 	int rc;
+	const char *endpoint = NULL;
 
 	sd = accept(state->fd, &addr.u.sa, &addr.sa_socklen);
 	if (sd == -1) {
@@ -640,13 +657,21 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 		return;
 	}
 
+	endpoint = dcerpc_binding_get_string_option(
+			state->endpoint->ep_description, "endpoint");
+	if (endpoint == NULL) {
+		DBG_ERR("Failed to get endpoint from binding description\n");
+		close(sd);
+		return;
+	}
+
 	DBG_DEBUG("Accepted ncalrpc socket %s (fd: %d)\n",
 		   addr.u.un.sun_path, sd);
 
 	dcerpc_ncacn_accept(state->ev_ctx,
 			    state->msg_ctx,
 			    NCALRPC,
-			    state->ep.name,
+			    endpoint,
 			    cli_addr, srv_addr, sd,
 			    state->termination_fn,
 			    state->termination_data);

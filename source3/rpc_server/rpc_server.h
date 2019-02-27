@@ -96,7 +96,8 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 NTSTATUS dcesrv_create_ncalrpc_socket(const char *name, int *out_fd);
 NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 				     struct messaging_context *msg_ctx,
-				     const char *name,
+				     struct dcesrv_context *dce_ctx,
+				     struct dcesrv_endpoint *e,
 				     dcerpc_ncacn_termination_fn term_fn,
 				     void *termination_data);
 

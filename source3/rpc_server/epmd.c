@@ -238,16 +238,6 @@ void start_epmd(struct tevent_context *ev_ctx,
 		}
 	}
 
-	status = dcesrv_setup_ncalrpc_socket(ev_ctx,
-					     msg_ctx,
-					     "EPMAPPER",
-					     srv_epmapper_delete_endpoints,
-					     NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to open epmd ncalrpc pipe!\n"));
-		exit(1);
-	}
-
 	status = dcesrv_setup_ncacn_np_socket("epmapper", ev_ctx, msg_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to open epmd named pipe!\n"));

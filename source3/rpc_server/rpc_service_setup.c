@@ -210,8 +210,12 @@ NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
 
 	switch (transport) {
 	case NCALRPC:
-		/* TODO */
-		status = NT_STATUS_OK;
+		status = dcesrv_setup_ncalrpc_socket(ev_ctx,
+						     msg_ctx,
+						     dce_ctx,
+						     e,
+						     term_fn,
+						     term_data);
 		break;
 
 	case NCACN_IP_TCP:
