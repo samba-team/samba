@@ -664,22 +664,6 @@ static NTSTATUS lsasd_create_sockets(struct tevent_context *ev_ctx,
 	(*listen_fd_size)++;
 	fd = -1;
 
-	status = dcesrv_create_ncalrpc_socket("lsarpc", &fd);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
-	if (rc == -1) {
-		DEBUG(0, ("Failed to listen on lsarpc ncalrpc - %s\n",
-			  strerror(errno)));
-		goto done;
-	}
-	listen_fd[*listen_fd_size].fd = fd;
-	listen_fd[*listen_fd_size].fd_data = NULL;
-	(*listen_fd_size)++;
-	fd = -1;
-
 	v = dcerpc_binding_vector_dup(tmp_ctx, v_orig);
 	if (v == NULL) {
 		goto done;
@@ -722,22 +706,6 @@ static NTSTATUS lsasd_create_sockets(struct tevent_context *ev_ctx,
 	(*listen_fd_size)++;
 	fd = -1;
 
-	status = dcesrv_create_ncalrpc_socket("samr", &fd);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
-	if (rc == -1) {
-		DEBUG(0, ("Failed to listen on samr ncalrpc - %s\n",
-			  strerror(errno)));
-		goto done;
-	}
-	listen_fd[*listen_fd_size].fd = fd;
-	listen_fd[*listen_fd_size].fd_data = NULL;
-	(*listen_fd_size)++;
-	fd = -1;
-
 	v = dcerpc_binding_vector_dup(tmp_ctx, v_orig);
 	if (v == NULL) {
 		goto done;
@@ -772,22 +740,6 @@ static NTSTATUS lsasd_create_sockets(struct tevent_context *ev_ctx,
 	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
 	if (rc == -1) {
 		DEBUG(0, ("Failed to listen on samr pipe - %s\n",
-			  strerror(errno)));
-		goto done;
-	}
-	listen_fd[*listen_fd_size].fd = fd;
-	listen_fd[*listen_fd_size].fd_data = NULL;
-	(*listen_fd_size)++;
-	fd = -1;
-
-	status = dcesrv_create_ncalrpc_socket("netlogon", &fd);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	rc = listen(fd, pf_lsasd_cfg.max_allowed_clients);
-	if (rc == -1) {
-		DEBUG(0, ("Failed to listen on netlogon ncalrpc - %s\n",
 			  strerror(errno)));
 		goto done;
 	}

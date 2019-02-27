@@ -476,13 +476,31 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 				    uint16_t flags,
 				    void *private_data);
 
-NTSTATUS dcesrv_create_ncalrpc_socket(const char *name, int *out_fd)
+NTSTATUS dcesrv_create_ncalrpc_socket(struct dcesrv_endpoint *e, int *out_fd)
 {
 	int fd = -1;
+	const char *endpoint = NULL;
 	NTSTATUS status;
 
-	if (name == NULL) {
-		name = "DEFAULT";
+	endpoint = dcerpc_binding_get_string_option(e->ep_description,
+						    "endpoint");
+	if (endpoint == NULL) {
+		/*
+		 * No identifier specified: use DEFAULT.
+		 *
+		 * TODO: DO NOT hardcode this value anywhere else. Rather,
+		 * specify no endpoint and let the epmapper worry about it.
+		 */
+		endpoint = "DEFAULT";
+		status = dcerpc_binding_set_string_option(e->ep_description,
+							  "endpoint",
+							  endpoint);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to set ncalrpc 'endpoint' binding "
+				"string option to '%s': %s\n",
+				endpoint, nt_errstr(status));
+			return status;
+		}
 	}
 
 	if (!directory_create_or_exist(lp_ncalrpc_dir(), 0755)) {
@@ -492,16 +510,16 @@ NTSTATUS dcesrv_create_ncalrpc_socket(const char *name, int *out_fd)
 		goto out;
 	}
 
-	fd = create_pipe_sock(lp_ncalrpc_dir(), name, 0755);
+	fd = create_pipe_sock(lp_ncalrpc_dir(), endpoint, 0755);
 	if (fd == -1) {
 		status = map_nt_error_from_unix_common(errno);
 		DBG_ERR("Failed to create ncalrpc socket '%s/%s': %s\n",
-			lp_ncalrpc_dir(), name, strerror(errno));
+			lp_ncalrpc_dir(), endpoint, strerror(errno));
 		goto out;
 	}
 
 	DBG_DEBUG("Opened ncalrpc socket fd '%d' for '%s/%s'\n",
-		  fd, lp_ncalrpc_dir(), name);
+		  fd, lp_ncalrpc_dir(), endpoint);
 
 	*out_fd = fd;
 
@@ -522,7 +540,6 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 	struct tevent_fd *fde;
 	int rc;
 	NTSTATUS status;
-	const char *endpoint = NULL;
 
 	/* Alloc in endpoint context. If the endpoint is freed (for example
 	 * when forked daemons reinit the dcesrv_context, the tevent_fd
@@ -541,28 +558,7 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 	state->termination_fn = term_fn;
 	state->termination_data = termination_data;
 
-	endpoint = dcerpc_binding_get_string_option(e->ep_description,
-						    "endpoint");
-	if (endpoint == NULL) {
-		/*
-		 * No identifier specified: use DEFAULT.
-		 *
-		 * TODO: DO NOT hardcode this value anywhere else. Rather,
-		 * specify no endpoint and let the epmapper worry about it.
-		 */
-		endpoint = "DEFAULT";
-		status = dcerpc_binding_set_string_option(e->ep_description,
-							  "endpoint",
-							  endpoint);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Failed to set ncalrpc 'endpoint' binding "
-				"string option to '%s': %s\n",
-				endpoint, nt_errstr(status));
-			goto out;
-		}
-	}
-
-	status = dcesrv_create_ncalrpc_socket(endpoint, &state->fd);
+	status = dcesrv_create_ncalrpc_socket(e, &state->fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to create ncalrpc socket: %s\n",
 			nt_errstr(status));
@@ -571,6 +567,8 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 
 	rc = listen(state->fd, 5);
 	if (rc < 0) {
+		const char *endpoint = dcerpc_binding_get_string_option(
+				e->ep_description, "endpoint");
 		status = map_nt_error_from_unix_common(errno);
 		DBG_ERR("Failed to listen on ncalrpc socket %s: %s\n",
 			endpoint, strerror(errno));

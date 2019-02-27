@@ -593,20 +593,6 @@ static NTSTATUS mdssd_create_sockets(struct tevent_context *ev_ctx,
 	(*listen_fd_size)++;
 	fd = -1;
 
-	status = dcesrv_create_ncalrpc_socket("mdssvc", &fd);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	rc = listen(fd, pf_mdssd_cfg.max_allowed_clients);
-	if (rc == -1) {
-		goto done;
-	}
-	listen_fd[*listen_fd_size].fd = fd;
-	listen_fd[*listen_fd_size].fd_data = NULL;
-	(*listen_fd_size)++;
-	fd = -1;
-
 	v = dcerpc_binding_vector_dup(tmp_ctx, v_orig);
 	if (v == NULL) {
 		goto done;

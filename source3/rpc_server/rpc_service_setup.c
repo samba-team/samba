@@ -60,6 +60,7 @@
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "rpc_server/svcctl/srv_svcctl_nt.h"
 
+#include "lib/server_prefork.h"
 #include "librpc/rpc/dcesrv_core.h"
 #include "librpc/rpc/dcerpc_ep.h"
 #include "rpc_server/rpc_sock_helper.h"
@@ -127,6 +128,7 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 		dcerpc_binding_get_transport(e->ep_description);
 	char *binding = NULL;
 	NTSTATUS status;
+	int out_fd;
 
 	binding = dcerpc_binding_string(dce_ctx, e->ep_description);
 	if (binding == NULL) {
@@ -137,8 +139,12 @@ NTSTATUS dcesrv_create_endpoint_sockets(struct tevent_context *ev_ctx,
 
 	switch (transport) {
 	case NCALRPC:
-		/* TODO */
-		status = NT_STATUS_OK;
+		status = dcesrv_create_ncalrpc_socket(e, &out_fd);
+		if (NT_STATUS_IS_OK(status)) {
+			listen_fds[*listen_fds_size].fd = out_fd;
+			listen_fds[*listen_fds_size].fd_data = e;
+			(*listen_fds_size)++;
+		}
 		break;
 
 	case NCACN_IP_TCP:
