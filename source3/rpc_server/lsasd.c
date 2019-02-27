@@ -35,6 +35,7 @@
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_ep_register.h"
 #include "rpc_server/rpc_sock_helper.h"
+#include "rpc_server/rpc_service_setup.h"
 
 #include "librpc/gen_ndr/srv_lsa.h"
 #include "librpc/gen_ndr/srv_samr.h"
@@ -573,10 +574,11 @@ static void lsasd_check_children(struct tevent_context *ev_ctx,
  * start it up
  */
 
-static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
-				 struct messaging_context *msg_ctx,
-				 struct pf_listen_fd *listen_fd,
-				 int *listen_fd_size)
+static NTSTATUS lsasd_create_sockets(struct tevent_context *ev_ctx,
+				     struct messaging_context *msg_ctx,
+				     struct dcesrv_context *dce_ctx,
+				     struct pf_listen_fd *listen_fd,
+				     int *listen_fd_size)
 {
 	struct dcerpc_binding_vector *v, *v_orig;
 	TALLOC_CTX *tmp_ctx;
@@ -584,16 +586,49 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	int i;
 	int fd = -1;
 	int rc;
-	bool ok = false;
+	struct dcesrv_endpoint *e = NULL;
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = dcerpc_binding_vector_new(tmp_ctx, &v_orig);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+
+	DBG_INFO("Initializing DCE/RPC connection endpoints\n");
+
+	for (e = dce_ctx->endpoint_list; e; e = e->next) {
+		status = dcesrv_create_endpoint_sockets(ev_ctx,
+							msg_ctx,
+							dce_ctx,
+							e,
+							v_orig,
+							listen_fd,
+							listen_fd_size);
+		if (!NT_STATUS_IS_OK(status)) {
+			char *ep_string = dcerpc_binding_string(
+					dce_ctx, e->ep_description);
+			DBG_ERR("Failed to create endpoint '%s': %s\n",
+				ep_string, nt_errstr(status));
+			TALLOC_FREE(ep_string);
+			goto done;
+		}
+	}
+
+	for (i = 0; i < *listen_fd_size; i++) {
+		rc = listen(listen_fd[i].fd, pf_lsasd_cfg.max_allowed_clients);
+		if (rc == -1) {
+			char *ep_string = dcerpc_binding_string(
+					dce_ctx, e->ep_description);
+			DBG_ERR("Failed to listen on endpoint '%s': %s\n",
+				ep_string, strerror(errno));
+			status = map_nt_error_from_unix(errno);
+			TALLOC_FREE(ep_string);
+			goto done;
+		}
 	}
 
 	/* Create only one tcpip listener for all services */
@@ -806,13 +841,13 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 		goto done;
 	}
 
-	ok = true;
+	status = NT_STATUS_OK;
 done:
 	if (fd != -1) {
 		close(fd);
 	}
 	talloc_free(tmp_ctx);
-	return ok;
+	return status;
 }
 
 void start_lsasd(struct tevent_context *ev_ctx,
@@ -936,8 +971,12 @@ void start_lsasd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	ok = lsasd_create_sockets(ev_ctx, msg_ctx, listen_fd, &listen_fd_size);
-	if (!ok) {
+	status = lsasd_create_sockets(ev_ctx,
+				      msg_ctx,
+				      dce_ctx,
+				      listen_fd,
+				      &listen_fd_size);
+	if (!NT_STATUS_IS_OK(status)) {
 		exit(1);
 	}
 
