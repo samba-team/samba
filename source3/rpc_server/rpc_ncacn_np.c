@@ -131,8 +131,8 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 	status = dcerpc_ncacn_conn_init(npa,
 					ev_ctx,
 					msg_ctx,
-					NCACN_NP,
-					pipe_name,
+					dce_ctx,
+					endpoint,
 					NULL, /* termination fn */
 					NULL, /* termination data */
 					&ncacn_conn);

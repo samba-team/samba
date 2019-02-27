@@ -739,8 +739,8 @@ static int dcerpc_ncacn_conn_destructor(struct dcerpc_ncacn_conn *ncacn_conn)
 NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev_ctx,
 				struct messaging_context *msg_ctx,
-				enum dcerpc_transport_t transport,
-				const char *name,
+				struct dcesrv_context *dce_ctx,
+				struct dcesrv_endpoint *endpoint,
 				dcerpc_ncacn_termination_fn term_fn,
 				void *termination_data,
 				struct dcerpc_ncacn_conn **out)
@@ -753,19 +753,13 @@ NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 	}
 	talloc_set_destructor(ncacn_conn, dcerpc_ncacn_conn_destructor);
 
-	ncacn_conn->transport = transport;
 	ncacn_conn->ev_ctx = ev_ctx;
 	ncacn_conn->msg_ctx = msg_ctx;
+	ncacn_conn->dce_ctx = dce_ctx;
+	ncacn_conn->endpoint = endpoint;
 	ncacn_conn->sock = -1;
 	ncacn_conn->termination_fn = term_fn;
 	ncacn_conn->termination_data = termination_data;
-	if (name != NULL) {
-		ncacn_conn->name = talloc_strdup(ncacn_conn, name);
-		if (ncacn_conn->name == NULL) {
-			talloc_free(ncacn_conn);
-			return NT_STATUS_NO_MEMORY;;
-		}
-	}
 
 	*out = ncacn_conn;
 
@@ -791,9 +785,6 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 {
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(e->ep_description);
-	const char *endpoint =
-		dcerpc_binding_get_string_option(e->ep_description,
-						 "endpoint");
 	struct dcerpc_ncacn_conn *ncacn_conn;
 	NTSTATUS status;
 	int rc;
@@ -803,8 +794,8 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	status = dcerpc_ncacn_conn_init(ev_ctx,
 					ev_ctx,
 					msg_ctx,
-					transport,
-					endpoint,
+					dce_ctx,
+					e,
 					termination_fn,
 					termination_data,
 					&ncacn_conn);
@@ -941,8 +932,12 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 	gid_t gid;
 	int rc;
 	int sys_errno;
+	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(
+			ncacn_conn->endpoint->ep_description);
+	const char *endpoint = dcerpc_binding_get_string_option(
+			ncacn_conn->endpoint->ep_description, "endpoint");
 
-	switch (ncacn_conn->transport) {
+	switch (transport) {
 		case NCACN_IP_TCP:
 			pipe_name = tsocket_address_string(ncacn_conn->remote_client_addr,
 							   ncacn_conn);
@@ -985,8 +980,7 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 
 			FALL_THROUGH;
 		case NCACN_NP:
-			pipe_name = talloc_strdup(ncacn_conn,
-						  ncacn_conn->name);
+			pipe_name = talloc_strdup(ncacn_conn, endpoint);
 			if (pipe_name == NULL) {
 				DBG_ERR("No memory\n");
 				ncacn_terminate_connection(ncacn_conn, "No memory");
@@ -994,8 +988,7 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 			}
 			break;
 		default:
-			DBG_ERR("unknown dcerpc transport: %u!\n",
-				ncacn_conn->transport);
+			DBG_ERR("unknown dcerpc transport: %u!\n", transport);
 			ncacn_terminate_connection(ncacn_conn,
 					"Unknown DCE/RPC transport");
 			return;
@@ -1018,7 +1011,7 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 	rc = make_server_pipes_struct(ncacn_conn,
 				      ncacn_conn->msg_ctx,
 				      pipe_name,
-				      ncacn_conn->transport,
+				      transport,
 				      ncacn_conn->remote_client_addr,
 				      ncacn_conn->local_server_addr,
 				      &ncacn_conn->session_info,
@@ -1067,6 +1060,8 @@ void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 	size_t i;
 	NTSTATUS status;
 	bool ok;
+	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(
+			ncacn_conn->endpoint->ep_description);
 
 	status = dcerpc_read_ncacn_packet_recv(subreq, ncacn_conn, &pkt, &recv_buffer);
 	TALLOC_FREE(subreq);
@@ -1174,7 +1169,7 @@ void dcerpc_ncacn_packet_process(struct tevent_req *subreq)
 		return;
 	}
 
-	switch (ncacn_conn->transport) {
+	switch (transport) {
 	case NCACN_NP:
 		/* If sending packets over named pipe proxy we need to send
 		 * each fragment on its own to be a message
@@ -1245,6 +1240,8 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq)
 	NTSTATUS status = NT_STATUS_OK;
 	int sys_errno;
 	int rc;
+	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(
+			ncacn_conn->endpoint->ep_description);
 
 	rc = tstream_writev_queue_recv(subreq, &sys_errno);
 	TALLOC_FREE(subreq);
@@ -1254,7 +1251,7 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq)
 		goto fail;
 	}
 
-	if (ncacn_conn->transport == NCACN_NP &&
+	if (transport == NCACN_NP &&
 	    tevent_queue_length(ncacn_conn->send_queue) > 0) {
 		/* More fragments to send before reading a new packet */
 		return;

@@ -31,9 +31,6 @@ struct cli_credentials;
 typedef void (*dcerpc_ncacn_termination_fn)(struct pipes_struct *, void *);
 
 struct dcerpc_ncacn_conn {
-	enum dcerpc_transport_t transport;
-
-	const char *name;
 	int sock;
 
 	struct pipes_struct *p;
@@ -42,6 +39,8 @@ struct dcerpc_ncacn_conn {
 
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	struct dcesrv_context *dce_ctx;
+	struct dcesrv_endpoint *endpoint;
 
 	struct tstream_context *tstream;
 	struct tevent_queue *send_queue;
@@ -59,8 +58,8 @@ struct dcerpc_ncacn_conn {
 NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev_ctx,
 				struct messaging_context *msg_ctx,
-				enum dcerpc_transport_t transport,
-				const char *name,
+				struct dcesrv_context *dce_ctx,
+				struct dcesrv_endpoint *endpoint,
 				dcerpc_ncacn_termination_fn term_fn,
 				void *termination_data,
 				struct dcerpc_ncacn_conn **out);
