@@ -32,7 +32,7 @@
 #include "dsdb/common/util.h"
 #include "libds/common/flag_mapping.h"
 #include "../lib/util/dlinklist.h"
-#include "../lib/crypto/crypto.h"
+#include "lib/crypto/md4.h"
 #include "libcli/ldap/ldap_ndr.h"
 
 NTSTATUS dsdb_trust_forest_info_from_lsa(TALLOC_CTX *mem_ctx,
