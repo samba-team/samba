@@ -24,6 +24,11 @@ variables:
     - df -h
     - cat /proc/swaps
     - free -h
+  after_script:
+    - mount
+    - df -h
+    - cat /proc/swaps
+    - free -h
   artifacts:
     expire_in: 1 week
     when: on_failure
