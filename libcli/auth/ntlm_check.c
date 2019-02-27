@@ -20,7 +20,7 @@
 */
 
 #include "includes.h"
-#include "../lib/crypto/crypto.h"
+#include "lib/crypto/md4.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "libcli/auth/libcli_auth.h"
 
