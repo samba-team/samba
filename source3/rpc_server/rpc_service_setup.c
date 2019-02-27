@@ -115,6 +115,77 @@ NTSTATUS rpc_setup_embedded(struct tevent_context *ev_ctx,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
+				       struct messaging_context *msg_ctx,
+				       struct dcesrv_context *dce_ctx,
+				       struct dcesrv_endpoint *e,
+				       struct dcerpc_binding_vector *bvec,
+				       dcerpc_ncacn_termination_fn term_fn,
+				       void *term_data)
+{
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(e->ep_description);
+	char *binding = NULL;
+	NTSTATUS status;
+
+	binding = dcerpc_binding_string(dce_ctx, e->ep_description);
+	if (binding == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DBG_DEBUG("Setting up endpoint '%s'\n", binding);
+
+	switch (transport) {
+	case NCALRPC:
+		/* TODO */
+		status = NT_STATUS_OK;
+		break;
+
+	case NCACN_IP_TCP:
+		/* TODO */
+		status = NT_STATUS_OK;
+		break;
+
+	case NCACN_NP:
+		/* TODO */
+		status = NT_STATUS_OK;
+		break;
+
+	default:
+		status = NT_STATUS_NOT_SUPPORTED;
+		break;
+	}
+
+	/* Build binding string again as the endpoint may have changed by
+	 * dcesrv_create_<transport>_socket functions */
+	TALLOC_FREE(binding);
+	binding = dcerpc_binding_string(dce_ctx, e->ep_description);
+	if (binding == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		struct dcesrv_if_list *iface = NULL;
+		DBG_ERR("Failed to setup '%s' sockets for ", binding);
+		for (iface = e->interface_list; iface; iface = iface->next) {
+			DEBUGADD(DBGLVL_ERR, ("'%s' ", iface->iface->name));
+		}
+		DEBUGADD(DBGLVL_ERR, (": %s\n", nt_errstr(status)));
+		return status;
+	} else {
+		struct dcesrv_if_list *iface = NULL;
+		DBG_INFO("Successfully listening on '%s' for ", binding);
+		for (iface = e->interface_list; iface; iface = iface->next) {
+			DEBUGADD(DBGLVL_INFO, ("'%s' ", iface->iface->name));
+		}
+		DEBUGADD(DBGLVL_INFO, ("\n"));
+	}
+
+	TALLOC_FREE(binding);
+
+	return status;
+}
+
 static NTSTATUS rpc_setup_winreg(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx)
 {

@@ -22,9 +22,10 @@
 
 #include "librpc/rpc/rpc_common.h" /* For enum dcerpc_transport_t */
 
+#include "librpc/rpc/dcesrv_core.h"
+
 struct pipes_struct;
 struct auth_session_info;
-struct dcesrv_call_state;
 struct cli_credentials;
 
 typedef void (*dcerpc_ncacn_termination_fn)(struct pipes_struct *, void *);

@@ -22,14 +22,22 @@
 #ifndef _RPC_EP_SETUP_H
 #define _RPC_EP_SETUP_H
 
-struct ndr_interface_table;
-struct rpc_srv_callbacks;
-struct dcesrv_context;
+#include "rpc_server/rpc_server.h"
+
+struct dcerpc_binding_vector;
 
 NTSTATUS dcesrv_init(TALLOC_CTX *mem_ctx,
 		     struct tevent_context *ev_ctx,
 		     struct messaging_context *msg_ctx,
 		     struct dcesrv_context *dce_ctx);
+
+NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
+				       struct messaging_context *msg_ctx,
+				       struct dcesrv_context *dce_ctx,
+				       struct dcesrv_endpoint *e,
+				       struct dcerpc_binding_vector *bvec,
+				       dcerpc_ncacn_termination_fn term_fn,
+				       void *term_data);
 
 NTSTATUS rpc_setup_embedded(struct tevent_context *ev_ctx,
 			    struct messaging_context *msg_ctx,
