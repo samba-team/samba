@@ -44,7 +44,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#define SPOOLSS_PIPE_NAME "spoolss"
 #define DAEMON_NAME "spoolssd"
 
 static struct server_id parent_id;
@@ -287,6 +286,7 @@ static bool spoolss_child_init(struct tevent_context *ev_ctx,
 struct spoolss_children_data {
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	struct dcesrv_context *dce_ctx;
 	struct pf_worker_data *pf;
 	int listen_fd_size;
 	struct pf_listen_fd *listen_fds;
@@ -305,6 +305,9 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 	struct spoolss_children_data *data;
 	bool ok;
 	int ret = 0;
+	struct dcesrv_context *dce_ctx = NULL;
+
+	dce_ctx = talloc_get_type_abort(private_data, struct dcesrv_context);
 
 	ok = spoolss_child_init(ev_ctx, child_id, pf);
 	if (!ok) {
@@ -318,6 +321,7 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 	data->pf = pf;
 	data->ev_ctx = ev_ctx;
 	data->msg_ctx = msg_ctx;
+	data->dce_ctx = dce_ctx;
 	data->listen_fd_size = listen_fd_size;
 	data->listen_fds = listen_fds;
 
@@ -395,11 +399,13 @@ static void spoolss_handle_client(struct tevent_req *req)
 	int sd;
 	struct tsocket_address *srv_addr = NULL;
 	struct tsocket_address *cli_addr = NULL;
+	void *listen_fd_data = NULL;
+	struct dcesrv_endpoint *ep = NULL;
 
 	client = tevent_req_callback_data(req, struct spoolss_new_client);
 	data = client->data;
 
-	ret = prefork_listen_recv(req, data, &sd, NULL,
+	ret = prefork_listen_recv(req, data, &sd, &listen_fd_data,
 				  &srv_addr, &cli_addr);
 
 	/* this will free the request too */
@@ -410,6 +416,8 @@ static void spoolss_handle_client(struct tevent_req *req)
 		return;
 	}
 
+	ep = talloc_get_type_abort(listen_fd_data, struct dcesrv_endpoint);
+
 	/* Warn parent that our status changed */
 	messaging_send(data->msg_ctx, parent_id,
 			MSG_PREFORK_CHILD_EVENT, &ping);
@@ -419,8 +427,8 @@ static void spoolss_handle_client(struct tevent_req *req)
 
 	dcerpc_ncacn_accept(data->ev_ctx,
 			    data->msg_ctx,
-			    NCACN_NP,
-			    SPOOLSS_PIPE_NAME,
+			    data->dce_ctx,
+			    ep,
 			    cli_addr,
 			    srv_addr,
 			    sd,
@@ -776,7 +784,7 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 				 listen_fds_size, listen_fds,
 				 pf_spoolss_cfg.min_children,
 				 pf_spoolss_cfg.max_children,
-				 &spoolss_children_main, NULL,
+				 &spoolss_children_main, dce_ctx,
 				 &spoolss_pool);
 	if (!ok) {
 		exit(1);

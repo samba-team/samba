@@ -277,6 +277,7 @@ static bool lsasd_child_init(struct tevent_context *ev_ctx,
 struct lsasd_children_data {
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	struct dcesrv_context *dce_ctx;
 	struct pf_worker_data *pf;
 	int listen_fd_size;
 	struct pf_listen_fd *listen_fds;
@@ -295,6 +296,9 @@ static int lsasd_children_main(struct tevent_context *ev_ctx,
 	struct lsasd_children_data *data;
 	bool ok;
 	int ret = 0;
+	struct dcesrv_context *dce_ctx = NULL;
+
+	dce_ctx = talloc_get_type_abort(private_data, struct dcesrv_context);
 
 	ok = lsasd_child_init(ev_ctx, child_id, pf);
 	if (!ok) {
@@ -308,6 +312,7 @@ static int lsasd_children_main(struct tevent_context *ev_ctx,
 	data->pf = pf;
 	data->ev_ctx = ev_ctx;
 	data->msg_ctx = msg_ctx;
+	data->dce_ctx = dce_ctx;
 	data->listen_fd_size = listen_fd_size;
 	data->listen_fds = listen_fds;
 
@@ -388,6 +393,11 @@ static void lsasd_handle_client(struct tevent_req *req)
 	TALLOC_CTX *tmp_ctx;
 	struct tsocket_address *srv_addr;
 	struct tsocket_address *cli_addr;
+	void *listen_fd_data = NULL;
+	struct dcesrv_endpoint *ep = NULL;
+	enum dcerpc_transport_t transport;
+	dcerpc_ncacn_termination_fn term_fn = NULL;
+	void *term_fn_data = NULL;
 
 	client = tevent_req_callback_data(req, struct lsasd_new_client);
 	data = client->data;
@@ -401,7 +411,7 @@ static void lsasd_handle_client(struct tevent_req *req)
 	rc = prefork_listen_recv(req,
 				 tmp_ctx,
 				 &sd,
-				 NULL,
+				 &listen_fd_data,
 				 &srv_addr,
 				 &cli_addr);
 
@@ -413,69 +423,30 @@ static void lsasd_handle_client(struct tevent_req *req)
 		goto done;
 	}
 
+	ep = talloc_get_type_abort(listen_fd_data, struct dcesrv_endpoint);
+	transport = dcerpc_binding_get_transport(ep->ep_description);
+	if (transport == NCACN_NP) {
+		term_fn = lsasd_client_terminated;
+		term_fn_data = data;
+	}
+
 	/* Warn parent that our status changed */
 	messaging_send(data->msg_ctx, parent_id,
 			MSG_PREFORK_CHILD_EVENT, &ping);
 
-	DEBUG(2, ("LSASD preforked child %d got client connection!\n",
-		  (int)(data->pf->pid)));
+	DBG_INFO("LSASD preforked child %d got client connection on '%s'\n",
+		  (int)(data->pf->pid), dcerpc_binding_string(tmp_ctx,
+			  ep->ep_description));
 
-	if (tsocket_address_is_inet(srv_addr, "ip")) {
-		DEBUG(3, ("Got a tcpip client connection from %s on interface %s\n",
-			   tsocket_address_string(cli_addr, tmp_ctx),
-			   tsocket_address_string(srv_addr, tmp_ctx)));
-
-		dcerpc_ncacn_accept(data->ev_ctx,
-				    data->msg_ctx,
-				    NCACN_IP_TCP,
-				    "IP",
-				    cli_addr,
-				    srv_addr,
-				    sd,
-				    lsasd_client_terminated,
-				    data);
-	} else if (tsocket_address_is_unix(srv_addr)) {
-		const char *p;
-		const char *b;
-
-		p = tsocket_address_unix_path(srv_addr, tmp_ctx);
-		if (p == NULL) {
-			talloc_free(tmp_ctx);
-			return;
-		}
-
-		b = strrchr(p, '/');
-		if (b != NULL) {
-			b++;
-		} else {
-			b = p;
-		}
-
-		if (strstr(p, "/np/")) {
-			dcerpc_ncacn_accept(data->ev_ctx,
-					    data->msg_ctx,
-					    NCACN_NP,
-					    b,
-					    NULL,  /* remote client address */
-					    NULL,  /* local server address */
-					    sd,
-					    lsasd_client_terminated,
-					    data);
-
-		} else {
-			dcerpc_ncacn_accept(data->ev_ctx,
-					    data->msg_ctx,
-					    NCALRPC,
-					    b,
-					    cli_addr,
-					    srv_addr,
-					    sd,
-					    lsasd_client_terminated,
-					    data);
-		}
-	} else {
-		DEBUG(0, ("ERROR: Unsupported socket!\n"));
-	}
+	dcerpc_ncacn_accept(data->ev_ctx,
+			    data->msg_ctx,
+			    data->dce_ctx,
+			    ep,
+			    cli_addr,
+			    srv_addr,
+			    sd,
+			    term_fn,
+			    term_fn_data);
 
 done:
 	talloc_free(tmp_ctx);
@@ -781,7 +752,7 @@ void start_lsasd(struct tevent_context *ev_ctx,
 				 pf_lsasd_cfg.min_children,
 				 pf_lsasd_cfg.max_children,
 				 &lsasd_children_main,
-				 NULL,
+				 dce_ctx,
 				 &lsasd_pool);
 	if (!ok) {
 		exit(1);

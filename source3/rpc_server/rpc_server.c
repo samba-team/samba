@@ -291,8 +291,8 @@ static void dcesrv_ncacn_np_listener(struct tevent_context *ev,
 
 	dcerpc_ncacn_accept(state->ev_ctx,
 			    state->msg_ctx,
-			    NCACN_NP,
-			    endpoint,
+			    state->dce_ctx,
+			    state->endpoint,
 			    NULL, /* remote client address */
 			    NULL, /* local server address */
 			    sd,
@@ -498,8 +498,8 @@ static void dcesrv_ncacn_ip_tcp_listener(struct tevent_context *ev,
 
 	dcerpc_ncacn_accept(state->ev_ctx,
 			    state->msg_ctx,
-			    NCACN_IP_TCP,
-			    "IP",
+			    state->dce_ctx,
+			    state->endpoint,
 			    cli_addr,
 			    srv_addr,
 			    s,
@@ -719,8 +719,8 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 
 	dcerpc_ncacn_accept(state->ev_ctx,
 			    state->msg_ctx,
-			    NCALRPC,
-			    endpoint,
+			    state->dce_ctx,
+			    state->endpoint,
 			    cli_addr, srv_addr, sd,
 			    state->termination_fn,
 			    state->termination_data);
@@ -778,14 +778,19 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn);
 
 void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
-			 enum dcerpc_transport_t transport,
-			 const char *name,
+			 struct dcesrv_context *dce_ctx,
+			 struct dcesrv_endpoint *e,
 			 struct tsocket_address *cli_addr,
 			 struct tsocket_address *srv_addr,
 			 int s,
 			 dcerpc_ncacn_termination_fn termination_fn,
 			 void *termination_data)
 {
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(e->ep_description);
+	const char *endpoint =
+		dcerpc_binding_get_string_option(e->ep_description,
+						 "endpoint");
 	struct dcerpc_ncacn_conn *ncacn_conn;
 	NTSTATUS status;
 	int rc;
@@ -796,7 +801,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 					ev_ctx,
 					msg_ctx,
 					transport,
-					name,
+					endpoint,
 					termination_fn,
 					termination_data,
 					&ncacn_conn);
