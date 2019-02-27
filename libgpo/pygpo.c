@@ -220,6 +220,7 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	return 0;
 }
 
+/* connect.  Failure to connect results in an Exception */
 static PyObject* py_ads_connect(ADS *self)
 {
 	ADS_STATUS status;
@@ -235,10 +236,10 @@ static PyObject* py_ads_connect(ADS *self)
 
 		status = ads_connect_user_creds(self->ads_ptr);
 		if (!ADS_ERR_OK(status)) {
-			PyErr_SetString(PyExc_RuntimeError,
-					"ads_connect() failed");
-			TALLOC_FREE(frame);
-			Py_RETURN_FALSE;
+			PyErr_Format(PyExc_RuntimeError,
+					"ads_connect() failed: %s",
+					ads_errstr(status));
+			goto err;
 		}
 	} else {
 		char *passwd = NULL;
@@ -247,8 +248,7 @@ static PyObject* py_ads_connect(ADS *self)
 		if (ret == -1) {
 			PyErr_SetString(PyExc_RuntimeError,
 					"Failed to asprintf");
-			TALLOC_FREE(frame);
-			Py_RETURN_FALSE;
+			goto err;
 		} else {
 			self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
 		}
@@ -256,8 +256,7 @@ static PyObject* py_ads_connect(ADS *self)
 		if (!secrets_init()) {
 			PyErr_SetString(PyExc_RuntimeError,
 					"secrets_init() failed");
-			TALLOC_FREE(frame);
-			Py_RETURN_FALSE;
+			goto err;
 		}
 
 		passwd = secrets_fetch_machine_password(self->ads_ptr->server.workgroup,
@@ -266,30 +265,32 @@ static PyObject* py_ads_connect(ADS *self)
 			PyErr_SetString(PyExc_RuntimeError,
 					"Failed to fetch the machine account "
 					"password");
-			TALLOC_FREE(frame);
-			Py_RETURN_FALSE;
+			goto err;
 		}
 		self->ads_ptr->auth.password = smb_xstrdup(passwd);
 		SAFE_FREE(passwd);
 		self->ads_ptr->auth.realm =
 			smb_xstrdup(self->ads_ptr->server.realm);
 		if (!strupper_m(self->ads_ptr->auth.realm)) {
-			PyErr_SetString(PyExc_RuntimeError, "Failed to strdup");
-			TALLOC_FREE(frame);
-			Py_RETURN_FALSE;
+			PyErr_SetString(PyExc_RuntimeError, "Failed to strupper");
+			goto err;
 		}
 
 		status = ads_connect(self->ads_ptr);
 		if (!ADS_ERR_OK(status)) {
-			PyErr_SetString(PyExc_RuntimeError,
-					"ads_connect() failed");
-			TALLOC_FREE(frame);
-			Py_RETURN_FALSE;
+			PyErr_Format(PyExc_RuntimeError,
+					"ads_connect() failed: %s",
+					ads_errstr(status));
+			goto err;
 		}
 	}
 
 	TALLOC_FREE(frame);
 	Py_RETURN_TRUE;
+
+err:
+	TALLOC_FREE(frame);
+	return NULL;
 }
 
 /* Parameter mapping and functions for the GP_EXT struct */
