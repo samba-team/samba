@@ -22,6 +22,7 @@ variables:
     - cat /etc/os-release
     - mount
     - df -h
+    - cat /proc/swaps
     - free -h
   artifacts:
     expire_in: 1 week
