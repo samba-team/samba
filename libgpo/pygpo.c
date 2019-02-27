@@ -86,7 +86,7 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|s",
 					 discard_const_p(char *, kwlist),
 					 &cache_dir)) {
-		PyErr_SetString(PyExc_SystemError,
+		PyErr_SetString(PyExc_RuntimeError,
 				"Failed to parse arguments to "
 				"gpo_get_unix_path()");
 		goto out;
@@ -104,7 +104,7 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 	status = gpo_get_unix_path(frame, cache_dir, gpo_ptr, &unix_path);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetString(PyExc_SystemError,
+		PyErr_SetString(PyExc_RuntimeError,
 				"Failed to determine gpo unix path");
 		goto out;
 	}
@@ -235,7 +235,7 @@ static PyObject* py_ads_connect(ADS *self)
 
 		status = ads_connect_user_creds(self->ads_ptr);
 		if (!ADS_ERR_OK(status)) {
-			PyErr_SetString(PyExc_SystemError,
+			PyErr_SetString(PyExc_RuntimeError,
 					"ads_connect() failed");
 			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
@@ -245,7 +245,7 @@ static PyObject* py_ads_connect(ADS *self)
 		int ret = asprintf(&(self->ads_ptr->auth.user_name), "%s$",
 				   lp_netbios_name());
 		if (ret == -1) {
-			PyErr_SetString(PyExc_SystemError,
+			PyErr_SetString(PyExc_RuntimeError,
 					"Failed to asprintf");
 			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
@@ -254,7 +254,7 @@ static PyObject* py_ads_connect(ADS *self)
 		}
 
 		if (!secrets_init()) {
-			PyErr_SetString(PyExc_SystemError,
+			PyErr_SetString(PyExc_RuntimeError,
 					"secrets_init() failed");
 			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
@@ -263,7 +263,7 @@ static PyObject* py_ads_connect(ADS *self)
 		passwd = secrets_fetch_machine_password(self->ads_ptr->server.workgroup,
 							NULL, NULL);
 		if (passwd == NULL) {
-			PyErr_SetString(PyExc_SystemError,
+			PyErr_SetString(PyExc_RuntimeError,
 					"Failed to fetch the machine account "
 					"password");
 			TALLOC_FREE(frame);
@@ -274,14 +274,14 @@ static PyObject* py_ads_connect(ADS *self)
 		self->ads_ptr->auth.realm =
 			smb_xstrdup(self->ads_ptr->server.realm);
 		if (!strupper_m(self->ads_ptr->auth.realm)) {
-			PyErr_SetString(PyExc_SystemError, "Failed to strdup");
+			PyErr_SetString(PyExc_RuntimeError, "Failed to strdup");
 			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
 		}
 
 		status = ads_connect(self->ads_ptr);
 		if (!ADS_ERR_OK(status)) {
-			PyErr_SetString(PyExc_SystemError,
+			PyErr_SetString(PyExc_RuntimeError,
 					"ads_connect() failed");
 			TALLOC_FREE(frame);
 			Py_RETURN_FALSE;
@@ -404,7 +404,7 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s",
 					 discard_const_p(char *, kwlist),
 					 &samaccountname)) {
-		PyErr_SetString(PyExc_SystemError,
+		PyErr_SetString(PyExc_RuntimeError,
 				"Failed to parse arguments to "
 				"py_ads_get_gpo_list()");
 		goto out;
@@ -416,7 +416,7 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 				 samaccountname, &uac, &dn);
 	if (!ADS_ERR_OK(status)) {
 		TALLOC_FREE(frame);
-		PyErr_SetString(PyExc_SystemError,
+		PyErr_SetString(PyExc_RuntimeError,
 				"Failed to find samAccountName");
 		goto out;
 	}
@@ -431,7 +431,7 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 	}
 	if (!ADS_ERR_OK(status)) {
 		TALLOC_FREE(frame);
-		PyErr_SetString(PyExc_SystemError, "Failed to get token");
+		PyErr_SetString(PyExc_RuntimeError, "Failed to get token");
 		goto out;
 	}
 
@@ -440,7 +440,7 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 				  &gpo_list);
 	if (!ADS_ERR_OK(status)) {
 		TALLOC_FREE(frame);
-		PyErr_SetString(PyExc_SystemError, "Failed to fetch GPO list");
+		PyErr_SetString(PyExc_RuntimeError, "Failed to fetch GPO list");
 		goto out;
 	}
 
