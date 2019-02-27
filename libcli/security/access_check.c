@@ -110,19 +110,33 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 {
 	uint32_t denied = 0, granted = 0;
 	unsigned i;
-
-	if (security_token_has_sid(token, sd->owner_sid)) {
-		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
-	}
+	uint32_t owner_rights_allowed = 0;
+	uint32_t owner_rights_denied = 0;
+	bool owner_rights_default = true;
 
 	if (sd->dacl == NULL) {
-		return granted & ~denied;
+		if (security_token_has_sid(token, sd->owner_sid)) {
+			granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
+		}
+		return granted;
 	}
 
 	for (i = 0;i<sd->dacl->num_aces; i++) {
 		struct security_ace *ace = &sd->dacl->aces[i];
 
 		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+			continue;
+		}
+
+		if (dom_sid_equal(&ace->trustee, &global_sid_Owner_Rights)) {
+			if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED) {
+				owner_rights_allowed |= ace->access_mask;
+				owner_rights_default = false;
+			} else if (ace->type == SEC_ACE_TYPE_ACCESS_DENIED) {
+				owner_rights_denied |= (owner_rights_allowed &
+							ace->access_mask);
+				owner_rights_default = false;
+			}
 			continue;
 		}
 
@@ -140,6 +154,15 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 			break;
 		default:	/* Other ACE types not handled/supported */
 			break;
+		}
+	}
+
+	if (security_token_has_sid(token, sd->owner_sid)) {
+		if (owner_rights_default) {
+			granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
+		} else {
+			granted |= owner_rights_allowed;
+			granted &= ~owner_rights_denied;
 		}
 	}
 
