@@ -570,6 +570,7 @@ static bool mdssd_create_sockets(struct tevent_context *ev_ctx,
 	listen_fd[*listen_fd_size].fd = fd;
 	listen_fd[*listen_fd_size].fd_data = NULL;
 	(*listen_fd_size)++;
+	fd = -1;
 
 	status = dcesrv_create_ncalrpc_socket("mdssvc", &fd);
 	if (!NT_STATUS_IS_OK(status)) {
