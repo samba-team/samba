@@ -301,6 +301,9 @@ unless (defined($ENV{VALGRIND})) {
 # make all our python scripts unbuffered
 $ENV{PYTHONUNBUFFERED} = 1;
 
+# do not depend on the users setup
+$ENV{TZ} = "UTC";
+
 my $bindir_abs = abs_path($bindir);
 
 # Backwards compatibility:
