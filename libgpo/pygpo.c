@@ -74,7 +74,7 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 {
 	NTSTATUS status;
 	const char *cache_dir = NULL;
-	PyObject *ret = Py_None;
+	PyObject *ret = NULL;
 	char *unix_path = NULL;
 	TALLOC_CTX *frame = NULL;
 	static const char *kwlist[] = {"cache_dir", NULL};
@@ -86,9 +86,6 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "|s",
 					 discard_const_p(char *, kwlist),
 					 &cache_dir)) {
-		PyErr_SetString(PyExc_RuntimeError,
-				"Failed to parse arguments to "
-				"gpo_get_unix_path()");
 		goto out;
 	}
 
@@ -104,8 +101,9 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 	status = gpo_get_unix_path(frame, cache_dir, gpo_ptr, &unix_path);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		PyErr_SetString(PyExc_RuntimeError,
-				"Failed to determine gpo unix path");
+		PyErr_Format(PyExc_RuntimeError,
+				"Failed to determine gpo unix path: %s",
+				get_friendly_nt_error_msg(status));
 		goto out;
 	}
 
