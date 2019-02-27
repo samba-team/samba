@@ -12535,6 +12535,10 @@ static struct {
 		.fn    = run_local_namemap_cache1,
 	},
 	{
+		.name  = "LOCAL-IDMAP-CACHE1",
+		.fn    = run_local_idmap_cache1,
+	},
+	{
 		.name  = "qpathinfo-bufsize",
 		.fn    = run_qpathinfo_bufsize,
 	},
