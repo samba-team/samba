@@ -38,6 +38,7 @@
 		<arg choice="opt">--set-security-info FLAGS</arg>
 		<arg choice="opt">--sddl</arg>
 		<arg choice="opt">--domain-sid SID</arg>
+		<arg choice="opt">-x|--maximum-access</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -186,6 +187,14 @@
 		<varlistentry>
 		<term>--domain-sid SID</term>
 		<listitem><para>SID used for sddl processing.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-x|--maximum-access</term>
+		<listitem><para>When displaying an ACL additionally query
+		the server for effective maximum permissions. Note that this
+		is only supported with SMB protocol version 2 or higher.
 		</para></listitem>
 		</varlistentry>
 
