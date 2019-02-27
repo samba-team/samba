@@ -143,13 +143,6 @@ static void py_ads_dealloc(ADS* self)
 	Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
-static PyObject* py_ads_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
-{
-	ADS *self;
-	self = (ADS*)type->tp_alloc(type, 0);
-	return (PyObject*)self;
-}
-
 static PyObject* py_ads_connect(ADS *self);
 static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 {
@@ -496,7 +489,6 @@ static PyTypeObject ads_ADSType = {
 	.tp_doc = "ADS struct",
 	.tp_methods = ADS_methods,
 	.tp_init = (initproc)py_ads_init,
-	.tp_new = py_ads_new,
 };
 
 static PyMethodDef py_gpo_methods[] = {
@@ -526,25 +518,36 @@ MODULE_INIT_FUNC(gpo)
 	/* Instantiate the types */
 	m = PyModule_Create(&moduledef);
 	if (m == NULL) {
-		return m;
+		goto err;
 	}
 
-	PyModule_AddObject(m, "version",
-			   PyStr_FromString(SAMBA_VERSION_STRING));
+	if (PyModule_AddObject(m, "version",
+			   PyStr_FromString(SAMBA_VERSION_STRING)) ) {
+		goto err;
+	}
 
+	ads_ADSType.tp_new = PyType_GenericNew;
 	if (PyType_Ready(&ads_ADSType) < 0) {
-		return m;
+		goto err;
 	}
 
-	PyModule_AddObject(m, "ADS_STRUCT", (PyObject *)&ads_ADSType);
+	Py_INCREF(&ads_ADSType);
+	if (PyModule_AddObject(m, "ADS_STRUCT", (PyObject *)&ads_ADSType)) {
+		goto err;
+	}
 
 	if (pytalloc_BaseObject_PyType_Ready(&GPOType) < 0) {
-		return m;
+		goto err;
 	}
 
 	Py_INCREF((PyObject *)(void *)&GPOType);
-	PyModule_AddObject(m, "GROUP_POLICY_OBJECT",
-			   (PyObject *)&GPOType);
+	if (PyModule_AddObject(m, "GROUP_POLICY_OBJECT",
+			   (PyObject *)&GPOType)) {
+		goto err;
+	}
 	return m;
 
+err:
+	Py_CLEAR(m);
+	return NULL;
 }
