@@ -155,28 +155,58 @@ out:
 	return status;
 }
 
-NTSTATUS dcesrv_setup_ncacn_np_socket(const char *pipe_name,
-				      struct tevent_context *ev_ctx,
-				      struct messaging_context *msg_ctx)
+NTSTATUS dcesrv_setup_ncacn_np_socket(struct tevent_context *ev_ctx,
+				      struct messaging_context *msg_ctx,
+				      struct dcesrv_context *dce_ctx,
+				      struct dcesrv_endpoint *e,
+				      dcerpc_ncacn_termination_fn term_fn,
+				      void *term_data)
 {
 	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;
 	int rc;
 	NTSTATUS status;
+	const char *endpoint = NULL;
+	char *endpoint_normalized = NULL;
+	char *p = NULL;
 
-	state = talloc_zero(ev_ctx, struct dcerpc_ncacn_listen_state);
+	endpoint = dcerpc_binding_get_string_option(e->ep_description,
+						    "endpoint");
+	if (endpoint == NULL) {
+		DBG_ERR("Endpoint mandatory for named pipes\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* The endpoint string from IDL can be mixed uppercase and case is
+	 * normalized by smbd on connection */
+	endpoint_normalized = strlower_talloc(talloc_tos(), endpoint);
+	if (endpoint_normalized == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* The endpoint string from IDL can be prefixed by \pipe\ */
+	p = endpoint_normalized;
+	if (strncmp(p, "\\pipe\\", 6) == 0) {
+		p += 6;
+	}
+
+	/* Alloc in endpoint context. If the endpoint is freed (for example
+	 * when forked daemons reinit the dcesrv_context, the tevent_fd
+	 * listener will be stopped and the socket closed */
+	state = talloc_zero(e, struct dcerpc_ncacn_listen_state);
 	if (state == NULL) {
 		DBG_ERR("Out of memory\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 	state->fd = -1;
-	state->ep.name = talloc_strdup(state, pipe_name);
-	if (state->ep.name == NULL) {
-		DBG_ERR("Out of memory\n");
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-	status = dcesrv_create_ncacn_np_socket(pipe_name, &state->fd);
+	state->ev_ctx = ev_ctx;
+	state->msg_ctx = msg_ctx;
+	state->endpoint = e;
+	state->dce_ctx = talloc_reference(state, dce_ctx);
+	state->termination_fn = term_fn;
+	state->termination_data = term_data;
+
+	status = dcesrv_create_ncacn_np_socket(p, &state->fd);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -185,15 +215,12 @@ NTSTATUS dcesrv_setup_ncacn_np_socket(const char *pipe_name,
 	if (rc < 0) {
 		status = map_nt_error_from_unix_common(errno);
 		DBG_ERR("Failed to listen on ncacn_np socket %s: %s\n",
-			pipe_name, strerror(errno));
+			endpoint, strerror(errno));
 		goto out;
 	}
 
-	state->ev_ctx = ev_ctx;
-	state->msg_ctx = msg_ctx;
-
 	DBG_DEBUG("Opened pipe socket fd %d for %s\n",
-		  state->fd, pipe_name);
+		  state->fd, endpoint);
 
 	errno = 0;
 	fde = tevent_add_fd(ev_ctx,
@@ -210,12 +237,16 @@ NTSTATUS dcesrv_setup_ncacn_np_socket(const char *pipe_name,
 	}
 
 	tevent_fd_set_auto_close(fde);
+
+	TALLOC_FREE(endpoint_normalized);
+
 	return NT_STATUS_OK;
 
 out:
 	if (state->fd != -1) {
 		close(state->fd);
 	}
+	TALLOC_FREE(endpoint_normalized);
 	TALLOC_FREE(state);
 	return status;
 }
@@ -232,6 +263,7 @@ static void dcesrv_ncacn_np_listener(struct tevent_context *ev,
 		.sa_socklen = sizeof(struct sockaddr_un),
 	};
 	int sd = -1;
+	const char *endpoint = NULL;
 
 	/* TODO: should we have a limit to the number of clients ? */
 
@@ -246,13 +278,21 @@ static void dcesrv_ncacn_np_listener(struct tevent_context *ev,
 	}
 	smb_set_close_on_exec(sd);
 
+	endpoint = dcerpc_binding_get_string_option(
+			state->endpoint->ep_description, "endpoint");
+	if (endpoint == NULL) {
+		DBG_ERR("Failed to get endpoint from binding description\n");
+		close(sd);
+		return;
+	}
+
 	DBG_DEBUG("Accepted ncacn_np socket %s (fd: %d)\n",
 		   addr.u.un.sun_path, sd);
 
 	dcerpc_ncacn_accept(state->ev_ctx,
 			    state->msg_ctx,
 			    NCACN_NP,
-			    state->ep.name,
+			    endpoint,
 			    NULL, /* remote client address */
 			    NULL, /* local server address */
 			    sd,

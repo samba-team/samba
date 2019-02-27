@@ -227,13 +227,6 @@ void start_fssd(struct tevent_context *ev_ctx,
 		}
 	}
 
-	/* case is normalized by smbd on connection */
-	status = dcesrv_setup_ncacn_np_socket("fssagentrpc", ev_ctx, msg_ctx);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Failed to open fssd named pipe!\n"));
-		exit(1);
-	}
-
 	DEBUG(1, ("File Server Shadow-copy Daemon Started (%d)\n",
 		  (int)getpid()));
 
