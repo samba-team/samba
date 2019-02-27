@@ -22,7 +22,6 @@
 
 
 #include "includes.h"
-#include "../lib/crypto/crypto.h"
 #include "../libcli/auth/libcli_auth.h"
 #include "../libcli/samsync/samsync.h"
 #include "librpc/gen_ndr/ndr_netlogon.h"
