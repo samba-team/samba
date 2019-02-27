@@ -54,12 +54,13 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		 struct auth_session_info *session_info,
 		 struct tevent_context *ev_ctx,
 		 struct messaging_context *msg_ctx,
+		 struct dcesrv_context *dce_ctx,
 		 struct fake_file_handle **phandle)
 {
 	enum rpc_service_mode_e pipe_mode;
 	const char **proxy_list;
 	struct fake_file_handle *handle;
-	struct ndr_syntax_id syntax;
+	struct dcesrv_endpoint *endpoint = NULL;
 	struct npa_state *npa = NULL;
 	NTSTATUS status;
 
@@ -98,7 +99,7 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 		break;
 	case RPC_SERVICE_MODE_EMBEDDED:
 		/* Check if we handle this pipe internally */
-		status = is_known_pipename(name, &syntax);
+		status = is_known_pipename(dce_ctx, name, &endpoint);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_WARNING("'%s' is not a registered pipe!\n", name);
 			talloc_free(handle);
@@ -109,8 +110,8 @@ NTSTATUS np_open(TALLOC_CTX *mem_ctx, const char *name,
 			handle,
 			ev_ctx,
 			msg_ctx,
-			name,
-			&syntax,
+			dce_ctx,
+			endpoint,
 			remote_client_address,
 			local_server_address,
 			session_info,

@@ -1419,4 +1419,38 @@ static void ncacn_terminate_connection(struct dcerpc_ncacn_conn *conn,
        talloc_free(conn);
 }
 
+NTSTATUS dcesrv_endpoint_by_ncacn_np_name(struct dcesrv_context *dce_ctx,
+					  const char *pipe_name,
+					  struct dcesrv_endpoint **out)
+{
+	struct dcesrv_endpoint *e = NULL;
+
+	for (e = dce_ctx->endpoint_list; e; e = e->next) {
+		enum dcerpc_transport_t transport =
+			dcerpc_binding_get_transport(e->ep_description);
+		const char *endpoint = NULL;
+
+		if (transport != NCACN_NP) {
+			continue;
+		}
+
+		endpoint = dcerpc_binding_get_string_option(e->ep_description,
+							    "endpoint");
+		if (endpoint == NULL) {
+			continue;
+		}
+
+		if (strncmp(endpoint, "\\pipe\\", 6) == 0) {
+			endpoint += 6;
+		}
+
+		if (strequal(endpoint, pipe_name)) {
+			*out = e;
+			return NT_STATUS_OK;
+		}
+	}
+
+	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+}
+
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */

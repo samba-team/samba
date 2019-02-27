@@ -97,8 +97,8 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev_ctx,
 	struct messaging_context *msg_ctx,
-	const char *pipe_name,
-	const struct ndr_syntax_id *syntax,
+	struct dcesrv_context *dce_ctx,
+	struct dcesrv_endpoint *endpoint,
 	const struct tsocket_address *remote_address,
 	const struct tsocket_address *local_address,
 	const struct auth_session_info *session_info,
@@ -111,6 +111,10 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 	NTSTATUS status;
 	int error;
 	int rc;
+	enum dcerpc_transport_t transport = dcerpc_binding_get_transport(
+			endpoint->ep_description);
+	const char *pipe_name = dcerpc_binding_get_string_option(
+			endpoint->ep_description, "endpoint");
 
 	DEBUG(4, ("Create of internal pipe %s requested\n", pipe_name));
 
@@ -184,8 +188,8 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 
 	rc = make_server_pipes_struct(ncacn_conn,
 				      ncacn_conn->msg_ctx,
-				      ncacn_conn->name,
-				      ncacn_conn->transport,
+				      pipe_name,
+				      transport,
 				      ncacn_conn->remote_client_addr,
 				      ncacn_conn->local_server_addr,
 				      &ncacn_conn->session_info,

@@ -121,4 +121,8 @@ NTSTATUS dcesrv_auth_gensec_prepare(TALLOC_CTX *mem_ctx,
 void dcesrv_log_successful_authz(struct dcesrv_call_state *call);
 NTSTATUS dcesrv_assoc_group_find(struct dcesrv_call_state *call);
 
+NTSTATUS dcesrv_endpoint_by_ncacn_np_name(struct dcesrv_context *dce_ctx,
+					  const char *endpoint,
+					  struct dcesrv_endpoint **out);
+
 #endif /* _PRC_SERVER_H_ */

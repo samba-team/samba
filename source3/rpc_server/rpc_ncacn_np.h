@@ -23,6 +23,8 @@
 struct dcerpc_binding_handle;
 struct ndr_interface_table;
 struct tsocket_address;
+struct dcesrv_context;
+struct dcesrv_endpoint;
 
 struct npa_state {
 	struct tstream_context *stream;
@@ -48,8 +50,8 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev_ctx,
 	struct messaging_context *msg_ctx,
-	const char *pipe_name,
-	const struct ndr_syntax_id *syntax,
+	struct dcesrv_context *dce_ctx,
+	struct dcesrv_endpoint *endpoint,
 	const struct tsocket_address *remote_address,
 	const struct tsocket_address *local_address,
 	const struct auth_session_info *session_info,

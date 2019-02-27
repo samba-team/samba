@@ -474,10 +474,14 @@ static bool check_bind_req(struct pipes_struct *p,
 
 /**
  * Is a named pipe known?
+ * @param[in] dce_ctx		The rpc server context
  * @param[in] pipename		Just the filename
+ * @param[out] endpoint		The DCERPC endpoint serving the pipe name
  * @result			NT error code
  */
-NTSTATUS is_known_pipename(const char *pipename, struct ndr_syntax_id *syntax)
+NTSTATUS is_known_pipename(struct dcesrv_context *dce_ctx,
+			   const char *pipename,
+			   struct dcesrv_endpoint **ep)
 {
 	NTSTATUS status;
 
@@ -491,7 +495,8 @@ NTSTATUS is_known_pipename(const char *pipename, struct ndr_syntax_id *syntax)
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	if (rpc_srv_get_pipe_interface_by_cli_name(pipename, syntax)) {
+	status = dcesrv_endpoint_by_ncacn_np_name(dce_ctx, pipename, ep);
+	if (NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_OK;
 	}
 
@@ -505,7 +510,8 @@ NTSTATUS is_known_pipename(const char *pipename, struct ndr_syntax_id *syntax)
 	/*
 	 * Scan the list again for the interface id
 	 */
-	if (rpc_srv_get_pipe_interface_by_cli_name(pipename, syntax)) {
+	status = dcesrv_endpoint_by_ncacn_np_name(dce_ctx, pipename, ep);
+	if (NT_STATUS_IS_OK(status)) {
 		return NT_STATUS_OK;
 	}
 
