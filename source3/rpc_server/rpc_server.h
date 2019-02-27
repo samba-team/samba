@@ -124,4 +124,6 @@ NTSTATUS dcesrv_endpoint_by_ncacn_np_name(struct dcesrv_context *dce_ctx,
 					  const char *endpoint,
 					  struct dcesrv_endpoint **out);
 
+struct pipes_struct *dcesrv_get_pipes_struct(struct dcesrv_connection *conn);
+
 #endif /* _PRC_SERVER_H_ */

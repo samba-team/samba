@@ -1450,4 +1450,13 @@ NTSTATUS dcesrv_endpoint_by_ncacn_np_name(struct dcesrv_context *dce_ctx,
 	return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 }
 
+struct pipes_struct *dcesrv_get_pipes_struct(struct dcesrv_connection *conn)
+{
+	struct dcerpc_ncacn_conn *ncacn_conn = talloc_get_type_abort(
+			conn->transport.private_data,
+			struct dcerpc_ncacn_conn);
+
+	return ncacn_conn->p;
+}
+
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
