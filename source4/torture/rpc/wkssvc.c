@@ -25,7 +25,6 @@
 #include "torture/rpc/torture_rpc.h"
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
-#include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 
 #define SMBTORTURE_MACHINE_NAME "smbtrt_name"
