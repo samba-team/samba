@@ -33,13 +33,11 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(struct dcesrv_endpoint *e,
-					    struct dcerpc_binding_vector *bvec,
 					    struct pf_listen_fd *listen_fd,
 					    int *listen_fd_size)
 {
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	int rc;
 	uint16_t port = 0;
 	char port_str[6];
 	const char *endpoint = NULL;
@@ -69,8 +67,6 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(struct dcesrv_endpoint *e,
 		for (i = 0; i < num_ifs; i++) {
 			const struct sockaddr_storage *ifss =
 					iface_n_sockaddr_storage(i);
-			struct tsocket_address *bind_addr;
-			const char *addr;
 			int fd = -1;
 
 			status = dcesrv_create_ncacn_ip_tcp_socket(ifss,
@@ -82,43 +78,6 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(struct dcesrv_endpoint *e,
 			listen_fd[*listen_fd_size].fd = fd;
 			listen_fd[*listen_fd_size].fd_data = e;
 			(*listen_fd_size)++;
-
-			if (bvec != NULL) {
-				struct dcesrv_if_list *if_list = NULL;
-
-				rc = tsocket_address_bsd_from_sockaddr(tmp_ctx,
-								       (const struct sockaddr *)ifss,
-								       sizeof(struct sockaddr_storage),
-								       &bind_addr);
-				if (rc < 0) {
-					close(fd);
-					status = NT_STATUS_NO_MEMORY;
-					goto done;
-				}
-
-				addr = tsocket_address_inet_addr_string(bind_addr,
-									tmp_ctx);
-				if (addr == NULL) {
-					close(fd);
-					status = NT_STATUS_NO_MEMORY;
-					goto done;
-				}
-
-				for (if_list = e->interface_list; if_list; if_list = if_list->next) {
-					const struct ndr_interface_table *iface = NULL;
-					iface = ndr_table_by_syntax(&if_list->iface->syntax_id);
-					if (iface != NULL) {
-						status = dcerpc_binding_vector_add_port(iface,
-											bvec,
-											addr,
-											port);
-						if (!NT_STATUS_IS_OK(status)) {
-							close(fd);
-							goto done;
-						}
-					}
-				}
-			}
 		}
 	} else {
 		const char *sock_addr;
@@ -153,25 +112,6 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(struct dcesrv_endpoint *e,
 			listen_fd[*listen_fd_size].fd = fd;
 			listen_fd[*listen_fd_size].fd_data = e;
 			(*listen_fd_size)++;
-
-			if (bvec != NULL) {
-				struct dcesrv_if_list *if_list = NULL;
-
-				for (if_list = e->interface_list; if_list; if_list = if_list->next) {
-					const struct ndr_interface_table *iface = NULL;
-					iface = ndr_table_by_syntax(&if_list->iface->syntax_id);
-					if (iface != NULL) {
-						status = dcerpc_binding_vector_add_port(iface,
-											bvec,
-											sock_tok,
-											port);
-						if (!NT_STATUS_IS_OK(status)) {
-							close(fd);
-							goto done;
-						}
-					}
-				}
-			}
 		}
 	}
 
@@ -196,13 +136,11 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 					   struct messaging_context *msg_ctx,
 					   struct dcesrv_context *dce_ctx,
 					   struct dcesrv_endpoint *e,
-					   struct dcerpc_binding_vector *bvec,
 					   dcerpc_ncacn_termination_fn t_fn,
 					   void *t_data)
 {
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
-	int rc;
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -223,10 +161,6 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 		for (i = 0; i < num_ifs; i++) {
 			const struct sockaddr_storage *ifss =
 					iface_n_sockaddr_storage(i);
-			struct tsocket_address *bind_addr;
-			const char *addr;
-			const char *endpoint;
-			uint16_t port = 0;
 
 			status = dcesrv_setup_ncacn_ip_tcp_socket(ev_ctx,
 								  msg_ctx,
@@ -237,46 +171,6 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 								  t_data);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
-			}
-
-			if (bvec != NULL) {
-				struct dcesrv_if_list *if_list = NULL;
-
-				rc = tsocket_address_bsd_from_sockaddr(tmp_ctx,
-								       (const struct sockaddr*)ifss,
-								       sizeof(struct sockaddr_storage),
-								       &bind_addr);
-				if (rc < 0) {
-					status = NT_STATUS_NO_MEMORY;
-					goto done;
-				}
-
-				addr = tsocket_address_inet_addr_string(bind_addr,
-									tmp_ctx);
-				if (addr == NULL) {
-					status = NT_STATUS_NO_MEMORY;
-					goto done;
-				}
-
-				endpoint = dcerpc_binding_get_string_option(e->ep_description,
-									    "endpoint");
-				if (endpoint != NULL) {
-					port = atoi(endpoint);
-				}
-
-				for (if_list = e->interface_list; if_list; if_list = if_list->next) {
-					const struct ndr_interface_table *iface = NULL;
-					iface = ndr_table_by_syntax(&if_list->iface->syntax_id);
-					if (iface != NULL) {
-						status = dcerpc_binding_vector_add_port(iface,
-											bvec,
-											addr,
-											port);
-						if (!NT_STATUS_IS_OK(status)) {
-							goto done;
-						}
-					}
-				}
 			}
 		}
 	} else {
@@ -311,32 +205,6 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 								  t_data);
 			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
-			}
-
-			if (bvec != NULL) {
-				struct dcesrv_if_list *if_list = NULL;
-				const char *endpoint;
-				uint16_t port = 0;
-
-				endpoint = dcerpc_binding_get_string_option(e->ep_description,
-									    "endpoint");
-				if (endpoint != NULL) {
-					port = atoi(endpoint);
-				}
-
-				for (if_list = e->interface_list; if_list; if_list = if_list->next) {
-					const struct ndr_interface_table *iface = NULL;
-					iface = ndr_table_by_syntax(&if_list->iface->syntax_id);
-					if (iface != NULL) {
-						status = dcerpc_binding_vector_add_port(iface,
-											bvec,
-											sock_tok,
-											port);
-						if (!NT_STATUS_IS_OK(status)) {
-							goto done;
-						}
-					}
-				}
 			}
 		}
 	}

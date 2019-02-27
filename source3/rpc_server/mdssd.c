@@ -527,23 +527,11 @@ static NTSTATUS mdssd_create_sockets(struct tevent_context *ev_ctx,
 				     struct pf_listen_fd *listen_fd,
 				     int *listen_fd_size)
 {
-	struct dcerpc_binding_vector *v, *v_orig;
-	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 	int fd = -1;
 	int rc;
 	uint32_t i;
 	struct dcesrv_endpoint *e = NULL;
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dcerpc_binding_vector_new(tmp_ctx, &v_orig);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
 
 	DBG_INFO("Initializing DCE/RPC connection endpoints\n");
 
@@ -552,7 +540,6 @@ static NTSTATUS mdssd_create_sockets(struct tevent_context *ev_ctx,
 							msg_ctx,
 							dce_ctx,
 							e,
-							v_orig,
 							listen_fd,
 							listen_fd_size);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -578,25 +565,20 @@ static NTSTATUS mdssd_create_sockets(struct tevent_context *ev_ctx,
 		}
 	}
 
-	/* mdssvc */
-	v = dcerpc_binding_vector_dup(tmp_ctx, v_orig);
-	if (v == NULL) {
-		goto done;
-	}
-
-	status = dcerpc_binding_vector_replace_iface(&ndr_table_mdssvc, v);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	status = dcerpc_binding_vector_add_np_default(&ndr_table_mdssvc, v);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	status = dcerpc_binding_vector_add_unix(&ndr_table_mdssvc, v, "mdssvc");
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+	for (e = dce_ctx->endpoint_list; e; e = e->next) {
+		struct dcesrv_if_list *ifl = NULL;
+		for (ifl = e->interface_list; ifl; ifl = ifl->next) {
+			status = rpc_ep_register(ev_ctx,
+						 msg_ctx,
+						 dce_ctx,
+						 ifl->iface);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_ERR("Failed to register interface in "
+					"endpoint mapper: %s",
+					nt_errstr(status));
+				goto done;
+			}
+		}
 	}
 
 	status = NT_STATUS_OK;
@@ -604,7 +586,6 @@ done:
 	if (fd != -1) {
 		close(fd);
 	}
-	talloc_free(tmp_ctx);
 	return status;
 }
 

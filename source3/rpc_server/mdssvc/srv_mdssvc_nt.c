@@ -42,7 +42,6 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 			     struct messaging_context *msg_ctx)
 {
 	const struct ndr_interface_table *t = &ndr_table_mdssvc;
-	const char *pipe_name = "mdssvc";
 	NTSTATUS status;
 	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
 	enum rpc_daemon_type_e mdssvc_type = rpc_mdssd_daemon();
@@ -65,15 +64,6 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register 'mdssvc' endpoint "
 			"server: %s\n", nt_errstr(status));
-		return false;
-	}
-
-	if (external) {
-		return true;
-	}
-
-	status = rpc_setup_embedded(ev_ctx, msg_ctx, t, pipe_name);
-	if (!NT_STATUS_IS_OK(status)) {
 		return false;
 	}
 

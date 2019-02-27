@@ -574,26 +574,12 @@ static NTSTATUS spoolssd_create_sockets(struct tevent_context *ev_ctx,
 		struct pf_listen_fd *listen_fd,
 		int *listen_fd_size)
 {
-	struct dcerpc_binding_vector *v = NULL;
-	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
 	int fd = -1;
 	int rc;
 	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
 	uint32_t i;
 	struct dcesrv_endpoint *e = NULL;
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = dcerpc_binding_vector_new(tmp_ctx, &v);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("Failed to create binding vector (%s)\n",
-			nt_errstr(status));
-		goto done;
-	}
 
 	DBG_INFO("Initializing DCE/RPC connection endpoints\n");
 
@@ -602,7 +588,6 @@ static NTSTATUS spoolssd_create_sockets(struct tevent_context *ev_ctx,
 							msg_ctx,
 							dce_ctx,
 							e,
-							v,
 							listen_fd,
 							listen_fd_size);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -630,18 +615,20 @@ static NTSTATUS spoolssd_create_sockets(struct tevent_context *ev_ctx,
 
 	if (epm_mode != RPC_SERVICE_MODE_DISABLED &&
 	    (lp_parm_bool(-1, "rpc_server", "register_embedded_np", false))) {
-		status = dcerpc_binding_vector_add_np_default(&ndr_table_spoolss, v);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Failed to add np to binding vector (%s)\n",
-				nt_errstr(status));
-			goto done;
-		}
-
-		status = rpc_ep_register(ev_ctx, msg_ctx, &ndr_table_spoolss, v);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Failed to register spoolss endpoint! (%s)\n",
-				nt_errstr(status));
-			goto done;
+		for (e = dce_ctx->endpoint_list; e; e = e->next) {
+			struct dcesrv_if_list *ifl = NULL;
+			for (ifl = e->interface_list; ifl; ifl = ifl->next) {
+				status = rpc_ep_register(ev_ctx,
+							 msg_ctx,
+							 dce_ctx,
+							 ifl->iface);
+				if (!NT_STATUS_IS_OK(status)) {
+					DBG_ERR("Failed to register interface"
+						" in endpoint mapper: %s\n",
+						nt_errstr(status));
+					goto done;
+				}
+			}
 		}
 	}
 
@@ -651,7 +638,6 @@ done:
 		close(fd);
 	}
 
-	talloc_free(tmp_ctx);
 	return status;
 }
 

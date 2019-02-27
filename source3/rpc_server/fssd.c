@@ -214,7 +214,6 @@ void start_fssd(struct tevent_context *ev_ctx,
 						       msg_ctx,
 						       dce_ctx,
 						       e,
-						       NULL, /* binding vector */
 						       NULL, /* termination function */
 						       NULL); /* termination data */
 		if (!NT_STATUS_IS_OK(status)) {

@@ -22,7 +22,8 @@
 #ifndef _RPC_EP_REGISTER_H
 #define _RPC_EP_REGISTER_H
 
-struct dcerpc_binding_vector;
+struct dcesrv_context;
+struct dcesrv_interface;
 
 /**
  * @brief Register an endpoint at the endpoint mapper.
@@ -42,8 +43,8 @@ struct dcerpc_binding_vector;
  */
 NTSTATUS rpc_ep_register(struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
-			 const struct ndr_interface_table *iface,
-			 const struct dcerpc_binding_vector *v);
+			 struct dcesrv_context *dce_ctx,
+			 const struct dcesrv_interface *iface);
 
 #endif /* _RPC_EP_REGISTER_H */
 

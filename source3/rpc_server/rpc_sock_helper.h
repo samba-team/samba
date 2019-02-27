@@ -28,7 +28,6 @@
 struct pf_listen_fd;
 
 NTSTATUS dcesrv_create_ncacn_ip_tcp_sockets(struct dcesrv_endpoint *e,
-					    struct dcerpc_binding_vector *bvec,
 					    struct pf_listen_fd *listen_fd,
 					    int *listen_fd_size);
 
@@ -36,7 +35,6 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 					   struct messaging_context *msg_ctx,
 					   struct dcesrv_context *dce_ctx,
 					   struct dcesrv_endpoint *e,
-					   struct dcerpc_binding_vector *bvec,
 					   dcerpc_ncacn_termination_fn t_fn,
 					   void *t_data);
 

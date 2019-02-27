@@ -225,7 +225,6 @@ void start_epmd(struct tevent_context *ev_ctx,
 						       msg_ctx,
 						       dce_ctx,
 						       e,
-						       NULL, /* binding vector */
 						       term_fn,
 						       NULL); /* termination_data */
 		if (!NT_STATUS_IS_OK(status)) {

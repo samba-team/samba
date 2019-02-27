@@ -25,315 +25,16 @@
 #include "auth.h"
 #include "rpc_server/rpc_ncacn_np.h"
 #include "../lib/tsocket/tsocket.h"
+
+#include "librpc/rpc/dcesrv_core.h"
 #include "rpc_server/rpc_config.h"
 
 #define EPM_MAX_ANNOTATION_SIZE 64
 
-struct dcerpc_binding_vector {
-	struct dcerpc_binding **bindings;
-	uint32_t count;
-	uint32_t allocated;
-};
-
-static bool binding_vector_realloc(struct dcerpc_binding_vector *bvec)
-{
-	if (bvec->count >= bvec->allocated) {
-		struct dcerpc_binding **tmp;
-
-		tmp = talloc_realloc(bvec,
-				     bvec->bindings,
-				     struct dcerpc_binding *,
-				     bvec->allocated * 2);
-		if (tmp == NULL) {
-			return false;
-		}
-		bvec->bindings = tmp;
-		bvec->allocated = bvec->allocated * 2;
-	}
-
-	return true;
-}
-
-NTSTATUS dcerpc_binding_vector_new(TALLOC_CTX *mem_ctx,
-				   struct dcerpc_binding_vector **pbvec)
-{
-	struct dcerpc_binding_vector *bvec;
-	NTSTATUS status;
-	TALLOC_CTX *tmp_ctx;
-
-	tmp_ctx = talloc_stackframe();
-	if (tmp_ctx == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	bvec = talloc_zero(tmp_ctx, struct dcerpc_binding_vector);
-	if (bvec == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	bvec->bindings = talloc_zero_array(bvec,
-					   struct dcerpc_binding *,
-					   4);
-	if (bvec->bindings == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-
-	bvec->allocated = 4;
-	bvec->count = 0;
-
-	*pbvec = talloc_move(mem_ctx, &bvec);
-
-	status = NT_STATUS_OK;
-done:
-	talloc_free(tmp_ctx);
-
-	return status;
-}
-
-NTSTATUS dcerpc_binding_vector_add_np_default(const struct ndr_interface_table *iface,
-					      struct dcerpc_binding_vector *bvec)
-{
-	uint32_t ep_count = iface->endpoints->count;
-	uint32_t i;
-	NTSTATUS status;
-	bool ok;
-
-	for (i = 0; i < ep_count; i++) {
-		struct dcerpc_binding *b;
-		enum dcerpc_transport_t transport;
-		char *unc = NULL;
-
-		status = dcerpc_parse_binding(bvec->bindings,
-					      iface->endpoints->names[i],
-					      &b);
-		if (!NT_STATUS_IS_OK(status)) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		/* Only add the named pipes defined in the iface endpoints */
-		transport = dcerpc_binding_get_transport(b);
-		if (transport != NCACN_NP) {
-			talloc_free(b);
-			continue;
-		}
-
-		status = dcerpc_binding_set_abstract_syntax(b, &iface->syntax_id);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(b);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		unc = talloc_asprintf(b, "\\\\%s", lp_netbios_name());
-		if (unc == NULL) {
-			talloc_free(b);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		status = dcerpc_binding_set_string_option(b, "host", unc);
-		TALLOC_FREE(unc);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(b);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		ok = binding_vector_realloc(bvec);
-		if (!ok) {
-			talloc_free(b);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		bvec->bindings[bvec->count] = b;
-		bvec->count++;
-	}
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS dcerpc_binding_vector_add_port(const struct ndr_interface_table *iface,
-					struct dcerpc_binding_vector *bvec,
-					const char *host,
-					uint16_t _port)
-{
-	uint32_t ep_count = iface->endpoints->count;
-	uint32_t i;
-	NTSTATUS status;
-	bool ok;
-	char port[6];
-
-	snprintf(port, sizeof(port), "%u", _port);
-
-	for (i = 0; i < ep_count; i++) {
-		struct dcerpc_binding *b;
-		enum dcerpc_transport_t transport;
-
-		status = dcerpc_parse_binding(bvec->bindings,
-					      iface->endpoints->names[i],
-					      &b);
-		if (!NT_STATUS_IS_OK(status)) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		transport = dcerpc_binding_get_transport(b);
-		if (transport != NCACN_IP_TCP) {
-			talloc_free(b);
-			continue;
-		}
-
-		status = dcerpc_binding_set_abstract_syntax(b, &iface->syntax_id);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(b);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		status = dcerpc_binding_set_string_option(b, "host", host);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(b);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		status = dcerpc_binding_set_string_option(b, "endpoint", port);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(b);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		ok = binding_vector_realloc(bvec);
-		if (!ok) {
-			talloc_free(b);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		bvec->bindings[bvec->count] = b;
-		bvec->count++;
-
-		break;
-	}
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS dcerpc_binding_vector_add_unix(const struct ndr_interface_table *iface,
-					struct dcerpc_binding_vector *bvec,
-					const char *name)
-{
-	uint32_t ep_count = iface->endpoints->count;
-	uint32_t i;
-	NTSTATUS status;
-	bool ok;
-
-	for (i = 0; i < ep_count; i++) {
-		struct dcerpc_binding *b;
-		enum dcerpc_transport_t transport;
-		char *endpoint = NULL;
-
-		status = dcerpc_parse_binding(bvec->bindings,
-					      iface->endpoints->names[i],
-					      &b);
-		if (!NT_STATUS_IS_OK(status)) {
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		transport = dcerpc_binding_get_transport(b);
-		if (transport != NCALRPC) {
-			talloc_free(b);
-			continue;
-		}
-
-		status = dcerpc_binding_set_abstract_syntax(b, &iface->syntax_id);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(b);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		endpoint = talloc_asprintf(b,
-					   "%s/%s",
-					   lp_ncalrpc_dir(),
-					   name);
-		if (endpoint == NULL) {
-			talloc_free(b);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		status = dcerpc_binding_set_string_option(b, "endpoint", endpoint);
-		TALLOC_FREE(endpoint);
-		if (!NT_STATUS_IS_OK(status)) {
-			talloc_free(b);
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-
-		ok = binding_vector_realloc(bvec);
-		if (!ok) {
-			talloc_free(b);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		bvec->bindings[bvec->count] = b;
-		bvec->count++;
-
-		break;
-	}
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS dcerpc_binding_vector_replace_iface(const struct ndr_interface_table *iface,
-					     struct dcerpc_binding_vector *v)
-{
-	uint32_t i;
-
-	for (i = 0; i < v->count; i++) {
-		struct dcerpc_binding *b = v->bindings[i];
-		NTSTATUS status;
-
-		status = dcerpc_binding_set_abstract_syntax(b,
-							    &iface->syntax_id);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
-	}
-
-	return NT_STATUS_OK;
-}
-
-struct dcerpc_binding_vector *dcerpc_binding_vector_dup(TALLOC_CTX *mem_ctx,
-							const struct dcerpc_binding_vector *bvec)
-{
-	struct dcerpc_binding_vector *v;
-	uint32_t i;
-
-	v = talloc(mem_ctx, struct dcerpc_binding_vector);
-	if (v == NULL) {
-		return NULL;
-	}
-
-	v->bindings = talloc_array(v, struct dcerpc_binding *, bvec->allocated);
-	if (v->bindings == NULL) {
-		talloc_free(v);
-		return NULL;
-	}
-	v->allocated = bvec->allocated;
-
-	for (i = 0; i < bvec->count; i++) {
-		struct dcerpc_binding *b;
-
-		b = dcerpc_binding_dup(v->bindings, bvec->bindings[i]);
-		if (b == NULL) {
-			talloc_free(v);
-			return NULL;
-		}
-		v->bindings[i] = b;
-	}
-	v->count = bvec->count;
-
-	return v;
-}
-
 static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 			    struct messaging_context *msg_ctx,
-			    const struct ndr_interface_table *iface,
-			    const struct dcerpc_binding_vector *bind_vec,
+			    struct dcesrv_context *dce_ctx,
+			    const struct dcesrv_interface *iface,
 			    const struct GUID *object_guid,
 			    const char *annotation,
 			    uint32_t replace,
@@ -345,17 +46,40 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 	struct pipe_auth_data *auth;
 	const char *ncalrpc_sock;
 	enum rpc_service_mode_e epmd_mode;
-	struct epm_entry_t *entries;
-	uint32_t num_ents, i;
+	struct epm_entry_t *entries = NULL;
+	uint32_t i = 0;
 	TALLOC_CTX *tmp_ctx;
 	uint32_t result = EPMAPPER_STATUS_OK;
 	NTSTATUS status;
+	struct dcesrv_endpoint *ep;
+	bool found = false;
 
 	if (iface == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (bind_vec == NULL || bind_vec->count == 0) {
+	if (dce_ctx == NULL || iface == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Check if interface is registered */
+	for (ep = dce_ctx->endpoint_list; ep; ep = ep->next) {
+		struct dcesrv_if_list *ifl;
+		for (ifl = ep->interface_list; ifl; ifl = ifl->next) {
+			if (ndr_syntax_id_equal(&ifl->iface->syntax_id,
+						&iface->syntax_id)) {
+				found = true;
+				break;
+			}
+		}
+		if (found) {
+			break;
+		}
+	}
+	if (!found) {
+		DBG_ERR("Failed to register interface '%s' in the endpoint "
+			"mapper as it is not registered in any endpoint\n",
+			iface->name);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -428,14 +152,27 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	num_ents = bind_vec->count;
-	entries = talloc_array(tmp_ctx, struct epm_entry_t, num_ents);
-
-	for (i = 0; i < num_ents; i++) {
+	for (i = 0, ep = dce_ctx->endpoint_list; ep; i++, ep = ep->next) {
 		struct dcerpc_binding *map_binding;
 		struct epm_twr_t *map_tower;
+		struct dcesrv_if_list *ifl;
 
-		map_binding = dcerpc_binding_dup(entries, bind_vec->bindings[i]);
+		for (ifl = ep->interface_list; ifl; ifl = ifl->next) {
+			if (!ndr_syntax_id_equal(&ifl->iface->syntax_id,
+						 &iface->syntax_id)) {
+				continue;
+			}
+		}
+
+		/* The interface is registered in this endpoint, add it */
+		entries = talloc_realloc(tmp_ctx, entries, struct epm_entry_t,
+					 i + 1);
+		if (entries == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		map_binding = dcerpc_binding_dup(entries, ep->ep_description);
 		if (map_binding == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto done;
@@ -485,13 +222,13 @@ static NTSTATUS ep_register(TALLOC_CTX *mem_ctx,
 	if (unregister) {
 		status = dcerpc_epm_Delete(h,
 					   tmp_ctx,
-					   num_ents,
+					   i,
 					   entries,
 					   &result);
 	} else {
 		status = dcerpc_epm_Insert(h,
 					   tmp_ctx,
-					   num_ents,
+					   i,
 					   entries,
 					   replace,
 					   &result);
@@ -521,16 +258,16 @@ done:
 
 NTSTATUS dcerpc_ep_register(TALLOC_CTX *mem_ctx,
 			    struct messaging_context *msg_ctx,
-			    const struct ndr_interface_table *iface,
-			    const struct dcerpc_binding_vector *bind_vec,
+			    struct dcesrv_context *dce_ctx,
+			    const struct dcesrv_interface *iface,
 			    const struct GUID *object_guid,
 			    const char *annotation,
 			    struct dcerpc_binding_handle **ph)
 {
 	return ep_register(mem_ctx,
 			   msg_ctx,
+			   dce_ctx,
 			   iface,
-			   bind_vec,
 			   object_guid,
 			   annotation,
 			   1,
@@ -540,16 +277,16 @@ NTSTATUS dcerpc_ep_register(TALLOC_CTX *mem_ctx,
 
 NTSTATUS dcerpc_ep_register_noreplace(TALLOC_CTX *mem_ctx,
 				      struct messaging_context *msg_ctx,
-				      const struct ndr_interface_table *iface,
-				      const struct dcerpc_binding_vector *bind_vec,
+				      struct dcesrv_context *dce_ctx,
+				      const struct dcesrv_interface *iface,
 				      const struct GUID *object_guid,
 				      const char *annotation,
 				      struct dcerpc_binding_handle **ph)
 {
 	return ep_register(mem_ctx,
 			   msg_ctx,
+			   dce_ctx,
 			   iface,
-			   bind_vec,
 			   object_guid,
 			   annotation,
 			   0,
@@ -558,14 +295,14 @@ NTSTATUS dcerpc_ep_register_noreplace(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS dcerpc_ep_unregister(struct messaging_context *msg_ctx,
-			      const struct ndr_interface_table *iface,
-			      const struct dcerpc_binding_vector *bind_vec,
+			      struct dcesrv_context *dce_ctx,
+			      const struct dcesrv_interface *iface,
 			      const struct GUID *object_guid)
 {
 	return ep_register(NULL,
 			   msg_ctx,
+			   dce_ctx,
 			   iface,
-			   bind_vec,
 			   object_guid,
 			   NULL,
 			   0,

@@ -25,6 +25,7 @@
 #include "../librpc/gen_ndr/ndr_epmapper_c.h"
 
 #include "librpc/rpc/dcerpc_ep.h"
+#include "librpc/rpc/dcesrv_core.h"
 #include "rpc_server/rpc_ep_register.h"
 
 #undef DBGC_CLASS
@@ -34,8 +35,8 @@ static void rpc_ep_register_loop(struct tevent_req *subreq);
 static NTSTATUS rpc_ep_try_register(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev_ctx,
 				    struct messaging_context *msg_ctx,
-				    const struct ndr_interface_table *iface,
-				    const struct dcerpc_binding_vector *v,
+				    struct dcesrv_context *dce_ctx,
+				    const struct dcesrv_interface *iface,
 				    struct dcerpc_binding_handle **pbh);
 
 struct rpc_ep_register_state {
@@ -43,22 +44,24 @@ struct rpc_ep_register_state {
 
 	struct tevent_context *ev_ctx;
 	struct messaging_context *msg_ctx;
+	struct dcesrv_context *dce_ctx;
 
-	const struct ndr_interface_table *iface;
-	const struct dcerpc_binding_vector *vector;
+	const struct dcesrv_interface *iface;
 
 	uint32_t wait_time;
 };
 
 NTSTATUS rpc_ep_register(struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
-			 const struct ndr_interface_table *iface,
-			 const struct dcerpc_binding_vector *v)
+			 struct dcesrv_context *dce_ctx,
+			 const struct dcesrv_interface *iface)
 {
 	struct rpc_ep_register_state *state;
 	struct tevent_req *req;
 
-	state = talloc(ev_ctx, struct rpc_ep_register_state);
+	/* Allocate under iface to stop the loop if the interface is
+	 * removed from server */
+	state = talloc_zero(iface, struct rpc_ep_register_state);
 	if (state == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -66,12 +69,8 @@ NTSTATUS rpc_ep_register(struct tevent_context *ev_ctx,
 	state->wait_time = 1;
 	state->ev_ctx = ev_ctx;
 	state->msg_ctx = msg_ctx;
+	state->dce_ctx = dce_ctx;
 	state->iface = iface;
-	state->vector = dcerpc_binding_vector_dup(state, v);
-	if (state->vector == NULL) {
-		talloc_free(state);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	req = tevent_wakeup_send(state,
 				 state->ev_ctx,
@@ -106,8 +105,8 @@ static void rpc_ep_register_loop(struct tevent_req *subreq)
 	status = rpc_ep_try_register(state,
 				     state->ev_ctx,
 				     state->msg_ctx,
+				     state->dce_ctx,
 				     state->iface,
-				     state->vector,
 				     &state->h);
 	if (NT_STATUS_IS_OK(status)) {
 		/* endpoint registered, monitor the connnection. */
@@ -145,16 +144,16 @@ static void rpc_ep_register_loop(struct tevent_req *subreq)
 static NTSTATUS rpc_ep_try_register(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev_ctx,
 				    struct messaging_context *msg_ctx,
-				    const struct ndr_interface_table *iface,
-				    const struct dcerpc_binding_vector *v,
+				    struct dcesrv_context *dce_ctx,
+				    const struct dcesrv_interface *iface,
 				    struct dcerpc_binding_handle **pbh)
 {
 	NTSTATUS status;
 
 	status = dcerpc_ep_register(mem_ctx,
 				    msg_ctx,
+				    dce_ctx,
 				    iface,
-				    v,
 				    &iface->syntax_id.uuid,
 				    iface->name,
 				    pbh);
