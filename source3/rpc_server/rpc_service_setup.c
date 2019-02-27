@@ -257,6 +257,41 @@ NTSTATUS dcesrv_setup_endpoint_sockets(struct tevent_context *ev_ctx,
 	return status;
 }
 
+static NTSTATUS dcesrv_init_endpoints(struct tevent_context *ev_ctx,
+				      struct messaging_context *msg_ctx,
+				      struct dcesrv_context *dce_ctx)
+{
+	struct dcesrv_endpoint *e = NULL;
+	NTSTATUS status;
+
+	for (e = dce_ctx->endpoint_list; e; e = e->next) {
+		enum dcerpc_transport_t transport =
+			dcerpc_binding_get_transport(e->ep_description);
+
+		if (transport == NCACN_HTTP) {
+			/*
+			 * We don't support ncacn_http yet
+			 */
+			continue;
+		}
+
+		status = dcesrv_setup_endpoint_sockets(ev_ctx,
+						       msg_ctx,
+						       dce_ctx,
+						       e,
+						       NULL,
+						       NULL,
+						       NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		/* TODO If NCACN_NP register in endpoint mapper */
+	}
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS rpc_setup_winreg(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx)
 {
@@ -899,6 +934,15 @@ NTSTATUS dcesrv_init(TALLOC_CTX *mem_ctx,
 	status = dcesrv_init_registered_ep_servers(dce_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to init DCE/RPC endpoint servers: %s\n",
+			nt_errstr(status));
+		goto done;
+	}
+
+	DBG_INFO("Initializing DCE/RPC connection endpoints\n");
+
+	status = dcesrv_init_endpoints(ev_ctx, msg_ctx, dce_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to init DCE/RPC endpoints: %s\n",
 			nt_errstr(status));
 		goto done;
 	}
