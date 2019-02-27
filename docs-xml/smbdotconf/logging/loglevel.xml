@@ -6,7 +6,7 @@
 <synonym>debuglevel</synonym>
 <description>
     <para>
-    The value of the parameter (a astring) allows the debug level (logging level) to be specified in the 
+    The value of the parameter (a string) allows the debug level (logging level) to be specified in the
     <filename moreinfo="none">smb.conf</filename> file. 
     </para>
 
