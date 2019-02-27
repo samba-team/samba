@@ -32,6 +32,7 @@
 #include "librpc/gen_ndr/ndr_winreg_scompat.h"
 #include "librpc/gen_ndr/ndr_spoolss_scompat.h"
 #include "rpc_server/rpc_server.h"
+#include "rpc_server/rpc_service_setup.h"
 #include "rpc_server/rpc_ep_register.h"
 #include "rpc_server/rpc_config.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
@@ -569,6 +570,7 @@ static char *get_bq_logfile(void)
 
 static NTSTATUS spoolssd_create_sockets(struct tevent_context *ev_ctx,
 		struct messaging_context *msg_ctx,
+		struct dcesrv_context *dce_ctx,
 		struct pf_listen_fd *listen_fd,
 		int *listen_fd_size)
 {
@@ -578,6 +580,8 @@ static NTSTATUS spoolssd_create_sockets(struct tevent_context *ev_ctx,
 	int fd = -1;
 	int rc;
 	enum rpc_service_mode_e epm_mode = rpc_epmapper_mode();
+	uint32_t i;
+	struct dcesrv_endpoint *e = NULL;
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -589,6 +593,39 @@ static NTSTATUS spoolssd_create_sockets(struct tevent_context *ev_ctx,
 		DBG_ERR("Failed to create binding vector (%s)\n",
 			nt_errstr(status));
 		goto done;
+	}
+
+	DBG_INFO("Initializing DCE/RPC connection endpoints\n");
+
+	for (e = dce_ctx->endpoint_list; e; e = e->next) {
+		status = dcesrv_create_endpoint_sockets(ev_ctx,
+							msg_ctx,
+							dce_ctx,
+							e,
+							v,
+							listen_fd,
+							listen_fd_size);
+		if (!NT_STATUS_IS_OK(status)) {
+			char *ep_string = dcerpc_binding_string(
+					dce_ctx, e->ep_description);
+			DBG_ERR("Failed to create endpoint '%s': %s\n",
+				ep_string, nt_errstr(status));
+			TALLOC_FREE(ep_string);
+			goto done;
+		}
+	}
+
+	for (i = 0; i < *listen_fd_size; i++) {
+		rc = listen(listen_fd[i].fd, pf_spoolss_cfg.max_allowed_clients);
+		if (rc == -1) {
+			char *ep_string = dcerpc_binding_string(
+					dce_ctx, e->ep_description);
+			DBG_ERR("Failed to listen on endpoint '%s': %s\n",
+				ep_string, strerror(errno));
+			status = map_nt_error_from_unix(errno);
+			TALLOC_FREE(ep_string);
+			goto done;
+		}
 	}
 
 	status = dcesrv_create_ncacn_np_socket(SPOOLSS_PIPE_NAME, &fd);
@@ -752,7 +789,10 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 
 	/* the listening fd must be created before the children are actually
 	 * forked out. */
-	status = spoolssd_create_sockets(ev_ctx, msg_ctx, listen_fds,
+	status = spoolssd_create_sockets(ev_ctx,
+					 msg_ctx,
+					 dce_ctx,
+					 listen_fds,
 					 &listen_fds_size);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to create sockets: %s\n",
