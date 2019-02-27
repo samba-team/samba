@@ -119,12 +119,6 @@ samba-ad-dc-ntvfs:
   tags:
     - docker
     - private
-  before_script:
-    - uname -a
-    - lsb_release -a
-    - mount
-    - df -h
-    - free -h
   only:
     variables:
       # These jobs are only run if the gitlab repo has private runners available.
