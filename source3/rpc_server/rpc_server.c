@@ -776,6 +776,9 @@ static void dcerpc_ncacn_packet_done(struct tevent_req *subreq);
 static void dcesrv_ncacn_np_accept_done(struct tevent_req *subreq);
 static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn);
 
+static void ncacn_terminate_connection(struct dcerpc_ncacn_conn *conn,
+				       const char *reason);
+
 void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
 			 struct dcesrv_context *dce_ctx,
@@ -795,7 +798,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	NTSTATUS status;
 	int rc;
 
-	DEBUG(10, ("dcerpc_ncacn_accept\n"));
+	DBG_DEBUG("dcerpc_ncacn_accept\n");
 
 	status = dcerpc_ncacn_conn_init(ev_ctx,
 					ev_ctx,
@@ -829,7 +832,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 
 		if (ncacn_conn->remote_client_name == NULL) {
 			DBG_ERR("Out of memory obtaining remote socket address as a string!\n");
-			talloc_free(ncacn_conn);
+			ncacn_terminate_connection(ncacn_conn, "No memory");
 			close(s);
 			return;
 		}
@@ -848,8 +851,8 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 							  ncacn_conn);
 		}
 		if (ncacn_conn->local_server_name == NULL) {
-			DEBUG(0, ("Out of memory obtaining local socket address as a string!\n"));
-			talloc_free(ncacn_conn);
+			DBG_ERR("No memory\n");
+			ncacn_terminate_connection(ncacn_conn, "No memory");
 			close(s);
 			return;
 		}
@@ -858,7 +861,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	rc = set_blocking(s, false);
 	if (rc < 0) {
 		DBG_WARNING("Failed to set dcerpc socket to non-blocking\n");
-		talloc_free(ncacn_conn);
+		ncacn_terminate_connection(ncacn_conn, strerror(errno));
 		close(s);
 		return;
 	}
@@ -870,7 +873,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 	rc = tstream_bsd_existing_socket(ncacn_conn, s, &ncacn_conn->tstream);
 	if (rc < 0) {
 		DBG_WARNING("Failed to create tstream socket for dcerpc\n");
-		talloc_free(ncacn_conn);
+		ncacn_terminate_connection(ncacn_conn, "No memory");
 		close(s);
 		return;
 	}
@@ -888,8 +891,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 							  device_state,
 							  allocation_size);
 		if (subreq == NULL) {
-			DBG_ERR("Failed to start async accept procedure\n");
-			talloc_free(ncacn_conn);
+			ncacn_terminate_connection(ncacn_conn, "No memory");
 			return;
 		}
 		tevent_req_set_callback(subreq, dcesrv_ncacn_np_accept_done,
@@ -924,7 +926,7 @@ static void dcesrv_ncacn_np_accept_done(struct tevent_req *subreq)
 	if (ret != 0) {
 		DBG_ERR("Failed to accept named pipe connection: %s\n",
 			strerror(error));
-		talloc_free(ncacn_conn);
+		ncacn_terminate_connection(ncacn_conn, strerror(errno));
 		return;
 	}
 
@@ -945,7 +947,8 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 			pipe_name = tsocket_address_string(ncacn_conn->remote_client_addr,
 							   ncacn_conn);
 			if (pipe_name == NULL) {
-				talloc_free(ncacn_conn);
+				DBG_ERR("No memory\n");
+				ncacn_terminate_connection(ncacn_conn, "No memory");
 				return;
 			}
 
@@ -963,8 +966,8 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 									    AS_SYSTEM_MAGIC_PATH_TOKEN,
 									    &ncacn_conn->remote_client_addr);
 					if (rc < 0) {
-						DEBUG(0, ("Out of memory building magic ncalrpc_as_system path!\n"));
-						talloc_free(ncacn_conn);
+						DBG_ERR("No memory\n");
+						ncacn_terminate_connection(ncacn_conn, "No memory");
 						return;
 					}
 
@@ -973,8 +976,8 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 						= tsocket_address_unix_path(ncacn_conn->remote_client_addr,
 									    ncacn_conn);
 					if (ncacn_conn->remote_client_name == NULL) {
-						DEBUG(0, ("Out of memory getting magic ncalrpc_as_system string!\n"));
-						talloc_free(ncacn_conn);
+						DBG_ERR("No memory\n");
+						ncacn_terminate_connection(ncacn_conn, "No memory");
 						return;
 					}
 				}
@@ -985,14 +988,16 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 			pipe_name = talloc_strdup(ncacn_conn,
 						  ncacn_conn->name);
 			if (pipe_name == NULL) {
-				talloc_free(ncacn_conn);
+				DBG_ERR("No memory\n");
+				ncacn_terminate_connection(ncacn_conn, "No memory");
 				return;
 			}
 			break;
 		default:
-			DEBUG(0, ("unknown dcerpc transport: %u!\n",
-				  ncacn_conn->transport));
-			talloc_free(ncacn_conn);
+			DBG_ERR("unknown dcerpc transport: %u!\n",
+				ncacn_conn->transport);
+			ncacn_terminate_connection(ncacn_conn,
+					"Unknown DCE/RPC transport");
 			return;
 	}
 
@@ -1002,10 +1007,10 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 		status = make_session_info_anonymous(ncacn_conn,
 						     &ncacn_conn->session_info);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(2, ("Failed to create "
-				  "make_session_info_anonymous - %s\n",
-				  nt_errstr(status)));
-			talloc_free(ncacn_conn);
+			DBG_ERR("Failed to create anonymous session info: "
+				"%s\n", nt_errstr(status));
+			ncacn_terminate_connection(ncacn_conn,
+				nt_errstr(status));
 			return;
 		}
 	}
@@ -1020,17 +1025,17 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 				      &ncacn_conn->p,
 				      &sys_errno);
 	if (rc < 0) {
-		DEBUG(2, ("Failed to create pipe struct - %s",
-			  strerror(sys_errno)));
-		talloc_free(ncacn_conn);
+		DBG_ERR("Failed to create pipe struct: %s",
+			strerror(sys_errno));
+		ncacn_terminate_connection(ncacn_conn, strerror(sys_errno));
 		return;
 	}
 
 	ncacn_conn->send_queue = tevent_queue_create(ncacn_conn,
 							"dcerpc send queue");
 	if (ncacn_conn->send_queue == NULL) {
-		DEBUG(0, ("Out of memory building dcerpc send queue!\n"));
-		talloc_free(ncacn_conn);
+		DBG_ERR("No memory\n");
+		ncacn_terminate_connection(ncacn_conn, "No memory");
 		return;
 	}
 
@@ -1038,14 +1043,14 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 					       ncacn_conn->ev_ctx,
 					       ncacn_conn->tstream);
 	if (subreq == NULL) {
-		DEBUG(2, ("Failed to send ncacn packet\n"));
-		talloc_free(ncacn_conn);
+		DBG_ERR("No memory\n");
+		ncacn_terminate_connection(ncacn_conn, "No memory");
 		return;
 	}
 
 	tevent_req_set_callback(subreq, dcerpc_ncacn_packet_process, ncacn_conn);
 
-	DEBUG(10, ("dcerpc_ncacn_accept done\n"));
+	DBG_DEBUG("dcerpc_ncacn_accept done\n");
 
 	return;
 }
@@ -1400,6 +1405,18 @@ NTSTATUS dcesrv_assoc_group_find(struct dcesrv_call_state *call)
 	}
 
 	return dcesrv_assoc_group_new(call, assoc_group_id);
+}
+
+static void ncacn_terminate_connection(struct dcerpc_ncacn_conn *conn,
+				       const char *reason)
+{
+       if (reason == NULL) {
+               reason = "Unknown reason";
+       }
+
+       DBG_NOTICE("Terminating connection - '%s'\n", reason);
+
+       talloc_free(conn);
 }
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
