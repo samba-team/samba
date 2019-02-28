@@ -1779,6 +1779,7 @@ union smb_open {
 			/* uint32_t blob_size; */
 
 			/* optional return values matching tagged values in the call */
+			uint32_t maximal_access_status;
 			uint32_t maximal_access;
 			uint8_t on_disk_id[32];
 			struct smb2_lease lease_response;
