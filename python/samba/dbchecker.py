@@ -1491,6 +1491,13 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         return error_count
 
+    def find_repl_attid(self, repl, attid):
+        for o in repl.ctr.array:
+            if o.attid == attid:
+                return o
+
+        return None
+
     def get_originating_time(self, val, attid):
         '''Read metadata properties and return the originating time for
            a given attributeId.
@@ -1499,11 +1506,9 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         '''
 
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, val)
-
-        for o in repl.ctr.array:
-            if o.attid == attid:
-                return o.originating_change_time
-
+        o = self.find_repl_attid(repl, attid)
+        if o is not None:
+            return o.originating_change_time
         return 0
 
     def process_metadata(self, dn, val):
