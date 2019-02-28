@@ -191,7 +191,8 @@ sub boilerplate_iface($)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static NTSTATUS $name\__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)");
+	$self->pidl_hdr("NTSTATUS $name\__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r);");
+	$self->pidl("NTSTATUS $name\__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_pull *pull, void **r)");
 	$self->pidl("{");
 	$self->indent();
 	$self->pidl("enum ndr_err_code ndr_err;");
@@ -223,7 +224,8 @@ sub boilerplate_iface($)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)");
+	$self->pidl_hdr("NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r);");
+	$self->pidl("NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)");
 	$self->pidl("{");
 	$self->indent();
 	$self->pidl("uint16_t opnum = dce_call->pkt.u.request.opnum;");
@@ -299,7 +301,8 @@ sub boilerplate_iface($)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static NTSTATUS $name\__op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)");
+	$self->pidl_hdr("NTSTATUS $name\__op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r);");
+	$self->pidl("NTSTATUS $name\__op_reply(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)");
 	$self->pidl("{");
 	$self->indent();
 	$self->pidl("uint16_t opnum = dce_call->pkt.u.request.opnum;");
@@ -325,7 +328,8 @@ sub boilerplate_iface($)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static NTSTATUS $name\__op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r)");
+	$self->pidl_hdr("NTSTATUS $name\__op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r);");
+	$self->pidl("NTSTATUS $name\__op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct ndr_push *push, const void *r)");
 	$self->pidl("{");
 	$self->indent();
 	$self->pidl("enum ndr_err_code ndr_err;");
