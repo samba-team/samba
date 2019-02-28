@@ -30,6 +30,8 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "libcli/resolve/resolve.h"
 #include "lib/param/param.h"
+#include "oplock_break_handler.h"
+#include "torture/smb2/block.h"
 
 #define BASEDIR "multichanneltestdir"
 
@@ -300,6 +302,101 @@ static void test_multichannel_free_channels(struct smb2_tree *tree2A,
 	TALLOC_FREE(tree2A);
 	TALLOC_FREE(tree2B);
 	TALLOC_FREE(tree2C);
+}
+
+/*
+ * We simulate blocking incoming oplock break requests by simply ignoring
+ * the incoming break requests.
+ */
+static bool test_set_ignore_break_handler(struct torture_context *tctx,
+					  struct smb2_transport *transport)
+{
+	transport->oplock.handler = torture_oplock_ignore_handler;
+	transport->lease.handler = torture_lease_ignore_handler;
+
+	return true;
+}
+
+static bool test_reset_break_handler(struct torture_context *tctx,
+				     struct smb2_transport *transport)
+{
+	transport->oplock.handler = torture_oplock_ack_handler;
+	transport->lease.handler = torture_lease_handler;
+
+	return true;
+}
+
+/*
+ * Use iptables to block channels
+ */
+static bool test_iptables_block_channel(struct torture_context *tctx,
+					struct smb2_transport *transport,
+					const char *name)
+{
+	uint16_t local_port;
+	bool ret;
+
+	local_port = torture_get_local_port_from_transport(transport);
+	torture_comment(tctx, "transport uses tcp port: %d\n", local_port);
+	ret = torture_block_tcp_transport_name(tctx, transport, name);
+	torture_assert(tctx, ret, "we could not block tcp transport");
+
+	return ret;
+}
+
+static bool test_iptables_unblock_channel(struct torture_context *tctx,
+					  struct smb2_transport *transport,
+					  const char *name)
+{
+	uint16_t local_port;
+	bool ret;
+
+	local_port = torture_get_local_port_from_transport(transport);
+	torture_comment(tctx, "transport uses tcp port: %d\n", local_port);
+	ret = torture_unblock_tcp_transport_name(tctx, transport, name);
+	torture_assert(tctx, ret, "we could not block tcp transport");
+
+	return ret;
+}
+
+#define test_block_channel(_tctx, _t) _test_block_channel(_tctx, _t, #_t)
+static bool _test_block_channel(struct torture_context *tctx,
+					  struct smb2_transport *transport,
+					  const char *name)
+{
+	bool use_iptables = torture_setting_bool(tctx,
+					"use_iptables", false);
+
+	if (use_iptables) {
+		return test_iptables_block_channel(tctx, transport, name);
+	} else {
+		return test_set_ignore_break_handler(tctx, transport);
+	}
+}
+
+#define test_unblock_channel(_tctx, _t) _test_unblock_channel(_tctx, _t, #_t)
+static bool _test_unblock_channel(struct torture_context *tctx,
+					  struct smb2_transport *transport,
+					  const char *name)
+{
+	bool use_iptables = torture_setting_bool(tctx,
+					"use_iptables", false);
+
+	if (use_iptables) {
+		return test_iptables_unblock_channel(tctx, transport, name);
+	} else {
+		return test_reset_break_handler(tctx, transport);
+	}
+}
+
+static void test_cleanup_blocked_channels(struct torture_context *tctx)
+{
+	bool use_iptables = torture_setting_bool(tctx,
+					"use_iptables", false);
+
+	if (use_iptables) {
+		torture_unblock_cleanup(tctx);
+	}
 }
 
 struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
