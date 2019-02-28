@@ -1192,10 +1192,11 @@ class VLVTests(TestsWithUserOU):
         self.assertEqual(results, expected_results)
 
 
+
 class PagedResultsTests(TestsWithUserOU):
 
     def paged_search(self, expr, cookie="", page_size=0, extra_ctrls=None,
-                     attrs=None, ou=None, subtree=False):
+                     attrs=None, ou=None, subtree=False, sort=True):
         ou = ou or self.ou
         if cookie:
             cookie = ":" + cookie
@@ -1206,7 +1207,7 @@ class PagedResultsTests(TestsWithUserOU):
         # sort control on 'cn' attribute
         if extra_ctrls is not None:
             controls += extra_ctrls
-        else:
+        elif sort:
             sort_ctrl = "server_sort:1:0:cn"
             controls.append(sort_ctrl)
 
@@ -1235,15 +1236,16 @@ class PagedResultsTests(TestsWithUserOU):
             cookie = spl[-1]
         return results, cookie
 
-    def test_paged_delete_during_search(self):
+    def test_paged_delete_during_search(self, sort=True):
         expr = "(objectClass=*)"
 
         # Start new search
         first_page_size = 3
-        results, cookie = self.paged_search(expr, page_size=first_page_size)
+        results, cookie = self.paged_search(expr, sort=sort,
+                                            page_size=first_page_size)
 
         # Run normal search to get expected results
-        unedited_results, _ = self.paged_search(expr,
+        unedited_results, _ = self.paged_search(expr, sort=sort,
                                                 page_size=len(self.users))
 
         # Get remaining users not returned by the search above
@@ -1255,11 +1257,14 @@ class PagedResultsTests(TestsWithUserOU):
         self.ldb.delete(del_user['dn'])
 
         # Run test
-        results, _ = self.paged_search(expr, cookie=cookie,
+        results, _ = self.paged_search(expr, cookie=cookie, sort=sort,
                                        page_size=len(self.users))
         expected_results = [r for r in unedited_results[first_page_size:]
                             if r != del_user['cn']]
         self.assertEqual(results, expected_results)
+
+    def test_paged_delete_during_search_unsorted(self):
+        self.test_paged_delete_during_search(sort=False)
 
     def test_paged_show_deleted(self):
         unique = time.strftime("%s", time.gmtime())[-5:]
@@ -1309,14 +1314,15 @@ class PagedResultsTests(TestsWithUserOU):
                            if "DEL:" in r}
         self.assertEqual(deleted_results, deleted_cns)
 
-    def test_paged_add_during_search(self):
+    def test_paged_add_during_search(self, sort=True):
         expr = "(objectClass=*)"
 
         # Start new search
         first_page_size = 3
-        results, cookie = self.paged_search(expr, page_size=first_page_size)
+        results, cookie = self.paged_search(expr, sort=sort,
+                                            page_size=first_page_size)
 
-        unedited_results, _ = self.paged_search(expr,
+        unedited_results, _ = self.paged_search(expr, sort=sort,
                                                 page_size=len(self.users)+1)
 
         # Get remaining users not returned by the search above
@@ -1330,7 +1336,7 @@ class PagedResultsTests(TestsWithUserOU):
         user['dn'] = "cn=%s,%s" % (user['cn'], self.ou)
         self.ldb.add(user)
 
-        results, _ = self.paged_search(expr, cookie=cookie,
+        results, _ = self.paged_search(expr, sort=sort, cookie=cookie,
                                        page_size=len(self.users)+1)
         expected_results = unwalked_users[:]
 
@@ -1339,14 +1345,24 @@ class PagedResultsTests(TestsWithUserOU):
 
         self.assertEqual(results, expected_results)
 
-    def test_paged_rename_during_search(self):
+    # On Windows, when server_sort ctrl is NOT provided in the initial search,
+    # adding a record during the search will cause the modified record to
+    # be returned in a future page if it belongs there in the ordering.
+    # When server_sort IS provided, the added record will not be returned.
+    # Samba implements the latter behaviour. This test confirms Samba's
+    # implementation and will fail on Windows.
+    def test_paged_add_during_search_unsorted(self):
+        self.test_paged_add_during_search(sort=False)
+
+    def test_paged_modify_during_search(self, sort=True):
         expr = "(objectClass=*)"
 
         # Start new search
         first_page_size = 3
-        results, cookie = self.paged_search(expr, page_size=first_page_size)
+        results, cookie = self.paged_search(expr, sort=sort,
+                                            page_size=first_page_size)
 
-        unedited_results, _ = self.paged_search(expr,
+        unedited_results, _ = self.paged_search(expr, sort=sort,
                                                 page_size=len(self.users)+1)
 
         # Modify user in the middle of the remaining sort order
@@ -1364,11 +1380,21 @@ class PagedResultsTests(TestsWithUserOU):
         new_dn = middle_user['dn'].replace(middle_cn, edit_cn)
         self.ldb.rename(middle_user['dn'], new_dn)
 
-        results, _ = self.paged_search(expr, cookie=cookie,
+        results, _ = self.paged_search(expr, cookie=cookie, sort=sort,
                                        page_size=len(self.users)+1)
         expected_results = unwalked_users[:]
         expected_results[middle_index] = edit_cn
         self.assertEqual(results, expected_results)
+
+    # On Windows, when server_sort ctrl is NOT provided in the initial search,
+    # modifying a record during the search will cause the modified record to
+    # be returned in its new place in a CN ordering.
+    # When server_sort IS provided, the record will be returned its old place
+    # in the control-specified ordering.
+    # Samba implements the latter behaviour. This test confirms Samba's
+    # implementation and will fail on Windows.
+    def test_paged_modify_during_search_unsorted(self):
+        self.test_paged_modify_during_search(sort=False)
 
     def test_paged_modify_object_scope(self):
         expr = "(objectClass=*)"
