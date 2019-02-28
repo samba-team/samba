@@ -20,16 +20,11 @@
 #ifndef _RPC_SERVER_SRV_PIPE_H_
 #define _RPC_SERVER_SRV_PIPE_H_
 
-struct ncacn_packet;
-struct pipes_struct;
 struct dcesrv_context;
 struct dcesrv_endpoint;
 
 /* The following definitions come from rpc_server/srv_pipe.c  */
 
-bool create_next_pdu(struct pipes_struct *p);
-bool api_pipe_bind_auth3(struct pipes_struct *p, struct ncacn_packet *pkt);
-bool setup_fault_pdu(struct pipes_struct *p, NTSTATUS status);
 NTSTATUS is_known_pipename(struct dcesrv_context *dce_ctx,
 			   const char *pipename,
 			   struct dcesrv_endpoint **ep);

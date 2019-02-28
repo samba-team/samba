@@ -112,7 +112,6 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 int s,
 			 dcerpc_ncacn_termination_fn termination_fn,
 			 void *termination_data);
-void dcerpc_ncacn_packet_process(struct tevent_req *subreq);
 
 NTSTATUS dcesrv_auth_gensec_prepare(TALLOC_CTX *mem_ctx,
 				    struct dcesrv_call_state *call,

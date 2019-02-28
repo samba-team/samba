@@ -17,10 +17,6 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVER_LOOP',
                     source='rpc_server.c',
                     deps='samba-util')
 
-bld.SAMBA3_SUBSYSTEM('RPC_CRYPTO',
-                     source='dcesrv_auth_generic.c',
-                     deps = 'KRB5_PAC')
-
 bld.SAMBA3_SUBSYSTEM('RPC_PIPE_REGISTER',
                     source='srv_pipe_register.c',
                     deps='samba-util')
@@ -36,7 +32,6 @@ bld.SAMBA3_SUBSYSTEM('RPC_SERVER',
                     RPC_CONFIG
                     RPC_NCACN_NP
                     RPC_SERVER_LOOP
-                    RPC_CRYPTO
                     NDR_NAMED_PIPE_AUTH
                     ''')
 
