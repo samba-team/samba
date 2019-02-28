@@ -23,12 +23,13 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "torture/torture.h"
-#include "torture/util.h"
 #include "torture/smb2/proto.h"
 #include "libcli/security/security.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "libcli/resolve/resolve.h"
+#include "lib/param/param.h"
 
 #define BASEDIR "multichanneltestdir"
 
@@ -154,6 +155,151 @@ static bool test_multichannel_interface_info(struct torture_context *tctx,
 	struct fsctl_net_iface_info info;
 
 	return test_ioctl_network_interface_info(tctx, tree, &info);
+}
+
+static struct smb2_tree *test_multichannel_create_channel(
+				struct torture_context *tctx,
+				const char *host,
+				const char *share,
+				struct cli_credentials *credentials,
+				struct smbcli_options *transport_options,
+				struct smb2_tree *parent_tree
+				)
+{
+	NTSTATUS status;
+	struct smb2_transport *transport;
+	struct smb2_session *session;
+	bool ret = true;
+	struct smb2_tree *tree;
+
+	status = smb2_connect(tctx,
+			host,
+			lpcfg_smb_ports(tctx->lp_ctx),
+			share,
+			lpcfg_resolve_context(tctx->lp_ctx),
+			credentials,
+			&tree,
+			tctx->ev,
+			transport_options,
+			lpcfg_socket_options(tctx->lp_ctx),
+			lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+			);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+			"smb2_connect failed");
+	transport = tree->session->transport;
+	transport->oplock.handler = torture_oplock_ack_handler;
+	transport->oplock.private_data = tree;
+	transport->lease.handler = torture_lease_handler;
+	transport->lease.private_data = tree;
+	torture_comment(tctx, "established transport [%p]\n", transport);
+
+	/*
+	 * If parent tree is set, bind the session to the parent transport
+	 */
+	if (parent_tree) {
+		session = smb2_session_channel(transport,
+				lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+				parent_tree, parent_tree->session);
+		torture_assert_goto(tctx, session != NULL, ret, done,
+				"smb2_session_channel failed");
+
+		tree->smbXcli = parent_tree->smbXcli;
+		tree->session = session;
+		status = smb2_session_setup_spnego(session,
+						credentials,
+						0 /* previous_session_id */);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		torture_comment(tctx, "bound new session to parent\n");
+	}
+	/*
+	 * We absolutely need to make sure to send something over this
+	 * connection to register the oplock break handler with the smb client
+	 * connection. If we do not send something (at least a keepalive), we
+	 * will *NEVER* receive anything over this transport.
+	 */
+	smb2_keepalive(transport);
+
+done:
+	if (ret) {
+		return tree;
+	} else {
+		return NULL;
+	}
+}
+
+bool test_multichannel_create_channels(
+				struct torture_context *tctx,
+				const char *host,
+				const char *share,
+				struct cli_credentials *credentials,
+				struct smbcli_options *transport_options,
+				struct smb2_tree **tree2A,
+				struct smb2_tree **tree2B,
+				struct smb2_tree **tree2C
+				)
+{
+	struct smb2_tree *tree;
+	struct smb2_transport *transport2A;
+	struct smb2_transport *transport2B;
+	struct smb2_transport *transport2C;
+	uint16_t local_port = 0;
+
+	transport_options->client_guid = GUID_random();
+
+	/* Session 2A */
+	torture_comment(tctx, "Setting up connection 2A\n");
+	tree = test_multichannel_create_channel(tctx, host, share,
+				credentials, transport_options, NULL);
+	if (!tree) {
+		goto done;
+	}
+	*tree2A = tree;
+	transport2A = tree->session->transport;
+	local_port = torture_get_local_port_from_transport(transport2A);
+	torture_comment(tctx, "transport2A uses tcp port: %d\n", local_port);
+
+	/* Session 2B */
+	if (tree2B) {
+		torture_comment(tctx, "Setting up connection 2B\n");
+		tree = test_multichannel_create_channel(tctx, host, share,
+				credentials, transport_options, *tree2A);
+		if (!tree) {
+			goto done;
+		}
+		*tree2B = tree;
+		transport2B = tree->session->transport;
+		local_port = torture_get_local_port_from_transport(transport2B);
+		torture_comment(tctx, "transport2B uses tcp port: %d\n",
+								local_port);
+	}
+
+	/* Session 2C */
+	if (tree2C) {
+		torture_comment(tctx, "Setting up connection 2C\n");
+		tree = test_multichannel_create_channel(tctx, host, share,
+				credentials, transport_options, *tree2A);
+		if (!tree) {
+			goto done;
+		}
+		*tree2C = tree;
+		transport2C = tree->session->transport;
+		local_port = torture_get_local_port_from_transport(transport2C);
+		torture_comment(tctx, "transport2C uses tcp port: %d\n",
+								local_port);
+	}
+
+	return true;
+done:
+	return false;
+}
+
+static void test_multichannel_free_channels(struct smb2_tree *tree2A,
+					     struct smb2_tree *tree2B,
+					     struct smb2_tree *tree2C)
+{
+	TALLOC_FREE(tree2A);
+	TALLOC_FREE(tree2B);
+	TALLOC_FREE(tree2C);
 }
 
 struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
