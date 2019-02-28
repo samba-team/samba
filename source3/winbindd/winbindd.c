@@ -31,8 +31,6 @@
 #include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_lsa_scompat.h"
 #include "librpc/gen_ndr/ndr_samr_scompat.h"
-#include "../librpc/gen_ndr/srv_lsa.h"
-#include "../librpc/gen_ndr/srv_samr.h"
 #include "secrets.h"
 #include "rpc_client/cli_netlogon.h"
 #include "idmap.h"
@@ -50,6 +48,7 @@
 #include "passdb.h"
 #include "lib/util/tevent_req_profile.h"
 #include "lib/gencache.h"
+#include "rpc_server/rpc_config.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -1663,6 +1662,7 @@ int main(int argc, const char **argv)
 	NTSTATUS status;
 	bool ok;
 	const struct dcesrv_endpoint_server *ep_server = NULL;
+	struct dcesrv_context *dce_ctx = NULL;
 
 	setproctitle_init(argc, discard_const(argv), environ);
 
@@ -1965,8 +1965,17 @@ int main(int argc, const char **argv)
 		exit(1);
 	}
 
-	rpc_lsarpc_init(NULL);
-	rpc_samr_init(NULL);
+	dce_ctx = global_dcesrv_context();
+
+	DBG_INFO("Initializing DCE/RPC registered endpoint servers\n");
+
+	/* Init all registered ep servers */
+	status = dcesrv_init_registered_ep_servers(dce_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to init DCE/RPC endpoint servers: %s\n",
+			nt_errstr(status));
+		exit(1);
+	}
 
 	winbindd_init_addrchange(NULL, global_event_context(),
 				 global_messaging_context());
