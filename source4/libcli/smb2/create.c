@@ -360,12 +360,12 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 	/* pull out the parsed blobs */
 	for (i=0;i<io->out.blobs.num_blobs;i++) {
 		if (strcmp(io->out.blobs.blobs[i].tag, SMB2_CREATE_TAG_MXAC) == 0) {
-			/* TODO: this also contains a status field in
-			   first 4 bytes */
 			if (io->out.blobs.blobs[i].data.length != 8) {
 				smb2_request_destroy(req);
 				return NT_STATUS_INVALID_NETWORK_RESPONSE;
 			}
+			io->out.maximal_access_status =
+				IVAL(io->out.blobs.blobs[i].data.data, 0);
 			io->out.maximal_access = IVAL(io->out.blobs.blobs[i].data.data, 4);
 		}
 		if (strcmp(io->out.blobs.blobs[i].tag, SMB2_CREATE_TAG_QFID) == 0) {
