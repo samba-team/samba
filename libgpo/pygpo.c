@@ -150,6 +150,7 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	const char *workgroup = NULL;
 	const char *ldap_server = NULL;
 	PyObject *lp_obj = NULL;
+	PyObject *py_creds = NULL;
 	struct loadparm_context *lp_ctx = NULL;
 	bool ok = false;
 
@@ -158,10 +159,13 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 	};
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "sO|O",
 					 discard_const_p(char *, kwlist),
-					 &ldap_server, &lp_obj, &self->py_creds)) {
+					 &ldap_server, &lp_obj, &py_creds)) {
 		return -1;
 	}
-	/* keep reference to the credentials */
+	/* keep reference to the credentials. Clear any earlier ones */
+	Py_CLEAR(self->py_creds);
+	self->cli_creds = NULL;
+	self->py_creds = py_creds;
 	Py_XINCREF(self->py_creds);
 
 	if (self->py_creds) {
@@ -197,6 +201,11 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 		workgroup = lp_workgroup();
 	}
 
+	/* in case __init__ is called more than once */
+	if (self->ads_ptr) {
+		ads_destroy(&self->ads_ptr);
+		self->ads_ptr = NULL;
+	}
 	/* always succeeds or crashes */
 	self->ads_ptr = ads_init(realm, workgroup, ldap_server);
 	
@@ -208,34 +217,25 @@ static PyObject* py_ads_connect(ADS *self)
 {
 	ADS_STATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
+	if (!self->ads_ptr) {
+		PyErr_SetString(PyExc_RuntimeError, "Uninitialized");
+		return NULL;
+	}
+	SAFE_FREE(self->ads_ptr->auth.user_name);
+	SAFE_FREE(self->ads_ptr->auth.password);
+	SAFE_FREE(self->ads_ptr->auth.realm);
 	if (self->cli_creds) {
 		self->ads_ptr->auth.user_name =
 			SMB_STRDUP(cli_credentials_get_username(self->cli_creds));
-		self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
 		self->ads_ptr->auth.password =
 			SMB_STRDUP(cli_credentials_get_password(self->cli_creds));
 		self->ads_ptr->auth.realm =
 			SMB_STRDUP(cli_credentials_get_realm(self->cli_creds));
-
+		self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
 		status = ads_connect_user_creds(self->ads_ptr);
-		if (!ADS_ERR_OK(status)) {
-			PyErr_Format(PyExc_RuntimeError,
-					"ads_connect() failed: %s",
-					ads_errstr(status));
-			goto err;
-		}
 	} else {
 		char *passwd = NULL;
-		int ret = asprintf(&(self->ads_ptr->auth.user_name), "%s$",
-				   lp_netbios_name());
-		if (ret == -1) {
-			PyErr_SetString(PyExc_RuntimeError,
-					"Failed to asprintf");
-			goto err;
-		} else {
-			self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
-		}
-
+		int ret;
 		if (!secrets_init()) {
 			PyErr_SetString(PyExc_RuntimeError,
 					"secrets_init() failed");
@@ -250,6 +250,12 @@ static PyObject* py_ads_connect(ADS *self)
 					"password");
 			goto err;
 		}
+		ret = asprintf(&(self->ads_ptr->auth.user_name), "%s$",
+				   lp_netbios_name());
+		if (ret == -1) {
+			PyErr_NoMemory();
+			goto err;
+		}
 		self->ads_ptr->auth.password = smb_xstrdup(passwd);
 		SAFE_FREE(passwd);
 		self->ads_ptr->auth.realm =
@@ -258,14 +264,14 @@ static PyObject* py_ads_connect(ADS *self)
 			PyErr_SetString(PyExc_RuntimeError, "Failed to strupper");
 			goto err;
 		}
-
+		self->ads_ptr->auth.flags |= ADS_AUTH_USER_CREDS;
 		status = ads_connect(self->ads_ptr);
-		if (!ADS_ERR_OK(status)) {
-			PyErr_Format(PyExc_RuntimeError,
-					"ads_connect() failed: %s",
-					ads_errstr(status));
-			goto err;
-		}
+	}
+	if (!ADS_ERR_OK(status)) {
+		PyErr_Format(PyExc_RuntimeError,
+				"ads_connect() failed: %s",
+				ads_errstr(status));
+		goto err;
 	}
 
 	TALLOC_FREE(frame);
@@ -390,6 +396,10 @@ static PyObject *py_ads_get_gpo_list(ADS *self, PyObject *args, PyObject *kwds)
 	if (!PyArg_ParseTupleAndKeywords(args, kwds, "s",
 					 discard_const_p(char *, kwlist),
 					 &samaccountname)) {
+		return NULL;
+	}
+	if (!self->ads_ptr) {
+		PyErr_SetString(PyExc_RuntimeError, "Uninitialized");
 		return NULL;
 	}
 
