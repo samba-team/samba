@@ -27,14 +27,13 @@ import time
 import json
 import os
 import re
-
-msg_ctxs = []
+from samba import param
 
 
 class AuthLogTestBase(samba.tests.TestCase):
 
-    def setUp(self):
-        super(AuthLogTestBase, self).setUp()
+    @classmethod
+    def setUpClass(self):
         # connect to the server's messaging bus (we need to explicitly load a
         # different smb.conf here, because in all other respects this test
         # wants to act as a separate remote client)
@@ -42,16 +41,14 @@ class AuthLogTestBase(samba.tests.TestCase):
         if server_conf:
             lp_ctx = LoadParm(filename_for_non_global_lp=server_conf)
         else:
-            lp_ctx = self.get_loadparm()
+            samba.tests.env_loadparm()
         self.msg_ctx = Messaging((1,), lp_ctx=lp_ctx)
-        global msg_ctxs
-        msg_ctxs.append(self.msg_ctx)
         self.msg_ctx.irpc_add_name(AUTH_EVENT_NAME)
 
         # Now switch back to using the client-side smb.conf. The tests will
         # use the first interface in the client.conf (we need to strip off
         # the subnet mask portion)
-        lp_ctx = self.get_loadparm()
+        lp_ctx = samba.tests.env_loadparm()
         client_ip_and_mask = lp_ctx.get('interfaces')[0]
         client_ip = client_ip_and_mask.split('/')[0]
 
@@ -71,17 +68,20 @@ class AuthLogTestBase(samba.tests.TestCase):
         self.msg_ctx.register(self.msg_handler_and_context,
                               msg_type=MSG_AUTH_LOG)
 
-        self.discardMessages()
-
         self.remoteAddress = None
         self.server = os.environ["SERVER"]
         self.connection = None
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(self):
         if self.msg_handler_and_context:
             self.msg_ctx.deregister(self.msg_handler_and_context,
                                     msg_type=MSG_AUTH_LOG)
             self.msg_ctx.irpc_remove_name(AUTH_EVENT_NAME)
+
+    def setUp(self):
+        super(AuthLogTestBase, self).setUp()
+        self.discardMessages()
 
     def waitForMessages(self, isLastExpectedMessage, connection=None):
         """Wait for all the expected messages to arrive
@@ -126,11 +126,12 @@ class AuthLogTestBase(samba.tests.TestCase):
         return list(filter(isRemote, self.context["messages"]))
 
     # Discard any previously queued messages.
+    @classmethod
     def discardMessages(self):
         self.msg_ctx.loop_once(0.001)
         while len(self.context["messages"]):
+            self.context["messages"] = []
             self.msg_ctx.loop_once(0.001)
-        self.context["messages"] = []
 
     # Remove any NETLOGON authentication messages
     # NETLOGON is only performed once per session, so to avoid ordering
