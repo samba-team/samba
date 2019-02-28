@@ -4240,11 +4240,7 @@ static void cli_smb2_shadow_copy_data_fnum_done(struct tevent_req *subreq)
 	status = smb2cli_ioctl_recv(subreq, state,
 				&state->out_input_buffer,
 				&state->out_output_buffer);
-	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-	tevent_req_done(req);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 static NTSTATUS cli_smb2_shadow_copy_data_fnum_recv(struct tevent_req *req,
