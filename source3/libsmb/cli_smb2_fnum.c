@@ -703,41 +703,71 @@ NTSTATUS cli_smb2_mkdir(struct cli_state *cli, const char *dname)
 	return cli_smb2_close_fnum(cli, fnum);
 }
 
-/***************************************************************
- Small wrapper that allows SMB2 to delete a directory
- Synchronous only.
-***************************************************************/
-
-NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dname)
-{
-	NTSTATUS status;
+struct cli_smb2_rmdir_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	const char *dname;
 	uint16_t fnum;
+	NTSTATUS status;
+};
 
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		return NT_STATUS_INVALID_PARAMETER;
+static void cli_smb2_rmdir_opened1(struct tevent_req *subreq);
+static void cli_smb2_rmdir_opened2(struct tevent_req *subreq);
+static void cli_smb2_rmdir_disp_set(struct tevent_req *subreq);
+static void cli_smb2_rmdir_closed(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb2_rmdir_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct cli_state *cli,
+				       const char *dname)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb2_rmdir_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_smb2_rmdir_state);
+	if (req == NULL) {
+		return NULL;
 	}
+	state->ev = ev;
+	state->cli = cli;
+	state->dname = dname;
 
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
-		return NT_STATUS_INVALID_PARAMETER;
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
 	}
 
-	status = cli_smb2_create_fnum(cli,
-			dname,
-			0,			/* create_flags */
-			SMB2_IMPERSONATION_IMPERSONATION,
-			DELETE_ACCESS,		/* desired_access */
-			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
-			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
-			FILE_OPEN,		/* create_disposition */
-			FILE_DIRECTORY_FILE,	/* create_options */
-			NULL,
-			&fnum,
-			NULL,
-			NULL,
-			NULL);
+	subreq = cli_smb2_create_fnum_send(
+		state,
+		state->ev,
+		state->cli,
+		state->dname,
+		0,			/* create_flags */
+		SMB2_IMPERSONATION_IMPERSONATION,
+		DELETE_ACCESS,		/* desired_access */
+		FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
+		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
+		FILE_OPEN,		/* create_disposition */
+		FILE_DIRECTORY_FILE,	/* create_options */
+		NULL);			/* in_cblobs */
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb2_rmdir_opened1, req);
+	return req;
+}
+
+static void cli_smb2_rmdir_opened1(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_rmdir_state *state = tevent_req_data(
+		req, struct cli_smb2_rmdir_state);
+	NTSTATUS status;
+
+	status = cli_smb2_create_fnum_recv(
+		subreq, &state->fnum, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_STOPPED_ON_SYMLINK)) {
 		/*
@@ -746,35 +776,142 @@ NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dname)
 		 * component and try again. Eventually we will have to
 		 * deal with the returned path unprocessed component. JRA.
 		 */
-		status = cli_smb2_create_fnum(cli,
-			dname,
+		subreq = cli_smb2_create_fnum_send(
+			state,
+			state->ev,
+			state->cli,
+			state->dname,
 			0,			/* create_flags */
 			SMB2_IMPERSONATION_IMPERSONATION,
 			DELETE_ACCESS,		/* desired_access */
 			FILE_ATTRIBUTE_DIRECTORY, /* file attributes */
-			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 			FILE_OPEN,		/* create_disposition */
 			FILE_DIRECTORY_FILE|
-				FILE_DELETE_ON_CLOSE|
-				FILE_OPEN_REPARSE_POINT, /* create_options */
-			NULL,
-			&fnum,
-			NULL,
-			NULL,
-			NULL);
+			FILE_DELETE_ON_CLOSE|
+			FILE_OPEN_REPARSE_POINT, /* create_options */
+			NULL);				 /* in_cblobs */
+		if (tevent_req_nomem(subreq, req)) {
+			return;
+		}
+		tevent_req_set_callback(subreq, cli_smb2_rmdir_opened2, req);
+		return;
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	subreq = cli_smb2_delete_on_close_send(
+		state, state->ev, state->cli, state->fnum, true);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_smb2_rmdir_disp_set, req);
+}
+
+static void cli_smb2_rmdir_opened2(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_rmdir_state *state = tevent_req_data(
+		req, struct cli_smb2_rmdir_state);
+	NTSTATUS status;
+
+	status = cli_smb2_create_fnum_recv(
+		subreq, &state->fnum, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	subreq = cli_smb2_delete_on_close_send(
+		state, state->ev, state->cli, state->fnum, true);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_smb2_rmdir_disp_set, req);
+}
+
+static void cli_smb2_rmdir_disp_set(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_rmdir_state *state = tevent_req_data(
+		req, struct cli_smb2_rmdir_state);
+
+	state->status = cli_smb2_delete_on_close_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	/*
+	 * Close the fd even if the set_disp failed
+	 */
+
+	subreq = cli_smb2_close_fnum_send(
+		state, state->ev, state->cli, state->fnum);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_smb2_rmdir_closed, req);
+}
+
+static void cli_smb2_rmdir_closed(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_smb2_close_fnum_recv(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_smb2_rmdir_recv(struct tevent_req *req)
+{
+	struct cli_smb2_rmdir_state *state = tevent_req_data(
+		req, struct cli_smb2_rmdir_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
+	return state->status;
+}
 
-	status = cli_smb2_delete_on_close(cli, fnum, true);
-	if (!NT_STATUS_IS_OK(status)) {
-		cli_smb2_close_fnum(cli, fnum);
-		return status;
+NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dname)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev;
+	struct tevent_req *req;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	bool ok;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
 	}
-
-	return cli_smb2_close_fnum(cli, fnum);
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_smb2_rmdir_send(frame, ev, cli, dname);
+	if (req == NULL) {
+		goto fail;
+	}
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		goto fail;
+	}
+	status = cli_smb2_rmdir_recv(req);
+fail:
+	cli->raw_status = status;
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /***************************************************************
