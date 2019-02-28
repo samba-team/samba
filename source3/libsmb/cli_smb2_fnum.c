@@ -857,15 +857,8 @@ static void cli_smb2_rmdir_disp_set(struct tevent_req *subreq)
 
 static void cli_smb2_rmdir_closed(struct tevent_req *subreq)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	NTSTATUS status;
-
-	status = cli_smb2_close_fnum_recv(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-	tevent_req_done(req);
+	NTSTATUS status = cli_smb2_close_fnum_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 NTSTATUS cli_smb2_rmdir_recv(struct tevent_req *req)
