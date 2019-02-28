@@ -2419,6 +2419,14 @@ static bool test_owner_rights(struct torture_context *tctx,
 	sd_orig = gi.query_secdesc.out.sd;
 	owner_sid = dom_sid_string(tctx, sd_orig->owner_sid);
 
+	/*
+	 * Add a 2 element ACL
+	 * SEC_RIGHTS_FILE_READ for the owner,
+	 * SEC_FILE_WRITE_DATA for SID_OWNER_RIGHTS.
+	 *
+	 * Proves that the owner and SID_OWNER_RIGHTS
+	 * ACE entries are additive.
+	 */
 	sd = security_descriptor_dacl_create(tctx, 0, NULL, NULL,
 					     owner_sid,
 					     SEC_ACE_TYPE_ACCESS_ALLOWED,
@@ -2426,7 +2434,7 @@ static bool test_owner_rights(struct torture_context *tctx,
 					     0,
 					     SID_OWNER_RIGHTS,
 					     SEC_ACE_TYPE_ACCESS_ALLOWED,
-					     SEC_RIGHTS_FILE_READ,
+					     SEC_FILE_WRITE_DATA,
 					     0,
 					     NULL);
 	torture_assert_not_null_goto(tctx, sd, ret, done,
@@ -2467,10 +2475,14 @@ static bool test_owner_rights(struct torture_context *tctx,
 	torture_assert_ntstatus_ok_goto(tctx, mxac_status, ret, done,
 					"smb2_setinfo_file failed\n");
 
-	/* SEC_STD_DELETE comes from the parent directory */
+	/*
+	 * For some reasons Windows 2016 doesn't set SEC_STD_DELETE but we
+	 * do. Mask it out so the test passes against Samba and Windows.
+	 */
 	torture_assert_int_equal_goto(tctx,
-				      cr.out.maximal_access,
-				      SEC_RIGHTS_FILE_READ|SEC_STD_DELETE,
+				      cr.out.maximal_access & ~SEC_STD_DELETE,
+				      SEC_RIGHTS_FILE_READ |
+				      SEC_FILE_WRITE_DATA,
 				      ret, done,
 				      "Wrong maximum access\n");
 
