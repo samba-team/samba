@@ -28,6 +28,9 @@
 #include "nsswitch/winbind_client.h"
 #include "nsswitch/wb_reqtrans.h"
 #include "ntdomain.h"
+#include "librpc/rpc/dcesrv_core.h"
+#include "librpc/gen_ndr/ndr_lsa_scompat.h"
+#include "librpc/gen_ndr/ndr_samr_scompat.h"
 #include "../librpc/gen_ndr/srv_lsa.h"
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "secrets.h"
@@ -1659,6 +1662,7 @@ int main(int argc, const char **argv)
 	TALLOC_CTX *frame;
 	NTSTATUS status;
 	bool ok;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
 	setproctitle_init(argc, discard_const(argv), environ);
 
@@ -1929,6 +1933,36 @@ int main(int argc, const char **argv)
 	status = init_system_session_info(NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("Winbindd failed to setup system user info", map_errno_from_nt_status(status));
+	}
+
+	DBG_INFO("Registering DCE/RPC endpoint servers\n");
+
+	/* Register the endpoint server to dispatch calls locally through
+	 * the legacy api_struct */
+	ep_server = lsarpc_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'lsarpc' endpoint server\n");
+		exit(1);
+	}
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register 'lsarpc' endpoint "
+			"server: %s\n", nt_errstr(status));
+		exit(1);
+	}
+
+	/* Register the endpoint server to dispatch calls locally through
+	 * the legacy api_struct */
+	ep_server = samr_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'samr' endpoint server\n");
+		exit(1);
+	}
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register 'samr' endpoint "
+			"server: %s\n", nt_errstr(status));
+		exit(1);
 	}
 
 	rpc_lsarpc_init(NULL);
