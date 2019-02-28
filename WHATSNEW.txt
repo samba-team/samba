@@ -63,6 +63,24 @@ information about how the users are spread across groups in your domain.
 The 'samba-tool group list --verbose' command has also been updated to include
 the number of users in each group.
 
+Paged results LDAP control
+--------------------------
+
+The behaviour of the paged results control (1.2.840.113556.1.4.319, RFC2696)
+has been changed to more closely match Windows servers, to improve memory
+usage. Paged results may be used internally (or is requested by the user) by
+LDAP libraries or tools that deal with large result sizes, for example, when
+listing all the objects in the database.
+
+Previously, results were returned as a snapshot of the database but now,
+some changes made to the set of results while paging may be reflected in the
+responses. If strict inter-record consistency is required in answers (which is
+not possible on Windows with large result sets), consider avoiding the paged
+results control or alternatively, it might be possible to enforce restrictions
+using the LDAP filter expression.
+
+For further details see https://wiki.samba.org/index.php/Paged_Results
+
 Prefork process restart
 -----------------------
 
