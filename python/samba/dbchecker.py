@@ -120,6 +120,7 @@ class dbcheck(object):
         self.fix_missing_deleted_objects = False
         self.fix_replica_locations = False
         self.fix_missing_rid_set_master = False
+        self.fix_changes_after_deletion_bug = False
 
         self.dn_set = set()
         self.link_id_cache = {}
@@ -207,6 +208,14 @@ class dbcheck(object):
             self.rid_set_dn = ldb.Dn(self.samdb, res[0]['rIDSetReferences'][0].decode('utf8'))
         else:
             self.rid_set_dn = None
+
+        ntds_service_dn = "CN=Directory Service,CN=Windows NT,CN=Services,%s" % \
+                          self.samdb.get_config_basedn().get_linearized()
+        res = samdb.search(base=ntds_service_dn,
+                           scope=ldb.SCOPE_BASE,
+                           expression="(objectClass=nTDSService)",
+                           attrs=["tombstoneLifetime"])
+        self.tombstoneLifetime = int(res[0]["tombstoneLifetime"][0])
 
         self.compatibleFeatures = []
         self.requiredFeatures = []
@@ -1758,6 +1767,101 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
         self.samdb.set_session_info(self.system_session_info)
 
+    def find_changes_after_deletion(self, repl_val):
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, repl_val)
+
+        isDeleted = self.find_repl_attid(repl, drsuapi.DRSUAPI_ATTID_isDeleted)
+
+        delete_time = samba.nttime2unix(isDeleted.originating_change_time)
+
+        tombstone_delta = self.tombstoneLifetime * (24 * 60 * 60)
+
+        found = []
+        for o in repl.ctr.array:
+            if o.attid == drsuapi.DRSUAPI_ATTID_isDeleted:
+                continue
+
+            if o.local_usn <= isDeleted.local_usn:
+                continue
+
+            if o.originating_change_time <= isDeleted.originating_change_time:
+                continue
+
+            change_time = samba.nttime2unix(o.originating_change_time)
+
+            delta = change_time - delete_time
+            if delta <= tombstone_delta:
+                continue
+
+            # If the modification happened after the tombstone lifetime
+            # has passed, we have a bug as the object might be deleted
+            # already on other DCs and won't be able to replicate
+            # back
+            found.append(o)
+
+        return found, isDeleted
+
+    def has_changes_after_deletion(self, dn, repl_val):
+        found, isDeleted = self.find_changes_after_deletion(repl_val)
+        if len(found) == 0:
+            return False
+
+        def report_attid(o):
+            try:
+                attname = self.samdb_schema.get_lDAPDisplayName_by_attid(o.attid)
+            except KeyError:
+                attname = "<unknown:0x%x08x>" % o.attid
+
+            self.report("%s: attid=0x%08x version=%d invocation=%s usn=%s (local=%s) at %s" % (
+                        attname, o.attid, o.version,
+                        o.originating_invocation_id,
+                        o.originating_usn,
+                        o.local_usn,
+                        time.ctime(samba.nttime2unix(o.originating_change_time))))
+
+        self.report("ERROR: object %s, has changes after deletion" % dn)
+        report_attid(isDeleted)
+        for o in found:
+            report_attid(o)
+
+        return True
+
+    def err_changes_after_deletion(self, dn, repl_val):
+        found, isDeleted = self.find_changes_after_deletion(repl_val)
+
+        in_schema_nc = dn.is_child_of(self.schema_dn)
+        rdn_attr = dn.get_rdn_name()
+        rdn_attid = self.samdb_schema.get_attid_from_lDAPDisplayName(rdn_attr,
+                                                     is_schema_nc=in_schema_nc)
+
+        unexpected = []
+        for o in found:
+            if o.attid == rdn_attid:
+                continue
+            if o.attid == drsuapi.DRSUAPI_ATTID_name:
+                continue
+            if o.attid == drsuapi.DRSUAPI_ATTID_lastKnownParent:
+                continue
+            try:
+                attname = self.samdb_schema.get_lDAPDisplayName_by_attid(o.attid)
+            except KeyError:
+                attname = "<unknown:0x%x08x>" % o.attid
+            unexpected.append(attname)
+
+        if len(unexpected) > 0:
+            self.report('Unexpeted attributes: %s' % ",".join(unexpected))
+            self.report('Not fixing changes after deletion bug')
+            return
+
+        if not self.confirm_all('Delete broken tombstone object %s deleted %s days ago?' % (
+                                dn, self.tombstoneLifetime), 'fix_changes_after_deletion_bug'):
+            self.report('Not fixing changes after deletion bug')
+            return
+
+        if self.do_delete(dn, ["relax:0"],
+                          "Failed to remove DN %s" % dn):
+            self.report("Removed DN %s" % dn)
+
     def has_replmetadata_zero_invocationid(self, dn, repl_meta_data):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob,
                           repl_meta_data)
@@ -2134,6 +2238,12 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
             if str(attrname).lower() == 'replpropertymetadata':
                 repl_meta_data_val = obj[attrname][0]
+
+        if isDeleted and repl_meta_data_val:
+            if self.has_changes_after_deletion(dn, repl_meta_data_val):
+                error_count += 1
+                self.err_changes_after_deletion(dn, repl_meta_data_val)
+                return error_count
 
         for attrname in obj:
             if attrname == 'dn' or attrname == "distinguishedName":
