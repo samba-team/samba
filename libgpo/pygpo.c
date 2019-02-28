@@ -253,13 +253,13 @@ static PyObject* py_ads_connect(ADS *self)
 		ret = asprintf(&(self->ads_ptr->auth.user_name), "%s$",
 				   lp_netbios_name());
 		if (ret == -1) {
+			SAFE_FREE(passwd);
 			PyErr_NoMemory();
 			goto err;
 		}
-		self->ads_ptr->auth.password = smb_xstrdup(passwd);
-		SAFE_FREE(passwd);
+		self->ads_ptr->auth.password = passwd; /* take ownership of this data */
 		self->ads_ptr->auth.realm =
-			smb_xstrdup(self->ads_ptr->server.realm);
+			SMB_STRDUP(self->ads_ptr->server.realm);
 		if (!strupper_m(self->ads_ptr->auth.realm)) {
 			PyErr_SetString(PyExc_RuntimeError, "Failed to strupper");
 			goto err;
