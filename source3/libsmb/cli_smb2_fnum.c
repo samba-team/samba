@@ -2775,6 +2775,196 @@ NTSTATUS cli_smb2_set_security_descriptor(struct cli_state *cli,
 }
 
 /***************************************************************
+ Wrapper that allows SMB2 to query a security descriptor.
+ Synchronous only.
+
+***************************************************************/
+
+struct cli_smb2_mxac_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	const char *fname;
+	struct smb2_create_blobs in_cblobs;
+	uint16_t fnum;
+	NTSTATUS status;
+	uint32_t mxac;
+};
+
+static void cli_smb2_mxac_opened(struct tevent_req *subreq);
+static void cli_smb2_mxac_closed(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb2_query_mxac_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct cli_state *cli,
+					    const char *fname)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb2_mxac_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_smb2_mxac_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	*state = (struct cli_smb2_mxac_state) {
+		state->ev = ev,
+		state->cli = cli,
+		state->fname = fname,
+	};
+
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	status = smb2_create_blob_add(state,
+				      &state->in_cblobs,
+				      SMB2_CREATE_TAG_MXAC,
+				      data_blob(NULL, 0));
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = cli_smb2_create_fnum_send(
+		state,
+		state->ev,
+		state->cli,
+		state->fname,
+		0,			/* create_flags */
+		SMB2_IMPERSONATION_IMPERSONATION,
+		FILE_READ_ATTRIBUTES,
+		0,			/* file attributes */
+		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+		FILE_OPEN,
+		0,			/* create_options */
+		&state->in_cblobs);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb2_mxac_opened, req);
+	return req;
+}
+
+static void cli_smb2_mxac_opened(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_mxac_state *state = tevent_req_data(
+		req, struct cli_smb2_mxac_state);
+	struct smb2_create_blobs out_cblobs = {0};
+	DATA_BLOB *mxac_blob = NULL;
+	NTSTATUS status;
+	int i;
+
+	status = cli_smb2_create_fnum_recv(
+		subreq, &state->fnum, NULL, state, &out_cblobs);
+	TALLOC_FREE(subreq);
+
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	for (i = 0; i < out_cblobs.num_blobs; i++) {
+		if (strcmp(out_cblobs.blobs[i].tag, SMB2_CREATE_TAG_MXAC) != 0) {
+			continue;
+		}
+		mxac_blob = &out_cblobs.blobs[i].data;
+		break;
+	}
+	if (mxac_blob == NULL) {
+		state->status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto close;
+	}
+	if (mxac_blob->length != 8) {
+		state->status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		goto close;
+	}
+
+	state->status = NT_STATUS(IVAL(mxac_blob->data, 0));
+	state->mxac = IVAL(mxac_blob->data, 4);
+
+close:
+	subreq = cli_smb2_close_fnum_send(
+		state, state->ev, state->cli, state->fnum);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_smb2_mxac_closed, req);
+
+	return;
+}
+
+static void cli_smb2_mxac_closed(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_smb2_close_fnum_recv(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_smb2_query_mxac_recv(struct tevent_req *req, uint32_t *mxac)
+{
+	struct cli_smb2_mxac_state *state = tevent_req_data(
+		req, struct cli_smb2_mxac_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	if (!NT_STATUS_IS_OK(state->status)) {
+		return state->status;
+	}
+
+	*mxac = state->mxac;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_smb2_query_mxac(struct cli_state *cli,
+			     const char *fname,
+			     uint32_t *_mxac)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
+	bool ok;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_smb2_query_mxac_send(frame, ev, cli, fname);
+	if (req == NULL) {
+		goto fail;
+	}
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		goto fail;
+	}
+	status = cli_smb2_query_mxac_recv(req, _mxac);
+
+fail:
+	cli->raw_status = status;
+	TALLOC_FREE(frame);
+	return status;
+}
+
+/***************************************************************
  Wrapper that allows SMB2 to rename a file.
  Synchronous only.
 ***************************************************************/

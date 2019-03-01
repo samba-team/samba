@@ -173,6 +173,15 @@ NTSTATUS cli_smb2_set_security_descriptor(struct cli_state *cli,
 			uint16_t fnum,
 			uint32_t sec_info,
 			const struct security_descriptor *sd);
+struct tevent_req *cli_smb2_query_mxac_send(TALLOC_CTX *mem_ctx,
+					    struct tevent_context *ev,
+					    struct cli_state *cli,
+					    const char *fname);
+NTSTATUS cli_smb2_query_mxac_recv(struct tevent_req *req,
+				  uint32_t *mxac);
+NTSTATUS cli_smb2_query_mxac(struct cli_state *cli,
+			     const char *fname,
+			     uint32_t *mxac);
 NTSTATUS cli_smb2_rename(struct cli_state *cli,
 			 const char *fname_src,
 			 const char *fname_dst,
