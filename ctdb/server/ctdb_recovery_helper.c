@@ -2737,7 +2737,7 @@ int main(int argc, char *argv[])
 {
 	int write_fd;
 	const char *sockpath;
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = NULL;
 	struct tevent_context *ev;
 	struct ctdb_client_context *client;
 	int ret = 0;
