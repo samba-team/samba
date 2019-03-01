@@ -109,10 +109,9 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 					const struct security_token *token)
 {
 	uint32_t denied = 0, granted = 0;
+	bool am_owner = false;
+	bool have_owner_rights_ace = false;
 	unsigned i;
-	uint32_t owner_rights_allowed = 0;
-	uint32_t owner_rights_denied = 0;
-	bool owner_rights_default = true;
 
 	if (sd->dacl == NULL) {
 		if (security_token_has_sid(token, sd->owner_sid)) {
@@ -121,26 +120,50 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 		return granted;
 	}
 
+	if (security_token_has_sid(token, sd->owner_sid)) {
+		/*
+		 * Check for explicit owner rights: if there are none, we remove
+		 * the default owner right SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL
+		 * from remaining_access. Otherwise we just process the
+		 * explicitly granted rights when processing the ACEs.
+		 */
+		am_owner = true;
+
+		for (i=0; i < sd->dacl->num_aces; i++) {
+			struct security_ace *ace = &sd->dacl->aces[i];
+
+			if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+				continue;
+			}
+
+			have_owner_rights_ace = dom_sid_equal(
+				&ace->trustee, &global_sid_Owner_Rights);
+			if (have_owner_rights_ace) {
+				break;
+			}
+		}
+	}
+
+	if (am_owner && !have_owner_rights_ace) {
+		granted |= SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL;
+	}
+
 	for (i = 0;i<sd->dacl->num_aces; i++) {
 		struct security_ace *ace = &sd->dacl->aces[i];
+		bool is_owner_rights_ace = false;
 
 		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
 			continue;
 		}
 
-		if (dom_sid_equal(&ace->trustee, &global_sid_Owner_Rights)) {
-			if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED) {
-				owner_rights_allowed |= ace->access_mask;
-				owner_rights_default = false;
-			} else if (ace->type == SEC_ACE_TYPE_ACCESS_DENIED) {
-				owner_rights_denied |= (owner_rights_allowed &
-							ace->access_mask);
-				owner_rights_default = false;
-			}
-			continue;
+		if (am_owner) {
+			is_owner_rights_ace = dom_sid_equal(
+				&ace->trustee, &global_sid_Owner_Rights);
 		}
 
-		if (!security_token_has_sid(token, &ace->trustee)) {
+		if (!is_owner_rights_ace &&
+		    !security_token_has_sid(token, &ace->trustee))
+		{
 			continue;
 		}
 
@@ -154,15 +177,6 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 			break;
 		default:	/* Other ACE types not handled/supported */
 			break;
-		}
-	}
-
-	if (security_token_has_sid(token, sd->owner_sid)) {
-		if (owner_rights_default) {
-			granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
-		} else {
-			granted |= owner_rights_allowed;
-			granted &= ~owner_rights_denied;
 		}
 	}
 
@@ -182,16 +196,8 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 	uint32_t i;
 	uint32_t bits_remaining;
 	uint32_t explicitly_denied_bits = 0;
-	/*
-	 * Up until Windows Server 2008, owner always had these rights. Now
-	 * we have to use Owner Rights perms if they are on the file.
-	 *
-	 * In addition we have to accumulate these bits and apply them
-	 * correctly. See bug #8795
-	 */
-	uint32_t owner_rights_allowed = 0;
-	uint32_t owner_rights_denied = 0;
-	bool owner_rights_default = true;
+	bool am_owner = false;
+	bool have_owner_rights_ace = false;
 
 	*access_granted = access_desired;
 	bits_remaining = access_desired;
@@ -221,35 +227,50 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 		goto done;
 	}
 
+	if (security_token_has_sid(token, sd->owner_sid)) {
+		/*
+		 * Check for explicit owner rights: if there are none, we remove
+		 * the default owner right SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL
+		 * from remaining_access. Otherwise we just process the
+		 * explicitly granted rights when processing the ACEs.
+		 */
+		am_owner = true;
+
+		for (i=0; i < sd->dacl->num_aces; i++) {
+			struct security_ace *ace = &sd->dacl->aces[i];
+
+			if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
+				continue;
+			}
+
+			have_owner_rights_ace = dom_sid_equal(
+				&ace->trustee, &global_sid_Owner_Rights);
+			if (have_owner_rights_ace) {
+				break;
+			}
+		}
+	}
+	if (am_owner && !have_owner_rights_ace) {
+		bits_remaining &= ~(SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL);
+	}
+
 	/* check each ace in turn. */
 	for (i=0; bits_remaining && i < sd->dacl->num_aces; i++) {
 		struct security_ace *ace = &sd->dacl->aces[i];
+		bool is_owner_rights_ace = false;
 
 		if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
 			continue;
 		}
 
-		/*
-		 * We need the Owner Rights permissions to ensure we
-		 * give or deny the correct permissions to the owner. Replace
-		 * owner_rights with the perms here if it is present.
-		 *
-		 * We don't care if we are not the owner because that is taken
-		 * care of below when we check if our token has the owner SID.
-		 *
-		 */
-		if (dom_sid_equal(&ace->trustee, &global_sid_Owner_Rights)) {
-			if (ace->type == SEC_ACE_TYPE_ACCESS_ALLOWED) {
-				owner_rights_allowed |= ace->access_mask;
-				owner_rights_default = false;
-			} else if (ace->type == SEC_ACE_TYPE_ACCESS_DENIED) {
-				owner_rights_denied |= (bits_remaining & ace->access_mask);
-				owner_rights_default = false;
-			}
-			continue;
+		if (am_owner) {
+			is_owner_rights_ace = dom_sid_equal(
+				&ace->trustee, &global_sid_Owner_Rights);
 		}
 
-		if (!security_token_has_sid(token, &ace->trustee)) {
+		if (!is_owner_rights_ace &&
+		    !security_token_has_sid(token, &ace->trustee))
+		{
 			continue;
 		}
 
@@ -268,21 +289,6 @@ NTSTATUS se_access_check(const struct security_descriptor *sd,
 
 	/* Explicitly denied bits always override */
 	bits_remaining |= explicitly_denied_bits;
-
-	/* The owner always gets owner rights as defined above. */
-	if (security_token_has_sid(token, sd->owner_sid)) {
-		if (owner_rights_default) {
-			/*
-			 * Just remove them, no need to check if they are
-			 * there.
-			 */
-			bits_remaining &= ~(SEC_STD_WRITE_DAC |
-						SEC_STD_READ_CONTROL);
-		} else {
-			bits_remaining &= ~owner_rights_allowed;
-			bits_remaining |= owner_rights_denied;
-		}
-	}
 
 	/*
 	 * We check privileges here because they override even DENY entries.
