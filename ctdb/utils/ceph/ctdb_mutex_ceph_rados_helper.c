@@ -301,14 +301,10 @@ int main(int argc, char *argv[])
 	cmr_state->pool_name = argv[3];
 	cmr_state->object = argv[4];
 	if (argc == 6) {
-		int error = 0;
 		/* optional lock duration provided */
 		char *endptr = NULL;
-		cmr_state->lock_duration_s = strtoull_err(argv[5],
-							  &endptr,
-							  0,
-							  &error);
-		if ((endptr == argv[5]) || (*endptr != '\0') || (error != 0)) {
+		cmr_state->lock_duration_s = strtoull(argv[5], &endptr, 0);
+		if ((endptr == argv[5]) || (*endptr != '\0')) {
 			fprintf(stdout, CTDB_MUTEX_STATUS_ERROR);
 			ret = -EINVAL;
 			goto err_ctx_cleanup;
