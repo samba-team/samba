@@ -147,6 +147,45 @@ static NTSTATUS netsec_do_seq_num(struct schannel_state *state,
 				  uint8_t seq_num[8])
 {
 	if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+#ifdef HAVE_GNUTLS_AES_CFB8
+		gnutls_cipher_hd_t cipher_hnd = NULL;
+		gnutls_datum_t key = {
+			.data = state->creds->session_key,
+			.size = sizeof(state->creds->session_key),
+		};
+		uint32_t iv_size =
+			gnutls_cipher_get_iv_size(GNUTLS_CIPHER_AES_128_CFB8);
+		uint8_t _iv[iv_size];
+		gnutls_datum_t iv = {
+			.data = _iv,
+			.size = iv_size,
+		};
+		int rc;
+
+		ZERO_ARRAY(_iv);
+
+		memcpy(iv.data + 0, checksum, 8);
+		memcpy(iv.data + 8, checksum, 8);
+
+		rc = gnutls_cipher_init(&cipher_hnd,
+					GNUTLS_CIPHER_AES_128_CFB8,
+					&key,
+					&iv);
+		if (rc < 0) {
+			DBG_ERR("ERROR: gnutls_cipher_init: %s\n",
+				gnutls_strerror(rc));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		rc = gnutls_cipher_encrypt(cipher_hnd, seq_num, 8);
+		gnutls_cipher_deinit(cipher_hnd);
+		if (rc < 0) {
+			DBG_ERR("ERROR: gnutls_cipher_encrypt: %s\n",
+				gnutls_strerror(rc));
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+#else /* NOT HAVE_GNUTLS_AES_CFB8 */
 		AES_KEY key;
 		uint8_t iv[AES_BLOCK_SIZE];
 
@@ -156,6 +195,7 @@ static NTSTATUS netsec_do_seq_num(struct schannel_state *state,
 		memcpy(iv+8, checksum, 8);
 
 		aes_cfb8_encrypt(seq_num, seq_num, 8, &key, iv, AES_ENCRYPT);
+#endif /* HAVE_GNUTLS_AES_CFB8 */
 	} else {
 		static const uint8_t zeros[4];
 		uint8_t _sequence_key[16];
