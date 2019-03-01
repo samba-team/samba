@@ -36,3 +36,9 @@ if conf.CHECK_FUNCS_IN('gnutls_aead_cipher_init',
     conf.DEFINE('HAVE_GNUTLS_AEAD', '1')
 else:
     Logs.warn('No gnutls support for AEAD encryption')
+
+if conf.CHECK_VALUEOF('GNUTLS_CIPHER_AES_128_CFB8', headers='gnutls/gnutls.h'):
+    conf.DEFINE('HAVE_GNUTLS_AES_CFB8', 1)
+    conf.DEFINE('HAVE_GNUTLS_3_4_7', 1)
+else:
+    Logs.warn('No gnutls support for AES CFB8')
