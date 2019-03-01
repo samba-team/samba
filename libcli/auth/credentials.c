@@ -35,12 +35,9 @@ static void netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *cre
 				      struct netr_Credential *out)
 {
 	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		AES_KEY key;
-		uint8_t iv[AES_BLOCK_SIZE] = {0};
+		memcpy(out->data, in->data, sizeof(out->data));
 
-		AES_set_encrypt_key(creds->session_key, 128, &key);
-
-		aes_cfb8_encrypt(in->data, out->data, 8, &key, iv, AES_ENCRYPT);
+		netlogon_creds_aes_encrypt(creds, out->data, sizeof(out->data));
 	} else {
 		des_crypt112(out->data, in->data, creds->session_key, 1);
 	}
