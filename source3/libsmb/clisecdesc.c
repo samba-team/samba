@@ -91,6 +91,18 @@ NTSTATUS cli_query_secdesc(struct cli_state *cli, uint16_t fnum,
 	return cli_query_security_descriptor(cli, fnum, sec_info, mem_ctx, sd);
 }
 
+NTSTATUS cli_query_mxac(struct cli_state *cli,
+			const char *filename,
+			uint32_t *mxac)
+{
+	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	return cli_smb2_query_mxac(cli, filename, mxac);
+}
+
+
 /****************************************************************************
   set the security descriptor for a open file
  ****************************************************************************/

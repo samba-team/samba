@@ -927,6 +927,10 @@ NTSTATUS cli_set_security_descriptor(struct cli_state *cli,
 NTSTATUS cli_set_secdesc(struct cli_state *cli, uint16_t fnum,
 			 const struct security_descriptor *sd);
 
+NTSTATUS cli_query_mxac(struct cli_state *cli,
+			const char *filename,
+			uint32_t *mxac);
+
 /* The following definitions come from libsmb/clistr.c  */
 
 size_t clistr_pull_talloc(TALLOC_CTX *ctx,
