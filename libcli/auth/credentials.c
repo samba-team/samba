@@ -295,12 +295,48 @@ NTSTATUS netlogon_creds_arcfour_crypt(struct netlogon_creds_CredentialState *cre
 */
 void netlogon_creds_aes_encrypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len)
 {
+#ifdef HAVE_GNUTLS_AES_CFB8
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t key = {
+		.data = creds->session_key,
+		.size = sizeof(creds->session_key),
+	};
+	uint32_t iv_size =
+		gnutls_cipher_get_iv_size(GNUTLS_CIPHER_AES_128_CFB8);
+	uint8_t _iv[iv_size];
+	gnutls_datum_t iv = {
+		.data = _iv,
+		.size = iv_size,
+	};
+	int rc;
+
+	ZERO_ARRAY(_iv);
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_AES_128_CFB8,
+				&key,
+				&iv);
+	if (rc < 0) {
+		DBG_ERR("ERROR: gnutls_cipher_init: %s\n",
+			gnutls_strerror(rc));
+		return;
+	}
+
+	rc = gnutls_cipher_encrypt(cipher_hnd, data, len);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		DBG_ERR("ERROR: gnutls_cipher_encrypt: %s\n",
+			gnutls_strerror(rc));
+		return;
+	}
+#else /* NOT HAVE_GNUTLS_AES_CFB8 */
 	AES_KEY key;
 	uint8_t iv[AES_BLOCK_SIZE] = {0};
 
 	AES_set_encrypt_key(creds->session_key, 128, &key);
 
 	aes_cfb8_encrypt(data, data, len, &key, iv, AES_ENCRYPT);
+#endif /* HAVE_GNUTLS_AES_CFB8 */
 }
 
 /*
