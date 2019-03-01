@@ -43,7 +43,8 @@
 } while(0)
 
 #define NDR_SPOOLSS_PUSH_ENUM_OUT(fn) do { \
-	struct ndr_push *_ndr_info;\
+	DATA_BLOB _data_blob_info = data_blob_null;\
+	struct ndr_push *_ndr_info = NULL;\
 	_r.in.level	= r->in.level;\
 	_r.in.buffer	= r->in.buffer;\
 	_r.in.offered	= r->in.offered;\
@@ -56,7 +57,6 @@
 			"SPOOLSS Buffer: *r->out.info but there's no r->in.buffer");\
 	}\
 	if (r->in.buffer) {\
-		DATA_BLOB _data_blob_info;\
 		_ndr_info = ndr_push_init_ctx(ndr);\
 		NDR_ERR_HAVE_NO_MEMORY(_ndr_info);\
 		_ndr_info->flags= ndr->flags;\
