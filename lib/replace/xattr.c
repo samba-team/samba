@@ -528,8 +528,7 @@ int rep_setxattr (const char *path, const char *name, const void *value, size_t 
 #else
 /* So that we do not recursivly call this function */
 #undef setxattr
-	int options = 0;
-	retval = setxattr(path, name, value, size, 0, options);
+	retval = setxattr(path, name, value, size, 0, flags);
 	if (retval < 0) {
 		if (errno == E2BIG) {
 			errno = ENAMETOOLONG;
@@ -636,8 +635,7 @@ int rep_fsetxattr (int filedes, const char *name, const void *value, size_t size
 #else
 /* So that we do not recursivly call this function */
 #undef fsetxattr
-	int options = 0;
-	retval = fsetxattr(filedes, name, value, size, 0, options);
+	retval = fsetxattr(filedes, name, value, size, 0, flags);
 	if (retval < 0) {
 		if (errno == E2BIG) {
 			errno = ENAMETOOLONG;
