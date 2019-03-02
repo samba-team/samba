@@ -33,6 +33,22 @@ setup_remote_file() {
     $SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "lcd $PREFIX; put $fname" || exit 1
 }
 
+smbcacls_x() {
+    local share=$1
+    local fname="$share.$$"
+
+    # skip with SMB1
+    echo "$ADDARGS" | grep mNT1 && exit 0
+
+    $SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD "$fname" -x || exit 1
+    mxac=$($SMBCACLS //$SERVER/$share $fname -U $USERNAME%$PASSWORD "$fname" -x | awk '/Maximum access/ {print $3}')
+
+    echo "mxac: $mxac"
+    if test "$mxac" != "0x1f01ff" ; then
+        exit 1
+    fi
+}
+
 nt_affects_posix() {
     local share=$1
     local expected=$2
@@ -122,6 +138,7 @@ nt_affects_chgrp() {
 
 testit "setup remote file tmp" setup_remote_file tmp
 testit "setup remote file ign_sysacls" setup_remote_file ign_sysacls
+testit "smbcacls -x" smbcacls_x tmp
 testit "nt_affects_posix tmp" nt_affects_posix tmp "true"
 testit "nt_affects_posix ign_sysacls" nt_affects_posix ign_sysacls "false"
 testit "setup remote file tmp" setup_remote_file tmp
