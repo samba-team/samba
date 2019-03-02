@@ -5294,11 +5294,7 @@ static void cli_posix_open_done(struct tevent_req *subreq)
 	NTSTATUS status;
 
 	status = cli_posix_open_internal_recv(subreq, &state->fnum);
-	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-	tevent_req_done(req);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 NTSTATUS cli_posix_open_recv(struct tevent_req *req, uint16_t *pfnum)
