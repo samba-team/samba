@@ -538,7 +538,21 @@ int rep_setxattr (const char *path, const char *name, const void *value, size_t 
 	return retval;
 #endif
 #elif defined(HAVE_XATTR_EA)
-	return setea(path, name, value, size, flags);
+	if (flags) {
+		retval = getea(path, name, NULL, 0);
+		if (retval < 0) {
+			if (flags & XATTR_REPLACE && errno == ENOATTR) {
+				return -1;
+			}
+		} else {
+			if (flags & XATTR_CREATE) {
+				errno = EEXIST;
+				return -1;
+			}
+		}
+	}
+	retval = setea(path, name, value, size, 0);
+	return retval;
 #elif defined(HAVE_XATTR_EXTATTR)
 	int attrnamespace;
 	const char *attrname;
@@ -632,7 +646,21 @@ int rep_fsetxattr (int filedes, const char *name, const void *value, size_t size
 	return retval;
 #endif
 #elif defined(HAVE_XATTR_EA)
-	return fsetea(filedes, name, value, size, flags);
+	if (flags) {
+		retval = fgetea(filedes, name, NULL, 0);
+		if (retval < 0) {
+			if (flags & XATTR_REPLACE && errno == ENOATTR) {
+				return -1;
+			}
+		} else {
+			if (flags & XATTR_CREATE) {
+				errno = EEXIST;
+				return -1;
+			}
+		}
+	}
+	retval = fsetea(filedes, name, value, size, 0);
+	return retval;
 #elif defined(HAVE_XATTR_EXTATTR)
 	int attrnamespace;
 	const char *attrname;
