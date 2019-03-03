@@ -380,6 +380,22 @@ static int ltdb_parse_record(struct ldb_kv_private *ldb_kv,
 	return ltdb_err_map(tdb_error(ldb_kv->tdb));
 }
 
+static int ltdb_iterate_range(struct ldb_kv_private *ldb_kv,
+			      struct ldb_val start_key,
+			      struct ldb_val end_key,
+			      ldb_kv_traverse_fn fn,
+			      void *ctx)
+{
+	/*
+	 * We do not implement this operation because we do not know how to
+	 * iterate from one key to the next (in a sorted fashion).
+	 *
+	 * We could mimic it potentially, but it would violate boundaries of
+	 * knowledge (data type representation).
+	 */
+	return LDB_ERR_OPERATIONS_ERROR;
+}
+
 static const char *ltdb_name(struct ldb_kv_private *ldb_kv)
 {
 	return tdb_name(ldb_kv->tdb);
@@ -423,6 +439,7 @@ static const struct kv_db_ops key_value_ops = {
     .iterate = ltdb_traverse_fn,
     .update_in_iterate = ltdb_update_in_iterate,
     .fetch_and_parse = ltdb_parse_record,
+    .iterate_range = ltdb_iterate_range,
     .lock_read = ltdb_lock_read,
     .unlock_read = ltdb_unlock_read,
     .begin_write = ltdb_transaction_start,

@@ -32,6 +32,11 @@ struct kv_db_ops {
 					     struct ldb_val data,
 					     void *private_data),
 			       void *ctx);
+	int (*iterate_range)(struct ldb_kv_private *ldb_kv,
+			     struct ldb_val start_key,
+			     struct ldb_val end_key,
+			     ldb_kv_traverse_fn fn,
+			     void *ctx);
 	int (*lock_read)(struct ldb_module *);
 	int (*unlock_read)(struct ldb_module *);
 	int (*begin_write)(struct ldb_kv_private *);
