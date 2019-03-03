@@ -7,12 +7,7 @@ variables:
   GIT_DEPTH: "3"
 
 before_script:
-  - echo "Build starting (preparing swap)..."
-  - if [ $(df -m / --output=avail | tail -n1) -gt 10240 ]; then
-      sudo dd if=/dev/zero of=/samba-swap bs=1M count=6144;
-      sudo mkswap /samba-swap;
-      sudo swapon /samba-swap;
-    fi
+  - echo "Build starting..."
 
 after_script:
   - tar -xf logs.tar.gz system-info.txt -O
