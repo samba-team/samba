@@ -251,10 +251,10 @@ def SAMBA_LIBRARY(bld, libname, source,
         features += ' abi_check'
 
     if pyembed and bld.env['PYTHON_SO_ABI_FLAG']:
-        # For ABI checking, we don't care about the exact Python version.
-        # Replace the Python ABI tag (e.g. ".cpython-35m") by a generic ".py3"
+        # For ABI checking, we don't care about the Python version.
+        # Remove the Python ABI tag (e.g. ".cpython-35m")
         abi_flag = bld.env['PYTHON_SO_ABI_FLAG']
-        replacement = '.py%s' % bld.env['PYTHON_VERSION'].split('.')[0]
+        replacement = ''
         version_libname = libname.replace(abi_flag, replacement)
     else:
         version_libname = libname
