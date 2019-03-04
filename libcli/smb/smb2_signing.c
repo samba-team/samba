@@ -27,6 +27,19 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+bool smb2_signing_key_valid(const struct smb2_signing_key *key)
+{
+	if (key == NULL) {
+		return false;
+	}
+
+	if (key->blob.length == 0 || key->blob.data == NULL) {
+		return false;
+	}
+
+	return true;
+}
+
 NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
 			       enum protocol_types protocol,
 			       struct iovec *vector,

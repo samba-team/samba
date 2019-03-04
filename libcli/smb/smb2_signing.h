@@ -21,7 +21,17 @@
 #ifndef _LIBCLI_SMB_SMB2_SIGNING_H_
 #define _LIBCLI_SMB_SMB2_SIGNING_H_
 
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
+
 struct iovec;
+
+struct smb2_signing_key {
+	gnutls_hmac_hd_t hmac_hnd;
+	DATA_BLOB blob;
+};
+
+bool smb2_signing_key_valid(const struct smb2_signing_key *key);
 
 NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
 			       enum protocol_types protocol,
