@@ -2852,9 +2852,8 @@ static void cli_smb2_mxac_opened(struct tevent_req *subreq)
 	struct cli_smb2_mxac_state *state = tevent_req_data(
 		req, struct cli_smb2_mxac_state);
 	struct smb2_create_blobs out_cblobs = {0};
-	DATA_BLOB *mxac_blob = NULL;
+	struct smb2_create_blob *mxac_blob = NULL;
 	NTSTATUS status;
-	int i;
 
 	status = cli_smb2_create_fnum_recv(
 		subreq, &state->fnum, NULL, state, &out_cblobs);
@@ -2864,24 +2863,18 @@ static void cli_smb2_mxac_opened(struct tevent_req *subreq)
 		return;
 	}
 
-	for (i = 0; i < out_cblobs.num_blobs; i++) {
-		if (strcmp(out_cblobs.blobs[i].tag, SMB2_CREATE_TAG_MXAC) != 0) {
-			continue;
-		}
-		mxac_blob = &out_cblobs.blobs[i].data;
-		break;
-	}
+	mxac_blob = smb2_create_blob_find(&out_cblobs, SMB2_CREATE_TAG_MXAC);
 	if (mxac_blob == NULL) {
 		state->status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto close;
 	}
-	if (mxac_blob->length != 8) {
+	if (mxac_blob->data.length != 8) {
 		state->status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		goto close;
 	}
 
-	state->status = NT_STATUS(IVAL(mxac_blob->data, 0));
-	state->mxac = IVAL(mxac_blob->data, 4);
+	state->status = NT_STATUS(IVAL(mxac_blob->data.data, 0));
+	state->mxac = IVAL(mxac_blob->data.data, 4);
 
 close:
 	subreq = cli_smb2_close_fnum_send(
