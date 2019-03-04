@@ -923,6 +923,7 @@ struct cli_smb2_unlink_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
 	const char *fname;
+	const struct smb2_create_blobs *in_cblobs;
 };
 
 static void cli_smb2_unlink_opened1(struct tevent_req *subreq);
@@ -933,7 +934,8 @@ struct tevent_req *cli_smb2_unlink_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
 	struct cli_state *cli,
-	const char *fname)
+	const char *fname,
+	const struct smb2_create_blobs *in_cblobs)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_smb2_unlink_state *state = NULL;
@@ -945,6 +947,7 @@ struct tevent_req *cli_smb2_unlink_send(
 	state->ev = ev;
 	state->cli = cli;
 	state->fname = fname;
+	state->in_cblobs = in_cblobs;
 
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -965,7 +968,7 @@ struct tevent_req *cli_smb2_unlink_send(
 		FILE_SHARE_DELETE, /* share_access */
 		FILE_OPEN,		/* create_disposition */
 		FILE_DELETE_ON_CLOSE,	/* create_options */
-		NULL);			/* in_cblobs */
+		state->in_cblobs);	/* in_cblobs */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1007,7 +1010,7 @@ static void cli_smb2_unlink_opened1(struct tevent_req *subreq)
 			FILE_OPEN,		/* create_disposition */
 			FILE_DELETE_ON_CLOSE|
 			FILE_OPEN_REPARSE_POINT, /* create_options */
-			NULL);			 /* in_cblobs */
+			state->in_cblobs);	 /* in_cblobs */
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -1059,7 +1062,10 @@ NTSTATUS cli_smb2_unlink_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
-NTSTATUS cli_smb2_unlink(struct cli_state *cli, const char *fname)
+NTSTATUS cli_smb2_unlink(
+	struct cli_state *cli,
+	const char *fname,
+	const struct smb2_create_blobs *in_cblobs)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -1078,7 +1084,7 @@ NTSTATUS cli_smb2_unlink(struct cli_state *cli, const char *fname)
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_smb2_unlink_send(frame, ev, cli, fname);
+	req = cli_smb2_unlink_send(frame, ev, cli, fname, in_cblobs);
 	if (req == NULL) {
 		goto fail;
 	}
