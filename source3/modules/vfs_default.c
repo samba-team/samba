@@ -1025,10 +1025,7 @@ static off_t vfswrap_lseek(vfs_handle_struct *handle, files_struct *fsp, off_t o
 
 	START_PROFILE(syscall_lseek);
 
-	/* Cope with 'stat' file opens. */
-	if (fsp->fh->fd != -1)
-		result = lseek(fsp->fh->fd, offset, whence);
-
+	result = lseek(fsp->fh->fd, offset, whence);
 	/*
 	 * We want to maintain the fiction that we can seek
 	 * on a fifo for file system purposes. This allows

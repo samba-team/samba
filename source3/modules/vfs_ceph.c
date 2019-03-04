@@ -575,10 +575,7 @@ static off_t cephwrap_lseek(struct vfs_handle_struct *handle, files_struct *fsp,
 	off_t result = 0;
 
 	DBG_DEBUG("[CEPH] cephwrap_lseek\n");
-	/* Cope with 'stat' file opens. */
-	if (fsp->fh->fd != -1) {
-		result = ceph_lseek(handle->data, fsp->fh->fd, offset, whence);
-	}
+	result = ceph_lseek(handle->data, fsp->fh->fd, offset, whence);
 	WRAP_RETURN(result);
 }
 
