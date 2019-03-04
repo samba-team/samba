@@ -152,7 +152,7 @@ bld.SAMBA3_LIBRARY('samba-passdb',
                                   ''',
                    abi_match=private_pdb_match,
                    abi_directory='passdb/ABI',
-                   vnum='0.27.1')
+                   vnum='0.27.2')
 
 bld.SAMBA3_SUBSYSTEM('pdb',
                    source='''
