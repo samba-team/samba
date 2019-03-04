@@ -515,7 +515,21 @@ static int rootdse_add_dynamic(struct rootdse_context *ac, struct ldb_message *m
 					    DSDB_SEARCH_SHOW_EXTENDED_DN,
 					    ac->req);
 		if (ret != LDB_SUCCESS) {
-			return ldb_operr(ldb);
+			DBG_WARNING("Failed to convert GUID into full DN in rootDSE for %s: %s: %s\n",
+				    guid_attrs[i],
+				    ldb_dn_get_extended_linearized(ac, attr_dn, 1),
+				    ldb_errstring(ldb));
+			/*
+			 * Provide a meaninful error string but not
+			 * confidential DB contents possibly in the
+			 * original string
+			 */
+			ldb_asprintf_errstring(ldb,
+					       "Failed to find full DN for %s: %s",
+					       guid_attrs[i],
+					       ldb_dn_get_extended_linearized(ac, attr_dn, 1));
+			/* Overstamp the error code, it would confuse the caller */
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
 		el = ldb_msg_find_element(msg, guid_attrs[i]);
