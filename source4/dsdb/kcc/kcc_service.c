@@ -68,6 +68,7 @@ static WERROR kccsrv_connect_samdb(struct kccsrv_service *service, struct loadpa
 
 	ntds_guid = samdb_ntds_objectGUID(service->samdb);
 	if (!ntds_guid) {
+		DBG_ERR("Failed to determine own NTDS objectGUID\n");
 		return WERR_DS_UNAVAILABLE;
 	}
 
