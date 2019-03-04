@@ -707,6 +707,7 @@ struct cli_smb2_rmdir_state {
 	struct tevent_context *ev;
 	struct cli_state *cli;
 	const char *dname;
+	const struct smb2_create_blobs *in_cblobs;
 	uint16_t fnum;
 	NTSTATUS status;
 };
@@ -716,10 +717,12 @@ static void cli_smb2_rmdir_opened2(struct tevent_req *subreq);
 static void cli_smb2_rmdir_disp_set(struct tevent_req *subreq);
 static void cli_smb2_rmdir_closed(struct tevent_req *subreq);
 
-struct tevent_req *cli_smb2_rmdir_send(TALLOC_CTX *mem_ctx,
-				       struct tevent_context *ev,
-				       struct cli_state *cli,
-				       const char *dname)
+struct tevent_req *cli_smb2_rmdir_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *dname,
+	const struct smb2_create_blobs *in_cblobs)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_smb2_rmdir_state *state = NULL;
@@ -731,6 +734,7 @@ struct tevent_req *cli_smb2_rmdir_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->cli = cli;
 	state->dname = dname;
+	state->in_cblobs = in_cblobs;
 
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -749,7 +753,7 @@ struct tevent_req *cli_smb2_rmdir_send(TALLOC_CTX *mem_ctx,
 		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access */
 		FILE_OPEN,		/* create_disposition */
 		FILE_DIRECTORY_FILE,	/* create_options */
-		NULL);			/* in_cblobs */
+		state->in_cblobs);	/* in_cblobs */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -790,7 +794,7 @@ static void cli_smb2_rmdir_opened1(struct tevent_req *subreq)
 			FILE_DIRECTORY_FILE|
 			FILE_DELETE_ON_CLOSE|
 			FILE_OPEN_REPARSE_POINT, /* create_options */
-			NULL);				 /* in_cblobs */
+			state->in_cblobs);	 /* in_cblobs */
 		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
@@ -873,7 +877,10 @@ NTSTATUS cli_smb2_rmdir_recv(struct tevent_req *req)
 	return state->status;
 }
 
-NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dname)
+NTSTATUS cli_smb2_rmdir(
+	struct cli_state *cli,
+	const char *dname,
+	const struct smb2_create_blobs *in_cblobs)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev;
@@ -892,7 +899,7 @@ NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dname)
 	if (ev == NULL) {
 		goto fail;
 	}
-	req = cli_smb2_rmdir_send(frame, ev, cli, dname);
+	req = cli_smb2_rmdir_send(frame, ev, cli, dname, in_cblobs);
 	if (req == NULL) {
 		goto fail;
 	}
