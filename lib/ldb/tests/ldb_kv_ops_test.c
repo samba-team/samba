@@ -718,7 +718,6 @@ static int traverse_fn(struct ldb_kv_private *ldb_kv,
 	return LDB_SUCCESS;
 }
 
-
 /*
  * Test that iterate visits all the records.
  */
@@ -787,6 +786,128 @@ static void test_iterate(void **state)
 	assert_int_equal(ret, 0);
 
 	TALLOC_FREE(tmp_ctx);
+}
+
+static void do_iterate_range_test(void **state, int range_start,
+				  int range_end, bool fail)
+{
+	int ret;
+	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
+							  struct test_ctx);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
+	int i;
+	int num_recs = 1024;
+	int skip_recs = 10;
+	int visits[num_recs];
+	struct ldb_val sk, ek;
+
+	TALLOC_CTX *tmp_ctx;
+
+	for (i = 0; i < num_recs; i++){
+		visits[i] = 0;
+	}
+
+	/*
+	 * No iterate_range on tdb
+	 */
+	if (strcmp(TEST_BE, "tdb") == 0) {
+		return;
+	}
+
+	tmp_ctx = talloc_new(test_ctx);
+	assert_non_null(tmp_ctx);
+
+	/*
+	 * Begin a transaction
+	 */
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
+	assert_int_equal(ret, 0);
+
+	/*
+	 * Write the records
+	 */
+	for (i = skip_recs; i <= num_recs - skip_recs; i++) {
+		struct ldb_val key;
+		struct ldb_val rec;
+		int flags = 0;
+
+		key.data   = (uint8_t *)talloc_asprintf(tmp_ctx,
+							"key %04d",
+							i);
+		key.length = strlen((char *)key.data);
+
+		rec.data = (uint8_t *)talloc_asprintf(tmp_ctx,
+						      "data for record (%04d)",
+						      i);
+		rec.length = strlen((char *)rec.data) + 1;
+
+		ret = ldb_kv->kv_ops->store(ldb_kv, key, rec, flags);
+		assert_int_equal(ret, 0);
+
+		TALLOC_FREE(key.data);
+		TALLOC_FREE(rec.data);
+	}
+
+	/*
+	 * Commit the transaction
+	 */
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
+	assert_int_equal(ret, 0);
+
+	sk.data = (uint8_t *)talloc_asprintf(tmp_ctx, "key %04d", range_start);
+	sk.length = strlen((char *)sk.data);
+
+	ek.data = (uint8_t *)talloc_asprintf(tmp_ctx, "key %04d", range_end);
+	ek.length = strlen((char *)ek.data) + 1;
+
+	ret = ldb_kv->kv_ops->lock_read(test_ctx->ldb->modules);
+	assert_int_equal(ret, 0);
+	ret = ldb_kv->kv_ops->iterate_range(ldb_kv, sk, ek,
+					    traverse_fn, visits);
+	if (fail){
+		assert_int_equal(ret, LDB_ERR_PROTOCOL_ERROR);
+		TALLOC_FREE(tmp_ctx);
+		return;
+	} else{
+		assert_int_equal(ret, 0);
+	}
+	for (i = 0; i < num_recs; i++) {
+		if (i >= skip_recs && i <= num_recs - skip_recs &&
+		    i >= range_start && i <= range_end){
+			assert_int_equal(1, visits[i]);
+		} else {
+			assert_int_equal(0, visits[i]);
+		}
+	}
+
+	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
+	assert_int_equal(ret, 0);
+
+	TALLOC_FREE(tmp_ctx);
+}
+
+/*
+ * Test that iterate_range visits all the records between two keys.
+ */
+static void test_iterate_range(void **state)
+{
+	do_iterate_range_test(state, 300, 900, false);
+
+	/*
+	 * test start_key = end_key
+	 */
+	do_iterate_range_test(state, 20, 20, false);
+
+	/*
+	 * test reverse range fails
+	 */
+	do_iterate_range_test(state, 50, 40, true);
+
+	/*
+	 * keys are between 10-1014 so test with keys outside that range
+	 */
+	do_iterate_range_test(state, 0, 20, false);
+	do_iterate_range_test(state, 1010, 1030, false);
 }
 
 struct update_context {
@@ -1624,6 +1745,10 @@ int main(int argc, const char **argv)
 			teardown),
 		cmocka_unit_test_setup_teardown(
 			test_iterate,
+			setup,
+			teardown),
+		cmocka_unit_test_setup_teardown(
+			test_iterate_range,
 			setup,
 			teardown),
 		cmocka_unit_test_setup_teardown(
