@@ -376,7 +376,10 @@ typedef int (*ldb_attr_operator_t)(struct ldb_context *, enum ldb_parse_op opera
   ldif_read_fn		-> convert from ldif to binary format
   ldif_write_fn		-> convert from binary to ldif format
   canonicalise_fn	-> canonicalise a value, for use by indexing and dn construction
+  index_form_fn		-> get lexicographically sorted format for index
   comparison_fn		-> compare two values
+  operator_fn		-> override function for optimizing out unnecessary
+				calls to canonicalise_fn and comparison_fn
 */
 
 struct ldb_schema_syntax {
@@ -384,6 +387,7 @@ struct ldb_schema_syntax {
 	ldb_attr_handler_t ldif_read_fn;
 	ldb_attr_handler_t ldif_write_fn;
 	ldb_attr_handler_t canonicalise_fn;
+	ldb_attr_handler_t index_format_fn;
 	ldb_attr_comparison_t comparison_fn;
 	ldb_attr_operator_t operator_fn;
 };
