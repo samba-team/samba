@@ -80,6 +80,12 @@ struct tevent_req *cli_smb2_rmdir_send(TALLOC_CTX *mem_ctx,
 				       const char *dname);
 NTSTATUS cli_smb2_rmdir_recv(struct tevent_req *req);
 NTSTATUS cli_smb2_rmdir(struct cli_state *cli, const char *dirname);
+struct tevent_req *cli_smb2_unlink_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *fname);
+NTSTATUS cli_smb2_unlink_recv(struct tevent_req *req);
 NTSTATUS cli_smb2_unlink(struct cli_state *cli,const char *fname);
 NTSTATUS cli_smb2_list(struct cli_state *cli,
 			const char *pathname,
