@@ -346,23 +346,9 @@ bool winbind_sid_to_uid(uid_t *puid, const struct dom_sid *sid)
 	return false;
 }
 
-/* Call winbindd to convert uid to sid */
-
-bool winbind_uid_to_sid(struct dom_sid *sid, uid_t uid)
-{
-	return false;
-}
-
 /* Call winbindd to convert SID to gid */
 
 bool winbind_sid_to_gid(gid_t *pgid, const struct dom_sid *sid)
-{
-	return false;
-}
-
-/* Call winbindd to convert gid to sid */
-
-bool winbind_gid_to_sid(struct dom_sid *sid, gid_t gid)
 {
 	return false;
 }
