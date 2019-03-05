@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.10.  This is *not*
+This is the fourth release candidate of Samba 4.10.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -238,8 +238,54 @@ smb.conf changes
                               "smbd:async dosmode"
   smbd max async dosmode      Name changed, old name was
                               "smbd:max async dosmode"
-  smbd getinfo ask sharemode  New: similar to "smbd search ask  yes
+  smbd getinfo ask sharemode  New: similar to "smbd search ask yes
                               sharemode" but for SMB getinfo
+
+
+CHANGES SINCE 4.10.0rc3
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13803: SMB1 POSIX mkdir does case insensitive name lookup.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13802: Fix idmap xid2sid cache issue.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 13807: vfs_ceph strict_allocate_ftruncate calls (local FS) ftruncate
+     and fallocate.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13786: messages_dgm: Properly handle receiver re-initialization.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 13765: man pages: Document prefork process model.
+   * BUG 13773: CVE-2019-3824 ldb: wildcard_match end of data check.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * tdb: Fix compatibility of wscript with older python.
+   * tevent: version 0.9.39
+   * BUG 13773: CVE-2019-3824 ldb: version 1.5.4
+
+o  David Mulder <dmulder@suse.com>
+   * Search for location of waf script.
+
+o  Noel Power <noel.power@suse.com>
+   * BUG 13777: buildtools/wafsamba: Avoid decode when using python2.
+
+o  Jiří Šašek <jiri.sasek@oracle.com>
+   * BUG 13704: notifyd: Fix SIGBUS on sparc.
+
+o  Swen Schillig <swen@linux.ibm.com>
+   * BUG 13791: ctdb: Buffer write beyond limits.
+
+o  Lukas Slebodnik <lslebodn@fedoraproject.org>
+   * BUG 13773: CVE-2019-3824 ldb: Out of bound read in ldb_wildcard_compare.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13790: ctdb-config: Change example recovery lock setting to one that
+     fails.
+   * BUG 13800: Fix recovery lock bug.
 
 
 CHANGES SINCE 4.10.0rc2
