@@ -668,7 +668,6 @@ static int paged_search(struct ldb_module *module, struct ldb_request *req)
 						req->op.search.scope,
 						req->op.search.tree,
 						attrs,
-						//TODO req->op.search.attrs,
 						controls,
 						ac,
 						paged_search_callback,
