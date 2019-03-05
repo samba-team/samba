@@ -400,6 +400,13 @@ bool winbind_gid_to_sid(struct dom_sid *sid, gid_t gid)
 	return false;
 }
 
+/* Call winbindd to convert uid or gid to SID */
+
+bool winbind_xid_to_sid(struct dom_sid *sid, const struct unixid *xid)
+{
+	return false;
+}
+
 /* Check for a trusted domain */
 
 wbcErr wb_is_trusted_domain(const char *domain)
