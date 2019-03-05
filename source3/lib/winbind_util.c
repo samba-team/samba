@@ -23,9 +23,9 @@
 #include "../lib/util/util_pw.h"
 #include "nsswitch/libwbclient/wbclient.h"
 
-#if defined(WITH_WINBIND)
-
 #include "lib/winbind_util.h"
+
+#if defined(WITH_WINBIND)
 
 struct passwd * winbind_getpwnam(const char * name)
 {
