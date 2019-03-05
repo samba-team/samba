@@ -231,6 +231,41 @@ _NORETURN_ static void max_runtime_handler(struct tevent_context *ev,
 }
 
 /*
+ * When doing an in-place upgrade of Samba, the database format may have
+ * changed between versions. E.g. between 4.7 and 4.8 the DB changed from
+ * DN-based indexes to GUID-based indexes, so we have to re-index the DB after
+ * upgrading.
+ * This function handles migrating an older samba DB to a new Samba release.
+ * Note that we have to maintain DB compatibility between *all* older versions
+ * of Samba, not just the ones still under maintenance support.
+ */
+static int handle_inplace_db_upgrade(struct ldb_context *ldb_ctx)
+{
+	int ret;
+
+	/*
+	 * The DSDB stack will handle reindexing the DB (if needed) upon the first
+	 * DB write. Open and close a transaction on the DB now to trigger a
+	 * reindex if required, rather than waiting for the first write.
+	 * We do this here to guarantee that the DB will have been re-indexed by
+	 * the time the main samba code runs.
+	 * Refer to dsdb_schema_set_indices_and_attributes() for the actual reindexing
+	 * code, called from
+	 * source4/dsdb/samdb/ldb_modules/schema_load.c:schema_load_start_transaction()
+	 */
+	ret = ldb_transaction_start(ldb_ctx);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	ret = ldb_transaction_commit(ldb_ctx);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+	return LDB_SUCCESS;
+}
+
+/*
   pre-open the key databases. This saves a lot of time in child
   processes
  */
@@ -262,6 +297,13 @@ static int prime_ldb_databases(struct tevent_context *event_ctx, bool *am_backup
 		talloc_free(db_context);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
+	ret = handle_inplace_db_upgrade(ldb_ctx);
+	if (ret != LDB_SUCCESS) {
+		talloc_free(db_context);
+		return ret;
+	}
+
 	pdb = privilege_connect(db_context, cmdline_lp_ctx);
 	if (pdb == NULL) {
 		talloc_free(db_context);
