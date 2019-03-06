@@ -1790,7 +1790,7 @@ class IndexedAddModifyTests(AddModifyTests):
     def setUp(self):
         if not hasattr(self, 'index'):
             self.index = {"dn": "@INDEXLIST",
-                          "@IDXATTR": [b"x", b"y", b"ou", b"objectUUID"],
+                          "@IDXATTR": [b"x", b"y", b"ou", b"objectUUID", b"z"],
                           "@IDXONE": [b"1"]}
         super(IndexedAddModifyTests, self).setUp()
 
@@ -1861,6 +1861,16 @@ class IndexedAddModifyTests(AddModifyTests):
                     "name": b"Admins",
                     "x": "z", "y": "a",
                     "objectUUID": b"0123456789abcde2"})
+
+    def test_duplicate_index_values(self):
+        self.l.add({"dn": "OU=DIV1,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "z": "1",
+                    "objectUUID": b"0123456789abcdff"})
+        self.l.add({"dn": "OU=DIV2,DC=SAMBA,DC=ORG",
+                    "name": b"Admins",
+                    "z": "1",
+                    "objectUUID": b"0123456789abcdfd"})
 
 
 class GUIDIndexedAddModifyTests(IndexedAddModifyTests):
@@ -2071,6 +2081,62 @@ class BadIndexTests(LdbBaseTest):
             # https://bugzilla.samba.org/show_bug.cgi?id=13361
             self.assertEqual(len(res), 4)
 
+    def test_modify_transaction(self):
+        self.ldb.add({"dn": "x=y,dc=samba,dc=org",
+                      "objectUUID": b"0123456789abcde1",
+                      "y": "2",
+                      "z": "2"})
+
+        res = self.ldb.search(expression="(y=2)",
+                              base="dc=samba,dc=org")
+        self.assertEqual(len(res), 1)
+
+        self.ldb.add({"dn": "@ATTRIBUTES",
+                      "y": "UNIQUE_INDEX"})
+
+        self.ldb.transaction_start()
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb, "x=y,dc=samba,dc=org")
+        m["0"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, "y")
+        m["1"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, "not-here")
+
+        try:
+            self.ldb.modify(m)
+            self.fail()
+
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_NO_SUCH_ATTRIBUTE)
+
+        try:
+            self.ldb.transaction_commit()
+            # We should fail here, but we want to be sure
+            # we fail below
+
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_OPERATIONS_ERROR)
+
+        # The index should still be pointing to x=y
+        res = self.ldb.search(expression="(y=2)",
+                              base="dc=samba,dc=org")
+        self.assertEqual(len(res), 1)
+
+        try:
+            self.ldb.add({"dn": "x=y2,dc=samba,dc=org",
+                        "objectUUID": b"0123456789abcde2",
+                        "y": "2"})
+            self.fail("Added unique attribute twice")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_CONSTRAINT_VIOLATION)
+
+        res = self.ldb.search(expression="(y=2)",
+                              base="dc=samba,dc=org")
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0].dn), "x=y,dc=samba,dc=org")
+
     def tearDown(self):
         super(BadIndexTests, self).tearDown()
 
@@ -2082,6 +2148,20 @@ class GUIDBadIndexTests(BadIndexTests):
         self.IDXGUID = True
 
         super(GUIDBadIndexTests, self).setUp()
+
+
+class GUIDBadIndexTestsLmdb(BadIndexTests):
+
+    def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
+        self.prefix = MDB_PREFIX
+        self.index = MDB_INDEX_OBJ
+        self.IDXGUID = True
+        super(GUIDBadIndexTestsLmdb, self).setUp()
+
+    def tearDown(self):
+        super(GUIDBadIndexTestsLmdb, self).tearDown()
 
 
 class DnTests(TestCase):

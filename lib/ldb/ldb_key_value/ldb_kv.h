@@ -85,7 +85,19 @@ struct ldb_kv_private {
 
 	bool check_base;
 	bool disallow_dn_filter;
+	/*
+	 * To improve the performance of batch operations we maintain a cache
+	 * of index records, these entries get written to disk in the
+	 * prepare_commit phase.
+	 */
 	struct ldb_kv_idxptr *idxptr;
+	/*
+	 * To ensure that the indexes in idxptr are consistent we cache any
+	 * index updates during an operation, i.e. ldb_kv_add, ldb_kv_delete ...
+	 * Once the changes to the data record have been commited to disk
+	 * the contents of this cache are copied to idxptr
+	 */
+	struct ldb_kv_idxptr *nested_idx_ptr;
 	bool prepared_commit;
 	int read_lock_count;
 

@@ -469,14 +469,6 @@ static bool ldb_kv_single_valued(const struct ldb_schema_attribute *a,
 	return false;
 }
 
-
-/*
- * Place holder actual implementation to be added in subsequent commits
- */
-int ldb_kv_index_sub_transaction_start(struct ldb_kv_private *ldb_kv)
-{
-	return LDB_SUCCESS;
-}
 /*
  * Starts a sub transaction if they are supported by the backend
  */
@@ -492,13 +484,6 @@ static int ldb_kv_sub_transaction_start(struct ldb_kv_private *ldb_kv)
 }
 
 /*
- * Place holder actual implementation to be added in subsequent commits
- */
-int ldb_kv_index_sub_transaction_commit(struct ldb_kv_private *ldb_kv)
-{
-	return LDB_SUCCESS;
-}
-/*
  * Commits a sub transaction if they are supported by the backend
  */
 static int ldb_kv_sub_transaction_commit(struct ldb_kv_private *ldb_kv)
@@ -513,13 +498,6 @@ static int ldb_kv_sub_transaction_commit(struct ldb_kv_private *ldb_kv)
 	return ret;
 }
 
-/*
- * Place holder actual implementation to be added in subsequent commits
- */
-int ldb_kv_index_sub_transaction_cancel(struct ldb_kv_private *ldb_kv)
-{
-	return LDB_SUCCESS;
-}
 /*
  * Cancels a sub transaction if they are supported by the backend
  */
