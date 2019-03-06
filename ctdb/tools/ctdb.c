@@ -325,10 +325,9 @@ static bool parse_nodestring(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		tok = strtok(ns, ",");
 		while (tok != NULL) {
 			uint32_t pnn;
-			char *endptr;
 
-			pnn = (uint32_t)strtoul_err(tok, &endptr, 0, &error);
-			if (error != 0 || (pnn == 0 && tok == endptr)) {
+			pnn = (uint32_t)strtoul_err(tok, NULL, 0, &error);
+			if (error != 0) {
 				fprintf(stderr, "Invalid node %s\n", tok);
 					return false;
 			}
