@@ -291,7 +291,7 @@ int ctdb_sock_addr_from_string(const char *str,
 	}
 
 	port = strtoul_err(p+1, &endp, 10, &ret);
-	if (endp == p+1 || *endp != '\0' || ret != 0) {
+	if (ret != 0 || *endp != '\0') {
 		/* Empty string or trailing garbage */
 		return EINVAL;
 	}
@@ -330,7 +330,7 @@ int ctdb_sock_addr_mask_from_string(const char *str,
 	}
 
 	m = strtoul_err(p+1, &endp, 10, &ret);
-	if (endp == p+1 || *endp != '\0' || ret != 0) {
+	if (ret != 0 || *endp != '\0') {
 		/* Empty string or trailing garbage */
 		return EINVAL;
 	}
