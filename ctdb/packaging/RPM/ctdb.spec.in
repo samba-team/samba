@@ -258,7 +258,7 @@ development libraries for ctdb
 Summary: CTDB test suite
 Group: Development/Tools
 Requires: ctdb = %{version}
-Requires: nc
+Requires: nc, tcpdump
 
 %description tests
 test suite for ctdb
