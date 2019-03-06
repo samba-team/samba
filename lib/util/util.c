@@ -7,7 +7,8 @@
    Copyright (C) Jim McDonough (jmcd@us.ibm.com)  2003.
    Copyright (C) James J Myers 2003
    Copyright (C) Volker Lendecke 2010
-   
+   Copyright (C) Swen Schillig 2019
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -60,6 +61,7 @@
  * - wrong base
  * - value overflow
  * - string with a leading "-" indicating a negative number
+ * - no conversion due to empty string or not representing a number
  */
 unsigned long int
 strtoul_err(const char *nptr, char **endptr, int base, int *err)
@@ -80,6 +82,13 @@ strtoul_err(const char *nptr, char **endptr, int base, int *err)
 
 	if (errno != 0) {
 		*err = errno;
+		errno = saved_errno;
+		return val;
+	}
+
+	/* got an invalid number-string resulting in no conversion */
+	if (nptr == tmp_endptr) {
+		*err = EINVAL;
 		errno = saved_errno;
 		return val;
 	}
@@ -107,6 +116,7 @@ strtoul_err(const char *nptr, char **endptr, int base, int *err)
  * - wrong base
  * - value overflow
  * - string with a leading "-" indicating a negative number
+ * - no conversion due to empty string or not representing a number
  */
 unsigned long long int
 strtoull_err(const char *nptr, char **endptr, int base, int *err)
@@ -127,6 +137,13 @@ strtoull_err(const char *nptr, char **endptr, int base, int *err)
 
 	if (errno != 0) {
 		*err = errno;
+		errno = saved_errno;
+		return val;
+	}
+
+	/* got an invalid number-string resulting in no conversion */
+	if (nptr == tmp_endptr) {
+		*err = EINVAL;
 		errno = saved_errno;
 		return val;
 	}
