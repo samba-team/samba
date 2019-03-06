@@ -527,7 +527,7 @@ static void interpret_interface(char *token)
 		unsigned long val;
 
 		val = strtoul_err(p, &endp, 0, &error);
-		if (p == endp || (endp && *endp != '\0') || error != 0) {
+		if (error != 0 || *endp != '\0') {
 			DEBUG(2,("interpret_interface: "
 				"can't determine netmask value from %s\n",
 				p));

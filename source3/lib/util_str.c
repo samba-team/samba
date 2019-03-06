@@ -859,7 +859,7 @@ uint64_t conv_str_size(const char * str)
 
 	lval = strtoull_err(str, &end, 10, &error);
 
-        if (end == NULL || end == str || error != 0) {
+        if (error != 0) {
                 return 0;
         }
 
