@@ -222,7 +222,7 @@ fi
 %{_bindir}/onnode
 %dir %{_libexecdir}/ctdb
 %{_libexecdir}/ctdb/*
-%dir %{_libdir}
+%dir %{_libdir}/ctdb
 %{_libdir}/ctdb/lib*
 %dir %{_datadir}/ctdb/events
 %{_datadir}/ctdb/events/*
