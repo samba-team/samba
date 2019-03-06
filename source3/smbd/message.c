@@ -306,6 +306,12 @@ void reply_sendend(struct smb_request *req)
 		return;
 	}
 
+	if (xconn->smb1.msg_state == NULL) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		END_PROFILE(SMBsendend);
+		return;
+	}
+
 	DEBUG(3,("SMBsendend\n"));
 
 	msg_deliver(xconn->smb1.msg_state);
