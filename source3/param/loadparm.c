@@ -946,8 +946,6 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.kpasswd_port = 464;
 
-	Globals.web_port = 901;
-
 	Globals.aio_max_threads = 100;
 
 	lpcfg_string_set(Globals.ctx,

@@ -2777,7 +2777,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "cldap port", "389");
 	lpcfg_do_global_parameter(lp_ctx, "krb5 port", "88");
 	lpcfg_do_global_parameter(lp_ctx, "kpasswd port", "464");
-	lpcfg_do_global_parameter(lp_ctx, "web port", "901");
 
 	lpcfg_do_global_parameter(lp_ctx, "nt status support", "True");
 
