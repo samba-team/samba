@@ -437,6 +437,36 @@ static size_t ltdb_get_size(struct ldb_kv_private *ldb_kv)
 	return size;
 }
 
+/*
+ * Start a sub transaction
+ * As TDB does not currently support nested transactions, we do nothing and
+ * return LDB_SUCCESS
+ */
+static int ltdb_nested_transaction_start(struct ldb_kv_private *ldb_kv)
+{
+	return LDB_SUCCESS;
+}
+
+/*
+ * Commit a sub transaction
+ * As TDB does not currently support nested transactions, we do nothing and
+ * return LDB_SUCCESS
+ */
+static int ltdb_nested_transaction_commit(struct ldb_kv_private *ldb_kv)
+{
+	return LDB_SUCCESS;
+}
+
+/*
+ * Cancel a sub transaction
+ * As TDB does not currently support nested transactions, we do nothing and
+ * return LDB_SUCCESS
+ */
+static int ltdb_nested_transaction_cancel(struct ldb_kv_private *ldb_kv)
+{
+	return LDB_SUCCESS;
+}
+
 static const struct kv_db_ops key_value_ops = {
 	/* No support for any additional features */
 	.options = 0,
@@ -459,6 +489,9 @@ static const struct kv_db_ops key_value_ops = {
 	.has_changed = ltdb_changed,
 	.transaction_active = ltdb_transaction_active,
 	.get_size = ltdb_get_size,
+	.begin_nested_write = ltdb_nested_transaction_start,
+	.finish_nested_write = ltdb_nested_transaction_commit,
+	.abort_nested_write = ltdb_nested_transaction_cancel,
 };
 
 /*

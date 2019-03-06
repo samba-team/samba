@@ -739,6 +739,36 @@ static size_t lmdb_get_size(struct ldb_kv_private *ldb_kv)
 	return stats.ms_entries;
 }
 
+/*
+ * Start a sub transaction
+ * As lmdb supports nested transactions we can start a new transaction
+ */
+static int lmdb_nested_transaction_start(struct ldb_kv_private *ldb_kv)
+{
+	int ret = lmdb_transaction_start(ldb_kv);
+	return ret;
+}
+
+/*
+ * Commit a sub transaction
+ * As lmdb supports nested transactions we can commit the nested transaction
+ */
+static int lmdb_nested_transaction_commit(struct ldb_kv_private *ldb_kv)
+{
+	int ret = lmdb_transaction_commit(ldb_kv);
+	return ret;
+}
+
+/*
+ * Cancel a sub transaction
+ * As lmdb supports nested transactions we can cancel the nested transaction
+ */
+static int lmdb_nested_transaction_cancel(struct ldb_kv_private *ldb_kv)
+{
+	int ret = lmdb_transaction_cancel(ldb_kv);
+	return ret;
+}
+
 static struct kv_db_ops lmdb_key_value_ops = {
 	.options            = LDB_KV_OPTION_STABLE_READ_LOCK,
 
@@ -760,6 +790,9 @@ static struct kv_db_ops lmdb_key_value_ops = {
 	.has_changed        = lmdb_changed,
 	.transaction_active = lmdb_transaction_active,
 	.get_size           = lmdb_get_size,
+	.begin_nested_write = lmdb_nested_transaction_start,
+	.finish_nested_write = lmdb_nested_transaction_commit,
+	.abort_nested_write = lmdb_nested_transaction_cancel,
 };
 
 static const char *lmdb_get_path(const char *url)
