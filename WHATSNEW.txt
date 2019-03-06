@@ -54,12 +54,22 @@ The version of the JSON Authentication messages has been changed to 1.2 from 1.1
 REMOVED FEATURES
 ================
 
+Web server
+----------
+
+As a leftover from work related to the Samba Web Administration Tool (SWAT),
+Samba still supported a Python WSGI web server (which could still be turned on
+from the 'server services' smb.conf parameter). This service was unused and has
+now been removed from Samba.
+
 
 smb.conf changes
 ================
 
   Parameter Name                     Description                Default
   --------------                     -----------                -------
+
+  web port                           Removed
 
 
 KNOWN ISSUES
