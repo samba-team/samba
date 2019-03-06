@@ -503,7 +503,7 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
 	else {
 		value = strtoul_err(argv[1], &endptr, 10, &err);
 
-		if ((endptr == argv[1]) || (endptr[0] != '\0') || (err != 0)) {
+		if (err != 0 || *endptr != '\0') {
 			d_printf(_("Unable to set policy \"%s\"! Invalid value "
 				 "\"%s\".\n"),
 				 account_policy, argv[1]);

@@ -631,16 +631,10 @@ static bool parse_uint32(const char *str, uint32_t *result)
 	int error = 0;
 
 	val = strtoul_err(str, &endptr, 10, &error);
+	if (error != 0 || *endptr != '\0') {
+		return false;
+	}
 
-	if (str == endptr) {
-		return false;
-	}
-	if (*endptr != '\0') {
-		return false;
-	}
-	if (error != 0) {
-		return false;
-	}
 	*result = val;		/* Potential crop */
 	return true;
 }

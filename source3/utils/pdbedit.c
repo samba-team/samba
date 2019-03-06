@@ -602,10 +602,7 @@ static int set_user_info(const char *username, const char *fullname,
 			uint32_t num;
 
 			num = strtoul_err(kickoff_time, &endptr, 10, &error);
-			if ((endptr == kickoff_time) ||
-			    (endptr[0] != '\0') ||
-			    (error != 0))
-			{
+			if (error != 0 || *endptr != '\0') {
 				fprintf(stderr, "Failed to parse kickoff time\n");
 				return -1;
 			}

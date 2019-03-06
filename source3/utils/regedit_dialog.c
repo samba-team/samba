@@ -1029,7 +1029,6 @@ bool dialog_section_text_field_get_int(struct dialog_section *section,
 bool dialog_section_text_field_get_uint(struct dialog_section *section,
 				        unsigned long long *out)
 {
-	bool rv;
 	const char *buf;
 	char *endp;
 	int error = 0;
@@ -1043,12 +1042,11 @@ bool dialog_section_text_field_get_uint(struct dialog_section *section,
 		return false;
 	}
 	*out = strtoull_err(buf, &endp, 0, &error);
-	rv = true;
-	if (endp == buf || endp == NULL || endp[0] != '\0' || error != 0) {
-		rv = false;
+	if (error != 0 || *endp != '\0') {
+		return false;
 	}
 
-	return rv;
+	return true;
 }
 
 /* hex editor field */
