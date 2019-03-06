@@ -24,6 +24,9 @@
 #include <assert.h>
 #include "pytalloc_private.h"
 
+static PyObject *pytalloc_steal_or_reference(PyTypeObject *py_type,
+					 TALLOC_CTX *mem_ctx, void *ptr, bool steal);
+
 _PUBLIC_ PyTypeObject *pytalloc_GetObjectType(void)
 {
 	static PyTypeObject *type = NULL;
@@ -90,56 +93,7 @@ static PyTypeObject *pytalloc_GetGenericObjectType(void)
 _PUBLIC_ PyObject *pytalloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx,
 				     void *ptr)
 {
-	PyTypeObject *BaseObjectType = pytalloc_GetBaseObjectType();
-	PyTypeObject *ObjectType = pytalloc_GetObjectType();
-
-	if (mem_ctx == NULL) {
-		return PyErr_NoMemory();
-	}
-
-	if (PyType_IsSubtype(py_type, BaseObjectType)) {
-		pytalloc_BaseObject *ret
-			= (pytalloc_BaseObject *)py_type->tp_alloc(py_type, 0);
-
-		ret->talloc_ctx = talloc_new(NULL);
-		if (ret->talloc_ctx == NULL) {
-			return NULL;
-		}
-
-		/*
-		 * This allows us to keep multiple references to this object -
-		 * we only reference this context, which is per ptr, not the
-		 * talloc_ctx, which is per pytalloc_Object
-		 */
-		if (talloc_steal(ret->talloc_ctx, mem_ctx) == NULL) {
-			return NULL;
-		}
-		ret->talloc_ptr_ctx = mem_ctx;
-		talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
-		ret->ptr = ptr;
-		return (PyObject *)ret;
-
-	} else if (PyType_IsSubtype(py_type, ObjectType)) {
-		pytalloc_Object *ret
-			= (pytalloc_Object *)py_type->tp_alloc(py_type, 0);
-
-		ret->talloc_ctx = talloc_new(NULL);
-		if (ret->talloc_ctx == NULL) {
-			return NULL;
-		}
-
-		if (talloc_steal(ret->talloc_ctx, mem_ctx) == NULL) {
-			return NULL;
-		}
-		talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
-		ret->ptr = ptr;
-		return (PyObject *)ret;
-	} else {
-		PyErr_SetString(PyExc_RuntimeError,
-				"pytalloc_steal_ex() called for object type "
-				"not based on talloc");
-		return NULL;
-	}
+	return pytalloc_steal_or_reference(py_type, mem_ctx, ptr, true);
 }
 
 /**
@@ -147,7 +101,7 @@ _PUBLIC_ PyObject *pytalloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx,
  */
 _PUBLIC_ PyObject *pytalloc_steal(PyTypeObject *py_type, void *ptr)
 {
-	return pytalloc_steal_ex(py_type, ptr, ptr);
+	return pytalloc_steal_or_reference(py_type, ptr, ptr, true);
 }
 
 
@@ -165,6 +119,18 @@ _PUBLIC_ PyObject *pytalloc_steal(PyTypeObject *py_type, void *ptr)
 _PUBLIC_ PyObject *pytalloc_reference_ex(PyTypeObject *py_type,
 					 TALLOC_CTX *mem_ctx, void *ptr)
 {
+	return pytalloc_steal_or_reference(py_type, mem_ctx, ptr, false);
+}
+
+
+/**
+ * Internal function that either steals or referecences the talloc
+ * pointer into a new talloc context.
+ */
+static PyObject *pytalloc_steal_or_reference(PyTypeObject *py_type,
+					 TALLOC_CTX *mem_ctx, void *ptr, bool steal)
+{
+	bool ok = false;
 	PyTypeObject *BaseObjectType = pytalloc_GetBaseObjectType();
 	PyTypeObject *ObjectType = pytalloc_GetObjectType();
 
@@ -179,7 +145,12 @@ _PUBLIC_ PyObject *pytalloc_reference_ex(PyTypeObject *py_type,
 		if (ret->talloc_ctx == NULL) {
 			return NULL;
 		}
-		if (talloc_reference(ret->talloc_ctx, mem_ctx) == NULL) {
+		if (steal) {
+			ok = (talloc_steal(ret->talloc_ctx, mem_ctx) != NULL);
+		} else {
+			ok = (talloc_reference(ret->talloc_ctx, mem_ctx) != NULL);
+		}
+		if (!ok) {
 			return NULL;
 		}
 		talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
@@ -193,7 +164,12 @@ _PUBLIC_ PyObject *pytalloc_reference_ex(PyTypeObject *py_type,
 		if (ret->talloc_ctx == NULL) {
 			return NULL;
 		}
-		if (talloc_reference(ret->talloc_ctx, mem_ctx) == NULL) {
+		if (steal) {
+			ok = (talloc_steal(ret->talloc_ctx, mem_ctx) != NULL);
+		} else {
+			ok = (talloc_reference(ret->talloc_ctx, mem_ctx) != NULL);
+		}
+		if (!ok) {
 			return NULL;
 		}
 		talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
@@ -201,8 +177,7 @@ _PUBLIC_ PyObject *pytalloc_reference_ex(PyTypeObject *py_type,
 		return (PyObject *)ret;
 	} else {
 		PyErr_SetString(PyExc_RuntimeError,
-				"pytalloc_reference_ex() called for object type "
-				"not based on talloc");
+				"Expected type based on talloc");
 		return NULL;
 	}
 }

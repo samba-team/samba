@@ -29,10 +29,10 @@ typedef struct {
 	void *ptr; /* eg the array element */
 } pytalloc_Object;
 
-/* Return the PyTypeObject for pytalloc_Object. Returns a new reference. */
+/* Return the PyTypeObject for pytalloc_Object. Returns a borrowed reference. */
 PyTypeObject *pytalloc_GetObjectType(void);
 
-/* Return the PyTypeObject for pytalloc_BaseObject. Returns a new reference. */
+/* Return the PyTypeObject for pytalloc_BaseObject. Returns a borrowed reference. */
 PyTypeObject *pytalloc_GetBaseObjectType(void);
 
 /* Check whether a specific object is a talloc Object. */
