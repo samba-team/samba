@@ -3337,7 +3337,7 @@ static int verify_cidr(const char *cidr)
 		goto error;
 	}
 
-	if (*endptr != '\0' || endptr == slash + 1 || error != 0){
+	if (error != 0 || *endptr != '\0'){
 		DBG_INFO("CIDR mask is not a proper integer: %s\n", cidr);
 		goto error;
 	}
