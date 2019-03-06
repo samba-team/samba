@@ -70,7 +70,7 @@ _PUBLIC_ bool conv_str_size_error(const char * str, uint64_t * val)
 	}
 
 	lval = strtoull_err(str, &end, 10, &error);
-	if (end == NULL || end == str || error != 0) {
+	if (error != 0) {
 		return false;
 	}
 
@@ -112,7 +112,7 @@ _PUBLIC_ bool conv_str_u64(const char * str, uint64_t * val)
 	}
 
 	lval = strtoull_err(str, &end, 10, &error);
-	if (end == NULL || *end != '\0' || end == str || error != 0) {
+	if (error != 0 || *end != '\0') {
 		return false;
 	}
 

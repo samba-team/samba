@@ -75,7 +75,7 @@ static bool masked_match(const char *tok, const char *slash, const char *s)
 		unsigned long val;
 
 		val = strtoul_err(slash+1, &endp, 0, &error);
-		if (slash+1 == endp || (endp && *endp != '\0') || error != 0) {
+		if (error != 0 || *endp != '\0') {
 			return false;
 		}
 		if (!make_netmask(&ss_mask, &ss_tok, val)) {

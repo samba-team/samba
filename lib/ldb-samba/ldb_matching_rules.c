@@ -393,12 +393,7 @@ static int dsdb_match_for_dns_to_tombstone_time(struct ldb_context *ldb,
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 		}
 		tombstone_time = strtoull_err(s, &p, 10, &error);
-		if (p == NULL ||
-		    p == s ||
-		    *p != '\0' ||
-		    error != 0 ||
-		    tombstone_time == ULLONG_MAX)
-		{
+		if (error != 0 || *p != '\0') {
 			DBG_ERR("Invalid timestamp string passed\n");
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 		}
@@ -529,12 +524,7 @@ static int dsdb_match_for_expunge(struct ldb_context *ldb,
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 		}
 		tombstone_time = strtoull_err(s, &p, 10, &error);
-		if (p == NULL ||
-		    p == s ||
-		    *p != '\0' ||
-		    error != 0 ||
-		    tombstone_time == ULLONG_MAX)
-		{
+		if (error != 0 || *p != '\0') {
 			return LDB_ERR_INVALID_ATTRIBUTE_SYNTAX;
 		}
 	}
