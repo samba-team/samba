@@ -304,4 +304,7 @@ int ldb_kv_init_store(struct ldb_kv_private *ldb_kv,
 		      struct ldb_context *ldb,
 		      const char *options[],
 		      struct ldb_module **_module);
+int ldb_kv_index_sub_transaction_start(struct ldb_kv_private *ldb_kv);
+int ldb_kv_index_sub_transaction_cancel(struct ldb_kv_private *ldb_kv);
+int ldb_kv_index_sub_transaction_commit(struct ldb_kv_private *ldb_kv);
 #endif /* __LDB_KV_H__ */
