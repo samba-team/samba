@@ -1954,7 +1954,7 @@ class BadIndexTests(LdbBaseTest):
 
         res = self.ldb.search(expression="(y=1)",
                               base="dc=samba,dc=org")
-        self.assertEquals(len(res), 3)
+        self.assertEqual(len(res), 3)
 
         # Now set this to unique index, but forget to check the result
         try:
@@ -1967,7 +1967,7 @@ class BadIndexTests(LdbBaseTest):
         # We must still have a working index
         res = self.ldb.search(expression="(y=1)",
                               base="dc=samba,dc=org")
-        self.assertEquals(len(res), 3)
+        self.assertEqual(len(res), 3)
 
     def test_unique_transaction(self):
         self.ldb.add({"dn": "x=x,dc=samba,dc=org",
@@ -1982,7 +1982,7 @@ class BadIndexTests(LdbBaseTest):
 
         res = self.ldb.search(expression="(y=1)",
                               base="dc=samba,dc=org")
-        self.assertEquals(len(res), 3)
+        self.assertEqual(len(res), 3)
 
         self.ldb.transaction_start()
 
@@ -2005,7 +2005,7 @@ class BadIndexTests(LdbBaseTest):
         res = self.ldb.search(expression="(y=1)",
                               base="dc=samba,dc=org")
 
-        self.assertEquals(len(res), 3)
+        self.assertEqual(len(res), 3)
 
     def test_casefold(self):
         self.ldb.add({"dn": "x=x,dc=samba,dc=org",
@@ -2020,7 +2020,7 @@ class BadIndexTests(LdbBaseTest):
 
         res = self.ldb.search(expression="(y=a)",
                               base="dc=samba,dc=org")
-        self.assertEquals(len(res), 2)
+        self.assertEqual(len(res), 2)
 
         self.ldb.add({"dn": "@ATTRIBUTES",
                       "y": "CASE_INSENSITIVE"})
@@ -2030,12 +2030,12 @@ class BadIndexTests(LdbBaseTest):
                               base="dc=samba,dc=org")
 
         if hasattr(self, 'IDXGUID'):
-            self.assertEquals(len(res), 3)
+            self.assertEqual(len(res), 3)
         else:
             # We should not return this entry twice, but sadly
             # we have not yet fixed
             # https://bugzilla.samba.org/show_bug.cgi?id=13361
-            self.assertEquals(len(res), 4)
+            self.assertEqual(len(res), 4)
 
     def test_casefold_transaction(self):
         self.ldb.add({"dn": "x=x,dc=samba,dc=org",
@@ -2050,7 +2050,7 @@ class BadIndexTests(LdbBaseTest):
 
         res = self.ldb.search(expression="(y=a)",
                               base="dc=samba,dc=org")
-        self.assertEquals(len(res), 2)
+        self.assertEqual(len(res), 2)
 
         self.ldb.transaction_start()
 
@@ -2064,12 +2064,12 @@ class BadIndexTests(LdbBaseTest):
                               base="dc=samba,dc=org")
 
         if hasattr(self, 'IDXGUID'):
-            self.assertEquals(len(res), 3)
+            self.assertEqual(len(res), 3)
         else:
             # We should not return this entry twice, but sadly
             # we have not yet fixed
             # https://bugzilla.samba.org/show_bug.cgi?id=13361
-            self.assertEquals(len(res), 4)
+            self.assertEqual(len(res), 4)
 
     def tearDown(self):
         super(BadIndexTests, self).tearDown()
@@ -3058,20 +3058,20 @@ class NestedTransactionTests(LdbBaseTest):
                       "objectUUID": b"0123456789abcde1"})
         res = self.ldb.search(expression="(objectUUID=0123456789abcde1)",
                               base="dc=samba,dc=org")
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         self.ldb.add({"dn": "x=x2,dc=samba,dc=org",
                       "objectUUID": b"0123456789abcde2"})
         res = self.ldb.search(expression="(objectUUID=0123456789abcde2)",
                               base="dc=samba,dc=org")
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         self.ldb.transaction_start()
         self.ldb.add({"dn": "x=x3,dc=samba,dc=org",
                       "objectUUID": b"0123456789abcde3"})
         res = self.ldb.search(expression="(objectUUID=0123456789abcde3)",
                               base="dc=samba,dc=org")
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         self.ldb.transaction_cancel()
         #
         # Check that we can not see the record added by the cancelled
@@ -3102,10 +3102,10 @@ class NestedTransactionTests(LdbBaseTest):
         #
         res = self.ldb.search(expression="(objectUUID=0123456789abcde1)",
                               base="dc=samba,dc=org")
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         res = self.ldb.search(expression="(objectUUID=0123456789abcde2)",
                               base="dc=samba,dc=org")
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         #
         # And that we can't see the records added by the nested transaction.
         #
