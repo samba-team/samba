@@ -281,12 +281,22 @@ static PyObject *module_init(void)
 		return NULL;
 
 	Py_INCREF(&TallocObject_Type);
-	PyModule_AddObject(m, "Object", (PyObject *)&TallocObject_Type);
+	if (PyModule_AddObject(m, "Object", (PyObject *)&TallocObject_Type)) {
+		goto err;
+	}
 	Py_INCREF(&TallocBaseObject_Type);
-	PyModule_AddObject(m, "BaseObject", (PyObject *)&TallocBaseObject_Type);
+	if (PyModule_AddObject(m, "BaseObject", (PyObject *)&TallocBaseObject_Type)) {
+		goto err;
+	}
 	Py_INCREF(&TallocGenericObject_Type);
-	PyModule_AddObject(m, "GenericObject", (PyObject *)&TallocGenericObject_Type);
+	if (PyModule_AddObject(m, "GenericObject", (PyObject *)&TallocGenericObject_Type)) {
+		goto err;
+	}
 	return m;
+
+err:
+	Py_DECREF(m);
+	return NULL;
 }
 
 #if PY_MAJOR_VERSION >= 3
