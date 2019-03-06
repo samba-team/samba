@@ -3029,6 +3029,109 @@ class VersionTests(TestCase):
     def test_version(self):
         self.assertTrue(isinstance(ldb.__version__, str))
 
+class NestedTransactionTests(LdbBaseTest):
+    def setUp(self):
+        super(NestedTransactionTests, self).setUp()
+        self.testdir = tempdir()
+        self.filename = os.path.join(self.testdir, "test.ldb")
+        self.ldb = ldb.Ldb(self.url(), flags=self.flags())
+        self.ldb.add({"dn": "@INDEXLIST",
+                      "@IDXATTR": [b"x", b"y", b"ou"],
+                      "@IDXGUID": [b"objectUUID"],
+                      "@IDX_DN_GUID": [b"GUID"]})
+
+        super(NestedTransactionTests, self).setUp()
+
+    #
+    # This test documents that currently ldb does not support true nested
+    # transactions.
+    #
+    # Note: The test is written so that it treats failure as pass.
+    #       It is done this way as standalone ldb builds do not use the samba
+    #       known fail mechanism
+    #
+    def test_nested_transactions(self):
+
+        self.ldb.transaction_start()
+
+        self.ldb.add({"dn": "x=x1,dc=samba,dc=org",
+                      "objectUUID": b"0123456789abcde1"})
+        res = self.ldb.search(expression="(objectUUID=0123456789abcde1)",
+                              base="dc=samba,dc=org")
+        self.assertEquals(len(res), 1)
+
+        self.ldb.add({"dn": "x=x2,dc=samba,dc=org",
+                      "objectUUID": b"0123456789abcde2"})
+        res = self.ldb.search(expression="(objectUUID=0123456789abcde2)",
+                              base="dc=samba,dc=org")
+        self.assertEquals(len(res), 1)
+
+        self.ldb.transaction_start()
+        self.ldb.add({"dn": "x=x3,dc=samba,dc=org",
+                      "objectUUID": b"0123456789abcde3"})
+        res = self.ldb.search(expression="(objectUUID=0123456789abcde3)",
+                              base="dc=samba,dc=org")
+        self.assertEquals(len(res), 1)
+        self.ldb.transaction_cancel()
+        #
+        # Check that we can not see the record added by the cancelled
+        # transaction.
+        # Currently this fails as ldb does not support true nested
+        # transactions, and only the outer commits and cancels have an effect
+        #
+        res = self.ldb.search(expression="(objectUUID=0123456789abcde3)",
+                              base="dc=samba,dc=org")
+        #
+        # FIXME this test currently passes on a failure, i.e. if nested
+        #       transaction support worked correctly the correct test would
+        #       be.
+        #         self.assertEqual(len(res), 0)
+        #       as the add of objectUUID=0123456789abcde3 would reverted when
+        #       the sub transaction it was nested in was rolled back.
+        #
+        #       Currently this is not the case so the record is still present.
+        self.assertEqual(len(res), 1)
+
+
+        # Commit the outer transaction
+        #
+        self.ldb.transaction_commit()
+        #
+        # Now check we can still see the records added in the outer
+        # transaction.
+        #
+        res = self.ldb.search(expression="(objectUUID=0123456789abcde1)",
+                              base="dc=samba,dc=org")
+        self.assertEquals(len(res), 1)
+        res = self.ldb.search(expression="(objectUUID=0123456789abcde2)",
+                              base="dc=samba,dc=org")
+        self.assertEquals(len(res), 1)
+        #
+        # And that we can't see the records added by the nested transaction.
+        #
+        res = self.ldb.search(expression="(objectUUID=0123456789abcde3)",
+                              base="dc=samba,dc=org")
+        # FIXME again if nested transactions worked correctly we would not
+        #       see this record. The test should be.
+        #         self.assertEqual(len(res), 0)
+        self.assertEqual(len(res), 1)
+
+    def tearDown(self):
+        super(NestedTransactionTests, self).tearDown()
+
+
+class LmdbNestedTransactionTests(NestedTransactionTests):
+
+    def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
+        self.prefix = MDB_PREFIX
+        self.index = MDB_INDEX_OBJ
+        super(LmdbNestedTransactionTests, self).setUp()
+
+    def tearDown(self):
+        super(LmdbNestedTransactionTests, self).tearDown()
+
 
 if __name__ == '__main__':
     import unittest
