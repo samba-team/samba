@@ -149,7 +149,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	}
 
 	conv = strtoul_err(p, &q, 10, &error);
-	if (!q || (*q != '-') || conv > UINT8_MAX || error != 0) {
+	if (error != 0 || (*q != '-') || conv > UINT8_MAX) {
 		goto format_error;
 	}
 	sidout->sid_rev_num = (uint8_t) conv;
@@ -161,7 +161,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 
 	/* get identauth */
 	conv = strtoull_err(q, &q, 0, &error);
-	if (!q || conv & AUTHORITY_MASK || error != 0) {
+	if (conv & AUTHORITY_MASK || error != 0) {
 		goto format_error;
 	}
 
@@ -190,7 +190,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 		}
 
 		conv = strtoull_err(q, &end, 10, &error);
-		if (end == q || conv > UINT32_MAX || error != 0) {
+		if (conv > UINT32_MAX || error != 0) {
 			goto format_error;
 		}
 
