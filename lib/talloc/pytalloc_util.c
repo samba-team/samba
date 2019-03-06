@@ -131,6 +131,9 @@ static PyObject *pytalloc_steal_or_reference(PyTypeObject *py_type,
 					 TALLOC_CTX *mem_ctx, void *ptr, bool steal)
 {
 	bool ok = false;
+	TALLOC_CTX *talloc_ctx = NULL;
+	bool is_baseobject = false;
+	PyObject *obj = NULL;
 	PyTypeObject *BaseObjectType = pytalloc_GetBaseObjectType();
 	PyTypeObject *ObjectType = pytalloc_GetObjectType();
 
@@ -138,48 +141,43 @@ static PyObject *pytalloc_steal_or_reference(PyTypeObject *py_type,
 		return PyErr_NoMemory();
 	}
 
-	if (PyType_IsSubtype(py_type, BaseObjectType)) {
-		pytalloc_BaseObject *ret
-			= (pytalloc_BaseObject *)py_type->tp_alloc(py_type, 0);
-		ret->talloc_ctx = talloc_new(NULL);
-		if (ret->talloc_ctx == NULL) {
-			return NULL;
-		}
-		if (steal) {
-			ok = (talloc_steal(ret->talloc_ctx, mem_ctx) != NULL);
-		} else {
-			ok = (talloc_reference(ret->talloc_ctx, mem_ctx) != NULL);
-		}
-		if (!ok) {
-			return NULL;
-		}
-		talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
-		ret->talloc_ptr_ctx = mem_ctx;
-		ret->ptr = ptr;
-		return (PyObject *)ret;
-	} else if (PyType_IsSubtype(py_type, ObjectType)) {
-		pytalloc_Object *ret
-			= (pytalloc_Object *)py_type->tp_alloc(py_type, 0);
-		ret->talloc_ctx = talloc_new(NULL);
-		if (ret->talloc_ctx == NULL) {
-			return NULL;
-		}
-		if (steal) {
-			ok = (talloc_steal(ret->talloc_ctx, mem_ctx) != NULL);
-		} else {
-			ok = (talloc_reference(ret->talloc_ctx, mem_ctx) != NULL);
-		}
-		if (!ok) {
-			return NULL;
-		}
-		talloc_set_name_const(ret->talloc_ctx, py_type->tp_name);
-		ret->ptr = ptr;
-		return (PyObject *)ret;
-	} else {
-		PyErr_SetString(PyExc_RuntimeError,
+	is_baseobject = PyType_IsSubtype(py_type, BaseObjectType);
+	if (!is_baseobject) {
+		if (!PyType_IsSubtype(py_type, ObjectType)) {
+			PyErr_SetString(PyExc_RuntimeError,
 				"Expected type based on talloc");
+			return NULL;
+		}
+	}
+
+	obj = py_type->tp_alloc(py_type, 0);
+
+	talloc_ctx = talloc_new(NULL);
+	if (talloc_ctx == NULL) {
 		return NULL;
 	}
+
+	if (steal) {
+		ok = (talloc_steal(talloc_ctx, mem_ctx) != NULL);
+	} else {
+		ok = (talloc_reference(talloc_ctx, mem_ctx) != NULL);
+	}
+	if (!ok) {
+		return NULL;
+	}
+	talloc_set_name_const(talloc_ctx, py_type->tp_name);
+
+	if (is_baseobject) {
+		pytalloc_BaseObject *ret = (pytalloc_BaseObject*)obj;
+		ret->talloc_ctx = talloc_ctx;
+		ret->talloc_ptr_ctx = mem_ctx;
+		ret->ptr = ptr;
+	} else {
+		pytalloc_Object *ret = (pytalloc_Object*)obj;
+		ret->talloc_ctx = talloc_ctx;
+		ret->ptr = ptr;
+	}
+	return obj;
 }
 
 /*
