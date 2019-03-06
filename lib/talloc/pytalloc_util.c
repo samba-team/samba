@@ -134,9 +134,18 @@ static PyObject *pytalloc_steal_or_reference(PyTypeObject *py_type,
 	TALLOC_CTX *talloc_ctx = NULL;
 	bool is_baseobject = false;
 	PyObject *obj = NULL;
-	PyTypeObject *BaseObjectType = pytalloc_GetBaseObjectType();
-	PyTypeObject *ObjectType = pytalloc_GetObjectType();
+	PyTypeObject *BaseObjectType = NULL, *ObjectType = NULL;
 
+	BaseObjectType = pytalloc_GetBaseObjectType();
+	if (BaseObjectType == NULL) {
+		goto err;
+	}
+	ObjectType = pytalloc_GetObjectType();
+	if (ObjectType == NULL) {
+		goto err;
+	}
+
+	/* this should have been tested by caller */
 	if (mem_ctx == NULL) {
 		return PyErr_NoMemory();
 	}
@@ -144,17 +153,21 @@ static PyObject *pytalloc_steal_or_reference(PyTypeObject *py_type,
 	is_baseobject = PyType_IsSubtype(py_type, BaseObjectType);
 	if (!is_baseobject) {
 		if (!PyType_IsSubtype(py_type, ObjectType)) {
-			PyErr_SetString(PyExc_RuntimeError,
+			PyErr_SetString(PyExc_TypeError,
 				"Expected type based on talloc");
 			return NULL;
 		}
 	}
 
 	obj = py_type->tp_alloc(py_type, 0);
+	if (obj == NULL) {
+		goto err;
+	}
 
 	talloc_ctx = talloc_new(NULL);
 	if (talloc_ctx == NULL) {
-		return NULL;
+		PyErr_NoMemory();
+		goto err;
 	}
 
 	if (steal) {
@@ -163,7 +176,7 @@ static PyObject *pytalloc_steal_or_reference(PyTypeObject *py_type,
 		ok = (talloc_reference(talloc_ctx, mem_ctx) != NULL);
 	}
 	if (!ok) {
-		return NULL;
+		goto err;
 	}
 	talloc_set_name_const(talloc_ctx, py_type->tp_name);
 
@@ -178,6 +191,11 @@ static PyObject *pytalloc_steal_or_reference(PyTypeObject *py_type,
 		ret->ptr = ptr;
 	}
 	return obj;
+
+err:
+	TALLOC_FREE(talloc_ctx);
+	Py_XDECREF(obj);
+	return NULL;
 }
 
 /*
@@ -305,7 +323,6 @@ _PUBLIC_ int pytalloc_BaseObject_PyType_Ready(PyTypeObject *type)
 {
 	PyTypeObject *talloc_type = pytalloc_GetBaseObjectType();
 	if (talloc_type == NULL) {
-		PyErr_Format(PyExc_TypeError, "pytalloc: unable to get talloc.BaseObject type");
 		return -1;
 	}
 
