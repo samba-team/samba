@@ -94,7 +94,8 @@ def configure(conf):
     if not conf.CONFIG_SET('HAVE_RPC_RPC_H'):
             Logs.warn('No rpc/rpc.h header found, tirpc or libntirpc missing?')
 
-    conf.SET_TARGET_TYPE('nsl', 'EMPTY')
+    if not conf.CHECK_LIB('nsl'):
+        conf.SET_TARGET_TYPE('nsl', 'EMPTY')
     conf.CHECK_HEADERS('rpc/rpc.h rpcsvc/yp_prot.h', lib='tirpc')
     if not conf.CONFIG_SET('HAVE_RPCSVC_YP_PROT_H'):
         if conf.CHECK_CFG(package='libnsl', args='--cflags --libs',
@@ -102,8 +103,6 @@ def configure(conf):
                           uselib_store='NSL'):
             conf.SET_TARGET_TYPE('nsl', 'SYSLIB')
             conf.CHECK_HEADERS('rpc/rpc.h rpcsvc/yp_prot.h', lib='tirpc nsl')
-        else:
-            conf.SET_TARGET_TYPE('nsl', 'SYSLIB')
     conf.CHECK_HEADERS('rpcsvc/nis.h rpcsvc/ypclnt.h', lib='tirpc nsl')
 
     # This file is decprecated with glibc >= 2.30 so we need to check if it
