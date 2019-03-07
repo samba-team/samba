@@ -506,6 +506,7 @@ int tdb_lock(struct tdb_context *tdb, int list, int ltype)
 }
 
 /* lock a list in the database. list -1 is the alloc list. non-blocking lock */
+_PUBLIC_ int tdb_lock_nonblock(struct tdb_context *tdb, int list, int ltype);
 _PUBLIC_ int tdb_lock_nonblock(struct tdb_context *tdb, int list, int ltype)
 {
 	return tdb_lock_list(tdb, list, ltype, TDB_LOCK_NOWAIT);
@@ -567,6 +568,7 @@ int tdb_nest_unlock(struct tdb_context *tdb, uint32_t offset, int ltype,
 	return ret;
 }
 
+_PUBLIC_ int tdb_unlock(struct tdb_context *tdb, int list, int ltype);
 _PUBLIC_ int tdb_unlock(struct tdb_context *tdb, int list, int ltype)
 {
 	/* a global lock allows us to avoid per chain locks */
@@ -1017,14 +1019,14 @@ void tdb_release_transaction_locks(struct tdb_context *tdb)
 /* Following functions are added specifically to support CTDB. */
 
 /* Don't do actual fcntl locking, just mark tdb locked */
-int tdb_transaction_write_lock_mark(struct tdb_context *tdb);
+_PUBLIC_ int tdb_transaction_write_lock_mark(struct tdb_context *tdb);
 _PUBLIC_ int tdb_transaction_write_lock_mark(struct tdb_context *tdb)
 {
 	return tdb_transaction_lock(tdb, F_WRLCK, TDB_LOCK_MARK_ONLY);
 }
 
 /* Don't do actual fcntl unlocking, just mark tdb unlocked */
-int tdb_transaction_write_lock_unmark(struct tdb_context *tdb);
+_PUBLIC_ int tdb_transaction_write_lock_unmark(struct tdb_context *tdb);
 _PUBLIC_ int tdb_transaction_write_lock_unmark(struct tdb_context *tdb)
 {
 	return tdb_nest_unlock(tdb, TRANSACTION_LOCK, F_WRLCK, true);
