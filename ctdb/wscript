@@ -1166,14 +1166,6 @@ def manpages(ctx):
 def distonly(ctx):
     samba_dist.DIST_FILES('VERSION:VERSION', extend=True)
 
-    version = get_version()
-
-    distfile = open('.distversion', 'w')
-    for field in version.vcs_fields:
-        distfile.write('%s=%s\n' % (field, str(version.vcs_fields[field])))
-    distfile.close()
-    samba_dist.DIST_FILES('ctdb/.distversion:.distversion', extend=True)
-
     t = 'ctdb.spec'
     sed_expr1 = 's/@VERSION@/%s/g' % get_version_string()
     sed_expr2 = 's/@RELEASE@/%s/g' % '1'
