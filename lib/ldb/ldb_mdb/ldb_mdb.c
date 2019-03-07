@@ -739,9 +739,9 @@ static size_t lmdb_get_size(struct ldb_kv_private *ldb_kv)
 	return stats.ms_entries;
 }
 
-
-
 static struct kv_db_ops lmdb_key_value_ops = {
+	.options            = LDB_KV_OPTION_STABLE_READ_LOCK,
+
 	.store              = lmdb_store,
 	.delete             = lmdb_delete,
 	.iterate            = lmdb_traverse_fn,

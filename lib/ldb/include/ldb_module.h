@@ -560,6 +560,7 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 #define LDB_UNPACK_DATA_FLAG_NO_DN           0x0002
 #define LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC 0x0004
 #define LDB_UNPACK_DATA_FLAG_NO_ATTRS        0x0008
+#define LDB_UNPACK_DATA_FLAG_READ_LOCKED     0x0010
 
 /**
  Forces a specific ldb handle to use the global event context.

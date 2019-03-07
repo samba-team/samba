@@ -406,7 +406,13 @@ normal_index:
 				dn,
 				msg,
 				LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC |
-				    LDB_UNPACK_DATA_FLAG_NO_DN);
+				LDB_UNPACK_DATA_FLAG_NO_DN |
+				/*
+				 * The entry point ldb_kv_search_indexed is
+				 * only called from the read-locked
+				 * ldb_kv_search.
+				 */
+				LDB_UNPACK_DATA_FLAG_READ_LOCKED);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(msg);
 		return ret;
@@ -2222,7 +2228,13 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 				      keys[i],
 				      msg,
 				      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC |
-					  LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC);
+				      LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC |
+				      /*
+				       * The entry point ldb_kv_search_indexed is
+				       * only called from the read-locked
+				       * ldb_kv_search.
+				       */
+				      LDB_UNPACK_DATA_FLAG_READ_LOCKED);
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			/*
 			 * the record has disappeared? yes, this can

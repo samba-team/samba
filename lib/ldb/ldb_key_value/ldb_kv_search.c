@@ -190,22 +190,45 @@ static int ldb_kv_parse_data_unpack(struct ldb_val key,
 	struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
 	struct ldb_val data_parse = data;
 
-	if (ctx->unpack_flags & LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC) {
-		/*
-		 * If we got LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC
-		 * we need at least do a memdup on the whole
-		 * data buffer as that may change later
-		 * and the caller needs a stable result.
-		 */
-		data_parse.data = talloc_memdup(ctx->msg,
-						data.data,
-						data.length);
-		if (data_parse.data == NULL) {
-			ldb_debug(ldb, LDB_DEBUG_ERROR,
-				  "Unable to allocate data(%d) for %*.*s\n",
-				  (int)data.length,
-				  (int)key.length, (int)key.length, key.data);
-			return LDB_ERR_OPERATIONS_ERROR;
+	struct ldb_kv_private *ldb_kv =
+	    talloc_get_type(ldb_module_get_private(ctx->module), struct ldb_kv_private);
+
+	if ((ctx->unpack_flags & LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC)) {
+		if ((ldb_kv->kv_ops->options & LDB_KV_OPTION_STABLE_READ_LOCK) &&
+		    (ctx->unpack_flags & LDB_UNPACK_DATA_FLAG_READ_LOCKED) &&
+		    !ldb_kv->kv_ops->transaction_active(ldb_kv)) {
+			/*
+			 * In the case where no transactions are active and
+			 * we're in a read-lock, we can point directly into
+			 * database memory.
+			 *
+			 * The database can't be changed underneath us and we
+			 * will duplicate this data in the call to filter.
+			 *
+			 * This is seen in:
+			 * - ldb_kv_index_filter
+			 * - ldb_kv_search_and_return_base
+			 */
+		} else {
+			/*
+			 * In every other case, if we got
+			 * LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC we need at least
+			 * do a memdup on the whole data buffer as that may
+			 * change later and the caller needs a stable result.
+			 *
+			 * During transactions, pointers could change and in
+			 * TDB, there just aren't the same guarantees.
+			 */
+			data_parse.data = talloc_memdup(ctx->msg,
+							data.data,
+							data.length);
+			if (data_parse.data == NULL) {
+				ldb_debug(ldb, LDB_DEBUG_ERROR,
+					  "Unable to allocate data(%d) for %*.*s\n",
+					  (int)data.length,
+					  (int)key.length, (int)key.length, key.data);
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
 		}
 	}
 
@@ -635,7 +658,8 @@ static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 				ctx->base,
 				msg,
 				LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC |
-				    LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC);
+				LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC |
+				LDB_UNPACK_DATA_FLAG_READ_LOCKED);
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		if (ldb_kv->check_base == false) {

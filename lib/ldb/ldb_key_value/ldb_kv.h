@@ -13,6 +13,8 @@ typedef int (*ldb_kv_traverse_fn)(struct ldb_kv_private *ldb_kv,
 				  void *ctx);
 
 struct kv_db_ops {
+	uint32_t options;
+
 	int (*store)(struct ldb_kv_private *ldb_kv,
 		     struct ldb_val key,
 		     struct ldb_val data,
@@ -174,6 +176,13 @@ struct ldb_kv_reindex_context {
 #define LDB_KV_GUID_KEY_PREFIX "GUID="
 #define LDB_KV_GUID_SIZE 16
 #define LDB_KV_GUID_KEY_SIZE (LDB_KV_GUID_SIZE + sizeof(LDB_KV_GUID_KEY_PREFIX) - 1)
+
+/* LDB KV options */
+/*
+ * This allows pointers to be referenced after the callback to any variant of
+ * iterate or fetch_and_parse -- as long as an overall read lock is held.
+ */
+#define LDB_KV_OPTION_STABLE_READ_LOCK 0x00000001
 
 /*
  * The following definitions come from lib/ldb/ldb_key_value/ldb_kv_cache.c

@@ -434,24 +434,27 @@ static size_t ltdb_get_size(struct ldb_kv_private *ldb_kv)
 }
 
 static const struct kv_db_ops key_value_ops = {
-    .store = ltdb_store,
-    .delete = ltdb_delete,
-    .iterate = ltdb_traverse_fn,
-    .update_in_iterate = ltdb_update_in_iterate,
-    .fetch_and_parse = ltdb_parse_record,
-    .iterate_range = ltdb_iterate_range,
-    .lock_read = ltdb_lock_read,
-    .unlock_read = ltdb_unlock_read,
-    .begin_write = ltdb_transaction_start,
-    .prepare_write = ltdb_transaction_prepare_commit,
-    .finish_write = ltdb_transaction_commit,
-    .abort_write = ltdb_transaction_cancel,
-    .error = ltdb_error,
-    .errorstr = ltdb_errorstr,
-    .name = ltdb_name,
-    .has_changed = ltdb_changed,
-    .transaction_active = ltdb_transaction_active,
-    .get_size = ltdb_get_size,
+	/* No support for any additional features */
+	.options = 0,
+
+	.store = ltdb_store,
+	.delete = ltdb_delete,
+	.iterate = ltdb_traverse_fn,
+	.update_in_iterate = ltdb_update_in_iterate,
+	.fetch_and_parse = ltdb_parse_record,
+	.iterate_range = ltdb_iterate_range,
+	.lock_read = ltdb_lock_read,
+	.unlock_read = ltdb_unlock_read,
+	.begin_write = ltdb_transaction_start,
+	.prepare_write = ltdb_transaction_prepare_commit,
+	.finish_write = ltdb_transaction_commit,
+	.abort_write = ltdb_transaction_cancel,
+	.error = ltdb_error,
+	.errorstr = ltdb_errorstr,
+	.name = ltdb_name,
+	.has_changed = ltdb_changed,
+	.transaction_active = ltdb_transaction_active,
+	.get_size = ltdb_get_size,
 };
 
 /*
