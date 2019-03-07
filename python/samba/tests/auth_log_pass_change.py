@@ -100,12 +100,8 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
         net.change_password(newpassword=password,
                             username=USER_NAME,
                             oldpassword=USER_PASS)
-
-        messages = self.waitForMessages(isLastExpectedMessage)
-        print("Received %d messages" % len(messages))
-        self.assertEquals(8,
-                          len(messages),
-                          "Did not receive the expected number of messages")
+        self.assertTrue(self.waitForMessages(isLastExpectedMessage),
+                        "Did not receive the expected message")
 
     def test_admin_change_password_new_password_fails_restriction(self):
         def isLastExpectedMessage(msg):
@@ -136,11 +132,8 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
             exception_thrown = True
         self.assertEquals(True, exception_thrown,
                           "Expected exception not thrown")
-
-        messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(8,
-                          len(messages),
-                          "Did not receive the expected number of messages")
+        self.assertTrue(self.waitForMessages(isLastExpectedMessage),
+                        "Did not receive the expected message")
 
     def test_admin_change_password_unknown_user(self):
         def isLastExpectedMessage(msg):
@@ -172,10 +165,8 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertEquals(True, exception_thrown,
                           "Expected exception not thrown")
 
-        messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(8,
-                          len(messages),
-                          "Did not receive the expected number of messages")
+        self.assertTrue(self.waitForMessages(isLastExpectedMessage),
+                        "Did not receive the expected message")
 
     def test_admin_change_password_bad_original_password(self):
         def isLastExpectedMessage(msg):
@@ -207,10 +198,8 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.assertEquals(True, exception_thrown,
                           "Expected exception not thrown")
 
-        messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(8,
-                          len(messages),
-                          "Did not receive the expected number of messages")
+        self.assertTrue(self.waitForMessages(isLastExpectedMessage),
+                        "Did not receive the expected message")
 
     # net rap password changes are broken, but they trigger enough of the
     # server side behaviour to exercise the code paths of interest.
@@ -238,11 +227,8 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/net", "rap", server_param,
               "password", USER_NAME, "notMyPassword", "notGoingToBeMyPassword",
               server, creds, "--option=client ipc max protocol=nt1"])
-
-        messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(7,
-                          len(messages),
-                          "Did not receive the expected number of messages")
+        self.assertTrue(self.waitForMessages(isLastExpectedMessage),
+                        "Did not receive the expected message")
 
     def test_ldap_change_password(self):
         def isLastExpectedMessage(msg):
@@ -266,11 +252,8 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
             "add: userPassword\n" +
             "userPassword: " + new_password + "\n")
 
-        messages = self.waitForMessages(isLastExpectedMessage)
-        print("Received %d messages" % len(messages))
-        self.assertEquals(4,
-                          len(messages),
-                          "Did not receive the expected number of messages")
+        self.assertTrue(self.waitForMessages(isLastExpectedMessage),
+                        "Did not receive the expected message")
 
     #
     # Currently this does not get logged, so we expect to only see the log
@@ -296,11 +279,8 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
             (num, msg) = e.args
             pass
 
-        messages = self.waitForMessages(isLastExpectedMessage)
-        print("Received %d messages" % len(messages))
-        self.assertEquals(3,
-                          len(messages),
-                          "Did not receive the expected number of messages")
+        self.assertTrue(self.waitForMessages(isLastExpectedMessage),
+                        "Did not receive the expected message")
 
     def test_ldap_change_password_bad_original_password(self):
         def isLastExpectedMessage(msg):
@@ -330,8 +310,5 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
             (num, msg) = e1.args
             pass
 
-        messages = self.waitForMessages(isLastExpectedMessage)
-        print("Received %d messages" % len(messages))
-        self.assertEquals(4,
-                          len(messages),
-                          "Did not receive the expected number of messages")
+        self.assertTrue(self.waitForMessages(isLastExpectedMessage),
+                        "Did not receive the expected message")
