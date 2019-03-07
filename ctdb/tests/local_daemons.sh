@@ -193,7 +193,8 @@ local_daemons_setup ()
 
 	_recovery_lock="${directory}/rec.lock"
 	if $_recovery_lock_use_command ; then
-		_recovery_lock="! ${CTDB_CLUSTER_MUTEX_HELPER} ${_recovery_lock}"
+		_helper="${CTDB_SCRIPTS_HELPER_BINDIR}/ctdb_mutex_fcntl_helper"
+		_recovery_lock="! ${_helper} ${_recovery_lock}"
 	fi
 
 	if [ -n "$_socket_wrapper" ] ; then
