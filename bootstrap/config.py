@@ -159,21 +159,6 @@ apt-get -y install \
 apt-get -y autoremove
 apt-get -y autoclean
 apt-get -y clean
-
-# uncomment locale
-# this file doesn't exist on ubuntu1404 even locales installed
-if [ -f /etc/locale.gen ]; then
-    sed -i '/^#\s*en_US.UTF-8 UTF-8/s/^#\s*//' /etc/locale.gen
-fi
-
-locale-gen
-
-# update /etc/default/locale
-update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
-
-# set both for safe
-echo LC_ALL="en_US.UTF-8" >> /etc/environment
-echo LANG="en_US.UTF-8" >> /etc/environment
 """
 
 
@@ -189,17 +174,6 @@ yum -y -q --verbose install \
     {pkgs}
 
 yum clean all
-
-# gen locale
-localedef -c -i en_US -f UTF-8 en_US.UTF-8
-
-# no update-locale, diy
-# LC_ALL is not valid in this file
-echo LANG="en_US.UTF-8" > /etc/locale.conf
-
-# set both for safe
-echo LC_ALL="en_US.UTF-8" >> /etc/environment
-echo LANG="en_US.UTF-8" >> /etc/environment
 """
 
 
@@ -213,17 +187,60 @@ dnf -y -q --verbose install \
     {pkgs}
 
 dnf clean all
+"""
 
-# gen locale
-localedef -c -i en_US -f UTF-8 en_US.UTF-8
 
-# no update-locale, diy
-# LC_ALL is not valid in this file
-echo LANG="en_US.UTF-8" > /etc/locale.conf
+# A generic shell script to setup locale
+LOCALE_SETUP = r"""
+#!/bin/bash
+set -xueo pipefail
 
-# set both for safe
-echo LC_ALL="en_US.UTF-8" >> /etc/environment
-echo LANG="en_US.UTF-8" >> /etc/environment
+# refer to /usr/share/i18n/locales
+INPUTFILE=en_US
+# refer to /usr/share/i18n/charmaps
+CHARMAP=UTF-8
+# locale to generate in /usr/lib/locale
+# glibc/localedef will normalize UTF-8 to utf8, follow the naming style
+LOCALE=$INPUTFILE.utf8
+
+# if locale is already correct, exit
+( locale | grep LC_ALL | grep -i $LOCALE ) && exit 0
+
+# if locale not available, generate locale into /usr/lib/locale
+if ! ( locale --all-locales | grep -i $LOCALE )
+then
+    # no-archive means create its own dir
+    localedef --inputfile $INPUTFILE --charmap $CHARMAP --no-archive $LOCALE
+fi
+
+# update locale conf and global env file
+# set both LC_ALL and LANG for safe
+
+# update conf for Debian family
+FILE=/etc/default/locale
+if [ -f $FILE ]
+then
+    echo LC_ALL="$LOCALE" > $FILE
+    echo LANG="$LOCALE" >> $FILE
+fi
+
+# update conf for RedHat family
+FILE=/etc/locale.conf
+if [ -f $FILE ]
+then
+    # LC_ALL is not valid in this file, set LANG only
+    echo LANG="$LOCALE" > $FILE
+fi
+
+# update global env file
+FILE=/etc/environment
+if [ -f $FILE ]
+then
+    # append LC_ALL if not exist
+    grep LC_ALL $FILE || echo LC_ALL="$LOCALE" >> $FILE
+    # append LANG if not exist
+    grep LANG $FILE || echo LANG="$LOCALE" >> $FILE
+fi
 """
 
 
@@ -233,9 +250,9 @@ FROM {docker_image}
 # we will use this image to run ci, these ENV vars are important
 ENV CC="ccache gcc"
 
-ADD bootstrap.sh /tmp/bootstrap.sh
+ADD *.sh /tmp/
 # need root permission, do it before USER samba
-RUN bash /tmp/bootstrap.sh
+RUN /tmp/bootstrap.sh && /tmp/locale.sh
 
 # make test can not work with root, so we have to create a new user
 RUN useradd -m -s /bin/bash samba && \
@@ -254,6 +271,7 @@ VAGRANTFILE_SNIPPET = r"""
         v.vm.box = "{vagrant_box}"
         v.vm.hostname = "{name}"
         v.vm.provision :shell, path: "{name}/bootstrap.sh"
+        v.vm.provision :shell, path: "{name}/locale.sh"
     end
 """
 
@@ -423,6 +441,7 @@ def expand_family_dists(family):
         # get dist bootstrap template or fall back to family default
         bootstrap_template = config.get('bootstrap', family['bootstrap'])
         config['bootstrap.sh'] = bootstrap_template.format(**config).strip()
+        config['locale.sh'] = LOCALE_SETUP.format(**config).strip()
 
         config['Dockerfile'] = DOCKERFILE.format(**config).strip()
         # keep the indent, no strip
