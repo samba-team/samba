@@ -212,9 +212,9 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname,
 	old_umask = umask(0);
 	ret = mkdir(dname, dir_perms);
 	if (ret == -1 && errno != EEXIST) {
-		DEBUG(0, ("mkdir failed on directory "
-			  "%s: %s\n", dname,
-			  strerror(errno)));
+		DBG_WARNING("mkdir failed on directory %s: %s\n",
+			    dname,
+			    strerror(errno));
 		umask(old_umask);
 		return false;
 	}
