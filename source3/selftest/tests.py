@@ -885,7 +885,7 @@ for e in endianness_options:
             plansmbtorture4testsuite(test, "nt4_dc", options, 'over ncacn_ip_tcp with [%s%s%s] ' % (a, s, e))
 
 plansmbtorture4testsuite('rpc.epmapper', 'nt4_dc:local', 'ncalrpc: -U$USERNAME%$PASSWORD', 'over ncalrpc')
-plansmbtorture4testsuite('rpc.fsrvp', 'nt4_dc:local', 'ncacn_np:$SERVER_IP[/pipe/FssagentRpc] -U$USERNAME%$PASSWORD', 'over ncacn_np')
+plansmbtorture4testsuite('rpc.fsrvp', 'nt4_dc:local', 'ncacn_np:$SERVER_IP -U$USERNAME%$PASSWORD', 'over ncacn_np')
 
 for env in ["ad_member_idmap_rid:local", "maptoguest:local"]:
     plantestsuite("samba3.blackbox.guest", env,
