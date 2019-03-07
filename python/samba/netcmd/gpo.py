@@ -261,6 +261,12 @@ def find_parser(name, flags=re.IGNORECASE):
         return GPScriptsIniParser()
     if re.match('psscripts.ini$', name, flags=flags):
         return GPScriptsIniParser()
+    if re.match('GPE\.INI$', name, flags=flags):
+        # This file does not appear in the protocol specifications!
+        #
+        # It appears to be a legacy file used to maintain gPCUserExtensionNames
+        # and gPCMachineExtensionNames. We should just copy the file as binary.
+        return GPParser()
     if re.match('.*\.ini$', name, flags=flags):
         return GPIniParser()
     if re.match('.*\.pol$', name, flags=flags):
