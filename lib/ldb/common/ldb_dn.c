@@ -340,7 +340,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	/* Components data space is allocated here once */
 	data = talloc_array(dn->components, char, strlen(parse_dn) + 1);
 	if (!data) {
-		return false;
+		goto failed;
 	}
 
 	p = parse_dn;
