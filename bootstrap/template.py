@@ -38,11 +38,13 @@ def render(dists):
     for dist, config in dists.items():
         home = config['home']
         os.makedirs(home, exist_ok=True)
-        for key in ['packages.yml', 'bootstrap.sh', 'Dockerfile']:
+        for key in ['bootstrap.sh', 'locale.sh', 'packages.yml', 'Dockerfile']:
             path = os.path.join(home, key)
             log.info('%s: render "%s" to %s', dist, key, path)
             with io.open(path, mode='wt', encoding='utf8') as fp:
                 fp.write(config[key])
+            if path.endswith('.sh'):
+                os.chmod(path, 0o755)
 
         key = 'Vagrantfile'
         path = os.path.join(OUT, key)
