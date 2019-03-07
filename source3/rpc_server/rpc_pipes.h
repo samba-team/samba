@@ -132,15 +132,7 @@ struct pipes_struct {
 	/*
 	 * Set to true when an RPC bind has been done on this pipe.
 	 */
-
 	bool pipe_bound;
-
-	/*
-	 * States we can be in.
-	 */
-	bool allow_alter;
-	bool allow_bind;
-	bool allow_auth3;
 
 	/*
 	 * Set the DCERPC_FAULT to return.
@@ -150,7 +142,6 @@ struct pipes_struct {
 	/*
 	 * Set to RPC_BIG_ENDIAN when dealing with big-endian PDU's
 	 */
-
 	bool endian;
 
 	/*
@@ -177,9 +168,6 @@ struct pipes_struct {
 
 	/* operation number retrieved from the rpc header */
 	uint16_t opnum;
-
-	/* rpc header information to check fragments for consistency */
-	struct dcerpc_sec_vt_header2 header2;
 
 	/* private data for the interface implementation */
 	void *private_data;
