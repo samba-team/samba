@@ -5,13 +5,13 @@
 # Print a message and exit.
 die ()
 {
-	echo "$1" >&2 ; exit ${2:-1}
+	echo "$1" >&2 ; exit "${2:-1}"
 }
 
 # This expands the most probable problem cases like "." and "..".
 TEST_SUBDIR=$(dirname "$0")
-if [ $(dirname "$TEST_SUBDIR") = "." ] ; then
-	TEST_SUBDIR=$(cd "$TEST_SUBDIR" ; pwd)
+if [ "$(dirname "$TEST_SUBDIR")" = "." ] ; then
+	TEST_SUBDIR=$(cd "$TEST_SUBDIR" && pwd)
 fi
 
 . "${TEST_SCRIPTS_DIR}/script_install_paths.sh"
@@ -73,8 +73,9 @@ setup_ctdb_base ()
 	[ $# -ge 2 ] || die "usage: setup_ctdb_base <parent> <subdir> [item]..."
 	# If empty arguments are passed then we attempt to remove /
 	# (i.e. the root directory) below
-	[ -n "$1" -a -n "$2" ] || \
+	if [ -z "$1" ] || [ -z "$2" ] ; then
 		die "usage: setup_ctdb_base <parent> <subdir> [item]..."
+	fi
 
 	_parent="$1"
 	_subdir="$2"
