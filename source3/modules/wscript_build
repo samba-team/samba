@@ -247,11 +247,6 @@ bld.SAMBA_GENERATOR('nfs41acl-h',
                     target='nfs41acl.h',
                     rule='rpcgen -h ${SRC} > ${TGT}')
 
-vfs_nfs4acl_xattr_source = '''
-                           vfs_nfs4acl_xattr.c
-                           nfs4acl_xattr_ndr.c
-                           nfs4acl_xattr_xdr.c
-                           '''
 
 if bld.CONFIG_SET("HAVE_RPC_XDR_H"):
     xdr_buf_hack = 'sed -e "s@^\([ \t]*register int32_t \*buf\);@\\1 = buf;@"'
@@ -271,12 +266,20 @@ if bld.CONFIG_SET("HAVE_RPC_XDR_H"):
                              '${TGT[0].path_from(tsk.get_cwd())[:-len(tsk.outputs[0].name)] + tsk.inputs[0].name} | ' + \
                              xdr_buf_hack + ' > ${TGT}')
 
-    vfs_nfs4acl_xattr_source += ' nfs41acl_xdr.c'
+    bld.SAMBA_SUBSYSTEM('VFS_NFS4_XDR',
+                        source='nfs41acl_xdr.c',
+                        deps='NFS4_ACLS NDR_NFS4ACL tirpc')
+else:
+    bld.SET_TARGET_TYPE('VFS_NFS4_XDR', 'EMPTY')
 
 bld.SAMBA3_MODULE('vfs_nfs4acl_xattr',
                   subsystem='vfs',
-                  source=vfs_nfs4acl_xattr_source,
-                  deps='NFS4_ACLS sunacl NDR_NFS4ACL',
+                  source = '''
+                           vfs_nfs4acl_xattr.c
+                           nfs4acl_xattr_ndr.c
+                           nfs4acl_xattr_xdr.c
+                           ''',
+                  deps='NFS4_ACLS sunacl NDR_NFS4ACL VFS_NFS4_XDR',
                   init_function='',
                   internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_nfs4acl_xattr'),
                   enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_nfs4acl_xattr'))
