@@ -1198,7 +1198,8 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
                           setup_path("provision_self_join_modify_schema.ldif"), {
                               "SCHEMADN": names.schemadn,
                               "SERVERDN": names.serverdn,
-                          })
+                          },
+                          controls=["provision:0", "relax:0"])
         setup_modify_ldif(samdb,
                           setup_path("provision_self_join_modify_config.ldif"), {
                               "CONFIGDN": names.configdn,
@@ -1416,16 +1417,20 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
 
         # The LDIF here was created when the Schema object was constructed
         ignore_checks_oid = "local_oid:%s:0" % samba.dsdb.DSDB_CONTROL_SKIP_DUPLICATES_CHECK_OID
+        schema_controls = [
+            "provision:0",
+            "relax:0",
+            ignore_checks_oid
+        ]
+
         logger.info("Setting up sam.ldb schema")
-        samdb.add_ldif(schema.schema_dn_add,
-                       controls=["relax:0", ignore_checks_oid])
-        samdb.modify_ldif(schema.schema_dn_modify,
-                          controls=[ignore_checks_oid])
+        samdb.add_ldif(schema.schema_dn_add, controls=schema_controls)
+        samdb.modify_ldif(schema.schema_dn_modify, controls=schema_controls)
         samdb.write_prefixes_from_schema()
-        samdb.add_ldif(schema.schema_data, controls=["relax:0", ignore_checks_oid])
+        samdb.add_ldif(schema.schema_data, controls=schema_controls)
         setup_add_ldif(samdb, setup_path("aggregate_schema.ldif"),
                        {"SCHEMADN": names.schemadn},
-                       controls=["relax:0", ignore_checks_oid])
+                       controls=schema_controls)
 
     # Now register this container in the root of the forest
     msg = ldb.Message(ldb.Dn(samdb, names.domaindn))
