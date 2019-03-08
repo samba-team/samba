@@ -262,7 +262,7 @@ RUN useradd -m -s /bin/bash samba && \
 USER samba
 WORKDIR /home/samba
 # samba tests rely on this
-ENV USER=samba LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+ENV USER=samba LC_ALL=en_US.utf8 LANG=en_US.utf8
 """
 
 # Vagrantfile snippet for each dist
