@@ -19,7 +19,6 @@ def json_formatter(src_f, dest_f):
 
     for line in src_f:
         line = line.strip()
-        print >>sys.stderr, line
         if line[:14] == 'elapsed-time: ':
             name, time = line[14:].rsplit(':', 1)
             results[name] = float(time)
