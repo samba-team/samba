@@ -1258,8 +1258,6 @@ static void smbd_smb2_create_before_exec(struct tevent_req *req)
 			}
 		}
 	}
-
-	return;
 }
 
 static void smbd_smb2_create_after_exec(struct tevent_req *req)
@@ -1504,7 +1502,6 @@ static void smbd_smb2_create_finish(struct tevent_req *req)
 
 	tevent_req_done(req);
 	tevent_req_post(req, state->ev);
-	return;
 }
 
 static NTSTATUS smbd_smb2_create_recv(struct tevent_req *req,
