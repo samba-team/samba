@@ -1193,11 +1193,15 @@ def setup_self_join(samdb, admin_session_info, names, fill, machinepass,
                 "DOMAIN_CONTROLLER_FUNCTIONALITY": str(
                     domainControllerFunctionality)})
 
-    # Setup fSMORoleOwner entries to point at the newly created DC entry
+        # Setup fSMORoleOwner entries to point at the newly created DC entry
+        setup_modify_ldif(samdb,
+                          setup_path("provision_self_join_modify_schema.ldif"), {
+                              "SCHEMADN": names.schemadn,
+                              "SERVERDN": names.serverdn,
+                          })
         setup_modify_ldif(samdb,
                           setup_path("provision_self_join_modify_config.ldif"), {
                               "CONFIGDN": names.configdn,
-                              "SCHEMADN": names.schemadn,
                               "DEFAULTSITE": names.sitename,
                               "NETBIOSNAME": names.netbiosname,
                               "SERVERDN": names.serverdn,
