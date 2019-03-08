@@ -1,0 +1,4 @@
+dn: ${SCHEMADN}
+changetype: modify
+replace: fSMORoleOwner
+fSMORoleOwner: CN=NTDS Settings,${SERVERDN}
