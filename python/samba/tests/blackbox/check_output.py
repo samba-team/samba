@@ -32,7 +32,7 @@ class TimeoutHelper():
             with Timeout(3):
                 foobar("Request 1")
         except TimeoutHelper.Timeout:
-            print "Timeout"
+            print("Timeout")
     """
 
     class Timeout(Exception):
