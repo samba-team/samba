@@ -3,7 +3,7 @@
 # Copyright Matthieu Patou <mat@matws.net> 2011
 # script to call a DRSUAPI crackname
 # this is useful for plugfest testing and replication debug
-
+from __future__ import print_function
 import sys
 from optparse import OptionParser
 
@@ -71,8 +71,8 @@ if __name__ == "__main__":
     req.names = [names]
 
     (result, ctr) = drs.DsCrackNames(drs_handle, 1, req)
-    print "# of result = %d" %ctr.count
+    print("# of result = %d" %ctr.count)
     if ctr.count:
-        print "status = %d" % ctr.array[0].status
-        print "result name = %s" % ctr.array[0].result_name
-        print "domain = %s" % ctr.array[0].dns_domain_name
+        print("status = %d" % ctr.array[0].status)
+        print("result name = %s" % ctr.array[0].result_name)
+        print("domain = %s" % ctr.array[0].dns_domain_name)
