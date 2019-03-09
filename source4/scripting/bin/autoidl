@@ -55,7 +55,8 @@ class Function:
     def valid_ndr(self, data):
         try:
             self.request(data)
-        except RuntimeError, (num, msg):
+        except RuntimeError as e:
+            (num, msg) = e.args
             if num == DCERPC_FAULT_NDR:
                 return False
         return True
