@@ -2,7 +2,7 @@
 
 # script to call a DRS GetNCChanges from the command line
 # this is useful for plugfest testing
-
+from __future__ import print_function
 import sys
 from optparse import OptionParser
 
@@ -98,17 +98,17 @@ if __name__ == "__main__":
 
     dest_dsa = opts.dest_dsa
     if not dest_dsa:
-        print "no dest_dsa specified trying to figure out from ldap"
+        print("no dest_dsa specified trying to figure out from ldap")
         msgs = samdb.search(controls=["search_options:1:2"],
                            expression='(objectclass=ntdsdsa)')
         if len(msgs) == 1:
             dest_dsa = str(ndr_unpack(misc.GUID,  msgs[0]["invocationId"][0]))
-            print "Found this dsa: %s" % dest_dsa
+            print("Found this dsa: %s" % dest_dsa)
         else:
             # TODO fixme
             pass
         if not dest_dsa:
-            print "Unable to find the dest_dsa automatically please specify it"
+            print("Unable to find the dest_dsa automatically please specify it")
             import sys
             sys.exit(1)
 

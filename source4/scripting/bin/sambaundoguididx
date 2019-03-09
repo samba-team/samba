@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import optparse
 import sys
 
@@ -73,11 +74,12 @@ samdb.transaction_commit()
 print("Re-opening with the full DB stack")
 samdb = SamDB(url=url,
                           lp=lp_ctx)
-print "Re-triggering another re-index"
+print("Re-triggering another re-index")
 chk = dbcheck(samdb)
 
 chk.reindex_database()
 
-print "Your database has been downgraded to DN-based index values."
+print("Your database has been downgraded to DN-based index values.")
 
-print "NOTE: Any use of a Samba 4.8 tool including ldbsearch will auto-upgrade back to GUID index mode"
+print("NOTE: Any use of a Samba 4.8 tool including ldbsearch will "
+      "auto-upgrade back to GUID index mode")

@@ -2,6 +2,7 @@
 # 
 # Works out the full schema
 #
+from __future__ import print_function
 
 import base64
 import optparse
@@ -147,12 +148,12 @@ def write_ldif_one(o, attrs):
             value = fix_dn(j)
             if a != "cn":
                 if a == "oMObjectClass":
-                    print "%s:: %s" % (a, base64.b64encode(value)).decode('utf8')
+                    print("%s:: %s" % (a, base64.b64encode(value)).decode('utf8'))
                 elif a.endswith("GUID"):
-                    print "%s: %s" % (a, ldb.schema_format_value(a, value))
+                    print("%s: %s" % (a, ldb.schema_format_value(a, value)))
                 else:
-                    print "%s: %s" % (a, value)
-    print ""
+                    print("%s: %s" % (a, value))
+    print()
 
 
 # get the rootDSE

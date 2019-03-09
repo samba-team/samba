@@ -2,7 +2,7 @@
 # 
 # Works out the minimal schema for a set of objectclasses
 #
-
+from __future__ import print_function
 import base64
 import optparse
 import sys
@@ -251,15 +251,15 @@ def find_objectclass_auto(ldb, o):
         return
     testdn = create_testdn(o.exampleDN)
 
-    print "testdn is '%s'" % testdn
+    print("testdn is '%s'" % testdn)
 
     ldif = "dn: " + testdn
     ldif += "\nobjectClass: " + o.name
     try:
         ldb.add(ldif)
     except LdbError as e:
-        print "error adding %s: %s" % (o.name, e)
-        print "%s" % ldif
+        print("error adding %s: %s" % (o.name, e))
+        print("%s" % ldif)
         return
 
     res = ldb.search(base=testdn, scope=ldb.SCOPE_BASE)
@@ -279,7 +279,7 @@ def expand_objectclass(ldb, o):
         expression="(&(objectClass=classSchema)(ldapDisplayName=%s))" % o.name,
         base=rootDse["schemaNamingContext"][0], scope=SCOPE_SUBTREE, 
         attrs=attrs)
-    print >>sys.stderr, "Expanding class %s" % o.name
+    print("Expanding class %s" % o.name, file=sys.stderr)
     assert(len(res) == 1)
     msg = res[0]
     for aname in attrs:
@@ -290,7 +290,7 @@ def expand_objectclass(ldb, o):
             list = [msg[aname]]
         for name in list:
             if not objectclasses.has_key(name):
-                print >>sys.stderr, "Found new objectclass '%s'" % name
+                print("Found new objectclass '%s'" % name, file=sys.stderr)
                 objectclasses[name] = Objectclass(ldb, name)
 
 
@@ -317,13 +317,15 @@ def walk_dn(ldb, dn):
     try:
         res = ldb.search("objectClass=*", dn, SCOPE_BASE, attrs)
     except LdbError as e:
-        print >>sys.stderr, "Unable to fetch allowedAttributes for '%s' - %r" % (dn, e)
+        print("Unable to fetch allowedAttributes for '%s' - %r" % (dn, e),
+              file=sys.stderr)
         return
     allattrs = res[0]["allowedAttributes"]
     try:
         res = ldb.search("objectClass=*", dn, SCOPE_BASE, allattrs)
     except LdbError as e:
-        print >>sys.stderr, "Unable to fetch all attributes for '%s' - %s" % (dn, e)
+        print("Unable to fetch all attributes for '%s' - %s" % (dn, e),
+              file=sys.stderr)
         return
     msg = res[0]
     for a in msg:
@@ -336,7 +338,8 @@ def walk_naming_context(ldb, namingContext):
         res = ldb.search("objectClass=*", namingContext, SCOPE_DEFAULT, 
                          ["objectClass"])
     except LdbError as e:
-        print >>sys.stderr, "Unable to fetch objectClasses for '%s' - %s" % (namingContext, e)
+        print("Unable to fetch objectClasses for '%s' - %s" % (namingContext, e),
+              file=sys.stderr)
         return
     for msg in res:
         msg = res.msgs[r]["objectClass"]
@@ -389,7 +392,7 @@ def build_objectclass(ldb, name):
         base=rootDse["schemaNamingContext"][0], scope=SCOPE_SUBTREE, 
         attrs=attrs)
     if len(res) == 0:
-        print >>sys.stderr, "unknown class '%s'" % name
+        print("unknown class '%s'" % name, file=sys.stderr)
         return None
     return Objectclass(ldb, name)
 
@@ -424,7 +427,7 @@ def write_aggregate_objectclass(objectclass):
     list = attribute_list(objectclass, "systemMayContain", "mayContain")
     line += aggregate_list("MAY", list)
 
-    print line + " )"
+    print(line + " )")
 
 
 def write_aggregate_ditcontentrule(objectclass):
@@ -451,7 +454,7 @@ def write_aggregate_ditcontentrule(objectclass):
     line += aggregate_list("MUST", must_list)
     line += aggregate_list("MAY", may_list)
 
-    print line + " )"
+    print(line + " )")
 
 def write_aggregate_attribute(attrib):
     """write the aggregate record for an attribute"""
@@ -463,15 +466,15 @@ def write_aggregate_attribute(attrib):
     if attrib.get('systemOnly') == "TRUE":
         line += "NO-USER-MODIFICATION "
 
-    print line + ")"
+    print(line + ")")
 
 
 def write_aggregate():
     """write the aggregate record"""
-    print "dn: CN=Aggregate,${SCHEMADN}"
-    print """objectClass: top
+    print("dn: CN=Aggregate,${SCHEMADN}")
+    print("""objectClass: top
 objectClass: subSchema
-objectCategory: CN=SubSchema,${SCHEMADN}"""
+objectCategory: CN=SubSchema,${SCHEMADN}""")
     if not opts.dump_subschema_auto:
         return
 
@@ -552,15 +555,15 @@ if not opts.verbose:
 #
 #  dump list of objectclasses
 #
-print "objectClasses:\n"
+print("objectClasses:\n")
 for objectclass in objectclasses:
-    print "\t%s\n" % objectclass
+    print("\t%s\n" % objectclass)
 
-print "attributes:\n"
+print("attributes:\n")
 for attr in attributes:
-    print "\t%s\n" % attr
+    print("\t%s\n" % attr)
 
-print "autocreated attributes:\n"
+print("autocreated attributes:\n")
 for attr in attributes:
     if attr.autocreate:
-        print "\t%s\n" % i
+        print("\t%s\n" % i)
