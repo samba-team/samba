@@ -61,9 +61,9 @@ if opts.perf_test_output:
         if getattr(opts, bad_opt):
             bad_options.append(bad_opt)
     if bad_options:
-        print >>sys.stderr, ("--perf-test-output is incompatible with --%s" %
-                             (', --'.join(x.replace('_', '-')
-                                          for x in bad_options)))
+        print("--perf-test-output is incompatible with --%s" %
+              (', --'.join(x.replace('_', '-') for x in bad_options)),
+              file=sys.stderr)
         sys.exit(1)
 
 if opts.expected_failures:
