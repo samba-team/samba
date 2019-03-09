@@ -26,6 +26,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from __future__ import print_function
 
 import optparse
 import sys
@@ -97,12 +98,12 @@ class DescrGetter:
                         l = line[i * length:((i + 1) * length)]
                     else:
                         l = " " + line[(i * length):((i + 1) * length)]
-                    print l
-        print "\n"
+                    print(l)
+        print("\n")
 
     def write_as_sddl(self, dn, descr):
-        print dn
-        print descr + "\n"
+        print(dn)
+        print(descr + "\n")
 
     def read_descr_by_base(self, search_base):
         res = self.samdb.search(base=search_base + self.local_domain, expression="(objectClass=*)", scope=SCOPE_SUBTREE, attrs=["nTSecurityDescriptor"])
