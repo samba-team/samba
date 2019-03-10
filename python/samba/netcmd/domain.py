@@ -390,6 +390,7 @@ class cmd_domain_provision(Command):
                     print("%s [%s]: " % (prompt, default), end=' ')
                 else:
                     print("%s: " % (prompt,), end=' ')
+                sys.stdout.flush()
                 return sys.stdin.readline().rstrip("\n") or default
 
             try:
