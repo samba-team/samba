@@ -1546,6 +1546,161 @@ NTSTATUS cli_smb2_chkpath(struct cli_state *cli,
 	return cli_smb2_close_fnum(cli, fnum);
 }
 
+struct cli_smb2_query_info_fnum_state {
+	DATA_BLOB outbuf;
+};
+
+static void cli_smb2_query_info_fnum_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb2_query_info_fnum_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint8_t in_info_type,
+	uint8_t in_info_class,
+	uint32_t in_max_output_length,
+	const DATA_BLOB *in_input_buffer,
+	uint32_t in_additional_info,
+	uint32_t in_flags)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb2_query_info_fnum_state *state = NULL;
+	struct smb2_hnd *ph = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_smb2_query_info_fnum_state);
+	if (req == NULL) {
+		return req;
+	}
+
+	status = map_fnum_to_smb2_handle(cli, fnum, &ph);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = smb2cli_query_info_send(
+		state,
+		ev,
+		cli->conn,
+		cli->timeout,
+		cli->smb2.session,
+		cli->smb2.tcon,
+		in_info_type,
+		in_info_class,
+		in_max_output_length,
+		in_input_buffer,
+		in_additional_info,
+		in_flags,
+		ph->fid_persistent,
+		ph->fid_volatile);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb2_query_info_fnum_done, req);
+	return req;
+}
+
+static void cli_smb2_query_info_fnum_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_query_info_fnum_state *state = tevent_req_data(
+		req, struct cli_smb2_query_info_fnum_state);
+	DATA_BLOB outbuf;
+	NTSTATUS status;
+
+	status = smb2cli_query_info_recv(subreq, state, &outbuf);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	/*
+	 * We have to dup the memory here because outbuf.data is not
+	 * returned as a talloc object by smb2cli_query_info_recv.
+	 * It's a pointer into the received buffer.
+	 */
+	state->outbuf = data_blob_dup_talloc(state, outbuf);
+
+	if ((outbuf.length != 0) &&
+	    tevent_req_nomem(state->outbuf.data, req)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_smb2_query_info_fnum_recv(
+	struct tevent_req *req, TALLOC_CTX *mem_ctx, DATA_BLOB *outbuf)
+{
+	struct cli_smb2_query_info_fnum_state *state = tevent_req_data(
+		req, struct cli_smb2_query_info_fnum_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	*outbuf = (DATA_BLOB) {
+		.data = talloc_move(mem_ctx, &state->outbuf.data),
+		.length = state->outbuf.length,
+	};
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_smb2_query_info_fnum(
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint8_t in_info_type,
+	uint8_t in_info_class,
+	uint32_t in_max_output_length,
+	const DATA_BLOB *in_input_buffer,
+	uint32_t in_additional_info,
+	uint32_t in_flags,
+	TALLOC_CTX *mem_ctx,
+	DATA_BLOB *outbuf)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	bool ok;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_smb2_query_info_fnum_send(
+		frame,
+		ev,
+		cli,
+		fnum,
+		in_info_type,
+		in_info_class,
+		in_max_output_length,
+		in_input_buffer,
+		in_additional_info,
+		in_flags);
+	if (req == NULL) {
+		goto fail;
+	}
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		goto fail;
+	}
+	status = cli_smb2_query_info_fnum_recv(req, mem_ctx, outbuf);
+fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /***************************************************************
  Helper function for pathname operations.
 ***************************************************************/
