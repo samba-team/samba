@@ -156,7 +156,7 @@ static NTSTATUS smb2_create_blob_push_one(TALLOC_CTX *mem_ctx, DATA_BLOB *buffer
 NTSTATUS smb2_create_blob_push(TALLOC_CTX *mem_ctx, DATA_BLOB *buffer,
 			       const struct smb2_create_blobs blobs)
 {
-	int i;
+	uint32_t i;
 	NTSTATUS status;
 
 	*buffer = data_blob(NULL, 0);
