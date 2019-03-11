@@ -1295,6 +1295,89 @@ class MaxIndexKeyLengthTestsLmdb(MaxIndexKeyLengthTests):
         super(MaxIndexKeyLengthTestsLmdb, self).tearDown()
 
 
+class OrderedIntegerRangeTests(LdbBaseTest):
+
+    def tearDown(self):
+        shutil.rmtree(self.testdir)
+        super(OrderedIntegerRangeTests, self).tearDown()
+
+        # Ensure the LDB is closed now, so we close the FD
+        del(self.l)
+
+    def setUp(self):
+        super(OrderedIntegerRangeTests, self).setUp()
+        self.testdir = tempdir()
+        self.filename = os.path.join(self.testdir, "ordered_integer_test.ldb")
+
+        self.l = ldb.Ldb(self.url(),
+                         options=self.options())
+        self.l.add({"dn": "@ATTRIBUTES",
+                    "int64attr": "ORDERED_INTEGER"})
+        self.l.add({"dn": "@INDEXLIST",
+                    "@IDXATTR": [b"int64attr"],
+                    "@IDXONE": [b"1"],
+                    "@IDXGUID": [b"objectUUID"],
+                    "@IDX_DN_GUID": [b"GUID"]})
+
+    def options(self):
+        if self.prefix == MDB_PREFIX:
+            return ['modules:rdn_name',
+                    'disable_full_db_scan_for_self_test:1']
+        else:
+            return ['modules:rdn_name']
+
+    def test_comparison_expression(self):
+        int64_max = 2**63-1
+        int64_min = -2**63
+        test_nums = list(range(-5, 5))
+        test_nums += list(range(int64_max-5, int64_max+1))
+        test_nums += list(range(int64_min, int64_min+5))
+        test_nums = sorted(test_nums)
+
+        for (i, num) in enumerate(test_nums):
+            ouuid = 0x0123456789abcdef + i
+            ouuid_s = bytes(('0' + hex(ouuid)[2:]).encode())
+            self.l.add({"dn": "OU=COMPTESTOU{},DC=SAMBA,DC=ORG".format(i),
+                        "objectUUID": ouuid_s,
+                        "int64attr": str(num)})
+
+        def assert_int64_expr(expr, py_expr=None):
+            res = self.l.search(base="DC=SAMBA,DC=ORG",
+                                scope=ldb.SCOPE_SUBTREE,
+                                expression="(int64attr%s)" % (expr))
+
+            if not py_expr:
+                py_expr = expr
+            expect = [n for n in test_nums if eval(str(n) + py_expr)]
+            vals = sorted([int(r.get("int64attr")[0]) for r in res])
+            self.assertEqual(len(res), len(expect))
+            self.assertEqual(set(vals), set(expect))
+            self.assertEqual(expect, vals)
+
+        assert_int64_expr(">=-2")
+        assert_int64_expr("<=2")
+        assert_int64_expr(">=" + str(int64_min))
+        assert_int64_expr("<=" + str(int64_min))
+        assert_int64_expr("<=" + str(int64_min+1))
+        assert_int64_expr("<=" + str(int64_max))
+        assert_int64_expr(">=" + str(int64_max))
+        assert_int64_expr(">=" + str(int64_max-1))
+        assert_int64_expr("=10", "==10")
+
+
+# Run the ordered integer range tests against an lmdb backend
+class OrderedIntegerRangeTestsLmdb(OrderedIntegerRangeTests):
+
+    def setUp(self):
+        if os.environ.get('HAVE_LMDB', '1') == '0':
+            self.skipTest("No lmdb backend")
+        self.prefix = MDB_PREFIX
+        super(OrderedIntegerRangeTestsLmdb, self).setUp()
+
+    def tearDown(self):
+        super(OrderedIntegerRangeTestsLmdb, self).tearDown()
+
+
 # Run the index truncation tests against an lmdb backend
 class RejectSubDBIndex(LdbBaseTest):
 

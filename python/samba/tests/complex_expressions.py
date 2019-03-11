@@ -189,6 +189,16 @@ class ComplexExpressionTests(TestCase):
         py_expr = "%d <= {%s} <= %d" % (n-1, field, n+1)
         self.assertLDAPQuery(expr, ou_dn, py_expr, ldap_objects)
 
+        half_n = int(n/2)
+
+        expr = "(%s<=%s)" % (field, half_n)
+        py_expr = "{%s} <= %d" % (field, half_n)
+        self.assertLDAPQuery(expr, ou_dn, py_expr, ldap_objects)
+
+        expr = "(%s>=%s)" % (field, half_n)
+        py_expr = "{%s} >= %d" % (field, half_n)
+        self.assertLDAPQuery(expr, ou_dn, py_expr, ldap_objects)
+
     # Same test again for largeint and enum
     def test_largeint_range(self):
         self.test_int_range(self.largeint_f)
@@ -454,6 +464,11 @@ class ComplexExpressionTests(TestCase):
         expr = "(&(%s<=%d)(objectClass=user))" % (field, search_num)
         py_expr = "{%s} <= %d" % (field, search_num)
         self.assertLDAPQuery(expr, ou_dn, py_expr, ldap_objects)
+
+        expr = "(&(%s>=%d)(objectClass=user))" % (field, search_num)
+        py_expr = "{%s} >= %d" % (field, search_num)
+        self.assertLDAPQuery(expr, ou_dn, py_expr, ldap_objects)
+
 
 # If we're called independently then import subunit, get host from first
 # arg and run.  Otherwise, subunit ran us so just set host from env.
