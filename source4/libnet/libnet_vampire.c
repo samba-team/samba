@@ -554,7 +554,12 @@ WERROR libnet_vampire_cb_schema_chunk(void *private_data,
 		s->schema_part.last_object->next_object = talloc_steal(s->schema_part.last_object,
 								       first_object);
 	}
-	for (cur = first_object; cur->next_object; cur = cur->next_object) {}
+	if (first_object != NULL) {
+		for (cur = first_object; cur->next_object; cur = cur->next_object) {}
+	} else {
+		cur = first_object;
+	}
+
 	s->schema_part.last_object = cur;
 
 	if (!c->partition->more_data) {
