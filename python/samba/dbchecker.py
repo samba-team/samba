@@ -853,7 +853,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
         else:
             self.samdb.transaction_cancel()
 
-    def err_wrong_dn(self, obj, new_dn, rdn_attr, rdn_val, name_val):
+    def err_wrong_dn(self, obj, new_dn, rdn_attr, rdn_val, name_val, controls):
         '''handle a wrong dn'''
 
         new_rdn = ldb.Dn(self.samdb, str(new_dn))
@@ -870,7 +870,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Not renaming %s to %s" % (obj.dn, new_dn))
             return
 
-        if self.do_rename(obj.dn, new_rdn, new_parent, ["show_recycled:1", "relax:0"],
+        if self.do_rename(obj.dn, new_rdn, new_parent, controls,
                           "Failed to rename object %s into %s" % (obj.dn, new_dn)):
             self.report("Renamed %s into %s" % (obj.dn, new_dn))
 
@@ -2295,9 +2295,11 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
         if name_val is not None:
             parent_dn = None
+            controls = ["show_recycled:1", "relax:0"]
             if isDeleted:
                 if not (systemFlags & samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE):
                     parent_dn = deleted_objects_dn
+                controls += ["local_oid:%s:1" % dsdb.DSDB_CONTROL_DBCHECK_FIX_LINK_DN_NAME]
             if parent_dn is None:
                 parent_dn = obj.dn.parent()
             expected_dn = ldb.Dn(self.samdb, "RDN=RDN,%s" % (parent_dn))
@@ -2308,7 +2310,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
             if expected_dn != obj.dn:
                 error_count += 1
-                self.err_wrong_dn(obj, expected_dn, object_rdn_attr, object_rdn_val, name_val)
+                self.err_wrong_dn(obj, expected_dn, object_rdn_attr,
+                        object_rdn_val, name_val, controls)
             elif obj.dn.get_rdn_value() != object_rdn_val:
                 error_count += 1
                 self.report("ERROR: Not fixing %s=%r on '%s'" % (object_rdn_attr, object_rdn_val, str(obj.dn)))
