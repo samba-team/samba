@@ -77,9 +77,7 @@ from samba.ms_display_specifiers import read_ms_ldif
 from samba.ntacls import setntacl, getntacl, dsacl2fsacl
 from samba.ndr import ndr_pack, ndr_unpack
 from samba.provision.backend import (
-    FDSBackend,
     LDBBackend,
-    OpenLDAPBackend,
 )
 from samba.descriptor import (
     get_empty_descriptor,
@@ -2162,13 +2160,11 @@ def provision(logger, session_info, smbconf=None,
               krbtgtpass=None, domainguid=None, policyguid=None, policyguid_dc=None,
               dns_backend=None, dns_forwarder=None, dnspass=None,
               invocationid=None, machinepass=None, ntdsguid=None,
-              root=None, nobody=None, users=None, backup=None, aci=None,
-              serverrole=None, dom_for_fun_level=None, backend_type=None,
-              sitename=None, ol_mmr_urls=None, ol_olc=None, slapd_path=None,
+              root=None, nobody=None, users=None, backup=None,
+              sitename=None, serverrole=None, dom_for_fun_level=None,
               useeadb=False, am_rodc=False, lp=None, use_ntvfs=False,
               use_rfc2307=False, maxuid=None, maxgid=None, skip_sysvolacl=True,
-              ldap_backend_forced_uri=None, nosync=False, ldap_dryrun_mode=False,
-              ldap_backend_extra_port=None, base_schema="2012_R2",
+              base_schema="2012_R2",
               plaintext_secrets=False, backend_store=None,
               backend_store_size=None, batch_mode=False):
     """Provision samba4
@@ -2185,8 +2181,6 @@ def provision(logger, session_info, smbconf=None,
         # Make a new, random password between Samba and it's LDAP server
         ldapadminpass = samba.generate_random_password(128, 255)
 
-    if backend_type is None:
-        backend_type = "ldb"
     if backend_store is None:
         backend_store = get_default_backend_store()
 
@@ -2288,28 +2282,9 @@ def provision(logger, session_info, smbconf=None,
     schema = Schema(domainsid, invocationid=invocationid,
                     schemadn=names.schemadn, base_schema=base_schema)
 
-    if backend_type == "ldb":
-        provision_backend = LDBBackend(backend_type, paths=paths,
-                                       lp=lp,
-                                       names=names, logger=logger)
-    elif backend_type == "fedora-ds":
-        provision_backend = FDSBackend(backend_type, paths=paths,
-                                       lp=lp,
-                                       names=names, logger=logger, domainsid=domainsid,
-                                       schema=schema, hostname=hostname, ldapadminpass=ldapadminpass,
-                                       slapd_path=slapd_path,
-                                       root=root)
-    elif backend_type == "openldap":
-        provision_backend = OpenLDAPBackend(backend_type, paths=paths,
-                                            lp=lp,
-                                            names=names, logger=logger, domainsid=domainsid,
-                                            schema=schema, hostname=hostname, ldapadminpass=ldapadminpass,
-                                            slapd_path=slapd_path, ol_mmr_urls=ol_mmr_urls,
-                                            ldap_backend_extra_port=ldap_backend_extra_port,
-                                            ldap_dryrun_mode=ldap_dryrun_mode, nosync=nosync,
-                                            ldap_backend_forced_uri=ldap_backend_forced_uri)
-    else:
-        raise ValueError("Unknown LDAP backend type selected")
+    provision_backend = LDBBackend(paths=paths,
+                                   lp=lp,
+                                   names=names, logger=logger)
 
     provision_backend.init()
     provision_backend.start()
@@ -2480,8 +2455,7 @@ def provision_become_dc(smbconf=None, targetdir=None,
                         adminpass=None, krbtgtpass=None, domainguid=None, policyguid=None,
                         policyguid_dc=None, invocationid=None, machinepass=None, dnspass=None,
                         dns_backend=None, root=None, nobody=None, users=None,
-                        backup=None, serverrole=None, ldap_backend=None,
-                        ldap_backend_type=None, sitename=None, debuglevel=1, use_ntvfs=False):
+                        backup=None, serverrole=None, sitename=None, debuglevel=1, use_ntvfs=False):
 
     logger = logging.getLogger("provision")
     samba.set_debug_level(debuglevel)

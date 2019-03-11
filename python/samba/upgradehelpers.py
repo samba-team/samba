@@ -262,8 +262,6 @@ def newprovision(names, session, smbconf, provdir, logger, base_schema=None):
                      krbtgtpass=None, machinepass=None, dnspass=None, root=None,
                      nobody=None, users=None,
                      serverrole="domain controller",
-                     backend_type=None, ldapadminpass=None, ol_mmr_urls=None,
-                     slapd_path=None,
                      dom_for_fun_level=names.domainlevel, dns_backend=names.dns_backend,
                      useeadb=True, use_ntvfs=True, base_schema=base_schema)
 
