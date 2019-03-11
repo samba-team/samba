@@ -1,8 +1,8 @@
 #!/bin/sh
 # Blackbox test for wbinfo name lookup
-if [ $# -lt 2 ]; then
+if [ $# -lt 3 ]; then
 cat <<EOF
-Usage: test_wbinfo.sh DOMAIN DC_USERNAME
+Usage: test_wbinfo.sh DOMAIN REALM DC_USERNAME
 EOF
 exit 1;
 fi
