@@ -2264,12 +2264,12 @@ static void dump_sid(ADS_STRUCT *ads, const char *field, struct berval **values)
 {
 	int i;
 	for (i=0; values[i]; i++) {
-		struct sid_parse_ret ret;
+		ssize_t ret;
 		struct dom_sid sid;
 		struct dom_sid_buf tmp;
 		ret = sid_parse((const uint8_t *)values[i]->bv_val,
 				values[i]->bv_len, &sid);
-		if (ret.len == -1) {
+		if (ret == -1) {
 			return;
 		}
 		printf("%s: %s\n", field, dom_sid_str_buf(&sid, &tmp));
@@ -2797,10 +2797,10 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 
 	count = 0;
 	for (i=0; values[i]; i++) {
-		struct sid_parse_ret ret;
+		ssize_t ret;
 		ret = sid_parse((const uint8_t *)values[i]->bv_val,
 				values[i]->bv_len, &(*sids)[count]);
-		if (ret.len != -1) {
+		if (ret != -1) {
 			struct dom_sid_buf buf;
 			DBG_DEBUG("pulling SID: %s\n",
 				  dom_sid_str_buf(&(*sids)[count], &buf));
@@ -3358,7 +3358,7 @@ ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 		}
 		break;
 	case ADS_EXTENDED_DN_HEX_STRING: {
-		struct sid_parse_ret ret;
+		ssize_t ret;
 		fstring buf;
 		size_t buf_len;
 
@@ -3368,7 +3368,7 @@ ADS_STATUS ads_get_sid_from_extended_dn(TALLOC_CTX *mem_ctx,
 		}
 
 		ret = sid_parse((const uint8_t *)buf, buf_len, sid);
-		if (ret.len == -1) {
+		if (ret == -1) {
 			DEBUG(10,("failed to parse sid\n"));
 			return ADS_ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}

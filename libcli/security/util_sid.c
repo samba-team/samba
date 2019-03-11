@@ -300,8 +300,7 @@ void sid_copy(struct dom_sid *dst, const struct dom_sid *src)
  Parse a on-the-wire SID to a struct dom_sid.
 *****************************************************************/
 
-struct sid_parse_ret sid_parse(
-	const uint8_t *inbuf, size_t len, struct dom_sid *sid)
+ssize_t sid_parse(const uint8_t *inbuf, size_t len, struct dom_sid *sid)
 {
 	DATA_BLOB in = data_blob_const(inbuf, len);
 	enum ndr_err_code ndr_err;
@@ -309,9 +308,9 @@ struct sid_parse_ret sid_parse(
 	ndr_err = ndr_pull_struct_blob_all(
 		&in, NULL, sid, (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		return (struct sid_parse_ret) { .len = -1 };
+		return -1;
 	}
-	return (struct sid_parse_ret) { .len = ndr_size_dom_sid(sid, 0) };
+	return ndr_size_dom_sid(sid, 0);
 }
 
 /*****************************************************************

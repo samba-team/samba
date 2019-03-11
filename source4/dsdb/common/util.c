@@ -342,7 +342,7 @@ uint32_t samdb_result_rid_from_sid(TALLOC_CTX *mem_ctx, const struct ldb_message
 struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_message *msg, 
 				     const char *attr)
 {
-	struct sid_parse_ret ret;
+	ssize_t ret;
 	const struct ldb_val *v;
 	struct dom_sid *sid;
 	v = ldb_msg_find_ldb_val(msg, attr);
@@ -354,7 +354,7 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_messa
 		return NULL;
 	}
 	ret = sid_parse(v->data, v->length, sid);
-	if (ret.len == -1) {
+	if (ret == -1) {
 		talloc_free(sid);
 		return NULL;
 	}
@@ -5809,7 +5809,7 @@ static int dsdb_count_domain_callback(
 	case LDB_REPLY_ENTRY:
 	{
 		struct dsdb_count_domain_context *context = NULL;
-		struct sid_parse_ret ret;
+		ssize_t ret;
 		bool in_domain;
 		struct dom_sid sid;
 		const struct ldb_val *v;
@@ -5826,7 +5826,7 @@ static int dsdb_count_domain_callback(
 		}
 
 		ret = sid_parse(v->data, v->length, &sid);
-		if (ret.len == -1) {
+		if (ret == -1) {
 			break;
 		}
 

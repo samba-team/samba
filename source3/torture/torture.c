@@ -10878,7 +10878,7 @@ static bool run_local_sid_to_string(int dummy) {
 }
 
 static bool run_local_binary_to_sid(int dummy) {
-	struct sid_parse_ret ret;
+	ssize_t ret;
 	struct dom_sid *sid = talloc(NULL, struct dom_sid);
 	static const uint8_t good_binary_sid[] = {
 		0x1, /* revision number */
@@ -10964,15 +10964,15 @@ static bool run_local_binary_to_sid(int dummy) {
 	};
 
 	ret = sid_parse(good_binary_sid, sizeof(good_binary_sid), sid);
-	if (ret.len == -1) {
+	if (ret == -1) {
 		return false;
 	}
 	ret = sid_parse(long_binary_sid2, sizeof(long_binary_sid2), sid);
-	if (ret.len != -1) {
+	if (ret != -1) {
 		return false;
 	}
 	ret = sid_parse(long_binary_sid, sizeof(long_binary_sid), sid);
-	if (ret.len != -1) {
+	if (ret != -1) {
 		return false;
 	}
 	return true;
