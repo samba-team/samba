@@ -97,6 +97,7 @@ struct sl_inode_path_map {
 };
 
 struct mds_ctx {
+	struct auth_session_info *pipe_session_info;
 	struct dom_sid sid;
 	uid_t uid;
 	const char *spath;
@@ -119,7 +120,7 @@ extern bool mds_init(struct messaging_context *msg_ctx);
 extern bool mds_shutdown(void);
 extern struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
-				    const struct auth_session_info *session_info,
+				    struct auth_session_info *session_info,
 				    const char *path);
 extern int mds_ctx_destructor_cb(struct mds_ctx *mds_ctx);
 extern bool mds_dispatch(struct mds_ctx *query_ctx,

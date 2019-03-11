@@ -810,19 +810,38 @@ static void tracker_cursor_cb(GObject *object,
 		return;
 	}
 
+	/*
+	 * We're in a tevent callback which means in the case of
+	 * running as external RPC service we're running as root and
+	 * not as the user.
+	 */
+	if (!become_authenticated_pipe_user(slq->mds_ctx->pipe_session_info)) {
+		DBG_ERR("can't become authenticated user: %d\n", slq->mds_ctx->uid);
+		smb_panic("can't become authenticated user");
+	}
+
 	if (geteuid() != slq->mds_ctx->uid) {
 		DEBUG(0, ("uid mismatch: %d/%d\n", geteuid(), slq->mds_ctx->uid));
 		smb_panic("uid mismatch");
 	}
 
+	/*
+	 * We've changed identity to the authenticated pipe user, so
+	 * any function exit below must ensure we switch back
+	 */
+
 	result = sys_stat(path, &sb, false);
 	if (result != 0) {
+		unbecome_authenticated_pipe_user();
 		goto done;
 	}
 	result = access(path, R_OK);
 	if (result != 0) {
+		unbecome_authenticated_pipe_user();
 		goto done;
 	}
+
+	unbecome_authenticated_pipe_user();
 
 	ino64 = sb.st_ex_ino;
 	if (slq->cnids) {
@@ -1823,7 +1842,7 @@ static gboolean gmainloop_timer(gpointer user_data)
  **/
 struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 			     struct tevent_context *ev,
-			     const struct auth_session_info *session_info,
+			     struct auth_session_info *session_info,
 			     const char *path)
 {
 	struct mds_ctx *mds_ctx;
@@ -1838,6 +1857,8 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	if (mds_ctx->spath == NULL) {
 		goto error;
 	}
+
+	mds_ctx->pipe_session_info = session_info;
 
 	if (session_info->security_token->num_sids < 1) {
 		goto error;
