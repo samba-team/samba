@@ -7,9 +7,7 @@ The Samba testsuite is divided up into the following subdirectories.
     
     - nsswitch        Tests for nsswitch extensions
 
-    - build_farm      Tests designed to run automatically on the build farm
-
-All the scripts except those in build_farm require an unreleased
+All the scripts require an unreleased
 version of DejaGNU, and although they contain some useful tests they
 are not so useful at the moment.  All scripts are migrating to a
 single test framework, Satyr.  <cvs://cvs.samba.org/data/cvs/satyr>
