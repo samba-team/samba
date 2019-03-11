@@ -28,8 +28,11 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "../libcli/smb/smbXcli_base.h"
+#include "lib/cmdline/popt_common.h"
+#include "libcli/security/security.h"
 #include "libcli/resolve/resolve.h"
 #include "lib/param/param.h"
+#include "lib/events/events.h"
 #include "oplock_break_handler.h"
 #include "torture/smb2/block.h"
 
@@ -304,6 +307,45 @@ static void test_multichannel_free_channels(struct smb2_tree *tree2A,
 	TALLOC_FREE(tree2C);
 }
 
+static bool test_multichannel_initial_checks(struct torture_context *tctx,
+					     struct smb2_tree *tree1)
+{
+	struct smb2_transport *transport1 = tree1->session->transport;
+	uint32_t server_capabilities;
+	struct fsctl_net_iface_info info;
+
+	if (smbXcli_conn_protocol(transport1->conn) < PROTOCOL_SMB3_00) {
+		torture_skip_goto(tctx, fail,
+				  "SMB 3.X Dialect family required for "
+				  "Multichannel tests\n");
+	}
+
+	server_capabilities = smb2cli_conn_server_capabilities(
+					tree1->session->transport->conn);
+	if (!(server_capabilities & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_skip_goto(tctx, fail,
+			     "Server does not support multichannel.");
+	}
+
+	torture_assert(tctx,
+		test_ioctl_network_interface_info(tctx, tree1, &info),
+		"failed to retrieve network interface info");
+
+	return true;
+fail:
+	return false;
+}
+
+static void test_multichannel_init_smb_create(struct smb2_create *io)
+{
+	io->in.durable_open = false;
+	io->in.durable_open_v2 = true;
+	io->in.persistent_open = false;
+	io->in.create_guid = GUID_random();
+	io->in.timeout = 0x493E0; /* 300000 */
+	/* windows 2016 returns 300000 0x493E0 */
+}
+
 /*
  * We simulate blocking incoming oplock break requests by simply ignoring
  * the incoming break requests.
@@ -399,12 +441,190 @@ static void test_cleanup_blocked_channels(struct torture_context *tctx)
 	}
 }
 
+/*
+ * Oplock break - Test 1
+ * Test to confirm that server sends oplock breaks as expected.
+ * open file1 in session 2A
+ * open file2 in session 2B
+ * open file1 in session 1
+ *      oplock break received
+ * open file1 in session 1
+ *      oplock break received
+ * Cleanup
+ */
+static bool test_multichannel_oplock_break_test1(struct torture_context *tctx,
+					   struct smb2_tree *tree1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h;
+	struct smb2_handle h_client1_file1 = {{0}};
+	struct smb2_handle h_client1_file2 = {{0}};
+	struct smb2_handle h_client1_file3 = {{0}};
+	struct smb2_handle h_client2_file1 = {{0}};
+	struct smb2_handle h_client2_file2 = {{0}};
+	struct smb2_handle h_client2_file3 = {{0}};
+	struct smb2_create io1, io2, io3;
+	bool ret = true;
+	const char *fname1 = BASEDIR "\\oplock_break_test1.dat";
+	const char *fname2 = BASEDIR "\\oplock_break_test2.dat";
+	const char *fname3 = BASEDIR "\\oplock_break_test3.dat";
+	struct smb2_tree *tree2A = NULL;
+	struct smb2_tree *tree2B = NULL;
+	struct smb2_tree *tree2C = NULL;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smbcli_options transport2_options;
+	struct smb2_session *session1 = tree1->session;
+	uint16_t local_port = 0;
+
+	if (!test_multichannel_initial_checks(tctx, tree1)) {
+		return true;
+	}
+
+	torture_comment(tctx, "Oplock break retry: Test1\n");
+
+	torture_reset_break_info(tctx, &break_info);
+
+	transport1->oplock.handler = torture_oplock_ack_handler;
+	transport1->oplock.private_data = tree1;
+	torture_comment(tctx, "transport1  [%p]\n", transport1);
+	local_port = torture_get_local_port_from_transport(transport1);
+	torture_comment(tctx, "transport1 uses tcp port: %d\n", local_port);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &_h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, _h);
+	smb2_util_unlink(tree1, fname1);
+	smb2_util_unlink(tree1, fname2);
+	smb2_util_unlink(tree1, fname3);
+	CHECK_VAL(break_info.count, 0);
+
+	smb2_oplock_create_share(&io1, fname1,
+			smb2_util_share_access("RWD"),
+			smb2_util_oplock_level("b"));
+	test_multichannel_init_smb_create(&io1);
+
+	smb2_oplock_create_share(&io2, fname2,
+			smb2_util_share_access("RWD"),
+			smb2_util_oplock_level("b"));
+	test_multichannel_init_smb_create(&io2);
+
+	smb2_oplock_create_share(&io3, fname3,
+			smb2_util_share_access("RWD"),
+			smb2_util_oplock_level("b"));
+	test_multichannel_init_smb_create(&io3);
+
+	transport2_options = transport1->options;
+
+	ret = test_multichannel_create_channels(tctx, host, share,
+						  credentials,
+						  &transport2_options,
+						  &tree2A, &tree2B, NULL);
+	torture_assert(tctx, ret, "Could not create channels.\n");
+
+	/* 2a opens file1 */
+	torture_comment(tctx, "client2 opens fname1 via session 2A\n");
+	status = smb2_create(tree2A, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client2_file1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("b"));
+	torture_wait_for_oplock_break(tctx);
+	CHECK_VAL(break_info.count, 0);
+
+	/* 2b opens file2 */
+	torture_comment(tctx, "client2 opens fname2 via session 2B\n");
+	status = smb2_create(tree2B, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client2_file2 = io2.out.file.handle;
+	CHECK_CREATED(&io2, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("b"));
+	torture_wait_for_oplock_break(tctx);
+	CHECK_VAL(break_info.count, 0);
+
+
+	/* 1 opens file1 - batchoplock break? */
+	torture_comment(tctx, "client1 opens fname1 via session 1\n");
+	io1.in.oplock_level = smb2_util_oplock_level("b");
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client1_file1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io1.out.oplock_level, smb2_util_oplock_level("s"));
+	torture_wait_for_oplock_break(tctx);
+	CHECK_VAL(break_info.count, 1);
+
+	torture_reset_break_info(tctx, &break_info);
+
+	/* 1 opens file2 - batchoplock break? */
+	torture_comment(tctx, "client1 opens fname2 via session 1\n");
+	io2.in.oplock_level = smb2_util_oplock_level("b");
+	status = smb2_create(tree1, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client1_file2 = io2.out.file.handle;
+	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_VAL(io2.out.oplock_level, smb2_util_oplock_level("s"));
+	torture_wait_for_oplock_break(tctx);
+	CHECK_VAL(break_info.count, 1);
+
+	/* cleanup everything */
+	torture_reset_break_info(tctx, &break_info);
+
+	smb2_util_close(tree1, h_client1_file1);
+	smb2_util_close(tree1, h_client1_file2);
+	smb2_util_close(tree1, h_client1_file3);
+	smb2_util_close(tree2A, h_client2_file1);
+	smb2_util_close(tree2A, h_client2_file2);
+	smb2_util_close(tree2A, h_client2_file3);
+
+	smb2_util_unlink(tree1, fname1);
+	smb2_util_unlink(tree1, fname2);
+	smb2_util_unlink(tree1, fname3);
+	CHECK_VAL(break_info.count, 0);
+	test_multichannel_free_channels(tree2A, tree2B, tree2C);
+	tree2A = tree2B = tree2C = NULL;
+done:
+	tree1->session = session1;
+
+	smb2_util_close(tree1, h_client1_file1);
+	smb2_util_close(tree1, h_client1_file2);
+	smb2_util_close(tree1, h_client1_file3);
+	if (tree2A != NULL) {
+		smb2_util_close(tree2A, h_client2_file1);
+		smb2_util_close(tree2A, h_client2_file2);
+		smb2_util_close(tree2A, h_client2_file3);
+	}
+
+	smb2_util_unlink(tree1, fname1);
+	smb2_util_unlink(tree1, fname2);
+	smb2_util_unlink(tree1, fname3);
+	smb2_deltree(tree1, BASEDIR);
+
+	test_multichannel_free_channels(tree2A, tree2B, tree2C);
+	talloc_free(tree1);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "multichannel");
+	struct torture_suite *suite_generic = torture_suite_create(ctx,
+								   "generic");
+	struct torture_suite *suite_oplocks = torture_suite_create(ctx,
+								   "oplocks");
+
+	torture_suite_add_suite(suite, suite_generic);
+	torture_suite_add_suite(suite, suite_oplocks);
 
 	torture_suite_add_1smb2_test(suite, "interface_info",
 				     test_multichannel_interface_info);
+	torture_suite_add_1smb2_test(suite_oplocks, "test1",
+				     test_multichannel_oplock_break_test1);
 
 	suite->description = talloc_strdup(suite, "SMB2 Multichannel tests");
 
