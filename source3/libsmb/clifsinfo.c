@@ -29,6 +29,7 @@
 #include "../libcli/smb/smbXcli_base.h"
 #include "auth/credentials/credentials.h"
 #include "../librpc/gen_ndr/ndr_security.h"
+#include "libcli/security/dom_sid.h"
 
 /****************************************************************************
  Get UNIX extensions version info.
@@ -685,23 +686,9 @@ static void cli_posix_whoami_done(struct tevent_req *subreq)
 	num_rdata -= (p - rdata);
 
 	for (i = 0; i < state->num_sids; i++) {
-		size_t sid_size;
-		DATA_BLOB in = data_blob_const(p, num_rdata);
-		enum ndr_err_code ndr_err;
+		ssize_t sid_size = sid_parse(p, num_rdata, &state->sids[i]);
 
-		ndr_err = ndr_pull_struct_blob(&in,
-				state,
-				&state->sids[i],
-				(ndr_pull_flags_fn_t)ndr_pull_dom_sid);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			tevent_req_nterror(req,
-				NT_STATUS_INVALID_NETWORK_RESPONSE);
-			return;
-		}
-
-		sid_size = ndr_size_dom_sid(&state->sids[i], 0);
-
-		if (sid_size > num_rdata) {
+		if ((sid_size == -1) || (sid_size > num_rdata)) {
 			tevent_req_nterror(req,
 				NT_STATUS_INVALID_NETWORK_RESPONSE);
 			return;
