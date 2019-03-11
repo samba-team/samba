@@ -247,6 +247,7 @@ NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,
 			 const char *domain_name,
 			 const char *name,
 			 uint32_t flags,
+			 const char **pdom_name,
 			 struct dom_sid *sid,
 			 enum lsa_SidType *type)
 {
@@ -299,6 +300,17 @@ NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,
 		DEBUG(2,("name_to_sid: failed to lookup name: %s\n",
 			nt_errstr(status)));
 		return status;
+	}
+
+	if (pdom_name != NULL) {
+		const char *dom_name;
+
+		dom_name = talloc_strdup(mem_ctx, domains[0]);
+		if (dom_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		*pdom_name = dom_name;
 	}
 
 	sid_copy(sid, &sids[0]);

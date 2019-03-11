@@ -225,6 +225,7 @@ struct winbindd_methods {
 				const char *domain_name,
 				const char *name,
 				uint32_t flags,
+				const char **pdom_name,
 				struct dom_sid *sid,
 				enum lsa_SidType *type);
 

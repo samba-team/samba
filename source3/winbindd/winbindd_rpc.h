@@ -53,6 +53,7 @@ NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,
 			 const char *domain_name,
 			 const char *name,
 			 uint32_t flags,
+			 const char **pdom_name,
 			 struct dom_sid *psid,
 			 enum lsa_SidType *ptype);
 

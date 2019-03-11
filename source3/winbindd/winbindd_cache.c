@@ -1820,7 +1820,7 @@ NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
 
 	winbindd_domain_init_backend(domain);
 	status = domain->backend->name_to_sid(domain, mem_ctx, domain_name,
-					      name, flags, sid, type);
+					      name, flags, NULL, sid, type);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
 		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
