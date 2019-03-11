@@ -52,7 +52,6 @@ struct partition_private_data {
 	struct partition_metadata *metadata;
 	
 	struct partition_module **modules;
-	const char *ldapBackend;
 
 	uint64_t metadata_seq;
 	uint32_t in_transaction;
