@@ -3701,12 +3701,19 @@ static int replmd_rename_callback(struct ldb_request *req, struct ldb_reply *are
 static int replmd_rename(struct ldb_module *module, struct ldb_request *req)
 {
 	struct ldb_context *ldb;
+	struct ldb_control *fix_dn_name_control = NULL;
 	struct replmd_replicated_request *ac;
 	int ret;
 	struct ldb_request *down_req;
 
 	/* do not manipulate our control entries */
 	if (ldb_dn_is_special(req->op.mod.message->dn)) {
+		return ldb_next_request(module, req);
+	}
+
+	fix_dn_name_control = ldb_request_get_control(req,
+					DSDB_CONTROL_DBCHECK_FIX_LINK_DN_NAME);
+	if (fix_dn_name_control != NULL) {
 		return ldb_next_request(module, req);
 	}
 
