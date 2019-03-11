@@ -53,7 +53,6 @@ my @opt_include_env = ();
 my $opt_testenv = 0;
 my $opt_list = 0;
 my $opt_mitkrb5 = 0;
-my $ldap = undef;
 my $opt_resetup_env = undef;
 my $opt_load_list = undef;
 my $opt_libnss_wrapper_so_path = "";
@@ -238,9 +237,6 @@ Target Specific:
                             failed
  --socket-wrapper           enable socket wrapper
 
-Samba4 Specific:
- --ldap=openldap|fedora-ds  back samba onto specified ldap server
-
 Behaviour:
  --quick                    run quick overall test
  --one                      abort when the first test fails
@@ -268,7 +264,6 @@ my $result = GetOptions (
 		'testenv' => \$opt_testenv,
 		'list' => \$opt_list,
 		'mitkrb5' => \$opt_mitkrb5,
-		'ldap:s' => \$ldap,
 		'resetup-environment' => \$opt_resetup_env,
 		'testlist=s' => \@testlists,
 		'random-order' => \$opt_random_order,
@@ -306,20 +301,7 @@ $ENV{TZ} = "UTC";
 
 my $bindir_abs = abs_path($bindir);
 
-# Backwards compatibility:
-if (defined($ENV{TEST_LDAP}) and $ENV{TEST_LDAP} eq "yes") {
-	if (defined($ENV{FEDORA_DS_ROOT})) {
-		$ldap = "fedora-ds";
-	} else {
-		$ldap = "openldap";
-	}
-}
-
 my $torture_maxtime = ($ENV{TORTURE_MAXTIME} or 1200);
-if ($ldap) {
-	# LDAP is slow
-	$torture_maxtime *= 2;
-}
 
 $prefix =~ s+//+/+;
 $prefix =~ s+/./+/+;
@@ -488,7 +470,7 @@ if (defined($ENV{SMBD_MAXTIME}) and $ENV{SMBD_MAXTIME} ne "") {
     $server_maxtime = $ENV{SMBD_MAXTIME};
 }
 
-$target = new Samba($bindir, $ldap, $srcdir, $server_maxtime);
+$target = new Samba($bindir, $srcdir, $server_maxtime);
 unless ($opt_list) {
 	if ($opt_target eq "samba") {
 		$testenv_default = "ad_dc";

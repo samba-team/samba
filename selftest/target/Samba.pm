@@ -12,11 +12,11 @@ use POSIX;
 use Cwd qw(abs_path);
 
 sub new($$$$$) {
-	my ($classname, $bindir, $ldap, $srcdir, $server_maxtime) = @_;
+	my ($classname, $bindir, $srcdir, $server_maxtime) = @_;
 
 	my $self = {
 	    samba3 => new Samba3($bindir, $srcdir, $server_maxtime),
-	    samba4 => new Samba4($bindir, $ldap, $srcdir, $server_maxtime),
+	    samba4 => new Samba4($bindir, $srcdir, $server_maxtime),
 	};
 	bless $self;
 	return $self;

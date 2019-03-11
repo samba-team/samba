@@ -19,11 +19,10 @@ use Archive::Tar;
 use File::Path 'make_path';
 
 sub new($$$$$) {
-	my ($classname, $bindir, $ldap, $srcdir, $server_maxtime) = @_;
+	my ($classname, $bindir, $srcdir, $server_maxtime) = @_;
 
 	my $self = {
 		vars => {},
-		ldap => $ldap,
 		bindir => $bindir,
 		srcdir => $srcdir,
 		server_maxtime => $server_maxtime,
@@ -36,57 +35,6 @@ sub new($$$$$) {
 sub scriptdir_path($$) {
 	my ($self, $path) = @_;
 	return "$self->{srcdir}/source4/scripting/$path";
-}
-
-sub openldap_start($$$) {
-}
-
-sub slapd_start($$)
-{
-	my $count = 0;
-	my ($self, $env_vars, $STDIN_READER) = @_;
-	my $ldbsearch = Samba::bindir_path($self, "ldbsearch");
-
-	my $uri = $env_vars->{LDAP_URI};
-
-	if (system("$ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") == 0) {
-	    print "A SLAPD is still listening to $uri before we started the LDAP backend.  Aborting!";
-	    return 1;
-	}
-	# running slapd in the background means it stays in the same process group, so it can be
-	# killed by timelimit
-	my $pid = fork();
-	if ($pid == 0) {
-		open STDOUT, ">$env_vars->{LDAPDIR}/logs";
-		open STDERR, '>&STDOUT';
-		close($env_vars->{STDIN_PIPE});
-		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
-
-		if ($self->{ldap} eq "fedora-ds") {
-			exec("$ENV{FEDORA_DS_ROOT}/sbin/ns-slapd", "-D", $env_vars->{FEDORA_DS_DIR}, "-d0", "-i", $env_vars->{FEDORA_DS_PIDFILE});
-		} elsif ($self->{ldap} eq "openldap") {
-			exec($ENV{OPENLDAP_SLAPD}, "-dnone", "-F", $env_vars->{SLAPD_CONF_D}, "-h", $uri);
-		}
-		die("Unable to start slapd: $!");
-	}
-	$env_vars->{SLAPD_PID} = $pid;
-	sleep(1);
-	while (system("$ldbsearch -H $uri -s base -b \"\" supportedLDAPVersion > /dev/null") != 0) {
-		$count++;
-		if ($count > 40) {
-			$self->slapd_stop($env_vars);
-			return 0;
-		}
-		sleep(1);
-	}
-	return 1;
-}
-
-sub slapd_stop($$)
-{
-	my ($self, $envvars) = @_;
-	kill 9, $envvars->{SLAPD_PID};
-	return 1;
 }
 
 sub check_or_start($$$)
@@ -106,14 +54,6 @@ sub check_or_start($$$)
 	# those processes to monitor the pipe for EOF to ensure they
 	# exit when the test script exits
 	pipe($STDIN_READER, $env_vars->{STDIN_PIPE});
-
-	# Start slapd before samba, but with the fifo on stdin
-	if (defined($self->{ldap})) {
-		unless($self->slapd_start($env_vars, $STDIN_READER)) {
-			warn("couldn't start slapd (main run)");
-			return undef;
-		}
-	}
 
 	# build up the command to run samba
 	my @preargs = ();
@@ -327,28 +267,6 @@ pullInterval: 0
 pushChangeCount: 0
 type: 0x3
 ");
-}
-
-sub mk_fedora_ds($$)
-{
-	my ($self, $ctx) = @_;
-
-	#Make the subdirectory be as fedora DS would expect
-	my $fedora_ds_dir = "$ctx->{ldapdir}/slapd-$ctx->{ldap_instance}";
-
-	my $pidfile = "$fedora_ds_dir/logs/slapd-$ctx->{ldap_instance}.pid";
-
-	return ($fedora_ds_dir, $pidfile);
-}
-
-sub mk_openldap($$)
-{
-	my ($self, $ctx) = @_;
-
-	my $slapd_conf_d = "$ctx->{ldapdir}/slapd.d";
-	my $pidfile = "$ctx->{ldapdir}/slapd.pid";
-
-	return ($slapd_conf_d, $pidfile);
 }
 
 sub setup_dns_hub_internal($$$)
@@ -1225,37 +1143,9 @@ sub provision($$$$$$$$$$)
 $extra_smbconf_shares
 ";
 
-	if (defined($self->{ldap})) {
-		$ctx->{ldapdir} = "$ctx->{privatedir}/ldap";
-		push(@{$ctx->{directories}}, "$ctx->{ldapdir}");
-
-		my $ldap_uri= "$ctx->{ldapdir}/ldapi";
-		$ldap_uri =~ s|/|%2F|g;
-		$ldap_uri = "ldapi://$ldap_uri";
-		$ctx->{ldap_uri} = $ldap_uri;
-
-		$ctx->{ldap_instance} = lc($ctx->{netbiosname});
-	}
-
 	my $ret = $self->provision_raw_step1($ctx);
 	unless (defined $ret) {
 		return undef;
-	}
-
-	if (defined($self->{ldap})) {
-		$ret->{LDAP_URI} = $ctx->{ldap_uri};
-		push (@{$ctx->{provision_options}}, "--ldap-backend-type=" . $self->{ldap});
-		push (@{$ctx->{provision_options}}, "--ldap-backend-nosync");
-		if ($self->{ldap} eq "openldap") {
-			push (@{$ctx->{provision_options}}, "--slapd-path=" . $ENV{OPENLDAP_SLAPD});
-			($ret->{SLAPD_CONF_D}, $ret->{OPENLDAP_PIDFILE}) = $self->mk_openldap($ctx) or die("Unable to create openldap directories");
-
-                } elsif ($self->{ldap} eq "fedora-ds") {
- 		        push (@{$ctx->{provision_options}}, "--slapd-path=" . "$ENV{FEDORA_DS_ROOT}/sbin/ns-slapd");
- 		        push (@{$ctx->{provision_options}}, "--setup-ds-path=" . "$ENV{FEDORA_DS_ROOT}/sbin/setup-ds.pl");
-			($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ctx) or die("Unable to create fedora ds directories");
-		}
-
 	}
 
 	return $self->provision_raw_step2($ctx, $ret);
@@ -2100,8 +1990,6 @@ sub teardown_env($$)
 {
 	my ($self, $envvars) = @_;
 	teardown_env_terminate($self, $envvars);
-
-	$self->slapd_stop($envvars) if ($self->{ldap});
 
 	print $self->getlog_env($envvars);
 
