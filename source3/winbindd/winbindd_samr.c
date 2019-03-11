@@ -581,6 +581,7 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 				   const char *domain_name,
 				   const char *name,
 				   uint32_t flags,
+				   const char **pdom_name,
 				   struct dom_sid *psid,
 				   enum lsa_SidType *ptype)
 {
@@ -627,6 +628,14 @@ again:
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
+	}
+
+	if (pdom_name != NULL) {
+		*pdom_name = talloc_strdup(mem_ctx, dom_name);
+		if (*pdom_name == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 	}
 
 	if (psid) {
