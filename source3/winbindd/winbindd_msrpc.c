@@ -218,6 +218,7 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 				  const char *domain_name,
 				  const char *name,
 				  uint32_t flags,
+				  const char **pdom_name,
 				  struct dom_sid *sid,
 				  enum lsa_SidType *type)
 {
@@ -267,6 +268,17 @@ static NTSTATUS msrpc_name_to_sid(struct winbindd_domain *domain,
 		return result;
 
 	/* Return rid and type if lookup successful */
+
+	if (pdom_name != NULL) {
+		const char *dom_name;
+
+		dom_name = talloc_strdup(mem_ctx, domains[0]);
+		if (dom_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		*pdom_name = dom_name;
+	}
 
 	sid_copy(sid, &sids[0]);
 	*type = types[0];

@@ -558,11 +558,12 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 			    const char *domain_name,
 			    const char *name,
 			    uint32_t flags,
+			    const char **pdom_name,
 			    struct dom_sid *sid,
 			    enum lsa_SidType *type)
 {
 	return msrpc_methods.name_to_sid(domain, mem_ctx, domain_name, name,
-					 flags, sid, type);
+					 flags, pdom_name, sid, type);
 }
 
 /* convert a domain SID to a user or group name - use rpc methods */
