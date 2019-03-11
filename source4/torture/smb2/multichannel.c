@@ -30,13 +30,76 @@
 #include "librpc/gen_ndr/ndr_ioctl.h"
 #include "../libcli/smb/smbXcli_base.h"
 
-#define CHECK_STATUS(status, correct) do { \
-	if (!NT_STATUS_EQUAL(status, correct)) { \
-		torture_result(tctx, TORTURE_FAIL, \
-			"(%s) Incorrect status %s - should be %s\n", \
-			 __location__, nt_errstr(status), nt_errstr(correct)); \
-		return false; \
+#define BASEDIR "multichanneltestdir"
+
+#define CHECK_STATUS(status, correct) \
+	torture_assert_ntstatus_equal_goto(tctx, status, correct,\
+					   ret, done, "")
+
+#define CHECK_VAL(v, correct) do { \
+	if ((v) != (correct)) { \
+		torture_result(tctx, TORTURE_FAIL, "(%s): wrong value for %s" \
+				" got 0x%x - should be 0x%x\n", \
+				__location__, #v, (int)v, (int)correct); \
+		ret = false; \
+		goto done; \
 	} } while (0)
+
+#define CHECK_VAL_GREATER_THAN(v, gt_val) do { \
+	if ((v) <= (gt_val)) { \
+		torture_result(tctx, TORTURE_FAIL, \
+				"(%s): wrong value for %s got 0x%x - " \
+				"should be greater than 0x%x\n", \
+				__location__, #v, (int)v, (int)gt_val); \
+		ret = false; \
+		goto done; \
+	} } while (0)
+
+#define CHECK_CREATED(__io, __created, __attribute)			\
+	do {								\
+		CHECK_VAL((__io)->out.create_action,			\
+				NTCREATEX_ACTION_ ## __created);	\
+		CHECK_VAL((__io)->out.alloc_size, 0);			\
+		CHECK_VAL((__io)->out.size, 0);				\
+		CHECK_VAL((__io)->out.file_attr, (__attribute));	\
+		CHECK_VAL((__io)->out.reserved2, 0);			\
+	} while (0)
+
+#define CHECK_PTR(ptr, correct) do { \
+	if ((ptr) != (correct)) { \
+		torture_result(tctx, TORTURE_FAIL, "(%s): wrong value for %s " \
+				"got 0x%p - should be 0x%p\n", \
+				__location__, #ptr, ptr, correct); \
+		ret = false; \
+		goto done; \
+	} } while (0)
+
+#define CHECK_LEASE(__io, __state, __oplevel, __key, __flags)		\
+	do {								\
+		CHECK_VAL((__io)->out.lease_response.lease_version, 1); \
+		if (__oplevel) {					\
+			CHECK_VAL((__io)->out.oplock_level, \
+					SMB2_OPLOCK_LEVEL_LEASE); \
+			CHECK_VAL((__io)->out.lease_response.lease_key.data[0],\
+				  (__key)); \
+			CHECK_VAL((__io)->out.lease_response.lease_key.data[1],\
+				  ~(__key)); \
+			CHECK_VAL((__io)->out.lease_response.lease_state,\
+				  smb2_util_lease_state(__state)); \
+		} else {						\
+			CHECK_VAL((__io)->out.oplock_level,\
+				  SMB2_OPLOCK_LEVEL_NONE); \
+			CHECK_VAL((__io)->out.lease_response.lease_key.data[0],\
+				  0); \
+			CHECK_VAL((__io)->out.lease_response.lease_key.data[1],\
+				  0); \
+			CHECK_VAL((__io)->out.lease_response.lease_state, 0); \
+		}							\
+									\
+		CHECK_VAL((__io)->out.lease_response.lease_flags, (__flags)); \
+		CHECK_VAL((__io)->out.lease_response.lease_duration, 0); \
+		CHECK_VAL((__io)->out.lease_response.lease_epoch, 0); \
+	} while (0)
 
 static bool test_ioctl_network_interface_info(struct torture_context *tctx,
 					      struct smb2_tree *tree,
