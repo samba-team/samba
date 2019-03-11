@@ -1110,6 +1110,20 @@ Kerberos would return ALICE as the username. Kerberos would not be able to map
 names can be correctly mapped. This only applies to GSSAPI authentication,
 not for the geting the initial ticket granting ticket.
 
+New glusterfs_fuse VFS module
+-----------------------------
+
+The new vfs_glusterfs_fuse module improves performance when Samba
+accesses a glusterfs volume mounted via FUSE (Filesystem in Userspace
+as part of the Linux kernel). It achieves that by leveraging a
+mechanism to retrieve the appropriate case of filenames by querying a
+specific extended attribute in the filesystem. No extra configuration
+is required to use this module, only glusterfs_fuse needs to be set in
+the "vfs objects" parameter. Further details can be found in the
+vfs_glusterfs_fuse(8) manpage. This new vfs_glusterfs_fuse module does
+not replace the existing vfs_glusterfs module, it just provides an
+additional, alternative mechanism to access a Gluster volume.
+
 REMOVED FEATURES
 ================
 
