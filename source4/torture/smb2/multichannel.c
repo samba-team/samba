@@ -1072,6 +1072,318 @@ done:
 	return ret;
 }
 
+/*
+ * Lease Break Test 2:
+ * Test for lease break retries being sent by the server.
+ *      Connect 2A, 2B
+ *      open file1 in session 2A
+ *      open file2 in session 2B
+ *      block 2A
+ *      open file2 in session 1
+ *           lease break retry reaches the client?
+ *      Connect 2C
+ *      open file3 in session 2C
+ *      unblock 2A
+ *      open file1 in session 1
+ *           lease break reaches the client?
+ *      open file3 in session 1
+ *           lease break reached the client?
+ *      Cleanup
+ *           On deletion by 1, lease breaks sent for file1, file2 and file3
+ *           on 2B
+ *           This changes RH lease to R for Session 2.
+ *           (This has been disabled while we add support for sending lease
+ *            break for handle leases.)
+ */
+static bool test_multichannel_lease_break_test2(struct torture_context *tctx,
+						struct smb2_tree *tree1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_handle h_client1_file1 = {{0}};
+	struct smb2_handle h_client1_file2 = {{0}};
+	struct smb2_handle h_client1_file3 = {{0}};
+	struct smb2_handle h_client2_file1 = {{0}};
+	struct smb2_handle h_client2_file2 = {{0}};
+	struct smb2_handle h_client2_file3 = {{0}};
+	struct smb2_create io1, io2, io3;
+	bool ret = true;
+	const char *fname1 = BASEDIR "\\lease_break_test1.dat";
+	const char *fname2 = BASEDIR "\\lease_break_test2.dat";
+	const char *fname3 = BASEDIR "\\lease_break_test3.dat";
+	struct smb2_tree *tree2A = NULL;
+	struct smb2_tree *tree2B = NULL;
+	struct smb2_tree *tree2C = NULL;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smb2_transport *transport2A = NULL;
+	struct smbcli_options transport2_options;
+	struct smb2_session *session1 = tree1->session;
+	uint16_t local_port = 0;
+	struct smb2_lease ls1;
+	struct smb2_lease ls2;
+	struct smb2_lease ls3;
+	bool block_ok = false;
+	bool unblock_ok = false;
+
+
+	if (!test_multichannel_initial_checks(tctx, tree1)) {
+		return true;
+	}
+
+	torture_comment(tctx, "Lease break retry: Test2\n");
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	transport1->lease.handler = torture_lease_handler;
+	transport1->lease.private_data = tree1;
+	torture_comment(tctx, "transport1  [%p]\n", transport1);
+	local_port = torture_get_local_port_from_transport(transport1);
+	torture_comment(tctx, "transport1 uses tcp port: %d\n", local_port);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &_h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, _h);
+	smb2_util_unlink(tree1, fname1);
+	smb2_util_unlink(tree1, fname2);
+	smb2_util_unlink(tree1, fname3);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	smb2_lease_create(&io1, &ls1, false, fname1, LEASE2F1,
+			  smb2_util_lease_state("RHW"));
+	test_multichannel_init_smb_create(&io1);
+
+	smb2_lease_create(&io2, &ls2, false, fname2, LEASE2F2,
+			  smb2_util_lease_state("RHW"));
+	test_multichannel_init_smb_create(&io2);
+
+	smb2_lease_create(&io3, &ls3, false, fname3, LEASE2F3,
+			  smb2_util_lease_state("RHW"));
+	test_multichannel_init_smb_create(&io3);
+
+	transport2_options = transport1->options;
+
+	ret = test_multichannel_create_channels(tctx, host, share,
+						  credentials,
+						  &transport2_options,
+						  &tree2A, &tree2B, NULL);
+	torture_assert(tctx, ret, "Could not create channels.\n");
+	transport2A = tree2A->session->transport;
+
+	/* 2a opens file1 */
+	torture_comment(tctx, "client2 opens fname1 via session 2A\n");
+	smb2_lease_create(&io1, &ls1, false, fname1, LEASE2F1,
+			  smb2_util_lease_state("RHW"));
+	status = smb2_create(tree2A, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client2_file1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io1, "RHW", true, LEASE2F1, 0);
+	CHECK_VAL(io1.out.durable_open_v2, false); //true);
+	CHECK_VAL(io1.out.timeout, io1.in.timeout);
+	CHECK_VAL(io1.out.durable_open, false);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	/* 2b opens file2 */
+	torture_comment(tctx, "client2 opens fname2 via session 2B\n");
+	smb2_lease_create(&io2, &ls2, false, fname2, LEASE2F2,
+			  smb2_util_lease_state("RHW"));
+	status = smb2_create(tree2B, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client2_file2 = io2.out.file.handle;
+	CHECK_CREATED(&io2, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io2, "RHW", true, LEASE2F2, 0);
+	CHECK_VAL(io2.out.durable_open_v2, false); //true);
+	CHECK_VAL(io2.out.timeout, io2.in.timeout);
+	CHECK_VAL(io2.out.durable_open, false);
+	CHECK_VAL(lease_break_info.count, 0);
+
+
+	torture_comment(tctx, "Blocking 2A\n");
+	/* Block 2A */
+	block_ok = test_block_channel(tctx, transport2A);
+	torture_assert(tctx, block_ok, "we could not block tcp transport");
+
+	/* 1 opens file2 */
+	torture_comment(tctx,
+			"Client opens fname2 with session1 with 2A blocked\n");
+	smb2_lease_create(&io2, &ls2, false, fname2, LEASE1F2,
+			  smb2_util_lease_state("RHW"));
+	status = smb2_create(tree1, mem_ctx, &io2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client1_file2 = io2.out.file.handle;
+	CHECK_CREATED(&io2, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io2, "RH", true, LEASE1F2, 0);
+	CHECK_VAL(io2.out.durable_open_v2, false);
+	CHECK_VAL(io2.out.timeout, 0);
+	CHECK_VAL(io2.out.durable_open, false);
+
+	if (lease_break_info.count == 0) {
+		torture_comment(tctx,
+				"Did not receive expected lease break!!\n");
+	} else {
+		torture_comment(tctx, "Received %d lease break(s)!!\n",
+				lease_break_info.count);
+	}
+
+	CHECK_VAL(lease_break_info.count, 1);
+	CHECK_BREAK_INFO("RHW", "RH", LEASE2F2);
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/* Connect 2C */
+	torture_comment(tctx, "Connecting session 2C\n");
+	talloc_free(tree2C);
+	tree2C = test_multichannel_create_channel(tctx, host, share,
+				credentials, &transport2_options, tree2A);
+	if (!tree2C) {
+		goto done;
+	}
+
+	/* 2c opens file3 */
+	torture_comment(tctx, "client2 opens fname3 via session 2C\n");
+	smb2_lease_create(&io3, &ls3, false, fname3, LEASE2F3,
+			  smb2_util_lease_state("RHW"));
+	status = smb2_create(tree2C, mem_ctx, &io3);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client2_file3 = io3.out.file.handle;
+	CHECK_CREATED(&io3, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io3, "RHW", true, LEASE2F3, 0);
+	CHECK_VAL(io3.out.durable_open_v2, false);
+	CHECK_VAL(io3.out.timeout, io2.in.timeout);
+	CHECK_VAL(io3.out.durable_open, false);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	/* Unblock 2A */
+	torture_comment(tctx, "Unblocking 2A\n");
+	unblock_ok = test_unblock_channel(tctx, transport2A);
+	torture_assert(tctx, unblock_ok, "we could not unblock tcp transport");
+
+	/* 1 opens file1 */
+	torture_comment(tctx, "Client opens fname1 with session 1\n");
+	smb2_lease_create(&io1, &ls1, false, fname1, LEASE1F1,
+			  smb2_util_lease_state("RHW"));
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client1_file1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io1, "RH", true, LEASE1F1, 0);
+
+	if (lease_break_info.count == 0) {
+		torture_comment(tctx,
+				"Did not receive expected lease break!!\n");
+	} else {
+		torture_comment(tctx,
+				"Received %d lease break(s)!!\n",
+				lease_break_info.count);
+	}
+	CHECK_VAL(lease_break_info.count, 1);
+	CHECK_BREAK_INFO("RHW", "RH", LEASE2F1);
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/*1 opens file3 */
+	torture_comment(tctx, "client opens fname3 via session 1\n");
+
+	smb2_lease_create(&io3, &ls3, false, fname3, LEASE1F3,
+			  smb2_util_lease_state("RHW"));
+	status = smb2_create(tree1, mem_ctx, &io3);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client1_file3 = io3.out.file.handle;
+	CHECK_CREATED(&io3, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io3, "RH", true, LEASE1F3, 0);
+
+	if (lease_break_info.count == 0) {
+		torture_comment(tctx,
+				"Did not receive expected lease break!!\n");
+	} else {
+		torture_comment(tctx,
+				"Received %d lease break(s)!!\n",
+				lease_break_info.count);
+	}
+	CHECK_VAL(lease_break_info.count, 1);
+	CHECK_BREAK_INFO("RHW", "RH", LEASE2F3);
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	smb2_util_close(tree1, h_client1_file1);
+	smb2_util_close(tree1, h_client1_file2);
+	smb2_util_close(tree1, h_client1_file3);
+
+	/*
+	 * Session 2 still has RW lease on file 1. Deletion of this file by 1
+	 *  leads to a lease break call to session 2 file1
+	 */
+	smb2_util_unlink(tree1, fname1);
+	/*
+	 * Bug - Samba does not revoke Handle lease on unlink
+	 * CHECK_BREAK_INFO("RH", "R", LEASE2F1);
+	 */
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/*
+	 * Session 2 still has RW lease on file 2. Deletion of this file by 1
+	 *  leads to a lease break call to session 2 file2
+	 */
+	smb2_util_unlink(tree1, fname2);
+	/*
+	 * Bug - Samba does not revoke Handle lease on unlink
+	 * CHECK_BREAK_INFO("RH", "R", LEASE2F2);
+	 */
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	/*
+	 * Session 2 still has RW lease on file 3. Deletion of this file by 1
+	 *  leads to a lease break call to session 2 file3
+	 */
+	smb2_util_unlink(tree1, fname3);
+	/*
+	 * Bug - Samba does not revoke Handle lease on unlink
+	 * CHECK_BREAK_INFO("RH", "R", LEASE2F3);
+	 */
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	smb2_util_close(tree2C, h_client2_file1);
+	smb2_util_close(tree2C, h_client2_file2);
+	smb2_util_close(tree2C, h_client2_file3);
+
+	test_multichannel_free_channels(tree2A, tree2B, tree2C);
+	tree2A = tree2B = tree2C = NULL;
+
+done:
+	if (block_ok && !unblock_ok) {
+		test_unblock_channel(tctx, transport2A);
+	}
+	test_cleanup_blocked_channels(tctx);
+
+	tree1->session = session1;
+
+	smb2_util_close(tree1, h_client1_file1);
+	smb2_util_close(tree1, h_client1_file2);
+	smb2_util_close(tree1, h_client1_file3);
+	if (tree2A != NULL) {
+		smb2_util_close(tree2A, h_client2_file1);
+		smb2_util_close(tree2A, h_client2_file2);
+		smb2_util_close(tree2A, h_client2_file3);
+	}
+
+	if (h != NULL) {
+		smb2_util_close(tree1, *h);
+	}
+
+	smb2_util_unlink(tree1, fname1);
+	smb2_util_unlink(tree1, fname2);
+	smb2_util_unlink(tree1, fname3);
+	smb2_deltree(tree1, BASEDIR);
+
+	test_multichannel_free_channels(tree2A, tree2B, tree2C);
+	talloc_free(tree1);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "multichannel");
@@ -1094,6 +1406,8 @@ struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 				     test_multichannel_oplock_break_test2);
 	torture_suite_add_1smb2_test(suite_leases, "test1",
 				     test_multichannel_lease_break_test1);
+	torture_suite_add_1smb2_test(suite_leases, "test2",
+				     test_multichannel_lease_break_test2);
 
 	suite->description = talloc_strdup(suite, "SMB2 Multichannel tests");
 
