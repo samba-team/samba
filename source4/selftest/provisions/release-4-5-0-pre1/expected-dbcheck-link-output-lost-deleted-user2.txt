@@ -1,0 +1,9 @@
+Checking 232 objects
+ERROR: missing GUID component for lastKnownParent in object CN=fred\0ADEL:2301a64c-8765-4321-851e-12d4a711cfb4,CN=LostAndFound,DC=release-4-5-0-pre1,DC=samba,DC=corp - OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp
+unable to find object for DN OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp - (No such Base DN: OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp)
+WARNING: no target object found for GUID component link lastKnownParent in deleted object CN=fred\0ADEL:2301a64c-8765-4321-851e-12d4a711cfb4,CN=LostAndFound,DC=release-4-5-0-pre1,DC=samba,DC=corp - OU=removed,DC=release-4-5-0-pre1,DC=samba,DC=corp
+Not removing dangling one-way link on deleted object (tombstone garbage collection in progress?)
+ERROR: wrong dn[CN=fred\0ADEL:2301a64c-8765-4321-851e-12d4a711cfb4,CN=LostAndFound,DC=release-4-5-0-pre1,DC=samba,DC=corp] cn='fred\nDEL:2301a64c-8765-4321-851e-12d4a711cfb4' name=b'fred\nDEL:2301a64c-8765-4321-851e-12d4a711cfb4' new_dn[CN=fred\0ADEL:2301a64c-8765-4321-851e-12d4a711cfb4,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp]
+Rename CN=fred\0ADEL:2301a64c-8765-4321-851e-12d4a711cfb4,CN=LostAndFound,DC=release-4-5-0-pre1,DC=samba,DC=corp to CN=fred\0ADEL:2301a64c-8765-4321-851e-12d4a711cfb4,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp? [YES]
+Renamed CN=fred\0ADEL:2301a64c-8765-4321-851e-12d4a711cfb4,CN=LostAndFound,DC=release-4-5-0-pre1,DC=samba,DC=corp into CN=fred\0ADEL:2301a64c-8765-4321-851e-12d4a711cfb4,CN=Deleted Objects,DC=release-4-5-0-pre1,DC=samba,DC=corp
+Checked 232 objects (2 errors)
