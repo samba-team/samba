@@ -185,8 +185,6 @@ def cmd_testonly(opt):
     if Options.options.PERF_TEST:
         env.FILTER_OPTIONS = ('${PYTHON} -u ${srcdir}/selftest/filter-subunit '
                               '--perf-test-output')
-    elif os.environ.get('RUN_FROM_BUILD_FARM') is not None:
-        env.FILTER_OPTIONS = '${FILTER_XFAIL} --strip-passed-output'
     else:
         env.FILTER_OPTIONS = '${FILTER_XFAIL}'
 
@@ -314,8 +312,7 @@ def cmd_testonly(opt):
             # Skip subunit filtering (i.e. because python is disabled).
             # Use --one to bail out upon any failure
             cmd = '(${CORE_COMMAND} --one && touch ${SELFTEST_PREFIX}/st_done)'
-        elif (os.environ.get('RUN_FROM_BUILD_FARM') is None and
-            not Options.options.FILTERED_SUBUNIT):
+        elif not Options.options.FILTERED_SUBUNIT:
             subunit_cache = os.path.join(env.SELFTEST_PREFIX, "subunit")
             cmd += ' | tee %s | ${FORMAT_TEST_OUTPUT}' % subunit_cache
         else:
