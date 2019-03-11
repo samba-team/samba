@@ -254,6 +254,7 @@ NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,
 	struct dom_sid *sids = NULL;
 	char *full_name = NULL;
 	const char *names[1];
+	const char **domains;
 	char *mapped_name = NULL;
 	NTSTATUS status;
 
@@ -290,7 +291,7 @@ NTSTATUS rpc_name_to_sid(TALLOC_CTX *mem_ctx,
 					 lsa_policy,
 					 1, /* num_names */
 					 names,
-					 NULL, /* domains */
+					 &domains,
 					 1, /* level */
 					 &sids,
 					 &types);
