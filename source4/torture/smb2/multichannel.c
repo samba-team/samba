@@ -442,6 +442,16 @@ static void test_cleanup_blocked_channels(struct torture_context *tctx)
 	}
 }
 
+/* Timer handler function notifies the registering function that time is up */
+static void timeout_cb(struct tevent_context *ev,
+		       struct tevent_timer *te,
+		       struct timeval current_time,
+		       void *private_data)
+{
+	bool *timesup = (bool *)private_data;
+	*timesup = true;
+}
+
 /*
  * Oplock break - Test 1
  * Test to confirm that server sends oplock breaks as expected.
@@ -1384,6 +1394,144 @@ done:
 	return ret;
 }
 
+/*
+ * Test 3: Check to see how the server behaves if lease break
+ *      response is sent over a different channel to one over which
+ *      the break is received.
+ *      Connect 2A, 2B
+ *      open file1 in session 2A
+ *      open file1 in session 1
+ *           Lease break sent to 2A
+ *           2B sends back lease break reply.
+ *      session 1 allowed to open file
+ */
+static bool test_multichannel_lease_break_test3(struct torture_context *tctx,
+						struct smb2_tree *tree1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_handle h_client1_file1 = {{0}};
+	struct smb2_handle h_client2_file1 = {{0}};
+	struct smb2_create io1;
+	bool ret = true;
+	const char *fname1 = BASEDIR "\\lease_break_test1.dat";
+	struct smb2_tree *tree2A = NULL;
+	struct smb2_tree *tree2B = NULL;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smb2_transport *transport2A = NULL;
+	struct smbcli_options transport2_options;
+	uint16_t local_port = 0;
+	struct smb2_lease ls1;
+	struct tevent_timer *te = NULL;
+	struct timeval ne;
+	bool timesup = false;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+
+	if (!test_multichannel_initial_checks(tctx, tree1)) {
+		return true;
+	}
+
+	torture_comment(tctx, "Lease break retry: Test3\n");
+
+	torture_reset_lease_break_info(tctx, &lease_break_info);
+
+	transport1->lease.handler = torture_lease_handler;
+	transport1->lease.private_data = tree1;
+	torture_comment(tctx, "transport1  [%p]\n", transport1);
+	local_port = torture_get_local_port_from_transport(transport1);
+	torture_comment(tctx, "transport1 uses tcp port: %d\n", local_port);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &_h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree1, _h);
+	smb2_util_unlink(tree1, fname1);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	smb2_lease_create(&io1, &ls1, false, fname1, LEASE2F1,
+			  smb2_util_lease_state("RHW"));
+	test_multichannel_init_smb_create(&io1);
+
+	transport2_options = transport1->options;
+
+	ret = test_multichannel_create_channels(tctx, host, share,
+						credentials,
+						&transport2_options,
+						&tree2A, &tree2B, NULL);
+	torture_assert(tctx, ret, "Could not create channels.\n");
+	transport2A = tree2A->session->transport;
+	transport2A->lease.private_data = tree2B;
+
+	/* 2a opens file1 */
+	torture_comment(tctx, "client2 opens fname1 via session 2A\n");
+	smb2_lease_create(&io1, &ls1, false, fname1, LEASE2F1,
+			  smb2_util_lease_state("RHW"));
+	status = smb2_create(tree2A, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client2_file1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, CREATED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io1, "RHW", true, LEASE2F1, 0);
+	CHECK_VAL(io1.out.durable_open_v2, false); //true);
+	CHECK_VAL(io1.out.timeout, io1.in.timeout);
+	CHECK_VAL(io1.out.durable_open, false);
+	CHECK_VAL(lease_break_info.count, 0);
+
+	/* Set a timeout for 5 seconds for session 1 to open file1 */
+	ne = tevent_timeval_current_ofs(0, 5000000);
+	te = tevent_add_timer(tctx->ev, tmp_ctx, ne, timeout_cb, &timesup);
+	if (te == NULL) {
+		torture_comment(tctx, "Failed to add timer.");
+		goto done;
+	}
+
+	/* 1 opens file2 */
+	torture_comment(tctx, "Client opens fname1 with session 1\n");
+	smb2_lease_create(&io1, &ls1, false, fname1, LEASE1F1,
+			  smb2_util_lease_state("RHW"));
+	status = smb2_create(tree1, mem_ctx, &io1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h_client1_file1 = io1.out.file.handle;
+	CHECK_CREATED(&io1, EXISTED, FILE_ATTRIBUTE_ARCHIVE);
+	CHECK_LEASE(&io1, "RH", true, LEASE1F1, 0);
+	CHECK_VAL(io1.out.durable_open_v2, false);
+	CHECK_VAL(io1.out.timeout, 0);
+	CHECK_VAL(io1.out.durable_open, false);
+
+	CHECK_VAL(lease_break_info.count, 1);
+	CHECK_BREAK_INFO("RHW", "RH", LEASE2F1);
+
+	/*
+	 * Check if timeout handler was fired. This would indicate
+	 * that the server didn't receive a reply for the oplock break
+	 * from the client and the server let session 1 open the file
+	 * only after the oplock break timeout.
+	 */
+	CHECK_VAL(timesup, false);
+
+done:
+	smb2_util_close(tree1, h_client1_file1);
+	if (tree2A != NULL) {
+		smb2_util_close(tree2A, h_client2_file1);
+	}
+
+	if (h != NULL) {
+		smb2_util_close(tree1, *h);
+	}
+
+	smb2_util_unlink(tree1, fname1);
+	smb2_deltree(tree1, BASEDIR);
+
+	test_multichannel_free_channels(tree2A, tree2B, NULL);
+	talloc_free(tree1);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "multichannel");
@@ -1408,6 +1556,8 @@ struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 				     test_multichannel_lease_break_test1);
 	torture_suite_add_1smb2_test(suite_leases, "test2",
 				     test_multichannel_lease_break_test2);
+	torture_suite_add_1smb2_test(suite_leases, "test3",
+				     test_multichannel_lease_break_test3);
 
 	suite->description = talloc_strdup(suite, "SMB2 Multichannel tests");
 
