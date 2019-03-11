@@ -52,6 +52,7 @@ builddirs = {
     "samba-ad-dc-2": ".",
     "samba-ad-dc-2-py2": ".",
     "samba-ad-dc-backup": ".",
+    "samba-ad-dc-backup-py2": ".",
     "samba-systemkrb5": ".",
     "samba-nopython": ".",
     "samba-buildpy2-only": ".",
