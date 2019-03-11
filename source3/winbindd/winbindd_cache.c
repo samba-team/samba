@@ -1794,6 +1794,7 @@ NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
 {
 	NTSTATUS status;
 	bool old_status;
+	const char *dom_name;
 
 	old_status = domain->online;
 
@@ -1820,7 +1821,7 @@ NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
 
 	winbindd_domain_init_backend(domain);
 	status = domain->backend->name_to_sid(domain, mem_ctx, domain_name,
-					      name, flags, NULL, sid, type);
+					      name, flags, &dom_name, sid, type);
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT) ||
 		NT_STATUS_EQUAL(status, NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND)) {
@@ -1855,7 +1856,7 @@ NTSTATUS wb_cache_name_to_sid(struct winbindd_domain *domain,
 			}
 			(void)strlower_m(discard_const_p(char, name));
 			wcache_save_sid_to_name(domain, status, sid,
-						domain_name, name, save_type);
+						dom_name, name, save_type);
 		}
 	}
 
