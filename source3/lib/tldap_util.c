@@ -88,11 +88,13 @@ bool tldap_pull_binsid(struct tldap_message *msg, const char *attribute,
 		       struct dom_sid *sid)
 {
 	DATA_BLOB val;
+	struct sid_parse_ret ret;
 
 	if (!tldap_get_single_valueblob(msg, attribute, &val)) {
 		return false;
 	}
-	return sid_parse(val.data, val.length, sid);
+	ret = sid_parse(val.data, val.length, sid);
+	return (ret.len != -1);
 }
 
 bool tldap_pull_guid(struct tldap_message *msg, const char *attribute,

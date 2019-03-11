@@ -303,11 +303,13 @@ static bool test_against_ldap(struct torture_context *torture, struct ldb_contex
 		
 		for (i = 0; i < el->num_values; i++) {
 			struct dom_sid *sid = talloc(torture, struct dom_sid);
+			struct sid_parse_ret ret;
 			torture_assert(torture, sid != NULL, "talloc failed");
-			
+
+			ret = sid_parse(el->values[i].data,
+					el->values[i].length, sid);
 			torture_assert(torture,
-				       sid_parse(el->values[i].data,
-						 el->values[i].length, sid),
+				       ret.len != -1,
 				       "sid parse failed");
 			torture_assert_str_equal(torture, dom_sid_string(sid, sid), dom_sid_string(sid, whoami->sid_list[i]), "SID from LDAP and SID from CIFS does not match!");
 			talloc_free(sid);
@@ -318,20 +320,24 @@ static bool test_against_ldap(struct torture_context *torture, struct ldb_contex
 		struct dom_sid *dom_sid = talloc(torture, struct dom_sid);
 		struct dom_sid *dc_sids = talloc_array(torture, struct dom_sid, el->num_values);
 		struct dom_sid *member_sids = talloc_array(torture, struct dom_sid, whoami->num_sids);
+		struct sid_parse_ret ret;
 		torture_assert(torture, user_sid != NULL, "talloc failed");
-		torture_assert(torture, sid_parse(el->values[0].data,
-						  el->values[0].length,
-						  user_sid),
+		ret = sid_parse(el->values[0].data,
+				el->values[0].length,
+				user_sid);
+		torture_assert(torture,
+			       ret.len != -1,
 			       "sid parse failed");
 		torture_assert_ntstatus_equal(torture, dom_sid_split_rid(torture, user_sid, &dom_sid, NULL), NT_STATUS_OK, "failed to split domain SID from user SID");
 		for (i = 0; i < el->num_values; i++) {
 			struct dom_sid *sid = talloc(dc_sids, struct dom_sid);
 			torture_assert(torture, sid != NULL, "talloc failed");
-			
+
+			ret = sid_parse(el->values[i].data,
+					el->values[i].length,
+					sid);
 			torture_assert(torture,
-				       sid_parse(el->values[i].data,
-						 el->values[i].length,
-						 sid),
+				       ret.len != -1,
 				       "sid parse failed");
 			if (dom_sid_in_domain(dom_sid, sid)) {
 				dc_sids[num_domain_sids_dc] = *sid;

@@ -1355,6 +1355,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		 *
 		 * but I have to check that --metze
 		 */
+		struct sid_parse_ret ret;
 		struct dom_sid sid;
 		struct dom_sid_buf buf;
 		uid_t uid;
@@ -1373,7 +1374,8 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 		/* unknown 4 bytes: this is not the length of the sid :-(  */
 		/*unknown = IVAL(pdata,0);*/
 
-		if (!sid_parse(_in_data + 4, sid_len, &sid)) {
+		ret = sid_parse(_in_data + 4, sid_len, &sid);
+		if (ret.len == -1) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		DEBUGADD(10, ("for SID: %s\n",

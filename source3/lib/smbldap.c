@@ -278,7 +278,7 @@ void smbldap_set_bind_callback(struct smbldap_state *state,
 		       struct dom_sid *sid)
 {
 	DATA_BLOB blob;
-	bool ret;
+	struct sid_parse_ret ret;
 
 	if (!smbldap_talloc_single_blob(talloc_tos(), ld, msg, attrib,
 					&blob)) {
@@ -286,7 +286,7 @@ void smbldap_set_bind_callback(struct smbldap_state *state,
 	}
 	ret = sid_parse(blob.data, blob.length, sid);
 	TALLOC_FREE(blob.data);
-	return ret;
+	return (ret.len != -1);
 }
 
  static int ldapmsg_destructor(LDAPMessage **result) {
