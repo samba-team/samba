@@ -1720,6 +1720,119 @@ done:
 	return ret;
 }
 
+/*
+ * Test limits of channels
+ */
+static bool test_multichannel_num_channels(struct torture_context *tctx,
+					   struct smb2_tree *tree1)
+{
+	const char *host = torture_setting_string(tctx, "host", NULL);
+	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct cli_credentials *credentials = popt_get_cmdline_credentials();
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	bool ret = true;
+	struct smb2_tree **tree2 = NULL;
+	struct smb2_transport *transport1 = tree1->session->transport;
+	struct smb2_transport **transport2 = NULL;
+	struct smbcli_options transport2_options;
+	struct smb2_session **session2 = NULL;
+	uint32_t server_capabilities;
+	int i;
+	int max_channels = 33; /* 32 is the W2K12R2 and W2K16 limit */
+
+	if (smbXcli_conn_protocol(transport1->conn) < PROTOCOL_SMB3_00) {
+		torture_fail(tctx,
+			     "SMB 3.X Dialect family required for Multichannel"
+			     " tests\n");
+	}
+
+	server_capabilities = smb2cli_conn_server_capabilities(
+					tree1->session->transport->conn);
+	if (!(server_capabilities & SMB2_CAP_MULTI_CHANNEL)) {
+		torture_fail(tctx,
+			     "Server does not support multichannel.");
+	}
+
+	torture_comment(tctx, "Testing max. number of channels\n");
+
+	transport2_options = transport1->options;
+	transport2_options.client_guid = GUID_random();
+
+	tree2		= talloc_zero_array(mem_ctx, struct smb2_tree *,
+					    max_channels);
+	transport2	= talloc_zero_array(mem_ctx, struct smb2_transport *,
+					    max_channels);
+	session2	= talloc_zero_array(mem_ctx, struct smb2_session *,
+					    max_channels);
+	if (tree2 == NULL || transport2 == NULL || session2 == NULL) {
+		torture_fail(tctx, "out of memory");
+	}
+
+	for (i = 0; i < max_channels; i++) {
+
+		NTSTATUS expected_status;
+
+		torture_assert_ntstatus_ok_goto(tctx,
+			smb2_connect(tctx,
+				host,
+				lpcfg_smb_ports(tctx->lp_ctx),
+				share,
+				lpcfg_resolve_context(tctx->lp_ctx),
+				credentials,
+				&tree2[i],
+				tctx->ev,
+				&transport2_options,
+				lpcfg_socket_options(tctx->lp_ctx),
+				lpcfg_gensec_settings(tctx, tctx->lp_ctx)
+				),
+			ret, done, "smb2_connect failed");
+
+		transport2[i] = tree2[i]->session->transport;
+
+		if (i == 0) {
+			/* done for the 1st channel */
+			continue;
+		}
+
+		/*
+		 * Now bind the session2[i] to the transport2
+		 */
+		session2[i] = smb2_session_channel(transport2[i],
+						   lpcfg_gensec_settings(tctx,
+								 tctx->lp_ctx),
+						   tree2[0],
+						   tree2[0]->session);
+
+		torture_assert(tctx, session2[i] != NULL,
+			       "smb2_session_channel failed");
+
+		torture_comment(tctx, "established transport2 [#%d]\n", i);
+
+		if (i >= 32) {
+			expected_status = NT_STATUS_INSUFFICIENT_RESOURCES;
+		} else {
+			expected_status = NT_STATUS_OK;
+		}
+
+		torture_assert_ntstatus_equal_goto(tctx,
+			smb2_session_setup_spnego(session2[i],
+				popt_get_cmdline_credentials(),
+				0 /* previous_session_id */),
+			expected_status,
+			ret, done,
+			talloc_asprintf(tctx, "failed to establish session "
+					      "setup for channel #%d", i));
+
+		torture_comment(tctx, "bound session2 [#%d] to session2 [0]\n",
+				i);
+	}
+
+ done:
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "multichannel");
@@ -1736,6 +1849,8 @@ struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 
 	torture_suite_add_1smb2_test(suite, "interface_info",
 				     test_multichannel_interface_info);
+	torture_suite_add_1smb2_test(suite_generic, "num_channels",
+				     test_multichannel_num_channels);
 	torture_suite_add_1smb2_test(suite_oplocks, "test1",
 				     test_multichannel_oplock_break_test1);
 	torture_suite_add_1smb2_test(suite_oplocks, "test2",
