@@ -138,100 +138,6 @@ static int prepare_modules_line(struct ldb_context *ldb,
 	return ret;
 }
 
-/*
- * Force overwrite of the credentials with those
- * specified in secrets.ldb, to connect across the
- * ldapi socket to an LDAP backend
- */
-
-static int set_ldap_credentials(struct ldb_context *ldb, bool use_external)
-{
-	const char *secrets_ldb_path, *sam_ldb_path;
-	char *private_dir, *p, *error_string;
-	struct ldb_context *secrets_ldb;
-	struct cli_credentials *cred;
-	struct loadparm_context *lp_ctx = ldb_get_opaque(ldb, "loadparm");
-	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
-
-	if (!tmp_ctx) {
-		return ldb_oom(ldb);
-	}
-
-	cred = cli_credentials_init(ldb);
-	if (!cred) {
-		talloc_free(tmp_ctx);
-		return ldb_oom(ldb);
-	}
-	cli_credentials_set_anonymous(cred);
-	if (use_external) {
-		cli_credentials_set_forced_sasl_mech(cred, "EXTERNAL");
-	} else {
-		cli_credentials_set_forced_sasl_mech(cred, "DIGEST-MD5");
-
-		/*
-		 * We don't want to use krb5 to talk to our samdb - recursion
-		 * here would be bad, and this account isn't in the KDC
-		 * anyway
-		 */
-		cli_credentials_set_kerberos_state(cred, CRED_DONT_USE_KERBEROS);
-
-		/*
-		 * Work out where *our* secrets.ldb is.  It must be in
-		 * the same directory as sam.ldb
-		 */
-		sam_ldb_path = (const char *)ldb_get_opaque(ldb, "ldb_url");
-		if (!sam_ldb_path) {
-			talloc_free(tmp_ctx);
-			return ldb_operr(ldb);
-		}
-		if (strncmp("tdb://", sam_ldb_path, 6) == 0) {
-			sam_ldb_path += 6;
-		}
-		private_dir = talloc_strdup(tmp_ctx, sam_ldb_path);
-		p = strrchr(private_dir, '/');
-		if (p) {
-			*p = '\0';
-		} else {
-			private_dir = talloc_strdup(tmp_ctx, ".");
-		}
-
-		secrets_ldb_path = talloc_asprintf(private_dir, "tdb://%s/secrets.ldb",
-						   private_dir);
-
-		if (!secrets_ldb_path) {
-			talloc_free(tmp_ctx);
-			return ldb_oom(ldb);
-		}
-
-		/*
-		 * Now that we have found the location, connect to
-		 * secrets.ldb so we can read the SamDB Credentials
-		 * record
-		 */
-		secrets_ldb = ldb_wrap_connect(tmp_ctx, NULL, lp_ctx, secrets_ldb_path,
-					       NULL, NULL, 0);
-
-		if (!NT_STATUS_IS_OK(cli_credentials_set_secrets(cred, NULL, secrets_ldb, NULL,
-								 SECRETS_LDAP_FILTER, &error_string))) {
-			ldb_asprintf_errstring(ldb, "Failed to read LDAP backend password from %s", secrets_ldb_path);
-			talloc_free(tmp_ctx);
-			return LDB_ERR_STRONG_AUTH_REQUIRED;
-		}
-	}
-
-	/*
-	 * Finally overwrite any supplied credentials with
-	 * these ones, as only secrets.ldb contains the magic
-	 * credentials to talk on the ldapi socket
-	 */
-	if (ldb_set_opaque(ldb, "credentials", cred)) {
-		talloc_free(tmp_ctx);
-		return ldb_operr(ldb);
-	}
-	talloc_free(tmp_ctx);
-	return LDB_SUCCESS;
-}
-
 static bool check_required_features(struct ldb_message_element *el)
 {
 	if (el != NULL) {
@@ -309,10 +215,6 @@ static int samba_dsdb_init(struct ldb_module *module)
 					     NULL };
 
 	const char **link_modules;
-	static const char *fedora_ds_modules[] = {
-		"rdn_name", NULL };
-	static const char *openldap_modules[] = {
-		NULL };
 	static const char *tdb_modules_list[] = {
 		"rdn_name",
 		"subtree_delete",
@@ -327,8 +229,6 @@ static int samba_dsdb_init(struct ldb_module *module)
 
 	const char *extended_dn_module;
 	const char *extended_dn_module_ldb = "extended_dn_out_ldb";
-	const char *extended_dn_module_fds = "extended_dn_out_fds";
-	const char *extended_dn_module_openldap = "extended_dn_out_openldap";
 	const char *extended_dn_in_module = "extended_dn_in";
 
 	static const char *modules_list2[] = {"dns_notify",
@@ -338,18 +238,9 @@ static int samba_dsdb_init(struct ldb_module *module)
 					      NULL };
 
 	const char **backend_modules;
-	static const char *fedora_ds_backend_modules[] = {
-		"dsdb_flags_ignore", "nsuniqueid", "paged_searches", "simple_dn", NULL };
-	static const char *openldap_backend_modules[] = {
-		"dsdb_flags_ignore", "entryuuid", "simple_dn", NULL };
-
-	static const char *samba_dsdb_attrs[] = { "backendType",
-						  SAMBA_COMPATIBLE_FEATURES_ATTR,
+	static const char *samba_dsdb_attrs[] = { SAMBA_COMPATIBLE_FEATURES_ATTR,
 						  SAMBA_REQUIRED_FEATURES_ATTR, NULL };
 	static const char *indexlist_attrs[] = { SAMBA_FEATURES_SUPPORTED_FLAG, NULL };
-	static const char *partition_attrs[] = { "ldapBackend", NULL };
-	const char *backendType, *backendUrl;
-	bool use_sasl_external = false;
 
 	const char *current_supportedFeatures[] = {SAMBA_SORTED_LINKS_FEATURE};
 
@@ -392,12 +283,10 @@ static int samba_dsdb_init(struct ldb_module *module)
 	ret = dsdb_module_search_dn(module, tmp_ctx, &res, samba_dsdb_dn,
 	                            samba_dsdb_attrs, DSDB_FLAG_NEXT_MODULE, NULL);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		backendType = "ldb";
+		/* do nothing, a very old db being upgraded */
 	} else if (ret == LDB_SUCCESS) {
 		struct ldb_message_element *requiredFeatures;
 		struct ldb_message_element *old_compatibleFeatures;
-
-		backendType = ldb_msg_find_attr_as_string(res->msgs[0], "backendType", "ldb");
 
 		requiredFeatures = ldb_msg_find_element(res->msgs[0], SAMBA_REQUIRED_FEATURES_ATTR);
 		if (!check_required_features(requiredFeatures)) {
@@ -512,47 +401,8 @@ static int samba_dsdb_init(struct ldb_module *module)
 	}
 
 	backend_modules = NULL;
-	if (strcasecmp(backendType, "ldb") == 0) {
-		extended_dn_module = extended_dn_module_ldb;
-		link_modules = tdb_modules_list;
-	} else {
-		struct cli_credentials *cred;
-		bool is_ldapi = false;
-
-		ret = dsdb_module_search_dn(module, tmp_ctx, &res, partition_dn,
-					    partition_attrs, DSDB_FLAG_NEXT_MODULE, NULL);
-		if (ret == LDB_SUCCESS) {
-			backendUrl = ldb_msg_find_attr_as_string(res->msgs[0], "ldapBackend", "ldapi://");
-			if (!strncasecmp(backendUrl, "ldapi://", sizeof("ldapi://")-1)) {
-				is_ldapi = true;
-			}
-		} else if (ret != LDB_ERR_NO_SUCH_OBJECT) {
-			talloc_free(tmp_ctx);
-			return ret;
-		}
-		if (strcasecmp(backendType, "fedora-ds") == 0) {
-			link_modules = fedora_ds_modules;
-			backend_modules = fedora_ds_backend_modules;
-			extended_dn_module = extended_dn_module_fds;
-		} else if (strcasecmp(backendType, "openldap") == 0) {
-			link_modules = openldap_modules;
-			backend_modules = openldap_backend_modules;
-			extended_dn_module = extended_dn_module_openldap;
-			extended_dn_in_module = "extended_dn_in_openldap";
-			if (is_ldapi) {
-				use_sasl_external = true;
-			}
-		} else {
-			return ldb_error(ldb, LDB_ERR_OPERATIONS_ERROR, "invalid backend type");
-		}
-		cred = ldb_get_opaque(ldb, "credentials");
-		if (!cred || !cli_credentials_authentication_requested(cred)) {
-			ret = set_ldap_credentials(ldb, use_sasl_external);
-			if (ret != LDB_SUCCESS) {
-				return ret;
-			}
-		}
-	}
+	extended_dn_module = extended_dn_module_ldb;
+	link_modules = tdb_modules_list;
 
 #define CHECK_MODULE_LIST \
 	do {							\
