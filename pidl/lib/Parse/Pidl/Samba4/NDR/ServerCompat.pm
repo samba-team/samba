@@ -11,8 +11,12 @@ use Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(Parse);
 
-use Parse::Pidl::Util qw(print_uuid);
+use Parse::Pidl::Util qw(print_uuid has_property ParseExpr);
 use Parse::Pidl::Typelist qw(mapTypeName);
+use Parse::Pidl qw(error fatal);
+use Parse::Pidl::NDR qw(ContainsPipe GetNextLevel);
+use Parse::Pidl::Samba4 qw(ElementStars);
+use Parse::Pidl::Samba4::Header qw(GenerateFunctionOutEnv);
 
 use vars qw($VERSION);
 $VERSION = '1.0';
@@ -33,12 +37,115 @@ sub new($)
 	bless($self, $class);
 }
 
+sub decl_level($$)
+{
+	my ($self, $e, $l) = @_;
+	my $res = "";
+
+	if (has_property($e, "charset")) {
+		$res .= "const char";
+	} else {
+		$res .= mapTypeName($e->{TYPE});
+	}
+
+	my $stars = ElementStars($e, $l);
+
+	$res .= " ".$stars unless ($stars eq "");
+
+	return $res;
+}
+
+sub alloc_out_var($$$$$)
+{
+	my ($self, $e, $mem_ctx, $name, $env, $alloc_error_block) = @_;
+
+	my $l = $e->{LEVELS}[0];
+
+	# we skip pointer to arrays
+	if ($l->{TYPE} eq "POINTER") {
+		my $nl = GetNextLevel($e, $l);
+		$l = $nl if ($nl->{TYPE} eq "ARRAY");
+	} elsif
+
+	# we don't support multi-dimentional arrays yet
+	($l->{TYPE} eq "ARRAY") {
+		my $nl = GetNextLevel($e, $l);
+		if ($nl->{TYPE} eq "ARRAY") {
+			fatal($e->{ORIGINAL},"multi-dimentional [out] arrays are not supported!");
+		}
+	} else {
+		# neither pointer nor array, no need to alloc something.
+		return;
+	}
+
+	if ($l->{TYPE} eq "ARRAY") {
+		unless(defined($l->{SIZE_IS})) {
+			error($e->{ORIGINAL}, "No size known for array `$e->{NAME}'");
+			$self->pidl("#error No size known for array `$e->{NAME}'");
+		} else {
+			my $size = ParseExpr($l->{SIZE_IS}, $env, $e);
+			$self->pidl("$name = talloc_zero_array($mem_ctx, " . $self->decl_level($e, 1) . ", $size);");
+		}
+	} else {
+		$self->pidl("$name = talloc_zero($mem_ctx, " . $self->decl_level($e, 1) . ");");
+	}
+
+	$self->pidl("if ($name == NULL) {");
+	$self->indent();
+	foreach (@{$alloc_error_block}) {
+		$self->pidl($_);
+	}
+	$self->deindent();
+	$self->pidl("}");
+	$self->pidl("");
+}
+
+sub gen_fn_out($$)
+{
+	my ($self, $fn, $alloc_error_block) = @_;
+
+	my $hasout = 0;
+	foreach (@{$fn->{ELEMENTS}}) {
+		if (grep(/out/, @{$_->{DIRECTION}})) {
+			$hasout = 1;
+		}
+	}
+
+	if ($hasout) {
+		$self->pidl("NDR_ZERO_STRUCT(r2->out);");
+	}
+
+	foreach (@{$fn->{ELEMENTS}}) {
+		my @dir = @{$_->{DIRECTION}};
+		if (grep(/in/, @dir) and grep(/out/, @dir)) {
+			$self->pidl("r2->out.$_->{NAME} = r2->in.$_->{NAME};");
+		}
+	}
+
+	foreach (@{$fn->{ELEMENTS}}) {
+		next if ContainsPipe($_, $_->{LEVELS}[0]);
+
+		my @dir = @{$_->{DIRECTION}};
+
+		if (grep(/in/, @dir) and grep(/out/, @dir)) {
+			# noop
+		} elsif (grep(/out/, @dir) and not has_property($_, "represent_as")) {
+			my $env = GenerateFunctionOutEnv($fn, "r2->");
+			$self->alloc_out_var($_, "r2", "r2->out.$_->{NAME}", $env, $alloc_error_block);
+		}
+
+	}
+}
+
 #####################################################
 # generate the switch statement for function dispatch
 sub gen_dispatch_switch($)
 {
 	my ($self, $interface) = @_;
 
+	my @alloc_error_block = ("status = NT_STATUS_NO_MEMORY;",
+				 "p->fault_state = DCERPC_FAULT_CANT_PERFORM;",
+				 "goto fail;");
 	foreach my $fn (@{$interface->{FUNCTIONS}}) {
 		next if not defined($fn->{OPNUM});
 
@@ -53,6 +160,8 @@ sub gen_dispatch_switch($)
 		$self->pidl("NDR_PRINT_FUNCTION_DEBUG($fname, NDR_IN, r2);");
 		$self->deindent();
 		$self->pidl("}");
+
+		$self->gen_fn_out($fn, \@alloc_error_block);
 
 		$self->pidl_hdr("struct $fname;");
 
