@@ -267,9 +267,6 @@ fi
 DOCKERFILE = r"""
 FROM {docker_image}
 
-# we will use this image to run ci, these ENV vars are important
-ENV CC="ccache gcc"
-
 ADD *.sh /tmp/
 # need root permission, do it before USER samba
 RUN /tmp/bootstrap.sh && /tmp/locale.sh
