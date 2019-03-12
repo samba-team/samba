@@ -688,10 +688,13 @@ ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 		}
 	}
 
-	new_token = create_local_nt_token(mem_ctx, &object_sid, false,
-					  num_token_sids, token_sids);
-	ADS_ERROR_HAVE_NO_MEMORY(new_token);
-
+	status = ADS_ERROR_NT(create_local_nt_token(mem_ctx, 
+					  &object_sid, false,
+					  num_token_sids, token_sids, &new_token));
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+	
 	*token = new_token;
 
 	security_token_debug(DBGC_CLASS, 5, *token);

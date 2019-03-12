@@ -137,9 +137,13 @@ static struct service_control_op* find_service_by_name( const char *name )
 static NTSTATUS svcctl_access_check( struct security_descriptor *sec_desc, struct security_token *token,
                                      uint32_t access_desired, uint32_t *access_granted )
 {
+	NTSTATUS status;
 	if ( geteuid() == sec_initial_uid() ) {
 		DEBUG(5,("svcctl_access_check: using root's token\n"));
-		token = get_root_nt_token();
+		status = get_root_nt_token(&token);
+		if(!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	return se_access_check( sec_desc, token, access_desired, access_granted);

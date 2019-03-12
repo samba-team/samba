@@ -383,14 +383,15 @@ NTSTATUS pass_check(const struct passwd *pass,
 
 bool nt_token_check_sid ( const struct dom_sid *sid, const struct security_token *token );
 bool nt_token_check_domain_rid( struct security_token *token, uint32_t rid );
-struct security_token *get_root_nt_token( void );
+NTSTATUS get_root_nt_token( struct security_token **token );
 NTSTATUS add_aliases(const struct dom_sid *domain_sid,
 		     struct security_token *token);
-struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
+NTSTATUS create_local_nt_token(TALLOC_CTX *mem_ctx,
 					    const struct dom_sid *user_sid,
 					    bool is_guest,
 					    int num_groupsids,
-					    const struct dom_sid *groupsids);
+					    const struct dom_sid *groupsids,
+					    struct security_token **token);
 NTSTATUS finalize_local_nt_token(struct security_token *result,
 				 uint32_t session_info_flags);
 NTSTATUS get_user_sid_info3_and_extra(const struct netr_SamInfo3 *info3,

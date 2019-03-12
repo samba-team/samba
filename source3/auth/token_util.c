@@ -78,27 +78,29 @@ bool nt_token_check_domain_rid( struct security_token *token, uint32_t rid )
  Create a copy if you need to change it.
 ******************************************************************************/
 
-struct security_token *get_root_nt_token( void )
+NTSTATUS get_root_nt_token( struct security_token **token )
 {
-	struct security_token *token, *for_cache;
+	struct security_token *for_cache;
 	struct dom_sid u_sid, g_sid;
 	struct passwd *pw;
 	void *cache_data;
+	NTSTATUS status = NT_STATUS_OK;
 
 	cache_data = memcache_lookup_talloc(
 		NULL, SINGLETON_CACHE_TALLOC,
 		data_blob_string_const_null("root_nt_token"));
 
 	if (cache_data != NULL) {
-		return talloc_get_type_abort(
+		*token = talloc_get_type_abort(
 			cache_data, struct security_token);
+		return NT_STATUS_OK;
 	}
 
 	if ( !(pw = getpwuid(0)) ) {
 		if ( !(pw = getpwnam("root")) ) {
-			DEBUG(0,("get_root_nt_token: both getpwuid(0) "
-				"and getpwnam(\"root\") failed!\n"));
-			return NULL;
+			DBG_ERR("get_root_nt_token: both getpwuid(0) "
+				"and getpwnam(\"root\") failed!\n");
+			return NT_STATUS_NO_SUCH_USER;
 		}
 	}
 
@@ -108,18 +110,21 @@ struct security_token *get_root_nt_token( void )
 	uid_to_sid(&u_sid, pw->pw_uid);
 	gid_to_sid(&g_sid, pw->pw_gid);
 
-	token = create_local_nt_token(talloc_tos(), &u_sid, False,
-				      1, &global_sid_Builtin_Administrators);
+	status = create_local_nt_token(talloc_tos(), &u_sid, False,
+				      1, &global_sid_Builtin_Administrators, token);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	security_token_set_privilege(token, SEC_PRIV_DISK_OPERATOR);
+	security_token_set_privilege(*token, SEC_PRIV_DISK_OPERATOR);
 
-	for_cache = token;
+	for_cache = *token;
 
 	memcache_add_talloc(
 		NULL, SINGLETON_CACHE_TALLOC,
 		data_blob_string_const_null("root_nt_token"), &for_cache);
 
-	return token;
+	return status;
 }
 
 
@@ -420,11 +425,12 @@ NTSTATUS create_local_nt_token_from_info3(TALLOC_CTX *mem_ctx,
  Create a NT token for the user, expanding local aliases
 *******************************************************************/
 
-struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
+NTSTATUS create_local_nt_token(TALLOC_CTX *mem_ctx,
 					    const struct dom_sid *user_sid,
 					    bool is_guest,
 					    int num_groupsids,
-					    const struct dom_sid *groupsids)
+					    const struct dom_sid *groupsids,
+					    struct security_token **token)
 {
 	struct security_token *result = NULL;
 	int i;
@@ -437,7 +443,8 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 
 	if (!(result = talloc_zero(mem_ctx, struct security_token))) {
 		DEBUG(0, ("talloc failed\n"));
-		return NULL;
+		status = NT_STATUS_NO_MEMORY;
+		goto err;
 	}
 
 	/* Add the user and primary group sid */
@@ -445,8 +452,7 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	status = add_sid_to_array(result, user_sid,
 				  &result->sids, &result->num_sids);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(result);
-		return NULL;
+		goto err;
 	}
 
 	/* For guest, num_groupsids may be zero. */
@@ -455,8 +461,7 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 					  &result->sids,
 					  &result->num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(result);
-			return NULL;
+			goto err;
 		}
 	}
 
@@ -471,15 +476,13 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 						 &result->sids,
 						 &result->num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(result);
-			return NULL;
+			goto err;
 		}
 	}
 
 	status = add_local_groups(result, is_guest);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(result);
-		return NULL;
+		goto err;
 	}
 
 	session_info_flags |= AUTH_SESSION_INFO_DEFAULT_GROUPS;
@@ -489,8 +492,7 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 
 	status = finalize_local_nt_token(result, session_info_flags);
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(result);
-		return NULL;
+		goto err;
 	}
 
 	if (is_guest) {
@@ -511,12 +513,16 @@ struct security_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 						 &result->num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Failed to add SID to nt token\n"));
-			TALLOC_FREE(result);
-			return NULL;
+			goto err;
 		}
 	}
 
-	return result;
+	*token = result;
+	return NT_STATUS_SUCCESS;
+
+err:
+	TALLOC_FREE(result);
+	return status;
 }
 
 /***************************************************
@@ -556,9 +562,11 @@ static NTSTATUS add_local_groups(struct security_token *result,
 		pass = getpwuid_alloc(tmp_ctx, uid);
 		if (pass == NULL) {
 			struct dom_sid_buf buf;
-			DEBUG(1, ("SID %s -> getpwuid(%u) failed\n",
+			DBG_ERR("SID %s -> getpwuid(%u) failed, is nsswitch configured?\n",
 				dom_sid_str_buf(&result->sids[0], &buf),
-				(unsigned int)uid));
+				(unsigned int)uid);
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_SUCH_USER;
 		}
 	}
 
@@ -1115,11 +1123,10 @@ static NTSTATUS create_token_from_sid(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Ensure we're creating the nt_token on the right context. */
-	*token = create_local_nt_token(mem_ctx, user_sid,
-				       is_guest, num_group_sids, group_sids);
+	result = create_local_nt_token(mem_ctx, user_sid,
+				       is_guest, num_group_sids, group_sids, token);
 
-	if (*token == NULL) {
-		result = NT_STATUS_NO_MEMORY;
+	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
