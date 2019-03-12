@@ -1861,6 +1861,36 @@ bool mds_shutdown(void)
 }
 
 /**
+ * Tear down connections and free all resources
+ **/
+static int mds_ctx_destructor_cb(struct mds_ctx *mds_ctx)
+{
+	/*
+	 * We need to free query_list before ino_path_map
+	 */
+	while (mds_ctx->query_list != NULL) {
+		/*
+		 * slq destructor removes element from list.
+		 * Don't use TALLOC_FREE()!
+		 */
+		talloc_free(mds_ctx->query_list);
+	}
+	TALLOC_FREE(mds_ctx->ino_path_map);
+
+	if (mds_ctx->tracker_con != NULL) {
+		g_object_unref(mds_ctx->tracker_con);
+	}
+	if (mds_ctx->gcancellable != NULL) {
+		g_cancellable_cancel(mds_ctx->gcancellable);
+		g_object_unref(mds_ctx->gcancellable);
+	}
+
+	ZERO_STRUCTP(mds_ctx);
+
+	return 0;
+}
+
+/**
  * Initialise a context per RPC bind
  *
  * This ends up being called for every tcon, because the client does a
@@ -1917,36 +1947,6 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 error:
 	TALLOC_FREE(mds_ctx);
 	return NULL;
-}
-
-/**
- * Tear down connections and free all resources
- **/
-int mds_ctx_destructor_cb(struct mds_ctx *mds_ctx)
-{
-	/*
-	 * We need to free query_list before ino_path_map
-	 */
-	while (mds_ctx->query_list != NULL) {
-		/*
-		 * slq destructor removes element from list.
-		 * Don't use TALLOC_FREE()!
-		 */
-		talloc_free(mds_ctx->query_list);
-	}
-	TALLOC_FREE(mds_ctx->ino_path_map);
-
-	if (mds_ctx->tracker_con != NULL) {
-		g_object_unref(mds_ctx->tracker_con);
-	}
-	if (mds_ctx->gcancellable != NULL) {
-		g_cancellable_cancel(mds_ctx->gcancellable);
-		g_object_unref(mds_ctx->gcancellable);
-	}
-
-	ZERO_STRUCTP(mds_ctx);
-
-	return 0;
 }
 
 /**

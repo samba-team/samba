@@ -129,7 +129,6 @@ extern struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct auth_session_info *session_info,
 				    const char *path);
-extern int mds_ctx_destructor_cb(struct mds_ctx *mds_ctx);
 extern bool mds_dispatch(struct mds_ctx *query_ctx,
 			 struct mdssvc_blob *request_blob,
 			 struct mdssvc_blob *response_blob);
