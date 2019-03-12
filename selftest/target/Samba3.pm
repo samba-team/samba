@@ -1734,10 +1734,13 @@ sub provision($$$$$$$$$)
 	        warn("Unable to open $conffile");
 		return undef;
 	}
+
+	my $interfaces = Samba::get_interfaces_config($server);
+
 	print CONF "
 [global]
 	netbios name = $server
-	interfaces = $server_ip/8 $server_ipv6/64
+	interfaces = $interfaces
 	bind interfaces only = yes
 	panic action = cd $self->{srcdir} && $self->{srcdir}/selftest/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	smbd:suicide mode = yes

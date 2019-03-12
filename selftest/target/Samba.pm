@@ -505,6 +505,17 @@ sub get_ipv6_addr
 	return sprintf("fd00:0000:0000:0000:0000:0000:5357:5f%02x", $swiface);
 }
 
+# returns the 'interfaces' setting for smb.conf, i.e. the IPv4/IPv6
+# addresses for testenv
+sub get_interfaces_config
+{
+	(my $hostname) = @_;
+	my $ipv4_addr = Samba::get_ipv4_addr($hostname);
+	my $ipv6_addr = Samba::get_ipv6_addr($hostname);
+
+	return "$ipv4_addr/8 $ipv6_addr/64";
+}
+
 sub cleanup_child($$)
 {
     my ($pid, $name) = @_;

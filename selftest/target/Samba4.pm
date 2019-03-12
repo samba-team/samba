@@ -675,7 +675,6 @@ sub provision_raw_prepare($$$$$$$$$$$$)
 
 	$ctx->{ipv4} = Samba::get_ipv4_addr($hostname);
 	$ctx->{ipv6} = Samba::get_ipv6_addr($hostname);
-	$ctx->{interfaces} = "$ctx->{ipv4}/8 $ctx->{ipv6}/64";
 
 	push(@{$ctx->{directories}}, $ctx->{privatedir});
 	push(@{$ctx->{directories}}, $ctx->{binddnsdir});
@@ -783,6 +782,8 @@ sub provision_raw_step1($$)
 		$services = "+smb -s3fs";
 	}
 
+	my $interfaces = Samba::get_interfaces_config($ctx->{netbiosname});
+
 	print CONFFILE "
 [global]
 	netbios name = $ctx->{netbiosname}
@@ -799,7 +800,7 @@ sub provision_raw_step1($$)
 	winbindd socket directory = $ctx->{winbindd_socket_dir}
 	ntp signd socket directory = $ctx->{ntp_signd_socket_dir}
 	winbind separator = /
-	interfaces = $ctx->{interfaces}
+	interfaces = $interfaces
 	tls dh params file = $ctx->{tlsdir}/dhparms.pem
 	tls crlfile = ${crlfile}
 	tls verify peer = no_check
