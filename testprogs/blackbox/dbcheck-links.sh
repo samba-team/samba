@@ -539,7 +539,7 @@ EOF
 dbcheck_lost_deleted_user3() {
     # here we don't pass --selftest-check-expired-tombstones
     # as we want to test the default
-    dbcheck "-lost-deleted-user3" "1" ""
+    dbcheck "-lost-deleted-user3" "0" ""
     return $?
 }
 

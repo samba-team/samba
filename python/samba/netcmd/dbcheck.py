@@ -144,7 +144,8 @@ class cmd_dbcheck(Command):
                           fix=fix, yes=yes, quiet=quiet,
                           in_transaction=started_transaction,
                           quick_membership_checks=quick_membership_checks,
-                          reset_well_known_acls=reset_well_known_acls)
+                          reset_well_known_acls=reset_well_known_acls,
+                          check_expired_tombstones=selftest_check_expired_tombstones)
 
             for option in yes_rules:
                 if hasattr(chk, option):
