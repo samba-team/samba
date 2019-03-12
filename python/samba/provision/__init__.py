@@ -1853,9 +1853,9 @@ def checksysvolacl(samdb, netlogon, sysvol, domainsid, dnsdomain, domaindn,
                        direct_db_access)
 
 
-def interface_ips_v4(lp):
+def interface_ips_v4(lp, all_interfaces=False):
     """return only IPv4 IPs"""
-    ips = samba.interface_ips(lp, False)
+    ips = samba.interface_ips(lp, all_interfaces)
     ret = []
     for i in ips:
         if i.find(':') == -1:

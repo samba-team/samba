@@ -24,6 +24,7 @@ from samba.tests.dns_base import DNSTKeyTest
 from samba.join import DCJoinContext
 from samba.dcerpc import drsuapi, misc, dns
 from samba.credentials import Credentials
+from samba.provision import interface_ips_v4
 
 
 def get_logger(name="subunit"):
@@ -92,7 +93,7 @@ class JoinTestCase(DNSTKeyTest):
         questions.append(q)
 
         # Get expected IPs
-        IPs = samba.interface_ips(self.lp)
+        IPs = interface_ips_v4(self.lp, all_interfaces=True)
 
         self.finish_name_packet(p, questions)
         (response, response_packet) = self.dns_transaction_tcp(p, host=self.server_ip)
@@ -132,7 +133,7 @@ class JoinTestCase(DNSTKeyTest):
 
         updates = []
         # Delete the old expected IPs
-        IPs = samba.interface_ips(self.lp)
+        IPs = interface_ips_v4(self.lp, all_interfaces=True)
         for IP in IPs[1:]:
             if ":" in IP:
                 r = dns.res_rec()
