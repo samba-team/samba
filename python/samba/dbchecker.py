@@ -41,7 +41,8 @@ class dbcheck(object):
 
     def __init__(self, samdb, samdb_schema=None, verbose=False, fix=False,
                  yes=False, quiet=False, in_transaction=False,
-                 reset_well_known_acls=False):
+                 reset_well_known_acls=False,
+                 check_expired_tombstones=False):
         self.samdb = samdb
         self.dict_oid_name = None
         self.samdb_schema = (samdb_schema or samdb)
@@ -88,6 +89,8 @@ class dbcheck(object):
         self.fix_doubled_userparameters = False
         self.fix_sid_rid_set_conflict = False
         self.reset_well_known_acls = reset_well_known_acls
+        self.check_expired_tombstones = check_expired_tombstones
+        self.expired_tombstones = 0
         self.reset_all_well_known_acls = False
         self.in_transaction = in_transaction
         self.infrastructure_dn = ldb.Dn(samdb, "CN=Infrastructure," + samdb.domain_dn())
@@ -232,6 +235,13 @@ class dbcheck(object):
 
         if DN is None:
             error_count += self.check_rootdse()
+
+        if self.expired_tombstones > 0:
+            self.report("NOTICE: found %d expired tombstones, "
+                        "'samba' will remove them daily, "
+                        "'samba-tool domain tombstones expunge' "
+                        "would do that immediately." % (
+                        self.expired_tombstones))
 
         if error_count != 0 and not self.fix:
             self.report("Please use --fix to fix these errors")
@@ -1742,6 +1752,37 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             self.report("Fixed attribute '%s' of '%s'\n" % (sd_attr, dn))
         self.samdb.set_session_info(self.system_session_info)
 
+    def is_expired_tombstone(self, dn, repl_val):
+        if self.check_expired_tombstones:
+            # This is not the default, it's just
+            # used to keep dbcheck tests work with
+            # old static provision dumps
+            return False
+
+        repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, repl_val)
+
+        isDeleted = self.find_repl_attid(repl, drsuapi.DRSUAPI_ATTID_isDeleted)
+
+        delete_time = samba.nttime2unix(isDeleted.originating_change_time)
+        current_time = time.time()
+
+        tombstone_delta = self.tombstoneLifetime * (24 * 60 * 60)
+
+        delta = current_time - delete_time
+        if delta <= tombstone_delta:
+            return False
+
+        self.report("SKIPING: object %s is an expired tombstone" % dn)
+        self.report("isDeleted: attid=0x%08x version=%d invocation=%s usn=%s (local=%s) at %s" % (
+                    isDeleted.attid,
+                    isDeleted.version,
+                    isDeleted.originating_invocation_id,
+                    isDeleted.originating_usn,
+                    isDeleted.local_usn,
+                    time.ctime(samba.nttime2unix(isDeleted.originating_change_time))))
+        self.expired_tombstones += 1
+        return True
+
     def find_changes_after_deletion(self, repl_val):
         repl = ndr_unpack(drsblobs.replPropertyMetaDataBlob, repl_val)
 
@@ -2222,6 +2263,8 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
             if self.has_changes_after_deletion(dn, repl_meta_data_val):
                 error_count += 1
                 self.err_changes_after_deletion(dn, repl_meta_data_val)
+                return error_count
+            if self.is_expired_tombstone(dn, repl_meta_data_val):
                 return error_count
 
         for attrname in obj:

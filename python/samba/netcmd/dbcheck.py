@@ -136,8 +136,10 @@ class cmd_dbcheck(Command):
             started_transaction = True
         try:
             chk = dbcheck(samdb, samdb_schema=samdb_schema, verbose=verbose,
-                          fix=fix, yes=yes, quiet=quiet, in_transaction=started_transaction,
-                          reset_well_known_acls=reset_well_known_acls)
+                          fix=fix, yes=yes, quiet=quiet,
+                          in_transaction=started_transaction,
+                          reset_well_known_acls=reset_well_known_acls,
+                          check_expired_tombstones=selftest_check_expired_tombstones)
 
             for option in yes_rules:
                 if hasattr(chk, option):
