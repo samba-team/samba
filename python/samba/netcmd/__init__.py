@@ -24,6 +24,7 @@ import sys, traceback
 import textwrap
 
 class Option(optparse.Option):
+    SUPPRESS_HELP = optparse.SUPPRESS_HELP
     pass
 
 # This help formatter does text wrapping and preserves newlines
