@@ -796,9 +796,6 @@ static int aclread_search(struct ldb_module *module, struct ldb_request *req)
 	if (attrs == NULL) {
 		all_attrs = true;
 		attrs = _all_attrs;
-	} else if (attrs[0] == NULL) {
-		all_attrs = true;
-		attrs = _all_attrs;
 	} else if (ldb_attr_in_list(attrs, "*")) {
 		all_attrs = true;
 	}
