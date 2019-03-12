@@ -66,7 +66,7 @@ static struct cli_state *smb_complete_connection(const char *, const char *,
 	int, const char *, const char *, const char *, const char *, int, bool *need_auth);
 static struct cli_state *smb_connect(const char *, const char *, int, const
 	char *, const char *, const char *, const char *, bool *need_auth);
-static int      smb_print(struct cli_state *, char *, FILE *);
+static int      smb_print(struct cli_state *, const char *, FILE *);
 static char    *uri_unescape_alloc(const char *);
 #if 0
 static bool     smb_encrypt;
@@ -655,7 +655,7 @@ kerberos_auth:
 
 static int			/* O - 0 = success, non-0 = failure */
 smb_print(struct cli_state * cli,	/* I - SMB connection */
-	  char *title,		/* I - Title/job name */
+	  const char *print_title,		/* I - Title/job name */
 	  FILE * fp)
 {				/* I - File to print */
 	uint16_t             fnum;	/* File number */
@@ -663,12 +663,18 @@ smb_print(struct cli_state * cli,	/* I - SMB connection */
 	                tbytes;	/* Total bytes read */
 	char            buffer[8192],	/* Buffer for copy */
 	               *ptr;	/* Pointer into title */
+	char title[1024] = {0};
+	int len;
 	NTSTATUS nt_status;
 
 
 	/*
-         * Sanitize the title...
-         */
+	 * Sanitize the title...
+	 */
+	len = snprintf(title, sizeof(title), "%s", print_title);
+	if (len != strlen(print_title)) {
+		return 2;
+	}
 
 	for (ptr = title; *ptr; ptr++) {
 		if (!isalnum((int) *ptr) && !isspace((int) *ptr)) {
