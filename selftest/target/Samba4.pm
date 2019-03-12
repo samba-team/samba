@@ -390,18 +390,18 @@ sub setup_dns_hub_internal($$$)
 	$env->{prefix} = $prefix;
 	$env->{prefix_abs} = $prefix_abs;
 
-	$env->{hostname} = $hostname;
+	$env->{NETBIOSNAME} = $hostname;
 
-	$env->{ipv4} = Samba::get_ipv4_addr($hostname);
-	$env->{ipv6} = Samba::get_ipv6_addr($hostname);
+	$env->{SERVER_IP} = Samba::get_ipv4_addr($hostname);
+	$env->{SERVER_IPV6} = Samba::get_ipv6_addr($hostname);
 
 	$env->{DNS_HUB_LOG} = "$prefix_abs/dns_hub.log";
 
 	$env->{RESOLV_CONF} = "$prefix_abs/resolv.conf";
 
 	open(RESOLV_CONF, ">$env->{RESOLV_CONF}");
-	print RESOLV_CONF "nameserver $env->{ipv4}\n";
-	print RESOLV_CONF "nameserver $env->{ipv6}\n";
+	print RESOLV_CONF "nameserver $env->{SERVER_IP}\n";
+	print RESOLV_CONF "nameserver $env->{SERVER_IPV6}\n";
 	close(RESOLV_CONF);
 
 	# use a pipe for stdin in the child processes. This allows
@@ -434,7 +434,7 @@ sub setup_dns_hub_internal($$$)
 		}
 		$ENV{MAKE_TEST_BINARY} = "$self->{srcdir}/selftest/target/dns_hub.py";
 		push (@args, "$self->{server_maxtime}");
-		push (@args, "$env->{ipv4}");
+		push (@args, "$env->{SERVER_IP}");
 		push (@args, Samba::realm_to_ip_mappings());
 		close($env->{STDIN_PIPE});
 		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
