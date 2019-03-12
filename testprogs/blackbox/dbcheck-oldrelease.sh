@@ -207,7 +207,7 @@ check_expected_before_values() {
 # This should 'fail', because it returns the number of modified records
 dbcheck_objectclass() {
     if [ x$RELEASE = x"release-4-1-6-partial-object" ]; then
-	$PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --attrs=objectclass $@
+	$PYTHON $BINDIR/samba-tool dbcheck --selftest-check-expired-tombstones --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --attrs=objectclass $@
     else
 	return 1
     fi
@@ -215,7 +215,7 @@ dbcheck_objectclass() {
 
 # This should 'fail', because it returns the number of modified records
 dbcheck() {
-       $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
+       $PYTHON $BINDIR/samba-tool dbcheck --selftest-check-expired-tombstones --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
 }
 
 check_expected_after_values() {
@@ -285,7 +285,7 @@ check_forced_duplicate_values() {
 # This should 'fail', because it returns the number of modified records
 dbcheck_after_dup() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
-	$PYTHON $BINDIR/samba-tool dbcheck --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=administrator,cn=users,DC=release-4-1-0rc3,DC=samba,DC=corp $@
+	$PYTHON $BINDIR/samba-tool dbcheck --selftest-check-expired-tombstones --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb cn=administrator,cn=users,DC=release-4-1-0rc3,DC=samba,DC=corp $@
     else
 	return 1
     fi
@@ -328,7 +328,7 @@ dbcheck_acl_reset_clean() {
 # This should 'fail', because it returns the number of modified records
 dbcheck2() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
-       $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
+       $PYTHON $BINDIR/samba-tool dbcheck --selftest-check-expired-tombstones --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
     else
 	exit 1
     fi
@@ -336,7 +336,7 @@ dbcheck2() {
 # But having fixed it all up, this should pass
 dbcheck_clean2() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
-       $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
+       $PYTHON $BINDIR/samba-tool dbcheck --selftest-check-expired-tombstones --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
     fi
 }
 
@@ -353,7 +353,7 @@ rm_deleted_objects() {
 # This should 'fail', because it returns the number of modified records
 dbcheck3() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
-       $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
+       $PYTHON $BINDIR/samba-tool dbcheck --selftest-check-expired-tombstones --cross-ncs --fix --yes -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
     else
 	exit 1
     fi
@@ -361,7 +361,7 @@ dbcheck3() {
 # But having fixed it all up, this should pass
 dbcheck_clean3() {
     if [ x$RELEASE = x"release-4-1-0rc3" ]; then
-       $PYTHON $BINDIR/samba-tool dbcheck --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
+       $PYTHON $BINDIR/samba-tool dbcheck --selftest-check-expired-tombstones --cross-ncs -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb $@
     fi
 }
 
