@@ -84,23 +84,35 @@ int main(int argc, char *argv[])
 	struct passwd *pwd;
 	char gen_cc[PATH_MAX] = {0};
 	struct stat sb;
-	char *env;
+	char *env = NULL;
+	char auth_info_required[256] = {0};
+	char device_uri[4096] = {0};
 	uid_t uid = (uid_t)-1;
 	gid_t gid = (gid_t)-1;
 	unsigned long tmp;
 	int cmp;
 	int rc;
 
+	env = getenv("DEVICE_URI");
+	if (env != NULL && strlen(env) > 2) {
+		snprintf(device_uri, sizeof(device_uri), "%s", env);
+	}
+
 	/* Check if AuthInfoRequired is set to negotiate */
 	env = getenv("AUTH_INFO_REQUIRED");
 
         /* If not set, then just call smbspool. */
-	if (env == NULL) {
+	if (env == NULL || env[0] == 0) {
 		CUPS_SMB_DEBUG("AUTH_INFO_REQUIRED is not set - "
 			       "execute smbspool");
 		goto smbspool;
 	} else {
 		CUPS_SMB_DEBUG("AUTH_INFO_REQUIRED=%s", env);
+
+		snprintf(auth_info_required,
+			 sizeof(auth_info_required),
+			 "%s",
+			 env);
 
 		cmp = strcmp(env, "username,password");
 		if (cmp == 0) {
@@ -223,12 +235,18 @@ create_env:
 #else
 	{
 		extern char **environ;
-		environ = calloc(1, sizeof(*environ));
+		environ = calloc(3, sizeof(*environ));
 	}
 #endif
 
 	CUPS_SMB_DEBUG("Setting KRB5CCNAME to '%s'", gen_cc);
 	setenv("KRB5CCNAME", gen_cc, 1);
+	if (device_uri[0] != '\0') {
+		setenv("DEVICE_URI", device_uri, 1);
+	}
+	if (auth_info_required[0] != '\0') {
+		setenv("AUTH_INFO_REQUIRED", auth_info_required, 1);
+	}
 
 smbspool:
 	snprintf(smbspool_cmd,
