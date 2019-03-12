@@ -258,21 +258,24 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 	uint32_t name_hash;
 	bool delete_on_close_set;
 	int ret;
+	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!parent_dirname(talloc_tos(),
+	if (!parent_dirname(frame,
 				smb_fname->base_name,
 				&parent_dir,
 				NULL)) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
-	parent_smb_fname = synthetic_smb_fname(talloc_tos(),
+	parent_smb_fname = synthetic_smb_fname(frame,
 				parent_dir,
 				NULL,
 				NULL,
 				smb_fname->flags);
 	if (parent_smb_fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto out;
 	}
 
 	if (get_current_uid(conn) == (uid_t)0) {
@@ -281,13 +284,14 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 			"on %s. Granting 0x%x\n",
 			smb_fname_str_dbg(smb_fname),
 			(unsigned int)access_mask ));
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto out;
 	}
 
 	status = SMB_VFS_GET_NT_ACL(conn,
 				parent_smb_fname,
 				SECINFO_DACL,
-				    talloc_tos(),
+				frame,
 				&parent_sd);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -295,7 +299,7 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 			"%s with error %s\n",
 			parent_dir,
 			nt_errstr(status)));
-		return status;
+		goto out;
 	}
 
  	/*
@@ -322,14 +326,16 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 			access_mask,
 			access_granted,
 			nt_errstr(status) ));
-		return status;
+		goto out;
 	}
 
 	if (!(access_mask & (SEC_DIR_ADD_FILE | SEC_DIR_ADD_SUBDIR))) {
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto out;
 	}
 	if (!lp_check_parent_directory_delete_on_close(SNUM(conn))) {
-		return NT_STATUS_OK;
+		status = NT_STATUS_OK;
+		goto out;
 	}
 
 	/* Check if the directory has delete-on-close set */
@@ -346,7 +352,7 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 		goto out;
 	}
 
-	lck = get_existing_share_mode_lock(talloc_tos(), id);
+	lck = get_existing_share_mode_lock(frame, id);
 	if (lck == NULL) {
 		status = NT_STATUS_OK;
 		goto out;
@@ -361,8 +367,7 @@ NTSTATUS check_parent_access(struct connection_struct *conn,
 	status = NT_STATUS_OK;
 
 out:
-	TALLOC_FREE(lck);
-	TALLOC_FREE(parent_smb_fname);
+	TALLOC_FREE(frame);
 	return status;
 }
 
