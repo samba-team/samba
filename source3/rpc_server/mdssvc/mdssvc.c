@@ -1837,6 +1837,9 @@ static struct mdssvc_ctx *mdssvc_init(struct tevent_context *ev)
 
 /**
  * Init callbacks at startup
+ *
+ * This gets typically called in the main parent smbd which means we can't
+ * initialize our global state here.
  **/
 bool mds_init(struct messaging_context *msg_ctx)
 {
