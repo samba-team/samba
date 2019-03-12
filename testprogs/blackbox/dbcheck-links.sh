@@ -42,12 +42,12 @@ dbcheck() {
 }
 
 dbcheck_dangling() {
-    dbcheck "" "1" ""
+    dbcheck "" "1" "--selftest-check-expired-tombstones"
     return $?
 }
 
 dbcheck_one_way() {
-    dbcheck "_one_way" "0" "CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp"
+    dbcheck "_one_way" "0" "CN=Configuration,DC=release-4-5-0-pre1,DC=samba,DC=corp --selftest-check-expired-tombstones"
     return $?
 }
 
@@ -118,7 +118,7 @@ duplicate_member() {
 }
 
 dbcheck_duplicate_member() {
-    dbcheck "_duplicate_member" "1" ""
+    dbcheck "_duplicate_member" "1" "--selftest-check-expired-tombstones"
     return $?
 }
 
@@ -234,7 +234,7 @@ EOF
 }
 
 dbcheck_missing_link_sid_corruption() {
-    dbcheck "-missing-link-sid-corruption" "1" ""
+    dbcheck "-missing-link-sid-corruption" "1" "--selftest-check-expired-tombstones"
     return $?
 }
 
@@ -332,7 +332,7 @@ EOF
 }
 
 dbcheck_lost_deleted_user1() {
-    dbcheck "-lost-deleted-user1" "1" ""
+    dbcheck "-lost-deleted-user1" "1" "--selftest-check-expired-tombstones"
     return $?
 }
 
@@ -439,7 +439,7 @@ EOF
 }
 
 dbcheck_lost_deleted_user2() {
-    dbcheck "-lost-deleted-user2" "1" ""
+    dbcheck "-lost-deleted-user2" "1" "--selftest-check-expired-tombstones"
     return $?
 }
 
@@ -504,7 +504,7 @@ EOF
 }
 
 dbcheck_forward_link_corruption() {
-    dbcheck "-forward-link-corruption" "1" ""
+    dbcheck "-forward-link-corruption" "1" "--selftest-check-expired-tombstones"
     return $?
 }
 
@@ -565,7 +565,7 @@ EOF
 }
 
 dbcheck_oneway_link_corruption() {
-    dbcheck "-oneway-link-corruption" "0" ""
+    dbcheck "-oneway-link-corruption" "0" "--selftest-check-expired-tombstones"
     return $?
 }
 
@@ -580,7 +580,7 @@ check_expected_after_dbcheck_oneway_link_corruption() {
 
 dbcheck_dangling_multi_valued() {
 
-    $PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --fix --yes
+    $PYTHON $BINDIR/samba-tool dbcheck -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --selftest-check-expired-tombstones --fix --yes
     if [ "$?" != "1" ]; then
 	return 1
     fi
