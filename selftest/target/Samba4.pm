@@ -387,9 +387,6 @@ sub setup_dns_hub_internal($$$)
 	}
 
 	my $env = undef;
-	$env->{prefix} = $prefix;
-	$env->{prefix_abs} = $prefix_abs;
-
 	$env->{NETBIOSNAME} = $hostname;
 
 	$env->{SERVER_IP} = Samba::get_ipv4_addr($hostname);
@@ -443,7 +440,7 @@ sub setup_dns_hub_internal($$$)
 			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
 	}
 	$env->{SAMBA_PID} = $pid;
-	$env->{KRB5_CONFIG} = "${prefix_abs}/no_krb5.conf";
+	$env->{KRB5_CONFIG} = "$prefix_abs/no_krb5.conf";
 	close($STDIN_READER);
 
 	print "DONE\n";
