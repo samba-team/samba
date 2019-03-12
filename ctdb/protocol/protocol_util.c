@@ -251,6 +251,9 @@ static int ip_from_string(const char *str, ctdb_sock_addr *addr)
 		if (memcmp(&addr->ip6.sin6_addr.s6_addr[0],
 			   ipv4_mapped_prefix,
 			   sizeof(ipv4_mapped_prefix)) == 0) {
+                        /* Initialize addr struct to zero before reparsing as IPV4 */
+                        ZERO_STRUCTP(addr);
+
 			/* Reparse as IPv4 */
 			ret = ipv4_from_string(p+1, &addr->ip);
 		}
