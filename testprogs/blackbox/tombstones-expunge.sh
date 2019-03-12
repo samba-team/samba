@@ -54,7 +54,7 @@ tombstones_expunge() {
     if [ "$?" != "0" ]; then
 	return 1
     fi
-    diff $tmpfile $release_dir/expected-expunge-output.txt
+    diff -u $tmpfile $release_dir/expected-expunge-output.txt
     if [ "$?" != "0" ]; then
 	return 1
     fi
@@ -62,7 +62,7 @@ tombstones_expunge() {
     tmpldif2=$PREFIX_ABS/$RELEASE/expected-expunge-output2.txt.tmp2
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif2
 
-    diff $tmpldif1 $tmpldif2
+    diff -u $tmpldif1 $tmpldif2
     if [ "$?" != "0" ]; then
 	return 1
     fi
@@ -124,7 +124,7 @@ remove_one_user() {
 check_match_rule_links() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-match-rule-links.ldif.tmp
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(member:1.3.6.1.4.1.7165.4.5.2:=131139216000000000)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted no_attrs > $tmpldif
-    diff $tmpldif $release_dir/expected-match-rule-links.ldif
+    diff -u $tmpldif $release_dir/expected-match-rule-links.ldif
     if [ "$?" != "0" ]; then
 	return 1
     fi
@@ -165,7 +165,7 @@ check_match_rule_links_notlink() {
 check_expected_after_links() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-links-after-expunge.ldif.tmp
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=swimmers)(cn=leaders)(cn=helpers))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted member > $tmpldif
-    diff $tmpldif $release_dir/expected-links-after-expunge.ldif
+    diff -u $tmpldif $release_dir/expected-links-after-expunge.ldif
     if [ "$?" != "0" ]; then
 	return 1
     fi
@@ -174,7 +174,7 @@ check_expected_after_links() {
 check_expected_after_deleted_links() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-deleted-links-after-expunge.ldif.tmp
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=swimmers)(cn=leaders)(cn=helpers))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member > $tmpldif
-    diff $tmpldif $release_dir/expected-deleted-links-after-expunge.ldif
+    diff -u $tmpldif $release_dir/expected-deleted-links-after-expunge.ldif
     if [ "$?" != "0" ]; then
 	return 1
     fi
@@ -183,7 +183,7 @@ check_expected_after_deleted_links() {
 check_expected_after_objects() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-objects-after-expunge.ldif.tmp
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(samaccountname=fred)(samaccountname=ddg)(samaccountname=usg)(samaccountname=user1)(samaccountname=user2))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted samAccountName | grep sAMAccountName > $tmpldif
-    diff $tmpldif $release_dir/expected-objects-after-expunge.ldif
+    diff -u $tmpldif $release_dir/expected-objects-after-expunge.ldif
     if [ "$?" != "0" ]; then
 	return 1
     fi
@@ -192,7 +192,7 @@ check_expected_after_objects() {
 check_expected_unsorted_links() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-unsorted-links-after-expunge.ldif.tmp
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(name=unsorted-g)' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member > $tmpldif
-    diff $tmpldif $release_dir/expected-unsorted-links-after-expunge.ldif
+    diff -u $tmpldif $release_dir/expected-unsorted-links-after-expunge.ldif
     if [ "$?" != "0" ]; then
 	return 1
     fi
