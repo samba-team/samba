@@ -1903,6 +1903,12 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
+	mds_ctx->gcancellable = g_cancellable_new();
+	if (mds_ctx->gcancellable == NULL) {
+		DBG_ERR("error from g_cancellable_new\n");
+		goto error;
+	}
+
 	tracker_sparql_connection_get_async(mds_ctx->gcancellable,
 					    tracker_con_cb, mds_ctx);
 
