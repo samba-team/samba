@@ -79,6 +79,9 @@ class cmd_dbcheck(Command):
                default=False, action="store_true"),
         Option("-H", "--URL", help="LDB URL for database or target server (defaults to local SAM database)",
                type=str, metavar="URL", dest="H"),
+        Option("--selftest-check-expired-tombstones",
+               dest="selftest_check_expired_tombstones", default=False, action="store_true",
+               help=Option.SUPPRESS_HELP), # This is only used by tests
     ]
 
     def run(self, DN=None, H=None, verbose=False, fix=False, yes=False,
@@ -86,7 +89,9 @@ class cmd_dbcheck(Command):
             scope="SUB", credopts=None, sambaopts=None, versionopts=None,
             attrs=None, reindex=False, force_modules=False,
             quick_membership_checks=False,
-            reset_well_known_acls=False, yes_rules=[]):
+            reset_well_known_acls=False,
+            selftest_check_expired_tombstones=False,
+            yes_rules=[]):
 
         lp = sambaopts.get_loadparm()
 
