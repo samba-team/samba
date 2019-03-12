@@ -63,7 +63,7 @@ dbcheck_clean() {
     tmpldif2=$PREFIX_ABS/$RELEASE/expected-dbcheck-output2.txt.tmp2
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -s base -b '' | grep highestCommittedUSN > $tmpldif2
 
-    diff $tmpldif1 $tmpldif2
+    diff -u $tmpldif1 $tmpldif2
     if [ "$?" != "0" ]; then
 	return 1
     fi
@@ -72,7 +72,7 @@ dbcheck_clean() {
 check_expected_after_links() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-links-after-link-dbcheck.ldif.tmp
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=swimmers)(cn=leaders)(cn=helpers))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted member > $tmpldif
-    diff $tmpldif $release_dir/expected-links-after-link-dbcheck.ldif
+    diff -u $tmpldif $release_dir/expected-links-after-link-dbcheck.ldif
     if [ "$?" != "0" ]; then
 	return 1
     fi
@@ -81,7 +81,7 @@ check_expected_after_links() {
 check_expected_after_deleted_links() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-deleted-links-after-link-dbcheck.ldif.tmp
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=swimmers)(cn=leaders)(cn=helpers))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted member > $tmpldif
-    diff $tmpldif $release_dir/expected-deleted-links-after-link-dbcheck.ldif
+    diff -u $tmpldif $release_dir/expected-deleted-links-after-link-dbcheck.ldif
     if [ "$?" != "0" ]; then
 	return 1
     fi
@@ -90,7 +90,7 @@ check_expected_after_deleted_links() {
 check_expected_after_objects() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-objects-after-link-dbcheck.ldif.tmp
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(samaccountname=fred)(samaccountname=ddg)(samaccountname=usg)(samaccountname=user1)(samaccountname=user1x)(samaccountname=user2))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --reveal --sorted samAccountName | grep sAMAccountName > $tmpldif
-    diff $tmpldif $release_dir/expected-objects-after-link-dbcheck.ldif
+    diff -u $tmpldif $release_dir/expected-objects-after-link-dbcheck.ldif
     if [ "$?" != "0" ]; then
 	return 1
     fi
@@ -125,7 +125,7 @@ dbcheck_duplicate_member() {
 check_expected_after_duplicate_links() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-duplicates-after-link-dbcheck.ldif.tmp
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=administrator)(cn=enterprise admins))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted memberOf member > $tmpldif
-    diff $tmpldif $release_dir/expected-duplicates-after-link-dbcheck.ldif
+    diff -u $tmpldif $release_dir/expected-duplicates-after-link-dbcheck.ldif
     if [ "$?" != "0" ]; then
 	return 1
     fi
@@ -306,7 +306,7 @@ dbcheck_forward_link_corruption() {
 check_expected_after_dbcheck_forward_link_corruption() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-after-dbcheck-forward-link-corruption.ldif.tmp
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(cn=dangling)(cn=enterprise admins))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted memberOf member > $tmpldif
-    diff $tmpldif $release_dir/expected-after-dbcheck-forward-link-corruption.ldif
+    diff -u $tmpldif $release_dir/expected-after-dbcheck-forward-link-corruption.ldif
     if [ "$?" != "0" ]; then
 	return 1
     fi
@@ -367,7 +367,7 @@ dbcheck_oneway_link_corruption() {
 check_expected_after_dbcheck_oneway_link_corruption() {
     tmpldif=$PREFIX_ABS/$RELEASE/expected-after-dbcheck-oneway-link-corruption.ldif.tmp
     TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb '(|(ou=dangling-ou)(ou=dangling-ou2)(ou=dangling-from))' -s sub -b DC=release-4-5-0-pre1,DC=samba,DC=corp --show-deleted --sorted seeAlso > $tmpldif
-    diff $tmpldif $release_dir/expected-after-dbcheck-oneway-link-corruption.ldif
+    diff -u $tmpldif $release_dir/expected-after-dbcheck-oneway-link-corruption.ldif
     if [ "$?" != "0" ]; then
 	return 1
     fi
