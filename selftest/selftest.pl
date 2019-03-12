@@ -511,7 +511,7 @@ foreach (@opt_include) {
 	push (@includes, read_test_regexes($_));
 }
 
-my $interfaces = "127.0.0.11/8";
+my $interfaces = Samba::get_interfaces_config("client");
 
 my $clientdir = "$prefix_abs/client";
 
