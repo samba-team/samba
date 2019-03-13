@@ -5964,7 +5964,8 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
 	}
-	/* TODO: setup destructor once we cache the hmac handle */
+	talloc_set_destructor(session->smb2->signing_key,
+			      smb2_signing_key_destructor);
 
 	session->smb2->signing_key->blob =
 		data_blob_talloc(session->smb2->signing_key,
@@ -6041,7 +6042,8 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	if (session->smb2_channel.signing_key == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	/* TODO: setup destructor once we cache the hmac handle */
+	talloc_set_destructor(session->smb2_channel.signing_key,
+			      smb2_signing_key_destructor);
 
 	session->smb2_channel.signing_key->blob =
 		data_blob_dup_talloc(session->smb2_channel.signing_key,

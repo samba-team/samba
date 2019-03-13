@@ -27,6 +27,16 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+int smb2_signing_key_destructor(struct smb2_signing_key *key)
+{
+	if (key->hmac_hnd != NULL) {
+		gnutls_hmac_deinit(key->hmac_hnd, NULL);
+		key->hmac_hnd = NULL;
+	}
+
+	return 0;
+}
+
 bool smb2_signing_key_valid(const struct smb2_signing_key *key)
 {
 	if (key == NULL) {

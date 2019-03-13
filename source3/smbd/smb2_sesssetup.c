@@ -329,7 +329,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
 	}
-	/* TODO: setup destructor once we cache the hmac handle */
+	talloc_set_destructor(x->global->signing_key,
+			      smb2_signing_key_destructor);
 
 	x->global->signing_key->blob =
 		x->global->signing_key_blob =
@@ -459,7 +460,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	if (x->global->channels[0].signing_key == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	/* TODO: setup destructor once we cache the hmac handle */
+	talloc_set_destructor(x->global->channels[0].signing_key,
+			      smb2_signing_key_destructor);
 
 	x->global->channels[0].signing_key->blob =
 		x->global->channels[0].signing_key_blob =
@@ -700,7 +702,8 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
 	}
-	/* TODO: setup destructor once we cache the hmac handle */
+	talloc_set_destructor(c->signing_key,
+			      smb2_signing_key_destructor);
 
 	c->signing_key->blob =
 		c->signing_key_blob =

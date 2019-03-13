@@ -31,6 +31,8 @@ struct smb2_signing_key {
 	DATA_BLOB blob;
 };
 
+int smb2_signing_key_destructor(struct smb2_signing_key *key);
+
 bool smb2_signing_key_valid(const struct smb2_signing_key *key);
 
 NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
