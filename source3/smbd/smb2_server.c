@@ -428,7 +428,7 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *xconn,
 			tf_iov[1].iov_base = (void *)hdr;
 			tf_iov[1].iov_len = enc_len;
 
-			status = smb2_signing_decrypt_pdu(s->global->decryption_key,
+			status = smb2_signing_decrypt_pdu(s->global->decryption_key_blob,
 							  xconn->smb2.server.cipher,
 							  tf_iov, 2);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -1517,11 +1517,11 @@ static DATA_BLOB smbd_smb2_signing_key(struct smbXsrv_session *session,
 
 	status = smbXsrv_session_find_channel(session, xconn, &c);
 	if (NT_STATUS_IS_OK(status)) {
-		key = c->signing_key;
+		key = c->signing_key_blob;
 	}
 
 	if (key.length == 0) {
-		key = session->global->signing_key;
+		key = session->global->signing_key_blob;
 	}
 
 	return key;
@@ -1716,7 +1716,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 
 	if (req->do_encryption) {
 		struct smbXsrv_session *x = req->session;
-		DATA_BLOB encryption_key = x->global->encryption_key;
+		DATA_BLOB encryption_key = x->global->encryption_key_blob;
 
 		status = smb2_signing_encrypt_pdu(encryption_key,
 					xconn->smb2.server.cipher,
@@ -2830,9 +2830,9 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	    (firsttf->iov_len == 0) &&
 	    (req->first_key.length == 0) &&
 	    (req->session != NULL) &&
-	    (req->session->global->encryption_key.length != 0))
+	    (req->session->global->encryption_key_blob.length != 0))
 	{
-		DATA_BLOB encryption_key = req->session->global->encryption_key;
+		DATA_BLOB encryption_key = req->session->global->encryption_key_blob;
 		uint8_t *tf;
 		uint64_t session_id = req->session->global->session_wire_id;
 		uint64_t nonce_high;
@@ -3359,7 +3359,7 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	}
 
 	if (do_encryption) {
-		DATA_BLOB encryption_key = session->global->encryption_key;
+		DATA_BLOB encryption_key = session->global->encryption_key_blob;
 
 		status = smb2_signing_encrypt_pdu(encryption_key,
 					xconn->smb2.server.cipher,

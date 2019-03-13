@@ -273,10 +273,10 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			/*
 			 * Note: the SMB1 signing key is not truncated to 16 byte!
 			 */
-			x->global->signing_key =
+			x->global->signing_key_blob =
 				data_blob_dup_talloc(x->global,
 						     session_info->session_key);
-			if (x->global->signing_key.data == NULL) {
+			if (x->global->signing_key_blob.data == NULL) {
 				data_blob_free(&out_blob);
 				TALLOC_FREE(session);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
@@ -313,14 +313,14 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 		if (srv_is_signing_negotiated(xconn) &&
 		    is_authenticated &&
-		    session->global->signing_key.length > 0)
+		    session->global->signing_key_blob.length > 0)
 		{
 			/*
 			 * Try and turn on server signing on the first non-guest
 			 * sessionsetup.
 			 */
 			srv_set_signing(xconn,
-				session->global->signing_key,
+				session->global->signing_key_blob,
 				data_blob_null);
 		}
 
@@ -997,10 +997,10 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		/*
 		 * Note: the SMB1 signing key is not truncated to 16 byte!
 		 */
-		session->global->signing_key =
+		session->global->signing_key_blob =
 			data_blob_dup_talloc(session->global,
 					     session_info->session_key);
-		if (session->global->signing_key.data == NULL) {
+		if (session->global->signing_key_blob.data == NULL) {
 			TALLOC_FREE(session);
 			reply_nterror(req, NT_STATUS_NO_MEMORY);
 			END_PROFILE(SMBsesssetupX);
@@ -1011,8 +1011,8 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		 * The application key is truncated/padded to 16 bytes
 		 */
 		ZERO_STRUCT(session_key);
-		memcpy(session_key, session->global->signing_key.data,
-		       MIN(session->global->signing_key.length,
+		memcpy(session_key, session->global->signing_key_blob.data,
+		       MIN(session->global->signing_key_blob.length,
 			   sizeof(session_key)));
 		session->global->application_key =
 			data_blob_talloc(session->global,
@@ -1063,14 +1063,14 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	if (srv_is_signing_negotiated(xconn) &&
 	    is_authenticated &&
-	    session->global->signing_key.length > 0)
+	    session->global->signing_key_blob.length > 0)
 	{
 		/*
 		 * Try and turn on server signing on the first non-guest
 		 * sessionsetup.
 		 */
 		srv_set_signing(xconn,
-			session->global->signing_key,
+			session->global->signing_key_blob,
 			state->nt_resp.data ? state->nt_resp : state->lm_resp);
 	}
 

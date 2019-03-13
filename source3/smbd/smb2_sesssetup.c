@@ -323,10 +323,10 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	memcpy(session_key, session_info->session_key.data,
 	       MIN(session_info->session_key.length, sizeof(session_key)));
 
-	x->global->signing_key = data_blob_talloc(x->global,
+	x->global->signing_key_blob = data_blob_talloc(x->global,
 						  session_key,
 						  sizeof(session_key));
-	if (x->global->signing_key.data == NULL) {
+	if (x->global->signing_key_blob.data == NULL) {
 		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -337,16 +337,16 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		smb2_key_derivation(session_key, sizeof(session_key),
 				    d->label.data, d->label.length,
 				    d->context.data, d->context.length,
-				    x->global->signing_key.data);
+				    x->global->signing_key_blob.data);
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.decryption;
 
-		x->global->decryption_key = data_blob_talloc(x->global,
+		x->global->decryption_key_blob = data_blob_talloc(x->global,
 							     session_key,
 							     sizeof(session_key));
-		if (x->global->decryption_key.data == NULL) {
+		if (x->global->decryption_key_blob.data == NULL) {
 			ZERO_STRUCT(session_key);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -354,17 +354,17 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		smb2_key_derivation(session_key, sizeof(session_key),
 				    d->label.data, d->label.length,
 				    d->context.data, d->context.length,
-				    x->global->decryption_key.data);
+				    x->global->decryption_key_blob.data);
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.encryption;
 		size_t nonce_size;
 
-		x->global->encryption_key = data_blob_talloc(x->global,
+		x->global->encryption_key_blob = data_blob_talloc(x->global,
 							     session_key,
 							     sizeof(session_key));
-		if (x->global->encryption_key.data == NULL) {
+		if (x->global->encryption_key_blob.data == NULL) {
 			ZERO_STRUCT(session_key);
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -372,7 +372,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		smb2_key_derivation(session_key, sizeof(session_key),
 				    d->label.data, d->label.length,
 				    d->context.data, d->context.length,
-				    x->global->encryption_key.data);
+				    x->global->encryption_key_blob.data);
 
 		/*
 		 * CCM and GCM algorithms must never have their
@@ -401,8 +401,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		x->nonce_low = 0;
 	}
 
-	x->global->application_key = data_blob_dup_talloc(x->global,
-						x->global->signing_key);
+	x->global->application_key =
+		data_blob_dup_talloc(x->global, x->global->signing_key_blob);
 	if (x->global->application_key.data == NULL) {
 		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
@@ -425,8 +425,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		DEBUGADD(0, ("Session Key   "));
 		dump_data(0, session_key, sizeof(session_key));
 		DEBUGADD(0, ("Signing Key   "));
-		dump_data(0, x->global->signing_key.data,
-			  x->global->signing_key.length);
+		dump_data(0, x->global->signing_key_blob.data,
+			  x->global->signing_key_blob.length);
 		DEBUGADD(0, ("App Key       "));
 		dump_data(0, x->global->application_key.data,
 			  x->global->application_key.length);
@@ -434,18 +434,19 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		/* In server code, ServerIn is the decryption key */
 
 		DEBUGADD(0, ("ServerIn Key  "));
-		dump_data(0, x->global->decryption_key.data,
-			  x->global->decryption_key.length);
+		dump_data(0, x->global->decryption_key_blob.data,
+			  x->global->decryption_key_blob.length);
 		DEBUGADD(0, ("ServerOut Key "));
-		dump_data(0, x->global->encryption_key.data,
-			  x->global->encryption_key.length);
+		dump_data(0, x->global->encryption_key_blob.data,
+			  x->global->encryption_key_blob.length);
 	}
 
 	ZERO_STRUCT(session_key);
 
-	x->global->channels[0].signing_key = data_blob_dup_talloc(x->global->channels,
-						x->global->signing_key);
-	if (x->global->channels[0].signing_key.data == NULL) {
+	x->global->channels[0].signing_key_blob =
+		data_blob_dup_talloc(x->global->channels,
+				     x->global->signing_key_blob);
+	if (x->global->channels[0].signing_key_blob.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -672,10 +673,10 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 	memcpy(session_key, session_info->session_key.data,
 	       MIN(session_info->session_key.length, sizeof(session_key)));
 
-	c->signing_key = data_blob_talloc(x->global,
+	c->signing_key_blob = data_blob_talloc(x->global,
 					  session_key,
 					  sizeof(session_key));
-	if (c->signing_key.data == NULL) {
+	if (c->signing_key_blob.data == NULL) {
 		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -686,7 +687,7 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 		smb2_key_derivation(session_key, sizeof(session_key),
 				    d->label.data, d->label.length,
 				    d->context.data, d->context.length,
-				    c->signing_key.data);
+				    c->signing_key_blob.data);
 	}
 	ZERO_STRUCT(session_key);
 
@@ -784,7 +785,7 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 						      smb2req->xconn,
 						      &c);
 		if (NT_STATUS_IS_OK(status)) {
-			if (c->signing_key.length == 0) {
+			if (c->signing_key_blob.length == 0) {
 				goto auth;
 			}
 			tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);

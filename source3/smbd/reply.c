@@ -1013,7 +1013,7 @@ void reply_tcon_and_X(struct smb_request *req)
 	 * change any more.
 	 */
 	if (session->global->application_key.length == 0 &&
-	    session->global->signing_key.length > 0)
+	    session->global->signing_key_blob.length > 0)
 	{
 		struct smbXsrv_session *x = session;
 		struct auth_session_info *session_info =
@@ -1021,8 +1021,8 @@ void reply_tcon_and_X(struct smb_request *req)
 		uint8_t session_key[16];
 
 		ZERO_STRUCT(session_key);
-		memcpy(session_key, x->global->signing_key.data,
-		       MIN(x->global->signing_key.length, sizeof(session_key)));
+		memcpy(session_key, x->global->signing_key_blob.data,
+		       MIN(x->global->signing_key_blob.length, sizeof(session_key)));
 
 		/*
 		 * The application key is truncated/padded to 16 bytes
