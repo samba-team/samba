@@ -25,6 +25,8 @@ import ldb
 import socket
 import samba
 import re
+import os
+import tempfile
 from samba import sd_utils
 from samba.dcerpc import dnsserver, dnsp, security
 from samba.dnsserver import ARecord, AAAARecord
@@ -32,6 +34,8 @@ from samba.ndr import ndr_unpack, ndr_pack, ndr_print
 from samba.remove_dc import remove_dns_references
 from samba.auth import system_session
 from samba.samdb import SamDB
+from samba.compat import get_bytes
+from subprocess import check_call, CalledProcessError
 
 from samba import (
     credentials,
@@ -47,7 +51,6 @@ from samba.netcmd import (
     SuperCommand,
     Option,
 )
-
 
 def _is_valid_ip(ip_string, address_families=None):
     """Check ip string is valid address"""
@@ -400,6 +403,123 @@ sudo is used so a computer may run the command as root.
         self.outf.write("Deleted computer %s\n" % computername)
 
 
+class cmd_computer_edit(Command):
+    """Modify Computer AD object.
+
+    This command will allow editing of a computer account in the Active
+    Directory domain. You will then be able to add or change attributes and
+    their values.
+
+    The computername specified on the command is the sAMaccountName with or
+    without the trailing $ (dollar sign).
+
+    The command may be run from the root userid or another authorized userid.
+
+    The -H or --URL= option can be used to execute the command against a remote
+    server.
+
+    Example1:
+    samba-tool computer edit Computer1 -H ldap://samba.samdom.example.com \\
+        -U administrator --password=passw1rd
+
+    Example1 shows how to edit a computers attributes in the domain against a
+    remote LDAP server.
+
+    The -H parameter is used to specify the remote target server.
+
+    Example2:
+    samba-tool computer edit Computer2
+
+    Example2 shows how to edit a computers attributes in the domain against a
+    local LDAP server.
+
+    Example3:
+    samba-tool computer edit Computer3 --editor=nano
+
+    Example3 shows how to edit a computers attributes in the domain against a
+    local LDAP server using the 'nano' editor.
+    """
+    synopsis = "%prog <computername> [options]"
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
+        Option("--editor", help="Editor to use instead of the system default,"
+               " or 'vi' if no system default is set.", type=str),
+    ]
+
+    takes_args = ["computername"]
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+    }
+
+    def run(self, computername, credopts=None, sambaopts=None, versionopts=None,
+            H=None, editor=None):
+        from . import common
+
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
+
+        samaccountname = computername
+        if not computername.endswith('$'):
+            samaccountname = "%s$" % computername
+
+        filter = ("(&(sAMAccountType=%d)(sAMAccountName=%s))" %
+                  (dsdb.ATYPE_WORKSTATION_TRUST,
+                   ldb.binary_encode(samaccountname)))
+
+        domaindn = samdb.domain_dn()
+
+        try:
+            res = samdb.search(base=domaindn,
+                               expression=filter,
+                               scope=ldb.SCOPE_SUBTREE)
+            computer_dn = res[0].dn
+        except IndexError:
+            raise CommandError('Unable to find computer "%s"' % (computername))
+
+        if len(res) != 1:
+            raise CommandError('Invalid number of results: for "%s": %d' %
+                               ((computername), len(res)))
+
+        msg = res[0]
+        result_ldif = common.get_ldif_for_editor(samdb, msg)
+
+        if editor is None:
+            editor = os.environ.get('EDITOR')
+            if editor is None:
+                editor = 'vi'
+
+        with tempfile.NamedTemporaryFile(suffix=".tmp") as t_file:
+            t_file.write(get_bytes(result_ldif))
+            t_file.flush()
+            try:
+                check_call([editor, t_file.name])
+            except CalledProcessError as e:
+                raise CalledProcessError("ERROR: ", e)
+            with open(t_file.name) as edited_file:
+                edited_message = edited_file.read()
+
+        msgs_edited = samdb.parse_ldif(edited_message)
+        msg_edited = next(msgs_edited)[1]
+
+        res_msg_diff = samdb.msg_diff(msg, msg_edited)
+        if len(res_msg_diff) == 0:
+            self.outf.write("Nothing to do\n")
+            return
+
+        try:
+            samdb.modify(res_msg_diff)
+        except Exception as e:
+            raise CommandError("Failed to modify computer '%s': " %
+                               (computername, e))
+
+        self.outf.write("Modified computer '%s' successfully\n" % computername)
+
 class cmd_computer_list(Command):
     """List all computers."""
 
@@ -583,6 +703,7 @@ class cmd_computer(SuperCommand):
     subcommands = {}
     subcommands["create"] = cmd_computer_create()
     subcommands["delete"] = cmd_computer_delete()
+    subcommands["edit"] = cmd_computer_edit()
     subcommands["list"] = cmd_computer_list()
     subcommands["show"] = cmd_computer_show()
     subcommands["move"] = cmd_computer_move()
