@@ -2448,9 +2448,7 @@ LDAP server using the 'nano' editor.
             raise CommandError('Unable to find user "%s"' % (username))
 
         for msg in res:
-            r_ldif = samdb.write_ldif(msg, 1)
-            # remove 'changetype' line
-            result_ldif = re.sub('changetype: add\n', '', r_ldif)
+            result_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
 
             if editor is None:
                 editor = os.environ.get('EDITOR')
