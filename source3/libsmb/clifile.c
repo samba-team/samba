@@ -739,16 +739,16 @@ NTSTATUS cli_posix_setacl(struct cli_state *cli,
 ****************************************************************************/
 
 struct stat_state {
-	uint32_t num_data;
-	uint8_t *data;
+	SMB_STRUCT_STAT *sbuf;
 };
 
 static void cli_posix_stat_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
-					struct tevent_context *ev,
-					struct cli_state *cli,
-					const char *fname)
+				       struct tevent_context *ev,
+				       struct cli_state *cli,
+				       const char *fname,
+				       SMB_STRUCT_STAT *sbuf)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct stat_state *state = NULL;
@@ -757,6 +757,8 @@ struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->sbuf = sbuf;
+
 	subreq = cli_qpathinfo_send(state, ev, cli, fname,
 				    SMB_QUERY_FILE_UNIX_BASIC, 100, 100);
 	if (tevent_req_nomem(subreq, req)) {
@@ -771,54 +773,74 @@ static void cli_posix_stat_done(struct tevent_req *subreq)
 	struct tevent_req *req = tevent_req_callback_data(
 				subreq, struct tevent_req);
 	struct stat_state *state = tevent_req_data(req, struct stat_state);
+	SMB_STRUCT_STAT *sbuf = state->sbuf;
+	uint8_t *data;
+	uint32_t num_data;
 	NTSTATUS status;
 
-	status = cli_qpathinfo_recv(subreq, state, &state->data,
-				    &state->num_data);
+	status = cli_qpathinfo_recv(subreq, state, &data, &num_data);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	tevent_req_done(req);
-}
 
-NTSTATUS cli_posix_stat_recv(struct tevent_req *req,
-				SMB_STRUCT_STAT *sbuf)
-{
-	struct stat_state *state = tevent_req_data(req, struct stat_state);
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
+	if (num_data != 100) {
+		/*
+		 * Paranoia, cli_qpathinfo should have guaranteed
+		 * this, but you never know...
+		 */
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
 	}
 
-	sbuf->st_ex_size = IVAL2_TO_SMB_BIG_UINT(state->data,0);     /* total size, in bytes */
-	sbuf->st_ex_blocks = IVAL2_TO_SMB_BIG_UINT(state->data,8);   /* number of blocks allocated */
+	*sbuf = (SMB_STRUCT_STAT) { 0 };
+
+	/* total size, in bytes */
+	sbuf->st_ex_size = IVAL2_TO_SMB_BIG_UINT(data, 0);
+
+	/* number of blocks allocated */
+	sbuf->st_ex_blocks = IVAL2_TO_SMB_BIG_UINT(data,8);
 #if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
 	sbuf->st_ex_blocks /= STAT_ST_BLOCKSIZE;
 #else
 	/* assume 512 byte blocks */
 	sbuf->st_ex_blocks /= 512;
 #endif
-	sbuf->st_ex_ctime = interpret_long_date((char *)(state->data + 16));    /* time of last change */
-	sbuf->st_ex_atime = interpret_long_date((char *)(state->data + 24));    /* time of last access */
-	sbuf->st_ex_mtime = interpret_long_date((char *)(state->data + 32));    /* time of last modification */
+	/* time of last change */
+	sbuf->st_ex_ctime = interpret_long_date((char *)(data + 16));
 
-	sbuf->st_ex_uid = (uid_t) IVAL(state->data,40);      /* user ID of owner */
-	sbuf->st_ex_gid = (gid_t) IVAL(state->data,48);      /* group ID of owner */
-	sbuf->st_ex_mode = unix_filetype_from_wire(IVAL(state->data, 56));
+	/* time of last access */
+	sbuf->st_ex_atime = interpret_long_date((char *)(data + 24));
+
+	/* time of last modification */
+	sbuf->st_ex_mtime = interpret_long_date((char *)(data + 32));
+
+	sbuf->st_ex_uid = (uid_t) IVAL(data, 40); /* user ID of owner */
+	sbuf->st_ex_gid = (gid_t) IVAL(data, 48); /* group ID of owner */
+	sbuf->st_ex_mode = unix_filetype_from_wire(IVAL(data, 56));
+
 #if defined(HAVE_MAKEDEV)
 	{
-		uint32_t dev_major = IVAL(state->data,60);
-		uint32_t dev_minor = IVAL(state->data,68);
+		uint32_t dev_major = IVAL(data,60);
+		uint32_t dev_minor = IVAL(data,68);
 		sbuf->st_ex_rdev = makedev(dev_major, dev_minor);
 	}
 #endif
-	sbuf->st_ex_ino = (SMB_INO_T)IVAL2_TO_SMB_BIG_UINT(state->data,76);      /* inode */
-	sbuf->st_ex_mode |= wire_perms_to_unix(IVAL(state->data,84));     /* protection */
-	sbuf->st_ex_nlink = BIG_UINT(state->data,92); /* number of hard links */
+	/* inode */
+	sbuf->st_ex_ino = (SMB_INO_T)IVAL2_TO_SMB_BIG_UINT(data, 76);
 
-	return NT_STATUS_OK;
+	/* protection */
+	sbuf->st_ex_mode |= wire_perms_to_unix(IVAL(data, 84));
+
+	/* number of hard links */
+	sbuf->st_ex_nlink = BIG_UINT(data, 92);
+
+	tevent_req_done(req);
+}
+
+NTSTATUS cli_posix_stat_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_posix_stat(struct cli_state *cli,
@@ -844,10 +866,7 @@ NTSTATUS cli_posix_stat(struct cli_state *cli,
 		goto fail;
 	}
 
-	req = cli_posix_stat_send(frame,
-				ev,
-				cli,
-				fname);
+	req = cli_posix_stat_send(frame, ev, cli, fname, sbuf);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -857,7 +876,7 @@ NTSTATUS cli_posix_stat(struct cli_state *cli,
 		goto fail;
 	}
 
-	status = cli_posix_stat_recv(req, sbuf);
+	status = cli_posix_stat_recv(req);
 
  fail:
 	TALLOC_FREE(frame);
