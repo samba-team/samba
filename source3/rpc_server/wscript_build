@@ -138,17 +138,21 @@ bld.SAMBA3_SUBSYSTEM('RPC_WKSSVC',
                     ../../librpc/gen_ndr/srv_wkssvc.c''',
                     deps='LIBNET')
 
+rpc_mdssvc_sources = '''
+                     mdssvc/mdssvc.c
+                     mdssvc/dalloc.c
+                     mdssvc/marshalling.c
+                     mdssvc/sparql_mapping.c
+                     mdssvc/sparql_parser.y
+                     mdssvc/sparql_lexer.l
+                     mdssvc/srv_mdssvc_nt.c
+                     ../../librpc/gen_ndr/srv_mdssvc.c
+                     '''
+
 bld.SAMBA3_MODULE('rpc_mdssvc_module',
                   subsystem='rpc',
                   allow_undefined_symbols=True,
-                  source='''mdssvc/mdssvc.c
-                  mdssvc/dalloc.c
-                  mdssvc/marshalling.c
-                  mdssvc/sparql_mapping.c
-                  mdssvc/sparql_parser.y
-                  mdssvc/sparql_lexer.l
-                  mdssvc/srv_mdssvc_nt.c
-                  ../../librpc/gen_ndr/srv_mdssvc.c''',
+                  source=rpc_mdssvc_sources,
                   init_function='',
                   deps='samba-util tevent-glib-glue ' + bld.env['libtracker'],
                   internal_module=bld.SAMBA3_IS_STATIC_MODULE('rpc_mdssvc_module'),
