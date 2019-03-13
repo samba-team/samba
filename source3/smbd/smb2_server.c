@@ -1329,10 +1329,15 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 			return status;
 		}
 	} else if (req->last_key.length > 0) {
-		status = smb2_signing_sign_pdu(req->last_key,
+		struct smb2_signing_key key = {
+			.blob = req->last_key,
+		};
+
+		status = smb2_signing_sign_pdu(&key,
 					       xconn->protocol,
 					       outhdr_v,
 					       SMBD_SMB2_NUM_IOV_PER_REQ - 1);
+		smb2_signing_key_destructor(&key);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -1508,20 +1513,21 @@ NTSTATUS smbd_smb2_request_pending_queue(struct smbd_smb2_request *req,
 	return NT_STATUS_OK;
 }
 
-static DATA_BLOB smbd_smb2_signing_key(struct smbXsrv_session *session,
-				       struct smbXsrv_connection *xconn)
+static
+struct smb2_signing_key *smbd_smb2_signing_key(struct smbXsrv_session *session,
+					       struct smbXsrv_connection *xconn)
 {
 	struct smbXsrv_channel_global0 *c = NULL;
 	NTSTATUS status;
-	DATA_BLOB key = data_blob_null;
+	struct smb2_signing_key *key = NULL;
 
 	status = smbXsrv_session_find_channel(session, xconn, &c);
 	if (NT_STATUS_IS_OK(status)) {
-		key = c->signing_key->blob;
+		key = c->signing_key;
 	}
 
-	if (key.length == 0) {
-		key = session->global->signing_key->blob;
+	if (!smb2_signing_key_valid(key)) {
+		key = session->global->signing_key;
 	}
 
 	return key;
@@ -1729,7 +1735,8 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 		}
 	} else if (req->do_signing) {
 		struct smbXsrv_session *x = req->session;
-		DATA_BLOB signing_key = smbd_smb2_signing_key(x, xconn);
+		struct smb2_signing_key *signing_key =
+			smbd_smb2_signing_key(x, xconn);
 
 		status = smb2_signing_sign_pdu(signing_key,
 					xconn->protocol,
@@ -2444,7 +2451,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 	if (req->was_encrypted) {
 		signing_required = false;
 	} else if (signing_required || (flags & SMB2_HDR_FLAG_SIGNED)) {
-		DATA_BLOB signing_key = data_blob_null;
+		struct smb2_signing_key *signing_key = NULL;
 
 		if (x == NULL) {
 			/*
@@ -2472,11 +2479,11 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 		 * If we have a signing key, we should
 		 * sign the response
 		 */
-		if (signing_key.length > 0) {
+		if (smb2_signing_key_valid(signing_key)) {
 			req->do_signing = true;
 		}
 
-		status = smb2_signing_check_pdu(signing_key,
+		status = smb2_signing_check_pdu(signing_key->blob,
 						xconn->protocol,
 						SMBD_SMB2_IN_HDR_IOV(req),
 						SMBD_SMB2_NUM_IOV_PER_REQ - 1);
@@ -2882,16 +2889,20 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	{
 		int last_idx = req->current_idx - SMBD_SMB2_NUM_IOV_PER_REQ;
 		struct iovec *lasthdr = SMBD_SMB2_IDX_HDR_IOV(req,out,last_idx);
+		struct smb2_signing_key key = {
+			.blob = req->last_key,
+		};
 
 		/*
 		 * As we are sure the header of the last request in the
 		 * compound chain will not change, we can to sign here
 		 * with the last signing key we remembered.
 		 */
-		status = smb2_signing_sign_pdu(req->last_key,
+		status = smb2_signing_sign_pdu(&key,
 					       xconn->protocol,
 					       lasthdr,
 					       SMBD_SMB2_NUM_IOV_PER_REQ - 1);
+		smb2_signing_key_destructor(&key);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -2921,7 +2932,8 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 		if (req->do_signing && firsttf->iov_len == 0) {
 			struct smbXsrv_session *x = req->session;
-			DATA_BLOB signing_key = smbd_smb2_signing_key(x, xconn);
+			struct smb2_signing_key *signing_key =
+				smbd_smb2_signing_key(x, xconn);
 
 			/*
 			 * we need to remember the signing key
@@ -2929,7 +2941,8 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 			 * we are sure that we do not change
 			 * the header again.
 			 */
-			req->last_key = data_blob_dup_talloc(req, signing_key);
+			req->last_key = data_blob_dup_talloc(req,
+							     signing_key->blob);
 			if (req->last_key.data == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -2973,7 +2986,8 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		}
 	} else if (req->do_signing) {
 		struct smbXsrv_session *x = req->session;
-		DATA_BLOB signing_key = smbd_smb2_signing_key(x, xconn);
+		struct smb2_signing_key *signing_key =
+			smbd_smb2_signing_key(x, xconn);
 
 		status = smb2_signing_sign_pdu(signing_key,
 					       xconn->protocol,

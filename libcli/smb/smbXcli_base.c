@@ -3190,7 +3190,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 		uint16_t charge;
 		uint16_t credits;
 		uint64_t mid;
-		const struct smb2_signing_key *signing_key = NULL;
+		struct smb2_signing_key *signing_key = NULL;
 
 		if (!tevent_req_is_in_progress(reqs[i])) {
 			return NT_STATUS_INTERNAL_ERROR;
@@ -3323,7 +3323,7 @@ skip_credits:
 		if (signing_key != NULL) {
 			NTSTATUS status;
 
-			status = smb2_signing_sign_pdu(signing_key->blob,
+			status = smb2_signing_sign_pdu(signing_key,
 						       state->session->conn->protocol,
 						       &iov[hdr_iov], num_iov - hdr_iov);
 			if (!NT_STATUS_IS_OK(status)) {

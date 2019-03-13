@@ -50,7 +50,7 @@ bool smb2_signing_key_valid(const struct smb2_signing_key *key)
 	return true;
 }
 
-NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
+NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
 			       enum protocol_types protocol,
 			       struct iovec *vector,
 			       int count)
@@ -79,9 +79,9 @@ NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
 		return NT_STATUS_OK;
 	}
 
-	if (signing_key.length == 0) {
-		DEBUG(2,("Wrong session key length %u for SMB2 signing\n",
-			 (unsigned)signing_key.length));
+	if (!smb2_signing_key_valid(signing_key)) {
+		DBG_WARNING("Wrong session key length %zu for SMB2 signing\n",
+			    signing_key->blob.length);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -93,7 +93,9 @@ NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
 		struct aes_cmac_128_context ctx;
 		uint8_t key[AES_BLOCK_SIZE] = {0};
 
-		memcpy(key, signing_key.data, MIN(signing_key.length, 16));
+		memcpy(key,
+		       signing_key->blob.data,
+		       MIN(signing_key->blob.length, 16));
 
 		aes_cmac_128_init(&ctx, key);
 		for (i=0; i < count; i++) {
@@ -105,28 +107,28 @@ NTSTATUS smb2_signing_sign_pdu(DATA_BLOB signing_key,
 
 		ZERO_ARRAY(key);
 	} else {
-		gnutls_hmac_hd_t hmac_hnd = NULL;
 		uint8_t digest[gnutls_hmac_get_len(GNUTLS_MAC_SHA256)];
 		int rc;
 
-		rc = gnutls_hmac_init(&hmac_hnd,
-				      GNUTLS_MAC_SHA256,
-				      signing_key.data,
-				      MIN(signing_key.length, 16));
-		if (rc < 0) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		for (i = 0; i < count; i++) {
-			rc = gnutls_hmac(hmac_hnd,
-					 vector[i].iov_base,
-					 vector[i].iov_len);
+		if (signing_key->hmac_hnd == NULL) {
+			rc = gnutls_hmac_init(&signing_key->hmac_hnd,
+					      GNUTLS_MAC_SHA256,
+					      signing_key->blob.data,
+					      MIN(signing_key->blob.length, 16));
 			if (rc < 0) {
-				gnutls_hmac_deinit(hmac_hnd, NULL);
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
-		gnutls_hmac_deinit(hmac_hnd, digest);
+
+		for (i = 0; i < count; i++) {
+			rc = gnutls_hmac(signing_key->hmac_hnd,
+					 vector[i].iov_base,
+					 vector[i].iov_len);
+			if (rc < 0) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+		gnutls_hmac_output(signing_key->hmac_hnd, digest);
 		memcpy(res, digest, sizeof(res));
 	}
 	DEBUG(5,("signed SMB2 message\n"));
