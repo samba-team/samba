@@ -1759,6 +1759,11 @@ static bool test_twrp_write(struct torture_context *tctx, struct smb2_tree *tree
 	torture_comment(tctx, "Testing timewarp (%s) (%s)\n", file, snapshot);
 
 	setenv("TZ", "GMT", 1);
+
+	/* strptime does not set tm.tm_isdst but mktime assumes DST is in
+	 * effect if it is greather than 1. */
+	ZERO_STRUCT(tm);
+
 	p = strptime(snapshot, "@GMT-%Y.%m.%d-%H.%M.%S", &tm);
 	torture_assert_goto(tctx, p != NULL, ret, done, "strptime\n");
 	torture_assert_goto(tctx, *p == '\0', ret, done, "strptime\n");
@@ -1858,6 +1863,11 @@ static bool test_twrp_stream(struct torture_context *tctx,
 	torture_assert_not_null_goto(tctx, buf, ret, done, "buf\n");
 
 	setenv("TZ", "GMT", 1);
+
+	/* strptime does not set tm.tm_isdst but mktime assumes DST is in
+	 * effect if it is greather than 1. */
+	ZERO_STRUCT(tm);
+
 	p = strptime(snapshot, "@GMT-%Y.%m.%d-%H.%M.%S", &tm);
 	torture_assert_goto(tctx, p != NULL, ret, done, "strptime\n");
 	torture_assert_goto(tctx, *p == '\0', ret, done, "strptime\n");
