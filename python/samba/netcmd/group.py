@@ -35,6 +35,10 @@ from samba.dsdb import (
     GTYPE_DISTRIBUTION_UNIVERSAL_GROUP,
 )
 from collections import defaultdict
+from subprocess import check_call, CalledProcessError
+from samba.compat import get_bytes
+import os
+import tempfile
 
 security_group = dict({"Builtin": GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
                        "Domain": GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
@@ -691,12 +695,122 @@ class cmd_group_stats(Command):
         self.outf.write("\n* Note this does not include nested group memberships\n")
 
 
+class cmd_group_edit(Command):
+    """Modify Group AD object.
+
+    This command will allow editing of a group account in the Active Directory
+    domain. You will then be able to add or change attributes and their values.
+
+    The groupname specified on the command is the sAMAccountName.
+
+    The command may be run from the root userid or another authorized userid.
+
+    The -H or --URL= option can be used to execute the command against a remote
+    server.
+
+    Example1:
+    samba-tool group edit Group1 -H ldap://samba.samdom.example.com \\
+        -U administrator --password=passw1rd
+
+    Example1 shows how to edit a groups attributes in the domain against a
+    remote LDAP server.
+
+    The -H parameter is used to specify the remote target server.
+
+    Example2:
+    samba-tool group edit Group2
+
+    Example2 shows how to edit a groups attributes in the domain against a local
+    server.
+
+    Example3:
+    samba-tool group edit Group3 --editor=nano
+
+    Example3 shows how to edit a groups attributes in the domain against a local
+    server using the 'nano' editor.
+    """
+    synopsis = "%prog <groupname> [options]"
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
+        Option("--editor", help="Editor to use instead of the system default,"
+               " or 'vi' if no system default is set.", type=str),
+    ]
+
+    takes_args = ["groupname"]
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+    }
+
+    def run(self, groupname, credopts=None, sambaopts=None, versionopts=None,
+            H=None, editor=None):
+        from . import common
+
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp, fallback_machine=True)
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
+
+        filter = ("(&(sAMAccountName=%s)(objectClass=group))" % groupname)
+
+        domaindn = samdb.domain_dn()
+
+        try:
+            res = samdb.search(base=domaindn,
+                               expression=filter,
+                               scope=ldb.SCOPE_SUBTREE)
+            group_dn = res[0].dn
+        except IndexError:
+            raise CommandError('Unable to find group "%s"' % (groupname))
+
+        if len(res) != 1:
+            raise CommandError('Invalid number of results: for "%s": %d' %
+                               ((groupname), len(res)))
+
+        msg = res[0]
+        result_ldif = common.get_ldif_for_editor(samdb, msg)
+
+        if editor is None:
+            editor = os.environ.get('EDITOR')
+            if editor is None:
+                editor = 'vi'
+
+        with tempfile.NamedTemporaryFile(suffix=".tmp") as t_file:
+            t_file.write(get_bytes(result_ldif))
+            t_file.flush()
+            try:
+                check_call([editor, t_file.name])
+            except CalledProcessError as e:
+                raise CalledProcessError("ERROR: ", e)
+            with open(t_file.name) as edited_file:
+                edited_message = edited_file.read()
+
+        msgs_edited = samdb.parse_ldif(edited_message)
+        msg_edited = next(msgs_edited)[1]
+
+        res_msg_diff = samdb.msg_diff(msg, msg_edited)
+        if len(res_msg_diff) == 0:
+            self.outf.write("Nothing to do\n")
+            return
+
+        try:
+            samdb.modify(res_msg_diff)
+        except Exception as e:
+            raise CommandError("Failed to modify group '%s': " % groupname, e)
+
+        self.outf.write("Modified group '%s' successfully\n" % groupname)
+
+
 class cmd_group(SuperCommand):
     """Group management."""
 
     subcommands = {}
     subcommands["add"] = cmd_group_add()
     subcommands["delete"] = cmd_group_delete()
+    subcommands["edit"] = cmd_group_edit()
     subcommands["addmembers"] = cmd_group_add_members()
     subcommands["removemembers"] = cmd_group_remove_members()
     subcommands["list"] = cmd_group_list()
