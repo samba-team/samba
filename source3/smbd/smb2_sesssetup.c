@@ -323,10 +323,20 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	memcpy(session_key, session_info->session_key.data,
 	       MIN(session_info->session_key.length, sizeof(session_key)));
 
-	x->global->signing_key_blob = data_blob_talloc(x->global,
-						  session_key,
-						  sizeof(session_key));
-	if (x->global->signing_key_blob.data == NULL) {
+	x->global->signing_key = talloc_zero(x->global,
+					     struct smb2_signing_key);
+	if (x->global->signing_key == NULL) {
+		ZERO_STRUCT(session_key);
+		return NT_STATUS_NO_MEMORY;
+	}
+	/* TODO: setup destructor once we cache the hmac handle */
+
+	x->global->signing_key->blob =
+		x->global->signing_key_blob =
+			data_blob_talloc(x->global,
+					 session_key,
+					 sizeof(session_key));
+	if (!smb2_signing_key_valid(x->global->signing_key)) {
 		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -337,7 +347,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		smb2_key_derivation(session_key, sizeof(session_key),
 				    d->label.data, d->label.length,
 				    d->context.data, d->context.length,
-				    x->global->signing_key_blob.data);
+				    x->global->signing_key->blob.data);
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
@@ -402,11 +412,12 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	}
 
 	x->global->application_key =
-		data_blob_dup_talloc(x->global, x->global->signing_key_blob);
+		data_blob_dup_talloc(x->global, x->global->signing_key->blob);
 	if (x->global->application_key.data == NULL) {
 		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
 	}
+	talloc_keep_secret(x->global->application_key.data);
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.application;
@@ -425,8 +436,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		DEBUGADD(0, ("Session Key   "));
 		dump_data(0, session_key, sizeof(session_key));
 		DEBUGADD(0, ("Signing Key   "));
-		dump_data(0, x->global->signing_key_blob.data,
-			  x->global->signing_key_blob.length);
+		dump_data(0, x->global->signing_key->blob.data,
+			  x->global->signing_key->blob.length);
 		DEBUGADD(0, ("App Key       "));
 		dump_data(0, x->global->application_key.data,
 			  x->global->application_key.length);
@@ -443,12 +454,21 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 
 	ZERO_STRUCT(session_key);
 
-	x->global->channels[0].signing_key_blob =
-		data_blob_dup_talloc(x->global->channels,
-				     x->global->signing_key_blob);
-	if (x->global->channels[0].signing_key_blob.data == NULL) {
+	x->global->channels[0].signing_key =
+		talloc_zero(x->global->channels, struct smb2_signing_key);
+	if (x->global->channels[0].signing_key == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	/* TODO: setup destructor once we cache the hmac handle */
+
+	x->global->channels[0].signing_key->blob =
+		x->global->channels[0].signing_key_blob =
+			data_blob_dup_talloc(x->global->channels[0].signing_key,
+					     x->global->signing_key->blob);
+	if (!smb2_signing_key_valid(x->global->channels[0].signing_key)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_keep_secret(x->global->channels[0].signing_key->blob.data);
 
 	data_blob_clear_free(&session_info->session_key);
 	session_info->session_key = data_blob_dup_talloc(session_info,
@@ -456,6 +476,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	if (session_info->session_key.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	talloc_keep_secret(session_info->session_key.data);
 
 	session->compat = talloc_zero(session, struct user_struct);
 	if (session->compat == NULL) {
@@ -547,6 +568,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	if (session_info->session_key.data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	talloc_keep_secret(session_info->session_key.data);
 
 	session->compat->session_info = session_info;
 	session->compat->vuid = session->global->session_wire_id;
@@ -673,13 +695,23 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 	memcpy(session_key, session_info->session_key.data,
 	       MIN(session_info->session_key.length, sizeof(session_key)));
 
-	c->signing_key_blob = data_blob_talloc(x->global,
-					  session_key,
-					  sizeof(session_key));
-	if (c->signing_key_blob.data == NULL) {
+	c->signing_key = talloc_zero(x->global, struct smb2_signing_key);
+	if (c->signing_key == NULL) {
 		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
 	}
+	/* TODO: setup destructor once we cache the hmac handle */
+
+	c->signing_key->blob =
+		c->signing_key_blob =
+			data_blob_talloc(c->signing_key,
+					 session_key,
+					 sizeof(session_key));
+	if (!smb2_signing_key_valid(c->signing_key)) {
+		ZERO_STRUCT(session_key);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_keep_secret(c->signing_key->blob.data);
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.signing;
@@ -687,7 +719,7 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 		smb2_key_derivation(session_key, sizeof(session_key),
 				    d->label.data, d->label.length,
 				    d->context.data, d->context.length,
-				    c->signing_key_blob.data);
+				    c->signing_key->blob.data);
 	}
 	ZERO_STRUCT(session_key);
 
@@ -785,7 +817,7 @@ static struct tevent_req *smbd_smb2_session_setup_send(TALLOC_CTX *mem_ctx,
 						      smb2req->xconn,
 						      &c);
 		if (NT_STATUS_IS_OK(status)) {
-			if (c->signing_key_blob.length == 0) {
+			if (!smb2_signing_key_valid(c->signing_key)) {
 				goto auth;
 			}
 			tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);

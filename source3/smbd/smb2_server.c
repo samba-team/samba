@@ -1517,11 +1517,11 @@ static DATA_BLOB smbd_smb2_signing_key(struct smbXsrv_session *session,
 
 	status = smbXsrv_session_find_channel(session, xconn, &c);
 	if (NT_STATUS_IS_OK(status)) {
-		key = c->signing_key_blob;
+		key = c->signing_key->blob;
 	}
 
 	if (key.length == 0) {
-		key = session->global->signing_key_blob;
+		key = session->global->signing_key->blob;
 	}
 
 	return key;
