@@ -30,6 +30,7 @@ from selftesthelpers import smbget, smbcacls, smbcquotas, ntlm_auth3
 from selftesthelpers import valgrindify, smbtorture4_testsuites
 from selftesthelpers import smbtorture4_options
 from selftesthelpers import smbcontrol
+from selftesthelpers import smbstatus
 smbtorture4_options.extend([
     '--option=torture:sharedelay=100000',
    '--option=torture:writetimeupdatedelay=500000',
@@ -361,7 +362,10 @@ for env in ["fileserver"]:
                    '-d', '$PREFIX', '-b', smbclient3,
                    '--subunit', '--', configuration, '-mSMB3'])
 
-plantestsuite("samba3.blackbox.net_usershare", "fileserver:local", [os.path.join(samba3srcdir, "script/tests/test_net_usershare.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbclient3])
+for env in ["fileserver:local"]:
+    plantestsuite("samba3.blackbox.net_usershare", env, [os.path.join(samba3srcdir, "script/tests/test_net_usershare.sh"), '$SERVER', '$SERVER_IP', '$USERNAME', '$PASSWORD', smbclient3])
+
+    plantestsuite("samba3.blackbox.smbstatus", env, [os.path.join(samba3srcdir, "script/tests/test_smbstatus.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$USERNAME', '$PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, smbstatus, configuration, "SMB3"])
 
 # TODO encrypted against member, with member creds, and with DC creds
 plantestsuite("samba3.blackbox.net.misc", "nt4_dc:local",
