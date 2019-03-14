@@ -169,19 +169,41 @@ NTSTATUS smb2_signing_check_pdu(DATA_BLOB signing_key,
 
 		ZERO_ARRAY(key);
 	} else {
-		struct HMACSHA256Context m;
-		uint8_t digest[SHA256_DIGEST_LENGTH];
+		gnutls_hmac_hd_t hmac_hnd = NULL;
+		uint8_t digest[gnutls_hash_get_len(GNUTLS_MAC_SHA256)];
+		int rc;
 
-		ZERO_STRUCT(m);
-		hmac_sha256_init(signing_key.data, MIN(signing_key.length, 16), &m);
-		hmac_sha256_update(hdr, SMB2_HDR_SIGNATURE, &m);
-		hmac_sha256_update(zero_sig, 16, &m);
-		for (i=1; i < count; i++) {
-			hmac_sha256_update((const uint8_t *)vector[i].iov_base,
-					   vector[i].iov_len, &m);
+		rc = gnutls_hmac_init(&hmac_hnd,
+				      GNUTLS_MAC_SHA256,
+				      signing_key.data,
+				      MIN(signing_key.length, 16));
+		if (rc < 0) {
+			return NT_STATUS_NO_MEMORY;
 		}
-		hmac_sha256_final(digest, &m);
+
+		rc = gnutls_hmac(hmac_hnd, hdr, SMB2_HDR_SIGNATURE);
+		if (rc < 0) {
+			gnutls_hmac_deinit(hmac_hnd, NULL);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		rc = gnutls_hmac(hmac_hnd, zero_sig, 16);
+		if (rc < 0) {
+			gnutls_hmac_deinit(hmac_hnd, NULL);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		for (i = 1; i < count; i++) {
+			rc = gnutls_hmac(hmac_hnd,
+					 vector[i].iov_base,
+					 vector[i].iov_len);
+			if (rc < 0) {
+				gnutls_hmac_deinit(hmac_hnd, NULL);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+		}
+		gnutls_hmac_deinit(hmac_hnd, digest);
 		memcpy(res, digest, 16);
+		ZERO_ARRAY(digest);
 	}
 
 	if (memcmp_const_time(res, sig, 16) != 0) {
