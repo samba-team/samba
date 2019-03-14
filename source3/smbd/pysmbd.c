@@ -85,26 +85,18 @@ static int set_sys_acl_conn(const char *fname,
 {
 	int ret;
 	struct smb_filename *smb_fname = NULL;
-	mode_t saved_umask;
 
 	TALLOC_CTX *frame = talloc_stackframe();
-
-	/* we want total control over the permissions on created files,
-	   so set our umask to 0 */
-	saved_umask = umask(0);
 
 	smb_fname = synthetic_smb_fname_split(frame,
 					fname,
 					lp_posix_pathnames());
 	if (smb_fname == NULL) {
 		TALLOC_FREE(frame);
-		umask(saved_umask);
 		return -1;
 	}
 
 	ret = SMB_VFS_SYS_ACL_SET_FILE( conn, smb_fname, acltype, theacl);
-
-	umask(saved_umask);
 
 	TALLOC_FREE(frame);
 	return ret;
@@ -132,22 +124,26 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 	}
 	fsp->conn = conn;
 
-	/* we want total control over the permissions on created files,
-	   so set our umask to 0 */
-	saved_umask = umask(0);
-
 	smb_fname = synthetic_smb_fname_split(fsp,
 					      fname,
 					      lp_posix_pathnames());
 	if (smb_fname == NULL) {
-		umask(saved_umask);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	fsp->fsp_name = smb_fname;
+
+	/*
+	 * we want total control over the permissions on created files,
+	 * so set our umask to 0 (this matters if flags contains O_CREAT)
+	 */
+	saved_umask = umask(0);
+
 	fsp->fh->fd = SMB_VFS_OPEN(conn, smb_fname, fsp, flags, 00644);
+
+	umask(saved_umask);
+
 	if (fsp->fh->fd == -1) {
-		umask(saved_umask);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -157,7 +153,6 @@ static NTSTATUS init_files_struct(TALLOC_CTX *mem_ctx,
 		DEBUG(0,("Error doing fstat on open file %s (%s)\n",
 			 smb_fname_str_dbg(smb_fname),
 			 strerror(errno) ));
-		umask(saved_umask);
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -444,7 +439,6 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 	char *fname, *service = NULL;
 	int uid, gid;
 	TALLOC_CTX *frame;
-	mode_t saved_umask;
 	struct smb_filename *smb_fname = NULL;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sii|z",
@@ -460,10 +454,6 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 		return NULL;
 	}
 
-	/* we want total control over the permissions on created files,
-	   so set our umask to 0 */
-	saved_umask = umask(0);
-
 	smb_fname = synthetic_smb_fname(talloc_tos(),
 					fname,
 					NULL,
@@ -471,7 +461,6 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 					lp_posix_pathnames() ?
 						SMB_FILENAME_POSIX_PATH : 0);
 	if (smb_fname == NULL) {
-		umask(saved_umask);
 		TALLOC_FREE(frame);
 		errno = ENOMEM;
 		return PyErr_SetFromErrno(PyExc_OSError);
@@ -479,13 +468,10 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 
 	ret = SMB_VFS_CHOWN(conn, smb_fname, uid, gid);
 	if (ret != 0) {
-		umask(saved_umask);
 		TALLOC_FREE(frame);
 		errno = ret;
 		return PyErr_SetFromErrno(PyExc_OSError);
 	}
-
-	umask(saved_umask);
 
 	TALLOC_FREE(frame);
 
