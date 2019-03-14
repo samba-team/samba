@@ -32,6 +32,32 @@ unc="//$SERVER/tmp"
 UID_WRAPPER_ROOT=1
 export UID_WRAPPER_ROOT
 
+test_smbpasswd()
+{
+	user=$1
+	newpass=$2
+
+	echo "set password with smbpasswd"
+	tmpfile=$PREFIX/smbpasswd_change_password_script
+	cat > $tmpfile <<EOF
+expect New SMB password:
+send ${newpass}\n
+expect Retype new SMB password:
+send ${newpass}\n
+EOF
+
+	cmd='UID_WRAPPER_INITIAL_RUID=0 UID_WRAPPER_INITIAL_EUID=0 $texpect $tmpfile $smbpasswd -L $user -c $SMB_CONF'
+	eval echo "$cmd"
+	out=$(eval $cmd)
+	ret=$?
+	rm -f $tmpfile
+
+	if [ $ret -ne 0 ]; then
+		echo "Failed to change user password $user"
+		return 1
+	fi
+}
+
 testit "pdbtest" $VALGRIND $BINDIR/pdbtest -u $USER $@ || failed=`expr $failed + 1`
 
 NEWUSERPASS=testPaSS@01%
@@ -55,15 +81,10 @@ test_smbclient "Test login with user (ntlm)" 'ls' "$unc" -k no -U$USER%$NEWUSERP
 
 NEWUSERPASS=testPaSS@02%
 
-echo "set password with smbpasswd"
-cat > ./tmpsmbpasswdscript <<EOF
-expect New SMB password:
-send ${NEWUSERPASS}\n
-expect Retype new SMB password:
-send ${NEWUSERPASS}\n
-EOF
+testit "set user password with smbpasswd" \
+	test_smbpasswd $USER $NEWUSERPASS \
+	|| failed=$(expr $failed + 1)
 
-testit "set user password with smbpasswd" $texpect ./tmpsmbpasswdscript $smbpasswd -L $USER -c $SMB_CONF || failed=`expr $failed + 1`
 USERPASS=$NEWUSERPASS
 
 test_smbclient "Test login with user (ntlm)" 'ls' "$unc" -k no -U$USER%$NEWUSERPASS $@|| failed=`expr $failed + 1`

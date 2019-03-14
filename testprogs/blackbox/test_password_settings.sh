@@ -52,6 +52,31 @@ do_kinit() {
 	fi
 }
 
+test_smbpasswd()
+{
+	user=$1
+	newpass=$2
+
+	tmpfile=$PREFIX/smbpasswd_change_password_script
+	cat > $tmpfile <<EOF
+expect New SMB password:
+send ${newpass}\n
+expect Retype new SMB password:
+send ${newpass}\n
+EOF
+
+	cmd='UID_WRAPPER_INITIAL_RUID=0 UID_WRAPPER_INITIAL_EUID=0 $texpect $tmpfile $smbpasswd -L -c $PREFIX/etc/smb.conf $user'
+	eval echo "$cmd"
+	out=$(eval $cmd)
+	ret=$?
+	rm -f $tmpfile
+
+	if [ $ret -ne 0 ]; then
+		echo "Failed to change user password $user"
+		return 1
+	fi
+}
+
 UID_WRAPPER_ROOT=1
 export UID_WRAPPER_ROOT
 
@@ -139,15 +164,9 @@ rm -f $KRB5CCNAME_PATH
 ### Set the password with smbpasswd
 ###########################################################
 
-cat > $PREFIX/tmpsmbpasswdscript <<EOF
-expect New SMB password:
-send ${TEST_PASSWORD_NEW}\n
-expect Retype new SMB password:
-send ${TEST_PASSWORD_NEW}\n
-EOF
-
 testit "set user password with smbpasswd" \
-	$texpect $PREFIX/tmpsmbpasswdscript $smbpasswd -L -c $PREFIX/etc/smb.conf $TEST_USERNAME || failed=`expr $failed + 1`
+	test_smbpasswd $TEST_USERNAME $TEST_PASSWORD_NEW \
+	|| failed=$(expr $failed + 1)
 
 TEST_PASSWORD=$TEST_PASSWORD_NEW
 TEST_PASSWORD_NEW="testPaSS@03%"
