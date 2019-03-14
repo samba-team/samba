@@ -201,9 +201,20 @@ static void cli_posix_link_internal_done(struct tevent_req *subreq)
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
+static NTSTATUS cli_posix_link_internal_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
 /****************************************************************************
  Symlink a file (UNIX extensions).
 ****************************************************************************/
+
+struct cli_posix_symlink_state {
+	uint8_t dummy;
+};
+
+static void cli_posix_symlink_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -211,8 +222,28 @@ struct tevent_req *cli_posix_symlink_send(TALLOC_CTX *mem_ctx,
 					const char *link_target,
 					const char *newname)
 {
-	return cli_posix_link_internal_send(
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_posix_symlink_state *state = NULL;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_posix_symlink_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = cli_posix_link_internal_send(
 		mem_ctx, ev, cli, SMB_SET_FILE_UNIX_LINK, link_target, newname);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_posix_symlink_done, req);
+	return req;
+}
+
+static void cli_posix_symlink_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_posix_link_internal_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 NTSTATUS cli_posix_symlink_recv(struct tevent_req *req)
@@ -408,14 +439,40 @@ NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
  Hard link a file (UNIX extensions).
 ****************************************************************************/
 
+struct cli_posix_hardlink_state {
+	uint8_t dummy;
+};
+
+static void cli_posix_hardlink_done(struct tevent_req *subreq);
+
 struct tevent_req *cli_posix_hardlink_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,
 					const char *oldname,
 					const char *newname)
 {
-	return cli_posix_link_internal_send(
-		mem_ctx, ev, cli, SMB_SET_FILE_UNIX_HLINK, oldname, newname);
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_posix_hardlink_state *state = NULL;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_posix_hardlink_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = cli_posix_link_internal_send(
+		state, ev, cli, SMB_SET_FILE_UNIX_HLINK, oldname, newname);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_posix_hardlink_done, req);
+	return req;
+}
+
+static void cli_posix_hardlink_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_posix_link_internal_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 NTSTATUS cli_posix_hardlink_recv(struct tevent_req *req)
