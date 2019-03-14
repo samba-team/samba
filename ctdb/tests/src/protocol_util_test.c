@@ -52,6 +52,20 @@ static void test_sock_addr_from_string_bad(const char *ip, bool with_port)
 	assert(ret == EINVAL);
 }
 
+static void test_sock_addr_from_string_memcmp(const char *ip1,
+					      const char* ip2)
+{
+	ctdb_sock_addr sa1, sa2;
+	int ret;
+
+	ret = ctdb_sock_addr_from_string(ip1, &sa1, false);
+	assert(ret == 0);
+	ret = ctdb_sock_addr_from_string(ip2, &sa2, false);
+	assert(ret == 0);
+	ret = memcmp(&sa1, &sa2, sizeof(ctdb_sock_addr));
+	assert(ret == 0);
+}
+
 static void test_sock_addr_cmp(const char *ip1, const char *ip2,
 			       bool with_port, int res)
 {
@@ -298,6 +312,11 @@ int main(int argc, char *argv[])
 	test_sock_addr_from_string_bad("fe80::6af7:28ff:fefa:d136", true);
 	test_sock_addr_from_string_bad("junk", false);
 	test_sock_addr_from_string_bad("0.0.0.0:0 trailing junk", true);
+
+	test_sock_addr_from_string_memcmp("127.0.0.1", "127.0.0.1");
+	test_sock_addr_from_string_memcmp("fe80::6af7:28ff:fefa:d136",
+					  "fe80::6af7:28ff:fefa:d136");
+	test_sock_addr_from_string_memcmp("::ffff:192.0.2.128", "192.0.2.128");
 
 	test_sock_addr_cmp("127.0.0.1", "127.0.0.1" , false, 0);
 	test_sock_addr_cmp("127.0.0.1", "127.0.0.2" , false, -1);
