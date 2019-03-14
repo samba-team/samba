@@ -852,6 +852,9 @@ static struct tevent_req *tstream_npa_writev_send(TALLOC_CTX *mem_ctx,
 
 		msg_len = 0;
 		for (i=0; i < count; i++) {
+			/*
+			 * overflow check already done in tstream_writev_send
+			 */
 			msg_len += vector[i].iov_len;
 		}
 
