@@ -140,7 +140,8 @@ if version is None:
     for i in range(MAX_IFACE_VERSION):
         try:
             conn = ClientConnection(binding, (uuid, i))
-        except RuntimeError, (num, msg):
+        except RuntimeError as e:
+            num, msg = e.args
             if num == NT_STATUS_NET_WRITE_FAULT:
                 continue
             raise
