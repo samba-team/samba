@@ -154,7 +154,7 @@ struct smb2cli_session {
 	struct smb2_signing_key *signing_key;
 	bool should_sign;
 	bool should_encrypt;
-	DATA_BLOB encryption_key;
+	struct smb2_signing_key *encryption_key;
 	DATA_BLOB decryption_key;
 	uint64_t nonce_high_random;
 	uint64_t nonce_high_max;
@@ -3091,7 +3091,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	struct iovec *iov;
 	int i, num_iov, nbt_len;
 	int tf_iov = -1;
-	const DATA_BLOB *encryption_key = NULL;
+	const struct smb2_signing_key *encryption_key = NULL;
 	uint64_t encryption_session_id = 0;
 	uint64_t nonce_high = UINT64_MAX;
 	uint64_t nonce_low = UINT64_MAX;
@@ -3138,8 +3138,8 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 			continue;
 		}
 
-		encryption_key = &state->session->smb2->encryption_key;
-		if (encryption_key->length == 0) {
+		encryption_key = state->session->smb2->encryption_key;
+		if (!smb2_signing_key_valid(encryption_key)) {
 			return NT_STATUS_INVALID_PARAMETER_MIX;
 		}
 
@@ -3380,7 +3380,7 @@ skip_credits:
 			buf += v->iov_len;
 		}
 
-		status = smb2_signing_encrypt_pdu(*encryption_key,
+		status = smb2_signing_encrypt_pdu(encryption_key->blob,
 					state->conn->smb2.server.cipher,
 					&iov[tf_iov], num_iov - tf_iov);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -5724,11 +5724,11 @@ NTSTATUS smb2cli_session_encryption_key(struct smbXcli_session *session,
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	if (session->smb2->encryption_key.length == 0) {
+	if (!smb2_signing_key_valid(session->smb2->encryption_key)) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	*key = data_blob_dup_talloc(mem_ctx, session->smb2->encryption_key);
+	*key = data_blob_dup_talloc(mem_ctx, session->smb2->encryption_key->blob);
 	if (key->data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -6122,9 +6122,18 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	}
 
 	session->smb2->encryption_key =
-		data_blob_dup_talloc(session,
+		talloc_zero(session, struct smb2_signing_key);
+	if (session->smb2->encryption_key == NULL) {
+		ZERO_STRUCT(session_key);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(session->smb2->encryption_key,
+			      smb2_signing_key_destructor);
+
+	session->smb2->encryption_key->blob =
+		data_blob_dup_talloc(session->smb2->encryption_key,
 				     session->smb2->signing_key->blob);
-	if (session->smb2->encryption_key.data == NULL) {
+	if (!smb2_signing_key_valid(session->smb2->encryption_key)) {
 		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -6135,7 +6144,7 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     session->smb2->encryption_key.data);
+					     session->smb2->encryption_key->blob.data);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
