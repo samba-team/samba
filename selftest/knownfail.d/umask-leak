@@ -1,3 +1,0 @@
-^samba.tests.ntacls_backup.samba.tests.ntacls_backup.NtaclsBackupRestoreTests.test_smbd_create_file
-^samba.tests.ntacls_backup.samba.tests.ntacls_backup.NtaclsBackupRestoreTests.test_backup_online
-^samba.tests.ntacls_backup.samba.tests.ntacls_backup.NtaclsBackupRestoreTests.test_backup_offline
