@@ -33,7 +33,7 @@
 /* change this when we change something in our schema code that
  * requires a re-index of the database
  */
-#define SAMDB_INDEXING_VERSION "2"
+#define SAMDB_INDEXING_VERSION "3"
 
 /*
   override the name to attribute handler function

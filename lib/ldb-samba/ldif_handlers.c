@@ -835,6 +835,50 @@ static int ldif_canonicalise_int32(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
+/* Lexicographically sorted representation for a 32-bit integer */
+static int ldif_index_format_int32(struct ldb_context *ldb,
+				    void *mem_ctx,
+				    const struct ldb_val *in,
+				    struct ldb_val *out)
+{
+	int32_t i;
+	int ret;
+	char prefix;
+	size_t len;
+
+	ret = val_to_int32(in, &i);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (i < 0) {
+		prefix = 'n';
+		i = INT32_MAX + i + 1;
+	} else if (i > 0) {
+		prefix = 'p';
+	} else {
+		prefix = 'o';
+	}
+
+	out->data = (uint8_t *) talloc_asprintf(mem_ctx, "%c%010ld", prefix, (long)i);
+	if (out->data == NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	len = talloc_array_length(out->data) - 1;
+	if (len != 11) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  __location__ ": expected index format str %s to"
+			  " have length 11 but got %zu",
+			  (char*)out->data, len);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	out->length = 11;
+	return 0;
+}
+
 /* Comparison of two 32-bit integers */
 static int ldif_comparison_int32(struct ldb_context *ldb, void *mem_ctx,
 				 const struct ldb_val *v1, const struct ldb_val *v2)
@@ -1427,6 +1471,7 @@ static const struct ldb_schema_syntax samba_syntaxes[] = {
 		.ldif_read_fn	  = ldb_handler_copy,
 		.ldif_write_fn	  = ldb_handler_copy,
 		.canonicalise_fn  = ldif_canonicalise_int32,
+		.index_format_fn  = ldif_index_format_int32,
 		.comparison_fn	  = ldif_comparison_int32,
 		.operator_fn      = samba_syntax_operator_fn
 	},{

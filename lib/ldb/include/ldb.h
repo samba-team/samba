@@ -478,6 +478,12 @@ const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_c
 #define LDB_SYNTAX_INTEGER              "1.3.6.1.4.1.1466.115.121.1.27"
 
 /**
+  Custom attribute syntax for an integer whose index is lexicographically
+  ordered by attribute value in the database.
+*/
+#define LDB_SYNTAX_ORDERED_INTEGER      "LDB_SYNTAX_ORDERED_INTEGER"
+
+/**
   LDAP attribute syntax for a boolean
 
   This is the well-known LDAP attribute syntax for a boolean.

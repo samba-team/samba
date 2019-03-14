@@ -2541,7 +2541,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 		.validate_ldb		= dsdb_syntax_INT64_validate_ldb,
 		.equality               = "integerMatch",
 		.comment                = "Large Integer",
-		.ldb_syntax             = LDB_SYNTAX_INTEGER,
+		.ldb_syntax             = LDB_SYNTAX_ORDERED_INTEGER,
 		.auto_normalise		= true
 	},{
 		.name			= "String(NT-Sec-Desc)",
