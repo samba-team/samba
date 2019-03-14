@@ -386,7 +386,7 @@ NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
+NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 				  uint16_t cipher_id,
 				  struct iovec *vector,
 				  int count)
@@ -400,7 +400,6 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 	uint32_t tag_size = 0;
 	uint8_t _key[16] = {0};
 	gnutls_cipher_algorithm_t algo = 0;
-	gnutls_aead_cipher_hd_t cipher_hnd = NULL;
 	gnutls_datum_t key;
 	gnutls_datum_t iv;
 	NTSTATUS status;
@@ -416,9 +415,9 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 
 	tf = (uint8_t *)vector[0].iov_base;
 
-	if (encryption_key.length == 0) {
-		DEBUG(2,("Wrong encryption key length %u for SMB2 signing\n",
-			 (unsigned)encryption_key.length));
+	if (!smb2_signing_key_valid(encryption_key)) {
+		DBG_WARNING("Wrong encryption key length %zu for SMB2 signing\n",
+			    encryption_key->blob.length);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -458,20 +457,22 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 	};
 
 	memcpy(key.data,
-	       encryption_key.data,
-	       MIN(encryption_key.length, key.size));
+	       encryption_key->blob.data,
+	       MIN(encryption_key->blob.length, key.size));
 
 	iv = (gnutls_datum_t) {
 		.data = tf + SMB2_TF_NONCE,
 		.size = iv_size,
 	};
 
-	rc = gnutls_aead_cipher_init(&cipher_hnd,
-				algo,
-				&key);
-	if (rc < 0) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
+	if (encryption_key->cipher_hnd == NULL) {
+		rc = gnutls_aead_cipher_init(&encryption_key->cipher_hnd,
+					algo,
+					&key);
+		if (rc < 0) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
 	}
 
 	memset(tf + SMB2_TF_NONCE + iv_size,
@@ -487,14 +488,12 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 
 		ptext = talloc_size(talloc_tos(), ptext_size);
 		if (ptext == NULL) {
-			gnutls_aead_cipher_deinit(cipher_hnd);
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
 
 		ctext = talloc_size(talloc_tos(), ctext_size);
 		if (ctext == NULL) {
-			gnutls_aead_cipher_deinit(cipher_hnd);
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
@@ -508,13 +507,12 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 			if (len > ptext_size) {
 				TALLOC_FREE(ptext);
 				TALLOC_FREE(ctext);
-				gnutls_aead_cipher_deinit(cipher_hnd);
 				status = NT_STATUS_INTERNAL_ERROR;
 				goto out;
 			}
 		}
 
-		rc = gnutls_aead_cipher_encrypt(cipher_hnd,
+		rc = gnutls_aead_cipher_encrypt(encryption_key->cipher_hnd,
 						iv.data,
 						iv.size,
 						tf + SMB2_TF_NONCE,
@@ -528,7 +526,6 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 			DBG_ERR("ERROR: %s\n", gnutls_strerror(rc));
 			TALLOC_FREE(ptext);
 			TALLOC_FREE(ctext);
-			gnutls_aead_cipher_deinit(cipher_hnd);
 			status = NT_STATUS_INTERNAL_ERROR;
 			goto out;
 		}
@@ -547,7 +544,6 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 		TALLOC_FREE(ptext);
 		TALLOC_FREE(ctext);
 	}
-	gnutls_aead_cipher_deinit(cipher_hnd);
 
 	DBG_INFO("Enencrypted SMB2 message\n");
 

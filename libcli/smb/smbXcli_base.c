@@ -3091,7 +3091,7 @@ NTSTATUS smb2cli_req_compound_submit(struct tevent_req **reqs,
 	struct iovec *iov;
 	int i, num_iov, nbt_len;
 	int tf_iov = -1;
-	const struct smb2_signing_key *encryption_key = NULL;
+	struct smb2_signing_key *encryption_key = NULL;
 	uint64_t encryption_session_id = 0;
 	uint64_t nonce_high = UINT64_MAX;
 	uint64_t nonce_low = UINT64_MAX;
@@ -3380,7 +3380,7 @@ skip_credits:
 			buf += v->iov_len;
 		}
 
-		status = smb2_signing_encrypt_pdu(encryption_key->blob,
+		status = smb2_signing_encrypt_pdu(encryption_key,
 					state->conn->smb2.server.cipher,
 					&iov[tf_iov], num_iov - tf_iov);
 		if (!NT_STATUS_IS_OK(status)) {

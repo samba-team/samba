@@ -1336,10 +1336,14 @@ static NTSTATUS smb2_send_async_interim_response(const struct smbd_smb2_request 
 	 * we need to sign/encrypt here with the last/first key we remembered
 	 */
 	if (firsttf->iov_len == SMB2_TF_HDR_SIZE) {
-		status = smb2_signing_encrypt_pdu(req->first_key,
+		struct smb2_signing_key key = {
+			.blob = req->first_key,
+		};
+		status = smb2_signing_encrypt_pdu(&key,
 					xconn->smb2.server.cipher,
 					firsttf,
 					nreq->out.vector_count - first_idx);
+		smb2_signing_key_destructor(&key);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -1739,7 +1743,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 		struct smbXsrv_session *x = req->session;
 		struct smb2_signing_key *encryption_key = x->global->encryption_key;
 
-		status = smb2_signing_encrypt_pdu(encryption_key->blob,
+		status = smb2_signing_encrypt_pdu(encryption_key,
 					xconn->smb2.server.cipher,
 					&state->vector[1+SMBD_SMB2_TF_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ);
@@ -2994,10 +2998,14 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	 * now check if we need to sign the current response
 	 */
 	if (firsttf->iov_len == SMB2_TF_HDR_SIZE) {
-		status = smb2_signing_encrypt_pdu(req->first_key,
+		struct smb2_signing_key key = {
+			.blob = req->first_key,
+		};
+		status = smb2_signing_encrypt_pdu(&key,
 					xconn->smb2.server.cipher,
 					firsttf,
 					req->out.vector_count - first_idx);
+		smb2_signing_key_destructor(&key);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -3419,7 +3427,7 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 		struct smb2_signing_key *encryption_key =
 			session->global->encryption_key;
 
-		status = smb2_signing_encrypt_pdu(encryption_key->blob,
+		status = smb2_signing_encrypt_pdu(encryption_key,
 					xconn->smb2.server.cipher,
 					&state->vector[1+SMBD_SMB2_TF_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ);
