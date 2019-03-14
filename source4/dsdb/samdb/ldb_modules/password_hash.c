@@ -1484,6 +1484,7 @@ static int setup_primary_userPassword_hash(
 	 * Relies on the assertion that cleartext_utf8->data is a zero
 	 * terminated UTF-8 string
 	 */
+	errno = 0;
 #ifdef HAVE_CRYPT_R
 	hash = crypt_r((char *)io->n.cleartext_utf8->data, cmd, &crypt_data);
 #else
@@ -1493,7 +1494,10 @@ static int setup_primary_userPassword_hash(
 	 */
 	hash = crypt((char *)io->n.cleartext_utf8->data, cmd);
 #endif
-	if (hash == NULL) {
+	/* crypt_r and crypt may return a null pointer upon error depending on
+	 * how libcrypt was configured. POSIX specifies returning a null
+	 * pointer and setting errno. */
+	if (hash == NULL || errno != 0) {
 		char buf[1024];
 		int err = strerror_r(errno, buf, sizeof(buf));
 		if (err != 0) {
