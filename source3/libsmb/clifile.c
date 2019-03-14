@@ -1311,16 +1311,9 @@ static struct tevent_req *cli_ntrename_internal_send(TALLOC_CTX *mem_ctx,
 
 static void cli_ntrename_internal_done(struct tevent_req *subreq)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-				subreq, struct tevent_req);
-	NTSTATUS status;
-
-	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
-	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-	tevent_req_done(req);
+	NTSTATUS status = cli_smb_recv(
+		subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 static NTSTATUS cli_ntrename_internal_recv(struct tevent_req *req)
