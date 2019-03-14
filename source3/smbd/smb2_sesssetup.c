@@ -373,18 +373,28 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.decryption;
 
-		x->global->decryption_key_blob = data_blob_talloc(x->global,
-							     session_key,
-							     sizeof(session_key));
-		if (x->global->decryption_key_blob.data == NULL) {
+		x->global->decryption_key =
+			talloc_zero(x->global, struct smb2_signing_key);
+		if (x->global->decryption_key == NULL) {
 			ZERO_STRUCT(session_key);
 			return NT_STATUS_NO_MEMORY;
 		}
 
+		x->global->decryption_key->blob =
+			x->global->decryption_key_blob =
+				data_blob_talloc(x->global->decryption_key,
+						 session_key,
+						 sizeof(session_key));
+		if (!smb2_signing_key_valid(x->global->decryption_key)) {
+			ZERO_STRUCT(session_key);
+			return NT_STATUS_NO_MEMORY;
+		}
+		talloc_keep_secret(x->global->decryption_key->blob.data);
+
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     x->global->decryption_key_blob.data);
+					     x->global->decryption_key->blob.data);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -484,8 +494,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		/* In server code, ServerIn is the decryption key */
 
 		DEBUGADD(0, ("ServerIn Key  "));
-		dump_data(0, x->global->decryption_key_blob.data,
-			  x->global->decryption_key_blob.length);
+		dump_data(0, x->global->decryption_key->blob.data,
+			  x->global->decryption_key->blob.length);
 		DEBUGADD(0, ("ServerOut Key "));
 		dump_data(0, x->global->encryption_key->blob.data,
 			  x->global->encryption_key->blob.length);

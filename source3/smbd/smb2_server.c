@@ -432,7 +432,7 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *xconn,
 			tf_iov[1].iov_base = (void *)hdr;
 			tf_iov[1].iov_len = enc_len;
 
-			status = smb2_signing_decrypt_pdu(s->global->decryption_key_blob,
+			status = smb2_signing_decrypt_pdu(s->global->decryption_key->blob,
 							  xconn->smb2.server.cipher,
 							  tf_iov, 2);
 			if (!NT_STATUS_IS_OK(status)) {
