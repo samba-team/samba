@@ -108,7 +108,7 @@ interface auth
 
 	        /*
 		 * It is really handy to have our authorization code log a
-		 * token that can be used to tie later requests togeather.
+		 * token that can be used to tie later requests together.
 		 * We generate this in auth_generate_session_info()
 		 */
 	        GUID unique_session_token;
