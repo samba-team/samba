@@ -304,60 +304,6 @@ static bool open_smb2_connection_no_level2_oplocks(struct torture_context *tctx,
 	return true;
 }
 
-/*
-   Timer handler function notifies the registering function that time is up
-*/
-static void timeout_cb(struct tevent_context *ev,
-		       struct tevent_timer *te,
-		       struct timeval current_time,
-		       void *private_data)
-{
-	bool *timesup = (bool *)private_data;
-	*timesup = true;
-	return;
-}
-
-/*
-   Wait a short period of time to receive a single oplock break request
-*/
-static void torture_wait_for_oplock_break(struct torture_context *tctx)
-{
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
-	struct tevent_timer *te = NULL;
-	struct timeval ne;
-	bool timesup = false;
-	int old_count = break_info.count;
-
-	/* Wait .1 seconds for an oplock break */
-	ne = tevent_timeval_current_ofs(0, 100000);
-
-	if ((te = tevent_add_timer(tctx->ev, tmp_ctx, ne, timeout_cb, &timesup))
-	    == NULL)
-	{
-		torture_comment(tctx, "Failed to wait for an oplock break. "
-				      "test results may not be accurate.");
-		goto done;
-	}
-
-	while (!timesup && break_info.count < old_count + 1) {
-		if (tevent_loop_once(tctx->ev) != 0) {
-			torture_comment(tctx, "Failed to wait for an oplock "
-					      "break. test results may not be "
-					      "accurate.");
-			goto done;
-		}
-	}
-
-done:
-	/* We don't know if the timed event fired and was freed, we received
-	 * our oplock break, or some other event triggered the loop.  Thus,
-	 * we create a tmp_ctx to be able to safely free/remove the timed
-	 * event in all 3 cases. */
-	talloc_free(tmp_ctx);
-
-	return;
-}
-
 static bool test_smb2_oplock_exclusive1(struct torture_context *tctx,
 					struct smb2_tree *tree1,
 					struct smb2_tree *tree2)

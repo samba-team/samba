@@ -40,6 +40,7 @@ bool torture_oplock_ack_handler(struct smb2_transport *transport,
 				const struct smb2_handle *handle,
 				uint8_t level,
 				void *private_data);
+void torture_wait_for_oplock_break(struct torture_context *tctx);
 
 static inline void torture_reset_break_info(struct torture_context *tctx,
 			      struct break_info *r)
