@@ -2387,6 +2387,7 @@ force_user:x:$gid_force_user:
 	$ret{SMBD_TEST_LOG} = "$prefix/smbd_test.log";
 	$ret{SMBD_TEST_LOG_POS} = 0;
 	$ret{SERVERCONFFILE} = $conffile;
+	$ret{TESTENV_DIR} = $prefix_abs;
 	$ret{CONFIGURATION} ="-s $conffile";
 	$ret{LOCK_DIR} = $lockdir;
 	$ret{SERVER} = $server;

@@ -376,8 +376,8 @@ sub setup_dns_hub_internal($$$)
 	$env->{SERVER_IPV6} = Samba::get_ipv6_addr($hostname);
 	$env->{SOCKET_WRAPPER_DEFAULT_IFACE} = Samba::get_interface($hostname);
 	$env->{DNS_HUB_LOG} = "$prefix_abs/dns_hub.log";
-
 	$env->{RESOLV_CONF} = "$prefix_abs/resolv.conf";
+	$env->{TESTENV_DIR} = $prefix_abs;
 
 	open(RESOLV_CONF, ">$env->{RESOLV_CONF}");
 	print RESOLV_CONF "nameserver $env->{SERVER_IP}\n";
@@ -916,6 +916,7 @@ nogroup:x:65534:nobody
 		PRIVATEDIR => $ctx->{privatedir},
 		BINDDNSDIR => $ctx->{binddnsdir},
 		SERVERCONFFILE => $ctx->{smb_conf},
+		TESTENV_DIR => $ctx->{prefix_abs},
 		CONFIGURATION => $configuration,
 		SOCKET_WRAPPER_DEFAULT_IFACE => $ctx->{swiface},
 		NSS_WRAPPER_PASSWD => $ctx->{nsswrap_passwd},
