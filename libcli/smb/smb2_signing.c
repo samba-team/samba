@@ -35,6 +35,11 @@ int smb2_signing_key_destructor(struct smb2_signing_key *key)
 		key->hmac_hnd = NULL;
 	}
 
+	if (key->cipher_hnd != NULL) {
+		gnutls_aead_cipher_deinit(key->cipher_hnd);
+		key->cipher_hnd = NULL;
+	}
+
 	return 0;
 }
 
