@@ -16,6 +16,13 @@ PASSWORD="$3"
 STpath=$(pwd)
 . $STpath/testprogs/blackbox/subunit.sh
 
+display_name="Björn"
+display_name_b64="QmrDtnJu"
+display_name_new="Renamed Bjoern"
+# attribute value including control character
+# echo -e "test \a string" | base64
+display_name_con_b64="dGVzdCAHIHN0cmluZwo="
+
 tmpeditor=$(mktemp --suffix .sh -p $STpath/bin samba-tool-editor-XXXXXXXX)
 chmod +x $tmpeditor
 
@@ -39,6 +46,89 @@ EOF
 	-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
+# Test edit user - add base64 attributes
+add_attribute_base64() {
+	# create editor.sh
+	cat >$tmpeditor <<EOF
+#!/usr/bin/env bash
+user_ldif="\$1"
+
+grep -v '^$' \$user_ldif > \${user_ldif}.tmp
+echo "displayName:: $display_name_b64" >> \${user_ldif}.tmp
+
+mv \${user_ldif}.tmp \$user_ldif
+EOF
+
+	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user edit \
+		sambatool1 --editor=$tmpeditor \
+		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
+}
+
+get_attribute_base64() {
+	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user show \
+		sambatool1 --attributes=displayName \
+		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
+}
+
+delete_attribute() {
+	# create editor.sh
+	cat >$tmpeditor <<EOF
+#!/usr/bin/env bash
+user_ldif="\$1"
+
+grep -v '^displayName' \$user_ldif >> \${user_ldif}.tmp
+mv \${user_ldif}.tmp \$user_ldif
+EOF
+	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user edit \
+		sambatool1 --editor=$tmpeditor \
+		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
+}
+
+# Test edit user - add base64 attribute value including control character
+add_attribute_base64_control() {
+	# create editor.sh
+	cat >$tmpeditor <<EOF
+#!/usr/bin/env bash
+user_ldif="\$1"
+
+grep -v '^$' \$user_ldif > \${user_ldif}.tmp
+echo "displayName:: $display_name_con_b64" >> \${user_ldif}.tmp
+
+mv \${user_ldif}.tmp \$user_ldif
+EOF
+	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user edit \
+		sambatool1 --editor=$tmpeditor \
+		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
+}
+
+get_attribute_base64_control() {
+	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user show \
+		sambatool1 --attributes=displayName \
+		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
+}
+
+
+# Test edit user - change base64 attribute value including control character
+change_attribute_base64_control() {
+	# create editor.sh
+	cat >$tmpeditor <<EOF
+#!/usr/bin/env bash
+user_ldif="\$1"
+
+sed -i -e 's/displayName:: $display_name_con_b64/displayName: $display_name/' \
+	\$user_ldif
+EOF
+	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user edit \
+		sambatool1 --editor=$tmpeditor \
+		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
+}
+
+get_attribute_base64_control() {
+	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user show \
+		sambatool1 --attributes=displayName \
+		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
+}
+
 delete_user() {
 	$PYTHON ${STpath}/source4/scripting/bin/samba-tool \
 		user delete sambatool1 \
@@ -49,6 +139,13 @@ failed=0
 
 testit "create_test_user" create_test_user || failed=`expr $failed + 1`
 testit "edit_user" edit_user || failed=`expr $failed + 1`
+testit "add_attribute_base64" add_attribute_base64 || failed=`expr $failed + 1`
+testit_grep "get_attribute_base64" "^displayName:: $display_name_b64" get_attribute_base64 || failed=`expr $failed + 1`
+testit "delete_attribute" delete_attribute || failed=`expr $failed + 1`
+testit "add_attribute_base64_control" add_attribute_base64_control || failed=`expr $failed + 1`
+testit_grep "get_attribute_base64_control" "^displayName:: $display_name_con_b64" get_attribute_base64_control || failed=`expr $failed + 1`
+testit "change_attribute_base64_control" change_attribute_base64_control || failed=`expr $failed + 1`
+testit_grep "get_attribute_base64_control" "^displayName:: $display_name_b64" get_attribute_base64_control || failed=`expr $failed + 1`
 testit "delete_user" delete_user || failed=`expr $failed + 1`
 
 rm -f $tmpeditor
