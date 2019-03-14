@@ -21,6 +21,7 @@
 %{
 	#include "includes.h"
 	#include "rpc_server/mdssvc/mdssvc.h"
+	#include "rpc_server/mdssvc/mdssvc_tracker.h"
 	#include "rpc_server/mdssvc/sparql_parser.tab.h"
 	#include "rpc_server/mdssvc/sparql_mapping.h"
 
@@ -446,6 +447,8 @@ int mdsyywrap(void)
  **/
 bool map_spotlight_to_sparql_query(struct sl_query *slq)
 {
+	struct sl_tracker_query *tq = talloc_get_type_abort(
+		slq->backend_private, struct sl_tracker_query);
 	struct sparql_parser_state s = {
 		.frame = talloc_stackframe(),
 		.var = 'a',
@@ -467,12 +470,12 @@ bool map_spotlight_to_sparql_query(struct sl_query *slq)
 		return false;
 	}
 
-	slq->sparql_query = talloc_asprintf(slq,
+	tq->sparql_query = talloc_asprintf(slq,
 		"SELECT ?url WHERE { %s . ?obj nie:url ?url . "
 		"FILTER(tracker:uri-is-descendant('file://%s/', ?url)) }",
-		s.result, slq->path_scope);
+		s.result, tq->path_scope);
 	TALLOC_FREE(s.frame);
-	if (slq->sparql_query == NULL) {
+	if (tq->sparql_query == NULL) {
 		return false;
 	}
 

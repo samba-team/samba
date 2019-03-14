@@ -149,6 +149,9 @@ rpc_mdssvc_sources = '''
                      ../../librpc/gen_ndr/srv_mdssvc.c
                      '''
 
+if bld.CONFIG_SET('HAVE_TRACKER'):
+    rpc_mdssvc_sources += ' mdssvc/mdssvc_tracker.c'
+
 bld.SAMBA3_MODULE('rpc_mdssvc_module',
                   subsystem='rpc',
                   allow_undefined_symbols=True,

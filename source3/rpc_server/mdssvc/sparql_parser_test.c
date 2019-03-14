@@ -1,6 +1,7 @@
 #include "includes.h"
 #include "mdssvc.h"
 #include "rpc_server/mdssvc/sparql_parser.tab.h"
+#include "rpc_server/mdssvc/mdssvc_tracker.h"
 
 /*
  * Examples:
@@ -13,6 +14,7 @@
 
 int main(int argc, char **argv)
 {
+	struct sl_tracker_query *tq = NULL;
 	bool ok;
 	struct sl_query *slq;
 
@@ -30,8 +32,15 @@ int main(int argc, char **argv)
 	slq->query_string = argv[1];
 	slq->path_scope = "/foo/bar";
 
+	tq = talloc_zero(slq, struct sl_tracker_query);
+	if (tq == NULL) {
+		printf("talloc error\n");
+		return 1;
+	}
+	slq->backend_private = tq;
+
 	ok = map_spotlight_to_sparql_query(slq);
-	printf("%s\n", ok ? slq->sparql_query : "*mapping failed*");
+	printf("%s\n", ok ? tq->sparql_query : "*mapping failed*");
 
 	talloc_free(slq);
 	return ok ? 0 : 1;

@@ -27,8 +27,7 @@
 #include "lib/dbwrap/dbwrap_rbt.h"
 #include "libcli/security/dom_sid.h"
 #include "mdssvc.h"
-#include "rpc_server/mdssvc/sparql_parser.tab.h"
-#include "lib/tevent_glib_glue.h"
+#include "mdssvc_tracker.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -73,29 +72,6 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 				   const DALLOC_CTX *query, DALLOC_CTX *reply);
 static bool slrpc_close_query(struct mds_ctx *mds_ctx,
 			      const DALLOC_CTX *query, DALLOC_CTX *reply);
-
-static struct tevent_req *slq_destroy_send(TALLOC_CTX *mem_ctx,
-					   struct tevent_context *ev,
-					   struct sl_query **slq)
-{
-	struct tevent_req *req;
-	struct slq_destroy_state *state;
-
-	req = tevent_req_create(mem_ctx, &state,
-				struct slq_destroy_state);
-	if (req == NULL) {
-		return NULL;
-	}
-	state->slq = talloc_move(state, slq);
-	tevent_req_done(req);
-
-	return tevent_req_post(req, ev);
-}
-
-static void slq_destroy_recv(struct tevent_req *req)
-{
-	tevent_req_received(req);
-}
 
 /************************************************
  * Misc utility functions
@@ -266,33 +242,6 @@ char *mds_dalloc_dump(DALLOC_CTX *dd, int nestinglevel)
 		return NULL;
 	}
 	return logstring;
-}
-
-static char *tracker_to_unix_path(TALLOC_CTX *mem_ctx, const char *uri)
-{
-	GFile *f;
-	char *path;
-	char *talloc_path;
-
-	f = g_file_new_for_uri(uri);
-	if (f == NULL) {
-		return NULL;
-	}
-
-	path = g_file_get_path(f);
-	g_object_unref(f);
-
-	if (path == NULL) {
-		return NULL;
-	}
-
-	talloc_path = talloc_strdup(mem_ctx, path);
-	g_free(path);
-	if (talloc_path == NULL) {
-		return NULL;
-	}
-
-	return talloc_path;
 }
 
 /**
@@ -583,16 +532,7 @@ static int slq_destructor_cb(struct sl_query *slq)
 		slq->mds_ctx = NULL;
 	}
 
-	if (slq->tracker_cursor != NULL) {
-		g_object_unref(slq->tracker_cursor);
-		slq->tracker_cursor = NULL;
-	}
-
-	if (slq->gcancellable != NULL) {
-		g_cancellable_cancel(slq->gcancellable);
-		g_object_unref(slq->gcancellable);
-		slq->gcancellable = NULL;
-	}
+	TALLOC_FREE(slq->backend_private);
 
 	return 0;
 }
@@ -701,98 +641,12 @@ static bool inode_map_add(struct sl_query *slq, uint64_t ino, const char *path)
 	return true;
 }
 
-/************************************************
- * Tracker async callbacks
- ************************************************/
-
-static void tracker_con_cb(GObject *object,
-			   GAsyncResult *res,
-			   gpointer user_data)
+bool mds_add_result(struct sl_query *slq, const char *path)
 {
-	struct mds_ctx *mds_ctx = talloc_get_type_abort(user_data, struct mds_ctx);
-	GError *error = NULL;
-
-	mds_ctx->tracker_con = tracker_sparql_connection_get_finish(res,
-								    &error);
-	if (error) {
-		DEBUG(1, ("Could not connect to Tracker: %s\n",
-			  error->message));
-		g_error_free(error);
-	}
-
-	DEBUG(10, ("connected to Tracker\n"));
-}
-
-static void tracker_cursor_cb_destroy_done(struct tevent_req *subreq);
-
-static void tracker_cursor_cb(GObject *object,
-			      GAsyncResult *res,
-			      gpointer user_data)
-{
-	GError *error = NULL;
-	struct sl_query *slq = talloc_get_type_abort(user_data, struct sl_query);
-	gboolean more_results;
-	const gchar *uri;
-	char *path;
-	int result;
 	struct stat_ex sb;
 	uint64_t ino64;
+	int result;
 	bool ok;
-	struct tevent_req *req;
-
-	SLQ_DEBUG(10, slq, "tracker_cursor_cb");
-
-	more_results = tracker_sparql_cursor_next_finish(slq->tracker_cursor,
-							 res,
-							 &error);
-
-	if (slq->state == SLQ_STATE_DONE) {
-		/*
-		 * The query was closed in slrpc_close_query(), so we
-		 * don't care for results or errors from
-		 * tracker_sparql_cursor_next_finish(), we just go
-		 * ahead and schedule deallocation of the slq handle.
-		 *
-		 * We have to shedule the deallocation via tevent,
-		 * because we have to unref the cursor glib object and
-		 * we can't do it here, because it's still used after
-		 * we return.
-		 */
-		SLQ_DEBUG(10, slq, "closed");
-
-		req = slq_destroy_send(slq, global_event_context(), &slq);
-		if (req == NULL) {
-			slq->state = SLQ_STATE_ERROR;
-			return;
-		}
-		tevent_req_set_callback(req, tracker_cursor_cb_destroy_done, NULL);
-		return;
-	}
-
-	if (error) {
-		DEBUG(1, ("Tracker cursor: %s\n", error->message));
-		g_error_free(error);
-		slq->state = SLQ_STATE_ERROR;
-		return;
-	}
-
-	if (!more_results) {
-		slq->state = SLQ_STATE_DONE;
-		return;
-	}
-
-	uri = tracker_sparql_cursor_get_string(slq->tracker_cursor, 0, NULL);
-	if (uri == NULL) {
-		DEBUG(1, ("error fetching Tracker URI\n"));
-		slq->state = SLQ_STATE_ERROR;
-		return;
-	}
-	path = tracker_to_unix_path(slq->query_results, uri);
-	if (path == NULL) {
-		DEBUG(1, ("error converting Tracker URI to path: %s\n", uri));
-		slq->state = SLQ_STATE_ERROR;
-		return;
-	}
 
 	/*
 	 * We're in a tevent callback which means in the case of
@@ -818,12 +672,12 @@ static void tracker_cursor_cb(GObject *object,
 	result = sys_stat(path, &sb, false);
 	if (result != 0) {
 		unbecome_authenticated_pipe_user();
-		goto done;
+		return true;
 	}
 	result = access(path, R_OK);
 	if (result != 0) {
 		unbecome_authenticated_pipe_user();
-		goto done;
+		return true;
 	}
 
 	unbecome_authenticated_pipe_user();
@@ -841,7 +695,7 @@ static void tracker_cursor_cb(GObject *object,
 			     sizeof(uint64_t),
 			     cnid_comp_fn);
 		if (!ok) {
-			goto done;
+			return false;
 		}
 	}
 
@@ -855,7 +709,7 @@ static void tracker_cursor_cb(GObject *object,
 	if (result != 0) {
 		DBG_ERR("dalloc error\n");
 		slq->state = SLQ_STATE_ERROR;
-		return;
+		return false;
 	}
 	ok = add_filemeta(slq->reqinfo,
 			  slq->query_results->fm_array,
@@ -864,73 +718,18 @@ static void tracker_cursor_cb(GObject *object,
 	if (!ok) {
 		DBG_ERR("add_filemeta error\n");
 		slq->state = SLQ_STATE_ERROR;
-		return;
+		return false;
 	}
 
 	ok = inode_map_add(slq, ino64, path);
 	if (!ok) {
 		DEBUG(1, ("inode_map_add error\n"));
 		slq->state = SLQ_STATE_ERROR;
-		return;
+		return false;
 	}
 
 	slq->query_results->num_results++;
-
-done:
-	if (slq->query_results->num_results >= MAX_SL_RESULTS) {
-		slq->state = SLQ_STATE_FULL;
-		SLQ_DEBUG(10, slq, "full");
-		return;
-	}
-
-	slq->state = SLQ_STATE_RESULTS;
-	SLQ_DEBUG(10, slq, "cursor next");
-	tracker_sparql_cursor_next_async(slq->tracker_cursor,
-					 slq->gcancellable,
-					 tracker_cursor_cb,
-					 slq);
-}
-
-static void tracker_cursor_cb_destroy_done(struct tevent_req *req)
-{
-	slq_destroy_recv(req);
-	TALLOC_FREE(req);
-
-	DEBUG(10, ("%s\n", __func__));
-}
-
-static void tracker_query_cb(GObject *object,
-			     GAsyncResult *res,
-			     gpointer user_data)
-{
-	GError *error = NULL;
-	struct sl_query *slq = talloc_get_type_abort(user_data, struct sl_query);
-
-	SLQ_DEBUG(10, slq, "tracker_query_cb");
-
-	slq->tracker_cursor = tracker_sparql_connection_query_finish(
-		TRACKER_SPARQL_CONNECTION(object),
-		res,
-		&error);
-	if (error) {
-		slq->state = SLQ_STATE_ERROR;
-		DEBUG(1, ("Tracker query error: %s\n", error->message));
-		g_error_free(error);
-		return;
-	}
-
-	if (slq->state == SLQ_STATE_DONE) {
-		SLQ_DEBUG(10, slq, "done");
-		talloc_free(slq);
-		return;
-	}
-
-	slq->state = SLQ_STATE_RESULTS;
-
-	tracker_sparql_cursor_next_async(slq->tracker_cursor,
-					 slq->gcancellable,
-					 tracker_cursor_cb,
-					 slq);
+	return true;
 }
 
 /***********************************************************
@@ -1141,16 +940,10 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 	int result;
 	char *querystring;
 	char *scope = NULL;
-	char *escaped_scope = NULL;
 
 	array = dalloc_zero(reply, sl_array_t);
 	if (array == NULL) {
 		return false;
-	}
-
-	if (mds_ctx->tracker_con == NULL) {
-		DEBUG(1, ("no connection to Tracker\n"));
-		goto error;
 	}
 
 	/* Allocate and initialize query object */
@@ -1174,12 +967,6 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 				   slq->expire_time, slq_close_timer, slq);
 	if (slq->te == NULL) {
 		DEBUG(1, ("tevent_add_timer failed\n"));
-		goto error;
-	}
-
-	slq->gcancellable = g_cancellable_new();
-	if (slq->gcancellable == NULL) {
-		DEBUG(1,("error from g_cancellable_new\n"));
 		goto error;
 	}
 
@@ -1225,15 +1012,7 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 		goto error;
 	}
 
-	escaped_scope = g_uri_escape_string(scope,
-					    G_URI_RESERVED_CHARS_ALLOWED_IN_PATH,
-					    TRUE);
-	if (escaped_scope == NULL) {
-		goto error;
-	}
-
-	slq->path_scope = talloc_strdup(slq, escaped_scope);
-	g_free(escaped_scope);
+	slq->path_scope = talloc_strdup(slq, scope);
 	if (slq->path_scope == NULL) {
 		goto error;
 	}
@@ -1267,31 +1046,11 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 
 	DLIST_ADD(mds_ctx->query_list, slq);
 
-	ok = map_spotlight_to_sparql_query(slq);
+	ok = mds_ctx->mdssvc_ctx->backend->search_start(slq);
 	if (!ok) {
-		/*
-		 * Two cases:
-		 *
-		 * 1) the query string is "false", the parser returns
-		 * an error for that. We're supposed to return -1
-		 * here.
-		 *
-		 * 2) the parsing really failed, in that case we're
-		 * probably supposed to return -1 too, this needs
-		 * verification though
-		 */
-		SLQ_DEBUG(10, slq, "map failed");
+		DBG_ERR("backend search_start failed\n");
 		goto error;
 	}
-
-	DEBUG(10, ("SPARQL query: \"%s\"\n", slq->sparql_query));
-
-	tracker_sparql_connection_query_async(mds_ctx->tracker_con,
-					      slq->sparql_query,
-					      slq->gcancellable,
-					      tracker_query_cb,
-					      slq);
-	slq->state = SLQ_STATE_RUNNING;
 
 	sl_result = 0;
 	result = dalloc_add_copy(array, &sl_result, uint64_t);
@@ -1383,11 +1142,7 @@ static bool slrpc_fetch_query_results(struct mds_ctx *mds_ctx,
 		}
 		if (slq->state == SLQ_STATE_FULL) {
 			slq->state = SLQ_STATE_RESULTS;
-			tracker_sparql_cursor_next_async(
-				slq->tracker_cursor,
-				slq->gcancellable,
-				tracker_cursor_cb,
-				slq);
+			slq->mds_ctx->mdssvc_ctx->backend->search_cont(slq);
 		}
 		break;
 
@@ -1748,35 +1503,8 @@ static bool slrpc_close_query(struct mds_ctx *mds_ctx,
 		goto done;
 	}
 
-	switch (slq->state) {
-	case SLQ_STATE_RUNNING:
-	case SLQ_STATE_RESULTS:
-		DEBUG(10, ("close: requesting query close\n"));
-		/*
-		 * Mark the query is done so the cursor callback can
-		 * act accordingly by stopping to request more results
-		 * and sheduling query resource deallocation via
-		 * tevent.
-		 */
-		slq->state = SLQ_STATE_DONE;
-		break;
-
-	case SLQ_STATE_FULL:
-	case SLQ_STATE_DONE:
-		DEBUG(10, ("close: query was done or result queue was full\n"));
-		/*
-		 * We can directly deallocate the query because there
-		 * are no pending Tracker async calls in flight in
-		 * these query states.
-		 */
-		TALLOC_FREE(slq);
-		break;
-
-	default:
-		DEBUG(1, ("close: unexpected state: %d\n", slq->state));
-		break;
-	}
-
+	SLQ_DEBUG(10, slq, "close");
+	TALLOC_FREE(slq);
 
 done:
 	sl_res = 0;
@@ -1793,6 +1521,8 @@ done:
 
 static struct mdssvc_ctx *mdssvc_init(struct tevent_context *ev)
 {
+	bool ok;
+
 	if (mdssvc_ctx != NULL) {
 		return mdssvc_ctx;
 	}
@@ -1804,17 +1534,12 @@ static struct mdssvc_ctx *mdssvc_init(struct tevent_context *ev)
 
 	mdssvc_ctx->ev_ctx = ev;
 
-	mdssvc_ctx->gmain_ctx = g_main_context_default();
-	if (mdssvc_ctx->gmain_ctx == NULL) {
-		DBG_ERR("error from g_main_context_new\n");
-		return NULL;
-	}
+	mdssvc_ctx->backend = &mdsscv_backend_tracker;
 
-	mdssvc_ctx->glue = samba_tevent_glib_glue_create(ev,
-							 mdssvc_ctx->ev_ctx,
-							 mdssvc_ctx->gmain_ctx);
-	if (mdssvc_ctx->glue == NULL) {
-		DBG_ERR("samba_tevent_glib_glue_create failed\n");
+	ok = mdsscv_backend_tracker.init(mdssvc_ctx);
+	if (!ok) {
+		DBG_ERR("backend init failed\n");
+		TALLOC_FREE(mdssvc_ctx);
 		return NULL;
 	}
 
@@ -1829,24 +1554,26 @@ static struct mdssvc_ctx *mdssvc_init(struct tevent_context *ev)
  **/
 bool mds_init(struct messaging_context *msg_ctx)
 {
-#if (GLIB_MAJOR_VERSION < 3) && (GLIB_MINOR_VERSION < 36)
-	g_type_init();
-#endif
 	return true;
 }
 
 bool mds_shutdown(void)
 {
+	bool ok;
+
 	if (mdssvc_ctx == NULL) {
 		return false;
 	}
 
-	samba_tevent_glib_glue_quit(mdssvc_ctx->glue);
-	TALLOC_FREE(mdssvc_ctx->glue);
+	ok = mdsscv_backend_tracker.shutdown(mdssvc_ctx);
+	if (!ok) {
+		goto fail;
+	}
 
+	ok = true;
+fail:
 	TALLOC_FREE(mdssvc_ctx);
-
-	return true;
+	return ok;
 }
 
 /**
@@ -1866,14 +1593,6 @@ static int mds_ctx_destructor_cb(struct mds_ctx *mds_ctx)
 	}
 	TALLOC_FREE(mds_ctx->ino_path_map);
 
-	if (mds_ctx->tracker_con != NULL) {
-		g_object_unref(mds_ctx->tracker_con);
-	}
-	if (mds_ctx->gcancellable != NULL) {
-		g_cancellable_cancel(mds_ctx->gcancellable);
-		g_object_unref(mds_ctx->gcancellable);
-	}
-
 	ZERO_STRUCTP(mds_ctx);
 
 	return 0;
@@ -1891,6 +1610,7 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 			     const char *path)
 {
 	struct mds_ctx *mds_ctx;
+	bool ok;
 
 	mds_ctx = talloc_zero(mem_ctx, struct mds_ctx);
 	if (mds_ctx == NULL) {
@@ -1922,14 +1642,11 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	mds_ctx->gcancellable = g_cancellable_new();
-	if (mds_ctx->gcancellable == NULL) {
-		DBG_ERR("error from g_cancellable_new\n");
+	ok = mds_ctx->mdssvc_ctx->backend->connect(mds_ctx);
+	if (!ok) {
+		DBG_ERR("backend connect failed\n");
 		goto error;
 	}
-
-	tracker_sparql_connection_get_async(mds_ctx->gcancellable,
-					    tracker_con_cb, mds_ctx);
 
 	return mds_ctx;
 

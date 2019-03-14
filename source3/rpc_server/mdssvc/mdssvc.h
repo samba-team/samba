@@ -33,12 +33,6 @@
  */
 #undef TRUE
 #undef FALSE
-/* allow building with --picky-developer */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#include <gio/gio.h>
-#include <tracker-sparql.h>
-#pragma GCC diagnostic pop
 
 #define MAX_SL_FRAGMENT_SIZE 0xFFFFF
 #define MAX_SL_RESULTS 100
@@ -84,6 +78,7 @@ typedef enum {
 struct sl_query {
 	struct sl_query *prev, *next;	 /* list pointers */
 	struct mds_ctx  *mds_ctx;        /* context handle */
+	void            *backend_private; /* search backend private data */
 	slq_state_t      state;          /* query state */
 	struct timeval   start_time;	 /* Query start time */
 	struct timeval   last_used;	 /* Time of last result fetch */
@@ -94,12 +89,9 @@ struct sl_query {
 	uint64_t         ctx2;           /* client context 2 */
 	sl_array_t      *reqinfo;        /* array with requested metadata */
 	const char      *query_string;   /* the Spotlight query string */
-	const char      *sparql_query;   /* the SPARQL query string */
 	uint64_t        *cnids;          /* restrict query to these CNIDs */
 	size_t           cnids_num;      /* Size of slq_cnids array */
 	const char      *path_scope;	 /* path to directory to search */
-	GCancellable    *gcancellable;
-	TrackerSparqlCursor *tracker_cursor; /* Tracker SPARQL query result cursor */
 	struct sl_rslts *query_results;  /* query results */
 	TALLOC_CTX      *entries_ctx;    /* talloc parent of the search results */
 };
@@ -119,21 +111,29 @@ struct sl_inode_path_map {
 /* Per process state */
 struct mdssvc_ctx {
 	struct tevent_context *ev_ctx;
-	GMainContext *gmain_ctx;
-	struct tevent_glib_glue *glue;
+	struct mdssvc_backend *backend;
+	void *backend_private;
 };
 
 /* Per tree connect state */
 struct mds_ctx {
 	struct mdssvc_ctx *mdssvc_ctx;
+	void *backend_private;
 	struct auth_session_info *pipe_session_info;
 	struct dom_sid sid;
 	uid_t uid;
 	const char *spath;
-	GCancellable *gcancellable;
-	TrackerSparqlConnection *tracker_con;
 	struct sl_query *query_list;     /* list of active queries */
 	struct db_context *ino_path_map; /* dbwrap rbt for storing inode->path mappings */
+};
+
+struct mdssvc_backend {
+	bool (*init)(struct mdssvc_ctx *mdssvc_ctx);
+	bool (*connect)(struct mds_ctx *mds_ctx);
+	bool (*search_map)(struct sl_query *slq);
+	bool (*search_start)(struct sl_query *slq);
+	bool (*search_cont)(struct sl_query *slq);
+	bool (*shutdown)(struct mdssvc_ctx *mdssvc_ctx);
 };
 
 /******************************************************************************
@@ -153,5 +153,6 @@ extern bool mds_dispatch(struct mds_ctx *query_ctx,
 			 struct mdssvc_blob *request_blob,
 			 struct mdssvc_blob *response_blob);
 extern char *mds_dalloc_dump(DALLOC_CTX *dd, int nestinglevel);
+bool mds_add_result(struct sl_query *slq, const char *path);
 
 #endif /* _MDSSVC_H */
