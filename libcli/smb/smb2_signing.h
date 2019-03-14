@@ -57,7 +57,7 @@ NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 				  uint16_t cipher_id,
 				  struct iovec *vector,
 				  int count);
-NTSTATUS smb2_signing_decrypt_pdu(DATA_BLOB decryption_key,
+NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 				  uint16_t cipher_id,
 				  struct iovec *vector,
 				  int count);
