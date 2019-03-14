@@ -40,7 +40,7 @@ NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
 			       struct iovec *vector,
 			       int count);
 
-NTSTATUS smb2_signing_check_pdu(DATA_BLOB signing_key,
+NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 				enum protocol_types protocol,
 				const struct iovec *vector,
 				int count);

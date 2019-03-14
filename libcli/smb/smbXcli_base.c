@@ -3698,7 +3698,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		uint16_t credits = SVAL(inhdr, SMB2_HDR_CREDIT);
 		uint32_t new_credits;
 		struct smbXcli_session *session = NULL;
-		const struct smb2_signing_key *signing_key = NULL;
+		struct smb2_signing_key *signing_key = NULL;
 		bool was_encrypted = false;
 
 		new_credits = conn->smb2.cur_credits;
@@ -3915,7 +3915,7 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 		if (signing_key) {
 			NTSTATUS signing_status;
 
-			signing_status = smb2_signing_check_pdu(signing_key->blob,
+			signing_status = smb2_signing_check_pdu(signing_key,
 								state->conn->protocol,
 								&cur[1], 3);
 			if (!NT_STATUS_IS_OK(signing_status)) {
@@ -6074,7 +6074,7 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	}
 
 	if (check_signature) {
-		status = smb2_signing_check_pdu(session->smb2_channel.signing_key->blob,
+		status = smb2_signing_check_pdu(session->smb2_channel.signing_key,
 						session->conn->protocol,
 						recv_iov, 3);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -6237,7 +6237,7 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	}
 	ZERO_STRUCT(channel_key);
 
-	status = smb2_signing_check_pdu(session->smb2_channel.signing_key->blob,
+	status = smb2_signing_check_pdu(session->smb2_channel.signing_key,
 					session->conn->protocol,
 					recv_iov, 3);
 	if (!NT_STATUS_IS_OK(status)) {

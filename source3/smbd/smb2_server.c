@@ -2483,7 +2483,7 @@ NTSTATUS smbd_smb2_request_dispatch(struct smbd_smb2_request *req)
 			req->do_signing = true;
 		}
 
-		status = smb2_signing_check_pdu(signing_key->blob,
+		status = smb2_signing_check_pdu(signing_key,
 						xconn->protocol,
 						SMBD_SMB2_IN_HDR_IOV(req),
 						SMBD_SMB2_NUM_IOV_PER_REQ - 1);
