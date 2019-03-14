@@ -155,7 +155,7 @@ struct smb2cli_session {
 	bool should_sign;
 	bool should_encrypt;
 	struct smb2_signing_key *encryption_key;
-	DATA_BLOB decryption_key;
+	struct smb2_signing_key *decryption_key;
 	uint64_t nonce_high_random;
 	uint64_t nonce_high_max;
 	uint64_t nonce_high;
@@ -3568,7 +3568,7 @@ static NTSTATUS smb2cli_inbuf_parse_compound(struct smbXcli_conn *conn,
 			tf_iov[1].iov_base = (void *)hdr;
 			tf_iov[1].iov_len = enc_len;
 
-			status = smb2_signing_decrypt_pdu(s->smb2->decryption_key,
+			status = smb2_signing_decrypt_pdu(s->smb2->decryption_key->blob,
 							  conn->smb2.server.cipher,
 							  tf_iov, 2);
 			if (!NT_STATUS_IS_OK(status)) {
@@ -5748,11 +5748,11 @@ NTSTATUS smb2cli_session_decryption_key(struct smbXcli_session *session,
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	if (session->smb2->decryption_key.length == 0) {
+	if (!smb2_signing_key_valid(session->smb2->decryption_key)) {
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 
-	*key = data_blob_dup_talloc(mem_ctx, session->smb2->decryption_key);
+	*key = data_blob_dup_talloc(mem_ctx, session->smb2->decryption_key->blob);
 	if (key->data == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -6151,9 +6151,18 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	}
 
 	session->smb2->decryption_key =
-		data_blob_dup_talloc(session,
+		talloc_zero(session, struct smb2_signing_key);
+	if (session->smb2->decryption_key == NULL) {
+		ZERO_STRUCT(session_key);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(session->smb2->decryption_key,
+			      smb2_signing_key_destructor);
+
+	session->smb2->decryption_key->blob =
+		data_blob_dup_talloc(session->smb2->decryption_key,
 				     session->smb2->signing_key->blob);
-	if (session->smb2->decryption_key.data == NULL) {
+	if (!smb2_signing_key_valid(session->smb2->decryption_key)) {
 		ZERO_STRUCT(session_key);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -6164,7 +6173,7 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 		status = smb2_key_derivation(session_key, sizeof(session_key),
 					     d->label.data, d->label.length,
 					     d->context.data, d->context.length,
-					     session->smb2->decryption_key.data);
+					     session->smb2->decryption_key->blob.data);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
