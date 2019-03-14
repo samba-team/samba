@@ -55,4 +55,3 @@ interface named_pipe_auth
 		NTSTATUS status;
 	} named_pipe_auth_rep;
 }
-
