@@ -1737,9 +1737,9 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 
 	if (req->do_encryption) {
 		struct smbXsrv_session *x = req->session;
-		DATA_BLOB encryption_key = x->global->encryption_key_blob;
+		struct smb2_signing_key *encryption_key = x->global->encryption_key;
 
-		status = smb2_signing_encrypt_pdu(encryption_key,
+		status = smb2_signing_encrypt_pdu(encryption_key->blob,
 					xconn->smb2.server.cipher,
 					&state->vector[1+SMBD_SMB2_TF_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ);
@@ -2852,9 +2852,10 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 	    (firsttf->iov_len == 0) &&
 	    (req->first_key.length == 0) &&
 	    (req->session != NULL) &&
-	    (req->session->global->encryption_key_blob.length != 0))
+	    smb2_signing_key_valid(req->session->global->encryption_key))
 	{
-		DATA_BLOB encryption_key = req->session->global->encryption_key_blob;
+		struct smb2_signing_key *encryption_key =
+			req->session->global->encryption_key;
 		uint8_t *tf;
 		uint64_t session_id = req->session->global->session_wire_id;
 		uint64_t nonce_high;
@@ -2878,7 +2879,8 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 		 * we are sure that we do not change
 		 * the header again.
 		 */
-		req->first_key = data_blob_dup_talloc(req, encryption_key);
+		req->first_key = data_blob_dup_talloc(req,
+						      encryption_key->blob);
 		if (req->first_key.data == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -3414,9 +3416,10 @@ static NTSTATUS smbd_smb2_send_break(struct smbXsrv_connection *xconn,
 	}
 
 	if (do_encryption) {
-		DATA_BLOB encryption_key = session->global->encryption_key_blob;
+		struct smb2_signing_key *encryption_key =
+			session->global->encryption_key;
 
-		status = smb2_signing_encrypt_pdu(encryption_key,
+		status = smb2_signing_encrypt_pdu(encryption_key->blob,
 					xconn->smb2.server.cipher,
 					&state->vector[1+SMBD_SMB2_TF_IOV_OFS],
 					SMBD_SMB2_NUM_IOV_PER_REQ);

@@ -229,6 +229,7 @@ interface smbXsrv
 		[noprint] DATA_BLOB			signing_key_blob;
 		[ignore] smb2_signing_key		*signing_key;
 		[noprint] DATA_BLOB			encryption_key_blob;
+		[ignore] smb2_signing_key		*encryption_key;
 		[noprint] DATA_BLOB			decryption_key_blob;
 		[noprint] DATA_BLOB			application_key;
 		[range(1, 1024)] uint32			num_channels;
