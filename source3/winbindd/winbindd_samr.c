@@ -587,6 +587,7 @@ static NTSTATUS sam_name_to_sid(struct winbindd_domain *domain,
 	struct rpc_pipe_client *lsa_pipe;
 	struct policy_handle lsa_policy = { 0 };
 	struct dom_sid sid;
+	const char *dom_name;
 	enum lsa_SidType type;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
@@ -615,6 +616,7 @@ again:
 				 domain_name,
 				 name,
 				 flags,
+				 &dom_name,
 				 &sid,
 				 &type);
 
