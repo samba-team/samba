@@ -17,7 +17,6 @@ STpath=$(pwd)
 . $STpath/testprogs/blackbox/subunit.sh
 
 # create editor.sh
-# this has to be hard linked to /tmp or 'samba-tool user edit' cannot find it
 tmpeditor=$(mktemp --suffix .sh -p $STpath/bin samba-tool-editor-XXXXXXXX)
 
 cat >$tmpeditor <<-'EOF'
