@@ -16,55 +16,40 @@ PASSWORD="$3"
 STpath=$(pwd)
 . $STpath/testprogs/blackbox/subunit.sh
 
-# create editor.sh
 tmpeditor=$(mktemp --suffix .sh -p $STpath/bin samba-tool-editor-XXXXXXXX)
+chmod +x $tmpeditor
 
-cat >$tmpeditor <<-'EOF'
+create_test_user() {
+	$PYTHON ${STpath}/source4/scripting/bin/samba-tool \
+		user create sambatool1 --random-password \
+		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
+}
+
+edit_user() {
+	# create editor.sh
+	cat >$tmpeditor <<-'EOF'
 #!/usr/bin/env bash
 user_ldif="$1"
 SED=$(which sed)
 $SED -i -e 's/userAccountControl: 512/userAccountControl: 514/' $user_ldif
 EOF
 
-chmod +x $tmpeditor
+	$PYTHON ${STpath}/source4/scripting/bin/samba-tool \
+	user edit sambatool1 --editor=$tmpeditor \
+	-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
+}
+
+delete_user() {
+	$PYTHON ${STpath}/source4/scripting/bin/samba-tool \
+		user delete sambatool1 \
+		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
+}
 
 failed=0
 
-# Create a test user
-subunit_start_test "Create_User"
-output=$($PYTHON ${STpath}/source4/scripting/bin/samba-tool user create sambatool1 --random-password \
--H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD")
-status=$?
-if [ "x$status" = "x0" ]; then
-    subunit_pass_test "Create_User"
-else
-    echo "$output" | subunit_fail_test "Create_User"
-    failed=$((failed + 1))
-fi
-
-# Edit test user
-subunit_start_test "Edit_User"
-output=$($PYTHON ${STpath}/source4/scripting/bin/samba-tool user edit sambatool1 --editor=$tmpeditor \
--H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD")
-status=$?
-if [ "x$status" = "x0" ]; then
-    subunit_pass_test "Edit_User"
-else
-    echo "$output" | subunit_fail_test "Edit_User"
-    failed=$((failed + 1))
-fi
-
-# Delete test user
-subunit_start_test "Delete_User"
-output=$($PYTHON ${STpath}/source4/scripting/bin/samba-tool user delete sambatool1 \
--H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD")
-status=$?
-if [ "x$status" = "x0" ]; then
-    subunit_pass_test "Delete_User"
-else
-    echo "$output" | subunit_fail_test "Delete_User"
-    failed=$((failed + 1))
-fi
+testit "create_test_user" create_test_user || failed=`expr $failed + 1`
+testit "edit_user" edit_user || failed=`expr $failed + 1`
+testit "delete_user" delete_user || failed=`expr $failed + 1`
 
 rm -f $tmpeditor
 
