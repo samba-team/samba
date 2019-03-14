@@ -6416,7 +6416,9 @@ static bool run_simple_posix_open_test(int dummy)
 	/* What happens when we try and POSIX open a directory for write ? */
 	status = cli_posix_open(cli1, dname, O_RDWR, 0, &fnum1);
 	if (NT_STATUS_IS_OK(status)) {
-		printf("POSIX open of directory %s succeeded, should have failed.\n", fname);
+		printf("POSIX open of directory %s succeeded, "
+		       "should have failed.\n",
+		       dname);
 		goto out;
 	} else {
 		if (!check_both_error(__LINE__, status, ERRDOS, EISDIR,
