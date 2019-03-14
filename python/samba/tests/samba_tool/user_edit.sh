@@ -4,7 +4,7 @@
 
 if [ $# -lt 3 ]; then
 cat <<EOF
-Usage: edit.sh SERVER USERNAME PASSWORD
+Usage: user_edit.sh SERVER USERNAME PASSWORD
 EOF
 exit 1;
 fi
