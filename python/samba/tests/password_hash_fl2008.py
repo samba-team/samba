@@ -158,7 +158,7 @@ class PassWordHashFl2008Tests(PassWordHashTests):
     def test_userPassword_cleartext_sha256(self):
         self.add_user(clear_text=True,
                       options=[("password hash userPassword schemes",
-                                "CryptSHA256:rounds=100")])
+                                "CryptSHA256:rounds=5000")])
 
         sc = self.get_supplemental_creds()
 
@@ -206,5 +206,5 @@ class PassWordHashFl2008Tests(PassWordHashTests):
         #
         up = ndr_unpack(drsblobs.package_PrimaryUserPasswordBlob,
                         binascii.a2b_hex(up_package.data))
-        self.checkUserPassword(up, [("{CRYPT}", "5", 100)])
+        self.checkUserPassword(up, [("{CRYPT}", "5", 5000)])
         self.checkNtHash(USER_PASS, up.current_nt_hash.hash)
