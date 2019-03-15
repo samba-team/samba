@@ -492,14 +492,10 @@ NTSTATUS smbd_smb2_request_process_negprot(struct smbd_smb2_request *req)
 			}
 		}
 
-		/*
-		 * For now we preferr CCM because our implementation
-		 * is faster than GCM, see bug #11451.
-		 */
-		if (aes_128_ccm_supported) {
-			xconn->smb2.server.cipher = SMB2_ENCRYPTION_AES128_CCM;
-		} else if (aes_128_gcm_supported) {
+		if (aes_128_gcm_supported) {
 			xconn->smb2.server.cipher = SMB2_ENCRYPTION_AES128_GCM;
+		} else if (aes_128_ccm_supported) {
+			xconn->smb2.server.cipher = SMB2_ENCRYPTION_AES128_CCM;
 		}
 
 		SSVAL(buf, 0, 1); /* ChiperCount */
