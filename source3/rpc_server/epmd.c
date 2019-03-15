@@ -29,11 +29,9 @@
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_sock_helper.h"
 #include "rpc_server/epmapper/srv_epmapper.h"
+#include "rpc_server/epmd.h"
 
 #define DAEMON_NAME "epmd"
-
-void start_epmd(struct tevent_context *ev_ctx,
-		struct messaging_context *msg_ctx);
 
 static void epmd_reopen_logs(void)
 {

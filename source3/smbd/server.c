@@ -54,6 +54,7 @@
 #include "lib/util/sys_rw.h"
 #include "cleanupdb.h"
 #include "g_lock.h"
+#include "rpc_server/epmd.h"
 
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_protocol.h"
@@ -92,9 +93,6 @@ struct smbd_child_pid {
 	struct smbd_child_pid *prev, *next;
 	pid_t pid;
 };
-
-extern void start_epmd(struct tevent_context *ev_ctx,
-		       struct messaging_context *msg_ctx);
 
 extern void start_lsasd(struct tevent_context *ev_ctx,
 			struct messaging_context *msg_ctx);
