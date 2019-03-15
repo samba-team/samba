@@ -38,6 +38,7 @@
 #include "librpc/gen_ndr/srv_lsa.h"
 #include "librpc/gen_ndr/srv_samr.h"
 #include "librpc/gen_ndr/srv_netlogon.h"
+#include "rpc_server/lsasd.h"
 
 #define DAEMON_NAME "lsasd"
 #define LSASD_MAX_SOCKETS 64
@@ -55,9 +56,6 @@ static struct pf_daemon_config default_pf_lsasd_cfg = {
 	.child_min_life = 60 /* 1 minute minimum life time */
 };
 static struct pf_daemon_config pf_lsasd_cfg = { 0 };
-
-void start_lsasd(struct tevent_context *ev_ctx,
-		 struct messaging_context *msg_ctx);
 
 static void lsasd_reopen_logs(int child_id)
 {
