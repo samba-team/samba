@@ -216,6 +216,43 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 	sig = hdr+SMB2_HDR_SIGNATURE;
 
 	if (protocol >= PROTOCOL_SMB2_24) {
+#ifdef HAVE_GNUTLS_AES_CMAC
+		gnutls_datum_t key = {
+			.data = signing_key->blob.data,
+			.size = MIN(signing_key->blob.length, 16),
+		};
+		int rc;
+
+		if (signing_key->hmac_hnd == NULL) {
+			rc = gnutls_hmac_init(&signing_key->hmac_hnd,
+					      GNUTLS_MAC_AES_CMAC_128,
+					      key.data,
+					      key.size);
+			if (rc < 0) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+
+		rc = gnutls_hmac(signing_key->hmac_hnd, hdr, SMB2_HDR_SIGNATURE);
+		if (rc < 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		rc = gnutls_hmac(signing_key->hmac_hnd, zero_sig, 16);
+		if (rc < 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		for (i = 1; i < count; i++) {
+			rc = gnutls_hmac(signing_key->hmac_hnd,
+					 vector[i].iov_base,
+					 vector[i].iov_len);
+			if (rc < 0) {
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+		}
+		gnutls_hmac_output(signing_key->hmac_hnd, res);
+#else /* NOT HAVE_GNUTLS_AES_CMAC */
 		struct aes_cmac_128_context ctx;
 		uint8_t key[AES_BLOCK_SIZE] = {0};
 
@@ -234,6 +271,7 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 		aes_cmac_128_final(&ctx, res);
 
 		ZERO_ARRAY(key);
+#endif
 	} else {
 		uint8_t digest[gnutls_hash_get_len(GNUTLS_MAC_SHA256)];
 		int rc;
