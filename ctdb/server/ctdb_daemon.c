@@ -36,7 +36,7 @@
 #include "lib/util/blocking.h"
 #include "lib/util/become_daemon.h"
 
-#include "common/version.h"
+#include "version.h"
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
@@ -1237,7 +1237,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 
 	ctdb->ctdbd_pid = getpid();
 	DEBUG(DEBUG_ERR, ("Starting CTDBD (Version %s) as PID: %u\n",
-			  ctdb_version_string, ctdb->ctdbd_pid));
+			  SAMBA_VERSION_STRING, ctdb->ctdbd_pid));
 	ctdb_create_pidfile(ctdb);
 
 	/* create a unix domain stream socket to listen to */

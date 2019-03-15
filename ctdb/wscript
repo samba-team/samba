@@ -412,7 +412,7 @@ def build(bld):
                                              pidfile.c run_proc.c
                                              hash_count.c
                                              run_event.c event_script.c
-                                             sock_client.c version.c
+                                             sock_client.c
                                              cmdline.c path.c conf.c line.c
                                           '''),
                         deps='''samba-util sys_rw tevent-util
