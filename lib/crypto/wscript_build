@@ -20,27 +20,59 @@ bld.SAMBA_SUBSYSTEM('LIBCRYPTO_RC4',
                     deps='talloc',
                     enabled=not bld.CONFIG_SET('HAVE_GNUTLS_3_4_7'))
 
+bld.SAMBA_SUBSYSTEM('LIBCRYPTO_AES_CCM',
+                    source='aes_ccm_128.c',
+                    deps='talloc')
+
+bld.SAMBA_SUBSYSTEM('LIBCRYPTO_AES_GCM',
+                    source='aes_gcm_128.c',
+                    deps='talloc')
+
+bld.SAMBA_SUBSYSTEM('LIBCRYPTO_AES',
+                    source='aes.c rijndael-alg-fst.c',
+                    deps='talloc')
+
+bld.SAMBA_SUBSYSTEM('LIBCRYPTO_AES_CMAC',
+                    source='aes_cmac_128.c',
+                    deps='talloc')
+
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
         source='''
                md4.c
-               aes.c
-               rijndael-alg-fst.c
-               aes_cmac_128.c
-               aes_ccm_128.c
-               aes_gcm_128.c
                ''',
         deps='''
              talloc
              LIBCRYPTO_RC4
+             LIBCRYPTO_AES
+             LIBCRYPTO_AES_CCM
+             LIBCRYPTO_AES_GCM
+             LIBCRYPTO_AES_CMAC
              ''' + extra_deps)
 
+bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO_AES_CCM',
+                    source='aes_ccm_128_test.c',
+                    autoproto='aes_ccm_test_proto.h',
+                    deps='talloc')
+
+bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO_AES_GCM',
+                    source='aes_gcm_128_test.c',
+                    autoproto='aes_gcm_test_proto.h',
+                    deps='talloc')
+
+bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO_AES_CMAC',
+                    source='aes_cmac_128_test.c',
+                    autoproto='aes_cmac_test_proto.h',
+                    deps='talloc')
+
 bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO',
-        source='''md4test.c
-            aes_cmac_128_test.c aes_ccm_128_test.c aes_gcm_128_test.c
-        ''',
+        source='md4test.c',
         autoproto='test_proto.h',
-        deps='LIBCRYPTO'
-        )
+        deps='''
+             LIBCRYPTO
+             TORTURE_LIBCRYPTO_AES_CCM
+             TORTURE_LIBCRYPTO_AES_GCM
+             TORTURE_LIBCRYPTO_AES_CMAC
+             ''')
 
 bld.SAMBA_PYTHON('python_crypto',
                  source='py_crypto.c',

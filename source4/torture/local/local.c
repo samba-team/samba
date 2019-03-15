@@ -23,6 +23,9 @@
 #include "torture/ndr/proto.h"
 #include "torture/auth/proto.h"
 #include "../lib/crypto/test_proto.h"
+#include "../lib/crypto/aes_ccm_test_proto.h"
+#include "../lib/crypto/aes_gcm_test_proto.h"
+#include "../lib/crypto/aes_cmac_test_proto.h"
 #include "lib/registry/tests/proto.h"
 #include "lib/replace/replace-testsuite.h"
 
