@@ -2467,46 +2467,21 @@ LDAP server using the 'nano' editor.
                 with open(t_file.name) as edited_file:
                     edited_message = edited_file.read()
 
-        if result_ldif != edited_message:
-            diff = difflib.ndiff(result_ldif.splitlines(),
-                                 edited_message.splitlines())
-            minus_lines = []
-            plus_lines = []
-            for line in diff:
-                if line.startswith('-'):
-                    line = line[2:]
-                    minus_lines.append(line)
-                elif line.startswith('+'):
-                    line = line[2:]
-                    plus_lines.append(line)
 
-            user_ldif = "dn: %s\n" % user_dn
-            user_ldif += "changetype: modify\n"
+        msgs_edited = samdb.parse_ldif(edited_message)
+        msg_edited = next(msgs_edited)[1]
 
-            for line in minus_lines:
-                attr, val = line.split(':', 1)
-                search_attr = "%s:" % attr
-                if not re.search(r'^' + search_attr, str(plus_lines)):
-                    user_ldif += "delete: %s\n" % attr
-                    user_ldif += "%s: %s\n" % (attr, val)
+        res_msg_diff = samdb.msg_diff(msg, msg_edited)
+        if len(res_msg_diff) == 0:
+            self.outf.write("Nothing to do\n")
+            return
 
-            for line in plus_lines:
-                attr, val = line.split(':', 1)
-                search_attr = "%s:" % attr
-                if re.search(r'^' + search_attr, str(minus_lines)):
-                    user_ldif += "replace: %s\n" % attr
-                    user_ldif += "%s: %s\n" % (attr, val)
-                if not re.search(r'^' + search_attr, str(minus_lines)):
-                    user_ldif += "add: %s\n" % attr
-                    user_ldif += "%s: %s\n" % (attr, val)
+        try:
+            samdb.modify(res_msg_diff)
+        except Exception as e:
+            raise CommandError("Failed to modify user '%s': " % username, e)
 
-            try:
-                samdb.modify_ldif(user_ldif)
-            except Exception as e:
-                raise CommandError("Failed to modify user '%s': " %
-                                   username, e)
-
-            self.outf.write("Modified User '%s' successfully\n" % username)
+        self.outf.write("Modified User '%s' successfully\n" % username)
 
 
 class cmd_user_show(Command):

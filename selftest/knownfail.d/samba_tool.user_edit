@@ -1,3 +1,0 @@
-samba.tests.samba_tool.user_edit.add_attribute_base64
-samba.tests.samba_tool.user_edit.add_attribute_base64_control
-samba.tests.samba_tool.user_edit.change_attribute_base64_control
