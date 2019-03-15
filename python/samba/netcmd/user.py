@@ -2428,6 +2428,7 @@ LDAP server using the 'nano' editor.
 
     def run(self, username, credopts=None, sambaopts=None, versionopts=None,
             H=None, editor=None):
+        from . import common
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -2448,7 +2449,7 @@ LDAP server using the 'nano' editor.
             raise CommandError('Unable to find user "%s"' % (username))
 
         for msg in res:
-            result_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
+            result_ldif = common.get_ldif_for_editor(samdb, msg)
 
             if editor is None:
                 editor = os.environ.get('EDITOR')
