@@ -20,6 +20,8 @@
 #ifndef _RPC_SERVER_H_
 #define _RPC_SERVER_H_
 
+#include "librpc/rpc/rpc_common.h" /* For enum dcerpc_transport_t */
+
 struct pipes_struct;
 
 typedef bool (*dcerpc_ncacn_disconnect_fn)(struct pipes_struct *p);
