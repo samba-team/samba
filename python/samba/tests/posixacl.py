@@ -20,7 +20,7 @@
 
 from samba.ntacls import setntacl, getntacl, checkset_backend
 from samba.dcerpc import security, smb_acl, idmap
-from samba.tests import TestCaseInTempDir
+from samba.tests.smbd_base import SmbdBaseTests
 from samba import provision
 import os
 from samba.samba3 import smbd, passdb
@@ -32,7 +32,7 @@ DOM_SID = "S-1-5-21-2212615479-2695158682-2101375467"
 ACL = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
 
 
-class PosixAclMappingTests(TestCaseInTempDir):
+class PosixAclMappingTests(SmbdBaseTests):
 
     def setUp(self):
         super(PosixAclMappingTests, self).setUp()
