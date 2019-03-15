@@ -27,10 +27,10 @@ from samba import ntacls
 from samba.auth import system_session
 from samba.param import LoadParm
 from samba.dcerpc import security
-from samba.tests import TestCaseInTempDir
+from samba.tests.smbd_base import SmbdBaseTests
 
 
-class NtaclsBackupRestoreTests(TestCaseInTempDir):
+class NtaclsBackupRestoreTests(SmbdBaseTests):
     """
     Tests for NTACLs backup and restore.
     """
