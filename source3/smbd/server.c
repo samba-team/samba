@@ -56,6 +56,7 @@
 #include "g_lock.h"
 #include "rpc_server/epmd.h"
 #include "rpc_server/lsasd.h"
+#include "rpc_server/fssd.h"
 
 #ifdef CLUSTER_SUPPORT
 #include "ctdb_protocol.h"
@@ -94,9 +95,6 @@ struct smbd_child_pid {
 	struct smbd_child_pid *prev, *next;
 	pid_t pid;
 };
-
-extern void start_fssd(struct tevent_context *ev_ctx,
-		       struct messaging_context *msg_ctx);
 
 extern void start_mdssd(struct tevent_context *ev_ctx,
 			struct messaging_context *msg_ctx);

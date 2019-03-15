@@ -30,6 +30,7 @@
 #include "rpc_server/rpc_server.h"
 #include "rpc_server/rpc_sock_helper.h"
 #include "rpc_server/fss/srv_fss_agent.h"
+#include "rpc_server/fssd.h"
 
 #define DAEMON_NAME "fssd"
 
