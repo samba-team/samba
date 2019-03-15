@@ -4789,12 +4789,9 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 		}
 
 		SSVAL(p, 0, 2); /* ChiperCount */
-		/*
-		 * For now we preferr CCM because our implementation
-		 * is faster than GCM, see bug #11451.
-		 */
-		SSVAL(p, 2, SMB2_ENCRYPTION_AES128_CCM);
-		SSVAL(p, 4, SMB2_ENCRYPTION_AES128_GCM);
+
+		SSVAL(p, 2, SMB2_ENCRYPTION_AES128_GCM);
+		SSVAL(p, 4, SMB2_ENCRYPTION_AES128_CCM);
 
 		status = smb2_negotiate_context_add(
 			state, &c, SMB2_ENCRYPTION_CAPABILITIES, p, 6);
