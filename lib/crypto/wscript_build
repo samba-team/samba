@@ -26,7 +26,8 @@ bld.SAMBA_SUBSYSTEM('LIBCRYPTO_AES',
 
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO_AES_CMAC',
                     source='aes_cmac_128.c',
-                    deps='talloc')
+                    deps='talloc',
+                    enabled=not bld.CONFIG_SET('HAVE_GNUTLS_AES_CMAC'))
 
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
         source='''
@@ -53,7 +54,8 @@ bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO_AES_GCM',
 bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO_AES_CMAC',
                     source='aes_cmac_128_test.c',
                     autoproto='aes_cmac_test_proto.h',
-                    deps='talloc')
+                    deps='talloc',
+                    enabled=not bld.CONFIG_SET('HAVE_GNUTLS_AES_CMAC'))
 
 bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO',
         source='md4test.c',
