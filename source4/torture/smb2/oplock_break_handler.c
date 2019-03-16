@@ -91,6 +91,16 @@ bool torture_oplock_ack_handler(struct smb2_transport *transport,
 	return true;
 }
 
+/**
+ * A oplock break handler designed to ignore incoming break requests.
+ * This is used when incoming oplock break requests need to be ignored
+ */
+bool torture_oplock_ignore_handler(struct smb2_transport *transport,
+				   const struct smb2_handle *handle,
+				   uint8_t level, void *private_data)
+{
+	return true;
+}
 
 /*
  * Timer handler function notifies the registering function that time is up
