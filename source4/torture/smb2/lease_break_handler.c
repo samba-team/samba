@@ -124,11 +124,3 @@ done:
 
 	return;
 }
-
- void torture_reset_lease_break_info(struct torture_context *tctx,
-				     struct lease_break_info *r)
-{
-	ZERO_STRUCTP(r);
-	r->tctx = tctx;
-}
-
