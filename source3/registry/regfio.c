@@ -178,7 +178,7 @@ static int read_block( REGF_FILE *file, prs_struct *ps, uint32_t file_offset, ui
 			return False;
 		}
 		if ( (returned == 0) && (bytes_read < block_size) ) {
-			DEBUG(0,("read_block: not a vald registry file ?\n" ));
+			DEBUG(0,("read_block: not a valid registry file ?\n" ));
 			return False;
 		}	
 		
