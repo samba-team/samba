@@ -58,7 +58,7 @@ cwd = os.getcwd()
 gitroot = find_git_root()
 
 # create a bisect script
-f = tempfile.NamedTemporaryFile(delete=False)
+f = tempfile.NamedTemporaryFile(delete=False, mode="w+t")
 f.write("set -x\n")
 f.write("cd %s || exit 125\n" % cwd)
 if opts.autogen:
