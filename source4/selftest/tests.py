@@ -1322,3 +1322,5 @@ planoldpythontestsuite("proclimitdc",
                            os.path.join(srcdir(), 'python/samba/tests')],
                        extra_args=['-U"$USERNAME%$PASSWORD"'],
                        name="samba.tests.process_limits")
+
+planoldpythontestsuite("none", "samba.tests.usage")
