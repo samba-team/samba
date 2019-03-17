@@ -2357,7 +2357,6 @@ NTSTATUS cli_smb2_setpathinfo(struct cli_state *cli,
 {
 	NTSTATUS status;
 	uint16_t fnum = 0xffff;
-	struct smb2_hnd *ph = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -2382,23 +2381,13 @@ NTSTATUS cli_smb2_setpathinfo(struct cli_state *cli,
 		goto fail;
 	}
 
-	status = map_fnum_to_smb2_handle(cli,
-					fnum,
-					&ph);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = smb2cli_set_info(cli->conn,
-				cli->timeout,
-				cli->smb2.session,
-				cli->smb2.tcon,
-				in_info_type,
-				in_file_info_class,
-				p_in_data, /* in_input_buffer */
-				0, /* in_additional_info */
-				ph->fid_persistent,
-				ph->fid_volatile);
+	status = cli_smb2_set_info_fnum(
+		cli,
+		fnum,
+		in_info_type,
+		in_file_info_class,
+		p_in_data,	   /* in_input_buffer */
+		0);		   /* in_additional_info */
   fail:
 
 	if (fnum != 0xffff) {
@@ -2484,8 +2473,6 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
 			time_t access_time,
 			time_t write_time)
 {
-	NTSTATUS status;
-	struct smb2_hnd *ph = NULL;
 	uint8_t inbuf_store[40];
 	DATA_BLOB inbuf = data_blob_null;
 
@@ -2498,13 +2485,6 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
 
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status = map_fnum_to_smb2_handle(cli,
-					fnum,
-					&ph);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
 	}
 
 	/* setinfo on the handle with info_type SMB2_SETINFO_FILE (1),
@@ -2525,16 +2505,13 @@ NTSTATUS cli_smb2_setattrE(struct cli_state *cli,
 		put_long_date((char *)inbuf.data + 16, write_time);
 	}
 
-	cli->raw_status = smb2cli_set_info(cli->conn,
-				cli->timeout,
-				cli->smb2.session,
-				cli->smb2.tcon,
-				1, /* in_info_type */
-				SMB_FILE_BASIC_INFORMATION - 1000, /* in_file_info_class */
-				&inbuf, /* in_input_buffer */
-				0, /* in_additional_info */
-				ph->fid_persistent,
-				ph->fid_volatile);
+	cli->raw_status = cli_smb2_set_info_fnum(
+		cli,
+		fnum,
+		1,		/* in_info_type */
+		SMB_FILE_BASIC_INFORMATION - 1000, /* in_file_info_class */
+		&inbuf,		   /* in_input_buffer */
+		0);		   /* in_additional_info */
 
 	return cli->raw_status;
 }
@@ -3020,7 +2997,6 @@ NTSTATUS cli_smb2_set_security_descriptor(struct cli_state *cli,
 {
 	NTSTATUS status;
 	DATA_BLOB inbuf = data_blob_null;
-	struct smb2_hnd *ph = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -3036,13 +3012,6 @@ NTSTATUS cli_smb2_set_security_descriptor(struct cli_state *cli,
 		goto fail;
 	}
 
-	status = map_fnum_to_smb2_handle(cli,
-					fnum,
-					&ph);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
 	status = marshall_sec_desc(frame,
 				sd,
 				&inbuf.data,
@@ -3054,16 +3023,13 @@ NTSTATUS cli_smb2_set_security_descriptor(struct cli_state *cli,
 
 	/* setinfo on the returned handle with info_type SMB2_SETINFO_SEC (3) */
 
-	status = smb2cli_set_info(cli->conn,
-				cli->timeout,
-				cli->smb2.session,
-				cli->smb2.tcon,
-				3, /* in_info_type */
-				0, /* in_file_info_class */
-				&inbuf, /* in_input_buffer */
-				sec_info, /* in_additional_info */
-				ph->fid_persistent,
-				ph->fid_volatile);
+	status = cli_smb2_set_info_fnum(
+		cli,
+		fnum,
+		3,			  /* in_info_type */
+		0,			  /* in_file_info_class */
+		&inbuf,			  /* in_input_buffer */
+		sec_info);		  /* in_additional_info */
 
   fail:
 
@@ -3269,7 +3235,6 @@ NTSTATUS cli_smb2_rename(struct cli_state *cli,
 	NTSTATUS status;
 	DATA_BLOB inbuf = data_blob_null;
 	uint16_t fnum = 0xffff;
-	struct smb2_hnd *ph = NULL;
 	smb_ucs2_t *converted_str = NULL;
 	size_t converted_size_bytes = 0;
 	size_t namelen = 0;
@@ -3293,13 +3258,6 @@ NTSTATUS cli_smb2_rename(struct cli_state *cli,
 				DELETE_ACCESS,
 				&fnum);
 
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
-	status = map_fnum_to_smb2_handle(cli,
-					fnum,
-					&ph);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
@@ -3354,16 +3312,13 @@ NTSTATUS cli_smb2_rename(struct cli_state *cli,
 	/* setinfo on the returned handle with info_type SMB2_GETINFO_FILE (1),
 	   level SMB2_FILE_RENAME_INFORMATION (SMB_FILE_RENAME_INFORMATION - 1000) */
 
-	status = smb2cli_set_info(cli->conn,
-				cli->timeout,
-				cli->smb2.session,
-				cli->smb2.tcon,
-				1, /* in_info_type */
-				SMB_FILE_RENAME_INFORMATION - 1000, /* in_file_info_class */
-				&inbuf, /* in_input_buffer */
-				0, /* in_additional_info */
-				ph->fid_persistent,
-				ph->fid_volatile);
+	status = cli_smb2_set_info_fnum(
+		cli,
+		fnum,
+		1,		/* in_info_type */
+		SMB_FILE_RENAME_INFORMATION - 1000, /* in_file_info_class */
+		&inbuf,		   /* in_input_buffer */
+		0);		   /* in_additional_info */
 
   fail:
 
@@ -3393,7 +3348,6 @@ NTSTATUS cli_smb2_set_ea_fnum(struct cli_state *cli,
 	size_t bloblen = 0;
 	char *ea_name_ascii = NULL;
 	size_t namelen = 0;
-	struct smb2_hnd *ph = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -3406,13 +3360,6 @@ NTSTATUS cli_smb2_set_ea_fnum(struct cli_state *cli,
 
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	status = map_fnum_to_smb2_handle(cli,
-					fnum,
-					&ph);
-	if (!NT_STATUS_IS_OK(status)) {
 		goto fail;
 	}
 
@@ -3453,16 +3400,13 @@ NTSTATUS cli_smb2_set_ea_fnum(struct cli_state *cli,
 	/* setinfo on the handle with info_type SMB2_SETINFO_FILE (1),
 	   level 15 (SMB_FILE_FULL_EA_INFORMATION - 1000). */
 
-	status = smb2cli_set_info(cli->conn,
-				cli->timeout,
-				cli->smb2.session,
-				cli->smb2.tcon,
-				1, /* in_info_type */
-				SMB_FILE_FULL_EA_INFORMATION - 1000, /* in_file_info_class */
-				&inbuf, /* in_input_buffer */
-				0, /* in_additional_info */
-				ph->fid_persistent,
-				ph->fid_volatile);
+	status = cli_smb2_set_info_fnum(
+		cli,
+		fnum,
+		1,		/* in_info_type */
+		SMB_FILE_FULL_EA_INFORMATION - 1000, /* in_file_info_class */
+		&inbuf,		/* in_input_buffer */
+		0);		/* in_additional_info */
 
   fail:
 
@@ -3878,7 +3822,6 @@ NTSTATUS cli_smb2_set_user_quota(struct cli_state *cli,
 {
 	NTSTATUS status;
 	DATA_BLOB inbuf = data_blob_null;
-	struct smb2_hnd *ph = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -3894,22 +3837,18 @@ NTSTATUS cli_smb2_set_user_quota(struct cli_state *cli,
 		goto cleanup;
 	}
 
-	status = map_fnum_to_smb2_handle(cli, quota_fnum, &ph);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto cleanup;
-	}
-
 	status = build_user_quota_buffer(qtl, 0, talloc_tos(), &inbuf, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto cleanup;
 	}
 
-	status = smb2cli_set_info(cli->conn, cli->timeout, cli->smb2.session,
-				  cli->smb2.tcon, 4, /* in_info_type */
-				  0,		     /* in_file_info_class */
-				  &inbuf,	    /* in_input_buffer */
-				  0,		     /* in_additional_info */
-				  ph->fid_persistent, ph->fid_volatile);
+	status = cli_smb2_set_info_fnum(
+		cli,
+		quota_fnum,
+		4,			  /* in_info_type */
+		0,			  /* in_file_info_class */
+		&inbuf,			  /* in_input_buffer */
+		0);			  /* in_additional_info */
 cleanup:
 
 	cli->raw_status = status;
@@ -3925,7 +3864,6 @@ NTSTATUS cli_smb2_set_fs_quota_info(struct cli_state *cli,
 {
 	NTSTATUS status;
 	DATA_BLOB inbuf = data_blob_null;
-	struct smb2_hnd *ph = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -3941,23 +3879,18 @@ NTSTATUS cli_smb2_set_fs_quota_info(struct cli_state *cli,
 		goto cleanup;
 	}
 
-	status = map_fnum_to_smb2_handle(cli, quota_fnum, &ph);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto cleanup;
-	}
-
 	status = build_fs_quota_buffer(talloc_tos(), pqt, &inbuf, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto cleanup;
 	}
 
-	status = smb2cli_set_info(
-	    cli->conn, cli->timeout, cli->smb2.session, cli->smb2.tcon,
-	    2,				     /* in_info_type */
-	    SMB_FS_QUOTA_INFORMATION - 1000, /* in_file_info_class */
-	    &inbuf,			     /* in_input_buffer */
-	    0,				     /* in_additional_info */
-	    ph->fid_persistent, ph->fid_volatile);
+	status = cli_smb2_set_info_fnum(
+		cli,
+		quota_fnum,
+		2,			     /* in_info_type */
+		SMB_FS_QUOTA_INFORMATION - 1000, /* in_file_info_class */
+		&inbuf,			     /* in_input_buffer */
+		0);			     /* in_additional_info */
 cleanup:
 	cli->raw_status = status;
 
@@ -4849,7 +4782,6 @@ NTSTATUS cli_smb2_ftruncate(struct cli_state *cli,
 	NTSTATUS status;
 	uint8_t buf[8] = {0};
 	DATA_BLOB inbuf = { .data = buf, .length = sizeof(buf) };
-	struct smb2_hnd *ph = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (smbXcli_conn_has_async_calls(cli->conn)) {
@@ -4865,29 +4797,18 @@ NTSTATUS cli_smb2_ftruncate(struct cli_state *cli,
 		goto fail;
 	}
 
-	status = map_fnum_to_smb2_handle(cli,
-					fnum,
-					&ph);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto fail;
-	}
-
 	SBVAL(buf, 0, newsize);
 
 	/* setinfo on the handle with info_type SMB2_SETINFO_FILE (1),
 	   level 20 (SMB_FILE_END_OF_FILE_INFORMATION - 1000). */
 
-	status = smb2cli_set_info(cli->conn,
-				cli->timeout,
-				cli->smb2.session,
-				cli->smb2.tcon,
-				1, /* in_info_type */
-					/* in_file_info_class */
-				SMB_FILE_END_OF_FILE_INFORMATION - 1000,
-				&inbuf, /* in_input_buffer */
-				0, /* in_additional_info */
-				ph->fid_persistent,
-				ph->fid_volatile);
+	status = cli_smb2_set_info_fnum(
+		cli,
+		fnum,
+		1, /* in_info_type */
+		SMB_FILE_END_OF_FILE_INFORMATION-1000, /* in_file_info_class */
+		&inbuf, /* in_input_buffer */
+		0);
 
   fail:
 
