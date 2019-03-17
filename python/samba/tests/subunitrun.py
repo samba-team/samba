@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Simple subunit testrunner for python
 
 # NOTE: DO NOT USE THIS MODULE FOR NEW CODE.
