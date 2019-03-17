@@ -305,7 +305,7 @@ static bool prs_hbin_block( const char *desc, prs_struct *ps, int depth, REGF_HB
 {
 	uint32_t block_size2;
 
-	prs_debug(ps, depth, desc, "prs_regf_block");
+	prs_debug(ps, depth, desc, "prs_hbin_block");
 	depth++;
 	
 	if ( !prs_uint8s( True, "header", ps, depth, (uint8_t*)hbin->header, sizeof( hbin->header )) )
@@ -1019,7 +1019,7 @@ static bool hbin_prs_key( REGF_FILE *file, REGF_HBIN *hbin, REGF_NK_REC *nk )
 	int depth = 0;
 	REGF_HBIN *sub_hbin;
 	
-	prs_debug(&hbin->ps, depth, "", "fetch_key");
+	prs_debug(&hbin->ps, depth, "", "prs_key");
 	depth++;
 
 	/* get the initial nk record */
@@ -1238,7 +1238,7 @@ out:
 	ZERO_STRUCTP( rb );
 	rb->fd = -1;
 	
-	if ( !(rb->mem_ctx = talloc_init( "read_regf_block" )) ) {
+	if ( !(rb->mem_ctx = talloc_init( "regfio_open" )) ) {
 		regfio_close( rb );
 		return NULL;
 	}
