@@ -646,8 +646,6 @@ fail:
 
 struct cli_smb2_delete_on_close_state {
 	struct cli_state *cli;
-	uint16_t fnum;
-	struct smb2_hnd *ph;
 	uint8_t data[1];
 	DATA_BLOB inbuf;
 };
@@ -665,7 +663,6 @@ struct tevent_req *cli_smb2_delete_on_close_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *subreq = NULL;
 	uint8_t in_info_type;
 	uint8_t in_file_info_class;
-	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_smb2_delete_on_close_state);
@@ -673,15 +670,9 @@ struct tevent_req *cli_smb2_delete_on_close_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->cli = cli;
-	state->fnum = fnum;
 
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
-	status = map_fnum_to_smb2_handle(cli, fnum, &state->ph);
-	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
 
@@ -696,17 +687,15 @@ struct tevent_req *cli_smb2_delete_on_close_send(TALLOC_CTX *mem_ctx,
 	state->inbuf.data = &state->data[0];
 	state->inbuf.length = 1;
 
-	subreq = smb2cli_set_info_send(state, ev,
-				       cli->conn,
-				       cli->timeout,
-				       cli->smb2.session,
-				       cli->smb2.tcon,
-				       in_info_type,
-				       in_file_info_class,
-				       &state->inbuf, /* in_input_buffer */
-				       0, /* in_additional_info */
-				       state->ph->fid_persistent,
-				       state->ph->fid_volatile);
+	subreq = cli_smb2_set_info_fnum_send(
+		state,
+		ev,
+		cli,
+		fnum,
+		in_info_type,
+		in_file_info_class,
+		&state->inbuf,
+		0);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -718,7 +707,7 @@ struct tevent_req *cli_smb2_delete_on_close_send(TALLOC_CTX *mem_ctx,
 
 static void cli_smb2_delete_on_close_done(struct tevent_req *subreq)
 {
-	NTSTATUS status = smb2cli_set_info_recv(subreq);
+	NTSTATUS status = cli_smb2_set_info_fnum_recv(subreq);
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
