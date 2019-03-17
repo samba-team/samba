@@ -37,7 +37,7 @@ if __name__ == "__main__":
     name.port = opts.port
     name.dns_register = True
     dns_names.names = [ name ]
-    site_name = opts.site.decode('utf-8')
+    site_name = opts.site
 
     ret_names = w.DsrUpdateReadOnlyServerDnsRecords(site_name, 600, dns_names)
     print("Status: %u" % ret_names.names[0].status)
