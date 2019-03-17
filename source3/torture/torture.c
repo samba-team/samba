@@ -9653,7 +9653,7 @@ static bool run_uid_regression_test(int dummy)
 		goto out;
 	}
 
-	/* Now try a SMBtdis with the invald vuid set to zero. */
+	/* Now try a SMBtdis with the invalid vuid set to zero. */
 	cli_state_set_uid(cli, 0);
 
 	/* This should succeed. */
