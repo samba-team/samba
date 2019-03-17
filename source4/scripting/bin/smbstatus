@@ -84,8 +84,8 @@ if opts.nbt:
 else:
     try:
         conn = open_connection("smb_server")
-    except RuntimeError, (num, msg):
-        if msg == 'NT_STATUS_OBJECT_NAME_NOT_FOUND':
+    except RuntimeError as e:
+        if e.args[1] == 'NT_STATUS_OBJECT_NAME_NOT_FOUND':
             print("No active connections")
     else:
         show_sessions(conn)
