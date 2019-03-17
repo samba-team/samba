@@ -160,7 +160,7 @@ def run_dcpromo(t, vm):
     t.info("Joining a windows VM ${WIN_VM} to the domain as a DC using dcpromo")
     child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_ip=True, set_noexpire=True)
     child.sendline("copy /Y con answers.txt")
-    child.sendline('''
+    child.sendline(b'''
 [DCINSTALL]
 RebootOnSuccess=Yes
 RebootOnCompletion=Yes
@@ -315,7 +315,7 @@ def run_dcpromo_rodc(t, vm):
     t.vm_restore("${WIN_VM}", "${WIN_SNAPSHOT}")
     child = t.open_telnet("${WIN_HOSTNAME}", "administrator", "${WIN_PASS}", set_ip=True)
     child.sendline("copy /Y con answers.txt")
-    child.sendline('''
+    child.sendline(b'''
 [DCInstall]
 ReplicaOrNewDomain=ReadOnlyReplica
 ReplicaDomainDNSName=${LCREALM}
