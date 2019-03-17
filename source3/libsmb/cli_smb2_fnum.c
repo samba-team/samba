@@ -534,6 +534,116 @@ NTSTATUS cli_smb2_close_fnum(struct cli_state *cli, uint16_t fnum)
 	return status;
 }
 
+struct cli_smb2_set_info_fnum_state {
+	uint8_t dummy;
+};
+
+static void cli_smb2_set_info_fnum_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_smb2_set_info_fnum_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint8_t in_info_type,
+	uint8_t in_info_class,
+	const DATA_BLOB *in_input_buffer,
+	uint32_t in_additional_info)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb2_set_info_fnum_state *state = NULL;
+	struct smb2_hnd *ph = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_smb2_set_info_fnum_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = map_fnum_to_smb2_handle(cli, fnum, &ph);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	subreq = smb2cli_set_info_send(
+		state,
+		ev,
+		cli->conn,
+		cli->timeout,
+		cli->smb2.session,
+		cli->smb2.tcon,
+		in_info_type,
+		in_info_class,
+		in_input_buffer,
+		in_additional_info,
+		ph->fid_persistent,
+		ph->fid_volatile);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb2_set_info_fnum_done, req);
+	return req;
+}
+
+static void cli_smb2_set_info_fnum_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = smb2cli_set_info_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_smb2_set_info_fnum_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_smb2_set_info_fnum(
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint8_t in_info_type,
+	uint8_t in_info_class,
+	const DATA_BLOB *in_input_buffer,
+	uint32_t in_additional_info)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	bool ok;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		/*
+		 * Can't use sync call while an async call is in flight
+		 */
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_smb2_set_info_fnum_send(
+		frame,
+		ev,
+		cli,
+		fnum,
+		in_info_type,
+		in_info_class,
+		in_input_buffer,
+		in_additional_info);
+	if (req == NULL) {
+		goto fail;
+	}
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		goto fail;
+	}
+	status = cli_smb2_set_info_fnum_recv(req);
+fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 struct cli_smb2_delete_on_close_state {
 	struct cli_state *cli;
 	uint16_t fnum;
