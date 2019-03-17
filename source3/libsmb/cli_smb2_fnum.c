@@ -4847,7 +4847,8 @@ NTSTATUS cli_smb2_ftruncate(struct cli_state *cli,
 			uint64_t newsize)
 {
 	NTSTATUS status;
-	DATA_BLOB inbuf = data_blob_null;
+	uint8_t buf[8] = {0};
+	DATA_BLOB inbuf = { .data = buf, .length = sizeof(buf) };
 	struct smb2_hnd *ph = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -4871,13 +4872,7 @@ NTSTATUS cli_smb2_ftruncate(struct cli_state *cli,
 		goto fail;
 	}
 
-	inbuf = data_blob_talloc_zero(frame, 8);
-	if (inbuf.data == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	SBVAL(inbuf.data, 0, newsize);
+	SBVAL(buf, 0, newsize);
 
 	/* setinfo on the handle with info_type SMB2_SETINFO_FILE (1),
 	   level 20 (SMB_FILE_END_OF_FILE_INFORMATION - 1000). */
