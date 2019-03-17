@@ -1132,6 +1132,10 @@ static bool next_record( REGF_HBIN *hbin, const char *hdr, bool *eob )
 			record_size = (record_size ^ 0xffffffff) + 1;
 		}
 
+		if ( record_size < sizeof(REC_HDR_SIZE) ) {
+			return False;
+		}
+
 		if ( memcmp( header, hdr, REC_HDR_SIZE ) == 0 ) {
 			found = True;
 			curr_off += sizeof(uint32_t);
@@ -1433,7 +1437,8 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 
 	/* see if there is anything left to report */
 	
-	if ( !nk || (nk->subkeys_off==REGF_OFFSET_NONE) || (nk->subkey_index >= nk->num_subkeys) )
+	if ( !nk || !nk->subkeys.hashes || nk->subkey_index >= nk->subkeys.num_keys ||
+	     (nk->subkeys_off==REGF_OFFSET_NONE) || (nk->subkey_index >= nk->num_subkeys) )
 		return NULL;
 
 	/* find the HBIN block which should contain the nk record */

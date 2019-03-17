@@ -95,6 +95,17 @@ static int teardown_context(void **state)
 	return 0;
 }
 
+static void open_testfile(struct test_ctx *test_ctx, const char *filename)
+{
+	char *path;
+
+	path = talloc_asprintf(test_ctx, "%s/testdata/samba3/%s", SRCDIR, filename);
+	assert_non_null(path);
+
+	test_ctx->rb = regfio_open(path, O_RDONLY, 0600);
+	assert_non_null(test_ctx->rb);
+}
+
 static void test_regfio_open_new_file(void **state)
 {
 	struct test_ctx *test_ctx =
@@ -126,10 +137,44 @@ static void test_regfio_open_new_file(void **state)
 	assert_int_equal(root->key_type, NK_TYPE_ROOTKEY);
 }
 
+static void test_regfio_corrupt_hbin(void **state)
+{
+	struct test_ctx *test_ctx =
+		talloc_get_type_abort(*state, struct test_ctx);
+	REGF_NK_REC *root;
+
+	open_testfile(test_ctx, "regfio_corrupt_hbin1.dat");
+
+	root = regfio_rootkey(test_ctx->rb);
+	assert_null(root);
+}
+
+static void test_regfio_corrupt_lf_subkeys(void **state)
+{
+	struct test_ctx *test_ctx =
+		talloc_get_type_abort(*state, struct test_ctx);
+	REGF_NK_REC *root, *subkey;
+
+	open_testfile(test_ctx, "regfio_corrupt_lf_subkeys.dat");
+
+	root = regfio_rootkey(test_ctx->rb);
+	assert_non_null(root);
+
+	root->subkey_index = 0;
+	while ((subkey = regfio_fetch_subkey(test_ctx->rb, root))) {
+	}
+}
+
 int main(void) {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test_setup_teardown(test_regfio_open_new_file,
 						setup_context_tempfile,
+						teardown_context),
+		cmocka_unit_test_setup_teardown(test_regfio_corrupt_hbin,
+						setup_context,
+						teardown_context),
+		cmocka_unit_test_setup_teardown(test_regfio_corrupt_lf_subkeys,
+						setup_context,
 						teardown_context),
 	};
 
