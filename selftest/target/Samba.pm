@@ -437,11 +437,10 @@ sub get_interface($)
 		localnt4dc9       => 9,
 		# 10 is spare
 
-		# 11 is used by selftest.pl for the client interface
+		# 11-16 are used by selftest.pl for the client.conf. Most tests only
+		# use the first .11 IP. However, some tests (like winsreplication) rely
+		# on the client having multiple IPs.
 		client            => 11,
-
-		# 12-16 have been historically reserved for the client, although
-		# aren't actually used
 
 		addc_no_nss       => 17,
 		addc_no_ntlm      => 18,
@@ -491,8 +490,14 @@ sub get_interface($)
 
 sub get_ipv4_addr
 {
-	(my $hostname) = @_;
+	my ($hostname, $iface_num) = @_;
 	my $swiface = Samba::get_interface($hostname);
+
+	# Handle testenvs with multiple different addresses, i.e. IP multihoming.
+	# Currently only the selftest client has multiple IPv4 addresses.
+	if (defined($iface_num)) {
+		$swiface += $iface_num;
+	}
 
 	return "127.0.0.$swiface";
 }
@@ -509,11 +514,23 @@ sub get_ipv6_addr
 # addresses for testenv
 sub get_interfaces_config
 {
-	(my $hostname) = @_;
-	my $ipv4_addr = Samba::get_ipv4_addr($hostname);
-	my $ipv6_addr = Samba::get_ipv6_addr($hostname);
+	my ($hostname, $num_ips) = @_;
+	my $interfaces = "";
 
-	return "$ipv4_addr/8 $ipv6_addr/64";
+	# We give the client.conf multiple different IPv4 addresses.
+	# All other testenvs generally just have one IPv4 address.
+	if (! defined($num_ips)) {
+		$num_ips = 1;
+	}
+	for (my $i = 0; $i < $num_ips; $i++) {
+		my $ipv4_addr = Samba::get_ipv4_addr($hostname, $i);
+		$interfaces .= "$ipv4_addr/8 ";
+	}
+
+	my $ipv6_addr = Samba::get_ipv6_addr($hostname);
+	$interfaces .= "$ipv6_addr/64";
+
+	return $interfaces;
 }
 
 sub cleanup_child($$)

@@ -514,7 +514,10 @@ foreach (@opt_include) {
 	push (@includes, read_test_regexes($_));
 }
 
-my $interfaces = Samba::get_interfaces_config("client");
+# We give the selftest client 6 different IPv4 addresses to use. Most tests
+# only use the first (.11) IP. Note that winsreplication.c is one test that
+# uses the other IPs (search for iface_list_count()).
+my $interfaces = Samba::get_interfaces_config("client", 6);
 
 my $clientdir = "$prefix_abs/client";
 
