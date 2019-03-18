@@ -18,8 +18,6 @@
 /* shift right a certain amount of digits */
 void mp_rshd (mp_int * a, int b)
 {
-  int     x;
-
   /* if b <= 0 then ignore it */
   if (b <= 0) {
     return;
@@ -33,6 +31,7 @@ void mp_rshd (mp_int * a, int b)
 
   {
     register mp_digit *bottom, *top;
+    unsigned x, y;
 
     /* shift the digits down */
 
@@ -52,12 +51,13 @@ void mp_rshd (mp_int * a, int b)
                  /\                   |      ---->
                   \-------------------/      ---->
      */
-    for (x = 0; x < (a->used - b); x++) {
+    y = a->used - b;		/* a->used>=b checked above */
+    for (x = 0; x < y; x++) {
       *bottom++ = *top++;
     }
 
     /* zero the top digits */
-    for (; x < a->used; x++) {
+    for (; x < (unsigned)a->used; x++) {
       *bottom++ = 0;
     }
   }
