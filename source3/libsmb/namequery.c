@@ -2510,7 +2510,7 @@ static NTSTATUS resolve_ads(const char *name,
 			}
 		} else {
 			/* use all the IP addresses from the SRV response */
-			int j;
+			size_t j;
 			for (j = 0; j < dcs[i].num_ips; j++) {
 				(*return_iplist)[*return_count].port = dcs[i].port;
 				(*return_iplist)[*return_count].ss = dcs[i].ss_s[j];
