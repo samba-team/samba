@@ -34,7 +34,8 @@ void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...)
 
 static void test_setup(ctdb_queue_cb_fn_t cb,
 		       int *pfd,
-		       struct ctdb_context **pctdb)
+		       struct ctdb_context **pctdb,
+		       struct ctdb_queue **pqueue)
 {
 	int pipefd[2], ret;
 	struct ctdb_context *ctdb;
@@ -54,6 +55,9 @@ static void test_setup(ctdb_queue_cb_fn_t cb,
 
 	*pctdb = ctdb;
 	*pfd = pipefd[1];
+	if (pqueue != NULL) {
+		*pqueue = queue;
+	}
 }
 
 static const size_t test1_req_len = 8;
@@ -76,7 +80,7 @@ static void test1(void)
 	int fd, ret;
 	uint32_t pkt_size;
 
-	test_setup(test1_callback, &fd, &ctdb);
+	test_setup(test1_callback, &fd, &ctdb, NULL);
 
 	pkt_size = sizeof(uint32_t) + test1_req_len;
 	ret = write(fd, &pkt_size, sizeof(pkt_size));
@@ -116,7 +120,7 @@ static void test2(void)
 		req[i] = i % CHAR_MAX;
 	}
 
-	test_setup(test2_callback, &fd, &ctdb);
+	test_setup(test2_callback, &fd, &ctdb, NULL);
 
 	/*
 	 * request 0
