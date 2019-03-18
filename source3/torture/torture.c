@@ -3833,7 +3833,7 @@ static bool run_oplock4(int dummy)
 	}
 
 	/* Now create a hardlink. */
-	status = cli_nt_hardlink(cli1, fname, fname_ln);
+	status = cli_hardlink(cli1, fname, fname_ln);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("nt hardlink failed (%s)\n", nt_errstr(status));
 		return false;
@@ -4737,7 +4737,7 @@ static bool run_deletetest_ln(int dummy)
 	}
 
 	/* Now create a hardlink. */
-	status = cli_nt_hardlink(cli, fname, fname_ln);
+	status = cli_hardlink(cli, fname, fname_ln);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("nt hardlink failed (%s)\n", nt_errstr(status));
 		return false;

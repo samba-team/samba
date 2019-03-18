@@ -4492,7 +4492,7 @@ static int cmd_hardlink(void)
 		return 1;
 	}
 
-	status = cli_nt_hardlink(targetcli, targetname, dest);
+	status = cli_hardlink(targetcli, targetname, dest);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s doing an NT hard link of files\n",
 			 nt_errstr(status));
