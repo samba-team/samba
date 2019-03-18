@@ -52,44 +52,44 @@ EOF
 
 basic_stop ()
 {
-    case "$1" in
+	case "$1" in
 	nfs)
-	    service "$nfs_service" stop
-	    if [ -n "$nfslock_service" ] ; then
-		service "$nfslock_service" stop
-	    fi
-	    ;;
-	nfslock)
-	    if [ -n "$nfslock_service" ] ; then
-		service "$nfslock_service" stop
-	    else
 		service "$nfs_service" stop
-	    fi
-	    ;;
+		if [ -n "$nfslock_service" ] ; then
+			service "$nfslock_service" stop
+		fi
+		;;
+	nfslock)
+		if [ -n "$nfslock_service" ] ; then
+			service "$nfslock_service" stop
+		else
+			service "$nfs_service" stop
+		fi
+		;;
 	*)
-	    usage
-    esac
+		usage
+	esac
 }
 
 basic_start ()
 {
-    case "$1" in
+	case "$1" in
 	nfs)
-	    if [ -n "$nfslock_service" ] ; then
-		service "$nfslock_service" start
-	    fi
-	    service "$nfs_service" start
-	    ;;
-	nfslock)
-	    if [ -n "$nfslock_service" ] ; then
-		service "$nfslock_service" start
-	    else
+		if [ -n "$nfslock_service" ] ; then
+			service "$nfslock_service" start
+		fi
 		service "$nfs_service" start
-	    fi
-	    ;;
+		;;
+	nfslock)
+		if [ -n "$nfslock_service" ] ; then
+			service "$nfslock_service" start
+		else
+			service "$nfs_service" start
+		fi
+		;;
 	*)
-	    usage
-    esac
+		usage
+	esac
 }
 
 ##################################################
@@ -97,32 +97,32 @@ basic_start ()
 
 service_stop ()
 {
-    case "$1" in
+	case "$1" in
 	nfs)
-	    echo 0 >"${PROCFS_PATH}/fs/nfsd/threads"
-	    basic_stop "nfs" >/dev/null 2>&1 || true
-	    pkill -9 nfsd
-	    ;;
+		echo 0 >"${PROCFS_PATH}/fs/nfsd/threads"
+		basic_stop "nfs" >/dev/null 2>&1 || true
+		pkill -9 nfsd
+		;;
 	nlockmgr)
-	    basic_stop "nfslock" >/dev/null 2>&1 || true
-	    ;;
+		basic_stop "nfslock" >/dev/null 2>&1 || true
+		;;
 	*)
-	    usage
-    esac
+		usage
+	esac
 }
 
 service_start ()
 {
-    case "$1" in
+	case "$1" in
 	nfs)
-	    basic_start "nfs"
-	    ;;
+		basic_start "nfs"
+		;;
 	nlockmgr)
-	    basic_start "nfslock"
-	    ;;
+		basic_start "nfslock"
+		;;
 	*)
-	    usage
-    esac
+		usage
+	esac
 }
 
 ##################################################
