@@ -33,8 +33,11 @@
 #include "librpc/gen_ndr/dcerpc.h"
 #include "param/param.h"
 #include "auth/gensec/gensec_toplevel_proto.h"
-#include "lib/crypto/aes.h"
 #include "libds/common/roles.h"
+
+#ifndef HAVE_GNUTLS_AES_CFB8
+#include "lib/crypto/aes.h"
+#endif
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -258,6 +261,95 @@ static NTSTATUS netsec_do_seal(struct schannel_state *state,
 			       bool forward)
 {
 	if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
+#ifdef HAVE_GNUTLS_AES_CFB8
+		gnutls_cipher_hd_t cipher_hnd = NULL;
+		uint8_t sess_kf0[16] = {0};
+		gnutls_datum_t key = {
+			.data = sess_kf0,
+			.size = sizeof(sess_kf0),
+		};
+		uint32_t iv_size =
+			gnutls_cipher_get_iv_size(GNUTLS_CIPHER_AES_128_CFB8);
+		uint8_t _iv[iv_size];
+		gnutls_datum_t iv = {
+			.data = _iv,
+			.size = iv_size,
+		};
+		uint32_t i;
+		int rc;
+
+		for (i = 0; i < key.size; i++) {
+			key.data[i] = state->creds->session_key[i] ^ 0xf0;
+		}
+
+		ZERO_ARRAY(_iv);
+
+		memcpy(iv.data + 0, seq_num, 8);
+		memcpy(iv.data + 8, seq_num, 8);
+
+		rc = gnutls_cipher_init(&cipher_hnd,
+					GNUTLS_CIPHER_AES_128_CFB8,
+					&key,
+					&iv);
+		if (rc < 0) {
+			DBG_ERR("ERROR: gnutls_cipher_init: %s\n",
+				gnutls_strerror(rc));
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (forward) {
+			rc = gnutls_cipher_encrypt(cipher_hnd,
+						   confounder,
+						   8);
+			if (rc < 0) {
+				DBG_ERR("ERROR: gnutls_cipher_encrypt: %s\n",
+					gnutls_strerror(errno));
+				gnutls_cipher_deinit(cipher_hnd);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+
+			/*
+			 * Looks like we have to reuse the initial IV which is
+			 * cryptographically wrong!
+			 */
+			gnutls_cipher_set_iv(cipher_hnd, iv.data, iv.size);
+			rc = gnutls_cipher_encrypt(cipher_hnd,
+						   data,
+						   length);
+			if (rc < 0) {
+				DBG_ERR("ERROR: gnutls_cipher_encrypt: %s\n",
+					gnutls_strerror(errno));
+				gnutls_cipher_deinit(cipher_hnd);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+		} else {
+			rc = gnutls_cipher_decrypt(cipher_hnd,
+						   confounder,
+						   8);
+			if (rc < 0) {
+				DBG_ERR("ERROR: gnutls_cipher_decrypt: %s\n",
+					gnutls_strerror(errno));
+				gnutls_cipher_deinit(cipher_hnd);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+
+			/*
+			 * Looks like we have to reuse the initial IV which is
+			 * cryptographically wrong!
+			 */
+			gnutls_cipher_set_iv(cipher_hnd, iv.data, iv.size);
+			rc = gnutls_cipher_decrypt(cipher_hnd,
+						   data,
+						   length);
+			if (rc < 0) {
+				DBG_ERR("ERROR: gnutls_cipher_decrypt: %s\n",
+					gnutls_strerror(errno));
+				gnutls_cipher_deinit(cipher_hnd);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+		}
+		gnutls_cipher_deinit(cipher_hnd);
+#else /* NOT HAVE_GNUTLS_AES_CFB8 */
 		AES_KEY key;
 		uint8_t iv[AES_BLOCK_SIZE];
 		uint8_t sess_kf0[16];
@@ -279,6 +371,7 @@ static NTSTATUS netsec_do_seal(struct schannel_state *state,
 			aes_cfb8_encrypt(confounder, confounder, 8, &key, iv, AES_DECRYPT);
 			aes_cfb8_encrypt(data, data, length, &key, iv, AES_DECRYPT);
 		}
+#endif /* HAVE_GNUTLS_AES_CFB8 */
 	} else {
 		gnutls_cipher_hd_t cipher_hnd;
 		uint8_t _sealing_key[16];
