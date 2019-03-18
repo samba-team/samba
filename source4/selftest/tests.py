@@ -659,10 +659,11 @@ planpythontestsuite("none", "samba.tests.samba_tool.visualize")
 for env in all_fl_envs:
     planpythontestsuite(env + ":local", "samba.tests.samba_tool.fsmo")
 
-# test user.edit
+# test samba-tool user and computer edit command
 for env in all_fl_envs:
     env += ":local"
     plantestsuite("samba.tests.samba_tool.user_edit", env, [os.path.join(srcdir(), "python/samba/tests/samba_tool/user_edit.sh"), '$SERVER', '$USERNAME', '$PASSWORD'])
+    plantestsuite("samba.tests.samba_tool.computer_edit", env, [os.path.join(srcdir(), "python/samba/tests/samba_tool/computer_edit.sh"), '$SERVER', '$USERNAME', '$PASSWORD'])
 
 # We run this test against both AD DC implementations because it is
 # the only test we have of GPO get/set behaviour, and this involves
