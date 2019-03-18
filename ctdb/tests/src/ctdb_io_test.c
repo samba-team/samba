@@ -243,6 +243,76 @@ static void test3(void)
 	TALLOC_FREE(ctdb);
 }
 
+static void test4(void)
+{
+	struct ctdb_context *ctdb;
+	struct ctdb_queue *queue;
+	uint32_t pkt_size;
+	char *request;
+	size_t req_len;
+	int fd;
+	int ret;
+
+	test_setup(test_cb, &fd, &ctdb, &queue);
+
+	req_len = queue->buffer_size << 1; /* double the buffer size */
+	request = talloc_zero_size(queue, req_len);
+
+	/* writing first part of packet exceeding standard buffer size */
+	pkt_size = sizeof(uint32_t) + req_len;
+
+	ret = write(fd, &pkt_size, sizeof(pkt_size));
+	assert(ret == sizeof(pkt_size));
+
+	ret = write(fd, request, req_len - (queue->buffer_size >> 1));
+	assert(ret == req_len - (queue->buffer_size >> 1));
+
+	/*
+	 * process...
+	 * this needs to be done to have things changed
+	 */
+	tevent_loop_once(ctdb->ev);
+	/*
+	 * needs to be called twice as an initial incomplete packet
+	 * does not trigger a schedule_immediate
+	 */
+	tevent_loop_once(ctdb->ev);
+
+	/* the buffer should be resized to packet size now */
+	assert(queue->buffer.size == pkt_size);
+
+	/* writing remaining data */
+	ret = write(fd, request, queue->buffer_size >> 1);
+	assert(ret == (queue->buffer_size >> 1));
+
+	/* process... */
+	tevent_loop_once(ctdb->ev);
+
+	/*
+	 * the buffer was increased beyond its standard size.
+	 * once packet got processed, the buffer has to be free'd
+	 * and will be re-allocated with standard size on new request arrival.
+	 */
+
+	assert(queue->buffer.size == 0);
+
+	/* writing new packet to verify standard buffer size */
+	pkt_size = sizeof(uint32_t) + (queue->buffer_size >> 1);
+
+	ret = write(fd, &pkt_size, sizeof(pkt_size));
+	assert(ret == sizeof(pkt_size));
+
+	ret = write(fd, request, (queue->buffer_size >> 1));
+	assert(ret == (queue->buffer_size >> 1));
+
+	/* process... */
+	tevent_loop_once(ctdb->ev);
+
+	/* back to standard buffer size */
+	assert(queue->buffer.size == queue->buffer_size);
+
+	TALLOC_FREE(ctdb);
+}
 
 int main(int argc, const char **argv)
 {
@@ -266,6 +336,10 @@ int main(int argc, const char **argv)
 
 	case 3:
 		test3();
+		break;
+
+	case 4:
+		test4();
 		break;
 
 	default:
