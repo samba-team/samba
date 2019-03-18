@@ -6875,7 +6875,7 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (req->posix_pathnames) {
+	if (smb_fname_src->flags & SMB_FILENAME_POSIX_PATH) {
 		srvstr_get_path_posix(ctx,
 				pdata,
 				req->flags2,
@@ -6884,6 +6884,7 @@ static NTSTATUS smb_file_link_information(connection_struct *conn,
 				len,
 				STR_TERMINATE,
 				&status);
+		ucf_flags |= UCF_POSIX_PATHNAMES;
 	} else {
 		srvstr_get_path(ctx,
 				pdata,
