@@ -6128,6 +6128,7 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		struct smb_filename *smb_fname_new)
 {
 	NTSTATUS status = NT_STATUS_OK;
+	bool ok;
 
 	/* source must already exist. */
 	if (!VALID_STAT(smb_fname_old->st)) {
@@ -6159,8 +6160,14 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 	}
 
 	/* Setting a hardlink to/from a stream isn't currently supported. */
-	if (is_ntfs_stream_smb_fname(smb_fname_old) ||
-	    is_ntfs_stream_smb_fname(smb_fname_new)) {
+	ok = is_ntfs_stream_smb_fname(smb_fname_old);
+	if (ok) {
+		DBG_DEBUG("Old name has streams\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	ok = is_ntfs_stream_smb_fname(smb_fname_new);
+	if (ok) {
+		DBG_DEBUG("New name has streams\n");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
