@@ -3041,8 +3041,8 @@ static NTSTATUS get_dc_list(const char *domain,
 	char *port_str = NULL;
 	int port;
 	char *name;
-	int num_addresses = 0;
-	int  local_count, i, j;
+	size_t num_addresses = 0;
+	size_t local_count, i;
 	struct ip_service *return_iplist = NULL;
 	struct ip_service *auto_ip_list = NULL;
 	bool done_auto_lookup = false;
@@ -3171,6 +3171,7 @@ static NTSTATUS get_dc_list(const char *domain,
 		/* copy any addresses from the auto lookup */
 
 		if (strequal(name, "*")) {
+			int j;
 			for (j=0; j<auto_count; j++) {
 				char addr[INET6_ADDRSTRLEN];
 				print_sockaddr(addr,
@@ -3251,7 +3252,7 @@ static NTSTATUS get_dc_list(const char *domain,
 	}
 
 	if ( DEBUGLEVEL >= 4 ) {
-		DEBUG(4,("get_dc_list: returning %d ip addresses "
+		DEBUG(4,("get_dc_list: returning %zu ip addresses "
 				"in an %sordered list\n",
 				local_count,
 				*ordered ? "":"un"));
