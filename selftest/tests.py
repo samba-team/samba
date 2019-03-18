@@ -193,3 +193,5 @@ plantestsuite("samba.unittests.ms_fnmatch", "none",
               [os.path.join(bindir(), "default/lib/util/test_ms_fnmatch")])
 plantestsuite("samba.unittests.ntlm_check", "none",
               [os.path.join(bindir(), "default/libcli/auth/test_ntlm_check")])
+plantestsuite("samba.unittests.test_registry_regfio", "none",
+              [os.path.join(bindir(), "default/source3/test_registry_regfio")])
