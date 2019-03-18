@@ -352,14 +352,6 @@ struct tevent_req *cli_ntrename_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_ntrename_recv(struct tevent_req *req);
 NTSTATUS cli_ntrename(struct cli_state *cli, const char *fname_src, const char *fname_dst);
 
-struct tevent_req *cli_nt_hardlink_send(TALLOC_CTX *mem_ctx,
-                                struct tevent_context *ev,
-                                struct cli_state *cli,
-                                const char *fname_src,
-                                const char *fname_dst);
-NTSTATUS cli_nt_hardlink_recv(struct tevent_req *req);
-NTSTATUS cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst);
-
 struct tevent_req *cli_hardlink_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,

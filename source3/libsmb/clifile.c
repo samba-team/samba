@@ -1458,7 +1458,7 @@ NTSTATUS cli_ntrename(struct cli_state *cli, const char *fname_src, const char *
  NT hardlink a file.
 ****************************************************************************/
 
-struct tevent_req *cli_nt_hardlink_send(TALLOC_CTX *mem_ctx,
+static struct tevent_req *cli_nt_hardlink_send(TALLOC_CTX *mem_ctx,
 				struct tevent_context *ev,
 				struct cli_state *cli,
 				const char *fname_src,
@@ -1472,47 +1472,9 @@ struct tevent_req *cli_nt_hardlink_send(TALLOC_CTX *mem_ctx,
 					  RENAME_FLAG_HARD_LINK);
 }
 
-NTSTATUS cli_nt_hardlink_recv(struct tevent_req *req)
+static NTSTATUS cli_nt_hardlink_recv(struct tevent_req *req)
 {
 	return cli_ntrename_internal_recv(req);
-}
-
-NTSTATUS cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	struct tevent_context *ev;
-	struct tevent_req *req;
-	NTSTATUS status = NT_STATUS_OK;
-
-	if (smbXcli_conn_has_async_calls(cli->conn)) {
-		/*
-		 * Can't use sync call while an async call is in flight
-		 */
-		status = NT_STATUS_INVALID_PARAMETER;
-		goto fail;
-	}
-
-	ev = samba_tevent_context_init(frame);
-	if (ev == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	req = cli_nt_hardlink_send(frame, ev, cli, fname_src, fname_dst);
-	if (req == NULL) {
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
-		goto fail;
-	}
-
-	status = cli_nt_hardlink_recv(req);
-
- fail:
-	TALLOC_FREE(frame);
-	return status;
 }
 
 struct cli_smb2_hardlink_state {
