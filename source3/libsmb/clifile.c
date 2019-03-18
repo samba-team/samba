@@ -26,7 +26,7 @@
 #include "libsmb/clirap.h"
 #include "trans2.h"
 #include "ntioctl.h"
-#include "libcli/security/secdesc.h"
+#include "libcli/security/security.h"
 #include "../libcli/smb/smbXcli_base.h"
 
 struct cli_setpathinfo_state {
@@ -1510,6 +1510,241 @@ NTSTATUS cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const cha
 
 	status = cli_nt_hardlink_recv(req);
 
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+struct cli_smb2_hardlink_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	uint16_t fnum_src;
+	const char *fname_dst;
+	bool overwrite;
+	NTSTATUS status;
+};
+
+static void cli_smb2_hardlink_opened(struct tevent_req *subreq);
+static void cli_smb2_hardlink_info_set(struct tevent_req *subreq);
+static void cli_smb2_hardlink_closed(struct tevent_req *subreq);
+
+static struct tevent_req *cli_smb2_hardlink_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *fname_src,
+	const char *fname_dst,
+	bool overwrite,
+	struct smb2_create_blobs *in_cblobs)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_smb2_hardlink_state *state = NULL;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_smb2_hardlink_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->fname_dst = fname_dst;
+	state->overwrite = overwrite;
+
+	subreq = cli_smb2_create_fnum_send(
+		state,
+		ev,
+		cli,
+		fname_src,
+		0,			/* create_flags */
+		SMB2_IMPERSONATION_IMPERSONATION,
+		FILE_WRITE_ATTRIBUTES,
+		0,			/* file attributes */
+		FILE_SHARE_READ|
+		FILE_SHARE_WRITE|
+		FILE_SHARE_DELETE,	 /* share_access */
+		FILE_OPEN,		 /* create_disposition */
+		FILE_NON_DIRECTORY_FILE, /* no hardlinks on directories */
+		in_cblobs);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_smb2_hardlink_opened, req);
+	return req;
+}
+
+static void cli_smb2_hardlink_opened(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_hardlink_state *state = tevent_req_data(
+		req, struct cli_smb2_hardlink_state);
+	NTSTATUS status;
+	smb_ucs2_t *ucs2_dst;
+	size_t ucs2_len;
+	DATA_BLOB inbuf;
+	bool ok;
+
+	status = cli_smb2_create_fnum_recv(
+		subreq, &state->fnum_src, NULL, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	ok = push_ucs2_talloc(state, &ucs2_dst, state->fname_dst, &ucs2_len);
+	if (!ok || (ucs2_len < 2)) {
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return;
+	}
+	/* Don't 0-terminate the name */
+	ucs2_len -= 2;
+
+	inbuf = data_blob_talloc_zero(state, ucs2_len + 20);
+	if (tevent_req_nomem(inbuf.data, req)) {
+		return;
+	}
+
+	if (state->overwrite) {
+		SCVAL(inbuf.data, 0, 1);
+	}
+	SIVAL(inbuf.data, 16, ucs2_len);
+	memcpy(inbuf.data + 20, ucs2_dst, ucs2_len);
+	TALLOC_FREE(ucs2_dst);
+
+	subreq = cli_smb2_set_info_fnum_send(
+		state,
+		state->ev,
+		state->cli,
+		state->fnum_src,
+		1,		/* in_info_type */
+		SMB_FILE_LINK_INFORMATION - 1000, /* in_file_info_class */
+		&inbuf,
+		0);		/* in_additional_info */
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_smb2_hardlink_info_set, req);
+}
+
+static void cli_smb2_hardlink_info_set(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct cli_smb2_hardlink_state *state = tevent_req_data(
+		req, struct cli_smb2_hardlink_state);
+
+	state->status = cli_smb2_set_info_fnum_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	/* ignore error here, we need to close the file */
+
+	subreq = cli_smb2_close_fnum_send(
+		state, state->ev, state->cli, state->fnum_src);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, cli_smb2_hardlink_closed, req);
+}
+
+static void cli_smb2_hardlink_closed(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_close_fnum_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static NTSTATUS cli_smb2_hardlink_recv(struct tevent_req *req)
+{
+	struct cli_smb2_hardlink_state *state = tevent_req_data(
+		req, struct cli_smb2_hardlink_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	return state->status;
+}
+
+struct cli_hardlink_state {
+	uint8_t dummy;
+};
+
+static void cli_hardlink_done(struct tevent_req *subreq);
+static void cli_hardlink_done2(struct tevent_req *subreq);
+
+struct tevent_req *cli_hardlink_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *fname_src,
+	const char *fname_dst)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_hardlink_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_hardlink_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		subreq = cli_smb2_hardlink_send(
+			state, ev, cli, fname_src, fname_dst, false, NULL);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, cli_hardlink_done2, req);
+		return req;
+	}
+
+	subreq = cli_nt_hardlink_send(state, ev, cli, fname_src, fname_dst);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_hardlink_done, req);
+	return req;
+}
+
+static void cli_hardlink_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_nt_hardlink_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static void cli_hardlink_done2(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb2_hardlink_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_hardlink_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_hardlink(
+	struct cli_state *cli, const char *fname_src, const char *fname_dst)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto fail;
+	}
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+	req = cli_hardlink_send(frame, ev, cli, fname_src, fname_dst);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_hardlink_recv(req);
  fail:
 	TALLOC_FREE(frame);
 	return status;

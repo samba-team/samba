@@ -360,6 +360,18 @@ struct tevent_req *cli_nt_hardlink_send(TALLOC_CTX *mem_ctx,
 NTSTATUS cli_nt_hardlink_recv(struct tevent_req *req);
 NTSTATUS cli_nt_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst);
 
+struct tevent_req *cli_hardlink_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *fname_src,
+	const char *fname_dst);
+NTSTATUS cli_hardlink_recv(struct tevent_req *req);
+NTSTATUS cli_hardlink(
+	struct cli_state *cli,
+	const char *fname_src,
+	const char *fname_dst);
+
 struct tevent_req *cli_unlink_send(TALLOC_CTX *mem_ctx,
                                 struct tevent_context *ev,
                                 struct cli_state *cli,
