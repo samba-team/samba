@@ -204,6 +204,12 @@ bld.SAMBA3_SUBSYSTEM('REGFIO',
                     source='registry/regfio.c',
                     deps='samba-util REG_PARSE_PRS')
 
+bld.SAMBA_BINARY('test_registry_regfio',
+                 source='registry/tests/test_regfio.c',
+                 deps='cmocka samba3-util smbconf REGFIO',
+                 local_include=False,
+                 install=False)
+
 bld.SAMBA3_SUBSYSTEM('REG_API_REGF',
                     source='registry/reg_api_regf.c',
                     deps='samba-util')
