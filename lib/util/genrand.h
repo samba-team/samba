@@ -20,14 +20,11 @@
 */
 
 /**
- Interface to the (hopefully) good crypto random number generator.
- Will use our internal PRNG if more than 40 bytes of random generation
- has been requested, otherwise tries to read from /dev/random
-**/
+ * Thread and fork safe random number generator for temporary keys.
+ */
 void generate_random_buffer(uint8_t *out, int len);
 
 /**
- Interface to the (hopefully) good crypto random number generator.
- Will always use /dev/urandom if available.
-**/
+ * Thread and fork safe random number generator for long term keys.
+ */
 void generate_secret_buffer(uint8_t *out, int len);

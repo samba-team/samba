@@ -20,35 +20,17 @@
 */
 
 #include "replace.h"
-#include "system/filesys.h"
 #include "lib/util/genrand.h"
-#include "sys_rw_data.h"
-#include "lib/util/blocking.h"
 
-static int urand_fd = -1;
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
-static void open_urandom(void)
-{
-	if (urand_fd != -1) {
-		return;
-	}
-	urand_fd = open( "/dev/urandom", O_RDONLY,0);
-	if (urand_fd == -1) {
-		abort();
-	}
-	smb_set_close_on_exec(urand_fd);
-}
+/* TODO: Add API for generating nonce or use gnutls_rnd directly everywhere. */
 
 _PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
 {
-	ssize_t rw_ret;
-
-	open_urandom();
-
-	rw_ret = read_data(urand_fd, out, len);
-	if (rw_ret != len) {
-		abort();
-	}
+	/* Thread and fork safe random number generator for temporary keys. */
+	gnutls_rnd(GNUTLS_RND_RANDOM, out, len);
 }
 
 /*
@@ -57,5 +39,6 @@ _PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
  */
 _PUBLIC_ void generate_secret_buffer(uint8_t *out, int len)
 {
-	generate_random_buffer(out, len);
+	/* Thread and fork safe random number generator for long term keys. */
+	gnutls_rnd(GNUTLS_RND_KEY, out, len);
 }

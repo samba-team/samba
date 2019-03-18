@@ -104,7 +104,7 @@ else:
 
     bld.SAMBA_LIBRARY('genrand',
                       source='genrand.c',
-                      deps='replace socket-blocking sys_rw',
+                      deps='replace gnutls',
                       local_include=False,
                       private_library=True)
 
