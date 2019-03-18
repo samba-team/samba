@@ -172,6 +172,78 @@ static void test2(void)
 	TALLOC_FREE(ctdb);
 }
 
+static void test_cb(uint8_t *data, size_t length, void *private_data)
+{
+	/* dummy handler, not verifying anything */
+	TALLOC_FREE(data);
+}
+
+static void test3(void)
+{
+	struct ctdb_context *ctdb;
+	struct ctdb_queue *queue;
+	uint32_t pkt_size;
+	char *request;
+	size_t req_len;
+	int fd;
+	int ret;
+
+	test_setup(test_cb, &fd, &ctdb, &queue);
+	request = talloc_zero_size(queue, queue->buffer_size);
+
+	/*
+	 * calculate a request length which will fit into the buffer
+	 * but not twice. Because we need to write the size integer
+	 * as well (4-bytes) we're guaranteed that no 2 packets will fit.
+	 */
+	req_len = queue->buffer_size >> 1;
+
+	/* writing first packet */
+	pkt_size = sizeof(uint32_t) + req_len;
+
+	ret = write(fd, &pkt_size, sizeof(pkt_size));
+	assert(ret == sizeof(pkt_size));
+
+	ret = write(fd, request, req_len);
+	assert(ret == req_len);
+
+	/* writing second, incomplete packet */
+	pkt_size = sizeof(uint32_t) + req_len;
+
+	ret = write(fd, &pkt_size, sizeof(pkt_size));
+	assert(ret == sizeof(pkt_size));
+
+	ret = write(fd, request, req_len >> 1);
+	assert(ret == req_len >> 1);
+
+	/* process...only 1st packet can be processed */
+	tevent_loop_once(ctdb->ev);
+
+	/* we should see a progressed offset of req_len + sizeof(pkt_size) */
+	assert(queue->buffer.offset == req_len + sizeof(pkt_size));
+
+	/* writing another few bytes of the still incomplete packet */
+	ret = write(fd, request, (req_len >> 1) - 1);
+	assert(ret == (req_len >> 1) - 1);
+
+	/*
+	 * the packet is still incomplete and connot be processed
+	 * but the packet data had to be moved in the buffer in order
+	 * to fetch the new 199 bytes -> offset must be 0 now.
+	 */
+	tevent_loop_once(ctdb->ev);
+	/*
+	 * needs to be called twice as an incomplete packet
+	 * does not trigger a schedule_immediate
+	 */
+	tevent_loop_once(ctdb->ev);
+
+	assert(queue->buffer.offset == 0);
+
+	TALLOC_FREE(ctdb);
+}
+
+
 int main(int argc, const char **argv)
 {
 	int num;
@@ -190,6 +262,10 @@ int main(int argc, const char **argv)
 
 	case 2:
 		test2();
+		break;
+
+	case 3:
+		test3();
 		break;
 
 	default:
