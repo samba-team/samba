@@ -409,7 +409,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 			 * handle (returned from an NT SMB). NT5.0 seems
 			 * to do this call. JRA.
 			 */
-			if (INFO_LEVEL_IS_UNIX(file_info_level)) {
+			if (fsp->fsp_name->flags & SMB_FILENAME_POSIX_PATH) {
 				/* Always do lstat for UNIX calls. */
 				if (SMB_VFS_LSTAT(conn, fsp->fsp_name)) {
 					DEBUG(3,("smbd_smb2_setinfo_send: "
