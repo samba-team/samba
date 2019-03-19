@@ -88,7 +88,7 @@ def shorten_vertex_names(vertices, suffix=',...', aggressive=False):
         try:
             while True:
                 c = set(x[i] for x in vlist)
-                if len(c) > 1 or c == {'*'}:
+                if len(c) > 1 or '*' in c:
                     break
                 i -= 1
         except IndexError:
