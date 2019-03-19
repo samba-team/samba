@@ -194,6 +194,6 @@ def get_utdv_summary(distances, filters=None):
     }
 
     if filters:
-        return {key: summary[key] for key in filters}
+        return dict((key, summary[key]) for key in filters)
     else:
         return summary
