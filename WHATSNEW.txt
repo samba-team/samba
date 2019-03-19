@@ -1,16 +1,11 @@
-Release Announcements
-=====================
-
-This is the fourth release candidate of Samba 4.10.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.10 will be the next version of the Samba suite.
+                   ==============================
+                   Release Notes for Samba 4.10.0
+                           March 19, 2019
+		   ==============================
 
 
-UPGRADING
-=========
+This is the first stable release of the Samba 4.10 release series.
+Please read the release notes carefully before upgrading.
 
 
 NEW FEATURES/CHANGES
@@ -253,6 +248,34 @@ smb.conf changes
                               "smbd:max async dosmode"
   smbd getinfo ask sharemode  New: similar to "smbd search ask yes
                               sharemode" but for SMB getinfo
+
+
+CHANGES SINCE 4.10.0rc4
+=======================
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13760: s4-server: Open and close a transaction on sam.ldb at startup.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13812: access_check_max_allowed() doesn't process "Owner Rights" ACEs.
+
+o  Joe Guo <joeg@catalyst.net.nz>
+   * s4/scripting/bin: Open unicode files with utf8 encoding and write
+   * unicode string.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 13759: sambaundoguididx: Use the right escaped oder unescaped sam ldb
+     files.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13813: Fix idmap cache pollution with S-1-22- IDs on winbind hickup.
+
+o  Christof Schmitt <cs@samba.org>
+   * passdb: Update ABI to 0.27.2.
+   * BUG 13813: lib/winbind_util: Add winbind_xid_to_sid for --without-winbind.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13823: lib:util: Move debug message for mkdir failing to log level 1.
 
 
 CHANGES SINCE 4.10.0rc3
