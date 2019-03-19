@@ -115,16 +115,34 @@ else:
                      install=False)
 
     bld.SAMBA_LIBRARY('samba-util',
-                  source='''talloc_stack.c smb_threads.c
-                    rbtree.c rfc1738.c system.c getpass.c
-                    genrand_util.c fsusage.c
-                    params.c util_id.c util_net.c
-                    util_strlist_v3.c util_paths.c
-                    idtree_random.c base64.c
-                    util_str.c util_str_common.c ms_fnmatch.c
-                    server_id.c dprintf.c
-                    tevent_debug.c memcache.c unix_match.c tfork.c
-                    tftw.c''',
+                  source='''
+                         base64.c
+                         dprintf.c
+                         fsusage.c
+                         genrand_util.c
+                         getpass.c
+                         idtree_random.c
+                         memcache.c
+                         ms_fnmatch.c
+                         params.c
+                         rbtree.c
+                         rfc1738.c
+                         server_id.c
+                         smb_threads.c
+                         system.c
+                         talloc_keep_secret.c
+                         talloc_stack.c
+                         tevent_debug.c
+                         tfork.c
+                         tftw.c
+                         unix_match.c
+                         util_id.c
+                         util_net.c
+                         util_paths.c
+                         util_str.c
+                         util_str_common.c
+                         util_strlist_v3.c
+                         ''',
                   deps='samba-util-core DYNCONFIG close-low-fd tiniparser genrand util_str_hex',
                   public_deps='talloc tevent execinfo pthread LIBCRYPTO charset util_setid',
                   public_headers='''
