@@ -58,6 +58,7 @@ class cmd_sambatool(SuperCommand):
     subcommands = cache_loader()
 
     subcommands["computer"] = None
+    subcommands["contact"] = None
     subcommands["dbcheck"] = None
     subcommands["delegation"] = None
     subcommands["dns"] = None

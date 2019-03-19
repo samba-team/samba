@@ -497,6 +497,114 @@ member: %s
         else:
             self.transaction_commit()
 
+    def newcontact(self,
+                   fullcontactname=None,
+                   ou=None,
+                   surname=None,
+                   givenname=None,
+                   initials=None,
+                   displayname=None,
+                   jobtitle=None,
+                   department=None,
+                   company=None,
+                   description=None,
+                   mailaddress=None,
+                   internetaddress=None,
+                   telephonenumber=None,
+                   mobilenumber=None,
+                   physicaldeliveryoffice=None):
+        """Adds a new contact with additional parameters
+
+        :param fullcontactname: Optional full name of the new contact
+        :param ou: Object container for new contact
+        :param surname: Surname of the new contact
+        :param givenname: First name of the new contact
+        :param initials: Initials of the new contact
+        :param displayname: displayName of the new contact
+        :param jobtitle: Job title of the new contact
+        :param department: Department of the new contact
+        :param company: Company of the new contact
+        :param description: Description of the new contact
+        :param mailaddress: Email address of the new contact
+        :param internetaddress: Home page of the new contact
+        :param telephonenumber: Phone number of the new contact
+        :param mobilenumber: Primary mobile number of the new contact
+        :param physicaldeliveryoffice: Office location of the new contact
+        """
+
+        # Prepare the contact name like the RSAT, using the name parts.
+        cn = ""
+        if givenname is not None:
+            cn += givenname
+
+        if initials is not None:
+            cn += ' %s.' % initials
+
+        if surname is not None:
+            cn += ' %s' % surname
+
+        # Use the specified fullcontactname instead of the previously prepared
+        # contact name, if it is specified.
+        # This is similar to the "Full name" value of the RSAT.
+        if fullcontactname is not None:
+            cn = fullcontactname
+
+        if fullcontactname is None and cn == "":
+            raise Exception('No name for contact specified')
+
+        contactcontainer_dn = self.domain_dn()
+        if ou:
+            contactcontainer_dn = self.normalize_dn_in_domain(ou)
+
+        contact_dn = "CN=%s,%s" % (cn, contactcontainer_dn)
+
+        ldbmessage = {"dn": contact_dn,
+                      "objectClass": "contact",
+                      }
+
+        if surname is not None:
+            ldbmessage["sn"] = surname
+
+        if givenname is not None:
+            ldbmessage["givenName"] = givenname
+
+        if displayname is not None:
+            ldbmessage["displayName"] = displayname
+
+        if initials is not None:
+            ldbmessage["initials"] = '%s.' % initials
+
+        if jobtitle is not None:
+            ldbmessage["title"] = jobtitle
+
+        if department is not None:
+            ldbmessage["department"] = department
+
+        if company is not None:
+            ldbmessage["company"] = company
+
+        if description is not None:
+            ldbmessage["description"] = description
+
+        if mailaddress is not None:
+            ldbmessage["mail"] = mailaddress
+
+        if internetaddress is not None:
+            ldbmessage["wWWHomePage"] = internetaddress
+
+        if telephonenumber is not None:
+            ldbmessage["telephoneNumber"] = telephonenumber
+
+        if mobilenumber is not None:
+            ldbmessage["mobile"] = mobilenumber
+
+        if physicaldeliveryoffice is not None:
+            ldbmessage["physicalDeliveryOfficeName"] = physicaldeliveryoffice
+
+        self.add(ldbmessage)
+
+        return cn
+
     def newcomputer(self, computername, computerou=None, description=None,
                     prepare_oldjoin=False, ip_address_list=None,
                     service_principal_name_list=None):
