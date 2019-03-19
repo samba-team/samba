@@ -48,6 +48,7 @@ extern const char *panic_action;
 #include "lib/util/data_blob.h"
 #include "lib/util/byteorder.h"
 #include "lib/util/talloc_stack.h"
+#include "lib/util/talloc_keep_secret.h"
 
 #ifndef ABS
 #define ABS(a) ((a)>0?(a):(-(a)))
