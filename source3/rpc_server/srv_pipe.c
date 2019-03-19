@@ -1878,7 +1878,7 @@ void process_complete_pdu(struct pipes_struct *p, struct ncacn_packet *pkt)
 
 done:
 	if (!reply) {
-		DEBUG(3,("DCE/RPC fault sent!"));
+		DBG_NOTICE("DCE/RPC fault sent!\n");
 		set_incoming_fault(p);
 		setup_fault_pdu(p, NT_STATUS(DCERPC_NCA_S_PROTO_ERROR));
 	}
