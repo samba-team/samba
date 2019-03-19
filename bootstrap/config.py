@@ -88,6 +88,10 @@ PKGS = [
     ('', 'quota-devel'),
     ('uuid-dev', 'libuuid-devel'),
     ('libjs-jquery', ''),
+    ('libavahi-common-dev', 'avahi-devel'),
+    ('libdbus-1-dev', 'dbus-devel'),
+    ('libpcap-dev', 'libpcap-devel'),
+    ('libunwind-dev', 'libunwind-devel'),  # for back trace
 
     # NAME1, NAME2
     # for debian, locales provide locale support with language packs
@@ -342,6 +346,7 @@ DEB_DISTS = {
             'python3-gpg': 'python3-gpgme',
             'lmdb-utils': 'lmdb-utils/trusty-backports',
             'liblmdb-dev': 'liblmdb-dev/trusty-backports',
+            'libunwind-dev': 'libunwind8-dev',
         }
     },
     'ubuntu1604': {
