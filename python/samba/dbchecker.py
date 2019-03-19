@@ -2445,7 +2445,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
 
             # check for empty attributes
             for val in obj[attrname]:
-                if val == '':
+                if val == b'':
                     self.err_empty_attribute(dn, attrname)
                     error_count += 1
                     continue
