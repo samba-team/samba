@@ -246,6 +246,9 @@ plantestsuite("samba.unittests.lib_util_modules", "none",
 plantestsuite("samba.unittests.smb1cli_session", "none",
               [os.path.join(bindir(), "default/libcli/smb/test_smb1cli_session")])
 
+plantestsuite("samba.unittests.talloc_keep_secret", "none",
+              [os.path.join(bindir(), "default/lib/util/test_talloc_keep_secret")])
+
 plantestsuite("samba.unittests.tldap", "none",
               [os.path.join(bindir(), "default/source3/test_tldap")])
 plantestsuite("samba.unittests.rfc1738", "none",

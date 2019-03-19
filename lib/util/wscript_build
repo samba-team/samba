@@ -269,3 +269,9 @@ else:
                      deps='cmocka replace samba-util',
                      local_include=False,
                      install=False)
+
+    bld.SAMBA_BINARY('test_talloc_keep_secret',
+                     source='tests/test_talloc_keep_secret.c',
+                     deps='cmocka replace samba-util',
+                     local_include=False,
+                     install=False)
