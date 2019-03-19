@@ -31,21 +31,23 @@ OUT = join(HERE, 'dists')
 
 # pkgs with same name in all packaging systems
 COMMON = [
+    'acl',
     'attr',
     'autoconf',
     'binutils',
     'bison',
-    'ccache',
     'curl',
     'gcc',
     'gdb',
     'git',
+    'htop',
     'make',
     'perl',
     'psmisc',  # for pstree in test
+    'rng-tools',
+    'sed',
     'sudo',  # docker images has no sudo by default
-    'vim',
-    'wget',
+    'tree',
 ]
 
 
@@ -62,8 +64,7 @@ PKGS = [
     ('libaio-dev', 'libaio-devel'),
     ('libarchive-dev', 'libarchive-devel'),
     ('libblkid-dev', 'libblkid-devel'),
-    ('libxml2-dev', 'libxml2-devel'),
-    ('libcap-dev', 'libpcap-devel'),
+    ('libcap-dev', 'libcap-devel'),
     ('libacl1-dev', 'libacl-devel'),
     ('libattr1-dev', 'libattr-devel'),
 
@@ -82,7 +83,11 @@ PKGS = [
     ('libgpgme11-dev', 'gpgme-devel'),
     # NOTE: Debian 8+ and Ubuntu 14.04+
     ('libgnutls28-dev', 'gnutls-devel'),
-    ('libdbus-1-dev', 'dbus-devel'),
+    ('libtasn1-bin', ''),
+    ('libtasn1-dev', 'libtasn1-devel'),
+    ('', 'quota-devel'),
+    ('uuid-dev', 'libuuid-devel'),
+    ('libjs-jquery', ''),
 
     # NAME1, NAME2
     # for debian, locales provide locale support with language packs
@@ -91,43 +96,54 @@ PKGS = [
     # fedora split language packs  to glibc-langpack-xx
     ('locales', 'glibc-common'),  # required for locale
     ('language-pack-en', 'glibc-langpack-en'),  # we need en_US.UTF-8
-    ('', 'glibc-locale-source'),  # for localedef
-    ('bind9', 'bind'),
     ('bind9utils', 'bind-utils'),
     ('dnsutils', ''),
-    ('locate', 'mlocate'),
     ('xsltproc', 'libxslt'),
-    ('krb5-kdc', 'krb5-workstation'),
+    ('krb5-user', ''),
+    ('krb5-config', ''),
+    ('', 'krb5-server'),
     ('apt-utils', 'yum-utils'),
     ('pkg-config', 'pkgconfig'),
     ('procps', 'procps-ng'),  # required for the free cmd in tests
-    ('lsb-core', 'redhat-lsb'),  # we need lsb_relase to show info
+    ('lsb-release', 'redhat-lsb'),  # we need lsb_relase to show info
     ('', 'rpcgen'),  # required for test
     # refer: https://fedoraproject.org/wiki/Changes/SunRPCRemoval
     ('', 'libtirpc-devel'),  # for <rpc/rpc.h> header on fedora
     ('', 'libnsl2-devel'),  # for <rpcsvc/yp_prot.h> header on fedora
+    ('mawk', 'gawk'),
 
     # python
     ('python-dev', 'python-devel'),
+    ('python-dbg', ''),
+    ('python-iso8601', ''),
     ('python-gpg', 'python2-gpg'),  # defaults to ubuntu/fedora latest
     ('python-crypto', 'python-crypto'),
     ('python-markdown', 'python-markdown'),
     ('python-dnspython', 'python-dns'),
+    ('python-pexpect', ''),  # for wintest only
 
     ('python3-dev', 'python3-devel'),
+    ('python3-dbg', ''),
+    ('python3-iso8601', ''),
     ('python3-gpg', 'python3-gpg'),  # defaults to ubuntu/fedora latest
     ('python3-crypto', 'python3-crypto'),
     ('python3-markdown', 'python3-markdown'),
+    ('python3-matplotlib', ''),
     ('python3-dnspython', 'python3-dns'),
+    ('python3-pexpect', ''),  # for wintest only
 
     ('', 'libsemanage-python'),
     ('', 'policycoreutils-python'),
 
     # perl
     ('libparse-yapp-perl', 'perl-Parse-Yapp'),
-    # not strict equivalents
-    ('perl-modules', 'perl-ExtUtils-MakeMaker'),
-    ('libjson-perl', 'perl-Test-Base'),
+    ('libjson-perl', 'perl-JSON-Parse'),
+    ('perl-modules', ''),
+    ('', 'perl-Archive-Tar'),
+    ('', 'perl-ExtUtils-MakeMaker'),
+    ('', 'perl-Test-Base'),
+    ('', 'perl-generators'),
+    ('', 'perl-interpreter'),
 
     # misc
     # @ means group for rpm, use fedora as rpm default
