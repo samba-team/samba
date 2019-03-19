@@ -2301,7 +2301,7 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                     self.report("ERROR: Not fixing num_values(%d) for '%s' on '%s'" %
                                 (len(obj[attrname]), attrname, str(obj.dn)))
                 else:
-                    name_val = obj[attrname][0]
+                    name_val = str(obj[attrname][0])
 
             if str(attrname).lower() == str(obj.dn.get_rdn_name()).lower():
                 object_rdn_attr = attrname
