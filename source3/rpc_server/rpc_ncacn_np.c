@@ -164,7 +164,7 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 				      NCACN_NP,
 				      npc->remote_client_addr,
 				      npc->local_server_addr,
-				      npc->session_info,
+				      &npc->session_info,
 				      &npc->p,
 				      &error);
 	if (rc == -1) {

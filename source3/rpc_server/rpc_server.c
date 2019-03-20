@@ -42,10 +42,11 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 			     enum dcerpc_transport_t transport,
 			     const struct tsocket_address *remote_address,
 			     const struct tsocket_address *local_address,
-			     struct auth_session_info *session_info,
+			     struct auth_session_info **psession_info,
 			     struct pipes_struct **_p,
 			     int *perrno)
 {
+	struct auth_session_info *session_info = *psession_info;
 	struct pipes_struct *p;
 	int ret;
 
@@ -67,7 +68,7 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Don't call create_local_token(), we already have the full details here */
-	p->session_info = talloc_steal(p, session_info);
+	p->session_info = talloc_move(p, psession_info);
 
 	*_p = p;
 	return 0;
@@ -380,7 +381,7 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 				       npc->pipe_name, NCACN_NP,
 				       npc->remote_client_addr,
 				       npc->local_server_addr,
-				       npc->session_info,
+				       &npc->session_info,
 				       &npc->p, &error);
 	if (ret != 0) {
 		DEBUG(2, ("Failed to create pipes_struct! (%s)\n",
@@ -1127,7 +1128,7 @@ void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 				      ncacn_conn->transport,
 				      ncacn_conn->remote_client_addr,
 				      ncacn_conn->local_server_addr,
-				      ncacn_conn->session_info,
+				      &ncacn_conn->session_info,
 				      &ncacn_conn->p,
 				      &sys_errno);
 	if (rc < 0) {

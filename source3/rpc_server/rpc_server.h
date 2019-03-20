@@ -71,7 +71,7 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 			     enum dcerpc_transport_t transport,
 			     const struct tsocket_address *remote_address,
 			     const struct tsocket_address *local_address,
-			     struct auth_session_info *session_info,
+			     struct auth_session_info **session_info,
 			     struct pipes_struct **_p,
 			     int *perrno);
 
