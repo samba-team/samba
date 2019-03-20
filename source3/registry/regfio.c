@@ -1127,16 +1127,16 @@ static bool next_record( REGF_HBIN *hbin, const char *hdr, bool *eob )
 		if ( !prs_uint8s( True, "header", ps, 0, header, REC_HDR_SIZE ) )
 			return False;
 
-		if ( record_size & 0x80000000 ) {
+		if (record_size & 0x80000000) {
 			/* absolute_value(record_size) */
 			record_size = (record_size ^ 0xffffffff) + 1;
 		}
 
-		if ( record_size < sizeof(REC_HDR_SIZE) ) {
-			return False;
+		if (record_size < sizeof(REC_HDR_SIZE)) {
+			return false;
 		}
 
-		if ( memcmp( header, hdr, REC_HDR_SIZE ) == 0 ) {
+		if (memcmp(header, hdr, REC_HDR_SIZE) == 0) {
 			found = True;
 			curr_off += sizeof(uint32_t);
 		}
@@ -1437,13 +1437,19 @@ REGF_NK_REC* regfio_rootkey( REGF_FILE *file )
 
 	/* see if there is anything left to report */
 	
-	if ( !nk || !nk->subkeys.hashes || nk->subkey_index >= nk->subkeys.num_keys ||
-	     (nk->subkeys_off==REGF_OFFSET_NONE) || (nk->subkey_index >= nk->num_subkeys) )
+	if (nk == NULL ||
+	    nk->subkeys.hashes == NULL ||
+	    nk->subkey_index >= nk->subkeys.num_keys ||
+	    (nk->subkeys_off == REGF_OFFSET_NONE) ||
+	    (nk->subkey_index >= nk->num_subkeys)) {
 		return NULL;
+	}
 
 	/* find the HBIN block which should contain the nk record */
-	
-	if ( !(hbin = lookup_hbin_block( file, nk->subkeys.hashes[nk->subkey_index].nk_off )) ) {
+
+	hbin = lookup_hbin_block(file,
+				 nk->subkeys.hashes[nk->subkey_index].nk_off);
+	if (hbin == NULL) {
 		DEBUG(0,("hbin_prs_key: Failed to find HBIN block containing offset [0x%x]\n", 
 			nk->subkeys.hashes[nk->subkey_index].nk_off));
 		return NULL;
