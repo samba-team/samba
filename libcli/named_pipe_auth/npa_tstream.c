@@ -1120,8 +1120,6 @@ struct tevent_req *tstream_npa_accept_existing_send(TALLOC_CTX *mem_ctx,
 		goto post;
 	}
 
-	ZERO_STRUCTP(state);
-
 	state->ev = ev;
 	state->plain = plain;
 	state->file_type = file_type;
