@@ -14,17 +14,17 @@ nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/var/lib/nfs/etab}"
 
 # Red Hat
 nfs_service="nfs"
-nfslock_service="nfslock"
+nfs_lock_service="nfslock"
 nfs_config="/etc/sysconfig/nfs"
 
 # SUSE
 #nfs_service="nfsserver"
-#nfslock_service=""
+#nfs_lock_service=""
 #nfs_config="/etc/sysconfig/nfs"
 
 # Debian
 #nfs_service="nfs-kernel-server"
-#nfslock_service=""
+#nfs_lock_service=""
 #nfs_config="/etc/default/nfs-kernel-server"
 
 # Override for unit testing
@@ -55,13 +55,13 @@ basic_stop ()
 	case "$1" in
 	nfs)
 		service "$nfs_service" stop
-		if [ -n "$nfslock_service" ] ; then
-			service "$nfslock_service" stop
+		if [ -n "$nfs_lock_service" ] ; then
+			service "$nfs_lock_service" stop
 		fi
 		;;
 	nfslock)
-		if [ -n "$nfslock_service" ] ; then
-			service "$nfslock_service" stop
+		if [ -n "$nfs_lock_service" ] ; then
+			service "$nfs_lock_service" stop
 		else
 			service "$nfs_service" stop
 		fi
@@ -75,14 +75,14 @@ basic_start ()
 {
 	case "$1" in
 	nfs)
-		if [ -n "$nfslock_service" ] ; then
-			service "$nfslock_service" start
+		if [ -n "$nfs_lock_service" ] ; then
+			service "$nfs_lock_service" start
 		fi
 		service "$nfs_service" start
 		;;
 	nfslock)
-		if [ -n "$nfslock_service" ] ; then
-			service "$nfslock_service" start
+		if [ -n "$nfs_lock_service" ] ; then
+			service "$nfs_lock_service" start
 		else
 			service "$nfs_service" start
 		fi
