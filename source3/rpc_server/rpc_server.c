@@ -293,26 +293,21 @@ void named_pipe_accept_function(struct tevent_context *ev_ctx,
 	struct tevent_req *subreq;
 	int ret;
 
-	npc = talloc_zero(ev_ctx, struct named_pipe_client);
-	if (!npc) {
+	npc = named_pipe_client_init(
+		ev_ctx,
+		ev_ctx,
+		msg_ctx,
+		pipe_name,
+		term_fn,
+		FILE_TYPE_MESSAGE_MODE_PIPE, /* file_type */
+		0xff | 0x0400 | 0x0100,	     /* device_state */
+		4096,			     /* allocation_size */
+		private_data);
+	if (npc == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		close(fd);
 		return;
 	}
-
-	npc->pipe_name = talloc_strdup(npc, pipe_name);
-	if (npc->pipe_name == NULL) {
-		DEBUG(0, ("Out of memory!\n"));
-		TALLOC_FREE(npc);
-		close(fd);
-		return;
-	}
-	npc->ev = ev_ctx;
-	npc->msg_ctx = msg_ctx;
-	npc->term_fn = term_fn;
-	npc->private_data = private_data;
-
-	talloc_set_destructor(npc, named_pipe_destructor);
 
 	/* make sure socket is in NON blocking state */
 	ret = set_blocking(fd, false);
@@ -330,10 +325,6 @@ void named_pipe_accept_function(struct tevent_context *ev_ctx,
 		close(fd);
 		return;
 	}
-
-	npc->file_type = FILE_TYPE_MESSAGE_MODE_PIPE;
-	npc->device_state = 0xff | 0x0400 | 0x0100;
-	npc->allocation_size = 4096;
 
 	subreq = tstream_npa_accept_existing_send(npc, npc->ev, plain,
 						  npc->file_type,
