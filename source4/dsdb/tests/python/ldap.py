@@ -3175,6 +3175,23 @@ nTSecurityDescriptor:: """ + desc_base64
             self.assertTrue(len(res[0]["msTSExpireDate"]) == 1)
             self.assertEquals(str(res[0]["msTSExpireDate"][0]), v_get)
 
+    def test_ldapSearchNoAttributes(self):
+        """Testing ldap search with no attributes"""
+
+        user_name = "testemptyattributesuser"
+        user_dn = "CN=%s,%s" % (user_name, self.base_dn)
+        delete_force(self.ldb, user_dn)
+
+        self.ldb.add({"dn": user_dn,
+                      "objectClass": "user",
+                      "sAMAccountName": user_name})
+
+        res = self.ldb.search(user_dn, scope=SCOPE_BASE, attrs=[])
+        delete_force(self.ldb, user_dn)
+
+        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res[0]), 0)
+
 
 class BaseDnTests(samba.tests.TestCase):
 
