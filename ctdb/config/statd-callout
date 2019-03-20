@@ -20,7 +20,8 @@ die ()
     exit 1
 }
 
-load_system_config "nfs"
+# Try different variables to find config file for NFS_HOSTNAME
+load_system_config "nfs" "nfs-common"
 
 [ -n "$NFS_HOSTNAME" ] || \
     die "NFS_HOSTNAME is not configured. statd-callout failed"
