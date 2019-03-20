@@ -57,15 +57,16 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	if (session_info->unix_token && session_info->unix_info && session_info->security_token) {
-		/* Don't call create_local_token(), we already have the full details here */
-		p->session_info = talloc_steal(p, session_info);
-
-	} else {
-		DEBUG(0, ("Supplied session_info in make_server_pipes_struct was incomplete!"));
+	if ((session_info->unix_token == NULL) ||
+	    (session_info->unix_info == NULL) ||
+	    (session_info->security_token == NULL)) {
+		DBG_ERR("Supplied session_info was incomplete!\n");
 		*perrno = EINVAL;
 		return -1;
 	}
+
+	/* Don't call create_local_token(), we already have the full details here */
+	p->session_info = talloc_steal(p, session_info);
 
 	*_p = p;
 	return 0;
