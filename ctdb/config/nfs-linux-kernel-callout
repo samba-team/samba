@@ -64,6 +64,16 @@ EOF
     exit 1
 }
 
+##################################################
+
+nfs_load_config ()
+{
+	_config="${1:-${nfs_config}}"
+
+	if [ -r "$_config" ] ; then
+		. "$_config"
+	fi
+}
 
 ##################################################
 # Basic service stop and start
@@ -167,9 +177,7 @@ nfs_startup ()
 nfs_check_thread_count ()
 {
     # Load NFS configuration to get desired number of threads.
-    if [ -r "$nfs_config" ] ; then
-	. "$nfs_config"
-    fi
+    nfs_load_config
 
     # If $RPCNFSDCOUNT/$USE_KERNEL_NFSD_NUMBER isn't set then we could
     # guess the default from the initscript.  However, let's just
