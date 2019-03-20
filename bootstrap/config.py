@@ -275,6 +275,9 @@ ADD *.sh /tmp/
 # need root permission, do it before USER samba
 RUN /tmp/bootstrap.sh && /tmp/locale.sh
 
+# if ld.gold exists, force link it to ld
+RUN set -x; LD=$(which ld); LD_GOLD=$(which ld.gold); test -x $LD_GOLD && ln -sf $LD_GOLD $LD && test -x $LD && echo "$LD is now $LD_GOLD"
+
 # make test can not work with root, so we have to create a new user
 RUN useradd -m -s /bin/bash samba && \
     mkdir -p /etc/sudoers.d && \
