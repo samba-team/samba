@@ -61,6 +61,7 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	    (session_info->unix_info == NULL) ||
 	    (session_info->security_token == NULL)) {
 		DBG_ERR("Supplied session_info was incomplete!\n");
+		TALLOC_FREE(p);
 		*perrno = EINVAL;
 		return -1;
 	}
