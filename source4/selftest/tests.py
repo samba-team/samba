@@ -659,11 +659,12 @@ planpythontestsuite("none", "samba.tests.samba_tool.visualize")
 for env in all_fl_envs:
     planpythontestsuite(env + ":local", "samba.tests.samba_tool.fsmo")
 
-# test samba-tool user, group and computer edit command
+# test samba-tool user, group, contact and computer edit command
 for env in all_fl_envs:
     env += ":local"
     plantestsuite("samba.tests.samba_tool.user_edit", env, [os.path.join(srcdir(), "python/samba/tests/samba_tool/user_edit.sh"), '$SERVER', '$USERNAME', '$PASSWORD'])
     plantestsuite("samba.tests.samba_tool.group_edit", env, [os.path.join(srcdir(), "python/samba/tests/samba_tool/group_edit.sh"), '$SERVER', '$USERNAME', '$PASSWORD'])
+    plantestsuite("samba.tests.samba_tool.contact_edit", env, [os.path.join(srcdir(), "python/samba/tests/samba_tool/contact_edit.sh"), '$SERVER', '$USERNAME', '$PASSWORD'])
     plantestsuite("samba.tests.samba_tool.computer_edit", env, [os.path.join(srcdir(), "python/samba/tests/samba_tool/computer_edit.sh"), '$SERVER', '$USERNAME', '$PASSWORD'])
 
 # We run this test against both AD DC implementations because it is
