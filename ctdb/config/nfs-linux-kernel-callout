@@ -17,6 +17,29 @@ nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/var/lib/nfs/etab}"
 nfs_distro_style="${CTDB_NFS_DISTRO_STYLE:-sysvinit-redhat}"
 
 case "$nfs_distro_style" in
+systemd-*)
+	# Defaults
+	nfs_service="nfs-server"
+	nfs_lock_service="rpc-statd"
+	nfs_mountd_service="nfs-mountd"
+	nfs_status_service="rpc-statd"
+	nfs_rquotad_service="rpc-rquotad"
+	nfs_config="/etc/sysconfig/nfs"
+	nfs_rquotad_config="" # Not use with systemd, restart via service
+
+	case "$nfs_distro_style" in
+	*-redhat|*-suse)
+		: # Defaults only
+		;;
+	*-debian)
+		nfs_rquotad_service="quotarpc"
+		;;
+	*)
+		echo "Internal error"
+		exit 1
+	esac
+	;;
+
 sysvinit-*)
 	# Defaults
 	nfs_service="nfs"
