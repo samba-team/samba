@@ -33,15 +33,16 @@ fi
 
 load_system_config ()
 {
-	if [ -z "$1" ] ; then
-		return
-	fi
+	for _i ; do
 
-	if [ -f "${CTDB_SYS_ETCDIR}/sysconfig/$1" ]; then
-		. "${CTDB_SYS_ETCDIR}/sysconfig/$1"
-	elif [ -f "${CTDB_SYS_ETCDIR}/default/$1" ]; then
-		. "${CTDB_SYS_ETCDIR}/default/$1"
-	fi
+		if [ -f "${CTDB_SYS_ETCDIR}/sysconfig/${_i}" ]; then
+			. "${CTDB_SYS_ETCDIR}/sysconfig/${_i}"
+			return
+		elif [ -f "${CTDB_SYS_ETCDIR}/default/${_i}" ]; then
+			. "${CTDB_SYS_ETCDIR}/default/${_i}"
+			return
+		fi
+	done
 }
 
 # load_script_options [ component script ]
