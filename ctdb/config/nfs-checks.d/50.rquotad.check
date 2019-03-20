@@ -2,6 +2,6 @@
 version="1"
 restart_every=2
 unhealthy_after=6
-service_stop_cmd="killall -q -9 rpc.rquotad"
-service_start_cmd="rpc.rquotad ${RQUOTAD_PORT:+-p} $RQUOTAD_PORT"
+service_stop_cmd="$CTDB_NFS_CALLOUT stop rquotad"
+service_start_cmd="$CTDB_NFS_CALLOUT start rquotad"
 service_debug_cmd="program_stack_traces rpc.rquotad 5"
