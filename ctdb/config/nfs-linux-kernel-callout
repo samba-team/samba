@@ -21,7 +21,11 @@ sysvinit-*)
 	# Defaults
 	nfs_service="nfs"
 	nfs_lock_service=""
+	nfs_mountd_service=""
+	nfs_status_service=""
+	nfs_rquotad_service=""
 	nfs_config="/etc/sysconfig/nfs"
+	nfs_rquotad_config="$nfs_config"
 
 	case "$nfs_distro_style" in
 	*-redhat)
@@ -33,6 +37,7 @@ sysvinit-*)
 	*-debian)
 		nfs_service="nfs-kernel-server"
 		nfs_config="/etc/default/nfs-kernel-server"
+		nfs_rquotad_config="/etc/default/quota"
 		;;
 	*)
 		echo "Internal error"
@@ -134,6 +139,33 @@ service_stop ()
 	nlockmgr)
 		basic_stop "nfslock" >/dev/null 2>&1 || true
 		;;
+	mountd)
+		if [ -n "$nfs_mountd_service" ] ; then
+			service "$nfs_mountd_service" stop
+			return
+		fi
+
+		# Default to stopping by hand
+		killall -q -9 rpc.mountd
+		;;
+	rquotad)
+		if [ -n "$nfs_rquotad_service" ] ; then
+			service "$nfs_rquotad_service" stop
+			return
+		fi
+
+		# Default to stopping by hand
+		killall -q -9 rpc.rquotad
+		;;
+	status)
+		if [ -n "$nfs_status_service" ] ; then
+			service "$nfs_status_service" stop
+			return
+		fi
+
+		# Default to stopping by hand
+		killall -q -9 rpc.statd
+		;;
 	*)
 		usage
 	esac
@@ -147,6 +179,56 @@ service_start ()
 		;;
 	nlockmgr)
 		basic_start "nfslock"
+		;;
+	mountd)
+		if [ -n "$nfs_mountd_service" ] ; then
+			service "$nfs_mountd_service" start
+			return
+		fi
+
+		# Default to starting by hand
+		nfs_load_config
+		if [ -z "$RPCMOUNTDOPTS" ] ; then
+			RPCMOUNTDOPTS="${MOUNTD_PORT:+-p }$MOUNTD_PORT"
+		fi
+		# shellcheck disable=SC2086
+		rpc.mountd $RPCMOUNTDOPTS
+		;;
+	rquotad)
+		if [ -n "$nfs_rquotad_service" ] ; then
+			service "$nfs_rquotad_service" start
+			return
+		fi
+
+		# Default to starting by hand
+		nfs_load_config "$nfs_rquotad_config"
+		if [ -z "$RPCRQUOTADOPTS" ] ; then
+			RPCRQUOTADOPTS="${RQUOTAD_PORT:+-p }$RQUOTAD_PORT"
+		fi
+		# shellcheck disable=SC2086
+		rpc.rquotad $RPCRQUOTADOPTS
+		;;
+	status)
+		if [ -n "$nfs_status_service" ] ; then
+			service "$nfs_status_service" start
+			return
+		fi
+
+		# Default to starting by hand
+		nfs_load_config
+		# Red Hat uses STATDARG, Debian uses STATDOPTS
+		opts="${STATDARG:-${STATDOPTS:-''}}"
+		if [ -z "$opts" ] ; then
+			# shellcheck disable=SC2086
+			set -- \
+			    ${STATD_HA_CALLOUT:+-H} $STATD_HA_CALLOUT \
+			    ${STATD_HOSTNAME:+-n} $STATD_HOSTNAME \
+			    ${STATD_PORT:+-p} $STATD_PORT \
+			    ${STATD_OUTGOING_PORT:+-o} $STATD_OUTGOING_PORT
+			opts="$*"
+		fi
+		# shellcheck disable=SC2086
+		rpc.statd $opts
 		;;
 	*)
 		usage
