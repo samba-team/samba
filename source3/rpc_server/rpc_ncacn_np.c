@@ -186,7 +186,7 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 	}
 	tevent_req_set_callback(subreq, named_pipe_packet_process, npc);
 
-	*pnpa = talloc_steal(mem_ctx, npa);
+	*pnpa = talloc_move(mem_ctx, &npa);
 	status = NT_STATUS_OK;
 out:
 	talloc_free(tmp_ctx);
