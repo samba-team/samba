@@ -412,14 +412,6 @@ for env in bld.gen_python_environments():
                 cflags_end=gen_cflags
 		)
 
-	bld.SAMBA_PYTHON('python_idmap',
-		source='../../librpc/gen_ndr/py_idmap.c',
-		deps='NDR_IDMAP %s %s' % (pytalloc_util, pyrpc_util),
-		realname='samba/dcerpc/idmap.so',
-                cflags_end=gen_cflags
-		)
-
-
 	bld.SAMBA_PYTHON('python_drsuapi',
 		source='../../librpc/gen_ndr/py_drsuapi.c',
 		deps='RPC_NDR_DRSUAPI %s %s' % (pytalloc_util, pyrpc_util),
