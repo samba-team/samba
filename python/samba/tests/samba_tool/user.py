@@ -68,7 +68,7 @@ class UserCmdTestCase(SambaToolCmdTest):
             if self._find_user(user["name"]):
                 self.runsubcmd("user", "delete", user["name"])
         lp = env_loadparm()
-        # second run of this test (e.g. with --extra-python)
+        # second run of this test
         # the cache is still there and '--cache-ldb-initialize'
         # will fail
         cachedb = lp.private_path("user-syncpasswords-cache.ldb")
