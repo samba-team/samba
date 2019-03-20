@@ -496,14 +496,14 @@ void named_pipe_packet_process(struct tevent_req *subreq)
 		return;
 	}
 
-	DEBUG(10, ("Sending %u fragments in a total of %u bytes\n",
-		   (unsigned int)npc->count,
-		   (unsigned int)npc->p->out_data.data_sent_length));
+	DBG_DEBUG("Sending %zu fragments in a total of %"PRIu32" bytes\n",
+		  npc->count,
+		  npc->p->out_data.data_sent_length);
 
 	for (i = 0; i < npc->count; i++) {
-		DEBUG(10, ("Sending PDU number: %d, PDU Length: %u\n",
-			  (unsigned int)i,
-			  (unsigned int)npc->iov[i].iov_len));
+		DBG_DEBUG("Sending PDU number: %zu, PDU Length: %zu\n",
+			  i,
+			  npc->iov[i].iov_len);
 		dump_data(11, (const uint8_t *)npc->iov[i].iov_base,
 				npc->iov[i].iov_len);
 
