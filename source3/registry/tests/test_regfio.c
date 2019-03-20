@@ -128,7 +128,7 @@ static void test_regfio_open_new_file(void **state)
 	werr = regval_ctr_init(subkeys, &values);
 	assert_true(W_ERROR_IS_OK(werr));
 
-	// Write root key
+	/* Write root key */
 	regfio_write_key(test_ctx->rb, "", values, subkeys, NULL, NULL);
 
 	root = regfio_rootkey(test_ctx->rb);
