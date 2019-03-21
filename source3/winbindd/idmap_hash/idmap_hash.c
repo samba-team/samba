@@ -60,13 +60,16 @@ static uint32_t hash_domain_sid(const struct dom_sid *sid)
 }
 
 /*********************************************************************
- Hash a Relative ID to a 20 bit number
+ Hash a Relative ID to a 19 bit number
  ********************************************************************/
 
 static uint32_t hash_rid(uint32_t rid)
 {
-	/* 20 bits for the rid which allows us to support
-	   the first 100K users/groups in a domain */
+	/*
+	 * 19 bits for the rid which allows us to support
+	 * the first 50K users/groups in a domain
+	 *
+	 */
 
 	return (rid & 0x0007FFFF);
 }
@@ -79,8 +82,13 @@ static uint32_t combine_hashes(uint32_t h_domain,
 {
 	uint32_t return_id = 0;
 
-	/* shift the hash_domain 19 bits to the left and OR with the
-	   hash_rid */
+	/*
+	 * shift the hash_domain 19 bits to the left and OR with the
+	 * hash_rid
+	 *
+	 * This will generate a 31 bit number out of
+	 * 12 bit domain and 19 bit rid.
+	 */
 
 	return_id = ((h_domain<<19) | h_rid);
 
