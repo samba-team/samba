@@ -295,12 +295,11 @@ static NTSTATUS idmap_hash_sid_to_id(struct sid_hash_table *hashed_domains,
 	 */
 	if (netsamlogon_cache_have(&sid)) {
 		/*
-		 * We keep the legacy behavior and
-		 * just return the mapping, but
-		 * the reverse mapping would not
-		 * still not work.
+		 * The domain is valid, so we'll
+		 * remember it in order to
+		 * allow reverse mappings to work.
 		 */
-		goto return_mapping;
+		goto remember_domain;
 	}
 
 	if (id->xid.type == ID_TYPE_NOT_SPECIFIED) {
@@ -320,6 +319,17 @@ static NTSTATUS idmap_hash_sid_to_id(struct sid_hash_table *hashed_domains,
 		 */
 		id->status = ID_REQUIRE_TYPE;
 		return NT_STATUS_OK;
+	}
+
+	/*
+	 * Now we're sure the domain exist, remember
+	 * the domain in order to return reverse mappings
+	 * in future.
+	 */
+remember_domain:
+	hashed_domains[h_domain].sid = dom_sid_dup(hashed_domains, &sid);
+	if (hashed_domains[h_domain].sid == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/*
