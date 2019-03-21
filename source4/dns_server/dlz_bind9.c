@@ -1276,6 +1276,17 @@ static bool b9_has_soa(struct dlz_bind9_data *state, struct ldb_dn *dn, const ch
 		return false;
 	}
 
+	/*
+	 * The SOA record is alwas stored under DC=@,DC=zonename
+	 * This can probably be removed when dns_common_lookup makes a fallback
+	 * lookup on @ pseudo record
+	 */
+
+	if (!ldb_dn_add_child_fmt(dn,"DC=@")) {
+		talloc_free(tmp_ctx);
+		return false;
+	}
+
 	werr = dns_common_lookup(state->samdb, tmp_ctx, dn,
 				 &records, &num_records, NULL);
 	if (!W_ERROR_IS_OK(werr)) {
