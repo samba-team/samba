@@ -17,7 +17,7 @@
 from samba.tests import TestCaseInTempDir
 import os
 
-TEST_UMASK = 0o022
+TEST_UMASK = 0o042
 
 class SmbdBaseTests(TestCaseInTempDir):
 
