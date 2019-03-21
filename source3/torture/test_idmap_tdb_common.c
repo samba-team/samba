@@ -110,12 +110,21 @@ static bool open_db(struct idmap_tdb_common_context *ctx)
 	return true;
 }
 
-static struct idmap_tdb_common_context *createcontext(TALLOC_CTX *memctx)
+static NTSTATUS idmap_test_tdb_db_init(struct idmap_domain *dom)
 {
 	struct idmap_tdb_common_context *ret;
 
-	ret = talloc_zero(memctx, struct idmap_tdb_common_context);
+	DBG_DEBUG("called for domain '%s'\n", dom->name);
+
+	ret = talloc_zero(dom, struct idmap_tdb_common_context);
+	if (ret == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	ret->rw_ops = talloc_zero(ret, struct idmap_rw_ops);
+	if (ret->rw_ops == NULL) {
+		TALLOC_FREE(ret);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ret->max_id = HIGH_ID;
 	ret->hwmkey_uid = HWM_USER;
@@ -125,25 +134,33 @@ static struct idmap_tdb_common_context *createcontext(TALLOC_CTX *memctx)
 	ret->rw_ops->set_mapping = idmap_tdb_common_set_mapping;
 
 	if (!open_db(ret)) {
-		return NULL;
+		TALLOC_FREE(ret);
+		return NT_STATUS_INTERNAL_ERROR;
 	};
 
-	return ret;
+	dom->private_data = ret;
+
+	return NT_STATUS_OK;
 }
 
 static struct idmap_domain *createdomain(TALLOC_CTX *memctx)
 {
 	struct idmap_domain *dom;
+	struct idmap_methods *m;
 
 	dom = talloc_zero(memctx, struct idmap_domain);
 	dom->name = "*";
 	dom->low_id = LOW_ID;
 	dom->high_id = HIGH_ID;
 	dom->read_only = false;
-	dom->methods = talloc_zero(dom, struct idmap_methods);
-	dom->methods->sids_to_unixids = idmap_tdb_common_sids_to_unixids;
-	dom->methods->unixids_to_sids = idmap_tdb_common_unixids_to_sids;
-	dom->methods->allocate_id = idmap_tdb_common_get_new_id;
+	m = talloc_zero(dom, struct idmap_methods);
+	*m = (struct idmap_methods) {
+		.init = idmap_test_tdb_db_init,
+		.sids_to_unixids = idmap_tdb_common_sids_to_unixids,
+		.unixids_to_sids = idmap_tdb_common_unixids_to_sids,
+		.allocate_id = idmap_tdb_common_get_new_id,
+	};
+	dom->methods = m;
 
 	return dom;
 }
@@ -965,20 +982,20 @@ out:
 bool run_idmap_tdb_common_test(int dummy)
 {
 	bool result;
-	struct idmap_tdb_common_context *ctx;
 	struct idmap_domain *dom;
-
-	TALLOC_CTX *memctx = talloc_new(NULL);
 	TALLOC_CTX *stack = talloc_stackframe();
+	TALLOC_CTX *memctx = talloc_new(stack);
+	NTSTATUS status;
 
-	ctx = createcontext(memctx);
-	if(!ctx) {
+	dom = createdomain(memctx);
+	if (dom == NULL) {
 		return false;
 	}
 
-	dom = createdomain(memctx);
-
-	dom->private_data = ctx;
+	status = dom->methods->init(dom);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
 
 	/* test a single allocation from pool (no mapping) */
 	result = test_getnewid1(memctx, dom);
@@ -1022,7 +1039,6 @@ bool run_idmap_tdb_common_test(int dummy)
 	result = test_getnewid2(memctx, dom);
 	CHECKRESULT(result);
 
-	talloc_free(memctx);
 	talloc_free(stack);
 
 	return true;
