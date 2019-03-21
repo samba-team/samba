@@ -46,7 +46,8 @@ static struct nss_function_entry *nss_get_backend(const char *name )
  Allow a module to register itself as a backend.
 **********************************************************************/
 
- NTSTATUS smb_register_idmap_nss(int version, const char *name, struct nss_info_methods *methods)
+ NTSTATUS smb_register_idmap_nss(int version, const char *name,
+				 const struct nss_info_methods *methods)
 {
 	struct nss_function_entry *entry;
 
@@ -319,7 +320,7 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 			    const char *name, char **alias )
 {
 	struct nss_domain_entry *p;
-	struct nss_info_methods *m;
+	const struct nss_info_methods *m;
 
 	if ( (p = find_nss_domain( domain )) == NULL ) {
 		DEBUG(4,("nss_map_to_alias: Failed to find nss domain pointer for %s\n",
@@ -340,7 +341,7 @@ static struct nss_domain_entry *find_nss_domain( const char *domain )
 			      const char *alias, char **name )
 {
 	struct nss_domain_entry *p;
-	struct nss_info_methods *m;
+	const struct nss_info_methods *m;
 
 	if ( (p = find_nss_domain( domain )) == NULL ) {
 		DEBUG(4,("nss_map_from_alias: Failed to find nss domain pointer for %s\n",
