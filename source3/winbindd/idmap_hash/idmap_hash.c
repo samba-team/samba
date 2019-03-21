@@ -183,6 +183,32 @@ done:
 /*********************************************************************
  ********************************************************************/
 
+static NTSTATUS idmap_hash_id_to_sid(struct sid_hash_table *hashed_domains,
+				     struct idmap_domain *dom,
+				     struct id_map *id)
+{
+	uint32_t h_domain = 0, h_rid = 0;
+
+	id->status = ID_UNMAPPED;
+
+	separate_hashes(id->xid.id, &h_domain, &h_rid);
+
+	/*
+	 * If the domain hash doesn't find a SID in the table,
+	 * skip it
+	 */
+	if (hashed_domains[h_domain].sid == NULL) {
+		/* keep ID_UNMAPPED */
+		return NT_STATUS_OK;
+	}
+
+	id->xid.type = ID_TYPE_BOTH;
+	sid_compose(id->sid, hashed_domains[h_domain].sid, h_rid);
+	id->status = ID_MAPPED;
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 				struct id_map **ids)
 {
@@ -199,22 +225,20 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 	}
 
 	for (i=0; ids[i]; i++) {
-		uint32_t h_domain, h_rid;
+		NTSTATUS ret;
 
-		ids[i]->status = ID_UNMAPPED;
+		ret = idmap_hash_id_to_sid(hashed_domains, dom, ids[i]);
+		if (!NT_STATUS_IS_OK(ret)) {
+			/* some fatal error occurred, log it */
+			DBG_NOTICE("Unexpected error resolving an ID "
+				   "(%d): %s\n", ids[i]->xid.id,
+				   nt_errstr(ret));
+			return ret;
+		}
 
-		separate_hashes(ids[i]->xid.id, &h_domain, &h_rid);
-
-		/* If the domain hash doesn't find a SID in the table,
-		   skip it */
-
-		if (!hashed_domains[h_domain].sid)
-			continue;
-
-		ids[i]->xid.type = ID_TYPE_BOTH;
-		sid_compose(ids[i]->sid, hashed_domains[h_domain].sid, h_rid);
-		ids[i]->status = ID_MAPPED;
-		num_mapped++;
+		if (ids[i]->status == ID_MAPPED) {
+			num_mapped++;
+		}
 	}
 
 	if (num_tomap == num_mapped) {
