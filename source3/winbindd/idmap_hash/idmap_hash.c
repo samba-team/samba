@@ -25,6 +25,7 @@
 #include "ads.h"
 #include "nss_info.h"
 #include "../libcli/security/dom_sid.h"
+#include "libsmb/samlogon_cache.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_IDMAP
@@ -284,6 +285,21 @@ static NTSTATUS idmap_hash_sid_to_id(struct sid_hash_table *hashed_domains,
 	 * just return the mapping.
 	 */
 	if (hashed_domains[h_domain].sid != NULL) {
+		goto return_mapping;
+	}
+
+	/*
+	 * Check of last resort: A domain is valid if a user from that
+	 * domain has recently logged in. The samlogon_cache these
+	 * days also stores the domain sid.
+	 */
+	if (netsamlogon_cache_have(&sid)) {
+		/*
+		 * We keep the legacy behavior and
+		 * just return the mapping, but
+		 * the reverse mapping would not
+		 * still not work.
+		 */
 		goto return_mapping;
 	}
 
