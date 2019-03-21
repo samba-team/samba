@@ -188,11 +188,14 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 {
 	struct sid_hash_table *hashed_domains = talloc_get_type_abort(
 		dom->private_data, struct sid_hash_table);
-	int i;
+	size_t i;
+	size_t num_tomap = 0;
+	size_t num_mapped = 0;
 
-	/* initialize the status to avoid suprise */
+	/* initialize the status to avoid surprise */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
+		num_tomap++;
 	}
 
 	for (i=0; ids[i]; i++) {
@@ -211,9 +214,16 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 		ids[i]->xid.type = ID_TYPE_BOTH;
 		sid_compose(ids[i]->sid, hashed_domains[h_domain].sid, h_rid);
 		ids[i]->status = ID_MAPPED;
+		num_mapped++;
 	}
 
-	return NT_STATUS_OK;
+	if (num_tomap == num_mapped) {
+		return NT_STATUS_OK;
+	} else if (num_mapped == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	return STATUS_SOME_UNMAPPED;
 }
 
 /*********************************************************************
@@ -222,11 +232,15 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 static NTSTATUS sids_to_unixids(struct idmap_domain *dom,
 				struct id_map **ids)
 {
-	int i;
+	size_t i;
+	size_t num_tomap = 0;
+	size_t num_mapped = 0;
+	size_t num_required = 0;
 
-	/* initialize the status to avoid suprise */
+	/* initialize the status to avoid surprise */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
+		num_tomap++;
 	}
 
 	for (i=0; ids[i]; i++) {
@@ -252,6 +266,7 @@ static NTSTATUS sids_to_unixids(struct idmap_domain *dom,
 			 * if the domain is not known yet.
 			 */
 			ids[i]->status = ID_REQUIRE_TYPE;
+			num_required++;
 			continue;
 		}
 
@@ -282,10 +297,19 @@ static NTSTATUS sids_to_unixids(struct idmap_domain *dom,
 			ids[i]->xid.type = ID_TYPE_BOTH;
 			ids[i]->xid.id = combine_hashes(h_domain, h_rid);
 			ids[i]->status = ID_MAPPED;
+			num_mapped++;
 		}
 	}
 
-	return NT_STATUS_OK;
+	if (num_tomap == num_mapped) {
+		return NT_STATUS_OK;
+	} else if (num_required > 0) {
+		return STATUS_SOME_UNMAPPED;
+	} else if (num_mapped == 0) {
+		return NT_STATUS_NONE_MAPPED;
+	}
+
+	return STATUS_SOME_UNMAPPED;
 }
 
 /*********************************************************************
