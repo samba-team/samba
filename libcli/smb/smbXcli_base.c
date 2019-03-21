@@ -591,7 +591,7 @@ struct tevent_req *smbXcli_conn_samba_suicide_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->conn = conn;
-	SIVAL(state->buf, 4, 0x74697865);
+	SIVAL(state->buf, 4, SMB_SUICIDE_PACKET);
 	SCVAL(state->buf, 8, exitcode);
 	_smb_setlen_nbt(state->buf, sizeof(state->buf)-4);
 

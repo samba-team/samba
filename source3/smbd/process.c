@@ -44,6 +44,7 @@
 #include "system/threads.h"
 #include "lib/pthreadpool/pthreadpool_tevent.h"
 #include "util_event.h"
+#include "libcli/smb/smbXcli_base.h"
 
 /* Internal message queue for deferred opens. */
 struct pending_message_list {
@@ -1980,7 +1981,7 @@ static void process_smb(struct smbXsrv_connection *xconn,
 
 		/* special magic for immediate exit */
 		if ((nread == 9) &&
-		    (IVAL(inbuf, 4) == 0x74697865) &&
+		    (IVAL(inbuf, 4) == SMB_SUICIDE_PACKET) &&
 		    lp_parm_bool(-1, "smbd", "suicide mode", false)) {
 			uint8_t exitcode = CVAL(inbuf, 8);
 			DEBUG(1, ("Exiting immediately with code %d\n",

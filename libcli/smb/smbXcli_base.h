@@ -21,6 +21,8 @@
 #ifndef _SMBXCLI_BASE_H_
 #define _SMBXCLI_BASE_H_
 
+#define SMB_SUICIDE_PACKET 0x74697865
+
 struct smbXcli_conn;
 struct smbXcli_session;
 struct smbXcli_tcon;
