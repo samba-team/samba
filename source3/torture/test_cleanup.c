@@ -298,8 +298,10 @@ bool run_cleanup3(int dummy)
 			return false;
 		}
 
-		printf("%d %d %d\n", (int)id.devid, (int)id.inode,
-		       (int)id.extid);
+		printf("devid: %lu inode: %lu extid: %lu\n",
+		       (unsigned long)id.devid,
+		       (unsigned long)id.inode,
+		       (unsigned long)id.extid);
 
 		lck = get_existing_share_mode_lock(talloc_tos(), id);
 		if (lck == NULL) {
