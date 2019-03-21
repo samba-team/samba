@@ -85,6 +85,8 @@ static bool test_dlz_bind9_create(struct torture_context *tctx)
 	return true;
 }
 
+static bool calls_zone_hook = false;
+
 static isc_result_t dlz_bind9_writeable_zone_hook(dns_view_t *view,
 					   const char *zone_name)
 {
@@ -119,6 +121,8 @@ static isc_result_t dlz_bind9_writeable_zone_hook(dns_view_t *view,
 	}
 	talloc_free(msg);
 
+	calls_zone_hook = true;
+
 	return ISC_R_SUCCESS;
 }
 
@@ -138,11 +142,14 @@ static bool test_dlz_bind9_configure(struct torture_context *tctx)
 				 ISC_R_SUCCESS,
 				 "Failed to create samba_dlz");
 
+	calls_zone_hook = false;
 	torture_assert_int_equal(tctx, dlz_configure((void*)tctx, dbdata),
 						     ISC_R_SUCCESS,
 				 "Failed to configure samba_dlz");
 
 	dlz_destroy(dbdata);
+
+	torture_assert_int_equal(tctx, calls_zone_hook, 1, "Hasn't called zone hook");
 
 	return true;
 }
