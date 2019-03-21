@@ -22,6 +22,8 @@ sub _create_snapshot
 	my $snap_path = $base_path . "/.snapshots/\@GMT-" . $time_str;
 	my $ret;
 
+	delete @ENV{'BASH_ENV'};
+
 	$ENV{'PATH'} = '/bin:/usr/bin'; # untaint PATH
 	POSIX::mkdir($base_path . "/.snapshots", 0755);
 
