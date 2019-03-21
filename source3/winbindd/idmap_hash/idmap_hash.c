@@ -261,6 +261,24 @@ static NTSTATUS idmap_hash_sid_to_id(struct sid_hash_table *hashed_domains,
 	uint32_t rid;
 	uint32_t h_domain, h_rid;
 
+	id->status = ID_UNMAPPED;
+
+	sid_copy(&sid, id->sid);
+	sid_split_rid(&sid, &rid);
+
+	h_domain = hash_domain_sid(&sid);
+	h_rid = hash_rid(rid);
+
+	/* Check that both hashes are non-zero*/
+	if (h_domain == 0) {
+		/* keep ID_UNMAPPED */
+		return NT_STATUS_OK;
+	}
+	if (h_rid == 0) {
+		/* keep ID_UNMAPPED */
+		return NT_STATUS_OK;
+	}
+
 	if (id->xid.type == ID_TYPE_NOT_SPECIFIED) {
 		/*
 		 * idmap_hash used to bounce back the requested type,
@@ -277,24 +295,6 @@ static NTSTATUS idmap_hash_sid_to_id(struct sid_hash_table *hashed_domains,
 		 * if the domain is not known yet.
 		 */
 		id->status = ID_REQUIRE_TYPE;
-		return NT_STATUS_OK;
-	}
-
-	id->status = ID_UNMAPPED;
-
-	sid_copy(&sid, id->sid);
-	sid_split_rid(&sid, &rid);
-
-	h_domain = hash_domain_sid(&sid);
-	h_rid = hash_rid(rid);
-
-	/* Check that both hashes are non-zero*/
-	if (h_domain == 0) {
-		/* keep ID_UNMAPPED */
-		return NT_STATUS_OK;
-	}
-	if (h_rid == 0) {
-		/* keep ID_UNMAPPED */
 		return NT_STATUS_OK;
 	}
 
