@@ -281,6 +281,11 @@ bool run_cleanup3(int dummy)
 		{ create_duplicate_batch, "create_duplicate_batch" },
 	};
 
+	if (!locking_init()) {
+		printf("locking_init failed\n");
+		return false;
+	}
+
 	printf("CLEANUP3: Checking that a share mode is cleaned up on "
 	       "conflict\n");
 
@@ -296,10 +301,6 @@ bool run_cleanup3(int dummy)
 		printf("%d %d %d\n", (int)id.devid, (int)id.inode,
 		       (int)id.extid);
 
-		if (!locking_init()) {
-			printf("locking_init failed\n");
-			return false;
-		}
 		lck = get_existing_share_mode_lock(talloc_tos(), id);
 		if (lck == NULL) {
 			printf("get_existing_share_mode_lock failed\n");
