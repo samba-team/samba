@@ -1219,6 +1219,9 @@ main() {
 #include <unistd.h>
 #endif
 #include <sys/types.h>
+#if defined(HAVE_SYS_SYSMACROS_H)
+#include <sys/sysmacros.h>
+#endif
 main() { dev_t dev = makedev(1,2); return 0; }
 ''',
         'HAVE_MAKEDEV',
