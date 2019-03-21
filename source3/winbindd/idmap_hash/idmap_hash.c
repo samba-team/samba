@@ -279,6 +279,14 @@ static NTSTATUS idmap_hash_sid_to_id(struct sid_hash_table *hashed_domains,
 		return NT_STATUS_OK;
 	}
 
+	/*
+	 * If the domain hash already exists find a SID in the table,
+	 * just return the mapping.
+	 */
+	if (hashed_domains[h_domain].sid != NULL) {
+		goto return_mapping;
+	}
+
 	if (id->xid.type == ID_TYPE_NOT_SPECIFIED) {
 		/*
 		 * idmap_hash used to bounce back the requested type,
@@ -313,6 +321,7 @@ static NTSTATUS idmap_hash_sid_to_id(struct sid_hash_table *hashed_domains,
 	 * random mix of ID_TYPE_UID, ID_TYPE_GID or
 	 * ID_TYPE_BOTH.
 	 */
+return_mapping:
 	id->xid.type = ID_TYPE_BOTH;
 	id->xid.id = combine_hashes(h_domain, h_rid);
 	id->status = ID_MAPPED;
