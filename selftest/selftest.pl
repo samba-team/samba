@@ -430,6 +430,9 @@ print "LD_PRELOAD=$ENV{LD_PRELOAD}\n";
 # Enable uid_wrapper globally
 $ENV{UID_WRAPPER} = 1;
 
+# We are already hitting the limit, so double it.
+$ENV{NSS_WRAPPER_MAX_HOSTENTS} = 200;
+
 # Disable RTLD_DEEPBIND hack for Samba bind dlz module
 #
 # This is needed in order to allow the ldb_*ldap module
