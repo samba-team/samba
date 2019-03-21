@@ -895,7 +895,7 @@ static int send_all_fn(pid_t pid, void *private_data)
 	status = messaging_send_buf(state->msg_ctx, pid_to_procid(pid),
 				    state->msg_type, state->buf, state->len);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("messaging_send_buf to %ju failed: %s\n",
+		DBG_NOTICE("messaging_send_buf to %ju failed: %s\n",
 			    (uintmax_t)pid, nt_errstr(status));
 	}
 
