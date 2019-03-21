@@ -87,7 +87,12 @@ basic_stop ()
 {
 	case "$1" in
 	nfs)
+		if [ -n "$nfs_rquotad_service" ] ; then
+			service "$nfs_rquotad_service" stop
+		fi
+
 		service "$nfs_service" stop
+
 		if [ -n "$nfs_lock_service" ] ; then
 			service "$nfs_lock_service" stop
 		fi
@@ -111,7 +116,12 @@ basic_start ()
 		if [ -n "$nfs_lock_service" ] ; then
 			service "$nfs_lock_service" start
 		fi
+
 		service "$nfs_service" start
+
+		if [ -n "$nfs_rquotad_service" ] ; then
+			service "$nfs_rquotad_service" start
+		fi
 		;;
 	nfslock)
 		if [ -n "$nfs_lock_service" ] ; then
