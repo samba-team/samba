@@ -199,11 +199,6 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
-	if (!ids) {
-		nt_status = NT_STATUS_INVALID_PARAMETER;
-		BAIL_ON_NTSTATUS_ERROR(nt_status);
-	}
-
 	/* initialize the status to avoid suprise */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
@@ -218,13 +213,6 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 		ids[i]->status = ID_UNMAPPED;
 
 		separate_hashes(ids[i]->xid.id, &h_domain, &h_rid);
-
-		/* Make sure the caller allocated memor for us */
-
-		if (!ids[i]->sid) {
-			nt_status = NT_STATUS_INVALID_PARAMETER;
-			BAIL_ON_NTSTATUS_ERROR(nt_status);
-		}
 
 		/* If the domain hash doesn't find a SID in the table,
 		   skip it */
@@ -249,11 +237,6 @@ static NTSTATUS sids_to_unixids(struct idmap_domain *dom,
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	int i;
-
-	if (!ids) {
-		nt_status = NT_STATUS_INVALID_PARAMETER;
-		BAIL_ON_NTSTATUS_ERROR(nt_status);
-	}
 
 	/* initialize the status to avoid suprise */
 	for (i = 0; ids[i]; i++) {
