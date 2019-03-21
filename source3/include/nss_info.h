@@ -38,7 +38,7 @@ struct nss_function_entry {
 	struct nss_function_entry *prev, *next;
 
 	const char *name;
-	struct nss_info_methods *methods;
+	const struct nss_info_methods *methods;
 };
 
 /* List of configured domains.  Each domain points 
@@ -50,7 +50,7 @@ struct nss_domain_entry {
 	const char *domain;
 
 	NTSTATUS init_status;	
-	struct nss_function_entry *backend;
+	const struct nss_function_entry *backend;
 
 	/* hold state on a per domain basis */
 
@@ -75,7 +75,7 @@ struct nss_info_methods {
 
 NTSTATUS smb_register_idmap_nss(int version, 
 				const char *name, 
-				struct nss_info_methods *methods);
+				const struct nss_info_methods *methods);
 
 NTSTATUS nss_map_to_alias( TALLOC_CTX *mem_ctx, const char *domain,
 			   const char *name, char **alias );

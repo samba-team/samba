@@ -337,7 +337,7 @@ static const struct idmap_methods hash_idmap_methods = {
 	.sids_to_unixids = sids_to_unixids,
 };
 
-static struct nss_info_methods hash_nss_methods = {
+static const struct nss_info_methods hash_nss_methods = {
 	.init           = nss_hash_init,
 	.map_to_alias   = nss_hash_map_to_alias,
 	.map_from_alias = nss_hash_map_from_alias,

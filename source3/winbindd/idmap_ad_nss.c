@@ -370,19 +370,19 @@ done:
 /* The SFU and RFC2307 NSS plugins share everything but the init
    function which sets the intended schema model to use */
 
-static struct nss_info_methods nss_rfc2307_methods = {
+static const struct nss_info_methods nss_rfc2307_methods = {
 	.init           = nss_rfc2307_init,
 	.map_to_alias   = nss_ad_map_to_alias,
 	.map_from_alias = nss_ad_map_from_alias,
 };
 
-static struct nss_info_methods nss_sfu_methods = {
+static const struct nss_info_methods nss_sfu_methods = {
 	.init           = nss_sfu_init,
 	.map_to_alias   = nss_ad_map_to_alias,
 	.map_from_alias = nss_ad_map_from_alias,
 };
 
-static struct nss_info_methods nss_sfu20_methods = {
+static const struct nss_info_methods nss_sfu20_methods = {
 	.init           = nss_sfu20_init,
 	.map_to_alias   = nss_ad_map_to_alias,
 	.map_from_alias = nss_ad_map_from_alias,
