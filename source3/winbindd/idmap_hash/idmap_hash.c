@@ -131,14 +131,6 @@ static NTSTATUS idmap_hash_initialize(struct idmap_domain *dom)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* If the domain SID hash table has been initialized, assume
-	   that we completed this function previously */
-
-	if (dom->private_data != NULL) {
-		nt_status = NT_STATUS_OK;
-		goto done;
-	}
-
 	if (!wcache_tdc_fetch_list(&dom_list, &num_domains)) {
 		nt_status = NT_STATUS_TRUSTED_DOMAIN_FAILURE;
 		BAIL_ON_NTSTATUS_ERROR(nt_status);
@@ -196,16 +188,12 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 {
 	struct sid_hash_table *hashed_domains = talloc_get_type_abort(
 		dom->private_data, struct sid_hash_table);
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
 	/* initialize the status to avoid suprise */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
-
-	nt_status = idmap_hash_initialize(dom);
-	BAIL_ON_NTSTATUS_ERROR(nt_status);
 
 	for (i=0; ids[i]; i++) {
 		uint32_t h_domain, h_rid;
@@ -225,8 +213,7 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 		ids[i]->status = ID_MAPPED;
 	}
 
-done:
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 /*********************************************************************
@@ -235,16 +222,12 @@ done:
 static NTSTATUS sids_to_unixids(struct idmap_domain *dom,
 				struct id_map **ids)
 {
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
 	/* initialize the status to avoid suprise */
 	for (i = 0; ids[i]; i++) {
 		ids[i]->status = ID_UNKNOWN;
 	}
-
-	nt_status = idmap_hash_initialize(dom);
-	BAIL_ON_NTSTATUS_ERROR(nt_status);
 
 	for (i=0; ids[i]; i++) {
 		struct dom_sid sid;
@@ -302,8 +285,7 @@ static NTSTATUS sids_to_unixids(struct idmap_domain *dom,
 		}
 	}
 
-done:
-	return nt_status;
+	return NT_STATUS_OK;
 }
 
 /*********************************************************************
