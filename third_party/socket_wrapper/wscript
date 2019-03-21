@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.2.1"
+VERSION="1.2.3"
 
 def configure(conf):
     if conf.CHECK_SOCKET_WRAPPER():

@@ -555,7 +555,7 @@ struct swrap {
 static struct swrap swrap;
 
 /* prototypes */
-static const char *socket_wrapper_dir(void);
+static char *socket_wrapper_dir(void);
 
 #define LIBC_NAME "libc.so"
 
@@ -587,20 +587,29 @@ static void *swrap_load_lib_handle(enum swrap_lib lib)
 	int i;
 
 #ifdef RTLD_DEEPBIND
-	const char *env = getenv("LD_PRELOAD");
+	const char *env_preload = getenv("LD_PRELOAD");
+	const char *env_deepbind = getenv("SOCKET_WRAPPER_DISABLE_DEEPBIND");
+	bool enable_deepbind = true;
 
 	/* Don't do a deepbind if we run with libasan */
-	if (env != NULL && strlen(env) < 1024) {
-		const char *p = strstr(env, "libasan.so");
-		if (p == NULL) {
-			flags |= RTLD_DEEPBIND;
+	if (env_preload != NULL && strlen(env_preload) < 1024) {
+		const char *p = strstr(env_preload, "libasan.so");
+		if (p != NULL) {
+			enable_deepbind = false;
 		}
+	}
+
+	if (env_deepbind != NULL && strlen(env_deepbind) >= 1) {
+		enable_deepbind = false;
+	}
+
+	if (enable_deepbind) {
+		flags |= RTLD_DEEPBIND;
 	}
 #endif
 
 	switch (lib) {
 	case SWRAP_LIBNSL:
-		FALL_THROUGH;
 	case SWRAP_LIBSOCKET:
 #ifdef HAVE_LIBSOCKET
 		handle = swrap.libc.socket_handle;
@@ -619,7 +628,6 @@ static void *swrap_load_lib_handle(enum swrap_lib lib)
 		}
 		break;
 #endif
-		FALL_THROUGH;
 	case SWRAP_LIBC:
 		handle = swrap.libc.handle;
 #ifdef LIBC_SO
@@ -1274,19 +1282,26 @@ static void swrap_set_next_free(struct socket_info *si, int next_free)
 	sic->meta.next_free = next_free;
 }
 
-static const char *socket_wrapper_dir(void)
+static char *socket_wrapper_dir(void)
 {
-	const char *s = getenv("SOCKET_WRAPPER_DIR");
+	char *swrap_dir = NULL;
+	char *s = getenv("SOCKET_WRAPPER_DIR");
+
 	if (s == NULL) {
+		SWRAP_LOG(SWRAP_LOG_WARN, "SOCKET_WRAPPER_DIR not set\n");
 		return NULL;
 	}
-	/* TODO use realpath(3) here, when we add support for threads */
-	if (strncmp(s, "./", 2) == 0) {
-		s += 2;
+
+	swrap_dir = realpath(s, NULL);
+	if (swrap_dir == NULL) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "Unable to resolve socket_wrapper dir path: %s",
+			  strerror(errno));
+		return NULL;
 	}
 
-	SWRAP_LOG(SWRAP_LOG_TRACE, "socket_wrapper_dir: %s", s);
-	return s;
+	SWRAP_LOG(SWRAP_LOG_TRACE, "socket_wrapper_dir: %s", swrap_dir);
+	return swrap_dir;
 }
 
 static unsigned int socket_wrapper_mtu(void)
@@ -1491,11 +1506,13 @@ done:
 
 bool socket_wrapper_enabled(void)
 {
-	const char *s = socket_wrapper_dir();
+	char *s = socket_wrapper_dir();
 
 	if (s == NULL) {
 		return false;
 	}
+
+	SAFE_FREE(s);
 
 	socket_wrapper_init_sockets();
 
@@ -1702,6 +1719,7 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 	unsigned int prt;
 	unsigned int iface;
 	int is_bcast = 0;
+	char *swrap_dir = NULL;
 
 	if (bcast) *bcast = 0;
 
@@ -1800,17 +1818,26 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 		return -1;
 	}
 
+	swrap_dir = socket_wrapper_dir();
+	if (swrap_dir == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
 	if (is_bcast) {
-		snprintf(un->sun_path, sizeof(un->sun_path), "%s/EINVAL",
-			 socket_wrapper_dir());
+		snprintf(un->sun_path, sizeof(un->sun_path),
+			 "%s/EINVAL", swrap_dir);
 		SWRAP_LOG(SWRAP_LOG_DEBUG, "un path [%s]", un->sun_path);
+		SAFE_FREE(swrap_dir);
 		/* the caller need to do more processing */
 		return 0;
 	}
 
 	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT,
-		 socket_wrapper_dir(), type, iface, prt);
+		 swrap_dir, type, iface, prt);
 	SWRAP_LOG(SWRAP_LOG_DEBUG, "un path [%s]", un->sun_path);
+
+	SAFE_FREE(swrap_dir);
 
 	return 0;
 }
@@ -1823,6 +1850,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 	unsigned int iface;
 	struct stat st;
 	int is_bcast = 0;
+	char *swrap_dir = NULL;
 
 	if (bcast) *bcast = 0;
 
@@ -1964,11 +1992,17 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		return -1;
 	}
 
+	swrap_dir = socket_wrapper_dir();
+	if (swrap_dir == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
+
 	if (prt == 0) {
 		/* handle auto-allocation of ephemeral ports */
 		for (prt = 5001; prt < 10000; prt++) {
 			snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT,
-				 socket_wrapper_dir(), type, iface, prt);
+				 swrap_dir, type, iface, prt);
 			if (stat(un->sun_path, &st) == 0) continue;
 
 			set_port(si->family, prt, &si->myname);
@@ -1976,15 +2010,20 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 
 			break;
 		}
+
 		if (prt == 10000) {
 			errno = ENFILE;
+			SAFE_FREE(swrap_dir);
 			return -1;
 		}
 	}
 
 	snprintf(un->sun_path, sizeof(un->sun_path), "%s/"SOCKET_FORMAT,
-		 socket_wrapper_dir(), type, iface, prt);
+		 swrap_dir, type, iface, prt);
 	SWRAP_LOG(SWRAP_LOG_DEBUG, "un path [%s]", un->sun_path);
+
+	SAFE_FREE(swrap_dir);
+
 	return 0;
 }
 
@@ -2012,7 +2051,7 @@ static bool check_addr_port_in_use(const struct sockaddr *sa, socklen_t len)
 			return false;
 		}
 		break;
-#if HAVE_IPV6
+#ifdef HAVE_IPV6
 	case AF_INET6:
 		if (len < sizeof(struct sockaddr_in6)) {
 			return false;
@@ -2059,7 +2098,7 @@ static bool check_addr_port_in_use(const struct sockaddr *sa, socklen_t len)
 			return true;
 			break;
 		}
-#if HAVE_IPV6
+#ifdef HAVE_IPV6
 		case AF_INET6: {
 			struct sockaddr_in6 *sin1, *sin2;
 
@@ -2431,14 +2470,20 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 				       int unreachable,
 				       size_t *_packet_len)
 {
-	uint8_t *base;
-	uint8_t *buf;
-	struct swrap_packet_frame *frame;
-	union swrap_packet_ip *ip;
+	uint8_t *base = NULL;
+	uint8_t *buf = NULL;
+	union {
+		uint8_t *ptr;
+		struct swrap_packet_frame *frame;
+	} f;
+	union {
+		uint8_t *ptr;
+		union swrap_packet_ip *ip;
+	} i;
 	union swrap_packet_payload *pay;
 	size_t packet_len;
 	size_t alloc_len;
-	size_t nonwire_len = sizeof(*frame);
+	size_t nonwire_len = sizeof(struct swrap_packet_frame);
 	size_t wire_hdr_len = 0;
 	size_t wire_len = 0;
 	size_t ip_hdr_len = 0;
@@ -2460,7 +2505,7 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 		dest_in = (const struct sockaddr_in *)(const void *)dest;
 		src_port = src_in->sin_port;
 		dest_port = dest_in->sin_port;
-		ip_hdr_len = sizeof(ip->v4);
+		ip_hdr_len = sizeof(i.ip->v4);
 		break;
 #ifdef HAVE_IPV6
 	case AF_INET6:
@@ -2468,7 +2513,7 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 		dest_in6 = (const struct sockaddr_in6 *)(const void *)dest;
 		src_port = src_in6->sin6_port;
 		dest_port = dest_in6->sin6_port;
-		ip_hdr_len = sizeof(ip->v6);
+		ip_hdr_len = sizeof(i.ip->v6);
 		break;
 #endif
 	default:
@@ -2509,7 +2554,6 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 		if (wire_len > 64 ) {
 			icmp_truncate_len = wire_len - 64;
 		}
-		wire_hdr_len += icmp_hdr_len;
 		wire_len += icmp_hdr_len;
 	}
 
@@ -2525,39 +2569,50 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 	}
 
 	buf = base;
+	f.ptr = buf;
 
-	frame = (struct swrap_packet_frame *)(void *)buf;
-	frame->seconds		= tval->tv_sec;
-	frame->micro_seconds	= tval->tv_usec;
-	frame->recorded_length	= wire_len - icmp_truncate_len;
-	frame->full_length	= wire_len - icmp_truncate_len;
+	f.frame->seconds		= tval->tv_sec;
+	f.frame->micro_seconds	= tval->tv_usec;
+	f.frame->recorded_length	= wire_len - icmp_truncate_len;
+	f.frame->full_length	= wire_len - icmp_truncate_len;
+
 	buf += SWRAP_PACKET_FRAME_SIZE;
 
-	ip = (union swrap_packet_ip *)(void *)buf;
+	i.ptr = buf;
 	switch (src->sa_family) {
 	case AF_INET:
-		ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
-		ip->v4.tos		= 0x00;
-		ip->v4.packet_length	= htons(wire_len - icmp_truncate_len);
-		ip->v4.identification	= htons(0xFFFF);
-		ip->v4.flags		= 0x40; /* BIT 1 set - means don't fragment */
-		ip->v4.fragment		= htons(0x0000);
-		ip->v4.ttl		= 0xFF;
-		ip->v4.protocol		= protocol;
-		ip->v4.hdr_checksum	= htons(0x0000);
-		ip->v4.src_addr		= src_in->sin_addr.s_addr;
-		ip->v4.dest_addr	= dest_in->sin_addr.s_addr;
+		if (src_in == NULL || dest_in == NULL) {
+			SAFE_FREE(base);
+			return NULL;
+		}
+
+		i.ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
+		i.ip->v4.tos		= 0x00;
+		i.ip->v4.packet_length	= htons(wire_len - icmp_truncate_len);
+		i.ip->v4.identification	= htons(0xFFFF);
+		i.ip->v4.flags		= 0x40; /* BIT 1 set - means don't fragment */
+		i.ip->v4.fragment	= htons(0x0000);
+		i.ip->v4.ttl		= 0xFF;
+		i.ip->v4.protocol	= protocol;
+		i.ip->v4.hdr_checksum	= htons(0x0000);
+		i.ip->v4.src_addr	= src_in->sin_addr.s_addr;
+		i.ip->v4.dest_addr	= dest_in->sin_addr.s_addr;
 		buf += SWRAP_PACKET_IP_V4_SIZE;
 		break;
 #ifdef HAVE_IPV6
 	case AF_INET6:
-		ip->v6.ver_prio		= 0x60; /* version 4 and 5 * 32 bit words */
-		ip->v6.flow_label_high	= 0x00;
-		ip->v6.flow_label_low	= 0x0000;
-		ip->v6.payload_length	= htons(wire_len - icmp_truncate_len); /* TODO */
-		ip->v6.next_header	= protocol;
-		memcpy(ip->v6.src_addr, src_in6->sin6_addr.s6_addr, 16);
-		memcpy(ip->v6.dest_addr, dest_in6->sin6_addr.s6_addr, 16);
+		if (src_in6 == NULL || dest_in6 == NULL) {
+			SAFE_FREE(base);
+			return NULL;
+		}
+
+		i.ip->v6.ver_prio		= 0x60; /* version 4 and 5 * 32 bit words */
+		i.ip->v6.flow_label_high	= 0x00;
+		i.ip->v6.flow_label_low	= 0x0000;
+		i.ip->v6.payload_length	= htons(wire_len - icmp_truncate_len); /* TODO */
+		i.ip->v6.next_header	= protocol;
+		memcpy(i.ip->v6.src_addr, src_in6->sin6_addr.s6_addr, 16);
+		memcpy(i.ip->v6.dest_addr, dest_in6->sin6_addr.s6_addr, 16);
 		buf += SWRAP_PACKET_IP_V6_SIZE;
 		break;
 #endif
@@ -2571,21 +2626,23 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 			pay->icmp4.code		= 0x01; /* host unreachable */
 			pay->icmp4.checksum	= htons(0x0000);
 			pay->icmp4.unused	= htonl(0x00000000);
+
 			buf += SWRAP_PACKET_PAYLOAD_ICMP4_SIZE;
 
 			/* set the ip header in the ICMP payload */
-			ip = (union swrap_packet_ip *)(void *)buf;
-			ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
-			ip->v4.tos		= 0x00;
-			ip->v4.packet_length	= htons(wire_len - icmp_hdr_len);
-			ip->v4.identification	= htons(0xFFFF);
-			ip->v4.flags		= 0x40; /* BIT 1 set - means don't fragment */
-			ip->v4.fragment		= htons(0x0000);
-			ip->v4.ttl		= 0xFF;
-			ip->v4.protocol		= icmp_protocol;
-			ip->v4.hdr_checksum	= htons(0x0000);
-			ip->v4.src_addr		= dest_in->sin_addr.s_addr;
-			ip->v4.dest_addr	= src_in->sin_addr.s_addr;
+			i.ptr = buf;
+			i.ip->v4.ver_hdrlen	= 0x45; /* version 4 and 5 * 32 bit words */
+			i.ip->v4.tos		= 0x00;
+			i.ip->v4.packet_length	= htons(wire_len - icmp_hdr_len);
+			i.ip->v4.identification	= htons(0xFFFF);
+			i.ip->v4.flags		= 0x40; /* BIT 1 set - means don't fragment */
+			i.ip->v4.fragment	= htons(0x0000);
+			i.ip->v4.ttl		= 0xFF;
+			i.ip->v4.protocol	= icmp_protocol;
+			i.ip->v4.hdr_checksum	= htons(0x0000);
+			i.ip->v4.src_addr	= dest_in->sin_addr.s_addr;
+			i.ip->v4.dest_addr	= src_in->sin_addr.s_addr;
+
 			buf += SWRAP_PACKET_IP_V4_SIZE;
 
 			src_port = dest_in->sin_port;
@@ -2600,14 +2657,15 @@ static uint8_t *swrap_pcap_packet_init(struct timeval *tval,
 			buf += SWRAP_PACKET_PAYLOAD_ICMP6_SIZE;
 
 			/* set the ip header in the ICMP payload */
-			ip = (union swrap_packet_ip *)(void *)buf;
-			ip->v6.ver_prio		= 0x60; /* version 4 and 5 * 32 bit words */
-			ip->v6.flow_label_high	= 0x00;
-			ip->v6.flow_label_low	= 0x0000;
-			ip->v6.payload_length	= htons(wire_len - icmp_truncate_len); /* TODO */
-			ip->v6.next_header	= protocol;
-			memcpy(ip->v6.src_addr, dest_in6->sin6_addr.s6_addr, 16);
-			memcpy(ip->v6.dest_addr, src_in6->sin6_addr.s6_addr, 16);
+			i.ptr = buf;
+			i.ip->v6.ver_prio		= 0x60; /* version 4 and 5 * 32 bit words */
+			i.ip->v6.flow_label_high	= 0x00;
+			i.ip->v6.flow_label_low	= 0x0000;
+			i.ip->v6.payload_length	= htons(wire_len - icmp_truncate_len); /* TODO */
+			i.ip->v6.next_header	= protocol;
+			memcpy(i.ip->v6.src_addr, dest_in6->sin6_addr.s6_addr, 16);
+			memcpy(i.ip->v6.dest_addr, src_in6->sin6_addr.s6_addr, 16);
+
 			buf += SWRAP_PACKET_IP_V6_SIZE;
 
 			src_port = dest_in6->sin6_port;
@@ -3446,6 +3504,7 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 	int ret;
 	int port;
 	struct stat st;
+	char *swrap_dir = NULL;
 
 	swrap_mutex_lock(&autobind_start_mutex);
 
@@ -3531,11 +3590,18 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 		autobind_start = 10000;
 	}
 
+	swrap_dir = socket_wrapper_dir();
+	if (swrap_dir == NULL) {
+		errno = EINVAL;
+		ret = -1;
+		goto done;
+	}
+
 	for (i = 0; i < SOCKET_MAX_SOCKETS; i++) {
 		port = autobind_start + i;
 		snprintf(un_addr.sa.un.sun_path, sizeof(un_addr.sa.un.sun_path),
-			 "%s/"SOCKET_FORMAT, socket_wrapper_dir(),
-			 type, socket_wrapper_default_iface(), port);
+			 "%s/"SOCKET_FORMAT, swrap_dir, type,
+			 socket_wrapper_default_iface(), port);
 		if (stat(un_addr.sa.un.sun_path, &st) == 0) continue;
 
 		ret = libc_bind(fd, &un_addr.sa.s, un_addr.sa_socklen);
@@ -3567,6 +3633,7 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 	ret = 0;
 
 done:
+	SAFE_FREE(swrap_dir);
 	swrap_mutex_unlock(&autobind_start_mutex);
 	return ret;
 }
@@ -4752,6 +4819,11 @@ static ssize_t swrap_sendmsg_before(int fd,
 		for (i = 0; i < (size_t)msg->msg_iovlen; i++) {
 			size_t nlen;
 			nlen = len + msg->msg_iov[i].iov_len;
+			if (nlen < len) {
+				/* overflow */
+				errno = EMSGSIZE;
+				goto out;
+			}
 			if (nlen > mtu) {
 				break;
 			}
@@ -5298,7 +5370,7 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 	msg.msg_namelen = tolen;       /* size of address */
 	msg.msg_iov = &tmp;            /* scatter/gather array */
 	msg.msg_iovlen = 1;            /* # elements in msg_iov */
-#if HAVE_STRUCT_MSGHDR_MSG_CONTROL
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	msg.msg_control = NULL;        /* ancillary data, see below */
 	msg.msg_controllen = 0;        /* ancillary data buffer len */
 	msg.msg_flags = 0;             /* flags on received message */
@@ -5324,14 +5396,19 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 		unsigned int iface;
 		unsigned int prt = ntohs(((const struct sockaddr_in *)(const void *)to)->sin_port);
 		char type;
+		char *swrap_dir = NULL;
 
 		type = SOCKET_TYPE_CHAR_UDP;
+
+		swrap_dir = socket_wrapper_dir();
+		if (swrap_dir == NULL) {
+			return -1;
+		}
 
 		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
 			snprintf(un_addr.sa.un.sun_path,
 				 sizeof(un_addr.sa.un.sun_path),
-				 "%s/"SOCKET_FORMAT,
-				 socket_wrapper_dir(), type, iface, prt);
+				 "%s/"SOCKET_FORMAT, swrap_dir, type, iface, prt);
 			if (stat(un_addr.sa.un.sun_path, &st) != 0) continue;
 
 			/* ignore the any errors in broadcast sends */
@@ -5342,6 +5419,8 @@ static ssize_t swrap_sendto(int s, const void *buf, size_t len, int flags,
 				    &un_addr.sa.s,
 				    un_addr.sa_socklen);
 		}
+
+		SAFE_FREE(swrap_dir);
 
 		SWRAP_LOCK_SI(si);
 
@@ -5529,7 +5608,7 @@ static ssize_t swrap_write(int s, const void *buf, size_t len)
 	msg.msg_namelen = 0;           /* size of address */
 	msg.msg_iov = &tmp;            /* scatter/gather array */
 	msg.msg_iovlen = 1;            /* # elements in msg_iov */
-#if HAVE_STRUCT_MSGHDR_MSG_CONTROL
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	msg.msg_control = NULL;        /* ancillary data, see below */
 	msg.msg_controllen = 0;        /* ancillary data buffer len */
 	msg.msg_flags = 0;             /* flags on received message */
@@ -5580,7 +5659,7 @@ static ssize_t swrap_send(int s, const void *buf, size_t len, int flags)
 	msg.msg_namelen = 0;           /* size of address */
 	msg.msg_iov = &tmp;            /* scatter/gather array */
 	msg.msg_iovlen = 1;            /* # elements in msg_iov */
-#if HAVE_STRUCT_MSGHDR_MSG_CONTROL
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	msg.msg_control = NULL;        /* ancillary data, see below */
 	msg.msg_controllen = 0;        /* ancillary data buffer len */
 	msg.msg_flags = 0;             /* flags on received message */
@@ -5803,6 +5882,7 @@ static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 		off_t ofs = 0;
 		size_t avail = 0;
 		size_t remain;
+		char *swrap_dir = NULL;
 
 		for (i = 0; i < (size_t)msg.msg_iovlen; i++) {
 			avail += msg.msg_iov[i].iov_len;
@@ -5828,9 +5908,15 @@ static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 
 		type = SOCKET_TYPE_CHAR_UDP;
 
+		swrap_dir = socket_wrapper_dir();
+		if (swrap_dir == NULL) {
+			free(buf);
+			return -1;
+		}
+
 		for(iface=0; iface <= MAX_WRAPPED_INTERFACES; iface++) {
 			snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/"SOCKET_FORMAT,
-				 socket_wrapper_dir(), type, iface, prt);
+				 swrap_dir, type, iface, prt);
 			if (stat(un_addr.sun_path, &st) != 0) continue;
 
 			msg.msg_name = &un_addr;           /* optional address */
@@ -5839,6 +5925,8 @@ static ssize_t swrap_sendmsg(int s, const struct msghdr *omsg, int flags)
 			/* ignore the any errors in broadcast sends */
 			libc_sendmsg(s, &msg, flags);
 		}
+
+		SAFE_FREE(swrap_dir);
 
 		SWRAP_LOCK_SI(si);
 
@@ -5944,7 +6032,7 @@ static ssize_t swrap_writev(int s, const struct iovec *vector, int count)
 	msg.msg_namelen = 0;           /* size of address */
 	msg.msg_iov = discard_const_p(struct iovec, vector); /* scatter/gather array */
 	msg.msg_iovlen = count;        /* # elements in msg_iov */
-#if HAVE_STRUCT_MSGHDR_MSG_CONTROL
+#ifdef HAVE_STRUCT_MSGHDR_MSG_CONTROL
 	msg.msg_control = NULL;        /* ancillary data, see below */
 	msg.msg_controllen = 0;        /* ancillary data buffer len */
 	msg.msg_flags = 0;             /* flags on received message */
