@@ -1984,8 +1984,8 @@ static void process_smb(struct smbXsrv_connection *xconn,
 		    (IVAL(inbuf, 4) == SMB_SUICIDE_PACKET) &&
 		    lp_parm_bool(-1, "smbd", "suicide mode", false)) {
 			uint8_t exitcode = CVAL(inbuf, 8);
-			DEBUG(1, ("Exiting immediately with code %d\n",
-				  (int)exitcode));
+			DBG_WARNING("SUICIDE: Exiting immediately with code %d\n",
+				    (int)exitcode);
 			exit(exitcode);
 		}
 
