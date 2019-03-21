@@ -224,6 +224,7 @@ static NTSTATUS unixids_to_sids(struct idmap_domain *dom,
 		if (!hashed_domains[h_domain].sid)
 			continue;
 
+		ids[i]->xid.type = ID_TYPE_BOTH;
 		sid_compose(ids[i]->sid, hashed_domains[h_domain].sid, h_rid);
 		ids[i]->status = ID_MAPPED;
 	}
