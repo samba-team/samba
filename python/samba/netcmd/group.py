@@ -444,7 +444,7 @@ class cmd_group_move(Command):
     server.
 
     Example1:
-    samba-tool group move Group1 'OU=OrgUnit,DC=samdom.DC=example,DC=com' \
+    samba-tool group move Group1 'OU=OrgUnit,DC=samdom.DC=example,DC=com' \\
         -H ldap://samba.samdom.example.com -U administrator
 
     Example1 shows how to move a group Group1 into the 'OrgUnit' organizational
@@ -522,11 +522,11 @@ The -H or --URL= option can be used to execute the command against a remote
 server.
 
 Example1:
-samba-tool group show Group1 -H ldap://samba.samdom.example.com \
--U administrator --password=passw1rd
+samba-tool group show Group1 -H ldap://samba.samdom.example.com \\
+    -U administrator --password=passw1rd
 
-Example1 shows how to display a group's attributes in the domain against a remote
-LDAP server.
+Example1 shows how to display a group's attributes in the domain against a
+remote LDAP server.
 
 The -H parameter is used to specify the remote target server.
 

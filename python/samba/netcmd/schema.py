@@ -38,7 +38,7 @@ class cmd_schema_attribute_modify(Command):
     so be sure to view the current content before making changes.
 
     Example1:
-    samba-tool schema attribute modify uid \
+    samba-tool schema attribute modify uid \\
         --searchflags="fATTINDEX,fPRESERVEONDELETE"
 
     This alters the uid attribute to be indexed and to be preserved when

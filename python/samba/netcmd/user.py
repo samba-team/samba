@@ -291,8 +291,8 @@ samba-tool user create User4 passw4rd --rfc2307-from-nss --gecos 'some text'
 Example4 shows how to create a new user with Unix UID, GID and login-shell set from the local NSS and GECOS set to 'some text'.
 
 Example5:
-samba-tool user create User5 passw5rd --nis-domain=samdom --unix-home=/home/User5 \
-           --uid-number=10005 --login-shell=/bin/false --gid-number=10000
+samba-tool user create User5 passw5rd --nis-domain=samdom --unix-home=/home/User5 \\
+    --uid-number=10005 --login-shell=/bin/false --gid-number=10000
 
 Example5 shows how to create an RFC2307/NIS domain enabled user account. If
 --nis-domain is set, then the other four parameters are mandatory.
@@ -2389,8 +2389,8 @@ The -H or --URL= option can be used to execute the command against a remote
 server.
 
 Example1:
-samba-tool user edit User1 -H ldap://samba.samdom.example.com \
--U administrator --password=passw1rd
+samba-tool user edit User1 -H ldap://samba.samdom.example.com \\
+    -U administrator --password=passw1rd
 
 Example1 shows how to edit a users attributes in the domain against a remote
 LDAP server.
@@ -2522,8 +2522,8 @@ The -H or --URL= option can be used to execute the command against a remote
 server.
 
 Example1:
-samba-tool user show User1 -H ldap://samba.samdom.example.com \
--U administrator --password=passw1rd
+samba-tool user show User1 -H ldap://samba.samdom.example.com \\
+    -U administrator --password=passw1rd
 
 Example1 shows how to display a users attributes in the domain against a remote
 LDAP server.
@@ -2603,7 +2603,7 @@ class cmd_user_move(Command):
     server.
 
     Example1:
-    samba-tool user move User1 'OU=OrgUnit,DC=samdom.DC=example,DC=com' \
+    samba-tool user move User1 'OU=OrgUnit,DC=samdom.DC=example,DC=com' \\
         -H ldap://samba.samdom.example.com -U administrator
 
     Example1 shows how to move a user User1 into the 'OrgUnit' organizational

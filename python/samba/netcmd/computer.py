@@ -181,7 +181,7 @@ accounts are also referred to as security principals and are assigned a
 security identifier (SID).
 
 Example1:
-samba-tool computer create Computer1 -H ldap://samba.samdom.example.com \
+samba-tool computer create Computer1 -H ldap://samba.samdom.example.com \\
     -Uadministrator%passw1rd
 
 Example1 shows how to create a new computer in the domain against a remote LDAP
@@ -323,7 +323,7 @@ userid. The -H or --URL= option can be used to execute the command against
 a remote server.
 
 Example1:
-samba-tool computer delete Computer1 -H ldap://samba.samdom.example.com \
+samba-tool computer delete Computer1 -H ldap://samba.samdom.example.com \\
     -Uadministrator%passw1rd
 
 Example1 shows how to delete a computer in the domain against a remote LDAP
@@ -450,7 +450,7 @@ The -H or --URL= option can be used to execute the command against a remote
 server.
 
 Example1:
-samba-tool computer show Computer1 -H ldap://samba.samdom.example.com \
+samba-tool computer show Computer1 -H ldap://samba.samdom.example.com \\
     -U administrator
 
 Example1 shows how display a computers attributes in the domain against a
