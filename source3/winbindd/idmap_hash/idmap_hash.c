@@ -331,7 +331,7 @@ static NTSTATUS nss_hash_close(void)
  Dispatch Tables for IDMap and NssInfo Methods
 ********************************************************************/
 
-static struct idmap_methods hash_idmap_methods = {
+static const struct idmap_methods hash_idmap_methods = {
 	.init            = idmap_hash_initialize,
 	.unixids_to_sids = unixids_to_sids,
 	.sids_to_unixids = sids_to_unixids,
