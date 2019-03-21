@@ -919,7 +919,7 @@ done:
 	return status;
 }
 
-static struct idmap_methods autorid_methods = {
+static const struct idmap_methods autorid_methods = {
 	.init = idmap_autorid_initialize,
 	.unixids_to_sids = idmap_autorid_unixids_to_sids,
 	.sids_to_unixids = idmap_autorid_sids_to_unixids,

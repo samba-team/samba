@@ -40,7 +40,7 @@ static_decl_idmap;
 
 struct idmap_backend {
 	const char *name;
-	struct idmap_methods *methods;
+	const struct idmap_methods *methods;
 	struct idmap_backend *prev, *next;
 };
 static struct idmap_backend *backends = NULL;
@@ -285,7 +285,7 @@ static bool idmap_found_domain_backend(const char *domname,
 	return false;
 }
 
-static struct idmap_methods *get_methods(const char *name)
+static const struct idmap_methods *get_methods(const char *name)
 {
 	struct idmap_backend *b;
 
@@ -309,7 +309,7 @@ bool idmap_is_offline(void)
 **********************************************************************/
 
 NTSTATUS smb_register_idmap(int version, const char *name,
-			    struct idmap_methods *methods)
+			    const struct idmap_methods *methods)
 {
 	struct idmap_backend *entry;
 

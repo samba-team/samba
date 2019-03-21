@@ -1093,7 +1093,7 @@ done:
  Close the idmap ldap instance
 **********************************/
 
-static struct idmap_methods idmap_ldap_methods = {
+static const struct idmap_methods idmap_ldap_methods = {
 
 	.init = idmap_ldap_db_init,
 	.unixids_to_sids = idmap_ldap_unixids_to_sids,

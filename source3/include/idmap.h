@@ -42,7 +42,7 @@ struct idmap_domain {
 	 * so don't rely on this being filled out everywhere!
 	 */
 	struct dom_sid dom_sid;
-	struct idmap_methods *methods;
+	const struct idmap_methods *methods;
 	NTSTATUS (*query_user)(struct idmap_domain *domain,
 			       struct wbint_userinfo *info);
 	uint32_t low_id;

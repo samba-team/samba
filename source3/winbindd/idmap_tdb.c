@@ -426,7 +426,7 @@ failed:
 	return ret;
 }
 
-static struct idmap_methods db_methods = {
+static const struct idmap_methods db_methods = {
 	.init = idmap_tdb_db_init,
 	.unixids_to_sids = idmap_tdb_common_unixids_to_sids,
 	.sids_to_unixids = idmap_tdb_common_sids_to_unixids,

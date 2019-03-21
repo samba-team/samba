@@ -838,7 +838,7 @@ err:
 	return status;
 }
 
-static struct idmap_methods rfc2307_methods = {
+static const struct idmap_methods rfc2307_methods = {
 	.init = idmap_rfc2307_initialize,
 	.unixids_to_sids = idmap_rfc2307_unixids_to_sids,
 	.sids_to_unixids = idmap_rfc2307_sids_to_unixids,

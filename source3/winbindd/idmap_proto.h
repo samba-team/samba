@@ -29,7 +29,7 @@
 
 bool idmap_is_offline(void);
 NTSTATUS smb_register_idmap(int version, const char *name,
-			    struct idmap_methods *methods);
+			    const struct idmap_methods *methods);
 void idmap_close(void);
 NTSTATUS idmap_allocate_uid(struct unixid *id);
 NTSTATUS idmap_allocate_gid(struct unixid *id);

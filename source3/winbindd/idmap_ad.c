@@ -1003,7 +1003,7 @@ static NTSTATUS idmap_ad_sids_to_unixids_retry(struct idmap_domain *dom,
 	return status;
 }
 
-static struct idmap_methods ad_methods = {
+static const struct idmap_methods ad_methods = {
 	.init            = idmap_ad_initialize,
 	.unixids_to_sids = idmap_ad_unixids_to_sids_retry,
 	.sids_to_unixids = idmap_ad_sids_to_unixids_retry,

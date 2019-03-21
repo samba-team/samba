@@ -75,12 +75,7 @@ static NTSTATUS idmap_pdb_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	return NT_STATUS_OK;
 }
 
-/**********************************
- Close the idmap tdb instance
-**********************************/
-
-static struct idmap_methods passdb_methods = {
-
+static const struct idmap_methods passdb_methods = {
 	.init = idmap_pdb_init,
 	.unixids_to_sids = idmap_pdb_unixids_to_sids,
 	.sids_to_unixids = idmap_pdb_sids_to_unixids,
