@@ -131,6 +131,8 @@ if ($opt_delete && ($found_section == 0)) {
 	die "share $share_name not found";
 }
 
+delete @ENV{'BASH_ENV'};
+
 $ENV{'PATH'} = '/bin:/usr/bin'; # untaint PATH
 system("cp", "$tmp", "$smb_conf_file");
 unlink $tmp;
