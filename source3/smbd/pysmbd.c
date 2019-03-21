@@ -739,6 +739,8 @@ static PyObject *py_smbd_mkdir(PyObject *self, PyObject *args, PyObject *kwargs)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct connection_struct *conn = NULL;
 	struct smb_filename *smb_fname = NULL;
+	int ret;
+	mode_t saved_umask;
 
 	if (!PyArg_ParseTupleAndKeywords(args,
 					 kwargs,
@@ -769,8 +771,15 @@ static PyObject *py_smbd_mkdir(PyObject *self, PyObject *args, PyObject *kwargs)
 		return NULL;
 	}
 
+	/* we want total control over the permissions on created files,
+	   so set our umask to 0 */
+	saved_umask = umask(0);
 
-	if (SMB_VFS_MKDIR(conn, smb_fname, 00755) == -1) {
+	ret = SMB_VFS_MKDIR(conn, smb_fname, 00755);
+
+	umask(saved_umask);
+
+	if (ret == -1) {
 		DBG_ERR("mkdir error=%d (%s)\n", errno, strerror(errno));
 		TALLOC_FREE(frame);
 		return NULL;
