@@ -116,7 +116,7 @@ PKGS = [
     ('apt-utils', 'yum-utils'),
     ('pkg-config', 'pkgconfig'),
     ('procps', 'procps-ng'),  # required for the free cmd in tests
-    ('lsb-release', 'redhat-lsb'),  # we need lsb_relase to show info
+    ('lsb-release', 'lsb-release'),  # we need lsb_relase to show info
     ('', 'rpcgen'),  # required for test
     # refer: https://fedoraproject.org/wiki/Changes/SunRPCRemoval
     ('', 'libtirpc-devel'),  # for <rpc/rpc.h> header on fedora
@@ -381,6 +381,7 @@ RPM_DISTS = {
         'vagrant_box': 'centos/6',
         'bootstrap': YUM_BOOTSTRAP,
         'replace': {
+            'lsb-release': 'redhat-lsb',
             'python3-devel': 'python34-devel',
             'python2-gpg': 'pygpgme',
             'python3-gpg': '',  # no python3-gpg yet
@@ -398,6 +399,7 @@ RPM_DISTS = {
         'vagrant_box': 'centos/7',
         'bootstrap': YUM_BOOTSTRAP,
         'replace': {
+            'lsb-release': 'redhat-lsb',
             'python3-devel': 'python34-devel',
             # although python36-devel is available
             # after epel-release installed
@@ -416,11 +418,17 @@ RPM_DISTS = {
         'docker_image': 'fedora:28',
         'vagrant_box': 'fedora/28-cloud-base',
         'bootstrap': DNF_BOOTSTRAP,
+        'replace': {
+            'lsb-release': 'redhat-lsb',
+        }
     },
     'fedora29': {
         'docker_image': 'fedora:29',
         'vagrant_box': 'fedora/29-cloud-base',
         'bootstrap': DNF_BOOTSTRAP,
+        'replace': {
+            'lsb-release': 'redhat-lsb',
+        }
     },
 }
 
