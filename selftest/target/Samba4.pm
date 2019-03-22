@@ -830,6 +830,7 @@ sub provision_raw_step1($$)
 	winbind enum groups = yes
 
         rpc server port:netlogon = 1026
+	include system krb5 conf = no
 
 ";
 
