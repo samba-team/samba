@@ -261,9 +261,9 @@
 		<listitem><para>This allows the user to select the
 		highest SMB protocol level that smbclient will use to
 		connect to the server. By default this is set to
-		NT1, which is the highest available SMB1 protocol.
-		To connect using SMB2 or SMB3 protocol, use the
-		strings SMB2 or SMB3 respectively. Note that to connect
+		highest available SMB3 protocol version.
+		To connect using SMB2 or SMB1 protocol, use the
+		strings SMB2 or NT1 respectively. Note that to connect
 		to a Windows 2012 server with encrypted transport selecting
 		a max-protocol of SMB3 is required.
 		</para></listitem>
