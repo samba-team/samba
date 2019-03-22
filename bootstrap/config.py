@@ -216,6 +216,22 @@ dnf -y -q --verbose install \
 dnf clean all
 """
 
+ZYPPER_BOOTSTRAP = r"""
+#!/bin/bash
+set -xueo pipefail
+
+zypper --non-interactive refresh
+zypper --non-interactive update
+zypper --non-interactive install \
+    {pkgs} \
+    system-user-nobody
+
+zypper --non-interactive clean
+
+if [ -f /usr/lib/mit/bin/krb5-config ]; then
+    ln -sf /usr/lib/mit/bin/krb5-config /usr/bin/krb5-config
+fi
+"""
 
 # A generic shell script to setup locale
 LOCALE_SETUP = r"""
@@ -430,6 +446,36 @@ RPM_DISTS = {
             'lsb-release': 'redhat-lsb',
         }
     },
+    'opensuse150': {
+        'docker_image': 'opensuse/leap:15.0',
+        'vagrant_box': 'opensuse/openSUSE-15.0-x86_64',
+        'bootstrap': ZYPPER_BOOTSTRAP,
+        'replace': {
+            '@development-tools': '',
+            'dbus-devel': 'dbus-1-devel',
+            'docbook-style-xsl': 'docbook-xsl-stylesheets',
+            'glibc-common': 'glibc-locale',
+            'glibc-locale-source': 'glibc-i18ndata',
+            'glibc-langpack-en': '',
+            'jansson-devel': 'libjansson-devel',
+            'keyutils-libs-devel': 'keyutils-devel',
+            'krb5-workstation': 'krb5-client',
+            'libnsl2-devel': 'libnsl-devel',
+            'libsemanage-python': 'python2-semanage',
+            'nettle-devel': 'libnettle-devel',
+            'openldap-devel': 'openldap2-devel',
+            'perl-Archive-Tar': 'perl-Archive-Tar-Wrapper',
+            'perl-JSON-Parse': 'perl-JSON-XS',
+            'perl-generators': '',
+            'perl-interpreter': '',
+            'procps-ng': 'procps',
+            'python-dns': 'python2-dnspython',
+            'python3-crypto': 'python3-pycrypto',
+            'python3-dns': 'python3-dnspython',
+            'python3-markdown': 'python3-Markdown',
+            'quota-devel': '',
+        }
+    }
 }
 
 
