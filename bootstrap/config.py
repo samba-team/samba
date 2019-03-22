@@ -40,6 +40,8 @@ COMMON = [
     'gcc',
     'gdb',
     'git',
+    'gzip',
+    'hostname',
     'htop',
     'make',
     'patch',
@@ -163,7 +165,7 @@ PKGS = [
     ('docbook-xsl', 'docbook-style-xsl'),
     ('flex', ''),
     ('', 'keyutils-libs-devel'),
-
+    ('', 'which'),
 ]
 
 
