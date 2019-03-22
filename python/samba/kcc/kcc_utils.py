@@ -31,7 +31,7 @@ from samba.dcerpc import (
 )
 from samba.common import dsdb_Dn
 from samba.ndr import ndr_unpack, ndr_pack
-from collections import Counter
+from collections import defaultdict
 
 
 class KCCError(Exception):
@@ -2288,7 +2288,7 @@ def uncovered_sites_to_cover(samdb, site_name):
                             scope=ldb.SCOPE_SUBTREE,
                             expression="(objectClass=site)")
 
-    sites_in_use = Counter()
+    sites_in_use = defaultdict(int)
     dc_count = 0
 
     # Assume server is of form DC,Servers,Site-ABCD because of schema
