@@ -1,4 +1,4 @@
-/* 
+/*
    ldb database library
 
    Copyright (C) Simo Sorce 2005
@@ -6,7 +6,7 @@
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
      ** under the LGPL
-   
+
    This library is free software; you can redistribute it and/or
    modify it under the terms of the GNU Lesser General Public
    License as published by the Free Software Foundation; either
@@ -32,11 +32,10 @@
  */
 
 #include "includes.h"
+#include "./lib.h"
 #include "ldb.h"
-#include "dsdb/samdb/samdb.h"
 #include "../lib/crypto/sha256.h"
 #include "../librpc/gen_ndr/ndr_misc.h"
-#include "lib/cmdline/popt_common.h"
 
 #define SCHEMA_UNKNOWN 0
 #define SCHEMA_NAME 1
@@ -53,18 +52,10 @@
 #define SCHEMA_SYNTAX 12
 #define SCHEMA_DESC 13
 
-struct schema_conv {
-	int count;
-	int failures;
-};
-
 struct schema_token {
 	int type;
 	char *value;
 };
-
-struct ldb_context *ldb_ctx;
-struct ldb_dn *basedn;
 
 static int check_braces(const char *string)
 {
@@ -335,7 +326,7 @@ static struct schema_token *get_next_schema_token(TALLOC_CTX *ctx, char **string
 	return token;
 }
 
-static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
+static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, struct conv_options *opt, const char *entry)
 {
 	TALLOC_CTX *ctx;
 	struct ldb_message *msg;
@@ -424,7 +415,7 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, const char *entry)
 			MSG_ADD_STRING("cn", token->value);
 			MSG_ADD_STRING("name", token->value);
 			MSG_ADD_STRING("lDAPDisplayName", token->value);
-			msg->dn = ldb_dn_copy(msg, basedn);
+			msg->dn = ldb_dn_copy(msg, opt->basedn);
 			ldb_dn_add_child_fmt(msg->dn, "CN=%s,CN=Schema,CN=Configuration", token->value);
 			break;
 
@@ -513,17 +504,16 @@ failed:
 	return NULL;
 }
 
-static struct schema_conv process_file(FILE *in, FILE *out)
+struct schema_conv process_file(TALLOC_CTX *mem_ctx, struct conv_options *opt)
 {
-	TALLOC_CTX *ctx;
 	struct schema_conv ret;
 	char *entry;
 	int c, t, line;
 	struct ldb_ldif ldif;
+	FILE *in = opt->in;
+	FILE *out = opt->out;
 
 	ldif.changetype = LDB_CHANGETYPE_NONE;
-
-	ctx = talloc_new(NULL);
 
 	ret.count = 0;
 	ret.failures = 0;
@@ -543,23 +533,23 @@ static struct schema_conv process_file(FILE *in, FILE *out)
 		}
 
 		t = 0;
-		entry = talloc_array(ctx, char, 1024);
+		entry = talloc_array(mem_ctx, char, 1024);
 		if (entry == NULL) exit(-1);
 
-		do { 
+		do {
 			if (c == '\n') {
 				int ret2 = 0;
 				entry[t] = '\0';
 				ret2 = check_braces(entry);
 				if (ret2 == 0) {
 					ret.count++;
-					ldif.msg = process_entry(ctx, entry);
+					ldif.msg = process_entry(mem_ctx, opt, entry);
 					if (ldif.msg == NULL) {
 						ret.failures++;
 						fprintf(stderr, "No valid msg from entry \n[%s]\n at line %d\n", entry, line);
 						break;
 					}
-					ldb_ldif_write_file(ldb_ctx, out, &ldif);
+					ldb_ldif_write_file(opt->ldb_ctx, out, &ldif);
 					break;
 				}
 				if (ret2 == 2) {
@@ -573,22 +563,22 @@ static struct schema_conv process_file(FILE *in, FILE *out)
 				t++;
 			}
 			if ((t % 1023) == 0) {
-				entry = talloc_realloc(ctx, entry, char, t + 1024);
+				entry = talloc_realloc(mem_ctx, entry, char, t + 1024);
 				if (entry == NULL) exit(-1);
 			}
-		} while ((c = fgetc(in)) != EOF); 
+		} while ((c = fgetc(in)) != EOF);
 
 		if (c != '\n') {
 			entry[t] = '\0';
 			if (check_braces(entry) == 0) {
 				ret.count++;
-				ldif.msg = process_entry(ctx, entry);
+				ldif.msg = process_entry(mem_ctx, opt, entry);
 				if (ldif.msg == NULL) {
 					ret.failures++;
 					fprintf(stderr, "No valid msg from entry \n[%s]\n at line %d\n", entry, line);
 					break;
 				}
-				ldb_ldif_write_file(ldb_ctx, out, &ldif);
+				ldb_ldif_write_file(opt->ldb_ctx, out, &ldif);
 			} else {
 				fprintf(stderr, "malformed entry on line %d\n", line);
 				ret.failures++;
@@ -599,98 +589,4 @@ static struct schema_conv process_file(FILE *in, FILE *out)
 	}
 
 	return ret;
-}
-
-static struct options {
-	const char *basedn;
-	const char *input;
-	const char *output;
-} options;
-
-static struct poptOption popt_options[] = {
-	POPT_AUTOHELP
-	{ "basedn",    'b', POPT_ARG_STRING, &options.basedn, 0, "base DN", "DN" },
-	{ "input", 'I', POPT_ARG_STRING, &options.input, 0, 
-	  "inputfile of OpenLDAP style schema otherwise STDIN", "inputfile"},
-	{ "output", 'O', POPT_ARG_STRING, &options.output, 0, 
-	  "outputfile otherwise STDOUT", "outputfile"},
-	POPT_COMMON_VERSION
-	{ NULL }
-};
-
-
-static void usage(void)
-{
-	poptContext pc;
-	printf("Usage: oLschema2ldif <options>\n");
-	printf("\nConvert OpenLDAP schema to AD-like LDIF format\n\n");
-	printf("Converts records from an openLdap formatted schema to an ldif schema\n\n");
-	pc = poptGetContext("oLschema2ldif", 0, NULL, popt_options, 
-			    POPT_CONTEXT_KEEP_FIRST);
-	poptPrintHelp(pc, stdout, 0);
-	exit(1);
-}
-
-
- int main(int argc, const char **argv)
-{
-	TALLOC_CTX *ctx;
-	struct schema_conv ret;
-	FILE *in = stdin;
-	FILE *out = stdout;
-	poptContext pc;
-	int opt;
-
-	ctx = talloc_new(NULL);
-	ldb_ctx = ldb_init(ctx, NULL);
-
-	setenv("LDB_URL", "NONE", 1);
-
-	pc = poptGetContext(argv[0], argc, argv, popt_options, 
-			    POPT_CONTEXT_KEEP_FIRST);
-
-	while((opt = poptGetNextOpt(pc)) != -1) {
-		fprintf(stderr, "Invalid option %s: %s\n", 
-			poptBadOption(pc, 0), poptStrerror(opt));
-		usage();
-	}
-
-	if (options.basedn == NULL) {		
-		printf("Base DN not specified\n");
-		usage();
-		exit(1);
-	} else {
-		basedn = ldb_dn_new(ctx, ldb_ctx, options.basedn);
-		if ( ! ldb_dn_validate(basedn)) {
-			printf("Malformed Base DN\n");
-			usage();
-			exit(1);
-		}
-	}
-
-	if (options.input) {
-		in = fopen(options.input, "r");
-		if (!in) {
-			perror(options.input);
-			usage();
-			exit(1);
-		}
-	}
-	if (options.output) {
-		out = fopen(options.output, "w");
-		if (!out) {
-			perror(options.output);
-			usage();
-			exit(1);
-		}
-	}
-
-	ret = process_file(in, out);
-
-	fclose(in);
-	fclose(out);
-
-	printf("Converted %d records with %d failures\n", ret.count, ret.failures);
-
-	return 0;
 }

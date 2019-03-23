@@ -1,8 +1,0 @@
-#!/usr/bin/env python
-
-bld.SAMBA_BINARY('oLschema2ldif',
-	source='oLschema2ldif.c',
-	manpages='man/oLschema2ldif.1',
-	deps='samdb POPT_SAMBA'
-	)
-
