@@ -14,10 +14,7 @@ objectclass: extensibleObject
 objectclass: nsBackendInstance
 nsslapd-suffix: dc=tammy,dc=abartlet,dc=net
 
-# Generate 99_ad.ldif with 
-
-# bin/ad2oLschema -I setup/fedora-ds-init.ldif --option=convert:target=fedora-ds -O /opt/fedora-ds/slapd-piglett/config/schema/99_ad.ldif -H /data/samba/samba4/prefix/private/sam.ldb
-# Then install 00_staish_core.ldif 30ns-common.ldif and 99_ad.ldif
+# Generate 99_ad.ldif, then install 00_staish_core.ldif 30ns-common.ldif and 99_ad.ldif
 # into /opt/fedora-ds/slapd-piglett/config/schema/
 #
 
