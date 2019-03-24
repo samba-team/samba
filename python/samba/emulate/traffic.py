@@ -872,11 +872,8 @@ class Conversation(object):
         if not client:
             src, dest = dest, src
         key = (protocol, opcode)
-        desc = OP_DESCRIPTIONS[key] if key in OP_DESCRIPTIONS else ''
-        if protocol in IP_PROTOCOLS:
-            ip_protocol = IP_PROTOCOLS[protocol]
-        else:
-            ip_protocol = '06'
+        desc = OP_DESCRIPTIONS.get(key, '')
+        ip_protocol = IP_PROTOCOLS.get(protocol, '06')
         packet = Packet(timestamp - self.start_time, ip_protocol,
                         '', src, dest,
                         protocol, opcode, desc, extra)
@@ -909,10 +906,7 @@ class Conversation(object):
         return self.packets[-1].timestamp - self.packets[0].timestamp
 
     def replay_as_summary_lines(self):
-        lines = []
-        for p in self.packets:
-            lines.append(p.as_summary(self.start_time))
-        return lines
+        return [p.as_summary(self.start_time) for p in self.packets]
 
     def replay_with_delay(self, start, context=None, account=None):
         """Replay the conversation at the right time.
