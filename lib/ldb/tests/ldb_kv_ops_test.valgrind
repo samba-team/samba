@@ -1,0 +1,97 @@
+{
+   Memory allocated by setup
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   ...
+   fun:setup
+}
+{
+   Memory allocated by setup
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:realloc
+   ...
+   fun:setup
+}
+{
+   Memory allocated by ldb_init
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   ...
+   fun:ldb_init
+}
+{
+   Memory allocated by ldb_init
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:realloc
+   ...
+   fun:ldb_init
+}
+{
+   Memory allocated by noconn_setup
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   ...
+   fun:noconn_setup
+}
+{
+   Memory allocated by parse, which allocates on the NULL context
+   Memcheck:Leak
+   match-leak-kinds: all
+   fun:malloc
+   ...
+   fun:parse
+}
+{
+   Memory allocated by tdb_parse_data
+   Memcheck:Leak
+   match-leak-kinds: all
+   fun:malloc
+   ...
+   fun:tdb_parse_data
+}
+{
+   Memory allocated by ldb_connect
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   ...
+   fun:ldb_connect
+}
+{
+   Memory allocated by ldb_connect
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:calloc
+   ...
+   fun:ldb_connect
+}
+{
+   Memory allocated by ldb_kv_cache_load
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   ...
+   fun:ldb_kv_cache_load
+}
+{
+   Memory allocated by ldb_kv_index_load
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   ...
+   fun:ldb_kv_index_load
+}
+{
+   Memory allocated by ldb_asprintf_errstring
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   ...
+   fun:ldb_asprintf_errstring
+}
+

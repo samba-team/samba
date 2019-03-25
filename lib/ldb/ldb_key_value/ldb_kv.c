@@ -655,6 +655,15 @@ static int ldb_kv_add_internal(struct ldb_module *module,
 
 	ret = ldb_kv_modified(module, msg->dn);
 
+	/*
+	 * To allow testing of the error recovery code in ldb_kv_add
+	 * cmocka tests can define CMOCKA_UNIT_TEST_ADD_INTERNAL_FAIL
+	 * to inject failures at this point.
+	 */
+#ifdef CMOCKA_UNIT_TEST_ADD_INTERNAL_FAIL
+	CMOCKA_UNIT_TEST_ADD_INTERNAL_FAIL
+#endif
+
 	return ret;
 }
 
@@ -786,6 +795,14 @@ static int ldb_kv_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 
 done:
 	talloc_free(msg);
+	/*
+	 * To allow testing of the error recovery code in ldb_kv_delete
+	 * cmocka tests can define CMOCKA_UNIT_TEST_DELETE_INTERNAL_FAIL
+	 * to inject failures at this point.
+	 */
+#ifdef CMOCKA_UNIT_TEST_DELETE_INTERNAL_FAIL
+	CMOCKA_UNIT_TEST_DELETE_INTERNAL_FAIL
+#endif
 	return ret;
 }
 
@@ -1337,6 +1354,14 @@ int ldb_kv_modify_internal(struct ldb_module *module,
 
 done:
 	TALLOC_FREE(mem_ctx);
+	/*
+	 * To allow testing of the error recovery code in ldb_kv_modify
+	 * cmocka tests can define CMOCKA_UNIT_TEST_MODIFY_INTERNAL_FAIL
+	 * to inject failures at this point.
+	 */
+#ifdef CMOCKA_UNIT_TEST_MODIFY_INTERNAL_FAIL
+	CMOCKA_UNIT_TEST_MODIFY_INTERNAL_FAIL
+#endif
 	return ret;
 }
 
@@ -1414,6 +1439,14 @@ static int ldb_kv_rename_internal(struct ldb_module *module,
 	 */
 	ret = ldb_kv_add_internal(module, ldb_kv, msg, false);
 
+	/*
+	 * To allow testing of the error recovery code in ldb_kv_rename
+	 * cmocka tests can define CMOCKA_UNIT_TEST_RENAME_INTERNAL_FAIL
+	 * to inject failures at this point.
+	 */
+#ifdef CMOCKA_UNIT_TEST_RENAME_INTERNAL_FAIL
+	CMOCKA_UNIT_TEST_RENAME_INTERNAL_FAIL
+#endif
 	return ret;
 }
 

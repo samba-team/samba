@@ -1589,6 +1589,12 @@ static void test_delete_transaction_isolation(void **state)
 				    val.data);
 			exit(LDB_ERR_OPERATIONS_ERROR);
 		}
+		ret = ldb_kv->kv_ops->unlock_read(ldb->modules);
+		if (ret != LDB_SUCCESS) {
+			print_error(__location__": unlock_read returned (%d)\n",
+				    ret);
+			exit(ret);
+		}
 
 		/*
 		 * Check that KEY2 is not there
@@ -1617,7 +1623,7 @@ static void test_delete_transaction_isolation(void **state)
 				    ret);
 			exit(ret);
 		}
-
+		TALLOC_FREE(tmp_ctx);
 		exit(0);
 	}
 	close(to_child[0]);

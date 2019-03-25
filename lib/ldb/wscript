@@ -512,6 +512,16 @@ def build(bld):
                          deps='cmocka ldb ldb_tdb_err_map',
                          install=False)
 
+        bld.SAMBA_BINARY('ldb_key_value_sub_txn_tdb_test',
+                         bld.SUBDIR('ldb_key_value',
+                             '''ldb_kv_search.c
+                                ldb_kv_index.c
+                                ldb_kv_cache.c''') +
+                         'tests/ldb_key_value_sub_txn_test.c',
+                         cflags='-DTEST_BE=\"tdb\"',
+                         deps='cmocka ldb ldb_tdb',
+                         install=False)
+
         if bld.CONFIG_SET('HAVE_LMDB'):
             bld.SAMBA_BINARY('ldb_mdb_mod_op_test',
                              source='tests/ldb_mod_op_test.c',
@@ -534,6 +544,24 @@ def build(bld):
                              source='tests/ldb_kv_ops_test.c',
                              cflags='-DTEST_BE=\"mdb\" -DTEST_LMDB=1',
                              deps='cmocka ldb',
+                             install=False)
+
+            #
+            # We rely on the versions of the ldb_key_value functions included
+            # in ldb_key_value_sub_txn_test.c taking priority over the versions
+            # in the ldb_key_value shared library.
+            # If this turns out to not be the case, the dependencies will
+            # need to be unrolled, and all the source files included and the
+            # ldb_tdb module initialization code will need to be called
+            # manually.
+            bld.SAMBA_BINARY('ldb_key_value_sub_txn_mdb_test',
+                             bld.SUBDIR('ldb_key_value',
+                                 '''ldb_kv_search.c
+                                    ldb_kv_index.c
+                                    ldb_kv_cache.c''') +
+                             'tests/ldb_key_value_sub_txn_test.c',
+                             cflags='-DTEST_BE=\"mdb\"',
+                             deps='cmocka ldb ldb_tdb',
                              install=False)
         else:
             bld.SAMBA_BINARY('ldb_no_lmdb_test',
@@ -583,6 +611,11 @@ def test(ctx):
                  'ldb_tdb_test',
                  'ldb_match_test',
                  'ldb_key_value_test',
+                 # we currently don't run ldb_key_value_sub_txn_tdb_test as it
+                 # tests the nested/sub transaction handling
+                 # on operations which the TDB backend does not currently
+                 # support
+                 # 'ldb_key_value_sub_txn_tdb_test'
                  'ldb_parse_test']
 
     if env.HAVE_LMDB:
@@ -591,7 +624,8 @@ def test(ctx):
                      # we don't want to run ldb_lmdb_size_test (which proves we can
                      # fit > 4G of data into the DB), it would fill up the disk on
                      # many of our test instances
-                     'ldb_mdb_kv_ops_test']
+                     'ldb_mdb_kv_ops_test',
+                     'ldb_key_value_sub_txn_mdb_test']
     else:
         test_exes += ['ldb_no_lmdb_test']
 
