@@ -299,7 +299,7 @@ NTSTATUS cli_posix_symlink(struct cli_state *cli,
  Read a POSIX symlink.
 ****************************************************************************/
 
-struct readlink_state {
+struct cli_posix_readlink_state {
 	uint8_t *data;
 	uint32_t num_data;
 };
@@ -313,10 +313,11 @@ struct tevent_req *cli_posix_readlink_send(TALLOC_CTX *mem_ctx,
 					size_t len)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
-	struct readlink_state *state = NULL;
+	struct cli_posix_readlink_state *state = NULL;
 	uint32_t maxbytelen = (uint32_t)(smbXcli_conn_use_unicode(cli->conn) ? len*3 : len);
 
-	req = tevent_req_create(mem_ctx, &state, struct readlink_state);
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_posix_readlink_state);
 	if (req == NULL) {
 		return NULL;
 	}
@@ -342,8 +343,8 @@ static void cli_posix_readlink_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct readlink_state *state = tevent_req_data(
-		req, struct readlink_state);
+	struct cli_posix_readlink_state *state = tevent_req_data(
+		req, struct cli_posix_readlink_state);
 	NTSTATUS status;
 
 	status = cli_qpathinfo_recv(subreq, state, &state->data,
@@ -365,10 +366,11 @@ static void cli_posix_readlink_done(struct tevent_req *subreq)
 NTSTATUS cli_posix_readlink_recv(struct tevent_req *req, struct cli_state *cli,
 				char *retpath, size_t len)
 {
+	struct cli_posix_readlink_state *state = tevent_req_data(
+		req, struct cli_posix_readlink_state);
 	NTSTATUS status;
 	char *converted = NULL;
 	size_t converted_size = 0;
-	struct readlink_state *state = tevent_req_data(req, struct readlink_state);
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
