@@ -336,3 +336,12 @@ bld.SAMBA_BINARY('locktest',
 	deps='popt POPT_SAMBA POPT_CREDENTIALS samba-util LIBCLI_SMB samba-hostconfig param_options',
 	)
 
+bld.SAMBA_MODULE('TORTURE_DSDB',
+	source="../../source4/dsdb/common/tests/dsdb.c",
+	autoproto='dsdb_proto.h',
+	subsystem='smbtorture',
+	init_function='torture_dsdb_init',
+	deps="TORTURE_UTIL samba-util",
+	internal_module=True,
+	enabled=bld.PYTHON_BUILD_IS_ENABLED()
+	)
