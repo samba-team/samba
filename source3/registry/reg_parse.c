@@ -117,6 +117,7 @@ static bool act_val_hex(struct reg_parse* p, cbuf* value, bool cont)
 					cbuf_swapptr(p->valblob, &dst, dlen);
 				} else {
 					DEBUG(0, ("iconvert_talloc failed\n"));
+					return false;
 				}
 				talloc_free(dst);
 			}
@@ -166,6 +167,7 @@ static bool act_val_sz(struct reg_parse* p, cbuf* value, bool cont)
 		} else {
 			DEBUG(0, ("convert_string_talloc failed: >%s<\n"
 				  "use it as is\t", src));
+			return false;
 		}
 		talloc_free(dst);
 
