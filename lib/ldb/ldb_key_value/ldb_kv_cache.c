@@ -302,7 +302,7 @@ static int ldb_kv_index_load(struct ldb_module *module,
 	if (lmdb_subdb_version != 0) {
 		ldb_set_errstring(ldb,
 				  "FATAL: This ldb_mdb database has "
-				  "been written in a new verson of LDB "
+				  "been written in a new version of LDB "
 				  "using a sub-database index that "
 				  "is not understood by ldb "
 				  LDB_VERSION);
