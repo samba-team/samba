@@ -1818,17 +1818,11 @@ static struct mdssvc_ctx *mdssvc_init(struct tevent_context *ev)
 
 	mdssvc_ctx->ev_ctx = ev;
 
-	mdssvc_ctx->gmain_ctx = g_main_context_new();
+	mdssvc_ctx->gmain_ctx = g_main_context_default();
 	if (mdssvc_ctx->gmain_ctx == NULL) {
 		DBG_ERR("error from g_main_context_new\n");
 		return NULL;
 	}
-
-	/*
-	 * This ensures all glib threads, especially gioi worker threads
-	 * dispatch their async callbacks via our gmain_ctx.
-	 */
-	g_main_context_push_thread_default(mdssvc_ctx->gmain_ctx);
 
 	mdssvc_ctx->glue = samba_tevent_glib_glue_create(ev,
 							 mdssvc_ctx->ev_ctx,
@@ -1860,8 +1854,6 @@ bool mds_shutdown(void)
 
 	samba_tevent_glib_glue_quit(mdssvc_ctx->glue);
 	TALLOC_FREE(mdssvc_ctx->glue);
-
-	g_main_context_pop_thread_default(mdssvc_ctx->gmain_ctx);
 
 	TALLOC_FREE(mdssvc_ctx);
 
