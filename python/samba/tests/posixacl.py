@@ -54,7 +54,7 @@ class PosixAclMappingTests(TestCaseInTempDir):
         Get session_info for setntacl.
 
         This test case always return None, to run tests without session_info
-        like before. To be overrided in derived class.
+        like before. To be overridden in derived class.
         """
         return None
 

@@ -68,7 +68,7 @@
 
 	<variablelist>
 		<varlistentry><term>LDB_URL</term>
-			<listitem><para>LDB URL to connect to (can be overrided by using the 
+			<listitem><para>LDB URL to connect to (can be overridden by using the 
 					-H command-line option.)</para></listitem>
 		</varlistentry>
 	</variablelist>
