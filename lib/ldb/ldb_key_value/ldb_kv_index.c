@@ -2318,7 +2318,7 @@ static int ldb_kv_index_add1(struct ldb_module *module,
 			ldb_debug(ldb, LDB_DEBUG_WARNING,
 				  __location__
 				  ": unique index violation on %s in %s, "
-				  "conficts with %*.*s in %s",
+				  "conflicts with %*.*s in %s",
 				  el->name, ldb_dn_get_linearized(msg->dn),
 				  (int)list->dn[0].length,
 				  (int)list->dn[0].length,
@@ -2337,7 +2337,7 @@ static int ldb_kv_index_add1(struct ldb_module *module,
 					  LDB_DEBUG_WARNING,
 					  __location__
 					  ": unique index violation on %s in "
-					  "%s, conficts with %s %*.*s in %s",
+					  "%s, conflicts with %s %*.*s in %s",
 					  el->name,
 					  ldb_dn_get_linearized(msg->dn),
 					  ldb_kv->cache->GUID_index_attribute,
