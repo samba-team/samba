@@ -300,6 +300,7 @@ NTSTATUS cli_posix_symlink(struct cli_state *cli,
 ****************************************************************************/
 
 struct cli_posix_readlink_state {
+	struct cli_state *cli;
 	uint8_t *data;
 	uint32_t num_data;
 };
@@ -321,6 +322,7 @@ struct tevent_req *cli_posix_readlink_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
+	state->cli = cli;
 
 	/*
 	 * Len is in bytes, we need it in UCS2 units.
@@ -363,26 +365,29 @@ static void cli_posix_readlink_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_posix_readlink_recv(struct tevent_req *req, struct cli_state *cli,
-				char *retpath, size_t len)
+NTSTATUS cli_posix_readlink_recv(
+	struct tevent_req *req, char *retpath, size_t len)
 {
 	struct cli_posix_readlink_state *state = tevent_req_data(
 		req, struct cli_posix_readlink_state);
 	NTSTATUS status;
 	char *converted = NULL;
 	size_t converted_size = 0;
+	bool ok;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
 	/* The returned data is a pushed string, not raw data. */
-	if (!convert_string_talloc(state,
-				smbXcli_conn_use_unicode(cli->conn) ? CH_UTF16LE : CH_DOS, 
-				CH_UNIX,
-				state->data,
-				state->num_data,
-				&converted,
-				&converted_size)) {
+	ok = convert_string_talloc(
+		state,
+		smbXcli_conn_use_unicode(state->cli->conn) ? CH_UTF16LE:CH_DOS,
+		CH_UNIX,
+		state->data,
+		state->num_data,
+		&converted,
+		&converted_size);
+	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -430,7 +435,7 @@ NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
 		goto fail;
 	}
 
-	status = cli_posix_readlink_recv(req, cli, linkpath, len);
+	status = cli_posix_readlink_recv(req, linkpath, len);
 
  fail:
 	TALLOC_FREE(frame);
