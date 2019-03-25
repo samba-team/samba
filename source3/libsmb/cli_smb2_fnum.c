@@ -5131,7 +5131,7 @@ struct tevent_req *cli_smb2_get_reparse_point_fnum_send(
 				uint16_t fnum)
 {
 	struct tevent_req *req, *subreq;
-	struct cli_smb2_set_reparse_point_fnum_state *state = NULL;
+	struct cli_smb2_get_reparse_point_fnum_state *state = NULL;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
