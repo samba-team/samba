@@ -38,6 +38,15 @@ enum http_read_status {
 	HTTP_DATA_TOO_LONG,
 };
 
+struct http_conn {
+	struct tevent_queue *send_queue;
+	struct {
+		struct tstream_context *raw;
+		struct tstream_context *tls;
+		struct tstream_context *active;
+	} tstreams;
+};
+
 struct http_send_request_state {
 	struct tevent_context	*ev;
 	struct tstream_context	*stream;

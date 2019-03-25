@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 bld.SAMBA_LIBRARY('http',
-	source='http.c http_auth.c',
-	deps='talloc tevent samba3core',
+	source='http.c http_auth.c http_conn.c',
+	deps='talloc tevent samba3core dns_lookup',
 	private_library=True,
 )
 

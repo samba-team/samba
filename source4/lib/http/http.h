@@ -92,6 +92,29 @@ int http_remove_header(struct http_header **, const char *);
 int http_add_header(TALLOC_CTX *, struct http_header **, const char *, const char *);
 int http_replace_header(TALLOC_CTX *, struct http_header **, const char *, const char *);
 
+/* HTTP(s) connect */
+
+struct http_conn;
+struct tstream_tls_params;
+
+struct tevent_req *http_connect_send(TALLOC_CTX *mem_ctx,
+				     struct tevent_context *ev,
+				     const char *http_server,
+				     uint16_t http_port,
+				     struct cli_credentials *credentials,
+				     struct tstream_tls_params *tls_params);
+int http_connect_recv(struct tevent_req *req,
+		      TALLOC_CTX *mem_ctx,
+		      struct http_conn **http_conn);
+
+struct tevent_req *http_disconnect_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct http_conn *http_conn);
+int http_disconnect_recv(struct tevent_req *req);
+
+struct tevent_queue *http_conn_send_queue(struct http_conn *http_conn);
+struct tstream_context *http_conn_tstream(struct http_conn *http_conn);
+
 /* HTTP request */
 struct tevent_req *http_send_request_send(TALLOC_CTX *,
 					  struct tevent_context *,
