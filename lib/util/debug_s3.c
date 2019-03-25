@@ -47,6 +47,25 @@ bool reopen_logs(void)
 				   lp_logging(talloc_tos()),
 				   lp_syslog(),
 				   lp_syslog_only());
+	} else {
+		/*
+		 * Parameters are not yet loaded - configure debugging with
+		 * reasonable defaults to enable logging for early
+		 * startup failures.
+		 */
+		struct debug_settings settings = {
+			.max_log_size = 5000,
+			.timestamp_logs = true,
+			.debug_prefix_timestamp = false,
+			.debug_hires_timestamp = true,
+			.debug_pid = false,
+			.debug_uid = false,
+			.debug_class = false,
+		};
+		debug_set_settings(&settings,
+				   "file",
+				   1,
+				   false);
 	}
 	return reopen_logs_internal();
 }
