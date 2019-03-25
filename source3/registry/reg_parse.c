@@ -688,7 +688,15 @@ static bool guess_charset(const char** ptr,
 	}
 
 	if (srprs_bom(&pos, &charset, NULL)) {
-		*len -= (pos - *ptr);
+		size_t declen;
+		if (pos < *ptr) {
+			return false;
+		}
+		declen = (pos - *ptr);
+		if (*len < declen) {
+			return false;
+		}
+		*len -= declen;
 		*ptr = pos;
 		if (*file_enc == NULL) {
 			*file_enc = charset;
