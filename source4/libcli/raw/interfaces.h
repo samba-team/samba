@@ -2086,12 +2086,7 @@ union smb_lock {
 			uint16_t lock_count;
 			uint32_t lock_sequence;
 			/* struct smb2_handle handle; */
-			struct smb2_lock_element {
-				uint64_t offset;
-				uint64_t length;
-				uint32_t flags;
-				uint32_t reserved;
-			} *locks;
+			struct smb2_lock_element *locks;
 		} in;
 		struct {
 			/* static body buffer 4 (0x04) bytes */
