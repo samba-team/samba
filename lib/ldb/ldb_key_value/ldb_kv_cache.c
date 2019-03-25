@@ -37,6 +37,7 @@
 #define LDB_KV_FLAG_CASE_INSENSITIVE (1<<0)
 #define LDB_KV_FLAG_INTEGER          (1<<1)
 #define LDB_KV_FLAG_UNIQUE_INDEX     (1<<2)
+#define LDB_KV_FLAG_ORDERED_INTEGER  (1<<3)
 
 /* valid attribute flags */
 static const struct {
@@ -45,6 +46,7 @@ static const struct {
 } ldb_kv_valid_attr_flags[] = {
 	{ "CASE_INSENSITIVE", LDB_KV_FLAG_CASE_INSENSITIVE },
 	{ "INTEGER", LDB_KV_FLAG_INTEGER },
+	{ "ORDERED_INTEGER", LDB_KV_FLAG_ORDERED_INTEGER },
 	{ "HIDDEN", 0 },
 	{ "UNIQUE_INDEX",  LDB_KV_FLAG_UNIQUE_INDEX},
 	{ "NONE", 0 },
@@ -181,6 +183,8 @@ static int ldb_kv_attributes_load(struct ldb_module *module)
 			syntax = LDB_SYNTAX_DIRECTORY_STRING;
 		} else if (flags == LDB_KV_FLAG_INTEGER) {
 			syntax = LDB_SYNTAX_INTEGER;
+		} else if (flags == LDB_KV_FLAG_ORDERED_INTEGER) {
+			syntax = LDB_SYNTAX_ORDERED_INTEGER;
 		} else if (flags == 0) {
 			syntax = LDB_SYNTAX_OCTET_STRING;
 		} else {

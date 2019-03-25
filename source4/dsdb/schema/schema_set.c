@@ -152,6 +152,8 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		 */
 		if (strcmp(syntax, LDB_SYNTAX_INTEGER) == 0) {
 			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "INTEGER");
+		} else if (strcmp(syntax, LDB_SYNTAX_ORDERED_INTEGER) == 0) {
+			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "ORDERED_INTEGER");
 		} else if (strcmp(syntax, LDB_SYNTAX_DIRECTORY_STRING) == 0) {
 			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "CASE_INSENSITIVE");
 		}
