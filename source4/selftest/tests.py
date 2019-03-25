@@ -152,6 +152,9 @@ for options in ['-U"$USERNAME%$PASSWORD"']:
 for t in smbtorture4_testsuites("ldap."):
     plansmbtorture4testsuite(t, "ad_dc_default", '-U"$USERNAME%$PASSWORD" //$SERVER_IP/_none_')
 
+for t in smbtorture4_testsuites("dsdb."):
+    plansmbtorture4testsuite(t, "ad_dc:local", "localhost")
+
 ldbdir = os.path.join(srcdir(), "lib/ldb")
 # Don't run LDB tests when using system ldb, as we won't have ldbtest installed
 if os.path.exists(os.path.join(samba4bindir, "ldbtest")):
