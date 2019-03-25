@@ -19,6 +19,7 @@ variables:
   before_script:
     - uname -a
     - lsb_release -a
+    - cat /etc/os-release
     - mount
     - df -h
     - free -h
