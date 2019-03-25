@@ -966,7 +966,7 @@ size_t talloc_reference_count(const void *ptr);
  *
  * - you can talloc_free() the pointer itself if it has at maximum one
  *   parent. This behaviour has been changed since the release of version
- *   2.0. Further informations in the description of "talloc_free".
+ *   2.0. Further information in the description of "talloc_free".
  *
  * For more control on which parent to remove, see talloc_unlink()
  * @param[in]  ctx      The additional parent.
@@ -1007,7 +1007,7 @@ void *_talloc_reference_loc(const void *context, const void *ptr, const char *lo
  *
  * You can just use talloc_free() instead of talloc_unlink() if there
  * is at maximum one parent. This behaviour has been changed since the
- * release of version 2.0. Further informations in the description of
+ * release of version 2.0. Further information in the description of
  * "talloc_free".
  *
  * @param[in]  context  The talloc parent to remove.

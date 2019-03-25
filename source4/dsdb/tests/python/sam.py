@@ -1766,7 +1766,7 @@ class SamTests(samba.tests.TestCase):
         self.assertNotEqual(int(res1[0]["pwdLastSet"][0]), 0)
 
         # Open a second LDB connection with the user credentials. Use the
-        # command line credentials for informations like the domain, the realm
+        # command line credentials for information like the domain, the realm
         # and the workstation.
         sasl_creds = Credentials()
         sasl_creds.set_username(username)

@@ -1,4 +1,4 @@
-# Additional informations for DNS setup using BIND
+# Additional information for DNS setup using BIND
 
 # If you are running a capable version of BIND and you wish to support secure
 # GSS-TSIG updates, you must make the following configuration changes:

@@ -1304,7 +1304,7 @@ class cmd_domain_passwordsettings_show(Command):
         except Exception as e:
             raise CommandError("Could not retrieve password properties!", e)
 
-        self.message("Password informations for domain '%s'" % domain_dn)
+        self.message("Password information for domain '%s'" % domain_dn)
         self.message("")
         if pwd_props & DOMAIN_PASSWORD_COMPLEX != 0:
             self.message("Password complexity: on")

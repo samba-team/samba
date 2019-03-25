@@ -199,7 +199,7 @@
             <para>
 	      you can talloc_free() the pointer itself if it has at maximum one
 	      parent. This behaviour has been changed since the release of version
-	      2.0. Further informations in the description of "talloc_free".
+	      2.0. Further information in the description of "talloc_free".
             </para>
           </listitem>
         </itemizedlist>

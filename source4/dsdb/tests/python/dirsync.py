@@ -315,14 +315,14 @@ class SimpleDirsyncTests(DirsyncBaseTests):
         delete_force(self.ldb_admin, ouname)
 
     def test_dirsync_with_controls(self):
-        """Check that dirsync return correct informations when dealing with the NC"""
+        """Check that dirsync return correct information when dealing with the NC"""
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(distinguishedName=%s)" % str(self.base_dn),
                                     attrs=["name"],
                                     controls=["dirsync:1:0:10000", "extended_dn:1", "show_deleted:1"])
 
     def test_dirsync_basenc(self):
-        """Check that dirsync return correct informations when dealing with the NC"""
+        """Check that dirsync return correct information when dealing with the NC"""
         res = self.ldb_admin.search(self.base_dn,
                                     expression="(distinguishedName=%s)" % str(self.base_dn),
                                     attrs=["name"],

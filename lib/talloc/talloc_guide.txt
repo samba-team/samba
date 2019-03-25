@@ -189,7 +189,7 @@ ways:
 
   - you can talloc_free() the pointer itself if it has at maximum one
     parent. This behaviour has been changed since the release of version
-    2.0. Further informations in the description of "talloc_free".
+    2.0. Further information in the description of "talloc_free".
 
 For more control on which parent to remove, see talloc_unlink()
 
@@ -207,7 +207,7 @@ is NULL, then the function will make no modifications and return -1.
 
 You can just use talloc_free() instead of talloc_unlink() if there
 is at maximum one parent. This behaviour has been changed since the
-release of version 2.0. Further informations in the description of
+release of version 2.0. Further information in the description of
 "talloc_free".
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

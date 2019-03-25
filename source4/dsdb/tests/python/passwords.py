@@ -140,7 +140,7 @@ add: userPassword
         self.ldb.enable_account("(sAMAccountName=testuser)")
 
         # Open a second LDB connection with the user credentials. Use the
-        # command line credentials for informations like the domain, the realm
+        # command line credentials for information like the domain, the realm
         # and the workstation.
         creds2 = Credentials()
         creds2.set_username("testuser")

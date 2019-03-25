@@ -401,7 +401,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         self.assertGreaterEqual(lastLogon, lastLogonTimestamp)
 
         # Open a second LDB connection with the user credentials. Use the
-        # command line credentials for informations like the domain, the realm
+        # command line credentials for information like the domain, the realm
         # and the workstation.
         creds_lockout = self.insta_creds(creds)
 
@@ -695,7 +695,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
         # time should increase.
 
         # Open a second LDB connection with the user credentials. Use the
-        # command line credentials for informations like the domain, the realm
+        # command line credentials for information like the domain, the realm
         # and the workstation.
         username = creds.get_username()
         userdn = "cn=%s,cn=users,%s" % (username, self.base_dn)

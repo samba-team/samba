@@ -201,7 +201,7 @@ pwdLastSet: 0
         group_dn = "CN=%s,%s,%s" % (groupname, (groupou or "CN=Users"), self.domain_dn())
 
         # The new user record. Note the reliance on the SAMLDB module which
-        # fills in the default informations
+        # fills in the default information
         ldbmessage = {"dn": group_dn,
                       "sAMAccountName": groupname,
                       "objectClass": "group"}
@@ -389,7 +389,7 @@ member: %s
         dnsdomain = ldb.Dn(self, self.domain_dn()).canonical_str().replace("/", "")
         user_principal_name = "%s@%s" % (username, dnsdomain)
         # The new user record. Note the reliance on the SAMLDB module which
-        # fills in the default informations
+        # fills in the default information
         ldbmessage = {"dn": user_dn,
                       "sAMAccountName": username,
                       "userPrincipalName": user_principal_name,

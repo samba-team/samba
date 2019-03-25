@@ -343,7 +343,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         creds = self.lockout1ntlm_creds
 
         # Open a second LDB connection with the user credentials. Use the
-        # command line credentials for informations like the domain, the realm
+        # command line credentials for information like the domain, the realm
         # and the workstation.
         creds_lockout = self.insta_creds(creds)
 
@@ -403,7 +403,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
         userpass = creds.get_password()
 
         # Open a second LDB connection with the user credentials. Use the
-        # command line credentials for informations like the domain, the realm
+        # command line credentials for information like the domain, the realm
         # and the workstation.
         creds_lockout = self.insta_creds(creds)
 
