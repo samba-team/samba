@@ -682,7 +682,7 @@ def build(bld):
         bld.SAMBA_BINARY('ctdb_mutex_ceph_rados_helper',
                          source='utils/ceph/ctdb_mutex_ceph_rados_helper.c',
 			 deps='talloc tevent rados ceph-common',
-			 includes='include',
+			 includes=bld.CONFIG_GET('CPPPATH_RADOS'),
 			 install_path='${CTDB_HELPER_BINDIR}')
 
     sed_expr1 = 's|/usr/local/var/lib/ctdb|%s|g'  % (bld.env.CTDB_VARDIR)
