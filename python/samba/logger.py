@@ -62,7 +62,7 @@ def get_samba_logger(
         Formatter = logging.Formatter
     formatter = Formatter(fmt=fmt, datefmt=datefmt)
 
-    handler = logging.StreamHandler(stream=stream)
+    handler = logging.StreamHandler(stream)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
