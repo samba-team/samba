@@ -365,7 +365,10 @@ class ReplayContext(object):
         self.netlogon_connection      = None
         self.creds                    = creds
         self.lp                       = lp
-        self.prefer_kerberos          = prefer_kerberos
+        if prefer_kerberos:
+            self.kerberos_state = MUST_USE_KERBEROS
+        else:
+            self.kerberos_state = DONT_USE_KERBEROS
         self.ou                       = ou
         self.base_dn                  = base_dn
         self.domain                   = domain
@@ -510,20 +513,14 @@ class ReplayContext(object):
         self.user_creds.set_password(self.userpass)
         self.user_creds.set_username(self.username)
         self.user_creds.set_domain(self.domain)
-        if self.prefer_kerberos:
-            self.user_creds.set_kerberos_state(MUST_USE_KERBEROS)
-        else:
-            self.user_creds.set_kerberos_state(DONT_USE_KERBEROS)
+        self.user_creds.set_kerberos_state(self.kerberos_state)
 
         self.user_creds_bad = Credentials()
         self.user_creds_bad.guess(self.lp)
         self.user_creds_bad.set_workstation(self.netbios_name)
         self.user_creds_bad.set_password(self.userpass[:-4])
         self.user_creds_bad.set_username(self.username)
-        if self.prefer_kerberos:
-            self.user_creds_bad.set_kerberos_state(MUST_USE_KERBEROS)
-        else:
-            self.user_creds_bad.set_kerberos_state(DONT_USE_KERBEROS)
+        self.user_creds_bad.set_kerberos_state(self.kerberos_state)
 
         # Credentials for ldap simple bind.
         self.simple_bind_creds = Credentials()
@@ -533,10 +530,7 @@ class ReplayContext(object):
         self.simple_bind_creds.set_username(self.username)
         self.simple_bind_creds.set_gensec_features(
             self.simple_bind_creds.get_gensec_features() | gensec.FEATURE_SEAL)
-        if self.prefer_kerberos:
-            self.simple_bind_creds.set_kerberos_state(MUST_USE_KERBEROS)
-        else:
-            self.simple_bind_creds.set_kerberos_state(DONT_USE_KERBEROS)
+        self.simple_bind_creds.set_kerberos_state(self.kerberos_state)
         self.simple_bind_creds.set_bind_dn(self.user_dn)
 
         self.simple_bind_creds_bad = Credentials()
@@ -547,10 +541,7 @@ class ReplayContext(object):
         self.simple_bind_creds_bad.set_gensec_features(
             self.simple_bind_creds_bad.get_gensec_features() |
             gensec.FEATURE_SEAL)
-        if self.prefer_kerberos:
-            self.simple_bind_creds_bad.set_kerberos_state(MUST_USE_KERBEROS)
-        else:
-            self.simple_bind_creds_bad.set_kerberos_state(DONT_USE_KERBEROS)
+        self.simple_bind_creds_bad.set_kerberos_state(self.kerberos_state)
         self.simple_bind_creds_bad.set_bind_dn(self.user_dn)
 
     def generate_machine_creds(self):
@@ -568,10 +559,7 @@ class ReplayContext(object):
         self.machine_creds.set_password(self.machinepass)
         self.machine_creds.set_username(self.netbios_name + "$")
         self.machine_creds.set_domain(self.domain)
-        if self.prefer_kerberos:
-            self.machine_creds.set_kerberos_state(MUST_USE_KERBEROS)
-        else:
-            self.machine_creds.set_kerberos_state(DONT_USE_KERBEROS)
+        self.machine_creds.set_kerberos_state(self.kerberos_state)
 
         self.machine_creds_bad = Credentials()
         self.machine_creds_bad.guess(self.lp)
@@ -579,10 +567,7 @@ class ReplayContext(object):
         self.machine_creds_bad.set_secure_channel_type(SEC_CHAN_BDC)
         self.machine_creds_bad.set_password(self.machinepass[:-4])
         self.machine_creds_bad.set_username(self.netbios_name + "$")
-        if self.prefer_kerberos:
-            self.machine_creds_bad.set_kerberos_state(MUST_USE_KERBEROS)
-        else:
-            self.machine_creds_bad.set_kerberos_state(DONT_USE_KERBEROS)
+        self.machine_creds_bad.set_kerberos_state(self.kerberos_state)
 
     def get_matching_dn(self, pattern, attributes=None):
         # If the pattern is an empty string, we assume ROOTDSE,
