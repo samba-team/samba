@@ -5,6 +5,11 @@ setup ()
 
 	service_name="nfs"
 
+	if [ -z "$CTDB_NFS_DISTRO_STYLE" ] ; then
+		# Currently supported: sysvinit-redhat, systemd-redhat
+		CTDB_NFS_DISTRO_STYLE="sysvinit-redhat"
+	fi
+
 	export FAKE_RPCINFO_SERVICES=""
 
 	setup_script_options <<EOF
@@ -20,8 +25,18 @@ EOF
 Setting up NFS environment: all RPC services up, NFS managed by CTDB
 EOF
 
-		service "nfs" force-started
-		service "nfslock" force-started
+		case "$CTDB_NFS_DISTRO_STYLE" in
+		sysvinit-*)
+			service "nfs" force-started
+			service "nfslock" force-started
+			;;
+		systemd-*)
+			service "nfs-service" force-started
+			service "nfs-mountd" force-started
+			service "rpc-rquotad" force-started
+			service "rpc-statd" force-started
+			;;
+		esac
 
 		rpc_services_up \
 			"portmapper" "nfs" "mountd" "rquotad" \
@@ -34,8 +49,18 @@ EOF
 Setting up NFS environment: all RPC services down, NFS not managed by CTDB
 EOF
 
-		service "nfs" force-stopped
-		service "nfslock" force-stopped
+		case "$CTDB_NFS_DISTRO_STYLE" in
+		sysvinit-*)
+			service "nfs" force-stopped
+			service "nfslock" force-stopped
+			;;
+		systemd-*)
+			service "nfs-server" force-stopped
+			service "nfs-mountd" force-stopped
+			service "rpc-quotad" force-stopped
+			service "rpc-statd" force-stopped
+			;;
+		esac
 	fi
 
 	# This is really nasty.  However, when we test NFS we don't
@@ -103,13 +128,73 @@ guess_output ()
 {
 	case "$1" in
 	$CTDB_NFS_CALLOUT\ start\ nlockmgr)
-		echo "&Starting nfslock: OK"
+		case "$CTDB_NFS_DISTRO_STYLE" in
+		sysvinit-redhat)
+			echo "&Starting nfslock: OK"
+			;;
+		systemd-redhat)
+			echo "&Starting rpc-statd: OK"
+			;;
+		esac
 		;;
 	$CTDB_NFS_CALLOUT\ start\ nfs)
-		cat <<EOF
+		case "$CTDB_NFS_DISTRO_STYLE" in
+		sysvinit-redhat)
+			cat <<EOF
 &Starting nfslock: OK
 &Starting nfs: OK
 EOF
+			;;
+		systemd-redhat)
+			cat <<EOF
+&Starting rpc-statd: OK
+&Starting nfs-server: OK
+&Starting rpc-rquotad: OK
+EOF
+			;;
+		esac
+		;;
+	$CTDB_NFS_CALLOUT\ stop\ mountd)
+		case "$CTDB_NFS_DISTRO_STYLE" in
+		systemd-*)
+			echo "Stopping nfs-mountd: OK"
+			;;
+		esac
+		;;
+	$CTDB_NFS_CALLOUT\ stop\ rquotad)
+		case "$CTDB_NFS_DISTRO_STYLE" in
+		systemd-redhat)
+			echo "Stopping rpc-rquotad: OK"
+			;;
+		esac
+		;;
+	$CTDB_NFS_CALLOUT\ stop\ status)
+		case "$CTDB_NFS_DISTRO_STYLE" in
+		systemd-*)
+			echo "Stopping rpc-statd: OK"
+			;;
+		esac
+		;;
+	$CTDB_NFS_CALLOUT\ start\ mountd)
+		case "$CTDB_NFS_DISTRO_STYLE" in
+		systemd-*)
+			echo "&Starting nfs-mountd: OK"
+			;;
+		esac
+		;;
+	$CTDB_NFS_CALLOUT\ start\ rquotad)
+		case "$CTDB_NFS_DISTRO_STYLE" in
+		systemd-redhat)
+			echo "&Starting rpc-rquotad: OK"
+			;;
+		esac
+		;;
+	$CTDB_NFS_CALLOUT\ start\ status)
+		case "$CTDB_NFS_DISTRO_STYLE" in
+		systemd-*)
+			echo "&Starting rpc-statd: OK"
+			;;
+		esac
 		;;
 	*)
 		: # Nothing
@@ -201,6 +286,8 @@ program $_rpc_service${_ver:+ version }${_ver} is not available"
 
 			echo "Trying to restart service \"${_rpc_service}\"..."\
 			     >>"$_out"
+
+			guess_output "$service_stop_cmd" >>"$_out"
 
 			if [ -n "$service_debug_cmd" ] ; then
 				$service_debug_cmd 2>&1 >>"$_out"
