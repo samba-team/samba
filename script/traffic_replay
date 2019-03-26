@@ -50,6 +50,8 @@ def main():
 
     parser.add_option('--dns-rate', type='float', default=0,
                       help='fire extra DNS packets at this rate')
+    parser.add_option('--dns-query-file', dest="dns_query_file",
+                      help='A file contains DNS query list')
     parser.add_option('-B', '--badpassword-frequency',
                       type='float', default=0.0,
                       help='frequency of connections with bad passwords')
@@ -403,6 +405,7 @@ def main():
                    creds=creds,
                    accounts=accounts,
                    dns_rate=opts.dns_rate,
+                   dns_query_file=opts.dns_query_file,
                    duration=opts.duration,
                    latency_timeout=opts.latency_timeout,
                    badpassword_frequency=opts.badpassword_frequency,
