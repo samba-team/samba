@@ -7,7 +7,7 @@ setup ()
 
 	if [ -z "$CTDB_NFS_DISTRO_STYLE" ] ; then
 		# Currently supported: sysvinit-redhat, systemd-redhat
-		CTDB_NFS_DISTRO_STYLE="sysvinit-redhat"
+		CTDB_NFS_DISTRO_STYLE="systemd-redhat"
 	fi
 
 	export FAKE_RPCINFO_SERVICES=""

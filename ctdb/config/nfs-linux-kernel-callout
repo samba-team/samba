@@ -14,7 +14,7 @@ nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/var/lib/nfs/etab}"
 
 # As above, edit the default value below.  CTDB_NFS_DISTRO_STYLE is a
 # test variable only.
-nfs_distro_style="${CTDB_NFS_DISTRO_STYLE:-sysvinit-redhat}"
+nfs_distro_style="${CTDB_NFS_DISTRO_STYLE:-systemd-redhat}"
 
 case "$nfs_distro_style" in
 systemd-*)
