@@ -555,6 +555,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	struct socket_address *nbt_srv_addr;
 	NTSTATUS status;
 	uint32_t i;
+	uint32_t num_ifaces;
 	struct interface *ifaces;
 
 	ctx = talloc_zero(tctx, struct test_wrepl_conflict_conn);
@@ -627,6 +628,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	if (!ctx->myaddr) return NULL;
 
 	for (i = 0; i < iface_list_count(ifaces); i++) {
+		if (!iface_list_n_is_v4(ifaces, i)) continue;
 		if (strcmp(ctx->myaddr->addr, iface_list_n_ip(ifaces, i)) == 0) continue;
 		ctx->myaddr2 = socket_address_from_strings(tctx, ctx->nbtsock->sock->backend_name, iface_list_n_ip(ifaces, i), 0);
 		if (!ctx->myaddr2) return NULL;
@@ -685,12 +687,16 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	ctx->addresses_best[0].owner	= ctx->b.address;
 	ctx->addresses_best[0].ip	= ctx->myaddr->addr;
 
-	ctx->addresses_all_num = iface_list_count(ifaces);
-	ctx->addresses_all = talloc_array(ctx, struct wrepl_ip, ctx->addresses_all_num);
+
+	num_ifaces = iface_list_count(ifaces);
+	ctx->addresses_all = talloc_array(ctx, struct wrepl_ip, num_ifaces);
+	ctx->addresses_all_num = 0;
 	if (!ctx->addresses_all) return NULL;
-	for (i=0; i < ctx->addresses_all_num; i++) {
+	for (i=0; i < num_ifaces; i++) {
+		if (!iface_list_n_is_v4(ifaces, i)) continue;
 		ctx->addresses_all[i].owner	= ctx->b.address;
 		ctx->addresses_all[i].ip	= talloc_strdup(ctx->addresses_all, iface_list_n_ip(ifaces, i));
+		ctx->addresses_all_num++;
 		if (!ctx->addresses_all[i].ip) return NULL;
 	}
 
