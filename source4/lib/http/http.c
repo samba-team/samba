@@ -752,6 +752,19 @@ static NTSTATUS http_push_body(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+struct http_send_request_state {
+	struct tevent_context	*ev;
+	struct tstream_context	*stream;
+	struct loadparm_context	*lp_ctx;
+	struct cli_credentials	*credentials;
+	struct tevent_queue 	*send_queue;
+	struct http_request	*request;
+	DATA_BLOB		buffer;
+	struct iovec		iov;
+	ssize_t			nwritten;
+	int			sys_errno;
+};
+
 /**
  * Sends and HTTP request
  */

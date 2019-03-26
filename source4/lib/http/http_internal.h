@@ -47,19 +47,6 @@ struct http_conn {
 	} tstreams;
 };
 
-struct http_send_request_state {
-	struct tevent_context	*ev;
-	struct tstream_context	*stream;
-	struct loadparm_context	*lp_ctx;
-	struct cli_credentials	*credentials;
-	struct tevent_queue 	*send_queue;
-	struct http_request	*request;
-	DATA_BLOB		buffer;
-	struct iovec		iov;
-	ssize_t			nwritten;
-	int			sys_errno;
-};
-
 struct http_read_response_state {
 	enum http_parser_state	parser_state;
 	size_t			max_headers_size;
