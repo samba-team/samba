@@ -12,20 +12,38 @@ set -e
 # hook for testing.
 nfs_exports_file="${CTDB_NFS_EXPORTS_FILE:-/var/lib/nfs/etab}"
 
-# Red Hat
-nfs_service="nfs"
-nfs_lock_service="nfslock"
-nfs_config="/etc/sysconfig/nfs"
+# As above, edit the default value below.  CTDB_NFS_DISTRO_STYLE is a
+# test variable only.
+nfs_distro_style="${CTDB_NFS_DISTRO_STYLE:-sysvinit-redhat}"
 
-# SUSE
-#nfs_service="nfsserver"
-#nfs_lock_service=""
-#nfs_config="/etc/sysconfig/nfs"
+case "$nfs_distro_style" in
+sysvinit-*)
+	# Defaults
+	nfs_service="nfs"
+	nfs_lock_service=""
+	nfs_config="/etc/sysconfig/nfs"
 
-# Debian
-#nfs_service="nfs-kernel-server"
-#nfs_lock_service=""
-#nfs_config="/etc/default/nfs-kernel-server"
+	case "$nfs_distro_style" in
+	*-redhat)
+		nfs_lock_service="nfslock"
+		;;
+	*-suse)
+		nfs_service="nfsserver"
+		;;
+	*-debian)
+		nfs_service="nfs-kernel-server"
+		nfs_config="/etc/default/nfs-kernel-server"
+		;;
+	*)
+		echo "Internal error"
+		exit 1
+	esac
+	;;
+
+*)
+	echo "Internal error"
+	exit 1
+esac
 
 # Override for unit testing
 if [ -z "$PROCFS_PATH" ] ; then
