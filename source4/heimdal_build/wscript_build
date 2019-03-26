@@ -699,9 +699,14 @@ if not bld.CONFIG_SET("USING_SYSTEM_ASN1"):
 
     HEIMDAL_ERRTABLE('HEIMDAL_ASN1_ERR_ET', 'lib/asn1/asn1_err.et')
 
+    heimdal_heim_asn1_cflags = ''
+    if bld.CONFIG_SET('HAVE_WNO_FORMAT_TRUNCATION'):
+        heimdal_heim_asn1_cflags = '-Wno-format-truncation'
+
     HEIMDAL_SUBSYSTEM('HEIMDAL_HEIM_ASN1',
         HEIMDAL_HEIM_ASN1_DER_SOURCE + 'lib/asn1/extra.c lib/asn1/timegm.c lib/asn1/asn1_err.c',
         includes='../heimdal/lib/asn1',
+        cflags=heimdal_heim_asn1_cflags,
         deps='roken com_err'
         )
 
