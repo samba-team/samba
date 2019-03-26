@@ -1766,6 +1766,11 @@ main() {
 
     if conf.CONFIG_SET("HAVE_CEPH"):
         default_shared_modules.extend(TO_LIST('vfs_ceph'))
+        # Unlike vfs_ceph, vfs_ceph_snapshots doesn't depend on libcephfs, so
+        # can be enabled atop a kernel CephFS share (with vfs_default) in
+        # addition to vfs_ceph. Still, only enable vfs_ceph_snapshots builds
+        # if we're building with libcephfs for now.
+        default_shared_modules.extend(TO_LIST('vfs_ceph_snapshots'))
 
     if conf.CONFIG_SET('HAVE_GLUSTERFS'):
         default_shared_modules.extend(TO_LIST('vfs_glusterfs'))
