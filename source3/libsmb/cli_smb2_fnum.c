@@ -5182,6 +5182,7 @@ static void cli_smb2_get_reparse_point_fnum_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct cli_smb2_get_reparse_point_fnum_state *state = tevent_req_data(
 		req, struct cli_smb2_get_reparse_point_fnum_state);
+	struct cli_state *cli = state->cli;
 	NTSTATUS status;
 
 	status = smb2cli_ioctl_recv(subreq, state,
@@ -5189,7 +5190,7 @@ static void cli_smb2_get_reparse_point_fnum_done(struct tevent_req *subreq)
 				&state->output_buffer);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
-		state->cli->raw_status = status;
+		cli->raw_status = status;
 		return;
 	}
 	tevent_req_done(req);
@@ -5203,8 +5204,9 @@ NTSTATUS cli_smb2_get_reparse_point_fnum_recv(struct tevent_req *req,
 		req, struct cli_smb2_get_reparse_point_fnum_state);
 
 	if (tevent_req_is_nterror(req, &state->cli->raw_status)) {
+		NTSTATUS status = state->cli->raw_status;
 		tevent_req_received(req);
-		return state->cli->raw_status;
+		return status;
 	}
 	*output = data_blob_dup_talloc(mem_ctx, state->output_buffer);
 	if (output->data == NULL) {
