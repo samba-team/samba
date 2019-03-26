@@ -6228,7 +6228,7 @@ static bool run_simple_posix_open_test(int dummy)
 	const char *sname = "posix:symlink";
 	const char *dname = "posix:dir";
 	char buf[10];
-	char namebuf[11];
+	char *target = NULL;
 	uint16_t fnum1 = (uint16_t)-1;
 	SMB_STRUCT_STAT sbuf;
 	bool correct = false;
@@ -6515,15 +6515,15 @@ static bool run_simple_posix_open_test(int dummy)
 		}
 	}
 
-	status = cli_posix_readlink(cli1, sname, namebuf, sizeof(namebuf));
+	status = cli_posix_readlink(cli1, sname, talloc_tos(), &target);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("POSIX readlink on %s failed (%s)\n", sname, nt_errstr(status));
 		goto out;
 	}
 
-	if (strcmp(namebuf, fname) != 0) {
+	if (strcmp(target, fname) != 0) {
 		printf("POSIX readlink on %s failed to match name %s (read %s)\n",
-			sname, fname, namebuf);
+			sname, fname, target);
 		goto out;
 	}
 

@@ -3487,7 +3487,7 @@ static int cmd_readlink(void)
 	char *name= NULL;
 	char *buf = NULL;
 	char *targetname = NULL;
-	char linkname[PATH_MAX+1];
+	char *linkname = NULL;
 	struct cli_state *targetcli;
         NTSTATUS status;
 
@@ -3519,7 +3519,7 @@ static int cmd_readlink(void)
 		return 1;
 	}
 
-	status = cli_posix_readlink(targetcli, name, linkname, PATH_MAX+1);
+	status = cli_posix_readlink(targetcli, name, talloc_tos(), &linkname);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s readlink on file %s\n",
 			 nt_errstr(status), name);
@@ -3527,6 +3527,8 @@ static int cmd_readlink(void)
 	}
 
 	d_printf("%s -> %s\n", name, linkname);
+
+	TALLOC_FREE(linkname);
 
 	return 0;
 }

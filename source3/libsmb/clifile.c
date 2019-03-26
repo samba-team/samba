@@ -301,8 +301,7 @@ NTSTATUS cli_posix_symlink(struct cli_state *cli,
 
 struct cli_posix_readlink_state {
 	struct cli_state *cli;
-	uint8_t *data;
-	uint32_t num_data;
+	char *converted;
 };
 
 static void cli_posix_readlink_done(struct tevent_req *subreq);
@@ -310,12 +309,10 @@ static void cli_posix_readlink_done(struct tevent_req *subreq);
 struct tevent_req *cli_posix_readlink_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,
-					const char *fname,
-					size_t len)
+					const char *fname)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_posix_readlink_state *state = NULL;
-	uint32_t maxbytelen = (uint32_t)(smbXcli_conn_use_unicode(cli->conn) ? len*3 : len);
 
 	req = tevent_req_create(
 		mem_ctx, &state, struct cli_posix_readlink_state);
@@ -324,16 +321,14 @@ struct tevent_req *cli_posix_readlink_send(TALLOC_CTX *mem_ctx,
 	}
 	state->cli = cli;
 
-	/*
-	 * Len is in bytes, we need it in UCS2 units.
-	 */
-	if ((2*len < len) || (maxbytelen < len)) {
-		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
-		return tevent_req_post(req, ev);
-	}
-
-	subreq = cli_qpathinfo_send(state, ev, cli, fname,
-				    SMB_QUERY_FILE_UNIX_LINK, 1, maxbytelen);
+	subreq = cli_qpathinfo_send(
+		state,
+		ev,
+		cli,
+		fname,
+		SMB_QUERY_FILE_UNIX_LINK,
+		1,
+		UINT16_MAX);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -348,9 +343,13 @@ static void cli_posix_readlink_done(struct tevent_req *subreq)
 	struct cli_posix_readlink_state *state = tevent_req_data(
 		req, struct cli_posix_readlink_state);
 	NTSTATUS status;
+	uint8_t *data = NULL;
+	uint32_t num_data;
+	charset_t charset;
+	size_t converted_size;
+	bool ok;
 
-	status = cli_qpathinfo_recv(subreq, state, &state->data,
-				    &state->num_data);
+	status = cli_qpathinfo_recv(subreq, state, &data, &num_data);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
@@ -358,49 +357,49 @@ static void cli_posix_readlink_done(struct tevent_req *subreq)
 	/*
 	 * num_data is > 1, we've given 1 as minimum to cli_qpathinfo_send
 	 */
-	if (state->data[state->num_data-1] != '\0') {
+	if (data[num_data-1] != '\0') {
 		tevent_req_nterror(req, NT_STATUS_DATA_ERROR);
+		return;
+	}
+
+	charset = smbXcli_conn_use_unicode(state->cli->conn) ?
+		CH_UTF16LE : CH_DOS;
+
+	/* The returned data is a pushed string, not raw data. */
+	ok = convert_string_talloc(
+		state,
+		charset,
+		CH_UNIX,
+		data,
+		num_data,
+		&state->converted,
+		&converted_size);
+	if (!ok) {
+		tevent_req_oom(req);
 		return;
 	}
 	tevent_req_done(req);
 }
 
 NTSTATUS cli_posix_readlink_recv(
-	struct tevent_req *req, char *retpath, size_t len)
+	struct tevent_req *req, TALLOC_CTX *mem_ctx, char **target)
 {
 	struct cli_posix_readlink_state *state = tevent_req_data(
 		req, struct cli_posix_readlink_state);
 	NTSTATUS status;
-	char *converted = NULL;
-	size_t converted_size = 0;
-	bool ok;
 
 	if (tevent_req_is_nterror(req, &status)) {
 		return status;
 	}
-	/* The returned data is a pushed string, not raw data. */
-	ok = convert_string_talloc(
-		state,
-		smbXcli_conn_use_unicode(state->cli->conn) ? CH_UTF16LE:CH_DOS,
-		CH_UNIX,
-		state->data,
-		state->num_data,
-		&converted,
-		&converted_size);
-	if (!ok) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	len = MIN(len,converted_size);
-	if (len == 0) {
-		return NT_STATUS_DATA_ERROR;
-	}
-	memcpy(retpath, converted, len);
+	*target = talloc_move(mem_ctx, &state->converted);
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
-				char *linkpath, size_t len)
+NTSTATUS cli_posix_readlink(
+	struct cli_state *cli,
+	const char *fname,
+	TALLOC_CTX *mem_ctx,
+	char **target)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev = NULL;
@@ -421,11 +420,7 @@ NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
 		goto fail;
 	}
 
-	req = cli_posix_readlink_send(frame,
-				ev,
-				cli,
-				fname,
-				len);
+	req = cli_posix_readlink_send(frame, ev, cli, fname);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -435,7 +430,7 @@ NTSTATUS cli_posix_readlink(struct cli_state *cli, const char *fname,
 		goto fail;
 	}
 
-	status = cli_posix_readlink_recv(req, linkpath, len);
+	status = cli_posix_readlink_recv(req, mem_ctx, target);
 
  fail:
 	TALLOC_FREE(frame);
