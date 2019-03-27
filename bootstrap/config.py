@@ -286,7 +286,7 @@ RUN /tmp/bootstrap.sh && /tmp/locale.sh
 RUN set -x; LD=$(which ld); LD_GOLD=$(which ld.gold); test -x $LD_GOLD && ln -sf $LD_GOLD $LD && test -x $LD && echo "$LD is now $LD_GOLD"
 
 # make test can not work with root, so we have to create a new user
-RUN useradd -m -s /bin/bash samba && \
+RUN useradd -m -U -s /bin/bash samba && \
     mkdir -p /etc/sudoers.d && \
     echo "samba ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/samba
 
