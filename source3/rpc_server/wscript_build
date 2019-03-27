@@ -131,7 +131,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_SVCCTL',
 bld.SAMBA3_SUBSYSTEM('RPC_WINREG',
                     source='''winreg/srv_winreg_nt.c
                     ../../librpc/gen_ndr/srv_winreg.c''',
-                    deps='REG_FULL REGFIO REG_API_REGF NDR_PERFCOUNT')
+                    deps='REG_FULL REGFIO NDR_PERFCOUNT')
 
 bld.SAMBA3_SUBSYSTEM('RPC_WKSSVC',
                     source='''wkssvc/srv_wkssvc_nt.c

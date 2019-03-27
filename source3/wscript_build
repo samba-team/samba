@@ -209,10 +209,6 @@ bld.SAMBA_BINARY('test_registry_regfio',
                  local_include=False,
                  install=False)
 
-bld.SAMBA3_SUBSYSTEM('REG_API_REGF',
-                    source='registry/reg_api_regf.c',
-                    deps='samba-util')
-
 # Do not link against this use 'smbconf'
 bld.SAMBA3_SUBSYSTEM('SMBREGISTRY',
                    source='''

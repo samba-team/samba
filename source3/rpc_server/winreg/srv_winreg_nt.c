@@ -25,7 +25,6 @@
 #include "../librpc/gen_ndr/srv_winreg.h"
 #include "registry.h"
 #include "registry/reg_api.h"
-#include "registry/reg_api_regf.h"
 #include "registry/reg_perfcount.h"
 #include "rpc_misc.h"
 #include "auth.h"
