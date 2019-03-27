@@ -741,7 +741,7 @@ struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb, TALLOC_CTX *referen
 	}
 
 	if (refresh_fn) {
-		/* We need to guard against recurisve calls here */
+		/* We need to guard against recursive calls here */
 		if (ldb_set_opaque(ldb, "dsdb_schema_refresh_fn", NULL) != LDB_SUCCESS) {
 			ldb_debug_set(ldb, LDB_DEBUG_FATAL,
 				      "dsdb_get_schema: clearing dsdb_schema_refresh_fn failed");

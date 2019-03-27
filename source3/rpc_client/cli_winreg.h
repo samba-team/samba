@@ -417,7 +417,7 @@ NTSTATUS dcerpc_winreg_enumvals(TALLOC_CTX *mem_ctx,
 /**
  * @internal
  *
- * @brief A function to delete a key and its subkeys recurively.
+ * @brief A function to delete a key and its subkeys recursively.
  *
  * @param[in]  mem_ctx  The memory context to use.
  *
