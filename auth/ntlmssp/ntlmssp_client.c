@@ -342,6 +342,22 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 		}
 	}
 
+	if (DEBUGLEVEL >= 10) {
+		struct CHALLENGE_MESSAGE *challenge =
+			talloc(ntlmssp_state, struct CHALLENGE_MESSAGE);
+		if (challenge != NULL) {
+			NTSTATUS status;
+			challenge->NegotiateFlags = chal_flags;
+			status = ntlmssp_pull_CHALLENGE_MESSAGE(
+					&in, challenge, challenge);
+			if (NT_STATUS_IS_OK(status)) {
+				NDR_PRINT_DEBUG(CHALLENGE_MESSAGE,
+						challenge);
+			}
+			TALLOC_FREE(challenge);
+		}
+	}
+
 	if (chal_flags & NTLMSSP_TARGET_TYPE_SERVER) {
 		ntlmssp_state->server.is_standalone = true;
 	} else {
@@ -700,6 +716,22 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		talloc_free(mem_ctx);
 		return nt_status;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		struct AUTHENTICATE_MESSAGE *authenticate =
+			talloc(ntlmssp_state, struct AUTHENTICATE_MESSAGE);
+		if (authenticate != NULL) {
+			NTSTATUS status;
+			authenticate->NegotiateFlags = ntlmssp_state->neg_flags;
+			status = ntlmssp_pull_AUTHENTICATE_MESSAGE(
+				out, authenticate, authenticate);
+			if (NT_STATUS_IS_OK(status)) {
+				NDR_PRINT_DEBUG(AUTHENTICATE_MESSAGE,
+						authenticate);
+			}
+			TALLOC_FREE(authenticate);
+		}
 	}
 
 	/*
