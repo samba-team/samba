@@ -3,3 +3,7 @@
 .*RODC
 ^samba4.ntvfs.cifs.ntlm.base.unlink
 ^samba4.ntvfs.cifs.krb5.base.unlink
+#
+# We skip the pre-fork restart tests as they use the kdc process to test
+# restart back off
+^samba.tests.prefork_restart
