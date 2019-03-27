@@ -345,6 +345,8 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 
+	DBG_INFO("Doing kinit for %s to access %s\n",
+		 user_principal, target_hostname);
 
 	/*
 	 * TODO: This should be done within the gensec layer
@@ -373,6 +375,11 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 		 * Ignore the error and hope that NTLM will work
 		 */
 	}
+
+	DBG_DEBUG("Successfully authenticated as %s to access %s using "
+		  "Kerberos\n",
+		  user_principal,
+		  target_hostname);
 
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
@@ -1293,6 +1300,10 @@ static struct tevent_req *cli_session_setup_spnego_send(
 		return tevent_req_post(req, ev);
 	}
 
+	DBG_INFO("Connect to %s as %s using SPNEGO\n",
+		 target_hostname,
+		 cli_credentials_get_principal(creds, talloc_tos()));
+
 	subreq = cli_session_setup_gensec_send(state, ev, cli, creds,
 					       target_service, target_hostname);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1495,6 +1506,8 @@ struct tevent_req *cli_session_setup_creds_send(TALLOC_CTX *mem_ctx,
 	if (tevent_req_nomem(domain, req)) {
 		return tevent_req_post(req, ev);
 	}
+
+	DBG_INFO("Connect to %s as %s using NTLM\n", domain, username);
 
 	if ((sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		bool use_unicode = smbXcli_conn_use_unicode(cli->conn);
