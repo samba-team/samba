@@ -1970,7 +1970,7 @@ static void vfswrap_offload_write_read_done(struct tevent_req *subreq)
 	nread = SMB_VFS_PREAD_RECV(subreq, &aio_state);
 	TALLOC_FREE(subreq);
 	if (nread == -1) {
-		DBG_ERR("read failed: %s\n", strerror(errno));
+		DBG_ERR("read failed: %s\n", strerror(aio_state.error));
 		tevent_req_nterror(req, map_nt_error_from_unix(aio_state.error));
 		return;
 	}
@@ -2031,7 +2031,7 @@ static void vfswrap_offload_write_write_done(struct tevent_req *subreq)
 	nwritten = SMB_VFS_PWRITE_RECV(subreq, &aio_state);
 	TALLOC_FREE(subreq);
 	if (nwritten == -1) {
-		DBG_ERR("write failed: %s\n", strerror(errno));
+		DBG_ERR("write failed: %s\n", strerror(aio_state.error));
 		tevent_req_nterror(req, map_nt_error_from_unix(aio_state.error));
 		return;
 	}
