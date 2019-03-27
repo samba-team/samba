@@ -91,35 +91,21 @@ lp = sambaopts.get_loadparm()
 
 domain = lp.get("realm")
 host = lp.get("netbios name")
-if opts.all_interfaces:
-    all_interfaces = True
-else:
-    all_interfaces = False
+all_interfaces = opts.all_interfaces
 
-if opts.current_ip:
-    IPs = opts.current_ip
-else:
-    IPs = samba.interface_ips(lp, all_interfaces)
+IPs = opts.current_ip or samba.interface_ips(lp, bool(all_interfaces)) or []
 
 nsupdate_cmd = lp.get('nsupdate command')
 dns_zone_scavenging = lp.get("dns zone scavenging")
 
-if len(IPs) == 0:
+if not IPs:
     print("No IP interfaces - skipping DNS updates")
     sys.exit(0)
 
-if opts.rpc_server_ip:
-    rpc_server_ip = opts.rpc_server_ip
-else:
-    rpc_server_ip = IPs[0]
+rpc_server_ip = opts.rpc_server_ip or IPs[0]
 
-IP6s = []
-IP4s = []
-for i in IPs:
-    if i.find(':') != -1:
-        IP6s.append(i)
-    else:
-        IP4s.append(i)
+IP6s = [ip for ip in IPs if ':' in ip]
+IP4s = [ip for ip in IPs if ':' not in ip]
 
 smb_conf = sambaopts.get_loadparm_path()
 
@@ -132,23 +118,18 @@ def get_possible_rw_dns_server(creds, domain):
        (4.6 and prior) do not maintain this value, so add NS servers
        as well"""
 
-    hostnames = []
     ans_soa = check_one_dns_name(domain, 'SOA')
-
     # Actually there is only one
-    for i in range(len(ans_soa)):
-        hostnames.append(str(ans_soa[i].mname).rstrip('.'))
+    hosts_soa = [str(a.mname).rstrip('.') for a in ans_soa]
 
     # This is not strictly legit, but old Samba domains may have an
     # unmaintained SOA record, so go for any NS that we can get a
     # ticket to.
     ans_ns = check_one_dns_name(domain, 'NS')
-
     # Actually there is only one
-    for i in range(len(ans_ns)):
-        hostnames.append(str(ans_ns[i].target).rstrip('.'))
+    hosts_ns = [str(a.target).rstrip('.') for a in ans_ns]
 
-    return hostnames
+    return hosts_soa + hosts_ns
 
 def get_krb5_rw_dns_server(creds, domain):
     """Get a list of read-write DNS servers that we can obtain a ticket
@@ -160,8 +141,7 @@ def get_krb5_rw_dns_server(creds, domain):
 
     rw_dns_servers = get_possible_rw_dns_server(creds, domain)
     # Actually there is only one
-    for i in range(len(rw_dns_servers)):
-        target_hostname = str(rw_dns_servers[i])
+    for i, target_hostname in enumerate(rw_dns_servers):
         settings = {}
         settings["lp_ctx"] = lp
         settings["target_hostname"] = target_hostname
@@ -181,9 +161,8 @@ def get_krb5_rw_dns_server(creds, domain):
             return target_hostname
         except RuntimeError:
             # Only raise an exception if they all failed
-            if i != len(rw_dns_servers) - 1:
-                pass
-            raise
+            if i == len(rw_dns_servers) - 1:
+                raise
 
 def get_credentials(lp):
     """# get credentials if we haven't got them already."""
@@ -278,9 +257,7 @@ def hostname_match(h1, h2):
     return h1.lower().rstrip('.') == h2.lower().rstrip('.')
 
 def get_resolver(d=None):
-    resolv_conf = os.getenv('RESOLV_CONF')
-    if not resolv_conf:
-        resolv_conf = '/etc/resolv.conf'
+    resolv_conf = os.getenv('RESOLV_CONF', default='/etc/resolv.conf')
     resolver = dns.resolver.Resolver(filename=resolv_conf, configure=True)
 
     if d is not None and d.nameservers != []:
@@ -290,11 +267,10 @@ def get_resolver(d=None):
 
 def check_one_dns_name(name, name_type, d=None):
     resolver = get_resolver(d)
-    if d is not None and len(d.nameservers) == 0:
+    if d and not d.nameservers:
         d.nameservers = resolver.nameservers
-
-    ans = resolver.query(name, name_type)
-    return ans
+    # dns.resolver.Answer
+    return resolver.query(name, name_type)
 
 def check_dns_name(d):
     """check that a DNS entry exists."""
@@ -727,15 +703,9 @@ def call_rodc_update(d, op="add"):
 
 
 # get the list of DNS entries we should have
-if opts.update_list:
-    dns_update_list = opts.update_list
-else:
-    dns_update_list = lp.private_path('dns_update_list')
+dns_update_list = opts.update_list or lp.private_path('dns_update_list')
 
-if opts.update_cache:
-    dns_update_cache = opts.update_cache
-else:
-    dns_update_cache = lp.private_path('dns_update_cache')
+dns_update_cache = opts.update_cache or lp.private_path('dns_update_cache')
 
 krb5conf = None
 # only change the krb5.conf if we are not in selftest
@@ -895,7 +865,7 @@ else:
 use_samba_tool = opts.use_samba_tool
 use_nsupdate = opts.use_nsupdate
 # get our krb5 creds
-if len(delete_list) != 0 or len(update_list) != 0 and not opts.nocreds:
+if delete_list or update_list and not opts.nocreds:
     try:
         creds = get_credentials(lp)
     except RuntimeError as e:
