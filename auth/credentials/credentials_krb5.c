@@ -406,6 +406,21 @@ _PUBLIC_ bool cli_credentials_failed_kerberos_login(struct cli_credentials *cred
 		return false;
 	}
 
+	/* MIT kerberos requires creds.client to match against cached
+	 * credentials */
+	ret = krb5_cc_get_principal(ccc->smb_krb5_context->krb5_context,
+				    ccc->ccache,
+				    &creds.client);
+	if (ret != 0) {
+		krb5_free_cred_contents(ccc->smb_krb5_context->krb5_context,
+					&creds);
+		DBG_ERR("krb5_cc_get_principal failed: %s\n",
+			smb_get_krb5_error_message(
+				ccc->smb_krb5_context->krb5_context,
+				ret, ccc));
+		return false;
+	}
+
 	ret = krb5_cc_retrieve_cred(ccc->smb_krb5_context->krb5_context, ccc->ccache, KRB5_TC_MATCH_SRV_NAMEONLY, &creds, &creds2);
 	if (ret != 0) {
 		/* don't retry - we didn't find these credentials to remove */
