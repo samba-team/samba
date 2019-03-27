@@ -121,7 +121,9 @@ static char *get_def_value(TALLOC_CTX *ctx, char **string)
 		n = strcspn(c, "\'");
 		value = talloc_strndup(ctx, c, n);
 		c += n;
-		c++; /* skip closing \' */
+		if (*c != '\0') {
+			c++; /* skip closing \' */
+		}
 	} else {
 		n = strcspn(c, " \t\n");
 		value = talloc_strndup(ctx, c, n);
@@ -177,6 +179,10 @@ static struct schema_token *get_next_schema_token(TALLOC_CTX *ctx, char **string
 			n = strcspn(c, ")");
 			token->value = talloc_strndup(ctx, c, n);
 			c += n;
+			if (*c == '\0') {
+				talloc_free(token->value);
+				return NULL;
+			}
 			c++;
 		} else {
 			token->value = get_def_value(ctx, &c);
@@ -217,6 +223,10 @@ static struct schema_token *get_next_schema_token(TALLOC_CTX *ctx, char **string
 			n = strcspn(c, ")");
 			token->value = talloc_strndup(ctx, c, n);
 			c += n;
+			if (*c == '\0') {
+				talloc_free(token->value);
+				return NULL;
+			}
 			c++;
 		} else {
 			token->value = get_def_value(ctx, &c);
@@ -236,6 +246,10 @@ static struct schema_token *get_next_schema_token(TALLOC_CTX *ctx, char **string
 			n = strcspn(c, ")");
 			token->value = talloc_strndup(ctx, c, n);
 			c += n;
+			if (*c == '\0') {
+				talloc_free(token->value);
+				return NULL;
+			}
 			c++;
 		} else {
 			token->value = get_def_value(ctx, &c);
@@ -316,6 +330,9 @@ static struct schema_token *get_next_schema_token(TALLOC_CTX *ctx, char **string
 	}
 	if (*c == '\'') {
 		c = strchr(++c, '\'');
+		if (c == NULL || *c == '\0') {
+			return NULL;
+		}
 		c++;
 	} else {
 		c += strcspn(c, " \t\n");
@@ -486,12 +503,16 @@ static struct ldb_message *process_entry(TALLOC_CTX *mem_ctx, struct conv_option
 
 		default:
 			fprintf(stderr, "Unknown Definition: %s\n", token->value);
+			goto failed;
 		}
 	}
 
 	if (isAttribute) {
 		MSG_ADD_STRING("isSingleValued", single_valued ? "TRUE" : "FALSE");
 	} else {
+		if (msg->dn == NULL) {
+			goto failed;
+		}
 		MSG_ADD_STRING("defaultObjectCategory", ldb_dn_get_linearized(msg->dn));
 	}
 

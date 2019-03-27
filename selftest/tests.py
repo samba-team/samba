@@ -258,3 +258,5 @@ plantestsuite("samba.unittests.ntlm_check", "none",
               [os.path.join(bindir(), "default/libcli/auth/test_ntlm_check")])
 plantestsuite("samba.unittests.test_registry_regfio", "none",
               [os.path.join(bindir(), "default/source3/test_registry_regfio")])
+plantestsuite("samba.unittests.test_oLschema2ldif", "none",
+              [os.path.join(bindir(), "default/source4/utils/oLschema2ldif/test_oLschema2ldif")])

@@ -2640,7 +2640,7 @@ static const struct dsdb_syntax dsdb_syntaxes[] = {
 const struct dsdb_syntax *find_syntax_map_by_ad_oid(const char *ad_oid)
 {
 	unsigned int i;
-	for (i=0; dsdb_syntaxes[i].ldap_oid; i++) {
+	for (i=0; i < ARRAY_SIZE(dsdb_syntaxes); i++) {
 		if (strcasecmp(ad_oid, dsdb_syntaxes[i].attributeSyntax_oid) == 0) {
 			return &dsdb_syntaxes[i];
 		}
@@ -2651,7 +2651,7 @@ const struct dsdb_syntax *find_syntax_map_by_ad_oid(const char *ad_oid)
 const struct dsdb_syntax *find_syntax_map_by_ad_syntax(int oMSyntax)
 {
 	unsigned int i;
-	for (i=0; dsdb_syntaxes[i].ldap_oid; i++) {
+	for (i=0; i < ARRAY_SIZE(dsdb_syntaxes); i++) {
 		if (oMSyntax == dsdb_syntaxes[i].oMSyntax) {
 			return &dsdb_syntaxes[i];
 		}
@@ -2662,7 +2662,7 @@ const struct dsdb_syntax *find_syntax_map_by_ad_syntax(int oMSyntax)
 const struct dsdb_syntax *find_syntax_map_by_standard_oid(const char *standard_oid)
 {
 	unsigned int i;
-	for (i=0; dsdb_syntaxes[i].ldap_oid; i++) {
+	for (i=0; i < ARRAY_SIZE(dsdb_syntaxes); i++) {
 		if (strcasecmp(standard_oid, dsdb_syntaxes[i].ldap_oid) == 0) {
 			return &dsdb_syntaxes[i];
 		}
