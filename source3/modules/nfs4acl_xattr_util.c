@@ -29,7 +29,6 @@
 #ifdef FALSE
 #undef FALSE
 #endif
-#endif
 
 #include "nfs4_acls.h"
 #include "nfs41acl.h"
@@ -71,3 +70,4 @@ uint16_t nfs4acl_to_smb4acl_flags(unsigned nfsacl41_flags)
 
 	return smb4acl_flags;
 }
+#endif /* HAVE_RPC_XDR_H */

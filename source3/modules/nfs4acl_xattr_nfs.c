@@ -874,6 +874,7 @@ NTSTATUS nfs4acl_nfs_blob_to_smb4(struct vfs_handle_struct *handle,
 }
 
 #else /* !HAVE_RPC_XDR_H */
+#include "nfs4_acls.h"
 #include "nfs4acl_xattr_nfs.h"
 NTSTATUS nfs4acl_nfs_blob_to_smb4(struct vfs_handle_struct *handle,
 				  TALLOC_CTX *mem_ctx,
