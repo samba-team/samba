@@ -86,7 +86,7 @@ static struct extended_dn_context *extended_dn_context_init(struct ldb_module *m
 		return NULL;
 	}
 
-	ac->schema = dsdb_get_schema(ldb_module_get_ctx(module), ac);
+	ac->schema = dsdb_get_schema(ldb, ac);
 	ac->module = module;
 	ac->ldb = ldb;
 	ac->req = req;
