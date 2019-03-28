@@ -684,6 +684,11 @@
 	<para>Reset sysvol ACLs to defaults (including correct ACLs on GPOs).</para>
 </refsect3>
 
+<refsect2>
+	<title>ou</title>
+	<para>Manage organizational units (OUs).</para>
+</refsect2>
+
 <refsect3>
 	<title>ou create <replaceable>ou_dn</replaceable> [options]</title>
 	<para>Create an organizational unit.</para>
