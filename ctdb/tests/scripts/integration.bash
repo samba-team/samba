@@ -72,7 +72,20 @@ ctdb_test_init ()
 
 ########################################
 
-# Sets: $out
+# Sets: $out, $outfile
+# * The first 1KB of output is put into $out
+# * Tests should use $outfile for handling large output
+# * $outfile is removed after each test
+out=""
+outfile="${TEST_VAR_DIR}/try_command_on_node.out"
+
+outfile_cleanup ()
+{
+	rm -f "$outfile"
+}
+
+ctdb_test_exit_hook_add outfile_cleanup
+
 try_command_on_node ()
 {
     local nodespec="$1" ; shift
@@ -91,17 +104,18 @@ try_command_on_node ()
 
     local cmd="$*"
 
-    out=$(onnode -q $onnode_opts "$nodespec" "$cmd" 2>&1) || {
-
+    if ! onnode -q $onnode_opts "$nodespec" "$cmd" >"$outfile" 2>&1 ; then
 	echo "Failed to execute \"$cmd\" on node(s) \"$nodespec\""
-	echo "$out"
+	cat "$outfile"
 	return 1
-    }
+    fi
 
     if $verbose ; then
 	echo "Output of \"$cmd\":"
-	echo "$out"
+	cat "$outfile"
     fi
+
+    out=$(dd if="$outfile" bs=1k count=1 2>/dev/null)
 }
 
 sanity_check_output ()
@@ -111,7 +125,7 @@ sanity_check_output ()
 
     local ret=0
 
-    local num_lines=$(echo "$out" | wc -l)
+    local num_lines=$(wc -l <"$outfile")
     echo "There are $num_lines lines of output"
     if [ $num_lines -lt $min_lines ] ; then
 	echo "BAD: that's less than the required number (${min_lines})"
@@ -120,7 +134,7 @@ sanity_check_output ()
 
     local status=0
     local unexpected # local doesn't pass through status of command on RHS.
-    unexpected=$(echo "$out" | egrep -v "$regexp") || status=$?
+    unexpected=$(grep -Ev "$regexp" "$outfile") || status=$?
 
     # Note that this is reversed.
     if [ $status -eq 0 ] ; then
