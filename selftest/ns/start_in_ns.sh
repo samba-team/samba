@@ -17,9 +17,14 @@ parent_pid=$3
 # The namespaces we use are anonymous, which means other processes would need
 # to use our PID to access the new namespace
 echo "-------------------------------------------------------------"
-echo "Created namespace for $NETBIOSNAME"
-echo "To communicate with this testenv, use: nsenter -t $$ --net sh"
-echo "To copy its environment variables, use: . $exports_file"
+echo "Created namespace for $NETBIOSNAME ($ENVNAME) PID $$"
+
+# generate a helper script if the developer wants to talk to this namespace
+# in another shell
+mk_nsenter_script="$(dirname $0)/mk_nsenter.sh"
+helper_script=$($mk_nsenter_script $$ $exports_file)
+
+echo "To communicate with this testenv, use: $helper_script"
 echo "-------------------------------------------------------------"
 
 # the rest of the args are the samba command to run
