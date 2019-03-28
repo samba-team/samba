@@ -636,6 +636,21 @@
 </refsect3>
 
 <refsect3>
+	<title>group edit <replaceable>groupname</replaceable></title>
+	<para>Edit a group AD object.</para>
+
+	<variablelist>
+	<varlistentry>
+	<term>--editor=EDITOR</term>
+	<listitem><para>
+	Specifies the editor to use instead of the system default, or 'vi' if no
+	system default is set.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
 	<title>group list</title>
 	<para>List all groups.</para>
 </refsect3>
