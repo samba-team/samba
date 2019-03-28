@@ -110,6 +110,11 @@
 <refsect1>
 <title>COMMANDS</title>
 
+<refsect2>
+	<title>computer</title>
+	<para>Manage computer accounts.</para>
+</refsect2>
+
 <refsect3>
 	<title>computer create <replaceable>computername</replaceable> [options]</title>
 	<para>Create a new computer in the Active Directory Domain.</para>
