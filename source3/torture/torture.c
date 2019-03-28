@@ -10989,13 +10989,14 @@ static bool data_blob_equal(DATA_BLOB a, DATA_BLOB b)
 static bool run_local_memcache(int dummy)
 {
 	struct memcache *cache;
-	DATA_BLOB k1, k2, k3;
+	DATA_BLOB k1, k2, k3, k4, k5;
 	DATA_BLOB d1, d3;
 	DATA_BLOB v1, v3;
 
 	TALLOC_CTX *mem_ctx;
 	char *ptr1 = NULL;
 	char *ptr2 = NULL;
+	char *ptr3 = NULL;
 
 	char *str1, *str2;
 	size_t size1, size2;
@@ -11021,6 +11022,8 @@ static bool run_local_memcache(int dummy)
 	k1 = data_blob_const("d1", 2);
 	k2 = data_blob_const("d2", 2);
 	k3 = data_blob_const("d3", 2);
+	k4 = data_blob_const("d4", 2);
+	k5 = data_blob_const("d5", 2);
 
 	memcache_add(cache, STAT_CACHE, k1, d1);
 
@@ -11081,6 +11084,71 @@ static bool run_local_memcache(int dummy)
 	ptr2 = memcache_lookup_talloc(cache, GETWD_CACHE, k2);
 	if (ptr2 != NULL) {
 		printf("Did find k2, should have been purged\n");
+		return false;
+	}
+
+	/*
+	 * Test that talloc size also is accounted in memcache and
+	 * causes purge of other object.
+	 */
+
+	str1 = talloc_zero_size(mem_ctx, 100);
+	str2 = talloc_zero_size(mem_ctx, 100);
+
+	memcache_add_talloc(cache, GETWD_CACHE, k4, &str1);
+	memcache_add_talloc(cache, GETWD_CACHE, k5, &str1);
+
+	ptr3 = memcache_lookup_talloc(cache, GETWD_CACHE, k4);
+	if (ptr3 != NULL) {
+		printf("Did find k4, should have been purged\n");
+		return false;
+	}
+
+	/*
+	 * Test that adding a duplicate non-talloced
+	 * key/value on top of a talloced key/value takes account
+	 * of the talloc_freed value size.
+	 */
+	TALLOC_FREE(cache);
+	TALLOC_FREE(mem_ctx);
+
+	mem_ctx = talloc_init("key_replace");
+	if (mem_ctx == NULL) {
+		return false;
+	}
+
+	cache = memcache_init(NULL, sizeof(void *) == 8 ? 200 : 100);
+	if (cache == NULL) {
+		return false;
+	}
+
+	/*
+	 * Add a 100 byte talloced string. This will
+	 * store a (4 or 8 byte) pointer and record the
+	 * total talloced size.
+	 */
+	str1 = talloc_zero_size(mem_ctx, 100);
+	memcache_add_talloc(cache, GETWD_CACHE, k4, &str1);
+	/*
+	 * Now overwrite with a small talloced
+	 * value. This should fit in the existing size
+	 * and the total talloced size should be removed
+	 * from the cache size.
+	 */
+	str1 = talloc_zero_size(mem_ctx, 2);
+	memcache_add_talloc(cache, GETWD_CACHE, k4, &str1);
+	/*
+	 * Now store a 20 byte string. If the
+	 * total talloced size wasn't accounted for
+	 * and removed in the overwrite, then this
+	 * will evict k4.
+	 */
+	str2 = talloc_zero_size(mem_ctx, 20);
+	memcache_add_talloc(cache, GETWD_CACHE, k5, &str2);
+
+	ptr3 = memcache_lookup_talloc(cache, GETWD_CACHE, k4);
+	if (ptr3 == NULL) {
+		printf("Did not find k4, should not have been purged\n");
 		return false;
 	}
 
