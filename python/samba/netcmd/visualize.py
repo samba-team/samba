@@ -705,7 +705,7 @@ class cmd_uptodateness(GraphCommand):
 
 
 class cmd_visualize(SuperCommand):
-    """Produces graphical representations of Samba network state"""
+    """Produces graphical representations of Samba network state."""
     subcommands = {}
 
     for k, v in globals().items():

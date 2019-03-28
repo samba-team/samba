@@ -1,6 +1,6 @@
-# implement samba_tool ou commands
+# implement samba-tool ou commands
 #
-# Copyright Bjoern Baumbach <bb@sernet.de> 2018
+# Copyright Bjoern Baumbach 2018-2019 <bb@samba.org>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -390,7 +390,7 @@ class cmd_delete(Command):
 
 
 class cmd_ou(SuperCommand):
-    """Organizational Units (OU) management"""
+    """Organizational Units (OU) management."""
 
     subcommands = {}
     subcommands["create"] = cmd_create()
