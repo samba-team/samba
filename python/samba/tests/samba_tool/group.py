@@ -243,8 +243,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
                           self.samdb.domain_dn()))
         grouplist = self.samdb.search(base=self.samdb.domain_dn(),
                                       scope=ldb.SCOPE_SUBTREE,
-                                      expression=search_filter,
-                                      attrs=[])
+                                      expression=search_filter)
         if grouplist:
             return grouplist[0]
         else:

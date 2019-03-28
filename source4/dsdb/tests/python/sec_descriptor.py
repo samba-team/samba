@@ -1847,7 +1847,7 @@ class SdFlagsDescriptorTests(DescriptorTests):
         self.assertFalse("nTSecurityDescriptor" in res[0])
 
         res = self.ldb_admin.search(self.base_dn, SCOPE_BASE, None,
-                                    [], controls=["sd_flags:1:%d" % (sd_flags)])
+                                    controls=["sd_flags:1:%d" % (sd_flags)])
         self.assertTrue("nTSecurityDescriptor" in res[0])
         tmp = res[0]["nTSecurityDescriptor"][0]
         sd = ndr_unpack(security.descriptor, tmp)

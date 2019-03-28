@@ -282,7 +282,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
                           self.samdb.domain_dn()))
         computerlist = self.samdb.search(base=self.samdb.domain_dn(),
                                          scope=ldb.SCOPE_SUBTREE,
-                                         expression=search_filter, attrs=[])
+                                         expression=search_filter)
         if computerlist:
             return computerlist[0]
         else:

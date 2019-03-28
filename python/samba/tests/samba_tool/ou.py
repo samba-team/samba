@@ -264,8 +264,7 @@ class OUCmdTestCase(SambaToolCmdTest):
                           self.samdb.domain_dn()))
         oulist = self.samdb.search(base=self.samdb.domain_dn(),
                                    scope=ldb.SCOPE_SUBTREE,
-                                   expression=search_filter,
-                                   attrs=[])
+                                   expression=search_filter)
         if oulist:
             return oulist[0]
         else:

@@ -592,7 +592,7 @@ sAMAccountName: %s
         search_filter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (ldb.binary_encode(name), "CN=Person,CN=Schema,CN=Configuration", self.samdb.domain_dn())
         userlist = self.samdb.search(base=self.samdb.domain_dn(),
                                      scope=ldb.SCOPE_SUBTREE,
-                                     expression=search_filter, attrs=[])
+                                     expression=search_filter)
         if userlist:
             return userlist[0]
         else:
