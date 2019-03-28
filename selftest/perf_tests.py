@@ -74,6 +74,11 @@ plantestsuite_loadlist("samba4.ldb.multi_connect.python(ad_dc_ntvfs)",
                         'tdb://$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb'
                         '$LOADLIST', '$LISTOPT'])
 
+plantestsuite_loadlist("samba4.ldap.vlv.python(ad_dc_ntvfs)", "ad_dc_ntvfs",
+                       [python,
+                        os.path.join(samba4srcdir, "dsdb/tests/python/vlv.py"),
+                        '$SERVER', '-U"$USERNAME%$PASSWORD"',
+                        '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
 # this one doesn't tidy itself up fully, so leave it as last unless
 # you want a messy database.
@@ -84,4 +89,16 @@ plantestsuite_loadlist("samba4.ldap.ad_dc_medley_performance.python(ad_dc_ntvfs)
                                      "dsdb/tests/python/ad_dc_medley_performance.py"),
                         '$SERVER', '-U"$USERNAME%$PASSWORD"',
                         '--workgroup=$DOMAIN',
+                        '$LOADLIST', '$LISTOPT'])
+
+# again with paged search module
+plantestsuite_loadlist("samba4.ldap.ad_dc_medley_performance.paged_search."+\
+                           "python(ad_dc_ntvfs)",
+                       "ad_dc_ntvfs",
+                       [python,
+                        os.path.join(samba4srcdir,
+                              "dsdb/tests/python/ad_dc_medley_performance.py"),
+                        '$SERVER', '-U"$USERNAME%$PASSWORD"',
+                        '--workgroup=$DOMAIN',
+                        '--use-paged-search',
                         '$LOADLIST', '$LISTOPT'])

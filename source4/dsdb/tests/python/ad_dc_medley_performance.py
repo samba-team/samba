@@ -42,6 +42,9 @@ from ldb import ERR_NO_SUCH_OBJECT
 
 parser = optparse.OptionParser("ad_dc_performance.py [options] <host>")
 sambaopts = options.SambaOptions(parser)
+sambaopts.add_option("-p", "--use-paged-search", action="store_true",
+                     help="Use paged search module")
+
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 
@@ -53,7 +56,6 @@ if not ANCIENT_SAMBA:
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
 opts, args = parser.parse_args()
-
 
 if len(args) < 1:
     parser.print_usage()
@@ -103,8 +105,13 @@ class UserTests(samba.tests.TestCase):
         super(UserTests, self).setUp()
         self.state = GlobalState  # the class itself, not an instance
         self.lp = lp
+
+        kwargs = {}
+        if opts.use_paged_search:
+            kwargs["options"] = ["modules:paged_searches"]
+
         self.ldb = SamDB(host, credentials=creds,
-                         session_info=system_session(lp), lp=lp)
+                         session_info=system_session(lp), lp=lp, **kwargs)
         self.base_dn = self.ldb.domain_dn()
         self.ou = "OU=pid%s,%s" % (os.getpid(), self.base_dn)
         self.ou_users = "OU=users,%s" % self.ou
