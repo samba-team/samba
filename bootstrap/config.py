@@ -62,7 +62,7 @@ COMMON = [
 # deb, rpm, ...
 PKGS = [
     # NAME1-dev, NAME2-devel
-    ('lmdb-utils', 'lmdb-devel'),
+    ('lmdb-utils', 'lmdb'),
     ('nettle-dev', 'nettle-devel'),
     ('zlib1g-dev', 'zlib-devel'),
     ('libbsd-dev', 'libbsd-devel'),
