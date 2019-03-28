@@ -170,6 +170,23 @@
 </refsect3>
 
 <refsect3>
+	<title>computer edit <replaceable>computername</replaceable></title>
+	<para>Edit a computer AD object.</para>
+	<para>The computer name specified on the command is the
+	sAMAccountName, with or without the trailing dollar sign.</para>
+
+	<variablelist>
+	<varlistentry>
+	<term>--editor=EDITOR</term>
+	<listitem><para>
+	Specifies the editor to use instead of the system default, or 'vi' if no
+	system default is set.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
+</refsect3>
+
+<refsect3>
 	<title>computer list</title>
 	<para>List all computers.</para>
 </refsect3>
