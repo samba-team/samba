@@ -39,12 +39,7 @@ struct roh_channel {
 
 	struct GUID channel_cookie;
 
-	struct tevent_queue *send_queue;
-	struct {
-		struct tstream_context *raw;
-		struct tstream_context *tls;
-		struct tstream_context *active;
-	} streams;
+	struct http_conn *http_conn;
 };
 
 enum roh_protocol_version {

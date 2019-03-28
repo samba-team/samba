@@ -41,11 +41,8 @@
 
 struct roh_connect_channel_state {
 	struct tevent_context		*ev;
-	struct tsocket_address		*local_address;
-	struct tsocket_address		*remote_address;
 	struct cli_credentials		*credentials;
 	struct roh_connection		*roh;
-	bool				tls;
 	struct tstream_tls_params	*tls_params;
 };
 
@@ -59,11 +56,9 @@ struct tevent_req *roh_connect_channel_out_send(TALLOC_CTX *mem_ctx,
 						bool tls,
 						struct tstream_tls_params *tls_params)
 {
-	NTSTATUS				status;
 	struct tevent_req			*req;
 	struct tevent_req			*subreq;
 	struct roh_connect_channel_state	*state;
-	int					ret;
 
 	DEBUG(8, ("%s: Connecting channel out socket, RPC proxy is %s:%d (TLS: %s)\n",
 		  __func__, rpcproxy_ip_address, rpcproxy_port,
@@ -84,29 +79,7 @@ struct tevent_req *roh_connect_channel_out_send(TALLOC_CTX *mem_ctx,
 	state->ev = ev;
 	state->credentials = credentials;
 	state->roh = roh;
-	state->tls = tls;
 	state->tls_params = tls_params;
-	ret = tsocket_address_inet_from_strings(state, "ip", NULL, 0,
-						&state->local_address);
-	if (ret != 0) {
-		DEBUG(0, ("%s: Cannot create local socket address, error: %s (%d)\n",
-			  __func__, strerror(errno), errno));
-		status = map_nt_error_from_unix_common(errno);
-		tevent_req_nterror(req, status);
-		return tevent_req_post(req, ev);
-	}
-
-	ret = tsocket_address_inet_from_strings(state, "ip",
-						rpcproxy_ip_address,
-						rpcproxy_port,
-						&state->remote_address);
-	if (ret != 0) {
-		DEBUG(0, ("%s: Cannot create remote socket address, error: %s (%d)\n",
-			  __func__, strerror(errno), errno));
-		status = map_nt_error_from_unix_common(errno);
-		tevent_req_nterror(req, status);
-		return tevent_req_post(req, ev);
-	}
 
 	/* Initialize channel structure */
 	state->roh->default_channel_out = talloc_zero(roh, struct roh_channel);
@@ -114,16 +87,14 @@ struct tevent_req *roh_connect_channel_out_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	state->roh->default_channel_out->send_queue =
-			tevent_queue_create(state->roh->default_channel_out,
-					    "RoH OUT virtual channel send queue");
-	if (tevent_req_nomem(state->roh->default_channel_out->send_queue, req)) {
-		return tevent_req_post(req, ev);
-	}
-
 	state->roh->default_channel_out->channel_cookie = GUID_random();
-	subreq = tstream_inet_tcp_connect_send(state, ev, state->local_address,
-					       state->remote_address);
+
+	subreq = http_connect_send(state,
+				   ev,
+				   rpcproxy_ip_address,
+				   rpcproxy_port,
+				   credentials,
+				   tls ? tls_params : NULL);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -132,71 +103,27 @@ struct tevent_req *roh_connect_channel_out_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
-static void roh_connect_channel_out_tls_done(struct tevent_req *subreq);
 static void roh_connect_channel_out_done(struct tevent_req *subreq)
 {
-	NTSTATUS				status;
 	struct tevent_req			*req;
 	struct roh_connect_channel_state	*state;
-	int					ret;
-	int					sys_errno;
+	NTSTATUS status;
+	int ret;
 
 	req = tevent_req_callback_data(subreq, struct tevent_req);
 	state = tevent_req_data(req, struct roh_connect_channel_state);
-	ret = tstream_inet_tcp_connect_recv(subreq, &sys_errno, state,
-					    &state->roh->default_channel_out->streams.raw,
-					    NULL);
-	talloc_steal(state->roh->default_channel_out,
-		     state->roh->default_channel_out->streams.raw);
-	state->roh->default_channel_out->streams.active = state->roh->default_channel_out->streams.raw;
+
+	ret = http_connect_recv(subreq,
+				state->roh->default_channel_out,
+				&state->roh->default_channel_out->http_conn);
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
-		status = map_nt_error_from_unix_common(sys_errno);
+		status = map_nt_error_from_unix_common(ret);
 		tevent_req_nterror(req, status);
 		return;
 	}
 
-	DEBUG(8, ("%s: Socket connected\n", __func__));
-	if (state->tls) {
-		DEBUG(8, ("%s: Starting TLS handshake\n", __func__));
-		subreq = _tstream_tls_connect_send(state,
-						   state->ev,
-						   state->roh->default_channel_out->streams.raw,
-						   state->tls_params,
-						   __location__);
-		if (tevent_req_nomem(subreq, req)) {
-			return;
-		}
-		tevent_req_set_callback(subreq, roh_connect_channel_out_tls_done, req);
-		return;
-	}
-
-	tevent_req_done(req);
-}
-
-static void roh_connect_channel_out_tls_done(struct tevent_req *subreq)
-{
-	NTSTATUS				status;
-	struct tevent_req			*req;
-	struct roh_connect_channel_state	*state;
-	int					ret;
-	int					sys_errno;
-
-	req = tevent_req_callback_data(subreq, struct tevent_req);
-	state = tevent_req_data(req, struct roh_connect_channel_state);
-	ret = tstream_tls_connect_recv(subreq, &sys_errno, state,
-				       &state->roh->default_channel_out->streams.tls);
-	talloc_steal(state->roh->default_channel_out,
-		     state->roh->default_channel_out->streams.tls);
-	state->roh->default_channel_out->streams.active = state->roh->default_channel_out->streams.tls;
-	TALLOC_FREE(subreq);
-	if (ret != 0) {
-		status = map_nt_error_from_unix_common(sys_errno);
-		tevent_req_nterror(req, status);
-		return;
-	}
-	DEBUG(8, ("%s: TLS handshake completed\n", __func__));
-
+	DBG_DEBUG("HTTP connected\n");
 	tevent_req_done(req);
 }
 
@@ -235,6 +162,8 @@ struct tevent_req *roh_send_RPC_DATA_OUT_send(TALLOC_CTX *mem_ctx,
 	const char			*path;
 	char				*query;
 	char				*uri;
+	struct tstream_context          *stream = NULL;
+	struct tevent_queue             *send_queue = NULL;
 
 	DEBUG(8, ("%s: Sending RPC_OUT_DATA request\n", __func__));
 
@@ -292,10 +221,13 @@ struct tevent_req *roh_send_RPC_DATA_OUT_send(TALLOC_CTX *mem_ctx,
 	http_add_header(state, &state->request->headers,
 			"Pragma", "no-cache");
 
+	stream = http_conn_tstream(roh->default_channel_out->http_conn);
+	send_queue = http_conn_send_queue(roh->default_channel_out->http_conn);
+
 	subreq = http_send_auth_request_send(state,
 					ev,
-					roh->default_channel_out->streams.active,
-					roh->default_channel_out->send_queue,
+					stream,
+					send_queue,
 					state->request,
 					credentials,
 					lp_ctx,
@@ -358,6 +290,8 @@ struct tevent_req *roh_send_CONN_A1_send(TALLOC_CTX *mem_ctx,
 	struct dcerpc_rts		rts;
 	struct ncacn_packet		pkt;
 	struct ndr_push			*ndr;
+	struct tstream_context          *stream = NULL;
+	struct tevent_queue             *send_queue = NULL;
 
 	DEBUG(8, ("%s: Sending CONN/A1 request\n", __func__));
 
@@ -411,10 +345,13 @@ struct tevent_req *roh_send_CONN_A1_send(TALLOC_CTX *mem_ctx,
 	state->iov.iov_base = (char *) state->buffer.data;
 	state->iov.iov_len = state->buffer.length;
 
+	stream = http_conn_tstream(roh->default_channel_out->http_conn);
+	send_queue = http_conn_send_queue(roh->default_channel_out->http_conn);
+
 	subreq = tstream_writev_queue_send(mem_ctx,
 					   ev,
-					   roh->default_channel_out->streams.active,
-					   roh->default_channel_out->send_queue,
+					   stream,
+					   send_queue,
 					   &state->iov,
 					   1);
 	if (tevent_req_nomem(subreq, req)) {
@@ -475,6 +412,7 @@ struct tevent_req *roh_recv_out_channel_response_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req		*req;
 	struct tevent_req		*subreq;
 	struct roh_recv_response_state	*state;
+	struct tstream_context          *stream = NULL;
 
 	DEBUG(8, ("%s: Waiting for RPC_OUT_DATA response\n", __func__));
 
@@ -483,8 +421,10 @@ struct tevent_req *roh_recv_out_channel_response_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	stream = http_conn_tstream(roh->default_channel_out->http_conn);
+
 	subreq = http_read_response_send(state, ev,
-					 roh->default_channel_out->streams.active,
+					 stream,
 					 0); /* we'll get the content later */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
@@ -562,6 +502,7 @@ struct tevent_req *roh_recv_CONN_A3_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req		*req;
 	struct tevent_req		*subreq;
 	struct roh_recv_pdu_state	*state;
+	struct tstream_context          *stream = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct roh_recv_pdu_state);
 	if (req == NULL) {
@@ -569,8 +510,10 @@ struct tevent_req *roh_recv_CONN_A3_send(TALLOC_CTX *mem_ctx,
 	}
 
 	DEBUG(8, ("%s: Waiting for CONN/A3\n", __func__));
-	subreq = dcerpc_read_ncacn_packet_send(state, ev,
-					       roh->default_channel_out->streams.active);
+
+	stream = http_conn_tstream(roh->default_channel_out->http_conn);
+
+	subreq = dcerpc_read_ncacn_packet_send(state, ev, stream);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -649,6 +592,7 @@ struct tevent_req *roh_recv_CONN_C2_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req		*req;
 	struct tevent_req		*subreq;
 	struct roh_recv_pdu_state	*state;
+	struct tstream_context		*stream = NULL;
 
 	req = tevent_req_create(mem_ctx, &state, struct roh_recv_pdu_state);
 	if (req == NULL) {
@@ -656,8 +600,9 @@ struct tevent_req *roh_recv_CONN_C2_send(TALLOC_CTX *mem_ctx,
 	}
 
 	DEBUG(8, ("%s: Waiting for CONN/C2\n", __func__));
-	subreq = dcerpc_read_ncacn_packet_send(state, ev,
-					       roh->default_channel_out->streams.active);
+	stream = http_conn_tstream(roh->default_channel_out->http_conn);
+
+	subreq = dcerpc_read_ncacn_packet_send(state, ev, stream);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
