@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+
+import sys
+import struct
+sys.path.insert(0, "bin/python")
+import tdb
+
+
+def main(filename):
+    db = tdb.Tdb(filename)
+    pairs = []
+    longest = 0
+    for k in db:
+        v = struct.unpack("I", db[k])[0]
+        pairs.append((v, k.decode('utf-8')))
+        longest = max(len(k), longest)
+
+    pairs.sort()
+    for v, k in pairs:
+        print("%*s: %7d" % (longest, k,  v))
+
+
+if len(sys.argv) < 2:
+    print("Usage: attr_count_read <tdb-file>")
+    sys.exit(1)
+
+main(sys.argv[1])

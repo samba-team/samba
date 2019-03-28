@@ -555,3 +555,13 @@ bld.SAMBA_MODULE('ldb_group_audit_log',
             samdb
         '''
 	)
+
+
+bld.SAMBA_MODULE('count_attrs',
+	'count_attrs.c',
+	init_function='ldb_count_attrs_init',
+	module_init_name='ldb_init_module',
+	internal_module=False,
+	deps='samdb-common DSDB_MODULE_HELPERS',
+	subsystem='ldb'
+)
