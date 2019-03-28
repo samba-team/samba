@@ -865,7 +865,7 @@
 
 <refsect3>
 	<title>user disable <replaceable>username</replaceable></title>
-	<para>Disable an user account.</para>
+	<para>Disable a user account.</para>
 </refsect3>
 
 <refsect3>
@@ -885,7 +885,7 @@
 
 <refsect3>
 	<title>user enable <replaceable>username</replaceable></title>
-	<para>Enable an user account.</para>
+	<para>Enable a user account.</para>
 </refsect3>
 
 <refsect3>
@@ -919,23 +919,23 @@
 
 <refsect3>
 	<title>user password [options]</title>
-	<para>Change password for an user account (the one provided in
+	<para>Change password for a user account (the one provided in
 	authentication).</para>
 </refsect3>
 
 <refsect3>
 	<title>user setexpiry <replaceable>username</replaceable> [options]</title>
-	<para>Set the expiration of an user account.</para>
+	<para>Set the expiration of a user account.</para>
 </refsect3>
 
 <refsect3>
 	<title>user setpassword <replaceable>username</replaceable> [options]</title>
-	<para>Sets or resets the password of an user account.</para>
+	<para>Sets or resets the password of a user account.</para>
 </refsect3>
 
 <refsect3>
 	<title>user getpassword <replaceable>username</replaceable> [options]</title>
-	<para>Gets the password of an user account.</para>
+	<para>Gets the password of a user account.</para>
 </refsect3>
 
 <refsect3>
