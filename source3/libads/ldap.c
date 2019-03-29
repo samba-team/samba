@@ -1521,8 +1521,10 @@ static void ads_print_error(int ret, LDAP *ld)
 	if (ret != 0) {
 		char *ld_error = NULL;
 		ldap_get_option(ld, LDAP_OPT_ERROR_STRING, &ld_error);
-		DEBUG(10,("AD LDAP failure %d (%s):\n%s\n", ret,
-			ldap_err2string(ret), ld_error));
+		DBG_ERR("AD LDAP ERROR: %d (%s): %s\n",
+			ret,
+			ldap_err2string(ret),
+			ld_error);
 		SAFE_FREE(ld_error);
 	}
 }
@@ -1548,6 +1550,8 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 		{0, NULL},
 		(char) 1};
 	LDAPControl *controls[2];
+
+	DBG_INFO("AD LDAP: Modifying %s\n", mod_dn);
 
 	controls[0] = &PermitModify;
 	controls[1] = NULL;
@@ -1580,6 +1584,8 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	char *utf8_dn = NULL;
 	size_t converted_size;
 
+	DBG_INFO("AD LDAP: Adding %s\n", new_dn);
+
 	if (!push_utf8_talloc(talloc_tos(), &utf8_dn, new_dn, &converted_size)) {
 		DEBUG(1, ("ads_gen_add: push_utf8_talloc failed!"));
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
@@ -1611,6 +1617,8 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 		DEBUG(1, ("ads_del_dn: push_utf8_talloc failed!"));
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
+
+	DBG_INFO("AD LDAP: Deleting %s\n", del_dn);
 
 	ret = ldap_delete_s(ads->ldap.ld, utf8_dn);
 	ads_print_error(ret, ads->ldap.ld);
