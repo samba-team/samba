@@ -1653,7 +1653,7 @@ main() {
     Logs.info("Checking for bison")
     bison.configure(conf)
     if conf.env['BISON']:
-        conf.CHECK_COMMAND('%s --version  | head -n1' % conf.env.BISON,
+        conf.CHECK_COMMAND('%s --version  | head -n1' % conf.env.BISON[0],
                            msg='Using bison version',
                            define=None,
                            on_target=False)
@@ -1662,7 +1662,7 @@ main() {
     conf.find_program('flex', var='FLEX')
     if conf.env['FLEX']:
         conf.env.FLEXFLAGS = ['-t']
-        conf.CHECK_COMMAND('%s --version' % conf.env.FLEX,
+        conf.CHECK_COMMAND('%s --version' % conf.env.FLEX[0],
                            msg='Using flex version',
                            define=None,
                            on_target=False)
