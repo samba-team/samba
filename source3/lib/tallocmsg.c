@@ -30,21 +30,32 @@ static void msg_pool_usage(struct messaging_context *msg_ctx,
 			   struct server_id src,
 			   DATA_BLOB *data)
 {
-	char *report;
+	char *report = NULL;
+	int iov_size = 0;
+	struct iovec iov[1];
 
 	SMB_ASSERT(msg_type == MSG_REQ_POOL_USAGE);
 
 	DEBUG(2,("Got POOL_USAGE\n"));
 
 	report = talloc_report_str(msg_ctx, NULL);
-
 	if (report != NULL) {
-		messaging_send_buf(msg_ctx, src, MSG_POOL_USAGE,
-				   (uint8_t *)report,
-				   talloc_get_size(report)-1);
+		iov[iov_size].iov_base = report;
+		iov[iov_size].iov_len = talloc_get_size(report) - 1;
+		iov_size++;
 	}
 
-	talloc_free(report);
+	if (iov_size) {
+		messaging_send_iov(msg_ctx,
+				   src,
+				   MSG_POOL_USAGE,
+				   iov,
+				   iov_size,
+				   NULL,
+				   0);
+	}
+
+	TALLOC_FREE(report);
 }
 
 /**
