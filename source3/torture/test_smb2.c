@@ -1617,7 +1617,7 @@ bool run_smb2_session_reauth(int dummy)
 				    cli->timeout,
 				    cli->smb2.session,
 				    cli->smb2.tcon,
-				    SMB2_GETINFO_SECURITY,
+				    SMB2_0_INFO_SECURITY,
 				    0, /* in_file_info_class */
 				    1024, /* in_max_output_length */
 				    NULL, /* in_input_buffer */
@@ -1637,7 +1637,7 @@ bool run_smb2_session_reauth(int dummy)
 				    cli->timeout,
 				    cli->smb2.session,
 				    cli->smb2.tcon,
-				    SMB2_GETINFO_FILE,
+				    SMB2_0_INFO_FILE,
 				    in_file_info_class,
 				    1024, /* in_max_output_length */
 				    NULL, /* in_input_buffer */
@@ -1660,7 +1660,7 @@ bool run_smb2_session_reauth(int dummy)
 				  cli->timeout,
 				  cli->smb2.session,
 				  cli->smb2.tcon,
-				  SMB2_GETINFO_FILE,
+				  SMB2_0_INFO_FILE,
 				  in_file_info_class,
 				  &in_input_buffer,
 				  0, /* in_additional_info */
@@ -1766,7 +1766,7 @@ bool run_smb2_session_reauth(int dummy)
 				    cli->timeout,
 				    cli->smb2.session,
 				    cli->smb2.tcon,
-				    SMB2_GETINFO_SECURITY,
+				    SMB2_0_INFO_SECURITY,
 				    0, /* in_file_info_class */
 				    1024, /* in_max_output_length */
 				    NULL, /* in_input_buffer */
@@ -1786,7 +1786,7 @@ bool run_smb2_session_reauth(int dummy)
 				    cli->timeout,
 				    cli->smb2.session,
 				    cli->smb2.tcon,
-				    SMB2_GETINFO_FILE,
+				    SMB2_0_INFO_FILE,
 				    in_file_info_class,
 				    1024, /* in_max_output_length */
 				    NULL, /* in_input_buffer */
@@ -1809,7 +1809,7 @@ bool run_smb2_session_reauth(int dummy)
 				  cli->timeout,
 				  cli->smb2.session,
 				  cli->smb2.tcon,
-				  SMB2_GETINFO_FILE,
+				  SMB2_0_INFO_FILE,
 				  in_file_info_class,
 				  &in_input_buffer,
 				  0, /* in_additional_info */
@@ -1825,7 +1825,7 @@ bool run_smb2_session_reauth(int dummy)
 				    cli->timeout,
 				    cli->smb2.session,
 				    cli->smb2.tcon,
-				    SMB2_GETINFO_FILE,
+				    SMB2_0_INFO_FILE,
 				    in_file_info_class,
 				    1024, /* in_max_output_length */
 				    NULL, /* in_input_buffer */

@@ -184,7 +184,7 @@ static bool test_compound_break(struct torture_context *tctx,
 
 	ZERO_STRUCT(gf);
 	gf.in.file.handle = h;
-	gf.in.info_type = SMB2_GETINFO_FILE;
+	gf.in.info_type = SMB2_0_INFO_FILE;
 	gf.in.info_class = 0x16;
 	gf.in.output_buffer_length = 0x1000;
 	gf.in.input_buffer = data_blob_null;
@@ -1226,7 +1226,7 @@ static bool test_compound_interim2(struct torture_context *tctx,
 
     ZERO_STRUCT(gf);
     gf.in.file.handle = hd;
-    gf.in.info_type   = SMB2_GETINFO_FILE;
+    gf.in.info_type   = SMB2_0_INFO_FILE;
     gf.in.info_class  = 0x04; /* FILE_BASIC_INFORMATION */
     gf.in.output_buffer_length = 0x1000;
     gf.in.input_buffer = data_blob_null;

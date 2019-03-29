@@ -285,7 +285,7 @@ static bool torture_smb2_qfs_buffercheck(struct torture_context *tctx)
 		}
 
 		ZERO_STRUCT(b);
-		b.in.info_type			= SMB2_GETINFO_FS;
+		b.in.info_type			= SMB2_0_INFO_FILESYSTEM;
 		b.in.info_class			= levels[i].level;
 		b.in.file.handle		= handle;
 		b.in.output_buffer_length	= 65535;
@@ -366,7 +366,7 @@ static bool torture_smb2_qfile_buffercheck(struct torture_context *tctx)
 		struct smb2_getinfo b;
 
 		ZERO_STRUCT(b);
-		b.in.info_type			= SMB2_GETINFO_FILE;
+		b.in.info_type			= SMB2_0_INFO_FILE;
 		b.in.info_class			= levels[i].level;
 		b.in.file.handle		= handle;
 		b.in.output_buffer_length	= 65535;
@@ -420,7 +420,7 @@ static bool torture_smb2_qsec_buffercheck(struct torture_context *tctx)
 	handle = c.out.file.handle;
 
 	ZERO_STRUCT(b);
-	b.in.info_type			= SMB2_GETINFO_SECURITY;
+	b.in.info_type			= SMB2_0_INFO_SECURITY;
 	b.in.info_class			= 0;
 	b.in.file.handle		= handle;
 	b.in.output_buffer_length	= 0;

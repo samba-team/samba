@@ -112,9 +112,9 @@ NTSTATUS smb2_getinfo(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 */
 uint16_t smb2_getinfo_map_level(uint16_t level, uint8_t info_class)
 {
-	if (info_class == SMB2_GETINFO_FILE &&
+	if (info_class == SMB2_0_INFO_FILE &&
 	    level == RAW_FILEINFO_SEC_DESC) {
-		return SMB2_GETINFO_SECURITY;
+		return SMB2_0_INFO_SECURITY;
 	}
 	if ((level & 0xFF) == info_class) {
 		return level;
@@ -132,7 +132,8 @@ uint16_t smb2_getinfo_map_level(uint16_t level, uint8_t info_class)
 struct smb2_request *smb2_getinfo_file_send(struct smb2_tree *tree, union smb_fileinfo *io)
 {
 	struct smb2_getinfo b;
-	uint16_t smb2_level = smb2_getinfo_map_level(io->generic.level, SMB2_GETINFO_FILE);
+	uint16_t smb2_level = smb2_getinfo_map_level(
+		io->generic.level, SMB2_0_INFO_FILE);
 	
 	if (smb2_level == 0) {
 		return NULL;
@@ -190,7 +191,8 @@ NTSTATUS smb2_getinfo_file(struct smb2_tree *tree, TALLOC_CTX *mem_ctx,
 struct smb2_request *smb2_getinfo_fs_send(struct smb2_tree *tree, union smb_fsinfo *io)
 {
 	struct smb2_getinfo b;
-	uint16_t smb2_level = smb2_getinfo_map_level(io->generic.level, SMB2_GETINFO_FS);
+	uint16_t smb2_level = smb2_getinfo_map_level(
+		io->generic.level, SMB2_0_INFO_FILESYSTEM);
 	
 	if (smb2_level == 0) {
 		return NULL;

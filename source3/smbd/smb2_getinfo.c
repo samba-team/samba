@@ -288,7 +288,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (in_info_type) {
-	case SMB2_GETINFO_FILE:
+	case SMB2_0_INFO_FILE:
 	{
 		uint16_t file_info_level;
 		char *data = NULL;
@@ -428,7 +428,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	case SMB2_GETINFO_FS:
+	case SMB2_0_INFO_FILESYSTEM:
 	{
 		uint16_t file_info_level;
 		char *data = NULL;
@@ -481,7 +481,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	case SMB2_GETINFO_SECURITY:
+	case SMB2_0_INFO_SECURITY:
 	{
 		uint8_t *p_marshalled_sd = NULL;
 		size_t sd_size = 0;
@@ -528,7 +528,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	case SMB2_GETINFO_QUOTA: {
+	case SMB2_0_INFO_QUOTA: {
 #ifdef HAVE_SYS_QUOTAS
 		struct smb2_query_quota_info info;
 		enum ndr_err_code err;

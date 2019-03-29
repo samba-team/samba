@@ -2675,7 +2675,7 @@ NTSTATUS cli_smb2_get_fs_full_size_info(struct cli_state *cli,
 	status = cli_smb2_query_info_fnum(
 		cli,
 		fnum,
-		SMB2_GETINFO_FS, /* in_info_type */
+		SMB2_0_INFO_FILESYSTEM, /* in_info_type */
 		SMB_FS_FULL_SIZE_INFORMATION - 1000, /* in_file_info_class */
 		0xFFFF, /* in_max_output_length */
 		NULL, /* in_input_buffer */
@@ -2846,7 +2846,7 @@ NTSTATUS cli_smb2_get_fs_volume_info(struct cli_state *cli,
 	status = cli_smb2_query_info_fnum(
 		cli,
 		fnum,
-		SMB2_GETINFO_FS, /* in_info_type */
+		SMB2_0_INFO_FILESYSTEM, /* in_info_type */
 		/* in_file_info_class */
 		SMB_FS_VOLUME_INFORMATION - 1000,
 		0xFFFF, /* in_max_output_length */

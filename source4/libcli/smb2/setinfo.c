@@ -83,7 +83,8 @@ NTSTATUS smb2_setinfo(struct smb2_tree *tree, struct smb2_setinfo *io)
 struct smb2_request *smb2_setinfo_file_send(struct smb2_tree *tree, union smb_setfileinfo *io)
 {
 	struct smb2_setinfo b;
-	uint16_t smb2_level = smb2_getinfo_map_level(io->generic.level, SMB2_GETINFO_FILE);
+	uint16_t smb2_level = smb2_getinfo_map_level(
+		io->generic.level, SMB2_0_INFO_FILE);
 	struct smb2_request *req;
 	
 	if (smb2_level == 0) {

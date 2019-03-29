@@ -259,11 +259,11 @@
 #define SMB2_CONTINUE_FLAG_INDEX      0x04
 #define SMB2_CONTINUE_FLAG_REOPEN     0x10
 
-/* getinfo classes */
-#define SMB2_GETINFO_FILE               0x01
-#define SMB2_GETINFO_FS                 0x02
-#define SMB2_GETINFO_SECURITY           0x03
-#define SMB2_GETINFO_QUOTA              0x04
+/* get/setinfo classes, see [MS-SMB2] 2.2.37 and 2.2.39 */
+#define SMB2_0_INFO_FILE                0x01
+#define SMB2_0_INFO_FILESYSTEM          0x02
+#define SMB2_0_INFO_SECURITY            0x03
+#define SMB2_0_INFO_QUOTA               0x04
 
 #define SMB2_CLOSE_FLAGS_FULL_INFORMATION (0x01)
 

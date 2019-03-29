@@ -389,7 +389,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 	}
 
 	switch (in_info_type) {
-	case 0x01:/* SMB2_SETINFO_FILE */
+	case SMB2_0_INFO_FILE:
 	{
 		uint16_t file_info_level;
 		char *data;
@@ -530,7 +530,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	case 0x02:/* SMB2_SETINFO_FS */
+	case SMB2_0_INFO_FILESYSTEM:
 	{
 		uint16_t file_info_level = in_file_info_class + 1000;
 
@@ -548,7 +548,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	case 0x03:/* SMB2_SETINFO_SECURITY */
+	case SMB2_0_INFO_SECURITY:
 	{
 		if (!CAN_WRITE(conn)) {
 			tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
@@ -567,7 +567,7 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
-	case 0x04:/* SMB2_SETINFO_QUOTA */
+	case SMB2_0_INFO_QUOTA:
 	{
 #ifdef HAVE_SYS_QUOTAS
 		struct file_quota_information info = {0};

@@ -185,16 +185,16 @@ static NTSTATUS smb2srv_getinfo_security(struct smb2srv_getinfo_op *op, uint8_t 
 static NTSTATUS smb2srv_getinfo_backend(struct smb2srv_getinfo_op *op)
 {
 	switch (op->info->in.info_type) {
-	case SMB2_GETINFO_FILE:
+	case SMB2_0_INFO_FILE:
 		return smb2srv_getinfo_file(op, op->info->in.info_class);
 
-	case SMB2_GETINFO_FS:
+	case SMB2_0_INFO_FILESYSTEM:
 		return smb2srv_getinfo_fs(op, op->info->in.info_class);
 
-	case SMB2_GETINFO_SECURITY:
+	case SMB2_0_INFO_SECURITY:
 		return smb2srv_getinfo_security(op, op->info->in.info_class);
 
-	case SMB2_GETINFO_QUOTA:
+	case SMB2_0_INFO_QUOTA:
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -338,16 +338,16 @@ static NTSTATUS smb2srv_setinfo_backend(struct smb2srv_setinfo_op *op)
 	smb2_level = 0xFF & (op->info->in.level>>8);
 
 	switch (smb2_class) {
-	case SMB2_GETINFO_FILE:
+	case SMB2_0_INFO_FILE:
 		return smb2srv_setinfo_file(op, smb2_level);
 
-	case SMB2_GETINFO_FS:
+	case SMB2_0_INFO_FILESYSTEM:
 		return smb2srv_setinfo_fs(op, smb2_level);
 
-	case SMB2_GETINFO_SECURITY:
+	case SMB2_0_INFO_SECURITY:
 		return smb2srv_setinfo_security(op, smb2_level);
 
-	case 0x04:
+	case SMB2_0_INFO_QUOTA:
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
