@@ -132,7 +132,9 @@ class ConfigurationContext(Configure.ConfigurationContext):
         return super(ConfigurationContext, self).init_dirs()
 
 def find_program_samba(self, *k, **kw):
-    kw['mandatory'] = False
+    # Override the waf default set in the @conf decorator in Configure.py
+    if 'mandatory' not in kw:
+        kw['mandatory'] = False
     ret = self.find_program_old(*k, **kw)
     return ret
 Configure.ConfigurationContext.find_program_old = Configure.ConfigurationContext.find_program
