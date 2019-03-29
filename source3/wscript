@@ -13,7 +13,7 @@ import build.charset
 from wafsamba import samba_utils
 from samba_utils import TO_LIST
 import samba3
-from waflib.Tools import bison, flex
+from waflib.Tools import bison
 
 default_prefix = Options.default_prefix = '/usr/local/samba'
 
@@ -1647,7 +1647,8 @@ main() {
             conf.fatal("Spotlight support requested but bison missing")
         conf.CHECK_COMMAND('%s --version | head -n1' % conf.env['BISON'], msg='Using bison version', define=None, on_target=False)
         Logs.info("Requested Spotlight support, checking for flex")
-        flex.configure(conf)
+        conf.find_program('flex', var='FLEX')
+        conf.env.FLEXFLAGS = ['-t']
         if not conf.env['FLEX']:
             conf.fatal("Spotlight support requested but flex missing")
         conf.CHECK_COMMAND('%s --version' % conf.env['FLEX'], msg='Using flex version', define=None, on_target=False)
