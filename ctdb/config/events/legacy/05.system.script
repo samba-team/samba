@@ -132,9 +132,6 @@ monitor_memory_usage ()
     if [ -z "$CTDB_MONITOR_MEMORY_USAGE" ] ; then
 	CTDB_MONITOR_MEMORY_USAGE=80
     fi
-    if [ -z "$CTDB_MONITOR_SWAP_USAGE" ] ; then
-	CTDB_MONITOR_SWAP_USAGE=25
-    fi
 
     _meminfo=$(get_proc "meminfo")
     # Intentional word splitting here
@@ -149,20 +146,18 @@ $1 == "SwapFree:"     { swapfree  = $2 }
 $1 == "SwapTotal:"    { swaptotal = $2 }
 END {
     if (memavail != 0) { memfree = memavail ; }
-    if (memtotal != 0) { print int((memtotal - memfree) / memtotal * 100) ; } else { print 0 ; }
-    if (swaptotal != 0) { print int((swaptotal - swapfree) / swaptotal * 100) ; } else { print 0 ; }
+    if (memtotal + swaptotal != 0) {
+	usedtotal = memtotal - memfree + swaptotal - swapfree
+	print int(usedtotal / (memtotal + swaptotal) * 100)
+    } else {
+	print 0
+    }
 }')
     _mem_usage="$1"
-    _swap_usage="$2"
 
     check_thresholds "System memory" \
 		     "$CTDB_MONITOR_MEMORY_USAGE" \
 		     "$_mem_usage" \
-		     dump_memory_info
-
-    check_thresholds "System swap" \
-		     "$CTDB_MONITOR_SWAP_USAGE" \
-		     "$_swap_usage" \
 		     dump_memory_info
 }
 
