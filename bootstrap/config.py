@@ -42,11 +42,14 @@ COMMON = [
     'git',
     'htop',
     'make',
+    'patch',
     'perl',
     'psmisc',  # for pstree in test
     'rng-tools',
+    'rsync',
     'sed',
     'sudo',  # docker images has no sudo by default
+    'tar',
     'tree',
 ]
 
