@@ -998,6 +998,7 @@ sub provision_raw_step2($$$)
 	$ldbmodify .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$ldbmodify .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
 	$ldbmodify .= Samba::bindir_path($self, "ldbmodify");
+	$ldbmodify .=  " --configfile=$ctx->{smb_conf}";
 	my $base_dn = "DC=".join(",DC=", split(/\./, $ctx->{realm}));
 
 	if ($ctx->{server_role} ne "domain controller") {
@@ -1098,7 +1099,7 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 	$ldbmodify .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$ldbmodify .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
 	$ldbmodify .= Samba::bindir_path($self, "ldbmodify");
-
+	$ldbmodify .=  " --configfile=$ctx->{smb_conf}";
 	my $base_dn = "DC=".join(",DC=", split(/\./, $ctx->{realm}));
 	my $user_dn = "cn=jane,cn=users,$base_dn";
 
