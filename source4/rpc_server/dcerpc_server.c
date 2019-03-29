@@ -3222,7 +3222,7 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx,
 		for (iface = e->interface_list; iface; iface = iface->next) {
 			DEBUGADD(0, ("%s ", iface->iface.name));
 		}
-		DEBUGADD(0, ("failed - %s",
+		DEBUGADD(0, ("failed - %s\n",
 			     nt_errstr(status)));
 		return status;
 	}
