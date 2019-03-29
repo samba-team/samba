@@ -934,9 +934,20 @@ static void cli_posix_chown_chmod_internal_done(struct tevent_req *subreq)
 	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
+static NTSTATUS cli_posix_chown_chmod_internal_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
 /****************************************************************************
  chmod a file (UNIX extensions).
 ****************************************************************************/
+
+struct cli_posix_chmod_state {
+	uint8_t dummy;
+};
+
+static void cli_posix_chmod_done(struct tevent_req *subreq);
 
 struct tevent_req *cli_posix_chmod_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -944,11 +955,33 @@ struct tevent_req *cli_posix_chmod_send(TALLOC_CTX *mem_ctx,
 					const char *fname,
 					mode_t mode)
 {
-	return cli_posix_chown_chmod_internal_send(mem_ctx, ev, cli,
-			fname,
-			unix_perms_to_wire(mode),
-			SMB_UID_NO_CHANGE,
-			SMB_GID_NO_CHANGE);
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_posix_chmod_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_posix_chmod_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = cli_posix_chown_chmod_internal_send(
+		state,
+		ev,
+		cli,
+		fname,
+		unix_perms_to_wire(mode),
+		SMB_UID_NO_CHANGE,
+		SMB_GID_NO_CHANGE);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_posix_chmod_done, req);
+	return req;
+}
+
+static void cli_posix_chmod_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_posix_chown_chmod_internal_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 NTSTATUS cli_posix_chmod_recv(struct tevent_req *req)
@@ -1002,6 +1035,12 @@ NTSTATUS cli_posix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
  chown a file (UNIX extensions).
 ****************************************************************************/
 
+struct cli_posix_chown_state {
+	uint8_t dummy;
+};
+
+static void cli_posix_chown_done(struct tevent_req *subreq);
+
 struct tevent_req *cli_posix_chown_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,
@@ -1009,11 +1048,34 @@ struct tevent_req *cli_posix_chown_send(TALLOC_CTX *mem_ctx,
 					uid_t uid,
 					gid_t gid)
 {
-	return cli_posix_chown_chmod_internal_send(mem_ctx, ev, cli,
-			fname,
-			SMB_MODE_NO_CHANGE,
-			(uint32_t)uid,
-			(uint32_t)gid);
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_posix_chown_state *state = NULL;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct cli_posix_chown_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = cli_posix_chown_chmod_internal_send(
+		state,
+		ev,
+		cli,
+		fname,
+		SMB_MODE_NO_CHANGE,
+		(uint32_t)uid,
+		(uint32_t)gid);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_posix_chown_done, req);
+	return req;
+}
+
+static void cli_posix_chown_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_posix_chown_chmod_internal_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 NTSTATUS cli_posix_chown_recv(struct tevent_req *req)
