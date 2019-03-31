@@ -600,7 +600,8 @@ static int samba_dsdb_init(struct ldb_module *module)
 
 	talloc_steal(ldb, partition_msg);
 
-	/* Now prepare the module chain.  Oddly, we must give it to ldb_load_modules_list in REVERSE */
+	/* Now prepare the module chain. Oddly, we must give it to
+	 * ldb_module_load_list in REVERSE */
 	for (len = 0; final_module_list[len]; len++) { /* noop */};
 
 	reverse_module_list = talloc_array(tmp_ctx, const char *, len+1);
@@ -621,7 +622,8 @@ static int samba_dsdb_init(struct ldb_module *module)
 	CHECK_LDB_RET(ret);
 
 	talloc_free(tmp_ctx);
-	/* Set this as the 'next' module, so that we effectivly append it to module chain */
+	/* Set this as the 'next' module, so that we effectively append it to
+	 * module chain */
 	ldb_module_set_next(module, module_chain);
 
 	ret = ldb_next_read_lock(module);
