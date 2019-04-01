@@ -673,11 +673,19 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	}
 #endif
 
+	/*
+	 * We are setting 'dns_lookup_kdc' to true, because we want to lookup
+	 * KDCs which are not configured via DNS SRV records, eg. if we do:
+	 *
+	 *     net ads join -Uadmin@otherdomain
+	 */
 	file_contents =
 	    talloc_asprintf(fname,
-			    "[libdefaults]\n\tdefault_realm = %s\n"
+			    "[libdefaults]\n"
+			    "\tdefault_realm = %s\n"
 			    "%s"
-			    "\tdns_lookup_realm = false\n\n"
+			    "\tdns_lookup_realm = false\n"
+			    "\tdns_lookup_kdc = true\n\n"
 			    "[realms]\n\t%s = {\n"
 			    "%s\t}\n"
 			    "%s\n",
