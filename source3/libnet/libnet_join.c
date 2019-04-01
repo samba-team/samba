@@ -2664,8 +2664,8 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 			return WERR_NERR_DEFAULTJOINREQUIRED;
 		}
 
-		DEBUG(5, ("failed to precreate account in ou %s: %s",
-			r->in.account_ou, ads_errstr(ads_status)));
+		DBG_INFO("Failed to pre-create account in OU %s: %s\n",
+			 r->in.account_ou, ads_errstr(ads_status));
 	}
  rpc_join:
 
