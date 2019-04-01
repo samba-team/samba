@@ -1259,6 +1259,22 @@ class cmd_domain_level(Command):
 NEVER_TIMESTAMP = int(-0x8000000000000000)
 
 
+def timestamp_to_mins(timestamp_str):
+    """Converts a timestamp in -100 nanosecond units to minutes"""
+    # treat a timestamp of 'never' the same as zero (this should work OK for
+    # most settings, and it displays better than trying to convert
+    # -0x8000000000000000 to minutes)
+    if int(timestamp_str) == NEVER_TIMESTAMP:
+        return 0
+    else:
+        return abs(int(timestamp_str)) / (1e7 * 60)
+
+
+def timestamp_to_days(timestamp_str):
+    """Converts a timestamp in -100 nanosecond units to days"""
+    return timestamp_to_mins(timestamp_str) / (60 * 24)
+
+
 class cmd_domain_passwordsettings_show(Command):
     """Display current password settings for the domain."""
 
@@ -1293,18 +1309,14 @@ class cmd_domain_passwordsettings_show(Command):
             pwd_hist_len = int(res[0]["pwdHistoryLength"][0])
             cur_min_pwd_len = int(res[0]["minPwdLength"][0])
             # ticks -> days
-            cur_min_pwd_age = int(abs(int(res[0]["minPwdAge"][0])) / (1e7 * 60 * 60 * 24))
-            if int(res[0]["maxPwdAge"][0]) == NEVER_TIMESTAMP:
-                cur_max_pwd_age = 0
-            else:
-                cur_max_pwd_age = int(abs(int(res[0]["maxPwdAge"][0])) / (1e7 * 60 * 60 * 24))
+            cur_min_pwd_age = timestamp_to_days(res[0]["minPwdAge"][0])
+            cur_max_pwd_age = timestamp_to_days(res[0]["maxPwdAge"][0])
+
             cur_account_lockout_threshold = int(res[0]["lockoutThreshold"][0])
+
             # ticks -> mins
-            if int(res[0]["lockoutDuration"][0]) == NEVER_TIMESTAMP:
-                cur_account_lockout_duration = 0
-            else:
-                cur_account_lockout_duration = abs(int(res[0]["lockoutDuration"][0])) / (1e7 * 60)
-            cur_reset_account_lockout_after = abs(int(res[0]["lockOutObservationWindow"][0])) / (1e7 * 60)
+            cur_account_lockout_duration = timestamp_to_mins(res[0]["lockoutDuration"][0])
+            cur_reset_account_lockout_after = timestamp_to_mins(res[0]["lockOutObservationWindow"][0])
         except Exception as e:
             raise CommandError("Could not retrieve password properties!", e)
 
