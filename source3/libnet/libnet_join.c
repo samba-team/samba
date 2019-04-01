@@ -2598,12 +2598,14 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		}
 
 		/* The domain parameter is only used as modifier
-		 * to krb5.conf file name. .JOIN is is not a valid
+		 * to krb5.conf file name. _JOIN_ is is not a valid
 		 * NetBIOS name so it cannot clash with another domain
 		 * -- Uri.
 		 */
-		create_local_private_krb5_conf_for_domain(
-		    pre_connect_realm, ".JOIN", sitename, &ss);
+		create_local_private_krb5_conf_for_domain(pre_connect_realm,
+							  "_JOIN_",
+							  sitename,
+							  &ss);
 	}
 
 	status = libnet_join_lookup_dc_rpc(mem_ctx, r, &cli);
