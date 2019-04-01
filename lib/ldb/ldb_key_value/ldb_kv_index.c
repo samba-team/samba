@@ -208,6 +208,11 @@ int ldb_kv_index_transaction_start(struct ldb_module *module)
 		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
+	ldb_kv->idxptr->itdb = tdb_open(NULL, 1000, TDB_INTERNAL, O_RDWR, 0);
+	if (ldb_kv->idxptr->itdb == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -715,14 +720,6 @@ static int ldb_kv_dn_list_store(struct ldb_module *module,
 
 	if (ldb_kv->idxptr == NULL) {
 		return ldb_kv_dn_list_store_full(module, ldb_kv, dn, list);
-	}
-
-	if (ldb_kv->idxptr->itdb == NULL) {
-		ldb_kv->idxptr->itdb =
-		    tdb_open(NULL, 1000, TDB_INTERNAL, O_RDWR, 0);
-		if (ldb_kv->idxptr->itdb == NULL) {
-			return LDB_ERR_OPERATIONS_ERROR;
-		}
 	}
 
 	key.dptr = discard_const_p(unsigned char, ldb_dn_get_linearized(dn));
