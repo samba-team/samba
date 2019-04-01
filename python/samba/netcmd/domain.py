@@ -1254,6 +1254,10 @@ class cmd_domain_level(Command):
             raise CommandError("invalid argument: '%s' (choose from 'show', 'raise')" % subcommand)
 
 
+# In MS AD, setting a timeout to '(never)' corresponds to this value
+NEVER_TIMESTAMP = int(-0x8000000000000000)
+
+
 class cmd_domain_passwordsettings_show(Command):
     """Display current password settings for the domain."""
 
@@ -1289,13 +1293,13 @@ class cmd_domain_passwordsettings_show(Command):
             cur_min_pwd_len = int(res[0]["minPwdLength"][0])
             # ticks -> days
             cur_min_pwd_age = int(abs(int(res[0]["minPwdAge"][0])) / (1e7 * 60 * 60 * 24))
-            if int(res[0]["maxPwdAge"][0]) == -0x8000000000000000:
+            if int(res[0]["maxPwdAge"][0]) == NEVER_TIMESTAMP:
                 cur_max_pwd_age = 0
             else:
                 cur_max_pwd_age = int(abs(int(res[0]["maxPwdAge"][0])) / (1e7 * 60 * 60 * 24))
             cur_account_lockout_threshold = int(res[0]["lockoutThreshold"][0])
             # ticks -> mins
-            if int(res[0]["lockoutDuration"][0]) == -0x8000000000000000:
+            if int(res[0]["lockoutDuration"][0]) == NEVER_TIMESTAMP:
                 cur_account_lockout_duration = 0
             else:
                 cur_account_lockout_duration = abs(int(res[0]["lockoutDuration"][0])) / (1e7 * 60)
@@ -1454,7 +1458,7 @@ class cmd_domain_passwordsettings_set(Command):
 
             # days -> ticks
             if max_pwd_age == 0:
-                max_pwd_age_ticks = -0x8000000000000000
+                max_pwd_age_ticks = NEVER_TIMESTAMP
             else:
                 max_pwd_age_ticks = -int(max_pwd_age * (24 * 60 * 60 * 1e7))
 
@@ -1473,7 +1477,7 @@ class cmd_domain_passwordsettings_set(Command):
 
             # minutes -> ticks
             if account_lockout_duration == 0:
-                account_lockout_duration_ticks = -0x8000000000000000
+                account_lockout_duration_ticks = NEVER_TIMESTAMP
             else:
                 account_lockout_duration_ticks = -int(account_lockout_duration * (60 * 1e7))
 
@@ -1502,7 +1506,7 @@ class cmd_domain_passwordsettings_set(Command):
 
             # minutes -> ticks
             if reset_account_lockout_after == 0:
-                reset_account_lockout_after_ticks = -0x8000000000000000
+                reset_account_lockout_after_ticks = NEVER_TIMESTAMP
             else:
                 reset_account_lockout_after_ticks = -int(reset_account_lockout_after * (60 * 1e7))
 
