@@ -52,7 +52,6 @@
 #include <sys/wait.h>
 
 #include "ldb_key_value/ldb_kv.c"
-#include "ldb_key_value/ldb_kv_cache.c"
 #include "ldb_key_value/ldb_kv_index.c"
 #include "ldb_key_value/ldb_kv_search.c"
 
@@ -63,7 +62,18 @@
 #endif /* TEST_BE */
 
 #define NUM_RECS 1024
-
+int ldb_kv_cache_reload(struct ldb_module *module) {
+	return LDB_SUCCESS;
+}
+int ldb_kv_cache_load(struct ldb_module *module) {
+	return LDB_SUCCESS;
+}
+int ldb_kv_check_at_attributes_values(const struct ldb_val *value) {
+	return LDB_SUCCESS;
+}
+int ldb_kv_increase_sequence_number(struct ldb_module *module) {
+	return LDB_SUCCESS;
+}
 
 struct test_ctx {
 };
@@ -158,6 +168,65 @@ static void test_default_index_cache_size(void **state)
 	TALLOC_FREE(module);
 }
 
+static int db_size = 0;
+static size_t mock_get_size(struct ldb_kv_private *ldb_kv) {
+	return db_size;
+}
+
+static int mock_iterate(
+	struct ldb_kv_private *ldb_kv,
+	ldb_kv_traverse_fn fn,
+	void *ctx) {
+	return 1;
+}
+
+/*
+ * Test that the index cache is correctly sized by the re_index call
+ */
+static void test_reindex_cache_size(void **state)
+{
+	struct test_ctx *test_ctx = talloc_get_type_abort(
+		*state,
+		struct test_ctx);
+	struct ldb_module *module = NULL;
+	struct ldb_kv_private *ldb_kv = NULL;
+	int ret = LDB_SUCCESS;
+	const struct kv_db_ops ops = {
+		.iterate = mock_iterate,
+		.get_size = mock_get_size,
+	};
+
+	module = talloc_zero(test_ctx, struct ldb_module);
+	ldb_kv = talloc_zero(test_ctx, struct ldb_kv_private);
+	ldb_kv->kv_ops = &ops;
+	ldb_module_set_private(module, ldb_kv);
+
+	/*
+	 * Use a value less than the DEFAULT_INDEX_CACHE_SIZE
+	 * Should get the DEFAULT_INDEX_CACHE_SIZE
+	 */
+	db_size = DEFAULT_INDEX_CACHE_SIZE - 1;
+	ret = ldb_kv_reindex(module);
+	assert_int_equal(LDB_SUCCESS, ret);
+
+	assert_int_equal(
+		DEFAULT_INDEX_CACHE_SIZE,
+		tdb_hash_size(ldb_kv->idxptr->itdb));
+
+	/*
+	 * Use a value greater than the DEFAULT_INDEX_CACHE_SIZE
+	 * Should get the value specified.
+	 */
+	db_size = DEFAULT_INDEX_CACHE_SIZE + 1;
+	ret = ldb_kv_reindex(module);
+	assert_int_equal(LDB_SUCCESS, ret);
+
+	assert_int_equal(db_size, tdb_hash_size(ldb_kv->idxptr->itdb));
+
+	TALLOC_FREE(ldb_kv);
+	TALLOC_FREE(module);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -167,6 +236,10 @@ int main(int argc, const char **argv)
 			teardown),
 		cmocka_unit_test_setup_teardown(
 			test_default_index_cache_size,
+			setup,
+			teardown),
+		cmocka_unit_test_setup_teardown(
+			test_reindex_cache_size,
 			setup,
 			teardown),
 	};

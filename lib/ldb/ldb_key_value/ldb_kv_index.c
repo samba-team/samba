@@ -3092,6 +3092,7 @@ int ldb_kv_reindex(struct ldb_module *module)
 	    ldb_module_get_private(module), struct ldb_kv_private);
 	int ret;
 	struct ldb_kv_reindex_context ctx;
+	size_t index_cache_size = 0;
 
 	/*
 	 * Only triggered after a modification, but make clear we do
@@ -3112,7 +3113,16 @@ int ldb_kv_reindex(struct ldb_module *module)
 	 */
 	ldb_kv_index_transaction_cancel(module);
 
-	ret = ldb_kv_index_transaction_start(module, DEFAULT_INDEX_CACHE_SIZE);
+	/*
+	 * Calculate the size of the index cache that we'll need for
+	 * the re-index
+	 */
+	index_cache_size = ldb_kv->kv_ops->get_size(ldb_kv);
+	if (index_cache_size < DEFAULT_INDEX_CACHE_SIZE) {
+		index_cache_size = DEFAULT_INDEX_CACHE_SIZE;
+	}
+
+	ret = ldb_kv_index_transaction_start(module, index_cache_size);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
