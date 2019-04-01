@@ -27,6 +27,10 @@
 
 static struct memcache *global_cache;
 
+struct memcache_talloc_value {
+	void *ptr;
+};
+
 struct memcache_element {
 	struct rb_node rb_node;
 	struct memcache_element *prev, *next;
@@ -180,19 +184,19 @@ void *memcache_lookup_talloc(struct memcache *cache, enum memcache_number n,
 			     DATA_BLOB key)
 {
 	DATA_BLOB value;
-	void *result;
+	struct memcache_talloc_value mtv;
 
 	if (!memcache_lookup(cache, n, key, &value)) {
 		return NULL;
 	}
 
-	if (value.length != sizeof(result)) {
+	if (value.length != sizeof(mtv)) {
 		return NULL;
 	}
 
-	memcpy(&result, value.data, sizeof(result));
+	memcpy(&mtv, value.data, sizeof(mtv));
 
-	return result;
+	return mtv.ptr;
 }
 
 static void memcache_delete_element(struct memcache *cache,
@@ -204,12 +208,12 @@ static void memcache_delete_element(struct memcache *cache,
 
 	if (memcache_is_talloc(e->n)) {
 		DATA_BLOB cache_key, cache_value;
-		void *ptr;
+		struct memcache_talloc_value mtv;
 
 		memcache_element_parse(e, &cache_key, &cache_value);
-		SMB_ASSERT(cache_value.length == sizeof(ptr));
-		memcpy(&ptr, cache_value.data, sizeof(ptr));
-		TALLOC_FREE(ptr);
+		SMB_ASSERT(cache_value.length == sizeof(mtv));
+		memcpy(&mtv, cache_value.data, sizeof(mtv));
+		TALLOC_FREE(mtv.ptr);
 	}
 
 	cache->size -= memcache_element_size(e->keylength, e->valuelength);
@@ -275,10 +279,11 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 
 		if (value.length <= cache_value.length) {
 			if (memcache_is_talloc(e->n)) {
-				void *ptr;
-				SMB_ASSERT(cache_value.length == sizeof(ptr));
-				memcpy(&ptr, cache_value.data, sizeof(ptr));
-				TALLOC_FREE(ptr);
+				struct memcache_talloc_value mtv;
+
+				SMB_ASSERT(cache_value.length == sizeof(mtv));
+				memcpy(&mtv, cache_value.data, sizeof(mtv));
+				TALLOC_FREE(mtv.ptr);
 			}
 			/*
 			 * We can reuse the existing record
@@ -334,8 +339,8 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
 			 DATA_BLOB key, void *pptr)
 {
+	struct memcache_talloc_value mtv;
 	void **ptr = (void **)pptr;
-	void *p;
 
 	if (cache == NULL) {
 		cache = global_cache;
@@ -344,8 +349,8 @@ void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
 		return;
 	}
 
-	p = talloc_move(cache, ptr);
-	memcache_add(cache, n, key, data_blob_const(&p, sizeof(p)));
+	mtv.ptr = talloc_move(cache, ptr);
+	memcache_add(cache, n, key, data_blob_const(&mtv, sizeof(mtv)));
 }
 
 void memcache_flush(struct memcache *cache, enum memcache_number n)
