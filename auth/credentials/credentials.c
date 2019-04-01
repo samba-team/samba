@@ -1115,7 +1115,7 @@ _PUBLIC_ void cli_credentials_get_ntlm_username_domain(struct cli_credentials *c
 					      const char **username, 
 					      const char **domain) 
 {
-	if (cred->principal_obtained > cred->username_obtained) {
+	if (cred->principal_obtained >= cred->username_obtained) {
 		*domain = talloc_strdup(mem_ctx, "");
 		*username = cli_credentials_get_principal(cred, mem_ctx);
 	} else {
