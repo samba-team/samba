@@ -199,7 +199,9 @@ static unsigned ldb_kv_max_key_length(struct ldb_kv_private *ldb_kv)
 }
 
 /* enable the idxptr mode when transactions start */
-int ldb_kv_index_transaction_start(struct ldb_module *module)
+int ldb_kv_index_transaction_start(
+	struct ldb_module *module,
+	size_t cache_size)
 {
 	struct ldb_kv_private *ldb_kv = talloc_get_type(
 	    ldb_module_get_private(module), struct ldb_kv_private);
@@ -208,7 +210,12 @@ int ldb_kv_index_transaction_start(struct ldb_module *module)
 		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
-	ldb_kv->idxptr->itdb = tdb_open(NULL, 1000, TDB_INTERNAL, O_RDWR, 0);
+	ldb_kv->idxptr->itdb = tdb_open(
+		NULL,
+		cache_size,
+		TDB_INTERNAL,
+		O_RDWR,
+		0);
 	if (ldb_kv->idxptr->itdb == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -3105,7 +3112,7 @@ int ldb_kv_reindex(struct ldb_module *module)
 	 */
 	ldb_kv_index_transaction_cancel(module);
 
-	ret = ldb_kv_index_transaction_start(module);
+	ret = ldb_kv_index_transaction_start(module, DEFAULT_INDEX_CACHE_SIZE);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}

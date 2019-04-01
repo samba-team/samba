@@ -4,6 +4,8 @@
 #include "tdb.h"
 #include "ldb_module.h"
 
+#ifndef __LDB_KV_H__
+#define __LDB_KV_H__
 struct ldb_kv_private;
 typedef int (*ldb_kv_traverse_fn)(struct ldb_kv_private *ldb_kv,
 				  struct ldb_val key,
@@ -175,6 +177,13 @@ int ldb_kv_check_at_attributes_values(const struct ldb_val *value);
  * The following definitions come from lib/ldb/ldb_key_value/ldb_kv_index.c
  */
 
+/*
+ * The default size of the in memory TDB used to cache index records
+ * The value chosen gives a prime modulo for the hash table and keeps the
+ * tdb memory overhead under 4 kB
+ */
+#define DEFAULT_INDEX_CACHE_SIZE 491
+
 struct ldb_parse_tree;
 
 int ldb_kv_search_indexed(struct ldb_kv_context *ctx, uint32_t *);
@@ -197,7 +206,9 @@ int ldb_kv_index_del_value(struct ldb_module *module,
 			   struct ldb_message_element *el,
 			   unsigned int v_idx);
 int ldb_kv_reindex(struct ldb_module *module);
-int ldb_kv_index_transaction_start(struct ldb_module *module);
+int ldb_kv_index_transaction_start(
+	struct ldb_module *module,
+	size_t cache_size);
 int ldb_kv_index_transaction_commit(struct ldb_module *module);
 int ldb_kv_index_transaction_cancel(struct ldb_module *module);
 int ldb_kv_key_dn_from_idx(struct ldb_module *module,
@@ -263,3 +274,4 @@ int ldb_kv_init_store(struct ldb_kv_private *ldb_kv,
 		      struct ldb_context *ldb,
 		      const char *options[],
 		      struct ldb_module **_module);
+#endif /* __LDB_KV_H__ */

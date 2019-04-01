@@ -1382,7 +1382,7 @@ static int ldb_kv_start_trans(struct ldb_module *module)
 		return ldb_kv->kv_ops->error(ldb_kv);
 	}
 
-	ldb_kv_index_transaction_start(module);
+	ldb_kv_index_transaction_start(module, DEFAULT_INDEX_CACHE_SIZE);
 
 	ldb_kv->reindex_failed = false;
 
