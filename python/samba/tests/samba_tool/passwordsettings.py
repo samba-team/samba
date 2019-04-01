@@ -444,3 +444,41 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertIn("Minimum password length: %u" % new_len, out)
+
+    def test_domain_passwordsettings_pwdage(self):
+        """Checks the 'set' command for the domain password age (non-PSO)"""
+
+        # check we can set the domain max password age
+        max_pwd_age = self.ldb.get_maxPwdAge()
+        self.addCleanup(self.ldb.set_maxPwdAge, max_pwd_age)
+        max_pwd_args = "--max-pwd-age=270"
+        (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
+                                                 "set"), max_pwd_args,
+                                                 "-H", self.server,
+                                                 self.user_auth)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertIn("successful", out)
+        self.assertNotEquals(max_pwd_age, self.ldb.get_maxPwdAge())
+
+        # check we can't set the domain min password age to more than the max
+        min_pwd_age = self.ldb.get_minPwdAge()
+        self.addCleanup(self.ldb.set_minPwdAge, min_pwd_age)
+        min_pwd_args = "--min-pwd-age=271"
+        (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
+                                                 "set"), min_pwd_args,
+                                                 "-H", self.server,
+                                                 self.user_auth)
+        self.assertCmdFail(result, "minPwdAge > maxPwdAge should be rejected")
+        self.assertIn("Maximum password age", err)
+
+        # check we can set the domain min password age to less than the max
+        min_pwd_args = "--min-pwd-age=269"
+        (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
+                                                 "set"), min_pwd_args,
+                                                 "-H", self.server,
+                                                 self.user_auth)
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertIn("successful", out)
+        self.assertNotEquals(min_pwd_age, self.ldb.get_minPwdAge())
