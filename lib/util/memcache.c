@@ -29,6 +29,7 @@ static struct memcache *global_cache;
 
 struct memcache_talloc_value {
 	void *ptr;
+	size_t len;
 };
 
 struct memcache_element {
@@ -213,6 +214,7 @@ static void memcache_delete_element(struct memcache *cache,
 		memcache_element_parse(e, &cache_key, &cache_value);
 		SMB_ASSERT(cache_value.length == sizeof(mtv));
 		memcpy(&mtv, cache_value.data, sizeof(mtv));
+		cache->size -= mtv.len;
 		TALLOC_FREE(mtv.ptr);
 	}
 
@@ -283,6 +285,7 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 
 				SMB_ASSERT(cache_value.length == sizeof(mtv));
 				memcpy(&mtv, cache_value.data, sizeof(mtv));
+				cache->size -= mtv.len;
 				TALLOC_FREE(mtv.ptr);
 			}
 			/*
@@ -290,6 +293,14 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 			 */
 			memcpy(cache_value.data, value.data, value.length);
 			e->valuelength = value.length;
+
+			if (memcache_is_talloc(e->n)) {
+				struct memcache_talloc_value mtv;
+
+				SMB_ASSERT(cache_value.length == sizeof(mtv));
+				memcpy(&mtv, cache_value.data, sizeof(mtv));
+				cache->size += mtv.len;
+			}
 			return;
 		}
 
@@ -333,6 +344,13 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 	DLIST_ADD(cache->mru, e);
 
 	cache->size += element_size;
+	if (memcache_is_talloc(e->n)) {
+		struct memcache_talloc_value mtv;
+
+		SMB_ASSERT(cache_value.length == sizeof(mtv));
+		memcpy(&mtv, cache_value.data, sizeof(mtv));
+		cache->size += mtv.len;
+	}
 	memcache_trim(cache);
 }
 
@@ -349,6 +367,7 @@ void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
 		return;
 	}
 
+	mtv.len = talloc_total_size(*ptr);
 	mtv.ptr = talloc_move(cache, ptr);
 	memcache_add(cache, n, key, data_blob_const(&mtv, sizeof(mtv)));
 }
