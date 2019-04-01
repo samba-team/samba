@@ -526,7 +526,7 @@ def build(bld):
 
             bld.SAMBA_BINARY('ldb_mdb_kv_ops_test',
                              source='tests/ldb_kv_ops_test.c',
-                             cflags='-DTEST_BE=\"mdb\"',
+                             cflags='-DTEST_BE=\"mdb\" -DTEST_LMDB=1',
                              deps='cmocka ldb',
                              install=False)
         else:

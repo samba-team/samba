@@ -576,6 +576,27 @@ static bool lmdb_changed(struct ldb_kv_private *ldb_kv)
 	return true;
 }
 
+/*
+ * Get the number of records in the database.
+ *
+ * The mdb_env_stat call returns an accurate count, so we return the actual
+ * number of records in the database rather than an estimate.
+ */
+static size_t lmdb_get_size(struct ldb_kv_private *ldb_kv) {
+
+	struct MDB_stat stats = {0};
+	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
+	int ret = 0;
+
+	ret = mdb_env_stat(lmdb->env, &stats);
+	if (ret != 0) {
+		return 0;
+	}
+	return stats.ms_entries;
+}
+
+
+
 static struct kv_db_ops lmdb_key_value_ops = {
 	.store              = lmdb_store,
 	.delete             = lmdb_delete,
@@ -593,6 +614,7 @@ static struct kv_db_ops lmdb_key_value_ops = {
 	.name               = lmdb_name,
 	.has_changed        = lmdb_changed,
 	.transaction_active = lmdb_transaction_active,
+	.get_size           = lmdb_get_size,
 };
 
 static const char *lmdb_get_path(const char *url)

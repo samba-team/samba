@@ -400,6 +400,23 @@ static bool ltdb_transaction_active(struct ldb_kv_private *ldb_kv)
 	return tdb_transaction_active(ldb_kv->tdb);
 }
 
+/*
+ * Get an estimate of the number of records in a tdb database.
+ *
+ * This implementation will overestimate the number of records in a sparsely
+ * populated database. The size estimate is only used for allocating
+ * an in memory tdb to cache index records during a reindex, overestimating
+ * the contents is acceptable, and preferable to underestimating
+ */
+#define RECORD_SIZE 500
+static size_t ltdb_get_size(struct ldb_kv_private *ldb_kv)
+{
+	size_t map_size = tdb_map_size(ldb_kv->tdb);
+	size_t size = map_size / RECORD_SIZE;
+
+	return size;
+}
+
 static const struct kv_db_ops key_value_ops = {
     .store = ltdb_store,
     .delete = ltdb_delete,
@@ -417,6 +434,7 @@ static const struct kv_db_ops key_value_ops = {
     .name = ltdb_name,
     .has_changed = ltdb_changed,
     .transaction_active = ltdb_transaction_active,
+    .get_size = ltdb_get_size,
 };
 
 /*

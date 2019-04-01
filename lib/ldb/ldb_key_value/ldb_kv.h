@@ -43,6 +43,7 @@ struct kv_db_ops {
 	const char *(*name)(struct ldb_kv_private *ldb_kv);
 	bool (*has_changed)(struct ldb_kv_private *ldb_kv);
 	bool (*transaction_active)(struct ldb_kv_private *ldb_kv);
+	size_t (*get_size)(struct ldb_kv_private *ldb_kv);
 };
 
 /* this private structure is used by the key value backends in the

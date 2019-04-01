@@ -43,6 +43,9 @@
  * - supports iteration over all records in the database
  * - supports the update_in_iterate operation allowing entries to be
  *   re-keyed.
+ * - has a get_size implementation that returns an estimate of the number of
+ *   records in the database.  Note that this can be an estimate rather than
+ *   an accurate size.
  */
 #include <stdarg.h>
 #include <stddef.h>
@@ -1523,6 +1526,71 @@ static void test_delete_transaction_isolation(void **state)
 }
 
 
+/*
+ * Test that get_size returns a sensible estimate of the number of records
+ * in the database.
+ */
+static void test_get_size(void **state)
+{
+	int ret;
+	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
+							  struct test_ctx);
+	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
+	uint8_t key_val[] = "TheKey";
+	struct ldb_val key = {
+		.data   = key_val,
+		.length = sizeof(key_val)
+	};
+
+	uint8_t value[] = "The record contents";
+	struct ldb_val data = {
+		.data    = value,
+		.length = sizeof(value)
+	};
+	size_t size = 0;
+
+	int flags = 0;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(test_ctx);
+	assert_non_null(tmp_ctx);
+
+	size = ldb_kv->kv_ops->get_size(ldb_kv);
+#if defined(TEST_LMDB)
+	assert_int_equal(2, size);
+#else
+	/*
+	 * The tdb implementation of get_size over estimates for sparse files
+	 * which is perfectly acceptable for it's intended use.
+	 */
+	assert_true( size > 2500);
+#endif
+
+	/*
+	 * Begin a transaction
+	 */
+	ret = ldb_kv->kv_ops->begin_write(ldb_kv);
+	assert_int_equal(ret, 0);
+
+	/*
+	 * Write the record
+	 */
+	ret = ldb_kv->kv_ops->store(ldb_kv, key, data, flags);
+	assert_int_equal(ret, 0);
+
+	/*
+	 * Commit the transaction
+	 */
+	ret = ldb_kv->kv_ops->finish_write(ldb_kv);
+	assert_int_equal(ret, 0);
+
+	size = ldb_kv->kv_ops->get_size(ldb_kv);
+#ifdef TEST_LMDB
+	assert_int_equal(3, size);
+#endif
+	talloc_free(tmp_ctx);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -1568,6 +1636,10 @@ int main(int argc, const char **argv)
 			teardown),
 		cmocka_unit_test_setup_teardown(
 			test_delete_transaction_isolation,
+			setup,
+			teardown),
+		cmocka_unit_test_setup_teardown(
+			test_get_size,
 			setup,
 			teardown),
 	};
