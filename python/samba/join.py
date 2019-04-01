@@ -888,8 +888,13 @@ class DCJoinContext(object):
 
         # we now operate exclusively on the local database, which
         # we need to reopen in order to get the newly created schema
+        # we set the transaction_index_cache_size to 200,000 to ensure it is
+        # not too small, if it's too small the performance of the join will
+        # be negatively impacted.
         print("Reconnecting to local samdb")
         ctx.samdb = SamDB(url=ctx.local_samdb.url,
+                         options=[
+                             "transaction_index_cache_size:200000"],
                           session_info=system_session(),
                           lp=ctx.local_samdb.lp,
                           global_schema=False)
