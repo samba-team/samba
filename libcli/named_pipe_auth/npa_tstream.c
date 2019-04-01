@@ -763,7 +763,7 @@ static void tstream_npa_readv_msg_mode_handler(struct tevent_req *subreq)
 	}
 
 	/*
-	 * we do not set state->ret here as ret includes the headr size.
+	 * we do not set state->ret here as ret includes the header size.
 	 * we set it in tstream_npa_readv_pdu_next_vector()
 	 */
 
