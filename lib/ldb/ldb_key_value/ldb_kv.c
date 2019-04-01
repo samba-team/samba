@@ -1382,7 +1382,9 @@ static int ldb_kv_start_trans(struct ldb_module *module)
 		return ldb_kv->kv_ops->error(ldb_kv);
 	}
 
-	ldb_kv_index_transaction_start(module, DEFAULT_INDEX_CACHE_SIZE);
+	ldb_kv_index_transaction_start(
+		module,
+		ldb_kv->index_transaction_cache_size);
 
 	ldb_kv->reindex_failed = false;
 
@@ -1943,6 +1945,37 @@ int ldb_kv_init_store(struct ldb_kv_private *ldb_kv,
 					 "disable_full_db_scan_for_self_test");
 		if (len_str != NULL) {
 			ldb_kv->disable_full_db_scan = true;
+		}
+	}
+
+	/*
+	 * Set the size of the transaction index cache.
+	 * If the ldb option "transaction_index_cache_size" is set use that
+	 * otherwise use DEFAULT_INDEX_CACHE_SIZE
+	 */
+	ldb_kv->index_transaction_cache_size = DEFAULT_INDEX_CACHE_SIZE;
+	{
+		const char *size = ldb_options_find(
+			ldb,
+			options,
+			"transaction_index_cache_size");
+		if (size != NULL) {
+			size_t cache_size = 0;
+			errno = 0;
+
+			cache_size = strtoul( size, NULL, 0);
+			if (cache_size == 0 || errno == ERANGE) {
+				ldb_debug(
+					ldb,
+					LDB_DEBUG_WARNING,
+					"Invalid transaction_index_cache_size "
+					"value [%s], using default(%d)\n",
+					size,
+					DEFAULT_INDEX_CACHE_SIZE);
+			} else {
+				ldb_kv->index_transaction_cache_size =
+					cache_size;
+			}
 		}
 	}
 

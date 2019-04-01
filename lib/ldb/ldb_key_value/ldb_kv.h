@@ -103,6 +103,11 @@ struct ldb_kv_private {
 	 * fork()ed child.
 	 */
 	pid_t pid;
+
+	/*
+	 * The size to be used for the index transaction cache
+	 */
+	size_t index_transaction_cache_size;
 };
 
 struct ldb_kv_context {

@@ -152,6 +152,7 @@ static void test_default_index_cache_size(void **state)
 	ldb_kv = talloc_zero(test_ctx, struct ldb_kv_private);
 	ldb_kv->pid = getpid();
 	ldb_kv->kv_ops = &ops;
+	ldb_kv->index_transaction_cache_size = DEFAULT_INDEX_CACHE_SIZE;
 	ldb_module_set_private(module, ldb_kv);
 
 	ret = ldb_kv_start_trans(module);
@@ -227,6 +228,129 @@ static void test_reindex_cache_size(void **state)
 	TALLOC_FREE(module);
 }
 
+/*
+ * Test that ldb_kv_init_store sets the default index transaction cache size
+ * if the option is not supplied.
+ */
+static void test_init_store_default_index_cache_size(void **state)
+{
+	struct test_ctx *test_ctx = talloc_get_type_abort(
+		*state,
+		struct test_ctx);
+	struct ldb_module *module = NULL;
+	struct ldb_kv_private *ldb_kv = NULL;
+	struct ldb_context *ldb = NULL;
+	int ret = LDB_SUCCESS;
+
+	module = talloc_zero(test_ctx, struct ldb_module);
+	ldb = talloc_zero(test_ctx, struct ldb_context);
+	ldb_kv = talloc_zero(test_ctx, struct ldb_kv_private);
+
+	ret = ldb_kv_init_store(ldb_kv, "test", ldb, NULL, &module);
+	assert_int_equal(LDB_SUCCESS, ret);
+
+	assert_int_equal(
+		DEFAULT_INDEX_CACHE_SIZE,
+		ldb_kv->index_transaction_cache_size);
+
+	TALLOC_FREE(ldb_kv);
+	TALLOC_FREE(module);
+	TALLOC_FREE(ldb);
+}
+
+/*
+ * Test that ldb_kv_init_store sets the index transaction cache size
+ * to the value specified in the option.
+ */
+static void test_init_store_set_index_cache_size(void **state)
+{
+	struct test_ctx *test_ctx = talloc_get_type_abort(
+		*state,
+		struct test_ctx);
+	struct ldb_module *module = NULL;
+	struct ldb_kv_private *ldb_kv = NULL;
+	struct ldb_context *ldb = NULL;
+	const char *options[] = {"transaction_index_cache_size:1900", NULL};
+	int ret = LDB_SUCCESS;
+
+	module = talloc_zero(test_ctx, struct ldb_module);
+	ldb = talloc_zero(test_ctx, struct ldb_context);
+	ldb_kv = talloc_zero(test_ctx, struct ldb_kv_private);
+
+	ret = ldb_kv_init_store(ldb_kv, "test", ldb, options, &module);
+	assert_int_equal(LDB_SUCCESS, ret);
+
+	assert_int_equal( 1900, ldb_kv->index_transaction_cache_size);
+
+	TALLOC_FREE(ldb_kv);
+	TALLOC_FREE(module);
+	TALLOC_FREE(ldb);
+}
+
+/*
+ * Test that ldb_kv_init_store sets the default index transaction cache size
+ * if the value specified in the option is not a number.
+ */
+static void test_init_store_set_index_cache_size_non_numeric(void **state)
+{
+	struct test_ctx *test_ctx = talloc_get_type_abort(
+		*state,
+		struct test_ctx);
+	struct ldb_module *module = NULL;
+	struct ldb_kv_private *ldb_kv = NULL;
+	struct ldb_context *ldb = NULL;
+	const char *options[] = {"transaction_index_cache_size:fred", NULL};
+	int ret = LDB_SUCCESS;
+
+	module = talloc_zero(test_ctx, struct ldb_module);
+	ldb = talloc_zero(test_ctx, struct ldb_context);
+	ldb_kv = talloc_zero(test_ctx, struct ldb_kv_private);
+
+	ret = ldb_kv_init_store(ldb_kv, "test", ldb, options, &module);
+	assert_int_equal(LDB_SUCCESS, ret);
+
+	assert_int_equal(
+		DEFAULT_INDEX_CACHE_SIZE,
+		ldb_kv->index_transaction_cache_size);
+
+	TALLOC_FREE(ldb_kv);
+	TALLOC_FREE(module);
+	TALLOC_FREE(ldb);
+}
+
+/*
+ * Test that ldb_kv_init_store sets the default index transaction cache size
+ * if the value specified is too large
+ */
+static void test_init_store_set_index_cache_size_range(void **state)
+{
+	struct test_ctx *test_ctx = talloc_get_type_abort(
+		*state,
+		struct test_ctx);
+	struct ldb_module *module = NULL;
+	struct ldb_kv_private *ldb_kv = NULL;
+	struct ldb_context *ldb = NULL;
+	const char *options[] = {
+		"transaction_index_cache_size:0xfffffffffffffffffffffffffffff",
+		NULL};
+	int ret = LDB_SUCCESS;
+
+	module = talloc_zero(test_ctx, struct ldb_module);
+	ldb = talloc_zero(test_ctx, struct ldb_context);
+	ldb_kv = talloc_zero(test_ctx, struct ldb_kv_private);
+
+	ret = ldb_kv_init_store(ldb_kv, "test", ldb, options, &module);
+	assert_int_equal(LDB_SUCCESS, ret);
+
+	assert_int_equal(
+		DEFAULT_INDEX_CACHE_SIZE,
+		ldb_kv->index_transaction_cache_size);
+
+	TALLOC_FREE(ldb_kv);
+	TALLOC_FREE(module);
+	TALLOC_FREE(ldb);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -240,6 +364,22 @@ int main(int argc, const char **argv)
 			teardown),
 		cmocka_unit_test_setup_teardown(
 			test_reindex_cache_size,
+			setup,
+			teardown),
+		cmocka_unit_test_setup_teardown(
+			test_init_store_default_index_cache_size,
+			setup,
+			teardown),
+		cmocka_unit_test_setup_teardown(
+			test_init_store_set_index_cache_size,
+			setup,
+			teardown),
+		cmocka_unit_test_setup_teardown(
+			test_init_store_set_index_cache_size_non_numeric,
+			setup,
+			teardown),
+		cmocka_unit_test_setup_teardown(
+			test_init_store_set_index_cache_size_range,
 			setup,
 			teardown),
 	};
