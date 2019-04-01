@@ -44,7 +44,7 @@ class RodcRwdcTestException(Exception):
     pass
 
 
-def make_creds(username, password, kerberos_state=None):
+def make_creds(username, password, kerberos_state=None, simple_dn=None):
     # use the global CREDS as a template
     c = Credentials()
     c.set_username(username)
@@ -52,6 +52,9 @@ def make_creds(username, password, kerberos_state=None):
     c.set_domain(CREDS.get_domain())
     c.set_realm(CREDS.get_realm())
     c.set_workstation(CREDS.get_workstation())
+
+    if simple_dn is not None:
+        c.set_bind_dn(simple_dn)
 
     if kerberos_state is None:
         kerberos_state = CREDS.get_kerberos_state()
@@ -1024,10 +1027,14 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
             "add: userPassword\n"
             "userPassword: %s\n" % (user_dn, old_password, new_password))
 
-    def try_ldap_logon(self, server, creds, errno=None):
+    def try_ldap_logon(self, server, creds, errno=None, simple=False):
         try:
-            tmpdb = SamDB('ldap://%s' % server, credentials=creds,
-                          session_info=system_session(LP), lp=LP)
+            if simple:
+                tmpdb = SamDB('ldaps://%s' % server, credentials=creds,
+                              session_info=system_session(LP), lp=LP)
+            else:
+                tmpdb = SamDB('ldap://%s' % server, credentials=creds,
+                              session_info=system_session(LP), lp=LP)
             if errno is not None:
                 self.fail("logon failed to fail with ldb error %s" % errno)
         except ldb.LdbError as e10:
@@ -1046,19 +1053,23 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         if min_pwd_age != 0:
             self.rwdc_db.set_minPwdAge('0')
 
-    def _test_ldap_change_password(self, errno=None):
+    def _test_ldap_change_password(self, errno=None, simple=False):
         self.zero_min_password_age()
 
         dn, username, password = self._new_user()
-        creds1 = make_creds(username, password)
+
+        simple_dn = dn if simple else None
+
+        creds1 = make_creds(username, password, simple_dn=simple_dn)
 
         # With NTLM, this should fail on RODC before replication,
         # because the user isn't known.
-        self.try_ldap_logon(RODC, creds1, ldb.ERR_INVALID_CREDENTIALS)
+        self.try_ldap_logon(RODC, creds1, ldb.ERR_INVALID_CREDENTIALS,
+                            simple=simple)
         self.force_replication()
 
         # Now the user is replicated to RODC, so logon should work
-        self.try_ldap_logon(RODC, creds1)
+        self.try_ldap_logon(RODC, creds1, simple=simple)
 
         passwords = ['password#%s' % i for i in range(1, 6)]
         for prev, password in zip(passwords[:-1], passwords[1:]):
@@ -1067,40 +1078,40 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
         # The password has changed enough times to make the old
         # password invalid (though with kerberos that doesn't matter).
         # For NTLM, the old creds should always fail
-        self.try_ldap_logon(RODC, creds1, errno)
-        self.try_ldap_logon(RWDC, creds1, errno)
+        self.try_ldap_logon(RODC, creds1, errno, simple=simple)
+        self.try_ldap_logon(RWDC, creds1, errno, simple=simple)
 
-        creds2 = make_creds(username, password)
+        creds2 = make_creds(username, password, simple_dn=simple_dn)
 
         # new creds work straight away with NTLM, because although it
         # doesn't have the password, it knows the user and forwards
         # the query.
-        self.try_ldap_logon(RODC, creds2)
-        self.try_ldap_logon(RWDC, creds2)
+        self.try_ldap_logon(RODC, creds2, simple=simple)
+        self.try_ldap_logon(RWDC, creds2, simple=simple)
 
         self.force_replication()
 
         # After another replication check RODC still works and fails,
         # as appropriate to various creds
-        self.try_ldap_logon(RODC, creds2)
-        self.try_ldap_logon(RODC, creds1, errno)
+        self.try_ldap_logon(RODC, creds2, simple=simple)
+        self.try_ldap_logon(RODC, creds1, errno, simple=simple)
 
         prev = password
         password = 'password#6'
         self._change_password(dn, prev, password)
-        creds3 = make_creds(username, password)
+        creds3 = make_creds(username, password, simple_dn=simple_dn)
 
         # previous password should still work.
-        self.try_ldap_logon(RWDC, creds2)
-        self.try_ldap_logon(RODC, creds2)
+        self.try_ldap_logon(RWDC, creds2, simple=simple)
+        self.try_ldap_logon(RODC, creds2, simple=simple)
 
         # new password should still work.
-        self.try_ldap_logon(RWDC, creds3)
-        self.try_ldap_logon(RODC, creds3)
+        self.try_ldap_logon(RWDC, creds3, simple=simple)
+        self.try_ldap_logon(RODC, creds3, simple=simple)
 
         # old password should still fail (but not on kerberos).
-        self.try_ldap_logon(RWDC, creds1, errno)
-        self.try_ldap_logon(RODC, creds1, errno)
+        self.try_ldap_logon(RWDC, creds1, errno, simple=simple)
+        self.try_ldap_logon(RODC, creds1, errno, simple=simple)
 
     def test_ldap_change_password_kerberos(self):
         CREDS.set_kerberos_state(MUST_USE_KERBEROS)
@@ -1109,6 +1120,10 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
     def test_ldap_change_password_ntlm(self):
         CREDS.set_kerberos_state(DONT_USE_KERBEROS)
         self._test_ldap_change_password(ldb.ERR_INVALID_CREDENTIALS)
+
+    def test_ldap_change_password_simple_bind(self):
+        CREDS.set_kerberos_state(DONT_USE_KERBEROS)
+        self._test_ldap_change_password(ldb.ERR_INVALID_CREDENTIALS, simple=True)
 
     def _test_ldap_change_password_reveal_on_demand(self, errno=None):
         self.zero_min_password_age()
