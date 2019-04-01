@@ -56,6 +56,7 @@ builddirs = {
     "samba-systemkrb5": ".",
     "samba-nopython": ".",
     "samba-nopython-py2": ".",
+    "samba-schemaupgrade": ".",
     "ldb": "lib/ldb",
     "tdb": "lib/tdb",
     "talloc": "lib/talloc",
@@ -131,6 +132,8 @@ tasks = {
                  "--exclude-env=rodc "
                  "--exclude-env=ad_dc_default "
                  "--exclude-env=ad_dc_slowtests "
+                 "--exclude-env=schemaupgrade_pair_dc "
+                 "--exclude-env=schemaupgrade_dc "
                  "'",
                  "text/plain"),
                 ("install", "make install", "text/plain"),
@@ -233,6 +236,17 @@ tasks = {
                         ("test", "make test FAIL_IMMEDIATELY=1 "
                          "TESTS='"
                          "--include-env=ad_dc_slowtests "
+                         "'", "text/plain"),
+                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+
+
+    "samba-schemaupgrade": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
+                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+                        ("make", "make -j", "text/plain"),
+                        ("test", "make test FAIL_IMMEDIATELY=1 "
+                         "TESTS='"
+                         "--include-env=schemaupgrade_dc "
+                         "--include-env=schemaupgrade_pair_dc "
                          "'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
