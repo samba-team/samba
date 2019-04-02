@@ -145,6 +145,8 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 	}
 
+	my_ads->auth.flags |= ADS_AUTH_ALLOW_NTLMSSP;
+
 	if (user_name) {
 		SAFE_FREE(my_ads->auth.user_name);
 		my_ads->auth.user_name = SMB_STRDUP(user_name);
