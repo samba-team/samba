@@ -37,7 +37,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/dcerpc_roh.h"
 #include "librpc/rpc/dcerpc_proto.h"
-#include "lib/http/http.h"
+#include "libcli/http/http.h"
 
 struct roh_connect_channel_state {
 	struct tevent_context		*ev;

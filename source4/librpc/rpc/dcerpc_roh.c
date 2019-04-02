@@ -32,7 +32,7 @@
 #include "librpc/rpc/dcerpc_roh.h"
 #include "librpc/rpc/dcerpc_proto.h"
 #include "lib/param/param.h"
-#include "lib/http/http.h"
+#include "libcli/http/http.h"
 
 static ssize_t tstream_roh_pending_bytes(struct tstream_context *stream);
 static struct tevent_req * tstream_roh_readv_send(

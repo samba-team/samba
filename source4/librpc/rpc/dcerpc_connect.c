@@ -35,7 +35,7 @@
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 #include "libcli/resolve/resolve.h"
-#include "lib/http/http.h"
+#include "libcli/http/http.h"
 #include "lib/util/util_net.h"
 
 struct dcerpc_pipe_connect {
