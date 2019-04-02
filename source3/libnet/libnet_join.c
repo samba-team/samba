@@ -2655,6 +2655,9 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 
 		ads_status = libnet_join_connect_ads_user(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
+			libnet_join_set_error_string(mem_ctx, r,
+				"failed to connect to AD: %s",
+				ads_errstr(ads_status));
 			return WERR_NERR_DEFAULTJOINREQUIRED;
 		}
 
