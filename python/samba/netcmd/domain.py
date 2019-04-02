@@ -1397,6 +1397,10 @@ class cmd_domain_passwordsettings_set(Command):
         m.dn = ldb.Dn(samdb, domain_dn)
         pwd_props = int(samdb.get_pwdProperties())
 
+        # get the current password age settings
+        max_pwd_age_ticks = samdb.get_maxPwdAge()
+        min_pwd_age_ticks = samdb.get_minPwdAge()
+
         if complexity is not None:
             if complexity == "on" or complexity == "default":
                 pwd_props = pwd_props | DOMAIN_PASSWORD_COMPLEX
@@ -1526,8 +1530,14 @@ class cmd_domain_passwordsettings_set(Command):
                                                                ldb.FLAG_MOD_REPLACE, "lockOutObservationWindow")
             msgs.append("Duration to reset account lockout after changed!")
 
-        if max_pwd_age and max_pwd_age > 0 and min_pwd_age >= max_pwd_age:
-            raise CommandError("Maximum password age (%d) must be greater than minimum password age (%d)!" % (max_pwd_age, min_pwd_age))
+        if max_pwd_age or min_pwd_age:
+            # If we're setting either min or max password, make sure the max is
+            # still greater overall. As either setting could be None, we use the
+            # ticks here (which are always set) and work backwards.
+            max_pwd_age = timestamp_to_days(max_pwd_age_ticks)
+            min_pwd_age = timestamp_to_days(min_pwd_age_ticks)
+            if max_pwd_age != 0 and min_pwd_age >= max_pwd_age:
+                raise CommandError("Maximum password age (%d) must be greater than minimum password age (%d)!" % (max_pwd_age, min_pwd_age))
 
         if len(m) == 0:
             raise CommandError("You must specify at least one option to set. Try --help")
