@@ -205,7 +205,19 @@ static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
 		password = r->in.machine_password;
 		ccname = "MEMORY:libnet_join_machine_creds";
 	} else {
+		char *p = NULL;
+
 		username = r->in.admin_account;
+
+		p = strchr(r->in.admin_account, '@');
+		if (p == NULL) {
+			username = talloc_asprintf(mem_ctx, "%s@%s",
+						   r->in.admin_account,
+						   r->in.admin_domain);
+		}
+		if (username == NULL) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
 		password = r->in.admin_password;
 
 		/*
