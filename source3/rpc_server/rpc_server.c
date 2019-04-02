@@ -357,8 +357,6 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 						&npc->local_server_name,
 						&session_info_transport);
 
-	npc->session_info = talloc_move(npc, &session_info_transport->session_info);
-
 	TALLOC_FREE(subreq);
 	if (ret != 0) {
 		DEBUG(2, ("Failed to accept named pipe connection! (%s)\n",
@@ -366,6 +364,9 @@ static void named_pipe_accept_done(struct tevent_req *subreq)
 		TALLOC_FREE(npc);
 		return;
 	}
+
+	npc->session_info = talloc_move(
+		npc, &session_info_transport->session_info);
 
 	ret = make_server_pipes_struct(npc,
 				       npc->msg_ctx,
