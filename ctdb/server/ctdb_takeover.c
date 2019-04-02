@@ -1243,7 +1243,8 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	TDB_DATA data;
 	struct ctdb_client_ip *ip;
 	struct ctdb_vnn *vnn;
-	ctdb_sock_addr addr;
+	ctdb_sock_addr src_addr;
+	ctdb_sock_addr dst_addr;
 
 	/* If we don't have public IPs, tickles are useless */
 	if (ctdb->vnn == NULL) {
@@ -1252,36 +1253,54 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 
 	tcp_sock = (struct ctdb_connection *)indata.dptr;
 
-	addr = tcp_sock->src;
-	ctdb_canonicalize_ip(&addr,  &tcp_sock->src);
-	addr = tcp_sock->dst;
-	ctdb_canonicalize_ip(&addr, &tcp_sock->dst);
+	src_addr = tcp_sock->src;
+	ctdb_canonicalize_ip(&src_addr,  &tcp_sock->src);
+	ZERO_STRUCT(src_addr);
+	memcpy(&src_addr, &tcp_sock->src, sizeof(src_addr));
 
-	ZERO_STRUCT(addr);
-	memcpy(&addr, &tcp_sock->dst, sizeof(addr));
-	vnn = find_public_ip_vnn(ctdb, &addr);
+	dst_addr = tcp_sock->dst;
+	ctdb_canonicalize_ip(&dst_addr, &tcp_sock->dst);
+	ZERO_STRUCT(dst_addr);
+	memcpy(&dst_addr, &tcp_sock->dst, sizeof(dst_addr));
+
+	vnn = find_public_ip_vnn(ctdb, &dst_addr);
 	if (vnn == NULL) {
-		switch (addr.sa.sa_family) {
+		char *src_addr_str = NULL;
+		char *dst_addr_str = NULL;
+
+		switch (dst_addr.sa.sa_family) {
 		case AF_INET:
-			if (ntohl(addr.ip.sin_addr.s_addr) != INADDR_LOOPBACK) {
-				DEBUG(DEBUG_ERR,("Could not add client IP %s. This is not a public address.\n", 
-					ctdb_addr_to_str(&addr)));
+			if (ntohl(dst_addr.ip.sin_addr.s_addr) == INADDR_LOOPBACK) {
+				/* ignore ... */
+				return 0;
 			}
 			break;
 		case AF_INET6:
-			DEBUG(DEBUG_ERR,("Could not add client IP %s. This is not a public ipv6 address.\n", 
-				ctdb_addr_to_str(&addr)));
 			break;
 		default:
-			DEBUG(DEBUG_ERR,(__location__ " Unknown family type %d\n", addr.sa.sa_family));
+			DEBUG(DEBUG_ERR,(__location__ " Unknown family type %d\n",
+			      dst_addr.sa.sa_family));
+			return 0;
 		}
 
+		src_addr_str = ctdb_sock_addr_to_string(client, &src_addr, false);
+		dst_addr_str = ctdb_sock_addr_to_string(client, &dst_addr, false);
+		DEBUG(DEBUG_ERR,(
+		      "Could not register TCP connection from "
+		      "%s to %s (not a public address) (port %u) "
+		      "(client_id %u pid %u).\n",
+		      src_addr_str,
+		      dst_addr_str,
+		      ctdb_sock_addr_port(&dst_addr),
+		      client_id, client->pid));
+		TALLOC_FREE(src_addr_str);
+		TALLOC_FREE(dst_addr_str);
 		return 0;
 	}
 
 	if (vnn->pnn != ctdb->pnn) {
 		DEBUG(DEBUG_ERR,("Attempt to register tcp client for IP %s we don't hold - failing (client_id %u pid %u)\n",
-			ctdb_addr_to_str(&addr),
+			ctdb_addr_to_str(&dst_addr),
 			client_id, client->pid));
 		/* failing this call will tell smbd to die */
 		return -1;
@@ -1291,7 +1310,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	CTDB_NO_MEMORY(ctdb, ip);
 
 	ip->ctdb      = ctdb;
-	ip->addr      = addr;
+	ip->addr      = dst_addr;
 	ip->client_id = client_id;
 	talloc_set_destructor(ip, ctdb_client_ip_destructor);
 	DLIST_ADD(ctdb->client_ip_list, ip);
@@ -1310,7 +1329,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
 
-	switch (addr.sa.sa_family) {
+	switch (dst_addr.sa.sa_family) {
 	case AF_INET:
 		DEBUG(DEBUG_INFO,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
 			(unsigned)ntohs(tcp_sock->dst.ip.sin_port),
@@ -1324,7 +1343,8 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 			(unsigned)ntohs(tcp_sock->src.ip6.sin6_port), client_id, client->pid));
 		break;
 	default:
-		DEBUG(DEBUG_ERR,(__location__ " Unknown family %d\n", addr.sa.sa_family));
+		DEBUG(DEBUG_ERR,(__location__ " Unknown family %d\n",
+		      dst_addr.sa.sa_family));
 	}
 
 
