@@ -1,4 +1,86 @@
                    ==============================
+                   Release Notes for Samba 4.10.1
+                           April 3, 2019
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.10 release series.
+
+
+Changes since 4.10.0:
+---------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 13837: py/kcc_utils: py2.6 compatibility.
+
+o  Philipp Gesang <philipp.gesang@intra2net.com>
+   * BUG 13869: libcli: permit larger values of DataLength in
+     SMB2_ENCRYPTION_CAPABILITIES of negotiate response.
+
+o  Michael Hanselmann <public@hansmi.ch>
+   * BUG 13840: regfio: Improve handling of malformed registry hive files.
+
+o  Amitay Isaacs <amitay@samba.org>
+   * BUG 13789: ctdb-version: Simplify version string usage.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13859: lib: Make fd_load work for non-regular files.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13816: dbcheck in the middle of the tombstone garbage collection causes
+     replication failures, dbcheck: add --selftest-check-expired-tombstones
+     cmdline option.
+   * BUG 13818: ndr_spoolss_buf: Fix out of scope use of stack variable in
+     NDR_SPOOLSS_PUSH_ENUM_OUT().
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 13854: s4/messaging: Fix undefined reference in linking
+     libMESSAGING-samba4.so.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 13836: acl_read: Fix regression for empty lists.
+
+o  Michael Saxl <mike@mwsys.mine.bz>
+   * BUG 13841: s4:dlz make b9_has_soa check dc=@ node.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13832: s3:client: Fix printing via smbspool backend with kerberos auth.
+   * BUG 13847: s4:librpc: Fix installation of Samba.
+   * BUG 13848: s3:lib: Fix the debug message for adding cache entries.
+   * BUG 13793: s3:utils: Add 'smbstatus -L --resolve-uids' to show username.
+   * BUG 13848: s3:lib: Fix the debug message for adding cache entries.
+   * BUG 13853: s3:waf: Fix the detection of makdev() macro on Linux.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13789: ctdb-build: Drop creation of .distversion in tarball.
+   * BUG 13838: ctdb-packaging: Test package requires tcpdump, ctdb package
+     should not own system library directory.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.10.0
                            March 19, 2019
 		   ==============================
