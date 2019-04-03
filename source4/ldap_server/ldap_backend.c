@@ -567,16 +567,157 @@ static int ldapsrv_rename_with_controls(struct ldapsrv_call *call,
 	return ret;
 }
 
+
+
+struct ldapsrv_context {
+	struct ldapsrv_call *call;
+	int extended_type;
+	bool attributesonly;
+	struct ldb_control **controls;
+	size_t count; /* For notificaiton only */
+};
+
+static int ldap_server_search_callback(struct ldb_request *req, struct ldb_reply *ares)
+{
+	struct ldapsrv_context *ctx = talloc_get_type(req->context, struct ldapsrv_context);
+	struct ldapsrv_call *call = ctx->call;
+	struct ldb_context *ldb = call->conn->ldb;
+	unsigned int j;
+	struct ldapsrv_reply *ent_r = NULL;
+	struct ldap_SearchResEntry *ent;
+	int ret;
+	NTSTATUS status;
+
+	if (!ares) {
+		return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+	}
+	if (ares->error != LDB_SUCCESS) {
+		return ldb_request_done(req, ares->error);
+	}
+
+	switch (ares->type) {
+	case LDB_REPLY_ENTRY:
+	{
+		struct ldb_message *msg = ares->message;
+		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
+		if (ent_r == NULL) {
+			return ldb_oom(ldb);
+		}
+
+		ctx->count++;
+
+		/*
+		 * Put the LDAP search response data under ent_r->msg
+		 * so we can free that later once encoded
+		 */
+		talloc_steal(ent_r->msg, msg);
+
+		ent = &ent_r->msg->r.SearchResultEntry;
+		ent->dn = ldb_dn_get_extended_linearized(ent_r, msg->dn,
+							 ctx->extended_type);
+		ent->num_attributes = 0;
+		ent->attributes = NULL;
+		if (msg->num_elements == 0) {
+			goto queue_reply;
+		}
+		ent->num_attributes = msg->num_elements;
+		ent->attributes = talloc_array(ent_r, struct ldb_message_element, ent->num_attributes);
+		if (ent->attributes == NULL) {
+			return ldb_oom(ldb);
+		}
+
+		for (j=0; j < ent->num_attributes; j++) {
+			ent->attributes[j].name = msg->elements[j].name;
+			ent->attributes[j].num_values = 0;
+			ent->attributes[j].values = NULL;
+			if (ctx->attributesonly && (msg->elements[j].num_values == 0)) {
+				continue;
+			}
+			ent->attributes[j].num_values = msg->elements[j].num_values;
+			ent->attributes[j].values = msg->elements[j].values;
+		}
+queue_reply:
+		status = ldapsrv_queue_reply(call, ent_r);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_TOO_LARGE)) {
+			ret = ldb_request_done(req,
+					       LDB_ERR_SIZE_LIMIT_EXCEEDED);
+			ldb_asprintf_errstring(ldb,
+					       "LDAP search response size "
+					       "limited to %zu bytes\n",
+					       LDAP_SERVER_MAX_REPLY_SIZE);
+		} else if (!NT_STATUS_IS_OK(status)) {
+			ret = ldb_request_done(req,
+					       ldb_operr(ldb));
+		} else {
+			ret = LDB_SUCCESS;
+		}
+		break;
+	}
+	case LDB_REPLY_REFERRAL:
+	{
+		struct ldap_SearchResRef *ent_ref;
+
+		/*
+		 * TODO: This should be handled by the notification
+		 * module not here
+		 */
+		if (call->notification.busy) {
+			ret = LDB_SUCCESS;
+			break;
+		}
+
+		ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultReference);
+		if (ent_r == NULL) {
+			return ldb_oom(ldb);
+		}
+
+		/*
+		 * Put the LDAP referral data under ent_r->msg
+		 * so we can free that later once encoded
+		 */
+		talloc_steal(ent_r->msg, ares->referral);
+
+		ent_ref = &ent_r->msg->r.SearchResultReference;
+		ent_ref->referral = ares->referral;
+
+		status = ldapsrv_queue_reply(call, ent_r);
+		if (!NT_STATUS_IS_OK(status)) {
+			ret = LDB_ERR_OPERATIONS_ERROR;
+		} else {
+			ret = LDB_SUCCESS;
+		}
+		break;
+	}
+	case LDB_REPLY_DONE:
+	{
+		/*
+		 * We don't queue the reply for this one, we let that
+		 * happen outside
+		 */
+		ctx->controls = talloc_move(ctx, &ares->controls);
+
+		TALLOC_FREE(ares);
+		return ldb_request_done(req, LDB_SUCCESS);
+	}
+	default:
+		/* Doesn't happen */
+		ret = LDB_ERR_OPERATIONS_ERROR;
+	}
+	TALLOC_FREE(ares);
+
+	return ret;
+}
+
+
 static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 {
 	struct ldap_SearchRequest *req = &call->request->r.SearchRequest;
-	struct ldap_SearchResEntry *ent;
 	struct ldap_Result *done;
-	struct ldapsrv_reply *ent_r, *done_r;
+	struct ldapsrv_reply *done_r;
 	TALLOC_CTX *local_ctx;
+	struct ldapsrv_context *callback_ctx = NULL;
 	struct ldb_context *samdb = talloc_get_type(call->conn->ldb, struct ldb_context);
 	struct ldb_dn *basedn;
-	struct ldb_result *res = NULL;
 	struct ldb_request *lreq;
 	struct ldb_control *search_control;
 	struct ldb_search_options_control *search_options;
@@ -588,9 +729,8 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	const char *scope_str, *errstr = NULL;
 	int result = -1;
 	int ldb_ret = -1;
-	unsigned int i, j;
+	unsigned int i;
 	int extended_type = 1;
-	NTSTATUS status;
 
 	DEBUG(10, ("SearchRequest"));
 	DEBUGADD(10, (" basedn: %s", req->basedn));
@@ -642,14 +782,18 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	DEBUG(5,("ldb_request %s dn=%s filter=%s\n", 
 		 scope_str, req->basedn, ldb_filter_from_tree(call, req->tree)));
 
-	res = talloc_zero(local_ctx, struct ldb_result);
-	NT_STATUS_HAVE_NO_MEMORY(res);
+	callback_ctx = talloc_zero(local_ctx, struct ldapsrv_context);
+	NT_STATUS_HAVE_NO_MEMORY(callback_ctx);
+	callback_ctx->call = call;
+	callback_ctx->extended_type = extended_type;
+	callback_ctx->attributesonly = req->attributesonly;
 
 	ldb_ret = ldb_build_search_req_ex(&lreq, samdb, local_ctx,
 					  basedn, scope,
 					  req->tree, attrs,
 					  call->request->controls,
-					  res, ldb_search_default_callback,
+					  callback_ctx,
+					  ldap_server_search_callback,
 					  NULL);
 
 	if (ldb_ret != LDB_SUCCESS) {
@@ -726,57 +870,13 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	ldb_ret = ldb_wait(lreq->handle, LDB_WAIT_ALL);
 
 	if (ldb_ret == LDB_SUCCESS) {
-		for (i = 0; i < res->count; i++) {
-			ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
-			NT_STATUS_HAVE_NO_MEMORY(ent_r);
-
-			/* Better to have the whole message kept here,
-			 * than to find someone further up didn't put
-			 * a value in the right spot in the talloc tree */
-			talloc_steal(ent_r, res->msgs[i]);
-			
-			ent = &ent_r->msg->r.SearchResultEntry;
-			ent->dn = ldb_dn_get_extended_linearized(ent_r, res->msgs[i]->dn, extended_type);
-			ent->num_attributes = 0;
-			ent->attributes = NULL;
-			if (res->msgs[i]->num_elements == 0) {
-				goto queue_reply;
-			}
-			ent->num_attributes = res->msgs[i]->num_elements;
-			ent->attributes = talloc_array(ent_r, struct ldb_message_element, ent->num_attributes);
-			NT_STATUS_HAVE_NO_MEMORY(ent->attributes);
-			for (j=0; j < ent->num_attributes; j++) {
-				ent->attributes[j].name = res->msgs[i]->elements[j].name;
-				ent->attributes[j].num_values = 0;
-				ent->attributes[j].values = NULL;
-				if (req->attributesonly && (res->msgs[i]->elements[j].num_values == 0)) {
-					continue;
-				}
-				ent->attributes[j].num_values = res->msgs[i]->elements[j].num_values;
-				ent->attributes[j].values = res->msgs[i]->elements[j].values;
-			}
-queue_reply:
-			status = ldapsrv_queue_reply(call, ent_r);
-			if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_TOO_LARGE)) {
-				result = LDB_ERR_SIZE_LIMIT_EXCEEDED;
-				ldb_asprintf_errstring(samdb,
-						       "LDAP search response size "
-						       "limited to %zu bytes\n",
-						       LDAP_SERVER_MAX_REPLY_SIZE);
-				goto reply;
-			} else if (!NT_STATUS_IS_OK(status)) {
-				result = ldb_operr(samdb);
-				goto reply;
-			}
-		}
-
 		if (call->notification.busy) {
 			/* Move/Add it to the end */
 			DLIST_DEMOTE(call->conn->pending_calls, call);
 			call->notification.generation =
 				call->conn->service->notification.generation;
 
-			if (res->count != 0) {
+			if (callback_ctx->count != 0) {
 				call->notification.generation += 1;
 				ldapsrv_notification_retry_setup(call->conn->service,
 								 true);
@@ -784,28 +884,6 @@ queue_reply:
 
 			talloc_free(local_ctx);
 			return NT_STATUS_OK;
-		}
-
-		/* Send back referrals if they do exist (search operations) */
-		if (res->refs != NULL) {
-			char **ref;
-			struct ldap_SearchResRef *ent_ref;
-
-			for (ref = res->refs; *ref != NULL; ++ref) {
-				ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultReference);
-				NT_STATUS_HAVE_NO_MEMORY(ent_r);
-
-				/* Better to have the whole referrals kept here,
-				 * than to find someone further up didn't put
-				 * a value in the right spot in the talloc tree
-				 */
-				talloc_steal(ent_r, *ref);
-
-				ent_ref = &ent_r->msg->r.SearchResultReference;
-				ent_ref->referral = *ref;
-
-				ldapsrv_queue_reply(call, ent_r);
-			}
 		}
 	}
 
@@ -822,9 +900,9 @@ reply:
 
 	if (result != -1) {
 	} else if (ldb_ret == LDB_SUCCESS) {
-		if (res->controls) {
-			done_r->msg->controls = res->controls;
-			talloc_steal(done_r, res->controls);
+		if (callback_ctx->controls) {
+			done_r->msg->controls = callback_ctx->controls;
+			talloc_steal(done_r->msg, callback_ctx->controls);
 		}
 		result = LDB_SUCCESS;
 	} else {
