@@ -910,6 +910,12 @@ def send_email(subject, text, log_tar):
         outer.attach(msg)
     content = outer.as_string()
     s = smtplib.SMTP(options.email_server)
+    email_user = os.getenv('SMTP_USERNAME')
+    email_password = os.getenv('SMTP_PASSWORD')
+    if email_user is not None:
+        s.starttls()
+        s.login(email_user, email_password)
+
     s.sendmail(options.email_from, [options.email], content)
     s.set_debuglevel(1)
     s.quit()
