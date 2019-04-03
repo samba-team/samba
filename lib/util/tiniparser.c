@@ -321,15 +321,10 @@ static bool section_parser(const char *section_name,
 	return true;
 }
 
-struct tiniparser_dictionary *tiniparser_load(const char *filename)
+struct tiniparser_dictionary *tiniparser_load_stream(FILE *fp)
 {
 	bool ret;
 	struct tiniparser_dictionary *d = NULL;
-	FILE *fp = fopen(filename, "r");
-
-	if (fp == NULL) {
-		return NULL;
-	}
 
 	d = malloc(sizeof(struct tiniparser_dictionary));
 	if (d == NULL) {
@@ -343,11 +338,26 @@ struct tiniparser_dictionary *tiniparser_load(const char *filename)
 			section_parser,
 			value_parser,
 			d);
-	fclose(fp);
 	if (ret == false) {
 		tiniparser_freedict(d);
 		d = NULL;
 	}
+	return d;
+}
+
+struct tiniparser_dictionary *tiniparser_load(const char *filename)
+{
+	struct tiniparser_dictionary *d;
+	FILE *fp = fopen(filename, "r");
+
+	if (fp == NULL) {
+		return NULL;
+	}
+
+	d = tiniparser_load_stream(fp);
+
+	fclose(fp);
+
 	return d;
 }
 

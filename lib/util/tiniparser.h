@@ -49,6 +49,7 @@ const char *tiniparser_getstring(struct tiniparser_dictionary *d,
 int tiniparser_getint(struct tiniparser_dictionary *d,
                         const char *key,
                         int default_value);
+struct tiniparser_dictionary *tiniparser_load_stream(FILE *fp);
 struct tiniparser_dictionary *tiniparser_load(const char *filename);
 void tiniparser_freedict(struct tiniparser_dictionary *d);
 
