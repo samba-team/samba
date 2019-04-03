@@ -89,7 +89,7 @@ static NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 	sam->groups.count = 0;
 	sam->groups.rids = NULL;
 
-	if (user_info_dc->num_sids > 2) {
+	if (user_info_dc->num_sids > PRIMARY_GROUP_SID_INDEX) {
 		size_t i;
 		sam->groups.rids = talloc_array(mem_ctx, struct samr_RidWithAttribute,
 						user_info_dc->num_sids);
@@ -97,7 +97,7 @@ static NTSTATUS auth_convert_user_info_dc_sambaseinfo(TALLOC_CTX *mem_ctx,
 		if (sam->groups.rids == NULL)
 			return NT_STATUS_NO_MEMORY;
 
-		for (i=2; i<user_info_dc->num_sids; i++) {
+		for (i=PRIMARY_GROUP_SID_INDEX; i<user_info_dc->num_sids; i++) {
 			struct dom_sid *group_sid = &user_info_dc->sids[i];
 			if (!dom_sid_in_domain(sam->domain_sid, group_sid)) {
 				/* We handle this elsewhere */
@@ -451,6 +451,10 @@ NTSTATUS make_user_info_dc_netlogon_validation(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < base->groups.count; i++) {
+		/* Skip primary group, already added above */
+		if (base->groups.rids[i].rid == base->primary_gid) {
+			continue;
+		}
 		user_info_dc->sids[user_info_dc->num_sids] = *base->domain_sid;
 		if (!sid_append_rid(&user_info_dc->sids[user_info_dc->num_sids], base->groups.rids[i].rid)) {
 			return NT_STATUS_INVALID_PARAMETER;
