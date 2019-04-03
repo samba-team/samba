@@ -92,7 +92,7 @@ plantestsuite_loadlist("samba4.ldap.ad_dc_medley_performance.python(ad_dc_ntvfs)
                         '$LOADLIST', '$LISTOPT'])
 
 # again with paged search module
-plantestsuite_loadlist("samba4.ldap.ad_dc_medley_performance.paged_search."+\
+plantestsuite_loadlist("samba4.ldap.ad_dc_performance.paged_search."+\
                            "python(ad_dc_ntvfs)",
                        "ad_dc_ntvfs",
                        [python,
