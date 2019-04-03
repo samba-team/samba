@@ -521,7 +521,6 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
 	const char *scope_str, *errstr = NULL;
-	int success_limit = 1;
 	int result = -1;
 	int ldb_ret = -1;
 	unsigned int i, j;
@@ -544,17 +543,14 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		case LDAP_SEARCH_SCOPE_BASE:
 			scope_str = "BASE";
 			scope = LDB_SCOPE_BASE;
-			success_limit = 0;
 			break;
 		case LDAP_SEARCH_SCOPE_SINGLE:
 			scope_str = "ONE";
 			scope = LDB_SCOPE_ONELEVEL;
-			success_limit = 0;
 			break;
 		case LDAP_SEARCH_SCOPE_SUB:
 			scope_str = "SUB";
 			scope = LDB_SCOPE_SUBTREE;
-			success_limit = 0;
 			break;
 	        default:
 			result = LDAP_PROTOCOL_ERROR;
@@ -749,15 +745,11 @@ reply:
 
 	if (result != -1) {
 	} else if (ldb_ret == LDB_SUCCESS) {
-		if (res->count >= success_limit) {
-			DEBUG(10,("SearchRequest: results: [%d]\n", res->count));
-			result = LDAP_SUCCESS;
-			errstr = NULL;
-		}
 		if (res->controls) {
 			done_r->msg->controls = res->controls;
 			talloc_steal(done_r, res->controls);
 		}
+		result = LDB_SUCCESS;
 	} else {
 		DEBUG(10,("SearchRequest: error\n"));
 		result = map_ldb_error(local_ctx, ldb_ret, ldb_errstring(samdb),
