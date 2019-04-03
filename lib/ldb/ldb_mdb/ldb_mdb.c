@@ -283,6 +283,16 @@ static int lmdb_traverse_fn(struct ldb_kv_private *ldb_kv,
 
 		ret = fn(ldb_kv, key, data, ctx);
 		if (ret != 0) {
+			/*
+			 * NOTE: This DOES NOT set lmdb->error!
+			 *
+			 * This means that the caller will get success.
+			 * This matches TDB traverse behaviour, where callbacks
+			 * may terminate the traverse, but do not change the
+			 * return code from success.
+			 *
+			 * Callers SHOULD store their own error codes.
+			 */
 			goto done;
 		}
 	}
@@ -489,6 +499,16 @@ static int lmdb_iterate_range(struct ldb_kv_private *ldb_kv,
 
 		ret = fn(ldb_kv, key, data, ctx);
 		if (ret != 0) {
+			/*
+			 * NOTE: This DOES NOT set lmdb->error!
+			 *
+			 * This means that the caller will get success.
+			 * This matches TDB traverse behaviour, where callbacks
+			 * may terminate the traverse, but do not change the
+			 * return code from success.
+			 *
+			 * Callers SHOULD store their own error codes.
+			 */
 			goto done;
 		}
 	}
@@ -512,6 +532,16 @@ static int lmdb_iterate_range(struct ldb_kv_private *ldb_kv,
 
 		ret = fn(ldb_kv, key, data, ctx);
 		if (ret != 0) {
+			/*
+			 * NOTE: This DOES NOT set lmdb->error!
+			 *
+			 * This means that the caller will get success.
+			 * This matches TDB traverse behaviour, where callbacks
+			 * may terminate the traverse, but do not change the
+			 * return code from success.
+			 *
+			 * Callers SHOULD store their own error codes.
+			 */
 			goto done;
 		}
 	}
