@@ -133,6 +133,49 @@ class LdbTDBIndexedComparisonExpressions(LdbBaseTest):
         assert_int32_expr(">=" + str(int32_max-1))
         assert_int32_expr("=10", "==10")
 
+    def test_comparison_expression_duplicates(self):
+        self.l.samba_schema_attribute_add("int32attr", 0,
+                                          _ldb.SYNTAX_SAMBA_INT32)
+
+        int32_max = 2**31-1
+        int32_min = -2**31
+
+        test_nums = list(range(-5, 5)) * 3
+        test_nums += list(range(-20, 20, 5)) * 2
+        test_nums += list(range(-50, 50, 15))
+        test_nums = sorted(test_nums)
+
+        for i, n in enumerate(test_nums):
+            ouuid = 0x0123456789abcdef + i
+            ouuid_s = bytes(('0' + hex(ouuid)[2:]).encode())
+            self.l.add({"dn": "OU=COMPTESTOU{},DC=SAMBA,DC=ORG".format(i),
+                        "objectUUID": ouuid_s,
+                        "int32attr": str(n)})
+
+        def assert_int32_expr(expr, py_expr=None):
+            res = self.l.search(base="DC=SAMBA,DC=ORG",
+                                scope=SCOPE_SUBTREE,
+                                expression="(int32attr%s)" % (expr))
+
+            if not py_expr:
+                py_expr = expr
+            expect = [n for n in test_nums if eval(str(n) + py_expr)]
+            vals = sorted([int(r.get("int32attr")[0]) for r in res])
+            self.assertEqual(len(res), len(expect))
+            self.assertEqual(set(vals), set(expect))
+            self.assertEqual(expect, vals)
+
+        assert_int32_expr(">=-2")
+        assert_int32_expr("<=2")
+        assert_int32_expr(">=" + str(int32_min))
+        assert_int32_expr("<=" + str(int32_min))
+        assert_int32_expr("<=" + str(int32_min+1))
+        assert_int32_expr("<=" + str(int32_max))
+        assert_int32_expr(">=" + str(int32_max))
+        assert_int32_expr(">=" + str(int32_max-1))
+        assert_int32_expr("=-5", "==-5")
+        assert_int32_expr("=5", "==5")
+
 # Run the same tests against an lmdb backend
 class LdbLMDBIndexedComparisonExpressions(LdbTDBIndexedComparisonExpressions):
 
