@@ -229,8 +229,6 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		POPT_COMMON_VERSION
 		{ NULL }
 	};
-	const struct ndr_interface_call_pipes *in_pipes = NULL;
-	const struct ndr_interface_call_pipes *out_pipes = NULL;
 	uint32_t highest_ofs;
 	struct dcerpc_sec_verification_trailer *sec_vt = NULL;
 	
@@ -319,11 +317,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	if (strcmp(inout, "in") == 0 ||
 	    strcmp(inout, "request") == 0) {
 		flags = NDR_IN;
-		in_pipes = &f->in_pipes;
 	} else if (strcmp(inout, "out") == 0 ||
 		   strcmp(inout, "response") == 0) {
 		flags = NDR_OUT;
-		out_pipes = &f->out_pipes;
 	} else {
 		printf("Bad inout value '%s'\n", inout);
 		exit(1);
@@ -445,8 +441,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 	TALLOC_FREE(sec_vt);
 
-	if (out_pipes) {
-		status = ndrdump_pull_and_print_pipes(function, ndr_pull, ndr_print, out_pipes);
+	if (flags & NDR_OUT) {
+		status = ndrdump_pull_and_print_pipes(function, ndr_pull, ndr_print, &f->out_pipes);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("dump FAILED\n");
 			exit(1);
@@ -483,8 +479,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		exit(1);
 	}
 
-	if (in_pipes) {
-		status = ndrdump_pull_and_print_pipes(function, ndr_pull, ndr_print, in_pipes);
+	if (flags & NDR_IN) {
+		status = ndrdump_pull_and_print_pipes(function, ndr_pull, ndr_print, &f->in_pipes);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("dump FAILED\n");
 			exit(1);
