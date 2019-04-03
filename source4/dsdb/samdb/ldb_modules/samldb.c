@@ -1333,7 +1333,7 @@ static int samldb_schema_info_update(struct samldb_ctx *ac)
 	}
 
 	/* do not update schemaInfo during provisioning */
-	if (ldb_request_get_control(ac->req, LDB_CONTROL_RELAX_OID)) {
+	if (ldb_request_get_control(ac->req, LDB_CONTROL_PROVISION_OID)) {
 		return LDB_SUCCESS;
 	}
 
