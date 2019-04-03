@@ -129,6 +129,9 @@ def options(opt):
         action="store_true",
         dest='undefined_sanitizer',
         default=False)
+    gr.add_option('--enable-libfuzzer',
+                  help=("Build fuzzing binaries (requires compiler options for libFuzzer or compiler wrapper such as honggfuzz/hfuzz-cc)"),
+                  action="store_true", dest='enable_libfuzzer', default=False)
 
     gr.add_option('--abi-check',
 		   help=("Check ABI signatures for libraries"),
@@ -589,6 +592,10 @@ struct foo bar = { .y = 'X', .x = 1 };
                     #define eprintf(...) fprintf(stderr, __VA_ARGS__)
                     eprintf("bla", "bar")
                     ''', define='HAVE__VA_ARGS__MACRO')
+
+    conf.env.enable_libfuzzer = Options.options.enable_libfuzzer
+    if conf.env.enable_libfuzzer:
+        conf.DEFINE('ENABLE_LIBFUZZER', 1)
 
     conf.SAMBA_BUILD_ENV()
 

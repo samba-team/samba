@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+bld.SAMBA_SUBSYSTEM('fuzzing',
+    source='fuzzing.c',
+    deps='talloc',
+    enabled=bld.env.enable_libfuzzer,
+    )

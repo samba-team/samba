@@ -938,6 +938,11 @@ def SETUP_CONFIGURE_CACHE(conf, enable):
 
 @conf
 def SAMBA_CHECK_UNDEFINED_SYMBOL_FLAGS(conf):
+    if Options.options.address_sanitizer or Options.options.enable_libfuzzer:
+        # Sanitizers can rely on symbols undefined at library link time and the
+        # symbols used for fuzzers are only defined by compiler wrappers.
+        return
+
     if not sys.platform.startswith("openbsd"):
         # we don't want any libraries or modules to rely on runtime
         # resolution of symbols
