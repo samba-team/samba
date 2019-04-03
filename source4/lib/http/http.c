@@ -656,6 +656,9 @@ static const char *http_method_str(enum http_cmd_type type)
 	const char *method;
 
 	switch (type) {
+	case HTTP_REQ_POST:
+		method = "POST";
+		break;
 	case HTTP_REQ_RPC_IN_DATA:
 		method = "RPC_IN_DATA";
 		break;
