@@ -1701,7 +1701,7 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
 
     # use admin sid dn as user dn, since admin should own most of the files,
     # the operation will be much faster
-    userdn = '<SID={}-{}>'.format(domainsid, security.DOMAIN_RID_ADMINISTRATOR)
+    userdn = '<SID={0}-{1}>'.format(domainsid, security.DOMAIN_RID_ADMINISTRATOR)
 
     flags = (auth.AUTH_SESSION_INFO_DEFAULT_GROUPS |
              auth.AUTH_SESSION_INFO_AUTHENTICATED |
