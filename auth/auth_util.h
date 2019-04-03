@@ -18,6 +18,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __AUTH_AUTH_UTIL_H__
+#define __AUTH_AUTH_UTIL_H__
+
+#include "replace.h"
+#include <talloc.h>
+#include "librpc/gen_ndr/auth.h"
+
 struct auth_session_info *copy_session_info(
 	TALLOC_CTX *mem_ctx,
 	const struct auth_session_info *src);
+
+#endif
