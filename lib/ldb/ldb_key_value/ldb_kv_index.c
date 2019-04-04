@@ -1770,6 +1770,20 @@ static int traverse_range_index(struct ldb_kv_private *ldb_kv,
 	return LDB_SUCCESS;
 }
 
+/*
+ * >= and <= indexing implemented using lexicographically sorted keys
+ *
+ * We only run this in GUID indexing mode and when there is no write
+ * transaction (only implicit read locks are being held). Otherwise, we would
+ * have to deal with the in-memory index cache.
+ *
+ * We rely on the implementation of index_format_fn on a schema syntax which
+ * will can help us to construct keys which can be ordered correctly, and we
+ * terminate using schema agnostic start and end keys.
+ *
+ * index_format_fn must output values which can be memcmp-able to produce the
+ * correct ordering as defined by the schema syntax class.
+ */
 static int ldb_kv_index_dn_ordered(struct ldb_module *module,
 				   struct ldb_kv_private *ldb_kv,
 				   const struct ldb_parse_tree *tree,
