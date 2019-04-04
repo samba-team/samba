@@ -1195,7 +1195,7 @@ class TestZones(DNSTest):
                          0x91: "MASTER_SERVERS_DA",
                          0x92: "NS_SERVERS_DA",
                          0x100: "NODE_DBFLAGS"}
-        return {zone_prop_ids[p.id].lower(): p.data for p in props}
+        return dict((zone_prop_ids[p.id].lower(), p.data) for p in props)
 
     def set_aging(self, enable=False):
         self.create_zone(self.zone, aging_enabled=enable)
