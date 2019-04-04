@@ -1862,8 +1862,25 @@ static int ldb_kv_index_dn_ordered(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/*
+	 * In order to avoid defining a start and end key for the search, we
+	 * notice that each index key is of the form:
+	 *
+	 *     DN=@INDEX:<ATTRIBUTE>:<VALUE>\0.
+	 *
+	 * We can simply make our start key DN=@INDEX:<ATTRIBUTE>: and our end
+	 * key DN=@INDEX:<ATTRIBUTE>; to return all index entries for a
+	 * particular attribute.
+	 *
+	 * Our LMDB backend uses the default memcmp for key comparison.
+	 */
+
+	/* Eliminate NUL byte at the end of the empty key */
+	ldb_key2.length--;
+
 	if (ascending) {
-		ldb_key2.data[ldb_key2.length-2]++;
+		/* : becomes ; for pseudo end-key */
+		ldb_key2.data[ldb_key2.length-1]++;
 		start_key = ldb_key;
 		end_key = ldb_key2;
 	} else {
