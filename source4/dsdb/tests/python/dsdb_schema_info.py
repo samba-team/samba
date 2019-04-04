@@ -166,16 +166,17 @@ systemOnly: FALSE
 """
         return ldif
 
-    def test_AddModifyClass(self):
+    def test_AddModifyClass(self, controls=[], class_pre="schemaInfo-Class-"):
         # get initial schemaInfo
         schi_before = self._getSchemaInfo()
 
         # create names for a Class to add
-        (class_name, class_ldap_name, class_dn) = self._make_obj_names("schemaInfo-Class-")
+        (class_name, class_ldap_name, class_dn) =\
+                self._make_obj_names(class_pre)
         ldif = self._make_class_ldif(class_name, class_dn, 1)
 
         # add the new Class
-        self.sam_db.add_ldif(ldif)
+        self.sam_db.add_ldif(ldif, controls=controls)
         self._ldap_schemaUpdateNow()
         # compare resulting schemaInfo
         schi_after = self._getSchemaInfo()
@@ -184,7 +185,7 @@ systemOnly: FALSE
         # rename the Class
         class_dn_new = class_dn.replace(class_name, class_name + "-NEW")
         try:
-            self.sam_db.rename(class_dn, class_dn_new)
+            self.sam_db.rename(class_dn, class_dn_new, controls=controls)
         except LdbError as e1:
             (num, _) = e1.args
             self.fail("failed to change CN for %s: %s" % (class_name, _))
@@ -192,3 +193,9 @@ systemOnly: FALSE
         # compare resulting schemaInfo
         schi_after = self._getSchemaInfo()
         self._checkSchemaInfo(schi_before, schi_after)
+
+    def test_AddModifyClassLocalRelaxed(self):
+        lp = self.get_loadparm()
+        self.sam_db = samba.tests.connect_samdb(lp.samdb_url())
+        self.test_AddModifyClass(controls=["relax:0"],
+                                 class_pre="schemaInfo-Relaxed-")
