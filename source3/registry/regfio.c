@@ -552,7 +552,8 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 		if ( !prs_uint32( "header", &hbin->ps, 0, &header ) )
 			return NULL;
 		
-		SMB_ASSERT( record_size != 0 );
+		if (record_size == 0)
+			return NULL;
 
 		if ( record_size & 0x80000000 ) {
 			/* absolute_value(record_size) */
