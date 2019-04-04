@@ -512,7 +512,24 @@ static int search_func(struct ldb_kv_private *ldb_kv,
 	ac = talloc_get_type(state, struct ldb_kv_context);
 	ldb = ldb_module_get_ctx(ac->module);
 
-	if (ldb_kv_key_is_record(key) == false) {
+	/*
+	 * We want to skip @ records early in a search full scan
+	 *
+	 * @ records like @IDXLIST are only available via a base
+	 * search on the specific name but the method by which they
+	 * were excluded was expensive, after the unpack the DN is
+	 * exploded and ldb_match_msg_error() would reject it for
+	 * failing to match the scope.
+	 *
+	 * ldb_kv_key_is_normal_record() uses the fact that @ records
+	 * have the DN=@ prefix on their TDB/LMDB key to quickly
+	 * exclude them from consideration.
+	 *
+	 * (any other non-records are also excluded by the same key
+	 * match)
+	 */
+
+	if (ldb_kv_key_is_normal_record(key) == false) {
 		return 0;
 	}
 
