@@ -90,4 +90,33 @@ NTSTATUS dns_common_zones(struct ldb_context *samdb,
 
 bool dns_zoneinfo_load_zone_property(struct dnsserver_zoneinfo *zoneinfo,
 				     struct dnsp_DnsProperty *prop);
+/*
+ * Log a DNS operation along with it's duration
+ * Enabled by setting a log level of "dns:10"
+ *
+ * const char *operation
+ * const char *result
+ * const struct timeval *start
+ * const char *zone
+ * const char *name
+ * const char *data
+ */
+#define DNS_COMMON_LOG_OPERATION(result, start, zone, name, data) \
+	if (CHECK_DEBUGLVLC(DBGC_DNS, DBGLVL_DEBUG)) { \
+		struct timeval now = timeval_current(); \
+		uint64_t duration = usec_time_diff(&now, (start));\
+		const char *re = (result);\
+		const char *zn = (zone); \
+		const char *nm = (name); \
+		const char *dt = (data); \
+		DBG_DEBUG( \
+			"DNS timing: result: [%s] duration: (%" PRIi64 ") " \
+			"zone: [%s] name: [%s] data: [%s]\n", \
+			re == NULL ? "" : re, \
+			duration, \
+			zn == NULL ? "" : zn, \
+			nm == NULL ? "" : nm, \
+			dt == NULL ? "" : dt); \
+	}
+
 #endif /* __DNSSERVER_COMMON_H__ */

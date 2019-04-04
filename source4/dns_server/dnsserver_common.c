@@ -145,13 +145,14 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 			 uint16_t *num_records,
 			 bool *tombstoned)
 {
+	const struct timeval start = timeval_current();
 	static const char * const attrs[] = {
 		"dnsRecord",
 		"dNSTombstoned",
 		NULL
 	};
 	int ret;
-	WERROR werr;
+	WERROR werr = WERR_OK;
 	struct ldb_message *msg = NULL;
 	struct ldb_message_element *el;
 
@@ -169,12 +170,14 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 			"(&(objectClass=dnsNode)(!(dNSTombstoned=TRUE)))");
 	}
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		return WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
+		werr = WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
+		goto exit;
 	}
 	if (ret != LDB_SUCCESS) {
 		/* TODO: we need to check if there's a glue record we need to
 		 * create a referral to */
-		return DNS_ERR(NAME_ERROR);
+		werr = DNS_ERR(NAME_ERROR);
+		goto exit;
 	}
 
 	if (tombstoned != NULL) {
@@ -198,7 +201,8 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 					    struct dnsp_DnssrvRpcRecord,
 					    1);
 			if (recs == NULL) {
-				return WERR_NOT_ENOUGH_MEMORY;
+				werr = WERR_NOT_ENOUGH_MEMORY;
+				goto exit;
 			}
 			recs[0] = (struct dnsp_DnssrvRpcRecord) {
 				.wType = DNS_TYPE_TOMBSTONE,
@@ -214,24 +218,34 @@ WERROR dns_common_lookup(struct ldb_context *samdb,
 			*tombstoned = true;
 			*records = recs;
 			*num_records = 1;
-			return WERR_OK;
+			werr = WERR_OK;
+			goto exit;
 		} else {
 			/*
 			 * Because we are not looking for a tombstone
 			 * in this codepath, we just pretend it does
 			 * not exist at all.
 			 */
-			return WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
+			werr = WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
+			goto exit;
 		}
 	}
 
 	werr = dns_common_extract(samdb, el, mem_ctx, records, num_records);
 	TALLOC_FREE(msg);
 	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+		goto exit;
 	}
 
-	return WERR_OK;
+	werr = WERR_OK;
+exit:
+	DNS_COMMON_LOG_OPERATION(
+		win_errstr(werr),
+		&start,
+		NULL,
+		dn == NULL ? NULL : ldb_dn_get_linearized(dn),
+		NULL);
+	return werr;
 }
 
 /*
@@ -533,8 +547,9 @@ WERROR dns_common_wildcard_lookup(struct ldb_context *samdb,
 				  struct dnsp_DnssrvRpcRecord **records,
 				  uint16_t *num_records)
 {
+	const struct timeval start = timeval_current();
 	int ret;
-	WERROR werr;
+	WERROR werr = WERR_OK;
 	struct ldb_message *msg = NULL;
 	struct ldb_message_element *el = NULL;
 	const struct ldb_val *name = NULL;
@@ -545,16 +560,18 @@ WERROR dns_common_wildcard_lookup(struct ldb_context *samdb,
 	name = ldb_dn_get_rdn_val(dn);
 	if (name == NULL) {
 		return DNS_ERR(NAME_ERROR);
+		goto exit;
 	}
 
 	/* Don't look for a wildcard for @ */
 	if (name->length == 1 && name->data[0] == '@') {
-		return dns_common_lookup(samdb,
+		werr = dns_common_lookup(samdb,
 					 mem_ctx,
 					 dn,
 					 records,
 					 num_records,
 					 NULL);
+		goto exit;
 	}
 
 	werr =  dns_name_check(
@@ -562,7 +579,7 @@ WERROR dns_common_wildcard_lookup(struct ldb_context *samdb,
 			strlen((const char*)name->data),
 			(const char*) name->data);
 	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+		goto exit;
 	}
 
 	/*
@@ -576,29 +593,41 @@ WERROR dns_common_wildcard_lookup(struct ldb_context *samdb,
 				 num_records,
 				 NULL);
 	if (!W_ERROR_EQUAL(werr, WERR_DNS_ERROR_NAME_DOES_NOT_EXIST)) {
-		return werr;
+		goto exit;
 	}
 
 	ret = dns_wildcard_lookup(samdb, mem_ctx, dn, &msg);
 	if (ret == LDB_ERR_OPERATIONS_ERROR) {
-		return DNS_ERR(SERVER_FAILURE);
+		werr = DNS_ERR(SERVER_FAILURE);
+		goto exit;
 	}
 	if (ret != LDB_SUCCESS) {
-		return DNS_ERR(NAME_ERROR);
+		werr = DNS_ERR(NAME_ERROR);
+		goto exit;
 	}
 
 	el = ldb_msg_find_element(msg, "dnsRecord");
 	if (el == NULL) {
-		return WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
+		werr = WERR_DNS_ERROR_NAME_DOES_NOT_EXIST;
+		goto exit;
 	}
 
 	werr = dns_common_extract(samdb, el, mem_ctx, records, num_records);
 	TALLOC_FREE(msg);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
+		goto exit;
 	}
 
-	return WERR_OK;
+	werr = WERR_OK;
+exit:
+	DNS_COMMON_LOG_OPERATION(
+		win_errstr(werr),
+		&start,
+		NULL,
+		dn == NULL ? NULL : ldb_dn_get_linearized(dn),
+		NULL);
+	return werr;
 }
 
 static int rec_cmp(const struct dnsp_DnssrvRpcRecord *r1,
@@ -894,6 +923,7 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 			  struct dnsp_DnssrvRpcRecord *records,
 			  uint16_t rec_count)
 {
+	const struct timeval start = timeval_current();
 	struct ldb_message_element *el;
 	uint16_t i;
 	int ret;
@@ -912,14 +942,17 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 
 	zone_dn = ldb_dn_copy(mem_ctx, dn);
 	if (zone_dn == NULL) {
-		return WERR_NOT_ENOUGH_MEMORY;
+		werr = WERR_NOT_ENOUGH_MEMORY;
+		goto exit;
 	}
 	if (!ldb_dn_remove_child_components(zone_dn, 1)) {
-		return DNS_ERR(SERVER_FAILURE);
+		werr = DNS_ERR(SERVER_FAILURE);
+		goto exit;
 	}
 	zoneinfo = talloc(mem_ctx, struct dnsserver_zoneinfo);
 	if (zoneinfo == NULL) {
-		return WERR_NOT_ENOUGH_MEMORY;
+		werr = WERR_NOT_ENOUGH_MEMORY;
+		goto exit;
 	}
 	werr = dns_get_zone_properties(samdb, mem_ctx, zone_dn, zoneinfo);
 	if (W_ERROR_EQUAL(DNS_ERR(NOTZONE), werr)) {
@@ -929,17 +962,18 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 		 */
 		zoneinfo->fAging = 0;
 	} else if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+		goto exit;
 	}
 
 	werr = check_name_list(mem_ctx, rec_count, records);
 	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+		goto exit;
 	}
 
 	ret = ldb_msg_add_empty(msg, "dnsRecord", LDB_FLAG_MOD_REPLACE, &el);
 	if (ret != LDB_SUCCESS) {
-		return DNS_ERR(SERVER_FAILURE);
+		werr = DNS_ERR(SERVER_FAILURE);
+		goto exit;
 	}
 
 	/*
@@ -948,7 +982,10 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 	 */
 	el->values = talloc_zero_array(el, struct ldb_val, MAX(1, rec_count));
 	if (rec_count > 0) {
-		W_ERROR_HAVE_NO_MEMORY(el->values);
+		if (el->values == NULL) {
+			werr = WERR_NOT_ENOUGH_MEMORY;
+			goto exit;
+		}
 
 		/*
 		 * We store a sorted list with the high wType values first
@@ -984,27 +1021,32 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 				(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(0, ("Failed to push dnsp_DnssrvRpcRecord\n"));
-			return DNS_ERR(SERVER_FAILURE);
+			werr = DNS_ERR(SERVER_FAILURE);
+			goto exit;
 		}
 		el->num_values++;
 	}
 
 	if (needs_add) {
 		if (el->num_values == 0) {
-			return WERR_OK;
+			werr = WERR_OK;
+			goto exit;
 		}
 
 		ret = ldb_msg_add_string(msg, "objectClass", "dnsNode");
 		if (ret != LDB_SUCCESS) {
-			return DNS_ERR(SERVER_FAILURE);
+			werr = DNS_ERR(SERVER_FAILURE);
+			goto exit;
 		}
 
 		ret = ldb_add(samdb, msg);
 		if (ret != LDB_SUCCESS) {
-			return DNS_ERR(SERVER_FAILURE);
+			werr = DNS_ERR(SERVER_FAILURE);
+			goto exit;
 		}
 
 		return WERR_OK;
+		goto exit;
 	}
 
 	if (el->num_values == 0) {
@@ -1018,7 +1060,8 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 			 * This is already a tombstoned object.
 			 * Just leave it instead of updating the time stamp.
 			 */
-			return WERR_OK;
+			werr = WERR_OK;
+			goto exit;
 		}
 
 		tv = timeval_current();
@@ -1032,7 +1075,8 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 				(ndr_push_flags_fn_t)ndr_push_dnsp_DnssrvRpcRecord);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			DEBUG(0, ("Failed to push dnsp_DnssrvRpcRecord\n"));
-			return DNS_ERR(SERVER_FAILURE);
+			werr = DNS_ERR(SERVER_FAILURE);
+			goto exit;
 		}
 		el->num_values++;
 
@@ -1043,23 +1087,34 @@ WERROR dns_common_replace(struct ldb_context *samdb,
 		ret = ldb_msg_add_empty(msg, "dNSTombstoned",
 					LDB_FLAG_MOD_REPLACE, NULL);
 		if (ret != LDB_SUCCESS) {
-			return DNS_ERR(SERVER_FAILURE);
+			werr = DNS_ERR(SERVER_FAILURE);
+			goto exit;
 		}
 
 		ret = ldb_msg_add_fmt(msg, "dNSTombstoned", "%s",
 				      become_tombstoned ? "TRUE" : "FALSE");
 		if (ret != LDB_SUCCESS) {
-			return DNS_ERR(SERVER_FAILURE);
+			werr = DNS_ERR(SERVER_FAILURE);
+			goto exit;
 		}
 	}
 
 	ret = ldb_modify(samdb, msg);
 	if (ret != LDB_SUCCESS) {
 		NTSTATUS nt = dsdb_ldb_err_to_ntstatus(ret);
-		return ntstatus_to_werror(nt);
+		werr = ntstatus_to_werror(nt);
+		goto exit;
 	}
 
-	return WERR_OK;
+	werr = WERR_OK;
+exit:
+	DNS_COMMON_LOG_OPERATION(
+		win_errstr(werr),
+		&start,
+		NULL,
+		dn == NULL ? NULL : ldb_dn_get_linearized(dn),
+		NULL);
+	return werr;
 }
 
 bool dns_name_match(const char *zone, const char *name, size_t *host_part_len)
@@ -1231,12 +1286,14 @@ NTSTATUS dns_common_zones(struct ldb_context *samdb,
 			  struct ldb_dn *base_dn,
 			  struct dns_server_zone **zones_ret)
 {
+	const struct timeval start = timeval_current();
 	int ret;
 	static const char * const attrs[] = { "name", NULL};
 	struct ldb_result *res;
 	int i;
 	struct dns_server_zone *new_list = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS result = NT_STATUS_OK;
 
 	if (base_dn) {
 		/* This search will work against windows */
@@ -1253,7 +1310,8 @@ NTSTATUS dns_common_zones(struct ldb_context *samdb,
 	}
 	if (ret != LDB_SUCCESS) {
 		TALLOC_FREE(frame);
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		result = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		goto exit;
 	}
 
 	TYPESAFE_QSORT(res->msgs, res->count, dns_common_sort_zones);
@@ -1264,7 +1322,8 @@ NTSTATUS dns_common_zones(struct ldb_context *samdb,
 		z = talloc_zero(mem_ctx, struct dns_server_zone);
 		if (z == NULL) {
 			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
+			result = NT_STATUS_NO_MEMORY;
+			goto exit;
 		}
 
 		z->name = ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL);
@@ -1289,7 +1348,15 @@ NTSTATUS dns_common_zones(struct ldb_context *samdb,
 
 	*zones_ret = new_list;
 	TALLOC_FREE(frame);
-	return NT_STATUS_OK;
+	result = NT_STATUS_OK;
+exit:
+	DNS_COMMON_LOG_OPERATION(
+		nt_errstr(result),
+		&start,
+		NULL,
+		base_dn == NULL ? NULL : ldb_dn_get_linearized(base_dn),
+		NULL);
+	return result;
 }
 
 /*
