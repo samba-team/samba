@@ -835,7 +835,22 @@ static int ldif_canonicalise_int32(struct ldb_context *ldb, void *mem_ctx,
 	return 0;
 }
 
-/* Lexicographically sorted representation for a 32-bit integer */
+/*
+ * Lexicographically sorted representation for a 32-bit integer
+ *
+ * [ INT32_MIN ... -3, -2, -1 | 0 | +1, +2, +3 ... INT32_MAX ]
+ *             n                o              p
+ *
+ * Refer to the comment in lib/ldb/common/attrib_handlers.c for the
+ * corresponding documentation for 64-bit integers.
+ *
+ * The same rules apply but use INT32_MIN and INT32_MAX.
+ *
+ * String representation padding is done to 10 characters.
+ *
+ * INT32_MAX = 2^31 - 1 = 2147483647 (10 characters long)
+ *
+ */
 static int ldif_index_format_int32(struct ldb_context *ldb,
 				    void *mem_ctx,
 				    const struct ldb_val *in,
@@ -852,6 +867,10 @@ static int ldif_index_format_int32(struct ldb_context *ldb,
 	}
 
 	if (i < 0) {
+		/*
+		 * i is negative, so this is subtraction rather than
+		 * wrap-around.
+		 */
 		prefix = 'n';
 		i = INT32_MAX + i + 1;
 	} else if (i > 0) {
