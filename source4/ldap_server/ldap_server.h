@@ -72,7 +72,8 @@ struct ldapsrv_call {
 		struct ldap_message *msg;
 		DATA_BLOB blob;
 	} *replies;
-	struct iovec out_iov;
+	struct iovec *out_iov;
+	size_t iov_count;
 
 	struct tevent_req *(*wait_send)(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
