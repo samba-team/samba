@@ -132,8 +132,7 @@ int ldb_kv_search_base(struct ldb_module *module,
 	 * We can't use tdb_exists() directly on a key when the TDB
 	 * key is the GUID one, not the DN based one.  So we just do a
 	 * normal search and avoid most of the allocation with the
-	 * LDB_UNPACK_DATA_FLAG_NO_DN and
-	 * LDB_UNPACK_DATA_FLAG_NO_ATTRS flags
+	 * LDB_UNPACK_DATA_FLAG_NO_ATTRS flag
 	 */
 	msg = ldb_msg_new(module);
 	if (msg == NULL) {
