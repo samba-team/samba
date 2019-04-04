@@ -32,6 +32,7 @@
 #include <ldb_module.h>
 #include "ldb_wrap.h"
 #include "lib/tsocket/tsocket.h"
+#include "libcli/ldap/ldap_proto.h"
 
 static int map_ldb_error(TALLOC_CTX *mem_ctx, int ldb_err,
 	const char *add_err_string, const char **errstring)
@@ -257,9 +258,24 @@ struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, uint8_t type
 	return reply;
 }
 
-void ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *reply)
+NTSTATUS ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *reply)
 {
+	bool bret = ldap_encode(reply->msg,
+				samba_ldap_control_handlers(),
+				&reply->blob,
+				call);
+	TALLOC_FREE(reply->msg);
+	if (!bret) {
+		DEBUG(0,("Failed to encode ldap reply of type %d: ldap_encode() failed\n",
+			 call->replies->msg->type));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	talloc_set_name_const(reply->blob.data,
+			      "Outgoing, encoded single LDAP reply");
+
 	DLIST_ADD_END(call->replies, reply);
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
@@ -525,6 +541,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	int ldb_ret = -1;
 	unsigned int i, j;
 	int extended_type = 1;
+	NTSTATUS status;
 
 	DEBUG(10, ("SearchRequest"));
 	DEBUGADD(10, (" basedn: %s", req->basedn));
@@ -690,7 +707,11 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 				ent->attributes[j].values = res->msgs[i]->elements[j].values;
 			}
 queue_reply:
-			ldapsrv_queue_reply(call, ent_r);
+			status = ldapsrv_queue_reply(call, ent_r);
+			if (!NT_STATUS_IS_OK(status)) {
+				result = ldb_operr(samdb);
+				goto reply;
+			}
 		}
 
 		if (call->notification.busy) {
@@ -761,8 +782,7 @@ reply:
 
 	talloc_free(local_ctx);
 
-	ldapsrv_queue_reply(call, done_r);
-	return NT_STATUS_OK;
+	return ldapsrv_queue_reply(call, done_r);
 }
 
 static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
@@ -866,8 +886,7 @@ reply:
 	}
 	talloc_free(local_ctx);
 
-	ldapsrv_queue_reply(call, modify_reply);
-	return NT_STATUS_OK;
+	return ldapsrv_queue_reply(call, modify_reply);
 
 }
 
@@ -955,8 +974,7 @@ static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 	}
 	talloc_free(local_ctx);
 
-	ldapsrv_queue_reply(call, add_reply);
-	return NT_STATUS_OK;
+	return ldapsrv_queue_reply(call, add_reply);
 
 }
 
@@ -1011,8 +1029,7 @@ static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 
 	talloc_free(local_ctx);
 
-	ldapsrv_queue_reply(call, del_reply);
-	return NT_STATUS_OK;
+	return ldapsrv_queue_reply(call, del_reply);
 }
 
 static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
@@ -1118,8 +1135,7 @@ reply:
 
 	talloc_free(local_ctx);
 
-	ldapsrv_queue_reply(call, modifydn_r);
-	return NT_STATUS_OK;
+	return ldapsrv_queue_reply(call, modifydn_r);
 }
 
 static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
@@ -1190,8 +1206,7 @@ static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 
 	talloc_free(local_ctx);
 
-	ldapsrv_queue_reply(call, compare_r);
-	return NT_STATUS_OK;
+	return ldapsrv_queue_reply(call, compare_r);
 }
 
 static NTSTATUS ldapsrv_AbandonRequest(struct ldapsrv_call *call)

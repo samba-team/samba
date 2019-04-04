@@ -70,6 +70,7 @@ struct ldapsrv_call {
 	struct ldapsrv_reply {
 		struct ldapsrv_reply *prev, *next;
 		struct ldap_message *msg;
+		DATA_BLOB blob;
 	} *replies;
 	struct iovec out_iov;
 

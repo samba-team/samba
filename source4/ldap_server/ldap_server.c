@@ -677,18 +677,13 @@ static void ldapsrv_call_writev_start(struct ldapsrv_call *call)
 
 	/* build all the replies into a single blob */
 	while (call->replies) {
-		DATA_BLOB b;
 		bool ret;
 
-		if (!ldap_encode(call->replies->msg, samba_ldap_control_handlers(), &b, call)) {
-			DEBUG(0,("Failed to encode ldap reply of type %d\n",
-				 call->replies->msg->type));
-			ldapsrv_terminate_connection(conn, "ldap_encode failed");
-			return;
-		}
-
-		ret = data_blob_append(call, &blob, b.data, b.length);
-		data_blob_free(&b);
+		ret = data_blob_append(call,
+				       &blob,
+				       call->replies->blob.data,
+				       call->replies->blob.length);
+		data_blob_free(&call->replies->blob);
 
 		if (!ret) {
 			ldapsrv_terminate_connection(conn, "data_blob_append failed");
