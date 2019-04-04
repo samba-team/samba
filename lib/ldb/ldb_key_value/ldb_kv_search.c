@@ -678,6 +678,11 @@ static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 	 * assignment is safe
 	 */
 	ret = ldb_kv_filter_attrs(ctx, msg, ctx->attrs, &filtered_msg);
+	if (ret == -1) {
+		talloc_free(msg);
+		filtered_msg = NULL;
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	/*
 	 * Remove any extended components possibly copied in from
@@ -685,10 +690,6 @@ static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 	 */
 	ldb_dn_remove_extended_components(filtered_msg->dn);
 	talloc_free(msg);
-
-	if (ret == -1) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
 
 	ret = ldb_module_send_entry(ctx->req, filtered_msg, NULL);
 	if (ret != LDB_SUCCESS) {
