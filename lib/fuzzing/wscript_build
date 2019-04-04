@@ -18,3 +18,10 @@ bld.SAMBA_BINARY('fuzz_oLschema2ldif',
                  install=False,
                  enabled=bld.env.enable_libfuzzer,
                  )
+
+bld.SAMBA_BINARY('fuzz_reg_parse',
+                 source='fuzz_reg_parse.c',
+                 deps='fuzzing samba3-util smbconf REGFIO',
+                 install=False,
+                 enabled=bld.env.enable_libfuzzer,
+                 )
