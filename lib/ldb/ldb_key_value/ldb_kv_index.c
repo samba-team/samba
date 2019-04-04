@@ -2925,12 +2925,7 @@ static int re_key(struct ldb_kv_private *ldb_kv,
 
 	ldb = ldb_module_get_ctx(module);
 
-	if (key.length > 4 &&
-	    memcmp(key.data, "DN=@", 4) == 0) {
-		return 0;
-	}
-
-	is_record = ldb_kv_key_is_record(key);
+	is_record = ldb_kv_key_is_normal_record(key);
 	if (is_record == false) {
 		return 0;
 	}
@@ -3012,12 +3007,7 @@ static int re_index(struct ldb_kv_private *ldb_kv,
 
 	ldb = ldb_module_get_ctx(module);
 
-	if (key.length > 4 &&
-	    memcmp(key.data, "DN=@", 4) == 0) {
-		return 0;
-	}
-
-	is_record = ldb_kv_key_is_record(key);
+	is_record = ldb_kv_key_is_normal_record(key);
 	if (is_record == false) {
 		return 0;
 	}

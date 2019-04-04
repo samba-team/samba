@@ -231,10 +231,11 @@ int ldb_kv_search(struct ldb_kv_context *ctx);
 /*
  * The following definitions come from lib/ldb/ldb_key_value/ldb_kv.c  */
 /*
- * Determine if this key could hold a record.  We allow the new GUID
- * index, the old DN index and a possible future ID=
+ * Determine if this key could hold a normal record.  We allow the new
+ * GUID index, the old DN index and a possible future ID= but not
+ * DN=@.
  */
-bool ldb_kv_key_is_record(struct ldb_val key);
+bool ldb_kv_key_is_normal_record(struct ldb_val key);
 struct ldb_val ldb_kv_key_dn(struct ldb_module *module,
 			     TALLOC_CTX *mem_ctx,
 			     struct ldb_dn *dn);

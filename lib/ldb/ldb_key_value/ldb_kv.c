@@ -63,12 +63,22 @@ struct ldb_kv_req_spy {
  * Determine if this key could hold a record.  We allow the new GUID
  * index, the old DN index and a possible future ID=
  */
-bool ldb_kv_key_is_record(struct ldb_val key)
+bool ldb_kv_key_is_normal_record(struct ldb_val key)
 {
 	if (key.length < 4) {
 		return false;
 	}
 
+	/*
+	 * @ records are not normal records, we don't want to index
+	 * them nor search on them
+	 */
+	if (key.length > 4 &&
+	    memcmp(key.data, "DN=@", 4) == 0) {
+		return false;
+	}
+
+	/* All other DN= records are however */
 	if (memcmp(key.data, "DN=", 3) == 0) {
 		return true;
 	}
