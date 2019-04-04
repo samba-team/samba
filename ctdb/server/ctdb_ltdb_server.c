@@ -391,7 +391,7 @@ int ctdb_ltdb_lock_fetch_requeue(struct ctdb_db_context *ctdb_db,
 
 
 /*
-  paraoid check to see if the db is empty
+  paranoid check to see if the db is empty
  */
 static void ctdb_check_db_empty(struct ctdb_db_context *ctdb_db)
 {
