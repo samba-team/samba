@@ -13,6 +13,6 @@
 	</para>
 </description>
 <related>stat cache</related>
-<value type="default">256</value>
+<value type="default">512</value>
 <value type="example">100</value>
 </samba:parameter>
