@@ -2930,7 +2930,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "durable handles", "yes");
 
-	lpcfg_do_global_parameter(lp_ctx, "max stat cache size", "256");
+	lpcfg_do_global_parameter(lp_ctx, "max stat cache size", "512");
 
 	lpcfg_do_global_parameter(lp_ctx, "ldap passwd sync", "no");
 
