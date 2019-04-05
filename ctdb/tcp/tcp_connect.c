@@ -122,6 +122,9 @@ static void ctdb_node_connect_write(struct tevent_context *ev,
 
 	/* the queue subsystem now owns this fd */
 	tnode->fd = -1;
+
+	/* tell the ctdb layer we are connected */
+	node->ctdb->upcalls->node_connected(node);
 }
 
 
