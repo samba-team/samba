@@ -35,79 +35,27 @@
 #include "ldb_private.h"
 
 /*
-  add one element to a message
-*/
-static int msg_add_element(struct ldb_message *ret,
-			   const struct ldb_message_element *el,
-			   int check_duplicates)
-{
-	unsigned int i;
-	struct ldb_message_element *e2, *elnew;
-
-	if (check_duplicates && ldb_msg_find_element(ret, el->name)) {
-		/* its already there */
-		return 0;
-	}
-
-	e2 = talloc_realloc(ret, ret->elements, struct ldb_message_element, ret->num_elements+1);
-	if (!e2) {
-		return -1;
-	}
-	ret->elements = e2;
-
-	elnew = &e2[ret->num_elements];
-
-	elnew->name = talloc_strdup(ret->elements, el->name);
-	if (!elnew->name) {
-		return -1;
-	}
-
-	if (el->num_values) {
-		elnew->values = talloc_array(ret->elements, struct ldb_val, el->num_values);
-		if (!elnew->values) {
-			return -1;
-		}
-	} else {
-		elnew->values = NULL;
-	}
-
-	for (i=0;i<el->num_values;i++) {
-		elnew->values[i] = ldb_val_dup(elnew->values, &el->values[i]);
-		if (elnew->values[i].length != el->values[i].length) {
-			return -1;
-		}
-	}
-
-	elnew->num_values = el->num_values;
-	elnew->flags = el->flags;
-
-	ret->num_elements++;
-
-	return 0;
-}
-
-/*
   add the special distinguishedName element
 */
 static int msg_add_distinguished_name(struct ldb_message *msg)
 {
-	struct ldb_message_element el;
-	struct ldb_val val;
-	int ret;
+	const char *dn_attr = "distinguishedName";
+	char *dn = NULL;
 
-	el.flags = 0;
-	el.name = "distinguishedName";
-	el.num_values = 1;
-	el.values = &val;
-	el.flags = 0;
-	val.data = (uint8_t *)ldb_dn_alloc_linearized(msg, msg->dn);
-	if (val.data == NULL) {
-		return -1;
+	if (ldb_msg_find_element(msg, dn_attr)) {
+		/*
+		 * This should not happen, but this is
+		 * existing behaviour...
+		 */
+		return LDB_SUCCESS;
 	}
-	val.length = strlen((char *)val.data);
 
-	ret = msg_add_element(msg, &el, 1);
-	return ret;
+	dn = ldb_dn_alloc_linearized(msg, msg->dn);
+	if (dn == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	return ldb_msg_add_steal_string(msg, dn_attr, dn);
 }
 
 /*
