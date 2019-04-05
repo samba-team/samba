@@ -144,10 +144,10 @@ int ldb_kv_search_base(struct ldb_module *module,
 	if (ret == LDB_SUCCESS) {
 		const char *dn_linearized
 			= ldb_dn_get_linearized(dn);
-		const char *msg_dn_linearlized
+		const char *msg_dn_linearized
 			= ldb_dn_get_linearized(msg->dn);
 
-		if (strcmp(dn_linearized, msg_dn_linearlized) == 0) {
+		if (strcmp(dn_linearized, msg_dn_linearized) == 0) {
 			/*
 			 * Re-use the full incoming DN for
 			 * subtree checks
@@ -647,7 +647,7 @@ static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 	struct ldb_message *msg, *filtered_msg;
 	struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
 	const char *dn_linearized;
-	const char *msg_dn_linearlized;
+	const char *msg_dn_linearized;
 	int ret;
 	bool matched;
 
@@ -701,9 +701,9 @@ static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 	}
 
 	dn_linearized = ldb_dn_get_linearized(ctx->base);
-	msg_dn_linearlized = ldb_dn_get_linearized(msg->dn);
+	msg_dn_linearized = ldb_dn_get_linearized(msg->dn);
 
-	if (strcmp(dn_linearized, msg_dn_linearlized) == 0) {
+	if (strcmp(dn_linearized, msg_dn_linearized) == 0) {
 		/*
 		 * If the DN is exactly the same string, then
 		 * re-use the full incoming DN for the
