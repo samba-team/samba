@@ -188,11 +188,10 @@ static int handle_dereference_openldap(struct ldb_dn *dn,
 			      const char *attr, const DATA_BLOB *val)
 {
 	const struct ldb_val *entryUUIDblob, *sid_blob;
-	struct ldb_message fake_msg; /* easier to use routines that expect an ldb_message */
+	/* easier to use routines that expect an ldb_message */
+	struct ldb_message fake_msg = {0};
 	unsigned int j;
-	
-	fake_msg.num_elements = 0;
-			
+
 	/* Look for this attribute in the returned control */
 	for (j = 0; dereference_attrs && dereference_attrs[j]; j++) {
 		struct ldb_val source_dn = data_blob_string_const(dereference_attrs[j]->dereferenced_dn);
@@ -241,11 +240,10 @@ static int handle_dereference_fds(struct ldb_dn *dn,
 			      const char *attr, const DATA_BLOB *val)
 {
 	const struct ldb_val *nsUniqueIdBlob, *sidBlob;
-	struct ldb_message fake_msg; /* easier to use routines that expect an ldb_message */
+	struct ldb_message fake_msg = {0}; /* easier to use routines that expect an ldb_message */
 	unsigned int j;
-	
-	fake_msg.num_elements = 0;
-			
+
+
 	/* Look for this attribute in the returned control */
 	for (j = 0; dereference_attrs && dereference_attrs[j]; j++) {
 		struct ldb_val source_dn = data_blob_string_const(dereference_attrs[j]->dereferenced_dn);
