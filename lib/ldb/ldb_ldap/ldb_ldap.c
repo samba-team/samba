@@ -492,7 +492,7 @@ static bool lldb_parse_result(struct lldb_context *ac, LDAPMessage *result)
 	char *errmsgp = NULL;
 	LDAPMessage *msg;
 	int type;
-	struct ldb_message *ldbmsg;
+	struct ldb_message *ldbmsg = NULL;
 	char *referral;
 	bool callback_failed;
 	bool request_done;
@@ -537,10 +537,6 @@ static bool lldb_parse_result(struct lldb_context *ac, LDAPMessage *result)
 				break;
 			}
 			ldap_memfree(dn);
-
-			ldbmsg->num_elements = 0;
-			ldbmsg->elements = NULL;
-
 			/* loop over all attributes */
 			for (attr=ldap_first_attribute(lldb->ldap, msg, &berptr);
 			     attr;
