@@ -60,7 +60,7 @@ static void add_records(struct ldb_context *ldb,
 			struct ldb_dn *basedn,
 			unsigned int count)
 {
-	struct ldb_message msg;
+	struct ldb_message msg = {0};
 	unsigned int i;
 
 #if 0
@@ -149,7 +149,7 @@ static void modify_records(struct ldb_context *ldb,
 			   struct ldb_dn *basedn,
 			   unsigned int count)
 {
-	struct ldb_message msg;
+	struct ldb_message msg = {0};
 	unsigned int i;
 
 	for (i=0;i<count;i++) {
