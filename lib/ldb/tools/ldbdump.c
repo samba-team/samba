@@ -40,7 +40,7 @@ static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA _dbuf, void *sta
 {
 	int ret, i, j;
 	struct ldb_dn *dn = state;
-	struct ldb_message *msg = talloc_zero(NULL, struct ldb_message);
+	struct ldb_message *msg = ldb_msg_new(NULL);
 	struct ldb_val dbuf = {
 		.data = _dbuf.dptr,
 		.length = _dbuf.dsize,

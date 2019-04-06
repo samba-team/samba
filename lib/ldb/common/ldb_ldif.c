@@ -772,7 +772,7 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 	ldif = talloc(ldb, struct ldb_ldif);
 	if (!ldif) return NULL;
 
-	ldif->msg = talloc(ldif, struct ldb_message);
+	ldif->msg = ldb_msg_new(ldif);
 	if (ldif->msg == NULL) {
 		talloc_free(ldif);
 		return NULL;
@@ -780,10 +780,6 @@ struct ldb_ldif *ldb_ldif_read(struct ldb_context *ldb,
 
 	ldif->changetype = LDB_CHANGETYPE_NONE;
 	msg = ldif->msg;
-
-	msg->dn = NULL;
-	msg->elements = NULL;
-	msg->num_elements = 0;
 
 	chunk = next_chunk(ldb, ldif, fgetc_fn, private_data);
 	if (!chunk) {
