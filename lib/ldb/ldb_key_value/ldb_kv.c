@@ -766,7 +766,6 @@ static int ldb_kv_msg_delete_attribute(struct ldb_module *module,
 				       struct ldb_message *msg,
 				       const char *name)
 {
-	unsigned int i;
 	int ret;
 	struct ldb_message_element *el;
 	bool is_special = ldb_dn_is_special(msg->dn);
@@ -785,7 +784,6 @@ static int ldb_kv_msg_delete_attribute(struct ldb_module *module,
 	if (el == NULL) {
 		return LDB_ERR_NO_SUCH_ATTRIBUTE;
 	}
-	i = el - msg->elements;
 
 	ret = ldb_kv_index_del_element(module, ldb_kv, msg, el);
 	if (ret != LDB_SUCCESS) {
@@ -793,10 +791,7 @@ static int ldb_kv_msg_delete_attribute(struct ldb_module *module,
 	}
 
 	talloc_free(el->values);
-	if (msg->num_elements > (i+1)) {
-		memmove(el, el+1, sizeof(*el) * (msg->num_elements - (i+1)));
-	}
-	msg->num_elements--;
+	ldb_msg_remove_element(msg, el);
 	msg->elements = talloc_realloc(msg, msg->elements,
 				       struct ldb_message_element,
 				       msg->num_elements);
