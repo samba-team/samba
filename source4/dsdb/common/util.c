@@ -703,7 +703,7 @@ NTSTATUS samdb_result_parameters(TALLOC_CTX *mem_ctx,
 /* Find an attribute, with a particular value */
 
 /* The current callers of this function expect a very specific
- * behaviour: In particular, objectClass subclass equivilance is not
+ * behaviour: In particular, objectClass subclass equivalence is not
  * wanted.  This means that we should not lookup the schema for the
  * comparison function */
 struct ldb_message_element *samdb_find_attribute(struct ldb_context *ldb, 
