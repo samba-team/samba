@@ -622,7 +622,7 @@ int ldb_kv_delete_noindex(struct ldb_module *module,
 		return LDB_ERR_OTHER;
 	}
 
-	ret = ldb_kv->kv_ops->delete (ldb_kv, key);
+	ret = ldb_kv->kv_ops->delete(ldb_kv, key);
 	TALLOC_FREE(tdb_key_ctx);
 
 	if (ret != 0) {
