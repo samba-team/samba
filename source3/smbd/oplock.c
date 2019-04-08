@@ -25,6 +25,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "messages.h"
+#include "locking/leases_db.h"
 #include "../librpc/gen_ndr/ndr_open_files.h"
 
 /*
@@ -647,6 +648,27 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 			l->breaking = false;
 
 			lck->data->modified = true;
+
+			{
+				NTSTATUS set_status;
+
+				set_status = leases_db_set(
+					&sconn->client->connections->
+					smb2.client.guid,
+					key,
+					l->current_state,
+					l->breaking,
+					l->breaking_to_requested,
+					l->breaking_to_required,
+					l->lease_version,
+					l->epoch);
+
+				if (!NT_STATUS_IS_OK(set_status)) {
+					DBG_DEBUG("leases_db_set failed: %s\n",
+						  nt_errstr(set_status));
+					return set_status;
+				}
+			}
 		}
 
 		tevent_schedule_immediate(state->im,
@@ -667,6 +689,26 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 		l->breaking = false;
 
 		d->modified = true;
+	}
+
+	{
+		NTSTATUS set_status;
+
+		set_status = leases_db_set(
+			&sconn->client->connections->smb2.client.guid,
+			key,
+			l->current_state,
+			l->breaking,
+			l->breaking_to_requested,
+			l->breaking_to_required,
+			l->lease_version,
+			l->epoch);
+
+		if (!NT_STATUS_IS_OK(set_status)) {
+			DBG_DEBUG("leases_db_set failed: %s\n",
+				  nt_errstr(set_status));
+			return set_status;
+		}
 	}
 
 	DEBUG(10, ("%s: Downgrading %s to %x => %s\n", __func__,
@@ -994,6 +1036,27 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 				/* Need to increment the epoch */
 				l->epoch += 1;
 				lck->data->modified = true;
+			}
+
+			{
+				NTSTATUS set_status;
+
+				set_status = leases_db_set(
+					&sconn->client->connections->
+					smb2.client.guid,
+					&fsp->lease->lease.lease_key,
+					l->current_state,
+					l->breaking,
+					l->breaking_to_requested,
+					l->breaking_to_required,
+					l->lease_version,
+					l->epoch);
+
+				if (!NT_STATUS_IS_OK(set_status)) {
+					DBG_DEBUG("leases_db_set failed: %s\n",
+						  nt_errstr(set_status));
+					return;
+				}
 			}
 
 			/* Ensure we're in sync with current lease state. */

@@ -2099,6 +2099,26 @@ static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
 			l->epoch += 1;
 		}
 
+		{
+			NTSTATUS set_status;
+
+			set_status = leases_db_set(
+				client_guid,
+				&lease->lease_key,
+				l->current_state,
+				l->breaking,
+				l->breaking_to_requested,
+				l->breaking_to_required,
+				l->lease_version,
+				l->epoch);
+
+			if (!NT_STATUS_IS_OK(set_status)) {
+				DBG_DEBUG("leases_db_set failed: %s\n",
+					  nt_errstr(set_status));
+				return set_status;
+			}
+		}
+
 		/* Ensure we're in sync with current lease state. */
 		fsp_lease_update(lck, fsp_client_guid(fsp), fsp->lease);
 		return NT_STATUS_OK;
