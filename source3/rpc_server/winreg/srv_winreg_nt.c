@@ -640,46 +640,6 @@ WERROR _winreg_AbortSystemShutdown(struct pipes_struct *p,
 }
 
 /*******************************************************************
- ********************************************************************/
-
-static int validate_reg_filename(TALLOC_CTX *ctx, char **pp_fname )
-{
-	char *p = NULL;
-	int num_services = lp_numservices();
-	int snum = -1;
-	const char *share_path = NULL;
-	char *fname = *pp_fname;
-
-	/* convert to a unix path, stripping the C:\ along the way */
-
-	if (!(p = valid_share_pathname(ctx, fname))) {
-		return -1;
-	}
-
-	/* has to exist within a valid file share */
-
-	for (snum=0; snum<num_services; snum++) {
-		if (!lp_snum_ok(snum) || lp_printable(snum)) {
-			continue;
-		}
-
-		share_path = lp_path(talloc_tos(), snum);
-
-		/* make sure we have a path (e.g. [homes] ) */
-		if (strlen(share_path) == 0) {
-			continue;
-		}
-
-		if (strncmp(share_path, p, strlen(share_path)) == 0) {
-			break;
-		}
-	}
-
-	*pp_fname = p;
-	return (snum < num_services) ? snum : -1;
-}
-
-/*******************************************************************
  _winreg_RestoreKey
  ********************************************************************/
 
@@ -687,36 +647,11 @@ WERROR _winreg_RestoreKey(struct pipes_struct *p,
 			  struct winreg_RestoreKey *r)
 {
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
-	char *fname = NULL;
-	int snum = -1;
 
-	if ( !regkey )
+	if ( !regkey ) {
 		return WERR_INVALID_HANDLE;
-
-	if ( !r->in.filename || !r->in.filename->name )
-		return WERR_INVALID_PARAMETER;
-
-	fname = talloc_strdup(p->mem_ctx, r->in.filename->name);
-	if (!fname) {
-		return WERR_NOT_ENOUGH_MEMORY;
 	}
-
-	DEBUG(8,("_winreg_RestoreKey: verifying restore of key [%s] from "
-		 "\"%s\"\n", regkey->key->name, fname));
-
-	if ((snum = validate_reg_filename(p->mem_ctx, &fname)) == -1)
-		return WERR_BAD_PATHNAME;
-
-	/* user must posses SeRestorePrivilege for this this proceed */
-
-	if ( !security_token_has_privilege(p->session_info->security_token, SEC_PRIV_RESTORE)) {
-		return WERR_ACCESS_DENIED;
-	}
-
-	DEBUG(2,("_winreg_RestoreKey: Restoring [%s] from %s in share %s\n",
-		 regkey->key->name, fname, lp_servicename(talloc_tos(), snum) ));
-
-	return reg_restorekey(regkey, fname);
+	return WERR_BAD_PATHNAME;
 }
 
 /*******************************************************************
@@ -727,30 +662,11 @@ WERROR _winreg_SaveKey(struct pipes_struct *p,
 		       struct winreg_SaveKey *r)
 {
 	struct registry_key *regkey = find_regkey_by_hnd( p, r->in.handle );
-	char *fname = NULL;
-	int snum = -1;
 
-	if ( !regkey )
+	if ( !regkey ) {
 		return WERR_INVALID_HANDLE;
-
-	if ( !r->in.filename || !r->in.filename->name )
-		return WERR_INVALID_PARAMETER;
-
-	fname = talloc_strdup(p->mem_ctx, r->in.filename->name);
-	if (!fname) {
-		return WERR_NOT_ENOUGH_MEMORY;
 	}
-
-	DEBUG(8,("_winreg_SaveKey: verifying backup of key [%s] to \"%s\"\n",
-		 regkey->key->name, fname));
-
-	if ((snum = validate_reg_filename(p->mem_ctx, &fname)) == -1 )
-		return WERR_BAD_PATHNAME;
-
-	DEBUG(2,("_winreg_SaveKey: Saving [%s] to %s in share %s\n",
-		 regkey->key->name, fname, lp_servicename(talloc_tos(), snum) ));
-
-	return reg_savekey(regkey, fname);
+	return WERR_BAD_PATHNAME;
 }
 
 /*******************************************************************
