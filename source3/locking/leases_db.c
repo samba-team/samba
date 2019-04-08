@@ -86,6 +86,114 @@ static TDB_DATA leases_db_key(struct leases_db_key_buf *buf,
 	return (TDB_DATA) { .dptr = buf->buf, .dsize = sizeof(buf->buf) };
 }
 
+struct leases_db_do_locked_state {
+	void (*fn)(struct leases_db_value *value,
+		   bool *modified,
+		   void *private_data);
+	void *private_data;
+	NTSTATUS status;
+};
+
+static void leases_db_do_locked_fn(struct db_record *rec, void *private_data)
+{
+	struct leases_db_do_locked_state *state = private_data;
+	TDB_DATA db_value = dbwrap_record_get_value(rec);
+	DATA_BLOB blob = { .data = db_value.dptr, .length = db_value.dsize };
+	struct leases_db_value *value = NULL;
+	enum ndr_err_code ndr_err;
+	bool modified = false;
+
+	value = talloc_zero(talloc_tos(), struct leases_db_value);
+	if (value == NULL) {
+		state->status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	if (blob.length != 0) {
+		ndr_err = ndr_pull_struct_blob_all(
+			&blob,
+			value,
+			value,
+			(ndr_pull_flags_fn_t)ndr_pull_leases_db_value);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DBG_DEBUG("ndr_pull_struct_blob_failed: %s\n",
+				  ndr_errstr(ndr_err));
+			state->status = ndr_map_error2ntstatus(ndr_err);
+			goto done;
+		}
+	}
+
+	state->fn(value, &modified, state->private_data);
+
+	if (!modified) {
+		goto done;
+	}
+
+	if (value->num_files == 0) {
+		state->status = dbwrap_record_delete(rec);
+		if (!NT_STATUS_IS_OK(state->status)) {
+			DBG_DEBUG("dbwrap_record_delete returned %s\n",
+				  nt_errstr(state->status));
+		}
+		goto done;
+	}
+
+	ndr_err = ndr_push_struct_blob(
+		&blob,
+		value,
+		value,
+		(ndr_push_flags_fn_t)ndr_push_leases_db_value);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_DEBUG("ndr_push_struct_blob_failed: %s\n",
+			  ndr_errstr(ndr_err));
+		state->status = ndr_map_error2ntstatus(ndr_err);
+		goto done;
+	}
+
+	if (DEBUGLEVEL >= 10) {
+		DBG_DEBUG("\n");
+		NDR_PRINT_DEBUG(leases_db_value, value);
+	}
+
+	db_value = make_tdb_data(blob.data, blob.length);
+
+	state->status = dbwrap_record_store(rec, db_value, 0);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		DBG_DEBUG("dbwrap_record_store returned %s\n",
+			  nt_errstr(state->status));
+	}
+
+done:
+	TALLOC_FREE(value);
+}
+
+static NTSTATUS leases_db_do_locked(
+	const struct GUID *client_guid,
+	const struct smb2_lease_key *lease_key,
+	void (*fn)(struct leases_db_value *value,
+		   bool *modified,
+		   void *private_data),
+	void *private_data)
+{
+	struct leases_db_key_buf keybuf;
+	TDB_DATA db_key = leases_db_key(&keybuf, client_guid, lease_key);
+	struct leases_db_do_locked_state state = {
+		.fn = fn, .private_data = private_data,
+	};
+	NTSTATUS status;
+
+	if (!leases_db_init(false)) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	status = dbwrap_do_locked(
+		leases_db, db_key, leases_db_do_locked_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	return state.status;
+}
+
 NTSTATUS leases_db_add(const struct GUID *client_guid,
 		       const struct smb2_lease_key *lease_key,
 		       const struct file_id *id,
@@ -381,6 +489,40 @@ NTSTATUS leases_db_parse(const struct GUID *client_guid,
 	return state.status;
 }
 
+struct leases_db_rename_state {
+	const struct file_id *id;
+	const char *servicename_new;
+	const char *filename_new;
+	const char *stream_name_new;
+	NTSTATUS status;
+};
+
+static void leases_db_rename_fn(
+	struct leases_db_value *value, bool *modified, void *private_data)
+{
+	struct leases_db_rename_state *state = private_data;
+	struct leases_db_file *file = NULL;
+	uint32_t i;
+
+	/* id must exist. */
+	for (i = 0; i < value->num_files; i++) {
+		if (file_id_equal(state->id, &value->files[i].id)) {
+			break;
+		}
+	}
+	if (i == value->num_files) {
+		state->status = NT_STATUS_NOT_FOUND;
+		return;
+	}
+
+	file = &value->files[i];
+	file->servicepath = state->servicename_new;
+	file->base_name = state->filename_new;
+	file->stream_name = state->stream_name_new;
+
+	*modified = true;
+}
+
 NTSTATUS leases_db_rename(const struct GUID *client_guid,
 		       const struct smb2_lease_key *lease_key,
 		       const struct file_id *id,
@@ -388,21 +530,22 @@ NTSTATUS leases_db_rename(const struct GUID *client_guid,
 		       const char *filename_new,
 		       const char *stream_name_new)
 {
+	struct leases_db_rename_state state = {
+		.id = id,
+		.servicename_new = servicename_new,
+		.filename_new = filename_new,
+		.stream_name_new = stream_name_new,
+	};
 	NTSTATUS status;
 
-	status = leases_db_del(client_guid,
-				lease_key,
-				id);
+	status = leases_db_do_locked(
+		client_guid, lease_key, leases_db_rename_fn, &state);
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("leases_db_do_locked failed: %s\n",
+			  nt_errstr(status));
 		return status;
 	}
-
-	return leases_db_add(client_guid,
-				lease_key,
-				id,
-				servicename_new,
-				filename_new,
-				stream_name_new);
+	return state.status;
 }
 
 NTSTATUS leases_db_copy_file_ids(TALLOC_CTX *mem_ctx,
