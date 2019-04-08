@@ -1539,7 +1539,7 @@ int ldb_transaction_cancel_noerr(struct ldb_context *ldb);
 const char *ldb_errstring(struct ldb_context *ldb);
 
 /**
-  return a string explaining what a ldb error constant meancs
+  return a string explaining what a ldb error constant means
 */
 const char *ldb_strerror(int ldb_err);
 
