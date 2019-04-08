@@ -26,10 +26,11 @@ from samba import ntacls
 
 from samba.auth import system_session
 from samba.dcerpc import security
-from samba.tests import TestCaseInTempDir, env_loadparm
+from samba.tests import env_loadparm
+from samba.tests.smbd_base import SmbdBaseTests
 
 
-class NtaclsBackupRestoreTests(TestCaseInTempDir):
+class NtaclsBackupRestoreTests(SmbdBaseTests):
     """
     Tests for NTACLs backup and restore.
     """
@@ -110,6 +111,12 @@ class NtaclsBackupRestoreTests(TestCaseInTempDir):
 
         dirpath = os.path.join(self.service_root, 'a-dir')
         smbd.mkdir(dirpath, self.service)
+        mode = os.stat(dirpath).st_mode
+
+        # This works in conjunction with the TEST_UMASK in smbd_base
+        # to ensure that permissions are not related to the umask
+        # but instead the smb.conf settings
+        self.assertEquals(mode & 0o777, 0o755)
         self.assertTrue(os.path.isdir(dirpath))
 
     def test_smbd_create_file(self):
@@ -120,6 +127,13 @@ class NtaclsBackupRestoreTests(TestCaseInTempDir):
         filepath = os.path.join(self.service_root, 'a-file')
         smbd.create_file(filepath, self.service)
         self.assertTrue(os.path.isfile(filepath))
+
+        mode = os.stat(filepath).st_mode
+
+        # This works in conjunction with the TEST_UMASK in smbd_base
+        # to ensure that permissions are not related to the umask
+        # but instead the smb.conf settings
+        self.assertEquals(mode & 0o777, 0o644)
 
         # As well as checking that unlink works, this removes the
         # fake xattrs from the dev/inode based DB
