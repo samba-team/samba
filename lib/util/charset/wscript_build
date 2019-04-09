@@ -2,7 +2,7 @@
 
 bld.SAMBA_SUBSYSTEM('ICONV_WRAPPER',
                     source='iconv.c',
-                    public_deps='iconv replace talloc')
+                    public_deps='iconv replace talloc ' +  bld.env['icu-libs'])
 
 bld.SAMBA_SUBSYSTEM('charset',
                     public_headers='charset.h',

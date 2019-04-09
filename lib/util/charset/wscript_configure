@@ -36,3 +36,16 @@ conf.CHECK_CODE('''
                 msg='Checking errno of iconv for illegal multibyte sequence',
                 lib='iconv',
                 headers='errno.h iconv.h')
+
+if conf.CHECK_CFG(package='icu-i18n',
+               args='--cflags --libs',
+               msg='Checking for icu-i18n',
+               uselib_store='ICU_I18N'):
+    for lib in conf.env['LIB_ICU_I18N']:
+        conf.CHECK_LIB(lib, shlib=True, mandatory=True)
+    conf.env['icu-libs'] = ' '.join(conf.env['LIB_ICU_I18N'])
+    if not conf.CHECK_HEADERS('unicode/ustring.h'):
+        conf.fatal('Found libicu, but unicode/ustring.h is missing')
+    conf.DEFINE('HAVE_UTF8_NORMALISATION', 1)
+else:
+    conf.env['icu-libs'] = ''
