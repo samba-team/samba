@@ -1852,7 +1852,7 @@ static int smb_full_audit_get_real_filename(struct vfs_handle_struct *handle,
 						found_name);
 
 	do_log(SMB_VFS_OP_GET_REAL_FILENAME, (result == 0), handle,
-	       "%s/%s->%s", path, name, (result == 0) ? "" : *found_name);
+	       "%s/%s->%s", path, name, (result == 0) ? *found_name : "");
 
 	return result;
 }
