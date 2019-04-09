@@ -908,6 +908,7 @@ static void test_iterate_range(void **state)
 	 */
 	do_iterate_range_test(state, 0, 20, false);
 	do_iterate_range_test(state, 1010, 1030, false);
+	do_iterate_range_test(state, 0, 1030, false);
 }
 
 struct update_context {
