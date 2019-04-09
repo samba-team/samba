@@ -36,9 +36,9 @@ int parse_resolvconf_fp(
 	int ret = 0;
 
 	while (true) {
-		char *saveptr, *option, *ns;
-		char **tmp;
-		ssize_t n;
+		char *saveptr = NULL, *option = NULL, *ns = NULL;
+		char **tmp = NULL;
+		ssize_t n = 0;
 
 		n = getline(&line, &len, fp);
 		if (n < 0) {
