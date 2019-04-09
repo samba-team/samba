@@ -295,6 +295,13 @@ again:
 		proc->result.sig = WTERMSIG(status);
 	}
 
+	/* Confirm that all data has been read from the pipe */
+	if (proc->fd != -1) {
+		proc_read_handler(ev, proc->fde, 0, proc);
+		TALLOC_FREE(proc->fde);
+		proc->fd = -1;
+	}
+
 	/* Active run_proc request */
 	if (proc->req != NULL) {
 		run_proc_done(proc->req);
