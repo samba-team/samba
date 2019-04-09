@@ -96,6 +96,10 @@ static const char *gd_cp850_upper_base64 = "R5pOVEhFUiBERVNDSE5FUg==";
 static const char *gd_cp850_lower_base64 = "Z4FudGhlciBkZXNjaG5lcg==";
 static const char *gd_iso8859_1_base64 = "R/xudGhlciBEZXNjaG5lcg==";
 static const char *gd_utf16le_base64 = "RwD8AG4AdABoAGUAcgAgAEQAZQBzAGMAaABuAGUAcgA=";
+/* täst */
+static const char *utf8_nfc_base64 = "dMOkc3QA";
+/* täst, where ä = a + combining diaeresis */
+static const char *utf8_nfd_base64 = "dGHMiHN0AA==";
 
 /*
  * These cp850 bytes correspond to high Unicode codes, stretching out to
@@ -1239,6 +1243,227 @@ static bool test_plato_latin_cp850_utf8_handle(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_utf8_nfc_to_nfd_overflow(struct torture_context *tctx)
+{
+	smb_iconv_t ic;
+	DATA_BLOB utf8_nfc_blob;
+	DATA_BLOB utf8_nfd_blob;
+	DATA_BLOB src_blob;
+	DATA_BLOB blob;
+	size_t nconv;
+	const char *src = NULL;
+	char *dst = NULL;
+	size_t dst_left;
+	size_t srclen;
+	bool ret = true;
+
+	ic = smb_iconv_open("UTF8-NFD", "UTF8-NFC");
+	torture_assert_goto(tctx, ic != (smb_iconv_t)-1, ret, done,
+			    "creating iconv handle\n");
+
+	utf8_nfc_blob = base64_decode_data_blob_talloc(tctx, utf8_nfc_base64);
+	torture_assert_not_null_goto(tctx, utf8_nfc_blob.data, ret, done,
+				     "OOM\n");
+
+	utf8_nfd_blob = base64_decode_data_blob_talloc(tctx, utf8_nfd_base64);
+	torture_assert_not_null_goto(tctx, utf8_nfd_blob.data, ret, done,
+				     "OOM\n");
+
+	blob = data_blob_talloc_zero(tctx, 255);
+	torture_assert_not_null_goto(tctx, blob.data, ret, done, "OOM\n");
+
+	/*
+	 * Unfortunately the current implementation that performs the conversion
+	 * (using libicu) returns EINVAL if the result buffer is too small, not
+	 * E2BIG like iconv().
+	 */
+
+	src = "foo";
+	srclen = 3;
+	dst = (char *)blob.data;
+	dst_left = 0;
+	nconv = smb_iconv(ic,
+			  &src,
+			  &srclen,
+			  &dst,
+			  &dst_left);
+	torture_assert_int_equal_goto(tctx, nconv, -1, ret, done,
+				      "smb_iconv failed\n");
+	torture_assert_errno_equal_goto(tctx, EINVAL, ret, done,
+					"Wrong errno\n");
+
+	src = "foo";
+	srclen = 3;
+	dst = (char *)blob.data;
+	dst_left = 1;
+	nconv = smb_iconv(ic,
+			  &src,
+			  &srclen,
+			  &dst,
+			  &dst_left);
+	torture_assert_int_equal_goto(tctx, nconv, -1, ret, done,
+				      "smb_iconv failed\n");
+	torture_assert_errno_equal_goto(tctx, EINVAL, ret, done,
+					"Wrong errno\n");
+
+	src = "foo";
+	srclen = 3;
+	dst = (char *)blob.data;
+	dst_left = 2;
+	nconv = smb_iconv(ic,
+			  &src,
+			  &srclen,
+			  &dst,
+			  &dst_left);
+	torture_assert_int_equal_goto(tctx, nconv, -1, ret, done,
+				      "smb_iconv failed\n");
+	torture_assert_errno_equal_goto(tctx, EINVAL, ret, done,
+					"Wrong errno\n");
+
+	src_blob = data_blob_const("foo", 3);
+	src = (const char *)src_blob.data;
+	srclen = src_blob.length;
+	dst = (char *)blob.data;
+	dst_left = 3;
+	nconv = smb_iconv(ic,
+			  &src,
+			  &srclen,
+			  &dst,
+			  &dst_left);
+	torture_assert_int_equal_goto(tctx, nconv, 3, ret, done,
+				      "smb_iconv failed\n");
+
+	blob.length = nconv;
+	torture_assert_data_blob_equal(tctx,
+				       src_blob,
+				       blob,
+				       "Conversion failed\n");
+
+	src_blob = data_blob_const("foo", 4);
+	src = (const char *)src_blob.data;
+	srclen = src_blob.length;
+	dst = (char *)blob.data;
+	dst_left = 4;
+	nconv = smb_iconv(ic,
+			  &src,
+			  &srclen,
+			  &dst,
+			  &dst_left);
+	torture_assert_int_equal_goto(tctx, nconv, 4, ret, done,
+				      "smb_iconv failed\n");
+
+	blob.length = nconv;
+	torture_assert_data_blob_equal(tctx,
+				       src_blob,
+				       blob,
+				       "Conversion failed\n");
+
+done:
+	return ret;
+}
+
+static bool test_utf8_nfc_to_nfd(struct torture_context *tctx)
+{
+	smb_iconv_t ic;
+	DATA_BLOB utf8_nfc_blob;
+	DATA_BLOB utf8_nfd_blob;
+	DATA_BLOB blob;
+	size_t nconv;
+	const char *src = NULL;
+	char *dst = NULL;
+	size_t dst_left;
+	size_t srclen;
+	bool ret = true;
+
+	ic = smb_iconv_open("UTF8-NFD", "UTF8-NFC");
+	torture_assert_goto(tctx, ic != (smb_iconv_t)-1, ret, done,
+			    "creating iconv handle\n");
+
+	utf8_nfc_blob = base64_decode_data_blob_talloc(tctx, utf8_nfc_base64);
+	torture_assert_not_null_goto(tctx, utf8_nfc_blob.data, ret, done,
+				     "OOM\n");
+
+	utf8_nfd_blob = base64_decode_data_blob_talloc(tctx, utf8_nfd_base64);
+	torture_assert_not_null_goto(tctx, utf8_nfd_blob.data, ret, done,
+				     "OOM\n");
+
+	blob = data_blob_talloc_zero(tctx, 255);
+	torture_assert_not_null_goto(tctx, blob.data, ret, done, "OOM\n");
+
+	dst = (char *)blob.data;
+	dst_left = blob.length;
+	src = (const char *)utf8_nfc_blob.data;
+	srclen = strlen(src);
+
+	nconv = smb_iconv(ic,
+			  &src,
+			  &srclen,
+			  &dst,
+			  &dst_left);
+	torture_assert_goto(tctx, nconv != (size_t)-1, ret, done,
+			    "smb_iconv failed\n");
+
+	blob.length = nconv + 1; /* +1 for the trailing zero */
+	torture_assert_data_blob_equal(tctx,
+				       blob,
+				       utf8_nfd_blob,
+				       "Conversion failed\n");
+
+done:
+	return ret;
+}
+
+static bool test_utf8_nfd_to_nfc(struct torture_context *tctx)
+{
+	smb_iconv_t ic;
+	DATA_BLOB utf8_nfc_blob;
+	DATA_BLOB utf8_nfd_blob;
+	DATA_BLOB blob;
+	size_t nconv;
+	const char *src = NULL;
+	char *dst = NULL;
+	size_t dst_left;
+	size_t srclen;
+	bool ret = true;
+
+	ic = smb_iconv_open("UTF8-NFC", "UTF8-NFD");
+	torture_assert_goto(tctx, ic != (smb_iconv_t)-1, ret, done,
+			    "creating iconv handle\n");
+
+	utf8_nfc_blob = base64_decode_data_blob_talloc(tctx, utf8_nfc_base64);
+	torture_assert_not_null_goto(tctx, utf8_nfc_blob.data, ret, done,
+				     "OOM\n");
+
+	utf8_nfd_blob = base64_decode_data_blob_talloc(tctx, utf8_nfd_base64);
+	torture_assert_not_null_goto(tctx, utf8_nfd_blob.data, ret, done,
+				     "OOM\n");
+
+	blob = data_blob_talloc_zero(tctx, 255);
+	torture_assert_not_null_goto(tctx, blob.data, ret, done, "OOM\n");
+
+	dst = (char *)blob.data;
+	dst_left = blob.length;
+	src = (const char *)utf8_nfd_blob.data;
+	srclen = strlen(src);
+
+	nconv = smb_iconv(ic,
+			  &src,
+			  &srclen,
+			  &dst,
+			  &dst_left);
+	torture_assert_goto(tctx, nconv != (size_t)-1, ret, done,
+			    "smb_iconv failed\n");
+
+	blob.length = nconv + 1; /* +1 for the trailing zero */
+	torture_assert_data_blob_equal(tctx,
+				       blob,
+				       utf8_nfc_blob,
+				       "Conversion failed\n");
+
+done:
+	return ret;
+}
+
 static bool test_gd_case_utf8_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
@@ -1765,6 +1990,9 @@ struct torture_suite *torture_local_convert_string_handle(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "plato_cp850_utf8", test_plato_cp850_utf8_handle);
 	torture_suite_add_simple_test(suite, "plato_minus_1", test_plato_minus_1_handle);
 	torture_suite_add_simple_test(suite, "plato_latin_cp850_utf8", test_plato_latin_cp850_utf8_handle);
+	torture_suite_add_simple_test(suite, "utf8-nfc-to-nfd", test_utf8_nfc_to_nfd);
+	torture_suite_add_simple_test(suite, "utf8-nfc-to-nfd-overflow", test_utf8_nfc_to_nfd_overflow);
+	torture_suite_add_simple_test(suite, "utf8-nfd-to-nfc", test_utf8_nfd_to_nfc);
 	return suite;
 }
 
