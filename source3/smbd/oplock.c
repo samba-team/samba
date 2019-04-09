@@ -1192,13 +1192,14 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	 * anyway, so we postpone this into an immediate event.
 	 */
 
-	state = talloc_zero(sconn, struct break_to_none_state);
+	state = talloc(sconn, struct break_to_none_state);
 	if (state == NULL) {
 		DEBUG(1, ("talloc failed\n"));
 		return;
 	}
-	state->sconn = sconn;
-	state->id = fsp->file_id;
+	*state = (struct break_to_none_state) {
+		.sconn = sconn, .id = fsp->file_id,
+	};
 
 	if (fsp->oplock_type == LEASE_OPLOCK) {
 		state->client_guid = *fsp_client_guid(fsp);
