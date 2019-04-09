@@ -39,3 +39,10 @@ bld.SAMBA_BINARY('fuzz_lzxpress',
                  install=False,
                  enabled=bld.env.enable_libfuzzer,
                  )
+
+bld.SAMBA_BINARY('fuzz_ldap_decode',
+                 source='fuzz_ldap_decode.c',
+                 deps='fuzzing cli-ldap',
+                 install=False,
+                 enabled=bld.env.enable_libfuzzer,
+                 )
