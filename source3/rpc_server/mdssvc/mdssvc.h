@@ -88,7 +88,7 @@ struct sl_query {
 	uint64_t         ctx1;           /* client context 1 */
 	uint64_t         ctx2;           /* client context 2 */
 	sl_array_t      *reqinfo;        /* array with requested metadata */
-	const char      *query_string;   /* the Spotlight query string */
+	char            *query_string;   /* the Spotlight query string */
 	uint64_t        *cnids;          /* restrict query to these CNIDs */
 	size_t           cnids_num;      /* Size of slq_cnids array */
 	const char      *path_scope;	 /* path to directory to search */
@@ -122,6 +122,8 @@ struct mds_ctx {
 	struct auth_session_info *pipe_session_info;
 	struct dom_sid sid;
 	uid_t uid;
+	smb_iconv_t ic_nfc_to_nfd;
+	smb_iconv_t ic_nfd_to_nfc;
 	int snum;
 	const char *sharename;
 	const char *spath;

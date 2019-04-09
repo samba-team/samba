@@ -254,7 +254,8 @@ char *mds_dalloc_dump(DALLOC_CTX *dd, int nestinglevel)
  *
  * If path or sp is NULL, simply add nil values for all attributes.
  **/
-static bool add_filemeta(sl_array_t *reqinfo,
+static bool add_filemeta(struct mds_ctx *mds_ctx,
+			 sl_array_t *reqinfo,
 			 sl_array_t *fm_array,
 			 const char *path,
 			 const struct stat_ex *sp)
@@ -266,6 +267,13 @@ static bool add_filemeta(sl_array_t *reqinfo,
 	sl_time_t sl_time;
 	char *p;
 	const char *attribute;
+	size_t nfc_len;
+	const char *nfc_path = path;
+	size_t nfd_buf_size;
+	char *nfd_path = NULL;
+	char *dest = NULL;
+	size_t dest_remaining;
+	size_t nconv;
 
 	metacount = dalloc_size(reqinfo);
 	if (metacount == 0 || path == NULL || sp == NULL) {
@@ -281,6 +289,28 @@ static bool add_filemeta(sl_array_t *reqinfo,
 		return false;
 	}
 
+	nfc_len = strlen(nfc_path);
+	/*
+	 * Simple heuristic, strlen by two should give enough room for NFC to
+	 * NFD conversion.
+	 */
+	nfd_buf_size = nfc_len * 2;
+	nfd_path = talloc_array(meta, char, nfd_buf_size);
+	if (nfd_path == NULL) {
+		return false;
+	}
+	dest = nfd_path;
+	dest_remaining = talloc_array_length(dest);
+
+	nconv = smb_iconv(mds_ctx->ic_nfc_to_nfd,
+			  &nfc_path,
+			  &nfc_len,
+			  &dest,
+			  &dest_remaining);
+	if (nconv == (size_t)-1) {
+		return false;
+	}
+
 	for (i = 0; i < metacount; i++) {
 		attribute = dalloc_get_object(reqinfo, i);
 		if (attribute == NULL) {
@@ -288,7 +318,7 @@ static bool add_filemeta(sl_array_t *reqinfo,
 		}
 		if (strcmp(attribute, "kMDItemDisplayName") == 0
 		    || strcmp(attribute, "kMDItemFSName") == 0) {
-			p = strrchr(path, '/');
+			p = strrchr(nfd_path, '/');
 			if (p) {
 				result = dalloc_stradd(meta, p + 1);
 				if (result != 0) {
@@ -296,7 +326,7 @@ static bool add_filemeta(sl_array_t *reqinfo,
 				}
 			}
 		} else if (strcmp(attribute, "kMDItemPath") == 0) {
-			result = dalloc_stradd(meta, path);
+			result = dalloc_stradd(meta, nfd_path);
 			if (result != 0) {
 				return false;
 			}
@@ -713,7 +743,8 @@ bool mds_add_result(struct sl_query *slq, const char *path)
 		slq->state = SLQ_STATE_ERROR;
 		return false;
 	}
-	ok = add_filemeta(slq->reqinfo,
+	ok = add_filemeta(slq->mds_ctx,
+			  slq->reqinfo,
 			  slq->query_results->fm_array,
 			  path,
 			  &sb);
@@ -940,7 +971,11 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 	sl_cnids_t *cnids;
 	struct sl_query *slq = NULL;
 	int result;
-	char *querystring;
+	const char *querystring = NULL;
+	size_t querystring_len;
+	char *dest = NULL;
+	size_t dest_remaining;
+	size_t nconv;
 	char *scope = NULL;
 
 	array = dalloc_zero(reply, sl_array_t);
@@ -979,16 +1014,26 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 		DEBUG(1, ("missing kMDQueryString\n"));
 		goto error;
 	}
-	slq->query_string = talloc_strdup(slq, querystring);
+
+	querystring_len = talloc_array_length(querystring);
+
+	slq->query_string = talloc_array(slq, char, querystring_len);
 	if (slq->query_string == NULL) {
 		DEBUG(1, ("out of memory\n"));
 		goto error;
 	}
+	dest = slq->query_string;
+	dest_remaining = talloc_array_length(dest);
 
-	/*
-	 * FIXME: convert spotlight query charset from decomposed UTF8
-	 * to host charset precomposed UTF8.
-	 */
+	nconv = smb_iconv(mds_ctx->ic_nfd_to_nfc,
+			  &querystring,
+			  &querystring_len,
+			  &dest,
+			  &dest_remaining);
+	if (nconv == (size_t)-1) {
+		DBG_ERR("smb_iconv failed for: %s\n", querystring);
+		return false;
+	}
 
 	uint64p = dalloc_get(query, "DALLOC_CTX", 0, "DALLOC_CTX", 0,
 			     "uint64_t", 1);
@@ -1422,7 +1467,7 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 		goto error;
 	}
 
-	ok = add_filemeta(reqinfo, fm_array, elem->path, &sb);
+	ok = add_filemeta(mds_ctx, reqinfo, fm_array, elem->path, &sb);
 	if (!ok) {
 		goto error;
 	}
@@ -1640,7 +1685,23 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	default:
 		DBG_ERR("Unknown backend %d\n", backend);
 		TALLOC_FREE(mdssvc_ctx);
-		return NULL;
+		goto error;
+	}
+
+	mds_ctx->ic_nfc_to_nfd = smb_iconv_open_ex(mds_ctx,
+						   "UTF8-NFD",
+						   "UTF8-NFC",
+						   false);
+	if (mds_ctx->ic_nfc_to_nfd == (smb_iconv_t)-1) {
+		goto error;
+	}
+
+	mds_ctx->ic_nfd_to_nfc = smb_iconv_open_ex(mds_ctx,
+						   "UTF8-NFC",
+						   "UTF8-NFD",
+						   false);
+	if (mds_ctx->ic_nfd_to_nfc == (smb_iconv_t)-1) {
+		goto error;
 	}
 
 	mds_ctx->sharename = talloc_strdup(mds_ctx, sharename);
@@ -1677,6 +1738,13 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	return mds_ctx;
 
 error:
+	if (mds_ctx->ic_nfc_to_nfd != NULL) {
+		smb_iconv_close(mds_ctx->ic_nfc_to_nfd);
+	}
+	if (mds_ctx->ic_nfd_to_nfc != NULL) {
+		smb_iconv_close(mds_ctx->ic_nfd_to_nfc);
+	}
+
 	TALLOC_FREE(mds_ctx);
 	return NULL;
 }

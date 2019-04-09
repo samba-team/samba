@@ -1688,6 +1688,9 @@ main() {
                 conf.fatal("Spotlight support requested but bison missing")
             if not conf.env['FLEX']:
                 conf.fatal("Spotlight support requested but flex missing")
+            if not conf.CONFIG_GET('HAVE_UTF8_NORMALISATION'):
+                conf.fatal("Missing support for Unicode normalisation. "
+                           "Try installing icu-dev or libicu-devel.")
 
         if not conf.env.with_spotlight:
             if not conf.CONFIG_SET('HAVE_TRACKER'):
