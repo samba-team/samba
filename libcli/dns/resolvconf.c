@@ -30,6 +30,7 @@ int parse_resolvconf_fp(
 	size_t *pnum_nameservers)
 {
 	char *line = NULL;
+	size_t len = 0;
 	char **nameservers = NULL;
 	size_t num_nameservers = 0;
 	int ret = 0;
@@ -38,7 +39,6 @@ int parse_resolvconf_fp(
 		char *saveptr, *option, *ns;
 		char **tmp;
 		ssize_t n;
-		size_t len;
 
 		n = getline(&line, &len, fp);
 		if (n < 0) {
