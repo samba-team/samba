@@ -5026,7 +5026,7 @@ static NTSTATUS lease_match(connection_struct *conn,
 			if (e->op_type == LEASE_OPLOCK) {
 				struct share_mode_lease *l = NULL;
 				l = &lck->data->leases[e->lease_idx];
-				if (!smb2_lease_key_equal(&l->lease_key,
+				if (!smb2_lease_key_equal(&e->lease_key,
 							  lease_key)) {
 					continue;
 				}
