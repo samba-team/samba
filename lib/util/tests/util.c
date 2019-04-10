@@ -3,6 +3,7 @@
  *
  * Copyright Martin Schwenke <martin@meltin.net> 2016
  * Copyright Christof Schmitt <cs@samba.org> 2018
+ * Copyright Swen Schillig <swen@linux.ibm.com> 2019
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -421,6 +422,31 @@ done:
 	return ret;
 }
 
+static bool test_strtoul_err_errno_check(struct torture_context *tctx)
+{
+	const char *number = "123";
+	unsigned long int val = 0;
+	unsigned long long int vall = 0;
+	int err;
+
+	/* select an error code which is not set by the strtoul_err routines */
+	errno = EAGAIN;
+	err = EAGAIN;
+	val = strtoul_err(number, NULL, 0, &err);
+	torture_assert(tctx, errno == EAGAIN, "strtoul_err: Expected EAGAIN");
+	torture_assert(tctx, err == 0, "strtoul_err: Expected err = 0");
+	torture_assert(tctx, val == 123, "strtoul_err: Expected value 123");
+
+	/* set err to an impossible value again before continuing */
+	err = EAGAIN;
+	vall = strtoull_err(number, NULL, 0, &err);
+	torture_assert(tctx, errno == EAGAIN, "strtoull_err: Expected EAGAIN");
+	torture_assert(tctx, err == 0, "strtoul_err: Expected err = 0");
+	torture_assert(tctx, vall == 123, "strtoul_err: Expected value 123");
+
+	return true;
+}
+
 struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite =
@@ -432,5 +458,8 @@ struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "directory_create_or_exist",
 				      test_directory_create_or_exist);
+	torture_suite_add_simple_test(suite,
+				      "strtoul(l)_err errno",
+				      test_strtoul_err_errno_check);
 	return suite;
 }
