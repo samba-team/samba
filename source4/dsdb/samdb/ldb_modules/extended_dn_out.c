@@ -654,10 +654,7 @@ static int extended_callback(struct ldb_request *req, struct ldb_reply *ares,
 		if (msg->elements[i].num_values == 0) {
 			/* we've deleted all of the values from this
 			 * element - remove the element */
-			memmove(&msg->elements[i],
-				&msg->elements[i+1],
-				(msg->num_elements-(i+1))*sizeof(struct ldb_message_element));
-			msg->num_elements--;
+			ldb_msg_remove_element(msg, &msg->elements[i]);
 			i--;
 		}
 	}
