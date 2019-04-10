@@ -447,6 +447,40 @@ static bool test_strtoul_err_errno_check(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_strtoul_err_negative(struct torture_context *tctx)
+{
+	const char *number = "-132";
+	const char *number2 = "132-";
+	unsigned long int val = 0;
+	unsigned long long int vall = 0;
+	int err;
+
+	err = 0;
+	strtoul_err(number, NULL, 0, &err);
+	torture_assert(tctx, err == EINVAL, "strtoul_err: Expected EINVAL");
+
+	err = 0;
+	strtoull_err(number, NULL, 0, &err);
+	torture_assert(tctx, err == EINVAL, "strtoull_err: Expected EINVAL");
+
+	/* it is allowed to have a "-" sign after a number,
+	 * e.g. as part of a formular, however, it is not supposed to
+	 * have an effect on the converted value.
+	 */
+
+	err = 0;
+	val = strtoul_err(number2, NULL, 0, &err);
+	torture_assert(tctx, err == 0, "strtoul_err: Expected no error");
+	torture_assert(tctx, val == 132, "strtoul_err: Wrong value");
+
+	err = 0;
+	vall = strtoull_err(number2, NULL, 0, &err);
+	torture_assert(tctx, err == 0, "strtoull_err: Expected no error");
+	torture_assert(tctx, vall == 132, "strtoull_err: Wrong value");
+
+	return true;
+}
+
 struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite =
@@ -461,5 +495,8 @@ struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "strtoul(l)_err errno",
 				      test_strtoul_err_errno_check);
+	torture_suite_add_simple_test(suite,
+				      "strtoul(l)_err negative",
+				      test_strtoul_err_negative);
 	return suite;
 }
