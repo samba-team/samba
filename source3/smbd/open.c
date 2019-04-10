@@ -1862,12 +1862,13 @@ static bool delay_for_oplock(files_struct *fsp,
 
 	for (i=0; i<d->num_share_modes; i++) {
 		struct share_mode_entry *e = &d->share_modes[i];
+		bool e_is_lease = (e->op_type == LEASE_OPLOCK);
 		struct share_mode_lease *l = NULL;
 		uint32_t e_lease_type = get_lease_type(d, e);
 		uint32_t break_to;
 		uint32_t delay_mask = 0;
 
-		if (e->op_type == LEASE_OPLOCK) {
+		if (e_is_lease) {
 			l = &d->leases[e->lease_idx];
 		}
 
@@ -1892,7 +1893,7 @@ static bool delay_for_oplock(files_struct *fsp,
 			   (unsigned)i, (unsigned)e_lease_type,
 			   (unsigned)will_overwrite));
 
-		if (lease != NULL && l != NULL) {
+		if (e_is_lease && lease != NULL) {
 			bool ign;
 
 			ign = smb2_lease_equal(fsp_client_guid(fsp),
@@ -1905,7 +1906,7 @@ static bool delay_for_oplock(files_struct *fsp,
 		}
 
 		if ((e_lease_type & ~break_to) == 0) {
-			if (l != NULL && l->breaking) {
+			if (e_is_lease && l->breaking) {
 				delay = true;
 			}
 			continue;
@@ -1924,7 +1925,7 @@ static bool delay_for_oplock(files_struct *fsp,
 			break_to &= ~(SMB2_LEASE_READ|SMB2_LEASE_WRITE);
 		}
 
-		if (e->op_type != LEASE_OPLOCK) {
+		if (!e_is_lease) {
 			/*
 			 * Oplocks only support breaking to R or NONE.
 			 */
@@ -1938,7 +1939,7 @@ static bool delay_for_oplock(files_struct *fsp,
 		if (e_lease_type & delay_mask) {
 			delay = true;
 		}
-		if (l != NULL && l->breaking && !first_open_attempt) {
+		if (e_is_lease && l->breaking && !first_open_attempt) {
 			delay = true;
 		}
 		continue;
