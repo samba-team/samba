@@ -430,13 +430,23 @@ bool fsp_lease_update(struct share_mode_lock *lck,
 		      const struct GUID *client_guid,
 		      struct fsp_lease *lease)
 {
-	struct share_mode_data *d = lck->data;
-	int idx;
-	struct share_mode_lease *l = NULL;
+	uint32_t current_state;
+	bool breaking;
+	uint16_t lease_version, epoch;
+	NTSTATUS status;
 
-	idx = find_share_mode_lease(d, client_guid, &lease->lease.lease_key);
-	if (idx == -1) {
-		DEBUG(1, ("%s: Could not find lease entry\n", __func__));
+	status = leases_db_get(client_guid,
+			       &lease->lease.lease_key,
+			       &lck->data->id,
+			       &current_state,
+			       &breaking,
+			       NULL, /* breaking_to_requested */
+			       NULL, /* breaking_to_required */
+			       &lease_version,
+			       &epoch);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("Could not find lease entry: %s\n",
+			    nt_errstr(status));
 		TALLOC_FREE(lease->timeout);
 		lease->lease.lease_state = SMB2_LEASE_NONE;
 		lease->lease.lease_epoch += 1;
@@ -444,19 +454,17 @@ bool fsp_lease_update(struct share_mode_lock *lck,
 		return false;
 	}
 
-	l = &d->leases[idx];
-
 	DEBUG(10,("%s: refresh lease state\n", __func__));
 
 	/* Ensure we're in sync with current lease state. */
-	if (lease->lease.lease_epoch != l->epoch) {
+	if (lease->lease.lease_epoch != epoch) {
 		DEBUG(10,("%s: cancel outdated timeout\n", __func__));
 		TALLOC_FREE(lease->timeout);
 	}
-	lease->lease.lease_epoch = l->epoch;
-	lease->lease.lease_state = l->current_state;
+	lease->lease.lease_epoch = epoch;
+	lease->lease.lease_state = current_state;
 
-	if (l->breaking) {
+	if (breaking) {
 		lease->lease.lease_flags |= SMB2_LEASE_FLAG_BREAK_IN_PROGRESS;
 
 		if (lease->timeout == NULL) {
