@@ -5491,8 +5491,7 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 
 			DEBUG(4,(__location__ ": Removing attribute %s with num_values==0\n",
 				 el->name));
-			memmove(el, el+1, sizeof(*el)*(msg->num_elements - (i+1)));
-			msg->num_elements--;
+			ldb_msg_remove_element(msg, &msg->elements[i]);
 			i--;
 			continue;
 		}
