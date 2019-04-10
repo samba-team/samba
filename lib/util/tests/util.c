@@ -481,6 +481,31 @@ static bool test_strtoul_err_negative(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_strtoul_err_no_number(struct torture_context *tctx)
+{
+	const char *number = "ghijk";
+	const char *blank = "";
+	int err;
+
+	err = 0;
+	strtoul_err(number, NULL, 0, &err);
+	torture_assert(tctx, err == EINVAL, "strtoul_err: Expected EINVAL");
+
+	err = 0;
+	strtoull_err(number, NULL, 0, &err);
+	torture_assert(tctx, err == EINVAL, "strtoull_err: Expected EINVAL");
+
+	err = 0;
+	strtoul_err(blank, NULL, 0, &err);
+	torture_assert(tctx, err == EINVAL, "strtoul_err: Expected EINVAL");
+
+	err = 0;
+	strtoull_err(blank, NULL, 0, &err);
+	torture_assert(tctx, err == EINVAL, "strtoull_err: Expected EINVAL");
+
+	return true;
+}
+
 struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite =
@@ -498,5 +523,8 @@ struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "strtoul(l)_err negative",
 				      test_strtoul_err_negative);
+	torture_suite_add_simple_test(suite,
+				      "strtoul(l)_err no number",
+				      test_strtoul_err_no_number);
 	return suite;
 }
