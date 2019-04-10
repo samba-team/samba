@@ -235,6 +235,10 @@ def main():
                      "are incompatible. Use one or the other.")
         sys.exit(1)
 
+    if not opts.scale_traffic and not opts.packets_per_second:
+        logger.info("No packet rate specified. Using --scale-traffic=1.0")
+        opts.scale_traffic = 1.0
+
     if opts.timing_data not in ('-', None):
         try:
             open(opts.timing_data, 'w').close()
