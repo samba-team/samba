@@ -114,7 +114,7 @@ def main():
                               'the traffic')
     user_gen_group.add_option('-n', '--number-of-users', type='int', default=0,
                               help='Total number of test users to create')
-    user_gen_group.add_option('--number-of-groups', type='int', default=0,
+    user_gen_group.add_option('--number-of-groups', type='int', default=None,
                               help='Create this many groups')
     user_gen_group.add_option('--average-groups-per-user',
                               type='int', default=0,
@@ -301,6 +301,10 @@ def main():
         sys.exit(1)
 
     number_of_users = max(opts.number_of_users, len(conversations))
+
+    if opts.number_of_groups is None:
+        opts.number_of_groups = max(int(number_of_users / 10), 1)
+
     max_memberships = number_of_users * opts.number_of_groups
 
     if not opts.group_memberships and opts.average_groups_per_user:
@@ -316,6 +320,11 @@ def main():
                       % (opts.group_memberships, number_of_users,
                          opts.number_of_groups)))
         sys.exit(1)
+
+    # if no groups were specified by the user, then make sure we create some
+    # group memberships (otherwise it's not really a fair test)
+    if not opts.group_memberships and not opts.average_groups_per_user:
+        opts.group_memberships = min(number_of_users * 5, max_memberships)
 
     # Get an LDB connection.
     try:
