@@ -1867,9 +1867,11 @@ static bool delay_for_oplock(files_struct *fsp,
 		uint32_t e_lease_type = get_lease_type(d, e);
 		uint32_t break_to;
 		uint32_t delay_mask = 0;
+		bool lease_is_breaking = false;
 
 		if (e_is_lease) {
 			l = &d->leases[e->lease_idx];
+			lease_is_breaking = l->breaking;
 		}
 
 		if (have_sharing_violation) {
@@ -1906,7 +1908,7 @@ static bool delay_for_oplock(files_struct *fsp,
 		}
 
 		if ((e_lease_type & ~break_to) == 0) {
-			if (e_is_lease && l->breaking) {
+			if (lease_is_breaking) {
 				delay = true;
 			}
 			continue;
@@ -1939,7 +1941,7 @@ static bool delay_for_oplock(files_struct *fsp,
 		if (e_lease_type & delay_mask) {
 			delay = true;
 		}
-		if (e_is_lease && l->breaking && !first_open_attempt) {
+		if (lease_is_breaking && !first_open_attempt) {
 			delay = true;
 		}
 		continue;
