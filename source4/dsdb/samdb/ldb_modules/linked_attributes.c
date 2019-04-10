@@ -727,7 +727,8 @@ static int linked_attributes_fix_link_slow(struct ldb_module *module,
 	 * checking as soon as we find it.
 	 *
 	 * NOTE: if there are duplicate links, the extra ones will end up as
-	 * dangling links to the old DN. This may or may not be better.
+	 * dangling links to the old DN. This may or may not be worse than
+	 * leaving them as duplicate links.
 	 */
 	for (i = 0; i < el->num_values; i++) {
 		struct dsdb_dn *dsdb_dn = dsdb_dn_parse(msg,
