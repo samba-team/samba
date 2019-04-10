@@ -723,10 +723,10 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 
 		/*
 		 * Ensure the existing client guid matches the
-		 * stored one in the share_mode_lease.
+		 * stored one in the share_mode_entry.
 		 */
 		if (!GUID_equal(fsp_client_guid(fsp),
-				&l->client_guid)) {
+				&e->client_guid)) {
 			TALLOC_FREE(lck);
 			fsp_free(fsp);
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
