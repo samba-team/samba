@@ -62,6 +62,8 @@
  *	SMB_STR_STANDARD # raise error if negative or non-numeric
  *	SMB_STR_ALLOW_NEGATIVE # allow strings with a leading "-"
  *	SMB_STR_FULL_STR_CONV # entire string must be converted
+ *	SMB_STR_ALLOW_NO_CONVERSION # allow empty strings or non-numeric
+ *	SMB_STR_GLIBC_STANDARD # act exactly as the standard glibc strtoul
  *
  * The following errors are detected
  * - wrong base
@@ -92,11 +94,12 @@ smb_strtoul(const char *nptr, char **endptr, int base, int *err, int flags)
 		return val;
 	}
 
-	/* got an invalid number-string resulting in no conversion */
-	if (nptr == tmp_endptr) {
-		*err = EINVAL;
-		errno = saved_errno;
-		return val;
+	if ((flags & SMB_STR_ALLOW_NO_CONVERSION) == 0) {
+		/* got an invalid number-string resulting in no conversion */
+		if (nptr == tmp_endptr) {
+			*err = EINVAL;
+			goto out;
+		}
 	}
 
 	if ((flags & SMB_STR_ALLOW_NEGATIVE ) == 0) {
@@ -135,6 +138,8 @@ out:
  *	SMB_STR_STANDARD # raise error if negative or non-numeric
  *	SMB_STR_ALLOW_NEGATIVE # allow strings with a leading "-"
  *	SMB_STR_FULL_STR_CONV # entire string must be converted
+ *	SMB_STR_ALLOW_NO_CONVERSION # allow empty strings or non-numeric
+ *	SMB_STR_GLIBC_STANDARD # act exactly as the standard glibc strtoul
  *
  * The following errors are detected
  * - wrong base
@@ -165,11 +170,12 @@ smb_strtoull(const char *nptr, char **endptr, int base, int *err, int flags)
 		return val;
 	}
 
-	/* got an invalid number-string resulting in no conversion */
-	if (nptr == tmp_endptr) {
-		*err = EINVAL;
-		errno = saved_errno;
-		return val;
+	if ((flags & SMB_STR_ALLOW_NO_CONVERSION) == 0) {
+		/* got an invalid number-string resulting in no conversion */
+		if (nptr == tmp_endptr) {
+			*err = EINVAL;
+			goto out;
+		}
 	}
 
 	if ((flags & SMB_STR_ALLOW_NEGATIVE ) == 0) {
