@@ -725,7 +725,8 @@ static bool lmdb_changed(struct ldb_kv_private *ldb_kv)
  * The mdb_env_stat call returns an accurate count, so we return the actual
  * number of records in the database rather than an estimate.
  */
-static size_t lmdb_get_size(struct ldb_kv_private *ldb_kv) {
+static size_t lmdb_get_size(struct ldb_kv_private *ldb_kv)
+{
 
 	struct MDB_stat stats = {0};
 	struct lmdb_private *lmdb = ldb_kv->lmdb_private;
