@@ -64,14 +64,6 @@ echo "Source socket is $src_socket"
 # we sometimes beat the registration.
 echo "Checking if CIFS connection is tracked by CTDB on test node..."
 wait_until 10 check_tickles $test_node $test_ip $test_port $src_socket
-echo "$out"
-
-if [ "${out/SRC: ${src_socket} /}" != "$out" ] ; then
-    echo "GOOD: CIFS connection tracked OK by CTDB."
-else
-    echo "BAD: Socket not tracked by CTDB."
-    testfailures=1
-fi
 
 # This is almost immediate.  However, it is sent between nodes
 # asynchonously, so it is worth checking...

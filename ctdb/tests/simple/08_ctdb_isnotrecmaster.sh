@@ -33,13 +33,11 @@ set -e
 cluster_is_healthy
 
 cmd="$CTDB isnotrecmaster || true"
-try_command_on_node all "$cmd"
-echo "Output of \"$cmd\":"
-echo "$out"
+try_command_on_node -v all "$cmd"
 
-num_all_lines=$(echo "$out" |  wc -l)
-num_rm_lines=$(echo "$out" | fgrep -c 'this node is the recmaster') || true
-num_not_rm_lines=$(echo "$out" | fgrep -c 'this node is not the recmaster') || true
+num_all_lines=$(wc -l <"$outfile")
+num_rm_lines=$(grep -Fc 'this node is the recmaster' "$outfile") || true
+num_not_rm_lines=$(grep -Fc 'this node is not the recmaster' "$outfile") || true
 
 if [ $num_rm_lines -eq 1 ] ; then
     echo "OK, there is only 1 recmaster"

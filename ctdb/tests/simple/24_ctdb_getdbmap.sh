@@ -47,7 +47,7 @@ db_map_pattern='^(Number of databases:[[:digit:]]+|dbid:0x[[:xdigit:]]+ name:[^[
 
 sanity_check_output $(($num_db_init + 1)) "$dbmap_pattern"
 
-num_db_init=$(echo "$out" | sed -n -e '1s/.*://p')
+num_db_init=$(sed -n -e '1s/.*://p' "$outfile")
 
 for i in $(seq 1 5) ; do
     f=$(make_temp_db_filename)
@@ -55,14 +55,14 @@ for i in $(seq 1 5) ; do
     try_command_on_node 0 $CTDB attach "$f"
     try_command_on_node 0 $CTDB getdbmap
     sanity_check_output $(($num_db_init + 1)) "$dbmap_pattern"
-    num=$(echo "$out" | sed -n -e '1s/^.*://p')
+    num=$(sed -n -e '1s/^.*://p' "$outfile")
     if [ $num = $(($num_db_init + $i)) ] ; then
 	echo "OK: correct number of additional databases"
     else
 	echo "BAD: no additional database"
 	exit 1
     fi
-    if [ "${out/name:${f} /}" != "$out" ] ; then
+    if awk '{print $2}' "$outfile" | grep -Fqx "name:$f" ; then
 	echo "OK: getdbmap knows about \"$f\""
     else
 	echo "BAD: getdbmap does not know about \"$f\""

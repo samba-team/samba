@@ -63,7 +63,7 @@ echo "Source socket is $src_socket"
 echo "Wait until NFS connection is tracked by CTDB on test node ..."
 wait_until $((monitor_interval * 2)) \
 	   check_tickles $test_node $test_ip $test_port $src_socket
-echo "$out"
+cat "$outfile"
 
 # It would be nice if ss consistently used local/peer instead of src/dst
 ss_filter="src ${test_ip}:${test_port} dst ${src_socket}"
@@ -75,7 +75,7 @@ if [ -z "$out" ] ; then
 	exit 1
 fi
 echo "GOOD: ss lists the socket:"
-echo "$out"
+cat "$outfile"
 
 echo "Disabling node $test_node"
 try_command_on_node 1 $CTDB disable -n $test_node

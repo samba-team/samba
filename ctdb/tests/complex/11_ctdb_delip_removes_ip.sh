@@ -25,8 +25,8 @@ ctdb_restart_when_done
 select_test_node_and_ips
 get_test_ip_mask_and_iface
 
-echo "Checking that node ${test_node} hosts ${test_ip} on interface ${iface}..."
-try_command_on_node $test_node "ip addr show dev $iface | grep -E 'inet6?[[:space:]]*${test_ip}/'"
+echo "Checking that node ${test_node} hosts ${test_ip}..."
+try_command_on_node $test_node "ip addr show to ${test_ip} | grep -q ."
 
 echo "Attempting to remove ${test_ip} from node ${test_node}."
 try_command_on_node $test_node $CTDB delip $test_ip
@@ -36,10 +36,10 @@ wait_until_ips_are_on_node '!' $test_node $test_ip
 timeout=60
 increment=5
 count=0
-echo "Waiting for ${test_ip} to disappear from ${iface}..."
+echo "Waiting for ${test_ip} to disappear from node ${test_node}..."
 while : ; do
-    try_command_on_node -v $test_node "ip addr show dev $iface"
-    if echo "$out" | grep -E 'inet6?[[:space:]]*${test_ip}/'; then
+    try_command_on_node -v $test_node "ip addr show to ${test_node}"
+    if -n "$out" ; then
 	echo "Still there..."
 	if [ $(($count * $increment)) -ge $timeout ] ; then
 	    echo "BAD: Timed out waiting..."

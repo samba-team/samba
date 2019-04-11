@@ -23,9 +23,9 @@ testdb="rec_test.tdb"
 echo "Getting list of nodes..."
 try_command_on_node -v any "onnode -pq all ctdb pnn | grep '^[0-9][0-9]*$'"
 
-first=$(echo "$out" | sed -n -e '1p')
-second=$(echo "$out" | sed -n -e '2p')
-notfirst=$(echo "$out" | tail -n +2)
+first=$(sed -n -e '1p' "$outfile")
+second=$(sed -n -e '2p' "$outfile")
+notfirst=$(tail -n +2 "$outfile")
 
 echo "Create/wipe test database ${testdb}"
 try_command_on_node $first $CTDB attach "$testdb"
@@ -49,7 +49,7 @@ database_has_zero_records ()
 	local n
 	for n in $notfirst ; do
 		try_command_on_node $n $CTDB cattdb "$testdb"
-		if echo "$out" | grep -q '^key(' ; then
+		if grep -q '^key(' "$outfile" ; then
 			return 1
 		fi
 	done
@@ -76,7 +76,7 @@ wait_until_node_has_status $first notstopped
 echo "Get database contents"
 try_command_on_node -v $first $CTDB catdb "$testdb"
 
-if echo "$out" | grep -q '^key(' ; then
+if grep -q '^key(' "$outfile" ; then
 	echo "BAD: Deleted record has been resurrected"
 	exit 1
 fi

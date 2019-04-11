@@ -45,8 +45,8 @@ ctdb_restart_when_done
 
 test_node=1
 
-try_command_on_node 0 "$CTDB listnodes"
-num_nodes=$(echo "$out" | wc -l)
+try_command_on_node 0 "$CTDB listnodes | wc -l"
+num_nodes="$out"
 echo "There are $num_nodes nodes."
 
 echo "Shutting down node ${test_node}..."
@@ -61,7 +61,7 @@ pat="ctdb_control error: 'ctdb_control to disconnected node'|ctdb_control error:
 for i in ip disable enable "ban 0" unban listvars ; do
     try_command_on_node -v 0 ! $CTDB $i -n $test_node
 
-    if egrep -q "$pat" <<<"$out" ; then
+    if egrep -q "$pat" "$outfile" ; then
 	echo "OK: \"ctdb ${i}\" fails with expected \"disconnected node\" message"
     else
 	echo "BAD: \"ctdb ${i}\" does not fail with expected \"disconnected node\" message"

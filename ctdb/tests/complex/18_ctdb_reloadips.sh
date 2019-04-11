@@ -51,12 +51,12 @@ select_test_node_and_ips
 
 echo "Getting public IP information from CTDB..."
 try_command_on_node any "$CTDB ip -X -v all"
-ctdb_ip_info=$(echo "$out" | awk -F'|' 'NR > 1 { print $2, $3, $5 }')
+ctdb_ip_info=$(awk -F'|' 'NR > 1 { print $2, $3, $5 }' "$outfile")
 
 echo "Getting IP information from interfaces..."
 try_command_on_node all "ip addr show"
-ip_addr_info=$(echo "$out" | \
-    awk '$1 == "inet" { ip = $2; sub(/\/.*/, "", ip); print ip }')
+ip_addr_info=$(awk '$1 == "inet" { ip = $2; sub(/\/.*/, "", ip); print ip }' \
+		   "$outfile")
 
 prefix=""
 for b in $(seq 0 255) ; do
@@ -171,7 +171,7 @@ check_ips ()
 
     try_command_on_node $test_node "ip addr show dev ${iface}"
     local ip_addrs_file=$(mktemp)
-    echo "$out" | \
+    cat "$outfile" | \
 	sed -n -e "s@.*inet * \(${prefix//./\.}\.[0-9]*\)/.*@\1@p" | \
 	sort >"$ip_addrs_file"
 

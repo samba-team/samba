@@ -32,7 +32,7 @@ cluster_is_healthy
 
 try_command_on_node -v 0 "$CTDB listnodes"
 
-num_nodes=$(echo "$out" | wc -l)
+num_nodes=$(wc -l <"$outfile")
 
 # Each line should look like an IP address.
 ipv4_pat='[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+'

@@ -52,12 +52,12 @@ check_no_readonly ()
 {
     try_command_on_node all $CTDB cattdb $testdb
     local ro_flags="RO_HAVE_READONLY|RO_HAVE_DELEGATIONS"
-    local numreadonly=$(grep -c -E "$ro_flags" <<<"$out") || true
+    local numreadonly=$(grep -c -E "$ro_flags" "$outfile") || true
     if [ $numreadonly -eq 0 ] ; then
 	echo "GOOD: no read-only delegations"
     else
 	echo "BAD: there are read-only delegations"
-	echo "$out"
+	cat "$outfile"
 	exit 1
     fi
 }
@@ -75,36 +75,36 @@ check_readonly ()
     local count
 
     try_command_on_node $dmaster $CTDB cattdb $testdb
-    count=$(grep -c -E "RO_HAVE_DELEGATIONS" <<<"$out") || true
+    count=$(grep -c -E "RO_HAVE_DELEGATIONS" "$outfile") || true
     if [ $count -eq 1 ] ; then
 	echo "GOOD: dmaster ${dmaster} has read-only delegations"
     else
 	echo "BAD: dmaster ${dmaster} has no read-only delegations"
-	echo "$out"
+	cat "$outfile"
 	exit 1
     fi
-    count=$(grep -c -E "RO_HAVE_READONLY" <<<"$out") || true
+    count=$(grep -c -E "RO_HAVE_READONLY" "$outfile") || true
     if [ $count -ne 0 ] ; then
 	echo "BAD: dmaster ${dmaster} has a read-only copy"
-	echo "$out"
+	cat "$outfile"
 	exit 1
     fi
 
     local o
     for o in $others ; do
 	try_command_on_node $o $CTDB cattdb $testdb
-	count=$(grep -c -E "RO_HAVE_READONLY" <<<"$out") || true
+	count=$(grep -c -E "RO_HAVE_READONLY" "$outfile") || true
 	if [ $count -eq 1 ] ; then
 	    echo "GOOD: node ${o} has a read-only copy"
 	else
 	    echo "BAD: node ${o} has no read-only copy"
-	    echo "$out"
+	    cat "$outfile"
 	    exit 1
 	fi
-	count=$(grep -c -E "RO_HAVE_DELEGATIONS" <<<"$out") || true
+	count=$(grep -c -E "RO_HAVE_DELEGATIONS" "$outfile") || true
 	if [ $count -ne 0 ] ; then
 	    echo "BAD: other node ${o} has read-only delegations"
-	    echo "$out"
+	    cat "$outfile"
 	    exit 1
 	fi
     done
@@ -114,7 +114,7 @@ check_readonly ()
 
 echo "Get list of nodes..."
 try_command_on_node any $CTDB -X listnodes
-all_nodes=$(awk -F'|' '{print $2}' <<<"$out")
+all_nodes=$(awk -F'|' '{print $2}' "$outfile")
 
 ######################################################################
 
@@ -141,7 +141,7 @@ try_command_on_node all $CTDB setdbreadonly $testdb
 
 # Database should be tagged as READONLY
 try_command_on_node 0 $CTDB getdbmap
-db_details=$(awk -v db="$testdb" '$2 == foo="name:" db { print }' <<<"$out")
+db_details=$(awk -v db="$testdb" '$2 == foo="name:" db { print }' "$outfile")
 if grep -q "READONLY" <<<"$db_details" ; then
     echo "GOOD: read-only record support is enabled"
 else

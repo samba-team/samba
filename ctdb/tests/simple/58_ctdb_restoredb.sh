@@ -36,10 +36,10 @@ set -e
 cluster_is_healthy
 
 try_command_on_node 0 $CTDB status
-generation=$(echo "$out" | sed -n -e 's/^Generation:\([0-9]*\)/\1/p')
+generation=$(sed -n -e 's/^Generation:\([0-9]*\)/\1/p' "$outfile")
 
-try_command_on_node 0 "$CTDB listnodes"
-num_nodes=$(echo "$out" | wc -l)
+try_command_on_node 0 "$CTDB listnodes | wc -l"
+num_nodes="$out"
 
 # 2.
 test_db="restoredb_test.tdb"
@@ -105,7 +105,7 @@ fi
 wait_until_ready
 
 try_command_on_node 0 $CTDB status
-new_generation=$(echo "$out" | sed -n -e 's/^Generation:\([0-9]*\)/\1/p')
+new_generation=$(sed -n -e 's/^Generation:\([0-9]*\)/\1/p' "$outfile")
 
 echo "Old generation = $generation"
 echo "New generation = $new_generation"
