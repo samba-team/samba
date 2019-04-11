@@ -177,6 +177,7 @@ int ldb_kv_search_base(struct ldb_module *module,
 struct ldb_kv_parse_data_unpack_ctx {
 	struct ldb_message *msg;
 	struct ldb_module *module;
+	struct ldb_kv_private *ldb_kv;
 	unsigned int unpack_flags;
 };
 
@@ -190,8 +191,7 @@ static int ldb_kv_parse_data_unpack(struct ldb_val key,
 	struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
 	struct ldb_val data_parse = data;
 
-	struct ldb_kv_private *ldb_kv =
-	    talloc_get_type(ldb_module_get_private(ctx->module), struct ldb_kv_private);
+	struct ldb_kv_private *ldb_kv = ctx->ldb_kv;
 
 	if ((ctx->unpack_flags & LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC)) {
 		if ((ldb_kv->kv_ops->options & LDB_KV_OPTION_STABLE_READ_LOCK) &&
@@ -266,7 +266,8 @@ int ldb_kv_search_key(struct ldb_module *module,
 	struct ldb_kv_parse_data_unpack_ctx ctx = {
 		.msg = msg,
 		.module = module,
-		.unpack_flags = unpack_flags
+		.unpack_flags = unpack_flags,
+		.ldb_kv = ldb_kv
 	};
 
 	memset(msg, 0, sizeof(*msg));
