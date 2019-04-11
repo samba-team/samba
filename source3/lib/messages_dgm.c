@@ -1470,10 +1470,6 @@ static int messaging_dgm_read_unique(int fd, uint64_t *punique)
 	buf[rw_ret] = '\0';
 
 	unique = strtoull_err(buf, &endptr, 10, &error);
-	if ((unique == 0) && (errno == EINVAL)) {
-		return EINVAL;
-	}
-
 	if (error != 0) {
 		return error;
 	}
