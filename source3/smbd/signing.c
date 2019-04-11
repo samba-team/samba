@@ -75,21 +75,24 @@ bool srv_check_sign_mac(struct smbXsrv_connection *conn,
  Called to sign an outgoing packet to the client.
 ************************************************************/
 
-void srv_calculate_sign_mac(struct smbXsrv_connection *conn,
-			    char *outbuf, uint32_t seqnum)
+NTSTATUS srv_calculate_sign_mac(struct smbXsrv_connection *conn,
+				char *outbuf, uint32_t seqnum)
 {
 	uint8_t *outhdr;
 	size_t len;
 
 	/* Check if it's a non-session message. */
 	if(CVAL(outbuf,0)) {
-		return;
+		return NT_STATUS_OK;;
 	}
 
 	len = smb_len(outbuf);
 	outhdr = (uint8_t *)outbuf + NBT_HDR_SIZE;
 
-	smb_signing_sign_pdu(conn->smb1.signing_state, outhdr, len, seqnum);
+	return smb_signing_sign_pdu(conn->smb1.signing_state,
+				    outhdr,
+				    len,
+				    seqnum);
 }
 
 

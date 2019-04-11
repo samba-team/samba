@@ -228,8 +228,15 @@ bool srv_send_smb(struct smbXsrv_connection *xconn, char *buffer,
 	smbd_lock_socket(xconn);
 
 	if (do_signing) {
+		NTSTATUS status;
+
 		/* Sign the outgoing packet if required. */
-		srv_calculate_sign_mac(xconn, buf_out, seqnum);
+		status = srv_calculate_sign_mac(xconn, buf_out, seqnum);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to calculate signing mac: %s\n",
+				nt_errstr(status));
+			return false;
+		}
 	}
 
 	if (do_encrypt) {
