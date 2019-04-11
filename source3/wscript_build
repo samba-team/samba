@@ -671,7 +671,6 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/error.c
                           printing/printspoolss.c
                           lib/sessionid_tdb.c
-                          lib/conn_tdb.c
                           lib/cleanupdb.c
                           smbd/fake_file.c
                           smbd/quotas.c

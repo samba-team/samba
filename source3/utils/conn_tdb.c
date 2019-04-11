@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Low-level connections.tdb access functions
    Copyright (C) Volker Lendecke 2007
@@ -24,7 +24,7 @@
 #include "dbwrap/dbwrap_open.h"
 #include "dbwrap/dbwrap_rbt.h"
 #include "messages.h"
-#include "lib/conn_tdb.h"
+#include "conn_tdb.h"
 #include "util_tdb.h"
 
 struct connections_forall_state {
@@ -171,4 +171,3 @@ done:
 	talloc_free(frame);
 	return ret;
 }
-

@@ -44,7 +44,7 @@
 #include "librpc/gen_ndr/open_files.h"
 #include "smbd/smbd.h"
 #include "librpc/gen_ndr/notify.h"
-#include "lib/conn_tdb.h"
+#include "conn_tdb.h"
 #include "serverid.h"
 #include "status_profile.h"
 #include "smbd/notifyd/notifyd.h"
