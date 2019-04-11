@@ -52,7 +52,8 @@ bool smb_signing_is_mandatory(struct smb_signing_state *si);
 bool smb_signing_set_negotiated(struct smb_signing_state *si,
 				bool allowed, bool mandatory);
 bool smb_signing_is_negotiated(struct smb_signing_state *si);
-void smb_key_derivation(const uint8_t *KI, size_t KI_len,
-			uint8_t KO[16]);
+NTSTATUS smb_key_derivation(const uint8_t *KI,
+			    size_t KI_len,
+			    uint8_t KO[16]);
 
 #endif /* _SMB_SIGNING_H_ */

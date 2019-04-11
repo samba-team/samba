@@ -1038,9 +1038,16 @@ void reply_tcon_and_X(struct smb_request *req)
 		}
 
 		if (tcon_flags & TCONX_FLAG_EXTENDED_SIGNATURES) {
-			smb_key_derivation(x->global->application_key.data,
-					   x->global->application_key.length,
-					   x->global->application_key.data);
+			NTSTATUS status;
+
+			status = smb_key_derivation(x->global->application_key.data,
+						    x->global->application_key.length,
+						    x->global->application_key.data);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_ERR("smb_key_derivation failed: %s\n",
+					nt_errstr(status));
+				return;
+			}
 			optional_support |= SMB_EXTENDED_SIGNATURES;
 		}
 

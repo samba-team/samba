@@ -506,9 +506,11 @@ bool smb_signing_is_negotiated(struct smb_signing_state *si)
 	return si->negotiated;
 }
 
-void smb_key_derivation(const uint8_t *KI, size_t KI_len,
-			uint8_t KO[16])
+NTSTATUS smb_key_derivation(const uint8_t *KI,
+			    size_t KI_len,
+			    uint8_t KO[16])
 {
+	int rc;
 	static const uint8_t SSKeyHash[256] = {
 		0x53, 0x65, 0x63, 0x75, 0x72, 0x69, 0x74, 0x79,
 		0x20, 0x53, 0x69, 0x67, 0x6e, 0x61, 0x74, 0x75,
@@ -545,10 +547,18 @@ void smb_key_derivation(const uint8_t *KI, size_t KI_len,
 	};
 
 	/* The callers passing down KI_len of 16 so no need to limit to 64 */
-	gnutls_hmac_fast(GNUTLS_MAC_MD5,
-			 KI,
-			 KI_len,
-			 SSKeyHash,
-			 sizeof(SSKeyHash),
-			 KO);
+	rc = gnutls_hmac_fast(GNUTLS_MAC_MD5,
+			      KI,
+			      KI_len,
+			      SSKeyHash,
+			      sizeof(SSKeyHash),
+			      KO);
+	if (rc < 0) {
+		if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
+			return NT_STATUS_HASH_NOT_SUPPORTED;
+		}
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return NT_STATUS_OK;
 }

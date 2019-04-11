@@ -5793,6 +5793,8 @@ NTSTATUS smb1cli_session_set_session_key(struct smbXcli_session *session,
 
 NTSTATUS smb1cli_session_protect_session_key(struct smbXcli_session *session)
 {
+	NTSTATUS status;
+
 	if (session->smb1.protected_key) {
 		/* already protected */
 		return NT_STATUS_OK;
@@ -5802,9 +5804,12 @@ NTSTATUS smb1cli_session_protect_session_key(struct smbXcli_session *session)
 		return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
-	smb_key_derivation(session->smb1.application_key.data,
-			   session->smb1.application_key.length,
-			   session->smb1.application_key.data);
+	status = smb_key_derivation(session->smb1.application_key.data,
+				    session->smb1.application_key.length,
+				    session->smb1.application_key.data);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	session->smb1.protected_key = true;
 
