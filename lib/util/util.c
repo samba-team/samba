@@ -61,6 +61,7 @@
  * The following flags are supported
  *	SMB_STR_STANDARD # raise error if negative or non-numeric
  *	SMB_STR_ALLOW_NEGATIVE # allow strings with a leading "-"
+ *	SMB_STR_FULL_STR_CONV # entire string must be converted
  *
  * The following errors are detected
  * - wrong base
@@ -103,9 +104,19 @@ smb_strtoul(const char *nptr, char **endptr, int base, int *err, int flags)
 		needle = strchr(nptr, '-');
 		if (needle != NULL && needle < tmp_endptr) {
 			*err = EINVAL;
+			goto out;
 		}
 	}
 
+	if ((flags & SMB_STR_FULL_STR_CONV) != 0) {
+		/* did we convert the entire string ? */
+		if (tmp_endptr[0] != '\0') {
+			*err = EINVAL;
+			goto out;
+		}
+	}
+
+out:
 	errno = saved_errno;
 	return val;
 }
@@ -123,6 +134,7 @@ smb_strtoul(const char *nptr, char **endptr, int base, int *err, int flags)
  * The following flags are supported
  *	SMB_STR_STANDARD # raise error if negative or non-numeric
  *	SMB_STR_ALLOW_NEGATIVE # allow strings with a leading "-"
+ *	SMB_STR_FULL_STR_CONV # entire string must be converted
  *
  * The following errors are detected
  * - wrong base
@@ -165,9 +177,19 @@ smb_strtoull(const char *nptr, char **endptr, int base, int *err, int flags)
 		needle = strchr(nptr, '-');
 		if (needle != NULL && needle < tmp_endptr) {
 			*err = EINVAL;
+			goto out;
 		}
 	}
 
+	if ((flags & SMB_STR_FULL_STR_CONV) != 0) {
+		/* did we convert the entire string ? */
+		if (tmp_endptr[0] != '\0') {
+			*err = EINVAL;
+			goto out;
+		}
+	}
+
+out:
 	errno = saved_errno;
 	return val;
 }
