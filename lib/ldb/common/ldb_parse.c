@@ -328,7 +328,7 @@ static enum ldb_parse_op ldb_parse_filtertype(TALLOC_CTX *mem_ctx, char **type, 
 
 	if (*p == '=') {
 		filter = LDB_OP_EQUALITY;
-	} else if (*(p + 1) == '=') {
+	} else if (*p != '\0' && *(p + 1) == '=') {
 		switch (*p) {
 		case '<':
 			filter = LDB_OP_LESS;
@@ -679,11 +679,11 @@ static struct ldb_parse_tree *ldb_parse_filter(TALLOC_CTX *mem_ctx, const char *
 */
 struct ldb_parse_tree *ldb_parse_tree(TALLOC_CTX *mem_ctx, const char *s)
 {
+	while (s && isspace((unsigned char)*s)) s++;
+
 	if (s == NULL || *s == 0) {
 		s = "(|(objectClass=*)(distinguishedName=*))";
 	}
-
-	while (isspace((unsigned char)*s)) s++;
 
 	if (*s == '(') {
 		return ldb_parse_filter(mem_ctx, &s);

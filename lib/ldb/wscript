@@ -506,6 +506,11 @@ def build(bld):
                          deps='cmocka ldb ldb_tdb_err_map',
                          install=False)
 
+        bld.SAMBA_BINARY('ldb_parse_test',
+                         source='tests/ldb_parse_test.c',
+                         deps='cmocka ldb ldb_tdb_err_map',
+                         install=False)
+
         if bld.CONFIG_SET('HAVE_LMDB'):
             bld.SAMBA_BINARY('ldb_mdb_mod_op_test',
                              source='tests/ldb_mod_op_test.c',
@@ -576,7 +581,8 @@ def test(ctx):
                  'ldb_tdb_kv_ops_test',
                  'ldb_tdb_test',
                  'ldb_match_test',
-                 'ldb_key_value_test']
+                 'ldb_key_value_test',
+                 'ldb_parse_test']
 
     if env.HAVE_LMDB:
         test_exes += ['ldb_mdb_mod_op_test',
