@@ -316,6 +316,7 @@ bool smb_signing_check_pdu(struct smb_signing_state *si,
 	bool good;
 	uint8_t calc_md5_mac[16];
 	const uint8_t *reply_sent_mac;
+	NTSTATUS status;
 
 	if (si->mac_key.length == 0) {
 		return true;
@@ -328,8 +329,16 @@ bool smb_signing_check_pdu(struct smb_signing_state *si,
 		return false;
 	}
 
-	smb_signing_md5(&si->mac_key, inhdr, len,
-			seqnum, calc_md5_mac);
+	status = smb_signing_md5(&si->mac_key,
+				 inhdr,
+				 len,
+				 seqnum,
+				 calc_md5_mac);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to calculate signing mac: %s\n",
+			nt_errstr(status));
+		return false;
+	}
 
 	reply_sent_mac = &inhdr[HDR_SS_FIELD];
 	good = (memcmp(reply_sent_mac, calc_md5_mac, 8) == 0);
