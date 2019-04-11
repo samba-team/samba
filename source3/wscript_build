@@ -1144,25 +1144,6 @@ bld.SAMBA3_BINARY('locktest2',
                       ''',
                  install=False)
 
-smbstatus_source = 'utils/status.c smbd/notify_msg.c'
-
-if bld.CONFIG_GET("WITH_PROFILE"):
-    smbstatus_source += ' utils/status_profile.c'
-else:
-    smbstatus_source += ' utils/status_profile_dummy.c'
-
-bld.SAMBA3_BINARY('smbstatus',
-                 source=smbstatus_source,
-                 deps='''
-                      talloc
-                      smbconf
-                      popt_samba3
-                      cmdline_contexts
-                      smbd_base
-                      LOCKING
-                      PROFILE
-                      ''')
-
 bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  source='''
                         torture/torture.c
