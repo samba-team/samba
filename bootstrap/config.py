@@ -26,7 +26,7 @@ import os
 from os.path import abspath, dirname, join
 HERE = abspath(dirname(__file__))
 # output dir for rendered files
-OUT = join(HERE, 'dists')
+OUT = join(HERE, 'generated-dists')
 
 
 # pkgs with same name in all packaging systems
