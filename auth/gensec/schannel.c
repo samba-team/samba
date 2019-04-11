@@ -140,10 +140,10 @@ static void netsec_offset_and_sizes(struct schannel_state *state,
 /*******************************************************************
  Encode or Decode the sequence number (which is symmetric)
  ********************************************************************/
-static void netsec_do_seq_num(struct schannel_state *state,
-			      const uint8_t *checksum,
-			      uint32_t checksum_length,
-			      uint8_t seq_num[8])
+static NTSTATUS netsec_do_seq_num(struct schannel_state *state,
+				  const uint8_t *checksum,
+				  uint32_t checksum_length,
+				  uint8_t seq_num[8])
 {
 	if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		AES_KEY key;
@@ -168,7 +168,10 @@ static void netsec_do_seq_num(struct schannel_state *state,
 				      sizeof(zeros),
 				      digest1);
 		if (rc < 0) {
-			return;
+			if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
+				return NT_STATUS_HMAC_NOT_SUPPORTED;
+			}
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		rc = gnutls_hmac_fast(GNUTLS_MAC_MD5,
@@ -178,7 +181,10 @@ static void netsec_do_seq_num(struct schannel_state *state,
 				      checksum_length,
 				      sequence_key);
 		if (rc < 0) {
-			return;
+			if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
+				return NT_STATUS_HMAC_NOT_SUPPORTED;
+			}
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		ZERO_ARRAY(digest1);
@@ -189,6 +195,8 @@ static void netsec_do_seq_num(struct schannel_state *state,
 	}
 
 	state->seq_num++;
+
+	return NT_STATUS_OK;
 }
 
 static void netsec_do_seal(struct schannel_state *state,
@@ -462,7 +470,12 @@ static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	netsec_do_seq_num(state, checksum, checksum_length, seq_num);
+	status = netsec_do_seq_num(state, checksum, checksum_length, seq_num);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("netsec_do_seq_num failed: %s\n",
+			    nt_errstr(status));
+		return status;
+	}
 
 	ZERO_ARRAY(checksum);
 
@@ -552,7 +565,12 @@ static NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
 			       true);
 	}
 
-	netsec_do_seq_num(state, checksum, checksum_length, seq_num);
+	status = netsec_do_seq_num(state, checksum, checksum_length, seq_num);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("netsec_do_seq_num failed: %s\n",
+			    nt_errstr(status));
+		return status;
+	}
 
 	(*sig) = data_blob_talloc_zero(mem_ctx, used_sig_size);
 
