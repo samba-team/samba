@@ -46,11 +46,11 @@ def render(dists):
             if path.endswith('.sh'):
                 os.chmod(path, 0o755)
 
-        key = 'Vagrantfile'
-        path = os.path.join(OUT, key)
-        log.info('%s: render "%s" to %s', dist, key, path)
-        with io.open(path, mode='wt', encoding='utf8') as fp:
-            fp.write(VAGRANTFILE)
+    key = 'Vagrantfile'
+    path = os.path.join(OUT, key)
+    log.info('%s: render "%s" to %s', dist, key, path)
+    with io.open(path, mode='wt', encoding='utf8') as fp:
+        fp.write(VAGRANTFILE)
 
 
 def main():
