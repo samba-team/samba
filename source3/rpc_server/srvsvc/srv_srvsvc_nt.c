@@ -39,7 +39,6 @@
 #include "auth.h"
 #include "messages.h"
 #include "serverid.h"
-#include "lib/conn_tdb.h"
 
 extern const struct generic_mapping file_generic_mapping;
 

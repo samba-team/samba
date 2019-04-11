@@ -32,7 +32,6 @@
 #include "smbprofile.h"
 #include "../libcli/security/security.h"
 #include "auth/gensec/gensec.h"
-#include "lib/conn_tdb.h"
 #include "../libcli/smb/smb_signing.h"
 
 /****************************************************************************

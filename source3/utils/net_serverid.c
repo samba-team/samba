@@ -24,7 +24,6 @@
 #include "dbwrap/dbwrap_rbt.h"
 #include "serverid.h"
 #include "session.h"
-#include "lib/conn_tdb.h"
 #include "smbd/globals.h"
 #include "util_tdb.h"
 #include "librpc/gen_ndr/ndr_open_files.h"

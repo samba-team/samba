@@ -44,7 +44,6 @@
 #include "lib/id_cache.h"
 #include "lib/param/param.h"
 #include "lib/background.h"
-#include "lib/conn_tdb.h"
 #include "../lib/util/pidfile.h"
 #include "lib/smbd_shim.h"
 #include "scavenger.h"
