@@ -141,10 +141,10 @@ static bool smb_signing_good(struct smb_signing_state *si,
 	return false;
 }
 
-static void smb_signing_md5(const DATA_BLOB *mac_key,
-			    const uint8_t *hdr, size_t len,
-			    uint32_t seq_number,
-			    uint8_t calc_md5_mac[16])
+static NTSTATUS smb_signing_md5(const DATA_BLOB *mac_key,
+				const uint8_t *hdr, size_t len,
+				uint32_t seq_number,
+				uint8_t calc_md5_mac[16])
 {
 	const size_t offset_end_of_sig = (HDR_SS_FIELD + 8);
 	uint8_t sequence_buf[8];
@@ -171,34 +171,39 @@ static void smb_signing_md5(const DATA_BLOB *mac_key,
 	 */
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
-		return;
+		if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
+			return NT_STATUS_HASH_NOT_SUPPORTED;
+		}
+		return NT_STATUS_NO_MEMORY;
 	}
 	/* Initialise with the key. */
 	rc = gnutls_hash(hash_hnd, mac_key->data, mac_key->length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 	/* Copy in the first bit of the SMB header. */
 	rc = gnutls_hash(hash_hnd, hdr, HDR_SS_FIELD);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 	/* Copy in the sequence number, instead of the signature. */
 	rc = gnutls_hash(hash_hnd, sequence_buf, sizeof(sequence_buf));
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 	/* Copy in the rest of the packet in, skipping the signature. */
 	rc = gnutls_hash(hash_hnd, hdr + offset_end_of_sig, len - offset_end_of_sig);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	gnutls_hash_deinit(hash_hnd, calc_md5_mac);
+
+	return NT_STATUS_OK;
 }
 
 uint32_t smb_signing_next_seqnum(struct smb_signing_state *si, bool oneway)
@@ -281,8 +286,16 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 			memset(calc_md5_mac, 0, 8);
 		}
 	} else {
-		smb_signing_md5(&si->mac_key, outhdr, len,
-				seqnum, calc_md5_mac);
+		NTSTATUS status;
+
+		status = smb_signing_md5(&si->mac_key,
+				         outhdr,
+					 len,
+					 seqnum,
+					 calc_md5_mac);
+		if (!NT_STATUS_IS_OK(status)) {
+			return;
+		}
 	}
 
 	DEBUG(10, ("smb_signing_sign_pdu: sent SMB signature of\n"));
