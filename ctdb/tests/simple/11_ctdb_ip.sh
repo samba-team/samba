@@ -33,18 +33,20 @@ cluster_is_healthy
 
 echo "Getting list of public IPs..."
 try_command_on_node -v 1 "$CTDB ip all | tail -n +2"
-ips=$(echo "$out" | sed \
+ips=$(sed \
 	-e 's@ node\[@ @' \
-	-e 's@\].*$@@')
-machineout=$(echo "$out" | sed -r \
+	-e 's@\].*$@@' \
+	"$outfile")
+machineout=$(sed -r \
 	-e 's@^| |$@\|@g' \
 	-e 's@[[:alpha:]]+\[@@g' \
-	-e 's@\]@@g')
+	-e 's@\]@@g' \
+	"$outfile")
 
 if [ -z "$TEST_LOCAL_DAEMONS" ]; then
 	while read ip pnn ; do
-		try_command_on_node $pnn "ip addr show"
-		if [ "${out/inet* ${ip}\/}" != "$out" ] ; then
+		try_command_on_node $pnn "ip addr show to ${ip}"
+		if [ -n "$out" ] ; then
 			echo "GOOD: node $pnn appears to have $ip assigned"
 		else
 			die "BAD: node $pnn does not appear to have $ip assigned"

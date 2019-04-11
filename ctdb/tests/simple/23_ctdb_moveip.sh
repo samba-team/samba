@@ -23,7 +23,28 @@ cluster_is_healthy
 
 select_test_node_and_ips
 
-sanity_check_ips "$out"
+sanity_check_ips ()
+{
+    echo "Sanity checking IPs..."
+
+    local x ipp prev
+    prev=""
+    while read x ipp ; do
+	[ "$ipp" = "-1" ] && break
+	if [ -n "$prev" -a "$ipp" != "$prev" ] ; then
+	    echo "OK"
+	    return 0
+	fi
+	prev="$ipp"
+    done <"$outfile"
+
+    echo "BAD: a node was -1 or IPs are only assigned to one node:"
+    cat "$outfile"
+    echo "Are you running an old version of CTDB?"
+    return 1
+}
+
+sanity_check_ips
 
 # Find a target node - it must be willing to host $test_ip
 try_command_on_node any "$CTDB listnodes | wc -l"
@@ -37,7 +58,7 @@ for i in $(seq 0 $(($num_nodes - 1)) ) ; do
 	    to_node="$i"
 	    break 2
 	fi
-    done <<<"$out"
+    done <"$outfile"
 done
 
 if [ -z "$to_node" ] ; then

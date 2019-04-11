@@ -36,9 +36,8 @@ cluster_is_healthy
 
 ######################################################################
 
-try_command_on_node 0 "$CTDB listnodes -X"
-listnodes_output="$out"
-numnodes=$(wc -l <<<"$listnodes_output")
+try_command_on_node 0 "$CTDB listnodes -X | wc -l"
+numnodes="$out"
 lastnode=$(( numnodes - 1 ))
 
 ######################################################################
@@ -55,7 +54,7 @@ check_db ()
 	echo "$out"
 	exit 1
     else
-	local flags=$(awk '{print $4}' <<<"$out") || true
+	local flags=$(awk '{print $4}' "$outfile") || true
 	if [ "$flags" = "$flag" ]; then
 	    echo "GOOD: database $db is attached on node $node with flag $flag"
 	else

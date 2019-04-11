@@ -23,7 +23,6 @@ sanity_check_output \
 
 echo "Verifying all variable values using \"ctdb getvar\"..."
 
-echo "$out" |
 while read var x val ; do
     try_command_on_node 0 "$CTDB getvar $var"
 
@@ -33,7 +32,7 @@ while read var x val ; do
 	echo "MISMATCH on $var: $val != $val2"
 	exit 1
     fi
-done
+done <"$outfile"
 
 echo "GOOD: all tunables match"
 

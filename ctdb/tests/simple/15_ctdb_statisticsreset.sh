@@ -37,10 +37,11 @@ num_nodes="$out"
 
 get_stat ()
 {
-    local label="$1"
-    local out="$2"
+	local label="$1"
 
-    echo "$out" | sed -rn -e "s@^[[:space:]]+${label}[[:space:]]+([[:digit:]])@\1@p" | head -1
+	cat "$outfile" |
+	sed -rn -e "s@^[[:space:]]+${label}[[:space:]]+([[:digit:]])@\1@p" |
+	head -1
 }
 
 check_reduced ()
@@ -59,20 +60,20 @@ check_reduced ()
 n=0
 while [ $n -lt $num_nodes ] ; do
     echo "Getting initial statistics for node ${n}..."
-    
+
     try_command_on_node -v $n $CTDB statistics
 
-    before_req_control=$(get_stat "req_control" "$out")
-    before_reply_control=$(get_stat "reply_control" "$out")
-    before_node_packets_recv=$(get_stat "node_packets_recv" "$out")
+    before_req_control=$(get_stat "req_control")
+    before_reply_control=$(get_stat "reply_control")
+    before_node_packets_recv=$(get_stat "node_packets_recv")
 
     try_command_on_node $n $CTDB statisticsreset
 
     try_command_on_node -v $n $CTDB statistics
 
-    after_req_control=$(get_stat "req_control" "$out")
-    after_reply_control=$(get_stat "reply_control" "$out")
-    after_node_packets_recv=$(get_stat "node_packets_recv" "$out")
+    after_req_control=$(get_stat "req_control")
+    after_reply_control=$(get_stat "reply_control")
+    after_node_packets_recv=$(get_stat "node_packets_recv")
 
     check_reduced "req_control" "$before_req_control" "$after_req_control"
     check_reduced "reply_control" "$before_reply_control" "$after_reply_control"
