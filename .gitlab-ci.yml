@@ -39,9 +39,9 @@ include:
 .shared_template:
   variables:
     AUTOBUILD_JOB_NAME: $CI_JOB_NAME
-  # We use the ubuntu1404 image as default as
-  # it matches what we have on sn-devel-144.
-  image: $SAMBA_CI_CONTAINER_IMAGE_ubuntu1404
+  # We use the ubuntu1804 image as default as
+  # it matches what we have on sn-devel-184.
+  image: $SAMBA_CI_CONTAINER_IMAGE_ubuntu1804
   stage: build
   tags:
     - docker
