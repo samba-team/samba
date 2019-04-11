@@ -26,6 +26,8 @@ testit "simple-dc" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc
 
 rm -rf $PREFIX/simple-dc
 testit "simple-dc-guids" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --domain-guid=6054d36d-2bfd-44f1-a9cd-32cfbb06480b --ntds-guid=b838f255-c8aa-4fe8-9402-b7d61ca3bd1b --invocationid=6d4cff9a-2bbf-4b4c-98a2-36242ddb0bd6 --targetdir=$PREFIX/simple-dc --use-ntvfs
+rm -rf $PREFIX/simple-dc-2008r2-schema
+testit "simple-dc-2008r2-schema" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-dc-2008r2-schema --use-ntvfs --base-schema=2008_R2
 rm -rf $PREFIX/simple-member
 testit "simple-member" $PYTHON $BINDIR/samba-tool domain provision --server-role="member" --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple-member --use-ntvfs
 rm -rf $PREFIX/simple-standalone
@@ -38,6 +40,42 @@ reprovision() {
 }
 
 testit "reprovision" reprovision
+
+V_2012_R2=69
+V_2008_R2=47
+
+check_baseschema() {
+	ldbsearch="ldbsearch"
+	if [ -x "$BINDIR/ldbsearch" ]; then
+	    ldbsearch="$BINDIR/ldbsearch"
+	fi
+
+	base=$($ldbsearch -H $PREFIX/$1/private/sam.ldb -s base dn)
+	dom=$(echo "$base" | grep "dn: " | cut -d " " -f 2);
+
+	if [ -z "$dom" ]; then
+		echo "Unexpected ldbsearch output: $base";
+	fi
+
+	version=$($ldbsearch -H $PREFIX/$1/private/sam.ldb -s base \
+		  "objectVersion" -b "CN=SCHEMA,CN=CONFIGURATION,$dom");
+	version_num=$(echo "$version" | grep "objectVersion: " | cut -d " " -f 2);
+
+	if [ "$version_num" -eq "$2" ]; then
+		return 0;
+	fi
+
+	echo "Fail: schema version $version_num != $2";
+	return 1;
+}
+
+tname="schema version"
+testit "$tname simple-default" check_baseschema simple-default $V_2012_R2
+testit "$tname simple-dc" check_baseschema simple-dc $V_2012_R2
+testit "$tname simple-member" check_baseschema simple-member $V_2012_R2
+testit "$tname simple-standalone" check_baseschema simple-standalone $V_2012_R2
+testit "$tname simple-dc-2008r2-schema" check_baseschema simple-dc-2008r2-schema $V_2008_R2
+
 rm -rf $PREFIX/simple-default
 rm -rf $PREFIX/simple-dc
 rm -rf $PREFIX/blank-dc
