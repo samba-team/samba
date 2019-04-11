@@ -43,8 +43,10 @@ bool reopen_logs(void)
 
 		debug_set_logfile(lp_logfile(talloc_tos()));
 		debug_parse_levels(lp_log_level(talloc_tos()));
-		debug_set_settings(&settings, lp_logging(talloc_tos()),
-				   lp_syslog(), lp_syslog_only());
+		debug_set_settings(&settings,
+				   lp_logging(talloc_tos()),
+				   lp_syslog(),
+				   lp_syslog_only());
 	}
 	return reopen_logs_internal();
 }
