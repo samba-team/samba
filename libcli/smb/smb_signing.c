@@ -237,9 +237,9 @@ void smb_signing_cancel_reply(struct smb_signing_state *si, bool oneway)
 	}
 }
 
-void smb_signing_sign_pdu(struct smb_signing_state *si,
-			  uint8_t *outhdr, size_t len,
-			  uint32_t seqnum)
+NTSTATUS smb_signing_sign_pdu(struct smb_signing_state *si,
+			      uint8_t *outhdr, size_t len,
+			      uint32_t seqnum)
 {
 	uint8_t calc_md5_mac[16];
 	uint8_t com;
@@ -247,7 +247,7 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 
 	if (si->mac_key.length == 0) {
 		if (!si->negotiated) {
-			return;
+			return NT_STATUS_OK;
 		}
 	}
 
@@ -294,7 +294,7 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 					 seqnum,
 					 calc_md5_mac);
 		if (!NT_STATUS_IS_OK(status)) {
-			return;
+			return status;
 		}
 	}
 
@@ -305,6 +305,8 @@ void smb_signing_sign_pdu(struct smb_signing_state *si,
 
 /*	outhdr[HDR_SS_FIELD+2]=0;
 	Uncomment this to test if the remote server actually verifies signatures...*/
+
+	return NT_STATUS_OK;
 }
 
 bool smb_signing_check_pdu(struct smb_signing_state *si,

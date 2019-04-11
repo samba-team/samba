@@ -1623,6 +1623,7 @@ static NTSTATUS smb1cli_conn_signv(struct smbXcli_conn *conn,
 				   bool one_way_seqnum)
 {
 	TALLOC_CTX *frame = NULL;
+	NTSTATUS status;
 	uint8_t *buf;
 
 	/*
@@ -1655,9 +1656,13 @@ static NTSTATUS smb1cli_conn_signv(struct smbXcli_conn *conn,
 
 	*seqnum = smb_signing_next_seqnum(conn->smb1.signing,
 					  one_way_seqnum);
-	smb_signing_sign_pdu(conn->smb1.signing,
-			     buf, talloc_get_size(buf),
-			     *seqnum);
+	status = smb_signing_sign_pdu(conn->smb1.signing,
+				      buf,
+				      talloc_get_size(buf),
+				      *seqnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	memcpy(iov[1].iov_base, buf, iov[1].iov_len);
 
 	TALLOC_FREE(frame);
