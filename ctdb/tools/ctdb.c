@@ -2434,8 +2434,8 @@ static int control_dumpmemory(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	n = write(1, mem_str, strlen(mem_str)+1);
-	if (n < 0 || n != strlen(mem_str)+1) {
+	n = write(1, mem_str, strlen(mem_str));
+	if (n < 0 || n != strlen(mem_str)) {
 		fprintf(stderr, "Failed to write talloc summary\n");
 		return 1;
 	}
@@ -2446,10 +2446,12 @@ static int control_dumpmemory(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 static void dump_memory(uint64_t srvid, TDB_DATA data, void *private_data)
 {
 	bool *done = (bool *)private_data;
+	size_t len;
 	ssize_t n;
 
-	n = write(1, data.dptr, data.dsize);
-	if (n < 0 || n != data.dsize) {
+	len = strnlen((const char *)data.dptr, data.dsize);
+	n = write(1, data.dptr, len);
+	if (n < 0 || n != len) {
 		fprintf(stderr, "Failed to write talloc summary\n");
 	}
 
