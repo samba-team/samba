@@ -31,7 +31,7 @@ for i in $all_pnns ; do
 		continue
 	fi
 	try_command_on_node $i "$CTDB ip"
-	n=$(awk -v ip="$test_ip" '$1 == ip { print }' <<<"$out")
+	n=$(awk -v ip="$test_ip" '$1 == ip { print }' "$outfile")
 	if [ -n "$n" ] ; then
 		other_node="$i"
 		break

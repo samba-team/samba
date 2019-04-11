@@ -34,9 +34,7 @@ while read ip pnn ; do
 	if [ "$pnn" != "-1" ] ; then
 		die "BAD: IP address ${ip} is assigned to node ${pnn}"
 	fi
-done <<EOF
-$out
-EOF
+done <"$outfile"
 
 echo "GOOD: All IP addresses are unassigned"
 

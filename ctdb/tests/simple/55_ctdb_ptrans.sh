@@ -51,11 +51,11 @@ echo "$items" | try_command_on_node -i 0 $CTDB ptrans "$TESTDB"
 
 try_command_on_node 0 $CTDB catdb "$TESTDB"
 
-n=$(echo "$out" | grep -c '^key.*= "key.*"' || true)
+n=$(grep -c '^key.*= "key.*"' "$outfile" || true)
 
 if [ $n -ne 3 ] ; then
     echo "BAD: expected 3 keys in..."
-    echo "$out"
+    cat "$outfile"
     exit 1
 else
     echo "GOOD: 3 records were inserted"
@@ -75,11 +75,11 @@ echo "$items" | try_command_on_node -i 0 $CTDB ptrans "$TESTDB"
 
 try_command_on_node 0 $CTDB catdb "$TESTDB"
 
-n=$(echo "$out" | grep -c '^key.*= "key.*"' || true)
+n=$(grep -c '^key.*= "key.*"' "$outfile" || true)
 
 if [ $n -ne 3 ] ; then
     echo "BAD: expected 3 keys in..."
-    echo "$out"
+    cat "$outfile"
     exit 1
 else
     echo "GOOD: 3 records found"
@@ -116,11 +116,11 @@ echo "$items" | try_command_on_node -i 0 $CTDB ptrans "$TESTDB"
 
 try_command_on_node 0 $CTDB catdb "$TESTDB"
 
-n=$(echo "$out" | grep -c '^key.*= "key.*"' || true)
+n=$(grep -c '^key.*= "key.*"' "$outfile" || true)
 
 if [ $n -ne 0 ] ; then
     echo "BAD: expected 0 keys in..."
-    echo "$out"
+    cat "$outfile"
     exit 1
 else
     echo "GOOD: 0 records found"

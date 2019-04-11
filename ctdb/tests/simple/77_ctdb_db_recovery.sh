@@ -93,7 +93,7 @@ try_command_on_node $recmaster $CTDB writekey $TESTDB test1 value1
 # Fetch a record   key=test1
 echo "read key(test1)"
 try_command_on_node $recmaster $CTDB readkey $TESTDB test1
-echo "$out"
+cat "$outfile"
 
 # Do a recovery
 echo "force recovery"
@@ -108,7 +108,7 @@ try_command_on_node $recmaster $CTDB writekey $TESTDB test1 value2
 # Fetch a record   key=test1
 echo "read key(test1)"
 try_command_on_node $recmaster $CTDB readkey $TESTDB test1
-echo "$out"
+cat "$outfile"
 
 # Do a recovery
 echo "force recovery"
@@ -119,7 +119,7 @@ wait_until_node_has_status $recmaster recovered
 # Verify record   key=test1
 echo "read key(test1)"
 try_command_on_node $recmaster $CTDB readkey $TESTDB test1
-echo "$out"
+cat "$outfile"
 if [ "$out" = "Data: size:6 ptr:[value2]" ]; then
 	echo "GOOD: Recovery did not corrupt database"
 else

@@ -58,7 +58,7 @@ done
 echo "Start a traverse and collect records"
 try_command_on_node 0 $CTDB catdb $TESTDB
 
-num_read=$(echo "$out" | tail -n 1 | cut -d\  -f2)
+num_read=$(tail -n 1 "$outfile" | cut -d\  -f2)
 if [ $num_read -eq $num_records ]; then
 	echo "GOOD: All $num_records records retrieved"
 	status=0

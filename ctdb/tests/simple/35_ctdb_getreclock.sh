@@ -25,7 +25,7 @@ if [ -z "$out" ] ; then
     exit 0
 fi
 
-n=$(echo "$out" | sort -u | wc -l)
+n=$(sort -u "$outfile" | wc -l)
 if [ "$n" = 1 ] ; then
 	echo "GOOD: All nodes have the same recovery lock setting"
 else

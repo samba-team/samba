@@ -148,30 +148,7 @@ sanity_check_output ()
     return $ret
 }
 
-sanity_check_ips ()
-{
-    local ips="$1" # list of "ip node" lines
-
-    echo "Sanity checking IPs..."
-
-    local x ipp prev
-    prev=""
-    while read x ipp ; do
-	[ "$ipp" = "-1" ] && break
-	if [ -n "$prev" -a "$ipp" != "$prev" ] ; then
-	    echo "OK"
-	    return 0
-	fi
-	prev="$ipp"
-    done <<<"$ips"
-
-    echo "BAD: a node was -1 or IPs are only assigned to one node:"
-    echo "$ips"
-    echo "Are you running an old version of CTDB?"
-    return 1
-}
-
-# This returns a list of "ip node" lines in $out
+# This returns a list of "ip node" lines in $outfile
 all_ips_on_node()
 {
     local node="$1"
@@ -192,9 +169,9 @@ _select_test_node_and_ips ()
 	    test_node="$pnn"
 	fi
 	if [ "$pnn" = "$test_node" ] ; then
-            test_node_ips="${test_node_ips}${test_node_ips:+ }${ip}"
+	    test_node_ips="${test_node_ips}${test_node_ips:+ }${ip}"
 	fi
-    done <<<"$out" # bashism to avoid problem setting variable in pipeline.
+    done <"$outfile"
 
     echo "Selected node ${test_node} with IPs: ${test_node_ips}."
     test_ip="${test_node_ips%% *}"
@@ -264,7 +241,7 @@ delete_ip_from_all_nodes ()
 	    if [ "$_ip" = "$_i" ] ; then
 		_nodes="${_nodes}${_nodes:+,}${_pnn}"
 	    fi
-	done <<<"$out" # bashism
+	done <"$outfile"
     done
 
     try_command_on_node -pq "$_nodes" "$CTDB delip $_ip"
@@ -435,7 +412,7 @@ ips_are_on_node ()
 	    if $negating ; then
 		ips="${ips/${check}}"
 	    fi
-	done <<<"$out" # bashism to avoid problem setting variable in pipeline.
+	done <"$outfile"
     done
 
     ips="${ips// }" # Remove any spaces.
@@ -477,7 +454,7 @@ node_has_some_ips ()
 	if [ "$node" = "$pnn" ] ; then
 	    return 0
 	fi
-    done <<<"$out" # bashism to avoid problem setting variable in pipeline.
+    done <"$outfile"
 
     return 1
 }
@@ -614,7 +591,8 @@ wait_for_monitor_event ()
 	return 1
     }
 
-    local ctdb_scriptstatus_original="$out"
+    mv "$outfile" "${outfile}.orig"
+
     wait_until 120 _ctdb_scriptstatus_changed
 }
 
@@ -625,7 +603,7 @@ _ctdb_scriptstatus_changed ()
 	return 1
     }
 
-    [ "$out" != "$ctdb_scriptstatus_original" ]
+    ! diff "$outfile" "${outfile}.orig" >/dev/null
 }
 
 #######################################

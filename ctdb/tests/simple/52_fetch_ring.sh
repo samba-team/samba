@@ -19,8 +19,8 @@ set -e
 
 cluster_is_healthy
 
-try_command_on_node 0 "$CTDB listnodes"
-num_nodes=$(echo "$out" | wc -l)
+try_command_on_node 0 "$CTDB listnodes | wc -l"
+num_nodes="$out"
 
 echo "Running fetch_ring on all $num_nodes nodes."
 try_command_on_node -v -p all $CTDB_TEST_WRAPPER $VALGRIND fetch_ring -n $num_nodes
@@ -29,13 +29,11 @@ pat='^(Waiting for cluster|Fetch\[[[:digit:]]+\]: [[:digit:]]+(\.[[:digit:]]+)? 
 sanity_check_output 1 "$pat"
 
 # Get the last line of output.
-while read line ; do
-    prev=$line
-done <<<"$out"
+last=$(tail -n 1 "$outfile")
 
-# $prev should look like this:
+# $last should look like this:
 #    Fetch[1]: 10670.93 msgs/sec
-stuff="${prev##*Fetch\[*\]: }"
+stuff="${last##*Fetch\[*\]: }"
 mps="${stuff% msgs/sec*}"
 
 if [ ${mps%.*} -ge 10 ] ; then
