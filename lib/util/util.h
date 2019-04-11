@@ -3,6 +3,7 @@
    Utility functions for Samba
    Copyright (C) Andrew Tridgell 1992-1999
    Copyright (C) Jelmer Vernooij 2005
+   Copyright (C) Swen Schillig 2019
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,11 +30,15 @@
 				SMB_STR_ALLOW_NEGATIVE)
 
 unsigned long int
-strtoul_err(const char *nptr, char **endptr, int base, int *err);
+smb_strtoul(const char *nptr, char **endptr, int base, int *err, int flags);
 
 unsigned long long int
-strtoull_err(const char *nptr, char **endptr, int base, int *err);
+smb_strtoull(const char *nptr, char **endptr, int base, int *err, int flags);
 
+#define strtoul_err(nptr, endptr, base, err) \
+	smb_strtoul(nptr, endptr, base, err, SMB_STR_STANDARD)
+#define strtoull_err(nptr, endptr, base, err) \
+	smb_strtoull(nptr, endptr, base, err, SMB_STR_STANDARD)
 
 /**
  * Write dump of binary data to a callback

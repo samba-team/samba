@@ -55,7 +55,12 @@
  * @param endptr	[optional] reference to remainder of the string
  * @param base		base of the numbering scheme
  * @param err		error occured during conversion
+ * @flags		controlling conversion feature
  * @result		result of the conversion as provided by strtoul
+ *
+ * The following flags are supported
+ *	SMB_STR_STANDARD # raise error if negative or non-numeric
+ *	SMB_STR_ALLOW_NEGATIVE # allow strings with a leading "-"
  *
  * The following errors are detected
  * - wrong base
@@ -64,7 +69,7 @@
  * - no conversion due to empty string or not representing a number
  */
 unsigned long int
-strtoul_err(const char *nptr, char **endptr, int base, int *err)
+smb_strtoul(const char *nptr, char **endptr, int base, int *err, int flags)
 {
 	unsigned long int val;
 	int saved_errno = errno;
@@ -93,10 +98,12 @@ strtoul_err(const char *nptr, char **endptr, int base, int *err)
 		return val;
 	}
 
-	/* did we convert a negative "number" ? */
-	needle = strchr(nptr, '-');
-	if (needle != NULL && needle < tmp_endptr) {
-		*err = EINVAL;
+	if ((flags & SMB_STR_ALLOW_NEGATIVE ) == 0) {
+		/* did we convert a negative "number" ? */
+		needle = strchr(nptr, '-');
+		if (needle != NULL && needle < tmp_endptr) {
+			*err = EINVAL;
+		}
 	}
 
 	errno = saved_errno;
@@ -110,7 +117,12 @@ strtoul_err(const char *nptr, char **endptr, int base, int *err)
  * @param endptr	[optional] reference to remainder of the string
  * @param base		base of the numbering scheme
  * @param err		error occured during conversion
+ * @flags		controlling conversion feature
  * @result		result of the conversion as provided by strtoull
+ *
+ * The following flags are supported
+ *	SMB_STR_STANDARD # raise error if negative or non-numeric
+ *	SMB_STR_ALLOW_NEGATIVE # allow strings with a leading "-"
  *
  * The following errors are detected
  * - wrong base
@@ -119,7 +131,7 @@ strtoul_err(const char *nptr, char **endptr, int base, int *err)
  * - no conversion due to empty string or not representing a number
  */
 unsigned long long int
-strtoull_err(const char *nptr, char **endptr, int base, int *err)
+smb_strtoull(const char *nptr, char **endptr, int base, int *err, int flags)
 {
 	unsigned long long int val;
 	int saved_errno = errno;
@@ -148,10 +160,12 @@ strtoull_err(const char *nptr, char **endptr, int base, int *err)
 		return val;
 	}
 
-	/* did we convert a negative "number" ? */
-	needle = strchr(nptr, '-');
-	if (needle != NULL && needle < tmp_endptr) {
-		*err = EINVAL;
+	if ((flags & SMB_STR_ALLOW_NEGATIVE ) == 0) {
+		/* did we convert a negative "number" ? */
+		needle = strchr(nptr, '-');
+		if (needle != NULL && needle < tmp_endptr) {
+			*err = EINVAL;
+		}
 	}
 
 	errno = saved_errno;
