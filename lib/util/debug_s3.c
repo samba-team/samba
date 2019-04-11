@@ -31,19 +31,18 @@
 bool reopen_logs(void)
 {
 	if (lp_loaded()) {
-		struct debug_settings settings;
+		struct debug_settings settings = {
+			.max_log_size = lp_max_log_size(),
+			.timestamp_logs = lp_timestamp_logs(),
+			.debug_prefix_timestamp = lp_debug_prefix_timestamp(),
+			.debug_hires_timestamp = lp_debug_hires_timestamp(),
+			.debug_pid = lp_debug_pid(),
+			.debug_uid = lp_debug_uid(),
+			.debug_class = lp_debug_class(),
+		};
 
 		debug_set_logfile(lp_logfile(talloc_tos()));
 		debug_parse_levels(lp_log_level(talloc_tos()));
-
-		ZERO_STRUCT(settings);
-		settings.max_log_size = lp_max_log_size();
-		settings.timestamp_logs = lp_timestamp_logs();
-		settings.debug_prefix_timestamp = lp_debug_prefix_timestamp();
-		settings.debug_hires_timestamp = lp_debug_hires_timestamp();
-		settings.debug_pid = lp_debug_pid();
-		settings.debug_uid = lp_debug_uid();
-		settings.debug_class = lp_debug_class();
 		debug_set_settings(&settings, lp_logging(talloc_tos()),
 				   lp_syslog(), lp_syslog_only());
 	}
