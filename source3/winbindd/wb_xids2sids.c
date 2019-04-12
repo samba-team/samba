@@ -299,7 +299,11 @@ static struct tevent_req *wb_xids2sids_dom_send(
 			continue;
 		}
 		if (state->cached[i]) {
-			/* already mapped */
+			/* already found in cache */
+			continue;
+		}
+		if (!is_null_sid(&state->all_sids[i])) {
+			/* already mapped in a previously asked domain */
 			continue;
 		}
 		state->dom_xids[state->num_dom_xids++] = id;
@@ -366,7 +370,11 @@ static void wb_xids2sids_dom_done(struct tevent_req *subreq)
 			continue;
 		}
 		if (state->cached[i]) {
-			/* already mapped */
+			/* already found in cache */
+			continue;
+		}
+		if (!is_null_sid(&state->all_sids[i])) {
+			/* already mapped in a previously asked domain */
 			continue;
 		}
 
