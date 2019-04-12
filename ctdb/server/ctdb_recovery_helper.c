@@ -2752,7 +2752,11 @@ int main(int argc, char *argv[])
 
 	write_fd = atoi(argv[1]);
 	sockpath = argv[2];
-	generation = (uint32_t)strtoul_err(argv[3], NULL, 0, &ret);
+	generation = (uint32_t)smb_strtoul(argv[3],
+					   NULL,
+					   0,
+					   &ret,
+					   SMB_STR_STANDARD);
 	if (ret != 0) {
 		fprintf(stderr, "recovery: unable to initialize generation\n");
 		goto failed;

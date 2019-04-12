@@ -326,7 +326,11 @@ static bool parse_nodestring(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		while (tok != NULL) {
 			uint32_t pnn;
 
-			pnn = (uint32_t)strtoul_err(tok, NULL, 0, &error);
+			pnn = (uint32_t)smb_strtoul(tok,
+						    NULL,
+						    0,
+						    &error,
+						    SMB_STR_STANDARD);
 			if (error != 0) {
 				fprintf(stderr, "Invalid node %s\n", tok);
 					return false;
@@ -546,7 +550,7 @@ static bool db_exists(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (strncmp(db_arg, "0x", 2) == 0) {
-		id = strtoul_err(db_arg, NULL, 0, &ret);
+		id = smb_strtoul(db_arg, NULL, 0, &ret, SMB_STR_STANDARD);
 		if (ret != 0) {
 			return false;
 		}
@@ -1096,7 +1100,7 @@ static int control_setvar(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	tunable.name = argv[0];
-	tunable.value = strtoul_err(argv[1], NULL, 0, &ret);
+	tunable.value = smb_strtoul(argv[1], NULL, 0, &ret, SMB_STR_STANDARD);
 	if (ret != 0) {
 		return ret;
 	}
@@ -1891,7 +1895,7 @@ static int control_process_exists(TALLOC_CTX *mem_ctx,
 
 	pid = atoi(argv[0]);
 	if (argc == 2) {
-		srvid = strtoull_err(argv[1], NULL, 0, &ret);
+		srvid = smb_strtoull(argv[1], NULL, 0, &ret, SMB_STR_STANDARD);
 		if (ret != 0) {
 			return ret;
 		}
@@ -2802,7 +2806,7 @@ static int control_ban(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	ban_state.pnn = ctdb->cmd_pnn;
-	ban_state.time = strtoul_err(argv[0], NULL, 0, &ret);
+	ban_state.time = smb_strtoul(argv[0], NULL, 0, &ret, SMB_STR_STANDARD);
 	if (ret != 0) {
 		return ret;
 	}
@@ -3126,7 +3130,7 @@ static int control_gettickles(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	if (argc == 2) {
-		port = strtoul_err(argv[1], NULL, 10, &ret);
+		port = smb_strtoul(argv[1], NULL, 10, &ret, SMB_STR_STANDARD);
 		if (ret != 0) {
 			return ret;
 		}
@@ -3837,7 +3841,7 @@ static int control_moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	pnn = strtoul_err(argv[1], NULL, 10, &ret);
+	pnn = smb_strtoul(argv[1], NULL, 10, &ret, SMB_STR_STANDARD);
 	if (pnn == CTDB_UNKNOWN_PNN || ret != 0) {
 		fprintf(stderr, "Invalid PNN %s\n", argv[1]);
 		return 1;
@@ -5294,7 +5298,11 @@ static int control_tstore(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	ZERO_STRUCT(header);
 
 	if (argc > 3) {
-		header.rsn = (uint64_t)strtoull_err(argv[3], NULL, 0, &ret);
+		header.rsn = (uint64_t)smb_strtoull(argv[3],
+						    NULL,
+						    0,
+						    &ret,
+						    SMB_STR_STANDARD);
 		if (ret != 0) {
 			return ret;
 		}
@@ -6311,7 +6319,11 @@ int main(int argc, const char *argv[])
 
 		ctdb_timeout = getenv("CTDB_TIMEOUT");
 		if (ctdb_timeout != NULL) {
-			options.maxruntime = strtoul_err(ctdb_timeout, NULL, 0, &ret);
+			options.maxruntime = smb_strtoul(ctdb_timeout,
+							 NULL,
+							 0,
+							 &ret,
+							 SMB_STR_STANDARD);
 			if (ret != 0) {
 				fprintf(stderr, "Invalid value CTDB_TIMEOUT\n");
 				exit(1);

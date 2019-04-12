@@ -270,7 +270,6 @@ int ctdb_sock_addr_from_string(const char *str,
 	char *p;
 	char s[64]; /* Much longer than INET6_ADDRSTRLEN */
 	unsigned port;
-	char *endp = NULL;
 	size_t len;
 	int ret;
 
@@ -291,8 +290,8 @@ int ctdb_sock_addr_from_string(const char *str,
 		return EINVAL;
 	}
 
-	port = strtoul_err(p+1, &endp, 10, &ret);
-	if (ret != 0 || *endp != '\0') {
+	port = smb_strtoul(p+1, NULL, 10, &ret, SMB_STR_FULL_STR_CONV);
+	if (ret != 0) {
 		/* Empty string or trailing garbage */
 		return EINVAL;
 	}
@@ -312,7 +311,6 @@ int ctdb_sock_addr_mask_from_string(const char *str,
 	char *p;
 	char s[64]; /* Much longer than INET6_ADDRSTRLEN */
 	unsigned int m;
-	char *endp = NULL;
 	ssize_t len;
 	int ret = 0;
 
@@ -330,8 +328,8 @@ int ctdb_sock_addr_mask_from_string(const char *str,
 		return EINVAL;
 	}
 
-	m = strtoul_err(p+1, &endp, 10, &ret);
-	if (ret != 0 || *endp != '\0') {
+	m = smb_strtoul(p+1, NULL, 10, &ret, SMB_STR_FULL_STR_CONV);
+	if (ret != 0) {
 		/* Empty string or trailing garbage */
 		return EINVAL;
 	}
