@@ -31,7 +31,6 @@
 */
 
 #include "includes.h"
-#include "lib/events/events.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "lib/socket/socket.h"
