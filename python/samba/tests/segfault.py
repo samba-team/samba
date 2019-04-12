@@ -124,3 +124,13 @@ class SegfaultTests(samba.tests.TestCase):
             registry.open_ldb('', credentials=42)
         except ldb.LdbError as e:
             print("failed with %s" % e)
+
+    @segfault_detector
+    def test_ldb_add_nameless_element(self):
+        m = ldb.Message()
+        e = ldb.MessageElement('q')
+        try:
+            m.add(e)
+        except ldb.LdbError:
+            pass
+        str(m)
