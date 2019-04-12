@@ -272,7 +272,7 @@ static struct dns_records_container get_srv_records(TALLOC_CTX *mem_ctx,
 	struct dns_rr_srv *dclist;
 	NTSTATUS status;
 	uint32_t total;
-	unsigned i;
+	int i;
 	int count;
 
 	memset(&ret, 0, sizeof(struct dns_records_container));
