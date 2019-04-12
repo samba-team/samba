@@ -918,16 +918,6 @@ class BasicTests(samba.tests.TestCase):
             (num, _) = e39.args
             self.assertEquals(num, ERR_INVALID_ATTRIBUTE_SYNTAX)
 
-        # Too long (max. 64)
-#        try:
-#            ldb.add({
-#               "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
-#               "objectClass": "person",
-#               "sn": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" })
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
-
         ldb.add({
             "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
             "objectClass": "person"})
@@ -939,19 +929,10 @@ class BasicTests(samba.tests.TestCase):
         try:
             ldb.modify(m)
             self.fail()
-        except LdbError as e40:
-            (num, _) = e40.args
+        except LdbError as e:
+            (num, _) = e.args
             self.assertEquals(num, ERR_INVALID_ATTRIBUTE_SYNTAX)
 
-        # Too long (max. 64)
-#        m = Message()
-#        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
-#        m["sn"] = MessageElement("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", FLAG_MOD_REPLACE, "sn")
-#        try:
-#            ldb.modify(m)
-#            self.fail()
-#        except LdbError, (num, _):
-#            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
 
         m = Message()
         m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
@@ -959,6 +940,36 @@ class BasicTests(samba.tests.TestCase):
         ldb.modify(m)
 
         delete_force(self.ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+
+    def test_attribute_ranges_too_long(self):
+        """Test attribute ranges"""
+        # This is knownfail with the wrong error
+        # (INVALID_ATTRIBUTE_SYNTAX vs CONSTRAINT_VIOLATION per Windows)
+
+        # Too long (max. 64)
+        try:
+            ldb.add({
+               "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+               "objectClass": "person",
+               "sn": "x" * 65 })
+            self.fail()
+        except LdbError as e:
+            (num, _) = e.args
+            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+
+        ldb.add({
+            "dn": "cn=ldaptestuser,cn=users," + self.base_dn,
+            "objectClass": "person"})
+
+        # Too long (max. 64)
+        m = Message()
+        m.dn = Dn(ldb, "cn=ldaptestuser,cn=users," + self.base_dn)
+        m["sn"] = MessageElement("x" * 66, FLAG_MOD_REPLACE, "sn")
+        try:
+            ldb.modify(m)
+            self.fail()
+        except LdbError as e:
+            self.assertEquals(e.args[0], ERR_CONSTRAINT_VIOLATION)
 
     def test_empty_messages(self):
         """Test empty messages"""

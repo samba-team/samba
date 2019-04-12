@@ -1,0 +1,2 @@
+# the attributes too long test returns the wrong error
+^samba4.ldap.python.+test_attribute_ranges_too_long
