@@ -63,7 +63,6 @@ samba:
 
 samba-none-env:
   extends: .shared_template
-  # this one takes about 1 hours to finish
 
 samba-nopython:
   extends: .shared_template
@@ -115,8 +114,6 @@ samba-ctdb:
 
 samba-ad-dc-ntvfs:
   extends: .shared_template
-  # this one takes about 100 mins to finish
-
 
 .private_template:
   extends: .shared_template
@@ -133,7 +130,6 @@ samba-ad-dc-ntvfs:
 
 samba-fileserver:
   extends: .private_template
-  # this one takes about 1 hours to finish
 
 samba-ad-dc-1:
   extends: .private_template
