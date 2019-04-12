@@ -21,10 +21,15 @@ variables:
   #
   SAMBA_CI_CONTAINER_TAG: 8606e89b0ce6a916fa881549a6cebf6eed528157
   #
-  # Be use the ubuntu1404 image as it matches what we
-  # have on sn-devel-144.
+  # The following images are available
+  # Please see the samba-o3 sections at the end of this file!
+  # We should run that for each available image
   #
-  SAMBA_CI_CONTAINER_IMAGE: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-ubuntu1404:${SAMBA_CI_CONTAINER_TAG}
+  SAMBA_CI_CONTAINER_IMAGE_ubuntu1804: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-ubuntu1804:${SAMBA_CI_CONTAINER_TAG}
+  SAMBA_CI_CONTAINER_IMAGE_ubuntu1604: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-ubuntu1604:${SAMBA_CI_CONTAINER_TAG}
+  SAMBA_CI_CONTAINER_IMAGE_ubuntu1404: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-ubuntu1404:${SAMBA_CI_CONTAINER_TAG}
+  SAMBA_CI_CONTAINER_IMAGE_debian9: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-debian9:${SAMBA_CI_CONTAINER_TAG}
+  SAMBA_CI_CONTAINER_IMAGE_opensuse150: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-opensuse150:${SAMBA_CI_CONTAINER_TAG}
 
 include:
   # The image creation details are specified in a separate file
@@ -34,7 +39,9 @@ include:
 .shared_template:
   variables:
     AUTOBUILD_JOB_NAME: $CI_JOB_NAME
-  image: $SAMBA_CI_CONTAINER_IMAGE
+  # We use the ubuntu1404 image as default as
+  # it matches what we have on sn-devel-144.
+  image: $SAMBA_CI_CONTAINER_IMAGE_ubuntu1404
   stage: build
   tags:
     - docker
@@ -107,9 +114,6 @@ samba-systemkrb5:
 samba-xc:
   extends: .shared_template
 
-samba-o3:
-  extends: .shared_template
-
 samba-ad-member:
   extends: .shared_template
 
@@ -171,3 +175,36 @@ samba-nt4:
 
 samba-schemaupgrade:
   extends: .private_template
+
+#
+# We build samba-o3 on all supported distributions
+#
+
+.samba-o3-template:
+  extends: .shared_template
+  variables:
+    AUTOBUILD_JOB_NAME: samba-o3
+
+ubuntu1804-samba-o3:
+  extends: .samba-o3-template
+  image: $SAMBA_CI_CONTAINER_IMAGE_ubuntu1804
+
+ubuntu1604-samba-o3:
+  extends: .samba-o3-template
+  image: $SAMBA_CI_CONTAINER_IMAGE_ubuntu1604
+
+ubuntu1404-samba-o3:
+  extends: .samba-o3-template
+  image: $SAMBA_CI_CONTAINER_IMAGE_ubuntu1404
+
+debian9-samba-o3:
+  extends: .samba-o3-template
+  image: $SAMBA_CI_CONTAINER_IMAGE_debian9
+
+opensuse150-samba-o3:
+  extends: .samba-o3-template
+  image: $SAMBA_CI_CONTAINER_IMAGE_opensuse150
+
+#
+# Keep the samba-o3 sections at the end ...
+#
