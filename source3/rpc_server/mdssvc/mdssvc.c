@@ -1607,6 +1607,8 @@ static int mds_ctx_destructor_cb(struct mds_ctx *mds_ctx)
 struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 			     struct tevent_context *ev,
 			     struct auth_session_info *session_info,
+			     int snum,
+			     const char *sharename,
 			     const char *path)
 {
 	struct mds_ctx *mds_ctx;
@@ -1623,11 +1625,17 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
+	mds_ctx->sharename = talloc_strdup(mds_ctx, sharename);
+	if (mds_ctx->sharename == NULL) {
+		goto error;
+	}
+
 	mds_ctx->spath = talloc_strdup(mds_ctx, path);
 	if (mds_ctx->spath == NULL) {
 		goto error;
 	}
 
+	mds_ctx->snum = snum;
 	mds_ctx->pipe_session_info = session_info;
 
 	if (session_info->security_token->num_sids < 1) {

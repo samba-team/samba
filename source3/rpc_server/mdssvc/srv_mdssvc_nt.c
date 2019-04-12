@@ -113,6 +113,8 @@ bool shutdown_service_mdssvc(void)
 
 static NTSTATUS create_mdssvc_policy_handle(TALLOC_CTX *mem_ctx,
 					    struct pipes_struct *p,
+					    int snum,
+					    const char *sharename,
 					    const char *path,
 					    struct policy_handle *handle)
 {
@@ -123,6 +125,8 @@ static NTSTATUS create_mdssvc_policy_handle(TALLOC_CTX *mem_ctx,
 	mds_ctx = mds_init_ctx(mem_ctx,
 			       messaging_tevent_context(p->msg_ctx),
 			       p->session_info,
+			       snum,
+			       sharename,
 			       path);
 	if (mds_ctx == NULL) {
 		DEBUG(1, ("error in mds_init_ctx for: %s\n", path));
@@ -163,7 +167,10 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 			return;
 		}
 
-		status = create_mdssvc_policy_handle(p->mem_ctx, p, path,
+		status = create_mdssvc_policy_handle(p->mem_ctx, p,
+						     snum,
+						     r->in.share_name,
+						     path,
 						     r->out.handle);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Couldn't create policy handle for %s\n",

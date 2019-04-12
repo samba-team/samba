@@ -122,6 +122,8 @@ struct mds_ctx {
 	struct auth_session_info *pipe_session_info;
 	struct dom_sid sid;
 	uid_t uid;
+	int snum;
+	const char *sharename;
 	const char *spath;
 	struct sl_query *query_list;     /* list of active queries */
 	struct db_context *ino_path_map; /* dbwrap rbt for storing inode->path mappings */
@@ -145,10 +147,12 @@ struct mdssvc_backend {
  */
 extern bool mds_init(struct messaging_context *msg_ctx);
 extern bool mds_shutdown(void);
-extern struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
-				    struct tevent_context *ev,
-				    struct auth_session_info *session_info,
-				    const char *path);
+struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
+			     struct tevent_context *ev,
+			     struct auth_session_info *session_info,
+			     int snum,
+			     const char *sharename,
+			     const char *path);
 extern bool mds_dispatch(struct mds_ctx *query_ctx,
 			 struct mdssvc_blob *request_blob,
 			 struct mdssvc_blob *response_blob);
