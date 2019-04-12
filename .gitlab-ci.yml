@@ -120,6 +120,7 @@ samba-ad-dc-ntvfs:
   tags:
     - docker
     - private
+    - samba-ci-private
   only:
     variables:
       # These jobs are only run if the gitlab repo has private runners available.
