@@ -1,0 +1,34 @@
+modify_order_account_locality_device
+initial attrs:
+         objectclass: 'account'
+                   l: 'a'
+== result ===[  3]=======================
+ERR_CONSTRAINT_VIOLATION (19)
+-- operations ---------------------------
+               l delete   a
+           owner add      c
+     objectclass replace  ['device', 'top']
+----------------------------------
+           owner add      c
+     objectclass replace  ['device', 'top']
+               l delete   a
+----------------------------------
+           owner add      c
+               l delete   a
+     objectclass replace  ['device', 'top']
+----------------------------------
+== result ===[  3]=======================
+ERR_OBJECT_CLASS_VIOLATION (65)
+-- operations ---------------------------
+     objectclass replace  ['device', 'top']
+               l delete   a
+           owner add      c
+----------------------------------
+     objectclass replace  ['device', 'top']
+           owner add      c
+               l delete   a
+----------------------------------
+               l delete   a
+     objectclass replace  ['device', 'top']
+           owner add      c
+----------------------------------

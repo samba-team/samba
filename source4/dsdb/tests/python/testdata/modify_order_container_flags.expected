@@ -1,0 +1,134 @@
+modify_order_container_flags
+initial attrs:
+         objectclass: 'container'
+== result ===[  6]=======================
+               flags: [b'101']
+         objectClass: [b'container', b'top']
+-- operations ---------------------------
+           flags add      0x6
+           flags add      5
+           flags delete   c
+           flags replace  101
+----------------------------------
+           flags add      0x6
+           flags delete   c
+           flags add      5
+           flags replace  101
+----------------------------------
+           flags add      5
+           flags add      0x6
+           flags delete   c
+           flags replace  101
+----------------------------------
+           flags add      5
+           flags delete   c
+           flags add      0x6
+           flags replace  101
+----------------------------------
+           flags delete   c
+           flags add      0x6
+           flags add      5
+           flags replace  101
+----------------------------------
+           flags delete   c
+           flags add      5
+           flags add      0x6
+           flags replace  101
+----------------------------------
+== result ===[  6]=======================
+               flags: [b'5']
+         objectClass: [b'container', b'top']
+-- operations ---------------------------
+           flags add      0x6
+           flags replace  101
+           flags delete   c
+           flags add      5
+----------------------------------
+           flags add      0x6
+           flags delete   c
+           flags replace  101
+           flags add      5
+----------------------------------
+           flags replace  101
+           flags add      0x6
+           flags delete   c
+           flags add      5
+----------------------------------
+           flags replace  101
+           flags delete   c
+           flags add      0x6
+           flags add      5
+----------------------------------
+           flags delete   c
+           flags add      0x6
+           flags replace  101
+           flags add      5
+----------------------------------
+           flags delete   c
+           flags replace  101
+           flags add      0x6
+           flags add      5
+----------------------------------
+== result ===[ 12]=======================
+ERR_INVALID_ATTRIBUTE_SYNTAX (21)
+-- operations ---------------------------
+           flags add      0x6
+           flags add      5
+           flags replace  101
+           flags delete   c
+----------------------------------
+           flags add      0x6
+           flags replace  101
+           flags add      5
+           flags delete   c
+----------------------------------
+           flags add      5
+           flags add      0x6
+           flags replace  101
+           flags delete   c
+----------------------------------
+           flags add      5
+           flags replace  101
+           flags add      0x6
+           flags delete   c
+----------------------------------
+           flags add      5
+           flags replace  101
+           flags delete   c
+           flags add      0x6
+----------------------------------
+           flags add      5
+           flags delete   c
+           flags replace  101
+           flags add      0x6
+----------------------------------
+           flags replace  101
+           flags add      0x6
+           flags add      5
+           flags delete   c
+----------------------------------
+           flags replace  101
+           flags add      5
+           flags add      0x6
+           flags delete   c
+----------------------------------
+           flags replace  101
+           flags add      5
+           flags delete   c
+           flags add      0x6
+----------------------------------
+           flags replace  101
+           flags delete   c
+           flags add      5
+           flags add      0x6
+----------------------------------
+           flags delete   c
+           flags add      5
+           flags replace  101
+           flags add      0x6
+----------------------------------
+           flags delete   c
+           flags replace  101
+           flags add      5
+           flags add      0x6
+----------------------------------

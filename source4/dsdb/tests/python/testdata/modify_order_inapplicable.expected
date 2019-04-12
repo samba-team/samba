@@ -1,0 +1,34 @@
+modify_order_inapplicable
+initial attrs:
+         objectclass: 'user'
+           givenName: 'a'
+== result ===[  2]=======================
+ERR_NO_SUCH_ATTRIBUTE (16)
+-- operations ---------------------------
+       dhcpSites replace  b
+       dhcpSites add      c
+       dhcpSites delete   b
+----------------------------------
+       dhcpSites add      c
+       dhcpSites replace  b
+       dhcpSites delete   b
+----------------------------------
+== result ===[  4]=======================
+ERR_OBJECT_CLASS_VIOLATION (65)
+-- operations ---------------------------
+       dhcpSites replace  b
+       dhcpSites delete   b
+       dhcpSites add      c
+----------------------------------
+       dhcpSites delete   b
+       dhcpSites replace  b
+       dhcpSites add      c
+----------------------------------
+       dhcpSites delete   b
+       dhcpSites add      c
+       dhcpSites replace  b
+----------------------------------
+       dhcpSites add      c
+       dhcpSites delete   b
+       dhcpSites replace  b
+----------------------------------

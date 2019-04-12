@@ -1,0 +1,35 @@
+modify_order_objectclass
+initial attrs:
+         objectclass: 'user'
+      otherTelephone: '123'
+== result ===[  2]=======================
+         objectClass: [b'organizationalPerson', b'person', b'top', b'user']
+      otherTelephone: [b'123']
+-- operations ---------------------------
+     objectclass replace  computer
+     objectclass delete   user
+     objectclass delete   person
+----------------------------------
+     objectclass delete   user
+     objectclass replace  computer
+     objectclass delete   person
+----------------------------------
+== result ===[  4]=======================
+ERR_OBJECT_CLASS_VIOLATION (65)
+-- operations ---------------------------
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass delete   user
+----------------------------------
+     objectclass delete   user
+     objectclass delete   person
+     objectclass replace  computer
+----------------------------------
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass delete   user
+----------------------------------
+     objectclass delete   person
+     objectclass delete   user
+     objectclass replace  computer
+----------------------------------

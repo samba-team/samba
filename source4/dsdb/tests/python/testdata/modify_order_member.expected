@@ -1,0 +1,190 @@
+modify_order_member
+initial attrs:
+         objectclass: 'group'
+              member: 'cn=modify_order_member_other_group,{base dn}'
+== result ===[  1]=======================
+              member: [b'CN=ldaptest_modify_order_member_0,CN=Users,{base dn}', b'CN=modify_order_member_other_group,{base dn}']
+            memberOf: [b'CN=ldaptest_modify_order_member_0,CN=Users,{base dn}']
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member delete   cn=ldaptest_modify_order_member_0,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member_0,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member add      cn=ldaptest_modify_order_member_0,cn=users,{base dn}
+----------------------------------
+== result ===[  1]=======================
+              member: [b'CN=ldaptest_modify_order_member_12,CN=Users,{base dn}', b'CN=modify_order_member_other_group,{base dn}']
+            memberOf: [b'CN=ldaptest_modify_order_member_12,CN=Users,{base dn}']
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member delete   cn=ldaptest_modify_order_member_12,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member_12,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member_12,cn=users,{base dn}
+----------------------------------
+== result ===[  1]=======================
+              member: [b'CN=ldaptest_modify_order_member_13,CN=Users,{base dn}']
+            memberOf: [b'CN=ldaptest_modify_order_member_13,CN=Users,{base dn}']
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member delete   cn=ldaptest_modify_order_member_13,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member_13,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member_13,cn=users,{base dn}
+----------------------------------
+== result ===[  1]=======================
+              member: [b'CN=ldaptest_modify_order_member_14,CN=Users,{base dn}', b'CN=modify_order_member_other_group,{base dn}']
+            memberOf: [b'CN=ldaptest_modify_order_member_14,CN=Users,{base dn}']
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member replace  cn=ldaptest_modify_order_member_14,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member_14,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member_14,cn=users,{base dn}
+----------------------------------
+== result ===[  1]=======================
+              member: [b'CN=ldaptest_modify_order_member_16,CN=Users,{base dn}']
+            memberOf: [b'CN=ldaptest_modify_order_member_16,CN=Users,{base dn}']
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member add      cn=ldaptest_modify_order_member_16,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member_16,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member_16,cn=users,{base dn}
+----------------------------------
+== result ===[  1]=======================
+              member: [b'CN=ldaptest_modify_order_member_19,CN=Users,{base dn}']
+            memberOf: [b'CN=ldaptest_modify_order_member_19,CN=Users,{base dn}']
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member add      cn=ldaptest_modify_order_member_19,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member_19,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member replace  cn=ldaptest_modify_order_member_19,cn=users,{base dn}
+----------------------------------
+== result ===[  1]=======================
+              member: [b'CN=ldaptest_modify_order_member_2,CN=Users,{base dn}', b'CN=modify_order_member_other_group,{base dn}']
+            memberOf: [b'CN=ldaptest_modify_order_member_2,CN=Users,{base dn}']
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member delete   cn=ldaptest_modify_order_member_2,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member replace  cn=ldaptest_modify_order_member_2,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member_2,cn=users,{base dn}
+----------------------------------
+== result ===[  1]=======================
+              member: [b'CN=ldaptest_modify_order_member_22,CN=Users,{base dn}']
+            memberOf: [b'CN=ldaptest_modify_order_member_22,CN=Users,{base dn}']
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member add      cn=ldaptest_modify_order_member_22,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member delete   cn=ldaptest_modify_order_member_22,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member_22,cn=users,{base dn}
+----------------------------------
+== result ===[  1]=======================
+              member: [b'CN=ldaptest_modify_order_member_3,CN=Users,{base dn}']
+            memberOf: [b'CN=ldaptest_modify_order_member_3,CN=Users,{base dn}']
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member delete   cn=ldaptest_modify_order_member_3,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member add      cn=ldaptest_modify_order_member_3,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member_3,cn=users,{base dn}
+----------------------------------
+== result ===[  1]=======================
+              member: [b'CN=ldaptest_modify_order_member_5,CN=Users,{base dn}']
+            memberOf: [b'CN=ldaptest_modify_order_member_5,CN=Users,{base dn}']
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member delete   cn=ldaptest_modify_order_member_5,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member_5,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member replace  cn=ldaptest_modify_order_member_5,cn=users,{base dn}
+----------------------------------
+== result ===[  1]=======================
+              member: [b'CN=ldaptest_modify_order_member_6,CN=Users,{base dn}', b'CN=modify_order_member_other_group,{base dn}']
+            memberOf: [b'CN=ldaptest_modify_order_member_6,CN=Users,{base dn}']
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member replace  cn=ldaptest_modify_order_member_6,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member_6,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member add      cn=ldaptest_modify_order_member_6,cn=users,{base dn}
+----------------------------------
+== result ===[  1]=======================
+              member: [b'CN=ldaptest_modify_order_member_8,CN=Users,{base dn}', b'CN=modify_order_member_other_group,{base dn}']
+            memberOf: [b'CN=ldaptest_modify_order_member_8,CN=Users,{base dn}']
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member replace  cn=ldaptest_modify_order_member_8,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member delete   cn=ldaptest_modify_order_member_8,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member_8,cn=users,{base dn}
+----------------------------------
+== result ===[  6]=======================
+         objectClass: [b'group', b'top']
+-- operations ---------------------------
+          member delete   cn=ldaptest_modify_order_member_1,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member_1,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member_1,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+----------------------------------
+          member delete   cn=ldaptest_modify_order_member_4,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member_4,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member_4,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+----------------------------------
+          member replace  cn=ldaptest_modify_order_member_7,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member_7,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member_7,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+----------------------------------
+          member replace  cn=ldaptest_modify_order_member_10,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member_10,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member_10,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+----------------------------------
+          member add      cn=ldaptest_modify_order_member_18,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member_18,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member_18,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+----------------------------------
+          member add      cn=ldaptest_modify_order_member_20,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member_20,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member_20,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+----------------------------------
+== result ===[  6]=======================
+ERR_UNWILLING_TO_PERFORM (53)
+-- operations ---------------------------
+          member replace  cn=ldaptest_modify_order_member_9,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member add      cn=ldaptest_modify_order_member_9,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member_9,cn=users,{base dn}
+----------------------------------
+          member replace  cn=ldaptest_modify_order_member_11,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member_11,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member delete   cn=ldaptest_modify_order_member_11,cn=users,{base dn}
+----------------------------------
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member replace  cn=ldaptest_modify_order_member_15,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member_15,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member_15,cn=users,{base dn}
+----------------------------------
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member add      cn=ldaptest_modify_order_member_17,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member_17,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member_17,cn=users,{base dn}
+----------------------------------
+          member add      cn=ldaptest_modify_order_member_21,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member_21,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member delete   cn=ldaptest_modify_order_member_21,cn=users,{base dn}
+----------------------------------
+          member add      cn=ldaptest_modify_order_member_23,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member replace  cn=ldaptest_modify_order_member_23,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member_23,cn=users,{base dn}
+----------------------------------

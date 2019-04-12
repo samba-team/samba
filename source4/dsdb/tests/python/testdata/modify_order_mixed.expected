@@ -1,0 +1,143 @@
+modify_order_mixed
+initial attrs:
+         objectclass: 'user'
+          carLicense: ['1', '2', '3']
+      otherTelephone: '123'
+== result ===[  6]=======================
+          carLicense: [b'1', b'2', b'3', b'4']
+         objectClass: [b'organizationalPerson', b'person', b'top', b'user']
+-- operations ---------------------------
+      carLicense delete   3
+      carLicense add      4
+  otherTelephone replace  4
+  otherTelephone delete   123
+----------------------------------
+      carLicense delete   3
+  otherTelephone replace  4
+      carLicense add      4
+  otherTelephone delete   123
+----------------------------------
+      carLicense delete   3
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense add      4
+----------------------------------
+  otherTelephone replace  4
+      carLicense delete   3
+      carLicense add      4
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone replace  4
+      carLicense delete   3
+  otherTelephone delete   123
+      carLicense add      4
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense delete   3
+      carLicense add      4
+----------------------------------
+== result ===[  6]=======================
+          carLicense: [b'1', b'2', b'3', b'4']
+         objectClass: [b'organizationalPerson', b'person', b'top', b'user']
+      otherTelephone: [b'4']
+-- operations ---------------------------
+      carLicense delete   3
+      carLicense add      4
+  otherTelephone delete   123
+  otherTelephone replace  4
+----------------------------------
+      carLicense delete   3
+  otherTelephone delete   123
+      carLicense add      4
+  otherTelephone replace  4
+----------------------------------
+      carLicense delete   3
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense add      4
+----------------------------------
+  otherTelephone delete   123
+      carLicense delete   3
+      carLicense add      4
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   123
+      carLicense delete   3
+  otherTelephone replace  4
+      carLicense add      4
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense delete   3
+      carLicense add      4
+----------------------------------
+== result ===[  6]=======================
+          carLicense: [b'1', b'2']
+         objectClass: [b'organizationalPerson', b'person', b'top', b'user']
+-- operations ---------------------------
+      carLicense add      4
+      carLicense delete   3
+  otherTelephone replace  4
+  otherTelephone delete   123
+----------------------------------
+      carLicense add      4
+  otherTelephone replace  4
+      carLicense delete   3
+  otherTelephone delete   123
+----------------------------------
+      carLicense add      4
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense delete   3
+----------------------------------
+  otherTelephone replace  4
+      carLicense add      4
+      carLicense delete   3
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone replace  4
+      carLicense add      4
+  otherTelephone delete   123
+      carLicense delete   3
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense add      4
+      carLicense delete   3
+----------------------------------
+== result ===[  6]=======================
+          carLicense: [b'1', b'2']
+         objectClass: [b'organizationalPerson', b'person', b'top', b'user']
+      otherTelephone: [b'4']
+-- operations ---------------------------
+      carLicense add      4
+      carLicense delete   3
+  otherTelephone delete   123
+  otherTelephone replace  4
+----------------------------------
+      carLicense add      4
+  otherTelephone delete   123
+      carLicense delete   3
+  otherTelephone replace  4
+----------------------------------
+      carLicense add      4
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense delete   3
+----------------------------------
+  otherTelephone delete   123
+      carLicense add      4
+      carLicense delete   3
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   123
+      carLicense add      4
+  otherTelephone replace  4
+      carLicense delete   3
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense add      4
+      carLicense delete   3
+----------------------------------

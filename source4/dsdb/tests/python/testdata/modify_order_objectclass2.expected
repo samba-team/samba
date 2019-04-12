@@ -1,0 +1,735 @@
+modify_order_objectclass2
+initial attrs:
+         objectclass: 'user'
+== result ===[ 24]=======================
+         objectClass: [b'inetOrgPerson', b'organizationalPerson', b'person', b'top', b'user']
+-- operations ---------------------------
+     objectclass replace  computer
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass replace  computer
+     objectclass add      user
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass add      user
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass add      user
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass add      user
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass add      user
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass add      user
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass add      user
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass add      user
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass add      user
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass add      user
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass delete   person
+     objectclass add      user
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass delete   person
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass add      user
+     objectclass add      inetOrgPerson
+----------------------------------
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+----------------------------------
+== result ===[ 24]=======================
+         objectClass: [b'organizationalPerson', b'person', b'top', b'user']
+-- operations ---------------------------
+     objectclass replace  computer
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+----------------------------------
+     objectclass replace  computer
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass delete   person
+----------------------------------
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+----------------------------------
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass delete   person
+----------------------------------
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass delete   person
+----------------------------------
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass delete   person
+----------------------------------
+     objectclass add      user
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+----------------------------------
+     objectclass add      user
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass delete   person
+----------------------------------
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+----------------------------------
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass delete   person
+----------------------------------
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass delete   person
+----------------------------------
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass delete   person
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass delete   person
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass delete   person
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass add      user
+     objectclass delete   person
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass replace  computer
+     objectclass delete   person
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass delete   person
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass delete   person
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass delete   person
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass delete   person
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass add      user
+     objectclass delete   person
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass replace  computer
+     objectclass delete   person
+----------------------------------
+== result ===[ 24]=======================
+ERR_ATTRIBUTE_OR_VALUE_EXISTS (20)
+-- operations ---------------------------
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass add      user
+----------------------------------
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass add      user
+----------------------------------
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass add      user
+----------------------------------
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass add      user
+----------------------------------
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass add      user
+----------------------------------
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass add      user
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass add      user
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass add      user
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass add      user
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass add      user
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass add      user
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass add      user
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass add      user
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass add      user
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass add      user
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass add      user
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass add      user
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass add      user
+----------------------------------
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass add      user
+----------------------------------
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass add      user
+----------------------------------
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass add      user
+----------------------------------
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass add      user
+----------------------------------
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+     objectclass add      user
+----------------------------------
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+     objectclass add      user
+----------------------------------
+== result ===[ 48]=======================
+ERR_OBJECT_CLASS_VIOLATION (65)
+-- operations ---------------------------
+     objectclass replace  computer
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass replace  computer
+     objectclass add      user
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass delete   person
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass add      user
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      user
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      user
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass replace  computer
+----------------------------------
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+----------------------------------
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass replace  computer
+----------------------------------
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+----------------------------------
+     objectclass add      user
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      user
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+----------------------------------
+     objectclass add      user
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      user
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass replace  computer
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass delete   person
+     objectclass replace  computer
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass add      user
+     objectclass replace  computer
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+----------------------------------
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass replace  computer
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass add      user
+     objectclass delete   person
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass add      user
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass replace  computer
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass delete   person
+     objectclass replace  computer
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass delete   person
+     objectclass add      user
+     objectclass replace  computer
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass add      user
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass add      user
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+----------------------------------
+     objectclass add      inetOrgPerson
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass replace  computer
+----------------------------------
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass delete   person
+     objectclass add      user
+     objectclass replace  computer
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass delete   person
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+----------------------------------
+     objectclass delete   person
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass delete   person
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+----------------------------------
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+----------------------------------
+     objectclass delete   person
+     objectclass replace  attributeSchema
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass replace  computer
+----------------------------------
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass replace  computer
+     objectclass add      user
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass replace  computer
+     objectclass replace  attributeSchema
+----------------------------------
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass add      user
+     objectclass replace  attributeSchema
+     objectclass replace  computer
+----------------------------------
+     objectclass delete   person
+     objectclass add      inetOrgPerson
+     objectclass replace  attributeSchema
+     objectclass add      user
+     objectclass replace  computer
+----------------------------------

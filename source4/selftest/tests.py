@@ -835,6 +835,18 @@ for env in ["ad_dc_ntvfs:local", "ad_dc:local",
     planoldpythontestsuite(env, "samba.tests.blackbox.smbcontrol")
 
 plantestsuite_loadlist("samba4.ldap.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(DSDB_PYTEST_DIR, "ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+
+plantestsuite_loadlist("samba4.ldap_modify_order.python(ad_dc_default)",
+                       "ad_dc_default",
+                       [python, os.path.join(samba4srcdir,
+                                             "dsdb/tests/python/"
+                                             "ldap_modify_order.py"),
+                        '$SERVER',
+                        '-U"$USERNAME%$PASSWORD"',
+                        '--workgroup=$DOMAIN',
+                        '$LOADLIST',
+                        '$LISTOPT'])
+
 plantestsuite_loadlist("samba4.tokengroups.krb5.python(ad_dc_default)", "ad_dc_default:local", [python, os.path.join(DSDB_PYTEST_DIR, "token_group.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '-k', 'yes', '$LOADLIST', '$LISTOPT'])
 plantestsuite_loadlist("samba4.tokengroups.ntlm.python(ad_dc_default)", "ad_dc_default:local", [python, os.path.join(DSDB_PYTEST_DIR, "token_group.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '-k', 'no', '$LOADLIST', '$LISTOPT'])
 plantestsuite("samba4.sam.python(fl2008r2dc)", "fl2008r2dc", [python, os.path.join(DSDB_PYTEST_DIR, "sam.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])

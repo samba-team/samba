@@ -1,0 +1,127 @@
+modify_order_sometimes_inapplicable
+initial attrs:
+         objectclass: 'user'
+           givenName: 'a'
+== result ===[ 24]=======================
+ERR_OBJECT_CLASS_VIOLATION (65)
+-- operations ---------------------------
+     objectclass replace  computer
+     objectclass delete   person
+     dnsHostName add      b
+     dnsHostName replace  c
+----------------------------------
+     objectclass replace  computer
+     objectclass delete   person
+     dnsHostName replace  c
+     dnsHostName add      b
+----------------------------------
+     objectclass replace  computer
+     dnsHostName add      b
+     objectclass delete   person
+     dnsHostName replace  c
+----------------------------------
+     objectclass replace  computer
+     dnsHostName add      b
+     dnsHostName replace  c
+     objectclass delete   person
+----------------------------------
+     objectclass replace  computer
+     dnsHostName replace  c
+     objectclass delete   person
+     dnsHostName add      b
+----------------------------------
+     objectclass replace  computer
+     dnsHostName replace  c
+     dnsHostName add      b
+     objectclass delete   person
+----------------------------------
+     objectclass delete   person
+     objectclass replace  computer
+     dnsHostName add      b
+     dnsHostName replace  c
+----------------------------------
+     objectclass delete   person
+     objectclass replace  computer
+     dnsHostName replace  c
+     dnsHostName add      b
+----------------------------------
+     objectclass delete   person
+     dnsHostName add      b
+     objectclass replace  computer
+     dnsHostName replace  c
+----------------------------------
+     objectclass delete   person
+     dnsHostName add      b
+     dnsHostName replace  c
+     objectclass replace  computer
+----------------------------------
+     objectclass delete   person
+     dnsHostName replace  c
+     objectclass replace  computer
+     dnsHostName add      b
+----------------------------------
+     objectclass delete   person
+     dnsHostName replace  c
+     dnsHostName add      b
+     objectclass replace  computer
+----------------------------------
+     dnsHostName add      b
+     objectclass replace  computer
+     objectclass delete   person
+     dnsHostName replace  c
+----------------------------------
+     dnsHostName add      b
+     objectclass replace  computer
+     dnsHostName replace  c
+     objectclass delete   person
+----------------------------------
+     dnsHostName add      b
+     objectclass delete   person
+     objectclass replace  computer
+     dnsHostName replace  c
+----------------------------------
+     dnsHostName add      b
+     objectclass delete   person
+     dnsHostName replace  c
+     objectclass replace  computer
+----------------------------------
+     dnsHostName add      b
+     dnsHostName replace  c
+     objectclass replace  computer
+     objectclass delete   person
+----------------------------------
+     dnsHostName add      b
+     dnsHostName replace  c
+     objectclass delete   person
+     objectclass replace  computer
+----------------------------------
+     dnsHostName replace  c
+     objectclass replace  computer
+     objectclass delete   person
+     dnsHostName add      b
+----------------------------------
+     dnsHostName replace  c
+     objectclass replace  computer
+     dnsHostName add      b
+     objectclass delete   person
+----------------------------------
+     dnsHostName replace  c
+     objectclass delete   person
+     objectclass replace  computer
+     dnsHostName add      b
+----------------------------------
+     dnsHostName replace  c
+     objectclass delete   person
+     dnsHostName add      b
+     objectclass replace  computer
+----------------------------------
+     dnsHostName replace  c
+     dnsHostName add      b
+     objectclass replace  computer
+     objectclass delete   person
+----------------------------------
+     dnsHostName replace  c
+     dnsHostName add      b
+     objectclass delete   person
+     objectclass replace  computer
+----------------------------------
