@@ -201,7 +201,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	struct ndr_pull *ndr_pull;
 	struct ndr_print *ndr_print;
 	TALLOC_CTX *mem_ctx;
-	int flags;
+	int flags = 0;
 	poptContext pc;
 	NTSTATUS status;
 	enum ndr_err_code ndr_err;
@@ -316,10 +316,10 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 
 	if (strcmp(inout, "in") == 0 ||
 	    strcmp(inout, "request") == 0) {
-		flags = NDR_IN;
+		flags |= NDR_IN;
 	} else if (strcmp(inout, "out") == 0 ||
 		   strcmp(inout, "response") == 0) {
-		flags = NDR_OUT;
+		flags |= NDR_OUT;
 	} else {
 		printf("Bad inout value '%s'\n", inout);
 		exit(1);
@@ -340,7 +340,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 
 	if (ctx_filename) {
-		if (flags == NDR_IN) {
+		if (flags & NDR_IN) {
 			printf("Context file can only be used for \"out\" packages\n");
 			exit(1);
 		}
