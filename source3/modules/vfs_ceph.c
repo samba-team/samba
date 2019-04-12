@@ -119,6 +119,17 @@ static int cephwrap_connect(struct vfs_handle_struct *handle,  const char *servi
 		goto err_cm_release;
 	}
 
+	/* libcephfs disables POSIX ACL support by default, enable it... */
+	ret = ceph_conf_set(cmount, "client_acl_type", "posix_acl");
+	if (ret < 0) {
+		goto err_cm_release;
+	}
+	/* tell libcephfs to perform local permission checks */
+	ret = ceph_conf_set(cmount, "fuse_default_permissions", "false");
+	if (ret < 0) {
+		goto err_cm_release;
+	}
+
 	DBG_DEBUG("[CEPH] calling: ceph_mount\n");
 	ret = ceph_mount(cmount, NULL);
 	if (ret < 0) {
