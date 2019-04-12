@@ -129,9 +129,9 @@ allowed processes artificially low, to test that new connections are refused
 correctly.  Due to the limited number of connections accepted, it's not
 recommended to use this testenv for anything else.
 
-schemaupgrade_dc
+schema_dc
 ----------------
-This is a 2-DC testenv setup (schemaupgrade_dc and schemaupgrade_pair_dc).
+This is a 2-DC testenv setup (schema_dc and schema_pair_dc).
 We provision the first DC, and join the second, using an older version of the
 schema (2008R2), then start-up Samba. Then, we run a schema upgrade (i.e.
 'samba-tool domain schemaupgrade') on the PDC.

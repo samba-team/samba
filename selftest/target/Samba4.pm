@@ -2267,14 +2267,14 @@ sub check_env($$)
 	ad_dc_slowtests      => ["ad_dc_ntvfs"],
 	ad_dc_backup         => ["ad_dc"],
 
-	schemaupgrade_dc      => ["dns_hub"],
-	schemaupgrade_pair_dc => ["schemaupgrade_dc"],
+	schema_dc      => ["dns_hub"],
+	schema_pair_dc => ["schema_dc"],
 
 	none                 => [],
 );
 
 %Samba4::ENV_DEPS_POST = (
-	schemaupgrade_dc => ["schemaupgrade_pair_dc"],
+	schema_dc => ["schema_pair_dc"],
 );
 
 sub return_alias_env
@@ -2791,7 +2791,7 @@ sub setup_proclimitdc
 }
 
 # Used to test a live upgrade of the schema on a 2 DC network.
-sub setup_schemaupgrade_dc
+sub setup_schema_dc
 {
 	my ($self, $path) = @_;
 
@@ -2819,9 +2819,9 @@ sub setup_schemaupgrade_dc
 }
 
 # the second DC in the live schema upgrade pair
-sub setup_schemaupgrade_pair_dc
+sub setup_schema_pair_dc
 {
-	# note: dcvars contains the env info for the dependent testenv ('schemaupgrade_dc')
+	# note: dcvars contains the env info for the dependent testenv ('schema_dc')
 	my ($self, $prefix, $dcvars) = @_;
 	print "Preparing SCHEMA UPGRADE PAIR DC...\n";
 

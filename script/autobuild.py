@@ -132,8 +132,8 @@ tasks = {
                  "--exclude-env=rodc "
                  "--exclude-env=ad_dc_default "
                  "--exclude-env=ad_dc_slowtests "
-                 "--exclude-env=schemaupgrade_pair_dc "
-                 "--exclude-env=schemaupgrade_dc "
+                 "--exclude-env=schema_pair_dc "
+                 "--exclude-env=schema_dc "
                  "'",
                  "text/plain"),
                 ("install", "make install", "text/plain"),
@@ -245,8 +245,8 @@ tasks = {
                         ("make", "make -j", "text/plain"),
                         ("test", "make test FAIL_IMMEDIATELY=1 "
                          "TESTS='"
-                         "--include-env=schemaupgrade_dc "
-                         "--include-env=schemaupgrade_pair_dc "
+                         "--include-env=schema_dc "
+                         "--include-env=schema_pair_dc "
                          "'", "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 

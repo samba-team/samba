@@ -675,7 +675,7 @@ planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.ou")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.computer")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.forest")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.schema")
-planpythontestsuite("schemaupgrade_dc:local", "samba.tests.samba_tool.schema")
+planpythontestsuite("schema_dc:local", "samba.tests.samba_tool.schema")
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.ntacl")
 planpythontestsuite("none", "samba.tests.samba_tool.provision_password_check")
 planpythontestsuite("none", "samba.tests.samba_tool.help")
@@ -839,7 +839,7 @@ plantestsuite("samba4.sam.python(fl2008r2dc)", "fl2008r2dc", [python, os.path.jo
 plantestsuite("samba4.sam.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(samba4srcdir, "dsdb/tests/python/sam.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
 plantestsuite("samba4.user_account_control.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(samba4srcdir, "dsdb/tests/python/user_account_control.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
 
-for env in ['ad_dc_default:local', 'schemaupgrade_dc:local']:
+for env in ['ad_dc_default:local', 'schema_dc:local']:
     planoldpythontestsuite(env, "dsdb_schema_info",
                            extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')],
                            name="samba4.schemaInfo.python(%s)" % (env),
@@ -909,7 +909,7 @@ planoldpythontestsuite("ad_dc_default", "password_settings",
                        name="samba4.ldap.passwordsettings.python",
                        extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
-for env in all_fl_envs + ["schemaupgrade_dc"]:
+for env in all_fl_envs + ["schema_dc"]:
     plantestsuite_loadlist("samba4.ldap_schema.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/ldap_schema.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
     plantestsuite("samba4.ldap.possibleInferiors.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/samdb/ldb_modules/tests/possibleinferiors.py"), "ldap://$SERVER", '-U"$USERNAME%$PASSWORD"', "-W$DOMAIN"])
     plantestsuite_loadlist("samba4.ldap.secdesc.python(%s)" % env, env, [python, os.path.join(samba4srcdir, "dsdb/tests/python/sec_descriptor.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
@@ -1010,7 +1010,7 @@ planoldpythontestsuite(env, "ridalloc_exop",
                        environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
                        extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
-env = 'schemaupgrade_pair_dc'
+env = 'schema_pair_dc'
 planoldpythontestsuite("%s:local" % env, "samba_tool_drs",
                        extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                        name="samba4.drs.samba_tool_drs.python(%s)" % env,
@@ -1171,7 +1171,7 @@ for env in [
 planpythontestsuite("ad_dc_default:local", "samba.tests.kcc.kcc_utils")
 
 for env in ["simpleserver", "fileserver", "nt4_dc", "ad_dc", "ad_dc_ntvfs",
-            "ad_member", "offlinebackupdc", "restoredc", "renamedc", "labdc", 'schemaupgrade_pair_dc']:
+            "ad_member", "offlinebackupdc", "restoredc", "renamedc", "labdc", 'schema_pair_dc']:
     planoldpythontestsuite(env, "netlogonsvc",
                            extra_path=[os.path.join(srcdir(), 'python/samba/tests')],
                            name="samba.tests.netlogonsvc.python(%s)" % env)
