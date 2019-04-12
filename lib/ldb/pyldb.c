@@ -3528,7 +3528,11 @@ static PyObject *py_ldb_msg_add(PyLdbMessageObject *self, PyObject *args)
 		PyErr_SetString(PyExc_ValueError, "Invalid MessageElement object");
 		return NULL;
 	}
-
+	if (el->name == NULL) {
+		PyErr_SetString(PyExc_ValueError,
+				"The element has no name");
+		return NULL;
+	}
 	ret = ldb_msg_add_empty(msg, el->name, el->flags, &el_new);
 	PyErr_LDB_ERROR_IS_ERR_RAISE(PyExc_LdbError, ret, NULL);
 
