@@ -1489,8 +1489,6 @@ void reply_setatr(struct smb_request *req)
 
 	START_PROFILE(SMBsetatr);
 
-	ZERO_STRUCT(ft);
-
 	if (req->wct < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		goto out;
@@ -1552,7 +1550,10 @@ void reply_setatr(struct smb_request *req)
 		}
 	}
 
-	ft.mtime = convert_time_t_to_timespec(mtime);
+	ft = (struct smb_file_time) {
+		.mtime = convert_time_t_to_timespec(mtime)
+	};
+
 	status = smb_set_file_time(conn, NULL, smb_fname, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
