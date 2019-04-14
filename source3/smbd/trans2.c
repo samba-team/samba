@@ -103,10 +103,10 @@ NTSTATUS check_access_fsp(const struct files_struct *fsp,
  The canonical "check access" based on object handle or path function.
 ********************************************************************/
 
-NTSTATUS check_access(connection_struct *conn,
-				files_struct *fsp,
-				const struct smb_filename *smb_fname,
-				uint32_t access_mask)
+static NTSTATUS check_access(connection_struct *conn,
+			     files_struct *fsp,
+			     const struct smb_filename *smb_fname,
+			     uint32_t access_mask)
 {
 	NTSTATUS status;
 

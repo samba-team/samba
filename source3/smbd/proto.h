@@ -1162,10 +1162,6 @@ int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf);
 
 NTSTATUS check_access_fsp(const struct files_struct *fsp,
 			  uint32_t access_mask);
-NTSTATUS check_access(connection_struct *conn,
-				files_struct *fsp,
-				const struct smb_filename *smb_fname,
-				uint32_t access_mask);
 uint64_t smb_roundup(connection_struct *conn, uint64_t val);
 uint64_t get_FileIndex(connection_struct *conn, const SMB_STRUCT_STAT *psbuf);
 void aapl_force_zero_file_id(struct smbd_server_connection *sconn);
