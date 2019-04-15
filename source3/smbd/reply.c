@@ -1520,8 +1520,7 @@ void reply_setatr(struct smb_request *req)
 		goto out;
 	}
 
-	if (smb_fname->base_name[0] == '.' &&
-	    smb_fname->base_name[1] == '\0') {
+	if (ISDOT(smb_fname->base_name)) {
 		/*
 		 * Not sure here is the right place to catch this
 		 * condition. Might be moved to somewhere else later -- vl
