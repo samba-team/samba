@@ -799,12 +799,10 @@ static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 
 	DEBUG(10, ("ModifyRequest: dn: [%s]\n", req->dn));
 
-	msg = talloc(local_ctx, struct ldb_message);
+	msg = ldb_msg_new(local_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(msg);
 
 	msg->dn = dn;
-	msg->num_elements = 0;
-	msg->elements = NULL;
 
 	if (req->num_mods > 0) {
 		msg->num_elements = req->num_mods;

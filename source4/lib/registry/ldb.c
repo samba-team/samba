@@ -142,7 +142,7 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 	char *name_dup, *type_str;
 	int ret;
 
-	msg = talloc_zero(mem_ctx, struct ldb_message);
+	msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) {
 		return NULL;
 	}
@@ -658,7 +658,7 @@ static WERROR ldb_del_value(TALLOC_CTX *mem_ctx, struct hive_key *key,
 
 	if (child[0] == '\0') {
 		/* default value */
-		msg = talloc_zero(mem_ctx, struct ldb_message);
+		msg = ldb_msg_new(mem_ctx);
 		W_ERROR_HAVE_NO_MEMORY(msg);
 		msg->dn = ldb_dn_copy(msg, kd->dn);
 		W_ERROR_HAVE_NO_MEMORY(msg->dn);

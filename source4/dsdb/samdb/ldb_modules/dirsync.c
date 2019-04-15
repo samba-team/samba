@@ -150,7 +150,7 @@ static int dirsync_filter_entry(struct ldb_request *req,
 	 * list only the attribute that have been modified since last interogation
 	 *
 	 */
-	newmsg = talloc_zero(dsc->req, struct ldb_message);
+	newmsg = ldb_msg_new(dsc->req);
 	if (newmsg == NULL) {
 		return ldb_oom(ldb);
 	}
