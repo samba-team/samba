@@ -446,7 +446,7 @@ const struct ldb_dn_extended_syntax *ldb_dn_extended_syntax_by_name(struct ldb_c
 #define LDB_ATTR_FLAG_FROM_DB      (1<<6)
 
 /*
- * The attribute was loaded from a DB, rather than via the C API
+ * The attribute is indexed
  */
 #define LDB_ATTR_FLAG_INDEXED      (1<<7)
 
