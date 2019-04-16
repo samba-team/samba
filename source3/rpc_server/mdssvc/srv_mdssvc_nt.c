@@ -150,6 +150,10 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 
 	DEBUG(10, ("%s: [%s]\n", __func__, r->in.share_name));
 
+	*r->out.device_id = *r->in.device_id;
+	*r->out.unkn2 = *r->in.unkn2;
+	*r->out.unkn3 = *r->out.unkn3;
+
 	snum = lp_servicenumber(r->in.share_name);
 	if (!VALID_SNUM(snum)) {
 		p->fault_state = DCERPC_FAULT_CANT_PERFORM;
@@ -182,11 +186,7 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 
 		strlcpy(discard_const_p(char, r->out.share_path), path, 1024);
 		talloc_free(path);
-		*r->out.device_id = *r->in.device_id;
 	}
-
-	*r->out.unkn2 = 0x17;
-	*r->out.unkn3 = 0;
 
 	return;
 }
