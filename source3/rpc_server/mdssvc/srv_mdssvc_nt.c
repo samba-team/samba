@@ -160,35 +160,35 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 	if (!VALID_SNUM(snum)) {
 		return;
 	}
-
-	if (lp_spotlight(snum)) {
-		DBG_DEBUG("Spotlight enabled: %s\n", r->in.share_name);
-
-		path = lp_path(talloc_tos(), snum);
-		if (path == NULL) {
-			DBG_ERR("Couldn't create policy handle for %s\n",
-				r->in.share_name);
-			p->fault_state = DCERPC_FAULT_CANT_PERFORM;
-			return;
-		}
-
-		status = create_mdssvc_policy_handle(p->mem_ctx, p,
-						     snum,
-						     r->in.share_name,
-						     path,
-						     r->out.handle);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_ERR("Couldn't create policy handle for %s\n",
-				r->in.share_name);
-			talloc_free(path);
-			p->fault_state = DCERPC_FAULT_CANT_PERFORM;
-			return;
-		}
-
-		strlcpy(outpath, path, 1024);
-		talloc_free(path);
+	if (!lp_spotlight(snum)) {
+		return;
 	}
 
+	DBG_DEBUG("Spotlight enabled: %s\n", r->in.share_name);
+
+	path = lp_path(talloc_tos(), snum);
+	if (path == NULL) {
+		DBG_ERR("Couldn't create policy handle for %s\n",
+			r->in.share_name);
+		p->fault_state = DCERPC_FAULT_CANT_PERFORM;
+		return;
+	}
+
+	status = create_mdssvc_policy_handle(p->mem_ctx, p,
+					     snum,
+					     r->in.share_name,
+					     path,
+					     r->out.handle);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Couldn't create policy handle for %s\n",
+			r->in.share_name);
+		talloc_free(path);
+		p->fault_state = DCERPC_FAULT_CANT_PERFORM;
+		return;
+	}
+
+	strlcpy(outpath, path, 1024);
+	talloc_free(path);
 	return;
 }
 
