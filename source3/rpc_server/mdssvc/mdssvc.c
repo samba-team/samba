@@ -1388,7 +1388,7 @@ static bool slrpc_close_query(struct mds_ctx *mds_ctx,
 	TALLOC_FREE(slq);
 
 done:
-	sl_res = 0;
+	sl_res = UINT64_MAX;
 	result = dalloc_add_copy(array, &sl_res, uint64_t);
 	if (result != 0) {
 		return false;
