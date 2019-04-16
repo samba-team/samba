@@ -858,6 +858,10 @@ typedef unsigned long long ptrdiff_t ;
 #define PATH_MAX 1024
 #endif
 
+#ifndef NAME_MAX
+#define NAME_MAX 255
+#endif
+
 #ifndef MAX_DNS_NAME_LENGTH
 #define MAX_DNS_NAME_LENGTH 256 /* Actually 255 but +1 for terminating null. */
 #endif
