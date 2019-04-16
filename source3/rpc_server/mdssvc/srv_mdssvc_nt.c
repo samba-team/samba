@@ -145,6 +145,7 @@ static NTSTATUS create_mdssvc_policy_handle(TALLOC_CTX *mem_ctx,
 void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 {
 	int snum;
+	char *outpath = discard_const_p(char, r->out.share_path);
 	char *path;
 	NTSTATUS status;
 
@@ -153,6 +154,7 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 	*r->out.device_id = *r->in.device_id;
 	*r->out.unkn2 = *r->in.unkn2;
 	*r->out.unkn3 = *r->out.unkn3;
+	outpath[0] = '\0';
 
 	snum = lp_servicenumber(r->in.share_name);
 	if (!VALID_SNUM(snum)) {
@@ -184,7 +186,7 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 			return;
 		}
 
-		strlcpy(discard_const_p(char, r->out.share_path), path, 1024);
+		strlcpy(outpath, path, 1024);
 		talloc_free(path);
 	}
 
