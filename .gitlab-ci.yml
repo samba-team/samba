@@ -98,9 +98,6 @@ samba-ad-dc-5:
 samba-ad-dc-6:
   extends: .shared_template
 
-samba-schemaupgrade:
-  extends: .shared_template
-
 samba-ad-dc-backup:
   extends: .shared_template
 
@@ -142,4 +139,7 @@ samba-ad-dc-1:
   extends: .private_template
 
 samba-nt4:
+  extends: .private_template
+
+samba-schemaupgrade:
   extends: .private_template
