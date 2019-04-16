@@ -51,7 +51,7 @@ interface mdssvc
 		[in]        uint32          max_fragment_size2,
 		[in]        uint32          unkn7, /* always 0 ? */
 		[in]        uint32          unkn8, /* always 0 ? */
-		[out,ref]   uint32         *status,
+		[out,ref]   uint32         *fragment,
 		[out,ref]   mdssvc_blob    *response_blob,
 		[out,ref]   uint32         *unkn9  /* always 0 ? */
 	);

@@ -264,13 +264,14 @@ void _mdssvc_cmd(struct pipes_struct *p, struct mdssvc_cmd *r)
 	r->out.response_blob->spotlight_blob = (uint8_t *)rbuf;
 	r->out.response_blob->size = r->in.max_fragment_size1;
 
+	/* We currently don't use fragmentation at the mdssvc RPC layer */
+	*r->out.fragment = 0;
+
 	ok = mds_dispatch(mds_ctx, &r->in.request_blob, r->out.response_blob);
 	if (ok) {
-		*r->out.status = 0;
 		*r->out.unkn9 = 0;
 	} else {
 		/* FIXME: just interpolating from AFP, needs verification */
-		*r->out.status = UINT32_MAX;
 		*r->out.unkn9 = UINT32_MAX;
 	}
 
