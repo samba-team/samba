@@ -423,7 +423,7 @@ static int ino_path_map_destr_cb(struct sl_inode_path_map *entry)
 		return -1;
 	}
 
-	DEBUG(10,("deleted: %s\n", entry->path));
+	DBG_DEBUG("deleted [0x%"PRIx64"] [%s]\n", entry->ino, entry->path);
 	return 0;
 }
 
