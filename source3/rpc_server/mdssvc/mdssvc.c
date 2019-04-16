@@ -1661,27 +1661,20 @@ bool mds_dispatch(struct mds_ctx *mds_ctx,
 		goto cleanup;
 	}
 
-	/*
-	 * If these functions return an error, they hit something like
-	 * a non recoverable talloc error
-	 */
 	ok = slcmd->function(mds_ctx, query, reply);
-	if (!ok) {
-		DEBUG(1, ("error in Spotlight RPC handler\n"));
-		goto cleanup;
+	if (ok) {
+		DBG_DEBUG("%s", dalloc_dump(reply, 0));
+
+		len = sl_pack(reply,
+			      (char *)response_blob->spotlight_blob,
+			      response_blob->size);
+		if (len == -1) {
+			DBG_ERR("error packing Spotlight RPC reply\n");
+			ok = false;
+			goto cleanup;
+		}
+		response_blob->length = len;
 	}
-
-	DEBUG(5, ("%s", dalloc_dump(reply, 0)));
-
-	len = sl_pack(reply, (char *)response_blob->spotlight_blob,
-		      response_blob->size);
-	if (len == -1) {
-		DEBUG(1, ("error packing Spotlight RPC reply\n"));
-		ok = false;
-		goto cleanup;
-	}
-
-	response_blob->length = len;
 
 cleanup:
 	talloc_free(query);
