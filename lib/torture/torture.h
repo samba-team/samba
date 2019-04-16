@@ -520,6 +520,54 @@ static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 	} \
 	} while(0)
 
+#define torture_assert_u32_equal(torture_ctx,got,expected,cmt)\
+	do { uint32_t __got = (got), __expected = (expected); \
+	if (__got != __expected) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": "#got" was %ju (0x%jX), expected %ju (0x%jX): %s", \
+			(uintmax_t)__got, (uintmax_t)__got, \
+			(uintmax_t)__expected, (uintmax_t)__expected, \
+			cmt); \
+		return false; \
+	} \
+	} while(0)
+
+#define torture_assert_u32_equal_goto(torture_ctx,got,expected,ret,label,cmt)\
+	do { uint32_t __got = (got), __expected = (expected); \
+	if (__got != __expected) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": "#got" was %ju (0x%jX), expected %ju (0x%jX): %s", \
+			(uintmax_t)__got, (uintmax_t)__got, \
+			(uintmax_t)__expected, (uintmax_t)__expected, \
+			cmt); \
+		ret = false; \
+		goto label; \
+	} \
+	} while(0)
+
+#define torture_assert_u32_not_equal(torture_ctx,got,not_expected,cmt)\
+	do { uint32_t __got = (got), __not_expected = (not_expected); \
+	if (__got == __not_expected) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": "#got" was %ju (0x%jX), expected a different number: %s", \
+			(uintmax_t)__got, (uintmax_t)__got, \
+			cmt); \
+		return false; \
+	} \
+	} while(0)
+
+#define torture_assert_u32_not_equal_goto(torture_ctx,got,not_expected,ret,label,cmt)\
+	do { uint32_t __got = (got), __not_expected = (not_expected); \
+	if (__got == __not_expected) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": "#got" was %ju (0x%jX), expected a different number: %s", \
+			(uintmax_t)__got, (uintmax_t)__got, \
+			cmt); \
+		ret = false; \
+		goto label; \
+	} \
+	} while(0)
+
 #define torture_assert_u64_equal(torture_ctx,got,expected,cmt)\
 	do { uint64_t __got = (got), __expected = (expected); \
 	if (__got != __expected) { \
