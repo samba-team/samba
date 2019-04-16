@@ -1,0 +1,8 @@
+^samba3.rpc.mdssvc.rpccmd.open_unknown_share\(fileserver\)
+^samba3.rpc.mdssvc.rpccmd.open_spotlight_disabled\(fileserver\)
+^samba3.rpc.mdssvc.rpccmd.close\(fileserver\)
+^samba3.rpc.mdssvc.rpccmd.null_ph\(fileserver\)
+^samba3.rpc.mdssvc.disconnect1.invalid_ph_unknown1\(fileserver\)
+^samba3.rpc.mdssvc.disconnect2.invalid_ph_cmd\(fileserver\)
+^samba3.rpc.mdssvc.disconnect3.invalid_ph_close\(fileserver\)
+^samba3.rpc.mdssvc.mdscmd.fetch_unknown_cnid\(fileserver\)

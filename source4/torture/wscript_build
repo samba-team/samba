@@ -145,6 +145,7 @@ bld.SAMBA_MODULE('torture_rpc',
                         rpc/witness.c
                         rpc/iremotewinspool.c
                         rpc/iremotewinspool_driver.c
+                        rpc/mdssvc.c
                         ''' + torture_rpc_backupkey + ntvfs_specific['source'],
                  autoproto='rpc/proto.h',
                  subsystem='smbtorture',

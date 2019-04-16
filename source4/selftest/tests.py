@@ -182,8 +182,11 @@ slow_ncacn_ip_tcp_tests = ["rpc.cracknames"]
 
 all_rpc_tests = ncalrpc_tests + ncacn_np_tests + ncacn_ip_tcp_tests + slow_ncacn_np_tests + slow_ncacn_ip_tcp_tests + ["rpc.lsa.secrets", "rpc.pac", "rpc.samba3-sharesec", "rpc.countcalls"]
 
-# Make sure all tests get run
-rpc_tests = smbtorture4_testsuites("rpc.")
+# Filter RPC tests that should not run against ad_dc_ntvfs
+rpc_s3only = [
+    "rpc.mdssvc",
+]
+rpc_tests = [x for x in smbtorture4_testsuites("rpc.") if x not in rpc_s3only]
 auto_rpc_tests = list(filter(lambda t: t not in all_rpc_tests, rpc_tests))
 
 for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
