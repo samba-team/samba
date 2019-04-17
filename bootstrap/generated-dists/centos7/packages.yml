@@ -87,5 +87,6 @@ packages:
   - tar
   - tree
   - which
+  - xfsprogs-devel
   - yum-utils
   - zlib-devel

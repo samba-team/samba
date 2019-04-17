@@ -99,6 +99,7 @@ apt-get -y install \
     tar \
     tree \
     uuid-dev \
+    xfslibs-dev \
     xsltproc \
     zlib1g-dev
 

@@ -29,6 +29,7 @@ zypper --non-interactive install \
     git \
     glib2-devel \
     glibc-locale \
+    glusterfs-devel \
     gnutls-devel \
     gpgme-devel \
     gzip \
@@ -44,6 +45,7 @@ zypper --non-interactive install \
     libblkid-devel \
     libbsd-devel \
     libcap-devel \
+    libcephfs-devel \
     libicu-devel \
     libjansson-devel \
     libnettle-devel \
@@ -87,6 +89,7 @@ zypper --non-interactive install \
     readline-devel \
     rng-tools \
     rpcgen \
+    rpcsvc-proto-devel \
     rsync \
     sed \
     sudo \
@@ -94,6 +97,7 @@ zypper --non-interactive install \
     tar \
     tree \
     which \
+    xfsprogs-devel \
     yum-utils \
     zlib-devel \
     system-user-nobody

@@ -99,6 +99,7 @@ yum -y -q --verbose install \
     tar \
     tree \
     which \
+    xfsprogs-devel \
     yum-utils \
     zlib-devel
 

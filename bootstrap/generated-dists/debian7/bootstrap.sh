@@ -28,6 +28,7 @@ apt-get -y install \
     gcc \
     gdb \
     git \
+    glusterfs-common \
     gzip \
     hostname \
     htop \
@@ -41,6 +42,7 @@ apt-get -y install \
     libblkid-dev \
     libbsd-dev \
     libcap-dev \
+    libcephfs-dev \
     libcups2-dev \
     libdbus-1-dev \
     libglib2.0-dev \
@@ -95,6 +97,7 @@ apt-get -y install \
     tar \
     tree \
     uuid-dev \
+    xfslibs-dev \
     xsltproc \
     zlib1g-dev
 

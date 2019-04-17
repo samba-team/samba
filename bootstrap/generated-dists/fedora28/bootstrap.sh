@@ -7,9 +7,9 @@
 
 set -xueo pipefail
 
-dnf -y -q update
+dnf update -y
 
-dnf -y -q --verbose install \
+dnf install -y \
     @development-tools \
     acl \
     attr \
@@ -31,6 +31,8 @@ dnf -y -q --verbose install \
     glib2-devel \
     glibc-common \
     glibc-langpack-en \
+    glusterfs-api-devel \
+    glusterfs-devel \
     gnutls-devel \
     gpgme-devel \
     gzip \
@@ -47,6 +49,7 @@ dnf -y -q --verbose install \
     libblkid-devel \
     libbsd-devel \
     libcap-devel \
+    libcephfs-devel \
     libicu-devel \
     libnsl2-devel \
     libpcap-devel \
@@ -92,6 +95,7 @@ dnf -y -q --verbose install \
     redhat-lsb \
     rng-tools \
     rpcgen \
+    rpcsvc-proto-devel \
     rsync \
     sed \
     sudo \
@@ -99,6 +103,7 @@ dnf -y -q --verbose install \
     tar \
     tree \
     which \
+    xfsprogs-devel \
     yum-utils \
     zlib-devel
 

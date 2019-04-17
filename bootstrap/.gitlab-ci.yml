@@ -101,7 +101,7 @@ debian7:
   extends: .build_image_template_force_broken
 
 fedora29:
-  extends: .build_image_template_force_broken
+  extends: .build_image_template
 
 fedora28:
   extends: .build_image_template_force_broken

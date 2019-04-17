@@ -21,6 +21,8 @@ packages:
   - glib2-devel
   - glibc-common
   - glibc-langpack-en
+  - glusterfs-api-devel
+  - glusterfs-devel
   - gnutls-devel
   - gpgme-devel
   - gzip
@@ -37,6 +39,7 @@ packages:
   - libblkid-devel
   - libbsd-devel
   - libcap-devel
+  - libcephfs-devel
   - libicu-devel
   - libnsl2-devel
   - libpcap-devel
@@ -82,6 +85,7 @@ packages:
   - redhat-lsb
   - rng-tools
   - rpcgen
+  - rpcsvc-proto-devel
   - rsync
   - sed
   - sudo
@@ -89,5 +93,6 @@ packages:
   - tar
   - tree
   - which
+  - xfsprogs-devel
   - yum-utils
   - zlib-devel
