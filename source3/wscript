@@ -78,7 +78,8 @@ def options(opt):
                   help=("enable support for VxFS (default=no)"),
                   action="store_true", dest='enable_vxfs', default=False)
 
-    opt.samba_add_onoff_option('spotlight', with_name="enable", without_name="disable", default=False)
+    # default = None means autodetection
+    opt.samba_add_onoff_option('spotlight', with_name="enable", without_name="disable", default=None)
 
 def configure(conf):
     default_static_modules = []
@@ -1675,27 +1676,37 @@ main() {
                            define=None,
                            on_target=False)
 
+    with_spotlight_tracker_backend = (
+        conf.CONFIG_SET('HAVE_TRACKER')
+        and conf.CONFIG_SET('HAVE_GLIB')
+        and conf.env['BISON']
+        and conf.env['FLEX']
+        and conf.CONFIG_GET('HAVE_UTF8_NORMALISATION')
+    )
+
     conf.env.with_spotlight = False
-    if Options.options.with_spotlight:
+    if Options.options.with_spotlight is not False:
         backends = ['noindex']
-        if conf.CONFIG_SET('HAVE_TRACKER') and conf.CONFIG_SET('HAVE_GLIB'):
-            conf.env.spotlight_backend_tracker = True
-            backends.append('tracker')
-            conf.DEFINE('HAVE_SPOTLIGHT_BACKEND_TRACKER', '1')
 
-        if conf.env.spotlight_backend_tracker:
-            if not conf.env['BISON']:
-                conf.fatal("Spotlight support requested but bison missing")
-            if not conf.env['FLEX']:
-                conf.fatal("Spotlight support requested but flex missing")
-            if not conf.CONFIG_GET('HAVE_UTF8_NORMALISATION'):
-                conf.fatal("Missing support for Unicode normalisation. "
-                           "Try installing icu-dev or libicu-devel.")
-
+        if not conf.env['BISON']:
+            Logs.warn("Spotlight support requested but bison missing")
+        if not conf.env['FLEX']:
+            Logs.warn("Spotlight support requested but flex missing")
+        if not conf.CONFIG_GET('HAVE_UTF8_NORMALISATION'):
+            Logs.warn("Missing support for Unicode normalisation. "
+                      "Try installing icu-dev or libicu-devel.")
         if not conf.CONFIG_SET('HAVE_TRACKER'):
             Logs.warn('Missing libtracker-sparql development files for Spotlight backend "tracker"')
         if not conf.CONFIG_SET('HAVE_GLIB'):
             Logs.warn('Missing glib-2.0 development files for Spotlight backend "tracker"')
+
+        if with_spotlight_tracker_backend:
+            conf.env.spotlight_backend_tracker = True
+            backends.append('tracker')
+            conf.DEFINE('HAVE_SPOTLIGHT_BACKEND_TRACKER', '1')
+
+        if Options.options.with_spotlight is True and not conf.env.spotlight_backend_tracker:
+            conf.fatal("Unmet dependencies for Spotlight backend")
 
         Logs.info("Building with Spotlight support, available backends: %s" % ', '.join(backends))
         default_static_modules.extend(TO_LIST('rpc_mdssvc_module'))
