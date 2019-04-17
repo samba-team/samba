@@ -146,6 +146,7 @@ bld.SAMBA3_SUBSYSTEM('mdssvc',
 
 rpc_mdssvc_sources = '''
                      mdssvc/mdssvc.c
+                     mdssvc/mdssvc_noindex.c
                      mdssvc/srv_mdssvc_nt.c
                      ../../librpc/gen_ndr/srv_mdssvc.c
                      '''

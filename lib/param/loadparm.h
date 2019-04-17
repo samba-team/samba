@@ -250,6 +250,7 @@ enum mangled_names_options {MANGLED_NAMES_NO, MANGLED_NAMES_YES, MANGLED_NAMES_I
 
 /* Spotlight backend options */
 enum spotlight_backend_options {
+	SPOTLIGHT_BACKEND_NOINDEX,
 	SPOTLIGHT_BACKEND_TRACKER,
 };
 

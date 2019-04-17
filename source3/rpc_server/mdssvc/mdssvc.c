@@ -27,6 +27,7 @@
 #include "lib/dbwrap/dbwrap_rbt.h"
 #include "libcli/security/dom_sid.h"
 #include "mdssvc.h"
+#include "mdssvc_noindex.h"
 #ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
 #include "mdssvc_tracker.h"
 #endif
@@ -1414,6 +1415,13 @@ static struct mdssvc_ctx *mdssvc_init(struct tevent_context *ev)
 
 	mdssvc_ctx->ev_ctx = ev;
 
+	ok = mdsscv_backend_noindex.init(mdssvc_ctx);
+	if (!ok) {
+		DBG_ERR("backend init failed\n");
+		TALLOC_FREE(mdssvc_ctx);
+		return NULL;
+	}
+
 #ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
 	ok = mdsscv_backend_tracker.init(mdssvc_ctx);
 	if (!ok) {
@@ -1445,6 +1453,10 @@ bool mds_shutdown(void)
 		return false;
 	}
 
+	ok = mdsscv_backend_noindex.shutdown(mdssvc_ctx);
+	if (!ok) {
+		goto fail;
+	}
 #ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
 	ok = mdsscv_backend_tracker.shutdown(mdssvc_ctx);
 	if (!ok) {
@@ -1510,6 +1522,9 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 
 	backend = lp_spotlight_backend(snum);
 	switch (backend) {
+	case SPOTLIGHT_BACKEND_NOINDEX:
+		mds_ctx->backend = &mdsscv_backend_noindex;
+		break;
 #ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
 	case SPOTLIGHT_BACKEND_TRACKER:
 		mds_ctx->backend = &mdsscv_backend_tracker;

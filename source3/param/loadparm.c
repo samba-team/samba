@@ -247,7 +247,7 @@ static const struct loadparm_service _sDefault =
 	.param_opt = NULL,
 	.smbd_search_ask_sharemode = true,
 	.smbd_getinfo_ask_sharemode = true,
-	.spotlight_backend = SPOTLIGHT_BACKEND_TRACKER,
+	.spotlight_backend = SPOTLIGHT_BACKEND_NOINDEX,
 	.dummy = ""
 };
 

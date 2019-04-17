@@ -8,6 +8,13 @@
 	  Spotlight search backend. Available backends:
 
 	<itemizedlist>
+	<listitem><para><constant>noindex</constant> -
+	a backend that returns no results.
+	</para></listitem>
+
+	</itemizedlist>
+
+	<itemizedlist>
 	<listitem><para><constant>tracker</constant> -
 	Gnome Tracker.
 	</para></listitem>
@@ -15,5 +22,5 @@
 	</itemizedlist>
 	</para>
 </description>
-<value type="default">tracker</value>
+<value type="default">noindex</value>
 </samba:parameter>

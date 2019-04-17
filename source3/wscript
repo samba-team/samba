@@ -1677,7 +1677,7 @@ main() {
 
     conf.env.with_spotlight = False
     if Options.options.with_spotlight:
-        backends = []
+        backends = ['noindex']
         if conf.CONFIG_SET('HAVE_TRACKER') and conf.CONFIG_SET('HAVE_GLIB'):
             conf.env.spotlight_backend_tracker = True
             backends.append('tracker')
@@ -1692,12 +1692,10 @@ main() {
                 conf.fatal("Missing support for Unicode normalisation. "
                            "Try installing icu-dev or libicu-devel.")
 
-        if not conf.env.with_spotlight:
-            if not conf.CONFIG_SET('HAVE_TRACKER'):
-                Logs.warn('Missing libtracker-sparql development files for Spotlight backend "tracker"')
-            if not conf.CONFIG_SET('HAVE_GLIB'):
-                Logs.warn('Missing glib-2.0 development files for Spotlight backend "tracker"')
-            conf.fatal("Spotlight support requested, but dependencies missing")
+        if not conf.CONFIG_SET('HAVE_TRACKER'):
+            Logs.warn('Missing libtracker-sparql development files for Spotlight backend "tracker"')
+        if not conf.CONFIG_SET('HAVE_GLIB'):
+            Logs.warn('Missing glib-2.0 development files for Spotlight backend "tracker"')
 
         Logs.info("Building with Spotlight support, available backends: %s" % ', '.join(backends))
         default_static_modules.extend(TO_LIST('rpc_mdssvc_module'))

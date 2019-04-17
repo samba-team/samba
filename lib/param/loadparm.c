@@ -3025,7 +3025,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "debug encryption", "no");
 
-	lpcfg_do_global_parameter(lp_ctx, "spotlight backend", "tracker");
+	lpcfg_do_global_parameter(lp_ctx, "spotlight backend", "noindex");
 
 	for (i = 0; parm_table[i].label; i++) {
 		if (!(lp_ctx->flags[i] & FLAG_CMDLINE)) {
