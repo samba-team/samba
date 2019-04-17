@@ -1931,6 +1931,11 @@ static int winbind_auth_request(struct pwb_context *ctx,
 	wbcFreeMemory(logon.blobs);
 	if (info && info->blobs && !p_info) {
 		wbcFreeMemory(info->blobs);
+		/*
+		 * We set blobs to NULL to prevent a use after free in the
+		 * in the wbcLogonUserInfoDestructor
+		 */
+		info->blobs = NULL;
 	}
 	if (error && !p_error) {
 		wbcFreeMemory(error);
