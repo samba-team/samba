@@ -184,7 +184,7 @@ sub check_env($$)
 	ad_member           => ["ad_dc"],
 	ad_member_rfc2307   => ["ad_dc_ntvfs"],
 	ad_member_idmap_rid => ["ad_dc"],
-	ad_member_idmap_ad  => ["ad_dc"],
+	ad_member_idmap_ad  => ["fl2008r2dc"],
 );
 
 sub setup_nt4_dc
