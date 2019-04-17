@@ -149,7 +149,7 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 	char *path;
 	NTSTATUS status;
 
-	DEBUG(10, ("%s: [%s]\n", __func__, r->in.share_name));
+	DBG_DEBUG("[%s]\n", r->in.share_name);
 
 	*r->out.device_id = *r->in.device_id;
 	*r->out.unkn2 = *r->in.unkn2;
@@ -162,12 +162,12 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 	}
 
 	if (lp_spotlight(snum)) {
-		DEBUG(10, ("Spotlight enabled: %s\n", r->in.share_name));
+		DBG_DEBUG("Spotlight enabled: %s\n", r->in.share_name);
 
 		path = lp_path(talloc_tos(), snum);
 		if (path == NULL) {
-			DEBUG(1, ("Couldn't create policy handle for %s\n",
-				  r->in.share_name));
+			DBG_ERR("Couldn't create policy handle for %s\n",
+				r->in.share_name);
 			p->fault_state = DCERPC_FAULT_CANT_PERFORM;
 			return;
 		}
@@ -178,8 +178,8 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 						     path,
 						     r->out.handle);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1, ("Couldn't create policy handle for %s\n",
-				  r->in.share_name));
+			DBG_ERR("Couldn't create policy handle for %s\n",
+				r->in.share_name);
 			talloc_free(path);
 			p->fault_state = DCERPC_FAULT_CANT_PERFORM;
 			return;
