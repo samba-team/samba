@@ -44,7 +44,7 @@
  * format_bufr[FORMAT_BUFR_SIZE - 1] should always be reserved
  * for a terminating null byte.
  */
-#define FORMAT_BUFR_SIZE 1024
+#define FORMAT_BUFR_SIZE 4096
 
 /* -------------------------------------------------------------------------- **
  * This module implements Samba's debugging utility.
