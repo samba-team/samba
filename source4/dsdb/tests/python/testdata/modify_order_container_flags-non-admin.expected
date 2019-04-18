@@ -1,0 +1,129 @@
+modify_order_container_flags-non-admin
+initial attrs:
+         objectclass: 'container'
+== result ===[ 12]=======================
+ERR_INSUFFICIENT_ACCESS_RIGHTS (50)
+-- operations ---------------------------
+           flags add      0x6
+           flags add      5
+           flags delete   c
+           flags replace  101
+----------------------------------
+           flags add      0x6
+           flags replace  101
+           flags delete   c
+           flags add      5
+----------------------------------
+           flags add      0x6
+           flags delete   c
+           flags add      5
+           flags replace  101
+----------------------------------
+           flags add      0x6
+           flags delete   c
+           flags replace  101
+           flags add      5
+----------------------------------
+           flags add      5
+           flags add      0x6
+           flags delete   c
+           flags replace  101
+----------------------------------
+           flags add      5
+           flags delete   c
+           flags add      0x6
+           flags replace  101
+----------------------------------
+           flags replace  101
+           flags add      0x6
+           flags delete   c
+           flags add      5
+----------------------------------
+           flags replace  101
+           flags delete   c
+           flags add      0x6
+           flags add      5
+----------------------------------
+           flags delete   c
+           flags add      0x6
+           flags add      5
+           flags replace  101
+----------------------------------
+           flags delete   c
+           flags add      0x6
+           flags replace  101
+           flags add      5
+----------------------------------
+           flags delete   c
+           flags add      5
+           flags add      0x6
+           flags replace  101
+----------------------------------
+           flags delete   c
+           flags replace  101
+           flags add      0x6
+           flags add      5
+----------------------------------
+== result ===[ 12]=======================
+ERR_INVALID_ATTRIBUTE_SYNTAX (21)
+-- operations ---------------------------
+           flags add      0x6
+           flags add      5
+           flags replace  101
+           flags delete   c
+----------------------------------
+           flags add      0x6
+           flags replace  101
+           flags add      5
+           flags delete   c
+----------------------------------
+           flags add      5
+           flags add      0x6
+           flags replace  101
+           flags delete   c
+----------------------------------
+           flags add      5
+           flags replace  101
+           flags add      0x6
+           flags delete   c
+----------------------------------
+           flags add      5
+           flags replace  101
+           flags delete   c
+           flags add      0x6
+----------------------------------
+           flags add      5
+           flags delete   c
+           flags replace  101
+           flags add      0x6
+----------------------------------
+           flags replace  101
+           flags add      0x6
+           flags add      5
+           flags delete   c
+----------------------------------
+           flags replace  101
+           flags add      5
+           flags add      0x6
+           flags delete   c
+----------------------------------
+           flags replace  101
+           flags add      5
+           flags delete   c
+           flags add      0x6
+----------------------------------
+           flags replace  101
+           flags delete   c
+           flags add      5
+           flags add      0x6
+----------------------------------
+           flags delete   c
+           flags add      5
+           flags replace  101
+           flags add      0x6
+----------------------------------
+           flags delete   c
+           flags replace  101
+           flags add      5
+           flags add      0x6
+----------------------------------

@@ -1,0 +1,727 @@
+modify_order_singlevalue-non-admin
+initial attrs:
+         objectclass: 'user'
+           givenName: 'a'
+== result ===[120]=======================
+ERR_INSUFFICIENT_ACCESS_RIGHTS (50)
+-- operations ---------------------------
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName delete   a
+       givenName add      c
+----------------------------------
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName add      c
+       givenName delete   a
+----------------------------------
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName delete   b
+       givenName add      c
+----------------------------------
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName add      c
+       givenName delete   b
+----------------------------------
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName delete   b
+       givenName delete   a
+----------------------------------
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName delete   a
+       givenName delete   b
+----------------------------------
+       givenName replace  a
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName add      c
+----------------------------------
+       givenName replace  a
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName delete   a
+----------------------------------
+       givenName replace  a
+       givenName delete   b
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName add      c
+----------------------------------
+       givenName replace  a
+       givenName delete   b
+       givenName delete   a
+       givenName add      c
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName replace  a
+       givenName delete   b
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName delete   a
+----------------------------------
+       givenName replace  a
+       givenName delete   b
+       givenName add      c
+       givenName delete   a
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName replace  a
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName add      c
+----------------------------------
+       givenName replace  a
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName delete   b
+----------------------------------
+       givenName replace  a
+       givenName delete   a
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName add      c
+----------------------------------
+       givenName replace  a
+       givenName delete   a
+       givenName delete   b
+       givenName add      c
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName replace  a
+       givenName delete   a
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName delete   b
+----------------------------------
+       givenName replace  a
+       givenName delete   a
+       givenName add      c
+       givenName delete   b
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName replace  a
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName delete   a
+----------------------------------
+       givenName replace  a
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName delete   b
+----------------------------------
+       givenName replace  a
+       givenName add      c
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName delete   a
+----------------------------------
+       givenName replace  a
+       givenName add      c
+       givenName delete   b
+       givenName delete   a
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName replace  a
+       givenName add      c
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName delete   b
+----------------------------------
+       givenName replace  a
+       givenName add      c
+       givenName delete   a
+       givenName delete   b
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName delete   b
+       givenName delete   a
+       givenName add      c
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName delete   b
+       givenName add      c
+       givenName delete   a
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName delete   a
+       givenName delete   b
+       givenName add      c
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName delete   a
+       givenName add      c
+       givenName delete   b
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName add      c
+       givenName delete   b
+       givenName delete   a
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName add      c
+       givenName delete   a
+       givenName delete   b
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName replace  a
+       givenName delete   a
+       givenName add      c
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName replace  a
+       givenName add      c
+       givenName delete   a
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName delete   a
+       givenName replace  a
+       givenName add      c
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName delete   a
+       givenName add      c
+       givenName replace  a
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName add      c
+       givenName replace  a
+       givenName delete   a
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName add      c
+       givenName delete   a
+       givenName replace  a
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName replace  a
+       givenName delete   b
+       givenName add      c
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName replace  a
+       givenName add      c
+       givenName delete   b
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName delete   b
+       givenName replace  a
+       givenName add      c
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName delete   b
+       givenName add      c
+       givenName replace  a
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName add      c
+       givenName replace  a
+       givenName delete   b
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName add      c
+       givenName delete   b
+       givenName replace  a
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName replace  a
+       givenName delete   b
+       givenName delete   a
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName replace  a
+       givenName delete   a
+       givenName delete   b
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName delete   b
+       givenName replace  a
+       givenName delete   a
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName delete   b
+       givenName delete   a
+       givenName replace  a
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName delete   a
+       givenName replace  a
+       givenName delete   b
+----------------------------------
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName delete   a
+       givenName delete   b
+       givenName replace  a
+----------------------------------
+       givenName delete   b
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName add      c
+----------------------------------
+       givenName delete   b
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName delete   a
+----------------------------------
+       givenName delete   b
+       givenName replace  a
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName add      c
+----------------------------------
+       givenName delete   b
+       givenName replace  a
+       givenName delete   a
+       givenName add      c
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName delete   b
+       givenName replace  a
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName delete   a
+----------------------------------
+       givenName delete   b
+       givenName replace  a
+       givenName add      c
+       givenName delete   a
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName delete   a
+       givenName add      c
+----------------------------------
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName add      c
+       givenName delete   a
+----------------------------------
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName replace  a
+       givenName add      c
+----------------------------------
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName add      c
+       givenName replace  a
+----------------------------------
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName replace  a
+       givenName delete   a
+----------------------------------
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName delete   a
+       givenName replace  a
+----------------------------------
+       givenName delete   b
+       givenName delete   a
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName add      c
+----------------------------------
+       givenName delete   b
+       givenName delete   a
+       givenName replace  a
+       givenName add      c
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName delete   b
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName add      c
+----------------------------------
+       givenName delete   b
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName replace  a
+----------------------------------
+       givenName delete   b
+       givenName delete   a
+       givenName add      c
+       givenName replace  a
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName delete   b
+       givenName delete   a
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName replace  a
+----------------------------------
+       givenName delete   b
+       givenName add      c
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName delete   a
+----------------------------------
+       givenName delete   b
+       givenName add      c
+       givenName replace  a
+       givenName delete   a
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName delete   b
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName delete   a
+----------------------------------
+       givenName delete   b
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName replace  a
+----------------------------------
+       givenName delete   b
+       givenName add      c
+       givenName delete   a
+       givenName replace  a
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName delete   b
+       givenName add      c
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName replace  a
+----------------------------------
+       givenName delete   a
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName add      c
+----------------------------------
+       givenName delete   a
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName delete   b
+----------------------------------
+       givenName delete   a
+       givenName replace  a
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName add      c
+----------------------------------
+       givenName delete   a
+       givenName replace  a
+       givenName delete   b
+       givenName add      c
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName delete   a
+       givenName replace  a
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName delete   b
+----------------------------------
+       givenName delete   a
+       givenName replace  a
+       givenName add      c
+       givenName delete   b
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName delete   b
+       givenName add      c
+----------------------------------
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName add      c
+       givenName delete   b
+----------------------------------
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName replace  a
+       givenName add      c
+----------------------------------
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName add      c
+       givenName replace  a
+----------------------------------
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName replace  a
+       givenName delete   b
+----------------------------------
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName delete   b
+       givenName replace  a
+----------------------------------
+       givenName delete   a
+       givenName delete   b
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName add      c
+----------------------------------
+       givenName delete   a
+       givenName delete   b
+       givenName replace  a
+       givenName add      c
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName delete   a
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName add      c
+----------------------------------
+       givenName delete   a
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName add      c
+       givenName replace  a
+----------------------------------
+       givenName delete   a
+       givenName delete   b
+       givenName add      c
+       givenName replace  a
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName delete   a
+       givenName delete   b
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName replace  a
+----------------------------------
+       givenName delete   a
+       givenName add      c
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName delete   b
+----------------------------------
+       givenName delete   a
+       givenName add      c
+       givenName replace  a
+       givenName delete   b
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName delete   a
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName delete   b
+----------------------------------
+       givenName delete   a
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName replace  a
+----------------------------------
+       givenName delete   a
+       givenName add      c
+       givenName delete   b
+       givenName replace  a
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName delete   a
+       givenName add      c
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName replace  a
+----------------------------------
+       givenName add      c
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName delete   a
+----------------------------------
+       givenName add      c
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName delete   b
+----------------------------------
+       givenName add      c
+       givenName replace  a
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName delete   a
+----------------------------------
+       givenName add      c
+       givenName replace  a
+       givenName delete   b
+       givenName delete   a
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName add      c
+       givenName replace  a
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName delete   b
+----------------------------------
+       givenName add      c
+       givenName replace  a
+       givenName delete   a
+       givenName delete   b
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName delete   b
+       givenName delete   a
+----------------------------------
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName delete   a
+       givenName delete   b
+----------------------------------
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName replace  a
+       givenName delete   a
+----------------------------------
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName delete   a
+       givenName replace  a
+----------------------------------
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName replace  a
+       givenName delete   b
+----------------------------------
+       givenName add      c
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName delete   b
+       givenName replace  a
+----------------------------------
+       givenName add      c
+       givenName delete   b
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName delete   a
+----------------------------------
+       givenName add      c
+       givenName delete   b
+       givenName replace  a
+       givenName delete   a
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName add      c
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName delete   a
+----------------------------------
+       givenName add      c
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName delete   a
+       givenName replace  a
+----------------------------------
+       givenName add      c
+       givenName delete   b
+       givenName delete   a
+       givenName replace  a
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName add      c
+       givenName delete   b
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName replace  a
+----------------------------------
+       givenName add      c
+       givenName delete   a
+       givenName replace  a
+       givenName replace  ['b', 'a']
+       givenName delete   b
+----------------------------------
+       givenName add      c
+       givenName delete   a
+       givenName replace  a
+       givenName delete   b
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName add      c
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName replace  a
+       givenName delete   b
+----------------------------------
+       givenName add      c
+       givenName delete   a
+       givenName replace  ['b', 'a']
+       givenName delete   b
+       givenName replace  a
+----------------------------------
+       givenName add      c
+       givenName delete   a
+       givenName delete   b
+       givenName replace  a
+       givenName replace  ['b', 'a']
+----------------------------------
+       givenName add      c
+       givenName delete   a
+       givenName delete   b
+       givenName replace  ['b', 'a']
+       givenName replace  a
+----------------------------------

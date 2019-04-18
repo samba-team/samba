@@ -1,0 +1,31 @@
+modify_order_objectclass-non-admin
+initial attrs:
+         objectclass: 'user'
+      otherTelephone: '123'
+== result ===[  6]=======================
+ERR_INSUFFICIENT_ACCESS_RIGHTS (50)
+-- operations ---------------------------
+     objectclass replace  computer
+     objectclass delete   user
+     objectclass delete   person
+----------------------------------
+     objectclass replace  computer
+     objectclass delete   person
+     objectclass delete   user
+----------------------------------
+     objectclass delete   user
+     objectclass replace  computer
+     objectclass delete   person
+----------------------------------
+     objectclass delete   user
+     objectclass delete   person
+     objectclass replace  computer
+----------------------------------
+     objectclass delete   person
+     objectclass replace  computer
+     objectclass delete   user
+----------------------------------
+     objectclass delete   person
+     objectclass delete   user
+     objectclass replace  computer
+----------------------------------

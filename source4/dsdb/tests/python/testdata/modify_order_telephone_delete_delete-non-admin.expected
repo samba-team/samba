@@ -1,0 +1,727 @@
+modify_order_telephone_delete_delete-non-admin
+initial attrs:
+         objectclass: 'user'
+      otherTelephone: '123'
+== result ===[120]=======================
+ERR_INSUFFICIENT_ACCESS_RIGHTS (50)
+-- operations ---------------------------
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone replace  4
+  otherTelephone delete   4
+  otherTelephone delete   123
+----------------------------------
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone replace  4
+  otherTelephone delete   123
+  otherTelephone delete   4
+----------------------------------
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone delete   4
+  otherTelephone replace  4
+  otherTelephone delete   123
+----------------------------------
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone delete   4
+  otherTelephone delete   123
+  otherTelephone replace  4
+----------------------------------
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone delete   123
+  otherTelephone replace  4
+  otherTelephone delete   4
+----------------------------------
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone delete   123
+  otherTelephone delete   4
+  otherTelephone replace  4
+----------------------------------
+      carLicense replace  3
+  otherTelephone replace  4
+      carLicense delete   4
+  otherTelephone delete   4
+  otherTelephone delete   123
+----------------------------------
+      carLicense replace  3
+  otherTelephone replace  4
+      carLicense delete   4
+  otherTelephone delete   123
+  otherTelephone delete   4
+----------------------------------
+      carLicense replace  3
+  otherTelephone replace  4
+  otherTelephone delete   4
+      carLicense delete   4
+  otherTelephone delete   123
+----------------------------------
+      carLicense replace  3
+  otherTelephone replace  4
+  otherTelephone delete   4
+  otherTelephone delete   123
+      carLicense delete   4
+----------------------------------
+      carLicense replace  3
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense delete   4
+  otherTelephone delete   4
+----------------------------------
+      carLicense replace  3
+  otherTelephone replace  4
+  otherTelephone delete   123
+  otherTelephone delete   4
+      carLicense delete   4
+----------------------------------
+      carLicense replace  3
+  otherTelephone delete   4
+      carLicense delete   4
+  otherTelephone replace  4
+  otherTelephone delete   123
+----------------------------------
+      carLicense replace  3
+  otherTelephone delete   4
+      carLicense delete   4
+  otherTelephone delete   123
+  otherTelephone replace  4
+----------------------------------
+      carLicense replace  3
+  otherTelephone delete   4
+  otherTelephone replace  4
+      carLicense delete   4
+  otherTelephone delete   123
+----------------------------------
+      carLicense replace  3
+  otherTelephone delete   4
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense delete   4
+----------------------------------
+      carLicense replace  3
+  otherTelephone delete   4
+  otherTelephone delete   123
+      carLicense delete   4
+  otherTelephone replace  4
+----------------------------------
+      carLicense replace  3
+  otherTelephone delete   4
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense delete   4
+----------------------------------
+      carLicense replace  3
+  otherTelephone delete   123
+      carLicense delete   4
+  otherTelephone replace  4
+  otherTelephone delete   4
+----------------------------------
+      carLicense replace  3
+  otherTelephone delete   123
+      carLicense delete   4
+  otherTelephone delete   4
+  otherTelephone replace  4
+----------------------------------
+      carLicense replace  3
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense delete   4
+  otherTelephone delete   4
+----------------------------------
+      carLicense replace  3
+  otherTelephone delete   123
+  otherTelephone replace  4
+  otherTelephone delete   4
+      carLicense delete   4
+----------------------------------
+      carLicense replace  3
+  otherTelephone delete   123
+  otherTelephone delete   4
+      carLicense delete   4
+  otherTelephone replace  4
+----------------------------------
+      carLicense replace  3
+  otherTelephone delete   123
+  otherTelephone delete   4
+  otherTelephone replace  4
+      carLicense delete   4
+----------------------------------
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone replace  4
+  otherTelephone delete   4
+  otherTelephone delete   123
+----------------------------------
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone replace  4
+  otherTelephone delete   123
+  otherTelephone delete   4
+----------------------------------
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone delete   4
+  otherTelephone replace  4
+  otherTelephone delete   123
+----------------------------------
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone delete   4
+  otherTelephone delete   123
+  otherTelephone replace  4
+----------------------------------
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone delete   123
+  otherTelephone replace  4
+  otherTelephone delete   4
+----------------------------------
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone delete   123
+  otherTelephone delete   4
+  otherTelephone replace  4
+----------------------------------
+      carLicense delete   4
+  otherTelephone replace  4
+      carLicense replace  3
+  otherTelephone delete   4
+  otherTelephone delete   123
+----------------------------------
+      carLicense delete   4
+  otherTelephone replace  4
+      carLicense replace  3
+  otherTelephone delete   123
+  otherTelephone delete   4
+----------------------------------
+      carLicense delete   4
+  otherTelephone replace  4
+  otherTelephone delete   4
+      carLicense replace  3
+  otherTelephone delete   123
+----------------------------------
+      carLicense delete   4
+  otherTelephone replace  4
+  otherTelephone delete   4
+  otherTelephone delete   123
+      carLicense replace  3
+----------------------------------
+      carLicense delete   4
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense replace  3
+  otherTelephone delete   4
+----------------------------------
+      carLicense delete   4
+  otherTelephone replace  4
+  otherTelephone delete   123
+  otherTelephone delete   4
+      carLicense replace  3
+----------------------------------
+      carLicense delete   4
+  otherTelephone delete   4
+      carLicense replace  3
+  otherTelephone replace  4
+  otherTelephone delete   123
+----------------------------------
+      carLicense delete   4
+  otherTelephone delete   4
+      carLicense replace  3
+  otherTelephone delete   123
+  otherTelephone replace  4
+----------------------------------
+      carLicense delete   4
+  otherTelephone delete   4
+  otherTelephone replace  4
+      carLicense replace  3
+  otherTelephone delete   123
+----------------------------------
+      carLicense delete   4
+  otherTelephone delete   4
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense replace  3
+----------------------------------
+      carLicense delete   4
+  otherTelephone delete   4
+  otherTelephone delete   123
+      carLicense replace  3
+  otherTelephone replace  4
+----------------------------------
+      carLicense delete   4
+  otherTelephone delete   4
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense replace  3
+----------------------------------
+      carLicense delete   4
+  otherTelephone delete   123
+      carLicense replace  3
+  otherTelephone replace  4
+  otherTelephone delete   4
+----------------------------------
+      carLicense delete   4
+  otherTelephone delete   123
+      carLicense replace  3
+  otherTelephone delete   4
+  otherTelephone replace  4
+----------------------------------
+      carLicense delete   4
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense replace  3
+  otherTelephone delete   4
+----------------------------------
+      carLicense delete   4
+  otherTelephone delete   123
+  otherTelephone replace  4
+  otherTelephone delete   4
+      carLicense replace  3
+----------------------------------
+      carLicense delete   4
+  otherTelephone delete   123
+  otherTelephone delete   4
+      carLicense replace  3
+  otherTelephone replace  4
+----------------------------------
+      carLicense delete   4
+  otherTelephone delete   123
+  otherTelephone delete   4
+  otherTelephone replace  4
+      carLicense replace  3
+----------------------------------
+  otherTelephone replace  4
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone delete   4
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone replace  4
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone delete   123
+  otherTelephone delete   4
+----------------------------------
+  otherTelephone replace  4
+      carLicense replace  3
+  otherTelephone delete   4
+      carLicense delete   4
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone replace  4
+      carLicense replace  3
+  otherTelephone delete   4
+  otherTelephone delete   123
+      carLicense delete   4
+----------------------------------
+  otherTelephone replace  4
+      carLicense replace  3
+  otherTelephone delete   123
+      carLicense delete   4
+  otherTelephone delete   4
+----------------------------------
+  otherTelephone replace  4
+      carLicense replace  3
+  otherTelephone delete   123
+  otherTelephone delete   4
+      carLicense delete   4
+----------------------------------
+  otherTelephone replace  4
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone delete   4
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone replace  4
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone delete   123
+  otherTelephone delete   4
+----------------------------------
+  otherTelephone replace  4
+      carLicense delete   4
+  otherTelephone delete   4
+      carLicense replace  3
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone replace  4
+      carLicense delete   4
+  otherTelephone delete   4
+  otherTelephone delete   123
+      carLicense replace  3
+----------------------------------
+  otherTelephone replace  4
+      carLicense delete   4
+  otherTelephone delete   123
+      carLicense replace  3
+  otherTelephone delete   4
+----------------------------------
+  otherTelephone replace  4
+      carLicense delete   4
+  otherTelephone delete   123
+  otherTelephone delete   4
+      carLicense replace  3
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   4
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   4
+      carLicense replace  3
+  otherTelephone delete   123
+      carLicense delete   4
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   4
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   4
+      carLicense delete   4
+  otherTelephone delete   123
+      carLicense replace  3
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   4
+  otherTelephone delete   123
+      carLicense replace  3
+      carLicense delete   4
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   4
+  otherTelephone delete   123
+      carLicense delete   4
+      carLicense replace  3
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone delete   4
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense replace  3
+  otherTelephone delete   4
+      carLicense delete   4
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone delete   4
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense delete   4
+  otherTelephone delete   4
+      carLicense replace  3
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   123
+  otherTelephone delete   4
+      carLicense replace  3
+      carLicense delete   4
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   123
+  otherTelephone delete   4
+      carLicense delete   4
+      carLicense replace  3
+----------------------------------
+  otherTelephone delete   4
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone replace  4
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone delete   4
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone delete   123
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   4
+      carLicense replace  3
+  otherTelephone replace  4
+      carLicense delete   4
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone delete   4
+      carLicense replace  3
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense delete   4
+----------------------------------
+  otherTelephone delete   4
+      carLicense replace  3
+  otherTelephone delete   123
+      carLicense delete   4
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   4
+      carLicense replace  3
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense delete   4
+----------------------------------
+  otherTelephone delete   4
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone replace  4
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone delete   4
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone delete   123
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   4
+      carLicense delete   4
+  otherTelephone replace  4
+      carLicense replace  3
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone delete   4
+      carLicense delete   4
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense replace  3
+----------------------------------
+  otherTelephone delete   4
+      carLicense delete   4
+  otherTelephone delete   123
+      carLicense replace  3
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   4
+      carLicense delete   4
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense replace  3
+----------------------------------
+  otherTelephone delete   4
+  otherTelephone replace  4
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone delete   4
+  otherTelephone replace  4
+      carLicense replace  3
+  otherTelephone delete   123
+      carLicense delete   4
+----------------------------------
+  otherTelephone delete   4
+  otherTelephone replace  4
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone delete   4
+  otherTelephone replace  4
+      carLicense delete   4
+  otherTelephone delete   123
+      carLicense replace  3
+----------------------------------
+  otherTelephone delete   4
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense replace  3
+      carLicense delete   4
+----------------------------------
+  otherTelephone delete   4
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense delete   4
+      carLicense replace  3
+----------------------------------
+  otherTelephone delete   4
+  otherTelephone delete   123
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   4
+  otherTelephone delete   123
+      carLicense replace  3
+  otherTelephone replace  4
+      carLicense delete   4
+----------------------------------
+  otherTelephone delete   4
+  otherTelephone delete   123
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   4
+  otherTelephone delete   123
+      carLicense delete   4
+  otherTelephone replace  4
+      carLicense replace  3
+----------------------------------
+  otherTelephone delete   4
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense replace  3
+      carLicense delete   4
+----------------------------------
+  otherTelephone delete   4
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense delete   4
+      carLicense replace  3
+----------------------------------
+  otherTelephone delete   123
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone replace  4
+  otherTelephone delete   4
+----------------------------------
+  otherTelephone delete   123
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone delete   4
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   123
+      carLicense replace  3
+  otherTelephone replace  4
+      carLicense delete   4
+  otherTelephone delete   4
+----------------------------------
+  otherTelephone delete   123
+      carLicense replace  3
+  otherTelephone replace  4
+  otherTelephone delete   4
+      carLicense delete   4
+----------------------------------
+  otherTelephone delete   123
+      carLicense replace  3
+  otherTelephone delete   4
+      carLicense delete   4
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   123
+      carLicense replace  3
+  otherTelephone delete   4
+  otherTelephone replace  4
+      carLicense delete   4
+----------------------------------
+  otherTelephone delete   123
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone replace  4
+  otherTelephone delete   4
+----------------------------------
+  otherTelephone delete   123
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone delete   4
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   123
+      carLicense delete   4
+  otherTelephone replace  4
+      carLicense replace  3
+  otherTelephone delete   4
+----------------------------------
+  otherTelephone delete   123
+      carLicense delete   4
+  otherTelephone replace  4
+  otherTelephone delete   4
+      carLicense replace  3
+----------------------------------
+  otherTelephone delete   123
+      carLicense delete   4
+  otherTelephone delete   4
+      carLicense replace  3
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   123
+      carLicense delete   4
+  otherTelephone delete   4
+  otherTelephone replace  4
+      carLicense replace  3
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone delete   4
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense replace  3
+  otherTelephone delete   4
+      carLicense delete   4
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone delete   4
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense delete   4
+  otherTelephone delete   4
+      carLicense replace  3
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone replace  4
+  otherTelephone delete   4
+      carLicense replace  3
+      carLicense delete   4
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone replace  4
+  otherTelephone delete   4
+      carLicense delete   4
+      carLicense replace  3
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone delete   4
+      carLicense replace  3
+      carLicense delete   4
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone delete   4
+      carLicense replace  3
+  otherTelephone replace  4
+      carLicense delete   4
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone delete   4
+      carLicense delete   4
+      carLicense replace  3
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone delete   4
+      carLicense delete   4
+  otherTelephone replace  4
+      carLicense replace  3
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone delete   4
+  otherTelephone replace  4
+      carLicense replace  3
+      carLicense delete   4
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone delete   4
+  otherTelephone replace  4
+      carLicense delete   4
+      carLicense replace  3
+----------------------------------

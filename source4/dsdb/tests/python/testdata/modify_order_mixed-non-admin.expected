@@ -1,0 +1,128 @@
+modify_order_mixed-non-admin
+initial attrs:
+         objectclass: 'user'
+          carLicense: ['1', '2', '3']
+      otherTelephone: '123'
+== result ===[ 24]=======================
+ERR_INSUFFICIENT_ACCESS_RIGHTS (50)
+-- operations ---------------------------
+      carLicense delete   3
+      carLicense add      4
+  otherTelephone replace  4
+  otherTelephone delete   123
+----------------------------------
+      carLicense delete   3
+      carLicense add      4
+  otherTelephone delete   123
+  otherTelephone replace  4
+----------------------------------
+      carLicense delete   3
+  otherTelephone replace  4
+      carLicense add      4
+  otherTelephone delete   123
+----------------------------------
+      carLicense delete   3
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense add      4
+----------------------------------
+      carLicense delete   3
+  otherTelephone delete   123
+      carLicense add      4
+  otherTelephone replace  4
+----------------------------------
+      carLicense delete   3
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense add      4
+----------------------------------
+      carLicense add      4
+      carLicense delete   3
+  otherTelephone replace  4
+  otherTelephone delete   123
+----------------------------------
+      carLicense add      4
+      carLicense delete   3
+  otherTelephone delete   123
+  otherTelephone replace  4
+----------------------------------
+      carLicense add      4
+  otherTelephone replace  4
+      carLicense delete   3
+  otherTelephone delete   123
+----------------------------------
+      carLicense add      4
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense delete   3
+----------------------------------
+      carLicense add      4
+  otherTelephone delete   123
+      carLicense delete   3
+  otherTelephone replace  4
+----------------------------------
+      carLicense add      4
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense delete   3
+----------------------------------
+  otherTelephone replace  4
+      carLicense delete   3
+      carLicense add      4
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone replace  4
+      carLicense delete   3
+  otherTelephone delete   123
+      carLicense add      4
+----------------------------------
+  otherTelephone replace  4
+      carLicense add      4
+      carLicense delete   3
+  otherTelephone delete   123
+----------------------------------
+  otherTelephone replace  4
+      carLicense add      4
+  otherTelephone delete   123
+      carLicense delete   3
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense delete   3
+      carLicense add      4
+----------------------------------
+  otherTelephone replace  4
+  otherTelephone delete   123
+      carLicense add      4
+      carLicense delete   3
+----------------------------------
+  otherTelephone delete   123
+      carLicense delete   3
+      carLicense add      4
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   123
+      carLicense delete   3
+  otherTelephone replace  4
+      carLicense add      4
+----------------------------------
+  otherTelephone delete   123
+      carLicense add      4
+      carLicense delete   3
+  otherTelephone replace  4
+----------------------------------
+  otherTelephone delete   123
+      carLicense add      4
+  otherTelephone replace  4
+      carLicense delete   3
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense delete   3
+      carLicense add      4
+----------------------------------
+  otherTelephone delete   123
+  otherTelephone replace  4
+      carLicense add      4
+      carLicense delete   3
+----------------------------------

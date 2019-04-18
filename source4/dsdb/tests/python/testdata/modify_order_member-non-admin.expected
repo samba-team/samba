@@ -1,0 +1,127 @@
+modify_order_member-non-admin
+initial attrs:
+         objectclass: 'group'
+              member: 'cn=modify_order_member_other_group,{base dn}'
+== result ===[ 24]=======================
+ERR_INSUFFICIENT_ACCESS_RIGHTS (50)
+-- operations ---------------------------
+          member delete   cn=ldaptest_modify_order_member-non-admin_0,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_0,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_0,cn=users,{base dn}
+----------------------------------
+          member delete   cn=ldaptest_modify_order_member-non-admin_1,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_1,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_1,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+----------------------------------
+          member delete   cn=ldaptest_modify_order_member-non-admin_2,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_2,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_2,cn=users,{base dn}
+----------------------------------
+          member delete   cn=ldaptest_modify_order_member-non-admin_3,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_3,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_3,cn=users,{base dn}
+----------------------------------
+          member delete   cn=ldaptest_modify_order_member-non-admin_4,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_4,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_4,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+----------------------------------
+          member delete   cn=ldaptest_modify_order_member-non-admin_5,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_5,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_5,cn=users,{base dn}
+----------------------------------
+          member replace  cn=ldaptest_modify_order_member-non-admin_6,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_6,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_6,cn=users,{base dn}
+----------------------------------
+          member replace  cn=ldaptest_modify_order_member-non-admin_7,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_7,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_7,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+----------------------------------
+          member replace  cn=ldaptest_modify_order_member-non-admin_8,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_8,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_8,cn=users,{base dn}
+----------------------------------
+          member replace  cn=ldaptest_modify_order_member-non-admin_9,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_9,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_9,cn=users,{base dn}
+----------------------------------
+          member replace  cn=ldaptest_modify_order_member-non-admin_10,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_10,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_10,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+----------------------------------
+          member replace  cn=ldaptest_modify_order_member-non-admin_11,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_11,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_11,cn=users,{base dn}
+----------------------------------
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_12,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_12,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_12,cn=users,{base dn}
+----------------------------------
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_13,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_13,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_13,cn=users,{base dn}
+----------------------------------
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_14,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_14,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_14,cn=users,{base dn}
+----------------------------------
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_15,cn=users,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_15,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_15,cn=users,{base dn}
+----------------------------------
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_16,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_16,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_16,cn=users,{base dn}
+----------------------------------
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member add      cn=ldaptest_modify_order_member-non-admin_17,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_17,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_17,cn=users,{base dn}
+----------------------------------
+          member add      cn=ldaptest_modify_order_member-non-admin_18,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_18,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_18,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+----------------------------------
+          member add      cn=ldaptest_modify_order_member-non-admin_19,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_19,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_19,cn=users,{base dn}
+----------------------------------
+          member add      cn=ldaptest_modify_order_member-non-admin_20,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_20,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_20,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+----------------------------------
+          member add      cn=ldaptest_modify_order_member-non-admin_21,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_21,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_21,cn=users,{base dn}
+----------------------------------
+          member add      cn=ldaptest_modify_order_member-non-admin_22,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_22,cn=users,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_22,cn=users,{base dn}
+----------------------------------
+          member add      cn=ldaptest_modify_order_member-non-admin_23,cn=users,{base dn}
+          member delete   cn=modify_order_member_other_group,{base dn}
+          member replace  cn=ldaptest_modify_order_member-non-admin_23,cn=users,{base dn}
+          member delete   cn=ldaptest_modify_order_member-non-admin_23,cn=users,{base dn}
+----------------------------------

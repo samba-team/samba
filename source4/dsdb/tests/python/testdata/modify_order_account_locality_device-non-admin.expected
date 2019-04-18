@@ -1,0 +1,31 @@
+modify_order_account_locality_device-non-admin
+initial attrs:
+         objectclass: 'account'
+                   l: 'a'
+== result ===[  6]=======================
+ERR_INSUFFICIENT_ACCESS_RIGHTS (50)
+-- operations ---------------------------
+     objectclass replace  ['device', 'top']
+               l delete   a
+           owner add      c
+----------------------------------
+     objectclass replace  ['device', 'top']
+           owner add      c
+               l delete   a
+----------------------------------
+               l delete   a
+     objectclass replace  ['device', 'top']
+           owner add      c
+----------------------------------
+               l delete   a
+           owner add      c
+     objectclass replace  ['device', 'top']
+----------------------------------
+           owner add      c
+     objectclass replace  ['device', 'top']
+               l delete   a
+----------------------------------
+           owner add      c
+               l delete   a
+     objectclass replace  ['device', 'top']
+----------------------------------

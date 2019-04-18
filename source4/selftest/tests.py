@@ -841,6 +841,20 @@ plantestsuite_loadlist("samba4.ldap_modify_order.python(ad_dc_default)",
                        [python, os.path.join(samba4srcdir,
                                              "dsdb/tests/python/"
                                              "ldap_modify_order.py"),
+                        # add "-v" here to diagnose
+                        '$SERVER',
+                        '-U"$USERNAME%$PASSWORD"',
+                        '--workgroup=$DOMAIN',
+                        '$LOADLIST',
+                        '$LISTOPT'])
+
+plantestsuite_loadlist("samba4.ldap_modify_order.normal_user.python(ad_dc_default)",
+                       "ad_dc_default",
+                       [python, os.path.join(samba4srcdir,
+                                             "dsdb/tests/python/"
+                                             "ldap_modify_order.py"),
+                        '--normal-user',
+                        # add "-v" here to diagnose
                         '$SERVER',
                         '-U"$USERNAME%$PASSWORD"',
                         '--workgroup=$DOMAIN',

@@ -1,0 +1,128 @@
+modify_order_mixed2-non-admin
+initial attrs:
+         objectclass: 'user'
+          carLicense: ['1', '2', '3']
+             ipPhone: '123'
+== result ===[ 24]=======================
+ERR_INSUFFICIENT_ACCESS_RIGHTS (50)
+-- operations ---------------------------
+      carLicense delete   3
+      carLicense add      4
+         ipPhone replace  4
+         ipPhone delete   123
+----------------------------------
+      carLicense delete   3
+      carLicense add      4
+         ipPhone delete   123
+         ipPhone replace  4
+----------------------------------
+      carLicense delete   3
+         ipPhone replace  4
+      carLicense add      4
+         ipPhone delete   123
+----------------------------------
+      carLicense delete   3
+         ipPhone replace  4
+         ipPhone delete   123
+      carLicense add      4
+----------------------------------
+      carLicense delete   3
+         ipPhone delete   123
+      carLicense add      4
+         ipPhone replace  4
+----------------------------------
+      carLicense delete   3
+         ipPhone delete   123
+         ipPhone replace  4
+      carLicense add      4
+----------------------------------
+      carLicense add      4
+      carLicense delete   3
+         ipPhone replace  4
+         ipPhone delete   123
+----------------------------------
+      carLicense add      4
+      carLicense delete   3
+         ipPhone delete   123
+         ipPhone replace  4
+----------------------------------
+      carLicense add      4
+         ipPhone replace  4
+      carLicense delete   3
+         ipPhone delete   123
+----------------------------------
+      carLicense add      4
+         ipPhone replace  4
+         ipPhone delete   123
+      carLicense delete   3
+----------------------------------
+      carLicense add      4
+         ipPhone delete   123
+      carLicense delete   3
+         ipPhone replace  4
+----------------------------------
+      carLicense add      4
+         ipPhone delete   123
+         ipPhone replace  4
+      carLicense delete   3
+----------------------------------
+         ipPhone replace  4
+      carLicense delete   3
+      carLicense add      4
+         ipPhone delete   123
+----------------------------------
+         ipPhone replace  4
+      carLicense delete   3
+         ipPhone delete   123
+      carLicense add      4
+----------------------------------
+         ipPhone replace  4
+      carLicense add      4
+      carLicense delete   3
+         ipPhone delete   123
+----------------------------------
+         ipPhone replace  4
+      carLicense add      4
+         ipPhone delete   123
+      carLicense delete   3
+----------------------------------
+         ipPhone replace  4
+         ipPhone delete   123
+      carLicense delete   3
+      carLicense add      4
+----------------------------------
+         ipPhone replace  4
+         ipPhone delete   123
+      carLicense add      4
+      carLicense delete   3
+----------------------------------
+         ipPhone delete   123
+      carLicense delete   3
+      carLicense add      4
+         ipPhone replace  4
+----------------------------------
+         ipPhone delete   123
+      carLicense delete   3
+         ipPhone replace  4
+      carLicense add      4
+----------------------------------
+         ipPhone delete   123
+      carLicense add      4
+      carLicense delete   3
+         ipPhone replace  4
+----------------------------------
+         ipPhone delete   123
+      carLicense add      4
+         ipPhone replace  4
+      carLicense delete   3
+----------------------------------
+         ipPhone delete   123
+         ipPhone replace  4
+      carLicense delete   3
+      carLicense add      4
+----------------------------------
+         ipPhone delete   123
+         ipPhone replace  4
+      carLicense add      4
+      carLicense delete   3
+----------------------------------

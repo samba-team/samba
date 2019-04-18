@@ -54,23 +54,36 @@ class ModifyOrderTests(samba.tests.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.dsdb = get_dsdb()
-        self.base_dn = self.dsdb.domain_dn()
+        self.admin_dsdb = get_dsdb(admin_creds)
+        self.base_dn = self.admin_dsdb.domain_dn()
 
     def delete_object(self, dn):
-        delete_force(self.dsdb, dn)
+        delete_force(self.admin_dsdb, dn)
+
+    def get_user_dn(self, name):
+        return "CN=%s,CN=Users,%s" % (name, self.base_dn)
 
     def _test_modify_order(self,
                            start_attrs,
                            mod_attrs,
                            extra_search_attrs=(),
                            name=None):
-        # We are using Message objects here for add (rather than the
-        # more convenient dict) because we maybe care about the order
-        # in which attributes are added.
         if name is None:
             name = traceback.extract_stack()[-2][2][5:]
 
+        if opts.normal_user:
+            name += '-non-admin'
+            username = "user123"
+            password = "pass123@#$@#"
+            self.admin_dsdb.newuser(username, password)
+            self.addCleanup(self.delete_object, self.get_user_dn(username))
+            mod_creds = self.insta_creds(template=admin_creds,
+                                         username=username,
+                                         userpass=password)
+        else:
+            mod_creds = admin_creds
+
+        mod_dsdb = get_dsdb(mod_creds)
         sig = []
         op_lut = ['', 'add', 'replace', 'delete']
 
@@ -95,16 +108,20 @@ class ModifyOrderTests(samba.tests.TestCase):
             # attribute strings by their results.
             dn = "cn=ldaptest_%s_%d,cn=users,%s" % (name, i, self.base_dn)
             m = Message()
-            m.dn = Dn(self.dsdb, dn)
+            m.dn = Dn(self.admin_dsdb, dn)
+
+            # We are using Message objects here for add (rather than the
+            # more convenient dict) because we maybe care about the order
+            # in which attributes are added.
 
             for k, v in start_attrs:
                 m[k] = MessageElement(v, 0, k)
 
-            self.dsdb.add(m)
+            self.admin_dsdb.add(m)
             self.addCleanup(self.delete_object, dn)
 
             m = Message()
-            m.dn = Dn(self.dsdb, dn)
+            m.dn = Dn(mod_dsdb, dn)
 
             attr_lines = []
             for k, v, op in attrs:
@@ -116,14 +133,14 @@ class ModifyOrderTests(samba.tests.TestCase):
             attr_str = '\n'.join(attr_lines)
 
             try:
-                self.dsdb.modify(m)
+                mod_dsdb.modify(m)
             except LdbError as e:
                 err, _ = e.args
                 s = LDB_STRERR.get(err, "unknown error")
                 result_str = "%s (%d)" % (s, err)
             else:
-                res = self.dsdb.search(base=dn, scope=SCOPE_BASE,
-                                       attrs=search_attrs)
+                res = self.admin_dsdb.search(base=dn, scope=SCOPE_BASE,
+                                             attrs=search_attrs)
 
                 lines = []
                 for k, v in sorted(dict(res[0]).items()):
@@ -296,8 +313,8 @@ class ModifyOrderTests(samba.tests.TestCase):
 
         dn2 = "cn=%s,%s" % (name, self.base_dn)
         m = Message()
-        m.dn = Dn(self.dsdb, dn2)
-        self.dsdb.add({"dn": dn2, "objectclass": "group"})
+        m.dn = Dn(self.admin_dsdb, dn2)
+        self.admin_dsdb.add({"dn": dn2, "objectclass": "group"})
         self.addCleanup(self.delete_object, dn2)
 
         start_attrs = [("objectclass", "group"),
@@ -311,7 +328,9 @@ class ModifyOrderTests(samba.tests.TestCase):
         self._test_modify_order(start_attrs, mod_attrs, ["memberOf"])
 
 
-def get_dsdb():
+def get_dsdb(creds=None):
+    if creds is None:
+        creds = admin_creds
     dsdb = SamDB(host,
                  credentials=creds,
                  session_info=system_session(lp),
@@ -330,6 +349,7 @@ parser.add_option_group(subunitopts)
 parser.add_option("--rewrite-ground-truth", action="store_true",
                   help="write expected values")
 parser.add_option("-v", "--verbose", action="store_true")
+parser.add_option("--normal-user", action="store_true")
 
 opts, args = parser.parse_args()
 
@@ -340,8 +360,7 @@ if len(args) < 1:
 host = args[0]
 
 lp = sambaopts.get_loadparm()
-creds = credopts.get_credentials(lp)
-
+admin_creds = credopts.get_credentials(lp)
 
 if "://" not in host:
     if os.path.isfile(host):

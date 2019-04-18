@@ -1,0 +1,31 @@
+modify_order_inapplicable-non-admin
+initial attrs:
+         objectclass: 'user'
+           givenName: 'a'
+== result ===[  6]=======================
+ERR_INSUFFICIENT_ACCESS_RIGHTS (50)
+-- operations ---------------------------
+       dhcpSites replace  b
+       dhcpSites delete   b
+       dhcpSites add      c
+----------------------------------
+       dhcpSites replace  b
+       dhcpSites add      c
+       dhcpSites delete   b
+----------------------------------
+       dhcpSites delete   b
+       dhcpSites replace  b
+       dhcpSites add      c
+----------------------------------
+       dhcpSites delete   b
+       dhcpSites add      c
+       dhcpSites replace  b
+----------------------------------
+       dhcpSites add      c
+       dhcpSites replace  b
+       dhcpSites delete   b
+----------------------------------
+       dhcpSites add      c
+       dhcpSites delete   b
+       dhcpSites replace  b
+----------------------------------

@@ -1,0 +1,127 @@
+modify_order_container_flags_multivalue-non-admin
+initial attrs:
+         objectclass: 'container'
+         wWWHomePage: 'a'
+== result ===[ 24]=======================
+ERR_INSUFFICIENT_ACCESS_RIGHTS (50)
+-- operations ---------------------------
+           flags add      ['0', '1']
+           flags add      65355
+           flags delete   65355
+           flags replace  ['2', '101']
+----------------------------------
+           flags add      ['0', '1']
+           flags add      65355
+           flags replace  ['2', '101']
+           flags delete   65355
+----------------------------------
+           flags add      ['0', '1']
+           flags delete   65355
+           flags add      65355
+           flags replace  ['2', '101']
+----------------------------------
+           flags add      ['0', '1']
+           flags delete   65355
+           flags replace  ['2', '101']
+           flags add      65355
+----------------------------------
+           flags add      ['0', '1']
+           flags replace  ['2', '101']
+           flags add      65355
+           flags delete   65355
+----------------------------------
+           flags add      ['0', '1']
+           flags replace  ['2', '101']
+           flags delete   65355
+           flags add      65355
+----------------------------------
+           flags add      65355
+           flags add      ['0', '1']
+           flags delete   65355
+           flags replace  ['2', '101']
+----------------------------------
+           flags add      65355
+           flags add      ['0', '1']
+           flags replace  ['2', '101']
+           flags delete   65355
+----------------------------------
+           flags add      65355
+           flags delete   65355
+           flags add      ['0', '1']
+           flags replace  ['2', '101']
+----------------------------------
+           flags add      65355
+           flags delete   65355
+           flags replace  ['2', '101']
+           flags add      ['0', '1']
+----------------------------------
+           flags add      65355
+           flags replace  ['2', '101']
+           flags add      ['0', '1']
+           flags delete   65355
+----------------------------------
+           flags add      65355
+           flags replace  ['2', '101']
+           flags delete   65355
+           flags add      ['0', '1']
+----------------------------------
+           flags delete   65355
+           flags add      ['0', '1']
+           flags add      65355
+           flags replace  ['2', '101']
+----------------------------------
+           flags delete   65355
+           flags add      ['0', '1']
+           flags replace  ['2', '101']
+           flags add      65355
+----------------------------------
+           flags delete   65355
+           flags add      65355
+           flags add      ['0', '1']
+           flags replace  ['2', '101']
+----------------------------------
+           flags delete   65355
+           flags add      65355
+           flags replace  ['2', '101']
+           flags add      ['0', '1']
+----------------------------------
+           flags delete   65355
+           flags replace  ['2', '101']
+           flags add      ['0', '1']
+           flags add      65355
+----------------------------------
+           flags delete   65355
+           flags replace  ['2', '101']
+           flags add      65355
+           flags add      ['0', '1']
+----------------------------------
+           flags replace  ['2', '101']
+           flags add      ['0', '1']
+           flags add      65355
+           flags delete   65355
+----------------------------------
+           flags replace  ['2', '101']
+           flags add      ['0', '1']
+           flags delete   65355
+           flags add      65355
+----------------------------------
+           flags replace  ['2', '101']
+           flags add      65355
+           flags add      ['0', '1']
+           flags delete   65355
+----------------------------------
+           flags replace  ['2', '101']
+           flags add      65355
+           flags delete   65355
+           flags add      ['0', '1']
+----------------------------------
+           flags replace  ['2', '101']
+           flags delete   65355
+           flags add      ['0', '1']
+           flags add      65355
+----------------------------------
+           flags replace  ['2', '101']
+           flags delete   65355
+           flags add      65355
+           flags add      ['0', '1']
+----------------------------------
