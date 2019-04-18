@@ -680,10 +680,13 @@ def build(bld):
                           destname='README')
 
     if bld.env.HAVE_LIBRADOS:
+        rados_inc = ' include'
+        if bld.CONFIG_GET('CPPPATH_RADOS') is not None:
+            rados_inc = bld.CONFIG_GET('CPPPATH_RADOS') + rados_inc
         bld.SAMBA_BINARY('ctdb_mutex_ceph_rados_helper',
                          source='utils/ceph/ctdb_mutex_ceph_rados_helper.c',
 			 deps='talloc tevent rados ceph-common',
-			 includes=bld.CONFIG_GET('CPPPATH_RADOS'),
+			 includes=rados_inc,
 			 install_path='${CTDB_HELPER_BINDIR}')
 
     sed_expr1 = 's|/usr/local/var/lib/ctdb|%s|g'  % (bld.env.CTDB_VARDIR)
