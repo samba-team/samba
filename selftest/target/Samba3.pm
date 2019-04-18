@@ -764,6 +764,13 @@ sub setup_ad_member_idmap_ad
 	$ret->{DC_USERNAME} = $dcvars->{USERNAME};
 	$ret->{DC_PASSWORD} = $dcvars->{PASSWORD};
 
+	$ret->{TRUST_SERVER} = $dcvars->{TRUST_SERVER};
+	$ret->{TRUST_USERNAME} = $dcvars->{TRUST_USERNAME};
+	$ret->{TRUST_PASSWORD} = $dcvars->{TRUST_PASSWORD};
+	$ret->{TRUST_DOMAIN} = $dcvars->{TRUST_DOMAIN};
+	$ret->{TRUST_REALM} = $dcvars->{TRUST_REALM};
+	$ret->{TRUST_DOMSID} = $dcvars->{TRUST_DOMSID};
+
 	return $ret;
 }
 
