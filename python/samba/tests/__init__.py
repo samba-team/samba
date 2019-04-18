@@ -113,10 +113,11 @@ class TestCase(unittest.TestCase):
     def insta_creds(self, template=None, username=None, userpass=None, kerberos_state=None):
 
         if template is None:
-            assert template is not None
+            raise ValueError("you need to supply a Credentials template")
 
-        if username is not None:
-            assert userpass is not None
+        if username is not None and userpass is None:
+            raise ValueError(
+                "you cannot set creds username without setting a password")
 
         if username is None:
             assert userpass is None
