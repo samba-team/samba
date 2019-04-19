@@ -22,6 +22,7 @@ zypper --non-interactive install \
     dbus-1-devel \
     docbook-dtds \
     docbook-xsl-stylesheets \
+    flex \
     gawk \
     gcc \
     gdb \

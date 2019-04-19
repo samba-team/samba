@@ -37,6 +37,7 @@ COMMON = [
     'binutils',
     'bison',
     'curl',
+    'flex',
     'gcc',
     'gdb',
     'git',
@@ -163,7 +164,6 @@ PKGS = [
     # rpm has no pkg for docbook-xml
     ('docbook-xml', 'docbook-dtds'),
     ('docbook-xsl', 'docbook-style-xsl'),
-    ('flex', ''),
     ('', 'keyutils-libs-devel'),
     ('', 'which'),
 ]

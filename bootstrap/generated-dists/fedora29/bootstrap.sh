@@ -23,6 +23,7 @@ dnf -y -q --verbose install \
     dbus-devel \
     docbook-dtds \
     docbook-style-xsl \
+    flex \
     gawk \
     gcc \
     gdb \

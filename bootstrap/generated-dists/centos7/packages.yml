@@ -13,6 +13,7 @@ packages:
   - dbus-devel
   - docbook-dtds
   - docbook-style-xsl
+  - flex
   - gawk
   - gcc
   - gdb
