@@ -30,7 +30,7 @@ def build(bld):
 
     bld.SAMBA_MODULE('rpc_test_dummy_module',
                      source='rpc_test_dummy_module.c',
-                     deps='ndr',
+                     deps='ndr smbd_base',
                      subsystem='rpc',
                      allow_undefined_symbols=True,
                      init_function='',
