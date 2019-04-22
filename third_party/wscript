@@ -60,23 +60,25 @@ def configure(conf):
 
 
 def build(bld):
-    list = []
+    if not bld.env.disable_python:
+        list = []
 
-    for module, package in external_pkgs.items():
-        try:
-            __import__(module)
-        except ImportError:
-            list.append(package)
+        for module, package in external_pkgs.items():
+            try:
+                __import__(module)
+            except ImportError:
+                list.append(package)
 
-    for e in list:
-        bld.INSTALL_WILDCARD('${PYTHONARCHDIR}/samba/third_party', e + '/**/*', flat=False,
-                             exclude='*.pyc', trim_path=os.path.dirname(e))
+        for e in list:
+            bld.INSTALL_WILDCARD('${PYTHONARCHDIR}/samba/third_party', e + '/**/*', flat=False,
+                                 exclude='*.pyc', trim_path=os.path.dirname(e))
 
-    bld.SAMBA_GENERATOR('third_party_init_py',
-                        rule='touch ${TGT}',
-                        target='empty_file')
+        bld.SAMBA_GENERATOR('third_party_init_py',
+                            rule='touch ${TGT}',
+                            target='empty_file')
 
-    bld.INSTALL_FILES('${PYTHONARCHDIR}/samba/third_party', 'empty_file', destname='__init__.py')
+        bld.INSTALL_FILES('${PYTHONARCHDIR}/samba/third_party', 'empty_file', destname='__init__.py')
+
     bld.RECURSE('cmocka')
     bld.RECURSE('zlib')
     bld.RECURSE('popt')
