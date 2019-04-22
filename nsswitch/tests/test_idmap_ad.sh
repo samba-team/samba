@@ -3,14 +3,17 @@
 # Basic testing of id mapping with idmap_ad
 #
 
-if [ $# -ne 3 ]; then
-	echo Usage: $0 DOMAIN DC_SERVER DC_PASSWORD
+if [ $# -ne 6 ]; then
+	echo Usage: $0 DOMAIN DC_SERVER DC_PASSWORD TRUST_DOMAIN TRUST_SERVER TRUST_PASSWORD
 	exit 1
 fi
 
 DOMAIN="$1"
 DC_SERVER="$2"
 DC_PASSWORD="$3"
+TRUST_DOMAIN="$4"
+TRUST_SERVER="$5"
+TRUST_PASSWORD="$6"
 
 wbinfo="$VALGRIND $BINDIR/wbinfo"
 ldbmodify="$VALGRIND $BINDIR/ldbmodify"
