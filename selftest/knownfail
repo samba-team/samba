@@ -360,3 +360,4 @@
 ^samba.tests.ntlmdisabled.python\(ktest\).python2.ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ktest\)
 ^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).python3.ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ad_dc_no_ntlm\)
 ^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).python2.ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ad_dc_no_ntlm\)
+^idmap.ad.Test gid lookup of Domain Admins in trusted domain.\(ad_member_idmap_ad\)
