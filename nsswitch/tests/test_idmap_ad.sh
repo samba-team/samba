@@ -49,6 +49,13 @@ add: gidNumber
 gidNumber: 2000001
 EOF
 
+cat <<EOF | $ldbmodify -H ldap://$DC_SERVER -U "$DOMAIN\Administrator%$DC_PASSWORD"
+dn: CN=Domain Admins,CN=Users,$BASE_DN
+changetype: modify
+add: gidNumber
+gidNumber: 2000002
+EOF
+
 #
 # Test 1: Test uid of Administrator, should be 2000000
 #
@@ -80,6 +87,16 @@ ret=$?
 testit "Test get userinfo for Administrator works" test $ret -eq 0 || failed=$(expr $failed + 1)
 
 #
+# Test 4: Test lookup from gid to sid
+#
+
+out="$($wbinfo -G 2000002)"
+echo "wbinfo returned: \"$out\", expecting \"$DOMAIN_SID-512\""
+test "$out" = "$DOMAIN_SID-512"
+ret=$?
+testit "Test gid lookup of Domain Admins" test $ret -eq 0 || failed=$(expr $failed + 1)
+
+#
 # Remove POSIX ids from AD
 #
 cat <<EOF | $ldbmodify -H ldap://$DC_SERVER -U "$DOMAIN\Administrator%$DC_PASSWORD"
@@ -94,6 +111,13 @@ dn: CN=Domain Users,CN=Users,$BASE_DN
 changetype: modify
 delete: gidNumber
 gidNumber: 2000001
+EOF
+
+cat <<EOF | $ldbmodify -H ldap://$DC_SERVER -U "$DOMAIN\Administrator%$DC_PASSWORD"
+dn: CN=Domain Admins,CN=Users,$BASE_DN
+changetype: modify
+delete: gidNumber
+gidNumber: 2000002
 EOF
 
 exit $failed
