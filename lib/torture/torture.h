@@ -579,6 +579,18 @@ static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 	} \
 	} while(0)
 
+#define torture_assert_errno_equal_goto(torture_ctx,expected,ret,label,cmt)\
+	do { int __expected = (expected); \
+	if (errno != __expected) { \
+		torture_result(torture_ctx, TORTURE_FAIL, \
+			__location__": errno was %d (%s), expected %d: %s: %s", \
+					   errno, strerror(errno), __expected, \
+					   strerror(__expected), cmt); \
+		ret = false; \
+		goto label; \
+	} \
+	} while(0)
+
 #define torture_assert_guid_equal(torture_ctx,got,expected,cmt)\
 	do {const struct GUID __got = (got), __expected = (expected); \
 	if (!GUID_equal(&__got, &__expected)) { \
