@@ -3072,9 +3072,9 @@ struct tevent_req *cli_smb2_query_mxac_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	*state = (struct cli_smb2_mxac_state) {
-		state->ev = ev,
-		state->cli = cli,
-		state->fname = fname,
+		.ev = ev,
+		.cli = cli,
+		.fname = fname,
 	};
 
 	if (smbXcli_conn_protocol(cli->conn) < PROTOCOL_SMB2_02) {
