@@ -218,9 +218,9 @@ DNF_BOOTSTRAP = r"""
 {GENERATED_MARKER}
 set -xueo pipefail
 
-dnf -y -q update
+dnf update -y
 
-dnf -y -q --verbose install \
+dnf install -y \
     {pkgs}
 
 dnf clean all
