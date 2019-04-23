@@ -161,8 +161,8 @@ static int vfs_gluster_set_volfile_servers(glfs_t *fs,
 					   const char *volfile_servers)
 {
 	char *server = NULL;
-	int   server_count = 0;
-	int   server_success = 0;
+	size_t server_count = 0;
+	size_t server_success = 0;
 	int   ret = -1;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -174,7 +174,7 @@ static int vfs_gluster_set_volfile_servers(glfs_t *fs,
 		int   port = 0;
 
 		server_count++;
-		DBG_INFO("server %d %s\n", server_count, server);
+		DBG_INFO("server %zu %s\n", server_count, server);
 
 		/* Determine the transport type */
 		if (strncmp(server, "unix+", 5) == 0) {
@@ -251,7 +251,7 @@ out:
 	if (server_count == 0) {
 		ret = -1;
 	} else if (server_success < server_count) {
-		DBG_WARNING("Failed to set %d out of %d servers parsed\n",
+		DBG_WARNING("Failed to set %zu out of %zu servers parsed\n",
 			    server_count - server_success, server_count);
 		ret = 0;
 	}
