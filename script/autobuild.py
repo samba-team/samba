@@ -383,7 +383,7 @@ tasks = {
 
     "samba-systemkrb5": [
                       ("random-sleep", "script/random-sleep.sh 900 1500", "text/plain"),
-                      ("configure", "./configure.developer " + samba_configure_params + " --with-system-mitkrb5 --without-ad-dc", "text/plain"),
+                      ("configure", "./configure.developer " + samba_configure_params + " --with-system-mitkrb5 --with-experimental-mit-ad-dc", "text/plain"),
                       ("make", "make -j", "text/plain"),
                       # we currently cannot run a full make test, a limited list of tests could be run
                       # via "make test TESTS=sometests"
