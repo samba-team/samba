@@ -5970,6 +5970,7 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 								  "Failed to form conflict DN for %s\n",
 								  ldb_dn_get_linearized(msg->dn));
 
+			talloc_free(tmp_ctx);
 			return replmd_replicated_request_werror(ar, WERR_NOT_ENOUGH_MEMORY);
 		}
 
@@ -5982,11 +5983,13 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 					       ldb_dn_get_linearized(ar->search_msg->dn),
 					       ldb_dn_get_linearized(new_dn),
 					       ldb_errstring(ldb_module_get_ctx(ar->module)));
+			talloc_free(tmp_ctx);
 			return replmd_replicated_request_werror(ar, WERR_DS_DRA_DB_ERROR);
 		}
 
 		msg->dn = new_dn;
 		*renamed = true;
+		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
 
