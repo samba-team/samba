@@ -119,8 +119,6 @@ def configure(conf):
     conf.CHECK_FUNCS('lutimes futimes utimensat futimens')
     conf.CHECK_FUNCS('mlock munlock mlockall munlockall')
     conf.CHECK_FUNCS('memalign posix_memalign hstrerror')
-    conf.CHECK_FUNCS('shmget')
-    conf.CHECK_FUNCS_IN('shm_open', 'rt', checklibc=True)
     conf.CHECK_FUNCS_IN('yp_get_default_domain', 'nsl')
     conf.CHECK_FUNCS_IN('dn_expand _dn_expand __dn_expand', 'resolv')
     conf.CHECK_FUNCS_IN('dn_expand', 'inet')
@@ -408,7 +406,6 @@ rdchk _read __read _readdir __readdir
 _seekdir __seekdir
 select setenv setgidx setgroups setlocale setluid
 setmntent setpgid setpriv setsid setuidx
-shmget shm_open
 _stat __stat statvfs
 strcasecmp strchr strpbrk strsignal strtol strupr sysconf sysctl sysctlbyname
 __sys_llseek syslog _telldir __telldir timegm
