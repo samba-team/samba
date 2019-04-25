@@ -158,6 +158,9 @@ PKGS = [
     ('', 'perl-generators'),
     ('', 'perl-interpreter'),
 
+    # fs
+    ('xfslibs-dev', 'xfsprogs-devel'), # for xfs quota support
+
     # misc
     # @ means group for rpm, use fedora as rpm default
     ('build-essential', '@development-tools'),
