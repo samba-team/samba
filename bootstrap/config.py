@@ -122,6 +122,7 @@ PKGS = [
     # refer: https://fedoraproject.org/wiki/Changes/SunRPCRemoval
     ('', 'libtirpc-devel'),  # for <rpc/rpc.h> header on fedora
     ('', 'libnsl2-devel'),  # for <rpcsvc/yp_prot.h> header on fedora
+    ('', 'rpcsvc-proto-devel'), # for <rpcsvc/rquota.h> header
     ('mawk', 'gawk'),
 
     # python
@@ -423,6 +424,7 @@ RPM_DISTS = {
             # update perl core modules on centos
             # fix: Can't locate Archive/Tar.pm in @INC
             'perl': 'perl-core',
+            'rpcsvc-proto-devel': '',
         }
     },
     'centos7': {
@@ -443,6 +445,7 @@ RPM_DISTS = {
             # update perl core modules on centos
             # fix: Can't locate Archive/Tar.pm in @INC
             'perl': 'perl-core',
+            'rpcsvc-proto-devel': '',
         }
     },
     'fedora28': {
