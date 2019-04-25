@@ -5214,6 +5214,63 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			break;
 		}
 
+		case SMB_FILE_NORMALIZED_NAME_INFORMATION:
+		{
+			char *nfname = NULL;
+
+			if (!fsp->conn->sconn->using_smb2) {
+				return NT_STATUS_INVALID_LEVEL;
+			}
+
+			nfname = talloc_strdup(mem_ctx, smb_fname->base_name);
+			if (nfname == NULL) {
+				return NT_STATUS_NO_MEMORY;
+			}
+
+			if (ISDOT(nfname)) {
+				nfname[0] = '\0';
+			}
+			string_replace(nfname, '/', '\\');
+
+			if (smb_fname->stream_name != NULL) {
+				const char *s = smb_fname->stream_name;
+				const char *e = NULL;
+				size_t n;
+
+				SMB_ASSERT(s[0] != '\0');
+
+				/*
+				 * smb_fname->stream_name is in form
+				 * of ':StrEam:$DATA', but we should only
+				 * append ':StrEam' here.
+				 */
+
+				e = strchr(&s[1], ':');
+				if (e == NULL) {
+					n = strlen(s);
+				} else {
+					n = PTR_DIFF(e, s);
+				}
+				nfname = talloc_strndup_append(nfname, s, n);
+				if (nfname == NULL) {
+					return NT_STATUS_NO_MEMORY;
+				}
+			}
+
+			status = srvstr_push(dstart, flags2,
+					  pdata+4, nfname,
+					  PTR_DIFF(dend, pdata+4),
+					  STR_UNICODE, &len);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
+			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_NORMALIZED_NAME_INFORMATION\n"));
+			data_size = 4 + len;
+			SIVAL(pdata,0,len);
+			*fixed_portion = 8;
+			break;
+		}
+
 		case SMB_FILE_ALLOCATION_INFORMATION:
 		case SMB_QUERY_FILE_ALLOCATION_INFO:
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_ALLOCATION_INFORMATION\n"));
