@@ -264,8 +264,7 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
 	fsp->update_write_time_triggered = true;
         fsp->update_write_time_on_close = false;
 
-	ZERO_STRUCT(ft);
-	ft.mtime = timespec_current();
+	ft = (struct smb_file_time) { .mtime = timespec_current() };
 
 	/* Update the time in the open file db. */
 	(void)set_write_time(fsp->file_id, ft.mtime);
