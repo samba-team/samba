@@ -89,7 +89,7 @@ ubuntu1604:
   extends: .build_image_template
 
 ubuntu1404:
-  extends: .build_image_template
+  extends: .build_image_template_force_broken
 
 debian9:
   extends: .build_image_template
