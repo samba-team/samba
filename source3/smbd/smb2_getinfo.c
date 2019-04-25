@@ -318,6 +318,15 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 			break;
 		}
 
+		switch (file_info_level) {
+		case SMB_FILE_NORMALIZED_NAME_INFORMATION:
+			if (smb2req->xconn->protocol < PROTOCOL_SMB3_11) {
+				tevent_req_nterror(req, NT_STATUS_NOT_SUPPORTED);
+				return tevent_req_post(req, ev);
+			}
+			break;
+		}
+
 		if (fsp->fake_file_handle) {
 			/*
 			 * This is actually for the QUOTA_FAKE_FILE --metze
