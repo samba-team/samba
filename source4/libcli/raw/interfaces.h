@@ -461,6 +461,7 @@ enum smb_fileinfo_level {
 		     RAW_FILEINFO_COMPRESSION_INFORMATION    = SMB_QFILEINFO_COMPRESSION_INFORMATION,
 		     RAW_FILEINFO_NETWORK_OPEN_INFORMATION   = SMB_QFILEINFO_NETWORK_OPEN_INFORMATION,
 		     RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION  = SMB_QFILEINFO_ATTRIBUTE_TAG_INFORMATION,
+		     RAW_FILEINFO_NORMALIZED_NAME_INFORMATION= SMB_QFILEINFO_NORMALIZED_NAME_INFORMATION,
 		     /* SMB2 specific levels */
 		     RAW_FILEINFO_SMB2_ALL_EAS               = 0x0f01,
 		     RAW_FILEINFO_SMB2_ALL_INFORMATION       = 0x1201
@@ -643,6 +644,8 @@ union smb_fileinfo {
 	} ea_info;
 
 	/* RAW_FILEINFO_NAME_INFO and RAW_FILEINFO_NAME_INFORMATION interfaces */
+	/* RAW_FILEINFO_ALT_NAME_INFO and RAW_FILEINFO_ALT_NAME_INFORMATION interfaces */
+	/* RAW_FILEINFO_NORMALIZED_NAME_INFORMATION interface */
 	struct {
 		enum smb_fileinfo_level level;
 		struct {
@@ -651,7 +654,7 @@ union smb_fileinfo {
 		struct {
 			struct smb_wire_string fname;
 		} out;
-	} name_info;
+	} name_info, alt_name_info, normalized_name_info;
 
 	/* RAW_FILEINFO_ALL_INFO and RAW_FILEINFO_ALL_INFORMATION interfaces */
 	struct {
@@ -703,17 +706,6 @@ union smb_fileinfo {
 			struct smb_wire_string fname;
 		} out;
 	} all_info2;
-
-	/* RAW_FILEINFO_ALT_NAME_INFO and RAW_FILEINFO_ALT_NAME_INFORMATION interfaces */
-	struct {
-		enum smb_fileinfo_level level;
-		struct {
-			union smb_handle_or_path file;
-		} in;
-		struct {
-			struct smb_wire_string fname;
-		} out;
-	} alt_name_info;
 
 	/* RAW_FILEINFO_STREAM_INFO and RAW_FILEINFO_STREAM_INFORMATION interfaces */
 	struct {

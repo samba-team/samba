@@ -219,6 +219,13 @@ NTSTATUS smb_raw_fileinfo_passthru_parse(const DATA_BLOB *blob, TALLOC_CTX *mem_
 		parms->attribute_tag_information.out.reparse_tag = IVAL(blob->data, 4);
 		return NT_STATUS_OK;
 
+	case RAW_FILEINFO_NORMALIZED_NAME_INFORMATION:
+		FINFO_CHECK_MIN_SIZE(4);
+		smbcli_blob_pull_string(NULL, mem_ctx, blob,
+					&parms->normalized_name_info.out.fname,
+					0, 4, STR_UNICODE);
+		return NT_STATUS_OK;
+
 	case RAW_FILEINFO_SMB2_ALL_EAS:
 		FINFO_CHECK_MIN_SIZE(4);
 		return ea_pull_list_chained(blob, mem_ctx, 
@@ -442,6 +449,10 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 	case RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION:
 		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
 						       RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION, parms);
+
+	case RAW_FILEINFO_NORMALIZED_NAME_INFORMATION:
+		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx,
+						       RAW_FILEINFO_NORMALIZED_NAME_INFORMATION, parms);
 
 	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
 		return smb_raw_fileinfo_passthru_parse(blob, mem_ctx, 
