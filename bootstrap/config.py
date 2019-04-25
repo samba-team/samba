@@ -160,6 +160,9 @@ PKGS = [
 
     # fs
     ('xfslibs-dev', 'xfsprogs-devel'), # for xfs quota support
+    ('', 'glusterfs-api-devel'),
+    ('glusterfs-common', 'glusterfs-devel'),
+    ('libcephfs-dev', 'libcephfs-devel'),
 
     # misc
     # @ means group for rpm, use fedora as rpm default
@@ -393,6 +396,8 @@ DEB_DISTS = {
             'lmdb-utils': 'lmdb-utils/trusty-backports',
             'liblmdb-dev': 'liblmdb-dev/trusty-backports',
             'libunwind-dev': 'libunwind8-dev',
+            'glusterfs-common': '',
+            'libcephfs-dev': '',
         }
     },
     'ubuntu1604': {
@@ -401,6 +406,8 @@ DEB_DISTS = {
         'replace': {
             'python-gpg': 'python-gpgme',
             'python3-gpg': 'python3-gpgme',
+            'glusterfs-common': '',
+            'libcephfs-dev': '',
         }
     },
     'ubuntu1804': {
@@ -428,6 +435,9 @@ RPM_DISTS = {
             # fix: Can't locate Archive/Tar.pm in @INC
             'perl': 'perl-core',
             'rpcsvc-proto-devel': '',
+            'glusterfs-api-devel': '',
+            'glusterfs-devel': '',
+            'libcephfs-devel': '',
         }
     },
     'centos7': {
@@ -449,6 +459,9 @@ RPM_DISTS = {
             # fix: Can't locate Archive/Tar.pm in @INC
             'perl': 'perl-core',
             'rpcsvc-proto-devel': '',
+            'glusterfs-api-devel': '',
+            'glusterfs-devel': '',
+            'libcephfs-devel': '',
         }
     },
     'fedora28': {
@@ -495,6 +508,7 @@ RPM_DISTS = {
             'python3-dns': 'python3-dnspython',
             'python3-markdown': 'python3-Markdown',
             'quota-devel': '',
+            'glusterfs-api-devel': '',
         }
     }
 }
