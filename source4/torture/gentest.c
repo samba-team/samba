@@ -1697,6 +1697,10 @@ static bool cmp_fileinfo(int instance,
 		CHECK_EQUAL(attribute_tag_information.out.reparse_tag);
 		break;
 
+	case RAW_FILEINFO_NORMALIZED_NAME_INFORMATION:
+		CHECK_WSTR_EQUAL(normalized_name_info.out.fname);
+		break;
+
 	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
 		CHECK_NTTIMES_EQUAL(all_info2.out.create_time);
 		CHECK_NTTIMES_EQUAL(all_info2.out.access_time);
