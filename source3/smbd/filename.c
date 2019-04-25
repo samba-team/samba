@@ -1374,6 +1374,76 @@ static bool fname_equal(const char *name1, const char *name2,
 	return(strequal(name1,name2));
 }
 
+static bool sname_equal(const char *name1, const char *name2,
+		bool case_sensitive)
+{
+	bool match;
+	const char *s1 = NULL;
+	const char *s2 = NULL;
+	size_t n1;
+	size_t n2;
+	const char *e1 = NULL;
+	const char *e2 = NULL;
+	char *c1 = NULL;
+	char *c2 = NULL;
+
+	match = fname_equal(name1, name2, case_sensitive);
+	if (match) {
+		return true;
+	}
+
+	if (name1[0] != ':') {
+		return false;
+	}
+	if (name2[0] != ':') {
+		return false;
+	}
+	s1 = &name1[1];
+	e1 = strchr(s1, ':');
+	if (e1 == NULL) {
+		n1 = strlen(s1);
+	} else {
+		n1 = PTR_DIFF(e1, s1);
+	}
+	s2 = &name2[1];
+	e2 = strchr(s2, ':');
+	if (e2 == NULL) {
+		n2 = strlen(s2);
+	} else {
+		n2 = PTR_DIFF(e2, s2);
+	}
+
+	/* Normal filename handling */
+	if (case_sensitive) {
+		return (strncmp(s1, s2, n1) == 0);
+	}
+
+	/*
+	 * We can't use strnequal() here
+	 * as it takes the number of codepoints
+	 * and not the number of bytes.
+	 *
+	 * So we make a copy before calling
+	 * strequal().
+	 *
+	 * Note that we TALLOC_FREE() in reverse order
+	 * in order to avoid memory fragmentation.
+	 */
+
+	c1 = talloc_strndup(talloc_tos(), s1, n1);
+	c2 = talloc_strndup(talloc_tos(), s2, n2);
+	if (c1 == NULL || c2 == NULL) {
+		TALLOC_FREE(c2);
+		TALLOC_FREE(c1);
+		return (strncmp(s1, s2, n1) == 0);
+	}
+
+	match = strequal(c1, c2);
+	TALLOC_FREE(c2);
+	TALLOC_FREE(c1);
+	return match;
+}
+
 /****************************************************************************
  Scan a directory to find a filename, matching without case sensitivity.
  If the name looks like a mangled name then try via the mangling functions
@@ -1570,7 +1640,7 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 	for (i=0; i<num_streams; i++) {
 		DEBUG(10, ("comparing [%s] and [%s]: ",
 			   smb_fname->stream_name, streams[i].name));
-		if (fname_equal(smb_fname->stream_name, streams[i].name,
+		if (sname_equal(smb_fname->stream_name, streams[i].name,
 				conn->case_sensitive)) {
 			DEBUGADD(10, ("equal\n"));
 			break;
