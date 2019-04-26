@@ -49,7 +49,7 @@ SECURITY_SECINFO_FLAGS = security.SECINFO_OWNER | \
 
 # SEC_FLAG_SYSTEM_SECURITY is required otherwise get Access Denied
 SECURITY_SEC_FLAGS = security.SEC_FLAG_SYSTEM_SECURITY | \
-                     security.SEC_FLAG_MAXIMUM_ALLOWED
+                     security.SEC_STD_READ_CONTROL
 
 
 class XattrBackendError(Exception):
