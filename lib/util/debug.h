@@ -45,6 +45,7 @@
 bool dbgtext_va(const char *, va_list ap) PRINTF_ATTRIBUTE(1,0);
 bool dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
 bool dbghdrclass( int level, int cls, const char *location, const char *func);
+bool dbgsetclass(int level, int cls);
 
 /*
  * Define all new debug classes here. A class is represented by an entry in
@@ -205,12 +206,14 @@ void debuglevel_set_class(size_t idx, int level);
 
 #define DEBUGADD( level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-	  unlikely(debuglevel_get_class(DBGC_CLASS) >= (level))	\
+       unlikely(debuglevel_get_class(DBGC_CLASS) >= (level)) \
+       && (dbgsetclass(level, DBGC_CLASS))                   \
        && (dbgtext body) )
 
 #define DEBUGADDC( dbgc_class, level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-          unlikely((debuglevel_get_class(dbgc_class) >= (level))) \
+       unlikely((debuglevel_get_class(dbgc_class) >= (level))) \
+       && (dbgsetclass(level, dbgc_class))                     \
        && (dbgtext body) )
 
 /* Print a separator to the debug log. */
