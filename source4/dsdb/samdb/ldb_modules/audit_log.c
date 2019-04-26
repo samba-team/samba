@@ -928,6 +928,7 @@ static char *operation_human_readable(
 {
 	struct ldb_context *ldb = NULL;
 	const char *remote_host = NULL;
+	const struct tsocket_address *remote = NULL;
 	const struct dom_sid *sid = NULL;
 	struct dom_sid_buf user_sid;
 	const char *timestamp = NULL;
@@ -942,7 +943,8 @@ static char *operation_human_readable(
 	ldb = ldb_module_get_ctx(module);
 
 	remote_host = dsdb_audit_get_remote_host(ldb, ctx);
-	if (remote_host != NULL && dsdb_audit_is_system_session(module)) {
+	remote = dsdb_audit_get_remote_address(ldb);
+	if (remote != NULL && dsdb_audit_is_system_session(module)) {
 		sid = dsdb_audit_get_actual_sid(ldb);
 	} else {
 		sid = dsdb_audit_get_user_sid(module);
