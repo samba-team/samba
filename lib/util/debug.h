@@ -201,7 +201,7 @@ extern int  *DEBUGLEVEL_CLASS;
 #define DEBUGC( dbgc_class, level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
 	  unlikely(DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))		\
-       && (dbghdrclass( level, DBGC_CLASS, __location__, __FUNCTION__ )) \
+       && (dbghdrclass( level, dbgc_class, __location__, __FUNCTION__ )) \
        && (dbgtext body) )
 
 #define DEBUGADD( level, body ) \
