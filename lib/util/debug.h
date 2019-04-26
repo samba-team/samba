@@ -45,7 +45,6 @@
 bool dbgtext_va(const char *, va_list ap) PRINTF_ATTRIBUTE(1,0);
 bool dbgtext( const char *, ... ) PRINTF_ATTRIBUTE(1,2);
 bool dbghdrclass( int level, int cls, const char *location, const char *func);
-bool dbghdr( int level, const char *location, const char *func);
 
 /*
  * Define all new debug classes here. A class is represented by an entry in
@@ -318,7 +317,6 @@ void force_check_log_size( void );
 bool need_to_check_log_size( void );
 void check_log_size( void );
 void dbgflush( void );
-bool dbghdrclass(int level, int cls, const char *location, const char *func);
 bool debug_get_output_is_stderr(void);
 bool debug_get_output_is_stdout(void);
 void debug_schedule_reopen_logs(void);
