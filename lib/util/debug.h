@@ -201,7 +201,7 @@ void debuglevel_set_class(size_t idx, int level);
 #define DEBUGC( dbgc_class, level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
        unlikely(debuglevel_get_class(dbgc_class) >= (level))             \
-       && (dbghdrclass( level, DBGC_CLASS, __location__, __FUNCTION__ )) \
+       && (dbghdrclass( level, dbgc_class, __location__, __FUNCTION__ )) \
        && (dbgtext body) )
 
 #define DEBUGADD( level, body ) \
