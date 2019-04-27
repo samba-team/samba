@@ -45,27 +45,39 @@ lastnode=$(( numnodes - 1 ))
 
 ######################################################################
 
-# Confirm that the database is attached
+# Confirm that the database is attached with appropriate flags
+check_db_once ()
+{
+	local pnn="$1"
+	local db="$2"
+
+	try_command_on_node "$pnn" $CTDB getdbmap
+	if grep -qF "name:${db}" "$outfile" >/dev/null ; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 check_db ()
 {
-    pnn="$1"
-    db="$2"
-    flag="$3"
-    try_command_on_node $pnn "$CTDB getdbmap | grep $db"
-    if [ -z "$out" ] ; then
-	echo "BAD: database $db is not attached on node $node"
-	echo "$out"
-	exit 1
-    else
-	local flags=$(awk '{print $4}' "$outfile") || true
+	local pnn="$1"
+	local db="$2"
+	local flag="$3"
+
+	local flags
+
+	echo "Waiting until database ${db} is attached on node ${pnn}"
+	wait_until 10 check_db_once "$pnn" "$db"
+
+	flags=$(awk -v db="$db" '$2 == "name:" db {print $4}' "$outfile")
 	if [ "$flags" = "$flag" ]; then
-	    echo "GOOD: database $db is attached on node $node with flag $flag"
+		echo "GOOD: db ${db} attached on node ${pnn} with flag $flag"
 	else
-	    echo "BAD: database $db is attached on node $node with wrong flag"
-	    echo "$out"
-	    exit 1
+		echo "BAD: db ${db} attached on node ${pnn} with wrong flag"
+		cat "$outfile"
+		exit 1
 	fi
-    fi
 }
 
 ######################################################################
