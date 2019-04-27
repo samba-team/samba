@@ -38,33 +38,51 @@ numnodes="$out"
 ######################################################################
 
 # Confirm that the database is attached
+check_db_once ()
+{
+	local db="$1"
+
+	local num_db
+
+	try_command_on_node all "$CTDB getdbmap"
+	num_db=$(grep -cF "name:${db}" "$outfile") || true
+	if [ "$num_db" -eq "$numnodes" ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 check_db ()
 {
-    db="$1"
-    try_command_on_node all $CTDB getdbmap
-    local num_db=$(grep -cF "$db" "$outfile") || true
-    if [ $num_db -eq $numnodes ]; then
-	echo "GOOD: database $db is attached on all nodes"
-    else
-	echo "BAD: database $db is not attached on all nodes"
-	cat "$outfile"
-	exit 1
-    fi
+	local db="$1"
+
+	echo "Waiting until database ${db} is attached on all nodes"
+	wait_until 10 check_db_once "$db"
 }
 
 # Confirm that no nodes have databases attached
+check_no_db_once ()
+{
+	local db="$1"
+
+	local num_db
+
+	try_command_on_node all "$CTDB getdbmap"
+	num_db=$(grep -cF "name:${db}" "$outfile") || true
+	if [ "$num_db" -eq 0 ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 check_no_db ()
 {
-    db="$1"
-    try_command_on_node all $CTDB getdbmap
-    local num_db=$(grep -cF "$db" "$outfile") || true
-    if [ $num_db -eq 0 ]; then
-	echo "GOOD: database $db is not attached any more"
-    else
-	echo "BAD: database $db is still attached"
-	cat "$outfile"
-	exit 1
-    fi
+	local db="$1"
+
+	echo "Waiting until database ${db} is detached on all nodes"
+	wait_until 10 check_no_db_once "$db"
 }
 
 ######################################################################
