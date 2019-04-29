@@ -207,8 +207,20 @@ int main(int argc, const char **argv)
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
-		{"tevent",	't', POPT_ARG_NONE,	NULL, 't', "Use tevent loop" },
-		{"glib",	'g', POPT_ARG_NONE, 	NULL, 'g', "Use glib loop" },
+		{
+			.longName  = "tevent",
+			.shortName = 't',
+			.argInfo   = POPT_ARG_NONE,
+			.val       = 'v',
+			.descrip   = "Use tevent loop",
+		},
+		{
+			.longName  = "glib",
+			.shortName = 'g',
+			.argInfo   = POPT_ARG_NONE,
+			.val       = 'g',
+			.descrip   = "Use glib loop",
+		},
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
