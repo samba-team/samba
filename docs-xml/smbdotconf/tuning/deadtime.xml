@@ -22,6 +22,6 @@
 		should be performed.</para>
 </description>
 
-<value type="default">0</value>
+<value type="default">10080</value>
 <value type="example">15</value>
 </samba:parameter>

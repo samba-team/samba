@@ -53,7 +53,7 @@ bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
 	conn_lastused_update(sconn, t);
 
 	if (deadtime <= 0) {
-		deadtime = DEFAULT_SMBD_TIMEOUT;
+		return false;
 	}
 
 	for (conn=sconn->connections;conn;conn=conn->next) {

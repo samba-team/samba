@@ -641,7 +641,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals._disable_spoolss = false;
 	Globals.max_smbd_processes = 0;/* no limit specified */
 	Globals.username_level = 0;
-	Globals.deadtime = 0;
+	Globals.deadtime = 10080;
 	Globals.getwd_cache = true;
 	Globals.large_readwrite = true;
 	Globals.max_log_size = 5000;
