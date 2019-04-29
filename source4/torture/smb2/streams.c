@@ -1214,6 +1214,120 @@ done:
 	return ret;
 }
 
+/*
+  test case insensitive stream names
+*/
+static bool test_stream_names3(struct torture_context *tctx,
+			       struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	NTSTATUS status;
+	union smb_fsinfo info;
+	const char *fname = DNAME "\\stream_names3.txt";
+	const char *sname = NULL;
+	const char *snamel = NULL;
+	const char *snameu = NULL;
+	const char *sdname = NULL;
+	const char *sdnamel = NULL;
+	const char *sdnameu = NULL;
+	bool ret = true;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle hf = {{0}};
+	struct smb2_handle hs = {{0}};
+	struct smb2_handle hsl = {{0}};
+	struct smb2_handle hsu = {{0}};
+	struct smb2_handle hsd = {{0}};
+	struct smb2_handle hsdl = {{0}};
+	struct smb2_handle hsdu = {{0}};
+	const char *streams[] = { "::$DATA", ":StreamName:$DATA", };
+
+	smb2_deltree(tree, DNAME);
+	status = torture_smb2_testdir(tree, DNAME, &h);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	ZERO_STRUCT(info);
+	info.generic.level = RAW_QFS_ATTRIBUTE_INFORMATION;
+	info.generic.handle = h;
+	status = smb2_getinfo_fs(tree, tree, &info);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	if (!(info.attribute_info.out.fs_attr & FILE_CASE_SENSITIVE_SEARCH)) {
+		torture_skip(tctx, "No FILE_CASE_SENSITIVE_SEARCH supported");
+	}
+
+	/*
+	 * We create the following file:
+	 *
+	 *   teststreams\\stream_names3.txt
+	 *
+	 * and add a stream named 'StreamName'
+	 *
+	 * Then we try to open the stream using the following names:
+	 *
+	 * teststreams\\stream_names3.txt:StreamName
+	 * teststreams\\stream_names3.txt:streamname
+	 * teststreams\\stream_names3.txt:STREAMNAME
+	 * teststreams\\stream_names3.txt:StreamName:$dAtA
+	 * teststreams\\stream_names3.txt:streamname:$data
+	 * teststreams\\stream_names3.txt:STREAMNAME:$DATA
+	 */
+	sname = talloc_asprintf(tctx, "%s:StreamName", fname);
+	torture_assert_not_null(tctx, sname, __location__);
+	snamel = strlower_talloc(tctx, sname);
+	torture_assert_not_null(tctx, snamel, __location__);
+	snameu = strupper_talloc(tctx, sname);
+	torture_assert_not_null(tctx, snameu, __location__);
+
+	sdname = talloc_asprintf(tctx, "%s:$dAtA", sname);
+	torture_assert_not_null(tctx, sdname, __location__);
+	sdnamel = strlower_talloc(tctx, sdname);
+	torture_assert_not_null(tctx, sdnamel, __location__);
+	sdnameu = strupper_talloc(tctx, sdname);
+	torture_assert_not_null(tctx, sdnameu, __location__);
+
+	torture_comment(tctx, "(%s) testing case insensitive stream names\n",
+			__location__);
+	status = torture_smb2_testfile(tree, fname, &hf);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = torture_smb2_testfile(tree, sname, &hs);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, hs);
+
+	torture_assert(tctx,
+		       check_stream_list(tree, tctx, fname,
+					 ARRAY_SIZE(streams),
+					 streams,
+					 hf),
+		       "streams");
+
+	status = torture_smb2_open(tree, sname, SEC_RIGHTS_FILE_ALL, &hs);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = torture_smb2_open(tree, snamel, SEC_RIGHTS_FILE_ALL, &hsl);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = torture_smb2_open(tree, snameu, SEC_RIGHTS_FILE_ALL, &hsu);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = torture_smb2_open(tree, sdname, SEC_RIGHTS_FILE_ALL, &hsd);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = torture_smb2_open(tree, sdnamel, SEC_RIGHTS_FILE_ALL, &hsdl);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	status = torture_smb2_open(tree, sdnameu, SEC_RIGHTS_FILE_ALL, &hsdu);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+done:
+	smb2_util_close(tree, hsdu);
+	smb2_util_close(tree, hsdl);
+	smb2_util_close(tree, hsd);
+	smb2_util_close(tree, hsu);
+	smb2_util_close(tree, hsl);
+	smb2_util_close(tree, hs);
+	smb2_util_close(tree, hf);
+	smb2_util_close(tree, h);
+	status = smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, DNAME);
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 #define CHECK_CALL_HANDLE(call, rightstatus) do { \
 	sfinfo.generic.level = RAW_SFILEINFO_ ## call; \
 	sfinfo.generic.in.file.handle = h1; \
@@ -1924,6 +2038,7 @@ struct torture_suite *torture_smb2_streams_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "sharemodes", test_stream_sharemodes);
 	torture_suite_add_1smb2_test(suite, "names", test_stream_names);
 	torture_suite_add_1smb2_test(suite, "names2", test_stream_names2);
+	torture_suite_add_1smb2_test(suite, "names3", test_stream_names3);
 	torture_suite_add_1smb2_test(suite, "rename", test_stream_rename);
 	torture_suite_add_1smb2_test(suite, "rename2", test_stream_rename2);
 	torture_suite_add_1smb2_test(suite, "create-disposition", test_stream_create_disposition);
