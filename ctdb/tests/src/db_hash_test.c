@@ -99,7 +99,7 @@ static void do_traverse_test(enum db_hash_type type)
 {
 	struct db_hash_context *dh = NULL;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	char key[] = "keyXXXX";
+	char key[16] = "keyXXXX";
 	char value[] = "This is some test value";
 	int count, ret, i;
 
