@@ -83,7 +83,7 @@ bld.SAMBA_SUBSYSTEM('IREMOTEWINSPOOL_COMMON',
 
 torture_rpc_backupkey = ''
 if bld.AD_DC_BUILD_IS_ENABLED():
-    if bld.CONFIG_SET('HAVE_GNUTLS_3_4_7'):
+    if bld.CONFIG_SET('HAVE_GNUTLS_X509_CRT_SET_SUBJECT_UNIQUE_ID'):
         torture_rpc_backupkey = 'rpc/backupkey.c'
     else:
         torture_rpc_backupkey = 'rpc/backupkey_heimdal.c'
