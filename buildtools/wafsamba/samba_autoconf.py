@@ -731,7 +731,13 @@ def SAMBA_CONFIG_H(conf, path=None):
         conf.ADD_CFLAGS('-Wall', testflags=True)
         conf.ADD_CFLAGS('-Wshadow', testflags=True)
         conf.ADD_CFLAGS('-Wmissing-prototypes', testflags=True)
-        conf.ADD_CFLAGS('-Wmissing-field-initializers', testflags=True)
+        if CHECK_CODE(conf,
+                      'struct a { int b; }; struct c { struct a d; } e = { };',
+                      'CHECK_C99_INIT',
+                      link=False,
+                      cflags='-Wmissing-field-initializers -Werror=missing-field-initializers',
+                      msg="Checking C99 init of nested structs."):
+            conf.ADD_CFLAGS('-Wmissing-field-initializers', testflags=True)
         conf.ADD_CFLAGS('-Wcast-align -Wcast-qual', testflags=True)
         conf.ADD_CFLAGS('-fno-common', testflags=True)
 
