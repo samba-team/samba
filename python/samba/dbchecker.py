@@ -218,7 +218,10 @@ class dbcheck(object):
                            scope=ldb.SCOPE_BASE,
                            expression="(objectClass=nTDSService)",
                            attrs=["tombstoneLifetime"])
-        self.tombstoneLifetime = int(res[0]["tombstoneLifetime"][0])
+        if "tombstoneLifetime" in res[0]:
+            self.tombstoneLifetime = int(res[0]["tombstoneLifetime"][0])
+        else:
+            self.tombstoneLifetime = 180
 
         self.compatibleFeatures = []
         self.requiredFeatures = []
