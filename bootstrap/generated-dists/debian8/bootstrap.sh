@@ -33,6 +33,7 @@ apt-get -y install \
     hostname \
     htop \
     krb5-config \
+    krb5-kdc \
     krb5-user \
     libacl1-dev \
     libaio-dev \

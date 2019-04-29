@@ -113,7 +113,7 @@ PKGS = [
     ('xsltproc', 'libxslt'),
     ('krb5-user', ''),
     ('krb5-config', ''),
-    ('', 'krb5-server'),
+    ('krb5-kdc', 'krb5-server'),
     ('apt-utils', 'yum-utils'),
     ('pkg-config', 'pkgconfig'),
     ('procps', 'procps-ng'),  # required for the free cmd in tests
