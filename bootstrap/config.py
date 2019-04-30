@@ -456,7 +456,12 @@ RPM_DISTS = {
         'replace': {
             'lsb-release': 'redhat-lsb',
             'python3': 'python36',
+            'python3-crypto': 'python36-crypto',
             'python3-devel': 'python36-devel',
+            'python3-dns': 'python36-dns',
+            'python3-gpg': 'python36-gpg',
+            'python3-iso8601' : 'python36-iso8601',
+            'python3-markdown': 'python36-markdown',
             # although python36-devel is available
             # after epel-release installed
             # however, all other python3 pkgs are still python36-ish
