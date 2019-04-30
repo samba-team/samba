@@ -406,7 +406,7 @@ static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 		char *__dump = NULL; \
 		uint8_t __byte_a = 0x00;\
 		uint8_t __byte_b = 0x00;\
-		int __i;\
+		size_t __i;\
 		for (__i=0; __i < __expected.length; __i++) {\
 			__byte_a = __expected.data[__i];\
 			if (__i == __got.length) {\
@@ -418,14 +418,14 @@ static inline void torture_dump_data_str_cb(const char *buf, void *private_data)
 				break;\
 			}\
 		}\
-		torture_warning(torture_ctx, "blobs differ at byte 0x%02X (%u)", __i, __i);\
+		torture_warning(torture_ctx, "blobs differ at byte 0x%02X (%zu)", (unsigned int)__i, __i);\
 		torture_warning(torture_ctx, "expected byte[0x%02X] = 0x%02X got byte[0x%02X] = 0x%02X",\
-				__i, __byte_a, __i, __byte_b);\
+				(unsigned int)__i, __byte_a, (unsigned int)__i, __byte_b);\
 		__dump = talloc_strdup(torture_ctx, ""); \
 		dump_data_cb(__got.data, __got.length, true, \
 			     torture_dump_data_str_cb, &__dump); \
 		torture_warning(torture_ctx, "got[0x%02X]: \n%s", \
-				(int)__got.length, __dump); \
+				(unsigned int)__got.length, __dump); \
 		TALLOC_FREE(__dump); \
 		__dump = talloc_strdup(torture_ctx, ""); \
 		dump_data_cb(__expected.data, __expected.length, true, \
