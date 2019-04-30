@@ -108,11 +108,10 @@ sanity_check_output ()
 {
     local min_lines="$1"
     local regexp="$2" # Should be anchored as necessary.
-    local output="$3"
 
     local ret=0
 
-    local num_lines=$(echo "$output" | wc -l)
+    local num_lines=$(echo "$out" | wc -l)
     echo "There are $num_lines lines of output"
     if [ $num_lines -lt $min_lines ] ; then
 	echo "BAD: that's less than the required number (${min_lines})"
@@ -121,7 +120,7 @@ sanity_check_output ()
 
     local status=0
     local unexpected # local doesn't pass through status of command on RHS.
-    unexpected=$(echo "$output" | egrep -v "$regexp") || status=$?
+    unexpected=$(echo "$out" | egrep -v "$regexp") || status=$?
 
     # Note that this is reversed.
     if [ $status -eq 0 ] ; then
