@@ -242,8 +242,9 @@ set -xueo pipefail
 zypper --non-interactive refresh
 zypper --non-interactive update
 zypper --non-interactive install \
-    {pkgs} \
-    system-user-nobody
+    --no-recommends \
+    system-user-nobody \
+    {pkgs}
 
 zypper --non-interactive clean
 
