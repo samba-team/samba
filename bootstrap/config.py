@@ -136,6 +136,7 @@ PKGS = [
     ('python-dnspython', 'python-dns'),
     ('python-pexpect', ''),  # for wintest only
 
+    ('python3', 'python3'),
     ('python3-dev', 'python3-devel'),
     ('python3-dbg', ''),
     ('python3-iso8601', ''),
@@ -218,6 +219,10 @@ yum install -y \
     {pkgs}
 
 yum clean all
+
+if [ ! -f /usr/bin/python3 ]; then
+    ln -sf /usr/bin/python3.4 /usr/bin/python3
+fi
 """
 
 
@@ -427,6 +432,7 @@ RPM_DISTS = {
         'bootstrap': YUM_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
+            'python3': 'python34',
             'python3-devel': 'python34-devel',
             'python2-gpg': 'pygpgme',
             'python3-gpg': '',  # no python3-gpg yet
@@ -449,6 +455,7 @@ RPM_DISTS = {
         'bootstrap': YUM_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
+            'python3': 'python34',
             'python3-devel': 'python34-devel',
             # although python36-devel is available
             # after epel-release installed
