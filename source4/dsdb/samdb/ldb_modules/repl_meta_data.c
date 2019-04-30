@@ -4612,10 +4612,10 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 				dsdb_flags |= DSDB_REPLMD_VANISH_LINKS;
 
 			} else if (sa->linkID == 0) {
-				if (ldb_attr_in_list(preserved_attrs, el->name)) {
+				if (sa->searchFlags & SEARCH_FLAG_PRESERVEONDELETE) {
 					continue;
 				}
-				if (sa->searchFlags & SEARCH_FLAG_PRESERVEONDELETE) {
+				if (ldb_attr_in_list(preserved_attrs, el->name)) {
 					continue;
 				}
 			} else {
