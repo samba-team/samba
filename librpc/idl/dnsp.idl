@@ -169,7 +169,7 @@ interface dnsp
 
 	typedef struct {
 		uint32  addrCount;
-		[size_is(addrCount)] uint32 *addr;
+		uint32 addrArray[addrCount];
 	} dnsp_ip4_array;
 
 	typedef struct {

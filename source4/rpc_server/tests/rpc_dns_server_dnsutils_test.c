@@ -68,7 +68,7 @@ static void test_dnsserver_init_zoneinfo_master_servers_empty(void **state)
 	assert_non_null(property);
 	property->id = DSPROPERTY_ZONE_MASTER_SERVERS;
 	property->data.master_servers.addrCount = 0;
-	property->data.master_servers.addr = NULL;
+	property->data.master_servers.addrArray = NULL;
 
 	zone->tmp_props = property;
 	zone->num_props = 1;
@@ -122,12 +122,12 @@ static void test_dnsserver_init_zoneinfo_master_servers(void **state)
 	assert_non_null(property);
 	property->id = DSPROPERTY_ZONE_MASTER_SERVERS;
 	property->data.master_servers.addrCount = 4;
-	property->data.master_servers.addr =
+	property->data.master_servers.addrArray =
 		talloc_zero_array(ctx, uint32_t, 4);
-	property->data.master_servers.addr[0] = 1000;
-	property->data.master_servers.addr[1] = 1001;
-	property->data.master_servers.addr[2] = 1002;
-	property->data.master_servers.addr[3] = 1003;
+	property->data.master_servers.addrArray[0] = 1000;
+	property->data.master_servers.addrArray[1] = 1001;
+	property->data.master_servers.addrArray[2] = 1002;
+	property->data.master_servers.addrArray[3] = 1003;
 
 	zone->tmp_props = property;
 	zone->num_props = 1;
@@ -163,11 +163,11 @@ static void test_dnsserver_init_zoneinfo_master_servers(void **state)
 	 * the values in the property without affecting the zoneinfo data
 	 */
 	assert_true(zoneinfo->aipLocalMasters->AddrArray !=
-		    property->data.master_servers.addr);
-	property->data.master_servers.addr[0] = 0;
-	property->data.master_servers.addr[1] = 1;
-	property->data.master_servers.addr[2] = 2;
-	property->data.master_servers.addr[3] = 3;
+		    property->data.master_servers.addrArray);
+	property->data.master_servers.addrArray[0] = 0;
+	property->data.master_servers.addrArray[1] = 1;
+	property->data.master_servers.addrArray[2] = 2;
+	property->data.master_servers.addrArray[3] = 3;
 	assert_int_equal(zoneinfo->aipLocalMasters->AddrArray[0], 1000);
 	assert_int_equal(zoneinfo->aipLocalMasters->AddrArray[1], 1001);
 	assert_int_equal(zoneinfo->aipLocalMasters->AddrArray[2], 1002);
@@ -199,7 +199,7 @@ static void test_dnsserver_init_zoneinfo_scavenging_servers_empty(void **state)
 	assert_non_null(property);
 	property->id = DSPROPERTY_ZONE_SCAVENGING_SERVERS;
 	property->data.servers.addrCount = 0;
-	property->data.servers.addr = NULL;
+	property->data.servers.addrArray = NULL;
 
 	zone->tmp_props = property;
 	zone->num_props = 1;
@@ -241,11 +241,11 @@ static void test_dnsserver_init_zoneinfo_scavenging_servers(void **state)
 	assert_non_null(property);
 	property->id = DSPROPERTY_ZONE_SCAVENGING_SERVERS;
 	property->data.servers.addrCount = 4;
-	property->data.servers.addr = talloc_zero_array(ctx, uint32_t, 4);
-	property->data.servers.addr[0] = 1000;
-	property->data.servers.addr[1] = 1001;
-	property->data.servers.addr[2] = 1002;
-	property->data.servers.addr[3] = 1003;
+	property->data.servers.addrArray = talloc_zero_array(ctx, uint32_t, 4);
+	property->data.servers.addrArray[0] = 1000;
+	property->data.servers.addrArray[1] = 1001;
+	property->data.servers.addrArray[2] = 1002;
+	property->data.servers.addrArray[3] = 1003;
 
 	zone->tmp_props = property;
 	zone->num_props = 1;
@@ -273,11 +273,11 @@ static void test_dnsserver_init_zoneinfo_scavenging_servers(void **state)
 	 * the values in the property without affecting the zoneinfo data
 	 */
 	assert_true(zoneinfo->aipScavengeServers->AddrArray !=
-		    property->data.servers.addr);
-	property->data.servers.addr[0] = 0;
-	property->data.servers.addr[1] = 1;
-	property->data.servers.addr[2] = 2;
-	property->data.servers.addr[3] = 3;
+		    property->data.servers.addrArray);
+	property->data.servers.addrArray[0] = 0;
+	property->data.servers.addrArray[1] = 1;
+	property->data.servers.addrArray[2] = 2;
+	property->data.servers.addrArray[3] = 3;
 	assert_int_equal(zoneinfo->aipScavengeServers->AddrArray[0], 1000);
 	assert_int_equal(zoneinfo->aipScavengeServers->AddrArray[1], 1001);
 	assert_int_equal(zoneinfo->aipScavengeServers->AddrArray[2], 1002);
