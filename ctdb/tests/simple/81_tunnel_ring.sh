@@ -32,7 +32,7 @@ while read line ; do
 done <<<"$out"
 
 pat='^(Waiting for cluster|pnn\[[[:digit:]]+\] [[:digit:]]+(\.[[:digit:]]+)? msgs/sec)$'
-sanity_check_output 1 "$pat" "$out"
+sanity_check_output 1 "$pat"
 
 # $prev should look like this:
 #    pnn[2] count=85400

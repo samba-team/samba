@@ -19,8 +19,7 @@ try_command_on_node -v 0 "$CTDB listvars"
 
 sanity_check_output \
     5 \
-    '^[[:alpha:]][[:alnum:]]+[[:space:]]*=[[:space:]]*[[:digit:]]+$' \
-    "$out"
+    '^[[:alpha:]][[:alnum:]]+[[:space:]]*=[[:space:]]*[[:digit:]]+$'
 
 echo "Verifying all variable values using \"ctdb getvar\"..."
 
