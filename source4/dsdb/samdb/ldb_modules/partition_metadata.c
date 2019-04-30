@@ -153,7 +153,7 @@ int partition_metadata_inc_schema_sequence(struct ldb_module *module)
 {
 	struct partition_private_data *data;
 	int ret;
-	uint64_t value;
+	uint64_t value = 0;
 
 	data = talloc_get_type_abort(ldb_module_get_private(module),
 				    struct partition_private_data);
