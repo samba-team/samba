@@ -217,6 +217,7 @@ static bool dnsp_dnsProperty_addr_array_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, da->Tag, 0, "Tag");
 	torture_assert_int_equal(tctx, da->Family, 0, "Family");
 	torture_assert_int_equal(tctx, da->Reserved0, 0, "Reserved0");
+	torture_assert_int_equal(tctx, da->Flags, 0, "Flags");
 	torture_assert_int_equal(tctx, da->MatchFlag, 0, "MatchFlag");
 	torture_assert_int_equal(tctx, da->Reserved1, 0, "Reserved1");
 	torture_assert_int_equal(tctx, da->Reserved2, 0, "Reserved2");
