@@ -174,8 +174,8 @@ interface dnsp
 
 	typedef struct {
 		uint16 	family;
-		uint16	port;
-		ipv4address ipv4;
+		[flag(NDR_BIG_ENDIAN)] uint16	port;
+		[flag(NDR_BIG_ENDIAN)] ipv4address ipv4;
 		ipv6address ipv6;
 		uint8	pad[8];
 		uint32	unused[8];
@@ -187,6 +187,7 @@ interface dnsp
 		uint32	Tag;
 		uint16	Family;
 		uint16	Reserved0;
+		uint32	Flags;
 		uint32	MatchFlag;
 		uint32	Reserved1;
 		uint32	Reserved2;
