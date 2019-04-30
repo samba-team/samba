@@ -68,8 +68,8 @@ static bool dnsp_dnsProperty_ip4_array_check(struct torture_context *tctx,
 	 * 0x21631fac is 172.31.99.33
 	 * 0x2c631fac is 172.31.99.44
 	 */
-	torture_assert_int_equal(tctx, r->data.master_servers.addr[0], 0x21631fac, "addr[0]");
-	torture_assert_int_equal(tctx, r->data.master_servers.addr[1], 0x2c631fac, "addr[1]");
+	torture_assert_int_equal(tctx, r->data.master_servers.addrArray[0], 0x21631fac, "addrArray[0]");
+	torture_assert_int_equal(tctx, r->data.master_servers.addrArray[1], 0x2c631fac, "addrArray[1]");
 	torture_assert_int_equal(tctx, r->name, 0, "name");
 
 	return true;
