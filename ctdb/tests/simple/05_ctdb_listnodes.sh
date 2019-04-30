@@ -39,8 +39,7 @@ ipv4_pat='[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+'
 ipv6_pat='[[:xdigit:]]+:[[:xdigit:]:]+[[:xdigit:]]+'
 sanity_check_output \
     2 \
-    "^${ipv4_pat}|${ipv6_pat}\$" \
-    "$out"
+    "^${ipv4_pat}|${ipv6_pat}\$"
 
 out_0="$out"
 

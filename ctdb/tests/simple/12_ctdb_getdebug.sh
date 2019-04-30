@@ -36,8 +36,7 @@ getdebug_onnode="$out"
 
 sanity_check_output \
     $num_nodes \
-    '^(ERROR|WARNING|NOTICE|INFO|DEBUG)$' \
-    "$out"
+    '^(ERROR|WARNING|NOTICE|INFO|DEBUG)$'
 
 cmd=""
 n=0

@@ -31,7 +31,7 @@ while read line ; do
 done <<<"$out"
 
 pat='^(Waiting for cluster|Ring\[[[:digit:]]+\]: [[:digit:]]+(\.[[:digit:]]+)? msgs/sec \(\+ve=[[:digit:]]+ -ve=[[:digit:]]+\))$'
-sanity_check_output 1 "$pat" "$out"
+sanity_check_output 1 "$pat"
 
 # $prev should look like this:
 #    Ring[1]: 10670.93 msgs/sec (+ve=53391 -ve=53373)

@@ -26,7 +26,7 @@ echo "Running fetch_ring on all $num_nodes nodes."
 try_command_on_node -v -p all $CTDB_TEST_WRAPPER $VALGRIND fetch_ring -n $num_nodes
 
 pat='^(Waiting for cluster|Fetch\[[[:digit:]]+\]: [[:digit:]]+(\.[[:digit:]]+)? msgs/sec)$'
-sanity_check_output 1 "$pat" "$out"
+sanity_check_output 1 "$pat"
 
 # Get the last line of output.
 while read line ; do
