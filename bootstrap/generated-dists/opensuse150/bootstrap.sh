@@ -10,6 +10,8 @@ set -xueo pipefail
 zypper --non-interactive refresh
 zypper --non-interactive update
 zypper --non-interactive install \
+    --no-recommends \
+    system-user-nobody \
     acl \
     attr \
     autoconf \
@@ -99,8 +101,7 @@ zypper --non-interactive install \
     which \
     xfsprogs-devel \
     yum-utils \
-    zlib-devel \
-    system-user-nobody
+    zlib-devel
 
 zypper --non-interactive clean
 
