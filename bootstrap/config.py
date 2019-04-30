@@ -228,6 +228,7 @@ set -xueo pipefail
 dnf update -y
 
 dnf install -y \
+    --setopt=install_weak_deps=False \
     {pkgs}
 
 dnf clean all
