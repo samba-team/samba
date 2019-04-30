@@ -102,6 +102,10 @@ def options(opt):
     gr.add_option('--enable-developer',
                    help=("Turn on developer warnings and debugging"),
                    action="store_true", dest='developer', default=False)
+    opt.add_option('--enable-coverage',
+                   help=("enable options necessary for code coverage "
+                         "reporting on selftest (default=no)"),
+                   action="store_true", dest='enable_coverage', default=False)
     def picky_developer_callback(option, opt_str, value, parser):
         parser.values.developer = True
         parser.values.picky_developer = True
@@ -276,6 +280,13 @@ def configure(conf):
     try:
         conf.find_program('gdb', mandatory=True)
     except:
+        conf.env.ABI_CHECK = False
+
+    conf.env.enable_coverage = Options.options.enable_coverage
+    if conf.env.enable_coverage:
+        conf.ADD_LDFLAGS('-lgcov', testflags=True)
+        conf.ADD_CFLAGS('--coverage', testflags=True)
+        # disable abi check for coverage, otherwise ld will fail
         conf.env.ABI_CHECK = False
 
     conf.env.GIT_LOCAL_CHANGES = Options.options.GIT_LOCAL_CHANGES
