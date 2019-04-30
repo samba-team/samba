@@ -774,7 +774,7 @@ static struct IP4_ARRAY *copy_ip4_array(TALLOC_CTX *ctx,
 	}
 
 	for (i = 0; i < ip4_array->AddrCount; i++) {
-		ip4_array->AddrArray[i] = array.addr[i];
+		ip4_array->AddrArray[i] = array.addrArray[i];
 	}
 
 	return ip4_array;
