@@ -87,6 +87,7 @@ dnf install -y \
     python-dns \
     python-markdown \
     python2-gpg \
+    python3 \
     python3-crypto \
     python3-devel \
     python3-dns \

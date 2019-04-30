@@ -7,11 +7,11 @@
 
 set -xueo pipefail
 
-yum -y -q update
-yum -y -q install epel-release
-yum -y -q update
+yum update -y
+yum install -y epel-release
+yum update -y
 
-yum -y -q --verbose install \
+yum install -y \
     "@Development Tools" \
     acl \
     attr \
@@ -84,10 +84,11 @@ yum -y -q --verbose install \
     python-devel \
     python-dns \
     python-markdown \
-    python3-crypto \
-    python3-dns \
-    python3-markdown \
-    python34-devel \
+    python36 \
+    python36-crypto \
+    python36-devel \
+    python36-dns \
+    python36-markdown \
     quota-devel \
     readline-devel \
     redhat-lsb \
@@ -105,3 +106,7 @@ yum -y -q --verbose install \
     zlib-devel
 
 yum clean all
+
+if [ ! -f /usr/bin/python3 ]; then
+    ln -sf /usr/bin/python3.6 /usr/bin/python3
+fi

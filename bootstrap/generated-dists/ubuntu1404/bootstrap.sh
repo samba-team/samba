@@ -85,6 +85,7 @@ apt-get -y install \
     python-iso8601 \
     python-markdown \
     python-pexpect \
+    python3 \
     python3-crypto \
     python3-dbg \
     python3-dev \

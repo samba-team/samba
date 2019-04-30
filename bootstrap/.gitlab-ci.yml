@@ -107,7 +107,10 @@ fedora28:
   extends: .build_image_template_force_broken
 
 centos7:
-  extends: .build_image_template_force_broken
+  extends: .build_image_template
+  variables:
+    # Shallow copies are not supported by git on CentOS7
+    GIT_DEPTH: ""
 
 centos6:
   extends: .build_image_template_force_broken

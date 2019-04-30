@@ -84,6 +84,7 @@ zypper --non-interactive install \
     python2-dnspython \
     python2-gpg \
     python2-semanage \
+    python3 \
     python3-Markdown \
     python3-devel \
     python3-dnspython \

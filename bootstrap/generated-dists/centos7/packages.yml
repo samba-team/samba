@@ -72,10 +72,11 @@ packages:
   - python-devel
   - python-dns
   - python-markdown
-  - python3-crypto
-  - python3-dns
-  - python3-markdown
-  - python34-devel
+  - python36
+  - python36-crypto
+  - python36-devel
+  - python36-dns
+  - python36-markdown
   - quota-devel
   - readline-devel
   - redhat-lsb
