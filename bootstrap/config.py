@@ -210,11 +210,11 @@ YUM_BOOTSTRAP = r"""
 {GENERATED_MARKER}
 set -xueo pipefail
 
-yum -y -q update
-yum -y -q install epel-release
-yum -y -q update
+yum update -y
+yum install -y epel-release
+yum update -y
 
-yum -y -q --verbose install \
+yum install -y \
     {pkgs}
 
 yum clean all
