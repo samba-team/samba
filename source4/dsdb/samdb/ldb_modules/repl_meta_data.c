@@ -50,6 +50,7 @@
 #include "lib/util/dlinklist.h"
 #include "dsdb/samdb/ldb_modules/util.h"
 #include "lib/util/tsort.h"
+#include "lib/util/binsearch.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS            DBGC_DRS_REPL
@@ -4160,50 +4161,61 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 	TALLOC_CTX *tmp_ctx;
 	struct ldb_result *res, *parent_res;
 	static const char * const preserved_attrs[] = {
-		/* yes, this really is a hard coded list. See MS-ADTS
-		   section 3.1.1.5.5.1.1 */
+		/*
+		 * This list MUST be kept in case-insensitive sorted order,
+		 * as we  use it in a binary search with ldb_attr_cmp().
+		 *
+		 * We get this hard-coded list from
+		 * MS-ADTS section 3.1.1.5.5.1.1 "Tombstone Requirements".
+		 */
 		"attributeID",
 		"attributeSyntax",
+		"distinguishedName",
 		"dNReferenceUpdate",
 		"dNSHostName",
 		"flatName",
 		"governsID",
 		"groupType",
 		"instanceType",
-		"lDAPDisplayName",
-		"legacyExchangeDN",
 		"isDeleted",
 		"isRecycled",
 		"lastKnownParent",
+		"lDAPDisplayName",
+		"legacyExchangeDN",
+		"mS-DS-CreatorSID",
 		"msDS-LastKnownRDN",
 		"msDS-PortLDAP",
-		"mS-DS-CreatorSID",
 		"mSMQOwnerID",
+		"name",
 		"nCName",
+		"nTSecurityDescriptor",
 		"objectClass",
-		"distinguishedName",
 		"objectGUID",
 		"objectSid",
 		"oMSyntax",
 		"proxiedObjectName",
-		"name",
-		"nTSecurityDescriptor",
 		"replPropertyMetaData",
 		"sAMAccountName",
 		"securityIdentifier",
 		"sIDHistory",
 		"subClassOf",
 		"systemFlags",
-		"trustPartner",
-		"trustDirection",
-		"trustType",
 		"trustAttributes",
+		"trustDirection",
+		"trustPartner",
+		"trustType",
 		"userAccountControl",
 		"uSNChanged",
 		"uSNCreated",
-		"whenCreated",
 		"whenChanged",
-		NULL
+		"whenCreated",
+		/*
+		 * DO NOT JUST APPEND TO THIS LIST.
+		 *
+		 * In case you missed the note at the top, this list is kept
+		 * in case-insensitive sorted order. In the unlikely event you
+		 * need to add an attrbute, please add it in the RIGHT PLACE.
+		 */
 	};
 	static const char * const all_attrs[] = {
 		DSDB_SECRET_ATTRIBUTES,
@@ -4612,10 +4624,16 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 				dsdb_flags |= DSDB_REPLMD_VANISH_LINKS;
 
 			} else if (sa->linkID == 0) {
+				const char * const *attr = NULL;
 				if (sa->searchFlags & SEARCH_FLAG_PRESERVEONDELETE) {
 					continue;
 				}
-				if (ldb_attr_in_list(preserved_attrs, el->name)) {
+				BINARY_ARRAY_SEARCH_V(preserved_attrs,
+						      ARRAY_SIZE(preserved_attrs),
+						      el->name,
+						      ldb_attr_cmp,
+						      attr);
+				if (attr != NULL) {
 					continue;
 				}
 			} else {
