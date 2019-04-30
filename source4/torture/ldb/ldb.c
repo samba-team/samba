@@ -31,6 +31,7 @@
 #include "param/param.h"
 #include "torture/smbtorture.h"
 #include "torture/local/proto.h"
+#include <time.h>
 
 static const char *sid = "S-1-5-21-4177067393-1453636373-93818737";
 static const char *hex_sid = "01040000000000051500000081fdf8f815bba456718f9705";
@@ -1185,6 +1186,82 @@ static bool torture_ldb_parse_ldif(struct torture_context *torture)
 	return true;
 }
 
+static bool torture_ldb_pack_format_perf(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(torture);
+	char *unp_ldif_text = talloc_strndup(mem_ctx, dda1d01d_ldif,
+					       sizeof(dda1d01d_ldif)-1);
+	const char *ldif_text;
+	struct ldb_context *ldb;
+	struct ldb_ldif *ldif;
+	struct ldb_val binary;
+	struct ldb_message *msg = ldb_msg_new(mem_ctx);
+	int ret, i;
+	clock_t start, diff;
+
+	ldb = samba_ldb_init(mem_ctx, torture->ev, NULL,NULL,NULL);
+	torture_assert(torture,
+		       ldb != NULL,
+		       "Failed to init ldb");
+
+	unp_ldif_text[sizeof(dda1d01d_ldif)-2] = '\0';
+	ldif_text = unp_ldif_text;
+
+	for (i=0; i<10000; i++) {
+		ldif_text = talloc_asprintf_append(
+				discard_const_p(char, ldif_text),
+				"member: fillerfillerfillerfillerfillerfiller"
+				"fillerfillerfillerfillerfillerfillerfiller"
+				"fillerfillerfillerfillerfiller-group%d\n", i);
+	}
+
+	ldif = ldb_ldif_read_string(ldb, &ldif_text);
+	torture_assert(torture,
+		       ldif != NULL,
+		       "ldb_ldif_read_string failed");
+	torture_assert_int_equal(torture, ldif->changetype, LDB_CHANGETYPE_NONE,
+				 "changetype is incorrect");
+	torture_assert_int_equal(torture,
+				 ldb_pack_data(ldb, ldif->msg, &binary), 0,
+				 "ldb_pack_data failed");
+
+	ret = ldb_unpack_data(ldb, &binary, msg);
+	torture_assert_int_equal(torture, ret, 0,
+				 "ldb_unpack_data failed");
+
+	torture_assert(torture,
+		       helper_ldb_message_compare(torture, ldif->msg, msg),
+		       "Forms differ in memory");
+
+	i = 0;
+	start = clock();
+	while (true) {
+		ldb_pack_data(ldb, ldif->msg, &binary);
+		i++;
+
+		if (i >= 1000) {
+			break;
+		}
+	}
+	diff = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+	printf("\n%d pack runs took: %ldms\n", i, diff);
+
+	i = 0;
+	start = clock();
+	while (true) {
+		ldb_unpack_data(ldb, &binary, msg);
+		i++;
+
+		if (i >= 1000) {
+			break;
+		}
+	}
+	diff = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+	printf("%d unpack runs took: %ldms\n", i, diff);
+
+	return true;
+}
+
 static bool torture_ldb_unpack_only_attr_list(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
@@ -1319,6 +1396,8 @@ struct torture_suite *torture_ldb(TALLOC_CTX *mem_ctx)
 				      torture_ldb_parse_ldif);
 	torture_suite_add_simple_test(suite, "unpack-data-only-attr-list",
 				      torture_ldb_unpack_only_attr_list);
+	torture_suite_add_simple_test(suite, "pack-format-perf",
+				      torture_ldb_pack_format_perf);
 
 	suite->description = talloc_strdup(suite, "LDB (samba-specific behaviour) tests");
 
