@@ -7,7 +7,7 @@ Usage: $0 [OPTIONS] [TESTS]
 Options:
   -A		Use "cat -A" to print test output (only some tests)
   -c		Run integration tests on a cluster
-  -C		Clean up - kill daemons and remove TEST_VAR_DIR when done
+  -C		Remove TEST_VAR_DIR when done
   -d		Print descriptions of tests instead of filenames (dodgy!)
   -D		Show diff between failed/expected test output (some tests only)
   -e		Exit on the first test failure
