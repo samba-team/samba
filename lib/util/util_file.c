@@ -382,22 +382,49 @@ _PUBLIC_ int fdprintf(int fd, const char *format, ...)
  */
 bool file_compare(const char *path1, const char *path2)
 {
-	size_t size1, size2;
-	char *p1, *p2;
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	FILE *f1 = NULL, *f2 = NULL;
+	uint8_t buf1[1024], buf2[1024];
+	bool ret = false;
 
-	p1 = file_load(path1, &size1, 0, mem_ctx);
-	p2 = file_load(path2, &size2, 0, mem_ctx);
-	if (!p1 || !p2 || size1 != size2) {
-		talloc_free(mem_ctx);
-		return false;
+	f1 = fopen(path1, "r");
+	if (f1 == NULL) {
+		goto done;
 	}
-	if (memcmp(p1, p2, size1) != 0) {
-		talloc_free(mem_ctx);
-		return false;
+	f2 = fopen(path2, "r");
+	if (f2 == NULL) {
+		goto done;
 	}
-	talloc_free(mem_ctx);
-	return true;
+
+	while (!feof(f1)) {
+		size_t n1 = fread(buf1, 1, sizeof(buf1), f1);
+		size_t n2 = fread(buf2, 1, sizeof(buf2), f2);
+
+		if (n1 != n2) {
+			goto done;
+		}
+		if (n1 == 0) {
+			ret = (feof(f1) && feof(f2));
+			goto done;
+		}
+		if (memcmp(buf1, buf2, n1) != 0) {
+			goto done;
+		}
+		if (n1 < sizeof(buf1)) {
+			bool has_error = (ferror(f1) || ferror(f2));
+			if (has_error) {
+				goto done;
+			}
+		}
+	}
+	ret = true;
+done:
+	if (f2 != NULL) {
+		fclose(f2);
+	}
+	if (f1 != NULL) {
+		fclose(f1);
+	}
+	return ret;
 }
 
 /**
