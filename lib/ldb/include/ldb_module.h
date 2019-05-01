@@ -512,16 +512,7 @@ int ldb_pack_data(struct ldb_context *ldb,
 		  struct ldb_val *data);
 /*
  * Unpack a ldb message from a linear buffer in ldb_val
- *
- * Providing a list of attributes to this function allows selective unpacking.
- * Giving a NULL list (or a list_size of 0) unpacks all the attributes.
  */
-int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
-				   const struct ldb_val *data,
-				   struct ldb_message *message,
-				   const char* const * list,
-				   unsigned int list_size,
-				   unsigned int *nb_attributes_indb);
 int ldb_unpack_data(struct ldb_context *ldb,
 		    const struct ldb_val *data,
 		    struct ldb_message *message);
@@ -548,13 +539,10 @@ int ldb_filter_attrs(struct ldb_context *ldb,
  * are unpacked or returned.
  *
  */
-int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
-					 const struct ldb_val *data,
-					 struct ldb_message *message,
-					 const char * const *list,
-					 unsigned int list_size,
-					 unsigned int flags,
-					 unsigned int *nb_elements_in_db);
+int ldb_unpack_data_flags(struct ldb_context *ldb,
+			  const struct ldb_val *data,
+			  struct ldb_message *message,
+			  unsigned int flags);
 
 /* currently unused (was NO_DATA_ALLOC)      0x0001 */
 #define LDB_UNPACK_DATA_FLAG_NO_DN           0x0002

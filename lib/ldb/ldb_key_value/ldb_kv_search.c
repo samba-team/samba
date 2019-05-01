@@ -150,11 +150,8 @@ static int ldb_kv_parse_data_unpack(struct ldb_val key,
 		}
 	}
 
-	ret = ldb_unpack_data_only_attr_list_flags(ldb, &data_parse,
-						   ctx->msg,
-						   NULL, 0,
-						   ctx->unpack_flags,
-						   NULL);
+	ret = ldb_unpack_data_flags(ldb, &data_parse,
+				    ctx->msg, ctx->unpack_flags);
 	if (ret == -1) {
 		if (data_parse.data != data.data) {
 			talloc_free(data_parse.data);
@@ -318,7 +315,6 @@ static int search_func(struct ldb_kv_private *ldb_kv,
 	struct ldb_message *msg, *filtered_msg;
 	int ret;
 	bool matched;
-	unsigned int nb_elements_in_db;
 
 	ac = talloc_get_type(state, struct ldb_kv_context);
 	ldb = ldb_module_get_ctx(ac->module);
@@ -351,11 +347,8 @@ static int search_func(struct ldb_kv_private *ldb_kv,
 	}
 
 	/* unpack the record */
-	ret = ldb_unpack_data_only_attr_list_flags(ldb, &val,
-						   msg,
-						   NULL, 0,
-						   LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC,
-						   &nb_elements_in_db);
+	ret = ldb_unpack_data_flags(ldb, &val, msg,
+				    LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC);
 	if (ret == -1) {
 		talloc_free(msg);
 		ac->error = LDB_ERR_OPERATIONS_ERROR;

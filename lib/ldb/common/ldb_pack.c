@@ -180,50 +180,16 @@ int ldb_pack_data(struct ldb_context *ldb,
 	return 0;
 }
 
-static bool ldb_consume_element_data(uint8_t **pp, size_t *premaining)
-{
-	unsigned int remaining = *premaining;
-	uint8_t *p = *pp;
-	uint32_t num_values = pull_uint32(p, 0);
-	uint32_t j, len;
-
-	p += 4;
-	if (remaining < 4) {
-		return false;
-	}
-	remaining -= 4;
-	for (j = 0; j < num_values; j++) {
-		len = pull_uint32(p, 0);
-		if (remaining < 5) {
-			return false;
-		}
-		remaining -= 5;
-		if (len > remaining) {
-			return false;
-		}
-		remaining -= len;
-		p += len + 4 + 1;
-	}
-
-	*premaining = remaining;
-	*pp = p;
-	return true;
-}
-
-
 /*
  * Unpack a ldb message from a linear buffer in ldb_val
  *
  * Providing a list of attributes to this function allows selective unpacking.
  * Giving a NULL list (or a list_size of 0) unpacks all the attributes.
  */
-int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
-					 const struct ldb_val *data,
-					 struct ldb_message *message,
-					 const char * const *list,
-					 unsigned int list_size,
-					 unsigned int flags,
-					 unsigned int *nb_elements_in_db)
+int ldb_unpack_data_flags(struct ldb_context *ldb,
+			  const struct ldb_val *data,
+			  struct ldb_message *message,
+			  unsigned int flags)
 {
 	uint8_t *p;
 	size_t remaining;
@@ -232,12 +198,7 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 	unsigned format;
 	unsigned int nelem = 0;
 	size_t len;
-	unsigned int found = 0;
 	struct ldb_val *ldb_val_single_array = NULL;
-
-	if (list == NULL) {
-		list_size = 0;
-	}
 
 	message->elements = NULL;
 
@@ -250,9 +211,6 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 	format = pull_uint32(p, 0);
 	message->num_elements = pull_uint32(p, 4);
 	p += 8;
-	if (nb_elements_in_db) {
-		*nb_elements_in_db = message->num_elements;
-	}
 
 	remaining = data->length - 8;
 
@@ -364,44 +322,6 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 		}
 		attr = (char *)p;
 
-		/*
-		 * The general idea is to reduce allocations by skipping over
-		 * attributes that we do not actually care about.
-		 *
-		 * This is a bit expensive but normally the list is pretty small
-		 * also the cost of freeing unused attributes is quite important
-		 * and can dwarf the cost of looping.
-		 */
-		if (list_size != 0) {
-			bool keep = false;
-			unsigned int h;
-
-			/*
-			 * We know that p has a \0 terminator before the
-			 * end of the buffer due to the check above.
-			 */
-			for (h = 0; h < list_size && found < list_size; h++) {
-				if (ldb_attr_cmp(attr, list[h]) == 0) {
-					keep = true;
-					found++;
-					break;
-				}
-			}
-
-			if (!keep) {
-				if (remaining < (attr_len + 1)) {
-					errno = EIO;
-					goto failed;
-				}
-				remaining -= attr_len + 1;
-				p += attr_len + 1;
-				if (!ldb_consume_element_data(&p, &remaining)) {
-					errno = EIO;
-					goto failed;
-				}
-				continue;
-			}
-		}
 		element = &message->elements[nelem];
 		element->name = attr;
 		element->flags = 0;
@@ -471,7 +391,7 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 
 	if (remaining != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
-			  "Error: %zu bytes unread in ldb_unpack_data_only_attr_list",
+			  "Error: %zu bytes unread in ldb_unpack_data_flags",
 			  remaining);
 	}
 
@@ -485,32 +405,13 @@ failed:
 /*
  * Unpack a ldb message from a linear buffer in ldb_val
  *
- * Providing a list of attributes to this function allows selective unpacking.
- * Giving a NULL list (or a list_size of 0) unpacks all the attributes.
- *
  * Free with ldb_unpack_data_free()
  */
-int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
-				   const struct ldb_val *data,
-				   struct ldb_message *message,
-				   const char * const *list,
-				   unsigned int list_size,
-				   unsigned int *nb_elements_in_db)
-{
-	return ldb_unpack_data_only_attr_list_flags(ldb,
-						    data,
-						    message,
-						    list,
-						    list_size,
-						    0,
-						    nb_elements_in_db);
-}
-
 int ldb_unpack_data(struct ldb_context *ldb,
 		    const struct ldb_val *data,
 		    struct ldb_message *message)
 {
-	return ldb_unpack_data_only_attr_list(ldb, data, message, NULL, 0, NULL);
+	return ldb_unpack_data_flags(ldb, data, message, 0);
 }
 
 /*

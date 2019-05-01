@@ -1111,7 +1111,6 @@ static bool torture_ldb_unpack_flags(struct torture_context *torture)
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 	const char *ldif_text = dda1d01d_ldif;
 	struct ldb_ldif ldif;
-	unsigned int nb_elements_in_db;
 
 	ldb = samba_ldb_init(mem_ctx, torture->ev, NULL, NULL, NULL);
 	torture_assert(torture,
@@ -1119,11 +1118,8 @@ static bool torture_ldb_unpack_flags(struct torture_context *torture)
 		       "Failed to init ldb");
 
 	torture_assert_int_equal(torture,
-				 ldb_unpack_data_only_attr_list_flags(ldb, &data,
-								      msg,
-								      NULL, 0,
-								      LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC,
-								      &nb_elements_in_db),
+				 ldb_unpack_data_flags(ldb, &data, msg,
+					LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC),
 				 0,
 				 "ldb_unpack_data failed");
 
@@ -1136,11 +1132,8 @@ static bool torture_ldb_unpack_flags(struct torture_context *torture)
 				 "ldif form differs from binary form");
 
 	torture_assert_int_equal(torture,
-				 ldb_unpack_data_only_attr_list_flags(ldb, &data,
-								      msg,
-								      NULL, 0,
-								      LDB_UNPACK_DATA_FLAG_NO_DN,
-								      &nb_elements_in_db),
+				 ldb_unpack_data_flags(ldb, &data, msg,
+						LDB_UNPACK_DATA_FLAG_NO_DN),
 				 0,
 				 "ldb_unpack_data failed");
 

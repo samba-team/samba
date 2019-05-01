@@ -1669,11 +1669,8 @@ static int traverse_range_index(struct ldb_kv_private *ldb_kv,
 
 	msg = ldb_msg_new(module);
 
-	ctx->error = ldb_unpack_data_only_attr_list_flags(ldb, &data,
-							  msg,
-							  NULL, 0,
-							  LDB_UNPACK_DATA_FLAG_NO_DN,
-							  NULL);
+	ctx->error = ldb_unpack_data_flags(ldb, &data, msg,
+					   LDB_UNPACK_DATA_FLAG_NO_DN);
 
 	if (ctx->error != LDB_SUCCESS) {
 		talloc_free(msg);
