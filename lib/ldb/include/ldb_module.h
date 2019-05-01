@@ -555,6 +555,7 @@ int ldb_unpack_get_format(const struct ldb_val *data,
 
 /* In-use packing formats */
 #define LDB_PACKING_FORMAT 0x26011967
+#define LDB_PACKING_FORMAT_V2 0x26011968
 
 /* Old packing formats */
 #define LDB_PACKING_FORMAT_NODN 0x26011966

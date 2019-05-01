@@ -82,6 +82,8 @@
 	 PUSH_LE_U16((data), (pos) + 2, (uint16_t)((uint32_t)(val) >> 16)))
 
 #define U32_LEN 4
+#define U16_LEN 2
+#define U8_LEN 1
 #define NULL_PAD_BYTE_LEN 1
 
 static int attribute_storable_values(const struct ldb_message_element *el)
@@ -213,20 +215,17 @@ int ldb_pack_data(struct ldb_context *ldb,
 
 /*
  * Unpack a ldb message from a linear buffer in ldb_val
- *
- * Providing a list of attributes to this function allows selective unpacking.
- * Giving a NULL list (or a list_size of 0) unpacks all the attributes.
  */
-int ldb_unpack_data_flags(struct ldb_context *ldb,
-			  const struct ldb_val *data,
-			  struct ldb_message *message,
-			  unsigned int flags)
+static int ldb_unpack_data_flags_v1(struct ldb_context *ldb,
+				    const struct ldb_val *data,
+				    struct ldb_message *message,
+				    unsigned int flags,
+				    unsigned format)
 {
 	uint8_t *p;
 	size_t remaining;
 	size_t dn_len;
 	unsigned int i, j;
-	uint32_t format;
 	unsigned int nelem = 0;
 	size_t len;
 	struct ldb_val *ldb_val_single_array = NULL;
@@ -241,10 +240,7 @@ int ldb_unpack_data_flags(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	if (ldb_unpack_get_format(data, &format) != LDB_SUCCESS) {
-		errno = EIO;
-		goto failed;
-	}
+	/* Skip first 4 bytes, format already read */
 	p += U32_LEN;
 	message->num_elements = PULL_LE_U32(p, 0);
 	p += U32_LEN;
@@ -296,7 +292,6 @@ int ldb_unpack_data_flags(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	
 	if (flags & LDB_UNPACK_DATA_FLAG_NO_ATTRS) {
 		return 0;
 	}
@@ -448,6 +443,287 @@ failed:
 	return -1;
 }
 
+/*
+ * Unpack a ldb message from a linear buffer in ldb_val
+ */
+static int ldb_unpack_data_flags_v2(struct ldb_context *ldb,
+				    const struct ldb_val *data,
+				    struct ldb_message *message,
+				    unsigned int flags)
+{
+	uint8_t *p, *q, *end_p, *value_section_p;
+	unsigned int i, j;
+	unsigned int nelem = 0;
+	size_t len;
+	struct ldb_val *ldb_val_single_array = NULL;
+	uint8_t val_len_width;
+
+	message->elements = NULL;
+
+	p = data->data;
+	end_p = p + data->length;
+
+	/* Skip first 4 bytes, format already read */
+	p += U32_LEN;
+
+	/* First fields are fixed: num_elements, DN length */
+	if (p + U32_LEN * 2 > end_p) {
+		errno = EIO;
+		goto failed;
+	}
+
+	message->num_elements = PULL_LE_U32(p, 0);
+	p += U32_LEN;
+
+	len = PULL_LE_U32(p, 0);
+	p += U32_LEN;
+
+	if (p + len + NULL_PAD_BYTE_LEN > end_p) {
+		errno = EIO;
+		goto failed;
+	}
+
+	if (flags & LDB_UNPACK_DATA_FLAG_NO_DN) {
+		message->dn = NULL;
+	} else {
+		struct ldb_val blob;
+		blob.data = discard_const_p(uint8_t, p);
+		blob.length = len;
+		message->dn = ldb_dn_from_ldb_val(message, ldb, &blob);
+		if (message->dn == NULL) {
+			errno = ENOMEM;
+			goto failed;
+		}
+	}
+
+	p += len + NULL_PAD_BYTE_LEN;
+
+	if (*(p-NULL_PAD_BYTE_LEN) != '\0') {
+		errno = EINVAL;
+		goto failed;
+	}
+
+	/* Now skip the canonicalized DN and its length */
+	len = PULL_LE_U32(p, 0) + NULL_PAD_BYTE_LEN;
+	p += U32_LEN;
+
+	if (p + len > end_p) {
+		errno = EIO;
+		goto failed;
+	}
+
+	p += len;
+
+	if (*(p-NULL_PAD_BYTE_LEN) != '\0') {
+		errno = EINVAL;
+		goto failed;
+	}
+
+	if (flags & LDB_UNPACK_DATA_FLAG_NO_ATTRS) {
+		return 0;
+	}
+
+	if (message->num_elements == 0) {
+		return 0;
+	}
+
+	/*
+	 * Sanity check (17 bytes is the minimum element size)
+	 */
+	if (message->num_elements > (end_p - p) / 17) {
+		errno = EIO;
+		goto failed;
+	}
+
+	message->elements = talloc_zero_array(message,
+					      struct ldb_message_element,
+					      message->num_elements);
+	if (!message->elements) {
+		errno = ENOMEM;
+		goto failed;
+	}
+
+	/*
+	 * In typical use, most values are single-valued.  This makes
+	 * it quite expensive to allocate an array of ldb_val for each
+	 * of these, just to then hold the pointer to the data buffer.
+	 * So with LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC we allocate this
+	 * ahead of time and use it for the single values where possible.
+	 * (This is used the the normal search case, but not in the
+	 * index case because of caller requirements).
+	 */
+	if (flags & LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC) {
+		ldb_val_single_array = talloc_array(message->elements,
+						    struct ldb_val,
+						    message->num_elements);
+		if (ldb_val_single_array == NULL) {
+			errno = ENOMEM;
+			goto failed;
+		}
+	}
+
+	q = p + PULL_LE_U32(p, 0);
+	value_section_p = q;
+	p += U32_LEN;
+
+	for (i=0;i<message->num_elements;i++) {
+		const char *attr = NULL;
+		size_t attr_len;
+		struct ldb_message_element *element = NULL;
+
+		/* Sanity check: minimum element size */
+		if (p + (U32_LEN * 2) + /* attr name len, num values */
+			(U8_LEN * 2) + /* value length width, one val length */
+			(NULL_PAD_BYTE_LEN * 2) /* null for attr name + val */
+			> value_section_p) {
+			errno = EIO;
+			goto failed;
+		}
+
+		attr_len = PULL_LE_U32(p, 0);
+		p += U32_LEN;
+
+		if (attr_len == 0) {
+			errno = EIO;
+			goto failed;
+		}
+		attr = (char *)p;
+
+		p += attr_len + NULL_PAD_BYTE_LEN;
+		/*
+		 * num_values, val_len_width
+		 *
+		 * val_len_width is the width specifier
+		 * for the variable length encoding
+		 */
+		if (p + U32_LEN + U8_LEN > value_section_p) {
+			errno = EIO;
+			goto failed;
+		}
+
+		if (*(p-NULL_PAD_BYTE_LEN) != '\0') {
+			errno = EINVAL;
+			goto failed;
+		}
+
+		element = &message->elements[nelem];
+		element->name = attr;
+		element->flags = 0;
+
+		element->num_values = PULL_LE_U32(p, 0);
+		element->values = NULL;
+		if ((flags & LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC) &&
+		    element->num_values == 1) {
+			element->values = &ldb_val_single_array[nelem];
+		} else if (element->num_values != 0) {
+			element->values = talloc_array(message->elements,
+						       struct ldb_val,
+						       element->num_values);
+			if (!element->values) {
+				errno = ENOMEM;
+				goto failed;
+			}
+		}
+
+		p += U32_LEN;
+
+		/*
+		 * Here we read how wide the remaining lengths are
+		 * which avoids storing and parsing a lot of leading
+		 * 0s
+		 */
+		val_len_width = *p;
+		p += U8_LEN;
+
+		if (p + val_len_width * element->num_values >
+		    value_section_p) {
+			errno = EIO;
+			goto failed;
+		}
+
+		/*
+		 * This is structured weird for compiler optimization
+		 * purposes, but we need to pull the array of widths
+		 * with different macros depending on how wide the
+		 * biggest one is (specified by val_len_width)
+		 */
+		if (val_len_width == U8_LEN) {
+			for (j = 0; j < element->num_values; j++) {
+				element->values[j].length = PULL_LE_U8(p, 0);
+				p += U8_LEN;
+			}
+		} else if (val_len_width == U16_LEN) {
+			for (j = 0; j < element->num_values; j++) {
+				element->values[j].length = PULL_LE_U16(p, 0);
+				p += U16_LEN;
+			}
+		} else if (val_len_width == U32_LEN) {
+			for (j = 0; j < element->num_values; j++) {
+				element->values[j].length = PULL_LE_U32(p, 0);
+				p += U32_LEN;
+			}
+		} else {
+			errno = ERANGE;
+			goto failed;
+		}
+
+		for (j = 0; j < element->num_values; j++) {
+			len = element->values[j].length;
+			if (len + NULL_PAD_BYTE_LEN < len) {
+				errno = EIO;
+				goto failed;
+			}
+			if (q + len + NULL_PAD_BYTE_LEN > end_p) {
+				errno = EIO;
+				goto failed;
+			}
+
+			element->values[j].data = q;
+			q += len + NULL_PAD_BYTE_LEN;
+		}
+		nelem++;
+	}
+
+	/*
+	 * If p isn't now pointing at the beginning of the value section,
+	 * something went very wrong.
+	 */
+	if (p != value_section_p) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Error: Data corruption in ldb_unpack_data_flags");
+		errno = EIO;
+		goto failed;
+	}
+
+	/*
+	 * Adapt the number of elements to the real number of unpacked
+	 * elements it means that we overallocated elements array.
+	 */
+	message->num_elements = nelem;
+
+	/*
+	 * Shrink the allocated size.  On current talloc behaviour
+	 * this will help if we skipped 32 or more attributes.
+	 */
+	message->elements = talloc_realloc(message, message->elements,
+					   struct ldb_message_element,
+					   message->num_elements);
+
+	if (q != end_p) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR,
+			  "Error: %zu bytes unread in ldb_unpack_data_flags",
+			  end_p - q);
+		errno = EIO;
+		goto failed;
+	}
+
+	return 0;
+
+failed:
+	talloc_free(message->elements);
+	return -1;
+}
+
 int ldb_unpack_get_format(const struct ldb_val *data,
 			  uint32_t *pack_format_version)
 {
@@ -457,6 +733,36 @@ int ldb_unpack_get_format(const struct ldb_val *data,
 	*pack_format_version = PULL_LE_U32(data->data, 0);
 	return LDB_SUCCESS;
 }
+
+/*
+ * Unpack a ldb message from a linear buffer in ldb_val
+ */
+int ldb_unpack_data_flags(struct ldb_context *ldb,
+			  const struct ldb_val *data,
+			  struct ldb_message *message,
+			  unsigned int flags)
+{
+	unsigned format;
+
+	if (data->length < U32_LEN) {
+		errno = EIO;
+		return -1;
+	}
+
+	format = PULL_LE_U32(data->data, 0);
+	if (format == LDB_PACKING_FORMAT_V2) {
+		return ldb_unpack_data_flags_v2(ldb, data, message, flags);
+	}
+
+	/*
+	 * The v1 function we're about to call takes either LDB_PACKING_FORMAT
+	 * or LDB_PACKING_FORMAT_NODN packing format versions, and will error
+	 * if given some other version, so we don't need to do any further
+	 * checks on 'format'.
+	 */
+	return ldb_unpack_data_flags_v1(ldb, data, message, flags, format);
+}
+
 
 /*
  * Unpack a ldb message from a linear buffer in ldb_val
