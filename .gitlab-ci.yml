@@ -153,6 +153,7 @@ samba-ad-dc-ntvfs:
 .private_template:
   extends: .shared_template
   tags:
+    - docker
     - samba-ci-private
   only:
     variables:
