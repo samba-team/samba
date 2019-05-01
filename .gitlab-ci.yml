@@ -75,7 +75,6 @@ include:
       - "*.stdout"
       - "*.stderr"
       - system-info.txt
-      - /tmp/samba-testbase/*/*/bin/config.log
   retry:
     max: 2
     when:
