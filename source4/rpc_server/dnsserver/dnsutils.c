@@ -71,17 +71,23 @@ static struct DNS_ADDR_ARRAY *fill_dns_addr_array(TALLOC_CTX *mem_ctx,
 	}
 
 	for (i = 0; i < num_interfaces; i++) {
+		int ret;
 		ipstr = iface_list_n_ip(ifaces, i);
 		if (is_ipaddress_v4(ipstr)) {
 			have_ipv4 = true;
 			dns_addr_array->AddrArray[i].MaxSa[0] = 0x02;
-			inet_pton(AF_INET, ipstr,
-				  &dns_addr_array->AddrArray[i].MaxSa[4]);
+			ret = inet_pton(AF_INET, ipstr,
+					&dns_addr_array->AddrArray[i].MaxSa[4]);
 		} else {
 			have_ipv6 = true;
 			dns_addr_array->AddrArray[i].MaxSa[0] = 0x17;
-			inet_pton(AF_INET6, ipstr,
-				  &dns_addr_array->AddrArray[i].MaxSa[8]);
+			ret = inet_pton(AF_INET6, ipstr,
+					&dns_addr_array->AddrArray[i].MaxSa[8]);
+		}
+		if (ret != 1) { /*yep, 1 means success for inet_pton */
+			DBG_ERR("Interface %d address (%s) is invalid\n",
+				i, ipstr);
+			goto nomem;
 		}
 	}
 
