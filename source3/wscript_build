@@ -1053,6 +1053,13 @@ bld.SAMBA3_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
                     source='rpc_client/cli_pipe_schannel.c',
                     deps='samba-util krb5samba')
 
+bld.SAMBA3_SUBSYSTEM('RPCCLI_MDSSVC',
+                    source='''
+                    rpc_client/cli_mdssvc.c
+                    rpc_client/cli_mdssvc_util.c
+                    ''',
+                    deps='mdssvc RPC_NDR_MDSSVC')
+
 bld.SAMBA3_SUBSYSTEM('INIT_LSA',
                     source='rpc_client/init_lsa.c',
                     deps='samba-util')
