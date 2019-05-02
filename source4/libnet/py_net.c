@@ -22,6 +22,7 @@
 #include <Python.h>
 #include "python/py3compat.h"
 #include "includes.h"
+#include "python/modules.h"
 #include <pyldb.h>
 #include <pytalloc.h>
 #include "libnet.h"
@@ -768,17 +769,76 @@ static const char py_net_finddc_doc[] = "finddc(flags=server_type, domain=None, 
 					 "Find a DC with the specified 'server_type' bits. The 'domain' and/or 'address' have to be used as additional search criteria. Returns the whole netlogon struct";
 
 static PyMethodDef net_obj_methods[] = {
-	{"join_member", (PyCFunction)py_net_join_member, METH_VARARGS|METH_KEYWORDS, py_net_join_member_doc},
-	{"change_password", (PyCFunction)py_net_change_password, METH_VARARGS|METH_KEYWORDS, py_net_change_password_doc},
-	{"set_password", (PyCFunction)py_net_set_password, METH_VARARGS|METH_KEYWORDS, py_net_set_password_doc},
-	{"time", (PyCFunction)py_net_time, METH_VARARGS|METH_KEYWORDS, py_net_time_doc},
-	{"create_user", (PyCFunction)py_net_user_create, METH_VARARGS|METH_KEYWORDS, py_net_create_user_doc},
-	{"delete_user", (PyCFunction)py_net_user_delete, METH_VARARGS|METH_KEYWORDS, py_net_delete_user_doc},
-	{"replicate_init", (PyCFunction)py_net_replicate_init, METH_VARARGS|METH_KEYWORDS, py_net_replicate_init_doc},
-	{"replicate_chunk", (PyCFunction)py_net_replicate_chunk, METH_VARARGS|METH_KEYWORDS, py_net_replicate_chunk_doc},
-	{"replicate_decrypt", (PyCFunction)py_net_replicate_decrypt, METH_VARARGS|METH_KEYWORDS, py_net_replicate_decrypt_doc},
-	{"finddc", (PyCFunction)py_net_finddc, METH_VARARGS|METH_KEYWORDS, py_net_finddc_doc},
-	{ NULL }
+	{
+		.ml_name  = "join_member",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+				py_net_join_member),
+		.ml_flags = METH_VARARGS|METH_KEYWORDS,
+		.ml_doc   = py_net_join_member_doc
+	},
+	{
+		.ml_name  = "change_password",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+				py_net_change_password),
+		.ml_flags = METH_VARARGS|METH_KEYWORDS,
+		.ml_doc   = py_net_change_password_doc
+	},
+	{
+		.ml_name  = "set_password",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+				py_net_set_password),
+		.ml_flags = METH_VARARGS|METH_KEYWORDS,
+		.ml_doc   = py_net_set_password_doc
+	},
+	{
+		.ml_name  = "time",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction, py_net_time),
+		.ml_flags = METH_VARARGS|METH_KEYWORDS,
+		.ml_doc   = py_net_time_doc
+	},
+	{
+		.ml_name  = "create_user",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+				py_net_user_create),
+		.ml_flags = METH_VARARGS|METH_KEYWORDS,
+		.ml_doc   = py_net_create_user_doc
+	},
+	{
+		.ml_name  = "delete_user",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+				py_net_user_delete),
+		.ml_flags = METH_VARARGS|METH_KEYWORDS,
+		.ml_doc   = py_net_delete_user_doc
+	},
+	{
+		.ml_name  = "replicate_init",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+				py_net_replicate_init),
+		.ml_flags = METH_VARARGS|METH_KEYWORDS,
+		.ml_doc   = py_net_replicate_init_doc
+	},
+	{
+		.ml_name  = "replicate_chunk",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+				py_net_replicate_chunk),
+		.ml_flags = METH_VARARGS|METH_KEYWORDS,
+		.ml_doc   = py_net_replicate_chunk_doc
+	},
+	{
+		.ml_name  = "replicate_decrypt",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+				py_net_replicate_decrypt),
+		.ml_flags = METH_VARARGS|METH_KEYWORDS,
+		.ml_doc   = py_net_replicate_decrypt_doc
+	},
+	{
+		.ml_name  = "finddc",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+				py_net_finddc),
+		.ml_flags = METH_VARARGS|METH_KEYWORDS,
+		.ml_doc   = py_net_finddc_doc
+	},
+	{ .ml_name = NULL }
 };
 
 static void py_net_dealloc(py_net_Object *self)

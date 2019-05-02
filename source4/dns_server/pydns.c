@@ -22,6 +22,7 @@
 #include <Python.h>
 #include "python/py3compat.h"
 #include "includes.h"
+#include "python/modules.h"
 #include <pyldb.h>
 #include <pytalloc.h>
 #include "dns_server/dnsserver_common.h"
@@ -326,7 +327,7 @@ static PyObject *py_dsdb_dns_replace_by_dn(PyObject *self, PyObject *args)
 
 static PyMethodDef py_dsdb_dns_methods[] = {
 
-	{ "lookup", (PyCFunction)py_dsdb_dns_lookup,
+	{ "lookup", PY_DISCARD_FUNC_SIG(PyCFunction, py_dsdb_dns_lookup),
 	        METH_VARARGS|METH_KEYWORDS,
 	        "Get the DNS database entries for a DNS name"},
 	{ "replace", (PyCFunction)py_dsdb_dns_replace,

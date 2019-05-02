@@ -23,6 +23,7 @@
 #include <Python.h>
 #include "includes.h"
 #include "python/py3compat.h"
+#include "python/modules.h"
 #include "py_net.h"
 #include "libnet_export_keytab.h"
 
@@ -65,7 +66,9 @@ static const char py_net_export_keytab_doc[] = "export_keytab(keytab, name)\n\n"
 "Export the DC keytab to a keytab file.";
 
 static PyMethodDef export_keytab_method_table[] = {
-	{"export_keytab", (PyCFunction)py_net_export_keytab, METH_VARARGS|METH_KEYWORDS, py_net_export_keytab_doc},
+	{"export_keytab", PY_DISCARD_FUNC_SIG(PyCFunction,
+					      py_net_export_keytab),
+		METH_VARARGS|METH_KEYWORDS, py_net_export_keytab_doc},
 	{ NULL, NULL, 0, NULL }
 };
 

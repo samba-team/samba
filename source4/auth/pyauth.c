@@ -20,6 +20,7 @@
 #include <Python.h>
 #include "python/py3compat.h"
 #include "includes.h"
+#include "python/modules.h"
 #include "libcli/util/pyerrors.h"
 #include "param/param.h"
 #include "pyauth.h"
@@ -423,13 +424,14 @@ static PyTypeObject PyAuthContext = {
 static PyMethodDef py_auth_methods[] = {
 	{ "system_session", (PyCFunction)py_system_session, METH_VARARGS, NULL },
 	{ "admin_session", (PyCFunction)py_admin_session, METH_VARARGS, NULL },
-	{ "user_session", (PyCFunction)py_user_session, METH_VARARGS|METH_KEYWORDS, NULL },
+	{ "user_session", PY_DISCARD_FUNC_SIG(PyCFunction,py_user_session),
+			  METH_VARARGS|METH_KEYWORDS, NULL },
 	{ "session_info_fill_unix",
-	  (PyCFunction)py_session_info_fill_unix,
+	  PY_DISCARD_FUNC_SIG(PyCFunction,py_session_info_fill_unix),
 	  METH_VARARGS|METH_KEYWORDS,
 	  NULL },
 	{ "copy_session_info",
-	  (PyCFunction)py_copy_session_info,
+	  PY_DISCARD_FUNC_SIG(PyCFunction,py_copy_session_info),
 	  METH_VARARGS|METH_KEYWORDS,
 	  NULL },
 	{ NULL },

@@ -19,6 +19,7 @@
 #include <Python.h>
 #include "python/py3compat.h"
 #include "includes.h"
+#include "python/modules.h"
 #include "param/pyparam.h"
 #include "auth/gensec/gensec.h"
 #include "auth/gensec/gensec_internal.h" /* TODO: remove this */
@@ -295,7 +296,8 @@ static PyObject *py_gensec_set_credentials(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_gensec_session_info(PyObject *self)
+static PyObject *py_gensec_session_info(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
@@ -320,7 +322,8 @@ static PyObject *py_gensec_session_info(PyObject *self)
 	return py_session_info;
 }
 
-static PyObject *py_gensec_session_key(PyObject *self)
+static PyObject *py_gensec_session_key(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
@@ -440,7 +443,8 @@ static PyObject *py_gensec_set_max_update_size(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_gensec_max_update_size(PyObject *self)
+static PyObject *py_gensec_max_update_size(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	struct gensec_security *security = pytalloc_get_type(self, struct gensec_security);
 	unsigned int max_update_size = gensec_max_update_size(security);
@@ -640,9 +644,13 @@ static PyObject *py_gensec_check_packet(PyObject *self, PyObject *args)
 }
 
 static PyMethodDef py_gensec_security_methods[] = {
-	{ "start_client", (PyCFunction)py_gensec_start_client, METH_VARARGS|METH_KEYWORDS|METH_CLASS, 
+	{ "start_client", PY_DISCARD_FUNC_SIG(PyCFunction,
+					      py_gensec_start_client),
+		METH_VARARGS|METH_KEYWORDS|METH_CLASS,
 		"S.start_client(settings) -> gensec" },
-	{ "start_server", (PyCFunction)py_gensec_start_server, METH_VARARGS|METH_KEYWORDS|METH_CLASS,
+	{ "start_server", PY_DISCARD_FUNC_SIG(PyCFunction,
+					      py_gensec_start_server),
+		METH_VARARGS|METH_KEYWORDS|METH_CLASS,
 		"S.start_server(auth_ctx, settings) -> gensec" },
 	{ "set_credentials", (PyCFunction)py_gensec_set_credentials, METH_VARARGS, 
 		"S.start_client(credentials)" },

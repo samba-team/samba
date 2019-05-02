@@ -614,33 +614,33 @@ PyTypeObject PyLoadparmService = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
-static PyObject *py_default_path(PyObject *self)
+static PyObject *py_default_path(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
 	return PyStr_FromString(lp_default_path());
 }
 
-static PyObject *py_setup_dir(PyObject *self)
+static PyObject *py_setup_dir(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
 	return PyStr_FromString(dyn_SETUPDIR);
 }
 
-static PyObject *py_modules_dir(PyObject *self)
+static PyObject *py_modules_dir(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
 	return PyStr_FromString(dyn_MODULESDIR);
 }
 
-static PyObject *py_bin_dir(PyObject *self)
+static PyObject *py_bin_dir(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
 	return PyStr_FromString(dyn_BINDIR);
 }
 
-static PyObject *py_sbin_dir(PyObject *self)
+static PyObject *py_sbin_dir(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
 	return PyStr_FromString(dyn_SBINDIR);
 }
 
 static PyMethodDef pyparam_methods[] = {
-	{ "default_path", (PyCFunction)py_default_path, METH_NOARGS, 
+	{ "default_path", (PyCFunction)py_default_path, METH_NOARGS,
 		"Returns the default smb.conf path." },
 	{ "setup_dir", (PyCFunction)py_setup_dir, METH_NOARGS,
 		"Returns the compiled in location of provision tempates." },
