@@ -43,6 +43,9 @@
 #define PyStr_FromFormat PyString_FromFormat
 #endif
 
+/* discard signature of 'func' in favour of 'target_sig' */
+#define PY_DISCARD_FUNC_SIG(target_sig, func) (target_sig)(void(*)(void))func
+
 typedef struct {
 	PyObject_HEAD
 	TDB_CONTEXT *ctx;
@@ -130,7 +133,8 @@ static PyObject *py_tdb_open(PyTypeObject *type, PyObject *args, PyObject *kwarg
 	return (PyObject *)ret;
 }
 
-static PyObject *obj_transaction_cancel(PyTdbObject *self)
+static PyObject *obj_transaction_cancel(PyTdbObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	int ret;
 
@@ -141,7 +145,8 @@ static PyObject *obj_transaction_cancel(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_transaction_commit(PyTdbObject *self)
+static PyObject *obj_transaction_commit(PyTdbObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	int ret;
 	PyErr_TDB_RAISE_IF_CLOSED(self);
@@ -150,7 +155,8 @@ static PyObject *obj_transaction_commit(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_transaction_prepare_commit(PyTdbObject *self)
+static PyObject *obj_transaction_prepare_commit(PyTdbObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	int ret;
 	PyErr_TDB_RAISE_IF_CLOSED(self);
@@ -159,7 +165,8 @@ static PyObject *obj_transaction_prepare_commit(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_transaction_start(PyTdbObject *self)
+static PyObject *obj_transaction_start(PyTdbObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	int ret;
 	PyErr_TDB_RAISE_IF_CLOSED(self);
@@ -168,7 +175,8 @@ static PyObject *obj_transaction_start(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_reopen(PyTdbObject *self)
+static PyObject *obj_reopen(PyTdbObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	int ret;
 	PyErr_TDB_RAISE_IF_CLOSED(self);
@@ -184,7 +192,8 @@ static PyObject *obj_reopen(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_lockall(PyTdbObject *self)
+static PyObject *obj_lockall(PyTdbObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	int ret;
 	PyErr_TDB_RAISE_IF_CLOSED(self);
@@ -193,7 +202,8 @@ static PyObject *obj_lockall(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_unlockall(PyTdbObject *self)
+static PyObject *obj_unlockall(PyTdbObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	int ret;
 	PyErr_TDB_RAISE_IF_CLOSED(self);
@@ -202,7 +212,8 @@ static PyObject *obj_unlockall(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_lockall_read(PyTdbObject *self)
+static PyObject *obj_lockall_read(PyTdbObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	int ret;
 	PyErr_TDB_RAISE_IF_CLOSED(self);
@@ -211,14 +222,15 @@ static PyObject *obj_lockall_read(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_unlockall_read(PyTdbObject *self)
+static PyObject *obj_unlockall_read(PyTdbObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	int ret = tdb_unlockall_read(self->ctx);
 	PyErr_TDB_ERROR_IS_ERR_RAISE(ret, self->ctx);
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_close(PyTdbObject *self)
+static PyObject *obj_close(PyTdbObject *self, PyObject *Py_UNUSED(ignored))
 {
 	int ret;
 	if (self->closed)
@@ -275,7 +287,7 @@ static PyObject *obj_append(PyTdbObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_firstkey(PyTdbObject *self)
+static PyObject *obj_firstkey(PyTdbObject *self, PyObject *Py_UNUSED(ignored))
 {
 	PyErr_TDB_RAISE_IF_CLOSED(self);
 
@@ -436,7 +448,8 @@ PyTypeObject PyTdbIterator = {
 	.tp_iter = PyObject_SelfIter,
 };
 
-static PyObject *tdb_object_iter(PyTdbObject *self)
+static PyObject *tdb_object_iter(PyTdbObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	PyTdbIteratorObject *ret;	
 
@@ -451,7 +464,7 @@ static PyObject *tdb_object_iter(PyTdbObject *self)
 	return (PyObject *)ret;
 }
 
-static PyObject *obj_clear(PyTdbObject *self)
+static PyObject *obj_clear(PyTdbObject *self, PyObject *Py_UNUSED(ignored))
 {
 	int ret;
 	PyErr_TDB_RAISE_IF_CLOSED(self);
@@ -460,7 +473,7 @@ static PyObject *obj_clear(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_repack(PyTdbObject *self)
+static PyObject *obj_repack(PyTdbObject *self, PyObject *Py_UNUSED(ignored))
 {
 	int ret;
 	PyErr_TDB_RAISE_IF_CLOSED(self);
@@ -469,14 +482,16 @@ static PyObject *obj_repack(PyTdbObject *self)
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_enable_seqnum(PyTdbObject *self)
+static PyObject *obj_enable_seqnum(PyTdbObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	PyErr_TDB_RAISE_IF_CLOSED(self);
 	tdb_enable_seqnum(self->ctx);
 	Py_RETURN_NONE;
 }
 
-static PyObject *obj_increment_seqnum_nonblock(PyTdbObject *self)
+static PyObject *obj_increment_seqnum_nonblock(PyTdbObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	PyErr_TDB_RAISE_IF_CLOSED(self);
 	tdb_increment_seqnum_nonblock(self->ctx);
@@ -729,13 +744,18 @@ static PyTypeObject PyTdb = {
 	.tp_as_mapping = &tdb_object_mapping,
 	.tp_as_sequence = &tdb_object_seq,
 	.tp_flags = Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE|Py_TPFLAGS_HAVE_ITER,
-	.tp_iter = (getiterfunc)tdb_object_iter,
+	.tp_iter = PY_DISCARD_FUNC_SIG(getiterfunc,tdb_object_iter),
 };
 
 static PyMethodDef tdb_methods[] = {
-	{ "open", (PyCFunction)py_tdb_open, METH_VARARGS|METH_KEYWORDS, "open(name, hash_size=0, tdb_flags=TDB_DEFAULT, flags=O_RDWR, mode=0600)\n"
-		"Open a TDB file." },
-	{ NULL }
+	{
+		.ml_name  = "open",
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction, py_tdb_open),
+		.ml_flags = METH_VARARGS|METH_KEYWORDS,
+		.ml_doc   = "open(name, hash_size=0, tdb_flags=TDB_DEFAULT, "
+			    "flags=O_RDWR, mode=0600)\nOpen a TDB file."
+	},
+	{ .ml_name = NULL }
 };
 
 #define MODULE_DOC "simple key-value database that supports multiple writers."
