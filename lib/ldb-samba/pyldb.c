@@ -156,7 +156,8 @@ static PyObject *py_ldb_set_opaque_integer(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_ldb_set_utf8_casefold(PyObject *self)
+static PyObject *py_ldb_set_utf8_casefold(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	struct ldb_context *ldb;
 
@@ -226,7 +227,8 @@ static PyObject *py_ldb_samba_schema_attribute_add(PyLdbObject *self,
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_ldb_register_samba_handlers(PyObject *self)
+static PyObject *py_ldb_register_samba_handlers(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	struct ldb_context *ldb;
 	int ret;
