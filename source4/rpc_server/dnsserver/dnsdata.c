@@ -794,6 +794,11 @@ struct dns_tree *dns_build_tree(TALLOC_CTX *mem_ctx, const char *name, struct ld
 	/* Add all names in the result in a tree */
 	for (i=0; i<res->count; i++) {
 		ptr = ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL);
+		if (ptr == NULL) {
+			DBG_ERR("dnsserver: dns record has no name (%s)",
+				ldb_dn_get_linearized(res->msgs[i]->dn));
+			goto failed;
+		}
 
 		if (strcmp(ptr, "@") == 0) {
 			base->data = res->msgs[i];
