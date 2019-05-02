@@ -26,6 +26,7 @@
 #include <Python.h>
 #include "includes.h"
 #include "python/py3compat.h"
+#include "python/modules.h"
 #include "smbd/smbd.h"
 #include "libcli/util/pyerrors.h"
 #include "librpc/rpc/pyrpc_util.h"
@@ -538,7 +539,8 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs
 /*
   check if we have ACL support
  */
-static PyObject *py_smbd_have_posix_acls(PyObject *self)
+static PyObject *py_smbd_have_posix_acls(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 #ifdef HAVE_POSIX_ACLS
 	return PyBool_FromLong(true);
@@ -882,31 +884,40 @@ static PyMethodDef py_smbd_methods[] = {
 		(PyCFunction)py_smbd_have_posix_acls, METH_NOARGS,
 		NULL },
 	{ "set_simple_acl",
-		(PyCFunction)py_smbd_set_simple_acl, METH_VARARGS|METH_KEYWORDS,
+		PY_DISCARD_FUNC_SIG(PyCFunction, py_smbd_set_simple_acl),
+		METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "set_nt_acl",
-		(PyCFunction)py_smbd_set_nt_acl, METH_VARARGS|METH_KEYWORDS,
+		PY_DISCARD_FUNC_SIG(PyCFunction, py_smbd_set_nt_acl),
+		METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "get_nt_acl",
-		(PyCFunction)py_smbd_get_nt_acl, METH_VARARGS|METH_KEYWORDS,
+		PY_DISCARD_FUNC_SIG(PyCFunction, py_smbd_get_nt_acl),
+		METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "get_sys_acl",
-		(PyCFunction)py_smbd_get_sys_acl, METH_VARARGS|METH_KEYWORDS,
+		PY_DISCARD_FUNC_SIG(PyCFunction, py_smbd_get_sys_acl),
+		METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "set_sys_acl",
-		(PyCFunction)py_smbd_set_sys_acl, METH_VARARGS|METH_KEYWORDS,
+		PY_DISCARD_FUNC_SIG(PyCFunction, py_smbd_set_sys_acl),
+		METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "chown",
-		(PyCFunction)py_smbd_chown, METH_VARARGS|METH_KEYWORDS,
+		PY_DISCARD_FUNC_SIG(PyCFunction, py_smbd_chown),
+		METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "unlink",
-		(PyCFunction)py_smbd_unlink, METH_VARARGS|METH_KEYWORDS,
+		PY_DISCARD_FUNC_SIG(PyCFunction, py_smbd_unlink),
+		METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "mkdir",
-		(PyCFunction)py_smbd_mkdir, METH_VARARGS|METH_KEYWORDS,
+		PY_DISCARD_FUNC_SIG(PyCFunction, py_smbd_mkdir),
+		METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ "create_file",
-		(PyCFunction)py_smbd_create_file, METH_VARARGS|METH_KEYWORDS,
+		PY_DISCARD_FUNC_SIG(PyCFunction, py_smbd_create_file),
+		METH_VARARGS|METH_KEYWORDS,
 		NULL },
 	{ NULL }
 };
