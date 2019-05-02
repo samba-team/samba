@@ -310,3 +310,17 @@ bld.SAMBA3_BINARY('smbstatus',
                       PROFILE
                       CONN_TDB
                       ''')
+
+bld.SAMBA3_BINARY('mdfind',
+                 source='mdfind.c',
+                 deps='''
+                 talloc
+                 tevent
+                 smbconf
+                 popt_samba3
+                 popt_samba3_cmdline
+                 libsmb
+                 msrpc3
+                 RPCCLI_MDSSVC
+                 mdssvc
+                 ''')

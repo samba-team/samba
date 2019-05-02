@@ -19,6 +19,7 @@ manpages='''
          manpages/libsmbclient.7
          manpages/lmhosts.5
          manpages/log2pcap.1
+         manpages/mdfind.1
          manpages/mvxattr.1
          manpages/net.8
          manpages/nmbd.8

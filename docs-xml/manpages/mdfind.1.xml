@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="mdfind.1">
+
+  <refmeta>
+    <refentrytitle>mdfind</refentrytitle>
+    <manvolnum>1</manvolnum>
+    <refmiscinfo class="source">Samba</refmiscinfo>
+    <refmiscinfo class="manual">User Commands</refmiscinfo>
+    <refmiscinfo class="version">&doc.version;</refmiscinfo>
+  </refmeta>
+
+  <refnamediv>
+    <refname>mdfind</refname>
+    <refpurpose>Run Spotlight searches against an SMB server</refpurpose>
+  </refnamediv>
+
+  <refsynopsisdiv>
+    <cmdsynopsis>
+      <command>mvxattr</command>
+      <arg choice="req">server</arg>
+      <arg choice="req">sharename</arg>
+      <arg choice="req">query</arg>
+      <arg choice="opt">-p, --path</arg>
+      <arg choice="opt">-L, --live</arg>
+    </cmdsynopsis>
+  </refsynopsisdiv>
+
+  <refsect1>
+    <title>DESCRIPTION</title>
+
+    <para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+    <manvolnum>1</manvolnum></citerefentry> suite.</para>
+
+    <para>mdfind is a simple utility to run Spotlight searches against an SMB server
+    that runs the Spotlight <emphasis>mdssvc</emphasis> RPC service.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>OPTIONS</title>
+
+    <variablelist>
+      <varlistentry>
+	<term>server</term>
+	<listitem>
+	  <para>The SMB server name or IP address to connect to.</para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>sharename</term>
+	<listitem>
+	  <para>The name of a share on the server.</para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>query</term>
+	<listitem>
+	  <para>The query expression syntax is a simplified form of filename
+	  globbing familiar to shell users. Queries have the following
+	  format:</para>
+
+	  <para>attribute=="value"</para>
+
+	  <para>For queries against a Samba server with Spotlight enabled using
+	  the Elasticsearch backend, the list of supported metadata attributes
+	  is given by the JSON attribute mapping file, typically installed at
+	  <filename>/usr/share/samba/mdssvc/elasticsearch_mappings.json</filename>
+	  </para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>-p PATH, --path=PATH</term>
+	<listitem>
+	  <para>Server side path to search, defaults to
+	  <emphasis>"/"</emphasis></para>
+	</listitem>
+      </varlistentry>
+
+      <varlistentry>
+	<term>-L, --live</term>
+	<listitem><para>Query remains running.</para></listitem>
+      </varlistentry>
+
+    </variablelist>
+  </refsect1>
+
+  <refsect1>
+    <title>EXAMPLES</title>
+
+    <para>Search all indexed metadata attributes, exact match:</para>
+    <programlisting>
+      '*=="Samba"'
+    </programlisting>
+
+    <para>Search all indexed metadata attributes, prefix match:</para>
+    <programlisting>
+      '*=="Samba*"'
+    </programlisting>
+
+    <para>Search by filename:</para>
+    <programlisting>
+      'kMDItemFSName=="Samba*"'
+    </programlisting>
+
+    <para>Search by date:</para>
+    <programlisting>
+      'kMDItemFSContentChangeDate&lt;$time.iso(2018-10-01T10:00:00Z)'
+    </programlisting>
+
+    <para>Search files's content:</para>
+    <programlisting>
+      'kMDItemTextContent=="Samba*"'
+    </programlisting>
+
+    <para>Expressions:</para>
+    <programlisting>
+      kMDItemFSName=="Samba*"||kMDItemTextContent=="Tango*"'
+    </programlisting>
+  </refsect1>
+
+  <refsect1>
+    <title>SEE ALSO</title>
+
+    <para>File Metadata Search Programming Guide
+    <ulink url="https://developer.apple.com/library/archive/documentation/Carbon/Conceptual/SpotlightQuery/Concepts/Introduction.html">
+    https://developer.apple.com/library/archive/documentation/Carbon/Conceptual/SpotlightQuery/Concepts/Introduction.html</ulink>
+    </para>
+  </refsect1>
+
+  <refsect1>
+    <title>VERSION</title>
+
+    <para>This man page is part of version &doc.version; of the Samba suite.</para>
+  </refsect1>
+
+  <refsect1>
+    <title>AUTHOR</title>
+
+    <para>The original Samba software and related utilities were created by
+    Andrew Tridgell. Samba is now developed by the Samba Team as an Open
+    Source project similar to the way the Linux kernel is developed.</para>
+
+    <para>The mdfind manpage was written by Ralph Boehme.</para>
+  </refsect1>
+</refentry>
