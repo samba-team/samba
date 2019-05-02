@@ -23,7 +23,7 @@
 #include "python/py3compat.h"
 #include "lib/crypto/arcfour.h"
 
-static PyObject *py_crypto_arcfour_crypt_blob(PyObject *module, PyObject *args, PyObject *kwargs)
+static PyObject *py_crypto_arcfour_crypt_blob(PyObject *module, PyObject *args)
 {
 	DATA_BLOB data, key;
 	PyObject *py_data, *py_key, *result;
