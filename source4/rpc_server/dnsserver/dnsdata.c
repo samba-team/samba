@@ -873,6 +873,7 @@ static void _dns_add_name(TALLOC_CTX *mem_ctx, const char *name, char ***add_nam
 
 	ptr[count] = talloc_strdup(mem_ctx, name);
 	if (ptr[count] == NULL) {
+		talloc_free(ptr);
 		return;
 	}
 
