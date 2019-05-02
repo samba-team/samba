@@ -166,12 +166,14 @@ static PyObject *py_set_debug_level(PyObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_get_debug_level(PyObject *self)
+static PyObject *py_get_debug_level(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	return PyInt_FromLong(debuglevel_get());
 }
 
-static PyObject *py_fault_setup(PyObject *self)
+static PyObject *py_fault_setup(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	static bool done;
 	if (!done) {
@@ -181,7 +183,8 @@ static PyObject *py_fault_setup(PyObject *self)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_is_ntvfs_fileserver_built(PyObject *self)
+static PyObject *py_is_ntvfs_fileserver_built(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 #ifdef WITH_NTVFS_FILESERVER
 	Py_RETURN_TRUE;
@@ -190,7 +193,8 @@ static PyObject *py_is_ntvfs_fileserver_built(PyObject *self)
 #endif
 }
 
-static PyObject *py_is_heimdal_built(PyObject *self)
+static PyObject *py_is_heimdal_built(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 #ifdef SAMBA4_USES_HEIMDAL
 	Py_RETURN_TRUE;

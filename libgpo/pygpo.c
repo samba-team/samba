@@ -28,6 +28,7 @@
 #include "auth/credentials/pycredentials.h"
 #include "libcli/util/pyerrors.h"
 #include "python/py3compat.h"
+#include "python/modules.h"
 
 /* A Python C API module to use LIBGPO */
 
@@ -115,7 +116,9 @@ out:
 }
 
 static PyMethodDef GPO_methods[] = {
-	{"get_unix_path", (PyCFunction)py_gpo_get_unix_path, METH_KEYWORDS,
+	{"get_unix_path", PY_DISCARD_FUNC_SIG(PyCFunction,
+					      py_gpo_get_unix_path),
+		METH_KEYWORDS,
 		NULL },
 	{NULL}
 };
@@ -143,7 +146,7 @@ static void py_ads_dealloc(ADS* self)
 	Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
-static PyObject* py_ads_connect(ADS *self);
+static PyObject* py_ads_connect(ADS *self, PyObject *Py_UNUSED(ignored));
 static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 {
 	const char *realm = NULL;
@@ -213,7 +216,8 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 }
 
 /* connect.  Failure to connect results in an Exception */
-static PyObject* py_ads_connect(ADS *self)
+static PyObject* py_ads_connect(ADS *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	ADS_STATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -485,7 +489,8 @@ static PyMethodDef ADS_methods[] = {
 	{ "connect", (PyCFunction)py_ads_connect, METH_NOARGS,
 		"Connect to the LDAP server" },
 #ifdef HAVE_ADS
-	{ "get_gpo_list", (PyCFunction)py_ads_get_gpo_list, METH_VARARGS | METH_KEYWORDS,
+	{ "get_gpo_list", PY_DISCARD_FUNC_SIG(PyCFunction, py_ads_get_gpo_list),
+		METH_VARARGS | METH_KEYWORDS,
 		NULL },
 #endif
 	{ NULL }

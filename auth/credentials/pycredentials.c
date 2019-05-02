@@ -19,6 +19,7 @@
 #include <Python.h>
 #include "python/py3compat.h"
 #include "includes.h"
+#include "python/modules.h"
 #include "pycredentials.h"
 #include "param/param.h"
 #include "lib/cmdline/credentials.h"
@@ -760,7 +761,8 @@ static PyMethodDef py_creds_methods[] = {
 	},
 	{
 		.ml_name  = "get_ntlm_response",
-		.ml_meth  = (PyCFunction)py_creds_get_ntlm_response,
+		.ml_meth  = PY_DISCARD_FUNC_SIG(PyCFunction,
+						py_creds_get_ntlm_response),
 		.ml_flags = METH_VARARGS | METH_KEYWORDS,
 		.ml_doc   = "S.get_ntlm_response"
 		            "(flags, challenge[, target_info]) -> "

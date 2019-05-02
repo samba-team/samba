@@ -389,17 +389,23 @@ static PyObject *py_nbt_name_release(PyObject *self, PyObject *args, PyObject *k
 }
 
 static PyMethodDef py_nbt_methods[] = {
-	{ "query_name", (PyCFunction)py_nbt_name_query, METH_VARARGS|METH_KEYWORDS,
+	{ "query_name", PY_DISCARD_FUNC_SIG(PyCFunction, py_nbt_name_query),
+		METH_VARARGS|METH_KEYWORDS,
 		"S.query_name(name, dest, broadcast=True, wins=False, timeout=0, retries=3) -> (reply_from, name, reply_addr)\n"
 		"Query for a NetBIOS name" },
-	{ "register_name", (PyCFunction)py_nbt_name_register, METH_VARARGS|METH_KEYWORDS,
+	{ "register_name", PY_DISCARD_FUNC_SIG(PyCFunction,
+					       py_nbt_name_register),
+		METH_VARARGS|METH_KEYWORDS,
 		"S.register_name(name, address, dest, register_demand=True, broadcast=True, multi_homed=True, ttl=0, timeout=0, retries=0) -> (reply_from, name, reply_addr, rcode)\n"
 		"Register a new name" },
-	{ "release_name", (PyCFunction)py_nbt_name_release, METH_VARARGS|METH_KEYWORDS, "S.release_name(name, address, dest, nb_flags=0, broadcast=true, timeout=0, retries=3) -> (reply_from, name, reply_addr, rcode)\n"
+	{ "release_name", PY_DISCARD_FUNC_SIG(PyCFunction, py_nbt_name_release),
+		METH_VARARGS|METH_KEYWORDS, "S.release_name(name, address, dest, nb_flags=0, broadcast=true, timeout=0, retries=3) -> (reply_from, name, reply_addr, rcode)\n"
 		"release a previously registered name" },
-	{ "refresh_name", (PyCFunction)py_nbt_name_refresh, METH_VARARGS|METH_KEYWORDS, "S.refresh_name(name, address, dest, nb_flags=0, broadcast=True, ttl=0, timeout=0, retries=0) -> (reply_from, name, reply_addr, rcode)\n"
+	{ "refresh_name", PY_DISCARD_FUNC_SIG(PyCFunction, py_nbt_name_refresh),
+		METH_VARARGS|METH_KEYWORDS, "S.refresh_name(name, address, dest, nb_flags=0, broadcast=True, ttl=0, timeout=0, retries=0) -> (reply_from, name, reply_addr, rcode)\n"
 		"release a previously registered name" },
-	{ "name_status", (PyCFunction)py_nbt_name_status, METH_VARARGS|METH_KEYWORDS,
+	{ "name_status", PY_DISCARD_FUNC_SIG(PyCFunction, py_nbt_name_status),
+		METH_VARARGS|METH_KEYWORDS,
 		"S.name_status(name, dest, timeout=0, retries=0) -> (reply_from, name, status)\n"
 		"Find the status of a name" },
 

@@ -20,6 +20,7 @@
 #include <Python.h>
 #include "python/py3compat.h"
 #include "includes.h"
+#include "python/modules.h"
 #include "libcli/util/pyerrors.h"
 #include "libcli/security/security.h"
 #include "pytalloc.h"
@@ -68,7 +69,9 @@ static PyObject *py_se_access_check(PyObject *module, PyObject *args, PyObject *
 }
 
 static PyMethodDef py_security_methods[] = {
-	{ "access_check", (PyCFunction)py_se_access_check, METH_VARARGS|METH_KEYWORDS,
+	{ "access_check", PY_DISCARD_FUNC_SIG(PyCFunction,
+					      py_se_access_check),
+	METH_VARARGS|METH_KEYWORDS,
 	"access_check(security_descriptor, token, access_desired) -> access_granted.  Raises NT_STATUS on error, including on access check failure, returns access granted bitmask"},
 	{ NULL },
 };
