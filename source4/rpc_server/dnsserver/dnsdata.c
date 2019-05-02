@@ -968,6 +968,12 @@ WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
 	}
 
 	ptr = ldb_msg_find_attr_as_string(msg, "name", NULL);
+	if (ptr == NULL) {
+		DBG_ERR("dnsserver: dns record has no name (%s)",
+			ldb_dn_get_linearized(msg->dn));
+		return WERR_INTERNAL_DB_ERROR;
+	}
+
 	el = ldb_msg_find_element(msg, "dnsRecord");
 	if (el == NULL || el->values == 0) {
 		return WERR_OK;
