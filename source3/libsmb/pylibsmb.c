@@ -24,6 +24,7 @@
 #include <Python.h>
 #include "includes.h"
 #include "python/py3compat.h"
+#include "python/modules.h"
 #include "libcli/smb/smbXcli_base.h"
 #include "libsmb/libsmb.h"
 #include "libcli/security/security.h"
@@ -786,8 +787,7 @@ static size_t push_data(uint8_t *buf, size_t n, void *priv)
 /*
  * Writes a file with the contents specified
  */
-static PyObject *py_smb_savefile(struct py_cli_state *self, PyObject *args,
-				 PyObject *kwargs)
+static PyObject *py_smb_savefile(struct py_cli_state *self, PyObject *args)
 {
 	uint16_t fnum;
 	const char *filename = NULL;
@@ -910,8 +910,7 @@ static NTSTATUS py_smb_filesize(struct py_cli_state *self, uint16_t fnum,
 /*
  * Loads the specified file's contents and returns it
  */
-static PyObject *py_smb_loadfile(struct py_cli_state *self, PyObject *args,
-				 PyObject *kwargs)
+static PyObject *py_smb_loadfile(struct py_cli_state *self, PyObject *args)
 {
 	NTSTATUS status;
 	const char *filename = NULL;
@@ -1581,21 +1580,27 @@ static PyObject *py_smb_setacl(struct py_cli_state *self, PyObject *args)
 static PyMethodDef py_cli_state_methods[] = {
 	{ "settimeout", (PyCFunction)py_cli_settimeout, METH_VARARGS,
 	  "settimeout(new_timeout_msecs) => return old_timeout_msecs" },
-	{ "create", (PyCFunction)py_cli_create, METH_VARARGS|METH_KEYWORDS,
+	{ "create", PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_create),
+		METH_VARARGS|METH_KEYWORDS,
 	  "Open a file" },
 	{ "close", (PyCFunction)py_cli_close, METH_VARARGS,
 	  "Close a file handle" },
-	{ "write", (PyCFunction)py_cli_write, METH_VARARGS|METH_KEYWORDS,
+	{ "write", PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_write),
+		METH_VARARGS|METH_KEYWORDS,
 	  "Write to a file handle" },
-	{ "read", (PyCFunction)py_cli_read, METH_VARARGS|METH_KEYWORDS,
+	{ "read", PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_read),
+		METH_VARARGS|METH_KEYWORDS,
 	  "Read from a file handle" },
-	{ "truncate", (PyCFunction)py_cli_ftruncate,
+	{ "truncate", PY_DISCARD_FUNC_SIG(PyCFunction,
+			py_cli_ftruncate),
 	  METH_VARARGS|METH_KEYWORDS,
 	  "Truncate a file" },
-	{ "delete_on_close", (PyCFunction)py_cli_delete_on_close,
+	{ "delete_on_close", PY_DISCARD_FUNC_SIG(PyCFunction,
+					 py_cli_delete_on_close),
 	  METH_VARARGS|METH_KEYWORDS,
 	  "Set/Reset the delete on close flag" },
-	{ "list", (PyCFunction)py_cli_list, METH_VARARGS|METH_KEYWORDS,
+	{ "list", PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_list),
+		METH_VARARGS|METH_KEYWORDS,
 	  "list(directory, mask='*', attribs=DEFAULT_ATTRS) -> "
 	  "directory contents as a dictionary\n"
 	  "\t\tDEFAULT_ATTRS: FILE_ATTRIBUTE_SYSTEM | "

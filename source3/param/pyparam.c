@@ -28,7 +28,7 @@ static PyTypeObject *loadparm_Type = NULL;
 
 void initparam(void);
 
-static PyObject *py_get_context(PyObject *self)
+static PyObject *py_get_context(PyObject *self, PyObject *Py_UNUSED(ignored))
 {
 	PyObject *py_loadparm;
 	const struct loadparm_s3_helpers *s3_context;
