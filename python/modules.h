@@ -21,5 +21,6 @@
 #define __SAMBA_PYTHON_MODULES_H__
 
 bool py_update_path(void);
-
+/* discard signature of 'func' in favour of 'target_sig' */
+#define PY_DISCARD_FUNC_SIG(target_sig, func) (target_sig)(void(*)(void))func
 #endif /* __SAMBA_PYTHON_MODULES_H__ */ 
