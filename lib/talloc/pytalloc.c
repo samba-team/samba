@@ -47,7 +47,8 @@ static PyObject *pytalloc_report_full(PyObject *self, PyObject *args)
 }
 
 /* enable null tracking */
-static PyObject *pytalloc_enable_null_tracking(PyObject *self)
+static PyObject *pytalloc_enable_null_tracking(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	talloc_enable_null_tracking();
 	return Py_None;
