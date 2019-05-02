@@ -123,6 +123,10 @@ static int prepare_modules_line(struct ldb_context *ldb,
 	}
 
 	mod_list_string = str_list_join(tmp_ctx, backend_full_list, ',');
+
+	/* str_list_append allocates on NULL */
+	talloc_free(backend_full_list);
+
 	if (!mod_list_string) {
 		talloc_free(tmp_ctx);
 		return ldb_oom(ldb);
