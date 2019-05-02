@@ -25,7 +25,8 @@
 #include "system/filesys.h"
 #include "lib/util/base64.h"
 
-static PyObject *py_is_xattr_supported(PyObject *self)
+static PyObject *py_is_xattr_supported(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 #if !defined(HAVE_XATTR_SUPPORT)
 	return Py_False;

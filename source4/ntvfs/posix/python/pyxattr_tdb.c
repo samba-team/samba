@@ -33,7 +33,8 @@
 #include "lib/dbwrap/dbwrap_tdb.h"
 #include "source3/lib/xattr_tdb.h"
 
-static PyObject *py_is_xattr_supported(PyObject *self)
+static PyObject *py_is_xattr_supported(PyObject *self,
+		PyObject *Py_UNUSED(ignored))
 {
 	return Py_True;
 }

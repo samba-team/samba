@@ -29,7 +29,8 @@
 #include "libcli/util/pyerrors.h"
 #include "param/pyparam.h"
 
-static PyObject *py_is_xattr_supported(PyObject *self)
+static PyObject *py_is_xattr_supported(PyObject *self,
+			PyObject *Py_UNUSED(ignored))
 {
 	return Py_True;
 }
