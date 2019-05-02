@@ -279,7 +279,7 @@ sub PythonStruct($$$$$$)
 	# If the struct is not public there ndr_pull/ndr_push functions will
 	# be static so not callable from here
 	if (has_property($d, "public")) {
-		$self->pidl("static PyObject *py_$name\_ndr_pack(PyObject *py_obj)");
+		$self->pidl("static PyObject *py_$name\_ndr_pack(PyObject *py_obj,  PyObject *Py_UNUSED(ignored))");
 		$self->pidl("{");
 		$self->indent;
 		$self->pidl("$cname *object = ($cname *)pytalloc_get_ptr(py_obj);");
@@ -359,7 +359,7 @@ sub PythonStruct($$$$$$)
 		$self->pidl("}");
 		$self->pidl("");
 
-		$self->pidl("static PyObject *py_$name\_ndr_print(PyObject *py_obj)");
+		$self->pidl("static PyObject *py_$name\_ndr_print(PyObject *py_obj, PyObject *Py_UNUSED(ignored))");
 		$self->pidl("{");
 		$self->indent;
 		$self->pidl("$cname *object = ($cname *)pytalloc_get_ptr(py_obj);");
@@ -379,7 +379,7 @@ sub PythonStruct($$$$$$)
 		$self->pidl("static PyMethodDef $py_methods\[] = {");
 		$self->indent;
 		$self->pidl("{ \"__ndr_pack__\", (PyCFunction)py_$name\_ndr_pack, METH_NOARGS, \"S.ndr_pack(object) -> blob\\nNDR pack\" },");
-		$self->pidl("{ \"__ndr_unpack__\", (PyCFunction)py_$name\_ndr_unpack, METH_VARARGS|METH_KEYWORDS, \"S.ndr_unpack(class, blob, allow_remaining=False) -> None\\nNDR unpack\" },");
+		$self->pidl("{ \"__ndr_unpack__\", PY_DISCARD_FUNC_SIG(PyCFunction,py_$name\_ndr_unpack), METH_VARARGS|METH_KEYWORDS, \"S.ndr_unpack(class, blob, allow_remaining=False) -> None\\nNDR unpack\" },");
 		$self->pidl("{ \"__ndr_print__\", (PyCFunction)py_$name\_ndr_print, METH_NOARGS, \"S.ndr_print(object) -> None\\nNDR print\" },");
 		$self->pidl("{ NULL, NULL, 0, NULL }");
 		$self->deindent;
@@ -501,7 +501,7 @@ sub PythonFunctionStruct($$$$)
 	my $ndr_call = "const struct ndr_interface_call *call = NULL;";
 	my $object_ptr = "$cname *object = ($cname *)pytalloc_get_ptr(py_obj);";
 
-	$self->pidl("static PyObject *py_$name\_ndr_opnum(PyTypeObject *type)");
+	$self->pidl("static PyObject *py_$name\_ndr_opnum(PyTypeObject *type, PyObject *Py_UNUSED(ignored))");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("");
@@ -817,7 +817,7 @@ sub PythonFunctionStruct($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$name\_ndr_print_in(PyObject *py_obj, PyObject *py_obj2)");
+	$self->pidl("static PyObject *py_$name\_ndr_print_in(PyObject *py_obj, PyObject *Py_UNUSED(ignored))");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("return py_$name\_ndr_print(py_obj, \"$name\_in\", NDR_IN);");
@@ -825,7 +825,7 @@ sub PythonFunctionStruct($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$name\_ndr_print_out(PyObject *py_obj, PyObject *py_obj2)");
+	$self->pidl("static PyObject *py_$name\_ndr_print_out(PyObject *py_obj, PyObject *Py_UNUSED(ignored))");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("return py_$name\_ndr_print(py_obj, \"$name\_out\", NDR_OUT);");
@@ -840,19 +840,19 @@ sub PythonFunctionStruct($$$$)
 	$self->indent;
 	$self->pidl("\"$modulename.$prettyname.opnum() -> ".sprintf("%d (0x%02x)", $fn->{OPNUM}, $fn->{OPNUM})." \" },");
 	$self->deindent;
-	$self->pidl("{ \"__ndr_pack_in__\", (PyCFunction)py_$name\_ndr_pack_in, METH_VARARGS|METH_KEYWORDS,");
+	$self->pidl("{ \"__ndr_pack_in__\", PY_DISCARD_FUNC_SIG(PyCFunction,py_$name\_ndr_pack_in), METH_VARARGS|METH_KEYWORDS,");
 	$self->indent;
 	$self->pidl("\"S.ndr_pack_in(object, bigendian=False, ndr64=False) -> blob\\nNDR pack input\" },");
 	$self->deindent;
-	$self->pidl("{ \"__ndr_pack_out__\", (PyCFunction)py_$name\_ndr_pack_out, METH_VARARGS|METH_KEYWORDS,");
+	$self->pidl("{ \"__ndr_pack_out__\", PY_DISCARD_FUNC_SIG(PyCFunction,py_$name\_ndr_pack_out), METH_VARARGS|METH_KEYWORDS,");
 	$self->indent;
 	$self->pidl("\"S.ndr_pack_out(object, bigendian=False, ndr64=False) -> blob\\nNDR pack output\" },");
 	$self->deindent;
-	$self->pidl("{ \"__ndr_unpack_in__\", (PyCFunction)py_$name\_ndr_unpack_in, METH_VARARGS|METH_KEYWORDS,");
+	$self->pidl("{ \"__ndr_unpack_in__\", PY_DISCARD_FUNC_SIG(PyCFunction,py_$name\_ndr_unpack_in), METH_VARARGS|METH_KEYWORDS,");
 	$self->indent;
 	$self->pidl("\"S.ndr_unpack_in(class, blob, bigendian=False, ndr64=False, allow_remaining=False) -> None\\nNDR unpack input\" },");
 	$self->deindent;
-	$self->pidl("{ \"__ndr_unpack_out__\", (PyCFunction)py_$name\_ndr_unpack_out, METH_VARARGS|METH_KEYWORDS,");
+	$self->pidl("{ \"__ndr_unpack_out__\", PY_DISCARD_FUNC_SIG(PyCFunction,py_$name\_ndr_unpack_out), METH_VARARGS|METH_KEYWORDS,");
 	$self->indent;
 	$self->pidl("\"S.ndr_unpack_out(class, blob, bigendian=False, ndr64=False, allow_remaining=False) -> None\\nNDR unpack output\" },");
 	$self->deindent;
@@ -1269,12 +1269,12 @@ sub PythonType($$$$)
 		$py_methods = "py_$d->{NAME}_methods";
 		$self->pidl("static PyMethodDef $py_methods\[] = {");
 		$self->indent;
-		$self->pidl("{ \"__import__\", (PyCFunction)py_$d->{NAME}\_import,");
+		$self->pidl("{ \"__import__\", PY_DISCARD_FUNC_SIG(PyCFunction,py_$d->{NAME}\_import),");
 		$self->indent;
 		$self->pidl("METH_VARARGS|METH_KEYWORDS|METH_CLASS,");
 		$self->pidl("\"T.__import__(mem_ctx, level, in) => ret.\" },");
 		$self->deindent;
-		$self->pidl("{ \"__export__\", (PyCFunction)py_$d->{NAME}\_export,");
+		$self->pidl("{ \"__export__\", PY_DISCARD_FUNC_SIG(PyCFunction,py_$d->{NAME}\_export),");
 		$self->indent;
 		$self->pidl("METH_VARARGS|METH_KEYWORDS|METH_CLASS,");
 		$self->pidl("\"T.__export__(mem_ctx, level, in) => ret.\" },");
@@ -2273,6 +2273,7 @@ sub Parse($$$$$)
 #include <Python.h>
 #include \"python/py3compat.h\"
 #include \"includes.h\"
+#include \"python/modules.h\"
 #include <pytalloc.h>
 #include \"librpc/rpc/pyrpc.h\"
 #include \"librpc/rpc/pyrpc_util.h\"
