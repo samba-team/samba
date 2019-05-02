@@ -23,6 +23,7 @@
 #include <Python.h>
 #include "python/py3compat.h"
 #include "includes.h"
+#include "python/modules.h"
 #include "librpc/rpc/pyrpc_util.h"
 #include "librpc/rpc/dcerpc.h"
 #include "librpc/rpc/pyrpc.h"
@@ -324,7 +325,8 @@ bool PyInterface_AddNdrRpcMethods(PyTypeObject *ifacetype, const struct PyNdrRpc
 		}
 		wb->name = discard_const_p(char, mds[i].name);
 		wb->flags = PyWrapperFlag_KEYWORDS;
-		wb->wrapper = (wrapperfunc)py_dcerpc_call_wrapper;
+		wb->wrapper = PY_DISCARD_FUNC_SIG(wrapperfunc,
+						  py_dcerpc_call_wrapper);
 		wb->doc = discard_const_p(char, mds[i].doc);
 
 		ret = PyDescr_NewWrapper(ifacetype, wb, discard_const_p(void, &mds[i]));

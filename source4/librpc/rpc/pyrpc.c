@@ -20,6 +20,7 @@
 #include <Python.h>
 #include "python/py3compat.h"
 #include "includes.h"
+#include "python/modules.h"
 #include <structmember.h>
 #include "librpc/rpc/pyrpc.h"
 #include "lib/events/events.h"
@@ -293,7 +294,10 @@ static PyObject *py_iface_request(PyObject *self, PyObject *args, PyObject *kwar
 }
 
 static PyMethodDef dcerpc_interface_methods[] = {
-	{ "request", (PyCFunction)py_iface_request, METH_VARARGS|METH_KEYWORDS, "S.request(opnum, data, object=None) -> data\nMake a raw request" },
+	{ "request", PY_DISCARD_FUNC_SIG(PyCFunction, py_iface_request),
+		METH_VARARGS|METH_KEYWORDS,
+		"S.request(opnum, data, object=None) -> data\n"
+		"Make a raw request" },
 	{ NULL, NULL, 0, NULL },
 };
 
