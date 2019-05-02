@@ -111,8 +111,8 @@ static bool writespn_check_spn(struct drsuapi_bind_state *b_state,
 		return false;
 	}
 
-	ret = krb5_parse_name_flags(krb_ctx, spn, KRB5_PRINCIPAL_PARSE_NO_REALM,
-				    &principal);
+	kerr = krb5_parse_name_flags(krb_ctx, spn, KRB5_PRINCIPAL_PARSE_NO_REALM,
+				     &principal);
 	if (kerr != 0) {
 		krb5_free_context(krb_ctx);
 		talloc_free(tmp_ctx);
