@@ -778,6 +778,7 @@ struct dns_tree *dns_build_tree(TALLOC_CTX *mem_ctx, const char *name, struct ld
 
 	root = dns_tree_init(mem_ctx, nlist[rootcount-1], NULL);
 	if (root == NULL) {
+		talloc_free(nlist);
 		return NULL;
 	}
 
@@ -849,6 +850,7 @@ struct dns_tree *dns_build_tree(TALLOC_CTX *mem_ctx, const char *name, struct ld
 	return root;
 
 failed:
+	talloc_free(nlist);
 	talloc_free(root);
 	return NULL;
 }
