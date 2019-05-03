@@ -86,6 +86,9 @@ parser.add_option("", "--attach-logs", help="Attach logs to mails sent on succes
                   default=False, action="store_true")
 parser.add_option("", "--restrict-tests", help="run as make test with this TESTS= regex",
                   default='')
+parser.add_option("--enable-coverage", dest='enable_coverage',
+                  action="store_const", const='--enable-coverage', default='',
+                  help="Add --enable-coverage option while configure")
 
 (options, args) = parser.parse_args()
 
