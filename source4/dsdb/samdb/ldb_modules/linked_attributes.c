@@ -658,7 +658,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 		if (!attrs) {
 			return ldb_oom(ldb);
 		}
-		for (i = 0; ac->rc && i < ac->rc->num_elements; i++) {
+		for (i = 0; i < ac->rc->num_elements; i++) {
 			attrs[i] = ac->rc->el[i].name;
 		}
 		attrs[i] = NULL;
