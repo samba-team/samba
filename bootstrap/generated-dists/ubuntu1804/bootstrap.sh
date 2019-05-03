@@ -36,6 +36,7 @@ apt-get -y install \
     krb5-kdc \
     krb5-user \
     language-pack-en \
+    lcov \
     libacl1-dev \
     libaio-dev \
     libarchive-dev \

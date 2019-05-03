@@ -35,6 +35,7 @@ apt-get -y install \
     krb5-config \
     krb5-kdc \
     krb5-user \
+    lcov \
     libacl1-dev \
     libaio-dev \
     libarchive-dev \

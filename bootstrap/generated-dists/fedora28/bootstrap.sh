@@ -43,6 +43,7 @@ dnf install -y \
     keyutils-libs-devel \
     krb5-devel \
     krb5-server \
+    lcov \
     libacl-devel \
     libaio-devel \
     libarchive-devel \
