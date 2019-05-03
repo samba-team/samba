@@ -70,7 +70,7 @@ typedef int (*reg_parse_callback_val_t) (void*  private_data,
 					 const char* name,
 					 uint32_t type,
 					 const uint8_t* data,
-					 uint32_t len);
+					 size_t len);
 
 /**
  * Protoype for function called on value delete found.
