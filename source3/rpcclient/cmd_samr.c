@@ -2641,10 +2641,9 @@ static NTSTATUS cmd_samr_get_usrdom_pwinfo(struct rpc_pipe_client *cli,
 	}
 	status = result;
 	if (NT_STATUS_IS_OK(result)) {
-		printf("min_password_length: %d\n", info.min_password_length);
 		printf("%s\n",
 			NDR_PRINT_STRUCT_STRING(mem_ctx,
-				samr_PasswordProperties, &info.password_properties));
+				samr_PwInfo, &info));
 	}
 
  done:
