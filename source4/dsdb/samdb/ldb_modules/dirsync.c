@@ -852,6 +852,9 @@ static int dirsync_search_callback(struct ldb_request *req, struct ldb_reply *ar
 		}
 
 		tmp = strchr(tmp, '/');
+		if (tmp == NULL) {
+			return ldb_operr(ldb);
+		}
 		tmp++;
 
 		dn = ldb_dn_new(dsc, ldb, tmp);
