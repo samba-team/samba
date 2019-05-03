@@ -192,11 +192,27 @@ static bool act_comment (struct reg_parse* p, const char* txt)
 /**@}*/
 
 
-static int nop(void* data)
+static int nop_callback_key(void* private_data,
+		const char* key[],
+		size_t klen,
+		bool del)
 {
 	return 0;
 }
 
+static int nop_callback_val(void* private_data,
+		const char* name,
+		uint32_t type,
+		const uint8_t* data,
+		size_t len)
+{
+	return 0;
+}
+
+static int nop_callback_del(void* data, const char* str)
+{
+	return 0;
+}
 
 struct reg_parse* reg_parse_new(const void* ctx,
 				struct reg_parse_callback cb,
@@ -220,16 +236,17 @@ struct reg_parse* reg_parse_new(const void* ctx,
 
 	s->valtype = 0;
 	if (cb.key == NULL) {
-		cb.key = (reg_parse_callback_key_t)&nop;
+		cb.key = (reg_parse_callback_key_t)&nop_callback_key;
 	}
 	if (cb.val == NULL) {
-		cb.val = (reg_parse_callback_val_t)&nop;
+		cb.val = (reg_parse_callback_val_t)&nop_callback_val;
 	}
 	if (cb.val_del == NULL) {
-		cb.val_del = (reg_parse_callback_val_del_t)&nop;
+		cb.val_del = (reg_parse_callback_val_del_t)&nop_callback_del;
 	}
 	if (cb.comment == NULL) {
-		cb.comment = (reg_parse_callback_comment_t)&nop;
+		cb.comment =
+			(reg_parse_callback_comment_t)&nop_callback_del;
 	}
 
 	s->call = cb;
