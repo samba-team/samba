@@ -31,6 +31,22 @@ os.environ["PYTHONUNBUFFERED"] = "1"
 # This speeds up testing remarkably.
 os.environ['TDB_NO_FSYNC'] = '1'
 
+
+def find_git_root():
+    '''get to the top of the git repo'''
+    p = os.getcwd()
+    while p != '/':
+        if os.path.isdir(os.path.join(p, ".git")):
+            return p
+        p = os.path.abspath(os.path.join(p, '..'))
+    return None
+
+
+gitroot = find_git_root()
+if gitroot is None:
+    raise Exception("Failed to find git root")
+
+
 cleanup_list = []
 
 builddirs = {
@@ -770,16 +786,6 @@ def cleanup():
         run_cmd("rm -rf %s" % d)
 
 
-def find_git_root():
-    '''get to the top of the git repo'''
-    p = os.getcwd()
-    while p != '/':
-        if os.path.isdir(os.path.join(p, ".git")):
-            return p
-        p = os.path.abspath(os.path.join(p, '..'))
-    return None
-
-
 def daemonize(logfile):
     pid = os.fork()
     if pid == 0:  # Parent
@@ -860,10 +866,6 @@ def push_to(push_url, push_branch="master"):
 
 
 def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER'))
-
-gitroot = find_git_root()
-if gitroot is None:
-    raise Exception("Failed to find git root")
 
 parser = OptionParser()
 parser.add_option("", "--tail", help="show output while running", default=False, action="store_true")
