@@ -1037,7 +1037,7 @@ static ssize_t sl_unpack_cpx(DALLOC_CTX *query,
 		}
 
 		result = sl_unpack_CNID(query, buf, offset, bufsize,
-					tag.length, encoding);
+					tag.size, encoding);
 		if (result == -1) {
 			return -1;
 		}
