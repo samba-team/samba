@@ -155,7 +155,6 @@ static int dirsync_filter_entry(struct ldb_request *req,
 		return ldb_oom(ldb);
 	}
 	for (i = msg->num_elements - 1; i >= 0; i--) {
-		attr = dsdb_attribute_by_lDAPDisplayName(dsc->schema, msg->elements[i].name);
 		if (ldb_attr_cmp(msg->elements[i].name, "uSNChanged") == 0) {
 			int error = 0;
 			/* Read the USN it will used at the end of the filtering
