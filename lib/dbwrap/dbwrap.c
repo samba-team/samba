@@ -634,14 +634,12 @@ static ssize_t tdb_data_buf(const TDB_DATA *dbufs, int num_dbufs,
 
 	for (i=0; i<num_dbufs; i++) {
 		size_t thislen = dbufs[i].dsize;
-		size_t tmp;
 
-		tmp = needed + thislen;
-		if (tmp < needed) {
+		needed += thislen;
+		if (needed < thislen) {
 			/* wrap */
 			return -1;
 		}
-		needed = tmp;
 
 		if ((thislen != 0) && (needed <= buflen)) {
 			memcpy(p, dbufs[i].dptr, thislen);
