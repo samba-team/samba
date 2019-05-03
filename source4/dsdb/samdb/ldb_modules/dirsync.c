@@ -343,6 +343,10 @@ skip:
 
 		attr = dsdb_attribute_by_lDAPDisplayName(dsc->schema,
 				el->name);
+		if (attr == NULL) {
+			continue;
+		}
+
 		keep = false;
 
 		if (attr->linkID & 1) {
