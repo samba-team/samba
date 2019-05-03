@@ -643,7 +643,7 @@ static ssize_t tdb_data_buf(const TDB_DATA *dbufs, int num_dbufs,
 		}
 		needed = tmp;
 
-		if (needed <= buflen) {
+		if ((thislen != 0) && (needed <= buflen)) {
 			memcpy(p, dbufs[i].dptr, thislen);
 			p += thislen;
 		}
