@@ -401,6 +401,9 @@ struct tevent_req *roh_send_CONN_A1_send(TALLOC_CTX *mem_ctx,
 	pkt.u.rts = rts;
 
 	ndr = ndr_push_init_ctx(state);
+	if (ndr == NULL) {
+		return NULL;
+	}
 	ndr->offset = 0;
 	ndr_push_ncacn_packet(ndr, NDR_SCALARS, &pkt);
 
