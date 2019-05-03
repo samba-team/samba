@@ -886,8 +886,10 @@ NTSTATUS authsam_update_bad_pwd_count(struct ldb_context *sam_ctx,
 
 done:
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0, ("Failed to update badPwdCount, badPasswordTime or set lockoutTime on %s: %s\n",
-			  ldb_dn_get_linearized(msg_mod->dn), ldb_errstring(sam_ctx)));
+		DBG_ERR("Failed to update badPwdCount, badPasswordTime or "
+			"set lockoutTime on %s: %s\n",
+			ldb_dn_get_linearized(msg->dn),
+			ldb_errstring(sam_ctx));
 		TALLOC_FREE(mem_ctx);
 		return NT_STATUS_INTERNAL_ERROR;
 	}
