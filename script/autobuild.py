@@ -143,12 +143,12 @@ if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
 
 ctdb_configure_params = " --enable-developer --picky-developer ${PREFIX}"
-samba_configure_params = " --picky-developer ${PREFIX} --with-profiling-data"
+samba_configure_params = " ${ENABLE_COVERAGE} --picky-developer ${PREFIX} --with-profiling-data"
 
 samba_libs_envvars = "PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH"
 samba_libs_envvars += " PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig"
 samba_libs_envvars += " ADDITIONAL_CFLAGS='-Wmissing-prototypes'"
-samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check --enable-debug --picky-developer -C ${PREFIX}"
+samba_libs_configure_base = samba_libs_envvars + " ./configure --abi-check ${ENABLE_COVERAGE} --enable-debug --picky-developer -C ${PREFIX}"
 samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=cmocka,popt,NONE"
 samba_libs_configure_bundled_libs = " --bundled-libraries=!talloc,!pytalloc-util,!tdb,!pytdb,!ldb,!pyldb,!pyldb-util,!tevent,!pytevent,!popt"
 samba_libs_configure_samba = samba_libs_configure_base + samba_libs_configure_bundled_libs
@@ -474,7 +474,7 @@ tasks = {
     # shipping a minimal smbd.
     "samba-nopython": [
                       ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
-                      ("configure", "./configure.developer --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
+                      ("configure", "./configure.developer ${ENABLE_COVERAGE} --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
                       ("make", "make -j", "text/plain"),
                       ("install", "make install", "text/plain"),
                       ("find-python", "script/find_python.sh ${PREFIX}", "text/plain"),
@@ -509,7 +509,7 @@ tasks = {
     # check we can do the same thing using python2
     "samba-nopython-py2": [
                       ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
-                      ("configure", "PYTHON=python2 ./configure.developer --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
+                      ("configure", "PYTHON=python2 ./configure.developer ${ENABLE_COVERAGE} --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
                       ("make", "PYTHON=python2 make -j", "text/plain"),
                       ("install", "PYTHON=python2 make install", "text/plain"),
                       ("find-python", "script/find_python.sh ${PREFIX}", "text/plain"),
@@ -543,11 +543,11 @@ tasks = {
 
     "ldb": [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-              ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+              ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "make test", "text/plain"),
-              ("configure-no-lmdb", "./configure --enable-developer --without-ldb-lmdb -C ${PREFIX}", "text/plain"),
+              ("configure-no-lmdb", "./configure ${ENABLE_COVERAGE} --enable-developer --without-ldb-lmdb -C ${PREFIX}", "text/plain"),
               ("make-no-lmdb", "make", "text/plain"),
               ("install-no-lmdb", "make install", "text/plain"),
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
@@ -556,7 +556,7 @@ tasks = {
 
     "tdb": [
               ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-              ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+              ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "make test", "text/plain"),
@@ -566,7 +566,7 @@ tasks = {
 
     "talloc": [
                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-                 ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+                 ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
                  ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test", "text/plain"),
@@ -576,7 +576,7 @@ tasks = {
 
     "replace": [
                   ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-                  ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+                  ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
                   ("make", "make", "text/plain"),
                   ("install", "make install", "text/plain"),
                   ("test", "make test", "text/plain"),
@@ -586,7 +586,7 @@ tasks = {
 
     "tevent": [
                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-                 ("configure", "./configure --enable-developer -C ${PREFIX}", "text/plain"),
+                 ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
                  ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test", "text/plain"),
