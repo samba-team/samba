@@ -102,6 +102,10 @@ test_prefix = "%s/prefix" % testbase
 test_tmpdir = "%s/tmp" % testbase
 os.environ['TMPDIR'] = test_tmpdir
 
+if options.enable_coverage:
+    LCOV_CMD = "cd ${TEST_SOURCE_DIR} && lcov --capture --directory . --output-file ${LOG_BASE}/${NAME}.info --rc 'geninfo_adjust_src_path=${TEST_SOURCE_DIR}/'"
+else:
+    LCOV_CMD = 'echo "lcov skipped since no --enable-coverage specified"'
 
 cleanup_list = []
 
@@ -208,6 +212,7 @@ tasks = {
                  "--exclude-env=schema_dc "
                  "'",
                  "text/plain"),
+                ("lcov", LCOV_CMD, "text/plain"),
                 ("install", "make install", "text/plain"),
                 ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                 ("clean", "make clean", "text/plain")],
@@ -221,6 +226,7 @@ tasks = {
                      "--include-env=nt4_dc_schannel "
                      "--include-env=nt4_member "
                      "'", "text/plain"),
+                    ("lcov", LCOV_CMD, "text/plain"),
                     ("install", "make install", "text/plain"),
                     ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                     ("clean", "make clean", "text/plain")],
@@ -234,6 +240,7 @@ tasks = {
                             "--include-env=maptoguest "
                             "--include-env=simpleserver "
                             "'", "text/plain"),
+                           ("lcov", LCOV_CMD, "text/plain"),
                            ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-ad-member": [("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
@@ -246,6 +253,7 @@ tasks = {
                          "--include-env=ad_member_idmap_ad "
                          "--include-env=ad_member_rfc2307 "
                          "'", "text/plain"),
+                        ("lcov", LCOV_CMD, "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-ad-dc-1": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
@@ -256,6 +264,7 @@ tasks = {
                        "--include-env=ad_dc_no_nss "
                        "--include-env=ad_dc_no_ntlm "
                        "'", "text/plain"),
+                      ("lcov", LCOV_CMD, "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-ad-dc-2": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
@@ -267,6 +276,7 @@ tasks = {
                          "--include-env=vampire_2000_dc "
                          "--include-env=rodc "
                          "'", "text/plain"),
+                        ("lcov", LCOV_CMD, "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-ad-dc-3": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
@@ -279,6 +289,7 @@ tasks = {
                          "--include-env=preforkrestartdc "
                          "--include-env=proclimitdc "
                          "'", "text/plain"),
+                        ("lcov", LCOV_CMD, "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-ad-dc-4": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
@@ -291,6 +302,7 @@ tasks = {
                          "--include-env=fl2008dc "
                          "--include-env=fl2008r2dc "
                          "'", "text/plain"),
+                        ("lcov", LCOV_CMD, "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-ad-dc-5": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
@@ -300,6 +312,7 @@ tasks = {
                          "TESTS='"
                          "--include-env=ad_dc_default "
                          "'", "text/plain"),
+                        ("lcov", LCOV_CMD, "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-ad-dc-6": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
@@ -309,6 +322,7 @@ tasks = {
                          "TESTS='"
                          "--include-env=ad_dc_slowtests "
                          "'", "text/plain"),
+                        ("lcov", LCOV_CMD, "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
 
@@ -320,6 +334,7 @@ tasks = {
                          "--include-env=schema_dc "
                          "--include-env=schema_pair_dc "
                          "'", "text/plain"),
+                        ("lcov", LCOV_CMD, "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     # We split out the ad_dc_ntvfs tests (which are long) so other test do not wait
@@ -332,6 +347,7 @@ tasks = {
                        "TESTS='"
                        "--include-env=ad_dc_ntvfs "
                        "'", "text/plain"),
+                      ("lcov", LCOV_CMD, "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     # run the backup/restore testenvs separately as they're fairly standalone
@@ -347,11 +363,14 @@ tasks = {
                          "--include-env=labdc "
                          "--include-env=ad_dc_backup "
                          "'", "text/plain"),
+                        ("lcov", LCOV_CMD, "text/plain"),
                         ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
 
     "samba-test-only": [("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
                           ("make", "make -j", "text/plain"),
-                          ("test", 'make test FAIL_IMMEDIATELY=1 TESTS="${TESTS}"', "text/plain")],
+                          ("test", 'make test FAIL_IMMEDIATELY=1 TESTS="${TESTS}"', "text/plain"),
+                          ("lcov", LCOV_CMD, "text/plain"),
+                        ],
 
     # Test cross-compile infrastructure
     "samba-xc": [("random-sleep", "script/random-sleep.sh 900 1500", "text/plain"),
@@ -371,6 +390,7 @@ tasks = {
                    ("make", "make -j", "text/plain"),
                    ("test", "make quicktest FAIL_IMMEDIATELY=1 "
                     "TESTS='--include-env=ad_dc'", "text/plain"),
+                   ("lcov", LCOV_CMD, "text/plain"),
                    ("install", "make install", "text/plain"),
                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                    ("clean", "make clean", "text/plain")],
@@ -431,7 +451,8 @@ tasks = {
                       ("test", "make test "
                        "FAIL_IMMEDIATELY=1 "
                        "TESTS='--include-env=none'",
-                       "text/plain")],
+                       "text/plain"),
+                      ("lcov", LCOV_CMD, "text/plain")],
 
     "samba-static": [
                       ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
@@ -442,6 +463,7 @@ tasks = {
                        "FAIL_IMMEDIATELY=1 "
                        "TESTS='samba3.smb2.create.*nt4_dc'",
                        "text/plain"),
+                      ("lcov", LCOV_CMD, "text/plain"),
 
                       # retry without any required modules
                       ("none-distclean", "make distclean", "text/plain"),
@@ -461,6 +483,7 @@ tasks = {
                       # via "make test TESTS=sometests"
                       ("test", "make test FAIL_IMMEDIATELY=1 "
                        "TESTS='--include-env=ktest'", "text/plain"),
+                      ("lcov", LCOV_CMD, "text/plain"),
                       ("install", "make install", "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                       ("clean", "make clean", "text/plain")
@@ -479,6 +502,7 @@ tasks = {
                       ("install", "make install", "text/plain"),
                       ("find-python", "script/find_python.sh ${PREFIX}", "text/plain"),
                       ("test", "make test-nopython", "text/plain"),
+                      ("lcov", LCOV_CMD, "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                       ("clean", "make clean", "text/plain"),
 
@@ -514,6 +538,7 @@ tasks = {
                       ("install", "PYTHON=python2 make install", "text/plain"),
                       ("find-python", "script/find_python.sh ${PREFIX}", "text/plain"),
                       ("test", "make test-nopython", "text/plain"),
+                      ("lcov", LCOV_CMD, "text/plain"),
                       ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
                       ("clean", "PYTHON=python2 make clean", "text/plain"),
 
@@ -547,8 +572,12 @@ tasks = {
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "make test", "text/plain"),
+              ("lcov", LCOV_CMD, "text/plain"),
+              ("clean", "make clean", "text/plain"),
               ("configure-no-lmdb", "./configure ${ENABLE_COVERAGE} --enable-developer --without-ldb-lmdb -C ${PREFIX}", "text/plain"),
               ("make-no-lmdb", "make", "text/plain"),
+              ("test-no-lmdb", "make test", "text/plain"),
+              ("lcov-no-lmdb", LCOV_CMD, "text/plain"),
               ("install-no-lmdb", "make install", "text/plain"),
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
               ("distcheck", "make distcheck", "text/plain"),
@@ -560,6 +589,7 @@ tasks = {
               ("make", "make", "text/plain"),
               ("install", "make install", "text/plain"),
               ("test", "make test", "text/plain"),
+              ("lcov", LCOV_CMD, "text/plain"),
               ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
               ("distcheck", "make distcheck", "text/plain"),
               ("clean", "make clean", "text/plain")],
@@ -570,6 +600,7 @@ tasks = {
                  ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test", "text/plain"),
+                 ("lcov", LCOV_CMD, "text/plain"),
                  ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
                  ("distcheck", "make distcheck", "text/plain"),
                  ("clean", "make clean", "text/plain")],
@@ -580,6 +611,7 @@ tasks = {
                   ("make", "make", "text/plain"),
                   ("install", "make install", "text/plain"),
                   ("test", "make test", "text/plain"),
+                  ("lcov", LCOV_CMD, "text/plain"),
                   ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
                   ("distcheck", "make distcheck", "text/plain"),
                   ("clean", "make clean", "text/plain")],
@@ -590,6 +622,7 @@ tasks = {
                  ("make", "make", "text/plain"),
                  ("install", "make install", "text/plain"),
                  ("test", "make test", "text/plain"),
+                 ("lcov", LCOV_CMD, "text/plain"),
                  ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
                  ("distcheck", "make distcheck", "text/plain"),
                  ("clean", "make clean", "text/plain")],
