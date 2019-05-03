@@ -695,16 +695,18 @@ static int do_command(void)
 	enum commands mycmd = CMD_HELP;
 	int cmd_len;
 
-	if (cmdname && strlen(cmdname) == 0) {
-		mycmd = CMD_NEXT;
-	} else {
-		while (ctp->name) {
-			cmd_len = strlen(ctp->name);
-			if (strncmp(ctp->name,cmdname,cmd_len) == 0) {
-				mycmd = ctp->cmd;
-				break;
+	if (cmdname != NULL) {
+		if (strlen(cmdname) == 0) {
+			mycmd = CMD_NEXT;
+		} else {
+			while (ctp->name) {
+				cmd_len = strlen(ctp->name);
+				if (strncmp(ctp->name,cmdname,cmd_len) == 0) {
+					mycmd = ctp->cmd;
+					break;
+				}
+				ctp++;
 			}
-			ctp++;
 		}
 	}
 
