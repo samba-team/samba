@@ -3,6 +3,7 @@
 stages:
   - images
   - build
+  - report
 
 variables:
   GIT_STRATEGY: fetch
@@ -179,6 +180,50 @@ samba-nt4:
 
 samba-schemaupgrade:
   extends: .private_template
+
+# 'pages' is a special job which can publish artifacts in `public` dir to gitlab pages
+pages:
+  image: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-${SAMBA_CI_CONTAINER_IMAGE}:${SAMBA_CI_CONTAINER_TAG}
+  stage: report
+  tags:
+    - docker
+    - shared
+  dependencies:  # tell gitlab to download artifacts for these jobs
+    - samba
+    - samba-ad-dc-1
+    - samba-ad-dc-2
+    - samba-ad-dc-3
+    - samba-ad-dc-4
+    - samba-ad-dc-5
+    - samba-ad-dc-6
+    - samba-ad-dc-backup
+    - samba-ad-dc-ntvfs
+    - samba-ad-member
+    - samba-ctdb
+    - samba-fileserver
+    - samba-libs
+    - samba-none-env
+    - samba-nopython
+    - samba-nopython-py2
+    - samba-nt4
+    - samba-schemaupgrade
+    - samba-static
+    - samba-systemkrb5
+    - samba-xc
+    # - ctdb  # TODO
+    - others
+  script:
+    - ./configure.developer
+    - make -j
+    - lcov $(ls *.info | xargs -I{} echo -n "-a {} ") -o all.info
+    - genhtml all.info --output-directory public --prefix=$(pwd) --title "coverage report for $CI_COMMIT_REF_NAME $CI_COMMIT_SHORT_SHA"
+  artifacts:
+    expire_in: 30 days
+    paths:
+      - public
+  only:
+    variables:
+      - $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE == "--enable-coverage"
 
 #
 # We build samba-o3 on all supported distributions
