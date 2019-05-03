@@ -583,20 +583,20 @@ class builder(object):
         self.stdout = open(self.stdout_path, 'w')
         self.stderr = open(self.stderr_path, 'w')
         self.stdin  = open("/dev/null", 'r')
-        self.sdir = "%s/%s" % (testbase, self.tag)
+        self.test_source_dir = "%s/%s" % (testbase, self.tag)
         self.prefix = "%s/%s" % (test_prefix, self.tag)
-        run_cmd("rm -rf %s" % self.sdir)
+        run_cmd("rm -rf %s" % self.test_source_dir)
         run_cmd("rm -rf %s" % self.prefix)
         if cp:
-            run_cmd("cp --recursive --link --archive %s %s" % (test_master, self.sdir), dir=test_master, show=True)
+            run_cmd("cp --recursive --link --archive %s %s" % (test_master, self.test_source_dir), dir=test_master, show=True)
         else:
-            run_cmd("git clone --recursive --shared %s %s" % (test_master, self.sdir), dir=test_master, show=True)
+            run_cmd("git clone --recursive --shared %s %s" % (test_master, self.test_source_dir), dir=test_master, show=True)
         self.start_next()
 
     def start_next(self):
         if self.next == len(self.sequence):
             if not options.nocleanup:
-                run_cmd("rm -rf %s" % self.sdir)
+                run_cmd("rm -rf %s" % self.test_source_dir)
                 run_cmd("rm -rf %s" % self.prefix)
             do_print('%s: Completed OK' % self.name)
             self.done = True
@@ -609,7 +609,7 @@ class builder(object):
 #        if self.output_mime_type == "text/x-subunit":
 #            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
         cwd = os.getcwd()
-        os.chdir("%s/%s" % (self.sdir, self.dir))
+        os.chdir("%s/%s" % (self.test_source_dir, self.dir))
         do_print('%s: [%s] Running %s in %r' % (self.name, self.stage, self.cmd, os.getcwd()))
         self.proc = Popen(self.cmd, shell=True,
                           close_fds=True,
@@ -675,7 +675,7 @@ class buildlist(object):
             self.retry = None
         for b in self.tlist:
             if b.proc is not None:
-                run_cmd("killbysubdir %s > /dev/null 2>&1" % b.sdir, checkfail=False)
+                run_cmd("killbysubdir %s > /dev/null 2>&1" % b.test_source_dir, checkfail=False)
                 b.proc.terminate()
                 b.proc.wait()
                 b.proc = None
