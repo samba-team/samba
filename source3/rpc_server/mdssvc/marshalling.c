@@ -1005,7 +1005,7 @@ static ssize_t sl_unpack_cpx(DALLOC_CTX *query,
 		if (offset == -1) {
 			return -1;
 		}
-		if (tag.size < 16) {
+		if (tag.size < 8) {
 			DBG_WARNING("size too mall: %zu\n", tag.size);
 			return -1;
 		}
@@ -1014,9 +1014,14 @@ static ssize_t sl_unpack_cpx(DALLOC_CTX *query,
 		if (sl_fm == NULL) {
 			return -1;
 		}
-		result = sl_unpack(sl_fm, buf + offset, bufsize - offset );
-		if (result == -1) {
-			return -1;
+
+		if (tag.size >= 16) {
+			result = sl_unpack(sl_fm,
+					   buf + offset,
+					   bufsize - offset );
+			if (result == -1) {
+				return -1;
+			}
 		}
 		result = dalloc_add(query, sl_fm, sl_filemeta_t);
 		if (result != 0) {
