@@ -39,18 +39,18 @@ static int reg_parse_callback_key(struct reg_import *cb_private,
 
 static int reg_parse_callback_val(struct reg_import *cb_private,
 				  const char *name, uint32_t type,
-				  const uint8_t *data, uint32_t len);
+				  const uint8_t *data, size_t len);
 
 static int reg_parse_callback_val_registry_value(struct reg_import *cb_private,
 						 const char *name,
 						 uint32_t type,
 						 const uint8_t *data,
-						 uint32_t len);
+						 size_t len);
 
 static int reg_parse_callback_val_regval_blob(struct reg_import *cb_private,
 					      const char *name, uint32_t type,
 					      const uint8_t *data,
-					      uint32_t len);
+					      size_t len);
 
 static int reg_parse_callback_val_del(struct reg_import *cb_private,
 				      const char *name);
@@ -118,11 +118,11 @@ int reg_parse_callback_key(struct reg_import *p,
 /*----------------------------------------------------------------------------*/
 int reg_parse_callback_val(struct reg_import *p,
 			   const char *name, uint32_t type,
-			   const uint8_t *data, uint32_t len)
+			   const uint8_t *data, size_t len)
 {
 	WERROR werr = WERR_OK;
 
-	DEBUG(TL, ("%s(%x): >%s< = [%x]\n",  __FUNCTION__, type, name, len));
+	DEBUG(TL, ("%s(%x): >%s< = [%zx]\n",  __FUNCTION__, type, name, len));
 	DEBUG_ADD_HEX(TL, data, len);
 
 	werr = p->call.setval.blob(p->call.data, p->open_key, name, type,
@@ -138,7 +138,7 @@ int reg_parse_callback_val(struct reg_import *p,
 /*----------------------------------------------------------------------------*/
 int reg_parse_callback_val_registry_value(struct reg_import *p,
 					  const char *name, uint32_t type,
-					  const uint8_t *data, uint32_t len)
+					  const uint8_t *data, size_t len)
 {
 	WERROR werr = WERR_OK;
 	struct registry_value val = {
@@ -146,7 +146,7 @@ int reg_parse_callback_val_registry_value(struct reg_import *p,
 		.data = data_blob_talloc(p, data, len),
 	};
 
-	DEBUG(TL, ("%s(%x): >%s< = [%x]\n", __FUNCTION__, type, name, len));
+	DEBUG(TL, ("%s(%x): >%s< = [%zx]\n", __FUNCTION__, type, name, len));
 	DEBUG_ADD_HEX(TL, data, len);
 
 	werr = p->call.setval.registry_value(p->call.data, p->open_key,
@@ -163,13 +163,13 @@ int reg_parse_callback_val_registry_value(struct reg_import *p,
 /*----------------------------------------------------------------------------*/
 int reg_parse_callback_val_regval_blob(struct reg_import *p,
 				       const char *name, uint32_t type,
-				       const uint8_t *data, uint32_t len)
+				       const uint8_t *data, size_t len)
 {
 	WERROR werr = WERR_OK;
 	void* mem_ctx = talloc_new(p);
 	struct regval_blob *v = NULL;
 
-	DEBUG(TL, ("%s(%x): >%s< = [%x]\n", __FUNCTION__, type, name, len));
+	DEBUG(TL, ("%s(%x): >%s< = [%zx]\n", __FUNCTION__, type, name, len));
 	DEBUG_ADD_HEX(TL, data, len);
 
 	v = regval_compose(mem_ctx, name, type, data, len);
@@ -219,11 +219,35 @@ int reg_parse_callback_comment(struct reg_import *cb_private,
 }
 
 /******************************************************************************/
-static int nop(void *data)
+static WERROR nop_callback_open(void* private_data,
+		void* parent,
+		const char* name,
+		void** key)
 {
-	return 0;
+	return WERR_OK;
 }
 
+static WERROR nop_callback_close(void* private_data, void* key)
+{
+	return WERR_OK;
+}
+
+static WERROR nop_callback_create(void* private_data,
+		void* parent,
+		const char* name,
+		void** key,
+		bool* existing)
+{
+	return WERR_OK;
+}
+
+
+static WERROR nop_callback_del(void* private_data,
+		void* parent,
+		const char* name)
+{
+	return WERR_OK;
+}
 
 struct reg_parse_callback *reg_import_adapter(TALLOC_CTX *talloc_ctx,
 					      struct reg_import_callback cb)
@@ -234,19 +258,24 @@ struct reg_parse_callback *reg_import_adapter(TALLOC_CTX *talloc_ctx,
 		goto fail;
 	}
 	if (cb.openkey == NULL) {
-		cb.openkey = (reg_import_callback_openkey_t)&nop;
+		cb.openkey = (reg_import_callback_openkey_t)&nop_callback_open;
 	}
 	if (cb.closekey == NULL) {
-		cb.closekey = (reg_import_callback_closekey_t)&nop;
+		cb.closekey =
+			(reg_import_callback_closekey_t)&nop_callback_close;
 	}
 	if (cb.createkey == NULL) {
-		cb.createkey = (reg_import_callback_createkey_t)&nop;
+		cb.createkey =
+			(reg_import_callback_createkey_t)&nop_callback_create;
 	}
 	if (cb.deletekey == NULL) {
-		cb.deletekey = (reg_import_callback_deletekey_t)&nop;
+		cb.deletekey =
+			(reg_import_callback_deletekey_t)&nop_callback_del;
+
 	}
 	if (cb.deleteval == NULL) {
-		cb.deleteval = (reg_import_callback_deleteval_t)&nop;
+		cb.deleteval =
+			(reg_import_callback_deleteval_t)&nop_callback_del;
 	}
 
 	p->call = cb;
