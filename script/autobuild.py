@@ -47,6 +47,59 @@ if gitroot is None:
     raise Exception("Failed to find git root")
 
 
+def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER'))
+
+parser = OptionParser()
+parser.add_option("", "--tail", help="show output while running", default=False, action="store_true")
+parser.add_option("", "--keeplogs", help="keep logs", default=False, action="store_true")
+parser.add_option("", "--nocleanup", help="don't remove test tree", default=False, action="store_true")
+parser.add_option("", "--testbase", help="base directory to run tests in (default %s)" % def_testbase,
+                  default=def_testbase)
+parser.add_option("", "--passcmd", help="command to run on success", default=None)
+parser.add_option("", "--verbose", help="show all commands as they are run",
+                  default=False, action="store_true")
+parser.add_option("", "--rebase", help="rebase on the given tree before testing",
+                  default=None, type='str')
+parser.add_option("", "--pushto", help="push to a git url on success",
+                  default=None, type='str')
+parser.add_option("", "--mark", help="add a Tested-By signoff before pushing",
+                  default=False, action="store_true")
+parser.add_option("", "--fix-whitespace", help="fix whitespace on rebase",
+                  default=False, action="store_true")
+parser.add_option("", "--retry", help="automatically retry if master changes",
+                  default=False, action="store_true")
+parser.add_option("", "--email", help="send email to the given address on failure",
+                  type='str', default=None)
+parser.add_option("", "--email-from", help="send email from the given address",
+                  type='str', default="autobuild@samba.org")
+parser.add_option("", "--email-server", help="send email via the given server",
+                  type='str', default='localhost')
+parser.add_option("", "--always-email", help="always send email, even on success",
+                  action="store_true")
+parser.add_option("", "--daemon", help="daemonize after initial setup",
+                  action="store_true")
+parser.add_option("", "--branch", help="the branch to work on (default=master)",
+                  default="master", type='str')
+parser.add_option("", "--log-base", help="location where the logs can be found (default=cwd)",
+                  default=gitroot, type='str')
+parser.add_option("", "--attach-logs", help="Attach logs to mails sent on success/failure?",
+                  default=False, action="store_true")
+parser.add_option("", "--restrict-tests", help="run as make test with this TESTS= regex",
+                  default='')
+
+(options, args) = parser.parse_args()
+
+if options.retry:
+    if options.rebase is None:
+        raise Exception('You can only use --retry if you also rebase')
+
+testbase = "%s/b%u" % (options.testbase, os.getpid())
+test_master = "%s/master" % testbase
+test_prefix = "%s/prefix" % testbase
+test_tmpdir = "%s/tmp" % testbase
+os.environ['TMPDIR'] = test_tmpdir
+
+
 cleanup_list = []
 
 builddirs = {
@@ -865,47 +918,6 @@ def push_to(push_url, push_branch="master"):
             show=True, dir=test_master)
 
 
-def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER'))
-
-parser = OptionParser()
-parser.add_option("", "--tail", help="show output while running", default=False, action="store_true")
-parser.add_option("", "--keeplogs", help="keep logs", default=False, action="store_true")
-parser.add_option("", "--nocleanup", help="don't remove test tree", default=False, action="store_true")
-parser.add_option("", "--testbase", help="base directory to run tests in (default %s)" % def_testbase,
-                  default=def_testbase)
-parser.add_option("", "--passcmd", help="command to run on success", default=None)
-parser.add_option("", "--verbose", help="show all commands as they are run",
-                  default=False, action="store_true")
-parser.add_option("", "--rebase", help="rebase on the given tree before testing",
-                  default=None, type='str')
-parser.add_option("", "--pushto", help="push to a git url on success",
-                  default=None, type='str')
-parser.add_option("", "--mark", help="add a Tested-By signoff before pushing",
-                  default=False, action="store_true")
-parser.add_option("", "--fix-whitespace", help="fix whitespace on rebase",
-                  default=False, action="store_true")
-parser.add_option("", "--retry", help="automatically retry if master changes",
-                  default=False, action="store_true")
-parser.add_option("", "--email", help="send email to the given address on failure",
-                  type='str', default=None)
-parser.add_option("", "--email-from", help="send email from the given address",
-                  type='str', default="autobuild@samba.org")
-parser.add_option("", "--email-server", help="send email via the given server",
-                  type='str', default='localhost')
-parser.add_option("", "--always-email", help="always send email, even on success",
-                  action="store_true")
-parser.add_option("", "--daemon", help="daemonize after initial setup",
-                  action="store_true")
-parser.add_option("", "--branch", help="the branch to work on (default=master)",
-                  default="master", type='str')
-parser.add_option("", "--log-base", help="location where the logs can be found (default=cwd)",
-                  default=gitroot, type='str')
-parser.add_option("", "--attach-logs", help="Attach logs to mails sent on success/failure?",
-                  default=False, action="store_true")
-parser.add_option("", "--restrict-tests", help="run as make test with this TESTS= regex",
-                  default='')
-
-
 def send_email(subject, text, log_tar):
     if options.email is None:
         do_print("not sending email because the recipient is not set")
@@ -1038,18 +1050,6 @@ The top commit for the tree that was built was:
     send_email('autobuild[%s] success on %s' % (options.branch, platform.node()),
                text, logs)
 
-
-(options, args) = parser.parse_args()
-
-if options.retry:
-    if options.rebase is None:
-        raise Exception('You can only use --retry if you also rebase')
-
-testbase = "%s/b%u" % (options.testbase, os.getpid())
-test_master = "%s/master" % testbase
-test_prefix = "%s/prefix" % testbase
-test_tmpdir = "%s/tmp" % testbase
-os.environ['TMPDIR'] = test_tmpdir
 
 # get the top commit message, for emails
 top_commit_msg = run_cmd("git log -1", dir=gitroot, output=True)
