@@ -197,8 +197,6 @@ static int process_options(int argc, char **argv, int local_flags)
 		usage();
 	}
 
-	cmdline_messaging_context(configfile);
-
 	if (!lp_load_global(configfile)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			configfile);
