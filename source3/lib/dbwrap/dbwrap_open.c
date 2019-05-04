@@ -141,13 +141,19 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			struct messaging_context *msg_ctx;
 			struct ctdbd_connection *conn;
 
+			/*
+			 * Initialize messaging before getting the ctdb
+			 * connection, as the ctdb connection requires messaging
+			 * to be initialized.
+			 */
+			msg_ctx = global_messaging_context();
+
 			conn = messaging_ctdb_connection();
 			if (conn == NULL) {
 				DBG_WARNING("No ctdb connection\n");
 				errno = EIO;
 				return NULL;
 			}
-			msg_ctx = global_messaging_context();
 
 			result = db_open_ctdb(mem_ctx, msg_ctx, base,
 					      hash_size,
