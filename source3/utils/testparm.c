@@ -699,8 +699,6 @@ static void do_per_share_checks(int s)
 		goto done;
 	}
 
-	cmdline_messaging_context(config_file);
-
 	fprintf(stderr,"Load smb config files from %s\n",config_file);
 
 	if (!lp_load_with_registry_shares(config_file)) {

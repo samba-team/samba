@@ -473,9 +473,6 @@ int main( int argc, char *argv[] )
 		exit( 1 );
 	}
 
-	cmdline_messaging_context(configfile == NULL ?
-				  get_dyn_CONFIGFILE() : configfile);
-
 	if ( configfile == NULL ) {
 		lp_load_global(get_dyn_CONFIGFILE());
 	} else if (!lp_load_global(configfile)) {

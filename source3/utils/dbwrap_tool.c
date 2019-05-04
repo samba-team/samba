@@ -422,8 +422,6 @@ int main(int argc, const char **argv)
 		while (extra_argv[extra_argc]) extra_argc++;
 	}
 
-	cmdline_messaging_context(get_dyn_CONFIGFILE());
-
 	lp_load_global(get_dyn_CONFIGFILE());
 
 	if ((extra_argc < 2) || (extra_argc > 5)) {
