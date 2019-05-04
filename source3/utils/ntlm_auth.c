@@ -2504,8 +2504,6 @@ enum {
 
 	poptFreeContext(pc);
 
-	cmdline_messaging_context(get_dyn_CONFIGFILE());
-
 	if (!lp_load_global(get_dyn_CONFIGFILE())) {
 		d_fprintf(stderr, "ntlm_auth: error opening config file %s. Error was %s\n",
 			get_dyn_CONFIGFILE(), strerror(errno));

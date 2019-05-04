@@ -501,7 +501,6 @@ int main(int argc, const char *argv[])
 
 	setlinebuf(stdout);
 
-	cmdline_messaging_context(get_dyn_CONFIGFILE());
 	lp_load_with_registry_shares(get_dyn_CONFIGFILE());
 
 	/* check for initializing secrets.tdb first */
