@@ -77,6 +77,7 @@
 	torture_local_fsrvp,
 	torture_local_util_str_escape,
 	torture_local_tfork,
+	torture_local_mdspkt,
 	NULL
 };
 

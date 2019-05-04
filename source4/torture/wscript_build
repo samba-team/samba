@@ -193,6 +193,8 @@ bld.SAMBA_MODULE('torture_rpc',
                       RPC_NDR_WINSPOOL
                       IREMOTEWINSPOOL_COMMON
                       printer_driver
+                      RPC_NDR_MDSSVC
+                      mdssvc
                       ''' % samba_net + ntvfs_specific['deps'],
                  internal_module=True,
                  enabled=bld.PYTHON_BUILD_IS_ENABLED())
