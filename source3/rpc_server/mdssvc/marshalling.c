@@ -1006,7 +1006,7 @@ static ssize_t sl_unpack_cpx(DALLOC_CTX *query,
 			return -1;
 		}
 		if (tag.size < 16) {
-			DEBUG(1, ("%s: size too mall: %zu", __func__, tag.size));
+			DBG_WARNING("size too mall: %zu\n", tag.size);
 			return -1;
 		}
 
