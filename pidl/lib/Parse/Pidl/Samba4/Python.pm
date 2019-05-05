@@ -2321,7 +2321,7 @@ static inline PyObject *ndr_PyLong_FromLongLong(long long v)
 	if (v > LONG_MAX || v < LONG_MIN) {
 		return PyLong_FromLongLong(v);
 	} else {
-		return PyInt_FromLong(v);
+		return PyLong_FromLong(v);
 	}
 }
 
@@ -2330,7 +2330,7 @@ static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)
 	if (v > LONG_MAX) {
 		return PyLong_FromUnsignedLongLong(v);
 	} else {
-		return PyInt_FromLong(v);
+		return PyLong_FromLong(v);
 	}
 }
 
