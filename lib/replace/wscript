@@ -632,7 +632,7 @@ def configure(conf):
     conf.CHECK_FUNCS('strptime')
     conf.CHECK_DECLS('strptime', headers='time.h')
     conf.CHECK_CODE('''#define LIBREPLACE_CONFIGURE_TEST_STRPTIME
-                       #include "test/strptime.c"''',
+                       #include "tests/strptime.c"''',
                        define='HAVE_WORKING_STRPTIME',
                        execute=True,
                        addmain=False,
@@ -647,25 +647,25 @@ def configure(conf):
                            define='HAVE_GETTIMEOFDAY_TZ_VOID',
                            headers='sys/time.h')
 
-    conf.CHECK_CODE('#include "test/snprintf.c"',
+    conf.CHECK_CODE('#include "tests/snprintf.c"',
                     define="HAVE_C99_VSNPRINTF",
                     execute=True,
                     addmain=False,
                     msg="Checking for C99 vsnprintf")
 
-    conf.CHECK_CODE('#include "test/shared_mmap.c"',
+    conf.CHECK_CODE('#include "tests/shared_mmap.c"',
                     addmain=False, add_headers=False, execute=True,
                     define='HAVE_SHARED_MMAP',
                     msg="Checking for HAVE_SHARED_MMAP")
 
-    conf.CHECK_CODE('#include "test/shared_mremap.c"',
+    conf.CHECK_CODE('#include "tests/shared_mremap.c"',
                     addmain=False, add_headers=False, execute=True,
                     define='HAVE_MREMAP',
                     msg="Checking for HAVE_MREMAP")
 
     # OpenBSD (and I've heard HPUX) doesn't sync between mmap and write.
     # FIXME: Anything other than a 0 or 1 exit code should abort configure!
-    conf.CHECK_CODE('#include "test/incoherent_mmap.c"',
+    conf.CHECK_CODE('#include "tests/incoherent_mmap.c"',
                     addmain=False, add_headers=False, execute=True,
                     define='HAVE_INCOHERENT_MMAP',
                     msg="Checking for HAVE_INCOHERENT_MMAP")
@@ -763,7 +763,7 @@ def configure(conf):
                            #include "snprintf.c"
                            #include "getifaddrs.c"
                            #define getifaddrs_test main
-                           #include "test/getifaddrs.c"
+                           #include "tests/getifaddrs.c"
                            ''' % method,
                            method,
                            lib='nsl socket' + bsd_for_strlcpy,
@@ -861,13 +861,13 @@ def build(bld):
     if bld.CONFIG_SET('HAVE_WNO_FORMAT_TRUNCATION'):
         replace_test_cflags += " -Wno-format-truncation"
     bld.SAMBA_SUBSYSTEM('replace-test',
-                        source='''test/testsuite.c test/strptime.c
-                        test/os2_delete.c test/getifaddrs.c''',
+                        source='''tests/testsuite.c tests/strptime.c
+                        tests/os2_delete.c tests/getifaddrs.c''',
                         deps='replace',
                         cflags=replace_test_cflags)
 
     bld.SAMBA_BINARY('replace_testsuite',
-                     source='test/main.c',
+                     source='tests/main.c',
                      deps='replace replace-test',
                      install=False)
 
@@ -884,6 +884,24 @@ def build(bld):
                         enabled = not bld.CONFIG_SET('HAVE_STDBOOL_H'))
 
     bld.SAMBA_SUBSYSTEM('samba_intl', source='', use_global_deps=False,deps=bld.env.intl_libs)
+
+def testonly(ctx):
+    '''run talloc testsuite'''
+    import samba_utils
+
+    samba_utils.ADD_LD_LIBRARY_PATH('bin/shared')
+    samba_utils.ADD_LD_LIBRARY_PATH('bin/shared/private')
+
+    cmd = os.path.join(Context.g_module.out, 'replace_testsuite')
+    ret = samba_utils.RUN_COMMAND(cmd)
+    print("testsuite returned %d" % ret)
+    sys.exit(ret)
+
+# WAF doesn't build the unit tests for this, maybe because they don't link with talloc?
+# This forces it
+def test(ctx):
+    Options.commands.append('build')
+    Options.commands.append('testonly')
 
 def dist():
     '''makes a tarball for distribution'''
