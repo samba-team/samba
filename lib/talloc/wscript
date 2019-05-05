@@ -154,7 +154,7 @@ def build(bld):
                          install=False)
 
 
-def test(ctx):
+def testonly(ctx):
     '''run talloc testsuite'''
     import samba_utils
 
@@ -175,6 +175,12 @@ def test(ctx):
     pyret = samba_utils.RUN_PYTHON_TESTS(['test_pytalloc.py'])
     print("python testsuite returned %d" % pyret)
     sys.exit(ret or magic_ret or pyret)
+
+# WAF doesn't build the unit tests for this, maybe because they don't link with talloc?
+# This forces it
+def test(ctx):
+    Options.commands.append('build')
+    Options.commands.append('testonly')
 
 def dist():
     '''makes a tarball for distribution'''
