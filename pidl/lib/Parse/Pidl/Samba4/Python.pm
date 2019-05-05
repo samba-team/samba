@@ -2318,11 +2318,7 @@ static inline long long ndr_sizeof2intmax(size_t var_size)
 
 static inline PyObject *ndr_PyLong_FromLongLong(long long v)
 {
-	if (v > LONG_MAX || v < LONG_MIN) {
-		return PyLong_FromLongLong(v);
-	} else {
-		return PyLong_FromLong(v);
-	}
+	return PyLong_FromLongLong(v);
 }
 
 static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)
