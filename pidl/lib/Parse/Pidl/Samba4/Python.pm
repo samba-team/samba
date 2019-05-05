@@ -2029,7 +2029,7 @@ sub ConvertScalarToPython($$$$)
 	}
 
 	if ($ctypename =~ /^(uint64|hyper|NTTIME_hyper|NTTIME|NTTIME_1sec|udlong|udlongr|uid_t|gid_t)$/) {
-		return "ndr_PyLong_FromUnsignedLongLong($cvar)";
+		return "PyLong_FromUnsignedLongLong($cvar)";
 	}
 
 	if ($ctypename =~ /^(char|int|int8|int16|int32|time_t)$/) {
@@ -2041,7 +2041,7 @@ sub ConvertScalarToPython($$$$)
 	# possibly 64 bit unsigned long.  (enums are signed in C,
 	# unsigned in NDR)
 	if ($ctypename =~ /^(uint32|uint3264)$/) {
-		return "ndr_PyLong_FromUnsignedLongLong((uint32_t)$cvar)";
+		return "PyLong_FromUnsignedLongLong((uint32_t)$cvar)";
 	}
 
 	if ($ctypename =~ /^(uint|uint8|uint16|uint1632)$/) {
@@ -2316,11 +2316,6 @@ static inline long long ndr_sizeof2intmax(size_t var_size)
 	return 0;
 }
 
-static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)
-{
-	return PyLong_FromUnsignedLongLong(v);
-}
-
 ");
 
 	foreach my $x (@$ndr) {
@@ -2409,7 +2404,7 @@ static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)
 		my $py_obj;
 		my ($ctype, $cvar) = @{$h->{'val'}};
 		if ($cvar =~ /^[0-9]+$/ or $cvar =~ /^0x[0-9a-fA-F]+$/) {
-			$py_obj = "ndr_PyLong_FromUnsignedLongLong($cvar)";
+			$py_obj = "PyLong_FromUnsignedLongLong($cvar)";
 		} elsif ($cvar =~ /^".*"$/) {
 			$py_obj = "PyStr_FromString($cvar)";
 		} else {
