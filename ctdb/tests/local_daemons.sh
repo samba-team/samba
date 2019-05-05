@@ -399,6 +399,31 @@ local_daemons_print_socket ()
 	onnode -q "$_nodes" "${VALGRIND:-} ${_path} socket ctdbd"
 }
 
+local_daemons_dump_logs ()
+{
+	if [ $# -ne 1 ] || [ "$1" = "-h" ] ; then
+		local_daemons_generic_usage "dump-logs"
+	fi
+
+	_nodes="$1"
+	shift
+
+	onnode_common
+
+	# shellcheck disable=SC2016
+	# $CTDB_BASE must only be expanded under onnode, not in top-level shell
+	onnode -q "$_nodes" 'echo ${CTDB_BASE}/log.ctdb' |
+	while IFS='' read -r _l ; do
+		_dir=$(dirname "$_l")
+		_node=$(basename "$_dir")
+		# Add fake hostname after date and time, which are the
+		# first 2 words on each line
+		sed -e "s|^\\([^ ][^ ]* [^ ][^ ]*\\)|\\1 ${_node}|" "$_l"
+	done |
+	sort
+
+}
+
 usage ()
 {
 	cat <<EOF
@@ -410,6 +435,7 @@ Commands:
   stop           Stop specified daemon(s)
   onnode         Run a command in the environment of specified daemon(s)
   print-socket   Print the Unix domain socket used by specified daemon(s)
+  dump-logs      Dump logs for specified daemon(s) to stdout
 
 All commands use <directory> for daemon configuration
 
@@ -434,5 +460,6 @@ start) local_daemons_start "$@" ;;
 stop) local_daemons_stop "$@" ;;
 onnode) local_daemons_onnode "$@" ;;
 print-socket) local_daemons_print_socket "$@" ;;
+dump-logs) local_daemons_dump_logs "$@" ;;
 *) usage ;;
 esac
