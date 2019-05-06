@@ -286,7 +286,7 @@ sub wait_for_start($$)
 
 	# Ensure we registered all our names
 	if ($testenv_vars->{SERVER_ROLE} eq "domain controller") {
-		my $max_wait = 60;
+		my $max_wait = 120;
 		print "Waiting for dns_update_cache to be created.\n";
 		$count = 0;
 		while (not -e "$testenv_vars->{PRIVATEDIR}/dns_update_cache") {
