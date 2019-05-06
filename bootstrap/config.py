@@ -221,7 +221,7 @@ yum install -y \
 yum clean all
 
 if [ ! -f /usr/bin/python3 ]; then
-    ln -sf /usr/bin/python3.4 /usr/bin/python3
+    ln -sf /usr/bin/python3.6 /usr/bin/python3
 fi
 """
 
@@ -432,8 +432,8 @@ RPM_DISTS = {
         'bootstrap': YUM_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
-            'python3': 'python34',
-            'python3-devel': 'python34-devel',
+            'python3': 'python36',
+            'python3-devel': 'python36-devel',
             'python2-gpg': 'pygpgme',
             'python3-gpg': '',  # no python3-gpg yet
             '@development-tools': '"@Development Tools"',  # add quotes
@@ -455,11 +455,11 @@ RPM_DISTS = {
         'bootstrap': YUM_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
-            'python3': 'python34',
-            'python3-devel': 'python34-devel',
+            'python3': 'python36',
+            'python3-devel': 'python36-devel',
             # although python36-devel is available
             # after epel-release installed
-            # however, all other python3 pkgs are still python34-ish
+            # however, all other python3 pkgs are still python36-ish
             'python2-gpg': 'pygpgme',
             'python3-gpg': '',  # no python3-gpg yet
             '@development-tools': '"@Development Tools"',  # add quotes
