@@ -70,14 +70,3 @@ struct libnet_SamDump_keytab {
 	} out;
 };
 
-struct libnet_samsync_ldb {
-	struct {
-		const char *binding_string;
-		struct cli_credentials *machine_account;
-		struct auth_session_info *session_info;
-	} in;
-	struct {
-		const char *error_string;
-	} out;
-};
-
