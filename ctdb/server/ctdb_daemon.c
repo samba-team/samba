@@ -928,6 +928,44 @@ static int ctdb_clientpid_destructor(struct ctdb_client_pid_list *client_pid)
 	return 0;
 }
 
+static int get_new_client_id(struct reqid_context *idr,
+			     struct ctdb_client *client,
+			     uint32_t *out)
+{
+	uint32_t client_id;
+
+	client_id = reqid_new(idr, client);
+	/*
+	 * Some places in the code (e.g. ctdb_control_db_attach(),
+	 * ctdb_control_db_detach()) assign a special meaning to
+	 * client_id 0.  The assumption is that if client_id is 0 then
+	 * the control has come from another daemon.  Therefore, we
+	 * should never return client_id == 0.
+	 */
+	if (client_id == 0) {
+		/*
+		 * Don't leak ID 0.  This is safe because the ID keeps
+		 * increasing.  A test will be added to ensure that
+		 * this doesn't change.
+		 */
+		reqid_remove(idr, 0);
+
+		client_id = reqid_new(idr, client);
+	}
+
+	if (client_id == REQID_INVALID) {
+		return EINVAL;
+	}
+
+	if (client_id == 0) {
+		/* Every other ID must have been used and we can't use 0 */
+		reqid_remove(idr, 0);
+		return EINVAL;
+	}
+
+	*out = client_id;
+	return 0;
+}
 
 static void ctdb_accept_client(struct tevent_context *ev,
 			       struct tevent_fd *fde, uint16_t flags,
@@ -971,7 +1009,15 @@ static void ctdb_accept_client(struct tevent_context *ev,
 
 	client->ctdb = ctdb;
 	client->fd = fd;
-	client->client_id = reqid_new(ctdb->idr, client);
+
+	ret = get_new_client_id(ctdb->idr, client, &client->client_id);
+	if (ret != 0) {
+		DBG_ERR("Unable to get client ID (%d)\n", ret);
+		close(fd);
+		talloc_free(client);
+		return;
+	}
+
 	client->pid = peer_pid;
 
 	client_pid = talloc(client, struct ctdb_client_pid_list);
