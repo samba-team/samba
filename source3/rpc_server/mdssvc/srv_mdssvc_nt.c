@@ -158,7 +158,6 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 
 	snum = lp_servicenumber(r->in.share_name);
 	if (!VALID_SNUM(snum)) {
-		p->fault_state = DCERPC_FAULT_CANT_PERFORM;
 		return;
 	}
 

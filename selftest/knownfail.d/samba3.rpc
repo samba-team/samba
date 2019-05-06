@@ -1,4 +1,3 @@
-^samba3.rpc.mdssvc.rpccmd.open_unknown_share\(fileserver\)
 ^samba3.rpc.mdssvc.rpccmd.open_spotlight_disabled\(fileserver\)
 ^samba3.rpc.mdssvc.rpccmd.close\(fileserver\)
 ^samba3.rpc.mdssvc.rpccmd.null_ph\(fileserver\)
