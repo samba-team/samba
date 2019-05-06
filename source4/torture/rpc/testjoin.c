@@ -788,15 +788,6 @@ const char *torture_join_dom_dns_name(struct test_join *join)
 	return join->dom_dns_name;
 }
 
-const char *torture_join_server_dn_str(struct test_join *join)
-{
-	if (join->libnet_r) {
-		return join->libnet_r->out.server_dn_str;
-	}
-	return NULL;
-}
-
-
 #if 0 /* Left as the documentation of the join process, but see new implementation in libnet_become_dc.c */
 struct test_join_ads_dc {
 	struct test_join *join;
