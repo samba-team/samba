@@ -4,6 +4,7 @@ import os
 from waflib import Context
 from samba_utils import SET_TARGET_TYPE
 from samba_autoconf import CURRENT_CFLAGS
+from samba_utils import LOAD_ENVIRONMENT
 
 def to_list(str):
     '''Split a list, preserving quoted strings and existing lists'''
@@ -57,7 +58,15 @@ def HEIMDAL_ASN1(name, source,
     # source file. Note that in the case of a option_file, we have more than
     # one source file
     cd_rule = 'cd "${TGT[0].parent.abspath(env)}"'
-    asn1_rule = cd_rule + ' && "${ASN1_COMPILE}" ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file "${SRC[0].abspath(env)}" ${ASN1NAME}'
+    env = LOAD_ENVIRONMENT()
+    if env.ADDRESS_SANITIZER:
+        # If address sanitizer is enabled, we need to suppress leak checking
+        # in the asn1 tool.
+        no_leak_check = " && export ASAN_OPTIONS=detect_leaks=0"
+    else:
+        no_leak_check = ""
+
+    asn1_rule = cd_rule + no_leak_check + ' && "${ASN1_COMPILE}" ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file "${SRC[0].abspath(env)}" ${ASN1NAME}'
 
     source = to_list(source)
 
