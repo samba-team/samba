@@ -518,7 +518,7 @@ static void g_lock_unlock_fn(struct db_record *rec,
 
 	ok = g_lock_parse(value.dptr, value.dsize, &lck);
 	if (!ok) {
-		DBG_DEBUG("g_lock_get for %s failed\n",
+		DBG_DEBUG("g_lock_parse for %s failed\n",
 			  hex_encode_talloc(talloc_tos(),
 					    state->key.dptr,
 					    state->key.dsize));
