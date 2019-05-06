@@ -75,14 +75,6 @@ def generatePythonFile(out_file, errors):
     out_file.write("#include <Python.h>\n")
     out_file.write("#include \"python/py3compat.h\"\n")
     out_file.write("#include \"includes.h\"\n\n")
-    out_file.write("static inline PyObject *ndr_PyLong_FromUnsignedLongLong(unsigned long long v)\n");
-    out_file.write("{\n");
-    out_file.write("\tif (v > LONG_MAX) {\n");
-    out_file.write("\t\treturn PyLong_FromUnsignedLongLong(v);\n");
-    out_file.write("\t} else {\n");
-    out_file.write("\t\treturn PyInt_FromLong(v);\n");
-    out_file.write("\t}\n");
-    out_file.write("}\n\n");
     # This is needed to avoid a missing prototype error from the C
     # compiler. There is never a prototype for this function, it is a
     # module loaded by python with dlopen() and found with dlsym().
@@ -100,7 +92,7 @@ def generatePythonFile(out_file, errors):
     out_file.write("\t\treturn NULL;\n\n");
     for err in errors:
         line = """\tPyModule_AddObject(m, \"%s\", 
-                  \t\tndr_PyLong_FromUnsignedLongLong(NT_STATUS_V(%s)));\n""" % (err.err_define, err.err_define)
+                  \t\tPyLong_FromUnsignedLongLong(NT_STATUS_V(%s)));\n""" % (err.err_define, err.err_define)
         out_file.write(line)
     out_file.write("\n");
     out_file.write("\treturn m;\n");
