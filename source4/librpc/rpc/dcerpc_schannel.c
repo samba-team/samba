@@ -607,21 +607,3 @@ NTSTATUS dcerpc_bind_auth_schannel_recv(struct composite_context *c)
 	talloc_free(c);
 	return status;
 }
-
-
-/*
-  Perform schannel authenticated bind - sync version
- */
-_PUBLIC_ NTSTATUS dcerpc_bind_auth_schannel(TALLOC_CTX *tmp_ctx, 
-				   struct dcerpc_pipe *p,
-				   const struct ndr_interface_table *table,
-				   struct cli_credentials *credentials,
-				   struct loadparm_context *lp_ctx,
-				   uint8_t auth_level)
-{
-	struct composite_context *c;
-
-	c = dcerpc_bind_auth_schannel_send(tmp_ctx, p, table, credentials, lp_ctx,
-					   auth_level);
-	return dcerpc_bind_auth_schannel_recv(c);
-}

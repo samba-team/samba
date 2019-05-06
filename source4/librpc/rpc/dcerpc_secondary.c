@@ -309,23 +309,6 @@ _PUBLIC_ NTSTATUS dcerpc_secondary_connection_recv(struct composite_context *c,
 }
 
 /*
-  Create a secondary dcerpc connection from a primary connection
-  - sync version
-
-  If the primary is a SMB connection then the secondary connection
-  will be on the same SMB connection, but using a new fnum
-*/
-_PUBLIC_ NTSTATUS dcerpc_secondary_connection(struct dcerpc_pipe *p,
-				     struct dcerpc_pipe **p2,
-				     const struct dcerpc_binding *b)
-{
-	struct composite_context *c;
-	
-	c = dcerpc_secondary_connection_send(p, b);
-	return dcerpc_secondary_connection_recv(c, p2);
-}
-
-/*
   Create a secondary DCERPC connection, then bind (and possibly
   authenticate) using the supplied credentials.
 

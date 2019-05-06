@@ -109,30 +109,3 @@ char *smbpasswd_sethexpwd(TALLOC_CTX *mem_ctx, struct samr_Password *pwd, uint16
 	}
 	return p;
 }
-
-/*! Encode account control bits (ACBs) into a string. */
-
-char *smbpasswd_encode_acb_info(TALLOC_CTX *mem_ctx, uint16_t acb_info)
-{
-	char *acct_str = talloc_array(mem_ctx, char, 35);
-	size_t i = 0;
-
-	acct_str[i++] = '[';
-
-	if (acb_info & ACB_PWNOTREQ ) acct_str[i++] = 'N';
-	if (acb_info & ACB_DISABLED ) acct_str[i++] = 'D';
-	if (acb_info & ACB_HOMDIRREQ) acct_str[i++] = 'H';
-	if (acb_info & ACB_TEMPDUP  ) acct_str[i++] = 'T'; 
-	if (acb_info & ACB_NORMAL   ) acct_str[i++] = 'U';
-	if (acb_info & ACB_MNS      ) acct_str[i++] = 'M';
-	if (acb_info & ACB_WSTRUST  ) acct_str[i++] = 'W';
-	if (acb_info & ACB_SVRTRUST ) acct_str[i++] = 'S';
-	if (acb_info & ACB_AUTOLOCK ) acct_str[i++] = 'L';
-	if (acb_info & ACB_PWNOEXP  ) acct_str[i++] = 'X';
-	if (acb_info & ACB_DOMTRUST ) acct_str[i++] = 'I';
-
-	acct_str[i++] = ']';
-	acct_str[i++] = '\0';
-
-	return acct_str;
-}     

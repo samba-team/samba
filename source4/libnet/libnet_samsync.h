@@ -19,46 +19,6 @@
 
 #include "librpc/gen_ndr/netlogon.h"
 
-struct libnet_SamSync_state {
-	struct libnet_context *machine_net_ctx;
-	struct dcerpc_pipe *netlogon_pipe;
-	const char *domain_name;
-	const struct dom_sid *domain_sid;
-	const char *realm;
-	struct GUID *domain_guid;
-};
-
-/* struct and enum for doing a remote domain vampire dump */
-struct libnet_SamSync {
-	struct {
-		const char *binding_string;
-		NTSTATUS (*init_fn)(TALLOC_CTX *mem_ctx, 		
-				    void *private_data,
-				    struct libnet_SamSync_state *samsync_state,
-				    char **error_string);
-		NTSTATUS (*delta_fn)(TALLOC_CTX *mem_ctx, 		
-				     void *private_data,
-				     enum netr_SamDatabaseID database,
-				     struct netr_DELTA_ENUM *delta,
-				     char **error_string);
-		void *fn_ctx;
-		struct cli_credentials *machine_account;
-	} in;
-	struct {
-		const char *error_string;
-	} out;
-};
-
-struct libnet_SamDump {
-	struct {
-		const char *binding_string;
-		struct cli_credentials *machine_account;
-	} in;
-	struct {
-		const char *error_string;
-	} out;
-};
-
 struct libnet_SamDump_keytab {
 	struct {
 		const char *binding_string;
