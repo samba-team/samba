@@ -276,6 +276,7 @@ def cmd_testonly(opt):
         # We try to find the correct libasan automatically
         libasan = Utils.cmd_output('ldd bin/texpect | grep libasan| cut -f 3 -d \ ',
                                    silent=True).strip()
+        libasan = libasan.decode('utf8')
 
         # Have the selftest.pl LD_PRELOAD libasan in the right spot
         env.OPTIONS += " --asan_so_path=" + libasan
