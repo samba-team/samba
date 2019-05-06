@@ -1226,6 +1226,7 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 	sl_filemeta_t *fm;
 	sl_array_t *fm_array;
 	sl_nil_t nil;
+	char *path = NULL;
 	struct stat_ex sb;
 	struct sl_inode_path_map *elem = NULL;
 	void *p;
@@ -1283,25 +1284,24 @@ static bool slrpc_fetch_attributes(struct mds_ctx *mds_ctx,
 	status = dbwrap_fetch(mds_ctx->ino_path_map, reply,
 			      make_tdb_data((void*)&ino, sizeof(uint64_t)),
 			      &val);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(1, ("Failed to fetch inode: %s\n", nt_errstr(status)));
-		goto error;
-	}
-	if (val.dsize != sizeof(p)) {
-		DEBUG(1, ("invalid record pointer size: %zd\n", val.dsize));
-		TALLOC_FREE(val.dptr);
-		goto error;
+	if (NT_STATUS_IS_OK(status)) {
+		if (val.dsize != sizeof(p)) {
+			DBG_ERR("invalid record pointer size: %zd\n", val.dsize);
+			TALLOC_FREE(val.dptr);
+			goto error;
+		}
+
+		memcpy(&p, val.dptr, sizeof(p));
+		elem = talloc_get_type_abort(p, struct sl_inode_path_map);
+		path = elem->path;
+
+		result = sys_stat(path, &sb, false);
+		if (result != 0) {
+			goto error;
+		}
 	}
 
-	memcpy(&p, val.dptr, sizeof(p));
-	elem = talloc_get_type_abort(p, struct sl_inode_path_map);
-
-	result = sys_stat(elem->path, &sb, false);
-	if (result != 0) {
-		goto error;
-	}
-
-	ok = add_filemeta(mds_ctx, reqinfo, fm_array, elem->path, &sb);
+	ok = add_filemeta(mds_ctx, reqinfo, fm_array, path, &sb);
 	if (!ok) {
 		goto error;
 	}
