@@ -1215,11 +1215,6 @@ bld.SAMBA3_BINARY('smbconftort',
                       ''',
                  install=False)
 
-bld.SAMBA3_BINARY('replacetort',
-                 source='../lib/replace/test/main.c',
-                 deps='replace replace-test',
-                 install=False)
-
 bld.SAMBA3_BINARY('msgtest',
                  source='torture/msgtest.c',
                  deps='''

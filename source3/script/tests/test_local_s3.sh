@@ -22,7 +22,7 @@ else
 	echo "Skipping talloctort"
 fi
 
-testit "replacetort" $VALGRIND $BINDIR/replacetort || \
+testit "replace_testsuite" $VALGRIND $BINDIR/replace_testsuite || \
     failed=`expr $failed + 1`
 
 if test -x bin/tdbtorture ; then

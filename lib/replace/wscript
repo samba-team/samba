@@ -866,11 +866,10 @@ def build(bld):
                         deps='replace',
                         cflags=replace_test_cflags)
 
-    if bld.env.standalone_replace:
-        bld.SAMBA_BINARY('replace_testsuite',
-                         source='test/main.c',
-                         deps='replace replace-test',
-                         install=False)
+    bld.SAMBA_BINARY('replace_testsuite',
+                     source='test/main.c',
+                     deps='replace replace-test',
+                     install=False)
 
     # build replacements for stdint.h and stdbool.h if needed
     bld.SAMBA_GENERATOR('replace_stdint_h',
