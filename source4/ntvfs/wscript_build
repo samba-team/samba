@@ -63,13 +63,3 @@ if bld.CONFIG_SET('WITH_NTVFS_FILESERVER'):
 	             init_function='ntvfs_ipc_init',
 	             deps='NDR_NAMED_PIPE_AUTH npa_tstream gssapi samba-credentials DCERPC_SHARE'
     )
-
-
-    bld.SAMBA_MODULE('ntvfs_nbench',
-	             source='nbench/vfs_nbench.c',
-	             subsystem='ntvfs',
-	             init_function='ntvfs_nbench_init',
-	             deps='talloc'
-    )
-
-
