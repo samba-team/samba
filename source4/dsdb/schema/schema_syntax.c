@@ -2797,24 +2797,3 @@ WERROR dsdb_attribute_drsuapi_to_ldb(struct ldb_context *ldb,
 
 	return sa->syntax->drsuapi_to_ldb(&syntax_ctx, sa, in, mem_ctx, out);
 }
-
-WERROR dsdb_attribute_ldb_to_drsuapi(struct ldb_context *ldb,
-				     const struct dsdb_schema *schema,
-				     const struct ldb_message_element *in,
-				     TALLOC_CTX *mem_ctx,
-				     struct drsuapi_DsReplicaAttribute *out)
-{
-	const struct dsdb_attribute *sa;
-	struct dsdb_syntax_ctx syntax_ctx;
-
-	sa = dsdb_attribute_by_lDAPDisplayName(schema, in->name);
-	if (!sa) {
-		return WERR_DS_ATT_NOT_DEF_IN_SCHEMA;
-	}
-
-	/* use default syntax conversion context */
-	dsdb_syntax_ctx_init(&syntax_ctx, ldb, schema);
-
-	return sa->syntax->ldb_to_drsuapi(&syntax_ctx, sa, in, mem_ctx, out);
-}
-
