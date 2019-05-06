@@ -160,11 +160,6 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 	if (!VALID_SNUM(snum)) {
 		return;
 	}
-	if (!lp_spotlight(snum)) {
-		return;
-	}
-
-	DBG_DEBUG("Spotlight enabled: %s\n", r->in.share_name);
 
 	path = lp_path(talloc_tos(), snum);
 	if (path == NULL) {

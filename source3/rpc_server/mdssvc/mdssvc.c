@@ -1521,6 +1521,9 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	}
 
 	backend = lp_spotlight_backend(snum);
+	if (!lp_spotlight(snum)) {
+		backend = SPOTLIGHT_BACKEND_NOINDEX;
+	}
 	switch (backend) {
 	case SPOTLIGHT_BACKEND_NOINDEX:
 		mds_ctx->backend = &mdsscv_backend_noindex;
