@@ -10,13 +10,6 @@ bld.SAMBA_MODULE('service_winbindd',
 	)
 
 
-bld.SAMBA_SUBSYSTEM('WB_HELPER',
-	source='wb_utils.c',
-	autoproto='wb_helper.h',
-	public_deps='RPC_NDR_LSA dcerpc-samr'
-	)
-
-
 bld.SAMBA_SUBSYSTEM('IDMAP',
 	source='idmap.c',
 	autoproto='idmap_proto.h',
