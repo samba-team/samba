@@ -678,6 +678,10 @@ class builder(object):
         self.cmd = self.cmd.replace("${PREFIX}", "--prefix=%s" % self.prefix)
         self.cmd = self.cmd.replace("${PREFIX_DIR}", "%s" % self.prefix)
         self.cmd = self.cmd.replace("${TESTS}", options.restrict_tests)
+        self.cmd = self.cmd.replace("${TEST_SOURCE_DIR}", self.test_source_dir)
+        self.cmd = self.cmd.replace("${LOG_BASE}", options.log_base)
+        self.cmd = self.cmd.replace("${NAME}", self.name)
+        self.cmd = self.cmd.replace("${ENABLE_COVERAGE}", options.enable_coverage)
 #        if self.output_mime_type == "text/x-subunit":
 #            self.cmd += " | %s --immediate" % (os.path.join(os.path.dirname(__file__), "selftest/format-subunit"))
         cwd = os.getcwd()
