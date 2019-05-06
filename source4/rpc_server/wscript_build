@@ -119,7 +119,8 @@ bld.SAMBA_MODULE('dcerpc_lsarpc',
 	)
 
 
-if bld.CONFIG_SET('HAVE_GNUTLS_X509_CRT_SET_SUBJECT_UNIQUE_ID'):
+if (bld.CONFIG_SET('HAVE_GNUTLS_PRIVKEY_EXPORT_X509') and
+    bld.CONFIG_SET('HAVE_GNUTLS_X509_CRT_SET_SUBJECT_UNIQUE_ID')):
 	bld.SAMBA_MODULE('dcerpc_backupkey',
 		source='backupkey/dcesrv_backupkey.c ',
 		autoproto='backupkey/proto.h',

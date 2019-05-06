@@ -20,6 +20,9 @@ conf.CHECK_CFG(package='gnutls',
 # Define gnutls as a system library
 conf.SET_TARGET_TYPE('gnutls', 'SYSLIB')
 
+# Check for gnutls_privkey_export_x509 (>= 3.4.0) required by backupkey
+conf.CHECK_FUNCS_IN('gnutls_privkey_export_x509', 'gnutls')
+
 # Check for gnutls_x509_crt_set_subject_unique_id (>= 3.4.7) required by backupkey
 conf.CHECK_FUNCS_IN('gnutls_x509_crt_set_subject_unique_id', 'gnutls')
 
