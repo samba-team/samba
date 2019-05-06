@@ -233,6 +233,10 @@ pages:
   extends: .shared_template
   variables:
     AUTOBUILD_JOB_NAME: samba-o3
+  only:
+    variables:
+      # do not run o3 for coverage since they are using different images
+      - $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE != "--enable-coverage"
 
 ubuntu1804-samba-o3:
   extends: .samba-o3-template
