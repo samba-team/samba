@@ -1677,18 +1677,26 @@ main() {
 
     conf.env.with_spotlight = False
     if Options.options.with_spotlight:
-        if not conf.env['BISON']:
-            conf.fatal("Spotlight support requested but bison missing")
-        if not conf.env['FLEX']:
-            conf.fatal("Spotlight support requested but flex missing")
+        backends = []
+        if conf.CONFIG_SET('HAVE_TRACKER') and conf.CONFIG_SET('HAVE_GLIB'):
+            conf.env.spotlight_backend_tracker = True
+            backends.append('tracker')
+            conf.DEFINE('HAVE_SPOTLIGHT_BACKEND_TRACKER', '1')
 
-        if not conf.CONFIG_SET('HAVE_TRACKER'):
-            conf.fatal('Missing Gnome Tracker development files')
+        if conf.env.spotlight_backend_tracker:
+            if not conf.env['BISON']:
+                conf.fatal("Spotlight support requested but bison missing")
+            if not conf.env['FLEX']:
+                conf.fatal("Spotlight support requested but flex missing")
 
-        if not conf.CONFIG_SET('HAVE_GLIB'):
-            conf.fatal('Missing glib-2.0 development files')
+        if not conf.env.with_spotlight:
+            if not conf.CONFIG_SET('HAVE_TRACKER'):
+                Logs.warn('Missing libtracker-sparql development files for Spotlight backend "tracker"')
+            if not conf.CONFIG_SET('HAVE_GLIB'):
+                Logs.warn('Missing glib-2.0 development files for Spotlight backend "tracker"')
+            conf.fatal("Spotlight support requested, but dependencies missing")
 
-        Logs.info("building with Spotlight support")
+        Logs.info("Building with Spotlight support, available backends: %s" % ', '.join(backends))
         default_static_modules.extend(TO_LIST('rpc_mdssvc_module'))
         conf.DEFINE('WITH_SPOTLIGHT', '1')
         conf.env.with_spotlight = True

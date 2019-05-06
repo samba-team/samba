@@ -1,0 +1,19 @@
+<samba:parameter name="spotlight backend"
+		 context="S"
+		 type="enum"
+                 enumlist="enum_spotlight_backend"
+		 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>
+	  Spotlight search backend. Available backends:
+
+	<itemizedlist>
+	<listitem><para><constant>tracker</constant> -
+	Gnome Tracker.
+	</para></listitem>
+
+	</itemizedlist>
+	</para>
+</description>
+<value type="default">tracker</value>
+</samba:parameter>

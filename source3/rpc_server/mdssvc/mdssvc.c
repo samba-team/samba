@@ -27,7 +27,9 @@
 #include "lib/dbwrap/dbwrap_rbt.h"
 #include "libcli/security/dom_sid.h"
 #include "mdssvc.h"
+#ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
 #include "mdssvc_tracker.h"
+#endif
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -1046,7 +1048,7 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 
 	DLIST_ADD(mds_ctx->query_list, slq);
 
-	ok = mds_ctx->mdssvc_ctx->backend->search_start(slq);
+	ok = mds_ctx->backend->search_start(slq);
 	if (!ok) {
 		DBG_ERR("backend search_start failed\n");
 		goto error;
@@ -1142,7 +1144,7 @@ static bool slrpc_fetch_query_results(struct mds_ctx *mds_ctx,
 		}
 		if (slq->state == SLQ_STATE_FULL) {
 			slq->state = SLQ_STATE_RESULTS;
-			slq->mds_ctx->mdssvc_ctx->backend->search_cont(slq);
+			slq->mds_ctx->backend->search_cont(slq);
 		}
 		break;
 
@@ -1534,14 +1536,14 @@ static struct mdssvc_ctx *mdssvc_init(struct tevent_context *ev)
 
 	mdssvc_ctx->ev_ctx = ev;
 
-	mdssvc_ctx->backend = &mdsscv_backend_tracker;
-
+#ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
 	ok = mdsscv_backend_tracker.init(mdssvc_ctx);
 	if (!ok) {
 		DBG_ERR("backend init failed\n");
 		TALLOC_FREE(mdssvc_ctx);
 		return NULL;
 	}
+#endif
 
 	return mdssvc_ctx;
 }
@@ -1565,10 +1567,12 @@ bool mds_shutdown(void)
 		return false;
 	}
 
+#ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
 	ok = mdsscv_backend_tracker.shutdown(mdssvc_ctx);
 	if (!ok) {
 		goto fail;
 	}
+#endif
 
 	ok = true;
 fail:
@@ -1612,6 +1616,7 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 			     const char *path)
 {
 	struct mds_ctx *mds_ctx;
+	int backend;
 	bool ok;
 
 	mds_ctx = talloc_zero(mem_ctx, struct mds_ctx);
@@ -1623,6 +1628,19 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	mds_ctx->mdssvc_ctx = mdssvc_init(ev);
 	if (mds_ctx->mdssvc_ctx == NULL) {
 		goto error;
+	}
+
+	backend = lp_spotlight_backend(snum);
+	switch (backend) {
+#ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
+	case SPOTLIGHT_BACKEND_TRACKER:
+		mds_ctx->backend = &mdsscv_backend_tracker;
+		break;
+#endif
+	default:
+		DBG_ERR("Unknown backend %d\n", backend);
+		TALLOC_FREE(mdssvc_ctx);
+		return NULL;
 	}
 
 	mds_ctx->sharename = talloc_strdup(mds_ctx, sharename);
@@ -1650,7 +1668,7 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 		goto error;
 	}
 
-	ok = mds_ctx->mdssvc_ctx->backend->connect(mds_ctx);
+	ok = mds_ctx->backend->connect(mds_ctx);
 	if (!ok) {
 		DBG_ERR("backend connect failed\n");
 		goto error;

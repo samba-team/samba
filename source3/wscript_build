@@ -1325,7 +1325,7 @@ bld.SAMBA3_BINARY('spotlight2sparql',
                  rpc_server/mdssvc/sparql_lexer.l
                  rpc_server/mdssvc/sparql_mapping.c''',
                  deps='samba3-util talloc ' + bld.env['libtracker'],
-                 enabled=bld.env.with_spotlight,
+                 enabled=bld.env.spotlight_backend_tracker,
                  install=False)
 
 bld.SAMBA3_BINARY('tevent_glib_glue_test',

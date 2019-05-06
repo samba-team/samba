@@ -351,6 +351,11 @@ static const struct enum_list enum_ntlm_auth[] = {
 	{-1, NULL}
 };
 
+static const struct enum_list enum_spotlight_backend[] = {
+	{SPOTLIGHT_BACKEND_TRACKER, "tracker"},
+	{-1, NULL}
+};
+
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *
  * NOTE: Handling of duplicated (synonym) parameters:

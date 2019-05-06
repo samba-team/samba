@@ -248,6 +248,11 @@ enum inheritowner_options {
 /* mangled names options */
 enum mangled_names_options {MANGLED_NAMES_NO, MANGLED_NAMES_YES, MANGLED_NAMES_ILLEGAL};
 
+/* Spotlight backend options */
+enum spotlight_backend_options {
+	SPOTLIGHT_BACKEND_TRACKER,
+};
+
 /*
  * Default passwd chat script.
  */

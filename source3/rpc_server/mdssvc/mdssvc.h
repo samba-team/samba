@@ -111,12 +111,12 @@ struct sl_inode_path_map {
 /* Per process state */
 struct mdssvc_ctx {
 	struct tevent_context *ev_ctx;
-	struct mdssvc_backend *backend;
 	void *backend_private;
 };
 
 /* Per tree connect state */
 struct mds_ctx {
+	struct mdssvc_backend *backend;
 	struct mdssvc_ctx *mdssvc_ctx;
 	void *backend_private;
 	struct auth_session_info *pipe_session_info;
