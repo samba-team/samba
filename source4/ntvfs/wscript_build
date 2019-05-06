@@ -22,14 +22,6 @@ if bld.CONFIG_SET('WITH_NTVFS_FILESERVER'):
     )
 
 
-    bld.SAMBA_MODULE('ntvfs_smb2',
-	             source='smb2/vfs_smb2.c',
-	             subsystem='ntvfs',
-	             init_function='ntvfs_smb2_init',
-	             deps='LIBCLI_SMB smbclient-raw param_options'
-    )
-
-
     bld.SAMBA_MODULE('ntvfs_simple',
 	             source='simple/vfs_simple.c simple/svfs_util.c',
 	             autoproto='simple/proto.h',
