@@ -90,7 +90,8 @@ static bool g_lock_parse(uint8_t *buf, size_t buflen, struct g_lock *lck)
 	return true;
 }
 
-static void g_lock_get_rec(struct g_lock *lck, size_t i,
+static void g_lock_get_rec(const struct g_lock *lck,
+			   size_t i,
 			   struct g_lock_rec *rec)
 {
 	if (i >= lck->num_recs) {
