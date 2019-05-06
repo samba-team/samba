@@ -317,9 +317,9 @@ void _mdssvc_close(struct pipes_struct *p, struct mdssvc_close *r)
 
 	DEBUG(10, ("%s: path: %s\n", __func__, mds_ctx->spath));
 
+	*r->out.out_handle = r->in.in_handle;
 	close_policy_hnd(p, &r->in.in_handle);
 
-	ZERO_STRUCTP(r->out.out_handle);
 	*r->out.status = 0;
 
 	return;
