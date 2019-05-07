@@ -62,6 +62,48 @@ static bool test_init_anonymous(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_guess(struct torture_context *tctx)
+{
+	struct cli_credentials *creds = cli_credentials_init_anon(tctx);
+	enum credentials_use_kerberos old_kerb_state = \
+		cli_credentials_get_kerberos_state(creds);
+	const char *logname = getenv("LOGNAME");
+	const char *user = getenv("USER");
+	const char *passwd = getenv("PASSWD");
+	const char *passwd_fd = getenv("PASSWD_FD");
+	const char *passwd_file = getenv("PASSWD_FILE");
+
+	cli_credentials_set_kerberos_state(creds, CRED_MUST_USE_KERBEROS);
+
+	unsetenv("USER");
+	unsetenv("PASSWD_FD");
+	unsetenv("PASSWD_FILE");
+
+	setenv("LOGNAME", "xx", 1);
+	setenv("PASSWD", "xx", 1);
+
+	cli_credentials_guess(creds, NULL);
+	if (logname != NULL) {
+		setenv("LOGNAME", logname, 1);
+	}
+	if (user != NULL) {
+		setenv("USER", user, 1);
+	}
+	if (passwd != NULL) {
+		setenv("PASSWD", passwd, 1);
+	}
+	if (passwd_fd != NULL) {
+		setenv("PASSWD_FD", passwd_fd, 1);
+	}
+	if (passwd_file != NULL) {
+		setenv("PASSWD_FILE", passwd_file, 1);
+	}
+	cli_credentials_set_kerberos_state(creds, old_kerb_state);
+
+	return true;
+}
+
+
 static bool test_parse_string(struct torture_context *tctx)
 {
 	struct cli_credentials *creds = cli_credentials_init_anon(tctx);
@@ -112,7 +154,9 @@ struct torture_suite *torture_local_credentials(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "init", test_init);
 	torture_suite_add_simple_test(suite, "init anonymous", 
 				      test_init_anonymous);
-	torture_suite_add_simple_test(suite, "parse_string", 
+	torture_suite_add_simple_test(suite, "guess",
+				      test_guess);
+	torture_suite_add_simple_test(suite, "parse_string",
 				      test_parse_string);
 
 	return suite;
