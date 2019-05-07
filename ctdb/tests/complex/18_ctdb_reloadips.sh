@@ -187,6 +187,33 @@ check_ips ()
     fi
 }
 
+# ctdb reloadips will fail if it can't disable takover runs.  The most
+# likely reason for this is that there is already a takeover run in
+# progress.  We can't predict when this will happen, so retry if this
+# occurs.
+do_ctdb_reloadips ()
+{
+	local retry_max=10
+	local retry_count=0
+	while : ; do
+		if try_command_on_node "$test_node" "$CTDB reloadips" ; then
+			return 0
+		fi
+
+		if [ "$out" != "Failed to disable takeover runs" ] ; then
+			return 1
+		fi
+
+		if [ $retry_count -ge $retry_max ] ; then
+			return 1
+		fi
+
+		retry_count=$((retry_count + 1))
+		echo "Retrying..."
+		sleep_for 1
+	done
+}
+
 ####################
 
 new_ip_max=100
@@ -196,7 +223,7 @@ new_ip_max=100
 add_ips_to_original_config \
     $test_node "$addresses" "$iface" "$prefix" 1 $new_ip_max
 
-try_command_on_node $test_node "$CTDB reloadips"
+do_ctdb_reloadips
 
 check_ips $test_node "$iface" "$prefix" 1 $new_ip_max
 
@@ -210,7 +237,7 @@ echo "Using 'ctdb reloadips' to remove the 1st address just added..."
 add_ips_to_original_config \
     $test_node "$addresses" "$iface" "$prefix" 2 $new_ip_max
 
-try_command_on_node $test_node "$CTDB reloadips"
+do_ctdb_reloadips
 
 check_ips $test_node "$iface" "$prefix" 2 $new_ip_max
 
@@ -225,7 +252,7 @@ echo "Updating to include only about 1/2 of the new IPs..."
 add_ips_to_original_config \
     $test_node "$addresses" "$iface" "$prefix" $start $new_ip_max
 
-try_command_on_node $test_node "$CTDB reloadips"
+do_ctdb_reloadips
 
 check_ips $test_node "$iface" "$prefix" $start $new_ip_max
 
@@ -237,6 +264,6 @@ try_command_on_node any $CTDB sync
 echo "Restoring original IP configuration..."
 restore_public_addresses
 
-try_command_on_node $test_node "$CTDB reloadips"
+do_ctdb_reloadips
 
 check_ips $test_node "$iface" "$prefix" 0
