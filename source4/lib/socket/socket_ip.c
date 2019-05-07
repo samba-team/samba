@@ -999,7 +999,7 @@ static struct socket_address *ipv6_tcp_get_my_addr(struct socket_context *sock, 
 		return NULL;
 	}
 	
-	local->addr = talloc_strdup(mem_ctx, addrstring);
+	local->addr = talloc_strdup(local, addrstring);
 	if (!local->addr) {
 		talloc_free(local);
 		return NULL;
