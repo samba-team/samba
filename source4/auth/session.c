@@ -115,10 +115,6 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	if (!sids) {
-		talloc_free(tmp_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
 
 	num_sids = user_info_dc->num_sids;
 
@@ -134,14 +130,19 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 
 	if (session_info_flags & AUTH_SESSION_INFO_DEFAULT_GROUPS) {
 		sids = talloc_realloc(tmp_ctx, sids, struct dom_sid, num_sids + 2);
-		NT_STATUS_HAVE_NO_MEMORY(sids);
+		if (sids == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		if (!dom_sid_parse(SID_WORLD, &sids[num_sids])) {
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 		num_sids++;
 
 		if (!dom_sid_parse(SID_NT_NETWORK, &sids[num_sids])) {
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 		num_sids++;
@@ -149,9 +150,13 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 
 	if (session_info_flags & AUTH_SESSION_INFO_AUTHENTICATED) {
 		sids = talloc_realloc(tmp_ctx, sids, struct dom_sid, num_sids + 1);
-		NT_STATUS_HAVE_NO_MEMORY(sids);
+		if (sids == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		if (!dom_sid_parse(SID_NT_AUTHENTICATED_USERS, &sids[num_sids])) {
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 		num_sids++;
@@ -159,9 +164,13 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 
 	if (session_info_flags & AUTH_SESSION_INFO_NTLM) {
 		sids = talloc_realloc(tmp_ctx, sids, struct dom_sid, num_sids + 1);
-		NT_STATUS_HAVE_NO_MEMORY(sids);
+		if (sids == NULL) {
+			TALLOC_FREE(tmp_ctx);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		if (!dom_sid_parse(SID_NT_NTLM_AUTHENTICATION, &sids[num_sids])) {
+			TALLOC_FREE(tmp_ctx);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 		num_sids++;
@@ -187,11 +196,11 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 				"<SID=%s>",
 				dom_sid_str_buf(&sids[i], &buf));
 			if (sid_dn == NULL) {
-				TALLOC_FREE(user_info_dc);
+				TALLOC_FREE(tmp_ctx);
 				return NT_STATUS_NO_MEMORY;
 			}
 			sid_blob = data_blob_string_const(sid_dn);
-			
+
 			/* This function takes in memberOf values and expands
 			 * them, as long as they meet the filter - so only
 			 * builtin groups
