@@ -118,6 +118,7 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 	ret = PyObject_New(dcerpc_InterfaceObject, type);
 	ret->pipe = NULL;
 	ret->binding_handle = NULL;
+	ret->ev = NULL;
 	ret->mem_ctx = talloc_new(NULL);
 	if (ret->mem_ctx == NULL) {
 		PyErr_NoMemory();
@@ -125,30 +126,26 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 	}
 
 	if (strncmp(binding_string, "irpc:", 5) == 0) {
-		struct tevent_context *event_ctx;
 		struct loadparm_context *lp_ctx;
 
-		event_ctx = s4_event_context_init(ret->mem_ctx);
-		if (event_ctx == NULL) {
+		ret->ev = s4_event_context_init(ret->mem_ctx);
+		if (ret->ev == NULL) {
 			PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
-			TALLOC_FREE(ret->mem_ctx);
 			Py_DECREF(ret);
 			return NULL;
 		}
 
-		lp_ctx = lpcfg_from_py_object(event_ctx, py_lp_ctx);
+		lp_ctx = lpcfg_from_py_object(ret->ev, py_lp_ctx);
 		if (lp_ctx == NULL) {
 			PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
-			TALLOC_FREE(ret->mem_ctx);
 			Py_DECREF(ret);
 			return NULL;
 		}
 
 		status = pyrpc_irpc_connect(ret->mem_ctx, binding_string+5, table,
-					    event_ctx, lp_ctx, &ret->binding_handle);
+					    ret->ev, lp_ctx, &ret->binding_handle);
 		if (!NT_STATUS_IS_OK(status)) {
 			PyErr_SetNTSTATUS(status);
-			TALLOC_FREE(ret->mem_ctx);
 			Py_DECREF(ret);
 			return NULL;
 		}
@@ -159,7 +156,6 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 
 		py_base = PyImport_ImportModule("samba.dcerpc.base");
 		if (py_base == NULL) {
-			TALLOC_FREE(ret->mem_ctx);
 			Py_DECREF(ret);
 			return NULL;
 		}
@@ -167,7 +163,6 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 		ClientConnection_Type = (PyTypeObject *)PyObject_GetAttrString(py_base, "ClientConnection");
 		if (ClientConnection_Type == NULL) {
 			PyErr_SetNone(PyExc_TypeError);
-			TALLOC_FREE(ret->mem_ctx);
 			Py_DECREF(ret);
 			Py_DECREF(py_base);
 			return NULL;
@@ -175,7 +170,6 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 
 		if (!PyObject_TypeCheck(py_basis, ClientConnection_Type)) {
 			PyErr_SetString(PyExc_TypeError, "basis_connection must be a DCE/RPC connection");
-			TALLOC_FREE(ret->mem_ctx);
 			Py_DECREF(ret);
 			Py_DECREF(py_base);
 			Py_DECREF(ClientConnection_Type);
@@ -186,7 +180,17 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 					 ((dcerpc_InterfaceObject *)py_basis)->pipe);
 		if (base_pipe == NULL) {
 			PyErr_NoMemory();
-			TALLOC_FREE(ret->mem_ctx);
+			Py_DECREF(ret);
+			Py_DECREF(py_base);
+			Py_DECREF(ClientConnection_Type);
+			return NULL;
+		}
+
+		ret->ev = talloc_reference(
+			ret->mem_ctx,
+			((dcerpc_InterfaceObject *)py_basis)->ev);
+		if (ret->ev == NULL) {
+			PyErr_NoMemory();
 			Py_DECREF(ret);
 			Py_DECREF(py_base);
 			Py_DECREF(ClientConnection_Type);
@@ -196,7 +200,6 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 		status = dcerpc_secondary_context(base_pipe, &ret->pipe, table);
 		if (!NT_STATUS_IS_OK(status)) {
 			PyErr_SetNTSTATUS(status);
-			TALLOC_FREE(ret->mem_ctx);
 			Py_DECREF(ret);
 			Py_DECREF(py_base);
 			Py_DECREF(ClientConnection_Type);
@@ -207,22 +210,19 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 		Py_XDECREF(ClientConnection_Type);
 		Py_XDECREF(py_base);
 	} else {
-		struct tevent_context *event_ctx;
 		struct loadparm_context *lp_ctx;
 		struct cli_credentials *credentials;
 
-		event_ctx = s4_event_context_init(ret->mem_ctx);
-		if (event_ctx == NULL) {
+		ret->ev = s4_event_context_init(ret->mem_ctx);
+		if (ret->ev == NULL) {
 			PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
-			TALLOC_FREE(ret->mem_ctx);
 			Py_DECREF(ret);
 			return NULL;
 		}
 
-		lp_ctx = lpcfg_from_py_object(event_ctx, py_lp_ctx);
+		lp_ctx = lpcfg_from_py_object(ret->ev, py_lp_ctx);
 		if (lp_ctx == NULL) {
 			PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
-			TALLOC_FREE(ret->mem_ctx);
 			Py_DECREF(ret);
 			return NULL;
 		}
@@ -230,24 +230,16 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 		credentials = cli_credentials_from_py_object(py_credentials);
 		if (credentials == NULL) {
 			PyErr_SetString(PyExc_TypeError, "Expected credentials");
-			TALLOC_FREE(ret->mem_ctx);
 			Py_DECREF(ret);
 			return NULL;
 		}
 		status = dcerpc_pipe_connect(ret->mem_ctx, &ret->pipe, binding_string,
-			     table, credentials, event_ctx, lp_ctx);
+			     table, credentials, ret->ev, lp_ctx);
 		if (!NT_STATUS_IS_OK(status)) {
 			PyErr_SetNTSTATUS(status);
-			TALLOC_FREE(ret->mem_ctx);
 			Py_DECREF(ret);
 			return NULL;
 		}
-
-		/*
-		 * the event context is cached under the connection,
-		 * so let it be a child of it.
-		 */
-		talloc_steal(ret->pipe->conn, event_ctx);
 	}
 
 	if (ret->pipe) {

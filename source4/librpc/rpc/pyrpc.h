@@ -44,6 +44,7 @@ typedef struct {
 	TALLOC_CTX *mem_ctx;
 	struct dcerpc_pipe *pipe;
 	struct dcerpc_binding_handle *binding_handle;
+	struct tevent_context *ev;
 } dcerpc_InterfaceObject;
 
 
