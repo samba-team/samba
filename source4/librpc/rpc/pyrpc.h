@@ -22,10 +22,6 @@
 
 #include "libcli/util/pyerrors.h"
 
-#ifndef Py_TYPE /* Py_TYPE is only available on Python > 2.6 */
-#define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
-#endif
-
 #define PY_CHECK_TYPE(type, var, fail)					\
 	if (var == NULL) {						\
 		PyErr_Format(PyExc_TypeError,				\
