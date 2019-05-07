@@ -26,10 +26,19 @@
 #define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
 #endif
 
-#define PY_CHECK_TYPE(type, var, fail) \
-	if (!PyObject_TypeCheck(var, type)) {\
-		PyErr_Format(PyExc_TypeError, __location__ ": Expected type '%s' for '%s' of type '%s'", (type)->tp_name, #var, Py_TYPE(var)->tp_name); \
-		fail; \
+#define PY_CHECK_TYPE(type, var, fail)					\
+	if (var == NULL) {						\
+		PyErr_Format(PyExc_TypeError,				\
+			     __location__				\
+			     ": Expected type '%s' for '%s', got NULL", \
+			     (type)->tp_name, #var);			\
+		fail;							\
+	} else if (!PyObject_TypeCheck(var, type)) {			\
+		PyErr_Format(PyExc_TypeError,				\
+			     __location__				\
+			     ": Expected type '%s' for '%s' of type '%s'", \
+			     (type)->tp_name, #var, Py_TYPE(var)->tp_name); \
+		fail;							\
 	}
 
 #define dom_sid0_Type dom_sid_Type
