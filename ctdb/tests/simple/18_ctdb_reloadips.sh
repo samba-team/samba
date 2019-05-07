@@ -29,8 +29,6 @@ cluster_is_healthy
 
 select_test_node_and_ips
 
-echo "Emptying public addresses file on $test_node"
-
 try_command_on_node $test_node $CTDB_TEST_WRAPPER ctdb_base_show
 addresses="${out}/public_addresses"
 echo "Public addresses file on node $test_node is \"$addresses\""
@@ -69,44 +67,6 @@ do_ctdb_reloadips ()
 	done
 }
 
-try_command_on_node $test_node "mv $addresses $backup && touch $addresses"
-
-do_ctdb_reloadips
-
-echo "Getting list of public IPs on node $test_node"
-try_command_on_node $test_node "$CTDB ip | tail -n +2"
-
-if [ -n "$out" ] ; then
-    cat <<EOF
-BAD: node $test_node still has ips:
-$out
-EOF
-    exit 1
-fi
-
-echo "GOOD: no IPs left on node $test_node"
-
-try_command_on_node any $CTDB sync
-
-echo "Restoring addresses"
-restore_public_addresses
-
-do_ctdb_reloadips
-
-echo "Getting list of public IPs on node $test_node"
-try_command_on_node $test_node "$CTDB ip | tail -n +2"
-
-if [ -z "$out" ] ; then
-    echo "BAD: node $test_node has no ips"
-    exit 1
-fi
-
-cat <<EOF
-GOOD: node $test_node has these addresses:
-$out
-EOF
-
-try_command_on_node any $CTDB sync
 
 echo "Removing IP $test_ip from node $test_node"
 
@@ -128,3 +88,46 @@ cat <<EOF
 GOOD: node $test_node is no longer hosting IP $test_ip:
 $out
 EOF
+
+try_command_on_node any $CTDB sync
+
+
+echo "Restoring addresses"
+restore_public_addresses
+
+do_ctdb_reloadips
+
+echo "Getting list of public IPs on node $test_node"
+try_command_on_node $test_node "$CTDB ip | tail -n +2"
+
+if [ -z "$out" ] ; then
+    echo "BAD: node $test_node has no ips"
+    exit 1
+fi
+
+cat <<EOF
+GOOD: node $test_node has these addresses:
+$out
+EOF
+
+try_command_on_node any $CTDB sync
+
+
+echo "Emptying public addresses file on $test_node"
+
+try_command_on_node $test_node "mv $addresses $backup && touch $addresses"
+
+do_ctdb_reloadips
+
+echo "Getting list of public IPs on node $test_node"
+try_command_on_node $test_node "$CTDB ip | tail -n +2"
+
+if [ -n "$out" ] ; then
+    cat <<EOF
+BAD: node $test_node still has ips:
+$out
+EOF
+    exit 1
+fi
+
+echo "GOOD: no IPs left on node $test_node"
