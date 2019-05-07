@@ -265,6 +265,7 @@ struct reg_parse* reg_parse_new(const void* ctx,
 	assert(&s->reg_format_callback == (struct reg_format_callback*)s);
 	return s;
 fail:
+	set_iconv(&s->str2UTF16, NULL, NULL);
 	talloc_free(s);
 	return NULL;
 }
@@ -787,59 +788,13 @@ done:
 	return ret;
 }
 
-
-static void
-handle_iconv_errno(int err, const char* obuf, size_t linenum,
-		   smb_iconv_t cd, const char** iptr, size_t* ilen,
-		   char** optr, size_t *olen)
+static void display_iconv_error_bytes(const char *inbuf, size_t len)
 {
-	const char *pos = obuf;
-	const char *ptr = obuf;
-	switch(err) {
-	case EINVAL:
-		/* DEBUG(0, ("Incomplete multibyte sequence\n")); */
-	case E2BIG:
-		return;
-	case EILSEQ:
-		break;
-	default:
-		assert(false);
+	size_t i;
+	for (i = 0; i < 4 && i < len; i++) {
+		DEBUGADD(0, ("<%02x>", (unsigned char)inbuf[i]));
 	}
-
-	**optr = '\0';
-	while (srprs_line(&ptr, NULL) && srprs_nl(&ptr, NULL)) {
-		pos = ptr;
-		linenum++;
-	}
-	if (pos == *optr) {
-		pos = MAX(obuf, *optr-60);
-	}
-	DEBUG(0, ("Illegal multibyte sequence at line %lu: %s",
-		  (long unsigned)(linenum+1), pos));
-
-	assert((*ilen) > 0);
-	do {
-		size_t il = 1;
-		DEBUGADD(0, ("<%02x>", (unsigned char)**iptr));
-
-		if ((*olen) > 0) {
-			*(*optr)++ = '\?';
-			(*iptr)++;
-			/* Todo: parametrize, e.g. skip: *optr++ = *iptr++; */
-			(*ilen)--;
-		}
-
-		if (smb_iconv(cd, iptr, &il, optr, olen) != (size_t)-1 || (errno != EILSEQ)) {
-			if(il == 0)
-				(*ilen)-- ;
-			break;
-		}
-
-	}
-	while ((*ilen > 0) && (*olen > 0));
-
 	DEBUGADD(0, ("\n"));
-
 }
 
 int reg_parse_fd(int fd, const struct reg_parse_callback* cb, const char* opts)
@@ -848,106 +803,255 @@ int reg_parse_fd(int fd, const struct reg_parse_callback* cb, const char* opts)
 	cbuf* line               = cbuf_new(mem_ctx);
 	smb_iconv_t cd           = (smb_iconv_t)-1;
 	struct reg_parse* parser = NULL;
-	char buf_raw[1024];
-	char buf_unix[1025];
-
+	char buf_in[1024];
+	char buf_out[1025] = { 0 };
 	ssize_t nread;
-	size_t  nconv;
-	const char* pos;
 	const char* iptr;
 	char* optr;
         size_t ilen;
 	size_t olen;
+	size_t avail_osize = sizeof(buf_out)-1;
+	size_t space_to_read = sizeof(buf_in);
 	int ret = -1;
 	bool eof = false;
-	size_t linenum = 0;
+	size_t linecount = 0;
 
 	struct reg_parse_fd_opt opt = reg_parse_fd_opt(mem_ctx, opts);
 
 	if (cb == NULL) {
-		DEBUG(0,("reg_parse_fd: NULL callback\n"));
+		DBG_ERR("NULL callback\n");
+		ret = -1;
 		goto done;
 	}
 
-	nread = read(fd, buf_raw, sizeof(buf_raw));
+	nread = read(fd, buf_in, space_to_read);
 	if (nread < 0) {
-		DEBUG(0, ("reg_parse_fd: read failed: %s\n", strerror(errno)));
-		ret = nread;
+		DBG_ERR("read failed: %s\n", strerror(errno));
+		ret = -1;
+		goto done;
+	}
+	if (nread == 0) {
+		/* Empty file. */
+		eof = true;
 		goto done;
 	}
 
-	iptr = &buf_raw[0];
+	iptr = buf_in;
 	ilen = nread;
 
 	if (!guess_charset(&iptr, &ilen,
 			   &opt.file_enc, &opt.str_enc))
 	{
-		DEBUG(0, ("reg_parse_fd: failed to guess encoding\n"));
+		DBG_ERR("reg_parse_fd: failed to guess encoding\n");
+		ret = -1;
 		goto done;
 	}
 
-	DEBUG(10, ("reg_parse_fd: encoding file: %s str: %s\n",
-		  opt.file_enc, opt.str_enc));
+	if (ilen == 0) {
+		/* File only contained charset info. */
+		eof = true;
+		ret = -1;
+		goto done;
+	}
+
+	DBG_DEBUG("reg_parse_fd: encoding file: %s str: %s\n",
+		  opt.file_enc, opt.str_enc);
 
 
 	if (!set_iconv(&cd, "unix", opt.file_enc)) {
-		DEBUG(0, ("reg_parse_fd: failed to set file encoding %s\n",
-			  opt.file_enc));
+		DBG_ERR("reg_parse_fd: failed to set file encoding %s\n",
+			  opt.file_enc);
+		ret = -1;
 		goto done;
 	}
 
 	parser = reg_parse_new(mem_ctx, *cb, opt.str_enc, opt.flags);
+	if (parser == NULL) {
+		ret = -1;
+		goto done;
+	}
 
-	optr = &buf_unix[0];
+	/* Move input data to start of buf_in. */
+	if (iptr > buf_in) {
+		memmove(buf_in, iptr, ilen);
+		iptr = buf_in;
+	}
+
+	optr = buf_out;
+	/* Leave last byte for null termination. */
+	olen = avail_osize;
+
+	/*
+	 * We read from buf_in (iptr), iconv converting into
+	 * buf_out (optr).
+	 */
+
 	while (!eof) {
-		olen = sizeof(buf_unix) - (optr - buf_unix) - 1 ;
-		while ( olen > 0 ) {
-			memmove(buf_raw, iptr, ilen);
+		const char *pos;
+		size_t nconv;
 
-			nread = read(fd, buf_raw + ilen, sizeof(buf_raw) - ilen);
-			if (nread < 0) {
-				DEBUG(0, ("reg_parse_fd: read failed: %s\n", strerror(errno)));
-				ret = nread;
+		if (olen == 0) {
+			/* We're out of possible room. */
+			DBG_ERR("no room in output buffer\n");
+			ret = -1;
+			goto done;
+		}
+		nconv = smb_iconv(cd, &iptr, &ilen, &optr, &olen);
+		if (nconv == (size_t)-1) {
+			bool valid_err = false;
+			if (errno == EINVAL) {
+				valid_err = true;
+			}
+			if (errno == E2BIG) {
+				valid_err = true;
+			}
+			if (!valid_err) {
+				DBG_ERR("smb_iconv error in file at line %zu: ",
+					  linecount);
+				display_iconv_error_bytes(iptr, ilen);
+				ret = -1;
 				goto done;
 			}
-
-			iptr =  buf_raw;
-			ilen += nread;
-
-			if (ilen == 0) {
-				smb_iconv(cd, NULL, NULL, &optr, &olen);
-				eof = true;
-				break;
-			}
-
-			nconv = smb_iconv(cd, &iptr, &ilen, &optr, &olen);
-
-			if (nconv == (size_t)-1) {
-				handle_iconv_errno(errno, buf_unix, linenum,
-						   cd, &iptr, &ilen,
-						   &optr, &olen);
-				break;
-			}
+			/*
+			 * For valid errors process the
+			 * existing buffer then continue.
+			 */
 		}
-	/* process_lines: */
-		*optr = '\0';
-		pos = &buf_unix[0];
 
-		while ( srprs_line(&pos, line) && srprs_nl_no_eos(&pos, line, eof)) {
-			linenum ++;
-			ret = reg_parse_line(parser, cbuf_gets(line, 0));
-			if (ret < opt.fail_level) {
+		/*
+		 * We know this is safe as we have an extra
+		 * enforced zero byte at the end of buf_out.
+		 */
+		*optr = '\0';
+		pos = buf_out;
+
+		while (srprs_line(&pos, line) && srprs_nl_no_eos(&pos, line, eof)) {
+			int retval;
+
+			/* Process all lines we got. */
+			retval = reg_parse_line(parser, cbuf_gets(line, 0));
+			if (retval < opt.fail_level) {
+				DBG_ERR("reg_parse_line %zu fail %d\n",
+					linecount,
+					retval);
+				ret = -1;
 				goto done;
 			}
 			cbuf_clear(line);
+			linecount++;
 		}
-		memmove(buf_unix, pos, optr - pos);
-		optr -= (pos - buf_unix);
+		if (pos > buf_out) {
+			/*
+			 * The output data we have
+			 * processed starts at buf_out
+			 * and ends at pos.
+			 * The unprocessed output
+			 * data starts at pos and
+			 * ends at optr.
+			 *
+			 *  <------ sizeof(buf_out) - 1------------->|0|
+			 *  <--------- avail_osize------------------>|0|
+			 *  +----------------------+-------+-----------+
+			 *  |                      |       |         |0|
+			 *  +----------------------+-------+-----------+
+			 *  ^                      ^       ^
+			 *  |                      |       |
+			 * buf_out               pos      optr
+			 */
+			size_t unprocessed_len;
+
+			/* Paranoia checks. */
+			if (optr < pos) {
+				ret = -1;
+				goto done;
+			}
+			unprocessed_len = optr - pos;
+
+			/* Paranoia checks. */
+			if (avail_osize < unprocessed_len) {
+				ret = -1;
+				goto done;
+			}
+			/* Move down any unprocessed data. */
+			memmove(buf_out, pos, unprocessed_len);
+
+			/*
+			 * After the move, reset the output length.
+			 *
+			 *  <------ sizeof(buf_out) - 1------------->|0|
+			 *  <--------- avail_osize------------------>|0|
+			 *  +----------------------+-------+-----------+
+			 *  |       |                                |0|
+			 *  +----------------------+-------+-----------+
+			 *  ^       ^
+			 *  |       optr
+			 * buf_out
+			 */
+			optr = buf_out + unprocessed_len;
+			/*
+			 * Calculate the new output space available
+			 * for iconv.
+			 * We already did the paranoia check for this
+			 * arithmetic above.
+			 */
+			olen = avail_osize - unprocessed_len;
+		}
+
+		/*
+		 * Move any unprocessed data to the start of
+		 * the input buffer (buf_in).
+		 */
+		if (ilen > 0 && iptr > buf_in) {
+			memmove(buf_in, iptr, ilen);
+		}
+
+		/* Is there any space to read more input ? */
+		if (ilen >= sizeof(buf_in)) {
+			/* No space. Nothing was converted. Error. */
+			DBG_ERR("no space in input buffer\n");
+			ret = -1;
+			goto done;
+		}
+
+		space_to_read = sizeof(buf_in) - ilen;
+
+		/* Read the next chunk from the file. */
+		nread = read(fd, buf_in, space_to_read);
+		if (nread < 0) {
+			DBG_ERR("read failed: %s\n", strerror(errno));
+			ret = -1;
+			goto done;
+		}
+		if (nread == 0) {
+			/* Empty file. */
+			eof = true;
+			continue;
+		}
+
+		/* Paranoia check. */
+		if (nread + ilen < ilen) {
+			ret = -1;
+			goto done;
+		}
+
+		/* Paranoia check. */
+		if (nread + ilen > sizeof(buf_in)) {
+			ret = -1;
+			goto done;
+		}
+
+		iptr = buf_in;
+		ilen = nread + ilen;
 	}
 
 	ret = 0;
+
 done:
+
 	set_iconv(&cd, NULL, NULL);
+	if (parser) {
+		set_iconv(&parser->str2UTF16, NULL, NULL);
+	}
 	talloc_free(mem_ctx);
 	return ret;
 }
