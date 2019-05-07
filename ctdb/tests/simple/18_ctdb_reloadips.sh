@@ -42,9 +42,36 @@ restore_public_addresses ()
 }
 ctdb_test_exit_hook_add restore_public_addresses
 
+# ctdb reloadips will fail if it can't disable takover runs.  The most
+# likely reason for this is that there is already a takeover run in
+# progress.  We can't predict when this will happen, so retry if this
+# occurs.
+do_ctdb_reloadips ()
+{
+	local retry_max=10
+	local retry_count=0
+	while : ; do
+		if try_command_on_node any "$CTDB reloadips all" ; then
+			return 0
+		fi
+
+		if [ "$out" != "Failed to disable takeover runs" ] ; then
+			return 1
+		fi
+
+		if [ $retry_count -ge $retry_max ] ; then
+			return 1
+		fi
+
+		retry_count=$((retry_count + 1))
+		echo "Retrying..."
+		sleep_for 1
+	done
+}
+
 try_command_on_node $test_node "mv $addresses $backup && touch $addresses"
 
-try_command_on_node any $CTDB reloadips all
+do_ctdb_reloadips
 
 echo "Getting list of public IPs on node $test_node"
 try_command_on_node $test_node "$CTDB ip | tail -n +2"
@@ -64,7 +91,7 @@ try_command_on_node any $CTDB sync
 echo "Restoring addresses"
 restore_public_addresses
 
-try_command_on_node any $CTDB reloadips all
+do_ctdb_reloadips
 
 echo "Getting list of public IPs on node $test_node"
 try_command_on_node $test_node "$CTDB ip | tail -n +2"
@@ -85,7 +112,7 @@ echo "Removing IP $test_ip from node $test_node"
 
 try_command_on_node $test_node "mv $addresses $backup && grep -v '^${test_ip}/' $backup >$addresses"
 
-try_command_on_node any $CTDB reloadips all
+do_ctdb_reloadips
 
 try_command_on_node $test_node $CTDB ip
 
