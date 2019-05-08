@@ -4387,7 +4387,7 @@ static NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
 			char addr[INET6_ADDRSTRLEN];
 			/* Try and give an error message
 			 * saying what client failed. */
-			DEBUG(0, ("read_fd_with_timeout failed for "
+			DEBUG(0, ("read_smb_length_return_keepalive failed for "
 				  "client %s read error = %s.\n",
 				  get_peer_addr(fd,addr,sizeof(addr)),
 				  nt_errstr(status)));
