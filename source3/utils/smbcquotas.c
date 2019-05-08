@@ -770,8 +770,8 @@ int main(int argc, char *argv[])
 		exit(EXIT_PARSE_ERROR);
 	}
 	share = strchr_m(server,'\\');
-	if (!share) {
-		printf("Invalid argument: %s\n", share);
+	if (share == NULL) {
+		printf("Invalid argument\n");
 		exit(EXIT_PARSE_ERROR);
 	}
 
