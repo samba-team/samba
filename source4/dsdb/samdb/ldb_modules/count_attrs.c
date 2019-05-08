@@ -567,12 +567,14 @@ static int count_attrs_init(struct ldb_module *module)
 	struct count_attrs_private *data = NULL;
 	struct loadparm_context *lp_ctx = NULL;
 	int ret;
+
+	ldb = ldb_module_get_ctx(module);
+
 	data = talloc_zero(module, struct count_attrs_private);
 	if (data == NULL) {
 		return ldb_oom(ldb);
 	}
 
-	ldb = ldb_module_get_ctx(module);
 	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
 				 struct loadparm_context);
 
