@@ -682,7 +682,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_charset_to_null(struct ndr_push *ndr, int nd
 	const char *str = var;
 
 	if (str == NULL) {
-		str = "";
+		str = "\0"; /* i.e. two zero bytes, for UTF16 null word. */
 		length = 1;
 	}
 
