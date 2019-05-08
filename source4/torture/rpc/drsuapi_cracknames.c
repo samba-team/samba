@@ -213,13 +213,13 @@ static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 			} else if (n_matrix[i][j] == NULL && formats[j] == DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL) {
 			} else if (n_matrix[i][j] == NULL && n_from[j] != NULL) {
 				err_msg = talloc_asprintf(mem_ctx,
-						"dcerpc_drsuapi_DsCrackNames mismatch - from %d to %d: %s should be %s",
-						formats[i], formats[j], n_matrix[i][j], n_from[j]);
+						"dcerpc_drsuapi_DsCrackNames mismatch - from %d to %d: should be %s",
+						formats[i], formats[j], n_from[j]);
 				torture_fail(tctx, err_msg);
 			} else if (n_matrix[i][j] != NULL && n_from[j] == NULL) {
 				err_msg = talloc_asprintf(mem_ctx,
-						"dcerpc_drsuapi_DsCrackNames mismatch - from %d to %d: %s should be %s",
-						formats[i], formats[j], n_matrix[i][j], n_from[j]);
+						"dcerpc_drsuapi_DsCrackNames mismatch - from %d to %d: should be %s",
+						formats[i], formats[j], n_matrix[i][j]);
 				torture_fail(tctx, err_msg);
 			} else if (strcmp(n_matrix[i][j], n_from[j]) != 0) {
 				err_msg = talloc_asprintf(mem_ctx,
