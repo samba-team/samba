@@ -1267,7 +1267,15 @@ static int dns_common_sort_zones(struct ldb_message **m1, struct ldb_message **m
 
 	n1 = ldb_msg_find_attr_as_string(*m1, "name", NULL);
 	n2 = ldb_msg_find_attr_as_string(*m2, "name", NULL);
-
+	if (n1 == NULL || n2 == NULL) {
+		if (n1 != NULL) {
+			return -1;
+		} else if (n2 != NULL) {
+			return 1;
+		} else {
+			return 0;
+		}
+	}
 	l1 = strlen(n1);
 	l2 = strlen(n2);
 
