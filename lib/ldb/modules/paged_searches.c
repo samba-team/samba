@@ -72,6 +72,11 @@ static int check_ps_continuation(struct ps_context *ac, struct ldb_request *req,
 	}
 
 	req_control = ldb_request_get_control(req, LDB_CONTROL_PAGED_RESULTS_OID);
+	if (req_control == NULL) {
+		ldb_set_errstring(ldb, "paged_searches: control is missing");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	paged_req_control = talloc_get_type(req_control->data, struct ldb_paged_control);
 
 	if (!rep_control || !paged_rep_control) {
