@@ -921,6 +921,9 @@ static int map_subtree_collect_remote(struct ldb_module *module, void *mem_ctx, 
 	}
 
 	map = map_attr_find_local(data, tree->u.equality.attr);
+	if (map == NULL) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	if (map->convert_operator) {
 		return map->convert_operator(module, mem_ctx, new, tree);
 	}
