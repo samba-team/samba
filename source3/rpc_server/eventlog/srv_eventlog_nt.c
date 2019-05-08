@@ -95,13 +95,13 @@ static bool elog_check_access( EVENTLOG_INFO *info, const struct security_token 
 			tdbname,
 			SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL,
 			&sec_desc);
-	TALLOC_FREE( tdbname );
-
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5,("elog_check_access: Unable to get NT ACL for %s: %s\n",
 			tdbname, nt_errstr(status)));
+		TALLOC_FREE(tdbname);
 		return False;
 	}
+	TALLOC_FREE(tdbname);
 
 	ace = talloc_zero(sec_desc, struct security_ace);
 	if (ace == NULL) {
