@@ -893,7 +893,7 @@ static void sock_daemon_run_socket_fail(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct sock_daemon_run_state *state = tevent_req_data(
 		req, struct sock_daemon_run_state);
-	const char *sockpath = NULL;
+	const char *sockpath = "INVALID";
 	int ret = 0;
 	bool status;
 
