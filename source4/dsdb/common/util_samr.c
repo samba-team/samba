@@ -154,11 +154,20 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 		return NT_STATUS_FOOBAR;
 	}
 
-	ldb_msg_add_string(msg, "sAMAccountName", account_name);
-	ldb_msg_add_string(msg, "objectClass", obj_class);
-	samdb_msg_add_uint(ldb, tmp_ctx, msg,
-			   "userAccountControl",
-			   user_account_control);
+	ret = ldb_msg_add_string(msg, "sAMAccountName", account_name);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+	ret = ldb_msg_add_string(msg, "objectClass", obj_class);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+	ret = samdb_msg_add_uint(ldb, tmp_ctx, msg,
+				 "userAccountControl",
+				 user_account_control);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
 
 	/* This is only here for migrations using pdb_samba4, the
 	 * caller and the samldb are responsible for ensuring it makes
@@ -237,6 +246,11 @@ NTSTATUS dsdb_add_user(struct ldb_context *ldb,
 	}
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;
+
+  failed:
+	ldb_transaction_cancel(ldb);
+	talloc_free(tmp_ctx);
+	return NT_STATUS_INTERNAL_ERROR;
 }
 
 /*
