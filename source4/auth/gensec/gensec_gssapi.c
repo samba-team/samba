@@ -703,11 +703,7 @@ init_sec_context_done:
 			OM_uint32 lifetime = 0;
 			gss_cred_usage_t usage;
 			const char *role = NULL;
-			DEBUG(0, ("GSS %s Update(krb5)(%d) Update failed, credentials expired during GSSAPI handshake!\n",
-				  role,
-				  gensec_gssapi_state->gss_exchange_count));
 
-			
 			switch (gensec_security->gensec_role) {
 			case GENSEC_CLIENT:
 				creds = gensec_gssapi_state->client_cred->creds;
@@ -718,6 +714,11 @@ init_sec_context_done:
 				role = "server";
 				break;
 			}
+
+			DBG_ERR("GSS %s Update(krb5)(%d) failed, credentials "
+				"expired during GSSAPI handshake!\n",
+				role,
+				gensec_gssapi_state->gss_exchange_count);
 
 			maj_stat = gss_inquire_cred(&min_stat, 
 						    creds,
