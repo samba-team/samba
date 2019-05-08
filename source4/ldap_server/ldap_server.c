@@ -1283,6 +1283,9 @@ static NTSTATUS ldapsrv_task_init(struct task_server *task)
 
 	/* register the server */
 	irpc_add_name(task->msg_ctx, "ldap_server");
+
+	task->private_data = ldap_service;
+
 	return NT_STATUS_OK;
 
 failed:
@@ -1290,6 +1293,27 @@ failed:
 	return status;
 }
 
+/*
+ * Open a database to be later used by LDB wrap code (although it should be
+ * plumbed through correctly eventually).
+ */
+static void ldapsrv_post_fork(struct task_server *task, struct process_details *pd)
+{
+	struct ldapsrv_service *ldap_service =
+		talloc_get_type_abort(task->private_data, struct ldapsrv_service);
+
+	ldap_service->sam_ctx = samdb_connect(ldap_service,
+					      ldap_service->task->event_ctx,
+					      ldap_service->task->lp_ctx,
+					      system_session(ldap_service->task->lp_ctx),
+					      NULL,
+					      0);
+	if (ldap_service->sam_ctx == NULL) {
+		task_server_terminate(task, "Cannot open system session LDB",
+				      true);
+		return;
+	}
+}
 
 NTSTATUS server_service_ldap_init(TALLOC_CTX *ctx)
 {
@@ -1297,7 +1321,7 @@ NTSTATUS server_service_ldap_init(TALLOC_CTX *ctx)
 		.inhibit_fork_on_accept = false,
 		.inhibit_pre_fork = false,
 		.task_init = ldapsrv_task_init,
-		.post_fork = NULL
+		.post_fork = ldapsrv_post_fork,
 	};
 	return register_server_service(ctx, "ldap", &details);
 }

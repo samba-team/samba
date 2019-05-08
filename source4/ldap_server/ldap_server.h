@@ -100,6 +100,8 @@ struct ldapsrv_service {
 		uint64_t generation;
 		struct tevent_req *retry;
 	} notification;
+
+	struct ldb_context *sam_ctx;
 };
 
 #include "ldap_server/proto.h"
