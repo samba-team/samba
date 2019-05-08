@@ -599,6 +599,7 @@ static void ldapsrv_BindSASL_done(struct tevent_req *subreq)
 				       "SASL Bind: Failed to advise "
 				       "ldb new credentials");
 		result = LDB_ERR_OPERATIONS_ERROR;
+		goto do_reply;
 	}
 
 	if (context != NULL) {
