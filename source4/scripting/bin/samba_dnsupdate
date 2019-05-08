@@ -940,6 +940,7 @@ if rebuild_cache:
         if opts.verbose:
             print("Adding %s to %s" % (str(d), file_name))
         wfile.write(str(d)+"\n")
+    wfile.flush()
     os.rename(tmpfile, dns_update_cache)
 fcntl.lockf(cfile, fcntl.LOCK_UN)
 
