@@ -728,7 +728,7 @@ int ldb_ldif_parse_modrdn(struct ldb_context *ldb,
 	if (_deleteoldrdn) {
 		*_deleteoldrdn = deleteoldrdn;
 	}
-	if (_newsuperior) {
+	if (_newsuperior != NULL && _newrdn != NULL) {
 		if (newsuperior_val) {
 			*_newrdn = talloc_move(mem_ctx, &newrdn);
 		} else {
