@@ -123,7 +123,6 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 			pvfs, eadb, 50000,
 			lpcfg_tdb_flags(pvfs->ntvfs->ctx->lp_ctx, TDB_DEFAULT),
 			O_RDWR|O_CREAT, 0600);
-		TALLOC_FREE(eadb);
 		if (pvfs->ea_db != NULL) {
 			pvfs->flags |= PVFS_FLAG_XATTR_ENABLE;
 		} else {
@@ -131,6 +130,7 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 				 eadb, strerror(errno)));
 			pvfs->flags &= ~PVFS_FLAG_XATTR_ENABLE;
 		}
+		TALLOC_FREE(eadb);
 	}
 
 	if (pvfs->flags & PVFS_FLAG_XATTR_ENABLE) {
