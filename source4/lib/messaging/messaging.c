@@ -578,6 +578,10 @@ static void imessaging_post_handler(struct tevent_context *ev,
 	struct imessaging_post_state *state = talloc_get_type_abort(
 		private_data, struct imessaging_post_state);
 
+	if (state == NULL) {
+		return;
+	}
+
 	/*
 	 * In usecases like using messaging_client_init() with irpc processing
 	 * we may free the imessaging_context during the messaging handler.
@@ -593,10 +597,6 @@ static void imessaging_post_handler(struct tevent_context *ev,
 
 	imessaging_dgm_recv(ev, state->buf, state->buf_len, NULL, 0,
 			    state->msg_ctx);
-
-	if (state == NULL) {
-		return;
-	}
 
 	state->busy_ref = NULL;
 	TALLOC_FREE(state);
