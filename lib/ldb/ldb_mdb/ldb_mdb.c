@@ -942,7 +942,16 @@ static int lmdb_open_env(TALLOC_CTX *mem_ctx,
 
 	/* Just as for TDB: on exec, don't inherit the fd */
 	v = fcntl(fd, F_GETFD, 0);
-	fcntl(fd, F_SETFD, v | FD_CLOEXEC);
+	if (v == -1) {
+		TALLOC_FREE(w);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	ret = fcntl(fd, F_SETFD, v | FD_CLOEXEC);
+	if (ret == -1) {
+		TALLOC_FREE(w);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	if (fstat(fd, &st) != 0) {
 		ldb_asprintf_errstring(
