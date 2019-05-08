@@ -258,24 +258,73 @@ struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, uint8_t type
 	return reply;
 }
 
-NTSTATUS ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *reply)
+/*
+ * Encode a reply to an LDAP client as ASN.1, free the original memory
+ */
+static NTSTATUS ldapsrv_encode(TALLOC_CTX *mem_ctx,
+			       struct ldapsrv_reply *reply)
 {
 	bool bret = ldap_encode(reply->msg,
 				samba_ldap_control_handlers(),
 				&reply->blob,
-				call);
+				mem_ctx);
 	TALLOC_FREE(reply->msg);
 	if (!bret) {
-		DEBUG(0,("Failed to encode ldap reply of type %d: ldap_encode() failed\n",
-			 call->replies->msg->type));
+		DEBUG(0,("Failed to encode ldap reply of type %d: "
+			 "ldap_encode() failed\n",
+			 reply->msg->type));
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	talloc_set_name_const(reply->blob.data,
 			      "Outgoing, encoded single LDAP reply");
 
-	DLIST_ADD_END(call->replies, reply);
 	return NT_STATUS_OK;
+}
+
+/*
+ * Queue a reply (encoding it also), even if it would exceed the
+ * limit.  This allows the error packet with LDAP_SIZE_LIMIT_EXCEEDED
+ * to be sent
+ */
+static NTSTATUS ldapsrv_queue_reply_forced(struct ldapsrv_call *call,
+					   struct ldapsrv_reply *reply)
+{
+	NTSTATUS status = ldapsrv_encode(call, reply);
+
+	if (NT_STATUS_IS_OK(status)) {
+		DLIST_ADD_END(call->replies, reply);
+	}
+	return status;
+}
+
+/*
+ * Queue a reply (encoding it also) but check we do not send more than
+ * LDAP_SERVER_MAX_REPLY_SIZE of responses as a way to limit the
+ * amount of data a client can make us allocate.
+ */
+NTSTATUS ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *reply)
+{
+	NTSTATUS status = ldapsrv_encode(call, reply);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (call->reply_size > call->reply_size + reply->blob.length
+	    || call->reply_size + reply->blob.length > LDAP_SERVER_MAX_REPLY_SIZE) {
+		DBG_WARNING("Refusing to queue LDAP search response size "
+			    "of more than %zu bytes\n",
+			    LDAP_SERVER_MAX_REPLY_SIZE);
+		TALLOC_FREE(reply->blob.data);
+		return NT_STATUS_FILE_TOO_LARGE;
+	}
+
+	call->reply_size += reply->blob.length;
+
+	DLIST_ADD_END(call->replies, reply);
+
+	return status;
 }
 
 static NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
@@ -708,7 +757,14 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 			}
 queue_reply:
 			status = ldapsrv_queue_reply(call, ent_r);
-			if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_TOO_LARGE)) {
+				result = LDB_ERR_SIZE_LIMIT_EXCEEDED;
+				ldb_asprintf_errstring(samdb,
+						       "LDAP search response size "
+						       "limited to %zu bytes\n",
+						       LDAP_SERVER_MAX_REPLY_SIZE);
+				goto reply;
+			} else if (!NT_STATUS_IS_OK(status)) {
 				result = ldb_operr(samdb);
 				goto reply;
 			}
@@ -782,7 +838,7 @@ reply:
 
 	talloc_free(local_ctx);
 
-	return ldapsrv_queue_reply(call, done_r);
+	return ldapsrv_queue_reply_forced(call, done_r);
 }
 
 static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)

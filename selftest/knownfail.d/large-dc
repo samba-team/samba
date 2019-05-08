@@ -1,6 +1,0 @@
-# Current Samba drops the LDAP socket after 256MB of replies, rather
-# than giving an nice error message
-^samba4.ldap.large_ldap.gssapi.python\(vampire_dc\).__main__.LargeLDAPTest.test_unindexed_iterator_search
-^samba4.ldap.large_ldap.ntlmssp.python\(ad_dc_default\).__main__.LargeLDAPTest.test_unindexed_iterator_search
-^samba4.ldap.large_ldap.ldaps.python\(ad_dc_ntvfs\).__main__.LargeLDAPTest.test_unindexed_iterator_search
-^samba4.ldap.large_ldap.straight_ldap.python\(fl2008r2dc\).__main__.LargeLDAPTest.test_unindexed_iterator_search

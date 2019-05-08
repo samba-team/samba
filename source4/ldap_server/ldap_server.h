@@ -74,6 +74,7 @@ struct ldapsrv_call {
 	} *replies;
 	struct iovec *out_iov;
 	size_t iov_count;
+	size_t reply_size;
 
 	struct tevent_req *(*wait_send)(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
@@ -92,6 +93,12 @@ struct ldapsrv_call {
 		uint64_t generation;
 	} notification;
 };
+
+/*
+ * This matches the previous implicit size limit via talloc's maximum
+ * allocation size
+ */
+#define LDAP_SERVER_MAX_REPLY_SIZE ((size_t)(256 * 1024 * 1024))
 
 struct ldapsrv_service {
 	struct tstream_tls_params *tls_params;
