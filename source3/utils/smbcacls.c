@@ -908,8 +908,8 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 	share = strchr_m(server,'\\');
-	if (!share) {
-		printf("Invalid argument: %s\n", share);
+	if (share == NULL) {
+		printf("Invalid argument\n");
 		return -1;
 	}
 
