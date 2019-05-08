@@ -92,9 +92,10 @@ struct ldb_dn *ldb_dn_from_ldb_val(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_dn *dn;
 
-	if (! ldb) return NULL;
-
-	if (strdn && strdn->data
+	if (ldb == NULL || strdn == NULL) {
+		return NULL;
+	}
+	if (strdn->data
 	    && (strnlen((const char*)strdn->data, strdn->length) != strdn->length)) {
 		/* The RDN must not contain a character with value 0x0 */
 		return NULL;
