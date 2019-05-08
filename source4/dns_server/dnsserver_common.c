@@ -559,7 +559,7 @@ WERROR dns_common_wildcard_lookup(struct ldb_context *samdb,
 
 	name = ldb_dn_get_rdn_val(dn);
 	if (name == NULL) {
-		return DNS_ERR(NAME_ERROR);
+		werr = DNS_ERR(NAME_ERROR);
 		goto exit;
 	}
 
@@ -615,7 +615,6 @@ WERROR dns_common_wildcard_lookup(struct ldb_context *samdb,
 	werr = dns_common_extract(samdb, el, mem_ctx, records, num_records);
 	TALLOC_FREE(msg);
 	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
 		goto exit;
 	}
 
