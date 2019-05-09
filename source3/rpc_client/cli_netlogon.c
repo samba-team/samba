@@ -471,6 +471,13 @@ NTSTATUS rpccli_netlogon_password_logon(
 	union netr_Validation *validation = NULL;
 	char *workstation_slash = NULL;
 
+	unsigned char local_nt_response[24];
+	unsigned char local_lm_response[24];
+	struct samr_Password lmpassword = {.hash = {0}};
+	struct samr_Password ntpassword = {.hash = {0}};
+	struct netr_ChallengeResponse lm = {0};
+	struct netr_ChallengeResponse nt = {0};
+
 	logon = talloc_zero(frame, union netr_LogonLevel);
 	if (logon == NULL) {
 		TALLOC_FREE(frame);
@@ -495,8 +502,6 @@ NTSTATUS rpccli_netlogon_password_logon(
 
 		struct netr_PasswordInfo *password_info;
 
-		struct samr_Password lmpassword;
-		struct samr_Password ntpassword;
 
 		password_info = talloc_zero(frame, struct netr_PasswordInfo);
 		if (password_info == NULL) {
@@ -524,10 +529,6 @@ NTSTATUS rpccli_netlogon_password_logon(
 	case NetlogonNetworkTransitiveInformation: {
 		struct netr_NetworkInfo *network_info;
 		uint8_t chal[8];
-		unsigned char local_lm_response[24];
-		unsigned char local_nt_response[24];
-		struct netr_ChallengeResponse lm;
-		struct netr_ChallengeResponse nt;
 
 		ZERO_STRUCT(lm);
 		ZERO_STRUCT(nt);
