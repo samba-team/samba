@@ -4973,6 +4973,10 @@ bool is_valid_writeX_buffer(struct smbXsrv_connection *xconn,
 		DEBUG(10,("is_valid_writeX_buffer: printing tid\n"));
 		return false;
 	}
+	if (fsp->base_fsp != NULL) {
+		DEBUG(10,("is_valid_writeX_buffer: stream fsp\n"));
+		return false;
+	}
 	doff = SVAL(inbuf,smb_vwv11);
 
 	numtowrite = SVAL(inbuf,smb_vwv10);
