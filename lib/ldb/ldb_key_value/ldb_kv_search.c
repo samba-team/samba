@@ -133,49 +133,45 @@ static int ldb_kv_parse_data_unpack(struct ldb_val key,
 				    void *private_data)
 {
 	struct ldb_kv_parse_data_unpack_ctx *ctx = private_data;
-	unsigned int nb_elements_in_db;
 	int ret;
 	struct ldb_context *ldb = ldb_module_get_ctx(ctx->module);
 	struct ldb_val data_parse = data;
 
 	struct ldb_kv_private *ldb_kv = ctx->ldb_kv;
 
-	if ((ctx->unpack_flags & LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC)) {
-		if ((ldb_kv->kv_ops->options & LDB_KV_OPTION_STABLE_READ_LOCK) &&
-		    (ctx->unpack_flags & LDB_UNPACK_DATA_FLAG_READ_LOCKED) &&
-		    !ldb_kv->kv_ops->transaction_active(ldb_kv)) {
-			/*
-			 * In the case where no transactions are active and
-			 * we're in a read-lock, we can point directly into
-			 * database memory.
-			 *
-			 * The database can't be changed underneath us and we
-			 * will duplicate this data in the call to filter.
-			 *
-			 * This is seen in:
-			 * - ldb_kv_index_filter
-			 * - ldb_kv_search_and_return_base
-			 */
-		} else {
-			/*
-			 * In every other case, if we got
-			 * LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC we need at least
-			 * do a memdup on the whole data buffer as that may
-			 * change later and the caller needs a stable result.
-			 *
-			 * During transactions, pointers could change and in
-			 * TDB, there just aren't the same guarantees.
-			 */
-			data_parse.data = talloc_memdup(ctx->msg,
-							data.data,
-							data.length);
-			if (data_parse.data == NULL) {
-				ldb_debug(ldb, LDB_DEBUG_ERROR,
-					  "Unable to allocate data(%d) for %*.*s\n",
-					  (int)data.length,
-					  (int)key.length, (int)key.length, key.data);
-				return LDB_ERR_OPERATIONS_ERROR;
-			}
+	if ((ldb_kv->kv_ops->options & LDB_KV_OPTION_STABLE_READ_LOCK) &&
+	    (ctx->unpack_flags & LDB_UNPACK_DATA_FLAG_READ_LOCKED) &&
+	    !ldb_kv->kv_ops->transaction_active(ldb_kv)) {
+		/*
+		 * In the case where no transactions are active and
+		 * we're in a read-lock, we can point directly into
+		 * database memory.
+		 *
+		 * The database can't be changed underneath us and we
+		 * will duplicate this data in the call to filter.
+		 *
+		 * This is seen in:
+		 * - ldb_kv_index_filter
+		 * - ldb_kv_search_and_return_base
+		 */
+	} else {
+		/*
+		 * In every other case, since unpack doesn't memdup, we need
+		 * to at least do a memdup on the whole data buffer as that
+		 * may change later and the caller needs a stable result.
+		 *
+		 * During transactions, pointers could change and in
+		 * TDB, there just aren't the same guarantees.
+		 */
+		data_parse.data = talloc_memdup(ctx->msg,
+						data.data,
+						data.length);
+		if (data_parse.data == NULL) {
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
+				  "Unable to allocate data(%d) for %*.*s\n",
+				  (int)data.length,
+				  (int)key.length, (int)key.length, key.data);
+			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
 
@@ -183,7 +179,7 @@ static int ldb_kv_parse_data_unpack(struct ldb_val key,
 						   ctx->msg,
 						   NULL, 0,
 						   ctx->unpack_flags,
-						   &nb_elements_in_db);
+						   NULL);
 	if (ret == -1) {
 		if (data_parse.data != data.data) {
 			talloc_free(data_parse.data);
@@ -514,7 +510,6 @@ static int search_func(struct ldb_kv_private *ldb_kv,
 	ret = ldb_unpack_data_only_attr_list_flags(ldb, &val,
 						   msg,
 						   NULL, 0,
-						   LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC|
 						   LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC,
 						   &nb_elements_in_db);
 	if (ret == -1) {
@@ -605,7 +600,6 @@ static int ldb_kv_search_and_return_base(struct ldb_kv_private *ldb_kv,
 	ret = ldb_kv_search_dn1(ctx->module,
 				ctx->base,
 				msg,
-				LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC |
 				LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC |
 				LDB_UNPACK_DATA_FLAG_READ_LOCKED);
 

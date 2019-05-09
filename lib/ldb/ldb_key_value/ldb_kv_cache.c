@@ -127,8 +127,7 @@ static int ldb_kv_attributes_load(struct ldb_module *module)
 	r = ldb_kv_search_dn1(module,
 			      dn,
 			      attrs_msg,
-			      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC |
-				  LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC |
+			      LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC |
 				  LDB_UNPACK_DATA_FLAG_NO_DN);
 	talloc_free(dn);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
@@ -278,8 +277,7 @@ static int ldb_kv_index_load(struct ldb_module *module,
 	r = ldb_kv_search_dn1(module,
 			      indexlist_dn,
 			      ldb_kv->cache->indexlist,
-			      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC |
-				  LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC |
+			      LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC |
 				  LDB_UNPACK_DATA_FLAG_NO_DN);
 	TALLOC_FREE(indexlist_dn);
 

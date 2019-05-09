@@ -405,7 +405,6 @@ normal_index:
 	ret = ldb_kv_search_dn1(module,
 				dn,
 				msg,
-				LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC |
 				LDB_UNPACK_DATA_FLAG_NO_DN |
 				/*
 				 * The entry point ldb_kv_search_indexed is
@@ -428,9 +427,8 @@ normal_index:
 
 	/*
 	 * we avoid copying the strings by stealing the list.  We have
-	 * to steal msg onto el->values (which looks odd) because we
-	 * asked for the memory to be allocated on msg, not on each
-	 * value with LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC above
+	 * to steal msg onto el->values (which looks odd) because
+	 * the memory is allocated on msg, not on each value.
 	 */
 	if (ldb_kv->cache->GUID_index_attribute == NULL) {
 		/* check indexing version number */
@@ -481,8 +479,7 @@ normal_index:
 		}
 
 		/*
-		 * The actual data is on msg, due to
-		 * LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC
+		 * The actual data is on msg.
 		 */
 		talloc_steal(list->dn, msg);
 		for (i = 0; i < list->count; i++) {
@@ -1675,7 +1672,6 @@ static int traverse_range_index(struct ldb_kv_private *ldb_kv,
 	ctx->error = ldb_unpack_data_only_attr_list_flags(ldb, &data,
 							  msg,
 							  NULL, 0,
-							  LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC |
 							  LDB_UNPACK_DATA_FLAG_NO_DN,
 							  NULL);
 
@@ -1694,9 +1690,8 @@ static int traverse_range_index(struct ldb_kv_private *ldb_kv,
 
 	/*
 	 * we avoid copying the strings by stealing the list.  We have
-	 * to steal msg onto el->values (which looks odd) because we
-	 * asked for the memory to be allocated on msg, not on each
-	 * value with LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC above
+	 * to steal msg onto el->values (which looks odd) because
+	 * the memory is allocated on msg, not on each value.
 	 */
 	if (version != LDB_KV_GUID_INDEXING_VERSION) {
 		/* This is quite likely during the DB startup
@@ -1758,8 +1753,7 @@ static int traverse_range_index(struct ldb_kv_private *ldb_kv,
 	}
 
 	/*
-	 * The actual data is on msg, due to
-	 * LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC
+	 * The actual data is on msg.
 	 */
 	talloc_steal(ctx->dn_list->dn, msg);
 	for (i = 0; i < additional_length; i++) {
@@ -2227,7 +2221,6 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 				      ldb_kv,
 				      keys[i],
 				      msg,
-				      LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC |
 				      LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC |
 				      /*
 				       * The entry point ldb_kv_search_indexed is
@@ -3270,7 +3263,6 @@ static int re_key(struct ldb_kv_private *ldb_kv,
 	    (struct ldb_kv_reindex_context *)state;
 	struct ldb_module *module = ctx->module;
 	struct ldb_message *msg;
-	unsigned int nb_elements_in_db;
 	int ret;
 	struct ldb_val key2;
 	bool is_record;
@@ -3287,11 +3279,7 @@ static int re_key(struct ldb_kv_private *ldb_kv,
 		return -1;
 	}
 
-	ret = ldb_unpack_data_only_attr_list_flags(ldb, &val,
-						   msg,
-						   NULL, 0,
-						   LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC,
-						   &nb_elements_in_db);
+	ret = ldb_unpack_data(ldb, &val, msg);
 	if (ret != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %s\n",
 						ldb_dn_get_linearized(msg->dn));
@@ -3353,7 +3341,6 @@ static int re_index(struct ldb_kv_private *ldb_kv,
 	    (struct ldb_kv_reindex_context *)state;
 	struct ldb_module *module = ctx->module;
 	struct ldb_message *msg;
-	unsigned int nb_elements_in_db;
 	int ret;
 	bool is_record;
 
@@ -3369,11 +3356,7 @@ static int re_index(struct ldb_kv_private *ldb_kv,
 		return -1;
 	}
 
-	ret = ldb_unpack_data_only_attr_list_flags(ldb, &val,
-						   msg,
-						   NULL, 0,
-						   LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC,
-						   &nb_elements_in_db);
+	ret = ldb_unpack_data(ldb, &val, msg);
 	if (ret != 0) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR, "Invalid data for index %s\n",
 						ldb_dn_get_linearized(msg->dn));

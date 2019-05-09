@@ -644,8 +644,7 @@ static int ldb_kv_delete_internal(struct ldb_module *module, struct ldb_dn *dn)
 
 	/* in case any attribute of the message was indexed, we need
 	   to fetch the old record */
-	ret = ldb_kv_search_dn1(
-	    module, dn, msg, LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
+	ret = ldb_kv_search_dn1(module, dn, msg, 0);
 	if (ret != LDB_SUCCESS) {
 		/* not finding the old record is an error */
 		goto done;
@@ -902,8 +901,7 @@ int ldb_kv_modify_internal(struct ldb_module *module,
 		goto done;
 	}
 
-	ret = ldb_kv_search_dn1(
-	    module, msg->dn, msg2, LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
+	ret = ldb_kv_search_dn1(module, msg->dn, msg2, 0);
 	if (ret != LDB_SUCCESS) {
 		goto done;
 	}
@@ -1267,10 +1265,7 @@ static int ldb_kv_rename(struct ldb_kv_context *ctx)
 	}
 
 	/* we need to fetch the old record to re-add under the new name */
-	ret = ldb_kv_search_dn1(module,
-				req->op.rename.olddn,
-				msg,
-				LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC);
+	ret = ldb_kv_search_dn1(module, req->op.rename.olddn, msg, 0);
 	if (ret == LDB_ERR_INVALID_DN_SYNTAX) {
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       "Invalid Old DN: %s",

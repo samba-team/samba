@@ -326,10 +326,8 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 	 * In typical use, most values are single-valued.  This makes
 	 * it quite expensive to allocate an array of ldb_val for each
 	 * of these, just to then hold the pointer to the data buffer
-	 * (in the LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC we don't
-	 * allocate the data).  So with
-	 * LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC we allocate this ahead
-	 * of time and use it for the single values where possible.
+	 * So with LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC we allocate this
+	 * ahead of time and use it for the single values where possible.
 	 * (This is used the the normal search case, but not in the
 	 * index case because of caller requirements).
 	 */
@@ -405,16 +403,7 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 			}
 		}
 		element = &message->elements[nelem];
-		if (flags & LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC) {
-			element->name = attr;
-		} else {
-			element->name = talloc_memdup(message->elements, attr, attr_len+1);
-
-			if (element->name == NULL) {
-				errno = ENOMEM;
-				goto failed;
-			}
-		}
+		element->name = attr;
 		element->flags = 0;
 
 		if (remaining < (attr_len + 1)) {
@@ -460,18 +449,7 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 			}
 
 			element->values[j].length = len;
-			if (flags & LDB_UNPACK_DATA_FLAG_NO_DATA_ALLOC) {
-				element->values[j].data = p + 4;
-			} else {
-				element->values[j].data = talloc_size(element->values, len+1);
-				if (element->values[j].data == NULL) {
-					errno = ENOMEM;
-					goto failed;
-				}
-				memcpy(element->values[j].data, p + 4,
-				       len);
-				element->values[j].data[len] = 0;
-			}
+			element->values[j].data = p + 4;
 			remaining -= len;
 			p += len+4+1;
 		}
