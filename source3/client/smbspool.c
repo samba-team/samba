@@ -664,7 +664,7 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
 	 * behavior with 3.0.14a
 	 */
 
-	if (username != NULL && username[0] != '\0') {
+	if (username == NULL || username[0] == '\0') {
 		if (kerberos_ccache_is_valid()) {
 			goto kerberos_auth;
 		}
