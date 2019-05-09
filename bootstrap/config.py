@@ -90,7 +90,7 @@ PKGS = [
     ('libgpgme11-dev', 'gpgme-devel'),
     # NOTE: Debian 8+ and Ubuntu 14.04+
     ('libgnutls28-dev', 'gnutls-devel'),
-    ('libtasn1-bin', ''),
+    ('libtasn1-bin', 'libtasn1-tools'),
     ('libtasn1-dev', 'libtasn1-devel'),
     ('', 'quota-devel'),
     ('uuid-dev', 'libuuid-devel'),
@@ -524,6 +524,7 @@ RPM_DISTS = {
             'python3-markdown': 'python3-Markdown',
             'quota-devel': '',
             'glusterfs-api-devel': '',
+            'libtasn1-tools': '', # asn1Parser is part of libtasn1
         }
     }
 }

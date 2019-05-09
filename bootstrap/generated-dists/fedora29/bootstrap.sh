@@ -57,6 +57,7 @@ dnf install -y \
     libpcap-devel \
     libsemanage-python \
     libtasn1-devel \
+    libtasn1-tools \
     libtirpc-devel \
     libunwind-devel \
     libuuid-devel \
