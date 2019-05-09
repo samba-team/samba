@@ -490,7 +490,7 @@ static bool test_tfork_threads(struct torture_context *tctx)
 	ret = sigprocmask(SIG_UNBLOCK, &set, NULL);
 #endif
 	if (ret != 0) {
-		return -1;
+		return false;
 	}
 
 	for (i = 0; i < num_threads; i++) {
