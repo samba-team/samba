@@ -645,7 +645,7 @@ static NTSTATUS idmap_sid_to_xid(struct idmap_context *idmap_ctx,
 		}
 
 		vals = talloc_array(tmp_ctx, struct ldb_val, 2);
-		if (els == NULL) {
+		if (vals == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto failed;
 		}
