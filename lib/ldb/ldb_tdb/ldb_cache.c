@@ -387,6 +387,13 @@ int ltdb_cache_reload(struct ldb_module *module)
 	ltdb_cache_free(module);
 	return ltdb_cache_load(module);
 }
+static int get_pack_format_version(struct ldb_val key,
+				   struct ldb_val data,
+				   void *private_data)
+{
+	uint32_t *v = (uint32_t *) private_data;
+	return ldb_unpack_get_format(&data, v);
+}
 
 /*
   load the cache records
@@ -402,6 +409,9 @@ int ltdb_cache_load(struct ldb_module *module)
 	const struct ldb_schema_attribute *a;
 	bool have_write_txn = false;
 	int r;
+	uint32_t pack_format_version;
+	struct ldb_val key_ldb;
+	struct TDB_DATA key;
 
 	ldb = ldb_module_get_ctx(module);
 
@@ -425,7 +435,40 @@ int ltdb_cache_load(struct ldb_module *module)
 	if (r != LDB_SUCCESS) {
 		goto failed;
 	}
-	r= ltdb_search_dn1(module, baseinfo_dn, baseinfo, 0);
+
+	key = ltdb_key_dn(module, baseinfo, baseinfo_dn);
+	if (!key.dptr) {
+		goto failed_and_unlock;
+	}
+
+	key_ldb = (struct ldb_val){
+		.data = key.dptr,
+		.length = key.dsize
+	};
+
+	/* Read packing format from first 4 bytes of @BASEINFO record */
+	r = ltdb->kv_ops->fetch_and_parse(ltdb, key_ldb,
+					  get_pack_format_version,
+					  &pack_format_version);
+
+	if (r != LDB_ERR_NO_SUCH_OBJECT) {
+		if (r != LDB_SUCCESS) {
+			goto failed_and_unlock;
+		}
+
+		/* Make sure the database has the right format */
+		if (pack_format_version != ltdb->pack_format_version) {
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
+				  "Unexpected packing format. "
+				  "Expected: %#010x, Got: %#010x",
+				  pack_format_version,
+				  ltdb->pack_format_version);
+			goto failed_and_unlock;
+		}
+	}
+
+	/* Now fetch the whole @BASEINFO record */
+	r = ltdb_search_dn1(module, baseinfo_dn, baseinfo, 0);
 	if (r != LDB_SUCCESS && r != LDB_ERR_NO_SUCH_OBJECT) {
 		goto failed_and_unlock;
 	}

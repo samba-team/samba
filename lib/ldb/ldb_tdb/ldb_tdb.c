@@ -2272,6 +2272,8 @@ int init_store(struct ltdb_private *ltdb,
 
 	ltdb->sequence_number = 0;
 
+	ltdb->pack_format_version = LDB_PACKING_FORMAT;
+
 	ltdb->pid = getpid();
 
 	ltdb->module = ldb_module_new(ldb, ldb, name, &ltdb_ops);
