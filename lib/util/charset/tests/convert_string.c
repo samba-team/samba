@@ -97,6 +97,57 @@ static const char *gd_cp850_lower_base64 = "Z4FudGhlciBkZXNjaG5lcg==";
 static const char *gd_iso8859_1_base64 = "R/xudGhlciBEZXNjaG5lcg==";
 static const char *gd_utf16le_base64 = "RwD8AG4AdABoAGUAcgAgAEQAZQBzAGMAaABuAGUAcgA=";
 
+/*
+ * These cp850 bytes correspond to high Unicode codes, stretching out to
+ * 3-byte sequences in utf-8.
+ */
+static const char *cp850_high_points = "\xb9\xba\xbb\xbc\xcd\xce";
+static const char *utf8_high_points = "╣║╗╝═╬";
+
+static bool test_cp850_high_points(struct torture_context *tctx)
+{
+	struct smb_iconv_handle *iconv_handle = NULL;
+	DATA_BLOB cp850 = data_blob_string_const(cp850_high_points);
+	DATA_BLOB utf8;
+	DATA_BLOB cp850_return;
+
+	iconv_handle = get_iconv_testing_handle(tctx, "CP850", "UTF8",
+						lpcfg_parm_bool(tctx->lp_ctx,
+								NULL,
+								"iconv",
+								"use_builtin_handlers",
+								true));
+
+	torture_assert(tctx, iconv_handle, "creating iconv handle");
+
+	torture_assert(tctx,
+		       convert_string_talloc_handle(tctx, iconv_handle,
+						    CH_DOS, CH_UTF8,
+						    cp850.data, cp850.length,
+						    (void *)&utf8.data, &utf8.length),
+		       "conversion from CP850 to UTF-8");
+
+	torture_assert(tctx, utf8.length == cp850.length * 3,
+		       "CP850 high bytes expand to the right size");
+
+	torture_assert(tctx,
+		       memcmp(utf8.data, utf8_high_points, utf8.length) == 0,
+		       "cp850 converted to utf8 matches expected value");
+
+	torture_assert(tctx,
+		       convert_string_talloc_handle(tctx, iconv_handle,
+						    CH_UTF8, CH_DOS,
+						    utf8.data, utf8.length,
+						    (void *)&cp850_return.data,
+						    &cp850_return.length),
+		       "conversion from UTF-8 back to CP850");
+
+	torture_assert(tctx, data_blob_cmp(&cp850_return, &cp850) == 0,
+		       "UTF-8 returned to CP850 matches the original");
+	return true;
+}
+
+
 static bool test_gd_iso8859_cp850_handle(struct torture_context *tctx)
 {
 	struct smb_iconv_handle *iconv_handle;
@@ -1704,6 +1755,7 @@ static bool test_plato_case(struct torture_context *tctx)
 struct torture_suite *torture_local_convert_string_handle(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "convert_string_handle");
+	torture_suite_add_simple_test(suite, "cp850 high points", test_cp850_high_points);
 
 	torture_suite_add_simple_test(suite, "gd_ascii", test_gd_ascii_handle);
 	torture_suite_add_simple_test(suite, "gd_minus_1", test_gd_minus_1_handle);
