@@ -1371,6 +1371,143 @@ static bool torture_ldb_unpack_data_corrupt(struct torture_context *torture)
 	return true;
 }
 
+static bool torture_ldb_pack_data_v2(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(torture);
+	struct ldb_context *ldb;
+	struct ldb_val binary;
+
+	uint8_t bin[] = {0x68, 0x19, 0x01, 0x26, /* version */
+		2, 0, 0, 0, /* num elements */
+		4, 0, 0, 0, /* dn length */
+		'D', 'N', '=', 'A', 0, /* dn with null term */
+		2, 0, 0, 0, /* canonicalized dn length */
+		'/', 'A', 0, /* canonicalized dn with null term */
+		42, 0, 0, 0, /* distance from here to values section */
+		3, 0, 0, 0, /* el name length */
+		'a', 'b', 'c', 0, /* name with null term */
+		4, 0, 0, 0, 1, /* num values and length width */
+		1, 1, 1, 1, /* value lengths */
+		3, 0, 0, 0, /* el name length */
+		'd', 'e', 'f', 0, /* name def with null term */
+		4, 0, 0, 0, 2, /* num of values and length width */
+		1, 0, 1, 0, 1, 0, 0, 1, /* value lengths */
+		'1', 0, '2', 0, '3', 0, '4', 0, /* values for abc */
+		'5', 0, '6', 0, '7', 0}; /* first 3 values for def */
+
+	char eight_256[257] =\
+		"88888888888888888888888888888888888888888888888888888888888"
+		"88888888888888888888888888888888888888888888888888888888888"
+		"88888888888888888888888888888888888888888888888888888888888"
+		"88888888888888888888888888888888888888888888888888888888888"
+		"88888888888888888888"; /* def's 4th value */
+
+	struct ldb_val vals[4] = {{.data=discard_const_p(uint8_t, "1"),
+				   .length=1},
+				  {.data=discard_const_p(uint8_t, "2"),
+				   .length=1},
+				  {.data=discard_const_p(uint8_t, "3"),
+				   .length=1},
+				  {.data=discard_const_p(uint8_t, "4"),
+				   .length=1}};
+	struct ldb_val vals2[4] = {{.data=discard_const_p(uint8_t,"5"),
+				   .length=1},
+				  {.data=discard_const_p(uint8_t, "6"),
+				   .length=1},
+				  {.data=discard_const_p(uint8_t, "7"),
+				   .length=1},
+				  {.data=discard_const_p(uint8_t, eight_256),
+				   .length=256}};
+	struct ldb_message_element els[2] = {{.name=discard_const_p(char, "abc"),
+					   .num_values=4, .values=vals},
+					  {.name=discard_const_p(char, "def"),
+					   .num_values=4, .values=vals2}};
+	struct ldb_message msg = {.num_elements=2, .elements=els};
+
+	uint8_t *expect_bin;
+	struct ldb_val expect_bin_ldb;
+	size_t expect_size = sizeof(bin) + sizeof(eight_256);
+	expect_bin = talloc_size(NULL, expect_size);
+	memcpy(expect_bin, bin, sizeof(bin));
+	memcpy(expect_bin + sizeof(bin), eight_256, sizeof(eight_256));
+	expect_bin_ldb = data_blob_const(expect_bin, expect_size);
+
+	ldb = samba_ldb_init(mem_ctx, torture->ev, NULL,NULL,NULL);
+	torture_assert(torture, ldb != NULL, "Failed to init ldb");
+
+	msg.dn = ldb_dn_new(NULL, ldb, "DN=A");
+
+	torture_assert_int_equal(torture,
+				 ldb_pack_data(ldb, &msg, &binary,
+					       LDB_PACKING_FORMAT_V2),
+				 0, "ldb_pack_data failed");
+
+	torture_assert_int_equal(torture, expect_bin_ldb.length,
+				 binary.length,
+				 "packed data length not as expected");
+
+	torture_assert_mem_equal(torture,
+				 expect_bin_ldb.data,
+				 binary.data,
+				 binary.length,
+				 "packed data not as expected");
+	talloc_free(expect_bin);
+
+	return true;
+}
+
+static bool torture_ldb_pack_data_v2_special(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(torture);
+	struct ldb_context *ldb;
+	struct ldb_val binary;
+
+	uint8_t bin[] = {0x68, 0x19, 0x01, 0x26, /* version */
+		1, 0, 0, 0, /* num elements */
+		2, 0, 0, 0, /* dn length */
+		'@', 'A', 0, /* dn with null term */
+		0, 0, 0, 0, /* canonicalized dn length */
+		0, /* no canonicalized dn, just null term */
+		18, 0, 0, 0, /* distance from here to values section */
+		3, 0, 0, 0, /* el name length */
+		'a', 'b', 'c', 0, /* name with null term */
+		1, 0, 0, 0, 1, /* num values and length width */
+		1, /* value lengths */
+		'1', 0}; /* values for abc */
+
+	struct ldb_val vals[1] = {{.data=discard_const_p(uint8_t, "1"),
+				   .length=1}};
+	struct ldb_message_element els[1] = {{.name=discard_const_p(char,
+								    "abc"),
+					      .num_values=1, .values=vals}};
+	struct ldb_message msg = {.num_elements=1, .elements=els};
+
+	struct ldb_val expect_bin_ldb;
+	expect_bin_ldb = data_blob_const(bin, sizeof(bin));
+
+	ldb = samba_ldb_init(mem_ctx, torture->ev, NULL,NULL,NULL);
+	torture_assert(torture, ldb != NULL, "Failed to init ldb");
+
+	msg.dn = ldb_dn_new(NULL, ldb, "@A");
+
+	torture_assert_int_equal(torture,
+				 ldb_pack_data(ldb, &msg, &binary,
+					       LDB_PACKING_FORMAT_V2),
+				 0, "ldb_pack_data failed");
+
+	torture_assert_int_equal(torture, expect_bin_ldb.length,
+				 binary.length,
+				 "packed data length not as expected");
+
+	torture_assert_mem_equal(torture,
+				 expect_bin_ldb.data,
+				 binary.data,
+				 binary.length,
+				 "packed data not as expected");
+
+	return true;
+}
+
 static bool torture_ldb_parse_ldif(struct torture_context *torture,
 				   const void *data_p)
 {
@@ -1394,8 +1531,9 @@ static bool torture_ldb_parse_ldif(struct torture_context *torture,
 	torture_assert_int_equal(torture, ldif->changetype, LDB_CHANGETYPE_NONE,
 				 "changetype is incorrect");
 	torture_assert_int_equal(torture,
-				 ldb_pack_data(ldb, ldif->msg, &binary), 0,
-				 "ldb_pack_data failed");
+				 ldb_pack_data(ldb, ldif->msg, &binary,
+					       LDB_PACKING_FORMAT_V2),
+				 0, "ldb_pack_data failed");
 
 	torture_assert_int_equal(torture, ldb_unpack_data(ldb, &data, msg), 0,
 				 "ldb_unpack_data failed");
@@ -1443,8 +1581,9 @@ static bool torture_ldb_pack_format_perf(struct torture_context *torture)
 	torture_assert_int_equal(torture, ldif->changetype, LDB_CHANGETYPE_NONE,
 				 "changetype is incorrect");
 	torture_assert_int_equal(torture,
-				 ldb_pack_data(ldb, ldif->msg, &binary), 0,
-				 "ldb_pack_data failed");
+				 ldb_pack_data(ldb, ldif->msg, &binary,
+					       LDB_PACKING_FORMAT_V2),
+				 0, "ldb_pack_data failed");
 
 	ret = ldb_unpack_data(ldb, &binary, msg);
 	torture_assert_int_equal(torture, ret, 0,
@@ -1457,7 +1596,7 @@ static bool torture_ldb_pack_format_perf(struct torture_context *torture)
 	i = 0;
 	start = clock();
 	while (true) {
-		ldb_pack_data(ldb, ldif->msg, &binary);
+		ldb_pack_data(ldb, ldif->msg, &binary, LDB_PACKING_FORMAT_V2);
 		i++;
 
 		if (i >= 1000) {
@@ -1624,6 +1763,10 @@ struct torture_suite *torture_ldb(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "dn", torture_ldb_dn);
 	torture_suite_add_simple_test(suite, "pack-format-perf",
 				      torture_ldb_pack_format_perf);
+	torture_suite_add_simple_test(suite, "pack-data-v2",
+				      torture_ldb_pack_data_v2);
+	torture_suite_add_simple_test(suite, "pack-data-special-v2",
+				      torture_ldb_pack_data_v2_special);
 	torture_suite_add_simple_test(suite, "unpack-corrupt-v2",
 				      torture_ldb_unpack_data_corrupt);
 

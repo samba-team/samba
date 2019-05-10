@@ -509,7 +509,8 @@ int ldb_register_extended_match_rule(struct ldb_context *ldb,
  */
 int ldb_pack_data(struct ldb_context *ldb,
 		  const struct ldb_message *message,
-		  struct ldb_val *data);
+		  struct ldb_val *data,
+		  uint32_t pack_format_version);
 /*
  * Unpack a ldb message from a linear buffer in ldb_val
  */

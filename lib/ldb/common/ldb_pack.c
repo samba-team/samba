@@ -95,17 +95,9 @@ static int attribute_storable_values(const struct ldb_message_element *el)
 	return el->num_values;
 }
 
-/*
-  pack a ldb message into a linear buffer in a ldb_val
-
-  note that this routine avoids saving elements with zero values,
-  as these are equivalent to having no element
-
-  caller frees the data buffer after use
-*/
-int ldb_pack_data(struct ldb_context *ldb,
-		  const struct ldb_message *message,
-		  struct ldb_val *data)
+static int ldb_pack_data_v1(struct ldb_context *ldb,
+			    const struct ldb_message *message,
+			    struct ldb_val *data)
 {
 	unsigned int i, j, real_elements=0;
 	size_t size, dn_len, attr_len, value_len;
@@ -211,6 +203,331 @@ int ldb_pack_data(struct ldb_context *ldb,
 	}
 
 	return 0;
+}
+
+/*
+ * New pack version designed based on performance profiling of version 1.
+ * The approach is to separate value data from the rest of the record's data.
+ * This improves performance because value data is not needed during unpacking
+ * or filtering of the message's attribute list. During filtering we only copy
+ * attributes which are present in the attribute list, however at the parse
+ * stage we need to point to all attributes as they may be referenced in the
+ * search expression.
+ * With this new format, we don't lose time loading data (eg via
+ * talloc_memdup()) that is never needed (for the vast majority of attributes
+ * are are never found in either the search expression or attribute list).
+ * Additional changes include adding a canonicalized DN (for later
+ * optimizations) and variable width length fields for faster unpacking.
+ * The pack and unpack performance improvement is tested in the torture
+ * test torture_ldb_pack_format_perf.
+ *
+ * Layout:
+ *
+ * Version (4 bytes)
+ * Number of Elements (4 bytes)
+ * DN length (4 bytes)
+ * DN with null terminator (DN length + 1 bytes)
+ * Canonicalized DN length (4 bytes)
+ * Canonicalized DN with null terminator (Canonicalized DN length + 1 bytes)
+ * Number of bytes from here to value data section (4 bytes)
+ * # For each element:
+ * 	Element name length (4 bytes)
+ * 	Element name with null terminator (Element name length + 1 bytes)
+ * 	Number of values (4 bytes)
+ * 	Width of value lengths
+ * 	# For each value:
+ * 		Value data length (#bytes given by width field above)
+ * # For each element:
+ * 	# For each value:
+ *	 	Value data (#bytes given by corresponding length above)
+ */
+static int ldb_pack_data_v2(struct ldb_context *ldb,
+			    const struct ldb_message *message,
+			    struct ldb_val *data)
+{
+	unsigned int i, j, real_elements=0;
+	size_t size, dn_len, dn_canon_len, attr_len, value_len;
+	const char *dn, *dn_canon;
+	uint8_t *p, *q;
+	size_t len;
+	size_t max_val_len;
+	uint8_t val_len_width;
+
+	/*
+	 * First half of this function will calculate required size for
+	 * packed data. Initial size is 20 = 5 * 4.  5 fixed fields are:
+	 * version, num elements, dn len, canon dn len, attr section len
+	 */
+	size = U32_LEN * 5;
+
+	/*
+	 * Get linearized and canonicalized form of the DN and add the lengths
+	 * of each to size, plus 1 for null terminator.
+	 */
+	dn = ldb_dn_get_linearized(message->dn);
+	if (dn == NULL) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	dn_len = strlen(dn) + NULL_PAD_BYTE_LEN;
+	if (size + dn_len < size) {
+		errno = ENOMEM;
+		return -1;
+	}
+	size += dn_len;
+
+	if (ldb_dn_is_special(message->dn)) {
+		dn_canon_len = NULL_PAD_BYTE_LEN;
+		dn_canon = discard_const_p(char, "\0");
+	} else {
+		dn_canon = ldb_dn_canonical_string(message->dn, message->dn);
+		if (dn_canon == NULL) {
+			errno = ENOMEM;
+			return -1;
+		}
+
+		dn_canon_len = strlen(dn_canon) + NULL_PAD_BYTE_LEN;
+		if (size + dn_canon_len < size) {
+			errno = ENOMEM;
+			return -1;
+		}
+	}
+	size += dn_canon_len;
+
+	/* Add the size required by each element */
+	for (i=0;i<message->num_elements;i++) {
+		if (attribute_storable_values(&message->elements[i]) == 0) {
+			continue;
+		}
+
+		real_elements++;
+
+		/*
+		 * Add length of element name + 9 for:
+		 * 1 for null terminator
+		 * 4 for element name length field
+		 * 4 for number of values field
+		 */
+		attr_len = strlen(message->elements[i].name);
+		if (size + attr_len + U32_LEN * 2 + NULL_PAD_BYTE_LEN < size) {
+			errno = ENOMEM;
+			return -1;
+		}
+		size += attr_len + U32_LEN * 2 + NULL_PAD_BYTE_LEN;
+
+		/*
+		 * Find the max value length, so we can calculate the width
+		 * required for the value length fields.
+		 */
+		max_val_len = 0;
+		for (j=0;j<message->elements[i].num_values;j++) {
+			value_len = message->elements[i].values[j].length;
+			if (value_len > max_val_len) {
+				max_val_len = value_len;
+			}
+
+			if (size + value_len + NULL_PAD_BYTE_LEN < size) {
+				errno = ENOMEM;
+				return -1;
+			}
+			size += value_len + NULL_PAD_BYTE_LEN;
+		}
+
+		if (max_val_len <= UCHAR_MAX) {
+			val_len_width = U8_LEN;
+		} else if (max_val_len <= USHRT_MAX) {
+			val_len_width = U16_LEN;
+		} else if (max_val_len <= UINT_MAX) {
+		        val_len_width = U32_LEN;
+		} else {
+			errno = EMSGSIZE;
+			return -1;
+		}
+
+		/* Total size required for val lengths (re-using variable) */
+		max_val_len = (val_len_width*message->elements[i].num_values);
+
+		/* Add one for storing the width */
+		max_val_len += U8_LEN;
+		if (size + max_val_len < size) {
+			errno = ENOMEM;
+			return -1;
+		}
+		size += max_val_len;
+	}
+
+	/* Allocate */
+	data->data = talloc_array(ldb, uint8_t, size);
+	if (!data->data) {
+		errno = ENOMEM;
+		return -1;
+	}
+	data->length = size;
+
+	/* Packing format version and number of element */
+	p = data->data;
+	PUSH_LE_U32(p, 0, LDB_PACKING_FORMAT_V2);
+	p += U32_LEN;
+	PUSH_LE_U32(p, 0, real_elements);
+	p += U32_LEN;
+
+	/* Pack DN and Canonicalized DN */
+	PUSH_LE_U32(p, 0, dn_len-NULL_PAD_BYTE_LEN);
+	p += U32_LEN;
+	memcpy(p, dn, dn_len);
+	p += dn_len;
+
+	PUSH_LE_U32(p, 0, dn_canon_len-NULL_PAD_BYTE_LEN);
+	p += U32_LEN;
+	memcpy(p, dn_canon, dn_canon_len);
+	p += dn_canon_len;
+
+	/*
+	 * Save pointer at this point and leave a U32_LEN gap for
+	 * storing the size of the attribute names and value lengths
+	 * section
+	 */
+	q = p;
+	p += U32_LEN;
+
+	for (i=0;i<message->num_elements;i++) {
+		if (attribute_storable_values(&message->elements[i]) == 0) {
+			continue;
+		}
+
+		/* Length of el name */
+		len = strlen(message->elements[i].name);
+		PUSH_LE_U32(p, 0, len);
+		p += U32_LEN;
+
+		/*
+		 * Even though we have the element name's length, put a null
+		 * terminator at the end so if any code uses the name
+		 * directly, it'll be safe to do things requiring null
+		 * termination like strlen
+		 */
+		memcpy(p, message->elements[i].name, len+NULL_PAD_BYTE_LEN);
+		p += len + NULL_PAD_BYTE_LEN;
+		/* Num values */
+		PUSH_LE_U32(p, 0, message->elements[i].num_values);
+		p += U32_LEN;
+
+		/*
+		 * Calculate value length width again. It's faster to
+		 * calculate it again than do the array management to
+		 * store the result during size calculation.
+		 */
+		max_val_len = 0;
+		for (j=0;j<message->elements[i].num_values;j++) {
+			value_len = message->elements[i].values[j].length;
+			if (value_len > max_val_len) {
+				max_val_len = value_len;
+			}
+		}
+
+		if (max_val_len <= UCHAR_MAX) {
+			val_len_width = U8_LEN;
+		} else if (max_val_len <= USHRT_MAX) {
+			val_len_width = U16_LEN;
+		} else if (max_val_len <= UINT_MAX) {
+		        val_len_width = U32_LEN;
+		} else {
+			errno = EMSGSIZE;
+			return -1;
+		}
+
+		/* Pack the width */
+		*p = val_len_width & 0xFF;
+		p += U8_LEN;
+
+		/*
+		 * Pack each value's length using the minimum number of bytes
+		 * required, which we just calculated. We repeat the loop
+		 * for each case here so the compiler can inline code.
+		 */
+		if (val_len_width == U8_LEN) {
+			for (j=0;j<message->elements[i].num_values;j++) {
+				PUSH_LE_U8(p, 0,
+					message->elements[i].values[j].length);
+				p += U8_LEN;
+			}
+		} else if (val_len_width == U16_LEN) {
+			for (j=0;j<message->elements[i].num_values;j++) {
+				PUSH_LE_U16(p, 0,
+					message->elements[i].values[j].length);
+				p += U16_LEN;
+			}
+		} else if (val_len_width == U32_LEN) {
+			for (j=0;j<message->elements[i].num_values;j++) {
+				PUSH_LE_U32(p, 0,
+					message->elements[i].values[j].length);
+				p += U32_LEN;
+			}
+		}
+	}
+
+	/*
+	 * We've finished packing the attr names and value lengths
+	 * section, so store the size in the U32_LEN gap we left
+	 * earlier
+	 */
+	PUSH_LE_U32(q, 0, p-q);
+
+	/* Now pack the values */
+	for (i=0;i<message->num_elements;i++) {
+		if (attribute_storable_values(&message->elements[i]) == 0) {
+			continue;
+		}
+		for (j=0;j<message->elements[i].num_values;j++) {
+			memcpy(p, message->elements[i].values[j].data,
+			       message->elements[i].values[j].length);
+
+			/*
+			 * Even though we have the data length, put a null
+			 * terminator at the end of each value's data so if
+			 * any code uses the data directly, it'll  be safe to
+			 * do things requiring null termination like strlen.
+			 */
+			p[message->elements[i].values[j].length] = 0;
+			p += message->elements[i].values[j].length +
+				NULL_PAD_BYTE_LEN;
+		}
+	}
+
+	/*
+	 * If we didn't end up at the end of the data here, something has
+	 * gone very wrong.
+	 */
+	if (p != data->data + size) {
+		errno = ENOMEM;
+		return -1;
+	}
+
+	return 0;
+}
+
+/*
+  pack a ldb message into a linear buffer in a ldb_val
+
+  note that this routine avoids saving elements with zero values,
+  as these are equivalent to having no element
+
+  caller frees the data buffer after use
+*/
+int ldb_pack_data(struct ldb_context *ldb,
+		  const struct ldb_message *message,
+		  struct ldb_val *data,
+		  uint32_t pack_format_version) {
+
+	if (pack_format_version == LDB_PACKING_FORMAT) {
+		return ldb_pack_data_v1(ldb, message, data);
+	} else if (pack_format_version == LDB_PACKING_FORMAT_V2) {
+		return ldb_pack_data_v2(ldb, message, data);
+	} else {
+		errno = EINVAL;
+		return -1;
+	}
 }
 
 /*

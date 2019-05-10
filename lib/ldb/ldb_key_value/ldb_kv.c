@@ -384,7 +384,8 @@ int ldb_kv_store(struct ldb_module *module,
 	}
 
 	ret = ldb_pack_data(ldb_module_get_ctx(module),
-			    msg, &ldb_data);
+			    msg, &ldb_data,
+			    ldb_kv->pack_format_version);
 	if (ret == -1) {
 		TALLOC_FREE(key_ctx);
 		return LDB_ERR_OTHER;
