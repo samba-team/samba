@@ -357,6 +357,9 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 	void **dest = (void **)dst;
 
 	*dest = NULL;
+	if (converted_size != NULL) {
+		*converted_size = 0;
+	}
 
 	if (src == NULL || srclen == (size_t)-1) {
 		errno = EINVAL;
