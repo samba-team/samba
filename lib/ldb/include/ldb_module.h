@@ -544,11 +544,20 @@ int ldb_unpack_data_flags(struct ldb_context *ldb,
 			  struct ldb_message *message,
 			  unsigned int flags);
 
+int ldb_unpack_get_format(const struct ldb_val *data,
+			  uint32_t *pack_format_version);
+
 /* currently unused (was NO_DATA_ALLOC)      0x0001 */
 #define LDB_UNPACK_DATA_FLAG_NO_DN           0x0002
 #define LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC 0x0004
 #define LDB_UNPACK_DATA_FLAG_NO_ATTRS        0x0008
 #define LDB_UNPACK_DATA_FLAG_READ_LOCKED     0x0010
+
+/* In-use packing formats */
+#define LDB_PACKING_FORMAT 0x26011967
+
+/* Old packing formats */
+#define LDB_PACKING_FORMAT_NODN 0x26011966
 
 /**
  Forces a specific ldb handle to use the global event context.
