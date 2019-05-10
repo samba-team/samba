@@ -406,10 +406,10 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 	}
 	destlen = srclen * 3 / 2;
 
-  convert:
+  convert: /* this is a do-while loop with case E2BIG below. */
 
 	/* +2 is for ucs2 null termination. */
-	if ((destlen*2)+2 < destlen) {
+	if ((destlen*2)+2 <= destlen) {
 		/* wrapped ! abort. */
 		DEBUG(0, ("convert_string_talloc: destlen wrapped !\n"));
 		TALLOC_FREE(outbuf);
