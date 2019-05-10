@@ -53,6 +53,7 @@ struct ldb_kv_private {
 	unsigned int connect_flags;
 
 	unsigned long long sequence_number;
+	uint32_t pack_format_version;
 
 	/* the low level tdb seqnum - used to avoid loading BASEINFO when
 	   possible */

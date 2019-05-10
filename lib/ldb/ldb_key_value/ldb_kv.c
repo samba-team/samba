@@ -1902,6 +1902,8 @@ int ldb_kv_init_store(struct ldb_kv_private *ldb_kv,
 
 	ldb_kv->sequence_number = 0;
 
+	ldb_kv->pack_format_version = LDB_PACKING_FORMAT;
+
 	ldb_kv->pid = getpid();
 
 	ldb_kv->module = ldb_module_new(ldb, ldb, name, &ldb_kv_ops);

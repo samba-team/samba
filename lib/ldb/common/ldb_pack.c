@@ -33,12 +33,6 @@
 
 #include "ldb_private.h"
 
-/* change this if the data format ever changes */
-#define LDB_PACKING_FORMAT 0x26011967
-
-/* old packing formats */
-#define LDB_PACKING_FORMAT_NODN 0x26011966
-
 /* use a portable integer format */
 static void put_uint32(uint8_t *p, int ofs, unsigned int val)
 {
@@ -229,7 +223,7 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 	size_t remaining;
 	size_t dn_len;
 	unsigned int i, j;
-	unsigned format;
+	uint32_t format;
 	unsigned int nelem = 0;
 	size_t len;
 	unsigned int found = 0;
@@ -247,7 +241,10 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 		goto failed;
 	}
 
-	format = pull_uint32(p, 0);
+	if (ldb_unpack_get_format(data, &format) != LDB_SUCCESS) {
+		errno = EIO;
+		goto failed;
+	}
 	message->num_elements = pull_uint32(p, 4);
 	p += 8;
 	if (nb_elements_in_db) {
@@ -502,6 +499,16 @@ int ldb_unpack_data_only_attr_list_flags(struct ldb_context *ldb,
 failed:
 	talloc_free(message->elements);
 	return -1;
+}
+
+int ldb_unpack_get_format(const struct ldb_val *data,
+			  uint32_t *pack_format_version)
+{
+	if (data->length < 4) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+	*pack_format_version = pull_uint32(data->data, 0);
+	return LDB_SUCCESS;
 }
 
 /*
