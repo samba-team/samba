@@ -351,7 +351,7 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 {
 	size_t i_len, o_len, destlen;
 	size_t retval;
-	const char *inbuf = (const char *)src;
+	const char *inbuf = NULL;
 	char *outbuf = NULL, *ob = NULL;
 	smb_iconv_t descriptor;
 	void **dest = (void **)dst;
@@ -430,6 +430,7 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 	outbuf = ob;
 	i_len = srclen;
 	o_len = destlen;
+	inbuf = (const char *)src;
 
 	retval = smb_iconv(descriptor,
 			   &inbuf, &i_len,
