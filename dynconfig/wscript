@@ -100,6 +100,11 @@ dynconfig = {
          'FHS-PATH':  '${DATADIR}',
          'OVERWRITE': True,
     },
+    'SAMBA_DATADIR' : {
+         'STD-PATH':  '${DATADIR}/samba',
+         'FHS-PATH':  '${DATADIR}/samba',
+         'OVERWRITE': True,
+    },
     'LOCALEDIR' : {
          'STD-PATH':  '${LOCALEDIR}',
          'FHS-PATH':  '${LOCALEDIR}',

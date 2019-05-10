@@ -17,6 +17,7 @@ echo "<!DOCTYPE section [
 <!ENTITY pathconfig.CACHEDIR             '\${prefix}/var/cache'>
 <!ENTITY pathconfig.NTP_SIGND_SOCKET_DIR '\${prefix}/var/lib/ntp_signd'>
 <!ENTITY pathconfig.MITKDCPATH           '\${prefix}/sbin/krb5kdc'>
+<!ENTITY pathconfig.SAMBA_DATADIR        '\${prefix}/var/samba'>
 ]>"
 
 DIR=.
