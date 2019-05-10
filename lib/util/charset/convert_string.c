@@ -349,7 +349,7 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 				  size_t *converted_size)
 
 {
-	size_t i_len, o_len, destlen = (srclen * 3) / 2;
+	size_t i_len, o_len, destlen;
 	size_t retval;
 	const char *inbuf = (const char *)src;
 	char *outbuf = NULL, *ob = NULL;
@@ -396,6 +396,15 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 		errno = EOPNOTSUPP;
 		return false;
 	}
+
+	if (srclen >= SIZE_MAX / 3) {
+		DBG_ERR("convert_string_talloc: "
+			"srclen is %zu, destlen would wrap!\n",
+			srclen);
+		errno = EOPNOTSUPP;
+		return false;
+	}
+	destlen = srclen * 3 / 2;
 
   convert:
 
