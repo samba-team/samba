@@ -520,6 +520,7 @@ ctdb_init ()
 {
     local i
     for i in $(seq 1 5) ; do
+	ctdb_stop_all >/dev/null 2>&1 || :
 	ctdb_start_all || {
 	    echo "Start failed.  Trying again in a few seconds..."
 	    sleep_for 5
