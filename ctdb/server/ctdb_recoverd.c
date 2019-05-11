@@ -1134,7 +1134,7 @@ static int helper_run(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx,
 
 	state->done = false;
 
-	fde = tevent_add_fd(rec->ctdb->ev, rec->ctdb, state->fd[0],
+	fde = tevent_add_fd(rec->ctdb->ev, state, state->fd[0],
 			    TEVENT_FD_READ, helper_handler, state);
 	if (fde == NULL) {
 		goto fail;
