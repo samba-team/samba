@@ -117,7 +117,8 @@ int event_script_get_list(TALLOC_CTX *mem_ctx,
 	}
 
 	*out = script_list;
-	return 0;
+	ret = 0;
+	goto done;
 
 nomem:
 	ret = ENOMEM;
