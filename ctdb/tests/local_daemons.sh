@@ -119,6 +119,7 @@ setup_socket_wrapper ()
 	ln -s "$_socket_wrapper_so" "$_so"
 
 	_d="${directory}/sw"
+	rm -rf "$_d"
 	mkdir -p "$_d"
 }
 
