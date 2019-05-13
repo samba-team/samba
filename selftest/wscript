@@ -265,8 +265,9 @@ def cmd_testonly(opt):
 
     if env.ADDRESS_SANITIZER:
         # We try to find the correct libasan automatically
-        libasan = Utils.cmd_output('ldd bin/texpect | grep libasan| cut -f 3 -d \ ',
-                                   silent=True).strip()
+        libasan = Utils.cmd_output(
+            'ldd bin/texpect | grep libasan| cut -f 3 -d \ ',
+            silent=True).strip()
         libasan = libasan.decode('utf8')
 
         # Have the selftest.pl LD_PRELOAD libasan in the right spot
@@ -289,6 +290,12 @@ def cmd_testonly(opt):
         asan_envs = no_leak_check + " LD_PRELOAD=" + libasan + ' '
         env.FILTER_OPTIONS = asan_envs + env.FILTER_OPTIONS
         env.SUBUNIT_FORMATTER = asan_envs + env.SUBUNIT_FORMATTER
+
+    if env.UNDEFINED_SANITIZER:
+        # print a stack trace with the error.
+        print_stack_trace = "UBSAN_OPTIONS=print_stacktrace=1"
+        print_stack_trace += ",suppressions=${srcdir}/selftest/ubsan.supp"
+        env.CORE_COMMAND = print_stack_trace + " " + env.CORE_COMMAND
 
     if Options.options.LIST:
         cmd = '${CORE_COMMAND} --list'
