@@ -46,8 +46,16 @@ bool srprs_char(const char** ptr, char c) {
 
 bool srprs_str(const char** ptr, const char* str, ssize_t len)
 {
+	/* By definition *ptr must be null terminated. */
+	size_t ptr_len = strlen(*ptr);
+
 	if (len == -1)
 		len = strlen(str);
+
+	/* Don't memcmp read past end of buffer. */
+	if (len > ptr_len) {
+		return false;
+	}
 
 	if (memcmp(*ptr, str, len) == 0) {
 		*ptr += len;
