@@ -4244,15 +4244,47 @@ const char *volume_label(TALLOC_CTX *ctx, int snum)
 {
 	char *ret;
 	const char *label = lp_volume(ctx, snum);
+	size_t end = 32;
+
 	if (!*label) {
 		label = lp_servicename(ctx, snum);
 	}
 
-	/* This returns a 33 byte guarenteed null terminated string. */
-	ret = talloc_strndup(ctx, label, 32);
+	/*
+	 * Volume label can be a max of 32 bytes. Make sure to truncate
+	 * it at a codepoint boundary if it's longer than 32 and contains
+	 * multibyte characters. Windows insists on a volume label being
+	 * a valid mb sequence, and errors out if not.
+	 */
+	if (strlen(label) > 32) {
+		/*
+		 * A MB char can be a max of 5 bytes, thus
+		 * we should have a valid mb character at a
+		 * minimum position of (32-5) = 27.
+		 */
+		while (end >= 27) {
+			/*
+			 * Check if a codepoint starting from next byte
+			 * is valid. If yes, then the current byte is the
+			 * end of a MB or ascii sequence and the label can
+			 * be safely truncated here. If not, keep going
+			 * backwards till a valid codepoint is found.
+			 */
+			size_t len = 0;
+			const char *s = &label[end];
+			codepoint_t c = next_codepoint(s, &len);
+			if (c != INVALID_CODEPOINT) {
+				break;
+			}
+			end--;
+		}
+	}
+
+	/* This returns a max of 33 byte guarenteed null terminated string. */
+	ret = talloc_strndup(ctx, label, end);
 	if (!ret) {
 		return "";
-	}		
+	}
 	return ret;
 }
 
