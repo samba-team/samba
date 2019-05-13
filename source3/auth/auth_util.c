@@ -1383,6 +1383,21 @@ static NTSTATUS make_new_session_info_guest(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	/*
+	 * It's ugly, but for now it's
+	 * needed to force Builtin_Guests
+	 * here, because memberships of
+	 * Builtin_Guests might be incomplete.
+	 */
+	status = add_sid_to_array_unique(session_info->security_token,
+					 &global_sid_Builtin_Guests,
+					 &session_info->security_token->sids,
+					 &session_info->security_token->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to force Builtin_Guests to nt token\n");
+		goto done;
+	}
+
 	/* annoying, but the Guest really does have a session key, and it is
 	   all zeros! */
 	session_info->session_key = data_blob_talloc_zero(session_info, 16);
