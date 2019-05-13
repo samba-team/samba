@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
 {
 	char smbspool_cmd[PATH_MAX] = {0};
 	struct passwd *pwd;
+	struct group *g = NULL;
 	char gen_cc[PATH_MAX] = {0};
 	struct stat sb;
 	char *env = NULL;
@@ -89,6 +90,7 @@ int main(int argc, char *argv[])
 	char device_uri[4096] = {0};
 	uid_t uid = (uid_t)-1;
 	gid_t gid = (gid_t)-1;
+	gid_t groups[1] = { (gid_t)-1 };
 	unsigned long tmp;
 	int cmp;
 	int rc;
@@ -172,6 +174,26 @@ int main(int argc, char *argv[])
 	rc = setgroups(0, NULL);
 	if (rc != 0) {
 		CUPS_SMB_ERROR("Failed to clear groups - %s",
+			       strerror(errno));
+		return CUPS_BACKEND_FAILED;
+	}
+
+	/*
+	 * We need the primary group of the 'lp' user. This is needed to access
+	 * temporary files in /var/spool/cups/.
+	 */
+	g = getgrnam("lp");
+	if (g == NULL) {
+		CUPS_SMB_ERROR("Failed to find user 'lp' - %s",
+			       strerror(errno));
+		return CUPS_BACKEND_FAILED;
+	}
+
+	CUPS_SMB_DEBUG("Adding group 'lp' (%u)", g->gr_gid);
+	groups[0] = g->gr_gid;
+	rc = setgroups(sizeof(groups), groups);
+	if (rc != 0) {
+		CUPS_SMB_ERROR("Failed to set groups for 'lp' - %s",
 			       strerror(errno));
 		return CUPS_BACKEND_FAILED;
 	}
