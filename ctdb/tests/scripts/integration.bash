@@ -104,7 +104,11 @@ try_command_on_node ()
 
     local cmd="$*"
 
-    if ! onnode -q $onnode_opts "$nodespec" "$cmd" >"$outfile" 2>&1 ; then
+    local status=0
+    onnode -q $onnode_opts "$nodespec" "$cmd" >"$outfile" 2>&1 || status=$?
+    out=$(dd if="$outfile" bs=1k count=1 2>/dev/null)
+
+    if [ $status -ne 0 ] ; then
 	echo "Failed to execute \"$cmd\" on node(s) \"$nodespec\""
 	cat "$outfile"
 	return 1
@@ -114,8 +118,6 @@ try_command_on_node ()
 	echo "Output of \"$cmd\":"
 	cat "$outfile"
     fi
-
-    out=$(dd if="$outfile" bs=1k count=1 2>/dev/null)
 }
 
 sanity_check_output ()
