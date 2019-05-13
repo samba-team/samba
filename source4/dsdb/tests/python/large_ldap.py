@@ -70,7 +70,7 @@ class ManyLDAPTest(samba.tests.TestCase):
         super(ManyLDAPTest, self).setUp()
         self.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
         self.base_dn = self.ldb.domain_dn()
-        self.OU_NAME_MANY="many_ou"
+        self.OU_NAME_MANY="many_ou" + format(random.randint(0, 99999), "05")
         self.ou_dn = ldb.Dn(self.ldb, "ou=" + self.OU_NAME_MANY + "," + str(self.base_dn))
 
         samba.tests.delete_force(self.ldb, self.ou_dn,
@@ -122,7 +122,7 @@ class LargeLDAPTest(samba.tests.TestCase):
         self.ldb = SamDB(url, credentials=creds, session_info=system_session(lp), lp=lp)
         self.base_dn = self.ldb.domain_dn()
         self.USER_NAME = "large_user" + format(random.randint(0, 99999), "05") + "-"
-        self.OU_NAME="large_user_ou"
+        self.OU_NAME="large_user_ou" + format(random.randint(0, 99999), "05")
         self.ou_dn = ldb.Dn(self.ldb, "ou=" + self.OU_NAME + "," + str(self.base_dn))
 
         samba.tests.delete_force(self.ldb, self.ou_dn,
