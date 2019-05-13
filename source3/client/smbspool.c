@@ -88,8 +88,8 @@ main(int argc,			/* I - Number of command-line arguments */
 	int             port;	/* Port number */
 	char            uri[1024],	/* URI */
 	               *sep,	/* Pointer to separator */
-	               *tmp, *tmp2,	/* Temp pointers to do escaping */
-	               *password;	/* Password */
+	               *tmp, *tmp2;	/* Temp pointers to do escaping */
+	const char     *password = NULL;	/* Password */
 	char           *username,	/* Username */
 	               *server,	/* Server name */
 	               *printer;/* Printer name */
@@ -293,8 +293,6 @@ main(int argc,			/* I - Number of command-line arguments */
 		if ((tmp2 = strchr_m(tmp, ':')) != NULL) {
 			*tmp2++ = '\0';
 			password = uri_unescape_alloc(tmp2);
-		} else {
-			password = empty_str;
 		}
 		username = uri_unescape_alloc(tmp);
 	} else {
@@ -302,14 +300,15 @@ main(int argc,			/* I - Number of command-line arguments */
 			username = empty_str;
 		}
 
-		if ((password = getenv("AUTH_PASSWORD")) == NULL) {
-			password = empty_str;
+		env = getenv("AUTH_PASSWORD");
+		if (env != NULL && strlen(env) > 0) {
+			password = env;
 		}
 
 		server = uri + 6;
 	}
 
-	if (password != empty_str) {
+	if (password != NULL) {
 		auth_info_required = "username,password";
 	}
 
@@ -514,6 +513,7 @@ smb_complete_connection(const char *myname,
 	NTSTATUS        nt_status;
 	struct cli_credentials *creds = NULL;
 	bool use_kerberos = false;
+	bool fallback_after_kerberos = false;
 
 	/* Start the SMB connection */
 	*need_auth = false;
@@ -524,18 +524,12 @@ smb_complete_connection(const char *myname,
 		return NULL;
 	}
 
-	/*
-	 * We pretty much guarantee password must be valid or a pointer to a
-	 * 0 char.
-	 */
-	if (!password) {
-		*need_auth = true;
-		return NULL;
+	if (flags & CLI_FULL_CONNECTION_USE_KERBEROS) {
+		use_kerberos = true;
 	}
 
-	if (flags & CLI_FULL_CONNECTION_USE_KERBEROS) {
-		auth_info_required = "negotiate";
-		use_kerberos = true;
+	if (flags & CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS) {
+		fallback_after_kerberos = true;
 	}
 
 	creds = cli_session_creds_init(cli,
@@ -544,7 +538,7 @@ smb_complete_connection(const char *myname,
 				       NULL, /* realm */
 				       password,
 				       use_kerberos,
-				       false, /* fallback_after_kerberos */
+				       fallback_after_kerberos,
 				       false, /* use_ccache */
 				       false); /* password_is_nt_hash */
 	if (creds == NULL) {
@@ -663,6 +657,10 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
 	struct cli_state *cli;	/* New connection */
 	char           *myname = NULL;	/* Client name */
 	struct passwd  *pwd;
+	int flags = CLI_FULL_CONNECTION_USE_KERBEROS;
+	bool use_kerberos = false;
+	const char *user = username;
+	int cmp;
 
 	/*
          * Get the names and addresses of the client and server...
@@ -672,42 +670,56 @@ smb_connect(const char *workgroup,	/* I - Workgroup */
 		return NULL;
 	}
 
-	/*
-	 * See if we have a username first.  This is for backwards compatible
-	 * behavior with 3.0.14a
-	 */
 
-	if (username == NULL || username[0] == '\0') {
-		if (kerberos_ccache_is_valid()) {
-			goto kerberos_auth;
+	cmp = strcmp(auth_info_required, "negotiate");
+	if (cmp == 0) {
+		if (!kerberos_ccache_is_valid()) {
+			return NULL;
 		}
+		user = jobusername;
+
+		use_kerberos = true;
+		fprintf(stderr,
+			"DEBUG: Try to connect using Kerberos ...\n");
+	}
+
+	cmp = strcmp(auth_info_required, "username,password");
+	if (cmp == 0) {
+		if (username == NULL || username[0] == '\0') {
+			return NULL;
+		}
+
+		/* Fallback to NTLM */
+		flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
+
+		fprintf(stderr,
+			"DEBUG: Try to connect using username/password ...\n");
+	}
+
+	cmp = strcmp(auth_info_required, "none");
+	if (cmp == 0) {
+		fprintf(stderr,
+			"DEBUG: This backend doesn't support none auth ...\n");
+		return NULL;
 	}
 
 	cli = smb_complete_connection(myname,
 				      server,
 				      port,
-				      username,
+				      user,
 				      password,
 				      workgroup,
 				      share,
-				      0,
+				      flags,
 				      need_auth);
 	if (cli != NULL) {
-		fputs("DEBUG: Connected with username/password...\n", stderr);
+		fprintf(stderr, "DEBUG: SMB connection established.\n");
 		return (cli);
 	}
 
-kerberos_auth:
-	/*
-	 * Try to use the user kerberos credentials (if any) to authenticate
-	 */
-	cli = smb_complete_connection(myname, server, port, jobusername, "",
-				      workgroup, share,
-				 CLI_FULL_CONNECTION_USE_KERBEROS, need_auth);
-
-	if (cli) {
-		fputs("DEBUG: Connected using Kerberos...\n", stderr);
-		return (cli);
+	if (!use_kerberos) {
+		fprintf(stderr, "ERROR: SMB connection failed!\n");
+		return NULL;
 	}
 
 	/* give a chance for a passwordless NTLMSSP session setup */
