@@ -3412,6 +3412,96 @@ static int re_index(struct ldb_kv_private *ldb_kv,
 	return 0;
 }
 
+static int re_pack(struct ldb_kv_private *ldb_kv,
+		   struct ldb_val key,
+		   struct ldb_val val,
+		   void *state)
+{
+	struct ldb_context *ldb;
+	struct ldb_message *msg;
+	struct ldb_module *module = ldb_kv->module;
+	struct ldb_kv_repack_context *ctx =
+	    (struct ldb_kv_repack_context *)state;
+	int ret;
+
+	ldb = ldb_module_get_ctx(module);
+
+	msg = ldb_msg_new(module);
+	if (msg == NULL) {
+		return -1;
+	}
+
+	ret = ldb_unpack_data(ldb, &val, msg);
+	if (ret != 0) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Repack: unpack failed: %s\n",
+			  ldb_dn_get_linearized(msg->dn));
+		ctx->error = ret;
+		talloc_free(msg);
+		return -1;
+	}
+
+	ret = ldb_kv_store(module, msg, TDB_MODIFY);
+	if (ret != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Repack: store failed: %s\n",
+			  ldb_dn_get_linearized(msg->dn));
+		ctx->error = ret;
+		talloc_free(msg);
+		return -1;
+	}
+
+	/*
+	 * Warn the user that we're repacking the first time we see a normal
+	 * record. This means we never warn if we're repacking a database with
+	 * only @ records. This is because during database initialisation,
+	 * we might repack as initial settings are written out, and we don't
+	 * want to spam the log.
+	 */
+	if ((!ctx->normal_record_seen) && (!ldb_dn_is_special(msg->dn))) {
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
+			  "Repacking database with format %#010x",
+			  ldb_kv->pack_format_version);
+		ctx->normal_record_seen = true;
+	}
+
+	ctx->count++;
+	if (ctx->count % 10000 == 0) {
+		ldb_debug(ldb, LDB_DEBUG_WARNING,
+			  "Repack: re-packed %u records so far",
+			  ctx->count);
+	}
+
+	return 0;
+}
+
+int ldb_kv_repack(struct ldb_module *module)
+{
+	struct ldb_kv_private *ldb_kv = talloc_get_type(
+	    ldb_module_get_private(module), struct ldb_kv_private);
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_kv_repack_context ctx;
+	int ret;
+
+	ctx.count = 0;
+	ctx.error = LDB_SUCCESS;
+	ctx.normal_record_seen = false;
+
+	/* Iterate all database records and repack them in the new format */
+	ret = ldb_kv->kv_ops->iterate(ldb_kv, re_pack, &ctx);
+	if (ret < 0) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Repack traverse failed: %s",
+			  ldb_errstring(ldb));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (ctx.error != LDB_SUCCESS) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "Repack failed: %s",
+			  ldb_errstring(ldb));
+		return ctx.error;
+	}
+
+	return LDB_SUCCESS;
+}
+
 /*
   force a complete reindex of the database
 */

@@ -64,6 +64,7 @@ struct ldb_kv_private {
 
 	unsigned long long sequence_number;
 	uint32_t pack_format_version;
+	uint32_t target_pack_format_version;
 
 	/* the low level tdb seqnum - used to avoid loading BASEINFO when
 	   possible */
@@ -139,6 +140,12 @@ struct ldb_kv_context {
 struct ldb_kv_reindex_context {
 	int error;
 	uint32_t count;
+};
+
+struct ldb_kv_repack_context {
+	int error;
+	uint32_t count;
+	bool normal_record_seen;
 };
 
 
@@ -226,6 +233,7 @@ int ldb_kv_index_del_value(struct ldb_module *module,
 			   struct ldb_message_element *el,
 			   unsigned int v_idx);
 int ldb_kv_reindex(struct ldb_module *module);
+int ldb_kv_repack(struct ldb_module *module);
 int ldb_kv_index_transaction_start(
 	struct ldb_module *module,
 	size_t cache_size);

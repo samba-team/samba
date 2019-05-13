@@ -301,6 +301,28 @@ static int ldb_kv_check_special_dn(struct ldb_module *module,
 	return LDB_SUCCESS;
 }
 
+/*
+ * Called after modifies and when starting a transaction. Checks target pack
+ * format version and current pack format version, which are set by cache_load,
+ * and repacks if necessary.
+ */
+static int ldb_kv_maybe_repack(struct ldb_kv_private *ldb_kv) {
+	if (ldb_kv->pack_format_version !=
+	    ldb_kv->target_pack_format_version) {
+		int r;
+		struct ldb_context *ldb = ldb_module_get_ctx(ldb_kv->module);
+		ldb_kv->pack_format_version =
+			ldb_kv->target_pack_format_version;
+		r = ldb_kv_repack(ldb_kv->module);
+		if (r != LDB_SUCCESS) {
+			ldb_debug(ldb, LDB_DEBUG_ERROR,
+				  "Database repack failed.");
+		}
+		return r;
+	}
+
+	return LDB_SUCCESS;
+}
 
 /*
   we've made a modification to a dn - possibly reindex and
@@ -1447,6 +1469,20 @@ static int ldb_kv_prepare_commit(struct ldb_module *module)
 		return ret;
 	}
 
+	/*
+	 * If GUID indexing was toggled in this transaction, we repack at
+	 * format version 2 if GUID indexing was enabled, or version 1 if
+	 * it was disabled.
+	 */
+	ret = ldb_kv_maybe_repack(ldb_kv);
+	if (ret != LDB_SUCCESS) {
+		ldb_kv_del_trans(module);
+		ldb_set_errstring(ldb_module_get_ctx(module),
+				  "Failure during re-pack, so "
+				  "transaction must be aborted.");
+		return ret;
+	}
+
 	if (ldb_kv->kv_ops->prepare_write(ldb_kv) != 0) {
 		ret = ldb_kv->kv_ops->error(ldb_kv);
 		ldb_debug_set(ldb_module_get_ctx(module),
@@ -1894,8 +1930,6 @@ int ldb_kv_init_store(struct ldb_kv_private *ldb_kv,
 	}
 
 	ldb_kv->sequence_number = 0;
-
-	ldb_kv->pack_format_version = LDB_PACKING_FORMAT;
 
 	ldb_kv->pid = getpid();
 
