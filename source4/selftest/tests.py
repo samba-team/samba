@@ -882,6 +882,22 @@ plantestsuite("samba4.ldap.index.python", "none", [python, os.path.join(srcdir()
 plantestsuite_loadlist("samba4.ldap.notification.python(ad_dc_ntvfs)", "ad_dc_ntvfs", [python, os.path.join(DSDB_PYTEST_DIR, "notification.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 plantestsuite_loadlist("samba4.ldap.sites.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(DSDB_PYTEST_DIR, "sites.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
+env = 'vampire_dc'
+# Test with LMDB (GSSAPI/SASL bind)
+plantestsuite_loadlist("samba4.ldap.large_ldap.gssapi.python(%s)" % env, env, [python, os.path.join(DSDB_PYTEST_DIR, "large_ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--kerberos=yes', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+
+env = 'ad_dc_default'
+# Test with TDB (NTLMSSP bind)
+plantestsuite_loadlist("samba4.ldap.large_ldap.ntlmssp.python(%s)" % env, env, [python, os.path.join(DSDB_PYTEST_DIR, "large_ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--kerberos=no', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+
+env = 'ad_dc_ntvfs'
+# Test with ldaps://
+plantestsuite_loadlist("samba4.ldap.large_ldap.ldaps.python(%s)" % env, env, [python, os.path.join(DSDB_PYTEST_DIR, "large_ldap.py"), 'ldaps://$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+
+env = 'fl2008r2dc'
+# Test with straight ldap
+plantestsuite_loadlist("samba4.ldap.large_ldap.straight_ldap.python(%s)" % env, env, [python, os.path.join(DSDB_PYTEST_DIR, "large_ldap.py"), 'ldap://$SERVER',     '--simple-bind-dn=$USERNAME@$REALM', '--password=$PASSWORD', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
+
 planoldpythontestsuite("ad_dc_default", "sort", environ={'SERVER' : '$SERVER', 'DATA_DIR' : os.path.join(samba4srcdir, 'dsdb/tests/python/testdata/')}, name="samba4.ldap.sort.python", extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')], extra_args=['-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
 
 plantestsuite_loadlist("samba4.ldap.linked_attributes.python(ad_dc_ntvfs)", "ad_dc_ntvfs:local", [python, os.path.join(DSDB_PYTEST_DIR, "linked_attributes.py"), '$PREFIX_ABS/ad_dc_ntvfs/private/sam.ldb', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
