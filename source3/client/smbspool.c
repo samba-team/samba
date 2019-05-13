@@ -224,7 +224,9 @@ main(int argc,			/* I - Number of command-line arguments */
 
 		fp = fopen(print_file, "rb");
 		if (fp == NULL) {
-			perror("ERROR: Unable to open print file");
+			fprintf(stderr,
+				"ERROR: Unable to open print file: %s",
+				print_file);
 			goto done;
 		}
 
