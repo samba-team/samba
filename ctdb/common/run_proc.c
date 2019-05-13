@@ -302,12 +302,14 @@ again:
 		proc->fd = -1;
 	}
 
+	DLIST_REMOVE(run_ctx->plist, proc);
+
 	/* Active run_proc request */
 	if (proc->req != NULL) {
 		run_proc_done(proc->req);
+	} else {
+		talloc_free(proc);
 	}
-
-	DLIST_REMOVE(run_ctx->plist, proc);
 
 	goto again;
 }
@@ -426,6 +428,7 @@ static void run_proc_done(struct tevent_req *req)
 	if (state->proc->output != NULL) {
 		state->output = talloc_steal(state, state->proc->output);
 	}
+	talloc_steal(state, state->proc);
 
 	tevent_req_done(req);
 }
