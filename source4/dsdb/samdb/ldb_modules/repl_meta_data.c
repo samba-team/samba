@@ -1029,6 +1029,24 @@ static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		talloc_free(tmp_ctx);
 		return LDB_ERR_CONSTRAINT_VIOLATION;
 	}
+
+	/*
+	 * At the successful end of these functions el->values is
+	 * overwritten with new_values.  However get_parsed_dns()
+	 * points p->v at the supplied el and it effectively gets used
+	 * as a working area by replmd_build_la_val().  So we must
+	 * duplicate it because our caller only called
+	 * ldb_msg_copy_shallow().
+	 */
+
+	el->values = talloc_memdup(tmp_ctx,
+				   el->values,
+				   sizeof(el->values[0]) * el->num_values);
+	if (el->values == NULL) {
+		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 	
 	ret = get_parsed_dns(module, tmp_ctx, el, &pdn,
 			     sa->syntax->ldap_oid, parent);
@@ -3072,6 +3090,24 @@ static int replmd_modify_la_replace(struct ldb_module *module,
 	if (max_num_values == 0) {
 		/* There is nothing to do! */
 		return LDB_SUCCESS;
+	}
+
+	/*
+	 * At the successful end of these functions el->values is
+	 * overwritten with new_values.  However get_parsed_dns()
+	 * points p->v at the supplied el and it effectively gets used
+	 * as a working area by replmd_build_la_val().  So we must
+	 * duplicate it because our caller only called
+	 * ldb_msg_copy_shallow().
+	 */
+
+	el->values = talloc_memdup(tmp_ctx,
+				   el->values,
+				   sizeof(el->values[0]) * el->num_values);
+	if (el->values == NULL) {
+		ldb_module_oom(module);
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ret = get_parsed_dns(module, tmp_ctx, el, &dns, ldap_oid, parent);
