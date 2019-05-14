@@ -525,6 +525,16 @@ int ldb_unpack_data_only_attr_list(struct ldb_context *ldb,
 int ldb_unpack_data(struct ldb_context *ldb,
 		    const struct ldb_val *data,
 		    struct ldb_message *message);
+
+/*
+ * filter the specified list of attributes from msg,
+ * adding requested attributes, and perhaps all for *,
+ * but not the DN to filtered_msg.
+ */
+int ldb_filter_attrs(struct ldb_context *ldb,
+		     const struct ldb_message *msg,
+		     const char *const *attrs,
+		     struct ldb_message *filtered_msg);
 /*
  * Unpack a ldb message from a linear buffer in ldb_val
  *

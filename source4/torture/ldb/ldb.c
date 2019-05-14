@@ -1262,16 +1262,17 @@ static bool torture_ldb_pack_format_perf(struct torture_context *torture)
 	return true;
 }
 
-static bool torture_ldb_unpack_only_attr_list(struct torture_context *torture)
+static bool torture_ldb_unpack_and_filter(struct torture_context *torture)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(torture);
 	struct ldb_context *ldb;
 	struct ldb_val data = data_blob_const(dda1d01d_bin, sizeof(dda1d01d_bin));
+	struct ldb_message *unpack_msg = ldb_msg_new(mem_ctx);
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
-	const char *lookup_names[] = {"instanceType", "nonexistant", "whenChanged",
-				      "objectClass", "uSNCreated",
-				      "showInAdvancedViewOnly", "name", "cnNotHere"};
-	unsigned int nb_elements_in_db;
+	const char *lookup_names[] = {"instanceType", "nonexistant",
+				      "whenChanged", "objectClass",
+				      "uSNCreated", "showInAdvancedViewOnly",
+				      "name", "cnNotHere", NULL};
 	const char *ldif_text;
 	struct ldb_ldif ldif;
 
@@ -1281,12 +1282,18 @@ static bool torture_ldb_unpack_only_attr_list(struct torture_context *torture)
 		       "Failed to init samba");
 
 	torture_assert_int_equal(torture,
-				 ldb_unpack_data_only_attr_list(ldb, &data, msg,
-							  lookup_names, ARRAY_SIZE(lookup_names),
-							  &nb_elements_in_db), 0,
-				 "ldb_unpack_data_only_attr_list failed");
-	torture_assert_int_equal(torture, nb_elements_in_db, 13,
+				 ldb_unpack_data(ldb, &data, unpack_msg),
+				 0, "ldb_unpack_data failed");
+
+	torture_assert_int_equal(torture, unpack_msg->num_elements, 13,
 				 "Got wrong count of elements");
+
+	msg->dn = talloc_steal(msg, unpack_msg->dn);
+
+	torture_assert_int_equal(torture,
+				 ldb_filter_attrs(ldb, unpack_msg,
+						  lookup_names, msg),
+				 0, "ldb_kv_filter_attrs failed");
 
 	/* Compare data in binary form */
 	torture_assert_int_equal(torture, msg->num_elements, 6,
@@ -1394,8 +1401,8 @@ struct torture_suite *torture_ldb(TALLOC_CTX *mem_ctx)
 				      torture_ldb_unpack_flags);
 	torture_suite_add_simple_test(suite, "parse-ldif",
 				      torture_ldb_parse_ldif);
-	torture_suite_add_simple_test(suite, "unpack-data-only-attr-list",
-				      torture_ldb_unpack_only_attr_list);
+	torture_suite_add_simple_test(suite, "unpack-and-filter",
+				      torture_ldb_unpack_and_filter);
 	torture_suite_add_simple_test(suite, "pack-format-perf",
 				      torture_ldb_pack_format_perf);
 
