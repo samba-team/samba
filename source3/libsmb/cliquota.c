@@ -587,13 +587,19 @@ NTSTATUS fill_quota_buffer(TALLOC_CTX *mem_ctx,
 			      SMB_NTQUOTA_LIST **end_ptr)
 {
 	int ndr_flags = NDR_SCALARS | NDR_BUFFERS;
-	struct ndr_push *qndr = ndr_push_init_ctx(mem_ctx);
+	struct ndr_push *qndr = NULL;
 	uint32_t start_offset = 0;
 	uint32_t padding = 0;
 	if (qlist == NULL) {
 		/* We must push at least one. */
 		return NT_STATUS_NO_MORE_ENTRIES;
 	}
+
+	qndr = ndr_push_init_ctx(mem_ctx);
+	if (qndr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	for (;qlist != NULL; qlist = qlist->next) {
 		struct file_quota_information info = {0};
 		enum ndr_err_code err;
