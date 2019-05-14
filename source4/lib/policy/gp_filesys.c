@@ -486,6 +486,7 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 					DBG_ERR("read failed with errno %s\n",
 						strerror(errno));
 					status = NT_STATUS_UNSUCCESSFUL;
+					close(local_fd);
 					goto done;
 				}
 				smbcli_write(gp_ctx->cli->tree, remote_fd, 0,
