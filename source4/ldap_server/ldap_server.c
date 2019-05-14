@@ -683,9 +683,16 @@ static void ldapsrv_call_writev_start(struct ldapsrv_call *call)
 	for (reply = call->replies;
 	     reply != NULL;
 	     reply = reply->next) {
+
+		/* Cap output at 25MB per writev() */
+		if (length > length + reply->blob.length
+		    || length + reply->blob.length > LDAP_SERVER_MAX_CHUNK_SIZE) {
+			break;
+		}
+
 		/*
 		 * Overflow is harmless here, just used below to
-		 * decide if to read or write
+		 * decide if to read or write, but checkd above anyway
 		 */
 		length += reply->blob.length;
 

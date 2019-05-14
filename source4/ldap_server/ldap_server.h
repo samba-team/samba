@@ -100,6 +100,11 @@ struct ldapsrv_call {
  */
 #define LDAP_SERVER_MAX_REPLY_SIZE ((size_t)(256 * 1024 * 1024))
 
+/*
+ * Start writing to the network before we hit this size
+ */
+#define LDAP_SERVER_MAX_CHUNK_SIZE ((size_t)(25 * 1024 * 1024))
+
 struct ldapsrv_service {
 	struct tstream_tls_params *tls_params;
 	struct task_server *task;
