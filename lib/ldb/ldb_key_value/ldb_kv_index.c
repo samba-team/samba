@@ -2273,12 +2273,22 @@ static int ldb_kv_index_filter(struct ldb_kv_private *ldb_kv,
 			continue;
 		}
 
+		filtered_msg = ldb_msg_new(ac);
+		if (filtered_msg == NULL) {
+			TALLOC_FREE(keys);
+			TALLOC_FREE(msg);
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+
+		filtered_msg->dn = talloc_steal(filtered_msg, msg->dn);
+
 		/* filter the attributes that the user wants */
-		ret = ldb_kv_filter_attrs(ac, msg, ac->attrs, &filtered_msg);
+		ret = ldb_kv_filter_attrs(ldb, msg, ac->attrs, filtered_msg);
 
 		talloc_free(msg);
 
 		if (ret == -1) {
+			TALLOC_FREE(filtered_msg);
 			talloc_free(keys);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}

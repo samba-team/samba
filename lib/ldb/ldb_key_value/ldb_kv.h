@@ -253,10 +253,10 @@ int ldb_kv_search_key(struct ldb_module *module,
 		      const struct ldb_val ldb_key,
 		      struct ldb_message *msg,
 		      unsigned int unpack_flags);
-int ldb_kv_filter_attrs(TALLOC_CTX *mem_ctx,
+int ldb_kv_filter_attrs(struct ldb_context *ldb,
 			const struct ldb_message *msg,
 			const char *const *attrs,
-			struct ldb_message **filtered_msg);
+			struct ldb_message *filtered_msg);
 int ldb_kv_search(struct ldb_kv_context *ctx);
 
 /*
