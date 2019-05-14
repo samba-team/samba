@@ -44,7 +44,8 @@
 #define TEST_S4U2SELF         0x0000080
 #define TEST_REMOVEDOLLAR     0x0000100
 #define TEST_AS_REQ_SPN       0x0000200
-#define TEST_ALL              0x00003FF
+#define TEST_MITM_S4U2SELF    0x0000400
+#define TEST_ALL              0x00007FF
 
 struct test_data {
 	const char *test_name;
@@ -62,6 +63,7 @@ struct test_data {
 	bool upn;
 	bool other_upn_suffix;
 	bool s4u2self;
+	bool mitm_s4u2self;
 	bool removedollar;
 	bool as_req_spn;
 	bool spn_is_upn;
@@ -209,6 +211,67 @@ static bool test_accept_ticket(struct torture_context *tctx,
 	torture_assert(tctx, pac_data != NULL, "gensec_update failed to fill in pac_data in auth_context");
 	torture_assert(tctx, pac_data->principal_name != NULL, "principal_name not present");
 	torture_assert_str_equal(tctx, pac_data->principal_name, principal, "wrong principal name");
+	return true;
+}
+
+krb5_error_code
+_krb5_s4u2self_to_checksumdata(krb5_context context,
+			       const PA_S4U2Self *self,
+			       krb5_data *data);
+
+/* Helper function to modify the principal in PA_FOR_USER padata */
+static bool change_for_user_principal(struct torture_krb5_context *test_context,
+				      krb5_data *modified_send_buf)
+{
+	PA_DATA *for_user;
+	int i = 0;
+	size_t used;
+	krb5_error_code ret;
+	PA_S4U2Self self, mod_self;
+	krb5_data cksum_data;
+	krb5_principal admin;
+	heim_octet_string orig_padata_value;
+	krb5_context k5_ctx = test_context->smb_krb5_context->krb5_context;
+
+	for_user = krb5_find_padata(test_context->tgs_req.padata->val,
+				    test_context->tgs_req.padata->len, KRB5_PADATA_FOR_USER, &i);
+	torture_assert(test_context->tctx, for_user != NULL, "No PA_FOR_USER in s4u2self request");
+	orig_padata_value = for_user->padata_value;
+
+	torture_assert_int_equal(test_context->tctx,
+				 krb5_make_principal(k5_ctx, &admin, test_context->test_data->realm,
+						     "Administrator", NULL),
+				 0, "krb5_make_principal() failed");
+	torture_assert_int_equal(test_context->tctx,
+				 decode_PA_S4U2Self(for_user->padata_value.data,
+						    for_user->padata_value.length, &self, NULL),
+				 0, "decode_PA_S4U2Self() failed");
+	mod_self = self;
+	mod_self.name = admin->name;
+
+	torture_assert_int_equal(test_context->tctx,
+				 _krb5_s4u2self_to_checksumdata(k5_ctx, &mod_self, &cksum_data),
+				 0, "_krb5_s4u2self_to_checksumdata() failed");
+	torture_assert_int_equal(test_context->tctx,
+				 krb5_create_checksum(k5_ctx, NULL, KRB5_KU_OTHER_CKSUM,
+						      CKSUMTYPE_CRC32, cksum_data.data,
+						      cksum_data.length, &mod_self.cksum),
+				 0, "krb5_create_checksum() failed");
+
+	ASN1_MALLOC_ENCODE(PA_S4U2Self, for_user->padata_value.data, for_user->padata_value.length,
+			   &mod_self, &used, ret);
+	torture_assert(test_context->tctx, ret == 0, "Failed to encode PA_S4U2Self ASN1 struct");
+	ASN1_MALLOC_ENCODE(TGS_REQ, modified_send_buf->data, modified_send_buf->length,
+			   &test_context->tgs_req, &used, ret);
+	torture_assert(test_context->tctx, ret == 0, "Failed to encode TGS_REQ ASN1 struct");
+
+	free(for_user->padata_value.data);
+	for_user->padata_value = orig_padata_value;
+
+	free_PA_S4U2Self(&self);
+	krb5_data_free(&cksum_data);
+	free_Checksum(&mod_self.cksum);
+
 	return true;
 }
 
@@ -631,7 +694,12 @@ static bool torture_krb5_pre_send_tgs_req_canon_test(struct torture_krb5_context
 
 	}
 
-	*modified_send_buf = *send_buf;
+	if (test_context->test_data->mitm_s4u2self) {
+		torture_assert(test_context->tctx, change_for_user_principal(test_context, modified_send_buf),
+			       "Failed to modify PA_FOR_USER principal name");
+	} else {
+		*modified_send_buf = *send_buf;
+	}
 
 	return true;
 }
@@ -650,6 +718,7 @@ static bool torture_krb5_post_recv_tgs_req_canon_test(struct torture_krb5_contex
 {
 	KRB_ERROR error;
 	size_t used;
+	krb5_error_code expected_error;
 
 	/*
 	 * If this account did not have a servicePrincipalName, then
@@ -660,9 +729,13 @@ static bool torture_krb5_post_recv_tgs_req_canon_test(struct torture_krb5_contex
 		torture_assert_int_equal(test_context->tctx,
 					 error.pvno, 5,
 					 "Got wrong error.pvno");
+		expected_error = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN - KRB5KDC_ERR_NONE;
+		if (error.error_code != expected_error && test_context->test_data->mitm_s4u2self) {
+			expected_error = KRB5KRB_AP_ERR_INAPP_CKSUM - KRB5KDC_ERR_NONE;
+		}
 		torture_assert_int_equal(test_context->tctx,
 					 error.error_code,
-					 KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN - KRB5KDC_ERR_NONE,
+					 expected_error,
 					 "Got wrong error.error_code");
 	} else {
 		torture_assert_int_equal(test_context->tctx,
@@ -705,6 +778,8 @@ static bool torture_krb5_post_recv_tgs_req_canon_test(struct torture_krb5_contex
 		torture_assert_int_equal(test_context->tctx,
 					 *test_context->tgs_rep.ticket.enc_part.kvno & 0xFFFF0000,
 					 0, "Unexpecedly got a RODC number in the KVNO, should just be principal KVNO");
+		torture_assert(test_context->tctx, test_context->test_data->mitm_s4u2self == false,
+			       "KDC accepted PA_S4U2Self with unkeyed checksum!");
 		free_TGS_REP(&test_context->tgs_rep);
 	}
 	torture_assert(test_context->tctx, test_context->packet_count == 0, "too many packets");
@@ -2006,7 +2081,23 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 		    && (test_data->enterprise
 			|| test_data->spn_is_upn
 			|| test_data->upn == false)) {
+
+			if (test_data->mitm_s4u2self) {
+				torture_assert_int_equal(tctx, k5ret, KRB5KRB_AP_ERR_INAPP_CKSUM,
+							 assertion_message);
+				/* Done testing mitm-s4u2self */
+				return true;
+			}
+
 			torture_assert_int_equal(tctx, k5ret, 0, assertion_message);
+
+			/* Check that the impersonate principal is not being canonicalized by the KDC. */
+			if (test_data->s4u2self) {
+				torture_assert(tctx, krb5_principal_compare(k5_context, server_creds->client,
+									    principal),
+					       "TGS-REP cname does not match requested client principal");
+			}
+
 			torture_assert_int_equal(tctx, krb5_cc_store_cred(k5_context,
 									  ccache, server_creds),
 						 0, "krb5_cc_store_cred failed");
@@ -2480,7 +2571,7 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 					     (i & TEST_UPN) ? "upn" :
 					     ((i & TEST_AS_REQ_SPN) ? "spn" : 
 					      ((i & TEST_REMOVEDOLLAR) ? "removedollar" : "samaccountname")),
-					     (i & TEST_S4U2SELF) ? "s4u2self" : "normal");
+					     (i & TEST_S4U2SELF) ? (i & TEST_MITM_S4U2SELF) ? "mitm-s4u2self" : "s4u2self" : "normal");
 		struct torture_suite *sub_suite = torture_suite_create(mem_ctx, name);
 
 		struct test_data *test_data = talloc_zero(suite, struct test_data);
@@ -2491,6 +2582,11 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 		}
 		if ((i & TEST_UPN) || (i & TEST_AS_REQ_SPN)) {
 			if (i & TEST_REMOVEDOLLAR) {
+				continue;
+			}
+		}
+		if (i & TEST_MITM_S4U2SELF) {
+			if (!(i & TEST_S4U2SELF)) {
 				continue;
 			}
 		}
@@ -2514,6 +2610,7 @@ struct torture_suite *torture_krb5_canon(TALLOC_CTX *mem_ctx)
 		test_data->win2k = (i & TEST_WIN2K) != 0;
 		test_data->upn = (i & TEST_UPN) != 0;
 		test_data->s4u2self = (i & TEST_S4U2SELF) != 0;
+		test_data->mitm_s4u2self = (i & TEST_MITM_S4U2SELF) != 0;
 		test_data->removedollar = (i & TEST_REMOVEDOLLAR) != 0;
 		test_data->as_req_spn = (i & TEST_AS_REQ_SPN) != 0;
 		torture_suite_add_simple_tcase_const(sub_suite, name, torture_krb5_as_req_canon,
