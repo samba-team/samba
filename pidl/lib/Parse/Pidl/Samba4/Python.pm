@@ -1947,6 +1947,11 @@ sub ConvertObjectFromPythonLevel($$$$$$$$$)
 		if ($need_deref == 1) {
 			my $ndr_pointer_typename = $self->import_type_variable("samba.dcerpc.base", "ndr_pointer");
 			$self->pidl("$py_var = py_dcerpc_ndr_pointer_deref($ndr_pointer_typename, $py_var);");
+			$self->pidl("if ($py_var == NULL) {");
+			$self->indent;
+                        $self->pidl($fail);
+			$self->deindent;
+			$self->pidl("}");
 		}
 		unless ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE})) {
 			$var_name = get_value_of($var_name);
