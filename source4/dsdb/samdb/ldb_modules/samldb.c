@@ -4063,7 +4063,6 @@ static int check_rename_constraints(struct ldb_message *msg,
 	if (samdb_find_attribute(ldb, msg, "objectclass", "subnet") != NULL) {
 		ret = samldb_verify_subnet(ac, newdn);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(ac);
 			return ret;
 		}
 	}
