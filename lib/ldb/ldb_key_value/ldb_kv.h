@@ -137,7 +137,6 @@ struct ldb_kv_context {
 };
 
 struct ldb_kv_reindex_context {
-	struct ldb_module *module;
 	int error;
 	uint32_t count;
 };

@@ -286,7 +286,7 @@ static int ltdb_update_in_iterate(struct ldb_kv_private *ldb_kv,
 	struct ldb_context *ldb;
 	struct ldb_kv_reindex_context *ctx =
 	    (struct ldb_kv_reindex_context *)state;
-	struct ldb_module *module = ctx->module;
+	struct ldb_module *module = ldb_kv->module;
 	TDB_DATA key = {
 		.dptr = ldb_key.data,
 		.dsize = ldb_key.length

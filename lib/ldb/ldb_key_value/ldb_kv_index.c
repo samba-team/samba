@@ -3268,7 +3268,7 @@ static int re_key(struct ldb_kv_private *ldb_kv,
 	struct ldb_context *ldb;
 	struct ldb_kv_reindex_context *ctx =
 	    (struct ldb_kv_reindex_context *)state;
-	struct ldb_module *module = ctx->module;
+	struct ldb_module *module = ldb_kv->module;
 	struct ldb_message *msg;
 	int ret;
 	struct ldb_val key2;
@@ -3346,7 +3346,7 @@ static int re_index(struct ldb_kv_private *ldb_kv,
 	struct ldb_context *ldb;
 	struct ldb_kv_reindex_context *ctx =
 	    (struct ldb_kv_reindex_context *)state;
-	struct ldb_module *module = ctx->module;
+	struct ldb_module *module = ldb_kv->module;
 	struct ldb_message *msg;
 	int ret;
 	bool is_record;
@@ -3466,7 +3466,6 @@ int ldb_kv_reindex(struct ldb_module *module)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ctx.module = module;
 	ctx.error = 0;
 	ctx.count = 0;
 
