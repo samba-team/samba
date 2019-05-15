@@ -254,6 +254,44 @@ test_conf_delshare_usage()
     fi
 }
 
+test_conf_showshare_case()
+{
+	echo '\nChecking case in net conf shareshare' >>$LOG
+
+	echo '\nDropping existing configuration' >> $LOG
+	$NETCMD conf drop
+	log_print $NETCMD conf drop
+	test "x$?" = "x0" || {
+		echo 'ERROR: RC does not match, expected: 0' | tee -a $LOG
+		return 1
+	}
+
+	for share in UPPERCASE lowercase; do
+
+		log_print $NETCMD conf addshare $share /tmp
+		$NETCMD conf addshare $share /tmp \
+			>>$DIR/case_addshare_exp \
+			2>>$DIR/case_addshare_exp
+
+		# Lookup share in different case, check that output has
+		# share name in correct case.
+		switch_case=$(echo $share | tr 'A-Za-z' 'a-zA-Z')
+		log_print $NETCMD conf showshare $switch_case
+		$NETCMD conf showshare $switch_case > $DIR/showshare_out
+		test "x$?" = "x0" || {
+			echo 'ERROR: net conf showshare failed.' | tee -a $LOG
+			return 1
+		}
+
+		grep "\[$share\]" $DIR/showshare_out >/dev/null 2>>$LOG
+		if [ "$?" = "1" ]; then
+			echo "ERROR: share not found" | tee -a $LOG
+			return 1
+		fi
+	done
+
+}
+
 test_conf_drop()
 {
 
@@ -920,6 +958,10 @@ CONF_FILES=$SERVERCONFFILE
 
     testit "conf_delshare_usage" \
 	test_conf_delshare_usage \
+	|| failed=`expr $failed + 1`
+
+    testit "test_conf_showshare_case" \
+	   test_conf_showshare_case \
 	|| failed=`expr $failed + 1`
 
     testit "conf_setparm" \
