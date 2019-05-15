@@ -1007,7 +1007,7 @@ static int replmd_add_fix_la(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 
 	for (i = 0; i < el->num_values; i++) {
 		struct parsed_dn *p = &pdn[i];
-		ret = replmd_build_la_val(el->values, p->v, p->dsdb_dn,
+		ret = replmd_build_la_val(new_values, p->v, p->dsdb_dn,
 					  &ac->our_invocation_id,
 					  ac->seq_num, now);
 		if (ret != LDB_SUCCESS) {
