@@ -924,8 +924,6 @@ void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 
 	generate_random_buffer((uint8_t *)confounder, confounder_len);
 
-	GNUTLS_FIPS140_SET_LAX_MODE();
-
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
 		goto out;
@@ -955,7 +953,6 @@ void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 	*pwd_buf = my_pwd_buf;
 
 out:
-	GNUTLS_FIPS140_SET_STRICT_MODE();
 	return;
 }
 
