@@ -154,7 +154,8 @@ static bool test_OpenPolicy_fail(struct dcerpc_binding_handle *b,
 bool test_lsa_OpenPolicy2_ex(struct dcerpc_binding_handle *b,
 			     struct torture_context *tctx,
 			     struct policy_handle **handle,
-			     NTSTATUS expected_status)
+			     NTSTATUS expected_status,
+			     NTSTATUS expected_status2)
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
@@ -184,9 +185,15 @@ bool test_lsa_OpenPolicy2_ex(struct dcerpc_binding_handle *b,
 	r.out.handle = *handle;
 
 	status = dcerpc_lsa_OpenPolicy2_r(b, tctx, &r);
-	torture_assert_ntstatus_equal(tctx, status, expected_status,
-				   "OpenPolicy2 failed");
-	if (!NT_STATUS_IS_OK(expected_status)) {
+
+	/* Allow two possible failure status codes */
+	if (!NT_STATUS_EQUAL(status, expected_status2)) {
+		torture_assert_ntstatus_equal(tctx, status,
+					      expected_status,
+					      "OpenPolicy2 failed");
+	}
+	if (!NT_STATUS_IS_OK(expected_status) ||
+	    !NT_STATUS_IS_OK(expected_status2)) {
 		return true;
 	}
 
@@ -202,7 +209,8 @@ bool test_lsa_OpenPolicy2(struct dcerpc_binding_handle *b,
 			  struct torture_context *tctx,
 			  struct policy_handle **handle)
 {
-	return test_lsa_OpenPolicy2_ex(b, tctx, handle, NT_STATUS_OK);
+	return test_lsa_OpenPolicy2_ex(b, tctx, handle,
+				       NT_STATUS_OK, NT_STATUS_OK);
 }
 
 static bool test_OpenPolicy2_fail(struct dcerpc_binding_handle *b,
