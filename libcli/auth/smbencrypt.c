@@ -374,12 +374,12 @@ void SMBsesskeygen_ntv2(const uint8_t kr[16],
 			const uint8_t * nt_resp, uint8_t sess_key[16])
 {
 	/* a very nice, 128 bit, variable session key */
-
-	HMACMD5Context ctx;
-
-	hmac_md5_init_limK_to_64(kr, 16, &ctx);
-	hmac_md5_update(nt_resp, 16, &ctx);
-	hmac_md5_final((uint8_t *)sess_key, &ctx);
+	gnutls_hmac_fast(GNUTLS_MAC_MD5,
+			 kr,
+			 16,
+			 nt_resp,
+			 16,
+			 sess_key);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_ntv2:\n"));
