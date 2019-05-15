@@ -224,17 +224,39 @@ static void netsec_do_seal(struct schannel_state *state,
 		static const uint8_t zeros[4];
 		uint8_t digest2[16];
 		uint8_t sess_kf0[16];
+		int rc;
 		int i;
 
 		for (i = 0; i < 16; i++) {
 			sess_kf0[i] = state->creds->session_key[i] ^ 0xf0;
 		}
 
-		hmac_md5(sess_kf0, zeros, 4, digest2);
-		hmac_md5(digest2, seq_num, 8, sealing_key);
+		rc = gnutls_hmac_fast(GNUTLS_MAC_MD5,
+				      sess_kf0,
+				      sizeof(sess_kf0),
+				      zeros,
+				      4,
+				      digest2);
+		if (rc < 0) {
+			ZERO_ARRAY(digest2);
+			return;
+		}
+
+		rc = gnutls_hmac_fast(GNUTLS_MAC_MD5,
+				      digest2,
+				      sizeof(digest2),
+				      seq_num,
+				      8,
+				      sealing_key);
+		ZERO_ARRAY(digest2);
+		if (rc < 0) {
+			return;
+		}
 
 		arcfour_crypt(confounder, sealing_key, 8);
 		arcfour_crypt(data, sealing_key, length);
+
+		ZERO_ARRAY(sealing_key);
 	}
 }
 
