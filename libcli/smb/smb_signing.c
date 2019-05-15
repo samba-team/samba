@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "../lib/crypto/crypto.h"
 #include "smb_common.h"
 #include "smb_signing.h"
 
@@ -520,11 +519,12 @@ void smb_key_derivation(const uint8_t *KI, size_t KI_len,
 		0x31, 0x66, 0x09, 0x48, 0x88, 0xcc, 0x18, 0xa3,
 		0xb2, 0x1f, 0x1f, 0x1b, 0x90, 0x4e, 0xd7, 0xe1
 	};
-	HMACMD5Context ctx;
 
-	hmac_md5_init_limK_to_64(KI, KI_len, &ctx);
-	hmac_md5_update(SSKeyHash, sizeof(SSKeyHash), &ctx);
-	hmac_md5_final(KO, &ctx);
-
-	ZERO_STRUCT(ctx);
+	/* The callers passing down KI_len of 16 so no need to limit to 64 */
+	gnutls_hmac_fast(GNUTLS_MAC_MD5,
+			 KI,
+			 KI_len,
+			 SSKeyHash,
+			 sizeof(SSKeyHash),
+			 KO);
 }
