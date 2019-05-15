@@ -1712,7 +1712,7 @@ NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 	/* Overload entry->op_type */
 	/*
 	 * This is a cut from uint32_t to uint16_t, but so far only the lower 3
-	 * bits (LEASE_WRITE/HANDLE/READ are used anyway.
+	 * bits (LEASE_WRITE/HANDLE/READ) are used anyway.
 	 */
 	SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET, break_to);
 
