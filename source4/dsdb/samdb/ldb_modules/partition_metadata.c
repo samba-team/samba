@@ -421,6 +421,69 @@ int partition_metadata_sequence_number_increment(struct ldb_module *module, uint
 	ret = partition_metadata_set_uint64(module, LDB_METADATA_SEQ_NUM, *value, false);
 	return ret;
 }
+/*
+  lock the database for read - use by partition_lock_read
+*/
+int partition_metadata_read_lock(struct ldb_module *module)
+{
+	struct partition_private_data *data
+		= talloc_get_type_abort(ldb_module_get_private(module),
+					struct partition_private_data);
+	struct tdb_context *tdb = NULL;
+	int tdb_ret = 0;
+	int ret;
+
+	if (!data || !data->metadata || !data->metadata->db) {
+		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
+					"partition_metadata: metadata not initialized");
+	}
+	tdb = data->metadata->db->tdb;
+
+	if (tdb_transaction_active(tdb) == false &&
+	    data->metadata->read_lock_count == 0) {
+		tdb_ret = tdb_lockall_read(tdb);
+	}
+	if (tdb_ret == 0) {
+		data->metadata->read_lock_count++;
+		return LDB_SUCCESS;
+	} else {
+		/* Sadly we can't call ltdb_err_map(tdb_error(tdb)); */
+		ret = LDB_ERR_BUSY;
+	}
+	ldb_debug_set(ldb_module_get_ctx(module),
+		      LDB_DEBUG_FATAL,
+		      "Failure during partition_metadata_read_lock(): %s",
+		      tdb_errorstr(tdb));
+	return ret;
+}
+
+/*
+  unlock the database after a partition_metadata_lock_read()
+*/
+int partition_metadata_read_unlock(struct ldb_module *module)
+{
+	struct partition_private_data *data
+		= talloc_get_type_abort(ldb_module_get_private(module),
+					struct partition_private_data);
+	struct tdb_context *tdb = NULL;
+
+	data = talloc_get_type_abort(ldb_module_get_private(module),
+				     struct partition_private_data);
+	if (!data || !data->metadata || !data->metadata->db) {
+		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
+					"partition_metadata: metadata not initialized");
+	}
+	tdb = data->metadata->db->tdb;
+
+	if (!tdb_transaction_active(tdb) &&
+	    data->metadata->read_lock_count == 1) {
+		tdb_unlockall_read(tdb);
+		data->metadata->read_lock_count--;
+		return 0;
+	}
+	data->metadata->read_lock_count--;
+	return 0;
+}
 
 
 /*

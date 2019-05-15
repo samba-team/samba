@@ -43,6 +43,7 @@ struct partition_module {
 struct partition_metadata {
 	struct tdb_wrap *db;
 	int in_transaction;
+	int read_lock_count;
 };
 
 struct partition_private_data {

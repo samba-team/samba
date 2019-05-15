@@ -1435,7 +1435,7 @@ int partition_read_lock(struct ldb_module *module)
 
 	/*
 	 * This order must match that in prepare_commit(), start with
-	 * the metadata partition (sam.ldb) lock
+	 * the top level DB (sam.ldb) lock
 	 */
 	ret = ldb_next_read_lock(module);
 	if (ret != LDB_SUCCESS) {
@@ -1449,7 +1449,7 @@ int partition_read_lock(struct ldb_module *module)
 	}
 
 	/*
-	 * The metadata partition (sam.ldb) lock is not
+	 * The top level DB (sam.ldb) lock is not
 	 * enough to block another process in prepare_commit(),
 	 * because prepare_commit() is a no-op, if nothing
 	 * was changed in the specific backend.
@@ -1476,18 +1476,24 @@ int partition_read_lock(struct ldb_module *module)
 			      ldb_dn_get_linearized(
 				      data->partitions[i]->ctrl->dn));
 
-		/* Back it out, if it fails on one */
-		for (i--; i >= 0; i--) {
-			ret2 = ldb_next_read_unlock(data->partitions[i]->module);
-			if (ret2 != LDB_SUCCESS) {
-				ldb_debug(ldb,
-					  LDB_DEBUG_FATAL,
-					  "Failed to unlock db: %s / %s",
-					  ldb_errstring(ldb),
-					  ldb_strerror(ret2));
-			}
-		}
-		ret2 = ldb_next_read_unlock(module);
+		goto failed;
+	}
+
+	/*
+	 * Because in prepare_commit this must come last, to ensure
+	 * lock ordering we have to do this last here also
+	 */
+	ret = partition_metadata_read_lock(module);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	return LDB_SUCCESS;
+
+failed:
+	/* Back it out, if it fails on one */
+	for (i--; i >= 0; i--) {
+		ret2 = ldb_next_read_unlock(data->partitions[i]->module);
 		if (ret2 != LDB_SUCCESS) {
 			ldb_debug(ldb,
 				  LDB_DEBUG_FATAL,
@@ -1495,10 +1501,16 @@ int partition_read_lock(struct ldb_module *module)
 				  ldb_errstring(ldb),
 				  ldb_strerror(ret2));
 		}
-		return ret;
 	}
-
-	return LDB_SUCCESS;
+	ret2 = ldb_next_read_unlock(module);
+	if (ret2 != LDB_SUCCESS) {
+		ldb_debug(ldb,
+			  LDB_DEBUG_FATAL,
+			  "Failed to unlock db: %s / %s",
+			  ldb_errstring(ldb),
+			  ldb_strerror(ret2));
+	}
+	return ret;
 }
 
 /* unlock all the backends */
@@ -1564,6 +1576,20 @@ int partition_read_unlock(struct ldb_module *module)
 		if (ret == LDB_SUCCESS) {
 			ret = ret2;
 		}
+	}
+
+	/*
+	 * Because in prepare_commit this must come last, to ensure
+	 * lock ordering we have to do this last here also
+	 */
+	ret = partition_metadata_read_unlock(module);
+
+	/*
+	 * Don't overwrite the original failure code
+	 * if there was one
+	 */
+	if (ret == LDB_SUCCESS) {
+		ret = ret2;
 	}
 
 	return ret;
