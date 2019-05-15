@@ -339,12 +339,28 @@ void SMBOWFencrypt_ntv2(const uint8_t kr[16],
 			const DATA_BLOB *smbcli_chal,
 			uint8_t resp_buf[16])
 {
-	HMACMD5Context ctx;
+	gnutls_hmac_hd_t hmac_hnd = NULL;
+	int rc;
 
-	hmac_md5_init_limK_to_64(kr, 16, &ctx);
-	hmac_md5_update(srv_chal->data, srv_chal->length, &ctx);
-	hmac_md5_update(smbcli_chal->data, smbcli_chal->length, &ctx);
-	hmac_md5_final(resp_buf, &ctx);
+	rc = gnutls_hmac_init(&hmac_hnd,
+			      GNUTLS_MAC_MD5,
+			      kr,
+			      16);
+	if (rc < 0) {
+		return;
+	}
+
+	rc = gnutls_hmac(hmac_hnd, srv_chal->data, srv_chal->length);
+	if (rc < 0) {
+		return;
+	}
+	rc = gnutls_hmac(hmac_hnd, smbcli_chal->data, smbcli_chal->length);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		return;
+	}
+
+	gnutls_hmac_deinit(hmac_hnd, resp_buf);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, smbcli_chal, resp_buf\n"));
