@@ -159,10 +159,33 @@ static void netsec_do_seq_num(struct schannel_state *state,
 		static const uint8_t zeros[4];
 		uint8_t sequence_key[16];
 		uint8_t digest1[16];
+		int rc;
 
-		hmac_md5(state->creds->session_key, zeros, sizeof(zeros), digest1);
-		hmac_md5(digest1, checksum, checksum_length, sequence_key);
+		rc = gnutls_hmac_fast(GNUTLS_MAC_MD5,
+				      state->creds->session_key,
+				      sizeof(state->creds->session_key),
+				      zeros,
+				      sizeof(zeros),
+				      digest1);
+		if (rc < 0) {
+			return;
+		}
+
+		rc = gnutls_hmac_fast(GNUTLS_MAC_MD5,
+				      digest1,
+				      sizeof(digest1),
+				      checksum,
+				      checksum_length,
+				      sequence_key);
+		if (rc < 0) {
+			return;
+		}
+
+		ZERO_ARRAY(digest1);
+
 		arcfour_crypt(seq_num, sequence_key, 8);
+
+		ZERO_ARRAY(sequence_key);
 	}
 
 	state->seq_num++;
