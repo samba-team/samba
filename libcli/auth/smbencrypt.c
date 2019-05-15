@@ -28,6 +28,9 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
 
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
+
 void SMBencrypt_hash(const uint8_t lm_hash[16], const uint8_t *c8, uint8_t p24[24])
 {
 	uint8_t p21[21];
@@ -99,11 +102,28 @@ bool E_md4hash(const char *passwd, uint8_t p16[16])
 
 void E_md5hash(const uint8_t salt[16], const uint8_t nthash[16], uint8_t hash_out[16])
 {
-	MD5_CTX tctx;
-	MD5Init(&tctx);
-	MD5Update(&tctx, salt, 16);
-	MD5Update(&tctx, nthash, 16);
-	MD5Final(hash_out, &tctx);
+	gnutls_hash_hd_t hash_hnd = NULL;
+	int rc;
+
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		goto out;
+	}
+
+	rc = gnutls_hash(hash_hnd, salt, 16);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+	rc = gnutls_hash(hash_hnd, nthash, 16);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+	gnutls_hash_deinit(hash_hnd, hash_out);
+
+out:
+	return;
 }
 
 /**
