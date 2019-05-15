@@ -897,10 +897,28 @@ static sbcErr smbconf_reg_get_share(struct smbconf_ctx *ctx,
 	}
 
 	if (servicename != NULL) {
-		tmp_service->name = talloc_strdup(tmp_service, servicename);
-		if (tmp_service->name == NULL) {
-			err = SBC_ERR_NOMEM;
-			goto done;
+		WERROR werr;
+		uint32_t count = 0;
+		char *name = NULL;
+
+		/*
+		 * Determine correct upper/lowercase.
+		 */
+		for (count = 0;
+		     werr = reg_enumkey(tmp_ctx, rpd(ctx)->base_key, count,
+					&name, NULL),
+			     W_ERROR_IS_OK(werr);
+		     count++) {
+			if (!strequal(name, servicename)) {
+				continue;
+			}
+
+			tmp_service->name = talloc_strdup(tmp_service, name);
+			if (tmp_service->name == NULL) {
+				err = SBC_ERR_NOMEM;
+				goto done;
+			}
+			break;
 		}
 	}
 
