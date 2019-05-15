@@ -204,7 +204,7 @@ static PyObject *py_ldb_control_get_critical(PyLdbControlObject *self,
 	return PyBool_FromLong(self->data->critical);
 }
 
-static PyObject *py_ldb_control_set_critical(PyLdbControlObject *self, PyObject *value, void *closure)
+static int py_ldb_control_set_critical(PyLdbControlObject *self, PyObject *value, void *closure)
 {
 	if (PyObject_IsTrue(value)) {
 		self->data->critical = true;
