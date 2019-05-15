@@ -807,17 +807,36 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 
 void encode_or_decode_arc4_passwd_buffer(unsigned char pw_buf[532], const DATA_BLOB *psession_key)
 {
-	MD5_CTX tctx;
+	gnutls_hash_hd_t hash_hnd = NULL;
 	unsigned char key_out[16];
+	int rc;
 
 	/* Confounder is last 16 bytes. */
 
-	MD5Init(&tctx);
-	MD5Update(&tctx, &pw_buf[516], 16);
-	MD5Update(&tctx, psession_key->data, psession_key->length);
-	MD5Final(key_out, &tctx);
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		goto out;
+	}
+
+	rc = gnutls_hash(hash_hnd, &pw_buf[516], 16);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+	rc = gnutls_hash(hash_hnd, psession_key->data, psession_key->length);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+	gnutls_hash_deinit(hash_hnd, key_out);
+
 	/* arc4 with key_out. */
 	arcfour_crypt(pw_buf, key_out, 516);
+
+	ZERO_ARRAY(key_out);
+
+out:
+	return;
 }
 
 /***********************************************************
