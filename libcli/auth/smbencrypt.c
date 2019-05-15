@@ -961,9 +961,12 @@ WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 					  DATA_BLOB *session_key,
 					  char **pwd)
 {
+	gnutls_hash_hd_t hash_hnd = NULL;
 	uint8_t buffer[516];
-	MD5_CTX ctx;
 	size_t pwd_len;
+	WERROR result;
+	bool ok;
+	int rc;
 
 	DATA_BLOB confounded_session_key;
 
@@ -986,20 +989,42 @@ WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 	memcpy(&confounder, &pwd_buf->data[0], confounder_len);
 	memcpy(&buffer, &pwd_buf->data[8], 516);
 
-	MD5Init(&ctx);
-	MD5Update(&ctx, session_key->data, session_key->length);
-	MD5Update(&ctx, confounder, confounder_len);
-	MD5Final(confounded_session_key.data, &ctx);
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		result = WERR_NOT_ENOUGH_MEMORY;
+		goto out;
+	}
+
+	rc = gnutls_hash(hash_hnd, session_key->data, session_key->length);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		result = WERR_INTERNAL_ERROR;
+		goto out;
+	}
+	rc = gnutls_hash(hash_hnd, confounder, confounder_len);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		result = WERR_INTERNAL_ERROR;
+		goto out;
+	}
+	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
 
 	arcfour_crypt_blob(buffer, 516, &confounded_session_key);
 
-	if (!decode_pw_buffer(mem_ctx, buffer, pwd, &pwd_len, CH_UTF16)) {
-		data_blob_free(&confounded_session_key);
-		return WERR_INVALID_PASSWORD;
+	ok = decode_pw_buffer(mem_ctx, buffer, pwd, &pwd_len, CH_UTF16);
+
+	ZERO_ARRAY(confounder);
+	ZERO_ARRAY(buffer);
+
+	data_blob_clear_free(&confounded_session_key);
+
+	if (!ok) {
+		result = WERR_INVALID_PASSWORD;
+		goto out;
 	}
 
-	data_blob_free(&confounded_session_key);
-
-	return WERR_OK;
+	result = WERR_OK;
+out:
+	return result;
 }
 
