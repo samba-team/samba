@@ -212,8 +212,9 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 	size_t user_byte_len;
 	size_t domain_byte_len;
 	bool ret;
-
-	HMACMD5Context ctx;
+	gnutls_hmac_hd_t hmac_hnd = NULL;
+	int rc;
+	bool ok = false;
 	TALLOC_CTX *mem_ctx = talloc_init("ntv2_owf_gen for %s\\%s", domain_in, user_in);
 
 	if (!mem_ctx) {
@@ -255,10 +256,29 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 	user_byte_len = user_byte_len - 2;
 	domain_byte_len = domain_byte_len - 2;
 
-	hmac_md5_init_limK_to_64(owf, 16, &ctx);
-	hmac_md5_update((uint8_t *)user, user_byte_len, &ctx);
-	hmac_md5_update((uint8_t *)domain, domain_byte_len, &ctx);
-	hmac_md5_final(kr_buf, &ctx);
+	rc = gnutls_hmac_init(&hmac_hnd,
+			      GNUTLS_MAC_MD5,
+			      owf,
+			      16);
+	if (rc < 0) {
+		ok = false;
+		goto out;
+	}
+
+	rc = gnutls_hmac(hmac_hnd, user, user_byte_len);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		ok = false;
+		goto out;
+	}
+	rc = gnutls_hmac(hmac_hnd, domain, domain_byte_len);
+	if (rc < 0) {
+		gnutls_hmac_deinit(hmac_hnd, NULL);
+		ok = false;
+		goto out;
+	}
+
+	gnutls_hmac_deinit(hmac_hnd, kr_buf);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("ntv2_owf_gen: user, domain, owfkey, kr\n"));
@@ -268,8 +288,10 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 	dump_data(100, kr_buf, 16);
 #endif
 
+	ok = true;
+out:
 	talloc_free(mem_ctx);
-	return true;
+	return ok;
 }
 
 /* Does the des encryption from the NT or LM MD4 hash. */
