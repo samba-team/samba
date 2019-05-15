@@ -47,8 +47,9 @@
 #include "lib/krb5_wrap/krb5_samba.h"
 #include "auth/common_auth.h"
 #include "lib/messaging/messaging.h"
+#include "lib/param/loadparm.h"
 
-#include <gnutls/gnutls.h>
+#include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/crypto.h>
 
 #ifdef ENABLE_GPGME
@@ -1792,11 +1793,14 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	bool do_newer_keys = false;
 	bool do_cleartext = false;
 	bool do_samba_gpg = false;
+	struct loadparm_context *lp_ctx = NULL;
 
 	ZERO_STRUCT(names);
 	ZERO_STRUCT(packages);
 
 	ldb = ldb_module_get_ctx(io->ac->module);
+	lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+				 struct loadparm_context);
 
 	if (!io->n.cleartext_utf8) {
 		/*
@@ -1922,7 +1926,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		num_packages++;
 	}
 
-	{
+	if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_ALLOWED) {
 		/*
 		 * setup 'Primary:WDigest' element
 		 */
