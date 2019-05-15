@@ -321,32 +321,70 @@ static NTSTATUS netsec_do_sign(struct schannel_state *state,
 	} else {
 		uint8_t packet_digest[16];
 		static const uint8_t zeros[4];
-		MD5_CTX ctx;
+		gnutls_hash_hd_t hash_hnd = NULL;
+		int rc;
 
-		MD5Init(&ctx);
-		MD5Update(&ctx, zeros, 4);
+		rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+		if (rc < 0) {
+			if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
+				return NT_STATUS_HASH_NOT_SUPPORTED;
+			}
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		rc = gnutls_hash(hash_hnd, zeros, sizeof(zeros));
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		if (confounder) {
 			SSVAL(header, 0, NL_SIGN_HMAC_MD5);
 			SSVAL(header, 2, NL_SEAL_RC4);
 			SSVAL(header, 4, 0xFFFF);
 			SSVAL(header, 6, 0x0000);
 
-			MD5Update(&ctx, header, 8);
-			MD5Update(&ctx, confounder, 8);
+			rc = gnutls_hash(hash_hnd, header, 8);
+			if (rc < 0) {
+				gnutls_hash_deinit(hash_hnd, NULL);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
+			rc = gnutls_hash(hash_hnd, confounder, 8);
+			if (rc < 0) {
+				gnutls_hash_deinit(hash_hnd, NULL);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
 		} else {
 			SSVAL(header, 0, NL_SIGN_HMAC_MD5);
 			SSVAL(header, 2, NL_SEAL_NONE);
 			SSVAL(header, 4, 0xFFFF);
 			SSVAL(header, 6, 0x0000);
 
-			MD5Update(&ctx, header, 8);
+			rc = gnutls_hash(hash_hnd, header, 8);
+			if (rc < 0) {
+				gnutls_hash_deinit(hash_hnd, NULL);
+				return NT_STATUS_INTERNAL_ERROR;
+			}
 		}
-		MD5Update(&ctx, data, length);
-		MD5Final(packet_digest, &ctx);
+		rc = gnutls_hash(hash_hnd, data, length);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		gnutls_hash_deinit(hash_hnd, packet_digest);
 
-		hmac_md5(state->creds->session_key,
-			 packet_digest, sizeof(packet_digest),
-			 checksum);
+		rc = gnutls_hmac_fast(GNUTLS_MAC_MD5,
+				      state->creds->session_key,
+				      sizeof(state->creds->session_key),
+				      packet_digest,
+				      sizeof(packet_digest),
+				      checksum);
+		ZERO_ARRAY(packet_digest);
+		if (rc < 0) {
+			if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
+				return NT_STATUS_HASH_NOT_SUPPORTED;
+			}
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 	}
 
 	return NT_STATUS_OK;
