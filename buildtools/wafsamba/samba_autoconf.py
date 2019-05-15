@@ -795,13 +795,16 @@ int main(void) {
 
     if (Options.options.address_sanitizer or
         Options.options.undefined_sanitizer):
-        conf.ADD_CFLAGS('-fno-omit-frame-pointer -O1', testflags=True)
+        conf.ADD_CFLAGS('-g -O1', testflags=True)
     if Options.options.address_sanitizer:
+        conf.ADD_CFLAGS('-fno-omit-frame-pointer', testflags=True)
         conf.ADD_CFLAGS('-fsanitize=address', testflags=True)
         conf.ADD_LDFLAGS('-fsanitize=address', testflags=True)
         conf.env['ADDRESS_SANITIZER'] = True
     if Options.options.undefined_sanitizer:
         conf.ADD_CFLAGS('-fsanitize=undefined', testflags=True)
+        conf.ADD_CFLAGS('-fsanitize=null', testflags=True)
+        conf.ADD_CFLAGS('-fsanitize=alignment', testflags=True)
         conf.ADD_LDFLAGS('-fsanitize=undefined', testflags=True)
         conf.env['UNDEFINED_SANITIZER'] = True
 
