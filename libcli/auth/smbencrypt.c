@@ -906,11 +906,12 @@ void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 					struct wkssvc_PasswordBuffer **pwd_buf)
 {
 	uint8_t buffer[516];
-	MD5_CTX ctx;
+	gnutls_hash_hd_t hash_hnd = NULL;
 	struct wkssvc_PasswordBuffer *my_pwd_buf = NULL;
 	DATA_BLOB confounded_session_key;
 	int confounder_len = 8;
 	uint8_t confounder[8];
+	int rc;
 
 	my_pwd_buf = talloc_zero(mem_ctx, struct wkssvc_PasswordBuffer);
 	if (!my_pwd_buf) {
@@ -923,19 +924,39 @@ void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 
 	generate_random_buffer((uint8_t *)confounder, confounder_len);
 
-	MD5Init(&ctx);
-	MD5Update(&ctx, session_key->data, session_key->length);
-	MD5Update(&ctx, confounder, confounder_len);
-	MD5Final(confounded_session_key.data, &ctx);
+	GNUTLS_FIPS140_SET_LAX_MODE();
+
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		goto out;
+	}
+
+	rc = gnutls_hash(hash_hnd, session_key->data, session_key->length);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+	rc = gnutls_hash(hash_hnd, confounder, confounder_len);
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		goto out;
+	}
+	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
 
 	arcfour_crypt_blob(buffer, 516, &confounded_session_key);
 
 	memcpy(&my_pwd_buf->data[0], confounder, confounder_len);
+	ZERO_ARRAY(confounder);
 	memcpy(&my_pwd_buf->data[8], buffer, 516);
+	ZERO_ARRAY(buffer);
 
-	data_blob_free(&confounded_session_key);
+	data_blob_clear_free(&confounded_session_key);
 
 	*pwd_buf = my_pwd_buf;
+
+out:
+	GNUTLS_FIPS140_SET_STRICT_MODE();
+	return;
 }
 
 WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
