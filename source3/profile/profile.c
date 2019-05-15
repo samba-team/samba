@@ -35,6 +35,7 @@
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
+#include "lib/crypto/gnutls_helpers.h"
 
 struct profile_stats *profile_p;
 struct smbprofile_global_state smbprofile_state;
@@ -154,6 +155,8 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 				   reqprofile_message);
 	}
 
+	GNUTLS_FIPS140_SET_LAX_MODE();
+
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_SHA1);
 	if (rc < 0) {
 		goto out;
@@ -212,6 +215,8 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 
 	gnutls_hash_deinit(hash_hnd, digest);
 
+	GNUTLS_FIPS140_SET_STRICT_MODE();
+
 	profile_p = &smbprofile_state.stats.global;
 
 	profile_p->magic = BVAL(digest, 0);
@@ -221,6 +226,8 @@ bool profile_setup(struct messaging_context *msg_ctx, bool rdonly)
 
 	ok = true;
 out:
+	GNUTLS_FIPS140_SET_STRICT_MODE();
+
 	return ok;
 }
 
