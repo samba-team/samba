@@ -37,7 +37,6 @@
 #include "ntdomain.h"
 #include "../librpc/gen_ndr/srv_samr.h"
 #include "rpc_server/samr/srv_samr_util.h"
-#include "../lib/crypto/arcfour.h"
 #include "secrets.h"
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
@@ -46,6 +45,10 @@
 #include "rpc_server/srv_access_check.h"
 #include "../lib/tsocket/tsocket.h"
 #include "lib/util/base64.h"
+
+#include "lib/crypto/gnutls_helpers.h"
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -4946,6 +4949,41 @@ static uint32_t samr_set_user_info_map_fields_to_access_mask(uint32_t fields)
 	return acc_required;
 }
 
+static NTSTATUS arc4_decrypt_data(DATA_BLOB session_key,
+				     uint8_t *data,
+				     size_t data_size)
+{
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t my_session_key = {
+		.data = session_key.data,
+		.size = session_key.length,
+	};
+	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
+	int rc;
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&my_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto out;
+	}
+
+	rc = gnutls_cipher_decrypt(cipher_hnd,
+				   data,
+				   data_size);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto out;
+	}
+
+	status = NT_STATUS_OK;
+out:
+	return status;
+}
+
 /*******************************************************************
  samr_SetUserInfo
  ********************************************************************/
@@ -5153,8 +5191,12 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			if(!NT_STATUS_IS_OK(status)) {
 				break;
 			}
-			arcfour_crypt_blob(info->info23.password.data, 516,
-					   &session_key);
+			status = arc4_decrypt_data(session_key,
+						   info->info23.password.data,
+						   516);
+			if(!NT_STATUS_IS_OK(status)) {
+				break;
+			}
 
 			dump_data(100, info->info23.password.data, 516);
 
@@ -5165,13 +5207,17 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 24:
+
 			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
 			if(!NT_STATUS_IS_OK(status)) {
 				break;
 			}
-			arcfour_crypt_blob(info->info24.password.data,
-					   516,
-					   &session_key);
+			status = arc4_decrypt_data(session_key,
+						   info->info24.password.data,
+						   516);
+			if(!NT_STATUS_IS_OK(status)) {
+				break;
+			}
 
 			dump_data(100, info->info24.password.data, 516);
 
