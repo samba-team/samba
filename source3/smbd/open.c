@@ -1871,6 +1871,18 @@ static bool delay_for_oplock(files_struct *fsp,
 		if (e_is_lease) {
 			NTSTATUS status;
 
+			if (lease != NULL) {
+				bool our_lease = smb2_lease_equal(
+					fsp_client_guid(fsp),
+					&lease->lease_key,
+					&e->client_guid,
+					&e->lease_key);
+				if (our_lease) {
+					DBG_DEBUG("Ignoring our own lease\n");
+					continue;
+				}
+			}
+
 			status = leases_db_get(
 				&e->client_guid,
 				&e->lease_key,
@@ -1904,18 +1916,6 @@ static bool delay_for_oplock(files_struct *fsp,
 		DEBUG(10, ("entry %u: e_lease_type %u, will_overwrite: %u\n",
 			   (unsigned)i, (unsigned)e_lease_type,
 			   (unsigned)will_overwrite));
-
-		if (e_is_lease && lease != NULL) {
-			bool ign;
-
-			ign = smb2_lease_equal(fsp_client_guid(fsp),
-					       &lease->lease_key,
-					       &e->client_guid,
-					       &e->lease_key);
-			if (ign) {
-				continue;
-			}
-		}
 
 		if ((e_lease_type & ~break_to) == 0) {
 			if (lease_is_breaking) {
