@@ -30,6 +30,7 @@
 
 #include "includes.h"
 #include "lib/replace/replace.h"
+#include "system/filesys.h"
 #include "lib/util/samba_util.h"
 #include "registry/regfio.h"
 
