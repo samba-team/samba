@@ -1722,6 +1722,17 @@ bool init_guest_session_info(TALLOC_CTX *mem_ctx)
 	return true;
 }
 
+bool reinit_guest_session_info(TALLOC_CTX *mem_ctx)
+{
+	TALLOC_FREE(guest_info);
+	TALLOC_FREE(guest_server_info);
+	TALLOC_FREE(anonymous_info);
+
+	DBG_DEBUG("Reinitialing guest info\n");
+
+	return init_guest_session_info(mem_ctx);
+}
+
 NTSTATUS make_server_info_guest(TALLOC_CTX *mem_ctx,
 				struct auth_serversupplied_info **server_info)
 {
