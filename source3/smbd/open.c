@@ -1950,7 +1950,6 @@ static bool delay_for_oplock(files_struct *fsp,
 		if (lease_is_breaking && !first_open_attempt) {
 			delay = true;
 		}
-		continue;
 	}
 
 	return delay;
