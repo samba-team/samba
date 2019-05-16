@@ -34,7 +34,7 @@ bool run_addrchange(int dummy)
 	ev = samba_tevent_context_init(talloc_tos());
 	if (ev == NULL) {
 		d_fprintf(stderr, "tevent_context_init failed\n");
-		return -1;
+		return false;
 	}
 
 	status = addrchange_context_create(talloc_tos(), &ctx);
@@ -54,14 +54,14 @@ bool run_addrchange(int dummy)
 		req = addrchange_send(talloc_tos(), ev, ctx);
 		if (req == NULL) {
 			d_fprintf(stderr, "addrchange_send failed\n");
-			return -1;
+			return false;
 		}
 
 		if (!tevent_req_poll_ntstatus(req, ev, &status)) {
 			d_fprintf(stderr, "tevent_req_poll_ntstatus failed: "
 				  "%s\n", nt_errstr(status));
 			TALLOC_FREE(req);
-			return -1;
+			return false;
 		}
 
 		status = addrchange_recv(req, &type, &addr);
@@ -69,7 +69,7 @@ bool run_addrchange(int dummy)
 		if (!NT_STATUS_IS_OK(status)) {
 			d_fprintf(stderr, "addrchange_recv failed: %s\n",
 				  nt_errstr(status));
-			return -1;
+			return false;
 		}
 
 		switch(type) {
@@ -90,5 +90,5 @@ bool run_addrchange(int dummy)
 	}
 	TALLOC_FREE(ctx);
 	TALLOC_FREE(ev);
-	return 0;
+	return true;
 }
