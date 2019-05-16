@@ -602,12 +602,15 @@ static bool kerberos_ccache_is_valid(void) {
 
 	ccache_name = krb5_cc_default_name(ctx);
 	if (ccache_name == NULL) {
+		DBG_ERR("Failed to get default ccache name\n");
 		krb5_free_context(ctx);
 		return false;
 	}
 
 	code = krb5_cc_resolve(ctx, ccache_name, &ccache);
 	if (code != 0) {
+		DBG_ERR("Failed to resolve ccache name: %s\n",
+			ccache_name);
 		krb5_free_context(ctx);
 		return false;
 	} else {
@@ -618,6 +621,9 @@ static bool kerberos_ccache_is_valid(void) {
 					     ccache,
 					     &default_princ);
 		if (code != 0) {
+			DBG_ERR("Failed to get default principal from "
+				"ccache: %s\n",
+				ccache_name);
 			krb5_cc_close(ctx, ccache);
 			krb5_free_context(ctx);
 			return false;
