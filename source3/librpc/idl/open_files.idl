@@ -98,4 +98,10 @@ interface open_files
 		timespec close_write_time;
 		vfs_default_durable_stat stat_info;
 	} vfs_default_durable_cookie;
+
+	typedef [public] struct {
+		file_id id;
+		udlong share_file_id;
+		uint8 break_to;
+	} oplock_break_message;
 }

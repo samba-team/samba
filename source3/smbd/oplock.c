@@ -945,8 +945,8 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 					 struct server_id src,
 					 DATA_BLOB *data)
 {
-	struct file_id id;
-	struct share_mode_entry msg;
+	struct oplock_break_message *msg = NULL;
+	enum ndr_err_code ndr_err;
 	files_struct *fsp;
 	bool use_kernel;
 	struct smbd_server_connection *sconn =
@@ -957,28 +957,35 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	uint16_t break_from;
 	uint16_t break_to;
 	bool break_needed = true;
-	struct server_id_buf tmp;
 
-	if (data->data == NULL) {
-		DEBUG(0, ("Got NULL buffer\n"));
+	msg = talloc(talloc_tos(), struct oplock_break_message);
+	if (msg == NULL) {
+		DBG_WARNING("talloc failed\n");
 		return;
 	}
 
-	if (data->length != MSG_SMB_SHARE_MODE_ENTRY_SIZE) {
-		DEBUG(0, ("Got invalid msg len %d\n", (int)data->length));
+	ndr_err = ndr_pull_struct_blob_all(
+		data,
+		msg,
+		msg,
+		(ndr_pull_flags_fn_t)ndr_pull_oplock_break_message);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_DEBUG("ndr_pull_oplock_break_message failed: %s\n",
+			  ndr_errstr(ndr_err));
+		TALLOC_FREE(msg);
 		return;
 	}
+	if (DEBUGLEVEL >= 10) {
+		struct server_id_buf buf;
+		DBG_DEBUG("Got break message from %s\n",
+			  server_id_str_buf(src, &buf));
+		NDR_PRINT_DEBUG(oplock_break_message, msg);
+	}
 
-	/* De-linearize incoming message. */
-	message_to_share_mode_entry(&id, &msg, (char *)data->data);
-	break_to = msg.op_type;
+	break_to = msg->break_to;
+	fsp = initial_break_processing(sconn, msg->id, msg->share_file_id);
 
-	DEBUG(10, ("Got oplock break to %u message from pid %s: %s/%llu\n",
-		   (unsigned)break_to, server_id_str_buf(src, &tmp),
-		   file_id_string_tos(&id),
-		   (unsigned long long)msg.share_file_id));
-
-	fsp = initial_break_processing(sconn, id, msg.share_file_id);
+	TALLOC_FREE(msg);
 
 	if (fsp == NULL) {
 		/* We hit a race here. Break messages are sent, and before we
@@ -1040,7 +1047,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 
 		status = leases_db_get(client_guid,
 				       &fsp->lease->lease.lease_key,
-				       &id,
+				       &fsp->file_id,
 				       &current_state,
 				       &breaking,
 				       &breaking_to_requested,

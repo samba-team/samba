@@ -29,7 +29,7 @@
 #include "fake_file.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
-#include "../librpc/gen_ndr/open_files.h"
+#include "../librpc/gen_ndr/ndr_open_files.h"
 #include "../librpc/gen_ndr/idmap.h"
 #include "../librpc/gen_ndr/ioctl.h"
 #include "passdb/lookup_sid.h"
@@ -1695,26 +1695,36 @@ NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 			    const struct share_mode_entry *exclusive,
 			    uint16_t break_to)
 {
+	struct oplock_break_message msg = {
+		.id = *id,
+		.share_file_id = exclusive->share_file_id,
+		.break_to = break_to,
+	};
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
 	NTSTATUS status;
-	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
-	struct server_id_buf tmp;
 
-	DEBUG(10, ("Sending break request to PID %s\n",
-		   server_id_str_buf(exclusive->pid, &tmp)));
+	if (DEBUGLVL(10)) {
+		struct server_id_buf buf;
+		DBG_DEBUG("Sending break message to %s\n",
+			  server_id_str_buf(exclusive->pid, &buf));
+		NDR_PRINT_DEBUG(oplock_break_message, &msg);
+	}
 
-	/* Create the message. */
-	share_mode_entry_to_message(msg, id, exclusive);
+	ndr_err = ndr_push_struct_blob(
+		&blob,
+		talloc_tos(),
+		&msg,
+		(ndr_push_flags_fn_t)ndr_push_oplock_break_message);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_WARNING("ndr_push_oplock_break_message failed: %s\n",
+			    ndr_errstr(ndr_err));
+		return ndr_map_error2ntstatus(ndr_err);
+	}
 
-	/* Overload entry->op_type */
-	/*
-	 * This is a cut from uint32_t to uint16_t, but so far only the lower 3
-	 * bits (LEASE_WRITE/HANDLE/READ) are used anyway.
-	 */
-	SSVAL(msg,OP_BREAK_MSG_OP_TYPE_OFFSET, break_to);
-
-	status = messaging_send_buf(msg_ctx, exclusive->pid,
-				    MSG_SMB_BREAK_REQUEST,
-				    (uint8_t *)msg, sizeof(msg));
+	status = messaging_send(
+		msg_ctx, exclusive->pid, MSG_SMB_BREAK_REQUEST, &blob);
+	TALLOC_FREE(blob.data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Could not send oplock break message: %s\n",
 			  nt_errstr(status)));
