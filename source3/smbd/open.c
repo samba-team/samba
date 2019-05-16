@@ -1472,10 +1472,6 @@ static bool share_conflict(struct share_mode_entry *entry,
 		  (unsigned int)entry->private_options));
 
 	if (server_id_is_disconnected(&entry->pid)) {
-		/*
-		 * note: cleanup should have been done by
-		 * delay_for_batch_oplocks()
-		 */
 		return false;
 	}
 
