@@ -406,8 +406,6 @@ int partition_metadata_sequence_number_increment(struct ldb_module *module, uint
 		 */
 		ret = partition_metadata_set_sequence_number(module);
 		if (ret != LDB_SUCCESS) {
-			TALLOC_FREE(data->metadata);
-			partition_del_trans(module);
 			return ret;
 		}
 
