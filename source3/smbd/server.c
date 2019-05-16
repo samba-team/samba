@@ -2101,7 +2101,7 @@ extern void build_options(bool screen);
 	if (lp_clustering() && !lp_allow_unsafe_cluster_upgrade()) {
 		status = smbd_claim_version(msg_ctx, samba_version_string());
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_WARNING("Could not claim version: %s\n",
+			DBG_ERR("Could not claim version: %s\n",
 				    nt_errstr(status));
 			return -1;
 		}
