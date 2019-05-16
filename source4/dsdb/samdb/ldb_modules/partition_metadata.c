@@ -303,6 +303,10 @@ int partition_metadata_init(struct ldb_module *module)
 	data = talloc_get_type_abort(ldb_module_get_private(module),
 				     struct partition_private_data);
 
+	if (data->metadata != NULL && data->metadata->db != NULL) {
+		return LDB_SUCCESS;
+	}
+
 	data->metadata = talloc_zero(data, struct partition_metadata);
 	if (data->metadata == NULL) {
 		return ldb_module_oom(module);

@@ -409,6 +409,12 @@ int partition_reload_if_required(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 
+	/* This loads metadata tdb. If it's missing, creates it */
+	ret = partition_metadata_init(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	ret = partition_reload_metadata(module, data, mem_ctx, &msg, parent);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
@@ -888,12 +894,6 @@ int partition_init(struct ldb_module *module)
 		ldb_debug(ldb, LDB_DEBUG_ERROR,
 			"partition: Unable to register control with rootdse!\n");
 		return ldb_operr(ldb);
-	}
-
-	/* This loads metadata tdb. If it's missing, creates it */
-	ret = partition_metadata_init(module);
-	if (ret != LDB_SUCCESS) {
-		return ret;
 	}
 
 	return ldb_next_init(module);
