@@ -227,13 +227,13 @@ int main(int argc, char *argv[])
 
 	CUPS_SMB_DEBUG("Trying to guess KRB5CCNAME (FILE, DIR, KEYRING)");
 
-	snprintf(gen_cc, sizeof(gen_cc), "/tmp/krb5cc_%d", uid);
+	snprintf(gen_cc, sizeof(gen_cc), "/tmp/krb5cc_%u", uid);
 
 	rc = lstat(gen_cc, &sb);
 	if (rc == 0) {
-		snprintf(gen_cc, sizeof(gen_cc), "FILE:/tmp/krb5cc_%d", uid);
+		snprintf(gen_cc, sizeof(gen_cc), "FILE:/tmp/krb5cc_%u", uid);
 	} else {
-		snprintf(gen_cc, sizeof(gen_cc), "/run/user/%d/krb5cc", uid);
+		snprintf(gen_cc, sizeof(gen_cc), "/run/user/%u/krb5cc", uid);
 
 		rc = lstat(gen_cc, &sb);
 		if (rc == 0 && S_ISDIR(sb.st_mode)) {
