@@ -1193,12 +1193,6 @@ int partition_del_trans(struct ldb_module *module)
 		}
 	}	
 
-	if (data->in_transaction == 0) {
-		DEBUG(0,("partition del transaction mismatch\n"));
-		return ldb_operr(ldb_module_get_ctx(module));
-	}
-	data->in_transaction--;
-
 	if (ldb_module_flags(ldb_module_get_ctx(module)) &
 	    LDB_FLG_ENABLE_TRACING) {
 		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_del_trans() -> (metadata partition)");
@@ -1212,6 +1206,12 @@ int partition_del_trans(struct ldb_module *module)
 	if (ret != LDB_SUCCESS) {
 		final_ret = ret;
 	}
+
+	if (data->in_transaction == 0) {
+		DEBUG(0,("partition del transaction mismatch\n"));
+		return ldb_operr(ldb_module_get_ctx(module));
+	}
+	data->in_transaction--;
 
 	return final_ret;
 }
