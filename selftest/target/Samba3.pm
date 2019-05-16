@@ -609,6 +609,7 @@ sub setup_ad_member_idmap_rid
 	# Prevent overridding the provisioned lib/krb5.conf which sets certain
 	# values required for tests to succeed
 	create krb5 conf = no
+        map to guest = bad user
 ";
 
 	my $ret = $self->provision($prefix, $dcvars->{DOMAIN},
