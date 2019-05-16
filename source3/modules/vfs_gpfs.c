@@ -1995,7 +1995,7 @@ static bool vfs_gpfs_is_offline(struct vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct gpfs_config_data,
-				return -1);
+				return false);
 
 	if (!config->winattr) {
 		return false;
