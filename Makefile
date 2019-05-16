@@ -28,6 +28,19 @@ subunit-test:
 testenv:
 	$(WAF) test --testenv $(TEST_OPTIONS)
 
+lcov:
+	@echo usage:
+	@echo ""
+	@echo ./configure --enable-coverage
+	@echo make -j
+	@echo make test TESTS=mytest
+	@echo make lcov
+	@echo ""
+	rm -f lcov.info
+	lcov --capture --directory . --output-file lcov.info && \
+	genhtml lcov.info --output-directory public --prefix=$$(pwd) && \
+	echo Please open public/index.html in browser to view the coverage report
+
 gdbtestenv:
 	$(WAF) test --testenv --gdbtest $(TEST_OPTIONS)
 
