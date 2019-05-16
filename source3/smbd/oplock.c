@@ -1327,14 +1327,12 @@ static void send_break_to_none(struct messaging_context *msg_ctx,
 			       const struct file_id *id,
 			       const struct share_mode_entry *e)
 {
-	char msg[MSG_SMB_SHARE_MODE_ENTRY_SIZE];
-
-	share_mode_entry_to_message(msg, id, e);
-	/* Overload entry->op_type */
-	SSVAL(msg, OP_BREAK_MSG_OP_TYPE_OFFSET, NO_OPLOCK);
-
-	messaging_send_buf(msg_ctx, e->pid, MSG_SMB_BREAK_REQUEST,
-			   (uint8_t *)msg, sizeof(msg));
+	NTSTATUS status;
+	status = send_break_message(msg_ctx, id, e, OPLOCK_NONE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("send_break_message failed: %s\n",
+			  nt_errstr(status));
+	}
 }
 
 static bool do_break_lease_to_none(struct share_mode_lock *lck,
