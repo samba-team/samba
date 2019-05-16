@@ -219,9 +219,13 @@ int main(int argc, char *argv[])
 	env = getenv("KRB5CCNAME");
 	if (env != NULL && env[0] != 0) {
 		snprintf(gen_cc, sizeof(gen_cc), "%s", env);
+		CUPS_SMB_DEBUG("User already set KRB5CCNAME [%s] as ccache",
+			       gen_cc);
 
 		goto create_env;
 	}
+
+	CUPS_SMB_DEBUG("Trying to guess KRB5CCNAME (FILE, DIR, KEYRING)");
 
 	snprintf(gen_cc, sizeof(gen_cc), "/tmp/krb5cc_%d", uid);
 
