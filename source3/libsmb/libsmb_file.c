@@ -619,7 +619,7 @@ SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
                 if (!NT_STATUS_IS_OK(cli_open(srv->cli, path, O_RDWR, DENY_NONE, &fd))) {
                         errno = SMBC_errno(context, srv->cli);
 			TALLOC_FREE(frame);
-                        return -1;
+                        return False;
                 }
 
                 /* Set the new attributes */
