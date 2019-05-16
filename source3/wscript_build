@@ -1134,6 +1134,7 @@ bld.SAMBA3_BINARY('smbspool_krb5_wrapper',
                  deps='''
                       DYNCONFIG
                       cups
+                      krb5
                       ''',
                  install_path='${LIBEXECDIR}/samba',
                  enabled=bld.CONFIG_SET('HAVE_CUPS'))
