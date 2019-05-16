@@ -2116,7 +2116,7 @@ static bool catia_lock(vfs_handle_struct *handle,
 
 	ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, fsp, &cc);
 	if (ret != 0) {
-		return -1;
+		return false;
 	}
 
 	ok = SMB_VFS_NEXT_LOCK(handle, fsp, op, offset, count, type);
@@ -2178,7 +2178,7 @@ static bool catia_getlock(vfs_handle_struct *handle,
 
 	ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, fsp, &cc);
 	if (ret != 0) {
-		return -1;
+		return false;
 	}
 
 	ok = SMB_VFS_NEXT_GETLOCK(handle, fsp, poffset, pcount, ptype, ppid);
@@ -2198,7 +2198,7 @@ static bool catia_strict_lock_check(struct vfs_handle_struct *handle,
 
 	ret = CATIA_FETCH_FSP_PRE_NEXT(talloc_tos(), handle, fsp, &cc);
 	if (ret != 0) {
-		return -1;
+		return false;
 	}
 
 	ok = SMB_VFS_NEXT_STRICT_LOCK_CHECK(handle, fsp, plock);
