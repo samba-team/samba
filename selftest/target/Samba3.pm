@@ -597,6 +597,7 @@ sub setup_ad_member_idmap_rid
 	idmap config * : range = 1000000-1999999
 	idmap config $dcvars->{DOMAIN} : backend = rid
 	idmap config $dcvars->{DOMAIN} : range = 2000000-2999999
+        map to guest = bad user
 ";
 
 	my $ret = $self->provision($prefix, $dcvars->{DOMAIN},
