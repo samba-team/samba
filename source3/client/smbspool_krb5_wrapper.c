@@ -21,6 +21,7 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include "system/kerberos.h"
 #include "system/passwd.h"
 
 #include <errno.h>
@@ -68,6 +69,50 @@ static void cups_smb_debug(enum cups_smb_dbglvl_e lvl, const char *format, ...)
 		buffer);
 }
 
+static bool kerberos_get_default_ccache(char *ccache_buf, size_t len)
+{
+	krb5_context ctx;
+	const char *ccache_name = NULL;
+	char *full_ccache_name = NULL;
+	krb5_ccache ccache = NULL;
+	krb5_error_code code;
+
+	code = krb5_init_context(&ctx);
+	if (code != 0) {
+		return false;
+	}
+
+	ccache_name = krb5_cc_default_name(ctx);
+	if (ccache_name == NULL) {
+		krb5_free_context(ctx);
+		return false;
+	}
+
+	code = krb5_cc_resolve(ctx, ccache_name, &ccache);
+	if (code != 0) {
+		krb5_free_context(ctx);
+		return false;
+	}
+
+	code = krb5_cc_get_full_name(ctx, ccache, &full_ccache_name);
+	krb5_cc_close(ctx, ccache);
+	if (code != 0) {
+		krb5_free_context(ctx);
+		return false;
+	}
+
+	snprintf(ccache_buf, len, "%s", full_ccache_name);
+
+#ifdef SAMBA4_USES_HEIMDAL
+	free(full_ccache_name);
+#else
+	krb5_free_string(ctx, full_ccache_name);
+#endif
+	krb5_free_context(ctx);
+
+	return true;
+}
+
 /*
  * This is a helper binary to execute smbspool.
  *
@@ -84,7 +129,6 @@ int main(int argc, char *argv[])
 	struct passwd *pwd;
 	struct group *g = NULL;
 	char gen_cc[PATH_MAX] = {0};
-	struct stat sb;
 	char *env = NULL;
 	char auth_info_required[256] = {0};
 	char device_uri[4096] = {0};
@@ -92,6 +136,7 @@ int main(int argc, char *argv[])
 	gid_t gid = (gid_t)-1;
 	gid_t groups[1] = { (gid_t)-1 };
 	unsigned long tmp;
+	bool ok;
 	int cmp;
 	int rc;
 
@@ -225,31 +270,15 @@ int main(int argc, char *argv[])
 		goto create_env;
 	}
 
-	CUPS_SMB_DEBUG("Trying to guess KRB5CCNAME (FILE, DIR, KEYRING)");
-
-	snprintf(gen_cc, sizeof(gen_cc), "/tmp/krb5cc_%u", uid);
-
-	rc = lstat(gen_cc, &sb);
-	if (rc == 0) {
-		snprintf(gen_cc, sizeof(gen_cc), "FILE:/tmp/krb5cc_%u", uid);
-	} else {
-		snprintf(gen_cc, sizeof(gen_cc), "/run/user/%u/krb5cc", uid);
-
-		rc = lstat(gen_cc, &sb);
-		if (rc == 0 && S_ISDIR(sb.st_mode)) {
-			snprintf(gen_cc,
-				 sizeof(gen_cc),
-				 "DIR:/run/user/%d/krb5cc",
-				 uid);
-		} else {
-#if defined(__linux__)
-			snprintf(gen_cc,
-				 sizeof(gen_cc),
-				 "KEYRING:persistent:%d",
-				 uid);
-#endif
-		}
+	ok = kerberos_get_default_ccache(gen_cc, sizeof(gen_cc));
+	if (ok) {
+		CUPS_SMB_DEBUG("Use default KRB5CCNAME [%s]",
+			       gen_cc);
+		goto create_env;
 	}
+
+	/* Fallback to a FILE ccache */
+	snprintf(gen_cc, sizeof(gen_cc), "FILE:/tmp/krb5cc_%u", uid);
 
 create_env:
 	/*
