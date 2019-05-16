@@ -616,6 +616,7 @@ static bool kerberos_ccache_is_valid(void) {
 		return false;
 	} else {
 		krb5_principal default_princ = NULL;
+		char *princ_name = NULL;
 
 		code = krb5_cc_get_principal(ctx,
 					     ccache,
@@ -624,6 +625,16 @@ static bool kerberos_ccache_is_valid(void) {
 			krb5_cc_close(ctx, ccache);
 			krb5_free_context(ctx);
 			return false;
+		}
+
+		code = krb5_unparse_name(ctx,
+					 default_princ,
+					 &princ_name);
+		if (code == 0) {
+			fprintf(stderr,
+				"DEBUG: Try to authenticate as %s\n",
+				princ_name);
+			krb5_free_unparsed_name(ctx, princ_name);
 		}
 		krb5_free_principal(ctx, default_princ);
 	}
