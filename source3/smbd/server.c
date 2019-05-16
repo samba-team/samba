@@ -117,12 +117,18 @@ static void smbd_parent_conf_updated(struct messaging_context *msg,
 {
 	struct tevent_context *ev_ctx =
 		talloc_get_type_abort(private_data, struct tevent_context);
+	bool ok;
 
 	DEBUG(10,("smbd_parent_conf_updated: Got message saying smb.conf was "
 		  "updated. Reloading.\n"));
 	change_to_root_user();
 	reload_services(NULL, NULL, false);
 	printing_subsystem_update(ev_ctx, msg, false);
+
+	ok = reinit_guest_session_info(NULL);
+	if (!ok) {
+		DBG_ERR("Failed to reinit guest info\n");
+	}
 }
 
 /*******************************************************************
