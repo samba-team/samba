@@ -737,3 +737,8 @@ for e in endianness_options:
 
 plansmbtorture4testsuite('rpc.epmapper', 'nt4_dc:local', 'ncalrpc: -U$USERNAME%$PASSWORD', 'over ncalrpc')
 plansmbtorture4testsuite('rpc.fsrvp', 'nt4_dc:local', 'ncacn_np:$SERVER_IP[/pipe/FssagentRpc] -U$USERNAME%$PASSWORD', 'over ncacn_np')
+
+for env in ["ad_member_idmap_rid:local", "maptoguest:local"]:
+    plantestsuite("samba3.blackbox.guest (%s)" % env , env,
+                  [os.path.join(samba3srcdir, "script/tests/test_guest_auth.sh"),
+                   '$SERVER', smbclient3, smbcontrol, net, configuration])
