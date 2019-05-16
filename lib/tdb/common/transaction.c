@@ -1209,7 +1209,29 @@ _PUBLIC_ int tdb_transaction_commit(struct tdb_context *tdb)
 	_tdb_transaction_cancel(tdb);
 
 	if (need_repack) {
-		return tdb_repack(tdb);
+		int ret = tdb_repack(tdb);
+		if (ret != 0) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,
+				 __location__ " Failed to repack database (not fatal)\n"));
+		}
+		/*
+		 * Ignore the error.
+		 *
+		 * Why?
+		 *
+		 * We just committed to the DB above, so anything
+		 * written during the transaction is committed, the
+		 * caller needs to know that the long-term state was
+		 * successfully modified.
+		 *
+		 * tdb_repack is an optimization that can fail for
+		 * reasons like lock ordering and we cannot recover
+		 * the transaction lock at this point, having released
+		 * it above.
+		 *
+		 * If we return a failure the caller thinks the
+		 * transaction was rolled back.
+		 */
 	}
 
 	return 0;
