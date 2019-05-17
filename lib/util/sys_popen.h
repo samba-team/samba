@@ -21,6 +21,7 @@
 #define __LIB_SYS_POPEN_H__
 
 int sys_popen(const char *command);
+int sys_popenv(char * const argl[]);
 int sys_pclose(int fd);
 
 #endif
