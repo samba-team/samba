@@ -410,3 +410,49 @@ char *file_pload(const char *syscmd, size_t *size)
 
 	return p;
 }
+
+/**
+ Load from a pipe into memory.
+**/
+char *file_ploadv(char * const argl[], size_t *size)
+{
+	int fd, n;
+	char *p = NULL;
+	char buf[1024];
+	size_t total;
+
+	fd = sys_popenv(argl);
+	if (fd == -1) {
+		return NULL;
+	}
+
+	total = 0;
+
+	while ((n = sys_read(fd, buf, sizeof(buf))) > 0) {
+		p = talloc_realloc(NULL, p, char, total + n + 1);
+		if (p == NULL) {
+		        DBG_ERR("failed to expand buffer!\n");
+			close(fd);
+			return NULL;
+		}
+		memcpy(p+total, buf, n);
+		total += n;
+	}
+
+	if (p != NULL) {
+		p[total] = 0;
+	}
+
+	/*
+	 * FIXME: Perhaps ought to check that the command completed
+	 * successfully (returned 0); if not the data may be
+	 * truncated.
+	 */
+	sys_pclose(fd);
+
+	if (size) {
+		*size = total;
+	}
+
+	return p;
+}
