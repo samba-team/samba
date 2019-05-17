@@ -1785,7 +1785,9 @@ static ssize_t ad_read_rsrc(struct adouble *ad,
 /**
  * Read and unpack an AppleDouble metadata xattr or resource
  **/
-static ssize_t ad_read(struct adouble *ad, const struct smb_filename *smb_fname)
+static ssize_t ad_read(vfs_handle_struct *handle,
+		       struct adouble *ad,
+		       const struct smb_filename *smb_fname)
 {
 	switch (ad->ad_type) {
 	case ADOUBLE_META:
@@ -1970,7 +1972,7 @@ static struct adouble *ad_get_internal(TALLOC_CTX *ctx,
 
 	}
 
-	len = ad_read(ad, smb_fname);
+	len = ad_read(handle, ad, smb_fname);
 	if (len == -1) {
 		DEBUG(10, ("error reading AppleDouble for %s\n",
 			smb_fname->base_name));
