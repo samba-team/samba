@@ -170,3 +170,18 @@ char **file_lines_pload(TALLOC_CTX *mem_ctx, const char *syscmd,
 
 	return file_lines_parse(p, size, numlines, mem_ctx);
 }
+
+char **file_lines_ploadv(TALLOC_CTX *mem_ctx,
+			char * const argl[],
+			int *numlines)
+{
+	char *p = NULL;
+	size_t size;
+
+	p = file_ploadv(argl, &size);
+	if (!p) {
+		return NULL;
+	}
+
+	return file_lines_parse(p, size, numlines, mem_ctx);
+}
