@@ -1413,7 +1413,8 @@ static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
 	return true;
 }
 
-static bool ad_convert_delete_adfile(struct adouble *ad,
+static bool ad_convert_delete_adfile(vfs_handle_struct *handle,
+				     struct adouble *ad,
 				     const struct smb_filename *smb_fname)
 {
 	struct fruit_config_data *config = NULL;
@@ -1424,7 +1425,7 @@ static bool ad_convert_delete_adfile(struct adouble *ad,
 		return true;
 	}
 
-	SMB_VFS_HANDLE_GET_DATA(ad->ad_handle, config,
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return false);
 
 	if (!config->delete_empty_adfiles) {
@@ -1436,7 +1437,7 @@ static bool ad_convert_delete_adfile(struct adouble *ad,
 		return false;
 	}
 
-	rc = SMB_VFS_NEXT_UNLINK(ad->ad_handle, ad_name);
+	rc = SMB_VFS_NEXT_UNLINK(handle, ad_name);
 	if (rc != 0) {
 		DBG_ERR("Unlinking [%s] failed: %s\n",
 			smb_fname_str_dbg(ad_name), strerror(errno));
@@ -1501,7 +1502,7 @@ static int ad_convert(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
-	ok = ad_convert_delete_adfile(ad, smb_fname);
+	ok = ad_convert_delete_adfile(handle, ad, smb_fname);
 	if (!ok) {
 		ret = -1;
 		goto done;
