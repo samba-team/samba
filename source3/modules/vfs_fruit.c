@@ -1513,7 +1513,7 @@ done:
  **/
 static ssize_t ad_read_meta(vfs_handle_struct *handle,
 			    struct adouble *ad,
-				const struct smb_filename *smb_fname)
+			    const struct smb_filename *smb_fname)
 {
 	int      rc = 0;
 	ssize_t  ealen;
