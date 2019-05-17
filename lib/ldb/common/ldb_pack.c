@@ -33,21 +33,53 @@
 
 #include "ldb_private.h"
 
-/* use a portable integer format */
-static void put_uint32(uint8_t *p, int ofs, unsigned int val)
-{
-	p += ofs;
-	p[0] = val&0xFF;
-	p[1] = (val>>8)  & 0xFF;
-	p[2] = (val>>16) & 0xFF;
-	p[3] = (val>>24) & 0xFF;
-}
+/*
+ * These macros are from byte_array.h via libssh
+ * TODO: This will be replaced with use of the byte_array.h header when it
+ * becomes available.
+ *
+ * Macros for handling integer types in byte arrays
+ *
+ * This file is originally from the libssh.org project
+ *
+ * Copyright (c) 2018 Andreas Schneider <asn@cryptomilk.org>
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+#define _DATA_BYTE_CONST(data, pos) \
+	((uint8_t)(((const uint8_t *)(data))[(pos)]))
+#define PULL_LE_U8(data, pos) \
+	(_DATA_BYTE_CONST(data, pos))
+#define PULL_LE_U16(data, pos) \
+	((uint16_t)PULL_LE_U8(data, pos) |\
+	((uint16_t)(PULL_LE_U8(data, (pos) + 1))) << 8)
+#define PULL_LE_U32(data, pos) \
+	((uint32_t)(PULL_LE_U16(data, pos) |\
+	((uint32_t)PULL_LE_U16(data, (pos) + 2)) << 16))
 
-static unsigned int pull_uint32(uint8_t *p, int ofs)
-{
-	p += ofs;
-	return p[0] | (p[1]<<8) | (p[2]<<16) | (p[3]<<24);
-}
+#define _DATA_BYTE(data, pos) \
+	(((uint8_t *)(data))[(pos)])
+#define PUSH_LE_U8(data, pos, val) \
+	(_DATA_BYTE(data, pos) = ((uint8_t)(val)))
+#define PUSH_LE_U16(data, pos, val) \
+	(PUSH_LE_U8((data), (pos), (uint8_t)((uint16_t)(val) & 0xff)),\
+		    PUSH_LE_U8((data), (pos) + 1,\
+			       (uint8_t)((uint16_t)(val) >> 8)))
+#define PUSH_LE_U32(data, pos, val) \
+	(PUSH_LE_U16((data), (pos), (uint16_t)((uint32_t)(val) & 0xffff)),\
+	 PUSH_LE_U16((data), (pos) + 2, (uint16_t)((uint32_t)(val) >> 16)))
 
 static int attribute_storable_values(const struct ldb_message_element *el)
 {
@@ -143,8 +175,8 @@ int ldb_pack_data(struct ldb_context *ldb,
 	data->length = size;
 
 	p = data->data;
-	put_uint32(p, 0, LDB_PACKING_FORMAT);
-	put_uint32(p, 4, real_elements);
+	PUSH_LE_U32(p, 0, LDB_PACKING_FORMAT);
+	PUSH_LE_U32(p, 4, real_elements);
 	p += 8;
 
 	/* the dn needs to be packed so we can be case preserving
@@ -160,10 +192,11 @@ int ldb_pack_data(struct ldb_context *ldb,
 		len = strlen(message->elements[i].name);
 		memcpy(p, message->elements[i].name, len+1);
 		p += len + 1;
-		put_uint32(p, 0, message->elements[i].num_values);
+		PUSH_LE_U32(p, 0, message->elements[i].num_values);
 		p += 4;
 		for (j=0;j<message->elements[i].num_values;j++) {
-			put_uint32(p, 0, message->elements[i].values[j].length);
+			PUSH_LE_U32(p, 0,
+				    message->elements[i].values[j].length);
 			memcpy(p+4, message->elements[i].values[j].data,
 			       message->elements[i].values[j].length);
 			p[4+message->elements[i].values[j].length] = 0;
@@ -206,7 +239,7 @@ int ldb_unpack_data_flags(struct ldb_context *ldb,
 		errno = EIO;
 		goto failed;
 	}
-	message->num_elements = pull_uint32(p, 4);
+	message->num_elements = PULL_LE_U32(p, 4);
 	p += 8;
 
 	remaining = data->length - 8;
@@ -329,7 +362,7 @@ int ldb_unpack_data_flags(struct ldb_context *ldb,
 		}
 		remaining -= attr_len + 1;
 		p += attr_len + 1;
-		element->num_values = pull_uint32(p, 0);
+		element->num_values = PULL_LE_U32(p, 0);
 		element->values = NULL;
 		if ((flags & LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC) && element->num_values == 1) {
 			element->values = &ldb_val_single_array[nelem];
@@ -355,7 +388,7 @@ int ldb_unpack_data_flags(struct ldb_context *ldb,
 			}
 			remaining -= 5;
 
-			len = pull_uint32(p, 0);
+			len = PULL_LE_U32(p, 0);
 			if (remaining < len) {
 				errno = EIO;
 				goto failed;
@@ -405,7 +438,7 @@ int ldb_unpack_get_format(const struct ldb_val *data,
 	if (data->length < 4) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	*pack_format_version = pull_uint32(data->data, 0);
+	*pack_format_version = PULL_LE_U32(data->data, 0);
 	return LDB_SUCCESS;
 }
 
