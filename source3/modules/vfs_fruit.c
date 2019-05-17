@@ -539,7 +539,9 @@ static struct adouble *ad_get(TALLOC_CTX *ctx,
 			      vfs_handle_struct *handle,
 			      const struct smb_filename *smb_fname,
 			      adouble_type_t type);
-static int ad_set(struct adouble *ad, const struct smb_filename *smb_fname);
+static int ad_set(vfs_handle_struct *handle,
+		  struct adouble *ad,
+		  const struct smb_filename *smb_fname);
 static int ad_fset(struct vfs_handle_struct *handle,
 		   struct adouble *ad,
 		   files_struct *fsp);
@@ -2030,7 +2032,9 @@ static struct adouble *ad_fget(TALLOC_CTX *ctx, vfs_handle_struct *handle,
  *
  * @return            status code, 0 means success
  **/
-static int ad_set(struct adouble *ad, const struct smb_filename *smb_fname)
+static int ad_set(vfs_handle_struct *handle,
+		  struct adouble *ad,
+		  const struct smb_filename *smb_fname)
 {
 	bool ok;
 	int ret;
@@ -2048,7 +2052,7 @@ static int ad_set(struct adouble *ad, const struct smb_filename *smb_fname)
 		return -1;
 	}
 
-	ret = SMB_VFS_SETXATTR(ad->ad_handle->conn,
+	ret = SMB_VFS_SETXATTR(handle->conn,
 			       smb_fname,
 			       AFPINFO_EA_NETATALK,
 			       ad->ad_data,
@@ -5869,7 +5873,7 @@ static int fruit_ntimes(vfs_handle_struct *handle,
 	ad_setdate(ad, AD_DATE_CREATE | AD_DATE_UNIX,
 		   convert_time_t_to_uint32_t(ft->create_time.tv_sec));
 
-	rc = ad_set(ad, smb_fname);
+	rc = ad_set(handle, ad, smb_fname);
 
 exit:
 
