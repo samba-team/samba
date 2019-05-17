@@ -1057,7 +1057,8 @@ static bool ad_convert_move_reso(struct adouble *ad,
 	return true;
 }
 
-static bool ad_convert_xattr(struct adouble *ad,
+static bool ad_convert_xattr(vfs_handle_struct *handle,
+			     struct adouble *ad,
 			     const struct smb_filename *smb_fname,
 			     bool *converted_xattr)
 {
@@ -1108,7 +1109,7 @@ static bool ad_convert_xattr(struct adouble *ad,
 		files_struct *fsp = NULL;
 		ssize_t nwritten;
 
-		status = string_replace_allocate(ad->ad_handle->conn,
+		status = string_replace_allocate(handle->conn,
 						 e->adx_name,
 						 string_replace_cmaps,
 						 talloc_tos(),
@@ -1145,7 +1146,7 @@ static bool ad_convert_xattr(struct adouble *ad,
 		DBG_DEBUG("stream_name: %s\n", smb_fname_str_dbg(stream_name));
 
 		status = SMB_VFS_CREATE_FILE(
-			ad->ad_handle->conn,		/* conn */
+			handle->conn,			/* conn */
 			NULL,				/* req */
 			0,				/* root_dir_fid */
 			stream_name,			/* fname */
@@ -1468,7 +1469,7 @@ static int ad_convert(struct vfs_handle_struct *handle,
 		return 0;
 	}
 
-	ok = ad_convert_xattr(ad, smb_fname, &converted_xattr);
+	ok = ad_convert_xattr(handle, ad, smb_fname, &converted_xattr);
 	if (!ok) {
 		ret = -1;
 		goto done;
