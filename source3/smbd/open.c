@@ -1849,6 +1849,8 @@ static bool delay_for_oplock(files_struct *fsp,
 	uint32_t i;
 	bool delay = false;
 	bool will_overwrite;
+	const uint32_t delay_mask = have_sharing_violation ?
+		SMB2_LEASE_HANDLE : SMB2_LEASE_WRITE;
 
 	if ((oplock_request & INTERNAL_OPEN_ONLY) ||
 	    is_stat_open(fsp->access_mask)) {
@@ -1871,7 +1873,6 @@ static bool delay_for_oplock(files_struct *fsp,
 		bool e_is_lease = (e->op_type == LEASE_OPLOCK);
 		uint32_t e_lease_type = get_lease_type(d, e);
 		uint32_t break_to;
-		uint32_t delay_mask = 0;
 		bool lease_is_breaking = false;
 
 		if (e_is_lease) {
@@ -1900,12 +1901,6 @@ static bool delay_for_oplock(files_struct *fsp,
 				NULL, /* lease_version */
 				NULL); /* epoch */
 			SMB_ASSERT(NT_STATUS_IS_OK(status));
-		}
-
-		if (have_sharing_violation) {
-			delay_mask = SMB2_LEASE_HANDLE;
-		} else {
-			delay_mask = SMB2_LEASE_WRITE;
 		}
 
 		break_to = e_lease_type & ~delay_mask;
