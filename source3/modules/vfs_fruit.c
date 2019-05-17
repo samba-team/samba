@@ -1227,7 +1227,8 @@ fail:
 	return ok;
 }
 
-static bool ad_convert_finderinfo(struct adouble *ad,
+static bool ad_convert_finderinfo(vfs_handle_struct *handle,
+				  struct adouble *ad,
 				  const struct smb_filename *smb_fname)
 {
 	char *p_ad = NULL;
@@ -1284,7 +1285,7 @@ static bool ad_convert_finderinfo(struct adouble *ad,
 	DBG_DEBUG("stream_name: %s\n", smb_fname_str_dbg(stream_name));
 
 	status = SMB_VFS_CREATE_FILE(
-		ad->ad_handle->conn,		/* conn */
+		handle->conn,			/* conn */
 		NULL,				/* req */
 		0,				/* root_dir_fid */
 		stream_name,			/* fname */
@@ -1492,7 +1493,7 @@ static int ad_convert(struct vfs_handle_struct *handle,
 		}
 	}
 
-	ok = ad_convert_finderinfo(ad, smb_fname);
+	ok = ad_convert_finderinfo(handle, ad, smb_fname);
 	if (!ok) {
 		DBG_ERR("Failed to convert [%s]\n",
 			smb_fname_str_dbg(smb_fname));
