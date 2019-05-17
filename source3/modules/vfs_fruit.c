@@ -411,7 +411,6 @@ struct ad_entry {
 };
 
 struct adouble {
-	vfs_handle_struct        *ad_handle;
 	int                       ad_fd;
 	bool                      ad_opened;
 	adouble_type_t            ad_type;
@@ -1868,7 +1867,6 @@ static struct adouble *ad_alloc(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 		}
 	}
 
-	ad->ad_handle = handle;
 	ad->ad_type = type;
 	ad->ad_magic = AD_MAGIC;
 	ad->ad_version = AD_VERSION;
