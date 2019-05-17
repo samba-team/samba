@@ -1511,7 +1511,8 @@ done:
 /**
  * Read and parse Netatalk AppleDouble metadata xattr
  **/
-static ssize_t ad_read_meta(struct adouble *ad,
+static ssize_t ad_read_meta(vfs_handle_struct *handle,
+			    struct adouble *ad,
 				const struct smb_filename *smb_fname)
 {
 	int      rc = 0;
@@ -1520,7 +1521,7 @@ static ssize_t ad_read_meta(struct adouble *ad,
 
 	DEBUG(10, ("reading meta xattr for %s\n", smb_fname->base_name));
 
-	ealen = SMB_VFS_GETXATTR(ad->ad_handle->conn, smb_fname,
+	ealen = SMB_VFS_GETXATTR(handle->conn, smb_fname,
 				 AFPINFO_EA_NETATALK, ad->ad_data,
 				 AD_DATASZ_XATTR);
 	if (ealen == -1) {
@@ -1791,7 +1792,7 @@ static ssize_t ad_read(vfs_handle_struct *handle,
 {
 	switch (ad->ad_type) {
 	case ADOUBLE_META:
-		return ad_read_meta(ad, smb_fname);
+		return ad_read_meta(handle, ad, smb_fname);
 	case ADOUBLE_RSRC:
 		return ad_read_rsrc(ad, smb_fname);
 	default:
