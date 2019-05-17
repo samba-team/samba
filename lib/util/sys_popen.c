@@ -110,13 +110,18 @@ typedef struct _popen_list
 
 static popen_list *popen_chain;
 
-int sys_popen(const char *command)
+int sys_popenv(char * const argl[])
 {
 	int parent_end, child_end;
 	int pipe_fds[2];
 	popen_list *entry = NULL;
-	char **argl = NULL;
+	const char *command = argl[0];
 	int ret;
+
+	if (argl == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
 
 	if (!*command) {
 		errno = EINVAL;
@@ -125,8 +130,8 @@ int sys_popen(const char *command)
 
 	ret = pipe(pipe_fds);
 	if (ret < 0) {
-		DEBUG(0, ("sys_popen: error opening pipe: %s\n",
-			  strerror(errno)));
+		DBG_ERR("error opening pipe: %s\n",
+			  strerror(errno));
 		return -1;
 	}
 
@@ -135,24 +140,14 @@ int sys_popen(const char *command)
 
 	entry = talloc_zero(NULL, popen_list);
 	if (entry == NULL) {
-		DEBUG(0, ("sys_popen: malloc failed\n"));
-		goto err_exit;
-	}
-
-	/*
-	 * Extract the command and args into a NULL terminated array.
-	 */
-
-	argl = extract_args(NULL, command);
-	if (argl == NULL) {
-		DEBUG(0, ("sys_popen: extract_args() failed: %s\n", strerror(errno)));
+		DBG_ERR("talloc failed\n");
 		goto err_exit;
 	}
 
 	entry->child_pid = fork();
 
 	if (entry->child_pid == -1) {
-		DEBUG(0, ("sys_popen: fork failed: %s\n", strerror(errno)));
+		DBG_ERR("fork failed: %s\n", strerror(errno));
 		goto err_exit;
 	}
 
@@ -182,8 +177,8 @@ int sys_popen(const char *command)
 
 		ret = execv(argl[0], argl);
 		if (ret == -1) {
-			DEBUG(0, ("sys_popen: ERROR executing command "
-				  "'%s': %s\n", command, strerror(errno)));
+			DBG_ERR("ERROR executing command "
+			  "'%s': %s\n", command, strerror(errno));
 		}
 		_exit (127);
 	}
@@ -193,7 +188,6 @@ int sys_popen(const char *command)
 	 */
 
 	close (child_end);
-	TALLOC_FREE(argl);
 
 	/* Link into popen_chain. */
 	entry->next = popen_chain;
@@ -205,10 +199,33 @@ int sys_popen(const char *command)
 err_exit:
 
 	TALLOC_FREE(entry);
-	TALLOC_FREE(argl);
 	close(pipe_fds[0]);
 	close(pipe_fds[1]);
 	return -1;
+}
+
+int sys_popen(const char *command)
+{
+	char **argl = NULL;
+	int ret;
+
+	if (!*command) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	/*
+	 * Extract the command and args into a NULL terminated array.
+	 */
+
+	argl = extract_args(NULL, command);
+	if (argl == NULL) {
+		DBG_ERR("extract_args() failed: %s\n", strerror(errno));
+		return -1;
+	}
+	ret = sys_popenv(argl);
+	TALLOC_FREE(argl);
+	return ret;
 }
 
 /**************************************************************************
