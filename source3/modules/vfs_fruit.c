@@ -1704,7 +1704,7 @@ static ssize_t ad_read_rsrc_xattr(vfs_handle_struct *handle,
 
 static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 				    struct adouble *ad,
-				const struct smb_filename *smb_fname)
+				    const struct smb_filename *smb_fname)
 {
 	SMB_STRUCT_STAT sbuf;
 	char *p_ad = NULL;
@@ -1773,7 +1773,7 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
  **/
 static ssize_t ad_read_rsrc(vfs_handle_struct *handle,
 			    struct adouble *ad,
-			const struct smb_filename *smb_fname)
+			    const struct smb_filename *smb_fname)
 {
 	struct fruit_config_data *config = NULL;
 	ssize_t len;
