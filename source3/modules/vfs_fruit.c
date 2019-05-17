@@ -1591,20 +1591,6 @@ exit:
 	return ealen;
 }
 
-static int ad_open_rsrc_xattr(const struct smb_filename *smb_fname,
-				int flags,
-				mode_t mode)
-{
-#ifdef HAVE_ATTROPEN
-	/* FIXME: direct Solaris xattr syscall */
-	return attropen(smb_fname->base_name,
-			AFPRESOURCE_EA_NETATALK, flags, mode);
-#else
-	errno = ENOSYS;
-	return -1;
-#endif
-}
-
 static int ad_open_rsrc_adouble(const struct smb_filename *smb_fname,
 				int flags,
 				mode_t mode)
@@ -1629,19 +1615,7 @@ static int ad_open_rsrc(vfs_handle_struct *handle,
 			int flags,
 			mode_t mode)
 {
-	struct fruit_config_data *config = NULL;
-	int fd;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	if (config->rsrc == FRUIT_RSRC_XATTR) {
-		fd = ad_open_rsrc_xattr(smb_fname, flags, mode);
-	} else {
-		fd = ad_open_rsrc_adouble(smb_fname, flags, mode);
-	}
-
-	return fd;
+	return ad_open_rsrc_adouble(smb_fname, flags, mode);
 }
 
 /*
@@ -1683,24 +1657,6 @@ static int ad_open(vfs_handle_struct *handle,
 		  ad->ad_type == ADOUBLE_META ? "meta" : "rsrc", fd);
 
 	return 0;
-}
-
-static ssize_t ad_read_rsrc_xattr(vfs_handle_struct *handle,
-				  struct adouble *ad)
-{
-	int ret;
-	SMB_STRUCT_STAT st;
-
-	/* FIXME: direct sys_fstat(), don't have an fsp */
-	ret = sys_fstat(ad->ad_fd, &st,
-			lp_fake_directory_create_times(
-				SNUM(handle->conn)));
-	if (ret != 0) {
-		return -1;
-	}
-
-	ad_setentrylen(ad, ADEID_RFORK, st.st_ex_size);
-	return st.st_ex_size;
 }
 
 static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
@@ -1776,19 +1732,7 @@ static ssize_t ad_read_rsrc(vfs_handle_struct *handle,
 			    struct adouble *ad,
 			    const struct smb_filename *smb_fname)
 {
-	struct fruit_config_data *config = NULL;
-	ssize_t len;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	if (config->rsrc == FRUIT_RSRC_XATTR) {
-		len = ad_read_rsrc_xattr(handle, ad);
-	} else {
-		len = ad_read_rsrc_adouble(handle, ad, smb_fname);
-	}
-
-	return len;
+	return ad_read_rsrc_adouble(handle, ad, smb_fname);
 }
 
 /**
@@ -1896,22 +1840,14 @@ static struct adouble *ad_init(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 	int rc = 0;
 	const struct ad_entry_order  *eid;
 	struct adouble *ad = NULL;
-	struct fruit_config_data *config;
 	time_t t = time(NULL);
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return NULL);
 
 	switch (type) {
 	case ADOUBLE_META:
 		eid = entry_order_meta_xattr;
 		break;
 	case ADOUBLE_RSRC:
-		if (config->rsrc == FRUIT_RSRC_ADFILE) {
-			eid = entry_order_dot_und;
-		} else {
-			eid = entry_order_rsrc_xattr;
-		}
+		eid = entry_order_dot_und;
 		break;
 	default:
 		return NULL;
