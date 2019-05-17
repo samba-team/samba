@@ -1345,7 +1345,8 @@ static bool ad_convert_truncate(struct adouble *ad,
 	return true;
 }
 
-static bool ad_convert_blank_rfork(struct adouble *ad,
+static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
+				   struct adouble *ad,
 				   bool *blank)
 {
 	struct fruit_config_data *config = NULL;
@@ -1358,7 +1359,7 @@ static bool ad_convert_blank_rfork(struct adouble *ad,
 
 	*blank = false;
 
-	SMB_VFS_HANDLE_GET_DATA(ad->ad_handle, config,
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return false);
 
 	if (!config->wipe_intentionally_left_blank_rfork) {
@@ -1475,7 +1476,7 @@ static int ad_convert(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
-	ok = ad_convert_blank_rfork(ad, &blank);
+	ok = ad_convert_blank_rfork(handle, ad, &blank);
 	if (!ok) {
 		ret = -1;
 		goto done;
