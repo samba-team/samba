@@ -605,25 +605,6 @@ Offset  Data                  length.
 */
 #define MSG_SMB_KERNEL_BREAK_SIZE 28
 
-/* file_renamed_message definition.
-
-struct file_renamed_message {
-	uint64_t dev;
-	uint64_t inode;
-	char names[1]; A variable area containing sharepath and filename.
-};
-
-Offset  Data			length.
-0	uint64_t dev		8 bytes
-8	uint64_t inode		8 bytes
-16      unit64_t extid          8 bytes
-24	char [] name		zero terminated namelen bytes
-minimum length == 24.
-
-*/
-
-#define MSG_FILE_RENAMED_MIN_SIZE 24
-
 /*
  * On the wire return values for oplock types.
  */

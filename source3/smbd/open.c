@@ -4416,62 +4416,60 @@ NTSTATUS create_directory(connection_struct *conn, struct smb_request *req,
  smbd process.
 ****************************************************************************/
 
-void msg_file_was_renamed(struct messaging_context *msg,
+void msg_file_was_renamed(struct messaging_context *msg_ctx,
 			  void *private_data,
 			  uint32_t msg_type,
-			  struct server_id server_id,
+			  struct server_id src,
 			  DATA_BLOB *data)
 {
+	struct file_rename_message *msg = NULL;
+	enum ndr_err_code ndr_err;
 	files_struct *fsp;
-	char *frm = (char *)data->data;
-	struct file_id id;
-	const char *sharepath;
-	const char *base_name;
-	const char *stream_name;
 	struct smb_filename *smb_fname = NULL;
-	size_t sp_len, bn_len;
 	NTSTATUS status;
 	struct smbd_server_connection *sconn =
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
 
-	if (data->data == NULL
-	    || data->length < MSG_FILE_RENAMED_MIN_SIZE + 2) {
-                DEBUG(0, ("msg_file_was_renamed: Got invalid msg len %d\n",
-			  (int)data->length));
-                return;
-        }
-
-	/* Unpack the message. */
-	pull_file_id_24(frm, &id);
-	sharepath = &frm[24];
-	sp_len = strlen(sharepath);
-	base_name = sharepath + sp_len + 1;
-	bn_len = strlen(base_name);
-	stream_name = sharepath + sp_len + 1 + bn_len + 1;
-
-	/* stream_name must always be NULL if there is no stream. */
-	if (stream_name[0] == '\0') {
-		stream_name = NULL;
-	}
-
-	smb_fname = synthetic_smb_fname(talloc_tos(),
-					base_name,
-					stream_name,
-					NULL,
-					0);
-	if (smb_fname == NULL) {
+	msg = talloc(talloc_tos(), struct file_rename_message);
+	if (msg == NULL) {
+		DBG_WARNING("talloc failed\n");
 		return;
 	}
 
-	DEBUG(10,("msg_file_was_renamed: Got rename message for sharepath %s, new name %s, "
-		"file_id %s\n",
-		sharepath, smb_fname_str_dbg(smb_fname),
-		file_id_string_tos(&id)));
+	ndr_err = ndr_pull_struct_blob_all(
+		data,
+		msg,
+		msg,
+		(ndr_pull_flags_fn_t)ndr_pull_file_rename_message);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_DEBUG("ndr_pull_oplock_break_message failed: %s\n",
+			  ndr_errstr(ndr_err));
+		goto out;
+	}
+	if (DEBUGLVL(10)) {
+		struct server_id_buf buf;
+		DBG_DEBUG("Got rename message from %s\n",
+			  server_id_str_buf(src, &buf));
+		NDR_PRINT_DEBUG(file_rename_message, msg);
+	}
 
-	for(fsp = file_find_di_first(sconn, id); fsp;
+	/* stream_name must always be NULL if there is no stream. */
+	if ((msg->stream_name != NULL) && (msg->stream_name[0] == '\0')) {
+		msg->stream_name = NULL;
+	}
+
+	smb_fname = synthetic_smb_fname(
+		msg, msg->base_name, msg->stream_name, NULL, 0);
+	if (smb_fname == NULL) {
+		DBG_DEBUG("synthetic_smb_fname failed\n");
+		goto out;
+	}
+
+	for(fsp = file_find_di_first(sconn, msg->id); fsp;
 	    fsp = file_find_di_next(fsp)) {
-		if (memcmp(fsp->conn->connectpath, sharepath, sp_len) == 0) {
+
+		if (strcmp(fsp->conn->connectpath, msg->servicepath) == 0) {
 
 			DEBUG(10,("msg_file_was_renamed: renaming file %s from %s -> %s\n",
 				fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
@@ -4488,15 +4486,14 @@ void msg_file_was_renamed(struct messaging_context *msg,
 				"not sharepath %s) "
 				"%s from %s -> %s\n",
 				fsp->conn->connectpath,
-				sharepath,
+				msg->servicepath,
 				fsp_fnum_dbg(fsp),
 				fsp_str_dbg(fsp),
 				smb_fname_str_dbg(smb_fname)));
 		}
         }
  out:
-	TALLOC_FREE(smb_fname);
-	return;
+	TALLOC_FREE(msg);
 }
 
 /*

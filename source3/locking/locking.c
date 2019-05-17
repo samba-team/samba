@@ -501,14 +501,15 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			const struct smb_filename *smb_fname_dst)
 {
 	struct share_mode_data *d = lck->data;
-	size_t sp_len;
-	size_t bn_len;
-	size_t sn_len;
-	size_t msg_len;
-	char *frm = NULL;
+	struct file_rename_message msg = {
+		.id = id,
+		.servicepath = servicepath,
+		.base_name = smb_fname_dst->base_name,
+		.stream_name = smb_fname_dst->stream_name,
+	};
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
 	uint32_t i;
-	bool strip_two_chars = false;
-	bool has_stream = smb_fname_dst->stream_name != NULL;
 	struct server_id self_pid = messaging_server_id(msg_ctx);
 	bool ok;
 
@@ -519,51 +520,35 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 	 * rename_internal_fsp() and rename_internals() add './' to
 	 * head of newname if newname does not contain a '/'.
 	 */
-	if (smb_fname_dst->base_name[0] &&
-	    smb_fname_dst->base_name[1] &&
-	    smb_fname_dst->base_name[0] == '.' &&
-	    smb_fname_dst->base_name[1] == '/') {
-		strip_two_chars = true;
+
+	if (strncmp(msg.base_name, "./", 2) == 0) {
+		msg.base_name += 2;
 	}
 
-	d->servicepath = talloc_strdup(d, servicepath);
-	d->base_name = talloc_strdup(d, smb_fname_dst->base_name +
-				       (strip_two_chars ? 2 : 0));
-	d->stream_name = talloc_strdup(d, smb_fname_dst->stream_name);
-	if (d->base_name == NULL ||
-	    (has_stream && d->stream_name == NULL) ||
-	    d->servicepath == NULL) {
-		DEBUG(0, ("rename_share_filename: talloc failed\n"));
-		return False;
+	d->servicepath = talloc_strdup(d, msg.servicepath);
+	d->base_name = talloc_strdup(d, msg.base_name);
+	d->stream_name = talloc_strdup(d, msg.stream_name);
+	if ((d->servicepath == NULL) ||
+	    (d->base_name == NULL) ||
+	    ((msg.stream_name != NULL) && (d->stream_name == NULL))) {
+		DBG_WARNING("talloc failed\n");
+		return false;
 	}
 	d->modified = True;
 
-	sp_len = strlen(d->servicepath);
-	bn_len = strlen(d->base_name);
-	sn_len = has_stream ? strlen(d->stream_name) : 0;
-
-	msg_len = MSG_FILE_RENAMED_MIN_SIZE + sp_len + 1 + bn_len + 1 +
-	    sn_len + 1;
-
-	/* Set up the name changed message. */
-	frm = talloc_array(d, char, msg_len);
-	if (!frm) {
-		return False;
+	ndr_err = ndr_push_struct_blob(
+		&blob,
+		talloc_tos(),
+		&msg,
+		(ndr_push_flags_fn_t)ndr_push_file_rename_message);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_DEBUG("ndr_push_file_rename_message failed: %s\n",
+			  ndr_errstr(ndr_err));
+		return false;
 	}
-
-	push_file_id_24(frm, &id);
-
-	DEBUG(10,("rename_share_filename: msg_len = %u\n", (unsigned int)msg_len ));
-
-	strlcpy(&frm[24],
-		d->servicepath ? d->servicepath : "",
-		sp_len+1);
-	strlcpy(&frm[24 + sp_len + 1],
-		d->base_name ? d->base_name : "",
-		bn_len+1);
-	strlcpy(&frm[24 + sp_len + 1 + bn_len + 1],
-		d->stream_name ? d->stream_name : "",
-		sn_len+1);
+	if (DEBUGLVL(10)) {
+		NDR_PRINT_DEBUG(file_rename_message, &msg);
+	}
 
 	/* Send the messages. */
 	for (i=0; i<d->num_share_modes; i++) {
@@ -591,17 +576,13 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			continue;
 		}
 
-		DEBUG(10,("rename_share_filename: sending rename message to "
-			  "pid %s file_id %s sharepath %s base_name %s "
-			  "stream_name %s\n",
-			  server_id_str_buf(se->pid, &tmp),
-			  file_id_string_tos(&id),
-			  d->servicepath, d->base_name,
-			has_stream ? d->stream_name : ""));
+		DBG_DEBUG("sending rename message to %s\n",
+			  server_id_str_buf(se->pid, &tmp));
 
-		messaging_send_buf(msg_ctx, se->pid, MSG_SMB_FILE_RENAME,
-				   (uint8_t *)frm, msg_len);
+		messaging_send(msg_ctx, se->pid, MSG_SMB_FILE_RENAME, &blob);
 	}
+
+	TALLOC_FREE(blob.data);
 
 	ok = share_mode_forall_leases(lck, rename_lease_fn, NULL);
 	if (!ok) {

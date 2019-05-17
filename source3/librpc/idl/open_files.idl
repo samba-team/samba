@@ -104,4 +104,11 @@ interface open_files
 		udlong share_file_id;
 		uint8 break_to;
 	} oplock_break_message;
+
+	typedef [public] struct {
+		file_id id;
+		[string,charset(UTF8)] char *servicepath;
+		[string,charset(UTF8)] char *base_name;
+		[string,charset(UTF8)] char *stream_name;
+	} file_rename_message;
 }
