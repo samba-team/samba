@@ -266,7 +266,8 @@ static int paged_results(struct paged_context *ac)
 		ret = paged_search_by_dn_guid(ac->module, ac, &result, guid,
 					    ac->req->op.search.attrs,
 					    ac->store->expr);
-		if (ret == LDAP_NO_SUCH_OBJECT /* TODO or no result */) {
+		if (ret == LDAP_NO_SUCH_OBJECT ||
+		    (ret == LDB_SUCCESS && result->count == 0)) {
 			/* The thing isn't there TODO, which we quietly
 			   ignore and go on to send an extra one
 			   instead. */
