@@ -3996,6 +3996,7 @@ static void test_ldb_unique_index_duplicate_with_guid(void **state)
 	assert_non_null(p);
 	TALLOC_FREE(debug_string);
 	talloc_free(tmp_ctx);
+	ldb_set_debug(test_ctx->ldb, NULL, NULL);
 }
 
 static void test_ldb_guid_index_duplicate_dn_logging(void **state)
@@ -4044,6 +4045,7 @@ static void test_ldb_guid_index_duplicate_dn_logging(void **state)
 
 	assert_null(debug_string);
 	talloc_free(tmp_ctx);
+	ldb_set_debug(test_ctx->ldb, NULL, NULL);
 }
 
 static void test_ldb_talloc_destructor_transaction_cleanup(void **state)
