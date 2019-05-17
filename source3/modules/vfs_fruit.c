@@ -540,7 +540,9 @@ static struct adouble *ad_get(TALLOC_CTX *ctx,
 			      const struct smb_filename *smb_fname,
 			      adouble_type_t type);
 static int ad_set(struct adouble *ad, const struct smb_filename *smb_fname);
-static int ad_fset(struct adouble *ad, files_struct *fsp);
+static int ad_fset(struct vfs_handle_struct *handle,
+		   struct adouble *ad,
+		   files_struct *fsp);
 static int adouble_path(TALLOC_CTX *ctx,
 			const struct smb_filename *smb_fname__in,
 			struct smb_filename **ppsmb_fname_out);
@@ -2065,7 +2067,9 @@ static int ad_set(struct adouble *ad, const struct smb_filename *smb_fname)
  *
  * @return            status code, 0 means success
  **/
-static int ad_fset(struct adouble *ad, files_struct *fsp)
+static int ad_fset(struct vfs_handle_struct *handle,
+		   struct adouble *ad,
+		   files_struct *fsp)
 {
 	int rc = -1;
 	ssize_t len;
@@ -2087,7 +2091,7 @@ static int ad_fset(struct adouble *ad, files_struct *fsp)
 
 	switch (ad->ad_type) {
 	case ADOUBLE_META:
-		rc = SMB_VFS_NEXT_SETXATTR(ad->ad_handle,
+		rc = SMB_VFS_NEXT_SETXATTR(handle,
 					   fsp->fsp_name,
 					   AFPINFO_EA_NETATALK,
 					   ad->ad_data,
@@ -2095,7 +2099,7 @@ static int ad_fset(struct adouble *ad, files_struct *fsp)
 		break;
 
 	case ADOUBLE_RSRC:
-		len = SMB_VFS_NEXT_PWRITE(ad->ad_handle,
+		len = SMB_VFS_NEXT_PWRITE(handle,
 					  fsp,
 					  ad->ad_data,
 					  AD_DATASZ_DOT_UND,
@@ -3588,7 +3592,7 @@ static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 
 		fsp->fh->fd = hostfd;
 
-		rc = ad_fset(ad, fsp);
+		rc = ad_fset(handle, ad, fsp);
 		fsp->fh->fd = -1;
 		if (rc != 0) {
 			rc = -1;
@@ -4676,7 +4680,7 @@ static ssize_t fruit_pwrite_meta_netatalk(vfs_handle_struct *handle,
 
 	memcpy(p, &ai->afpi_FinderInfo[0], ADEDLEN_FINDERI);
 
-	ret = ad_fset(ad, fsp);
+	ret = ad_fset(handle, ad, fsp);
 	if (ret != 0) {
 		DBG_ERR("ad_pwrite [%s] failed\n", fsp_str_dbg(fsp));
 		TALLOC_FREE(ad);
@@ -4832,7 +4836,7 @@ static ssize_t fruit_pwrite_rsrc_adouble(vfs_handle_struct *handle,
 
 	if ((n + offset) > ad_getentrylen(ad, ADEID_RFORK)) {
 		ad_setentrylen(ad, ADEID_RFORK, n + offset);
-		ret = ad_fset(ad, fsp);
+		ret = ad_fset(handle, ad, fsp);
 		if (ret != 0) {
 			DBG_ERR("ad_pwrite [%s] failed\n", fsp_str_dbg(fsp));
 			TALLOC_FREE(ad);
@@ -5929,7 +5933,7 @@ static int fruit_ftruncate_rsrc_adouble(struct vfs_handle_struct *handle,
 
 	ad_setentrylen(ad, ADEID_RFORK, offset);
 
-	rc = ad_fset(ad, fsp);
+	rc = ad_fset(handle, ad, fsp);
 	if (rc != 0) {
 		DBG_ERR("ad_fset [%s] failed [%s]\n",
 			fsp_str_dbg(fsp), strerror(errno));
