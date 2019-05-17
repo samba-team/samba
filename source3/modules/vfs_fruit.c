@@ -1578,7 +1578,9 @@ exit:
 		ealen = -1;
 		if (errno == EINVAL) {
 			become_root();
-			removexattr(smb_fname->base_name, AFPINFO_EA_NETATALK);
+			(void)SMB_VFS_REMOVEXATTR(handle->conn,
+						  smb_fname,
+						  AFPINFO_EA_NETATALK);
 			unbecome_root();
 			errno = ENOENT;
 		}
