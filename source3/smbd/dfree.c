@@ -60,7 +60,7 @@ uint64_t sys_disk_free(connection_struct *conn, struct smb_filename *fname,
 	uint64_t dsize_q = 0;
 	const char *dfree_command;
 	static bool dfree_broken = false;
-	const char *path = fname->base_name;
+	char *path = fname->base_name;
 
 	(*dfree) = (*dsize) = 0;
 	(*bsize) = 512;
@@ -73,20 +73,31 @@ uint64_t sys_disk_free(connection_struct *conn, struct smb_filename *fname,
 	if (dfree_command && *dfree_command) {
 		const char *p;
 		char **lines = NULL;
-		char *syscmd = NULL;
+		char **argl = NULL;
 
-		syscmd = talloc_asprintf(talloc_tos(),
-				"%s %s",
-				dfree_command,
-				path);
-
-		if (!syscmd) {
+		argl = talloc_zero_array(talloc_tos(),
+					char *,
+					3);
+		if (argl == NULL) {
 			return (uint64_t)-1;
 		}
 
-		DEBUG (3, ("disk_free: Running command '%s'\n", syscmd));
+		argl[0] = talloc_strdup(argl, dfree_command);
+		if (argl[0] == NULL) {
+			TALLOC_FREE(argl);
+			return (uint64_t)-1;
+		}
+		argl[1] = path;
+		argl[2] = NULL;
 
-		lines = file_lines_pload(talloc_tos(), syscmd, NULL);
+		DBG_NOTICE("Running command '%s %s'\n",
+			dfree_command,
+			path);
+
+		lines = file_lines_ploadv(talloc_tos(), argl, NULL);
+
+		TALLOC_FREE(argl);
+
 		if (lines != NULL) {
 			char *line = lines[0];
 
@@ -114,9 +125,9 @@ uint64_t sys_disk_free(connection_struct *conn, struct smb_filename *fname,
 
 			goto dfree_done;
 		}
-		DEBUG (0, ("disk_free: file_lines_load() failed for "
-			   "command '%s'. Error was : %s\n",
-			   syscmd, strerror(errno) ));
+		DBG_ERR("file_lines_load() failed for "
+			   "command '%s %s'. Error was : %s\n",
+			   dfree_command, path, strerror(errno));
 	}
 
 	if (SMB_VFS_DISK_FREE(conn, fname, bsize, dfree, dsize) ==
