@@ -1682,7 +1682,8 @@ static int ad_open(vfs_handle_struct *handle,
 	return 0;
 }
 
-static ssize_t ad_read_rsrc_xattr(struct adouble *ad)
+static ssize_t ad_read_rsrc_xattr(vfs_handle_struct *handle,
+				  struct adouble *ad)
 {
 	int ret;
 	SMB_STRUCT_STAT st;
@@ -1690,7 +1691,7 @@ static ssize_t ad_read_rsrc_xattr(struct adouble *ad)
 	/* FIXME: direct sys_fstat(), don't have an fsp */
 	ret = sys_fstat(ad->ad_fd, &st,
 			lp_fake_directory_create_times(
-				SNUM(ad->ad_handle->conn)));
+				SNUM(handle->conn)));
 	if (ret != 0) {
 		return -1;
 	}
@@ -1699,7 +1700,8 @@ static ssize_t ad_read_rsrc_xattr(struct adouble *ad)
 	return st.st_ex_size;
 }
 
-static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
+static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
+				    struct adouble *ad,
 				const struct smb_filename *smb_fname)
 {
 	SMB_STRUCT_STAT sbuf;
@@ -1710,7 +1712,7 @@ static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
 	bool ok;
 
 	ret = sys_fstat(ad->ad_fd, &sbuf, lp_fake_directory_create_times(
-				SNUM(ad->ad_handle->conn)));
+				SNUM(handle->conn)));
 	if (ret != 0) {
 		return -1;
 	}
@@ -1767,19 +1769,20 @@ static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
 /**
  * Read and parse resource fork, either ._ AppleDouble file or xattr
  **/
-static ssize_t ad_read_rsrc(struct adouble *ad,
+static ssize_t ad_read_rsrc(vfs_handle_struct *handle,
+			    struct adouble *ad,
 			const struct smb_filename *smb_fname)
 {
 	struct fruit_config_data *config = NULL;
 	ssize_t len;
 
-	SMB_VFS_HANDLE_GET_DATA(ad->ad_handle, config,
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
 
 	if (config->rsrc == FRUIT_RSRC_XATTR) {
-		len = ad_read_rsrc_xattr(ad);
+		len = ad_read_rsrc_xattr(handle, ad);
 	} else {
-		len = ad_read_rsrc_adouble(ad, smb_fname);
+		len = ad_read_rsrc_adouble(handle, ad, smb_fname);
 	}
 
 	return len;
@@ -1796,7 +1799,7 @@ static ssize_t ad_read(vfs_handle_struct *handle,
 	case ADOUBLE_META:
 		return ad_read_meta(handle, ad, smb_fname);
 	case ADOUBLE_RSRC:
-		return ad_read_rsrc(ad, smb_fname);
+		return ad_read_rsrc(handle, ad, smb_fname);
 	default:
 		return -1;
 	}
