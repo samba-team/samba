@@ -507,8 +507,6 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 		.base_name = smb_fname_dst->base_name,
 		.stream_name = smb_fname_dst->stream_name,
 	};
-	DATA_BLOB blob;
-	enum ndr_err_code ndr_err;
 	uint32_t i;
 	struct server_id self_pid = messaging_server_id(msg_ctx);
 	bool ok;
@@ -536,24 +534,11 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 	}
 	d->modified = True;
 
-	ndr_err = ndr_push_struct_blob(
-		&blob,
-		talloc_tos(),
-		&msg,
-		(ndr_push_flags_fn_t)ndr_push_file_rename_message);
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DBG_DEBUG("ndr_push_file_rename_message failed: %s\n",
-			  ndr_errstr(ndr_err));
-		return false;
-	}
-	if (DEBUGLVL(10)) {
-		NDR_PRINT_DEBUG(file_rename_message, &msg);
-	}
-
 	/* Send the messages. */
 	for (i=0; i<d->num_share_modes; i++) {
 		struct share_mode_entry *se = &d->share_modes[i];
-		struct server_id_buf tmp;
+		DATA_BLOB blob;
+		enum ndr_err_code ndr_err;
 
 		if (!is_valid_share_mode_entry(se)) {
 			continue;
@@ -576,13 +561,29 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			continue;
 		}
 
-		DBG_DEBUG("sending rename message to %s\n",
-			  server_id_str_buf(se->pid, &tmp));
+		msg.share_file_id = se->share_file_id;
+
+		ndr_err = ndr_push_struct_blob(
+			&blob,
+			talloc_tos(),
+			&msg,
+			(ndr_push_flags_fn_t)ndr_push_file_rename_message);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DBG_DEBUG("ndr_push_file_rename_message failed: %s\n",
+				  ndr_errstr(ndr_err));
+			return false;
+		}
+		if (DEBUGLEVEL >= 10) {
+			struct server_id_buf tmp;
+			DBG_DEBUG("sending rename message to %s\n",
+				  server_id_str_buf(se->pid, &tmp));
+			NDR_PRINT_DEBUG(file_rename_message, &msg);
+		}
 
 		messaging_send(msg_ctx, se->pid, MSG_SMB_FILE_RENAME, &blob);
-	}
 
-	TALLOC_FREE(blob.data);
+		TALLOC_FREE(blob.data);
+	}
 
 	ok = share_mode_forall_leases(lck, rename_lease_fn, NULL);
 	if (!ok) {

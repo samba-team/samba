@@ -4426,7 +4426,6 @@ void msg_file_was_renamed(struct messaging_context *msg_ctx,
 	enum ndr_err_code ndr_err;
 	files_struct *fsp;
 	struct smb_filename *smb_fname = NULL;
-	NTSTATUS status;
 	struct smbd_server_connection *sconn =
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
@@ -4447,7 +4446,7 @@ void msg_file_was_renamed(struct messaging_context *msg_ctx,
 			  ndr_errstr(ndr_err));
 		goto out;
 	}
-	if (DEBUGLVL(10)) {
+	if (DEBUGLEVEL >= 10) {
 		struct server_id_buf buf;
 		DBG_DEBUG("Got rename message from %s\n",
 			  server_id_str_buf(src, &buf));
@@ -4466,32 +4465,38 @@ void msg_file_was_renamed(struct messaging_context *msg_ctx,
 		goto out;
 	}
 
-	for(fsp = file_find_di_first(sconn, msg->id); fsp;
-	    fsp = file_find_di_next(fsp)) {
+	fsp = file_find_dif(sconn, msg->id, msg->share_file_id);
+	if (fsp == NULL) {
+		DBG_DEBUG("fsp not found\n");
+		goto out;
+	}
 
-		if (strcmp(fsp->conn->connectpath, msg->servicepath) == 0) {
-
-			DEBUG(10,("msg_file_was_renamed: renaming file %s from %s -> %s\n",
-				fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
-				smb_fname_str_dbg(smb_fname)));
-			status = fsp_set_smb_fname(fsp, smb_fname);
-			if (!NT_STATUS_IS_OK(status)) {
-				goto out;
-			}
-		} else {
-			/* TODO. JRA. */
-			/* Now we have the complete path we can work out if this is
-			   actually within this share and adjust newname accordingly. */
-	                DEBUG(10,("msg_file_was_renamed: share mismatch (sharepath %s "
-				"not sharepath %s) "
-				"%s from %s -> %s\n",
-				fsp->conn->connectpath,
-				msg->servicepath,
-				fsp_fnum_dbg(fsp),
-				fsp_str_dbg(fsp),
-				smb_fname_str_dbg(smb_fname)));
+	if (strcmp(fsp->conn->connectpath, msg->servicepath) == 0) {
+		NTSTATUS status;
+		DBG_DEBUG("renaming file %s from %s -> %s\n",
+			  fsp_fnum_dbg(fsp),
+			  fsp_str_dbg(fsp),
+			  smb_fname_str_dbg(smb_fname));
+		status = fsp_set_smb_fname(fsp, smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("fsp_set_smb_fname failed: %s\n",
+				  nt_errstr(status));
 		}
-        }
+	} else {
+		/* TODO. JRA. */
+		/*
+		 * Now we have the complete path we can work out if
+		 * this is actually within this share and adjust
+		 * newname accordingly.
+		 */
+		DBG_DEBUG("share mismatch (sharepath %s not sharepath %s) "
+			  "%s from %s -> %s\n",
+			  fsp->conn->connectpath,
+			  msg->servicepath,
+			  fsp_fnum_dbg(fsp),
+			  fsp_str_dbg(fsp),
+			  smb_fname_str_dbg(smb_fname));
+	}
  out:
 	TALLOC_FREE(msg);
 }

@@ -107,6 +107,7 @@ interface open_files
 
 	typedef [public] struct {
 		file_id id;
+		udlong share_file_id;
 		[string,charset(UTF8)] char *servicepath;
 		[string,charset(UTF8)] char *base_name;
 		[string,charset(UTF8)] char *stream_name;
