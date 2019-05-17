@@ -31,5 +31,8 @@ int file_pload_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
 
 char **file_lines_pload(TALLOC_CTX *mem_ctx, const char *syscmd,
 			int *numlines);
+char **file_lines_ploadv(TALLOC_CTX *mem_ctx,
+			char * const argl[],
+			int *numlines);
 
 #endif
