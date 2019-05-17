@@ -41,6 +41,7 @@ bool sysv_cache_reload(struct pcap_cache **_pcache)
 	char **lines;
 	int i;
 	struct pcap_cache *pcache = NULL;
+	char **argl = NULL;
 
 #if defined(HPUX)
 	DEBUG(5, ("reloading hpux printcap cache\n"));
@@ -48,7 +49,23 @@ bool sysv_cache_reload(struct pcap_cache **_pcache)
 	DEBUG(5, ("reloading sysv printcap cache\n"));
 #endif
 
-	lines = file_lines_pload(talloc_tos(), "/usr/bin/lpstat -v", NULL);
+	argl = talloc_zero_array(talloc_tos(), char *, 3);
+	if (argl == NULL) {
+		return false;
+	}
+	argl[0] = talloc_strdup(argl, "/usr/bin/lpstat");
+	if (argl[0] == NULL) {
+		TALLOC_FREE(argl);
+		return false;
+	}
+	argl[1] = talloc_strdup(argl, "-v");
+	if (argl[1] == NULL) {
+		TALLOC_FREE(argl);
+		return false;
+	}
+	argl[2] = NULL;
+
+	lines = file_lines_ploadv(talloc_tos(), argl, NULL);
 	if (lines == NULL) {
 #if defined(HPUX)
       
@@ -59,7 +76,14 @@ bool sysv_cache_reload(struct pcap_cache **_pcache)
 		*/
 
 		char **scheduler;
-                scheduler = file_lines_pload("/usr/bin/lpstat -r", NULL);
+
+		argl[1] = talloc_strdup(argl, "-r");
+		if (argl[1] == NULL) {
+			TALLOC_FREE(argl);
+			return false;
+		}
+		scheduler = file_lines_ploadv(talloc_tos(), argl, NULL);
+		TALLOC_FREE(argl);
                 if(!strcmp(*scheduler,"scheduler is running")){
                         DEBUG(3,("No Printers found!!!\n"));
 			TALLOC_FREE(scheduler);
@@ -75,6 +99,7 @@ bool sysv_cache_reload(struct pcap_cache **_pcache)
 		return False;
 #endif
 	}
+	TALLOC_FREE(argl);
 
 	for (i = 0; lines[i]; i++) {
 		char *name, *tmp;
