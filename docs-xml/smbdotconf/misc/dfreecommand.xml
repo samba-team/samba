@@ -40,14 +40,16 @@
 	Where the script dfree (which must be made executable) could be:
 <programlisting format="linespecific"> 
 #!/bin/sh
-df $1 | tail -1 | awk '{print $(NF-4),$(NF-2)}'
+df "$1" | tail -1 | awk '{print $(NF-4),$(NF-2)}'
 </programlisting>
 	or perhaps (on Sys V based systems):
 <programlisting format="linespecific"> 
 #!/bin/sh
-/usr/bin/df -k $1 | tail -1 | awk '{print $3&quot; &quot;$5}'
+/usr/bin/df -k "$1" | tail -1 | awk '{print $3&quot; &quot;$5}'
 </programlisting>
 	Note that you may have to replace the command names with full path names on some systems.
+	Also note the arguments passed into the script should be quoted inside the script in case they
+	contain special characters such as spaces or newlines.
 	</para>
 
 	<para>
