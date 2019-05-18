@@ -365,52 +365,6 @@ bool file_compare(const char *path1, const char *path2)
 	return true;
 }
 
-
-/**
- Load from a pipe into memory.
-**/
-char *file_pload(const char *syscmd, size_t *size)
-{
-	int fd, n;
-	char *p;
-	char buf[1024];
-	size_t total;
-
-	fd = sys_popen(syscmd);
-	if (fd == -1) {
-		return NULL;
-	}
-
-	p = NULL;
-	total = 0;
-
-	while ((n = sys_read(fd, buf, sizeof(buf))) > 0) {
-		p = talloc_realloc(NULL, p, char, total + n + 1);
-		if (!p) {
-		        DEBUG(0,("file_pload: failed to expand buffer!\n"));
-			close(fd);
-			return NULL;
-		}
-		memcpy(p+total, buf, n);
-		total += n;
-	}
-
-	if (p) {
-		p[total] = 0;
-	}
-
-	/* FIXME: Perhaps ought to check that the command completed
-	 * successfully (returned 0); if not the data may be
-	 * truncated. */
-	sys_pclose(fd);
-
-	if (size) {
-		*size = total;
-	}
-
-	return p;
-}
-
 /**
  Load from a pipe into memory.
 **/
