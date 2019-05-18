@@ -157,20 +157,6 @@ int file_pload_recv(struct tevent_req *req, TALLOC_CTX *mem_ctx,
  must be freed with TALLOC_FREE.
 **/
 
-char **file_lines_pload(TALLOC_CTX *mem_ctx, const char *syscmd,
-			int *numlines)
-{
-	char *p;
-	size_t size;
-
-	p = file_pload(syscmd, &size);
-	if (!p) {
-		return NULL;
-	}
-
-	return file_lines_parse(p, size, numlines, mem_ctx);
-}
-
 char **file_lines_ploadv(TALLOC_CTX *mem_ctx,
 			char * const argl[],
 			int *numlines)
