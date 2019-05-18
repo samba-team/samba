@@ -49,6 +49,14 @@
 	</para>
 
 	<para>
+		Furthermore, this module implements a substitute file-id
+		mechanism. The default file-id mechanism is not working
+		correctly for gluster fuse mount re-exports, so in order to
+		avoid data loss, users exporting gluster fuse mounts with
+		Samba should enable this module.
+	</para>
+
+	<para>
 		This module can be combined with other modules, but it
 		should be the last module in the <command>vfs objects</command>
 		list. Modules added to this list to the right of the glusterfs
