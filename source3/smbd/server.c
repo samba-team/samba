@@ -385,6 +385,17 @@ static void notifyd_stopped(struct tevent_req *req)
 	DEBUG(1, ("notifyd stopped: %s\n", strerror(ret)));
 }
 
+static void notifyd_sig_hup_handler(struct tevent_context *ev,
+				    struct tevent_signal *se,
+				    int signum,
+				    int count,
+				    void *siginfo,
+				    void *pvt)
+{
+	DBG_NOTICE("notifyd: Reloading services after SIGHUP\n");
+	reload_services(NULL, NULL, false);
+}
+
 static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 			      struct server_id *ppid)
 {
@@ -393,6 +404,7 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 	pid_t pid;
 	NTSTATUS status;
 	bool ok;
+	struct tevent_signal *se;
 
 	if (interactive) {
 		req = notifyd_req(msg, ev);
@@ -421,6 +433,17 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 		exit(1);
 	}
 
+	/* Set up sighup handler for notifyd */
+	se = tevent_add_signal(ev,
+			       ev,
+			       SIGHUP, 0,
+			       notifyd_sig_hup_handler,
+			       NULL);
+	if (!se) {
+		DEBUG(0, ("failed to setup notifyd SIGHUP handler\n"));
+		exit(1);
+	}
+
 	req = notifyd_req(msg, ev);
 	if (req == NULL) {
 		exit(1);
@@ -428,7 +451,6 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 	tevent_req_set_callback(req, notifyd_stopped, msg);
 
 	/* Block those signals that we are not handling */
-	BlockSignals(True, SIGHUP);
 	BlockSignals(True, SIGUSR1);
 
 	messaging_send(msg, pid_to_procid(getppid()), MSG_SMB_NOTIFY_STARTED,
