@@ -65,6 +65,35 @@ struct tevent_req *file_pload_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+struct tevent_req *file_ploadv_send(TALLOC_CTX *mem_ctx,
+				   struct tevent_context *ev,
+				   char * const argl[], size_t maxsize)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct file_pload_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct file_pload_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->maxsize = maxsize;
+
+	state->fd = sys_popenv(argl);
+	if (state->fd == -1) {
+		tevent_req_error(req, errno);
+		return tevent_req_post(req, ev);
+	}
+	talloc_set_destructor(state, file_pload_state_destructor);
+
+	subreq = wait_for_read_send(state, state->ev, state->fd, false);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, file_pload_readable, req);
+	return req;
+}
+
 static int file_pload_state_destructor(struct file_pload_state *s)
 {
 	if (s->fd != -1) {
