@@ -36,35 +36,6 @@ struct file_pload_state {
 static int file_pload_state_destructor(struct file_pload_state *s);
 static void file_pload_readable(struct tevent_req *subreq);
 
-struct tevent_req *file_pload_send(TALLOC_CTX *mem_ctx,
-				   struct tevent_context *ev,
-				   const char *syscmd, size_t maxsize)
-{
-	struct tevent_req *req, *subreq;
-	struct file_pload_state *state;
-
-	req = tevent_req_create(mem_ctx, &state, struct file_pload_state);
-	if (req == NULL) {
-		return NULL;
-	}
-	state->ev = ev;
-	state->maxsize = maxsize;
-
-	state->fd = sys_popen(syscmd);
-	if (state->fd == -1) {
-		tevent_req_error(req, errno);
-		return tevent_req_post(req, ev);
-	}
-	talloc_set_destructor(state, file_pload_state_destructor);
-
-	subreq = wait_for_read_send(state, state->ev, state->fd, false);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_set_callback(subreq, file_pload_readable, req);
-	return req;
-}
-
 struct tevent_req *file_ploadv_send(TALLOC_CTX *mem_ctx,
 				   struct tevent_context *ev,
 				   char * const argl[], size_t maxsize)
