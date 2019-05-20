@@ -103,11 +103,16 @@ int main(int argc, char *argv[]) {
 	}
 
 	rc = mscat_ctl_import(msctl, cat_pkcs7);
-	if (rc != 0) {
+	if (rc < 0) {
 		exit(1);
 	}
 
-	member_count = mscat_ctl_get_member_count(msctl);
+	rc = mscat_ctl_get_member_count(msctl);
+	if (rc < 0) {
+		exit(1);
+	}
+
+	member_count = rc;
 	printf("CATALOG MEMBER COUNT=%d\n", member_count);
 
 	for (i = 0; i < member_count; i++) {
@@ -164,7 +169,11 @@ int main(int argc, char *argv[]) {
 	}
 	printf("\n");
 
-	attribute_count = mscat_ctl_get_attribute_count(msctl);
+	rc = mscat_ctl_get_attribute_count(msctl);
+	if (rc < 0) {
+		exit(1);
+	}
+	attribute_count = rc;
 	printf("CATALOG ATTRIBUTE COUNT=%d\n", attribute_count);
 
 	for (i = 0; i < attribute_count; i++) {
