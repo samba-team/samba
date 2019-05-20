@@ -34,7 +34,9 @@ if opts.H is None:
 else:
     url = opts.H
 
-samdb = ldb.Ldb(url=url, options=["modules:"])
+samdb = ldb.Ldb(url=url,
+                flags=ldb.FLG_DONT_CREATE_DB,
+                options=["modules:"])
 
 partitions = samdb.search(base="@PARTITION",
 			  scope=ldb.SCOPE_BASE,
@@ -58,10 +60,11 @@ privatedir = os.path.dirname(url)
 
 dbs = []
 for part in partitions[0]['partition']:
-    tdbname = part.split(":")[1]
-    tdbpath = os.path.join(privatedir, tdbname)
-
-    db = ldb.Ldb(url=tdbpath, options=["modules:"])
+    dbname = str(part).split(":")[1]
+    dbpath = os.path.join(privatedir, dbname)
+    db = ldb.Ldb(url="ldb://" + dbpath,
+                 options=["modules:"],
+                 flags=ldb.FLG_DONT_CREATE_DB)
     db.transaction_start()
     db.modify(modmsg)
     dbs.append(db)
@@ -73,7 +76,8 @@ samdb.transaction_commit()
 
 print("Re-opening with the full DB stack")
 samdb = SamDB(url=url,
-                          lp=lp_ctx)
+              flags=ldb.FLG_DONT_CREATE_DB,
+              lp=lp_ctx)
 print("Re-triggering another re-index")
 chk = dbcheck(samdb)
 
