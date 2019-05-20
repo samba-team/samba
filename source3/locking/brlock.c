@@ -61,18 +61,18 @@ static void print_lock_struct(unsigned int i, const struct lock_struct *pls)
 {
 	struct server_id_buf tmp;
 
-	DEBUG(10,("[%u]: smblctx = %llu, tid = %u, pid = %s, ",
-			i,
-			(unsigned long long)pls->context.smblctx,
-			(unsigned int)pls->context.tid,
-			server_id_str_buf(pls->context.pid, &tmp) ));
-
-	DEBUG(10, ("start = %ju, size = %ju, fnum = %ju, %s %s\n",
-		   (uintmax_t)pls->start,
-		   (uintmax_t)pls->size,
-		   (uintmax_t)pls->fnum,
-		   lock_type_name(pls->lock_type),
-		   lock_flav_name(pls->lock_flav)));
+	DBG_DEBUG("[%u]: smblctx = %"PRIu64", tid = %"PRIu32", pid = %s, "
+		  "start = %"PRIu64", size = %"PRIu64", fnum = %"PRIu64", "
+		  "%s %s\n",
+		  i,
+		  pls->context.smblctx,
+		  pls->context.tid,
+		  server_id_str_buf(pls->context.pid, &tmp),
+		  pls->start,
+		  pls->size,
+		  pls->fnum,
+		  lock_type_name(pls->lock_type),
+		  lock_flav_name(pls->lock_flav));
 }
 
 unsigned int brl_num_locks(const struct byte_range_lock *brl)
