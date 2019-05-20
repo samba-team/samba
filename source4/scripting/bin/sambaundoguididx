@@ -30,7 +30,7 @@ lp_ctx = sambaopts.get_loadparm()
 lp_ctx.set("dsdb:guid index", "false")
 
 if opts.H is None:
-    url = lp_ctx.samdb_url()
+    url = lp_ctx.private_path("sam.ldb")
 else:
     url = opts.H
 
@@ -62,7 +62,9 @@ dbs = []
 for part in partitions[0]['partition']:
     dbname = str(part).split(":")[1]
     dbpath = os.path.join(privatedir, dbname)
-    db = ldb.Ldb(url="ldb://" + dbpath,
+    if os.path.isfile(dbpath):
+        dbpath = "ldb://" + dbpath
+    db = ldb.Ldb(url=dbpath,
                  options=["modules:"],
                  flags=ldb.FLG_DONT_CREATE_DB)
     db.transaction_start()
