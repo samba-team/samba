@@ -231,7 +231,6 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 	TDB_DATA rec[2];
 	uint32_t hsize = sizeof(struct ctdb_ltdb_header);
 	int ret;
-	bool seqnum_suppressed = false;
 
 	if (ctdb_db->ctdb_ltdb_store_fn) {
 		return ctdb_db->ctdb_ltdb_store_fn(ctdb_db, key, header, data);
@@ -260,27 +259,9 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 	rec[1].dsize = data.dsize;
 	rec[1].dptr = data.dptr;
 
-	/* Databases with seqnum updates enabled only get their seqnum
-	   changes when/if we modify the data */
-	if (ctdb_db->seqnum_update != NULL) {
-		TDB_DATA old;
-		old = tdb_fetch(ctdb_db->ltdb->tdb, key);
-
-		if ((old.dsize == hsize + data.dsize) &&
-		    memcmp(old.dptr+hsize, data.dptr, data.dsize) == 0) {
-			tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_SEQNUM);
-			seqnum_suppressed = true;
-		}
-		if (old.dptr != NULL) {
-			free(old.dptr);
-		}
-	}
 	ret = tdb_storev(ctdb_db->ltdb->tdb, key, rec, 2, TDB_REPLACE);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Failed to store dynamic data\n"));
-	}
-	if (seqnum_suppressed) {
-		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_SEQNUM);
 	}
 
 	return ret;

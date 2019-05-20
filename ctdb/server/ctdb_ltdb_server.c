@@ -62,7 +62,6 @@ static int ctdb_ltdb_store_server(struct ctdb_db_context *ctdb_db,
 	TDB_DATA rec[2];
 	uint32_t hsize = sizeof(struct ctdb_ltdb_header);
 	int ret;
-	bool seqnum_suppressed = false;
 	bool keep = false;
 	bool schedule_for_deletion = false;
 	bool remove_from_delete_queue = false;
@@ -192,22 +191,6 @@ store:
 	rec[1].dsize = data.dsize;
 	rec[1].dptr = data.dptr;
 
-	/* Databases with seqnum updates enabled only get their seqnum
-	   changes when/if we modify the data */
-	if (ctdb_db->seqnum_update != NULL) {
-		TDB_DATA old;
-		old = tdb_fetch(ctdb_db->ltdb->tdb, key);
-
-		if ((old.dsize == hsize + data.dsize) &&
-		    memcmp(old.dptr + hsize, data.dptr, data.dsize) == 0) {
-			tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_SEQNUM);
-			seqnum_suppressed = true;
-		}
-		if (old.dptr != NULL) {
-			free(old.dptr);
-		}
-	}
-
 	DEBUG(DEBUG_DEBUG, (__location__ " db[%s]: %s record: hash[0x%08x]\n",
 			    ctdb_db->db_name,
 			    keep?"storing":"deleting",
@@ -236,9 +219,6 @@ store:
 
 		schedule_for_deletion = false;
 		remove_from_delete_queue = false;
-	}
-	if (seqnum_suppressed) {
-		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_SEQNUM);
 	}
 
 	if (schedule_for_deletion) {
