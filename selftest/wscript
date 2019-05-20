@@ -289,7 +289,10 @@ def cmd_testonly(opt):
 
     if env.ADDRESS_SANITIZER:
         # For now we cannot run with leak detection
-        no_leak_check = "ASAN_OPTIONS=detect_leaks=0"
+        no_leak_check = "ASAN_OPTIONS=detect_leaks=0 "
+        # And we need to disable RTLD_DEEPBIND in ldb and socket wrapper
+        no_leak_check += "LDB_MODULES_DISABLE_DEEPBIND=1 "
+        no_leak_check += "SOCKET_WRAPPER_DISABLE_DEEP_BIND=1"
         env.CORE_COMMAND = no_leak_check + " " + env.CORE_COMMAND
 
         # We need to have the subunit filter and formatter preload
