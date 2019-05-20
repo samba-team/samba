@@ -580,6 +580,46 @@ sub random_domain_sid()
 	return $domain_sid;
 }
 
+# sets the environment variables ready for running a given process
+sub set_env_for_process
+{
+	my ($proc_name, $env_vars, $skip_resolv_wrapper) = @_;
+
+	$proc_envs = get_env_for_process($proc_name, $env_vars, $skip_resolv_wrapper);
+
+	foreach my $key (keys %{ $proc_envs }) {
+		$ENV{$key} = $proc_envs->{$key};
+	}
+}
+
+sub get_env_for_process
+{
+	my ($proc_name, $env_vars, $skip_resolv_wrapper) = @_;
+	my $proc_envs = {
+		KRB5_CONFIG => $env_vars->{KRB5_CONFIG},
+		KRB5CCNAME => "$env_vars->{KRB5_CCACHE}.$proc_name",
+		SELFTEST_WINBINDD_SOCKET_DIR => $env_vars->{SELFTEST_WINBINDD_SOCKET_DIR},
+		NMBD_SOCKET_DIR => $env_vars->{NMBD_SOCKET_DIR},
+		NSS_WRAPPER_PASSWD => $env_vars->{NSS_WRAPPER_PASSWD},
+		NSS_WRAPPER_GROUP => $env_vars->{NSS_WRAPPER_GROUP},
+		NSS_WRAPPER_HOSTS => $env_vars->{NSS_WRAPPER_HOSTS},
+		NSS_WRAPPER_HOSTNAME => $env_vars->{NSS_WRAPPER_HOSTNAME},
+		NSS_WRAPPER_MODULE_SO_PATH => $env_vars->{NSS_WRAPPER_MODULE_SO_PATH},
+		NSS_WRAPPER_MODULE_FN_PREFIX => $env_vars->{NSS_WRAPPER_MODULE_FN_PREFIX},
+		UID_WRAPPER_ROOT => "1",
+		ENVNAME => "$ENV{ENVNAME}.$proc_name",
+	};
+
+	if (not defined($skip_resolv_wrapper)) {
+		if (defined($env_vars->{RESOLV_WRAPPER_CONF})) {
+			$proc_envs->{RESOLV_WRAPPER_CONF} = $env_vars->{RESOLV_WRAPPER_CONF};
+		} else {
+			$proc_envs->{RESOLV_WRAPPER_HOSTS} = $env_vars->{RESOLV_WRAPPER_HOSTS};
+		}
+	}
+	return $proc_envs;
+}
+
 my @exported_envvars = (
 	# domain stuff
 	"DOMAIN",

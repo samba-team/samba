@@ -126,30 +126,16 @@ sub check_or_start($$$)
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
-		$ENV{KRB5_CONFIG} = $env_vars->{KRB5_CONFIG};
-		$ENV{KRB5CCNAME} = "$env_vars->{KRB5_CCACHE}.samba";
+		# setup common samba env variables
+		Samba::set_env_for_process("samba", $env_vars);
+
+		# setup additional env variables for s4
+		$ENV{RESOLV_CONF} = $env_vars->{RESOLV_CONF};
+		$ENV{UID_WRAPPER} = "1";
+
 		if (defined($ENV{MITKRB5})) {
 			$ENV{KRB5_KDC_PROFILE} = $env_vars->{MITKDC_CONFIG};
 		}
-		$ENV{SELFTEST_WINBINDD_SOCKET_DIR} = $env_vars->{SELFTEST_WINBINDD_SOCKET_DIR};
-		$ENV{NMBD_SOCKET_DIR} = $env_vars->{NMBD_SOCKET_DIR};
-
-		$ENV{NSS_WRAPPER_PASSWD} = $env_vars->{NSS_WRAPPER_PASSWD};
-		$ENV{NSS_WRAPPER_GROUP} = $env_vars->{NSS_WRAPPER_GROUP};
-		$ENV{NSS_WRAPPER_HOSTS} = $env_vars->{NSS_WRAPPER_HOSTS};
-		$ENV{NSS_WRAPPER_HOSTNAME} = $env_vars->{NSS_WRAPPER_HOSTNAME};
-		$ENV{NSS_WRAPPER_MODULE_SO_PATH} = $env_vars->{NSS_WRAPPER_MODULE_SO_PATH};
-		$ENV{NSS_WRAPPER_MODULE_FN_PREFIX} = $env_vars->{NSS_WRAPPER_MODULE_FN_PREFIX};
-
-		if (defined($env_vars->{RESOLV_WRAPPER_CONF})) {
-			$ENV{RESOLV_WRAPPER_CONF} = $env_vars->{RESOLV_WRAPPER_CONF};
-		} else {
-			$ENV{RESOLV_WRAPPER_HOSTS} = $env_vars->{RESOLV_WRAPPER_HOSTS};
-		}
-		$ENV{RESOLV_CONF} = $env_vars->{RESOLV_CONF};
-
-		$ENV{UID_WRAPPER} = "1";
-		$ENV{UID_WRAPPER_ROOT} = "1";
 
 		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "samba");
 		my @preargs = ();
