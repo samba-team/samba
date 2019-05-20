@@ -206,13 +206,13 @@ int tdb_writeunlock(TDB_CONTEXT *tdb);
    unlock the database
 
 ----------------------------------------------------------------------
-int tdb_lockchain(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
 
    lock one hash chain. This is meant to be used to reduce locking
    contention - it cannot guarantee how many records will be locked
 
 ----------------------------------------------------------------------
-int tdb_unlockchain(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
 
    unlock one hash chain
 
