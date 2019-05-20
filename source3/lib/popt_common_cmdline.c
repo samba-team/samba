@@ -198,6 +198,10 @@ void popt_burn_cmdline_password(int argc, char *argv[])
 
 	for (i = 0; i < argc; i++) {
 		p = argv[i];
+		if (p == NULL) {
+			return;
+		}
+
 		if (strncmp(p, "-U", 2) == 0) {
 			ulen = 2;
 			found = true;
@@ -207,10 +211,6 @@ void popt_burn_cmdline_password(int argc, char *argv[])
 		}
 
 		if (found) {
-			if (p == NULL) {
-				return;
-			}
-
 			if (strlen(p) == ulen) {
 				continue;
 			}
