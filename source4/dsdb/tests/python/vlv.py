@@ -1216,6 +1216,29 @@ class VLVTests(VLVTestsBase):
         expected_results = [r for r in full_results if r != del_user[attr]]
         self.assertEqual(results, expected_results)
 
+    def test_vlv_change_during_search(self):
+        attr = 'facsimileTelephoneNumber'
+        prefix = "change_during_search_"
+        expr = "(&(objectClass=user)(cn=%s*))" % (prefix)
+        num_users = 3
+        users = [self.create_user(i, num_users, prefix=prefix)
+                 for i in range(num_users)]
+        expr = "(&(objectClass=user)(facsimileTelephoneNumber=%s*))" % (prefix)
+
+        # Start the VLV, change the searched attribute and try the
+        # cookie.
+        results, cookie = self.vlv_search(attr, expr)
+
+        for u in users:
+            self.ldb.modify_ldif("dn: %s\n"
+                                 "changetype: modify\n"
+                                 "replace: facsimileTelephoneNumber\n"
+                                 "facsimileTelephoneNumber: 123" % u['dn'])
+
+        for i in range(2):
+            results, cookie = self.vlv_search(attr, expr, cookie=cookie,
+                                              offset=i+1)
+
 
 
 class PagedResultsTests(TestsWithUserOU):
