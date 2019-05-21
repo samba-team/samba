@@ -1100,7 +1100,7 @@ static WERROR NetLocalGroupModifyMembers_r(struct libnetapi_ctx *ctx,
 		r = (struct NetLocalGroupAddMembers *)set;
 	}
 
-	if (!r->in.group_name) {
+	if (r==NULL || r->in.group_name == NULL) {
 		return WERR_INVALID_PARAMETER;
 	}
 
