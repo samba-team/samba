@@ -4079,7 +4079,7 @@ static int fruit_unlink(vfs_handle_struct *handle,
 		return fruit_unlink_meta(handle, smb_fname);
 	} else if (is_afpresource_stream(smb_fname)) {
 		return fruit_unlink_rsrc(handle, smb_fname, false);
-	} if (is_ntfs_stream_smb_fname(smb_fname)) {
+	} else if (is_ntfs_stream_smb_fname(smb_fname)) {
 		return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 	}
 
