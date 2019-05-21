@@ -510,10 +510,8 @@ class VLVTests(VLVTestsBase):
                 random.shuffle(gte_tests)
                 res = None
                 sort_control = "server_sort:1:0:%s" % attr
-
                 expected_order = self.get_expected_order(attr, expression)
-                sort_control = "server_sort:1:0:%s" % attr
-                res = None
+
                 for before in range(0, 11):
                     after = before
                     for gte in gte_tests:
