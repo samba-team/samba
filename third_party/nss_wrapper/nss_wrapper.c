@@ -2091,6 +2091,19 @@ static int nwrap_pw_copy_r(const struct passwd *src, struct passwd *dst,
 	dst->pw_passwd = buf + ofs;
 	dst->pw_uid = src->pw_uid;
 	dst->pw_gid = src->pw_gid;
+#ifdef HAVE_STRUCT_PASSWD_PW_CLASS
+	ofs = PTR_DIFF(src->pw_class, first);
+	dst->pw_class = buf + ofs;
+#endif /* HAVE_STRUCT_PASSWD_PW_CLASS */
+
+#ifdef HAVE_STRUCT_PASSWD_PW_CHANGE
+	dst->pw_change = 0;
+#endif /* HAVE_STRUCT_PASSWD_PW_CHANGE */
+
+#ifdef HAVE_STRUCT_PASSWD_PW_EXPIRE
+	dst->pw_expire = 0;
+#endif /* HAVE_STRUCT_PASSWD_PW_EXPIRE */
+
 	ofs = PTR_DIFF(src->pw_gecos, first);
 	dst->pw_gecos = buf + ofs;
 	ofs = PTR_DIFF(src->pw_dir, first);
@@ -2491,7 +2504,7 @@ static bool nwrap_gr_parse_line(struct nwrap_cache *nwrap, char *line)
 	}
 	gr->gr_mem[0] = NULL;
 
-	for(nummem=0; p; nummem++) {
+	for(nummem = 0; p != NULL && p[0] != '\0'; nummem++) {
 		char **m;
 		size_t m_size;
 		c = p;
@@ -2550,50 +2563,84 @@ static void nwrap_gr_unload(struct nwrap_cache *nwrap)
 static int nwrap_gr_copy_r(const struct group *src, struct group *dst,
 			   char *buf, size_t buflen, struct group **dstp)
 {
-	char *first;
-	char **lastm;
-	char *last = NULL;
-	off_t ofsb;
-	off_t ofsm;
-	off_t ofs;
+	char *p = NULL;
+	uintptr_t align = 0;
+	unsigned int gr_mem_cnt = 0;
 	unsigned i;
+	size_t total_len;
+	size_t gr_name_len = strlen(src->gr_name) + 1;
+	size_t gr_passwd_len = strlen(src->gr_passwd) + 1;
+	union {
+		char *ptr;
+		char **data;
+	} g_mem;
 
-	first = src->gr_name;
-
-	lastm = src->gr_mem;
-	while (*lastm) {
-		last = *lastm;
-		lastm++;
+	for (i = 0; src->gr_mem[i] != NULL; i++) {
+		gr_mem_cnt++;
 	}
 
-	if (last == NULL) {
-		last = src->gr_passwd;
+	/* Align the memory for storing pointers */
+	align = __alignof__(char *) - ((p - (char *)0) % __alignof__(char *));
+	total_len = align +
+		    (1 + gr_mem_cnt) * sizeof(char *) +
+		    gr_name_len + gr_passwd_len;
+
+	if (total_len > buflen) {
+		errno = ERANGE;
+		return -1;
 	}
-	while (*last) last++;
+	buflen -= total_len;
 
-	ofsb = PTR_DIFF(last + 1, first);
-	ofsm = PTR_DIFF(lastm + 1, src->gr_mem);
+	/* gr_mem */
+	p = buf + align;
+	g_mem.ptr = p;
+	dst->gr_mem = g_mem.data;
 
-	if ((ofsb + ofsm) > (off_t) buflen) {
-		return ERANGE;
-	}
+	/* gr_name */
+	p += (1 + gr_mem_cnt) * sizeof(char *);
+	dst->gr_name = p;
 
-	memcpy(buf, first, ofsb);
-	memcpy(buf + ofsb, src->gr_mem, ofsm);
+	/* gr_passwd */
+	p += gr_name_len;
+	dst->gr_passwd = p;
 
-	ofs = PTR_DIFF(src->gr_name, first);
-	dst->gr_name = buf + ofs;
-	ofs = PTR_DIFF(src->gr_passwd, first);
-	dst->gr_passwd = buf + ofs;
+	/* gr_mem[x] */
+	p += gr_passwd_len;
+
+	/* gr_gid */
 	dst->gr_gid = src->gr_gid;
 
-	dst->gr_mem = (char **)(buf + ofsb);
-	for (i=0; src->gr_mem[i]; i++) {
-		ofs = PTR_DIFF(src->gr_mem[i], first);
-		dst->gr_mem[i] = buf + ofs;
+	memcpy(dst->gr_name, src->gr_name, gr_name_len);
+
+	memcpy(dst->gr_passwd, src->gr_passwd, gr_passwd_len);
+
+	/* Set the terminating entry */
+	dst->gr_mem[gr_mem_cnt] = NULL;
+
+	/* Now add the group members content */
+	total_len = 0;
+	for (i = 0; i < gr_mem_cnt; i++) {
+		size_t len = strlen(src->gr_mem[i]) + 1;
+
+		dst->gr_mem[i] = p;
+		total_len += len;
+		p += len;
 	}
 
-	if (dstp) {
+	if (total_len > buflen) {
+		errno = ERANGE;
+		return -1;
+	}
+
+	for (i = 0; i < gr_mem_cnt; i++) {
+		size_t len = strlen(src->gr_mem[i]) + 1;
+
+		memcpy(dst->gr_mem[i],
+		       src->gr_mem[i],
+		       len);
+	}
+
+	if (dstp != NULL) {
 		*dstp = dst;
 	}
 
@@ -3465,7 +3512,8 @@ static int nwrap_files_gethostbyname(const char *name, int af,
 
 	name_len = strlen(name);
 	if (name_len < sizeof(canon_name) && name[name_len - 1] == '.') {
-		strncpy(canon_name, name, name_len - 1);
+		memcpy(canon_name, name, name_len - 1);
+		canon_name[name_len] = '\0';
 		name = canon_name;
 	}
 
@@ -3547,6 +3595,10 @@ static int nwrap_gethostbyname_r(const char *name,
 				 struct hostent **result, int *h_errnop)
 {
 	struct nwrap_vector *addr_list = malloc(sizeof(struct nwrap_vector));
+	union {
+		char *ptr;
+		char **list;
+	} g;
 	int rc;
 
 	if (addr_list == NULL) {
@@ -3583,7 +3635,8 @@ static int nwrap_gethostbyname_r(const char *name,
 	free(addr_list->items);
 	free(addr_list);
 
-	ret->h_addr_list = (char **)buf;
+	g.ptr = buf;
+	ret->h_addr_list = g.list;
 	*result = ret;
 	return 0;
 }
@@ -3633,8 +3686,9 @@ static int nwrap_files_getaddrinfo(const char *name,
 	}
 
 	name_len = strlen(name);
-	if (name_len < DNS_NAME_MAX && name[name_len - 1] == '.') {
-		strncpy(canon_name, name, name_len - 1);
+	if (name_len < sizeof(canon_name) && name[name_len - 1] == '.') {
+		memcpy(canon_name, name, name_len - 1);
+		canon_name[name_len] = '\0';
 		name = canon_name;
 	}
 
@@ -5192,31 +5246,43 @@ static int nwrap_convert_he_ai(const struct hostent *he,
 	switch (he->h_addrtype) {
 		case AF_INET:
 		{
-			struct sockaddr_in *sinp =
-				(struct sockaddr_in *) ai->ai_addr;
+			union {
+				struct sockaddr *sa;
+				struct sockaddr_in *in;
+			} addr;
 
-			memset(sinp, 0, sizeof(struct sockaddr_in));
+			addr.sa = ai->ai_addr;
 
-			sinp->sin_port = htons(port);
-			sinp->sin_family = AF_INET;
+			memset(addr.in, 0, sizeof(struct sockaddr_in));
 
-			memset (sinp->sin_zero, '\0', sizeof (sinp->sin_zero));
-			memcpy(&sinp->sin_addr, he->h_addr_list[0], he->h_length);
+			addr.in->sin_port = htons(port);
+			addr.in->sin_family = AF_INET;
+
+			memset(addr.in->sin_zero,
+			       '\0',
+			       sizeof (addr.in->sin_zero));
+			memcpy(&(addr.in->sin_addr),
+			       he->h_addr_list[0],
+			       he->h_length);
 
 		}
 		break;
 #ifdef HAVE_IPV6
 		case AF_INET6:
 		{
-			struct sockaddr_in6 *sin6p =
-				(struct sockaddr_in6 *) ai->ai_addr;
+			union {
+				struct sockaddr *sa;
+				struct sockaddr_in6 *in6;
+			} addr;
 
-			memset(sin6p, 0, sizeof(struct sockaddr_in6));
+			addr.sa = ai->ai_addr;
 
-			sin6p->sin6_port = htons(port);
-			sin6p->sin6_family = AF_INET6;
+			memset(addr.in6, 0, sizeof(struct sockaddr_in6));
 
-			memcpy(&sin6p->sin6_addr,
+			addr.in6->sin6_port = htons(port);
+			addr.in6->sin6_family = AF_INET6;
+
+			memcpy(&addr.in6->sin6_addr,
 			       he->h_addr_list[0],
 			       he->h_length);
 		}
@@ -5453,21 +5519,41 @@ static int nwrap_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 
 	type = sa->sa_family;
 	switch (type) {
-	case AF_INET:
-		if (salen < sizeof(struct sockaddr_in))
+	case AF_INET: {
+		union {
+			const struct sockaddr *sa;
+			const struct sockaddr_in *in;
+		} a;
+
+		if (salen < sizeof(struct sockaddr_in)) {
 			return EAI_FAMILY;
-		addr = &((const struct sockaddr_in *)sa)->sin_addr;
-		addrlen = sizeof(((const struct sockaddr_in *)sa)->sin_addr);
-		port = ntohs(((const struct sockaddr_in *)sa)->sin_port);
+		}
+
+		a.sa = sa;
+
+		addr = &(a.in->sin_addr);
+		addrlen = sizeof(a.in->sin_addr);
+		port = ntohs(a.in->sin_port);
 		break;
+	}
 #ifdef HAVE_IPV6
-	case AF_INET6:
-		if (salen < sizeof(struct sockaddr_in6))
+	case AF_INET6: {
+		union {
+			const struct sockaddr *sa;
+			const struct sockaddr_in6 *in6;
+		} a;
+
+		if (salen < sizeof(struct sockaddr_in6)) {
 			return EAI_FAMILY;
-		addr = &((const struct sockaddr_in6 *)sa)->sin6_addr;
-		addrlen = sizeof(((const struct sockaddr_in6 *)sa)->sin6_addr);
-		port = ntohs(((const struct sockaddr_in6 *)sa)->sin6_port);
+		}
+
+		a.sa = sa;
+
+		addr = &(a.in6->sin6_addr);
+		addrlen = sizeof(a.in6->sin6_addr);
+		port = ntohs(a.in6->sin6_port);
 		break;
+	}
 #endif
 	default:
 		return EAI_FAMILY;
