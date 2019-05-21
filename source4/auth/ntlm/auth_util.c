@@ -32,15 +32,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-/* this default function can be used by mostly all backends
- * which don't want to set a challenge
- */
-NTSTATUS auth_get_challenge_not_implemented(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, uint8_t chal[8])
-{
-	/* we don't want to set a challenge */
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 /****************************************************************************
  Create an auth_usersupplied_data structure after appropriate mapping.
 ****************************************************************************/
