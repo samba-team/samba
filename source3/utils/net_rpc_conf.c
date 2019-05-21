@@ -418,8 +418,9 @@ static NTSTATUS rpc_conf_get_share(TALLOC_CTX *mem_ctx,
 	WERROR _werr;
 	struct policy_handle child_hnd;
 	int32_t includes_cnt, includes_idx = -1;
-	uint32_t num_vals, i, param_cnt = 0;
+	uint32_t num_vals, num_subkeys, i, param_cnt = 0;
 	const char **val_names;
+	const char **subkeys = NULL;
 	enum winreg_Type *types;
 	DATA_BLOB *data;
 	struct winreg_String key = { 0, };
@@ -429,7 +430,39 @@ static NTSTATUS rpc_conf_get_share(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(tmp_share);
 
-	key.name = share_name;
+	/*
+	 * Determine correct upper/lowercase.
+	 */
+	status = dcerpc_winreg_enum_keys(frame,
+					 b,
+					 parent_hnd,
+					 &num_subkeys,
+					 &subkeys,
+					 &result);
+	if (!(NT_STATUS_IS_OK(status))) {
+		d_fprintf(stderr, _("Failed to enumerate shares: %s\n"),
+				nt_errstr(status));
+		goto error;
+	}
+	if (!(W_ERROR_IS_OK(result))) {
+		d_fprintf(stderr, _("Failed to enumerate shares: %s\n"),
+				win_errstr(result));
+		goto error;
+	}
+
+	for (i = 0; i < num_subkeys; i++) {
+		if (!strequal(share_name, subkeys[i])) {
+			continue;
+		}
+
+		key.name = subkeys[i];
+	}
+
+	if (key.name == NULL) {
+		d_fprintf(stderr, _("Could not find share.\n"));
+		goto error;
+	}
+
 	status = dcerpc_winreg_OpenKey(b, frame, parent_hnd, key, 0,
 			       REG_KEY_READ, &child_hnd, &result);
 
@@ -487,7 +520,7 @@ static NTSTATUS rpc_conf_get_share(TALLOC_CTX *mem_ctx,
 		     includes_cnt ++);
 	}
 	/* place the name of the share in the smbconf_service struct */
-	tmp_share.name = talloc_strdup(frame, share_name);
+	tmp_share.name = talloc_strdup(frame, key.name);
 	if (tmp_share.name == NULL) {
 		result = WERR_NOT_ENOUGH_MEMORY;
 		d_fprintf(stderr, _("Failed to create share: %s\n"),
