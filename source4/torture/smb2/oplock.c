@@ -26,6 +26,7 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/resolve/resolve.h"
+#include "libcli/smb/smbXcli_base.h"
 
 #include "lib/cmdline/popt_common.h"
 #include "lib/events/events.h"
@@ -3949,6 +3950,78 @@ static void levelII501_timeout_cb(struct tevent_context *ev,
 	state->done = true;
 }
 
+static bool test_smb2_oplock_levelII502(struct torture_context *tctx,
+					struct smb2_tree *tree1,
+					struct smb2_tree *tree2)
+
+{
+	const char *fname = BASEDIR "\\test_levelII502.dat";
+	NTSTATUS status;
+	union smb_open io;
+	struct smb2_close closeio;
+	struct smb2_handle h;
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &h);
+	torture_assert_ntstatus_ok(tctx, status, "Error creating directory");
+
+	/* cleanup */
+	smb2_util_unlink(tree1, fname);
+
+	/*
+	  base ntcreatex parms
+	*/
+	ZERO_STRUCT(io.smb2);
+	io.generic.level = RAW_OPEN_SMB2;
+	io.smb2.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.smb2.in.alloc_size = 0;
+	io.smb2.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.smb2.in.create_options = 0;
+	io.smb2.in.impersonation_level = SMB2_IMPERSONATION_ANONYMOUS;
+	io.smb2.in.security_flags = 0;
+	io.smb2.in.fname = fname;
+
+	torture_comment(
+		tctx,
+		"LEVELII502: Open a stale LEVEL2 oplock with OVERWRITE");
+
+	io.smb2.in.desired_access = SEC_RIGHTS_FILE_READ |
+				SEC_RIGHTS_FILE_WRITE;
+	io.smb2.in.share_access = NTCREATEX_SHARE_ACCESS_READ |
+				NTCREATEX_SHARE_ACCESS_WRITE;
+	io.smb2.in.create_flags = NTCREATEX_FLAGS_EXTENDED;
+	io.smb2.in.oplock_level = SMB2_OPLOCK_LEVEL_II;
+	status = smb2_create(tree1, tctx, &(io.smb2));
+	torture_assert_ntstatus_ok(tctx, status, "Error opening the file");
+	torture_assert(tctx,
+		       io.smb2.out.oplock_level==SMB2_OPLOCK_LEVEL_II,
+		       "Did not get LEVEL_II oplock\n");
+
+	status = smbXcli_conn_samba_suicide(
+		tree1->session->transport->conn, 93);
+	torture_assert_ntstatus_ok(tctx, status, "suicide failed");
+
+	sleep(1);
+
+	io.smb2.in.oplock_level = SMB2_OPLOCK_LEVEL_BATCH;
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OVERWRITE;
+
+	status = smb2_create(tree2, tctx, &(io.smb2));
+	torture_assert_ntstatus_ok(tctx, status, "Error opening the file");
+	torture_assert(tctx,
+		       io.smb2.out.oplock_level==SMB2_OPLOCK_LEVEL_BATCH,
+		       "Did not get BATCH oplock\n");
+
+	closeio = (struct smb2_close) {
+		.in.file.handle = io.smb2.out.file.handle,
+	};
+	status = smb2_close(tree2, &closeio);
+	torture_assert_ntstatus_equal(
+		tctx, status, NT_STATUS_OK, "close failed");
+
+	return true;
+}
+
 struct torture_suite *torture_smb2_oplocks_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -3995,6 +4068,8 @@ struct torture_suite *torture_smb2_oplocks_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "levelii500", test_smb2_oplock_levelII500);
 	torture_suite_add_2smb2_test(suite, "levelii501",
 				     test_smb2_oplock_levelII501);
+	torture_suite_add_2smb2_test(suite, "levelii502",
+				     test_smb2_oplock_levelII502);
 	suite->description = talloc_strdup(suite, "SMB2-OPLOCK tests");
 
 	return suite;
