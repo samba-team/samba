@@ -282,12 +282,9 @@ static void dcerpc_interface_dealloc(PyObject* self)
 {
 	dcerpc_InterfaceObject *interface = (dcerpc_InterfaceObject *)self;
 
-	/*
-	 * This can't fail, and if it did talloc_unlink(NULL, NULL) is
-	 * harmless below
-	 */
 	struct tevent_context *ev_save = talloc_reparent(
-		NULL, interface->mem_ctx, interface->ev);
+		interface->mem_ctx, NULL, interface->ev);
+	SMB_ASSERT(ev_save != NULL);
 
 	interface->binding_handle = NULL;
 	interface->pipe = NULL;
