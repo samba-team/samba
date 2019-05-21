@@ -81,6 +81,9 @@
 	(PUSH_LE_U16((data), (pos), (uint16_t)((uint32_t)(val) & 0xffff)),\
 	 PUSH_LE_U16((data), (pos) + 2, (uint16_t)((uint32_t)(val) >> 16)))
 
+#define U32_LEN 4
+#define NULL_PAD_BYTE_LEN 1
+
 static int attribute_storable_values(const struct ldb_message_element *el)
 {
 	if (el->num_values == 0) return 0;
@@ -115,9 +118,7 @@ int ldb_pack_data(struct ldb_context *ldb,
 	}
 
 	/* work out how big it needs to be */
-	size = 8;
-
-	size += 1;
+	size = U32_LEN * 2 + NULL_PAD_BYTE_LEN;
 
 	dn_len = strlen(dn);
 	if (size + dn_len < size) {
@@ -137,11 +138,11 @@ int ldb_pack_data(struct ldb_context *ldb,
 
 		real_elements++;
 
-		if (size + 5 < size) {
+		if (size + U32_LEN + NULL_PAD_BYTE_LEN < size) {
 			errno = ENOMEM;
 			return -1;
 		}
-		size += 5;
+		size += U32_LEN + NULL_PAD_BYTE_LEN;
 
 		attr_len = strlen(message->elements[i].name);
 		if (size + attr_len < size) {
@@ -151,11 +152,11 @@ int ldb_pack_data(struct ldb_context *ldb,
 		size += attr_len;
 
 		for (j=0;j<message->elements[i].num_values;j++) {
-			if (size + 5 < size) {
+			if (size + U32_LEN + NULL_PAD_BYTE_LEN < size) {
 				errno = ENOMEM;
 				return -1;
 			}
-			size += 5;
+			size += U32_LEN + NULL_PAD_BYTE_LEN;
 
 			value_len = message->elements[i].values[j].length;
 			if (size + value_len < size) {
@@ -176,31 +177,34 @@ int ldb_pack_data(struct ldb_context *ldb,
 
 	p = data->data;
 	PUSH_LE_U32(p, 0, LDB_PACKING_FORMAT);
-	PUSH_LE_U32(p, 4, real_elements);
-	p += 8;
+	p += U32_LEN;
+	PUSH_LE_U32(p, 0, real_elements);
+	p += U32_LEN;
 
 	/* the dn needs to be packed so we can be case preserving
 	   while hashing on a case folded dn */
 	len = dn_len;
-	memcpy(p, dn, len+1);
-	p += len + 1;
+	memcpy(p, dn, len+NULL_PAD_BYTE_LEN);
+	p += len + NULL_PAD_BYTE_LEN;
 
 	for (i=0;i<message->num_elements;i++) {
 		if (attribute_storable_values(&message->elements[i]) == 0) {
 			continue;
 		}
 		len = strlen(message->elements[i].name);
-		memcpy(p, message->elements[i].name, len+1);
-		p += len + 1;
+		memcpy(p, message->elements[i].name, len+NULL_PAD_BYTE_LEN);
+		p += len + NULL_PAD_BYTE_LEN;
 		PUSH_LE_U32(p, 0, message->elements[i].num_values);
-		p += 4;
+		p += U32_LEN;
 		for (j=0;j<message->elements[i].num_values;j++) {
 			PUSH_LE_U32(p, 0,
 				    message->elements[i].values[j].length);
-			memcpy(p+4, message->elements[i].values[j].data,
+			p += U32_LEN;
+			memcpy(p, message->elements[i].values[j].data,
 			       message->elements[i].values[j].length);
-			p[4+message->elements[i].values[j].length] = 0;
-			p += 4 + message->elements[i].values[j].length + 1;
+			p[message->elements[i].values[j].length] = 0;
+			p += message->elements[i].values[j].length +
+				NULL_PAD_BYTE_LEN;
 		}
 	}
 
@@ -230,7 +234,9 @@ int ldb_unpack_data_flags(struct ldb_context *ldb,
 	message->elements = NULL;
 
 	p = data->data;
-	if (data->length < 8) {
+
+	/* Format (U32, already read) + U32 for num_elements */
+	if (data->length < U32_LEN * 2) {
 		errno = EIO;
 		goto failed;
 	}
@@ -239,10 +245,11 @@ int ldb_unpack_data_flags(struct ldb_context *ldb,
 		errno = EIO;
 		goto failed;
 	}
-	message->num_elements = PULL_LE_U32(p, 4);
-	p += 8;
+	p += U32_LEN;
+	message->num_elements = PULL_LE_U32(p, 0);
+	p += U32_LEN;
 
-	remaining = data->length - 8;
+	remaining = data->length - U32_LEN * 2;
 
 	switch (format) {
 	case LDB_PACKING_FORMAT_NODN:
@@ -276,12 +283,12 @@ int ldb_unpack_data_flags(struct ldb_context *ldb,
 		 * than one less than dn_len, as otherwise it would be
 		 * == dn_len
 		 */
-		if (remaining < dn_len + 1) {
+		if (remaining < dn_len + NULL_PAD_BYTE_LEN) {
 			errno = EIO;
 			goto failed;
 		}
-		remaining -= dn_len + 1;
-		p += dn_len + 1;
+		remaining -= dn_len + NULL_PAD_BYTE_LEN;
+		p += dn_len + NULL_PAD_BYTE_LEN;
 		break;
 
 	default:
@@ -333,10 +340,15 @@ int ldb_unpack_data_flags(struct ldb_context *ldb,
 		size_t attr_len;
 		struct ldb_message_element *element = NULL;
 
-		if (remaining < 10) {
+		/*
+		 * Sanity check: Element must be at least the size of empty
+		 * attr name and value and NULL terms for each.
+		 */
+		if (remaining < U32_LEN * 2 + NULL_PAD_BYTE_LEN * 2) {
 			errno = EIO;
 			goto failed;
 		}
+
 		/*
 		 * With this check, we know that the attribute name at
 		 * p is \0 terminated.
@@ -356,12 +368,12 @@ int ldb_unpack_data_flags(struct ldb_context *ldb,
 		element->name = attr;
 		element->flags = 0;
 
-		if (remaining < (attr_len + 1)) {
+		if (remaining < (attr_len + NULL_PAD_BYTE_LEN)) {
 			errno = EIO;
 			goto failed;
 		}
-		remaining -= attr_len + 1;
-		p += attr_len + 1;
+		remaining -= attr_len + NULL_PAD_BYTE_LEN;
+		p += attr_len + NULL_PAD_BYTE_LEN;
 		element->num_values = PULL_LE_U32(p, 0);
 		element->values = NULL;
 		if ((flags & LDB_UNPACK_DATA_FLAG_NO_VALUES_ALLOC) && element->num_values == 1) {
@@ -375,33 +387,37 @@ int ldb_unpack_data_flags(struct ldb_context *ldb,
 				goto failed;
 			}
 		}
-		p += 4;
-		if (remaining < 4) {
+		p += U32_LEN;
+		if (remaining < U32_LEN) {
 			errno = EIO;
 			goto failed;
 		}
-		remaining -= 4;
+		remaining -= U32_LEN;
 		for (j = 0; j < element->num_values; j++) {
-			if (remaining < 5) {
+			/*
+			 * Sanity check: Value must be at least the size of
+			 * empty val and NULL terminator.
+			 */
+			if (remaining < U32_LEN + NULL_PAD_BYTE_LEN) {
 				errno = EIO;
 				goto failed;
 			}
-			remaining -= 5;
+			remaining -= U32_LEN + NULL_PAD_BYTE_LEN;
 
 			len = PULL_LE_U32(p, 0);
 			if (remaining < len) {
 				errno = EIO;
 				goto failed;
 			}
-			if (len + 1 < len) {
+			if (len + NULL_PAD_BYTE_LEN < len) {
 				errno = EIO;
 				goto failed;
 			}
 
 			element->values[j].length = len;
-			element->values[j].data = p + 4;
+			element->values[j].data = p + U32_LEN;
 			remaining -= len;
-			p += len+4+1;
+			p += len + U32_LEN + NULL_PAD_BYTE_LEN;
 		}
 		nelem++;
 	}
@@ -435,7 +451,7 @@ failed:
 int ldb_unpack_get_format(const struct ldb_val *data,
 			  uint32_t *pack_format_version)
 {
-	if (data->length < 4) {
+	if (data->length < U32_LEN) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	*pack_format_version = PULL_LE_U32(data->data, 0);
