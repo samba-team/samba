@@ -912,6 +912,14 @@ plantestsuite_loadlist("samba4.ldap.subtree_rename.python(ad_dc_ntvfs)",
                         '$LOADLIST',
                         '$LISTOPT'])
 
+planoldpythontestsuite(
+    "ad_dc_default",
+    "samba.tests.ldap_referrals",
+    environ={
+        'SERVER': '$SERVER',
+    },
+    name="samba.ldap.referrals",
+    extra_args=['-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN'])
 
 # These should be the first tests run against testenvs created by backup/restore
 for env in ['offlinebackupdc', 'restoredc', 'renamedc', 'labdc']:
