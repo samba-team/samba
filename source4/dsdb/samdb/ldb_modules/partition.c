@@ -902,11 +902,17 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 						 data->partitions[i]->ctrl->dn) == 0) &&
 			    (ldb_dn_compare(req->op.search.base,
 					    data->partitions[i]->ctrl->dn) != 0)) {
-				char *ref = talloc_asprintf(ac,
-							    "ldap://%s/%s%s",
-							    lpcfg_dnsdomain(lp_ctx),
-							    ldb_dn_get_linearized(data->partitions[i]->ctrl->dn),
-							    req->op.search.scope == LDB_SCOPE_ONELEVEL ? "??base" : "");
+				const char *scheme = ldb_get_opaque(
+				    ldb, LDAP_REFERRAL_SCHEME_OPAQUE);
+				char *ref = talloc_asprintf(
+					ac,
+					"%s://%s/%s%s",
+					scheme == NULL ? "ldap" : scheme,
+					lpcfg_dnsdomain(lp_ctx),
+					ldb_dn_get_linearized(
+					    data->partitions[i]->ctrl->dn),
+					req->op.search.scope ==
+					    LDB_SCOPE_ONELEVEL ? "??base" : "");
 
 				if (ref == NULL) {
 					return ldb_oom(ldb);
