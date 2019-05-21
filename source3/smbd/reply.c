@@ -8096,13 +8096,13 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 	for(i = 0; i < (int)num_locks; i++) {
 		struct smbd_lock_element *e = &locks[i];
 
-		DEBUG(10,("smbd_do_locking: lock start=%.0f, len=%.0f for smblctx "
-			  "%llu, file %s timeout = %d\n",
-			  (double)e->offset,
-			  (double)e->count,
-			  (unsigned long long)e->smblctx,
+		DBG_DEBUG("lock start=%"PRIu64", len=%"PRIu64" for smblctx "
+			  "%"PRIu64", file %s timeout = %"PRIi32"\n",
+			  e->offset,
+			  e->count,
+			  e->smblctx,
 			  fsp_str_dbg(fsp),
-			  (int)timeout));
+			  timeout);
 
 		if (type & LOCKING_ANDX_CANCEL_LOCK) {
 			struct blocking_lock_record *blr = NULL;
@@ -8261,8 +8261,10 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 		return status;
 	}
 
-	DEBUG(3, ("smbd_do_locking: %s type=%d num_locks=%d\n",
-		  fsp_fnum_dbg(fsp), (unsigned int)type, num_locks));
+	DBG_NOTICE("%s type=%"PRIu8" num_locks=%"PRIu16"\n",
+		   fsp_fnum_dbg(fsp),
+		   type,
+		   num_locks);
 
 	return NT_STATUS_OK;
 }
