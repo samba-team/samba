@@ -13,5 +13,5 @@
 </description>
 
 <value type="default"></value>
-<value type="example">192.168.0.1</value>
+<value type="example">192.168.0.1 192.168.0.2</value>
 </samba:parameter>
