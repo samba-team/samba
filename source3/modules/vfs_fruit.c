@@ -1450,27 +1450,37 @@ static bool ad_convert_delete_adfile(struct adouble *ad,
  * @return -1 in case an error occurred, 0 if no conversion was done, 1
  * otherwise
  **/
-static int ad_convert(struct adouble *ad,
+static int ad_convert(struct vfs_handle_struct *handle,
 		      const struct smb_filename *smb_fname)
 {
+	struct adouble *ad = NULL;
 	bool ok;
 	bool converted_xattr = false;
 	bool blank;
+	int ret;
+
+	ad = ad_get(talloc_tos(), handle, smb_fname, ADOUBLE_RSRC);
+	if (ad == NULL) {
+		return 0;
+	}
 
 	ok = ad_convert_xattr(ad, smb_fname, &converted_xattr);
 	if (!ok) {
-		return -1;
+		ret = -1;
+		goto done;
 	}
 
 	ok = ad_convert_blank_rfork(ad, &blank);
 	if (!ok) {
-		return -1;
+		ret = -1;
+		goto done;
 	}
 
 	if (converted_xattr || blank) {
 		ok = ad_convert_truncate(ad, smb_fname);
 		if (!ok) {
-			return -1;
+			ret = -1;
+			goto done;
 		}
 	}
 
@@ -1478,15 +1488,20 @@ static int ad_convert(struct adouble *ad,
 	if (!ok) {
 		DBG_ERR("Failed to convert [%s]\n",
 			smb_fname_str_dbg(smb_fname));
-		return -1;
+		ret = -1;
+		goto done;
 	}
 
 	ok = ad_convert_delete_adfile(ad, smb_fname);
 	if (!ok) {
-		return -1;
+		ret = -1;
+		goto done;
 	}
 
-	return 0;
+	ret = 0;
+done:
+	TALLOC_FREE(ad);
+	return ret;
 }
 
 /**
@@ -1737,17 +1752,6 @@ static ssize_t ad_read_rsrc_adouble(struct adouble *ad,
 			smb_fname->base_name);
 		errno = EINVAL;
 		return -1;
-	}
-
-	/*
-	 * Try to fixup AppleDouble files created by OS X with xattrs
-	 * appended to the ADEID_FINDERI entry.
-	 */
-
-	ret = ad_convert(ad, smb_fname);
-	if (ret != 0) {
-		DBG_WARNING("Failed to convert [%s]\n", smb_fname->base_name);
-		return len;
 	}
 
 	return len;
@@ -2137,9 +2141,8 @@ static bool is_afpresource_stream(const struct smb_filename *smb_fname)
 }
 
 /**
- * Test whether stream is an Apple stream, not used atm
+ * Test whether stream is an Apple stream.
  **/
-#if 0
 static bool is_apple_stream(const struct smb_filename *smb_fname)
 {
 	if (is_afpinfo_stream(smb_fname)) {
@@ -2150,7 +2153,6 @@ static bool is_apple_stream(const struct smb_filename *smb_fname)
 	}
 	return false;
 }
-#endif
 
 /**
  * Initialize config struct from our smb.conf config parameters
@@ -6046,6 +6048,8 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	struct fruit_config_data *config = NULL;
 	files_struct *fsp = NULL;
 	struct fio *fio = NULL;
+	bool internal_open = (oplock_request & INTERNAL_OPEN_ONLY);
+	int ret;
 
 	status = check_aapl(handle, req, in_context_blobs, out_context_blobs);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -6054,6 +6058,14 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
 				return NT_STATUS_UNSUCCESSFUL);
+
+	if (is_apple_stream(smb_fname) && !internal_open) {
+		ret = ad_convert(handle, smb_fname);
+		if (ret != 0) {
+			DBG_ERR("ad_convert() failed\n");
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+	}
 
 	status = SMB_VFS_NEXT_CREATE_FILE(
 		handle, req, root_dir_fid, smb_fname,
@@ -6137,6 +6149,7 @@ static NTSTATUS fruit_readdir_attr(struct vfs_handle_struct *handle,
 	struct fruit_config_data *config = NULL;
 	struct readdir_attr_data *attr_data;
 	NTSTATUS status;
+	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data,
@@ -6147,6 +6160,12 @@ static NTSTATUS fruit_readdir_attr(struct vfs_handle_struct *handle,
 	}
 
 	DEBUG(10, ("fruit_readdir_attr %s\n", fname->base_name));
+
+	ret = ad_convert(handle, fname);
+	if (ret != 0) {
+		DBG_ERR("ad_convert() failed\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	*pattr_data = talloc_zero(mem_ctx, struct readdir_attr_data);
 	if (*pattr_data == NULL) {
