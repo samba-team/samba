@@ -24,6 +24,11 @@
 #include "system/network.h"
 #include "lib/param/loadparm.h"
 
+enum ldap_server_referral_scheme {
+	LDAP_REFERRAL_SCHEME_LDAP,
+	LDAP_REFERRAL_SCHEME_LDAPS
+};
+
 struct ldapsrv_connection {
 	struct ldapsrv_connection *next, *prev;
 	struct loadparm_context *lp_ctx;
@@ -47,6 +52,7 @@ struct ldapsrv_connection {
 	bool is_privileged;
 	enum ldap_server_require_strong_auth require_strong_auth;
 	bool authz_logged;
+	enum ldap_server_referral_scheme referral_scheme;
 
 	struct {
 		int initial_timeout;

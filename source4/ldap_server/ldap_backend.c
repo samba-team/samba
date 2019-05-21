@@ -647,6 +647,24 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		call->notification.busy = true;
 	}
 
+	{
+		const char *scheme = NULL;
+		switch (call->conn->referral_scheme) {
+		case LDAP_REFERRAL_SCHEME_LDAPS:
+			scheme = "ldaps";
+			break;
+		default:
+			scheme = "ldap";
+		}
+		ldb_ret = ldb_set_opaque(
+			samdb,
+			LDAP_REFERRAL_SCHEME_OPAQUE,
+			discard_const_p(char *, scheme));
+		if (ldb_ret != LDB_SUCCESS) {
+			goto reply;
+		}
+	}
+
 	ldb_set_timeout(samdb, lreq, req->timelimit);
 
 	if (!call->conn->is_privileged) {

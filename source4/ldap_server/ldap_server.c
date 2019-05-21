@@ -436,6 +436,7 @@ static void ldapsrv_accept_tls_done(struct tevent_req *subreq)
 	}
 
 	conn->sockets.active = conn->sockets.tls;
+	conn->referral_scheme = LDAP_REFERRAL_SCHEME_LDAPS;
 	ldapsrv_call_read_next(conn);
 }
 
