@@ -31,15 +31,6 @@ if bld.CONFIG_SET('WITH_NTVFS_FILESERVER'):
     )
 
 
-    bld.SAMBA_MODULE('ntvfs_cifsposix',
-	             source='cifs_posix_cli/vfs_cifs_posix.c cifs_posix_cli/svfs_util.c',
-	             autoproto='cifs_posix_cli/proto.h',
-	             subsystem='ntvfs',
-	             init_function='ntvfs_cifs_posix_init',
-	            deps='talloc'
-    )
-
-
     bld.SAMBA_MODULE('ntvfs_ipc',
 	             source='ipc/vfs_ipc.c ipc/ipc_rap.c ipc/rap_server.c',
 	             autoproto='ipc/proto.h',
