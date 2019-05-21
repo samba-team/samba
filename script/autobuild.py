@@ -727,11 +727,7 @@ class builder(object):
 
     def __init__(self, name, sequence, cp=True):
         self.name = name
-        if name in builddirs:
-            self.dir = builddirs[name]
-        else:
-            self.dir = "."
-
+        self.dir = builddirs.get(name, '.')
         self.tag = self.name.replace('/', '_')
         self.sequence = sequence
         self.next = 0
@@ -783,19 +779,16 @@ class buildlist(object):
     '''handle build of multiple directories'''
 
     def __init__(self, tasknames, rebase_url, rebase_branch="master"):
-        global tasks
-        self.tlist = []
         self.tail_proc = None
         self.retry = None
-        if tasknames == []:
+        if not tasknames:
             if options.restrict_tests:
                 tasknames = ["samba-test-only"]
             else:
                 tasknames = defaulttasks
 
-        for n in tasknames:
-            b = builder(n, tasks[n], cp=n is not "pidl")
-            self.tlist.append(b)
+        self.tlist = [builder(n, tasks[n], cp=(n != "pidl")) for n in tasknames]
+
         if options.retry:
             rebase_remote = "rebaseon"
             retry_task = [("retry",
@@ -874,34 +867,31 @@ class buildlist(object):
         self.kill_kids()
         return (0, None, None, None, "All OK")
 
-    def write_system_info(self):
-        filename = 'system-info.txt'
-        f = open(filename, 'w')
-        for cmd in ['uname -a',
-                    'lsb_release -a',
-                    'free',
-                    'mount',
-                    'cat /proc/cpuinfo',
-                    'cc --version',
-                    'df -m .',
-                    'df -m %s' % testbase]:
-            out = run_cmd(cmd, output=True, checkfail=False)
-            print('### %s' % cmd, file=f)
-            print(out, file=f)
-            print(file=f)
-        f.close()
-        return filename
+    def write_system_info(self, filename):
+        with open(filename, 'w') as f:
+            for cmd in ['uname -a',
+                        'lsb_release -a',
+                        'free',
+                        'mount',
+                        'cat /proc/cpuinfo',
+                        'cc --version',
+                        'df -m .',
+                        'df -m %s' % testbase]:
+                out = run_cmd(cmd, output=True, checkfail=False)
+                print('### %s' % cmd, file=f)
+                print(out, file=f)
+                print(file=f)
 
     def tarlogs(self, fname):
-        tar = tarfile.open(fname, "w:gz")
-        for b in self.tlist:
-            tar.add(b.stdout_path, arcname="%s.stdout" % b.tag)
-            tar.add(b.stderr_path, arcname="%s.stderr" % b.tag)
-        if os.path.exists("autobuild.log"):
-            tar.add("autobuild.log")
-        sys_info = self.write_system_info()
-        tar.add(sys_info)
-        tar.close()
+        with tarfile.open(fname, "w:gz") as tar:
+            for b in self.tlist:
+                tar.add(b.stdout_path, arcname="%s.stdout" % b.tag)
+                tar.add(b.stderr_path, arcname="%s.stderr" % b.tag)
+            if os.path.exists("autobuild.log"):
+                tar.add("autobuild.log")
+            filename = 'system-info.txt'
+            self.write_system_info(filename)
+            tar.add(filename)
 
     def remove_logs(self):
         for b in self.tlist:
@@ -952,9 +942,8 @@ def daemonize(logfile):
 
 def write_pidfile(fname):
     '''write a pid file, cleanup on exit'''
-    f = open(fname, mode='w')
-    f.write("%u\n" % os.getpid())
-    f.close()
+    with open(fname, mode='w') as f:
+        f.write("%u\n" % os.getpid())
 
 
 def rebase_tree(rebase_url, rebase_branch="master"):
@@ -1019,9 +1008,8 @@ def send_email(subject, text, log_tar):
     outer.preamble = 'Autobuild mails are now in MIME because we optionally attach the logs.\n'
     outer.attach(MIMEText(text, 'plain'))
     if options.attach_logs:
-        fp = open(log_tar, 'rb')
-        msg = MIMEApplication(fp.read(), 'gzip', email.encoders.encode_base64)
-        fp.close()
+        with open(log_tar, 'rb') as fp:
+            msg = MIMEApplication(fp.read(), 'gzip', email.encoders.encode_base64)
         # Set the filename parameter
         msg.add_header('Content-Disposition', 'attachment', filename=os.path.basename(log_tar))
         outer.attach(msg)
