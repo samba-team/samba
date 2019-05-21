@@ -2172,6 +2172,27 @@ static bool is_apple_stream(const struct smb_filename *smb_fname)
 	return false;
 }
 
+static bool is_adouble_file(const char *path)
+{
+	const char *p = NULL;
+	int match;
+
+	p = strrchr(path, '/');
+	if (p == NULL) {
+		p = path;
+	} else {
+		p++;
+	}
+
+	match = strncmp(p,
+			ADOUBLE_NAME_PREFIX,
+			strlen(ADOUBLE_NAME_PREFIX));
+	if (match != 0) {
+		return false;
+	}
+	return true;
+}
+
 /**
  * Initialize config struct from our smb.conf config parameters
  **/
@@ -4204,16 +4225,12 @@ static int fruit_rmdir(struct vfs_handle_struct *handle,
 	}
 
 	while ((de = SMB_VFS_READDIR(handle->conn, dh, NULL)) != NULL) {
-		int match;
 		struct adouble *ad = NULL;
 		char *p = NULL;
 		struct smb_filename *ad_smb_fname = NULL;
 		int ret;
 
-		match = strncmp(de->d_name,
-				ADOUBLE_NAME_PREFIX,
-				strlen(ADOUBLE_NAME_PREFIX));
-		if (match != 0) {
+		if (!is_adouble_file(de->d_name)) {
 			continue;
 		}
 
