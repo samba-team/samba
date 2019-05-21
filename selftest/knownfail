@@ -175,7 +175,6 @@
 ^samba3.smb2.dir.modify
 ^samba3.smb2.oplock.batch20
 ^samba3.smb2.oplock.stream1
-^samba3.smb2.oplock.levelii502
 ^samba3.smb2.streams.rename
 ^samba3.smb2.streams.rename2
 ^samba3.smb2.streams.attributes
