@@ -40,14 +40,6 @@ if bld.CONFIG_SET('WITH_NTVFS_FILESERVER'):
     )
 
 
-    bld.SAMBA_MODULE('ntvfs_print',
-	             source='print/vfs_print.c',
-	            subsystem='ntvfs',
-	             init_function='ntvfs_print_init',
-	             deps='talloc'
-    )
-
-
     bld.SAMBA_MODULE('ntvfs_ipc',
 	             source='ipc/vfs_ipc.c ipc/ipc_rap.c ipc/rap_server.c',
 	             autoproto='ipc/proto.h',
