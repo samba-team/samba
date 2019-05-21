@@ -1026,26 +1026,3 @@ _PUBLIC_ NTSTATUS ldap_result_one(struct ldap_request *req, struct ldap_message 
 	}
 	return status;
 }
-
-/*
-  a simple ldap transaction, for single result requests that only need a status code
-  this relies on single valued requests having the response type == request type + 1
-*/
-_PUBLIC_ NTSTATUS ldap_transaction(struct ldap_connection *conn, struct ldap_message *msg)
-{
-	struct ldap_request *req = ldap_request_send(conn, msg);
-	struct ldap_message *res;
-	NTSTATUS status;
-	status = ldap_result_n(req, 0, &res);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(req);
-		return status;
-	}
-	if (res->type != msg->type + 1) {
-		talloc_free(req);
-		return NT_STATUS_LDAP(LDAP_PROTOCOL_ERROR);
-	}
-	status = ldap_check_response(conn, &res->r.GeneralResult);
-	talloc_free(req);
-	return status;
-}
