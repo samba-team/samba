@@ -1315,7 +1315,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			 * GPFS can return ETIMEDOUT for pread on
 			 * nonblocking file descriptors when files
 			 * migrated to tape need to be recalled. I
-			 * could imagine this happens elsehwere
+			 * could imagine this happens elsewhere
 			 * too. With blocking file descriptors this
 			 * does not happen.
 			 */
