@@ -384,18 +384,6 @@ struct sec_desc_buf *make_sec_desc_buf(TALLOC_CTX *ctx, size_t len, struct secur
 	return dst;
 }
 
-/*******************************************************************
- Duplicates a struct sec_desc_buf structure.
-********************************************************************/
-
-struct sec_desc_buf *dup_sec_desc_buf(TALLOC_CTX *ctx, struct sec_desc_buf *src)
-{
-	if(src == NULL)
-		return NULL;
-
-	return make_sec_desc_buf( ctx, src->sd_size, src->sd);
-}
-
 /*
  * Determine if an struct security_ace is inheritable
  */
