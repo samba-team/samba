@@ -537,6 +537,10 @@ struct fio {
  */
 static struct adouble *ad_init(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 			       adouble_type_t type);
+static struct adouble *ad_get(TALLOC_CTX *ctx,
+			      vfs_handle_struct *handle,
+			      const struct smb_filename *smb_fname,
+			      adouble_type_t type);
 static int ad_set(struct adouble *ad, const struct smb_filename *smb_fname);
 static int ad_fset(struct adouble *ad, files_struct *fsp);
 static int adouble_path(TALLOC_CTX *ctx,
