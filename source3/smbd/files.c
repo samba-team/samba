@@ -778,7 +778,18 @@ const struct GUID *fsp_client_guid(const files_struct *fsp)
 
 size_t fsp_fullbasepath(struct files_struct *fsp, char *buf, size_t buflen)
 {
-	int len;
+	int len = 0;
+	char tmp_buf[1] = {'\0'};
+
+	/*
+	 * Don't pass NULL buffer to snprintf (to satisfy static checker)
+	 * Some callers will call this function with NULL for buf and
+	 * 0 for buflen in order to get length of fullbasepatch (without
+	 * needing to allocate or write to buf)
+	 */
+	if (buf == NULL) {
+		buf = tmp_buf;
+	}
 
 	len = snprintf(buf, buflen, "%s/%s", fsp->conn->connectpath,
 		       fsp->fsp_name->base_name);
