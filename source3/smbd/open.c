@@ -1875,12 +1875,7 @@ static bool delay_for_oplock(files_struct *fsp,
 		break_to = e_lease_type & ~delay_mask;
 
 		if (will_overwrite) {
-			/*
-			 * we'll decide about SMB2_LEASE_READ later.
-			 *
-			 * Maybe the break will be deferred
-			 */
-			break_to &= ~SMB2_LEASE_HANDLE;
+			break_to &= ~(SMB2_LEASE_HANDLE|SMB2_LEASE_READ);
 		}
 
 		DEBUG(10, ("entry %u: e_lease_type %u, will_overwrite: %u\n",
@@ -3622,13 +3617,17 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	    (!S_ISFIFO(fsp->fsp_name->st.st_ex_mode))) {
 		int ret;
 
-		ret = vfs_set_filelen(fsp, 0);
+		ret = SMB_VFS_FTRUNCATE(fsp, 0);
 		if (ret != 0) {
 			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
 			return status;
 		}
+		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
+			     FILE_NOTIFY_CHANGE_SIZE
+			     | FILE_NOTIFY_CHANGE_ATTRIBUTES,
+			     fsp->fsp_name->base_name);
 	}
 
 	/*
