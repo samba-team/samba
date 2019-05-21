@@ -91,19 +91,23 @@ again:
 
 	/* Pack header */
 
-	len += tdb_pack(buf + len, buflen - len, "f", msg->printer);
+	len += tdb_pack(buf ? buf + len : NULL,
+			buf ? buflen - len : 0, "f", msg->printer);
 
-	len += tdb_pack(buf + len, buflen - len, "ddddddd",
+	len += tdb_pack(buf ? buf + len : NULL,
+			buf ? buflen - len : 0, "ddddddd",
 			(uint32_t)q->tv.tv_sec, (uint32_t)q->tv.tv_usec,
 			msg->type, msg->field, msg->id, msg->len, msg->flags);
 
 	/* Pack data */
 
 	if (msg->len == 0)
-		len += tdb_pack(buf + len, buflen - len, "dd",
+		len += tdb_pack(buf ? buf + len : NULL,
+				buf ? buflen - len : 0, "dd",
 				msg->notify.value[0], msg->notify.value[1]);
 	else
-		len += tdb_pack(buf + len, buflen - len, "B",
+		len += tdb_pack(buf ? buf + len : NULL,
+				buf ? buflen - len : 0, "B",
 				msg->len, msg->notify.data);
 
 	if (buflen != len) {
