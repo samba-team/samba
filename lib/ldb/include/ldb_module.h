@@ -104,6 +104,11 @@ struct ldb_module;
 #define LDB_SECRET_ATTRIBUTE_LIST_OPAQUE "LDB_SECRET_ATTRIBUTE_LIST"
 
 /*
+ * The scheme to be used for referral entries, i.e. ldap or ldaps
+ */
+#define LDAP_REFERRAL_SCHEME_OPAQUE "LDAP_REFERRAL_SCHEME"
+
+/*
    these function pointers define the operations that a ldb module can intercept
 */
 struct ldb_module_ops {
