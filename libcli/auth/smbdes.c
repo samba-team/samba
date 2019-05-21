@@ -338,17 +338,6 @@ void des_crypt128(uint8_t out[8], const uint8_t in[8], const uint8_t key[16])
 	des_crypt56(out, buf, key+9, 1);
 }
 
-/* des encryption with a 64 bit key */
-void des_crypt64(uint8_t out[8], const uint8_t in[8], const uint8_t key[8], int forw)
-{
-	uint8_t buf[8];
-	uint8_t key2[8];
-	ZERO_STRUCT(key2);
-	des_crypt56(buf, in, key, forw);
-	key2[0] = key[7];
-	des_crypt56(out, buf, key2, forw);
-}
-
 /* des encryption with a 112 bit (14 byte) key */
 void des_crypt112(uint8_t out[8], const uint8_t in[8], const uint8_t key[14], int forw)
 {
