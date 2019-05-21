@@ -44,10 +44,9 @@ static size_t tdb_pack_va(uint8_t *buf, int bufsize, const char *fmt, va_list ap
 	int len = 0;
 	char *s;
 	char c;
-	uint8_t *buf0 = buf;
 	const char *fmt0 = fmt;
 	int bufsize0 = bufsize;
-
+	size_t to_write = 0;
 	while (*fmt) {
 		switch ((c = *fmt++)) {
 		case 'b': /* unsigned 8-bit integer */
@@ -104,17 +103,19 @@ static size_t tdb_pack_va(uint8_t *buf, int bufsize, const char *fmt, va_list ap
 			break;
 		}
 
-		buf += len;
-		if (bufsize)
+		to_write += len;
+		if (bufsize > 0) {
 			bufsize -= len;
+			buf += len;
+		}
 		if (bufsize < 0)
 			bufsize = 0;
 	}
 
 	DEBUG(18,("tdb_pack_va(%s, %d) -> %d\n", 
-		 fmt0, bufsize0, (int)PTR_DIFF(buf, buf0)));
+		 fmt0, bufsize0, (int)to_write));
 
-	return PTR_DIFF(buf, buf0);
+	return to_write;
 }
 
 size_t tdb_pack(uint8_t *buf, int bufsize, const char *fmt, ...)
