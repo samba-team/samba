@@ -169,16 +169,6 @@ const struct dsdb_class *dsdb_class_by_lDAPDisplayName_ldb_val(const struct dsdb
 	return c;
 }
 
-const struct dsdb_class *dsdb_class_by_cn(const struct dsdb_schema *schema,
-					  const char *cn)
-{
-	struct dsdb_class *c;
-	if (!cn) return NULL;
-	BINARY_ARRAY_SEARCH_P(schema->classes_by_cn,
-			      schema->num_classes, cn, cn, strcasecmp, c);
-	return c;
-}
-
 const struct dsdb_class *dsdb_class_by_cn_ldb_val(const struct dsdb_schema *schema,
 						  const struct ldb_val *cn)
 {
