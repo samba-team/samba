@@ -397,7 +397,6 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                           lib/ms_fnmatch.c
                           lib/tallocmsg.c
                           lib/dmallocmsg.c
-                          intl/lang_tdb.c
                           lib/gencache.c
                           lib/util_event.c
                           lib/global_contexts.c
