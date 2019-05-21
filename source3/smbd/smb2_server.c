@@ -30,6 +30,7 @@
 #include "../librpc/gen_ndr/krb5pac.h"
 #include "lib/util/iov_buf.h"
 #include "auth.h"
+#include "libcli/smb/smbXcli_base.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -447,6 +448,17 @@ static NTSTATUS smbd_smb2_inbuf_parse_compound(struct smbXsrv_connection *xconn,
 		 */
 
 		if (len < SMB2_HDR_BODY + 2) {
+
+			if ((len == 5) &&
+			    (IVAL(hdr, 0) == SMB_SUICIDE_PACKET) &&
+			    lp_parm_bool(-1, "smbd", "suicide mode", false)) {
+				uint8_t exitcode = CVAL(hdr, 4);
+				DBG_WARNING("SUICIDE: Exiting immediately "
+					    "with code %"PRIu8"\n",
+					    exitcode);
+				exit(exitcode);
+			}
+
 			DEBUG(10, ("%d bytes left, expected at least %d\n",
 				   (int)len, SMB2_HDR_BODY));
 			goto inval;
