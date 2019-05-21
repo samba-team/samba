@@ -304,20 +304,6 @@ struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 	return zoneinfo;
 }
 
-struct dnsserver_partition *dnsserver_find_partition(struct dnsserver_partition *partitions,
-						     const char *dp_fqdn)
-{
-	struct dnsserver_partition *p = NULL;
-
-	for (p = partitions; p; p = p->next) {
-		if (strcasecmp(dp_fqdn, p->pszDpFqdn) == 0) {
-			break;
-		}
-	}
-
-	return p;
-}
-
 struct dnsserver_zone *dnsserver_find_zone(struct dnsserver_zone *zones, const char *zone_name)
 {
 	struct dnsserver_zone *z = NULL;

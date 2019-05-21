@@ -214,8 +214,6 @@ struct dnsserver_serverinfo *dnsserver_init_serverinfo(TALLOC_CTX *mem_ctx,
 					struct ldb_context *samdb);
 struct dnsserver_zoneinfo *dnsserver_init_zoneinfo(struct dnsserver_zone *zone,
 					struct dnsserver_serverinfo *serverinfo);
-struct dnsserver_partition *dnsserver_find_partition(struct dnsserver_partition *partitions,
-					const char *dp_fqdn);
 struct dnsserver_zone *dnsserver_find_zone(struct dnsserver_zone *zones,
 					const char *zone_name);
 struct ldb_dn *dnsserver_name_to_dn(TALLOC_CTX *mem_ctx, struct dnsserver_zone *z,
