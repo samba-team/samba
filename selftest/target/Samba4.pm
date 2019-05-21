@@ -408,7 +408,6 @@ sub setup_dns_hub_internal($$$)
 
 		my @preargs = ();
 		my @args = ();
-		my @optargs = ();
 		if (!defined($ENV{PYTHON})) {
 		    push (@preargs, "env");
 		    push (@preargs, "python");
@@ -422,7 +421,7 @@ sub setup_dns_hub_internal($$$)
 		close($env->{STDIN_PIPE});
 		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@preargs, $ENV{MAKE_TEST_BINARY}, @args, @optargs)
+		exec(@preargs, $ENV{MAKE_TEST_BINARY}, @args)
 			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
 	}
 	$env->{SAMBA_PID} = $pid;
