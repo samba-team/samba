@@ -297,7 +297,7 @@ static bool verify_setinfo_flags(void *mem_ctx,
 	 * that flag is in our requested mask.
 	 */
 	for (i = 0; i < 32; ++i) {
-		info2.file_flags = (1 << i);
+		info2.file_flags = ((uint32_t)1 << i);
 		info2.flags_mask = smb_fmask | info2.file_flags;
 
 		set_no_metadata_change(&info2);
