@@ -41,7 +41,7 @@ int list_of_nodes(struct ctdb_node_map *nodemap,
 {
 	int num_nodes = 0;
 	uint32_t *list;
-	int i;
+	unsigned int i;
 
 	/* Allocate the list of same number of nodes */
 	list = talloc_array(mem_ctx, uint32_t, nodemap->num);

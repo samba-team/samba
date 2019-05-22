@@ -2018,7 +2018,8 @@ static int ctdb_g_lock_unlock_update(struct tevent_req *req)
 	struct ctdb_g_lock_unlock_state *state = tevent_req_data(
 		req, struct ctdb_g_lock_unlock_state);
 	struct ctdb_g_lock *lock;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	for (i=0; i<state->lock_list->num; i++) {
 		lock = &state->lock_list->lock[i];

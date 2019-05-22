@@ -691,7 +691,7 @@ int ctdb_tunnel_destroy(struct tevent_context *ev,
 struct tevent_req *ctdb_tunnel_request_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct ctdb_tunnel_context *tctx,
-					    int destnode,
+					    uint32_t destnode,
 					    struct timeval timeout,
 					    uint8_t *buf, size_t buflen,
 					    bool wait_for_reply);
@@ -724,7 +724,7 @@ bool ctdb_tunnel_request_recv(struct tevent_req *req, int *perr,
  * @return 0 on success, errno on failure
  */
 int ctdb_tunnel_request(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-			struct ctdb_tunnel_context *tctx, int destnode,
+			struct ctdb_tunnel_context *tctx, uint32_t destnode,
 			struct timeval timeout, uint8_t *buf, size_t buflen,
 			bool wait_for_reply);
 
@@ -744,7 +744,7 @@ int ctdb_tunnel_request(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 struct tevent_req *ctdb_tunnel_reply_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct ctdb_tunnel_context *tctx,
-					  int destnode, uint32_t reqid,
+					  uint32_t destnode, uint32_t reqid,
 					  struct timeval timeout,
 					  uint8_t *buf, size_t buflen);
 
@@ -771,7 +771,7 @@ bool ctdb_tunnel_reply_recv(struct tevent_req *req, int *perr);
  * @return 0 on success, errno on failure
  */
 int ctdb_tunnel_reply(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
-		      struct ctdb_tunnel_context *tctx, int destnode,
+		      struct ctdb_tunnel_context *tctx, uint32_t destnode,
 		      uint32_t reqid, struct timeval timeout,
 		      uint8_t *buf, size_t buflen);
 
