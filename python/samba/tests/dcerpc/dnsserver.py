@@ -28,6 +28,7 @@ from samba.dcerpc import dnsp, dnsserver, security
 from samba.tests import RpcInterfaceTestCase, env_get_var_value
 from samba.netcmd.dns import ARecord, AAAARecord, PTRRecord, CNameRecord, NSRecord, MXRecord, SRVRecord, TXTRecord
 from samba import sd_utils, descriptor
+from samba import WERRORError, werror
 
 class DnsserverTests(RpcInterfaceTestCase):
 
@@ -706,6 +707,30 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                 None,
                                                 'ServerInfo')
         self.assertEquals(dnsserver.DNSSRV_TYPEID_SERVER_INFO, typeid)
+
+
+    # This test is to confirm that we do not support multizone operations,
+    # which are designated by a non-zero dwContext value (the 3rd argument
+    # to DnssrvOperation).
+    def test_operation_invalid(self):
+        non_zone = 'a-zone-that-does-not-exist'
+        typeid = dnsserver.DNSSRV_TYPEID_NAME_AND_PARAM
+        name_and_param = dnsserver.DNS_RPC_NAME_AND_PARAM()
+        name_and_param.pszNodeName = 'AllowUpdate'
+        name_and_param.dwParam = dnsp.DNS_ZONE_UPDATE_SECURE
+        try:
+            res = self.conn.DnssrvOperation(self.server,
+                                            non_zone,
+                                            1,
+                                            'ResetDwordProperty',
+                                            typeid,
+                                            name_and_param)
+        except WERRORError as e:
+            if e.args[0] == werror.WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST:
+                return
+
+        # We should always encounter a DOES_NOT_EXIST error.
+        self.fail()
 
     def test_operation2(self):
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
