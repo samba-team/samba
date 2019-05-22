@@ -188,9 +188,11 @@ static struct group *nss_getgrent(void)
 again:
 	status = _nss_getgrent_r(&grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
+		char *oldbuf = buf;
 		buflen *= 2;
 		buf = (char *)realloc(buf, buflen);
 		if (!buf) {
+			SAFE_FREE(oldbuf);
 			return NULL;
 		}
 		goto again;
@@ -226,9 +228,11 @@ static struct group *nss_getgrnam(const char *name)
 again:
 	status = _nss_getgrnam_r(name, &grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
+		char *oldbuf = buf;
 		buflen *= 2;
 		buf = (char *)realloc(buf, buflen);
 		if (!buf) {
+			SAFE_FREE(oldbuf);
 			return NULL;
 		}
 		goto again;
@@ -265,9 +269,11 @@ static struct group *nss_getgrgid(gid_t gid)
 again:
 	status = _nss_getgrgid_r(gid, &grp, buf, buflen, &nss_errno);
 	if (status == NSS_STATUS_TRYAGAIN) {
+		char *oldbuf = buf;
 		buflen *= 2;
 		buf = (char *)realloc(buf, buflen);
 		if (!buf) {
+			SAFE_FREE(oldbuf);
 			return NULL;
 		}
 		goto again;
