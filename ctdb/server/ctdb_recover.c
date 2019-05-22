@@ -144,7 +144,7 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 int
 ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode)
 {
-	int i, num_nodes;
+	unsigned int i, num_nodes;
 	TALLOC_CTX *tmp_ctx;
 	struct ctdb_node **nodes;
 
@@ -453,7 +453,8 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct ctdb_marshall_buffer *reply = (struct ctdb_marshall_buffer *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
-	int i, ret;
+	unsigned int i;
+	int ret;
 	struct ctdb_rec_data_old *rec;
 
 	if (indata.dsize < offsetof(struct ctdb_marshall_buffer, data)) {
@@ -554,7 +555,8 @@ static void db_push_msg_handler(uint64_t srvid, TDB_DATA indata,
 		private_data, struct db_push_state);
 	struct ctdb_marshall_buffer *recs;
 	struct ctdb_rec_data_old *rec;
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	if (state->failed) {
 		return;
@@ -1255,7 +1257,7 @@ int32_t ctdb_control_try_delete_records(struct ctdb_context *ctdb, TDB_DATA inda
 {
 	struct ctdb_marshall_buffer *reply = (struct ctdb_marshall_buffer *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
-	int i;
+	unsigned int i;
 	struct ctdb_rec_data_old *rec;
 	struct ctdb_marshall_buffer *records;
 

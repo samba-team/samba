@@ -430,7 +430,8 @@ static int set_recovery_mode(struct ctdb_context *ctdb,
 static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, 
 					   uint32_t pnn, struct ctdb_dbid_map_old *dbmap, TALLOC_CTX *mem_ctx)
 {
-	int i, j, db, ret;
+	unsigned int i, j, db;
+	int ret;
 	struct ctdb_dbid_map_old *remote_dbmap;
 
 	/* verify that all other nodes have all our databases */
@@ -494,7 +495,8 @@ static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctd
 static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, 
 					  uint32_t pnn, struct ctdb_dbid_map_old **dbmap, TALLOC_CTX *mem_ctx)
 {
-	int i, j, db, ret;
+	unsigned int i, j, db;
+	int ret;
 	struct ctdb_dbid_map_old *remote_dbmap;
 
 	/* verify that we have all database any other node has */
@@ -654,7 +656,8 @@ static void vacuum_fetch_handler(uint64_t srvid, TDB_DATA data,
 		private_data, struct ctdb_recoverd);
 	struct ctdb_context *ctdb = rec->ctdb;
 	struct ctdb_marshall_buffer *recs;
-	int ret, i;
+	unsigned int i;
+	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 	const char *name;
 	struct ctdb_dbid_map_old *dbmap=NULL;
@@ -805,7 +808,7 @@ static void ctdb_wait_election(struct ctdb_recoverd *rec)
  */
 static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map_old *nodemap)
 {
-	int j;
+	unsigned int j;
 	struct ctdb_context *ctdb = rec->ctdb;
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 
@@ -1027,7 +1030,7 @@ static void ctdb_recovery_unlock(struct ctdb_recoverd *rec)
 static void ban_misbehaving_nodes(struct ctdb_recoverd *rec, bool *self_ban)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
-	int i;
+	unsigned int i;
 	struct ctdb_banning_state *ban_state;
 
 	*self_ban = false;
@@ -1184,7 +1187,8 @@ static int ctdb_takeover(struct ctdb_recoverd *rec,
 {
 	static char prog[PATH_MAX+1] = "";
 	char *arg;
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	if (!ctdb_set_helper("takeover_helper", prog, sizeof(prog),
 			     "CTDB_TAKEOVER_HELPER", CTDB_HELPER_BINDIR,
@@ -1223,7 +1227,7 @@ static bool do_takeover_run(struct ctdb_recoverd *rec,
 	uint32_t *nodes = NULL;
 	struct ctdb_disable_message dtr;
 	TDB_DATA data;
-	int i;
+	size_t i;
 	uint32_t *rebalance_nodes = rec->force_rebalance_nodes;
 	int ret;
 	bool ok;
@@ -1335,7 +1339,8 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		       struct ctdb_node_map_old *nodemap, struct ctdb_vnn_map *vnnmap)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
-	int i, ret;
+	unsigned int i;
+	int ret;
 	struct ctdb_dbid_map_old *dbmap;
 	bool self_ban;
 
@@ -1542,7 +1547,8 @@ struct election_message {
  */
 static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_message *em)
 {
-	int ret, i;
+	unsigned int i;
+	int ret;
 	struct ctdb_node_map_old *nodemap;
 	struct ctdb_context *ctdb = rec->ctdb;
 
@@ -2049,7 +2055,7 @@ static void monitor_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
 	struct ctdb_node_map_old *nodemap=NULL;
 	TALLOC_CTX *tmp_ctx;
-	int i;
+	unsigned int i;
 
 	if (data.dsize != sizeof(*c)) {
 		DEBUG(DEBUG_ERR,(__location__ "Invalid data in ctdb_node_flag_change\n"));
@@ -2175,8 +2181,8 @@ static enum monitor_result verify_recmode(struct ctdb_context *ctdb, struct ctdb
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 	struct ctdb_client_control_state *state;
 	enum monitor_result status;
-	int j;
-	
+	unsigned int j;
+
 	rmdata = talloc(mem_ctx, struct verify_recmode_normal_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, rmdata);
 	rmdata->count  = 0;
@@ -2268,8 +2274,8 @@ static enum monitor_result verify_recmaster(struct ctdb_recoverd *rec, struct ct
 	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 	struct ctdb_client_control_state *state;
 	enum monitor_result status;
-	int j;
-	
+	unsigned int j;
+
 	rmdata = talloc(mem_ctx, struct verify_recmaster_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, rmdata);
 	rmdata->rec    = rec;
@@ -2351,7 +2357,7 @@ static bool interfaces_have_changed(struct ctdb_context *ctdb,
 		ret = true;
 	} else {
 		/* See if interface names or link states have changed */
-		int i;
+		unsigned int i;
 		for (i = 0; i < rec->ifaces->num; i++) {
 			struct ctdb_iface * iface = &rec->ifaces->ifaces[i];
 			if (strcmp(iface->name, ifaces->ifaces[i].name) != 0) {
@@ -2387,7 +2393,8 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb,
 				      struct ctdb_node_map_old *nodemap)
 {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	int ret, j;
+	unsigned int j;
+	int ret;
 	bool need_takeover_run = false;
 	struct ctdb_public_ip_list_old *ips = NULL;
 
@@ -2638,7 +2645,8 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	struct ctdb_vnn_map *remote_vnnmap=NULL;
 	uint32_t num_lmasters;
 	int32_t debug_level;
-	int i, j, ret;
+	unsigned int i, j;
+	int ret;
 	bool self_ban;
 
 
