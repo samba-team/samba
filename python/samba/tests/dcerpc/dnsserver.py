@@ -732,6 +732,32 @@ class DnsserverTests(RpcInterfaceTestCase):
         # We should always encounter a DOES_NOT_EXIST error.
         self.fail()
 
+    # This test is to confirm that we do not support multizone operations,
+    # which are designated by a non-zero dwContext value (the 5th argument
+    # to DnssrvOperation2).
+    def test_operation2_invalid(self):
+        client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
+        non_zone = 'a-zone-that-does-not-exist'
+        typeid = dnsserver.DNSSRV_TYPEID_NAME_AND_PARAM
+        name_and_param = dnsserver.DNS_RPC_NAME_AND_PARAM()
+        name_and_param.pszNodeName = 'AllowUpdate'
+        name_and_param.dwParam = dnsp.DNS_ZONE_UPDATE_SECURE
+        try:
+            res = self.conn.DnssrvOperation2(client_version,
+                                             0,
+                                             self.server,
+                                             non_zone,
+                                             1,
+                                             'ResetDwordProperty',
+                                             typeid,
+                                             name_and_param)
+        except WERRORError as e:
+            if e.args[0] == werror.WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST:
+                return
+
+        # We should always encounter a DOES_NOT_EXIST error.
+        self.fail()
+
     def test_operation2(self):
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
         rev_zone = '1.168.192.in-addr.arpa'
