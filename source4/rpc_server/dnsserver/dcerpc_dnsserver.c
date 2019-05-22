@@ -1727,6 +1727,10 @@ static WERROR dnsserver_enumerate_root_records(struct dnsserver_state *dsstate,
 							NULL, NULL);
 			talloc_free(rname);
 			talloc_free(res);
+			if (!W_ERROR_IS_OK(status)) {
+				talloc_free(tmp_ctx);
+				return status;
+			}
 		}
 	}
 
@@ -1885,6 +1889,10 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 							NULL, NULL);
 			talloc_free(rname);
 			talloc_free(res);
+			if (!W_ERROR_IS_OK(status)) {
+				talloc_free(tmp_ctx);
+				return status;
+			}
 		}
 	}
 
