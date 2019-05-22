@@ -101,7 +101,7 @@ static int script_args(TALLOC_CTX *mem_ctx, const char *event_str,
 		       const char *arg_str, const char ***out)
 {
 	const char **argv;
-	int argc;
+	size_t argc;
 	size_t len;
 
 	/* Preallocate argv array to avoid reallocation. */
@@ -287,7 +287,8 @@ int run_event_list(struct run_event_context *run_ctx,
 {
 	struct event_script_list *s_list;
 	struct run_event_script_list *script_list;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	ret = event_script_get_list(mem_ctx,
 				    run_event_script_dir(run_ctx),

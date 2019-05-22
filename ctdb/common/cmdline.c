@@ -143,7 +143,7 @@ static int cmdline_options_define(TALLOC_CTX *mem_ctx,
 	return 0;
 }
 
-static bool cmdline_command_check(struct cmdline_command *cmd, int *max_len)
+static bool cmdline_command_check(struct cmdline_command *cmd, size_t *max_len)
 {
 	size_t len;
 
@@ -185,7 +185,7 @@ static bool cmdline_command_check(struct cmdline_command *cmd, int *max_len)
 }
 
 static bool cmdline_commands_check(struct cmdline_command *commands,
-				   int *max_len)
+				   size_t *max_len)
 {
 	int i;
 	bool ok;
@@ -213,7 +213,8 @@ int cmdline_init(TALLOC_CTX *mem_ctx,
 		 struct cmdline_context **result)
 {
 	struct cmdline_context *cmdline;
-	int ret, max_len = 0;
+	int ret;
+	size_t max_len = 0;
 	bool ok;
 
 	if (prog == NULL) {

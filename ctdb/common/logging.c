@@ -54,7 +54,7 @@ struct {
 
 bool debug_level_parse(const char *log_string, int *log_level)
 {
-	int i;
+	size_t i;
 
 	if (log_string == NULL) {
 		return false;
@@ -83,7 +83,7 @@ bool debug_level_parse(const char *log_string, int *log_level)
 
 const char *debug_level_to_string(int log_level)
 {
-	int i;
+	size_t i;
 
 	for (i=0; i < ARRAY_SIZE(log_string_map); i++) {
 		if (log_string_map[i].log_level == log_level) {
@@ -604,7 +604,7 @@ static int log_backend_parse(TALLOC_CTX *mem_ctx,
 {
 	struct log_backend *b = NULL;
 	char *t, *name, *option;
-	int i;
+	size_t i;
 
 	t = talloc_strdup(mem_ctx, logging);
 	if (t == NULL) {
