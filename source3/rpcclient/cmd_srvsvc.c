@@ -41,7 +41,7 @@ static char *get_server_type_str(uint32_t type)
 	typestr[0] = 0;
 
 	for (i = 0; i < 32; i++) {
-		if (type & (1 << i)) {
+		if (type & ((uint32_t)1 << i)) {
 			switch (1 << i) {
 			case SV_TYPE_WORKSTATION:
 				fstrcat(typestr, "Wk ");
