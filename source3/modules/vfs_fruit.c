@@ -449,18 +449,6 @@ struct ad_entry_order entry_order_dot_und[ADEID_NUM_DOT_UND + 1] = {
 	{0, 0, 0}
 };
 
-/*
- * Fake AppleDouble entry oder for resource fork xattr.  The xattr
- * isn't an AppleDouble file, it simply contains the resource data,
- * but in order to be able to use some API calls like ad_getentryoff()
- * we build a fake/helper struct adouble with this entry order struct.
- */
-static const
-struct ad_entry_order entry_order_rsrc_xattr[ADEID_NUM_RSRC_XATTR + 1] = {
-	{ADEID_RFORK, 0, 0},
-	{0, 0, 0}
-};
-
 /* Conversion from enumerated id to on-disk AppleDouble id */
 #define AD_EID_DISK(a) (set_eid[a])
 static const uint32_t set_eid[] = {
@@ -532,7 +520,7 @@ struct fio {
 /*
  * Forward declarations
  */
-static struct adouble *ad_init(TALLOC_CTX *ctx, vfs_handle_struct *handle,
+static struct adouble *ad_init(TALLOC_CTX *ctx,
 			       adouble_type_t type);
 static struct adouble *ad_get(TALLOC_CTX *ctx,
 			      vfs_handle_struct *handle,
@@ -1773,25 +1761,19 @@ static int adouble_destructor(struct adouble *ad)
  *
  * @return               adouble handle
  **/
-static struct adouble *ad_alloc(TALLOC_CTX *ctx, vfs_handle_struct *handle,
+static struct adouble *ad_alloc(TALLOC_CTX *ctx,
 				adouble_type_t type)
 {
 	int rc = 0;
 	size_t adsize = 0;
 	struct adouble *ad;
-	struct fruit_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return NULL);
 
 	switch (type) {
 	case ADOUBLE_META:
 		adsize = AD_DATASZ_XATTR;
 		break;
 	case ADOUBLE_RSRC:
-		if (config->rsrc == FRUIT_RSRC_ADFILE) {
-			adsize = AD_DATASZ_DOT_UND;
-		}
+		adsize = AD_DATASZ_DOT_UND;
 		break;
 	default:
 		return NULL;
@@ -1829,12 +1811,11 @@ exit:
  * Allocate and initialize a new struct adouble
  *
  * @param[in] ctx        talloc context
- * @param[in] handle     vfs handle
  * @param[in] type       type of AppleDouble, ADOUBLE_META or ADOUBLE_RSRC
  *
  * @return               adouble handle, initialized
  **/
-static struct adouble *ad_init(TALLOC_CTX *ctx, vfs_handle_struct *handle,
+static struct adouble *ad_init(TALLOC_CTX *ctx,
 			       adouble_type_t type)
 {
 	int rc = 0;
@@ -1853,7 +1834,7 @@ static struct adouble *ad_init(TALLOC_CTX *ctx, vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	ad = ad_alloc(ctx, handle, type);
+	ad = ad_alloc(ctx, type);
 	if (ad == NULL) {
 		return NULL;
 	}
@@ -1895,7 +1876,7 @@ static struct adouble *ad_get_internal(TALLOC_CTX *ctx,
 		   type == ADOUBLE_META ? "meta" : "rsrc",
 		   smb_fname->base_name));
 
-	ad = ad_alloc(ctx, handle, type);
+	ad = ad_alloc(ctx, type);
 	if (ad == NULL) {
 		rc = -1;
 		goto exit;
@@ -3555,7 +3536,7 @@ static int fruit_open_rsrc_adouble(vfs_handle_struct *handle,
 	}
 
 	if (flags & (O_CREAT | O_TRUNC)) {
-		ad = ad_init(fsp, handle, ADOUBLE_RSRC);
+		ad = ad_init(fsp, ADOUBLE_RSRC);
 		if (ad == NULL) {
 			rc = -1;
 			goto exit;
@@ -4635,7 +4616,7 @@ static ssize_t fruit_pwrite_meta_netatalk(vfs_handle_struct *handle,
 
 	ad = ad_fget(talloc_tos(), handle, fsp, ADOUBLE_META);
 	if (ad == NULL) {
-		ad = ad_init(talloc_tos(), handle, ADOUBLE_META);
+		ad = ad_init(talloc_tos(), ADOUBLE_META);
 		if (ad == NULL) {
 			return -1;
 		}
