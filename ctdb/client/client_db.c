@@ -1442,7 +1442,7 @@ int ctdb_fetch_lock(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 {
 	struct tevent_req *req;
 	struct ctdb_record_handle *h;
-	int ret;
+	int ret = 0;
 
 	req = ctdb_fetch_lock_send(mem_ctx, ev, client, db, key, readonly);
 	if (req == NULL) {
@@ -2249,7 +2249,7 @@ int ctdb_transaction_start(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 {
 	struct tevent_req *req;
 	struct ctdb_transaction_handle *h;
-	int ret;
+	int ret = 0;
 
 	req = ctdb_transaction_start_send(mem_ctx, ev, client, timeout, db,
 					  readonly);
