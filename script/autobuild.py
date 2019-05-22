@@ -745,6 +745,7 @@ class builder(object):
         self.stderr = open(self.stderr_path, 'w')
         self.stdin  = open("/dev/null", 'r')
         self.test_source_dir = "%s/%s" % (testbase, self.tag)
+        self.cwd = "%s/%s" % (self.test_source_dir, self.dir)
         self.prefix = "%s/%s" % (test_prefix, self.tag)
         run_cmd("rm -rf %s" % self.test_source_dir)
         run_cmd("rm -rf %s" % self.prefix)
@@ -771,13 +772,10 @@ class builder(object):
         self.cmd = self.cmd.replace("${LOG_BASE}", options.log_base)
         self.cmd = self.cmd.replace("${NAME}", self.name)
         self.cmd = self.cmd.replace("${ENABLE_COVERAGE}", options.enable_coverage)
-        cwd = os.getcwd()
-        os.chdir("%s/%s" % (self.test_source_dir, self.dir))
-        do_print('%s: [%s] Running %s in %r' % (self.name, self.stage, self.cmd, os.getcwd()))
+        do_print('%s: [%s] Running %s in %r' % (self.name, self.stage, self.cmd, self.cwd))
         self.proc = Popen(self.cmd, shell=True,
-                          close_fds=True,
+                          close_fds=True, cwd=self.cwd,
                           stdout=self.stdout, stderr=self.stderr, stdin=self.stdin)
-        os.chdir(cwd)
         self.next += 1
 
 
