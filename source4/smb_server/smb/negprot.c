@@ -371,7 +371,7 @@ static void reply_nt1(struct smbsrv_request *req, uint16_t choice)
 		struct cli_credentials *server_credentials;
 		struct gensec_security *gensec_security;
 		DATA_BLOB null_data_blob = data_blob(NULL, 0);
-		DATA_BLOB blob;
+		DATA_BLOB blob = data_blob_null;
 		const char *oid;
 		NTSTATUS nt_status;
 		
