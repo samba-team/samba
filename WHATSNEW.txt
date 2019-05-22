@@ -1,4 +1,120 @@
                    ==============================
+                   Release Notes for Samba 4.10.4
+                            May 22, 2019
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.10 release series.
+
+
+Changes since 4.10.3:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13938: s3: SMB1: Don't allow recvfile on stream fsp's.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 13882: py/provision: Fix for Python 2.6.
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 13873: netcmd: Fix 'passwordsettings --max-pwd-age' command.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13938: s3:smbd: Don't use recvfile on streams.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13861: s3-libnet_join: 'net ads join' to child domain fails when using
+     "-U admin@forestroot".
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 13896: vfs_ceph: Explicitly enable libcephfs POSIX ACL support.
+   * BUG 13940: vfs_ceph: Fix cephwrap_flistxattr() debug message.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13895: ctdb-common: Avoid race between fd and signal events.
+   * BUG 13943: ctdb-common: Fix memory leak in run_proc.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13892: lib: Initialize getline() arguments.
+   * BUG 13903: winbind: Fix overlapping id ranges.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 13902: lib util debug: Increase format buffer to 4KiB.
+   * BUG 13927: nsswitch pam_winbind: Fix Asan use after free.
+   * BUG 13929: s4 lib socket: Ensure address string owned by parent struct.
+   * BUG 13936: s3 rpc_client: Fix Asan stack use after scope.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 10097: s3:smbd: Handle IO_REPARSE_TAG_DFS in
+     SMB_FIND_FILE_FULL_DIRECTORY_INFO.
+   * BUG 10344: smb2_tcon: Avoid STATUS_PENDING completely on tdis.
+   * BUG 12845: smb2_sesssetup: avoid STATUS_PENDING responses for session
+     setup.
+   * BUG 13698: smb2_tcon: Avoid STATUS_PENDING completely on tdis.
+   * BUG 13796: smb2_sesssetup: avoid STATUS_PENDING responses for session
+     setup.
+   * BUG 13843: dbcheck: Fix the err_empty_attribute() check.
+   * BUG 13858: vfs_snapper: Drop unneeded fstat handler.
+   * BUG 13862: vfs_default: Fix vfswrap_offload_write_send()
+     NT_STATUS_INVALID_VIEW_SIZE check.
+   * BUG 13863: smb2_server: Grant all 8192 credits to clients.
+   * BUG 13919: smbd: Implement SMB_FILE_NORMALIZED_NAME_INFORMATION handling.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 13872: s3/vfs_glusterfs: Dynamically determine NAME_MAX.
+
+o  Robert Sander <r.sander@heinlein-support.de>
+   * BUG 13918: s3: modules: ceph: Use current working directory instead of
+     share path.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13831: winbind: Use domain name from lsa query for sid_to_name cache
+     entry.
+   * BUG 13865: memcache: Increase size of default memcache to 512k.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13857: docs: Update smbclient manpage for "--max-protocol".
+   * BUG 13861: 'net ads join' to child domain fails when using
+     "-U admin@forestroot".
+   * BUG 13937: s3:utils: If share is NULL in smbcacls, don't print it.
+   * BUG 13939: s3:smbspool: Fix regression printing with Kerberos credentials.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13860: ctdb-scripts: CTDB restarts failed NFS RPC services by hand,
+     which is incompatible with systemd.
+   * BUG 13888: ctdb-daemon: Revert "We can not assume that just because we
+     could complete a TCP handshake".
+   * BUG 13930: ctdb-daemon: Never use 0 as a client ID.
+   * BUG 13943: ctdb-common: Fix memory leak.
+
+o  Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+   * BUG 13904: s3:debug: Enable logging for early startup failures.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.10.3
                             May 14, 2019
                    ==============================
@@ -49,8 +165,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.10.2
