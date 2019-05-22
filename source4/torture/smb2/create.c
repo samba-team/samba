@@ -194,7 +194,7 @@ static bool test_create_gentest(struct torture_context *tctx, struct smb2_tree *
 	{
 		int i;
 		for (i=0;i<32;i++) {
-			io.in.create_options = 1<<i;
+			io.in.create_options = (uint32_t)1<<i;
 			if (io.in.create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
 				continue;
 			}
@@ -231,7 +231,7 @@ static bool test_create_gentest(struct torture_context *tctx, struct smb2_tree *
 	{
 		int i;
 		for (i=0;i<32;i++) {
-			io.in.desired_access = 1<<i;
+			io.in.desired_access = (uint32_t)1<<i;
 			status = smb2_create(tree, tctx, &io);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED) ||
 			    NT_STATUS_EQUAL(status, NT_STATUS_PRIVILEGE_NOT_HELD)) {
@@ -262,7 +262,7 @@ static bool test_create_gentest(struct torture_context *tctx, struct smb2_tree *
 	{
 		int i;
 		for (i=0;i<32;i++) {
-			io.in.file_attributes = 1<<i;
+			io.in.file_attributes = (uint32_t)1<<i;
 			if (io.in.file_attributes & FILE_ATTRIBUTE_ENCRYPTED) {
 				continue;
 			}
