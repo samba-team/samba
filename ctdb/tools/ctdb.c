@@ -92,7 +92,7 @@ static struct ctdb_node_and_flags *get_node_by_pnn(
 					struct ctdb_node_map *nodemap,
 					uint32_t pnn)
 {
-	int i;
+	unsigned int i;
 
 	for (i=0; i<nodemap->num; i++) {
 		if (nodemap->node[i].pnn == pnn) {
@@ -117,7 +117,7 @@ static const char *pretty_print_flags(TALLOC_CTX *mem_ctx, uint32_t flags)
 		{ NODE_FLAGS_INACTIVE,		    "INACTIVE" },
 	};
 	char *flags_str = NULL;
-	int i;
+	size_t i;
 
 	for (i=0; i<ARRAY_SIZE(flag_names); i++) {
 		if (flags & flag_names[i].flag) {
@@ -216,7 +216,7 @@ static bool verify_pnn(struct ctdb_context *ctdb, int pnn)
 {
 	struct ctdb_node_map *nodemap;
 	bool found;
-	int i;
+	unsigned int i;
 
 	if (pnn == -1) {
 		return false;
@@ -282,7 +282,7 @@ static bool parse_nodestring(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 {
 	struct ctdb_node_map *nodemap, *nodemap2;
 	struct ctdb_node_and_flags *node;
-	int i;
+	unsigned int i;
 
 	nodemap = get_nodemap(ctdb, false);
 	if (nodemap == NULL) {
@@ -507,7 +507,8 @@ static struct ctdb_dbid *db_find(TALLOC_CTX *mem_ctx,
 {
 	struct ctdb_dbid *db = NULL;
 	const char *name;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	for (i=0; i<dbmap->num; i++) {
 		ret = ctdb_ctrl_get_dbname(mem_ctx, ctdb->ev, ctdb->client,
@@ -535,7 +536,7 @@ static bool db_exists(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	struct ctdb_dbid *db = NULL;
 	uint32_t id = 0;
 	const char *name = NULL;
-	int i;
+	unsigned int i;
 	int ret = 0;
 
 	ret = ctdb_ctrl_get_dbmap(mem_ctx, ctdb->ev, ctdb->client,
@@ -599,7 +600,7 @@ static int h2i(char h)
 static int hex_to_data(const char *str, size_t len, TALLOC_CTX *mem_ctx,
 		       TDB_DATA *out)
 {
-	int i;
+	unsigned int i;
 	TDB_DATA data;
 
 	if (len & 0x01) {
@@ -731,7 +732,8 @@ static bool partially_online(TALLOC_CTX *mem_ctx,
 			     struct ctdb_node_and_flags *node)
 {
 	struct ctdb_iface_list *iface_list;
-	int ret, i;
+	unsigned int i;
+	int ret;
 	bool status = false;
 
 	if (node->flags != 0) {
@@ -761,7 +763,7 @@ static void print_nodemap_machine(TALLOC_CTX *mem_ctx,
 				  uint32_t mypnn)
 {
 	struct ctdb_node_and_flags *node;
-	int i;
+	unsigned int i;
 
 	printf("%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n",
 	       options.sep,
@@ -806,7 +808,7 @@ static void print_nodemap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 {
 	struct ctdb_node_and_flags *node;
 	int num_deleted_nodes = 0;
-	int i;
+	unsigned int i;
 
 	for (i=0; i<nodemap->num; i++) {
 		if (nodemap->node[i].flags & NODE_FLAGS_DELETED) {
@@ -845,7 +847,7 @@ static void print_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			 struct ctdb_vnn_map *vnnmap, int recmode,
 			 uint32_t recmaster)
 {
-	int i;
+	unsigned int i;
 
 	print_nodemap(mem_ctx, ctdb, nodemap, mypnn, true);
 
@@ -1186,7 +1188,7 @@ const struct {
 static void print_statistics_machine(struct ctdb_statistics *s,
 				     bool show_header)
 {
-	int i;
+	size_t i;
 
 	if (show_header) {
 		printf("CTDB version%s", options.sep);
@@ -1260,7 +1262,7 @@ static void print_statistics_machine(struct ctdb_statistics *s,
 static void print_statistics(struct ctdb_statistics *s)
 {
 	int tmp, days, hours, minutes, seconds;
-	int i;
+	size_t i;
 	const char *prefix = NULL;
 	int preflen = 0;
 
@@ -1429,7 +1431,7 @@ static void print_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		     struct ctdb_public_ip_info **ipinfo,
 		     bool all_nodes)
 {
-	int i, j;
+	unsigned int i, j;
 	char *conf, *avail, *active;
 
 	if (options.machinereadable == 1) {
@@ -1546,7 +1548,8 @@ static int get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 	struct ctdb_public_ip_list *ips;
 	struct db_hash_context *ipdb;
 	uint32_t *pnn_list;
-	int ret, count, i, j;
+	unsigned int j;
+	int ret, count, i;
 
 	nodemap = get_nodemap(ctdb, false);
 	if (nodemap == NULL) {
@@ -1653,7 +1656,8 @@ static int control_ip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 {
 	struct ctdb_public_ip_list *ips;
 	struct ctdb_public_ip_info **ipinfo;
-	int ret, i;
+	unsigned int i;
+	int ret;
 	bool do_all = false;
 
 	if (argc > 1) {
@@ -1716,7 +1720,8 @@ static int control_ipinfo(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 {
 	struct ctdb_public_ip_info *ipinfo;
 	ctdb_sock_addr addr;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	if (argc != 1) {
 		usage("ipinfo");
@@ -1766,7 +1771,8 @@ static int control_ifaces(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			  int argc, const char **argv)
 {
 	struct ctdb_iface_list *ifaces;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	if (argc != 0) {
 		usage("ifaces");
@@ -1815,7 +1821,8 @@ static int control_setifacelink(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 {
 	struct ctdb_iface_list *ifaces;
 	struct ctdb_iface *iface;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	if (argc != 2) {
 		usage("setifacelink");
@@ -1923,7 +1930,8 @@ static int control_getdbmap(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			    int argc, const char **argv)
 {
 	struct ctdb_dbid_map *dbmap;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	if (argc != 0) {
 		usage("getdbmap");
@@ -2065,7 +2073,7 @@ struct dump_record_state {
 
 static void dump_tdb_data(const char *name, TDB_DATA val)
 {
-	int i;
+	size_t i;
 
 	fprintf(stdout, "%s(%zu) = \"", name, val.dsize);
 	for (i=0; i<val.dsize; i++) {
@@ -3051,7 +3059,7 @@ static int control_tickle(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	if (argc == 0) {
 		struct ctdb_connection_list *clist;
-		int i;
+		unsigned int i;
 		unsigned int num_failed;
 
 		/* Client first but the src/dst logic is confused */
@@ -3109,7 +3117,7 @@ static int control_gettickles(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	ctdb_sock_addr addr;
 	struct ctdb_tickle_list *tickles;
 	unsigned port = 0;
-	int i;
+	unsigned int i;
 	int ret = 0;
 
 	if (argc < 1 || argc > 2) {
@@ -3184,7 +3192,7 @@ typedef int (*clist_reply_func)(struct ctdb_reply_control *reply);
 struct process_clist_state {
 	struct ctdb_connection_list *clist;
 	int count;
-	int num_failed, num_total;
+	unsigned int num_failed, num_total;
 	clist_reply_func reply_func;
 };
 
@@ -3200,7 +3208,7 @@ static struct tevent_req *process_clist_send(
 	struct tevent_req *req, *subreq;
 	struct process_clist_state *state;
 	struct ctdb_req_control request;
-	int i;
+	unsigned int i;
 
 	req = tevent_req_create(mem_ctx, &state, struct process_clist_state);
 	if (req == NULL) {
@@ -3395,7 +3403,7 @@ static int control_listnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			     int argc, const char **argv)
 {
 	struct ctdb_node_map *nodemap;
-	int i;
+	unsigned int i;
 
 	if (argc != 0) {
 		usage("listnodes");
@@ -3430,7 +3438,7 @@ static int control_listnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 static bool nodemap_identical(struct ctdb_node_map *nodemap1,
 			      struct ctdb_node_map *nodemap2)
 {
-	int i;
+	unsigned int i;
 
 	if (nodemap1->num != nodemap2->num) {
 		return false;
@@ -3457,7 +3465,7 @@ static int check_node_file_changes(TALLOC_CTX *mem_ctx,
 				   struct ctdb_node_map *fnm,
 				   bool *reload)
 {
-	int i;
+	unsigned int i;
 	bool check_failed = false;
 
 	*reload = false;
@@ -3542,7 +3550,7 @@ static int check_node_file_changes(TALLOC_CTX *mem_ctx,
 
 struct disable_recoveries_state {
 	uint32_t *pnn_list;
-	int node_count;
+	unsigned int node_count;
 	bool *reply;
 	int status;
 	bool done;
@@ -3553,7 +3561,8 @@ static void disable_recoveries_handler(uint64_t srvid, TDB_DATA data,
 {
 	struct disable_recoveries_state *state =
 		(struct disable_recoveries_state *)private_data;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	if (data.dsize != sizeof(int)) {
 		/* Ignore packet */
@@ -3643,9 +3652,9 @@ static int control_reloadnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	struct ctdb_req_control request;
 	struct ctdb_reply_control **reply;
 	bool reload;
-	int ret, i;
+	unsigned int i, count;
+	int ret;
 	uint32_t *pnn_list;
-	int count;
 
 	nodemap = get_nodemap(ctdb, false);
 	if (nodemap == NULL) {
@@ -3745,7 +3754,8 @@ static int moveip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	struct ctdb_node_map *nodemap;
 	struct ctdb_req_control request;
 	uint32_t *pnn_list;
-	int ret, i, count;
+	unsigned int i;
+	int ret, count;
 
 	ret = ctdb_message_disable_ip_check(mem_ctx, ctdb->ev, ctdb->client,
 					    CTDB_BROADCAST_CONNECTED,
@@ -3873,8 +3883,8 @@ static int control_addip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	ctdb_sock_addr addr;
 	struct ctdb_public_ip_list *pubip_list;
 	struct ctdb_addr_info addr_info;
-	unsigned int mask;
-	int ret, i, retries = 0;
+	unsigned int mask, i;
+	int ret, retries = 0;
 
 	if (argc != 2) {
 		usage("addip");
@@ -3940,7 +3950,8 @@ static int control_delip(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	ctdb_sock_addr addr;
 	struct ctdb_public_ip_list *pubip_list;
 	struct ctdb_addr_info addr_info;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	if (argc != 1) {
 		usage("delip");
@@ -4157,8 +4168,9 @@ static int control_restoredb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	uint32_t *pnn_list;
 	char timebuf[128];
 	ssize_t n;
-	int fd, i;
-	int count, ret;
+	int fd;
+	unsigned long i, count;
+	int ret;
 	uint8_t db_flags;
 
 	if (argc < 1 || argc > 2) {
@@ -4398,7 +4410,8 @@ static int control_dumpdbbackup(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	char timebuf[128];
 	struct dumpdbbackup_state state;
 	ssize_t n;
-	int fd, ret, i;
+	unsigned long i;
+	int fd, ret;
 
 	if (argc != 1) {
 		usage("dumpbackup");
@@ -4660,7 +4673,7 @@ static int control_natgw(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 static bool find_node_xpnn(TALLOC_CTX *mem_ctx, uint32_t *pnn)
 {
 	struct ctdb_node_map *nodemap;
-	int i;
+	unsigned int i;
 
 	nodemap = read_nodes_file(mem_ctx, CTDB_UNKNOWN_PNN);
 	if (nodemap == NULL) {
@@ -5559,7 +5572,8 @@ static int control_nodestatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 {
 	const char *nodestring = NULL;
 	struct ctdb_node_map *nodemap;
-	int ret, i;
+	unsigned int i;
+	int ret;
 	bool print_hdr = false;
 
 	if (argc > 1) {
@@ -5607,7 +5621,7 @@ const struct {
 static void print_dbstatistics(const char *db_name,
 			       struct ctdb_db_statistics *s)
 {
-	int i;
+	size_t i;
 	const char *prefix = NULL;
 	int preflen = 0;
 
@@ -5654,7 +5668,7 @@ static void print_dbstatistics(const char *db_name,
 
 	printf(" Num Hot Keys:     %d\n", s->num_hot_keys);
 	for (i=0; i<s->num_hot_keys; i++) {
-		int j;
+		size_t j;
 		printf("     Count:%d Key:", s->hot_keys[i].count);
 		for (j=0; j<s->hot_keys[i].key.dsize; j++) {
 			printf("%02x", s->hot_keys[i].key.dptr[j] & 0xff);
@@ -5694,7 +5708,7 @@ static int control_dbstatistics(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 struct disable_takeover_runs_state {
 	uint32_t *pnn_list;
-	int node_count;
+	unsigned int node_count;
 	bool *reply;
 	int status;
 	bool done;
@@ -5705,7 +5719,8 @@ static void disable_takeover_run_handler(uint64_t srvid, TDB_DATA data,
 {
 	struct disable_takeover_runs_state *state =
 		(struct disable_takeover_runs_state *)private_data;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	if (data.dsize != sizeof(int)) {
 		/* Ignore packet */
@@ -6038,7 +6053,7 @@ static const struct ctdb_cmd {
 static const struct ctdb_cmd *match_command(const char *command)
 {
 	const struct ctdb_cmd *cmd;
-	int i;
+	size_t i;
 
 	for (i=0; i<ARRAY_SIZE(ctdb_commands); i++) {
 		cmd = &ctdb_commands[i];
@@ -6057,7 +6072,7 @@ static const struct ctdb_cmd *match_command(const char *command)
  */
 static void usage_full(void)
 {
-	int i;
+	size_t i;
 
 	poptPrintHelp(pc, stdout, 0);
 	printf("\nCommands:\n");
