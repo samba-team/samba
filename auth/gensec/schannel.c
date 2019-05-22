@@ -213,11 +213,11 @@ static NTSTATUS netsec_do_seq_num(struct schannel_state *state,
 	return NT_STATUS_OK;
 }
 
-static void netsec_do_seal(struct schannel_state *state,
-			   const uint8_t seq_num[8],
-			   uint8_t confounder[8],
-			   uint8_t *data, uint32_t length,
-			   bool forward)
+static NTSTATUS netsec_do_seal(struct schannel_state *state,
+			       const uint8_t seq_num[8],
+			       uint8_t confounder[8],
+			       uint8_t *data, uint32_t length,
+			       bool forward)
 {
 	if (state->creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		AES_KEY key;
@@ -266,7 +266,7 @@ static void netsec_do_seal(struct schannel_state *state,
 				      digest2);
 		if (rc < 0) {
 			ZERO_ARRAY(digest2);
-			return;
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		rc = gnutls_hmac_fast(GNUTLS_MAC_MD5,
@@ -278,7 +278,7 @@ static void netsec_do_seal(struct schannel_state *state,
 
 		ZERO_ARRAY(digest2);
 		if (rc < 0) {
-			return;
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		rc = gnutls_cipher_init(&cipher_hnd,
@@ -287,14 +287,14 @@ static void netsec_do_seal(struct schannel_state *state,
 					NULL);
 		if (rc < 0) {
 			ZERO_ARRAY(_sealing_key);
-			return;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		}
 		rc = gnutls_cipher_encrypt(cipher_hnd,
 					   confounder,
 					   8);
 		if (rc < 0) {
 			ZERO_ARRAY(_sealing_key);
-			return;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		}
 		rc = gnutls_cipher_encrypt(cipher_hnd,
 					   data,
@@ -302,9 +302,11 @@ static void netsec_do_seal(struct schannel_state *state,
 		gnutls_cipher_deinit(cipher_hnd);
 		ZERO_ARRAY(_sealing_key);
 		if (rc < 0) {
-			return;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		}
 	}
+
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -471,10 +473,16 @@ static NTSTATUS netsec_incoming_packet(struct schannel_state *state,
 	SETUP_SEQNUM(state, seq_num, !state->initiator);
 
 	if (do_unseal) {
-		netsec_do_seal(state, seq_num,
-			       confounder,
-			       data, length,
-			       false);
+		status = netsec_do_seal(state,
+					seq_num,
+					confounder,
+					data,
+					length,
+					false);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("netsec_do_seal failed: %s\n", nt_errstr(status));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	if (state->gensec->want_features & GENSEC_FEATURE_SIGN_PKT_HEADER) {
@@ -592,10 +600,17 @@ static NTSTATUS netsec_outgoing_packet(struct schannel_state *state,
 	}
 
 	if (do_seal) {
-		netsec_do_seal(state, seq_num,
-			       confounder,
-			       data, length,
-			       true);
+		status = netsec_do_seal(state,
+					seq_num,
+					confounder,
+					data,
+					length,
+					true);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("netsec_do_seal failed: %s\n",
+				    nt_errstr(status));
+			return status;
+		}
 	}
 
 	status = netsec_do_seq_num(state, checksum, checksum_length, seq_num);
