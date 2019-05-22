@@ -1006,7 +1006,8 @@ static bool test_nttrans_create(struct torture_context *tctx, struct smbcli_stat
 
 	/* Check some create options (these all should be ignored) */
 	for (i=0; i < 32; i++) {
-		uint32_t create_option = (1 << i) & NTCREATEX_OPTIONS_MUST_IGNORE_MASK;
+		uint32_t create_option =
+			((uint32_t)1 << i) & NTCREATEX_OPTIONS_MUST_IGNORE_MASK;
 		if (create_option == 0) {
 			continue;
 		}
@@ -1045,7 +1046,7 @@ static bool test_nttrans_create(struct torture_context *tctx, struct smbcli_stat
 	not_a_directory_mask = 0;
 	unexpected_mask = 0;
 	for (i=0; i < 32; i++) {
-		uint32_t create_option = 1<<i;
+		uint32_t create_option = (uint32_t)1<<i;
 		if (create_option & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
 			continue;
 		}
