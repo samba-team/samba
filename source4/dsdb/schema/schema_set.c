@@ -73,11 +73,22 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 	struct loadparm_context *lp_ctx =
 		talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
 				struct loadparm_context);
+	bool guid_indexing = true;
+	if (lp_ctx != NULL) {
+		/*
+		 * GUID indexing is wanted by Samba by default.  This allows
+		 * an override in a specific case for downgrades.
+		 */
+		guid_indexing = lpcfg_parm_bool(lp_ctx,
+						NULL,
+						"dsdb",
+						"guid index",
+						true);
+	}
 	/* setup our own attribute name to schema handler */
 	ldb_schema_attribute_set_override_handler(ldb, dsdb_attribute_handler_override, schema);
 	ldb_schema_set_override_indexlist(ldb, true);
-	if (lp_ctx == NULL ||
-	    lpcfg_parm_bool(lp_ctx, NULL, "dsdb", "guid index", true)) {
+	if (guid_indexing) {
 		ldb_schema_set_override_GUID_index(ldb, "objectGUID", "GUID");
 	}
 
@@ -116,8 +127,7 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		goto op_error;
 	}
 
-	if (lp_ctx == NULL ||
-	    lpcfg_parm_bool(lp_ctx, NULL, "dsdb", "guid index", true)) {
+	if (guid_indexing) {
 		ret = ldb_msg_add_string(msg_idx, "@IDXGUID", "objectGUID");
 		if (ret != LDB_SUCCESS) {
 			goto op_error;
@@ -148,12 +158,25 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 
 		/*
 		 * Write out a rough approximation of the schema
-		 * as an @ATTRIBUTES value, for bootstrapping
+		 * as an @ATTRIBUTES value, for bootstrapping.
+		 * Only write ORDERED_INTEGER if we're using GUID indexes,
 		 */
 		if (strcmp(syntax, LDB_SYNTAX_INTEGER) == 0) {
 			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "INTEGER");
 		} else if (strcmp(syntax, LDB_SYNTAX_ORDERED_INTEGER) == 0) {
-			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "ORDERED_INTEGER");
+			/*
+			 * When preparing to downgrade Samba, we need to write
+			 * out an LDB without the new key word ORDERED_INTEGER.
+			 */
+			if (guid_indexing) {
+				ret = ldb_msg_add_string(msg,
+							 attr->lDAPDisplayName,
+							 "ORDERED_INTEGER");
+			} else {
+				ret = ldb_msg_add_string(msg,
+							 attr->lDAPDisplayName,
+							 "INTEGER");
+			}
 		} else if (strcmp(syntax, LDB_SYNTAX_DIRECTORY_STRING) == 0) {
 			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "CASE_INSENSITIVE");
 		}
