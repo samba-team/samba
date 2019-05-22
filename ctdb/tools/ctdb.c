@@ -229,7 +229,7 @@ static bool verify_pnn(struct ctdb_context *ctdb, int pnn)
 
 	found = false;
 	for (i=0; i<nodemap->num; i++) {
-		if (nodemap->node[i].pnn == pnn) {
+		if (nodemap->node[i].pnn == (uint32_t)pnn) {
 			found = true;
 			break;
 		}
@@ -1637,7 +1637,7 @@ static int get_all_public_ips(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	if (count != ips->num) {
+	if ((unsigned int)count != ips->num) {
 		goto failed;
 	}
 
@@ -2460,7 +2460,7 @@ static int control_dumpmemory(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	}
 
 	n = write(1, mem_str, strlen(mem_str));
-	if (n < 0 || n != strlen(mem_str)) {
+	if (n < 0 || (size_t)n != strlen(mem_str)) {
 		fprintf(stderr, "Failed to write talloc summary\n");
 		return 1;
 	}
@@ -2476,7 +2476,7 @@ static void dump_memory(uint64_t srvid, TDB_DATA data, void *private_data)
 
 	len = strnlen((const char *)data.dptr, data.dsize);
 	n = write(1, data.dptr, len);
-	if (n < 0 || n != len) {
+	if (n < 0 || (size_t)n != len) {
 		fprintf(stderr, "Failed to write talloc summary\n");
 	}
 
@@ -3578,7 +3578,7 @@ static void disable_recoveries_handler(uint64_t srvid, TDB_DATA data,
 		return;
 	}
 	for (i=0; i<state->node_count; i++) {
-		if (state->pnn_list[i] == ret) {
+		if (state->pnn_list[i] == (uint32_t)ret) {
 			state->reply[i] = true;
 			break;
 		}
@@ -5234,7 +5234,8 @@ static int control_tfetch(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		}
 
 		nwritten = sys_write(fd, data.dptr, data.dsize);
-		if (nwritten != data.dsize) {
+		if (nwritten == -1 ||
+		    (size_t)nwritten != data.dsize) {
 			fprintf(stderr, "Failed to write record to file\n");
 			close(fd);
 			goto fail;
@@ -5736,7 +5737,7 @@ static void disable_takeover_run_handler(uint64_t srvid, TDB_DATA data,
 		return;
 	}
 	for (i=0; i<state->node_count; i++) {
-		if (state->pnn_list[i] == ret) {
+		if (state->pnn_list[i] == (uint32_t)ret) {
 			state->reply[i] = true;
 			break;
 		}
