@@ -167,6 +167,42 @@ samba_libs_configure_libs = samba_libs_configure_base + " --bundled-libraries=cm
 samba_libs_configure_bundled_libs = " --bundled-libraries=!talloc,!pytalloc-util,!tdb,!pytdb,!ldb,!pyldb,!pyldb-util,!tevent,!pytevent,!popt"
 samba_libs_configure_samba = samba_libs_configure_base + samba_libs_configure_bundled_libs
 
+
+def format_option(name, value=None):
+    """Format option as str list."""
+    if value is None:  # boolean option
+        return [name]
+    if not isinstance(value, list):  # single value option
+        value = [value]
+    # repeatable option
+    return ['{}={}'.format(name, item) for item in value]
+
+
+def make_test(
+        cmd='make test',
+        FAIL_IMMEDIATELY=1,
+        TESTS='',
+        include_envs=None,
+        exclude_envs=None):
+
+    test_options = []
+    if include_envs:
+        test_options = format_option('--include-env', include_envs)
+    if exclude_envs:
+        test_options = format_option('--exclude-env', exclude_envs)
+    if test_options:
+        # join envs options to original test options
+        TESTS = (TESTS + ' ' + ' '.join(test_options)).strip()
+
+    _options = []
+    if FAIL_IMMEDIATELY:
+        _options.append('FAIL_IMMEDIATELY=1')
+    if TESTS:
+        _options.append("TESTS='{}'".format(TESTS))
+
+    return ' '.join([cmd] + _options)
+
+
 tasks = {
     "ctdb": [
         ("random-sleep", random_sleep(300, 900)),
@@ -183,46 +219,46 @@ tasks = {
         ("random-sleep", random_sleep(300, 900)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='--exclude-env=none "
-            "--exclude-env=nt4_dc "
-            "--exclude-env=nt4_dc_schannel "
-            "--exclude-env=nt4_member "
-            "--exclude-env=ad_dc "
-            "--exclude-env=ad_dc_backup "
-            "--exclude-env=ad_dc_ntvfs "
-            "--exclude-env=ad_dc_default "
-            "--exclude-env=ad_dc_slowtests "
-            "--exclude-env=ad_dc_no_nss "
-            "--exclude-env=ad_dc_no_ntlm "
-            "--exclude-env=fl2003dc "
-            "--exclude-env=fl2008dc "
-            "--exclude-env=fl2008r2dc "
-            "--exclude-env=ad_member "
-            "--exclude-env=ad_member_idmap_rid "
-            "--exclude-env=ad_member_idmap_ad "
-            "--exclude-env=ad_member_rfc2307 "
-            "--exclude-env=chgdcpass "
-            "--exclude-env=vampire_2000_dc "
-            "--exclude-env=fl2000dc "
-            "--exclude-env=fileserver "
-            "--exclude-env=maptoguest "
-            "--exclude-env=simpleserver "
-            "--exclude-env=backupfromdc "
-            "--exclude-env=restoredc "
-            "--exclude-env=renamedc "
-            "--exclude-env=offlinebackupdc "
-            "--exclude-env=labdc "
-            "--exclude-env=preforkrestartdc "
-            "--exclude-env=proclimitdc "
-            "--exclude-env=promoted_dc "
-            "--exclude-env=vampire_dc "
-            "--exclude-env=rodc "
-            "--exclude-env=ad_dc_default "
-            "--exclude-env=ad_dc_slowtests "
-            "--exclude-env=schema_pair_dc "
-            "--exclude-env=schema_dc "
-            "'"),
+        ("test", make_test(exclude_envs=[
+            "none",
+            "nt4_dc",
+            "nt4_dc_schannel",
+            "nt4_member",
+            "ad_dc",
+            "ad_dc_backup",
+            "ad_dc_ntvfs",
+            "ad_dc_default",
+            "ad_dc_slowtests",
+            "ad_dc_no_nss",
+            "ad_dc_no_ntlm",
+            "fl2003dc",
+            "fl2008dc",
+            "fl2008r2dc",
+            "ad_member",
+            "ad_member_idmap_rid",
+            "ad_member_idmap_ad",
+            "ad_member_rfc2307",
+            "chgdcpass",
+            "vampire_2000_dc",
+            "fl2000dc",
+            "fileserver",
+            "maptoguest",
+            "simpleserver",
+            "backupfromdc",
+            "restoredc",
+            "renamedc",
+            "offlinebackupdc",
+            "labdc",
+            "preforkrestartdc",
+            "proclimitdc",
+            "promoted_dc",
+            "vampire_dc",
+            "rodc",
+            "ad_dc_default",
+            "ad_dc_slowtests",
+            "schema_pair_dc",
+            "schema_dc",
+            ])),
         ("lcov", LCOV_CMD),
         ("install", "make install"),
         ("check-clean-tree", "script/clean-source-tree.sh"),
@@ -233,12 +269,11 @@ tasks = {
         ("random-sleep", random_sleep(300, 900)),
         ("configure", "./configure.developer --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='"
-            "--include-env=nt4_dc "
-            "--include-env=nt4_dc_schannel "
-            "--include-env=nt4_member "
-            "'"),
+        ("test", make_test(include_envs=[
+            "nt4_dc",
+            "nt4_dc_schannel",
+            "nt4_member",
+            ])),
         ("lcov", LCOV_CMD),
         ("install", "make install"),
         ("check-clean-tree", "script/clean-source-tree.sh"),
@@ -249,12 +284,11 @@ tasks = {
         ("random-sleep", random_sleep(300, 900)),
         ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='"
-            "--include-env=fileserver "
-            "--include-env=maptoguest "
-            "--include-env=simpleserver "
-            "'"),
+        ("test", make_test(include_envs=[
+            "fileserver",
+            "maptoguest",
+            "simpleserver",
+            ])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
@@ -263,13 +297,12 @@ tasks = {
         ("random-sleep", random_sleep(300, 900)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='"
-            "--include-env=ad_member "
-            "--include-env=ad_member_idmap_rid "
-            "--include-env=ad_member_idmap_ad "
-            "--include-env=ad_member_rfc2307 "
-            "'"),
+        ("test", make_test(include_envs=[
+            "ad_member",
+            "ad_member_idmap_rid",
+            "ad_member_idmap_ad",
+            "ad_member_rfc2307",
+            ])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
@@ -278,11 +311,11 @@ tasks = {
         ("random-sleep", random_sleep(1, 1)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='--include-env=ad_dc "
-            "--include-env=ad_dc_no_nss "
-            "--include-env=ad_dc_no_ntlm "
-            "'"),
+        ("test", make_test(include_envs=[
+            "ad_dc",
+            "ad_dc_no_nss",
+            "ad_dc_no_ntlm",
+            ])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
@@ -291,12 +324,11 @@ tasks = {
         ("random-sleep", random_sleep(1, 1)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='"
-            "--include-env=vampire_dc "
-            "--include-env=vampire_2000_dc "
-            "--include-env=rodc "
-            "'"),
+        ("test", make_test(include_envs=[
+            "vampire_dc",
+            "vampire_2000_dc",
+            "rodc",
+            ])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
@@ -305,13 +337,12 @@ tasks = {
         ("random-sleep", random_sleep(1, 1)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='"
-            "--include-env=promoted_dc "
-            "--include-env=chgdcpass "
-            "--include-env=preforkrestartdc "
-            "--include-env=proclimitdc "
-            "'"),
+        ("test", make_test(include_envs=[
+            "promoted_dc",
+            "chgdcpass",
+            "preforkrestartdc",
+            "proclimitdc",
+            ])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
@@ -320,13 +351,12 @@ tasks = {
         ("random-sleep", random_sleep(1, 1)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-         "TESTS='"
-         "--include-env=fl2000dc "
-         "--include-env=fl2003dc "
-         "--include-env=fl2008dc "
-         "--include-env=fl2008r2dc "
-         "'"),
+        ("test", make_test(include_envs=[
+            "fl2000dc",
+            "fl2003dc",
+            "fl2008dc",
+            "fl2008r2dc",
+            ])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
@@ -335,10 +365,7 @@ tasks = {
         ("random-sleep", random_sleep(1, 1)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='"
-            "--include-env=ad_dc_default "
-            "'"),
+        ("test", make_test(include_envs=["ad_dc_default"])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
@@ -347,10 +374,7 @@ tasks = {
         ("random-sleep", random_sleep(1, 1)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='"
-            "--include-env=ad_dc_slowtests "
-            "'"),
+        ("test", make_test(include_envs=["ad_dc_slowtests"])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
@@ -359,11 +383,7 @@ tasks = {
         ("random-sleep", random_sleep(1, 1)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='"
-            "--include-env=schema_dc "
-            "--include-env=schema_pair_dc "
-            "'"),
+        ("test", make_test(include_envs=["schema_dc", "schema_pair_dc"])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
@@ -374,10 +394,7 @@ tasks = {
         ("random-sleep", random_sleep(1, 1)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='"
-            "--include-env=ad_dc_ntvfs "
-            "'"),
+        ("test", make_test(include_envs=["ad_dc_ntvfs"])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
@@ -388,14 +405,14 @@ tasks = {
         ("random-sleep", random_sleep(300, 900)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='--include-env=backupfromdc "
-            "--include-env=restoredc "
-            "--include-env=renamedc "
-            "--include-env=offlinebackupdc "
-            "--include-env=labdc "
-            "--include-env=ad_dc_backup "
-            "'"),
+        ("test", make_test(include_envs=[
+            "backupfromdc",
+            "restoredc",
+            "renamedc",
+            "offlinebackupdc",
+            "labdc",
+            "ad_dc_backup",
+            ])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
@@ -403,7 +420,7 @@ tasks = {
     "samba-test-only": [
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params),
         ("make", "make -j"),
-        ("test", 'make test FAIL_IMMEDIATELY=1 TESTS="${TESTS}"'),
+        ("test", make_test(TESTS="${TESTS}")),
         ("lcov", LCOV_CMD),
         ],
 
@@ -426,8 +443,7 @@ tasks = {
         ("random-sleep", random_sleep(300, 900)),
         ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make quicktest FAIL_IMMEDIATELY=1 "
-            "TESTS='--include-env=ad_dc'"),
+        ("test", make_test(cmd='make quicktest', include_envs=["ad_dc"])),
         ("lcov", LCOV_CMD),
         ("install", "make install"),
         ("check-clean-tree", "script/clean-source-tree.sh"),
@@ -489,9 +505,7 @@ tasks = {
         ("random-sleep", random_sleep(1, 1)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
-        ("test", "make test "
-            "FAIL_IMMEDIATELY=1 "
-            "TESTS='--include-env=none'"),
+        ("test", make_test(include_envs=["none"])),
         ("lcov", LCOV_CMD),
         ],
 
@@ -500,9 +514,7 @@ tasks = {
         # build with all modules static
         ("allstatic-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=ALL"),
         ("allstatic-make", "make -j"),
-        ("allstatic-test", "make test "
-            "FAIL_IMMEDIATELY=1 "
-            "TESTS='samba3.smb2.create.*nt4_dc'"),
+        ("allstatic-test", make_test(TESTS="samba3.smb2.create.*nt4_dc")),
         ("lcov", LCOV_CMD),
 
         # retry without any required modules
@@ -522,8 +534,7 @@ tasks = {
         ("make", "make -j"),
         # we currently cannot run a full make test, a limited list of tests could be run
         # via "make test TESTS=sometests"
-        ("test", "make test FAIL_IMMEDIATELY=1 "
-            "TESTS='--include-env=ktest'"),
+        ("test", make_test(include_envs=["ktest"])),
         ("lcov", LCOV_CMD),
         ("install", "make install"),
         ("check-clean-tree", "script/clean-source-tree.sh"),
