@@ -113,11 +113,13 @@ static void syncops_two_names(const char *name1, const char *name2)
  */
 static void syncops_smb_fname(const struct smb_filename *smb_fname)
 {
-	char *parent;
-	parent = parent_dir(NULL, smb_fname->base_name);
-	if (parent) {
-		syncops_sync_directory(parent);
-		talloc_free(parent);
+	char *parent = NULL;
+	if (smb_fname != NULL) {
+		parent = parent_dir(NULL, smb_fname->base_name);
+		if (parent != NULL) {
+			syncops_sync_directory(parent);
+			talloc_free(parent);
+		}
 	}
 }
 
