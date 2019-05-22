@@ -768,7 +768,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 		fnum = io.ntcreatex.out.file.fnum; \
 		setup \
 		notify.nttrans.in.file.fnum = fnum;	\
-		notify.nttrans.in.completion_filter = (1<<i); \
+		notify.nttrans.in.completion_filter = ((uint32_t)1<<i); \
 		req = smb_raw_changenotify_send(cli->tree, &notify); \
 		smb_raw_chkpath(cli->tree, &chkpath); \
 		op \
@@ -817,7 +817,7 @@ static bool test_notify_mask(struct torture_context *tctx,
 					notify.nttrans.in.completion_filter, \
 					notify.nttrans.out.changes[0].name.s));\
 		} \
-		mask |= (1<<i); \
+		mask |= ((uint32_t)1<<i); \
 	} \
 	if ((expected) != mask) { \
 		torture_assert_int_not_equal_goto(tctx, ((expected) & ~mask), \
