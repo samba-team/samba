@@ -40,7 +40,7 @@ int main(void)
 
 	for (i=0; i<1024*1024; i++) {
 		reqid = reqid_new(reqid_ctx, data);
-		assert(reqid != -1);
+		assert(reqid != REQID_INVALID);
 	}
 
 	for (i=0; i<1024; i++) {
