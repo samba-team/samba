@@ -2,11 +2,12 @@
 
 
 bld.SAMBA_LIBRARY('samba-errors',
-                  public_headers='error.h ntstatus.h ntstatus_gen.h doserr.h werror.h werror_gen.h hresult.h',
+                  public_headers='error.h ntstatus.h ntstatus_gen.h doserr.h werror.h werror_gen.h hresult.h gnutls_error.h',
                   private_headers='nterr_private.h',
                   header_path='core',
-                  source='doserr.c errormap.c nterr.c errmap_unix.c hresult.c',
+                  source='doserr.c errormap.c nterr.c errmap_unix.c hresult.c gnutls_error.c',
                   public_deps='talloc samba-debug',
+                  deps='gnutls',
                   # private_library=True,
                   pc_files=[],
                   vnum='1',
