@@ -5112,7 +5112,7 @@ static int control_ptrans(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	struct ctdb_transaction_handle *h;
 	uint8_t db_flags;
 	FILE *file;
-	TDB_DATA key, value;
+	TDB_DATA key = tdb_null, value = tdb_null;
 	int ret;
 
 	if (argc < 1 || argc > 2) {
