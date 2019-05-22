@@ -3218,11 +3218,11 @@ static uint64_t readdir_attr_rfork_size(struct vfs_handle_struct *handle,
 
 	switch (config->rsrc) {
 	case FRUIT_RSRC_ADFILE:
-	case FRUIT_RSRC_XATTR:
 		rfork_size = readdir_attr_rfork_size_adouble(handle,
 							     smb_fname);
 		break;
 
+	case FRUIT_RSRC_XATTR:
 	case FRUIT_RSRC_STREAM:
 		rfork_size = readdir_attr_rfork_size_stream(handle,
 							    smb_fname);
