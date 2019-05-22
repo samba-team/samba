@@ -158,336 +158,370 @@ samba_libs_configure_bundled_libs = " --bundled-libraries=!talloc,!pytalloc-util
 samba_libs_configure_samba = samba_libs_configure_base + samba_libs_configure_bundled_libs
 
 tasks = {
-    "ctdb": [("random-sleep", "../script/random-sleep.sh 300 900", "text/plain"),
-               ("configure", "./configure " + ctdb_configure_params, "text/plain"),
-               ("make", "make all", "text/plain"),
-               ("install", "make install", "text/plain"),
-               ("test", "make autotest", "text/plain"),
-               ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
-               ("clean", "make clean", "text/plain")],
+    "ctdb": [
+        ("random-sleep", "../script/random-sleep.sh 300 900", "text/plain"),
+        ("configure", "./configure " + ctdb_configure_params, "text/plain"),
+        ("make", "make all", "text/plain"),
+        ("install", "make install", "text/plain"),
+        ("test", "make autotest", "text/plain"),
+        ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
+        ("clean", "make clean", "text/plain"),
+        ],
 
     # We have 'test' before 'install' because, 'test' should work without 'install (runs all the other envs)'
     "samba": [
-                ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
-                ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                ("make", "make -j", "text/plain"),
-                ("test", "make test FAIL_IMMEDIATELY=1 "
-                 "TESTS='--exclude-env=none "
-                 "--exclude-env=nt4_dc "
-                 "--exclude-env=nt4_dc_schannel "
-                 "--exclude-env=nt4_member "
-                 "--exclude-env=ad_dc "
-                 "--exclude-env=ad_dc_backup "
-                 "--exclude-env=ad_dc_ntvfs "
-                 "--exclude-env=ad_dc_default "
-                 "--exclude-env=ad_dc_slowtests "
-                 "--exclude-env=ad_dc_no_nss "
-                 "--exclude-env=ad_dc_no_ntlm "
-                 "--exclude-env=fl2003dc "
-                 "--exclude-env=fl2008dc "
-                 "--exclude-env=fl2008r2dc "
-                 "--exclude-env=ad_member "
-                 "--exclude-env=ad_member_idmap_rid "
-                 "--exclude-env=ad_member_idmap_ad "
-                 "--exclude-env=ad_member_rfc2307 "
-                 "--exclude-env=chgdcpass "
-                 "--exclude-env=vampire_2000_dc "
-                 "--exclude-env=fl2000dc "
-                 "--exclude-env=fileserver "
-                 "--exclude-env=maptoguest "
-                 "--exclude-env=simpleserver "
-                 "--exclude-env=backupfromdc "
-                 "--exclude-env=restoredc "
-                 "--exclude-env=renamedc "
-                 "--exclude-env=offlinebackupdc "
-                 "--exclude-env=labdc "
-                 "--exclude-env=preforkrestartdc "
-                 "--exclude-env=proclimitdc "
-                 "--exclude-env=promoted_dc "
-                 "--exclude-env=vampire_dc "
-                 "--exclude-env=rodc "
-                 "--exclude-env=ad_dc_default "
-                 "--exclude-env=ad_dc_slowtests "
-                 "--exclude-env=schema_pair_dc "
-                 "--exclude-env=schema_dc "
-                 "'",
-                 "text/plain"),
-                ("lcov", LCOV_CMD, "text/plain"),
-                ("install", "make install", "text/plain"),
-                ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                ("clean", "make clean", "text/plain")],
+        ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='--exclude-env=none "
+            "--exclude-env=nt4_dc "
+            "--exclude-env=nt4_dc_schannel "
+            "--exclude-env=nt4_member "
+            "--exclude-env=ad_dc "
+            "--exclude-env=ad_dc_backup "
+            "--exclude-env=ad_dc_ntvfs "
+            "--exclude-env=ad_dc_default "
+            "--exclude-env=ad_dc_slowtests "
+            "--exclude-env=ad_dc_no_nss "
+            "--exclude-env=ad_dc_no_ntlm "
+            "--exclude-env=fl2003dc "
+            "--exclude-env=fl2008dc "
+            "--exclude-env=fl2008r2dc "
+            "--exclude-env=ad_member "
+            "--exclude-env=ad_member_idmap_rid "
+            "--exclude-env=ad_member_idmap_ad "
+            "--exclude-env=ad_member_rfc2307 "
+            "--exclude-env=chgdcpass "
+            "--exclude-env=vampire_2000_dc "
+            "--exclude-env=fl2000dc "
+            "--exclude-env=fileserver "
+            "--exclude-env=maptoguest "
+            "--exclude-env=simpleserver "
+            "--exclude-env=backupfromdc "
+            "--exclude-env=restoredc "
+            "--exclude-env=renamedc "
+            "--exclude-env=offlinebackupdc "
+            "--exclude-env=labdc "
+            "--exclude-env=preforkrestartdc "
+            "--exclude-env=proclimitdc "
+            "--exclude-env=promoted_dc "
+            "--exclude-env=vampire_dc "
+            "--exclude-env=rodc "
+            "--exclude-env=ad_dc_default "
+            "--exclude-env=ad_dc_slowtests "
+            "--exclude-env=schema_pair_dc "
+            "--exclude-env=schema_dc "
+            "'",
+            "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("install", "make install", "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ("clean", "make clean", "text/plain"),
+        ],
 
-    "samba-nt4": [("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
-                    ("configure", "./configure.developer --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                    ("make", "make -j", "text/plain"),
-                    ("test", "make test FAIL_IMMEDIATELY=1 "
-                     "TESTS='"
-                     "--include-env=nt4_dc "
-                     "--include-env=nt4_dc_schannel "
-                     "--include-env=nt4_member "
-                     "'", "text/plain"),
-                    ("lcov", LCOV_CMD, "text/plain"),
-                    ("install", "make install", "text/plain"),
-                    ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                    ("clean", "make clean", "text/plain")],
+    "samba-nt4": [
+        ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
+        ("configure", "./configure.developer --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='"
+            "--include-env=nt4_dc "
+            "--include-env=nt4_dc_schannel "
+            "--include-env=nt4_member "
+            "'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("install", "make install", "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ("clean", "make clean", "text/plain"),
+        ],
 
-    "samba-fileserver": [("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
-                           ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                           ("make", "make -j", "text/plain"),
-                           ("test", "make test FAIL_IMMEDIATELY=1 "
-                            "TESTS='"
-                            "--include-env=fileserver "
-                            "--include-env=maptoguest "
-                            "--include-env=simpleserver "
-                            "'", "text/plain"),
-                           ("lcov", LCOV_CMD, "text/plain"),
-                           ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+    "samba-fileserver": [
+        ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
+        ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='"
+            "--include-env=fileserver "
+            "--include-env=maptoguest "
+            "--include-env=simpleserver "
+            "'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ],
 
-    "samba-ad-member": [("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
-                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                        ("make", "make -j", "text/plain"),
-                        ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='"
-                         "--include-env=ad_member "
-                         "--include-env=ad_member_idmap_rid "
-                         "--include-env=ad_member_idmap_ad "
-                         "--include-env=ad_member_rfc2307 "
-                         "'", "text/plain"),
-                        ("lcov", LCOV_CMD, "text/plain"),
-                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+    "samba-ad-member": [
+        ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='"
+            "--include-env=ad_member "
+            "--include-env=ad_member_idmap_rid "
+            "--include-env=ad_member_idmap_ad "
+            "--include-env=ad_member_rfc2307 "
+            "'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ],
 
-    "samba-ad-dc-1": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
-                      ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                      ("make", "make -j", "text/plain"),
-                      ("test", "make test FAIL_IMMEDIATELY=1 "
-                       "TESTS='--include-env=ad_dc "
-                       "--include-env=ad_dc_no_nss "
-                       "--include-env=ad_dc_no_ntlm "
-                       "'", "text/plain"),
-                      ("lcov", LCOV_CMD, "text/plain"),
-                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+    "samba-ad-dc-1": [
+        ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='--include-env=ad_dc "
+            "--include-env=ad_dc_no_nss "
+            "--include-env=ad_dc_no_ntlm "
+            "'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ],
 
-    "samba-ad-dc-2": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
-                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                        ("make", "make -j", "text/plain"),
-                        ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='"
-                         "--include-env=vampire_dc "
-                         "--include-env=vampire_2000_dc "
-                         "--include-env=rodc "
-                         "'", "text/plain"),
-                        ("lcov", LCOV_CMD, "text/plain"),
-                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+    "samba-ad-dc-2": [
+        ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='"
+            "--include-env=vampire_dc "
+            "--include-env=vampire_2000_dc "
+            "--include-env=rodc "
+            "'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ],
 
-    "samba-ad-dc-3": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
-                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                        ("make", "make -j", "text/plain"),
-                        ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='"
-                         "--include-env=promoted_dc "
-                         "--include-env=chgdcpass "
-                         "--include-env=preforkrestartdc "
-                         "--include-env=proclimitdc "
-                         "'", "text/plain"),
-                        ("lcov", LCOV_CMD, "text/plain"),
-                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+    "samba-ad-dc-3": [
+        ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='"
+            "--include-env=promoted_dc "
+            "--include-env=chgdcpass "
+            "--include-env=preforkrestartdc "
+            "--include-env=proclimitdc "
+            "'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ],
 
-    "samba-ad-dc-4": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
-                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                        ("make", "make -j", "text/plain"),
-                        ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='"
-                         "--include-env=fl2000dc "
-                         "--include-env=fl2003dc "
-                         "--include-env=fl2008dc "
-                         "--include-env=fl2008r2dc "
-                         "'", "text/plain"),
-                        ("lcov", LCOV_CMD, "text/plain"),
-                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+    "samba-ad-dc-4": [
+        ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+         "TESTS='"
+         "--include-env=fl2000dc "
+         "--include-env=fl2003dc "
+         "--include-env=fl2008dc "
+         "--include-env=fl2008r2dc "
+         "'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ],
 
-    "samba-ad-dc-5": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
-                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                        ("make", "make -j", "text/plain"),
-                        ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='"
-                         "--include-env=ad_dc_default "
-                         "'", "text/plain"),
-                        ("lcov", LCOV_CMD, "text/plain"),
-                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+    "samba-ad-dc-5": [
+        ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='"
+            "--include-env=ad_dc_default "
+            "'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ],
 
-    "samba-ad-dc-6": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
-                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                        ("make", "make -j", "text/plain"),
-                        ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='"
-                         "--include-env=ad_dc_slowtests "
-                         "'", "text/plain"),
-                        ("lcov", LCOV_CMD, "text/plain"),
-                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+    "samba-ad-dc-6": [
+        ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='"
+            "--include-env=ad_dc_slowtests "
+            "'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ],
 
-
-    "samba-schemaupgrade": [("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
-                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                        ("make", "make -j", "text/plain"),
-                        ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='"
-                         "--include-env=schema_dc "
-                         "--include-env=schema_pair_dc "
-                         "'", "text/plain"),
-                        ("lcov", LCOV_CMD, "text/plain"),
-                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+    "samba-schemaupgrade": [
+        ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='"
+            "--include-env=schema_dc "
+            "--include-env=schema_pair_dc "
+            "'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ],
 
     # We split out the ad_dc_ntvfs tests (which are long) so other test do not wait
     # This is currently the longest task, so we don't randomly delay it.
     "samba-ad-dc-ntvfs": [
-                      ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
-                      ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                      ("make", "make -j", "text/plain"),
-                      ("test", "make test FAIL_IMMEDIATELY=1 "
-                       "TESTS='"
-                       "--include-env=ad_dc_ntvfs "
-                       "'", "text/plain"),
-                      ("lcov", LCOV_CMD, "text/plain"),
-                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+        ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='"
+            "--include-env=ad_dc_ntvfs "
+            "'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ],
 
     # run the backup/restore testenvs separately as they're fairly standalone
     # (and CI seems to max out at ~8 different DCs running at once)
-    "samba-ad-dc-backup": [("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
-                        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                        ("make", "make -j", "text/plain"),
-                        ("test", "make test FAIL_IMMEDIATELY=1 "
-                         "TESTS='--include-env=backupfromdc "
-                         "--include-env=restoredc "
-                         "--include-env=renamedc "
-                         "--include-env=offlinebackupdc "
-                         "--include-env=labdc "
-                         "--include-env=ad_dc_backup "
-                         "'", "text/plain"),
-                        ("lcov", LCOV_CMD, "text/plain"),
-                        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain")],
+    "samba-ad-dc-backup": [
+        ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='--include-env=backupfromdc "
+            "--include-env=restoredc "
+            "--include-env=renamedc "
+            "--include-env=offlinebackupdc "
+            "--include-env=labdc "
+            "--include-env=ad_dc_backup "
+            "'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ],
 
-    "samba-test-only": [("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
-                          ("make", "make -j", "text/plain"),
-                          ("test", 'make test FAIL_IMMEDIATELY=1 TESTS="${TESTS}"', "text/plain"),
-                          ("lcov", LCOV_CMD, "text/plain"),
-                        ],
+    "samba-test-only": [
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", 'make test FAIL_IMMEDIATELY=1 TESTS="${TESTS}"', "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ],
 
     # Test cross-compile infrastructure
-    "samba-xc": [("random-sleep", "script/random-sleep.sh 900 1500", "text/plain"),
-                   ("configure-native", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                   ("configure-cross-execute", "./configure.developer --out ./bin-xe --cross-compile --cross-execute=script/identity_cc.sh" \
-                    " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xe/ab" + samba_configure_params, "text/plain"),
-                   ("configure-cross-answers", "./configure.developer --out ./bin-xa --cross-compile" \
-                    " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xa/ab" + samba_configure_params, "text/plain"),
-                   ("compare-results", "script/compare_cc_results.py "
-                    "./bin/c4che/default{} "
-                    "./bin-xe/c4che/default{} "
-                    "./bin-xa/c4che/default{}".format(*([CACHE_SUFFIX]*3)), "text/plain")],
+    "samba-xc": [
+        ("random-sleep", "script/random-sleep.sh 900 1500", "text/plain"),
+        ("configure-native", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("configure-cross-execute", "./configure.developer --out ./bin-xe --cross-compile --cross-execute=script/identity_cc.sh" \
+            " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xe/ab" + samba_configure_params, "text/plain"),
+        ("configure-cross-answers", "./configure.developer --out ./bin-xa --cross-compile" \
+            " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xa/ab" + samba_configure_params, "text/plain"),
+        ("compare-results", "script/compare_cc_results.py "
+            "./bin/c4che/default{} "
+            "./bin-xe/c4che/default{} "
+            "./bin-xa/c4che/default{}".format(*([CACHE_SUFFIX]*3)), "text/plain"),
+        ],
 
     # test build with -O3 -- catches extra warnings and bugs, tests the ad_dc environments
-    "samba-o3": [("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
-                   ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params, "text/plain"),
-                   ("make", "make -j", "text/plain"),
-                   ("test", "make quicktest FAIL_IMMEDIATELY=1 "
-                    "TESTS='--include-env=ad_dc'", "text/plain"),
-                   ("lcov", LCOV_CMD, "text/plain"),
-                   ("install", "make install", "text/plain"),
-                   ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                   ("clean", "make clean", "text/plain")],
+    "samba-o3": [
+        ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
+        ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make quicktest FAIL_IMMEDIATELY=1 "
+            "TESTS='--include-env=ad_dc'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("install", "make install", "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ("clean", "make clean", "text/plain"),
+        ],
 
-    "samba-ctdb": [("random-sleep", "script/random-sleep.sh 900 1500", "text/plain"),
+    "samba-ctdb": [
+        ("random-sleep", "script/random-sleep.sh 900 1500", "text/plain"),
 
-                     # make sure we have tdb around:
-                     ("tdb-configure", "cd lib/tdb && PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
-                     ("tdb-make", "cd lib/tdb && make", "text/plain"),
-                     ("tdb-install", "cd lib/tdb && make install", "text/plain"),
+        # make sure we have tdb around:
+        ("tdb-configure", "cd lib/tdb && PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH PKG_CONFIG_PATH=$PKG_CONFIG_PATH:${PREFIX_DIR}/lib/pkgconfig ./configure --bundled-libraries=NONE --abi-check --enable-debug -C ${PREFIX}", "text/plain"),
+        ("tdb-make", "cd lib/tdb && make", "text/plain"),
+        ("tdb-install", "cd lib/tdb && make install", "text/plain"),
 
+        # build samba with cluster support (also building ctdb):
+        ("samba-configure", "PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH PKG_CONFIG_PATH=${PREFIX_DIR}/lib/pkgconfig:${PKG_CONFIG_PATH} ./configure.developer --picky-developer ${PREFIX} --with-selftest-prefix=./bin/ab --with-cluster-support --bundled-libraries=!tdb", "text/plain"),
+        ("samba-make", "make", "text/plain"),
+        ("samba-check", "./bin/smbd -b | grep CLUSTER_SUPPORT", "text/plain"),
+        ("samba-install", "make install", "text/plain"),
+        ("ctdb-check", "test -e ${PREFIX_DIR}/sbin/ctdbd", "text/plain"),
 
-                     # build samba with cluster support (also building ctdb):
-                     ("samba-configure", "PYTHONPATH=${PYTHON_PREFIX}:$PYTHONPATH PKG_CONFIG_PATH=${PREFIX_DIR}/lib/pkgconfig:${PKG_CONFIG_PATH} ./configure.developer --picky-developer ${PREFIX} --with-selftest-prefix=./bin/ab --with-cluster-support --bundled-libraries=!tdb", "text/plain"),
-                     ("samba-make", "make", "text/plain"),
-                     ("samba-check", "./bin/smbd -b | grep CLUSTER_SUPPORT", "text/plain"),
-                     ("samba-install", "make install", "text/plain"),
-                     ("ctdb-check", "test -e ${PREFIX_DIR}/sbin/ctdbd", "text/plain"),
-
-                     # clean up:
-                     ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                     ("clean", "make clean", "text/plain"),
-                     ("ctdb-clean", "cd ./ctdb && make clean", "text/plain")],
+        # clean up:
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ("clean", "make clean", "text/plain"),
+        ("ctdb-clean", "cd ./ctdb && make clean", "text/plain"),
+        ],
 
     "samba-libs": [
-                      ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
-                      ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_libs, "text/plain"),
-                      ("talloc-make", "cd lib/talloc && make", "text/plain"),
-                      ("talloc-install", "cd lib/talloc && make install", "text/plain"),
+        ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
+        ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_libs, "text/plain"),
+        ("talloc-make", "cd lib/talloc && make", "text/plain"),
+        ("talloc-install", "cd lib/talloc && make install", "text/plain"),
 
-                      ("tdb-configure", "cd lib/tdb && " + samba_libs_configure_libs, "text/plain"),
-                      ("tdb-make", "cd lib/tdb && make", "text/plain"),
-                      ("tdb-install", "cd lib/tdb && make install", "text/plain"),
+        ("tdb-configure", "cd lib/tdb && " + samba_libs_configure_libs, "text/plain"),
+        ("tdb-make", "cd lib/tdb && make", "text/plain"),
+        ("tdb-install", "cd lib/tdb && make install", "text/plain"),
 
-                      ("tevent-configure", "cd lib/tevent && " + samba_libs_configure_libs, "text/plain"),
-                      ("tevent-make", "cd lib/tevent && make", "text/plain"),
-                      ("tevent-install", "cd lib/tevent && make install", "text/plain"),
+        ("tevent-configure", "cd lib/tevent && " + samba_libs_configure_libs, "text/plain"),
+        ("tevent-make", "cd lib/tevent && make", "text/plain"),
+        ("tevent-install", "cd lib/tevent && make install", "text/plain"),
 
-                      ("ldb-configure", "cd lib/ldb && " + samba_libs_configure_libs, "text/plain"),
-                      ("ldb-make", "cd lib/ldb && make", "text/plain"),
-                      ("ldb-install", "cd lib/ldb && make install", "text/plain"),
+        ("ldb-configure", "cd lib/ldb && " + samba_libs_configure_libs, "text/plain"),
+        ("ldb-make", "cd lib/ldb && make", "text/plain"),
+        ("ldb-install", "cd lib/ldb && make install", "text/plain"),
 
-                      ("nondevel-configure", "./configure ${PREFIX}", "text/plain"),
-                      ("nondevel-make", "make -j", "text/plain"),
-                      ("nondevel-check", "./bin/smbd -b | grep WITH_NTVFS_FILESERVER && exit 1; exit 0", "text/plain"),
-                      ("nondevel-install", "make install", "text/plain"),
-                      ("nondevel-dist", "make dist", "text/plain"),
+        ("nondevel-configure", "./configure ${PREFIX}", "text/plain"),
+        ("nondevel-make", "make -j", "text/plain"),
+        ("nondevel-check", "./bin/smbd -b | grep WITH_NTVFS_FILESERVER && exit 1; exit 0", "text/plain"),
+        ("nondevel-install", "make install", "text/plain"),
+        ("nondevel-dist", "make dist", "text/plain"),
 
-                      # retry with all modules shared
-                      ("allshared-distclean", "make distclean", "text/plain"),
-                      ("allshared-configure", samba_libs_configure_samba + " --with-shared-modules=ALL", "text/plain"),
-                      ("allshared-make", "make -j", "text/plain")],
+        # retry with all modules shared
+        ("allshared-distclean", "make distclean", "text/plain"),
+        ("allshared-configure", samba_libs_configure_samba + " --with-shared-modules=ALL", "text/plain"),
+        ("allshared-make", "make -j", "text/plain"),
+        ],
 
     "samba-none-env": [
-                      ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
-                      ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
-                      ("make", "make -j", "text/plain"),
-                      ("test", "make test "
-                       "FAIL_IMMEDIATELY=1 "
-                       "TESTS='--include-env=none'",
-                       "text/plain"),
-                      ("lcov", LCOV_CMD, "text/plain")],
+        ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params, "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("test", "make test "
+            "FAIL_IMMEDIATELY=1 "
+            "TESTS='--include-env=none'",
+            "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ],
 
     "samba-static": [
-                      ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
-                      # build with all modules static
-                      ("allstatic-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=ALL", "text/plain"),
-                      ("allstatic-make", "make -j", "text/plain"),
-                      ("allstatic-test", "make test "
-                       "FAIL_IMMEDIATELY=1 "
-                       "TESTS='samba3.smb2.create.*nt4_dc'",
-                       "text/plain"),
-                      ("lcov", LCOV_CMD, "text/plain"),
+        ("random-sleep", "script/random-sleep.sh 1 1", "text/plain"),
+        # build with all modules static
+        ("allstatic-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=ALL", "text/plain"),
+        ("allstatic-make", "make -j", "text/plain"),
+        ("allstatic-test", "make test "
+            "FAIL_IMMEDIATELY=1 "
+            "TESTS='samba3.smb2.create.*nt4_dc'",
+            "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
 
-                      # retry without any required modules
-                      ("none-distclean", "make distclean", "text/plain"),
-                      ("none-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=!FORCED,!DEFAULT --with-shared-modules=!FORCED,!DEFAULT", "text/plain"),
-                      ("none-make", "make -j", "text/plain"),
+        # retry without any required modules
+        ("none-distclean", "make distclean", "text/plain"),
+        ("none-configure", "./configure.developer " + samba_configure_params + " --with-static-modules=!FORCED,!DEFAULT --with-shared-modules=!FORCED,!DEFAULT", "text/plain"),
+        ("none-make", "make -j", "text/plain"),
 
-                      # retry with nonshared smbd and smbtorture
-                      ("nonshared-distclean", "make distclean", "text/plain"),
-                      ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=talloc,tdb,pytdb,ldb,pyldb,tevent,pytevent --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd", "text/plain"),
-                      ("nonshared-make", "make -j", "text/plain")],
+        # retry with nonshared smbd and smbtorture
+        ("nonshared-distclean", "make distclean", "text/plain"),
+        ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=talloc,tdb,pytdb,ldb,pyldb,tevent,pytevent --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd", "text/plain"),
+        ("nonshared-make", "make -j", "text/plain"),
+        ],
 
     "samba-systemkrb5": [
-                      ("random-sleep", "script/random-sleep.sh 900 1500", "text/plain"),
-                      ("configure", "./configure.developer " + samba_configure_params + " --with-system-mitkrb5 --with-experimental-mit-ad-dc", "text/plain"),
-                      ("make", "make -j", "text/plain"),
-                      # we currently cannot run a full make test, a limited list of tests could be run
-                      # via "make test TESTS=sometests"
-                      ("test", "make test FAIL_IMMEDIATELY=1 "
-                       "TESTS='--include-env=ktest'", "text/plain"),
-                      ("lcov", LCOV_CMD, "text/plain"),
-                      ("install", "make install", "text/plain"),
-                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                      ("clean", "make clean", "text/plain")
-                      ],
+        ("random-sleep", "script/random-sleep.sh 900 1500", "text/plain"),
+        ("configure", "./configure.developer " + samba_configure_params + " --with-system-mitkrb5 --with-experimental-mit-ad-dc", "text/plain"),
+        ("make", "make -j", "text/plain"),
+        # we currently cannot run a full make test, a limited list of tests could be run
+        # via "make test TESTS=sometests"
+        ("test", "make test FAIL_IMMEDIATELY=1 "
+            "TESTS='--include-env=ktest'", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("install", "make install", "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ("clean", "make clean", "text/plain"),
+        ],
 
     # Test Samba without python still builds.  When this test fails
     # due to more use of Python, the expectations is that the newly
@@ -496,136 +530,141 @@ tasks = {
     # support this environment).  The target here is for vendors
     # shipping a minimal smbd.
     "samba-nopython": [
-                      ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
-                      ("configure", "./configure.developer ${ENABLE_COVERAGE} --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
-                      ("make", "make -j", "text/plain"),
-                      ("install", "make install", "text/plain"),
-                      ("find-python", "script/find_python.sh ${PREFIX}", "text/plain"),
-                      ("test", "make test-nopython", "text/plain"),
-                      ("lcov", LCOV_CMD, "text/plain"),
-                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                      ("clean", "make clean", "text/plain"),
+        ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
+        ("configure", "./configure.developer ${ENABLE_COVERAGE} --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
+        ("make", "make -j", "text/plain"),
+        ("install", "make install", "text/plain"),
+        ("find-python", "script/find_python.sh ${PREFIX}", "text/plain"),
+        ("test", "make test-nopython", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ("clean", "make clean", "text/plain"),
 
-                      ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
-                      ("talloc-make", "cd lib/talloc && make", "text/plain"),
-                      ("talloc-install", "cd lib/talloc && make install", "text/plain"),
+        ("talloc-configure", "cd lib/talloc && " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
+        ("talloc-make", "cd lib/talloc && make", "text/plain"),
+        ("talloc-install", "cd lib/talloc && make install", "text/plain"),
 
-                      ("tdb-configure", "cd lib/tdb && " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
-                      ("tdb-make", "cd lib/tdb && make", "text/plain"),
-                      ("tdb-install", "cd lib/tdb && make install", "text/plain"),
+        ("tdb-configure", "cd lib/tdb && " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
+        ("tdb-make", "cd lib/tdb && make", "text/plain"),
+        ("tdb-install", "cd lib/tdb && make install", "text/plain"),
 
-                      ("tevent-configure", "cd lib/tevent && " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
-                      ("tevent-make", "cd lib/tevent && make", "text/plain"),
-                      ("tevent-install", "cd lib/tevent && make install", "text/plain"),
+        ("tevent-configure", "cd lib/tevent && " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
+        ("tevent-make", "cd lib/tevent && make", "text/plain"),
+        ("tevent-install", "cd lib/tevent && make install", "text/plain"),
 
-                      ("ldb-configure", "cd lib/ldb && " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
-                      ("ldb-make", "cd lib/ldb && make", "text/plain"),
-                      ("ldb-install", "cd lib/ldb && make install", "text/plain"),
+        ("ldb-configure", "cd lib/ldb && " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
+        ("ldb-make", "cd lib/ldb && make", "text/plain"),
+        ("ldb-install", "cd lib/ldb && make install", "text/plain"),
 
-                      # retry against installed library packages
-                      ("libs-configure", samba_libs_configure_base + samba_libs_configure_bundled_libs + " --disable-python --without-ad-dc", "text/plain"),
-                      ("libs-make", "make -j", "text/plain"),
-                      ("libs-install", "make install", "text/plain"),
-                      ("libs-check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                      ("libs-clean", "make clean", "text/plain")
-                      ],
+        # retry against installed library packages
+        ("libs-configure", samba_libs_configure_base + samba_libs_configure_bundled_libs + " --disable-python --without-ad-dc", "text/plain"),
+        ("libs-make", "make -j", "text/plain"),
+        ("libs-install", "make install", "text/plain"),
+        ("libs-check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ("libs-clean", "make clean", "text/plain"),
+        ],
 
     # check we can do the same thing using python2
     "samba-nopython-py2": [
-                      ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
-                      ("configure", "PYTHON=python2 ./configure.developer ${ENABLE_COVERAGE} --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
-                      ("make", "PYTHON=python2 make -j", "text/plain"),
-                      ("install", "PYTHON=python2 make install", "text/plain"),
-                      ("find-python", "script/find_python.sh ${PREFIX}", "text/plain"),
-                      ("test", "make test-nopython", "text/plain"),
-                      ("lcov", LCOV_CMD, "text/plain"),
-                      ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                      ("clean", "PYTHON=python2 make clean", "text/plain"),
+        ("random-sleep", "script/random-sleep.sh 300 900", "text/plain"),
+        ("configure", "PYTHON=python2 ./configure.developer ${ENABLE_COVERAGE} --picky-developer ${PREFIX} --with-profiling-data --disable-python --without-ad-dc", "text/plain"),
+        ("make", "PYTHON=python2 make -j", "text/plain"),
+        ("install", "PYTHON=python2 make install", "text/plain"),
+        ("find-python", "script/find_python.sh ${PREFIX}", "text/plain"),
+        ("test", "make test-nopython", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ("clean", "PYTHON=python2 make clean", "text/plain"),
 
-                      ("talloc-configure", "cd lib/talloc && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
-                      ("talloc-make", "cd lib/talloc && PYTHON=python2 make", "text/plain"),
-                      ("talloc-install", "cd lib/talloc && PYTHON=python2 make install", "text/plain"),
+        ("talloc-configure", "cd lib/talloc && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
+        ("talloc-make", "cd lib/talloc && PYTHON=python2 make", "text/plain"),
+        ("talloc-install", "cd lib/talloc && PYTHON=python2 make install", "text/plain"),
 
-                      ("tdb-configure", "cd lib/tdb && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
-                      ("tdb-make", "cd lib/tdb && PYTHON=python2 make", "text/plain"),
-                      ("tdb-install", "cd lib/tdb && PYTHON=python2 make install", "text/plain"),
+        ("tdb-configure", "cd lib/tdb && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
+        ("tdb-make", "cd lib/tdb && PYTHON=python2 make", "text/plain"),
+        ("tdb-install", "cd lib/tdb && PYTHON=python2 make install", "text/plain"),
 
-                      ("tevent-configure", "cd lib/tevent && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
-                      ("tevent-make", "cd lib/tevent && PYTHON=python2 make", "text/plain"),
-                      ("tevent-install", "cd lib/tevent && PYTHON=python2 make install", "text/plain"),
+        ("tevent-configure", "cd lib/tevent && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
+        ("tevent-make", "cd lib/tevent && PYTHON=python2 make", "text/plain"),
+        ("tevent-install", "cd lib/tevent && PYTHON=python2 make install", "text/plain"),
 
-                      ("ldb-configure", "cd lib/ldb && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
-                      ("ldb-make", "cd lib/ldb && PYTHON=python2 make", "text/plain"),
-                      ("ldb-install", "cd lib/ldb && PYTHON=python2 make install", "text/plain"),
+        ("ldb-configure", "cd lib/ldb && PYTHON=python2 " + samba_libs_configure_base + " --bundled-libraries=cmocka,NONE --disable-python", "text/plain"),
+        ("ldb-make", "cd lib/ldb && PYTHON=python2 make", "text/plain"),
+        ("ldb-install", "cd lib/ldb && PYTHON=python2 make install", "text/plain"),
 
-                      # retry against installed library packages
-                      ("libs-configure", "PYTHON=python2 " + samba_libs_configure_base + samba_libs_configure_bundled_libs + " --disable-python --without-ad-dc", "text/plain"),
-                      ("libs-make", "PYTHON=python2 make -j", "text/plain"),
-                      ("libs-install", "PYTHON=python2 make install", "text/plain"),
-                      ("libs-check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
-                      ("libs-clean", "PYTHON=python2 make clean", "text/plain")
-                      ],
+        # retry against installed library packages
+        ("libs-configure", "PYTHON=python2 " + samba_libs_configure_base + samba_libs_configure_bundled_libs + " --disable-python --without-ad-dc", "text/plain"),
+        ("libs-make", "PYTHON=python2 make -j", "text/plain"),
+        ("libs-install", "PYTHON=python2 make install", "text/plain"),
+        ("libs-check-clean-tree", "script/clean-source-tree.sh", "text/plain"),
+        ("libs-clean", "PYTHON=python2 make clean", "text/plain"),
+        ],
 
     "ldb": [
-              ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-              ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
-              ("make", "make", "text/plain"),
-              ("install", "make install", "text/plain"),
-              ("test", "make test", "text/plain"),
-              ("lcov", LCOV_CMD, "text/plain"),
-              ("clean", "make clean", "text/plain"),
-              ("configure-no-lmdb", "./configure ${ENABLE_COVERAGE} --enable-developer --without-ldb-lmdb -C ${PREFIX}", "text/plain"),
-              ("make-no-lmdb", "make", "text/plain"),
-              ("test-no-lmdb", "make test", "text/plain"),
-              ("lcov-no-lmdb", LCOV_CMD, "text/plain"),
-              ("install-no-lmdb", "make install", "text/plain"),
-              ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
-              ("distcheck", "make distcheck", "text/plain"),
-              ("clean", "make clean", "text/plain")],
+        ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
+        ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
+        ("make", "make", "text/plain"),
+        ("install", "make install", "text/plain"),
+        ("test", "make test", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("clean", "make clean", "text/plain"),
+        ("configure-no-lmdb", "./configure ${ENABLE_COVERAGE} --enable-developer --without-ldb-lmdb -C ${PREFIX}", "text/plain"),
+        ("make-no-lmdb", "make", "text/plain"),
+        ("test-no-lmdb", "make test", "text/plain"),
+        ("lcov-no-lmdb", LCOV_CMD, "text/plain"),
+        ("install-no-lmdb", "make install", "text/plain"),
+        ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+        ("distcheck", "make distcheck", "text/plain"),
+        ("clean", "make clean", "text/plain"),
+        ],
 
     "tdb": [
-              ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-              ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
-              ("make", "make", "text/plain"),
-              ("install", "make install", "text/plain"),
-              ("test", "make test", "text/plain"),
-              ("lcov", LCOV_CMD, "text/plain"),
-              ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
-              ("distcheck", "make distcheck", "text/plain"),
-              ("clean", "make clean", "text/plain")],
+        ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
+        ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
+        ("make", "make", "text/plain"),
+        ("install", "make install", "text/plain"),
+        ("test", "make test", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+        ("distcheck", "make distcheck", "text/plain"),
+        ("clean", "make clean", "text/plain"),
+        ],
 
     "talloc": [
-                 ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-                 ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
-                 ("make", "make", "text/plain"),
-                 ("install", "make install", "text/plain"),
-                 ("test", "make test", "text/plain"),
-                 ("lcov", LCOV_CMD, "text/plain"),
-                 ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
-                 ("distcheck", "make distcheck", "text/plain"),
-                 ("clean", "make clean", "text/plain")],
+        ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
+        ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
+        ("make", "make", "text/plain"),
+        ("install", "make install", "text/plain"),
+        ("test", "make test", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+        ("distcheck", "make distcheck", "text/plain"),
+        ("clean", "make clean", "text/plain"),
+        ],
 
     "replace": [
-                  ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-                  ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
-                  ("make", "make", "text/plain"),
-                  ("install", "make install", "text/plain"),
-                  ("test", "make test", "text/plain"),
-                  ("lcov", LCOV_CMD, "text/plain"),
-                  ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
-                  ("distcheck", "make distcheck", "text/plain"),
-                  ("clean", "make clean", "text/plain")],
+        ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
+        ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
+        ("make", "make", "text/plain"),
+        ("install", "make install", "text/plain"),
+        ("test", "make test", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+        ("distcheck", "make distcheck", "text/plain"),
+        ("clean", "make clean", "text/plain"),
+        ],
 
     "tevent": [
-                 ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
-                 ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
-                 ("make", "make", "text/plain"),
-                 ("install", "make install", "text/plain"),
-                 ("test", "make test", "text/plain"),
-                 ("lcov", LCOV_CMD, "text/plain"),
-                 ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
-                 ("distcheck", "make distcheck", "text/plain"),
-                 ("clean", "make clean", "text/plain")],
+        ("random-sleep", "../../script/random-sleep.sh 60 600", "text/plain"),
+        ("configure", "./configure ${ENABLE_COVERAGE} --enable-developer -C ${PREFIX}", "text/plain"),
+        ("make", "make", "text/plain"),
+        ("install", "make install", "text/plain"),
+        ("test", "make test", "text/plain"),
+        ("lcov", LCOV_CMD, "text/plain"),
+        ("check-clean-tree", "../../script/clean-source-tree.sh", "text/plain"),
+        ("distcheck", "make distcheck", "text/plain"),
+        ("clean", "make clean", "text/plain"),
+        ],
 
     "pidl": [
         ("random-sleep", "../script/random-sleep.sh 60 600", "text/plain"),
@@ -636,14 +675,12 @@ tasks = {
         ("install", "make install", "text/plain"),
         ("checkout-yapp-generated", "git checkout lib/Parse/Pidl/IDL.pm lib/Parse/Pidl/Expr.pm", "text/plain"),
         ("check-clean-tree", "../script/clean-source-tree.sh", "text/plain"),
-        ("clean", "make clean", "text/plain")],
-
+        ("clean", "make clean", "text/plain"),
+        ],
 
     # these are useful for debugging autobuild
     'pass': [("pass", 'echo passing && /bin/true', "text/plain")],
-    'fail': [("fail", 'echo failing && /bin/false', "text/plain")]
-
-
+    'fail': [("fail", 'echo failing && /bin/false', "text/plain")],
 }
 
 
