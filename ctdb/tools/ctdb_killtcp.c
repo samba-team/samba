@@ -66,7 +66,8 @@ static struct tevent_req *reset_connections_send(
 {
 	struct tevent_req *req, *subreq;
 	struct reset_connections_state *state;
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct reset_connections_state);
