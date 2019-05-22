@@ -4383,7 +4383,8 @@ static int pack_tdc_domains( struct winbindd_tdc_domain *domains,
 	len = 0;
 
 	/* Store the number of array items first */
-	len += tdb_pack( buffer+len, buflen-len, "d", 
+	len += tdb_pack( buffer ? buffer+len : NULL,
+			 buffer ? buflen-len : 0, "d",
 			 num_domains );
 
 	/* now pack each domain trust record */
@@ -4397,7 +4398,8 @@ static int pack_tdc_domains( struct winbindd_tdc_domain *domains,
 				  domains[i].dns_name ? domains[i].dns_name : "UNKNOWN" ));
 		}
 
-		len += tdb_pack( buffer+len, buflen-len, "fffddd",
+		len += tdb_pack( buffer ? buffer+len : NULL,
+				 buffer ? buflen-len : 0, "fffddd",
 				 domains[i].domain_name,
 				 domains[i].dns_name ? domains[i].dns_name : "",
 				 dom_sid_str_buf(&domains[i].sid, &tmp),
