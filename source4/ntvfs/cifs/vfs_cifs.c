@@ -598,9 +598,15 @@ static void async_open(struct smbcli_request *c_req)
 	struct cvfs_file *f = async->f;
 	union smb_open *io = async->parms;
 	union smb_handle *file;
+	if (f == NULL) {
+		goto failed;
+	}
 	talloc_free(async);
 	req->async_states->status = smb_raw_open_recv(c_req, req, io);
 	SMB_OPEN_OUT_FILE(io, file);
+	if (file == NULL) {
+		goto failed;
+	}
 	f->fnum = file->fnum;
 	file->ntvfs = NULL;
 	if (!NT_STATUS_IS_OK(req->async_states->status)) goto failed;
@@ -645,6 +651,9 @@ static NTSTATUS cvfs_open(struct ntvfs_module_context *ntvfs,
 		NT_STATUS_NOT_OK_RETURN(status);
 
 		SMB_OPEN_OUT_FILE(io, file);
+		if (file == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 		f->fnum = file->fnum;
 		file->ntvfs = NULL;
 		status = ntvfs_handle_set_backend_data(f->h, p->ntvfs, f);
