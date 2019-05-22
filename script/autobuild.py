@@ -4,7 +4,7 @@
 # released under GNU GPL v3 or later
 
 from __future__ import print_function
-from subprocess import call, check_call, Popen, PIPE
+from subprocess import call, check_call, check_output, Popen, PIPE
 import os
 import tarfile
 import sys
@@ -714,7 +714,8 @@ def run_cmd(cmd, dir=".", show=None, output=False, checkfail=True):
     if show:
         do_print("Running: '%s' in '%s'" % (cmd, dir))
     if output:
-        return Popen([cmd], shell=True, stdout=PIPE, cwd=dir, close_fds=True).communicate()[0]
+        out = check_output([cmd], shell=True, cwd=dir)
+        return out.decode(encoding='utf-8', errors='backslashreplace')
     elif checkfail:
         return check_call(cmd, shell=True, cwd=dir)
     else:
@@ -888,7 +889,7 @@ class buildlist(object):
                     'df -m %s' % testbase]:
             out = run_cmd(cmd, output=True, checkfail=False)
             print('### %s' % cmd, file=f)
-            print(out.decode('utf8', 'backslashreplace'), file=f)
+            print(out, file=f)
             print(file=f)
         f.close()
         return filename
@@ -1141,7 +1142,6 @@ The top commit for the tree that was built was:
 
 # get the top commit message, for emails
 top_commit_msg = run_cmd("git log -1", dir=gitroot, output=True)
-top_commit_msg = top_commit_msg.decode('utf-8', 'backslashreplace')
 
 try:
     os.makedirs(testbase)
