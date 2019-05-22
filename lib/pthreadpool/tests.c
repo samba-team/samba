@@ -60,6 +60,7 @@ static int test_jobs(int num_threads, int num_jobs)
 	if (ret != 0) {
 		fprintf(stderr, "pthreadpool_pipe_init failed: %s\n",
 			strerror(ret));
+		free(finished);
 		return -1;
 	}
 
@@ -68,6 +69,7 @@ static int test_jobs(int num_threads, int num_jobs)
 		if (ret != 0) {
 			fprintf(stderr, "pthreadpool_pipe_add_job failed: "
 				"%s\n", strerror(ret));
+			free(finished);
 			return -1;
 		}
 	}
@@ -78,10 +80,12 @@ static int test_jobs(int num_threads, int num_jobs)
 		if (ret < 0) {
 			fprintf(stderr, "pthreadpool_pipe_finished_jobs "
 				"failed: %s\n", strerror(-ret));
+			free(finished);
 			return -1;
 		}
 		if ((ret != 1) || (jobid >= num_jobs)) {
 			fprintf(stderr, "invalid job number %d\n", jobid);
+			free(finished);
 			return -1;
 		}
 		finished[jobid] += 1;
@@ -91,6 +95,7 @@ static int test_jobs(int num_threads, int num_jobs)
 		if (finished[i] != 1) {
 			fprintf(stderr, "finished[%d] = %d\n",
 				i, finished[i]);
+			free(finished);
 			return -1;
 		}
 	}
@@ -99,6 +104,7 @@ static int test_jobs(int num_threads, int num_jobs)
 	if (ret != 0) {
 		fprintf(stderr, "pthreadpool_pipe_destroy failed: %s\n",
 			strerror(ret));
+		free(finished);
 		return -1;
 	}
 
