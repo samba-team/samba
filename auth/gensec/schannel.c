@@ -242,7 +242,12 @@ static void netsec_do_seal(struct schannel_state *state,
 			aes_cfb8_encrypt(data, data, length, &key, iv, AES_DECRYPT);
 		}
 	} else {
-		uint8_t sealing_key[16];
+		gnutls_cipher_hd_t cipher_hnd;
+		uint8_t _sealing_key[16];
+		gnutls_datum_t sealing_key = {
+			.data = _sealing_key,
+			.size = sizeof(_sealing_key),
+		};
 		static const uint8_t zeros[4];
 		uint8_t digest2[16];
 		uint8_t sess_kf0[16];
@@ -269,16 +274,36 @@ static void netsec_do_seal(struct schannel_state *state,
 				      sizeof(digest2),
 				      seq_num,
 				      8,
-				      sealing_key);
+				      _sealing_key);
+
 		ZERO_ARRAY(digest2);
 		if (rc < 0) {
 			return;
 		}
 
-		arcfour_crypt(confounder, sealing_key, 8);
-		arcfour_crypt(data, sealing_key, length);
-
-		ZERO_ARRAY(sealing_key);
+		rc = gnutls_cipher_init(&cipher_hnd,
+					GNUTLS_CIPHER_ARCFOUR_128,
+					&sealing_key,
+					NULL);
+		if (rc < 0) {
+			ZERO_ARRAY(_sealing_key);
+			return;
+		}
+		rc = gnutls_cipher_encrypt(cipher_hnd,
+					   confounder,
+					   8);
+		if (rc < 0) {
+			ZERO_ARRAY(_sealing_key);
+			return;
+		}
+		rc = gnutls_cipher_encrypt(cipher_hnd,
+					   data,
+					   length);
+		gnutls_cipher_deinit(cipher_hnd);
+		ZERO_ARRAY(_sealing_key);
+		if (rc < 0) {
+			return;
+		}
 	}
 }
 
