@@ -913,7 +913,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 		h1 = io.smb2.out.file.handle; \
 		setup \
 		notify.smb2.in.file.handle = h1;	\
-		notify.smb2.in.completion_filter = (1<<i); \
+		notify.smb2.in.completion_filter = ((uint32_t)1<<i); \
 		/* cancel initial requests so the buffer is setup */	\
 		req = smb2_notify_send(tree1, &(notify.smb2)); \
 		smb2_cancel(req); \
@@ -965,7 +965,7 @@ static bool torture_smb2_notify_mask(struct torture_context *torture,
 			       notify.smb2.out.changes[0].name.s);	\
 			ret = false; \
 		} \
-		mask |= (1<<i); \
+		mask |= ((uint32_t)1<<i); \
 	} \
 	} while (0); \
 	} while (0);
