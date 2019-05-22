@@ -1904,6 +1904,7 @@ struct kv_ctx {
 	int (*parser)(struct ldb_val key,
 		      struct ldb_val data,
 		      void *private_data);
+	int parser_ret;
 };
 
 static int ldb_tdb_traverse_fn_wrapper(struct tdb_context *tdb, TDB_DATA tdb_key, TDB_DATA tdb_data, void *ctx)
@@ -1999,7 +2000,8 @@ static int ltdb_tdb_parse_record_wrapper(TDB_DATA tdb_key, TDB_DATA tdb_data,
 		.data = tdb_data.dptr,
 	};
 
-	return kv_ctx->parser(key, data, kv_ctx->ctx);
+	kv_ctx->parser_ret = kv_ctx->parser(key, data, kv_ctx->ctx);
+	return kv_ctx->parser_ret;
 }
 
 static int ltdb_tdb_parse_record(struct ltdb_private *ltdb,
@@ -2027,7 +2029,9 @@ static int ltdb_tdb_parse_record(struct ltdb_private *ltdb,
 
 	ret = tdb_parse_record(ltdb->tdb, key, ltdb_tdb_parse_record_wrapper,
 			       &kv_ctx);
-	if (ret == 0) {
+	if (kv_ctx.parser_ret != LDB_SUCCESS) {
+		return kv_ctx.parser_ret;
+	} else if (ret == 0) {
 		return LDB_SUCCESS;
 	}
 	return ltdb_err_map(tdb_error(ltdb->tdb));
