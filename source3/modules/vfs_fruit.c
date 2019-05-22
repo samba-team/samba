@@ -3223,7 +3223,7 @@ static uint64_t readdir_attr_rfork_size(struct vfs_handle_struct *handle,
 							     smb_fname);
 		break;
 
-	case FRUIT_META_STREAM:
+	case FRUIT_RSRC_STREAM:
 		rfork_size = readdir_attr_rfork_size_stream(handle,
 							    smb_fname);
 		break;
