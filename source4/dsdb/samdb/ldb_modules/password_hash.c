@@ -2456,8 +2456,8 @@ static int setup_password_fields(struct setup_password_fields_io *io)
 {
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
 	struct loadparm_context *lp_ctx =
-		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-					 struct loadparm_context);
+		talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+				struct loadparm_context);
 	int ret;
 
 	ret = setup_last_set_field(io);
@@ -2708,8 +2708,8 @@ static int check_password_restrictions(struct setup_password_fields_io *io, WERR
 	struct ldb_context *ldb = ldb_module_get_ctx(io->ac->module);
 	int ret;
 	struct loadparm_context *lp_ctx =
-		lp_ctx = talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
-					 struct loadparm_context);
+		talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
+				struct loadparm_context);
 
 	*werror = WERR_INVALID_PARAMETER;
 
