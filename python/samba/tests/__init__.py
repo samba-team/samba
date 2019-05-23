@@ -19,6 +19,7 @@
 """Samba Python tests."""
 from __future__ import print_function
 import os
+import shutil
 import tempfile
 import warnings
 import ldb
@@ -294,11 +295,15 @@ class TestCaseInTempDir(TestCase):
         super(TestCaseInTempDir, self).setUp()
         self.tempdir = tempfile.mkdtemp()
         self.addCleanup(self._remove_tempdir)
+        self.check_tempdir_empty = True
 
     def _remove_tempdir(self):
         # Note asserting here is treated as an error rather than a test failure
-        self.assertEquals([], os.listdir(self.tempdir))
-        os.rmdir(self.tempdir)
+        if self.check_tempdir_empty:
+            self.assertEquals([], os.listdir(self.tempdir))
+            os.rmdir(self.tempdir)
+        else:
+            shutil.rmtree(self.tempdir)
         self.tempdir = None
 
     @contextmanager

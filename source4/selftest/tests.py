@@ -834,6 +834,8 @@ for env in ["ad_dc_ntvfs:local", "ad_dc:local",
             "promoted_dc:local"]:
     planoldpythontestsuite(env, "samba.tests.blackbox.smbcontrol")
 
+planoldpythontestsuite("none", "samba.tests.blackbox.downgradedatabase")
+
 plantestsuite_loadlist("samba4.ldap.python(ad_dc_default)", "ad_dc_default", [python, os.path.join(DSDB_PYTEST_DIR, "ldap.py"), '$SERVER', '-U"$USERNAME%$PASSWORD"', '--workgroup=$DOMAIN', '$LOADLIST', '$LISTOPT'])
 
 plantestsuite_loadlist("samba4.ldap_modify_order.python(ad_dc_default)",
