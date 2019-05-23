@@ -60,7 +60,8 @@ class DowngradeTest(BlackboxTestCase):
 
     # Parse out the comments above each record that ldbdump produces
     # containing pack format version and KV level key for each record.
-    # Return all GUID keys and DN keys (without @attrs)
+    # Return all GUID keys and DN keys (without @attrs), and the set
+    # of all unique pack formats.
     def ldbdump_keys_pack_formats(self):
         # Get all comments from all partition dbs
         comments = []
@@ -81,7 +82,12 @@ class DowngradeTest(BlackboxTestCase):
         # Ignore @ attributes, they are always DN keyed
         dn_keys_no_at_attrs = {d for d in dn_keys if not d.startswith("@")}
 
-        return dn_keys_no_at_attrs, guid_keys
+        pack_format_tag = "# pack format: "
+        pack_formats = {c[len(pack_format_tag):] for c in comments
+                        if c.startswith(pack_format_tag)}
+        pack_formats = [int(s, 16) for s in pack_formats]
+
+        return dn_keys_no_at_attrs, guid_keys, pack_formats
 
     # Get a set of all distinct types in @ATTRIBUTES
     def attribute_types(self):
@@ -97,21 +103,24 @@ class DowngradeTest(BlackboxTestCase):
     # Check that running sambadowngradedatabase with a TDB backend:
     # * Replaces all GUID keys with DN keys
     # * Removes ORDERED_INTEGER from @ATTRIBUTES
+    # * Repacks database with pack format version 1
     def test_downgrade_database(self):
         type_prefix = "LDB_SYNTAX_"
         ordered_int_type = ldb.SYNTAX_ORDERED_INTEGER[len(type_prefix):]
 
-        dn_keys, guid_keys = self.ldbdump_keys_pack_formats()
+        dn_keys, guid_keys, pack_formats = self.ldbdump_keys_pack_formats()
         self.assertGreater(len(guid_keys), 20)
         self.assertEqual(len(dn_keys), 0)
         self.assertTrue(ordered_int_type in self.attribute_types())
+        self.assertEqual(pack_formats, [ldb.PACKING_FORMAT_V2])
 
         num_guid_keys_before_downgrade = len(guid_keys)
 
         self.check_run("%s -H %s" % (COMMAND, self.sam_path),
                        msg="Running sambadowngradedatabase")
 
-        dn_keys, guid_keys = self.ldbdump_keys_pack_formats()
+        dn_keys, guid_keys, pack_formats = self.ldbdump_keys_pack_formats()
         self.assertEqual(len(guid_keys), 0)
         self.assertEqual(len(dn_keys), num_guid_keys_before_downgrade)
         self.assertTrue(ordered_int_type not in self.attribute_types())
+        self.assertEqual(pack_formats, [ldb.PACKING_FORMAT])
