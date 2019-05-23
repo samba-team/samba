@@ -620,6 +620,66 @@ sub get_env_for_process
 	return $proc_envs;
 }
 
+sub fork_and_exec
+{
+	my ($self, $env_vars, $daemon_ctx, $STDIN_READER) = @_;
+
+	unlink($daemon_ctx->{LOG_FILE});
+	print "STARTING $daemon_ctx->{NAME} for $ENV{ENVNAME}...";
+
+	my $pid = fork();
+
+	# exec the daemon in the child process
+	if ($pid == 0) {
+		# redirect the daemon's stdout/stderr to a log file
+		if (defined($daemon_ctx->{TEE_STDOUT})) {
+			# in some cases, we want out from samba to go to the log file,
+			# but also to the users terminal when running 'make test' on the
+			# command line. This puts it on stderr on the terminal
+			open STDOUT, "| tee $daemon_ctx->{LOG_FILE} 1>&2";
+		} else {
+			open STDOUT, ">$daemon_ctx->{LOG_FILE}";
+		}
+		open STDERR, '>&STDOUT';
+
+		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
+		if (defined($daemon_ctx->{PCAP_FILE})) {
+			SocketWrapper::setup_pcap($daemon_ctx->{PCAP_FILE});
+		}
+
+		# setup ENV variables in the child process
+		set_env_for_process($daemon_ctx->{NAME}, $env_vars,
+				    $daemon_ctx->{ENV_VARS});
+
+		# not all s3 daemons run in all testenvs (e.g. fileserver doesn't
+		# run winbindd). In which case, the child process just sleeps
+		if (defined($daemon_ctx->{SKIP_DAEMON})) {
+			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
+				my $signame = shift;
+				print("Skip $daemon_ctx->{NAME} received signal $signame");
+				exit 0;
+			};
+			sleep($self->{server_maxtime});
+			exit 0;
+		}
+
+		$ENV{MAKE_TEST_BINARY} = $daemon_ctx->{BINARY_PATH};
+
+		# we close the child's write-end of the pipe and redirect the read-end
+		# to its stdin. That way the daemon will receive an EOF on stdin when
+		# parent selftest process closes its write-end.
+		close($env_vars->{STDIN_PIPE});
+		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
+
+		# the command args are stored as an array reference (because...Perl),
+		# so convert the reference back to an array
+		my @full_cmd = @{ $daemon_ctx->{FULL_CMD} };
+		exec(@full_cmd) or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
+	}
+	print "DONE ($pid)\n";
+	return $pid;
+}
+
 my @exported_envvars = (
 	# domain stuff
 	"DOMAIN",

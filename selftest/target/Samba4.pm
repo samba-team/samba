@@ -141,6 +141,7 @@ sub check_or_start($$$)
 		$samba_envs->{KRB5_KDC_PROFILE} = $env_vars->{MITKDC_CONFIG};
 	}
 
+	# fork a child process and exec() samba
 	my %daemon_ctx = (
 		NAME => "samba",
 		BINARY_PATH => $binary,
@@ -149,30 +150,11 @@ sub check_or_start($$$)
 		TEE_STDOUT => 1,
 		ENV_VARS => $samba_envs,
 	);
+	my $pid = Samba::fork_and_exec($self, $env_vars, \%daemon_ctx, $STDIN_READER);
 
-	print "STARTING SAMBA...\n";
-	my $pid = fork();
-	if ($pid == 0) {
-		# we want out from samba to go to the log file, but also
-		# to the users terminal when running 'make test' on the command
-		# line. This puts it on stderr on the terminal
-		open STDOUT, "| tee $daemon_ctx{LOG_FILE} 1>&2";
-		open STDERR, '>&STDOUT';
-
-		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
-
-		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars, $daemon_ctx{ENV_VARS});
-
-		$ENV{MAKE_TEST_BINARY} = $daemon_ctx{BINARY_PATH};
-
-		close($env_vars->{STDIN_PIPE});
-		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
-
-		exec(@{ $daemon_ctx{FULL_CMD} }) or die("Unable to start $daemon_ctx{BINARY_NAME}: $!");
-	}
 	$env_vars->{SAMBA_PID} = $pid;
-	print "DONE ($pid)\n";
 
+	# close the parent's read-end of the pipe
 	close($STDIN_READER);
 
 	if ($self->wait_for_start($env_vars) != 0) {
@@ -415,6 +397,7 @@ sub setup_dns_hub_internal($$$)
 	push (@args, "$env->{SERVER_IP}");
 	push (@args, Samba::realm_to_ip_mappings());
 	my @full_cmd = (@preargs, $binary, @args);
+
 	my %daemon_ctx = (
 		NAME => "dnshub",
 		BINARY_PATH => $binary,
@@ -430,33 +413,14 @@ sub setup_dns_hub_internal($$$)
 	# exit when the test script exits
 	pipe($STDIN_READER, $env->{STDIN_PIPE});
 
-	print "STARTING rootdnsforwarder...\n";
-	my $pid = fork();
-	if ($pid == 0) {
-		# we want out from samba to go to the log file, but also
-		# to the users terminal when running 'make test' on the command
-		# line. This puts it on stderr on the terminal
-		open STDOUT, "| tee $daemon_ctx{LOG_FILE} 1>&2";
-		open STDERR, '>&STDOUT';
+	my $pid = Samba::fork_and_exec($self, $env, \%daemon_ctx, $STDIN_READER);
 
-		SocketWrapper::set_default_iface($env->{SOCKET_WRAPPER_DEFAULT_IFACE});
-		SocketWrapper::setup_pcap($daemon_ctx{PCAP_FILE});
-
-		Samba::set_env_for_process($daemon_ctx{NAME}, $env, $daemon_ctx{ENV_VARS});
-
-		$ENV{MAKE_TEST_BINARY} = $daemon_ctx{BINARY_PATH};
-
-		close($env->{STDIN_PIPE});
-		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
-
-		exec(@{ $daemon_ctx{FULL_CMD} })
-			or die("Unable to start $daemon_ctx{NAME}: $!");
-	}
 	$env->{SAMBA_PID} = $pid;
 	$env->{KRB5_CONFIG} = "$prefix_abs/no_krb5.conf";
+
+	# close the parent's read-end of the pipe
 	close($STDIN_READER);
 
-	print "DONE\n";
 	return $env;
 }
 

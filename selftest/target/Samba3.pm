@@ -1260,11 +1260,12 @@ sub make_bin_cmd
 
 sub check_or_start($$$$$) {
 	my ($self, $env_vars, $nmbd, $winbindd, $smbd) = @_;
+	my $STDIN_READER;
 
 	# use a pipe for stdin in the child processes. This allows
 	# those processes to monitor the pipe for EOF to ensure they
 	# exit when the test script exits
-	pipe(STDIN_READER, $env_vars->{STDIN_PIPE});
+	pipe($STDIN_READER, $env_vars->{STDIN_PIPE});
 
 	my $binary = Samba::bindir_path($self, "nmbd");
 	my @full_cmd = $self->make_bin_cmd($binary, $env_vars,
@@ -1273,6 +1274,8 @@ sub check_or_start($$$$$) {
 	my $nmbd_envs = Samba::get_env_for_process("nmbd", $env_vars);
 	delete $nmbd_envs->{RESOLV_WRAPPER_CONF};
 	delete $nmbd_envs->{RESOLV_WRAPPER_HOSTS};
+
+	# fork and exec() nmbd in the child process
 	my %daemon_ctx = (
 		NAME => "nmbd",
 		BINARY_PATH => $binary,
@@ -1283,39 +1286,10 @@ sub check_or_start($$$$$) {
 	if ($nmbd ne "yes") {
 		$daemon_ctx{SKIP_DAEMON} = 1;
 	}
+	my $pid = Samba::fork_and_exec($self, $env_vars, \%daemon_ctx, $STDIN_READER);
 
-	unlink($daemon_ctx{LOG_FILE});
-	print "STARTING NMBD...";
-	my $pid = fork();
-	if ($pid == 0) {
-		open STDOUT, ">$daemon_ctx{LOG_FILE}";
-		open STDERR, '>&STDOUT';
-
-		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
-
-		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars, $daemon_ctx{ENV_VARS});
-
-		if (defined($daemon_ctx{SKIP_DAEMON})) {
-			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
-				my $signame = shift;
-				print("Skip $daemon_ctx{NAME} received signal $signame");
-				exit 0;
-			};
-			sleep($self->{server_maxtime});
-			exit 0;
-		}
-
-		$ENV{MAKE_TEST_BINARY} = $daemon_ctx{BINARY_PATH};
-
-		close($env_vars->{STDIN_PIPE});
-		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
-
-		exec(@{ $daemon_ctx{FULL_CMD} })
-			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
-	}
 	$env_vars->{NMBD_TL_PID} = $pid;
 	write_pid($env_vars, "nmbd", $pid);
-	print "DONE\n";
 
 	$binary = Samba::bindir_path($self, "winbindd");
 	@full_cmd = $self->make_bin_cmd($binary, $env_vars,
@@ -1324,6 +1298,8 @@ sub check_or_start($$$$$) {
 	if (not defined($ENV{WINBINDD_DONT_LOG_STDOUT})) {
 		push(@full_cmd, "--stdout");
 	}
+
+	# fork and exec() winbindd in the child process
 	%daemon_ctx = (
 		NAME => "winbindd",
 		BINARY_PATH => $binary,
@@ -1333,44 +1309,17 @@ sub check_or_start($$$$$) {
 	if ($winbindd ne "yes") {
 		$daemon_ctx{SKIP_DAEMON} = 1;
 	}
+	my $pid = Samba::fork_and_exec($self, $env_vars, \%daemon_ctx, $STDIN_READER);
 
-	unlink($daemon_ctx{LOG_FILE});
-	print "STARTING WINBINDD...";
-	$pid = fork();
-	if ($pid == 0) {
-		open STDOUT, ">$daemon_ctx{LOG_FILE}";
-		open STDERR, '>&STDOUT';
-
-		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
-
-		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars, $daemon_ctx{ENV_VARS});
-
-		if (defined($daemon_ctx{SKIP_DAEMON})) {
-			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
-				my $signame = shift;
-				print("Skip $daemon_ctx{NAME} received signal $signame");
-				exit 0;
-			};
-			sleep($self->{server_maxtime});
-			exit 0;
-		}
-
-		$ENV{MAKE_TEST_BINARY} = $daemon_ctx{BINARY_PATH};
-
-		close($env_vars->{STDIN_PIPE});
-		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
-
-		exec(@{ $daemon_ctx{FULL_CMD} })
-			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
-	}
 	$env_vars->{WINBINDD_TL_PID} = $pid;
 	write_pid($env_vars, "winbindd", $pid);
-	print "DONE\n";
 
 	$binary = Samba::bindir_path($self, "smbd");
 	@full_cmd = $self->make_bin_cmd($binary, $env_vars,
 					 $ENV{SMBD_OPTIONS}, $ENV{SMBD_VALGRIND},
 					 $ENV{SMBD_DONT_LOG_STDOUT});
+
+	# fork and exec() smbd in the child process
 	%daemon_ctx = (
 		NAME => "smbd",
 		BINARY_PATH => $binary,
@@ -1381,39 +1330,12 @@ sub check_or_start($$$$$) {
 		$daemon_ctx{SKIP_DAEMON} = 1;
 	}
 
-	unlink($daemon_ctx{LOG_FILE});
-	print "STARTING SMBD...";
-	$pid = fork();
-	if ($pid == 0) {
-		open STDOUT, ">$daemon_ctx{LOG_FILE}";
-		open STDERR, '>&STDOUT';
+	my $pid = Samba::fork_and_exec($self, $env_vars, \%daemon_ctx, $STDIN_READER);
 
-		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
-
-		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars, $daemon_ctx{ENV_VARS});
-
-		if (defined($daemon_ctx{SKIP_DAEMON})) {
-			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
-				my $signame = shift;
-				print("Skip $daemon_ctx{NAME} received signal $signame");
-				exit 0;
-			};
-			sleep($self->{server_maxtime});
-			exit 0;
-		}
-
-		$ENV{MAKE_TEST_BINARY} = $daemon_ctx{BINARY_PATH};
-
-		close($env_vars->{STDIN_PIPE});
-		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
-
-		exec(@{ $daemon_ctx{FULL_CMD} })
-			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
-	}
 	$env_vars->{SMBD_TL_PID} = $pid;
 	write_pid($env_vars, "smbd", $pid);
-	print "DONE\n";
 
+	# close the parent's read-end of the pipe
 	close(STDIN_READER);
 
 	return $self->wait_for_start($env_vars, $nmbd, $winbindd, $smbd);
