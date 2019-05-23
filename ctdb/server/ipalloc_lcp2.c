@@ -58,7 +58,7 @@ static uint32_t ip_distance(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
 			/* Count number of leading zeroes.
 			 * FIXME? This could be optimised...
 			 */
-			while ((x & (1 << 31)) == 0) {
+			while ((x & ((uint32_t)1 << 31)) == 0) {
 				x <<= 1;
 				distance += 1;
 			}
