@@ -1173,17 +1173,18 @@ while True:
         raise
 
     try:
-        try:
-            if options.rebase is not None:
-                rebase_tree(options.rebase, rebase_branch=options.branch)
-        except Exception:
-            cleanup_list.append(gitroot + "/autobuild.pid")
-            cleanup()
-            elapsed_time = time.time() - start_time
-            email_failure(-1, 'rebase', 'rebase', 'rebase',
-                          'rebase on %s failed' % options.branch,
-                          elapsed_time, log_base=options.log_base)
-            sys.exit(1)
+        if options.rebase is not None:
+            rebase_tree(options.rebase, rebase_branch=options.branch)
+    except Exception:
+        cleanup_list.append(gitroot + "/autobuild.pid")
+        cleanup()
+        elapsed_time = time.time() - start_time
+        email_failure(-1, 'rebase', 'rebase', 'rebase',
+                      'rebase on %s failed' % options.branch,
+                      elapsed_time, log_base=options.log_base)
+        sys.exit(1)
+
+    try:
         blist = buildlist(args, options.rebase, rebase_branch=options.branch)
         if options.tail:
             blist.start_tail()
