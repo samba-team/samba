@@ -51,41 +51,41 @@ if gitroot is None:
 def_testbase = os.getenv("AUTOBUILD_TESTBASE", "/memdisk/%s" % os.getenv('USER'))
 
 parser = OptionParser()
-parser.add_option("", "--tail", help="show output while running", default=False, action="store_true")
-parser.add_option("", "--keeplogs", help="keep logs", default=False, action="store_true")
-parser.add_option("", "--nocleanup", help="don't remove test tree", default=False, action="store_true")
-parser.add_option("", "--testbase", help="base directory to run tests in (default %s)" % def_testbase,
+parser.add_option("--tail", help="show output while running", default=False, action="store_true")
+parser.add_option("--keeplogs", help="keep logs", default=False, action="store_true")
+parser.add_option("--nocleanup", help="don't remove test tree", default=False, action="store_true")
+parser.add_option("--testbase", help="base directory to run tests in (default %s)" % def_testbase,
                   default=def_testbase)
-parser.add_option("", "--passcmd", help="command to run on success", default=None)
-parser.add_option("", "--verbose", help="show all commands as they are run",
+parser.add_option("--passcmd", help="command to run on success", default=None)
+parser.add_option("--verbose", help="show all commands as they are run",
                   default=False, action="store_true")
-parser.add_option("", "--rebase", help="rebase on the given tree before testing",
+parser.add_option("--rebase", help="rebase on the given tree before testing",
                   default=None, type='str')
-parser.add_option("", "--pushto", help="push to a git url on success",
+parser.add_option("--pushto", help="push to a git url on success",
                   default=None, type='str')
-parser.add_option("", "--mark", help="add a Tested-By signoff before pushing",
+parser.add_option("--mark", help="add a Tested-By signoff before pushing",
                   default=False, action="store_true")
-parser.add_option("", "--fix-whitespace", help="fix whitespace on rebase",
+parser.add_option("--fix-whitespace", help="fix whitespace on rebase",
                   default=False, action="store_true")
-parser.add_option("", "--retry", help="automatically retry if master changes",
+parser.add_option("--retry", help="automatically retry if master changes",
                   default=False, action="store_true")
-parser.add_option("", "--email", help="send email to the given address on failure",
+parser.add_option("--email", help="send email to the given address on failure",
                   type='str', default=None)
-parser.add_option("", "--email-from", help="send email from the given address",
+parser.add_option("--email-from", help="send email from the given address",
                   type='str', default="autobuild@samba.org")
-parser.add_option("", "--email-server", help="send email via the given server",
+parser.add_option("--email-server", help="send email via the given server",
                   type='str', default='localhost')
-parser.add_option("", "--always-email", help="always send email, even on success",
+parser.add_option("--always-email", help="always send email, even on success",
                   action="store_true")
-parser.add_option("", "--daemon", help="daemonize after initial setup",
+parser.add_option("--daemon", help="daemonize after initial setup",
                   action="store_true")
-parser.add_option("", "--branch", help="the branch to work on (default=master)",
+parser.add_option("--branch", help="the branch to work on (default=master)",
                   default="master", type='str')
-parser.add_option("", "--log-base", help="location where the logs can be found (default=cwd)",
+parser.add_option("--log-base", help="location where the logs can be found (default=cwd)",
                   default=gitroot, type='str')
-parser.add_option("", "--attach-logs", help="Attach logs to mails sent on success/failure?",
+parser.add_option("--attach-logs", help="Attach logs to mails sent on success/failure?",
                   default=False, action="store_true")
-parser.add_option("", "--restrict-tests", help="run as make test with this TESTS= regex",
+parser.add_option("--restrict-tests", help="run as make test with this TESTS= regex",
                   default='')
 parser.add_option("--enable-coverage", dest='enable_coverage',
                   action="store_const", const='--enable-coverage', default='',
