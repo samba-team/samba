@@ -115,6 +115,7 @@ sub check_or_start($$$)
 		}
 	}
 
+	# build up the command to run samba
 	my @preargs = ();
 	my @optargs = ();
 	if (defined($ENV{SAMBA_OPTIONS})) {
@@ -127,9 +128,17 @@ sub check_or_start($$$)
 	if (defined($process_model)) {
 		push @optargs, ("-M", $process_model);
 	}
-	my @full_cmd = (@preargs, Samba::bindir_path($self, "samba"), "-i",
+	my $binary = Samba::bindir_path($self, "samba");
+	my @full_cmd = (@preargs, $binary, "-i",
 			"--no-process-group", "--maximum-runtime=$self->{server_maxtime}",
 			$env_vars->{CONFIGURATION}, @optargs);
+	my %daemon_ctx = (
+		NAME => "samba",
+		BINARY_PATH => $binary,
+		FULL_CMD => [ @full_cmd ],
+		LOG_FILE => $env_vars->{SAMBA_TEST_LOG},
+		TEE_STDOUT => 1,
+	);
 
 	print "STARTING SAMBA...\n";
 	my $pid = fork();
@@ -137,13 +146,13 @@ sub check_or_start($$$)
 		# we want out from samba to go to the log file, but also
 		# to the users terminal when running 'make test' on the command
 		# line. This puts it on stderr on the terminal
-		open STDOUT, "| tee $env_vars->{SAMBA_TEST_LOG} 1>&2";
+		open STDOUT, "| tee $daemon_ctx{LOG_FILE} 1>&2";
 		open STDERR, '>&STDOUT';
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
 		# setup common samba env variables
-		Samba::set_env_for_process("samba", $env_vars);
+		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars);
 
 		# setup additional env variables for s4
 		$ENV{RESOLV_CONF} = $env_vars->{RESOLV_CONF};
@@ -153,12 +162,12 @@ sub check_or_start($$$)
 			$ENV{KRB5_KDC_PROFILE} = $env_vars->{MITKDC_CONFIG};
 		}
 
-		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "samba");
+		$ENV{MAKE_TEST_BINARY} = $daemon_ctx{BINARY_PATH};
 
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@full_cmd) or die("Unable to start samba: $!");
+		exec(@{ $daemon_ctx{FULL_CMD} }) or die("Unable to start $daemon_ctx{BINARY_NAME}: $!");
 	}
 	$env_vars->{SAMBA_PID} = $pid;
 	print "DONE ($pid)\n";
@@ -382,7 +391,7 @@ sub setup_dns_hub_internal($$$)
 
 	$env->{SERVER_IP} = Samba::get_ipv4_addr($hostname);
 	$env->{SERVER_IPV6} = Samba::get_ipv6_addr($hostname);
-
+	$env->{SOCKET_WRAPPER_DEFAULT_IFACE} = Samba::get_interface($hostname);
 	$env->{DNS_HUB_LOG} = "$prefix_abs/dns_hub.log";
 
 	$env->{RESOLV_CONF} = "$prefix_abs/resolv.conf";
@@ -405,6 +414,14 @@ sub setup_dns_hub_internal($$$)
 	push (@args, "$env->{SERVER_IP}");
 	push (@args, Samba::realm_to_ip_mappings());
 	my @full_cmd = (@preargs, $binary, @args);
+	my %daemon_ctx = (
+		NAME => "dnshub",
+		BINARY_PATH => $binary,
+		FULL_CMD => [ @full_cmd ],
+		LOG_FILE => $env->{DNS_HUB_LOG},
+		TEE_STDOUT => 1,
+		PCAP_FILE => "$ENV{SOCKET_WRAPPER_PCAP_DIR}/env-$hostname$.pcap",
+	);
 
 	# use a pipe for stdin in the child processes. This allows
 	# those processes to monitor the pipe for EOF to ensure they
@@ -417,21 +434,19 @@ sub setup_dns_hub_internal($$$)
 		# we want out from samba to go to the log file, but also
 		# to the users terminal when running 'make test' on the command
 		# line. This puts it on stderr on the terminal
-		open STDOUT, "| tee $env->{DNS_HUB_LOG} 1>&2";
+		open STDOUT, "| tee $daemon_ctx{LOG_FILE} 1>&2";
 		open STDERR, '>&STDOUT';
 
-		my $swiface = Samba::get_interface($hostname);
-		SocketWrapper::set_default_iface($swiface);
-		my $pcap_file = "$ENV{SOCKET_WRAPPER_PCAP_DIR}/env-$hostname$.pcap";
-		SocketWrapper::setup_pcap($pcap_file);
+		SocketWrapper::set_default_iface($env->{SOCKET_WRAPPER_DEFAULT_IFACE});
+		SocketWrapper::setup_pcap($daemon_ctx{PCAP_FILE});
 
-		$ENV{MAKE_TEST_BINARY} = $binary;
+		$ENV{MAKE_TEST_BINARY} = $daemon_ctx{BINARY_PATH};
 
 		close($env->{STDIN_PIPE});
 		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@full_cmd)
-			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
+		exec(@{ $daemon_ctx{FULL_CMD} })
+			or die("Unable to start $daemon_ctx{NAME}: $!");
 	}
 	$env->{SAMBA_PID} = $pid;
 	$env->{KRB5_CONFIG} = "$prefix_abs/no_krb5.conf";

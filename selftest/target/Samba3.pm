@@ -1270,35 +1270,44 @@ sub check_or_start($$$$$) {
 	my @full_cmd = $self->make_bin_cmd($binary, $env_vars,
 					   $ENV{NMBD_OPTIONS}, $ENV{NMBD_VALGRIND},
 					   $ENV{NMBD_DONT_LOG_STDOUT});
+	my %daemon_ctx = (
+		NAME => "nmbd",
+		BINARY_PATH => $binary,
+		FULL_CMD => [ @full_cmd ],
+		LOG_FILE => $env_vars->{NMBD_TEST_LOG},
+		NO_RESOLV => 1,
+	);
+	if ($nmbd ne "yes") {
+		$daemon_ctx{SKIP_DAEMON} = 1;
+	}
 
-	unlink($env_vars->{NMBD_TEST_LOG});
+	unlink($daemon_ctx{LOG_FILE});
 	print "STARTING NMBD...";
 	my $pid = fork();
 	if ($pid == 0) {
-		open STDOUT, ">$env_vars->{NMBD_TEST_LOG}";
+		open STDOUT, ">$daemon_ctx{LOG_FILE}";
 		open STDERR, '>&STDOUT';
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
-		my $skip_resolv_wrapper = 1;
-		Samba::set_env_for_process("nmbd", $env_vars, $skip_resolv_wrapper);
+		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars, $daemon_ctx{NO_RESOLV});
 
-		if ($nmbd ne "yes") {
+		if (defined($daemon_ctx{SKIP_DAEMON})) {
 			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
 				my $signame = shift;
-				print("Skip nmbd received signal $signame");
+				print("Skip $daemon_ctx{NAME} received signal $signame");
 				exit 0;
 			};
 			sleep($self->{server_maxtime});
 			exit 0;
 		}
 
-		$ENV{MAKE_TEST_BINARY} = $binary;
+		$ENV{MAKE_TEST_BINARY} = $daemon_ctx{BINARY_PATH};
 
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@full_cmd)
+		exec(@{ $daemon_ctx{FULL_CMD} })
 			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
 	}
 	$env_vars->{NMBD_TL_PID} = $pid;
@@ -1312,34 +1321,43 @@ sub check_or_start($$$$$) {
 	if (not defined($ENV{WINBINDD_DONT_LOG_STDOUT})) {
 		push(@full_cmd, "--stdout");
 	}
+	%daemon_ctx = (
+		NAME => "winbindd",
+		BINARY_PATH => $binary,
+		FULL_CMD => [ @full_cmd ],
+		LOG_FILE => $env_vars->{WINBINDD_TEST_LOG},
+	);
+	if ($winbindd ne "yes") {
+		$daemon_ctx{SKIP_DAEMON} = 1;
+	}
 
-	unlink($env_vars->{WINBINDD_TEST_LOG});
+	unlink($daemon_ctx{LOG_FILE});
 	print "STARTING WINBINDD...";
 	$pid = fork();
 	if ($pid == 0) {
-		open STDOUT, ">$env_vars->{WINBINDD_TEST_LOG}";
+		open STDOUT, ">$daemon_ctx{LOG_FILE}";
 		open STDERR, '>&STDOUT';
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
-		Samba::set_env_for_process("winbindd", $env_vars);
+		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars);
 
-		if ($winbindd ne "yes") {
+		if (defined($daemon_ctx{SKIP_DAEMON})) {
 			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
 				my $signame = shift;
-				print("Skip winbindd received signal $signame");
+				print("Skip $daemon_ctx{NAME} received signal $signame");
 				exit 0;
 			};
 			sleep($self->{server_maxtime});
 			exit 0;
 		}
 
-		$ENV{MAKE_TEST_BINARY} = $binary;
+		$ENV{MAKE_TEST_BINARY} = $daemon_ctx{BINARY_PATH};
 
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@full_cmd)
+		exec(@{ $daemon_ctx{FULL_CMD} })
 			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
 	}
 	$env_vars->{WINBINDD_TL_PID} = $pid;
@@ -1350,34 +1368,43 @@ sub check_or_start($$$$$) {
 	@full_cmd = $self->make_bin_cmd($binary, $env_vars,
 					 $ENV{SMBD_OPTIONS}, $ENV{SMBD_VALGRIND},
 					 $ENV{SMBD_DONT_LOG_STDOUT});
+	%daemon_ctx = (
+		NAME => "smbd",
+		BINARY_PATH => $binary,
+		FULL_CMD => [ @full_cmd ],
+		LOG_FILE => $env_vars->{SMBD_TEST_LOG},
+	);
+	if ($smbd ne "yes") {
+		$daemon_ctx{SKIP_DAEMON} = 1;
+	}
 
-	unlink($env_vars->{SMBD_TEST_LOG});
+	unlink($daemon_ctx{LOG_FILE});
 	print "STARTING SMBD...";
 	$pid = fork();
 	if ($pid == 0) {
-		open STDOUT, ">$env_vars->{SMBD_TEST_LOG}";
+		open STDOUT, ">$daemon_ctx{LOG_FILE}";
 		open STDERR, '>&STDOUT';
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
-		Samba::set_env_for_process("smbd", $env_vars);
+		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars);
 
-		if ($smbd ne "yes") {
+		if (defined($daemon_ctx{SKIP_DAEMON})) {
 			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
 				my $signame = shift;
-				print("Skip smbd received signal $signame");
+				print("Skip $daemon_ctx{NAME} received signal $signame");
 				exit 0;
 			};
 			sleep($self->{server_maxtime});
 			exit 0;
 		}
 
-		$ENV{MAKE_TEST_BINARY} = $binary;
+		$ENV{MAKE_TEST_BINARY} = $daemon_ctx{BINARY_PATH};
 
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", \*STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@full_cmd)
+		exec(@{ $daemon_ctx{FULL_CMD} })
 			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
 	}
 	$env_vars->{SMBD_TL_PID} = $pid;
