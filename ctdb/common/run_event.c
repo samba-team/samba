@@ -285,8 +285,8 @@ int run_event_list(struct run_event_context *run_ctx,
 		   TALLOC_CTX *mem_ctx,
 		   struct run_event_script_list **output)
 {
-	struct event_script_list *s_list;
-	struct run_event_script_list *script_list;
+	struct event_script_list *s_list = NULL;
+	struct run_event_script_list *script_list = NULL;
 	unsigned int i;
 	int ret;
 
