@@ -1,0 +1,24 @@
+# Except where noted these are missing RPCs with just give a simple
+# fault (mapped to NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE\)
+^samba3.rpc.srvsvc.srvsvc \(admin access\).NetShareGetInfo\(ad_member\)
+# Level 501 is supported in the s3 srvsrv server
+^samba3.rpc.srvsvc.srvsvc \(admin access\).NetShareEnum\(ad_member\)
+^samba3.rpc.srvsvc.srvsvc \(admin access\).NetTransportEnum\(ad_member\)
+^samba3.rpc.srvsvc.srvsvc \(admin access\).NetShareEnumAll\(ad_member\)
+^samba3.rpc.srvsvc.srvsvc \(admin access\).NetCharDevQEnum\(ad_member\)
+^samba3.rpc.srvsvc.srvsvc \(admin access\).NetCharDevEnum\(ad_member\)
+^samba3.rpc.srvsvc.srvsvc anonymous access.NetShareGetInfo\(ad_member\)
+^samba3.rpc.srvsvc.srvsvc anonymous access.NetShareEnum\(ad_member\)
+^samba3.rpc.srvsvc.srvsvc anonymous access.NetShareEnumAll\(ad_member\)
+^samba3.rpc.srvsvc.srvsvc \(admin access\).NetShareGetInfo\(ad_dc\)
+# Level 501 is supported in the s3 srvsrv server
+^samba3.rpc.srvsvc.srvsvc \(admin access\).NetShareEnum\(ad_dc\)
+^samba3.rpc.srvsvc.srvsvc \(admin access\).NetTransportEnum\(ad_dc\)
+^samba3.rpc.srvsvc.srvsvc \(admin access\).NetShareEnumAll\(ad_dc\)
+^samba3.rpc.srvsvc.srvsvc \(admin access\).NetCharDevQEnum\(ad_dc\)
+^samba3.rpc.srvsvc.srvsvc \(admin access\).NetCharDevEnum\(ad_dc\)
+# These should be fixed by setting 'restrict anonymous = 2' by default
+# per https://bugzilla.samba.org/show_bug.cgi?id=12775
+^samba3.rpc.srvsvc.srvsvc anonymous access.NetShareGetInfo\(ad_dc\)
+^samba3.rpc.srvsvc.srvsvc anonymous access.NetShareEnum\(ad_dc\)
+^samba3.rpc.srvsvc.srvsvc anonymous access.NetShareEnumAll\(ad_dc\)

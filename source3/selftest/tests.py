@@ -464,7 +464,7 @@ rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sh
        "rpc.samr.priv", "rpc.samr.passwords.validate",
        "rpc.netlogon.admin",
        "rpc.schannel", "rpc.schannel2", "rpc.bench-schannel1", "rpc.schannel_anon_setpw", "rpc.join", "rpc.bind",
-       "rpc.initshutdown", "rpc.wkssvc"]
+       "rpc.initshutdown", "rpc.wkssvc", "rpc.srvsvc"]
 
 local = ["local.nss"]
 
@@ -671,6 +671,9 @@ for t in tests:
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "rpc.wkssvc":
         plansmbtorture4testsuite(t, "ad_member", '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
+    elif t == "rpc.srvsvc":
+        plansmbtorture4testsuite(t, "ad_member", '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
+        plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
     else:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
