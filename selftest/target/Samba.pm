@@ -583,9 +583,11 @@ sub random_domain_sid()
 # sets the environment variables ready for running a given process
 sub set_env_for_process
 {
-	my ($proc_name, $env_vars, $skip_resolv_wrapper) = @_;
+	my ($proc_name, $env_vars, $proc_envs) = @_;
 
-	$proc_envs = get_env_for_process($proc_name, $env_vars, $skip_resolv_wrapper);
+	if (not defined($proc_envs)) {
+		$proc_envs = get_env_for_process($proc_name, $env_vars);
+	}
 
 	foreach my $key (keys %{ $proc_envs }) {
 		$ENV{$key} = $proc_envs->{$key};
@@ -594,7 +596,7 @@ sub set_env_for_process
 
 sub get_env_for_process
 {
-	my ($proc_name, $env_vars, $skip_resolv_wrapper) = @_;
+	my ($proc_name, $env_vars) = @_;
 	my $proc_envs = {
 		KRB5_CONFIG => $env_vars->{KRB5_CONFIG},
 		KRB5CCNAME => "$env_vars->{KRB5_CCACHE}.$proc_name",
@@ -610,12 +612,10 @@ sub get_env_for_process
 		ENVNAME => "$ENV{ENVNAME}.$proc_name",
 	};
 
-	if (not defined($skip_resolv_wrapper)) {
-		if (defined($env_vars->{RESOLV_WRAPPER_CONF})) {
-			$proc_envs->{RESOLV_WRAPPER_CONF} = $env_vars->{RESOLV_WRAPPER_CONF};
-		} else {
-			$proc_envs->{RESOLV_WRAPPER_HOSTS} = $env_vars->{RESOLV_WRAPPER_HOSTS};
-		}
+	if (defined($env_vars->{RESOLV_WRAPPER_CONF})) {
+		$proc_envs->{RESOLV_WRAPPER_CONF} = $env_vars->{RESOLV_WRAPPER_CONF};
+	} else {
+		$proc_envs->{RESOLV_WRAPPER_HOSTS} = $env_vars->{RESOLV_WRAPPER_HOSTS};
 	}
 	return $proc_envs;
 }

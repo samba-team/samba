@@ -1270,12 +1270,15 @@ sub check_or_start($$$$$) {
 	my @full_cmd = $self->make_bin_cmd($binary, $env_vars,
 					   $ENV{NMBD_OPTIONS}, $ENV{NMBD_VALGRIND},
 					   $ENV{NMBD_DONT_LOG_STDOUT});
+	my $nmbd_envs = Samba::get_env_for_process("nmbd", $env_vars);
+	delete $nmbd_envs->{RESOLV_WRAPPER_CONF};
+	delete $nmbd_envs->{RESOLV_WRAPPER_HOSTS};
 	my %daemon_ctx = (
 		NAME => "nmbd",
 		BINARY_PATH => $binary,
 		FULL_CMD => [ @full_cmd ],
 		LOG_FILE => $env_vars->{NMBD_TEST_LOG},
-		NO_RESOLV => 1,
+		ENV_VARS => $nmbd_envs,
 	);
 	if ($nmbd ne "yes") {
 		$daemon_ctx{SKIP_DAEMON} = 1;
@@ -1290,7 +1293,7 @@ sub check_or_start($$$$$) {
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
-		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars, $daemon_ctx{NO_RESOLV});
+		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars, $daemon_ctx{ENV_VARS});
 
 		if (defined($daemon_ctx{SKIP_DAEMON})) {
 			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
