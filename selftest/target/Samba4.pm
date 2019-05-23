@@ -132,12 +132,22 @@ sub check_or_start($$$)
 	my @full_cmd = (@preargs, $binary, "-i",
 			"--no-process-group", "--maximum-runtime=$self->{server_maxtime}",
 			$env_vars->{CONFIGURATION}, @optargs);
+
+	# the samba process takes some additional env variables (compared to s3)
+	my $samba_envs = Samba::get_env_for_process("samba", $env_vars);
+	$samba_envs->{RESOLV_CONF} = $env_vars->{RESOLV_CONF};
+	$samba_envs->{UID_WRAPPER} = "1";
+	if (defined($ENV{MITKRB5})) {
+		$samba_envs->{KRB5_KDC_PROFILE} = $env_vars->{MITKDC_CONFIG};
+	}
+
 	my %daemon_ctx = (
 		NAME => "samba",
 		BINARY_PATH => $binary,
 		FULL_CMD => [ @full_cmd ],
 		LOG_FILE => $env_vars->{SAMBA_TEST_LOG},
 		TEE_STDOUT => 1,
+		ENV_VARS => $samba_envs,
 	);
 
 	print "STARTING SAMBA...\n";
@@ -151,16 +161,7 @@ sub check_or_start($$$)
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
-		# setup common samba env variables
-		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars);
-
-		# setup additional env variables for s4
-		$ENV{RESOLV_CONF} = $env_vars->{RESOLV_CONF};
-		$ENV{UID_WRAPPER} = "1";
-
-		if (defined($ENV{MITKRB5})) {
-			$ENV{KRB5_KDC_PROFILE} = $env_vars->{MITKDC_CONFIG};
-		}
+		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars, $daemon_ctx{ENV_VARS});
 
 		$ENV{MAKE_TEST_BINARY} = $daemon_ctx{BINARY_PATH};
 
@@ -421,6 +422,7 @@ sub setup_dns_hub_internal($$$)
 		LOG_FILE => $env->{DNS_HUB_LOG},
 		TEE_STDOUT => 1,
 		PCAP_FILE => "$ENV{SOCKET_WRAPPER_PCAP_DIR}/env-$hostname$.pcap",
+		ENV_VARS => {},
 	);
 
 	# use a pipe for stdin in the child processes. This allows
@@ -439,6 +441,8 @@ sub setup_dns_hub_internal($$$)
 
 		SocketWrapper::set_default_iface($env->{SOCKET_WRAPPER_DEFAULT_IFACE});
 		SocketWrapper::setup_pcap($daemon_ctx{PCAP_FILE});
+
+		Samba::set_env_for_process($daemon_ctx{NAME}, $env, $daemon_ctx{ENV_VARS});
 
 		$ENV{MAKE_TEST_BINARY} = $daemon_ctx{BINARY_PATH};
 

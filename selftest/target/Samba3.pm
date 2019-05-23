@@ -1343,7 +1343,7 @@ sub check_or_start($$$$$) {
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
-		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars);
+		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars, $daemon_ctx{ENV_VARS});
 
 		if (defined($daemon_ctx{SKIP_DAEMON})) {
 			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
@@ -1390,7 +1390,7 @@ sub check_or_start($$$$$) {
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 
-		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars);
+		Samba::set_env_for_process($daemon_ctx{NAME}, $env_vars, $daemon_ctx{ENV_VARS});
 
 		if (defined($daemon_ctx{SKIP_DAEMON})) {
 			$SIG{USR1} = $SIG{ALRM} = $SIG{INT} = $SIG{QUIT} = $SIG{TERM} = sub {
