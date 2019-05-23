@@ -992,7 +992,8 @@ static bool ad_unpack(struct adouble *ad, const size_t nentries,
 	return true;
 }
 
-static bool ad_convert_move_reso(struct adouble *ad,
+static bool ad_convert_move_reso(vfs_handle_struct *handle,
+				 struct adouble *ad,
 				 const struct smb_filename *smb_fname)
 {
 	char *map = MAP_FAILED;
@@ -1194,7 +1195,7 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	ok = ad_convert_move_reso(ad, smb_fname);
+	ok = ad_convert_move_reso(handle, ad, smb_fname);
 	if (!ok) {
 		goto fail;
 	}
