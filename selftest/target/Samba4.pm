@@ -142,15 +142,15 @@ sub check_or_start($$$)
 	}
 
 	# fork a child process and exec() samba
-	my %daemon_ctx = (
+	my $daemon_ctx = {
 		NAME => "samba",
 		BINARY_PATH => $binary,
 		FULL_CMD => [ @full_cmd ],
 		LOG_FILE => $env_vars->{SAMBA_TEST_LOG},
 		TEE_STDOUT => 1,
 		ENV_VARS => $samba_envs,
-	);
-	my $pid = Samba::fork_and_exec($self, $env_vars, \%daemon_ctx, $STDIN_READER);
+	};
+	my $pid = Samba::fork_and_exec($self, $env_vars, $daemon_ctx, $STDIN_READER);
 
 	$env_vars->{SAMBA_PID} = $pid;
 
@@ -398,7 +398,7 @@ sub setup_dns_hub_internal($$$)
 	push (@args, Samba::realm_to_ip_mappings());
 	my @full_cmd = (@preargs, $binary, @args);
 
-	my %daemon_ctx = (
+	my $daemon_ctx = {
 		NAME => "dnshub",
 		BINARY_PATH => $binary,
 		FULL_CMD => [ @full_cmd ],
@@ -406,14 +406,14 @@ sub setup_dns_hub_internal($$$)
 		TEE_STDOUT => 1,
 		PCAP_FILE => "$ENV{SOCKET_WRAPPER_PCAP_DIR}/env-$hostname$.pcap",
 		ENV_VARS => {},
-	);
+	};
 
 	# use a pipe for stdin in the child processes. This allows
 	# those processes to monitor the pipe for EOF to ensure they
 	# exit when the test script exits
 	pipe($STDIN_READER, $env->{STDIN_PIPE});
 
-	my $pid = Samba::fork_and_exec($self, $env, \%daemon_ctx, $STDIN_READER);
+	my $pid = Samba::fork_and_exec($self, $env, $daemon_ctx, $STDIN_READER);
 
 	$env->{SAMBA_PID} = $pid;
 	$env->{KRB5_CONFIG} = "$prefix_abs/no_krb5.conf";

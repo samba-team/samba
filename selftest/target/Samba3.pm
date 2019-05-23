@@ -1276,17 +1276,17 @@ sub check_or_start($$$$$) {
 	delete $nmbd_envs->{RESOLV_WRAPPER_HOSTS};
 
 	# fork and exec() nmbd in the child process
-	my %daemon_ctx = (
+	my $daemon_ctx = {
 		NAME => "nmbd",
 		BINARY_PATH => $binary,
 		FULL_CMD => [ @full_cmd ],
 		LOG_FILE => $env_vars->{NMBD_TEST_LOG},
 		ENV_VARS => $nmbd_envs,
-	);
+	};
 	if ($nmbd ne "yes") {
-		$daemon_ctx{SKIP_DAEMON} = 1;
+		$daemon_ctx->{SKIP_DAEMON} = 1;
 	}
-	my $pid = Samba::fork_and_exec($self, $env_vars, \%daemon_ctx, $STDIN_READER);
+	my $pid = Samba::fork_and_exec($self, $env_vars, $daemon_ctx, $STDIN_READER);
 
 	$env_vars->{NMBD_TL_PID} = $pid;
 	write_pid($env_vars, "nmbd", $pid);
@@ -1300,16 +1300,16 @@ sub check_or_start($$$$$) {
 	}
 
 	# fork and exec() winbindd in the child process
-	%daemon_ctx = (
+	$daemon_ctx = {
 		NAME => "winbindd",
 		BINARY_PATH => $binary,
 		FULL_CMD => [ @full_cmd ],
 		LOG_FILE => $env_vars->{WINBINDD_TEST_LOG},
-	);
+	};
 	if ($winbindd ne "yes") {
-		$daemon_ctx{SKIP_DAEMON} = 1;
+		$daemon_ctx->{SKIP_DAEMON} = 1;
 	}
-	my $pid = Samba::fork_and_exec($self, $env_vars, \%daemon_ctx, $STDIN_READER);
+	my $pid = Samba::fork_and_exec($self, $env_vars, $daemon_ctx, $STDIN_READER);
 
 	$env_vars->{WINBINDD_TL_PID} = $pid;
 	write_pid($env_vars, "winbindd", $pid);
@@ -1320,17 +1320,17 @@ sub check_or_start($$$$$) {
 					 $ENV{SMBD_DONT_LOG_STDOUT});
 
 	# fork and exec() smbd in the child process
-	%daemon_ctx = (
+	$daemon_ctx = {
 		NAME => "smbd",
 		BINARY_PATH => $binary,
 		FULL_CMD => [ @full_cmd ],
 		LOG_FILE => $env_vars->{SMBD_TEST_LOG},
-	);
+	};
 	if ($smbd ne "yes") {
-		$daemon_ctx{SKIP_DAEMON} = 1;
+		$daemon_ctx->{SKIP_DAEMON} = 1;
 	}
 
-	my $pid = Samba::fork_and_exec($self, $env_vars, \%daemon_ctx, $STDIN_READER);
+	my $pid = Samba::fork_and_exec($self, $env_vars, $daemon_ctx, $STDIN_READER);
 
 	$env_vars->{SMBD_TL_PID} = $pid;
 	write_pid($env_vars, "smbd", $pid);
