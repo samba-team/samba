@@ -516,7 +516,13 @@ sub get_ipv4_addr
 		$swiface += $iface_num;
 	}
 
-	return "127.0.0.$swiface";
+	if (use_namespaces()) {
+		# use real IPs if selftest is running in its own network namespace
+		return "10.0.0.$swiface";
+	} else {
+		# use loopback IPs with socket-wrapper
+		return "127.0.0.$swiface";
+	}
 }
 
 sub get_ipv6_addr
@@ -541,7 +547,12 @@ sub get_interfaces_config
 	}
 	for (my $i = 0; $i < $num_ips; $i++) {
 		my $ipv4_addr = Samba::get_ipv4_addr($hostname, $i);
-		$interfaces .= "$ipv4_addr/8 ";
+		if (use_namespaces()) {
+			# use a /24 subnet with network namespaces
+			$interfaces .= "$ipv4_addr/24 ";
+		} else {
+			$interfaces .= "$ipv4_addr/8 ";
+		}
 	}
 
 	my $ipv6_addr = Samba::get_ipv6_addr($hostname);
@@ -627,10 +638,13 @@ sub fork_and_exec
 	unlink($daemon_ctx->{LOG_FILE});
 	print "STARTING $daemon_ctx->{NAME} for $ENV{ENVNAME}...";
 
+	my $parent_pid = $$;
 	my $pid = fork();
 
 	# exec the daemon in the child process
 	if ($pid == 0) {
+		my @preargs = ();
+
 		# redirect the daemon's stdout/stderr to a log file
 		if (defined($daemon_ctx->{TEE_STDOUT})) {
 			# in some cases, we want out from samba to go to the log file,
@@ -671,12 +685,27 @@ sub fork_and_exec
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
+		# if using kernel namespaces, prepend the command so the process runs in
+		# its own namespace
+		if (Samba::use_namespaces()) {
+			@preargs = ns_exec_preargs($parent_pid, $env_vars);
+		}
+
 		# the command args are stored as an array reference (because...Perl),
 		# so convert the reference back to an array
 		my @full_cmd = @{ $daemon_ctx->{FULL_CMD} };
-		exec(@full_cmd) or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
+
+		exec(@preargs, @full_cmd) or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
 	}
+
 	print "DONE ($pid)\n";
+
+	# if using kernel namespaces, we now establish a connection between the
+	# main selftest namespace (i.e. this process) and the new child namespace
+	if (use_namespaces()) {
+		ns_child_forked($pid, $env_vars);
+	}
+
 	return $pid;
 }
 
@@ -795,6 +824,80 @@ sub export_envvars_to_file
 	open(FILE, "> $filepath");
 	print FILE "$env_str";
 	close(FILE);
+}
+
+# Returns true if kernel namespaces are being used instead of socket-wrapper.
+# The default is false.
+sub use_namespaces
+{
+	return defined($ENV{USE_NAMESPACES});
+}
+
+# returns a given testenv's interface-name (only when USE_NAMESPACES=1)
+sub ns_interface_name
+{
+	my ($hostname) = @_;
+
+	# when using namespaces, each testenv has its own vethX interface,
+	# where X = Samba::get_interface(testenv_name)
+	my $iface = get_interface($hostname);
+	return "veth$iface";
+}
+
+# Called after a new child namespace has been forked
+sub ns_child_forked
+{
+	my ($child_pid, $env_vars) = @_;
+
+	# we only need to do this for the first child forked for this testenv
+	if (defined($env_vars->{NS_PID})) {
+		return;
+	}
+
+	# store the child PID. It's the only way the main (selftest) namespace can
+	# access the new child (testenv) namespace.
+	$env_vars->{NS_PID} = $child_pid;
+
+	# Add the new child namespace's interface to the main selftest bridge.
+	# This connects together the various testenvs so that selftest can talk to
+	# them all
+	my $iface = ns_interface_name($env_vars->{NETBIOSNAME});
+	system "$ENV{SRCDIR}/selftest/ns/add_bridge_iface.sh $iface-br selftest0";
+}
+
+# returns args to prepend to a command in order to execute it the correct
+# namespace for the testenv (creating a new namespace if needed).
+# This should only used when USE_NAMESPACES=1 is set.
+sub ns_exec_preargs
+{
+	my ($parent_pid, $env_vars) = @_;
+
+	# NS_PID stores the pid of the first child daemon run in this namespace
+	if (defined($env_vars->{NS_PID})) {
+
+		# the namespace has already been created previously. So we use nsenter
+		# to execute the command in the given testenv's namespace. We need to
+		# use the NS_PID to identify this particular namespace
+		return ("nsenter", "-t", "$env_vars->{NS_PID}", "--net");
+	} else {
+
+		# We need to create a new namespace for this daemon (i.e. we're
+		# setting up a new testenv). First, write the environment variables to
+		# an exports.sh file for this testenv (for convenient access by the
+		# namespace scripts).
+		my $exports_file = "$env_vars->{TESTENV_DIR}/exports.sh";
+		export_envvars_to_file($exports_file, $env_vars);
+
+		# when using namespaces, each testenv has its own veth interface
+		my $interface = ns_interface_name($env_vars->{NETBIOSNAME});
+
+		# we use unshare to create a new network namespace. The start_in_ns.sh
+		# helper script gets run first to setup the new namespace's interfaces.
+		# (This all gets prepended around the actual command to run in the new
+		# namespace)
+		return ("unshare", "--net", "$ENV{SRCDIR}/selftest/ns/start_in_ns.sh",
+				$interface, $exports_file, $parent_pid);
+	}
 }
 
 1;

@@ -246,8 +246,11 @@ def cmd_testonly(opt):
 
     env.OPTIONS += " --nss_wrapper_so_path=" + CONFIG_GET(opt, 'LIBNSS_WRAPPER_SO_PATH')
     env.OPTIONS += " --resolv_wrapper_so_path=" + CONFIG_GET(opt, 'LIBRESOLV_WRAPPER_SO_PATH')
-    env.OPTIONS += " --socket_wrapper_so_path=" + CONFIG_GET(opt, 'LIBSOCKET_WRAPPER_SO_PATH')
     env.OPTIONS += " --uid_wrapper_so_path=" + CONFIG_GET(opt, 'LIBUID_WRAPPER_SO_PATH')
+
+    # selftest can optionally use kernel namespaces instead of socket-wrapper
+    if os.environ.get('USE_NAMESPACES') is None:
+        env.OPTIONS += " --socket_wrapper_so_path=" + CONFIG_GET(opt, 'LIBSOCKET_WRAPPER_SO_PATH')
 
     #if unversioned_sys_platform in ('freebsd', 'netbsd', 'openbsd', 'sunos'):
     #    env.OPTIONS += " --use-dns-faking"
@@ -276,6 +279,13 @@ def cmd_testonly(opt):
     subunit_cache = None
     # We use the full path rather than relative path to avoid problems on some platforms (ie. solaris 8).
     env.CORE_COMMAND = '${PERL} ${srcdir}/selftest/selftest.pl --target=${SELFTEST_TARGET} --prefix=${SELFTEST_PREFIX} --srcdir=${srcdir} --exclude=${srcdir}/selftest/skip ${TESTLISTS} ${OPTIONS} ${TESTS}'
+
+    # If using namespaces (rather than socket-wrapper), run the selftest script
+    # in its own network namespace (by doing an 'unshare'). (To create a new
+    # namespace as a non-root user, we have to also unshare the current user
+    # namespace, and remap ourself as root in the namespace created)
+    if os.environ.get('USE_NAMESPACES') is not None:
+        env.CORE_COMMAND = 'unshare --net --user --map-root-user ' + env.CORE_COMMAND
 
     if env.ADDRESS_SANITIZER:
         # For now we cannot run with leak detection

@@ -468,6 +468,9 @@ sub get_cmd_env_vars
 	return $cmd_env;
 }
 
+# Sets up a forest trust namespace.
+# (Note this is different to kernel namespaces, setup by the
+# USE_NAMESPACES=1 option)
 sub setup_namespaces($$:$$)
 {
 	my ($self, $localenv, $upn_array, $spn_array) = @_;

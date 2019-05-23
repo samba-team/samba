@@ -424,6 +424,16 @@ if ($opt_libuid_wrapper_so_path) {
 	}
 }
 
+if (defined($ENV{USE_NAMESPACES})) {
+	print "Using linux containerization for selftest testenv(s)...\n";
+
+	# Create a common bridge to connect up the testenv namespaces. We give
+	# it the client's IP address, as this is where the tests will run from
+	my $ipv4_addr = Samba::get_ipv4_addr("client");
+	my $ipv6_addr = Samba::get_ipv6_addr("client");
+	system "$ENV{SRCDIR_ABS}/selftest/ns/create_bridge.sh selftest0 $ipv4_addr $ipv6_addr";
+}
+
 $ENV{LD_PRELOAD} = $ld_preload;
 print "LD_PRELOAD=$ENV{LD_PRELOAD}\n";
 
