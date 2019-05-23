@@ -1580,9 +1580,10 @@ exit:
 	return ealen;
 }
 
-static int ad_open_rsrc_adouble(const struct smb_filename *smb_fname,
-				int flags,
-				mode_t mode)
+static int ad_open_rsrc(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			int flags,
+			mode_t mode)
 {
 	int ret;
 	int fd;
@@ -1597,14 +1598,6 @@ static int ad_open_rsrc_adouble(const struct smb_filename *smb_fname,
 	TALLOC_FREE(adp_smb_fname);
 
 	return fd;
-}
-
-static int ad_open_rsrc(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			int flags,
-			mode_t mode)
-{
-	return ad_open_rsrc_adouble(smb_fname, flags, mode);
 }
 
 /*
