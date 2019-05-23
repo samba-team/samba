@@ -584,6 +584,7 @@ static NTSTATUS idmap_script_db_init(struct idmap_domain *dom)
 	NTSTATUS ret;
 	struct idmap_script_context *ctx;
 	const char * idmap_script = NULL;
+	const char *ctx_script = NULL;
 
 	DEBUG(10, ("%s called ...\n", __func__));
 
@@ -594,7 +595,7 @@ static NTSTATUS idmap_script_db_init(struct idmap_domain *dom)
 		goto failed;
 	}
 
-	ctx->script = idmap_config_const_string(dom->name, "script", NULL);
+	ctx_script = idmap_config_const_string(dom->name, "script", NULL);
 
 	/* Do we even need to handle this? */
 	idmap_script = lp_parm_const_string(-1, "idmap", "script", NULL);
@@ -603,13 +604,24 @@ static NTSTATUS idmap_script_db_init(struct idmap_domain *dom)
 			  " Please use 'idmap config * : script' instead!\n"));
 	}
 
-	if (strequal(dom->name, "*") && ctx->script == NULL) {
+	if (strequal(dom->name, "*") && ctx_script == NULL) {
 		/* fall back to idmap:script for backwards compatibility */
-		ctx->script = idmap_script;
+		ctx_script = idmap_script;
 	}
 
-	if (ctx->script) {
+	if (ctx_script) {
 		DEBUG(1, ("using idmap script '%s'\n", ctx->script));
+		/*
+		 * We must ensure this memory is owned by ctx.
+		 * The ctx_script const pointer is a pointer into
+		 * the config file data and may become invalid
+		 * on config file reload. BUG: 13956
+		 */
+		ctx->script = talloc_strdup(ctx, ctx_script);
+		if (ctx->script == NULL) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
 	}
 
 	dom->private_data = ctx;

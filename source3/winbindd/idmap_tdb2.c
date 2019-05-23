@@ -522,6 +522,7 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom)
 	struct idmap_tdb_common_context *commonctx;
 	struct idmap_tdb2_context *ctx;
 	const char * idmap_script = NULL;
+	const char *ctx_script = NULL;
 
 	commonctx = talloc_zero(dom, struct idmap_tdb_common_context);
 	if(!commonctx) {
@@ -543,7 +544,7 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom)
 		goto failed;
 	}
 
-	ctx->script = idmap_config_const_string(dom->name, "script", NULL);
+	ctx_script = idmap_config_const_string(dom->name, "script", NULL);
 
 	idmap_script = lp_parm_const_string(-1, "idmap", "script", NULL);
 	if (idmap_script != NULL) {
@@ -551,13 +552,24 @@ static NTSTATUS idmap_tdb2_db_init(struct idmap_domain *dom)
 			  " Please use 'idmap config * : script' instead!\n"));
 	}
 
-	if (strequal(dom->name, "*") && ctx->script == NULL) {
+	if (strequal(dom->name, "*") && ctx_script == NULL) {
 		/* fall back to idmap:script for backwards compatibility */
-		ctx->script = idmap_script;
+		ctx_script = idmap_script;
 	}
 
-	if (ctx->script) {
-		DEBUG(1, ("using idmap script '%s'\n", ctx->script));
+	if (ctx_script) {
+		DEBUG(1, ("using idmap script '%s'\n", ctx_script));
+		/*
+		 * We must ensure this memory is owned by ctx.
+		 * The ctx_script const pointer is a pointer into
+		 * the config file data and may become invalid
+		 * on config file reload. BUG: 13956
+		 */
+		ctx->script = talloc_strdup(ctx, ctx_script);
+		if (ctx->script == NULL) {
+			ret = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
 	}
 
 	commonctx->max_id = dom->high_id;
