@@ -1234,6 +1234,30 @@ sub read_pid($$)
 	return $pid;
 }
 
+# builds up the cmd args to run an s3 binary (i.e. smbd, nmbd, etc)
+sub make_bin_cmd
+{
+	my ($self, $binary, $env_vars, $options, $valgrind, $dont_log_stdout) = @_;
+
+	my @optargs = ("-d0");
+	if (defined($options)) {
+		@optargs = split(/ /, $options);
+	}
+	my @preargs = (Samba::bindir_path($self, "timelimit"), $self->{server_maxtime});
+
+	if (defined($valgrind)) {
+		@preargs = split(/ /, $valgrind);
+	}
+	my @args = ("-F", "--no-process-group",
+		    "-s", $env_vars->{SERVERCONFFILE},
+		    "-l", $env_vars->{LOGDIR});
+
+	if (not defined($dont_log_stdout)) {
+		push(@args, "--log-stdout");
+	}
+	return (@preargs, $binary, @args, @optargs);
+}
+
 sub check_or_start($$$$$) {
 	my ($self, $env_vars, $nmbd, $winbindd, $smbd) = @_;
 
@@ -1243,21 +1267,9 @@ sub check_or_start($$$$$) {
 	pipe(STDIN_READER, $env_vars->{STDIN_PIPE});
 
 	my $binary = Samba::bindir_path($self, "nmbd");
-	my @optargs = ("-d0");
-	if (defined($ENV{NMBD_OPTIONS})) {
-		@optargs = split(/ /, $ENV{NMBD_OPTIONS});
-	}
-	my @preargs = (Samba::bindir_path($self, "timelimit"), $self->{server_maxtime});
-	if(defined($ENV{NMBD_VALGRIND})) {
-		@preargs = split(/ /, $ENV{NMBD_VALGRIND});
-	}
-	my @args = ("-F", "--no-process-group",
-		    "-s", $env_vars->{SERVERCONFFILE},
-		    "-l", $env_vars->{LOGDIR});
-	if (not defined($ENV{NMBD_DONT_LOG_STDOUT})) {
-		push(@args, "--log-stdout");
-	}
-	my @full_cmd = (@preargs, $binary, @args, @optargs);
+	my @full_cmd = $self->make_bin_cmd($binary, $env_vars,
+					   $ENV{NMBD_OPTIONS}, $ENV{NMBD_VALGRIND},
+					   $ENV{NMBD_DONT_LOG_STDOUT});
 
 	unlink($env_vars->{NMBD_TEST_LOG});
 	print "STARTING NMBD...";
@@ -1294,21 +1306,12 @@ sub check_or_start($$$$$) {
 	print "DONE\n";
 
 	$binary = Samba::bindir_path($self, "winbindd");
-	@optargs = ("-d0");
-	if (defined($ENV{WINBINDD_OPTIONS})) {
-		@optargs = split(/ /, $ENV{WINBINDD_OPTIONS});
-	}
-	@preargs = (Samba::bindir_path($self, "timelimit"), $self->{server_maxtime});
-	if(defined($ENV{WINBINDD_VALGRIND})) {
-		@preargs = split(/ /, $ENV{WINBINDD_VALGRIND});
-	}
-	@args = ("-F", "--no-process-group",
-		    "-s", $env_vars->{SERVERCONFFILE},
-		    "-l", $env_vars->{LOGDIR});
+	@full_cmd = $self->make_bin_cmd($binary, $env_vars,
+					 $ENV{WINBINDD_OPTIONS}, $ENV{WINBINDD_VALGRIND}, "N/A");
+
 	if (not defined($ENV{WINBINDD_DONT_LOG_STDOUT})) {
-		push(@args, "--stdout");
+		push(@full_cmd, "--stdout");
 	}
-	@full_cmd = (@preargs, $binary, @args, @optargs);
 
 	unlink($env_vars->{WINBINDD_TEST_LOG});
 	print "STARTING WINBINDD...";
@@ -1344,21 +1347,9 @@ sub check_or_start($$$$$) {
 	print "DONE\n";
 
 	$binary = Samba::bindir_path($self, "smbd");
-	@optargs = ("-d0");
-	if (defined($ENV{SMBD_OPTIONS})) {
-		@optargs = split(/ /, $ENV{SMBD_OPTIONS});
-	}
-	@preargs = (Samba::bindir_path($self, "timelimit"), $self->{server_maxtime});
-	if(defined($ENV{SMBD_VALGRIND})) {
-		@preargs = split(/ /,$ENV{SMBD_VALGRIND});
-	}
-	@args = ("-F", "--no-process-group",
-		    "-s", $env_vars->{SERVERCONFFILE},
-		    "-l", $env_vars->{LOGDIR});
-	if (not defined($ENV{SMBD_DONT_LOG_STDOUT})) {
-		push(@args, "--log-stdout");
-	}
-	@full_cmd = (@preargs, $binary, @args, @optargs);
+	@full_cmd = $self->make_bin_cmd($binary, $env_vars,
+					 $ENV{SMBD_OPTIONS}, $ENV{SMBD_VALGRIND},
+					 $ENV{SMBD_DONT_LOG_STDOUT});
 
 	unlink($env_vars->{SMBD_TEST_LOG});
 	print "STARTING SMBD...";
