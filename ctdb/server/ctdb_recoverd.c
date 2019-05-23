@@ -2436,7 +2436,7 @@ static int verify_local_ip_allocation(struct ctdb_context *ctdb,
 	}
 
 	for (j=0; j<ips->num; j++) {
-		if (ips->ips[j].pnn == -1 &&
+		if (ips->ips[j].pnn == CTDB_UNKNOWN_PNN &&
 		    nodemap->nodes[pnn].flags == 0) {
 			DEBUG(DEBUG_WARNING,
 			      ("Unassigned IP %s can be served by this node\n",
