@@ -307,6 +307,12 @@ static int ldb_kv_check_special_dn(struct ldb_module *module,
  * and repacks if necessary.
  */
 static int ldb_kv_maybe_repack(struct ldb_kv_private *ldb_kv) {
+	/* Override option taken from ldb options */
+	if (ldb_kv->pack_format_override != 0) {
+		ldb_kv->target_pack_format_version =
+			ldb_kv->pack_format_override;
+	}
+
 	if (ldb_kv->pack_format_version !=
 	    ldb_kv->target_pack_format_version) {
 		int r;
@@ -1933,6 +1939,8 @@ int ldb_kv_init_store(struct ldb_kv_private *ldb_kv,
 
 	ldb_kv->pid = getpid();
 
+	ldb_kv->pack_format_override = 0;
+
 	ldb_kv->module = ldb_module_new(ldb, ldb, name, &ldb_kv_ops);
 	if (!ldb_kv->module) {
 		ldb_oom(ldb);
@@ -1966,6 +1974,40 @@ int ldb_kv_init_store(struct ldb_kv_private *ldb_kv,
 		if (len_str != NULL) {
 			unsigned len = strtoul(len_str, NULL, 0);
 			ldb_kv->max_key_length = len;
+		}
+	}
+
+	/*
+	 * Usually the presence of GUID indexing determines the pack format
+	 * we use but in certain circumstances such as downgrading an
+	 * MDB-backed database, we want to override the target pack format.
+	 *
+	 * We set/get opaques here because in the Samba partitions module,
+	 * 'options' are not passed correctly so sub-databases can't see
+	 * the options they need.
+	 */
+	{
+		const char *pack_format_override =
+			ldb_options_find(ldb, options, "pack_format_override");
+		if (pack_format_override != NULL) {
+			int ret;
+			ldb_kv->pack_format_override =
+				strtoul(pack_format_override, NULL, 0);
+			ret = ldb_set_opaque(ldb,
+					     "pack_format_override",
+			     (void *)(intptr_t)ldb_kv->pack_format_override);
+			if (ret != LDB_SUCCESS) {
+				talloc_free(ldb_kv->module);
+				return ldb_module_operr(ldb_kv->module);
+			}
+		} else {
+			/*
+			 * NULL -> 0 is fine, otherwise we get back
+			 * the number we needed
+			 */
+			ldb_kv->pack_format_override
+				= (intptr_t)ldb_get_opaque(ldb,
+						   "pack_format_override");
 		}
 	}
 
