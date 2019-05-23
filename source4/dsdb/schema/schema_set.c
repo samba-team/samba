@@ -74,6 +74,8 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		talloc_get_type(ldb_get_opaque(ldb, "loadparm"),
 				struct loadparm_context);
 	bool guid_indexing = true;
+	bool declare_ordered_integer_in_attributes = true;
+	uint32_t pack_format_override;
 	if (lp_ctx != NULL) {
 		/*
 		 * GUID indexing is wanted by Samba by default.  This allows
@@ -84,6 +86,28 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 						"dsdb",
 						"guid index",
 						true);
+		/*
+		 * If the pack format has been overridden to a previous
+		 * version, then act like ORDERED_INTEGER doesn't exist,
+		 * because it's a new type and we don't want to deal with
+		 * possible issues with databases containing version 1 pack
+		 * format and ordered types.
+		 *
+		 * This approach means that the @ATTRIBUTES will be
+		 * incorrect for integers.  Many other @ATTRIBUTES
+		 * values are gross simplifications, but the presence
+		 * of the ORDERED_INTEGER keyword prevents the old
+		 * Samba from starting and then forcing a reindex.
+		 *
+		 * It is too difficult to override the actual index
+		 * formatter, but this doesn't matter in practice.
+		 */
+		pack_format_override =
+			(intptr_t)ldb_get_opaque(ldb, "pack_format_override");
+		if (pack_format_override == LDB_PACKING_FORMAT ||
+		    pack_format_override == LDB_PACKING_FORMAT_NODN) {
+			declare_ordered_integer_in_attributes = false;
+		}
 	}
 	/* setup our own attribute name to schema handler */
 	ldb_schema_attribute_set_override_handler(ldb, dsdb_attribute_handler_override, schema);
@@ -164,30 +188,60 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		if (strcmp(syntax, LDB_SYNTAX_INTEGER) == 0) {
 			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "INTEGER");
 		} else if (strcmp(syntax, LDB_SYNTAX_ORDERED_INTEGER) == 0) {
-			/*
-			 * When preparing to downgrade Samba, we need to write
-			 * out an LDB without the new key word ORDERED_INTEGER.
-			 */
-			if (guid_indexing) {
+			if (declare_ordered_integer_in_attributes &&
+			    guid_indexing) {
+				/*
+				 * The normal production case
+				 */
 				ret = ldb_msg_add_string(msg,
 							 attr->lDAPDisplayName,
 							 "ORDERED_INTEGER");
 			} else {
+				/*
+				 * For this mode, we are going back to
+				 * before GUID indexing so we write it out
+				 * as INTEGER
+				 *
+				 * Down in LDB, the special handler
+				 * (index_format_fn) that made
+				 * ORDERED_INTEGER and INTEGER
+				 * different has been disabled.
+				 */
 				ret = ldb_msg_add_string(msg,
 							 attr->lDAPDisplayName,
 							 "INTEGER");
 			}
 		} else if (strcmp(syntax, LDB_SYNTAX_DIRECTORY_STRING) == 0) {
-			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName, "CASE_INSENSITIVE");
+			ret = ldb_msg_add_string(msg, attr->lDAPDisplayName,
+						 "CASE_INSENSITIVE");
 		}
 		if (ret != LDB_SUCCESS) {
 			break;
 		}
 
 		if (attr->searchFlags & SEARCH_FLAG_ATTINDEX) {
-			ret = ldb_msg_add_string(msg_idx, "@IDXATTR", attr->lDAPDisplayName);
-			if (ret != LDB_SUCCESS) {
-				break;
+			/*
+			 * When preparing to downgrade Samba, we need to write
+			 * out an LDB without the new key word ORDERED_INTEGER.
+			 */
+			if (strcmp(syntax, LDB_SYNTAX_ORDERED_INTEGER) == 0
+			    && !declare_ordered_integer_in_attributes) {
+				/*
+				 * Ugly, but do nothing, the best
+				 * thing is to omit the reference
+				 * entirely, the next transaction will
+				 * spot this and rewrite everything.
+				 *
+				 * This way nothing will look at the
+				 * index for this attribute until
+				 * Samba starts and this is all
+				 * rewritten.
+				 */
+			} else {
+				ret = ldb_msg_add_string(msg_idx, "@IDXATTR", attr->lDAPDisplayName);
+				if (ret != LDB_SUCCESS) {
+					break;
+				}
 			}
 		}
 	}
