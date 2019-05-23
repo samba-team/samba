@@ -59,6 +59,7 @@ packages:
   - lsb-release
   - make
   - mawk
+  - mingw-w64
   - nettle-dev
   - patch
   - perl

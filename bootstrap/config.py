@@ -65,6 +65,7 @@ COMMON = [
 PKGS = [
     # NAME1-dev, NAME2-devel
     ('lmdb-utils', 'lmdb'),
+    ('mingw-w64', 'mingw64-gcc'),
     ('nettle-dev', 'nettle-devel'),
     ('zlib1g-dev', 'zlib-devel'),
     ('libbsd-dev', 'libbsd-devel'),
@@ -525,6 +526,7 @@ RPM_DISTS = {
             'quota-devel': '',
             'glusterfs-api-devel': '',
             'libtasn1-tools': '', # asn1Parser is part of libtasn1
+            'mingw64-gcc': '', # doesn't exist
         }
     }
 }

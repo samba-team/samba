@@ -72,6 +72,7 @@ apt-get -y install \
     lsb-release \
     make \
     mawk \
+    mingw-w64 \
     nettle-dev \
     patch \
     perl \

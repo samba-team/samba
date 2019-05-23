@@ -65,6 +65,7 @@ dnf install -y \
     lmdb \
     lmdb-devel \
     make \
+    mingw64-gcc \
     ncurses-devel \
     nettle-devel \
     openldap-devel \
