@@ -146,7 +146,7 @@ static int script_args(TALLOC_CTX *mem_ctx, const char *event_str,
 	}
 
 	argv[argc] = NULL;
-	argc += 1;
+	/* argc += 1 */
 
 	*out = argv;
 	return 0;
