@@ -150,7 +150,7 @@ static bool test_file_lines_load(struct torture_context *tctx)
 				 strlen(TEST_DATA_EMPTY)),
 		       "saving file");
 
-	lines = file_lines_load(TEST_FILENAME, &numlines, 0, mem_ctx);
+	(void)file_lines_load(TEST_FILENAME, &numlines, 0, mem_ctx);
 
 	torture_assert_int_equal(tctx, numlines, 0, "Lines");
 
