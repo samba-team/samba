@@ -72,12 +72,16 @@ static struct smbcli_request *smb_raw_trans_backend_send(struct smbcli_tree *tre
 		SSVAL(req->out.vwv, VWV(s), parms->in.setup[s]);
 	}
 
-	memcpy(req->out.data,
-	       parms->in.params.data,
-	       parms->in.params.length);
-	memcpy(req->out.data + parms->in.params.length,
-	       parms->in.data.data,
-	       parms->in.data.length);
+	if (parms->in.params.length > 0) {
+		memcpy(req->out.data,
+		       parms->in.params.data,
+		       parms->in.params.length);
+	}
+	if (parms->in.data.length > 0) {
+		memcpy(req->out.data + parms->in.params.length,
+		       parms->in.data.data,
+		       parms->in.data.length);
+	}
 
 	if (command == SMBtrans && parms->in.trans_name) {
 		pipe_name = parms->in.trans_name;
@@ -296,16 +300,21 @@ struct smbcli_request *smb_raw_nttrans_send(struct smbcli_tree *tree,
 
 	timeout_msec = req->transport->options.request_timeout * 1000;
 
-	memcpy(req->out.vwv,
-	       parms->in.setup,
-	       parms->in.setup_count * 2);
+	if (parms->in.setup_count > 0) {
+		memcpy(
+		    req->out.vwv, parms->in.setup, parms->in.setup_count * 2);
+	}
 
-	memcpy(req->out.data,
-	       parms->in.params.data,
-	       parms->in.params.length);
-	memcpy(req->out.data + parms->in.params.length,
-	       parms->in.data.data,
-	       parms->in.data.length);
+	if (parms->in.params.length > 0) {
+		memcpy(req->out.data,
+		       parms->in.params.data,
+		       parms->in.params.length);
+	}
+	if (parms->in.data.length > 0) {
+		memcpy(req->out.data + parms->in.params.length,
+		       parms->in.data.data,
+		       parms->in.data.length);
+	}
 
 	req->subreqs[0] = smb1cli_trans_send(req,
 					     req->transport->ev,

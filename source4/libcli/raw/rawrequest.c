@@ -533,9 +533,14 @@ size_t smbcli_req_append_ascii4(struct smbcli_request *req, const char *str, uns
 */
 size_t smbcli_req_append_blob(struct smbcli_request *req, const DATA_BLOB *blob)
 {
-	smbcli_req_grow_allocation(req, req->out.data_size + blob->length);
-	memcpy(req->out.data + req->out.data_size, blob->data, blob->length);
-	smbcli_req_grow_data(req, req->out.data_size + blob->length);
+	if (blob->length > 0) {
+		smbcli_req_grow_allocation(req,
+					   req->out.data_size + blob->length);
+		memcpy(req->out.data + req->out.data_size,
+		       blob->data,
+		       blob->length);
+		smbcli_req_grow_data(req, req->out.data_size + blob->length);
+	}
 	return blob->length;
 }
 
@@ -545,9 +550,11 @@ size_t smbcli_req_append_blob(struct smbcli_request *req, const DATA_BLOB *blob)
 */
 size_t smbcli_req_append_bytes(struct smbcli_request *req, const uint8_t *bytes, size_t byte_len)
 {
-	smbcli_req_grow_allocation(req, byte_len + req->out.data_size);
-	memcpy(req->out.data + req->out.data_size, bytes, byte_len);
-	smbcli_req_grow_data(req, byte_len + req->out.data_size);
+	if (byte_len > 0) {
+		smbcli_req_grow_allocation(req, byte_len + req->out.data_size);
+		memcpy(req->out.data + req->out.data_size, bytes, byte_len);
+		smbcli_req_grow_data(req, byte_len + req->out.data_size);
+	}
 	return byte_len;
 }
 

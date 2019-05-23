@@ -213,7 +213,9 @@ static NTSTATUS db_rbt_storev(struct db_record *rec,
 	TALLOC_FREE(rec_priv->node);
 	rec_priv->node = node;
 
-	memcpy(this_val.dptr, data.dptr, node->valuesize);
+	if (node->valuesize > 0) {
+		memcpy(this_val.dptr, data.dptr, node->valuesize);
+	}
 
 	parent = NULL;
 	p = &db_ctx->tree.rb_node;

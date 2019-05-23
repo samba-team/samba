@@ -69,10 +69,12 @@ void aes_cmac_128_update(struct aes_cmac_128_context *ctx,
 	if (ctx->last_len < AES_BLOCK_SIZE) {
 		size_t len = MIN(AES_BLOCK_SIZE - ctx->last_len, msg_len);
 
-		memcpy(&ctx->last[ctx->last_len], msg, len);
-		msg += len;
-		msg_len -= len;
-		ctx->last_len += len;
+		if (len > 0) {
+			memcpy(&ctx->last[ctx->last_len], msg, len);
+			msg += len;
+			msg_len -= len;
+			ctx->last_len += len;
+		}
 	}
 
 	if (msg_len == 0) {

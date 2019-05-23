@@ -570,8 +570,11 @@ static void reply_nttrans_send(struct ntvfs_request *ntvfs)
 		SIVAL(this_req->out.vwv, 31, PTR_DIFF(data, trans->out.data.data));
 
 		SCVAL(this_req->out.vwv, 35, trans->out.setup_count);
-		memcpy((char *)(this_req->out.vwv) + VWV(18), trans->out.setup,
-		       sizeof(uint16_t) * trans->out.setup_count);
+		if (trans->out.setup_count > 0) {
+			memcpy((char *)(this_req->out.vwv) + VWV(18),
+			       trans->out.setup,
+			       sizeof(uint16_t) * trans->out.setup_count);
+		}
 		memset(this_req->out.data, 0, align1);
 		if (this_param != 0) {
 			memcpy(this_req->out.data + align1, params, this_param);

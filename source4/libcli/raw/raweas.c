@@ -86,7 +86,11 @@ void ea_put_list(uint8_t *data, unsigned int num_eas, struct ea_struct *eas)
 		SCVAL(data, 1, nlen);
 		SSVAL(data, 2, eas[i].value.length);
 		memcpy(data+4, eas[i].name.s, nlen+1);
-		memcpy(data+4+nlen+1, eas[i].value.data, eas[i].value.length);
+		if (eas[i].value.length > 0) {
+			memcpy(data + 4 + nlen + 1,
+			       eas[i].value.data,
+			       eas[i].value.length);
+		}
 		data += 4+nlen+1+eas[i].value.length;
 	}
 }

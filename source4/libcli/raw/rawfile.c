@@ -354,8 +354,14 @@ static struct smbcli_request *smb_raw_nttrans_create_send(struct smbcli_tree *tr
 
 	/* build the data section */
 	nt.in.data = data_blob_talloc(mem_ctx, NULL, sd_blob.length + ea_blob.length);
-	memcpy(nt.in.data.data, sd_blob.data, sd_blob.length);
-	memcpy(nt.in.data.data+sd_blob.length, ea_blob.data, ea_blob.length);
+	if (sd_blob.length > 0) {
+		memcpy(nt.in.data.data, sd_blob.data, sd_blob.length);
+	}
+	if (ea_blob.length > 0) {
+		memcpy(nt.in.data.data + sd_blob.length,
+		       ea_blob.data,
+		       ea_blob.length);
+	}
 
 	/* send the request on its way */
 	req = smb_raw_nttrans_send(tree, &nt);

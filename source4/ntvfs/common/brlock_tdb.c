@@ -365,7 +365,9 @@ static NTSTATUS brl_tdb_lock(struct brl_context *brl,
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-	memcpy(locks, dbuf.dptr, dbuf.dsize);
+	if (dbuf.dsize > 0) {
+		memcpy(locks, dbuf.dptr, dbuf.dsize);
+	}
 	locks[count] = lock;
 
 	dbuf.dptr = (unsigned char *)locks;

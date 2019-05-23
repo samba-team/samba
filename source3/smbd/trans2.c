@@ -565,7 +565,11 @@ static unsigned int fill_ea_buffer(TALLOC_CTX *mem_ctx, char *pdata, unsigned in
 		SCVAL(p,1,dos_namelen);
 		SSVAL(p,2,ea_list->ea.value.length);
 		strlcpy(p+4, dos_ea_name, dos_namelen+1);
-		memcpy( p + 4 + dos_namelen + 1, ea_list->ea.value.data, ea_list->ea.value.length);
+		if (ea_list->ea.value.length > 0) {
+			memcpy(p + 4 + dos_namelen + 1,
+			       ea_list->ea.value.data,
+			       ea_list->ea.value.length);
+		}
 
 		total_data_size -= 4 + dos_namelen + 1 + ea_list->ea.value.length;
 		p += 4 + dos_namelen + 1 + ea_list->ea.value.length;

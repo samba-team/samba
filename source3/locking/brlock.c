@@ -1911,7 +1911,9 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 		data.dptr = talloc_array(talloc_tos(), uint8_t, data_len);
 		SMB_ASSERT(data.dptr != NULL);
 
-		memcpy(data.dptr, br_lck->lock_data, lock_len);
+		if (lock_len > 0) {
+			memcpy(data.dptr, br_lck->lock_data, lock_len);
+		}
 		memcpy(data.dptr + lock_len, &br_lck->num_read_oplocks,
 		       sizeof(br_lck->num_read_oplocks));
 

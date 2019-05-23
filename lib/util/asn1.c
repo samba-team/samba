@@ -94,8 +94,10 @@ bool asn1_write(struct asn1_data *data, const void *p, int len)
 		data->data = newp;
 		data->length = data->ofs+len;
 	}
-	memcpy(data->data + data->ofs, p, len);
-	data->ofs += len;
+	if (len > 0) {
+		memcpy(data->data + data->ofs, p, len);
+		data->ofs += len;
+	}
 	return true;
 }
 
