@@ -2256,7 +2256,7 @@ static void verify_recmaster_callback(struct ctdb_client_control_state *state)
 	/* if we got a response, then the recmaster will be stored in the
 	   status field
 	*/
-	if (state->status != rmdata->pnn) {
+	if ((uint32_t)state->status != rmdata->pnn) {
 		DEBUG(DEBUG_ERR,("Node %d thinks node %d is recmaster. Need a new recmaster election\n", state->c->hdr.destnode, state->status));
 		ctdb_set_culprit(rmdata->rec, state->c->hdr.destnode);
 		rmdata->status = MONITOR_ELECTION_NEEDED;
