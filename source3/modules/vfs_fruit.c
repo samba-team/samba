@@ -411,7 +411,7 @@ struct ad_entry {
 };
 
 struct adouble {
-	int                       ad_fd;
+	files_struct             *ad_fsp;
 	bool                      ad_opened;
 	adouble_type_t            ad_type;
 	uint32_t                  ad_magic;
@@ -1011,7 +1011,7 @@ static bool ad_convert_move_reso(vfs_handle_struct *handle,
 
 	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
 	map = mmap(NULL, maplen, PROT_READ|PROT_WRITE, MAP_SHARED,
-		   ad->ad_fd, 0);
+		   ad->ad_fsp->fh->fd, 0);
 	if (map == MAP_FAILED) {
 		DBG_ERR("mmap AppleDouble: %s\n", strerror(errno));
 		return false;
@@ -1036,7 +1036,7 @@ static bool ad_convert_move_reso(vfs_handle_struct *handle,
 		return false;
 	}
 
-	len = sys_pwrite(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
+	len = sys_pwrite(ad->ad_fsp->fh->fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
 	if (len != AD_DATASZ_DOT_UND) {
 		DBG_ERR("%s: bad size: %zd\n", smb_fname->base_name, len);
 		return false;
@@ -1083,7 +1083,7 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 
 	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
 	map = mmap(NULL, maplen, PROT_READ|PROT_WRITE, MAP_SHARED,
-		   ad->ad_fd, 0);
+		   ad->ad_fsp->fh->fd, 0);
 	if (map == MAP_FAILED) {
 		DBG_ERR("mmap AppleDouble: %s\n", strerror(errno));
 		return false;
@@ -1188,7 +1188,7 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	len = sys_pwrite(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
+	len = sys_pwrite(ad->ad_fsp->fh->fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
 	if (len != AD_DATASZ_DOT_UND) {
 		DBG_ERR("%s: bad size: %zd\n", smb_fname->base_name, len);
 		ok = false;
@@ -1325,7 +1325,7 @@ static bool ad_convert_truncate(struct adouble *ad,
 	 * FIXME: direct ftruncate(), but we don't have a fsp for the
 	 * VFS call
 	 */
-	rc = ftruncate(ad->ad_fd, ADEDOFF_RFORK_DOT_UND +
+	rc = ftruncate(ad->ad_fsp->fh->fd, ADEDOFF_RFORK_DOT_UND +
 		       ad_getentrylen(ad, ADEID_RFORK));
 	if (rc != 0) {
 		return false;
@@ -1364,7 +1364,7 @@ static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
 
 	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
 	map = mmap(NULL, maplen, PROT_READ|PROT_WRITE, MAP_SHARED,
-		   ad->ad_fd, 0);
+		   ad->ad_fsp->fh->fd, 0);
 	if (map == MAP_FAILED) {
 		DBG_ERR("mmap AppleDouble: %s\n", strerror(errno));
 		return false;
@@ -1390,7 +1390,7 @@ static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
 		return false;
 	}
 
-	len = sys_pwrite(ad->ad_fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
+	len = sys_pwrite(ad->ad_fsp->fh->fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
 	if (len != AD_DATASZ_DOT_UND) {
 		return false;
 	}
@@ -1583,21 +1583,64 @@ exit:
 static int ad_open_rsrc(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags,
-			mode_t mode)
+			mode_t mode,
+			files_struct **_fsp)
 {
 	int ret;
-	int fd;
 	struct smb_filename *adp_smb_fname = NULL;
+	files_struct *fsp = NULL;
+	uint32_t access_mask;
+	uint32_t share_access;
+	uint32_t create_disposition;
+	NTSTATUS status;
 
 	ret = adouble_path(talloc_tos(), smb_fname, &adp_smb_fname);
 	if (ret != 0) {
 		return -1;
 	}
 
-	fd = open(adp_smb_fname->base_name, flags, mode);
-	TALLOC_FREE(adp_smb_fname);
+	ret = SMB_VFS_STAT(handle->conn, adp_smb_fname);
+	if (ret != 0) {
+		TALLOC_FREE(adp_smb_fname);
+		return -1;
+	}
 
-	return fd;
+	access_mask = FILE_GENERIC_READ;
+	share_access = FILE_SHARE_READ | FILE_SHARE_WRITE;
+	create_disposition = FILE_OPEN;
+
+	if (flags & O_RDWR) {
+		access_mask |= FILE_GENERIC_WRITE;
+		share_access &= ~FILE_SHARE_WRITE;
+	}
+
+	status = SMB_VFS_CREATE_FILE(
+		handle->conn,			/* conn */
+		NULL,				/* req */
+		0,				/* root_dir_fid */
+		adp_smb_fname,
+		access_mask,
+		share_access,
+		create_disposition,
+		0,				/* create_options */
+		0,				/* file_attributes */
+		INTERNAL_OPEN_ONLY,		/* oplock_request */
+		NULL,				/* lease */
+		0,				/* allocation_size */
+		0,				/* private_flags */
+		NULL,				/* sd */
+		NULL,				/* ea_list */
+		&fsp,
+		NULL,				/* psbuf */
+		NULL, NULL);			/* create context */
+	TALLOC_FREE(adp_smb_fname);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("SMB_VFS_CREATE_FILE failed\n");
+		return -1;
+	}
+
+	*_fsp = fsp;
+	return 0;
 }
 
 /*
@@ -1612,7 +1655,7 @@ static int ad_open(vfs_handle_struct *handle,
 		   int flags,
 		   mode_t mode)
 {
-	int fd;
+	int ret;
 
 	DBG_DEBUG("Path [%s] type [%s]\n", smb_fname->base_name,
 		  ad->ad_type == ADOUBLE_META ? "meta" : "rsrc");
@@ -1621,22 +1664,21 @@ static int ad_open(vfs_handle_struct *handle,
 		return 0;
 	}
 
-	if ((fsp != NULL) && (fsp->fh != NULL) && (fsp->fh->fd != -1)) {
-		ad->ad_fd = fsp->fh->fd;
+	if (fsp != NULL) {
+		ad->ad_fsp = fsp;
 		ad->ad_opened = false;
 		return 0;
 	}
 
-	fd = ad_open_rsrc(handle, smb_fname, flags, mode);
-	if (fd == -1) {
+	ret = ad_open_rsrc(handle, smb_fname, flags, mode, &ad->ad_fsp);
+	if (ret != 0) {
 		return -1;
 	}
 	ad->ad_opened = true;
-	ad->ad_fd = fd;
 
-	DBG_DEBUG("Path [%s] type [%s] fd [%d]\n",
+	DBG_DEBUG("Path [%s] type [%s]\n",
 		  smb_fname->base_name,
-		  ad->ad_type == ADOUBLE_META ? "meta" : "rsrc", fd);
+		  ad->ad_type == ADOUBLE_META ? "meta" : "rsrc");
 
 	return 0;
 }
@@ -1652,7 +1694,7 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 	int ret;
 	bool ok;
 
-	ret = sys_fstat(ad->ad_fd, &sbuf, lp_fake_directory_create_times(
+	ret = sys_fstat(ad->ad_fsp->fh->fd, &sbuf, lp_fake_directory_create_times(
 				SNUM(handle->conn)));
 	if (ret != 0) {
 		return -1;
@@ -1678,7 +1720,7 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 		ad->ad_data = p_ad;
 	}
 
-	len = sys_pread(ad->ad_fd, ad->ad_data,
+	len = sys_pread(ad->ad_fsp->fh->fd, ad->ad_data,
 			talloc_array_length(ad->ad_data), 0);
 	if (len != talloc_array_length(ad->ad_data)) {
 		DBG_NOTICE("%s %s: bad size: %zd\n",
@@ -1736,10 +1778,20 @@ static ssize_t ad_read(vfs_handle_struct *handle,
 
 static int adouble_destructor(struct adouble *ad)
 {
-	if ((ad->ad_fd != -1) && ad->ad_opened) {
-		close(ad->ad_fd);
-		ad->ad_fd = -1;
+	NTSTATUS status;
+
+	if (!ad->ad_opened) {
+		return 0;
 	}
+
+	SMB_ASSERT(ad->ad_fsp != NULL);
+
+	status = close_file(NULL, ad->ad_fsp, NORMAL_CLOSE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Closing [%s] failed: %s\n",
+			fsp_str_dbg(ad->ad_fsp), nt_errstr(status));
+	}
+
 	return 0;
 }
 
@@ -1790,7 +1842,6 @@ static struct adouble *ad_alloc(TALLOC_CTX *ctx,
 	ad->ad_type = type;
 	ad->ad_magic = AD_MAGIC;
 	ad->ad_version = AD_VERSION;
-	ad->ad_fd = -1;
 
 	talloc_set_destructor(ad, adouble_destructor);
 
