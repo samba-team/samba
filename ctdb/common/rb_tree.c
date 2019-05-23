@@ -1029,7 +1029,7 @@ trbt_findfirstarray32(trbt_tree_t *tree, uint32_t keylen)
 }
 
 
-#if TEST_RB_TREE
+#ifdef TEST_RB_TREE
 static void printtree(trbt_node_t *node, int levels)
 {
 	int i;
@@ -1098,4 +1098,4 @@ exit(0);
 
 }
 
-#endif
+#endif /* TEST_RB_TREE */
