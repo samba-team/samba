@@ -83,11 +83,28 @@ class DowngradeTest(BlackboxTestCase):
 
         return dn_keys_no_at_attrs, guid_keys
 
-    # Check that sambadowngradedatabase replaces all GUID keys with DN keys
+    # Get a set of all distinct types in @ATTRIBUTES
+    def attribute_types(self):
+        at_attributes = self.ldb.search(base="@ATTRIBUTES",
+                                          scope=ldb.SCOPE_BASE,
+                                          attrs=["*"])
+        self.assertEqual(len(at_attributes), 1)
+        keys = at_attributes[0].keys()
+        attribute_types = {str(at_attributes[0].get(k)) for k in keys}
+
+        return attribute_types
+
+    # Check that running sambadowngradedatabase with a TDB backend:
+    # * Replaces all GUID keys with DN keys
+    # * Removes ORDERED_INTEGER from @ATTRIBUTES
     def test_downgrade_database(self):
+        type_prefix = "LDB_SYNTAX_"
+        ordered_int_type = ldb.SYNTAX_ORDERED_INTEGER[len(type_prefix):]
+
         dn_keys, guid_keys = self.ldbdump_keys_pack_formats()
         self.assertGreater(len(guid_keys), 20)
         self.assertEqual(len(dn_keys), 0)
+        self.assertTrue(ordered_int_type in self.attribute_types())
 
         num_guid_keys_before_downgrade = len(guid_keys)
 
@@ -97,3 +114,4 @@ class DowngradeTest(BlackboxTestCase):
         dn_keys, guid_keys = self.ldbdump_keys_pack_formats()
         self.assertEqual(len(guid_keys), 0)
         self.assertEqual(len(dn_keys), num_guid_keys_before_downgrade)
+        self.assertTrue(ordered_int_type not in self.attribute_types())
