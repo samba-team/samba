@@ -27,7 +27,6 @@ if len(args) != 0:
     sys.exit(1)
 
 lp_ctx = sambaopts.get_loadparm()
-lp_ctx.set("dsdb:guid index", "false")
 
 if opts.H is None:
     url = lp_ctx.private_path("sam.ldb")
@@ -40,7 +39,33 @@ samdb = ldb.Ldb(url=url,
 
 partitions = samdb.search(base="@PARTITION",
 			  scope=ldb.SCOPE_BASE,
-                          attrs=["partition"])
+                          attrs=["backendStore", "partition"])
+    
+backend = str(partitions[0].get('backendStore', 'tdb'))
+
+if backend == "mdb":
+    samdb = None
+    options = ["pack_format_override=%d" % ldb.PACKING_FORMAT]
+    # We can't remove GUID indexes from LMDB in case there are very
+    # long DNs, so we just move down the pack format, which also removes
+    # references to ORDERED_INTEGER in @ATTRIBUTES.
+
+    # Reopen the DB with pack_format_override set
+    samdb = SamDB(url=url,
+                  flags=ldb.FLG_DONT_CREATE_DB,
+                  lp=lp_ctx,
+                  options=options)
+    samdb.transaction_start()
+    samdb.transaction_commit()
+    print("Your database has been downgraded to LDB pack format version %0x (v1)." % ldb.PACKING_FORMAT)
+
+    print("NOTE: Any use of a Samba 4.11 tool that modifies the DB will "
+          "auto-upgrade back to pack format version %0x (v2)" %
+          ldb.PACKING_FORMAT_V2)
+    exit(0);
+
+# This is needed to force the @ATTRIBUTES and @INDEXLIST to be correct
+lp_ctx.set("dsdb:guid index", "false")
 
 modmsg = ldb.Message()
 modmsg.dn = ldb.Dn(samdb, '@INDEXLIST')
