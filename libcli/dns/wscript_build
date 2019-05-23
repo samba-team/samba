@@ -8,6 +8,7 @@ bld.SAMBA_LIBRARY('clidns',
 bld.SAMBA_BINARY('resolvconftest',
                   source='resolvconftest.c',
                   deps='clidns',
+                  enabled=bld.CONFIG_SET('HAVE_FMEMOPEN'),
                   install=False)
 
 bld.SAMBA_SUBSYSTEM('dns_lookup',
