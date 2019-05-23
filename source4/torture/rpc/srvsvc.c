@@ -1109,6 +1109,13 @@ again:
 			if (W_ERROR_IS_OK(r.out.result)) {
 				min = n;
 				n += (max - min + 1)/2;
+				if (n == min) {
+					/*
+					 * We did not move, so
+					 * do not loop forever
+					 */
+					break;
+				}
 				continue;
 				
 			} else {
