@@ -996,49 +996,59 @@ static bool ad_convert_move_reso(vfs_handle_struct *handle,
 				 struct adouble *ad,
 				 const struct smb_filename *smb_fname)
 {
-	char *map = MAP_FAILED;
-	size_t maplen;
-	ssize_t len;
-	int rc;
+	char *buf = NULL;
+	size_t rforklen;
+	size_t rforkoff;
+	ssize_t n;
+	int ret;
 	bool ok;
 
-	if (ad_getentrylen(ad, ADEID_RFORK) == 0) {
+	rforklen = ad_getentrylen(ad, ADEID_RFORK);
+	if (rforklen == 0) {
 		return true;
 	}
 
-	maplen = ad_getentryoff(ad, ADEID_RFORK) +
-		ad_getentrylen(ad, ADEID_RFORK);
-
-	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
-	map = mmap(NULL, maplen, PROT_READ|PROT_WRITE, MAP_SHARED,
-		   ad->ad_fsp->fh->fd, 0);
-	if (map == MAP_FAILED) {
-		DBG_ERR("mmap AppleDouble: %s\n", strerror(errno));
+	buf = talloc_size(ad, rforklen);
+	if (buf == NULL) {
+		/*
+		 * This allocates a buffer for reading the resource fork data in
+		 * one big swoop. Resource forks won't be larger then, say, 64
+		 * MB, I swear, so just doing the allocation with the talloc
+		 * limit as safeguard seems safe.
+		 */
+		DBG_ERR("Failed to allocate %zu bytes for rfork\n",
+			rforklen);
 		return false;
 	}
 
+	rforkoff = ad_getentryoff(ad, ADEID_RFORK);
 
-	memmove(map + ADEDOFF_RFORK_DOT_UND,
-		map + ad_getentryoff(ad, ADEID_RFORK),
-		ad_getentrylen(ad, ADEID_RFORK));
+	n = SMB_VFS_PREAD(ad->ad_fsp, buf, rforklen, rforkoff);
+	if (n != rforklen) {
+		DBG_ERR("Reading %zu bytes from rfork [%s] failed: %s\n",
+			rforklen, fsp_str_dbg(ad->ad_fsp), strerror(errno));
+		return false;
+	}
 
-	rc = munmap(map, maplen);
-	if (rc != 0) {
-		DBG_ERR("munmap failed: %s\n", strerror(errno));
+	rforkoff = ADEDOFF_RFORK_DOT_UND;
+
+	n = SMB_VFS_PWRITE(ad->ad_fsp, buf, rforklen, rforkoff);
+	if (n != rforklen) {
+		DBG_ERR("Writing %zu bytes to rfork [%s] failed: %s\n",
+			rforklen, fsp_str_dbg(ad->ad_fsp), strerror(errno));
 		return false;
 	}
 
 	ad_setentryoff(ad, ADEID_RFORK, ADEDOFF_RFORK_DOT_UND);
-
 	ok = ad_pack(ad);
 	if (!ok) {
 		DBG_WARNING("ad_pack [%s] failed\n", smb_fname->base_name);
 		return false;
 	}
 
-	len = sys_pwrite(ad->ad_fsp->fh->fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
-	if (len != AD_DATASZ_DOT_UND) {
-		DBG_ERR("%s: bad size: %zd\n", smb_fname->base_name, len);
+	ret = ad_fset(handle, ad, ad->ad_fsp);
+	if (ret != 0) {
+		DBG_ERR("ad_fset on [%s] failed\n", fsp_str_dbg(ad->ad_fsp));
 		return false;
 	}
 
