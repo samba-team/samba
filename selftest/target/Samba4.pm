@@ -115,6 +115,22 @@ sub check_or_start($$$)
 		}
 	}
 
+	my @preargs = ();
+	my @optargs = ();
+	if (defined($ENV{SAMBA_OPTIONS})) {
+		@optargs = split(/ /, $ENV{SAMBA_OPTIONS});
+	}
+	if(defined($ENV{SAMBA_VALGRIND})) {
+		@preargs = split(/ /,$ENV{SAMBA_VALGRIND});
+	}
+
+	if (defined($process_model)) {
+		push @optargs, ("-M", $process_model);
+	}
+	my @full_cmd = (@preargs, Samba::bindir_path($self, "samba"), "-i",
+			"--no-process-group", "--maximum-runtime=$self->{server_maxtime}",
+			$env_vars->{CONFIGURATION}, @optargs);
+
 	print "STARTING SAMBA...\n";
 	my $pid = fork();
 	if ($pid == 0) {
@@ -138,22 +154,11 @@ sub check_or_start($$$)
 		}
 
 		$ENV{MAKE_TEST_BINARY} = Samba::bindir_path($self, "samba");
-		my @preargs = ();
-		my @optargs = ();
-		if (defined($ENV{SAMBA_OPTIONS})) {
-			@optargs = split(/ /, $ENV{SAMBA_OPTIONS});
-		}
-		if(defined($ENV{SAMBA_VALGRIND})) {
-			@preargs = split(/ /,$ENV{SAMBA_VALGRIND});
-		}
 
-		if (defined($process_model)) {
-			push @optargs, ("-M", $process_model);
-		}
 		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@preargs, Samba::bindir_path($self, "samba"), "-i", "--no-process-group", "--maximum-runtime=$self->{server_maxtime}", $env_vars->{CONFIGURATION}, @optargs) or die("Unable to start samba: $!");
+		exec(@full_cmd) or die("Unable to start samba: $!");
 	}
 	$env_vars->{SAMBA_PID} = $pid;
 	print "DONE ($pid)\n";
@@ -387,6 +392,20 @@ sub setup_dns_hub_internal($$$)
 	print RESOLV_CONF "nameserver $env->{SERVER_IPV6}\n";
 	close(RESOLV_CONF);
 
+	my @preargs = ();
+	my @args = ();
+	if (!defined($ENV{PYTHON})) {
+	    push (@preargs, "env");
+	    push (@preargs, "python");
+	} else {
+	    push (@preargs, $ENV{PYTHON});
+	}
+	my $binary = "$self->{srcdir}/selftest/target/dns_hub.py";
+	push (@args, "$self->{server_maxtime}");
+	push (@args, "$env->{SERVER_IP}");
+	push (@args, Samba::realm_to_ip_mappings());
+	my @full_cmd = (@preargs, $binary, @args);
+
 	# use a pipe for stdin in the child processes. This allows
 	# those processes to monitor the pipe for EOF to ensure they
 	# exit when the test script exits
@@ -406,22 +425,12 @@ sub setup_dns_hub_internal($$$)
 		my $pcap_file = "$ENV{SOCKET_WRAPPER_PCAP_DIR}/env-$hostname$.pcap";
 		SocketWrapper::setup_pcap($pcap_file);
 
-		my @preargs = ();
-		my @args = ();
-		if (!defined($ENV{PYTHON})) {
-		    push (@preargs, "env");
-		    push (@preargs, "python");
-		} else {
-		    push (@preargs, $ENV{PYTHON});
-		}
-		$ENV{MAKE_TEST_BINARY} = "$self->{srcdir}/selftest/target/dns_hub.py";
-		push (@args, "$self->{server_maxtime}");
-		push (@args, "$env->{SERVER_IP}");
-		push (@args, Samba::realm_to_ip_mappings());
+		$ENV{MAKE_TEST_BINARY} = $binary;
+
 		close($env->{STDIN_PIPE});
 		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
-		exec(@preargs, $ENV{MAKE_TEST_BINARY}, @args)
+		exec(@full_cmd)
 			or die("Unable to start $ENV{MAKE_TEST_BINARY}: $!");
 	}
 	$env->{SAMBA_PID} = $pid;
