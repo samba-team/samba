@@ -6066,7 +6066,9 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 		return status;
 	}
 
-	if (config->locking == FRUIT_LOCKING_NETATALK) {
+	if ((config->locking == FRUIT_LOCKING_NETATALK) &&
+	    (fsp->op != NULL))
+	{
 		status = fruit_check_access(
 			handle, *result,
 			access_mask,
