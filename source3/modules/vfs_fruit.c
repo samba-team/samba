@@ -1312,13 +1312,11 @@ static bool ad_convert_truncate(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname)
 {
 	int rc;
+	off_t newlen;
 
-	/*
-	 * FIXME: direct ftruncate(), but we don't have a fsp for the
-	 * VFS call
-	 */
-	rc = ftruncate(ad->ad_fsp->fh->fd, ADEDOFF_RFORK_DOT_UND +
-		       ad_getentrylen(ad, ADEID_RFORK));
+	newlen = ADEDOFF_RFORK_DOT_UND + ad_getentrylen(ad, ADEID_RFORK);
+
+	rc = SMB_VFS_FTRUNCATE(ad->ad_fsp, newlen);
 	if (rc != 0) {
 		return false;
 	}
