@@ -142,7 +142,7 @@ static void idmap_script_xid2sid_done(struct tevent_req *subreq)
 		req, struct idmap_script_xid2sid_state);
 	int ret;
 
-	ret = file_pload_recv(subreq, state, &state->out);
+	ret = file_ploadv_recv(subreq, state, &state->out);
 	TALLOC_FREE(subreq);
 	if (tevent_req_error(req, ret)) {
 		return;
@@ -398,7 +398,7 @@ static void idmap_script_sid2xid_done(struct tevent_req *subreq)
 		req, struct idmap_script_sid2xid_state);
 	int ret;
 
-	ret = file_pload_recv(subreq, state, &state->out);
+	ret = file_ploadv_recv(subreq, state, &state->out);
 	TALLOC_FREE(subreq);
 	if (tevent_req_error(req, ret)) {
 		return;
