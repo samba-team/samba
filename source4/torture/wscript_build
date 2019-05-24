@@ -57,6 +57,7 @@ bld.SAMBA_SUBSYSTEM('TORTURE_NDR',
                   ndr/samr.c
                   ndr/dfsblob.c
                   ndr/drsblobs.c
+                  ndr/dnsp.c
                   ndr/nbt.c
                   ndr/ntlmssp.c
                   ndr/string.c
