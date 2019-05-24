@@ -2363,6 +2363,7 @@ static int control_detach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	uint8_t db_flags;
 	struct ctdb_node_map *nodemap;
 	int recmode;
+	unsigned int j;
 	int ret, ret2, i;
 
 	if (argc < 1) {
@@ -2386,29 +2387,29 @@ static int control_detach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return 1;
 	}
 
-	for (i=0; i<nodemap->num; i++) {
+	for (j=0; j<nodemap->num; j++) {
 		uint32_t value;
 
-		if (nodemap->node[i].flags & NODE_FLAGS_DISCONNECTED) {
+		if (nodemap->node[j].flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
-		if (nodemap->node[i].flags & NODE_FLAGS_DELETED) {
+		if (nodemap->node[j].flags & NODE_FLAGS_DELETED) {
 			continue;
 		}
-		if (nodemap->node[i].flags & NODE_FLAGS_INACTIVE) {
+		if (nodemap->node[j].flags & NODE_FLAGS_INACTIVE) {
 			fprintf(stderr, "Database cannot be detached on"
 				" inactive (stopped or banned) node %u\n",
-				nodemap->node[i].pnn);
+				nodemap->node[j].pnn);
 			return 1;
 		}
 
 		ret = ctdb_ctrl_get_tunable(mem_ctx, ctdb->ev, ctdb->client,
-					    nodemap->node[i].pnn, TIMEOUT(),
+					    nodemap->node[j].pnn, TIMEOUT(),
 					    "AllowClientDBAttach", &value);
 		if (ret != 0) {
 			fprintf(stderr,
 				"Unable to get tunable AllowClientDBAttach"
-			        " from node %u\n", nodemap->node[i].pnn);
+			        " from node %u\n", nodemap->node[j].pnn);
 			return ret;
 		}
 
@@ -2416,7 +2417,7 @@ static int control_detach(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 			fprintf(stderr,
 				"Database access is still active on node %u."
 			        " Set AllowclientDBAttach=0 on all nodes.\n",
-				nodemap->node[i].pnn);
+				nodemap->node[j].pnn);
 			return 1;
 		}
 	}
