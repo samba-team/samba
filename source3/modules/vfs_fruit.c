@@ -1665,16 +1665,16 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 				    struct adouble *ad,
 				    const struct smb_filename *smb_fname)
 {
-	SMB_STRUCT_STAT sbuf;
 	char *p_ad = NULL;
 	size_t size;
 	ssize_t len;
 	int ret;
 	bool ok;
 
-	ret = sys_fstat(ad->ad_fsp->fh->fd, &sbuf, lp_fake_directory_create_times(
-				SNUM(handle->conn)));
+	ret = SMB_VFS_NEXT_FSTAT(handle, ad->ad_fsp, &ad->ad_fsp->fsp_name->st);
 	if (ret != 0) {
+		DBG_ERR("fstat [%s] failed: %s\n",
+			fsp_str_dbg(ad->ad_fsp), strerror(errno));
 		return -1;
 	}
 
@@ -1686,7 +1686,7 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 	 *
 	 * Read as much as we can up to AD_XATTR_MAX_HDR_SIZE.
 	 */
-	size = sbuf.st_ex_size;
+	size = ad->ad_fsp->fsp_name->st.st_ex_size;
 	if (size > talloc_array_length(ad->ad_data)) {
 		if (size > AD_XATTR_MAX_HDR_SIZE) {
 			size = AD_XATTR_MAX_HDR_SIZE;
@@ -1698,8 +1698,7 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 		ad->ad_data = p_ad;
 	}
 
-	len = sys_pread(ad->ad_fsp->fh->fd, ad->ad_data,
-			talloc_array_length(ad->ad_data), 0);
+	len = SMB_VFS_NEXT_PREAD(handle, ad->ad_fsp, ad->ad_data, talloc_array_length(ad->ad_data), 0);
 	if (len != talloc_array_length(ad->ad_data)) {
 		DBG_NOTICE("%s %s: bad size: %zd\n",
 			   smb_fname->base_name, strerror(errno), len);
@@ -1707,7 +1706,7 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 	}
 
 	/* Now parse entries */
-	ok = ad_unpack(ad, ADEID_NUM_DOT_UND, sbuf.st_ex_size);
+	ok = ad_unpack(ad, ADEID_NUM_DOT_UND, size);
 	if (!ok) {
 		DBG_ERR("invalid AppleDouble resource %s\n",
 			smb_fname->base_name);
