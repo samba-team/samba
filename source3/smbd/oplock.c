@@ -391,7 +391,7 @@ static void lease_timeout_handler(struct tevent_context *ctx,
 		return;
 	}
 
-	fsp_lease_update(lck, fsp_client_guid(fsp), lease);
+	fsp_lease_update(lck, fsp_client_guid(fsp), fsp->lease);
 
 	if (lease->lease.lease_epoch != old_epoch) {
 		/*
