@@ -300,13 +300,13 @@ bool convert_string_handle(struct smb_iconv_handle *ic,
 			{
 				reason="No more room";
 				if (from == CH_UNIX) {
-					DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u - '%s'\n",
+					DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u - '%s' error: %s\n",
 						 charset_name(ic, from), charset_name(ic, to),
-						 (unsigned int)srclen, (unsigned int)destlen, (const char *)src));
+						 (unsigned int)srclen, (unsigned int)destlen, (const char *)src, reason));
 				} else {
-					DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u\n",
+					DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u error: %s\n",
 						 charset_name(ic, from), charset_name(ic, to),
-						 (unsigned int)srclen, (unsigned int)destlen));
+						 (unsigned int)srclen, (unsigned int)destlen, reason));
 				}
 				break;
 			}
