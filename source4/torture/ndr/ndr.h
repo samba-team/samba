@@ -88,6 +88,15 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 			 NDR_SCALARS|NDR_BUFFERS, 0, \
 			 (bool (*) (struct torture_context *, void *)) check_fn);
 
+#define torture_suite_add_ndr_pull_validate_test_b64(suite,name,tname,b64,check_fn) \
+		_torture_suite_add_ndr_pullpush_test(suite, #name "_" tname, \
+			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
+			 (ndr_push_flags_fn_t)ndr_push_ ## name, \
+			 base64_decode_data_blob_talloc(suite, b64), \
+			 sizeof(struct name), \
+			 NDR_SCALARS|NDR_BUFFERS, 0, \
+			 (bool (*) (struct torture_context *, void *)) check_fn);
+
 #define torture_suite_add_ndr_pullpush_fn_test_flags(suite,name,data,flags,flags2,check_fn) \
 		_torture_suite_add_ndr_pullpush_test(suite, #name, \
 			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
