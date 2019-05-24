@@ -739,6 +739,22 @@ static size_t dbwrap_watched_id(struct db_context *db, uint8_t *id,
 	return dbwrap_db_id(ctx->backend, id, idlen);
 }
 
+void dbwrap_watched_wakeup(struct db_record *rec)
+{
+	struct db_watched_subrec *subrec = NULL;
+
+	if (rec->storev == dbwrap_watched_do_locked_storev) {
+		struct dbwrap_watched_do_locked_state *state =
+			rec->private_data;
+		subrec = &state->subrec;
+	} else {
+		subrec = talloc_get_type_abort(
+			rec->private_data, struct db_watched_subrec);
+	}
+
+	dbwrap_watched_subrec_wakeup(rec, subrec);
+}
+
 struct db_context *db_open_watched(TALLOC_CTX *mem_ctx,
 				   struct db_context **backend,
 				   struct messaging_context *msg)
