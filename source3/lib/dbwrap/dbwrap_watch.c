@@ -361,7 +361,8 @@ static void dbwrap_watched_wakeup(struct db_record *rec,
 
 	SIVAL(len_buf, 0, db_id_len);
 
-	iov[0] = (struct iovec) { .iov_base = len_buf, .iov_len = 4 };
+	iov[0] = (struct iovec) { .iov_base = len_buf,
+				  .iov_len = sizeof(len_buf) };
 	iov[1] = (struct iovec) { .iov_base = db_id, .iov_len = db_id_len };
 	iov[2] = (struct iovec) { .iov_base = rec->key.dptr,
 				  .iov_len = rec->key.dsize };
