@@ -523,17 +523,16 @@ static void downgrade_lease_additional_trigger(struct tevent_context *ev,
 	}
 }
 
-struct downgrade_lease_fsps_state {
-	struct file_id id;
-	struct share_mode_lock *lck;
+struct fsps_lease_update_state {
+	const struct file_id *id;
 	const struct smb2_lease_key *key;
 };
 
-static struct files_struct *downgrade_lease_fsps(struct files_struct *fsp,
-						 void *private_data)
+static struct files_struct *fsps_lease_update_fn(
+	struct files_struct *fsp, void *private_data)
 {
-	struct downgrade_lease_fsps_state *state =
-		(struct downgrade_lease_fsps_state *)private_data;
+	struct fsps_lease_update_state *state =
+		(struct fsps_lease_update_state *)private_data;
 
 	if (fsp->oplock_type != LEASE_OPLOCK) {
 		return NULL;
@@ -541,13 +540,21 @@ static struct files_struct *downgrade_lease_fsps(struct files_struct *fsp,
 	if (!smb2_lease_key_equal(&fsp->lease->lease.lease_key, state->key)) {
 		return NULL;
 	}
-	if (!file_id_equal(&fsp->file_id, &state->id)) {
+	if (!file_id_equal(&fsp->file_id, state->id)) {
 		return NULL;
 	}
 
 	fsp_lease_update(fsp);
 
 	return NULL;
+}
+
+static void fsps_lease_update(struct smbd_server_connection *sconn,
+			      const struct file_id *id,
+			      const struct smb2_lease_key *key)
+{
+	struct fsps_lease_update_state state = { .id = id, .key = key };
+	files_forall(sconn, fsps_lease_update_fn, &state);
 }
 
 NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
@@ -748,13 +755,7 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 	 */
 	lck->data->modified = true;
 
-	{
-		struct downgrade_lease_fsps_state state = {
-			.id = id, .lck = lck, .key = key,
-		};
-
-		files_forall(sconn, downgrade_lease_fsps, &state);
-	}
+	fsps_lease_update(sconn, &id, key);
 
 	TALLOC_FREE(lck);
 	DEBUG(10, ("%s: Downgrading %s to %x => %s\n", __func__,
@@ -771,13 +772,7 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		}
 
-		{
-			struct downgrade_lease_fsps_state state = {
-				.id = ids[i], .lck = lck, .key = key,
-			};
-
-			files_forall(sconn, downgrade_lease_fsps, &state);
-		}
+		fsps_lease_update(sconn, &ids[i], key);
 
 		DEBUG(10, ("%s: Downgrading %s to %x => %s\n", __func__,
 			file_id_string_tos(&ids[i]), (unsigned)lease_state, nt_errstr(status)));
