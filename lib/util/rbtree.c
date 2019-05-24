@@ -22,6 +22,7 @@
 
 #include "replace.h"
 #include "rbtree.h"
+#include "fault.h"
 
 #define	RB_RED		0
 #define	RB_BLACK	1
@@ -167,6 +168,12 @@ static void __rb_erase_color(struct rb_node *node, struct rb_node *parent,
 		if (parent->rb_left == node)
 		{
 			other = parent->rb_right;
+			if (other == NULL) {
+				/* we should never get here */
+				smb_panic("corrupted rb tree");
+				/* satisfy static checkers */
+				return;
+			}
 			if (rb_is_red(other))
 			{
 				rb_set_black(other);
