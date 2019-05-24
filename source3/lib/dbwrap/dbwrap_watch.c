@@ -207,8 +207,8 @@ static NTSTATUS dbwrap_watched_storev(struct db_record *rec,
 				      const TDB_DATA *dbufs, int num_dbufs,
 				      int flags);
 static NTSTATUS dbwrap_watched_delete(struct db_record *rec);
-static void dbwrap_watched_wakeup(struct db_record *rec,
-				  struct dbwrap_watch_rec *wrec);
+static void dbwrap_watched_subrec_wakeup(
+	struct db_record *rec, struct db_watched_subrec *subrec);
 static NTSTATUS dbwrap_watched_save(struct db_record *rec,
 				    struct dbwrap_watch_rec *wrec,
 				    struct server_id *addwatch,
@@ -347,9 +347,10 @@ static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
 	return state.status;
 }
 
-static void dbwrap_watched_wakeup(struct db_record *rec,
-				  struct dbwrap_watch_rec *wrec)
+static void dbwrap_watched_subrec_wakeup(
+	struct db_record *rec, struct db_watched_subrec *subrec)
 {
+	struct dbwrap_watch_rec *wrec = &subrec->wrec;
 	struct db_context *db = rec->db;
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
@@ -451,7 +452,7 @@ static NTSTATUS dbwrap_watched_subrec_storev(
 {
 	NTSTATUS status;
 
-	dbwrap_watched_wakeup(rec, &subrec->wrec);
+	dbwrap_watched_subrec_wakeup(rec, subrec);
 
 	subrec->wrec.deleted = false;
 
@@ -478,7 +479,7 @@ static NTSTATUS dbwrap_watched_subrec_delete(
 {
 	NTSTATUS status;
 
-	dbwrap_watched_wakeup(rec, &subrec->wrec);
+	dbwrap_watched_subrec_wakeup(rec, subrec);
 
 	if (subrec->wrec.num_watchers == 0) {
 		return dbwrap_record_delete(subrec->subrec);
