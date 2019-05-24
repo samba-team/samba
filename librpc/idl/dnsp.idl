@@ -239,7 +239,7 @@ interface dnsp
 		[case(DSPROPERTY_ZONE_AGING_STATE)]             uint32 aging_enabled;
 		[case(DSPROPERTY_ZONE_SCAVENGING_SERVERS)]      dnsp_ip4_array servers;
 		[case(DSPROPERTY_ZONE_AGING_ENABLED_TIME)]      uint32 next_scavenging_cycle_hours;
-		[case(DSPROPERTY_ZONE_DELETED_FROM_HOSTNAME)]   utf8string deleted_by_hostname;
+		[case(DSPROPERTY_ZONE_DELETED_FROM_HOSTNAME)]   nstring deleted_by_hostname;
 		[case(DSPROPERTY_ZONE_MASTER_SERVERS)]          dnsp_ip4_array master_servers;
 		[case(DSPROPERTY_ZONE_AUTO_NS_SERVERS)]         dnsp_ip4_array ns_servers;
 		[case(DSPROPERTY_ZONE_DCPROMO_CONVERT)]         dns_dcpromo_flag dcpromo_flag;
