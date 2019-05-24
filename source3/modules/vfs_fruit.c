@@ -1329,10 +1329,10 @@ static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
 				   bool *blank)
 {
 	struct fruit_config_data *config = NULL;
-	uint8_t *map = MAP_FAILED;
-	size_t maplen;
+	size_t rforklen = sizeof(empty_resourcefork);
+	char buf[rforklen];
+	ssize_t nread;
 	int cmp;
-	ssize_t len;
 	int rc;
 	bool ok;
 
@@ -1345,43 +1345,31 @@ static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
 		return true;
 	}
 
-	if (ad_getentrylen(ad, ADEID_RFORK) != sizeof(empty_resourcefork)) {
+	if (ad_getentrylen(ad, ADEID_RFORK) != rforklen) {
 		return true;
 	}
 
-	maplen = ad_getentryoff(ad, ADEID_RFORK) +
-		ad_getentrylen(ad, ADEID_RFORK);
-
-	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
-	map = mmap(NULL, maplen, PROT_READ|PROT_WRITE, MAP_SHARED,
-		   ad->ad_fsp->fh->fd, 0);
-	if (map == MAP_FAILED) {
-		DBG_ERR("mmap AppleDouble: %s\n", strerror(errno));
+	nread = SMB_VFS_PREAD(ad->ad_fsp, buf, rforklen, ADEDOFF_RFORK_DOT_UND);
+	if (nread != rforklen) {
+		DBG_ERR("Reading %zu bytes from rfork [%s] failed: %s\n",
+			rforklen, fsp_str_dbg(ad->ad_fsp), strerror(errno));
 		return false;
 	}
 
-	cmp = memcmp(map + ADEDOFF_RFORK_DOT_UND,
-		     empty_resourcefork,
-		     sizeof(empty_resourcefork));
-	rc = munmap(map, maplen);
-	if (rc != 0) {
-		DBG_ERR("munmap failed: %s\n", strerror(errno));
-		return false;
-	}
-
+	cmp = memcmp(buf, empty_resourcefork, rforklen);
 	if (cmp != 0) {
 		return true;
 	}
 
 	ad_setentrylen(ad, ADEID_RFORK, 0);
-
 	ok = ad_pack(ad);
 	if (!ok) {
 		return false;
 	}
 
-	len = sys_pwrite(ad->ad_fsp->fh->fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
-	if (len != AD_DATASZ_DOT_UND) {
+	rc = ad_fset(handle, ad, ad->ad_fsp);
+	if (rc != 0) {
+		DBG_ERR("ad_fset on [%s] failed\n", fsp_str_dbg(ad->ad_fsp));
 		return false;
 	}
 
