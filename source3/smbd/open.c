@@ -2108,7 +2108,7 @@ static NTSTATUS try_lease_upgrade(struct files_struct *fsp,
 		}
 	}
 
-	fsp_lease_update(lck, fsp_client_guid(fsp), fsp->lease);
+	fsp_lease_update(fsp);
 
 	return NT_STATUS_OK;
 }

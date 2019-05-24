@@ -391,7 +391,7 @@ static void lease_timeout_handler(struct tevent_context *ctx,
 		return;
 	}
 
-	fsp_lease_update(lck, fsp_client_guid(fsp), fsp->lease);
+	fsp_lease_update(fsp);
 
 	if (lease->lease.lease_epoch != old_epoch) {
 		/*
@@ -426,18 +426,18 @@ static void lease_timeout_handler(struct tevent_context *ctx,
 	TALLOC_FREE(lck);
 }
 
-bool fsp_lease_update(struct share_mode_lock *lck,
-		      const struct GUID *client_guid,
-		      struct fsp_lease *lease)
+bool fsp_lease_update(struct files_struct *fsp)
 {
+	const struct GUID *client_guid = fsp_client_guid(fsp);
+	struct fsp_lease *lease = fsp->lease;
 	uint32_t current_state;
 	bool breaking;
 	uint16_t lease_version, epoch;
 	NTSTATUS status;
 
 	status = leases_db_get(client_guid,
-			       &lease->lease.lease_key,
-			       &lck->data->id,
+			       &fsp->lease->lease.lease_key,
+			       &fsp->file_id,
 			       &current_state,
 			       &breaking,
 			       NULL, /* breaking_to_requested */
@@ -545,7 +545,7 @@ static struct files_struct *downgrade_lease_fsps(struct files_struct *fsp,
 		return NULL;
 	}
 
-	fsp_lease_update(state->lck, fsp_client_guid(fsp), fsp->lease);
+	fsp_lease_update(fsp);
 
 	return NULL;
 }
@@ -1110,7 +1110,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 		}
 
 		/* Ensure we're in sync with current lease state. */
-		fsp_lease_update(lck, fsp_client_guid(fsp), fsp->lease);
+		fsp_lease_update(fsp);
 
 		TALLOC_FREE(lck);
 	}
