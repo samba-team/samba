@@ -367,12 +367,6 @@ typedef enum {ADOUBLE_META, ADOUBLE_RSRC} adouble_type_t;
 #define AD_XATTR_HDR_SIZE     36
 #define AD_XATTR_MAX_HDR_SIZE 65536
 
-/* Accessor macros */
-#define ad_getentrylen(ad,eid)     ((ad)->ad_eid[(eid)].ade_len)
-#define ad_getentryoff(ad,eid)     ((ad)->ad_eid[(eid)].ade_off)
-#define ad_setentrylen(ad,eid,len) ((ad)->ad_eid[(eid)].ade_len = (len))
-#define ad_setentryoff(ad,eid,off) ((ad)->ad_eid[(eid)].ade_off = (off))
-
 /*
  * Both struct ad_xattr_header and struct ad_xattr_entry describe the in memory
  * representation as well as the on-disk format.
@@ -538,6 +532,25 @@ static AfpInfo *afpinfo_new(TALLOC_CTX *ctx);
 static ssize_t afpinfo_pack(const AfpInfo *ai, char *buf);
 static AfpInfo *afpinfo_unpack(TALLOC_CTX *ctx, const void *data);
 
+static size_t ad_getentrylen(const struct adouble *ad, int eid)
+{
+	return ad->ad_eid[eid].ade_len;
+}
+
+static size_t ad_getentryoff(const struct adouble *ad, int eid)
+{
+	return ad->ad_eid[eid].ade_off;
+}
+
+static size_t ad_setentrylen(struct adouble *ad, int eid, size_t len)
+{
+	return ad->ad_eid[eid].ade_len = len;
+}
+
+static size_t ad_setentryoff(struct adouble *ad, int eid, size_t off)
+{
+	return ad->ad_eid[eid].ade_off = off;
+}
 
 /**
  * Return a pointer to an AppleDouble entry
