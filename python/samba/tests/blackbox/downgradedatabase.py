@@ -26,12 +26,13 @@ COMMAND = os.path.join(os.path.dirname(__file__),
                "../../../../../source4/scripting/bin/sambadowngradedatabase")
 
 
-class DowngradeTest(BlackboxTestCase):
+class DowngradeTestBase(BlackboxTestCase):
     """Test that sambadowngradedatabase downgrades the samba database"""
-    backend = 'tdb'
 
     def setUp(self):
-        super(DowngradeTest, self).setUp()
+        super(DowngradeTestBase, self).setUp()
+        if not hasattr(self, "backend"):
+            self.fail("Subclass this class and set 'backend'")
 
         # Don't assert on empty tempdir contents on tearDown
         self.check_tempdir_empty = False
@@ -100,6 +101,9 @@ class DowngradeTest(BlackboxTestCase):
 
         return attribute_types
 
+class DowngradeTestTDB(DowngradeTestBase):
+    backend = 'tdb'
+
     # Check that running sambadowngradedatabase with a TDB backend:
     # * Replaces all GUID keys with DN keys
     # * Removes ORDERED_INTEGER from @ATTRIBUTES
@@ -122,5 +126,33 @@ class DowngradeTest(BlackboxTestCase):
         dn_keys, guid_keys, pack_formats = self.ldbdump_keys_pack_formats()
         self.assertEqual(len(guid_keys), 0)
         self.assertEqual(len(dn_keys), num_guid_keys_before_downgrade)
+        self.assertTrue(ordered_int_type not in self.attribute_types())
+        self.assertEqual(pack_formats, [ldb.PACKING_FORMAT])
+
+class DowngradeTestMDB(DowngradeTestBase):
+    backend = 'mdb'
+
+    # Check that running sambadowngradedatabase with a TDB backend:
+    # * Does NOT replace GUID keys with DN keys
+    # * Removes ORDERED_INTEGER from @ATTRIBUTES
+    # * Repacks database with pack format version 1
+    def test_undo_guid(self):
+        type_prefix = "LDB_SYNTAX_"
+        ordered_int_type = ldb.SYNTAX_ORDERED_INTEGER[len(type_prefix):]
+
+        dn_keys, guid_keys, pack_formats = self.ldbdump_keys_pack_formats()
+        self.assertGreater(len(guid_keys), 20)
+        self.assertEqual(len(dn_keys), 0)
+        self.assertTrue(ordered_int_type in self.attribute_types())
+        self.assertEqual(pack_formats, [ldb.PACKING_FORMAT_V2])
+
+        num_guid_keys_before_downgrade = len(guid_keys)
+
+        self.check_run("%s -H %s" % (COMMAND, self.sam_path),
+                       msg="Running sambadowngradedatabase")
+
+        dn_keys, guid_keys, pack_formats = self.ldbdump_keys_pack_formats()
+        self.assertEqual(len(guid_keys), num_guid_keys_before_downgrade)
+        self.assertEqual(len(dn_keys), 0)
         self.assertTrue(ordered_int_type not in self.attribute_types())
         self.assertEqual(pack_formats, [ldb.PACKING_FORMAT])
