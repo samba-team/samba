@@ -82,7 +82,7 @@ do { \
 	if ((p) == (list)) { \
 		if ((p)->next) (p)->next->prev = (p)->prev; \
 		(list) = (p)->next; \
-	} else if ((list) && (p) == (list)->prev) {	\
+	} else if ((p)->prev && (list) && (p) == (list)->prev) {	\
 		(p)->prev->next = NULL; \
 		(list)->prev = (p)->prev; \
 	} else { \
