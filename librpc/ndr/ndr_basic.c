@@ -160,13 +160,16 @@ _PUBLIC_ enum ndr_err_code ndr_pull_uint32(struct ndr_pull *ndr, int ndr_flags, 
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_uint3264(struct ndr_pull *ndr, int ndr_flags, uint32_t *v)
 {
-	uint64_t v64;
+	uint64_t v64 = 0;
 	enum ndr_err_code err;
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	if (likely(!(ndr->flags & LIBNDR_FLAG_NDR64))) {
 		return ndr_pull_uint32(ndr, ndr_flags, v);
 	}
 	err = ndr_pull_hyper(ndr, ndr_flags, &v64);
+	if (!NDR_ERR_CODE_IS_SUCCESS(err)) {
+		return err;
+	}
 	*v = (uint32_t)v64;
 	if (unlikely(v64 != *v)) {
 		DEBUG(0,(__location__ ": non-zero upper 32 bits 0x%016llx\n",
@@ -891,7 +894,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_uid_t(struct ndr_push *ndr, int ndr_flags, u
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_uid_t(struct ndr_pull *ndr, int ndr_flags, uid_t *u)
 {
-	uint64_t uu;
+	uint64_t uu = 0;
 	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &uu));
 	*u = (uid_t)uu;
 	if (unlikely(uu != *u)) {
@@ -917,7 +920,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_gid_t(struct ndr_push *ndr, int ndr_flags, g
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_gid_t(struct ndr_pull *ndr, int ndr_flags, gid_t *g)
 {
-	uint64_t gg;
+	uint64_t gg = 0;
 	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &gg));
 	*g = (gid_t)gg;
 	if (unlikely(gg != *g)) {
@@ -1450,8 +1453,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_timespec(struct ndr_pull *ndr,
 					     int ndr_flags,
 					     struct timespec *t)
 {
-	uint64_t secs;
-	uint32_t nsecs;
+	uint64_t secs = 0;
+	uint32_t nsecs = 0;
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &secs));
 	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &nsecs));
@@ -1481,8 +1484,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_timeval(struct ndr_pull *ndr,
 					    int ndr_flags,
 					    struct timeval *t)
 {
-	uint64_t secs;
-	uint32_t usecs;
+	uint64_t secs = 0;
+	uint32_t usecs = 0;
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	NDR_CHECK(ndr_pull_hyper(ndr, ndr_flags, &secs));
 	NDR_CHECK(ndr_pull_uint32(ndr, ndr_flags, &usecs));
