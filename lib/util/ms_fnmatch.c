@@ -72,7 +72,8 @@ static int ms_fnmatch_core(const char *p, const char *n,
 		switch (c) {
 		case '*':
 			/* a '*' matches zero or more characters of any type */
-			if (max_n->predot && max_n->predot <= n) {
+			if (max_n != NULL && max_n->predot &&
+			    max_n->predot <= n) {
 				return null_match(p);
 			}
 			for (i=0; n[i]; i += size_n) {
@@ -81,17 +82,22 @@ static int ms_fnmatch_core(const char *p, const char *n,
 					return 0;
 				}
 			}
-			if (!max_n->predot || max_n->predot > n) max_n->predot = n;
+			if (max_n != NULL && (!max_n->predot ||
+			    max_n->predot > n)) {
+				max_n->predot = n;
+			}
 			return null_match(p);
 
 		case '<':
 			/* a '<' matches zero or more characters of
 			   any type, but stops matching at the last
 			   '.' in the string. */
-			if (max_n->predot && max_n->predot <= n) {
+			if (max_n != NULL && max_n->predot &&
+			    max_n->predot <= n) {
 				return null_match(p);
 			}
-			if (max_n->postdot && max_n->postdot <= n && n <= ldot) {
+			if (max_n != NULL && max_n->postdot &&
+			    max_n->postdot <= n && n <= ldot) {
 				return -1;
 			}
 			for (i=0; n[i]; i += size_n) {
@@ -99,11 +105,19 @@ static int ms_fnmatch_core(const char *p, const char *n,
 				if (ms_fnmatch_core(p, n+i, max_n+1, ldot, is_case_sensitive) == 0) return 0;
 				if (n+i == ldot) {
 					if (ms_fnmatch_core(p, n+i+size_n, max_n+1, ldot, is_case_sensitive) == 0) return 0;
-					if (!max_n->postdot || max_n->postdot > n) max_n->postdot = n;
+					if (max_n != NULL) {
+						if (!max_n->postdot ||
+						    max_n->postdot > n) {
+							max_n->postdot = n;
+						}
+					}
 					return -1;
 				}
 			}
-			if (!max_n->predot || max_n->predot > n) max_n->predot = n;
+			if (max_n != NULL && (!max_n->predot ||
+			    max_n->predot > n)) {
+				max_n->predot = n;
+			}
 			return null_match(p);
 
 		case '?':
