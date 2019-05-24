@@ -1061,10 +1061,7 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 			     bool *converted_xattr)
 {
 	static struct char_mappings **string_replace_cmaps = NULL;
-	char *map = MAP_FAILED;
-	size_t maplen;
 	uint16_t i;
-	ssize_t len;
 	int saved_errno = 0;
 	NTSTATUS status;
 	int rc;
@@ -1086,17 +1083,6 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 		}
 		string_replace_cmaps = string_replace_init_map(mappings);
 		TALLOC_FREE(mappings);
-	}
-
-	maplen = ad_getentryoff(ad, ADEID_RFORK) +
-		ad_getentrylen(ad, ADEID_RFORK);
-
-	/* FIXME: direct use of mmap(), vfs_aio_fork does it too */
-	map = mmap(NULL, maplen, PROT_READ|PROT_WRITE, MAP_SHARED,
-		   ad->ad_fsp->fh->fd, 0);
-	if (map == MAP_FAILED) {
-		DBG_ERR("mmap AppleDouble: %s\n", strerror(errno));
-		return false;
 	}
 
 	for (i = 0; i < ad->adx_header.adx_num_attrs; i++) {
@@ -1170,7 +1156,7 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 		}
 
 		nwritten = SMB_VFS_PWRITE(fsp,
-					  map + e->adx_offset,
+					  ad->ad_data + e->adx_offset,
 					  e->adx_length,
 					  0);
 		if (nwritten == -1) {
@@ -1198,9 +1184,10 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	len = sys_pwrite(ad->ad_fsp->fh->fd, ad->ad_data, AD_DATASZ_DOT_UND, 0);
-	if (len != AD_DATASZ_DOT_UND) {
-		DBG_ERR("%s: bad size: %zd\n", smb_fname->base_name, len);
+	rc = ad_fset(handle, ad, ad->ad_fsp);
+	if (rc != 0) {
+		DBG_ERR("ad_fset on [%s] failed: %s\n",
+			fsp_str_dbg(ad->ad_fsp), strerror(errno));
 		ok = false;
 		goto fail;
 	}
@@ -1214,12 +1201,6 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 	ok = true;
 
 fail:
-	rc = munmap(map, maplen);
-	if (rc != 0) {
-		DBG_ERR("munmap failed: %s\n", strerror(errno));
-		return false;
-	}
-
 	return ok;
 }
 
