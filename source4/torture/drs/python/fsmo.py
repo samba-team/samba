@@ -51,6 +51,10 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
         self.infrastructure_dn = "CN=Infrastructure," + self.domain_dn
         self.naming_dn = "CN=Partitions," + self.config_dn
         self.rid_dn = "CN=RID Manager$,CN=System," + self.domain_dn
+        self.domain_dns_dn = (
+            "CN=Infrastructure,DC=DomainDnsZones, %s" % self.domain_dn )
+        self.forest_dns_dn = (
+            "CN=Infrastructure,DC=ForestDnsZones, %s" % self.domain_dn )
 
     def tearDown(self):
         super(DrsFsmoTestCase, self).tearDown()
@@ -143,3 +147,9 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
 
     def test_NamingMasterTransfer(self):
         self._role_transfer(role="naming", role_dn=self.naming_dn)
+
+    def test_DomainDnsZonesMasterTransfer(self):
+        self._role_transfer(role="domaindns", role_dn=self.domain_dns_dn)
+
+    def test_ForestDnsZonesMasterTransfer(self):
+        self._role_transfer(role="forestdns", role_dn=self.forest_dns_dn)
