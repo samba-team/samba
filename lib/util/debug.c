@@ -699,11 +699,15 @@ static int debug_lookup_classname_int(const char* classname)
 {
 	size_t i;
 
-	if (!classname) return -1;
+	if (classname == NULL) {
+		return -1;
+	}
 
 	for (i=0; i < debug_num_classes; i++) {
-		if (strcmp(classname, classname_table[i])==0)
+		char *entry = classname_table[i];
+		if (entry != NULL && strcmp(classname, entry)==0) {
 			return i;
+		}
 	}
 	return -1;
 }
@@ -780,7 +784,7 @@ static int debug_lookup_classname(const char *classname)
 {
 	int ndx;
 
-	if (!classname || !*classname)
+	if (classname == NULL || !*classname)
 		return -1;
 
 	ndx = debug_lookup_classname_int(classname);
