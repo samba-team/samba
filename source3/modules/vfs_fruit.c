@@ -1307,7 +1307,8 @@ static bool ad_convert_finderinfo(vfs_handle_struct *handle,
 	return true;
 }
 
-static bool ad_convert_truncate(struct adouble *ad,
+static bool ad_convert_truncate(vfs_handle_struct *handle,
+				struct adouble *ad,
 				const struct smb_filename *smb_fname)
 {
 	int rc;
@@ -1464,7 +1465,7 @@ static int ad_convert(struct vfs_handle_struct *handle,
 	}
 
 	if (converted_xattr || blank) {
-		ok = ad_convert_truncate(ad, smb_fname);
+		ok = ad_convert_truncate(handle, ad, smb_fname);
 		if (!ok) {
 			ret = -1;
 			goto done;
