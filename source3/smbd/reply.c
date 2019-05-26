@@ -8157,7 +8157,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 						e->offset,
 						WINDOWS_LOCK);
 		} else {
-			bool blocking_lock = timeout ? true : false;
+			bool blocking_lock = (timeout != 0);
 			bool defer_lock = false;
 			struct byte_range_lock *br_lck;
 			uint64_t block_smblctx;
