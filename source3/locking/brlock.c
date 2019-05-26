@@ -2099,22 +2099,13 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 	br_lock->modified = false;
 	br_lock->record = NULL;
 
-	if (lp_clustering()) {
-		/*
-		 * In the cluster case we can't cache the brlock struct
-		 * because dbwrap_get_seqnum does not work reliably over
-		 * ctdb. Thus we have to throw away the brlock struct soon.
-		 */
-		talloc_steal(talloc_tos(), br_lock);
-	} else {
-		/*
-		 * Cache the brlock struct, invalidated when the dbwrap_seqnum
-		 * changes. See beginning of this routine.
-		 */
-		TALLOC_FREE(fsp->brlock_rec);
-		fsp->brlock_rec = br_lock;
-		fsp->brlock_seqnum = dbwrap_get_seqnum(brlock_db);
-	}
+	/*
+	 * Cache the brlock struct, invalidated when the dbwrap_seqnum
+	 * changes. See beginning of this routine.
+	 */
+	TALLOC_FREE(fsp->brlock_rec);
+	fsp->brlock_rec = br_lock;
+	fsp->brlock_seqnum = dbwrap_get_seqnum(brlock_db);
 
 	return br_lock;
 }
