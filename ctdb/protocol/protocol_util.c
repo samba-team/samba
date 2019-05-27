@@ -155,8 +155,9 @@ int ctdb_sock_addr_to_buf(char *buf, socklen_t buflen,
 	return 0;
 }
 
-const char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx,
-				     ctdb_sock_addr *addr, bool with_port)
+char *ctdb_sock_addr_to_string(TALLOC_CTX *mem_ctx,
+			       ctdb_sock_addr *addr,
+			       bool with_port)
 {
 	size_t len = 64;
 	char *cip;
@@ -493,9 +494,9 @@ int ctdb_connection_to_buf(char *buf, size_t buflen,
 	return 0;
 }
 
-const char *ctdb_connection_to_string(TALLOC_CTX *mem_ctx,
-				      struct ctdb_connection *conn,
-				      bool client_first)
+char *ctdb_connection_to_string(TALLOC_CTX *mem_ctx,
+				struct ctdb_connection *conn,
+				bool client_first)
 {
 	const size_t len = 128;
 	char *out;
@@ -612,7 +613,7 @@ int ctdb_connection_list_sort(struct ctdb_connection_list *conn_list)
 	return 0;
 }
 
-const char *ctdb_connection_list_to_string(
+char *ctdb_connection_list_to_string(
 	TALLOC_CTX *mem_ctx,
 	struct ctdb_connection_list *conn_list, bool client_first)
 {
