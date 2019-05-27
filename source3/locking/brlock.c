@@ -295,13 +295,18 @@ static bool brl_conflict_other(const struct lock_struct *lock,
  Check if an unlock overlaps a pending lock.
 ****************************************************************************/
 
-static bool brl_pending_overlap(const struct lock_struct *lock, const struct lock_struct *pend_lock)
+static bool brl_pending_overlap(const struct lock_struct *lock,
+				const struct lock_struct *pend_lock)
 {
-	if ((lock->start <= pend_lock->start) && (lock->start + lock->size > pend_lock->start))
-		return True;
-	if ((lock->start >= pend_lock->start) && (lock->start < pend_lock->start + pend_lock->size))
-		return True;
-	return False;
+	if ((lock->start <= pend_lock->start) &&
+	    (lock->start + lock->size > pend_lock->start)) {
+		return true;
+	}
+	if ((lock->start >= pend_lock->start) &&
+	    (lock->start < pend_lock->start + pend_lock->size)) {
+		return true;
+	}
+	return false;
 }
 
 /****************************************************************************
