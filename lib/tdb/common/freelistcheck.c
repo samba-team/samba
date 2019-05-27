@@ -93,7 +93,6 @@ _PUBLIC_ int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries)
 		}
 
 		/* move to the next record */
-		last_ptr = rec_ptr;
 		rec_ptr = rec.next;
 		*pnum_entries += 1;
 	}
