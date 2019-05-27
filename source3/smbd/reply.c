@@ -4597,7 +4597,7 @@ void reply_writebraw(struct smb_request *req)
 
 		/*
 		 * We are not vulnerable to CVE-2017-12163
-		 * here as we are guarenteed to have numtowrite
+		 * here as we are guaranteed to have numtowrite
 		 * bytes available - we just read from the client.
 		 */
 		nwritten = write_file(req,fsp,buf+4,startpos+nwritten,numtowrite);
