@@ -136,7 +136,8 @@ PyObject *py_dcerpc_interface_init_helper(PyTypeObject *type, PyObject *args, Py
 
 		ret->ev = s4_event_context_init(ret->mem_ctx);
 		if (ret->ev == NULL) {
-			PyErr_SetString(PyExc_TypeError, "Expected loadparm context");
+			PyErr_SetString(PyExc_TypeError,
+					"Unable to initialise event context");
 			Py_DECREF(ret);
 			return NULL;
 		}
