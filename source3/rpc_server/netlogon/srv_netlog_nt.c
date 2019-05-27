@@ -927,7 +927,7 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 		srv_flgs |= NETLOGON_NEG_SUPPORTS_AES;
 	}
 
-	if (lp_server_schannel() != false) {
+	if (in_neg_flags & NETLOGON_NEG_SCHANNEL) {
 		srv_flgs |= NETLOGON_NEG_SCHANNEL;
 	}
 
@@ -964,17 +964,6 @@ NTSTATUS _netr_ServerAuthenticate3(struct pipes_struct *p,
 	if (!pipe_state) {
 		DEBUG(0,("%s: no challenge sent to client %s\n", fn,
 			r->in.computer_name));
-		status = NT_STATUS_ACCESS_DENIED;
-		goto out;
-	}
-
-	if ( (lp_server_schannel() == true) &&
-	     ((in_neg_flags & NETLOGON_NEG_SCHANNEL) == 0) ) {
-
-		/* schannel must be used, but client did not offer it. */
-		DEBUG(0,("%s: schannel required but client failed "
-			"to offer it. Client was %s\n",
-			fn, r->in.account_name));
 		status = NT_STATUS_ACCESS_DENIED;
 		goto out;
 	}
