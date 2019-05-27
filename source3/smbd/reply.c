@@ -8280,12 +8280,12 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 		struct smbd_lock_element *e = &ulocks[i];
 		NTSTATUS status;
 
-		DEBUG(10,("%s: unlock start=%.0f, len=%.0f for "
-			  "pid %u, file %s\n", __func__,
-			  (double)e->offset,
-			  (double)e->count,
-			  (unsigned int)e->smblctx,
-			  fsp_str_dbg(fsp)));
+		DBG_DEBUG("unlock start=%"PRIu64", len=%"PRIu64" for "
+			  "pid %"PRIu64", file %s\n",
+			  e->offset,
+			  e->count,
+			  e->smblctx,
+			  fsp_str_dbg(fsp));
 
 		if (e->brltype != UNLOCK_LOCK) {
 			/* this can only happen with SMB2 */
