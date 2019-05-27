@@ -23,8 +23,6 @@
 #include "rpc_server/mdssvc/sparql_parser.tab.h"
 
 #define YY_NO_INPUT
-#define yyalloc SMB_MALLOC
-#define yyrealloc SMB_REALLOC
 %}
 
 %option nounput noyyalloc noyyrealloc prefix="mdsyy"
@@ -57,3 +55,13 @@ true              {mdsyylval.bval = true; return BOOL;}
 {UANY}+           {mdsyylval.sval = talloc_strdup(talloc_tos(), mdsyytext); return WORD;}
 [ \t\n]           /* ignore */
 %%
+
+void *yyalloc(yy_size_t bytes)
+{
+    return SMB_MALLOC(bytes);
+}
+
+void *yyrealloc(void *ptr, yy_size_t bytes)
+{
+    return SMB_REALLOC(ptr, bytes);
+}
