@@ -1073,6 +1073,7 @@ static bool ad_convert_move_reso(vfs_handle_struct *handle,
 static bool ad_convert_xattr(vfs_handle_struct *handle,
 			     struct adouble *ad,
 			     const struct smb_filename *smb_fname,
+			     const char *catia_mappings,
 			     bool *converted_xattr)
 {
 	static struct char_mappings **string_replace_cmaps = NULL;
@@ -1092,7 +1093,7 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 		const char **mappings = NULL;
 
 		mappings = str_list_make_v3_const(
-			talloc_tos(), fruit_catia_maps, NULL);
+			talloc_tos(), catia_mappings, NULL);
 		if (mappings == NULL) {
 			return false;
 		}
@@ -1435,6 +1436,7 @@ static bool ad_convert_delete_adfile(vfs_handle_struct *handle,
  **/
 static int ad_convert(struct vfs_handle_struct *handle,
 		      const struct smb_filename *smb_fname,
+		      const char *catia_mappings,
 		      uint32_t flags)
 {
 	struct adouble *ad = NULL;
@@ -1448,7 +1450,11 @@ static int ad_convert(struct vfs_handle_struct *handle,
 		return 0;
 	}
 
-	ok = ad_convert_xattr(handle, ad, smb_fname, &converted_xattr);
+	ok = ad_convert_xattr(handle,
+			      ad,
+			      smb_fname,
+			      catia_mappings,
+			      &converted_xattr);
 	if (!ok) {
 		ret = -1;
 		goto done;
@@ -6021,7 +6027,10 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 			conv_flags |= AD_CONV_DELETE;
 		}
 
-		ret = ad_convert(handle, smb_fname, conv_flags);
+		ret = ad_convert(handle,
+				 smb_fname,
+				 fruit_catia_maps,
+				 conv_flags);
 		if (ret != 0) {
 			DBG_ERR("ad_convert() failed\n");
 			return NT_STATUS_UNSUCCESSFUL;
@@ -6132,7 +6141,7 @@ static NTSTATUS fruit_readdir_attr(struct vfs_handle_struct *handle,
 		conv_flags |= AD_CONV_DELETE;
 	}
 
-	ret = ad_convert(handle, fname, conv_flags);
+	ret = ad_convert(handle, fname, fruit_catia_maps, conv_flags);
 	if (ret != 0) {
 		DBG_ERR("ad_convert() failed\n");
 		return NT_STATUS_UNSUCCESSFUL;
