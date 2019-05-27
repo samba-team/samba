@@ -8274,9 +8274,9 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 			   uint16_t num_ulocks,
 			   struct smbd_lock_element *ulocks)
 {
-	int i;
+	uint16_t i;
 
-	for(i = 0; i < (int)num_ulocks; i++) {
+	for(i = 0; i < num_ulocks; i++) {
 		struct smbd_lock_element *e = &ulocks[i];
 		NTSTATUS status;
 
