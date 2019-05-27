@@ -28,9 +28,6 @@
 struct smbd_dmapi_context *dmapi_ctx = NULL;
 #endif
 
-/* how many write cache buffers have been allocated */
-unsigned int allocated_write_caches = 0;
-
 const struct mangle_fns *mangle_fns = NULL;
 
 unsigned char *chartest = NULL;

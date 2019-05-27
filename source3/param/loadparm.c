@@ -160,7 +160,6 @@ static const struct loadparm_service _sDefault =
 	.min_print_space = 0,
 	.max_print_jobs = 1000,
 	.max_reported_print_jobs = 0,
-	.write_cache_size = 0,
 	.create_mask = 0744,
 	.force_create_mode = 0,
 	.directory_mask = 0755,

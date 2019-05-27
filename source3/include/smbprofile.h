@@ -108,27 +108,6 @@ struct tevent_context;
 	SMBPROFILE_STATS_COUNT(statcache_hits) \
 	SMBPROFILE_STATS_SECTION_END \
 	\
-	SMBPROFILE_STATS_SECTION_START(writecache, "Write Cache") \
-	SMBPROFILE_STATS_COUNT(writecache_allocations) \
-	SMBPROFILE_STATS_COUNT(writecache_deallocations) \
-	SMBPROFILE_STATS_COUNT(writecache_cached_reads) \
-	SMBPROFILE_STATS_COUNT(writecache_total_writes) \
-	SMBPROFILE_STATS_COUNT(writecache_init_writes) \
-	SMBPROFILE_STATS_COUNT(writecache_abutted_writes) \
-	SMBPROFILE_STATS_COUNT(writecache_non_oplock_writes) \
-	SMBPROFILE_STATS_COUNT(writecache_direct_writes) \
-	SMBPROFILE_STATS_COUNT(writecache_cached_writes) \
-	SMBPROFILE_STATS_COUNT(writecache_perfect_writes) \
-	SMBPROFILE_STATS_COUNT(writecache_flush_reason_seek) \
-	SMBPROFILE_STATS_COUNT(writecache_flush_reason_read) \
-	SMBPROFILE_STATS_COUNT(writecache_flush_reason_readraw) \
-	SMBPROFILE_STATS_COUNT(writecache_flush_reason_write) \
-	SMBPROFILE_STATS_COUNT(writecache_flush_reason_oplock) \
-	SMBPROFILE_STATS_COUNT(writecache_flush_reason_close) \
-	SMBPROFILE_STATS_COUNT(writecache_flush_reason_sync) \
-	SMBPROFILE_STATS_COUNT(writecache_flush_reason_sizechange) \
-	SMBPROFILE_STATS_SECTION_END \
-	\
 	SMBPROFILE_STATS_SECTION_START(SMB, "SMB Calls") \
 	SMBPROFILE_STATS_BASIC(SMBmkdir) \
 	SMBPROFILE_STATS_BASIC(SMBrmdir) \

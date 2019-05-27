@@ -515,10 +515,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len)
 
 		contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_ALLOC_SHRINK);
 
-		flush_write_cache(fsp, SAMBA_SIZECHANGE_FLUSH);
-		if ((ret = SMB_VFS_FTRUNCATE(fsp, (off_t)len)) != -1) {
-			set_filelen_write_cache(fsp, len);
-		}
+		ret = SMB_VFS_FTRUNCATE(fsp, (off_t)len);
 
 		contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_ALLOC_SHRINK);
 
@@ -585,9 +582,7 @@ int vfs_set_filelen(files_struct *fsp, off_t len)
 
 	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n",
 		  fsp_str_dbg(fsp), (double)len));
-	flush_write_cache(fsp, SAMBA_SIZECHANGE_FLUSH);
 	if ((ret = SMB_VFS_FTRUNCATE(fsp, len)) != -1) {
-		set_filelen_write_cache(fsp, len);
 		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_SIZE
 			     | FILE_NOTIFY_CHANGE_ATTRIBUTES,
@@ -676,8 +671,6 @@ int vfs_fill_sparse(files_struct *fsp, off_t len)
 
 	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_FILL_SPARSE);
 
-	flush_write_cache(fsp, SAMBA_SIZECHANGE_FLUSH);
-
 	offset = fsp->fsp_name->st.st_ex_size;
 	num_to_write = len - fsp->fsp_name->st.st_ex_size;
 
@@ -702,10 +695,6 @@ int vfs_fill_sparse(files_struct *fsp, off_t len)
 	ret = vfs_slow_fallocate(fsp, offset, num_to_write);
 
  out:
-
-	if (ret == 0) {
-		set_filelen_write_cache(fsp, len);
-	}
 
 	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_FILL_SPARSE);
 	return ret;

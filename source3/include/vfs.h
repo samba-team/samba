@@ -286,6 +286,7 @@
 /* Version 42 - Remove SMB_VFS_RMDIR.
 		Use SMB_VFS_UNLINKAT(.., AT_REMOVEDIR) instead. */
 /* Version 42 - Remove SMB_VFS_CHOWN */
+/* Version 42 - Remove struct write_cache *wcp from files_struct */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -347,7 +348,6 @@ typedef struct files_struct {
 	uint64_t initial_allocation_size; /* Faked up initial allocation on disk. */
 	uint16_t file_pid;
 	uint64_t vuid; /* SMB2 compat */
-	struct write_cache *wcp;
 	struct timeval open_time;
 	uint32_t access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
 	bool kernel_share_modes_taken;

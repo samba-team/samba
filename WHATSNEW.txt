@@ -56,6 +56,23 @@ applies.
 REMOVED FEATURES
 ================
 
+The smb.conf parameter "write cache size" has been removed.
+
+Since the in-memory write caching code was written, our write path has
+changed significantly. In particular we have gained very flexible
+support for async I/O, with the new linux io_uring interface in
+development.  The old write cache concept which cached data in main
+memory followed by a blocking pwrite no longer gives any improvement
+on modern systems, and may make performance worse on memory-contrained
+systems, so this functionality should not be enabled in core smbd
+code.
+
+In addition, it complicated the write code, which is a performance
+critical code path.
+
+If required for specialist purposes, it can be recreated as a VFS
+module.
+
 BIND9_FLATFILE deprecated
 -------------------------
 
@@ -77,6 +94,7 @@ smb.conf changes
 
   nfs4:acedup                        Changed default            merge
   rndc command                       Removed
+  write cache size                   Removed
 
 KNOWN ISSUES
 ============

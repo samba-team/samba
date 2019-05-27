@@ -355,7 +355,6 @@ static NTSTATUS schedule_smb2_sendfile_read(struct smbd_smb2_request *smb2req,
 	    smb2req->do_encryption ||
 	    smbd_smb2_is_compound(smb2req) ||
 	    (fsp->base_fsp != NULL) ||
-	    (fsp->wcp != NULL) ||
 	    (!S_ISREG(fsp->fsp_name->st.st_ex_mode)) ||
 	    (state->in_offset >= fsp->fsp_name->st.st_ex_size) ||
 	    (fsp->fsp_name->st.st_ex_size < state->in_offset + state->in_length))

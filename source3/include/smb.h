@@ -749,19 +749,4 @@ struct smb_extended_info {
 	char   samba_version_string[SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH];
 };
 
-/*
- * Reasons for cache flush.
- */
-
-enum flush_reason_enum {
-    SAMBA_SEEK_FLUSH,
-    SAMBA_READ_FLUSH,
-    SAMBA_WRITE_FLUSH,
-    SAMBA_READRAW_FLUSH,
-    SAMBA_OPLOCK_RELEASE_FLUSH,
-    SAMBA_CLOSE_FLUSH,
-    SAMBA_SYNC_FLUSH,
-    SAMBA_SIZECHANGE_FLUSH,
-};
-
 #endif /* _SMB_H */

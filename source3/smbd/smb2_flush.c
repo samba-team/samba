@@ -125,7 +125,6 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req *subreq;
 	struct smbd_smb2_flush_state *state;
 	struct smb_request *smbreq;
-	int ret;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct smbd_smb2_flush_state);
@@ -184,12 +183,6 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 		 * anything here.
 		 */
 		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
-
-	ret = flush_write_cache(fsp, SAMBA_SYNC_FLUSH);
-	if (ret == -1) {
-		tevent_req_nterror(req,  map_nt_error_from_unix(errno));
 		return tevent_req_post(req, ev);
 	}
 

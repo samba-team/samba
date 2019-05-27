@@ -330,9 +330,6 @@ ssize_t write_file(struct smb_request *req,
 			const char *data,
 			off_t pos,
 			size_t n);
-void delete_write_cache(files_struct *fsp);
-void set_filelen_write_cache(files_struct *fsp, off_t file_size);
-ssize_t flush_write_cache(files_struct *fsp, enum flush_reason_enum reason);
 NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_through);
 
 /* The following definitions come from smbd/filename.c  */

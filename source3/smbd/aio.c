@@ -172,9 +172,8 @@ NTSTATUS schedule_aio_read_and_X(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
-	/* Only do this on non-chained and non-chaining reads not using the
-	 * write cache. */
-        if (req_is_in_chain(smbreq) || (lp_write_cache_size(SNUM(conn)) != 0)) {
+	/* Only do this on non-chained and non-chaining reads */
+        if (req_is_in_chain(smbreq)) {
 		return NT_STATUS_RETRY;
 	}
 
@@ -428,9 +427,8 @@ NTSTATUS schedule_aio_write_and_X(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
-	/* Only do this on non-chained and non-chaining writes not using the
-	 * write cache. */
-        if (req_is_in_chain(smbreq) || (lp_write_cache_size(SNUM(conn)) != 0)) {
+	/* Only do this on non-chained and non-chaining writes */
+        if (req_is_in_chain(smbreq)) {
 		return NT_STATUS_RETRY;
 	}
 
@@ -673,11 +671,6 @@ NTSTATUS schedule_smb2_aio_read(connection_struct *conn,
 		return NT_STATUS_RETRY;
 	}
 
-	/* Only do this on reads not using the write cache. */
-	if (lp_write_cache_size(SNUM(conn)) != 0) {
-		return NT_STATUS_RETRY;
-	}
-
 	if (smbd_smb2_is_compound(smbreq->smb2req)) {
 		return NT_STATUS_RETRY;
 	}
@@ -810,11 +803,6 @@ NTSTATUS schedule_aio_smb2_write(connection_struct *conn,
 			"small for minimum aio_write of %u\n",
 			(unsigned int)in_data.length,
 			(unsigned int)min_aio_write_size ));
-		return NT_STATUS_RETRY;
-	}
-
-	/* Only do this on writes not using the write cache. */
-	if (lp_write_cache_size(SNUM(conn)) != 0) {
 		return NT_STATUS_RETRY;
 	}
 

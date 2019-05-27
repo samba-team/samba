@@ -30,9 +30,6 @@ struct smbd_dmapi_context;
 extern struct smbd_dmapi_context *dmapi_ctx;
 #endif
 
-/* how many write cache buffers have been allocated */
-extern unsigned int allocated_write_caches;
-
 /* A singleton cache to speed up searching by dev/inode. */
 struct fsp_singleton_cache {
 	files_struct *fsp;
