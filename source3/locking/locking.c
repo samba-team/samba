@@ -316,9 +316,12 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(10, ("do_unlock: unlock start=%ju len=%ju requested for %s file "
-		   "%s\n", (uintmax_t)offset, (uintmax_t)count,
-		   fsp_fnum_dbg(fsp), fsp_str_dbg(fsp)));
+	DBG_DEBUG("unlock start=%"PRIu64" len=%"PRIu64" requested for %s file "
+		  "%s\n",
+		  offset,
+		  count,
+		  fsp_fnum_dbg(fsp),
+		  fsp_str_dbg(fsp));
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {
