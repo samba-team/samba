@@ -350,15 +350,17 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 	if (isunlock) {
 		status = smbd_do_unlocking(
 			smb1req, fsp, in_lock_count, locks, WINDOWS_LOCK);
-		async = false;
-	} else {
-		status = smbd_do_locking(smb1req,
-					 fsp,
-					 timeout,
-					 in_lock_count,
-					 locks,
-					 &async);
+
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
 	}
+
+	status = smbd_do_locking(
+		smb1req, fsp, timeout, in_lock_count, locks, &async);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
 		       status = NT_STATUS_LOCK_NOT_GRANTED;
