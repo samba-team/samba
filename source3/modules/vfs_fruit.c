@@ -367,6 +367,9 @@ typedef enum {ADOUBLE_META, ADOUBLE_RSRC} adouble_type_t;
 #define AD_XATTR_HDR_SIZE     36
 #define AD_XATTR_MAX_HDR_SIZE 65536
 
+#define AD_CONV_WIPE_BLANK	(1<<0)
+#define AD_CONV_DELETE		(1<<1)
+
 /*
  * Both struct ad_xattr_header and struct ad_xattr_entry describe the in memory
  * representation as well as the on-disk format.
@@ -1338,9 +1341,9 @@ static bool ad_convert_truncate(vfs_handle_struct *handle,
 
 static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
 				   struct adouble *ad,
+				   uint32_t flags,
 				   bool *blank)
 {
-	struct fruit_config_data *config = NULL;
 	size_t rforklen = sizeof(empty_resourcefork);
 	char buf[rforklen];
 	ssize_t nread;
@@ -1350,10 +1353,7 @@ static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
 
 	*blank = false;
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return false);
-
-	if (!config->wipe_intentionally_left_blank_rfork) {
+	if (!(flags & AD_CONV_WIPE_BLANK)) {
 		return true;
 	}
 
@@ -1391,9 +1391,9 @@ static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
 
 static bool ad_convert_delete_adfile(vfs_handle_struct *handle,
 				     struct adouble *ad,
-				     const struct smb_filename *smb_fname)
+				     const struct smb_filename *smb_fname,
+				     uint32_t flags)
 {
-	struct fruit_config_data *config = NULL;
 	struct smb_filename *ad_name = NULL;
 	int rc;
 
@@ -1401,10 +1401,7 @@ static bool ad_convert_delete_adfile(vfs_handle_struct *handle,
 		return true;
 	}
 
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return false);
-
-	if (!config->delete_empty_adfiles) {
+	if (!(flags & AD_CONV_DELETE)) {
 		return true;
 	}
 
@@ -1437,7 +1434,8 @@ static bool ad_convert_delete_adfile(vfs_handle_struct *handle,
  * otherwise
  **/
 static int ad_convert(struct vfs_handle_struct *handle,
-		      const struct smb_filename *smb_fname)
+		      const struct smb_filename *smb_fname,
+		      uint32_t flags)
 {
 	struct adouble *ad = NULL;
 	bool ok;
@@ -1456,7 +1454,7 @@ static int ad_convert(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
-	ok = ad_convert_blank_rfork(handle, ad, &blank);
+	ok = ad_convert_blank_rfork(handle, ad, flags, &blank);
 	if (!ok) {
 		ret = -1;
 		goto done;
@@ -1478,7 +1476,7 @@ static int ad_convert(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
-	ok = ad_convert_delete_adfile(handle, ad, smb_fname);
+	ok = ad_convert_delete_adfile(handle, ad, smb_fname, flags);
 	if (!ok) {
 		ret = -1;
 		goto done;
@@ -6014,7 +6012,16 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 				return NT_STATUS_UNSUCCESSFUL);
 
 	if (is_apple_stream(smb_fname) && !internal_open) {
-		ret = ad_convert(handle, smb_fname);
+		uint32_t conv_flags  = 0;
+
+		if (config->wipe_intentionally_left_blank_rfork) {
+			conv_flags |= AD_CONV_WIPE_BLANK;
+		}
+		if (config->delete_empty_adfiles) {
+			conv_flags |= AD_CONV_DELETE;
+		}
+
+		ret = ad_convert(handle, smb_fname, conv_flags);
 		if (ret != 0) {
 			DBG_ERR("ad_convert() failed\n");
 			return NT_STATUS_UNSUCCESSFUL;
@@ -6104,6 +6111,7 @@ static NTSTATUS fruit_readdir_attr(struct vfs_handle_struct *handle,
 {
 	struct fruit_config_data *config = NULL;
 	struct readdir_attr_data *attr_data;
+	uint32_t conv_flags  = 0;
 	NTSTATUS status;
 	int ret;
 
@@ -6117,7 +6125,14 @@ static NTSTATUS fruit_readdir_attr(struct vfs_handle_struct *handle,
 
 	DEBUG(10, ("fruit_readdir_attr %s\n", fname->base_name));
 
-	ret = ad_convert(handle, fname);
+	if (config->wipe_intentionally_left_blank_rfork) {
+		conv_flags |= AD_CONV_WIPE_BLANK;
+	}
+	if (config->delete_empty_adfiles) {
+		conv_flags |= AD_CONV_DELETE;
+	}
+
+	ret = ad_convert(handle, fname, conv_flags);
 	if (ret != 0) {
 		DBG_ERR("ad_convert() failed\n");
 		return NT_STATUS_UNSUCCESSFUL;
