@@ -8176,8 +8176,8 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 			if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
 				/* Windows internal resolution for blocking locks seems
 				   to be about 200ms... Don't wait for less than that. JRA. */
-				if (timeout != -1 && timeout < lp_lock_spin_time()) {
-					timeout = lp_lock_spin_time();
+				if (timeout != -1) {
+					timeout = MAX(timeout, lp_lock_spin_time());
 				}
 				defer_lock = true;
 			}
