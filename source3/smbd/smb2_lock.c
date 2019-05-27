@@ -335,13 +335,13 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 			locks[i].brltype = UNLOCK_LOCK;
 		}
 
-		DEBUG(10,("smbd_smb2_lock_send: index %d offset=%llu, count=%llu, "
-			"smblctx = %llu type %d\n",
-			i,
-			(unsigned long long)locks[i].offset,
-			(unsigned long long)locks[i].count,
-			(unsigned long long)locks[i].smblctx,
-			(int)locks[i].brltype ));
+		DBG_DEBUG("index %"PRIu16" offset=%"PRIu64", count=%"PRIu64", "
+			  "smblctx = %"PRIu64" type %d\n",
+			  i,
+			  locks[i].offset,
+			  locks[i].count,
+			  locks[i].smblctx,
+			  (int)locks[i].brltype);
 	}
 
 	state->locks = locks;
