@@ -571,7 +571,7 @@ static bool test_async(struct torture_context *tctx,
 		       "lock cancel was not immediate (%s)\n", __location__));
 
 	/* MS-CIFS (2.2.4.32.1) states that a cancel is honored if and only
-	 * if the lock vector contains one entry. When given mutliple cancel
+	 * if the lock vector contains one entry. When given multiple cancel
 	 * requests in a single PDU we expect the server to return an
 	 * error. Samba4 handles this correctly. Windows servers seem to
 	 * accept the request but only cancel the first lock.  Samba3
