@@ -107,22 +107,12 @@ def transfer_dns_role(outf, sambaopts, credopts, role, samdb):
 
         m = ldb.Message()
         m.dn = ldb.Dn(samdb, role_object)
-        m["fSMORoleOwner"] = ldb.MessageElement(master_owner,
-                                                ldb.FLAG_MOD_DELETE,
-                                                "fSMORoleOwner")
-
-        try:
-            samdb.modify(m)
-        except LdbError as e4:
-            (num, msg) = e4.args
-            raise CommandError("Failed to delete role '%s': %s" %
-                               (role, msg))
-
-        m = ldb.Message()
-        m.dn = ldb.Dn(samdb, role_object)
-        m["fSMORoleOwner"]= ldb.MessageElement(new_owner,
-                                               ldb.FLAG_MOD_ADD,
-                                               "fSMORoleOwner")
+        m["fSMORoleOwner_Del"] = ldb.MessageElement(master_owner,
+                                                    ldb.FLAG_MOD_DELETE,
+                                                    "fSMORoleOwner")
+        m["fSMORoleOwner_Add"] = ldb.MessageElement(new_owner,
+                                                    ldb.FLAG_MOD_ADD,
+                                                    "fSMORoleOwner")
         try:
             samdb.modify(m)
         except LdbError as e5:
