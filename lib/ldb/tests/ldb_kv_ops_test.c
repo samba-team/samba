@@ -203,6 +203,17 @@ static int parse(struct ldb_val key,
 }
 
 /*
+ * Parse function that just returns the int we pass it.
+ */
+static int parse_return(struct ldb_val key,
+		        struct ldb_val data,
+		        void *private_data)
+{
+	int *rcode = private_data;
+	return *rcode;
+}
+
+/*
  * Test that data can be written to the kv store and be read back.
  */
 static void test_add_get(void **state)
@@ -224,6 +235,7 @@ static void test_add_get(void **state)
 	};
 
 	struct ldb_val read;
+	int rcode;
 
 	int flags = 0;
 	TALLOC_CTX *tmp_ctx;
@@ -260,6 +272,17 @@ static void test_add_get(void **state)
 
 	assert_int_equal(sizeof(value), read.length);
 	assert_memory_equal(value, read.data, sizeof(value));
+
+	/*
+	 * Now check that the error code we return in the
+	 * parse function is returned by fetch_and_parse.
+	 */
+	for (rcode=0; rcode<50; rcode++) {
+		ret = ldb_kv->kv_ops->fetch_and_parse(ldb_kv, key,
+						      parse_return,
+						      &rcode);
+		assert_int_equal(ret, rcode);
+	}
 
 	ret = ldb_kv->kv_ops->unlock_read(test_ctx->ldb->modules);
 	assert_int_equal(ret, 0);
