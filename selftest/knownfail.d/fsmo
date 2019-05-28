@@ -1,2 +1,0 @@
-^samba4.drs.fsmo.python.*.fsmo.DrsFsmoTestCase.test_DomainDnsZonesMasterTransfer
-^samba4.drs.fsmo.python.*.fsmo.DrsFsmoTestCase.test_ForestDnsZonesMasterTransfer
