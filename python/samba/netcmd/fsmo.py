@@ -23,6 +23,7 @@ import ldb
 from ldb import LdbError
 from samba.dcerpc import drsuapi, misc
 from samba.auth import system_session
+import samba.drs_utils
 from samba.netcmd import (
     Command,
     CommandError,
