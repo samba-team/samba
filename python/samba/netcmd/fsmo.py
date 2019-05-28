@@ -64,6 +64,8 @@ def transfer_dns_role(outf, sambaopts, credopts, role, samdb):
         forest_dn = samba.dn_from_dns_name(samdb.forest_dns_name())
         role_object = "CN=Infrastructure,DC=ForestDnsZones," + forest_dn
 
+    new_host_dns_name = samdb.host_dns_name()
+
     res = samdb.search(role_object,
                        attrs=["fSMORoleOwner"],
                        scope=ldb.SCOPE_BASE,
@@ -128,7 +130,7 @@ def transfer_dns_role(outf, sambaopts, credopts, role, samdb):
             raise CommandError("Failed to add role '%s': %s" % (role, msg))
 
         try:
-            connection = samba.drs_utils.drsuapi_connect(samdb.host_dns_name(),
+            connection = samba.drs_utils.drsuapi_connect(new_host_dns_name,
                                                          lp, creds)
         except samba.drs_utils.drsException as e:
             raise CommandError("Drsuapi Connect failed", e)
