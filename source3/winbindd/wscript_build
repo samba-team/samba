@@ -271,7 +271,6 @@ bld.SAMBA3_SUBSYSTEM('winbindd-lib',
                     SLCACHE
                     RPC_NDR_DSSETUP
                     RPC_NDR_WINBIND
-                    SRV_NDR_WINBIND
                     RPC_SAMR
                     RPC_LSARPC
                     RPC_SERVER

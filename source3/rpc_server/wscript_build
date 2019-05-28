@@ -41,13 +41,11 @@ bld.SAMBA3_SUBSYSTEM('RPC_MODULES',
 
 ### RPC_SERVICES
 bld.SAMBA3_SUBSYSTEM('RPC_DSSETUP',
-                    source='''dssetup/srv_dssetup_nt.c
-                    ../../librpc/gen_ndr/srv_dssetup.c''',
+                    source='''dssetup/srv_dssetup_nt.c''',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_EPMAPPER',
-                    source='''epmapper/srv_epmapper.c
-                    ../../librpc/gen_ndr/srv_epmapper.c''',
+                    source='''epmapper/srv_epmapper.c''',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_FSS_STATE',
@@ -55,51 +53,42 @@ bld.SAMBA3_SUBSYSTEM('RPC_FSS_STATE',
                     deps='samba-util NDR_FSRVP_STATE')
 
 bld.SAMBA3_SUBSYSTEM('RPC_FSS_AGENT',
-                    source='''fss/srv_fss_agent.c
-                    ../../librpc/gen_ndr/srv_fsrvp.c''',
+                    source='''fss/srv_fss_agent.c''',
                     deps='samba-util RPC_FSS_STATE')
 
 bld.SAMBA3_SUBSYSTEM('RPC_EVENTLOG',
                     source='''eventlog/srv_eventlog_nt.c
-                    eventlog/srv_eventlog_reg.c
-                    ../../librpc/gen_ndr/srv_eventlog.c''',
+                    eventlog/srv_eventlog_reg.c''',
                     deps='LIBEVENTLOG LIBCLI_WINREG_INTERNAL')
 
 bld.SAMBA3_SUBSYSTEM('RPC_INITSHUTDOWN',
-                    source='''initshutdown/srv_initshutdown_nt.c
-                    ../../librpc/gen_ndr/srv_initshutdown.c''',
+                    source='''initshutdown/srv_initshutdown_nt.c''',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_LSARPC',
-                    source='''lsa/srv_lsa_nt.c
-                    ../../librpc/gen_ndr/srv_lsa.c''',
+                    source='''lsa/srv_lsa_nt.c''',
                     deps='SRV_ACCESS_CHECK LIBLSA GNUTLS_HELPERS')
 
 bld.SAMBA3_SUBSYSTEM('RPC_NETDFS',
-                    source='''dfs/srv_dfs_nt.c
-                    ../../librpc/gen_ndr/srv_dfs.c''',
+                    source='''dfs/srv_dfs_nt.c''',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_NETLOGON',
-                     source='''netlogon/srv_netlog_nt.c
-                     ../../librpc/gen_ndr/srv_netlogon.c''',
+                     source='''netlogon/srv_netlog_nt.c''',
                     deps='LIBCLI_AUTH')
 
 bld.SAMBA3_SUBSYSTEM('RPC_NTSVCS',
-                    source='''ntsvcs/srv_ntsvcs_nt.c
-                    ../../librpc/gen_ndr/srv_ntsvcs.c''',
+                    source='''ntsvcs/srv_ntsvcs_nt.c''',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_RPCECHO',
-                    source='''echo/srv_echo_nt.c
-                    ../../librpc/gen_ndr/srv_echo.c''',
+                    source='''echo/srv_echo_nt.c''',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SAMR',
                     source='''samr/srv_samr_nt.c
                     samr/srv_samr_util.c
-                    samr/srv_samr_chgpasswd.c
-                    ../../librpc/gen_ndr/srv_samr.c''',
+                    samr/srv_samr_chgpasswd.c''',
                     deps='PLAINTEXT_AUTH SRV_ACCESS_CHECK')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SPOOLSS',
@@ -115,24 +104,20 @@ bld.SAMBA3_SUBSYSTEM('RPC_IREMOTEWINSPOOL',
                     deps='RPC_SPOOLSS')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SRVSVC',
-                    source='''srvsvc/srv_srvsvc_nt.c
-                    ../../librpc/gen_ndr/srv_srvsvc.c''',
+                    source='''srvsvc/srv_srvsvc_nt.c''',
                     deps='samba-util tdb')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SVCCTL',
                     source='''svcctl/srv_svcctl_nt.c
-                    svcctl/srv_svcctl_reg.c
-                    ../../librpc/gen_ndr/srv_svcctl.c''',
+                    svcctl/srv_svcctl_reg.c''',
                     deps='SERVICES LIBCLI_WINREG_INTERNAL')
 
 bld.SAMBA3_SUBSYSTEM('RPC_WINREG',
-                    source='''winreg/srv_winreg_nt.c
-                    ../../librpc/gen_ndr/srv_winreg.c''',
+                    source='''winreg/srv_winreg_nt.c''',
                     deps='REG_FULL REGFIO NDR_PERFCOUNT')
 
 bld.SAMBA3_SUBSYSTEM('RPC_WKSSVC',
-                    source='''wkssvc/srv_wkssvc_nt.c
-                    ../../librpc/gen_ndr/srv_wkssvc.c''',
+                    source='''wkssvc/srv_wkssvc_nt.c''',
                     deps='LIBNET')
 
 bld.SAMBA3_SUBSYSTEM('mdssvc',
@@ -145,7 +130,6 @@ rpc_mdssvc_sources = '''
                      mdssvc/mdssvc.c
                      mdssvc/mdssvc_noindex.c
                      mdssvc/srv_mdssvc_nt.c
-                     ../../librpc/gen_ndr/srv_mdssvc.c
                      '''
 rpc_mdssvc_deps = 'mdssvc samba-util '
 
