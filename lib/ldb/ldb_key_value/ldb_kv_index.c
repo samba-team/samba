@@ -924,7 +924,8 @@ static struct ldb_dn *ldb_kv_index_key(struct ldb_context *ldb,
 			v = *value;
 		} else {
 			ldb_attr_handler_t fn;
-			if (a->syntax->index_format_fn) {
+			if (a->syntax->index_format_fn &&
+			    ldb_kv->cache->GUID_index_attribute != NULL) {
 				fn = a->syntax->index_format_fn;
 			} else {
 				fn = a->syntax->canonicalise_fn;
