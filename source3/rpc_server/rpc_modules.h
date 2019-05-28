@@ -22,12 +22,9 @@
 #ifndef _RPC_MODULES_H
 #define _RPC_MODULES_H
 
-struct rpc_srv_callbacks;
-
 struct rpc_module_fns {
-	bool (*setup)(struct tevent_context *ev_ctx, struct messaging_context *msg_ctx);
-	NTSTATUS (*init)(const struct rpc_srv_callbacks *rpc_srv_cb);
-	NTSTATUS (*shutdown)(void);
+	bool (*setup)(struct tevent_context *ev_ctx,
+		      struct messaging_context *msg_ctx);
 };
 
 NTSTATUS register_rpc_module(struct rpc_module_fns *fns,
@@ -39,9 +36,4 @@ bool setup_rpc_modules(struct tevent_context *ev_ctx,
 bool setup_rpc_module(struct tevent_context *ev_ctx,
 		      struct messaging_context *msg_ctx,
 		      const char *name);
-
-bool init_rpc_module(const char *name,
-		     const struct rpc_srv_callbacks *rpc_srv_cb);
-
-bool shutdown_rpc_module(const char *name);
 #endif

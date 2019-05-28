@@ -72,8 +72,6 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 
 static struct rpc_module_fns rpc_module_mdssvc_fns = {
 	.setup = rpc_setup_mdssvc,
-	.init = NULL,
-	.shutdown = NULL
 };
 
 static_decl_rpc;
