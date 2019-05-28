@@ -308,8 +308,6 @@ static NTSTATUS make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 	}
 
 	context_fns->next = context_fns->prev = NULL;
-	context_fns->n_cmds = rpc_srv_get_pipe_num_cmds(syntax);
-	context_fns->cmds = rpc_srv_get_pipe_cmds(syntax);
 	context_fns->context_id = 0;
 	context_fns->syntax = *syntax;
 
