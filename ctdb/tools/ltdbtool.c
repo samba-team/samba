@@ -96,7 +96,7 @@ static int usage(const char* cmd)
 static int
 ltdb_traverse(TDB_CONTEXT *tdb, int (*fn)(TDB_CONTEXT*, TDB_DATA, TDB_DATA,
 					  struct ctdb_ltdb_header*, void *),
-	      void *state, int hsize, bool skip_empty);
+	      void *state, size_t hsize, bool skip_empty);
 
 struct write_record_ctx {
 	TDB_CONTEXT* tdb;
@@ -125,7 +125,10 @@ static void dump_header_nop(struct dump_record_ctx* c,
 			    struct ctdb_ltdb_header* h)
 {}
 
-static int dump_db(const char* iname, FILE* ofile, int hsize, bool dump_header,
+static int dump_db(const char* iname,
+		   FILE* ofile,
+		   size_t hsize,
+		   bool dump_header,
 		   bool empty)
 {
 	int ret = -1;
@@ -307,12 +310,12 @@ ltdb_traverse_fn(TDB_CONTEXT* tdb, TDB_DATA key, TDB_DATA val,
 static int ltdb_traverse(TDB_CONTEXT *tdb,
 			 int (*fn)(TDB_CONTEXT*, TDB_DATA, TDB_DATA,
 				   struct ctdb_ltdb_header*, void *),
-			 void *state, int hsize, bool skip_empty)
+			 void *state, size_t hsize, bool skip_empty)
 {
 	struct ltdb_traverse_ctx ctx = {
 		.fn = fn,
 		.state = state,
-		.hsize = hsize < 0 ? sizeof(struct ctdb_ltdb_header) : hsize,
+		.hsize = hsize,
 		.skip_empty = skip_empty,
 		.nempty = 0,
 	};
