@@ -21,7 +21,8 @@
 
 #include "includes.h"
 #include "ntdomain.h"
-#include "../librpc/gen_ndr/srv_winspool.h"
+#include "librpc/gen_ndr/ndr_winspool.h"
+#include "librpc/gen_ndr/ndr_winspool_scompat.h"
 
 /****************************************************************
  _winspool_AsyncOpenPrinter

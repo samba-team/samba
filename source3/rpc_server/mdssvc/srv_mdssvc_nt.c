@@ -25,7 +25,6 @@
 #include "rpc_server/rpc_config.h"
 #include "rpc_server/rpc_modules.h"
 #include "rpc_server/mdssvc/srv_mdssvc_nt.h"
-#include "../librpc/gen_ndr/srv_mdssvc.h"
 #include "libcli/security/security_token.h"
 #include "libcli/security/dom_sid.h"
 #include "gen_ndr/auth.h"
@@ -33,6 +32,7 @@
 #include "smbd/globals.h"
 
 #include "librpc/rpc/dcesrv_core.h"
+#include "librpc/gen_ndr/ndr_mdssvc.h"
 #include "librpc/gen_ndr/ndr_mdssvc_scompat.h"
 
 #undef DBGC_CLASS

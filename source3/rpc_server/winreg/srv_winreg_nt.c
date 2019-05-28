@@ -22,7 +22,8 @@
 
 #include "includes.h"
 #include "ntdomain.h"
-#include "../librpc/gen_ndr/srv_winreg.h"
+#include "librpc/gen_ndr/ndr_winreg.h"
+#include "librpc/gen_ndr/ndr_winreg_scompat.h"
 #include "registry.h"
 #include "registry/reg_api.h"
 #include "registry/reg_perfcount.h"

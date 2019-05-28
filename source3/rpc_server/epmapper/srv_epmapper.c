@@ -23,11 +23,11 @@
 #include "ntdomain.h"
 #include "../libcli/security/security.h"
 #include "../lib/tsocket/tsocket.h"
-#include "librpc/gen_ndr/srv_epmapper.h"
 #include "srv_epmapper.h"
 #include "auth.h"
 
 #include "librpc/rpc/dcesrv_core.h"
+#include "librpc/gen_ndr/ndr_epmapper.h"
 #include "librpc/gen_ndr/ndr_epmapper_scompat.h"
 #include "rpc_server/rpc_server.h"
 

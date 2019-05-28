@@ -25,7 +25,6 @@
 #include "messages.h"
 
 #include "librpc/rpc/dcerpc_ep.h"
-#include "../librpc/gen_ndr/srv_epmapper.h"
 
 #include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_epmapper_scompat.h"

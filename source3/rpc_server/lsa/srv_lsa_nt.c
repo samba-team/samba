@@ -31,7 +31,8 @@
 
 #include "includes.h"
 #include "ntdomain.h"
-#include "../librpc/gen_ndr/srv_lsa.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/gen_ndr/ndr_lsa_scompat.h"
 #include "secrets.h"
 #include "../librpc/gen_ndr/netlogon.h"
 #include "rpc_client/init_lsa.h"

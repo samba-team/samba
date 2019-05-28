@@ -24,7 +24,8 @@
 
 #include "includes.h"
 #include "ntdomain.h"
-#include "../librpc/gen_ndr/srv_dssetup.h"
+#include "librpc/gen_ndr/ndr_dssetup.h"
+#include "librpc/gen_ndr/ndr_dssetup_scompat.h"
 #include "secrets.h"
 
 #undef DBGC_CLASS

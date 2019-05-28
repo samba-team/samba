@@ -26,7 +26,6 @@
 #include "messages.h"
 
 #include "librpc/rpc/dcerpc_ep.h"
-#include "../librpc/gen_ndr/srv_fsrvp.h"
 
 #include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_fsrvp_scompat.h"

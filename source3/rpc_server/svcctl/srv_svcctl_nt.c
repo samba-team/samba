@@ -25,7 +25,6 @@
 #include "includes.h"
 #include "system/passwd.h" /* uid_wrapper */
 #include "ntdomain.h"
-#include "../librpc/gen_ndr/srv_svcctl.h"
 #include "../libcli/security/security.h"
 #include "../librpc/gen_ndr/ndr_security.h"
 #include "services/services.h"
@@ -35,6 +34,7 @@
 
 #include "rpc_server/rpc_server.h"
 #include "librpc/rpc/dcesrv_core.h"
+#include "librpc/gen_ndr/ndr_svcctl.h"
 #include "librpc/gen_ndr/ndr_svcctl_scompat.h"
 #include "srv_svcctl_reg.h"
 

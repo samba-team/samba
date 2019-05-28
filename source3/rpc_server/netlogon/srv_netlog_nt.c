@@ -28,9 +28,10 @@
 #include "system/passwd.h" /* uid_wrapper */
 #include "ntdomain.h"
 #include "../libcli/auth/schannel.h"
-#include "../librpc/gen_ndr/srv_netlogon.h"
-#include "../librpc/gen_ndr/ndr_samr_c.h"
-#include "../librpc/gen_ndr/ndr_lsa_c.h"
+#include "librpc/gen_ndr/ndr_netlogon.h"
+#include "librpc/gen_ndr/ndr_netlogon_scompat.h"
+#include "librpc/gen_ndr/ndr_samr_c.h"
+#include "librpc/gen_ndr/ndr_lsa_c.h"
 #include "rpc_client/cli_lsarpc.h"
 #include "rpc_client/init_lsa.h"
 #include "rpc_client/init_samr.h"

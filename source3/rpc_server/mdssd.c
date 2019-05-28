@@ -37,7 +37,6 @@
 #include "rpc_server/rpc_sock_helper.h"
 #include "rpc_server/rpc_modules.h"
 
-#include "librpc/gen_ndr/srv_mdssvc.h"
 #include "rpc_server/mdssvc/srv_mdssvc_nt.h"
 #include "rpc_server/mdssd.h"
 

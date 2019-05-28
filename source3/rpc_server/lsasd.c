@@ -37,9 +37,6 @@
 #include "rpc_server/rpc_sock_helper.h"
 #include "rpc_server/rpc_service_setup.h"
 
-#include "librpc/gen_ndr/srv_lsa.h"
-#include "librpc/gen_ndr/srv_samr.h"
-#include "librpc/gen_ndr/srv_netlogon.h"
 #include "rpc_server/lsasd.h"
 
 #include "librpc/gen_ndr/ndr_lsa_scompat.h"

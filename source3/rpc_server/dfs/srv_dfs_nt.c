@@ -23,7 +23,8 @@
 
 #include "includes.h"
 #include "ntdomain.h"
-#include "../librpc/gen_ndr/srv_dfs.h"
+#include "librpc/gen_ndr/ndr_dfs.h"
+#include "librpc/gen_ndr/ndr_dfs_scompat.h"
 #include "msdfs.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"

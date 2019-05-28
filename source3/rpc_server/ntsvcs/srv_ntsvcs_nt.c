@@ -21,7 +21,8 @@
 
 #include "includes.h"
 #include "ntdomain.h"
-#include "../librpc/gen_ndr/srv_ntsvcs.h"
+#include "librpc/gen_ndr/ndr_ntsvcs.h"
+#include "librpc/gen_ndr/ndr_ntsvcs_scompat.h"
 #include "services/svc_winreg_glue.h"
 #include "../libcli/registry/util_reg.h"
 

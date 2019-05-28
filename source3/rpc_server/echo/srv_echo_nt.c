@@ -23,7 +23,8 @@
 
 #include "includes.h"
 #include "ntdomain.h"
-#include "../librpc/gen_ndr/srv_echo.h"
+#include "librpc/gen_ndr/ndr_echo.h"
+#include "librpc/gen_ndr/ndr_echo_scompat.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

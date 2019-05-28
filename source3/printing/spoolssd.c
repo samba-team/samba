@@ -27,8 +27,6 @@
 #include "printing/load.h"
 #include "printing/spoolssd.h"
 #include "ntdomain.h"
-#include "librpc/gen_ndr/srv_winreg.h"
-#include "librpc/gen_ndr/srv_spoolss.h"
 #include "librpc/gen_ndr/ndr_winreg_scompat.h"
 #include "librpc/gen_ndr/ndr_spoolss_scompat.h"
 #include "rpc_server/rpc_server.h"
