@@ -60,8 +60,6 @@ class DrsFsmoTestCase(drs_base.DrsBaseTestCase):
         super(DrsFsmoTestCase, self).tearDown()
 
     def _net_fsmo_role_transfer(self, DC, role, noop=False):
-        # find out where is samba-tool command
-        net_cmd = os.path.abspath("./bin/samba-tool")
         # make command line credentials string
         ccache_name = self.get_creds_ccache_name()
         cmd_line_auth = "--krb5-ccache=%s" % ccache_name
