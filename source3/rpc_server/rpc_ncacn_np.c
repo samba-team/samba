@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "rpc_client/cli_pipe.h"
-#include "rpc_server/srv_pipe_internal.h"
 #include "rpc_dce.h"
 #include "../libcli/named_pipe_auth/npa_tstream.h"
 #include "rpc_server/rpc_ncacn_np.h"

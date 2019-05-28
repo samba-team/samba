@@ -26,62 +26,10 @@
 
 #include "librpc/rpc/dcerpc.h"
 
-typedef struct _output_data {
-	/*
-	 * Raw RPC output data. This does not include RPC headers or footers.
-	 */
-	DATA_BLOB rdata;
-
-	/* The amount of data sent from the current rdata struct. */
-	uint32_t data_sent_length;
-
-	/*
-	 * The current fragment being returned. This inclues
-	 * headers, data and authentication footer.
-	 */
-	DATA_BLOB frag;
-
-	/* The amount of data sent from the current PDU. */
-	uint32_t current_pdu_sent;
-} output_data;
-
-typedef struct _input_data {
-	/*
-	 * This is the current incoming pdu. The data here
-	 * is collected via multiple writes until a complete
-	 * pdu is seen, then the data is copied into the in_data
-	 * structure. The maximum size of this is 0x1630 (RPC_MAX_PDU_FRAG_LEN).
-	 * If length is zero, then we are at the start of a new
-	 * pdu.
-	 */
-	DATA_BLOB pdu;
-
-	/*
-	 * The amount of data needed to complete the in_pdu.
-	 * If this is zero, then we are at the start of a new
-	 * pdu.
-	 */
-	uint32_t pdu_needed_len;
-
-	/*
-	 * This is the collection of input data with all
-	 * the rpc headers and auth footers removed.
-	 * The maximum length of this (1Mb) is strictly enforced.
-	 */
-	DATA_BLOB data;
-
-} input_data;
-
 struct dcesrv_ep_entry_list;
 struct tsocket_address;
 struct handle_list;
 struct pipes_struct;
-
-struct api_struct {
-	const char *name;
-	uint8_t opnum;
-	bool (*fn) (struct pipes_struct *);
-};
 
 struct pipe_rpc_fns {
 
@@ -141,18 +89,6 @@ struct pipes_struct {
 	 * Set to RPC_BIG_ENDIAN when dealing with big-endian PDU's
 	 */
 	bool endian;
-
-	/*
-	 * Struct to deal with multiple pdu inputs.
-	 */
-
-	input_data in_data;
-
-	/*
-	 * Struct to deal with multiple pdu outputs.
-	 */
-
-	output_data out_data;
 
 	/* This context is used for PDU data and is freed between each pdu.
 		Don't use for pipe state storage. */

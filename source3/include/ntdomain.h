@@ -32,6 +32,4 @@ struct gse_context;
 
 #include "rpc_server/rpc_pipes.h"
 
-#include "rpc_server/srv_pipe_register.h"
-
 #endif /* _NT_DOMAIN_H */

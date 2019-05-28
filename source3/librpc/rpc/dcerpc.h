@@ -30,8 +30,6 @@
 #include "../librpc/ndr/libndr.h"
 #include "../librpc/rpc/rpc_common.h"
 
-#define SMB_RPC_INTERFACE_VERSION 1
-
 struct NL_AUTH_MESSAGE;
 struct gensec_security;
 

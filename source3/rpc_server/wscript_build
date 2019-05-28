@@ -3,7 +3,7 @@
 ### RPC_SERVER
 bld.SAMBA3_SUBSYSTEM('rpc',
                     source='',
-                    deps='RPC_PIPE_REGISTER')
+                    deps='dcerpc-server-core')
 
 bld.SAMBA3_SUBSYSTEM('RPC_CONFIG',
                     source='rpc_config.c',
@@ -11,14 +11,10 @@ bld.SAMBA3_SUBSYSTEM('RPC_CONFIG',
 
 bld.SAMBA3_SUBSYSTEM('RPC_NCACN_NP',
                     source='rpc_ncacn_np.c rpc_handles.c rpc_contexts.c',
-                    deps='RPC_CONFIG auth common_auth RPC_PIPE_REGISTER npa_tstream')
+                    deps='RPC_CONFIG auth common_auth npa_tstream')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER_LOOP',
                     source='rpc_server.c',
-                    deps='samba-util')
-
-bld.SAMBA3_SUBSYSTEM('RPC_PIPE_REGISTER',
-                    source='srv_pipe_register.c',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('SRV_ACCESS_CHECK',
