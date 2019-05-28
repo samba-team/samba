@@ -44,13 +44,14 @@ int sys_popenv(char * const argl[])
 	int parent_end, child_end;
 	int pipe_fds[2];
 	popen_list *entry = NULL;
-	const char *command = argl[0];
+	const char *command = NULL;
 	int ret;
 
 	if (argl == NULL) {
 		errno = EINVAL;
 		return -1;
 	}
+	command = argl[0];
 
 	if (!*command) {
 		errno = EINVAL;
