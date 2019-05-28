@@ -269,7 +269,7 @@ struct ltdb_traverse_ctx {
 	void* state;
 	size_t hsize;
 	bool skip_empty;
-	unsigned nempty;
+	int nempty;
 };
 
 static int
