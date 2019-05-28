@@ -297,61 +297,46 @@ static NTSTATUS make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS rpcint_dispatch(struct pipes_struct *p,
+				const struct ndr_interface_table *ndr_table,
 				TALLOC_CTX *mem_ctx,
 				uint32_t opnum,
 				const DATA_BLOB *in_data,
 				DATA_BLOB *out_data)
 {
-	struct pipe_rpc_fns *fns = find_pipe_fns_by_context(p->contexts, 0);
-	uint32_t num_cmds = fns->n_cmds;
-	const struct api_struct *cmds = fns->cmds;
-	uint32_t i;
+	NTSTATUS status;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
+	struct dcesrv_interface iface;
+	const struct ndr_syntax_id *abstract_syntax = &ndr_table->syntax_id;
 	bool ok;
 
-	/* set opnum */
-	p->opnum = opnum;
-
-	for (i = 0; i < num_cmds; i++) {
-		if (cmds[i].opnum == opnum && cmds[i].fn != NULL) {
-			break;
-		}
+	ep_server = dcesrv_ep_server_byname(ndr_table->name);
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get DCE/RPC endpoint server '%s'\n",
+			ndr_table->name);
+		return NT_STATUS_NOT_FOUND;
 	}
 
-	if (i == num_cmds) {
-		return NT_STATUS_RPC_PROCNUM_OUT_OF_RANGE;
-	}
-
-	p->in_data.data = *in_data;
-	p->out_data.rdata = data_blob_null;
-
-	ok = cmds[i].fn(p);
-	p->in_data.data = data_blob_null;
+	ok = ep_server->interface_by_uuid(&iface, &abstract_syntax->uuid,
+					  abstract_syntax->if_version);
 	if (!ok) {
-		data_blob_free(&p->out_data.rdata);
-		talloc_free_children(p->mem_ctx);
-		return NT_STATUS_RPC_CALL_FAILED;
+		DBG_ERR("Failed to get DCE/RPC interface\n");
+		return NT_STATUS_NOT_FOUND;
 	}
 
-	if (p->fault_state) {
-		NTSTATUS status;
-
-		status = NT_STATUS(p->fault_state);
-		p->fault_state = 0;
-		data_blob_free(&p->out_data.rdata);
-		talloc_free_children(p->mem_ctx);
+	status = iface.local(p, opnum, mem_ctx, in_data, out_data);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("DCE/RPC fault in call %s:%02X - %s\n",
+			iface.name, opnum,
+			dcerpc_errstr(mem_ctx, p->fault_state));
 		return status;
 	}
 
-	*out_data = p->out_data.rdata;
-	talloc_steal(mem_ctx, out_data->data);
-	p->out_data.rdata = data_blob_null;
-
-	talloc_free_children(p->mem_ctx);
 	return NT_STATUS_OK;
 }
 
 struct rpcint_bh_state {
 	struct pipes_struct *p;
+	const struct ndr_interface_table *ndr_table;
 };
 
 static bool rpcint_bh_is_connected(struct dcerpc_binding_handle *h)
@@ -411,7 +396,10 @@ static struct tevent_req *rpcint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	}
 
 	/* TODO: allow async */
-	status = rpcint_dispatch(hs->p, state, opnum,
+	status = rpcint_dispatch(hs->p,
+				 hs->ndr_table,
+				 state,
+				 opnum,
 				 &state->in_data,
 				 &state->out_data);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -566,6 +554,8 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
 	if (h == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	hs->ndr_table = ndr_table;
 
 	status = make_internal_rpc_pipe_p(hs,
 					  abstract_syntax,
