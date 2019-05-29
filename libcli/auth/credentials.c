@@ -702,13 +702,13 @@ NTSTATUS netlogon_creds_encrypt_samlogon_validation(struct netlogon_creds_Creden
 							true);
 }
 
-static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
-						enum netr_LogonInfoClass level,
-						union netr_LogonLevel *logon,
-						bool do_encrypt)
+static NTSTATUS netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
+						    enum netr_LogonInfoClass level,
+						    union netr_LogonLevel *logon,
+						    bool do_encrypt)
 {
 	if (logon == NULL) {
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	switch (level) {
@@ -717,7 +717,7 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 	case NetlogonServiceInformation:
 	case NetlogonServiceTransitiveInformation:
 		if (logon->password == NULL) {
-			return;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
@@ -780,7 +780,7 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 
 	case NetlogonGenericInformation:
 		if (logon->generic == NULL) {
-			return;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
@@ -802,24 +802,22 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 		}
 		break;
 	}
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS netlogon_creds_decrypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
 					       enum netr_LogonInfoClass level,
 					       union netr_LogonLevel *logon)
 {
-	netlogon_creds_crypt_samlogon_logon(creds, level, logon, false);
-
-	return NT_STATUS_OK;
+	return netlogon_creds_crypt_samlogon_logon(creds, level, logon, false);
 }
 
 NTSTATUS netlogon_creds_encrypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
 					       enum netr_LogonInfoClass level,
 					       union netr_LogonLevel *logon)
 {
-	netlogon_creds_crypt_samlogon_logon(creds, level, logon, true);
-
-	return NT_STATUS_OK;
+	return netlogon_creds_crypt_samlogon_logon(creds, level, logon, true);
 }
 
 union netr_LogonLevel *netlogon_creds_shallow_copy_logon(TALLOC_CTX *mem_ctx,
