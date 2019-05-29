@@ -2531,9 +2531,13 @@ static void netlogon_creds_cli_LogonSamLogon_done(struct tevent_req *subreq)
 			return;
 		}
 
-		netlogon_creds_decrypt_samlogon_validation(state->ro_creds,
-							state->validation_level,
-							state->validation);
+		status = netlogon_creds_decrypt_samlogon_validation(state->ro_creds,
+								    state->validation_level,
+								    state->validation);
+		if (tevent_req_nterror(req, status)) {
+			netlogon_creds_cli_LogonSamLogon_cleanup(req, status);
+			return;
+		}
 
 		tevent_req_done(req);
 		return;
@@ -2601,9 +2605,13 @@ static void netlogon_creds_cli_LogonSamLogon_done(struct tevent_req *subreq)
 		return;
 	}
 
-	netlogon_creds_decrypt_samlogon_validation(&state->tmp_creds,
-						state->validation_level,
-						state->validation);
+	status = netlogon_creds_decrypt_samlogon_validation(&state->tmp_creds,
+							    state->validation_level,
+							    state->validation);
+	if (tevent_req_nterror(req, result)) {
+		netlogon_creds_cli_LogonSamLogon_cleanup(req, result);
+		return;
+	}
 
 	tevent_req_done(req);
 }

@@ -176,9 +176,15 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		validation_level = r->in.validation_level;
 
-		netlogon_creds_decrypt_samlogon_validation(samlogon_state->creds,
-							   validation_level,
-							   r->out.validation);
+		status = netlogon_creds_decrypt_samlogon_validation(samlogon_state->creds,
+								    validation_level,
+								    r->out.validation);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (error_string) {
+				*error_string = strdup(nt_errstr(status));
+			}
+			return status;
+		}
 
 		switch (validation_level) {
 		case 2:
@@ -210,9 +216,15 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		validation_level = r_ex->in.validation_level;
 
-		netlogon_creds_decrypt_samlogon_validation(samlogon_state->creds,
-							   validation_level,
-							   r_ex->out.validation);
+		status = netlogon_creds_decrypt_samlogon_validation(samlogon_state->creds,
+								    validation_level,
+								    r_ex->out.validation);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (error_string) {
+				*error_string = strdup(nt_errstr(status));
+			}
+			return status;
+		}
 
 		switch (validation_level) {
 		case 2:
@@ -252,9 +264,15 @@ static NTSTATUS check_samlogon(struct samlogon_state *samlogon_state,
 
 		validation_level = r_flags->in.validation_level;
 
-		netlogon_creds_decrypt_samlogon_validation(samlogon_state->creds,
-							   validation_level,
-							   r_flags->out.validation);
+		status = netlogon_creds_decrypt_samlogon_validation(samlogon_state->creds,
+								    validation_level,
+								    r_flags->out.validation);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (error_string) {
+				*error_string = strdup(nt_errstr(status));
+			}
+			return status;
+		}
 
 		switch (validation_level) {
 		case 2:
