@@ -22,6 +22,7 @@
 #include "../lib/crypto/arcfour.h"
 #include "rpc_client/init_samr.h"
 
+#include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -29,9 +30,9 @@
  inits a samr_CryptPasswordEx structure
  *************************************************************************/
 
-void init_samr_CryptPasswordEx(const char *pwd,
-			       DATA_BLOB *session_key,
-			       struct samr_CryptPasswordEx *pwd_buf)
+NTSTATUS init_samr_CryptPasswordEx(const char *pwd,
+				   DATA_BLOB *session_key,
+				   struct samr_CryptPasswordEx *pwd_buf)
 {
 	/* samr_CryptPasswordEx */
 
@@ -39,42 +40,52 @@ void init_samr_CryptPasswordEx(const char *pwd,
 	gnutls_hash_hd_t hash_hnd = NULL;
 	uint8_t confounder[16];
 	DATA_BLOB confounded_session_key = data_blob(NULL, 16);
+	NTSTATUS status;
+	bool ok;
 	int rc;
 
-	encode_pw_buffer(pwbuf, pwd, STR_UNICODE);
+	ok = encode_pw_buffer(pwbuf, pwd, STR_UNICODE);
+	if (!ok) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
+	}
 
 	generate_random_buffer((uint8_t *)confounder, 16);
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 
 	rc = gnutls_hash(hash_hnd, confounder, 16);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 	rc = gnutls_hash(hash_hnd, session_key->data, session_key->length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 
 	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
 
 	arcfour_crypt_blob(pwbuf, 516, &confounded_session_key);
-	ZERO_ARRAY_LEN(confounded_session_key.data,
-		       confounded_session_key.length);
-	data_blob_free(&confounded_session_key);
+	data_blob_clear_free(&confounded_session_key);
 
 	memcpy(&pwbuf[516], confounder, 16);
 	ZERO_ARRAY(confounder);
 
 	memcpy(pwd_buf->data, pwbuf, sizeof(pwbuf));
 	ZERO_ARRAY(pwbuf);
+
+	status = NT_STATUS_OK;
 out:
-	return;
+	data_blob_clear_free(&confounded_session_key);
+	return status;
 }
 
 /*************************************************************************

@@ -1226,9 +1226,12 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 
 			infolevel = UserInternal5InformationNew;
 
-			init_samr_CryptPasswordEx(cr->creds.password,
-						  &session_key,
-						  &info26.password);
+			status = init_samr_CryptPasswordEx(cr->creds.password,
+							   &session_key,
+							   &info26.password);
+			if (!NT_STATUS_IS_OK(status)) {
+				goto out;
+			}
 
 			info26.password_expired = PASS_DONT_CHANGE_AT_NEXT_LOGON;
 			info->info26 = info26;

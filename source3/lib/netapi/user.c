@@ -313,9 +313,12 @@ static NTSTATUS set_user_info_USER_INFO_X(TALLOC_CTX *ctx,
 
 		user_info.info25.info = info21;
 
-		init_samr_CryptPasswordEx(uX->usriX_password,
-					  session_key,
-					  &user_info.info25.password);
+		status = init_samr_CryptPasswordEx(uX->usriX_password,
+						   session_key,
+						   &user_info.info25.password);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 
 		status = dcerpc_samr_SetUserInfo2(b, talloc_tos(),
 						  user_handle,
