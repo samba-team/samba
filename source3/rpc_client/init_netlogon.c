@@ -31,13 +31,19 @@ void init_netr_CryptPassword(const char *pwd,
 			     struct netr_CryptPassword *pwd_buf)
 {
 	struct samr_CryptPassword password_buf;
+	NTSTATUS status;
 
 	encode_pw_buffer(password_buf.data, pwd, STR_UNICODE);
 
 	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		netlogon_creds_aes_encrypt(creds, password_buf.data, 516);
 	} else {
-		netlogon_creds_arcfour_crypt(creds, password_buf.data, 516);
+		status = netlogon_creds_arcfour_crypt(creds,
+						      password_buf.data,
+						      516);
+		if (!NT_STATUS_IS_OK(status)) {
+			return;
+		}
 	}
 	memcpy(pwd_buf->data, password_buf.data, 512);
 	pwd_buf->length = IVAL(password_buf.data, 512);

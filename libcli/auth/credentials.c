@@ -262,7 +262,9 @@ void netlogon_creds_des_decrypt(struct netlogon_creds_CredentialState *creds, st
 /*
   ARCFOUR encrypt/decrypt a password buffer using the session key
 */
-void netlogon_creds_arcfour_crypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len)
+NTSTATUS netlogon_creds_arcfour_crypt(struct netlogon_creds_CredentialState *creds,
+				      uint8_t *data,
+				      size_t len)
 {
 	gnutls_cipher_hd_t cipher_hnd = NULL;
 	gnutls_datum_t session_key = {
@@ -276,12 +278,19 @@ void netlogon_creds_arcfour_crypt(struct netlogon_creds_CredentialState *creds, 
 				&session_key,
 				NULL);
 	if (rc < 0) {
-		return;
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_CRYPTO_SYSTEM_INVALID);
 	}
-	gnutls_cipher_encrypt(cipher_hnd,
-			      data,
-			      len);
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   data,
+				   len);
 	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_CRYPTO_SYSTEM_INVALID);
+	}
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -591,6 +600,7 @@ static NTSTATUS netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_C
 							 bool do_encrypt)
 {
 	struct netr_SamBaseInfo *base = NULL;
+	NTSTATUS status;
 
 	if (validation == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -654,16 +664,22 @@ static NTSTATUS netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_C
 	} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 		/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
 		if (!all_zero(base->key.key, sizeof(base->key.key))) {
-			netlogon_creds_arcfour_crypt(creds,
-					    base->key.key,
-					    sizeof(base->key.key));
+			status = netlogon_creds_arcfour_crypt(creds,
+							      base->key.key,
+							      sizeof(base->key.key));
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 		}
 
 		if (!all_zero(base->LMSessKey.key,
 			      sizeof(base->LMSessKey.key))) {
-			netlogon_creds_arcfour_crypt(creds,
-					    base->LMSessKey.key,
-					    sizeof(base->LMSessKey.key));
+			status = netlogon_creds_arcfour_crypt(creds,
+							      base->LMSessKey.key,
+							      sizeof(base->LMSessKey.key));
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 		}
 	} else {
 		/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
@@ -707,6 +723,8 @@ static NTSTATUS netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Creden
 						    union netr_LogonLevel *logon,
 						    bool do_encrypt)
 {
+	NTSTATUS status;
+
 	if (logon == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -745,12 +763,22 @@ static NTSTATUS netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Creden
 
 			h = logon->password->lmpassword.hash;
 			if (!all_zero(h, 16)) {
-				netlogon_creds_arcfour_crypt(creds, h, 16);
+				status = netlogon_creds_arcfour_crypt(creds,
+								      h,
+								      16);
+				if (!NT_STATUS_IS_OK(status)) {
+					return status;
+				}
 			}
 
 			h = logon->password->ntpassword.hash;
 			if (!all_zero(h, 16)) {
-				netlogon_creds_arcfour_crypt(creds, h, 16);
+				status = netlogon_creds_arcfour_crypt(creds,
+								      h,
+								      16);
+				if (!NT_STATUS_IS_OK(status)) {
+					return status;
+				}
 			}
 		} else {
 			struct samr_Password *p;
@@ -794,9 +822,12 @@ static NTSTATUS netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Creden
 						logon->generic->length);
 			}
 		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
-			netlogon_creds_arcfour_crypt(creds,
-						     logon->generic->data,
-						     logon->generic->length);
+			status = netlogon_creds_arcfour_crypt(creds,
+							      logon->generic->data,
+							      logon->generic->length);
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
+			}
 		} else {
 			/* Using DES to verify kerberos tickets makes no sense */
 		}

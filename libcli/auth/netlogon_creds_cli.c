@@ -1992,9 +1992,13 @@ static void netlogon_creds_cli_ServerPasswordSet_locked(struct tevent_req *subre
 					state->samr_crypt_password.data,
 					516);
 		} else {
-			netlogon_creds_arcfour_crypt(&state->tmp_creds,
-					state->samr_crypt_password.data,
-					516);
+			status = netlogon_creds_arcfour_crypt(&state->tmp_creds,
+							      state->samr_crypt_password.data,
+							      516);
+			if (tevent_req_nterror(req, status)) {
+				netlogon_creds_cli_ServerPasswordSet_cleanup(req, status);
+				return;
+			}
 		}
 
 		memcpy(state->netr_crypt_password.data,
@@ -3685,9 +3689,13 @@ static void netlogon_creds_cli_SendToSam_locked(struct tevent_req *subreq)
 					   state->opaque.data,
 					   state->opaque.length);
 	} else {
-		netlogon_creds_arcfour_crypt(&state->tmp_creds,
-					     state->opaque.data,
-					     state->opaque.length);
+		status = netlogon_creds_arcfour_crypt(&state->tmp_creds,
+						      state->opaque.data,
+						      state->opaque.length);
+		if (tevent_req_nterror(req, status)) {
+			netlogon_creds_cli_SendToSam_cleanup(req, status);
+			return;
+		}
 	}
 
 	subreq = dcerpc_netr_NetrLogonSendToSam_send(state, state->ev,

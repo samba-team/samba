@@ -69,9 +69,18 @@ static NTSTATUS fix_user(TALLOC_CTX *mem_ctx,
 		DATA_BLOB data;
 		struct netr_USER_KEYS keys;
 		enum ndr_err_code ndr_err;
+		NTSTATUS status;
+
 		data.data = user->user_private_info.SensitiveData;
 		data.length = user->user_private_info.DataLength;
-		netlogon_creds_arcfour_crypt(creds, data.data, data.length);
+
+		status = netlogon_creds_arcfour_crypt(creds,
+						      data.data,
+						      data.length);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
 		user->user_private_info.SensitiveData = data.data;
 		user->user_private_info.DataLength = data.length;
 
@@ -125,11 +134,21 @@ static NTSTATUS fix_secret(TALLOC_CTX *mem_ctx,
 			   struct netr_DELTA_ENUM *delta) 
 {
 	struct netr_DELTA_SECRET *secret = delta->delta_union.secret;
-	netlogon_creds_arcfour_crypt(creds, secret->current_cipher.cipher_data, 
-			    secret->current_cipher.maxlen); 
+	NTSTATUS status;
 
-	netlogon_creds_arcfour_crypt(creds, secret->old_cipher.cipher_data, 
-			    secret->old_cipher.maxlen); 
+	status = netlogon_creds_arcfour_crypt(creds,
+					      secret->current_cipher.cipher_data,
+					      secret->current_cipher.maxlen);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = netlogon_creds_arcfour_crypt(creds,
+					      secret->old_cipher.cipher_data,
+					      secret->old_cipher.maxlen);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	return NT_STATUS_OK;
 }
