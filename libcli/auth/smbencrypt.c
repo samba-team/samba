@@ -843,27 +843,32 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
  Decode an arc4 encrypted password change buffer.
 ************************************************************/
 
-void encode_or_decode_arc4_passwd_buffer(unsigned char pw_buf[532], const DATA_BLOB *psession_key)
+NTSTATUS encode_or_decode_arc4_passwd_buffer(unsigned char pw_buf[532],
+					     const DATA_BLOB *psession_key)
 {
 	gnutls_hash_hd_t hash_hnd = NULL;
 	unsigned char key_out[16];
+	NTSTATUS status;
 	int rc;
 
 	/* Confounder is last 16 bytes. */
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 
 	rc = gnutls_hash(hash_hnd, &pw_buf[516], 16);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 	rc = gnutls_hash(hash_hnd, psession_key->data, psession_key->length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 	gnutls_hash_deinit(hash_hnd, key_out);
@@ -873,8 +878,9 @@ void encode_or_decode_arc4_passwd_buffer(unsigned char pw_buf[532], const DATA_B
 
 	ZERO_ARRAY(key_out);
 
+	status = NT_STATUS_OK;
 out:
-	return;
+	return status;
 }
 
 /***********************************************************
