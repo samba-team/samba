@@ -255,7 +255,7 @@ static void process_callbacks(struct lock_context *lock_ctx, bool locked)
 			break;
 
 		case LOCK_DB:
-			ctdb_lockdb_mark(lock_ctx->ctdb_db);
+			(void)ctdb_lockdb_mark(lock_ctx->ctdb_db);
 			break;
 		}
 	}
