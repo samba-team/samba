@@ -883,3 +883,29 @@ class DnsCmdTestCase(SambaToolCmdTest):
                 print(msg)
             self.fail("Failed to accept valid commands. %d total failures."
                       "Errors above." % num_failures)
+
+    def test_serverinfo(self):
+        for v in ['w2k', 'dotnet', 'longhorn']:
+            result, out, err = self.runsubcmd("dns",
+                                              "serverinfo",
+                                              "--client-version", v,
+                                              os.environ["SERVER"],
+                                              self.creds_string)
+            self.assertCmdSuccess(result,
+                                  out,
+                                  err,
+                                  "Failed to print serverinfo with "
+                                  "client version %s" % v)
+            self.assertTrue(out != '')
+
+    def test_zoneinfo(self):
+        result, out, err = self.runsubcmd("dns",
+                                          "zoneinfo",
+                                          os.environ["SERVER"],
+                                          self.zone,
+                                          self.creds_string)
+        self.assertCmdSuccess(result,
+                              out,
+                              err,
+                              "Failed to print zoneinfo")
+        self.assertTrue(out != '')
