@@ -238,7 +238,7 @@ pages:
   only:
     variables:
       # do not run o3 for coverage since they are using different images
-      - $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE != "--enable-coverage"
+      - $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE == ""
 
 ubuntu1804-samba-o3:
   extends: .samba-o3-template
