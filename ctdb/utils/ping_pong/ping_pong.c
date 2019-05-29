@@ -150,7 +150,13 @@ static void ping_pong(int fd, int num_locks)
 
 	start_timer();
 
-	lock_range(fd, 0, 1, true);
+	ret = lock_range(fd, 0, 1, true);
+	if (ret != 0) {
+		printf("initial lock at 0 failed! - %s\n", strerror(errno));
+		free(val);
+		return;
+	}
+
 	i = 0;
 
 	while (1) {
