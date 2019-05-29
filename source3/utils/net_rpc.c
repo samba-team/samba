@@ -6195,9 +6195,12 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 
 		ZERO_STRUCT(info.info23);
 
-		init_samr_CryptPassword(argv[1],
-					&session_key,
-					&crypt_pwd);
+		status = init_samr_CryptPassword(argv[1],
+						 &session_key,
+						 &crypt_pwd);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
 
 		info.info23.info.fields_present = SAMR_FIELD_ACCT_FLAGS |
 						  SAMR_FIELD_NT_PASSWORD_PRESENT;

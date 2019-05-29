@@ -81,12 +81,18 @@ out:
  inits a samr_CryptPassword structure
  *************************************************************************/
 
-void init_samr_CryptPassword(const char *pwd,
-			     DATA_BLOB *session_key,
-			     struct samr_CryptPassword *pwd_buf)
+NTSTATUS init_samr_CryptPassword(const char *pwd,
+				 DATA_BLOB *session_key,
+				 struct samr_CryptPassword *pwd_buf)
 {
 	/* samr_CryptPassword */
+	bool ok;
 
-	encode_pw_buffer(pwd_buf->data, pwd, STR_UNICODE);
+	ok = encode_pw_buffer(pwd_buf->data, pwd, STR_UNICODE);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 	arcfour_crypt_blob(pwd_buf->data, 516, session_key);
+
+	return NT_STATUS_OK;
 }

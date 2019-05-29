@@ -3063,7 +3063,10 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 		return status;
 	}
 
-	init_samr_CryptPassword(param, &session_key, &pwd_buf);
+	status = init_samr_CryptPassword(param, &session_key, &pwd_buf);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 	init_samr_CryptPasswordEx(param, &session_key, &pwd_buf_ex);
 	nt_lm_owf_gen(param, nt_hash, lm_hash);
 
