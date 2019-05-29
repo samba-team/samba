@@ -970,9 +970,10 @@ static NTSTATUS dcesrv_netr_LogonSamLogon_base_call(struct dcesrv_netr_LogonSamL
 
 	user_info->service_description = "SamLogon";
 
-	netlogon_creds_decrypt_samlogon_logon(creds,
-					      r->in.logon_level,
-					      r->in.logon);
+	nt_status = netlogon_creds_decrypt_samlogon_logon(creds,
+							  r->in.logon_level,
+							  r->in.logon);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	switch (r->in.logon_level) {
 	case NetlogonInteractiveInformation:

@@ -65,9 +65,9 @@ NTSTATUS netlogon_creds_decrypt_samlogon_validation(struct netlogon_creds_Creden
 NTSTATUS netlogon_creds_encrypt_samlogon_validation(struct netlogon_creds_CredentialState *creds,
 						    uint16_t validation_level,
 						    union netr_Validation *validation);
-void netlogon_creds_decrypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
-					   enum netr_LogonInfoClass level,
-					   union netr_LogonLevel *logon);
+NTSTATUS netlogon_creds_decrypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
+					       enum netr_LogonInfoClass level,
+					       union netr_LogonLevel *logon);
 NTSTATUS netlogon_creds_encrypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
 					       enum netr_LogonInfoClass level,
 					       union netr_LogonLevel *logon);

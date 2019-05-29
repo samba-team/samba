@@ -804,11 +804,13 @@ static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Credential
 	}
 }
 
-void netlogon_creds_decrypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
-					   enum netr_LogonInfoClass level,
-					   union netr_LogonLevel *logon)
+NTSTATUS netlogon_creds_decrypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
+					       enum netr_LogonInfoClass level,
+					       union netr_LogonLevel *logon)
 {
 	netlogon_creds_crypt_samlogon_logon(creds, level, logon, false);
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS netlogon_creds_encrypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,

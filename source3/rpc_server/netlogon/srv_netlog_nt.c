@@ -1584,11 +1584,12 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	DEBUG(5,("Attempting validation level %d for unmapped username %s.\n",
 		r->in.validation_level, nt_username));
 
-	status = NT_STATUS_OK;
-
-	netlogon_creds_decrypt_samlogon_logon(creds,
-					      r->in.logon_level,
-					      logon);
+	status = netlogon_creds_decrypt_samlogon_logon(creds,
+						       r->in.logon_level,
+						       logon);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	status = make_auth3_context_for_netlogon(talloc_tos(), &auth_context);
 	if (!NT_STATUS_IS_OK(status)) {
