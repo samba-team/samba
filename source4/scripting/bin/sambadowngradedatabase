@@ -87,5 +87,5 @@ chk.reindex_database()
 
 print("Your database has been downgraded to DN-based index values.")
 
-print("NOTE: Any use of a Samba 4.8 tool including ldbsearch will "
+print("NOTE: Any use of a Samba 4.8 or later tool including ldbsearch will "
       "auto-upgrade back to GUID index mode")
