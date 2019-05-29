@@ -415,7 +415,7 @@ static bool do_sleep(struct tevent_context *ev_ctx,
 		     const struct server_id pid,
 		     const int argc, const char **argv)
 {
-#if defined(DEVELOPER) && defined(ENABLE_SELFTEST)
+#if defined(DEVELOPER) || defined(ENABLE_SELFTEST)
 	unsigned int seconds;
 	long input;
 	const long MAX_SLEEP = 60 * 60; /* One hour maximum sleep */
