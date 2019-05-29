@@ -585,15 +585,15 @@ NTSTATUS netlogon_creds_server_step_check(struct netlogon_creds_CredentialState 
 	}
 }
 
-static void netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_CredentialState *creds,
-						     uint16_t validation_level,
-						     union netr_Validation *validation,
-						     bool do_encrypt)
+static NTSTATUS netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_CredentialState *creds,
+							 uint16_t validation_level,
+							 union netr_Validation *validation,
+							 bool do_encrypt)
 {
 	struct netr_SamBaseInfo *base = NULL;
 
 	if (validation == NULL) {
-		return;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	switch (validation_level) {
@@ -614,11 +614,11 @@ static void netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_Crede
 		break;
 	default:
 		/* If we can't find it, we can't very well decrypt it */
-		return;
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	if (!base) {
-		return;
+		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	/* find and decyrpt the session keys, return in parameters above */
@@ -678,26 +678,28 @@ static void netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_Crede
 			}
 		}
 	}
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS netlogon_creds_decrypt_samlogon_validation(struct netlogon_creds_CredentialState *creds,
 						    uint16_t validation_level,
 						    union netr_Validation *validation)
 {
-	netlogon_creds_crypt_samlogon_validation(creds, validation_level,
-							validation, false);
-
-	return NT_STATUS_OK;
+	return netlogon_creds_crypt_samlogon_validation(creds,
+							validation_level,
+							validation,
+							false);
 }
 
 NTSTATUS netlogon_creds_encrypt_samlogon_validation(struct netlogon_creds_CredentialState *creds,
 						    uint16_t validation_level,
 						    union netr_Validation *validation)
 {
-	netlogon_creds_crypt_samlogon_validation(creds, validation_level,
-							validation, true);
-
-	return NT_STATUS_OK;
+	return netlogon_creds_crypt_samlogon_validation(creds,
+							validation_level,
+							validation,
+							true);
 }
 
 static void netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_CredentialState *creds,
