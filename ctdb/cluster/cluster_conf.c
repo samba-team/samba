@@ -38,13 +38,24 @@ static bool check_static_string_change(const char *key,
 				       enum conf_update_mode mode)
 {
 	if (mode == CONF_MODE_RELOAD) {
-		if (strcmp(old_value, new_value) != 0) {
+		if (old_value == new_value) {
+			goto done;
+		}
+
+		/*
+		 * At this point old_value or new_value can not both
+		 * NULL, so if one is NULL then they are different
+		 */
+		if (old_value == NULL ||
+		    new_value == NULL ||
+		    strcmp(old_value, new_value) != 0) {
 			D_WARNING("Ignoring update of [%s] -> %s\n",
 				  CLUSTER_CONF_SECTION,
 				  key);
 		}
 	}
 
+done:
 	return true;
 }
 
