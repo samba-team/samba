@@ -1262,9 +1262,14 @@ static void dcesrv_netr_LogonSamLogon_base_reply(
 	NTSTATUS status;
 
 	if (NT_STATUS_IS_OK(r->out.result)) {
-		netlogon_creds_encrypt_samlogon_validation(state->creds,
-							   r->in.validation_level,
-							   r->out.validation);
+		status = netlogon_creds_encrypt_samlogon_validation(state->creds,
+								    r->in.validation_level,
+								    r->out.validation);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("netlogon_creds_encrypt_samlogon_validation() "
+				"failed - %s\n",
+				nt_errstr(status));
+		}
 	}
 
 	if (state->_r.lslex != NULL) {

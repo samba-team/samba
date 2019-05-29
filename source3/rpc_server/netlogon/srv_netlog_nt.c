@@ -1752,10 +1752,11 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		return status;
 	}
 
-	netlogon_creds_encrypt_samlogon_validation(creds,
-						   r->in.validation_level,
-						   r->out.validation);
-	return NT_STATUS_OK;
+	status = netlogon_creds_encrypt_samlogon_validation(creds,
+							    r->in.validation_level,
+							    r->out.validation);
+
+	return status;
 }
 
 /****************************************************************
