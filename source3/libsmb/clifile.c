@@ -3405,6 +3405,217 @@ NTSTATUS cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size)
 	return status;
 }
 
+static uint8_t *cli_lockingx_put_locks(
+	uint8_t *buf,
+	bool large,
+	uint16_t num_locks,
+	const struct smb1_lock_element *locks)
+{
+	uint16_t i;
+
+	for (i=0; i<num_locks; i++) {
+		const struct smb1_lock_element *e = &locks[i];
+		if (large) {
+			SSVAL(buf, 0, e->pid);
+			SSVAL(buf, 2, 0);
+			SOFF_T_R(buf, 4, e->offset);
+			SOFF_T_R(buf, 12, e->length);
+			buf += 20;
+		} else {
+			SSVAL(buf, 0, e->pid);
+			SIVAL(buf, 2, e->offset);
+			SIVAL(buf, 6, e->length);
+			buf += 10;
+		}
+	}
+	return buf;
+}
+
+struct cli_lockingx_state {
+	uint16_t vwv[8];
+	struct iovec bytes;
+};
+
+static void cli_lockingx_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_lockingx_create(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint8_t typeoflock,
+	uint8_t newoplocklevel,
+	int32_t timeout,
+	uint16_t num_unlocks,
+	const struct smb1_lock_element *unlocks,
+	uint16_t num_locks,
+	const struct smb1_lock_element *locks,
+	struct tevent_req **psmbreq)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_lockingx_state *state = NULL;
+	uint16_t *vwv;
+	uint8_t *p;
+	const bool large = (typeoflock & LOCKING_ANDX_LARGE_FILES);
+	const size_t element_len = large ? 20 : 10;
+
+	/* uint16->size_t, no overflow */
+	const size_t num_elements = (size_t)num_locks + (size_t)num_unlocks;
+
+	/* at most 20*2*65535 = 2621400, no overflow */
+	const size_t num_bytes = num_elements * element_len;
+
+	req = tevent_req_create(mem_ctx, &state, struct cli_lockingx_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	vwv = state->vwv;
+
+	SCVAL(vwv + 0, 0, 0xFF);
+	SCVAL(vwv + 0, 1, 0);
+	SSVAL(vwv + 1, 0, 0);
+	SSVAL(vwv + 2, 0, fnum);
+	SCVAL(vwv + 3, 0, typeoflock);
+	SCVAL(vwv + 3, 1, newoplocklevel);
+	SIVALS(vwv + 4, 0, timeout);
+	SSVAL(vwv + 6, 0, num_unlocks);
+	SSVAL(vwv + 7, 0, num_locks);
+
+	state->bytes.iov_len = num_bytes;
+	state->bytes.iov_base = talloc_array(state, uint8_t, num_bytes);
+	if (tevent_req_nomem(state->bytes.iov_base, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	p = cli_lockingx_put_locks(
+		state->bytes.iov_base, large, num_unlocks, unlocks);
+	cli_lockingx_put_locks(p, large, num_locks, locks);
+
+	subreq = cli_smb_req_create(
+		state, ev, cli, SMBlockingX, 0, 0, 8, vwv, 1, &state->bytes);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_lockingx_done, req);
+	*psmbreq = subreq;
+	return req;
+}
+
+struct tevent_req *cli_lockingx_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint8_t typeoflock,
+	uint8_t newoplocklevel,
+	int32_t timeout,
+	uint16_t num_unlocks,
+	const struct smb1_lock_element *unlocks,
+	uint16_t num_locks,
+	const struct smb1_lock_element *locks)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	NTSTATUS status;
+
+	req = cli_lockingx_create(
+		mem_ctx,
+		ev,
+		cli,
+		fnum,
+		typeoflock,
+		newoplocklevel,
+		timeout,
+		num_unlocks,
+		unlocks,
+		num_locks,
+		locks,
+		&subreq);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = smb1cli_req_chain_submit(&subreq, 1);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+	return req;
+}
+
+static void cli_lockingx_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_smb_recv(
+		subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+NTSTATUS cli_lockingx_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+NTSTATUS cli_lockingx(
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint8_t typeoflock,
+	uint8_t newoplocklevel,
+	int32_t timeout,
+	uint16_t num_unlocks,
+	const struct smb1_lock_element *unlocks,
+	uint16_t num_locks,
+	const struct smb1_lock_element *locks)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	unsigned int set_timeout = 0;
+	unsigned int saved_timeout = 0;
+
+	if (smbXcli_conn_has_async_calls(cli->conn)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	ev = samba_tevent_context_init(frame);
+	if (ev == NULL) {
+		goto fail;
+	}
+
+	if (timeout != 0) {
+		if (timeout == -1) {
+			set_timeout = 0x7FFFFFFF;
+		} else {
+			set_timeout = timeout + 2*1000;
+		}
+		saved_timeout = cli_set_timeout(cli, set_timeout);
+	}
+
+	req = cli_lockingx_send(
+		frame,
+		ev,
+		cli,
+		fnum,
+		typeoflock,
+		newoplocklevel,
+		timeout,
+		num_unlocks,
+		unlocks,
+		num_locks,
+		locks);
+	if (req == NULL) {
+		goto fail;
+	}
+	if (!tevent_req_poll_ntstatus(req, ev, &status)) {
+		goto fail;
+	}
+	status = cli_lockingx_recv(req);
+
+	if (saved_timeout != 0) {
+		cli_set_timeout(cli, saved_timeout);
+	}
+fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
 /****************************************************************************
  send a lock with a specified locktype
  this is used for testing LOCKING_ANDX_CANCEL_LOCK

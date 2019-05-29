@@ -448,6 +448,49 @@ NTSTATUS cli_ftruncate(struct cli_state *cli, uint16_t fnum, uint64_t size);
 NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 		      uint32_t offset, uint32_t len,
 		      int timeout, unsigned char locktype);
+struct smb1_lock_element {
+	uint16_t pid;
+	uint64_t offset;
+	uint64_t length;
+};
+
+struct tevent_req *cli_lockingx_create(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint8_t typeoflock,
+	uint8_t newoplocklevel,
+	int32_t timeout,
+	uint16_t num_unlocks,
+	const struct smb1_lock_element *unlocks,
+	uint16_t num_locks,
+	const struct smb1_lock_element *locks,
+	struct tevent_req **psmbreq);
+struct tevent_req *cli_lockingx_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint8_t typeoflock,
+	uint8_t newoplocklevel,
+	int32_t timeout,
+	uint16_t num_unlocks,
+	const struct smb1_lock_element *unlocks,
+	uint16_t num_locks,
+	const struct smb1_lock_element *locks);
+NTSTATUS cli_lockingx_recv(struct tevent_req *req);
+NTSTATUS cli_lockingx(
+	struct cli_state *cli,
+	uint16_t fnum,
+	uint8_t typeoflock,
+	uint8_t newoplocklevel,
+	int32_t timeout,
+	uint16_t num_unlocks,
+	const struct smb1_lock_element *unlocks,
+	uint16_t num_locks,
+	const struct smb1_lock_element *locks);
+
 NTSTATUS cli_lock32(struct cli_state *cli, uint16_t fnum, uint32_t offset,
 		    uint32_t len, int timeout, enum brl_type lock_type);
 struct tevent_req *cli_unlock_send(TALLOC_CTX *mem_ctx,
