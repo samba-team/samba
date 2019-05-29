@@ -2365,9 +2365,15 @@ static void netlogon_creds_cli_LogonSamLogon_start(struct tevent_req *req)
 				return;
 			}
 
-			netlogon_creds_encrypt_samlogon_logon(state->ro_creds,
-							      state->logon_level,
-							      state->logon);
+			status = netlogon_creds_encrypt_samlogon_logon(state->ro_creds,
+								       state->logon_level,
+								       state->logon);
+			if (!NT_STATUS_IS_OK(status)) {
+				status = NT_STATUS_ACCESS_DENIED;
+				tevent_req_nterror(req, status);
+				netlogon_creds_cli_LogonSamLogon_cleanup(req, status);
+				return;
+			}
 		}
 
 		subreq = dcerpc_netr_LogonSamLogonEx_send(state, state->ev,
@@ -2419,9 +2425,13 @@ static void netlogon_creds_cli_LogonSamLogon_start(struct tevent_req *req)
 		return;
 	}
 
-	netlogon_creds_encrypt_samlogon_logon(&state->tmp_creds,
-					      state->logon_level,
-					      state->logon);
+	status = netlogon_creds_encrypt_samlogon_logon(&state->tmp_creds,
+						       state->logon_level,
+						       state->logon);
+	if (tevent_req_nterror(req, status)) {
+		netlogon_creds_cli_LogonSamLogon_cleanup(req, status);
+		return;
+	}
 
 	state->validation_level = 3;
 
