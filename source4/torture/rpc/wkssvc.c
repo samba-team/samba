@@ -1199,6 +1199,7 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 	enum wkssvc_NetJoinStatus join_status;
 	const char *join_name = NULL;
 	WERROR expected_err;
+	WERROR werr;
 	DATA_BLOB session_key;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
@@ -1240,8 +1241,13 @@ static bool test_NetrJoinDomain2(struct torture_context *tctx,
 		return false;
 	}
 
-	encode_wkssvc_join_password_buffer(tctx, domain_admin_password,
-					   &session_key, &pwd_buf);
+	werr = encode_wkssvc_join_password_buffer(tctx,
+						  domain_admin_password,
+						  &session_key,
+						  &pwd_buf);
+	if (!W_ERROR_IS_OK(werr)) {
+		return false;
+	}
 
 	r.in.server_name = dcerpc_server_name(p);
 	r.in.domain_name = domain_name;
@@ -1284,6 +1290,7 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 	enum wkssvc_NetJoinStatus join_status;
 	const char *join_name = NULL;
 	WERROR expected_err;
+	WERROR werr;
 	DATA_BLOB session_key;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 
@@ -1322,8 +1329,13 @@ static bool test_NetrUnjoinDomain2(struct torture_context *tctx,
 		return false;
 	}
 
-	encode_wkssvc_join_password_buffer(tctx, domain_admin_password,
-					   &session_key, &pwd_buf);
+	werr = encode_wkssvc_join_password_buffer(tctx,
+						  domain_admin_password,
+						  &session_key,
+						  &pwd_buf);
+	if (!W_ERROR_IS_OK(werr)) {
+		return false;
+	}
 
 	r.in.server_name = dcerpc_server_name(p);
 	r.in.account = domain_admin_account;

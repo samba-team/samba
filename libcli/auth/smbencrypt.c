@@ -965,10 +965,10 @@ bool extract_pw_from_buffer(TALLOC_CTX *mem_ctx,
  * buffer), calling MD5Update() first with session_key and then with confounder
  * (vice versa in samr) - Guenther */
 
-void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
-					const char *pwd,
-					DATA_BLOB *session_key,
-					struct wkssvc_PasswordBuffer **pwd_buf)
+WERROR encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
+					  const char *pwd,
+					  DATA_BLOB *session_key,
+					  struct wkssvc_PasswordBuffer **pwd_buf)
 {
 	uint8_t buffer[516];
 	gnutls_hash_hd_t hash_hnd = NULL;
@@ -976,11 +976,12 @@ void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 	DATA_BLOB confounded_session_key;
 	int confounder_len = 8;
 	uint8_t confounder[8];
+	WERROR werr;
 	int rc;
 
 	my_pwd_buf = talloc_zero(mem_ctx, struct wkssvc_PasswordBuffer);
 	if (!my_pwd_buf) {
-		return;
+		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
 	confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
@@ -991,17 +992,23 @@ void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
+		werr = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+
 		goto out;
 	}
 
 	rc = gnutls_hash(hash_hnd, session_key->data, session_key->length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
+		werr = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+
 		goto out;
 	}
 	rc = gnutls_hash(hash_hnd, confounder, confounder_len);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
+		werr = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+
 		goto out;
 	}
 	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
@@ -1017,8 +1024,9 @@ void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 
 	*pwd_buf = my_pwd_buf;
 
+	werr = WERR_OK;
 out:
-	return;
+	return werr;
 }
 
 WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,

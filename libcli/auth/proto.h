@@ -207,10 +207,10 @@ bool set_pw_in_buffer(uint8_t buffer[516], const DATA_BLOB *password);
 bool extract_pw_from_buffer(TALLOC_CTX *mem_ctx, 
 			    uint8_t in_buffer[516], DATA_BLOB *new_pass);
 struct wkssvc_PasswordBuffer;
-void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
-					const char *pwd,
-					DATA_BLOB *session_key,
-					struct wkssvc_PasswordBuffer **pwd_buf);
+WERROR encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
+					  const char *pwd,
+					  DATA_BLOB *session_key,
+					  struct wkssvc_PasswordBuffer **pwd_buf);
 WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 					  struct wkssvc_PasswordBuffer *pwd_buf,
 					  DATA_BLOB *session_key,
