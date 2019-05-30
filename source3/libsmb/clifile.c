@@ -3666,8 +3666,7 @@ NTSTATUS cli_lock32(struct cli_state *cli, uint16_t fnum,
 ****************************************************************************/
 
 struct cli_unlock_state {
-	uint16_t vwv[8];
-	uint8_t data[10];
+	struct smb1_lock_element lck;
 };
 
 static void cli_unlock_done(struct tevent_req *subreq);
@@ -3682,26 +3681,29 @@ struct tevent_req *cli_unlock_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct cli_unlock_state *state = NULL;
-	uint8_t additional_flags = 0;
 
 	req = tevent_req_create(mem_ctx, &state, struct cli_unlock_state);
 	if (req == NULL) {
 		return NULL;
 	}
+	state->lck = (struct smb1_lock_element) {
+		.pid = cli_getpid(cli),
+		.offset = offset,
+		.length = len,
+	};
 
-	SCVAL(state->vwv+0, 0, 0xFF);
-	SSVAL(state->vwv+2, 0, fnum);
-	SCVAL(state->vwv+3, 0, 0);
-	SIVALS(state->vwv+4, 0, 0);
-	SSVAL(state->vwv+6, 0, 1);
-	SSVAL(state->vwv+7, 0, 0);
-
-	SSVAL(state->data, 0, cli_getpid(cli));
-	SIVAL(state->data, 2, offset);
-	SIVAL(state->data, 6, len);
-
-	subreq = cli_smb_send(state, ev, cli, SMBlockingX, additional_flags, 0,
-				8, state->vwv, 10, state->data);
+	subreq = cli_lockingx_send(
+		state,				/* mem_ctx */
+		ev,				/* tevent_context */
+		cli,				/* cli */
+		fnum,				/* fnum */
+		0,				/* typeoflock */
+		0,				/* newoplocklevel */
+		0,				/* timeout */
+		1,				/* num_unlocks */
+		&state->lck,			/* unlocks */
+		0,				/* num_locks */
+		NULL);				/* locks */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -3711,16 +3713,8 @@ struct tevent_req *cli_unlock_send(TALLOC_CTX *mem_ctx,
 
 static void cli_unlock_done(struct tevent_req *subreq)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-				subreq, struct tevent_req);
-	NTSTATUS status;
-
-	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
-	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-	tevent_req_done(req);
+	NTSTATUS status = cli_lockingx_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 NTSTATUS cli_unlock_recv(struct tevent_req *req)
