@@ -3625,42 +3625,23 @@ NTSTATUS cli_locktype(struct cli_state *cli, uint16_t fnum,
 		      uint32_t offset, uint32_t len,
 		      int timeout, unsigned char locktype)
 {
-	uint16_t vwv[8];
-	uint8_t bytes[10];
+	struct smb1_lock_element lck = {
+		.pid = cli_getpid(cli),
+		.offset = offset,
+		.length = len,
+	};
 	NTSTATUS status;
-	unsigned int set_timeout = 0;
-	unsigned int saved_timeout = 0;
 
-	SCVAL(vwv + 0, 0, 0xff);
-	SCVAL(vwv + 0, 1, 0);
-	SSVAL(vwv + 1, 0, 0);
-	SSVAL(vwv + 2, 0, fnum);
-	SCVAL(vwv + 3, 0, locktype);
-	SCVAL(vwv + 3, 1, 0);
-	SIVALS(vwv + 4, 0, timeout);
-	SSVAL(vwv + 6, 0, 0);
-	SSVAL(vwv + 7, 0, 1);
-
-	SSVAL(bytes, 0, cli_getpid(cli));
-	SIVAL(bytes, 2, offset);
-	SIVAL(bytes, 6, len);
-
-	if (timeout != 0) {
-		if (timeout == -1) {
-			set_timeout = 0x7FFFFFFF;
-		} else {
-			set_timeout = timeout + 2*1000;
-		}
-		saved_timeout = cli_set_timeout(cli, set_timeout);
-	}
-
-	status = cli_smb(talloc_tos(), cli, SMBlockingX, 0, 8, vwv,
-			 10, bytes, NULL, 0, NULL, NULL, NULL, NULL);
-
-	if (saved_timeout != 0) {
-		cli_set_timeout(cli, saved_timeout);
-	}
-
+	status = cli_lockingx(
+		cli,				/* cli */
+		fnum,				/* fnum */
+		locktype,			/* typeoflock */
+		0,				/* newoplocklevel */
+		timeout,			/* timeout */
+		0,				/* num_unlocks */
+		NULL,				/* unlocks */
+		1,				/* num_locks */
+		&lck);				/* locks */
 	return status;
 }
 
