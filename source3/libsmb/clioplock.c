@@ -119,7 +119,7 @@ send an ack for an oplock break request
 ****************************************************************************/
 
 struct cli_oplock_ack_state {
-	uint16_t vwv[8];
+	uint8_t dummy;
 };
 
 static void cli_oplock_ack_done(struct tevent_req *subreq);
@@ -136,18 +136,20 @@ struct tevent_req *cli_oplock_ack_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	SCVAL(state->vwv+0, 0, 0xff);
-	SCVAL(state->vwv+0, 1, 0);
-	SSVAL(state->vwv+1, 0, 0);
-	SSVAL(state->vwv+2, 0, fnum);
-	SCVAL(state->vwv+3, 0, LOCKING_ANDX_OPLOCK_RELEASE);
-	SCVAL(state->vwv+3, 1, level);
-	SIVAL(state->vwv+4, 0, 0); /* timeout */
-	SSVAL(state->vwv+6, 0, 0); /* unlockcount */
-	SSVAL(state->vwv+7, 0, 0); /* lockcount */
 
-	subreq = cli_smb_send(state, ev, cli, SMBlockingX, 0, 0, 8, state->vwv,
-			      0, NULL);
+	subreq = cli_lockingx_send(
+		state,				/* mem_ctx */
+		ev,				/* tevent_context */
+		cli,				/* cli */
+		fnum,				/* fnum */
+		LOCKING_ANDX_OPLOCK_RELEASE,	/* typeoflock */
+		level,				/* newoplocklevel */
+		0,				/* timeout */
+		0,				/* num_unlocks */
+		NULL,				/* unlocks */
+		0,				/* num_locks */
+		NULL);				/* locks */
+
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -157,17 +159,8 @@ struct tevent_req *cli_oplock_ack_send(TALLOC_CTX *mem_ctx,
 
 static void cli_oplock_ack_done(struct tevent_req *subreq)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	NTSTATUS status;
-
-	status = cli_smb_recv(subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
-	TALLOC_FREE(subreq);
-	if (!NT_STATUS_IS_OK(status)) {
-		tevent_req_nterror(req, status);
-		return;
-	}
-	tevent_req_done(req);
+	NTSTATUS status = cli_lockingx_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
 }
 
 NTSTATUS cli_oplock_ack_recv(struct tevent_req *req)
