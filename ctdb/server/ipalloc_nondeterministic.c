@@ -54,15 +54,15 @@ try_again:
 	   not greater than 1.
 	*/
 	for (t = ipalloc_state->all_ips; t != NULL; t = t->next) {
-		if (t->pnn == -1) {
+		if (t->pnn == CTDB_UNKNOWN_PNN) {
 			continue;
 		}
 
 		/* Get the highest and lowest number of ips's served by any 
 		   valid node which can serve this ip.
 		*/
-		maxnode = -1;
-		minnode = -1;
+		maxnode = CTDB_UNKNOWN_PNN;
+		minnode = CTDB_UNKNOWN_PNN;
 		for (i=0; i<numnodes; i++) {
 			/* only check nodes that can actually serve this ip */
 			if (!can_node_takeover_ip(ipalloc_state, i,
@@ -72,7 +72,7 @@ try_again:
 			}
 
 			num = node_ip_coverage(i, ipalloc_state->all_ips);
-			if (maxnode == -1) {
+			if (maxnode == CTDB_UNKNOWN_PNN) {
 				maxnode = i;
 				maxnum  = num;
 			} else {
@@ -81,7 +81,7 @@ try_again:
 					maxnum  = num;
 				}
 			}
-			if (minnode == -1) {
+			if (minnode == CTDB_UNKNOWN_PNN) {
 				minnode = i;
 				minnum  = num;
 			} else {
@@ -91,7 +91,7 @@ try_again:
 				}
 			}
 		}
-		if (maxnode == -1) {
+		if (maxnode == CTDB_UNKNOWN_PNN) {
 			DEBUG(DEBUG_WARNING,
 			      (__location__ " Could not find maxnode. May not be able to serve ip '%s'\n",
 			       ctdb_sock_addr_to_string(ipalloc_state,

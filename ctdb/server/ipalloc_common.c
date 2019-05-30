@@ -87,7 +87,7 @@ int find_takeover_node(struct ipalloc_state *ipalloc_state,
 	unsigned int i, numnodes;
 
 	numnodes = ipalloc_state->num;
-	pnn    = -1;
+	pnn = CTDB_UNKNOWN_PNN;
 	for (i=0; i<numnodes; i++) {
 		/* verify that this node can serve this ip */
 		if (!can_node_takeover_ip(ipalloc_state, i, ip)) {
@@ -97,7 +97,7 @@ int find_takeover_node(struct ipalloc_state *ipalloc_state,
 
 		num = node_ip_coverage(i, ipalloc_state->all_ips);
 		/* was this the first node we checked ? */
-		if (pnn == -1) {
+		if (pnn == CTDB_UNKNOWN_PNN) {
 			pnn = i;
 			min  = num;
 		} else {
@@ -107,7 +107,7 @@ int find_takeover_node(struct ipalloc_state *ipalloc_state,
 			}
 		}
 	}
-	if (pnn == -1) {
+	if (pnn == CTDB_UNKNOWN_PNN) {
 		DEBUG(DEBUG_WARNING,(__location__ " Could not find node to take over public address '%s'\n",
 				     ctdb_sock_addr_to_string(ipalloc_state,
 							      &ip->addr,
@@ -157,7 +157,7 @@ void basic_allocate_unassigned(struct ipalloc_state *ipalloc_state)
 	   each unassigned ip.
 	*/
 	for (t = ipalloc_state->all_ips; t != NULL; t = t->next) {
-		if (t->pnn == -1) {
+		if (t->pnn == CTDB_UNKNOWN_PNN) {
 			if (find_takeover_node(ipalloc_state, t)) {
 				DEBUG(DEBUG_WARNING,
 				      ("Failed to find node to cover ip %s\n",
@@ -174,10 +174,10 @@ void unassign_unsuitable_ips(struct ipalloc_state *ipalloc_state)
 	struct public_ip_list *t;
 
 	/* verify that the assigned nodes can serve that public ip
-	   and set it to -1 if not
+	   and set it to CTDB_UNKNOWN_PNN if not
 	*/
 	for (t = ipalloc_state->all_ips; t != NULL; t = t->next) {
-		if (t->pnn == -1) {
+		if (t->pnn == CTDB_UNKNOWN_PNN) {
 			continue;
 		}
 		if (!can_node_host_ip(ipalloc_state, t->pnn, t) != 0) {
@@ -187,7 +187,7 @@ void unassign_unsuitable_ips(struct ipalloc_state *ipalloc_state)
 						   ipalloc_state,
 						   &t->addr, false),
 					   t->pnn));
-			t->pnn = -1;
+			t->pnn = CTDB_UNKNOWN_PNN;
 		}
 	}
 }

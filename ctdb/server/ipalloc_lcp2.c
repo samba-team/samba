@@ -164,7 +164,7 @@ static bool lcp2_init(struct ipalloc_state *ipalloc_state,
 	 * changes.
 	 */
 	for (t = ipalloc_state->all_ips; t != NULL; t = t->next) {
-		if (t->pnn != -1) {
+		if (t->pnn != CTDB_UNKNOWN_PNN) {
 			(*rebalance_candidates)[t->pnn] = false;
 		}
 	}
@@ -217,13 +217,13 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 		DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
 		DEBUG(DEBUG_DEBUG,(" CONSIDERING MOVES (UNASSIGNED)\n"));
 
-		minnode = -1;
+		minnode = CTDB_UNKNOWN_PNN;
 		mindsum = 0;
 		minip = NULL;
 
 		/* loop over each unassigned ip. */
 		for (t = ipalloc_state->all_ips; t != NULL ; t = t->next) {
-			if (t->pnn != -1) {
+			if (t->pnn != CTDB_UNKNOWN_PNN) {
 				continue;
 			}
 
@@ -249,7 +249,8 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 				       dstimbl - lcp2_imbalances[dstnode]));
 
 
-				if ((minnode == -1) || (dstdsum < mindsum)) {
+				if (minnode == CTDB_UNKNOWN_PNN ||
+				    dstdsum < mindsum) {
 					minnode = dstnode;
 					minimbl = dstimbl;
 					mindsum = dstdsum;
@@ -262,7 +263,7 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 		DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
 
 		/* If we found one then assign it to the given node. */
-		if (minnode != -1) {
+		if (minnode != CTDB_UNKNOWN_PNN) {
 			minip->pnn = minnode;
 			lcp2_imbalances[minnode] = minimbl;
 			DEBUG(DEBUG_INFO,(" %s -> %d [+%d]\n",
@@ -276,7 +277,7 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 		/* There might be a better way but at least this is clear. */
 		have_unassigned = false;
 		for (t = ipalloc_state->all_ips; t != NULL; t = t->next) {
-			if (t->pnn == -1) {
+			if (t->pnn == CTDB_UNKNOWN_PNN) {
 				have_unassigned = true;
 			}
 		}
@@ -287,7 +288,7 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 	 */
 	if (have_unassigned) {
 		for (t = ipalloc_state->all_ips; t != NULL; t = t->next) {
-			if (t->pnn == -1) {
+			if (t->pnn == CTDB_UNKNOWN_PNN) {
 				DEBUG(DEBUG_WARNING,
 				      ("Failed to find node to cover ip %s\n",
 				       ctdb_sock_addr_to_string(ipalloc_state,
@@ -317,7 +318,7 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 	srcimbl = 0;
 	minip = NULL;
 	minsrcimbl = 0;
-	mindstnode = -1;
+	mindstnode = CTDB_UNKNOWN_PNN;
 	mindstimbl = 0;
 
 	numnodes = ipalloc_state->num;
@@ -369,7 +370,7 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 
 			if ((dstimbl < lcp2_imbalances[srcnode]) &&
 			    (dstdsum < srcdsum) &&			\
-			    ((mindstnode == -1) ||				\
+			    ((mindstnode == CTDB_UNKNOWN_PNN) ||				\
 			     ((srcimbl + dstimbl) < (minsrcimbl + mindstimbl)))) {
 
 				minip = t;
@@ -381,7 +382,7 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 	}
 	DEBUG(DEBUG_DEBUG,(" ----------------------------------------\n"));
 
-        if (mindstnode != -1) {
+        if (mindstnode != CTDB_UNKNOWN_PNN) {
 		/* We found a move that makes things better... */
 		DEBUG(DEBUG_INFO,
 		      ("%d [%d] -> %s -> %d [+%d]\n",

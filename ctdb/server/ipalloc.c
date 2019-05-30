@@ -67,7 +67,7 @@ static void *add_ip_callback(void *parm, void *data)
 	if (prev_ip == NULL) {
 		return parm;
 	}
-	if (this_ip->pnn == -1) {
+	if (this_ip->pnn == CTDB_UNKNOWN_PNN) {
 		this_ip->pnn = prev_ip->pnn;
 	}
 
@@ -125,7 +125,7 @@ create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 			if (public_ips->ip[j].pnn == i) {
 				tmp_ip->pnn = public_ips->ip[j].pnn;
 			} else {
-				tmp_ip->pnn = -1;
+				tmp_ip->pnn = CTDB_UNKNOWN_PNN;
 			}
 			tmp_ip->addr = public_ips->ip[j].addr;
 			tmp_ip->next = NULL;
@@ -272,7 +272,7 @@ struct public_ip_list *ipalloc(struct ipalloc_state *ipalloc_state)
 	}
 
 	/* at this point ->pnn is the node which will own each IP
-	   or -1 if there is no node that can cover this ip
+	   or CTDB_UNKNOWN_PNN if there is no node that can cover this ip
 	*/
 
 	return (ret ? ipalloc_state->all_ips : NULL);
