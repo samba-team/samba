@@ -3310,6 +3310,10 @@ sub setup_customdc
 
 	# work out the correct domain/realm env values from the backup-file
 	my ($domain, $realm) = $self->get_backup_domain_realm($backup_file);
+	if ($domain eq '' or $realm eq '') {
+		warn("Could not determine domain or realm");
+		return undef;
+	}
 
 	# create a placeholder directory and smb.conf, as well as the env vars.
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, $dc_name,
