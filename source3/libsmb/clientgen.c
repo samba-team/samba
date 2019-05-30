@@ -585,31 +585,6 @@ NTSTATUS cli_echo(struct cli_state *cli, uint16_t num_echos, DATA_BLOB data)
 	return status;
 }
 
-/**
- * Is the SMB command able to hold an AND_X successor
- * @param[in] cmd	The SMB command in question
- * @retval Can we add a chained request after "cmd"?
- */
-bool is_andx_req(uint8_t cmd)
-{
-	switch (cmd) {
-	case SMBtconX:
-	case SMBlockingX:
-	case SMBopenX:
-	case SMBreadX:
-	case SMBwriteX:
-	case SMBsesssetupX:
-	case SMBulogoffX:
-	case SMBntcreateX:
-		return true;
-		break;
-	default:
-		break;
-	}
-
-	return false;
-}
-
 NTSTATUS cli_smb(TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		 uint8_t smb_command, uint8_t additional_flags,
 		 uint8_t wct, uint16_t *vwv,
