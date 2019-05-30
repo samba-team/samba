@@ -8322,6 +8322,7 @@ void reply_lockingX(struct smb_request *req)
 	connection_struct *conn = req->conn;
 	files_struct *fsp;
 	unsigned char locktype;
+	enum brl_type brltype;
 	unsigned char oplocklevel;
 	uint16_t num_ulocks;
 	uint16_t num_locks;
@@ -8474,24 +8475,25 @@ void reply_lockingX(struct smb_request *req)
 	/* Data now points at the beginning of the list
 	   of smb_lkrng structs */
 
+	if (locktype & LOCKING_ANDX_SHARED_LOCK) {
+		if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
+			brltype = PENDING_READ_LOCK;
+		} else {
+			brltype = READ_LOCK;
+		}
+	} else {
+		if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
+			brltype = PENDING_WRITE_LOCK;
+		} else {
+			brltype = WRITE_LOCK;
+		}
+	}
+
 	for(i = 0; i < (int)num_locks; i++) {
 		locks[i].smblctx = get_lock_pid(data, i, large_file_format);
 		locks[i].count = get_lock_count(data, i, large_file_format);
 		locks[i].offset = get_lock_offset(data, i, large_file_format);
-
-		if (locktype & LOCKING_ANDX_SHARED_LOCK) {
-			if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
-				locks[i].brltype = PENDING_READ_LOCK;
-			} else {
-				locks[i].brltype = READ_LOCK;
-			}
-		} else {
-			if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
-				locks[i].brltype = PENDING_WRITE_LOCK;
-			} else {
-				locks[i].brltype = WRITE_LOCK;
-			}
-		}
+		locks[i].brltype = brltype;
 	}
 
 	status = smbd_do_unlocking(req, fsp, num_ulocks, ulocks);
