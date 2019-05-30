@@ -2104,7 +2104,7 @@ static bool find_andx_cmd_ofs(uint8_t *buf, size_t *pofs)
 
 	cmd = CVAL(buf, smb_com);
 
-	if (!is_andx_req(cmd)) {
+	if (!smb1cli_is_andx_req(cmd)) {
 		return false;
 	}
 
@@ -2112,7 +2112,7 @@ static bool find_andx_cmd_ofs(uint8_t *buf, size_t *pofs)
 
 	while (CVAL(buf, ofs) != 0xff) {
 
-		if (!is_andx_req(CVAL(buf, ofs))) {
+		if (!smb1cli_is_andx_req(CVAL(buf, ofs))) {
 			return false;
 		}
 
@@ -2269,7 +2269,7 @@ bool smb1_is_chain(const uint8_t *buf)
 	uint8_t cmd, wct, andx_cmd;
 
 	cmd = CVAL(buf, smb_com);
-	if (!is_andx_req(cmd)) {
+	if (!smb1cli_is_andx_req(cmd)) {
 		return false;
 	}
 	wct = CVAL(buf, smb_wct);
@@ -2305,7 +2305,7 @@ bool smb1_walk_chain(const uint8_t *buf,
 		return false;
 	}
 
-	if (!is_andx_req(cmd)) {
+	if (!smb1cli_is_andx_req(cmd)) {
 		return true;
 	}
 	if (wct < 2) {
@@ -2363,7 +2363,7 @@ bool smb1_walk_chain(const uint8_t *buf,
 
 		wct = CVAL(smb_buf, chain_offset);
 
-		if (is_andx_req(chain_cmd) && (wct < 2)) {
+		if (smb1cli_is_andx_req(chain_cmd) && (wct < 2)) {
 			return false;
 		}
 
@@ -2398,7 +2398,7 @@ bool smb1_walk_chain(const uint8_t *buf,
 			return false;
 		}
 
-		if (!is_andx_req(chain_cmd)) {
+		if (!smb1cli_is_andx_req(chain_cmd)) {
 			return true;
 		}
 		chain_cmd = CVAL(vwv, 0);
@@ -4146,7 +4146,7 @@ bool req_is_in_chain(const struct smb_request *req)
 		return true;
 	}
 
-	if (!is_andx_req(req->cmd)) {
+	if (!smb1cli_is_andx_req(req->cmd)) {
 		return false;
 	}
 
