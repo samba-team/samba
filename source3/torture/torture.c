@@ -2727,6 +2727,173 @@ fail_nofd:
 	return correct;
 }
 
+struct locktest10_state {
+	bool ok;
+	bool done;
+};
+
+static void locktest10_lockingx_done(struct tevent_req *subreq);
+static void locktest10_read_andx_done(struct tevent_req *subreq);
+
+static bool run_locktest10(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct cli_state *cli1 = NULL;
+	struct cli_state *cli2 = NULL;
+	struct smb1_lock_element lck = { 0 };
+	struct tevent_req *reqs[2] = { NULL };
+	struct tevent_req *smbreqs[2] = { NULL };
+	const char fname[] = "\\lockt10.lck";
+	uint16_t fnum1, fnum2;
+	bool ret = false;
+	bool ok;
+	uint8_t data = 1;
+	struct locktest10_state state = { .ok = true };
+	NTSTATUS status;
+
+	printf("starting locktest10\n");
+
+	ev = samba_tevent_context_init(NULL);
+	if (ev == NULL) {
+		d_fprintf(stderr, "samba_tevent_context_init failed\n");
+		goto done;
+	}
+
+	ok = torture_open_connection(&cli1, 0);
+	if (!ok) {
+		goto done;
+	}
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+
+	ok = torture_open_connection(&cli2, 1);
+	if (!ok) {
+		goto done;
+	}
+	smbXcli_conn_set_sockopt(cli2->conn, sockops);
+
+	status = cli_openx(cli1, fname, O_CREAT|O_RDWR, DENY_NONE, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_openx failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = cli_writeall(cli1, fnum1, 0, &data, 0, sizeof(data), NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_writeall failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = cli_openx(cli2, fname, O_CREAT|O_RDWR, DENY_NONE, &fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_openx failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = cli_locktype(
+		cli2, fnum2, 0, 1, 0, LOCKING_ANDX_EXCLUSIVE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_locktype failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	lck = (struct smb1_lock_element) {
+		.pid = cli_getpid(cli1), .offset = 0, .length = 1,
+	};
+
+	reqs[0] = cli_lockingx_create(
+		ev,				/* mem_ctx */
+		ev,				/* tevent_context */
+		cli1,				/* cli */
+		fnum1,				/* fnum */
+		LOCKING_ANDX_EXCLUSIVE_LOCK,	/* typeoflock */
+		0,				/* newoplocklevel */
+		1,				/* timeout */
+		0,				/* num_unlocks */
+		NULL,				/* unlocks */
+		1,				/* num_locks */
+		&lck,				/* locks */
+		&smbreqs[0]);			/* psmbreq */
+	if (reqs[0] == NULL) {
+		d_fprintf(stderr, "cli_lockingx_create failed\n");
+		goto done;
+	}
+	tevent_req_set_callback(reqs[0], locktest10_lockingx_done, &state);
+
+	reqs[1] = cli_read_andx_create(
+		ev,		/* mem_ctx */
+		ev,		/* ev */
+		cli1,		/* cli */
+		fnum1,		/* fnum */
+		0,		/* offset */
+		1,		/* size */
+		&smbreqs[1]);	/* psmbreq */
+	if (reqs[1] == NULL) {
+		d_fprintf(stderr, "cli_read_andx_create failed\n");
+		goto done;
+	}
+	tevent_req_set_callback(reqs[1], locktest10_read_andx_done, &state);
+
+	status = smb1cli_req_chain_submit(smbreqs, ARRAY_SIZE(smbreqs));
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "smb1cli_req_chain_submit failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	while (!state.done) {
+		tevent_loop_once(ev);
+	}
+
+	torture_close_connection(cli1);
+
+	if (state.ok) {
+		ret = true;
+	}
+done:
+	return ret;
+}
+
+static void locktest10_lockingx_done(struct tevent_req *subreq)
+{
+	struct locktest10_state *state = tevent_req_callback_data_void(subreq);
+	NTSTATUS status;
+
+	status = cli_lockingx_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
+		d_printf("cli_lockingx returned %s\n", nt_errstr(status));
+		state->ok = false;
+	}
+}
+
+static void locktest10_read_andx_done(struct tevent_req *subreq)
+{
+	struct locktest10_state *state = tevent_req_callback_data_void(subreq);
+	ssize_t received = -1;
+	uint8_t *rcvbuf = NULL;
+	NTSTATUS status;
+
+	status = cli_read_andx_recv(subreq, &received, &rcvbuf);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_REQUEST_ABORTED)) {
+		d_printf("cli_read_andx returned %s\n", nt_errstr(status));
+		state->ok = false;
+	}
+
+	state->done = true;
+	TALLOC_FREE(subreq);
+}
+
 /*
 test whether fnums and tids open on one VC are available on another (a major
 security hole)
@@ -12045,6 +12212,10 @@ static struct {
 	{
 		.name = "LOCK9",
 		.fn   =  run_locktest9,
+	},
+	{
+		.name = "LOCK10",
+		.fn   =  run_locktest10,
 	},
 	{
 		.name = "UNLINK",
