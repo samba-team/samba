@@ -43,7 +43,7 @@ struct ipalloc_state {
 bool can_node_takeover_ip(struct ipalloc_state *ipalloc_state,
 			  int32_t pnn,
 			  struct public_ip_list *ip);
-int node_ip_coverage(int32_t pnn, struct public_ip_list *ips);
+int node_ip_coverage(uint32_t pnn, struct public_ip_list *ips);
 int find_takeover_node(struct ipalloc_state *ipalloc_state,
 		       struct public_ip_list *ip);
 

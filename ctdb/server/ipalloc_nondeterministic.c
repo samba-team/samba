@@ -37,8 +37,8 @@
 static void basic_failback(struct ipalloc_state *ipalloc_state,
 			   int num_ips)
 {
-	int i, numnodes;
-	int maxnode, maxnum, minnode, minnum, num, retries;
+	unsigned int i, numnodes, maxnode, minnode;
+	int maxnum, minnum, num, retries;
 	struct public_ip_list *t;
 
 	numnodes = ipalloc_state->num;

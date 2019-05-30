@@ -74,7 +74,7 @@ static uint32_t ip_distance(ctdb_sock_addr *ip1, ctdb_sock_addr *ip2)
  */
 static uint32_t ip_distance_2_sum(ctdb_sock_addr *ip,
 				  struct public_ip_list *ips,
-				  int pnn)
+				  unsigned int pnn)
 {
 	struct public_ip_list *t;
 	uint32_t d;
@@ -109,7 +109,8 @@ static uint32_t ip_distance_2_sum(ctdb_sock_addr *ip,
 /* Return the LCP2 imbalance metric for addresses currently assigned
    to the given node.
  */
-static uint32_t lcp2_imbalance(struct public_ip_list * all_ips, int pnn)
+static uint32_t lcp2_imbalance(struct public_ip_list * all_ips,
+			       unsigned int pnn)
 {
 	struct public_ip_list *t;
 
@@ -132,7 +133,7 @@ static bool lcp2_init(struct ipalloc_state *ipalloc_state,
 		      uint32_t **lcp2_imbalances,
 		      bool **rebalance_candidates)
 {
-	int i, numnodes;
+	unsigned int i, numnodes;
 	struct public_ip_list *t;
 
 	numnodes = ipalloc_state->num;
@@ -198,9 +199,9 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
 				     uint32_t *lcp2_imbalances)
 {
 	struct public_ip_list *t;
-	int dstnode, numnodes;
+	unsigned int dstnode, numnodes;
 
-	int minnode;
+	unsigned int minnode;
 	uint32_t mindsum, dstdsum, dstimbl;
 	uint32_t minimbl = 0;
 	struct public_ip_list *minip;
@@ -302,11 +303,11 @@ static void lcp2_allocate_unassigned(struct ipalloc_state *ipalloc_state,
  * combination to move from the source node.
  */
 static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
-				    int srcnode,
+				    unsigned int srcnode,
 				    uint32_t *lcp2_imbalances,
 				    bool *rebalance_candidates)
 {
-	int dstnode, mindstnode, numnodes;
+	unsigned int dstnode, mindstnode, numnodes;
 	uint32_t srcimbl, srcdsum, dstimbl, dstdsum;
 	uint32_t minsrcimbl, mindstimbl;
 	struct public_ip_list *minip;
@@ -402,7 +403,7 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 
 struct lcp2_imbalance_pnn {
 	uint32_t imbalance;
-	int pnn;
+	unsigned int pnn;
 };
 
 static int lcp2_cmp_imbalance_pnn(const void * a, const void * b)

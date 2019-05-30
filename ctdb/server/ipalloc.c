@@ -92,7 +92,7 @@ static int getips_count_callback(void *param, void *data)
 static struct public_ip_list *
 create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 {
-	int i, j;
+	unsigned int i, j;
 	struct public_ip_list *ip_list;
 	struct ctdb_public_ip_list *public_ips;
 	struct trbt_tree *ip_tree;
@@ -147,7 +147,7 @@ create_merged_ip_list(struct ipalloc_state *ipalloc_state)
 static bool populate_bitmap(struct ipalloc_state *ipalloc_state)
 {
 	struct public_ip_list *ip = NULL;
-	int i, j;
+	unsigned int i, j;
 
 	for (ip = ipalloc_state->all_ips; ip != NULL; ip = ip->next) {
 
@@ -210,14 +210,14 @@ void ipalloc_set_public_ips(struct ipalloc_state *ipalloc_state,
  * right now... */
 bool ipalloc_can_host_ips(struct ipalloc_state *ipalloc_state)
 {
-	int i;
+	unsigned int i;
 	bool have_ips = false;
 
 	for (i=0; i < ipalloc_state->num; i++) {
 		struct ctdb_public_ip_list *ips =
 			ipalloc_state->known_public_ips;
 		if (ips[i].num != 0) {
-			int j;
+			unsigned int j;
 			have_ips = true;
 			/* Succeed if an address is hosted on node i */
 			for (j=0; j < ips[i].num; j++) {
