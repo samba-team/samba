@@ -160,6 +160,10 @@ static void ping_pong(int fd, int num_locks)
 		}
 		if (do_check) {
 			ret = check_lock(fd, i, 1);
+			if (ret != 0) {
+				free(val);
+				return;
+			}
 		}
 		if (do_reads) {
 			unsigned char c;
