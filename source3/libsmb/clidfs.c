@@ -901,7 +901,7 @@ NTSTATUS cli_resolve_path(TALLOC_CTX *ctx,
 	int pathlen;
 	struct cli_state *newcli = NULL;
 	struct cli_state *ccli = NULL;
-	int count = 0;
+	size_t count = 0;
 	char *newpath = NULL;
 	char *newmount = NULL;
 	char *ppath = NULL;
