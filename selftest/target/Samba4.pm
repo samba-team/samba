@@ -3280,10 +3280,15 @@ sub get_backup_domain_realm
 		return undef, undef;
 	}
 
+	# make sure we don't try to create locks/sockets in the default install
+	# location (i.e. /usr/local/samba/)
+	my $options = "--option=\"private dir = $tmpdir\"";
+	$options .=  " --option=\"lock dir = $tmpdir\"";
+
 	# now use testparm to read the values we're interested in
 	my $testparm = Samba::bindir_path($self, "testparm");
-	my $domain = `$testparm $smbconf -sl --parameter-name=WORKGROUP`;
-	my $realm = `$testparm $smbconf -sl --parameter-name=REALM`;
+	my $domain = `$testparm $smbconf -sl --parameter-name=WORKGROUP $options`;
+	my $realm = `$testparm $smbconf -sl --parameter-name=REALM $options`;
 	chomp $realm;
 	chomp $domain;
 	print "Backup-file REALM is $realm, DOMAIN is $domain\n";
