@@ -167,8 +167,8 @@ int main(int argc, const char **argv)
 {
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;
-	struct run_proc_context *run_proc_ctx;
-	struct run_event_context *run_ctx;
+	struct run_proc_context *run_proc_ctx = NULL;
+	struct run_event_context *run_ctx = NULL;
 	int ret;
 
 	if (argc < 3) {
