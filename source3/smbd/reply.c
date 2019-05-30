@@ -8331,8 +8331,8 @@ void reply_lockingX(struct smb_request *req)
 	const uint8_t *data;
 	bool large_file_format;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	struct smbd_lock_element *ulocks;
-	struct smbd_lock_element *locks;
+	struct smbd_lock_element *ulocks = NULL;
+	struct smbd_lock_element *locks = NULL;
 	bool async = false;
 
 	START_PROFILE(SMBlockingX);
@@ -8453,13 +8453,6 @@ void reply_lockingX(struct smb_request *req)
 		return;
 	}
 
-	locks = talloc_array(req, struct smbd_lock_element, num_locks);
-	if (locks == NULL) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBlockingX);
-		return;
-	}
-
 	/* Data now points at the beginning of the list
 	   of smb_unlkrng structs */
 	for(i = 0; i < (int)num_ulocks; i++) {
@@ -8467,6 +8460,14 @@ void reply_lockingX(struct smb_request *req)
 		ulocks[i].count = get_lock_count(data, i, large_file_format);
 		ulocks[i].offset = get_lock_offset(data, i, large_file_format);
 		ulocks[i].brltype = UNLOCK_LOCK;
+	}
+
+	status = smbd_do_unlocking(req, fsp, num_ulocks, ulocks);
+	TALLOC_FREE(ulocks);
+	if (!NT_STATUS_IS_OK(status)) {
+		END_PROFILE(SMBlockingX);
+		reply_nterror(req, status);
+		return;
 	}
 
 	/* Now do any requested locks */
@@ -8489,6 +8490,13 @@ void reply_lockingX(struct smb_request *req)
 		}
 	}
 
+	locks = talloc_array(req, struct smbd_lock_element, num_locks);
+	if (locks == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBlockingX);
+		return;
+	}
+
 	for(i = 0; i < (int)num_locks; i++) {
 		locks[i].smblctx = get_lock_pid(data, i, large_file_format);
 		locks[i].count = get_lock_count(data, i, large_file_format);
@@ -8496,17 +8504,11 @@ void reply_lockingX(struct smb_request *req)
 		locks[i].brltype = brltype;
 	}
 
-	status = smbd_do_unlocking(req, fsp, num_ulocks, ulocks);
-	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBlockingX);
-		reply_nterror(req, status);
-		return;
-	}
-
 	status = smbd_do_locking(req, fsp,
 				 locktype, lock_timeout,
 				 num_locks, locks,
 				 &async);
+	TALLOC_FREE(locks);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBlockingX);
 		reply_nterror(req, status);
