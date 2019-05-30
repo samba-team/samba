@@ -8402,11 +8402,11 @@ void reply_lockingX(struct smb_request *req)
 			if (num_locks == 0 && num_ulocks == 0) {
 				END_PROFILE(SMBlockingX);
 				return;
-			} else {
-				END_PROFILE(SMBlockingX);
-				reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
-				return;
 			}
+
+			END_PROFILE(SMBlockingX);
+			reply_nterror(req, NT_STATUS_FILE_LOCK_CONFLICT);
+			return;
 		}
 
 		if ((fsp->sent_oplock_break == BREAK_TO_NONE_SENT) ||
