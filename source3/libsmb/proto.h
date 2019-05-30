@@ -459,17 +459,6 @@ struct tevent_req *cli_unlock_send(TALLOC_CTX *mem_ctx,
                                 uint64_t len);
 NTSTATUS cli_unlock_recv(struct tevent_req *req);
 NTSTATUS cli_unlock(struct cli_state *cli, uint16_t fnum, uint32_t offset, uint32_t len);
-NTSTATUS cli_lock64(struct cli_state *cli, uint16_t fnum,
-		    uint64_t offset, uint64_t len, int timeout,
-		    enum brl_type lock_type);
-struct tevent_req *cli_unlock64_send(TALLOC_CTX *mem_ctx,
-                                struct tevent_context *ev,
-                                struct cli_state *cli,
-                                uint16_t fnum,
-                                uint64_t offset,
-                                uint64_t len);
-NTSTATUS cli_unlock64_recv(struct tevent_req *req);
-NTSTATUS cli_unlock64(struct cli_state *cli, uint16_t fnum, uint64_t offset, uint64_t len);
 struct tevent_req *cli_posix_lock_send(TALLOC_CTX *mem_ctx,
                                         struct tevent_context *ev,
                                         struct cli_state *cli,
