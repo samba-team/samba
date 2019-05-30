@@ -309,13 +309,12 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 				    bool *rebalance_candidates)
 {
 	unsigned int dstnode, mindstnode, numnodes;
-	uint32_t srcimbl, srcdsum, dstimbl, dstdsum;
+	uint32_t srcdsum, dstimbl, dstdsum;
 	uint32_t minsrcimbl, mindstimbl;
 	struct public_ip_list *minip;
 	struct public_ip_list *t;
 
 	/* Find an IP and destination node that best reduces imbalance. */
-	srcimbl = 0;
 	minip = NULL;
 	minsrcimbl = 0;
 	mindstnode = CTDB_UNKNOWN_PNN;
@@ -328,6 +327,8 @@ static bool lcp2_failback_candidate(struct ipalloc_state *ipalloc_state,
 			   srcnode, lcp2_imbalances[srcnode]));
 
 	for (t = ipalloc_state->all_ips; t != NULL; t = t->next) {
+		uint32_t srcimbl;
+
 		/* Only consider addresses on srcnode. */
 		if (t->pnn != srcnode) {
 			continue;
