@@ -614,10 +614,46 @@ static bool test_PACVerify_workstation_des(struct torture_context *tctx,
 			      NETLOGON_NEG_AUTH2_ADS_FLAGS);
 }
 
+#ifdef SAMBA4_USES_HEIMDAL
+static NTSTATUS check_primary_group_in_validation(TALLOC_CTX *mem_ctx,
+						  uint16_t validation_level,
+						  const union netr_Validation *validation)
+{
+	const struct netr_SamBaseInfo *base = NULL;
+	int i;
+	switch (validation_level) {
+	case 2:
+		if (!validation || !validation->sam2) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		base = &validation->sam2->base;
+		break;
+	case 3:
+		if (!validation || !validation->sam3) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		base = &validation->sam3->base;
+		break;
+	case 6:
+		if (!validation || !validation->sam6) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		base = &validation->sam6->base;
+		break;
+	default:
+		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	for (i = 0; i < base->groups.count; i++) {
+		if (base->groups.rids[i].rid == base->primary_gid) {
+			return NT_STATUS_OK;
+		}
+	}
+	return NT_STATUS_INVALID_PARAMETER;
+}
 
 /* Check various ways to get the PAC, in particular check the group membership and
  * other details between the PAC from a normal kinit, S4U2Self and a SamLogon */
-#ifdef SAMBA4_USES_HEIMDAL
 static bool test_S4U2Self(struct torture_context *tctx,
 			  struct dcerpc_pipe *p1,
 			  struct cli_credentials *credentials,
@@ -872,6 +908,17 @@ static bool test_S4U2Self(struct torture_context *tctx,
 						      &netlogon_user_info_dc);
 
 	torture_assert_ntstatus_ok(tctx, status, "make_user_info_dc_netlogon_validation failed");
+
+	/* Check that the primary group is present in validation's RID array */
+	status = check_primary_group_in_validation(tmp_ctx, r.in.validation_level, r.out.validation);
+	torture_assert_ntstatus_ok(tctx, status, "check_primary_group_in_validation failed");
+
+	/* Check that the primary group is not duplicated in user_info_dc SID array */
+	for (i = 2; i < netlogon_user_info_dc->num_sids; i++) {
+		torture_assert(tctx, !dom_sid_equal(&netlogon_user_info_dc->sids[1],
+						    &netlogon_user_info_dc->sids[i]),
+			       "Duplicate PrimaryGroupId in return SID array");
+	}
 
 	torture_assert_str_equal(tctx, netlogon_user_info_dc->info->account_name == NULL ? "" : netlogon_user_info_dc->info->account_name,
 				 kinit_session_info->info->account_name, "Account name differs for kinit-based PAC");
