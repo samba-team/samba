@@ -952,25 +952,23 @@ NTSTATUS rpc_trusted_domains(TALLOC_CTX *mem_ctx,
 				return NT_STATUS_NO_MEMORY;
 			}
 
+			if (dom_list_ex.domains[i].sid == NULL) {
+				DBG_ERR("Trusted domain %s has no SID, "
+					"skipping!\n",
+					trust->dns_name);
+				continue;
+			}
+
 			if (has_ex) {
 				trust->netbios_name = talloc_move(array,
 								  &dom_list_ex.domains[i].netbios_name.string);
 				trust->dns_name = talloc_move(array,
 							      &dom_list_ex.domains[i].domain_name.string);
-				if (dom_list_ex.domains[i].sid == NULL) {
-					DEBUG(0, ("Trusted Domain %s has no SID, aborting!\n", trust->dns_name));
-					return NT_STATUS_INVALID_NETWORK_RESPONSE;
-				}
 				sid_copy(sid, dom_list_ex.domains[i].sid);
 			} else {
 				trust->netbios_name = talloc_move(array,
 								  &dom_list.domains[i].name.string);
 				trust->dns_name = NULL;
-
-				if (dom_list.domains[i].sid == NULL) {
-					DEBUG(0, ("Trusted Domain %s has no SID, aborting!\n", trust->netbios_name));
-					return NT_STATUS_INVALID_NETWORK_RESPONSE;
-				}
 
 				sid_copy(sid, dom_list.domains[i].sid);
 			}
