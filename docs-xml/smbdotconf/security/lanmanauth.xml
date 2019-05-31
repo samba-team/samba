@@ -24,16 +24,18 @@
     auth is re-enabled later on.
     </para>
 		
-    <para>Unlike the <command moreinfo="none">encrypt
-    passwords</command> option, this parameter cannot alter client
+    <para>Unlike the <parameter moreinfo="none">encrypt
+    passwords</parameter> option, this parameter cannot alter client
     behaviour, and the LANMAN response will still be sent over the
     network.  See the <command moreinfo="none">client lanman
     auth</command> to disable this for Samba's clients (such as smbclient)</para>
 
-    <para>If this option, and <command moreinfo="none">ntlm
-    auth</command> are both disabled, then only NTLMv2 logins will be
-    permited.  Not all clients support NTLMv2, and most will require
-    special configuration to use it.</para>
+    <para>This parameter is overriden by <parameter moreinfo="none">ntlm
+    auth</parameter>, so unless that it is also set to
+    <constant>ntlmv1-permitted</constant> or <constant>yes</constant>,
+    then only NTLMv2 logins will be permited and no LM hash will be
+    stored.  All modern clients support NTLMv2, and but some older
+    clients require special configuration to use it.</para>
 </description>
 
 <value type="default">no</value>
