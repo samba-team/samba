@@ -964,6 +964,10 @@ $envvarstr
 	my @term = ();
 	if ($ENV{TERMINAL}) {
 	    @term = ($ENV{TERMINAL});
+		# override the default terminal args (if specified)
+		if (defined($ENV{TERMINAL_ARGS})) {
+			@term_args = split(/ /, $ENV{TERMINAL_ARGS});
+		}
 	} else {
 	    @term = ("xterm", "-e");
 	    unshift(@term_args, ("bash", "-c"));
