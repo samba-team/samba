@@ -19,6 +19,7 @@ from __future__ import print_function
 from samba.tests import BlackboxTestCase
 import os
 import ldb
+import shutil
 from subprocess import check_output
 from samba.samdb import SamDB
 
@@ -33,9 +34,6 @@ class DowngradeTestBase(BlackboxTestCase):
         super(DowngradeTestBase, self).setUp()
         if not hasattr(self, "backend"):
             self.fail("Subclass this class and set 'backend'")
-
-        # Don't assert on empty tempdir contents on tearDown
-        self.check_tempdir_empty = False
 
         prov_cmd = "samba-tool domain provision " +\
                    "--domain FOO --realm foo.example.com " +\
@@ -58,6 +56,16 @@ class DowngradeTestBase(BlackboxTestCase):
         self.dbs = [os.path.join(private_dir, p)
                     for p in partitions]
         self.dbs.append(self.sam_path)
+
+    def tearDown(self):
+        shutil.rmtree(os.path.join(self.tempdir, "private"))
+        shutil.rmtree(os.path.join(self.tempdir, "etc"))
+        shutil.rmtree(os.path.join(self.tempdir, "state"))
+        shutil.rmtree(os.path.join(self.tempdir, "bind-dns"))
+        shutil.rmtree(os.path.join(self.tempdir, "msg.lock"))
+        os.unlink(os.path.join(self.tempdir, "names.tdb"))
+        os.unlink(os.path.join(self.tempdir, "gencache.tdb"))
+        super(DowngradeTestBase, self).tearDown()
 
     # Parse out the comments above each record that ldbdump produces
     # containing pack format version and KV level key for each record.
