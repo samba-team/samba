@@ -8104,59 +8104,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 			  fsp_str_dbg(fsp),
 			  timeout);
 
-		if (type & LOCKING_ANDX_CANCEL_LOCK) {
-			struct blocking_lock_record *blr = NULL;
-
-			if (num_locks > 1) {
-				/*
-				 * MS-CIFS (2.2.4.32.1) states that a cancel is honored if and only
-				 * if the lock vector contains one entry. When given multiple cancel
-				 * requests in a single PDU we expect the server to return an
-				 * error. Windows servers seem to accept the request but only
-				 * cancel the first lock.
-				 * JRA - Do what Windows does (tm) :-).
-				 */
-
-#if 0
-				/* MS-CIFS (2.2.4.32.1) behavior. */
-				return NT_STATUS_DOS(ERRDOS,
-						ERRcancelviolation);
-#else
-				/* Windows behavior. */
-				if (i != 0) {
-					DEBUG(10,("smbd_do_locking: ignoring subsequent "
-						"cancel request\n"));
-					continue;
-				}
-#endif
-			}
-
-			if (lp_blocking_locks(SNUM(conn))) {
-
-				/* Schedule a message to ourselves to
-				   remove the blocking lock record and
-				   return the right error. */
-
-				blr = blocking_lock_cancel_smb1(fsp,
-						e->smblctx,
-						e->offset,
-						e->count,
-						WINDOWS_LOCK,
-						type,
-						NT_STATUS_FILE_LOCK_CONFLICT);
-				if (blr == NULL) {
-					return NT_STATUS_DOS(
-							ERRDOS,
-							ERRcancelviolation);
-				}
-			}
-			/* Remove a matching pending lock. */
-			status = do_lock_cancel(fsp,
-						e->smblctx,
-						e->count,
-						e->offset,
-						WINDOWS_LOCK);
-		} else {
+		{
 			bool blocking_lock = (timeout != 0);
 			bool defer_lock = false;
 			struct byte_range_lock *br_lck;
@@ -8238,10 +8186,6 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 	   all of the previous locks (X/Open spec). */
 
 	if (num_locks != 0 && !NT_STATUS_IS_OK(status)) {
-
-		if (type & LOCKING_ANDX_CANCEL_LOCK) {
-			i = -1; /* we want to skip the for loop */
-		}
 
 		/*
 		 * Ensure we don't do a remove on the lock that just failed,
@@ -8504,6 +8448,61 @@ void reply_lockingX(struct smb_request *req)
 		locks[i].brltype = brltype;
 	}
 
+	if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
+		struct smbd_lock_element *e = NULL;
+
+		if (num_locks == 0) {
+			/* See smbtorture3 lock11 test */
+			goto done;
+		}
+
+		e = &locks[0];
+
+		/*
+		 * MS-CIFS (2.2.4.32.1) states that a cancel is
+		 * honored if and only if the lock vector contains one
+		 * entry. When given multiple cancel requests in a
+		 * single PDU we expect the server to return an
+		 * error. Windows servers seem to accept the request
+		 * but only cancel the first lock.
+		 *
+		 * JRA - Do what Windows does (tm) :-).
+		 */
+
+		if (lp_blocking_locks(SNUM(conn))) {
+			struct blocking_lock_record *blr = NULL;
+
+			/* Schedule a message to ourselves to
+			   remove the blocking lock record and
+			   return the right error. */
+
+			blr = blocking_lock_cancel_smb1(
+				fsp,
+				e->smblctx,
+				e->offset,
+				e->count,
+				WINDOWS_LOCK,
+				locktype,
+				NT_STATUS_FILE_LOCK_CONFLICT);
+			if (blr == NULL) {
+				reply_force_doserror(
+					req, ERRDOS, ERRcancelviolation);
+				END_PROFILE(SMBlockingX);
+				return;
+			}
+		}
+
+		/* Remove a matching pending lock. */
+		status = do_lock_cancel(fsp,
+					e->smblctx,
+					e->count,
+					e->offset,
+					WINDOWS_LOCK);
+		END_PROFILE(SMBlockingX);
+		reply_nterror(req, status);
+		return;
+	}
+
 	status = smbd_do_locking(req, fsp,
 				 locktype, lock_timeout,
 				 num_locks, locks,
@@ -8519,6 +8518,7 @@ void reply_lockingX(struct smb_request *req)
 		return;
 	}
 
+done:
 	reply_outbuf(req, 2, 0);
 	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
 	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
