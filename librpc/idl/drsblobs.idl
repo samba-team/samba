@@ -30,10 +30,6 @@ interface drsblobs {
 		hyper local_usn;
 	} replPropertyMetaData1;
 
-	void decode_replPropertyMetaData1(
-		[in] replPropertyMetaData1 blob
-		);
-
 	typedef struct {
 		uint32 count;
 		[value(0)] uint32 reserved;
@@ -49,10 +45,6 @@ interface drsblobs {
 		[value(0)] uint32 reserved;
 		[switch_is(version)] replPropertyMetaDataCtr ctr;
 	} replPropertyMetaDataBlob;
-
-	void decode_replPropertyMetaData(
-		[in] replPropertyMetaDataBlob blob
-		);
 
 	/*
 	 * replUpToDateVector
@@ -81,10 +73,6 @@ interface drsblobs {
 		[value(0)] uint32 reserved;
 		[switch_is(version)] replUpToDateVectorCtr ctr;
 	} replUpToDateVectorBlob;
-
-	void decode_replUpToDateVector(
-		[in] replUpToDateVectorBlob blob
-		);
 
 	/*
 	 * repsFrom/repsTo
@@ -154,10 +142,6 @@ interface drsblobs {
 		[switch_is(version)] repsFromTo ctr;
 	} repsFromToBlob;
 
-	void decode_repsFromTo(
-		[in] repsFromToBlob blob
-		);
-
 	/* Replication schedule structures as defined in MS-ADTS 7.1.4.5
          * Appears as attribute of NTDSConnection object
          */
@@ -197,11 +181,6 @@ interface drsblobs {
 		[value(0)] uint32 reserved;
 		[switch_is(version)] partialAttributeSetCtr ctr;
 	} partialAttributeSetBlob;
-
-	void decode_partialAttributeSet(
-		[in] partialAttributeSetBlob blob
-		);
-
 
 	/*
 	 * schemaInfo attribute
@@ -264,11 +243,6 @@ interface drsblobs {
 		[switch_is(version)] prefixMapCtr ctr;
 	} prefixMapBlob;
 
-	void decode_prefixMap(
-		[in] prefixMapBlob blob
-		);
-
-
 	/*
 	 * the cookie for the LDAP dirsync control
 	 */
@@ -293,10 +267,6 @@ interface drsblobs {
 		[charset(DOS),value("MSDS")] uint8 msds[4];
 		[subcontext(0)] ldapControlDirSyncBlob blob;
 	} ldapControlDirSyncCookie;
-
-	void decode_ldapControlDirSync(
-		[in] ldapControlDirSyncCookie cookie
-		);
 
 	typedef [public] struct {
 		[value(2*strlen_m(name))] uint16 name_len;
@@ -359,17 +329,9 @@ interface drsblobs {
 		[value(0)] uint8 unknown3;
 	} supplementalCredentialsBlob;
 
-	void decode_supplementalCredentials(
-		[in] supplementalCredentialsBlob blob
-		);
-
 	typedef [public] struct {
 		[flag(STR_NOTERM|NDR_REMAINING)] string_array names;
 	} package_PackagesBlob;
-
-	void decode_Packages(
-		[in] package_PackagesBlob blob
-		);
 
 	typedef struct {
 		[value(2*strlen_m(string))] uint16 length;
@@ -433,17 +395,9 @@ interface drsblobs {
 		[switch_is(version)] package_PrimaryKerberosCtr ctr;
 	} package_PrimaryKerberosBlob;
 
-	void decode_PrimaryKerberos(
-		[in] package_PrimaryKerberosBlob blob
-		);
-
 	typedef [public] struct {
 		[flag(NDR_REMAINING)] DATA_BLOB cleartext;
 	} package_PrimaryCLEARTEXTBlob;
-
-	void decode_PrimaryCLEARTEXT(
-		[in] package_PrimaryCLEARTEXTBlob blob
-		);
 
 	typedef [flag(NDR_PAHEX)] struct {
 		uint8 hash[16];
@@ -458,17 +412,9 @@ interface drsblobs {
 		package_PrimaryWDigestHash hashes[num_hashes];
 	} package_PrimaryWDigestBlob;
 
-	void decode_PrimaryWDigest(
-		[in] package_PrimaryWDigestBlob blob
-		);
-
 	typedef [public] struct {
 		[flag(NDR_REMAINING)] DATA_BLOB gpg_blob;
 	} package_PrimarySambaGPGBlob;
-
-	void decode_PrimarySambaGPG(
-		[in] package_PrimarySambaGPGBlob blob
-		);
 
 	/*
 	 * Password hashes stored in a scheme compatible with
@@ -499,10 +445,6 @@ interface drsblobs {
 		uint16 num_hashes;
 		package_PrimaryUserPasswordValue hashes[num_hashes];
 	} package_PrimaryUserPasswordBlob;
-
-	void decode_PrimaryUserPasswordBlob(
-		[in] package_PrimaryUserPasswordBlob blob
-	);
 
 	typedef struct {
 		[value(0)] uint32 size;
@@ -568,10 +510,6 @@ interface drsblobs {
 		[subcontext(0)] [flag(NDR_REMAINING)] AuthenticationInformationArray previous;
 	} trustAuthInOutBlob;
 
-	[nopython] void decode_trustAuthInOut(
-		[in] trustAuthInOutBlob blob
-		);
-
 	typedef [public,nopull] struct {
 		uint8 confounder[512];
 		[subcontext(0),subcontext_size(outgoing_size)] trustAuthInOutBlob outgoing;
@@ -579,10 +517,6 @@ interface drsblobs {
 		[value(ndr_size_trustAuthInOutBlob(&outgoing, ndr->flags))] uint32 outgoing_size;
 		[value(ndr_size_trustAuthInOutBlob(&incoming, ndr->flags))] uint32 incoming_size;
 	} trustDomainPasswords;
-
-	[nopython] void decode_trustDomainPasswords(
-		[in] trustDomainPasswords blob
-		);
 
 	typedef [public] struct {
 		uint32 marker;
@@ -661,10 +595,6 @@ interface drsblobs {
 		[unique] ExtendedErrorInfo *info;
 	} ExtendedErrorInfoPtr;
 
-	[nopython] void decode_ExtendedErrorInfo (
-		[in,subcontext(0xFFFFFC01)] ExtendedErrorInfoPtr ptr
-		);
-
 	/* MS-ADTS 7.1.6.9.3 msDS-TrustForestTrustInfo Attribute */
 
 	typedef struct {
@@ -717,10 +647,6 @@ interface drsblobs {
 		uint32 count;
 		ForestTrustInfoRecordArmor records[count];
 	} ForestTrustInfo;
-
-	[nopython] void decode_ForestTrustInfo(
-		[in] ForestTrustInfo blob
-		);
 
 	typedef enum {
 		ENC_SECRET_AES_128_AEAD = 1
