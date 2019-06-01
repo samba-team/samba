@@ -282,7 +282,8 @@ static void reply_lockingX_success(struct blocking_lock_record *blr)
 			true, req->seqnum+1,
 			IS_CONN_ENCRYPTED(req->conn)||req->encrypted,
 			&req->pcd)) {
-		exit_server_cleanly("construct_reply: srv_send_smb failed.");
+		exit_server_cleanly("reply_lockingX_success: srv_send_smb "
+				    "failed.");
 	}
 
 	TALLOC_FREE(req->outbuf);
