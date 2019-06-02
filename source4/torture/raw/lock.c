@@ -164,7 +164,7 @@ static bool test_lock(struct torture_context *tctx, struct smbcli_state *cli)
 	status = smb_raw_lock(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_RANGE_NOT_LOCKED);
 
-	torture_comment(tctx, "Trying 0xEF000000 lock\n");
+	torture_comment(tctx, "Trying 0xEEFFFFFF lock\n");
 	io.lock.level = RAW_LOCK_LOCK;
 	io.lock.in.file.fnum = fnum;
 	io.lock.in.count = 4000;
