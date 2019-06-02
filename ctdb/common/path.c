@@ -89,7 +89,7 @@ static bool path_construct(char *path, const char *subdir)
 			       subdir);
 	}
 
-	if (len >= sizeof(p)) {
+	if ((size_t)len >= sizeof(p)) {
 		return false;
 	}
 

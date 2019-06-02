@@ -63,7 +63,7 @@ bool debug_level_parse(const char *log_string, int *log_level)
 	if (isdigit(log_string[0])) {
 		int level = atoi(log_string);
 
-		if (level >= 0 && level < ARRAY_SIZE(log_string_map)) {
+		if (level >= 0 && (size_t)level < ARRAY_SIZE(log_string_map)) {
 			*log_level = level;
 			return true;
 		}
@@ -253,12 +253,12 @@ static int debug_level_to_priority(int level)
         };
         int priority;
 
-        if( level >= ARRAY_SIZE(priority_map) || level < 0)
-                priority = LOG_DEBUG;
-        else
-                priority = priority_map[level];
-
-        return priority;
+	if ((size_t)level >= ARRAY_SIZE(priority_map) || level < 0) {
+		priority = LOG_DEBUG;
+	} else {
+		priority = priority_map[level];
+	}
+	return priority;
 }
 
 struct syslog_log_state {
