@@ -3810,10 +3810,13 @@ void reply_lockread(struct smb_request *req)
 	maxtoread = xconn->smb1.sessions.max_send - (smb_size + 5*2 + 3);
 
 	if (numtoread > maxtoread) {
-		DEBUG(0,("reply_lockread: requested read size (%u) is greater than maximum allowed (%u/%u). \
-Returning short read of maximum allowed for compatibility with Windows 2000.\n",
-			(unsigned int)numtoread, (unsigned int)maxtoread,
-			(unsigned int)xconn->smb1.sessions.max_send));
+		DBG_WARNING("requested read size (%zu) is greater than "
+			    "maximum allowed (%zu/%d). "
+			    "Returning short read of maximum allowed for "
+			    "compatibility with Windows 2000.\n",
+			    numtoread,
+			    maxtoread,
+			    xconn->smb1.sessions.max_send);
 		numtoread = maxtoread;
 	}
 
