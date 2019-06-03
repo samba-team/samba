@@ -259,15 +259,4 @@ interface dnsp
 		[switch_is(wDataLength?id:DSPROPERTY_ZONE_EMPTY)]     dnsPropertyData data;
 		uint32              name;
 	} dnsp_DnsProperty;
-
-	/*
-	  these are convenience hooks for ndrdump
-	 */
-	[nopython] void decode_DnssrvRpcRecord(
-		[in] dnsp_DnssrvRpcRecord blob
-		);
-
-	[nopython] void decode_DnsProperty(
-		[in] dnsp_DnsProperty blob
-		);
 }
