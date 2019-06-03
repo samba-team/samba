@@ -385,6 +385,13 @@
 		</para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>--json</term>
+		<listitem><para>Report results in JSON format for
+		"net ads info" and "net ads lookup".
+		</para></listitem>
+		</varlistentry>
+
 		&stdarg.encrypt;
 		&popt.common.samba.client;
 
