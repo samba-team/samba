@@ -500,9 +500,10 @@ static bool ceph_snap_gmt_strip_snapshot(struct vfs_handle_struct *handle,
 			memcpy(_stripped_buf + len_before_gmt, q, rest_len);
 		}
 		_stripped_buf[dst_len] = '\0';
+		DBG_DEBUG("GMT token in %s stripped to %s\n",
+			  name, _stripped_buf);
 	}
 	*_timestamp = timestamp;
-	DBG_DEBUG("GMT token in %s stripped to %s\n", name, _stripped_buf);
 	return 0;
 no_snapshot:
 	*_timestamp = 0;
