@@ -8272,7 +8272,7 @@ void reply_lockingX(struct smb_request *req)
 	uint16_t num_ulocks;
 	uint16_t num_locks;
 	int32_t lock_timeout;
-	int i;
+	uint16_t i;
 	const uint8_t *data;
 	bool large_file_format;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -8400,7 +8400,7 @@ void reply_lockingX(struct smb_request *req)
 
 	/* Data now points at the beginning of the list
 	   of smb_unlkrng structs */
-	for(i = 0; i < (int)num_ulocks; i++) {
+	for (i = 0; i < num_ulocks; i++) {
 		ulocks[i].smblctx = get_lock_pid(data, i, large_file_format);
 		ulocks[i].count = get_lock_count(data, i, large_file_format);
 		ulocks[i].offset = get_lock_offset(data, i, large_file_format);
@@ -8442,7 +8442,7 @@ void reply_lockingX(struct smb_request *req)
 		return;
 	}
 
-	for(i = 0; i < (int)num_locks; i++) {
+	for (i = 0; i < num_locks; i++) {
 		locks[i].smblctx = get_lock_pid(data, i, large_file_format);
 		locks[i].count = get_lock_count(data, i, large_file_format);
 		locks[i].offset = get_lock_offset(data, i, large_file_format);
