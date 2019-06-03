@@ -47,6 +47,7 @@
 #include "modules/posixacl_xattr.h"
 
 #define DEFAULT_VOLFILE_SERVER "localhost"
+#define GLUSTER_NAME_MAX 255
 
 static int read_fd = -1;
 static int write_fd = -1;
@@ -1449,18 +1450,19 @@ static int vfs_gluster_get_real_filename(struct vfs_handle_struct *handle,
 					 TALLOC_CTX *mem_ctx, char **found_name)
 {
 	int ret;
-	char key_buf[NAME_MAX + 64];
-	char val_buf[NAME_MAX + 1];
+	char key_buf[GLUSTER_NAME_MAX + 64];
+	char val_buf[GLUSTER_NAME_MAX + 1];
 
-	if (strlen(name) >= NAME_MAX) {
+	if (strlen(name) >= GLUSTER_NAME_MAX) {
 		errno = ENAMETOOLONG;
 		return -1;
 	}
 
-	snprintf(key_buf, NAME_MAX + 64,
+	snprintf(key_buf, GLUSTER_NAME_MAX + 64,
 		 "glusterfs.get_real_filename:%s", name);
 
-	ret = glfs_getxattr(handle->data, path, key_buf, val_buf, NAME_MAX + 1);
+	ret = glfs_getxattr(handle->data, path, key_buf, val_buf,
+			    GLUSTER_NAME_MAX + 1);
 	if (ret == -1) {
 		if (errno == ENOATTR) {
 			errno = EOPNOTSUPP;
