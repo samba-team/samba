@@ -149,8 +149,4 @@ interface negoex
 		uint32 count;
 		negoex_MESSAGE messages[count];
 	} negoex_MESSAGE_ARRAY;
-
-	void decode_negoex_MESSAGE(
-		[in] negoex_MESSAGE_ARRAY array
-		);
 }
