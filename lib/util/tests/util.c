@@ -31,6 +31,9 @@
 
 #include "lib/util/samba_util.h"
 
+#include "limits.h"
+#include "string.h"
+
 struct test_trim_string_data {
 	const char *desc;
 	const char *in;
@@ -506,6 +509,38 @@ static bool test_smb_strtoul_no_number(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_smb_strtoul_allow_negative(struct torture_context *tctx)
+{
+	const char *number = "-1";
+	const char *number2 = "-1-1";
+	unsigned long res = 0;
+	unsigned long long res2 = 0;
+	char *end_ptr = NULL;
+	int err;
+
+	err = 0;
+	res = smb_strtoul(number, NULL, 0, &err, SMB_STR_ALLOW_NEGATIVE);
+	torture_assert(tctx, err == 0, "strtoul_err: Unexpected error");
+	torture_assert(tctx, res == ULONG_MAX, "strtoul_err: Unexpected value");
+
+	err = 0;
+	res2 = smb_strtoull(number, NULL, 0, &err, SMB_STR_ALLOW_NEGATIVE);
+	torture_assert(tctx, err == 0, "strtoull_err: Unexpected error");
+	torture_assert(tctx, res2 == ULLONG_MAX, "strtoull_err: Unexpected value");
+
+	err = 0;
+	smb_strtoul(number2, &end_ptr, 0, &err, SMB_STR_ALLOW_NEGATIVE);
+	torture_assert(tctx, err == 0, "strtoul_err: Unexpected error");
+	torture_assert(tctx, end_ptr[0] == '-', "strtoul_err: Unexpected end pointer");
+
+	err = 0;
+	smb_strtoull(number2, &end_ptr, 0, &err, SMB_STR_ALLOW_NEGATIVE);
+	torture_assert(tctx, err == 0, "strtoull_err: Unexpected error");
+	torture_assert(tctx, end_ptr[0] == '-', "strtoull_err: Unexpected end pointer");
+
+	return true;
+}
+
 struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite =
@@ -526,5 +561,8 @@ struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "smb_strtoul(l) no number",
 				      test_smb_strtoul_no_number);
+	torture_suite_add_simple_test(suite,
+				      "smb_strtoul(l) allow_negative",
+				      test_smb_strtoul_allow_negative);
 	return suite;
 }
