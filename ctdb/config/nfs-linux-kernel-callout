@@ -281,8 +281,8 @@ nfs_startup ()
     basic_stop "nfs" || true
     basic_start "nfs"
     _f="${PROCFS_PATH}/sys/net/ipv4/tcp_tw_recycle"
-    if [ "$_f" ] ; then
-	echo 1 >"$_f"
+    if [ -f "$_f" ] ; then
+	    echo 1 >"$_f"
     fi
 }
 
