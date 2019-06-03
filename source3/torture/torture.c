@@ -2894,6 +2894,58 @@ static void locktest10_read_andx_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 }
 
+static bool run_locktest11(int dummy)
+{
+	struct cli_state *cli1;
+	const char *fname = "\\lockt11.lck";
+	NTSTATUS status;
+	uint16_t fnum;
+	bool ret = false;
+
+	if (!torture_open_connection(&cli1, 0)) {
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+
+	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	status = cli_openx(cli1, fname, O_CREAT|O_RDWR, DENY_NONE, &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_openx returned %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	/*
+	 * Test that LOCKING_ANDX_CANCEL_LOCK without any locks
+	 * returns NT_STATUS_OK
+	 */
+
+	status = cli_lockingx(
+		cli1,				/* cli */
+		fnum,				/* fnum */
+		LOCKING_ANDX_CANCEL_LOCK,	/* typeoflock */
+		0,				/* newoplocklevel */
+		0,				/* timeout */
+		0,				/* num_unlocks */
+		NULL,				/* unlocks */
+		0,				/* num_locks */
+		NULL);				/* locks */
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("cli_lockingX returned %s\n", nt_errstr(status));
+		goto fail;
+	}
+
+	ret = true;
+fail:
+	cli_close(cli1, fnum);
+	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	return ret;
+}
 /*
 test whether fnums and tids open on one VC are available on another (a major
 security hole)
@@ -12216,6 +12268,10 @@ static struct {
 	{
 		.name = "LOCK10",
 		.fn   =  run_locktest10,
+	},
+	{
+		.name = "LOCK11",
+		.fn   =  run_locktest11,
 	},
 	{
 		.name = "UNLINK",

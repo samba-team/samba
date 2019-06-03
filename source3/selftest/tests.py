@@ -80,6 +80,7 @@ plantestsuite("samba3.blackbox.registry.upgrade", "nt4_dc:local", [os.path.join(
 
 tests = ["FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7", "LOCK9",
          "LOCK10",
+         "LOCK11",
          "UNLINK", "BROWSE", "ATTR", "TRANS2", "TORTURE",
          "OPLOCK1", "OPLOCK2", "OPLOCK4", "STREAMERROR",
          "DIR", "DIR1", "DIR-CREATETIME", "TCON", "TCONDEV", "RW1", "RW2", "RW3", "LARGE_READX", "RW-SIGNING",
