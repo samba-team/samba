@@ -1311,7 +1311,7 @@ static int net_idmap_check(struct net_context *c, int argc, const char **argv)
 			   "    --repair,-r\trepair\n"
 			   "    --auto,-a\tnoninteractive mode\n"
 			   "    --test,-T\tdry run\n"
-			   "    --fore,-f\tforce\n"
+			   "    --force,-f\tforce\n"
 			   "    --lock,-l\tlock db while doing the check\n"
 			   "    TDB\tidmap database\n"));
 		return c->display_usage ? 0 : -1;
