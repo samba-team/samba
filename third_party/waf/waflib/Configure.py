@@ -125,7 +125,7 @@ class ConfigurationContext(Context.Context):
 		self.bldnode.mkdir()
 
 		if not os.path.isdir(self.bldnode.abspath()):
-			conf.fatal('Could not create the build directory %s' % self.bldnode.abspath())
+			self.fatal('Could not create the build directory %s' % self.bldnode.abspath())
 
 	def execute(self):
 		"""
@@ -180,6 +180,7 @@ class ConfigurationContext(Context.Context):
 		env.hash = self.hash
 		env.files = self.files
 		env.environ = dict(self.environ)
+		env.launch_dir = Context.launch_dir
 
 		if not (self.env.NO_LOCK_IN_RUN or env.environ.get('NO_LOCK_IN_RUN') or getattr(Options.options, 'no_lock_in_run')):
 			env.store(os.path.join(Context.run_dir, Options.lockfile))
@@ -286,7 +287,7 @@ class ConfigurationContext(Context.Context):
 
 	def eval_rules(self, rules):
 		"""
-		Execute configuration tests provided as list of funcitons to run
+		Execute configuration tests provided as list of functions to run
 
 		:param rules: list of configuration method names
 		:type rules: list of string

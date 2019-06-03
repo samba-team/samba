@@ -329,6 +329,10 @@ def check_python_headers(conf, features='pyembed pyext'):
 	conf.find_program([''.join(pybin) + '-config', 'python%s-config' % num, 'python-config-%s' % num, 'python%sm-config' % num], var='PYTHON_CONFIG', msg="python-config", mandatory=False)
 
 	if env.PYTHON_CONFIG:
+		# check python-config output only once
+		if conf.env.HAVE_PYTHON_H:
+			return
+
 		# python2.6-config requires 3 runs
 		all_flags = [['--cflags', '--libs', '--ldflags']]
 		if sys.hexversion < 0x2070000:
@@ -338,7 +342,13 @@ def check_python_headers(conf, features='pyembed pyext'):
 
 		if 'pyembed' in features:
 			for flags in all_flags:
-				conf.check_cfg(msg='Asking python-config for pyembed %r flags' % ' '.join(flags), path=env.PYTHON_CONFIG, package='', uselib_store='PYEMBED', args=flags)
+				# Python 3.8 has different flags for pyembed, needs --embed
+				embedflags = flags + ['--embed']
+				try:
+					conf.check_cfg(msg='Asking python-config for pyembed %r flags' % ' '.join(embedflags), path=env.PYTHON_CONFIG, package='', uselib_store='PYEMBED', args=embedflags)
+				except conf.errors.ConfigurationError:
+					# However Python < 3.8 doesn't accept --embed, so we need a fallback
+					conf.check_cfg(msg='Asking python-config for pyembed %r flags' % ' '.join(flags), path=env.PYTHON_CONFIG, package='', uselib_store='PYEMBED', args=flags)
 
 			try:
 				conf.test_pyembed(xx)
@@ -446,9 +456,9 @@ def check_python_version(conf, minver=None):
 	Check if the python interpreter is found matching a given minimum version.
 	minver should be a tuple, eg. to check for python >= 2.4.2 pass (2,4,2) as minver.
 
-	If successful, PYTHON_VERSION is defined as 'MAJOR.MINOR'
-	(eg. '2.4') of the actual python version found, and PYTHONDIR is
-	defined, pointing to the site-packages directory appropriate for
+	If successful, PYTHON_VERSION is defined as 'MAJOR.MINOR' (eg. '2.4')
+	of the actual python version found, and PYTHONDIR and PYTHONARCHDIR
+	are defined, pointing to the site-packages directories appropriate for
 	this python version, where modules/packages/extensions should be
 	installed.
 

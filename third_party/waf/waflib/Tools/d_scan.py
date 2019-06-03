@@ -93,8 +93,8 @@ class d_parser(object):
 
 		self.allnames = []
 
-		self.re_module = re.compile("module\s+([^;]+)")
-		self.re_import = re.compile("import\s+([^;]+)")
+		self.re_module = re.compile(r"module\s+([^;]+)")
+		self.re_import = re.compile(r"import\s+([^;]+)")
 		self.re_import_bindings = re.compile("([^:]+):(.*)")
 		self.re_import_alias = re.compile("[^=]+=(.+)")
 
@@ -138,7 +138,7 @@ class d_parser(object):
 
 		mod_name = self.re_module.search(code)
 		if mod_name:
-			self.module = re.sub('\s+', '', mod_name.group(1)) # strip all whitespaces
+			self.module = re.sub(r'\s+', '', mod_name.group(1)) # strip all whitespaces
 
 		# go through the code, have a look at all import occurrences
 
@@ -146,7 +146,7 @@ class d_parser(object):
 		import_iterator = self.re_import.finditer(code)
 		if import_iterator:
 			for import_match in import_iterator:
-				import_match_str = re.sub('\s+', '', import_match.group(1)) # strip all whitespaces
+				import_match_str = re.sub(r'\s+', '', import_match.group(1)) # strip all whitespaces
 
 				# does this end with an import bindings declaration?
 				# (import bindings always terminate the list of imports)

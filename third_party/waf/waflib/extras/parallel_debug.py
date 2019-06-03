@@ -3,13 +3,16 @@
 # Thomas Nagy, 2007-2010 (ita)
 
 """
-Debugging helper for parallel compilation, outputs
-a file named pdebug.svg in the source directory::
+Debugging helper for parallel compilation.
+
+Copy it to your project and load it with::
 
 	def options(opt):
-		opt.load('parallel_debug')
+		opt.load('parallel_debug', tooldir='.')
 	def build(bld):
 		...
+
+The build will then output a file named pdebug.svg in the source directory.
 """
 
 import re, sys, threading, time, traceback

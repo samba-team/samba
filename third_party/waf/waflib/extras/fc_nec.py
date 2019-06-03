@@ -20,7 +20,7 @@ def find_sxfc(conf):
 @conf
 def sxfc_flags(conf):
 	v = conf.env
-	v['_FCMODOUTFLAGS']  = [] # enable module files and put them in the current directoy
+	v['_FCMODOUTFLAGS']  = [] # enable module files and put them in the current directory
 	v['FCFLAGS_DEBUG'] = [] # more verbose compiler warnings
 	v['FCFLAGS_fcshlib']   = []
 	v['LINKFLAGS_fcshlib'] = []

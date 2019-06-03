@@ -74,7 +74,7 @@ class task_gen(object):
 		else:
 			self.bld = kw['bld']
 			self.env = self.bld.env.derive()
-			self.path = self.bld.path # emulate chdir when reading scripts
+			self.path = kw.get('path', self.bld.path) # by default, emulate chdir when reading scripts
 
 			# Provide a unique index per folder
 			# This is part of a measure to prevent output file name collisions
@@ -556,7 +556,7 @@ def process_rule(self):
 	* chmod: permissions for the resulting files (integer value such as Utils.O755)
 	* shell: set to False to execute the command directly (default is True to use a shell)
 	* scan: scanner function
-	* vars: list of variables to trigger rebuilts, such as CFLAGS
+	* vars: list of variables to trigger rebuilds, such as CFLAGS
 	* cls_str: string to display when executing the task
 	* cls_keyword: label to display when executing the task
 	* cache_rule: by default, try to re-use similar classes, set to False to disable
@@ -727,7 +727,7 @@ def sequence_order(self):
 	self.bld.prev = self
 
 
-re_m4 = re.compile('@(\w+)@', re.M)
+re_m4 = re.compile(r'@(\w+)@', re.M)
 
 class subst_pc(Task.Task):
 	"""

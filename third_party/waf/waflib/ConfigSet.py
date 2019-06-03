@@ -11,7 +11,7 @@ The values put in :py:class:`ConfigSet` must be serializable (dicts, lists, stri
 
 import copy, re, os
 from waflib import Logs, Utils
-re_imp = re.compile('^(#)*?([^#=]*?)\ =\ (.*?)$', re.M)
+re_imp = re.compile(r'^(#)*?([^#=]*?)\ =\ (.*?)$', re.M)
 
 class ConfigSet(object):
 	"""
@@ -312,7 +312,7 @@ class ConfigSet(object):
 		:type filename: string
 		"""
 		tbl = self.table
-		code = Utils.readf(filename, m='rU')
+		code = Utils.readf(filename, m='r')
 		for m in re_imp.finditer(code):
 			g = m.group
 			tbl[g(2)] = eval(g(3))

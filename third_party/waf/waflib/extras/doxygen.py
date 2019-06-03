@@ -27,6 +27,7 @@ When using this tool, the wscript will look like:
 """
 
 import os, os.path, re
+from collections import OrderedDict
 from waflib import Task, Utils, Node
 from waflib.TaskGen import feature
 
@@ -40,7 +41,13 @@ inc m mm py f90c cc cxx cpp c++ java ii ixx ipp i++ inl h hh hxx
 re_rl = re.compile('\\\\\r*\n', re.MULTILINE)
 re_nl = re.compile('\r*\n', re.M)
 def parse_doxy(txt):
-	tbl = {}
+	'''
+	Parses a doxygen file.
+	Returns an ordered dictionary. We cannot return a default dictionary, as the
+	order in which the entries are reported does matter, especially for the
+	'@INCLUDE' lines.
+	'''
+	tbl = OrderedDict()
 	txt   = re_rl.sub('', txt)
 	lines = re_nl.split(txt)
 	for x in lines:
@@ -190,13 +197,13 @@ class tar(Task.Task):
 @feature('doxygen')
 def process_doxy(self):
 	if not getattr(self, 'doxyfile', None):
-		self.generator.bld.fatal('no doxyfile??')
+		self.bld.fatal('no doxyfile variable specified??')
 
 	node = self.doxyfile
 	if not isinstance(node, Node.Node):
 		node = self.path.find_resource(node)
 	if not node:
-		raise ValueError('doxygen file not found')
+		self.bld.fatal('doxygen file %s not found' % self.doxyfile)
 
 	# the task instance
 	dsk = self.create_task('doxygen', node)

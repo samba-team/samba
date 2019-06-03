@@ -2,8 +2,10 @@
 # encoding: utf-8
 
 """
-Re-calculate md5 hashes of files only when the file times or the file
-size have changed.
+Re-calculate md5 hashes of files only when the file time have changed::
+
+	def options(opt):
+		opt.load('md5_tstamp')
 
 The hashes can also reflect either the file contents (STRONGEST=True) or the
 file time and file size.

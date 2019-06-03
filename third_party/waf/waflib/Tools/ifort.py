@@ -107,7 +107,7 @@ def gather_ifort_versions(conf, versions):
 	"""
 	List compiler versions by looking up registry keys
 	"""
-	version_pattern = re.compile('^...?.?\....?.?')
+	version_pattern = re.compile(r'^...?.?\....?.?')
 	try:
 		all_versions = Utils.winreg.OpenKey(Utils.winreg.HKEY_LOCAL_MACHINE, 'SOFTWARE\\Wow6432node\\Intel\\Compilers\\Fortran')
 	except OSError:

@@ -44,7 +44,7 @@ TARFORMAT = 'w:bz2'
 TIMEOUT = 60
 REQUIRES = 'requires.txt'
 
-re_com = re.compile('\s*#.*', re.M)
+re_com = re.compile(r'\s*#.*', re.M)
 
 def total_version_order(num):
 	lst = num.split('.')

@@ -71,7 +71,7 @@ def configure(self):
 	fu = re.compile('#(.*)\n')
 	txt = fu.sub('', txt)
 
-	setregexp = re.compile('([sS][eE][tT]\s*\()\s*([^\s]+)\s+\"([^"]+)\"\)')
+	setregexp = re.compile(r'([sS][eE][tT]\s*\()\s*([^\s]+)\s+\"([^"]+)\"\)')
 	found = setregexp.findall(txt)
 
 	for (_, key, val) in found:

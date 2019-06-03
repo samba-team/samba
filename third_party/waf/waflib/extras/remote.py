@@ -203,7 +203,7 @@ class remote(BuildContext):
 					Options.commands.remove(k)
 
 	def login_to_host(self, login):
-		return re.sub('(\w+@)', '', login)
+		return re.sub(r'(\w+@)', '', login)
 
 	def variant_to_login(self, variant):
 		"""linux_32_debug -> search env.LINUX_32 and then env.LINUX"""

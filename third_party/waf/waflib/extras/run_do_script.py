@@ -101,7 +101,7 @@ class run_do_script(run_do_script_base):
 		with open(**kwargs) as log:
 			log_tail = log.readlines()[-10:]
 			for line in log_tail:
-				error_found = re.match("r\(([0-9]+)\)", line)
+				error_found = re.match(r"r\(([0-9]+)\)", line)
 				if error_found:
 					return error_found.group(1), ''.join(log_tail)
 				else:

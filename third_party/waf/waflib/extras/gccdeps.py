@@ -36,7 +36,7 @@ def scan(self):
 	names = []
 	return (nodes, names)
 
-re_o = re.compile("\.o$")
+re_o = re.compile(r"\.o$")
 re_splitter = re.compile(r'(?<!\\)\s+') # split by space, except when spaces are escaped
 
 def remove_makefile_rule_lhs(line):
@@ -197,7 +197,7 @@ def configure(conf):
 		except Errors.ConfigurationError:
 			pass
 		else:
-			conf.env.append_value('CFLAGS', gccdeps_flags)
+			conf.env.append_value('CFLAGS', flags)
 			conf.env.append_unique('ENABLE_GCCDEPS', 'c')
 
 	if conf.env.CXX_NAME in supported_compilers:
@@ -206,7 +206,7 @@ def configure(conf):
 		except Errors.ConfigurationError:
 			pass
 		else:
-			conf.env.append_value('CXXFLAGS', gccdeps_flags)
+			conf.env.append_value('CXXFLAGS', flags)
 			conf.env.append_unique('ENABLE_GCCDEPS', 'cxx')
 
 def options(opt):

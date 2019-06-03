@@ -11,13 +11,13 @@ from waflib import Utils, Errors, Logs
 import waflib.Node
 
 # the following 3 constants are updated on each new release (do not touch)
-HEXVERSION=0x2000800
+HEXVERSION=0x2001100
 """Constant updated on new releases"""
 
-WAFVERSION="2.0.8"
+WAFVERSION="2.0.17"
 """Constant updated on new releases"""
 
-WAFREVISION="f78fbc32bb355a3291c9b5f79bbe0c8dfe81282a"
+WAFREVISION="6bc6cb599c702e985780e9f705b291b812123693"
 """Git revision when the waf version is updated"""
 
 ABI = 20
@@ -266,7 +266,7 @@ class Context(ctx):
 				cache[node] = True
 				self.pre_recurse(node)
 				try:
-					function_code = node.read('rU', encoding)
+					function_code = node.read('r', encoding)
 					exec(compile(function_code, node.abspath(), 'exec'), self.exec_dict)
 				finally:
 					self.post_recurse(node)
@@ -502,7 +502,7 @@ class Context(ctx):
 			def build(bld):
 				bld.to_log('starting the build')
 
-		Provide a logger on the context class or override this methid if necessary.
+		Provide a logger on the context class or override this method if necessary.
 
 		:param msg: message
 		:type msg: string
@@ -613,7 +613,7 @@ class Context(ctx):
 		is typically called once for a programming language group, see for
 		example :py:mod:`waflib.Tools.compiler_c`
 
-		:param var: glob expression, for example 'cxx\_\*.py'
+		:param var: glob expression, for example 'cxx\\_\\*.py'
 		:type var: string
 		:param ban: list of exact file names to exclude
 		:type ban: list of string
@@ -662,7 +662,7 @@ def load_module(path, encoding=None):
 
 	module = imp.new_module(WSCRIPT_FILE)
 	try:
-		code = Utils.readf(path, m='rU', encoding=encoding)
+		code = Utils.readf(path, m='r', encoding=encoding)
 	except EnvironmentError:
 		raise Errors.WafError('Could not read the file %r' % path)
 
@@ -678,7 +678,7 @@ def load_module(path, encoding=None):
 
 def load_tool(tool, tooldir=None, ctx=None, with_sys_path=True):
 	"""
-	Importx a Waf tool as a python module, and stores it in the dict :py:const:`waflib.Context.Context.tools`
+	Imports a Waf tool as a python module, and stores it in the dict :py:const:`waflib.Context.Context.tools`
 
 	:type  tool: string
 	:param tool: Name of the tool

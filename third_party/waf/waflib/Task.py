@@ -50,6 +50,9 @@ def f(tsk):
 	bld = gen.bld
 	cwdx = tsk.get_cwd()
 	p = env.get_flat
+	def to_list(xx):
+		if isinstance(xx, str): return [xx]
+		return xx
 	tsk.last_cmd = cmd = \'\'\' %s \'\'\' % s
 	return tsk.exec_command(cmd, cwd=cwdx, env=env.env or None)
 '''
@@ -73,6 +76,20 @@ def f(tsk):
 		lst = [x for x in lst if x]
 	tsk.last_cmd = lst
 	return tsk.exec_command(lst, cwd=cwdx, env=env.env or None)
+'''
+
+COMPILE_TEMPLATE_SIG_VARS = '''
+def f(tsk):
+	sig = tsk.generator.bld.hash_env_vars(tsk.env, tsk.vars)
+	tsk.m.update(sig)
+	env = tsk.env
+	gen = tsk.generator
+	bld = gen.bld
+	cwdx = tsk.get_cwd()
+	p = env.get_flat
+	buf = []
+	%s
+	tsk.m.update(repr(buf).encode())
 '''
 
 classes = {}
@@ -101,8 +118,13 @@ class store_task_type(type):
 				# change the name of run_str or it is impossible to subclass with a function
 				cls.run_str = None
 				cls.run = f
+				# process variables
 				cls.vars = list(set(cls.vars + dvars))
 				cls.vars.sort()
+				if cls.vars:
+					fun = compile_sig_vars(cls.vars)
+					if fun:
+						cls.sig_vars = fun
 			elif getattr(cls, 'run', None) and not 'hcode' in cls.__dict__:
 				# getattr(cls, 'hcode') would look in the upper classes
 				cls.hcode = Utils.h_cmd(cls.run)
@@ -115,10 +137,12 @@ evil = store_task_type('evil', (object,), {})
 
 class Task(evil):
 	"""
-	This class deals with the filesystem (:py:class:`waflib.Node.Node`). The method :py:class:`waflib.Task.Task.runnable_status`
-	uses a hash value (from :py:class:`waflib.Task.Task.signature`) which is persistent from build to build. When the value changes,
-	the task has to be executed. The method :py:class:`waflib.Task.Task.post_run` will assign the task signature to the output
-	nodes (if present).
+	Task objects represents actions to perform such as commands to execute by calling the `run` method.
+
+	Detecting when to execute a task occurs in the method :py:meth:`waflib.Task.Task.runnable_status`.
+
+	Detecting which tasks to execute is performed through a hash value returned by
+	:py:meth:`waflib.Task.Task.signature`. The task signature is persistent from build to build.
 	"""
 	vars = []
 	"""ConfigSet variables that should trigger a rebuild (class attribute used for :py:meth:`waflib.Task.Task.sig_vars`)"""
@@ -139,10 +163,10 @@ class Task(evil):
 	"""File extensions that objects of this task class may create"""
 
 	before = []
-	"""List of task class names to execute before instances of this class"""
+	"""The instances of this class are executed before the instances of classes whose names are in this list"""
 
 	after = []
-	"""List of task class names to execute after instances of this class"""
+	"""The instances of this class are executed after the instances of classes whose names are in this list"""
 
 	hcode = Utils.SIG_NIL
 	"""String representing an additional hash for the class representation"""
@@ -282,25 +306,31 @@ class Task(evil):
 		if hasattr(self, 'stderr'):
 			kw['stderr'] = self.stderr
 
-		# workaround for command line length limit:
-		# http://support.microsoft.com/kb/830473
-		if not isinstance(cmd, str) and (len(repr(cmd)) >= 8192 if Utils.is_win32 else len(cmd) > 200000):
-			cmd, args = self.split_argfile(cmd)
-			try:
-				(fd, tmp) = tempfile.mkstemp()
-				os.write(fd, '\r\n'.join(args).encode())
-				os.close(fd)
-				if Logs.verbose:
-					Logs.debug('argfile: @%r -> %r', tmp, args)
-				return self.generator.bld.exec_command(cmd + ['@' + tmp], **kw)
-			finally:
+		if not isinstance(cmd, str):
+			if Utils.is_win32:
+				# win32 compares the resulting length http://support.microsoft.com/kb/830473
+				too_long = sum([len(arg) for arg in cmd]) + len(cmd) > 8192
+			else:
+				# non-win32 counts the amount of arguments (200k)
+				too_long = len(cmd) > 200000
+
+			if too_long and getattr(self, 'allow_argsfile', True):
+				# Shunt arguments to a temporary file if the command is too long.
+				cmd, args = self.split_argfile(cmd)
 				try:
-					os.remove(tmp)
-				except OSError:
-					# anti-virus and indexers can keep files open -_-
-					pass
-		else:
-			return self.generator.bld.exec_command(cmd, **kw)
+					(fd, tmp) = tempfile.mkstemp()
+					os.write(fd, '\r\n'.join(args).encode())
+					os.close(fd)
+					if Logs.verbose:
+						Logs.debug('argfile: @%r -> %r', tmp, args)
+					return self.generator.bld.exec_command(cmd + ['@' + tmp], **kw)
+				finally:
+					try:
+						os.remove(tmp)
+					except OSError:
+						# anti-virus and indexers can keep files open -_-
+						pass
+		return self.generator.bld.exec_command(cmd, **kw)
 
 	def process(self):
 		"""
@@ -572,6 +602,9 @@ class Task(evil):
 		"""
 		Run this task only after the given *task*.
 
+		Calling this method from :py:meth:`waflib.Task.Task.runnable_status` may cause
+		build deadlocks; see :py:meth:`waflib.Tools.fc.fc.runnable_status` for details.
+
 		:param task: task
 		:type task: :py:class:`waflib.Task.Task`
 		"""
@@ -751,6 +784,10 @@ class Task(evil):
 	def sig_vars(self):
 		"""
 		Used by :py:meth:`waflib.Task.Task.signature`; it hashes :py:attr:`waflib.Task.Task.env` variables/values
+		When overriding this method, and if scriptlet expressions are used, make sure to follow
+		the code in :py:meth:`waflib.Task.Task.compile_sig_vars` to enable dependencies on scriptlet results.
+
+		This method may be replaced on subclasses by the metaclass to force dependencies on scriptlet code.
 		"""
 		sig = self.generator.bld.hash_env_vars(self.env, self.vars)
 		self.m.update(sig)
@@ -1013,7 +1050,7 @@ def funex(c):
 	exec(c, dc)
 	return dc['f']
 
-re_cond = re.compile('(?P<var>\w+)|(?P<or>\|)|(?P<and>&)')
+re_cond = re.compile(r'(?P<var>\w+)|(?P<or>\|)|(?P<and>&)')
 re_novar = re.compile(r'^(SRC|TGT)\W+.*?$')
 reg_act = re.compile(r'(?P<backslash>\\)|(?P<dollar>\$\$)|(?P<subst>\$\{(?P<var>\w+)(?P<code>.*?)\})', re.M)
 def compile_fun_shell(line):
@@ -1033,6 +1070,9 @@ def compile_fun_shell(line):
 		return None
 	line = reg_act.sub(repl, line) or line
 	dvars = []
+	def add_dvar(x):
+		if x not in dvars:
+			dvars.append(x)
 
 	def replc(m):
 		# performs substitutions and populates dvars
@@ -1042,8 +1082,7 @@ def compile_fun_shell(line):
 			return ' or '
 		else:
 			x = m.group('var')
-			if x not in dvars:
-				dvars.append(x)
+			add_dvar(x)
 			return 'env[%r]' % x
 
 	parm = []
@@ -1061,8 +1100,7 @@ def compile_fun_shell(line):
 				app('" ".join([a.path_from(cwdx) for a in tsk.outputs])')
 		elif meth:
 			if meth.startswith(':'):
-				if var not in dvars:
-					dvars.append(var)
+				add_dvar(var)
 				m = meth[1:]
 				if m == 'SRC':
 					m = '[a.path_from(cwdx) for a in tsk.inputs]'
@@ -1072,19 +1110,21 @@ def compile_fun_shell(line):
 					m = '[tsk.inputs%s]' % m[3:]
 				elif re_novar.match(m):
 					m = '[tsk.outputs%s]' % m[3:]
-				elif m[:3] not in ('tsk', 'gen', 'bld'):
-					dvars.append(meth[1:])
-					m = '%r' % m
+				else:
+					add_dvar(m)
+					if m[:3] not in ('tsk', 'gen', 'bld'):
+						m = '%r' % m
 				app('" ".join(tsk.colon(%r, %s))' % (var, m))
 			elif meth.startswith('?'):
 				# In A?B|C output env.A if one of env.B or env.C is non-empty
 				expr = re_cond.sub(replc, meth[1:])
 				app('p(%r) if (%s) else ""' % (var, expr))
 			else:
-				app('%s%s' % (var, meth))
+				call = '%s%s' % (var, meth)
+				add_dvar(call)
+				app(call)
 		else:
-			if var not in dvars:
-				dvars.append(var)
+			add_dvar(var)
 			app("p('%s')" % var)
 	if parm:
 		parm = "%% (%s) " % (',\n\t\t'.join(parm))
@@ -1105,6 +1145,10 @@ def compile_fun_noshell(line):
 	merge = False
 	app = buf.append
 
+	def add_dvar(x):
+		if x not in dvars:
+			dvars.append(x)
+
 	def replc(m):
 		# performs substitutions and populates dvars
 		if m.group('and'):
@@ -1113,8 +1157,7 @@ def compile_fun_noshell(line):
 			return ' or '
 		else:
 			x = m.group('var')
-			if x not in dvars:
-				dvars.append(x)
+			add_dvar(x)
 			return 'env[%r]' % x
 
 	for m in reg_act_noshell.finditer(line):
@@ -1139,8 +1182,7 @@ def compile_fun_noshell(line):
 			elif code:
 				if code.startswith(':'):
 					# a composed variable ${FOO:OUT}
-					if not var in dvars:
-						dvars.append(var)
+					add_dvar(var)
 					m = code[1:]
 					if m == 'SRC':
 						m = '[a.path_from(cwdx) for a in tsk.inputs]'
@@ -1150,9 +1192,10 @@ def compile_fun_noshell(line):
 						m = '[tsk.inputs%s]' % m[3:]
 					elif re_novar.match(m):
 						m = '[tsk.outputs%s]' % m[3:]
-					elif m[:3] not in ('tsk', 'gen', 'bld'):
-						dvars.append(m)
-						m = '%r' % m
+					else:
+						add_dvar(m)
+						if m[:3] not in ('tsk', 'gen', 'bld'):
+							m = '%r' % m
 					app('tsk.colon(%r, %s)' % (var, m))
 				elif code.startswith('?'):
 					# In A?B|C output env.A if one of env.B or env.C is non-empty
@@ -1160,12 +1203,13 @@ def compile_fun_noshell(line):
 					app('to_list(env[%r] if (%s) else [])' % (var, expr))
 				else:
 					# plain code such as ${tsk.inputs[0].abspath()}
-					app('gen.to_list(%s%s)' % (var, code))
+					call = '%s%s' % (var, code)
+					add_dvar(call)
+					app('to_list(%s)' % call)
 			else:
 				# a plain variable such as # a plain variable like ${AR}
 				app('to_list(env[%r])' % var)
-				if not var in dvars:
-					dvars.append(var)
+				add_dvar(var)
 		if merge:
 			tmp = 'merge(%s, %s)' % (buf[-2], buf[-1])
 			del buf[-1]
@@ -1221,6 +1265,36 @@ def compile_fun(line, shell=False):
 		return compile_fun_shell(line)
 	else:
 		return compile_fun_noshell(line)
+
+def compile_sig_vars(vars):
+	"""
+	This method produces a sig_vars method suitable for subclasses that provide
+	scriptlet code in their run_str code.
+	If no such method can be created, this method returns None.
+
+	The purpose of the sig_vars method returned is to ensures
+	that rebuilds occur whenever the contents of the expression changes.
+	This is the case B below::
+
+		import time
+		# case A: regular variables
+		tg = bld(rule='echo ${FOO}')
+		tg.env.FOO = '%s' % time.time()
+		# case B
+		bld(rule='echo ${gen.foo}', foo='%s' % time.time())
+
+	:param vars: env variables such as CXXFLAGS or gen.foo
+	:type vars: list of string
+	:return: A sig_vars method relevant for dependencies if adequate, else None
+	:rtype: A function, or None in most cases
+	"""
+	buf = []
+	for x in sorted(vars):
+		if x[:3] in ('tsk', 'gen', 'bld'):
+			buf.append('buf.append(%s)' % x)
+	if buf:
+		return funex(COMPILE_TEMPLATE_SIG_VARS % '\n\t'.join(buf))
+	return None
 
 def task_factory(name, func=None, vars=None, color='GREEN', ext_in=[], ext_out=[], before=[], after=[], shell=False, scan=None):
 	"""
@@ -1278,4 +1352,55 @@ def deep_inputs(cls):
 
 TaskBase = Task
 "Provided for compatibility reasons, TaskBase should not be used"
+
+class TaskSemaphore(object):
+	"""
+	Task semaphores provide a simple and efficient way of throttling the amount of
+	a particular task to run concurrently. The throttling value is capped
+	by the amount of maximum jobs, so for example, a `TaskSemaphore(10)`
+	has no effect in a `-j2` build.
+
+	Task semaphores are typically specified on the task class level::
+
+		class compile(waflib.Task.Task):
+			semaphore = waflib.Task.TaskSemaphore(2)
+			run_str = 'touch ${TGT}'
+
+	Task semaphores are meant to be used by the build scheduler in the main
+	thread, so there are no guarantees of thread safety.
+	"""
+	def __init__(self, num):
+		"""
+		:param num: maximum value of concurrent tasks
+		:type num: int
+		"""
+		self.num = num
+		self.locking = set()
+		self.waiting = set()
+
+	def is_locked(self):
+		"""Returns True if this semaphore cannot be acquired by more tasks"""
+		return len(self.locking) >= self.num
+
+	def acquire(self, tsk):
+		"""
+		Mark the semaphore as used by the given task (not re-entrant).
+
+		:param tsk: task object
+		:type tsk: :py:class:`waflib.Task.Task`
+		:raises: :py:class:`IndexError` in case the resource is already acquired
+		"""
+		if self.is_locked():
+			raise IndexError('Cannot lock more %r' % self.locking)
+		self.locking.add(tsk)
+
+	def release(self, tsk):
+		"""
+		Mark the semaphore as unused by the given task.
+
+		:param tsk: task object
+		:type tsk: :py:class:`waflib.Task.Task`
+		:raises: :py:class:`KeyError` in case the resource is not acquired by the task
+		"""
+		self.locking.remove(tsk)
 

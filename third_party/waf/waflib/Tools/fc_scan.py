@@ -5,13 +5,15 @@
 
 import re
 
-INC_REGEX = """(?:^|['">]\s*;)\s*(?:|#\s*)INCLUDE\s+(?:\w+_)?[<"'](.+?)(?=["'>])"""
-USE_REGEX = """(?:^|;)\s*USE(?:\s+|(?:(?:\s*,\s*(?:NON_)?INTRINSIC)?\s*::))\s*(\w+)"""
-MOD_REGEX = """(?:^|;)\s*MODULE(?!\s*PROCEDURE)(?:\s+|(?:(?:\s*,\s*(?:NON_)?INTRINSIC)?\s*::))\s*(\w+)"""
+INC_REGEX = r"""(?:^|['">]\s*;)\s*(?:|#\s*)INCLUDE\s+(?:\w+_)?[<"'](.+?)(?=["'>])"""
+USE_REGEX = r"""(?:^|;)\s*USE(?:\s+|(?:(?:\s*,\s*(?:NON_)?INTRINSIC)?\s*::))\s*(\w+)"""
+MOD_REGEX = r"""(?:^|;)\s*MODULE(?!\s+(?:PROCEDURE|SUBROUTINE|FUNCTION))\s+(\w+)"""
+SMD_REGEX = r"""(?:^|;)\s*SUBMODULE\s*\(([\w:]+)\)\s*(\w+)"""
 
 re_inc = re.compile(INC_REGEX, re.I)
 re_use = re.compile(USE_REGEX, re.I)
 re_mod = re.compile(MOD_REGEX, re.I)
+re_smd = re.compile(SMD_REGEX, re.I)
 
 class fortran_parser(object):
 	"""
@@ -58,6 +60,10 @@ class fortran_parser(object):
 			m = re_mod.search(line)
 			if m:
 				mods.append(m.group(1))
+			m = re_smd.search(line)
+			if m:
+				uses.append(m.group(1))
+				mods.append('{0}:{1}'.format(m.group(1),m.group(2)))
 		return (incs, uses, mods)
 
 	def start(self, node):

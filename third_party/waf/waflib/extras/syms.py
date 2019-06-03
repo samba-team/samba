@@ -31,7 +31,7 @@ class gen_sym(Task):
 			if self.env.DEST_BINFMT == 'pe': #gcc uses nm, and has a preceding _ on windows
 				re_nm = re.compile(r'(T|D)\s+_(?P<symbol>%s)\b' % reg)
 			elif self.env.DEST_BINFMT=='mac-o':
-				re_nm=re.compile(r'(T|D)\s+(?P<symbol>_?%s)\b' % reg)
+				re_nm=re.compile(r'(T|D)\s+(?P<symbol>_?(%s))\b' % reg)
 			else:
 				re_nm = re.compile(r'(T|D)\s+(?P<symbol>%s)\b' % reg)
 			cmd = (self.env.NM or ['nm']) + ['-g', obj.abspath()]

@@ -15,7 +15,7 @@ EXT_MLI = ['.mli']
 EXT_MLC = ['.c']
 EXT_ML  = ['.ml']
 
-open_re = re.compile('^\s*open\s+([a-zA-Z]+)(;;){0,1}$', re.M)
+open_re = re.compile(r'^\s*open\s+([a-zA-Z]+)(;;){0,1}$', re.M)
 foo = re.compile(r"""(\(\*)|(\*\))|("(\\.|[^"\\])*"|'(\\.|[^'\\])*'|.[^()*"'\\]*)""", re.M)
 def filter_comments(txt):
 	meh = [0]

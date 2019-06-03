@@ -60,7 +60,7 @@ def get_pgi_version(conf, cc):
 	except Errors.WafError:
 		conf.fatal('Could not find pgi compiler %r' % cmd)
 
-	version = re.findall('^COMPVER\s*=(.*)', out, re.M)
+	version = re.findall(r'^COMPVER\s*=(.*)', out, re.M)
 	if len(version) != 1:
 		conf.fatal('Could not determine the compiler version')
 	return version[0]
