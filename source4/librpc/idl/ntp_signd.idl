@@ -37,10 +37,4 @@ interface ntp_signd
 		uint32 packet_id;
 		[flag(NDR_REMAINING)]	DATA_BLOB signed_packet;
 	} signed_reply;
-
-	void decode_sign_requst(
-		[in] sign_request request
-		);
-
-	
 }
