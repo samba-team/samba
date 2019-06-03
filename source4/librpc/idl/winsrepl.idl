@@ -171,9 +171,4 @@ import "nbt.idl";
 		[value(ndr_size_wrepl_packet(&packet, ndr->flags))] uint32 size;
 		wrepl_packet    packet;
 	} wrepl_wrap;
-
-	void decode_winsrepl(
-		[in] wrepl_wrap p
-		);
-
 }
