@@ -41,6 +41,4 @@ import "misc.idl";
 		uint32 num_entries;
 		preg_entry entries[num_entries];
 	} preg_file;
-
-	[nopython] void decode_preg_file([in] preg_file file);
 }
