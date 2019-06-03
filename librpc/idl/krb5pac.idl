@@ -178,34 +178,6 @@ interface krb5pac
 		[flag(NDR_REMAINING)] DATA_BLOB ChecksumAndSignature;
 	} PAC_Validate;
 
-	[nopython] void decode_pac(
-		[in] PAC_DATA pac
-		);
-
-	[nopython] void decode_pac_raw(
-		[in] PAC_DATA_RAW pac
-		);
-
-	[nopython] void decode_login_info(
-		[in] PAC_LOGON_INFO logon_info
-		);
-
-	[nopython] void decode_login_info_ctr(
-		[in] PAC_LOGON_INFO_CTR logon_info_ctr
-		);
-
-	[nopython] void decode_credential_data_ndr(
-		[in] PAC_CREDENTIAL_DATA_NDR credential_data_ndr
-		);
-
-	[nopython] void decode_upn_dns_info(
-		[in] PAC_UPN_DNS_INFO upn_dns_info
-		);
-
-	[nopython] void decode_pac_validate(
-		[in] PAC_Validate pac_validate
-		);
-
 	/* used for samba3 netsamlogon cache */
 	typedef [public] struct {
 		time_t timestamp;
