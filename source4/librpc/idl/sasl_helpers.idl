@@ -17,8 +17,4 @@ interface sasl_helpers {
 		[value(strlen_m(realm))] uint16 realm_length;
 		[charset(UTF8)] uint8 realm[realm_length];
 	} saslauthdRequest;
-
-	void decode_saslauthd(
-		[in] saslauthdRequest req
-		);
 }
