@@ -378,6 +378,10 @@ typedef struct files_struct {
 	/* if not NULL, means this is a print file */
 	struct print_file_data *print_file;
 
+	/*
+	 * Optimize the aio_requests array for high performance: Never
+	 * shrink it, maintain num_aio_requests separately
+	 */
 	unsigned num_aio_requests;
 	struct tevent_req **aio_requests;
 
