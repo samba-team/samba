@@ -21,6 +21,8 @@
 #include "smbd/smbd.h"
 #include "system/filesys.h"
 
+#define GLUSTER_NAME_MAX 255
+
 static int vfs_gluster_fuse_get_real_filename(struct vfs_handle_struct *handle,
 					      const char *path,
 					      const char *name,
@@ -28,19 +30,19 @@ static int vfs_gluster_fuse_get_real_filename(struct vfs_handle_struct *handle,
 					      char **_found_name)
 {
 	int ret;
-	char key_buf[NAME_MAX + 64];
-	char val_buf[NAME_MAX + 1];
+	char key_buf[GLUSTER_NAME_MAX + 64];
+	char val_buf[GLUSTER_NAME_MAX + 1];
 	char *found_name = NULL;
 
-	if (strlen(name) >= NAME_MAX) {
+	if (strlen(name) >= GLUSTER_NAME_MAX) {
 		errno = ENAMETOOLONG;
 		return -1;
 	}
 
-	snprintf(key_buf, NAME_MAX + 64,
+	snprintf(key_buf, GLUSTER_NAME_MAX + 64,
 		 "glusterfs.get_real_filename:%s", name);
 
-	ret = getxattr(path, key_buf, val_buf, NAME_MAX + 1);
+	ret = getxattr(path, key_buf, val_buf, GLUSTER_NAME_MAX + 1);
 	if (ret == -1) {
 		if (errno == ENOATTR) {
 			errno = EOPNOTSUPP;
