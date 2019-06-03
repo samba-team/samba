@@ -541,6 +541,31 @@ static bool test_smb_strtoul_allow_negative(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_smb_strtoul_full_string(struct torture_context *tctx)
+{
+	const char *number = "123 ";
+	const char *number2 = "123";
+	int err;
+
+	err = 0;
+	smb_strtoul(number, NULL, 0, &err, SMB_STR_FULL_STR_CONV);
+	torture_assert(tctx, err == EINVAL, "strtoul_err: Expected EINVAL");
+
+	err = 0;
+	smb_strtoull(number, NULL, 0, &err, SMB_STR_FULL_STR_CONV);
+	torture_assert(tctx, err == EINVAL, "strtoull_err: Expected EINVAL");
+
+	err = 0;
+	smb_strtoul(number2, NULL, 0, &err, SMB_STR_FULL_STR_CONV);
+	torture_assert(tctx, err == 0, "strtoul_err: Unexpected error");
+
+	err = 0;
+	smb_strtoull(number2, NULL, 0, &err, SMB_STR_FULL_STR_CONV);
+	torture_assert(tctx, err == 0, "strtoull_err: Unexpected error");
+
+	return true;
+}
+
 struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite =
@@ -564,5 +589,8 @@ struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "smb_strtoul(l) allow_negative",
 				      test_smb_strtoul_allow_negative);
+	torture_suite_add_simple_test(suite,
+				      "smb_strtoul(l) full string conversion",
+				      test_smb_strtoul_full_string);
 	return suite;
 }
