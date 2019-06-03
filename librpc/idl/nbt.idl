@@ -493,10 +493,6 @@ interface nbt
 		[switch_is(ntver)] netlogon_samlogon_response_union data;
 	} netlogon_samlogon_response;
 
-	void decode_netlogon_samlogon_response_packet(
-		[in] netlogon_samlogon_response packet
-		);
-
 	/* query for pdc request */
 	typedef struct {
 		astring              computer_name;
@@ -578,10 +574,6 @@ interface nbt
 		netlogon_command command;
 		[switch_is(command)] nbt_netlogon_request req;
 	} nbt_netlogon_packet;
-
-	void decode_nbt_netlogon_packet(
-		[in] nbt_netlogon_packet packet
-		);
 
 	/********************************************************/
 	/* \MAILSLOT\BROWSE mailslot requests			*/
