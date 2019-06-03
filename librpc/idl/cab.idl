@@ -127,9 +127,4 @@ import "misc.idl";
 		[noprint,value(ndr_count_cfdata(r))] uint32 cfdata_count;
 		CFDATA cfdata[cfdata_count];
 	} cab_file;
-
-	void decode_cab_file(
-		[in] cab_file file
-		);
-
 }
