@@ -304,26 +304,4 @@ interface ntlmssp
 		 uint32 SeqNum;
 	} NTLMSSP_MESSAGE_SIGNATURE_NTLMv2;
 
-	/* some ndrdump helpers */
-
-	void decode_NEGOTIATE_MESSAGE(
-		[in] NEGOTIATE_MESSAGE negotiate
-		);
-
-	void decode_CHALLENGE_MESSAGE(
-		[in] CHALLENGE_MESSAGE challenge
-		);
-
-	void decode_AUTHENTICATE_MESSAGE(
-		[in] AUTHENTICATE_MESSAGE authenticate
-		);
-
-	void decode_NTLMv2_CLIENT_CHALLENGE(
-		[in] NTLMv2_CLIENT_CHALLENGE challenge
-		);
-
-	void decode_NTLMv2_RESPONSE(
-		[in] NTLMv2_RESPONSE response
-		);
-
 }
