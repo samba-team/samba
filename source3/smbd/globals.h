@@ -117,7 +117,6 @@ void smbd_unlock_socket(struct smbXsrv_connection *xconn);
 
 NTSTATUS smbd_do_locking(struct smb_request *req,
 			 files_struct *fsp,
-			 uint8_t type,
 			 int32_t timeout,
 			 uint16_t num_locks,
 			 struct smbd_lock_element *locks,

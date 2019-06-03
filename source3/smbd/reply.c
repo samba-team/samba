@@ -8075,7 +8075,6 @@ uint64_t get_lock_offset(const uint8_t *data, int data_offset,
 
 NTSTATUS smbd_do_locking(struct smb_request *req,
 			 files_struct *fsp,
-			 uint8_t type,
 			 int32_t timeout,
 			 uint16_t num_locks,
 			 struct smbd_lock_element *locks,
@@ -8205,9 +8204,8 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 		return status;
 	}
 
-	DBG_NOTICE("%s type=%"PRIu8" num_locks=%"PRIu16"\n",
+	DBG_NOTICE("%s num_locks=%"PRIu16"\n",
 		   fsp_fnum_dbg(fsp),
-		   type,
 		   num_locks);
 
 	return NT_STATUS_OK;
@@ -8503,10 +8501,8 @@ void reply_lockingX(struct smb_request *req)
 		return;
 	}
 
-	status = smbd_do_locking(req, fsp,
-				 locktype, lock_timeout,
-				 num_locks, locks,
-				 &async);
+	status = smbd_do_locking(
+		req, fsp, lock_timeout, num_locks, locks, &async);
 	TALLOC_FREE(locks);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBlockingX);

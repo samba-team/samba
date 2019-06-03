@@ -352,8 +352,8 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 					   in_lock_count, locks);
 		async = false;
 	} else {
-		status = smbd_do_locking(smb1req, fsp,
-					 0,
+		status = smbd_do_locking(smb1req,
+					 fsp,
 					 timeout,
 					 in_lock_count,
 					 locks,
