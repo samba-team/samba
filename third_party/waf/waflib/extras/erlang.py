@@ -51,7 +51,7 @@ class erl(Task.Task):
 			if n.abspath() in scanned:
 				continue
 
-			for i in re.findall('-include\("(.*)"\)\.', n.read()):
+			for i in re.findall(r'-include\("(.*)"\)\.', n.read()):
 				for d in task.erlc_incnodes:
 					r = d.find_node(i)
 					if r:

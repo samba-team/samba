@@ -74,7 +74,7 @@ else:
 
 import os, sys, re
 from waflib.Tools import cxx
-from waflib import Task, Utils, Options, Errors, Context
+from waflib import Build, Task, Utils, Options, Errors, Context
 from waflib.TaskGen import feature, after_method, extension, before_method
 from waflib.Configure import conf
 from waflib import Logs
@@ -166,6 +166,10 @@ class qxx(Task.classes['cxx']):
 		"""
 		node = self.inputs[0]
 		bld = self.generator.bld
+
+		# skip on uninstall due to generated files
+		if bld.is_install == Build.UNINSTALL:
+			return
 
 		try:
 			# compute the signature once to know if there is a moc file to create
@@ -313,11 +317,11 @@ def apply_qt5(self):
 
 	The additional parameters are:
 
-	:param lang: list of translation files (\*.ts) to process
+	:param lang: list of translation files (\\*.ts) to process
 	:type lang: list of :py:class:`waflib.Node.Node` or string without the .ts extension
-	:param update: whether to process the C++ files to update the \*.ts files (use **waf --translate**)
+	:param update: whether to process the C++ files to update the \\*.ts files (use **waf --translate**)
 	:type update: bool
-	:param langname: if given, transform the \*.ts files into a .qrc files to include in the binary file
+	:param langname: if given, transform the \\*.ts files into a .qrc files to include in the binary file
 	:type langname: :py:class:`waflib.Node.Node` or string without the .qrc extension
 	"""
 	if getattr(self, 'lang', None):
@@ -762,7 +766,7 @@ def set_qt5_libs_to_check(self):
 		if self.environ.get('QT5_FORCE_STATIC'):
 			pat = self.env.cxxstlib_PATTERN
 		if Utils.unversioned_sys_platform() == 'darwin':
-			pat = "%s\.framework"
+			pat = r"%s\.framework"
 		re_qt = re.compile(pat%'Qt5?(?P<name>.*)'+'$')
 		for x in dirlst:
 			m = re_qt.match(x)

@@ -122,7 +122,8 @@ def waf_entry_point(current_directory, version, wafdir):
 		if no_climb:
 			break
 
-	if not Context.run_dir:
+	wscript = os.path.normpath(os.path.join(Context.run_dir, Context.WSCRIPT_FILE))
+	if not os.path.exists(wscript):
 		if options.whelp:
 			Logs.warn('These are the generic options (no wscript/project found)')
 			ctx.parser.print_help()
@@ -137,7 +138,7 @@ def waf_entry_point(current_directory, version, wafdir):
 		sys.exit(1)
 
 	try:
-		set_main_module(os.path.normpath(os.path.join(Context.run_dir, Context.WSCRIPT_FILE)))
+		set_main_module(wscript)
 	except Errors.WafError as e:
 		Logs.pprint('RED', e.verbose_msg)
 		Logs.error(str(e))
@@ -215,7 +216,10 @@ def parse_options():
 	ctx = Context.create_context('options')
 	ctx.execute()
 	if not Options.commands:
-		Options.commands.append(default_cmd)
+		if isinstance(default_cmd, list):
+			Options.commands.extend(default_cmd)
+		else:
+			Options.commands.append(default_cmd)
 	if Options.options.whelp:
 		ctx.parser.print_help()
 		sys.exit(0)
@@ -279,7 +283,7 @@ def distclean_dir(dirname):
 			pass
 
 	try:
-		shutil.rmtree('c4che')
+		shutil.rmtree(Build.CACHE_DIR)
 	except OSError:
 		pass
 
@@ -597,12 +601,15 @@ def autoconfigure(execute_method):
 			cmd = env.config_cmd or 'configure'
 			if Configure.autoconfig == 'clobber':
 				tmp = Options.options.__dict__
+				launch_dir_tmp = Context.launch_dir
 				if env.options:
 					Options.options.__dict__ = env.options
+				Context.launch_dir = env.launch_dir
 				try:
 					run_command(cmd)
 				finally:
 					Options.options.__dict__ = tmp
+					Context.launch_dir = launch_dir_tmp
 			else:
 				run_command(cmd)
 			run_command(self.cmd)

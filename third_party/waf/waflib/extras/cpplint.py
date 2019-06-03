@@ -38,26 +38,25 @@ When using this tool, the wscript will look like:
 from __future__ import absolute_import
 import sys, re
 import logging
-import threading
-from waflib import Task, TaskGen, Logs, Options, Node
-try:
-    import cpplint.cpplint as cpplint_tool
-except ImportError:
-    try:
-        import cpplint as cpplint_tool
-    except ImportError:
-        pass
+from waflib import Errors, Task, TaskGen, Logs, Options, Node, Utils
 
 
 critical_errors = 0
 CPPLINT_FORMAT = '[CPPLINT] %(filename)s:\nline %(linenum)s, severity %(confidence)s, category: %(category)s\n%(message)s\n'
-RE_EMACS = re.compile('(?P<filename>.*):(?P<linenum>\d+):  (?P<message>.*)  \[(?P<category>.*)\] \[(?P<confidence>\d+)\]')
+RE_EMACS = re.compile(r'(?P<filename>.*):(?P<linenum>\d+):  (?P<message>.*)  \[(?P<category>.*)\] \[(?P<confidence>\d+)\]')
 CPPLINT_RE = {
     'waf': RE_EMACS,
     'emacs': RE_EMACS,
-    'vs7': re.compile('(?P<filename>.*)\((?P<linenum>\d+)\):  (?P<message>.*)  \[(?P<category>.*)\] \[(?P<confidence>\d+)\]'),
-    'eclipse': re.compile('(?P<filename>.*):(?P<linenum>\d+): warning: (?P<message>.*)  \[(?P<category>.*)\] \[(?P<confidence>\d+)\]'),
+    'vs7': re.compile(r'(?P<filename>.*)\((?P<linenum>\d+)\):  (?P<message>.*)  \[(?P<category>.*)\] \[(?P<confidence>\d+)\]'),
+    'eclipse': re.compile(r'(?P<filename>.*):(?P<linenum>\d+): warning: (?P<message>.*)  \[(?P<category>.*)\] \[(?P<confidence>\d+)\]'),
 }
+CPPLINT_STR = ('${CPPLINT} '
+               '--verbose=${CPPLINT_LEVEL} '
+               '--output=${CPPLINT_OUTPUT} '
+               '--filter=${CPPLINT_FILTERS} '
+               '--root=${CPPLINT_ROOT} '
+               '--linelength=${CPPLINT_LINE_LENGTH} ')
+
 
 def options(opt):
     opt.add_option('--cpplint-filters', type='string',
@@ -71,24 +70,21 @@ def options(opt):
     opt.add_option('--cpplint-break', default=5, type='int', dest='CPPLINT_BREAK',
                    help='break the build if error >= level (default: 5)')
     opt.add_option('--cpplint-root', type='string',
-                   default=None, dest='CPPLINT_ROOT',
+                   default='', dest='CPPLINT_ROOT',
                    help='root directory used to derive header guard')
     opt.add_option('--cpplint-skip', action='store_true',
                    default=False, dest='CPPLINT_SKIP',
                    help='skip cpplint during build')
     opt.add_option('--cpplint-output', type='string',
                    default='waf', dest='CPPLINT_OUTPUT',
-                   help='select output format (waf, emacs, vs7)')
+                   help='select output format (waf, emacs, vs7, eclipse)')
 
 
 def configure(conf):
-    conf.start_msg('Checking cpplint')
     try:
-        cpplint_tool._cpplint_state
-        conf.end_msg('ok')
-    except NameError:
+        conf.find_program('cpplint', var='CPPLINT')
+    except Errors.ConfigurationError:
         conf.env.CPPLINT_SKIP = True
-        conf.end_msg('not found, skipping it.')
 
 
 class cpplint_formatter(Logs.formatter, object):
@@ -117,34 +113,22 @@ class cpplint_handler(Logs.log_handler, object):
 
 
 class cpplint_wrapper(object):
-    stream = None
-    tasks_count = 0
-    lock = threading.RLock()
-
     def __init__(self, logger, threshold, fmt):
         self.logger = logger
         self.threshold = threshold
-        self.error_count = 0
         self.fmt = fmt
 
     def __enter__(self):
-        with cpplint_wrapper.lock:
-            cpplint_wrapper.tasks_count += 1
-            if cpplint_wrapper.tasks_count == 1:
-                sys.stderr.flush()
-                cpplint_wrapper.stream = sys.stderr
-                sys.stderr = self
-            return self
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        with cpplint_wrapper.lock:
-            cpplint_wrapper.tasks_count -= 1
-            if cpplint_wrapper.tasks_count == 0:
-                sys.stderr = cpplint_wrapper.stream
-                sys.stderr.flush()
-
-    def isatty(self):
-        return True
+        if isinstance(exc_value, Utils.subprocess.CalledProcessError):
+            messages = [m for m in exc_value.output.splitlines() 
+                        if 'Done processing' not in m 
+                        and 'Total errors found' not in m]
+            for message in messages:
+                self.write(message)
+            return True
 
     def write(self, message):
         global critical_errors
@@ -184,12 +168,15 @@ class cpplint(Task.Task):
     def run(self):
         global critical_errors
         with cpplint_wrapper(get_cpplint_logger(self.env.CPPLINT_OUTPUT), self.env.CPPLINT_BREAK, self.env.CPPLINT_OUTPUT):
-            if self.env.CPPLINT_OUTPUT != 'waf':
-                cpplint_tool._SetOutputFormat(self.env.CPPLINT_OUTPUT)
-            cpplint_tool._SetFilters(self.env.CPPLINT_FILTERS)
-            cpplint_tool._line_length = self.env.CPPLINT_LINE_LENGTH
-            cpplint_tool._root = self.env.CPPLINT_ROOT
-            cpplint_tool.ProcessFile(self.inputs[0].abspath(), self.env.CPPLINT_LEVEL)
+            params = {key: str(self.env[key]) for key in self.env if 'CPPLINT_' in key}
+            if params['CPPLINT_OUTPUT'] is 'waf':
+                params['CPPLINT_OUTPUT'] = 'emacs'
+            params['CPPLINT'] = self.env.get_flat('CPPLINT')
+            cmd = Utils.subst_vars(CPPLINT_STR, params)
+            env = self.env.env or None
+            Utils.subprocess.check_output(cmd + self.inputs[0].abspath(),
+                                          stderr=Utils.subprocess.STDOUT,
+                                          env=env, shell=True)
         return critical_errors
 
 @TaskGen.extension('.h', '.hh', '.hpp', '.hxx')

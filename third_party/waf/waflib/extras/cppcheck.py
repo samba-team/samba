@@ -205,11 +205,17 @@ def _tgen_create_cmd(self):
 		args.append('--enable=%s' % lib_enable)
 
 	for src in self.to_list(getattr(self, 'source', [])):
-		args.append('%r' % src)
+		if not isinstance(src, str):
+			src = repr(src)
+		args.append(src)
 	for inc in self.to_incnodes(self.to_list(getattr(self, 'includes', []))):
-		args.append('-I%r' % inc)
+		if not isinstance(inc, str):
+			inc = repr(inc)
+		args.append('-I%s' % inc)
 	for inc in self.to_incnodes(self.to_list(self.env.INCLUDES)):
-		args.append('-I%r' % inc)
+		if not isinstance(inc, str):
+			inc = repr(inc)
+		args.append('-I%s' % inc)
 	return cmd + args
 
 

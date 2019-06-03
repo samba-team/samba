@@ -8,8 +8,9 @@ from waflib.TaskGen import extension
 
 cy_api_pat = re.compile(r'\s*?cdef\s*?(public|api)\w*')
 re_cyt = re.compile(r"""
-	(?:from\s+(\w+)\s+)?   # optionally match "from foo" and capture foo
-	c?import\s(\w+|[*])    # require "import bar" and capture bar
+	^\s*                           # must begin with some whitespace characters
+	(?:from\s+(\w+)(?:\.\w+)*\s+)? # optionally match "from foo(.baz)" and capture foo
+	c?import\s(\w+|[*])            # require "import bar" and capture bar
 	""", re.M | re.VERBOSE)
 
 @extension('.pyx')
@@ -85,12 +86,12 @@ class cython(Task.Task):
 		node = self.inputs[0]
 		txt = node.read()
 
-		mods = []
+		mods = set()
 		for m in re_cyt.finditer(txt):
 			if m.group(1):  # matches "from foo import bar"
-				mods.append(m.group(1))
+				mods.add(m.group(1))
 			else:
-				mods.append(m.group(2))
+				mods.add(m.group(2))
 
 		Logs.debug('cython: mods %r', mods)
 		incs = getattr(self.generator, 'cython_includes', [])
@@ -99,7 +100,7 @@ class cython(Task.Task):
 
 		found = []
 		missing = []
-		for x in mods:
+		for x in sorted(mods):
 			for y in incs:
 				k = y.find_resource(x + '.pxd')
 				if k:
@@ -141,6 +142,6 @@ def configure(ctx):
 	if not ctx.env.PYTHON:
 		ctx.fatal('Load the python tool first!')
 	ctx.find_program('cython', var='CYTHON')
-	if ctx.options.cython_flags:
+	if hasattr(ctx.options, 'cython_flags'):
 		ctx.env.CYTHONFLAGS = ctx.options.cython_flags
 

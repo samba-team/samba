@@ -37,6 +37,8 @@ class PriorityTasks(object):
 		return len(self.lst)
 	def __iter__(self):
 		return iter(self.lst)
+	def __str__(self):
+		return 'PriorityTasks: [%s]' % '\n  '.join(str(x) for x in self.lst)
 	def clear(self):
 		self.lst = []
 	def append(self, task):
@@ -181,10 +183,12 @@ class Parallel(object):
 		The reverse dependency graph of dependencies obtained from Task.run_after
 		"""
 
-		self.spawner = Spawner(self)
+		self.spawner = None
 		"""
 		Coordinating daemon thread that spawns thread consumers
 		"""
+		if self.numjobs > 1:
+			self.spawner = Spawner(self)
 
 	def get_next_task(self):
 		"""
@@ -226,6 +230,10 @@ class Parallel(object):
 					pass
 				else:
 					if cond:
+						# The most common reason is conflicting build order declaration
+						# for example: "X run_after Y" and "Y run_after X"
+						# Another can be changing "run_after" dependencies while the build is running
+						# for example: updating "tsk.run_after" in the "runnable_status" method
 						lst = []
 						for tsk in self.postponed:
 							deps = [id(x) for x in tsk.run_after if not x.hasrun]
@@ -250,6 +258,8 @@ class Parallel(object):
 							self.outstanding.append(x)
 							break
 					else:
+						if self.stop or self.error:
+							break
 						raise Errors.WafError('Broken revdeps detected on %r' % self.incomplete)
 				else:
 					tasks = next(self.biter)
@@ -298,6 +308,8 @@ class Parallel(object):
 	def mark_finished(self, tsk):
 		def try_unfreeze(x):
 			# DAG ancestors are likely to be in the incomplete set
+			# This assumes that the run_after contents have not changed
+			# after the build starts, else a deadlock may occur
 			if x in self.incomplete:
 				# TODO remove dependencies to free some memory?
 				# x.run_after.remove(tsk)
@@ -323,6 +335,19 @@ class Parallel(object):
 					try_unfreeze(x)
 			del self.revdeps[tsk]
 
+		if hasattr(tsk, 'semaphore'):
+			sem = tsk.semaphore
+			try:
+				sem.release(tsk)
+			except KeyError:
+				# TODO
+				pass
+			else:
+				while sem.waiting and not sem.is_locked():
+					# take a frozen task, make it ready to run
+					x = sem.waiting.pop()
+					self._add_task(x)
+
 	def get_out(self):
 		"""
 		Waits for a Task that task consumers add to :py:attr:`waflib.Runner.Parallel.out` after execution.
@@ -346,7 +371,28 @@ class Parallel(object):
 		:param tsk: task instance
 		:type tsk: :py:attr:`waflib.Task.Task`
 		"""
+		# TODO change in waf 2.1
 		self.ready.put(tsk)
+
+	def _add_task(self, tsk):
+		if hasattr(tsk, 'semaphore'):
+			sem = tsk.semaphore
+			try:
+				sem.acquire(tsk)
+			except IndexError:
+				sem.waiting.add(tsk)
+				return
+
+		self.count += 1
+		self.processed += 1
+		if self.numjobs == 1:
+			tsk.log_display(tsk.generator.bld)
+			try:
+				self.process_task(tsk)
+			finally:
+				self.out.put(tsk)
+		else:
+			self.add_task(tsk)
 
 	def process_task(self, tsk):
 		"""
@@ -447,17 +493,7 @@ class Parallel(object):
 
 			st = self.task_status(tsk)
 			if st == Task.RUN_ME:
-				self.count += 1
-				self.processed += 1
-
-				if self.numjobs == 1:
-					tsk.log_display(tsk.generator.bld)
-					try:
-						self.process_task(tsk)
-					finally:
-						self.out.put(tsk)
-				else:
-					self.add_task(tsk)
+				self._add_task(tsk)
 			elif st == Task.ASK_LATER:
 				self.postpone(tsk)
 			elif st == Task.SKIP_ME:

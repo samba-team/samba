@@ -52,7 +52,7 @@ import os
 
 local_repo = ''
 """Local repository containing additional Waf tools (plugins)"""
-remote_repo = 'https://raw.githubusercontent.com/waf-project/waf/master/'
+remote_repo = 'https://gitlab.com/ita1024/waf/raw/master/'
 """
 Remote directory containing downloadable waf tools. The missing tools can be downloaded by using::
 

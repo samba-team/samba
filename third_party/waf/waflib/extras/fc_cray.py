@@ -20,7 +20,7 @@ def find_crayftn(conf):
 @conf
 def crayftn_flags(conf):
 	v = conf.env
-	v['_FCMODOUTFLAGS']  = ['-em', '-J.'] # enable module files and put them in the current directoy
+	v['_FCMODOUTFLAGS']  = ['-em', '-J.'] # enable module files and put them in the current directory
 	v['FCFLAGS_DEBUG'] = ['-m1'] # more verbose compiler warnings
 	v['FCFLAGS_fcshlib']   = ['-h pic']
 	v['LINKFLAGS_fcshlib'] = ['-h shared']

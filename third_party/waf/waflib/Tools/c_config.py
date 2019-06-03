@@ -250,9 +250,9 @@ def exec_cfg(self, kw):
 	:type atleast_pkgconfig_version: string
 	:param package: package name, for example *gtk+-2.0*
 	:type package: string
-	:param uselib_store: if the test is successful, define HAVE\_*name*. It is also used to define *conf.env.FLAGS_name* variables.
+	:param uselib_store: if the test is successful, define HAVE\\_*name*. It is also used to define *conf.env.FLAGS_name* variables.
 	:type uselib_store: string
-	:param modversion: if provided, return the version of the given module and define *name*\_VERSION
+	:param modversion: if provided, return the version of the given module and define *name*\\_VERSION
 	:type modversion: string
 	:param args: arguments to give to *package* when retrieving flags
 	:type args: list of string
@@ -358,13 +358,12 @@ def check_cfg(self, *k, **kw):
 	ret = None
 	try:
 		ret = self.exec_cfg(kw)
-	except self.errors.WafError:
+	except self.errors.WafError as e:
 		if 'errmsg' in kw:
 			self.end_msg(kw['errmsg'], 'YELLOW', **kw)
 		if Logs.verbose > 1:
-			raise
-		else:
-			self.fatal('The configuration failed')
+			self.to_log('Command failure: %s' % e)
+		self.fatal('The configuration failed')
 	else:
 		if not ret:
 			ret = True

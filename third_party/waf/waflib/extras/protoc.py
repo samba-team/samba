@@ -6,7 +6,7 @@
 import re, os
 from waflib.Task import Task
 from waflib.TaskGen import extension
-from waflib import Errors, Context
+from waflib import Errors, Context, Logs
 
 """
 A simple tool to integrate protocol buffers into your build system.
@@ -67,6 +67,13 @@ Example for Java:
                 protoc_includes = ['inc']) # for protoc to search dependencies
 
 
+Protoc includes passed via protoc_includes are either relative to the taskgen
+or to the project and are searched in this order.
+
+Include directories external to the waf project can also be passed to the
+extra by using protoc_extincludes
+
+                protoc_extincludes = ['/usr/include/pblib']
 
 
 Notes when using this tool:
@@ -82,7 +89,7 @@ Notes when using this tool:
 """
 
 class protoc(Task):
-	run_str = '${PROTOC} ${PROTOC_FL:PROTOC_FLAGS} ${PROTOC_ST:INCPATHS} ${PROTOC_ST:PROTOC_INCPATHS} ${SRC[0].bldpath()}'
+	run_str = '${PROTOC} ${PROTOC_FL:PROTOC_FLAGS} ${PROTOC_ST:INCPATHS} ${PROTOC_ST:PROTOC_INCPATHS} ${PROTOC_ST:PROTOC_EXTINCPATHS} ${SRC[0].bldpath()}'
 	color   = 'BLUE'
 	ext_out = ['.h', 'pb.cc', '.py', '.java']
 	def scan(self):
@@ -104,7 +111,17 @@ class protoc(Task):
 
 		if 'py' in self.generator.features or 'javac' in self.generator.features:
 			for incpath in getattr(self.generator, 'protoc_includes', []):
-				search_nodes.append(self.generator.bld.path.find_node(incpath))
+				incpath_node = self.generator.path.find_node(incpath)
+				if incpath_node:
+					search_nodes.append(incpath_node)
+				else:
+					# Check if relative to top-level for extra tg dependencies
+					incpath_node = self.generator.bld.path.find_node(incpath)
+					if incpath_node:
+						search_nodes.append(incpath_node)
+					else:
+						raise Errors.WafError('protoc: include path %r does not exist' % incpath)
+
 
 		def parse_node(node):
 			if node in seen:
@@ -126,7 +143,7 @@ class protoc(Task):
 		parse_node(node)
 		# Add also dependencies path to INCPATHS so protoc will find the included file
 		for deppath in nodes:
-			self.env.append_value('INCPATHS', deppath.parent.bldpath())
+			self.env.append_unique('INCPATHS', deppath.parent.bldpath())
 		return (nodes, names)
 
 @extension('.proto')
@@ -153,61 +170,12 @@ def process_protoc(self, node):
 		protoc_flags.append('--python_out=%s' % node.parent.get_bld().bldpath())
 
 	if 'javac' in self.features:
-		pkgname, javapkg, javacn, nodename = None, None, None, None
-		messages = []
-
-		# .java file name is done with some rules depending on .proto file content:
-		#   -) package is either derived from option java_package if present
-		#      or from package directive
-		#   -) file name is either derived from option java_outer_classname if present
-		#      or the .proto file is converted to camelcase. If a message
-		#      is named the same then the behaviour depends on protoc version
-		#
-		# See also: https://developers.google.com/protocol-buffers/docs/reference/java-generated#invocation
-
-		code = node.read().splitlines()
-		for line in code:
-			m = re.search(r'^package\s+(.*);', line)
-			if m:
-				pkgname = m.groups()[0]
-			m = re.search(r'^option\s+(\S*)\s*=\s*"(\S*)";', line)
-			if m:
-				optname = m.groups()[0]
-				if optname == 'java_package':
-					javapkg = m.groups()[1]
-				elif optname == 'java_outer_classname':
-					javacn = m.groups()[1]
-			if self.env.PROTOC_MAJOR > '2':
-				m = re.search(r'^message\s+(\w*)\s*{*', line)
-				if m:
-					messages.append(m.groups()[0])
-
-		if javapkg:
-			nodename = javapkg
-		elif pkgname:
-			nodename = pkgname
-		else:
-			raise Errors.WafError('Cannot derive java name from protoc file')
-
-		nodename = nodename.replace('.',os.sep) + os.sep
-		if javacn:
-			nodename += javacn + '.java'
-		else:
-			if self.env.PROTOC_MAJOR > '2' and node.abspath()[node.abspath().rfind(os.sep)+1:node.abspath().rfind('.')].title() in messages:
-				nodename += node.abspath()[node.abspath().rfind(os.sep)+1:node.abspath().rfind('.')].title().replace('_','') + 'OuterClass.java'
-			else:
-				nodename += node.abspath()[node.abspath().rfind(os.sep)+1:node.abspath().rfind('.')].title().replace('_','') + '.java'
-
-		java_node = node.parent.find_or_declare(nodename)
-		out_nodes.append(java_node)
-		protoc_flags.append('--java_out=%s' % node.parent.get_bld().bldpath())
-
 		# Make javac get also pick java code generated in build
 		if not node.parent.get_bld() in self.javac_task.srcdir:
 			self.javac_task.srcdir.append(node.parent.get_bld())
 
-	if not out_nodes:
-		raise Errors.WafError('Feature %r not supported by protoc extra' % self.features)
+		protoc_flags.append('--java_out=%s' % node.parent.get_bld().bldpath())
+		node.parent.get_bld().mkdir()
 
 	tsk = self.create_task('protoc', node, out_nodes)
 	tsk.env.append_value('PROTOC_FLAGS', protoc_flags)
@@ -219,8 +187,21 @@ def process_protoc(self, node):
 	# For C++ standard include files dirs are used,
 	# but this doesn't apply to Python for example
 	for incpath in getattr(self, 'protoc_includes', []):
-		incdirs.append(self.path.find_node(incpath).bldpath())
+		incpath_node = self.path.find_node(incpath)
+		if incpath_node:
+			incdirs.append(incpath_node.bldpath())
+		else:
+			# Check if relative to top-level for extra tg dependencies
+			incpath_node = self.bld.path.find_node(incpath)
+			if incpath_node:
+				incdirs.append(incpath_node.bldpath())
+			else:
+				raise Errors.WafError('protoc: include path %r does not exist' % incpath)
+
 	tsk.env.PROTOC_INCPATHS = incdirs
+
+	# Include paths external to the waf project (ie. shared pb repositories)
+	tsk.env.PROTOC_EXTINCPATHS = getattr(self, 'protoc_extincludes', [])
 
 	# PR2115: protoc generates output of .proto files in nested
 	# directories  by canonicalizing paths. To avoid this we have to pass

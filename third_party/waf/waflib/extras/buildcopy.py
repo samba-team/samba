@@ -22,7 +22,7 @@ Examples::
 
 """
 import os, shutil
-from waflib import Errors, Task, TaskGen, Utils, Node
+from waflib import Errors, Task, TaskGen, Utils, Node, Logs
 
 @TaskGen.before_method('process_source')
 @TaskGen.feature('buildcopy')
@@ -58,9 +58,12 @@ def make_buildcopy(self):
 		raise Errors.WafError('buildcopy: File not found in src: %s'%os.path.join(*lst))
 
 	nodes = [ to_src_nodes(n) for n in getattr(self, 'buildcopy_source', getattr(self, 'source', [])) ]
+	if not nodes:
+		Logs.warn('buildcopy: No source files provided to buildcopy in %s (set `buildcopy_source` or `source`)',
+			self)
+		return
 	node_pairs = [(n, n.get_bld()) for n in nodes]
 	self.create_task('buildcopy', [n[0] for n in node_pairs], [n[1] for n in node_pairs], node_pairs=node_pairs)
-
 
 class buildcopy(Task.Task):
 	"""
