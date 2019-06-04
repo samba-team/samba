@@ -48,6 +48,35 @@ static const struct ndr_interface_call *find_function(
 	return &p->calls[i];
 }
 
+/*
+ * Find a public structure on the pipe and return it as if it were
+ * a function (as the rest of ndrdump is based around functions)
+ */
+static const struct ndr_interface_call *find_struct(
+	const struct ndr_interface_table *p,
+	const char *struct_name,
+	struct ndr_interface_call *out_buffer)
+{
+	int i;
+	for (i=0;i<p->num_public_structs;i++) {
+		if (strcmp(p->public_structs[i].name, struct_name) == 0) {
+			break;
+		}
+	}
+	if (i == p->num_public_structs) {
+		printf("Public structure '%s' not found\n", struct_name);
+		exit(1);
+	}
+	*out_buffer = (struct ndr_interface_call) {
+		.name = p->public_structs[i].name,
+		.struct_size = p->public_structs[i].struct_size,
+		.ndr_pull = p->public_structs[i].ndr_pull,
+		.ndr_push = p->public_structs[i].ndr_push,
+		.ndr_print = p->public_structs[i].ndr_print
+	};
+	return out_buffer;
+}
+
 _NORETURN_ static void show_pipes(void)
 {
 	const struct ndr_interface_list *l;
@@ -70,6 +99,10 @@ _NORETURN_ static void show_functions(const struct ndr_interface_table *p)
 	printf("known functions on '%s' are:\n", p->name);
 	for (i=0;i<p->num_calls;i++) {
 		printf("\t0x%02x (%2d) %s\n", i, i, p->calls[i].name);
+	}
+	printf("known public structures on '%s' are:\n", p->name);
+	for (i=0;i<p->num_public_structs;i++) {
+		printf("\t%s\n", p->public_structs[i].name);
 	}
 	exit(1);
 }
@@ -194,7 +227,21 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 {
 	const struct ndr_interface_table *p = NULL;
 	const struct ndr_interface_call *f;
-	const char *pipe_name, *function, *inout, *filename;
+	struct ndr_interface_call f_buffer;
+	const char *pipe_name = NULL;
+	const char *filename = NULL;
+	/*
+	 * The format type:
+	 *   in:     a request
+	 *   out:    a response
+	 *   struct: a public structure
+	 */
+	const char *type = NULL;
+	/*
+	 * Format is either the name of the decoding function or the
+	 * name of a public structure
+	 */
+	const char *format = NULL;
 	uint8_t *data;
 	size_t size;
 	DATA_BLOB blob;
@@ -244,7 +291,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	pc = poptGetContext("ndrdump", argc, argv, long_options, 0);
 	
 	poptSetOtherOptionHelp(
-		pc, "<pipe|uuid> <function> <inout> [<filename>]");
+		pc, "<pipe|uuid> <format> <in|out|struct> [<filename>]");
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
@@ -302,28 +349,33 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		exit(1);
 	}
 
-	function = poptGetArg(pc);
-	inout = poptGetArg(pc);
+	format = poptGetArg(pc);
+	type = poptGetArg(pc);
 	filename = poptGetArg(pc);
 
-	if (!function || !inout) {
+	if (!format || !type) {
 		poptPrintUsage(pc, stderr, 0);
 		show_functions(p);
 		exit(1);
 	}
 
-	f = find_function(p, function);
-
-	if (strcmp(inout, "in") == 0 ||
-	    strcmp(inout, "request") == 0) {
-		flags |= NDR_IN;
-	} else if (strcmp(inout, "out") == 0 ||
-		   strcmp(inout, "response") == 0) {
-		flags |= NDR_OUT;
+	if (strcmp(type, "struct") == 0) {
+		flags = 0; /* neither NDR_IN nor NDR_OUT */
+		f = find_struct(p, format, &f_buffer);
 	} else {
-		printf("Bad inout value '%s'\n", inout);
-		exit(1);
+		f = find_function(p, format);
+		if (strcmp(type, "in") == 0 ||
+		    strcmp(type, "request") == 0) {
+			flags |= NDR_IN;
+		} else if (strcmp(type, "out") == 0 ||
+			   strcmp(type, "response") == 0) {
+			flags |= NDR_OUT;
+		} else {
+			printf("Bad type value '%s'\n", type);
+			exit(1);
+		}
 	}
+
 
 	mem_ctx = talloc_init("ndrdump");
 
@@ -442,7 +494,10 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	TALLOC_FREE(sec_vt);
 
 	if (flags & NDR_OUT) {
-		status = ndrdump_pull_and_print_pipes(function, ndr_pull, ndr_print, &f->out_pipes);
+		status = ndrdump_pull_and_print_pipes(format,
+						      ndr_pull,
+						      ndr_print,
+						      &f->out_pipes);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("dump FAILED\n");
 			exit(1);
@@ -472,7 +527,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		ndrdump_data(blob.data, blob.length, dumpdata);
 	}
 
-	f->ndr_print(ndr_print, function, flags, st);
+	f->ndr_print(ndr_print, format, flags, st);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("dump FAILED\n");
@@ -480,7 +535,10 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 
 	if (flags & NDR_IN) {
-		status = ndrdump_pull_and_print_pipes(function, ndr_pull, ndr_print, &f->in_pipes);
+		status = ndrdump_pull_and_print_pipes(format,
+						      ndr_pull,
+						      ndr_print,
+						      &f->in_pipes);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("dump FAILED\n");
 			exit(1);
@@ -554,7 +612,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		ndr_v_print = talloc_zero(mem_ctx, struct ndr_print);
 		ndr_v_print->print = ndr_print_debug_helper;
 		ndr_v_print->depth = 1;
-		f->ndr_print(ndr_v_print, function, flags, v_st);
+		f->ndr_print(ndr_v_print,
+			     format,
+			     flags, v_st);
 
 		if (blob.length != v_blob.length) {
 			printf("WARNING! orig bytes:%llu validated pushed bytes:%llu\n", 
