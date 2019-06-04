@@ -26,10 +26,6 @@ interface ntprinting
 		uint32 bottom;
 	} ntprinting_form;
 
-	[public] void decode_ntprinting_form(
-		[in] ntprinting_form form
-		);
-
 	/*
 	 * First the string flags and then the Samba 3 tdb storage
 	 * format: drivers
@@ -49,10 +45,6 @@ interface ntprinting
 		[flag(ndr_ntprinting_string_flags(r->string_flags))] string defaultdatatype;
 		[flag((ndr_ntprinting_string_flags(r->string_flags)&~STR_NULLTERM)|STR_NOTERM|NDR_REMAINING)] string_array dependent_files;
 	} ntprinting_driver;
-
-	[public] void decode_ntprinting_driver(
-		[in] ntprinting_driver driver
-		);
 
 	/* Samba 3 tdb storage format: devicemode
 	 * "p" ptr to devicemode
@@ -161,7 +153,4 @@ interface ntprinting
 		ntprinting_printer_data printer_data[count];
 	} ntprinting_printer;
 
-	[public] void decode_ntprinting_printer(
-		[in] ntprinting_printer printer
-		);
 }
