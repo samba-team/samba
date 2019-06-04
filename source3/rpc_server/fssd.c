@@ -148,7 +148,6 @@ void start_fssd(struct tevent_context *ev_ctx,
 	struct rpc_srv_callbacks fss_cb;
 	NTSTATUS status;
 	pid_t pid;
-	bool ok;
 	int rc;
 
 	fss_cb.init = fss_init_cb;
@@ -195,8 +194,8 @@ void start_fssd(struct tevent_context *ev_ctx,
 	}
 
 	/* case is normalized by smbd on connection */
-	ok = dcesrv_setup_ncacn_np_socket("fssagentrpc", ev_ctx, msg_ctx);
-	if (!ok) {
+	status = dcesrv_setup_ncacn_np_socket("fssagentrpc", ev_ctx, msg_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Failed to open fssd named pipe!\n"));
 		exit(1);
 	}

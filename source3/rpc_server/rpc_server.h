@@ -80,9 +80,9 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 void set_incoming_fault(struct pipes_struct *p);
 void process_complete_pdu(struct pipes_struct *p, struct ncacn_packet *pkt);
 NTSTATUS dcesrv_create_ncacn_np_socket(const char *pipe_name, int *out_fd);
-bool dcesrv_setup_ncacn_np_socket(const char *pipe_name,
-				  struct tevent_context *ev_ctx,
-				  struct messaging_context *msg_ctx);
+NTSTATUS dcesrv_setup_ncacn_np_socket(const char *pipe_name,
+				      struct tevent_context *ev_ctx,
+				      struct messaging_context *msg_ctx);
 void named_pipe_accept_function(struct tevent_context *ev_ctx,
 			        struct messaging_context *msg_ctx,
 				const char *pipe_name, int fd,

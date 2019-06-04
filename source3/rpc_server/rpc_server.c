@@ -147,9 +147,9 @@ out:
 	return status;
 }
 
-bool dcesrv_setup_ncacn_np_socket(const char *pipe_name,
-				  struct tevent_context *ev_ctx,
-				  struct messaging_context *msg_ctx)
+NTSTATUS dcesrv_setup_ncacn_np_socket(const char *pipe_name,
+				      struct tevent_context *ev_ctx,
+				      struct messaging_context *msg_ctx)
 {
 	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;
@@ -159,12 +159,13 @@ bool dcesrv_setup_ncacn_np_socket(const char *pipe_name,
 	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
 	if (!state) {
 		DEBUG(0, ("Out of memory\n"));
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 	state->fd = -1;
 	state->ep.name = talloc_strdup(state, pipe_name);
 	if (state->ep.name == NULL) {
 		DEBUG(0, ("Out of memory\n"));
+		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 	status = dcesrv_create_ncacn_np_socket(pipe_name, &state->fd);
@@ -174,6 +175,7 @@ bool dcesrv_setup_ncacn_np_socket(const char *pipe_name,
 
 	rc = listen(state->fd, 5);
 	if (rc < 0) {
+		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0, ("Failed to listen on pipe socket %s: %s\n",
 			  pipe_name, strerror(errno)));
 		goto out;
@@ -185,23 +187,28 @@ bool dcesrv_setup_ncacn_np_socket(const char *pipe_name,
 	DEBUG(10, ("Opened pipe socket fd %d for %s\n",
 		   state->fd, pipe_name));
 
+	errno = 0;
 	fde = tevent_add_fd(ev_ctx,
 			    state, state->fd, TEVENT_FD_READ,
 			    named_pipe_listener, state);
-	if (!fde) {
+	if (fde == NULL) {
+		if (errno == 0) {
+			errno = ENOMEM;
+		}
+		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0, ("Failed to add event handler!\n"));
 		goto out;
 	}
 
 	tevent_fd_set_auto_close(fde);
-	return true;
+	return NT_STATUS_OK;
 
 out:
 	if (state->fd != -1) {
 		close(state->fd);
 	}
 	TALLOC_FREE(state);
-	return false;
+	return status;
 }
 
 static void named_pipe_listener(struct tevent_context *ev,
