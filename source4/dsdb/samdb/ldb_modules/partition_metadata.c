@@ -74,7 +74,7 @@ static int partition_metadata_get_uint64(struct ldb_module *module,
 		return ldb_module_oom(module);
 	}
 
-	*value = strtoull_err(value_str, NULL, 10, &error);
+	*value = smb_strtoull(value_str, NULL, 10, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		return ldb_module_error(module, LDB_ERR_OPERATIONS_ERROR,
 					"partition_metadata: converision failed");

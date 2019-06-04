@@ -135,7 +135,7 @@ struct dsdb_dn *dsdb_dn_parse_trusted(TALLOC_CTX *mem_ctx, struct ldb_context *l
 	}
 
 	errno = 0;
-	blen = strtoul_err(p1, &p2, 10, &error);
+	blen = smb_strtoul(p1, &p2, 10, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		DEBUG(10, (__location__ ": failed\n"));
 		goto failed;

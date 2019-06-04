@@ -3845,7 +3845,7 @@ NTSTATUS dsdb_get_extended_dn_uint64(struct ldb_dn *dn, uint64_t *val, const cha
 		memcpy(s, v->data, v->length);
 		s[v->length] = 0;
 
-		*val = strtoull_err(s, NULL, 0, &error);
+		*val = smb_strtoull(s, NULL, 0, &error, SMB_STR_STANDARD);
 		if (error != 0) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -3881,7 +3881,7 @@ NTSTATUS dsdb_get_extended_dn_uint32(struct ldb_dn *dn, uint32_t *val, const cha
 		char s[v->length + 1];
 		memcpy(s, v->data, v->length);
 		s[v->length] = 0;
-		*val = strtoul_err(s, NULL, 0, &error);
+		*val = smb_strtoul(s, NULL, 0, &error, SMB_STR_STANDARD);
 		if (error != 0) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -3947,7 +3947,7 @@ uint32_t dsdb_dn_val_rmd_flags(const struct ldb_val *val)
 	if (!p) {
 		return 0;
 	}
-	flags = strtoul_err(p+11, &end, 10, &error);
+	flags = smb_strtoul(p+11, &end, 10, &error, SMB_STR_STANDARD);
 	if (!end || *end != '>' || error != 0) {
 		/* it must end in a > */
 		return 0;

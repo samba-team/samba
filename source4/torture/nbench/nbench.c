@@ -140,7 +140,11 @@ again:
 
 		/* accept numeric or string status codes */
 		if (strncmp(params[i-1], "0x", 2) == 0) {
-			tmp = strtoul_err(params[i-1], NULL, 16, &error);
+			tmp = smb_strtoul(params[i-1],
+					  NULL,
+					  16,
+					  &error,
+					  SMB_STR_STANDARD);
 			if (error != 0) {
 				tmp = error;
 			}

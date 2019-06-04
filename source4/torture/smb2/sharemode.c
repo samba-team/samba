@@ -192,7 +192,7 @@ bool torture_smb2_check_sharemode(struct torture_context *tctx)
 	sharemode = smb2_util_share_access(sharemode_string);
 
 	access_string = torture_setting_string(tctx, "access", "0xf01ff");
-	access = strtoul_err(access_string, NULL, 0, &error);
+	access = smb_strtoul(access_string, NULL, 0, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		torture_comment(tctx, "Initializing access failed.\n");
 		return false;

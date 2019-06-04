@@ -3305,7 +3305,7 @@ static int check_address_roundtrip(const char *address, int family,
  */
 static int verify_cidr(const char *cidr)
 {
-	char *address = NULL, *slash = NULL, *endptr = NULL;
+	char *address = NULL, *slash = NULL;
 	bool has_colon, has_dot;
 	int res, ret;
 	unsigned long mask;
@@ -3330,14 +3330,14 @@ static int verify_cidr(const char *cidr)
 	/* terminate the address for strchr, inet_pton */
 	*slash = '\0';
 
-	mask = strtoul_err(slash + 1, &endptr, 10, &error);
+	mask = smb_strtoul(slash + 1, NULL, 10, &error, SMB_STR_FULL_STR_CONV);
 	if (mask == 0){
 		DBG_INFO("Windows does not like the zero mask, "
 			 "so nor do we: %s\n", cidr);
 		goto error;
 	}
 
-	if (error != 0 || *endptr != '\0'){
+	if (error != 0){
 		DBG_INFO("CIDR mask is not a proper integer: %s\n", cidr);
 		goto error;
 	}

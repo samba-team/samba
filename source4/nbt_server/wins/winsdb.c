@@ -183,11 +183,12 @@ static NTSTATUS winsdb_nbt_name(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, struct n
 
 	if (comp_num > cur && strcasecmp("type", ldb_dn_get_component_name(dn, cur)) == 0) {
 		name->type =
-			strtoul_err(
+			smb_strtoul(
 				(char *)ldb_dn_get_component_val(dn, cur)->data,
 				NULL,
 				0,
-				&error);
+				&error,
+				SMB_STR_STANDARD);
 		if (error != 0) {
 			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 			goto failed;

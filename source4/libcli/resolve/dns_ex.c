@@ -536,7 +536,7 @@ static void pipe_handler(struct tevent_context *ev, struct tevent_fd *fde,
 			composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 			return;
 		}
-		port = strtoul_err(p, NULL, 10, &error);
+		port = smb_strtoul(p, NULL, 10, &error, SMB_STR_STANDARD);
 		if (port > UINT16_MAX || error != 0) {
 			composite_error(c, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 			return;

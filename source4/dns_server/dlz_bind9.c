@@ -341,7 +341,7 @@ static bool b9_dns_type(const char *type, enum dns_record_type *dtype)
 	char *istr = strtok_r(str, sep, &saveptr); \
 	int error = 0;\
 	if ((istr) == NULL) return false; \
-	(ret) = strtoul_err(istr, NULL, 10, &error); \
+	(ret) = smb_strtoul(istr, NULL, 10, &error, SMB_STR_STANDARD); \
 	if (error != 0) {\
 		return false;\
 	}\

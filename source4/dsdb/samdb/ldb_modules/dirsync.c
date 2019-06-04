@@ -161,11 +161,12 @@ static int dirsync_filter_entry(struct ldb_request *req,
 			 * to update the max USN in the cookie if we
 			 * decide to keep this entry
 			 */
-			val = strtoull_err(
+			val = smb_strtoull(
 				(const char*)msg->elements[i].values[0].data,
 				NULL,
 				0,
-				&error);
+				&error,
+				SMB_STR_STANDARD);
 			if (error != 0) {
 				ldb_set_errstring(ldb,
 						  "Failed to convert USN");

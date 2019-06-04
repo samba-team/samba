@@ -79,7 +79,11 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 			/* The data is a plain DWORD */
 			uint32_t tmp;
 
-			tmp = strtoul_err((char *)val->data, NULL, 0, &error);
+			tmp = smb_strtoul((char *)val->data,
+					  NULL,
+					  0,
+					  &error,
+					  SMB_STR_STANDARD);
 			if (error != 0) {
 				data->data = NULL;
 				data->length = 0;
@@ -102,7 +106,11 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx,
 			/* The data is a plain QWORD */
 			uint64_t tmp;
 
-			tmp = strtoull_err((char *)val->data, NULL, 0, &error);
+			tmp = smb_strtoull((char *)val->data,
+					   NULL,
+					   0,
+					   &error,
+					   SMB_STR_STANDARD);
 			if (error != 0) {
 				data->data = NULL;
 				data->length = 0;

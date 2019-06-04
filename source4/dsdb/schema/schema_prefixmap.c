@@ -224,7 +224,7 @@ static WERROR _dsdb_pfm_make_binary_oid(const char *full_oid, TALLOC_CTX *mem_ct
 		return WERR_INVALID_PARAMETER;
 	}
 	oid_subid++;
-	last_subid = strtoul_err(oid_subid, NULL, 10, &error);
+	last_subid = smb_strtoul(oid_subid, NULL, 10, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		return WERR_INVALID_PARAMETER;
 	}

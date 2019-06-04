@@ -1736,10 +1736,11 @@ static NTSTATUS update_uint32_t_value(TALLOC_CTX *mem_ctx,
 		flags = LDB_FLAG_MOD_ADD;
 
 	} else {
-		orig_uint = strtoul_err((const char *)orig_val->data,
+		orig_uint = smb_strtoul((const char *)orig_val->data,
 					NULL,
 					0,
-					&error);
+					&error,
+					SMB_STR_STANDARD);
 		if (error != 0 || orig_uint != value) {
 			/* replace also if can't get value */
 			flags = LDB_FLAG_MOD_REPLACE;
