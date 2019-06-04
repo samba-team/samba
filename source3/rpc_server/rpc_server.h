@@ -93,10 +93,10 @@ void named_pipe_packet_process(struct tevent_req *subreq);
 NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
 					   uint16_t *port,
 					   int *out_fd);
-uint16_t dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
+NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 					  struct messaging_context *msg_ctx,
 					  const struct sockaddr_storage *ifss,
-					  uint16_t port);
+					  uint16_t *port);
 
 NTSTATUS dcesrv_create_ncalrpc_socket(const char *name, int *out_fd);
 bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,

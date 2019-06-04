@@ -159,7 +159,7 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 {
 	uint32_t num_ifs = iface_count();
 	uint32_t i;
-	uint16_t p = 0;
+	uint16_t p = port;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	int rc;
@@ -183,12 +183,11 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 			struct tsocket_address *bind_addr;
 			const char *addr;
 
-			p = dcesrv_setup_ncacn_ip_tcp_socket(ev_ctx,
-							     msg_ctx,
-							     ifss,
-							     port);
-			if (p == 0) {
-				status = NT_STATUS_UNSUCCESSFUL;
+			status = dcesrv_setup_ncacn_ip_tcp_socket(ev_ctx,
+								  msg_ctx,
+								  ifss,
+								  &p);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
 
@@ -241,12 +240,11 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 				continue;
 			}
 
-			p = dcesrv_setup_ncacn_ip_tcp_socket(ev_ctx,
-							     msg_ctx,
-							     &ss,
-							     port);
-			if (p == 0) {
-				status = NT_STATUS_UNSUCCESSFUL;
+			status = dcesrv_setup_ncacn_ip_tcp_socket(ev_ctx,
+								  msg_ctx,
+								  &ss,
+								  &p);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
 

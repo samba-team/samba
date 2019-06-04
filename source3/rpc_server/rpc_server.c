@@ -652,10 +652,10 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
 	return NT_STATUS_OK;
 }
 
-uint16_t dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
+NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 					  struct messaging_context *msg_ctx,
 					  const struct sockaddr_storage *ifss,
-					  uint16_t port)
+					  uint16_t *port)
 {
 	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;
@@ -665,11 +665,11 @@ uint16_t dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
 	if (state == NULL) {
 		DEBUG(0, ("setup_dcerpc_ncacn_tcpip_socket: Out of memory\n"));
-		return 0;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	state->fd = -1;
-	state->ep.port = port;
+	state->ep.port = *port;
 	state->disconnect_fn = NULL;
 
 	status = dcesrv_create_ncacn_ip_tcp_socket(ifss, &state->ep.port,
@@ -690,6 +690,7 @@ uint16_t dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 
 	rc = listen(state->fd, SMBD_LISTEN_BACKLOG);
 	if (rc == -1) {
+		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0,("setup_tcpip_socket: listen - %s\n", strerror(errno)));
 		goto out;
 	}
@@ -697,6 +698,7 @@ uint16_t dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 	DEBUG(10, ("setup_tcpip_socket: opened socket fd %d for port %u\n",
 		   state->fd, state->ep.port));
 
+	errno = 0;
 	fde = tevent_add_fd(state->ev_ctx,
 			    state,
 			    state->fd,
@@ -704,20 +706,27 @@ uint16_t dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 			    dcesrv_ncacn_ip_tcp_listener,
 			    state);
 	if (fde == NULL) {
+		if (errno == 0) {
+			errno = ENOMEM;
+		}
+		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0, ("setup_tcpip_socket: Failed to add event handler!\n"));
 		goto out;
 	}
 
 	tevent_fd_set_auto_close(fde);
 
-	return state->ep.port;
+	*port = state->ep.port;
+
+	return NT_STATUS_OK;
+
 out:
 	if (state->fd != -1) {
 		close(state->fd);
 	}
 	TALLOC_FREE(state);
 
-	return 0;
+	return status;
 }
 
 static void dcesrv_ncacn_ip_tcp_listener(struct tevent_context *ev,
