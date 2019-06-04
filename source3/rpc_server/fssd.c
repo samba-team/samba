@@ -195,7 +195,7 @@ void start_fssd(struct tevent_context *ev_ctx,
 	}
 
 	/* case is normalized by smbd on connection */
-	ok = setup_named_pipe_socket("fssagentrpc", ev_ctx, msg_ctx);
+	ok = dcesrv_setup_ncacn_np_socket("fssagentrpc", ev_ctx, msg_ctx);
 	if (!ok) {
 		DEBUG(0, ("Failed to open fssd named pipe!\n"));
 		exit(1);

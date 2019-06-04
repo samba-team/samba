@@ -147,9 +147,9 @@ out:
 	return status;
 }
 
-bool setup_named_pipe_socket(const char *pipe_name,
-			     struct tevent_context *ev_ctx,
-			     struct messaging_context *msg_ctx)
+bool dcesrv_setup_ncacn_np_socket(const char *pipe_name,
+				  struct tevent_context *ev_ctx,
+				  struct messaging_context *msg_ctx)
 {
 	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;
