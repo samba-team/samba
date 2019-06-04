@@ -156,8 +156,8 @@ NTSTATUS dcesrv_setup_ncacn_np_socket(const char *pipe_name,
 	int rc;
 	NTSTATUS status;
 
-	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
-	if (!state) {
+	state = talloc_zero(ev_ctx, struct dcerpc_ncacn_listen_state);
+	if (state == NULL) {
 		DBG_ERR("Out of memory\n");
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -662,7 +662,7 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 	int rc;
 	NTSTATUS status;
 
-	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
+	state = talloc_zero(ev_ctx, struct dcerpc_ncacn_listen_state);
 	if (state == NULL) {
 		DBG_ERR("Out of memory\n");
 		return NT_STATUS_NO_MEMORY;
@@ -846,7 +846,7 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 	int rc;
 	NTSTATUS status;
 
-	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
+	state = talloc_zero(ev_ctx, struct dcerpc_ncacn_listen_state);
 	if (state == NULL) {
 		DBG_ERR("Out of memory\n");
 		return NT_STATUS_NO_MEMORY;
