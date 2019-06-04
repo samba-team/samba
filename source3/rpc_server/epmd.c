@@ -190,7 +190,7 @@ void start_epmd(struct tevent_context *ev_ctx,
 		exit(1);
 	}
 
-	ok = setup_dcerpc_ncalrpc_socket(ev_ctx,
+	ok = dcesrv_setup_ncalrpc_socket(ev_ctx,
 					 msg_ctx,
 					 "EPMAPPER",
 					 srv_epmapper_delete_endpoints);

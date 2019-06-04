@@ -836,7 +836,7 @@ out:
 	return status;
 }
 
-bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
+bool dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
 				 const char *name,
 				 dcerpc_ncacn_disconnect_fn fn)
