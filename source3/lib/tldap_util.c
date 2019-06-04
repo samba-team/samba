@@ -399,7 +399,7 @@ bool tldap_pull_uint64(struct tldap_message *msg, const char *attr,
 		return false;
 	}
 
-	result = strtoull_err(str, NULL, 10, &error);
+	result = smb_strtoull(str, NULL, 10, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		DBG_DEBUG("Attribute conversion failed (%s)\n",
 			  strerror(error));

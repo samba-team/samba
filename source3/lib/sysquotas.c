@@ -311,7 +311,11 @@ static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t
 
 			/* we need to deal with long long unsigned here, if supported */
 
-			dp->qflags = strtoul_err(line, &p2, 10, &error);
+			dp->qflags = smb_strtoul(line,
+						 &p2,
+						 10,
+						 &error,
+						 SMB_STR_STANDARD);
 			if (error != 0) {
 				goto invalid_param;
 			}

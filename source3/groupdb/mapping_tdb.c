@@ -857,7 +857,6 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 	size_t len;
 	char *name;
 	char *val;
-	char *q;
 	uint32_t num_mem = 0;
 	struct dom_sid *members = NULL;
 	int error = 0;
@@ -975,8 +974,12 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 			/* we ignore unknown or uninteresting attributes
 			 * (objectclass, etc.) */
 			if (strcasecmp_m(name, "gidNumber") == 0) {
-				map->gid = strtoul_err(val, &q, 10, &error);
-				if (*q || (error != 0)) {
+				map->gid = smb_strtoul(val,
+						       NULL,
+						       10,
+						       &error,
+						       SMB_STR_FULL_STR_CONV);
+				if (error != 0) {
 					errno = EIO;
 					goto failed;
 				}
@@ -986,11 +989,13 @@ static int convert_ldb_record(TDB_CONTEXT *ltdb, TDB_DATA key,
 					goto failed;
 				}
 			} else if (strcasecmp_m(name, "sidNameUse") == 0) {
-				map->sid_name_use = strtoul_err(val,
-								&q,
-								10,
-								&error);
-				if (*q || (error != 0)) {
+				map->sid_name_use =
+					smb_strtoul(val,
+						    NULL,
+						    10,
+						    &error,
+						    SMB_STR_FULL_STR_CONV);
+				if (error != 0) {
 					errno = EIO;
 					goto failed;
 				}

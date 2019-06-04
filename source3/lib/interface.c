@@ -370,7 +370,11 @@ static void parse_extra_info(char *key, uint64_t *speed, uint32_t *cap,
 			*val++ = 0;
 
 			if (strequal_m(key, "speed")) {
-				*speed = (uint64_t)strtoull_err(val, NULL, 0, &error);
+				*speed = (uint64_t)smb_strtoull(val,
+								NULL,
+								0,
+								&error,
+								SMB_STR_STANDARD);
 				if (error != 0) {
 					DBG_DEBUG("Invalid speed value (%s)\n", val);
 				}
@@ -384,7 +388,11 @@ static void parse_extra_info(char *key, uint64_t *speed, uint32_t *cap,
 						    "'%s'\n", val);
 				}
 			} else if (strequal_m(key, "if_index")) {
-				*if_index = (uint32_t)strtoul_err(val, NULL, 0, &error);
+				*if_index = (uint32_t)smb_strtoul(val,
+								  NULL,
+								  0,
+								  &error,
+								  SMB_STR_STANDARD);
 				if (error != 0) {
 					DBG_DEBUG("Invalid key value (%s)\n", val);
 				}
@@ -523,11 +531,10 @@ static void interpret_interface(char *token)
 		}
 	} else {
 		int error = 0;
-		char *endp = NULL;
 		unsigned long val;
 
-		val = strtoul_err(p, &endp, 0, &error);
-		if (error != 0 || *endp != '\0') {
+		val = smb_strtoul(p, NULL, 0, &error, SMB_STR_FULL_STR_CONV);
+		if (error != 0) {
 			DEBUG(2,("interpret_interface: "
 				"can't determine netmask value from %s\n",
 				p));

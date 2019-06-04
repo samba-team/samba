@@ -300,7 +300,7 @@ static NTSTATUS idmap_ldap_allocate_id_internal(struct idmap_domain *dom,
 		goto done;
 	}
 
-	xid->id = strtoul_err(id_str, NULL, 10, &error);
+	xid->id = smb_strtoul(id_str, NULL, 10, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
@@ -775,7 +775,7 @@ again:
 			continue;
 		}
 
-		id = strtoul_err(tmp, NULL, 10, &error);
+		id = smb_strtoul(tmp, NULL, 10, &error, SMB_STR_STANDARD);
 		TALLOC_FREE(tmp);
 		if (error != 0) {
 			DEBUG(5, ("Requested id (%u) out of range (%u - %u). "
@@ -1019,7 +1019,7 @@ again:
 			continue;
 		}
 
-		id = strtoul_err(tmp, NULL, 10, &error);
+		id = smb_strtoul(tmp, NULL, 10, &error, SMB_STR_STANDARD);
 		TALLOC_FREE(tmp);
 		if (error != 0) {
 			DEBUG(5, ("Requested id (%u) out of range (%u - %u). "

@@ -627,11 +627,10 @@ done:
 static bool parse_uint32(const char *str, uint32_t *result)
 {
 	unsigned long val;
-	char *endptr;
 	int error = 0;
 
-	val = strtoul_err(str, &endptr, 10, &error);
-	if (error != 0 || *endptr != '\0') {
+	val = smb_strtoul(str, NULL, 10, &error, SMB_STR_FULL_STR_CONV);
+	if (error != 0) {
 		return false;
 	}
 

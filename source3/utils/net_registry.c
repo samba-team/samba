@@ -512,7 +512,7 @@ static int net_registry_setvalue(struct net_context *c, int argc,
 		int error = 0;
 		uint32_t v;
 
-		v = strtoul_err(argv[3], NULL, 10, &error);
+		v = smb_strtoul(argv[3], NULL, 10, &error, SMB_STR_STANDARD);
 		if (error != 0) {
 			goto done;
 		}
@@ -650,7 +650,11 @@ static int net_registry_increment(struct net_context *c, int argc,
 	if (argc == 3) {
 		int error = 0;
 
-		state.increment = strtoul_err(argv[2], NULL, 10, &error);
+		state.increment = smb_strtoul(argv[2],
+					      NULL,
+					      10,
+					      &error,
+					      SMB_STR_STANDARD);
 		if (error != 0) {
 			goto done;
 		}

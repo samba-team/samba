@@ -1413,7 +1413,7 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	alias_rid = strtoul_err(argv[2], NULL, 10, &error);
+	alias_rid = smb_strtoul(argv[2], NULL, 10, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}

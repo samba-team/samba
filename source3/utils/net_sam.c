@@ -483,7 +483,6 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
 	uint32_t value = 0;
 	uint32_t old_value = 0;
 	enum pdb_policy_type field;
-	char *endptr;
 	int err = 0;
 
         if (argc != 2 || c->display_usage) {
@@ -501,9 +500,13 @@ static int net_sam_policy_set(struct net_context *c, int argc, const char **argv
 		value = -1;
 	}
 	else {
-		value = strtoul_err(argv[1], &endptr, 10, &err);
+		value = smb_strtoul(argv[1],
+				    NULL,
+				    10,
+				    &err,
+				    SMB_STR_FULL_STR_CONV);
 
-		if (err != 0 || *endptr != '\0') {
+		if (err != 0) {
 			d_printf(_("Unable to set policy \"%s\"! Invalid value "
 				 "\"%s\".\n"),
 				 account_policy, argv[1]);

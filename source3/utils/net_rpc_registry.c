@@ -606,7 +606,7 @@ static NTSTATUS rpc_registry_setvalue_internal(struct net_context *c,
 		int error = 0;
 		uint32_t v;
 
-		v = strtoul_err(argv[3], NULL, 10, &error);
+		v = smb_strtoul(argv[3], NULL, 10, &error, SMB_STR_STANDARD);
 		if (error != 0) {
 			goto error;
 		}

@@ -100,7 +100,6 @@ typedef struct um_dirinfo_struct {
 static bool get_digit_group(const char *path, uintmax_t *digit)
 {
 	const char *p = path;
-	char *endp = NULL;
 	codepoint_t cp;
 	size_t size;
 	int error = 0;
@@ -121,7 +120,11 @@ static bool get_digit_group(const char *path, uintmax_t *digit)
 			return false;
 		}
 		if ((size == 1) && (isdigit(cp))) {
-			*digit = (uintmax_t)strtoul_err(p, &endp, 10, &error);
+			*digit = (uintmax_t)smb_strtoul(p,
+							NULL,
+							10,
+							&error,
+							SMB_STR_STANDARD);
 			if (error != 0) {
 				return false;
 			}

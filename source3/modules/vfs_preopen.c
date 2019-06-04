@@ -366,7 +366,7 @@ static bool preopen_parse_fname(const char *fname, unsigned long *pnum,
 		return false;
 	}
 
-	num = strtoul_err(p, (char **)&q, 10, &error);
+	num = smb_strtoul(p, (char **)&q, 10, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		return false;
 	}

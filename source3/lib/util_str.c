@@ -850,20 +850,20 @@ uint64_t STR_TO_SMB_BIG_UINT(const char *nptr, const char **entptr)
 uint64_t conv_str_size(const char * str)
 {
         uint64_t lval;
-	char * end;
+        char *end;
 	int error = 0;
 
         if (str == NULL || *str == '\0') {
                 return 0;
         }
 
-	lval = strtoull_err(str, &end, 10, &error);
+	lval = smb_strtoull(str, &end, 10, &error, SMB_STR_STANDARD);
 
         if (error != 0) {
                 return 0;
         }
 
-        if (*end == '\0') {
+	if (*end == '\0') {
 		return lval;
 	}
 

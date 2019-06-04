@@ -107,7 +107,6 @@ static void namemap_cache_find_sid_parser(
 	const char *name;
 	const char *typebuf;
 	int error = 0;
-	char *endptr;
 	unsigned long type;
 
 	state->ok = false;
@@ -125,8 +124,8 @@ static void namemap_cache_find_sid_parser(
 		return;
 	}
 
-	type = strtoul_err(typebuf, &endptr, 10, &error);
-	if ((*endptr != '\0') || (error != 0)) {
+	type = smb_strtoul(typebuf, NULL, 10, &error, SMB_STR_FULL_STR_CONV);
+	if (error != 0) {
 		return;
 	}
 
@@ -251,7 +250,6 @@ static void namemap_cache_find_name_parser(
 	const char *sidbuf;
 	const char *sid_endptr;
 	const char *typebuf;
-	char *endptr;
 	int error = 0;
 	struct dom_sid sid;
 	unsigned long type;
@@ -276,8 +274,8 @@ static void namemap_cache_find_name_parser(
 		return;
 	}
 
-	type = strtoul_err(typebuf, &endptr, 10, &error);
-	if ((*endptr != '\0') || (error != 0)) {
+	type = smb_strtoul(typebuf, NULL, 10, &error, SMB_STR_FULL_STR_CONV);
+	if (error != 0) {
 		return;
 	}
 

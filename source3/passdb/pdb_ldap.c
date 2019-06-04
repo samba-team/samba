@@ -996,7 +996,11 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				ctx);
 		if (temp) {
 			/* We've got a uid, feed the cache */
-			unix_pw.pw_uid = strtoul_err(temp, NULL, 10, &error);
+			unix_pw.pw_uid = smb_strtoul(temp,
+						     NULL,
+						     10,
+						     &error,
+						     SMB_STR_STANDARD);
 			if (error != 0) {
 				DBG_ERR("Failed to convert UID\n");
 				goto fn_exit;
@@ -1010,7 +1014,11 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				ctx);
 		if (temp) {
 			/* We've got a uid, feed the cache */
-			unix_pw.pw_gid = strtoul_err(temp, NULL, 10, &error);
+			unix_pw.pw_gid = smb_strtoul(temp,
+						     NULL,
+						     10,
+						     &error,
+						     SMB_STR_STANDARD);
 			if (error != 0) {
 				DBG_ERR("Failed to convert GID\n");
 				goto fn_exit;
@@ -2938,7 +2946,11 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 				ret = NT_STATUS_INTERNAL_DB_CORRUPTION;
 				goto done;
 			}
-			primary_gid = strtoul_err(gidstr, NULL, 10, &error);
+			primary_gid = smb_strtoul(gidstr,
+						  NULL,
+						  10,
+						  &error,
+						  SMB_STR_STANDARD);
 			if (error != 0) {
 				DBG_ERR("Failed to convert GID\n");
 				goto done;
@@ -2995,7 +3007,6 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 		fstring str;
 		struct dom_sid sid;
 		gid_t gid;
-		char *end;
 
 		if (!smbldap_get_single_attribute(smbldap_get_ldap(conn),
 						  entry, "sambaSID",
@@ -3010,9 +3021,9 @@ static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
 						  str, sizeof(str)-1))
 			continue;
 
-		gid = strtoul_err(str, &end, 10, &error);
+		gid = smb_strtoul(str, NULL, 10, &error, SMB_STR_FULL_STR_CONV);
 
-		if ((PTR_DIFF(end, str) != strlen(str)) || (error != 0)) {
+		if (error != 0) {
 			goto done;
 		}
 
@@ -4976,7 +4987,11 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 	value = smbldap_talloc_single_attribute(priv2ld(priv), entry,
 						"sambaNextRid",	mem_ctx);
 	if (value != NULL) {
-		tmp = (uint32_t)strtoul_err(value, NULL, 10, &error);
+		tmp = (uint32_t)smb_strtoul(value,
+					    NULL,
+					    10,
+					    &error,
+					    SMB_STR_STANDARD);
 		if (error != 0) {
 			goto done;
 		}
@@ -4987,7 +5002,11 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 	value = smbldap_talloc_single_attribute(priv2ld(priv), entry,
 						"sambaNextUserRid", mem_ctx);
 	if (value != NULL) {
-		tmp = (uint32_t)strtoul_err(value, NULL, 10, &error);
+		tmp = (uint32_t)smb_strtoul(value,
+					    NULL,
+					    10,
+					    &error,
+					    SMB_STR_STANDARD);
 		if (error != 0) {
 			goto done;
 		}
@@ -4998,7 +5017,11 @@ static NTSTATUS ldapsam_get_new_rid(struct ldapsam_privates *priv,
 	value = smbldap_talloc_single_attribute(priv2ld(priv), entry,
 						"sambaNextGroupRid", mem_ctx);
 	if (value != NULL) {
-		tmp = (uint32_t)strtoul_err(value, NULL, 10, &error);
+		tmp = (uint32_t)smb_strtoul(value,
+					    NULL,
+					    10,
+					    &error,
+					    SMB_STR_STANDARD);
 		if (error != 0) {
 			goto done;
 		}
@@ -5136,7 +5159,11 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 			goto done;
 		}
 
-		id->id = strtoul_err(gid_str, NULL, 10, &error);
+		id->id = smb_strtoul(gid_str,
+				     NULL,
+				     10,
+				     &error,
+				     SMB_STR_STANDARD);
 		if (error != 0) {
 			goto done;
 		}
@@ -5156,7 +5183,7 @@ static bool ldapsam_sid_to_id(struct pdb_methods *methods,
 		goto done;
 	}
 
-	id->id = strtoul_err(value, NULL, 10, &error);
+	id->id = smb_strtoul(value, NULL, 10, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		goto done;
 	}
@@ -5747,7 +5774,7 @@ static NTSTATUS ldapsam_create_dom_group(struct pdb_methods *my_methods,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		gid = strtoul_err(tmp, NULL, 10, &error);
+		gid = smb_strtoul(tmp, NULL, 10, &error, SMB_STR_STANDARD);
 		if (error != 0) {
 			DBG_ERR("Failed to convert gidNumber\n");
 			return NT_STATUS_UNSUCCESSFUL;
@@ -6024,7 +6051,7 @@ static NTSTATUS ldapsam_change_groupmem(struct pdb_methods *my_methods,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		user_gid = strtoul_err(gidstr, NULL, 10, &error);
+		user_gid = smb_strtoul(gidstr, NULL, 10, &error, SMB_STR_STANDARD);
 		if (error != 0) {
 			DBG_ERR("Failed to convert user gid\n");
 			return NT_STATUS_UNSUCCESSFUL;

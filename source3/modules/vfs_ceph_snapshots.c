@@ -83,24 +83,24 @@ static int ceph_snap_get_btime(struct vfs_handle_struct *handle,
 
 	/* First component is seconds, extract it */
 	*s = '\0';
-	snap_timespec.tv_sec = strtoull_err(snap_btime, &endptr, 10, &err);
+	snap_timespec.tv_sec = smb_strtoull(snap_btime,
+					    &endptr,
+					    10,
+					    &err,
+					    SMB_STR_FULL_STR_CONV);
 	if (err != 0) {
 		return -err;
-	}
-	if ((endptr == snap_btime) || (*endptr != '\0')) {
-		DBG_ERR("couldn't process snap.tv_sec in %s\n", snap_btime);
-		return -EINVAL;
 	}
 
 	/* second component is nsecs */
 	s++;
-	snap_timespec.tv_nsec = strtoul_err(s, &endptr, 10, &err);
+	snap_timespec.tv_nsec = smb_strtoul(s,
+					    &endptr,
+					    10,
+					    &err,
+					    SMB_STR_FULL_STR_CONV);
 	if (err != 0) {
 		return -err;
-	}
-	if ((endptr == s) || (*endptr != '\0')) {
-		DBG_ERR("couldn't process snap.tv_nsec in %s\n", s);
-		return -EINVAL;
 	}
 
 	/*

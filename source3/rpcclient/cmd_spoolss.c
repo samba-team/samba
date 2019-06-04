@@ -2708,7 +2708,11 @@ static WERROR cmd_spoolss_setprinterdata(struct rpc_pipe_client *cli,
 		W_ERROR_HAVE_NO_MEMORY(data.string);
 		break;
 	case REG_DWORD:
-		data.value = strtoul_err(argv[4], NULL, 10, &error);
+		data.value = smb_strtoul(argv[4],
+					 NULL,
+					 10,
+					 &error,
+					 SMB_STR_STANDARD);
 		if (error != 0) {
 			result = WERR_INVALID_PARAMETER;
 			goto done;

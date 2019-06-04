@@ -507,7 +507,11 @@ static void trustdom_list_done(struct tevent_req *req)
 			break;
 		}
 
-		trust_flags = (uint32_t)strtoul_err(q, NULL, 10, &error);
+		trust_flags = (uint32_t)smb_strtoul(q,
+						    NULL,
+						    10,
+						    &error,
+						    SMB_STR_STANDARD);
 		if (error != 0) {
 			DBG_ERR("Failed to convert trust_flags\n");
 			break;
@@ -519,7 +523,11 @@ static void trustdom_list_done(struct tevent_req *req)
 			break;
 		}
 
-		trust_type = (uint32_t)strtoul_err(q, NULL, 10, &error);
+		trust_type = (uint32_t)smb_strtoul(q,
+						   NULL,
+						   10,
+						   &error,
+						   SMB_STR_STANDARD);
 		if (error != 0) {
 			DBG_ERR("Failed to convert trust_type\n");
 			break;
@@ -531,7 +539,11 @@ static void trustdom_list_done(struct tevent_req *req)
 			break;
 		}
 
-		trust_attribs = (uint32_t)strtoul_err(q, NULL, 10, &error);
+		trust_attribs = (uint32_t)smb_strtoul(q,
+						      NULL,
+						      10,
+						      &error,
+						      SMB_STR_STANDARD);
 		if (error != 0) {
 			DBG_ERR("Failed to convert trust_attribs\n");
 			break;
@@ -2170,7 +2182,7 @@ bool parse_xidlist(TALLOC_CTX *mem_ctx, const char *xidstr,
 
 		p += 1;
 
-		id = strtoull_err(p, &endp, 10, &error);
+		id = smb_strtoull(p, &endp, 10, &error, SMB_STR_STANDARD);
 		if (error != 0) {
 			goto fail;
 		}

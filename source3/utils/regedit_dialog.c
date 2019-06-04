@@ -1030,7 +1030,6 @@ bool dialog_section_text_field_get_uint(struct dialog_section *section,
 				        unsigned long long *out)
 {
 	const char *buf;
-	char *endp;
 	int error = 0;
 	struct dialog_section_text_field *text_field =
 		talloc_get_type_abort(section, struct dialog_section_text_field);
@@ -1041,8 +1040,8 @@ bool dialog_section_text_field_get_uint(struct dialog_section *section,
 	if (buf == NULL) {
 		return false;
 	}
-	*out = strtoull_err(buf, &endp, 0, &error);
-	if (error != 0 || *endp != '\0') {
+	*out = smb_strtoull(buf, NULL, 0, &error, SMB_STR_FULL_STR_CONV);
+	if (error != 0) {
 		return false;
 	}
 

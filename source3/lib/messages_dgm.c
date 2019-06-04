@@ -1469,7 +1469,7 @@ static int messaging_dgm_read_unique(int fd, uint64_t *punique)
 	}
 	buf[rw_ret] = '\0';
 
-	unique = strtoull_err(buf, &endptr, 10, &error);
+	unique = smb_strtoull(buf, &endptr, 10, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		return error;
 	}
@@ -1640,7 +1640,7 @@ int messaging_dgm_forall(int (*fn)(pid_t pid, void *private_data),
 		unsigned long pid;
 		int ret;
 
-		pid = strtoul_err(dp->d_name, NULL, 10, &error);
+		pid = smb_strtoul(dp->d_name, NULL, 10, &error, SMB_STR_STANDARD);
 		if ((pid == 0) || (error != 0)) {
 			/*
 			 * . and .. and other malformed entries

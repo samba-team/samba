@@ -1183,7 +1183,11 @@ static int tdbsam_collect_rids(struct db_record *rec, void *private_data)
 		return 0;
 	}
 
-	rid = strtoul_err((char *)key.dptr+prefixlen, NULL, 16, &error);
+	rid = smb_strtoul((char *)key.dptr+prefixlen,
+			  NULL,
+			  16,
+			  &error,
+			  SMB_STR_STANDARD);
 	if (error != 0) {
 		return 0;
 	}
