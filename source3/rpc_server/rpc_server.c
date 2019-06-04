@@ -641,11 +641,11 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
 				    true);
 	}
 	if (fd == -1) {
-		DEBUG(0, ("Failed to create socket on port %u!\n", *port));
+		DBG_ERR("Failed to create socket on port %u!\n", *port);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(10, ("Opened tcpip socket fd %d for port %u\n", fd, *port));
+	DBG_DEBUG("Opened ncacn_ip_tcp socket fd %d for port %u\n", fd, *port);
 
 	*out_fd = fd;
 
