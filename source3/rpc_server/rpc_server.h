@@ -90,8 +90,9 @@ void named_pipe_accept_function(struct tevent_context *ev_ctx,
 				void *private_data);
 void named_pipe_packet_process(struct tevent_req *subreq);
 
-int dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
-				      uint16_t *port);
+NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
+					   uint16_t *port,
+					   int *out_fd);
 uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 					 struct messaging_context *msg_ctx,
 					 const struct sockaddr_storage *ifss,

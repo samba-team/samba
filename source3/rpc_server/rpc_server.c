@@ -613,8 +613,9 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 					uint16_t flags,
 					void *private_data);
 
-int dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
-				      uint16_t *port)
+NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
+					   uint16_t *port,
+					   int *out_fd)
 {
 	int fd = -1;
 
@@ -641,12 +642,14 @@ int dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
 	}
 	if (fd == -1) {
 		DEBUG(0, ("Failed to create socket on port %u!\n", *port));
-		return -1;
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	DEBUG(10, ("Opened tcpip socket fd %d for port %u\n", fd, *port));
 
-	return fd;
+	*out_fd = fd;
+
+	return NT_STATUS_OK;
 }
 
 uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
@@ -657,6 +660,7 @@ uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;
 	int rc;
+	NTSTATUS status;
 
 	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
 	if (state == NULL) {
@@ -668,8 +672,9 @@ uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 	state->ep.port = port;
 	state->disconnect_fn = NULL;
 
-	state->fd = dcesrv_create_ncacn_ip_tcp_socket(ifss, &state->ep.port);
-	if (state->fd == -1) {
+	status = dcesrv_create_ncacn_ip_tcp_socket(ifss, &state->ep.port,
+						   &state->fd);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 

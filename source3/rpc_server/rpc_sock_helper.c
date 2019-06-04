@@ -60,9 +60,10 @@ NTSTATUS rpc_create_tcpip_sockets(const struct ndr_interface_table *iface,
 			const char *addr;
 			int fd;
 
-			fd = dcesrv_create_ncacn_ip_tcp_socket(ifss, &p);
-			if (fd < 0) {
-				status = NT_STATUS_UNSUCCESSFUL;
+			status = dcesrv_create_ncacn_ip_tcp_socket(ifss,
+								   &p,
+								   &fd);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
 			listen_fd[*listen_fd_size] = fd;
@@ -121,9 +122,10 @@ NTSTATUS rpc_create_tcpip_sockets(const struct ndr_interface_table *iface,
 				continue;
 			}
 
-			fd = dcesrv_create_ncacn_ip_tcp_socket(&ss, &p);
-			if (fd < 0) {
-				status = NT_STATUS_UNSUCCESSFUL;
+			status = dcesrv_create_ncacn_ip_tcp_socket(&ss,
+								   &p,
+								   &fd);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
 			listen_fd[*listen_fd_size] = fd;
