@@ -765,7 +765,7 @@ static void dcerpc_ncalrpc_listener(struct tevent_context *ev,
 				    uint16_t flags,
 				    void *private_data);
 
-int create_dcerpc_ncalrpc_socket(const char *name)
+int dcesrv_create_ncalrpc_socket(const char *name)
 {
 	int fd = -1;
 
@@ -820,7 +820,7 @@ bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	state->fd = create_dcerpc_ncalrpc_socket(name);
+	state->fd = dcesrv_create_ncalrpc_socket(name);
 	if (state->fd == -1) {
 		goto out;
 	}

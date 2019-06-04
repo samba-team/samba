@@ -655,7 +655,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	listen_fd[*listen_fd_size] = fd;
 	(*listen_fd_size)++;
 
-	fd = create_dcerpc_ncalrpc_socket("lsarpc");
+	fd = dcesrv_create_ncalrpc_socket("lsarpc");
 	if (fd < 0) {
 		goto done;
 	}
@@ -710,7 +710,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	listen_fd[*listen_fd_size] = fd;
 	(*listen_fd_size)++;
 
-	fd = create_dcerpc_ncalrpc_socket("samr");
+	fd = dcesrv_create_ncalrpc_socket("samr");
 	if (fd < 0) {
 		goto done;
 	}
@@ -765,7 +765,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	listen_fd[*listen_fd_size] = fd;
 	(*listen_fd_size)++;
 
-	fd = create_dcerpc_ncalrpc_socket("netlogon");
+	fd = dcesrv_create_ncalrpc_socket("netlogon");
 	if (fd < 0) {
 		goto done;
 	}

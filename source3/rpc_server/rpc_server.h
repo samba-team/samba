@@ -95,7 +95,7 @@ uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 					 const struct sockaddr_storage *ifss,
 					 uint16_t port);
 
-int create_dcerpc_ncalrpc_socket(const char *name);
+int dcesrv_create_ncalrpc_socket(const char *name);
 bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
 				 const char *name,
