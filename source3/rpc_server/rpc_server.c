@@ -848,7 +848,7 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 
 	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
 	if (state == NULL) {
-		DEBUG(0, ("Out of memory\n"));
+		DBG_ERR("Out of memory\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -861,7 +861,7 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 
 	state->ep.name = talloc_strdup(state, name);
 	if (state->ep.name == NULL) {
-		DEBUG(0, ("Out of memory\n"));
+		DBG_ERR("Out of memory\n");
 		talloc_free(state);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -876,8 +876,8 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 	rc = listen(state->fd, 5);
 	if (rc < 0) {
 		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0, ("Failed to listen on ncalrpc socket %s: %s\n",
-			  name, strerror(errno)));
+		DBG_ERR("Failed to listen on ncalrpc socket %s: %s\n",
+			name, strerror(errno));
 		goto out;
 	}
 
@@ -899,7 +899,8 @@ NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
 			errno = ENOMEM;
 		}
 		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0, ("Failed to add event handler for ncalrpc!\n"));
+		DBG_ERR("Failed to add event handler for ncalrpc: %s\n",
+			strerror(errno));
 		goto out;
 	}
 
