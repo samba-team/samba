@@ -652,10 +652,10 @@ NTSTATUS dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
 	return NT_STATUS_OK;
 }
 
-uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
-					 struct messaging_context *msg_ctx,
-					 const struct sockaddr_storage *ifss,
-					 uint16_t port)
+uint16_t dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
+					  struct messaging_context *msg_ctx,
+					  const struct sockaddr_storage *ifss,
+					  uint16_t port)
 {
 	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;

@@ -183,10 +183,10 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 			struct tsocket_address *bind_addr;
 			const char *addr;
 
-			p = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
-							    msg_ctx,
-							    ifss,
-							    port);
+			p = dcesrv_setup_ncacn_ip_tcp_socket(ev_ctx,
+							     msg_ctx,
+							     ifss,
+							     port);
 			if (p == 0) {
 				status = NT_STATUS_UNSUCCESSFUL;
 				goto done;
@@ -241,10 +241,10 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_sockets(struct tevent_context *ev_ctx,
 				continue;
 			}
 
-			p = setup_dcerpc_ncacn_tcpip_socket(ev_ctx,
-							    msg_ctx,
-							    &ss,
-							    port);
+			p = dcesrv_setup_ncacn_ip_tcp_socket(ev_ctx,
+							     msg_ctx,
+							     &ss,
+							     port);
 			if (p == 0) {
 				status = NT_STATUS_UNSUCCESSFUL;
 				goto done;
