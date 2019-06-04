@@ -776,20 +776,21 @@ NTSTATUS dcesrv_create_ncalrpc_socket(const char *name, int *out_fd)
 
 	if (!directory_create_or_exist(lp_ncalrpc_dir(), 0755)) {
 		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0, ("Failed to create ncalrpc directory %s - %s\n",
-			  lp_ncalrpc_dir(), strerror(errno)));
+		DBG_ERR("Failed to create ncalrpc directory '%s': %s\n",
+			lp_ncalrpc_dir(), strerror(errno));
 		goto out;
 	}
 
 	fd = create_pipe_sock(lp_ncalrpc_dir(), name, 0755);
 	if (fd == -1) {
 		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0, ("Failed to create ncalrpc socket! [%s/%s]\n",
-			  lp_ncalrpc_dir(), name));
+		DBG_ERR("Failed to create ncalrpc socket '%s/%s': %s\n",
+			lp_ncalrpc_dir(), name, strerror(errno));
 		goto out;
 	}
 
-	DEBUG(10, ("Opened ncalrpc socket fd %d for %s\n", fd, name));
+	DBG_DEBUG("Opened ncalrpc socket fd '%d' for '%s/%s'\n",
+		  fd, lp_ncalrpc_dir(), name);
 
 	*out_fd = fd;
 
@@ -831,6 +832,8 @@ bool setup_dcerpc_ncalrpc_socket(struct tevent_context *ev_ctx,
 
 	status = dcesrv_create_ncalrpc_socket(name, &state->fd);
 	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to create ncalrpc socket: %s\n",
+			nt_errstr(status));
 		goto out;
 	}
 
