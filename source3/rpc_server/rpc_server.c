@@ -96,10 +96,11 @@ static void named_pipe_listener(struct tevent_context *ev,
 				uint16_t flags,
 				void *private_data);
 
-int dcesrv_create_ncacn_np_socket(const char *pipe_name)
+NTSTATUS dcesrv_create_ncacn_np_socket(const char *pipe_name, int *out_fd)
 {
 	char *np_dir = NULL;
 	int fd = -1;
+	NTSTATUS status;
 
 	/*
 	 * As lp_ncalrpc_dir() should have 0755, but
@@ -107,6 +108,7 @@ int dcesrv_create_ncacn_np_socket(const char *pipe_name)
 	 * create lp_ncalrpc_dir() first.
 	 */
 	if (!directory_create_or_exist(lp_ncalrpc_dir(), 0755)) {
+		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
 			  lp_ncalrpc_dir(), strerror(errno)));
 		goto out;
@@ -114,11 +116,13 @@ int dcesrv_create_ncacn_np_socket(const char *pipe_name)
 
 	np_dir = talloc_asprintf(talloc_tos(), "%s/np", lp_ncalrpc_dir());
 	if (!np_dir) {
+		status = NT_STATUS_NO_MEMORY;
 		DEBUG(0, ("Out of memory\n"));
 		goto out;
 	}
 
 	if (!directory_create_or_exist_strict(np_dir, geteuid(), 0700)) {
+		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
 			  np_dir, strerror(errno)));
 		goto out;
@@ -126,6 +130,7 @@ int dcesrv_create_ncacn_np_socket(const char *pipe_name)
 
 	fd = create_pipe_sock(np_dir, pipe_name, 0700);
 	if (fd == -1) {
+		status = map_nt_error_from_unix_common(errno);
 		DEBUG(0, ("Failed to create pipe socket! [%s/%s]\n",
 			  np_dir, pipe_name));
 		goto out;
@@ -133,9 +138,13 @@ int dcesrv_create_ncacn_np_socket(const char *pipe_name)
 
 	DEBUG(10, ("Opened pipe socket fd %d for %s\n", fd, pipe_name));
 
+	*out_fd = fd;
+
+	status = NT_STATUS_OK;
+
 out:
 	talloc_free(np_dir);
-	return fd;
+	return status;
 }
 
 bool setup_named_pipe_socket(const char *pipe_name,
@@ -145,19 +154,21 @@ bool setup_named_pipe_socket(const char *pipe_name,
 	struct dcerpc_ncacn_listen_state *state;
 	struct tevent_fd *fde;
 	int rc;
+	NTSTATUS status;
 
 	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
 	if (!state) {
 		DEBUG(0, ("Out of memory\n"));
 		return false;
 	}
+	state->fd = -1;
 	state->ep.name = talloc_strdup(state, pipe_name);
 	if (state->ep.name == NULL) {
 		DEBUG(0, ("Out of memory\n"));
 		goto out;
 	}
-	state->fd = dcesrv_create_ncacn_np_socket(pipe_name);
-	if (state->fd == -1) {
+	status = dcesrv_create_ncacn_np_socket(pipe_name, &state->fd);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 

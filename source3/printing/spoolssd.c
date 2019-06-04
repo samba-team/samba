@@ -657,8 +657,8 @@ pid_t start_spoolssd(struct tevent_context *ev_ctx,
 
 	/* the listening fd must be created before the children are actually
 	 * forked out. */
-	listen_fd = dcesrv_create_ncacn_np_socket(SPOOLSS_PIPE_NAME);
-	if (listen_fd == -1) {
+	status = dcesrv_create_ncacn_np_socket(SPOOLSS_PIPE_NAME, &listen_fd);
+	if (!NT_STATUS_IS_OK(status)) {
 		exit(1);
 	}
 

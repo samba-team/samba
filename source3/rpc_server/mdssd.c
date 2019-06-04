@@ -549,8 +549,8 @@ static bool mdssd_create_sockets(struct tevent_context *ev_ctx,
 	}
 
 	/* mdssvc */
-	fd = dcesrv_create_ncacn_np_socket("mdssvc");
-	if (fd < 0) {
+	status = dcesrv_create_ncacn_np_socket("mdssvc", &fd);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
