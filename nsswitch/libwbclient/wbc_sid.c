@@ -122,7 +122,7 @@ wbcErr wbcStringToSid(const char *str,
 	/* Get the SID revision number */
 
 	p = str+2;
-	x = (uint64_t)strtoul_err(p, &q, 10, &error);
+	x = (uint64_t)smb_strtoul(p, &q, 10, &error, SMB_STR_STANDARD);
 	if (x == 0 || x > UINT8_MAX || !q || *q != '-' || error != 0) {
 		wbc_status = WBC_ERR_INVALID_SID;
 		BAIL_ON_WBC_ERROR(wbc_status);
@@ -135,7 +135,7 @@ wbcErr wbcStringToSid(const char *str,
 	 * be expressed as a hex value, according to MS-DTYP.
 	 */
 	p = q+1;
-	x = strtoull_err(p, &q, 0, &error);
+	x = smb_strtoull(p, &q, 0, &error, SMB_STR_STANDARD);
 	if (!q || *q != '-' || (x & AUTHORITY_MASK) || error != 0) {
 		wbc_status = WBC_ERR_INVALID_SID;
 		BAIL_ON_WBC_ERROR(wbc_status);
@@ -151,7 +151,7 @@ wbcErr wbcStringToSid(const char *str,
 	p = q +1;
 	sid->num_auths = 0;
 	while (sid->num_auths < WBC_MAXSUBAUTHS) {
-		x = strtoull_err(p, &q, 10, &error);
+		x = smb_strtoull(p, &q, 10, &error, SMB_STR_ALLOW_NO_CONVERSION);
 		if (p == q)
 			break;
 		if (x > UINT32_MAX || error != 0) {
@@ -389,7 +389,7 @@ wbcErr wbcCtxLookupSids(struct wbcContext *ctx,
 
 	p = extra_data;
 
-	num_domains = strtoul_err(p, &q, 10, &error);
+	num_domains = smb_strtoul(p, &q, 10, &error, SMB_STR_STANDARD);
 	if (*q != '\n' || error != 0) {
 		goto wbc_err_invalid;
 	}
@@ -429,7 +429,7 @@ wbcErr wbcCtxLookupSids(struct wbcContext *ctx,
 		p = q+1;
 	}
 
-	num_names = strtoul_err(p, &q, 10, &error);
+	num_names = smb_strtoul(p, &q, 10, &error, SMB_STR_STANDARD);
 	if (*q != '\n' || error != 0) {
 		goto wbc_err_invalid;
 	}
@@ -449,7 +449,11 @@ wbcErr wbcCtxLookupSids(struct wbcContext *ctx,
 
 	for (i=0; i<num_names; i++) {
 
-		names[i].domain_index = strtoul_err(p, &q, 10, &error);
+		names[i].domain_index = smb_strtoul(p,
+						    &q,
+						    10,
+						    &error,
+						    SMB_STR_STANDARD);
 		if (names[i].domain_index < 0 || error != 0) {
 			goto wbc_err_invalid;
 		}
@@ -462,7 +466,7 @@ wbcErr wbcCtxLookupSids(struct wbcContext *ctx,
 		}
 		p = q+1;
 
-		names[i].type = strtoul_err(p, &q, 10, &error);
+		names[i].type = smb_strtoul(p, &q, 10, &error, SMB_STR_STANDARD);
 		if (*q != ' ' || error != 0) {
 			goto wbc_err_invalid;
 		}
@@ -585,7 +589,11 @@ wbcErr wbcCtxLookupRids(struct wbcContext *ctx, struct wbcDomainSid *dom_sid,
 			goto done;
 		}
 
-		types[i] = (enum wbcSidType)strtoul_err(p, &q, 10, &error);
+		types[i] = (enum wbcSidType)smb_strtoul(p,
+							&q,
+							10,
+							&error,
+							SMB_STR_STANDARD);
 
 		if (*q != ' ' || error != 0) {
 			wbc_status = WBC_ERR_INVALID_RESPONSE;

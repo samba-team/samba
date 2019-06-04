@@ -380,15 +380,27 @@ wbcErr wbcCtxSidsToUnixIds(struct wbcContext *ctx,
 		switch (p[0]) {
 		case 'U':
 			id->type = WBC_ID_TYPE_UID;
-			id->id.uid = strtoul_err(p+1, &q, 10, &error);
+			id->id.uid = smb_strtoul(p+1,
+						 &q,
+						 10,
+						 &error,
+						 SMB_STR_STANDARD);
 			break;
 		case 'G':
 			id->type = WBC_ID_TYPE_GID;
-			id->id.gid = strtoul_err(p+1, &q, 10, &error);
+			id->id.gid = smb_strtoul(p+1,
+						 &q,
+						 10,
+						 &error,
+						 SMB_STR_STANDARD);
 			break;
 		case 'B':
 			id->type = WBC_ID_TYPE_BOTH;
-			id->id.uid = strtoul_err(p+1, &q, 10, &error);
+			id->id.uid = smb_strtoul(p+1,
+						 &q,
+						 10,
+						 &error,
+						 SMB_STR_STANDARD);
 			break;
 		default:
 			id->type = WBC_ID_TYPE_NOT_SPECIFIED;

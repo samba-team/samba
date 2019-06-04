@@ -140,7 +140,7 @@ static bool parse_wbinfo_domain_user(const char *domuser, fstring domain,
  * Return true if input was valid, false otherwise. */
 static bool parse_mapping_arg(char *arg, int *id, char **sid)
 {
-	char *tmp, *endptr;
+	char *tmp;
 	int error = 0;
 
 	if (!arg || !*arg)
@@ -154,9 +154,8 @@ static bool parse_mapping_arg(char *arg, int *id, char **sid)
 
 	/* Because atoi() can return 0 on invalid input, which would be a valid
 	 * UID/GID we must use strtoul() and do error checking */
-	*id = strtoul_err(tmp, &endptr, 10, &error);
-
-	if (endptr[0] != '\0' || error != 0)
+	*id = smb_strtoul(tmp, NULL, 10, &error, SMB_STR_FULL_STR_CONV);
+	if (error != 0)
 		return false;
 
 	return true;
@@ -1421,7 +1420,7 @@ static bool wbinfo_lookuprids(const char *domain, const char *arg)
 		int error = 0;
 		uint32_t rid;
 
-		rid = strtoul_err(ridstr, NULL, 10, &error);
+		rid = smb_strtoul(ridstr, NULL, 10, &error, SMB_STR_STANDARD);
 		if (error != 0) {
 			d_printf("failed to convert rid\n");
 			goto done;
