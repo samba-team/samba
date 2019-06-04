@@ -664,7 +664,7 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 
 	state = talloc(ev_ctx, struct dcerpc_ncacn_listen_state);
 	if (state == NULL) {
-		DEBUG(0, ("setup_dcerpc_ncacn_tcpip_socket: Out of memory\n"));
+		DBG_ERR("Out of memory\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -691,12 +691,13 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 	rc = listen(state->fd, SMBD_LISTEN_BACKLOG);
 	if (rc == -1) {
 		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0,("setup_tcpip_socket: listen - %s\n", strerror(errno)));
+		DBG_ERR("Failed to listen on ncacn_ip_tcp socket: %s\n",
+			strerror(errno));
 		goto out;
 	}
 
-	DEBUG(10, ("setup_tcpip_socket: opened socket fd %d for port %u\n",
-		   state->fd, state->ep.port));
+	DBG_DEBUG("Opened socket fd %d for port %u\n",
+		  state->fd, state->ep.port);
 
 	errno = 0;
 	fde = tevent_add_fd(state->ev_ctx,
@@ -710,7 +711,8 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 			errno = ENOMEM;
 		}
 		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0, ("setup_tcpip_socket: Failed to add event handler!\n"));
+		DBG_ERR("Failed to add event handler for ncacn_ip_tcp: %s\n",
+			strerror(errno));
 		goto out;
 	}
 
