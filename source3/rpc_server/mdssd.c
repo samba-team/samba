@@ -561,8 +561,8 @@ static bool mdssd_create_sockets(struct tevent_context *ev_ctx,
 	listen_fd[*listen_fd_size] = fd;
 	(*listen_fd_size)++;
 
-	fd = dcesrv_create_ncalrpc_socket("mdssvc");
-	if (fd < 0) {
+	status = dcesrv_create_ncalrpc_socket("mdssvc", &fd);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
