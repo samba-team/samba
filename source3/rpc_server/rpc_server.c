@@ -613,7 +613,8 @@ static void dcerpc_ncacn_tcpip_listener(struct tevent_context *ev,
 					uint16_t flags,
 					void *private_data);
 
-int create_tcpip_socket(const struct sockaddr_storage *ifss, uint16_t *port)
+int dcesrv_create_ncacn_ip_tcp_socket(const struct sockaddr_storage *ifss,
+				      uint16_t *port)
 {
 	int fd = -1;
 
@@ -667,7 +668,7 @@ uint16_t setup_dcerpc_ncacn_tcpip_socket(struct tevent_context *ev_ctx,
 	state->ep.port = port;
 	state->disconnect_fn = NULL;
 
-	state->fd = create_tcpip_socket(ifss, &state->ep.port);
+	state->fd = dcesrv_create_ncacn_ip_tcp_socket(ifss, &state->ep.port);
 	if (state->fd == -1) {
 		goto out;
 	}

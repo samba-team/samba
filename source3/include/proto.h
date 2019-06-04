@@ -562,7 +562,6 @@ int get_remote_hostname(const struct tsocket_address *remote_address,
 int create_pipe_sock(const char *socket_dir,
 		     const char *socket_name,
 		     mode_t dir_perms);
-int create_tcpip_socket(const struct sockaddr_storage *ifss, uint16_t *port);
 const char *get_mydnsfullname(void);
 bool is_myname_or_ipaddr(const char *s);
 int poll_one_fd(int fd, int events, int timeout, int *revents);
