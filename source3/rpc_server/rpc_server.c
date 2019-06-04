@@ -109,34 +109,34 @@ NTSTATUS dcesrv_create_ncacn_np_socket(const char *pipe_name, int *out_fd)
 	 */
 	if (!directory_create_or_exist(lp_ncalrpc_dir(), 0755)) {
 		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
-			  lp_ncalrpc_dir(), strerror(errno)));
+		DBG_ERR("Failed to create pipe directory %s - %s\n",
+			lp_ncalrpc_dir(), strerror(errno));
 		goto out;
 	}
 
 	np_dir = talloc_asprintf(talloc_tos(), "%s/np", lp_ncalrpc_dir());
 	if (!np_dir) {
 		status = NT_STATUS_NO_MEMORY;
-		DEBUG(0, ("Out of memory\n"));
+		DBG_ERR("Out of memory\n");
 		goto out;
 	}
 
 	if (!directory_create_or_exist_strict(np_dir, geteuid(), 0700)) {
 		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0, ("Failed to create pipe directory %s - %s\n",
-			  np_dir, strerror(errno)));
+		DBG_ERR("Failed to create pipe directory %s - %s\n",
+			np_dir, strerror(errno));
 		goto out;
 	}
 
 	fd = create_pipe_sock(np_dir, pipe_name, 0700);
 	if (fd == -1) {
 		status = map_nt_error_from_unix_common(errno);
-		DEBUG(0, ("Failed to create pipe socket! [%s/%s]\n",
-			  np_dir, pipe_name));
+		DBG_ERR("Failed to create ncacn_np socket! '%s/%s': %s\n",
+			np_dir, pipe_name, strerror(errno));
 		goto out;
 	}
 
-	DEBUG(10, ("Opened pipe socket fd %d for %s\n", fd, pipe_name));
+	DBG_DEBUG("Opened pipe socket fd %d for %s\n", fd, pipe_name);
 
 	*out_fd = fd;
 
