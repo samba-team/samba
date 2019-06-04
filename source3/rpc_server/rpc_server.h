@@ -99,10 +99,10 @@ NTSTATUS dcesrv_setup_ncacn_ip_tcp_socket(struct tevent_context *ev_ctx,
 					  uint16_t *port);
 
 NTSTATUS dcesrv_create_ncalrpc_socket(const char *name, int *out_fd);
-bool dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
-				 struct messaging_context *msg_ctx,
-				 const char *name,
-				 dcerpc_ncacn_disconnect_fn fn);
+NTSTATUS dcesrv_setup_ncalrpc_socket(struct tevent_context *ev_ctx,
+				     struct messaging_context *msg_ctx,
+				     const char *name,
+				     dcerpc_ncacn_disconnect_fn fn);
 
 void dcerpc_ncacn_accept(struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
