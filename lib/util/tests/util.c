@@ -422,32 +422,32 @@ done:
 	return ret;
 }
 
-static bool test_strtoul_err_errno_check(struct torture_context *tctx)
+static bool test_smb_strtoul_errno_check(struct torture_context *tctx)
 {
 	const char *number = "123";
 	unsigned long int val = 0;
 	unsigned long long int vall = 0;
 	int err;
 
-	/* select an error code which is not set by the strtoul_err routines */
+	/* select an error code which is not set by the smb_strtoul routines */
 	errno = EAGAIN;
 	err = EAGAIN;
-	val = strtoul_err(number, NULL, 0, &err);
-	torture_assert(tctx, errno == EAGAIN, "strtoul_err: Expected EAGAIN");
-	torture_assert(tctx, err == 0, "strtoul_err: Expected err = 0");
-	torture_assert(tctx, val == 123, "strtoul_err: Expected value 123");
+	val = smb_strtoul(number, NULL, 0, &err, SMB_STR_STANDARD);
+	torture_assert(tctx, errno == EAGAIN, "smb_strtoul: Expected EAGAIN");
+	torture_assert(tctx, err == 0, "smb_strtoul: Expected err = 0");
+	torture_assert(tctx, val == 123, "smb_strtoul: Expected value 123");
 
 	/* set err to an impossible value again before continuing */
 	err = EAGAIN;
-	vall = strtoull_err(number, NULL, 0, &err);
-	torture_assert(tctx, errno == EAGAIN, "strtoull_err: Expected EAGAIN");
-	torture_assert(tctx, err == 0, "strtoul_err: Expected err = 0");
-	torture_assert(tctx, vall == 123, "strtoul_err: Expected value 123");
+	vall = smb_strtoull(number, NULL, 0, &err, SMB_STR_STANDARD);
+	torture_assert(tctx, errno == EAGAIN, "smb_strtoull: Expected EAGAIN");
+	torture_assert(tctx, err == 0, "smb_strtoul: Expected err = 0");
+	torture_assert(tctx, vall == 123, "smb_strtoul: Expected value 123");
 
 	return true;
 }
 
-static bool test_strtoul_err_negative(struct torture_context *tctx)
+static bool test_smb_strtoul_negative(struct torture_context *tctx)
 {
 	const char *number = "-132";
 	const char *number2 = "132-";
@@ -456,12 +456,12 @@ static bool test_strtoul_err_negative(struct torture_context *tctx)
 	int err;
 
 	err = 0;
-	strtoul_err(number, NULL, 0, &err);
-	torture_assert(tctx, err == EINVAL, "strtoul_err: Expected EINVAL");
+	smb_strtoul(number, NULL, 0, &err, SMB_STR_STANDARD);
+	torture_assert(tctx, err == EINVAL, "smb_strtoul: Expected EINVAL");
 
 	err = 0;
-	strtoull_err(number, NULL, 0, &err);
-	torture_assert(tctx, err == EINVAL, "strtoull_err: Expected EINVAL");
+	smb_strtoull(number, NULL, 0, &err, SMB_STR_STANDARD);
+	torture_assert(tctx, err == EINVAL, "smb_strtoull: Expected EINVAL");
 
 	/* it is allowed to have a "-" sign after a number,
 	 * e.g. as part of a formular, however, it is not supposed to
@@ -469,39 +469,39 @@ static bool test_strtoul_err_negative(struct torture_context *tctx)
 	 */
 
 	err = 0;
-	val = strtoul_err(number2, NULL, 0, &err);
-	torture_assert(tctx, err == 0, "strtoul_err: Expected no error");
-	torture_assert(tctx, val == 132, "strtoul_err: Wrong value");
+	val = smb_strtoul(number2, NULL, 0, &err, SMB_STR_STANDARD);
+	torture_assert(tctx, err == 0, "smb_strtoul: Expected no error");
+	torture_assert(tctx, val == 132, "smb_strtoul: Wrong value");
 
 	err = 0;
-	vall = strtoull_err(number2, NULL, 0, &err);
-	torture_assert(tctx, err == 0, "strtoull_err: Expected no error");
-	torture_assert(tctx, vall == 132, "strtoull_err: Wrong value");
+	vall = smb_strtoull(number2, NULL, 0, &err, SMB_STR_STANDARD);
+	torture_assert(tctx, err == 0, "smb_strtoull: Expected no error");
+	torture_assert(tctx, vall == 132, "smb_strtoull: Wrong value");
 
 	return true;
 }
 
-static bool test_strtoul_err_no_number(struct torture_context *tctx)
+static bool test_smb_strtoul_no_number(struct torture_context *tctx)
 {
 	const char *number = "ghijk";
 	const char *blank = "";
 	int err;
 
 	err = 0;
-	strtoul_err(number, NULL, 0, &err);
-	torture_assert(tctx, err == EINVAL, "strtoul_err: Expected EINVAL");
+	smb_strtoul(number, NULL, 0, &err, SMB_STR_STANDARD);
+	torture_assert(tctx, err == EINVAL, "smb_strtoul: Expected EINVAL");
 
 	err = 0;
-	strtoull_err(number, NULL, 0, &err);
-	torture_assert(tctx, err == EINVAL, "strtoull_err: Expected EINVAL");
+	smb_strtoull(number, NULL, 0, &err, SMB_STR_STANDARD);
+	torture_assert(tctx, err == EINVAL, "smb_strtoull: Expected EINVAL");
 
 	err = 0;
-	strtoul_err(blank, NULL, 0, &err);
-	torture_assert(tctx, err == EINVAL, "strtoul_err: Expected EINVAL");
+	smb_strtoul(blank, NULL, 0, &err, SMB_STR_STANDARD);
+	torture_assert(tctx, err == EINVAL, "smb_strtoul: Expected EINVAL");
 
 	err = 0;
-	strtoull_err(blank, NULL, 0, &err);
-	torture_assert(tctx, err == EINVAL, "strtoull_err: Expected EINVAL");
+	smb_strtoull(blank, NULL, 0, &err, SMB_STR_STANDARD);
+	torture_assert(tctx, err == EINVAL, "smb_strtoull: Expected EINVAL");
 
 	return true;
 }
@@ -518,13 +518,13 @@ struct torture_suite *torture_local_util(TALLOC_CTX *mem_ctx)
 				      "directory_create_or_exist",
 				      test_directory_create_or_exist);
 	torture_suite_add_simple_test(suite,
-				      "strtoul(l)_err errno",
-				      test_strtoul_err_errno_check);
+				      "smb_strtoul(l) errno",
+				      test_smb_strtoul_errno_check);
 	torture_suite_add_simple_test(suite,
-				      "strtoul(l)_err negative",
-				      test_strtoul_err_negative);
+				      "smb_strtoul(l) negative",
+				      test_smb_strtoul_negative);
 	torture_suite_add_simple_test(suite,
-				      "strtoul(l)_err no number",
-				      test_strtoul_err_no_number);
+				      "smb_strtoul(l) no number",
+				      test_smb_strtoul_no_number);
 	return suite;
 }

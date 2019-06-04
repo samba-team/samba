@@ -622,7 +622,7 @@ static int ldif_read_prefixMap(struct ldb_context *ldb, void *mem_ctx,
 		}
 
 		blob->ctr.dsdb.mappings[blob->ctr.dsdb.num_mappings].id_prefix =
-			strtoul_err(line, &oid, 10, &error);
+			smb_strtoul(line, &oid, 10, &error, SMB_STR_STANDARD);
 
 		if (oid[0] != ':' || error != 0) {
 			talloc_free(tmp_ctx);

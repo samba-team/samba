@@ -70,12 +70,15 @@ static bool masked_match(const char *tok, const char *slash, const char *s)
 			return false;
 		}
         } else {
-		char *endp = NULL;
 		int error = 0;
 		unsigned long val;
 
-		val = strtoul_err(slash+1, &endp, 0, &error);
-		if (error != 0 || *endp != '\0') {
+		val = smb_strtoul(slash+1,
+				  NULL,
+				  0,
+				  &error,
+				  SMB_STR_FULL_STR_CONV);
+		if (error != 0) {
 			return false;
 		}
 		if (!make_netmask(&ss_mask, &ss_tok, val)) {

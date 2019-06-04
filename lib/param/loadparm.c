@@ -339,7 +339,7 @@ unsigned long lp_ulong(const char *s)
 		return -1;
 	}
 
-	ret = strtoul_err(s, NULL, 0, &error);
+	ret = smb_strtoul(s, NULL, 0, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		DBG_DEBUG("lp_ulong(%s): conversion failed\n",s);
 		return -1;
@@ -361,7 +361,7 @@ unsigned long long lp_ulonglong(const char *s)
 		return -1;
 	}
 
-	ret = strtoull_err(s, NULL, 0, &error);
+	ret = smb_strtoull(s, NULL, 0, &error, SMB_STR_STANDARD);
 	if (error != 0) {
 		DBG_DEBUG("lp_ulonglong(%s): conversion failed\n",s);
 		return -1;
