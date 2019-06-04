@@ -96,7 +96,7 @@ static void named_pipe_listener(struct tevent_context *ev,
 				uint16_t flags,
 				void *private_data);
 
-int create_named_pipe_socket(const char *pipe_name)
+int dcesrv_create_ncacn_np_socket(const char *pipe_name)
 {
 	char *np_dir = NULL;
 	int fd = -1;
@@ -156,7 +156,7 @@ bool setup_named_pipe_socket(const char *pipe_name,
 		DEBUG(0, ("Out of memory\n"));
 		goto out;
 	}
-	state->fd = create_named_pipe_socket(pipe_name);
+	state->fd = dcesrv_create_ncacn_np_socket(pipe_name);
 	if (state->fd == -1) {
 		goto out;
 	}

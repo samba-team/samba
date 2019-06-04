@@ -627,7 +627,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	}
 
 	/* LSARPC */
-	fd = create_named_pipe_socket("lsarpc");
+	fd = dcesrv_create_ncacn_np_socket("lsarpc");
 	if (fd < 0) {
 		goto done;
 	}
@@ -641,7 +641,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	listen_fd[*listen_fd_size] = fd;
 	(*listen_fd_size)++;
 
-	fd = create_named_pipe_socket("lsass");
+	fd = dcesrv_create_ncacn_np_socket("lsass");
 	if (fd < 0) {
 		goto done;
 	}
@@ -696,7 +696,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	}
 
 	/* SAMR */
-	fd = create_named_pipe_socket("samr");
+	fd = dcesrv_create_ncacn_np_socket("samr");
 	if (fd < 0) {
 		goto done;
 	}
@@ -751,7 +751,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	}
 
 	/* NETLOGON */
-	fd = create_named_pipe_socket("netlogon");
+	fd = dcesrv_create_ncacn_np_socket("netlogon");
 	if (fd < 0) {
 		goto done;
 	}

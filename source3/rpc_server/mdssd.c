@@ -549,7 +549,7 @@ static bool mdssd_create_sockets(struct tevent_context *ev_ctx,
 	}
 
 	/* mdssvc */
-	fd = create_named_pipe_socket("mdssvc");
+	fd = dcesrv_create_ncacn_np_socket("mdssvc");
 	if (fd < 0) {
 		goto done;
 	}
