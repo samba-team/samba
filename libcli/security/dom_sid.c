@@ -148,7 +148,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 		goto format_error;
 	}
 
-	conv = strtoul_err(p, &q, 10, &error);
+	conv = smb_strtoul(p, &q, 10, &error, SMB_STR_STANDARD);
 	if (error != 0 || (*q != '-') || conv > UINT8_MAX) {
 		goto format_error;
 	}
@@ -160,7 +160,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 	}
 
 	/* get identauth */
-	conv = strtoull_err(q, &q, 0, &error);
+	conv = smb_strtoull(q, &q, 0, &error, SMB_STR_STANDARD);
 	if (conv & AUTHORITY_MASK || error != 0) {
 		goto format_error;
 	}
@@ -189,7 +189,7 @@ bool dom_sid_parse_endp(const char *sidstr,struct dom_sid *sidout,
 			goto format_error;
 		}
 
-		conv = strtoull_err(q, &end, 10, &error);
+		conv = smb_strtoull(q, &end, 10, &error, SMB_STR_STANDARD);
 		if (conv > UINT32_MAX || error != 0) {
 			goto format_error;
 		}
