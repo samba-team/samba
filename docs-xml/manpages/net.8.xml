@@ -1335,6 +1335,46 @@ against an NT4 Domain Controller.
 </refsect2>
 
 <refsect2>
+
+<title>ADS GPO</title>
+<refsect3>
+<title>ADS GPO APPLY &lt;USERNAME|MACHINENAME&gt; </title>
+<para>Apply GPOs for a username or machine name. Either username or machine name should be provided to the command, not both. </para>
+</refsect3>
+
+<refsect3>
+<title>ADS GPO GETGPO [<replaceable>GPO</replaceable>]</title>
+<para>List specified GPO.</para>
+</refsect3>
+
+<refsect3>
+<title>ADS GPO LINKADD [<replaceable>LINKDN</replaceable>] [<replaceable>GPODN</replaceable>]</title>
+<para>Link a container to a GPO. <replaceable>LINKDN</replaceable> Container to link to a GPO. <replaceable>GPODN</replaceable> GPO to link container to. DNs must be provided properly escaped. See RFC 4514 for details.</para>
+</refsect3>
+
+<refsect3>
+<title>ADS GPO LINKGET [<replaceable>CONTAINER</replaceable>]</title>
+<para>Lists gPLink of a containter.</para>
+</refsect3>
+
+<refsect3>
+<title>ADS GPO LIST &lt;USERNAME|MACHINENAME&gt; </title>
+<para>Lists all GPOs for a username or machine name. Either username or machine name should be provided to the command, not both. </para>
+</refsect3>
+
+<refsect3>
+<title>ADS GPO LISTALL</title>
+<para>Lists all GPOs on a DC.</para>
+</refsect3>
+
+<refsect3>
+<title>ADS GPO REFRESH [<replaceable>USERNAME</replaceable>] [<replaceable>MACHINENAME</replaceable>]</title>
+<para>Lists all GPOs assigned to an account and download them. <replaceable>USERNAME</replaceable> User to refresh GPOs for. <replaceable>MACHINENAME</replaceable> Machine to refresh GPOs for.</para>
+</refsect3>
+
+</refsect2>
+
+<refsect2>
 <title>ADS LEAVE [--keep-account]</title>
 
 <para>Make the remote host leave the domain it is part of. </para>
