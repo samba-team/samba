@@ -351,8 +351,10 @@ static void smb1cli_trans_format(struct smb1cli_trans_state *state,
 		SSVAL(vwv +12, 0, data_offset);
 		SCVAL(vwv +13, 0, state->num_setup);
 		SCVAL(vwv +13, 1, 0);	/* reserved */
-		memcpy(vwv + 14, state->setup,
-		       sizeof(uint16_t) * state->num_setup);
+		if (state->num_setup > 0) {
+			memcpy(vwv + 14, state->setup,
+			       sizeof(uint16_t) * state->num_setup);
+		}
 		break;
 	case SMBtranss:
 	case SMBtranss2:
