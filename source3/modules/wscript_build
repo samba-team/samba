@@ -396,6 +396,14 @@ bld.SAMBA3_MODULE('vfs_aio_pthread',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_aio_pthread'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_aio_pthread'))
 
+bld.SAMBA3_MODULE('vfs_io_uring',
+                 subsystem='vfs',
+                 source='vfs_io_uring.c',
+                 deps='samba-util tevent uring',
+                 init_function='',
+                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_io_uring'),
+                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_io_uring'))
+
 bld.SAMBA3_MODULE('vfs_preopen',
                  subsystem='vfs',
                  source='vfs_preopen.c',

@@ -1754,6 +1754,14 @@ main() {
                                       and conf.CHECK_LIB('dbus-1', shlib=True)):
             conf.DEFINE('HAVE_DBUS', '1')
 
+    if conf.CHECK_CFG(package='liburing', args='--cflags --libs',
+                      msg='Checking for liburing package', uselib_store="URING"):
+        if (conf.CHECK_HEADERS('liburing.h', lib='uring')
+                                      and conf.CHECK_LIB('uring', shlib=True)):
+            conf.CHECK_FUNCS_IN('io_uring_ring_dontfork', 'uring',
+                                headers='liburing.h')
+            conf.DEFINE('HAVE_LIBURING', '1')
+
     conf.env.build_regedit = False
     if not Options.options.with_regedit == False:
         conf.PROCESS_SEPARATE_RULE('system_ncurses')
@@ -1931,6 +1939,9 @@ main() {
 
     if (conf.CONFIG_SET('HAVE_STRUCT_MSGHDR_MSG_CONTROL') or conf.CONFIG_SET('HAVE_STRUCT_MSGHDR_MSG_ACCRIGHTS')):
         default_shared_modules.extend(TO_LIST('vfs_aio_fork'))
+
+    if conf.CONFIG_SET('HAVE_LIBURING'):
+        default_shared_modules.extend(TO_LIST('vfs_io_uring'))
 
     if Options.options.with_pthreadpool:
         default_shared_modules.extend(TO_LIST('vfs_aio_pthread'))

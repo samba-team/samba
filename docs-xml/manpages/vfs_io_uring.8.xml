@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="vfs_io_uring.8">
+
+<refmeta>
+	<refentrytitle>vfs_io_uring</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">System Administration tools</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
+</refmeta>
+
+<refnamediv>
+	<refname>vfs_io_uring</refname>
+	<refpurpose>Implement async io in Samba vfs using io_uring of Linux (>= 5.1).</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>vfs objects = io_uring</command>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This VFS module is part of the
+	<citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>The <command>io_uring</command> VFS module enables asynchronous
+	pread, pwrite and fsync using the io_uring infrastructure of Linux (>= 5.1).
+	This provides much less overhead compared to the usage of the pthreadpool for
+	async io.</para>
+
+	<para>This module SHOULD be listed last in any module stack as
+	it requires real kernel file descriptors.</para>
+
+</refsect1>
+
+
+<refsect1>
+	<title>EXAMPLES</title>
+
+	<para>Straight forward use:</para>
+
+<programlisting>
+        <smbconfsection name="[cooldata]"/>
+	<smbconfoption name="path">/data/ice</smbconfoption>
+	<smbconfoption name="vfs objects">io_uring</smbconfoption>
+</programlisting>
+
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+
+		<varlistentry>
+		<term>io_uring:num_entries = NUMBER_OF_QUEUE_ENTRIES</term>
+		<listitem>
+		<para>The number of entries in the submission queue.
+		The maximum allowed value depends on the kernel version
+		and the kernel will roundup the value to a power of 2.
+		</para>
+		<para>The default is '128'.</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>io_uring:sqpoll = BOOL</term>
+		<listitem>
+		<para>Use the IORING_SETUP_SQPOLL feature.
+		</para>
+		<para>The default is 'no'.</para>
+		</listitem>
+		</varlistentry>
+
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>SEE ALSO</title>
+	<para>
+	<citerefentry><refentrytitle>io_uring_setup</refentrytitle><manvolnum>2</manvolnum></citerefentry>.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is part of version &doc.version; of the Samba suite.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+</refsect1>
+
+</refentry>
