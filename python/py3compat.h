@@ -52,8 +52,6 @@
  *
  */
 
-#if PY_MAJOR_VERSION >= 3
-
 /***** Python 3 *****/
 
 #define IS_PY3 1
@@ -119,99 +117,5 @@
 
 #define PYARG_BYTES_LEN "y#"
 #define PYARG_STR_UNI "es"
-
-#else
-
-/***** Python 2 *****/
-
-#define IS_PY3 0
-
-/* Strings */
-
-#define PyStr_Type PyString_Type
-#define PyStr_Check PyString_Check
-#define PyStr_CheckExact PyString_CheckExact
-#define PyStr_FromString PyString_FromString
-#define PyStr_FromStringAndSize PyString_FromStringAndSize
-#define PyStr_FromFormat PyString_FromFormat
-#define PyStr_FromFormatV PyString_FromFormatV
-#define PyStr_AsString PyString_AsString
-#define PyStr_Format PyString_Format
-#define PyStr_InternInPlace PyString_InternInPlace
-#define PyStr_InternFromString PyString_InternFromString
-#define PyStr_Decode PyString_Decode
-
-#define PyStr_AsUTF8String(str) (Py_INCREF(str), (str))
-#define PyStr_AsUTF8 PyString_AsString
-#define PyStr_AsUTF8AndSize(pystr, sizeptr) \
-    ((*sizeptr=PyString_Size(pystr)), PyString_AsString(pystr))
-
-#define PyBytes_Type PyString_Type
-#define PyBytes_Check PyString_Check
-#define PyBytes_CheckExact PyString_CheckExact
-#define PyBytes_FromString PyString_FromString
-#define PyBytes_FromStringAndSize PyString_FromStringAndSize
-#define PyBytes_FromFormat PyString_FromFormat
-#define PyBytes_FromFormatV PyString_FromFormatV
-#define PyBytes_Size PyString_Size
-#define PyBytes_GET_SIZE PyString_GET_SIZE
-#define PyBytes_AsString PyString_AsString
-#define PyBytes_AS_STRING PyString_AS_STRING
-#define PyBytes_AsStringAndSize PyString_AsStringAndSize
-#define PyBytes_Concat PyString_Concat
-#define PyBytes_ConcatAndDel PyString_ConcatAndDel
-#define _PyBytes_Resize _PyString_Resize
-
-/* description of bytes and string objects */
-#define PY_DESC_PY3_BYTES "string"
-#define PY_DESC_PY3_STRING "unicode"
-
-/* Determine if object is really bytes, for code that runs
- * in python2 & python3 (note: PyBytes_Check is replaced by
- * PyString_Check in python2) so care needs to be taken when
- * writing code that will check if incoming type is bytes that
- * will work as expected in python2 & python3
- */
-
-#define IsPy3Bytes(pystr) false
-
-#define IsPy3BytesOrString PyStr_Check
-
-/* PyArg_ParseTuple/Py_BuildValue argument */
-
-#define PYARG_BYTES_LEN "s#"
-/*
- * We want a format that will ensure unicode is encoded using the
- * specified encoding 'utf8' (to obtain the char* array)
- * In python3 we use "es" but in python2 the specifiying 'es' will
- * result in the any incomming 'str' type being decoded first to ascii
- * then encoded to the specified 'utf8' encoding. In order to avoid that
- * we use format 'et' in python2 instead.
- */
-#define PYARG_STR_UNI "et"
-
-/* Module init */
-
-#define PyModuleDef_HEAD_INIT 0
-
-typedef struct PyModuleDef {
-    int m_base;
-    const char* m_name;
-    const char* m_doc;
-    Py_ssize_t m_size;
-    PyMethodDef *m_methods;
-} PyModuleDef;
-
-#define PyModule_Create(def) \
-    Py_InitModule3((def)->m_name, (def)->m_methods, (def)->m_doc)
-
-#define MODULE_INIT_FUNC(name) \
-    static PyObject *PyInit_ ## name(void); \
-    void init ## name(void); \
-    void init ## name(void) { PyInit_ ## name(); } \
-    static PyObject *PyInit_ ## name(void)
-
-
-#endif
 
 #endif
