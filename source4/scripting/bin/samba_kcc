@@ -250,7 +250,6 @@ parser.add_option("--forget-intersite-links", default=False,
                   help="pretend not to know the existing intersite topology",
                   action="store_true")
 
-
 opts, args = parser.parse_args()
 
 
@@ -286,6 +285,10 @@ else:
     unix_now = int(time.time())
 
 lp = sambaopts.get_loadparm()
+# only log warnings/errors by default, unless the user has specified otherwise
+if opts.debug is None:
+    lp.set('log level', '1')
+
 creds = credopts.get_credentials(lp, fallback_machine=True)
 
 if opts.dburl is None:
