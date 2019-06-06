@@ -180,12 +180,14 @@ static int tdb_update_hash_cmp(TDB_DATA key, TDB_DATA data, void *private_data)
 
 	for (i=0; i<state->num_dbufs; i++) {
 		TDB_DATA dbuf = state->dbufs[i];
-		int ret;
-		ret = memcmp(dptr, dbuf.dptr, dbuf.dsize);
-		if (ret != 0) {
-			return -1;
+		if( dbuf.dsize > 0) {
+			int ret;
+			ret = memcmp(dptr, dbuf.dptr, dbuf.dsize);
+			if (ret != 0) {
+				return -1;
+			}
+			dptr += dbuf.dsize;
 		}
-		dptr += dbuf.dsize;
 	}
 
 	return 0;
