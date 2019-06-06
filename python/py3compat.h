@@ -65,9 +65,8 @@
 #define PyStr_AsUTF8 PyUnicode_AsUTF8
 #define PyStr_AsUTF8AndSize PyUnicode_AsUTF8AndSize
 
-/* description of bytes and string objects */
+/* description of bytes objects */
 #define PY_DESC_PY3_BYTES "bytes"
-#define PY_DESC_PY3_STRING "string"
 
 /* Determine if object is really bytes, for code that runs
  * in python2 & python3 (note: PyBytes_Check is replaced by
