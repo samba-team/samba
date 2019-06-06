@@ -86,7 +86,6 @@
 #define PyInt_Type PyLong_Type
 #define PyInt_Check PyLong_Check
 #define PyInt_FromLong PyLong_FromLong
-#define PyInt_FromSize_t PyLong_FromSize_t
 #define PyInt_AsLong PyLong_AsLong
 #define PyInt_AS_LONG PyLong_AS_LONG
 #define PyInt_AsUnsignedLongLongMask PyLong_AsUnsignedLongLongMask
