@@ -49,6 +49,40 @@ where:
 
 The version of the JSON Authentication messages has been changed to 1.2 from 1.1
 
+Reindex performance improvements
+--------------------------------
+
+The performance of samba-tool dbcheck --reindex has been improved, especially
+for large domains.
+
+LDAP referrals
+--------------
+
+The scheme of returned LDAP referrals now reflects the scheme of the original
+request, i.e. referrals received via ldap are prefixed with "ldap://"
+and those over ldaps are prefixed with "ldaps://"
+
+Previously all referrals were prefixed with "ldap://"
+
+Bind9 logging
+-------------
+
+It is now possible to log the duration of DNS operations performed by Bind9
+This should aid future diagnosis of performance issues, and could be used to
+monitor DNS performance. The logging is enabled by setting log level to
+"dns:10" in smb.conf
+
+The logs are currently Human readable text only, i.e. no JSON formatted output.
+
+Log lines are of the form:
+
+    <function>: DNS timing: result: [<result>] duration: (<duration>)
+    zone: [<zone>] name: [<name>] data: [<data>]
+
+    durations are in microseconds.
+
+
+
 
 
 REMOVED FEATURES
