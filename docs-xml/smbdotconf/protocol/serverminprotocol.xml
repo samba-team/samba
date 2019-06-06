@@ -10,7 +10,7 @@
 
 	<para>Normally this option should not be set as the automatic negotiation
 	phase in the SMB protocol takes care of choosing the appropriate
-	protocol.</para>
+	protocol unless you have legacy clients which are SMB1 capable only.</para>
 
 	<para>See <related>server max protocol</related> for a full list
 	of available protocols.</para>
@@ -18,6 +18,6 @@
 
 <related>server max protocol</related>
 
-<value type="default">LANMAN1</value>
+<value type="default">SMB2_02</value>
 <value type="example">NT1</value>
 </samba:parameter>
