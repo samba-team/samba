@@ -85,7 +85,6 @@
 
 #define PyInt_Type PyLong_Type
 #define PyInt_Check PyLong_Check
-#define PyInt_FromString PyLong_FromString
 #define PyInt_FromLong PyLong_FromLong
 #define PyInt_FromSsize_t PyLong_FromSsize_t
 #define PyInt_FromSize_t PyLong_FromSize_t
