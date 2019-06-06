@@ -61,7 +61,6 @@
 #define PyStr_FromFormat PyUnicode_FromFormat
 #define PyStr_FromFormatV PyUnicode_FromFormatV
 #define PyStr_AsString PyUnicode_AsUTF8
-#define PyStr_InternFromString PyUnicode_InternFromString
 #define PyStr_Decode PyUnicode_Decode
 
 #define PyStr_AsUTF8String PyUnicode_AsUTF8String // returns PyBytes
