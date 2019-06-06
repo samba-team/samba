@@ -23,8 +23,6 @@
 
 /* Quick docs:
  *
- * The IS_PY3 preprocessor constant is 1 on Python 3, and 0 on Python 2.
- *
  * "PyStr_*" works like PyUnicode_* on Python 3, but uses bytestrings (str)
  * under Python 2.
  *
@@ -53,8 +51,6 @@
  */
 
 /***** Python 3 *****/
-
-#define IS_PY3 1
 
 /* Strings */
 
