@@ -648,7 +648,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 	Globals.server_max_protocol = PROTOCOL_SMB3_11;
 	Globals.server_min_protocol = PROTOCOL_SMB2_02;
 	Globals._client_max_protocol = PROTOCOL_DEFAULT;
-	Globals.client_min_protocol = PROTOCOL_CORE;
+	Globals.client_min_protocol = PROTOCOL_SMB2_02;
 	Globals._client_ipc_max_protocol = PROTOCOL_DEFAULT;
 	Globals._client_ipc_min_protocol = PROTOCOL_DEFAULT;
 	Globals._security = SEC_AUTO;

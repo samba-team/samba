@@ -2713,7 +2713,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lpcfg_do_global_parameter(lp_ctx, "LargeReadwrite", "True");
 	lpcfg_do_global_parameter(lp_ctx, "server min protocol", "SMB2_02");
 	lpcfg_do_global_parameter(lp_ctx, "server max protocol", "SMB3");
-	lpcfg_do_global_parameter(lp_ctx, "client min protocol", "CORE");
+	lpcfg_do_global_parameter(lp_ctx, "client min protocol", "SMB2_02");
 	lpcfg_do_global_parameter(lp_ctx, "client max protocol", "default");
 	lpcfg_do_global_parameter(lp_ctx, "client ipc min protocol", "default");
 	lpcfg_do_global_parameter(lp_ctx, "client ipc max protocol", "default");

@@ -9,13 +9,17 @@
 
 	<para>Normally this option should not be set as the automatic
 	negotiation phase in the SMB protocol takes care of choosing
-	the appropriate protocol.</para>
+	the appropriate protocol unless you connect to a legacy SMB1-only server.</para>
 
 	<para>See <related>client max protocol</related> for a full list
 	of available protocols.</para>
 
 	<para>IPC$ connections for DCERPC e.g. in winbindd, are handled by the
 	<smbconfoption name="client ipc min protocol"/> option.</para>
+
+	<para>Note that most command line tools support
+	--option='client min protocol=NT1', so it may not be required to
+	enable SMB1 protocols globally in smb.conf.</para>
 </description>
 
 <related>client max protocol</related>
@@ -23,6 +27,6 @@
 <related>client ipc min protocol</related>
 <related>client ipc max protocol</related>
 
-<value type="default">CORE</value>
+<value type="default">SMB2_02</value>
 <value type="example">NT1</value>
 </samba:parameter>
