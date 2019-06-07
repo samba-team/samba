@@ -106,8 +106,7 @@ bool ldb_kv_key_is_normal_record(struct ldb_val key)
   note that the key for a record can depend on whether the
   dn refers to a case sensitive index record or not
 */
-struct ldb_val ldb_kv_key_dn(struct ldb_module *module,
-			     TALLOC_CTX *mem_ctx,
+struct ldb_val ldb_kv_key_dn(TALLOC_CTX *mem_ctx,
 			     struct ldb_dn *dn)
 {
 	struct ldb_val key;
@@ -198,7 +197,7 @@ int ldb_kv_idx_to_key(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	/* form the key */
-	*key = ldb_kv_key_dn(module, mem_ctx, dn);
+	*key = ldb_kv_key_dn(mem_ctx, dn);
 	TALLOC_FREE(dn);
 	if (!key->data) {
 		return ldb_module_oom(module);
@@ -226,11 +225,11 @@ struct ldb_val ldb_kv_key_msg(struct ldb_module *module,
 	int ret;
 
 	if (ldb_kv->cache->GUID_index_attribute == NULL) {
-		return ldb_kv_key_dn(module, mem_ctx, msg->dn);
+		return ldb_kv_key_dn(mem_ctx, msg->dn);
 	}
 
 	if (ldb_dn_is_special(msg->dn)) {
-		return ldb_kv_key_dn(module, mem_ctx, msg->dn);
+		return ldb_kv_key_dn(mem_ctx, msg->dn);
 	}
 
 	guid_val =
@@ -1312,13 +1311,13 @@ static int ldb_kv_rename(struct ldb_kv_context *ctx)
 	 * Even in GUID index mode we use ltdb_key_dn() as we are
 	 * trying to figure out if this is just a case rename
 	 */
-	key = ldb_kv_key_dn(module, msg, req->op.rename.newdn);
+	key = ldb_kv_key_dn(msg, req->op.rename.newdn);
 	if (!key.data) {
 		talloc_free(msg);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	key_old = ldb_kv_key_dn(module, msg, req->op.rename.olddn);
+	key_old = ldb_kv_key_dn(msg, req->op.rename.olddn);
 	if (!key_old.data) {
 		talloc_free(msg);
 		talloc_free(key.data);

@@ -1850,7 +1850,7 @@ static int ldb_kv_index_dn_ordered(struct ldb_module *module,
 			  ldb_dn_get_linearized(key_dn));
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ldb_key = ldb_kv_key_dn(module, tmp_ctx, key_dn);
+	ldb_key = ldb_kv_key_dn(tmp_ctx, key_dn);
 	talloc_free(key_dn);
 	if (ldb_key.data == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1868,7 +1868,7 @@ static int ldb_kv_index_dn_ordered(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	ldb_key2 = ldb_kv_key_dn(module, tmp_ctx, key_dn);
+	ldb_key2 = ldb_kv_key_dn(tmp_ctx, key_dn);
 	talloc_free(key_dn);
 	if (ldb_key2.data == NULL) {
 		return LDB_ERR_OPERATIONS_ERROR;

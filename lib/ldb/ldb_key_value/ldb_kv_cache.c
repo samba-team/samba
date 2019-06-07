@@ -444,7 +444,7 @@ int ldb_kv_cache_load(struct ldb_module *module)
 		goto failed;
 	}
 
-	key = ldb_kv_key_dn(module, baseinfo, baseinfo_dn);
+	key = ldb_kv_key_dn(baseinfo, baseinfo_dn);
 	if (!key.data) {
 		goto failed_and_unlock;
 	}

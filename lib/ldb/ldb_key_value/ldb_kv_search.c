@@ -250,7 +250,7 @@ int ldb_kv_search_dn1(struct ldb_module *module,
 		}
 
 		/* form the key */
-		key = ldb_kv_key_dn(module, tdb_key_ctx, dn);
+		key = ldb_kv_key_dn(tdb_key_ctx, dn);
 		if (!key.data) {
 			TALLOC_FREE(tdb_key_ctx);
 			return LDB_ERR_OPERATIONS_ERROR;
