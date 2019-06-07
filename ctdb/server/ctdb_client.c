@@ -1772,11 +1772,11 @@ uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
 /* Get list of nodes not including those with flags specified by mask.
  * If exclude_pnn is not -1 then exclude that pnn from the list.
  */
-uint32_t *list_of_nodes(struct ctdb_context *ctdb,
-			struct ctdb_node_map_old *node_map,
-			TALLOC_CTX *mem_ctx,
-			uint32_t mask,
-			int exclude_pnn)
+static uint32_t *list_of_nodes(struct ctdb_context *ctdb,
+			       struct ctdb_node_map_old *node_map,
+			       TALLOC_CTX *mem_ctx,
+			       uint32_t mask,
+			       int exclude_pnn)
 {
 	int i, j, num_nodes;
 	uint32_t *nodes;
