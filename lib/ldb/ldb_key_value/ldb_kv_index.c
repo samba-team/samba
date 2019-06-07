@@ -1273,8 +1273,7 @@ static int ldb_kv_index_dn_leaf(struct ldb_module *module,
   list intersection
   list = list & list2
 */
-static bool list_intersect(struct ldb_context *ldb,
-			   struct ldb_kv_private *ldb_kv,
+static bool list_intersect(struct ldb_kv_private *ldb_kv,
 			   struct dn_list *list,
 			   const struct dn_list *list2)
 {
@@ -1621,7 +1620,7 @@ static int ldb_kv_index_dn_and(struct ldb_module *module,
 			list->dn = list2->dn;
 			list->count = list2->count;
 			found = true;
-		} else if (!list_intersect(ldb, ldb_kv, list, list2)) {
+		} else if (!list_intersect(ldb_kv, list, list2)) {
 			talloc_free(list2);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
@@ -2453,8 +2452,7 @@ int ldb_kv_search_indexed(struct ldb_kv_context *ac, uint32_t *match_count)
 			 * and falling back to a full DB scan).
 			 */
 			if (ret == LDB_SUCCESS) {
-				if (!list_intersect(ldb,
-						    ldb_kv,
+				if (!list_intersect(ldb_kv,
 						    dn_list,
 						    indexed_search_result)) {
 					talloc_free(indexed_search_result);
