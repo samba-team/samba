@@ -298,7 +298,7 @@ static void ctdb_vnn_unassign_iface(struct ctdb_context *ctdb,
 	}
 	vnn->iface = NULL;
 	if (vnn->pnn == ctdb->pnn) {
-		vnn->pnn = -1;
+		vnn->pnn = CTDB_UNKNOWN_PNN;
 	}
 }
 
@@ -772,7 +772,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	if (vnn->pnn != ctdb->pnn && have_ip && vnn->pnn != -1) {
+	if (vnn->pnn != ctdb->pnn && have_ip && vnn->pnn != CTDB_UNKNOWN_PNN) {
 		DEBUG(DEBUG_CRIT,(__location__ " takeoverip of IP %s is known to the kernel, "
 				  "and we have it on iface[%s], but it was assigned to node %d"
 				  "and we are node %d, banning ourself\n",
@@ -782,7 +782,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 		return -1;
 	}
 
-	if (vnn->pnn == -1 && have_ip) {
+	if (vnn->pnn == CTDB_UNKNOWN_PNN && have_ip) {
 		/* This will cause connections to be reset and
 		 * reestablished.  However, this is a very unusual
 		 * situation and doing this will completely repair the

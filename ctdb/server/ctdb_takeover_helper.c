@@ -466,7 +466,7 @@ static struct tevent_req *take_ip_send(TALLOC_CTX *mem_ctx,
 		struct take_ip_one_state *substate;
 		struct ctdb_public_ip ip;
 
-		if (tmp_ip->pnn == -1) {
+		if (tmp_ip->pnn == CTDB_UNKNOWN_PNN) {
 			/* IP will be unassigned */
 			continue;
 		}
