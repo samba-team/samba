@@ -2596,7 +2596,7 @@ static int ldb_kv_index_add1(struct ldb_module *module,
 		 *
 		 * So need to pull the DN's to check if it's really a duplicate
 		 */
-		int i;
+		unsigned int i;
 		for (i=0; i < list->count; i++) {
 			uint8_t guid_key[LDB_KV_GUID_KEY_SIZE];
 			struct ldb_val key = {
