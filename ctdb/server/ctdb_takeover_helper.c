@@ -160,7 +160,6 @@ static void get_public_ips_done(struct tevent_req *subreq)
 						&reply);
 	TALLOC_FREE(subreq);
 	if (! status) {
-		found_errors = false;
 		for (i = 0; i < state->count; i++) {
 			if (err_list[i] != 0) {
 				uint32_t pnn = state->pnns[i];
@@ -169,7 +168,6 @@ static void get_public_ips_done(struct tevent_req *subreq)
 				      "node %u, ret=%d\n", pnn, err_list[i]);
 
 				state->ban_credits[pnn]++;
-				found_errors = true;
 			}
 		}
 
