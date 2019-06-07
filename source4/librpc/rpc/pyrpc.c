@@ -41,7 +41,7 @@ static PyTypeObject *ndr_syntax_id_Type;
 static bool PyString_AsGUID(PyObject *object, struct GUID *uuid)
 {
 	NTSTATUS status;
-	status = GUID_from_string(PyStr_AsString(object), uuid);
+	status = GUID_from_string(PyUnicode_AsUTF8(object), uuid);
 	if (NT_STATUS_IS_ERR(status)) {
 		PyErr_SetNTSTATUS(status);
 		return false;

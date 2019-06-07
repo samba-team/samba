@@ -140,7 +140,7 @@ static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
 	
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
-	sid = dom_sid_parse_talloc(NULL, PyStr_AsString(py_sid));
+	sid = dom_sid_parse_talloc(NULL, PyUnicode_AsUTF8(py_sid));
 	if (sid == NULL) {
 		PyErr_NoMemory();
 		return NULL;
@@ -782,7 +782,7 @@ static PyObject *py_dsdb_set_ntds_invocation_id(PyObject *self, PyObject *args)
 		return NULL;
 
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
-	GUID_from_string(PyStr_AsString(py_guid), &guid);
+	GUID_from_string(PyUnicode_AsUTF8(py_guid), &guid);
 
 	if (GUID_all_zero(&guid)) {
 		PyErr_SetString(PyExc_RuntimeError, "set_ntds_invocation_id rejected due to all-zero invocation ID");
@@ -1282,7 +1282,7 @@ static PyObject *py_dsdb_garbage_collect_tombstones(PyObject *self, PyObject *ar
 	length = PyList_GET_SIZE(py_list_dn);
 
 	for (i = 0; i < length; i++) {
-		const char *part_str = PyStr_AsString(PyList_GetItem(py_list_dn, i));
+		const char *part_str = PyUnicode_AsUTF8(PyList_GetItem(py_list_dn, i));
 		struct ldb_dn *p;
 		struct dsdb_ldb_dn_list_node *node;
 

@@ -121,7 +121,7 @@ static PyObject *py_mount_hive(PyObject *self, PyObject *args)
 		int i;
 		elements = talloc_array(NULL, const char *, PyList_Size(py_elements));
 		for (i = 0; i < PyList_Size(py_elements); i++)
-			elements[i] = PyStr_AsString(PyList_GetItem(py_elements, i));
+			elements[i] = PyUnicode_AsUTF8(PyList_GetItem(py_elements, i));
 	}
 
 	SMB_ASSERT(ctx != NULL);

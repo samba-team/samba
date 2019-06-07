@@ -250,7 +250,7 @@ static int py_samu_set_username(PyObject *obj, PyObject *value, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (!pdb_set_username(sam_acct, PyStr_AsString(value), PDB_CHANGED)) {
+	if (!pdb_set_username(sam_acct, PyUnicode_AsUTF8(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -281,7 +281,7 @@ static int py_samu_set_domain(PyObject *obj, PyObject *value, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (!pdb_set_domain(sam_acct, PyStr_AsString(value), PDB_CHANGED)) {
+	if (!pdb_set_domain(sam_acct, PyUnicode_AsUTF8(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -312,7 +312,7 @@ static int py_samu_set_nt_username(PyObject *obj, PyObject *value, void *closure
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (!pdb_set_nt_username(sam_acct, PyStr_AsString(value), PDB_CHANGED)) {
+	if (!pdb_set_nt_username(sam_acct, PyUnicode_AsUTF8(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -343,7 +343,7 @@ static int py_samu_set_full_name(PyObject *obj, PyObject *value, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (!pdb_set_fullname(sam_acct, PyStr_AsString(value), PDB_CHANGED)) {
+	if (!pdb_set_fullname(sam_acct, PyUnicode_AsUTF8(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -374,7 +374,7 @@ static int py_samu_set_home_dir(PyObject *obj, PyObject *value, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (!pdb_set_homedir(sam_acct, PyStr_AsString(value), PDB_CHANGED)) {
+	if (!pdb_set_homedir(sam_acct, PyUnicode_AsUTF8(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -405,7 +405,7 @@ static int py_samu_set_dir_drive(PyObject *obj, PyObject *value, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (!pdb_set_dir_drive(sam_acct, PyStr_AsString(value), PDB_CHANGED)) {
+	if (!pdb_set_dir_drive(sam_acct, PyUnicode_AsUTF8(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -436,7 +436,7 @@ static int py_samu_set_logon_script(PyObject *obj, PyObject *value, void *closur
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (!pdb_set_logon_script(sam_acct, PyStr_AsString(value), PDB_CHANGED)) {
+	if (!pdb_set_logon_script(sam_acct, PyUnicode_AsUTF8(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -467,7 +467,7 @@ static int py_samu_set_profile_path(PyObject *obj, PyObject *value, void *closur
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (!pdb_set_profile_path(sam_acct, PyStr_AsString(value), PDB_CHANGED)) {
+	if (!pdb_set_profile_path(sam_acct, PyUnicode_AsUTF8(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -498,7 +498,7 @@ static int py_samu_set_acct_desc(PyObject *obj, PyObject *value, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (!pdb_set_acct_desc(sam_acct, PyStr_AsString(value), PDB_CHANGED)) {
+	if (!pdb_set_acct_desc(sam_acct, PyUnicode_AsUTF8(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -529,7 +529,7 @@ static int py_samu_set_workstations(PyObject *obj, PyObject *value, void *closur
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (!pdb_set_workstations(sam_acct, PyStr_AsString(value), PDB_CHANGED)) {
+	if (!pdb_set_workstations(sam_acct, PyUnicode_AsUTF8(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -560,7 +560,7 @@ static int py_samu_set_comment(PyObject *obj, PyObject *value, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (!pdb_set_comment(sam_acct, PyStr_AsString(value), PDB_CHANGED)) {
+	if (!pdb_set_comment(sam_acct, PyUnicode_AsUTF8(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -591,7 +591,7 @@ static int py_samu_set_munged_dial(PyObject *obj, PyObject *value, void *closure
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
 	PY_CHECK_TYPE(&PyUnicode_Type, value, return -1;);
-	if (!pdb_set_munged_dial(sam_acct, PyStr_AsString(value), PDB_CHANGED)) {
+	if (!pdb_set_munged_dial(sam_acct, PyUnicode_AsUTF8(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -805,7 +805,7 @@ static int py_samu_set_plaintext_passwd(PyObject *obj, PyObject *value, void *cl
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	if (!pdb_set_plaintext_passwd(sam_acct, PyStr_AsString(value))) {
+	if (!pdb_set_plaintext_passwd(sam_acct, PyUnicode_AsUTF8(value))) {
 		talloc_free(frame);
 		return -1;
 	}
@@ -1361,7 +1361,7 @@ static int py_groupmap_set_nt_name(PyObject *obj, PyObject *value, void *closure
 	if (value == Py_None) {
 		fstrcpy(group_map->nt_name, NULL);
 	} else {
-		fstrcpy(group_map->nt_name, PyStr_AsString(value));
+		fstrcpy(group_map->nt_name, PyUnicode_AsUTF8(value));
 	}
 	talloc_free(frame);
 	return 0;
@@ -1391,7 +1391,7 @@ static int py_groupmap_set_comment(PyObject *obj, PyObject *value, void *closure
 	if (value == Py_None) {
 		fstrcpy(group_map->comment, NULL);
 	} else {
-		fstrcpy(group_map->comment, PyStr_AsString(value));
+		fstrcpy(group_map->comment, PyUnicode_AsUTF8(value));
 	}
 	talloc_free(frame);
 	return 0;
@@ -2430,13 +2430,13 @@ static PyObject *py_pdb_set_aliasinfo(PyObject *self, PyObject *args)
 
 	alias_sid = pytalloc_get_ptr(py_alias_sid);
 
-	alias_info.acct_name = talloc_strdup(frame, PyStr_AsString(PyDict_GetItemString(py_alias_info, "acct_name")));
+	alias_info.acct_name = talloc_strdup(frame, PyUnicode_AsUTF8(PyDict_GetItemString(py_alias_info, "acct_name")));
 	if (alias_info.acct_name == NULL) {
 		PyErr_Format(py_pdb_error, "Unable to allocate memory");
 		talloc_free(frame);
 		return NULL;
 	}
-	alias_info.acct_desc = talloc_strdup(frame, PyStr_AsString(PyDict_GetItemString(py_alias_info, "acct_desc")));
+	alias_info.acct_desc = talloc_strdup(frame, PyUnicode_AsUTF8(PyDict_GetItemString(py_alias_info, "acct_desc")));
 	if (alias_info.acct_desc == NULL) {
 		PyErr_Format(py_pdb_error, "Unable to allocate memory");
 		talloc_free(frame);
@@ -3303,10 +3303,10 @@ static PyObject *py_pdb_set_trusted_domain(PyObject *self, PyObject *args)
 	}
 
 	py_tmp = PyDict_GetItemString(py_td_info, "domain_name");
-	td_info.domain_name = discard_const_p(char, PyStr_AsString(py_tmp));
+	td_info.domain_name = discard_const_p(char, PyUnicode_AsUTF8(py_tmp));
 
 	py_tmp = PyDict_GetItemString(py_td_info, "netbios_name");
-	td_info.netbios_name = discard_const_p(char, PyStr_AsString(py_tmp));
+	td_info.netbios_name = discard_const_p(char, PyUnicode_AsUTF8(py_tmp));
 
 	py_tmp = PyDict_GetItemString(py_td_info, "security_identifier");
 	td_info.security_identifier = *pytalloc_get_type(py_tmp, struct dom_sid);

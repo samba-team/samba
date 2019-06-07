@@ -270,7 +270,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	}
 
 	py_domaindn = PyObject_GetAttrString(py_result, "domaindn");
-	result->domaindn = talloc_strdup(mem_ctx, PyStr_AsString(py_domaindn));
+	result->domaindn = talloc_strdup(mem_ctx, PyUnicode_AsUTF8(py_domaindn));
 
 	/* FIXME paths */
 	py_lp_ctx = PyObject_GetAttrString(py_result, "lp");

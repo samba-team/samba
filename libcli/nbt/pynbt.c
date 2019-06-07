@@ -58,7 +58,7 @@ static PyObject *py_nbt_node_init(PyTypeObject *self, PyObject *args, PyObject *
 static bool PyObject_AsDestinationTuple(PyObject *obj, const char **dest_addr, uint16_t *dest_port)
 {
 	if (PyUnicode_Check(obj) || PyUnicode_Check(obj)) {
-		*dest_addr = PyStr_AsString(obj);
+		*dest_addr = PyUnicode_AsUTF8(obj);
 		*dest_port = NBT_NAME_SERVICE_PORT;
 		return true;
 	}
@@ -74,7 +74,7 @@ static bool PyObject_AsDestinationTuple(PyObject *obj, const char **dest_addr, u
 			return false;
 		}
 
-		*dest_addr = PyStr_AsString(obj);
+		*dest_addr = PyUnicode_AsUTF8(obj);
 
 		if (PyTuple_Size(obj) == 1) {
 			*dest_port = NBT_NAME_SERVICE_PORT;
@@ -96,7 +96,7 @@ static bool PyObject_AsNBTName(PyObject *obj, struct nbt_name_socket *name_socke
 {
 	if (PyTuple_Check(obj)) {
 		if (PyTuple_Size(obj) == 2) {
-			name->name = PyStr_AsString(PyTuple_GetItem(obj, 0));
+			name->name = PyUnicode_AsUTF8(PyTuple_GetItem(obj, 0));
 			if (name->name == NULL) {
 				goto err;
 			}
@@ -107,11 +107,11 @@ static bool PyObject_AsNBTName(PyObject *obj, struct nbt_name_socket *name_socke
 			name->scope = NULL;
 			return true;
 		} else if (PyTuple_Size(obj) == 3) {
-			name->name = PyStr_AsString(PyTuple_GetItem(obj, 0));
+			name->name = PyUnicode_AsUTF8(PyTuple_GetItem(obj, 0));
 			if (name->name == NULL) {
 				goto err;
 			}
-			name->scope = PyStr_AsString(PyTuple_GetItem(obj, 1));
+			name->scope = PyUnicode_AsUTF8(PyTuple_GetItem(obj, 1));
 			if (name->scope == NULL) {
 				goto err;
 			}
@@ -128,7 +128,7 @@ static bool PyObject_AsNBTName(PyObject *obj, struct nbt_name_socket *name_socke
 
 	if (PyUnicode_Check(obj) || PyUnicode_Check(obj)) {
 		/* FIXME: Parse string to be able to interpret things like RHONWYN<02> ? */
-		name->name = PyStr_AsString(obj);
+		name->name = PyUnicode_AsUTF8(obj);
 		if (name->name == NULL) {
 			goto err;
 		}

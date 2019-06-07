@@ -538,7 +538,7 @@ static PyObject *py_lp_ctx_getitem(PyObject *self, PyObject *name)
 		PyErr_SetString(PyExc_TypeError, "Only string subscripts are supported");
 		return NULL;
 	}
-	service = lpcfg_service(PyLoadparmContext_AsLoadparmContext(self), PyStr_AsString(name));
+	service = lpcfg_service(PyLoadparmContext_AsLoadparmContext(self), PyUnicode_AsUTF8(name));
 	if (service == NULL) {
 		PyErr_SetString(PyExc_KeyError, "No such section");
 		return NULL;

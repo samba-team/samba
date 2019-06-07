@@ -73,7 +73,7 @@ static struct gensec_settings *settings_from_object(TALLOC_CTX *mem_ctx, PyObjec
 		return NULL;
 	}
 
-	s->target_hostname = PyStr_AsString(py_hostname);
+	s->target_hostname = PyUnicode_AsUTF8(py_hostname);
 	s->lp_ctx = lpcfg_from_py_object(s, py_lp_ctx);
 	return s;
 }
