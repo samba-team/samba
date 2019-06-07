@@ -719,7 +719,6 @@ static void log_successful_authz_event_human_readable(
 	const struct tsocket_address *local,
 	const char *service_description,
 	const char *auth_type,
-	const char *transport_protection,
 	struct auth_session_info *session_info,
 	int debug_level)
 {
@@ -790,7 +789,6 @@ void log_successful_authz_event(
 							  local,
 							  service_description,
 							  auth_type,
-							  transport_protection,
 							  session_info,
 							  debug_level);
 	}
