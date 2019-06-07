@@ -53,7 +53,8 @@ struct ctdb_persistent_write_state {
  */
 static int ctdb_persistent_store(struct ctdb_persistent_write_state *state)
 {
-	int ret, i;
+	unsigned int i;
+	int ret;
 	struct ctdb_rec_data_old *rec = NULL;
 	struct ctdb_marshall_buffer *m = state->m;
 
@@ -73,8 +74,10 @@ static int ctdb_persistent_store(struct ctdb_persistent_write_state *state)
 		rec = ctdb_marshall_loop_next(m, rec, NULL, &header, &key, &data);
 
 		if (rec == NULL) {
-			DEBUG(DEBUG_ERR,("Failed to get next record %d for db_id 0x%08x in ctdb_persistent_store\n",
-					 i, state->ctdb_db->db_id));
+			D_ERR("Failed to get next record %u for db_id 0x%08x "
+			      "in ctdb_persistent_store\n",
+			      i,
+			      state->ctdb_db->db_id);
 			talloc_free(tmp_ctx);
 			goto failed;
 		}

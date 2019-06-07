@@ -72,7 +72,7 @@ static int convert_node_map_to_list(struct ctdb_context *ctdb,
 				    struct ctdb_node ***nodes,
 				    uint32_t *num_nodes)
 {
-	int i;
+	unsigned int i;
 
 	*nodes = talloc_zero_array(mem_ctx,
 					struct ctdb_node *, node_map->num);
@@ -157,7 +157,7 @@ int ctdb_set_address(struct ctdb_context *ctdb, const char *address)
 */
 uint32_t ctdb_get_num_active_nodes(struct ctdb_context *ctdb)
 {
-	int i;
+	unsigned int i;
 	uint32_t count=0;
 	for (i=0; i < ctdb->num_nodes; i++) {
 		if (!(ctdb->nodes[i]->flags & NODE_FLAGS_INACTIVE)) {
@@ -383,7 +383,7 @@ static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header 
 static void ctdb_broadcast_packet_all(struct ctdb_context *ctdb, 
 				      struct ctdb_req_header *hdr)
 {
-	int i;
+	unsigned int i;
 	for (i=0; i < ctdb->num_nodes; i++) {
 		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
 			continue;
@@ -399,7 +399,7 @@ static void ctdb_broadcast_packet_all(struct ctdb_context *ctdb,
 static void ctdb_broadcast_packet_active(struct ctdb_context *ctdb,
 					 struct ctdb_req_header *hdr)
 {
-	int i;
+	unsigned int i;
 	for (i = 0; i < ctdb->num_nodes; i++) {
 		if (ctdb->nodes[i]->flags & NODE_FLAGS_INACTIVE) {
 			continue;
@@ -416,7 +416,7 @@ static void ctdb_broadcast_packet_active(struct ctdb_context *ctdb,
 static void ctdb_broadcast_packet_connected(struct ctdb_context *ctdb, 
 					    struct ctdb_req_header *hdr)
 {
-	int i;
+	unsigned int i;
 	for (i=0; i < ctdb->num_nodes; i++) {
 		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
 			continue;

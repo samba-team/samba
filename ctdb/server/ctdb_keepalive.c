@@ -107,7 +107,7 @@ static void ctdb_check_for_dead_nodes(struct tevent_context *ev,
 				      struct timeval t, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
-	int i;
+	unsigned int i;
 
 	/* send a keepalive to all other nodes, unless */
 	for (i=0;i<ctdb->num_nodes;i++) {

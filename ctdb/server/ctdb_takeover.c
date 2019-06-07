@@ -75,9 +75,11 @@ struct ctdb_vnn {
 	ctdb_sock_addr public_address;
 	uint8_t public_netmask_bits;
 
-	/* the node number that is serving this public address, if any.
-	   If no node serves this ip it is set to -1 */
-	int32_t pnn;
+	/*
+	 * The node number that is serving this public address - set
+	 * to CTDB_UNKNOWN_PNN if node is serving it
+	 */
+	uint32_t pnn;
 
 	/* List of clients to tickle for this public address */
 	struct ctdb_tcp_array *tcp_array;
@@ -370,7 +372,7 @@ static void ctdb_control_send_arp(struct tevent_context *ev,
 {
 	struct ctdb_takeover_arp *arp = talloc_get_type(private_data, 
 							struct ctdb_takeover_arp);
-	int i, ret;
+	int ret;
 	struct ctdb_tcp_array *tcparray;
 	const char *iface = ctdb_vnn_iface_string(arp->vnn);
 
@@ -382,6 +384,8 @@ static void ctdb_control_send_arp(struct tevent_context *ev,
 
 	tcparray = arp->tcparray;
 	if (tcparray) {
+		unsigned int i;
+
 		for (i=0;i<tcparray->num;i++) {
 			struct ctdb_connection *tcon;
 
@@ -1366,7 +1370,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 static struct ctdb_connection *ctdb_tcp_find(struct ctdb_tcp_array *array,
 					   struct ctdb_connection *tcp)
 {
-	int i;
+	unsigned int i;
 
 	if (array == NULL) {
 		return NULL;
@@ -1949,7 +1953,7 @@ int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 	ctdb_sock_addr *addr = (ctdb_sock_addr *)indata.dptr;
 	struct ctdb_tickle_list_old *list;
 	struct ctdb_tcp_array *tcparray;
-	int num, i;
+	unsigned int num, i;
 	struct ctdb_vnn *vnn;
 	unsigned port;
 
@@ -2393,7 +2397,8 @@ static int ctdb_reloadips_child(struct ctdb_context *ctdb)
 	TDB_DATA data;
 	struct ctdb_client_control_state *state;
 	bool first_add;
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	CTDB_NO_MEMORY(ctdb, mem_ctx);
 

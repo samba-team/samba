@@ -86,7 +86,7 @@ static int db_transaction_start_handler(struct ctdb_db_context *ctdb_db,
 static int db_transaction_commit_handler(struct ctdb_db_context *ctdb_db,
 					 void *private_data)
 {
-	int healthy_nodes = *(int *)private_data;
+	unsigned int healthy_nodes = *(unsigned int *)private_data;
 	int ret;
 
 	tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
@@ -414,7 +414,7 @@ static int db_invalidate(struct ctdb_db_context *ctdb_db, void *private_data)
  */
 static int db_count(struct ctdb_db_context *ctdb_db, void *private_data)
 {
-	int *count = (int *)private_data;
+	unsigned int *count = (unsigned int *)private_data;
 
 	*count += 1;
 
@@ -464,7 +464,7 @@ static void ctdb_start_freeze(struct ctdb_context *ctdb)
 	ctdb_db_iterator(ctdb, db_invalidate, NULL);
 
 	if (ctdb->freeze_mode == CTDB_FREEZE_FROZEN) {
-		int count = 0;
+		unsigned int count = 0;
 
 		/*
 		 * Check if all the databases are frozen
@@ -711,7 +711,7 @@ static int db_cancel_transaction(struct ctdb_db_context *ctdb_db,
 
 struct db_commit_transaction_state {
 	uint32_t transaction_id;
-	int healthy_nodes;
+	unsigned int healthy_nodes;
 };
 
 static int db_commit_transaction(struct ctdb_db_context *ctdb_db,
@@ -809,7 +809,7 @@ int32_t ctdb_control_db_transaction_commit(struct ctdb_context *ctdb,
 		(struct ctdb_transdb *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
 	struct db_commit_transaction_state state;
-	int healthy_nodes, i;
+	unsigned int healthy_nodes, i;
 
 	ctdb_db = find_ctdb_db(ctdb, w->db_id);
 	if (ctdb_db == NULL) {

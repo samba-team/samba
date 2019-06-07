@@ -390,7 +390,7 @@ static struct ctdb_traverse_all_handle *ctdb_daemon_traverse_all(struct ctdb_db_
 		/* volatile database, traverse all active nodes */
 		destination = CTDB_BROADCAST_ACTIVE;
 	} else {
-		int i;
+		unsigned int i;
 		/* persistent database, traverse one node, preferably
 		 * the local one
 		 */

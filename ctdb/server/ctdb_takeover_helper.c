@@ -692,7 +692,7 @@ struct takeover_state {
 	struct tevent_context *ev;
 	struct ctdb_client_context *client;
 	struct timeval timeout;
-	int num_nodes;
+	unsigned int num_nodes;
 	uint32_t *pnns_connected;
 	int num_connected;
 	uint32_t *pnns_active;
@@ -1076,8 +1076,8 @@ void takeover_failed(struct tevent_req *req, int ret)
 		req, struct takeover_state);
 	struct tevent_req *subreq;
 	uint32_t max_pnn = CTDB_UNKNOWN_PNN;
-	int max_credits = 0;
-	int pnn;
+	unsigned int max_credits = 0;
+	uint32_t pnn;
 
 	/* Check that bans are enabled */
 	if (state->tun_list->enable_bans == 0) {

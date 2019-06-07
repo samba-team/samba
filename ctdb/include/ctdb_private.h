@@ -713,7 +713,7 @@ int ctdb_load_persistent_health(struct ctdb_context *ctdb,
 int ctdb_update_persistent_health(struct ctdb_context *ctdb,
 				  struct ctdb_db_context *ctdb_db,
 				  const char *reason,/* NULL means healthy */
-				  int num_healthy_nodes);
+				  unsigned int num_healthy_nodes);
 int ctdb_recheck_persistent_health(struct ctdb_context *ctdb);
 
 int32_t ctdb_control_db_set_healthy(struct ctdb_context *ctdb,

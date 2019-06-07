@@ -178,7 +178,7 @@ int32_t ctdb_control_trans3_commit(struct ctdb_context *ctdb,
 {
 	struct ctdb_client *client;
 	struct ctdb_persistent_state *state;
-	int i;
+	unsigned int i;
 	struct ctdb_marshall_buffer *m = (struct ctdb_marshall_buffer *)recdata.dptr;
 	struct ctdb_db_context *ctdb_db;
 

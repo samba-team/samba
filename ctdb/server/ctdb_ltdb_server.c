@@ -425,7 +425,7 @@ int ctdb_load_persistent_health(struct ctdb_context *ctdb,
 int ctdb_update_persistent_health(struct ctdb_context *ctdb,
 				  struct ctdb_db_context *ctdb_db,
 				  const char *given_reason,/* NULL means healthy */
-				  int num_healthy_nodes)
+				  unsigned int num_healthy_nodes)
 {
 	struct tdb_context *tdb = ctdb->db_persistent_health->tdb;
 	int ret;

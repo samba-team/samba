@@ -86,7 +86,8 @@ static void usage(const char *progname)
 static uint8_t *hex_decode_talloc(TALLOC_CTX *mem_ctx,
 				  const char *hex_in, size_t *len)
 {
-	int i, num;
+	unsigned int i;
+	int num;
 	uint8_t *buffer;
 
 	*len = strlen(hex_in) / 2;

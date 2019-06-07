@@ -1345,7 +1345,7 @@ static void ctdb_create_pidfile(TALLOC_CTX *mem_ctx)
 
 static void ctdb_initialise_vnn_map(struct ctdb_context *ctdb)
 {
-	int i, j, count;
+	unsigned int i, j, count;
 
 	/* initialize the vnn mapping table, skipping any deleted nodes */
 	ctdb->vnn_map = talloc(ctdb, struct ctdb_vnn_map);

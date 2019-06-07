@@ -741,7 +741,7 @@ static bool event_allowed_during_recovery(enum ctdb_event event)
 		CTDB_EVENT_RELEASE_IP,
 		CTDB_EVENT_IPREALLOCATED,
 	};
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(allowed_events); i++) {
 		if (event == allowed_events[i]) {

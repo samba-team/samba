@@ -655,7 +655,7 @@ static void ctdb_vacuum_traverse_db(struct ctdb_db_context *ctdb_db,
 static void ctdb_process_vacuum_fetch_lists(struct ctdb_db_context *ctdb_db,
 					    struct vacuum_data *vdata)
 {
-	int i;
+	unsigned int i;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 
 	for (i = 0; i < ctdb->num_nodes; i++) {
@@ -924,7 +924,7 @@ static struct vacuum_data *ctdb_vacuum_init_vacuum_data(
 					struct ctdb_db_context *ctdb_db,
 					TALLOC_CTX *mem_ctx)
 {
-	int i;
+	unsigned int i;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct vacuum_data *vdata;
 

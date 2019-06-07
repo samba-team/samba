@@ -1746,7 +1746,7 @@ uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
 				TALLOC_CTX *mem_ctx,
 				bool include_self)
 {
-	int i, j, num_nodes;
+	unsigned int i, j, num_nodes;
 	uint32_t *nodes;
 
 	for (i=num_nodes=0;i<vnn_map->size;i++) {
@@ -1776,7 +1776,7 @@ static uint32_t *list_of_nodes(struct ctdb_context *ctdb,
 			       uint32_t mask,
 			       bool include_self)
 {
-	int i, j, num_nodes;
+	unsigned int i, j, num_nodes;
 	uint32_t exclude_pnn;
 	uint32_t *nodes;
 
