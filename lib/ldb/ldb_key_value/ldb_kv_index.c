@@ -148,6 +148,7 @@ ldb_schema_set_override_GUID_index() must be called.
 #include "../ldb_tdb/ldb_tdb.h"
 #include "ldb_private.h"
 #include "lib/util/binsearch.h"
+#include "lib/util/attr.h"
 
 struct dn_list {
 	unsigned int count;
@@ -776,7 +777,7 @@ static int ldb_kv_dn_list_store(struct ldb_module *module,
 /*
   traverse function for storing the in-memory index entries on disk
  */
-static int ldb_kv_index_traverse_store(struct tdb_context *tdb,
+static int ldb_kv_index_traverse_store(_UNUSED_ struct tdb_context *tdb,
 				       TDB_DATA key,
 				       TDB_DATA data,
 				       void *state)
