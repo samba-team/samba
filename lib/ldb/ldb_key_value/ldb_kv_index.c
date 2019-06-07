@@ -3217,7 +3217,7 @@ int ldb_kv_index_delete(struct ldb_module *module,
 */
 static int delete_index(struct ldb_kv_private *ldb_kv,
 			struct ldb_val key,
-			struct ldb_val data,
+			_UNUSED_ struct ldb_val data,
 			void *state)
 {
 	struct ldb_module *module = state;
