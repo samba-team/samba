@@ -1650,8 +1650,8 @@ struct ldb_kv_ordered_index_context {
 	struct dn_list *dn_list;
 };
 
-static int traverse_range_index(struct ldb_kv_private *ldb_kv,
-				struct ldb_val key,
+static int traverse_range_index(_UNUSED_ struct ldb_kv_private *ldb_kv,
+				_UNUSED_ struct ldb_val key,
 				struct ldb_val data,
 				void *state)
 {
