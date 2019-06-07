@@ -54,7 +54,6 @@
 
 /* Strings */
 
-#define PyStr_FromFormatV PyUnicode_FromFormatV
 #define PyStr_AsString PyUnicode_AsUTF8
 
 #define PyStr_AsUTF8 PyUnicode_AsUTF8
