@@ -6302,6 +6302,15 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	memcpy(channel_key, _channel_key.data,
 	       MIN(_channel_key.length, sizeof(channel_key)));
 
+	session->smb2_channel.signing_key = talloc_zero(session,
+						 struct smb2_signing_key);
+	if (session->smb2_channel.signing_key == NULL) {
+		ZERO_STRUCT(channel_key);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(session->smb2_channel.signing_key,
+			      smb2_signing_key_destructor);
+
 	session->smb2_channel.signing_key->blob =
 		data_blob_talloc(session->smb2_channel.signing_key,
 				 channel_key,
