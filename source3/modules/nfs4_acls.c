@@ -723,14 +723,7 @@ static bool smbacl4_fill_ace4(
 		uid_t uid;
 		gid_t gid;
 
-		/*
-		 * ID_TYPE_BOTH returns both uid and gid. Explicitly
-		 * check for ownerUID to allow the mapping of the
-		 * owner to a special entry in this idmap config.
-		 */
-		if (sid_to_uid(&ace_nt->trustee, &uid) && uid == ownerUID) {
-			ace_v4->who.uid = uid;
-		} else if (sid_to_gid(&ace_nt->trustee, &gid)) {
+		if (sid_to_gid(&ace_nt->trustee, &gid)) {
 			ace_v4->aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
 			ace_v4->who.gid = gid;
 		} else if (sid_to_uid(&ace_nt->trustee, &uid)) {
