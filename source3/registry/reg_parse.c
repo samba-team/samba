@@ -1016,7 +1016,7 @@ int reg_parse_fd(int fd, const struct reg_parse_callback* cb, const char* opts)
 		space_to_read = sizeof(buf_in) - ilen;
 
 		/* Read the next chunk from the file. */
-		nread = read(fd, buf_in, space_to_read);
+		nread = read(fd, buf_in + ilen, space_to_read);
 		if (nread < 0) {
 			DBG_ERR("read failed: %s\n", strerror(errno));
 			ret = -1;
