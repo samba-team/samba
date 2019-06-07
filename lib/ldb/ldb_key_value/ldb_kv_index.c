@@ -1500,10 +1500,10 @@ static int ldb_kv_index_dn_or(struct ldb_module *module,
 /*
   NOT an index results
  */
-static int ldb_kv_index_dn_not(struct ldb_module *module,
-			       struct ldb_kv_private *ldb_kv,
-			       const struct ldb_parse_tree *tree,
-			       struct dn_list *list)
+static int ldb_kv_index_dn_not(_UNUSED_ struct ldb_module *module,
+			       _UNUSED_ struct ldb_kv_private *ldb_kv,
+			       _UNUSED_ const struct ldb_parse_tree *tree,
+			       _UNUSED_ struct dn_list *list)
 {
 	/* the only way to do an indexed not would be if we could
 	   negate the not via another not or if we knew the total
