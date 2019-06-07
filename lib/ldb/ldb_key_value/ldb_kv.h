@@ -281,8 +281,7 @@ struct ldb_val ldb_kv_key_dn(TALLOC_CTX *mem_ctx,
 struct ldb_val ldb_kv_key_msg(struct ldb_module *module,
 			     TALLOC_CTX *mem_ctx,
 			      const struct ldb_message *msg);
-int ldb_kv_guid_to_key(struct ldb_kv_private *ldb_kv,
-		       const struct ldb_val *GUID_val,
+int ldb_kv_guid_to_key(const struct ldb_val *GUID_val,
 		       struct ldb_val *key);
 int ldb_kv_idx_to_key(struct ldb_module *module,
 		      struct ldb_kv_private *ldb_kv,
