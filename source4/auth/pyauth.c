@@ -301,7 +301,7 @@ static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list,
 		const char *value;
 		Py_ssize_t size;
 		PyObject *item = PyList_GetItem(list, i);
-		if (!(PyStr_Check(item) || PyUnicode_Check(item))) {
+		if (!(PyUnicode_Check(item) || PyUnicode_Check(item))) {
 			PyErr_Format(PyExc_TypeError, "%s should be strings", paramname);
 			return NULL;
 		}

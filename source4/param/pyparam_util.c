@@ -34,7 +34,7 @@ _PUBLIC_ struct loadparm_context *lpcfg_from_py_object(TALLOC_CTX *mem_ctx, PyOb
 	PyTypeObject *lp_type;
 	bool is_lpobj;
 
-	if (PyStr_Check(py_obj) || PyUnicode_Check(py_obj)) {
+	if (PyUnicode_Check(py_obj) || PyUnicode_Check(py_obj)) {
 		lp_ctx = loadparm_init_global(false);
 		if (lp_ctx == NULL) {
 			return NULL;

@@ -534,7 +534,7 @@ static Py_ssize_t py_lp_ctx_len(PyObject *self)
 static PyObject *py_lp_ctx_getitem(PyObject *self, PyObject *name)
 {
 	struct loadparm_service *service;
-	if (!(PyStr_Check(name) || PyUnicode_Check(name))) {
+	if (!(PyUnicode_Check(name) || PyUnicode_Check(name))) {
 		PyErr_SetString(PyExc_TypeError, "Only string subscripts are supported");
 		return NULL;
 	}

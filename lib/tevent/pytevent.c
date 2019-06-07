@@ -27,12 +27,10 @@
 #include <tevent.h>
 
 #if PY_MAJOR_VERSION >= 3
-#define PyStr_Check PyUnicode_Check
 #define PyStr_FromString PyUnicode_FromString
 #define PyStr_AsUTF8 PyUnicode_AsUTF8
 #define PyInt_FromLong PyLong_FromLong
 #else
-#define PyStr_Check PyString_Check
 #define PyStr_FromString PyString_FromString
 #define PyStr_AsUTF8 PyString_AsString
 #endif
@@ -191,7 +189,7 @@ static PyObject *py_register_backend(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if (!(PyStr_Check(name) || PyUnicode_Check(name))) {
+	if (!(PyUnicode_Check(name) || PyUnicode_Check(name))) {
 		PyErr_SetNone(PyExc_TypeError);
 		Py_DECREF(name);
 		return NULL;

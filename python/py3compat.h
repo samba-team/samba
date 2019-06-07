@@ -54,7 +54,6 @@
 
 /* Strings */
 
-#define PyStr_Check PyUnicode_Check
 #define PyStr_FromString PyUnicode_FromString
 #define PyStr_FromStringAndSize PyUnicode_FromStringAndSize
 #define PyStr_FromFormat PyUnicode_FromFormat
@@ -77,7 +76,7 @@
 #define IsPy3Bytes PyBytes_Check
 
 #define IsPy3BytesOrString(pystr) \
-    (PyStr_Check(pystr) || PyBytes_Check(pystr))
+    (PyUnicode_Check(pystr) || PyBytes_Check(pystr))
 
 
 /* Ints */

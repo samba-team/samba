@@ -85,7 +85,6 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 static PyTypeObject PyLdbBytesType;
 
 #if PY_MAJOR_VERSION >= 3
-#define PyStr_Check PyUnicode_Check
 #define PyStr_FromString PyUnicode_FromString
 #define PyStr_FromStringAndSize PyUnicode_FromStringAndSize
 #define PyStr_FromFormat PyUnicode_FromFormat
@@ -106,7 +105,6 @@ static PyObject *PyLdbBytes_FromStringAndSize(const char *msg, int size)
 	return result;
 }
 #else
-#define PyStr_Check PyString_Check
 #define PyStr_FromString PyString_FromString
 #define PyStr_FromStringAndSize PyString_FromStringAndSize
 #define PyStr_FromFormat PyString_FromFormat
@@ -1157,7 +1155,7 @@ static const char **PyList_AsStrList(TALLOC_CTX *mem_ctx, PyObject *list,
 		const char *str = NULL;
 		Py_ssize_t size;
 		PyObject *item = PyList_GetItem(list, i);
-		if (!(PyStr_Check(item) || PyUnicode_Check(item))) {
+		if (!(PyUnicode_Check(item) || PyUnicode_Check(item))) {
 			PyErr_Format(PyExc_TypeError, "%s should be strings", paramname);
 			talloc_free(ret);
 			return NULL;

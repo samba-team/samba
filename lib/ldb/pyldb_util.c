@@ -30,10 +30,8 @@
 static PyObject *ldb_module = NULL;
 
 #if PY_MAJOR_VERSION >= 3
-#define PyStr_Check PyUnicode_Check
 #define PyStr_AsUTF8 PyUnicode_AsUTF8
 #else
-#define PyStr_Check PyString_Check
 #define PyStr_AsUTF8 PyString_AsString
 #endif
 
@@ -70,7 +68,7 @@ bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	struct ldb_dn *odn;
 	PyTypeObject *PyLdb_Dn_Type;
 
-	if (ldb_ctx != NULL && (PyStr_Check(object) || PyUnicode_Check(object))) {
+	if (ldb_ctx != NULL && (PyUnicode_Check(object) || PyUnicode_Check(object))) {
 		odn = ldb_dn_new(mem_ctx, ldb_ctx, PyStr_AsUTF8(object));
 		*dn = odn;
 		return true;
