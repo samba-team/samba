@@ -5526,8 +5526,26 @@ struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 	}
 	talloc_set_destructor(session, smbXcli_session_destructor);
 
+	session->smb2->signing_key = talloc_zero(session,
+						 struct smb2_signing_key);
+	if (session->smb2->signing_key == NULL) {
+		talloc_free(session);
+		return NULL;
+	}
+	talloc_set_destructor(session->smb2->signing_key,
+			      smb2_signing_key_destructor);
+
 	DLIST_ADD_END(conn->sessions, session);
 	session->conn = conn;
+
+	session->smb2_channel.signing_key =
+		talloc_zero(session, struct smb2_signing_key);
+	if (session->smb2_channel.signing_key == NULL) {
+		talloc_free(session);
+		return NULL;
+	}
+	talloc_set_destructor(session->smb2_channel.signing_key,
+			      smb2_signing_key_destructor);
 
 	memcpy(session->smb2_channel.preauth_sha512,
 	       conn->smb2.preauth_sha512,
@@ -6038,15 +6056,6 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	memcpy(session_key, _session_key.data,
 	       MIN(_session_key.length, sizeof(session_key)));
 
-	session->smb2->signing_key = talloc_zero(session,
-						 struct smb2_signing_key);
-	if (session->smb2->signing_key == NULL) {
-		ZERO_STRUCT(session_key);
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_set_destructor(session->smb2->signing_key,
-			      smb2_signing_key_destructor);
-
 	session->smb2->signing_key->blob =
 		data_blob_talloc(session->smb2->signing_key,
 				 session_key,
@@ -6116,14 +6125,6 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 				    session->smb2->application_key.data);
 	}
 	ZERO_STRUCT(session_key);
-
-	session->smb2_channel.signing_key =
-		talloc_zero(session, struct smb2_signing_key);
-	if (session->smb2_channel.signing_key == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	talloc_set_destructor(session->smb2_channel.signing_key,
-			      smb2_signing_key_destructor);
 
 	session->smb2_channel.signing_key->blob =
 		data_blob_dup_talloc(session->smb2_channel.signing_key,
@@ -6242,6 +6243,15 @@ NTSTATUS smb2cli_session_create_channel(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(session2, smbXcli_session_destructor);
 	DLIST_ADD_END(conn->sessions, session2);
 	session2->conn = conn;
+
+	session2->smb2_channel.signing_key =
+		talloc_zero(session2, struct smb2_signing_key);
+	if (session2->smb2_channel.signing_key == NULL) {
+		talloc_free(session2);
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(session2->smb2_channel.signing_key,
+			      smb2_signing_key_destructor);
 
 	memcpy(session2->smb2_channel.preauth_sha512,
 	       conn->smb2.preauth_sha512,
