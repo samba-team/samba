@@ -608,7 +608,7 @@ int ldb_kv_key_dn_from_idx(struct ldb_module *module,
 	}
 
 	/* The ldb_key memory is allocated by the caller */
-	ret = ldb_kv_guid_to_key(module, ldb_kv, &list->dn[index], ldb_key);
+	ret = ldb_kv_guid_to_key(ldb_kv, &list->dn[index], ldb_key);
 	TALLOC_FREE(list);
 
 	if (ret != LDB_SUCCESS) {

@@ -153,8 +153,7 @@ failed:
 }
 
 /* The caller is to provide a correctly sized key */
-int ldb_kv_guid_to_key(struct ldb_module *module,
-		       struct ldb_kv_private *ldb_kv,
+int ldb_kv_guid_to_key(struct ldb_kv_private *ldb_kv,
 		       const struct ldb_val *GUID_val,
 		       struct ldb_val *key)
 {
@@ -185,7 +184,7 @@ int ldb_kv_idx_to_key(struct ldb_module *module,
 	struct ldb_dn *dn;
 
 	if (ldb_kv->cache->GUID_index_attribute != NULL) {
-		return ldb_kv_guid_to_key(module, ldb_kv, idx_val, key);
+		return ldb_kv_guid_to_key(ldb_kv, idx_val, key);
 	}
 
 	dn = ldb_dn_from_ldb_val(mem_ctx, ldb, idx_val);
@@ -257,7 +256,7 @@ struct ldb_val ldb_kv_key_msg(struct ldb_module *module,
 	}
 	key.length = talloc_get_size(key.data);
 
-	ret = ldb_kv_guid_to_key(module, ldb_kv, guid_val, &key);
+	ret = ldb_kv_guid_to_key(ldb_kv, guid_val, &key);
 
 	if (ret != LDB_SUCCESS) {
 		errno = EINVAL;
