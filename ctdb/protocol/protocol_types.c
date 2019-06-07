@@ -5208,5 +5208,5 @@ done:
 
 fail:
 	talloc_free(val);
-	return ENOMEM;
+	return ret;
 }
