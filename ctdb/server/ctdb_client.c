@@ -97,7 +97,9 @@ int ctdb_call_local(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
 	c->header = header;
 
 	for (fn=ctdb_db->calls;fn;fn=fn->next) {
-		if (fn->id == call->call_id) break;
+		if (fn->id == (uint32_t)call->call_id) {
+			break;
+		}
 	}
 	if (fn == NULL) {
 		ctdb_set_error(ctdb, "Unknown call id %u\n", call->call_id);
