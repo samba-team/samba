@@ -27,10 +27,7 @@
 #include <tevent.h>
 
 #if PY_MAJOR_VERSION >= 3
-#define PyStr_AsUTF8 PyUnicode_AsUTF8
 #define PyInt_FromLong PyLong_FromLong
-#else
-#define PyStr_AsUTF8 PyString_AsString
 #endif
 
 /* discard signature of 'func' in favour of 'target_sig' */
@@ -193,7 +190,7 @@ static PyObject *py_register_backend(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if (!tevent_register_backend(PyStr_AsUTF8(name), &py_tevent_ops)) { /* FIXME: What to do with backend */
+	if (!tevent_register_backend(PyUnicode_AsUTF8(name), &py_tevent_ops)) { /* FIXME: What to do with backend */
 		PyErr_SetNone(PyExc_RuntimeError);
 		Py_DECREF(name);
 		return NULL;

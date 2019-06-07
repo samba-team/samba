@@ -54,7 +54,6 @@
 
 /* Strings */
 
-#define PyStr_AsUTF8 PyUnicode_AsUTF8
 #define PyStr_AsUTF8AndSize PyUnicode_AsUTF8AndSize
 
 /* description of bytes objects */

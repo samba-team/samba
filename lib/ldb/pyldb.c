@@ -85,7 +85,6 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 static PyTypeObject PyLdbBytesType;
 
 #if PY_MAJOR_VERSION >= 3
-#define PyStr_AsUTF8 PyUnicode_AsUTF8
 #define PyStr_AsUTF8AndSize PyUnicode_AsUTF8AndSize
 #define PyInt_FromLong PyLong_FromLong
 
@@ -101,7 +100,6 @@ static PyObject *PyLdbBytes_FromStringAndSize(const char *msg, int size)
 	return result;
 }
 #else
-#define PyStr_AsUTF8 PyString_AsString
 #define PyLdbBytes_FromStringAndSize PyString_FromStringAndSize
 
 #define PYARG_STR_UNI "et"
@@ -593,7 +591,7 @@ static PyObject *py_ldb_dn_repr(PyLdbDnObject *self)
 		Py_DECREF(str);
 		return NULL;
 	}
-	result = PyUnicode_FromFormat("Dn(%s)", PyStr_AsUTF8(repr));
+	result = PyUnicode_FromFormat("Dn(%s)", PyUnicode_AsUTF8(repr));
 	Py_DECREF(str);
 	Py_DECREF(repr);
 	return result;
@@ -1385,7 +1383,7 @@ static struct ldb_message *PyDict_AsMessage(TALLOC_CTX *mem_ctx,
 	}
 
 	while (PyDict_Next(py_obj, &dict_pos, &key, &value)) {
-		const char *key_str = PyStr_AsUTF8(key);
+		const char *key_str = PyUnicode_AsUTF8(key);
 		if (ldb_attr_cmp(key_str, "dn") != 0) {
 			msg_el = PyObject_AsMessageElement(msg->elements, value,
 							   mod_flags, key_str);
@@ -3295,9 +3293,9 @@ static PyObject *py_ldb_msg_element_repr(PyLdbMessageElementObject *self)
 		PyObject *o = py_ldb_msg_element_find(self, i);
 		repr = PyObject_Repr(o);
 		if (element_str == NULL)
-			element_str = talloc_strdup(NULL, PyStr_AsUTF8(repr));
+			element_str = talloc_strdup(NULL, PyUnicode_AsUTF8(repr));
 		else
-			element_str = talloc_asprintf_append(element_str, ",%s", PyStr_AsUTF8(repr));
+			element_str = talloc_asprintf_append(element_str, ",%s", PyUnicode_AsUTF8(repr));
 		Py_DECREF(repr);
 	}
 
@@ -3433,7 +3431,7 @@ static PyObject *py_ldb_msg_getitem_helper(PyLdbMessageObject *self, PyObject *p
 	struct ldb_message_element *el;
 	const char *name;
 	struct ldb_message *msg = pyldb_Message_AsMessage(self);
-	name = PyStr_AsUTF8(py_name);
+	name = PyUnicode_AsUTF8(py_name);
 	if (name == NULL) {
 		PyErr_SetNone(PyExc_TypeError);
 		return NULL;
@@ -3633,7 +3631,7 @@ static int py_ldb_msg_setitem(PyLdbMessageObject *self, PyObject *name, PyObject
 {
 	const char *attr_name;
 
-	attr_name = PyStr_AsUTF8(name);
+	attr_name = PyUnicode_AsUTF8(name);
 	if (attr_name == NULL) {
 		PyErr_SetNone(PyExc_TypeError);
 		return -1;
@@ -3777,7 +3775,7 @@ static PyObject *py_ldb_msg_repr(PyLdbMessageObject *self)
 		Py_DECREF(dict);
 		return NULL;
 	}
-	ret = PyUnicode_FromFormat("Message(%s)", PyStr_AsUTF8(repr));
+	ret = PyUnicode_FromFormat("Message(%s)", PyUnicode_AsUTF8(repr));
 	Py_DECREF(repr);
 	Py_DECREF(dict);
 	return ret;
@@ -4160,7 +4158,7 @@ static PyObject *py_register_module(PyObject *module, PyObject *args)
 	}
 
 	tmp = PyObject_GetAttrString(input, discard_const_p(char, "name"));
-	ops->name = talloc_strdup(ops, PyStr_AsUTF8(tmp));
+	ops->name = talloc_strdup(ops, PyUnicode_AsUTF8(tmp));
 
 	Py_XDECREF(tmp);
 	Py_INCREF(input);

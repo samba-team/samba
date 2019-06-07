@@ -29,12 +29,6 @@
 
 static PyObject *ldb_module = NULL;
 
-#if PY_MAJOR_VERSION >= 3
-#define PyStr_AsUTF8 PyUnicode_AsUTF8
-#else
-#define PyStr_AsUTF8 PyString_AsString
-#endif
-
 /**
  * Find out PyTypeObject in ldb module for a given typename
  */
@@ -69,7 +63,7 @@ bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	PyTypeObject *PyLdb_Dn_Type;
 
 	if (ldb_ctx != NULL && (PyUnicode_Check(object) || PyUnicode_Check(object))) {
-		odn = ldb_dn_new(mem_ctx, ldb_ctx, PyStr_AsUTF8(object));
+		odn = ldb_dn_new(mem_ctx, ldb_ctx, PyUnicode_AsUTF8(object));
 		*dn = odn;
 		return true;
 	}
