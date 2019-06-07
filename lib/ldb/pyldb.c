@@ -85,7 +85,6 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 static PyTypeObject PyLdbBytesType;
 
 #if PY_MAJOR_VERSION >= 3
-#define PyStr_FromStringAndSize PyUnicode_FromStringAndSize
 #define PyStr_FromFormat PyUnicode_FromFormat
 #define PyStr_FromFormatV PyUnicode_FromFormatV
 #define PyStr_AsUTF8 PyUnicode_AsUTF8
@@ -104,7 +103,6 @@ static PyObject *PyLdbBytes_FromStringAndSize(const char *msg, int size)
 	return result;
 }
 #else
-#define PyStr_FromStringAndSize PyString_FromStringAndSize
 #define PyStr_FromFormat PyString_FromFormat
 #define PyStr_FromFormatV PyString_FromFormatV
 #define PyStr_AsUTF8 PyString_AsString
@@ -326,7 +324,7 @@ static PyObject *PyObject_FromLdbValue(const struct ldb_val *val)
 
 static PyObject *PyStr_FromLdbValue(const struct ldb_val *val)
 {
-	return PyStr_FromStringAndSize((const char *)val->data, val->length);
+	return PyUnicode_FromStringAndSize((const char *)val->data, val->length);
 }
 
 /**
@@ -3322,7 +3320,7 @@ static PyObject *py_ldb_msg_element_str(PyLdbMessageElementObject *self)
 	struct ldb_message_element *el = pyldb_MessageElement_AsMessageElement(self);
 
 	if (el->num_values == 1)
-		return PyStr_FromStringAndSize((char *)el->values[0].data, el->values[0].length);
+		return PyUnicode_FromStringAndSize((char *)el->values[0].data, el->values[0].length);
 	else
 		Py_RETURN_NONE;
 }
