@@ -59,7 +59,7 @@
 
 #include "lib/audit_logging/audit_logging.h"
 
-static void test_json_add_int(void **state)
+static void test_json_add_int(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_t *value = NULL;
@@ -101,7 +101,7 @@ static void test_json_add_int(void **state)
 	assert_int_equal(JSON_ERROR, rc);
 }
 
-static void test_json_add_bool(void **state)
+static void test_json_add_bool(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_t *value = NULL;
@@ -133,7 +133,7 @@ static void test_json_add_bool(void **state)
 	assert_int_equal(JSON_ERROR, rc);
 }
 
-static void test_json_add_string(void **state)
+static void test_json_add_string(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_t *value = NULL;
@@ -173,7 +173,7 @@ static void test_json_add_string(void **state)
 	assert_int_equal(JSON_ERROR, rc);
 }
 
-static void test_json_add_object(void **state)
+static void test_json_add_object(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_object other;
@@ -214,7 +214,7 @@ static void test_json_add_object(void **state)
 	json_free(&after);
 }
 
-static void test_json_add_to_array(void **state)
+static void test_json_add_to_array(_UNUSED_ void **state)
 {
 	struct json_object array;
 	struct json_object o1;
@@ -271,7 +271,7 @@ static void test_json_add_to_array(void **state)
 	json_free(&after);
 }
 
-static void test_json_add_timestamp(void **state)
+static void test_json_add_timestamp(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_t *ts = NULL;
@@ -338,7 +338,7 @@ static void test_json_add_timestamp(void **state)
 	assert_int_equal(JSON_ERROR, rc);
 }
 
-static void test_json_add_stringn(void **state)
+static void test_json_add_stringn(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_t *value = NULL;
@@ -405,7 +405,7 @@ static void test_json_add_stringn(void **state)
 	assert_int_equal(JSON_ERROR, rc);
 }
 
-static void test_json_add_version(void **state)
+static void test_json_add_version(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_t *version = NULL;
@@ -443,7 +443,7 @@ static void test_json_add_version(void **state)
 	assert_int_equal(JSON_ERROR, rc);
 }
 
-static void test_json_add_address(void **state)
+static void test_json_add_address(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_t *value = NULL;
@@ -522,7 +522,7 @@ static void test_json_add_address(void **state)
 	TALLOC_FREE(ctx);
 }
 
-static void test_json_add_sid(void **state)
+static void test_json_add_sid(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_t *value = NULL;
@@ -560,7 +560,7 @@ static void test_json_add_sid(void **state)
 	assert_int_equal(JSON_ERROR, rc);
 }
 
-static void test_json_add_guid(void **state)
+static void test_json_add_guid(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_t *value = NULL;
@@ -600,7 +600,7 @@ static void test_json_add_guid(void **state)
 	assert_int_equal(JSON_ERROR, rc);
 }
 
-static void test_json_to_string(void **state)
+static void test_json_to_string(_UNUSED_ void **state)
 {
 	struct json_object object;
 	char *s = NULL;
@@ -634,7 +634,7 @@ static void test_json_to_string(void **state)
 	TALLOC_FREE(ctx);
 }
 
-static void test_json_get_array(void **state)
+static void test_json_get_array(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_object array;
@@ -730,7 +730,7 @@ static void test_json_get_array(void **state)
 	json_free(&array);
 }
 
-static void test_json_get_object(void **state)
+static void test_json_get_object(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_object o1;
@@ -788,7 +788,7 @@ static void test_json_get_object(void **state)
 	json_free(&o3);
 }
 
-static void test_audit_get_timestamp(void **state)
+static void test_audit_get_timestamp(_UNUSED_ void **state)
 {
 	const char *t = NULL;
 	char *c;
@@ -829,7 +829,7 @@ static void test_audit_get_timestamp(void **state)
 	TALLOC_FREE(ctx);
 }
 
-int main(int argc, const char **argv)
+int main(_UNUSED_ int argc, _UNUSED_ const char **argv)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_json_add_int),

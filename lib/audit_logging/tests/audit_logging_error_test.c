@@ -279,7 +279,7 @@ char *__wrap_tsocket_address_string(const struct tsocket_address *addr,
 	return __real_tsocket_address_string(addr, mem_ctx);
 }
 
-static void test_json_add_int(void **state)
+static void test_json_add_int(_UNUSED_ void **state)
 {
 	struct json_object object;
 	int rc = 0;
@@ -308,7 +308,7 @@ static void test_json_add_int(void **state)
 	json_free(&object);
 }
 
-static void test_json_add_bool(void **state)
+static void test_json_add_bool(_UNUSED_ void **state)
 {
 	struct json_object object;
 	int rc = 0;
@@ -329,7 +329,7 @@ static void test_json_add_bool(void **state)
 	json_free(&object);
 }
 
-static void test_json_add_string(void **state)
+static void test_json_add_string(_UNUSED_ void **state)
 {
 	struct json_object object;
 	int rc = 0;
@@ -369,7 +369,7 @@ static void test_json_add_string(void **state)
 	json_free(&object);
 }
 
-static void test_json_add_object(void **state)
+static void test_json_add_object(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_object value;
@@ -404,7 +404,7 @@ static void test_json_add_object(void **state)
 	json_free(&value);
 }
 
-static void test_json_add_to_array(void **state)
+static void test_json_add_to_array(_UNUSED_ void **state)
 {
 	struct json_object array;
 	struct json_object value;
@@ -439,7 +439,7 @@ static void test_json_add_to_array(void **state)
 	json_free(&value);
 }
 
-static void test_json_add_timestamp(void **state)
+static void test_json_add_timestamp(_UNUSED_ void **state)
 {
 	struct json_object object;
 	int rc = 0;
@@ -489,7 +489,7 @@ static void test_json_add_timestamp(void **state)
 	json_free(&object);
 }
 
-static void test_json_add_stringn(void **state)
+static void test_json_add_stringn(_UNUSED_ void **state)
 {
 	struct json_object object;
 	int rc = 0;
@@ -537,7 +537,7 @@ static void test_json_add_stringn(void **state)
 	json_free(&object);
 }
 
-static void test_json_add_version(void **state)
+static void test_json_add_version(_UNUSED_ void **state)
 {
 	struct json_object object;
 	int rc = 0;
@@ -618,7 +618,7 @@ static void test_json_add_version(void **state)
 	json_free(&object);
 }
 
-static void test_json_add_address(void **state)
+static void test_json_add_address(_UNUSED_ void **state)
 {
 	struct json_object object;
 	int rc = 0;
@@ -745,7 +745,7 @@ static void test_json_add_guid(void **state)
 	json_free(&object);
 }
 
-static void test_json_to_string(void **state)
+static void test_json_to_string(_UNUSED_ void **state)
 {
 	struct json_object object;
 	char *s = NULL;
@@ -775,7 +775,7 @@ static void test_json_to_string(void **state)
 	json_free(&object);
 }
 
-static void test_json_get_array(void **state)
+static void test_json_get_array(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_object stored_array;
@@ -814,7 +814,7 @@ static void test_json_get_array(void **state)
 	json_free(&object);
 }
 
-static void test_json_get_object(void **state)
+static void test_json_get_object(_UNUSED_ void **state)
 {
 	struct json_object object;
 	struct json_object stored;
@@ -845,7 +845,7 @@ static void test_json_get_object(void **state)
 	json_free(&object);
 }
 
-int main(int argc, const char **argv)
+int main(_UNUSED_ int argc, _UNUSED_ const char **argv)
 {
 	const struct CMUnitTest tests[] = {
 	    cmocka_unit_test(test_json_add_int),
