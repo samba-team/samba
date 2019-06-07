@@ -41,7 +41,7 @@ static PyObject *py_lsa_String_repr(PyObject *py_self)
 		const char *empty = "lsaString(None)";
 		ret = PyUnicode_FromString(empty);
 	} else {
-		ret = PyStr_FromFormat("lsaString('%s')", self->string);
+		ret = PyUnicode_FromFormat("lsaString('%s')", self->string);
 	}
 	return ret;
 }

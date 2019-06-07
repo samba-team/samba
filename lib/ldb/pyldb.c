@@ -85,7 +85,6 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 static PyTypeObject PyLdbBytesType;
 
 #if PY_MAJOR_VERSION >= 3
-#define PyStr_FromFormat PyUnicode_FromFormat
 #define PyStr_FromFormatV PyUnicode_FromFormatV
 #define PyStr_AsUTF8 PyUnicode_AsUTF8
 #define PyStr_AsUTF8AndSize PyUnicode_AsUTF8AndSize
@@ -103,7 +102,6 @@ static PyObject *PyLdbBytes_FromStringAndSize(const char *msg, int size)
 	return result;
 }
 #else
-#define PyStr_FromFormat PyString_FromFormat
 #define PyStr_FromFormatV PyString_FromFormatV
 #define PyStr_AsUTF8 PyString_AsString
 #define PyLdbBytes_FromStringAndSize PyString_FromStringAndSize
@@ -597,7 +595,7 @@ static PyObject *py_ldb_dn_repr(PyLdbDnObject *self)
 		Py_DECREF(str);
 		return NULL;
 	}
-	result = PyStr_FromFormat("Dn(%s)", PyStr_AsUTF8(repr));
+	result = PyUnicode_FromFormat("Dn(%s)", PyStr_AsUTF8(repr));
 	Py_DECREF(str);
 	Py_DECREF(repr);
 	return result;
@@ -2764,7 +2762,7 @@ static PyTypeObject PyLdbSearchIterator = {
 
 static PyObject *py_ldb_module_repr(PyLdbModuleObject *self)
 {
-	return PyStr_FromFormat("<ldb module '%s'>",
+	return PyUnicode_FromFormat("<ldb module '%s'>",
 		pyldb_Module_AsModule(self)->ops->name);
 }
 
@@ -3306,7 +3304,7 @@ static PyObject *py_ldb_msg_element_repr(PyLdbMessageElementObject *self)
 	}
 
 	if (element_str != NULL) {
-		ret = PyStr_FromFormat("MessageElement([%s])", element_str);
+		ret = PyUnicode_FromFormat("MessageElement([%s])", element_str);
 		talloc_free(element_str);
 	} else {
 		ret = PyUnicode_FromString("MessageElement([])");
@@ -3781,7 +3779,7 @@ static PyObject *py_ldb_msg_repr(PyLdbMessageObject *self)
 		Py_DECREF(dict);
 		return NULL;
 	}
-	ret = PyStr_FromFormat("Message(%s)", PyStr_AsUTF8(repr));
+	ret = PyUnicode_FromFormat("Message(%s)", PyStr_AsUTF8(repr));
 	Py_DECREF(repr);
 	Py_DECREF(dict);
 	return ret;

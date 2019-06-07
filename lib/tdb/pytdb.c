@@ -32,13 +32,10 @@
 #include <tdb.h>
 
 #if PY_MAJOR_VERSION >= 3
-#define PyStr_FromFormat PyUnicode_FromFormat
 #define PyInt_FromLong PyLong_FromLong
 #define PyInt_Check PyLong_Check
 #define PyInt_AsLong PyLong_AsLong
 #define Py_TPFLAGS_HAVE_ITER 0
-#else
-#define PyStr_FromFormat PyString_FromFormat
 #endif
 
 /* discard signature of 'func' in favour of 'target_sig' */
@@ -654,7 +651,7 @@ static PyObject *tdb_object_repr(PyTdbObject *self)
 	if (tdb_get_flags(self->ctx) & TDB_INTERNAL) {
 		return PyUnicode_FromString("Tdb(<internal>)");
 	} else {
-		return PyStr_FromFormat("Tdb('%s')", tdb_name(self->ctx));
+		return PyUnicode_FromFormat("Tdb('%s')", tdb_name(self->ctx));
 	}
 }
 

@@ -100,7 +100,7 @@ static PyObject *py_lp_ctx_get_helper(struct loadparm_context *lp_ctx, const cha
     /* construct and return the right type of python object */
     switch (parm->type) {
     case P_CHAR:
-	return PyStr_FromFormat("%c", *(char *)parm_ptr);
+	return PyUnicode_FromFormat("%c", *(char *)parm_ptr);
     case P_STRING:
     case P_USTRING:
 	return PyUnicode_FromString(*(char **)parm_ptr);
@@ -355,7 +355,7 @@ static PyObject *py_lp_log_level(PyObject *self, PyObject *unused)
 static PyObject *py_samdb_url(PyObject *self, PyObject *unused)
 {
 	struct loadparm_context *lp_ctx = PyLoadparmContext_AsLoadparmContext(self);
-	return PyStr_FromFormat("tdb://%s/sam.ldb", lpcfg_private_dir(lp_ctx));
+	return PyUnicode_FromFormat("tdb://%s/sam.ldb", lpcfg_private_dir(lp_ctx));
 }
 
 static PyObject *py_cache_path(PyObject *self, PyObject *args)

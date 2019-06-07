@@ -78,7 +78,7 @@ static PyObject *py_GUID_repr(PyObject *py_self)
 {
 	struct GUID *self = pytalloc_get_ptr(py_self);
 	char *str = GUID_string(NULL, self);
-	PyObject *ret = PyStr_FromFormat("GUID('%s')", str);
+	PyObject *ret = PyUnicode_FromFormat("GUID('%s')", str);
 	talloc_free(str);
 	return ret;
 }
@@ -162,7 +162,7 @@ static PyObject *py_policy_handle_repr(PyObject *py_self)
 {
 	struct policy_handle *self = pytalloc_get_ptr(py_self);
 	char *uuid_str = GUID_string(NULL, &self->uuid);
-	PyObject *ret = PyStr_FromFormat("policy_handle(%d, '%s')", self->handle_type, uuid_str);
+	PyObject *ret = PyUnicode_FromFormat("policy_handle(%d, '%s')", self->handle_type, uuid_str);
 	talloc_free(uuid_str);
 	return ret;
 }
@@ -171,7 +171,7 @@ static PyObject *py_policy_handle_str(PyObject *py_self)
 {
 	struct policy_handle *self = pytalloc_get_ptr(py_self);
 	char *uuid_str = GUID_string(NULL, &self->uuid);
-	PyObject *ret = PyStr_FromFormat("%d, %s", self->handle_type, uuid_str);
+	PyObject *ret = PyUnicode_FromFormat("%d, %s", self->handle_type, uuid_str);
 	talloc_free(uuid_str);
 	return ret;
 }

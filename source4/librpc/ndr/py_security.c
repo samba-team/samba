@@ -124,7 +124,7 @@ static PyObject *py_dom_sid_repr(PyObject *py_self)
 {
 	struct dom_sid *self = pytalloc_get_ptr(py_self);
 	struct dom_sid_buf buf;
-	PyObject *ret = PyStr_FromFormat(
+	PyObject *ret = PyUnicode_FromFormat(
 		"dom_sid('%s')", dom_sid_str_buf(self, &buf));
 	return ret;
 }

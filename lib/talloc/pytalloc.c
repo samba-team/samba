@@ -24,12 +24,6 @@
 
 static PyTypeObject TallocObject_Type;
 
-#if PY_MAJOR_VERSION >= 3
-#define PyStr_FromFormat PyUnicode_FromFormat
-#else
-#define PyStr_FromFormat PyString_FromFormat
-#endif
-
 /* print a talloc tree report for a talloc python object */
 static PyObject *pytalloc_report_full(PyObject *self, PyObject *args)
 {
@@ -87,7 +81,7 @@ static PyObject *pytalloc_default_repr(PyObject *obj)
 	pytalloc_Object *talloc_obj = (pytalloc_Object *)obj;
 	PyTypeObject *type = (PyTypeObject*)PyObject_Type(obj);
 
-	return PyStr_FromFormat("<%s talloc object at %p>",
+	return PyUnicode_FromFormat("<%s talloc object at %p>",
 				type->tp_name, talloc_obj->ptr);
 }
 
@@ -167,7 +161,7 @@ static PyObject *pytalloc_base_default_repr(PyObject *obj)
 	pytalloc_BaseObject *talloc_obj = (pytalloc_BaseObject *)obj;
 	PyTypeObject *type = (PyTypeObject*)PyObject_Type(obj);
 
-	return PyStr_FromFormat("<%s talloc based object at %p>",
+	return PyUnicode_FromFormat("<%s talloc based object at %p>",
 				type->tp_name, talloc_obj->ptr);
 }
 
