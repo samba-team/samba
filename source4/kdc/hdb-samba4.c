@@ -501,7 +501,6 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context, HDB *db,
 					 status,
 					 domain_name,
 					 account_name,
-					 NULL,
 					 sid);
 		TALLOC_FREE(frame);
 		break;
@@ -526,7 +525,7 @@ static krb5_error_code hdb_samba4_auth_status(krb5_context context, HDB *db,
 					 &ui,
 					 NT_STATUS_NO_SUCH_USER,
 					 NULL, NULL,
-					 NULL, NULL);
+					 NULL);
 		TALLOC_FREE(frame);
 		break;
 	}

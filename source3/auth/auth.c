@@ -317,7 +317,7 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 				 nt_status,
 				 server_info->info3->base.logon_domain.string,
 				 server_info->info3->base.account_name.string,
-				 unix_username, &sid);
+				 &sid);
 
 	DEBUG(server_info->guest ? 5 : 2,
 	      ("check_ntlm_password:  %sauthentication for user "
@@ -350,7 +350,6 @@ fail:
 				 &auth_context->start_time,
 				 user_info,
 				 nt_status,
-				 NULL,
 				 NULL,
 				 NULL,
 				 NULL);

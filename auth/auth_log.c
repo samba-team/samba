@@ -143,7 +143,6 @@ static void log_authentication_event_json(
 	NTSTATUS status,
 	const char *domain_name,
 	const char *account_name,
-	const char *unix_username,
 	struct dom_sid *sid,
 	enum event_id_type event_id,
 	int debug_level)
@@ -498,7 +497,6 @@ static void log_authentication_event_json(
 	NTSTATUS status,
 	const char *domain_name,
 	const char *account_name,
-	const char *unix_username,
 	struct dom_sid *sid,
 	enum event_id_type event_id,
 	int debug_level)
@@ -583,7 +581,6 @@ static void log_authentication_event_human_readable(
 	NTSTATUS status,
 	const char *domain_name,
 	const char *account_name,
-	const char *unix_username,
 	struct dom_sid *sid,
 	int debug_level)
 {
@@ -673,7 +670,6 @@ void log_authentication_event(
 	NTSTATUS status,
 	const char *domain_name,
 	const char *account_name,
-	const char *unix_username,
 	struct dom_sid *sid)
 {
 	/* set the log level */
@@ -693,7 +689,6 @@ void log_authentication_event(
 							status,
 							domain_name,
 							account_name,
-							unix_username,
 							sid,
 							debug_level);
 	}
@@ -706,7 +701,6 @@ void log_authentication_event(
 					      status,
 					      domain_name,
 					      account_name,
-					      unix_username,
 					      sid,
 					      event_id,
 					      debug_level);

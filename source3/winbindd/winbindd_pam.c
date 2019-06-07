@@ -2038,7 +2038,6 @@ static void log_authentication(
 	    result,
 	    state->response->data.auth.info3.logon_dom,
 	    state->response->data.auth.info3.user_name,
-	    state->response->data.auth.unix_username,
 	    sid);
 	TALLOC_FREE(ui);
 }

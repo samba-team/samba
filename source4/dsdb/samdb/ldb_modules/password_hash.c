@@ -2980,7 +2980,6 @@ static int check_password_restrictions_and_log(struct setup_password_fields_io *
 					 status,
 					 domain_name,
 					 io->u.sAMAccountName,
-					 NULL,
 					 io->u.account_sid);
 
 	}

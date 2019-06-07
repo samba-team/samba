@@ -114,7 +114,7 @@ _PUBLIC_ struct tevent_req *authenticate_ldap_simple_bind_send(TALLOC_CTX *mem_c
 		log_authentication_event(msg, lp_ctx,
 					 &state->auth_context->start_time,
 					 user_info, status,
-					 NULL, NULL, NULL, NULL);
+					 NULL, NULL, NULL);
 	}
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);

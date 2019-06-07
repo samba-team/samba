@@ -187,7 +187,6 @@ void log_authentication_event(struct imessaging_context *msg_ctx,
 			      NTSTATUS status,
 			      const char *account_name,
 			      const char *domain_name,
-			      const char *unix_username,
 			      struct dom_sid *sid);
 
 /*

@@ -76,7 +76,6 @@ static void log_password_change_event(struct imessaging_context *msg_ctx,
 				 status,
 				 ui.mapped.domain_name,
 				 ui.mapped.account_name,
-				 NULL,
 				 sid);
 }
 /*
