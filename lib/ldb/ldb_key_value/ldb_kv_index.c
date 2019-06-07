@@ -540,7 +540,7 @@ int ldb_kv_key_dn_from_idx(struct ldb_module *module,
 		 * DN key has been truncated, need to inspect the actual
 		 * records to locate the actual DN
 		 */
-		int i;
+		unsigned int i;
 		index = -1;
 		for (i=0; i < list->count; i++) {
 			uint8_t guid_key[LDB_KV_GUID_KEY_SIZE];
