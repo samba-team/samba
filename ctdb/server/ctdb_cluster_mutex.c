@@ -176,6 +176,10 @@ static bool cluster_mutex_helper_args_cmd(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 	n = strv_count(strv);
+	if (n == 0) {
+		D_ERR("Mutex helper command is empty \"%s\"\n", argstring);
+		return false;
+	}
 
 	/* Extra slot for NULL */
 	args = talloc_array(mem_ctx, char *, n + 1);
