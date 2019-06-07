@@ -51,6 +51,7 @@
 
 #include "ldb_kv.h"
 #include "ldb_private.h"
+#include "lib/util/attr.h"
 
 /*
   prevent memory errors on callbacks
@@ -1669,9 +1670,9 @@ static void ldb_kv_request_done(struct ldb_kv_context *ctx, int error)
 	req->callback(req, ares);
 }
 
-static void ldb_kv_timeout(struct tevent_context *ev,
-			   struct tevent_timer *te,
-			   struct timeval t,
+static void ldb_kv_timeout(_UNUSED_ struct tevent_context *ev,
+			   _UNUSED_ struct tevent_timer *te,
+			   _UNUSED_ struct timeval t,
 			   void *private_data)
 {
 	struct ldb_kv_context *ctx;
