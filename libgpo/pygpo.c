@@ -39,7 +39,7 @@ static PyObject* GPO_get_##ATTR(PyObject *self, void *closure) \
 		= pytalloc_get_ptr(self); \
 	\
 	if (gpo_ptr->ATTR) \
-		return PyStr_FromString(gpo_ptr->ATTR); \
+		return PyUnicode_FromString(gpo_ptr->ATTR); \
 	else \
 		return Py_None; \
 }
@@ -108,7 +108,7 @@ static PyObject *py_gpo_get_unix_path(PyObject *self, PyObject *args,
 		goto out;
 	}
 
-	ret = PyStr_FromString(unix_path);
+	ret = PyUnicode_FromString(unix_path);
 
 out:
 	TALLOC_FREE(frame);
@@ -537,7 +537,7 @@ MODULE_INIT_FUNC(gpo)
 	}
 
 	if (PyModule_AddObject(m, "version",
-			   PyStr_FromString(SAMBA_VERSION_STRING)) ) {
+			   PyUnicode_FromString(SAMBA_VERSION_STRING)) ) {
 		goto err;
 	}
 

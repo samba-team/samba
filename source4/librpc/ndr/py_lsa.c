@@ -26,9 +26,9 @@ static PyObject *py_lsa_String_str(PyObject *py_self)
 	PyObject *ret = NULL;
 	if (self->string == NULL) {
 		const char *empty = "";
-		ret = PyStr_FromString(empty);
+		ret = PyUnicode_FromString(empty);
 	} else {
-		ret = PyStr_FromString(self->string);
+		ret = PyUnicode_FromString(self->string);
 	}
 	return ret;
 }
@@ -39,7 +39,7 @@ static PyObject *py_lsa_String_repr(PyObject *py_self)
 	PyObject *ret = NULL;
 	if (self->string == NULL) {
 		const char *empty = "lsaString(None)";
-		ret = PyStr_FromString(empty);
+		ret = PyUnicode_FromString(empty);
 	} else {
 		ret = PyStr_FromFormat("lsaString('%s')", self->string);
 	}

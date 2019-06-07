@@ -367,7 +367,7 @@ sub PythonStruct($$$$$$)
 		$self->pidl("char *retstr;");
 		$self->pidl("");
 		$self->pidl("retstr = ndr_print_struct_string(pytalloc_get_mem_ctx(py_obj), (ndr_print_fn_t)ndr_print_$name, \"$name\", object);");
-		$self->pidl("ret = PyStr_FromString(retstr);");
+		$self->pidl("ret = PyUnicode_FromString(retstr);");
 		$self->pidl("talloc_free(retstr);");
 		$self->pidl("");
 		$self->pidl("return ret;");
@@ -809,7 +809,7 @@ sub PythonFunctionStruct($$$$)
 	$self->pidl("call = &ndr_table_$iface\.calls[$fn->{OPNUM}];");
 	$self->pidl("");
 	$self->pidl("retstr = ndr_print_function_string(pytalloc_get_mem_ctx(py_obj), call->ndr_print, name, ndr_inout_flags, object);");
-	$self->pidl("ret = PyStr_FromString(retstr);");
+	$self->pidl("ret = PyUnicode_FromString(retstr);");
 	$self->pidl("TALLOC_FREE(retstr);");
 	$self->pidl("");
 	$self->pidl("return ret;");
@@ -2407,7 +2407,7 @@ static inline long long ndr_sizeof2intmax(size_t var_size)
 		if ($cvar =~ /^[0-9]+$/ or $cvar =~ /^0x[0-9a-fA-F]+$/) {
 			$py_obj = "PyLong_FromUnsignedLongLong($cvar)";
 		} elsif ($cvar =~ /^".*"$/) {
-			$py_obj = "PyStr_FromString($cvar)";
+			$py_obj = "PyUnicode_FromString($cvar)";
 		} else {
 			$py_obj = $self->ConvertObjectToPythonData("NULL", expandAlias($ctype), $cvar, undef);
 		}

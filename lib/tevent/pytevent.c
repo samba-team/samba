@@ -27,11 +27,9 @@
 #include <tevent.h>
 
 #if PY_MAJOR_VERSION >= 3
-#define PyStr_FromString PyUnicode_FromString
 #define PyStr_AsUTF8 PyUnicode_AsUTF8
 #define PyInt_FromLong PyLong_FromLong
 #else
-#define PyStr_FromString PyString_FromString
 #define PyStr_AsUTF8 PyString_AsString
 #endif
 
@@ -836,7 +834,7 @@ static PyObject *py_backend_list(PyObject *self,
 		goto err;
 	}
 	for (i = 0; backends[i]; i++) {
-		string = PyStr_FromString(backends[i]);
+		string = PyUnicode_FromString(backends[i]);
 		if (!string) {
 			goto err;
 		}

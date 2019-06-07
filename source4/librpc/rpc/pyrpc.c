@@ -95,7 +95,7 @@ static PyObject *py_iface_server_name(PyObject *obj, void *closure)
 	if (server_name == NULL)
 		Py_RETURN_NONE;
 
-	return PyStr_FromString(server_name);
+	return PyUnicode_FromString(server_name);
 }
 
 static PyObject *py_ndr_syntax_id(struct ndr_syntax_id *syntax_id)

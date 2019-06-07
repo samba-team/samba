@@ -97,7 +97,7 @@ static PyObject *py_samdb_server_site_name(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	result = PyStr_FromString(site);
+	result = PyUnicode_FromString(site);
 	talloc_free(mem_ctx);
 	return result;
 }
@@ -123,7 +123,7 @@ static PyObject *py_dsdb_convert_schema_to_openldap(PyObject *self,
 		return NULL;
 	} 
 
-	ret = PyStr_FromString(retstr);
+	ret = PyUnicode_FromString(retstr);
 	talloc_free(retstr);
 	return ret;
 }
@@ -208,7 +208,7 @@ static PyObject *py_samdb_get_domain_sid(PyLdbObject *self, PyObject *args)
 		return NULL;
 	}
 
-	ret = PyStr_FromString(dom_sid_str_buf(sid, &buf));
+	ret = PyUnicode_FromString(dom_sid_str_buf(sid, &buf));
 	return ret;
 }
 
@@ -237,7 +237,7 @@ static PyObject *py_samdb_ntds_invocation_id(PyObject *self, PyObject *args)
 		PyErr_NoMemory();
 		return NULL;
 	}
-	result = PyStr_FromString(retstr);
+	result = PyUnicode_FromString(retstr);
 	talloc_free(retstr);
 	return result;
 }
@@ -279,7 +279,7 @@ static PyObject *py_dsdb_get_oid_from_attid(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	ret = PyStr_FromString(oid);
+	ret = PyUnicode_FromString(oid);
 
 	talloc_free(mem_ctx);
 
@@ -434,7 +434,7 @@ static PyObject *py_dsdb_get_backlink_from_lDAPDisplayName(PyObject *self, PyObj
 		Py_RETURN_NONE;
 	}
 
-	return PyStr_FromString(target_attr->lDAPDisplayName);
+	return PyUnicode_FromString(target_attr->lDAPDisplayName);
 }
 
 
@@ -464,7 +464,7 @@ static PyObject *py_dsdb_get_lDAPDisplayName_by_attid(PyObject *self, PyObject *
 		return NULL;
 	}
 
-	return PyStr_FromString(a->lDAPDisplayName);
+	return PyUnicode_FromString(a->lDAPDisplayName);
 }
 
 
@@ -497,7 +497,7 @@ static PyObject *py_dsdb_get_syntax_oid_from_lDAPDisplayName(PyObject *self, PyO
 		return NULL;
 	}
 
-	return PyStr_FromString(attribute->syntax->ldap_oid);
+	return PyUnicode_FromString(attribute->syntax->ldap_oid);
 }
 
 /*
@@ -821,7 +821,7 @@ static PyObject *py_samdb_ntds_objectGUID(PyObject *self, PyObject *args)
 		PyErr_NoMemory();
 		return NULL;
 	}
-	result = PyStr_FromString(retstr);
+	result = PyUnicode_FromString(retstr);
 	talloc_free(retstr);
 	return result;
 }
@@ -1656,7 +1656,7 @@ MODULE_INIT_FUNC(dsdb)
 	ADD_DSDB_FLAG(GPO_INHERIT);
 	ADD_DSDB_FLAG(GPO_BLOCK_INHERITANCE);
 
-#define ADD_DSDB_STRING(val)  PyModule_AddObject(m, #val, PyStr_FromString(val))
+#define ADD_DSDB_STRING(val)  PyModule_AddObject(m, #val, PyUnicode_FromString(val))
 
 	ADD_DSDB_STRING(DSDB_SYNTAX_BINARY_DN);
 	ADD_DSDB_STRING(DSDB_SYNTAX_STRING_DN);

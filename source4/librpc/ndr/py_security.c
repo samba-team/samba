@@ -116,7 +116,7 @@ static PyObject *py_dom_sid_str(PyObject *py_self)
 {
 	struct dom_sid *self = pytalloc_get_ptr(py_self);
 	struct dom_sid_buf buf;
-	PyObject *ret = PyStr_FromString(dom_sid_str_buf(self, &buf));
+	PyObject *ret = PyUnicode_FromString(dom_sid_str_buf(self, &buf));
 	return ret;
 }
 
@@ -285,7 +285,7 @@ static PyObject *py_descriptor_as_sddl(PyObject *self, PyObject *args)
 
 	text = sddl_encode(NULL, desc, sid);
 
-	ret = PyStr_FromString(text);
+	ret = PyUnicode_FromString(text);
 
 	talloc_free(text);
 
@@ -438,7 +438,7 @@ static PyObject *py_privilege_name(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i", &priv))
 		return NULL;
 
-	return PyStr_FromString(sec_privilege_name(priv));
+	return PyUnicode_FromString(sec_privilege_name(priv));
 }
 
 static PyObject *py_privilege_id(PyObject *self, PyObject *args)

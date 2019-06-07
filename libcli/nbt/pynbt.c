@@ -190,7 +190,7 @@ static PyObject *py_nbt_name_query(PyObject *self, PyObject *args, PyObject *kwa
 	ret = PyTuple_New(3);
 	if (ret == NULL)
 		return NULL;
-	PyTuple_SetItem(ret, 0, PyStr_FromString(io.out.reply_from));
+	PyTuple_SetItem(ret, 0, PyUnicode_FromString(io.out.reply_from));
 
 	py_name = PyObject_FromNBTName(node->socket, &io.out.name);
 	if (py_name == NULL)
@@ -205,7 +205,7 @@ static PyObject *py_nbt_name_query(PyObject *self, PyObject *args, PyObject *kwa
 	}
 
 	for (i = 0; i < io.out.num_addrs; i++) {
-		PyList_SetItem(reply_addrs, i, PyStr_FromString(io.out.reply_addrs[i]));
+		PyList_SetItem(reply_addrs, i, PyUnicode_FromString(io.out.reply_addrs[i]));
 	}
 
 	PyTuple_SetItem(ret, 2, reply_addrs);
@@ -248,7 +248,7 @@ static PyObject *py_nbt_name_status(PyObject *self, PyObject *args, PyObject *kw
 	ret = PyTuple_New(3);
 	if (ret == NULL)
 		return NULL;
-	PyTuple_SetItem(ret, 0, PyStr_FromString(io.out.reply_from));
+	PyTuple_SetItem(ret, 0, PyUnicode_FromString(io.out.reply_from));
 
 	py_name = PyObject_FromNBTName(node->socket, &io.out.name);
 	if (py_name == NULL)
@@ -312,7 +312,7 @@ static PyObject *py_nbt_name_register(PyObject *self, PyObject *args, PyObject *
 	ret = PyTuple_New(4);
 	if (ret == NULL)
 		return NULL;
-	PyTuple_SetItem(ret, 0, PyStr_FromString(io.out.reply_from));
+	PyTuple_SetItem(ret, 0, PyUnicode_FromString(io.out.reply_from));
 
 	py_name = PyObject_FromNBTName(node->socket, &io.out.name);
 	if (py_name == NULL)
@@ -320,7 +320,7 @@ static PyObject *py_nbt_name_register(PyObject *self, PyObject *args, PyObject *
 
 	PyTuple_SetItem(ret, 1, py_name);
 
-	PyTuple_SetItem(ret, 2, PyStr_FromString(io.out.reply_addr));
+	PyTuple_SetItem(ret, 2, PyUnicode_FromString(io.out.reply_addr));
 
 	PyTuple_SetItem(ret, 3, PyInt_FromLong(io.out.rcode));
 
@@ -368,7 +368,7 @@ static PyObject *py_nbt_name_refresh(PyObject *self, PyObject *args, PyObject *k
 	ret = PyTuple_New(3);
 	if (ret == NULL)
 		return NULL;
-	PyTuple_SetItem(ret, 0, PyStr_FromString(io.out.reply_from));
+	PyTuple_SetItem(ret, 0, PyUnicode_FromString(io.out.reply_from));
 
 	py_name = PyObject_FromNBTName(node->socket, &io.out.name);
 	if (py_name == NULL)
@@ -376,7 +376,7 @@ static PyObject *py_nbt_name_refresh(PyObject *self, PyObject *args, PyObject *k
 
 	PyTuple_SetItem(ret, 1, py_name);
 
-	PyTuple_SetItem(ret, 2, PyStr_FromString(io.out.reply_addr));
+	PyTuple_SetItem(ret, 2, PyUnicode_FromString(io.out.reply_addr));
 
 	PyTuple_SetItem(ret, 3, PyInt_FromLong(io.out.rcode));
 

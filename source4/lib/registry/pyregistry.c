@@ -417,7 +417,7 @@ static PyObject *py_str_regtype(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "i", &regtype))
 		return NULL;
 	
-	return PyStr_FromString(str_regtype(regtype));
+	return PyUnicode_FromString(str_regtype(regtype));
 }
 
 static PyObject *py_get_predef_name(PyObject *self, PyObject *args)
@@ -431,7 +431,7 @@ static PyObject *py_get_predef_name(PyObject *self, PyObject *args)
 	str = reg_get_predef_name(hkey);
 	if (str == NULL)
 		Py_RETURN_NONE;
-	return PyStr_FromString(str);
+	return PyUnicode_FromString(str);
 }
 
 static PyMethodDef py_registry_methods[] = {

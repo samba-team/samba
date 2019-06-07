@@ -26,7 +26,7 @@
 static bool PySys_PathPrepend(PyObject *list, const char *path)
 {
 	bool ok;
-	PyObject *py_path = PyStr_FromString(path);
+	PyObject *py_path = PyUnicode_FromString(path);
 	if (py_path == NULL) {
 		return false;
 	}

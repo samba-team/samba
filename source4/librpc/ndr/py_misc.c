@@ -69,7 +69,7 @@ static PyObject *py_GUID_str(PyObject *py_self)
 {
 	struct GUID *self = pytalloc_get_ptr(py_self);
 	char *str = GUID_string(NULL, self);
-	PyObject *ret = PyStr_FromString(str);
+	PyObject *ret = PyUnicode_FromString(str);
 	talloc_free(str);
 	return ret;
 }

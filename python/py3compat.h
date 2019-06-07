@@ -54,7 +54,6 @@
 
 /* Strings */
 
-#define PyStr_FromString PyUnicode_FromString
 #define PyStr_FromStringAndSize PyUnicode_FromStringAndSize
 #define PyStr_FromFormat PyUnicode_FromFormat
 #define PyStr_FromFormatV PyUnicode_FromFormatV

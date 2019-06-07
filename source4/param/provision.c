@@ -45,7 +45,7 @@ static bool dict_insert(PyObject* dict,
 
 static PyObject *provision_module(void)
 {
-	PyObject *name = PyStr_FromString("samba.provision");
+	PyObject *name = PyUnicode_FromString("samba.provision");
 	PyObject *mod = NULL;
 	if (name == NULL)
 		return NULL;
@@ -56,7 +56,7 @@ static PyObject *provision_module(void)
 
 static PyObject *schema_module(void)
 {
-	PyObject *name = PyStr_FromString("samba.schema");
+	PyObject *name = PyUnicode_FromString("samba.schema");
 	PyObject *mod = NULL;
 	if (name == NULL)
 		return NULL;
@@ -67,7 +67,7 @@ static PyObject *schema_module(void)
 
 static PyObject *ldb_module(void)
 {
-	PyObject *name = PyStr_FromString("ldb");
+	PyObject *name = PyUnicode_FromString("ldb");
 	PyObject *mod = NULL;
 	if (name == NULL)
 		return NULL;
@@ -152,7 +152,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	configfile = lpcfg_configfile(lp_ctx);
 	if (configfile != NULL) {
 		if (!dict_insert(parameters, "smbconf",
-				 PyStr_FromString(configfile))) {
+				 PyUnicode_FromString(configfile))) {
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto out;
 		}
@@ -160,40 +160,40 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 
 	if (!dict_insert(parameters,
 			 "rootdn",
-			 PyStr_FromString(settings->root_dn_str))) {
+			 PyUnicode_FromString(settings->root_dn_str))) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
 	if (settings->targetdir != NULL) {
 		if (!dict_insert(parameters,
 				 "targetdir",
-				 PyStr_FromString(settings->targetdir))) {
+				 PyUnicode_FromString(settings->targetdir))) {
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto out;
 		}
 	}
 	if (!dict_insert(parameters,
 			 "hostname",
-			 PyStr_FromString(settings->netbios_name))) {
+			 PyUnicode_FromString(settings->netbios_name))) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
 	if (!dict_insert(parameters,
 			 "domain",
-			 PyStr_FromString(settings->domain))) {
+			 PyUnicode_FromString(settings->domain))) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
 	if (!dict_insert(parameters,
 			 "realm",
-			 PyStr_FromString(settings->realm))) {
+			 PyUnicode_FromString(settings->realm))) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
 	if (settings->root_dn_str) {
 		if (!dict_insert(parameters,
 				 "rootdn",
-				 PyStr_FromString(settings->root_dn_str))) {
+				 PyUnicode_FromString(settings->root_dn_str))) {
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto out;
 		}
@@ -202,7 +202,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	if (settings->domain_dn_str) {
 		if (!dict_insert(parameters,
 				 "domaindn",
-				 PyStr_FromString(settings->domain_dn_str))) {
+				 PyUnicode_FromString(settings->domain_dn_str))) {
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto out;
 		}
@@ -211,7 +211,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	if (settings->schema_dn_str) {
 		if (!dict_insert(parameters,
 				 "schemadn",
-				 PyStr_FromString(settings->schema_dn_str))) {
+				 PyUnicode_FromString(settings->schema_dn_str))) {
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto out;
 		}
@@ -219,7 +219,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	if (settings->config_dn_str) {
 		if (!dict_insert(parameters,
 				 "configdn",
-				 PyStr_FromString(settings->config_dn_str))) {
+				 PyUnicode_FromString(settings->config_dn_str))) {
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto out;
 		}
@@ -227,7 +227,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	if (settings->server_dn_str) {
 		if (!dict_insert(parameters,
 				 "serverdn",
-				 PyStr_FromString(settings->server_dn_str))) {
+				 PyUnicode_FromString(settings->server_dn_str))) {
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto out;
 		}
@@ -235,7 +235,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 	if (settings->site_name) {
 		if (!dict_insert(parameters,
 				 "sitename",
-				  PyStr_FromString(settings->site_name))) {
+				  PyUnicode_FromString(settings->site_name))) {
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto out;
 		}
@@ -243,7 +243,7 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 
 	if (!dict_insert(parameters,
 			 "machinepass",
-			 PyStr_FromString(settings->machine_password))){
+			 PyUnicode_FromString(settings->machine_password))){
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
@@ -403,27 +403,27 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	}
 	if (!dict_insert(parameters,
 			 "domain",
-			 PyStr_FromString(settings->domain_name))) {
+			 PyUnicode_FromString(settings->domain_name))) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
 	if (settings->realm != NULL) {
 		if (!dict_insert(parameters,
 				 "realm",
-				 PyStr_FromString(settings->realm))) {
+				 PyUnicode_FromString(settings->realm))) {
 			status = NT_STATUS_UNSUCCESSFUL;
 			goto out;
 		}
 	}
 	if (!dict_insert(parameters,
 			 "machinepass",
-			 PyStr_FromString(settings->machine_password))) {
+			 PyUnicode_FromString(settings->machine_password))) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
 	if (!dict_insert(parameters,
 			 "netbiosname",
-			 PyStr_FromString(settings->netbios_name))) {
+			 PyUnicode_FromString(settings->netbios_name))) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
@@ -527,7 +527,7 @@ struct ldb_context *provision_get_schema(TALLOC_CTX *mem_ctx,
 	if (schema_dn) {
 		if (!dict_insert(parameters,
 				 "schemadn",
-				 PyStr_FromString(schema_dn))) {
+				 PyUnicode_FromString(schema_dn))) {
 			return NULL;
 		}
 	}

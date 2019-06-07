@@ -40,7 +40,7 @@ static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 		return NULL;
 
 	retstr = generate_random_str(NULL, len);
-	ret = PyStr_FromString(retstr);
+	ret = PyUnicode_FromString(retstr);
 	talloc_free(retstr);
 	return ret;
 }
@@ -57,7 +57,7 @@ static PyObject *py_generate_random_password(PyObject *self, PyObject *args)
 	if (retstr == NULL) {
 		return NULL;
 	}
-	ret = PyStr_FromString(retstr);
+	ret = PyUnicode_FromString(retstr);
 	talloc_free(retstr);
 	return ret;
 }
@@ -150,7 +150,7 @@ static PyObject *py_nttime2string(PyObject *self, PyObject *args)
 	}
 
 	string = nt_time_string(tmp_ctx, nt);
-	ret =  PyStr_FromString(string);
+	ret =  PyUnicode_FromString(string);
 
 	talloc_free(tmp_ctx);
 
@@ -272,7 +272,7 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 		const char *ip = iface_list_n_ip(ifaces, i);
 
 		if (all_interfaces) {
-			PyList_SetItem(pylist, ifcount, PyStr_FromString(ip));
+			PyList_SetItem(pylist, ifcount, PyUnicode_FromString(ip));
 			ifcount++;
 			continue;
 		}
@@ -293,7 +293,7 @@ static PyObject *py_interface_ips(PyObject *self, PyObject *args)
 			continue;
 		}
 
-		PyList_SetItem(pylist, ifcount, PyStr_FromString(ip));
+		PyList_SetItem(pylist, ifcount, PyUnicode_FromString(ip));
 		ifcount++;
 	}
 	talloc_free(tmp_ctx);
@@ -411,7 +411,7 @@ MODULE_INIT_FUNC(_glue)
 		return NULL;
 
 	PyModule_AddObject(m, "version",
-					   PyStr_FromString(SAMBA_VERSION_STRING));
+					   PyUnicode_FromString(SAMBA_VERSION_STRING));
 	PyExc_NTSTATUSError = PyErr_NewException(discard_const_p(char, "samba.NTSTATUSError"), PyExc_RuntimeError, NULL);
 	if (PyExc_NTSTATUSError != NULL) {
 		Py_INCREF(PyExc_NTSTATUSError);

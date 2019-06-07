@@ -45,7 +45,7 @@ static PyObject *py_get_name_by_authtype(PyObject *self, PyObject *args)
 	if (name == NULL)
 		Py_RETURN_NONE;
 
-	return PyStr_FromString(name);
+	return PyUnicode_FromString(name);
 }
 
 static struct gensec_settings *settings_from_object(TALLOC_CTX *mem_ctx, PyObject *object)

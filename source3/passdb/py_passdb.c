@@ -239,7 +239,7 @@ static PyObject *py_samu_get_username(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_username = PyStr_FromString(username);
+	py_username = PyUnicode_FromString(username);
 	talloc_free(frame);
 	return py_username;
 }
@@ -270,7 +270,7 @@ static PyObject *py_samu_get_domain(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_domain = PyStr_FromString(domain);
+	py_domain = PyUnicode_FromString(domain);
 	talloc_free(frame);
 	return py_domain;
 }
@@ -301,7 +301,7 @@ static PyObject *py_samu_get_nt_username(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_nt_username = PyStr_FromString(nt_username);
+	py_nt_username = PyUnicode_FromString(nt_username);
 	talloc_free(frame);
 	return py_nt_username;
 }
@@ -332,7 +332,7 @@ static PyObject *py_samu_get_full_name(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_full_name = PyStr_FromString(full_name);
+	py_full_name = PyUnicode_FromString(full_name);
 	talloc_free(frame);
 	return py_full_name;
 }
@@ -363,7 +363,7 @@ static PyObject *py_samu_get_home_dir(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_home_dir = PyStr_FromString(home_dir);
+	py_home_dir = PyUnicode_FromString(home_dir);
 	talloc_free(frame);
 	return py_home_dir;
 }
@@ -394,7 +394,7 @@ static PyObject *py_samu_get_dir_drive(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_dir_drive = PyStr_FromString(dir_drive);
+	py_dir_drive = PyUnicode_FromString(dir_drive);
 	talloc_free(frame);
 	return py_dir_drive;
 }
@@ -425,7 +425,7 @@ static PyObject *py_samu_get_logon_script(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_logon_script = PyStr_FromString(logon_script);
+	py_logon_script = PyUnicode_FromString(logon_script);
 	talloc_free(frame);
 	return py_logon_script;
 }
@@ -456,7 +456,7 @@ static PyObject *py_samu_get_profile_path(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_profile_path = PyStr_FromString(profile_path);
+	py_profile_path = PyUnicode_FromString(profile_path);
 	talloc_free(frame);
 	return py_profile_path;
 }
@@ -487,7 +487,7 @@ static PyObject *py_samu_get_acct_desc(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_acct_desc = PyStr_FromString(acct_desc);
+	py_acct_desc = PyUnicode_FromString(acct_desc);
 	talloc_free(frame);
 	return py_acct_desc;
 }
@@ -518,7 +518,7 @@ static PyObject *py_samu_get_workstations(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_workstations = PyStr_FromString(workstations);
+	py_workstations = PyUnicode_FromString(workstations);
 	talloc_free(frame);
 	return py_workstations;
 }
@@ -549,7 +549,7 @@ static PyObject *py_samu_get_comment(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_comment = PyStr_FromString(comment);
+	py_comment = PyUnicode_FromString(comment);
 	talloc_free(frame);
 	return py_comment;
 }
@@ -580,7 +580,7 @@ static PyObject *py_samu_get_munged_dial(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_munged_dial = PyStr_FromString(munged_dial);
+	py_munged_dial = PyUnicode_FromString(munged_dial);
 	talloc_free(frame);
 	return py_munged_dial;
 }
@@ -795,7 +795,7 @@ static PyObject *py_samu_get_plaintext_passwd(PyObject *obj, void *closure)
 		Py_RETURN_NONE;
 	}
 
-	py_plaintext_pw = PyStr_FromString(plaintext_pw);
+	py_plaintext_pw = PyUnicode_FromString(plaintext_pw);
 	talloc_free(frame);
 	return py_plaintext_pw;
 }
@@ -1346,7 +1346,7 @@ static PyObject *py_groupmap_get_nt_name(PyObject *obj, void *closure)
 		py_nt_name = Py_None;
 		Py_INCREF(py_nt_name);
 	} else {
-		py_nt_name = PyStr_FromString(group_map->nt_name);
+		py_nt_name = PyUnicode_FromString(group_map->nt_name);
 	}
 	talloc_free(frame);
 	return py_nt_name;
@@ -1376,7 +1376,7 @@ static PyObject *py_groupmap_get_comment(PyObject *obj, void *closure)
 		py_comment = Py_None;
 		Py_INCREF(py_comment);
 	} else {
-		py_comment = PyStr_FromString(group_map->comment);
+		py_comment = PyUnicode_FromString(group_map->comment);
 	}
 	talloc_free(frame);
 	return py_comment;
@@ -3823,7 +3823,7 @@ static PyObject *py_passdb_backends(PyObject *self, PyObject *unused)
 
 	while(entry) {
 		int res = 0;
-		PyObject *entry_name = PyStr_FromString(entry->name);
+		PyObject *entry_name = PyUnicode_FromString(entry->name);
 		if (entry_name) {
 			res = PyList_Append(py_blist, entry_name);
 		} else {

@@ -53,7 +53,7 @@ static PyObject *py_get_gpo_flags(PyObject *self, PyObject *args)
 	py_ret = PyList_New(0);
 	for (i = 0; ret[i]; i++) {
 		int res = 0;
-		PyObject *item = PyStr_FromString(ret[i]);
+		PyObject *item = PyUnicode_FromString(ret[i]);
 		if (item == NULL) {
 			talloc_free(mem_ctx);
 			Py_DECREF(py_ret);
@@ -102,7 +102,7 @@ static PyObject *py_get_gplink_options(PyObject *self, PyObject *args)
 	py_ret = PyList_New(0);
 	for (i = 0; ret[i]; i++) {
 		int res = 0;
-		PyObject *item = PyStr_FromString(ret[i]);
+		PyObject *item = PyUnicode_FromString(ret[i]);
 		if (item == NULL) {
 			talloc_free(mem_ctx);
 			Py_DECREF(py_ret);

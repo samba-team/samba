@@ -325,7 +325,7 @@ static PyObject *py_net_time(py_net_Object *self, PyObject *args, PyObject *kwar
 	tm = localtime(&r.generic.out.time);
 	strftime(timestr, sizeof(timestr)-1, "%c %Z",tm);
 	
-	ret = PyStr_FromString(timestr);
+	ret = PyUnicode_FromString(timestr);
 
 	talloc_free(mem_ctx);
 

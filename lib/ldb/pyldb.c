@@ -85,7 +85,6 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 static PyTypeObject PyLdbBytesType;
 
 #if PY_MAJOR_VERSION >= 3
-#define PyStr_FromString PyUnicode_FromString
 #define PyStr_FromStringAndSize PyUnicode_FromStringAndSize
 #define PyStr_FromFormat PyUnicode_FromFormat
 #define PyStr_FromFormatV PyUnicode_FromFormatV
@@ -105,7 +104,6 @@ static PyObject *PyLdbBytes_FromStringAndSize(const char *msg, int size)
 	return result;
 }
 #else
-#define PyStr_FromString PyString_FromString
 #define PyStr_FromStringAndSize PyString_FromStringAndSize
 #define PyStr_FromFormat PyString_FromFormat
 #define PyStr_FromFormatV PyString_FromFormatV
@@ -152,9 +150,9 @@ static PyObject *py_ldb_control_str(PyLdbControlObject *self)
 			PyErr_NoMemory();
 			return NULL;
 		}
-		return PyStr_FromString(control);
+		return PyUnicode_FromString(control);
 	} else {
-		return PyStr_FromString("ldb control");
+		return PyUnicode_FromString("ldb control");
 	}
 }
 
@@ -193,7 +191,7 @@ static PyObject *wrap_text(const char *type, PyObject *wrapped)
 static PyObject *py_ldb_control_get_oid(PyLdbControlObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	return PyStr_FromString(self->data->oid);
+	return PyUnicode_FromString(self->data->oid);
 }
 
 static PyObject *py_ldb_control_get_critical(PyLdbControlObject *self,
@@ -454,7 +452,7 @@ static PyObject *PyLdbResult_FromResult(struct ldb_result *result)
 	}
 
 	for (i = 0;result->refs && result->refs[i]; i++) {
-		PyList_SetItem(referals, i, PyStr_FromString(result->refs[i]));
+		PyList_SetItem(referals, i, PyUnicode_FromString(result->refs[i]));
 	}
 	ret->referals = referals;
 	return (PyObject *)ret;
@@ -517,24 +515,24 @@ static PyObject *py_ldb_dn_is_null(PyLdbDnObject *self,
 static PyObject *py_ldb_dn_get_casefold(PyLdbDnObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	return PyStr_FromString(ldb_dn_get_casefold(self->dn));
+	return PyUnicode_FromString(ldb_dn_get_casefold(self->dn));
 }
 
 static PyObject *py_ldb_dn_get_linearized(PyLdbDnObject *self)
 {
-	return PyStr_FromString(ldb_dn_get_linearized(self->dn));
+	return PyUnicode_FromString(ldb_dn_get_linearized(self->dn));
 }
 
 static PyObject *py_ldb_dn_canonical_str(PyLdbDnObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	return PyStr_FromString(ldb_dn_canonical_string(self->dn, self->dn));
+	return PyUnicode_FromString(ldb_dn_canonical_string(self->dn, self->dn));
 }
 
 static PyObject *py_ldb_dn_canonical_ex_str(PyLdbDnObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	return PyStr_FromString(ldb_dn_canonical_ex_string(self->dn, self->dn));
+	return PyUnicode_FromString(ldb_dn_canonical_ex_string(self->dn, self->dn));
 }
 
 static PyObject *py_ldb_dn_extended_str(PyLdbDnObject *self, PyObject *args, PyObject *kwargs)
@@ -545,7 +543,7 @@ static PyObject *py_ldb_dn_extended_str(PyLdbDnObject *self, PyObject *args, PyO
 					 discard_const_p(char *, kwnames),
 					 &mode))
 		return NULL;
-	return PyStr_FromString(ldb_dn_get_extended_linearized(self->dn, self->dn, mode));
+	return PyUnicode_FromString(ldb_dn_get_extended_linearized(self->dn, self->dn, mode));
 }
 
 static PyObject *py_ldb_dn_get_extended_component(PyLdbDnObject *self, PyObject *args)
@@ -592,7 +590,7 @@ static PyObject *py_ldb_dn_set_extended_component(PyLdbDnObject *self, PyObject 
 
 static PyObject *py_ldb_dn_repr(PyLdbDnObject *self)
 {
-	PyObject *str = PyStr_FromString(ldb_dn_get_linearized(self->dn));
+	PyObject *str = PyUnicode_FromString(ldb_dn_get_linearized(self->dn));
 	PyObject *repr, *result;
 	if (str == NULL)
 		return NULL;
@@ -726,7 +724,7 @@ static PyObject *py_ldb_dn_get_component_name(PyLdbDnObject *self, PyObject *arg
 		Py_RETURN_NONE;
 	}
 
-	return PyStr_FromString(name);
+	return PyUnicode_FromString(name);
 }
 
 static PyObject *py_ldb_dn_get_component_value(PyLdbDnObject *self, PyObject *args)
@@ -784,7 +782,7 @@ static PyObject *py_ldb_dn_get_rdn_name(PyLdbDnObject *self,
 		Py_RETURN_NONE;
 	}
 
-	return PyStr_FromString(name);
+	return PyUnicode_FromString(name);
 }
 
 static PyObject *py_ldb_dn_get_rdn_value(PyLdbDnObject *self,
@@ -1096,7 +1094,7 @@ static PyObject *py_ldb_setup_wellknown_attributes(PyLdbObject *self,
 
 static PyObject *py_ldb_repr(PyLdbObject *self)
 {
-	return PyStr_FromString("<ldb connection>");
+	return PyUnicode_FromString("<ldb connection>");
 }
 
 static PyObject *py_ldb_get_root_basedn(PyLdbObject *self,
@@ -1738,7 +1736,7 @@ static PyObject *py_ldb_write_ldif(PyLdbObject *self, PyObject *args)
 		return NULL;
 	}
 
-	ret = PyStr_FromString(string);
+	ret = PyUnicode_FromString(string);
 
 	talloc_free(mem_ctx);
 
@@ -2066,7 +2064,7 @@ static int py_ldb_search_iterator_callback(struct ldb_request *req,
 		return LDB_SUCCESS;
 
 	case LDB_REPLY_REFERRAL:
-		reply->obj = PyStr_FromString(ares->referral);
+		reply->obj = PyUnicode_FromString(ares->referral);
 		if (reply->obj == NULL) {
 			TALLOC_FREE(ares);
 			return ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
@@ -2606,7 +2604,7 @@ static PySequenceMethods py_ldb_result_seq = {
 
 static PyObject *py_ldb_result_repr(PyLdbObject *self)
 {
-	return PyStr_FromString("<ldb result>");
+	return PyUnicode_FromString("<ldb result>");
 }
 
 
@@ -2751,7 +2749,7 @@ static PyMethodDef py_ldb_search_iterator_methods[] = {
 
 static PyObject *py_ldb_search_iterator_repr(PyLdbSearchIteratorObject *self)
 {
-	return PyStr_FromString("<ldb search iterator>");
+	return PyUnicode_FromString("<ldb search iterator>");
 }
 
 static PyTypeObject PyLdbSearchIterator = {
@@ -2774,7 +2772,7 @@ static PyObject *py_ldb_module_repr(PyLdbModuleObject *self)
 
 static PyObject *py_ldb_module_str(PyLdbModuleObject *self)
 {
-	return PyStr_FromString(pyldb_Module_AsModule(self)->ops->name);
+	return PyUnicode_FromString(pyldb_Module_AsModule(self)->ops->name);
 }
 
 static PyObject *py_ldb_module_start_transaction(PyLdbModuleObject *self,
@@ -3313,7 +3311,7 @@ static PyObject *py_ldb_msg_element_repr(PyLdbMessageElementObject *self)
 		ret = PyStr_FromFormat("MessageElement([%s])", element_str);
 		talloc_free(element_str);
 	} else {
-		ret = PyStr_FromString("MessageElement([])");
+		ret = PyUnicode_FromString("MessageElement([])");
 	}
 
 	return ret;
@@ -3426,11 +3424,11 @@ static PyObject *py_ldb_msg_keys(PyLdbMessageObject *self,
 	Py_ssize_t i, j = 0;
 	PyObject *obj = PyList_New(msg->num_elements+(msg->dn != NULL?1:0));
 	if (msg->dn != NULL) {
-		PyList_SetItem(obj, j, PyStr_FromString("dn"));
+		PyList_SetItem(obj, j, PyUnicode_FromString("dn"));
 		j++;
 	}
 	for (i = 0; i < msg->num_elements; i++) {
-		PyList_SetItem(obj, j, PyStr_FromString(msg->elements[i].name));
+		PyList_SetItem(obj, j, PyUnicode_FromString(msg->elements[i].name));
 		j++;
 	}
 	return obj;
@@ -3908,7 +3906,7 @@ static int py_module_search(struct ldb_module *mod, struct ldb_request *req)
 		for (len = 0; req->op.search.attrs[len]; len++);
 		py_attrs = PyList_New(len);
 		for (i = 0; i < len; i++)
-			PyList_SetItem(py_attrs, i, PyStr_FromString(req->op.search.attrs[i]));
+			PyList_SetItem(py_attrs, i, PyUnicode_FromString(req->op.search.attrs[i]));
 	}
 
 	py_result = PyObject_CallMethod(py_ldb, discard_const_p(char, "search"),
@@ -4205,7 +4203,7 @@ static PyObject *py_timestring(PyObject *module, PyObject *args)
 	if (!PyArg_ParseTuple(args, "l", &t_val))
 		return NULL;
 	tresult = ldb_timestring(NULL, (time_t) t_val);
-	ret = PyStr_FromString(tresult);
+	ret = PyUnicode_FromString(tresult);
 	talloc_free(tresult);
 	return ret;
 }
@@ -4247,7 +4245,7 @@ static PyObject *py_binary_encode(PyObject *self, PyObject *args)
 		PyErr_SetString(PyExc_TypeError, "unable to encode binary string");
 		return NULL;
 	}
-	ret = PyStr_FromString(encoded);
+	ret = PyUnicode_FromString(encoded);
 	talloc_free(encoded);
 	return ret;
 }
