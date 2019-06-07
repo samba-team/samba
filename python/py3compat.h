@@ -54,7 +54,6 @@
 
 /* Strings */
 
-#define PyStr_Type PyUnicode_Type
 #define PyStr_Check PyUnicode_Check
 #define PyStr_FromString PyUnicode_FromString
 #define PyStr_FromStringAndSize PyUnicode_FromStringAndSize
