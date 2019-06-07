@@ -85,7 +85,6 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 static PyTypeObject PyLdbBytesType;
 
 #if PY_MAJOR_VERSION >= 3
-#define PyStr_AsUTF8AndSize PyUnicode_AsUTF8AndSize
 #define PyInt_FromLong PyLong_FromLong
 
 #define PYARG_STR_UNI "es"
@@ -104,16 +103,6 @@ static PyObject *PyLdbBytes_FromStringAndSize(const char *msg, int size)
 
 #define PYARG_STR_UNI "et"
 
-const char *PyStr_AsUTF8AndSize(PyObject *pystr, Py_ssize_t *sizeptr);
-const char *
-PyStr_AsUTF8AndSize(PyObject *pystr, Py_ssize_t *sizeptr)
-{
-	const char * ret = PyString_AsString(pystr);
-	if (ret == NULL)
-		return NULL;
-	*sizeptr = PyString_Size(pystr);
-	return ret;
-}
 #endif
 
 static PyObject *richcmp(int cmp_val, int op)
@@ -1150,7 +1139,7 @@ static const char **PyList_AsStrList(TALLOC_CTX *mem_ctx, PyObject *list,
 			talloc_free(ret);
 			return NULL;
 		}
-		str = PyStr_AsUTF8AndSize(item, &size);
+		str = PyUnicode_AsUTF8AndSize(item, &size);
 		if (str == NULL) {
 			talloc_free(ret);
 			return NULL;
@@ -3007,7 +2996,7 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 			}
 			msg = _msg;
 		} else {
-			msg = PyStr_AsUTF8AndSize(set_obj, &size);
+			msg = PyUnicode_AsUTF8AndSize(set_obj, &size);
 			if (msg == NULL) {
 				talloc_free(me);
 				return NULL;
@@ -3032,7 +3021,7 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 				}
 				msg = _msg;
 			} else if (PyUnicode_Check(obj)) {
-				msg = PyStr_AsUTF8AndSize(obj, &size);
+				msg = PyUnicode_AsUTF8AndSize(obj, &size);
 				if (msg == NULL) {
 					talloc_free(me);
 					return NULL;
@@ -3216,7 +3205,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 				result = PyBytes_AsStringAndSize(py_elements, &_msg, &size);
 				msg = _msg;
 			} else {
-				msg = PyStr_AsUTF8AndSize(py_elements, &size);
+				msg = PyUnicode_AsUTF8AndSize(py_elements, &size);
 				result = (msg == NULL) ? -1 : 0;
 			}
 			if (result != 0) {
@@ -3245,7 +3234,7 @@ static PyObject *py_ldb_msg_element_new(PyTypeObject *type, PyObject *args, PyOb
 					result = PyBytes_AsStringAndSize(item, &_msg, &size);
 					msg = _msg;
 				} else if (PyUnicode_Check(item)) {
-					msg = PyStr_AsUTF8AndSize(item, &size);
+					msg = PyUnicode_AsUTF8AndSize(item, &size);
 					result = (msg == NULL) ? -1 : 0;
 				} else {
 					PyErr_Format(PyExc_TypeError, 

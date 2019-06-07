@@ -305,7 +305,7 @@ static const char **PyList_AsStringList(TALLOC_CTX *mem_ctx, PyObject *list,
 			PyErr_Format(PyExc_TypeError, "%s should be strings", paramname);
 			return NULL;
 		}
-		value = PyStr_AsUTF8AndSize(item, &size);
+		value = PyUnicode_AsUTF8AndSize(item, &size);
 		if (value == NULL) {
 			talloc_free(ret);
 			return NULL;
