@@ -3412,7 +3412,7 @@ static int re_index(struct ldb_kv_private *ldb_kv,
 }
 
 static int re_pack(struct ldb_kv_private *ldb_kv,
-		   struct ldb_val key,
+		   _UNUSED_ struct ldb_val key,
 		   struct ldb_val val,
 		   void *state)
 {
