@@ -117,7 +117,7 @@ NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
 					      signing_key->blob.data,
 					      MIN(signing_key->blob.length, 16));
 			if (rc < 0) {
-				return NT_STATUS_NO_MEMORY;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 			}
 		}
 
@@ -126,7 +126,7 @@ NTSTATUS smb2_signing_sign_pdu(struct smb2_signing_key *signing_key,
 					 vector[i].iov_base,
 					 vector[i].iov_len);
 			if (rc < 0) {
-				return NT_STATUS_NO_MEMORY;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 			}
 		}
 		gnutls_hmac_output(signing_key->hmac_hnd, digest);
