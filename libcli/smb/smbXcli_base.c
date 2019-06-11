@@ -3282,8 +3282,7 @@ skip_credits:
 			 * If it is a channel binding, we already have the main
 			 * signing key and try that one.
 			 */
-			if (signing_key != NULL &&
-			    !smb2_signing_key_valid(signing_key)) {
+			if (!smb2_signing_key_valid(signing_key)) {
 				signing_key = state->session->smb2->signing_key;
 			}
 
@@ -3291,8 +3290,7 @@ skip_credits:
 			 * If we do not have any session key yet, we skip the
 			 * signing of SMB2_OP_SESSSETUP requests.
 			 */
-			if (signing_key != NULL &&
-			    !smb2_signing_key_valid(signing_key)) {
+			if (!smb2_signing_key_valid(signing_key)) {
 				signing_key = NULL;
 			}
 		}
@@ -3791,14 +3789,12 @@ static NTSTATUS smb2cli_conn_dispatch_incoming(struct smbXcli_conn *conn,
 			 * we try the main signing key, if it is not
 			 * the final response.
 			 */
-			if (signing_key != NULL &&
-			    !smb2_signing_key_valid(signing_key) &&
+			if (!smb2_signing_key_valid(signing_key) &&
 			    !NT_STATUS_IS_OK(status)) {
 				signing_key = session->smb2->signing_key;
 			}
 
-			if (signing_key != NULL &&
-			    !smb2_signing_key_valid(signing_key)) {
+			if (!smb2_signing_key_valid(signing_key)) {
 				/*
 				 * If we do not have a session key to
 				 * verify the signature, we defer the
