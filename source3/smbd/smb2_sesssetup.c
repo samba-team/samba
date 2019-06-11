@@ -32,6 +32,7 @@
 #include "lib/crypto/aes_ccm_128.h"
 #include "lib/crypto/aes_gcm_128.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -229,7 +230,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 
 		rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_SHA512);
 		if (rc < 0) {
-			return NT_STATUS_NO_MEMORY;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		}
 		rc = gnutls_hash(hash_hnd,
 				 preauth->sha512_value,
@@ -682,7 +683,7 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 
 		rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_SHA512);
 		if (rc < 0) {
-			return NT_STATUS_NO_MEMORY;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		}
 
 		rc = gnutls_hash(hash_hnd,
@@ -690,7 +691,7 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 				 sizeof(preauth->sha512_value));
 		if (rc < 0) {
 			gnutls_hash_deinit(hash_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		}
 		for (i = 1; i < smb2req->in.vector_count; i++) {
 			rc = gnutls_hash(hash_hnd,
@@ -698,7 +699,7 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 					 smb2req->in.vector[i].iov_len);
 			if (rc < 0) {
 				gnutls_hash_deinit(hash_hnd, NULL);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 			}
 		}
 		gnutls_hash_deinit(hash_hnd, preauth->sha512_value);
