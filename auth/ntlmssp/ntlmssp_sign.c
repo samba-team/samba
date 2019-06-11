@@ -24,6 +24,7 @@
 #include "zlib.h"
 #include "../auth/ntlmssp/ntlmssp_private.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -60,20 +61,17 @@ static NTSTATUS calc_ntlmv2_key(uint8_t subkey[16],
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
-		if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-			return NT_STATUS_NTLM_BLOCKED;
-		}
-		return NT_STATUS_NO_MEMORY;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 	}
 	rc = gnutls_hash(hash_hnd, session_key.data, session_key.length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return NT_STATUS_NO_MEMORY;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 	}
 	rc = gnutls_hash(hash_hnd, constant, strlen(constant) + 1);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 	}
 	gnutls_hash_deinit(hash_hnd, subkey);
 
@@ -120,10 +118,7 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 					      ntlmssp_state->crypt->ntlm2.sending.sign_key,
 					      16);
 			if (rc < 0) {
-				if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-					return NT_STATUS_NTLM_BLOCKED;
-				}
-				return NT_STATUS_NO_MEMORY;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 			}
 			break;
 		case NTLMSSP_RECEIVE:
@@ -141,10 +136,7 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 					      ntlmssp_state->crypt->ntlm2.receiving.sign_key,
 					      16);
 			if (rc < 0) {
-				if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-					return NT_STATUS_NTLM_BLOCKED;
-				}
-				return NT_STATUS_NO_MEMORY;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 			}
 			break;
 		}
@@ -154,12 +146,12 @@ static NTSTATUS ntlmssp_make_packet_signature(struct ntlmssp_state *ntlmssp_stat
 		rc = gnutls_hmac(hmac_hnd, seq_num, sizeof(seq_num));
 		if (rc < 0) {
 			gnutls_hmac_deinit(hmac_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		}
 		rc = gnutls_hmac(hmac_hnd, whole_pdu, pdu_length);
 		if (rc < 0) {
 			gnutls_hmac_deinit(hmac_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		}
 		gnutls_hmac_deinit(hmac_hnd, digest);
 
