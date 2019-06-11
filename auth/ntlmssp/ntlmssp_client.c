@@ -35,6 +35,7 @@ struct auth_session_info;
 #include "../auth/ntlmssp/ntlmssp_ndr.h"
 #include "../nsswitch/libwbclient/wbclient.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -749,10 +750,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			 session_key.data,
 			 MIN(session_key.length, 64));
 	if (rc < 0) {
-		nt_status = NT_STATUS_NO_MEMORY;
-		if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-			nt_status = NT_STATUS_NTLM_BLOCKED;
-		}
+		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		goto done;
 	}
 
@@ -761,19 +759,19 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			 ntlmssp_state->negotiate_blob.length);
 	if (rc < 0) {
 		gnutls_hmac_deinit(hmac_hnd, NULL);
-		nt_status = NT_STATUS_INTERNAL_ERROR;
+		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		goto done;
 	}
 	rc = gnutls_hmac(hmac_hnd, in.data, in.length);
 	if (rc < 0) {
 		gnutls_hmac_deinit(hmac_hnd, NULL);
-		nt_status = NT_STATUS_INTERNAL_ERROR;
+		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		goto done;
 	}
 	rc = gnutls_hmac(hmac_hnd, out->data, out->length);
 	if (rc < 0) {
 		gnutls_hmac_deinit(hmac_hnd, NULL);
-		nt_status = NT_STATUS_INTERNAL_ERROR;
+		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		goto done;
 	}
 
