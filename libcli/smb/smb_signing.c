@@ -23,6 +23,7 @@
 #include "smb_common.h"
 #include "smb_signing.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -171,34 +172,31 @@ static NTSTATUS smb_signing_md5(const DATA_BLOB *mac_key,
 	 */
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
-		if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-			return NT_STATUS_HASH_NOT_SUPPORTED;
-		}
-		return NT_STATUS_NO_MEMORY;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 	/* Initialise with the key. */
 	rc = gnutls_hash(hash_hnd, mac_key->data, mac_key->length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 	/* Copy in the first bit of the SMB header. */
 	rc = gnutls_hash(hash_hnd, hdr, HDR_SS_FIELD);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 	/* Copy in the sequence number, instead of the signature. */
 	rc = gnutls_hash(hash_hnd, sequence_buf, sizeof(sequence_buf));
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 	/* Copy in the rest of the packet in, skipping the signature. */
 	rc = gnutls_hash(hash_hnd, hdr + offset_end_of_sig, len - offset_end_of_sig);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 
 	gnutls_hash_deinit(hash_hnd, calc_md5_mac);
@@ -554,10 +552,7 @@ NTSTATUS smb_key_derivation(const uint8_t *KI,
 			      sizeof(SSKeyHash),
 			      KO);
 	if (rc < 0) {
-		if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-			return NT_STATUS_HASH_NOT_SUPPORTED;
-		}
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 
 	return NT_STATUS_OK;
