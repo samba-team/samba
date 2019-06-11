@@ -32,6 +32,7 @@
 #include "auth.h"
 #include "libcli/smb/smbXcli_base.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -3022,14 +3023,14 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 
 		rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_SHA512);
 		if (rc < 0) {
-			return NT_STATUS_NO_MEMORY;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		}
 		rc = gnutls_hash(hash_hnd,
 			    req->preauth->sha512_value,
 			    sizeof(req->preauth->sha512_value));
 		if (rc < 0) {
 			gnutls_hash_deinit(hash_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		}
 		for (i = 1; i < req->in.vector_count; i++) {
 			rc = gnutls_hash(hash_hnd,
@@ -3037,12 +3038,12 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 					 req->in.vector[i].iov_len);
 			if (rc < 0) {
 				gnutls_hash_deinit(hash_hnd, NULL);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 			}
 		}
 		if (rc < 0) {
 			gnutls_hash_deinit(hash_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		}
 		gnutls_hash_output(hash_hnd, req->preauth->sha512_value);
 
@@ -3051,7 +3052,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 				 sizeof(req->preauth->sha512_value));
 		if (rc < 0) {
 			gnutls_hash_deinit(hash_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		}
 		for (i = 1; i < req->out.vector_count; i++) {
 			rc = gnutls_hash(hash_hnd,
@@ -3059,7 +3060,7 @@ static NTSTATUS smbd_smb2_request_reply(struct smbd_smb2_request *req)
 					 req->out.vector[i].iov_len);
 			if (rc < 0) {
 				gnutls_hash_deinit(hash_hnd, NULL);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 			}
 		}
 
