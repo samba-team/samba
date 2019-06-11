@@ -7277,6 +7277,8 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 	uint64_t smblctx;
 	bool blocking_lock = False;
 	enum brl_type lock_type;
+	uint64_t block_smblctx;
+	struct byte_range_lock *br_lck;
 
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -7339,43 +7341,42 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 				count,
 				offset,
 				POSIX_LOCK);
-	} else {
-		uint64_t block_smblctx;
-
-		struct byte_range_lock *br_lck = do_lock(req->sconn->msg_ctx,
-							fsp,
-							smblctx,
-							count,
-							offset,
-							lock_type,
-							POSIX_LOCK,
-							blocking_lock,
-							&status,
-							&block_smblctx);
-
-		if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
-			/*
-			 * A blocking lock was requested. Package up
-			 * this smb into a queued request and push it
-			 * onto the blocking lock queue.
-			 */
-			if(push_blocking_lock_request(br_lck,
-						req,
-						fsp,
-						-1, /* infinite timeout. */
-						0,
-						smblctx,
-						lock_type,
-						POSIX_LOCK,
-						offset,
-						count,
-						block_smblctx)) {
-				TALLOC_FREE(br_lck);
-				return status;
-			}
-		}
-		TALLOC_FREE(br_lck);
+		return status;
 	}
+
+	br_lck = do_lock(req->sconn->msg_ctx,
+			 fsp,
+			 smblctx,
+			 count,
+			 offset,
+			 lock_type,
+			 POSIX_LOCK,
+			 blocking_lock,
+			 &status,
+			 &block_smblctx);
+
+	if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
+		/*
+		 * A blocking lock was requested. Package up this smb
+		 * into a queued request and push it onto the blocking
+		 * lock queue.
+		 */
+		if(push_blocking_lock_request(br_lck,
+					      req,
+					      fsp,
+					      -1, /* infinite timeout. */
+					      0,
+					      smblctx,
+					      lock_type,
+					      POSIX_LOCK,
+					      offset,
+					      count,
+					      block_smblctx)) {
+			TALLOC_FREE(br_lck);
+			return status;
+		}
+	}
+	TALLOC_FREE(br_lck);
 
 	return status;
 }
