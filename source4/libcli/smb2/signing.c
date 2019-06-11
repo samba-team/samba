@@ -26,6 +26,7 @@
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
+#include "libcli/util/gnutls_error.h"
 
 /*
   sign an outgoing message
@@ -68,7 +69,7 @@ NTSTATUS smb2_sign_message(struct smb2_request_buffer *buf, DATA_BLOB session_ke
 			      buf->size - hdr_offset,
 			      digest);
 	if (rc < 0) {
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 
 	DEBUG(5,("signed SMB2 message of size %u\n", (unsigned)buf->size - NBT_HDR_SIZE));
@@ -119,7 +120,7 @@ NTSTATUS smb2_check_signature(struct smb2_request_buffer *buf, DATA_BLOB session
 			      buf->size - hdr_offset,
 			      digest);
 	if (rc < 0) {
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 
 	memcpy(buf->hdr + SMB2_HDR_SIGNATURE, digest, 16);
