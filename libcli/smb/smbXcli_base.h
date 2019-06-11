@@ -466,7 +466,7 @@ NTSTATUS smb2cli_validate_negotiate_info_recv(struct tevent_req *req);
 
 struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 					       struct smbXcli_conn *conn);
-struct smbXcli_session *smbXcli_session_copy(TALLOC_CTX *mem_ctx,
+struct smbXcli_session *smbXcli_session_shallow_copy(TALLOC_CTX *mem_ctx,
 					       struct smbXcli_session *src);
 bool smbXcli_session_is_guest(struct smbXcli_session *session);
 bool smbXcli_session_is_authenticated(struct smbXcli_session *session);

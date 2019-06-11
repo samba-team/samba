@@ -5558,7 +5558,7 @@ struct smbXcli_session *smbXcli_session_create(TALLOC_CTX *mem_ctx,
 	return session;
 }
 
-struct smbXcli_session *smbXcli_session_copy(TALLOC_CTX *mem_ctx,
+struct smbXcli_session *smbXcli_session_shallow_copy(TALLOC_CTX *mem_ctx,
 						struct smbXcli_session *src)
 {
 	struct smbXcli_session *session;
@@ -5573,6 +5573,11 @@ struct smbXcli_session *smbXcli_session_copy(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	/*
+	 * Note we keep a pointer to the session keys of the
+	 * main session and rely on the caller to free the
+	 * shallow copy first!
+	 */
 	session->conn = src->conn;
 	*session->smb2 = *src->smb2;
 	session->smb2_channel = src->smb2_channel;
