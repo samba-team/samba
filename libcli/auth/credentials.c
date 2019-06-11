@@ -26,6 +26,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "../libcli/security/dom_sid.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -88,26 +89,23 @@ static NTSTATUS netlogon_creds_init_128bit(struct netlogon_creds_CredentialState
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
-		if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-			return NT_STATUS_HASH_NOT_SUPPORTED;
-		}
-		return NT_STATUS_NO_MEMORY;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 
 	rc = gnutls_hash(hash_hnd, zero, sizeof(zero));
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 	rc = gnutls_hash(hash_hnd, client_challenge->data, 8);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 	rc = gnutls_hash(hash_hnd, server_challenge->data, 8);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 
 	gnutls_hash_deinit(hash_hnd, tmp);
@@ -122,7 +120,7 @@ static NTSTATUS netlogon_creds_init_128bit(struct netlogon_creds_CredentialState
 	ZERO_ARRAY(tmp);
 
 	if (rc < 0) {
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 
 	return NT_STATUS_OK;
@@ -149,21 +147,21 @@ static NTSTATUS netlogon_creds_init_hmac_sha256(struct netlogon_creds_Credential
 			      machine_password->hash,
 			      sizeof(machine_password->hash));
 	if (rc < 0) {
-		return NT_STATUS_NO_MEMORY;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 	rc = gnutls_hmac(hmac_hnd,
 			 client_challenge->data,
 			 8);
 	if (rc < 0) {
 		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 	rc  = gnutls_hmac(hmac_hnd,
 			  server_challenge->data,
 			  8);
 	if (rc < 0) {
 		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 	gnutls_hmac_deinit(hmac_hnd, digest);
 
