@@ -45,10 +45,10 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 				const struct iovec *vector,
 				int count);
 
-void smb2_key_derivation(const uint8_t *KI, size_t KI_len,
-			 const uint8_t *Label, size_t Label_len,
-			 const uint8_t *Context, size_t Context_len,
-			 uint8_t KO[16]);
+NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
+			     const uint8_t *Label, size_t Label_len,
+			     const uint8_t *Context, size_t Context_len,
+			     uint8_t KO[16]);
 
 NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
 				  uint16_t cipher_id,

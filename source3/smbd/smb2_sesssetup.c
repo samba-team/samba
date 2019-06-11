@@ -360,10 +360,13 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.signing;
 
-		smb2_key_derivation(session_key, sizeof(session_key),
-				    d->label.data, d->label.length,
-				    d->context.data, d->context.length,
-				    x->global->signing_key->blob.data);
+		status = smb2_key_derivation(session_key, sizeof(session_key),
+					     d->label.data, d->label.length,
+					     d->context.data, d->context.length,
+					     x->global->signing_key->blob.data);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
@@ -377,10 +380,13 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		smb2_key_derivation(session_key, sizeof(session_key),
-				    d->label.data, d->label.length,
-				    d->context.data, d->context.length,
-				    x->global->decryption_key_blob.data);
+		status = smb2_key_derivation(session_key, sizeof(session_key),
+					     d->label.data, d->label.length,
+					     d->context.data, d->context.length,
+					     x->global->decryption_key_blob.data);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
@@ -395,10 +401,13 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		smb2_key_derivation(session_key, sizeof(session_key),
-				    d->label.data, d->label.length,
-				    d->context.data, d->context.length,
-				    x->global->encryption_key_blob.data);
+		status = smb2_key_derivation(session_key, sizeof(session_key),
+					     d->label.data, d->label.length,
+					     d->context.data, d->context.length,
+					     x->global->encryption_key_blob.data);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 
 		/*
 		 * CCM and GCM algorithms must never have their
@@ -438,10 +447,13 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.application;
 
-		smb2_key_derivation(session_key, sizeof(session_key),
-				    d->label.data, d->label.length,
-				    d->context.data, d->context.length,
-				    x->global->application_key.data);
+		status = smb2_key_derivation(session_key, sizeof(session_key),
+					     d->label.data, d->label.length,
+					     d->context.data, d->context.length,
+					     x->global->application_key.data);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	if (xconn->protocol >= PROTOCOL_SMB3_00 && lp_debug_encryption()) {
@@ -748,10 +760,13 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 	if (xconn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.signing;
 
-		smb2_key_derivation(session_key, sizeof(session_key),
-				    d->label.data, d->label.length,
-				    d->context.data, d->context.length,
-				    c->signing_key->blob.data);
+		status = smb2_key_derivation(session_key, sizeof(session_key),
+					     d->label.data, d->label.length,
+					     d->context.data, d->context.length,
+					     c->signing_key->blob.data);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 	ZERO_STRUCT(session_key);
 

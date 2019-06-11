@@ -6096,10 +6096,13 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.signing;
 
-		smb2_key_derivation(session_key, sizeof(session_key),
-				    d->label.data, d->label.length,
-				    d->context.data, d->context.length,
-				    session->smb2->signing_key->blob.data);
+		status = smb2_key_derivation(session_key, sizeof(session_key),
+					     d->label.data, d->label.length,
+					     d->context.data, d->context.length,
+					     session->smb2->signing_key->blob.data);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	session->smb2->encryption_key =
@@ -6113,10 +6116,13 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.encryption;
 
-		smb2_key_derivation(session_key, sizeof(session_key),
-				    d->label.data, d->label.length,
-				    d->context.data, d->context.length,
-				    session->smb2->encryption_key.data);
+		status = smb2_key_derivation(session_key, sizeof(session_key),
+					     d->label.data, d->label.length,
+					     d->context.data, d->context.length,
+					     session->smb2->encryption_key.data);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	session->smb2->decryption_key =
@@ -6130,10 +6136,13 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.decryption;
 
-		smb2_key_derivation(session_key, sizeof(session_key),
-				    d->label.data, d->label.length,
-				    d->context.data, d->context.length,
-				    session->smb2->decryption_key.data);
+		status = smb2_key_derivation(session_key, sizeof(session_key),
+					     d->label.data, d->label.length,
+					     d->context.data, d->context.length,
+					     session->smb2->decryption_key.data);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	session->smb2->application_key =
@@ -6147,10 +6156,13 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.application;
 
-		smb2_key_derivation(session_key, sizeof(session_key),
-				    d->label.data, d->label.length,
-				    d->context.data, d->context.length,
-				    session->smb2->application_key.data);
+		status = smb2_key_derivation(session_key, sizeof(session_key),
+					     d->label.data, d->label.length,
+					     d->context.data, d->context.length,
+					     session->smb2->application_key.data);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 	ZERO_STRUCT(session_key);
 
@@ -6348,10 +6360,13 @@ NTSTATUS smb2cli_session_set_channel_key(struct smbXcli_session *session,
 	if (conn->protocol >= PROTOCOL_SMB2_24) {
 		struct _derivation *d = &derivation.signing;
 
-		smb2_key_derivation(channel_key, sizeof(channel_key),
-				    d->label.data, d->label.length,
-				    d->context.data, d->context.length,
-				    session->smb2_channel.signing_key->blob.data);
+		status = smb2_key_derivation(channel_key, sizeof(channel_key),
+					     d->label.data, d->label.length,
+					     d->context.data, d->context.length,
+					     session->smb2_channel.signing_key->blob.data);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 	ZERO_STRUCT(channel_key);
 

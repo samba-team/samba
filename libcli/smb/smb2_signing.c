@@ -24,6 +24,7 @@
 #include "../lib/crypto/crypto.h"
 #include "lib/util/iov_buf.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -241,10 +242,10 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 	return NT_STATUS_OK;
 }
 
-void smb2_key_derivation(const uint8_t *KI, size_t KI_len,
-			 const uint8_t *Label, size_t Label_len,
-			 const uint8_t *Context, size_t Context_len,
-			 uint8_t KO[16])
+NTSTATUS smb2_key_derivation(const uint8_t *KI, size_t KI_len,
+			     const uint8_t *Label, size_t Label_len,
+			     const uint8_t *Context, size_t Context_len,
+			     uint8_t KO[16])
 {
 	gnutls_hmac_hd_t hmac_hnd = NULL;
 	uint8_t buf[4];
@@ -263,36 +264,41 @@ void smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 			      GNUTLS_MAC_SHA256,
 			      KI,
 			      KI_len);
-	if (rc != 0) {
-		return;
+	if (rc < 0) {
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 
 	RSIVAL(buf, 0, i);
 	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
 	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return;
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 	rc = gnutls_hmac(hmac_hnd, Label, Label_len);
 	if (rc < 0) {
 		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return;
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 	rc = gnutls_hmac(hmac_hnd, &zero, 1);
 	if (rc < 0) {
 		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return;
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 	rc = gnutls_hmac(hmac_hnd, Context, Context_len);
 	if (rc < 0) {
 		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return;
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 	RSIVAL(buf, 0, L);
 	rc = gnutls_hmac(hmac_hnd, buf, sizeof(buf));
 	if (rc < 0) {
 		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return;
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 
 	gnutls_hmac_deinit(hmac_hnd, digest);
@@ -300,6 +306,8 @@ void smb2_key_derivation(const uint8_t *KI, size_t KI_len,
 	memcpy(KO, digest, 16);
 
 	ZERO_ARRAY(digest);
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS smb2_signing_encrypt_pdu(DATA_BLOB encryption_key,
