@@ -5562,6 +5562,8 @@ struct smbXcli_session *smbXcli_session_shallow_copy(TALLOC_CTX *mem_ctx,
 						struct smbXcli_session *src)
 {
 	struct smbXcli_session *session;
+	struct timespec ts;
+	NTTIME nt;
 
 	session = talloc_zero(mem_ctx, struct smbXcli_session);
 	if (session == NULL) {
@@ -5582,6 +5584,23 @@ struct smbXcli_session *smbXcli_session_shallow_copy(TALLOC_CTX *mem_ctx,
 	*session->smb2 = *src->smb2;
 	session->smb2_channel = src->smb2_channel;
 	session->disconnect_expired = src->disconnect_expired;
+
+	/*
+	 * This is only supposed to be called in test code
+	 * but we should not reuse nonces!
+	 *
+	 * Add the current timestamp as NTTIME to nonce_high
+	 * and set nonce_low to a value we can recognize in captures.
+	 */
+	clock_gettime_mono(&ts);
+	nt = unix_timespec_to_nt_time(ts);
+	nt &= session->smb2->nonce_high_max;
+	if (nt == session->smb2->nonce_high_max || nt < UINT8_MAX) {
+		talloc_free(session);
+		return NULL;
+	}
+	session->smb2->nonce_high += nt;
+	session->smb2->nonce_low = UINT32_MAX;
 
 	DLIST_ADD_END(src->conn->sessions, session);
 	talloc_set_destructor(session, smbXcli_session_destructor);
