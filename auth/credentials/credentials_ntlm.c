@@ -28,6 +28,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_internal.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -175,10 +176,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 				      sizeof(session_nonce),
 				      session_nonce_hash);
 		if (rc < 0) {
-			if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-				return NT_STATUS_NTLM_BLOCKED;
-			}
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		}
 
 		DEBUG(5, ("NTLMSSP challenge set by NTLM2\n"));
@@ -211,10 +209,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 				      sizeof(session_nonce),
 				      session_key.data);
 		if (rc < 0) {
-			if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-				return NT_STATUS_NTLM_BLOCKED;
-			}
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		}
 
 		ZERO_ARRAY(user_session_key);
