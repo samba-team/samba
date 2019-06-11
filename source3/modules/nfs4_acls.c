@@ -648,7 +648,7 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 
 
 static bool smbacl4_fill_ace4(
-	const struct smb_filename *filename,
+	bool is_directory,
 	const struct smbacl4_vfs_params *params,
 	uid_t ownerUID,
 	gid_t ownerGID,
@@ -670,8 +670,7 @@ static bool smbacl4_fill_ace4(
 		ace_nt->flags);
 
 	/* remove inheritance flags on files */
-	if (VALID_STAT(filename->st) &&
-	    !S_ISDIR(filename->st.st_ex_mode)) {
+	if (!is_directory) {
 		DEBUG(10, ("Removing inheritance flags from a file\n"));
 		ace_v4->aceFlags &= ~(SMB_ACE4_FILE_INHERIT_ACE|
 				      SMB_ACE4_DIRECTORY_INHERIT_ACE|
@@ -732,9 +731,8 @@ static bool smbacl4_fill_ace4(
 						  &global_sid_Unix_NFS) == 0) {
 			return false;
 		} else {
-			DEBUG(1, ("nfs4_acls.c: file [%s]: could not "
+			DEBUG(1, ("nfs4_acls.c: could not "
 				  "convert %s to uid or gid\n",
-				  filename->base_name,
 				  dom_sid_str_buf(&ace_nt->trustee, &buf)));
 			return false;
 		}
@@ -855,7 +853,7 @@ static int smbacl4_substitute_simple(
 
 static struct SMB4ACL_T *smbacl4_win2nfs4(
 	TALLOC_CTX *mem_ctx,
-	const files_struct *fsp,
+	bool is_directory,
 	const struct security_acl *dacl,
 	const struct smbacl4_vfs_params *pparams,
 	uid_t ownerUID,
@@ -864,7 +862,6 @@ static struct SMB4ACL_T *smbacl4_win2nfs4(
 {
 	struct SMB4ACL_T *theacl;
 	uint32_t i;
-	const char *filename = fsp->fsp_name->base_name;
 
 	DEBUG(10, ("smbacl4_win2nfs4 invoked\n"));
 
@@ -876,12 +873,11 @@ static struct SMB4ACL_T *smbacl4_win2nfs4(
 		SMB_ACE4PROP_T	ace_v4;
 		bool	addNewACE = true;
 
-		if (!smbacl4_fill_ace4(fsp->fsp_name, pparams,
+		if (!smbacl4_fill_ace4(is_directory, pparams,
 				       ownerUID, ownerGID,
 				       dacl->aces + i, &ace_v4)) {
 			struct dom_sid_buf buf;
-			DEBUG(3, ("Could not fill ace for file %s, SID %s\n",
-				  filename,
+			DEBUG(3, ("Could not fill ace for file, SID %s\n",
 				  dom_sid_str_buf(&((dacl->aces+i)->trustee),
 						  &buf)));
 			continue;
@@ -916,7 +912,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 {
 	struct smbacl4_vfs_params params;
 	struct SMB4ACL_T *theacl = NULL;
-	bool	result;
+	bool	result, is_directory;
 
 	SMB_STRUCT_STAT sbuf;
 	bool set_acl_as_root = false;
@@ -950,6 +946,8 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
 	}
+
+	is_directory = S_ISDIR(sbuf.st_ex_mode);
 
 	if (pparams->do_chown) {
 		/* chown logic is a copy/paste from posix_acl.c:set_nt_acl */
@@ -998,7 +996,7 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	theacl = smbacl4_win2nfs4(frame, fsp, psd->dacl, pparams,
+	theacl = smbacl4_win2nfs4(frame, is_directory, psd->dacl, pparams,
 				  sbuf.st_ex_uid, sbuf.st_ex_gid);
 	if (!theacl) {
 		TALLOC_FREE(frame);
