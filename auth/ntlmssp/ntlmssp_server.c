@@ -36,6 +36,7 @@
 #include "param/loadparm.h"
 #include "libcli/security/session.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -772,10 +773,7 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 						      16,
 						      session_nonce_hash);
 				if (rc < 0) {
-					if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-						return NT_STATUS_NTLM_BLOCKED;
-					}
-					return NT_STATUS_INTERNAL_ERROR;
+					return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 				}
 
 
@@ -951,10 +949,7 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 					      sizeof(state->session_nonce),
 					      session_key.data);
 			if (rc < 0) {
-				if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-					return NT_STATUS_NTLM_BLOCKED;
-				}
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 			}
 
 			DEBUG(10,("ntlmssp_server_auth: Created NTLM2 session key.\n"));
@@ -1067,24 +1062,21 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 				 ntlmssp_state->session_key.data,
 				 MIN(ntlmssp_state->session_key.length, 64));
 		if (rc < 0) {
-			if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-				return NT_STATUS_NTLM_BLOCKED;
-			}
-			return NT_STATUS_NO_MEMORY;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		}
 		rc = gnutls_hmac(hmac_hnd,
 				 ntlmssp_state->negotiate_blob.data,
 				 ntlmssp_state->negotiate_blob.length);
 		if (rc < 0) {
 			gnutls_hmac_deinit(hmac_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		}
 		rc = gnutls_hmac(hmac_hnd,
 				  ntlmssp_state->challenge_blob.data,
 				  ntlmssp_state->challenge_blob.length);
 		if (rc < 0) {
 			gnutls_hmac_deinit(hmac_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		}
 
 		/* checked were we set ntlmssp_state->new_spnego */
@@ -1094,19 +1086,19 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 		rc = gnutls_hmac(hmac_hnd, request.data, NTLMSSP_MIC_OFFSET);
 		if (rc < 0) {
 			gnutls_hmac_deinit(hmac_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		}
 		rc = gnutls_hmac(hmac_hnd, mic_buffer, NTLMSSP_MIC_SIZE);
 		if (rc < 0) {
 			gnutls_hmac_deinit(hmac_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		}
 		rc = gnutls_hmac(hmac_hnd,
 				 request.data + (NTLMSSP_MIC_OFFSET + NTLMSSP_MIC_SIZE),
 				 request.length - (NTLMSSP_MIC_OFFSET + NTLMSSP_MIC_SIZE));
 		if (rc < 0) {
 			gnutls_hmac_deinit(hmac_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_NTLM_BLOCKED);
 		}
 		gnutls_hmac_deinit(hmac_hnd, mic_buffer);
 
