@@ -38,6 +38,7 @@
 #include "lib/crypto/aes_ccm_128.h"
 #include "lib/crypto/aes_gcm_128.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -5102,7 +5103,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_SHA512);
 	if (rc < 0) {
 		tevent_req_nterror(req,
-				   NT_STATUS_NO_MEMORY);
+				   gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED));
 		return;
 	}
 
@@ -5112,7 +5113,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
 		tevent_req_nterror(req,
-				   NT_STATUS_ACCESS_DENIED);
+				   gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED));
 		return;
 	}
 	for (i = 0; i < 3; i++) {
@@ -5122,7 +5123,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		if (rc < 0) {
 			gnutls_hash_deinit(hash_hnd, NULL);
 			tevent_req_nterror(req,
-					   NT_STATUS_ACCESS_DENIED);
+					   gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED));
 			return;
 		}
 	}
@@ -5130,7 +5131,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
 		tevent_req_nterror(req,
-				   NT_STATUS_ACCESS_DENIED);
+				   gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED));
 		return;
 	}
 
@@ -5145,7 +5146,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
 		tevent_req_nterror(req,
-				   NT_STATUS_ACCESS_DENIED);
+				   gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED));
 		return;
 	}
 	for (i = 0; i < 3; i++) {
@@ -5155,7 +5156,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 		if (rc < 0) {
 			gnutls_hash_deinit(hash_hnd, NULL);
 			tevent_req_nterror(req,
-					   NT_STATUS_ACCESS_DENIED);
+					   gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED));
 			return;
 		}
 	}
@@ -5959,7 +5960,7 @@ NTSTATUS smb2cli_session_update_preauth(struct smbXcli_session *session,
 	rc = gnutls_hash_init(&hash_hnd,
 			      GNUTLS_DIG_SHA512);
 	if (rc < 0) {
-		return NT_STATUS_NO_MEMORY;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 
 	rc = gnutls_hash(hash_hnd,
@@ -5967,7 +5968,7 @@ NTSTATUS smb2cli_session_update_preauth(struct smbXcli_session *session,
 			 sizeof(session->smb2_channel.preauth_sha512));
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 	for (i = 0; i < 3; i++) {
 		rc = gnutls_hash(hash_hnd,
@@ -5975,7 +5976,7 @@ NTSTATUS smb2cli_session_update_preauth(struct smbXcli_session *session,
 				 iov[i].iov_len);
 		if (rc < 0) {
 			gnutls_hash_deinit(hash_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		}
 	}
 	gnutls_hash_deinit(hash_hnd, session->smb2_channel.preauth_sha512);
