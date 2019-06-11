@@ -36,6 +36,7 @@
 #include "lib/crypto/crypto.h"
 #include "libds/common/roles.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -168,10 +169,7 @@ static NTSTATUS netsec_do_seq_num(struct schannel_state *state,
 				      sizeof(zeros),
 				      digest1);
 		if (rc < 0) {
-			if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-				return NT_STATUS_HMAC_NOT_SUPPORTED;
-			}
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 
 		rc = gnutls_hmac_fast(GNUTLS_MAC_MD5,
@@ -181,10 +179,7 @@ static NTSTATUS netsec_do_seq_num(struct schannel_state *state,
 				      checksum_length,
 				      sequence_key);
 		if (rc < 0) {
-			if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-				return NT_STATUS_HMAC_NOT_SUPPORTED;
-			}
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 
 		ZERO_ARRAY(digest1);
@@ -299,12 +294,12 @@ static NTSTATUS netsec_do_sign(struct schannel_state *state,
 			rc = gnutls_hmac(hmac_hnd, header, 8);
 			if (rc < 0) {
 				gnutls_hmac_deinit(hmac_hnd, NULL);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 			}
 			rc = gnutls_hmac(hmac_hnd, confounder, 8);
 			if (rc < 0) {
 				gnutls_hmac_deinit(hmac_hnd, NULL);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 			}
 		} else {
 			SSVAL(header, 0, NL_SIGN_HMAC_SHA256);
@@ -315,14 +310,14 @@ static NTSTATUS netsec_do_sign(struct schannel_state *state,
 			rc = gnutls_hmac(hmac_hnd, header, 8);
 			if (rc < 0) {
 				gnutls_hmac_deinit(hmac_hnd, NULL);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 			}
 		}
 
 		rc = gnutls_hmac(hmac_hnd, data, length);
 		if (rc < 0) {
 			gnutls_hmac_deinit(hmac_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 
 		gnutls_hmac_deinit(hmac_hnd, checksum);
@@ -334,16 +329,13 @@ static NTSTATUS netsec_do_sign(struct schannel_state *state,
 
 		rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 		if (rc < 0) {
-			if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-				return NT_STATUS_HASH_NOT_SUPPORTED;
-			}
-			return NT_STATUS_NO_MEMORY;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 
 		rc = gnutls_hash(hash_hnd, zeros, sizeof(zeros));
 		if (rc < 0) {
 			gnutls_hash_deinit(hash_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 		if (confounder) {
 			SSVAL(header, 0, NL_SIGN_HMAC_MD5);
@@ -354,12 +346,12 @@ static NTSTATUS netsec_do_sign(struct schannel_state *state,
 			rc = gnutls_hash(hash_hnd, header, 8);
 			if (rc < 0) {
 				gnutls_hash_deinit(hash_hnd, NULL);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 			}
 			rc = gnutls_hash(hash_hnd, confounder, 8);
 			if (rc < 0) {
 				gnutls_hash_deinit(hash_hnd, NULL);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 			}
 		} else {
 			SSVAL(header, 0, NL_SIGN_HMAC_MD5);
@@ -370,13 +362,13 @@ static NTSTATUS netsec_do_sign(struct schannel_state *state,
 			rc = gnutls_hash(hash_hnd, header, 8);
 			if (rc < 0) {
 				gnutls_hash_deinit(hash_hnd, NULL);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 			}
 		}
 		rc = gnutls_hash(hash_hnd, data, length);
 		if (rc < 0) {
 			gnutls_hash_deinit(hash_hnd, NULL);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 		gnutls_hash_deinit(hash_hnd, packet_digest);
 
@@ -388,10 +380,7 @@ static NTSTATUS netsec_do_sign(struct schannel_state *state,
 				      checksum);
 		ZERO_ARRAY(packet_digest);
 		if (rc < 0) {
-			if (rc == GNUTLS_E_UNWANTED_ALGORITHM) {
-				return NT_STATUS_HASH_NOT_SUPPORTED;
-			}
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 	}
 
