@@ -927,6 +927,9 @@ int tdb_lock_record(struct tdb_context *tdb, tdb_off_t off)
 int tdb_write_lock_record(struct tdb_context *tdb, tdb_off_t off)
 {
 	struct tdb_traverse_lock *i;
+	if (tdb == NULL) {
+		return -1;
+	}
 	for (i = &tdb->travlocks; i; i = i->next)
 		if (i->off == off)
 			return -1;
