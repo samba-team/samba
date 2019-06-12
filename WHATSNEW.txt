@@ -12,6 +12,35 @@ Samba 4.11 will be the next version of the Samba suite.
 UPGRADING
 =========
 
+SMB1 is disabled by default
+---------------------------
+
+The defaults of 'client min protocol' and 'server min protocol'
+have been changed to SMB2_02.
+
+This means clients without support for SMB2 or SMB3 are no longer
+able to connect to smbd (by default).
+
+It also means client tools like smbclient and other,
+as well as applications making use of libsmbclient are no longer
+able to connect to servers without SMB2 or SMB3 support (by default).
+
+It's still possible to allow SMB1 dialects, e.g. NT1, LANMAN2
+and LANMAN1 for client and server, as well as CORE and COREPLUS on
+the client.
+
+Note that most commandline tools e.g. smbclient, smbcacls and others
+also support the --option argument to overwrite smb.conf options,
+e.g. --option='client min protocol=NT1' might be useful.
+
+As Microsoft no longer installs SMB1 support in recent releases
+or uninstalls it after 30 days without usage, the Samba Team
+tries to get remove the SMB1 usage as much as possible.
+
+SMB1 is officially deprecated and might be removed step by step
+in the following years. If you have a strong requirement for SMB1
+(except for supporting old Linux Kernels), please file a bug
+at https://bugzilla.samba.org and let us know about the details.
 
 NEW FEATURES/CHANGES
 ====================
@@ -270,6 +299,8 @@ smb.conf changes
 
   allocation roundup size            Default changed/           0
                                      Deprecated
+  client min protocol                Changed default            SMB2_02
+  server min protocol                Changed default            SMB2_02
   web port                           Removed
   fruit:zero_file_id                 Changed default            False
 
