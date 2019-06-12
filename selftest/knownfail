@@ -361,5 +361,3 @@
 ^samba.tests.ntlmdisabled.python\(ktest\).python2.ntlmdisabled.NtlmDisabledTests.test_samr_change_password\(ktest\)
 ^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).python3.ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ad_dc_no_ntlm\)
 ^samba.tests.ntlmdisabled.python\(ad_dc_no_ntlm\).python2.ntlmdisabled.NtlmDisabledTests.test_ntlm_connection\(ad_dc_no_ntlm\)
-^samba4.blackbox.samba-tool_ntacl.*.set_ntacl_ntvfs
-^samba4.blackbox.samba-tool_ntacl.*.get_ntacl_ntvfs

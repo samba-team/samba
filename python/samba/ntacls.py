@@ -77,7 +77,9 @@ def checkset_backend(lp, backend, eadbfile):
         if eadbfile is not None:
             return (samba.xattr_tdb, eadbfile)
         else:
-            return (samba.xattr_tdb, os.path.abspath(os.path.join(lp.get("state dir"), "xattr.tdb")))
+            state_dir = lp.get("state directory")
+            db_path = os.path.abspath(os.path.join(state_dir, "xattr.tdb"))
+            return (samba.xattr_tdb, db_path)
     else:
         raise XattrBackendError("Invalid xattr backend choice %s" % backend)
 
