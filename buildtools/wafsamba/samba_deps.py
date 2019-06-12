@@ -1,6 +1,6 @@
 # Samba automatic dependency handling and project rules
 
-import os, sys, re, time
+import os, sys, re
 
 from waflib import Build, Options, Logs, Utils, Errors
 from waflib.Logs import debug
@@ -1102,8 +1102,7 @@ def check_project_rules(bld):
     if not force_project_rules and load_samba_deps(bld, tgt_list):
         return
 
-    global tstart
-    tstart = time.clock()
+    timer = Utils.Timer()
 
     bld.new_rules = True
     Logs.info("Checking project rules ...")
@@ -1112,26 +1111,26 @@ def check_project_rules(bld):
 
     expand_subsystem_deps(bld)
 
-    debug("deps: expand_subsystem_deps: %f" % (time.clock() - tstart))
+    debug("deps: expand_subsystem_deps: %s" % str(timer))
 
     replace_grouping_libraries(bld, tgt_list)
 
-    debug("deps: replace_grouping_libraries: %f" % (time.clock() - tstart))
+    debug("deps: replace_grouping_libraries: %s" % str(timer))
 
     build_direct_deps(bld, tgt_list)
 
-    debug("deps: build_direct_deps: %f" % (time.clock() - tstart))
+    debug("deps: build_direct_deps: %s" % str(timer))
 
     break_dependency_loops(bld, tgt_list)
 
-    debug("deps: break_dependency_loops: %f" % (time.clock() - tstart))
+    debug("deps: break_dependency_loops: %s" % str(timer))
 
     if Options.options.SHOWDEPS:
             show_dependencies(bld, Options.options.SHOWDEPS, set())
 
     calculate_final_deps(bld, tgt_list, loops)
 
-    debug("deps: calculate_final_deps: %f" % (time.clock() - tstart))
+    debug("deps: calculate_final_deps: %s" % str(timer))
 
     if Options.options.SHOW_DUPLICATES:
             show_object_duplicates(bld, tgt_list)
@@ -1140,7 +1139,7 @@ def check_project_rules(bld):
     for f in [ build_dependencies, build_includes, add_init_functions ]:
         debug('deps: project rules checking %s', f)
         for t in tgt_list: f(t)
-        debug("deps: %s: %f" % (f, time.clock() - tstart))
+        debug("deps: %s: %s" % (f, str(timer)))
 
     debug('deps: project rules stage1 completed')
 
@@ -1148,17 +1147,17 @@ def check_project_rules(bld):
         Logs.error("Duplicate sources present - aborting")
         sys.exit(1)
 
-    debug("deps: check_duplicate_sources: %f" % (time.clock() - tstart))
+    debug("deps: check_duplicate_sources: %s" % str(timer))
 
     if not bld.check_group_ordering(tgt_list):
         Logs.error("Bad group ordering - aborting")
         sys.exit(1)
 
-    debug("deps: check_group_ordering: %f" % (time.clock() - tstart))
+    debug("deps: check_group_ordering: %s" % str(timer))
 
     show_final_deps(bld, tgt_list)
 
-    debug("deps: show_final_deps: %f" % (time.clock() - tstart))
+    debug("deps: show_final_deps: %s" % str(timer))
 
     debug('deps: project rules checking completed - %u targets checked',
           len(tgt_list))
@@ -1166,7 +1165,7 @@ def check_project_rules(bld):
     if not bld.is_install:
         save_samba_deps(bld, tgt_list)
 
-    debug("deps: save_samba_deps: %f" % (time.clock() - tstart))
+    debug("deps: save_samba_deps: %s" % str(timer))
 
     Logs.info("Project rules pass")
 
