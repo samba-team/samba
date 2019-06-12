@@ -44,6 +44,24 @@ test_set_acl()
 	$PYTHON $samba_tool ntacl set "$acl" "$testfile"
 }
 
+test_get_acl_ntvfs()
+{
+	testfile="$1"
+	exptextedacl="$2"
+
+	retacl=$($PYTHON $samba_tool ntacl get "$testfile" --as-sddl --use-ntvfs --xattr-backend=tdb -s $PREFIX/ad_member/lib/server.conf) || return $?
+
+	test "$retacl" = "$exptextedacl"
+}
+
+test_set_acl_ntvfs()
+{
+	testfile="$1"
+	acl="$2"
+
+	$PYTHON $samba_tool ntacl set "$acl" "$testfile" --use-ntvfs --xattr-backend=tdb -s $PREFIX/ad_member/lib/server.conf
+}
+
 # work around include error - s4-loadparm does not allow missing include files
 #
 # Unable to load file /home/bbaumba/src/git/samba/st/ad_member/lib/server.conf
@@ -62,6 +80,9 @@ touch "$testfile"
 testit "set_ntacl" test_set_acl "$testfile" "$acl" || failed=`expr $failed + 1`
 
 testit "get_ntacl" test_get_acl "$testfile" "$acl" || failed=`expr $failed + 1`
+
+testit "set_ntacl_ntvfs" test_set_acl_ntvfs "$testfile" "$acl" || failed=`expr $failed + 1`
+testit "get_ntacl_ntvfs" test_get_acl_ntvfs "$testfile" "$acl" || failed=`expr $failed + 1`
 
 rm -f "$testfile"
 
