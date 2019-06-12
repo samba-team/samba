@@ -133,3 +133,90 @@ class NtACLCmdGetSetTestCase(SambaToolCmdTest):
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
         self.assertEquals(self.acl + "\n", out, "Output should be the ACL")
+
+class NtACLCmdChangedomsidTestCase(SambaToolCmdTest):
+    """Tests for samba-tool ntacl changedomsid subcommand"""
+
+    acl = "O:DAG:DUD:P(A;OICI;0x001f01ff;;;DA)(A;OICI;0x001f01ff;;;EA)(A;OICIIO;0x001f01ff;;;CO)(A;OICI;0x001f01ff;;;DA)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001200a9;;;ED)S:AI(OU;CIIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
+    new_acl="O:S-1-5-21-2212615479-2695158682-2101375468-512G:S-1-5-21-2212615479-2695158682-2101375468-513D:P(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-512)(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-519)(A;OICIIO;0x001f01ff;;;CO)(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375468-512)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001200a9;;;ED)S:AI(OU;CIIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
+    domain_sid=os.environ['DOMSID']
+    new_domain_sid="S-1-5-21-2212615479-2695158682-2101375468"
+
+    def test_ntvfs_check(self):
+        path = os.environ['SELFTEST_PREFIX']
+        tempf = os.path.join(
+            path, "pytests" + str(int(100000 * random.random())))
+        open(tempf, 'w').write("empty")
+
+        print("DOMSID: %s", self.domain_sid)
+
+        (result, out, err) = self.runsubcmd("ntacl",
+                                            "set",
+                                            self.acl,
+                                            tempf,
+                                            "--use-ntvfs")
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(out, "", "Shouldn't be any output messages")
+        self.assertIn("Please note that POSIX permissions have NOT been "
+                      "changed, only the stored NT ACL", err)
+
+        (result, out, err) = self.runsubcmd("ntacl",
+                                            "changedomsid",
+                                            self.domain_sid,
+                                            self.new_domain_sid,
+                                            tempf,
+                                            "--use-ntvfs")
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(out, "", "Shouldn't be any output messages")
+        self.assertIn("Please note that POSIX permissions have NOT been "
+                      "changed, only the stored NT ACL.", err)
+
+        # Now check they were set correctly
+        (result, out, err) = self.runsubcmd("ntacl",
+                                            "get",
+                                            tempf,
+                                            "--use-ntvfs",
+                                            "--as-sddl")
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEquals(self.new_acl + "\n", out, "Output should be the ACL")
+
+    def test_s3fs_check(self):
+        path = os.environ['SELFTEST_PREFIX']
+        tempf = os.path.join(
+            path, "pytests" + str(int(100000 * random.random())))
+        open(tempf, 'w').write("empty")
+
+        print("DOMSID: %s" % self.domain_sid)
+
+        (result, out, err) = self.runsubcmd("ntacl",
+                                            "set",
+                                            self.acl,
+                                            tempf,
+                                            "--use-s3fs",
+                                            "--service=sysvol")
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(out, "", "Shouldn't be any output messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+
+        (result, out, err) = self.runsubcmd("ntacl",
+                                            "changedomsid",
+                                            self.domain_sid,
+                                            self.new_domain_sid,
+                                            tempf,
+                                            "--use-s3fs",
+                                            "--service=sysvol")
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(out, "", "Shouldn't be any output messages")
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+
+        # Now check they were set correctly
+        (result, out, err) = self.runsubcmd("ntacl",
+                                            "get",
+                                            tempf,
+                                            "--use-s3fs",
+                                            "--as-sddl",
+                                            "--service=sysvol")
+        self.assertCmdSuccess(result, out, err)
+        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEquals(self.new_acl + "\n", out, "Output should be the ACL")
