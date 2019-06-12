@@ -33,6 +33,7 @@
 
 #include "ldb_kv.h"
 #include "ldb_private.h"
+#include "lib/util/attr.h"
 /*
   search the database for a single simple dn.
   return LDB_ERR_NO_SUCH_OBJECT on record-not-found
@@ -305,7 +306,7 @@ int ldb_kv_filter_attrs(struct ldb_context *ldb,
 /*
   search function for a non-indexed search
  */
-static int search_func(struct ldb_kv_private *ldb_kv,
+static int search_func(_UNUSED_ struct ldb_kv_private *ldb_kv,
 		       struct ldb_val key,
 		       struct ldb_val val,
 		       void *state)
