@@ -1685,7 +1685,7 @@ struct timeval tevent_timeval_add(const struct timeval *tv, uint32_t secs,
  *
  * @param[in]  usecs    The microseconds of the offset from now.
  *
- * @return              A timval with the given offset in the future.
+ * @return              A timeval with the given offset in the future.
  */
 struct timeval tevent_timeval_current_ofs(uint32_t secs, uint32_t usecs);
 
