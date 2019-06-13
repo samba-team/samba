@@ -7212,7 +7212,8 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	NTSTATUS status;
 
 	if (total_data < SMB_POSIX_ACL_HEADER_SIZE) {
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 	posix_acl_version = SVAL(pdata,0);
 	num_file_acls = SVAL(pdata,2);
@@ -7229,17 +7230,19 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	}
 
 	if (posix_acl_version != SMB_POSIX_ACL_VERSION) {
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 
 	if (total_data < SMB_POSIX_ACL_HEADER_SIZE +
 			(num_file_acls+num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE) {
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
 	}
 
 	status = refuse_symlink(conn, fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	DBG_DEBUG("file %s num_file_acls = %"PRIu16", "
@@ -7251,16 +7254,23 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	if (valid_file_acls && !set_unix_posix_acl(conn, fsp,
 		smb_fname, num_file_acls,
 		pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
-		return map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix(errno);
+		goto out;
 	}
 
 	if (valid_def_acls && !set_unix_posix_default_acl(conn,
 		smb_fname, num_def_acls,
 		pdata + SMB_POSIX_ACL_HEADER_SIZE +
 		(num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE))) {
-		return map_nt_error_from_unix(errno);
+		status = map_nt_error_from_unix(errno);
+		goto out;
 	}
-	return NT_STATUS_OK;
+
+	status = NT_STATUS_OK;
+
+  out:
+
+	return status;
 }
 #endif
 
