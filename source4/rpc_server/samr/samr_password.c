@@ -32,6 +32,7 @@
 #include "rpc_server/samr/proto.h"
 #include "auth/auth_sam.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -605,20 +606,20 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
-		nt_status = NT_STATUS_NO_MEMORY;
+		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 
 	rc = gnutls_hash(hash_hnd, &pwbuf->data[516], 16);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		nt_status = NT_STATUS_INTERNAL_ERROR;
+		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 	rc = gnutls_hash(hash_hnd, session_key.data, session_key.length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		nt_status = NT_STATUS_INTERNAL_ERROR;
+		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 	gnutls_hash_deinit(hash_hnd, co_session_key.data);
