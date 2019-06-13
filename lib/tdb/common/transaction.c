@@ -330,7 +330,7 @@ static int transaction_write_existing(struct tdb_context *tdb, tdb_off_t off,
 		}
 	}
 
-	if (len == 0) {
+	if (len == 0 || buf == NULL) {
 		return 0;
 	}
 
