@@ -24,6 +24,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -301,20 +302,20 @@ static NTSTATUS libnet_SetPassword_samr_handle_26(struct libnet_context *ctx, TA
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
-		status = NT_STATUS_NO_MEMORY;
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 
 	rc = gnutls_hash(hash_hnd, confounder, 16);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		status = NT_STATUS_INTERNAL_ERROR;
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 	rc = gnutls_hash(hash_hnd, session_key.data, session_key.length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		status = NT_STATUS_INTERNAL_ERROR;
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 
@@ -382,20 +383,20 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
-		status = NT_STATUS_NO_MEMORY;
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 
 	rc = gnutls_hash(hash_hnd, confounder, 16);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		status = NT_STATUS_NO_MEMORY;
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 	rc = gnutls_hash(hash_hnd, session_key.data, session_key.length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		status = NT_STATUS_NO_MEMORY;
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
 
