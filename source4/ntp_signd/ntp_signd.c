@@ -40,6 +40,7 @@
 #include "system/network.h"
 #include "system/passwd.h"
 
+#include "libcli/util/gnutls_error.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -248,10 +249,7 @@ static NTSTATUS ntp_signd_process(struct ntp_signd_connection *ntp_signd_conn,
 	/* Sign the NTP response with the unicodePwd */
 	ret = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (ret < 0) {
-		if (ret == GNUTLS_E_UNWANTED_ALGORITHM) {
-			return NT_STATUS_HASH_NOT_SUPPORTED;
-		}
-		return NT_STATUS_NO_MEMORY;
+		return gnutls_error_to_ntstatus(ret, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 
 	ret = gnutls_hash(hash_hnd,
@@ -259,14 +257,14 @@ static NTSTATUS ntp_signd_process(struct ntp_signd_connection *ntp_signd_conn,
 			  sizeof(nt_hash->hash));
 	if (ret < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(ret, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 	ret = gnutls_hash(hash_hnd,
 			  sign_request.packet_to_sign.data,
 			  sign_request.packet_to_sign.length);
 	if (ret < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		return NT_STATUS_INTERNAL_ERROR;
+		return gnutls_error_to_ntstatus(ret, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 
 	gnutls_hash_deinit(hash_hnd,
