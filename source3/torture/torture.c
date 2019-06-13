@@ -7614,7 +7614,7 @@ static bool run_acl_symlink_test(int dummy)
 				posix_acl_len);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
-		printf("cli_posix_getacl on a symlink gave %s. "
+		printf("cli_posix_setacl on a symlink gave %s. "
 			"Should be NT_STATUS_ACCESS_DENIED.\n",
 			nt_errstr(status));
 		goto out;
