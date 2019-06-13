@@ -262,7 +262,6 @@ def configure(conf):
     if Options.options.ctdb_ceph_reclock:
         if (conf.CHECK_HEADERS('rados/librados.h', False, False, 'rados') and
 					conf.CHECK_LIB('rados', shlib=True)):
-            conf.CHECK_LIB('ceph-common', shlib=True)
             Logs.info('Building with Ceph librados recovery lock support')
             conf.define('HAVE_LIBRADOS', 1)
         else:
@@ -682,7 +681,7 @@ def build(bld):
     if bld.env.HAVE_LIBRADOS:
         bld.SAMBA_BINARY('ctdb_mutex_ceph_rados_helper',
                          source='utils/ceph/ctdb_mutex_ceph_rados_helper.c',
-			 deps='talloc tevent rados ceph-common',
+			 deps='talloc tevent rados',
 			 includes='include',
 			 install_path='${CTDB_HELPER_BINDIR}')
 
