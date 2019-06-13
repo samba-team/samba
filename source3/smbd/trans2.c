@@ -7198,6 +7198,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 
 #if defined(HAVE_POSIX_ACLS)
 static NTSTATUS smb_set_posix_acl(connection_struct *conn,
+				struct smb_request *req,
 				const char *pdata,
 				int total_data,
 				files_struct *fsp,
@@ -8756,6 +8757,7 @@ NTSTATUS smbd_do_setfilepathinfo(connection_struct *conn,
 		case SMB_SET_POSIX_ACL:
 		{
 			status = smb_set_posix_acl(conn,
+						req,
 						pdata,
 						total_data,
 						fsp,
