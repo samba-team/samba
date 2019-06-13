@@ -310,40 +310,6 @@ static bool brl_pending_overlap(const struct lock_struct *lock,
 }
 
 /****************************************************************************
- Amazingly enough, w2k3 "remembers" whether the last lock failure on a fnum
- is the same as this one and changes its error code. I wonder if any
- app depends on this ?
-****************************************************************************/
-
-static NTSTATUS brl_lock_failed(files_struct *fsp,
-				const struct lock_struct *lock,
-				bool blocking_lock)
-{
-	if (lock->start >= 0xEF000000 && (lock->start >> 63) == 0) {
-		/* amazing the little things you learn with a test
-		   suite. Locks beyond this offset (as a 64 bit
-		   number!) always generate the conflict error code,
-		   unless the top bit is set */
-		if (!blocking_lock) {
-			fsp->last_lock_failure = *lock;
-		}
-		return NT_STATUS_FILE_LOCK_CONFLICT;
-	}
-
-	if (serverid_equal(&lock->context.pid, &fsp->last_lock_failure.context.pid) &&
-			lock->context.tid == fsp->last_lock_failure.context.tid &&
-			lock->fnum == fsp->last_lock_failure.fnum &&
-			lock->start == fsp->last_lock_failure.start) {
-		return NT_STATUS_FILE_LOCK_CONFLICT;
-	}
-
-	if (!blocking_lock) {
-		fsp->last_lock_failure = *lock;
-	}
-	return NT_STATUS_LOCK_NOT_GRANTED;
-}
-
-/****************************************************************************
  Open up the brlock.tdb database.
 ****************************************************************************/
 
@@ -442,7 +408,7 @@ NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 			}
 			/* Remember who blocked us. */
 			plock->context.smblctx = locks[i].context.smblctx;
-			return brl_lock_failed(fsp,plock,blocking_lock);
+			return NT_STATUS_LOCK_NOT_GRANTED;
 		}
 #if ZERO_ZERO
 		if (plock->start == 0 && plock->size == 0 &&
