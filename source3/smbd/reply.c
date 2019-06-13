@@ -8389,9 +8389,8 @@ void reply_lockingX(struct smb_request *req)
 	const uint8_t *data;
 	bool large_file_format;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	struct smbd_lock_element *ulocks = NULL;
 	struct smbd_lock_element *locks = NULL;
-	bool async = false;
+	struct tevent_req *subreq = NULL;
 
 	START_PROFILE(SMBlockingX);
 
@@ -8504,28 +8503,58 @@ void reply_lockingX(struct smb_request *req)
 		return;
 	}
 
-	ulocks = talloc_array(req, struct smbd_lock_element, num_ulocks);
-	if (ulocks == NULL) {
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBlockingX);
-		return;
-	}
+	if (num_ulocks != 0) {
+		struct smbd_lock_element *ulocks = NULL;
+		bool ok;
 
-	/* Data now points at the beginning of the list
-	   of smb_unlkrng structs */
-	for (i = 0; i < num_ulocks; i++) {
-		ulocks[i].smblctx = get_lock_pid(data, i, large_file_format);
-		ulocks[i].count = get_lock_count(data, i, large_file_format);
-		ulocks[i].offset = get_lock_offset(data, i, large_file_format);
-		ulocks[i].brltype = UNLOCK_LOCK;
-	}
+		ulocks = talloc_array(
+			req, struct smbd_lock_element, num_ulocks);
+		if (ulocks == NULL) {
+			reply_nterror(req, NT_STATUS_NO_MEMORY);
+			END_PROFILE(SMBlockingX);
+			return;
+		}
 
-	status = smbd_do_unlocking(req, fsp, num_ulocks, ulocks, WINDOWS_LOCK);
-	TALLOC_FREE(ulocks);
-	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBlockingX);
-		reply_nterror(req, status);
-		return;
+		/*
+		 * Data now points at the beginning of the list of
+		 * smb_unlkrng structs
+		 */
+		for (i = 0; i < num_ulocks; i++) {
+			ulocks[i].smblctx = get_lock_pid(
+				data, i, large_file_format);
+			ulocks[i].count = get_lock_count(
+				data, i, large_file_format);
+			ulocks[i].offset = get_lock_offset(
+				data, i, large_file_format);
+			ulocks[i].brltype = UNLOCK_LOCK;
+		}
+
+		/*
+		 * Unlock cancels pending locks
+		 */
+
+		ok = smbd_smb1_brl_finish_by_lock(
+			fsp,
+			large_file_format,
+			WINDOWS_LOCK,
+			ulocks[0],
+			NT_STATUS_OK);
+		if (ok) {
+			reply_outbuf(req, 2, 0);
+			SSVAL(req->outbuf, smb_vwv0, 0xff);
+			SSVAL(req->outbuf, smb_vwv1, 0);
+			END_PROFILE(SMBlockingX);
+			return;
+		}
+
+		status = smbd_do_unlocking(
+			req, fsp, num_ulocks, ulocks, WINDOWS_LOCK);
+		TALLOC_FREE(ulocks);
+		if (!NT_STATUS_IS_OK(status)) {
+			END_PROFILE(SMBlockingX);
+			reply_nterror(req, status);
+			return;
+		}
 	}
 
 	/* Now do any requested locks */
@@ -8535,17 +8564,9 @@ void reply_lockingX(struct smb_request *req)
 	   of smb_lkrng structs */
 
 	if (locktype & LOCKING_ANDX_SHARED_LOCK) {
-		if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
-			brltype = PENDING_READ_LOCK;
-		} else {
-			brltype = READ_LOCK;
-		}
+		brltype = READ_LOCK;
 	} else {
-		if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
-			brltype = PENDING_WRITE_LOCK;
-		} else {
-			brltype = WRITE_LOCK;
-		}
+		brltype = WRITE_LOCK;
 	}
 
 	locks = talloc_array(req, struct smbd_lock_element, num_locks);
@@ -8563,81 +8584,93 @@ void reply_lockingX(struct smb_request *req)
 	}
 
 	if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
-		struct smbd_lock_element *e = NULL;
+
+		bool ok;
 
 		if (num_locks == 0) {
 			/* See smbtorture3 lock11 test */
-			goto done;
+			reply_outbuf(req, 2, 0);
+			/* andx chain ends */
+			SSVAL(req->outbuf, smb_vwv0, 0xff);
+			SSVAL(req->outbuf, smb_vwv1, 0);
+			END_PROFILE(SMBlockingX);
+			return;
 		}
 
-		e = &locks[0];
+		ok = smbd_smb1_brl_finish_by_lock(
+			fsp,
+			large_file_format,
+			WINDOWS_LOCK,
+			locks[0], /* Windows only cancels the first lock */
+			NT_STATUS_FILE_LOCK_CONFLICT);
 
-		/*
-		 * MS-CIFS (2.2.4.32.1) states that a cancel is
-		 * honored if and only if the lock vector contains one
-		 * entry. When given multiple cancel requests in a
-		 * single PDU we expect the server to return an
-		 * error. Windows servers seem to accept the request
-		 * but only cancel the first lock.
-		 *
-		 * JRA - Do what Windows does (tm) :-).
-		 */
-
-		if (lp_blocking_locks(SNUM(conn))) {
-			struct blocking_lock_record *blr = NULL;
-
-			/* Schedule a message to ourselves to
-			   remove the blocking lock record and
-			   return the right error. */
-
-			blr = blocking_lock_cancel_smb1(
-				fsp,
-				e->smblctx,
-				e->offset,
-				e->count,
-				WINDOWS_LOCK,
-				locktype,
-				NT_STATUS_FILE_LOCK_CONFLICT);
-			if (blr == NULL) {
-				reply_force_doserror(
-					req, ERRDOS, ERRcancelviolation);
-				END_PROFILE(SMBlockingX);
-				return;
-			}
+		if (!ok) {
+			reply_force_doserror(req, ERRDOS, ERRcancelviolation);
+			END_PROFILE(SMBlockingX);
+			return;
 		}
 
-		/* Remove a matching pending lock. */
-		status = do_lock_cancel(fsp,
-					e->smblctx,
-					e->count,
-					e->offset,
-					WINDOWS_LOCK);
+		reply_outbuf(req, 2, 0);
+		SSVAL(req->outbuf, smb_vwv0, 0xff);
+		SSVAL(req->outbuf, smb_vwv1, 0);
 		END_PROFILE(SMBlockingX);
+		return;
+	}
+
+	subreq = smbd_smb1_do_locks_send(
+		fsp,
+		req->sconn->ev_ctx,
+		req->sconn->msg_ctx,
+		&req,
+		fsp,
+		lock_timeout,
+		large_file_format,
+		WINDOWS_LOCK,
+		num_locks,
+		locks);
+	if (subreq == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBlockingX);
+		return;
+	}
+	tevent_req_set_callback(subreq, reply_lockingx_done, NULL);
+	END_PROFILE(SMBlockingX);
+}
+
+static void reply_lockingx_done(struct tevent_req *subreq)
+{
+	struct smb_request *req = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	START_PROFILE(SMBlockingX);
+
+	ok = smbd_smb1_do_locks_extract_smbreq(subreq, talloc_tos(), &req);
+	SMB_ASSERT(ok);
+
+	status = smbd_smb1_do_locks_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	DBG_DEBUG("smbd_smb1_do_locks_recv returned %s\n", nt_errstr(status));
+
+	if (NT_STATUS_IS_OK(status)) {
+		reply_outbuf(req, 2, 0);
+		SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+		SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
+	} else {
 		reply_nterror(req, status);
-		return;
 	}
 
-	status = smbd_do_locking(
-		req, fsp, lock_timeout, num_locks, locks, &async);
-	TALLOC_FREE(locks);
-	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBlockingX);
-		reply_nterror(req, status);
-		return;
+	ok = srv_send_smb(req->xconn,
+			  (char *)req->outbuf,
+			  true,
+			  req->seqnum+1,
+			  IS_CONN_ENCRYPTED(req->conn),
+			  NULL);
+	if (!ok) {
+		exit_server_cleanly("reply_lock_done: srv_send_smb failed.");
 	}
-	if (async) {
-		END_PROFILE(SMBlockingX);
-		return;
-	}
-
-done:
-	reply_outbuf(req, 2, 0);
-	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
-	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
-
-	DEBUG(3, ("lockingX %s type=%d num_locks=%d num_ulocks=%d\n",
-		  fsp_fnum_dbg(fsp), (unsigned int)locktype, num_locks, num_ulocks));
-
+	TALLOC_FREE(req);
 	END_PROFILE(SMBlockingX);
 }
 
