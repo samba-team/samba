@@ -5678,13 +5678,14 @@ out:
  Reply to a lock.
 ****************************************************************************/
 
+static void reply_lock_done(struct tevent_req *subreq);
+
 void reply_lock(struct smb_request *req)
 {
+	struct tevent_req *subreq = NULL;
 	connection_struct *conn = req->conn;
-	uint64_t count,offset;
-	NTSTATUS status;
 	files_struct *fsp;
-	struct byte_range_lock *br_lck = NULL;
+	struct smbd_lock_element *lck = NULL;
 
 	START_PROFILE(SMBlock);
 
@@ -5701,36 +5702,77 @@ void reply_lock(struct smb_request *req)
 		return;
 	}
 
-	count = (uint64_t)IVAL(req->vwv+1, 0);
-	offset = (uint64_t)IVAL(req->vwv+3, 0);
-
-	DEBUG(3,("lock fd=%d %s offset=%.0f count=%.0f\n",
-		 fsp->fh->fd, fsp_fnum_dbg(fsp), (double)offset, (double)count));
-
-	br_lck = do_lock(req->sconn->msg_ctx,
-			fsp,
-			(uint64_t)req->smbpid,
-			count,
-			offset,
-			WRITE_LOCK,
-			WINDOWS_LOCK,
-			False, /* Non-blocking lock. */
-			&status,
-			NULL,
-			NULL);
-
-	TALLOC_FREE(br_lck);
-
-	if (NT_STATUS_V(status)) {
-		reply_nterror(req, status);
+	lck = talloc(req, struct smbd_lock_element);
+	if (lck == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBlock);
 		return;
 	}
 
-	reply_outbuf(req, 0, 0);
+	*lck = (struct smbd_lock_element) {
+		.smblctx = req->smbpid,
+		.brltype = WRITE_LOCK,
+		.count = IVAL(req->vwv+1, 0),
+		.offset = IVAL(req->vwv+3, 0),
+	};
 
+	DBG_NOTICE("lock fd=%d %s offset=%"PRIu64" count=%"PRIu64"\n",
+		   fsp->fh->fd,
+		   fsp_fnum_dbg(fsp),
+		   lck->offset,
+		   lck->count);
+
+	subreq = smbd_smb1_do_locks_send(
+		fsp,
+		req->sconn->ev_ctx,
+		req->sconn->msg_ctx,
+		&req,
+		fsp,
+		0,
+		false,		/* large_offset */
+		WINDOWS_LOCK,
+		1,
+		lck);
+	if (subreq == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBlock);
+		return;
+	}
+	tevent_req_set_callback(subreq, reply_lock_done, NULL);
 	END_PROFILE(SMBlock);
-	return;
+}
+
+static void reply_lock_done(struct tevent_req *subreq)
+{
+	struct smb_request *req = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	START_PROFILE(SMBlock);
+
+	ok = smbd_smb1_do_locks_extract_smbreq(subreq, talloc_tos(), &req);
+	SMB_ASSERT(ok);
+
+	status = smbd_smb1_do_locks_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	if (NT_STATUS_IS_OK(status)) {
+		reply_outbuf(req, 0, 0);
+	} else {
+		reply_nterror(req, status);
+	}
+
+	ok = srv_send_smb(req->xconn,
+			  (char *)req->outbuf,
+			  true,
+			  req->seqnum+1,
+			  IS_CONN_ENCRYPTED(req->conn),
+			  NULL);
+	if (!ok) {
+		exit_server_cleanly("reply_lock_done: srv_send_smb failed.");
+	}
+	TALLOC_FREE(req);
+	END_PROFILE(SMBlock);
 }
 
 /****************************************************************************
