@@ -7283,17 +7283,22 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 		  num_file_acls,
 		  num_def_acls);
 
+	/* Move pdata to the start of the file ACL entries. */
+	pdata += SMB_POSIX_ACL_HEADER_SIZE;
+
 	if (valid_file_acls && !set_unix_posix_acl(conn, fsp,
 		smb_fname, num_file_acls,
-		pdata + SMB_POSIX_ACL_HEADER_SIZE)) {
+		pdata)) {
 		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
 
+	/* Move pdata to the start of the default ACL entries. */
+	pdata += (num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE);
+
 	if (valid_def_acls && !set_unix_posix_default_acl(conn,
 		smb_fname, num_def_acls,
-		pdata + SMB_POSIX_ACL_HEADER_SIZE +
-		(num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE))) {
+		pdata)) {
 		status = map_nt_error_from_unix(errno);
 		goto out;
 	}
