@@ -44,6 +44,7 @@
 #include "lib/tevent_wait.h"
 #include "libcli/smb/smb_signing.h"
 #include "lib/util/sys_rw_data.h"
+#include "librpc/gen_ndr/open_files.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
@@ -8226,11 +8227,14 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 			   struct smbd_lock_element *ulocks,
 			   enum brl_flavour lock_flav)
 {
+	struct share_mode_lock *lck;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	uint16_t i;
+
+	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 
 	for(i = 0; i < num_ulocks; i++) {
 		struct smbd_lock_element *e = &ulocks[i];
-		NTSTATUS status;
 
 		DBG_DEBUG("unlock start=%"PRIu64", len=%"PRIu64" for "
 			  "pid %"PRIu64", file %s\n",
@@ -8241,7 +8245,8 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 
 		if (e->brltype != UNLOCK_LOCK) {
 			/* this can only happen with SMB2 */
-			return NT_STATUS_INVALID_PARAMETER;
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto done;
 		}
 
 		status = do_unlock(req->sconn->msg_ctx,
@@ -8255,19 +8260,27 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 			   nt_errstr(status)));
 
 		if (!NT_STATUS_IS_OK(status)) {
-			return status;
+			goto done;
 		}
 	}
 
 	DEBUG(3, ("%s: %s num_ulocks=%d\n", __func__, fsp_fnum_dbg(fsp),
 		  num_ulocks));
 
-	return NT_STATUS_OK;
+done:
+	if (NT_STATUS_IS_OK(status) && (lck != NULL)) {
+		lck->data->modified = true;
+	}
+
+	TALLOC_FREE(lck);
+	return status;
 }
 
 /****************************************************************************
  Reply to a lockingX request.
 ****************************************************************************/
+
+static void reply_lockingx_done(struct tevent_req *subreq);
 
 void reply_lockingX(struct smb_request *req)
 {
