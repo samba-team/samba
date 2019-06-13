@@ -3741,19 +3741,14 @@ void reply_readbraw(struct smb_request *req)
  Reply to a lockread (core+ protocol).
 ****************************************************************************/
 
+static void reply_lockread_locked(struct tevent_req *subreq);
+
 void reply_lockread(struct smb_request *req)
 {
+	struct tevent_req *subreq = NULL;
 	connection_struct *conn = req->conn;
-	ssize_t nread = -1;
-	char *data;
-	off_t startpos;
-	size_t numtoread;
-	size_t maxtoread;
-	NTSTATUS status;
 	files_struct *fsp;
-	struct byte_range_lock *br_lck = NULL;
-	char *p = NULL;
-	struct smbXsrv_connection *xconn = req->xconn;
+	struct smbd_lock_element *lck = NULL;
 
 	START_PROFILE(SMBlockread);
 
@@ -3776,8 +3771,12 @@ void reply_lockread(struct smb_request *req)
 		return;
 	}
 
-	numtoread = SVAL(req->vwv+1, 0);
-	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
+	lck = talloc(req, struct smbd_lock_element);
+	if (lck == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		END_PROFILE(SMBlockread);
+		return;
+	}
 
 	/*
 	 * NB. Discovered by Menny Hamburger at Mainsoft. This is a core+
@@ -3787,29 +3786,71 @@ void reply_lockread(struct smb_request *req)
 	 * Note that the requested lock size is unaffected by max_send.
 	 */
 
-	br_lck = do_lock(req->sconn->msg_ctx,
-			fsp,
-			(uint64_t)req->smbpid,
-			(uint64_t)numtoread,
-			(uint64_t)startpos,
-			WRITE_LOCK,
-			WINDOWS_LOCK,
-			False, /* Non-blocking lock. */
-			&status,
-			NULL,
-			NULL);
-	TALLOC_FREE(br_lck);
+	*lck = (struct smbd_lock_element) {
+		.smblctx = req->smbpid,
+		.brltype = WRITE_LOCK,
+		.count = SVAL(req->vwv+1, 0),
+		.offset = IVAL_TO_SMB_OFF_T(req->vwv+2, 0),
+	};
 
-	if (NT_STATUS_V(status)) {
-		reply_nterror(req, status);
+	subreq = smbd_smb1_do_locks_send(
+		fsp,
+		req->sconn->ev_ctx,
+		req->sconn->msg_ctx,
+		&req,
+		fsp,
+		0,
+		false,		/* large_offset */
+		WINDOWS_LOCK,
+		1,
+		lck);
+	if (subreq == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
 		END_PROFILE(SMBlockread);
 		return;
 	}
+	tevent_req_set_callback(subreq, reply_lockread_locked, NULL);
+	END_PROFILE(SMBlockread);
+}
+
+static void reply_lockread_locked(struct tevent_req *subreq)
+{
+	struct smb_request *req = NULL;
+	ssize_t nread = -1;
+	char *data = NULL;
+	NTSTATUS status;
+	bool ok;
+	off_t startpos;
+	size_t numtoread, maxtoread;
+	struct files_struct *fsp = NULL;
+	char *p = NULL;
+
+	START_PROFILE(SMBlockread);
+
+	ok = smbd_smb1_do_locks_extract_smbreq(subreq, talloc_tos(), &req);
+	SMB_ASSERT(ok);
+
+	status = smbd_smb1_do_locks_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
+		goto send;
+	}
+
+	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
+	if (fsp == NULL) {
+		reply_nterror(req, NT_STATUS_INTERNAL_ERROR);
+		goto send;
+	}
+
+	numtoread = SVAL(req->vwv+1, 0);
+	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
 
 	/*
 	 * However the requested READ size IS affected by max_send. Insanity.... JRA.
 	 */
-	maxtoread = xconn->smb1.sessions.max_send - (smb_size + 5*2 + 3);
+	maxtoread = req->xconn->smb1.sessions.max_send - (smb_size + 5*2 + 3);
 
 	if (numtoread > maxtoread) {
 		DBG_WARNING("requested read size (%zu) is greater than "
@@ -3818,7 +3859,7 @@ void reply_lockread(struct smb_request *req)
 			    "compatibility with Windows 2000.\n",
 			    numtoread,
 			    maxtoread,
-			    xconn->smb1.sessions.max_send);
+			    req->xconn->smb1.sessions.max_send);
 		numtoread = maxtoread;
 	}
 
@@ -3830,8 +3871,7 @@ void reply_lockread(struct smb_request *req)
 
 	if (nread < 0) {
 		reply_nterror(req, map_nt_error_from_unix(errno));
-		END_PROFILE(SMBlockread);
-		return;
+		goto send;
 	}
 
 	srv_set_message((char *)req->outbuf, 5, nread+3, False);
@@ -3845,6 +3885,17 @@ void reply_lockread(struct smb_request *req)
 	DEBUG(3,("lockread %s num=%d nread=%d\n",
 		 fsp_fnum_dbg(fsp), (int)numtoread, (int)nread));
 
+send:
+	ok = srv_send_smb(req->xconn,
+			  (char *)req->outbuf,
+			  true,
+			  req->seqnum+1,
+			  IS_CONN_ENCRYPTED(req->conn),
+			  NULL);
+	if (!ok) {
+		exit_server_cleanly("reply_lock_done: srv_send_smb failed.");
+	}
+	TALLOC_FREE(req);
 	END_PROFILE(SMBlockread);
 	return;
 }
