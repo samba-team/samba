@@ -7375,14 +7375,14 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	/* Here we know fsp != NULL */
 	SMB_ASSERT(fsp != NULL);
 
-	status = refuse_symlink(conn, fsp, smb_fname);
+	status = refuse_symlink(conn, fsp, fsp->fsp_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
 	DBG_DEBUG("file %s num_file_acls = %"PRIu16", "
 		  "num_def_acls = %"PRIu16"\n",
-		  smb_fname ? smb_fname_str_dbg(smb_fname) : fsp_str_dbg(fsp),
+		  fsp_str_dbg(fsp),
 		  num_file_acls,
 		  num_def_acls);
 
@@ -7392,7 +7392,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	if (valid_file_acls) {
 		bool ok = set_unix_posix_acl(conn,
 					fsp,
-					smb_fname,
+					fsp->fsp_name,
 					num_file_acls,
 					pdata);
 		if (!ok) {
@@ -7406,7 +7406,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 
 	if (valid_def_acls) {
 		bool ok = set_unix_posix_default_acl(conn,
-					smb_fname,
+					fsp->fsp_name,
 					num_def_acls,
 					pdata);
 		if (!ok) {
