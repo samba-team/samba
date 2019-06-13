@@ -2555,6 +2555,13 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 
+	/* Get the nodemaps for all connected remote nodes */
+	ret = get_remote_nodemaps(rec, mem_ctx, &remote_nodemaps);
+	if (ret != 0) {
+		DBG_ERR("Failed to read remote nodemaps\n");
+		return;
+	}
+
 	/* ensure our local copies of flags are right */
 	ret = update_local_flags(rec, nodemap);
 	if (ret != 0) {
@@ -2629,13 +2636,6 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	 * unnecessary recovery.  */
 	if (ctdb_op_is_disabled(rec->recovery)) {
 		goto takeover_run_checks;
-	}
-
-	/* Get the nodemaps for all connected remote nodes */
-	ret = get_remote_nodemaps(rec, mem_ctx, &remote_nodemaps);
-	if (ret != 0) {
-		DBG_ERR("Failed to read remote nodemaps\n");
-		return;
 	}
 
 	/* verify that all other nodes have the same nodemap as we have
