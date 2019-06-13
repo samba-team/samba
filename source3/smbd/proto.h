@@ -130,6 +130,40 @@ struct blocking_lock_record *blocking_lock_cancel_smb1(files_struct *fsp,
 			enum brl_flavour lock_flav,
 			unsigned char locktype,
                         NTSTATUS err);
+NTSTATUS smbd_do_locks_try(
+	struct messaging_context *msg_ctx,
+	struct files_struct *fsp,
+	enum brl_flavour lock_flav,
+	uint16_t num_locks,
+	struct smbd_lock_element *locks,
+	uint16_t *blocker_idx,
+	struct server_id *blocking_pid,
+	uint64_t *blocking_smblctx);
+struct tevent_req *smbd_smb1_do_locks_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct messaging_context *msg_ctx,
+	struct smb_request **smbreq, /* talloc_move()d into our state */
+	struct files_struct *fsp,
+	uint32_t timeout,
+	bool large_offset,
+	enum brl_flavour lock_flav,
+	uint16_t num_locks,
+	struct smbd_lock_element *locks);
+NTSTATUS smbd_smb1_do_locks_recv(struct tevent_req *req);
+bool smbd_smb1_do_locks_extract_smbreq(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct smb_request **psmbreq);
+void smbd_smb1_brl_finish_by_req(struct tevent_req *req, NTSTATUS status);
+bool smbd_smb1_brl_finish_by_lock(
+	struct files_struct *fsp,
+	bool large_offset,
+	enum brl_flavour lock_flav,
+	struct smbd_lock_element lock,
+	NTSTATUS finish_status);
+bool smbd_smb1_brl_finish_by_mid(
+	struct smbd_server_connection *sconn, uint64_t mid);
 
 /* The following definitions come from smbd/close.c  */
 
