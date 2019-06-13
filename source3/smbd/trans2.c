@@ -7326,13 +7326,13 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 	count = (((uint64_t) IVAL(pdata,(POSIX_LOCK_LEN_OFFSET+4))) << 32) |
 			((uint64_t) IVAL(pdata,POSIX_LOCK_LEN_OFFSET));
 
-	DEBUG(10,("smb_set_posix_lock: file %s, lock_type = %u,"
-			"smblctx = %llu, count = %.0f, offset = %.0f\n",
-		fsp_str_dbg(fsp),
-		(unsigned int)lock_type,
-		(unsigned long long)smblctx,
-		(double)count,
-		(double)offset ));
+	DBG_DEBUG("file %s, lock_type = %u, smblctx = %"PRIu64", "
+		  "count = %"PRIu64", offset = %"PRIu64"\n",
+		  fsp_str_dbg(fsp),
+		  (unsigned int)lock_type,
+		  smblctx,
+		  count,
+		  offset);
 
 	if (lock_type == UNLOCK_LOCK) {
 		status = do_unlock(req->sconn->msg_ctx,
