@@ -2288,7 +2288,7 @@ static int get_remote_nodemaps(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-	nodes = list_of_connected_nodes(ctdb, rec->nodemap, mem_ctx, true);
+	nodes = list_of_connected_nodes(ctdb, rec->nodemap, mem_ctx, false);
 
 	state.remote_nodemaps = t;
 	state.rec = rec;
@@ -2641,6 +2641,9 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	/* verify that all other nodes have the same nodemap as we have
 	*/
 	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].pnn == ctdb->pnn) {
+			continue;
+		}
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
@@ -2677,6 +2680,9 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	 * up-to-date information for all the nodes.
 	 */
 	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].pnn == ctdb->pnn) {
+			continue;
+		}
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
@@ -2684,6 +2690,9 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	}
 
 	for (j=0; j<nodemap->num; j++) {
+		if (nodemap->nodes[j].pnn == ctdb->pnn) {
+			continue;
+		}
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
