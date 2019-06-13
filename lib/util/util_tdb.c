@@ -382,7 +382,7 @@ int tdb_traverse_delete_fn(struct tdb_context *the_tdb, TDB_DATA key, TDB_DATA d
 
 NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 {
-	NTSTATUS result = NT_STATUS_INTERNAL_ERROR;
+	NTSTATUS result;
 
 	switch (err) {
 	case TDB_SUCCESS:
@@ -428,6 +428,9 @@ NTSTATUS map_nt_error_from_tdb(enum TDB_ERROR err)
 		result = NT_STATUS_ACCESS_DENIED;
 		break;
 	case TDB_ERR_NESTING:
+		result = NT_STATUS_INTERNAL_ERROR;
+		break;
+	default:
 		result = NT_STATUS_INTERNAL_ERROR;
 		break;
 	};
