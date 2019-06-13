@@ -7527,11 +7527,31 @@ static bool run_acl_symlink_test(int dummy)
 		goto out;
 	}
 
-	/* Open a handle on the symlink. */
+	/* Open a handle on the symlink for SD set/get should fail. */
 	status = cli_ntcreate(cli,
 			sname,
 			0,
 			READ_CONTROL_ACCESS|SEC_STD_WRITE_DAC,
+			0,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			FILE_OPEN,
+			0x0,
+			0x0,
+			&fnum,
+			NULL);
+
+	if (NT_STATUS_IS_OK(status)) {
+		printf("Symlink open for getsd/setsd of %s "
+			"succeeded (should fail)\n",
+			sname);
+		goto out;
+	}
+
+	/* Open a handle on the symlink. */
+	status = cli_ntcreate(cli,
+			sname,
+			0,
+			FILE_READ_ATTRIBUTES|FILE_WRITE_ATTRIBUTES,
 			0,
 			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
 			FILE_OPEN,

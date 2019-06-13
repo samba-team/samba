@@ -1206,7 +1206,10 @@ static NTSTATUS open_file(files_struct *fsp,
 		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
 	}
 
-	if ((open_access_mask & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
+	if ((open_access_mask & (FILE_READ_DATA|FILE_WRITE_DATA|
+				 FILE_APPEND_DATA|FILE_EXECUTE|
+				 WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
+				 READ_CONTROL_ACCESS))||
 	    (!file_existed && (local_flags & O_CREAT)) ||
 	    ((local_flags & O_TRUNC) == O_TRUNC) ) {
 		const char *wild;
