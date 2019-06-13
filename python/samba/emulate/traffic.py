@@ -355,6 +355,7 @@ class ReplayContext(object):
                  server=None,
                  lp=None,
                  creds=None,
+                 total_conversations=None,
                  badpassword_frequency=None,
                  prefer_kerberos=None,
                  tempdir=None,
@@ -389,6 +390,7 @@ class ReplayContext(object):
         self.last_drsuapi_bad         = False
         self.last_netlogon_bad        = False
         self.last_samlogon_bad        = False
+        self.total_conversations      = total_conversations
         self.generate_ldap_search_tables()
 
     def generate_ldap_search_tables(self):
@@ -1607,6 +1609,7 @@ def replay(conversation_seq,
     context = ReplayContext(server=host,
                             creds=creds,
                             lp=lp,
+                            total_conversations=len(conversation_seq),
                             **kwargs)
 
     if len(accounts) < len(conversation_seq):
