@@ -7308,11 +7308,14 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 			return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (SVAL(pdata,POSIX_LOCK_FLAGS_OFFSET) == POSIX_LOCK_FLAG_NOWAIT) {
-		blocking_lock = False;
-	} else if (SVAL(pdata,POSIX_LOCK_FLAGS_OFFSET) == POSIX_LOCK_FLAG_WAIT) {
-		blocking_lock = True;
-	} else {
+	switch (SVAL(pdata, POSIX_LOCK_FLAGS_OFFSET)) {
+	case POSIX_LOCK_FLAG_NOWAIT:
+		blocking_lock = false;
+		break;
+	case POSIX_LOCK_FLAG_WAIT:
+		blocking_lock = true;
+		break;
+	default:
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
