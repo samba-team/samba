@@ -37,7 +37,7 @@ from samba.ntstatus import (
 )
 import samba
 import dns.resolver
-
+from ldb import SCOPE_BASE
 
 def uint32(v):
     return ctypes.c_uint32(v).value
@@ -329,7 +329,7 @@ def packet_ldap_3(packet, conversation, context):
 
     (scope, dn_sig, filter, attrs, extra, desc, oid) = packet.extra
     if not scope:
-        scope = 0
+        scope = SCOPE_BASE
 
     samdb = context.get_ldap_connection()
     dn = context.get_matching_dn(dn_sig)
