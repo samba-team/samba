@@ -7206,8 +7206,8 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	uint16_t posix_acl_version;
 	uint16_t num_file_acls;
 	uint16_t num_def_acls;
-	bool valid_file_acls = True;
-	bool valid_def_acls = True;
+	bool valid_file_acls = true;
+	bool valid_def_acls = true;
 	NTSTATUS status;
 
 	if (total_data < SMB_POSIX_ACL_HEADER_SIZE) {
@@ -7218,12 +7218,12 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	num_def_acls = SVAL(pdata,4);
 
 	if (num_file_acls == SMB_POSIX_IGNORE_ACE_ENTRIES) {
-		valid_file_acls = False;
+		valid_file_acls = false;
 		num_file_acls = 0;
 	}
 
 	if (num_def_acls == SMB_POSIX_IGNORE_ACE_ENTRIES) {
-		valid_def_acls = False;
+		valid_def_acls = false;
 		num_def_acls = 0;
 	}
 
@@ -7241,10 +7241,11 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 		return status;
 	}
 
-	DEBUG(10,("smb_set_posix_acl: file %s num_file_acls = %u, num_def_acls = %u\n",
-		smb_fname ? smb_fname_str_dbg(smb_fname) : fsp_str_dbg(fsp),
-		(unsigned int)num_file_acls,
-		(unsigned int)num_def_acls));
+	DBG_DEBUG("file %s num_file_acls = %"PRIu16", "
+		  "num_def_acls = %"PRIu16"\n",
+		  smb_fname ? smb_fname_str_dbg(smb_fname) : fsp_str_dbg(fsp),
+		  num_file_acls,
+		  num_def_acls);
 
 	if (valid_file_acls && !set_unix_posix_acl(conn, fsp,
 		smb_fname, num_file_acls,
