@@ -7266,19 +7266,21 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
  Deal with SMB_SET_POSIX_LOCK.
 ****************************************************************************/
 
+static void smb_set_posix_lock_done(struct tevent_req *subreq);
+
 static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 				struct smb_request *req,
 				const char *pdata,
 				int total_data,
 				files_struct *fsp)
 {
+	struct tevent_req *subreq = NULL;
+	struct smbd_lock_element *lck = NULL;
 	uint64_t count;
 	uint64_t offset;
 	uint64_t smblctx;
 	bool blocking_lock = False;
 	enum brl_type lock_type;
-	uint64_t block_smblctx;
-	struct byte_range_lock *br_lck;
 
 	NTSTATUS status = NT_STATUS_OK;
 
@@ -7348,42 +7350,78 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 		return status;
 	}
 
-	br_lck = do_lock(req->sconn->msg_ctx,
-			 fsp,
-			 smblctx,
-			 count,
-			 offset,
-			 lock_type,
-			 POSIX_LOCK,
-			 blocking_lock,
-			 &status,
-			 NULL,
-			 &block_smblctx);
+	lck = talloc(req, struct smbd_lock_element);
+	if (lck == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {
-		/*
-		 * A blocking lock was requested. Package up this smb
-		 * into a queued request and push it onto the blocking
-		 * lock queue.
-		 */
-		if(push_blocking_lock_request(br_lck,
-					      req,
-					      fsp,
-					      -1, /* infinite timeout. */
-					      0,
-					      smblctx,
-					      lock_type,
-					      POSIX_LOCK,
-					      offset,
-					      count,
-					      block_smblctx)) {
-			TALLOC_FREE(br_lck);
-			return status;
+	*lck = (struct smbd_lock_element) {
+		.smblctx = smblctx,
+		.brltype = lock_type,
+		.count = count,
+		.offset = offset,
+	};
+
+	subreq = smbd_smb1_do_locks_send(
+		fsp,
+		req->sconn->ev_ctx,
+		req->sconn->msg_ctx,
+		&req,
+		fsp,
+		blocking_lock ? UINT32_MAX : 0,
+		true,		/* large_offset */
+		POSIX_LOCK,
+		1,
+		lck);
+	if (subreq == NULL) {
+		TALLOC_FREE(lck);
+		return NT_STATUS_NO_MEMORY;
+	}
+	tevent_req_set_callback(subreq, smb_set_posix_lock_done, req);
+	return NT_STATUS_EVENT_PENDING;
+}
+
+static void smb_set_posix_lock_done(struct tevent_req *subreq)
+{
+	struct smb_request *req = NULL;
+	NTSTATUS status;
+	bool ok;
+
+	ok = smbd_smb1_do_locks_extract_smbreq(subreq, talloc_tos(), &req);
+	SMB_ASSERT(ok);
+
+	status = smbd_smb1_do_locks_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	if (NT_STATUS_IS_OK(status)) {
+		char params[2] = {0};
+		/* Fake up max_data_bytes here - we know it fits. */
+		send_trans2_replies(
+			req->conn,
+			req,
+			NT_STATUS_OK,
+			params,
+			2,
+			NULL,
+			0,
+			0xffff);
+	} else {
+		reply_nterror(req, status);
+		ok = srv_send_smb(
+			req->xconn,
+			(char *)req->outbuf,
+			true,
+			req->seqnum+1,
+			IS_CONN_ENCRYPTED(req->conn),
+			NULL);
+		if (!ok) {
+			exit_server_cleanly("smb_set_posix_lock_done: "
+					    "srv_send_smb failed.");
 		}
 	}
-	TALLOC_FREE(br_lck);
 
-	return status;
+	TALLOC_FREE(req);
+	return;
 }
 
 /****************************************************************************
@@ -8984,7 +9022,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 			/* We have re-scheduled this call. */
 			return;
 		}
-		if (blocking_lock_was_deferred_smb1(req->sconn, req->mid)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_EVENT_PENDING)) {
 			/* We have re-scheduled this call. */
 			return;
 		}
