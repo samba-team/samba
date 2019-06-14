@@ -5721,8 +5721,11 @@ void reply_unlock(struct smb_request *req)
 		return;
 	}
 
-	DEBUG( 3, ( "unlock fd=%d %s offset=%.0f count=%.0f\n",
-		    fsp->fh->fd, fsp_fnum_dbg(fsp), (double)offset, (double)count ) );
+	DBG_NOTICE("unlock fd=%d %s offset=%"PRIu64" count=%"PRIu64"\n",
+		   fsp->fh->fd,
+		   fsp_fnum_dbg(fsp),
+		   offset,
+		   count);
 
 	reply_outbuf(req, 0, 0);
 
