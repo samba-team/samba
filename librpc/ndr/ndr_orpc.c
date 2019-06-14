@@ -137,7 +137,6 @@ enum ndr_err_code ndr_pull_STRINGARRAY(struct ndr_pull *ndr, int ndr_flags, stru
 	} while (towerid != 0);
 
 	ar->stringbindings[towernum] = NULL;
-	towernum = 0;
 
 	return NDR_ERR_SUCCESS;
 }
