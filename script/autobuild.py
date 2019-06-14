@@ -141,7 +141,7 @@ builddirs = {
     "pidl": "pidl"
 }
 
-defaulttasks = builddirs.keys()
+defaulttasks = list(builddirs.keys())
 
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
