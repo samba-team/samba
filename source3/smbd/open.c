@@ -3120,7 +3120,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		new_dos_attributes &= SAMBA_ATTRIBUTES_MASK;
 		if (file_existed) {
 			/*
-			 * Only use strored DOS attributes for checks
+			 * Only use stored DOS attributes for checks
 			 * against requested attributes (below via
 			 * open_match_attributes()), cf bug #11992
 			 * for details. -slow
