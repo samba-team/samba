@@ -7338,12 +7338,13 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 		  offset);
 
 	if (lock_type == UNLOCK_LOCK) {
-		status = do_unlock(req->sconn->msg_ctx,
-				fsp,
-				smblctx,
-				count,
-				offset,
-				POSIX_LOCK);
+		struct smbd_lock_element l = {
+			.smblctx = smblctx,
+			.brltype = UNLOCK_LOCK,
+			.offset = offset,
+			.count = count,
+		};
+		status = smbd_do_unlocking(req, fsp, 1, &l, POSIX_LOCK);
 		return status;
 	}
 
