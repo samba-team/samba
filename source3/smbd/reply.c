@@ -5715,7 +5715,7 @@ void reply_unlock(struct smb_request *req)
 			offset,
 			WINDOWS_LOCK);
 
-	if (NT_STATUS_V(status)) {
+	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
 		END_PROFILE(SMBunlock);
 		return;
