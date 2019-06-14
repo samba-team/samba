@@ -5686,9 +5686,9 @@ void reply_lock(struct smb_request *req)
 void reply_unlock(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	uint64_t count,offset;
 	NTSTATUS status;
 	files_struct *fsp;
+	struct smbd_lock_element lck;
 
 	START_PROFILE(SMBunlock);
 
@@ -5705,15 +5705,14 @@ void reply_unlock(struct smb_request *req)
 		return;
 	}
 
-	count = (uint64_t)IVAL(req->vwv+1, 0);
-	offset = (uint64_t)IVAL(req->vwv+3, 0);
+	lck = (struct smbd_lock_element) {
+		.smblctx = req->smbpid,
+		.brltype = UNLOCK_LOCK,
+		.offset = IVAL(req->vwv+3, 0),
+		.count = IVAL(req->vwv+1, 0),
+	};
 
-	status = do_unlock(req->sconn->msg_ctx,
-			fsp,
-			(uint64_t)req->smbpid,
-			count,
-			offset,
-			WINDOWS_LOCK);
+	status = smbd_do_unlocking(req, fsp, 1, &lck, WINDOWS_LOCK);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -5724,8 +5723,8 @@ void reply_unlock(struct smb_request *req)
 	DBG_NOTICE("unlock fd=%d %s offset=%"PRIu64" count=%"PRIu64"\n",
 		   fsp->fh->fd,
 		   fsp_fnum_dbg(fsp),
-		   offset,
-		   count);
+		   lck.offset,
+		   lck.count);
 
 	reply_outbuf(req, 0, 0);
 
