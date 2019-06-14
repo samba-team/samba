@@ -124,7 +124,8 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 NTSTATUS smbd_do_unlocking(struct smb_request *req,
 			   files_struct *fsp,
 			   uint16_t num_ulocks,
-			   struct smbd_lock_element *ulocks);
+			   struct smbd_lock_element *ulocks,
+			   enum brl_flavour lock_flav);
 
 NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			       TALLOC_CTX *mem_ctx,

@@ -8220,7 +8220,8 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 NTSTATUS smbd_do_unlocking(struct smb_request *req,
 			   files_struct *fsp,
 			   uint16_t num_ulocks,
-			   struct smbd_lock_element *ulocks)
+			   struct smbd_lock_element *ulocks,
+			   enum brl_flavour lock_flav)
 {
 	uint16_t i;
 
@@ -8245,7 +8246,7 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 				e->smblctx,
 				e->count,
 				e->offset,
-				WINDOWS_LOCK);
+				lock_flav);
 
 		DEBUG(10, ("%s: unlock returned %s\n", __func__,
 			   nt_errstr(status)));
@@ -8410,7 +8411,7 @@ void reply_lockingX(struct smb_request *req)
 		ulocks[i].brltype = UNLOCK_LOCK;
 	}
 
-	status = smbd_do_unlocking(req, fsp, num_ulocks, ulocks);
+	status = smbd_do_unlocking(req, fsp, num_ulocks, ulocks, WINDOWS_LOCK);
 	TALLOC_FREE(ulocks);
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBlockingX);
