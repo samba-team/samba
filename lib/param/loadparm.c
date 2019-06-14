@@ -3322,7 +3322,7 @@ struct loadparm_service *lpcfg_service(struct loadparm_context *lp_ctx,
 
 const char *lpcfg_servicename(const struct loadparm_service *service)
 {
-	return lpcfg_string((const char *)service->szService);
+	return service ? lpcfg_string((const char *)service->szService) : NULL;
 }
 
 /**
