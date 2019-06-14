@@ -510,9 +510,11 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map_ol
 	 */
 	for (j=0; j<nodemap->num; j++) {
 		struct ctdb_node_map_old *remote_nodemap=NULL;
+		uint32_t local_flags = nodemap->nodes[j].flags;
+		uint32_t remote_flags;
 		int ret;
 
-		if (nodemap->nodes[j].flags & NODE_FLAGS_DISCONNECTED) {
+		if (local_flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
 		if (nodemap->nodes[j].pnn == ctdb->pnn) {
@@ -528,26 +530,35 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map_ol
 			talloc_free(mem_ctx);
 			return -1;
 		}
-		if (nodemap->nodes[j].flags != remote_nodemap->nodes[j].flags) {
+		remote_flags = remote_nodemap->nodes[j].flags;
+
+		if (local_flags != remote_flags) {
 			/* We should tell our daemon about this so it
 			   updates its flags or else we will log the same 
 			   message again in the next iteration of recovery.
 			   Since we are the recovery master we can just as
 			   well update the flags on all nodes.
 			*/
-			ret = ctdb_ctrl_modflags(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, remote_nodemap->nodes[j].flags, ~remote_nodemap->nodes[j].flags);
+			ret = ctdb_ctrl_modflags(ctdb,
+						 CONTROL_TIMEOUT(),
+						 nodemap->nodes[j].pnn,
+						 remote_flags,
+						 ~remote_flags);
 			if (ret != 0) {
 				DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
 				return -1;
 			}
 
-			/* Update our local copy of the flags in the recovery
-			   daemon.
-			*/
-			DEBUG(DEBUG_NOTICE,("Remote node %u had flags 0x%x, local had 0x%x - updating local\n",
-				 nodemap->nodes[j].pnn, remote_nodemap->nodes[j].flags,
-				 nodemap->nodes[j].flags));
-			nodemap->nodes[j].flags = remote_nodemap->nodes[j].flags;
+			/*
+			 * Update the local copy of the flags in the
+			 * recovery daemon.
+			 */
+			D_NOTICE("Remote node %u had flags 0x%x, "
+				 "local had 0x%x - updating local\n",
+				 nodemap->nodes[j].pnn,
+				 remote_flags,
+				 local_flags);
+			nodemap->nodes[j].flags = remote_flags;
 		}
 		talloc_free(remote_nodemap);
 	}
