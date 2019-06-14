@@ -533,19 +533,13 @@ static int update_local_flags(struct ctdb_recoverd *rec, struct ctdb_node_map_ol
 		remote_flags = remote_nodemap->nodes[j].flags;
 
 		if (local_flags != remote_flags) {
-			/* We should tell our daemon about this so it
-			   updates its flags or else we will log the same 
-			   message again in the next iteration of recovery.
-			   Since we are the recovery master we can just as
-			   well update the flags on all nodes.
-			*/
-			ret = ctdb_ctrl_modflags(ctdb,
-						 CONTROL_TIMEOUT(),
-						 nodemap->nodes[j].pnn,
-						 remote_flags,
-						 ~remote_flags);
+			ret = update_flags_on_all_nodes(rec,
+							nodemap->nodes[j].pnn,
+							remote_flags);
 			if (ret != 0) {
-				DEBUG(DEBUG_ERR, (__location__ " Unable to update nodeflags on remote nodes\n"));
+				DBG_ERR(
+				    "Unable to update flags on remote nodes\n");
+				talloc_free(mem_ctx);
 				return -1;
 			}
 
