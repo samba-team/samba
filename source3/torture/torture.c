@@ -7479,6 +7479,283 @@ static bool run_posix_ofd_lock_test(int dummy)
 	return correct;
 }
 
+struct posix_blocking_state {
+	struct tevent_context *ev;
+	struct cli_state *cli1;
+	uint16_t fnum1;
+	struct cli_state *cli2;
+	uint16_t fnum2;
+	bool gotblocked;
+	bool gotecho;
+};
+
+static void posix_blocking_locked(struct tevent_req *subreq);
+static void posix_blocking_gotblocked(struct tevent_req *subreq);
+static void posix_blocking_gotecho(struct tevent_req *subreq);
+static void posix_blocking_unlocked(struct tevent_req *subreq);
+
+static struct tevent_req *posix_blocking_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli1,
+	uint16_t fnum1,
+	struct cli_state *cli2,
+	uint16_t fnum2)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct posix_blocking_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct posix_blocking_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli1 = cli1;
+	state->fnum1 = fnum1;
+	state->cli2 = cli2;
+	state->fnum2 = fnum2;
+
+	subreq = cli_posix_lock_send(
+		state,
+		state->ev,
+		state->cli1,
+		state->fnum1,
+		0,
+		1,
+		false,
+		WRITE_LOCK);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, posix_blocking_locked, req);
+	return req;
+}
+
+static void posix_blocking_locked(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct posix_blocking_state *state = tevent_req_data(
+		req, struct posix_blocking_state);
+	NTSTATUS status;
+
+	status = cli_posix_lock_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	subreq = cli_posix_lock_send(
+		state,
+		state->ev,
+		state->cli2,
+		state->fnum2,
+		0,
+		1,
+		true,
+		WRITE_LOCK);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, posix_blocking_gotblocked, req);
+
+	/* Make sure the blocking request is delivered */
+	subreq = cli_echo_send(
+		state,
+		state->ev,
+		state->cli2,
+		1,
+		(DATA_BLOB) { .data = (uint8_t *)state, .length = 1 });
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, posix_blocking_gotecho, req);
+}
+
+static void posix_blocking_gotblocked(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct posix_blocking_state *state = tevent_req_data(
+		req, struct posix_blocking_state);
+	NTSTATUS status;
+
+	status = cli_posix_lock_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	if (!state->gotecho) {
+		printf("blocked req got through before echo\n");
+		tevent_req_nterror(req, NT_STATUS_INVALID_LOCK_SEQUENCE);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static void posix_blocking_gotecho(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct posix_blocking_state *state = tevent_req_data(
+		req, struct posix_blocking_state);
+	NTSTATUS status;
+
+	status = cli_echo_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	if (state->gotblocked) {
+		printf("blocked req got through before echo\n");
+		tevent_req_nterror(req, NT_STATUS_INVALID_LOCK_SEQUENCE);
+		return;
+	}
+	state->gotecho = true;
+
+	subreq = cli_posix_lock_send(
+		state,
+		state->ev,
+		state->cli1,
+		state->fnum1,
+		0,
+		1,
+		false,
+		UNLOCK_LOCK);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, posix_blocking_unlocked, req);
+}
+
+static void posix_blocking_unlocked(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = cli_posix_lock_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	/* tevent_req_done in posix_blocking_gotlocked */
+}
+
+static NTSTATUS posix_blocking_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static bool run_posix_blocking_lock(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct cli_state *cli1 = NULL, *cli2 = NULL;
+	const char *fname = "posix_blocking";
+	uint16_t fnum1 = UINT16_MAX, fnum2 = UINT16_MAX;
+	struct tevent_req *req = NULL;
+	NTSTATUS status;
+	bool ret = false;
+	bool ok;
+
+	printf("Starting posix blocking lock test\n");
+
+	ev = samba_tevent_context_init(NULL);
+	if (ev == NULL) {
+		return false;
+	}
+
+	ok = torture_open_connection(&cli1, 0);
+	if (!ok) {
+		goto fail;
+	}
+	ok = torture_open_connection(&cli2, 0);
+	if (!ok) {
+		goto fail;
+	}
+
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+
+	status = torture_setup_unix_extensions(cli1);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	cli_setatr(cli1, fname, 0, 0);
+	cli_posix_unlink(cli1, fname);
+
+	status = cli_posix_open(cli1, fname, O_RDWR|O_CREAT|O_EXCL,
+				0600, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("First POSIX open of %s failed: %s\n",
+		       fname,
+		       nt_errstr(status));
+		goto fail;
+	}
+
+	status = cli_posix_open(cli2, fname, O_RDWR, 0600, &fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Second POSIX open of %s failed: %s\n",
+		       fname,
+		       nt_errstr(status));
+		goto fail;
+	}
+
+	req = posix_blocking_send(ev, ev, cli1, fnum1, cli2, fnum2);
+	if (req == NULL) {
+		printf("cli_posix_blocking failed\n");
+		goto fail;
+	}
+
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		printf("tevent_req_poll_ntstatus failed: %s\n",
+		       nt_errstr(status));
+		goto fail;
+	}
+	status = posix_blocking_recv(req);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("posix_blocking_recv returned %s\n",
+		       nt_errstr(status));
+		goto fail;
+	}
+
+	ret = true;
+fail:
+
+	if (fnum1 != UINT16_MAX) {
+		cli_close(cli1, fnum1);
+		fnum1 = UINT16_MAX;
+	}
+	if (fnum2 != UINT16_MAX) {
+		cli_close(cli2, fnum2);
+		fnum2 = UINT16_MAX;
+	}
+
+	if (cli1 != NULL) {
+		cli_setatr(cli1, fname, 0, 0);
+		cli_posix_unlink(cli1, fname);
+	}
+
+	ok = true;
+
+	if (cli1 != NULL) {
+		ok &= torture_close_connection(cli1);
+		cli1 = NULL;
+	}
+	if (cli2 != NULL) {
+		ok &= torture_close_connection(cli2);
+		cli2 = NULL;
+	}
+
+	if (!ok) {
+		ret = false;
+	}
+	TALLOC_FREE(ev);
+	return ret;
+}
+
 /*
   Test POSIX mkdir is case-sensitive.
  */
@@ -12399,6 +12676,10 @@ static struct {
 	{
 		.name  = "POSIX-OFD-LOCK",
 		.fn    = run_posix_ofd_lock_test,
+	},
+	{
+		.name  = "POSIX-BLOCKING-LOCK",
+		.fn    = run_posix_blocking_lock,
 	},
 	{
 		.name  = "POSIX-MKDIR",
