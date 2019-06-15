@@ -384,6 +384,7 @@ typedef struct files_struct {
 	 */
 	unsigned num_aio_requests;
 	struct tevent_req **aio_requests;
+	bool closing;
 
 	/*
 	 * Requests waiting for smb1 byte range locks. They are

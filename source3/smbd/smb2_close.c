@@ -313,6 +313,7 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct smbd_smb2_close_state *state;
+	unsigned i;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -323,6 +324,17 @@ static struct tevent_req *smbd_smb2_close_send(TALLOC_CTX *mem_ctx,
 	state->smb2req = smb2req;
 	state->in_fsp = in_fsp;
 	state->in_flags = in_flags;
+
+	in_fsp->closing = true;
+
+	i = 0;
+	while (i < in_fsp->num_aio_requests) {
+		bool ok = tevent_req_cancel(in_fsp->aio_requests[i]);
+		if (ok) {
+			continue;
+		}
+		i += 1;
+	}
 
 	if (in_fsp->num_aio_requests != 0) {
 		in_fsp->deferred_close = tevent_wait_send(in_fsp, ev);

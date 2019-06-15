@@ -24,6 +24,8 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/util/tevent_ntstatus.h"
+#include "lib/dbwrap/dbwrap_watch.h"
+#include "librpc/gen_ndr/open_files.h"
 #include "messages.h"
 
 #undef DBGC_CLASS
@@ -36,8 +38,10 @@ struct smbd_smb2_lock_element {
 };
 
 struct smbd_smb2_lock_state {
+	struct tevent_context *ev;
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smb1req;
+	struct files_struct *fsp;
 	struct blocking_lock_record *blr;
 	uint16_t lock_count;
 	struct smbd_lock_element *locks;
@@ -188,6 +192,9 @@ static void smbd_smb2_request_lock_done(struct tevent_req *subreq)
 	}
 }
 
+static void smbd_smb2_lock_retry(struct tevent_req *subreq);
+static bool smbd_smb2_lock_cancel(struct tevent_req *req);
+
 static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 						 struct tevent_context *ev,
 						 struct smbd_smb2_request *smb2req,
@@ -197,27 +204,30 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct smbd_smb2_lock_state *state;
-	struct smb_request *smb1req;
-	int32_t timeout = -1;
+	bool blocking = false;
 	bool isunlock = false;
 	uint16_t i;
 	struct smbd_lock_element *locks;
+	struct share_mode_lock *lck = NULL;
+	uint16_t blocker_idx;
+	struct server_id blocking_pid = { 0 };
+	uint64_t blocking_smblctx;
 	NTSTATUS status;
-	bool async = false;
 
 	req = tevent_req_create(mem_ctx, &state,
 			struct smbd_smb2_lock_state);
 	if (req == NULL) {
 		return NULL;
 	}
+	state->ev = ev;
+	state->fsp = fsp;
 	state->smb2req = smb2req;
 	smb2req->subreq = req; /* So we can find this when going async. */
 
-	smb1req = smbd_smb2_fake_smb_request(smb2req);
-	if (tevent_req_nomem(smb1req, req)) {
+	state->smb1req = smbd_smb2_fake_smb_request(smb2req);
+	if (tevent_req_nomem(state->smb1req, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->smb1req = smb1req;
 
 	DEBUG(10,("smbd_smb2_lock_send: %s - %s\n",
 		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
@@ -235,19 +245,17 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return tevent_req_post(req, ev);
 		}
-		timeout = -1;
+		blocking = true;
 		break;
 
 	case SMB2_LOCK_FLAG_SHARED|SMB2_LOCK_FLAG_FAIL_IMMEDIATELY:
 	case SMB2_LOCK_FLAG_EXCLUSIVE|SMB2_LOCK_FLAG_FAIL_IMMEDIATELY:
-		timeout = 0;
 		break;
 
 	case SMB2_LOCK_FLAG_UNLOCK:
 		/* only the first lock gives the UNLOCK bit - see
 		   MS-SMB2 3.3.5.14 */
 		isunlock = true;
-		timeout = 0;
 		break;
 
 	default:
@@ -349,7 +357,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 
 	if (isunlock) {
 		status = smbd_do_unlocking(
-			smb1req, fsp, in_lock_count, locks, WINDOWS_LOCK);
+			state->smb1req, fsp, in_lock_count, locks, WINDOWS_LOCK);
 
 		if (tevent_req_nterror(req, status)) {
 			return tevent_req_post(req, ev);
@@ -358,25 +366,101 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	status = smbd_do_locking(
-		smb1req, fsp, timeout, in_lock_count, locks, &async);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
-		       status = NT_STATUS_LOCK_NOT_GRANTED;
-		}
-		tevent_req_nterror(req, status);
+	lck = get_existing_share_mode_lock(
+		talloc_tos(), state->fsp->file_id);
+	if (tevent_req_nomem(lck, req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	if (async) {
+	status = smbd_do_locks_try(
+		state->smb1req->sconn->msg_ctx,
+		state->fsp,
+		WINDOWS_LOCK,
+		state->lock_count,
+		state->locks,
+		&blocker_idx,
+		&blocking_pid,
+		&blocking_smblctx);
+
+	if (NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(lck);
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	if (blocking &&
+	    (NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED) ||
+	     NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT))) {
+		struct tevent_req *subreq;
+
+		DBG_DEBUG("Watching share mode lock\n");
+
+		subreq = dbwrap_watched_watch_send(
+			state, state->ev, lck->data->record, blocking_pid);
+		TALLOC_FREE(lck);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, smbd_smb2_lock_retry, req);
+
 		tevent_req_defer_callback(req, smb2req->sconn->ev_ctx);
-		SMBPROFILE_IOBYTES_ASYNC_SET_IDLE(smb2req->profile);
+		aio_add_req_to_fsp(state->fsp, req);
+		tevent_req_set_cancel_fn(req, smbd_smb2_lock_cancel);
+
 		return req;
 	}
 
-	tevent_req_done(req);
+	TALLOC_FREE(lck);
+	tevent_req_nterror(req, status);
 	return tevent_req_post(req, ev);
+}
+
+static void smbd_smb2_lock_retry(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbd_smb2_lock_state *state = tevent_req_data(
+		req, struct smbd_smb2_lock_state);
+	struct share_mode_lock *lck = NULL;
+	uint16_t blocker_idx;
+	struct server_id blocking_pid = { 0 };
+	uint64_t blocking_smblctx;
+	NTSTATUS status;
+
+	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	lck = get_existing_share_mode_lock(
+		talloc_tos(), state->fsp->file_id);
+	if (tevent_req_nomem(lck, req)) {
+		return;
+	}
+
+	status = smbd_do_locks_try(
+		state->smb1req->sconn->msg_ctx,
+		state->fsp,
+		WINDOWS_LOCK,
+		state->lock_count,
+		state->locks,
+		&blocker_idx,
+		&blocking_pid,
+		&blocking_smblctx);
+	if (NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(lck);
+		tevent_req_done(req);
+		return;
+	}
+
+	subreq = dbwrap_watched_watch_send(
+		state, state->ev, lck->data->record, blocking_pid);
+	TALLOC_FREE(lck);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, smbd_smb2_lock_retry, req);
 }
 
 static NTSTATUS smbd_smb2_lock_recv(struct tevent_req *req)
@@ -403,23 +487,14 @@ static bool smbd_smb2_lock_cancel(struct tevent_req *req)
 
 	smb2req = state->smb2req;
 
-	remove_pending_lock(state, state->blr);
-
 	/*
-	 * If the request is canceled because of logoff, tdis or close
+	 * If the request is canceled because of close, logoff or tdis
 	 * the status is NT_STATUS_RANGE_NOT_LOCKED instead of
 	 * NT_STATUS_CANCELLED.
-	 *
-	 * Note that the close case is handled in
-	 * cancel_pending_lock_requests_by_fid_smb2(SHUTDOWN_CLOSE)
-	 * for now.
 	 */
-	if (!NT_STATUS_IS_OK(smb2req->session->status)) {
-		tevent_req_nterror(req, NT_STATUS_RANGE_NOT_LOCKED);
-		return true;
-	}
-
-	if (!NT_STATUS_IS_OK(smb2req->tcon->status)) {
+	if (state->fsp->closing ||
+	    !NT_STATUS_IS_OK(smb2req->session->status) ||
+	    !NT_STATUS_IS_OK(smb2req->tcon->status)) {
 		tevent_req_nterror(req, NT_STATUS_RANGE_NOT_LOCKED);
 		return true;
 	}
