@@ -62,7 +62,7 @@ bool pyldb_Object_AsDn(TALLOC_CTX *mem_ctx, PyObject *object,
 	struct ldb_dn *odn;
 	PyTypeObject *PyLdb_Dn_Type;
 
-	if (ldb_ctx != NULL && (PyUnicode_Check(object) || PyUnicode_Check(object))) {
+	if (ldb_ctx != NULL && (PyUnicode_Check(object))) {
 		odn = ldb_dn_new(mem_ctx, ldb_ctx, PyUnicode_AsUTF8(object));
 		*dn = odn;
 		return true;

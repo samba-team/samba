@@ -53,7 +53,7 @@ static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *sy
 {
 	ZERO_STRUCTP(syntax_id);
 
-	if (PyUnicode_Check(object) || PyUnicode_Check(object)) {
+	if (PyUnicode_Check(object)) {
 		return PyString_AsGUID(object, &syntax_id->uuid);
 	} else if (PyTuple_Check(object)) {
 		PyObject *item = NULL;
@@ -63,7 +63,7 @@ static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *sy
 		}
 
 		item = PyTuple_GetItem(object, 0);
-		if (!(PyUnicode_Check(item) || PyUnicode_Check(item))) {
+		if (!PyUnicode_Check(item)) {
 			PyErr_SetString(PyExc_ValueError, "Expected GUID as first element in tuple");
 			return false;
 		}

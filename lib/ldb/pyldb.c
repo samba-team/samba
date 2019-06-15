@@ -1134,7 +1134,7 @@ static const char **PyList_AsStrList(TALLOC_CTX *mem_ctx, PyObject *list,
 		const char *str = NULL;
 		Py_ssize_t size;
 		PyObject *item = PyList_GetItem(list, i);
-		if (!(PyUnicode_Check(item) || PyUnicode_Check(item))) {
+		if (!PyUnicode_Check(item)) {
 			PyErr_Format(PyExc_TypeError, "%s should be strings", paramname);
 			talloc_free(ret);
 			return NULL;

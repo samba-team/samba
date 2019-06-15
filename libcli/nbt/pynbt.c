@@ -57,7 +57,7 @@ static PyObject *py_nbt_node_init(PyTypeObject *self, PyObject *args, PyObject *
 
 static bool PyObject_AsDestinationTuple(PyObject *obj, const char **dest_addr, uint16_t *dest_port)
 {
-	if (PyUnicode_Check(obj) || PyUnicode_Check(obj)) {
+	if (PyUnicode_Check(obj)) {
 		*dest_addr = PyUnicode_AsUTF8(obj);
 		*dest_port = NBT_NAME_SERVICE_PORT;
 		return true;
@@ -69,7 +69,7 @@ static bool PyObject_AsDestinationTuple(PyObject *obj, const char **dest_addr, u
 			return false;
 		}
 
-		if (!(PyUnicode_Check(PyTuple_GetItem(obj, 0)) || PyUnicode_Check(PyTuple_GetItem(obj, 0)))) {
+		if (!PyUnicode_Check(PyTuple_GetItem(obj, 0))) {
 			PyErr_SetString(PyExc_TypeError, "Destination tuple first element not string");
 			return false;
 		}
@@ -126,7 +126,7 @@ static bool PyObject_AsNBTName(PyObject *obj, struct nbt_name_socket *name_socke
 		}
 	}
 
-	if (PyUnicode_Check(obj) || PyUnicode_Check(obj)) {
+	if (PyUnicode_Check(obj)) {
 		/* FIXME: Parse string to be able to interpret things like RHONWYN<02> ? */
 		name->name = PyUnicode_AsUTF8(obj);
 		if (name->name == NULL) {

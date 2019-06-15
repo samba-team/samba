@@ -184,7 +184,7 @@ static PyObject *py_register_backend(PyObject *self, PyObject *args)
 		return NULL;
 	}
 
-	if (!(PyUnicode_Check(name) || PyUnicode_Check(name))) {
+	if (!PyUnicode_Check(name)) {
 		PyErr_SetNone(PyExc_TypeError);
 		Py_DECREF(name);
 		return NULL;
