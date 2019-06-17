@@ -7288,6 +7288,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	NTSTATUS status;
 	unsigned int size_needed;
 	unsigned int total_data;
+	bool close_fsp = false;
 
 	if (total_data_in < 0) {
 		status = NT_STATUS_INVALID_PARAMETER;
@@ -7348,6 +7349,32 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 		goto out;
 	}
 
+	/*
+	 * Ensure we always operate on a file descriptor, not just
+	 * the filename.
+	 */
+	if (fsp == NULL) {
+		uint32_t access_mask = SEC_STD_WRITE_OWNER|
+					SEC_STD_WRITE_DAC|
+					SEC_STD_READ_CONTROL|
+					FILE_READ_ATTRIBUTES|
+					FILE_WRITE_ATTRIBUTES;
+
+		status = get_posix_fsp(conn,
+					req,
+					smb_fname,
+					access_mask,
+					&fsp);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+		close_fsp = true;
+	}
+
+	/* Here we know fsp != NULL */
+	SMB_ASSERT(fsp != NULL);
+
 	status = refuse_symlink(conn, fsp, smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
@@ -7392,6 +7419,10 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 
   out:
 
+	if (close_fsp) {
+		(void)close_file(req, fsp, NORMAL_CLOSE);
+		fsp = NULL;
+	}
 	return status;
 }
 #endif
