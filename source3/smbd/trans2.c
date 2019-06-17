@@ -99,6 +99,82 @@ NTSTATUS check_access_fsp(const struct files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
+#if defined(HAVE_POSIX_ACLS)
+/****************************************************************************
+ Utility function to open a fsp for a POSIX handle operation.
+****************************************************************************/
+
+static NTSTATUS get_posix_fsp(connection_struct *conn,
+			struct smb_request *req,
+			const struct smb_filename *smb_fname,
+			uint32_t access_mask,
+			files_struct **ret_fsp)
+{
+	NTSTATUS status;
+	struct smb_filename *smb_fname_tmp = NULL;
+	uint32_t create_disposition = FILE_OPEN;
+	uint32_t share_access = FILE_SHARE_READ|
+				FILE_SHARE_WRITE|
+				FILE_SHARE_DELETE;
+	/*
+	 * Only FILE_FLAG_POSIX_SEMANTICS matters on existing files,
+	 * but set reasonable defaults.
+	 */
+	uint32_t file_attributes = 0664|FILE_FLAG_POSIX_SEMANTICS;
+	uint32_t oplock = NO_OPLOCK;
+	uint32_t create_options = FILE_NON_DIRECTORY_FILE;
+
+	/* File or directory must exist. */
+	if (!VALID_STAT(smb_fname->st)) {
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+	/* Cannot be a symlink. */
+	if (S_ISLNK(smb_fname->st.st_ex_mode)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	/* Set options correctly for directory open. */
+	if (S_ISDIR(smb_fname->st.st_ex_mode)) {
+		/*
+		 * Only FILE_FLAG_POSIX_SEMANTICS matters on existing
+		 * directories, but set reasonable defaults.
+		 */
+		file_attributes = 0775|FILE_FLAG_POSIX_SEMANTICS;
+		create_options = FILE_DIRECTORY_FILE;
+	}
+
+	/* Createfile uses a non-const smb_fname. */
+	smb_fname_tmp = cp_smb_filename(talloc_tos(),
+					smb_fname);
+	if (smb_fname_tmp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_CREATE_FILE(
+		conn,           /* conn */
+		req,            /* req */
+		0,              /* root_dir_fid */
+		smb_fname_tmp,  /* fname */
+		access_mask,    /* access_mask */
+		share_access,   /* share_access */
+		create_disposition,/* create_disposition*/
+		create_options, /* create_options */
+		file_attributes,/* file_attributes */
+		oplock,         /* oplock_request */
+		NULL,           /* lease */
+		0,              /* allocation_size */
+		0,              /* private_flags */
+		NULL,           /* sd */
+		NULL,           /* ea_list */
+		ret_fsp,	/* result */
+		NULL,           /* pinfo */
+		NULL,           /* in_context */
+		NULL);          /* out_context */
+
+	TALLOC_FREE(smb_fname_tmp);
+	return status;
+}
+#endif
+
 /********************************************************************
  The canonical "check access" based on object handle or path function.
 ********************************************************************/
