@@ -46,6 +46,36 @@ def system_session_unix():
 
     return session_info_unix
 
+def get_local_domain_sid(lp):
+    is_ad_dc = False
+    server_role = lp.server_role()
+    if server_role == "ROLE_ACTIVE_DIRECTORY_DC":
+        is_ad_dc = True
+
+    s3conf = s3param.get_context()
+    s3conf.load(lp.configfile)
+
+    if is_ad_dc:
+        try:
+            samdb = SamDB(session_info=system_session(),
+                          lp=lp)
+        except Exception as e:
+            raise CommandError("Unable to open samdb:", e)
+        # ensure we are using the right samba_dsdb passdb backend, no
+        # matter what
+        s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
+
+    try:
+        if is_ad_dc:
+            domain_sid = security.dom_sid(samdb.domain_sid)
+        else:
+            domain_sid = passdb.get_domain_sid()
+    except:
+        raise CommandError("Unable to read domain SID from configuration "
+                           "files")
+    return domain_sid
+
+
 class cmd_ntacl_set(Command):
     """Set ACLs on a file."""
 
@@ -75,38 +105,12 @@ class cmd_ntacl_set(Command):
             service=None):
         logger = self.get_logger()
         lp = sambaopts.get_loadparm()
-
-        is_ad_dc = False
-        server_role = lp.server_role()
-        if server_role == "ROLE_ACTIVE_DIRECTORY_DC":
-            is_ad_dc = True
+        domain_sid = get_local_domain_sid(lp)
 
         if not use_ntvfs and not use_s3fs:
             use_ntvfs = "smb" in lp.get("server services")
         elif use_s3fs:
             use_ntvfs = False
-
-        s3conf = s3param.get_context()
-        s3conf.load(lp.configfile)
-
-        if is_ad_dc:
-            try:
-                samdb = SamDB(session_info=system_session(),
-                              lp=lp)
-            except Exception as e:
-                raise CommandError("Unable to open samdb:", e)
-            # ensure we are using the right samba_dsdb passdb backend, no
-            # matter what
-            s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
-
-        try:
-            if is_ad_dc:
-                domain_sid = security.dom_sid(samdb.domain_sid)
-            else:
-                domain_sid = passdb.get_domain_sid()
-        except:
-            raise CommandError("Unable to read domain SID from configuration "
-                               "files")
 
         setntacl(lp,
                  file,
@@ -171,29 +175,12 @@ class cmd_ntacl_get(Command):
             credopts=None, sambaopts=None, versionopts=None,
             service=None):
         lp = sambaopts.get_loadparm()
-
-        is_ad_dc = False
-        server_role = lp.server_role()
-        if server_role == "ROLE_ACTIVE_DIRECTORY_DC":
-            is_ad_dc = True
+        domain_sid = get_local_domain_sid(lp)
 
         if not use_ntvfs and not use_s3fs:
             use_ntvfs = "smb" in lp.get("server services")
         elif use_s3fs:
             use_ntvfs = False
-
-        s3conf = s3param.get_context()
-        s3conf.load(lp.configfile)
-        if is_ad_dc:
-            try:
-                samdb = SamDB(session_info=system_session(),
-                              lp=lp)
-            except Exception as e:
-                raise CommandError("Unable to open samdb:", e)
-
-            # ensure we are using the right samba_dsdb passdb backend, no
-            # matter what
-            s3conf.set("passdb backend", "samba_dsdb:%s" % samdb.url)
 
         acl = getntacl(lp,
                        file,
@@ -203,14 +190,6 @@ class cmd_ntacl_get(Command):
                        service=service,
                        session_info=system_session_unix())
         if as_sddl:
-            try:
-                if is_ad_dc:
-                    domain_sid = security.dom_sid(samdb.domain_sid)
-                else:
-                    domain_sid = passdb.get_domain_sid()
-            except:
-                raise CommandError("Unable to read domain SID from "
-                                   "configuration files")
             self.outf.write(acl.as_sddl(domain_sid) + "\n")
         else:
             self.outf.write(ndr_print(acl))
