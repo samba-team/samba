@@ -496,6 +496,14 @@ RPM_DISTS = {
             'lsb-release': 'redhat-lsb',
         }
     },
+    'fedora30': {
+        'docker_image': 'fedora:30',
+        'vagrant_box': 'fedora/30-cloud-base',
+        'bootstrap': DNF_BOOTSTRAP,
+        'replace': {
+            'lsb-release': 'redhat-lsb',
+        }
+    },
     'opensuse150': {
         'docker_image': 'opensuse/leap:15.0',
         'vagrant_box': 'opensuse/openSUSE-15.0-x86_64',

@@ -94,7 +94,7 @@ With Vagrant:
 
 Or a remote/cloud machine:
 
- scp bootstrap/generated-dists/fedora29/bootstrap.sh USER@IP:
+ scp bootstrap/generated-dists/fedora30/bootstrap.sh USER@IP:
  ssh USER@IP
  sudo bash ./bootstrap.sh
 
