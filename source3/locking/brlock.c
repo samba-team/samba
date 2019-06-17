@@ -369,12 +369,7 @@ void brl_init(bool read_only)
 		return;
 	}
 
-	tdb_flags =
-		TDB_DEFAULT|
-		TDB_VOLATILE|
-		TDB_CLEAR_IF_FIRST|
-		TDB_INCOMPATIBLE_HASH|
-		TDB_SEQNUM;
+	tdb_flags = SMBD_VOLATILE_TDB_FLAGS | TDB_SEQNUM;
 
 	db_path = lock_path(talloc_tos(), "brlock.tdb");
 	if (db_path == NULL) {
@@ -383,7 +378,7 @@ void brl_init(bool read_only)
 	}
 
 	brlock_db = db_open(NULL, db_path,
-			    SMB_OPEN_DATABASE_TDB_HASH_SIZE, tdb_flags,
+			    SMBD_VOLATILE_TDB_HASH_SIZE, tdb_flags,
 			    read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644,
 			    DBWRAP_LOCK_ORDER_2, DBWRAP_FLAG_NONE);
 	if (!brlock_db) {

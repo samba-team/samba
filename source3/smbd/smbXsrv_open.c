@@ -64,11 +64,8 @@ NTSTATUS smbXsrv_open_global_init(void)
 	}
 
 	db_ctx = db_open(NULL, global_path,
-			 0, /* hash_size */
-			 TDB_DEFAULT |
-			 TDB_CLEAR_IF_FIRST |
-			 TDB_VOLATILE |
-			 TDB_INCOMPATIBLE_HASH,
+			 SMBD_VOLATILE_TDB_HASH_SIZE,
+			 SMBD_VOLATILE_TDB_FLAGS,
 			 O_RDWR | O_CREAT, 0600,
 			 DBWRAP_LOCK_ORDER_1,
 			 DBWRAP_FLAG_NONE);
