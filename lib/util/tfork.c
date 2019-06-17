@@ -260,8 +260,8 @@ static void tfork_atfork_child(void)
 		ret = pthread_sigmask(SIG_SETMASK, &signal_state.oldset, NULL);
 #else
 		ret = sigprocmask(SIG_SETMASK, &signal_state.oldset, NULL);
-		assert(ret == 0);
 #endif
+		assert(ret == 0);
 
 		signal_state.pid = NULL;
 	}
