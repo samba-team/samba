@@ -810,7 +810,7 @@ int inherit_access_posix_acl(connection_struct *conn,
 bool set_unix_posix_default_acl(connection_struct *conn,
 				const struct smb_filename *smb_fname,
 				uint16_t num_def_acls, const char *pdata);
-bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp,
+NTSTATUS set_unix_posix_acl(connection_struct *conn, files_struct *fsp,
 				const struct smb_filename *smb_fname,
 				uint16_t num_acls,
 				const char *pdata);
