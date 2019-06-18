@@ -36,6 +36,10 @@ bld.SAMBA3_SUBSYSTEM('OFFLOAD_TOKEN',
 bld.SAMBA3_SUBSYSTEM('STRING_REPLACE',
                     source='string_replace.c')
 
+bld.SAMBA3_SUBSYSTEM('HASH_INODE',
+                    source='hash_inode.c',
+                    deps='gnutls')
+
 #
 # This is always be static, see
 # source3/wscript: required_static_modules
