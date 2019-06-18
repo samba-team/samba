@@ -610,7 +610,8 @@ static int _tdb_transaction_cancel(struct tdb_context *tdb)
 
 	/* free all the transaction blocks */
 	for (i=0;i<tdb->transaction->num_blocks;i++) {
-		if (tdb->transaction->blocks[i] != NULL) {
+		if (tdb->transaction->blocks &&
+		    tdb->transaction->blocks[i] != NULL) {
 			free(tdb->transaction->blocks[i]);
 		}
 	}
