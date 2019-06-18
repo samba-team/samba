@@ -808,7 +808,7 @@ int inherit_access_posix_acl(connection_struct *conn,
 			const struct smb_filename *smb_fname,
 			mode_t mode);
 NTSTATUS set_unix_posix_default_acl(connection_struct *conn,
-				const struct smb_filename *smb_fname,
+				files_struct *fsp,
 				uint16_t num_def_acls, const char *pdata);
 NTSTATUS set_unix_posix_acl(connection_struct *conn, files_struct *fsp,
 				uint16_t num_acls,

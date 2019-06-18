@@ -4351,7 +4351,7 @@ static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn,
 ****************************************************************************/
 
 NTSTATUS set_unix_posix_default_acl(connection_struct *conn,
-				const struct smb_filename *smb_fname,
+				files_struct *fsp,
 				uint16_t num_def_acls,
 				const char *pdata)
 {
@@ -4359,24 +4359,18 @@ NTSTATUS set_unix_posix_default_acl(connection_struct *conn,
 	NTSTATUS status;
 	int ret;
 
-	if (!S_ISDIR(smb_fname->st.st_ex_mode)) {
-		if (num_def_acls) {
-			DBG_INFO("Can't set default ACL on non-directory "
-				"file %s\n",
-				smb_fname->base_name);
-			return map_nt_error_from_unix(EISDIR);
-		}
-		return NT_STATUS_OK;
+	if (!fsp->is_directory) {
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (!num_def_acls) {
 		/* Remove the default ACL. */
-		ret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, smb_fname);
+		ret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, fsp->fsp_name);
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
 			DBG_INFO("acl_delete_def_file failed on "
 				"directory %s (%s)\n",
-				smb_fname->base_name,
+				fsp_str_dbg(fsp),
 				strerror(errno));
 			return status;
 		}
@@ -4392,20 +4386,20 @@ NTSTATUS set_unix_posix_default_acl(connection_struct *conn,
 	}
 
 	ret = SMB_VFS_SYS_ACL_SET_FILE(conn,
-					smb_fname,
+					fsp->fsp_name,
 					SMB_ACL_TYPE_DEFAULT,
 					def_acl);
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DBG_INFO("acl_set_file failed on directory %s (%s)\n",
-			smb_fname->base_name,
+			fsp_str_dbg(fsp),
 			strerror(errno));
 	        TALLOC_FREE(def_acl);
 		return status;
 	}
 
 	DBG_DEBUG("set default acl for file %s\n",
-		smb_fname->base_name);
+		fsp_str_dbg(fsp));
 	TALLOC_FREE(def_acl);
 	return NT_STATUS_OK;
 }
