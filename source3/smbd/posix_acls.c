@@ -4414,50 +4414,67 @@ static bool remove_posix_acl(connection_struct *conn,
 	SMB_ACL_T file_acl = NULL;
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
-	bool ret = False;
+	bool ok = false;
 	const char *fname = smb_fname->base_name;
 	/* Create a new ACL with only 3 entries, u/g/w. */
-	SMB_ACL_T new_file_acl = sys_acl_init(talloc_tos());
+	SMB_ACL_T new_file_acl = NULL;
 	SMB_ACL_ENTRY_T user_ent = NULL;
 	SMB_ACL_ENTRY_T group_ent = NULL;
 	SMB_ACL_ENTRY_T other_ent = NULL;
+	int ret;
 
+	new_file_acl = sys_acl_init(talloc_tos());
 	if (new_file_acl == NULL) {
-		DEBUG(5,("remove_posix_acl: failed to init new ACL with 3 entries for file %s.\n", fname));
-		return False;
+		DBG_INFO("failed to init new ACL with 3 entries "
+			"for file %s %s.\n",
+			fname,
+			strerror(errno));
+		goto done;
 	}
 
 	/* Now create the u/g/w entries. */
-	if (sys_acl_create_entry(&new_file_acl, &user_ent) == -1) {
-		DEBUG(5,("remove_posix_acl: Failed to create user entry for file %s. (%s)\n",
-			fname, strerror(errno) ));
+	ret = sys_acl_create_entry(&new_file_acl, &user_ent);
+	if (ret == -1) {
+		DBG_INFO("Failed to create user entry for file %s. (%s)\n",
+			fname,
+			strerror(errno));
 		goto done;
 	}
-	if (sys_acl_set_tag_type(user_ent, SMB_ACL_USER_OBJ) == -1) {
-		DEBUG(5,("remove_posix_acl: Failed to set user entry for file %s. (%s)\n",
-			fname, strerror(errno) ));
-		goto done;
-	}
-
-	if (sys_acl_create_entry(&new_file_acl, &group_ent) == -1) {
-		DEBUG(5,("remove_posix_acl: Failed to create group entry for file %s. (%s)\n",
-			fname, strerror(errno) ));
-		goto done;
-	}
-	if (sys_acl_set_tag_type(group_ent, SMB_ACL_GROUP_OBJ) == -1) {
-		DEBUG(5,("remove_posix_acl: Failed to set group entry for file %s. (%s)\n",
-			fname, strerror(errno) ));
+	ret = sys_acl_set_tag_type(user_ent, SMB_ACL_USER_OBJ);
+	if (ret == -1) {
+		DBG_INFO("Failed to set user entry for file %s. (%s)\n",
+			fname,
+			strerror(errno));
 		goto done;
 	}
 
-	if (sys_acl_create_entry(&new_file_acl, &other_ent) == -1) {
-		DEBUG(5,("remove_posix_acl: Failed to create other entry for file %s. (%s)\n",
-			fname, strerror(errno) ));
+	ret = sys_acl_create_entry(&new_file_acl, &group_ent);
+	if (ret == -1) {
+		DBG_INFO("Failed to create group entry for file %s. (%s)\n",
+			fname,
+			strerror(errno));
 		goto done;
 	}
-	if (sys_acl_set_tag_type(other_ent, SMB_ACL_OTHER) == -1) {
-		DEBUG(5,("remove_posix_acl: Failed to set other entry for file %s. (%s)\n",
-			fname, strerror(errno) ));
+	ret = sys_acl_set_tag_type(group_ent, SMB_ACL_GROUP_OBJ);
+	if (ret == -1) {
+		DBG_INFO("Failed to set group entry for file %s. (%s)\n",
+			fname,
+			strerror(errno));
+		goto done;
+	}
+
+	ret = sys_acl_create_entry(&new_file_acl, &other_ent);
+	if (ret == -1) {
+		DBG_INFO("Failed to create other entry for file %s. (%s)\n",
+			fname,
+			strerror(errno));
+		goto done;
+	}
+	ret = sys_acl_set_tag_type(other_ent, SMB_ACL_OTHER);
+	if (ret == -1) {
+		DBG_INFO("Failed to set other entry for file %s. (%s)\n",
+			fname,
+			strerror(errno));
 		goto done;
 	}
 
@@ -4473,8 +4490,9 @@ static bool remove_posix_acl(connection_struct *conn,
 	if (file_acl == NULL) {
 		/* This is only returned if an error occurred. Even for a file with
 		   no acl a u/g/w acl should be returned. */
-		DEBUG(5,("remove_posix_acl: failed to get ACL from file %s (%s).\n",
-			fname, strerror(errno) ));
+		DBG_INFO("failed to get ACL from file %s (%s).\n",
+			fname,
+			strerror(errno));
 		goto done;
 	}
 
@@ -4484,65 +4502,83 @@ static bool remove_posix_acl(connection_struct *conn,
 
 		entry_id = SMB_ACL_NEXT_ENTRY;
 
-		if (sys_acl_get_tag_type(entry, &tagtype) == -1) {
-			DEBUG(5,("remove_posix_acl: failed to get tagtype from ACL on file %s (%s).\n",
-				fname, strerror(errno) ));
+		ret = sys_acl_get_tag_type(entry, &tagtype);
+		if (ret == -1) {
+			DBG_INFO("failed to get tagtype from ACL "
+				"on file %s (%s).\n",
+				fname,
+				strerror(errno));
 			goto done;
 		}
 
-		if (sys_acl_get_permset(entry, &permset) == -1) {
-			DEBUG(5,("remove_posix_acl: failed to get permset from ACL on file %s (%s).\n",
-				fname, strerror(errno) ));
+		ret = sys_acl_get_permset(entry, &permset);
+		if (ret == -1) {
+			DBG_INFO("failed to get permset from ACL "
+				"on file %s (%s).\n",
+				fname,
+				strerror(errno));
 			goto done;
 		}
 
 		if (tagtype == SMB_ACL_USER_OBJ) {
-			if (sys_acl_set_permset(user_ent, permset) == -1) {
-				DEBUG(5,("remove_posix_acl: failed to set permset from ACL on file %s (%s).\n",
-					fname, strerror(errno) ));
+			ret = sys_acl_set_permset(user_ent, permset);
+			if (ret == -1) {
+				DBG_INFO("failed to set permset from ACL "
+					"on file %s (%s).\n",
+					fname,
+					strerror(errno));
+				goto done;
 			}
 		} else if (tagtype == SMB_ACL_GROUP_OBJ) {
-			if (sys_acl_set_permset(group_ent, permset) == -1) {
-				DEBUG(5,("remove_posix_acl: failed to set permset from ACL on file %s (%s).\n",
-					fname, strerror(errno) ));
+			ret = sys_acl_set_permset(group_ent, permset);
+			if (ret == -1) {
+				DBG_INFO("failed to set permset from ACL "
+					"on file %s (%s).\n",
+					fname,
+					strerror(errno));
+				goto done;
 			}
 		} else if (tagtype == SMB_ACL_OTHER) {
-			if (sys_acl_set_permset(other_ent, permset) == -1) {
-				DEBUG(5,("remove_posix_acl: failed to set permset from ACL on file %s (%s).\n",
-					fname, strerror(errno) ));
+			ret = sys_acl_set_permset(other_ent, permset);
+			if (ret == -1) {
+				DBG_INFO("failed to set permset from ACL "
+					"on file %s (%s).\n",
+					fname,
+					strerror(errno));
+				goto done;
 			}
 		}
 	}
 
 	/* Set the new empty file ACL. */
 	if (fsp && fsp->fh->fd != -1) {
-		if (SMB_VFS_SYS_ACL_SET_FD(fsp, new_file_acl) == -1) {
-			DEBUG(5,("remove_posix_acl: acl_set_file failed on %s (%s)\n",
-				fname, strerror(errno) ));
+		ret = SMB_VFS_SYS_ACL_SET_FD(fsp, new_file_acl);
+		if (ret == -1) {
+			DBG_INFO("acl_set_file failed on %s (%s)\n",
+				fname,
+				strerror(errno));
 			goto done;
 		}
 	} else {
-		if (SMB_VFS_SYS_ACL_SET_FILE(conn,
+		ret = SMB_VFS_SYS_ACL_SET_FILE(conn,
 					smb_fname,
 					SMB_ACL_TYPE_ACCESS,
-					new_file_acl) == -1) {
-			DEBUG(5,("remove_posix_acl: acl_set_file failed on %s (%s)\n",
-				fname, strerror(errno) ));
+					new_file_acl);
+		if (ret == -1) {
+			DBG_INFO("acl_set_file failed on %s (%s)\n",
+				fname,
+				strerror(errno));
 			goto done;
 		}
 	}
 
-	ret = True;
+	ok = true;
 
  done:
 
-	if (file_acl) {
-		TALLOC_FREE(file_acl);
-	}
-	if (new_file_acl) {
-		TALLOC_FREE(new_file_acl);
-	}
-	return ret;
+	TALLOC_FREE(file_acl);
+	TALLOC_FREE(new_file_acl);
+	return ok;
 }
 
 /****************************************************************************
