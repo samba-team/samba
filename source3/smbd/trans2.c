@@ -4860,48 +4860,67 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 	SMB_ACL_T def_acl = NULL;
 	uint16_t num_file_acls = 0;
 	uint16_t num_def_acls = 0;
-	SMB_STRUCT_STAT *psbuf = &smb_fname->st;
 	unsigned int size_needed = 0;
 	NTSTATUS status;
 	bool ok;
+	bool close_fsp;
+
+	/*
+	 * Ensure we always operate on a file descriptor, not just
+	 * the filename.
+	 */
+	if (fsp == NULL) {
+		uint32_t access_mask = SEC_STD_READ_CONTROL|
+					FILE_READ_ATTRIBUTES|
+					FILE_WRITE_ATTRIBUTES;
+
+		status = get_posix_fsp(conn,
+					req,
+					smb_fname,
+					access_mask,
+					&fsp);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			goto out;
+		}
+		close_fsp = true;
+	}
+
+	SMB_ASSERT(fsp != NULL);
 
 	status = refuse_symlink(conn,
 				fsp,
-				smb_fname);
+				fsp->fsp_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
-	if (fsp && fsp->fh->fd != -1) {
-		file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp,
+	file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp,
 					talloc_tos());
-	} else {
-		file_acl = SMB_VFS_SYS_ACL_GET_FILE(conn,
-					smb_fname,
-					SMB_ACL_TYPE_ACCESS,
-					talloc_tos());
-	}
 
 	if (file_acl == NULL && no_acl_syscall_error(errno)) {
 		DBG_INFO("ACLs not implemented on "
 			"filesystem containing %s\n",
-			smb_fname->base_name);
+			fsp_str_dbg(fsp));
 		status = NT_STATUS_NOT_IMPLEMENTED;
 		goto out;
 	}
 
-	if (S_ISDIR(psbuf->st_ex_mode)) {
-		if (fsp && fsp->is_directory) {
-			def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn,
-						fsp->fsp_name,
-						SMB_ACL_TYPE_DEFAULT,
-						talloc_tos());
-		} else {
-			def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn,
-						smb_fname,
-						SMB_ACL_TYPE_DEFAULT,
-						talloc_tos());
+	if (S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		/*
+		 * We can only have default POSIX ACLs on
+		 * directories.
+		 */
+		if (!fsp->is_directory) {
+			DBG_INFO("Non-directory open %s\n",
+				fsp_str_dbg(fsp));
+			status = NT_STATUS_INVALID_HANDLE;
+			goto out;
 		}
+		def_acl = SMB_VFS_SYS_ACL_GET_FILE(conn,
+					fsp->fsp_name,
+					SMB_ACL_TYPE_DEFAULT,
+					talloc_tos());
 		def_acl = free_empty_sys_acl(conn, def_acl);
 	}
 
@@ -4947,7 +4966,7 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 
 	ok = marshall_posix_acl(conn,
 			pdata,
-			psbuf,
+			&fsp->fsp_name->st,
 			file_acl);
 	if (!ok) {
 		status = NT_STATUS_INTERNAL_ERROR;
@@ -4957,7 +4976,7 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 
 	ok = marshall_posix_acl(conn,
 			pdata,
-			psbuf,
+			&fsp->fsp_name->st,
 			def_acl);
 	if (!ok) {
 		status = NT_STATUS_INTERNAL_ERROR;
@@ -4968,6 +4987,16 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 	status = NT_STATUS_OK;
 
   out:
+
+	if (close_fsp) {
+		/*
+		 * Ensure the stat struct in smb_fname is up to
+		 * date. Structure copy.
+		 */
+		smb_fname->st = fsp->fsp_name->st;
+		(void)close_file(req, fsp, NORMAL_CLOSE);
+		fsp = NULL;
+	}
 
 	TALLOC_FREE(file_acl);
 	TALLOC_FREE(def_acl);
