@@ -123,6 +123,7 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 
 NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			       TALLOC_CTX *mem_ctx,
+			       struct smb_request *req,
 			       uint16_t info_level,
 			       files_struct *fsp,
 			       struct smb_filename *smb_fname,

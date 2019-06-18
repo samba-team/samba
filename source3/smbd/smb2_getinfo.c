@@ -392,6 +392,7 @@ static struct tevent_req *smbd_smb2_getinfo_send(TALLOC_CTX *mem_ctx,
 		}
 
 		status = smbd_do_qfilepathinfo(conn, state,
+					       smbreq,
 					       file_info_level,
 					       fsp,
 					       fsp->fsp_name,

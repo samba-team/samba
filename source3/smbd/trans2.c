@@ -4849,6 +4849,7 @@ static NTSTATUS marshall_stream_info(unsigned int num_streams,
 
 #if defined(HAVE_POSIX_ACLS)
 static NTSTATUS smb_query_posix_acl(connection_struct *conn,
+				struct smb_request *req,
 				files_struct *fsp,
 				struct smb_filename *smb_fname,
 				char *pdata,
@@ -5051,6 +5052,7 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 
 NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			       TALLOC_CTX *mem_ctx,
+			       struct smb_request *req,
 			       uint16_t info_level,
 			       files_struct *fsp,
 			       struct smb_filename *smb_fname,
@@ -5775,6 +5777,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_QUERY_POSIX_ACL:
 			{
 				status = smb_query_posix_acl(conn,
+							req,
 							fsp,
 							smb_fname,
 							pdata,
@@ -6271,7 +6274,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		return;
 	}
 
-	status = smbd_do_qfilepathinfo(conn, req, info_level,
+	status = smbd_do_qfilepathinfo(conn, req, req, info_level,
 				       fsp, smb_fname,
 				       delete_pending, write_time_ts,
 				       ea_list,
