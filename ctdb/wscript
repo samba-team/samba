@@ -254,14 +254,12 @@ def configure(conf):
         Logs.info('Building with etcd support')
     conf.env.etcd_reclock = have_etcd_reclock
 
-    if Options.options.ctdb_ceph_reclock:
-        # Use custom libcephfs library path if provided. XXX The top level build
-        # explicitly sets LIBPATH_CEPH-COMMON when libcephfs_dir isn't provided.
-        if Options.options.libcephfs_dir:
-            conf.env['CPPPATH_RADOS'] = Options.options.libcephfs_dir + '/include'
-            conf.env['LIBPATH_RADOS'] = Options.options.libcephfs_dir + '/lib'
-            conf.env['LIBPATH_CEPH-COMMON'] = conf.env['LIBPATH_RADOS'] + '/ceph'
+    if Options.options.libcephfs_dir:
+        Logs.error('''--with-libcephfs no longer supported, please use compiler
+                   flags instead, e.g. GCC LIBRARY_PATH and C_INCLUDE_PATH''')
+        sys.exit(1)
 
+    if Options.options.ctdb_ceph_reclock:
         if (conf.CHECK_HEADERS('rados/librados.h', False, False, 'rados') and
 					conf.CHECK_LIB('rados', shlib=True)):
             conf.CHECK_LIB('ceph-common', shlib=True)
@@ -682,13 +680,10 @@ def build(bld):
                           destname='README')
 
     if bld.env.HAVE_LIBRADOS:
-        rados_inc = ' include'
-        if bld.CONFIG_GET('CPPPATH_RADOS') is not None:
-            rados_inc = bld.CONFIG_GET('CPPPATH_RADOS') + rados_inc
         bld.SAMBA_BINARY('ctdb_mutex_ceph_rados_helper',
                          source='utils/ceph/ctdb_mutex_ceph_rados_helper.c',
 			 deps='talloc tevent rados ceph-common',
-			 includes=rados_inc,
+			 includes='include',
 			 install_path='${CTDB_HELPER_BINDIR}')
 
     sed_expr1 = 's|/usr/local/var/lib/ctdb|%s|g'  % (bld.env.CTDB_VARDIR)
