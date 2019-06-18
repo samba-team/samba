@@ -4419,13 +4419,11 @@ NTSTATUS set_unix_posix_default_acl(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS remove_posix_acl(connection_struct *conn,
-			files_struct *fsp,
-			const struct smb_filename *smb_fname)
+			files_struct *fsp)
 {
 	SMB_ACL_T file_acl = NULL;
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
-	const char *fname = smb_fname->base_name;
 	/* Create a new ACL with only 3 entries, u/g/w. */
 	SMB_ACL_T new_file_acl = NULL;
 	SMB_ACL_ENTRY_T user_ent = NULL;
@@ -4439,7 +4437,7 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 		status = map_nt_error_from_unix(errno);
 		DBG_INFO("failed to init new ACL with 3 entries "
 			"for file %s %s.\n",
-			fname,
+			fsp_str_dbg(fsp),
 			strerror(errno));
 		goto done;
 	}
@@ -4449,7 +4447,7 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DBG_INFO("Failed to create user entry for file %s. (%s)\n",
-			fname,
+			fsp_str_dbg(fsp),
 			strerror(errno));
 		goto done;
 	}
@@ -4457,7 +4455,7 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DBG_INFO("Failed to set user entry for file %s. (%s)\n",
-			fname,
+			fsp_str_dbg(fsp),
 			strerror(errno));
 		goto done;
 	}
@@ -4466,7 +4464,7 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DBG_INFO("Failed to create group entry for file %s. (%s)\n",
-			fname,
+			fsp_str_dbg(fsp),
 			strerror(errno));
 		goto done;
 	}
@@ -4474,7 +4472,7 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DBG_INFO("Failed to set group entry for file %s. (%s)\n",
-			fname,
+			fsp_str_dbg(fsp),
 			strerror(errno));
 		goto done;
 	}
@@ -4483,7 +4481,7 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DBG_INFO("Failed to create other entry for file %s. (%s)\n",
-			fname,
+			fsp_str_dbg(fsp),
 			strerror(errno));
 		goto done;
 	}
@@ -4491,26 +4489,20 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 	if (ret == -1) {
 		status = map_nt_error_from_unix(errno);
 		DBG_INFO("Failed to set other entry for file %s. (%s)\n",
-			fname,
+			fsp_str_dbg(fsp),
 			strerror(errno));
 		goto done;
 	}
 
 	/* Get the current file ACL. */
-	if (fsp && fsp->fh->fd != -1) {
-		file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, talloc_tos());
-	} else {
-		file_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, smb_fname,
-						    SMB_ACL_TYPE_ACCESS,
-						    talloc_tos());
-	}
+	file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, talloc_tos());
 
 	if (file_acl == NULL) {
 		status = map_nt_error_from_unix(errno);
 		/* This is only returned if an error occurred. Even for a file with
 		   no acl a u/g/w acl should be returned. */
 		DBG_INFO("failed to get ACL from file %s (%s).\n",
-			fname,
+			fsp_str_dbg(fsp),
 			strerror(errno));
 		goto done;
 	}
@@ -4526,7 +4518,7 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 			status = map_nt_error_from_unix(errno);
 			DBG_INFO("failed to get tagtype from ACL "
 				"on file %s (%s).\n",
-				fname,
+				fsp_str_dbg(fsp),
 				strerror(errno));
 			goto done;
 		}
@@ -4536,7 +4528,7 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 			status = map_nt_error_from_unix(errno);
 			DBG_INFO("failed to get permset from ACL "
 				"on file %s (%s).\n",
-				fname,
+				fsp_str_dbg(fsp),
 				strerror(errno));
 			goto done;
 		}
@@ -4547,7 +4539,7 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 				status = map_nt_error_from_unix(errno);
 				DBG_INFO("failed to set permset from ACL "
 					"on file %s (%s).\n",
-					fname,
+					fsp_str_dbg(fsp),
 					strerror(errno));
 				goto done;
 			}
@@ -4557,7 +4549,7 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 				status = map_nt_error_from_unix(errno);
 				DBG_INFO("failed to set permset from ACL "
 					"on file %s (%s).\n",
-					fname,
+					fsp_str_dbg(fsp),
 					strerror(errno));
 				goto done;
 			}
@@ -4567,7 +4559,7 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 				status = map_nt_error_from_unix(errno);
 				DBG_INFO("failed to set permset from ACL "
 					"on file %s (%s).\n",
-					fname,
+					fsp_str_dbg(fsp),
 					strerror(errno));
 				goto done;
 			}
@@ -4575,27 +4567,13 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 	}
 
 	/* Set the new empty file ACL. */
-	if (fsp && fsp->fh->fd != -1) {
-		ret = SMB_VFS_SYS_ACL_SET_FD(fsp, new_file_acl);
-		if (ret == -1) {
-			status = map_nt_error_from_unix(errno);
-			DBG_INFO("acl_set_file failed on %s (%s)\n",
-				fname,
-				strerror(errno));
-			goto done;
-		}
-	} else {
-		ret = SMB_VFS_SYS_ACL_SET_FILE(conn,
-					smb_fname,
-					SMB_ACL_TYPE_ACCESS,
-					new_file_acl);
-		if (ret == -1) {
-			status = map_nt_error_from_unix(errno);
-			DBG_INFO("acl_set_file failed on %s (%s)\n",
-				fname,
-				strerror(errno));
-			goto done;
-		}
+	ret = SMB_VFS_SYS_ACL_SET_FD(fsp, new_file_acl);
+	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
+		DBG_INFO("acl_set_file failed on %s (%s)\n",
+			fsp_str_dbg(fsp),
+			strerror(errno));
+		goto done;
 	}
 
 	status = NT_STATUS_OK;
@@ -4624,7 +4602,7 @@ NTSTATUS set_unix_posix_acl(connection_struct *conn,
 
 	if (!num_acls) {
 		/* Remove the ACL from the file. */
-		return remove_posix_acl(conn, fsp, fsp->fsp_name);
+		return remove_posix_acl(conn, fsp);
 	}
 
 	file_acl = create_posix_acl_from_wire(conn,
