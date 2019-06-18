@@ -4587,46 +4587,58 @@ static bool remove_posix_acl(connection_struct *conn,
  except SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER.
 ****************************************************************************/
 
-bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp,
+bool set_unix_posix_acl(connection_struct *conn,
+			files_struct *fsp,
 			const struct smb_filename *smb_fname,
 			uint16_t num_acls,
 			const char *pdata)
 {
 	SMB_ACL_T file_acl = NULL;
 	const char *fname = smb_fname->base_name;
+	int ret;
 
 	if (!num_acls) {
 		/* Remove the ACL from the file. */
 		return remove_posix_acl(conn, fsp, smb_fname);
 	}
 
-	if ((file_acl = create_posix_acl_from_wire(conn, num_acls,
-						   pdata,
-						   talloc_tos())) == NULL) {
-		return False;
+	file_acl = create_posix_acl_from_wire(conn,
+					num_acls,
+					pdata,
+					talloc_tos());
+	if (file_acl == NULL) {
+		return false;
 	}
 
 	if (fsp && fsp->fh->fd != -1) {
 		/* The preferred way - use an open fd. */
-		if (SMB_VFS_SYS_ACL_SET_FD(fsp, file_acl) == -1) {
-			DEBUG(5,("set_unix_posix_acl: acl_set_file failed on %s (%s)\n",
-				fname, strerror(errno) ));
-		        TALLOC_FREE(file_acl);
-			return False;
+		ret = SMB_VFS_SYS_ACL_SET_FD(fsp, file_acl);
+		if (ret == -1) {
+			DBG_INFO("acl_set_file failed on %s (%s)\n",
+				fname,
+				strerror(errno));
+			TALLOC_FREE(file_acl);
+			return false;
 		}
 	} else {
-		if (SMB_VFS_SYS_ACL_SET_FILE(conn, smb_fname,
-					SMB_ACL_TYPE_ACCESS, file_acl) == -1) {
-			DEBUG(5,("set_unix_posix_acl: acl_set_file failed on %s (%s)\n",
-				fname, strerror(errno) ));
+		ret = SMB_VFS_SYS_ACL_SET_FILE(conn,
+					smb_fname,
+					SMB_ACL_TYPE_ACCESS,
+					file_acl);
+		if (ret == -1) {
+			DBG_INFO("acl_set_file failed on %s (%s)\n",
+				fname,
+				strerror(errno));
 		        TALLOC_FREE(file_acl);
-			return False;
+			return false;
 		}
 	}
 
-	DEBUG(10,("set_unix_posix_acl: set acl for file %s\n", fname ));
+	DBG_DEBUG("set acl for file %s\n",
+		fname);
+
 	TALLOC_FREE(file_acl);
-	return True;
+	return true;
 }
 
 /********************************************************************
