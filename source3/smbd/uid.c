@@ -629,6 +629,9 @@ void smbd_become_root(void)
 	}
 	push_conn_ctx();
 	set_root_sec_ctx();
+
+	current_user.need_chdir = false;
+	current_user.done_chdir = false;
 }
 
 /* Unbecome the root user */
