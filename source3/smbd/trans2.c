@@ -4860,13 +4860,15 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 	uint16_t num_file_acls = 0;
 	uint16_t num_def_acls = 0;
 	SMB_STRUCT_STAT *psbuf = &smb_fname->st;
+	unsigned int size_needed = 0;
 	NTSTATUS status;
+	bool ok;
 
 	status = refuse_symlink(conn,
 				fsp,
 				smb_fname);
 	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	if (fsp && fsp->fh->fd != -1) {
@@ -4880,11 +4882,11 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 	}
 
 	if (file_acl == NULL && no_acl_syscall_error(errno)) {
-		DEBUG(5,("smb_query_posix_acl: ACLs "
-			"not implemented on "
+		DBG_INFO("ACLs not implemented on "
 			"filesystem containing %s\n",
-			smb_fname->base_name));
-		return NT_STATUS_NOT_IMPLEMENTED;
+			smb_fname->base_name);
+		status = NT_STATUS_NOT_IMPLEMENTED;
+		goto out;
 	}
 
 	if (S_ISDIR(psbuf->st_ex_mode)) {
@@ -4905,50 +4907,70 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 	num_file_acls = count_acl_entries(conn, file_acl);
 	num_def_acls = count_acl_entries(conn, def_acl);
 
-	if ( data_size_in < (num_file_acls + num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE + SMB_POSIX_ACL_HEADER_SIZE) {
-		DEBUG(5,("smb_query_posix_acl: data_size too small (%u) need %u\n",
+	/* Wrap checks. */
+	if (num_file_acls + num_def_acls < num_file_acls) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	size_needed = num_file_acls + num_def_acls;
+
+	/*
+	 * (size_needed * SMB_POSIX_ACL_ENTRY_SIZE) must be less
+	 * than UINT_MAX, so check by division.
+	 */
+	if (size_needed > (UINT_MAX/SMB_POSIX_ACL_ENTRY_SIZE)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	size_needed = size_needed*SMB_POSIX_ACL_ENTRY_SIZE;
+	if (size_needed + SMB_POSIX_ACL_HEADER_SIZE < size_needed) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+	size_needed += SMB_POSIX_ACL_HEADER_SIZE;
+
+	if ( data_size_in < size_needed) {
+		DBG_INFO("data_size too small (%u) need %u\n",
 			data_size_in,
-			(unsigned int)((num_file_acls + num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE +
-						SMB_POSIX_ACL_HEADER_SIZE) ));
-		if (file_acl) {
-			TALLOC_FREE(file_acl);
-		}
-		if (def_acl) {
-			TALLOC_FREE(def_acl);
-		}
-		return NT_STATUS_BUFFER_TOO_SMALL;
+			size_needed);
+		status = NT_STATUS_BUFFER_TOO_SMALL;
+		goto out;
 	}
 
 	SSVAL(pdata,0,SMB_POSIX_ACL_VERSION);
 	SSVAL(pdata,2,num_file_acls);
 	SSVAL(pdata,4,num_def_acls);
-	if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE, psbuf, file_acl)) {
-		if (file_acl) {
-			TALLOC_FREE(file_acl);
-		}
-		if (def_acl) {
-			TALLOC_FREE(def_acl);
-		}
-		return NT_STATUS_INTERNAL_ERROR;
+	pdata += SMB_POSIX_ACL_HEADER_SIZE;
+
+	ok = marshall_posix_acl(conn,
+			pdata,
+			psbuf,
+			file_acl);
+	if (!ok) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
 	}
-	if (!marshall_posix_acl(conn, pdata + SMB_POSIX_ACL_HEADER_SIZE + (num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE), psbuf, def_acl)) {
-		if (file_acl) {
-			TALLOC_FREE(file_acl);
-		}
-		if (def_acl) {
-			TALLOC_FREE(def_acl);
-		}
-		return NT_STATUS_INTERNAL_ERROR;
+	pdata += (num_file_acls*SMB_POSIX_ACL_ENTRY_SIZE);
+
+	ok = marshall_posix_acl(conn,
+			pdata,
+			psbuf,
+			def_acl);
+	if (!ok) {
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto out;
 	}
 
-	if (file_acl) {
-		TALLOC_FREE(file_acl);
-	}
-	if (def_acl) {
-		TALLOC_FREE(def_acl);
-	}
-	*pdata_size_out = (num_file_acls + num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE + SMB_POSIX_ACL_HEADER_SIZE;
-	return NT_STATUS_OK;
+	*pdata_size_out = size_needed;
+	status = NT_STATUS_OK;
+
+  out:
+
+	TALLOC_FREE(file_acl);
+	TALLOC_FREE(def_acl);
+	return status;
 }
 #endif
 
