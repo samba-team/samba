@@ -120,3 +120,6 @@ centos6:
 
 opensuse150:
   extends: .build_image_template
+
+opensuse151:
+  extends: .build_image_template

@@ -73,6 +73,13 @@ Vagrant.configure("2") do |config|
         v.vm.provision :shell, path: "opensuse150/locale.sh"
     end
 
+    config.vm.define "opensuse151" do |v|
+        v.vm.box = "opensuse/openSUSE-15.1-x86_64"
+        v.vm.hostname = "opensuse151"
+        v.vm.provision :shell, path: "opensuse151/bootstrap.sh"
+        v.vm.provision :shell, path: "opensuse151/locale.sh"
+    end
+
     config.vm.define "ubuntu1404" do |v|
         v.vm.box = "ubuntu/trusty64"
         v.vm.hostname = "ubuntu1404"
