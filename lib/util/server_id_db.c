@@ -184,7 +184,7 @@ int server_id_db_prune_name(struct server_id_db *db, const char *name,
 
 	tdb_chainunlock(tdb, key);
 
-	return 0;
+	return ret;
 }
 
 int server_id_db_remove(struct server_id_db *db, const char *name)
