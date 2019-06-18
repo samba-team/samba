@@ -2009,7 +2009,7 @@ krb5_error_code smb_krb5_kinit_keyblock_ccache(krb5_context ctx,
 
 	memcpy(tmp_name, SMB_CREDS_KEYTAB, sizeof(SMB_CREDS_KEYTAB));
 	mask = umask(S_IRWXO | S_IRWXG);
-	mktemp(tmp_name);
+	mkstemp(tmp_name);
 	umask(mask);
 	if (tmp_name[0] == 0) {
 		return KRB5_KT_BADNAME;
