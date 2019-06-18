@@ -26,9 +26,7 @@
 #include "system/filesys.h"
 #include "lib/util/tevent_unix.h"
 #include "librpc/gen_ndr/ioctl.h"
-
-#include <gnutls/gnutls.h>
-#include <gnutls/crypto.h>
+#include "hash_inode.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
@@ -46,61 +44,6 @@ struct stream_io {
 	files_struct *fsp;
 	vfs_handle_struct *handle;
 };
-
-static SMB_INO_T stream_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
-{
-	unsigned char hash[16];
-	gnutls_hash_hd_t hash_hnd = NULL;
-	SMB_INO_T result = 0;
-	char *upper_sname;
-	int rc;
-
-	DEBUG(10, ("stream_inode called for %lu/%lu [%s]\n",
-		   (unsigned long)sbuf->st_ex_dev,
-		   (unsigned long)sbuf->st_ex_ino, sname));
-
-	upper_sname = talloc_strdup_upper(talloc_tos(), sname);
-	SMB_ASSERT(upper_sname != NULL);
-
-	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
-	if (rc < 0) {
-		goto out;
-	}
-
-	rc = gnutls_hash(hash_hnd, &(sbuf->st_ex_dev), sizeof(sbuf->st_ex_dev));
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd,
-			 &(sbuf->st_ex_ino),
-			 sizeof(sbuf->st_ex_ino));
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd,
-			 upper_sname,
-			 talloc_get_size(upper_sname) - 1);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		goto out;
-	}
-
-	gnutls_hash_deinit(hash_hnd, hash);
-
-
-        /* Hopefully all the variation is in the lower 4 (or 8) bytes! */
-	memcpy(&result, hash, sizeof(result));
-	ZERO_ARRAY(hash);
-
-	DEBUG(10, ("stream_inode returns %lu\n", (unsigned long)result));
-
-out:
-	TALLOC_FREE(upper_sname);
-
-	return result;
-}
 
 static ssize_t get_xattr_size(connection_struct *conn,
 				const struct smb_filename *smb_fname,
@@ -304,7 +247,7 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 
 	DEBUG(10, ("sbuf->st_ex_size = %d\n", (int)sbuf->st_ex_size));
 
-	sbuf->st_ex_ino = stream_inode(sbuf, io->xattr_name);
+	sbuf->st_ex_ino = hash_inode(sbuf, io->xattr_name);
 	sbuf->st_ex_mode &= ~S_IFMT;
 	sbuf->st_ex_mode &= ~S_IFDIR;
         sbuf->st_ex_mode |= S_IFREG;
@@ -359,7 +302,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	smb_fname->st.st_ex_ino = stream_inode(&smb_fname->st, xattr_name);
+	smb_fname->st.st_ex_ino = hash_inode(&smb_fname->st, xattr_name);
 	smb_fname->st.st_ex_mode &= ~S_IFMT;
 	smb_fname->st.st_ex_mode &= ~S_IFDIR;
         smb_fname->st.st_ex_mode |= S_IFREG;
@@ -412,7 +355,7 @@ static int streams_xattr_lstat(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	smb_fname->st.st_ex_ino = stream_inode(&smb_fname->st, xattr_name);
+	smb_fname->st.st_ex_ino = hash_inode(&smb_fname->st, xattr_name);
 	smb_fname->st.st_ex_mode &= ~S_IFMT;
         smb_fname->st.st_ex_mode |= S_IFREG;
         smb_fname->st.st_ex_blocks =
