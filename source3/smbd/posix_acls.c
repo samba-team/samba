@@ -4356,47 +4356,57 @@ bool set_unix_posix_default_acl(connection_struct *conn,
 				const char *pdata)
 {
 	SMB_ACL_T def_acl = NULL;
+	int ret;
 
 	if (!S_ISDIR(smb_fname->st.st_ex_mode)) {
 		if (num_def_acls) {
-			DEBUG(5,("set_unix_posix_default_acl: Can't "
-				"set default ACL on non-directory file %s\n",
-				smb_fname->base_name ));
+			DBG_INFO("Can't set default ACL on non-directory "
+				"file %s\n",
+				smb_fname->base_name);
 			errno = EISDIR;
-			return False;
+			return false;
 		} else {
-			return True;
+			return true;
 		}
 	}
 
 	if (!num_def_acls) {
 		/* Remove the default ACL. */
-		if (SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, smb_fname) == -1) {
-			DEBUG(5,("set_unix_posix_default_acl: acl_delete_def_file failed on directory %s (%s)\n",
-				smb_fname->base_name, strerror(errno) ));
-			return False;
+		ret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, smb_fname);
+		if (ret == -1) {
+			DBG_INFO("acl_delete_def_file failed on "
+				"directory %s (%s)\n",
+				smb_fname->base_name,
+				strerror(errno));
+			return false;
 		}
-		return True;
+		return true;
 	}
 
-	if ((def_acl = create_posix_acl_from_wire(conn, num_def_acls,
-						  pdata,
-						  talloc_tos())) == NULL) {
-		return False;
+	def_acl = create_posix_acl_from_wire(conn,
+					num_def_acls,
+					pdata,
+					talloc_tos());
+	if (def_acl == NULL) {
+		return false;
 	}
 
-	if (SMB_VFS_SYS_ACL_SET_FILE(conn, smb_fname,
-				SMB_ACL_TYPE_DEFAULT, def_acl) == -1) {
-		DEBUG(5,("set_unix_posix_default_acl: acl_set_file failed on directory %s (%s)\n",
-			smb_fname->base_name, strerror(errno) ));
+	ret = SMB_VFS_SYS_ACL_SET_FILE(conn,
+					smb_fname,
+					SMB_ACL_TYPE_DEFAULT,
+					def_acl);
+	if (ret == -1) {
+		DBG_INFO("acl_set_file failed on directory %s (%s)\n",
+			smb_fname->base_name,
+			strerror(errno));
 	        TALLOC_FREE(def_acl);
-		return False;
+		return false;
 	}
 
-	DEBUG(10,("set_unix_posix_default_acl: set default acl for file %s\n",
-		smb_fname->base_name ));
+	DBG_DEBUG("set default acl for file %s\n",
+		smb_fname->base_name);
 	TALLOC_FREE(def_acl);
-	return True;
+	return true;
 }
 
 /****************************************************************************
