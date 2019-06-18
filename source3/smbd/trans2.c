@@ -7452,6 +7452,14 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 		goto out;
 	}
 
+	/* If we have a default acl, this *must* be a directory. */
+	if (valid_def_acls && !fsp->is_directory) {
+		DBG_INFO("Can't set default acls on "
+			 "non-directory %s\n",
+			 fsp_str_dbg(fsp));
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	DBG_DEBUG("file %s num_file_acls = %"PRIu16", "
 		  "num_def_acls = %"PRIu16"\n",
 		  fsp_str_dbg(fsp),
