@@ -32,9 +32,7 @@
 #include "lib/util/tevent_unix.h"
 #include "offload_token.h"
 #include "string_replace.h"
-
-#include <gnutls/gnutls.h>
-#include <gnutls/crypto.h>
+#include "hash_inode.h"
 
 /*
  * Enhanced OS X and Netatalk compatibility
@@ -2362,64 +2360,6 @@ static AfpInfo *afpinfo_unpack(TALLOC_CTX *ctx, const void *data)
 	}
 
 	return ai;
-}
-
-/**
- * Fake an inode number from the md5 hash of the (xattr) name
- **/
-static SMB_INO_T fruit_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
-{
-	gnutls_hash_hd_t hash_hnd = NULL;
-	unsigned char hash[16];
-	SMB_INO_T result = 0;
-	char *upper_sname;
-	int rc;
-
-	DBG_DEBUG("fruit_inode called for %ju/%ju [%s]\n",
-		  (uintmax_t)sbuf->st_ex_dev,
-		  (uintmax_t)sbuf->st_ex_ino, sname);
-
-	upper_sname = talloc_strdup_upper(talloc_tos(), sname);
-	SMB_ASSERT(upper_sname != NULL);
-
-	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
-	if (rc < 0) {
-		goto out;
-	}
-
-	rc = gnutls_hash(hash_hnd, &(sbuf->st_ex_dev), sizeof(sbuf->st_ex_dev));
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd,
-			 &(sbuf->st_ex_ino),
-			 sizeof(sbuf->st_ex_ino));
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd,
-			 upper_sname,
-			 talloc_get_size(upper_sname) - 1);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		goto out;
-	}
-
-	gnutls_hash_deinit(hash_hnd, hash);
-
-	/* Hopefully all the variation is in the lower 4 (or 8) bytes! */
-	memcpy(&result, hash, sizeof(result));
-	ZERO_ARRAY(hash);
-
-	DBG_DEBUG("fruit_inode \"%s\": ino=%ju\n",
-		  sname, (uintmax_t)result);
-
-out:
-	TALLOC_FREE(upper_sname);
-
-	return result;
 }
 
 static bool add_fruit_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
@@ -5013,7 +4953,7 @@ static int fruit_stat_meta_stream(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ino = fruit_inode(&smb_fname->st, smb_fname->stream_name);
+	ino = hash_inode(&smb_fname->st, smb_fname->stream_name);
 
 	if (follow_links) {
 		ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
@@ -5046,7 +4986,7 @@ static int fruit_stat_meta_netatalk(vfs_handle_struct *handle,
 		return -1;
 	}
 	smb_fname->st.st_ex_size = AFP_INFO_SIZE;
-	smb_fname->st.st_ex_ino = fruit_inode(&smb_fname->st,
+	smb_fname->st.st_ex_ino = hash_inode(&smb_fname->st,
 					      smb_fname->stream_name);
 	return 0;
 }
@@ -5099,7 +5039,7 @@ static int fruit_stat_rsrc_netatalk(vfs_handle_struct *handle,
 	}
 
 	smb_fname->st.st_ex_size = ad_getentrylen(ad, ADEID_RFORK);
-	smb_fname->st.st_ex_ino = fruit_inode(&smb_fname->st,
+	smb_fname->st.st_ex_ino = hash_inode(&smb_fname->st,
 					      smb_fname->stream_name);
 	TALLOC_FREE(ad);
 	return 0;
@@ -5151,8 +5091,8 @@ static int fruit_stat_rsrc_xattr(vfs_handle_struct *handle,
 	close(fd);
 	fd = -1;
 
-	smb_fname->st.st_ex_ino = fruit_inode(&smb_fname->st,
-					      smb_fname->stream_name);
+	smb_fname->st.st_ex_ino = hash_inode(&smb_fname->st,
+					     smb_fname->stream_name);
 
 	return ret;
 
@@ -5293,7 +5233,7 @@ static int fruit_fstat_meta_stream(vfs_handle_struct *handle,
 
 		*sbuf = fsp->base_fsp->fsp_name->st;
 		sbuf->st_ex_size = AFP_INFO_SIZE;
-		sbuf->st_ex_ino = fruit_inode(sbuf, fsp->fsp_name->stream_name);
+		sbuf->st_ex_ino = hash_inode(sbuf, fsp->fsp_name->stream_name);
 		return 0;
 	}
 
@@ -5307,7 +5247,7 @@ static int fruit_fstat_meta_stream(vfs_handle_struct *handle,
 	}
 	*sbuf = smb_fname.st;
 
-	ino = fruit_inode(sbuf, fsp->fsp_name->stream_name);
+	ino = hash_inode(sbuf, fsp->fsp_name->stream_name);
 
 	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
 	if (ret != 0) {
@@ -5331,7 +5271,7 @@ static int fruit_fstat_meta_netatalk(vfs_handle_struct *handle,
 
 	*sbuf = fsp->base_fsp->fsp_name->st;
 	sbuf->st_ex_size = AFP_INFO_SIZE;
-	sbuf->st_ex_ino = fruit_inode(sbuf, fsp->fsp_name->stream_name);
+	sbuf->st_ex_ino = hash_inode(sbuf, fsp->fsp_name->stream_name);
 
 	return 0;
 }
@@ -5401,7 +5341,7 @@ static int fruit_fstat_rsrc_adouble(vfs_handle_struct *handle,
 
 	*sbuf = fsp->base_fsp->fsp_name->st;
 	sbuf->st_ex_size = ad_getentrylen(ad, ADEID_RFORK);
-	sbuf->st_ex_ino = fruit_inode(sbuf, fsp->fsp_name->stream_name);
+	sbuf->st_ex_ino = hash_inode(sbuf, fsp->fsp_name->stream_name);
 
 	TALLOC_FREE(ad);
 	return 0;
