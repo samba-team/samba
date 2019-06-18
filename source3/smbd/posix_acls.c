@@ -4350,12 +4350,13 @@ static SMB_ACL_T create_posix_acl_from_wire(connection_struct *conn,
  on the directory.
 ****************************************************************************/
 
-bool set_unix_posix_default_acl(connection_struct *conn,
+NTSTATUS set_unix_posix_default_acl(connection_struct *conn,
 				const struct smb_filename *smb_fname,
 				uint16_t num_def_acls,
 				const char *pdata)
 {
 	SMB_ACL_T def_acl = NULL;
+	NTSTATUS status;
 	int ret;
 
 	if (!S_ISDIR(smb_fname->st.st_ex_mode)) {
@@ -4363,24 +4364,23 @@ bool set_unix_posix_default_acl(connection_struct *conn,
 			DBG_INFO("Can't set default ACL on non-directory "
 				"file %s\n",
 				smb_fname->base_name);
-			errno = EISDIR;
-			return false;
-		} else {
-			return true;
+			return map_nt_error_from_unix(EISDIR);
 		}
+		return NT_STATUS_OK;
 	}
 
 	if (!num_def_acls) {
 		/* Remove the default ACL. */
 		ret = SMB_VFS_SYS_ACL_DELETE_DEF_FILE(conn, smb_fname);
 		if (ret == -1) {
+			status = map_nt_error_from_unix(errno);
 			DBG_INFO("acl_delete_def_file failed on "
 				"directory %s (%s)\n",
 				smb_fname->base_name,
 				strerror(errno));
-			return false;
+			return status;
 		}
-		return true;
+		return NT_STATUS_OK;
 	}
 
 	def_acl = create_posix_acl_from_wire(conn,
@@ -4388,7 +4388,7 @@ bool set_unix_posix_default_acl(connection_struct *conn,
 					pdata,
 					talloc_tos());
 	if (def_acl == NULL) {
-		return false;
+		return map_nt_error_from_unix(errno);
 	}
 
 	ret = SMB_VFS_SYS_ACL_SET_FILE(conn,
@@ -4396,17 +4396,18 @@ bool set_unix_posix_default_acl(connection_struct *conn,
 					SMB_ACL_TYPE_DEFAULT,
 					def_acl);
 	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
 		DBG_INFO("acl_set_file failed on directory %s (%s)\n",
 			smb_fname->base_name,
 			strerror(errno));
 	        TALLOC_FREE(def_acl);
-		return false;
+		return status;
 	}
 
 	DBG_DEBUG("set default acl for file %s\n",
 		smb_fname->base_name);
 	TALLOC_FREE(def_acl);
-	return true;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
