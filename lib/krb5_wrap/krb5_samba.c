@@ -3234,7 +3234,7 @@ static krb5_error_code ads_create_gss_checksum(krb5_data *in_data, /* [inout] */
 
 	SIVAL(gss_cksum, 20, gss_flags);
 
-	if (orig_length) {
+	if (orig_length && in_data->data != NULL) {
 		SSVAL(gss_cksum, 24, 1); /* The Delegation Option identifier */
 		SSVAL(gss_cksum, 26, orig_length);
 		/* Copy the kerberos KRB_CRED data */
