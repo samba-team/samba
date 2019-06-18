@@ -1088,7 +1088,6 @@ static int lock_search(struct ldb_module *lock_module, struct ldb_request *req)
 	if (ret == LDB_ERR_UNSUPPORTED_CRITICAL_EXTENSION) {
 		/* We might be talking LDAP */
 		ldb_reset_err_string(ldb);
-		ret = 0;
 		TALLOC_FREE(lock_context);
 
 		return ldb_next_request(lock_module, req);
