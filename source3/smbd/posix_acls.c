@@ -4615,18 +4615,16 @@ static NTSTATUS remove_posix_acl(connection_struct *conn,
 
 NTSTATUS set_unix_posix_acl(connection_struct *conn,
 			files_struct *fsp,
-			const struct smb_filename *smb_fname,
 			uint16_t num_acls,
 			const char *pdata)
 {
 	SMB_ACL_T file_acl = NULL;
-	const char *fname = smb_fname->base_name;
 	int ret;
 	NTSTATUS status;
 
 	if (!num_acls) {
 		/* Remove the ACL from the file. */
-		return remove_posix_acl(conn, fsp, smb_fname);
+		return remove_posix_acl(conn, fsp, fsp->fsp_name);
 	}
 
 	file_acl = create_posix_acl_from_wire(conn,
@@ -4637,34 +4635,18 @@ NTSTATUS set_unix_posix_acl(connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (fsp && fsp->fh->fd != -1) {
-		/* The preferred way - use an open fd. */
-		ret = SMB_VFS_SYS_ACL_SET_FD(fsp, file_acl);
-		if (ret == -1) {
-			status = map_nt_error_from_unix(errno);
-			DBG_INFO("acl_set_file failed on %s (%s)\n",
-				fname,
-				strerror(errno));
-			TALLOC_FREE(file_acl);
-			return status;
-		}
-	} else {
-		ret = SMB_VFS_SYS_ACL_SET_FILE(conn,
-					smb_fname,
-					SMB_ACL_TYPE_ACCESS,
-					file_acl);
-		if (ret == -1) {
-			status = map_nt_error_from_unix(errno);
-			DBG_INFO("acl_set_file failed on %s (%s)\n",
-				fname,
-				strerror(errno));
-		        TALLOC_FREE(file_acl);
-			return status;
-		}
+	ret = SMB_VFS_SYS_ACL_SET_FD(fsp, file_acl);
+	if (ret == -1) {
+		status = map_nt_error_from_unix(errno);
+		DBG_INFO("acl_set_file failed on %s (%s)\n",
+			fsp_str_dbg(fsp),
+			strerror(errno));
+		TALLOC_FREE(file_acl);
+		return status;
 	}
 
 	DBG_DEBUG("set acl for file %s\n",
-		fname);
+		fsp_str_dbg(fsp));
 
 	TALLOC_FREE(file_acl);
 	return NT_STATUS_OK;

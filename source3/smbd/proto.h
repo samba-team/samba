@@ -811,7 +811,6 @@ NTSTATUS set_unix_posix_default_acl(connection_struct *conn,
 				const struct smb_filename *smb_fname,
 				uint16_t num_def_acls, const char *pdata);
 NTSTATUS set_unix_posix_acl(connection_struct *conn, files_struct *fsp,
-				const struct smb_filename *smb_fname,
 				uint16_t num_acls,
 				const char *pdata);
 NTSTATUS get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname,

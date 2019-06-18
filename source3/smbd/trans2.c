@@ -7464,7 +7464,6 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	if (valid_file_acls) {
 		status = set_unix_posix_acl(conn,
 					fsp,
-					fsp->fsp_name,
 					num_file_acls,
 					pdata);
 		if (!NT_STATUS_IS_OK(status)) {
