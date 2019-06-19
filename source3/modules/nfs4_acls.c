@@ -82,6 +82,9 @@ int smbacl4_get_vfs_params(struct connection_struct *conn,
 		return -1;
 	}
 	params->mode = (enum smbacl4_mode_enum)enumval;
+	if (params->mode == e_special) {
+		DBG_WARNING("nfs4:mode special is deprecated.\n");
+	}
 
 	params->do_chown = lp_parm_bool(SNUM(conn), SMBACL4_PARAM_TYPE_NAME,
 		"chown", true);
