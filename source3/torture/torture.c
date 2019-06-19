@@ -2946,6 +2946,392 @@ fail:
 
 	return ret;
 }
+
+struct deferred_close_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	uint16_t fnum;
+};
+
+static void deferred_close_waited(struct tevent_req *subreq);
+static void deferred_close_done(struct tevent_req *subreq);
+
+static struct tevent_req *deferred_close_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	int wait_secs,
+	struct cli_state *cli,
+	uint16_t fnum)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct deferred_close_state *state = NULL;
+	struct timeval wakeup_time = timeval_current_ofs(wait_secs, 0);
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct deferred_close_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->cli = cli;
+	state->fnum = fnum;
+
+	subreq = tevent_wakeup_send(state, state->ev, wakeup_time);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, deferred_close_waited, req);
+	return req;
+}
+
+static void deferred_close_waited(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct deferred_close_state *state = tevent_req_data(
+		req, struct deferred_close_state);
+	bool ok;
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		tevent_req_oom(req);
+		return;
+	}
+
+	subreq = cli_close_send(state, state->ev, state->cli, state->fnum);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, deferred_close_done, req);
+}
+
+static void deferred_close_done(struct tevent_req *subreq)
+{
+	NTSTATUS status = cli_close_recv(subreq);
+	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static NTSTATUS deferred_close_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+struct lockread_state {
+	struct smb1_lock_element lck;
+	struct tevent_req *reqs[2];
+	struct tevent_req *smbreqs[2];
+	NTSTATUS lock_status;
+	NTSTATUS read_status;
+	uint8_t *readbuf;
+};
+
+static void lockread_lockingx_done(struct tevent_req *subreq);
+static void lockread_read_andx_done(struct tevent_req *subreq);
+
+static struct tevent_req *lockread_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum)
+{
+	struct tevent_req *req = NULL;
+	struct lockread_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(mem_ctx, &state, struct lockread_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->lck = (struct smb1_lock_element) {
+		.pid = cli_getpid(cli), .offset = 0, .length = 1,
+	};
+
+	state->reqs[0] = cli_lockingx_create(
+		ev,				/* mem_ctx */
+		ev,				/* tevent_context */
+		cli,				/* cli */
+		fnum,				/* fnum */
+		LOCKING_ANDX_EXCLUSIVE_LOCK,	/* typeoflock */
+		0,				/* newoplocklevel */
+		10000,				/* timeout */
+		0,				/* num_unlocks */
+		NULL,				/* unlocks */
+		1,				/* num_locks */
+		&state->lck,			/* locks */
+		&state->smbreqs[0]);		/* psmbreq */
+	if (tevent_req_nomem(state->reqs[0], req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(
+		state->reqs[0], lockread_lockingx_done, req);
+
+	state->reqs[1] = cli_read_andx_create(
+		ev,		/* mem_ctx */
+		ev,		/* ev */
+		cli,		/* cli */
+		fnum,		/* fnum */
+		0,		/* offset */
+		1,		/* size */
+		&state->smbreqs[1]);	/* psmbreq */
+	if (tevent_req_nomem(state->reqs[1], req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(
+		state->reqs[1], lockread_read_andx_done, req);
+
+	status = smb1cli_req_chain_submit(state->smbreqs, 2);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+	return req;
+}
+
+static void lockread_lockingx_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct lockread_state *state = tevent_req_data(
+		req, struct lockread_state);
+	state->lock_status = cli_lockingx_recv(subreq);
+	TALLOC_FREE(subreq);
+	d_fprintf(stderr,
+		  "lockingx returned %s\n",
+		  nt_errstr(state->lock_status));
+}
+
+static void lockread_read_andx_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct lockread_state *state = tevent_req_data(
+		req, struct lockread_state);
+	ssize_t received = -1;
+	uint8_t *rcvbuf = NULL;
+
+	state->read_status = cli_read_andx_recv(subreq, &received, &rcvbuf);
+
+	d_fprintf(stderr,
+		  "read returned %s\n",
+		  nt_errstr(state->read_status));
+
+	if (!NT_STATUS_IS_OK(state->read_status)) {
+		TALLOC_FREE(subreq);
+		tevent_req_done(req);
+		return;
+	}
+
+	if (received > 0) {
+		state->readbuf = talloc_memdup(state, rcvbuf, received);
+		TALLOC_FREE(subreq);
+		if (tevent_req_nomem(state->readbuf, req)) {
+			return;
+		}
+	}
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static NTSTATUS lockread_recv(
+	struct tevent_req *req,
+	NTSTATUS *lock_status,
+	NTSTATUS *read_status,
+	TALLOC_CTX *mem_ctx,
+	uint8_t **read_buf)
+{
+	struct lockread_state *state = tevent_req_data(
+		req, struct lockread_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	*lock_status = state->lock_status;
+	*read_status = state->read_status;
+	if (state->readbuf != NULL) {
+		*read_buf = talloc_move(mem_ctx, &state->readbuf);
+	} else {
+		*read_buf = NULL;
+	}
+
+	return NT_STATUS_OK;
+}
+
+struct lock12_state {
+	uint8_t dummy;
+};
+
+static void lock12_closed(struct tevent_req *subreq);
+static void lock12_read(struct tevent_req *subreq);
+
+static struct tevent_req *lock12_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum1,
+	uint16_t fnum2)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct lock12_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct lock12_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = deferred_close_send(state, ev, 1, cli, fnum1);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, lock12_closed, req);
+
+	subreq = lockread_send(state, ev, cli, fnum2);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, lock12_read, req);
+
+	return req;
+}
+
+static void lock12_closed(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+
+	status = deferred_close_recv(subreq);
+	TALLOC_FREE(subreq);
+	DBG_DEBUG("close returned %s\n", nt_errstr(status));
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+}
+
+static void lock12_read(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct lock12_state *state = tevent_req_data(
+		req, struct lock12_state);
+	NTSTATUS status, lock_status, read_status;
+	uint8_t *buf = NULL;
+
+	status = lockread_recv(
+		subreq, &lock_status, &read_status, state, &buf);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status) ||
+	    tevent_req_nterror(req, lock_status) ||
+	    tevent_req_nterror(req, read_status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static NTSTATUS lock12_recv(struct tevent_req *req)
+
+{
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	return NT_STATUS_OK;
+}
+
+static bool run_locktest12(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	struct cli_state *cli = NULL;
+	const char fname[] = "\\lockt12.lck";
+	uint16_t fnum1, fnum2;
+	bool ret = false;
+	bool ok;
+	uint8_t data = 1;
+	NTSTATUS status;
+
+	printf("starting locktest12\n");
+
+	ev = samba_tevent_context_init(NULL);
+	if (ev == NULL) {
+		d_fprintf(stderr, "samba_tevent_context_init failed\n");
+		goto done;
+	}
+
+	ok = torture_open_connection(&cli, 0);
+	if (!ok) {
+		goto done;
+	}
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	status = cli_openx(cli, fname, O_CREAT|O_RDWR, DENY_NONE, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_openx failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = cli_openx(cli, fname, O_CREAT|O_RDWR, DENY_NONE, &fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_openx failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = cli_writeall(cli, fnum1, 0, &data, 0, sizeof(data), NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_writeall failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = cli_locktype(
+		cli, fnum1, 0, 1, 0, LOCKING_ANDX_EXCLUSIVE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_locktype failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	req = lock12_send(ev, ev, cli, fnum1, fnum2);
+	if (req == NULL) {
+		d_fprintf(stderr, "lock12_send failed\n");
+		goto done;
+	}
+
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		d_fprintf(stderr, "tevent_req_poll_ntstatus failed\n");
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "tevent_req_poll_ntstatus returned %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = lock12_recv(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "lock12 returned %s\n", nt_errstr(status));
+		goto done;
+	}
+
+	ret = true;
+done:
+	torture_close_connection(cli);
+	return ret;
+}
+
+
 /*
 test whether fnums and tids open on one VC are available on another (a major
 security hole)
@@ -12549,6 +12935,10 @@ static struct {
 	{
 		.name = "LOCK11",
 		.fn   =  run_locktest11,
+	},
+	{
+		.name = "LOCK12",
+		.fn   =  run_locktest12,
 	},
 	{
 		.name = "UNLINK",
