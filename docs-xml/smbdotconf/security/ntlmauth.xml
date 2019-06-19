@@ -60,7 +60,7 @@
     </itemizedlist>
 
     <para>The default changed from <constant>yes</constant> to
-    <constant>no</constant> with Samba 4.5.  The default chagned again
+    <constant>no</constant> with Samba 4.5. The default changed again
     to <constant>ntlmv2-only</constant> with Samba 4.7, however the
     behaviour is unchanged.</para>
 </description>
