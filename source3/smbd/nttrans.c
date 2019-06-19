@@ -1405,7 +1405,7 @@ void reply_ntcancel(struct smb_request *req)
 	srv_cancel_sign_response(xconn);
 	found = remove_pending_change_notify_requests_by_mid(sconn, req->mid);
 	if (!found) {
-		remove_pending_lock_requests_by_mid_smb1(sconn, req->mid);
+		smbd_smb1_brl_finish_by_mid(sconn, req->mid);
 	}
 
 	DEBUG(3,("reply_ntcancel: cancel called on mid = %llu.\n",
