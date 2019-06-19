@@ -236,7 +236,6 @@ static const struct loadparm_service _sDefault =
 	.acl_map_full_control = true,
 	.acl_group_control = false,
 	.acl_allow_execute_always = false,
-	.allocation_roundup_size = SMB_ROUNDUP_ALLOCATION_SIZE,
 	.aio_read_size = 1,
 	.aio_write_size = 1,
 	.map_readonly = MAP_READONLY_NO,

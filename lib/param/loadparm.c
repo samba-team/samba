@@ -2889,8 +2889,6 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "show add printer wizard", "yes");
 
-	lpcfg_do_global_parameter(lp_ctx, "allocation roundup size", "1048576");
-
 	lpcfg_do_global_parameter(lp_ctx, "ldap page size", "1000");
 
 	lpcfg_do_global_parameter(lp_ctx, "kernel share modes", "yes");

@@ -4,17 +4,21 @@
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter allows an administrator to tune the 
-    allocation size reported to Windows clients.  The default 
-    size of 1Mb generally results in improved Windows client
-    performance.   However, rounding the allocation size may cause
+    allocation size reported to Windows clients. This is only
+    useful for old SMB1 clients because modern SMB dialects
+    eliminated that bottleneck and have better performance by
+    default.  Using this parameter may cause
     difficulties for some applications, e.g. MS Visual Studio.
     If the MS Visual Studio compiler starts to crash with an
     internal error, set this parameter to zero for this share.
+    Settings this parameter to a large value can also cause
+    small files to allocate more space on the disk than
+    needed.
     </para>
 
     <para>The integer parameter specifies the roundup size in bytes.</para>
 </description>
 
-<value type="default">1048576</value>
-<value type="example">0<comment>(to disable roundups)</comment></value>
+<value type="default">0</value>
+<value type="example">1048576<comment>(to set it to the former default of 1 MiB)</comment></value>
 </samba:parameter>
