@@ -432,7 +432,6 @@ void locking_close_file(struct messaging_context *msg_ctx,
 	br_lck = brl_get_locks(talloc_tos(),fsp);
 
 	if (br_lck) {
-		cancel_pending_lock_requests_by_fid(fsp, br_lck, close_type);
 		brl_close_fnum(msg_ctx, br_lck);
 		TALLOC_FREE(br_lck);
 	}
