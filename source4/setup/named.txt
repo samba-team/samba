@@ -1,8 +1,7 @@
 # Additional information for DNS setup using BIND
 
-# If you are running a capable version of BIND and you wish to support
-# secure GSS-TSIG updates, you must make the following configuration
-# changes:
+# You must make the following configuration changes to BIND to support
+# Samba's AD DC:
 
 #
 # Steps for BIND 9.8.x and 9.9.x -----------------------------------------
@@ -11,6 +10,7 @@
 # 1. Insert following lines into the options {} section of your named.conf 
 #    file:
 tkey-gssapi-keytab "${DNS_KEYTAB_ABS}";
+minimal-responses yes;
 
 # 2. If SELinux is enabled, ensure that all files have the appropriate 
 #    SELinux file contexts.  The ${DNS_KEYTAB} file must be accessible by the 
