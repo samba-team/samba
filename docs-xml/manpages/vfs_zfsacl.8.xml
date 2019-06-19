@@ -137,7 +137,7 @@
         <smbconfsection name="[samba_zfs_share]"/>
 	<smbconfoption name="vfs objects">zfsacl</smbconfoption>
 	<smbconfoption name="path">/test/zfs_mount</smbconfoption>
-	<smbconfoption name="nfs4: mode">special</smbconfoption>
+	<smbconfoption name="nfs4: mode">simple</smbconfoption>
 	<smbconfoption name="nfs4: acedup">merge</smbconfoption>
 </programlisting>
 </refsect1>
