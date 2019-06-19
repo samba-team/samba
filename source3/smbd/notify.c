@@ -428,7 +428,7 @@ static void smbd_notify_cancel_by_map(struct notify_mid_map *map)
  Delete entries by mid from the change notify pending queue. Always send reply.
 *****************************************************************************/
 
-void remove_pending_change_notify_requests_by_mid(
+bool remove_pending_change_notify_requests_by_mid(
 	struct smbd_server_connection *sconn, uint64_t mid)
 {
 	struct notify_mid_map *map;
@@ -440,10 +440,11 @@ void remove_pending_change_notify_requests_by_mid(
 	}
 
 	if (map == NULL) {
-		return;
+		return false;
 	}
 
 	smbd_notify_cancel_by_map(map);
+	return true;
 }
 
 void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq)

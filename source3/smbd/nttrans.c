@@ -1395,6 +1395,7 @@ void reply_ntcancel(struct smb_request *req)
 {
 	struct smbXsrv_connection *xconn = req->xconn;
 	struct smbd_server_connection *sconn = req->sconn;
+	bool found;
 
 	/*
 	 * Go through and cancel any pending change notifies.
@@ -1402,8 +1403,10 @@ void reply_ntcancel(struct smb_request *req)
 
 	START_PROFILE(SMBntcancel);
 	srv_cancel_sign_response(xconn);
-	remove_pending_change_notify_requests_by_mid(sconn, req->mid);
-	remove_pending_lock_requests_by_mid_smb1(sconn, req->mid);
+	found = remove_pending_change_notify_requests_by_mid(sconn, req->mid);
+	if (!found) {
+		remove_pending_lock_requests_by_mid_smb1(sconn, req->mid);
+	}
 
 	DEBUG(3,("reply_ntcancel: cancel called on mid = %llu.\n",
 		(unsigned long long)req->mid));
