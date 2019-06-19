@@ -665,6 +665,77 @@
 </refsect2>
 
 <refsect3>
+	<title>ntacl changedomsid <replaceable>original-domain-SID</replaceable> <replaceable>new-domain-SID</replaceable> <replaceable>file</replaceable> [options]</title>
+	<para>Change the domain SID for ACLs.
+	Can be used to change all entries in acl_xattr when the machine's SID
+	has accidentially changed or the data set has been copied
+	to another machine either via backup/restore or rsync.</para>
+
+	<variablelist>
+	<varlistentry>
+	<term>--use-ntvfs</term>
+	<listitem><para>
+	Set the ACLs directly to the TDB or xattr. The POSIX permissions will
+	NOT be changed, only the NT ACL will be stored.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--service=SERVICE</term>
+	<listitem><para>
+	Specify the name of the smb.conf service to use. This option is
+	required in combination with the --use-s3fs option.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--use-s3fs</term>
+	<listitem><para>
+	Set the ACLs for use with the default s3fs file server via the VFS
+	layer. This option requires a smb.conf service, specified by the
+	--service=SERVICE option.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--xattr-backend=[native|tdb]</term>
+	<listitem><para>
+	Specify the xattr backend type (native fs or tdb).
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--eadb-file=EADB_FILE</term>
+	<listitem><para>
+	Name of the tdb file where attributes are stored.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--recursive</term>
+	<listitem><para>
+	Set the ACLs for directories and their contents recursively.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--follow-symlinks</term>
+	<listitem><para>
+	Follow symlinks when --recursive is specified.
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>--verbose</term>
+	<listitem><para>
+	Verbosely list files and ACLs which are being processed.
+	</para></listitem>
+	</varlistentry>
+	</variablelist>
+</refsect3>
+
+
+<refsect3>
 	<title>ntacl get <replaceable>file</replaceable> [options]</title>
 	<para>Get ACLs on a file.</para>
 </refsect3>
