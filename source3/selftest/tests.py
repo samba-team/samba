@@ -160,6 +160,7 @@ for s in shares:
 posix_tests = ["POSIX", "POSIX-APPEND", "POSIX-SYMLINK-ACL", "POSIX-SYMLINK-EA", "POSIX-OFD-LOCK",
                "POSIX-STREAM-DELETE", "WINDOWS-BAD-SYMLINK", "POSIX-MKDIR",
                "POSIX-BLOCKING-LOCK",
+               "POSIX-ACL-OPLOCK",
               ]
 
 for t in posix_tests:

@@ -8562,6 +8562,211 @@ static bool run_posix_mkdir_test(int dummy)
 	return correct;
 }
 
+struct posix_acl_oplock_state {
+	struct tevent_context *ev;
+	struct cli_state *cli;
+	bool *got_break;
+	bool *acl_ret;
+	NTSTATUS status;
+};
+
+static void posix_acl_oplock_got_break(struct tevent_req *req)
+{
+	struct posix_acl_oplock_state *state = tevent_req_callback_data(
+		req, struct posix_acl_oplock_state);
+	uint16_t fnum;
+	uint8_t level;
+	NTSTATUS status;
+
+	status = cli_smb_oplock_break_waiter_recv(req, &fnum, &level);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_smb_oplock_break_waiter_recv returned %s\n",
+		       nt_errstr(status));
+		return;
+	}
+	*state->got_break = true;
+
+	req = cli_oplock_ack_send(state, state->ev, state->cli, fnum,
+				  NO_OPLOCK);
+	if (req == NULL) {
+		printf("cli_oplock_ack_send failed\n");
+		return;
+	}
+}
+
+static void posix_acl_oplock_got_acl(struct tevent_req *req)
+{
+	struct posix_acl_oplock_state *state = tevent_req_callback_data(
+		req, struct posix_acl_oplock_state);
+	size_t ret_size = 0;
+	char *ret_data = NULL;
+
+	state->status = cli_posix_getacl_recv(req,
+			state,
+			&ret_size,
+			&ret_data);
+
+	if (!NT_STATUS_IS_OK(state->status)) {
+		printf("cli_posix_getacl_recv returned %s\n",
+			nt_errstr(state->status));
+	}
+	*state->acl_ret = true;
+}
+
+static bool run_posix_acl_oplock_test(int dummy)
+{
+	struct tevent_context *ev;
+	struct cli_state *cli1, *cli2;
+	struct tevent_req *oplock_req, *getacl_req;
+	const char *fname = "posix_acl_oplock";
+	uint16_t fnum;
+	int saved_use_oplocks = use_oplocks;
+	NTSTATUS status;
+	bool correct = true;
+	bool got_break = false;
+	bool acl_ret = false;
+
+	struct posix_acl_oplock_state *state;
+
+	printf("starting posix_acl_oplock test\n");
+
+	if (!torture_open_connection(&cli1, 0)) {
+		use_level_II_oplocks = false;
+		use_oplocks = saved_use_oplocks;
+		return false;
+	}
+
+	if (!torture_open_connection(&cli2, 1)) {
+		use_level_II_oplocks = false;
+		use_oplocks = saved_use_oplocks;
+		return false;
+	}
+
+	/* Setup posix on cli2 only. */
+	status = torture_setup_unix_extensions(cli2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli1->conn, sockops);
+	smbXcli_conn_set_sockopt(cli2->conn, sockops);
+
+	cli_unlink(cli1, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	/* Create the file on the Windows connection. */
+	status = cli_openx(cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE,
+	                  &fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
+		return false;
+	}
+
+	status = cli_close(cli1, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close1 failed (%s)\n", nt_errstr(status));
+		return false;
+	}
+
+	cli1->use_oplocks = true;
+
+	/* Open with oplock. */
+	status = cli_ntcreate(cli1,
+			fname,
+			0,
+			FILE_READ_DATA,
+			FILE_ATTRIBUTE_NORMAL,
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			FILE_OPEN,
+			0,
+			0,
+			&fnum,
+			NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("open of %s failed (%s)\n", fname, nt_errstr(status));
+		return false;
+	}
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		printf("tevent_context_init failed\n");
+		return false;
+	}
+
+	state = talloc_zero(ev, struct posix_acl_oplock_state);
+	if (state == NULL) {
+		printf("talloc failed\n");
+		return false;
+	}
+	state->ev = ev;
+	state->cli = cli1;
+	state->got_break = &got_break;
+	state->acl_ret = &acl_ret;
+
+	oplock_req = cli_smb_oplock_break_waiter_send(
+		talloc_tos(), ev, cli1);
+	if (oplock_req == NULL) {
+		printf("cli_smb_oplock_break_waiter_send failed\n");
+		return false;
+	}
+	tevent_req_set_callback(oplock_req, posix_acl_oplock_got_break, state);
+
+	/* Get ACL on POSIX connection - should break oplock. */
+	getacl_req = cli_posix_getacl_send(talloc_tos(),
+				ev,
+				cli2,
+				fname);
+	if (getacl_req == NULL) {
+		printf("cli_posix_getacl_send failed\n");
+		return false;
+	}
+	tevent_req_set_callback(getacl_req, posix_acl_oplock_got_acl, state);
+
+	while (!got_break || !acl_ret) {
+		int ret;
+		ret = tevent_loop_once(ev);
+		if (ret == -1) {
+			printf("tevent_loop_once failed: %s\n",
+			       strerror(errno));
+			return false;
+		}
+	}
+
+	if (!NT_STATUS_IS_OK(state->status)) {
+		printf("getacl failed (%s)\n", nt_errstr(state->status));
+		correct = false;
+	}
+
+	status = cli_close(cli1, fnum);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("close2 failed (%s)\n", nt_errstr(status));
+		correct = false;
+	}
+
+	status = cli_unlink(cli1,
+			fname,
+			FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("unlink failed (%s)\n", nt_errstr(status));
+		correct = false;
+	}
+
+	if (!torture_close_connection(cli1)) {
+		correct = false;
+	}
+	if (!torture_close_connection(cli2)) {
+		correct = false;
+	}
+
+	if (!got_break) {
+		correct = false;
+	}
+
+	printf("finished posix acl oplock test\n");
+
+	return correct;
+}
 
 static uint32_t open_attrs_table[] = {
 		FILE_ATTRIBUTE_NORMAL,
@@ -13298,6 +13503,10 @@ static struct {
 	{
 		.name  = "POSIX-MKDIR",
 		.fn    = run_posix_mkdir_test,
+	},
+	{
+		.name  = "POSIX-ACL-OPLOCK",
+		.fn    = run_posix_acl_oplock_test,
 	},
 	{
 		.name  = "WINDOWS-BAD-SYMLINK",
