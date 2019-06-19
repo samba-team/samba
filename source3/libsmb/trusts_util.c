@@ -354,7 +354,7 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 		}
 
 		/*
-		 * We use the password that's already persitent in
+		 * We use the password that's already persistent in
 		 * our database in order to handle failures.
 		 */
 		data_blob_clear_free(&new_trust_pw_blob);
