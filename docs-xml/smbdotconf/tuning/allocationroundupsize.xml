@@ -1,6 +1,7 @@
 <samba:parameter name="allocation roundup size"
                  context="S"
                  type="bytes"
+                 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This parameter allows an administrator to tune the 
@@ -14,6 +15,9 @@
     Settings this parameter to a large value can also cause
     small files to allocate more space on the disk than
     needed.
+    </para>
+    <para>This parameter is deprecated and will be removed in
+    one of the next Samba releases.
     </para>
 
     <para>The integer parameter specifies the roundup size in bytes.</para>
