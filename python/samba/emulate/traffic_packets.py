@@ -334,7 +334,13 @@ def packet_ldap_3(packet, conversation, context):
     samdb = context.get_ldap_connection()
     dn = context.get_matching_dn(dn_sig)
 
+    # try to guess the search expression (don't bother for base searches, as
+    # they're only looking up a single object)
+    if (filter is None or filter is '') and scope != SCOPE_BASE:
+        filter = context.guess_search_filter(attrs, dn_sig, dn)
+
     samdb.search(dn,
+                 expression=filter,
                  scope=int(scope),
                  attrs=attrs.split(','),
                  controls=["paged_results:1:1000"])

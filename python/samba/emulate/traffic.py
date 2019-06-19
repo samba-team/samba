@@ -445,6 +445,63 @@ class ReplayContext(object):
         self.dn_map = dn_map
         self.attribute_clue_map = attribute_clue_map
 
+        # pre-populate DN-based search filters (it's simplest to generate them
+        # once, when the test starts). These are used by guess_search_filter()
+        # to avoid full-scans
+        self.search_filters = {}
+
+        # lookup all the GPO DNs
+        res = db.search(db.domain_dn(), scope=ldb.SCOPE_SUBTREE, attrs=['dn'],
+                        expression='(objectclass=groupPolicyContainer)')
+        gpos_by_dn = ""
+        for msg in res:
+            gpos_by_dn += "(distinguishedName={0})".format(msg['dn'])
+
+        # a search for the 'gPCFileSysPath' attribute is probably a GPO search
+        # (as per the MS-GPOL spec) which searches for GPOs by DN
+        self.search_filters['gPCFileSysPath'] = "(|{0})".format(gpos_by_dn)
+
+        # likewise, a search for gpLink is probably the Domain SOM search part
+        # of the MS-GPOL, in which case it's looking up a few OUs by DN
+        ou_str = ""
+        for ou in ["Domain Controllers,", "traffic_replay,", ""]:
+            ou_str += "(distinguishedName={0}{1})".format(ou, db.domain_dn())
+        self.search_filters['gpLink'] = "(|{0})".format(ou_str)
+
+        # The CEP Web Service can query the AD DC to get pKICertificateTemplate
+        # objects (as per MS-WCCE)
+        self.search_filters['pKIExtendedKeyUsage'] = \
+            '(objectCategory=pKICertificateTemplate)'
+
+        # assume that anything querying the usnChanged is some kind of
+        # synchronization tool, e.g. AD Change Detection Connector
+        res = db.search('', scope=ldb.SCOPE_BASE, attrs=['highestCommittedUSN'])
+        self.search_filters['usnChanged'] = \
+            '(usnChanged>={0})'.format(res[0]['highestCommittedUSN'])
+
+    # The traffic_learner script doesn't preserve the LDAP search filter, and
+    # having no filter can result in a full DB scan. This is costly for a large
+    # DB, and not necessarily representative of real world traffic. As there
+    # several standard LDAP queries that get used by AD tools, we can apply
+    # some logic and guess what the search filter might have been originally.
+    def guess_search_filter(self, attrs, dn_sig, dn):
+
+        # there are some standard spec-based searches that query fairly unique
+        # attributes. Check if the search is likely one of these
+        for key in self.search_filters.keys():
+            if key in attrs:
+                return self.search_filters[key]
+
+        # if it's the top-level domain, assume we're looking up a single user,
+        # e.g. like powershell Get-ADUser or a similar tool
+        if dn_sig == 'DC,DC':
+            random_user_id = random.random() % self.total_conversations
+            account_name = user_name(self.instance_id, random_user_id)
+            return '(&(sAMAccountName=%s)(objectClass=user))' % account_name
+
+        # otherwise just return everything in the sub-tree
+        return '(objectClass=*)'
+
     def generate_process_local_config(self, account, conversation):
         self.ldap_connections         = []
         self.dcerpc_connections       = []
