@@ -902,14 +902,11 @@ static void smbacl4_substitute_special(struct SMB4ACL_T *acl,
 			DEBUG(10,("replaced with special group ace\n"));
 		}
 	}
-	return true; /* OK */
 }
 
-static int smbacl4_substitute_simple(
-	struct SMB4ACL_T *acl,
-	uid_t ownerUID,
-	gid_t ownerGID
-)
+static void smbacl4_substitute_simple(struct SMB4ACL_T *acl,
+				      uid_t ownerUID,
+				      gid_t ownerGID)
 {
 	struct SMB4ACE_T *aceint;
 
@@ -939,7 +936,6 @@ static int smbacl4_substitute_simple(
 			DEBUG(10,("replaced with special group ace\n"));
 		}
 	}
-	return true; /* OK */
 }
 
 static struct SMB4ACL_T *smbacl4_win2nfs4(
