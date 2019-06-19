@@ -105,6 +105,7 @@ class TestsWithUserOU(samba.tests.TestCase):
             'givenName': "abcdefghijklmnopqrstuvwxyz"[i % 26],
             "roomNumber": "%sbc" % (n - i),
             "carLicense": "后来经",
+            "facsimileTelephoneNumber": name,
             "employeeNumber": "%s%sx" % (abs(i * (99 - i)), '\n' * (i & 255)),
             "accountExpires": "%s" % (10 ** 9 + 1000000 * i),
             "msTSExpireDate4": "19%02d0101010000.0Z" % (i % 100),
@@ -1334,7 +1335,7 @@ class PagedResultsTests(TestsWithUserOU):
 
         self.assertEqual(results, expected_results)
 
-    def test_paged_modify_during_search(self):
+    def test_paged_rename_during_search(self):
         expr = "(objectClass=*)"
 
         # Start new search
@@ -1420,6 +1421,53 @@ class PagedResultsTests(TestsWithUserOU):
         del expected_results[0]
 
         self.assertEqual(results, expected_results)
+
+    def test_paged_modify_one_during_search(self):
+        prefix = "change_during_search_"
+        num_users = 5
+        users = [self.create_user(i, num_users, prefix=prefix)
+                 for i in range(num_users)]
+        expr = "(&(objectClass=user)(facsimileTelephoneNumber=%s*))" % (prefix)
+
+        # Get the first page, then change the searched attribute and
+        # try for the second page.
+        results, cookie = self.paged_search(expr, page_size=1)
+        self.assertEqual(len(results), 1)
+        unwalked_users = [u for u in users if u['cn'] != results[0]]
+        self.assertEqual(len(unwalked_users), num_users-1)
+
+        mod_dn = unwalked_users[0]['dn']
+        self.ldb.modify_ldif("dn: %s\n"
+                             "changetype: modify\n"
+                             "replace: facsimileTelephoneNumber\n"
+                             "facsimileTelephoneNumber: 123" % mod_dn)
+
+        results, _ = self.paged_search(expr, cookie=cookie,
+                                       page_size=len(self.users))
+        expected_cns = {u['cn'] for u in unwalked_users if u['dn'] != mod_dn}
+        self.assertEqual(set(results), expected_cns)
+
+    def test_paged_modify_all_during_search(self):
+        prefix = "change_during_search_"
+        num_users = 5
+        users = [self.create_user(i, num_users, prefix=prefix)
+                 for i in range(num_users)]
+        expr = "(&(objectClass=user)(facsimileTelephoneNumber=%s*))" % (prefix)
+
+        # Get the first page, then change the searched attribute and
+        # try for the second page.
+        results, cookie = self.paged_search(expr, page_size=1)
+        unwalked_users = [u for u in users if u['cn'] != results[0]]
+
+        for u in users:
+            self.ldb.modify_ldif("dn: %s\n"
+                                 "changetype: modify\n"
+                                 "replace: facsimileTelephoneNumber\n"
+                                 "facsimileTelephoneNumber: 123" % u['dn'])
+
+        results, _ = self.paged_search(expr, cookie=cookie,
+                                       page_size=len(self.users))
+        self.assertEqual(results, [])
 
     def assertPagedSearchRaises(self, err_num, expr, cookie, attrs=None,
                                 extra_ctrls=None):

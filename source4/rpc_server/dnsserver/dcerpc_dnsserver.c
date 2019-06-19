@@ -2018,7 +2018,12 @@ static WERROR dcesrv_DnssrvOperation(struct dcesrv_call_state *dce_call, TALLOC_
 						&r->in.pData);
 	} else {
 		z = dnsserver_find_zone(dsstate->zones, r->in.pszZone);
-		if (z == NULL && request_filter == 0) {
+		/*
+		 * In the case that request_filter is not 0 and z is NULL,
+		 * the request is for a multizone operation, which we do not
+		 * yet support, so just error on NULL zone name.
+		 */
+		if (z == NULL) {
 			return WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST;
 		}
 
@@ -2225,7 +2230,12 @@ static WERROR dcesrv_DnssrvOperation2(struct dcesrv_call_state *dce_call, TALLOC
 						&r->in.pData);
 	} else {
 		z = dnsserver_find_zone(dsstate->zones, r->in.pszZone);
-		if (z == NULL && request_filter == 0) {
+		/*
+		 * In the case that request_filter is not 0 and z is NULL,
+		 * the request is for a multizone operation, which we do not
+		 * yet support, so just error on NULL zone name.
+		 */
+		if (z == NULL) {
 			return WERR_DNS_ERROR_ZONE_DOES_NOT_EXIST;
 		}
 
