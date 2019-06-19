@@ -432,6 +432,12 @@ void locking_close_file(struct messaging_context *msg_ctx,
 	br_lck = brl_get_locks(talloc_tos(),fsp);
 
 	if (br_lck) {
+		/*
+		 * Unlocks must trigger dbwrap_watch watchers,
+		 * normally in smbd_do_unlocking. Here it's done
+		 * implictly, we're closing the file and thus remove a
+		 * share mode. This will wake the waiters.
+		 */
 		brl_close_fnum(msg_ctx, br_lck);
 		TALLOC_FREE(br_lck);
 	}
