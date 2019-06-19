@@ -6312,6 +6312,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				       &fixed_portion,
 				       ppdata, &data_size);
 	if (!NT_STATUS_IS_OK(status)) {
+		if (open_was_deferred(req->xconn, req->mid)) {
+			/* We have re-scheduled this call. */
+			return;
+		}
 		reply_nterror(req, status);
 		return;
 	}
