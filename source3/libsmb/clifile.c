@@ -3434,9 +3434,11 @@ static uint8_t *cli_lockingx_put_locks(
 struct cli_lockingx_state {
 	uint16_t vwv[8];
 	struct iovec bytes;
+	struct tevent_req *subreq;
 };
 
 static void cli_lockingx_done(struct tevent_req *subreq);
+static bool cli_lockingx_cancel(struct tevent_req *req);
 
 struct tevent_req *cli_lockingx_create(
 	TALLOC_CTX *mem_ctx,
@@ -3515,6 +3517,7 @@ struct tevent_req *cli_lockingx_send(
 	const struct smb1_lock_element *locks)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
+	struct cli_lockingx_state *state = NULL;
 	NTSTATUS status;
 
 	req = cli_lockingx_create(
@@ -3533,11 +3536,14 @@ struct tevent_req *cli_lockingx_send(
 	if (req == NULL) {
 		return NULL;
 	}
+	state = tevent_req_data(req, struct cli_lockingx_state);
+	state->subreq = subreq;
 
 	status = smb1cli_req_chain_submit(&subreq, 1);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
+	tevent_req_set_cancel_fn(req, cli_lockingx_cancel);
 	return req;
 }
 
@@ -3546,6 +3552,16 @@ static void cli_lockingx_done(struct tevent_req *subreq)
 	NTSTATUS status = cli_smb_recv(
 		subreq, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 	tevent_req_simple_finish_ntstatus(subreq, status);
+}
+
+static bool cli_lockingx_cancel(struct tevent_req *req)
+{
+	struct cli_lockingx_state *state = tevent_req_data(
+		req, struct cli_lockingx_state);
+	if (state->subreq == NULL) {
+		return false;
+	}
+	return tevent_req_cancel(state->subreq);
 }
 
 NTSTATUS cli_lockingx_recv(struct tevent_req *req)
