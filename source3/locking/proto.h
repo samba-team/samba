@@ -68,12 +68,6 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 		br_off *psize,
 		enum brl_type *plock_type,
 		enum brl_flavour lock_flav);
-bool brl_lock_cancel(struct byte_range_lock *br_lck,
-		uint64_t smblctx,
-		struct server_id pid,
-		br_off start,
-		br_off size,
-		enum brl_flavour lock_flav);
 bool brl_lock_cancel_default(struct byte_range_lock *br_lck,
 		struct lock_struct *plock);
 bool brl_mark_disconnected(struct files_struct *fsp);
@@ -89,11 +83,6 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 					files_struct *fsp);
 struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp);
-void brl_revalidate(struct messaging_context *msg_ctx,
-		    void *private_data,
-		    uint32_t msg_type,
-		    struct server_id server_id,
-		    DATA_BLOB *data);
 bool brl_cleanup_disconnected(struct file_id fid, uint64_t open_persistent_id);
 
 /* The following definitions come from locking/locking.c  */
@@ -127,11 +116,6 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			uint64_t *psmblctx);
 NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			files_struct *fsp,
-			uint64_t smblctx,
-			uint64_t count,
-			uint64_t offset,
-			enum brl_flavour lock_flav);
-NTSTATUS do_lock_cancel(files_struct *fsp,
 			uint64_t smblctx,
 			uint64_t count,
 			uint64_t offset,

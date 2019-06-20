@@ -95,41 +95,8 @@ bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req);
 
 /* The following definitions come from smbd/blocking.c  */
 
-void brl_timeout_fn(struct tevent_context *event_ctx,
-		struct tevent_timer *te,
-		struct timeval now,
-		void *private_data);
 struct timeval timeval_brl_min(const struct timeval *tv1,
 			const struct timeval *tv2);
-void process_blocking_lock_queue(struct smbd_server_connection *sconn);
-bool push_blocking_lock_request( struct byte_range_lock *br_lck,
-		struct smb_request *req,
-		files_struct *fsp,
-		int lock_timeout,
-		int lock_num,
-		uint64_t smblctx,
-		enum brl_type lock_type,
-		enum brl_flavour lock_flav,
-		uint64_t offset,
-		uint64_t count,
-		uint64_t blocking_smblctx);
-void smbd_cancel_pending_lock_requests_by_fid(files_struct *fsp,
-			struct byte_range_lock *br_lck,
-			enum file_close_type close_type);
-void cancel_pending_lock_requests_by_fid(files_struct *fsp,
-			struct byte_range_lock *br_lck,
-			enum file_close_type close_type);
-void remove_pending_lock_requests_by_mid_smb1(
-	struct smbd_server_connection *sconn, uint64_t mid);
-bool blocking_lock_was_deferred_smb1(
-	struct smbd_server_connection *sconn, uint64_t mid);
-struct blocking_lock_record *blocking_lock_cancel_smb1(files_struct *fsp,
-			uint64_t smblctx,
-			uint64_t offset,
-			uint64_t count,
-			enum brl_flavour lock_flav,
-			unsigned char locktype,
-                        NTSTATUS err);
 NTSTATUS smbd_do_locks_try(
 	struct messaging_context *msg_ctx,
 	struct files_struct *fsp,

@@ -32,16 +32,6 @@ void set_smbd_shim(const struct smbd_shim *shim_functions)
 	shim = *shim_functions;
 }
 
-void cancel_pending_lock_requests_by_fid(files_struct *fsp,
-			struct byte_range_lock *br_lck,
-			enum file_close_type close_type)
-{
-	if (shim.cancel_pending_lock_requests_by_fid) {
-
-		shim.cancel_pending_lock_requests_by_fid(fsp, br_lck, close_type);
-	}
-}
-
 void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 				    const char *name)
 {

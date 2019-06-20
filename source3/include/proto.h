@@ -996,9 +996,6 @@ void unbecome_root(void);
 /* The following definitions come from lib/smbd_shim.c */
 
 int find_service(TALLOC_CTX *ctx, const char *service_in, char **p_service_out);
-void cancel_pending_lock_requests_by_fid(files_struct *fsp,
-			struct byte_range_lock *br_lck,
-			enum file_close_type close_type);
 void send_stat_cache_delete_message(struct messaging_context *msg_ctx,
 				    const char *name);
 NTSTATUS can_delete_directory_fsp(files_struct *fsp);

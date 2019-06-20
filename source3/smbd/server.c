@@ -300,31 +300,6 @@ static void smbd_parent_id_cache_delete(struct messaging_context *ctx,
 	messaging_send_to_children(ctx, msg_type, msg_data);
 }
 
-#ifdef CLUSTER_SUPPORT
-static int smbd_parent_ctdb_reconfigured(
-	struct tevent_context *ev,
-	uint32_t src_vnn, uint32_t dst_vnn, uint64_t dst_srvid,
-	const uint8_t *msg, size_t msglen, void *private_data)
-{
-	struct messaging_context *msg_ctx = talloc_get_type_abort(
-		private_data, struct messaging_context);
-
-	DEBUG(10, ("Got %s message\n", (dst_srvid == CTDB_SRVID_RECONFIGURE)
-		   ? "cluster reconfigure" : "SAMBA_NOTIFY"));
-
-	/*
-	 * Someone from the family died, validate our locks
-	 */
-
-	if (am_parent) {
-		messaging_send_buf(msg_ctx, am_parent->cleanupd,
-				   MSG_SMB_BRL_VALIDATE, NULL, 0);
-	}
-
-	return 0;
-}
-#endif
-
 static void add_child_pid(struct smbd_parent_context *parent,
 			  pid_t pid)
 {
@@ -761,32 +736,6 @@ static bool cleanupd_init_recv(struct tevent_req *req)
 	return state->ok;
 }
 
-/*
-  at most every smbd:cleanuptime seconds (default 20), we scan the BRL
-  and locking database for entries to cleanup. As a side effect this
-  also cleans up dead entries in the connections database (due to the
-  traversal in message_send_all()
-
-  Using a timer for this prevents a flood of traversals when a large
-  number of clients disconnect at the same time (perhaps due to a
-  network outage).  
-*/
-
-static void cleanup_timeout_fn(struct tevent_context *event_ctx,
-				struct tevent_timer *te,
-				struct timeval now,
-				void *private_data)
-{
-	struct smbd_parent_context *parent =
-		talloc_get_type_abort(private_data,
-		struct smbd_parent_context);
-
-	parent->cleanup_te = NULL;
-
-	messaging_send_buf(parent->msg_ctx, parent->cleanupd,
-			   MSG_SMB_BRL_VALIDATE, NULL, 0);
-}
-
 static void cleanupd_started(struct tevent_req *req)
 {
 	bool ok;
@@ -887,25 +836,6 @@ static void remove_child_pid(struct smbd_parent_context *parent,
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("messaging_send returned %s\n",
 				nt_errstr(status));
-		}
-	}
-
-	if (unclean_shutdown) {
-		/* a child terminated uncleanly so tickle all
-		   processes to see if they can grab any of the
-		   pending locks
-                */
-		DEBUG(3,(__location__ " Unclean shutdown of pid %u\n",
-			(unsigned int)pid));
-		if (parent->cleanup_te == NULL) {
-			/* call the cleanup timer, but not too often */
-			int cleanup_time = lp_parm_int(-1, "smbd", "cleanuptime", 20);
-			parent->cleanup_te = tevent_add_timer(parent->ev_ctx,
-						parent,
-						timeval_current_ofs(cleanup_time, 0),
-						cleanup_timeout_fn,
-						parent);
-			DEBUG(1,("Scheduled cleanup of brl and lock database after unclean shutdown\n"));
 		}
 	}
 }
@@ -1312,17 +1242,6 @@ static bool open_sockets_smbd(struct smbd_parent_context *parent,
 	messaging_register(msg_ctx, NULL, MSG_SMB_NOTIFY_STARTED,
 			   smb_parent_send_to_children);
 
-#ifdef CLUSTER_SUPPORT
-	if (lp_clustering()) {
-		struct ctdbd_connection *conn = messaging_ctdb_connection();
-
-		register_with_ctdbd(conn, CTDB_SRVID_RECONFIGURE,
-				    smbd_parent_ctdb_reconfigured, msg_ctx);
-		register_with_ctdbd(conn, CTDB_SRVID_SAMBA_NOTIFY,
-				    smbd_parent_ctdb_reconfigured, msg_ctx);
-	}
-#endif
-
 #ifdef DEVELOPER
 	messaging_register(msg_ctx, NULL, MSG_SMB_INJECT_FAULT,
 			   msg_inject_fault);
@@ -1688,7 +1607,6 @@ extern void build_options(bool screen);
 	char *np_dir = NULL;
 	static const struct smbd_shim smbd_shim_fns =
 	{
-		.cancel_pending_lock_requests_by_fid = smbd_cancel_pending_lock_requests_by_fid,
 		.send_stat_cache_delete_message = smbd_send_stat_cache_delete_message,
 		.change_to_root_user = smbd_change_to_root_user,
 		.become_authenticated_pipe_user = smbd_become_authenticated_pipe_user,

@@ -857,36 +857,6 @@ static bool do_ip_dropped(struct tevent_context *ev_ctx,
 			    strlen(argv[1]) + 1);
 }
 
-/* force a blocking lock retry */
-
-static bool do_lockretry(struct tevent_context *ev_ctx,
-			 struct messaging_context *msg_ctx,
-			 const struct server_id pid,
-			 const int argc, const char **argv)
-{
-	if (argc != 1) {
-		fprintf(stderr, "Usage: smbcontrol <dest> lockretry\n");
-		return False;
-	}
-
-	return send_message(msg_ctx, pid, MSG_SMB_UNLOCK, NULL, 0);
-}
-
-/* force a validation of all brl entries, including re-sends. */
-
-static bool do_brl_revalidate(struct tevent_context *ev_ctx,
-			      struct messaging_context *msg_ctx,
-			      const struct server_id pid,
-			      const int argc, const char **argv)
-{
-	if (argc != 1) {
-		fprintf(stderr, "Usage: smbcontrol <dest> brl-revalidate\n");
-		return False;
-	}
-
-	return send_message(msg_ctx, pid, MSG_SMB_BRL_VALIDATE, NULL, 0);
-}
-
 /* Display talloc pool usage */
 
 static bool do_poolusage(struct tevent_context *ev_ctx,
@@ -1483,16 +1453,6 @@ static const struct {
 		.name = "ip-dropped",
 		.fn   = do_ip_dropped,
 		.help = "Tell winbind that an IP got dropped",
-	},
-	{
-		.name = "lockretry",
-		.fn   = do_lockretry,
-		.help = "Force a blocking lock retry",
-	},
-	{
-		.name = "brl-revalidate",
-		.fn   = do_brl_revalidate,
-		.help = "Revalidate all brl entries",
 	},
 	{
 		.name = "pool-usage",

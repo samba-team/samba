@@ -115,12 +115,6 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn);
 void smbd_lock_socket(struct smbXsrv_connection *xconn);
 void smbd_unlock_socket(struct smbXsrv_connection *xconn);
 
-NTSTATUS smbd_do_locking(struct smb_request *req,
-			 files_struct *fsp,
-			 int32_t timeout,
-			 uint16_t num_locks,
-			 struct smbd_lock_element *locks,
-			 bool *async);
 NTSTATUS smbd_do_unlocking(struct smb_request *req,
 			   files_struct *fsp,
 			   uint16_t num_ulocks,
@@ -323,23 +317,6 @@ struct deferred_open_record;
 void send_break_message_smb2(files_struct *fsp,
 			     uint32_t break_from,
 			     uint32_t break_to);
-struct blocking_lock_record *get_pending_smb2req_blr(struct smbd_smb2_request *smb2req);
-bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
-				struct smb_request *req,
-				files_struct *fsp,
-				int lock_timeout,
-				int lock_num,
-				uint64_t smblctx,
-				enum brl_type lock_type,
-				enum brl_flavour lock_flav,
-				uint64_t offset,
-				uint64_t count,
-				uint64_t blocking_smblctx);
-void process_blocking_lock_queue_smb2(
-	struct smbd_server_connection *sconn, struct timeval tv_curr);
-void cancel_pending_lock_requests_by_fid_smb2(files_struct *fsp,
-			struct byte_range_lock *br_lck,
-			enum file_close_type close_type);
 /* From smbd/smb2_create.c */
 int map_smb2_oplock_levels_to_samba(uint8_t in_oplock_level);
 bool get_deferred_open_message_state_smb2(struct smbd_smb2_request *smb2req,
@@ -916,27 +893,7 @@ struct smbd_server_connection {
 
 	struct {
 		struct notify_mid_map *notify_mid_maps;
-
-		struct {
-			/* dlink list we store pending lock records on. */
-			struct blocking_lock_record *blocking_lock_queue;
-			/* dlink list we move cancelled lock records onto. */
-			struct blocking_lock_record *blocking_lock_cancelled_queue;
-
-			/* The event that makes us process our blocking lock queue */
-			struct tevent_timer *brl_timeout;
-
-			bool blocking_lock_unlock_state;
-			bool blocking_lock_cancel_state;
-		} locks;
 	} smb1;
-	struct {
-		struct {
-			/* The event that makes us process our blocking lock queue */
-			struct tevent_timer *brl_timeout;
-			bool blocking_lock_unlock_state;
-		} locks;
-	} smb2;
 
 	struct pthreadpool_tevent *pool;
 

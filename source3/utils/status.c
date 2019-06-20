@@ -241,8 +241,6 @@ static void print_brl(struct file_id id,
 	} lock_types[] = {
 		{ READ_LOCK, "R" },
 		{ WRITE_LOCK, "W" },
-		{ PENDING_READ_LOCK, "PR" },
-		{ PENDING_WRITE_LOCK, "PW" },
 		{ UNLOCK_LOCK, "U" }
 	};
 	const char *desc="X";

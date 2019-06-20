@@ -66,10 +66,6 @@ const char *lock_type_name(enum brl_type lock_type)
 			return "READ";
 		case WRITE_LOCK:
 			return "WRITE";
-		case PENDING_READ_LOCK:
-			return "PENDING_READ";
-		case PENDING_WRITE_LOCK:
-			return "PENDING_WRITE";
 		default:
 			return "other";
 	}
@@ -352,55 +348,6 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 	if (!ok) {
 		DEBUG(10,("do_unlock: returning ERRlock.\n" ));
 		return NT_STATUS_RANGE_NOT_LOCKED;
-	}
-
-	decrement_current_lock_count(fsp, lock_flav);
-	return NT_STATUS_OK;
-}
-
-/****************************************************************************
- Cancel any pending blocked locks.
-****************************************************************************/
-
-NTSTATUS do_lock_cancel(files_struct *fsp,
-			uint64_t smblctx,
-			uint64_t count,
-			uint64_t offset,
-			enum brl_flavour lock_flav)
-{
-	bool ok = False;
-	struct byte_range_lock *br_lck = NULL;
-
-	if (!fsp->can_lock) {
-		return fsp->is_directory ?
-			NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
-	}
-
-	if (!lp_locking(fsp->conn->params)) {
-		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
-	}
-
-	DEBUG(10, ("do_lock_cancel: cancel start=%ju len=%ju requested for "
-		   "%s file %s\n", (uintmax_t)offset, (uintmax_t)count,
-		   fsp_fnum_dbg(fsp), fsp_str_dbg(fsp)));
-
-	br_lck = brl_get_locks(talloc_tos(), fsp);
-	if (!br_lck) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	ok = brl_lock_cancel(br_lck,
-			smblctx,
-			messaging_server_id(fsp->conn->sconn->msg_ctx),
-			offset,
-			count,
-			lock_flav);
-
-	TALLOC_FREE(br_lck);
-
-	if (!ok) {
-		DEBUG(10,("do_lock_cancel: returning ERRcancelviolation.\n" ));
-		return NT_STATUS_DOS(ERRDOS, ERRcancelviolation);
 	}
 
 	decrement_current_lock_count(fsp, lock_flav);

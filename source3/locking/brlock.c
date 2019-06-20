@@ -142,10 +142,6 @@ static bool brl_overlap(const struct lock_struct *lck1,
 static bool brl_conflict(const struct lock_struct *lck1,
 			 const struct lock_struct *lck2)
 {
-	/* Ignore PENDING locks. */
-	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
-		return False;
-
 	/* Read locks never conflict. */
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
 		return False;
@@ -176,10 +172,6 @@ static bool brl_conflict_posix(const struct lock_struct *lck1,
 	SMB_ASSERT(lck2->lock_flav == POSIX_LOCK);
 #endif
 
-	/* Ignore PENDING locks. */
-	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
-		return False;
-
 	/* Read locks never conflict. */
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
 		return False;
@@ -199,9 +191,6 @@ static bool brl_conflict_posix(const struct lock_struct *lck1,
 static bool brl_conflict1(const struct lock_struct *lck1,
 			 const struct lock_struct *lck2)
 {
-	if (IS_PENDING_LOCK(lck1->lock_type) || IS_PENDING_LOCK(lck2->lock_type))
-		return False;
-
 	if (lck1->lock_type == READ_LOCK && lck2->lock_type == READ_LOCK) {
 		return False;
 	}
@@ -233,11 +222,6 @@ static bool brl_conflict1(const struct lock_struct *lck1,
 static bool brl_conflict_other(const struct lock_struct *lock,
 			       const struct lock_struct *rw_probe)
 {
-	if (IS_PENDING_LOCK(lock->lock_type) ||
-	    IS_PENDING_LOCK(rw_probe->lock_type)) {
-		return False;
-	}
-
 	if (lock->lock_type == READ_LOCK && rw_probe->lock_type == READ_LOCK) {
 		return False;
 	}
@@ -288,24 +272,6 @@ static bool brl_conflict_other(const struct lock_struct *lock,
 	 * conflict
 	 */
 
-	return false;
-}
-
-/****************************************************************************
- Check if an unlock overlaps a pending lock.
-****************************************************************************/
-
-static bool brl_pending_overlap(const struct lock_struct *lock,
-				const struct lock_struct *pend_lock)
-{
-	if ((lock->start <= pend_lock->start) &&
-	    (lock->start + lock->size > pend_lock->start)) {
-		return true;
-	}
-	if ((lock->start >= pend_lock->start) &&
-	    (lock->start < pend_lock->start + pend_lock->size)) {
-		return true;
-	}
 	return false;
 }
 
@@ -418,15 +384,13 @@ NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 #endif
 	}
 
-	if (!IS_PENDING_LOCK(plock->lock_type)) {
-		contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WINDOWS_BRL);
-	}
+	contend_level2_oplocks_begin(fsp, LEVEL2_CONTEND_WINDOWS_BRL);
 
 	/* We can get the Windows lock, now see if it needs to
 	   be mapped into a lower level POSIX one, and if so can
 	   we get it ? */
 
-	if (!IS_PENDING_LOCK(plock->lock_type) && lp_posix_locking(fsp->conn->params)) {
+	if (lp_posix_locking(fsp->conn->params)) {
 		int errno_ret;
 		if (!set_posix_lock_windows_flavour(fsp,
 				plock->start,
@@ -465,9 +429,7 @@ NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 
 	return NT_STATUS_OK;
  fail:
-	if (!IS_PENDING_LOCK(plock->lock_type)) {
-		contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_WINDOWS_BRL);
-	}
+	contend_level2_oplocks_end(fsp, LEVEL2_CONTEND_WINDOWS_BRL);
 	return status;
 }
 
@@ -772,7 +734,6 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	unsigned int i, count, posix_count;
 	struct lock_struct *locks = br_lck->lock_data;
 	struct lock_struct *tp;
-	bool signal_pending_read = False;
 	bool break_oplocks = false;
 	NTSTATUS status;
 
@@ -799,13 +760,6 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 
 	for (i=0; i < br_lck->num_locks; i++) {
 		struct lock_struct *curr_lock = &locks[i];
-
-		/* If we have a pending read lock, a lock downgrade should
-		   trigger a lock re-evaluation. */
-		if (curr_lock->lock_type == PENDING_READ_LOCK &&
-				brl_pending_overlap(plock, curr_lock)) {
-			signal_pending_read = True;
-		}
 
 		if (curr_lock->lock_flav == WINDOWS_LOCK) {
 			/* Do any Windows flavour locks conflict ? */
@@ -857,8 +811,7 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	 * call contend_level2_oplocks_begin if this is the first POSIX brl on
 	 * the file.
 	 */
-	break_oplocks = (!IS_PENDING_LOCK(plock->lock_type) &&
-			 posix_count == 0);
+	break_oplocks = (posix_count == 0);
 	if (break_oplocks) {
 		contend_level2_oplocks_begin(br_lck->fsp,
 					     LEVEL2_CONTEND_POSIX_BRL);
@@ -884,7 +837,7 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 	   be mapped into a lower level POSIX one, and if so can
 	   we get it ? */
 
-	if (!IS_PENDING_LOCK(plock->lock_type) && lp_posix_locking(br_lck->fsp->conn->params)) {
+	if (lp_posix_locking(br_lck->fsp->conn->params)) {
 		int errno_ret;
 
 		/* The lower layer just needs to attempt to
@@ -931,31 +884,6 @@ static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
 
 	/* A successful downgrade from write to read lock can trigger a lock
 	   re-evalutation where waiting readers can now proceed. */
-
-	if (signal_pending_read) {
-		/* Send unlock messages to any pending read waiters that overlap. */
-		for (i=0; i < br_lck->num_locks; i++) {
-			struct lock_struct *pend_lock = &locks[i];
-
-			/* Ignore non-pending locks. */
-			if (!IS_PENDING_LOCK(pend_lock->lock_type)) {
-				continue;
-			}
-
-			if (pend_lock->lock_type == PENDING_READ_LOCK &&
-					brl_pending_overlap(plock, pend_lock)) {
-				struct server_id_buf tmp;
-
-				DEBUG(10, ("brl_lock_posix: sending unlock "
-					   "message to pid %s\n",
-					   server_id_str_buf(pend_lock->context.pid,
-							     &tmp)));
-
-				messaging_send(msg_ctx, pend_lock->context.pid,
-					       MSG_SMB_UNLOCK, &data_blob_null);
-			}
-		}
-	}
 
 	return NT_STATUS_OK;
  fail:
@@ -1053,7 +981,7 @@ bool brl_unlock_windows_default(struct messaging_context *msg_ctx,
 			       struct byte_range_lock *br_lck,
 			       const struct lock_struct *plock)
 {
-	unsigned int i, j;
+	unsigned int i;
 	struct lock_struct *locks = br_lck->lock_data;
 	enum brl_type deleted_lock_type = READ_LOCK; /* shut the compiler up.... */
 
@@ -1087,10 +1015,6 @@ bool brl_unlock_windows_default(struct messaging_context *msg_ctx,
 
 	for (i = 0; i < br_lck->num_locks; i++) {
 		struct lock_struct *lock = &locks[i];
-
-		if (IS_PENDING_LOCK(lock->lock_type)) {
-			continue;
-		}
 
 		/* Only remove our own locks that match in start, size, and flavour. */
 		if (brl_same_context(&lock->context, &plock->context) &&
@@ -1127,29 +1051,6 @@ bool brl_unlock_windows_default(struct messaging_context *msg_ctx,
 				br_lck->num_locks);
 	}
 
-	/* Send unlock messages to any pending waiters that overlap. */
-	for (j=0; j < br_lck->num_locks; j++) {
-		struct lock_struct *pend_lock = &locks[j];
-
-		/* Ignore non-pending locks. */
-		if (!IS_PENDING_LOCK(pend_lock->lock_type)) {
-			continue;
-		}
-
-		/* We could send specific lock info here... */
-		if (brl_pending_overlap(plock, pend_lock)) {
-			struct server_id_buf tmp;
-
-			DEBUG(10, ("brl_unlock: sending unlock message to "
-				   "pid %s\n",
-				   server_id_str_buf(pend_lock->context.pid,
-						     &tmp)));
-
-			messaging_send(msg_ctx, pend_lock->context.pid,
-				       MSG_SMB_UNLOCK, &data_blob_null);
-		}
-	}
-
 	contend_level2_oplocks_end(br_lck->fsp, LEVEL2_CONTEND_WINDOWS_BRL);
 	return True;
 }
@@ -1162,7 +1063,7 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 			     struct byte_range_lock *br_lck,
 			     struct lock_struct *plock)
 {
-	unsigned int i, j, count;
+	unsigned int i, count;
 	struct lock_struct *tp;
 	struct lock_struct *locks = br_lck->lock_data;
 	bool overlap_found = False;
@@ -1195,8 +1096,7 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 		unsigned int tmp_count;
 
 		/* Only remove our own locks - ignore fnum. */
-		if (IS_PENDING_LOCK(lock->lock_type) ||
-				!brl_same_context(&lock->context, &plock->context)) {
+		if (!brl_same_context(&lock->context, &plock->context)) {
 			memcpy(&tp[count], lock, sizeof(struct lock_struct));
 			count++;
 			continue;
@@ -1286,30 +1186,6 @@ static bool brl_unlock_posix(struct messaging_context *msg_ctx,
 	locks = tp;
 	br_lck->lock_data = tp;
 	br_lck->modified = True;
-
-	/* Send unlock messages to any pending waiters that overlap. */
-
-	for (j=0; j < br_lck->num_locks; j++) {
-		struct lock_struct *pend_lock = &locks[j];
-
-		/* Ignore non-pending locks. */
-		if (!IS_PENDING_LOCK(pend_lock->lock_type)) {
-			continue;
-		}
-
-		/* We could send specific lock info here... */
-		if (brl_pending_overlap(plock, pend_lock)) {
-			struct server_id_buf tmp;
-
-			DEBUG(10, ("brl_unlock: sending unlock message to "
-				   "pid %s\n",
-				   server_id_str_buf(pend_lock->context.pid,
-						     &tmp)));
-
-			messaging_send(msg_ctx, pend_lock->context.pid,
-				       MSG_SMB_UNLOCK, &data_blob_null);
-		}
-	}
 
 	return True;
 }
@@ -1498,69 +1374,10 @@ bool smb_vfs_call_brl_cancel_windows(struct vfs_handle_struct *handle,
 	return handle->fns->brl_cancel_windows_fn(handle, br_lck, plock);
 }
 
-/****************************************************************************
- Remove a particular pending lock.
-****************************************************************************/
-bool brl_lock_cancel(struct byte_range_lock *br_lck,
-		uint64_t smblctx,
-		struct server_id pid,
-		br_off start,
-		br_off size,
-		enum brl_flavour lock_flav)
-{
-	bool ret;
-	struct lock_struct lock;
-
-	lock.context.smblctx = smblctx;
-	lock.context.pid = pid;
-	lock.context.tid = br_lck->fsp->conn->cnum;
-	lock.start = start;
-	lock.size = size;
-	lock.fnum = br_lck->fsp->fnum;
-	lock.lock_flav = lock_flav;
-	/* lock.lock_type doesn't matter */
-
-	if (lock_flav == WINDOWS_LOCK) {
-		ret = SMB_VFS_BRL_CANCEL_WINDOWS(br_lck->fsp->conn, br_lck,
-						 &lock);
-	} else {
-		ret = brl_lock_cancel_default(br_lck, &lock);
-	}
-
-	return ret;
-}
-
 bool brl_lock_cancel_default(struct byte_range_lock *br_lck,
 		struct lock_struct *plock)
 {
-	unsigned int i;
-	struct lock_struct *locks = br_lck->lock_data;
-
-	SMB_ASSERT(plock);
-
-	for (i = 0; i < br_lck->num_locks; i++) {
-		struct lock_struct *lock = &locks[i];
-
-		/* For pending locks we *always* care about the fnum. */
-		if (brl_same_context(&lock->context, &plock->context) &&
-				lock->fnum == plock->fnum &&
-				IS_PENDING_LOCK(lock->lock_type) &&
-				lock->lock_flav == plock->lock_flav &&
-				lock->start == plock->start &&
-				lock->size == plock->size) {
-			break;
-		}
-	}
-
-	if (i == br_lck->num_locks) {
-		/* Didn't find it. */
-		return False;
-	}
-
-	brl_delete_lock_struct(locks, br_lck->num_locks, i);
-	br_lck->num_locks -= 1;
-	br_lck->modified = True;
-	return True;
+	return false;
 }
 
 /****************************************************************************
@@ -2081,105 +1898,6 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 	fsp->brlock_seqnum = dbwrap_get_seqnum(brlock_db);
 
 	return br_lock;
-}
-
-struct brl_revalidate_state {
-	ssize_t array_size;
-	uint32_t num_pids;
-	struct server_id *pids;
-};
-
-/*
- * Collect PIDs of all processes with pending entries
- */
-
-static void brl_revalidate_collect(struct file_id id, struct server_id pid,
-				   enum brl_type lock_type,
-				   enum brl_flavour lock_flav,
-				   br_off start, br_off size,
-				   void *private_data)
-{
-	struct brl_revalidate_state *state =
-		(struct brl_revalidate_state *)private_data;
-
-	if (!IS_PENDING_LOCK(lock_type)) {
-		return;
-	}
-
-	add_to_large_array(state, sizeof(pid), (void *)&pid,
-			   &state->pids, &state->num_pids,
-			   &state->array_size);
-}
-
-/*
- * qsort callback to sort the processes
- */
-
-static int compare_procids(const void *p1, const void *p2)
-{
-	const struct server_id *i1 = (const struct server_id *)p1;
-	const struct server_id *i2 = (const struct server_id *)p2;
-
-	if (i1->pid < i2->pid) return -1;
-	if (i1->pid > i2->pid) return 1;
-	return 0;
-}
-
-/*
- * Send a MSG_SMB_UNLOCK message to all processes with pending byte range
- * locks so that they retry. Mainly used in the cluster code after a node has
- * died.
- *
- * Done in two steps to avoid double-sends: First we collect all entries in an
- * array, then qsort that array and only send to non-dupes.
- */
-
-void brl_revalidate(struct messaging_context *msg_ctx,
-		    void *private_data,
-		    uint32_t msg_type,
-		    struct server_id server_id,
-		    DATA_BLOB *data)
-{
-	struct brl_revalidate_state *state;
-	uint32_t i;
-	struct server_id last_pid;
-
-	if (!(state = talloc_zero(NULL, struct brl_revalidate_state))) {
-		DEBUG(0, ("talloc failed\n"));
-		return;
-	}
-
-	brl_forall(brl_revalidate_collect, state);
-
-	if (state->array_size == -1) {
-		DEBUG(0, ("talloc failed\n"));
-		goto done;
-	}
-
-	if (state->num_pids == 0) {
-		goto done;
-	}
-
-	TYPESAFE_QSORT(state->pids, state->num_pids, compare_procids);
-
-	ZERO_STRUCT(last_pid);
-
-	for (i=0; i<state->num_pids; i++) {
-		if (serverid_equal(&last_pid, &state->pids[i])) {
-			/*
-			 * We've seen that one already
-			 */
-			continue;
-		}
-
-		messaging_send(msg_ctx, state->pids[i], MSG_SMB_UNLOCK,
-			       &data_blob_null);
-		last_pid = state->pids[i];
-	}
-
- done:
-	TALLOC_FREE(state);
-	return;
 }
 
 bool brl_cleanup_disconnected(struct file_id fid, uint64_t open_persistent_id)

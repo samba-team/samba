@@ -26,10 +26,8 @@
    PENDING read and write locks to allow posix lock downgrades to trigger a lock
    re-evaluation. */
 
-enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_READ_LOCK, PENDING_WRITE_LOCK, UNLOCK_LOCK};
+enum brl_type {READ_LOCK, WRITE_LOCK, UNLOCK_LOCK};
 enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
-
-#define IS_PENDING_LOCK(type) ((type) == PENDING_READ_LOCK || (type) == PENDING_WRITE_LOCK)
 
 #include "librpc/gen_ndr/server_id.h"
 
