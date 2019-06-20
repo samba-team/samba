@@ -82,7 +82,7 @@ A list of Samba documentation in languages other than English is
 available on the webpage.
 
 If you would like to help with the documentation, please coordinate
-on the samba@samba.org mailing list.  See the next section for details
+on the samba@lists.samba.org mailing list.  See the next section for details
 on subscribing to samba mailing lists.
 
 
