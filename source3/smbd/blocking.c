@@ -496,6 +496,7 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 				WINDOWS_LOCK,
 				True,
 				&status,
+				NULL,
 				&blr->blocking_smblctx);
 
 		if (ERROR_WAS_LOCK_DENIED(status) && !lock_timeout) {
@@ -598,6 +599,7 @@ static bool process_trans2(struct blocking_lock_record *blr)
 						blr->lock_flav,
 						True,
 						&status,
+						NULL,
 						&blr->blocking_smblctx);
 	if (ERROR_WAS_LOCK_DENIED(status) && !lock_timeout) {
 		struct server_id blocker_pid;

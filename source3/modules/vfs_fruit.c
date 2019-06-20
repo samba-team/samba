@@ -2746,10 +2746,17 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 
 		off = access_to_netatalk_brl(fork_type, FILE_READ_DATA);
 		br_lck = do_lock(
-			handle->conn->sconn->msg_ctx, fsp,
-			fsp->op->global->open_persistent_id, 1, off,
-			READ_LOCK, POSIX_LOCK, false,
-			&status, NULL);
+			handle->conn->sconn->msg_ctx,
+			fsp,
+			fsp->op->global->open_persistent_id,
+			1,
+			off,
+			READ_LOCK,
+			POSIX_LOCK,
+			false, 	/* blocking_lock */
+			&status,
+			NULL,
+			NULL);
 
 		TALLOC_FREE(br_lck);
 
@@ -2763,10 +2770,17 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 
 		off = denymode_to_netatalk_brl(fork_type, DENY_READ);
 		br_lck = do_lock(
-			handle->conn->sconn->msg_ctx, fsp,
-			fsp->op->global->open_persistent_id, 1, off,
-			READ_LOCK, POSIX_LOCK, false,
-			&status, NULL);
+			handle->conn->sconn->msg_ctx,
+			fsp,
+			fsp->op->global->open_persistent_id,
+			1,
+			off,
+			READ_LOCK,
+			POSIX_LOCK,
+			false,	/* blocking_lock */
+			&status,
+			NULL,
+			NULL);
 
 		TALLOC_FREE(br_lck);
 
@@ -2780,10 +2794,17 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 
 		off = access_to_netatalk_brl(fork_type, FILE_WRITE_DATA);
 		br_lck = do_lock(
-			handle->conn->sconn->msg_ctx, fsp,
-			fsp->op->global->open_persistent_id, 1, off,
-			READ_LOCK, POSIX_LOCK, false,
-			&status, NULL);
+			handle->conn->sconn->msg_ctx,
+			fsp,
+			fsp->op->global->open_persistent_id,
+			1,
+			off,
+			READ_LOCK,
+			POSIX_LOCK,
+			false,
+			&status,
+			NULL,
+			NULL);
 
 		TALLOC_FREE(br_lck);
 
@@ -2797,10 +2818,17 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 
 		off = denymode_to_netatalk_brl(fork_type, DENY_WRITE);
 		br_lck = do_lock(
-			handle->conn->sconn->msg_ctx, fsp,
-			fsp->op->global->open_persistent_id, 1, off,
-			READ_LOCK, POSIX_LOCK, false,
-			&status, NULL);
+			handle->conn->sconn->msg_ctx,
+			fsp,
+			fsp->op->global->open_persistent_id,
+			1,
+			off,
+			READ_LOCK,
+			POSIX_LOCK,
+			false,
+			&status,
+			NULL,
+			NULL);
 
 		TALLOC_FREE(br_lck);
 

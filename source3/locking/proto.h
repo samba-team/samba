@@ -123,6 +123,7 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			enum brl_flavour lock_flav,
 			bool blocking_lock,
 			NTSTATUS *perr,
+			struct server_id *pblocker_pid,
 			uint64_t *psmblctx);
 NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 			files_struct *fsp,

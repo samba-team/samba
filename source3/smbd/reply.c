@@ -3795,6 +3795,7 @@ void reply_lockread(struct smb_request *req)
 			WINDOWS_LOCK,
 			False, /* Non-blocking lock. */
 			&status,
+			NULL,
 			NULL);
 	TALLOC_FREE(br_lck);
 
@@ -5663,6 +5664,7 @@ void reply_lock(struct smb_request *req)
 			WINDOWS_LOCK,
 			False, /* Non-blocking lock. */
 			&status,
+			NULL,
 			NULL);
 
 	TALLOC_FREE(br_lck);
@@ -8112,6 +8114,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 			bool blocking_lock = (timeout != 0);
 			bool defer_lock = false;
 			struct byte_range_lock *br_lck;
+			struct server_id blocker_pid;
 			uint64_t block_smblctx;
 
 			br_lck = do_lock(req->sconn->msg_ctx,
@@ -8123,6 +8126,7 @@ NTSTATUS smbd_do_locking(struct smb_request *req,
 					WINDOWS_LOCK,
 					blocking_lock,
 					&status,
+					&blocker_pid,
 					&block_smblctx);
 
 			if (br_lck && blocking_lock && ERROR_WAS_LOCK_DENIED(status)) {

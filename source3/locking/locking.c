@@ -243,6 +243,7 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			enum brl_flavour lock_flav,
 			bool blocking_lock,
 			NTSTATUS *perr,
+			struct server_id *pblocker_pid,
 			uint64_t *psmblctx)
 {
 	struct byte_range_lock *br_lck = NULL;
@@ -293,6 +294,9 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 
 	if (psmblctx != NULL) {
 		*psmblctx = blocker_smblctx;
+	}
+	if (pblocker_pid != NULL) {
+		*pblocker_pid = blocker_pid;
 	}
 
 	DEBUG(10, ("do_lock: returning status=%s\n", nt_errstr(*perr)));
