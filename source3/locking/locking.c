@@ -247,6 +247,7 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 {
 	struct byte_range_lock *br_lck = NULL;
 	struct server_id blocker_pid;
+	uint64_t blocker_smblctx;
 
 	/* silently return ok on print files as we don't do locking there */
 	if (fsp->print_file) {
@@ -288,7 +289,11 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 			lock_flav,
 			blocking_lock,
 			&blocker_pid,
-			psmblctx);
+			&blocker_smblctx);
+
+	if (psmblctx != NULL) {
+		*psmblctx = blocker_smblctx;
+	}
 
 	DEBUG(10, ("do_lock: returning status=%s\n", nt_errstr(*perr)));
 
