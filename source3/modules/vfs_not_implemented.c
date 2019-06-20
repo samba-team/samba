@@ -658,14 +658,6 @@ bool vfs_not_implemented_brl_unlock_windows(struct vfs_handle_struct *handle,
 	return false;
 }
 
-bool vfs_not_implemented_brl_cancel_windows(struct vfs_handle_struct *handle,
-					    struct byte_range_lock *br_lck,
-					    struct lock_struct *plock)
-{
-	errno = ENOSYS;
-	return false;
-}
-
 bool vfs_not_implemented_strict_lock_check(struct vfs_handle_struct *handle,
 					   struct files_struct *fsp,
 					   struct lock_struct *plock)
@@ -1108,7 +1100,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.connectpath_fn = vfs_not_implemented_connectpath,
 	.brl_lock_windows_fn = vfs_not_implemented_brl_lock_windows,
 	.brl_unlock_windows_fn = vfs_not_implemented_brl_unlock_windows,
-	.brl_cancel_windows_fn = vfs_not_implemented_brl_cancel_windows,
 	.strict_lock_check_fn = vfs_not_implemented_strict_lock_check,
 	.translate_name_fn = vfs_not_implemented_translate_name,
 	.fsctl_fn = vfs_not_implemented_fsctl,

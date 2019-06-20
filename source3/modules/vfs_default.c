@@ -2832,16 +2832,6 @@ static bool vfswrap_brl_unlock_windows(struct vfs_handle_struct *handle,
 	return brl_unlock_windows_default(msg_ctx, br_lck, plock);
 }
 
-static bool vfswrap_brl_cancel_windows(struct vfs_handle_struct *handle,
-				       struct byte_range_lock *br_lck,
-				       struct lock_struct *plock)
-{
-	SMB_ASSERT(plock->lock_flav == WINDOWS_LOCK);
-
-	/* Note: blr is not used in the default implementation. */
-	return brl_lock_cancel_default(br_lck, plock);
-}
-
 static bool vfswrap_strict_lock_check(struct vfs_handle_struct *handle,
 				      files_struct *fsp,
 				      struct lock_struct *plock)
@@ -3462,7 +3452,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.connectpath_fn = vfswrap_connectpath,
 	.brl_lock_windows_fn = vfswrap_brl_lock_windows,
 	.brl_unlock_windows_fn = vfswrap_brl_unlock_windows,
-	.brl_cancel_windows_fn = vfswrap_brl_cancel_windows,
 	.strict_lock_check_fn = vfswrap_strict_lock_check,
 	.translate_name_fn = vfswrap_translate_name,
 	.fsctl_fn = vfswrap_fsctl,

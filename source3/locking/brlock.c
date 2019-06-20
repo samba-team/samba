@@ -1366,20 +1366,6 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
 }
 
 
-bool smb_vfs_call_brl_cancel_windows(struct vfs_handle_struct *handle,
-				     struct byte_range_lock *br_lck,
-				     struct lock_struct *plock)
-{
-	VFS_FIND(brl_cancel_windows);
-	return handle->fns->brl_cancel_windows_fn(handle, br_lck, plock);
-}
-
-bool brl_lock_cancel_default(struct byte_range_lock *br_lck,
-		struct lock_struct *plock)
-{
-	return false;
-}
-
 /****************************************************************************
  Remove any locks associated with a open file.
  We return True if this process owns any other Windows locks on this

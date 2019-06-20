@@ -1663,7 +1663,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 
 	.brl_lock_windows_fn = NULL,
 	.brl_unlock_windows_fn = NULL,
-	.brl_cancel_windows_fn = NULL,
 	.strict_lock_check_fn = NULL,
 	.translate_name_fn = NULL,
 	.fsctl_fn = NULL,

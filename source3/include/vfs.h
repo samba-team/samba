@@ -259,8 +259,10 @@
 /* Bump to version 40, Samba 4.10 will ship with that */
 /* Version 40 - Add SMB_VFS_GETXATTRAT_SEND/RECV */
 /* Version 40 - Add SMB_VFS_GET_DOS_ATTRIBUTES_SEND/RECV */
+/* Bump to version 41, Samba 4.11 will ship with that */
+/* Version 41 - Remove SMB_VFS_BRL_CANCEL_WINDOWS */
 
-#define SMB_VFS_INTERFACE_VERSION 40
+#define SMB_VFS_INTERFACE_VERSION 41
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -870,10 +872,6 @@ struct vfs_fn_pointers {
 				      struct byte_range_lock *br_lck,
 				      const struct lock_struct *plock);
 
-	bool (*brl_cancel_windows_fn)(struct vfs_handle_struct *handle,
-				      struct byte_range_lock *br_lck,
-				      struct lock_struct *plock);
-
 	bool (*strict_lock_check_fn)(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp,
 				     struct lock_struct *plock);
@@ -1345,9 +1343,6 @@ bool smb_vfs_call_brl_unlock_windows(struct vfs_handle_struct *handle,
 				     struct messaging_context *msg_ctx,
 				     struct byte_range_lock *br_lck,
 				     const struct lock_struct *plock);
-bool smb_vfs_call_brl_cancel_windows(struct vfs_handle_struct *handle,
-				     struct byte_range_lock *br_lck,
-				     struct lock_struct *plock);
 bool smb_vfs_call_strict_lock_check(struct vfs_handle_struct *handle,
 				    struct files_struct *fsp,
 				    struct lock_struct *plock);
@@ -1809,9 +1804,6 @@ bool vfs_not_implemented_brl_unlock_windows(struct vfs_handle_struct *handle,
 					    struct messaging_context *msg_ctx,
 					    struct byte_range_lock *br_lck,
 					    const struct lock_struct *plock);
-bool vfs_not_implemented_brl_cancel_windows(struct vfs_handle_struct *handle,
-					    struct byte_range_lock *br_lck,
-					    struct lock_struct *plock);
 bool vfs_not_implemented_strict_lock_check(struct vfs_handle_struct *handle,
 					   struct files_struct *fsp,
 					   struct lock_struct *plock);

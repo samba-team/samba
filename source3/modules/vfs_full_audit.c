@@ -163,7 +163,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_CONNECTPATH,
 	SMB_VFS_OP_BRL_LOCK_WINDOWS,
 	SMB_VFS_OP_BRL_UNLOCK_WINDOWS,
-	SMB_VFS_OP_BRL_CANCEL_WINDOWS,
 	SMB_VFS_OP_STRICT_LOCK_CHECK,
 	SMB_VFS_OP_TRANSLATE_NAME,
 	SMB_VFS_OP_FSCTL,
@@ -306,7 +305,6 @@ static struct {
 	{ SMB_VFS_OP_CONNECTPATH,	"connectpath" },
 	{ SMB_VFS_OP_BRL_LOCK_WINDOWS,  "brl_lock_windows" },
 	{ SMB_VFS_OP_BRL_UNLOCK_WINDOWS, "brl_unlock_windows" },
-	{ SMB_VFS_OP_BRL_CANCEL_WINDOWS, "brl_cancel_windows" },
 	{ SMB_VFS_OP_STRICT_LOCK_CHECK, "strict_lock_check" },
 	{ SMB_VFS_OP_TRANSLATE_NAME,	"translate_name" },
 	{ SMB_VFS_OP_FSCTL,		"fsctl" },
@@ -1910,23 +1908,6 @@ static bool smb_full_audit_brl_unlock_windows(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static bool smb_full_audit_brl_cancel_windows(struct vfs_handle_struct *handle,
-				              struct byte_range_lock *br_lck,
-					      struct lock_struct *plock)
-{
-	bool result;
-
-	result = SMB_VFS_NEXT_BRL_CANCEL_WINDOWS(handle, br_lck, plock);
-
-	do_log(SMB_VFS_OP_BRL_CANCEL_WINDOWS, (result == 0), handle,
-	       "%s:%llu-%llu:%d", fsp_str_do_log(brl_fsp(br_lck)),
-	       (unsigned long long)plock->start,
-	       (unsigned long long)plock->size,
-	       plock->lock_type);
-
-	return result;
-}
-
 static bool smb_full_audit_strict_lock_check(struct vfs_handle_struct *handle,
 					     struct files_struct *fsp,
 					     struct lock_struct *plock)
@@ -2897,7 +2878,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.connectpath_fn = smb_full_audit_connectpath,
 	.brl_lock_windows_fn = smb_full_audit_brl_lock_windows,
 	.brl_unlock_windows_fn = smb_full_audit_brl_unlock_windows,
-	.brl_cancel_windows_fn = smb_full_audit_brl_cancel_windows,
 	.strict_lock_check_fn = smb_full_audit_strict_lock_check,
 	.translate_name_fn = smb_full_audit_translate_name,
 	.fsctl_fn = smb_full_audit_fsctl,
