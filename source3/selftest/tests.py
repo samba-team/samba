@@ -82,6 +82,7 @@ tests = ["FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7"
          "LOCK10",
          "LOCK11",
          "LOCK12",
+         "LOCK13",
          "UNLINK", "BROWSE", "ATTR", "TRANS2", "TORTURE",
          "OPLOCK1", "OPLOCK2", "OPLOCK4", "STREAMERROR",
          "DIR", "DIR1", "DIR-CREATETIME", "TCON", "TCONDEV", "RW1", "RW2", "RW3", "LARGE_READX", "RW-SIGNING",

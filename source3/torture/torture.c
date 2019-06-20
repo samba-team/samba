@@ -3331,6 +3331,206 @@ done:
 	return ret;
 }
 
+struct lock_ntcancel_state {
+	struct timeval start;
+	struct smb1_lock_element lck;
+	struct tevent_req *subreq;
+};
+
+static void lock_ntcancel_waited(struct tevent_req *subreq);
+static void lock_ntcancel_done(struct tevent_req *subreq);
+
+static struct tevent_req *lock_ntcancel_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	uint16_t fnum)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct lock_ntcancel_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct lock_ntcancel_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->lck = (struct smb1_lock_element) {
+		.pid = cli_getpid(cli), .offset = 0, .length = 1,
+	};
+	state->start = timeval_current();
+
+	state->subreq = cli_lockingx_send(
+		state,				/* mem_ctx */
+		ev,				/* tevent_context */
+		cli,				/* cli */
+		fnum,				/* fnum */
+		LOCKING_ANDX_EXCLUSIVE_LOCK,	/* typeoflock */
+		0,				/* newoplocklevel */
+		10000,				/* timeout */
+		0,				/* num_unlocks */
+		NULL,				/* unlocks */
+		1,				/* num_locks */
+		&state->lck);			/* locks */
+	if (tevent_req_nomem(state->subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(state->subreq, lock_ntcancel_done, req);
+
+	subreq = tevent_wakeup_send(state, ev, timeval_current_ofs(1, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, lock_ntcancel_waited, req);
+	return req;
+}
+
+static void lock_ntcancel_waited(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct lock_ntcancel_state *state = tevent_req_data(
+		req, struct lock_ntcancel_state);
+	bool ok;
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		tevent_req_oom(req);
+		return;
+	}
+
+	ok = tevent_req_cancel(state->subreq);
+	if (!ok) {
+		d_fprintf(stderr, "Could not cancel subreq\n");
+		tevent_req_oom(req);
+		return;
+	}
+}
+
+static void lock_ntcancel_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct lock_ntcancel_state *state = tevent_req_data(
+		req, struct lock_ntcancel_state);
+	NTSTATUS status;
+	double elapsed;
+
+	status = cli_lockingx_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
+		d_printf("cli_lockingx returned %s\n", nt_errstr(status));
+		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+
+	elapsed = timeval_elapsed(&state->start);
+
+	if (elapsed > 3) {
+		d_printf("cli_lockingx was too slow, cancel did not work\n");
+		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS lock_ntcancel_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static bool run_locktest13(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	struct cli_state *cli = NULL;
+	const char fname[] = "\\lockt13.lck";
+	uint16_t fnum1, fnum2;
+	bool ret = false;
+	bool ok;
+	uint8_t data = 1;
+	NTSTATUS status;
+
+	printf("starting locktest13\n");
+
+	ev = samba_tevent_context_init(NULL);
+	if (ev == NULL) {
+		d_fprintf(stderr, "samba_tevent_context_init failed\n");
+		goto done;
+	}
+
+	ok = torture_open_connection(&cli, 0);
+	if (!ok) {
+		goto done;
+	}
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	status = cli_openx(cli, fname, O_CREAT|O_RDWR, DENY_NONE, &fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_openx failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = cli_openx(cli, fname, O_CREAT|O_RDWR, DENY_NONE, &fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_openx failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = cli_writeall(cli, fnum1, 0, &data, 0, sizeof(data), NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_writeall failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = cli_locktype(
+		cli, fnum1, 0, 1, 0, LOCKING_ANDX_EXCLUSIVE_LOCK);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_locktype failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	req = lock_ntcancel_send(ev, ev, cli, fnum2);
+	if (req == NULL) {
+		d_fprintf(stderr, "lock_ntcancel_send failed\n");
+		goto done;
+	}
+
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		d_fprintf(stderr, "tevent_req_poll_ntstatus failed\n");
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "tevent_req_poll_ntstatus returned %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	status = lock_ntcancel_recv(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "lock_ntcancel returned %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
+
+	ret = true;
+done:
+	torture_close_connection(cli);
+	return ret;
+}
 
 /*
 test whether fnums and tids open on one VC are available on another (a major
@@ -12939,6 +13139,10 @@ static struct {
 	{
 		.name = "LOCK12",
 		.fn   =  run_locktest12,
+	},
+	{
+		.name = "LOCK13",
+		.fn   =  run_locktest13,
 	},
 	{
 		.name = "UNLINK",
