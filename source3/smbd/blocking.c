@@ -164,6 +164,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 {
 	struct smbd_server_connection *sconn = req->sconn;
 	struct blocking_lock_record *blr;
+	struct server_id blocker_pid;
 	NTSTATUS status;
 
 	if (req->smb2req) {
@@ -227,6 +228,7 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 			lock_type == READ_LOCK ? PENDING_READ_LOCK : PENDING_WRITE_LOCK,
 			blr->lock_flav,
 			True,
+			&blocker_pid,
 			NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -497,6 +499,7 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 				&blr->blocking_smblctx);
 
 		if (ERROR_WAS_LOCK_DENIED(status) && !lock_timeout) {
+			struct server_id blocker_pid;
 			/*
 			 * If we didn't timeout, but still need to wait,
 			 * re-add the pending lock entry whilst holding
@@ -515,6 +518,7 @@ static bool process_lockingX(struct blocking_lock_record *blr)
 						PENDING_WRITE_LOCK,
 						blr->lock_flav,
 					true, /* Blocking lock. */
+					&blocker_pid,
 					NULL);
 
 			if (!NT_STATUS_IS_OK(status1)) {
@@ -596,6 +600,7 @@ static bool process_trans2(struct blocking_lock_record *blr)
 						&status,
 						&blr->blocking_smblctx);
 	if (ERROR_WAS_LOCK_DENIED(status) && !lock_timeout) {
+		struct server_id blocker_pid;
 		/*
 		 * If we didn't timeout, but still need to wait,
 		 * re-add the pending lock entry whilst holding
@@ -614,6 +619,7 @@ static bool process_trans2(struct blocking_lock_record *blr)
 					PENDING_WRITE_LOCK,
 				blr->lock_flav,
 				true, /* Blocking lock. */
+				&blocker_pid,
 				NULL);
 
 		if (!NT_STATUS_IS_OK(status1)) {

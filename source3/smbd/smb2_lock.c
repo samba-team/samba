@@ -594,6 +594,7 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 	struct tevent_req *req = NULL;
 	struct smbd_smb2_lock_state *state = NULL;
 	struct blocking_lock_record *blr = NULL;
+	struct server_id blocker_pid;
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (!smb2req) {
@@ -645,6 +646,7 @@ bool push_blocking_lock_request_smb2( struct byte_range_lock *br_lck,
 			lock_type == READ_LOCK ? PENDING_READ_LOCK : PENDING_WRITE_LOCK,
 			blr->lock_flav,
 			true,
+			&blocker_pid,
 			NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {

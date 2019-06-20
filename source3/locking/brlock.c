@@ -1023,6 +1023,7 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
 		bool blocking_lock,
+		struct server_id *blocker_pid,
 		uint64_t *psmblctx)
 {
 	NTSTATUS ret;
@@ -1061,6 +1062,7 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 
 	/* If we're returning an error, return who blocked us. */
 	if (!NT_STATUS_IS_OK(ret) && psmblctx) {
+		*blocker_pid = lock.context.pid;
 		*psmblctx = lock.context.smblctx;
 	}
 	return ret;
