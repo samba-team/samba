@@ -42,7 +42,6 @@ struct smbd_smb2_lock_state {
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smb1req;
 	struct files_struct *fsp;
-	struct blocking_lock_record *blr;
 	uint16_t lock_count;
 	struct smbd_lock_element *locks;
 };

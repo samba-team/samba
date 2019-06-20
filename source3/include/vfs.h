@@ -280,7 +280,6 @@ struct vfs_statvfs_struct;
 struct smb_request;
 struct ea_list;
 struct smb_file_time;
-struct blocking_lock_record;
 struct smb_filename;
 struct dfs_GetDFSReferral;
 
