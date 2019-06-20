@@ -369,6 +369,13 @@
 			file. This flag is mutually exclusive with the
 			<parameter>x</parameter> flag. </para></listitem>
 
+			<listitem><para><parameter>n</parameter> - In
+			combination with the <parameter>c</parameter>
+			flag, do not actually create the archive,
+			instead perform a dry run that attempts
+			everything that involved in creation other than
+			writing the file.</para></listitem>
+
 			<listitem><para><parameter>x</parameter> - Extract (restore) a local
 			tar file back to a share. Unless the -D option is given, the tar
 			files will be restored from the top level of the share. Must be
