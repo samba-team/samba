@@ -45,7 +45,7 @@ static int vfs_gluster_fuse_get_real_filename(struct vfs_handle_struct *handle,
 	ret = getxattr(path, key_buf, val_buf, GLUSTER_NAME_MAX + 1);
 	if (ret == -1) {
 		if (errno == ENOATTR) {
-			errno = EOPNOTSUPP;
+			errno = ENOENT;
 		}
 		return -1;
 	}
