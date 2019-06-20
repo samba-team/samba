@@ -2470,7 +2470,7 @@ static bool test_durable_open_alloc_size(struct torture_context *tctx,
 	bool ret = true;
 	uint64_t previous_session_id;
 	uint64_t alloc_size_step;
-	uint64_t initial_alloc_size = 0x100;
+	uint64_t initial_alloc_size = 0x1000;
 	const uint8_t *b = NULL;
 	struct smbcli_options options;
 
