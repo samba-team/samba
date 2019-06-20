@@ -6379,18 +6379,13 @@ static NTSTATUS fruit_fset_nt_acl(vfs_handle_struct *handle,
 	}
 
 	if (do_chmod) {
-		if (fsp->fh->fd != -1) {
-			result = SMB_VFS_FCHMOD(fsp, ms_nfs_mode);
-		} else {
-			result = SMB_VFS_CHMOD(fsp->conn,
-					       fsp->fsp_name,
-					       ms_nfs_mode);
-		}
-
+		result = SMB_VFS_FCHMOD(fsp, ms_nfs_mode);
 		if (result != 0) {
-			DEBUG(1, ("chmod: %s, result: %d, %04o error %s\n", fsp_str_dbg(fsp),
-				  result, (unsigned)ms_nfs_mode,
-				  strerror(errno)));
+			DBG_WARNING("%s, result: %d, %04o error %s\n",
+				fsp_str_dbg(fsp),
+				result,
+				(unsigned)ms_nfs_mode,
+				strerror(errno));
 			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(psd);
 			return status;
