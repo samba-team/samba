@@ -7200,7 +7200,7 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 				struct smb_request *req,
 				const char *pdata,
-				int total_data,
+				int total_data_in,
 				files_struct *fsp,
 				const struct smb_filename *smb_fname)
 {
@@ -7210,6 +7210,15 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 	bool valid_file_acls = true;
 	bool valid_def_acls = true;
 	NTSTATUS status;
+	unsigned int size_needed;
+	unsigned int total_data;
+
+	if (total_data_in < 0) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	total_data = total_data_in;
 
 	if (total_data < SMB_POSIX_ACL_HEADER_SIZE) {
 		status = NT_STATUS_INVALID_PARAMETER;
@@ -7234,8 +7243,31 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 		goto out;
 	}
 
-	if (total_data < SMB_POSIX_ACL_HEADER_SIZE +
-			(num_file_acls+num_def_acls)*SMB_POSIX_ACL_ENTRY_SIZE) {
+	/* Wrap checks. */
+	if (num_file_acls + num_def_acls < num_file_acls) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	size_needed = num_file_acls + num_def_acls;
+
+	/*
+	 * (size_needed * SMB_POSIX_ACL_ENTRY_SIZE) must be less
+	 * than UINT_MAX, so check by division.
+	 */
+	if (size_needed > (UINT_MAX/SMB_POSIX_ACL_ENTRY_SIZE)) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+
+	size_needed = size_needed*SMB_POSIX_ACL_ENTRY_SIZE;
+	if (size_needed + SMB_POSIX_ACL_HEADER_SIZE < size_needed) {
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto out;
+	}
+	size_needed += SMB_POSIX_ACL_HEADER_SIZE;
+
+	if (total_data < size_needed) {
 		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}
