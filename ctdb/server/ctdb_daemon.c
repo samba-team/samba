@@ -1251,21 +1251,18 @@ static void ctdb_initialise_vnn_map(struct ctdb_context *ctdb)
 
 static void ctdb_set_my_pnn(struct ctdb_context *ctdb)
 {
-	int nodeid;
-
 	if (ctdb->address == NULL) {
 		ctdb_fatal(ctdb,
 			   "Can not determine PNN - node address is not set\n");
 	}
 
-	nodeid = ctdb_ip_to_nodeid(ctdb, ctdb->address);
-	if (nodeid == -1) {
+	ctdb->pnn = ctdb_ip_to_pnn(ctdb, ctdb->address);
+	if (ctdb->pnn == CTDB_UNKNOWN_PNN) {
 		ctdb_fatal(ctdb,
-			   "Can not determine PNN - node address not found in node list\n");
+			   "Can not determine PNN - unknown node address\n");
 	}
 
-	ctdb->pnn = ctdb->nodes[nodeid]->pnn;
-	DEBUG(DEBUG_NOTICE, ("PNN is %u\n", ctdb->pnn));
+	D_NOTICE("PNN is %u\n", ctdb->pnn);
 }
 
 /*
