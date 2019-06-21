@@ -727,7 +727,7 @@ static int ldb_kv_dn_list_store_full(struct ldb_module *module,
 		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 			ret = LDB_SUCCESS;
 		}
-		talloc_free(msg);
+		TALLOC_FREE(msg);
 		return ret;
 	}
 
@@ -735,14 +735,14 @@ static int ldb_kv_dn_list_store_full(struct ldb_module *module,
 		ret = ldb_msg_add_fmt(msg, LDB_KV_IDXVERSION, "%u",
 				      LDB_KV_INDEXING_VERSION);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(msg);
+			TALLOC_FREE(msg);
 			return ldb_module_oom(module);
 		}
 	} else {
 		ret = ldb_msg_add_fmt(msg, LDB_KV_IDXVERSION, "%u",
 				      LDB_KV_GUID_INDEXING_VERSION);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(msg);
+			TALLOC_FREE(msg);
 			return ldb_module_oom(module);
 		}
 	}
@@ -752,7 +752,7 @@ static int ldb_kv_dn_list_store_full(struct ldb_module *module,
 
 		ret = ldb_msg_add_empty(msg, LDB_KV_IDX, LDB_FLAG_MOD_ADD, &el);
 		if (ret != LDB_SUCCESS) {
-			talloc_free(msg);
+			TALLOC_FREE(msg);
 			return ldb_module_oom(module);
 		}
 
@@ -765,7 +765,7 @@ static int ldb_kv_dn_list_store_full(struct ldb_module *module,
 			el->values = talloc_array(msg,
 						  struct ldb_val, 1);
 			if (el->values == NULL) {
-				talloc_free(msg);
+				TALLOC_FREE(msg);
 				return ldb_module_oom(module);
 			}
 
@@ -773,7 +773,7 @@ static int ldb_kv_dn_list_store_full(struct ldb_module *module,
 						   list->count,
 						   LDB_KV_GUID_SIZE);
 			if (v.data == NULL) {
-				talloc_free(msg);
+				TALLOC_FREE(msg);
 				return ldb_module_oom(module);
 			}
 
@@ -782,7 +782,7 @@ static int ldb_kv_dn_list_store_full(struct ldb_module *module,
 			for (i = 0; i < list->count; i++) {
 				if (list->dn[i].length !=
 				    LDB_KV_GUID_SIZE) {
-					talloc_free(msg);
+					TALLOC_FREE(msg);
 					return ldb_module_operr(module);
 				}
 				memcpy(&v.data[LDB_KV_GUID_SIZE*i],
@@ -795,7 +795,7 @@ static int ldb_kv_dn_list_store_full(struct ldb_module *module,
 	}
 
 	ret = ldb_kv_store(module, msg, TDB_REPLACE);
-	talloc_free(msg);
+	TALLOC_FREE(msg);
 	return ret;
 }
 
