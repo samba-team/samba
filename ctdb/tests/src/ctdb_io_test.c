@@ -253,7 +253,7 @@ static void test4(void)
 	struct ctdb_queue *queue;
 	uint32_t pkt_size;
 	char *request;
-	size_t req_len;
+	size_t req_len, half_buf_size;
 	int fd;
 	ssize_t ret;
 
@@ -268,8 +268,10 @@ static void test4(void)
 	ret = write(fd, &pkt_size, sizeof(pkt_size));
 	assert(ret == sizeof(pkt_size));
 
-	ret = write(fd, request, req_len - (queue->buffer_size >> 1));
-	assert(ret == req_len - (queue->buffer_size >> 1));
+	half_buf_size = queue->buffer_size >> 1;
+
+	ret = write(fd, request, req_len - half_buf_size);
+	assert(ret == req_len - half_buf_size);
 
 	/*
 	 * process...
@@ -286,8 +288,8 @@ static void test4(void)
 	assert(queue->buffer.size == pkt_size);
 
 	/* writing remaining data */
-	ret = write(fd, request, queue->buffer_size >> 1);
-	assert(ret == (queue->buffer_size >> 1));
+	ret = write(fd, request, half_buf_size);
+	assert(ret == half_buf_size);
 
 	/* process... */
 	tevent_loop_once(ctdb->ev);
@@ -301,13 +303,13 @@ static void test4(void)
 	assert(queue->buffer.size == 0);
 
 	/* writing new packet to verify standard buffer size */
-	pkt_size = sizeof(uint32_t) + (queue->buffer_size >> 1);
+	pkt_size = sizeof(uint32_t) + half_buf_size;
 
 	ret = write(fd, &pkt_size, sizeof(pkt_size));
 	assert(ret == sizeof(pkt_size));
 
-	ret = write(fd, request, (queue->buffer_size >> 1));
-	assert(ret == (queue->buffer_size >> 1));
+	ret = write(fd, request, half_buf_size);
+	assert(ret == half_buf_size);
 
 	/* process... */
 	tevent_loop_once(ctdb->ev);
