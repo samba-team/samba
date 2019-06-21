@@ -361,7 +361,7 @@ _PUBLIC_ const char **str_list_append(const char **list1,
 	size_t len1 = str_list_length(list1);
 	size_t len2 = str_list_length(list2);
 	const char **ret;
-	int i;
+	size_t i;
 
 	ret = talloc_realloc(NULL, list1, const char *, len1+len2+1);
 	if (ret == NULL) return NULL;
@@ -390,7 +390,7 @@ _PUBLIC_ const char **str_list_unique(const char **list)
 {
 	size_t len = str_list_length(list);
 	const char **list2;
-	int i, j;
+	size_t i, j;
 	if (len < 2) {
 		return list;
 	}
@@ -435,7 +435,7 @@ _PUBLIC_ const char **str_list_append_const(const char **list1,
 	size_t len1 = str_list_length(list1);
 	size_t len2 = str_list_length(list2);
 	const char **ret;
-	int i;
+	size_t i;
 
 	ret = talloc_realloc(NULL, list1, const char *, len1+len2+1);
 	if (ret == NULL) return NULL;

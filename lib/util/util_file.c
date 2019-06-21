@@ -140,7 +140,7 @@ char *fgets_slash(TALLOC_CTX *mem_ctx, char *s2, size_t maxlen, FILE *f)
 			    s[len] = 0;
 		}
 		if ((s2 == NULL) && (len > maxlen-3)) {
-			int m;
+			size_t m;
 			char *t;
 
 			m = maxlen * 2;

@@ -261,10 +261,10 @@ libunwind_failed:
 		  (unsigned long)backtrace_size));
 
 	if (backtrace_strings) {
-		int i;
+		size_t i;
 
 		for (i = 0; i < backtrace_size; i++)
-			DEBUGADD(0, (" #%u %s\n", i, backtrace_strings[i]));
+			DEBUGADD(0, (" #%zu %s\n", i, backtrace_strings[i]));
 
 		/* Leak the backtrace_strings, rather than risk what free() might do */
 	}
