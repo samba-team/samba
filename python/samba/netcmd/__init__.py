@@ -19,6 +19,7 @@
 import optparse
 import samba
 from samba import colour
+from samba.getopt import SambaOption
 from samba.logger import get_samba_logger
 from ldb import LdbError
 import sys
@@ -26,7 +27,7 @@ import traceback
 import textwrap
 
 
-class Option(optparse.Option):
+class Option(SambaOption):
     SUPPRESS_HELP = optparse.SUPPRESS_HELP
     pass
 
