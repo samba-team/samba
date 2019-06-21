@@ -244,7 +244,8 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data, struct ctdb_tcp);
 	ctdb_sock_addr addr;
 	socklen_t len;
-	int fd, nodeid;
+	int fd;
+	uint32_t pnn;
 	struct ctdb_incoming *in;
 	int one = 1;
 	int ret;
@@ -255,10 +256,11 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 	if (fd == -1) return;
 	smb_set_close_on_exec(fd);
 
-	nodeid = ctdb_ip_to_nodeid(ctdb, &addr);
+	pnn = ctdb_ip_to_pnn(ctdb, &addr);
 
-	if (nodeid == -1) {
-		DEBUG(DEBUG_ERR, ("Refused connection from unknown node %s\n", ctdb_addr_to_str(&addr)));
+	if (pnn == CTDB_UNKNOWN_PNN) {
+		D_ERR("Refused connection from unknown node %s\n",
+		      ctdb_addr_to_str(&addr));
 		close(fd);
 		return;
 	}
