@@ -2139,7 +2139,8 @@ def provision(logger, session_info, smbconf=None,
               use_rfc2307=False, maxuid=None, maxgid=None, skip_sysvolacl=True,
               ldap_backend_forced_uri=None, nosync=False, ldap_dryrun_mode=False,
               ldap_backend_extra_port=None, base_schema="2012_R2",
-              plaintext_secrets=False, backend_store=None):
+              plaintext_secrets=False, backend_store=None,
+              backend_store_size=None):
     """Provision samba4
 
     :note: caution, this wipes all existing data!

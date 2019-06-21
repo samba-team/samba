@@ -118,6 +118,9 @@ common_provision_join_options = [
            choices=["tdb", "mdb"],
            help="Specify the database backend to be used "
            "(default is %s)" % get_default_backend_store()),
+    Option("--backend-store-size", type="bytes", metavar="SIZE",
+           help="Specify the size of the backend database, currently only " +
+                "supported by lmdb backends (default is 8 Gb)."),
     Option("--targetdir", metavar="DIR",
            help="Set target directory (where to store provision)", type=str),
     Option("-q", "--quiet", help="Be quiet", action="store_true"),
@@ -364,7 +367,8 @@ class cmd_domain_provision(Command):
             ldap_dryrun_mode=None,
             base_schema=None,
             plaintext_secrets=False,
-            backend_store=None):
+            backend_store=None,
+            backend_store_size=None):
 
         self.logger = self.get_logger(name="provision", quiet=quiet)
 
@@ -534,7 +538,8 @@ class cmd_domain_provision(Command):
                                nosync=ldap_backend_nosync, ldap_dryrun_mode=ldap_dryrun_mode,
                                base_schema=base_schema,
                                plaintext_secrets=plaintext_secrets,
-                               backend_store=backend_store)
+                               backend_store=backend_store,
+                               backend_store_size=backend_store_size)
 
         except ProvisioningError as e:
             raise CommandError("Provision failed", e)
@@ -606,7 +611,7 @@ class cmd_domain_dcpromo(Command):
             domain_critical_only=False, parent_domain=None, machinepass=None,
             use_ntvfs=False, dns_backend=None,
             quiet=False, verbose=False, plaintext_secrets=False,
-            backend_store=None):
+            backend_store=None, backend_store_size=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
@@ -625,14 +630,16 @@ class cmd_domain_dcpromo(Command):
                     machinepass=machinepass, use_ntvfs=use_ntvfs,
                     dns_backend=dns_backend,
                     promote_existing=True, plaintext_secrets=plaintext_secrets,
-                    backend_store=backend_store)
+                    backend_store=backend_store,
+                    backend_store_size=backend_store_size)
         elif role == "RODC":
             join_RODC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
                       domain_critical_only=domain_critical_only,
                       machinepass=machinepass, use_ntvfs=use_ntvfs, dns_backend=dns_backend,
                       promote_existing=True, plaintext_secrets=plaintext_secrets,
-                      backend_store=backend_store)
+                      backend_store=backend_store,
+                      backend_store_size=backend_store_size)
         else:
             raise CommandError("Invalid role '%s' (possible values: DC, RODC)" % role)
 
@@ -672,7 +679,7 @@ class cmd_domain_join(Command):
             use_ntvfs=False, dns_backend=None, adminpass=None,
             quiet=False, verbose=False,
             plaintext_secrets=False,
-            backend_store=None):
+            backend_store=None,backend_store_size=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
@@ -697,7 +704,8 @@ class cmd_domain_join(Command):
                     machinepass=machinepass, use_ntvfs=use_ntvfs,
                     dns_backend=dns_backend,
                     plaintext_secrets=plaintext_secrets,
-                    backend_store=backend_store)
+                    backend_store=backend_store,
+                    backend_store_size=backend_store_size)
         elif role == "RODC":
             join_RODC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
@@ -705,7 +713,8 @@ class cmd_domain_join(Command):
                       machinepass=machinepass, use_ntvfs=use_ntvfs,
                       dns_backend=dns_backend,
                       plaintext_secrets=plaintext_secrets,
-                      backend_store=backend_store)
+                      backend_store=backend_store,
+                      backend_store_size=backend_store_size)
         elif role == "SUBDOMAIN":
             if not adminpass:
                 logger.info("Administrator password will be set randomly!")
@@ -720,7 +729,8 @@ class cmd_domain_join(Command):
                            use_ntvfs=use_ntvfs, dns_backend=dns_backend,
                            adminpass=adminpass,
                            plaintext_secrets=plaintext_secrets,
-                           backend_store=backend_store)
+                           backend_store=backend_store,
+                           backend_store_size=backend_store_size)
         else:
             raise CommandError("Invalid role '%s' (possible values: MEMBER, DC, RODC, SUBDOMAIN)" % role)
 
