@@ -60,7 +60,7 @@ ssize_t write_data_iov(int fd, const struct iovec *orig_iov, int iovcnt)
 	memcpy(iov_copy, orig_iov, sizeof(struct iovec) * iovcnt);
 	iov = iov_copy;
 
-	while (sent < to_send) {
+	while (sent < (size_t)to_send) {
 		bool ok;
 
 		ok = iov_advance(&iov, &iovcnt, thistime);
@@ -104,7 +104,7 @@ ssize_t read_data(int fd, void *buffer, size_t n)
 
 	nread = 0;
 
-	while (nread < n) {
+	while ((size_t)nread < n) {
 		ssize_t ret;
 		ret = sys_read(fd, ((char *)buffer) + nread, n - nread);
 		if (ret <= 0) {

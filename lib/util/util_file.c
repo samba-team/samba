@@ -74,7 +74,7 @@ _PUBLIC_ char *afdgets(int fd, TALLOC_CTX *mem_ctx, size_t hint)
 
 		offset += ret;
 
-	} while (ret == hint);
+	} while ((size_t)ret == hint);
 
 	data[offset] = '\0';
 
@@ -327,12 +327,14 @@ _PUBLIC_ char **fd_lines_load(int fd, int *numlines, size_t maxsize, TALLOC_CTX 
 _PUBLIC_ bool file_save_mode(const char *fname, const void *packet,
 			     size_t length, mode_t mode)
 {
+	ssize_t num_written;
 	int fd;
 	fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC, mode);
 	if (fd == -1) {
 		return false;
 	}
-	if (write(fd, packet, length) != (size_t)length) {
+	num_written = write(fd, packet, length);
+	if (num_written == -1 || (size_t)num_written != length) {
 		close(fd);
 		return false;
 	}

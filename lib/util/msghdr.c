@@ -223,7 +223,7 @@ ssize_t msghdr_copy(struct msghdr_buf *msg, size_t msgsize,
 		return -1;
 	}
 
-	if (bufsize >= fd_len) {
+	if (bufsize >= (size_t)fd_len) {
 		bufsize -= fd_len;
 	} else {
 		bufsize = 0;
@@ -256,7 +256,7 @@ ssize_t msghdr_copy(struct msghdr_buf *msg, size_t msgsize,
 	}
 
 	needed = offsetof(struct msghdr_buf, buf) + fd_len;
-	if (needed < fd_len) {
+	if (needed < (size_t)fd_len) {
 		return -1;
 	}
 	needed += iov_len;

@@ -82,7 +82,7 @@ int pidfile_path_create(const char *path, int *outfd)
 		ret = errno;
 		goto fail_unlink;
 	}
-	if (len >= sizeof(tmp)) {
+	if ((size_t)len >= sizeof(tmp)) {
 		ret = ENOSPC;
 		goto fail_unlink;
 	}
