@@ -300,7 +300,8 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data,
 						struct ctdb_tcp);
         ctdb_sock_addr sock;
-	int lock_fd, i;
+	int lock_fd;
+	unsigned int i;
 	const char *lock_path = CTDB_RUNDIR "/.socket_lock";
 	struct flock lock;
 	int one = 1;

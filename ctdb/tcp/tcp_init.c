@@ -70,7 +70,7 @@ static int ctdb_tcp_add_node(struct ctdb_node *node)
 */
 static int ctdb_tcp_initialise(struct ctdb_context *ctdb)
 {
-	int i;
+	unsigned int i;
 
 	/* listen on our own address */
 	if (ctdb_tcp_listen(ctdb) != 0) {
@@ -147,7 +147,7 @@ static void ctdb_tcp_shutdown(struct ctdb_context *ctdb)
 */
 static int ctdb_tcp_start(struct ctdb_context *ctdb)
 {
-	int i;
+	unsigned int i;
 
 	for (i=0; i < ctdb->num_nodes; i++) {
 		if (ctdb->nodes[i]->flags & NODE_FLAGS_DELETED) {
