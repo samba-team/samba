@@ -72,7 +72,7 @@ int main(int argc, const char **argv)
 
 		while (1) {
 			n = read(fd, buffer, sizeof(buffer));
-			assert(n >= 0 && n <= sizeof(buffer));
+			assert(n >= 0 && (size_t)n <= sizeof(buffer));
 
 			if (n == 0) {
 				break;

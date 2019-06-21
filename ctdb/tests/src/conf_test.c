@@ -418,7 +418,7 @@ static void test11(const char *filename)
 	bool status;
 
 	ret = snprintf(reload, sizeof(reload), "%s.reload", filename);
-	assert(ret < sizeof(reload));
+	assert((size_t)ret < sizeof(reload));
 
 	ret = conf_init(mem_ctx, &conf);
 	assert(ret == 0);

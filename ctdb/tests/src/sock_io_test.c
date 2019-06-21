@@ -170,7 +170,7 @@ static void test2_reader(int fd)
 			return;
 		}
 
-		assert(n == pkt_len);
+		assert((size_t)n == pkt_len);
 		pkt_len += 10;
 	}
 }

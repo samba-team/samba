@@ -84,7 +84,7 @@ static void writer_next(struct tevent_req *subreq)
 		return;
 	}
 
-	if (nwritten != state->buflen) {
+	if ((size_t)nwritten != state->buflen) {
 		tevent_req_error(req, EIO);
 		return;
 	}

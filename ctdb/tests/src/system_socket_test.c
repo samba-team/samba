@@ -82,7 +82,7 @@ static void test_arp(const char *addr_str, const char *hwaddr_str, bool reply)
 	assert(ret == 0);
 
 	num_written = write(STDOUT_FILENO, buf, len);
-	assert(num_written == len);
+	assert(num_written != -1 && (size_t)num_written == len);
 }
 
 #else /* HAVE_PACKETSOCKET  */
@@ -162,7 +162,7 @@ static void test_tcp(const char *src_str,
 	num_written = write(STDOUT_FILENO,
 			    buf + sizeof(struct ether_header),
 			    len);
-	assert(num_written == len);
+	assert(num_written != -1 && (size_t)num_written == len);
 
 	switch (ntohs(eth->ether_type)) {
 	case ETHERTYPE_IP:
