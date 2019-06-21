@@ -325,8 +325,7 @@ static int ldb_kv_dn_list_find_msg(struct ldb_kv_private *ldb_kv,
   alignment
  */
 static struct dn_list *ldb_kv_index_idxptr(struct ldb_module *module,
-					   TDB_DATA rec,
-					   bool check_parent)
+					   TDB_DATA rec)
 {
 	struct dn_list *list;
 	if (rec.dsize != sizeof(void *)) {
@@ -343,12 +342,6 @@ static struct dn_list *ldb_kv_index_idxptr(struct ldb_module *module,
 		ldb_asprintf_errstring(ldb_module_get_ctx(module),
 				       "Bad type '%s' for idxptr",
 				       talloc_get_name(list));
-		return NULL;
-	}
-	if (check_parent && list->dn && talloc_parent(list->dn) != list) {
-		ldb_asprintf_errstring(ldb_module_get_ctx(module),
-				       "Bad parent '%s' for idxptr",
-				       talloc_get_name(talloc_parent(list->dn)));
 		return NULL;
 	}
 	return list;
@@ -387,7 +380,7 @@ static int ldb_kv_dn_list_load(struct ldb_module *module,
 	}
 
 	/* we've found an in-memory index entry */
-	list2 = ldb_kv_index_idxptr(module, rec, true);
+	list2 = ldb_kv_index_idxptr(module, rec);
 	if (list2 == NULL) {
 		free(rec.dptr);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -741,7 +734,7 @@ static int ldb_kv_dn_list_store(struct ldb_module *module,
 
 	rec = tdb_fetch(ldb_kv->idxptr->itdb, key);
 	if (rec.dptr != NULL) {
-		list2 = ldb_kv_index_idxptr(module, rec, false);
+		list2 = ldb_kv_index_idxptr(module, rec);
 		if (list2 == NULL) {
 			free(rec.dptr);
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -790,7 +783,7 @@ static int ldb_kv_index_traverse_store(_UNUSED_ struct tdb_context *tdb,
 	struct ldb_val v;
 	struct dn_list *list;
 
-	list = ldb_kv_index_idxptr(module, data, true);
+	list = ldb_kv_index_idxptr(module, data);
 	if (list == NULL) {
 		ldb_kv->idxptr->error = LDB_ERR_OPERATIONS_ERROR;
 		return -1;
