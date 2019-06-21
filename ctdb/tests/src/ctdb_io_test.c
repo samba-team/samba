@@ -78,7 +78,8 @@ static void test1_callback(uint8_t *data, size_t length, void *private_data)
 static void test1(void)
 {
 	struct ctdb_context *ctdb;
-	int fd, ret;
+	int fd;
+	ssize_t ret;
 	uint32_t pkt_size;
 
 	test_setup(test1_callback, &fd, &ctdb, NULL);
@@ -113,7 +114,8 @@ static void test2_callback(uint8_t *data, size_t length, void *private_data)
 static void test2(void)
 {
 	struct ctdb_context *ctdb;
-	int fd, ret;
+	int fd;
+	ssize_t ret;
 	size_t i;
 	uint32_t pkt_size;
 	char req[1024] = { 0 };
@@ -188,7 +190,7 @@ static void test3(void)
 	char *request;
 	size_t req_len;
 	int fd;
-	int ret;
+	ssize_t ret;
 
 	test_setup(test_cb, &fd, &ctdb, &queue);
 	request = talloc_zero_size(queue, queue->buffer_size);
@@ -253,7 +255,7 @@ static void test4(void)
 	char *request;
 	size_t req_len;
 	int fd;
-	int ret;
+	ssize_t ret;
 
 	test_setup(test_cb, &fd, &ctdb, &queue);
 
