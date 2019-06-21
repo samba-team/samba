@@ -838,6 +838,7 @@ static size_t ctdb_var_list_len_old(struct ctdb_var_list *in)
 	size_t len = sizeof(uint32_t);
 
 	for (i=0; i<in->count; i++) {
+		assert(in->var[i] != NULL);
 		len += strlen(in->var[i]) + 1;
 	}
 	return len;
