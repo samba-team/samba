@@ -33,7 +33,7 @@
 
 #define MSG_ID_FETCH	0
 
-static uint32_t next_node(struct ctdb_client_context *client, int num_nodes)
+static uint32_t next_node(struct ctdb_client_context *client, uint32_t num_nodes)
 {
 	return (ctdb_client_pnn(client) + 1) % num_nodes;
 }
@@ -42,7 +42,7 @@ struct fetch_ring_state {
 	struct tevent_context *ev;
 	struct ctdb_client_context *client;
 	struct ctdb_db_context *ctdb_db;
-	int num_nodes;
+	uint32_t num_nodes;
 	int timelimit;
 	int interactive;
 	TDB_DATA key;
@@ -63,7 +63,7 @@ static struct tevent_req *fetch_ring_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
 					  struct ctdb_client_context *client,
 					  struct ctdb_db_context *ctdb_db,
-					  int num_nodes, int timelimit,
+					  uint32_t num_nodes, int timelimit,
 					  int interactive)
 {
 	struct tevent_req *req, *subreq;

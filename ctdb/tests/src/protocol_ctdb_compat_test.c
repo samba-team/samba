@@ -1236,7 +1236,7 @@ int main(int argc, char *argv[])
 		CTDB_SRVID_DISABLE_RECOVERIES,
 		CTDB_SRVID_DISABLE_IP_CHECK,
 	};
-	int i;
+	unsigned int i;
 
 	if (argc == 2) {
 		int seed = atoi(argv[1]);

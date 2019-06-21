@@ -36,7 +36,8 @@ static void test_ctdb_chararray(void)
 	size_t len = rand_int(1000) + 1;
 	char p1[len], p2[len];
 	size_t buflen, np = 0;
-	int i, ret;
+	size_t i;
+	int ret;
 
 	for (i=0; i<len-1; i++) {
 		p1[i] = 'A' + rand_int(26);

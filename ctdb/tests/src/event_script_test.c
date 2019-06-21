@@ -46,7 +46,8 @@ static void usage(const char *prog)
 static void do_list(TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	struct event_script_list *script_list = NULL;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	if (argc != 3) {
 		usage(argv[0]);

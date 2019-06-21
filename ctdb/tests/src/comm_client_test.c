@@ -32,7 +32,7 @@ struct writer_state {
 	struct comm_context *comm;
 	uint8_t *buf;
 	size_t *pkt_size;
-	int count, id;
+	size_t count, id;
 };
 
 static void writer_done(struct tevent_req *subreq);
@@ -42,12 +42,13 @@ static void dead_handler(void *private_data);
 static struct tevent_req *writer_send(TALLOC_CTX *mem_ctx,
 				      struct tevent_context *ev,
 				      int fd, size_t *pkt_size,
-				      int count)
+				      size_t count)
 {
 	struct tevent_req *req, *subreq;
 	struct writer_state *state;
 	size_t max_size = 0, buflen;
-	int i, ret;
+	size_t i;
+	int ret;
 
 	for (i=0; i<count; i++) {
 		if (pkt_size[i] > max_size) {

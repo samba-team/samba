@@ -70,7 +70,7 @@ double rand_double(void)
 
 void fill_buffer(void *p, size_t len)
 {
-	int i;
+	size_t i;
 	uint8_t *ptr = p;
 
 	for (i=0; i<len; i++) {
@@ -87,7 +87,7 @@ void verify_buffer(void *p1, void *p2, size_t len)
 
 void fill_string(char *p, size_t len)
 {
-	int i;
+	size_t i;
 
 	for (i=0; i<len-1; i++) {
 		p[i] = 'A' + rand_int(26);

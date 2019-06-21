@@ -967,7 +967,7 @@ static void ctdb_tickle_list_push_old(struct ctdb_tickle_list *in,
 	struct ctdb_tickle_list_wire *wire =
 		(struct ctdb_tickle_list_wire *)buf;
 	size_t offset;
-	int i;
+	unsigned int i;
 
 	memcpy(&wire->addr, &in->addr, sizeof(ctdb_sock_addr));
 	wire->num = in->num;
@@ -987,7 +987,8 @@ static int ctdb_tickle_list_pull_old(uint8_t *buf, size_t buflen,
 	struct ctdb_tickle_list_wire *wire =
 		(struct ctdb_tickle_list_wire *)buf;
 	size_t offset;
-	int i, ret;
+	unsigned int i;
+	int ret;
 
 	if (buflen < offsetof(struct ctdb_tickle_list_wire, conn)) {
 		return EMSGSIZE;
@@ -1220,7 +1221,7 @@ struct ctdb_public_ip_list_wire {
 
 static size_t ctdb_public_ip_list_len_old(struct ctdb_public_ip_list *in)
 {
-	int i;
+	unsigned int i;
 	size_t len;
 
 	len = sizeof(uint32_t);
@@ -1236,7 +1237,7 @@ static void ctdb_public_ip_list_push_old(struct ctdb_public_ip_list *in,
 	struct ctdb_public_ip_list_wire *wire =
 		(struct ctdb_public_ip_list_wire *)buf;
 	size_t offset;
-	int i;
+	unsigned int i;
 
 	wire->num = in->num;
 
@@ -1255,7 +1256,7 @@ static int ctdb_public_ip_list_pull_old(uint8_t *buf, size_t buflen,
 	struct ctdb_public_ip_list_wire *wire =
 		(struct ctdb_public_ip_list_wire *)buf;
 	size_t offset;
-	int i;
+	unsigned int i;
 	bool ret;
 
 	if (buflen < sizeof(uint32_t)) {
@@ -1368,7 +1369,7 @@ static void ctdb_node_map_push_old(struct ctdb_node_map *in, uint8_t *buf)
 {
 	struct ctdb_node_map_wire *wire = (struct ctdb_node_map_wire *)buf;
 	size_t offset;
-	int i;
+	unsigned int i;
 
 	wire->num = in->num;
 
@@ -1386,7 +1387,7 @@ static int ctdb_node_map_pull_old(uint8_t *buf, size_t buflen,
 	struct ctdb_node_map *val;
 	struct ctdb_node_map_wire *wire = (struct ctdb_node_map_wire *)buf;
 	size_t offset;
-	int i;
+	unsigned int i;
 	bool ret;
 
 	if (buflen < sizeof(uint32_t)) {
@@ -1484,7 +1485,7 @@ struct ctdb_script_list_wire {
 
 static size_t ctdb_script_list_len_old(struct ctdb_script_list *in)
 {
-	int i;
+	unsigned int i;
 	size_t len;
 
 	if (in == NULL) {
@@ -1504,7 +1505,7 @@ static void ctdb_script_list_push_old(struct ctdb_script_list *in,
 	struct ctdb_script_list_wire *wire =
 		(struct ctdb_script_list_wire *)buf;
 	size_t offset;
-	int i;
+	unsigned int i;
 
 	if (in == NULL) {
 		return;
@@ -1527,7 +1528,7 @@ static int ctdb_script_list_pull_old(uint8_t *buf, size_t buflen,
 	struct ctdb_script_list_wire *wire =
 		(struct ctdb_script_list_wire *)buf;
 	size_t offset;
-	int i;
+	unsigned int i;
 	bool ret;
 
 	/* If event scripts have never been run, the result will be NULL */
@@ -2024,7 +2025,7 @@ static int ctdb_db_statistics_pull_old(uint8_t *buf, size_t buflen,
 	struct ctdb_db_statistics_wire *wire =
 		(struct ctdb_db_statistics_wire *)buf;
 	size_t offset;
-	int i;
+	unsigned int i;
 
 	if (buflen < sizeof(struct ctdb_db_statistics)) {
 		return EMSGSIZE;
@@ -2220,7 +2221,7 @@ static void ctdb_g_lock_list_push_old(struct ctdb_g_lock_list *in,
 				      uint8_t *buf)
 {
 	size_t offset = 0;
-	int i;
+	unsigned int i;
 
 	for (i=0; i<in->num; i++) {
 		ctdb_g_lock_push_old(&in->lock[i], &buf[offset]);
@@ -2235,7 +2236,8 @@ static int ctdb_g_lock_list_pull_old(uint8_t *buf, size_t buflen,
 	struct ctdb_g_lock_list *val;
 	unsigned count;
 	size_t offset;
-	int ret, i;
+	unsigned int i;
+	int ret;
 
 	val = talloc_zero(mem_ctx, struct ctdb_g_lock_list);
 	if (val == NULL) {

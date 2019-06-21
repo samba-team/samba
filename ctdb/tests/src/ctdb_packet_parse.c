@@ -30,7 +30,7 @@
 static TDB_DATA strace_parser(char *buf, TALLOC_CTX *mem_ctx)
 {
 	TDB_DATA data;
-	int i = 0, j = 0;
+	size_t i = 0, j = 0;
 
 	data.dptr = talloc_size(mem_ctx, strlen(buf));
 	if (data.dptr == NULL) {

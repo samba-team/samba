@@ -265,12 +265,12 @@ static void test3_writer_next(struct tevent_req *subreq);
 static struct tevent_req *test3_writer_send(TALLOC_CTX *mem_ctx,
 					    struct tevent_context *ev,
 					    struct comm_context *comm,
-					    size_t *pkt_size, int count)
+					    size_t *pkt_size, size_t count)
 {
 	struct tevent_req *req, *subreq;
 	struct test3_writer_state *state;
 	size_t max_size = 0, buflen;
-	int i;
+	size_t i;
 
 	for (i=0; i<count; i++) {
 		if (pkt_size[i] > max_size) {
@@ -352,7 +352,7 @@ static void test3_writer_recv(struct tevent_req *req, int *perr)
 	*perr = 0;
 }
 
-static void test3_writer(int fd, size_t *pkt_size, int count)
+static void test3_writer(int fd, size_t *pkt_size, size_t count)
 {
 	TALLOC_CTX *mem_ctx;
 	struct tevent_context *ev;

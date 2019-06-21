@@ -218,7 +218,7 @@ void verify_ctdb_statistics(struct ctdb_statistics *p1,
 
 void fill_ctdb_vnn_map(TALLOC_CTX *mem_ctx, struct ctdb_vnn_map *p)
 {
-	int i;
+	unsigned int i;
 
 	p->generation = rand32();
 	p->size = rand_int(20);
@@ -236,7 +236,7 @@ void fill_ctdb_vnn_map(TALLOC_CTX *mem_ctx, struct ctdb_vnn_map *p)
 
 void verify_ctdb_vnn_map(struct ctdb_vnn_map *p1, struct ctdb_vnn_map *p2)
 {
-	int i;
+	unsigned int i;
 
 	assert(p1->generation == p2->generation);
 	assert(p1->size == p2->size);
@@ -259,7 +259,7 @@ void verify_ctdb_dbid(struct ctdb_dbid *p1, struct ctdb_dbid *p2)
 
 void fill_ctdb_dbid_map(TALLOC_CTX *mem_ctx, struct ctdb_dbid_map *p)
 {
-	int i;
+	unsigned int i;
 
 	p->num = rand_int(40);
 	if (p->num > 0) {
@@ -275,7 +275,7 @@ void fill_ctdb_dbid_map(TALLOC_CTX *mem_ctx, struct ctdb_dbid_map *p)
 
 void verify_ctdb_dbid_map(struct ctdb_dbid_map *p1, struct ctdb_dbid_map *p2)
 {
-	int i;
+	unsigned int i;
 
 	assert(p1->num == p2->num);
 	for (i=0; i<p1->num; i++) {
@@ -714,7 +714,7 @@ void verify_ctdb_tunable_list(struct ctdb_tunable_list *p1,
 
 void fill_ctdb_tickle_list(TALLOC_CTX *mem_ctx, struct ctdb_tickle_list *p)
 {
-	int i;
+	unsigned int i;
 
 	fill_ctdb_sock_addr(mem_ctx, &p->addr);
 	p->num = rand_int(1000);
@@ -732,7 +732,7 @@ void fill_ctdb_tickle_list(TALLOC_CTX *mem_ctx, struct ctdb_tickle_list *p)
 void verify_ctdb_tickle_list(struct ctdb_tickle_list *p1,
 			     struct ctdb_tickle_list *p2)
 {
-	int i;
+	unsigned int i;
 
 	verify_ctdb_sock_addr(&p1->addr, &p2->addr);
 	assert(p1->num == p2->num);
@@ -806,7 +806,7 @@ void verify_ctdb_public_ip(struct ctdb_public_ip *p1,
 void fill_ctdb_public_ip_list(TALLOC_CTX *mem_ctx,
 			      struct ctdb_public_ip_list *p)
 {
-	int i;
+	unsigned int i;
 
 	p->num = rand_int(32);
 	if (p->num > 0) {
@@ -823,7 +823,7 @@ void fill_ctdb_public_ip_list(TALLOC_CTX *mem_ctx,
 void verify_ctdb_public_ip_list(struct ctdb_public_ip_list *p1,
 				struct ctdb_public_ip_list *p2)
 {
-	int i;
+	unsigned int i;
 
 	assert(p1->num == p2->num);
 	for (i=0; i<p1->num; i++) {
@@ -849,7 +849,7 @@ void verify_ctdb_node_and_flags(struct ctdb_node_and_flags *p1,
 
 void fill_ctdb_node_map(TALLOC_CTX *mem_ctx, struct ctdb_node_map *p)
 {
-	int i;
+	unsigned int i;
 
 	p->num = rand_int(32);
 	if (p->num > 0) {
@@ -866,7 +866,7 @@ void fill_ctdb_node_map(TALLOC_CTX *mem_ctx, struct ctdb_node_map *p)
 
 void verify_ctdb_node_map(struct ctdb_node_map *p1, struct ctdb_node_map *p2)
 {
-	int i;
+	unsigned int i;
 
 	assert(p1->num == p2->num);
 	for (i=0; i<p1->num; i++) {
@@ -894,7 +894,7 @@ void verify_ctdb_script(struct ctdb_script *p1, struct ctdb_script *p2)
 
 void fill_ctdb_script_list(TALLOC_CTX *mem_ctx, struct ctdb_script_list *p)
 {
-	int i;
+	unsigned int i;
 
 	p->num_scripts = rand_int(32);
 	if (p->num_scripts > 0) {
@@ -912,7 +912,7 @@ void fill_ctdb_script_list(TALLOC_CTX *mem_ctx, struct ctdb_script_list *p)
 void verify_ctdb_script_list(struct ctdb_script_list *p1,
 			     struct ctdb_script_list *p2)
 {
-	int i;
+	unsigned int i;
 
 	assert(p1->num_scripts == p2->num_scripts);
 	for (i=0; i<p1->num_scripts; i++) {
@@ -962,7 +962,7 @@ void verify_ctdb_iface(struct ctdb_iface *p1, struct ctdb_iface *p2)
 
 void fill_ctdb_iface_list(TALLOC_CTX *mem_ctx, struct ctdb_iface_list *p)
 {
-	int i;
+	unsigned int i;
 
 	p->num = rand_int(32);
 	if (p->num > 0) {
@@ -979,7 +979,7 @@ void fill_ctdb_iface_list(TALLOC_CTX *mem_ctx, struct ctdb_iface_list *p)
 void verify_ctdb_iface_list(struct ctdb_iface_list *p1,
 			    struct ctdb_iface_list *p2)
 {
-	int i;
+	unsigned int i;
 
 	assert(p1->num == p2->num);
 	for (i=0; i<p1->num; i++) {
@@ -1052,7 +1052,7 @@ void verify_ctdb_key_data(struct ctdb_key_data *p1, struct ctdb_key_data *p2)
 void fill_ctdb_db_statistics(TALLOC_CTX *mem_ctx,
 			     struct ctdb_db_statistics *p)
 {
-	int i;
+	unsigned int i;
 
 	p->locks.num_calls = rand32();
 	p->locks.num_current = rand32();
@@ -1081,7 +1081,7 @@ void fill_ctdb_db_statistics(TALLOC_CTX *mem_ctx,
 void verify_ctdb_db_statistics(struct ctdb_db_statistics *p1,
 			       struct ctdb_db_statistics *p2)
 {
-	int i;
+	unsigned int i;
 
 	assert(p1->locks.num_calls == p2->locks.num_calls);
 	assert(p1->locks.num_current == p2->locks.num_current);
@@ -1199,7 +1199,7 @@ void verify_ctdb_g_lock(struct ctdb_g_lock *p1, struct ctdb_g_lock *p2)
 
 void fill_ctdb_g_lock_list(TALLOC_CTX *mem_ctx, struct ctdb_g_lock_list *p)
 {
-	int i;
+	unsigned int i;
 
 	p->num = rand_int(20) + 1;
 	p->lock = talloc_zero_array(mem_ctx, struct ctdb_g_lock, p->num);
@@ -1212,7 +1212,7 @@ void fill_ctdb_g_lock_list(TALLOC_CTX *mem_ctx, struct ctdb_g_lock_list *p)
 void verify_ctdb_g_lock_list(struct ctdb_g_lock_list *p1,
 			     struct ctdb_g_lock_list *p2)
 {
-	int i;
+	unsigned int i;
 
 	assert(p1->num == p2->num);
 	for (i=0; i<p1->num; i++) {

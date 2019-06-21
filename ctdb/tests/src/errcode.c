@@ -127,7 +127,7 @@ struct {
 
 static void dump(void)
 {
-	int i;
+	size_t i;
 
 	for (i=0; i<ARRAY_SIZE(err_codes); i++) {
 		printf("%s %d\n", err_codes[i].label, err_codes[i].code);
@@ -137,7 +137,7 @@ static void dump(void)
 static void match_label(const char *str)
 {
 	int code = -1;
-	int i;
+	size_t i;
 
 	for (i=0; i<ARRAY_SIZE(err_codes); i++) {
 		if (strcasecmp(err_codes[i].label, str) == 0) {
@@ -152,7 +152,7 @@ static void match_label(const char *str)
 static void match_code(int code)
 {
 	const char *label = "UNKNOWN";
-	int i;
+	size_t i;
 
 	for (i=0; i<ARRAY_SIZE(err_codes); i++) {
 		if (err_codes[i].code == code) {

@@ -23,7 +23,7 @@
 struct tevent_req *cluster_wait_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct ctdb_client_context *client,
-				     int num_nodes);
+				     uint32_t num_nodes);
 
 bool cluster_wait_recv(struct tevent_req *req, int *perr);
 

@@ -34,7 +34,7 @@
 struct cluster_wait_state {
 	struct tevent_context *ev;
 	struct ctdb_client_context *client;
-	int num_nodes;
+	uint32_t num_nodes;
 	bool *ready;
 	bool join_done;
 };
@@ -54,7 +54,7 @@ static void cluster_wait_sync_unregistered(struct tevent_req *subreq);
 struct tevent_req *cluster_wait_send(TALLOC_CTX *mem_ctx,
 				     struct tevent_context *ev,
 				     struct ctdb_client_context *client,
-				     int num_nodes)
+				     uint32_t num_nodes)
 {
 	struct tevent_req *req, *subreq;
 	struct cluster_wait_state *state;
@@ -213,7 +213,7 @@ static void cluster_wait_join_handler(uint64_t srvid, TDB_DATA data,
 		req, struct cluster_wait_state);
 	struct tevent_req *subreq;
 	uint32_t pnn;
-	int i;
+	uint32_t i;
 
 	if (srvid != MSG_ID_JOIN) {
 		return;
