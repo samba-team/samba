@@ -45,24 +45,22 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 	return 0;
 }
 
-/*
-  Check whether an ip is a valid node ip
-  Returns the node id for this ip address or -1
-*/
-int ctdb_ip_to_nodeid(struct ctdb_context *ctdb, const ctdb_sock_addr *nodeip)
+/* Return the PNN for nodeip, CTDB_UNKNOWN_PNN if nodeip is invalid */
+uint32_t ctdb_ip_to_pnn(struct ctdb_context *ctdb,
+			const ctdb_sock_addr *nodeip)
 {
-	int nodeid;
+	unsigned int nodeid;
 
 	for (nodeid=0;nodeid<ctdb->num_nodes;nodeid++) {
 		if (ctdb->nodes[nodeid]->flags & NODE_FLAGS_DELETED) {
 			continue;
 		}
 		if (ctdb_same_ip(&ctdb->nodes[nodeid]->address, nodeip)) {
-			return nodeid;
+			return ctdb->nodes[nodeid]->pnn;
 		}
 	}
 
-	return -1;
+	return CTDB_UNKNOWN_PNN;
 }
 
 /* Load a nodes list file into a nodes array */
