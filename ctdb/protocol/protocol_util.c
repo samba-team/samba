@@ -147,7 +147,7 @@ int ctdb_sock_addr_to_buf(char *buf, socklen_t buflen,
 
 		ret = snprintf(buf+len, buflen-len,
 			       ":%u", ctdb_sock_addr_port(addr));
-		if (ret >= buflen-len) {
+		if (ret < 0 || (size_t)ret >= buflen-len) {
 			return ENOSPC;
 		}
 	}
@@ -485,7 +485,7 @@ int ctdb_connection_to_buf(char *buf, size_t buflen,
 	} else {
 		ret = snprintf(buf, buflen, "%s %s", client, server);
 	}
-	if (ret >= buflen) {
+	if (ret < 0 || (size_t)ret >= buflen) {
 		return ENOSPC;
 	}
 
