@@ -311,7 +311,7 @@ int ctdb_sock_addr_mask_from_string(const char *str,
 	char *p;
 	char s[64]; /* Much longer than INET6_ADDRSTRLEN */
 	unsigned int m;
-	ssize_t len;
+	size_t len;
 	int ret = 0;
 
 	if (addr == NULL || mask == NULL) {
