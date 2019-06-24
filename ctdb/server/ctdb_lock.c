@@ -198,13 +198,9 @@ static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
 		} else {
 			DLIST_REMOVE(lock_ctx->ctdb->lock_current, lock_ctx);
 		}
-		if (lock_ctx->ctdb_db) {
-			lock_ctx->ctdb_db->lock_num_current--;
-		}
+		lock_ctx->ctdb_db->lock_num_current--;
 		CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_current);
-		if (lock_ctx->ctdb_db) {
-			CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_current);
-		}
+		CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_current);
 	} else {
 		if (lock_ctx->type == LOCK_RECORD) {
 			DLIST_REMOVE(lock_ctx->ctdb_db->lock_pending, lock_ctx);
@@ -212,9 +208,7 @@ static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
 			DLIST_REMOVE(lock_ctx->ctdb->lock_pending, lock_ctx);
 		}
 		CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_pending);
-		if (lock_ctx->ctdb_db) {
-			CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
-		}
+		CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
 	}
 
 	ctdb_lock_schedule(lock_ctx->ctdb);
@@ -357,25 +351,19 @@ static void ctdb_lock_handler(struct tevent_context *ev,
 
 	/* Update statistics */
 	CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.num_calls);
-	if (lock_ctx->ctdb_db) {
-		CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_calls);
-	}
+	CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_calls);
 
 	if (locked) {
-		if (lock_ctx->ctdb_db) {
-			CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.buckets[id]);
-			CTDB_UPDATE_LATENCY(lock_ctx->ctdb, lock_ctx->ctdb_db,
-					    lock_type_str[lock_ctx->type], locks.latency,
-					    lock_ctx->start_time);
+		CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.buckets[id]);
+		CTDB_UPDATE_LATENCY(lock_ctx->ctdb, lock_ctx->ctdb_db,
+				    lock_type_str[lock_ctx->type], locks.latency,
+				    lock_ctx->start_time);
 
-			CTDB_UPDATE_DB_LATENCY(lock_ctx->ctdb_db, lock_type_str[lock_ctx->type], locks.latency, t);
-			CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.buckets[id]);
-		}
+		CTDB_UPDATE_DB_LATENCY(lock_ctx->ctdb_db, lock_type_str[lock_ctx->type], locks.latency, t);
+		CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.buckets[id]);
 	} else {
 		CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.num_failed);
-		if (lock_ctx->ctdb_db) {
-			CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_failed);
-		}
+		CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_failed);
 	}
 
 	process_callbacks(lock_ctx, locked);
@@ -674,10 +662,7 @@ static struct lock_context *ctdb_find_lock_context(struct ctdb_context *ctdb)
 				   "request\n"));
 		DLIST_REMOVE(ctdb->lock_pending, lock_ctx);
 		CTDB_DECREMENT_STAT(ctdb, locks.num_pending);
-		if (lock_ctx->ctdb_db) {
-			CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db,
-					       locks.num_pending);
-		}
+		CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
 		talloc_free(lock_ctx);
 	}
 
@@ -825,11 +810,9 @@ static void ctdb_lock_schedule(struct ctdb_context *ctdb)
 	}
 	CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_pending);
 	CTDB_INCREMENT_STAT(lock_ctx->ctdb, locks.num_current);
-	if (lock_ctx->ctdb_db) {
-		lock_ctx->ctdb_db->lock_num_current++;
-		CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
-		CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_current);
-	}
+	lock_ctx->ctdb_db->lock_num_current++;
+	CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_pending);
+	CTDB_INCREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_current);
 }
 
 
