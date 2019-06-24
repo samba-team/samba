@@ -14,10 +14,3 @@ The current sources for particular Debian releases as well as the
 
  svn://svn.debian.org/pkg-samba/branches/<name>/samba
 
-SerNet packages
----------------
-
-SerNet provides Debian packages of the latest Samba versions for various 
-Debian releases as part of EnterpriseSamba. See 
-http://www.enterprisesamba.org/index.php?id=56 for more information about the 
-packages and how to install them.
