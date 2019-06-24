@@ -28,6 +28,7 @@
 #include "../libcli/auth/libcli_auth.h"
 #include "../librpc/gen_ndr/ndr_ntlmssp.h"
 
+#include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -1028,20 +1029,20 @@ WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
-		result = WERR_NOT_ENOUGH_MEMORY;
+		result = gnutls_error_to_werror(rc, WERR_CONTENT_BLOCKED);
 		goto out;
 	}
 
 	rc = gnutls_hash(hash_hnd, session_key->data, session_key->length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		result = WERR_INTERNAL_ERROR;
+		result = gnutls_error_to_werror(rc, WERR_CONTENT_BLOCKED);
 		goto out;
 	}
 	rc = gnutls_hash(hash_hnd, confounder, confounder_len);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		result = WERR_INTERNAL_ERROR;
+		result = gnutls_error_to_werror(rc, WERR_CONTENT_BLOCKED);
 		goto out;
 	}
 	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
