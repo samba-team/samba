@@ -519,7 +519,7 @@ struct run_event_state {
 	struct run_event_script_list *script_list;
 	const char **argv;
 	struct tevent_req *script_subreq;
-	int index;
+	unsigned int index;
 	bool cancelled;
 };
 

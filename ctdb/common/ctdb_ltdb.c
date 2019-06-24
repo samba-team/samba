@@ -308,8 +308,8 @@ int ctdb_ltdb_delete(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 
 int ctdb_trackingdb_add_pnn(struct ctdb_context *ctdb, TDB_DATA *data, uint32_t pnn)
 {
-	int byte_pos = pnn / 8;
-	int bit_mask   = 1 << (pnn % 8);
+	unsigned int byte_pos = pnn / 8;
+	unsigned char bit_mask = 1 << (pnn % 8);
 
 	if (byte_pos + 1 > data->dsize) {
 		char *buf;
@@ -334,10 +334,10 @@ int ctdb_trackingdb_add_pnn(struct ctdb_context *ctdb, TDB_DATA *data, uint32_t 
 
 void ctdb_trackingdb_traverse(struct ctdb_context *ctdb, TDB_DATA data, ctdb_trackingdb_cb cb, void *private_data)
 {
-	int i;
+	unsigned int i;
 
 	for(i = 0; i < data.dsize; i++) {
-		int j;
+		unsigned int j;
 
 		for (j=0; j<8; j++) {
 			int mask = 1<<j;
