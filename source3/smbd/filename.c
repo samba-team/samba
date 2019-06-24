@@ -1736,16 +1736,13 @@ static NTSTATUS filename_convert_internal(TALLOC_CTX *ctx,
 	}
 
 	if (is_fake_file_path(name_in)) {
-		SMB_STRUCT_STAT st;
-		ZERO_STRUCT(st);
-		st.st_ex_nlink = 1;
 		*pp_smb_fname = synthetic_smb_fname_split(ctx,
 					name_in,
 					(ucf_flags & UCF_POSIX_PATHNAMES));
 		if (*pp_smb_fname == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		(*pp_smb_fname)->st = st;
+		(*pp_smb_fname)->st = (SMB_STRUCT_STAT) { .st_ex_nlink = 1 };
 		return NT_STATUS_OK;
 	}
 
