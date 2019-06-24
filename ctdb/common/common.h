@@ -20,6 +20,8 @@
 #ifndef __CTDB_COMMON_H__
 #define __CTDB_COMMON_H__
 
+#include "lib/util/attr.h"
+
 /* From common/ctdb_io.c */
 
 typedef void (*ctdb_queue_cb_fn_t)(uint8_t *data, size_t length,
@@ -91,9 +93,9 @@ const char *ctdb_errstr(struct ctdb_context *ctdb);
 void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...)
 		    PRINTF_ATTRIBUTE(2,3);
 
-void ctdb_fatal(struct ctdb_context *ctdb, const char *msg);
+void ctdb_fatal(struct ctdb_context *ctdb, const char *msg) _NORETURN_;
 
-void ctdb_die(struct ctdb_context *ctdb, const char *msg);
+void ctdb_die(struct ctdb_context *ctdb, const char *msg) _NORETURN_;
 
 bool ctdb_set_helper(const char *type, char *helper, size_t size,
 		     const char *envvar,
