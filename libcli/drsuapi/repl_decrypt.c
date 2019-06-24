@@ -31,6 +31,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "dsdb/samdb/samdb.h"
 
+#include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
@@ -86,19 +87,19 @@ WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
-		result = WERR_NOT_ENOUGH_MEMORY;
+		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
 		goto out;
 	}
 	rc = gnutls_hash(hash_hnd, gensec_skey->data, gensec_skey->length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		result = WERR_INTERNAL_ERROR;
+		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
 		goto out;
 	}
 	rc = gnutls_hash(hash_hnd, confounder.data, confounder.length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		result = WERR_INTERNAL_ERROR;
+		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
 		goto out;
 	}
 
@@ -305,20 +306,20 @@ static WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
-		result = WERR_NOT_ENOUGH_MEMORY;
+		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
 		goto out;
 	}
 
 	rc = gnutls_hash(hash_hnd, gensec_skey->data, gensec_skey->length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		result = WERR_INTERNAL_ERROR;
+		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
 		goto out;
 	}
 	rc = gnutls_hash(hash_hnd, confounder.data, confounder.length);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
-		result = WERR_INTERNAL_ERROR;
+		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
 		goto out;
 	}
 	gnutls_hash_deinit(hash_hnd, enc_key.data);
