@@ -179,11 +179,6 @@ struct ntvfs_handle *ntvfs_handle_search_by_wire_key(struct ntvfs_module_context
 	return ntvfs->ctx->handles.search_by_wire_key(ntvfs->ctx->handles.private_data, req, key);
 }
 
-DATA_BLOB ntvfs_handle_get_wire_key(struct ntvfs_handle *h, TALLOC_CTX *mem_ctx)
-{
-	return h->ctx->handles.get_wire_key(h->ctx->handles.private_data, h, mem_ctx);
-}
-
 NTSTATUS ntvfs_set_handle_callbacks(struct ntvfs_context *ntvfs,
 					     NTSTATUS (*create_new)(void *private_data, struct ntvfs_request *req, struct ntvfs_handle **h),
 					     NTSTATUS (*make_valid)(void *private_data, struct ntvfs_handle *h),

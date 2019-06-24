@@ -602,17 +602,6 @@ NTSTATUS ntvfs_next_trans(struct ntvfs_module_context *ntvfs,
 	return ntvfs->next->ops->trans_fn(ntvfs->next, req, trans);
 }
 
-/* trans2 interface - only used by CIFS backend to prover complete passthru for testing */
-NTSTATUS ntvfs_next_trans2(struct ntvfs_module_context *ntvfs, 
-				    struct ntvfs_request *req,
-				    struct smb_trans2 *trans2)
-{
-	if (!ntvfs->next || !ntvfs->next->ops->trans2_fn) {
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-	return ntvfs->next->ops->trans2_fn(ntvfs->next, req, trans2);
-}
-
 /*
   change notify request
 */
