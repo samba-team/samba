@@ -26,37 +26,10 @@
 
 struct loadparm_context;
 
-/*
-  call tls_initialise() once per task to startup the tls subsystem
-*/
-struct tls_params *tls_initialise(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
-
-/*
-  call tls_init_server() on each new server connection
-
-  the 'plain_chars' parameter is a list of chars that when they occur
-  as the first character from the client on the connection tell the
-  tls code that this is a non-tls connection. This can be used to have
-  tls and non-tls servers on the same port. If this is NULL then only
-  tls connections will be allowed
-*/
-struct socket_context *tls_init_server(struct tls_params *parms,
-				    struct socket_context *sock, 
-				    struct tevent_fd *fde,
-				    const char *plain_chars);
-
 void tls_cert_generate(TALLOC_CTX *mem_ctx,
 		       const char *hostname,
 		       const char *keyfile, const char *certfile,
 		       const char *cafile);
-
-/*
-  return True if a connection used tls
-*/
-bool tls_enabled(struct socket_context *tls);
-
-
-const struct socket_ops *socket_tls_ops(enum socket_type type);
 
 struct tstream_context;
 struct tstream_tls_params;
