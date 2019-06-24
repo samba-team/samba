@@ -96,7 +96,7 @@ static bool database_conf_validate_lock_debug_script(const char *key,
 		       "%s/%s",
 		       path_etcdir(),
 		       basename(script));
-	if (ret >= sizeof(script_path)) {
+	if (ret < 0 || (size_t)ret >= sizeof(script_path)) {
 		D_ERR("lock debug script path too long\n");
 		return false;
 	}
