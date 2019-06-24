@@ -317,6 +317,7 @@ static int ctdb_event_script_list_pull(uint8_t *buf,
 	value->script = talloc_array(value, struct ctdb_event_script,
 				     num_scripts);
 	if (value->script == NULL) {
+		ret = ENOMEM;
 		goto fail;
 	}
 
