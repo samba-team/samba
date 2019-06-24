@@ -408,7 +408,7 @@ static int event_command_script_list(TALLOC_CTX *mem_ctx,
 			}
 
 			len = readlink(e->path, buf, sizeof(buf));
-			if (len == -1 || len >= sizeof(buf)) {
+			if (len == -1 || (size_t)len >= sizeof(buf)) {
 				/*
 				 * Not a link?  Disappeared?  Invalid
 				 * link target?  Something else?

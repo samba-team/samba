@@ -50,7 +50,7 @@ static bool event_conf_validate_debug_script(const char *key,
 		       "%s/%s",
 		       path_etcdir(),
 		       basename(script));
-	if (ret >= sizeof(script_path)) {
+	if (ret < 0 || (size_t)ret >= sizeof(script_path)) {
 		D_ERR("debug script path too long\n");
 		return false;
 	}
