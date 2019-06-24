@@ -1693,6 +1693,10 @@ char *fill_domain_username_talloc(TALLOC_CTX *mem_ctx,
 		can_assume = false;
 	}
 
+	if (user == NULL) {
+		return NULL;
+	}
+
 	tmp_user = talloc_strdup(mem_ctx, user);
 	if (!strlower_m(tmp_user)) {
 		TALLOC_FREE(tmp_user);
