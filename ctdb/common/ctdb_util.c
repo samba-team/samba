@@ -111,7 +111,10 @@ bool ctdb_set_helper(const char *type, char *helper, size_t size,
 			      ("Unable to set %s - dir is NULL\n", type));
 		return false;
 	} else {
-		if (snprintf(helper, size, "%s/%s", dir, file) >= size) {
+		int ret;
+
+		ret = snprintf(helper, size, "%s/%s", dir, file);
+		if (ret < 0 || (size_t)ret >= size) {
 			DEBUG(DEBUG_ERR,
 			      ("Unable to set %s - path too long\n", type));
 			return false;

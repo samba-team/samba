@@ -159,7 +159,7 @@ int event_script_chmod(const char *script_dir,
 		script_file = script_name;
 	} else {
 		ret = snprintf(buf, sizeof(buf), "%s.script", script_name);
-		if (ret >= sizeof(buf)) {
+		if (ret < 0 || (size_t)ret >= sizeof(buf)) {
 			return ENAMETOOLONG;
 		}
 		script_file = buf;
@@ -196,7 +196,7 @@ int event_script_chmod(const char *script_dir,
 		       "%s/%s",
 		       script_dir,
 		       script_file);
-	if (ret >= sizeof(filename)) {
+	if (ret < 0 || (size_t)ret >= sizeof(filename)) {
 		return ENAMETOOLONG;
 	}
 

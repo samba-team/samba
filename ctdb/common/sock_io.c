@@ -198,7 +198,7 @@ static void sock_queue_handler(struct tevent_context *ev,
 		goto fail;
 	}
 
-	if (num_ready > queue->buflen - queue->end) {
+	if ((size_t)num_ready > queue->buflen - queue->end) {
 		queue->buf = talloc_realloc_size(queue, queue->buf,
 						 queue->end + num_ready);
 		if (queue->buf == NULL) {
