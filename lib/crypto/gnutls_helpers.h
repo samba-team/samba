@@ -19,6 +19,7 @@
 #define _GNUTLS_HELPERS_H
 
 #include "ntstatus.h"
+#include "werror.h"
 
 NTSTATUS _gnutls_error_to_ntstatus(int gnutls_rc,
 				   NTSTATUS blocked_status,
@@ -28,4 +29,11 @@ NTSTATUS _gnutls_error_to_ntstatus(int gnutls_rc,
 	_gnutls_error_to_ntstatus(gnutls_rc, blocked_status, \
 				  __FUNCTION__, __location__)
 
+WERROR _gnutls_error_to_werror(int gnutls_rc,
+			       WERROR blocked_werr,
+			       const char *function,
+			       const char *location);
+#define gnutls_error_to_werror(gnutls_rc, blocked_werr) \
+	_gnutls_error_to_werror(gnutls_rc, blocked_werr, \
+				__FUNCTION__, __location__)
 #endif /* _GNUTLS_HELPERS_H */

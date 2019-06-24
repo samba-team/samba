@@ -67,3 +67,51 @@ NTSTATUS _gnutls_error_to_ntstatus(int gnutls_rc,
 
 	return status;
 }
+
+WERROR _gnutls_error_to_werror(int gnutls_rc,
+			       WERROR blocked_werr,
+			       const char *function,
+			       const char *location)
+{
+	WERROR werr;
+
+	if (gnutls_rc == GNUTLS_E_SUCCESS) {
+		return WERR_OK;
+	}
+
+	switch (gnutls_rc) {
+	case GNUTLS_E_UNWANTED_ALGORITHM:
+		werr = blocked_werr;
+		break;
+	case GNUTLS_E_MEMORY_ERROR:
+		werr = WERR_NOT_ENOUGH_MEMORY;
+		break;
+	case GNUTLS_E_INVALID_REQUEST:
+		werr = WERR_INVALID_VARIANT;
+		break;
+	case GNUTLS_E_DECRYPTION_FAILED:
+		werr = WERR_DECRYPTION_FAILED;
+		break;
+	case GNUTLS_E_ENCRYPTION_FAILED:
+		werr = WERR_ENCRYPTION_FAILED;
+		break;
+	case GNUTLS_E_SHORT_MEMORY_BUFFER:
+		werr = WERR_INVALID_PARAMETER;
+		break;
+	case GNUTLS_E_BASE64_DECODING_ERROR:
+	case GNUTLS_E_HASH_FAILED:
+	case GNUTLS_E_LIB_IN_ERROR_STATE:
+	case GNUTLS_E_INTERNAL_ERROR:
+	default:
+		werr = WERR_INTERNAL_ERROR;
+		break;
+	}
+
+	D_WARNING("%s: GNUTLS ERROR: %s, WERROR: %s at %s\n",
+		  function,
+		  gnutls_strerror_name(gnutls_rc),
+		  win_errstr(werr),
+		  location);
+
+	return werr;
+}
