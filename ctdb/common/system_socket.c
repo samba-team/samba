@@ -681,8 +681,12 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 			     sizeof(dest->ip));
 		saved_errno = errno;
 		close(s);
-		if (ret != len) {
+		if (ret == -1) {
 			D_ERR("Failed sendto (%s)\n", strerror(saved_errno));
+			return -1;
+		}
+		if ((size_t)ret != len) {
+			DBG_ERR("Failed sendto - didn't send full packet\n");
 			return -1;
 		}
 		break;
@@ -722,9 +726,12 @@ int ctdb_sys_send_tcp(const ctdb_sock_addr *dest,
 			     sizeof(tmpdest));
 		saved_errno = errno;
 		close(s);
-
-		if (ret != len) {
+		if (ret == -1) {
 			D_ERR("Failed sendto (%s)\n", strerror(saved_errno));
+			return -1;
+		}
+		if ((size_t)ret != len) {
+			DBG_ERR("Failed sendto - didn't send full packet\n");
 			return -1;
 		}
 		break;
@@ -914,7 +921,10 @@ int ctdb_sys_read_tcp_packet(int s, void *private_data,
 	int ret;
 
 	nread = recv(s, pkt, sizeof(pkt), MSG_TRUNC);
-	if (nread < sizeof(*eth)) {
+	if (nread == -1) {
+		return errno;
+	}
+	if ((size_t)nread < sizeof(*eth)) {
 		return EMSGSIZE;
 	}
 
