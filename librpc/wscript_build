@@ -520,11 +520,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_DRSBLOBS',
     public_deps='dcerpc-binding NDR_DRSBLOBS'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_NTLMSSP',
-    source='gen_ndr/ndr_ntlmssp_c.c',
-    public_deps='dcerpc-binding NDR_NTLMSSP'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_POLICYAGENT',
     source='gen_ndr/ndr_policyagent_c.c',
     public_deps='dcerpc-binding NDR_POLICYAGENT'

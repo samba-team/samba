@@ -277,7 +277,7 @@ bld.SAMBA_PYTHON('python_dcerpc_drsblobs',
 
 bld.SAMBA_PYTHON('python_dcerpc_ntlmssp',
         source='../../librpc/gen_ndr/py_ntlmssp.c',
-        deps='%s %s RPC_NDR_NTLMSSP' % (pytalloc_util, pyrpc_util),
+        deps='%s %s NDR_NTLMSSP' % (pytalloc_util, pyrpc_util),
         realname='samba/dcerpc/ntlmssp.so',
         cflags_end=gen_cflags
         )
