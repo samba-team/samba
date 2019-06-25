@@ -21,6 +21,13 @@
 #ifndef __UTIL_SAMBA_UTIL_H__
 #define __UTIL_SAMBA_UTIL_H__
 
+#define SMB_STR_STANDARD  0x00
+#define SMB_STR_ALLOW_NEGATIVE 0x01
+#define SMB_STR_FULL_STR_CONV  0x02
+#define SMB_STR_ALLOW_NO_CONVERSION 0x04
+#define SMB_STR_GLIBC_STANDARD (SMB_STR_ALLOW_NO_CONVERSION | \
+				SMB_STR_ALLOW_NEGATIVE)
+
 unsigned long int
 strtoul_err(const char *nptr, char **endptr, int base, int *err);
 
