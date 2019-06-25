@@ -426,14 +426,14 @@ bld.SAMBA_PYTHON('python_dcerpc_dnsp',
 
 bld.SAMBA_PYTHON('python_dcerpc_xattr',
         source='../../librpc/gen_ndr/py_xattr.c',
-        deps='%s %s RPC_NDR_XATTR' % (pytalloc_util, pyrpc_util),
+        deps='%s %s NDR_XATTR' % (pytalloc_util, pyrpc_util),
         realname='samba/dcerpc/xattr.so',
         cflags_end=gen_cflags
         )
 
 bld.SAMBA_PYTHON('python_dcerpc_idmap',
         source='../../librpc/gen_ndr/py_idmap.c',
-        deps='%s %s RPC_NDR_XATTR' % (pytalloc_util, pyrpc_util),
+        deps='%s %s NDR_IDMAP' % (pytalloc_util, pyrpc_util),
         realname='samba/dcerpc/idmap.so',
         cflags_end=gen_cflags
         )

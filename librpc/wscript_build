@@ -445,11 +445,6 @@ bld.SAMBA_SUBSYSTEM('NDR_MESSAGING',
     public_deps='ndr NDR_SERVER_ID'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_XATTR',
-    source='gen_ndr/ndr_xattr_c.c',
-    public_deps='NDR_XATTR dcerpc-binding'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_IDMAP',
     source='gen_ndr/ndr_idmap_c.c',
     public_deps='NDR_IDMAP dcerpc-binding'
