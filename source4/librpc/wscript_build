@@ -270,7 +270,7 @@ bld.SAMBA_PYTHON('python_dcerpc_nbt',
 
 bld.SAMBA_PYTHON('python_dcerpc_drsblobs',
         source='../../librpc/gen_ndr/py_drsblobs.c',
-        deps='%s %s NDR_SECURITY RPC_NDR_DRSBLOBS' % (pytalloc_util, pyrpc_util),
+        deps='%s %s NDR_SECURITY NDR_DRSBLOBS' % (pytalloc_util, pyrpc_util),
         realname='samba/dcerpc/drsblobs.so',
         cflags_end=gen_cflags
         )
