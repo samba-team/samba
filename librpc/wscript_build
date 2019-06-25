@@ -445,11 +445,6 @@ bld.SAMBA_SUBSYSTEM('NDR_MESSAGING',
     public_deps='ndr NDR_SERVER_ID'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_SMB_ACL',
-    source='gen_ndr/ndr_smb_acl_c.c',
-    public_deps='NDR_SMB_ACL dcerpc-binding'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_ROT',
     source='gen_ndr/ndr_rot_c.c',
     public_deps='NDR_ROT dcerpc-binding'
