@@ -460,11 +460,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_ECHO',
     public_deps='dcerpc-binding NDR_ECHO'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_DSBACKUP',
-    source='gen_ndr/ndr_dsbackup_c.c',
-    public_deps='dcerpc-binding NDR_DSBACKUP'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_LSA',
     source='gen_ndr/ndr_lsa_c.c',
     public_deps='dcerpc-binding ndr-standard'
