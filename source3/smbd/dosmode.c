@@ -325,6 +325,50 @@ NTSTATUS parse_dos_attribute_blob(struct smb_filename *smb_fname,
 						      create_time)));
 		}
 		break;
+	case 4:
+	{
+		struct xattr_DosInfo4 *info = &dosattrib.info.info4;
+
+		dosattr = info->attrib;
+
+		if ((info->valid_flags & XATTR_DOSINFO_CREATE_TIME) &&
+		    !null_nttime(info->create_time))
+		{
+			struct timespec creat_time;
+
+			creat_time = nt_time_to_unix_timespec(info->create_time);
+			update_stat_ex_create_time(&smb_fname->st, creat_time);
+
+			DBG_DEBUG("file [%s] creation time [%s]\n",
+				smb_fname_str_dbg(smb_fname),
+				nt_time_string(talloc_tos(), info->create_time));
+		}
+
+		if (info->valid_flags & XATTR_DOSINFO_ITIME) {
+			struct timespec itime;
+			uint64_t file_id;
+
+			itime = nt_time_to_unix_timespec(info->itime);
+			if (smb_fname->st.st_ex_iflags &
+			    ST_EX_IFLAG_CALCULATED_ITIME)
+			{
+				update_stat_ex_itime(&smb_fname->st, itime);
+			}
+
+			file_id = make_file_id_from_itime(&smb_fname->st);
+			if (smb_fname->st.st_ex_iflags &
+			    ST_EX_IFLAG_CALCULATED_FILE_ID)
+			{
+				update_stat_ex_file_id(&smb_fname->st, file_id);
+			}
+
+			DBG_DEBUG("file [%s] itime [%s] fileid [%"PRIx64"]\n",
+				smb_fname_str_dbg(smb_fname),
+				nt_time_string(talloc_tos(), info->itime),
+				file_id);
+		}
+		break;
+	}
 	default:
 		DBG_WARNING("Badly formed DOSATTRIB on file %s - %s\n",
 			    smb_fname_str_dbg(smb_fname), blob.data);
