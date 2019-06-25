@@ -846,7 +846,7 @@ def setup_name_mappings(idmap, sid, root_uid, nobody_uid,
 def setup_samdb_partitions(samdb_path, logger, lp, session_info,
                            provision_backend, names, serverrole,
                            erase=False, plaintext_secrets=False,
-                           backend_store=None):
+                           backend_store=None,backend_store_size=None):
     """Setup the partitions for the SAM database.
 
     Alternatively, provision() may call this, and then populate the database.
@@ -1295,9 +1295,13 @@ def create_default_gpo(sysvolpath, dnsdomain, policyguid, policyguid_dc):
     create_gpo_struct(policy_path)
 
 
+# Default the database size to 8Gb
+DEFAULT_BACKEND_SIZE = 8 * 1024 * 1024 *1024
+
 def setup_samdb(path, session_info, provision_backend, lp, names,
                 logger, fill, serverrole, schema, am_rodc=False,
-                plaintext_secrets=False, backend_store=None):
+                plaintext_secrets=False, backend_store=None,
+                backend_store_size=None):
     """Setup a complete SAM Database.
 
     :note: This will wipe the main SAM database file!
@@ -1307,13 +1311,24 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     setup_samdb_partitions(path, logger=logger, lp=lp,
                            provision_backend=provision_backend, session_info=session_info,
                            names=names, serverrole=serverrole, plaintext_secrets=plaintext_secrets,
-                           backend_store=backend_store)
+                           backend_store=backend_store,
+                           backend_store_size=backend_store_size)
+
+    options = []
+    if backend_store == "mdb":
+        if backend_store_size:
+            store_size = backend_store_size
+        else :
+            # If no lmdb map size provided default to the default of
+            # 8 GiB
+            store_size = DEFAULT_BACKEND_SIZE
+        options = ["lmdb_env_size:" + str(store_size)]
 
     # Load the database, but don's load the global schema and don't connect
     # quite yet
     samdb = SamDB(session_info=session_info, url=None, auto_connect=False,
                   credentials=provision_backend.credentials, lp=lp,
-                  global_schema=False, am_rodc=am_rodc)
+                  global_schema=False, am_rodc=am_rodc, options=options)
 
     logger.info("Pre-loading the Samba 4 and AD schema")
 
@@ -1327,7 +1342,7 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     # And now we can connect to the DB - the schema won't be loaded from the
     # DB
     try:
-        samdb.connect(path)
+        samdb.connect(path, options=options)
     except ldb.LdbError as e2:
         (num, string_error) = e2.args
         if (num == ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS):
@@ -1347,7 +1362,8 @@ def fill_samdb(samdb, lp, names, logger, policyguid,
                policyguid_dc, fill, adminpass, krbtgtpass, machinepass, dns_backend,
                dnspass, invocationid, ntdsguid, serverrole, am_rodc=False,
                dom_for_fun_level=None, schema=None, next_rid=None, dc_rid=None,
-               backend_store=None):
+               backend_store=None,
+               backend_store_size=None):
 
     if next_rid is None:
         next_rid = 1000
@@ -1908,7 +1924,8 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                    dns_backend=None, dnspass=None,
                    serverrole=None, dom_for_fun_level=None,
                    am_rodc=False, lp=None, use_ntvfs=False,
-                   skip_sysvolacl=False, backend_store=None):
+                   skip_sysvolacl=False, backend_store=None,
+                   backend_store_size=None):
     # create/adapt the group policy GUIDs
     # Default GUID for default policy are described at
     # "How Core Group Policy Works"
@@ -1941,7 +1958,8 @@ def provision_fill(samdb, secrets_ldb, logger, names, paths,
                            ntdsguid=ntdsguid, serverrole=serverrole,
                            dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
                            next_rid=next_rid, dc_rid=dc_rid,
-                           backend_store=backend_store)
+                           backend_store=backend_store,
+                           backend_store_size=backend_store_size)
 
         # Set up group policies (domain policy and domain controller
         # policy)
@@ -2321,7 +2339,8 @@ def provision(logger, session_info, smbconf=None,
                             serverrole=serverrole,
                             schema=schema, fill=samdb_fill, am_rodc=am_rodc,
                             plaintext_secrets=plaintext_secrets,
-                            backend_store=backend_store)
+                            backend_store=backend_store,
+                            backend_store_size=backend_store_size)
 
         if serverrole == "active directory domain controller":
             if paths.netlogon is None:
@@ -2354,7 +2373,8 @@ def provision(logger, session_info, smbconf=None,
                            dom_for_fun_level=dom_for_fun_level, am_rodc=am_rodc,
                            lp=lp, use_ntvfs=use_ntvfs,
                            skip_sysvolacl=skip_sysvolacl,
-                           backend_store=backend_store)
+                           backend_store=backend_store,
+                           backend_store_size=backend_store_size)
 
         if not is_heimdal_built():
             create_kdc_conf(paths.kdcconf, realm, domain, os.path.dirname(lp.get("log file")))
