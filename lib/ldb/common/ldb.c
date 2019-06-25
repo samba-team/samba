@@ -257,6 +257,15 @@ int ldb_connect(struct ldb_context *ldb, const char *url,
 		return ret;
 	}
 
+	/*
+	 * Take a copy of the options.
+	 */
+	ldb->options = ldb_options_copy(ldb, options);
+	if (ldb->options == NULL && options != NULL) {
+		ldb_oom(ldb);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	ret = ldb_module_connect_backend(ldb, url, options, &ldb->modules);
 	if (ret != LDB_SUCCESS) {
 		return ret;

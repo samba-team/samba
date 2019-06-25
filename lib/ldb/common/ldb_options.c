@@ -70,3 +70,33 @@ const char *ldb_options_find(struct ldb_context *ldb, const char *options[],
 
 	return NULL;
 }
+
+const char **ldb_options_copy(TALLOC_CTX *ctx, const char *options[])
+{
+
+	size_t num_options = 0;
+	const char **copy = NULL;
+	size_t i = 0;
+
+	if (options == NULL) {
+		return copy;
+	}
+
+	for (i=0; options[i]; i++) {
+		num_options++;
+	}
+
+	copy = talloc_zero_array(ctx, const char *, num_options + 1);
+	if (copy == NULL) {
+		return copy;
+	}
+
+	for (i=0; options[i]; i++) {
+		copy[i] = talloc_strdup(copy, options[i]);
+		if (copy[i] == NULL) {
+			TALLOC_FREE(copy);
+			return copy;
+		}
+	}
+	return copy;
+}

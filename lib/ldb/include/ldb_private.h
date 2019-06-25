@@ -155,6 +155,12 @@ struct ldb_context {
 	char *partial_debug;
 
 	struct poptOption *popt_options;
+
+	/*
+	 * The ldb options passed to ldb_connect
+	 * A NULL terminated array of zero terminated strings
+	 */
+	const char **options;
 };
 
 /* The following definitions come from lib/ldb/common/ldb.c  */
@@ -218,6 +224,7 @@ struct ldb_val ldb_binary_decode(TALLOC_CTX *mem_ctx, const char *str);
 
 const char *ldb_options_find(struct ldb_context *ldb, const char *options[],
 			     const char *option_name);
+const char **ldb_options_copy(TALLOC_CTX *ctx, const char *options[]);
 
 /* The following definitions come from lib/ldb/common/ldb_ldif.c  */
 
