@@ -35,3 +35,8 @@ const char *file_id_string(TALLOC_CTX *mem_ctx, const struct file_id *id);
 void push_file_id_16(char *buf, const struct file_id *id);
 void push_file_id_24(char *buf, const struct file_id *id);
 void pull_file_id_24(const char *buf, struct file_id *id);
+
+/*
+ * Make a SMB File-ID from itime
+ */
+uint64_t make_file_id_from_itime(SMB_STRUCT_STAT *st);
