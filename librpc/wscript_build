@@ -582,11 +582,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_EPMAPPER',
     public_deps='tevent NDR_EPMAPPER'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_DBGIDL',
-    source='gen_ndr/ndr_dbgidl_c.c',
-    public_deps='dcerpc-binding NDR_DBGIDL'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_DSSETUP',
     source='gen_ndr/ndr_dssetup_c.c',
     public_deps='dcerpc-binding NDR_DSSETUP'
