@@ -27,7 +27,7 @@
 #include "lib/util/dlinklist.h"
 #include "libcli/resolve/resolve.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
-#include "librpc/gen_ndr/ndr_dcerpc_c.h"
+#include "librpc/rpc/rpc_common.h"
 #include "torture/torture.h"
 #include "torture/local/proto.h"
 
