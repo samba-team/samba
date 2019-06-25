@@ -391,7 +391,7 @@ bld.SAMBA_PYTHON('python_irpc',
 
 bld.SAMBA_PYTHON('python_server_id',
         source='../../librpc/gen_ndr/py_server_id.c',
-        deps='RPC_NDR_SERVER_ID %s %s' % (pytalloc_util, pyrpc_util),
+        deps='NDR_SERVER_ID %s %s' % (pytalloc_util, pyrpc_util),
         realname='samba/dcerpc/server_id.so',
         cflags_end=gen_cflags
         )
