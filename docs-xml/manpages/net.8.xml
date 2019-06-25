@@ -1375,6 +1375,27 @@ against an NT4 Domain Controller.
 </refsect2>
 
 <refsect2>
+
+<title>ADS DNS</title>
+
+<refsect3>
+<title>ADS DNS REGISTER [HOSTNAME [IP [IP.....]]]</title>
+<para>Add host dns entry to Active Directory.</para>
+</refsect3>
+
+<refsect3>
+<title>ADS DNS UNREGISTER &lt;HOSTNAME&gt;</title>
+<para>Remove host dns entry from Active Directory.</para>
+</refsect3>
+
+<refsect3>
+<title>ADS DNS GETHOSTBYNAME &lt;NAMESERVER|HOSTNAME&gt;</title>
+<para>Look up the hostname from Active Directory. You can either provide nameserver ie IPv4|IPv6 address or the hostname. Only one should be provided at a time.</para>
+</refsect3>
+
+</refsect2>
+
+<refsect2>
 <title>ADS LEAVE [--keep-account]</title>
 
 <para>Make the remote host leave the domain it is part of. </para>
