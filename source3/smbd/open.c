@@ -4242,7 +4242,10 @@ static NTSTATUS open_directory(connection_struct *conn,
 			   FILE_ADD_SUBDIRECTORY|
 			   FILE_TRAVERSE|
 			   DELETE_ACCESS|
-			   FILE_DELETE_CHILD)) {
+			   FILE_DELETE_CHILD|
+			   WRITE_DAC_ACCESS|
+			   WRITE_OWNER_ACCESS|
+			   READ_CONTROL_ACCESS)) {
 #ifdef O_DIRECTORY
 		status = fd_open(conn, fsp, O_RDONLY|O_DIRECTORY, 0);
 #else
