@@ -455,11 +455,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_ATSVC',
     public_deps='dcerpc-binding NDR_ATSVC'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_AUDIOSRV',
-    source='gen_ndr/ndr_audiosrv_c.c',
-    public_deps='NDR_AUDIOSRV dcerpc-binding'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_ECHO',
     source='gen_ndr/ndr_echo_c.c',
     public_deps='dcerpc-binding NDR_ECHO'
