@@ -8768,6 +8768,129 @@ static bool run_posix_acl_oplock_test(int dummy)
 	return correct;
 }
 
+static bool run_posix_acl_shareroot_test(int dummy)
+{
+	struct cli_state *cli;
+	NTSTATUS status;
+	bool correct = false;
+	char *posix_acl = NULL;
+	size_t posix_acl_len = 0;
+	uint16_t num_file_acls = 0;
+	uint16_t num_dir_acls = 0;
+	uint16_t i;
+	uint32_t expected_size = 0;
+	bool got_user = false;
+	bool got_group = false;
+	bool got_other = false;
+	TALLOC_CTX *frame = NULL;
+
+	frame = talloc_stackframe();
+
+	printf("starting posix_acl_shareroot test\n");
+
+	if (!torture_open_connection(&cli, 0)) {
+		TALLOC_FREE(frame);
+		return false;
+	}
+
+	smbXcli_conn_set_sockopt(cli->conn, sockops);
+
+	status = torture_setup_unix_extensions(cli);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to setup unix extensions\n");
+		goto out;
+	}
+
+	/* Get the POSIX ACL on the root of the share. */
+	status = cli_posix_getacl(cli,
+				".",
+				frame,
+				&posix_acl_len,
+				&posix_acl);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_posix_getacl of '.' failed (%s)\n",
+			nt_errstr(status));
+		goto out;
+	}
+
+	if (posix_acl_len < 6 ||
+			SVAL(posix_acl,0) != SMB_POSIX_ACL_VERSION) {
+		printf("getfacl ., unknown POSIX acl version %u.\n",
+			(unsigned int)CVAL(posix_acl,0) );
+		goto out;
+        }
+
+	num_file_acls = SVAL(posix_acl,2);
+	num_dir_acls = SVAL(posix_acl,4);
+	expected_size = SMB_POSIX_ACL_HEADER_SIZE +
+				SMB_POSIX_ACL_ENTRY_SIZE*
+				(num_file_acls+num_dir_acls);
+
+	if (posix_acl_len != expected_size) {
+                printf("incorrect POSIX acl buffer size "
+			"(should be %u, was %u).\n",
+                        (unsigned int)expected_size,
+                        (unsigned int)posix_acl_len);
+		goto out;
+        }
+
+	/*
+	 * We don't need to know what the ACL's are
+	 * we just need to know we have at least 3
+	 * file entries (u,g,o).
+	 */
+
+	for (i = 0; i < num_file_acls; i++) {
+		unsigned char tagtype =
+			CVAL(posix_acl,
+				SMB_POSIX_ACL_HEADER_SIZE+
+				(i*SMB_POSIX_ACL_ENTRY_SIZE));
+
+		switch(tagtype) {
+			case SMB_POSIX_ACL_USER_OBJ:
+				got_user = true;
+				break;
+			case SMB_POSIX_ACL_GROUP_OBJ:
+				got_group = true;
+				break;
+			case SMB_POSIX_ACL_OTHER:
+				got_other = true;
+				break;
+			default:
+				break;
+		}
+	}
+
+	if (!got_user) {
+		printf("Missing user entry\n");
+		goto out;
+	}
+
+	if (!got_group) {
+		printf("Missing group entry\n");
+		goto out;
+	}
+
+	if (!got_other) {
+		printf("Missing other entry\n");
+		goto out;
+	}
+
+	correct = true;
+
+  out:
+
+	if (!torture_close_connection(cli)) {
+		correct = false;
+	}
+
+	printf("finished posix acl shareroot test\n");
+	TALLOC_FREE(frame);
+
+	return correct;
+}
+
 static uint32_t open_attrs_table[] = {
 		FILE_ATTRIBUTE_NORMAL,
 		FILE_ATTRIBUTE_ARCHIVE,
@@ -13507,6 +13630,10 @@ static struct {
 	{
 		.name  = "POSIX-ACL-OPLOCK",
 		.fn    = run_posix_acl_oplock_test,
+	},
+	{
+		.name  = "POSIX-ACL-SHAREROOT",
+		.fn    = run_posix_acl_shareroot_test,
 	},
 	{
 		.name  = "WINDOWS-BAD-SYMLINK",

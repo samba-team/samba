@@ -161,6 +161,7 @@ posix_tests = ["POSIX", "POSIX-APPEND", "POSIX-SYMLINK-ACL", "POSIX-SYMLINK-EA",
                "POSIX-STREAM-DELETE", "WINDOWS-BAD-SYMLINK", "POSIX-MKDIR",
                "POSIX-BLOCKING-LOCK",
                "POSIX-ACL-OPLOCK",
+               "POSIX-ACL-SHAREROOT",
               ]
 
 for t in posix_tests:
