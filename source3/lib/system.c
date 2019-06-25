@@ -349,6 +349,12 @@ void update_stat_ex_itime(struct stat_ex *dst,
 	dst->st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_ITIME;
 }
 
+void update_stat_ex_file_id(struct stat_ex *dst, uint64_t file_id)
+{
+	dst->st_ex_file_id = file_id;
+	dst->st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_FILE_ID;
+}
+
 void init_stat_ex_from_stat (struct stat_ex *dst,
 			    const struct stat *src,
 			    bool fake_dir_create_times)
