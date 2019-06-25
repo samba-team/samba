@@ -490,11 +490,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_DRSUAPI',
     public_deps='dcerpc-binding NDR_DRSUAPI'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_POLICYAGENT',
-    source='gen_ndr/ndr_policyagent_c.c',
-    public_deps='dcerpc-binding NDR_POLICYAGENT'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_UNIXINFO',
     source='gen_ndr/ndr_unixinfo_c.c',
     public_deps='dcerpc-binding NDR_UNIXINFO'
