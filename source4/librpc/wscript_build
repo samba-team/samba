@@ -258,7 +258,7 @@ bld.SAMBA_PYTHON('python_witness',
 
 bld.SAMBA_PYTHON('python_dcerpc_nbt',
         source='../../librpc/gen_ndr/py_nbt.c',
-        deps='ndr_nbt RPC_NDR_NBT %s %s' % (pytalloc_util, pyrpc_util),
+        deps='ndr_nbt %s %s' % (pytalloc_util, pyrpc_util),
         realname='samba/dcerpc/nbt.so',
         cflags_end=gen_cflags
         )

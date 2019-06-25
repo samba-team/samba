@@ -505,11 +505,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_WINSPOOL',
     public_deps='dcerpc-binding NDR_WINSPOOL'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_NBT',
-    source='gen_ndr/ndr_nbt_c.c',
-    public_deps='dcerpc-binding ndr_nbt'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_WKSSVC',
     source='gen_ndr/ndr_wkssvc_c.c',
     public_deps='dcerpc-binding ndr-standard'
