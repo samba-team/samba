@@ -634,7 +634,7 @@ def build(bld):
                         target='utils/smnotify/smnotify.h',
                         rule='rpcgen -h ${SRC} > ${TGT}')
 
-    xdr_buf_hack = 'sed -e "s@^\([ \t]*register int32_t \*buf\);@\\1 = buf;@"'
+    xdr_buf_hack = 'grep -Fv "register int32_t *buf;"'
 
     bld.SAMBA_GENERATOR('ctdb-smnotify-x',
                         source='utils/smnotify/smnotify.x',
