@@ -4601,7 +4601,6 @@ static char *store_file_unix_basic(connection_struct *conn,
 				files_struct *fsp,
 				const SMB_STRUCT_STAT *psbuf)
 {
-	uint64_t file_index = get_FileIndex(conn, psbuf);
 	dev_t devno;
 
 	DEBUG(10,("store_file_unix_basic: SMB_QUERY_FILE_UNIX_BASIC\n"));
@@ -4643,7 +4642,7 @@ static char *store_file_unix_basic(connection_struct *conn,
 	SIVAL(pdata,4,0);
 	pdata += 8;
 
-	SINO_T_VAL(pdata,0,(SMB_INO_T)file_index);   /* inode number */
+	SINO_T_VAL(pdata, 0, psbuf->st_ex_ino);   /* inode number */
 	pdata += 8;
 
 	SIVAL(pdata,0, unix_perms_to_wire(psbuf->st_ex_mode));     /* Standard UNIX file permissions */
