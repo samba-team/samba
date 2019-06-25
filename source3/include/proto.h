@@ -220,6 +220,7 @@ ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *f
 int sys_fcntl_ptr(int fd, int cmd, void *arg);
 int sys_fcntl_long(int fd, int cmd, long arg);
 void update_stat_ex_mtime(struct stat_ex *dst, struct timespec write_ts);
+void update_stat_ex_itime(struct stat_ex *dst, struct timespec itime);
 void update_stat_ex_create_time(struct stat_ex *dst, struct timespec create_time);
 int sys_stat(const char *fname, SMB_STRUCT_STAT *sbuf,
 	     bool fake_dir_create_times);

@@ -342,6 +342,13 @@ void update_stat_ex_create_time(struct stat_ex *dst,
 	dst->st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_BTIME;
 }
 
+void update_stat_ex_itime(struct stat_ex *dst,
+			  struct timespec itime)
+{
+	dst->st_ex_itime = itime;
+	dst->st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_ITIME;
+}
+
 void init_stat_ex_from_stat (struct stat_ex *dst,
 			    const struct stat *src,
 			    bool fake_dir_create_times)
