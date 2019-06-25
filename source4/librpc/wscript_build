@@ -122,7 +122,6 @@ bld.SAMBA_SUBSYSTEM('ndr-table',
                     NDR_PREG
                     NDR_BKUPBLOBS
                     NDR_FSCC
-                    NDR_FRSBLOBS
                     NDR_CLUSAPI
                     NDR_WINSPOOL
                     NDR_CAB

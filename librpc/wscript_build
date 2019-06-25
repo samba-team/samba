@@ -95,11 +95,6 @@ bld.SAMBA_SUBSYSTEM('NDR_FSCC',
 	public_deps='ndr'
 	)
 
-bld.SAMBA_SUBSYSTEM('NDR_FRSBLOBS',
-	source='gen_ndr/ndr_frsblobs.c',
-	public_deps='ndr'
-	)
-
 bld.SAMBA_SUBSYSTEM('NDR_POLICYAGENT',
     source='gen_ndr/ndr_policyagent.c',
     public_deps='ndr'
