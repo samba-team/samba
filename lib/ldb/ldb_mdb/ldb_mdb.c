@@ -882,10 +882,10 @@ static int lmdb_open_env(TALLOC_CTX *mem_ctx,
 			 MDB_env **env,
 			 struct ldb_context *ldb,
 			 const char *path,
+			 const size_t env_map_size,
 			 unsigned int flags)
 {
 	int ret;
-	const size_t mmap_size = 8LL * GIGABYTE;
 	unsigned int mdb_flags = MDB_NOSUBDIR|MDB_NOTLS;
 	/*
 	 * MDB_NOSUBDIR implies there is a separate file called path and a
@@ -930,20 +930,19 @@ static int lmdb_open_env(TALLOC_CTX *mem_ctx,
 		return ldb_mdb_err_map(ret);
 	}
 
-	/*
-	 * Currently we set a 8Gb maximum database size
-	 * via the constant mmap_size above
-	 */
-	ret = mdb_env_set_mapsize(*env, mmap_size);
-	if (ret != 0) {
-		ldb_asprintf_errstring(
-			ldb,
-			"Could not set MDB mmap() size to %llu on %s: %s\n",
-			(unsigned long long)(mmap_size),
-			path,
-			mdb_strerror(ret));
-		TALLOC_FREE(w);
-		return ldb_mdb_err_map(ret);
+	if (env_map_size > 0) {
+		ret = mdb_env_set_mapsize(*env, env_map_size);
+		if (ret != 0) {
+			ldb_asprintf_errstring(
+				ldb,
+				"Could not set MDB mmap() size to %llu "
+				"on %s: %s\n",
+				(unsigned long long)(env_map_size),
+				path,
+				mdb_strerror(ret));
+			TALLOC_FREE(w);
+			return ldb_mdb_err_map(ret);
+		}
 	}
 
 	mdb_env_set_maxreaders(*env, 100000);
@@ -962,6 +961,19 @@ static int lmdb_open_env(TALLOC_CTX *mem_ctx,
 				path, mdb_strerror(ret));
 		TALLOC_FREE(w);
 		return ldb_mdb_err_map(ret);
+	}
+
+	{
+		MDB_envinfo stat = {0};
+		ret = mdb_env_info (*env, &stat);
+		if (ret != 0) {
+			ldb_asprintf_errstring(
+				ldb,
+				"Could not get MDB environment stats %s: %s\n",
+				path,
+				mdb_strerror(ret));
+		return ldb_mdb_err_map(ret);
+		}
 	}
 
 	ret = mdb_env_get_fd(*env, &fd);
@@ -1010,6 +1022,7 @@ static int lmdb_open_env(TALLOC_CTX *mem_ctx,
 static int lmdb_pvt_open(struct lmdb_private *lmdb,
 			 struct ldb_context *ldb,
 			 const char *path,
+			 const size_t env_map_size,
 			 unsigned int flags)
 {
 	int ret;
@@ -1022,7 +1035,7 @@ static int lmdb_pvt_open(struct lmdb_private *lmdb,
 		}
 	}
 
-	ret = lmdb_open_env(lmdb, &lmdb->env, ldb, path, flags);
+	ret = lmdb_open_env(lmdb, &lmdb->env, ldb, path, env_map_size, flags);
 	if (ret != 0) {
 		return ret;
 	}
@@ -1053,6 +1066,7 @@ int lmdb_connect(struct ldb_context *ldb,
 	struct lmdb_private *lmdb = NULL;
 	struct ldb_kv_private *ldb_kv = NULL;
 	int ret;
+	size_t env_map_size = 0;
 
 	/*
 	 * We hold locks, so we must use a private event context
@@ -1080,7 +1094,15 @@ int lmdb_connect(struct ldb_context *ldb,
 	lmdb->ldb = ldb;
 	ldb_kv->kv_ops = &lmdb_key_value_ops;
 
-	ret = lmdb_pvt_open(lmdb, ldb, path, flags);
+	{
+		const char *size = ldb_options_find(
+			ldb, ldb->options, "lmdb_env_size");
+		if (size != NULL) {
+			env_map_size = strtoull(size, NULL, 0);
+		}
+	}
+
+	ret = lmdb_pvt_open(lmdb, ldb, path, env_map_size, flags);
 	if (ret != LDB_SUCCESS) {
 		TALLOC_FREE(ldb_kv);
 		return ret;
