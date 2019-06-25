@@ -774,18 +774,24 @@ def make_smbconf(smbconf, hostname, domain, realm, targetdir,
         lp.set("binddns dir", global_settings["binddns dir"])
 
     if eadb:
-        if use_ntvfs and not lp.get("posix:eadb"):
+        if use_ntvfs:
             if targetdir is not None:
                 privdir = os.path.join(targetdir, "private")
-            else:
+                lp.set("posix:eadb",
+                       os.path.abspath(os.path.join(privdir, "eadb.tdb")))
+            elif not lp.get("posix:eadb"):
                 privdir = lp.get("private dir")
-            lp.set("posix:eadb", os.path.abspath(os.path.join(privdir, "eadb.tdb")))
-        elif not use_ntvfs and not lp.get("xattr_tdb:file"):
+                lp.set("posix:eadb",
+                       os.path.abspath(os.path.join(privdir, "eadb.tdb")))
+        else:
             if targetdir is not None:
                 statedir = os.path.join(targetdir, "state")
-            else:
+                lp.set("xattr_tdb:file",
+                       os.path.abspath(os.path.join(statedir, "xattr.tdb")))
+            elif not lp.get("xattr_tdb:file"):
                 statedir = lp.get("state directory")
-            lp.set("xattr_tdb:file", os.path.abspath(os.path.join(statedir, "xattr.tdb")))
+                lp.set("xattr_tdb:file",
+                       os.path.abspath(os.path.join(statedir, "xattr.tdb")))
 
     shares = {}
     if serverrole == "active directory domain controller":
