@@ -562,11 +562,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_REMACT',
     public_deps='dcerpc-binding NDR_REMACT'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_WZCSVC',
-    source='gen_ndr/ndr_wzcsvc_c.c',
-    public_deps='dcerpc-binding NDR_WZCSVC'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_W32TIME',
     source='gen_ndr/ndr_w32time_c.c',
     public_deps='dcerpc-binding NDR_W32TIME'
