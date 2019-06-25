@@ -537,11 +537,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_DSSETUP',
     public_deps='dcerpc-binding NDR_DSSETUP'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_MSGSVC',
-    source='gen_ndr/ndr_msgsvc_c.c',
-    public_deps='dcerpc-binding NDR_MSGSVC'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_WINREG',
     source='gen_ndr/ndr_winreg_c.c',
     public_deps='dcerpc-binding ndr-standard'
