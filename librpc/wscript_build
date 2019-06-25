@@ -577,11 +577,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_NETLOGON',
     public_deps='ndr-standard tevent'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_KEYSVC',
-    source='gen_ndr/ndr_keysvc_c.c',
-    public_deps='dcerpc-binding NDR_KEYSVC'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_BACKUPKEY',
     source='gen_ndr/ndr_backupkey_c.c',
     public_deps='dcerpc-binding NDR_BACKUPKEY'
