@@ -488,12 +488,18 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 	ZERO_STRUCT(dosattrib);
 	ZERO_STRUCT(blob);
 
-	dosattrib.version = 3;
-	dosattrib.info.info3.valid_flags = XATTR_DOSINFO_ATTRIB|
+	dosattrib.version = 4;
+	dosattrib.info.info4.valid_flags = XATTR_DOSINFO_ATTRIB |
 					XATTR_DOSINFO_CREATE_TIME;
-	dosattrib.info.info3.attrib = dosmode;
-	dosattrib.info.info3.create_time = unix_timespec_to_nt_time(
+	dosattrib.info.info4.attrib = dosmode;
+	dosattrib.info.info4.create_time = unix_timespec_to_nt_time(
 				smb_fname->st.st_ex_btime);
+
+	if (!(smb_fname->st.st_ex_iflags & ST_EX_IFLAG_CALCULATED_ITIME)) {
+		dosattrib.info.info4.valid_flags |= XATTR_DOSINFO_ITIME;
+		dosattrib.info.info4.itime = unix_timespec_to_nt_time(
+			smb_fname->st.st_ex_itime);
+	}
 
 	DEBUG(10,("set_ea_dos_attributes: set attribute 0x%x, btime = %s on file %s\n",
 		(unsigned int)dosmode,
