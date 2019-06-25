@@ -567,11 +567,6 @@ bld.SAMBA_SUBSYSTEM('RPC_NDR_W32TIME',
     public_deps='dcerpc-binding NDR_W32TIME'
     )
 
-bld.SAMBA_SUBSYSTEM('RPC_NDR_SCERPC',
-    source='gen_ndr/ndr_scerpc_c.c',
-    public_deps='dcerpc-binding NDR_SCERPC'
-    )
-
 bld.SAMBA_SUBSYSTEM('RPC_NDR_NTSVCS',
     source='gen_ndr/ndr_ntsvcs_c.c',
     public_deps='dcerpc-binding ndr-standard'
