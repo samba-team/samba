@@ -856,7 +856,7 @@ static int smbacl4_substitute_simple(
 
 		if (!(ace->flags & SMB_ACE4_ID_SPECIAL) &&
 		    ace->aceFlags & SMB_ACE4_IDENTIFIER_GROUP &&
-		    ace->who.uid == ownerGID &&
+		    ace->who.gid == ownerGID &&
 		    !(ace->aceFlags & SMB_ACE4_INHERIT_ONLY_ACE) &&
 		    !(ace->aceFlags & SMB_ACE4_FILE_INHERIT_ACE) &&
 		    !(ace->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)) {
