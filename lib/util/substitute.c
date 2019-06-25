@@ -52,14 +52,14 @@ static void string_sub2(char *s,const char *pattern, const char *insert, size_t 
 			bool allow_trailing_dollar)
 {
 	char *p;
-	ssize_t ls, lp, li, i;
+	size_t ls, lp, li, i;
 
 	if (!insert || !pattern || !*pattern || !s)
 		return;
 
-	ls = (ssize_t)strlen(s);
-	lp = (ssize_t)strlen(pattern);
-	li = (ssize_t)strlen(insert);
+	ls = strlen(s);
+	lp = strlen(pattern);
+	li = strlen(insert);
 
 	if (len == 0)
 		len = ls + 1; /* len is number of *bytes* */
@@ -176,14 +176,14 @@ _PUBLIC_ char *string_sub_talloc(TALLOC_CTX *mem_ctx, const char *s,
 _PUBLIC_ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
 	char *p;
-	ssize_t ls,lp,li;
+	size_t ls,lp,li;
 
 	if (!insert || !pattern || !s)
 		return;
 
-	ls = (ssize_t)strlen(s);
-	lp = (ssize_t)strlen(pattern);
-	li = (ssize_t)strlen(insert);
+	ls = strlen(s);
+	lp = strlen(pattern);
+	li = strlen(insert);
 
 	if (!*pattern)
 		return;
