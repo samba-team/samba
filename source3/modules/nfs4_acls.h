@@ -143,6 +143,8 @@ uint16_t smbacl4_get_controlflags(struct SMB4ACL_T *theacl);
 
 bool smbacl4_set_controlflags(struct SMB4ACL_T *theacl, uint16_t controlflags);
 
+bool nfs_ace_is_inherit(SMB_ACE4PROP_T *ace);
+
 NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 	const struct smbacl4_vfs_params *pparams,
 	uint32_t security_info,
