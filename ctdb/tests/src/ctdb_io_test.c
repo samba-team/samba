@@ -86,10 +86,10 @@ static void test1(void)
 
 	pkt_size = sizeof(uint32_t) + test1_req_len;
 	ret = write(fd, &pkt_size, sizeof(pkt_size));
-	assert(ret == sizeof(pkt_size));
+	assert(ret != -1 && (size_t)ret == sizeof(pkt_size));
 
 	ret = write(fd, test1_req, test1_req_len);
-	assert(ret == test1_req_len);
+	assert(ret != -1 && (size_t)ret == test1_req_len);
 
 	tevent_loop_once(ctdb->ev);
 
@@ -132,23 +132,23 @@ static void test2(void)
 
 	pkt_size = sizeof(uint32_t) + test2_req_len[0];
 	ret = write(fd, &pkt_size, sizeof(pkt_size));
-	assert(ret == sizeof(pkt_size));
+	assert(ret != -1 && (size_t)ret == sizeof(pkt_size));
 
 	ret = write(fd, req, test2_req_len[0]);
-	assert(ret == test2_req_len[0]);
+	assert(ret != -1 && (size_t)ret == test2_req_len[0]);
 
 	/*
 	 * request 1
 	 */
 	pkt_size = sizeof(uint32_t) + test2_req_len[1];
 	ret = write(fd, &pkt_size, sizeof(pkt_size));
-	assert(ret == sizeof(pkt_size));
+	assert(ret != -1 && (size_t)ret == sizeof(pkt_size));
 
 	/*
 	 * Omit the last byte to avoid buffer processing.
 	 */
 	ret = write(fd, req, test2_req_len[1] - 1);
-	assert(ret == test2_req_len[1] - 1);
+	assert(ret != -1 && (size_t)ret == test2_req_len[1] - 1);
 
 	tevent_loop_once(ctdb->ev);
 
@@ -156,17 +156,17 @@ static void test2(void)
 	 * Write the missing byte now.
 	 */
 	ret = write(fd, &req[test2_req_len[1] - 1], 1);
-	assert(ret == 1);
+	assert(ret != -1 && (size_t)ret == 1);
 
 	/*
 	 * request 2
 	 */
 	pkt_size = sizeof(uint32_t) + test2_req_len[2];
 	ret = write(fd, &pkt_size, sizeof(pkt_size));
-	assert(ret == sizeof(pkt_size));
+	assert(ret != -1 && (size_t)ret == sizeof(pkt_size));
 
 	ret = write(fd, req, test2_req_len[2]);
-	assert(ret == test2_req_len[2]);
+	assert(ret != -1 && (size_t)ret == test2_req_len[2]);
 
 	tevent_loop_once(ctdb->ev);
 	tevent_loop_once(ctdb->ev);
@@ -206,19 +206,19 @@ static void test3(void)
 	pkt_size = sizeof(uint32_t) + req_len;
 
 	ret = write(fd, &pkt_size, sizeof(pkt_size));
-	assert(ret == sizeof(pkt_size));
+	assert(ret != -1 && (size_t)ret == sizeof(pkt_size));
 
 	ret = write(fd, request, req_len);
-	assert(ret == req_len);
+	assert(ret != -1 && (size_t)ret == req_len);
 
 	/* writing second, incomplete packet */
 	pkt_size = sizeof(uint32_t) + req_len;
 
 	ret = write(fd, &pkt_size, sizeof(pkt_size));
-	assert(ret == sizeof(pkt_size));
+	assert(ret != -1 && (size_t)ret == sizeof(pkt_size));
 
 	ret = write(fd, request, req_len >> 1);
-	assert(ret == req_len >> 1);
+	assert(ret != -1 && (size_t)ret == req_len >> 1);
 
 	/* process...only 1st packet can be processed */
 	tevent_loop_once(ctdb->ev);
@@ -228,7 +228,7 @@ static void test3(void)
 
 	/* writing another few bytes of the still incomplete packet */
 	ret = write(fd, request, (req_len >> 1) - 1);
-	assert(ret == (req_len >> 1) - 1);
+	assert(ret != -1 && (size_t)ret == (req_len >> 1) - 1);
 
 	/*
 	 * the packet is still incomplete and connot be processed
@@ -266,12 +266,12 @@ static void test4(void)
 	pkt_size = sizeof(uint32_t) + req_len;
 
 	ret = write(fd, &pkt_size, sizeof(pkt_size));
-	assert(ret == sizeof(pkt_size));
+	assert(ret != -1 && (size_t)ret == sizeof(pkt_size));
 
 	half_buf_size = queue->buffer_size >> 1;
 
 	ret = write(fd, request, req_len - half_buf_size);
-	assert(ret == req_len - half_buf_size);
+	assert(ret != -1 && (size_t)ret == req_len - half_buf_size);
 
 	/*
 	 * process...
@@ -289,7 +289,7 @@ static void test4(void)
 
 	/* writing remaining data */
 	ret = write(fd, request, half_buf_size);
-	assert(ret == half_buf_size);
+	assert(ret != -1 && (size_t)ret == half_buf_size);
 
 	/* process... */
 	tevent_loop_once(ctdb->ev);
@@ -306,10 +306,10 @@ static void test4(void)
 	pkt_size = sizeof(uint32_t) + half_buf_size;
 
 	ret = write(fd, &pkt_size, sizeof(pkt_size));
-	assert(ret == sizeof(pkt_size));
+	assert(ret != -1 && (size_t)ret == sizeof(pkt_size));
 
 	ret = write(fd, request, half_buf_size);
-	assert(ret == half_buf_size);
+	assert(ret != -1 && (size_t)ret == half_buf_size);
 
 	/* process... */
 	tevent_loop_once(ctdb->ev);
