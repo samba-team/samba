@@ -400,7 +400,7 @@ static int preopen_open(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	if (flags != O_RDONLY) {
+	if ((flags & O_ACCMODE) != O_RDONLY) {
 		return res;
 	}
 
