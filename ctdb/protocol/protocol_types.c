@@ -1640,7 +1640,8 @@ int ctdb_rec_buffer_traverse(struct ctdb_rec_buffer *recbuf,
 	TDB_DATA key, data;
 	uint32_t reqid;
 	size_t offset, reclen;
-	int ret = 0, i;
+	unsigned int i;
+	int ret = 0;
 
 	offset = 0;
 	for (i=0; i<recbuf->count; i++) {
