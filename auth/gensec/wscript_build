@@ -19,7 +19,7 @@ bld.SAMBA_MODULE('gensec_schannel',
 	source='schannel.c',
 	subsystem='gensec',
 	init_function='gensec_schannel_init',
-	deps='COMMON_SCHANNEL NDR_SCHANNEL samba-credentials auth_session'
+	deps='COMMON_SCHANNEL NDR_SCHANNEL samba-credentials auth_session GNUTLS_HELPERS'
 	)
 
 bld.SAMBA_MODULE('gensec_ncalrpc',

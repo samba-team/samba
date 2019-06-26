@@ -35,7 +35,7 @@ struct auth_session_info;
 #include "../auth/ntlmssp/ntlmssp_ndr.h"
 #include "../nsswitch/libwbclient/wbclient.h"
 
-#include "libcli/util/gnutls_error.h"
+#include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 

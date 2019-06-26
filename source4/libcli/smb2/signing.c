@@ -26,7 +26,7 @@
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
-#include "libcli/util/gnutls_error.h"
+#include "lib/crypto/gnutls_helpers.h"
 
 /*
   sign an outgoing message

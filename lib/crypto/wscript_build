@@ -5,6 +5,10 @@ extra_deps = ''
 if bld.CONFIG_SET("HAVE_AESNI_INTEL"):
         extra_deps += ' aesni-intel'
 
+bld.SAMBA_SUBSYSTEM('GNUTLS_HELPERS',
+                    source='gnutls_error.c',
+                    deps='gnutls samba-errors');
+
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
         source='''md4.c arcfour.c
         aes.c rijndael-alg-fst.c aes_cmac_128.c aes_ccm_128.c aes_gcm_128.c

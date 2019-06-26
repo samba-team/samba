@@ -16,7 +16,7 @@
  */
 
 #include "includes.h"
-#include "gnutls_error.h"
+#include "gnutls_helpers.h"
 
 #include <gnutls/gnutls.h>
 

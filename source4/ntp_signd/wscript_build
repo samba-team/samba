@@ -4,7 +4,7 @@ bld.SAMBA_MODULE('service_ntp_signd',
 	source='ntp_signd.c',
 	subsystem='service',
 	init_function='server_service_ntp_signd_init',
-	deps='samdb NDR_NTP_SIGND LIBTSOCKET LIBSAMBA_TSOCKET',
+	deps='samdb NDR_NTP_SIGND LIBTSOCKET LIBSAMBA_TSOCKET GNUTLS_HELPERS',
 	internal_module=False,
 	enabled=bld.AD_DC_BUILD_IS_ENABLED()
 	)

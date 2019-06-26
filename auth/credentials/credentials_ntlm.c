@@ -28,7 +28,7 @@
 #include "auth/credentials/credentials.h"
 #include "auth/credentials/credentials_internal.h"
 
-#include "libcli/util/gnutls_error.h"
+#include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 

@@ -32,7 +32,7 @@
 #include "rpc_server/samr/proto.h"
 #include "auth/auth_sam.h"
 
-#include "libcli/util/gnutls_error.h"
+#include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 

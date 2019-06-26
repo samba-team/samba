@@ -36,7 +36,7 @@
 #include "lib/crypto/crypto.h"
 #include "libds/common/roles.h"
 
-#include "libcli/util/gnutls_error.h"
+#include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 

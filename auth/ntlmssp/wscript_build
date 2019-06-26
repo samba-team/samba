@@ -15,6 +15,7 @@ bld.SAMBA_SUBSYSTEM('NTLMSSP_COMMON',
 			 samba-credentials
 			 wbclient
 			 z
+			 GNUTLS_HELPERS
 			 ''')
 
 bld.SAMBA_MODULE('gensec_ntlmssp',

@@ -87,7 +87,7 @@ bld.SAMBA_MODULE('dcesrv_samr',
 	autoproto='samr/proto.h',
 	subsystem='dcerpc_server',
 	init_function='dcerpc_server_samr_init',
-	deps='samdb DCERPC_COMMON ndr-standard auth4_sam'
+	deps='samdb DCERPC_COMMON ndr-standard auth4_sam GNUTLS_HELPERS'
 	)
 
 

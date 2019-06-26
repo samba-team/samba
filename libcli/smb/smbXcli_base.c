@@ -38,7 +38,7 @@
 #include "lib/crypto/aes_ccm_128.h"
 #include "lib/crypto/aes_gcm_128.h"
 
-#include "libcli/util/gnutls_error.h"
+#include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 

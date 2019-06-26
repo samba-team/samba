@@ -15,8 +15,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _GNUTLS_ERROR_H
-#define _GNUTLS_ERROR_H
+#ifndef _GNUTLS_HELPERS_H
+#define _GNUTLS_HELPERS_H
 
 #include "ntstatus.h"
 
@@ -28,4 +28,4 @@ NTSTATUS _gnutls_error_to_ntstatus(int gnutls_rc,
 	_gnutls_error_to_ntstatus(gnutls_rc, blocked_status, \
 				  __FUNCTION__, __location__)
 
-#endif /* _GNUTLS_ERROR_H */
+#endif /* _GNUTLS_HELPERS_H */

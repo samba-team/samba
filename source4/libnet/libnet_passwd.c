@@ -24,7 +24,7 @@
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 
-#include "libcli/util/gnutls_error.h"
+#include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
