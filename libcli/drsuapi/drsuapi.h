@@ -19,13 +19,6 @@
    
 */
 
-WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
-				       const DATA_BLOB *gensec_skey,
-				       bool rid_crypt,
-				       uint32_t rid,
-				       DATA_BLOB *in,
-				       DATA_BLOB *out);
-
 WERROR drsuapi_decrypt_attribute(TALLOC_CTX *mem_ctx, 
 				 const DATA_BLOB *gensec_skey,
 				 uint32_t rid,

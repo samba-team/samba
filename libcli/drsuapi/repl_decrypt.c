@@ -35,12 +35,12 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
-WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
-				       const DATA_BLOB *gensec_skey,
-				       bool rid_crypt,
-				       uint32_t rid,
-				       DATA_BLOB *in,
-				       DATA_BLOB *out)
+static WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
+					      const DATA_BLOB *gensec_skey,
+					      bool rid_crypt,
+					      uint32_t rid,
+					      DATA_BLOB *in,
+					      DATA_BLOB *out)
 {
 	DATA_BLOB confounder;
 	DATA_BLOB enc_buffer;
