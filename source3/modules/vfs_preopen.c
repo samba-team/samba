@@ -57,6 +57,7 @@ struct preopen_state {
 static void preopen_helper_destroy(struct preopen_helper *c)
 {
 	int status;
+	TALLOC_FREE(c->fde);
 	close(c->fd);
 	c->fd = -1;
 	kill(c->pid, SIGKILL);
