@@ -3811,6 +3811,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		fsp->initial_delete_on_close = True;
 	}
 
+	if (info == FILE_WAS_CREATED) {
+		smb_fname->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_ITIME;
+	}
+
 	if (info != FILE_WAS_OPENED) {
 		/* Overwritten files should be initially set as archive */
 		if ((info == FILE_WAS_OVERWRITTEN && lp_map_archive(SNUM(conn))) ||
@@ -3957,6 +3961,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			  smb_fname_str_dbg(smb_dname)));
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
+
+	smb_dname->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_ITIME;
 
 	if (lp_store_dos_attributes(SNUM(conn))) {
 		if (!posix_open) {
