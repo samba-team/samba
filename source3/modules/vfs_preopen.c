@@ -274,6 +274,7 @@ static NTSTATUS preopen_init_helpers(TALLOC_CTX *mem_ctx, size_t to_read,
 	result->queue_max = queue_max;
 	result->template_fname = NULL;
 	result->fnum_sent = 0;
+	result->fnum_queue_end = 0;
 
 	for (i=0; i<num_helpers; i++) {
 		result->helpers[i].state = result;
