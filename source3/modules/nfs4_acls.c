@@ -21,6 +21,7 @@
 #include "smbd/smbd.h"
 #include "nfs4_acls.h"
 #include "librpc/gen_ndr/ndr_security.h"
+#include "librpc/gen_ndr/idmap.h"
 #include "../libcli/security/dom_sid.h"
 #include "../libcli/security/security.h"
 #include "dbwrap/dbwrap.h"
@@ -719,14 +720,21 @@ static bool smbacl4_fill_ace4(
 			return false;
 		}
 	} else {
-		uid_t uid;
-		gid_t gid;
+		struct unixid unixid;
+		bool ok;
 
-		if (sid_to_gid(&ace_nt->trustee, &gid)) {
+		ok = sids_to_unixids(&ace_nt->trustee, 1, &unixid);
+		if (!ok) {
+			DBG_WARNING("Could not convert %s to uid or gid.\n",
+				    dom_sid_str_buf(&ace_nt->trustee, &buf));
+			return false;
+		}
+
+		if (unixid.type == ID_TYPE_GID || unixid.type == ID_TYPE_BOTH) {
 			ace_v4->aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
-			ace_v4->who.gid = gid;
-		} else if (sid_to_uid(&ace_nt->trustee, &uid)) {
-			ace_v4->who.uid = uid;
+			ace_v4->who.gid = unixid.id;
+		} else if (unixid.type == ID_TYPE_UID) {
+			ace_v4->who.uid = unixid.id;
 		} else if (dom_sid_compare_domain(&ace_nt->trustee,
 						  &global_sid_Unix_NFS) == 0) {
 			return false;
