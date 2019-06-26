@@ -6,7 +6,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        ntsvcs.idl remact.idl unixinfo.idl
                        browser.idl dfs.idl dssetup.idl frsapi.idl
                        rot.idl spoolss.idl w32time.idl
-                       dnsserver.idl echo.idl frsrpc.idl lsa.idl
+                       dnsserver.idl echo.idl lsa.idl
                        oxidresolver.idl samr.idl srvsvc.idl winreg.idl
                        mgmt.idl netlogon.idl
                        svcctl.idl wkssvc.idl eventlog6.idl backupkey.idl
@@ -29,6 +29,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     dsbackup.idl
                     efs.idl
                     frstrans.idl
+                    frsrpc.idl
                     keysvc.idl
                     mdssvc.idl
                     msgsvc.idl
