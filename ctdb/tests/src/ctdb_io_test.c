@@ -113,7 +113,8 @@ static void test2_callback(uint8_t *data, size_t length, void *private_data)
 static void test2(void)
 {
 	struct ctdb_context *ctdb;
-	int fd, ret, i;
+	int fd, ret;
+	size_t i;
 	uint32_t pkt_size;
 	char req[1024] = { 0 };
 
