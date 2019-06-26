@@ -255,6 +255,13 @@ bool smbacl4_set_controlflags(struct SMB4ACL_T *acl, uint16_t controlflags)
 	return true;
 }
 
+bool nfs_ace_is_inherit(SMB_ACE4PROP_T *ace)
+{
+	return ace->aceFlags & (SMB_ACE4_INHERIT_ONLY_ACE|
+				SMB_ACE4_FILE_INHERIT_ACE|
+				SMB_ACE4_DIRECTORY_INHERIT_ACE);
+}
+
 static int smbacl4_GetFileOwner(struct connection_struct *conn,
 				const struct smb_filename *smb_fname,
 				SMB_STRUCT_STAT *psbuf)
@@ -846,9 +853,7 @@ static int smbacl4_substitute_simple(
 		if (!(ace->flags & SMB_ACE4_ID_SPECIAL) &&
 		    !(ace->aceFlags & SMB_ACE4_IDENTIFIER_GROUP) &&
 		    ace->who.uid == ownerUID &&
-		    !(ace->aceFlags & SMB_ACE4_INHERIT_ONLY_ACE) &&
-		    !(ace->aceFlags & SMB_ACE4_FILE_INHERIT_ACE) &&
-		    !(ace->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)) {
+		    !nfs_ace_is_inherit(ace)) {
 			ace->flags |= SMB_ACE4_ID_SPECIAL;
 			ace->who.special_id = SMB_ACE4_WHO_OWNER;
 			DEBUG(10,("replaced with special owner ace\n"));
@@ -857,9 +862,7 @@ static int smbacl4_substitute_simple(
 		if (!(ace->flags & SMB_ACE4_ID_SPECIAL) &&
 		    ace->aceFlags & SMB_ACE4_IDENTIFIER_GROUP &&
 		    ace->who.gid == ownerGID &&
-		    !(ace->aceFlags & SMB_ACE4_INHERIT_ONLY_ACE) &&
-		    !(ace->aceFlags & SMB_ACE4_FILE_INHERIT_ACE) &&
-		    !(ace->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)) {
+		    !nfs_ace_is_inherit(ace)) {
 			ace->flags |= SMB_ACE4_ID_SPECIAL;
 			ace->who.special_id = SMB_ACE4_WHO_GROUP;
 			DEBUG(10,("replaced with special group ace\n"));
