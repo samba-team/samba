@@ -1021,8 +1021,11 @@ static void fetch_dos_mode_done(struct tevent_req *subreq)
 	uint32_t dfs_dosmode;
 	uint32_t dosmode;
 	struct timespec btime_ts = {0};
+	bool need_file_id = false;
+	uint64_t file_id;
 	off_t dosmode_off;
 	off_t btime_off;
+	off_t file_id_off;
 	NTSTATUS status;
 
 	status = dos_mode_at_recv(subreq, &dosmode);
@@ -1073,6 +1076,30 @@ static void fetch_dos_mode_done(struct tevent_req *subreq)
 	put_long_date_timespec(state->dir_fsp->conn->ts_res,
 			       (char *)state->entry_marshall_buf + btime_off,
 			       btime_ts);
+
+	switch (state->info_level) {
+	case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
+		file_id_off = 96;
+		need_file_id = true;
+		break;
+	case SMB_FIND_ID_FULL_DIRECTORY_INFO:
+		file_id_off = 72;
+		need_file_id = true;
+		break;
+	default:
+		break;
+	}
+
+	if (need_file_id) {
+		/*
+		 * File-ID might have been updated from calculated (based on
+		 * inode) to storage based, fetch via DOS attributes in
+		 * vfs_default.
+		 */
+		file_id = SMB_VFS_FS_FILE_ID(state->dir_fsp->conn,
+					     &state->smb_fname->st);
+		SBVAL(state->entry_marshall_buf, file_id_off, file_id);
+	}
 
 	tevent_req_done(req);
 	return;
