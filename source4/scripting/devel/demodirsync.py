@@ -28,6 +28,9 @@ creds = credopts.get_credentials(lp)
 
 opts = parser.parse_args()[0]
 
+if opts.host is None:
+    print("Usage: demodirsync.py --host HOST [-b BASE]")
+    sys.exit(1)
 
 def printdirsync(ctl):
         arr = ctl.split(':')

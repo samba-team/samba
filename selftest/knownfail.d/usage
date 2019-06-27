@@ -1,5 +1,4 @@
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_chgtdcpass.none.
-samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_demodirsync_py.none.
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_findprovisionusnranges.none.
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_rebuildextendeddn.none.
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_renamedc.none.
