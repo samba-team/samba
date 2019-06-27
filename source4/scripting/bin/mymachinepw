@@ -30,7 +30,8 @@ for o, v in optlist:
     if o == "-s":
         if not conf.load(v):
             print(v + " not found")
-            exit(1)
+            print("\nUsage: mymachinepw [-s SMBCONF]")
+            sys.exit(1)
         loaded = True
 
 if not loaded:
@@ -50,9 +51,11 @@ if not msg:
     print("Error:")
     print("Password for host[%s] not found in path[%s]." % (netbios, path))
     print("You may want to pass the smb.conf location via the -s option.")
-    exit(1)
+    print()
+    print("Usage: mymachinepw [-s SMBCONF]")
+    sys.exit(1)
 
 password=msg[0]['secret'][0]
 
 print(password)
-exit(0)
+sys.exit(0)
