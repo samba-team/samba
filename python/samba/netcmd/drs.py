@@ -47,6 +47,7 @@ from samba.uptodateness import (
     get_kcc_and_dsas,
 )
 from samba.compat import get_string
+from samba.samdb import get_default_backend_store
 
 def drsuapi_connect(ctx):
     '''make a DRSUAPI connection to the server'''
@@ -756,14 +757,21 @@ class cmd_drs_clone_dc_database(Command):
         Option("--targetdir", help="where to store provision (required)", type=str),
         Option("-q", "--quiet", help="Be quiet", action="store_true"),
         Option("--include-secrets", help="Also replicate secret values", action="store_true"),
-        Option("-v", "--verbose", help="Be verbose", action="store_true")
+        Option("--backend-store", type="choice", metavar="BACKENDSTORE",
+               choices=["tdb", "mdb"],
+               help="Specify the database backend to be used "
+                    "(default is %s)" % get_default_backend_store()),
+        Option("--backend-store-size", type="bytes", metavar="SIZE",
+               help="Specify the size of the backend database, currently" +
+                    "only supported by lmdb backends (default is 8 Gb).")
     ]
 
     takes_args = ["domain"]
 
     def run(self, domain, sambaopts=None, credopts=None,
             versionopts=None, server=None, targetdir=None,
-            quiet=False, verbose=False, include_secrets=False):
+            quiet=False, verbose=False, include_secrets=False,
+            backend_store=None, backend_store_size=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
 
@@ -774,7 +782,9 @@ class cmd_drs_clone_dc_database(Command):
 
         join_clone(logger=logger, server=server, creds=creds, lp=lp,
                    domain=domain, dns_backend='SAMBA_INTERNAL',
-                   targetdir=targetdir, include_secrets=include_secrets)
+                   targetdir=targetdir, include_secrets=include_secrets,
+                   backend_store=backend_store,
+                   backend_store_size=backend_store_size)
 
 
 class cmd_drs_uptodateness(Command):

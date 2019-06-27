@@ -1551,12 +1551,14 @@ def join_DC(logger=None, server=None, creds=None, lp=None, site=None, netbios_na
 
 def join_clone(logger=None, server=None, creds=None, lp=None,
                targetdir=None, domain=None, include_secrets=False,
-               dns_backend="NONE", backend_store=None):
+               dns_backend="NONE", backend_store=None,
+               backend_store_size=None):
     """Creates a local clone of a remote DC."""
     ctx = DCCloneContext(logger, server, creds, lp, targetdir=targetdir,
                          domain=domain, dns_backend=dns_backend,
                          include_secrets=include_secrets,
-                         backend_store=backend_store)
+                         backend_store=backend_store,
+                         backend_store_size=backend_store_size)
 
     lp.set("workgroup", ctx.domain_name)
     logger.info("workgroup is %s" % ctx.domain_name)
@@ -1629,11 +1631,13 @@ class DCCloneContext(DCJoinContext):
 
     def __init__(ctx, logger=None, server=None, creds=None, lp=None,
                  targetdir=None, domain=None, dns_backend=None,
-                 include_secrets=False, backend_store=None):
+                 include_secrets=False, backend_store=None,
+                 backend_store_size=None):
         super(DCCloneContext, ctx).__init__(logger, server, creds, lp,
                                             targetdir=targetdir, domain=domain,
                                             dns_backend=dns_backend,
-                                            backend_store=backend_store)
+                                            backend_store=backend_store,
+                                            backend_store_size=backend_store_size)
 
         # As we don't want to create or delete these DNs, we set them to None
         ctx.server_dn = None
