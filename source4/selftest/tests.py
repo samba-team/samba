@@ -647,6 +647,8 @@ planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.timecmd")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.join")
 planpythontestsuite("ad_dc_default",
                     "samba.tests.samba_tool.join_lmdb_size")
+planpythontestsuite("ad_dc_default",
+                    "samba.tests.samba_tool.drs_clone_dc_data_lmdb_size")
 
 planpythontestsuite("none", "samba.tests.samba_tool.visualize")
 
