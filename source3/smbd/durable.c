@@ -118,7 +118,7 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 	cookie.stat_info.st_ex_mtime = fsp->fsp_name->st.st_ex_mtime;
 	cookie.stat_info.st_ex_ctime = fsp->fsp_name->st.st_ex_ctime;
 	cookie.stat_info.st_ex_btime = fsp->fsp_name->st.st_ex_btime;
-	cookie.stat_info.st_ex_calculated_birthtime = fsp->fsp_name->st.st_ex_calculated_birthtime;
+	cookie.stat_info.st_ex_iflags = fsp->fsp_name->st.st_ex_iflags;
 	cookie.stat_info.st_ex_blksize = fsp->fsp_name->st.st_ex_blksize;
 	cookie.stat_info.st_ex_blocks = fsp->fsp_name->st.st_ex_blocks;
 	cookie.stat_info.st_ex_flags = fsp->fsp_name->st.st_ex_flags;
@@ -267,7 +267,7 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 	cookie.stat_info.st_ex_mtime = fsp->fsp_name->st.st_ex_mtime;
 	cookie.stat_info.st_ex_ctime = fsp->fsp_name->st.st_ex_ctime;
 	cookie.stat_info.st_ex_btime = fsp->fsp_name->st.st_ex_btime;
-	cookie.stat_info.st_ex_calculated_birthtime = fsp->fsp_name->st.st_ex_calculated_birthtime;
+	cookie.stat_info.st_ex_iflags = fsp->fsp_name->st.st_ex_iflags;
 	cookie.stat_info.st_ex_blksize = fsp->fsp_name->st.st_ex_blksize;
 	cookie.stat_info.st_ex_blocks = fsp->fsp_name->st.st_ex_blocks;
 	cookie.stat_info.st_ex_flags = fsp->fsp_name->st.st_ex_flags;
@@ -445,17 +445,15 @@ static bool vfs_default_durable_reconnect_check_stat(
 		return false;
 	}
 
-	if (cookie_st->st_ex_calculated_birthtime !=
-	    fsp_st->st_ex_calculated_birthtime)
-	{
+	if (cookie_st->st_ex_iflags != fsp_st->st_ex_iflags) {
 		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
 			  "stat_ex.%s differs: "
 			  "cookie:%llu != stat:%llu, "
 			  "denying durable reconnect\n",
 			  name,
 			  "st_ex_calculated_birthtime",
-			  (unsigned long long)cookie_st->st_ex_calculated_birthtime,
-			  (unsigned long long)fsp_st->st_ex_calculated_birthtime));
+			  (unsigned long long)cookie_st->st_ex_iflags,
+			  (unsigned long long)fsp_st->st_ex_iflags));
 		return false;
 	}
 

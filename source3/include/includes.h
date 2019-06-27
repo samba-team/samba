@@ -190,6 +190,9 @@ typedef uint64_t br_off;
 #define SOFF_T_R(p, ofs, v) (SIVAL(p,(ofs)+4,(v)&0xFFFFFFFF), SIVAL(p,ofs,(v)>>32))
 #define IVAL_TO_SMB_OFF_T(buf,off) ((off_t)(( ((uint64_t)(IVAL((buf),(off)))) & ((uint64_t)0xFFFFFFFF) )))
 
+/* Is birthtime real, or was it calculated ? */
+#define ST_EX_IFLAG_CALCULATED_BTIME		(1 << 0)
+
 /*
  * Type for stat structure.
  */
@@ -207,12 +210,12 @@ struct stat_ex {
 	struct timespec st_ex_mtime;
 	struct timespec st_ex_ctime;
 	struct timespec st_ex_btime; /* birthtime */
-	/* Is birthtime real, or was it calculated ? */
-	bool		st_ex_calculated_birthtime;
+
 	blksize_t	st_ex_blksize;
 	blkcnt_t	st_ex_blocks;
 
 	uint32_t	st_ex_flags;
+	uint32_t	st_ex_iflags;
 };
 
 typedef struct stat_ex SMB_STRUCT_STAT;

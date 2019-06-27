@@ -291,7 +291,7 @@ static void make_create_timespec(const struct stat *pst, struct stat_ex *dst,
 		dst->st_ex_btime.tv_nsec = 0;
 	}
 
-	dst->st_ex_calculated_birthtime = false;
+	dst->st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_BTIME;
 
 #if defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC_TV_NSEC)
 	dst->st_ex_btime = pst->st_birthtimespec;
@@ -303,7 +303,7 @@ static void make_create_timespec(const struct stat *pst, struct stat_ex *dst,
 	dst->st_ex_btime.tv_nsec = 0;
 #else
 	dst->st_ex_btime = calc_create_time_stat(pst);
-	dst->st_ex_calculated_birthtime = true;
+	dst->st_ex_iflags |= ST_EX_IFLAG_CALCULATED_BTIME;
 #endif
 
 	/* Deal with systems that don't initialize birthtime correctly.
@@ -311,7 +311,7 @@ static void make_create_timespec(const struct stat *pst, struct stat_ex *dst,
 	 */
 	if (null_timespec(dst->st_ex_btime)) {
 		dst->st_ex_btime = calc_create_time_stat(pst);
-		dst->st_ex_calculated_birthtime = true;
+		dst->st_ex_iflags |= ST_EX_IFLAG_CALCULATED_BTIME;
 	}
 }
 
@@ -327,7 +327,7 @@ void update_stat_ex_mtime(struct stat_ex *dst,
 	dst->st_ex_mtime = write_ts;
 
 	/* We may have to recalculate btime. */
-	if (dst->st_ex_calculated_birthtime) {
+	if (dst->st_ex_iflags & ST_EX_IFLAG_CALCULATED_BTIME) {
 		dst->st_ex_btime = calc_create_time_stat_ex(dst);
 	}
 }
@@ -336,7 +336,7 @@ void update_stat_ex_create_time(struct stat_ex *dst,
                                 struct timespec create_time)
 {
 	dst->st_ex_btime = create_time;
-	dst->st_ex_calculated_birthtime = false;
+	dst->st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_BTIME;
 }
 
 void init_stat_ex_from_stat (struct stat_ex *dst,
@@ -354,6 +354,7 @@ void init_stat_ex_from_stat (struct stat_ex *dst,
 	dst->st_ex_atime = get_atimespec(src);
 	dst->st_ex_mtime = get_mtimespec(src);
 	dst->st_ex_ctime = get_ctimespec(src);
+	dst->st_ex_iflags = 0;
 	make_create_timespec(src, dst, fake_dir_create_times);
 #ifdef HAVE_STAT_ST_BLKSIZE
 	dst->st_ex_blksize = src->st_blksize;

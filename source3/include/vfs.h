@@ -262,6 +262,7 @@
 /* Bump to version 41, Samba 4.11 will ship with that */
 /* Version 41 - Remove SMB_VFS_BRL_CANCEL_WINDOWS */
 /* Version 41 - Remove unused st_ex_mask from struct stat_ex */
+/* Version 41 - convert struct stat_ex.st_ex_calculated_birthtime to flags */
 
 #define SMB_VFS_INTERFACE_VERSION 41
 

@@ -704,7 +704,7 @@ static void init_stat_ex_from_ceph_statx(struct stat_ex *dst, const struct ceph_
 	dst->st_ex_btime = stx->stx_btime;
 	dst->st_ex_ctime = stx->stx_ctime;
 	dst->st_ex_mtime = stx->stx_mtime;
-	dst->st_ex_calculated_birthtime = false;
+	dst->st_ex_iflags = 0;
 	dst->st_ex_blksize = stx->stx_blksize;
 	dst->st_ex_blocks = stx->stx_blocks;
 }

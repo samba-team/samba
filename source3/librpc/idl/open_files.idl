@@ -76,10 +76,10 @@ interface open_files
 		timespec	st_ex_mtime;
 		timespec	st_ex_ctime;
 		timespec	st_ex_btime;
-		boolean8	st_ex_calculated_birthtime;
 		hyper		st_ex_blksize;
 		hyper		st_ex_blocks;
 		uint32		st_ex_flags;
+		uint32		st_ex_iflags;
 	} vfs_default_durable_stat;
 
 	typedef [public] struct {
