@@ -192,6 +192,7 @@ typedef uint64_t br_off;
 
 /* Is birthtime real, or was it calculated ? */
 #define ST_EX_IFLAG_CALCULATED_BTIME		(1 << 0)
+#define ST_EX_IFLAG_CALCULATED_ITIME		(1 << 1)
 
 /*
  * Type for stat structure.
@@ -210,6 +211,11 @@ struct stat_ex {
 	struct timespec st_ex_mtime;
 	struct timespec st_ex_ctime;
 	struct timespec st_ex_btime; /* birthtime */
+	/*
+	 * Immutable original birth time aka instantiation time. Set when a file
+	 * is created, never changes thereafter. May not be set by the client.
+	 */
+	struct timespec st_ex_itime; /* instantiation time */
 
 	blksize_t	st_ex_blksize;
 	blkcnt_t	st_ex_blocks;

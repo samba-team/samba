@@ -313,6 +313,9 @@ static void make_create_timespec(const struct stat *pst, struct stat_ex *dst,
 		dst->st_ex_btime = calc_create_time_stat(pst);
 		dst->st_ex_iflags |= ST_EX_IFLAG_CALCULATED_BTIME;
 	}
+
+	dst->st_ex_itime = dst->st_ex_btime;
+	dst->st_ex_iflags |= ST_EX_IFLAG_CALCULATED_ITIME;
 }
 
 /****************************************************************************

@@ -263,6 +263,7 @@
 /* Version 41 - Remove SMB_VFS_BRL_CANCEL_WINDOWS */
 /* Version 41 - Remove unused st_ex_mask from struct stat_ex */
 /* Version 41 - convert struct stat_ex.st_ex_calculated_birthtime to flags */
+/* Version 41 - add st_ex_itime to struct stat_ex */
 
 #define SMB_VFS_INTERFACE_VERSION 41
 
