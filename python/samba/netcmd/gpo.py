@@ -478,9 +478,9 @@ class cmd_listall(GPOCommand):
 class cmd_list(GPOCommand):
     """List GPOs for an account."""
 
-    synopsis = "%prog <username> [options]"
+    synopsis = "%prog <username|machinename> [options]"
 
-    takes_args = ['username']
+    takes_args = ['accountname']
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
         "versionopts": options.VersionOptions,
@@ -492,7 +492,7 @@ class cmd_list(GPOCommand):
                type=str, metavar="URL", dest="H")
     ]
 
-    def run(self, username, H=None, sambaopts=None, credopts=None, versionopts=None):
+    def run(self, accountname, H=None, sambaopts=None, credopts=None, versionopts=None):
 
         self.lp = sambaopts.get_loadparm()
         self.creds = credopts.get_credentials(self.lp, fallback_machine=True)
@@ -503,17 +503,17 @@ class cmd_list(GPOCommand):
 
         try:
             msg = self.samdb.search(expression='(&(|(samAccountName=%s)(samAccountName=%s$))(objectClass=User))' %
-                                    (ldb.binary_encode(username), ldb.binary_encode(username)))
+                                    (ldb.binary_encode(accountname), ldb.binary_encode(accountname)))
             user_dn = msg[0].dn
         except Exception:
-            raise CommandError("Failed to find account %s" % username)
+            raise CommandError("Failed to find account %s" % accountname)
 
         # check if its a computer account
         try:
             msg = self.samdb.search(base=user_dn, scope=ldb.SCOPE_BASE, attrs=['objectClass'])[0]
             is_computer = 'computer' in msg['objectClass']
         except Exception:
-            raise CommandError("Failed to find objectClass for user %s" % username)
+            raise CommandError("Failed to find objectClass for %s" % accountname)
 
         session_info_flags = (AUTH_SESSION_INFO_DEFAULT_GROUPS |
                               AUTH_SESSION_INFO_AUTHENTICATED)
@@ -587,7 +587,7 @@ class cmd_list(GPOCommand):
         else:
             msg_str = 'user'
 
-        self.outf.write("GPOs for %s %s\n" % (msg_str, username))
+        self.outf.write("GPOs for %s %s\n" % (msg_str, accountname))
         for g in gpos:
             self.outf.write("    %s %s\n" % (g[0], g[1]))
 
