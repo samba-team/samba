@@ -121,16 +121,13 @@ def _init_git_file_finder():
 is_git_file = _init_git_file_finder()
 
 
-def python_script_iterator(d=BASEDIR, _cache={}):
-    """Generate an iterator over executable Python scripts. By default it
-    walks the entire source tree.
-    """
-    if d not in _cache:
-        cache = {}
-        _cache[d] = cache
-        pyshebang = re.compile(br'#!.+python').match
+def script_iterator(d=BASEDIR, cache=None,
+                    shebang_filter=None,
+                    filename_filter=None,
+                    subdirs=TEST_DIRS):
+    if not cache:
         safename = re.compile(r'\W+').sub
-        for subdir in TEST_DIRS:
+        for subdir in subdirs:
             sd = os.path.join(d, subdir)
             for root, dirs, files in os.walk(sd, followlinks=False):
                 for fn in files:
@@ -139,36 +136,82 @@ def python_script_iterator(d=BASEDIR, _cache={}):
                     if fn.endswith('.inst'):
                         continue
                     ffn = os.path.join(root, fn)
-                    if not (subdir == 'bin' or is_git_file(ffn)):
-                        continue
-
                     try:
                         s = os.stat(ffn)
                     except FileNotFoundError:
                         continue
                     if not s.st_mode & stat.S_IXUSR:
                         continue
-                    try:
-                        f = open(ffn, 'rb')
-                    except OSError as e:
-                        print("could not open %s: %s" % (ffn, e))
+                    if not (subdir == 'bin' or is_git_file(ffn)):
                         continue
-                    line = f.read(40)
-                    f.close()
-                    if not pyshebang(line):
-                        continue
+
+                    if filename_filter is not None:
+                        if not filename_filter(ffn):
+                            continue
+
+                    if shebang_filter is not None:
+                        try:
+                            f = open(ffn, 'rb')
+                        except OSError as e:
+                            print("could not open %s: %s" % (ffn, e))
+                            continue
+                        line = f.read(40)
+                        f.close()
+                        if not shebang_filter(line):
+                            continue
+
                     name = safename('_', fn)
                     while name in cache:
                         name += '_'
                     cache[name] = ffn
 
-    return _cache[d].items()
+    return cache.items()
+
+# For ELF we only look at /bin/* top level.
+def elf_file_name(fn):
+    fn = fn.partition('bin/')[2]
+    return fn and '/' not in fn and 'test' not in fn and 'ldb' in fn
+
+def elf_shebang(x):
+    return x[:4] == b'\x7fELF'
+
+elf_cache = {}
+def elf_iterator():
+    return script_iterator(BASEDIR, elf_cache,
+                           shebang_filter=elf_shebang,
+                           filename_filter=elf_file_name,
+                           subdirs=['bin'])
+
+
+perl_shebang = re.compile(br'#!.+perl').match
+
+perl_script_cache = {}
+def perl_script_iterator():
+    return script_iterator(BASEDIR, perl_script_cache, perl_shebang)
+
+
+python_shebang = re.compile(br'#!.+python').match
+
+python_script_cache = {}
+def python_script_iterator():
+    return script_iterator(BASEDIR, python_script_cache, python_shebang)
+
+
+class PerlScriptUsageTests(TestCase):
+    """Perl scripts run without arguments should print a usage string,
+        not fail with a traceback.
+    """
+
+    @classmethod
+    def initialise(cls):
+        for name, filename in perl_script_iterator():
+            print(name, filename)
 
 
 class PythonScriptUsageTests(TestCase):
     """Python scripts run without arguments should print a usage string,
         not fail with a traceback.
-        """
+    """
 
     @classmethod
     def initialise(cls):
@@ -208,14 +251,26 @@ class PythonScriptUsageTests(TestCase):
             setattr(cls, 'test_%s' % name, _f)
 
 
-class PythonScriptHelpTests(TestCase):
+class HelpTestSuper(TestCase):
     """Python scripts run with -h or --help should print a help string,
     and exit with success.
     """
+    check_return_code = True
+    check_contains_usage = True
+    check_multiline = True
+    check_merged_out_and_err = False
+
+    interpreter = None
+
+    options_start = None
+    options_end = None
+    def iterator(self):
+        raise NotImplementedError("Subclass this "
+                                  "and add an iterator function!")
 
     @classmethod
     def initialise(cls):
-        for name, filename in python_script_iterator():
+        for name, filename in cls.iterator():
             # We add the actual tests after the class definition so we
             # can give individual names to them, so we can have a
             # knownfail list.
@@ -232,8 +287,11 @@ class PythonScriptHelpTests(TestCase):
             def _f(self, filename=filename):
                 print(filename)
                 for h in ('--help', '-h'):
+                    cmd = [filename, h]
+                    if self.interpreter:
+                        cmd.insert(0, self.interpreter)
                     try:
-                        p = subprocess.Popen(['python3', filename, h],
+                        p = subprocess.Popen(cmd,
                                              stderr=subprocess.PIPE,
                                              stdout=subprocess.PIPE)
                         out, err = p.communicate(timeout=5)
@@ -243,8 +301,11 @@ class PythonScriptHelpTests(TestCase):
                         self.fail("Subprocess error: %s" % e)
 
                     err = err.decode('utf-8')
-                    out = out.decode('utf-8').lower()
+                    out = out.decode('utf-8')
+                    if self.check_merged_out_and_err:
+                        out = "%s\n%s" % (out, err)
 
+                    outl = out[:500].lower()
                     # NOTE:
                     # These assertions are heuristics, not policy.
                     # If your script fails this test when it shouldn't
@@ -254,19 +315,41 @@ class PythonScriptHelpTests(TestCase):
                     # --help should produce:
                     #    * multiple lines of help on stdout (not stderr),
                     #    * including a "Usage:" string,
+                    #    * not contradict itself or repeat options,
                     #    * and return success.
+                    #print(out.encode('utf8'))
+                    #print(err.encode('utf8'))
 
-                    self.assertEqual(p.returncode, 0,
-                                     "returncode should be zero")
-                    self.assertIn('usage', out,
-                                  ('lacks "Usage:"\n'
-                                   'stdout:\n%s\nstderr:\n%s' % (out, err)))
-                    self.assertIn('\n', out,
-                                  ('should be multi-line'
-                                   'stdout:\n%s\nstderr:\n%s' % (out, err)))
+                    if self.check_return_code:
+                        self.assertEqual(p.returncode, 0,
+                                         "%s %s\nreturncode should not be %d" %
+                                         (filename, h, p.returncode))
+                    if self.check_contains_usage:
+                        self.assertIn('usage', outl, 'lacks "Usage:"\n')
+                    if self.check_multiline:
+                        self.assertIn('\n', out, 'expected multi-line output')
 
             setattr(cls, 'test_%s' % name, _f)
 
 
+class PythonScriptHelpTests(HelpTestSuper):
+    """Python scripts run with -h or --help should print a help string,
+    and exit with success.
+    """
+    iterator = python_script_iterator
+    interpreter = 'python3'
+
+
+class ElfHelpTests(HelpTestSuper):
+    """ELF binaries run with -h or --help should print a help string,
+    and exit with success.
+    """
+    iterator = elf_iterator
+    check_return_code = False
+    check_merged_out_and_err = True
+
+
+PerlScriptUsageTests.initialise()
 PythonScriptUsageTests.initialise()
 PythonScriptHelpTests.initialise()
+ElfHelpTests.initialise()
