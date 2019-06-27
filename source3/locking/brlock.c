@@ -288,16 +288,12 @@ void brl_init(bool read_only)
 		return;
 	}
 
-	tdb_flags = TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH;
-
-	if (!lp_clustering()) {
-		/*
-		 * We can't use the SEQNUM trick to cache brlock
-		 * entries in the clustering case because ctdb seqnum
-		 * propagation has a delay.
-		 */
-		tdb_flags |= TDB_SEQNUM;
-	}
+	tdb_flags =
+		TDB_DEFAULT|
+		TDB_VOLATILE|
+		TDB_CLEAR_IF_FIRST|
+		TDB_INCOMPATIBLE_HASH|
+		TDB_SEQNUM;
 
 	db_path = lock_path(talloc_tos(), "brlock.tdb");
 	if (db_path == NULL) {
