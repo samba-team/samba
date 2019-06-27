@@ -2,6 +2,7 @@
 Description=CTDB
 Documentation=man:ctdbd(1) man:ctdb(7)
 After=network-online.target time-sync.target
+ConditionFileNotEmpty=/etc/ctdb/nodes
 
 [Service]
 Type=forking
