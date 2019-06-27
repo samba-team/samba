@@ -60,7 +60,7 @@ default_ttl = 900
 am_rodc = False
 error_count = 0
 
-parser = optparse.OptionParser("samba_dnsupdate")
+parser = optparse.OptionParser("samba_dnsupdate [options]")
 sambaopts = options.SambaOptions(parser)
 parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
@@ -98,8 +98,9 @@ IPs = opts.current_ip or samba.interface_ips(lp, bool(all_interfaces)) or []
 nsupdate_cmd = lp.get('nsupdate command')
 dns_zone_scavenging = lp.get("dns zone scavenging")
 
-if not IPs:
-    print("No IP interfaces - skipping DNS updates")
+if len(IPs) == 0:
+    print("No IP interfaces - skipping DNS updates\n")
+    parser.print_usage()
     sys.exit(0)
 
 rpc_server_ip = opts.rpc_server_ip or IPs[0]
@@ -715,7 +716,18 @@ if 'SOCKET_WRAPPER_DIR' not in os.environ:
     krb5conf = lp.private_path('krb5.conf')
     os.environ['KRB5_CONFIG'] = krb5conf
 
-file = open(dns_update_list, "r")
+try:
+    file = open(dns_update_list, "r")
+except OSError as e:
+    if opts.update_cache:
+        print("The specified update list does not exist")
+    else:
+        print("The server update list was not found, "
+              "and --update-list was not provided.")
+    print(e)
+    print()
+    parser.print_usage()
+    sys.exit(1)
 
 if opts.nosubs:
     sub_vars = {}
