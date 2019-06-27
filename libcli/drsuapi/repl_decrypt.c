@@ -106,7 +106,7 @@ static WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	gnutls_hash_deinit(hash_hnd, enc_key.data);
 
 	/*
-	 * copy the encrypted buffer part and 
+	 * reference the encrypted buffer part and
 	 * decrypt it using the created encryption key using arcfour
 	 */
 	dec_buffer = data_blob_const(enc_buffer.data, enc_buffer.length);
