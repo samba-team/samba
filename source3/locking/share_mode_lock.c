@@ -533,8 +533,29 @@ struct share_mode_lock *get_share_mode_lock(
 			goto fail;
 		}
 	} else {
-		/* This panic will go away in the next commit */
-		smb_panic("static_share_mode_record != NULL\n");
+		TDB_DATA static_key;
+		int cmp;
+
+		static_key = dbwrap_record_get_key(static_share_mode_record);
+
+		cmp = tdb_data_cmp(static_key, key);
+		if (cmp != 0) {
+			DBG_WARNING("Can not lock two share modes "
+				    "simultaneously\n");
+			return NULL;
+		}
+
+		status = get_static_share_mode_data(
+			static_share_mode_record,
+			id,
+			servicepath,
+			smb_fname,
+			old_write_time);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("get_static_share_mode_data failed: %s\n",
+				    nt_errstr(status));
+			goto fail;
+		}
 	}
 
 done:
@@ -598,6 +619,90 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 	}
 
 	return 0;
+}
+
+struct share_mode_do_locked_state {
+	void (*fn)(struct db_record *rec,
+		   bool *modified_dependent,
+		   void *private_data);
+	void *private_data;
+};
+
+static void share_mode_do_locked_fn(struct db_record *rec,
+				    void *private_data)
+{
+	struct share_mode_do_locked_state *state = private_data;
+	bool modified_dependent = false;
+	bool reset_static_share_mode_record = false;
+
+	if (static_share_mode_record == NULL) {
+		static_share_mode_record = rec;
+		static_share_mode_record_talloced = false;
+		reset_static_share_mode_record = true;
+	} else {
+		SMB_ASSERT(static_share_mode_record == rec);
+	}
+
+	state->fn(rec, &modified_dependent, state->private_data);
+
+	if (modified_dependent) {
+		dbwrap_watched_wakeup(rec);
+	}
+
+	if (reset_static_share_mode_record) {
+		static_share_mode_record = NULL;
+	}
+}
+
+NTSTATUS share_mode_do_locked(
+	struct file_id id,
+	void (*fn)(struct db_record *rec,
+		   bool *modified_dependent,
+		   void *private_data),
+	void *private_data)
+{
+	TDB_DATA key = locking_key(&id);
+	size_t refcount = static_share_mode_data_refcount;
+
+	if (static_share_mode_record != NULL) {
+		bool modified_dependent = false;
+		TDB_DATA static_key;
+		int cmp;
+
+		static_key = dbwrap_record_get_key(static_share_mode_record);
+
+		cmp = tdb_data_cmp(static_key, key);
+		if (cmp != 0) {
+			DBG_WARNING("Can not lock two share modes "
+				    "simultaneously\n");
+			return NT_STATUS_INVALID_LOCK_SEQUENCE;
+		}
+
+		fn(static_share_mode_record,
+		   &modified_dependent,
+		   private_data);
+
+		if (modified_dependent) {
+			dbwrap_watched_wakeup(static_share_mode_record);
+		}
+	} else {
+		struct share_mode_do_locked_state state = {
+			.fn = fn, .private_data = private_data,
+		};
+		NTSTATUS status;
+
+		status = dbwrap_do_locked(
+			lock_db, key, share_mode_do_locked_fn, &state);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("dbwrap_do_locked failed: %s\n",
+				    nt_errstr(status));
+			return status;
+		}
+	}
+
+	SMB_ASSERT(refcount == static_share_mode_data_refcount);
+
+	return NT_STATUS_OK;
 }
 
 struct fetch_share_mode_unlocked_state {

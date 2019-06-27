@@ -125,6 +125,15 @@ struct share_mode_lock *get_share_mode_lock(
 	const char *servicepath,
 	const struct smb_filename *smb_fname,
 	const struct timespec *old_write_time);
+
+struct db_record;
+NTSTATUS share_mode_do_locked(
+	struct file_id id,
+	void (*fn)(struct db_record *rec,
+		   bool *modified_dependent,
+		   void *private_data),
+	void *private_data);
+
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 						  struct file_id id);
 struct tevent_req *fetch_share_mode_send(TALLOC_CTX *mem_ctx,
