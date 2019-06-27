@@ -1215,6 +1215,11 @@ sub provision($$$$$$$$$$)
 	fruit:locking = netatalk
 	fruit:encoding = native
 
+[xattr]
+	path = $ctx->{share}
+        # This can be used for testing real fs xattr stuff
+	vfs objects = streams_xattr acl_xattr
+
 $extra_smbconf_shares
 ";
 

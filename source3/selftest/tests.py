@@ -832,3 +832,5 @@ for env in ["ad_member_idmap_rid:local", "maptoguest:local"]:
     plantestsuite("samba3.blackbox.guest (%s)" % env , env,
                   [os.path.join(samba3srcdir, "script/tests/test_guest_auth.sh"),
                    '$SERVER', smbclient3, smbcontrol, net, configuration])
+
+plantestsuite("samba3.blackbox.itime", "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_itime.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$LOCAL_PATH', smbclient3, 'xattr'])
