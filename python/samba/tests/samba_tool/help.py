@@ -20,7 +20,9 @@
 import re
 from samba.tests.samba_tool.base import SambaToolCmdTest
 from samba.tests import BlackboxProcessError
+from samba.tests import check_help_consistency
 from samba.compat import get_string
+
 
 class HelpTestCase(SambaToolCmdTest):
     """Tests for samba-tool help and --help
@@ -64,6 +66,12 @@ class HelpTestCase(SambaToolCmdTest):
 
                 output2 = get_string(output2)
                 self.assertEqual(output, output2)
+
+                err = check_help_consistency(output,
+                                             options_start='Options:',
+                                             options_end='Available subcommands:')
+                if err is not None:
+                    self.fail("consistency error with %s:\n%s" % (line, err))
 
             if not new_commands:
                 break
