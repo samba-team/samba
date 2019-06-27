@@ -17,7 +17,7 @@
 import os
 import sys
 import subprocess
-from samba.tests import TestCase
+from samba.tests import TestCase, check_help_consistency
 from unittest import TestSuite
 import re
 import stat
@@ -256,6 +256,7 @@ class HelpTestSuper(TestCase):
     and exit with success.
     """
     check_return_code = True
+    check_consistency = True
     check_contains_usage = True
     check_multiline = True
     check_merged_out_and_err = False
@@ -319,6 +320,12 @@ class HelpTestSuper(TestCase):
                     #    * and return success.
                     #print(out.encode('utf8'))
                     #print(err.encode('utf8'))
+                    if self.check_consistency:
+                        errors = check_help_consistency(out,
+                                                        self.options_start,
+                                                        self.options_end)
+                        if errors is not None:
+                            self.fail(errors)
 
                     if self.check_return_code:
                         self.assertEqual(p.returncode, 0,

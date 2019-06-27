@@ -1,3 +1,10 @@
+samba.tests.usage.samba.tests.usage.ElfHelpTests.test_ldbadd.none.
+samba.tests.usage.samba.tests.usage.ElfHelpTests.test_ldbdel.none.
+samba.tests.usage.samba.tests.usage.ElfHelpTests.test_ldbedit.none.
+samba.tests.usage.samba.tests.usage.ElfHelpTests.test_ldbmodify.none.
+samba.tests.usage.samba.tests.usage.ElfHelpTests.test_ldbrename.none.
+samba.tests.usage.samba.tests.usage.ElfHelpTests.test_ldbsearch.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_autobuild_py.none.
 samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_autoidl.none.
 samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_compare_cc_results_py.none.
 samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_config_base.none.
