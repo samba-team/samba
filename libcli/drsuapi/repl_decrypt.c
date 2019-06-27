@@ -39,7 +39,7 @@ static WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 					      const DATA_BLOB *gensec_skey,
 					      bool rid_crypt,
 					      uint32_t rid,
-					      DATA_BLOB *in,
+					      const DATA_BLOB *in,
 					      DATA_BLOB *out)
 {
 	DATA_BLOB confounder;
@@ -230,7 +230,7 @@ static WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 					      const DATA_BLOB *gensec_skey,
 					      bool rid_crypt,
 					      uint32_t rid,
-					      DATA_BLOB *in,
+					      const DATA_BLOB *in,
 					      DATA_BLOB *out)
 {
 	DATA_BLOB rid_crypt_out = data_blob(NULL, 0);
