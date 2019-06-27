@@ -29,6 +29,7 @@
 
 #include "lib/util/sys_rw.h"
 #include "lib/util/tevent_unix.h"
+#include "lib/util/util.h"
 
 /* protocol.h is just needed for ctdb_sock_addr, which is used in system.h */
 #include "protocol/protocol.h"
@@ -158,6 +159,121 @@ static bool wait_for_parent_recv(struct tevent_req *req)
 }
 
 /*
+ * Wait and check for lost lock - file removed or replaced
+ */
+
+struct wait_for_lost_state {
+	struct tevent_context *ev;
+	const char *lock_file;
+	ino_t inode;
+	unsigned long recheck_time;
+};
+
+static void wait_for_lost_check(struct tevent_req *subreq);
+
+static struct tevent_req *wait_for_lost_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     const char *lock_file,
+					     int fd,
+					     unsigned long recheck_time)
+{
+	struct tevent_req *req, *subreq;
+	struct wait_for_lost_state *state;
+	struct stat sb;
+	int ret;
+
+	req = tevent_req_create(mem_ctx, &state, struct wait_for_lost_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->ev = ev;
+	state->lock_file = lock_file;
+	state->recheck_time = recheck_time;
+
+	ret = fstat(fd, &sb);
+	if (ret != 0) {
+		fprintf(stderr,
+			"ctdb_mutex_fcntl_helper: "
+			"lock lost - lock file \"%s\" check failed (ret=%d)\n",
+			state->lock_file,
+			errno);
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+	state->inode = sb.st_ino;
+
+	subreq = tevent_wakeup_send(
+			state,
+			ev,
+			tevent_timeval_current_ofs(state->recheck_time, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, wait_for_lost_check, req);
+
+	return req;
+}
+
+static void wait_for_lost_check(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct wait_for_lost_state *state = tevent_req_data(
+		req, struct wait_for_lost_state);
+	bool status;
+	struct stat sb;
+	int ret;
+
+	status = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		/* Ignore error */
+		fprintf(stderr,
+			"ctdb_mutex_fcntl_helper: "
+			"tevent_wakeup_recv() failed\n");
+	}
+
+	ret = stat(state->lock_file, &sb);
+	if (ret != 0) {
+		fprintf(stderr,
+			"ctdb_mutex_fcntl_helper: "
+			"lock lost - lock file \"%s\" check failed (ret=%d)\n",
+			state->lock_file,
+			errno);
+		tevent_req_done(req);
+		return;
+	}
+
+	if (sb.st_ino != state->inode) {
+		fprintf(stderr,
+			"ctdb_mutex_fcntl_helper: "
+			"lock lost - lock file \"%s\" inode changed\n",
+			state->lock_file);
+		tevent_req_done(req);
+		return;
+	}
+
+	subreq = tevent_wakeup_send(
+			state,
+			state->ev,
+			tevent_timeval_current_ofs(state->recheck_time, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, wait_for_lost_check, req);
+}
+
+static bool wait_for_lost_recv(struct tevent_req *req)
+{
+	if (tevent_req_is_unix_error(req, NULL)) {
+		return false;
+	}
+
+	return true;
+}
+
+/*
  * Wait for a reason to exit, indicating that the lock is lost
  */
 
@@ -165,10 +281,14 @@ struct wait_for_exit_state {
 };
 
 static void wait_for_exit_parent_done(struct tevent_req *subreq);
+static void wait_for_exit_lost_done(struct tevent_req *subreq);
 
 static struct tevent_req *wait_for_exit_send(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *ev,
-					     pid_t ppid)
+					     pid_t ppid,
+					     const char *lock_file,
+					     int fd,
+					     unsigned long recheck_time)
 {
 	struct tevent_req *req, *subreq;
 	struct wait_for_exit_state *state;
@@ -183,6 +303,18 @@ static struct tevent_req *wait_for_exit_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(subreq, wait_for_exit_parent_done, req);
+
+	if (recheck_time > 0) {
+		subreq = wait_for_lost_send(state,
+					    ev,
+					    lock_file,
+					    fd,
+					    recheck_time);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+		tevent_req_set_callback(subreq, wait_for_exit_lost_done, req);
+	}
 
 	return req;
 }
@@ -205,6 +337,24 @@ static void wait_for_exit_parent_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
+static void wait_for_exit_lost_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	bool status;
+
+	status = wait_for_lost_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		/* Ignore error */
+		fprintf(stderr,
+			"ctdb_mutex_fcntl_helper: "
+			"wait_for_lost_recv() failed\n");
+	}
+
+	tevent_req_done(req);
+}
+
 static bool wait_for_exit_recv(struct tevent_req *req)
 {
 	if (tevent_req_is_unix_error(req, NULL)) {
@@ -214,20 +364,27 @@ static bool wait_for_exit_recv(struct tevent_req *req)
 	return true;
 }
 
+static void usage(void)
+{
+	fprintf(stderr, "Usage: %s <file> [recheck_time]\n", progname);
+}
+
 int main(int argc, char *argv[])
 {
 	struct tevent_context *ev;
 	char result;
 	int ppid;
 	const char *file = NULL;
+	unsigned long recheck_time;
+	int ret;
 	int fd = -1;
 	struct tevent_req *req;
 	bool status;
 
 	progname = argv[0];
 
-	if (argc != 2) {
-		fprintf(stderr, "Usage: %s <file>\n", progname);
+	if (argc < 2 || argc > 3) {
+		usage();
 		exit(1);
 	}
 
@@ -241,6 +398,19 @@ int main(int argc, char *argv[])
 
 	file = argv[1];
 
+	recheck_time = 60;
+	if (argc == 3) {
+		recheck_time = smb_strtoul(argv[2],
+					   NULL,
+					   10,
+					   &ret,
+					   SMB_STR_STANDARD);
+		if (ret != 0) {
+			usage();
+			exit(1);
+		}
+	}
+
 	result = fcntl_lock(file, &fd);
 	sys_write(STDOUT_FILENO, &result, 1);
 
@@ -248,7 +418,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	req = wait_for_exit_send(ev, ev, ppid);
+	req = wait_for_exit_send(ev, ev, ppid, file, fd, recheck_time);
 	if (req == NULL) {
 		fprintf(stderr,
 			"%s: wait_for_exit_send() failed\n",

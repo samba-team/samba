@@ -67,4 +67,4 @@ UNLOCK
 UNLOCK
 EOF
 unit_test cluster_mutex_test lock-file-removed-no-recheck \
-	  "$helper" "$lockfile"
+	  "$helper 0" "$lockfile"
