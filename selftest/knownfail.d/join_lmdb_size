@@ -1,3 +1,0 @@
-samba.tests.samba_tool.join_lmdb_size.samba.tests.samba_tool.join_lmdb_size.JoinLmdbSizeTestCase.test_join_as_dc\(ad_dc_default\)
-samba.tests.samba_tool.join_lmdb_size.samba.tests.samba_tool.join_lmdb_size.JoinLmdbSizeTestCase.test_join_as_rodc\(ad_dc_default\)
-

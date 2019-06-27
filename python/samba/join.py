@@ -66,7 +66,9 @@ class DCJoinContext(object):
                  netbios_name=None, targetdir=None, domain=None,
                  machinepass=None, use_ntvfs=False, dns_backend=None,
                  promote_existing=False, plaintext_secrets=False,
-                 backend_store=None, forced_local_samdb=None):
+                 backend_store=None,
+                 backend_store_size=None,
+                 forced_local_samdb=None):
 
         ctx.logger = logger
         ctx.creds = creds
@@ -76,6 +78,7 @@ class DCJoinContext(object):
         ctx.use_ntvfs = use_ntvfs
         ctx.plaintext_secrets = plaintext_secrets
         ctx.backend_store = backend_store
+        ctx.backend_store_size = backend_store_size
 
         ctx.promote_existing = promote_existing
         ctx.promote_from_dn = None
@@ -872,7 +875,8 @@ class DCJoinContext(object):
                             sitename=ctx.site, lp=ctx.lp, ntdsguid=ctx.ntds_guid,
                             use_ntvfs=ctx.use_ntvfs, dns_backend=ctx.dns_backend,
                             plaintext_secrets=ctx.plaintext_secrets,
-                            backend_store=ctx.backend_store
+                            backend_store=ctx.backend_store,
+                            backend_store_size=ctx.backend_store_size
                             )
         print("Provision OK for domain DN %s" % presult.domaindn)
         ctx.local_samdb = presult.samdb
@@ -1459,13 +1463,15 @@ def join_RODC(logger=None, server=None, creds=None, lp=None, site=None, netbios_
               targetdir=None, domain=None, domain_critical_only=False,
               machinepass=None, use_ntvfs=False, dns_backend=None,
               promote_existing=False, plaintext_secrets=False,
-              backend_store=None):
+              backend_store=None,
+              backend_store_size=None):
     """Join as a RODC."""
 
     ctx = DCJoinContext(logger, server, creds, lp, site, netbios_name,
                         targetdir, domain, machinepass, use_ntvfs, dns_backend,
                         promote_existing, plaintext_secrets,
-                        backend_store=backend_store)
+                        backend_store=backend_store,
+                        backend_store_size=backend_store_size)
 
     lp.set("workgroup", ctx.domain_name)
     logger.info("workgroup is %s" % ctx.domain_name)
@@ -1513,12 +1519,14 @@ def join_DC(logger=None, server=None, creds=None, lp=None, site=None, netbios_na
             targetdir=None, domain=None, domain_critical_only=False,
             machinepass=None, use_ntvfs=False, dns_backend=None,
             promote_existing=False, plaintext_secrets=False,
-            backend_store=None):
+            backend_store=None,
+            backend_store_size=None):
     """Join as a DC."""
     ctx = DCJoinContext(logger, server, creds, lp, site, netbios_name,
                         targetdir, domain, machinepass, use_ntvfs, dns_backend,
                         promote_existing, plaintext_secrets,
-                        backend_store=backend_store)
+                        backend_store=backend_store,
+                        backend_store_size=backend_store_size)
 
     lp.set("workgroup", ctx.domain_name)
     logger.info("workgroup is %s" % ctx.domain_name)
