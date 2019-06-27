@@ -52,6 +52,7 @@ unit_test cluster_mutex_test lock-wait-unlock "$lockfile"
 
 ok <<EOF
 LOCK
+parent gone
 LOCK
 UNLOCK
 EOF

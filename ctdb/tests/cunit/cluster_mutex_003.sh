@@ -61,6 +61,7 @@ unit_test cluster_mutex_test lock-wait-unlock "$helper"
 
 ok <<EOF
 LOCK
+parent gone
 LOCK
 UNLOCK
 EOF
