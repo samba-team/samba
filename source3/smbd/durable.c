@@ -122,7 +122,6 @@ NTSTATUS vfs_default_durable_cookie(struct files_struct *fsp,
 	cookie.stat_info.st_ex_blksize = fsp->fsp_name->st.st_ex_blksize;
 	cookie.stat_info.st_ex_blocks = fsp->fsp_name->st.st_ex_blocks;
 	cookie.stat_info.st_ex_flags = fsp->fsp_name->st.st_ex_flags;
-	cookie.stat_info.st_ex_mask = fsp->fsp_name->st.st_ex_mask;
 
 	ndr_err = ndr_push_struct_blob(cookie_blob, mem_ctx, &cookie,
 			(ndr_push_flags_fn_t)ndr_push_vfs_default_durable_cookie);
@@ -272,7 +271,6 @@ NTSTATUS vfs_default_durable_disconnect(struct files_struct *fsp,
 	cookie.stat_info.st_ex_blksize = fsp->fsp_name->st.st_ex_blksize;
 	cookie.stat_info.st_ex_blocks = fsp->fsp_name->st.st_ex_blocks;
 	cookie.stat_info.st_ex_flags = fsp->fsp_name->st.st_ex_flags;
-	cookie.stat_info.st_ex_mask = fsp->fsp_name->st.st_ex_mask;
 
 	ndr_err = ndr_push_struct_blob(&new_cookie_blob, mem_ctx, &cookie,
 			(ndr_push_flags_fn_t)ndr_push_vfs_default_durable_cookie);
@@ -494,18 +492,6 @@ static bool vfs_default_durable_reconnect_check_stat(
 			  "st_ex_flags",
 			  (unsigned long long)cookie_st->st_ex_flags,
 			  (unsigned long long)fsp_st->st_ex_flags));
-		return false;
-	}
-
-	if (cookie_st->st_ex_mask != fsp_st->st_ex_mask) {
-		DEBUG(1, ("vfs_default_durable_reconnect (%s): "
-			  "stat_ex.%s differs: "
-			  "cookie:%llu != stat:%llu, "
-			  "denying durable reconnect\n",
-			  name,
-			  "st_ex_mask",
-			  (unsigned long long)cookie_st->st_ex_mask,
-			  (unsigned long long)fsp_st->st_ex_mask));
 		return false;
 	}
 

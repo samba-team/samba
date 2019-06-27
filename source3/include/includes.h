@@ -213,7 +213,6 @@ struct stat_ex {
 	blkcnt_t	st_ex_blocks;
 
 	uint32_t	st_ex_flags;
-	uint32_t	st_ex_mask;
 };
 
 typedef struct stat_ex SMB_STRUCT_STAT;

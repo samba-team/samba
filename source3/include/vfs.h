@@ -261,6 +261,7 @@
 /* Version 40 - Add SMB_VFS_GET_DOS_ATTRIBUTES_SEND/RECV */
 /* Bump to version 41, Samba 4.11 will ship with that */
 /* Version 41 - Remove SMB_VFS_BRL_CANCEL_WINDOWS */
+/* Version 41 - Remove unused st_ex_mask from struct stat_ex */
 
 #define SMB_VFS_INTERFACE_VERSION 41
 

@@ -80,7 +80,6 @@ interface open_files
 		hyper		st_ex_blksize;
 		hyper		st_ex_blocks;
 		uint32		st_ex_flags;
-		uint32		st_ex_mask;
 	} vfs_default_durable_stat;
 
 	typedef [public] struct {
