@@ -31,6 +31,7 @@ import subprocess
 import sys
 import unittest
 import re
+from enum import IntEnum, unique
 import samba.auth
 import samba.dcerpc.base
 from samba.compat import text_type
@@ -581,3 +582,120 @@ def create_test_ou(samdb, name):
     dn = ldb.Dn(samdb, "OU=%s%d,%s" % (name, rand, samdb.get_default_basedn()))
     samdb.add({"dn": dn, "objectclass": "organizationalUnit"})
     return dn
+
+
+@unique
+class OptState(IntEnum):
+    NOOPT = 0
+    HYPHEN1 = 1
+    HYPHEN2 = 2
+    NAME = 3
+
+
+def parse_help_consistency(out,
+                           options_start=None,
+                           options_end=None,
+                           optmap=None,
+                           max_leading_spaces=10):
+    if options_start is None:
+        opt_lines = []
+    else:
+        opt_lines = None
+
+    for raw_line in out.split('\n'):
+        line = raw_line.lstrip()
+        if line == '':
+            continue
+        if opt_lines is None:
+            if line == options_start:
+                opt_lines = []
+            else:
+                continue
+        if len(line) < len(raw_line) - max_leading_spaces:
+            # for the case where we have:
+            #
+            #  --foo        frobnicate or barlify depending on
+            #               --bar option.
+            #
+            # where we want to ignore the --bar.
+            continue
+        if line[0] == '-':
+            opt_lines.append(line)
+        if line == options_end:
+            break
+
+    if opt_lines is None:
+        # No --help options is not an error in *this* test.
+        return
+
+    is_longname_char = re.compile(r'^[\w-]$').match
+    for line in opt_lines:
+        state = OptState.NOOPT
+        name = None
+        prev = ' '
+        for c in line:
+            if state == OptState.NOOPT:
+                if c == '-' and  prev.isspace():
+                    state = OptState.HYPHEN1
+                prev = c
+                continue
+            if state == OptState.HYPHEN1:
+                if c.isalnum():
+                    name = '-' + c
+                    state = OptState.NAME
+                elif c == '-':
+                    state = OptState.HYPHEN2
+                continue
+            if state == OptState.HYPHEN2:
+                if c.isalnum():
+                    name = '--' + c
+                    state = OptState.NAME
+                else: # WTF, perhaps '--' ending option list.
+                    state = OptState.NOOPT
+                    prev = c
+                continue
+            if state == OptState.NAME:
+                if is_longname_char(c):
+                    name += c
+                else:
+                    optmap.setdefault(name, []).append(line)
+                    state = OptState.NOOPT
+                    prev = c
+
+        if state == OptState.NAME:
+            optmap.setdefault(name, []).append(line)
+
+
+def check_help_consistency(out,
+                           options_start=None,
+                           options_end=None):
+    """Ensure that options are not repeated and redefined in --help
+    output.
+
+    Returns None if everything is OK, otherwise a string indicating
+    the problems.
+
+    If options_start and/or options_end are provided, only the bit in
+    the output between these two lines is considered. For example,
+    with samba-tool,
+
+    options_start='Options:', options_end='Available subcommands:'
+
+    will prevent the test looking at the preamble which may contain
+    examples using options.
+    """
+    # Silly test, you might think, but this happens
+    optmap = {}
+    parse_help_consistency(out,
+                           options_start,
+                           options_end,
+                           optmap)
+
+    errors = []
+    for k, values in sorted(optmap.items()):
+        if len(values) > 1:
+            for v in values:
+                errors.append("%s: %s" % (k, v))
+
+    if errors:
+        return "\n".join(errors)
