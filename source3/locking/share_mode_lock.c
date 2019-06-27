@@ -430,6 +430,14 @@ fail:
 static struct share_mode_data *static_share_mode_data = NULL;
 static size_t static_share_mode_data_refcount = 0;
 
+/*
+ * db_record for the above. With dbwrap_do_locked we can get a
+ * db_record on the stack, which we can't TALLOC_FREE but which we
+ * need to share with a nested get_share_mode_lock call.
+ */
+static struct db_record *static_share_mode_record = NULL;
+static bool static_share_mode_record_talloced = false;
+
 /*******************************************************************
  Either fetch a share mode from the database, or allocate a fresh
  one if the record doesn't exist.
@@ -483,7 +491,6 @@ struct share_mode_lock *get_share_mode_lock(
 	const struct timespec *old_write_time)
 {
 	TDB_DATA key = locking_key(&id);
-	struct db_record *rec = NULL;
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
 
@@ -504,27 +511,31 @@ struct share_mode_lock *get_share_mode_lock(
 
 	SMB_ASSERT(static_share_mode_data_refcount == 0);
 
-	rec = dbwrap_fetch_locked(lock_db, lock_db, key);
-	if (rec == NULL) {
-		DEBUG(3, ("Could not lock share entry\n"));
-		goto fail;
-	}
+	if (static_share_mode_record == NULL) {
+		static_share_mode_record = dbwrap_fetch_locked(
+			lock_db, lock_db, key);
+		if (static_share_mode_record == NULL) {
+			DEBUG(3, ("Could not lock share entry\n"));
+			goto fail;
+		}
+		static_share_mode_record_talloced = true;
 
-	status = get_static_share_mode_data(
-		rec, id, servicepath, smb_fname, old_write_time);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_WARNING("get_static_share_mode_data failed: %s\n",
-			    nt_errstr(status));
-		TALLOC_FREE(rec);
-		goto fail;
+		status = get_static_share_mode_data(
+			static_share_mode_record,
+			id,
+			servicepath,
+			smb_fname,
+			old_write_time);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("get_static_share_mode_data failed: %s\n",
+				    nt_errstr(status));
+			TALLOC_FREE(static_share_mode_record);
+			goto fail;
+		}
+	} else {
+		/* This panic will go away in the next commit */
+		smb_panic("static_share_mode_record != NULL\n");
 	}
-
-	/*
-	 * This is unnecessary, in share_mode_lock_destructor we
-	 * explicitly TALLOC_FREE lck->data->rec. Leave it here as
-	 * it's cleaner in the talloc report.
-	 */
-	talloc_reparent(lock_db, static_share_mode_data, rec);
 
 done:
 	static_share_mode_data_refcount += 1;
@@ -560,7 +571,12 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 	 * Drop the locking.tdb lock before moving the share_mode_data
 	 * to memcache
 	 */
-	TALLOC_FREE(static_share_mode_data->record);
+	SMB_ASSERT(static_share_mode_data->record == static_share_mode_record);
+	static_share_mode_data->record = NULL;
+
+	if (static_share_mode_record_talloced) {
+		TALLOC_FREE(static_share_mode_record);
+	}
 
 	if (static_share_mode_data->num_share_modes != 0) {
 		/*
