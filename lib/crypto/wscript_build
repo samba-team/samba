@@ -6,8 +6,11 @@ if bld.CONFIG_SET("HAVE_AESNI_INTEL"):
         extra_deps += ' aesni-intel'
 
 bld.SAMBA_SUBSYSTEM('GNUTLS_HELPERS',
-                    source='gnutls_error.c',
-                    deps='gnutls samba-errors');
+                    source='''
+                    gnutls_error.c
+                    gnutls_arcfour_confounded_md5.c
+                    ''',
+                    deps='gnutls samba-errors LIBCRYPTO');
 
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
         source='''md4.c arcfour.c

@@ -36,4 +36,9 @@ WERROR _gnutls_error_to_werror(int gnutls_rc,
 #define gnutls_error_to_werror(gnutls_rc, blocked_werr) \
 	_gnutls_error_to_werror(gnutls_rc, blocked_werr, \
 				__FUNCTION__, __location__)
+
+int samba_gnutls_arcfour_confounded_md5(const DATA_BLOB *key_input1,
+					const DATA_BLOB *key_input2,
+					DATA_BLOB *data);
+
 #endif /* _GNUTLS_HELPERS_H */
