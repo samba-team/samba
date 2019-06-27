@@ -61,6 +61,10 @@ creds = credopts.get_credentials(lp)
 
 opts = parser.parse_args()[0]
 
+if not opts.host or not opts.localdomain or not opts.remote_domain:
+    parser.print_usage()
+    sys.exit(1)
+
 class DescrGetter:
 
     def __init__(self, localdomain, remotedomain):
