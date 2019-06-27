@@ -193,6 +193,7 @@ typedef uint64_t br_off;
 /* Is birthtime real, or was it calculated ? */
 #define ST_EX_IFLAG_CALCULATED_BTIME		(1 << 0)
 #define ST_EX_IFLAG_CALCULATED_ITIME		(1 << 1)
+#define ST_EX_IFLAG_CALCULATED_FILE_ID		(1 << 2)
 
 /*
  * Type for stat structure.
@@ -201,6 +202,7 @@ typedef uint64_t br_off;
 struct stat_ex {
 	dev_t		st_ex_dev;
 	ino_t		st_ex_ino;
+	uint64_t	st_ex_file_id;
 	mode_t		st_ex_mode;
 	nlink_t		st_ex_nlink;
 	uid_t		st_ex_uid;
