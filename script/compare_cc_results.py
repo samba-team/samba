@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+"""Compare the results of native and cross-compiled configure tests
 
-#
-# Compare the results of native and cross-compiled configure tests
-#
+The compared files are called "default.cache.py" and are generated in
+bin/c4che/.
 
+USAGE: compare_cc_results.py CONFIG_1 CONFIG_2 [CONFIG_3 [CONFIG_4 ...]]
+"""
 from __future__ import print_function
 import sys
 import difflib
@@ -18,6 +20,10 @@ exceptions = [
     'LIBUID_WRAPPER_SO_PATH',
     'LIBRESOLV_WRAPPER_SO_PATH',
 ]
+
+if len(sys.argv) < 3:
+    print(__doc__)
+    sys.exit(1)
 
 base_lines = list()
 base_fname = ''
