@@ -163,6 +163,10 @@ class server_thread(threading.Thread):
 
 
 def main():
+    if len(sys.argv) < 4:
+        print("Usage: dns_hub.py TIMEOUT HOST MAPPING")
+        sys.exit(1)
+
     timeout = int(sys.argv[1]) * 1000
     timeout = min(timeout, 2**31 - 1)  # poll with 32-bit int can't take more
     host = sys.argv[2]
