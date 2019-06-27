@@ -36,19 +36,22 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 #include "gnutls_helpers.h"
-#include "arcfour.h"
 #include "lib/util/memory.h"
 
 int samba_gnutls_arcfour_confounded_md5(const DATA_BLOB *key_input1,
 					const DATA_BLOB *key_input2,
-					DATA_BLOB *data)
+					DATA_BLOB *data,
+					enum samba_gnutls_direction encrypt)
 {
 	int rc;
 	gnutls_hash_hd_t hash_hnd = NULL;
 	uint8_t confounded_key[16];
-	DATA_BLOB confounded_key_as_blob
-		= data_blob_const(confounded_key,
-				  sizeof(confounded_key));
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t confounded_key_datum = {
+		.data = confounded_key,
+		.size = sizeof(confounded_key),
+	};
+
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
 		return rc;
@@ -64,12 +67,27 @@ int samba_gnutls_arcfour_confounded_md5(const DATA_BLOB *key_input1,
 		return rc;
 	}
 
-	gnutls_hash_deinit(hash_hnd, confounded_key_as_blob.data);
+	gnutls_hash_deinit(hash_hnd, confounded_key);
 
-	arcfour_crypt_blob(data->data, data->length,
-			   &confounded_key_as_blob);
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&confounded_key_datum,
+				NULL);
+	if (rc < 0) {
+		return rc;
+	}
 
+	if (encrypt == SAMBA_GNUTLS_ENCRYPT) {
+		rc = gnutls_cipher_encrypt(cipher_hnd,
+					   data->data,
+					   data->length);
+	} else {
+		rc = gnutls_cipher_decrypt(cipher_hnd,
+					   data->data,
+					   data->length);
+	}
+	gnutls_cipher_deinit(cipher_hnd);
 	ZERO_ARRAY(confounded_key);
 
-	return 0;
+	return rc;
 }

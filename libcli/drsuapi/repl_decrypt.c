@@ -88,7 +88,8 @@ static WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 
 	rc = samba_gnutls_arcfour_confounded_md5(gensec_skey,
 						 &confounder,
-						 &dec_buffer);
+						 &dec_buffer,
+						 SAMBA_GNUTLS_DECRYPT);
 	if (rc < 0) {
 		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
 		goto out;
@@ -302,7 +303,8 @@ static WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 
 	rc = samba_gnutls_arcfour_confounded_md5(gensec_skey,
 						 &confounder,
-						 &to_encrypt);
+						 &to_encrypt,
+						 SAMBA_GNUTLS_ENCRYPT);
 	if (rc < 0) {
 		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
 		goto out;

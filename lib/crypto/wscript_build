@@ -10,7 +10,7 @@ bld.SAMBA_SUBSYSTEM('GNUTLS_HELPERS',
                     gnutls_error.c
                     gnutls_arcfour_confounded_md5.c
                     ''',
-                    deps='gnutls samba-errors LIBCRYPTO');
+                    deps='gnutls samba-errors');
 
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
         source='''md4.c arcfour.c

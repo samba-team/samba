@@ -37,8 +37,14 @@ WERROR _gnutls_error_to_werror(int gnutls_rc,
 	_gnutls_error_to_werror(gnutls_rc, blocked_werr, \
 				__FUNCTION__, __location__)
 
+enum samba_gnutls_direction {
+	SAMBA_GNUTLS_ENCRYPT,
+	SAMBA_GNUTLS_DECRYPT
+};
+
 int samba_gnutls_arcfour_confounded_md5(const DATA_BLOB *key_input1,
 					const DATA_BLOB *key_input2,
-					DATA_BLOB *data);
+					DATA_BLOB *data,
+					enum samba_gnutls_direction encrypt);
 
 #endif /* _GNUTLS_HELPERS_H */
