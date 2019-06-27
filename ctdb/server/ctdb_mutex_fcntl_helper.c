@@ -157,6 +157,63 @@ static bool wait_for_parent_recv(struct tevent_req *req)
 	return true;
 }
 
+/*
+ * Wait for a reason to exit, indicating that the lock is lost
+ */
+
+struct wait_for_exit_state {
+};
+
+static void wait_for_exit_parent_done(struct tevent_req *subreq);
+
+static struct tevent_req *wait_for_exit_send(TALLOC_CTX *mem_ctx,
+					     struct tevent_context *ev,
+					     pid_t ppid)
+{
+	struct tevent_req *req, *subreq;
+	struct wait_for_exit_state *state;
+
+	req = tevent_req_create(mem_ctx, &state, struct wait_for_exit_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = wait_for_parent_send(state, ev, ppid);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, wait_for_exit_parent_done, req);
+
+	return req;
+}
+
+static void wait_for_exit_parent_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	bool status;
+
+	status = wait_for_parent_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		/* Ignore error */
+		fprintf(stderr,
+			"ctdb_mutex_fcntl_helper: "
+			"wait_for_parent_recv() failed\n");
+	}
+
+	tevent_req_done(req);
+}
+
+static bool wait_for_exit_recv(struct tevent_req *req)
+{
+	if (tevent_req_is_unix_error(req, NULL)) {
+		return false;
+	}
+
+	return true;
+}
+
 int main(int argc, char *argv[])
 {
 	struct tevent_context *ev;
@@ -191,20 +248,20 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	req = wait_for_parent_send(ev, ev, ppid);
+	req = wait_for_exit_send(ev, ev, ppid);
 	if (req == NULL) {
 		fprintf(stderr,
-			"%s: wait_for_parent_send() failed\n",
+			"%s: wait_for_exit_send() failed\n",
 			progname);
 		exit(1);
 	}
 
 	tevent_req_poll(req, ev);
 
-	status = wait_for_parent_recv(req);
+	status = wait_for_exit_recv(req);
 	if (! status) {
 		fprintf(stderr,
-			"%s: wait_for_parent_recv() failed\n",
+			"%s: wait_for_exit_recv() failed\n",
 			progname);
 	}
 
