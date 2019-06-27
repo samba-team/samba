@@ -1,3 +1,17 @@
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_autoidl.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_compare_cc_results_py.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_config_base.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_ctdb_etcd_lock.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_depfilter_py.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_dns_hub_py.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_gen_hresult_py.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_mymachinepw.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_repl_cleartext_pwd_py.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_run_py.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_run_py_.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_smbstatus.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_tests_py.none.
+samba.tests.usage.samba.tests.usage.PythonScriptHelpTests.test_waf.none.
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_chgtdcpass.none.
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_findprovisionusnranges.none.
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_rebuildextendeddn.none.

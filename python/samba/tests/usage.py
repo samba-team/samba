@@ -85,6 +85,12 @@ EXCLUDE_USAGE = {
     'python/samba/tests/dcerpc/raw_protocol.py'
 }
 
+EXCLUDE_HELP = {
+    'selftest/tap2subunit',
+    'wintest/test-s3.py',
+    'wintest/test-s4-howto.py',
+}
+
 
 EXCLUDE_DIRS = {
     'source3/script/tests',
@@ -202,4 +208,65 @@ class PythonScriptUsageTests(TestCase):
             setattr(cls, 'test_%s' % name, _f)
 
 
+class PythonScriptHelpTests(TestCase):
+    """Python scripts run with -h or --help should print a help string,
+    and exit with success.
+    """
+
+    @classmethod
+    def initialise(cls):
+        for name, filename in python_script_iterator():
+            # We add the actual tests after the class definition so we
+            # can give individual names to them, so we can have a
+            # knownfail list.
+            fn = filename.replace(BASEDIR, '').lstrip('/')
+
+            if fn in EXCLUDE_HELP:
+                print("skipping %s (EXCLUDE_HELP)" % filename)
+                continue
+
+            if os.path.dirname(fn) in EXCLUDE_DIRS:
+                print("skipping %s (EXCLUDE_DIRS)" % filename)
+                continue
+
+            def _f(self, filename=filename):
+                print(filename)
+                for h in ('--help', '-h'):
+                    try:
+                        p = subprocess.Popen(['python3', filename, h],
+                                             stderr=subprocess.PIPE,
+                                             stdout=subprocess.PIPE)
+                        out, err = p.communicate(timeout=5)
+                    except OSError as e:
+                        self.fail("Error: %s" % e)
+                    except subprocess.SubprocessError as e:
+                        self.fail("Subprocess error: %s" % e)
+
+                    err = err.decode('utf-8')
+                    out = out.decode('utf-8').lower()
+
+                    # NOTE:
+                    # These assertions are heuristics, not policy.
+                    # If your script fails this test when it shouldn't
+                    # just add it to EXCLUDE_HELP above or change the
+                    # heuristic.
+
+                    # --help should produce:
+                    #    * multiple lines of help on stdout (not stderr),
+                    #    * including a "Usage:" string,
+                    #    * and return success.
+
+                    self.assertEqual(p.returncode, 0,
+                                     "returncode should be zero")
+                    self.assertIn('usage', out,
+                                  ('lacks "Usage:"\n'
+                                   'stdout:\n%s\nstderr:\n%s' % (out, err)))
+                    self.assertIn('\n', out,
+                                  ('should be multi-line'
+                                   'stdout:\n%s\nstderr:\n%s' % (out, err)))
+
+            setattr(cls, 'test_%s' % name, _f)
+
+
 PythonScriptUsageTests.initialise()
+PythonScriptHelpTests.initialise()
