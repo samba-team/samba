@@ -25,7 +25,6 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "../lib/crypto/arcfour.h"
 #include "zlib.h"
 #include "../libcli/drsuapi/drsuapi.h"
 #include "libcli/auth/libcli_auth.h"
@@ -44,10 +43,6 @@ static WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 {
 	DATA_BLOB confounder;
 	DATA_BLOB enc_buffer;
-
-	gnutls_hash_hd_t hash_hnd = NULL;
-	uint8_t _enc_key[16];
-	DATA_BLOB enc_key;
 
 	DATA_BLOB dec_buffer;
 
@@ -77,42 +72,27 @@ static WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	enc_buffer = data_blob_const(in->data + 16, in->length - 16);
 
 	/* 
-	 * build the encryption key md5 over the session key followed
-	 * by the confounder
+	 * decrypt with the encryption key, being md5 over the session
+	 * key followed by the confounder.  The parameter order to
+	 * samba_gnutls_arcfour_confounded_md5() matters for this!
 	 * 
 	 * here the gensec session key is used and
 	 * not the dcerpc ncacn_ip_tcp "SystemLibraryDTC" key!
 	 */
-	enc_key = data_blob_const(_enc_key, sizeof(_enc_key));
-
-	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
-	if (rc < 0) {
-		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd, gensec_skey->data, gensec_skey->length);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd, confounder.data, confounder.length);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
-		goto out;
-	}
-
-	gnutls_hash_deinit(hash_hnd, enc_key.data);
 
 	/*
 	 * reference the encrypted buffer part and
 	 * decrypt it using the created encryption key using arcfour
 	 */
 	dec_buffer = data_blob_const(enc_buffer.data, enc_buffer.length);
-	arcfour_crypt_blob(dec_buffer.data, dec_buffer.length, &enc_key);
 
-	ZERO_ARRAY_LEN(enc_key.data, enc_key.length);
+	rc = samba_gnutls_arcfour_confounded_md5(gensec_skey,
+						 &confounder,
+						 &dec_buffer);
+	if (rc < 0) {
+		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+		goto out;
+	}
 
 	/* 
 	 * the first 4 byte are the crc32 checksum
@@ -236,11 +216,9 @@ static WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	DATA_BLOB rid_crypt_out = data_blob(NULL, 0);
 	DATA_BLOB confounder;
 
-	gnutls_hash_hd_t hash_hnd = NULL;
-	uint8_t _enc_key[16];
-	DATA_BLOB enc_key;
-
 	DATA_BLOB enc_buffer;
+
+	DATA_BLOB to_encrypt;
 
 	uint32_t crc32_calc;
 	WERROR result;
@@ -296,35 +274,6 @@ static WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	generate_random_buffer(confounder.data, confounder.length);
 
 	/* 
-	 * build the encryption key md5 over the session key followed
-	 * by the confounder
-	 * 
-	 * here the gensec session key is used and
-	 * not the dcerpc ncacn_ip_tcp "SystemLibraryDTC" key!
-	 */
-	enc_key = data_blob_const(_enc_key, sizeof(_enc_key));
-
-	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
-	if (rc < 0) {
-		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
-		goto out;
-	}
-
-	rc = gnutls_hash(hash_hnd, gensec_skey->data, gensec_skey->length);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd, confounder.data, confounder.length);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
-		goto out;
-	}
-	gnutls_hash_deinit(hash_hnd, enc_key.data);
-
-	/* 
 	 * the first 4 byte are the crc32 checksum
 	 * of the remaining bytes
 	 */
@@ -339,9 +288,25 @@ static WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 	memcpy(enc_buffer.data+20, in->data, in->length); 
 	talloc_free(rid_crypt_out.data);
 
-	arcfour_crypt_blob(enc_buffer.data+16, enc_buffer.length-16, &enc_key);
+	to_encrypt = data_blob_const(enc_buffer.data+16,
+				     enc_buffer.length-16);
 
-	ZERO_ARRAY_LEN(enc_key.data, enc_key.length);
+	/*
+	 * encrypt with the encryption key, being md5 over the session
+	 * key followed by the confounder.  The parameter order to
+	 * samba_gnutls_arcfour_confounded_md5() matters for this!
+	 *
+	 * here the gensec session key is used and
+	 * not the dcerpc ncacn_ip_tcp "SystemLibraryDTC" key!
+	 */
+
+	rc = samba_gnutls_arcfour_confounded_md5(gensec_skey,
+						 &confounder,
+						 &to_encrypt);
+	if (rc < 0) {
+		result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+		goto out;
+	}
 
 	*out = enc_buffer;
 	result =  WERR_OK;
