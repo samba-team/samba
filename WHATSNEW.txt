@@ -198,6 +198,30 @@ Improvements have been made to Samba's handling of subtree renames,
 for example of containers and organisational units, however large
 renames are still not recommended.
 
+CTDB changes
+============
+
+* nfs-linux-kernel-callout now defaults to using systemd service names
+
+  The Red Hat service names continue to be the default.
+
+  Other distributions should patch this file when packaging it.
+
+* The onnode -o option has been removed
+
+* ctdbd logs when it is using more than 90% of a CPU thread
+
+  ctdbd is single threaded, so can become saturated if it uses the
+  full capacity of a CPU thread.  To help detect this situation, ctdbd
+  now logs messages when CPU utilisation exceeds 90%.  Each change in
+  CPU utilisation over 90% is logged.  A message is also logged when
+  CPU utilisation drops below the 90% threshold.
+
+* Script configuration variable CTDB_MONITOR_SWAP_USAGE has been removed
+
+  05.system.script now monitors total memory (i.e. physical memory +
+  swap) utilisation using the existing CTDB_MONITOR_MEMORY_USAGE
+  script configuration variable.
 
 
 REMOVED FEATURES
