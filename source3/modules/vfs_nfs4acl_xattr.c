@@ -56,7 +56,6 @@ static bool nfs4acl_validate_blob(vfs_handle_struct *handle,
 {
 	struct nfs4acl_config *config = NULL;
 	mode_t expected_mode;
-	int saved_errno = 0;
 	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -81,17 +80,9 @@ static bool nfs4acl_validate_blob(vfs_handle_struct *handle,
 		return true;
 	}
 
-	become_root();
 	ret = SMB_VFS_NEXT_REMOVEXATTR(handle,
 				       smb_fname,
 				       config->xattr_name);
-	if (ret != 0) {
-		saved_errno = errno;
-	}
-	unbecome_root();
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
 	if (ret != 0 && errno != ENOATTR) {
 		DBG_ERR("Removing NFS4 xattr failed: %s\n", strerror(errno));
 		return false;
@@ -135,7 +126,6 @@ static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 	}
 
 	do {
-		int saved_errno = 0;
 
 		allocsize *= 4;
 		ok = data_blob_realloc(mem_ctx, blob, allocsize);
@@ -143,7 +133,6 @@ static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		become_root();
 		if (fsp != NULL && fsp->fh->fd != -1) {
 			length = SMB_VFS_NEXT_FGETXATTR(handle,
 							fsp,
@@ -156,13 +145,6 @@ static NTSTATUS nfs4acl_get_blob(struct vfs_handle_struct *handle,
 						       config->xattr_name,
 						       blob->data,
 						       blob->length);
-		}
-		if (length == -1) {
-			saved_errno = errno;
-		}
-		unbecome_root();
-		if (saved_errno != 0) {
-			errno = saved_errno;
 		}
 	} while (length == -1 && errno == ERANGE && allocsize <= 65536);
 
@@ -350,7 +332,6 @@ static bool nfs4acl_smb4acl_set_fn(vfs_handle_struct *handle,
 		return false;
 	}
 
-	become_root();
 	if (fsp->fh->fd != -1) {
 		ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, config->xattr_name,
 					     blob.data, blob.length, 0);
@@ -362,7 +343,6 @@ static bool nfs4acl_smb4acl_set_fn(vfs_handle_struct *handle,
 	if (ret != 0) {
 		saved_errno = errno;
 	}
-	unbecome_root();
 	data_blob_free(&blob);
 	if (saved_errno != 0) {
 		errno = saved_errno;
@@ -410,11 +390,9 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 		expected_mode = 0;
 	}
 	if ((existing_mode & expected_mode) != expected_mode) {
-		int saved_errno = 0;
 
 		restored_mode = existing_mode | expected_mode;
 
-		become_root();
 		if (fsp->fh->fd != -1) {
 			ret = SMB_VFS_NEXT_FCHMOD(handle,
 						  fsp,
@@ -423,13 +401,6 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 			ret = SMB_VFS_NEXT_CHMOD(handle,
 						 fsp->fsp_name,
 						 restored_mode);
-		}
-		if (ret != 0) {
-			saved_errno = errno;
-		}
-		unbecome_root();
-		if (saved_errno != 0) {
-			errno = saved_errno;
 		}
 		if (ret != 0) {
 			DBG_ERR("Resetting POSIX mode on [%s] from [0%o]: %s\n",
@@ -492,14 +463,12 @@ static NTSTATUS nfs4acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 		  fsp_str_dbg(fsp),
 		  dom_sid_str_buf(psd->owner_sid, &buf));
 
-	become_root();
 	status = smb_set_nt_acl_nfs4(handle,
 				     fsp,
 				     &config->nfs4_params,
 				     security_info_sent,
 				     psd,
 				     nfs4acl_smb4acl_set_fn);
-	unbecome_root();
 	return status;
 }
 
