@@ -269,24 +269,6 @@ push()
     done
 }
 
-stdout_filter ()
-{
-    if $verbose && $parallel ; then
-	sed -e "s@^@[$n] @"
-    else
-	cat
-    fi
-}
-
-stderr_filter ()
-{
-    if $verbose && $parallel ; then
-	sed -e "s@^@[$n] @"
-    else
-	cat
-    fi
-}
-
 ######################################################################
 
 parse_options "$@"
@@ -331,21 +313,13 @@ retcode=0
 for n in $nodes ; do
 	set -o pipefail 2>/dev/null
 
-	# The following code applies stdout_filter and stderr_filter to
-	# the relevant streams.  Both filters are at the end of pipes so
-	# they read from stdin and (by default) write to stdout.  To allow
-	# the filters to operate independently, the output of
-	# stdout_filter is sent to a temporary file descriptor (3), which
-	# is redirected back to stdout at the outermost level.
 	ssh_cmd="$ONNODE_SSH $ssh_opts $ONNODE_SSH_OPTS"
 	if $parallel ; then
-		{
-			exec 3>&1
-			{
-				$ssh_cmd "$n" "$command" 3>&- |
-					stdout_filter >&3
-			} 2>&1 | stderr_filter
-		} &
+		if $verbose ; then
+			$ssh_cmd "$n" "$command" 2>&1 | sed -e "s@^@[$n] @"
+		else
+			$ssh_cmd "$n" "$command"
+		fi &
 		pids="${pids} $!"
 	else
 		if $verbose ; then
