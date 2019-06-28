@@ -33,6 +33,8 @@ samba_dist.DIST_DIRS('''ctdb:. lib/replace:lib/replace lib/talloc:lib/talloc
                         lib/util:lib/util lib/tdb_wrap:lib/tdb_wrap
                         lib/ccan:lib/ccan libcli/util:libcli/util
                         lib/async_req:lib/async_req
+                        lib/pthreadpool:lib/pthreadpoool
+                        lib/messaging:lib/messaging
                         buildtools:buildtools third_party/waf:third_party/waf''')
 
 manpages_binary = [
@@ -363,6 +365,8 @@ def build(bld):
     bld.RECURSE('lib/tdb_wrap')
     bld.RECURSE('lib/util')
     bld.RECURSE('lib/async_req')
+    bld.RECURSE('lib/pthreadpool')
+    bld.RECURSE('lib/messaging')
 
     bld.RECURSE('lib/talloc')
     bld.RECURSE('lib/tevent')
