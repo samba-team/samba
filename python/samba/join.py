@@ -304,8 +304,9 @@ class DCJoinContext(object):
             objectAttr = lsa.ObjectAttribute()
             objectAttr.sec_qos = lsa.QosInfo()
 
-            pol_handle = lsaconn.OpenPolicy2(''.decode('utf-8'),
-                                             objectAttr, security.SEC_FLAG_MAXIMUM_ALLOWED)
+            pol_handle = lsaconn.OpenPolicy2('',
+                                             objectAttr,
+                                             security.SEC_FLAG_MAXIMUM_ALLOWED)
 
             name = lsa.String()
             name.string = ctx.realm
@@ -1575,12 +1576,13 @@ def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
                    netbios_name=None, targetdir=None, parent_domain=None, dnsdomain=None,
                    netbios_domain=None, machinepass=None, adminpass=None, use_ntvfs=False,
                    dns_backend=None, plaintext_secrets=False,
-                   backend_store=None):
+                   backend_store=None, backend_store_size=None):
     """Join as a DC."""
     ctx = DCJoinContext(logger, server, creds, lp, site, netbios_name,
                         targetdir, parent_domain, machinepass, use_ntvfs,
                         dns_backend, plaintext_secrets,
-                        backend_store=backend_store)
+                        backend_store=backend_store,
+                        backend_store_size=backend_store_size)
     ctx.subdomain = True
     if adminpass is None:
         ctx.adminpass = samba.generate_random_password(12, 32)
