@@ -97,6 +97,12 @@ bld.SAMBA_LIBRARY('msghdr',
                   local_include=False,
                   private_library=True)
 
+bld.SAMBA_LIBRARY('genrand',
+                  source='genrand.c',
+                  deps='replace gnutls',
+                  local_include=False,
+                  private_library=True)
+
 if bld.env.SAMBA_UTIL_CORE_ONLY:
 
     bld.SAMBA_LIBRARY('tevent-util',
@@ -108,12 +114,6 @@ if bld.env.SAMBA_UTIL_CORE_ONLY:
 else:
 
     bld.env.public_headers_skip.append('charset_compat.h')
-
-    bld.SAMBA_LIBRARY('genrand',
-                      source='genrand.c',
-                      deps='replace gnutls',
-                      local_include=False,
-                      private_library=True)
 
     bld.SAMBA_BINARY('genrandperf',
                      source='tests/genrandperf.c',

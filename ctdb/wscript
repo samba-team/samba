@@ -145,6 +145,10 @@ def configure(conf):
         conf.SAMBA_CHECK_PYTHON()
         conf.SAMBA_CHECK_PYTHON_HEADERS()
 
+        # We just want gnutls_rnd for rand subsystem
+        conf.CHECK_FUNCS_IN('gnutls_rnd', 'gnutls')
+
+
     if conf.CHECK_FOR_THIRD_PARTY():
         conf.RECURSE('third_party/popt')
         if conf.env.standalone_ctdb or conf.CONFIG_GET('ENABLE_SELFTEST'):
