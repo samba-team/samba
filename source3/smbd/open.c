@@ -4237,33 +4237,19 @@ static NTSTATUS open_directory(connection_struct *conn,
 	*/
 	ZERO_STRUCT(mtimespec);
 
-	if (access_mask & (FILE_LIST_DIRECTORY|
-			   FILE_ADD_FILE|
-			   FILE_ADD_SUBDIRECTORY|
-			   FILE_TRAVERSE|
-			   DELETE_ACCESS|
-			   FILE_DELETE_CHILD|
-			   WRITE_DAC_ACCESS|
-			   WRITE_OWNER_ACCESS|
-			   READ_CONTROL_ACCESS)) {
 #ifdef O_DIRECTORY
-		status = fd_open(conn, fsp, O_RDONLY|O_DIRECTORY, 0);
+	status = fd_open(conn, fsp, O_RDONLY|O_DIRECTORY, 0);
 #else
-		/* POSIX allows us to open a directory with O_RDONLY. */
-		status = fd_open(conn, fsp, O_RDONLY, 0);
+	/* POSIX allows us to open a directory with O_RDONLY. */
+	status = fd_open(conn, fsp, O_RDONLY, 0);
 #endif
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(5, ("open_directory: Could not open fd for "
-				"%s (%s)\n",
-				smb_fname_str_dbg(smb_dname),
-				nt_errstr(status)));
-			file_free(req, fsp);
-			return status;
-		}
-	} else {
-		fsp->fh->fd = -1;
-		DEBUG(10, ("Not opening Directory %s\n",
-			smb_fname_str_dbg(smb_dname)));
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_INFO("Could not open fd for "
+			"%s (%s)\n",
+			smb_fname_str_dbg(smb_dname),
+			nt_errstr(status));
+		file_free(req, fsp);
+		return status;
 	}
 
 	status = vfs_stat_fsp(fsp);
