@@ -30,7 +30,7 @@
 #include "ldb_wrap.h"
 #include "lib/messaging/messaging.h"
 #include "lib/util/debug.h"
-#include "source3/lib/messages_dgm.h"
+#include "lib/messaging/messages_dgm.h"
 #include "lib/util/util_process.h"
 
 static unsigned connections_active = 0;

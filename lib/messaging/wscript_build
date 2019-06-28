@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+bld.SAMBA_LIBRARY('messages_dgm',
+                  source='''
+                         messages_dgm.c
+                         messages_dgm_ref.c
+                         ''',
+                  deps='''
+                       talloc
+                       samba-debug
+                       PTHREADPOOL
+                       msghdr
+                       genrand
+                       samba-util
+                       ''',
+                  private_library=True)

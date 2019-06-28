@@ -24,7 +24,7 @@
 #include "system/dir.h"
 #include "system/select.h"
 #include "lib/util/debug.h"
-#include "lib/messages_dgm.h"
+#include "messages_dgm.h"
 #include "lib/util/genrand.h"
 #include "lib/util/dlinklist.h"
 #include "lib/pthreadpool/pthreadpool_tevent.h"

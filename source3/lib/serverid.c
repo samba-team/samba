@@ -23,7 +23,7 @@
 #include "lib/param/param.h"
 #include "ctdbd_conn.h"
 #include "lib/messages_ctdb.h"
-#include "lib/messages_dgm.h"
+#include "lib/messaging/messages_dgm.h"
 
 static bool serverid_exists_local(const struct server_id *id)
 {

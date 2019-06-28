@@ -36,8 +36,8 @@
 #include "lib/param/param.h"
 #include "lib/util/server_id_db.h"
 #include "lib/util/talloc_report_printf.h"
-#include "../source3/lib/messages_dgm.h"
-#include "../source3/lib/messages_dgm_ref.h"
+#include "lib/messaging/messages_dgm.h"
+#include "lib/messaging/messages_dgm_ref.h"
 #include "../source3/lib/messages_util.h"
 #include <tdb.h>
 

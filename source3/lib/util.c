@@ -29,7 +29,7 @@
 #include "ctdbd_conn.h"
 #include "../lib/util/util_pw.h"
 #include "messages.h"
-#include "messages_dgm.h"
+#include "lib/messaging/messages_dgm.h"
 #include "libcli/security/security.h"
 #include "serverid.h"
 #include "lib/util/sys_rw.h"

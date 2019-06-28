@@ -23,7 +23,7 @@
 
 #include "util_procid.h"
 #include "lib/util/debug.h"
-#include "lib/messages_dgm.h"
+#include "lib/messaging/messages_dgm.h"
 
 pid_t procid_to_pid(const struct server_id *proc)
 {
