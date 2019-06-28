@@ -630,7 +630,8 @@ class cmd_domain_dcpromo(Command):
                     machinepass=machinepass, use_ntvfs=use_ntvfs,
                     dns_backend=dns_backend,
                     promote_existing=True, plaintext_secrets=plaintext_secrets,
-                    backend_store=backend_store)
+                    backend_store=backend_store,
+                    backend_store_size=backend_store_size)
         elif role == "RODC":
             join_RODC(logger=logger, server=server, creds=creds, lp=lp, domain=domain,
                       site=site, netbios_name=netbios_name, targetdir=targetdir,
