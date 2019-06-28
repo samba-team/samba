@@ -352,7 +352,7 @@ for n in $nodes ; do
 			echo >&2 ; echo ">> NODE: $n <<" >&2
 		fi
 		{
-			$ssh_cmd "$n" "$command" | stdout_filter
+			$ssh_cmd "$n" "$command"
 		} || retcode=$?
 	fi
 done
