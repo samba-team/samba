@@ -141,9 +141,6 @@ samba-ad-dc-5:
 samba-ad-dc-6:
   extends: .shared_template
 
-samba-ad-dc-backup:
-  extends: .shared_template
-
 samba-libs:
   extends: .shared_template
 
@@ -171,6 +168,9 @@ samba-ad-dc-ntvfs:
       # your gitlab repo by navigating to:
       # settings -> CI/CD -> Environment variables
       - $SUPPORT_PRIVATE_TEST == "yes"
+
+samba-ad-dc-backup:
+  extends: .private_template
 
 samba-fileserver:
   extends: .private_template
