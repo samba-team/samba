@@ -179,14 +179,15 @@ static void share_mode_memcache_store(struct share_mode_data *d)
  * NB. We use ndr_pull_hyper on a stack-created
  * struct ndr_pull with no talloc allowed, as we
  * need this to be really fast as an ndr-peek into
- * the first 8 bytes of the blob.
+ * the first 9 bytes of the blob.
  */
 
-static enum ndr_err_code get_blob_sequence_number(DATA_BLOB *blob,
-						uint64_t *pseq)
+static enum ndr_err_code get_share_mode_blob_header(
+	DATA_BLOB *blob, uint64_t *pseq, uint8_t *pflags)
 {
 	struct ndr_pull ndr = {.data = blob->data, .data_size = blob->length};
 	NDR_CHECK(ndr_pull_hyper(&ndr, NDR_SCALARS, pseq));
+	NDR_CHECK(ndr_pull_uint8(&ndr, NDR_SCALARS, pflags));
 	return NDR_ERR_SUCCESS;
 }
 
@@ -202,6 +203,7 @@ static struct share_mode_data *share_mode_memcache_fetch(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 	struct share_mode_data *d;
 	uint64_t sequence_number;
+	uint8_t flags;
 	void *ptr;
 	struct file_id id;
 	DATA_BLOB key;
@@ -223,7 +225,7 @@ static struct share_mode_data *share_mode_memcache_fetch(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	/* sequence number key is at start of blob. */
-	ndr_err = get_blob_sequence_number(blob, &sequence_number);
+	ndr_err = get_share_mode_blob_header(blob, &sequence_number, &flags);
 	if (ndr_err != NDR_ERR_SUCCESS) {
 		/* Bad blob. Remove entry. */
 		DEBUG(10,("bad blob %u key %s\n",

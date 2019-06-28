@@ -40,8 +40,13 @@ interface open_files
 		security_unix_token *delete_token;
 	} delete_token;
 
+	typedef [public,bitmap8bit] bitmap {
+		SHARE_MODE_HAS_READ_LEASE	= 0x01
+	} share_mode_flags;
+
 	typedef [public] struct {
 		hyper sequence_number;
+		share_mode_flags flags;
 		[string,charset(UTF8)] char *servicepath;
 		[string,charset(UTF8)] char *base_name;
 		[string,charset(UTF8)] char *stream_name;
