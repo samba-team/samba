@@ -219,18 +219,18 @@ uint64_t smb_roundup(connection_struct *conn, uint64_t val)
  mangle as we used to do.
 ********************************************************************/
 
-uint64_t get_FileIndex(connection_struct *conn, const SMB_STRUCT_STAT *psbuf)
+uint64_t get_fs_file_id(connection_struct *conn, const SMB_STRUCT_STAT *psbuf)
 {
-	uint64_t file_index;
+	uint64_t file_id;
 	if (conn->sconn->aapl_zero_file_id) {
 		return 0;
 	}
 	if (conn->base_share_dev == psbuf->st_ex_dev) {
 		return (uint64_t)psbuf->st_ex_ino;
 	}
-	file_index = ((psbuf->st_ex_ino) & UINT32_MAX); /* FileIndexLow */
-	file_index |= ((uint64_t)((psbuf->st_ex_dev) & UINT32_MAX)) << 32; /* FileIndexHigh */
-	return file_index;
+	file_id = ((psbuf->st_ex_ino) & UINT32_MAX); /* FileIDLow */
+	file_id |= ((uint64_t)((psbuf->st_ex_dev) & UINT32_MAX)) << 32; /* FileIDHigh */
+	return file_id;
 }
 
 
@@ -1836,7 +1836,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 	uint32_t reskey=0;
 	uint64_t file_size = 0;
 	uint64_t allocation_size = 0;
-	uint64_t file_index = 0;
+	uint64_t file_id = 0;
 	size_t len = 0;
 	struct timespec mdate_ts = {0};
 	struct timespec adate_ts = {0};
@@ -1863,7 +1863,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		}
 	}
 
-	file_index = get_FileIndex(conn, &smb_fname->st);
+	file_id = get_fs_file_id(conn, &smb_fname->st);
 
 	mdate_ts = smb_fname->st.st_ex_mtime;
 	adate_ts = smb_fname->st.st_ex_atime;
@@ -2281,7 +2281,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		}
 		p += 4;
 		SIVAL(p,0,0); p += 4; /* Unknown - reserved ? */
-		SBVAL(p,0,file_index); p += 8;
+		SBVAL(p,0,file_id); p += 8;
 		status = srvstr_push(base_data, flags2, p,
 				  fname, PTR_DIFF(end_data, p),
 				  STR_TERMINATE_ASCII, &len);
@@ -2402,7 +2402,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		}
 		p += 2;
 
-		SBVAL(p,0,file_index); p += 8;
+		SBVAL(p,0,file_id); p += 8;
 		status = srvstr_push(base_data, flags2, p,
 				  fname, PTR_DIFF(end_data, p),
 				  STR_TERMINATE_ASCII, &len);
@@ -5110,7 +5110,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	uint64_t file_size = 0;
 	uint64_t pos = 0;
 	uint64_t allocation_size = 0;
-	uint64_t file_index = 0;
+	uint64_t file_id = 0;
 	uint32_t access_mask = 0;
 	size_t len = 0;
 
@@ -5231,7 +5231,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 	   I think this causes us to fail the IFSKIT
 	   BasicFileInformationTest. -tpot */
-	file_index = get_FileIndex(conn, psbuf);
+	file_id = get_fs_file_id(conn, psbuf);
 
 	*fixed_portion = 0;
 
@@ -5575,7 +5575,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 			SCVAL(pdata,	0x3C, delete_pending);
 			SCVAL(pdata,	0x3D, (mode&FILE_ATTRIBUTE_DIRECTORY)?1:0);
 			SSVAL(pdata,	0x3E, 0); /* padding */
-			SBVAL(pdata,	0x40, file_index);
+			SBVAL(pdata,	0x40, file_id);
 			SIVAL(pdata,	0x48, ea_size);
 			SIVAL(pdata,	0x4C, access_mask);
 			SBVAL(pdata,	0x50, pos);
@@ -5600,7 +5600,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		case SMB_FILE_INTERNAL_INFORMATION:
 
 			DEBUG(10,("smbd_do_qfilepathinfo: SMB_FILE_INTERNAL_INFORMATION\n"));
-			SBVAL(pdata, 0, file_index);
+			SBVAL(pdata, 0, file_id);
 			data_size = 8;
 			*fixed_portion = 8;
 			break;
