@@ -90,15 +90,6 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>-o <parameter>PREFIX</parameter></term>
-        <listitem>
-          <para>
-	    Causes standard output from each node to be saved into a
-	    file with name PREFIX.<replaceable>IP</replaceable>.
-	  </para>
-        </listitem>
-      </varlistentry>
-
       <varlistentry><term>-p</term>
         <listitem>
           <para>

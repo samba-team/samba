@@ -34,7 +34,6 @@ Usage: onnode [OPTION] ... <NODES> <COMMAND> ...
     -f          Specify nodes file, overriding default.
     -i          Keep standard input open - the default is to close it.
     -n          Allow nodes to be specified by name.
-    -o <prefix> Save standard output from each node to file <prefix>.<ip>
     -p          Run command in parallel on specified nodes.
     -P          Push given files to nodes instead of running commands.
     -q          Do not print node addresses (overrides -v).
@@ -61,7 +60,6 @@ ctdb_nodes_file=""
 parallel=false
 verbose=false
 quiet=false
-prefix=""
 names_ok=false
 push=false
 stdin=false
@@ -79,7 +77,6 @@ parse_options ()
 		c) current=true ;;
 		f) ctdb_nodes_file="$OPTARG" ;;
 		n) names_ok=true ;;
-		o) prefix="$OPTARG" ;;
 		p) parallel=true ;;
 		q) quiet=true ;;
 		v) verbose=true ;;
@@ -274,9 +271,7 @@ push()
 
 stdout_filter ()
 {
-    if [ -n "$prefix" ] ; then
-	cat >"${prefix}.${n//\//_}"
-    elif $verbose && $parallel ; then
+    if $verbose && $parallel ; then
 	sed -e "s@^@[$n] @"
     else
 	cat
