@@ -647,7 +647,7 @@ class cmd_domain_dcpromo(Command):
 class cmd_domain_join(Command):
     """Join domain as either member or backup domain controller."""
 
-    synopsis = "%prog <dnsdomain> [DC|RODC|MEMBER|SUBDOMAIN] [options]"
+    synopsis = "%prog <dnsdomain> [DC|RODC|MEMBER] [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -715,24 +715,11 @@ class cmd_domain_join(Command):
                       plaintext_secrets=plaintext_secrets,
                       backend_store=backend_store,
                       backend_store_size=backend_store_size)
-        elif role == "SUBDOMAIN":
-            if not adminpass:
-                logger.info("Administrator password will be set randomly!")
-
-            netbios_domain = lp.get("workgroup")
-            if parent_domain is None:
-                parent_domain = ".".join(domain.split(".")[1:])
-            join_subdomain(logger=logger, server=server, creds=creds, lp=lp, dnsdomain=domain,
-                           parent_domain=parent_domain, site=site,
-                           netbios_name=netbios_name, netbios_domain=netbios_domain,
-                           targetdir=targetdir, machinepass=machinepass,
-                           use_ntvfs=use_ntvfs, dns_backend=dns_backend,
-                           adminpass=adminpass,
-                           plaintext_secrets=plaintext_secrets,
-                           backend_store=backend_store,
-                           backend_store_size=backend_store_size)
+        # elif role == "SUBDOMAIN":
+        # subdomain command removed by Gary Lockyer <gary@catalyst.net.nz>
+        # on the 28th June 2019.
         else:
-            raise CommandError("Invalid role '%s' (possible values: MEMBER, DC, RODC, SUBDOMAIN)" % role)
+            raise CommandError("Invalid role '%s' (possible values: MEMBER, DC, RODC)" % role)
 
 
 class cmd_domain_demote(Command):

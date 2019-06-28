@@ -1557,65 +1557,6 @@ sub provision_vampire_dc($$$)
 	return $ret;
 }
 
-sub provision_subdom_dc($$$)
-{
-	my ($self, $prefix, $dcvars) = @_;
-	print "PROVISIONING SUBDOMAIN DC...\n";
-
-	# We do this so that we don't run the provision.  That's the job of 'net vampire'.
-	my $samsid = undef; # TODO pass the domain sid all the way down
-	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
-					       "localsubdc",
-					       "SAMBASUBDOM",
-					       "sub.samba.example.com",
-					       $samsid,
-					       "2008",
-					       $dcvars->{PASSWORD},
-					       undef);
-
-	push (@{$ctx->{provision_options}}, "--use-ntvfs");
-
-	$ctx->{smb_conf_extra_options} = "
-	max xmit = 32K
-	server max protocol = SMB2
-
-[sysvol]
-	path = $ctx->{statedir}/sysvol
-	read only = yes
-
-[netlogon]
-	path = $ctx->{statedir}/sysvol/$ctx->{dnsname}/scripts
-	read only = no
-
-";
-
-	my $ret = $self->provision_raw_step1($ctx);
-	unless ($ret) {
-		return undef;
-	}
-
-	Samba::mk_krb5_conf($ctx);
-	Samba::mk_mitkdc_conf($ctx, abs_path(Samba::bindir_path($self, "shared")));
-
-	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
-	my $cmd = $self->get_cmd_env_vars($ret);
-	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $ctx->{dnsname} subdomain ";
-	$cmd .= "--parent-domain=$dcvars->{REALM} -U$dcvars->{DC_USERNAME}\@$dcvars->{REALM}\%$dcvars->{DC_PASSWORD}";
-	$cmd .= " --machinepass=machine$ret->{PASSWORD} --use-ntvfs";
-	$cmd .= " --adminpass=$ret->{PASSWORD}";
-
-	unless (system($cmd) == 0) {
-		warn("Join failed\n$cmd");
-		return undef;
-	}
-
-	$ret->{SUBDOM_DC_SERVER} = $ret->{SERVER};
-
-	$self->set_pdc_env_vars($ret, $dcvars);
-
-	return $ret;
-}
-
 sub provision_ad_dc_ntvfs($$$)
 {
 	my ($self, $prefix, $extra_provision_options) = @_;
@@ -2226,7 +2167,6 @@ sub check_env($$)
 	vampire_2000_dc      => ["fl2000dc"],
 	vampire_dc           => ["ad_dc_ntvfs"],
 	promoted_dc          => ["ad_dc_ntvfs"],
-	subdom_dc            => ["ad_dc_ntvfs"],
 
 	rodc                 => ["ad_dc_ntvfs"],
 	rpc_proxy            => ["ad_dc_ntvfs"],
@@ -2523,49 +2463,6 @@ sub setup_promoted_dc
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
 		# replicate Configuration NC
 		my $cmd_repl = "$cmd \"CN=Configuration,$base_dn\"";
-		unless(system($cmd_repl) == 0) {
-			warn("Failed to replicate\n$cmd_repl");
-			return undef;
-		}
-		# replicate Default NC
-		$cmd_repl = "$cmd \"$base_dn\"";
-		unless(system($cmd_repl) == 0) {
-			warn("Failed to replicate\n$cmd_repl");
-			return undef;
-		}
-	}
-
-	return $env;
-}
-
-sub setup_subdom_dc
-{
-	my ($self, $path, $dc_vars) = @_;
-
-	my $env = $self->provision_subdom_dc($path, $dc_vars);
-
-	if (defined $env) {
-	        if (not defined($self->check_or_start($env, "single"))) {
-		        return undef;
-		}
-
-		# force replicated DC to update repsTo/repsFrom
-		# for primary domain partitions
-		my $samba_tool =  Samba::bindir_path($self, "samba-tool");
-		my $cmd = "NSS_WRAPPER_HOSTS='$env->{NSS_WRAPPER_HOSTS}' ";
-		# as 'subdomain' dc may add data in its local replica
-		# we need to synchronize data between DCs
-		my $base_dn = "DC=".join(",DC=", split(/\./, $env->{REALM}));
-		my $config_dn = "CN=Configuration,DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
-		$cmd = "SOCKET_WRAPPER_DEFAULT_IFACE=\"$env->{SOCKET_WRAPPER_DEFAULT_IFACE}\"";
-		$cmd .= " KRB5_CONFIG=\"$env->{KRB5_CONFIG}\"";
-		$cmd .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";
-		$cmd .= "RESOLV_CONF=\"$env->{RESOLV_CONF}\" ";
-		$cmd .= " $samba_tool drs replicate $env->{DC_SERVER} $env->{SUBDOM_DC_SERVER}";
-		$cmd .= " $dc_vars->{CONFIGURATION}";
-		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD} --realm=$dc_vars->{DC_REALM}";
-		# replicate Configuration NC
-		my $cmd_repl = "$cmd \"$config_dn\"";
 		unless(system($cmd_repl) == 0) {
 			warn("Failed to replicate\n$cmd_repl");
 			return undef;
