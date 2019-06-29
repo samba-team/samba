@@ -858,7 +858,6 @@ struct smbd_server_connection {
 	struct messaging_context *msg_ctx;
 	struct notify_context *notify_ctx;
 	bool using_smb2;
-	bool aapl_zero_file_id; /* Apple-specific */
 	int trans_num;
 
 	size_t num_users;

@@ -2980,9 +2980,6 @@ static NTSTATUS check_aapl(vfs_handle_struct *handle,
 				      blob);
 	if (NT_STATUS_IS_OK(status)) {
 		global_fruit_config.nego_aapl = true;
-		if (config->aapl_zero_file_id) {
-			aapl_force_zero_file_id(handle->conn->sconn);
-		}
 	}
 
 	return status;
@@ -7135,6 +7132,22 @@ static uint64_t fruit_disk_free(vfs_handle_struct *handle,
 	return dfree / 2;
 }
 
+static uint64_t fruit_fs_file_id(struct vfs_handle_struct *handle,
+				 const SMB_STRUCT_STAT *psbuf)
+{
+	struct fruit_config_data *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data,
+				return 0);
+
+	if (config->aapl_zero_file_id) {
+		return 0;
+	}
+
+	return SMB_VFS_NEXT_FS_FILE_ID(handle, psbuf);
+}
+
 static struct vfs_fn_pointers vfs_fruit_fns = {
 	.connect_fn = fruit_connect,
 	.disk_free_fn = fruit_disk_free,
@@ -7166,6 +7179,7 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.offload_read_recv_fn = fruit_offload_read_recv,
 	.offload_write_send_fn = fruit_offload_write_send,
 	.offload_write_recv_fn = fruit_offload_write_recv,
+	.fs_file_id_fn = fruit_fs_file_id,
 
 	/* NT ACL operations */
 	.fget_nt_acl_fn = fruit_fget_nt_acl,

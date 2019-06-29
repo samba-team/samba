@@ -213,16 +213,6 @@ uint64_t smb_roundup(connection_struct *conn, uint64_t val)
 	return val;
 }
 
-/********************************************************************
- Globally (for this connection / multi-channel) disable file-ID
- calculation. This is required to be global because it serves
- Macs in AAPL mode, which is globally set.
-********************************************************************/
-void aapl_force_zero_file_id(struct smbd_server_connection *sconn)
-{
-	sconn->aapl_zero_file_id = true;
-}
-
 /****************************************************************************
  Utility functions for dealing with extended attributes.
 ****************************************************************************/

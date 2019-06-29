@@ -1161,7 +1161,6 @@ int sys_statvfs(const char *path, vfs_statvfs_struct *statbuf);
 NTSTATUS check_access_fsp(const struct files_struct *fsp,
 			  uint32_t access_mask);
 uint64_t smb_roundup(connection_struct *conn, uint64_t val);
-void aapl_force_zero_file_id(struct smbd_server_connection *sconn);
 bool samba_private_attr_name(const char *unix_ea_name);
 NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			files_struct *fsp,
