@@ -214,27 +214,6 @@ uint64_t smb_roundup(connection_struct *conn, uint64_t val)
 }
 
 /********************************************************************
- Create a 64 bit FileIndex. If the file is on the same device as
- the root of the share, just return the 64-bit inode. If it isn't,
- mangle as we used to do.
-********************************************************************/
-
-uint64_t get_fs_file_id(connection_struct *conn, const SMB_STRUCT_STAT *psbuf)
-{
-	uint64_t file_id;
-	if (conn->sconn->aapl_zero_file_id) {
-		return 0;
-	}
-	if (conn->base_share_dev == psbuf->st_ex_dev) {
-		return (uint64_t)psbuf->st_ex_ino;
-	}
-	file_id = ((psbuf->st_ex_ino) & UINT32_MAX); /* FileIDLow */
-	file_id |= ((uint64_t)((psbuf->st_ex_dev) & UINT32_MAX)) << 32; /* FileIDHigh */
-	return file_id;
-}
-
-
-/********************************************************************
  Globally (for this connection / multi-channel) disable file-ID
  calculation. This is required to be global because it serves
  Macs in AAPL mode, which is globally set.
@@ -1863,7 +1842,7 @@ static NTSTATUS smbd_marshall_dir_entry(TALLOC_CTX *ctx,
 		}
 	}
 
-	file_id = get_fs_file_id(conn, &smb_fname->st);
+	file_id = SMB_VFS_FS_FILE_ID(conn, &smb_fname->st);
 
 	mdate_ts = smb_fname->st.st_ex_mtime;
 	adate_ts = smb_fname->st.st_ex_atime;
@@ -5231,7 +5210,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 
 	   I think this causes us to fail the IFSKIT
 	   BasicFileInformationTest. -tpot */
-	file_id = get_fs_file_id(conn, psbuf);
+	file_id = SMB_VFS_FS_FILE_ID(conn, psbuf);
 
 	*fixed_portion = 0;
 

@@ -1389,8 +1389,9 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 
 	if (state->qfid != NULL) {
 		uint8_t p[32];
-		uint64_t file_id = get_fs_file_id(state->result->conn,
-						  &state->result->fsp_name->st);
+		uint64_t file_id = SMB_VFS_FS_FILE_ID(
+			state->result->conn,
+			&state->result->fsp_name->st);
 		DATA_BLOB blob = data_blob_const(p, sizeof(p));
 
 		ZERO_STRUCT(p);

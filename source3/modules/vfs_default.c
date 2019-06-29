@@ -2728,6 +2728,28 @@ static struct file_id vfswrap_file_id_create(struct vfs_handle_struct *handle,
 	return key;
 }
 
+static uint64_t vfswrap_fs_file_id(struct vfs_handle_struct *handle,
+				   const SMB_STRUCT_STAT *psbuf)
+{
+	uint64_t file_id;
+
+	if (handle->conn->sconn->aapl_zero_file_id) {
+		return 0;
+	}
+
+	if (handle->conn->base_share_dev == psbuf->st_ex_dev) {
+		return (uint64_t)psbuf->st_ex_ino;
+	}
+
+	/* FileIDLow */
+	file_id = ((psbuf->st_ex_ino) & UINT32_MAX);
+
+	/* FileIDHigh */
+	file_id |= ((uint64_t)((psbuf->st_ex_dev) & UINT32_MAX)) << 32;
+
+	return file_id;
+}
+
 static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 				   struct files_struct *fsp,
 				   const struct smb_filename *smb_fname,
@@ -3447,6 +3469,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.realpath_fn = vfswrap_realpath,
 	.chflags_fn = vfswrap_chflags,
 	.file_id_create_fn = vfswrap_file_id_create,
+	.fs_file_id_fn = vfswrap_fs_file_id,
 	.streaminfo_fn = vfswrap_streaminfo,
 	.get_real_filename_fn = vfswrap_get_real_filename,
 	.connectpath_fn = vfswrap_connectpath,
