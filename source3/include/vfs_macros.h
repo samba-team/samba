@@ -331,6 +331,11 @@
 #define SMB_VFS_NEXT_FILE_ID_CREATE(handle, sbuf) \
 	smb_vfs_call_file_id_create((handle)->next, (sbuf))
 
+#define SMB_VFS_FS_FILE_ID(conn, sbuf) \
+	smb_vfs_call_fs_file_id((conn)->vfs_handles, (sbuf))
+#define SMB_VFS_NEXT_FS_FILE_ID(handle, sbuf) \
+	smb_vfs_call_fs_file_id((handle)->next, (sbuf))
+
 #define SMB_VFS_STREAMINFO(conn, fsp, smb_fname, mem_ctx, num_streams, streams) \
 	smb_vfs_call_streaminfo((conn)->vfs_handles, (fsp), (smb_fname), (mem_ctx), (num_streams), (streams))
 #define SMB_VFS_NEXT_STREAMINFO(handle, fsp, smb_fname, mem_ctx, num_streams, streams) \

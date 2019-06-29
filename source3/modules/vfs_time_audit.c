@@ -1520,6 +1520,25 @@ static struct file_id smb_time_audit_file_id_create(struct vfs_handle_struct *ha
 	return result;
 }
 
+static uint64_t smb_time_audit_fs_file_id(struct vfs_handle_struct *handle,
+					  const SMB_STRUCT_STAT *sbuf)
+{
+	uint64_t result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_FS_FILE_ID(handle, sbuf);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("fs_file_id", timediff);
+	}
+
+	return result;
+}
+
 static NTSTATUS smb_time_audit_streaminfo(vfs_handle_struct *handle,
 					  struct files_struct *fsp,
 					  const struct smb_filename *smb_fname,
@@ -2824,6 +2843,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.realpath_fn = smb_time_audit_realpath,
 	.chflags_fn = smb_time_audit_chflags,
 	.file_id_create_fn = smb_time_audit_file_id_create,
+	.fs_file_id_fn = smb_time_audit_fs_file_id,
 	.offload_read_send_fn = smb_time_audit_offload_read_send,
 	.offload_read_recv_fn = smb_time_audit_offload_read_recv,
 	.offload_write_send_fn = smb_time_audit_offload_write_send,

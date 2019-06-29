@@ -2237,6 +2237,13 @@ struct file_id smb_vfs_call_file_id_create(struct vfs_handle_struct *handle,
 	return handle->fns->file_id_create_fn(handle, sbuf);
 }
 
+uint64_t smb_vfs_call_fs_file_id(struct vfs_handle_struct *handle,
+				 const SMB_STRUCT_STAT *sbuf)
+{
+	VFS_FIND(fs_file_id);
+	return handle->fns->fs_file_id_fn(handle, sbuf);
+}
+
 NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 const struct smb_filename *smb_fname,

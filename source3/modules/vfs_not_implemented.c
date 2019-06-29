@@ -511,6 +511,13 @@ struct file_id vfs_not_implemented_file_id_create(vfs_handle_struct *handle,
 	return id;
 }
 
+uint64_t vfs_not_implemented_fs_file_id(vfs_handle_struct *handle,
+					const SMB_STRUCT_STAT *sbuf)
+{
+	errno = ENOSYS;
+	return 0;
+}
+
 struct vfs_not_implemented_offload_read_state {
 	bool dummy;
 };
@@ -1088,6 +1095,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.realpath_fn = vfs_not_implemented_realpath,
 	.chflags_fn = vfs_not_implemented_chflags,
 	.file_id_create_fn = vfs_not_implemented_file_id_create,
+	.fs_file_id_fn = vfs_not_implemented_fs_file_id,
 	.offload_read_send_fn = vfs_not_implemented_offload_read_send,
 	.offload_read_recv_fn = vfs_not_implemented_offload_read_recv,
 	.offload_write_send_fn = vfs_not_implemented_offload_write_send,

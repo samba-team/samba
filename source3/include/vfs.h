@@ -265,6 +265,7 @@
 /* Version 41 - convert struct stat_ex.st_ex_calculated_birthtime to flags */
 /* Version 41 - add st_ex_itime to struct stat_ex */
 /* Version 41 - add st_ex_file_id to struct stat_ex */
+/* Version 41 - add SMB_VFS_FS_FILE_ID */
 
 #define SMB_VFS_INTERFACE_VERSION 41
 
@@ -800,6 +801,8 @@ struct vfs_fn_pointers {
 				unsigned int flags);
 	struct file_id (*file_id_create_fn)(struct vfs_handle_struct *handle,
 					    const SMB_STRUCT_STAT *sbuf);
+	uint64_t (*fs_file_id_fn)(struct vfs_handle_struct *handle,
+				  const SMB_STRUCT_STAT *sbuf);
 	struct tevent_req *(*offload_read_send_fn)(TALLOC_CTX *mem_ctx,
 						   struct tevent_context *ev,
 						   struct vfs_handle_struct *handle,
@@ -1327,6 +1330,8 @@ int smb_vfs_call_chflags(struct vfs_handle_struct *handle,
 			unsigned int flags);
 struct file_id smb_vfs_call_file_id_create(struct vfs_handle_struct *handle,
 					   const SMB_STRUCT_STAT *sbuf);
+uint64_t smb_vfs_call_fs_file_id(struct vfs_handle_struct *handle,
+				 const SMB_STRUCT_STAT *sbuf);
 NTSTATUS smb_vfs_call_streaminfo(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
 				 const struct smb_filename *smb_fname,
@@ -1751,6 +1756,8 @@ int vfs_not_implemented_chflags(vfs_handle_struct *handle,
 				uint flags);
 struct file_id vfs_not_implemented_file_id_create(vfs_handle_struct *handle,
 						  const SMB_STRUCT_STAT *sbuf);
+uint64_t vfs_not_implemented_fs_file_id(vfs_handle_struct *handle,
+					const SMB_STRUCT_STAT *sbuf);
 struct tevent_req *vfs_not_implemented_offload_read_send(
 			TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,

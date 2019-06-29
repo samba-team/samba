@@ -600,6 +600,12 @@ static struct file_id skel_file_id_create(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FILE_ID_CREATE(handle, sbuf);
 }
 
+static uint64_t skel_fs_file_id(vfs_handle_struct *handle,
+				const SMB_STRUCT_STAT *sbuf)
+{
+	return SMB_VFS_NEXT_FS_FILE_ID(handle, sbuf);
+}
+
 struct skel_offload_read_state {
 	struct vfs_handle_struct *handle;
 	DATA_BLOB token;
@@ -1348,6 +1354,7 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.realpath_fn = skel_realpath,
 	.chflags_fn = skel_chflags,
 	.file_id_create_fn = skel_file_id_create,
+	.fs_file_id_fn = skel_fs_file_id,
 	.offload_read_send_fn = skel_offload_read_send,
 	.offload_read_recv_fn = skel_offload_read_recv,
 	.offload_write_send_fn = skel_offload_write_send,
