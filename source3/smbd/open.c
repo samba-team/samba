@@ -2359,12 +2359,6 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 		lck->data->flags |= SHARE_MODE_HAS_READ_LEASE;
 	}
 
-	ok = update_num_read_oplocks(fsp, lck);
-	if (!ok) {
-		del_share_mode(lck, fsp);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
 	DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
 		  fsp->oplock_type, fsp_str_dbg(fsp)));
 

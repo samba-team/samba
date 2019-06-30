@@ -725,7 +725,6 @@ NTSTATUS get_relative_fid_filename(connection_struct *conn,
 
 uint32_t get_lease_type(const struct share_mode_data *d,
 			const struct share_mode_entry *e);
-bool update_num_read_oplocks(files_struct *fsp, struct share_mode_lock *lck);
 
 void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp);
 NTSTATUS set_file_oplock(files_struct *fsp);

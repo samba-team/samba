@@ -195,75 +195,6 @@ uint32_t get_lease_type(const struct share_mode_data *d,
 	return map_oplock_to_lease_type(e->op_type);
 }
 
-bool update_num_read_oplocks(files_struct *fsp, struct share_mode_lock *lck)
-{
-	struct share_mode_data *d = lck->data;
-	struct byte_range_lock *br_lck;
-	uint32_t num_read_oplocks = 0;
-	uint32_t i;
-
-	if (fsp_lease_type_is_exclusive(fsp)) {
-		const struct share_mode_entry *e = NULL;
-		uint32_t e_lease_type = 0;
-
-		/*
-		 * If we're fully exclusive, we don't need a brlock entry
-		 */
-		remove_stale_share_mode_entries(d);
-
-		e = find_share_mode_entry(lck, fsp);
-		if (e != NULL) {
-			e_lease_type = get_lease_type(d, e);
-		}
-
-		if (!lease_type_is_exclusive(e_lease_type)) {
-			char *timestr = NULL;
-
-			timestr = timeval_string(talloc_tos(),
-						 &fsp->open_time,
-						 true);
-
-			NDR_PRINT_DEBUG(share_mode_data, d);
-			DBG_ERR("file [%s] file_id [%s] gen_id [%lu] "
-				"open_time[%s] lease_type [0x%x] "
-				"oplock_type [0x%x]\n",
-				fsp_str_dbg(fsp),
-				file_id_string_tos(&fsp->file_id),
-				fsp->fh->gen_id, timestr,
-				e_lease_type, fsp->oplock_type);
-
-			smb_panic("Found non-exclusive lease");
-		}
-
-		return true;
-	}
-
-	for (i=0; i<d->num_share_modes; i++) {
-		struct share_mode_entry *e = &d->share_modes[i];
-		uint32_t e_lease_type = get_lease_type(d, e);
-
-		if (e_lease_type & SMB2_LEASE_READ) {
-			num_read_oplocks += 1;
-		}
-	}
-
-	br_lck = brl_get_locks_readonly(fsp);
-	if (br_lck == NULL) {
-		return false;
-	}
-	if (brl_num_read_oplocks(br_lck) == num_read_oplocks) {
-		return true;
-	}
-
-	br_lck = brl_get_locks(talloc_tos(), fsp);
-	if (br_lck == NULL) {
-		return false;
-	}
-	brl_set_num_read_oplocks(br_lck, num_read_oplocks);
-	TALLOC_FREE(br_lck);
-	return true;
-}
-
 /****************************************************************************
  Remove a file oplock with lock already held. Copes with level II and exclusive.
 ****************************************************************************/
@@ -280,14 +211,6 @@ bool remove_oplock_under_lock(files_struct *fsp, struct share_mode_lock *lck)
 			file_id_string_tos(&fsp->file_id));
 	}
 	release_file_oplock(fsp);
-
-	ret = update_num_read_oplocks(fsp, lck);
-	if (!ret) {
-		DBG_ERR("update_num_read_oplocks failed for "
-			"file %s, %s, %s\n",
-			fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
-			file_id_string_tos(&fsp->file_id));
-	}
 
 	return ret;
 }
@@ -344,14 +267,6 @@ bool downgrade_oplock(files_struct *fsp)
 			 file_id_string_tos(&fsp->file_id)));
 	}
 	downgrade_file_oplock(fsp);
-
-	ret = update_num_read_oplocks(fsp, lck);
-	if (!ret) {
-		DEBUG(0, ("%s: update_num_read_oplocks failed for "
-			 "file %s, %s, %s\n",
-			  __func__, fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
-			 file_id_string_tos(&fsp->file_id)));
-	}
 
 	TALLOC_FREE(lck);
 	return ret;
