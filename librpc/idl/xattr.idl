@@ -73,7 +73,8 @@ interface xattr
 		XATTR_DOSINFO_SIZE              = 0x00000004,
 		XATTR_DOSINFO_ALLOC_SIZE        = 0x00000008,
 		XATTR_DOSINFO_CREATE_TIME       = 0x00000010,
-		XATTR_DOSINFO_CHANGE_TIME       = 0x00000020
+		XATTR_DOSINFO_CHANGE_TIME       = 0x00000020,
+		XATTR_DOSINFO_ITIME             = 0x00000040
 	} xattr_DosInfoValidFlags;
 
 	typedef struct {
@@ -86,11 +87,19 @@ interface xattr
 		NTTIME change_time;
 	} xattr_DosInfo3;
 
+	typedef struct {
+		xattr_DosInfoValidFlags valid_flags;
+		uint32 attrib;
+		NTTIME itime;
+		NTTIME create_time;
+	} xattr_DosInfo4;
+
 	typedef [public,switch_type(uint16)] union {
 		[case(0xFFFF)] xattr_DosInfoFFFFCompat compatinfoFFFF;
                 [case(1)] xattr_DosInfo1 info1;
                 [case(2)] xattr_DosInfo2Old oldinfo2;
 		[case(3)] xattr_DosInfo3 info3;
+		[case(4)] xattr_DosInfo4 info4;
         } xattr_DosInfo;
 
 	typedef [public] struct {
