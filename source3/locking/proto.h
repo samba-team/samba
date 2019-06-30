@@ -126,6 +126,8 @@ struct share_mode_lock *get_share_mode_lock(
 	const struct smb_filename *smb_fname,
 	const struct timespec *old_write_time);
 
+bool file_has_read_lease(struct files_struct *fsp);
+
 struct db_record;
 NTSTATUS share_mode_do_locked(
 	struct file_id id,

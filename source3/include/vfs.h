@@ -375,6 +375,12 @@ typedef struct files_struct {
 	struct files_struct *base_fsp; /* placeholder for delete on close */
 
 	/*
+	 * Cache of share_mode_data->flags
+	 */
+	int share_mode_flags_seqnum;
+	uint8_t share_mode_flags;
+
+	/*
 	 * Read-only cached brlock record, thrown away when the
 	 * brlock.tdb seqnum changes. This avoids fetching data from
 	 * the brlock.tdb on every read/write call.

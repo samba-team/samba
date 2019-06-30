@@ -77,7 +77,11 @@ static bool locking_init_internal(bool read_only)
 
 	backend = db_open(NULL, db_path,
 			  SMB_OPEN_DATABASE_TDB_HASH_SIZE,
-			  TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+			  TDB_DEFAULT|
+			  TDB_VOLATILE|
+			  TDB_CLEAR_IF_FIRST|
+			  TDB_INCOMPATIBLE_HASH|
+			  TDB_SEQNUM,
 			  read_only?O_RDONLY:O_RDWR|O_CREAT, 0644,
 			  DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
 	TALLOC_FREE(db_path);
@@ -189,6 +193,66 @@ static enum ndr_err_code get_share_mode_blob_header(
 	NDR_CHECK(ndr_pull_hyper(&ndr, NDR_SCALARS, pseq));
 	NDR_CHECK(ndr_pull_uint8(&ndr, NDR_SCALARS, pflags));
 	return NDR_ERR_SUCCESS;
+}
+
+struct fsp_update_share_mode_flags_state {
+	enum ndr_err_code ndr_err;
+	uint8_t share_mode_flags;
+};
+
+static void fsp_update_share_mode_flags_fn(
+	struct db_record *rec, bool *modified_dependent, void *private_data)
+{
+	struct fsp_update_share_mode_flags_state *state = private_data;
+	TDB_DATA value = dbwrap_record_get_value(rec);
+	DATA_BLOB blob = { .data = value.dptr, .length = value.dsize };
+	uint64_t seq;
+
+	state->ndr_err = get_share_mode_blob_header(
+		&blob, &seq, &state->share_mode_flags);
+}
+
+static NTSTATUS fsp_update_share_mode_flags(struct files_struct *fsp)
+{
+	struct fsp_update_share_mode_flags_state state = {0};
+	int seqnum = dbwrap_get_seqnum(lock_db);
+	NTSTATUS status;
+
+	if (seqnum == fsp->share_mode_flags_seqnum) {
+		return NT_STATUS_OK;
+	}
+
+	status = share_mode_do_locked(
+		fsp->file_id, fsp_update_share_mode_flags_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("share_mode_do_locked returned %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(state.ndr_err)) {
+		DBG_DEBUG("get_share_mode_blob_header returned %s\n",
+			  ndr_errstr(state.ndr_err));
+		return ndr_map_error2ntstatus(state.ndr_err);
+	}
+
+	fsp->share_mode_flags_seqnum = seqnum;
+	fsp->share_mode_flags = state.share_mode_flags;
+
+	return NT_STATUS_OK;
+}
+
+bool file_has_read_lease(struct files_struct *fsp)
+{
+	NTSTATUS status;
+
+	status = fsp_update_share_mode_flags(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		/* Safe default for leases */
+		return true;
+	}
+
+	return (fsp->share_mode_flags & SHARE_MODE_HAS_READ_LEASE) != 0;
 }
 
 static int share_mode_data_nofree_destructor(struct share_mode_data *d)
