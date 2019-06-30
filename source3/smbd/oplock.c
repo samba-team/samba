@@ -1230,101 +1230,6 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	add_oplock_timeout_handler(fsp);
 }
 
-static bool file_has_read_oplocks(struct files_struct *fsp)
-{
-	struct byte_range_lock *brl;
-	uint32_t num_read_oplocks = 0;
-
-	brl = brl_get_locks_readonly(fsp);
-	if (brl == NULL) {
-		return false;
-	}
-
-	num_read_oplocks = brl_num_read_oplocks(brl);
-
-	DBG_DEBUG("num_read_oplocks = %"PRIu32"\n", num_read_oplocks);
-
-	return (num_read_oplocks != 0);
-}
-
-struct break_to_none_state {
-	struct smbd_server_connection *sconn;
-	struct file_id id;
-	struct smb2_lease_key lease_key;
-	struct GUID client_guid;
-};
-static void do_break_to_none(struct tevent_context *ctx,
-			     struct tevent_immediate *im,
-			     void *private_data);
-
-/****************************************************************************
- This function is called on any file modification or lock request. If a file
- is level 2 oplocked then it must tell all other level 2 holders to break to
- none.
-****************************************************************************/
-
-static void contend_level2_oplocks_begin_default(files_struct *fsp,
-					      enum level2_contention_type type)
-{
-	struct smbd_server_connection *sconn = fsp->conn->sconn;
-	struct tevent_immediate *im;
-	struct break_to_none_state *state;
-	bool has_read_oplocks;
-
-	/*
-	 * If this file is level II oplocked then we need
-	 * to grab the shared memory lock and inform all
-	 * other files with a level II lock that they need
-	 * to flush their read caches. We keep the lock over
-	 * the shared memory area whilst doing this.
-	 */
-
-	if (fsp_lease_type_is_exclusive(fsp)) {
-		/*
-		 * There can't be any level2 oplocks, we're alone.
-		 */
-		return;
-	}
-
-	has_read_oplocks = file_has_read_oplocks(fsp);
-	if (!has_read_oplocks) {
-		DEBUG(10, ("No read oplocks around\n"));
-		return;
-	}
-
-	/*
-	 * When we get here we might have a brlock entry locked. Also
-	 * locking the share mode entry would violate the locking
-	 * order. Breaking level2 oplocks to none is asynchronous
-	 * anyway, so we postpone this into an immediate event.
-	 */
-
-	state = talloc(sconn, struct break_to_none_state);
-	if (state == NULL) {
-		DEBUG(1, ("talloc failed\n"));
-		return;
-	}
-	*state = (struct break_to_none_state) {
-		.sconn = sconn, .id = fsp->file_id,
-	};
-
-	if (fsp->oplock_type == LEASE_OPLOCK) {
-		state->client_guid = *fsp_client_guid(fsp);
-		state->lease_key = fsp->lease->lease.lease_key;
-		DEBUG(10, ("Breaking through lease key %"PRIu64"/%"PRIu64"\n",
-			   state->lease_key.data[0],
-			   state->lease_key.data[1]));
-	}
-
-	im = tevent_create_immediate(state);
-	if (im == NULL) {
-		DEBUG(1, ("tevent_create_immediate failed\n"));
-		TALLOC_FREE(state);
-		return;
-	}
-	tevent_schedule_immediate(im, sconn->ev_ctx, do_break_to_none, state);
-}
-
 static void send_break_to_none(struct messaging_context *msg_ctx,
 			       const struct file_id *id,
 			       const struct share_mode_entry *e)
@@ -1336,13 +1241,19 @@ static void send_break_to_none(struct messaging_context *msg_ctx,
 			  nt_errstr(status));
 	}
 }
+struct break_to_none_state {
+	struct smbd_server_connection *sconn;
+	struct file_id id;
+	struct smb2_lease_key lease_key;
+	struct GUID client_guid;
+	size_t num_broken;
+};
 
 static bool do_break_lease_to_none(struct share_mode_lock *lck,
 				   struct share_mode_entry *e,
 				   void *private_data)
 {
-	struct break_to_none_state *state = talloc_get_type_abort(
-		private_data, struct break_to_none_state);
+	struct break_to_none_state *state = private_data;
 	uint32_t current_state = 0;
 	bool our_own;
 	NTSTATUS status;
@@ -1385,25 +1296,62 @@ static bool do_break_lease_to_none(struct share_mode_lock *lck,
 
 	send_break_to_none(state->sconn->msg_ctx, &state->id, e);
 
+	state->num_broken += 1;
+
 	return false;
 }
 
-static void do_break_to_none(struct tevent_context *ctx,
-			     struct tevent_immediate *im,
-			     void *private_data)
-{
-	struct break_to_none_state *state = talloc_get_type_abort(
-		private_data, struct break_to_none_state);
-	uint32_t i;
-	struct share_mode_lock *lck;
-	struct share_mode_data *d;
-	bool ok;
+/****************************************************************************
+ This function is called on any file modification or lock request. If a file
+ is level 2 oplocked then it must tell all other level 2 holders to break to
+ none.
+****************************************************************************/
 
-	lck = get_existing_share_mode_lock(talloc_tos(), state->id);
+static void contend_level2_oplocks_begin_default(files_struct *fsp,
+					      enum level2_contention_type type)
+{
+	struct break_to_none_state state = {
+		.sconn = fsp->conn->sconn, .id = fsp->file_id,
+	};
+	struct share_mode_lock *lck = NULL;
+	struct share_mode_data *d = NULL;
+	bool ok, has_read_lease;
+	uint32_t i;
+
+	/*
+	 * If this file is level II oplocked then we need
+	 * to grab the shared memory lock and inform all
+	 * other files with a level II lock that they need
+	 * to flush their read caches. We keep the lock over
+	 * the shared memory area whilst doing this.
+	 */
+
+	if (fsp_lease_type_is_exclusive(fsp)) {
+		/*
+		 * There can't be any level2 oplocks, we're alone.
+		 */
+		return;
+	}
+
+	has_read_lease = file_has_read_lease(fsp);
+	if (!has_read_lease) {
+		DEBUG(10, ("No read oplocks around\n"));
+		return;
+	}
+
+	if (fsp->oplock_type == LEASE_OPLOCK) {
+		state.client_guid = *fsp_client_guid(fsp);
+		state.lease_key = fsp->lease->lease.lease_key;
+		DEBUG(10, ("Breaking through lease key %"PRIu64"/%"PRIu64"\n",
+			   state.lease_key.data[0],
+			   state.lease_key.data[1]));
+	}
+
+	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
-		DEBUG(1, ("%s: failed to lock share mode entry for file %s.\n",
-			  __func__, file_id_string_tos(&state->id)));
-		goto done;
+		DBG_WARNING("failed to lock share mode entry for file %s.\n",
+			    file_id_string_tos(&state.id));
+		return;
 	}
 	d = lck->data;
 
@@ -1414,7 +1362,7 @@ static void do_break_to_none(struct tevent_context *ctx,
 	 * separately.
 	 */
 
-	ok = share_mode_forall_leases(lck, do_break_lease_to_none, state);
+	ok = share_mode_forall_leases(lck, do_break_lease_to_none, &state);
 	if (!ok) {
 		DBG_WARNING("share_mode_forall_leases failed\n");
 	}
@@ -1459,16 +1407,20 @@ static void do_break_to_none(struct tevent_context *ctx,
 			abort();
 		}
 
-		send_break_to_none(state->sconn->msg_ctx, &state->id, e);
+		send_break_to_none(state.sconn->msg_ctx, &state.id, e);
+		state.num_broken += 1;
 	}
 
-	/* We let the message receivers handle removing the oplock state
-	   in the share mode lock db. */
+	if (state.num_broken == 0) {
+		/*
+		 * Lazy update here. It might be that the read lease
+		 * has gone in the meantime.
+		 */
+		d->flags &= ~SHARE_MODE_HAS_READ_LEASE;
+		d->modified = true;
+	}
 
 	TALLOC_FREE(lck);
-done:
-	TALLOC_FREE(state);
-	return;
 }
 
 void smbd_contend_level2_oplocks_begin(files_struct *fsp,
