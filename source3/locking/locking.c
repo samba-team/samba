@@ -947,6 +947,7 @@ bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 	}
 
 	e->op_type = LEVEL_II_OPLOCK;
+	lck->data->flags |= SHARE_MODE_HAS_READ_LEASE;
 	lck->data->modified = True;
 	return True;
 }
