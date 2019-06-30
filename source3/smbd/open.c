@@ -2355,6 +2355,10 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (granted & SMB2_LEASE_READ) {
+		lck->data->flags |= SHARE_MODE_HAS_READ_LEASE;
+	}
+
 	ok = update_num_read_oplocks(fsp, lck);
 	if (!ok) {
 		del_share_mode(lck, fsp);
