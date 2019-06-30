@@ -144,23 +144,6 @@
 	  </varlistentry>
 
 	  <varlistentry>
-	    <term>fruit:zero_file_id = yes | no</term>
-	    <listitem>
-	      <para>A <emphasis>global</emphasis> option whether to return
-	      zero to queries of on-disk file identifier, if the client
-	      has negotiated AAPL.</para>
-	      <para>Mac applications and / or the Mac SMB
-	      client code expect the on-disk file identifier to have the
-	      semantics of HFS+ Catalog Node Identifier (CNID). Samba
-	      doesn't provide those semantics, and that occasionally cause
-	      usability issues or even data loss. Returning a file identifier
-	      of zero causes the Mac client to stop using and trusting the
-	      file id returned from the server.</para>
-	      <para>The default is <emphasis>yes</emphasis>.</para>
-	    </listitem>
-	  </varlistentry>
-
-	  <varlistentry>
 	    <term>fruit:model = MacSamba</term>
 	    <listitem>
 	      <para>This option defines the model string inside the AAPL
@@ -404,6 +387,22 @@
 	      the size is exactly 286 bytes and the content matches a special
 	      boilerplate resource fork created my macOS.</para>
 	      <para>The default is <emphasis>no</emphasis>.</para>
+	    </listitem>
+	  </varlistentry>
+
+	  <varlistentry>
+	    <term>fruit:zero_file_id = yes | no</term>
+	    <listitem>
+	      <para>Whether to return zero to queries of on-disk file
+	      identifier if the client has negotiated AAPL.</para>
+	      <para>Mac applications and / or the Mac SMB client code expect the
+	      on-disk file identifier to have the semantics of HFS+ Catalog Node
+	      Identifier (CNID). Samba provides File-IDs based on a file's
+	      initial creation date if the option <smbconfoption name="store dos
+	      attributes"/> is enabled.  Returning a file identifier of
+	      zero causes the Mac client to stop using and trusting the file id
+	      returned from the server.</para>
+	      <para>The default is <emphasis>yes</emphasis>.</para>
 	    </listitem>
 	  </varlistentry>
 

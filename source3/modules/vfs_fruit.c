@@ -2225,7 +2225,8 @@ static int init_fruit_config(vfs_handle_struct *handle)
 		SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME, "posix_rename", true);
 
 	config->aapl_zero_file_id =
-	    lp_parm_bool(-1, FRUIT_PARAM_TYPE_NAME, "zero_file_id", true);
+	    lp_parm_bool(SNUM(handle->conn), FRUIT_PARAM_TYPE_NAME,
+			 "zero_file_id", true);
 
 	config->readdir_attr_rsize = lp_parm_bool(
 		SNUM(handle->conn), "readdir_attr", "aapl_rsize", true);
@@ -7141,7 +7142,9 @@ static uint64_t fruit_fs_file_id(struct vfs_handle_struct *handle,
 				struct fruit_config_data,
 				return 0);
 
-	if (config->aapl_zero_file_id) {
+	if (global_fruit_config.nego_aapl &&
+	    config->aapl_zero_file_id)
+	{
 		return 0;
 	}
 

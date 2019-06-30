@@ -1995,6 +1995,13 @@ sub provision($$$$$$$$$)
 	fruit:delete_empty_adfiles = true
 	fruit:veto_appledouble = no
 
+[vfs_fruit_zero_fileid]
+	path = $shrdir
+	vfs objects = fruit streams_xattr acl_xattr xattr_tdb
+	fruit:resource = file
+	fruit:metadata = stream
+	fruit:zero_file_id=yes
+
 [badname-tmp]
 	path = $badnames_shrdir
 	guest ok = yes
