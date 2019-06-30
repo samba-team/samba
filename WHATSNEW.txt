@@ -81,7 +81,6 @@ Log lines are of the form:
 
     durations are in microseconds.
 
-
 Default schema updated to 2012_R2
 -------------------------
 
@@ -90,6 +89,17 @@ is not yet available.  Older schemas can be used by provisioning with the
 '--base-schema' argument.  Existing installations can be updated with the
 samba-tool command "domain schemaupgrade".
 
+Setting lmdb map size
+---------------------
+
+It is now possible to set the lmdb map size (The maximum permitted size for
+the database).  "samba-tool" now accepts the "--backend-store-size"
+i.e. --backend-store-size=4Gb.  If not specified it defaults to 8Gb.
+This option is avaiable for the following sub commands:
+ * domain provision
+ * domain join
+ * domain dcpromo
+ * drs clone-dc-database
 
 REMOVED FEATURES
 ================
@@ -101,6 +111,13 @@ As a leftover from work related to the Samba Web Administration Tool (SWAT),
 Samba still supported a Python WSGI web server (which could still be turned on
 from the 'server services' smb.conf parameter). This service was unused and has
 now been removed from Samba.
+
+
+samba-tool join subdommain
+--------------------------
+
+The subdommain role has been removed from the join command.  This option did
+not work and has no tests.
 
 
 smb.conf changes
