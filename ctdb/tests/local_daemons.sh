@@ -400,10 +400,10 @@ local_daemons_print_socket ()
 	onnode -q "$_nodes" "${VALGRIND:-} ${_path} socket ctdbd"
 }
 
-local_daemons_dump_logs ()
+local_daemons_print_log ()
 {
 	if [ $# -ne 1 ] || [ "$1" = "-h" ] ; then
-		local_daemons_generic_usage "dump-logs"
+		local_daemons_generic_usage "print-log"
 	fi
 
 	_nodes="$1"
@@ -436,7 +436,7 @@ Commands:
   stop           Stop specified daemon(s)
   onnode         Run a command in the environment of specified daemon(s)
   print-socket   Print the Unix domain socket used by specified daemon(s)
-  dump-logs      Dump logs for specified daemon(s) to stdout
+  print-log      Print logs for specified daemon(s) to stdout
 
 All commands use <directory> for daemon configuration
 
@@ -461,6 +461,6 @@ start) local_daemons_start "$@" ;;
 stop) local_daemons_stop "$@" ;;
 onnode) local_daemons_onnode "$@" ;;
 print-socket) local_daemons_print_socket "$@" ;;
-dump-logs) local_daemons_dump_logs "$@" ;;
+print-log) local_daemons_print_log "$@" ;;
 *) usage ;;
 esac
