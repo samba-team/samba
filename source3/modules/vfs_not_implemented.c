@@ -650,8 +650,7 @@ const char *vfs_not_implemented_connectpath(struct vfs_handle_struct *handle,
 
 NTSTATUS vfs_not_implemented_brl_lock_windows(struct vfs_handle_struct *handle,
 					      struct byte_range_lock *br_lck,
-					      struct lock_struct *plock,
-					      bool blocking_lock)
+					      struct lock_struct *plock)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }

@@ -1886,21 +1886,18 @@ static const char *smb_full_audit_connectpath(vfs_handle_struct *handle,
 
 static NTSTATUS smb_full_audit_brl_lock_windows(struct vfs_handle_struct *handle,
 					        struct byte_range_lock *br_lck,
-					        struct lock_struct *plock,
-					        bool blocking_lock)
+					        struct lock_struct *plock)
 {
 	NTSTATUS result;
 
-	result = SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle, br_lck, plock,
-					       blocking_lock);
+	result = SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle, br_lck, plock);
 
 	do_log(SMB_VFS_OP_BRL_LOCK_WINDOWS, NT_STATUS_IS_OK(result), handle,
-	    "%s:%llu-%llu. type=%d. blocking=%d",
+	    "%s:%llu-%llu. type=%d.",
 	       fsp_str_do_log(brl_fsp(br_lck)),
 	       (unsigned long long)plock->start,
 	       (unsigned long long)plock->size,
-	       plock->lock_type,
-	       blocking_lock);
+	       plock->lock_type);
 
 	return result;
 }

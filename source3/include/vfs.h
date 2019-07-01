@@ -266,6 +266,8 @@
 /* Version 41 - add st_ex_itime to struct stat_ex */
 /* Version 41 - add st_ex_file_id to struct stat_ex */
 /* Version 41 - add SMB_VFS_FS_FILE_ID */
+/* Version 41 - Remove "blocking_lock" parameter from
+                SMB_VFS_BRL_LOCK_WINDOWS */
 
 #define SMB_VFS_INTERFACE_VERSION 41
 
@@ -870,8 +872,7 @@ struct vfs_fn_pointers {
 
 	NTSTATUS (*brl_lock_windows_fn)(struct vfs_handle_struct *handle,
 					struct byte_range_lock *br_lck,
-					struct lock_struct *plock,
-					bool blocking_lock);
+					struct lock_struct *plock);
 
 	bool (*brl_unlock_windows_fn)(struct vfs_handle_struct *handle,
 				      struct messaging_context *msg_ctx,
@@ -1345,8 +1346,7 @@ const char *smb_vfs_call_connectpath(struct vfs_handle_struct *handle,
 				     const struct smb_filename *smb_fname);
 NTSTATUS smb_vfs_call_brl_lock_windows(struct vfs_handle_struct *handle,
 				       struct byte_range_lock *br_lck,
-				       struct lock_struct *plock,
-				       bool blocking_lock);
+				       struct lock_struct *plock);
 bool smb_vfs_call_brl_unlock_windows(struct vfs_handle_struct *handle,
 				     struct messaging_context *msg_ctx,
 				     struct byte_range_lock *br_lck,
@@ -1808,8 +1808,7 @@ const char *vfs_not_implemented_connectpath(struct vfs_handle_struct *handle,
 					    const struct smb_filename *smb_fname);
 NTSTATUS vfs_not_implemented_brl_lock_windows(struct vfs_handle_struct *handle,
 					      struct byte_range_lock *br_lck,
-					      struct lock_struct *plock,
-					      bool blocking_lock);
+					      struct lock_struct *plock);
 bool vfs_not_implemented_brl_unlock_windows(struct vfs_handle_struct *handle,
 					    struct messaging_context *msg_ctx,
 					    struct byte_range_lock *br_lck,

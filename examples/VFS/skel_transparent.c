@@ -818,11 +818,9 @@ static const char *skel_connectpath(struct vfs_handle_struct *handle,
 
 static NTSTATUS skel_brl_lock_windows(struct vfs_handle_struct *handle,
 				      struct byte_range_lock *br_lck,
-				      struct lock_struct *plock,
-				      bool blocking_lock)
+				      struct lock_struct *plock)
 {
-	return SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle,
-					     br_lck, plock, blocking_lock);
+	return SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle, br_lck, plock);
 }
 
 static bool skel_brl_unlock_windows(struct vfs_handle_struct *handle,

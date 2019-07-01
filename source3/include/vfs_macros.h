@@ -351,10 +351,10 @@
 #define SMB_VFS_NEXT_CONNECTPATH(conn, smb_fname) \
 	smb_vfs_call_connectpath((conn)->next, (smb_fname))
 
-#define SMB_VFS_BRL_LOCK_WINDOWS(conn, br_lck, plock, blocking_lock) \
-	smb_vfs_call_brl_lock_windows((conn)->vfs_handles, (br_lck), (plock), (blocking_lock))
-#define SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle, br_lck, plock, blocking_lock) \
-	smb_vfs_call_brl_lock_windows((handle)->next, (br_lck), (plock), (blocking_lock))
+#define SMB_VFS_BRL_LOCK_WINDOWS(conn, br_lck, plock) \
+	smb_vfs_call_brl_lock_windows((conn)->vfs_handles, (br_lck), (plock))
+#define SMB_VFS_NEXT_BRL_LOCK_WINDOWS(handle, br_lck, plock) \
+	smb_vfs_call_brl_lock_windows((handle)->next, (br_lck), (plock))
 
 #define SMB_VFS_BRL_UNLOCK_WINDOWS(conn, msg_ctx, br_lck, plock) \
 	smb_vfs_call_brl_unlock_windows((conn)->vfs_handles, (msg_ctx), (br_lck), (plock))
