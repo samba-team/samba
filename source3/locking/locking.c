@@ -230,6 +230,47 @@ static void decrement_current_lock_count(files_struct *fsp,
  Utility function called by locking requests.
 ****************************************************************************/
 
+struct do_lock_state {
+	struct files_struct *fsp;
+	uint64_t smblctx;
+	uint64_t count;
+	uint64_t offset;
+	enum brl_type lock_type;
+	enum brl_flavour lock_flav;
+
+	struct server_id blocker_pid;
+	uint64_t blocker_smblctx;
+	NTSTATUS status;
+};
+
+static void do_lock_fn(
+	struct db_record *rec,
+	bool *modified_dependent,
+	void *private_data)
+{
+	struct do_lock_state *state = private_data;
+	struct byte_range_lock *br_lck = NULL;
+
+	br_lck = brl_get_locks(talloc_tos(), state->fsp);
+	if (br_lck == NULL) {
+		state->status = NT_STATUS_NO_MEMORY;
+		return;
+	}
+
+	state->status = brl_lock(
+		br_lck,
+		state->smblctx,
+		messaging_server_id(state->fsp->conn->sconn->msg_ctx),
+		state->offset,
+		state->count,
+		state->lock_type,
+		state->lock_flav,
+		&state->blocker_pid,
+		&state->blocker_smblctx);
+
+	TALLOC_FREE(br_lck);
+}
+
 NTSTATUS do_lock(files_struct *fsp,
 		 uint64_t smblctx,
 		 uint64_t count,
@@ -239,9 +280,14 @@ NTSTATUS do_lock(files_struct *fsp,
 		 struct server_id *pblocker_pid,
 		 uint64_t *psmblctx)
 {
-	struct byte_range_lock *br_lck = NULL;
-	struct server_id blocker_pid = { 0 };
-	uint64_t blocker_smblctx = 0;
+	struct do_lock_state state = {
+		.fsp = fsp,
+		.smblctx = smblctx,
+		.count = count,
+		.offset = offset,
+		.lock_type = lock_type,
+		.lock_flav = lock_flav,
+	};
 	NTSTATUS status;
 
 	/* silently return ok on print files as we don't do locking there */
@@ -271,36 +317,25 @@ NTSTATUS do_lock(files_struct *fsp,
 		  fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp));
 
-	br_lck = brl_get_locks(talloc_tos(), fsp);
-	if (!br_lck) {
-		return NT_STATUS_NO_MEMORY;
+	status = share_mode_do_locked(fsp->file_id, do_lock_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("share_mode_do_locked returned %s\n",
+			  nt_errstr(status));
+		return status;
 	}
-
-	status = brl_lock(
-		br_lck,
-		smblctx,
-		messaging_server_id(fsp->conn->sconn->msg_ctx),
-		offset,
-		count,
-		lock_type,
-		lock_flav,
-		&blocker_pid,
-		&blocker_smblctx);
-
-	TALLOC_FREE(br_lck);
 
 	if (psmblctx != NULL) {
-		*psmblctx = blocker_smblctx;
+		*psmblctx = state.blocker_smblctx;
 	}
 	if (pblocker_pid != NULL) {
-		*pblocker_pid = blocker_pid;
+		*pblocker_pid = state.blocker_pid;
 	}
 
-	DBG_DEBUG("returning status=%s\n", nt_errstr(status));
+	DBG_DEBUG("returning status=%s\n", nt_errstr(state.status));
 
 	increment_current_lock_count(fsp, lock_flav);
 
-	return status;
+	return state.status;
 }
 
 /****************************************************************************
