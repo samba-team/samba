@@ -994,7 +994,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         self.assert_DCs_replication_is_consistent(peer_conn, all_objects,
                                                   expected_links)
 
-    def test_repl_integrity_cross_partition_links(self):
+    def _test_repl_integrity_cross_partition_links(self, get_tgt=False):
         """
         Checks that a cross-partition link to an unknown target object does
         not result in missing links.
@@ -1006,6 +1006,18 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
 
         # stop replication so the peer gets the following objects in one go
         self._disable_all_repl(self.dnsname_dc2)
+
+        # optionally force the client-side to use GET_TGT locally, by adding a
+        # one-way link to a missing/deleted target object
+        if get_tgt:
+            missing_target = "OU=missing_tgt,%s" % self.ou
+            self.add_object(missing_target)
+            get_tgt_source = "CN=get_tgt_src,%s" % self.ou
+            self.add_object(get_tgt_source,
+                            objectclass="msExchConfigurationContainer")
+            self.modify_object(get_tgt_source, "addressBookRoots2",
+                               missing_target)
+            self.test_ldb_dc.delete(missing_target)
 
         # create a link source object in the main NC
         la_source = "OU=cross_nc_src,%s" % self.ou
@@ -1037,6 +1049,14 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
             self.repl_get_next(get_tgt=True)
 
         self.set_dc_connection(self.default_conn)
+
+        # delete the GET_TGT test object. We're not interested in asserting its
+        # links - it was just there to make the client use GET_TGT (and it
+        # creates an inconsistency because one DC correctly ignores the link,
+        # because it points to a deleted object)
+        if get_tgt:
+            self.test_ldb_dc.delete(get_tgt_source)
+
         self.init_test_state()
 
         # Now sync across the partition containing the link target object
@@ -1092,6 +1112,12 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         # cleanup the server object we created in the Configuration partition
         self.test_ldb_dc.delete(la_target)
         self._enable_all_repl(self.dnsname_dc2)
+
+    def test_repl_integrity_cross_partition_links(self):
+        self._test_repl_integrity_cross_partition_links(get_tgt=False)
+
+    def test_repl_integrity_cross_partition_links_with_tgt(self):
+        self._test_repl_integrity_cross_partition_links(get_tgt=True)
 
     def test_repl_get_tgt_multivalued_links(self):
         """Tests replication with multi-valued link attributes."""
