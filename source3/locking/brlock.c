@@ -1191,8 +1191,7 @@ bool smb_vfs_call_brl_unlock_windows(struct vfs_handle_struct *handle,
  Unlock a range of bytes.
 ****************************************************************************/
 
-bool brl_unlock(struct messaging_context *msg_ctx,
-		struct byte_range_lock *br_lck,
+bool brl_unlock(struct byte_range_lock *br_lck,
 		uint64_t smblctx,
 		struct server_id pid,
 		br_off start,
@@ -1388,7 +1387,7 @@ void brl_close_fnum(struct messaging_context *msg_ctx,
 
 		if (lock->context.tid == tid && serverid_equal(&lock->context.pid, &pid) &&
 				(lock->fnum == fnum)) {
-			brl_unlock(msg_ctx,
+			brl_unlock(
 				br_lck,
 				lock->context.smblctx,
 				pid,

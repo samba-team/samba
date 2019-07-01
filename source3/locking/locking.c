@@ -337,8 +337,7 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ok = brl_unlock(msg_ctx,
-			br_lck,
+	ok = brl_unlock(br_lck,
 			smblctx,
 			messaging_server_id(fsp->conn->sconn->msg_ctx),
 			offset,
