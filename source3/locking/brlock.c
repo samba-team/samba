@@ -346,7 +346,7 @@ static int lock_compare(const struct lock_struct *lck1,
 ****************************************************************************/
 
 NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
-    struct lock_struct *plock, bool blocking_lock)
+				  struct lock_struct *plock)
 {
 	unsigned int i;
 	files_struct *fsp = br_lck->fsp;

@@ -35,8 +35,7 @@ void brl_set_num_read_oplocks(struct byte_range_lock *brl,
 			      uint32_t num_read_oplocks);
 
 NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
-		struct lock_struct *plock,
-		bool blocking_lock);
+				  struct lock_struct *plock);
 
 NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 		struct byte_range_lock *br_lck,

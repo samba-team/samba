@@ -2840,7 +2840,7 @@ static NTSTATUS vfswrap_brl_lock_windows(struct vfs_handle_struct *handle,
 	SMB_ASSERT(plock->lock_flav == WINDOWS_LOCK);
 
 	/* Note: blr is not used in the default implementation. */
-	return brl_lock_windows_default(br_lck, plock, false);
+	return brl_lock_windows_default(br_lck, plock);
 }
 
 static bool vfswrap_brl_unlock_windows(struct vfs_handle_struct *handle,
