@@ -85,8 +85,7 @@ NTSTATUS smbd_do_locks_try(
 	 */
 	for (i = i-1; i != UINT16_MAX; i--) {
 		struct smbd_lock_element *e = &locks[i];
-		do_unlock(msg_ctx,
-			  fsp,
+		do_unlock(fsp,
 			  e->smblctx,
 			  e->count,
 			  e->offset,

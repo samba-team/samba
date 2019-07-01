@@ -307,12 +307,11 @@ NTSTATUS do_lock(files_struct *fsp,
  Utility function called by unlocking requests.
 ****************************************************************************/
 
-NTSTATUS do_unlock(struct messaging_context *msg_ctx,
-			files_struct *fsp,
-			uint64_t smblctx,
-			uint64_t count,
-			uint64_t offset,
-			enum brl_flavour lock_flav)
+NTSTATUS do_unlock(files_struct *fsp,
+		   uint64_t smblctx,
+		   uint64_t count,
+		   uint64_t offset,
+		   enum brl_flavour lock_flav)
 {
 	bool ok = False;
 	struct byte_range_lock *br_lck = NULL;

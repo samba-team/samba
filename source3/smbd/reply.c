@@ -8202,12 +8202,12 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 			goto done;
 		}
 
-		status = do_unlock(req->sconn->msg_ctx,
-				fsp,
-				e->smblctx,
-				e->count,
-				e->offset,
-				lock_flav);
+		status = do_unlock(
+			fsp,
+			e->smblctx,
+			e->count,
+			e->offset,
+			lock_flav);
 
 		DEBUG(10, ("%s: unlock returned %s\n", __func__,
 			   nt_errstr(status)));

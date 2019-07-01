@@ -104,12 +104,11 @@ NTSTATUS do_lock(files_struct *fsp,
 		 enum brl_flavour lock_flav,
 		 struct server_id *pblocker_pid,
 		 uint64_t *psmblctx);
-NTSTATUS do_unlock(struct messaging_context *msg_ctx,
-			files_struct *fsp,
-			uint64_t smblctx,
-			uint64_t count,
-			uint64_t offset,
-			enum brl_flavour lock_flav);
+NTSTATUS do_unlock(files_struct *fsp,
+		   uint64_t smblctx,
+		   uint64_t count,
+		   uint64_t offset,
+		   enum brl_flavour lock_flav);
 void locking_close_file(struct messaging_context *msg_ctx,
 			files_struct *fsp,
 			enum file_close_type close_type);
