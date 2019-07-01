@@ -659,6 +659,15 @@ WERROR libnet_vampire_cb_store_chunk(void *private_data,
 		return WERR_INVALID_PARAMETER;
 	}
 
+	/*
+	 * If the peer DC doesn't support GET_TGT (req v10), then the link
+	 * targets are as up-to-date as they're ever gonna be. (Without this,
+	 * cases where we'd normally retry with GET_TGT cause the join to fail)
+	 */
+	if (c->req_level < 10) {
+		dsdb_repl_flags |= DSDB_REPL_FLAG_TARGETS_UPTODATE;
+	}
+
 	if (req_replica_flags & DRSUAPI_DRS_CRITICAL_ONLY || is_exop) {
 		/*
 		 * If we only replicate the critical objects, or this
