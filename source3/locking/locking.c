@@ -358,8 +358,7 @@ NTSTATUS do_unlock(files_struct *fsp,
  Remove any locks on this fd. Called from file_close().
 ****************************************************************************/
 
-void locking_close_file(struct messaging_context *msg_ctx,
-			files_struct *fsp,
+void locking_close_file(files_struct *fsp,
 			enum file_close_type close_type)
 {
 	struct byte_range_lock *br_lck;
