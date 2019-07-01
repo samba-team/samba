@@ -723,8 +723,7 @@ OR
  We must cope with range splits and merges.
 ****************************************************************************/
 
-static NTSTATUS brl_lock_posix(struct messaging_context *msg_ctx,
-			       struct byte_range_lock *br_lck,
+static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 			       struct lock_struct *plock)
 {
 	unsigned int i, count, posix_count;
@@ -939,7 +938,7 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 		ret = SMB_VFS_BRL_LOCK_WINDOWS(
 			br_lck->fsp->conn, br_lck, &lock);
 	} else {
-		ret = brl_lock_posix(msg_ctx, br_lck, &lock);
+		ret = brl_lock_posix(br_lck, &lock);
 	}
 
 #if ZERO_ZERO
