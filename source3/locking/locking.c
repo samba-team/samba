@@ -264,11 +264,15 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
 
-	DEBUG(10,("do_lock: lock flavour %s lock type %s start=%ju len=%ju "
-		"blocking_lock=%s requested for %s file %s\n",
-		lock_flav_name(lock_flav), lock_type_name(lock_type),
-		(uintmax_t)offset, (uintmax_t)count, blocking_lock ? "true" :
-		"false", fsp_fnum_dbg(fsp), fsp_str_dbg(fsp)));
+	DBG_DEBUG("lock flavour %s lock type %s start=%"PRIu64" len=%"PRIu64" "
+		  "blocking_lock=%s requested for %s file %s\n",
+		  lock_flav_name(lock_flav),
+		  lock_type_name(lock_type),
+		  offset,
+		  count,
+		  blocking_lock ? "true" : "false",
+		  fsp_fnum_dbg(fsp),
+		  fsp_str_dbg(fsp));
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {
