@@ -115,7 +115,6 @@ static bool smbd_smb1_fsp_add_blocked_lock_req(
 
 struct smbd_smb1_do_locks_state {
 	struct tevent_context *ev;
-	struct messaging_context *msg_ctx;
 	struct smb_request *smbreq;
 	struct files_struct *fsp;
 	struct timeval endtime;
@@ -133,7 +132,6 @@ static void smbd_smb1_blocked_locks_cleanup(
 struct tevent_req *smbd_smb1_do_locks_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
-	struct messaging_context *msg_ctx,
 	struct smb_request **smbreq, /* talloc_move()d into our state */
 	struct files_struct *fsp,
 	uint32_t timeout,
@@ -157,7 +155,6 @@ struct tevent_req *smbd_smb1_do_locks_send(
 		return NULL;
 	}
 	state->ev = ev;
-	state->msg_ctx = msg_ctx;
 	state->smbreq = talloc_move(state, smbreq);
 	state->fsp = fsp;
 	state->large_offset = large_offset;

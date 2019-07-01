@@ -7579,7 +7579,6 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 	subreq = smbd_smb1_do_locks_send(
 		fsp,
 		req->sconn->ev_ctx,
-		req->sconn->msg_ctx,
 		&req,
 		fsp,
 		blocking_lock ? UINT32_MAX : 0,

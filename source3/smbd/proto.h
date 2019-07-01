@@ -108,7 +108,6 @@ NTSTATUS smbd_do_locks_try(
 struct tevent_req *smbd_smb1_do_locks_send(
 	TALLOC_CTX *mem_ctx,
 	struct tevent_context *ev,
-	struct messaging_context *msg_ctx,
 	struct smb_request **smbreq, /* talloc_move()d into our state */
 	struct files_struct *fsp,
 	uint32_t timeout,

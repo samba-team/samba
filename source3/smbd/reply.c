@@ -3796,7 +3796,6 @@ void reply_lockread(struct smb_request *req)
 	subreq = smbd_smb1_do_locks_send(
 		fsp,
 		req->sconn->ev_ctx,
-		req->sconn->msg_ctx,
 		&req,
 		fsp,
 		0,
@@ -5725,7 +5724,6 @@ void reply_lock(struct smb_request *req)
 	subreq = smbd_smb1_do_locks_send(
 		fsp,
 		req->sconn->ev_ctx,
-		req->sconn->msg_ctx,
 		&req,
 		fsp,
 		0,
@@ -8480,7 +8478,6 @@ void reply_lockingX(struct smb_request *req)
 	subreq = smbd_smb1_do_locks_send(
 		fsp,
 		req->sconn->ev_ctx,
-		req->sconn->msg_ctx,
 		&req,
 		fsp,
 		lock_timeout,
