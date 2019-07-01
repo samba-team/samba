@@ -286,7 +286,6 @@ NTSTATUS do_lock(struct messaging_context *msg_ctx,
 		count,
 		lock_type,
 		lock_flav,
-		false,
 		&blocker_pid,
 		&blocker_smblctx);
 

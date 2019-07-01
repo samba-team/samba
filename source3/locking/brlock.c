@@ -912,7 +912,6 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 		br_off size,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
-		bool blocking_lock,
 		struct server_id *blocker_pid,
 		uint64_t *psmblctx)
 {
@@ -939,8 +938,8 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 	};
 
 	if (lock_flav == WINDOWS_LOCK) {
-		ret = SMB_VFS_BRL_LOCK_WINDOWS(br_lck->fsp->conn, br_lck,
-					       &lock, blocking_lock);
+		ret = SMB_VFS_BRL_LOCK_WINDOWS(
+			br_lck->fsp->conn, br_lck, &lock, false);
 	} else {
 		ret = brl_lock_posix(msg_ctx, br_lck, &lock);
 	}

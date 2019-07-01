@@ -46,7 +46,6 @@ NTSTATUS brl_lock(struct messaging_context *msg_ctx,
 		br_off size,
 		enum brl_type lock_type,
 		enum brl_flavour lock_flav,
-		bool blocking_lock,
 		struct server_id *blocker_pid,
 		uint64_t *psmblctx);
 bool brl_unlock(struct messaging_context *msg_ctx,
