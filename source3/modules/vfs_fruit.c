@@ -2743,10 +2743,8 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 
 	/* Set NetAtalk locks matching our access */
 	if (access_mask & FILE_READ_DATA) {
-		struct byte_range_lock *br_lck = NULL;
-
 		off = access_to_netatalk_brl(fork_type, FILE_READ_DATA);
-		br_lck = do_lock(
+		status = do_lock(
 			handle->conn->sconn->msg_ctx,
 			fsp,
 			fsp->op->global->open_persistent_id,
@@ -2755,11 +2753,8 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 			READ_LOCK,
 			POSIX_LOCK,
 			false, 	/* blocking_lock */
-			&status,
 			NULL,
 			NULL);
-
-		TALLOC_FREE(br_lck);
 
 		if (!NT_STATUS_IS_OK(status))  {
 			return status;
@@ -2767,10 +2762,8 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	}
 
 	if (!share_for_read) {
-		struct byte_range_lock *br_lck = NULL;
-
 		off = denymode_to_netatalk_brl(fork_type, DENY_READ);
-		br_lck = do_lock(
+		status = do_lock(
 			handle->conn->sconn->msg_ctx,
 			fsp,
 			fsp->op->global->open_persistent_id,
@@ -2779,11 +2772,8 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 			READ_LOCK,
 			POSIX_LOCK,
 			false,	/* blocking_lock */
-			&status,
 			NULL,
 			NULL);
-
-		TALLOC_FREE(br_lck);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -2791,10 +2781,8 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	}
 
 	if (access_mask & FILE_WRITE_DATA) {
-		struct byte_range_lock *br_lck = NULL;
-
 		off = access_to_netatalk_brl(fork_type, FILE_WRITE_DATA);
-		br_lck = do_lock(
+		status = do_lock(
 			handle->conn->sconn->msg_ctx,
 			fsp,
 			fsp->op->global->open_persistent_id,
@@ -2803,11 +2791,8 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 			READ_LOCK,
 			POSIX_LOCK,
 			false,
-			&status,
 			NULL,
 			NULL);
-
-		TALLOC_FREE(br_lck);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -2815,10 +2800,8 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	}
 
 	if (!share_for_write) {
-		struct byte_range_lock *br_lck = NULL;
-
 		off = denymode_to_netatalk_brl(fork_type, DENY_WRITE);
-		br_lck = do_lock(
+		status = do_lock(
 			handle->conn->sconn->msg_ctx,
 			fsp,
 			fsp->op->global->open_persistent_id,
@@ -2827,11 +2810,8 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 			READ_LOCK,
 			POSIX_LOCK,
 			false,
-			&status,
 			NULL,
 			NULL);
-
-		TALLOC_FREE(br_lck);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;

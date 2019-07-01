@@ -59,9 +59,8 @@ NTSTATUS smbd_do_locks_try(
 
 	for (i=0; i<num_locks; i++) {
 		struct smbd_lock_element *e = &locks[i];
-		struct byte_range_lock *br_lck;
 
-		br_lck = do_lock(
+		status = do_lock(
 			msg_ctx,
 			fsp,
 			e->smblctx,
@@ -70,14 +69,8 @@ NTSTATUS smbd_do_locks_try(
 			e->brltype,
 			lock_flav,
 			false,	/* blocking_lock */
-			&status,
 			blocking_pid,
 			blocking_smblctx);
-		if (br_lck == NULL) {
-			return status;
-		}
-		TALLOC_FREE(br_lck);
-
 		if (!NT_STATUS_IS_OK(status)) {
 			break;
 		}

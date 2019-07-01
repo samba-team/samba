@@ -230,36 +230,36 @@ static void decrement_current_lock_count(files_struct *fsp,
  Utility function called by locking requests.
 ****************************************************************************/
 
-struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
-			files_struct *fsp,
-			uint64_t smblctx,
-			uint64_t count,
-			uint64_t offset,
-			enum brl_type lock_type,
-			enum brl_flavour lock_flav,
-			bool blocking_lock,
-			NTSTATUS *perr,
-			struct server_id *pblocker_pid,
-			uint64_t *psmblctx)
+NTSTATUS do_lock(struct messaging_context *msg_ctx,
+		 files_struct *fsp,
+		 uint64_t smblctx,
+		 uint64_t count,
+		 uint64_t offset,
+		 enum brl_type lock_type,
+		 enum brl_flavour lock_flav,
+		 bool blocking_lock,
+		 struct server_id *pblocker_pid,
+		 uint64_t *psmblctx)
 {
 	struct byte_range_lock *br_lck = NULL;
 	struct server_id blocker_pid = { 0 };
 	uint64_t blocker_smblctx = 0;
+	NTSTATUS status;
 
 	/* silently return ok on print files as we don't do locking there */
 	if (fsp->print_file) {
-		*perr = NT_STATUS_OK;
-		return NULL;
+		return NT_STATUS_OK;
 	}
 
 	if (!fsp->can_lock) {
-		*perr = fsp->is_directory ? NT_STATUS_INVALID_DEVICE_REQUEST : NT_STATUS_INVALID_HANDLE;
-		return NULL;
+		if (fsp->is_directory) {
+			return NT_STATUS_INVALID_DEVICE_REQUEST;
+		}
+		return NT_STATUS_INVALID_HANDLE;
 	}
 
 	if (!lp_locking(fsp->conn->params)) {
-		*perr = NT_STATUS_OK;
-		return NULL;
+		return NT_STATUS_OK;
 	}
 
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
@@ -276,21 +276,23 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 
 	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {
-		*perr = NT_STATUS_NO_MEMORY;
-		return NULL;
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	*perr = brl_lock(msg_ctx,
-			br_lck,
-			smblctx,
-			messaging_server_id(fsp->conn->sconn->msg_ctx),
-			offset,
-			count,
-			lock_type,
-			lock_flav,
-			blocking_lock,
-			&blocker_pid,
-			&blocker_smblctx);
+	status = brl_lock(
+		msg_ctx,
+		br_lck,
+		smblctx,
+		messaging_server_id(fsp->conn->sconn->msg_ctx),
+		offset,
+		count,
+		lock_type,
+		lock_flav,
+		blocking_lock,
+		&blocker_pid,
+		&blocker_smblctx);
+
+	TALLOC_FREE(br_lck);
 
 	if (psmblctx != NULL) {
 		*psmblctx = blocker_smblctx;
@@ -299,10 +301,11 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 		*pblocker_pid = blocker_pid;
 	}
 
-	DEBUG(10, ("do_lock: returning status=%s\n", nt_errstr(*perr)));
+	DBG_DEBUG("returning status=%s\n", nt_errstr(status));
 
 	increment_current_lock_count(fsp, lock_flav);
-	return br_lck;
+
+	return status;
 }
 
 /****************************************************************************
