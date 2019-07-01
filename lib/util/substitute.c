@@ -65,10 +65,10 @@ static void string_sub2(char *s,const char *pattern, const char *insert, size_t 
 		len = ls + 1; /* len is number of *bytes* */
 
 	while (lp <= ls && (p = strstr_m(s,pattern))) {
-		if (ls + (li-lp) >= len) {
+		if (ls + li - lp >= len) {
 			DEBUG(0,("ERROR: string overflow by "
 				"%d in string_sub(%.50s, %d)\n",
-				 (int)(ls + (li-lp) - len),
+				 (int)(ls + li - lp - len),
 				 pattern, (int)len));
 			break;
 		}
@@ -105,7 +105,7 @@ static void string_sub2(char *s,const char *pattern, const char *insert, size_t 
 			}
 		}
 		s = p + li;
-		ls += (li-lp);
+		ls = ls + li - lp;
 
 		if (replace_once)
 			break;
@@ -192,10 +192,10 @@ _PUBLIC_ void all_string_sub(char *s,const char *pattern,const char *insert, siz
 		len = ls + 1; /* len is number of *bytes* */
 
 	while (lp <= ls && (p = strstr_m(s,pattern))) {
-		if (ls + (li-lp) >= len) {
+		if (ls + li - lp >= len) {
 			DEBUG(0,("ERROR: string overflow by "
 				"%d in all_string_sub(%.50s, %d)\n",
-				 (int)(ls + (li-lp) - len),
+				 (int)(ls + li - lp - len),
 				 pattern, (int)len));
 			break;
 		}
@@ -204,6 +204,6 @@ _PUBLIC_ void all_string_sub(char *s,const char *pattern,const char *insert, siz
 		}
 		memcpy(p, insert, li);
 		s = p + li;
-		ls += (li-lp);
+		ls = ls + li - lp;
 	}
 }
