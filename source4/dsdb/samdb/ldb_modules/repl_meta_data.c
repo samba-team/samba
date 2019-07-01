@@ -7433,27 +7433,28 @@ static int replmd_allow_missing_target(struct ldb_module *module,
 		return LDB_SUCCESS;
 	}
 
-	if (dsdb_repl_flags & DSDB_REPL_FLAG_TARGETS_UPTODATE) {
-
-		/*
-		 * target should already be up-to-date so there's no point in
-		 * retrying. This could be due to bad timing, or if a target
-		 * on a one-way link was deleted. We ignore the link rather
-		 * than failing the replication cycle completely
-		 */
-		*ignore_link = true;
-		DBG_WARNING("%s is %s but up to date. Ignoring link from %s\n",
-			    ldb_dn_get_linearized(target_dn), missing_str,
-			    ldb_dn_get_linearized(source_dn));
-		return LDB_SUCCESS;
-	}
-	
 	is_in_same_nc = dsdb_objects_have_same_nc(ldb,
 						  mem_ctx,
 						  source_dn,
 						  target_dn);
 	if (is_in_same_nc) {
-		/* fail the replication and retry with GET_TGT */
+
+		/*
+		 * if the target is already be up-to-date there's no point in
+		 * retrying. This could be due to bad timing, or if a target
+		 * on a one-way link was deleted. We ignore the link rather
+		 * than failing the replication cycle completely
+		 */
+		if (dsdb_repl_flags & DSDB_REPL_FLAG_TARGETS_UPTODATE) {
+			*ignore_link = true;
+			DBG_WARNING("%s is %s "
+				    "but up to date. Ignoring link from %s\n",
+				    ldb_dn_get_linearized(target_dn), missing_str,
+				    ldb_dn_get_linearized(source_dn));
+			return LDB_SUCCESS;
+		}
+
+		/* otherwise fail the replication and retry with GET_TGT */
 		ldb_asprintf_errstring(ldb, "%s target %s GUID %s linked from %s\n",
 				       missing_str,
 				       ldb_dn_get_linearized(target_dn),

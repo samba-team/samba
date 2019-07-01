@@ -12,5 +12,4 @@ samba4.drs.getncchanges.python\(promoted_dc\).python2.getncchanges.DrsReplicaSyn
 samba4.drs.getncchanges.python\(promoted_dc\).python2.getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt_chain\(promoted_dc\)
 samba4.drs.getncchanges.python\(promoted_dc\).python2.getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt_and_anc\(promoted_dc\)
 samba4.drs.getncchanges.python\(promoted_dc\).python2.getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_get_tgt_multivalued_links\(promoted_dc\)
-# this fails due to a bug
-samba4.drs.getncchanges.python.*.getncchanges.DrsReplicaSyncIntegrityTestCase.test_repl_integrity_cross_partition_links_with_tgt
+
