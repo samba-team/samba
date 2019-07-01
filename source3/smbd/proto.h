@@ -98,7 +98,6 @@ bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req);
 struct timeval timeval_brl_min(const struct timeval *tv1,
 			const struct timeval *tv2);
 NTSTATUS smbd_do_locks_try(
-	struct messaging_context *msg_ctx,
 	struct files_struct *fsp,
 	enum brl_flavour lock_flav,
 	uint16_t num_locks,

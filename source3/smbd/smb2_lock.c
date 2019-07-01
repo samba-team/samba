@@ -369,7 +369,6 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 	}
 
 	status = smbd_do_locks_try(
-		state->smb1req->sconn->msg_ctx,
 		state->fsp,
 		WINDOWS_LOCK,
 		state->lock_count,
@@ -436,7 +435,6 @@ static void smbd_smb2_lock_retry(struct tevent_req *subreq)
 	}
 
 	status = smbd_do_locks_try(
-		state->smb1req->sconn->msg_ctx,
 		state->fsp,
 		WINDOWS_LOCK,
 		state->lock_count,

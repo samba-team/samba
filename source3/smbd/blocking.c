@@ -45,7 +45,6 @@ struct timeval timeval_brl_min(const struct timeval *tv1,
 }
 
 NTSTATUS smbd_do_locks_try(
-	struct messaging_context *msg_ctx,
 	struct files_struct *fsp,
 	enum brl_flavour lock_flav,
 	uint16_t num_locks,
@@ -190,7 +189,6 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	}
 
 	status = smbd_do_locks_try(
-		state->msg_ctx,
 		state->fsp,
 		state->lock_flav,
 		state->num_locks,
@@ -364,7 +362,6 @@ static void smbd_smb1_do_locks_retry(struct tevent_req *subreq)
 	}
 
 	status = smbd_do_locks_try(
-		retry_state->msg_ctx,
 		fsp,
 		retry_state->lock_flav,
 		retry_state->num_locks,
