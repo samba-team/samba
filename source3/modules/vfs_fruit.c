@@ -34,6 +34,7 @@
 #include "string_replace.h"
 #include "hash_inode.h"
 #include "lib/adouble.h"
+#include "lib/util_macstreams.h"
 
 /*
  * Enhanced OS X and Netatalk compatibility
@@ -208,40 +209,6 @@ struct fio {
 /*****************************************************************************
  * Helper functions
  *****************************************************************************/
-
-static bool is_afpinfo_stream(const struct smb_filename *smb_fname)
-{
-	if (strncasecmp_m(smb_fname->stream_name,
-			  AFPINFO_STREAM_NAME,
-			  strlen(AFPINFO_STREAM_NAME)) == 0) {
-		return true;
-	}
-	return false;
-}
-
-static bool is_afpresource_stream(const struct smb_filename *smb_fname)
-{
-	if (strncasecmp_m(smb_fname->stream_name,
-			  AFPRESOURCE_STREAM_NAME,
-			  strlen(AFPRESOURCE_STREAM_NAME)) == 0) {
-		return true;
-	}
-	return false;
-}
-
-/**
- * Test whether stream is an Apple stream.
- **/
-static bool is_apple_stream(const struct smb_filename *smb_fname)
-{
-	if (is_afpinfo_stream(smb_fname)) {
-		return true;
-	}
-	if (is_afpresource_stream(smb_fname)) {
-		return true;
-	}
-	return false;
-}
 
 /**
  * Initialize config struct from our smb.conf config parameters
@@ -1650,9 +1617,9 @@ static int fruit_open(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	}
 
-	if (is_afpinfo_stream(smb_fname)) {
+	if (is_afpinfo_stream(smb_fname->stream_name)) {
 		fd = fruit_open_meta(handle, smb_fname, fsp, flags, mode);
-	} else if (is_afpresource_stream(smb_fname)) {
+	} else if (is_afpresource_stream(smb_fname->stream_name)) {
 		fd = fruit_open_rsrc(handle, smb_fname, fsp, flags, mode);
 	} else {
 		fd = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
@@ -1733,9 +1700,9 @@ static int fruit_close(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_CLOSE(handle, fsp);
 	}
 
-	if (is_afpinfo_stream(fsp->fsp_name)) {
+	if (is_afpinfo_stream(fsp->fsp_name->stream_name)) {
 		ret = fruit_close_meta(handle, fsp);
-	} else if (is_afpresource_stream(fsp->fsp_name)) {
+	} else if (is_afpresource_stream(fsp->fsp_name->stream_name)) {
 		ret = fruit_close_rsrc(handle, fsp);
 	} else {
 		ret = SMB_VFS_NEXT_CLOSE(handle, fsp);
@@ -1984,9 +1951,9 @@ static int fruit_unlink(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct fruit_config_data, return -1);
 
-	if (is_afpinfo_stream(smb_fname)) {
+	if (is_afpinfo_stream(smb_fname->stream_name)) {
 		return fruit_unlink_meta(handle, smb_fname);
-	} else if (is_afpresource_stream(smb_fname)) {
+	} else if (is_afpresource_stream(smb_fname->stream_name)) {
 		return fruit_unlink_rsrc(handle, smb_fname, false);
 	} else if (is_ntfs_stream_smb_fname(smb_fname)) {
 		return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
@@ -3169,9 +3136,9 @@ static int fruit_stat(vfs_handle_struct *handle,
 	 * not following links here.
 	 */
 
-	if (is_afpinfo_stream(smb_fname)) {
+	if (is_afpinfo_stream(smb_fname->stream_name)) {
 		rc = fruit_stat_meta(handle, smb_fname, true);
-	} else if (is_afpresource_stream(smb_fname)) {
+	} else if (is_afpresource_stream(smb_fname->stream_name)) {
 		rc = fruit_stat_rsrc(handle, smb_fname, true);
 	} else {
 		return SMB_VFS_NEXT_STAT(handle, smb_fname);
@@ -3204,9 +3171,9 @@ static int fruit_lstat(vfs_handle_struct *handle,
 		return rc;
 	}
 
-	if (is_afpinfo_stream(smb_fname)) {
+	if (is_afpinfo_stream(smb_fname->stream_name)) {
 		rc = fruit_stat_meta(handle, smb_fname, false);
-	} else if (is_afpresource_stream(smb_fname)) {
+	} else if (is_afpresource_stream(smb_fname->stream_name)) {
 		rc = fruit_stat_rsrc(handle, smb_fname, false);
 	} else {
 		return SMB_VFS_NEXT_LSTAT(handle, smb_fname);
@@ -4010,7 +3977,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	SMB_VFS_HANDLE_GET_DATA(handle, config, struct fruit_config_data,
 				return NT_STATUS_UNSUCCESSFUL);
 
-	if (is_apple_stream(smb_fname) && !internal_open) {
+	if (is_apple_stream(smb_fname->stream_name) && !internal_open) {
 		uint32_t conv_flags  = 0;
 
 		if (config->wipe_intentionally_left_blank_rfork) {

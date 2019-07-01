@@ -304,6 +304,7 @@ bld.SAMBA3_SUBSYSTEM('samba3util',
                           lib/util_sock.c
                           lib/util_tsock.c
                           lib/util_transfer_file.c
+                          lib/util_macstreams.c
                           ''',
                    deps='''
                         CHARSET3
