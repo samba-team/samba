@@ -300,7 +300,7 @@ _PUBLIC_ int tdb_rescue(struct tdb_context *tdb,
 		qsort(found.arr, found.num, sizeof(found.arr[0]), cmp_key);
 	}
 
-	for (i = 0; found.arr && i < found.num; ) {
+	for (i = 0; (found.arr != NULL) && i < found.num; ) {
 		unsigned int num, num_in_hash = 0;
 
 		/* How many are identical? */
