@@ -2745,7 +2745,6 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	if (access_mask & FILE_READ_DATA) {
 		off = access_to_netatalk_brl(fork_type, FILE_READ_DATA);
 		status = do_lock(
-			handle->conn->sconn->msg_ctx,
 			fsp,
 			fsp->op->global->open_persistent_id,
 			1,
@@ -2763,7 +2762,6 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	if (!share_for_read) {
 		off = denymode_to_netatalk_brl(fork_type, DENY_READ);
 		status = do_lock(
-			handle->conn->sconn->msg_ctx,
 			fsp,
 			fsp->op->global->open_persistent_id,
 			1,
@@ -2781,7 +2779,6 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	if (access_mask & FILE_WRITE_DATA) {
 		off = access_to_netatalk_brl(fork_type, FILE_WRITE_DATA);
 		status = do_lock(
-			handle->conn->sconn->msg_ctx,
 			fsp,
 			fsp->op->global->open_persistent_id,
 			1,
@@ -2799,7 +2796,6 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	if (!share_for_write) {
 		off = denymode_to_netatalk_brl(fork_type, DENY_WRITE);
 		status = do_lock(
-			handle->conn->sconn->msg_ctx,
 			fsp,
 			fsp->op->global->open_persistent_id,
 			1,

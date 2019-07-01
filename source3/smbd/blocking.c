@@ -61,7 +61,6 @@ NTSTATUS smbd_do_locks_try(
 		struct smbd_lock_element *e = &locks[i];
 
 		status = do_lock(
-			msg_ctx,
 			fsp,
 			e->smblctx,
 			e->count,

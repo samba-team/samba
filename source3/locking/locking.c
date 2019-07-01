@@ -230,8 +230,7 @@ static void decrement_current_lock_count(files_struct *fsp,
  Utility function called by locking requests.
 ****************************************************************************/
 
-NTSTATUS do_lock(struct messaging_context *msg_ctx,
-		 files_struct *fsp,
+NTSTATUS do_lock(files_struct *fsp,
 		 uint64_t smblctx,
 		 uint64_t count,
 		 uint64_t offset,
