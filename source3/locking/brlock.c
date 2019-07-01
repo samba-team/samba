@@ -1358,8 +1358,7 @@ NTSTATUS brl_lockquery(struct byte_range_lock *br_lck,
  fd and so we should not immediately close the fd.
 ****************************************************************************/
 
-void brl_close_fnum(struct messaging_context *msg_ctx,
-		    struct byte_range_lock *br_lck)
+void brl_close_fnum(struct byte_range_lock *br_lck)
 {
 	files_struct *fsp = br_lck->fsp;
 	uint32_t tid = fsp->conn->cnum;

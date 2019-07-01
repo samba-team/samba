@@ -386,7 +386,7 @@ void locking_close_file(struct messaging_context *msg_ctx,
 		 * implictly, we're closing the file and thus remove a
 		 * share mode. This will wake the waiters.
 		 */
-		brl_close_fnum(msg_ctx, br_lck);
+		brl_close_fnum(br_lck);
 		TALLOC_FREE(br_lck);
 	}
 }
