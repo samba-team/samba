@@ -278,7 +278,6 @@ NTSTATUS do_lock(struct messaging_context *msg_ctx,
 	}
 
 	status = brl_lock(
-		msg_ctx,
 		br_lck,
 		smblctx,
 		messaging_server_id(fsp->conn->sconn->msg_ctx),

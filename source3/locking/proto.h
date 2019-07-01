@@ -37,16 +37,16 @@ void brl_set_num_read_oplocks(struct byte_range_lock *brl,
 NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 				  struct lock_struct *plock);
 
-NTSTATUS brl_lock(struct messaging_context *msg_ctx,
-		struct byte_range_lock *br_lck,
-		uint64_t smblctx,
-		struct server_id pid,
-		br_off start,
-		br_off size,
-		enum brl_type lock_type,
-		enum brl_flavour lock_flav,
-		struct server_id *blocker_pid,
-		uint64_t *psmblctx);
+NTSTATUS brl_lock(
+	struct byte_range_lock *br_lck,
+	uint64_t smblctx,
+	struct server_id pid,
+	br_off start,
+	br_off size,
+	enum brl_type lock_type,
+	enum brl_flavour lock_flav,
+	struct server_id *blocker_pid,
+	uint64_t *psmblctx);
 bool brl_unlock(struct messaging_context *msg_ctx,
 		struct byte_range_lock *br_lck,
 		uint64_t smblctx,
