@@ -1050,8 +1050,7 @@ bool brl_unlock_windows_default(struct messaging_context *msg_ctx,
  Unlock a range of bytes - POSIX semantics.
 ****************************************************************************/
 
-static bool brl_unlock_posix(struct messaging_context *msg_ctx,
-			     struct byte_range_lock *br_lck,
+static bool brl_unlock_posix(struct byte_range_lock *br_lck,
 			     struct lock_struct *plock)
 {
 	unsigned int i, count;
@@ -1218,7 +1217,7 @@ bool brl_unlock(struct messaging_context *msg_ctx,
 		return SMB_VFS_BRL_UNLOCK_WINDOWS(br_lck->fsp->conn, msg_ctx,
 		    br_lck, &lock);
 	} else {
-		return brl_unlock_posix(msg_ctx, br_lck, &lock);
+		return brl_unlock_posix(br_lck, &lock);
 	}
 }
 
