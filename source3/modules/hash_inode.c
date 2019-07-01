@@ -23,6 +23,15 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
+/* Those macros are only available in GnuTLS >= 3.6.4 */
+#ifndef GNUTLS_FIPS140_SET_LAX_MODE
+#define GNUTLS_FIPS140_SET_LAX_MODE()
+#endif
+
+#ifndef GNUTLS_FIPS140_SET_STRICT_MODE
+#define GNUTLS_FIPS140_SET_STRICT_MODE()
+#endif
+
 SMB_INO_T hash_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 {
 	gnutls_hash_hd_t hash_hnd = NULL;
@@ -38,6 +47,8 @@ SMB_INO_T hash_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 
 	upper_sname = talloc_strdup_upper(talloc_tos(), sname);
 	SMB_ASSERT(upper_sname != NULL);
+
+	GNUTLS_FIPS140_SET_LAX_MODE();
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_SHA1);
 	if (rc < 0) {
@@ -73,6 +84,7 @@ SMB_INO_T hash_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 		  sname, (uintmax_t)result);
 
 out:
+	GNUTLS_FIPS140_SET_STRICT_MODE();
 	TALLOC_FREE(upper_sname);
 
 	DBG_DEBUG("hash_inode '%s': ino=%ju\n",
