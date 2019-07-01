@@ -968,9 +968,8 @@ static void brl_delete_lock_struct(struct lock_struct *locks,
  Unlock a range of bytes - Windows semantics.
 ****************************************************************************/
 
-bool brl_unlock_windows_default(struct messaging_context *msg_ctx,
-			       struct byte_range_lock *br_lck,
-			       const struct lock_struct *plock)
+bool brl_unlock_windows_default(struct byte_range_lock *br_lck,
+				const struct lock_struct *plock)
 {
 	unsigned int i;
 	struct lock_struct *locks = br_lck->lock_data;
@@ -1181,13 +1180,11 @@ static bool brl_unlock_posix(struct byte_range_lock *br_lck,
 }
 
 bool smb_vfs_call_brl_unlock_windows(struct vfs_handle_struct *handle,
-				     struct messaging_context *msg_ctx,
 				     struct byte_range_lock *br_lck,
 				     const struct lock_struct *plock)
 {
 	VFS_FIND(brl_unlock_windows);
-	return handle->fns->brl_unlock_windows_fn(handle, msg_ctx, br_lck,
-						  plock);
+	return handle->fns->brl_unlock_windows_fn(handle, br_lck, plock);
 }
 
 /****************************************************************************
@@ -1214,8 +1211,8 @@ bool brl_unlock(struct messaging_context *msg_ctx,
 	lock.lock_flav = lock_flav;
 
 	if (lock_flav == WINDOWS_LOCK) {
-		return SMB_VFS_BRL_UNLOCK_WINDOWS(br_lck->fsp->conn, msg_ctx,
-		    br_lck, &lock);
+		return SMB_VFS_BRL_UNLOCK_WINDOWS(
+			br_lck->fsp->conn, br_lck, &lock);
 	} else {
 		return brl_unlock_posix(br_lck, &lock);
 	}

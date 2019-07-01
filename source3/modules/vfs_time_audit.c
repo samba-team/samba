@@ -1628,7 +1628,6 @@ static NTSTATUS smb_time_audit_brl_lock_windows(struct vfs_handle_struct *handle
 }
 
 static bool smb_time_audit_brl_unlock_windows(struct vfs_handle_struct *handle,
-					      struct messaging_context *msg_ctx,
 					      struct byte_range_lock *br_lck,
 					      const struct lock_struct *plock)
 {
@@ -1637,8 +1636,7 @@ static bool smb_time_audit_brl_unlock_windows(struct vfs_handle_struct *handle,
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_BRL_UNLOCK_WINDOWS(handle, msg_ctx, br_lck,
-						 plock);
+	result = SMB_VFS_NEXT_BRL_UNLOCK_WINDOWS(handle, br_lck, plock);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
 

@@ -824,11 +824,10 @@ static NTSTATUS skel_brl_lock_windows(struct vfs_handle_struct *handle,
 }
 
 static bool skel_brl_unlock_windows(struct vfs_handle_struct *handle,
-				    struct messaging_context *msg_ctx,
 				    struct byte_range_lock *br_lck,
 				    const struct lock_struct *plock)
 {
-	return SMB_VFS_NEXT_BRL_UNLOCK_WINDOWS(handle, msg_ctx, br_lck, plock);
+	return SMB_VFS_NEXT_BRL_UNLOCK_WINDOWS(handle, br_lck, plock);
 }
 
 static bool skel_strict_lock_check(struct vfs_handle_struct *handle,

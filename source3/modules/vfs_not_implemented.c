@@ -656,7 +656,6 @@ NTSTATUS vfs_not_implemented_brl_lock_windows(struct vfs_handle_struct *handle,
 }
 
 bool vfs_not_implemented_brl_unlock_windows(struct vfs_handle_struct *handle,
-					    struct messaging_context *msg_ctx,
 					    struct byte_range_lock *br_lck,
 					    const struct lock_struct *plock)
 {
