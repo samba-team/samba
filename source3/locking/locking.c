@@ -237,7 +237,6 @@ NTSTATUS do_lock(struct messaging_context *msg_ctx,
 		 uint64_t offset,
 		 enum brl_type lock_type,
 		 enum brl_flavour lock_flav,
-		 bool blocking_lock,
 		 struct server_id *pblocker_pid,
 		 uint64_t *psmblctx)
 {
@@ -265,12 +264,11 @@ NTSTATUS do_lock(struct messaging_context *msg_ctx,
 	/* NOTE! 0 byte long ranges ARE allowed and should be stored  */
 
 	DBG_DEBUG("lock flavour %s lock type %s start=%"PRIu64" len=%"PRIu64" "
-		  "blocking_lock=%s requested for %s file %s\n",
+		  "requested for %s file %s\n",
 		  lock_flav_name(lock_flav),
 		  lock_type_name(lock_type),
 		  offset,
 		  count,
-		  blocking_lock ? "true" : "false",
 		  fsp_fnum_dbg(fsp),
 		  fsp_str_dbg(fsp));
 
@@ -288,7 +286,7 @@ NTSTATUS do_lock(struct messaging_context *msg_ctx,
 		count,
 		lock_type,
 		lock_flav,
-		blocking_lock,
+		false,
 		&blocker_pid,
 		&blocker_smblctx);
 

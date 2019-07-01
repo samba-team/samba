@@ -2752,7 +2752,6 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 			off,
 			READ_LOCK,
 			POSIX_LOCK,
-			false, 	/* blocking_lock */
 			NULL,
 			NULL);
 
@@ -2771,7 +2770,6 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 			off,
 			READ_LOCK,
 			POSIX_LOCK,
-			false,	/* blocking_lock */
 			NULL,
 			NULL);
 
@@ -2790,7 +2788,6 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 			off,
 			READ_LOCK,
 			POSIX_LOCK,
-			false,
 			NULL,
 			NULL);
 
@@ -2809,7 +2806,6 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 			off,
 			READ_LOCK,
 			POSIX_LOCK,
-			false,
 			NULL,
 			NULL);
 

@@ -68,7 +68,6 @@ NTSTATUS smbd_do_locks_try(
 			e->offset,
 			e->brltype,
 			lock_flav,
-			false,	/* blocking_lock */
 			blocking_pid,
 			blocking_smblctx);
 		if (!NT_STATUS_IS_OK(status)) {
