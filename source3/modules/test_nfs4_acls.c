@@ -621,6 +621,144 @@ static void test_dacl_permissions_to_nfs4(void **state)
 	TALLOC_FREE(frame);
 }
 
+/*
+ * Create NFS4 ACL with all possible "special" entries. Verify that
+ * the ones that should be mapped to a DACL are mapped and the other
+ * ones are ignored.
+ */
+static void test_special_nfs4_to_dacl(void **state)
+{
+	struct dom_sid *sids = *state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct SMB4ACL_T *nfs4_acl;
+	SMB_ACE4PROP_T nfs4_ace;
+	struct security_ace *dacl_aces;
+	int good_aces;
+	struct smbacl4_vfs_params params = {
+		.mode = e_simple,
+		.do_chown = true,
+		.acedup = e_merge,
+		.map_full_control = true,
+	};
+
+	nfs4_acl = smb_create_smb4acl(frame);
+	assert_non_null(nfs4_acl);
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= SMB_ACE4_ID_SPECIAL,
+		.who.special_id = SMB_ACE4_WHO_OWNER,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= 0,
+		.aceMask	= SMB_ACE4_READ_DATA,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= SMB_ACE4_ID_SPECIAL,
+		.who.special_id = SMB_ACE4_WHO_GROUP,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= 0,
+		.aceMask	= SMB_ACE4_WRITE_DATA,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= SMB_ACE4_ID_SPECIAL,
+		.who.special_id = SMB_ACE4_WHO_EVERYONE,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= 0,
+		.aceMask	= SMB_ACE4_APPEND_DATA,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= SMB_ACE4_ID_SPECIAL,
+		.who.special_id = SMB_ACE4_WHO_INTERACTIVE,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= 0,
+		.aceMask	= SMB_ACE4_READ_NAMED_ATTRS,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= SMB_ACE4_ID_SPECIAL,
+		.who.special_id = SMB_ACE4_WHO_NETWORK,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= 0,
+		.aceMask	= SMB_ACE4_WRITE_NAMED_ATTRS,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= SMB_ACE4_ID_SPECIAL,
+		.who.special_id = SMB_ACE4_WHO_DIALUP,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= 0,
+		.aceMask	= SMB_ACE4_EXECUTE,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= SMB_ACE4_ID_SPECIAL,
+		.who.special_id = SMB_ACE4_WHO_BATCH,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= 0,
+		.aceMask	= SMB_ACE4_READ_ATTRIBUTES,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= SMB_ACE4_ID_SPECIAL,
+		.who.special_id = SMB_ACE4_WHO_ANONYMOUS,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= 0,
+		.aceMask	= SMB_ACE4_WRITE_ATTRIBUTES,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= SMB_ACE4_ID_SPECIAL,
+		.who.special_id = SMB_ACE4_WHO_AUTHENTICATED,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= 0,
+		.aceMask	= SMB_ACE4_READ_ACL,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= SMB_ACE4_ID_SPECIAL,
+		.who.special_id = SMB_ACE4_WHO_SERVICE,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= 0,
+		.aceMask	= SMB_ACE4_WRITE_ACL,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	assert_true(smbacl4_nfs42win(frame, &params, nfs4_acl,
+				     &sids[0], &sids[1], false,
+				     &dacl_aces, &good_aces));
+
+	assert_int_equal(good_aces, 3);
+	assert_non_null(dacl_aces);
+
+	assert_int_equal(dacl_aces[0].type, SEC_ACE_TYPE_ACCESS_ALLOWED);
+	assert_int_equal(dacl_aces[0].flags, 0);
+	assert_int_equal(dacl_aces[0].access_mask, SEC_FILE_READ_DATA);
+	assert_true(dom_sid_equal(&dacl_aces[0].trustee, &sids[0]));
+
+	assert_int_equal(dacl_aces[1].type, SEC_ACE_TYPE_ACCESS_ALLOWED);
+	assert_int_equal(dacl_aces[1].flags, 0);
+	assert_int_equal(dacl_aces[1].access_mask, SEC_FILE_WRITE_DATA);
+	assert_true(dom_sid_equal(&dacl_aces[1].trustee, &sids[1]));
+
+	assert_int_equal(dacl_aces[2].type, SEC_ACE_TYPE_ACCESS_ALLOWED);
+	assert_int_equal(dacl_aces[2].flags, 0);
+	assert_int_equal(dacl_aces[2].access_mask, SEC_FILE_APPEND_DATA);
+	assert_true(dom_sid_equal(&dacl_aces[2].trustee, &global_sid_World));
+
+	TALLOC_FREE(frame);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -633,6 +771,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test(test_ace_flags_dacl_to_nfs4),
 		cmocka_unit_test(test_nfs4_permissions_to_dacl),
 		cmocka_unit_test(test_dacl_permissions_to_nfs4),
+		cmocka_unit_test(test_special_nfs4_to_dacl),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
