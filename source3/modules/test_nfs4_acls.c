@@ -1419,6 +1419,124 @@ static void test_dacl_to_nfs4_acedup_match(void **state)
 	TALLOC_FREE(frame);
 }
 
+static void test_dacl_to_nfs4_config_special(void **state)
+{
+	struct dom_sid *sids = *state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct SMB4ACL_T *nfs4_acl;
+	struct SMB4ACE_T *nfs4_ace_container;
+	SMB_ACE4PROP_T *nfs4_ace;
+	struct security_ace dacl_aces[6];
+	struct security_acl *dacl;
+	struct smbacl4_vfs_params params = {
+		.mode = e_special,
+		.do_chown = true,
+		.acedup = e_dontcare,
+		.map_full_control = true,
+	};
+
+	/*
+	 * global_sid_Creator_Owner or global_sid_Special_Group is NOT mapped
+	 * to SMB_ACE4_ID_SPECIAL.
+	 */
+	init_sec_ace(&dacl_aces[0], &global_sid_Creator_Owner,
+		     SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+		     SEC_ACE_FLAG_OBJECT_INHERIT);
+	init_sec_ace(&dacl_aces[1], &global_sid_Creator_Group,
+		     SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_WRITE_DATA,
+		     SEC_ACE_FLAG_CONTAINER_INHERIT);
+	/*
+	 * Anything that maps to owner or owning group with inheritance flags
+	 * IS mapped to special owner or special group.
+	 */
+	init_sec_ace(&dacl_aces[2], &sids[0],
+		     SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+		     SEC_ACE_FLAG_OBJECT_INHERIT);
+	init_sec_ace(&dacl_aces[3], &sids[0],
+		     SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+		     SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+	init_sec_ace(&dacl_aces[4], &sids[1],
+		     SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+		     SEC_ACE_FLAG_OBJECT_INHERIT);
+	init_sec_ace(&dacl_aces[5], &sids[1],
+		     SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+		     SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY);
+	dacl = make_sec_acl(frame, SECURITY_ACL_REVISION_ADS,
+			    ARRAY_SIZE(dacl_aces), dacl_aces);
+	assert_non_null(dacl);
+
+	nfs4_acl = smbacl4_win2nfs4(frame, true, dacl, &params, 1000, 1001);
+
+	assert_non_null(nfs4_acl);
+	assert_int_equal(smbacl4_get_controlflags(nfs4_acl),
+			 SEC_DESC_SELF_RELATIVE);
+	assert_int_equal(smb_get_naces(nfs4_acl), 6);
+
+	nfs4_ace_container = smb_first_ace4(nfs4_acl);
+	assert_non_null(nfs4_ace_container);
+
+	nfs4_ace = smb_get_ace4(nfs4_ace_container);
+	assert_int_equal(nfs4_ace->flags, 0);
+	assert_int_equal(nfs4_ace->aceFlags, SMB_ACE4_FILE_INHERIT_ACE);
+	assert_int_equal(nfs4_ace->who.uid, 1003);
+	assert_int_equal(nfs4_ace->aceMask, SMB_ACE4_READ_DATA);
+
+	nfs4_ace_container = smb_next_ace4(nfs4_ace_container);
+	assert_non_null(nfs4_ace_container);
+
+	nfs4_ace = smb_get_ace4(nfs4_ace_container);
+	assert_int_equal(nfs4_ace->flags, 0);
+	assert_int_equal(nfs4_ace->aceFlags,
+			 SMB_ACE4_IDENTIFIER_GROUP|
+			 SMB_ACE4_DIRECTORY_INHERIT_ACE);
+	assert_int_equal(nfs4_ace->who.gid, 1004);
+	assert_int_equal(nfs4_ace->aceMask, SMB_ACE4_WRITE_DATA);
+
+	nfs4_ace_container = smb_next_ace4(nfs4_ace_container);
+	assert_non_null(nfs4_ace_container);
+
+	nfs4_ace = smb_get_ace4(nfs4_ace_container);
+	assert_int_equal(nfs4_ace->flags, SMB_ACE4_ID_SPECIAL);
+	assert_int_equal(nfs4_ace->who.special_id, SMB_ACE4_WHO_OWNER);
+	assert_int_equal(nfs4_ace->aceFlags, SMB_ACE4_FILE_INHERIT_ACE);
+	assert_int_equal(nfs4_ace->aceMask, SMB_ACE4_READ_DATA);
+
+	nfs4_ace_container = smb_next_ace4(nfs4_ace_container);
+	assert_non_null(nfs4_ace_container);
+
+	nfs4_ace = smb_get_ace4(nfs4_ace_container);
+	assert_int_equal(nfs4_ace->flags, SMB_ACE4_ID_SPECIAL);
+	assert_int_equal(nfs4_ace->aceFlags, SMB_ACE4_DIRECTORY_INHERIT_ACE|
+			 SMB_ACE4_INHERIT_ONLY_ACE);
+	assert_int_equal(nfs4_ace->who.special_id, SMB_ACE4_WHO_OWNER);
+	assert_int_equal(nfs4_ace->aceMask, SMB_ACE4_READ_DATA);
+
+	nfs4_ace_container = smb_next_ace4(nfs4_ace_container);
+	assert_non_null(nfs4_ace_container);
+
+	nfs4_ace = smb_get_ace4(nfs4_ace_container);
+	assert_int_equal(nfs4_ace->flags, SMB_ACE4_ID_SPECIAL);
+	assert_int_equal(nfs4_ace->aceFlags, SMB_ACE4_IDENTIFIER_GROUP|
+			 SMB_ACE4_FILE_INHERIT_ACE);
+	assert_int_equal(nfs4_ace->who.special_id, SMB_ACE4_WHO_GROUP);
+	assert_int_equal(nfs4_ace->aceMask, SMB_ACE4_READ_DATA);
+
+	nfs4_ace_container = smb_next_ace4(nfs4_ace_container);
+	assert_non_null(nfs4_ace_container);
+
+	nfs4_ace = smb_get_ace4(nfs4_ace_container);
+	assert_int_equal(nfs4_ace->flags, SMB_ACE4_ID_SPECIAL);
+	assert_int_equal(nfs4_ace->aceFlags, SMB_ACE4_IDENTIFIER_GROUP|
+			 SMB_ACE4_DIRECTORY_INHERIT_ACE|
+			 SMB_ACE4_INHERIT_ONLY_ACE);
+	assert_int_equal(nfs4_ace->who.special_id, SMB_ACE4_WHO_GROUP);
+	assert_int_equal(nfs4_ace->aceMask, SMB_ACE4_READ_DATA);
+
+	assert_null(smb_next_ace4(nfs4_ace_container));
+
+	TALLOC_FREE(frame);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -1438,6 +1556,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test(test_full_control_nfs4_to_dacl),
 		cmocka_unit_test(test_dacl_to_nfs4_acedup_settings),
 		cmocka_unit_test(test_dacl_to_nfs4_acedup_match),
+		cmocka_unit_test(test_dacl_to_nfs4_config_special),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
