@@ -905,12 +905,14 @@ static struct SMB4ACL_T *smbacl4_win2nfs4(
 
 		if (pparams->acedup!=e_dontcare) {
 			if (smbacl4_MergeIgnoreReject(pparams->acedup, theacl,
-				&ace_v4, &addNewACE, i))
+						      &ace_v4, &addNewACE, i)) {
 				return NULL;
+			}
 		}
 
-		if (addNewACE)
+		if (addNewACE) {
 			smb_add_ace4(theacl, &ace_v4);
+		}
 	}
 
 	if (pparams->mode==e_simple) {
