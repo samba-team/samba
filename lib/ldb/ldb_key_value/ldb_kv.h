@@ -98,6 +98,19 @@ struct ldb_kv_private {
 	 * the contents of this cache are copied to idxptr
 	 */
 	struct ldb_kv_idxptr *nested_idx_ptr;
+	/*
+	 * If batch mode is set the sub transactions and index caching
+	 * wrapping individual operations is disabled.
+	 * This is to improve the performance of large batch operations
+	 * i.e. domain joins.
+	 */
+	bool batch_mode;
+	/*
+	 * Has an operation failed, if true and we're in batch_mode
+	 * the transaction commit will fail.
+	 */
+	bool operation_failed;
+
 	bool prepared_commit;
 	int read_lock_count;
 
