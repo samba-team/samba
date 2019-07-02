@@ -1301,7 +1301,7 @@ DEFAULT_BACKEND_SIZE = 8 * 1024 * 1024 *1024
 def setup_samdb(path, session_info, provision_backend, lp, names,
                 logger, fill, serverrole, schema, am_rodc=False,
                 plaintext_secrets=False, backend_store=None,
-                backend_store_size=None):
+                backend_store_size=None, batch_mode=False):
     """Setup a complete SAM Database.
 
     :note: This will wipe the main SAM database file!
@@ -1318,11 +1318,13 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
     if backend_store == "mdb":
         if backend_store_size:
             store_size = backend_store_size
-        else :
+        else:
             # If no lmdb map size provided default to the default of
             # 8 GiB
             store_size = DEFAULT_BACKEND_SIZE
         options = ["lmdb_env_size:" + str(store_size)]
+    if batch_mode:
+        options.append("batch_mode:1")
 
     # Load the database, but don's load the global schema and don't connect
     # quite yet
@@ -2164,7 +2166,7 @@ def provision(logger, session_info, smbconf=None,
               ldap_backend_forced_uri=None, nosync=False, ldap_dryrun_mode=False,
               ldap_backend_extra_port=None, base_schema="2012_R2",
               plaintext_secrets=False, backend_store=None,
-              backend_store_size=None):
+              backend_store_size=None, batch_mode=False):
     """Provision samba4
 
     :note: caution, this wipes all existing data!
@@ -2340,7 +2342,8 @@ def provision(logger, session_info, smbconf=None,
                             schema=schema, fill=samdb_fill, am_rodc=am_rodc,
                             plaintext_secrets=plaintext_secrets,
                             backend_store=backend_store,
-                            backend_store_size=backend_store_size)
+                            backend_store_size=backend_store_size,
+                            batch_mode=batch_mode)
 
         if serverrole == "active directory domain controller":
             if paths.netlogon is None:

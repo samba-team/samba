@@ -877,8 +877,8 @@ class DCJoinContext(object):
                             use_ntvfs=ctx.use_ntvfs, dns_backend=ctx.dns_backend,
                             plaintext_secrets=ctx.plaintext_secrets,
                             backend_store=ctx.backend_store,
-                            backend_store_size=ctx.backend_store_size
-                            )
+                            backend_store_size=ctx.backend_store_size,
+                            batch_mode=True)
         print("Provision OK for domain DN %s" % presult.domaindn)
         ctx.local_samdb = presult.samdb
         ctx.lp          = presult.lp
