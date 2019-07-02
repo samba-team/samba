@@ -2164,6 +2164,63 @@ class GUIDBadIndexTestsLmdb(BadIndexTests):
         super(GUIDBadIndexTestsLmdb, self).tearDown()
 
 
+class BatchModeTests(LdbBaseTest):
+
+    def setUp(self):
+        super(BatchModeTests, self).setUp()
+        self.testdir = tempdir()
+        self.filename = os.path.join(self.testdir, "test.ldb")
+        self.ldb = ldb.Ldb(self.url(),
+                           flags=self.flags(),
+                           options=["batch_mode:1"])
+        if hasattr(self, 'IDXGUID'):
+            self.ldb.add({"dn": "@INDEXLIST",
+                          "@IDXATTR": [b"x", b"y", b"ou"],
+                          "@IDXGUID": [b"objectUUID"],
+                          "@IDX_DN_GUID": [b"GUID"]})
+        else:
+            self.ldb.add({"dn": "@INDEXLIST",
+                          "@IDXATTR": [b"x", b"y", b"ou"]})
+
+    def test_modify_transaction(self):
+        self.ldb.add({"dn": "x=y,dc=samba,dc=org",
+                      "objectUUID": b"0123456789abcde1",
+                      "y": "2",
+                      "z": "2"})
+
+        res = self.ldb.search(expression="(y=2)",
+                              base="dc=samba,dc=org")
+        self.assertEqual(len(res), 1)
+
+        self.ldb.add({"dn": "@ATTRIBUTES",
+                      "y": "UNIQUE_INDEX"})
+
+        self.ldb.transaction_start()
+
+        m = ldb.Message()
+        m.dn = ldb.Dn(self.ldb, "x=y,dc=samba,dc=org")
+        m["0"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, "y")
+        m["1"] = ldb.MessageElement([], ldb.FLAG_MOD_DELETE, "not-here")
+
+        try:
+            self.ldb.modify(m)
+            self.fail()
+
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_NO_SUCH_ATTRIBUTE)
+
+        try:
+            self.ldb.transaction_commit()
+            self.fail("Commit should have failed as we were in batch mode")
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_OPERATIONS_ERROR)
+
+    def tearDown(self):
+        super(BatchModeTests, self).tearDown()
+
+
 class DnTests(TestCase):
 
     def setUp(self):
