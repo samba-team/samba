@@ -1094,6 +1094,87 @@ static void test_nfs4_to_dacl_creator(void **state)
 	TALLOC_FREE(frame);
 }
 
+struct nfs4_to_dacl_map_full_control{
+	bool is_dir;
+	bool config;
+	bool delete_child_added;
+} nfs4_to_dacl_full_control[] = {
+	{ true,	true,	false	},
+	{ true,	false,	false	},
+	{ false,	true,	true	},
+	{ false,	false,	false	},
+};
+
+static void test_full_control_nfs4_to_dacl(void **state)
+{
+	struct dom_sid *sids = *state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(nfs4_to_dacl_full_control); i++) {
+		struct SMB4ACL_T *nfs4_acl;
+		SMB_ACE4PROP_T nfs4_ace;
+		struct security_ace *dacl_aces;
+		int good_aces;
+		struct smbacl4_vfs_params params = {
+			.mode = e_simple,
+			.do_chown = true,
+			.acedup = e_merge,
+			.map_full_control = nfs4_to_dacl_full_control[i].config,
+		};
+		const uint32_t nfs4_ace_mask_except_deletes =
+			SMB_ACE4_READ_DATA|SMB_ACE4_WRITE_DATA|
+			SMB_ACE4_APPEND_DATA|SMB_ACE4_READ_NAMED_ATTRS|
+			SMB_ACE4_WRITE_NAMED_ATTRS|SMB_ACE4_EXECUTE|
+			SMB_ACE4_READ_ATTRIBUTES|SMB_ACE4_WRITE_ATTRIBUTES|
+			SMB_ACE4_READ_ACL|SMB_ACE4_WRITE_ACL|
+			SMB_ACE4_WRITE_OWNER|SMB_ACE4_SYNCHRONIZE;
+		const uint32_t dacl_ace_mask_except_deletes =
+			SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
+			SEC_FILE_APPEND_DATA|SEC_FILE_READ_EA|
+			SEC_FILE_WRITE_EA|SEC_FILE_EXECUTE|
+			SEC_FILE_READ_ATTRIBUTE|SEC_FILE_WRITE_ATTRIBUTE|
+			SEC_STD_READ_CONTROL|SEC_STD_WRITE_DAC|
+			SEC_STD_WRITE_OWNER|SEC_STD_SYNCHRONIZE;
+
+		nfs4_acl = smb_create_smb4acl(frame);
+		assert_non_null(nfs4_acl);
+
+		nfs4_ace = (SMB_ACE4PROP_T) {
+			.flags		= 0,
+			.who.uid	= 1000,
+			.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+			.aceFlags	= 0,
+			.aceMask	= nfs4_ace_mask_except_deletes,
+		};
+		assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+		assert_true(
+			smbacl4_nfs42win(frame, &params, nfs4_acl,
+					 &sids[0], &sids[1],
+					 nfs4_to_dacl_full_control[i].is_dir,
+					 &dacl_aces, &good_aces));
+
+		assert_int_equal(good_aces, 1);
+		assert_non_null(dacl_aces);
+
+		assert_int_equal(dacl_aces[0].type,
+				 SEC_ACE_TYPE_ACCESS_ALLOWED);
+		assert_int_equal(dacl_aces[0].flags, 0);
+		assert_true(dom_sid_equal(&dacl_aces[0].trustee, &sids[0]));
+		if (nfs4_to_dacl_full_control[i].delete_child_added) {
+			assert_int_equal(dacl_aces[0].access_mask,
+					 dacl_ace_mask_except_deletes|
+					 SEC_DIR_DELETE_CHILD);
+		} else {
+			assert_int_equal(dacl_aces[0].access_mask,
+					 dacl_ace_mask_except_deletes);
+		}
+	}
+
+	TALLOC_FREE(frame);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -1110,6 +1191,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test(test_dacl_to_special_nfs4),
 		cmocka_unit_test(test_dacl_creator_to_nfs4),
 		cmocka_unit_test(test_nfs4_to_dacl_creator),
+		cmocka_unit_test(test_full_control_nfs4_to_dacl),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
