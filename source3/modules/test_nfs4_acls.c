@@ -112,10 +112,63 @@ static void test_cached_id_mappings(void **state)
 	}
 }
 
+static void test_empty_nfs4_to_dacl(void **state)
+{
+	struct dom_sid *sids = *state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct SMB4ACL_T *nfs4_acl;
+	struct security_ace *dacl_aces;
+	int good_aces;
+	struct smbacl4_vfs_params params = {
+		.mode = e_simple,
+		.do_chown = true,
+		.acedup = e_merge,
+		.map_full_control = true,
+	};
+
+	nfs4_acl = smb_create_smb4acl(frame);
+	assert_non_null(nfs4_acl);
+
+	assert_true(smbacl4_nfs42win(frame, &params, nfs4_acl,
+				     &sids[0], &sids[1], false,
+				     &dacl_aces, &good_aces));
+
+	assert_int_equal(good_aces, 0);
+	assert_null(dacl_aces);
+
+	TALLOC_FREE(frame);
+}
+
+static void test_empty_dacl_to_nfs4(void **state)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct SMB4ACL_T *nfs4_acl;
+	struct security_acl *dacl;
+	struct smbacl4_vfs_params params = {
+		.mode = e_simple,
+		.do_chown = true,
+		.acedup = e_merge,
+		.map_full_control = true,
+	};
+
+	dacl = make_sec_acl(frame, SECURITY_ACL_REVISION_ADS, 0, NULL);
+	assert_non_null(dacl);
+
+	nfs4_acl = smbacl4_win2nfs4(frame, false, dacl, &params, 1001, 1002);
+
+	assert_non_null(nfs4_acl);
+	assert_int_equal(smbacl4_get_controlflags(nfs4_acl),
+			 SEC_DESC_SELF_RELATIVE);
+	assert_int_equal(smb_get_naces(nfs4_acl), 0);
+	assert_null(smb_first_ace4(nfs4_acl));
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_cached_id_mappings),
+		cmocka_unit_test(test_empty_nfs4_to_dacl),
+		cmocka_unit_test(test_empty_dacl_to_nfs4),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
