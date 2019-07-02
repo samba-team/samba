@@ -1599,6 +1599,72 @@ static void test_nfs4_to_dacl_config_special(void **state)
 	TALLOC_FREE(frame);
 }
 
+struct nfs_to_dacl_idmap_both {
+	uint32_t nfs4_flags;
+	uint32_t nfs4_id;
+	struct dom_sid *sid;
+};
+
+static void test_nfs4_to_dacl_idmap_type_both(void **state)
+{
+	struct dom_sid *sids = *state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	int i;
+	struct nfs_to_dacl_idmap_both nfs_to_dacl_idmap_both[] = {
+		{ 0,				1002, &sids[2] },
+		{ SMB_ACE4_IDENTIFIER_GROUP,	1002, &sids[2] },
+		{ 0,				1005, &sids[6] },
+		{ SMB_ACE4_IDENTIFIER_GROUP,	1005, &sids[6] },
+	};
+
+	for (i = 0; i < ARRAY_SIZE(nfs_to_dacl_idmap_both); i++) {
+		struct SMB4ACL_T *nfs4_acl;
+		struct security_ace *dacl_aces;
+		SMB_ACE4PROP_T nfs4_ace;
+		int good_aces;
+		struct smbacl4_vfs_params params = {
+			.mode = e_simple,
+			.do_chown = true,
+			.acedup = e_merge,
+			.map_full_control = true,
+		};
+
+		nfs4_acl = smb_create_smb4acl(frame);
+		assert_non_null(nfs4_acl);
+
+		nfs4_ace = (SMB_ACE4PROP_T) {
+			.flags		= 0,
+			.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+			.aceFlags	= nfs_to_dacl_idmap_both[i].nfs4_flags,
+			.aceMask	= SMB_ACE4_READ_DATA,
+		};
+
+		if (nfs_to_dacl_idmap_both[i].nfs4_flags &
+		    SMB_ACE4_IDENTIFIER_GROUP) {
+			nfs4_ace.who.gid = nfs_to_dacl_idmap_both[i].nfs4_id;
+		} else {
+			nfs4_ace.who.uid = nfs_to_dacl_idmap_both[i].nfs4_id;
+		}
+		assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+		assert_true(smbacl4_nfs42win(frame, &params, nfs4_acl,
+					     &sids[2], &sids[2],
+					     false, &dacl_aces, &good_aces));
+
+		assert_int_equal(good_aces, 1);
+		assert_non_null(dacl_aces);
+
+		assert_int_equal(dacl_aces[0].type,
+				 SEC_ACE_TYPE_ACCESS_ALLOWED);
+		assert_int_equal(dacl_aces[0].flags, 0);
+		assert_int_equal(dacl_aces[0].access_mask, SEC_FILE_READ_DATA);
+		assert_true(dom_sid_equal(&dacl_aces[0].trustee,
+					  nfs_to_dacl_idmap_both[i].sid));
+	}
+
+	TALLOC_FREE(frame);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -1620,6 +1686,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test(test_dacl_to_nfs4_acedup_match),
 		cmocka_unit_test(test_dacl_to_nfs4_config_special),
 		cmocka_unit_test(test_nfs4_to_dacl_config_special),
+		cmocka_unit_test(test_nfs4_to_dacl_idmap_type_both),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
