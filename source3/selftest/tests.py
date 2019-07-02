@@ -367,6 +367,10 @@ if with_pthreadpool and have_ldwrap:
     plantestsuite("samba3.pthreadpool_cmocka", "none",
                   [os.path.join(bindir(), "pthreadpooltest_cmocka")])
 
+plantestsuite("samba3.test_nfs4_acl", "none",
+              [os.path.join(bindir(), "test_nfs4_acls"),
+               "$SMB_CONF_PATH"])
+
 plantestsuite("samba3.async_req", "nt4_dc",
               [os.path.join(samba3srcdir, "script/tests/test_async_req.sh")])
 
