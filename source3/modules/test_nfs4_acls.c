@@ -1298,6 +1298,127 @@ static void test_dacl_to_nfs4_acedup_settings(void **state)
 	TALLOC_FREE(frame);
 }
 
+struct acedup_match {
+	int sid_idx1;
+	enum security_ace_type type1;
+	uint32_t ace_mask1;
+	uint8_t flag1;
+	int sid_idx2;
+	enum security_ace_type type2;
+	uint32_t ace_mask2;
+	uint8_t flag2;
+	bool match;
+} acedup_match[] = {
+	{ 0, SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+	  SEC_ACE_FLAG_OBJECT_INHERIT,
+	  0, SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+	  SEC_ACE_FLAG_OBJECT_INHERIT,
+	  true },
+	{ 0, SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+	  SEC_ACE_FLAG_OBJECT_INHERIT,
+	  1, SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+	  SEC_ACE_FLAG_OBJECT_INHERIT,
+	  false },
+	{ 0, SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+	  SEC_ACE_FLAG_OBJECT_INHERIT,
+	  0, SEC_ACE_TYPE_ACCESS_DENIED, SEC_FILE_READ_DATA,
+	  SEC_ACE_FLAG_OBJECT_INHERIT,
+	  false },
+	{ 0, SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+	  SEC_ACE_FLAG_OBJECT_INHERIT,
+	  0, SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_WRITE_DATA,
+	  SEC_ACE_FLAG_OBJECT_INHERIT,
+	  true },
+	{ 0, SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+	  SEC_ACE_FLAG_OBJECT_INHERIT,
+	  0, SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+	  SEC_ACE_FLAG_CONTAINER_INHERIT,
+	  false },
+	{ 0, SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+	  SEC_ACE_FLAG_OBJECT_INHERIT,
+	  5, SEC_ACE_TYPE_ACCESS_ALLOWED, SEC_FILE_READ_DATA,
+	  SEC_ACE_FLAG_OBJECT_INHERIT,
+	  false },
+};
+
+static void test_dacl_to_nfs4_acedup_match(void **state)
+{
+	struct dom_sid *sids = *state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(acedup_match); i++) {
+		struct SMB4ACL_T *nfs4_acl;
+		struct SMB4ACE_T *nfs4_ace_container;
+		SMB_ACE4PROP_T *nfs4_ace;
+		struct security_ace dacl_aces[2];
+		struct security_acl *dacl;
+		struct smbacl4_vfs_params params = {
+			.mode = e_simple,
+			.do_chown = true,
+			.acedup = e_ignore,
+			.map_full_control = true,
+		};
+
+		init_sec_ace(&dacl_aces[0],
+			     &sids[acedup_match[i].sid_idx1],
+			     acedup_match[i].type1,
+			     acedup_match[i].ace_mask1,
+			     acedup_match[i].flag1);
+		init_sec_ace(&dacl_aces[1],
+			     &sids[acedup_match[i].sid_idx2],
+			     acedup_match[i].type2,
+			     acedup_match[i].ace_mask2,
+			     acedup_match[i].flag2);
+		dacl = make_sec_acl(frame, SECURITY_ACL_REVISION_ADS,
+				    ARRAY_SIZE(dacl_aces), dacl_aces);
+		assert_non_null(dacl);
+
+		nfs4_acl = smbacl4_win2nfs4(frame, true, dacl, &params,
+					    101, 102);
+		assert_non_null(nfs4_acl);
+		assert_int_equal(smbacl4_get_controlflags(nfs4_acl),
+				 SEC_DESC_SELF_RELATIVE);
+
+		if (acedup_match[i].match) {
+			assert_int_equal(smb_get_naces(nfs4_acl), 1);
+
+			nfs4_ace_container = smb_first_ace4(nfs4_acl);
+			assert_non_null(nfs4_ace_container);
+			assert_null(smb_next_ace4(nfs4_ace_container));
+
+			nfs4_ace = smb_get_ace4(nfs4_ace_container);
+			assert_int_equal(nfs4_ace->flags, 0);
+			assert_int_equal(nfs4_ace->who.uid, 1000);
+			assert_int_equal(nfs4_ace->aceFlags,
+					 SMB_ACE4_FILE_INHERIT_ACE);
+			assert_int_equal(nfs4_ace->aceMask, SMB_ACE4_READ_DATA);
+
+		} else {
+			assert_int_equal(smb_get_naces(nfs4_acl), 2);
+
+			nfs4_ace_container = smb_first_ace4(nfs4_acl);
+			assert_non_null(nfs4_ace_container);
+
+			nfs4_ace = smb_get_ace4(nfs4_ace_container);
+			assert_int_equal(nfs4_ace->flags, 0);
+			assert_int_equal(nfs4_ace->who.uid, 1000);
+			assert_int_equal(nfs4_ace->aceFlags,
+					 SMB_ACE4_FILE_INHERIT_ACE);
+			assert_int_equal(nfs4_ace->aceMask, SMB_ACE4_READ_DATA);
+
+			nfs4_ace_container = smb_next_ace4(nfs4_ace_container);
+			assert_non_null(nfs4_ace_container);
+			assert_null(smb_next_ace4(nfs4_ace_container));
+
+			nfs4_ace = smb_get_ace4(nfs4_ace_container);
+			assert_int_equal(nfs4_ace->flags, 0);
+		}
+	}
+
+	TALLOC_FREE(frame);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -1316,6 +1437,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test(test_nfs4_to_dacl_creator),
 		cmocka_unit_test(test_full_control_nfs4_to_dacl),
 		cmocka_unit_test(test_dacl_to_nfs4_acedup_settings),
+		cmocka_unit_test(test_dacl_to_nfs4_acedup_match),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
