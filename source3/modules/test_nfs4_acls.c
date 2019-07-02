@@ -1665,6 +1665,90 @@ static void test_nfs4_to_dacl_idmap_type_both(void **state)
 	TALLOC_FREE(frame);
 }
 
+struct dacl_to_nfs4_idmap_both {
+	struct dom_sid *sid;
+	uint32_t dacl_flags;
+	uint32_t nfs4_flags;
+	uint32_t nfs4_ace_flags;
+	uint32_t nfs4_id;
+};
+
+/*
+ * IDMAP_TYPE_BOTH always creates group entries.
+ */
+static void test_dacl_to_nfs4_idmap_type_both(void **state)
+{
+	struct dom_sid *sids = *state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	int i;
+
+	struct dacl_to_nfs4_idmap_both dacl_to_nfs4_idmap_both[] = {
+	{ &sids[2], 0,
+	  SMB_ACE4_ID_SPECIAL, SMB_ACE4_IDENTIFIER_GROUP, SMB_ACE4_WHO_GROUP },
+	{ &sids[2], SEC_ACE_FLAG_OBJECT_INHERIT,
+	  0, SMB_ACE4_IDENTIFIER_GROUP|SMB_ACE4_FILE_INHERIT_ACE, 1002 },
+	{ &sids[6], 0,
+	  0, SMB_ACE4_IDENTIFIER_GROUP, 1005 },
+	{ &sids[6], SEC_ACE_FLAG_OBJECT_INHERIT,
+	  0, SMB_ACE4_IDENTIFIER_GROUP|SMB_ACE4_FILE_INHERIT_ACE, 1005 },
+	};
+
+	for (i = 0; i < ARRAY_SIZE(dacl_to_nfs4_idmap_both); i++) {
+		struct SMB4ACL_T *nfs4_acl;
+		struct SMB4ACE_T *nfs4_ace_container;
+		SMB_ACE4PROP_T *nfs4_ace;
+		struct security_ace dacl_aces[1];
+		struct security_acl *dacl;
+		struct smbacl4_vfs_params params = {
+			.mode = e_simple,
+			.do_chown = true,
+			.acedup = e_merge,
+			.map_full_control = true,
+		};
+
+		init_sec_ace(&dacl_aces[0], dacl_to_nfs4_idmap_both[i].sid,
+			     SEC_ACE_TYPE_ACCESS_ALLOWED,
+			     SEC_FILE_READ_DATA,
+			     dacl_to_nfs4_idmap_both[i].dacl_flags);
+		dacl = make_sec_acl(frame, SECURITY_ACL_REVISION_ADS,
+				    ARRAY_SIZE(dacl_aces), dacl_aces);
+		assert_non_null(dacl);
+
+		nfs4_acl = smbacl4_win2nfs4(frame, true, dacl, &params,
+					    1002, 1002);
+
+		assert_non_null(nfs4_acl);
+		assert_int_equal(smbacl4_get_controlflags(nfs4_acl),
+				 SEC_DESC_SELF_RELATIVE);
+		assert_int_equal(smb_get_naces(nfs4_acl), 1);
+
+		nfs4_ace_container = smb_first_ace4(nfs4_acl);
+		assert_non_null(nfs4_ace_container);
+		assert_null(smb_next_ace4(nfs4_ace_container));
+
+		nfs4_ace = smb_get_ace4(nfs4_ace_container);
+		assert_int_equal(nfs4_ace->flags,
+				 dacl_to_nfs4_idmap_both[i].nfs4_flags);
+		assert_int_equal(nfs4_ace->aceFlags,
+				 dacl_to_nfs4_idmap_both[i].nfs4_ace_flags);
+		if (nfs4_ace->flags & SMB_ACE4_ID_SPECIAL) {
+			assert_int_equal(nfs4_ace->who.special_id,
+					 dacl_to_nfs4_idmap_both[i].nfs4_id);
+		} else if (nfs4_ace->aceFlags & SMB_ACE4_IDENTIFIER_GROUP) {
+			assert_int_equal(nfs4_ace->who.gid,
+					 dacl_to_nfs4_idmap_both[i].nfs4_id);
+		} else {
+			assert_int_equal(nfs4_ace->who.uid,
+					 dacl_to_nfs4_idmap_both[i].nfs4_id);
+		}
+		assert_int_equal(nfs4_ace->aceType,
+				 SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE);
+		assert_int_equal(nfs4_ace->aceMask, SMB_ACE4_READ_DATA);
+	}
+
+	TALLOC_FREE(frame);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -1687,6 +1771,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test(test_dacl_to_nfs4_config_special),
 		cmocka_unit_test(test_nfs4_to_dacl_config_special),
 		cmocka_unit_test(test_nfs4_to_dacl_idmap_type_both),
+		cmocka_unit_test(test_dacl_to_nfs4_idmap_type_both),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
