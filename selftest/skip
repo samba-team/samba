@@ -129,7 +129,6 @@
 ^samba4.*.raw.samba3.*						# Samba3-specific test
 ^samba4.rpc..*samba3.*						# Samba3-specific test
 ^samba4.raw.offline 			# Samba 4 doesn't have much offline support yet
-^samba4.rpc.autoidl  # this one just generates a lot of noise, and is no longer useful
 ^samba4.rpc.countcalls # this is not useful now we have full IDL
 ^samba4.rap.basic
 ^samba4.rap.scan # same thing here - we have docs now

@@ -121,7 +121,6 @@ bld.SAMBA_MODULE('torture_rpc',
                         rpc/remact.c
                         rpc/mgmt.c
                         rpc/scanner.c
-                        rpc/autoidl.c
                         rpc/countcalls.c
                         rpc/testjoin.c
                         rpc/schannel.c

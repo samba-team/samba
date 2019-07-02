@@ -547,7 +547,6 @@ NTSTATUS torture_rpc_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_rpc_remact(suite));
 	torture_suite_add_simple_test(suite, "mgmt", torture_rpc_mgmt);
 	torture_suite_add_simple_test(suite, "scanner", torture_rpc_scanner);
-	torture_suite_add_simple_test(suite, "autoidl", torture_rpc_autoidl);
 	torture_suite_add_simple_test(suite, "countcalls", torture_rpc_countcalls);
 	torture_suite_add_simple_test(suite, "authcontext", torture_bind_authcontext);
 	torture_suite_add_suite(suite, torture_rpc_samba3(suite));
