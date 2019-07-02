@@ -1,3 +1,128 @@
+                   ==============================
+                   Release Notes for Samba 4.9.10
+                            July 02, 2019
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.9 release series.
+
+
+Changes since 4.9.9:
+--------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13938: s3: SMB1: Don't allow recvfile on stream fsp's.
+   * BUG 13956: s3: winbind: Fix crash when invoking winbind idmap scripts.
+   * BUG 13964: smbd does not correctly parse arguments passed to dfree and
+     quota scripts.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13981: docs: Improve documentation of "lanman auth" and "ntlm auth"
+     connection.
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 14002: python/ntacls: Use correct "state directory" smb.conf option
+     instead of "state dir".
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13840: registry: Add a missing include.
+   * BUG 13938: s3:smbd: Don't use recvfile on streams.
+   * BUG 13944: SMB guest authentication may fail.
+   * BUG 13958: AppleDouble conversion breaks Resourceforks.
+   * BUG 13964: s3: lib: Rename all uses of file_pload_XXX -> file_ploadv_XXX.
+   * BUG 13968: vfs_fruit makes direct use of syscalls like mmap() and pread().
+   * BUG 13987: s3:mdssvc: Fix flex compilation error.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13872: s3/vfs_glusterfs[_fuse]: Avoid using NAME_MAX directly.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 13940: vfs_ceph: Fix cephwrap_flistxattr() debug message.
+
+o  Aaron Haslett <aaronhaslett@catalyst.net.nz>
+   * BUG 13799: dsdb:samdb: Schemainfo update with relax control.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 13943: ctdb-common: Fix memory leak in run_proc.
+
+o  Aliaksei Karaliou <akaraliou@panasas.com>
+   * BUG 13964: smbd does not correctly parse arguments passed to dfree and
+     quota scripts.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13903: winbind: Fix overlapping id ranges.
+   * BUG 13957: smbd: Fix a panic.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 12478: ldap server: Generate correct referral schemes.
+   * BUG 13902: lib util debug: Increase format buffer to 4KiB.
+   * BUG 13941: Fix use after free detected by AddressSanitizer.
+   * BUG 13942: s4 dsdb: Fix use after free in
+     samldb_rename_search_base_callback.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12204: Samba fails to replicate schema 69.
+   * BUG 13713: Schema replication fails if link crosses chunk boundary
+     backwards.
+   * BUG 13799: 'samba-tool domain schemaupgrade' uses relax control and skips
+     the schemaInfo update.
+   * BUG 13916: dsdb:audit_log: avoid printing "... remote host [Unknown] SID
+     [(NULL SID)] ...".
+   * BUG 13917: python/ntacls: We only need security.SEC_STD_READ_CONTROL in
+     order to get the ACL.
+   * BUG 13919: smbd: Implement SMB_FILE_NORMALIZED_NAME_INFORMATION handling.
+
+o  Shyamsunder Rathi <shyam.rathi@nutanix.com>
+   * BUG 13947: s3:loadparm: Ensure to truncate FS Volume Label at multibyte
+     boundary.
+
+o  Robert Sander <r.sander@heinlein-support.de>
+   * BUG 13918: s3: modules: ceph: Use current working directory instead of
+     share path.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 13831: Fix inconsistent output from wbinfo --sid-to-name depending on
+     cache state.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13937: Fix several issues detected by GCC 9.
+   * BUG 13939: s3:smbspool: Fix regression printing with Kerberos credentials.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 13923: ctdb-tools: Fix ctdb dumpmemory to avoid printing trailing NUL.
+   * BUG 13930: ctdb-daemon: Never use 0 as a client ID.
+   * BUG 13943: ctdb-common: Fix memory leak.
+
+o  Rafael David Tinoco <rafaeldtinoco@ubuntu.com>
+   * BUG 13984: ctdb-scripts: Fix tcp_tw_recycle existence check.
+
+o  Ralph Wuerthner <ralph.wuerthner@de.ibm.com>
+   * BUG 13904: Log early startup failures.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
                    =============================
                    Release Notes for Samba 4.9.9
                             June 19, 2019
@@ -48,8 +173,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    =============================
                    Release Notes for Samba 4.9.8
