@@ -415,6 +415,10 @@ if with_pthreadpool:
                                 "script/tests/test_libwbclient_threads.sh"),
                    "$DOMAIN", "$DC_USERNAME"])
 
+plantestsuite("samba3.test_nfs4_acl", "none",
+              [os.path.join(bindir(), "test_nfs4_acls"),
+               "$SMB_CONF_PATH"])
+
 plantestsuite(
     "samba3.resolvconf", "none",
     [os.path.join(samba3srcdir, "script/tests/test_resolvconf.sh")])

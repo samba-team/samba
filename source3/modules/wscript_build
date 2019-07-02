@@ -4,6 +4,11 @@ bld.SAMBA3_SUBSYSTEM('NFS4_ACLS',
                     source='nfs4_acls.c',
                     deps='samba-util tdb')
 
+bld.SAMBA3_BINARY('test_nfs4_acls',
+                  source='test_nfs4_acls.c',
+                  deps='smbd_base cmocka',
+                  install=False)
+
 bld.SAMBA3_SUBSYSTEM('vfs_acl_common',
                      source='vfs_acl_common.c')
 
