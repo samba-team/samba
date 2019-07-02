@@ -516,6 +516,111 @@ static void test_nfs4_permissions_to_dacl(void **state)
 	TALLOC_FREE(frame);
 }
 
+struct ace_perm_mapping_dacl_to_nfs4 {
+	uint32_t dacl_perm;
+	uint32_t nfs4_perm;
+} perm_table_dacl_to_nfs4[] = {
+	{ SEC_FILE_READ_DATA,		SMB_ACE4_READ_DATA,		},
+	{ SEC_DIR_LIST,		SMB_ACE4_LIST_DIRECTORY,	},
+	{ SEC_FILE_WRITE_DATA,		SMB_ACE4_WRITE_DATA,		},
+	{ SEC_DIR_ADD_FILE,		SMB_ACE4_ADD_FILE,		},
+	{ SEC_FILE_APPEND_DATA,	SMB_ACE4_APPEND_DATA,		},
+	{ SEC_DIR_ADD_SUBDIR,		SMB_ACE4_ADD_SUBDIRECTORY,	},
+	{ SEC_FILE_READ_EA,		SMB_ACE4_READ_NAMED_ATTRS,	},
+	{ SEC_DIR_READ_EA,		SMB_ACE4_READ_NAMED_ATTRS,	},
+	{ SEC_FILE_WRITE_EA,		SMB_ACE4_WRITE_NAMED_ATTRS,	},
+	{ SEC_DIR_WRITE_EA,		SMB_ACE4_WRITE_NAMED_ATTRS,	},
+	{ SEC_FILE_EXECUTE,		SMB_ACE4_EXECUTE,		},
+	{ SEC_DIR_TRAVERSE,		SMB_ACE4_EXECUTE,		},
+	{ SEC_DIR_DELETE_CHILD,	SMB_ACE4_DELETE_CHILD,		},
+	{ SEC_FILE_READ_ATTRIBUTE,	SMB_ACE4_READ_ATTRIBUTES,	},
+	{ SEC_DIR_READ_ATTRIBUTE,	SMB_ACE4_READ_ATTRIBUTES,	},
+	{ SEC_FILE_WRITE_ATTRIBUTE,	SMB_ACE4_WRITE_ATTRIBUTES,	},
+	{ SEC_DIR_WRITE_ATTRIBUTE,	SMB_ACE4_WRITE_ATTRIBUTES,	},
+	{ SEC_STD_DELETE,		SMB_ACE4_DELETE,		},
+	{ SEC_STD_READ_CONTROL,	SMB_ACE4_READ_ACL,		},
+	{ SEC_STD_WRITE_DAC,		SMB_ACE4_WRITE_ACL,		},
+	{ SEC_STD_WRITE_OWNER,		SMB_ACE4_WRITE_OWNER,		},
+	{ SEC_STD_SYNCHRONIZE,		SMB_ACE4_SYNCHRONIZE,		},
+	{ SEC_GENERIC_READ,		SMB_ACE4_READ_ACL|
+					SMB_ACE4_READ_DATA|
+					SMB_ACE4_READ_ATTRIBUTES|
+					SMB_ACE4_READ_NAMED_ATTRS|
+					SMB_ACE4_SYNCHRONIZE		},
+	{ SEC_GENERIC_WRITE,		SMB_ACE4_WRITE_ACL|
+					SMB_ACE4_WRITE_DATA|
+					SMB_ACE4_WRITE_ATTRIBUTES|
+					SMB_ACE4_WRITE_NAMED_ATTRS|
+					SMB_ACE4_SYNCHRONIZE		},
+	{ SEC_GENERIC_EXECUTE,		SMB_ACE4_READ_ACL|
+					SMB_ACE4_READ_ATTRIBUTES|
+					SMB_ACE4_EXECUTE|
+					SMB_ACE4_SYNCHRONIZE		},
+	{ SEC_GENERIC_ALL,		SMB_ACE4_DELETE|
+					SMB_ACE4_READ_ACL|
+					SMB_ACE4_WRITE_ACL|
+					SMB_ACE4_WRITE_OWNER|
+					SMB_ACE4_SYNCHRONIZE|
+					SMB_ACE4_WRITE_ATTRIBUTES|
+					SMB_ACE4_READ_ATTRIBUTES|
+					SMB_ACE4_EXECUTE|
+					SMB_ACE4_READ_NAMED_ATTRS|
+					SMB_ACE4_WRITE_NAMED_ATTRS|
+					SMB_ACE4_WRITE_DATA|
+					SMB_ACE4_APPEND_DATA|
+					SMB_ACE4_READ_DATA|
+					SMB_ACE4_DELETE_CHILD		},
+};
+
+static void test_dacl_permissions_to_nfs4(void **state)
+{
+	struct dom_sid *sids = *state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(perm_table_nfs4_to_dacl); i++) {
+		struct SMB4ACL_T *nfs4_acl;
+		struct SMB4ACE_T *nfs4_ace_container;
+		SMB_ACE4PROP_T *nfs4_ace;
+		struct smbacl4_vfs_params params = {
+			.mode = e_simple,
+			.do_chown = true,
+			.acedup = e_merge,
+			.map_full_control = true,
+		};
+		struct security_ace dacl_aces[1];
+		struct security_acl *dacl;
+
+		init_sec_ace(&dacl_aces[0], &sids[0],
+			     SEC_ACE_TYPE_ACCESS_ALLOWED,
+			     perm_table_dacl_to_nfs4[i].dacl_perm, 0);
+		dacl = make_sec_acl(frame, SECURITY_ACL_REVISION_ADS,
+				    ARRAY_SIZE(dacl_aces), dacl_aces);
+		assert_non_null(dacl);
+
+		nfs4_acl = smbacl4_win2nfs4(frame, false, dacl, &params,
+					    101, 102);
+
+		assert_non_null(nfs4_acl);
+		assert_int_equal(smbacl4_get_controlflags(nfs4_acl),
+				 SEC_DESC_SELF_RELATIVE);
+		assert_int_equal(smb_get_naces(nfs4_acl), 1);
+
+		nfs4_ace_container = smb_first_ace4(nfs4_acl);
+		assert_non_null(nfs4_ace_container);
+		assert_null(smb_next_ace4(nfs4_ace_container));
+
+		nfs4_ace = smb_get_ace4(nfs4_ace_container);
+		assert_int_equal(nfs4_ace->flags, 0);
+		assert_int_equal(nfs4_ace->who.uid, 1000);
+		assert_int_equal(nfs4_ace->aceFlags, 0);
+		assert_int_equal(nfs4_ace->aceMask,
+				 perm_table_dacl_to_nfs4[i].nfs4_perm);
+	}
+
+	TALLOC_FREE(frame);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -527,6 +632,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test(test_ace_flags_nfs4_to_dacl),
 		cmocka_unit_test(test_ace_flags_dacl_to_nfs4),
 		cmocka_unit_test(test_nfs4_permissions_to_dacl),
+		cmocka_unit_test(test_dacl_permissions_to_nfs4),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
