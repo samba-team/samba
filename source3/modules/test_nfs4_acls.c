@@ -268,6 +268,92 @@ static void test_acl_type_dacl_to_nfs4(void **state)
 	TALLOC_FREE(frame);
 }
 
+struct ace_flag_mapping_nfs4_to_dacl {
+	bool is_directory;
+	uint32_t nfs4_flag;
+	uint32_t dacl_flag;
+} ace_flags_nfs4_to_dacl[] = {
+	{ true,  SMB_ACE4_FILE_INHERIT_ACE,
+	  SEC_ACE_FLAG_OBJECT_INHERIT },
+	{ false, SMB_ACE4_FILE_INHERIT_ACE,
+	  0 },
+	{ true, SMB_ACE4_DIRECTORY_INHERIT_ACE,
+	  SEC_ACE_FLAG_CONTAINER_INHERIT },
+	{ false, SMB_ACE4_DIRECTORY_INHERIT_ACE,
+	  0 },
+	{ true, SMB_ACE4_NO_PROPAGATE_INHERIT_ACE,
+	  SEC_ACE_FLAG_NO_PROPAGATE_INHERIT },
+	{ false, SMB_ACE4_NO_PROPAGATE_INHERIT_ACE,
+	  SEC_ACE_FLAG_NO_PROPAGATE_INHERIT },
+	{ true, SMB_ACE4_INHERIT_ONLY_ACE,
+	  SEC_ACE_FLAG_INHERIT_ONLY },
+	{ false, SMB_ACE4_INHERIT_ONLY_ACE,
+	  SEC_ACE_FLAG_INHERIT_ONLY },
+	{ true, SMB_ACE4_SUCCESSFUL_ACCESS_ACE_FLAG,
+	  0 },
+	{ false, SMB_ACE4_SUCCESSFUL_ACCESS_ACE_FLAG,
+	  0 },
+	{ true, SMB_ACE4_FAILED_ACCESS_ACE_FLAG,
+	  0 },
+	{ false, SMB_ACE4_FAILED_ACCESS_ACE_FLAG,
+	  0 },
+	{ true, SMB_ACE4_INHERITED_ACE,
+	  SEC_ACE_FLAG_INHERITED_ACE },
+	{ false, SMB_ACE4_INHERITED_ACE,
+	  SEC_ACE_FLAG_INHERITED_ACE },
+};
+
+static void test_ace_flags_nfs4_to_dacl(void **state)
+{
+	struct dom_sid *sids = *state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	SMB_ACE4PROP_T nfs4_ace;
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(ace_flags_nfs4_to_dacl); i++) {
+		struct SMB4ACL_T *nfs4_acl;
+		bool is_directory;
+		struct security_ace *dacl_aces;
+		int good_aces;
+		struct smbacl4_vfs_params params = {
+			.mode = e_simple,
+			.do_chown = true,
+			.acedup = e_merge,
+			.map_full_control = true,
+		};
+
+		nfs4_acl = smb_create_smb4acl(frame);
+		assert_non_null(nfs4_acl);
+
+		nfs4_ace = (SMB_ACE4PROP_T) {
+			.flags		= 0,
+			.who.uid	= 1000,
+			.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+			.aceFlags	= ace_flags_nfs4_to_dacl[i].nfs4_flag,
+			.aceMask	= SMB_ACE4_READ_DATA,
+		};
+		assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+		is_directory = ace_flags_nfs4_to_dacl[i].is_directory;
+
+		assert_true(smbacl4_nfs42win(frame, &params, nfs4_acl,
+					     &sids[2], &sids[3], is_directory,
+					     &dacl_aces, &good_aces));
+
+		assert_int_equal(good_aces, 1);
+		assert_non_null(dacl_aces);
+
+		assert_int_equal(dacl_aces[0].type,
+				 SEC_ACE_TYPE_ACCESS_ALLOWED);
+		assert_int_equal(dacl_aces[0].flags,
+				 ace_flags_nfs4_to_dacl[i].dacl_flag);
+		assert_int_equal(dacl_aces[0].access_mask, SEC_FILE_READ_DATA);
+		assert_true(dom_sid_equal(&dacl_aces[0].trustee, &sids[0]));
+	}
+
+	TALLOC_FREE(frame);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -276,6 +362,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test(test_empty_dacl_to_nfs4),
 		cmocka_unit_test(test_acl_type_nfs4_to_dacl),
 		cmocka_unit_test(test_acl_type_dacl_to_nfs4),
+		cmocka_unit_test(test_ace_flags_nfs4_to_dacl),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
