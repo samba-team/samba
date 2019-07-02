@@ -297,6 +297,35 @@ static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 	return 0;
 }
 
+static void check_for_duplicate_sec_ace(struct security_ace *nt_ace_list,
+					int *good_aces)
+{
+	struct security_ace *last = NULL;
+	int i;
+
+	if (*good_aces < 2) {
+		return;
+	}
+
+	last = &nt_ace_list[(*good_aces) - 1];
+
+	for (i = 0; i < (*good_aces) - 1; i++) {
+		struct security_ace *cur = &nt_ace_list[i];
+
+		if (cur->type == last->type &&
+		    cur->flags == last->flags &&
+		    cur->access_mask == last->access_mask &&
+		    dom_sid_equal(&cur->trustee, &last->trustee))
+		{
+			struct dom_sid_buf sid_buf;
+
+			DBG_INFO("Removing duplicate entry for SID %s.\n",
+				 dom_sid_str_buf(&last->trustee, &sid_buf));
+			(*good_aces)--;
+		}
+	}
+}
+
 static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 	const struct smbacl4_vfs_params *params,
 	struct SMB4ACL_T *acl, /* in */
@@ -438,6 +467,8 @@ static bool smbacl4_nfs42win(TALLOC_CTX *mem_ctx,
 				     ace->aceType, mask,
 				     win_ace_flags);
 		}
+
+		check_for_duplicate_sec_ace(nt_ace_list, &good_aces);
 	}
 
 	nt_ace_list = talloc_realloc(mem_ctx, nt_ace_list, struct security_ace,
