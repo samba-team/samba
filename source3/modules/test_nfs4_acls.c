@@ -973,6 +973,127 @@ static void test_dacl_creator_to_nfs4(void **state)
 	TALLOC_FREE(frame);
 }
 
+struct creator_owner_nfs4_to_dacl {
+	uint32_t special_id;
+	uint32_t nfs4_ace_flags;
+	uint32_t dacl_ace_flags;
+} creator_owner_nfs4_to_dacl[] = {
+	{ SMB_ACE4_WHO_OWNER,
+	  SMB_ACE4_FILE_INHERIT_ACE,
+	  SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY },
+	{ SMB_ACE4_WHO_OWNER,
+	  SMB_ACE4_DIRECTORY_INHERIT_ACE,
+	  SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY },
+	{ SMB_ACE4_WHO_OWNER,
+	  SMB_ACE4_FILE_INHERIT_ACE|SMB_ACE4_DIRECTORY_INHERIT_ACE,
+	  SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
+	  SEC_ACE_FLAG_INHERIT_ONLY },
+	{ SMB_ACE4_WHO_GROUP,
+	  SMB_ACE4_FILE_INHERIT_ACE,
+	  SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY },
+	{ SMB_ACE4_WHO_GROUP,
+	  SMB_ACE4_DIRECTORY_INHERIT_ACE,
+	  SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERIT_ONLY },
+	{ SMB_ACE4_WHO_GROUP,
+	  SMB_ACE4_FILE_INHERIT_ACE|SMB_ACE4_DIRECTORY_INHERIT_ACE,
+	  SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|
+	  SEC_ACE_FLAG_INHERIT_ONLY },
+};
+
+static void test_nfs4_to_dacl_creator(void **state)
+{
+	struct dom_sid *sids = *state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(creator_owner_nfs4_to_dacl); i++) {
+		struct SMB4ACL_T *nfs4_acl;
+		SMB_ACE4PROP_T nfs4_ace;
+		struct security_ace *dacl_aces, *creator_dacl_ace;
+		int good_aces;
+		struct smbacl4_vfs_params params = {
+			.mode = e_simple,
+			.do_chown = true,
+			.acedup = e_merge,
+			.map_full_control = true,
+		};
+
+		nfs4_acl = smb_create_smb4acl(frame);
+		assert_non_null(nfs4_acl);
+
+		nfs4_ace = (SMB_ACE4PROP_T) {
+			.flags		= SMB_ACE4_ID_SPECIAL,
+			.who.special_id
+				= creator_owner_nfs4_to_dacl[i].special_id,
+			.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+			.aceFlags
+				= creator_owner_nfs4_to_dacl[i].nfs4_ace_flags,
+			.aceMask	= SMB_ACE4_READ_DATA,
+		};
+		assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+		assert_true(smbacl4_nfs42win(frame, &params, nfs4_acl,
+					     &sids[0], &sids[1], true,
+					     &dacl_aces, &good_aces));
+		assert_non_null(dacl_aces);
+
+		if (creator_owner_nfs4_to_dacl[i].nfs4_ace_flags &
+		    SMB_ACE4_INHERIT_ONLY_ACE) {
+			/*
+			 * Only one ACE entry for the CREATOR ACE entry.
+			 */
+			assert_int_equal(good_aces, 1);
+			creator_dacl_ace = &dacl_aces[0];
+		} else {
+			/*
+			 * This creates an additional ACE entry for
+			 * the permissions on the current object.
+			 */
+			assert_int_equal(good_aces, 2);
+
+			assert_int_equal(dacl_aces[0].type,
+					 SEC_ACE_TYPE_ACCESS_ALLOWED);
+			assert_int_equal(dacl_aces[0].flags, 0);
+			assert_int_equal(dacl_aces[0].access_mask,
+					 SEC_FILE_READ_DATA);
+
+			if (creator_owner_nfs4_to_dacl[i].special_id ==
+			    SMB_ACE4_WHO_OWNER) {
+				assert_true(dom_sid_equal(&dacl_aces[0].trustee,
+							  &sids[0]));
+			}
+
+			if (creator_owner_nfs4_to_dacl[i].special_id ==
+			    SMB_ACE4_WHO_GROUP) {
+				assert_true(dom_sid_equal(&dacl_aces[0].trustee,
+							  &sids[1]));
+			}
+
+			creator_dacl_ace = &dacl_aces[1];
+		}
+
+		assert_int_equal(creator_dacl_ace->type,
+				 SEC_ACE_TYPE_ACCESS_ALLOWED);
+		assert_int_equal(creator_dacl_ace->flags,
+				 creator_owner_nfs4_to_dacl[i].dacl_ace_flags);
+		assert_int_equal(creator_dacl_ace->access_mask,
+				 SEC_FILE_READ_DATA);
+		if (creator_owner_nfs4_to_dacl[i].special_id ==
+		    SMB_ACE4_WHO_OWNER) {
+			assert_true(dom_sid_equal(&creator_dacl_ace->trustee,
+						  &global_sid_Creator_Owner));
+		}
+
+		if (creator_owner_nfs4_to_dacl[i].special_id ==
+		    SMB_ACE4_WHO_GROUP) {
+			assert_true(dom_sid_equal(&creator_dacl_ace->trustee,
+						  &global_sid_Creator_Group));
+		}
+	}
+
+	TALLOC_FREE(frame);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -988,6 +1109,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test(test_special_nfs4_to_dacl),
 		cmocka_unit_test(test_dacl_to_special_nfs4),
 		cmocka_unit_test(test_dacl_creator_to_nfs4),
+		cmocka_unit_test(test_nfs4_to_dacl_creator),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
