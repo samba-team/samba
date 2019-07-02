@@ -804,6 +804,101 @@ class cmd_group_edit(Command):
         self.outf.write("Modified group '%s' successfully\n" % groupname)
 
 
+class cmd_group_add_unix_attrs(Command):
+    """Add RFC2307 attributes to a group.
+
+This command adds Unix attributes to a group account in the Active
+Directory domain.
+The groupname specified on the command is the sAMaccountName.
+
+Unix (RFC2307) attributes will be added to the group account.
+
+Add 'idmap_ldb:use rfc2307 = Yes' to smb.conf to use these attributes for
+UID/GID mapping.
+
+The command may be run from the root userid or another authorized userid.
+The -H or --URL= option can be used to execute the command against a
+remote server.
+
+Example1:
+samba-tool group addunixattrs Group1 10000
+
+Example1 shows how to add RFC2307 attributes to a domain enabled group
+account.
+
+The groups Unix ID will be set to '10000', provided this ID isn't already
+in use.
+
+"""
+    synopsis = "%prog <groupname> <gidnumber> [options]"
+
+    takes_options = [
+        Option("-H", "--URL", help="LDB URL for database or target server",
+               type=str, metavar="URL", dest="H"),
+    ]
+
+    takes_args = ["groupname", "gidnumber"]
+
+    takes_optiongroups = {
+        "sambaopts": options.SambaOptions,
+        "credopts": options.CredentialsOptions,
+        "versionopts": options.VersionOptions,
+        }
+
+    def run(self, groupname, gidnumber, credopts=None, sambaopts=None,
+            versionopts=None, H=None):
+
+        lp = sambaopts.get_loadparm()
+        creds = credopts.get_credentials(lp)
+
+        samdb = SamDB(url=H, session_info=system_session(),
+                      credentials=creds, lp=lp)
+
+        domaindn = samdb.domain_dn()
+
+        # Check group exists and doesn't have a gidNumber
+        filter = "(samaccountname={})".format(ldb.binary_encode(groupname))
+        res = samdb.search(domaindn,
+                           scope=ldb.SCOPE_SUBTREE,
+                           expression=filter)
+        if (len(res) == 0):
+            raise CommandError("Unable to find group '{}'".format(groupname))
+
+        group_dn = res[0].dn
+
+        if "gidNumber" in res[0]:
+            raise CommandError("Group {} is a Unix group.".format(groupname))
+
+        # Check if supplied gidnumber isn't already being used
+        filter = "(&(objectClass=group)(gidNumber={}))".format(gidnumber)
+        res = samdb.search(domaindn,
+                           scope=ldb.SCOPE_SUBTREE,
+                           expression=filter)
+        if (len(res) != 0):
+            raise CommandError('gidNumber {} already used.'.format(gidnumber))
+
+        if not lp.get("idmap_ldb:use rfc2307"):
+            self.outf.write("You are setting a Unix/RFC2307 GID. "
+                            "You may want to set 'idmap_ldb:use rfc2307 = Yes'"
+                            " in smb.conf to use the attributes for "
+                            "XID/SID-mapping.\n")
+
+        group_mod = """
+dn: {0}
+changetype: modify
+add: gidNumber
+gidNumber: {1}
+""".format(group_dn, gidnumber)
+
+        try:
+            samdb.modify_ldif(group_mod)
+        except ldb.LdbError as e:
+            raise CommandError("Failed to modify group '{0}': {1}"
+                               .format(groupname, e))
+
+        self.outf.write("Modified Group '{}' successfully\n".format(groupname))
+
+
 class cmd_group(SuperCommand):
     """Group management."""
 
@@ -818,3 +913,4 @@ class cmd_group(SuperCommand):
     subcommands["move"] = cmd_group_move()
     subcommands["show"] = cmd_group_show()
     subcommands["stats"] = cmd_group_stats()
+    subcommands["addunixattrs"] = cmd_group_add_unix_attrs()

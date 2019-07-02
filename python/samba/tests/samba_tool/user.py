@@ -50,14 +50,23 @@ class UserCmdTestCase(SambaToolCmdTest):
         self.users.append(self._randomPosixUser({"name": "posixuser2"}))
         self.users.append(self._randomPosixUser({"name": "posixuser3"}))
         self.users.append(self._randomPosixUser({"name": "posixuser4"}))
+        self.users.append(self._randomUnixUser({"name": "unixuser1"}))
+        self.users.append(self._randomUnixUser({"name": "unixuser2"}))
+        self.users.append(self._randomUnixUser({"name": "unixuser3"}))
+        self.users.append(self._randomUnixUser({"name": "unixuser4"}))
 
-        # setup the 8 users and ensure they are correct
+        # setup the 12 users and ensure they are correct
         for user in self.users:
             (result, out, err) = user["createUserFn"](user)
 
             self.assertCmdSuccess(result, out, err)
             self.assertEquals(err, "", "Shouldn't be any error messages")
-            self.assertIn("User '%s' created successfully" % user["name"], out)
+            if 'unix' in user["name"]:
+                self.assertIn("Modified User '%s' successfully" % user["name"],
+                              out)
+            else:
+                self.assertIn("User '%s' created successfully" % user["name"],
+                              out)
 
             user["checkUserFn"](user)
 
@@ -539,6 +548,24 @@ sAMAccountName: %s
         user.update(base)
         return user
 
+    def _randomUnixUser(self, base={}):
+        """create a user with random attribute values and additional RFC2307
+        attributes, you can specify base attributes"""
+        user = self._randomUser({})
+        user.update(base)
+        posixAttributes = {
+            "uidNumber": self.randomXid(),
+            "gidNumber": self.randomXid(),
+            "uid": self.randomName(),
+            "loginShell": self.randomName(),
+            "gecos": self.randomName(),
+            "createUserFn": self._create_unix_user,
+            "checkUserFn": self._check_unix_user,
+        }
+        user.update(posixAttributes)
+        user.update(base)
+        return user
+
     def _check_user(self, user):
         """ check if a user from SamDB has the same attributes as its template """
         found = self._find_user(user["name"])
@@ -557,6 +584,20 @@ sAMAccountName: %s
         self.assertEquals("%s" % found.get("gecos"), user["gecos"])
         self.assertEquals("%s" % found.get("uidNumber"), "%s" % user["uidNumber"])
         self.assertEquals("%s" % found.get("gidNumber"), "%s" % user["gidNumber"])
+        self.assertEquals("%s" % found.get("uid"), user["uid"])
+        self._check_user(user)
+
+    def _check_unix_user(self, user):
+        """ check if a unix_user from SamDB has the same attributes as its
+template """
+        found = self._find_user(user["name"])
+
+        self.assertEquals("%s" % found.get("loginShell"), user["loginShell"])
+        self.assertEquals("%s" % found.get("gecos"), user["gecos"])
+        self.assertEquals("%s" % found.get("uidNumber"), "%s" %
+                          user["uidNumber"])
+        self.assertEquals("%s" % found.get("gidNumber"), "%s" %
+                          user["gidNumber"])
         self.assertEquals("%s" % found.get("uid"), user["uid"])
         self._check_user(user)
 
@@ -587,6 +628,19 @@ sAMAccountName: %s
                               "--gid-number=%s" % user["gidNumber"],
                               "-H", "ldap://%s" % os.environ["DC_SERVER"],
                               "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
+
+    def _create_unix_user(self, user):
+        """ Add RFC2307 attributes to a user"""
+        self._create_user(user)
+        return self.runsubcmd("user", "addunixattrs", user["name"],
+                              "%s" % user["uidNumber"],
+                              "--gid-number=%s" % user["gidNumber"],
+                              "--gecos=%s" % user["gecos"],
+                              "--login-shell=%s" % user["loginShell"],
+                              "--uid=%s" % user["uid"],
+                              "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                              "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                            os.environ["DC_PASSWORD"]))
 
     def _find_user(self, name):
         search_filter = "(&(sAMAccountName=%s)(objectCategory=%s,%s))" % (ldb.binary_encode(name), "CN=Person,CN=Schema,CN=Configuration", self.samdb.domain_dn())

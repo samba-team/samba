@@ -39,14 +39,29 @@ class GroupCmdTestCase(SambaToolCmdTest):
         self.groups.append(self._randomGroup({"name": "testgroup2"}))
         self.groups.append(self._randomGroup({"name": "testgroup3"}))
         self.groups.append(self._randomGroup({"name": "testgroup4"}))
+        self.groups.append(self._randomPosixGroup({"name": "posixgroup1"}))
+        self.groups.append(self._randomPosixGroup({"name": "posixgroup2"}))
+        self.groups.append(self._randomPosixGroup({"name": "posixgroup3"}))
+        self.groups.append(self._randomPosixGroup({"name": "posixgroup4"}))
+        self.groups.append(self._randomUnixGroup({"name": "unixgroup1"}))
+        self.groups.append(self._randomUnixGroup({"name": "unixgroup2"}))
+        self.groups.append(self._randomUnixGroup({"name": "unixgroup3"}))
+        self.groups.append(self._randomUnixGroup({"name": "unixgroup4"}))
 
-        # setup the 4 groups and ensure they are correct
+        # setup the 12 groups and ensure they are correct
         for group in self.groups:
-            (result, out, err) = self._create_group(group)
+            (result, out, err) = group["createGroupFn"](group)
 
             self.assertCmdSuccess(result, out, err)
             self.assertEquals(err, "", "There shouldn't be any error message")
-            self.assertIn("Added group %s" % group["name"], out)
+
+            if 'unix' in group["name"]:
+                self.assertIn("Modified Group '%s' successfully"
+                              % group["name"], out)
+            else:
+                self.assertIn("Added group %s" % group["name"], out)
+
+            group["checkGroupFn"](group)
 
             found = self._find_group(group["name"])
 
@@ -221,13 +236,71 @@ class GroupCmdTestCase(SambaToolCmdTest):
         self.assertIn("dn: CN=Domain Users,CN=Users,DC=samba,DC=example,DC=com", out)
 
     def _randomGroup(self, base={}):
-        """create a group with random attribute values, you can specify base attributes"""
+        """create a group with random attribute values, you can specify base
+ attributes"""
         group = {
             "name": self.randomName(),
             "description": self.randomName(count=100),
+            "createGroupFn": self._create_group,
+            "checkGroupFn": self._check_group,
         }
         group.update(base)
         return group
+
+    def _randomPosixGroup(self, base={}):
+        """create a group with random attribute values and additional RFC2307
+        attributes, you can specify base attributes"""
+        group = self._randomGroup({})
+        group.update(base)
+        posixAttributes = {
+            "unixdomain": self.randomName(),
+            "gidNumber": self.randomXid(),
+            "createGroupFn": self._create_posix_group,
+            "checkGroupFn": self._check_posix_group,
+        }
+        group.update(posixAttributes)
+        group.update(base)
+        return group
+
+    def _randomUnixGroup(self, base={}):
+        """create a group with random attribute values and additional RFC2307
+        attributes, you can specify base attributes"""
+        group = self._randomGroup({})
+        group.update(base)
+        posixAttributes = {
+            "gidNumber": self.randomXid(),
+            "createGroupFn": self._create_unix_group,
+            "checkGroupFn": self._check_unix_group,
+        }
+        group.update(posixAttributes)
+        group.update(base)
+        return group
+
+    def _check_group(self, group):
+        """ check if a group from SamDB has the same attributes as
+ its template """
+        found = self._find_group(group["name"])
+
+        self.assertEquals("%s" % found.get("name"), group["name"])
+        self.assertEquals("%s" % found.get("description"), group["description"])
+
+    def _check_posix_group(self, group):
+        """ check if a posix_group from SamDB has the same attributes as
+ its template """
+        found = self._find_group(group["name"])
+
+        self.assertEquals("%s" % found.get("gidNumber"), "%s" %
+                          group["gidNumber"])
+        self._check_group(group)
+
+    def _check_unix_group(self, group):
+        """ check if a unix_group from SamDB has the same attributes as its
+template """
+        found = self._find_group(group["name"])
+
+        self.assertEquals("%s" % found.get("gidNumber"), "%s" %
+                          group["gidNumber"])
+        self._check_group(group)
 
     def _create_group(self, group):
         return self.runsubcmd("group", "add", group["name"],
@@ -235,6 +308,25 @@ class GroupCmdTestCase(SambaToolCmdTest):
                               "-H", "ldap://%s" % os.environ["DC_SERVER"],
                               "-U%s%%%s" % (os.environ["DC_USERNAME"],
                                             os.environ["DC_PASSWORD"]))
+
+    def _create_posix_group(self, group):
+        """ create a new group with RFC2307 attributes """
+        return self.runsubcmd("group", "add", group["name"],
+                              "--description=%s" % group["description"],
+                              "--nis-domain=%s" % group["unixdomain"],
+                              "--gid-number=%s" % group["gidNumber"],
+                              "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                              "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                              os.environ["DC_PASSWORD"]))
+
+    def _create_unix_group(self, group):
+        """ Add RFC2307 attributes to a group"""
+        self._create_group(group)
+        return self.runsubcmd("group", "addunixattrs", group["name"],
+                              "%s" % group["gidNumber"],
+                              "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                              "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                              os.environ["DC_PASSWORD"]))
 
     def _find_group(self, name):
         search_filter = ("(&(sAMAccountName=%s)(objectCategory=%s,%s))" %
