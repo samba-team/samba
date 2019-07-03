@@ -46,7 +46,7 @@ ssize_t iov_buf(const struct iovec *iov, int iovcnt,
 		}
 		needed = tmp;
 
-		if (needed <= buflen && thislen > 0) {
+		if ((p != NULL) && needed <= buflen && thislen > 0) {
 			memcpy(p, iov[i].iov_base, thislen);
 			p += thislen;
 		}
