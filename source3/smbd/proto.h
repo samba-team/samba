@@ -715,12 +715,6 @@ NTSTATUS create_file_default(connection_struct *conn,
 			     const struct smb2_create_blobs *in_context_blobs,
 			     struct smb2_create_blobs *out_context_blobs);
 
-NTSTATUS get_relative_fid_filename(connection_struct *conn,
-				   struct smb_request *req,
-				   uint16_t root_dir_fid,
-				   const struct smb_filename *smb_fname,
-				   struct smb_filename **smb_fname_out);
-
 /* The following definitions come from smbd/oplock.c  */
 
 uint32_t get_lease_type(const struct share_mode_data *d,

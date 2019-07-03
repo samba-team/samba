@@ -5532,11 +5532,12 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 /*
  * Calculate the full path name given a relative fid.
  */
-NTSTATUS get_relative_fid_filename(connection_struct *conn,
-				   struct smb_request *req,
-				   uint16_t root_dir_fid,
-				   const struct smb_filename *smb_fname,
-				   struct smb_filename **smb_fname_out)
+static NTSTATUS get_relative_fid_filename(
+	connection_struct *conn,
+	struct smb_request *req,
+	uint16_t root_dir_fid,
+	const struct smb_filename *smb_fname,
+	struct smb_filename **smb_fname_out)
 {
 	files_struct *dir_fsp;
 	char *parent_fname = NULL;
