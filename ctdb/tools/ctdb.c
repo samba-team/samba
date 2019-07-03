@@ -3657,7 +3657,8 @@ static int control_reloadnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	struct ctdb_req_control request;
 	struct ctdb_reply_control **reply;
 	bool reload;
-	unsigned int i, count;
+	unsigned int i;
+	int count;
 	int ret;
 	uint32_t *pnn_list;
 
@@ -3726,13 +3727,14 @@ static int control_reloadnodes(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 					&request, NULL, &reply);
 	if (ret != 0) {
 		bool failed = false;
+		int j;
 
-		for (i=0; i<count; i++) {
-			ret = ctdb_reply_control_reload_nodes_file(reply[i]);
+		for (j=0; j<count; j++) {
+			ret = ctdb_reply_control_reload_nodes_file(reply[j]);
 			if (ret != 0) {
 				fprintf(stderr,
 					"Node %u failed to reload nodes\n",
-					pnn_list[i]);
+					pnn_list[j]);
 				failed = true;
 			}
 		}
