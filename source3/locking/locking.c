@@ -834,7 +834,7 @@ bool set_share_mode(struct share_mode_lock *lck,
 	return true;
 }
 
-struct share_mode_entry *find_share_mode_entry(
+static struct share_mode_entry *find_share_mode_entry(
 	struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_data *d = lck->data;
