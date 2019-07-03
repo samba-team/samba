@@ -271,7 +271,6 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		}
 		ret = ldb_add(ldb, msg);
 	} else {
-		ret = LDB_SUCCESS;
 		/* Annoyingly added to our search results */
 		ldb_msg_remove_attr(res->msgs[0], "distinguishedName");
 
@@ -324,7 +323,6 @@ int dsdb_schema_set_indices_and_attributes(struct ldb_context *ldb,
 		}
 		ret = ldb_add(ldb, msg_idx);
 	} else {
-		ret = LDB_SUCCESS;
 		/* Annoyingly added to our search results */
 		ldb_msg_remove_attr(res_idx->msgs[0], "distinguishedName");
 
