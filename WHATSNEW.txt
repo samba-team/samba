@@ -1,4 +1,50 @@
                    ==============================
+                   Release Notes for Samba 4.9.11
+                            July 03, 2019
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.9 release series.
+
+In yesterday's Samba 4.9.10 release, LDAP_REFERRAL_SCHEME_OPAQUE was added to
+db_module.h in order to fix bug #12478. Unfortunately, the ldb version was not
+raised. Samba >= 4.9.10 is no longer able to build with ldb 1.4.6. This version
+includes the new ldb version. Please note that there are just the version bumps
+in ldb and Samba, no code change. If you don't build Samba with an external ldb
+library, you can ignore this release and keep using 4.9.11.
+
+
+Changes since 4.9.10:
+---------------------
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12478: ldb: Release ldb 1.4.7.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.9.10
                             July 02, 2019
                    ==============================
@@ -119,9 +165,6 @@ database (https://bugzilla.samba.org/).
 == The Samba Team
 ======================================================================
 
-
-Release notes for older releases follow:
-----------------------------------------
 
                    =============================
                    Release Notes for Samba 4.9.9
