@@ -1314,17 +1314,21 @@ def setup_samdb(path, session_info, provision_backend, lp, names,
                            backend_store=backend_store,
                            backend_store_size=backend_store_size)
 
+    store_size = DEFAULT_BACKEND_SIZE
+    if backend_store_size:
+        store_size = backend_store_size
+
     options = []
     if backend_store == "mdb":
-        if backend_store_size:
-            store_size = backend_store_size
-        else:
-            # If no lmdb map size provided default to the default of
-            # 8 GiB
-            store_size = DEFAULT_BACKEND_SIZE
-        options = ["lmdb_env_size:" + str(store_size)]
+        options.append("lmdb_env_size:" + str(store_size))
     if batch_mode:
         options.append("batch_mode:1")
+    if batch_mode:
+        # Estimate the number of index records in the transaction_index_cache
+        # Numbers chosen give the prime 202481 for the default backend size,
+        # which works well for a 100,000 user database
+        cache_size = int(store_size / 42423) + 1
+        options.append("transaction_index_cache_size:" + str(cache_size))
 
     # Load the database, but don's load the global schema and don't connect
     # quite yet
