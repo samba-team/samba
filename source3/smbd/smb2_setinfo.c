@@ -443,11 +443,9 @@ static struct tevent_req *smbd_smb2_setinfo_send(TALLOC_CTX *mem_ctx,
 
 				tevent_req_done(req);
 				return tevent_req_post(req, ev);
-			} else {
-				tevent_req_nterror(req,
-					NT_STATUS_OBJECT_PATH_INVALID);
-				return tevent_req_post(req, ev);
 			}
+			tevent_req_nterror(req, NT_STATUS_OBJECT_PATH_INVALID);
+			return tevent_req_post(req, ev);
 		} else {
 			/*
 			 * Original code - this is an open file.
