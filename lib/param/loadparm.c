@@ -2161,15 +2161,14 @@ static bool do_section(const char *pszSectionName, void *userdata)
 	isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
 			 (strwicmp(pszSectionName, GLOBAL_NAME2) == 0));
 
-	bRetval = false;
-
 	/* if we've just struck a global section, note the fact. */
 	lp_ctx->bInGlobalSection = isglobal;
 
 	/* check for multiple global sections */
 	if (lp_ctx->bInGlobalSection) {
 		DEBUG(4, ("Processing section \"[%s]\"\n", pszSectionName));
-		return true;
+		bRetval = true;
+		goto out;
 	}
 
 	/* if we have a current service, tidy it up before moving on */
@@ -2188,10 +2187,11 @@ static bool do_section(const char *pszSectionName, void *userdata)
 								   pszSectionName))
 		    == NULL) {
 			DEBUG(0, ("Failed to add a new service\n"));
-			return false;
+			bRetval = false;
+			goto out;
 		}
 	}
-
+out:
 	return bRetval;
 }
 
