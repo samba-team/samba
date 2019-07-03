@@ -1801,6 +1801,11 @@ void reply_search(struct smb_request *req)
 		goto out;
 	}
 
+	if (smbreq_bufrem(req, p) < 3) {
+		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		goto out;
+	}
+
 	p++;
 	status_len = SVAL(p, 0);
 	p += 2;
@@ -1879,6 +1884,11 @@ void reply_search(struct smb_request *req)
 	} else {
 		int status_dirtype;
 		const char *dirpath;
+
+		if (smbreq_bufrem(req, p) < 21) {
+			reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+			goto out;
+		}
 
 		memcpy(status,p,21);
 		status_dirtype = CVAL(status,0) & 0x1F;
