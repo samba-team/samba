@@ -204,6 +204,15 @@ WERROR dsdb_schema_info_cmp(const struct dsdb_schema *schema,
 		return werr;
 	}
 
+	/*
+	 * shouldn't really be possible is dsdb_schema_info_from_blob
+	 * succeeded, this check is just to satisfy static checker
+	 */
+	if (schema_info == NULL) {
+		TALLOC_FREE(frame);
+		return WERR_INVALID_PARAMETER;
+	}
+
 	if (schema->schema_info->revision > schema_info->revision) {
 		/*
 		 * It's ok if our schema is newer than the remote one
