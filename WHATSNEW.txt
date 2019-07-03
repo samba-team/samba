@@ -55,6 +55,12 @@ Reindex performance improvements
 The performance of samba-tool dbcheck --reindex has been improved, especially
 for large domains.
 
+join performance improvements
+-----------------------------
+
+The performance of samba-tool domain join has been improved, especially
+for large domains.
+
 LDAP referrals
 --------------
 
@@ -100,6 +106,13 @@ This option is avaiable for the following sub commands:
  * domain join
  * domain dcpromo
  * drs clone-dc-database
+
+LDB "batch_mode"
+----------------
+
+To improve performance during batch operations i.e. joins, ldb now accepts a
+"batch_mode" option.  However to prevent any index or database inconsistencies
+if an operation fails, the entire transaction will be aborted at commit.
 
 REMOVED FEATURES
 ================
