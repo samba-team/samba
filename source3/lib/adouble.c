@@ -1727,9 +1727,9 @@ int ad_fset(struct vfs_handle_struct *handle,
 		len = SMB_VFS_NEXT_PWRITE(handle,
 					  fsp,
 					  ad->ad_data,
-					  AD_DATASZ_DOT_UND,
+					  ad_getentryoff(ad, ADEID_RFORK),
 					  0);
-		if (len != AD_DATASZ_DOT_UND) {
+		if (len != ad_getentryoff(ad, ADEID_RFORK)) {
 			DBG_ERR("short write on %s: %zd", fsp_str_dbg(fsp), len);
 			return -1;
 		}
