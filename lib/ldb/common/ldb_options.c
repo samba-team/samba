@@ -100,3 +100,8 @@ const char **ldb_options_copy(TALLOC_CTX *ctx, const char *options[])
 	}
 	return copy;
 }
+
+const char **ldb_options_get(struct ldb_context *ldb)
+{
+	return ldb->options;
+}

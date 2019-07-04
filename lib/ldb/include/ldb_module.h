@@ -582,4 +582,11 @@ int ldb_unpack_get_format(const struct ldb_val *data,
  */
 void ldb_handle_use_global_event_context(struct ldb_handle *handle);
 
+/**
+ * Get the options passed to ldb_connect.
+ *
+ * This allows the options to be inspected by elements in the module stack
+ *
+ */
+const char **ldb_options_get(struct ldb_context *ldb);
 #endif
