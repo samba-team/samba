@@ -124,33 +124,6 @@ virtual_attributes = {
     },
 }
 
-get_random_bytes_fn = None
-if get_random_bytes_fn is None:
-    try:
-        import Crypto.Random
-        get_random_bytes_fn = Crypto.Random.get_random_bytes
-    except ImportError as e:
-        pass
-if get_random_bytes_fn is None:
-    try:
-        import M2Crypto.Rand
-        get_random_bytes_fn = M2Crypto.Rand.rand_bytes
-    except ImportError as e:
-        pass
-
-
-def check_random():
-    if get_random_bytes_fn is not None:
-        return None
-    return "Crypto.Random or M2Crypto.Rand required"
-
-
-def get_random_bytes(num):
-    random_reason = check_random()
-    if random_reason is not None:
-        raise ImportError(random_reason)
-    return get_random_bytes_fn(num)
-
 
 def get_crypt_value(alg, utf8pw, rounds=0):
     algs = {
@@ -158,7 +131,7 @@ def get_crypt_value(alg, utf8pw, rounds=0):
         "6": {"length": 86},
     }
     assert alg in algs
-    salt = get_random_bytes(16)
+    salt = os.urandom(16)
     # The salt needs to be in [A-Za-z0-9./]
     # base64 is close enough and as we had 16
     # random bytes but only need 16 characters
@@ -203,9 +176,6 @@ def get_rounds(options):
 
 
 try:
-    random_reason = check_random()
-    if random_reason is not None:
-        raise ImportError(random_reason)
     import hashlib
     h = hashlib.sha1()
     h = None
@@ -213,8 +183,6 @@ try:
     }
 except ImportError as e:
     reason = "hashlib.sha1()"
-    if random_reason:
-        reason += " and " + random_reason
     reason += " required"
     disabled_virtual_attributes["virtualSSHA"] = {
         "reason": reason,
@@ -222,9 +190,6 @@ except ImportError as e:
 
 for (alg, attr) in [("5", "virtualCryptSHA256"), ("6", "virtualCryptSHA512")]:
     try:
-        random_reason = check_random()
-        if random_reason is not None:
-            raise ImportError(random_reason)
         import crypt
         v = get_crypt_value(alg, "")
         v = None
@@ -232,8 +197,6 @@ for (alg, attr) in [("5", "virtualCryptSHA256"), ("6", "virtualCryptSHA512")]:
         }
     except ImportError as e:
         reason = "crypt"
-        if random_reason:
-            reason += " and " + random_reason
         reason += " required"
         disabled_virtual_attributes[attr] = {
             "reason": reason,
@@ -1307,7 +1270,7 @@ class GetPasswordCommand(Command):
                 u8 = get_utf8(a, b, username or account_name)
                 if u8 is None:
                     continue
-                salt = get_random_bytes(4)
+                salt = os.urandom(4)
                 h = hashlib.sha1()
                 h.update(u8)
                 h.update(salt)
