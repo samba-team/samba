@@ -138,3 +138,11 @@ class SegfaultTests(samba.tests.TestCase):
     @segfault_detector
     def test_ldb_register_module(self):
         ldb.register_module('')
+
+    @segfault_detector
+    def test_ldb_open_0(self):
+        ldb.open()
+
+    @segfault_detector
+    def test_ldb_open_1(self):
+        ldb.open('')
