@@ -24,6 +24,8 @@
 #include "smbd/smbd.h"
 #include "system/filesys.h"
 #include "libcli/security/security.h"
+#include "lib/util_macstreams.h"
+#include "auth.h"
 
 /*
    "._" AppleDouble Header File Layout:
@@ -122,6 +124,7 @@
 #define AD_XATTR_MAX_ENTRIES  1024 /* Some arbitrarily enforced limit */
 #define AD_XATTR_HDR_SIZE     36
 #define AD_XATTR_MAX_HDR_SIZE 65536
+#define ADX_ENTRY_FIXED_SIZE  (4+4+2+1)
 
 /*
  * Both struct ad_xattr_header and struct ad_xattr_entry describe the in memory
@@ -168,8 +171,10 @@ struct adouble {
 	uint8_t                   ad_filler[ADEDLEN_FILLER];
 	struct ad_entry           ad_eid[ADEID_MAX];
 	char                     *ad_data;
+	char                     *ad_rsrc_data;
 	struct ad_xattr_header    adx_header;
 	struct ad_xattr_entry    *adx_entries;
+	char                     *adx_data;
 };
 
 struct ad_entry_order {
@@ -360,6 +365,251 @@ static uint32_t get_eid(uint32_t eid)
 	return 0;
 }
 
+/*
+ * Move resourcefork data in an AppleDouble file
+ *
+ * This is supposed to make room in an AppleDouble file by moving the
+ * resourcefork data behind the space required for packing additional xattr data
+ * in the extended FinderInfo entry.
+ *
+ * When we're called we're expecting an AppleDouble file with just two entries
+ * (FinderInfo an Resourcefork) and the resourcefork is expected at a fixed
+ * offset of ADEDOFF_RFORK_DOT_UND.
+ */
+static bool ad_pack_move_reso(struct vfs_handle_struct *handle,
+			      struct adouble *ad,
+			      files_struct *fsp)
+{
+	size_t reso_len;
+	size_t reso_off;
+	size_t n;
+	bool ok;
+
+	reso_len = ad_getentrylen(ad, ADEID_RFORK);
+	reso_off = ad_getentryoff(ad, ADEID_RFORK);
+
+	if (reso_len == 0) {
+		return true;
+	}
+
+	if (ad->ad_rsrc_data == NULL) {
+		/*
+		 * This buffer is already set when converting a resourcefork
+		 * stream from vfs_streams_depot backend via ad_unconvert(). It
+		 * is NULL with vfs_streams_xattr where the resourcefork stream
+		 * is stored in an AppleDouble sidecar file vy vfs_fruit.
+		 */
+		ad->ad_rsrc_data = talloc_size(ad, reso_len);
+		if (ad->ad_rsrc_data == NULL) {
+			return false;
+		}
+
+		n = SMB_VFS_NEXT_PREAD(handle,
+				       fsp,
+				       ad->ad_rsrc_data,
+				       reso_len,
+				       ADEDOFF_RFORK_DOT_UND);
+		if (n != reso_len) {
+			DBG_ERR("Read on [%s] failed\n",
+				fsp_str_dbg(fsp));
+			ok = false;
+			goto out;
+		}
+	}
+
+	n = SMB_VFS_NEXT_PWRITE(handle,
+				fsp,
+				ad->ad_rsrc_data,
+				reso_len,
+				reso_off);
+	if (n != reso_len) {
+		DBG_ERR("Write on [%s] failed\n",
+			fsp_str_dbg(fsp));
+		ok = false;
+		goto out;
+	}
+
+	ok = true;
+out:
+	return ok;
+}
+
+static bool ad_pack_xattrs(struct vfs_handle_struct *handle,
+			   struct adouble *ad,
+			   files_struct *fsp)
+{
+	struct ad_xattr_header *h = &ad->adx_header;
+	size_t oldsize;
+	uint32_t off;
+	uint32_t data_off;
+	uint16_t i;
+	bool ok;
+
+	if (ad->adx_entries == NULL) {
+		/* No xattrs, nothing to pack */
+		return true;
+	}
+
+	if (fsp == NULL) {
+		DBG_ERR("fsp unexpectedly NULL\n");
+		return false;
+	}
+
+	oldsize = talloc_get_size(ad->ad_data);
+	if (oldsize < AD_XATTR_MAX_HDR_SIZE) {
+		ad->ad_data = talloc_realloc(ad,
+					     ad->ad_data,
+					     char,
+					     AD_XATTR_MAX_HDR_SIZE);
+		if (ad->ad_data == NULL) {
+			return false;
+		}
+		memset(ad->ad_data + oldsize,
+		       0,
+		       AD_XATTR_MAX_HDR_SIZE - oldsize);
+	}
+
+	/*
+	 * First, let's calculate the start of the xattr data area which will be
+	 * after the xattr header + header entries.
+	 */
+
+	data_off = ad_getentryoff(ad, ADEID_FINDERI);
+	data_off += ADEDLEN_FINDERI + AD_XATTR_HDR_SIZE;
+	/* 2 bytes padding */
+	data_off += 2;
+
+	for (i = 0; i < h->adx_num_attrs; i++) {
+		struct ad_xattr_entry *e = &ad->adx_entries[i];
+
+		/* Align on 4 byte boundary */
+		data_off = (data_off + 3) & ~3;
+
+		data_off += e->adx_namelen + ADX_ENTRY_FIXED_SIZE;
+		if (data_off >= AD_XATTR_MAX_HDR_SIZE) {
+			return false;
+		}
+	}
+
+	off = ad_getentryoff(ad, ADEID_FINDERI);
+	off +=  ADEDLEN_FINDERI + AD_XATTR_HDR_SIZE;
+	/* 2 bytes padding */
+	off += 2;
+
+	for (i = 0; i < h->adx_num_attrs; i++) {
+		struct ad_xattr_entry *e = &ad->adx_entries[i];
+
+		/* Align on 4 byte boundary */
+		off = (off + 3) & ~3;
+
+		e->adx_offset = data_off;
+		data_off += e->adx_length;
+
+		DBG_DEBUG("%zu(%s){%zu}: off [%zu] adx_length [%zu] "
+			  "adx_data_off [%zu]\n",
+			  (size_t)i,
+			  e->adx_name,
+			  (size_t)e->adx_namelen,
+			  (size_t)off,
+			  (size_t)e->adx_length,
+			  (size_t)e->adx_offset);
+
+		if (off + 4 >= AD_XATTR_MAX_HDR_SIZE) {
+			return false;
+		}
+		RSIVAL(ad->ad_data, off, e->adx_offset);
+		off += 4;
+
+		if (off + 4 >= AD_XATTR_MAX_HDR_SIZE) {
+			return false;
+		}
+		RSIVAL(ad->ad_data, off, e->adx_length);
+		off += 4;
+
+		if (off + 2 >= AD_XATTR_MAX_HDR_SIZE) {
+			return false;
+		}
+		RSSVAL(ad->ad_data, off, e->adx_flags);
+		off += 2;
+
+		if (off + 1 >= AD_XATTR_MAX_HDR_SIZE) {
+			return false;
+		}
+		SCVAL(ad->ad_data, off, e->adx_namelen);
+		off += 1;
+
+		if (off + e->adx_namelen >= AD_XATTR_MAX_HDR_SIZE) {
+			return false;
+		}
+		memcpy(ad->ad_data + off, e->adx_name, e->adx_namelen);
+		off += e->adx_namelen;
+	}
+
+	h->adx_data_start = off;
+	h->adx_data_length = talloc_get_size(ad->adx_data);
+	h->adx_total_size = h->adx_data_start + h->adx_data_length;
+
+	if (talloc_get_size(ad->ad_data) < h->adx_total_size) {
+		ad->ad_data = talloc_realloc(ad,
+					     ad->ad_data,
+					     char,
+					     h->adx_total_size);
+		if (ad->ad_data == NULL) {
+			return false;
+		}
+	}
+
+	memcpy(ad->ad_data + h->adx_data_start,
+	       ad->adx_data,
+	       h->adx_data_length);
+
+	ad_setentrylen(ad,
+		       ADEID_FINDERI,
+		       h->adx_total_size - ad_getentryoff(ad, ADEID_FINDERI));
+
+	ad_setentryoff(ad,
+		       ADEID_RFORK,
+		       ad_getentryoff(ad, ADEID_FINDERI) +
+		       ad_getentrylen(ad, ADEID_FINDERI));
+
+	memcpy(ad->ad_data + ADEDOFF_FILLER, AD_FILLER_TAG_OSX, ADEDLEN_FILLER);
+
+	/*
+	 * Rewind, then update the header fields.
+	 */
+
+	off = ad_getentryoff(ad, ADEID_FINDERI) + ADEDLEN_FINDERI;
+	/* 2 bytes padding */
+	off += 2;
+
+	RSIVAL(ad->ad_data, off, AD_XATTR_HDR_MAGIC);
+	off += 4;
+	RSIVAL(ad->ad_data, off, 0);
+	off += 4;
+	RSIVAL(ad->ad_data, off, h->adx_total_size);
+	off += 4;
+	RSIVAL(ad->ad_data, off, h->adx_data_start);
+	off += 4;
+	RSIVAL(ad->ad_data, off, h->adx_data_length);
+	off += 4;
+
+	/* adx_reserved and adx_flags */
+	memset(ad->ad_data + off, 0, 3 * 4 + 2);
+	off += 3 * 4 + 2;
+
+	RSSVAL(ad->ad_data, off, h->adx_num_attrs);
+	off += 2;
+
+	ok = ad_pack_move_reso(handle, ad, fsp);
+	if (!ok) {
+		DBG_ERR("Moving resourcefork of [%s] failed\n",
+			fsp_str_dbg(fsp));
+		return false;
+	}
+
+	return true;
+}
+
 /**
  * Pack AppleDouble structure into data buffer
  **/
@@ -371,6 +621,7 @@ static bool ad_pack(struct vfs_handle_struct *handle,
 	uint16_t       nent;
 	uint32_t       bufsize;
 	uint32_t       offset = 0;
+	bool ok;
 
 	bufsize = talloc_get_size(ad->ad_data);
 	if (bufsize < AD_DATASZ_DOT_UND) {
@@ -406,6 +657,11 @@ static bool ad_pack(struct vfs_handle_struct *handle,
 		return false;
 	}
 	offset += ADEDLEN_NENTRIES;
+
+	ok = ad_pack_xattrs(handle, ad, fsp);
+	if (!ok) {
+		return false;
+	}
 
 	for (eid = 0, nent = 0; eid < ADEID_MAX; eid++) {
 		if (ad->ad_eid[eid].ade_off == 0) {
@@ -1188,6 +1444,515 @@ int ad_convert(struct vfs_handle_struct *handle,
 done:
 	TALLOC_FREE(ad);
 	return ret;
+}
+
+static bool ad_unconvert_open_ad(TALLOC_CTX *mem_ctx,
+				 struct vfs_handle_struct *handle,
+				 struct smb_filename *smb_fname,
+				 struct smb_filename *adpath,
+				 files_struct **_fsp)
+{
+	files_struct *fsp = NULL;
+	NTSTATUS status;
+	int ret;
+
+	status = SMB_VFS_CREATE_FILE(
+		handle->conn,
+		NULL,				/* req */
+		0,				/* root_dir_fid */
+		adpath,
+		FILE_READ_DATA|FILE_WRITE_DATA,
+		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+		FILE_OPEN_IF,
+		0,				/* create_options */
+		0,				/* file_attributes */
+		INTERNAL_OPEN_ONLY,
+		NULL,				/* lease */
+		0,				/* allocation_size */
+		0,				/* private_flags */
+		NULL,				/* sd */
+		NULL,				/* ea_list */
+		&fsp,
+		NULL,				/* info */
+		NULL, NULL);			/* create context */
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("SMB_VFS_CREATE_FILE [%s] failed: %s\n",
+			smb_fname_str_dbg(adpath), nt_errstr(status));
+		return false;
+	}
+
+	if (fsp->fsp_name->st.st_ex_uid != smb_fname->st.st_ex_uid ||
+	    fsp->fsp_name->st.st_ex_gid != smb_fname->st.st_ex_gid)
+	{
+		ret = SMB_VFS_FCHOWN(fsp,
+				     smb_fname->st.st_ex_uid,
+				     smb_fname->st.st_ex_gid);
+		if (ret != 0) {
+			DBG_ERR("SMB_VFS_FCHOWN [%s] failed: %s\n",
+				fsp_str_dbg(fsp), nt_errstr(status));
+			close_file(NULL, fsp, NORMAL_CLOSE);
+			return false;
+		}
+	}
+
+	*_fsp = fsp;
+	return true;
+}
+
+static bool ad_unconvert_get_streams(struct vfs_handle_struct *handle,
+				     struct smb_filename *smb_fname,
+				     TALLOC_CTX *mem_ctx,
+				     unsigned int *num_streams,
+				     struct stream_struct **streams)
+{
+	files_struct *fsp = NULL;
+	NTSTATUS status;
+
+	status = SMB_VFS_CREATE_FILE(
+		handle->conn,				/* conn */
+		NULL,					/* req */
+		0,					/* root_dir_fid */
+		smb_fname,				/* fname */
+		FILE_READ_ATTRIBUTES,			/* access_mask */
+		(FILE_SHARE_READ | FILE_SHARE_WRITE |	/* share_access */
+			FILE_SHARE_DELETE),
+		FILE_OPEN,				/* create_disposition*/
+		0,					/* create_options */
+		0,					/* file_attributes */
+		INTERNAL_OPEN_ONLY,			/* oplock_request */
+		NULL,					/* lease */
+		0,					/* allocation_size */
+		0,					/* private_flags */
+		NULL,					/* sd */
+		NULL,					/* ea_list */
+		&fsp,					/* result */
+		NULL,					/* pinfo */
+		NULL, NULL);				/* create context */
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Opening [%s] failed: %s\n",
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status));
+		return false;
+	}
+
+	status = vfs_streaminfo(handle->conn,
+				fsp,
+				fsp->fsp_name,
+				mem_ctx,
+				num_streams,
+				streams);
+	if (!NT_STATUS_IS_OK(status)) {
+		close_file(NULL, fsp, NORMAL_CLOSE);
+		DBG_ERR("streaminfo on [%s] failed: %s\n",
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status));
+		return false;
+	}
+
+	status = close_file(NULL, fsp, NORMAL_CLOSE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("close_file [%s] failed: %s\n",
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status));
+		return false;
+	}
+
+	return true;
+}
+
+struct ad_collect_state {
+	bool have_adfile;
+	size_t adx_data_off;
+	char *rsrc_data_buf;
+};
+
+static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
+				  struct char_mappings **cmaps,
+				  struct smb_filename *smb_fname,
+				  const struct stream_struct *stream,
+				  struct adouble *ad,
+				  struct ad_collect_state *state)
+{
+	struct smb_filename *sname = NULL;
+	files_struct *fsp = NULL;
+	struct ad_xattr_entry *e = NULL;
+	char *mapped_name = NULL;
+	char *p = NULL;
+	size_t needed_size;
+	ssize_t nread;
+	NTSTATUS status;
+	int ret;
+	bool ok;
+
+	sname = synthetic_smb_fname(ad,
+				    smb_fname->base_name,
+				    stream->name,
+				    NULL,
+				    0);
+	if (sname == NULL) {
+		return false;
+	}
+
+	if (is_ntfs_default_stream_smb_fname(sname)) {
+		TALLOC_FREE(sname);
+		return true;
+	}
+
+	DBG_DEBUG("Collecting stream [%s]\n", smb_fname_str_dbg(sname));
+
+	ret = SMB_VFS_STAT(handle->conn, sname);
+	if (ret != 0) {
+		DBG_ERR("SMB_VFS_STAT [%s] failed\n", smb_fname_str_dbg(sname));
+		ok = false;
+		goto out;
+	}
+
+	status = SMB_VFS_CREATE_FILE(
+		handle->conn,
+		NULL,				/* req */
+		0,				/* root_dir_fid */
+		sname,
+		FILE_READ_DATA|DELETE_ACCESS,
+		FILE_SHARE_READ,
+		FILE_OPEN,
+		0,				/* create_options */
+		0,				/* file_attributes */
+		INTERNAL_OPEN_ONLY,		/* oplock_request */
+		NULL,				/* lease */
+		0,				/* allocation_size */
+		0,				/* private_flags */
+		NULL,				/* sd */
+		NULL,				/* ea_list */
+		&fsp,
+		NULL,				/* info */
+		NULL, NULL);			/* create context */
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("SMB_VFS_CREATE_FILE [%s] failed\n",
+			smb_fname_str_dbg(sname));
+		ok = false;
+		goto out;
+	}
+
+	if (is_afpinfo_stream(stream->name)) {
+		char buf[AFP_INFO_SIZE];
+
+		if (stream->size != AFP_INFO_SIZE) {
+			DBG_ERR("Bad size [%zd] on [%s]\n",
+				stream->size,
+				smb_fname_str_dbg(sname));
+			ok = false;
+			goto out;
+		}
+
+		nread = SMB_VFS_PREAD(fsp, buf, stream->size, 0);
+		if (nread != AFP_INFO_SIZE) {
+			DBG_ERR("Bad size [%zd] on [%s]\n",
+				stream->size,
+				smb_fname_str_dbg(sname));
+			ok = false;
+			goto out;
+		}
+
+		memcpy(ad->ad_data + ADEDOFF_FINDERI_DOT_UND,
+		       buf + AFP_OFF_FinderInfo,
+		       AFP_FinderSize);
+
+		ok = set_delete_on_close(fsp,
+					 true,
+					 fsp->conn->session_info->security_token,
+					 fsp->conn->session_info->unix_token);
+		if (!ok) {
+			DBG_ERR("Deleting [%s] failed\n",
+				smb_fname_str_dbg(sname));
+			ok = false;
+			goto out;
+		}
+		ok = true;
+		goto out;
+	}
+
+	if (is_afpresource_stream(stream->name)) {
+		ad->ad_rsrc_data = talloc_size(ad, stream->size);
+		if (ad->ad_rsrc_data == NULL) {
+			ok = false;
+			goto out;
+		}
+
+		nread = SMB_VFS_PREAD(fsp,
+				      ad->ad_rsrc_data,
+				      stream->size,
+				      0);
+		if (nread != stream->size) {
+			DBG_ERR("Bad size [%zd] on [%s]\n",
+				stream->size,
+				smb_fname_str_dbg(sname));
+			ok = false;
+			goto out;
+		}
+
+		ad_setentrylen(ad, ADEID_RFORK, stream->size);
+
+		if (!state->have_adfile) {
+			/*
+			 * We have a resource *stream* but no AppleDouble
+			 * sidecar file, this means the share is configured with
+			 * fruit:resource=stream. So we should delete the
+			 * resource stream.
+			 */
+			ok = set_delete_on_close(
+				fsp,
+				true,
+				fsp->conn->session_info->security_token,
+				fsp->conn->session_info->unix_token);
+			if (!ok) {
+				DBG_ERR("Deleting [%s] failed\n",
+					smb_fname_str_dbg(sname));
+				ok = false;
+				goto out;
+			}
+		}
+		ok = true;
+		goto out;
+	}
+
+	ad->adx_entries = talloc_realloc(ad,
+					 ad->adx_entries,
+					 struct ad_xattr_entry,
+					 ad->adx_header.adx_num_attrs + 1);
+	if (ad->adx_entries == NULL) {
+		ok = false;
+		goto out;
+	}
+
+	e = &ad->adx_entries[ad->adx_header.adx_num_attrs];
+	*e = (struct ad_xattr_entry) {
+		.adx_length = stream->size,
+	};
+	e->adx_name = talloc_strdup(ad, stream->name + 1);
+	if (e->adx_name == NULL) {
+		ok = false;
+		goto out;
+	}
+	p = strchr(e->adx_name, ':');
+	if (p != NULL) {
+		*p = '\0';
+	}
+
+	status = string_replace_allocate(handle->conn,
+					 e->adx_name,
+					 cmaps,
+					 ad,
+					 &mapped_name,
+					 vfs_translate_to_unix);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED))
+	{
+		DBG_ERR("string_replace_allocate failed\n");
+		ok = false;
+		goto out;
+	}
+
+	e->adx_name = mapped_name;
+	e->adx_namelen = strlen(e->adx_name) + 1,
+
+	DBG_DEBUG("%u: name (%s) size (%zu)\n",
+		  ad->adx_header.adx_num_attrs,
+		  e->adx_name,
+		  (size_t)e->adx_length);
+
+	ad->adx_header.adx_num_attrs++;
+
+	needed_size = state->adx_data_off + stream->size;
+	if (needed_size > talloc_get_size(ad->adx_data)) {
+		ad->adx_data = talloc_realloc(ad,
+					      ad->adx_data,
+					      char,
+					      needed_size);
+		if (ad->adx_data == NULL) {
+			ok = false;
+			goto out;
+		}
+	}
+
+	nread = SMB_VFS_PREAD(fsp,
+			      ad->adx_data + state->adx_data_off,
+			      stream->size,
+			      0);
+	if (nread != stream->size) {
+		DBG_ERR("Bad size [%zd] on [%s]\n",
+			stream->size,
+			smb_fname_str_dbg(sname));
+		ok = false;
+		goto out;
+	}
+	state->adx_data_off += nread;
+
+	ok = set_delete_on_close(fsp,
+				 true,
+				 fsp->conn->session_info->security_token,
+				 fsp->conn->session_info->unix_token);
+	if (!ok) {
+		DBG_ERR("Deleting [%s] failed\n",
+			smb_fname_str_dbg(sname));
+		ok = false;
+		goto out;
+	}
+
+out:
+	TALLOC_FREE(sname);
+	if (fsp != NULL) {
+		status = close_file(NULL, fsp, NORMAL_CLOSE);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("close_file [%s] failed: %s\n",
+				smb_fname_str_dbg(smb_fname),
+				nt_errstr(status));
+			ok = false;
+		}
+	}
+
+	return ok;
+}
+
+/**
+ * Convert filesystem metadata to AppleDouble file
+ **/
+bool ad_unconvert(TALLOC_CTX *mem_ctx,
+		  struct vfs_handle_struct *handle,
+		  const char *catia_mappings,
+		  struct smb_filename *smb_fname,
+		  bool *converted)
+{
+	static struct char_mappings **cmaps = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct ad_collect_state state;
+	struct stream_struct *streams = NULL;
+	struct smb_filename *adpath = NULL;
+	struct adouble *ad = NULL;
+	unsigned int num_streams = 0;
+	size_t to_convert = 0;
+	bool have_rsrc;
+	files_struct *fsp = NULL;
+	size_t i;
+	NTSTATUS status;
+	int ret;
+	bool ok;
+
+	*converted = false;
+
+	if (cmaps == NULL) {
+		const char **mappings = NULL;
+
+		mappings = str_list_make_v3_const(
+			frame, catia_mappings, NULL);
+		if (mappings == NULL) {
+			ok = false;
+			goto out;
+		}
+		cmaps = string_replace_init_map(mem_ctx, mappings);
+		TALLOC_FREE(mappings);
+	}
+
+	ok = ad_unconvert_get_streams(handle,
+				      smb_fname,
+				      frame,
+				      &num_streams,
+				      &streams);
+	if (!ok) {
+		goto out;
+	}
+
+	for (i = 0; i < num_streams; i++) {
+		if (strcasecmp_m(streams[i].name, "::$DATA") == 0) {
+			continue;
+		}
+		to_convert++;
+		if (is_afpresource_stream(streams[i].name)) {
+			have_rsrc = true;
+		}
+	}
+
+	if (to_convert == 0) {
+		ok = true;
+		goto out;
+	}
+
+	state = (struct ad_collect_state) {
+		.adx_data_off = 0,
+	};
+
+	ret = adouble_path(frame, smb_fname, &adpath);
+	if (ret != 0) {
+		ok = false;
+		goto out;
+	}
+
+	ret = SMB_VFS_STAT(handle->conn, adpath);
+	if (ret == 0) {
+		state.have_adfile = true;
+	} else {
+		if (errno != ENOENT) {
+			ok = false;
+			goto out;
+		}
+		state.have_adfile = false;
+	}
+
+	if (to_convert == 1 && have_rsrc && state.have_adfile) {
+		/*
+		 * So we have just a single stream, the resource fork stream
+		 * from an AppleDouble file. Fine, that means there's nothing to
+		 * convert.
+		 */
+		ok = true;
+		goto out;
+	}
+
+	ad = ad_init(frame, ADOUBLE_RSRC);
+	if (ad == NULL) {
+		ok = false;
+		goto out;
+	}
+
+	for (i = 0; i < num_streams; i++) {
+		ok = ad_collect_one_stream(handle,
+					   cmaps,
+					   smb_fname,
+					   &streams[i],
+					   ad,
+					   &state);
+		if (!ok) {
+			goto out;
+		}
+	}
+
+	ok = ad_unconvert_open_ad(frame, handle, smb_fname, adpath, &fsp);
+	if (!ok) {
+		DBG_ERR("Failed to open adfile [%s]\n",
+			smb_fname_str_dbg(smb_fname));
+		goto out;
+	}
+
+	ret = ad_fset(handle, ad, fsp);
+	if (ret != 0) {
+		ok = false;
+		goto out;
+	}
+
+	*converted = true;
+	ok = true;
+
+out:
+	if (fsp != NULL) {
+		status = close_file(NULL, fsp, NORMAL_CLOSE);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("close_file [%s] failed: %s\n",
+				smb_fname_str_dbg(smb_fname),
+				nt_errstr(status));
+			ok = false;
+		}
+	}
+	TALLOC_FREE(frame);
+	return ok;
 }
 
 /**

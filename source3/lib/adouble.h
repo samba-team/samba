@@ -157,6 +157,11 @@ int ad_convert(struct vfs_handle_struct *handle,
 	       const struct smb_filename *smb_fname,
 	       const char *catia_mappings,
 	       uint32_t flags);
+bool ad_unconvert(TALLOC_CTX *mem_ctx,
+		  struct vfs_handle_struct *handle,
+		  const char *catia_mappings,
+		  struct smb_filename *smb_fname,
+		  bool *converted);
 struct adouble *ad_init(TALLOC_CTX *ctx, adouble_type_t type);
 struct adouble *ad_get(TALLOC_CTX *ctx,
 		       vfs_handle_struct *handle,
