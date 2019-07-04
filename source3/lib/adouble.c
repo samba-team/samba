@@ -688,7 +688,6 @@ static bool ad_convert_move_reso(vfs_handle_struct *handle,
 	size_t rforkoff;
 	ssize_t n;
 	int ret;
-	bool ok;
 
 	rforklen = ad_getentrylen(ad, ADEID_RFORK);
 	if (rforklen == 0) {
@@ -727,11 +726,6 @@ static bool ad_convert_move_reso(vfs_handle_struct *handle,
 	}
 
 	ad_setentryoff(ad, ADEID_RFORK, ADEDOFF_RFORK_DOT_UND);
-	ok = ad_pack(ad);
-	if (!ok) {
-		DBG_WARNING("ad_pack [%s] failed\n", smb_fname->base_name);
-		return false;
-	}
 
 	ret = ad_fset(handle, ad, ad->ad_fsp);
 	if (ret != 0) {
@@ -865,12 +859,6 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 	}
 
 	ad_setentrylen(ad, ADEID_FINDERI, ADEDLEN_FINDERI);
-
-	ok = ad_pack(ad);
-	if (!ok) {
-		DBG_WARNING("ad_pack [%s] failed\n", smb_fname->base_name);
-		goto fail;
-	}
 
 	rc = ad_fset(handle, ad, ad->ad_fsp);
 	if (rc != 0) {
@@ -1022,7 +1010,6 @@ static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
 	ssize_t nread;
 	int cmp;
 	int rc;
-	bool ok;
 
 	*blank = false;
 
@@ -1047,10 +1034,6 @@ static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
 	}
 
 	ad_setentrylen(ad, ADEID_RFORK, 0);
-	ok = ad_pack(ad);
-	if (!ok) {
-		return false;
-	}
 
 	rc = ad_fset(handle, ad, ad->ad_fsp);
 	if (rc != 0) {
