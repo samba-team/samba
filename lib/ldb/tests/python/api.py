@@ -2283,6 +2283,57 @@ class DnTests(TestCase):
         msg = next(msgs)
         self.assertEqual("bar=bar", str(msg[1].dn))
 
+    def test_print_ldif(self):
+        ldif = '''dn: dc=foo27
+foo: foo
+
+'''
+        self.msg = ldb.Message(ldb.Dn(self.ldb, "dc=foo27"))
+        self.msg["foo"] = [b"foo"]
+        self.assertEqual(ldif,
+                         self.ldb.write_ldif(self.msg,
+                                             ldb.CHANGETYPE_NONE))
+
+    def test_print_ldif_binary(self):
+        # this also confirms that ldb flags are set even without a URL)
+        self.ldb = ldb.Ldb(flags=ldb.FLG_SHOW_BINARY)
+        ldif = '''dn: dc=foo27
+foo: f
+öö
+
+'''
+        self.msg = ldb.Message(ldb.Dn(self.ldb, "dc=foo27"))
+        self.msg["foo"] = ["f\nöö"]
+        self.assertEqual(ldif,
+                         self.ldb.write_ldif(self.msg,
+                                             ldb.CHANGETYPE_NONE))
+
+
+    def test_print_ldif_no_base64_bad(self):
+        ldif = '''dn: dc=foo27
+foo: f
+öö
+
+'''
+        self.msg = ldb.Message(ldb.Dn(self.ldb, "dc=foo27"))
+        self.msg["foo"] = ["f\nöö"]
+        self.msg["foo"].set_flags(ldb.FLAG_FORCE_NO_BASE64_LDIF)
+        self.assertEqual(ldif,
+                         self.ldb.write_ldif(self.msg,
+                                             ldb.CHANGETYPE_NONE))
+
+    def test_print_ldif_no_base64_good(self):
+        ldif = '''dn: dc=foo27
+foo: föö
+
+'''
+        self.msg = ldb.Message(ldb.Dn(self.ldb, "dc=foo27"))
+        self.msg["foo"] = ["föö"]
+        self.msg["foo"].set_flags(ldb.FLAG_FORCE_NO_BASE64_LDIF)
+        self.assertEqual(ldif,
+                         self.ldb.write_ldif(self.msg,
+                                             ldb.CHANGETYPE_NONE))
+
     def test_canonical_string(self):
         x = ldb.Dn(self.ldb, "dc=foo25,bar=bloe")
         self.assertEqual("/bloe/foo25", x.canonical_str())
