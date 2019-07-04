@@ -1644,10 +1644,6 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 {
 	uint32_t i;
 
-	if(lck->data->num_share_modes == 0) {
-		return NT_STATUS_OK;
-	}
-
 	if (is_stat_open(access_mask)) {
 		/* Stat open that doesn't trigger oplock breaks or share mode
 		 * checks... ! JRA. */
