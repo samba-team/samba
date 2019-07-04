@@ -328,7 +328,9 @@ static uint32_t get_eid(uint32_t eid)
 /**
  * Pack AppleDouble structure into data buffer
  **/
-static bool ad_pack(struct adouble *ad)
+static bool ad_pack(struct vfs_handle_struct *handle,
+		    struct adouble *ad,
+		    files_struct *fsp)
 {
 	uint32_t       eid;
 	uint16_t       nent;
@@ -1666,7 +1668,7 @@ int ad_set(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ok = ad_pack(ad);
+	ok = ad_pack(handle, ad, NULL);
 	if (!ok) {
 		return -1;
 	}
@@ -1707,7 +1709,7 @@ int ad_fset(struct vfs_handle_struct *handle,
 		smb_panic("bad fsp");
 	}
 
-	ok = ad_pack(ad);
+	ok = ad_pack(handle, ad, fsp);
 	if (!ok) {
 		return -1;
 	}
