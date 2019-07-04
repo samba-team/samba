@@ -11,7 +11,7 @@ db_module.h in order to fix bug #12478. Unfortunately, the ldb version was not
 raised. Samba >= 4.9.10 is no longer able to build with ldb 1.4.6. This version
 includes the new ldb version. Please note that there are just the version bumps
 in ldb and Samba, no code change. If you don't build Samba with an external ldb
-library, you can ignore this release and keep using 4.9.11.
+library, you can ignore this release and keep using 4.9.10.
 
 
 Changes since 4.9.10:
