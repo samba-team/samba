@@ -3650,12 +3650,18 @@ int ldb_kv_reindex(struct ldb_module *module)
 	}
 
 	/*
-	 * Calculate the size of the index cache that we'll need for
-	 * the re-index
+	 * Calculate the size of the index cache needed for
+	 * the re-index. If specified always use the
+	 * ldb_kv->index_transaction_cache_size otherwise use the maximum
+	 * of the size estimate or the DEFAULT_INDEX_CACHE_SIZE
 	 */
-	index_cache_size = ldb_kv->kv_ops->get_size(ldb_kv);
-	if (index_cache_size < DEFAULT_INDEX_CACHE_SIZE) {
-		index_cache_size = DEFAULT_INDEX_CACHE_SIZE;
+	if (ldb_kv->index_transaction_cache_size > 0) {
+		index_cache_size = ldb_kv->index_transaction_cache_size;
+	} else {
+		index_cache_size = ldb_kv->kv_ops->get_size(ldb_kv);
+		if (index_cache_size < DEFAULT_INDEX_CACHE_SIZE) {
+			index_cache_size = DEFAULT_INDEX_CACHE_SIZE;
+		}
 	}
 
 	/*
