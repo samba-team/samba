@@ -4136,7 +4136,8 @@ static PyObject *py_register_module(PyObject *module, PyObject *args)
 	int ret;
 	struct ldb_module_ops *ops;
 	PyObject *input;
-	PyObject *tmp;
+	PyObject *tmp = NULL;
+	const char *name = NULL;
 
 	if (!PyArg_ParseTuple(args, "O", &input))
 		return NULL;
@@ -4148,10 +4149,17 @@ static PyObject *py_register_module(PyObject *module, PyObject *args)
 	}
 
 	tmp = PyObject_GetAttrString(input, discard_const_p(char, "name"));
-	ops->name = talloc_strdup(ops, PyUnicode_AsUTF8(tmp));
-
+	if (tmp == NULL) {
+		return NULL;
+	}
+	name = PyUnicode_AsUTF8(tmp);
+	if (name == NULL) {
+		return NULL;
+	}
 	Py_XDECREF(tmp);
 	Py_INCREF(input);
+
+	ops->name = talloc_strdup(ops, name);
 	ops->private_data = input;
 	ops->init_context = py_module_init;
 	ops->search = py_module_search;
