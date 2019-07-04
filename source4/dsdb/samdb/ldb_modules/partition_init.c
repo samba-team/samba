@@ -207,6 +207,7 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 	struct ldb_module *backend_module;
 	struct ldb_module *module_chain;
 	const char **modules;
+	const char **options = NULL;
 	int ret;
 
 	(*partition) = talloc_zero(mem_ctx, struct dsdb_partition);
@@ -257,7 +258,9 @@ static int new_partition_from_dn(struct ldb_context *ldb, struct partition_priva
 	ctrl->version = DSDB_CONTROL_CURRENT_PARTITION_VERSION;
 	ctrl->dn = talloc_steal(ctrl, dn);
 	
-	ret = ldb_module_connect_backend(ldb, (*partition)->backend_url, NULL, &backend_module);
+	options = ldb_options_get(ldb);
+	ret = ldb_module_connect_backend(
+	    ldb, (*partition)->backend_url, options, &backend_module);
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
