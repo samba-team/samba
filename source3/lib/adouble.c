@@ -25,6 +25,41 @@
 #include "system/filesys.h"
 #include "libcli/security/security.h"
 
+/*
+   "._" AppleDouble Header File Layout:
+
+         MAGIC          0x00051607
+         VERSION        0x00020000
+         FILLER         0
+         COUNT          2
+     .-- AD ENTRY[0]    Finder Info Entry (must be first)
+  .--+-- AD ENTRY[1]    Resource Fork Entry (must be last)
+  |  |   /////////////
+  |  '-> FINDER INFO    Fixed Size Data (32 Bytes)
+  |      ~~~~~~~~~~~~~  2 Bytes Padding
+  |      EXT ATTR HDR   Fixed Size Data (36 Bytes)
+  |      /////////////
+  |      ATTR ENTRY[0] --.
+  |      ATTR ENTRY[1] --+--.
+  |      ATTR ENTRY[2] --+--+--.
+  |         ...          |  |  |
+  |      ATTR ENTRY[N] --+--+--+--.
+  |      ATTR DATA 0   <-'  |  |  |
+  |      ////////////       |  |  |
+  |      ATTR DATA 1   <----'  |  |
+  |      /////////////         |  |
+  |      ATTR DATA 2   <-------'  |
+  |      /////////////            |
+  |         ...                   |
+  |      ATTR DATA N   <----------'
+  |      /////////////
+  |         ...          Attribute Free Space
+  |
+  '----> RESOURCE FORK
+            ...          Variable Sized Data
+            ...
+*/
+
 /* Number of actually used entries */
 #define ADEID_NUM_XATTR      8
 #define ADEID_NUM_DOT_UND    2
