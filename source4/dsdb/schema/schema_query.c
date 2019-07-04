@@ -220,7 +220,9 @@ WERROR dsdb_linked_attribute_lDAPDisplayName_list(const struct dsdb_schema *sche
 		attr_list[i] = cur->lDAPDisplayName;
 		i++;
 	}
-	attr_list[i] = NULL;
+	if (attr_list != NULL && attr_list[i] != NULL) {
+		attr_list[i] = NULL;
+	}
 	*attr_list_ret = attr_list;
 	return WERR_OK;
 }
