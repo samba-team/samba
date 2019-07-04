@@ -134,3 +134,7 @@ class SegfaultTests(samba.tests.TestCase):
         except ldb.LdbError:
             pass
         str(m)
+
+    @segfault_detector
+    def test_ldb_register_module(self):
+        ldb.register_module('')
