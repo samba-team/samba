@@ -1181,6 +1181,8 @@ static int py_ldb_init(PyLdbObject *self, PyObject *args, PyObject *kwargs)
 			PyErr_SetLdbError(PyExc_LdbError, ret, ldb);
 			return -1;
 		}
+	} else {
+		ldb_set_flags(ldb, flags);
 	}
 
 	talloc_free(options);
