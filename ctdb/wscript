@@ -1032,6 +1032,11 @@ def build(bld):
                              LIBASYNC_REQ popt''',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
+    bld.SAMBA_BINARY('cluster_mutex_test',
+                     source='tests/src/cluster_mutex_test.c',
+                     deps='samba-util talloc tevent',
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
+
     if bld.env.HAVE_INFINIBAND:
         bld.SAMBA_BINARY('ibwrapper_test',
                          source='ib/ibwrapper_test.c',
