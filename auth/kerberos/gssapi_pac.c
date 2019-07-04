@@ -133,8 +133,8 @@ NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 			status = NT_STATUS_OK;
 		}
 
-		gss_maj = gss_release_buffer(&gss_min, &pac_buffer);
-		gss_maj = gss_release_buffer(&gss_min, &pac_display_buffer);
+		gss_release_buffer(&gss_min, &pac_buffer);
+		gss_release_buffer(&gss_min, &pac_display_buffer);
 		return status;
 	} else {
 		DEBUG(0, ("obtaining PAC via GSSAPI failed: authenticated: %s, complete: %s, more: %s\n",
@@ -262,7 +262,7 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 				krb5_free_keyblock(NULL /* should be krb5_context */, subkey);
 			}
 #endif
-			gss_maj = gss_release_buffer_set(&gss_min, &set);
+			gss_release_buffer_set(&gss_min, &set);
 	
 			return NT_STATUS_OK;
 
@@ -270,25 +270,25 @@ NTSTATUS gssapi_get_session_key(TALLOC_CTX *mem_ctx,
 				  gse_sesskeytype_oid.elements,
 				  gse_sesskeytype_oid.length) != 0) {
 			/* Perhaps a non-krb5 session key */
-			gss_maj = gss_release_buffer_set(&gss_min, &set);
+			gss_release_buffer_set(&gss_min, &set);
 			return NT_STATUS_OK;
 		}
 		p = (const uint8_t *)set->elements[1].value + gse_sesskeytype_oid.length;
 		diflen = set->elements[1].length - gse_sesskeytype_oid.length;
 		if (diflen <= 0) {
-			gss_maj = gss_release_buffer_set(&gss_min, &set);
+			gss_release_buffer_set(&gss_min, &set);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		for (i = 0; i < diflen; i++) {
 			*keytype = (*keytype << 7) | (p[i] & 0x7f);
 			if (i + 1 != diflen && (p[i] & 0x80) == 0) {
-				gss_maj = gss_release_buffer_set(&gss_min, &set);
+				gss_release_buffer_set(&gss_min, &set);
 				return NT_STATUS_INVALID_PARAMETER;
 			}
 		}
 	}
 
-	gss_maj = gss_release_buffer_set(&gss_min, &set);
+	gss_release_buffer_set(&gss_min, &set);
 	return NT_STATUS_OK;
 }
 
