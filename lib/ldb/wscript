@@ -519,7 +519,7 @@ def build(bld):
                                 ldb_kv_cache.c''') +
                          'tests/ldb_key_value_sub_txn_test.c',
                          cflags='-DTEST_BE=\"tdb\"',
-                         deps='cmocka ldb ldb_tdb',
+                         deps='cmocka ldb ldb_tdb_err_map',
                          install=False)
 
         if bld.CONFIG_SET('HAVE_LMDB'):
@@ -561,7 +561,7 @@ def build(bld):
                                     ldb_kv_cache.c''') +
                              'tests/ldb_key_value_sub_txn_test.c',
                              cflags='-DTEST_BE=\"mdb\"',
-                             deps='cmocka ldb ldb_tdb',
+                             deps='cmocka ldb ldb_tdb_err_map',
                              install=False)
         else:
             bld.SAMBA_BINARY('ldb_no_lmdb_test',
