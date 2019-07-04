@@ -87,6 +87,36 @@ Samba's replication code has also been improved to handle replication
 with the 2012 schema (the core of this replication fix has also been
 backported to 4.9.11 and will be in a 4.10.x release).
 
+GnuTLS 3.2 required
+-------------------
+
+Samba is making efforts to remove in-tree cryptographic functionality,
+and to instead rely on externally maintained libraries.  To this end,
+Samba has chosen GnuTLS as our standard cryptographic provider.
+
+Samba now requires GnuTLS 3.2 to be installed (including development
+headers at build time) for all configurations, not just the Samba AD
+DC.
+
+NOTE WELL: The use of GnuTLS means that Samba will honour the
+system-wide 'FIPS mode' (a reference to the US FIPS-140 cryptographic
+standard) and so will not operate in many still common situations if
+this system-wide parameter is in effect, as many of our protocols rely
+on outdated cryptography.
+
+A future Samba version will mitigate this to some extent where good
+cryptography effectively wraps bad cryptography, but for now that above
+applies.
+
+samba-tool improvements
+-----------------------
+
+A new "samba-tool contact" command has been added to allow the
+command-line manipulation of contacts, as used for address book
+lookups in LDAP.
+
+The "samba-tool [user|group|computer|group|contact] edit" command has been
+improved to operate more pleasantly on international character sets.
 
 100,000 USER and LARGER Samba AD DOMAINS
 ========================================
