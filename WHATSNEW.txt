@@ -189,6 +189,25 @@ The subdommain role has been removed from the join command.  This option did
 not work and has no tests.
 
 
+Python2 support
+---------------
+
+Samba 4.11 will not have any runtime support for Python 2.
+
+If you are building Samba using the '--disable-python' option
+(i.e. you're excluding all the run-time Python support), then this
+will continue to work on a system that supports either python2 or
+python3.
+
+To build Samba with python2 you *must* set the 'PYTHON' environment
+variable for both the 'configure' and 'make' steps, i.e.
+   'PYTHON=python2 ./configure'
+   'PYTHON=python2 make'
+This will override the python3 default.
+
+Except for this specific build-time use of python2, Samba now requires
+Python 3.4 as a minimum.
+
 smb.conf changes
 ================
 
