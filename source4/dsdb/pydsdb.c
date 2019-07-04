@@ -129,18 +129,25 @@ static PyObject *py_dsdb_convert_schema_to_openldap(PyObject *self,
 }
 
 static PyObject *py_samdb_set_domain_sid(PyLdbObject *self, PyObject *args)
-{ 
+{
 	PyObject *py_ldb, *py_sid;
 	struct ldb_context *ldb;
 	struct dom_sid *sid;
 	bool ret;
+	const char *sid_str = NULL;
 
 	if (!PyArg_ParseTuple(args, "OO", &py_ldb, &py_sid))
 		return NULL;
-	
+
 	PyErr_LDB_OR_RAISE(py_ldb, ldb);
 
-	sid = dom_sid_parse_talloc(NULL, PyUnicode_AsUTF8(py_sid));
+	sid_str = PyUnicode_AsUTF8(py_sid);
+	if (sid_str == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	sid = dom_sid_parse_talloc(NULL, sid_str);
 	if (sid == NULL) {
 		PyErr_NoMemory();
 		return NULL;
