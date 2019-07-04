@@ -31,8 +31,10 @@ from samba.samdb import SamDB
 from samba import netbios
 from samba import registry
 from samba import ldb
+from samba import messaging
 
 import traceback
+
 
 def segfault_detector(f):
     def wrapper(*args, **kwargs):
@@ -146,3 +148,7 @@ class SegfaultTests(samba.tests.TestCase):
     @segfault_detector
     def test_ldb_register_module(self):
         ldb.register_module('')
+
+    @segfault_detector
+    def test_messaging_deregister(self):
+        messaging.deregister('s', 's', 's', False)
