@@ -104,19 +104,20 @@ struct ldb_dn;
 /**
  There are a number of flags that are used with ldap_modify() in
  ldb_message_element.flags fields. The LDB_FLAG_MOD_ADD,
- LDB_FLAG_MOD_DELETE and LDB_FLAG_MOD_REPLACE flags are used in
- ldap_modify() calls to specify whether attributes are being added,
- deleted or modified respectively.
+ LDB_FLAG_MOD_DELETE and LDB_FLAG_MOD_REPLACE are better thought of as
+ an enumeration, not flags, and are used in ldap_modify() calls to
+ specify whether attributes are being added, deleted or modified
+ respectively.
 */
 #define LDB_FLAG_MOD_MASK  0x3
 
 /**
-  use this to extract the mod type from the operation
+  use this to extract the mod type (enum) from the operation
  */
 #define LDB_FLAG_MOD_TYPE(flags) ((flags) & LDB_FLAG_MOD_MASK)
 
 /**
-   Flag value used in ldap_modify() to indicate that attributes are
+   Value used in ldap_modify() to indicate that attributes are
    being added.
 
    \sa LDB_FLAG_MOD_MASK
@@ -124,7 +125,7 @@ struct ldb_dn;
 #define LDB_FLAG_MOD_ADD     1
 
 /**
-   Flag value used in ldap_modify() to indicate that attributes are
+   Value used in ldap_modify() to indicate that attributes are
    being replaced.
 
    \sa LDB_FLAG_MOD_MASK
@@ -132,7 +133,7 @@ struct ldb_dn;
 #define LDB_FLAG_MOD_REPLACE 2
 
 /**
-   Flag value used in ldap_modify() to indicate that attributes are
+   Value used in ldap_modify() to indicate that attributes are
    being deleted.
 
    \sa LDB_FLAG_MOD_MASK
@@ -142,6 +143,9 @@ struct ldb_dn;
 /**
    Flag value used in ldb_ldif_write_trace() to enforce binary encoded
    attribute values per attribute.
+
+   This is a genuine flag, being outside LDB_FLAG_MOD_MASK and also
+   outside LDB_FLAG_INTERNAL_MASK
 */
 #define LDB_FLAG_FORCE_NO_BASE64_LDIF 4
 
