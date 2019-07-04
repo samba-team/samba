@@ -49,7 +49,7 @@
  * streams are deferred to vfs_streams_xattr.
  *
  * The OS X client maps all NTFS illegal characters to the Unicode
- * private range. This module optionally stores the charcters using
+ * private range. This module optionally stores the characters using
  * their native ASCII encoding using vfs_catia. If you're not enabling
  * this feature, you can skip catia from vfs modules.
  *
