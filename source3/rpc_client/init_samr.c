@@ -36,56 +36,36 @@ NTSTATUS init_samr_CryptPasswordEx(const char *pwd,
 {
 	/* samr_CryptPasswordEx */
 
-	uint8_t pwbuf[532];
-	gnutls_hash_hd_t hash_hnd = NULL;
-	uint8_t confounder[16];
-	DATA_BLOB confounded_session_key = data_blob(NULL, 16);
-	NTSTATUS status;
+	uint8_t _confounder[16] = {0};
+	DATA_BLOB confounder = data_blob_const(_confounder, 16);
+	uint8_t pwbuf[532] = {0};
+	DATA_BLOB encrypt_pwbuf = data_blob_const(pwbuf, 516);
 	bool ok;
 	int rc;
 
 	ok = encode_pw_buffer(pwbuf, pwd, STR_UNICODE);
 	if (!ok) {
-		status = NT_STATUS_INTERNAL_ERROR;
-		goto out;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	generate_random_buffer((uint8_t *)confounder, 16);
+	generate_random_buffer(_confounder, sizeof(_confounder));
 
-	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	rc = samba_gnutls_arcfour_confounded_md5(&confounder,
+						 session_key,
+						 &encrypt_pwbuf,
+						 SAMBA_GNUTLS_ENCRYPT);
 	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
-		goto out;
+		ZERO_ARRAY(_confounder);
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
 	}
 
-	rc = gnutls_hash(hash_hnd, confounder, 16);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd, session_key->data, session_key->length);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
-		goto out;
-	}
-
-	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
-
-	arcfour_crypt_blob(pwbuf, 516, &confounded_session_key);
-	data_blob_clear_free(&confounded_session_key);
-
-	memcpy(&pwbuf[516], confounder, 16);
-	ZERO_ARRAY(confounder);
+	memcpy(&pwbuf[516], confounder.data, confounder.length);
+	ZERO_ARRAY(_confounder);
 
 	memcpy(pwd_buf->data, pwbuf, sizeof(pwbuf));
 	ZERO_ARRAY(pwbuf);
 
-	status = NT_STATUS_OK;
-out:
-	data_blob_clear_free(&confounded_session_key);
-	return status;
+	return NT_STATUS_OK;
 }
 
 /*************************************************************************
