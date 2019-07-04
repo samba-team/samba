@@ -126,6 +126,14 @@ class SegfaultTests(samba.tests.TestCase):
             print("failed with %s" % e)
 
     @segfault_detector
+    def test_hive_open_hive(self):
+        # we don't need to provide a valid path because we segfault first
+        try:
+            registry.open_hive('s', 's', 's', 's')
+        except ldb.LdbError as e:
+            print("failed with %s" % e)
+
+    @segfault_detector
     def test_ldb_add_nameless_element(self):
         m = ldb.Message()
         e = ldb.MessageElement('q')
