@@ -351,7 +351,7 @@ bool fsp_lease_update(struct files_struct *fsp)
 	NTSTATUS status;
 
 	status = leases_db_get(client_guid,
-			       &fsp->lease->lease.lease_key,
+			       &lease->lease.lease_key,
 			       &fsp->file_id,
 			       &current_state,
 			       &breaking,
