@@ -4267,10 +4267,6 @@ static PyMethodDef py_ldb_global_methods[] = {
 	{ "valid_attr_name", py_valid_attr_name, METH_VARARGS,
 		"S.valid_attr_name(name) -> bool\n\nn"
 		"Check whether the supplied name is a valid attribute name." },
-	{ "open", PY_DISCARD_FUNC_SIG(PyCFunction,py_ldb_new),
-		METH_VARARGS|METH_KEYWORDS,
-		"S.open() -> Ldb\n\n"
-		"Open a new LDB context." },
 	{ "binary_encode", py_binary_encode, METH_VARARGS,
 		"S.binary_encode(string) -> string\n\n"
 		"Perform a RFC2254 binary encoding on a string" },

@@ -1,7 +1,5 @@
 samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_encrypt_netr_crypt_password
 samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_hive_open_ldb
-samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_open_0
-samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_open_1
 samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_ldb_register_module
 samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_net_replicate_chunk_1
 samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_net_replicate_init__3
