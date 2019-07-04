@@ -49,18 +49,6 @@ where:
 
 The version of the JSON Authentication messages has been changed to 1.2 from 1.1
 
-Reindex performance improvements
---------------------------------
-
-The performance of samba-tool dbcheck --reindex has been improved, especially
-for large domains.
-
-join performance improvements
------------------------------
-
-The performance of samba-tool domain join has been improved, especially
-for large domains.
-
 LDAP referrals
 --------------
 
@@ -88,19 +76,56 @@ Log lines are of the form:
     durations are in microseconds.
 
 Default schema updated to 2012_R2
--------------------------
+---------------------------------
 
 Default AD schema changed from 2008_R2 to 2012_R2.  2012_R2 functional level
 is not yet available.  Older schemas can be used by provisioning with the
 '--base-schema' argument.  Existing installations can be updated with the
 samba-tool command "domain schemaupgrade".
 
+Samba's replication code has also been improved to handle replication
+with the 2012 schema (the core of this replication fix has also been
+backported to 4.9.11 and will be in a 4.10.x release).
+
+
+100,000 USER and LARGER Samba AD DOMAINS
+========================================
+
+Extensive efforts have been made to optimise Samba for use in
+organisations (for example) targeting 100,000 users, plus 120,000
+computer objects, as well as large number of group memberships.
+
+Many of the specific efforts are detailed below, but the net results
+is to remove barriers to significantly larger Samba deployments
+compared to previous releases.
+
+Reindex performance improvements
+--------------------------------
+
+The performance of samba-tool dbcheck --reindex has been improved,
+especially for large domains.
+
+join performance improvements
+-----------------------------
+
+The performance of samba-tool domain join has been improved,
+especially for large domains.
+
+LDAP Server memory improvements
+-------------------------------
+
+The LDAP server has improved memory efficiency, ensuring that large
+LDAP responses (for example a search for all objects) is not copied
+multiple times into memory.
+
 Setting lmdb map size
 ---------------------
 
-It is now possible to set the lmdb map size (The maximum permitted size for
-the database).  "samba-tool" now accepts the "--backend-store-size"
-i.e. --backend-store-size=4Gb.  If not specified it defaults to 8Gb.
+It is now possible to set the lmdb map size (The maximum permitted
+size for the database).  "samba-tool" now accepts the
+"--backend-store-size" i.e. --backend-store-size=4Gb.  If not
+specified it defaults to 8Gb.
+
 This option is avaiable for the following sub commands:
  * domain provision
  * domain join
@@ -110,9 +135,40 @@ This option is avaiable for the following sub commands:
 LDB "batch_mode"
 ----------------
 
-To improve performance during batch operations i.e. joins, ldb now accepts a
-"batch_mode" option.  However to prevent any index or database inconsistencies
-if an operation fails, the entire transaction will be aborted at commit.
+To improve performance during batch operations i.e. joins, ldb now
+accepts a "batch_mode" option.  However to prevent any index or
+database inconsistencies if an operation fails, the entire transaction
+will be aborted at commit.
+
+New LDB pack format
+-------------------
+
+On first use (startup of 'samba' or the first transaction write)
+Samba's sam.ldb will be updated to a new more efficient pack format.
+This will take a few moments.
+
+New LDB <= and >= index mode to improve replication performance
+---------------------------------------------------------------
+
+As well as a new pack format, Samba's sam.ldb uses a new index format
+allowing Samba to efficiently select objects changed since the last
+replication cycle.  This in turn improves performance during
+replication of large domains.
+
+Improvements to ldb search performance
+--------------------------------------
+
+Search performance on large LDB databases has been improved by
+reducing memory allocations made on each object.
+
+Improvements to subtree rename performance
+------------------------------------------
+
+Improvements have been made to Samba's handling of subtree renames,
+for example of containers and organisational units, however large
+renames are still not recommended.
+
+
 
 REMOVED FEATURES
 ================
