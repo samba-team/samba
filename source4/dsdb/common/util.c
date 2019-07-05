@@ -2127,14 +2127,12 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 
 		if (write(cps_stdin, utf8_pw, utf8_len) != utf8_len) {
 			close(cps_stdin);
-			cps_stdin = -1;
 			TALLOC_FREE(password_script);
 			TALLOC_FREE(event_ctx);
 			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
 		}
 
 		close(cps_stdin);
-		cps_stdin = -1;
 
 		if (!tevent_req_poll(req, event_ctx)) {
 			TALLOC_FREE(password_script);
