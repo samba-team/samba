@@ -101,6 +101,10 @@ int main(int argc, char *argv[])
 	result = fcntl_lock(file, &fd);
 	sys_write(STDOUT_FILENO, &result, 1);
 
+	if (result != '0') {
+		return 0;
+	}
+
 	ctdb_wait_for_process_to_exit(ppid);
 
 	if (fd != -1) {
