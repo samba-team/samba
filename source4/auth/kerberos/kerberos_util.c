@@ -642,7 +642,6 @@ krb5_error_code smb_krb5_remove_obsolete_keytab_entries(TALLOC_CTX *mem_ctx,
 		break;
 	case ENOENT:
 	case KRB5_KT_END:
-		code = 0;
 		break;
 	default:
 		*error_string = talloc_asprintf(mem_ctx,
