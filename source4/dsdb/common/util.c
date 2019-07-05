@@ -1794,7 +1794,7 @@ int samdb_rid_manager_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ld
  */
 int samdb_rid_set_dn(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn **dn)
 {
-	struct ldb_dn *server_ref_dn;
+	struct ldb_dn *server_ref_dn = NULL;
 	int ret;
 
 	ret = samdb_server_reference_dn(ldb, mem_ctx, &server_ref_dn);
