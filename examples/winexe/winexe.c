@@ -58,6 +58,7 @@ static const char version_message_fmt[] = "winexe version %d.%d\n"
 
 struct program_options {
 	char *hostname;
+	int port;
 	char *cmd;
 	struct cli_credentials *credentials;
 	char *runas;
@@ -76,6 +77,9 @@ static void parse_args(int argc, const char *argv[],
 
 	int argc_new;
 	char **argv_new;
+
+	int port = 445;
+	char *port_str = NULL;
 
 	int flag_interactive = SVC_IGNORE_INTERACTIVE;
 	int flag_ostype = 2;
@@ -212,7 +216,7 @@ static void parse_args(int argc, const char *argv[],
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,
 			    0);
 
-	poptSetOtherOptionHelp(pc, "[OPTION]... //HOST COMMAND\nOptions:");
+	poptSetOtherOptionHelp(pc, "[OPTION]... //HOST[:PORT] COMMAND\nOptions:");
 
 	if (((opt = poptGetNextOpt(pc)) != -1) || flag_help || flag_version) {
 		fprintf(stderr, version_message_fmt, SAMBA_VERSION_MAJOR,
@@ -242,6 +246,17 @@ static void parse_args(int argc, const char *argv[],
 			SAMBA_VERSION_MINOR);
 		poptPrintHelp(pc, stdout, 0);
 		exit(1);
+	}
+
+	port_str = strchr(argv_new[0], ':');
+	if (port_str) {
+		if (sscanf(port_str + 1, "%d", &port) != 1 || port <= 0) {
+			fprintf(stderr, version_message_fmt,
+				SAMBA_VERSION_MAJOR, SAMBA_VERSION_MINOR);
+			poptPrintHelp(pc, stdout, 0);
+			exit(1);
+		}
+		*port_str = '\0';
 	}
 
 	if (opt_debuglevel) {
@@ -304,6 +319,7 @@ static void parse_args(int argc, const char *argv[],
 	options->credentials = cred;
 
 	options->hostname = argv_new[0] + 2;
+	options->port = port;
 	options->cmd = argv_new[1];
 
 	options->flags = flag_interactive;
@@ -323,6 +339,7 @@ static void parse_args(int argc, const char *argv[],
 
 static NTSTATUS winexe_svc_upload(
 	const char *hostname,
+	int port,
 	const char *service_filename,
 	const DATA_BLOB *svc32_exe,
 	const DATA_BLOB *svc64_exe,
@@ -339,7 +356,7 @@ static NTSTATUS winexe_svc_upload(
 		NULL,
 		hostname,
 		NULL,
-		445,
+		port,
 		"ADMIN$",
 		"?????",
 		credentials,
@@ -421,6 +438,7 @@ done:
 static NTSTATUS winexe_svc_install(
 	struct cli_state *cli,
 	const char *hostname,
+	int port,
 	const char *service_name,
 	const char *service_filename,
 	const DATA_BLOB *svc32_exe,
@@ -628,6 +646,7 @@ static NTSTATUS winexe_svc_install(
 	if (need_start) {
 		status = winexe_svc_upload(
 			hostname,
+			port,
 			service_filename,
 			svc32_exe,
 			svc64_exe,
@@ -1894,7 +1913,7 @@ int main(int argc, const char *argv[])
 		NULL,
 		options.hostname,
 		NULL,
-		445,
+		options.port,
 		"IPC$",
 		"?????",
 		options.credentials,
@@ -1910,6 +1929,7 @@ int main(int argc, const char *argv[])
 	status = winexe_svc_install(
 		cli,
 		options.hostname,
+		options.port,
 		service_name,
 		service_filename,
 		winexesvc32_exe,
