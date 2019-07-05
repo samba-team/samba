@@ -33,7 +33,6 @@
 
 #include "ctdb_private.h"
 #include "common/common.h"
-#include "common/logging.h"
 
 #include "ctdb_cluster_mutex.h"
 
@@ -234,7 +233,7 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 
 	h = talloc(mem_ctx, struct ctdb_cluster_mutex_handle);
 	if (h == NULL) {
-		DEBUG(DEBUG_ERR, (__location__ " out of memory\n"));
+		DBG_ERR("out of memory\n");
 		return NULL;
 	}
 
@@ -246,7 +245,7 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 	ret = pipe(h->fd);
 	if (ret != 0) {
 		talloc_free(h);
-		DEBUG(DEBUG_ERR, (__location__ " Failed to open pipe\n"));
+		DBG_ERR("Failed to open pipe\n");
 		return NULL;
 	}
 	set_close_on_exec(h->fd[0]);
@@ -302,7 +301,7 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 		execv(args[0], args);
 
 		/* Only happens on error */
-		DEBUG(DEBUG_ERR, (__location__ "execv() failed\n"));
+		DBG_ERR("execv() failed\n");
 		_exit(1);
 	}
 
@@ -313,7 +312,7 @@ ctdb_cluster_mutex(TALLOC_CTX *mem_ctx,
 		DBG_WARNING("Failed to unblock SIGTERM (%d)\n", errno);
 	}
 
-	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d\n", h->fd[0]));
+	DBG_DEBUG("Created PIPE FD:%d\n", h->fd[0]);
 	set_close_on_exec(h->fd[0]);
 
 	close(h->fd[1]);
