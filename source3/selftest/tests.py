@@ -499,6 +499,7 @@ vfs = [
     "vfs.fruit_file_id",
     "vfs.fruit_timemachine",
     "vfs.fruit_conversion",
+    "vfs.unfruit",
 ]
 
 tests = base + raw + smb2 + rpc + unix + local + rap + nbt + libsmbclient + idmap + vfs
@@ -623,6 +624,15 @@ for t in tests:
     elif t == "vfs.fruit_conversion":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=torture:share2=vfs_fruit_wipe_intentionally_left_blank_rfork --option=torture:delete_empty_adfiles=false', 'wipe_intentionally_left_blank_rfork')
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=torture:share2=vfs_fruit_delete_empty_adfiles --option=torture:delete_empty_adfiles=true', 'delete_empty_adfiles')
+    elif t == "vfs.unfruit":
+        creds = '-U$USERNAME%$PASSWORD'
+        share2 = '--option=torture:share2=tmp'
+        netopt = '--option=torture:net=%s' % net
+        shareopt = '--option=torture:sharename'
+
+        plansmbtorture4testsuite(t, "nt4_dc:local", '//$SERVER_IP/vfs_fruit %s %s %s %s=%s' % (creds, share2, netopt, shareopt, 'vfs_fruit'), 'metadata_netatalk')
+        plansmbtorture4testsuite(t, "nt4_dc:local", '//$SERVER_IP/vfs_fruit_metadata_stream %s %s %s %s=%s' % (creds, share2, netopt, shareopt, 'vfs_fruit_metadata_stream'), 'metadata_stream')
+        plansmbtorture4testsuite(t, "nt4_dc:local", '//$SERVER_IP/vfs_fruit_stream_depot %s %s %s %s=%s' % (creds, share2, netopt, shareopt, 'vfs_fruit_stream_depot'), 'streams_depot')
     elif t == "rpc.schannel_anon_setpw":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$%', description="anonymous password set")
         plansmbtorture4testsuite(t, "nt4_dc_schannel", '//$SERVER_IP/tmp -U$%', description="anonymous password set (schannel enforced server-side)")

@@ -7453,3 +7453,254 @@ struct torture_suite *torture_vfs_fruit_conversion(TALLOC_CTX *ctx)
 
 	return suite;
 }
+
+/*
+ * The buf below contains the following AppleDouble encoded data:
+ *
+ * -----------------------------------------------------------------------------
+ * MagicNumber: 00051607                                        : AppleDouble
+ * Version    : 00020000                                        : Version 2
+ * Filler     : 4D 61 63 20 4F 53 20 58 20 20 20 20 20 20 20 20 : Mac OS X
+ * Num. of ent: 0002                                            : 2
+ *
+ * -----------------------------------------------------------------------------
+ * Entry ID   : 00000002 : Resource Fork
+ * Offset     : 0000009A : 154
+ * Length     : 00000004 : 4
+ *
+ * -RAW DUMP--:  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F : (ASCII)
+ * 00000000   : 62 61 72 00                                     : bar.
+ *
+ * -----------------------------------------------------------------------------
+ * Entry ID   : 00000009 : Finder Info
+ * Offset     : 00000032 : 50
+ * Length     : 00000068 : 104
+ *
+ * -FInfo-----:
+ * Type       : 464F4F20 : FOO
+ * Creator    : 42415220 : BAR
+ * isAlias    : 0
+ * Invisible  : 0
+ * hasBundle  : 0
+ * nameLocked : 0
+ * Stationery : 0
+ * CustomIcon : 0
+ * Reserved   : 0
+ * Inited     : 0
+ * NoINITS    : 0
+ * Shared     : 0
+ * SwitchLaunc: 0
+ * Hidden Ext : 0
+ * color      : 000      : none
+ * isOnDesk   : 0
+ * Location v : 0000     : 0
+ * Location h : 0000     : 0
+ * Fldr       : 0000     : ..
+ *
+ * -FXInfo----:
+ * Rsvd|IconID: 0000     : 0
+ * Rsvd       : 0000     : ..
+ * Rsvd       : 0000     : ..
+ * Rsvd       : 0000     : ..
+ * AreInvalid : 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * CustomBadge: 0
+ * ObjctIsBusy: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * RoutingInfo: 0
+ * unknown bit: 0
+ * unknown bit: 0
+ * Rsvd|commnt: 0000     : 0
+ * PutAway    : 00000000 : 0
+ *
+ * -EA--------:
+ * pad        : 0000     :
+ * magic      : 41545452 : ATTR
+ * debug_tag  : 00000000 : 0
+ * total_size : 0000009A : 154
+ * data_start : 00000096 : 150
+ * data_length: 00000004 : 4
+ * reserved[0]: 00000000 : ....
+ * reserved[1]: 00000000 : ....
+ * reserved[2]: 00000000 : ....
+ * flags      : 0000     : ..
+ * num_attrs  : 0001     : 1
+ * -EA ENTRY--:
+ * offset     : 00000096 : 150
+ * length     : 00000004 : 4
+ * flags      : 0000     : ..
+ * namelen    : 13       : 19
+ * -EA NAME---:  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F : (ASCII)
+ * 00000000   : 6F 72 67 2E 73 61 6D 62 61 EF 80 A2 77 6F 6F 68 : org.samba...wooh
+ * 00000010   : 6F 6F 00                                        : oo.
+ * -EA VALUE--:  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F : (ASCII)
+ * 00000000   : 62 61 72 00                                     : bar.
+ *
+ * -RAW DUMP--:  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F : (ASCII)
+ * 00000000   : 46 4F 4F 20 42 41 52 20 00 00 00 00 00 00 00 00 : FOO BAR ........
+ * 00000010   : 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : ................
+ * 00000020   : 00 00 41 54 54 52 00 00 00 00 00 00 00 9A 00 00 : baATTR..........
+ * 00000030   : 00 96 00 00 00 04 00 00 00 00 00 00 00 00 00 00 : ................
+ * 00000040   : 00 00 00 00 00 01 00 00 00 96 00 00 00 04 00 00 : ................
+ * 00000050   : 13 6F 72 67 2E 73 61 6D 62 61 EF 80 A2 77 6F 6F : .org.samba...woo
+ * 00000060   : 68 6F 6F 00 62 61 72 00                         : hoo.bar.
+ *
+ * It was created with:
+ *
+ * $ hexdump -ve '"\t" 7/1 "0x%02x, " 1/1 " 0x%02x," "\n"'
+ */
+static char unconvert_adfile_data[] = {
+	0x00, 0x05, 0x16, 0x07, 0x00, 0x02, 0x00, 0x00,
+	0x4d, 0x61, 0x63, 0x20, 0x4f, 0x53, 0x20, 0x58,
+	0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+	0x00, 0x02, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00,
+	0x00, 0x98, 0x00, 0x00, 0x00, 0x04, 0x00, 0x00,
+	0x00, 0x09, 0x00, 0x00, 0x00, 0x32, 0x00, 0x00,
+	0x00, 0x66, 0x46, 0x4f, 0x4f, 0x20, 0x42, 0x41,
+	0x52, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x41, 0x54, 0x54, 0x52,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x98,
+	0x00, 0x00, 0x00, 0x94, 0x00, 0x00, 0x00, 0x04,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+	0x00, 0x00, 0x00, 0x94, 0x00, 0x00, 0x00, 0x04,
+	0x00, 0x00, 0x11, 0x6f, 0x72, 0x67, 0x2e, 0x73,
+	0x61, 0x6d, 0x62, 0x61, 0x3a, 0x77, 0x6f, 0x6f,
+	0x68, 0x6f, 0x6f, 0x00, 0x62, 0x61, 0x72, 0x00,
+	0x62, 0x61, 0x72, 0x00
+};
+
+static bool test_unconvert(struct torture_context *tctx,
+			   struct smb2_tree *tree1,
+			   struct smb2_tree *tree2)
+{
+	const char *fname = BASEDIR "\\unconvert";
+	const char *adname = BASEDIR "\\._unconvert";
+	const char *net = NULL;
+	const char *share = NULL;
+	AfpInfo *afpi = NULL;
+	char *cmd = NULL;
+	struct smb2_handle h1;
+	union smb_fileinfo finfo;
+	size_t adsize;
+	NTSTATUS status;
+	int result;
+	bool ret = true;
+
+	torture_assert_not_null_goto(tctx, tree2, ret, done,
+				     "Need a second share without fruit\n");
+
+	net = torture_setting_string(tctx, "net", NULL);
+	torture_assert_not_null_goto(tctx, net, ret, done,
+				     "Need path to 'net'");
+
+	share = torture_setting_string(tctx, "sharename", NULL);
+	torture_assert_not_null_goto(tctx, share, ret, done,
+				     "Need sharename");
+
+	torture_comment(tctx, "Testing unconvert\n");
+
+	smb2_deltree(tree1, BASEDIR);
+
+	status = torture_smb2_testdir(tree1, BASEDIR, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir\n");
+	smb2_util_close(tree1, h1);
+
+	ret = torture_setup_file(tctx, tree1, fname, false);
+	torture_assert_goto(tctx, ret == true, ret, done, "torture_setup_file");
+
+	afpi = torture_afpinfo_new(tctx);
+	torture_assert_not_null_goto(tctx, afpi, ret, done,
+				     "torture_afpinfo_new failed\n");
+
+	memcpy(afpi->afpi_FinderInfo, "FOO BAR ", 8);
+
+	ret = torture_write_afpinfo(tree1, tctx, tctx, fname, afpi);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "torture_write_afpinfo failed\n");
+
+	ret = write_stream(tree1, __location__, tctx, tctx,
+			   fname,
+			   /*
+			    * \xef\x80\xa2 is ':' mapped to Unicoe private range
+			    */
+			   ":org.samba" "\xef\x80\xa2" "woohoo",
+			   0, 4, "bar");
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "write_stream failed\n");
+
+	ret = write_stream(tree1, __location__, tctx, tctx,
+			   fname, AFPRESOURCE_STREAM_NAME,
+			   0, 4, "bar");
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "write_stream failed\n");
+
+	cmd = talloc_asprintf(tctx,
+			      "%s --recursive vfs stream2adouble %s %s/",
+			      net,
+			      share,
+			      BASEDIR);
+	torture_assert_not_null_goto(tctx, cmd, ret, done,
+				     "talloc_asprintf failed\n");
+
+	torture_comment(tctx, "cmd: %s\n", cmd);
+
+	result = system(cmd);
+	torture_assert_int_equal_goto(tctx, result, 0, ret, done,
+			    "command failed\n");
+
+	status = torture_smb2_testfile(tree2, adname, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testfile failed\n");
+
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+
+	status = smb2_getinfo_file(tree2, tctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir\n");
+	smb2_util_close(tree2, h1);
+
+	adsize = finfo.all_info.out.size;
+	torture_assert_int_equal_goto(tctx, adsize,
+				      sizeof(unconvert_adfile_data),
+				      ret, done, "wrong size\n");
+
+	ret = check_stream(tree2, __location__, tctx, tctx,
+			   adname, "", 0, adsize, 0, adsize,
+			   unconvert_adfile_data);
+	torture_assert_goto(tctx, ret == true, ret, done,
+			    "check_stream failed\n");
+
+done:
+//	smb2_deltree(tree1, BASEDIR);
+	return ret;
+}
+
+struct torture_suite *torture_vfs_fruit_unfruit(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite = torture_suite_create(
+		ctx, "unfruit");
+
+	suite->description = talloc_strdup(
+		suite, "test converting back to AppleDouble");
+
+	torture_suite_add_2ns_smb2_test(suite,
+					"unconvert",
+					test_unconvert);
+
+	return suite;
+}
