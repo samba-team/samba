@@ -795,7 +795,6 @@ sub provision_raw_step1($$)
 	log level = $ctx->{server_loglevel}
 	lanman auth = Yes
 	ntlm auth = Yes
-	rndc command = true
 	client min protocol = CORE
 	server min protocol = LANMAN1
 	mangled names = yes

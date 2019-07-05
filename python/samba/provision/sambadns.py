@@ -749,11 +749,6 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
         hostip_host_line = ""
         gc_msdcs_ip_line = ""
 
-    # we need to freeze the zone while we update the contents
-    if targetdir is None:
-        rndc = ' '.join(lp.get("rndc command"))
-        os.system(rndc + " freeze " + lp.get("realm"))
-
     setup_file(setup_path("provision.zone"), paths.dns, {
             "HOSTNAME": hostname,
             "DNSDOMAIN": dnsdomain,
@@ -779,9 +774,6 @@ def create_zone_file(lp, logger, paths, targetdir, dnsdomain,
             if 'SAMBA_SELFTEST' not in os.environ:
                 logger.error("Failed to chown %s to bind gid %u" % (
                     paths.dns, paths.bind_gid))
-
-    if targetdir is None:
-        os.system(rndc + " unfreeze " + lp.get("realm"))
 
 
 def create_samdb_copy(samdb, logger, paths, names, domainsid, domainguid):

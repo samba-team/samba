@@ -934,8 +934,6 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	Globals.nsupdate_command = str_list_make_v3_const(NULL, "/usr/bin/nsupdate -g", NULL);
 
-	Globals.rndc_command = str_list_make_v3_const(NULL, "/usr/sbin/rndc", NULL);
-
 	Globals.cldap_port = 389;
 
 	Globals.dgram_port = NBT_DGRAM_SERVICE_PORT;

@@ -20,6 +20,18 @@ NEW FEATURES/CHANGES
 REMOVED FEATURES
 ================
 
+BIND9_FLATFILE deprecated
+-------------------------
+
+The BIND9_FLATFILE DNS backend is deprecated in this release and will
+be removed in the future.  This was only practically useful on a single
+domain controller or under expert care and supervision.
+
+This release removes the "rndc command" smb.conf parameter, which
+supported this configuration by writing out a list of DCs permitted to
+make changes to the DNS Zone and nudging the 'named' server if a new
+DC was added to the domain.  Administrators using BIND9_FLATFILE will
+need to maintain this manually from now on.
 
 smb.conf changes
 ================
@@ -28,6 +40,7 @@ smb.conf changes
   --------------                     -----------                -------
 
   nfs4:acedup                        Changed default            merge
+  rndc command                       Removed
 
 KNOWN ISSUES
 ============
