@@ -435,10 +435,18 @@ static void py_token_patch(PyTypeObject *type)
 static PyObject *py_privilege_name(PyObject *self, PyObject *args)
 {
 	int priv;
-	if (!PyArg_ParseTuple(args, "i", &priv))
+	const char *name = NULL;
+	if (!PyArg_ParseTuple(args, "i", &priv)) {
 		return NULL;
+	}
+	name = sec_privilege_name(priv);
+	if (name == NULL) {
+		PyErr_Format(PyExc_ValueError,
+			     "Invalid privilege LUID: %d", priv);
+		return NULL;
+	}
 
-	return PyUnicode_FromString(sec_privilege_name(priv));
+	return PyUnicode_FromString(name);
 }
 
 static PyObject *py_privilege_id(PyObject *self, PyObject *args)
