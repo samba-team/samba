@@ -846,41 +846,20 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 NTSTATUS encode_or_decode_arc4_passwd_buffer(unsigned char pw_buf[532],
 					     const DATA_BLOB *psession_key)
 {
-	gnutls_hash_hd_t hash_hnd = NULL;
-	unsigned char key_out[16];
-	NTSTATUS status;
+	/* Confounder is last 16 bytes. */
+	DATA_BLOB confounder = data_blob_const(&pw_buf[516], 16);
+	DATA_BLOB pw_data = data_blob_const(pw_buf, 516);
 	int rc;
 
-	/* Confounder is last 16 bytes. */
-
-	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	rc = samba_gnutls_arcfour_confounded_md5(&confounder,
+						 psession_key,
+						 &pw_data,
+						 SAMBA_GNUTLS_DECRYPT);
 	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
-		goto out;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
 	}
 
-	rc = gnutls_hash(hash_hnd, &pw_buf[516], 16);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd, psession_key->data, psession_key->length);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
-		goto out;
-	}
-	gnutls_hash_deinit(hash_hnd, key_out);
-
-	/* arc4 with key_out. */
-	arcfour_crypt(pw_buf, key_out, 516);
-
-	ZERO_ARRAY(key_out);
-
-	status = NT_STATUS_OK;
-out:
-	return status;
+	return NT_STATUS_OK;
 }
 
 /***********************************************************
