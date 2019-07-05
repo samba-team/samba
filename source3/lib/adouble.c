@@ -895,6 +895,9 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 		fsp = NULL;
 	}
 
+	ad->adx_header.adx_num_attrs = 0;
+	TALLOC_FREE(ad->adx_entries);
+
 	ad_setentrylen(ad, ADEID_FINDERI, ADEDLEN_FINDERI);
 
 	rc = ad_fset(handle, ad, ad->ad_fsp);
