@@ -22,15 +22,7 @@
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
-
-/* Those macros are only available in GnuTLS >= 3.6.4 */
-#ifndef GNUTLS_FIPS140_SET_LAX_MODE
-#define GNUTLS_FIPS140_SET_LAX_MODE()
-#endif
-
-#ifndef GNUTLS_FIPS140_SET_STRICT_MODE
-#define GNUTLS_FIPS140_SET_STRICT_MODE()
-#endif
+#include "lib/crypto/gnutls_helpers.h"
 
 SMB_INO_T hash_inode(const SMB_STRUCT_STAT *sbuf, const char *sname)
 {

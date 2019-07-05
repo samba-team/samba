@@ -18,8 +18,19 @@
 #ifndef _GNUTLS_HELPERS_H
 #define _GNUTLS_HELPERS_H
 
+#include <gnutls/gnutls.h>
+
 #include "libcli/util/ntstatus.h"
 #include "libcli/util/werror.h"
+
+/* Those macros are only available in GnuTLS >= 3.6.4 */
+#ifndef GNUTLS_FIPS140_SET_LAX_MODE
+#define GNUTLS_FIPS140_SET_LAX_MODE()
+#endif
+
+#ifndef GNUTLS_FIPS140_SET_STRICT_MODE
+#define GNUTLS_FIPS140_SET_STRICT_MODE()
+#endif
 
 NTSTATUS _gnutls_error_to_ntstatus(int gnutls_rc,
 				   NTSTATUS blocked_status,
