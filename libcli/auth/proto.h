@@ -184,8 +184,8 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 /***********************************************************
  Decode an arc4 encrypted password change buffer.
 ************************************************************/
-NTSTATUS encode_or_decode_arc4_passwd_buffer(unsigned char pw_buf[532],
-					     const DATA_BLOB *psession_key);
+NTSTATUS decode_rc4_passwd_buffer(unsigned char pw_buf[532],
+				  const DATA_BLOB *psession_key);
 
 /***********************************************************
  encode a password buffer with an already unicode password.  The

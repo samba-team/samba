@@ -843,8 +843,8 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
  Decode an arc4 encrypted password change buffer.
 ************************************************************/
 
-NTSTATUS encode_or_decode_arc4_passwd_buffer(unsigned char pw_buf[532],
-					     const DATA_BLOB *psession_key)
+NTSTATUS decode_rc4_passwd_buffer(unsigned char pw_buf[532],
+				  const DATA_BLOB *psession_key)
 {
 	/* Confounder is last 16 bytes. */
 	DATA_BLOB confounder = data_blob_const(&pw_buf[516], 16);

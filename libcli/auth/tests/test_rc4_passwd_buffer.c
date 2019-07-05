@@ -114,8 +114,7 @@ static void torture_decode_rc4_passwd_buffer(void **state)
 	       encrypted_test_blob,
 	       sizeof(out_pwd_buf.data));
 
-	status = encode_or_decode_arc4_passwd_buffer(out_pwd_buf.data,
-						     &session_key);
+	status = decode_rc4_passwd_buffer(out_pwd_buf.data, &session_key);
 	assert_true(NT_STATUS_IS_OK(status));
 
 	ok = decode_pw_buffer(NULL,
@@ -144,8 +143,7 @@ static void torture_rc4_passwd_buffer(void **state)
 					   &out_pwd_buf);
 	assert_true(NT_STATUS_IS_OK(status));
 
-	status = encode_or_decode_arc4_passwd_buffer(out_pwd_buf.data,
-						     &session_key);
+	status = decode_rc4_passwd_buffer(out_pwd_buf.data, &session_key);
 	assert_true(NT_STATUS_IS_OK(status));
 
 	ok = decode_pw_buffer(NULL,
