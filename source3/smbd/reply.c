@@ -45,6 +45,7 @@
 #include "libcli/smb/smb_signing.h"
 #include "lib/util/sys_rw_data.h"
 #include "librpc/gen_ndr/open_files.h"
+#include "smb1_utils.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
@@ -2219,8 +2220,23 @@ void reply_open(struct smb_request *req)
 			/* We have re-scheduled this call. */
 			goto out;
 		}
-		reply_openerror(req, status);
-		goto out;
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+			reply_openerror(req, status);
+			goto out;
+		}
+
+		fsp = fcb_or_dos_open(
+			req,
+			smb_fname,
+			access_mask,
+			share_mode,
+			create_options,
+			private_flags);
+		if (fsp == NULL) {
+			reply_openerror(req, status);
+			goto out;
+		}
 	}
 
 	/* Ensure we're pointing at the correct stat struct. */
@@ -2392,8 +2408,24 @@ void reply_open_and_X(struct smb_request *req)
 			/* We have re-scheduled this call. */
 			goto out;
 		}
-		reply_openerror(req, status);
-		goto out;
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+			reply_openerror(req, status);
+			goto out;
+		}
+
+		fsp = fcb_or_dos_open(
+			req,
+			smb_fname,
+			access_mask,
+			share_mode,
+			create_options,
+			private_flags);
+		if (fsp == NULL) {
+			reply_openerror(req, status);
+			goto out;
+		}
+		smb_action = FILE_WAS_OPENED;
 	}
 
 	/* Setting the "size" field in vwv9 and vwv10 causes the file to be set to this size,

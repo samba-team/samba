@@ -41,6 +41,7 @@
 #include "lib/util_ea.h"
 #include "lib/readdir_attr.h"
 #include "messages.h"
+#include "smb1_utils.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
@@ -1440,8 +1441,24 @@ static void call_trans2open(connection_struct *conn,
 			/* We have re-scheduled this call. */
 			goto out;
 		}
-		reply_openerror(req, status);
-		goto out;
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+			reply_openerror(req, status);
+			goto out;
+		}
+
+		fsp = fcb_or_dos_open(
+			req,
+			smb_fname,
+			access_mask,
+			share_mode,
+			create_options,
+			private_flags);
+		if (fsp == NULL) {
+			reply_openerror(req, status);
+			goto out;
+		}
+		smb_action = FILE_WAS_OPENED;
 	}
 
 	size = get_file_size_stat(&smb_fname->st);

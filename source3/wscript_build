@@ -718,6 +718,7 @@ bld.SAMBA3_LIBRARY('smbd_base',
                           smbd/notify.c
                           smbd/notify_msg.c
                           smbd/build_options.c
+                          smbd/smb1_utils.c
                           ''' + NOTIFY_SOURCES,
                    deps='''
                         talloc

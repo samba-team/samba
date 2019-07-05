@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "smb1_utils.h"
 #include "system/filesys.h"
 #include "lib/util/server_id.h"
 #include "printing.h"
@@ -2608,69 +2609,6 @@ static bool open_match_attributes(connection_struct *conn,
 	return True;
 }
 
-/****************************************************************************
- Special FCB or DOS processing in the case of a sharing violation.
- Try and find a duplicated file handle.
-****************************************************************************/
-
-static NTSTATUS fcb_or_dos_open(struct smb_request *req,
-				connection_struct *conn,
-				files_struct *fsp_to_dup_into,
-				const struct smb_filename *smb_fname,
-				struct file_id id,
-				uint16_t file_pid,
-				uint64_t vuid,
-				uint32_t access_mask,
-				uint32_t share_access,
-				uint32_t create_options)
-{
-	files_struct *fsp;
-
-	DEBUG(5,("fcb_or_dos_open: attempting old open semantics for "
-		 "file %s.\n", smb_fname_str_dbg(smb_fname)));
-
-	for(fsp = file_find_di_first(conn->sconn, id); fsp;
-	    fsp = file_find_di_next(fsp)) {
-
-		DEBUG(10,("fcb_or_dos_open: checking file %s, fd = %d, "
-			  "vuid = %llu, file_pid = %u, private_options = 0x%x "
-			  "access_mask = 0x%x\n", fsp_str_dbg(fsp),
-			  fsp->fh->fd, (unsigned long long)fsp->vuid,
-			  (unsigned int)fsp->file_pid,
-			  (unsigned int)fsp->fh->private_options,
-			  (unsigned int)fsp->access_mask ));
-
-		if (fsp != fsp_to_dup_into &&
-		    fsp->fh->fd != -1 &&
-		    fsp->vuid == vuid &&
-		    fsp->file_pid == file_pid &&
-		    (fsp->fh->private_options & (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS |
-						 NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) &&
-		    (fsp->access_mask & FILE_WRITE_DATA) &&
-		    strequal(fsp->fsp_name->base_name, smb_fname->base_name) &&
-		    strequal(fsp->fsp_name->stream_name,
-			     smb_fname->stream_name)) {
-			DEBUG(10,("fcb_or_dos_open: file match\n"));
-			break;
-		}
-	}
-
-	if (!fsp) {
-		return NT_STATUS_NOT_FOUND;
-	}
-
-	/* quite an insane set of semantics ... */
-	if (is_executable(smb_fname->base_name) &&
-	    (fsp->fh->private_options & NTCREATEX_OPTIONS_PRIVATE_DENY_DOS)) {
-		DEBUG(10,("fcb_or_dos_open: file fail due to is_executable.\n"));
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	/* We need to duplicate this fsp. */
-	return dup_file_fsp(req, fsp, access_mask, share_access,
-			    create_options, fsp_to_dup_into);
-}
-
 static void schedule_defer_open(struct share_mode_lock *lck,
 				struct file_id id,
 				struct timeval request_time,
@@ -3546,41 +3484,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		bool can_access = True;
 
 		SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION));
-
-		/* Check if this can be done with the deny_dos and fcb
-		 * calls. */
-		if (private_flags &
-		    (NTCREATEX_OPTIONS_PRIVATE_DENY_DOS|
-		     NTCREATEX_OPTIONS_PRIVATE_DENY_FCB)) {
-			if (req == NULL) {
-				DEBUG(0, ("DOS open without an SMB "
-					  "request!\n"));
-				TALLOC_FREE(lck);
-				fd_close(fsp);
-				return NT_STATUS_INTERNAL_ERROR;
-			}
-
-			/* Use the client requested access mask here,
-			 * not the one we open with. */
-			status = fcb_or_dos_open(req,
-						 conn,
-						 fsp,
-						 smb_fname,
-						 id,
-						 req->smbpid,
-						 req->vuid,
-						 access_mask,
-						 share_access,
-						 create_options);
-
-			if (NT_STATUS_IS_OK(status)) {
-				TALLOC_FREE(lck);
-				if (pinfo) {
-					*pinfo = FILE_WAS_OPENED;
-				}
-				return NT_STATUS_OK;
-			}
-		}
 
 		/*
 		 * This next line is a subtlety we need for
