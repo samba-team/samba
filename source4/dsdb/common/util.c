@@ -1997,6 +1997,11 @@ int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 		talloc_free(local_ctx);
 		return ret;
 	}
+	/* should never be true with 'ret=LDB_SUCCESS', here to satisfy clang */
+	if (res == NULL) {
+		talloc_free(local_ctx);
+		return LDB_ERR_OTHER;
+	}
 	if (res->count != 1) {
 		*errstring = talloc_asprintf(mem_ctx, "Invalid dn (%s), not child of a domain object",
 					     ldb_dn_get_linearized(dn));
@@ -3278,6 +3283,11 @@ WERROR dsdb_loadreps(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, struct ld
 		return WERR_DS_DRA_INTERNAL_ERROR;
 	}
 
+	/* satisfy clang */
+	if (res == NULL) {
+		talloc_free(tmp_ctx);
+		return WERR_DS_DRA_INTERNAL_ERROR;
+	}
 	el = ldb_msg_find_element(res->msgs[0], attr);
 	if (el == NULL) {
 		/* it's OK to be empty */
@@ -3570,6 +3580,11 @@ int samdb_dns_host_name(struct ldb_context *sam_ctx, const char **host_name)
 			  ldb_errstring(sam_ctx)));
 		TALLOC_FREE(tmp_ctx);
 		return ret;
+	}
+	/* satisfy clang */
+	if (res == NULL) {
+		TALLOC_FREE(tmp_ctx);
+		return LDB_ERR_OTHER;
 	}
 
 
