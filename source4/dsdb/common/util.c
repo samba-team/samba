@@ -2850,7 +2850,7 @@ NTSTATUS samdb_create_foreign_security_principal(struct ldb_context *sam_ctx, TA
 						 struct dom_sid *sid, struct ldb_dn **ret_dn) 
 {
 	struct ldb_message *msg;
-	struct ldb_dn *basedn;
+	struct ldb_dn *basedn = NULL;
 	char *sidstr;
 	int ret;
 
@@ -3117,7 +3117,7 @@ int dsdb_find_guid_attr_by_dn(struct ldb_context *ldb,
 			      struct GUID *guid)
 {
 	int ret;
-	struct ldb_result *res;
+	struct ldb_result *res = NULL;
 	const char *attrs[2];
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 
@@ -3130,6 +3130,11 @@ int dsdb_find_guid_attr_by_dn(struct ldb_context *ldb,
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+	/* satisfy clang */
+	if (res == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OTHER;
 	}
 	if (res->count < 1) {
 		talloc_free(tmp_ctx);
@@ -3193,7 +3198,7 @@ int dsdb_find_sid_by_dn(struct ldb_context *ldb,
 			struct ldb_dn *dn, struct dom_sid *sid)
 {
 	int ret;
-	struct ldb_result *res;
+	struct ldb_result *res = NULL;
 	const char *attrs[] = { "objectSid", NULL };
 	TALLOC_CTX *tmp_ctx = talloc_new(ldb);
 	struct dom_sid *s;
@@ -3206,6 +3211,10 @@ int dsdb_find_sid_by_dn(struct ldb_context *ldb,
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+	if (res == NULL) {
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OTHER;
 	}
 	if (res->count < 1) {
 		talloc_free(tmp_ctx);
@@ -3996,7 +4005,7 @@ int dsdb_wellknown_dn(struct ldb_context *samdb, TALLOC_CTX *mem_ctx,
 	const char *attrs[] = { NULL };
 	int ret;
 	struct ldb_dn *dn;
-	struct ldb_result *res;
+	struct ldb_result *res = NULL;
 
 	/* construct the magic WKGUID DN */
 	dn = ldb_dn_new_fmt(tmp_ctx, samdb, "<WKGUID=%s,%s>",
@@ -4012,6 +4021,11 @@ int dsdb_wellknown_dn(struct ldb_context *samdb, TALLOC_CTX *mem_ctx,
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
 		return ret;
+	}
+	/* fix clang warning */
+	if (res == NULL){
+		talloc_free(tmp_ctx);
+		return LDB_ERR_OTHER;
 	}
 
 	(*wkguid_dn) = talloc_steal(mem_ctx, res->msgs[0]->dn);
@@ -4187,7 +4201,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 		     struct drsuapi_DsReplicaCursor2 **cursors, uint32_t *count)
 {
 	static const char *attrs[] = { "replUpToDateVector", NULL };
-	struct ldb_result *r;
+	struct ldb_result *r = NULL;
 	const struct ldb_val *ouv_value;
 	unsigned int i;
 	int ret;
@@ -4200,7 +4214,10 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 	if (ret != LDB_SUCCESS) {
 		return ret;
 	}
-
+	/* fix clang warning */
+	if (r == NULL) {
+		return LDB_ERR_OTHER;
+	}
 	ouv_value = ldb_msg_find_ldb_val(r->msgs[0], "replUpToDateVector");
 	if (ouv_value) {
 		enum ndr_err_code ndr_err;
@@ -4273,7 +4290,7 @@ int dsdb_load_udv_v2(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *m
 int dsdb_load_udv_v1(struct ldb_context *samdb, struct ldb_dn *dn, TALLOC_CTX *mem_ctx,
 		     struct drsuapi_DsReplicaCursor **cursors, uint32_t *count)
 {
-	struct drsuapi_DsReplicaCursor2 *v2;
+	struct drsuapi_DsReplicaCursor2 *v2 = NULL;
 	uint32_t i;
 	int ret;
 
@@ -5744,14 +5761,18 @@ bool dsdb_objects_have_same_nc(struct ldb_context *ldb,
 			       struct ldb_dn *target_dn)
 {
 	TALLOC_CTX *tmp_ctx;
-	struct ldb_dn *source_nc;
-	struct ldb_dn *target_nc;
+	struct ldb_dn *source_nc = NULL;
+	struct ldb_dn *target_nc = NULL;
 	int ret;
 	bool same_nc = true;
 
 	tmp_ctx = talloc_new(mem_ctx);
 
 	ret = dsdb_find_nc_root(ldb, tmp_ctx, source_dn, &source_nc);
+	/* fix clang warning */
+	if (source_nc == NULL) {
+		ret = LDB_ERR_OTHER;
+	}
 	if (ret != LDB_SUCCESS) {
 		DBG_ERR("Failed to find base DN for source %s\n",
 			ldb_dn_get_linearized(source_dn));
@@ -5760,6 +5781,10 @@ bool dsdb_objects_have_same_nc(struct ldb_context *ldb,
 	}
 
 	ret = dsdb_find_nc_root(ldb, tmp_ctx, target_dn, &target_nc);
+	/* fix clang warning */
+	if (target_nc == NULL) {
+		ret = LDB_ERR_OTHER;
+	}
 	if (ret != LDB_SUCCESS) {
 		DBG_ERR("Failed to find base DN for target %s\n",
 			ldb_dn_get_linearized(target_dn));
