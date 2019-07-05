@@ -18,8 +18,8 @@
 #ifndef _GNUTLS_HELPERS_H
 #define _GNUTLS_HELPERS_H
 
-#include "ntstatus.h"
-#include "werror.h"
+#include "libcli/util/ntstatus.h"
+#include "libcli/util/werror.h"
 
 NTSTATUS _gnutls_error_to_ntstatus(int gnutls_rc,
 				   NTSTATUS blocked_status,
