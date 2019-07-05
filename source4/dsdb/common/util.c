@@ -1957,7 +1957,7 @@ bool samdb_is_pdc(struct ldb_context *ldb)
 */
 bool samdb_is_gc(struct ldb_context *ldb)
 {
-	uint32_t options;
+	uint32_t options = 0;
 	if (samdb_ntds_options(ldb, &options) != LDB_SUCCESS) {
 		return false;
 	}
