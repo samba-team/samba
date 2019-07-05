@@ -54,3 +54,12 @@ bld.SAMBA_BINARY(
         ''',
         install=False
     )
+
+bld.SAMBA_BINARY('test_rc4_passwd_buffer',
+                 source='tests/test_rc4_passwd_buffer.c',
+                 deps='''
+                      INIT_SAMR
+                      LIBCLI_AUTH
+                      cmocka
+                      ''',
+                 install=False)
