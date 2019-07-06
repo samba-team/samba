@@ -37,13 +37,6 @@
 
 void initcredentials(void);
 
-static PyObject *PyString_FromStringOrNULL(const char *str)
-{
-	if (str == NULL)
-		Py_RETURN_NONE;
-	return PyUnicode_FromString(str);
-}
-
 static PyObject *py_creds_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	return pytalloc_steal(type, cli_credentials_init(NULL));
