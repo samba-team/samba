@@ -1357,6 +1357,10 @@ bool ldb_dn_add_base(struct ldb_dn *dn, struct ldb_dn *base)
 		return false;
 	}
 
+	if (dn == base) {
+		return false; /* or we will visit infinity */
+	}
+
 	if (dn->components) {
 		unsigned int i;
 
