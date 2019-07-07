@@ -32,10 +32,6 @@ _PUBLIC_ PyTypeObject *pytalloc_GetObjectType(void)
 	static PyTypeObject *type = NULL;
 	PyObject *mod;
 
-	if (type != NULL) {
-		return type;
-	}
-
 	mod = PyImport_ImportModule("talloc");
 	if (mod == NULL) {
 		return NULL;
@@ -52,10 +48,6 @@ _PUBLIC_ PyTypeObject *pytalloc_GetBaseObjectType(void)
 	static PyTypeObject *type = NULL;
 	PyObject *mod;
 
-	if (type != NULL) {
-		return type;
-	}
-
 	mod = PyImport_ImportModule("talloc");
 	if (mod == NULL) {
 		return NULL;
@@ -71,10 +63,6 @@ static PyTypeObject *pytalloc_GetGenericObjectType(void)
 {
 	static PyTypeObject *type = NULL;
 	PyObject *mod;
-
-	if (type != NULL) {
-		return type;
-	}
 
 	mod = PyImport_ImportModule("talloc");
 	if (mod == NULL) {
