@@ -909,7 +909,12 @@ static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
 	if (!PyArg_ParseTuple(args, "|O", &py_cp)) {
 		return NULL;
 	}
+
 	pwd = pytalloc_get_type(py_cp, struct netr_CryptPassword);
+	if (pwd == NULL) {
+		/* pytalloc_get_type sets TypeError */
+		return NULL;
+	}
 	data.length = sizeof(struct netr_CryptPassword);
 	data.data   = (uint8_t *)pwd;
 	status = netlogon_creds_session_encrypt(creds->netlogon_creds, data);
