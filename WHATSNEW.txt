@@ -268,6 +268,8 @@ smb.conf changes
   Parameter Name                     Description                Default
   --------------                     -----------                -------
 
+  allocation roundup size            Default changed/           0
+                                     Deprecated
   web port                           Removed
   fruit:zero_file_id                 Changed default            False
 
