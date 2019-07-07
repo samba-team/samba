@@ -281,9 +281,10 @@ static PyObject *py_gensec_set_credentials(PyObject *self, PyObject *args)
 
 	creds = PyCredentials_AsCliCredentials(py_creds);
 	if (!creds) {
-		PyErr_Format(PyExc_TypeError,
-			     "Expected samba.credentaials for credentials argument got  %s",
-			     talloc_get_name(pytalloc_get_ptr(py_creds)));
+		PyErr_Format(
+			PyExc_TypeError,
+			"Expected samba.credentials for credentials argument, "
+			"got %s", pytalloc_get_name(py_creds));
 		return NULL;
 	}
 
