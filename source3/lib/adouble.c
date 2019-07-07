@@ -1827,6 +1827,8 @@ int adouble_path(TALLOC_CTX *ctx,
 	/* And we're replacing base_name. */
 	TALLOC_FREE(smb_fname->base_name);
 
+	SET_STAT_INVALID(smb_fname->st);
+
 	if (!parent_dirname(smb_fname, smb_fname_in->base_name,
 				&parent, &base)) {
 		TALLOC_FREE(smb_fname);
