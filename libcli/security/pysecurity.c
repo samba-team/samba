@@ -33,12 +33,12 @@ static PyObject *py_se_access_check(PyObject *module, PyObject *args, PyObject *
 	PyObject *py_security_token = Py_None;
 	struct security_descriptor *security_descriptor;
 	struct security_token *security_token;
-	int access_desired; /* This is an int, because that's what
-			     * we need for the python
-			     * PyArg_ParseTupleAndKeywords */
+	unsigned int access_desired; /* This is an unsigned int, not uint32_t,
+				      * because that's what we need for the
+				      * python PyArg_ParseTupleAndKeywords */
 	uint32_t access_granted;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOi",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOI",
 					 discard_const_p(char *, kwnames),
 					 &py_sec_desc, &py_security_token, &access_desired)) {
 		return NULL;
