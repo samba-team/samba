@@ -9,7 +9,7 @@
 /* to a maximum of 8 if old smb clients break because of long printer names. */
 #define MAXPRINTERLEN 15
 
-/* max number of directory handles */
+/* max number of SMB1 directory handles */
 /* As this now uses the bitmap code this can be
    quite large. */
 #define MAX_DIRECTORY_HANDLES 2048
