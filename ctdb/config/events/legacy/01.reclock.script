@@ -4,43 +4,29 @@
 [ -n "$CTDB_BASE" ] || \
     CTDB_BASE=$(d=$(dirname "$0") ; cd -P "$d" ; dirname "$PWD")
 
-. "${CTDB_BASE}/functions"
-
-load_script_options
-
-ctdb_setup_state_dir "service" "reclock"
-
-ctdb_get_reclock_option ()
-{
-	_reclock_opt_file="${CTDB_SCRIPT_VARDIR}/recovery_lock.cache"
-
-	if [ -f "$_reclock_opt_file" ] ; then
-		. "$_reclock_opt_file"
-		return
-	fi
-
-	ctdb_translate_option "cluster" \
-			      "recovery lock" \
-			      "CTDB_RECOVERY_LOCK" >"$_reclock_opt_file"
-
-	. "$_reclock_opt_file"
-}
-
-ctdb_get_reclock_option
-
-# If CTDB_RECOVERY_LOCK specifies a helper then exit because this
-# script can't do anything useful.
-case "$CTDB_RECOVERY_LOCK" in
-!*) exit 0 ;;
-esac
-
 case "$1" in
 init)
-	if [ -n "$CTDB_RECOVERY_LOCK" ] ; then
-	    d=$(dirname "$CTDB_RECOVERY_LOCK")
-	    mkdir -vp "$d"
+	recovery_lock=$("${CTDB_HELPER_BINDIR}/ctdb-config" \
+				get cluster "recovery lock")
+	# xshellcheck disable=SC2181
+	# Above is already complicated enough without embedding into "if"
+	case $? in
+	0) : ;;
+	2) exit 0 ;; # ENOENT: not configured
+	*) die "Unexpected error getting recovery lock configuration"
+	esac
+
+	if [ -z "$recovery_lock" ] ; then
+		exit 0
 	fi
+
+	# If a helper is specified then exit because this script can't
+	# do anything useful
+	case "$recovery_lock" in
+	!*) exit 0 ;;
+	esac
+
+	d=$(dirname "$recovery_lock")
+	mkdir -vp "$d"
 	;;
 esac
-
-exit 0
