@@ -1011,70 +1011,47 @@ WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 					  DATA_BLOB *session_key,
 					  char **pwd)
 {
-	gnutls_hash_hd_t hash_hnd = NULL;
-	uint8_t buffer[516];
-	size_t pwd_len;
-	WERROR result;
+	uint8_t _confounder[8];
+	DATA_BLOB confounder = data_blob_const(_confounder, 8);
+	uint8_t pwbuf[516] = {0};
+	DATA_BLOB decrypt_pwbuf = data_blob_const(pwbuf, 516);
 	bool ok;
 	int rc;
 
-	DATA_BLOB confounded_session_key;
-
-	int confounder_len = 8;
-	uint8_t confounder[8];
-
-	*pwd = NULL;
-
-	if (!pwd_buf) {
+	if (pwd_buf == NULL) {
 		return WERR_INVALID_PASSWORD;
 	}
+
+	*pwd = NULL;
 
 	if (session_key->length != 16) {
 		DEBUG(10,("invalid session key\n"));
 		return WERR_INVALID_PASSWORD;
 	}
 
-	confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+	confounder = data_blob_const(&pwd_buf->data[0], 8);
+	memcpy(&pwbuf, &pwd_buf->data[8], 516);
 
-	memcpy(&confounder, &pwd_buf->data[0], confounder_len);
-	memcpy(&buffer, &pwd_buf->data[8], 516);
-
-	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	rc = samba_gnutls_arcfour_confounded_md5(session_key,
+						 &confounder,
+						 &decrypt_pwbuf,
+						 SAMBA_GNUTLS_ENCRYPT);
 	if (rc < 0) {
-		result = gnutls_error_to_werror(rc, WERR_CONTENT_BLOCKED);
-		goto out;
+		ZERO_ARRAY(_confounder);
+		TALLOC_FREE(pwd_buf);
+		return gnutls_error_to_werror(rc, WERR_CONTENT_BLOCKED);
 	}
 
-	rc = gnutls_hash(hash_hnd, session_key->data, session_key->length);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		result = gnutls_error_to_werror(rc, WERR_CONTENT_BLOCKED);
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd, confounder, confounder_len);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		result = gnutls_error_to_werror(rc, WERR_CONTENT_BLOCKED);
-		goto out;
-	}
-	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
-
-	arcfour_crypt_blob(buffer, 516, &confounded_session_key);
-
-	ok = decode_pw_buffer(mem_ctx, buffer, pwd, &pwd_len, CH_UTF16);
-
-	ZERO_ARRAY(confounder);
-	ZERO_ARRAY(buffer);
-
-	data_blob_clear_free(&confounded_session_key);
+	ok = decode_pw_buffer(mem_ctx,
+			      decrypt_pwbuf.data,
+			      pwd,
+			      &decrypt_pwbuf.length,
+			      CH_UTF16);
+	ZERO_ARRAY(pwbuf);
 
 	if (!ok) {
-		result = WERR_INVALID_PASSWORD;
-		goto out;
+		return WERR_INVALID_PASSWORD;
 	}
 
-	result = WERR_OK;
-out:
-	return result;
+	return WERR_OK;
 }
-
