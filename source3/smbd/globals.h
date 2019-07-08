@@ -879,7 +879,6 @@ struct smbd_server_connection {
 	struct {
 		struct bitmap *dptr_bmap;
 		struct dptr_struct *dirptrs;
-		int dirhandles_open;
 	} searches;
 
 	uint64_t num_requests;
