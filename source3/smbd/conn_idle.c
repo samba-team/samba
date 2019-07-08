@@ -69,11 +69,6 @@ bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
 			return false;
 		}
 
-		/* close dirptrs on connections that are idle */
-		if (age > DPTR_IDLE_TIMEOUT) {
-			dptr_idlecnum(conn);
-		}
-
 		if (conn->num_files_open > 0 || age < deadtime) {
 			return false;
 		}
