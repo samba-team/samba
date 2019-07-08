@@ -59,8 +59,8 @@ worker processes at startup and share the client connections amongst these
 workers. The number of worker processes can be configured by the 'prefork
 children' setting in the smb.conf (the default is 4).
 
-Authentication Logging.
------------------------
+Authentication Logging
+----------------------
 
 Winbind now logs PAM_AUTH and NTLM_AUTH events, a new attribute "logonId" has
 been added to the Authentication JSON log messages.  This contains a random
@@ -253,6 +253,12 @@ CTDB changes
   05.system.script now monitors total memory (i.e. physical memory +
   swap) utilisation using the existing CTDB_MONITOR_MEMORY_USAGE
   script configuration variable.
+
+CephFS Snapshot Integration
+---------------------------
+
+CephFS snapshots can now be exposed as previous file versions using the new
+ceph_snapshots VFS module. See the vfs_ceph_snapshots(8) man page for details.
 
 
 REMOVED FEATURES
