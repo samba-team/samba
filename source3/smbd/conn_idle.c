@@ -59,6 +59,16 @@ bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
 	for (conn=sconn->connections;conn;conn=conn->next) {
 		time_t age = t - conn->lastused;
 
+		/*
+		 * Don't idle connections with active
+		 * SMB1 directory scans. When all scans
+		 * are via file handles this code can
+		 * be removed.
+		 */
+		if (dptr_activecnum(sconn, conn)) {
+			return false;
+		}
+
 		/* close dirptrs on connections that are idle */
 		if (age > DPTR_IDLE_TIMEOUT) {
 			dptr_idlecnum(conn);
