@@ -2912,6 +2912,14 @@ NTSTATUS dsdb_trust_routing_table_load(struct ldb_context *sam_ctx,
 		return status;
 	}
 
+	/*
+	 * d->tdo should not be NULL of status above is 'NT_STATUS_OK'
+	 * check is needed to satisfy clang static checker
+	*/
+	if (d->tdo == NULL) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
 	d->di.domain_sid = d->tdo->sid;
 	d->di.netbios_domain_name.string = d->tdo->netbios_name.string;
 	d->di.dns_domain_name.string = d->tdo->domain_name.string;
