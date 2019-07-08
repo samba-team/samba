@@ -288,45 +288,6 @@ void dptr_closepath(struct smbd_server_connection *sconn,
 	}
 }
 
-#if 0
-/****************************************************************************
- Try and close the oldest handle not marked for
- expect close in the hope that the client has
- finished with that one.
-****************************************************************************/
-
-static void dptr_close_oldest(struct smbd_server_connection *sconn,
-			      bool old)
-{
-	struct dptr_struct *dptr;
-
-	/*
-	 * Go to the end of the list.
-	 */
-	for(dptr = sconn->searches.dirptrs; dptr && dptr->next; dptr = dptr->next)
-		;
-
-	if(!dptr) {
-		DEBUG(0,("No old dptrs available to close oldest ?\n"));
-		return;
-	}
-
-	/*
-	 * If 'old' is true, close the oldest oldhandle dnum (ie. 1 < dnum < 256) that
-	 * does not have expect_close set. If 'old' is false, close
-	 * one of the new dnum handles.
-	 */
-
-	for(; dptr; dptr = DLIST_PREV(dptr)) {
-		if ((old && (dptr->dnum < 256) && !dptr->expect_close) ||
-			(!old && (dptr->dnum > 255))) {
-				dptr_close_internal(dptr);
-				return;
-		}
-	}
-}
-#endif
-
 /****************************************************************************
  Safely do an OpenDir as root, ensuring we're in the right place.
 ****************************************************************************/
