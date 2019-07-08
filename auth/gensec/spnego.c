@@ -874,8 +874,6 @@ static NTSTATUS gensec_spnego_client_negTokenTarg_finish(
 	NTSTATUS status;
 	struct spnego_data spnego_out;
 
-	status = sub_status;
-
 	if (!spnego_state->sub_sec_ready) {
 		/*
 		 * We're not yet ready to deal with signatures.
