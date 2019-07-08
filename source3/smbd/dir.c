@@ -112,7 +112,7 @@ bool init_dptrs(struct smbd_server_connection *sconn)
 ****************************************************************************/
 
 static struct dptr_struct *dptr_get(struct smbd_server_connection *sconn,
-				    int key, bool forclose)
+				    int key)
 {
 	struct dptr_struct *dptr;
 
@@ -132,7 +132,7 @@ static struct dptr_struct *dptr_get(struct smbd_server_connection *sconn,
 
 const char *dptr_path(struct smbd_server_connection *sconn, int key)
 {
-	struct dptr_struct *dptr = dptr_get(sconn, key, false);
+	struct dptr_struct *dptr = dptr_get(sconn, key);
 	if (dptr)
 		return(dptr->smb_dname->base_name);
 	return(NULL);
@@ -144,7 +144,7 @@ const char *dptr_path(struct smbd_server_connection *sconn, int key)
 
 const char *dptr_wcard(struct smbd_server_connection *sconn, int key)
 {
-	struct dptr_struct *dptr = dptr_get(sconn, key, false);
+	struct dptr_struct *dptr = dptr_get(sconn, key);
 	if (dptr)
 		return(dptr->wcard);
 	return(NULL);
@@ -156,7 +156,7 @@ const char *dptr_wcard(struct smbd_server_connection *sconn, int key)
 
 uint16_t dptr_attr(struct smbd_server_connection *sconn, int key)
 {
-	struct dptr_struct *dptr = dptr_get(sconn, key, false);
+	struct dptr_struct *dptr = dptr_get(sconn, key);
 	if (dptr)
 		return(dptr->attr);
 	return(0);
@@ -221,7 +221,7 @@ void dptr_close(struct smbd_server_connection *sconn, int *key)
 		return;
 	}
 
-	dptr = dptr_get(sconn, *key, true);
+	dptr = dptr_get(sconn, *key);
 
 	if (!dptr) {
 		DEBUG(0,("Invalid key %d given to dptr_close\n", *key));
@@ -897,7 +897,7 @@ bool dptr_fill(struct smbd_server_connection *sconn,
 	       char *buf1,unsigned int key)
 {
 	unsigned char *buf = (unsigned char *)buf1;
-	struct dptr_struct *dptr = dptr_get(sconn, key, false);
+	struct dptr_struct *dptr = dptr_get(sconn, key);
 	uint32_t wire_offset;
 	if (!dptr) {
 		DEBUG(1,("filling null dirptr %d\n",key));
@@ -961,7 +961,7 @@ struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
 			       char *buf, int *num)
 {
 	unsigned int key = *(unsigned char *)buf;
-	struct dptr_struct *dptr = dptr_get(sconn, key, false);
+	struct dptr_struct *dptr = dptr_get(sconn, key);
 	uint32_t wire_offset;
 	long seekoff;
 
@@ -985,7 +985,7 @@ struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
 struct dptr_struct *dptr_fetch_lanman2(struct smbd_server_connection *sconn,
 				       int dptr_num)
 {
-	struct dptr_struct *dptr  = dptr_get(sconn, dptr_num, false);
+	struct dptr_struct *dptr  = dptr_get(sconn, dptr_num);
 
 	if (!dptr) {
 		DEBUG(3,("fetched null dirptr %d\n",dptr_num));
