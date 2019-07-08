@@ -792,12 +792,14 @@ wbcErr wbcCtxGetSidAliases(struct wbcContext *ctx,
 		sid_len = wbcSidToStringBuf(&sids[i], sid_str, sizeof(sid_str));
 
 		if (buflen < extra_data_len + sid_len + 2) {
+			char * tmp_data = NULL;
 			buflen *= 2;
-			extra_data = (char *)realloc(extra_data, buflen);
-			if (!extra_data) {
+			tmp_data = (char *)realloc(extra_data, buflen);
+			if (!tmp_data) {
 				wbc_status = WBC_ERR_NO_MEMORY;
 				BAIL_ON_WBC_ERROR(wbc_status);
 			}
+			extra_data = tmp_data;
 		}
 
 		strncpy(&extra_data[extra_data_len], sid_str,
