@@ -8459,12 +8459,11 @@ static int replmd_process_la_group(struct ldb_module *module,
 	ret = linked_attr_modify(module, msg, NULL);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING,
-			  "Failed to apply linked attribute change '%s'\n%s\n",
+			  "Failed to apply linked attribute change "
+			  "Error: '%s' DN: '%s' Attribute: '%s'\n",
 			  ldb_errstring(ldb),
-			  ldb_ldif_message_redacted_string(ldb,
-							   tmp_ctx,
-							   LDB_CHANGETYPE_MODIFY,
-							   msg));
+			  ldb_dn_get_linearized(msg->dn),
+			  attr->lDAPDisplayName);
 		TALLOC_FREE(tmp_ctx);
 		return ret;
 	}
