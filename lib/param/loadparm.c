@@ -2839,7 +2839,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 
 	lpcfg_do_global_parameter(lp_ctx, "winbind nested groups", "True");
 
-	lpcfg_do_global_parameter(lp_ctx, "mangled names", "True");
+	lpcfg_do_global_parameter(lp_ctx, "mangled names", "illegal");
 
 	lpcfg_do_global_parameter_var(lp_ctx, "smb2 max credits", "%u", DEFAULT_SMB2_MAX_CREDITS);
 

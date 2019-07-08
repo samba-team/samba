@@ -72,6 +72,6 @@
 	from Windows/DOS and will retain the same basename. Mangled names 
 	do not change between sessions.</para>
 </description>
-<value type="default">yes</value>
-<value type="example">illegal</value>
+<value type="default">illegal</value>
+<value type="example">no</value>
 </samba:parameter>
