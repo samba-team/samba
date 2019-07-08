@@ -1661,6 +1661,8 @@ sub provision($$$$$$$$$)
 	panic action = cd $self->{srcdir} && $self->{srcdir}/selftest/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	smbd:suicide mode = yes
 
+	server min protocol = LANMAN1
+
 	workgroup = $domain
 
 	private dir = $privatedir
