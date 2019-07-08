@@ -36,37 +36,9 @@ esac
 
 case "$1" in
 init)
-	ctdb_counter_init
-
 	if [ -n "$CTDB_RECOVERY_LOCK" ] ; then
 	    d=$(dirname "$CTDB_RECOVERY_LOCK")
 	    mkdir -vp "$d"
-	fi
-	;;
-
-monitor)
-	# Early exit if not using a reclock file
-	[ -n "$CTDB_RECOVERY_LOCK" ] || exit 0
-
-	# Try to stat the reclock file as a background process so that
-	# we don't block in case the cluster filesystem is unavailable
-	(
-	    if stat "$CTDB_RECOVERY_LOCK" ; then
-		# We could stat the file, reset the counter
-		ctdb_counter_init
-	    fi
-	) >/dev/null 2>&1 &
-
-	ctdb_counter_incr
-	num_fails=$(ctdb_counter_get)
-	if [ "$num_fails" -ge 200 ] ; then
-	    echo "Reclock file \"$CTDB_RECOVERY_LOCK\" can not be accessed. Shutting down."
-	    df
-	    sleep 1
-	    $CTDB shutdown
-	    exit 1
-	elif [ "$num_fails" -ge 4 ] ; then
-		die "ERROR: ${num_fails} consecutive failures checking reclock"
 	fi
 	;;
 esac

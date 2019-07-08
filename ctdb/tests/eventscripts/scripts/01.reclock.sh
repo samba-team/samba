@@ -1,12 +1,3 @@
-cleanup_reclock ()
-{
-	_pattern="${script_dir}/${script}"
-	while pgrep -f "$_pattern" >/dev/null ; do
-		echo "Waiting for backgrounded ${script} to exit..."
-		(FAKE_SLEEP_REALLY=yes sleep 1)
-	done
-}
-
 setup ()
 {
 	if [ $# -eq 1 ] ; then
@@ -22,6 +13,4 @@ setup ()
 	recovery lock = $CTDB_RECOVERY_LOCK
 EOF
 	fi
-
-	test_cleanup cleanup_reclock
 }
