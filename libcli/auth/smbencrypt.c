@@ -968,65 +968,42 @@ bool extract_pw_from_buffer(TALLOC_CTX *mem_ctx,
 WERROR encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 					  const char *pwd,
 					  DATA_BLOB *session_key,
-					  struct wkssvc_PasswordBuffer **pwd_buf)
+					  struct wkssvc_PasswordBuffer **out_pwd_buf)
 {
-	uint8_t buffer[516];
-	gnutls_hash_hd_t hash_hnd = NULL;
-	struct wkssvc_PasswordBuffer *my_pwd_buf = NULL;
-	DATA_BLOB confounded_session_key;
-	int confounder_len = 8;
-	uint8_t confounder[8];
-	WERROR werr;
+	struct wkssvc_PasswordBuffer *pwd_buf = NULL;
+	uint8_t _confounder[8] = {0};
+	DATA_BLOB confounder = data_blob_const(_confounder, 8);
+	uint8_t pwbuf[516] = {0};
+	DATA_BLOB encrypt_pwbuf = data_blob_const(pwbuf, 516);
 	int rc;
 
-	my_pwd_buf = talloc_zero(mem_ctx, struct wkssvc_PasswordBuffer);
-	if (!my_pwd_buf) {
+	pwd_buf = talloc_zero(mem_ctx, struct wkssvc_PasswordBuffer);
+	if (pwd_buf == NULL) {
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
-	confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
+	encode_pw_buffer(pwbuf, pwd, STR_UNICODE);
 
-	encode_pw_buffer(buffer, pwd, STR_UNICODE);
+	generate_random_buffer(_confounder, sizeof(_confounder));
 
-	generate_random_buffer((uint8_t *)confounder, confounder_len);
-
-	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	rc = samba_gnutls_arcfour_confounded_md5(session_key,
+						 &confounder,
+						 &encrypt_pwbuf,
+						 SAMBA_GNUTLS_ENCRYPT);
 	if (rc < 0) {
-		werr = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
-
-		goto out;
+		ZERO_ARRAY(_confounder);
+		TALLOC_FREE(pwd_buf);
+		return gnutls_error_to_werror(rc, WERR_CONTENT_BLOCKED);
 	}
 
-	rc = gnutls_hash(hash_hnd, session_key->data, session_key->length);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		werr = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	memcpy(&pwd_buf->data[0], confounder.data, confounder.length);
+	ZERO_ARRAY(_confounder);
+	memcpy(&pwd_buf->data[8], encrypt_pwbuf.data, encrypt_pwbuf.length);
+	ZERO_ARRAY(pwbuf);
 
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd, confounder, confounder_len);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		werr = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	*out_pwd_buf = pwd_buf;
 
-		goto out;
-	}
-	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
-
-	arcfour_crypt_blob(buffer, 516, &confounded_session_key);
-
-	memcpy(&my_pwd_buf->data[0], confounder, confounder_len);
-	ZERO_ARRAY(confounder);
-	memcpy(&my_pwd_buf->data[8], buffer, 516);
-	ZERO_ARRAY(buffer);
-
-	data_blob_clear_free(&confounded_session_key);
-
-	*pwd_buf = my_pwd_buf;
-
-	werr = WERR_OK;
-out:
-	return werr;
+	return WERR_OK;
 }
 
 WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
