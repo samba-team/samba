@@ -288,6 +288,7 @@ void dptr_closepath(struct smbd_server_connection *sconn,
 	}
 }
 
+#if 0
 /****************************************************************************
  Try and close the oldest handle not marked for
  expect close in the hope that the client has
@@ -324,6 +325,7 @@ static void dptr_close_oldest(struct smbd_server_connection *sconn,
 		}
 	}
 }
+#endif
 
 /****************************************************************************
  Safely do an OpenDir as root, ensuring we're in the right place.
@@ -544,25 +546,12 @@ NTSTATUS dptr_create(connection_struct *conn,
 		dptr->dnum = bitmap_find(sconn->searches.dptr_bmap, 255);
 
 		if(dptr->dnum == -1 || dptr->dnum < 255) {
-
-			/*
-			 * Try and close the oldest handle close in the hope that
-			 * the client has finished with that one. This will only
-			 * happen in the case of the Win98 client bug where it leaks
-			 * directory handles.
-			 */
-
-			dptr_close_oldest(sconn, false);
-
-			/* Now try again... */
-			dptr->dnum = bitmap_find(sconn->searches.dptr_bmap, 255);
-
-			if(dptr->dnum == -1 || dptr->dnum < 255) {
-				DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
-				TALLOC_FREE(dptr);
-				TALLOC_FREE(dir_hnd);
-				return NT_STATUS_TOO_MANY_OPENED_FILES;
-			}
+			DBG_ERR("returned %d: Error - all new "
+				"dirptrs in use ?\n",
+				dptr->dnum);
+			TALLOC_FREE(dptr);
+			TALLOC_FREE(dir_hnd);
+			return NT_STATUS_TOO_MANY_OPENED_FILES;
 		}
 	}
 
