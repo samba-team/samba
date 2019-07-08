@@ -1574,9 +1574,6 @@ static int smb_Dir_destructor(struct smb_Dir *dirp)
 			dirp->fsp = NULL;
 		}
 	}
-	if (dirp->conn->sconn && !dirp->conn->sconn->using_smb2) {
-		dirp->conn->sconn->searches.dirhandles_open--;
-	}
 	return 0;
 }
 
@@ -1591,7 +1588,6 @@ static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
 			uint32_t attr)
 {
 	struct smb_Dir *dirp = talloc_zero(mem_ctx, struct smb_Dir);
-	struct smbd_server_connection *sconn = conn->sconn;
 
 	if (!dirp) {
 		return NULL;
@@ -1618,9 +1614,6 @@ static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
 		dirp->name_cache_size = lp_directory_name_cache_size(SNUM(conn));
 	}
 
-	if (sconn && !sconn->using_smb2) {
-		sconn->searches.dirhandles_open++;
-	}
 	talloc_set_destructor(dirp, smb_Dir_destructor);
 
 	return dirp;
@@ -1721,7 +1714,6 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			uint32_t attr)
 {
 	struct smb_Dir *dirp = talloc_zero(mem_ctx, struct smb_Dir);
-	struct smbd_server_connection *sconn = conn->sconn;
 
 	if (!dirp) {
 		goto fail;
@@ -1778,9 +1770,6 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 					attr);
 	}
 
-	if (sconn && !sconn->using_smb2) {
-		sconn->searches.dirhandles_open++;
-	}
 	talloc_set_destructor(dirp, smb_Dir_destructor);
 
 	return dirp;
