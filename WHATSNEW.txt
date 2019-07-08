@@ -1,4 +1,111 @@
                    ==============================
+                   Release Notes for Samba 4.10.6
+                           July 8, 2019
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.10 release series.
+
+
+Changes since 4.10.5:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 13956: s3: winbind: Fix crash when invoking winbind idmap scripts.
+   * BUG 13964: smbd does not correctly parse arguments passed to dfree and
+     quota scripts.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 13965: samba-tool dns: use bytes for inet_ntop.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13828: samba-tool domain provision: Fix --interactive module in
+     python3.
+   * BUG 13893: ldb_kv: Skip @ records early in a search full scan.
+   * BUG 13981: docs: Improve documentation of "lanman auth" and "ntlm auth"
+     connection.
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 14002: python/ntacls: Use correct "state directory" smb.conf option
+     instead of "state dir".
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13840: registry: Add a missing include.
+   * BUG 13944: Fix SMB guest authentication.
+   * BUG 13958: AppleDouble conversion breaks Resourceforks.
+   * BUG 13968: vfs_fruit makes direct use of syscalls like mmap() and pread().
+   * BUG 13987: s3:mdssvc: Fix flex compilation error.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 13872: s3/vfs_glusterfs[_fuse]: Avoid using NAME_MAX directly:
+
+o  Aaron Haslett <aaronhaslett@catalyst.net.nz>
+   * BUG 13799: dsdb:samdb: schemainfo update with relax control.
+
+o  Aliaksei Karaliou <akaraliou@panasas.com>
+   * BUG 13964: s3:util: Move static file_pload() function to lib/util.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 13957: smbd: Fix a panic.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 12478: ldap server: Generate correct referral schemes.
+   * BUG 13941: s4 dsdb/repl_meta_data: fix use after free in
+     dsdb_audit_add_ldb_value.
+   * BUG 13942: s4 dsdb: Fix use after free in
+     samldb_rename_search_base_callback.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 12204: dsdb/repl: we need to replicate the whole schema before we can
+     apply it.
+   * BUG 12478: ldb: Release ldb 1.5.5
+   * BUG 13713: Schema replication fails if link crosses chunk boundary
+     backwards.
+   * BUG 13799: 'samba-tool domain schemaupgrade' uses relax control and skips
+     the schemaInfo update provision.
+   * BUG 13916: dsdb_audit: avoid printing "... remote host [Unknown]
+     SID [(NULL SID)] ..."
+   * BUG 13917: python/ntacls: We only need security.SEC_STD_READ_CONTROL in
+     order to get the ACL.
+
+o  Shyamsunder Rathi <shyam.rathi@nutanix.com>
+   * BUG 13947: s3:loadparm: Ensure to truncate FS Volume Label at multibyte
+     boundary.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13939: Using Kerberos credentials to print using spoolss doesn't work.
+
+o  Lukas Slebodnik <lslebodn@fedoraproject.org>
+   * BUG 13998: wafsamba: Use native waf timer.
+
+o  Rafael David Tinoco <rafaeldtinoco@ubuntu.com>
+   * BUG 13984: ctdb-scripts: Fix tcp_tw_recycle existence check.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+		   ==============================
                    Release Notes for Samba 4.10.5
                            June 19, 2019
                    ==============================
@@ -55,8 +162,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.10.4
