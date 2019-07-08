@@ -301,6 +301,7 @@ smb.conf changes
                                      Deprecated
   client min protocol                Changed default            SMB2_02
   server min protocol                Changed default            SMB2_02
+  mangled names                      Changed default            illegal
   web port                           Removed
   fruit:zero_file_id                 Changed default            False
 
