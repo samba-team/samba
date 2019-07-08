@@ -107,6 +107,7 @@ bool init_dptrs(struct smbd_server_connection *sconn)
 	return true;
 }
 
+#if 0
 /****************************************************************************
  Idle a dptr - the directory is closed but the control info is kept.
 ****************************************************************************/
@@ -150,6 +151,7 @@ static void dptr_idleoldest(struct smbd_server_connection *sconn)
 		}
 	}
 }
+#endif
 
 /****************************************************************************
  Get the struct dptr_struct for a dir index.
@@ -159,31 +161,10 @@ static struct dptr_struct *dptr_get(struct smbd_server_connection *sconn,
 				    int key, bool forclose)
 {
 	struct dptr_struct *dptr;
-	const int dirhandles_open = sconn->searches.dirhandles_open;
 
 	for (dptr = sconn->searches.dirptrs; dptr != NULL; dptr = dptr->next) {
 		if(dptr->dnum != key) {
 			continue;
-		}
-
-		if (!forclose && (dptr->dir_hnd == NULL)) {
-			if (dirhandles_open >= MAX_OPEN_DIRECTORIES) {
-				dptr_idleoldest(sconn);
-			}
-			DBG_INFO("Reopening dptr key %d\n",key);
-
-			dptr->dir_hnd = OpenDir(NULL,
-						dptr->conn,
-						dptr->smb_dname,
-						dptr->wcard,
-						dptr->attr);
-
-			if (dptr->dir_hnd == NULL) {
-				DBG_INFO("Failed to open %s (%s)\n",
-				      dptr->smb_dname->base_name,
-				      strerror(errno));
-				return NULL;
-			}
 		}
 		DLIST_PROMOTE(sconn->searches.dirptrs, dptr);
 		return dptr;
