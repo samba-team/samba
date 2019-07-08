@@ -826,6 +826,7 @@ static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		} else {
 			extended_type = 0;
 		}
+		callback_ctx->extended_type = extended_type;
 	}
 
 	notification_control = ldb_request_get_control(lreq, LDB_CONTROL_NOTIFICATION_OID);
