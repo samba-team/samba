@@ -646,6 +646,7 @@ sub write_clientconf($$$)
 	ldb:nosync = true
 	system:anonymous = true
 	client lanman auth = Yes
+	client min protocol = CORE
 	log level = 1
 	torture:basedir = $clientdir
 #We don't want to pass our self-tests if the PAC code is wrong

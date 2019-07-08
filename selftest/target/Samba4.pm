@@ -796,6 +796,7 @@ sub provision_raw_step1($$)
 	lanman auth = Yes
 	ntlm auth = Yes
 	rndc command = true
+	client min protocol = CORE
 	server min protocol = LANMAN1
 	dns update command = $ctx->{samba_dnsupdate}
 	spn update command = $ctx->{python} $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate -s $ctx->{smb_conf}
