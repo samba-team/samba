@@ -58,3 +58,12 @@ LOCK
 UNLOCK
 EOF
 unit_test cluster_mutex_test lock-ppid-gone-lock-unlock "$helper"
+
+ok <<EOF
+LOCK
+LOCK
+UNLOCK
+UNLOCK
+EOF
+unit_test cluster_mutex_test lock-file-removed-no-recheck \
+	  "$helper" "$lockfile"

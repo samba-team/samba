@@ -475,6 +475,43 @@ static void test_lock_ppid_gone_lock_unlock(TALLOC_CTX *mem_ctx,
 	assert(dl->mh == NULL);
 }
 
+static void test_lock_file_removed_no_recheck(TALLOC_CTX *mem_ctx,
+					      struct ctdb_context *ctdb,
+					      const char *mutex_string,
+					      const char *lock_file)
+{
+	struct do_lock_context *dl1;
+	struct do_lock_context *dl2;
+	int ret;
+
+	dl1 = talloc_zero(mem_ctx, struct do_lock_context);
+	assert(dl1 != NULL);
+	dl1->ctdb = ctdb;
+
+	dl2 = talloc_zero(mem_ctx, struct do_lock_context);
+	assert(dl2 != NULL);
+	dl2->ctdb = ctdb;
+
+	/* LOCK */
+	do_lock(dl1, mutex_string);
+	assert(dl1->mh != NULL);
+
+	ret = unlink(lock_file);
+	assert(ret == 0);
+
+	/* LOCK */
+	do_lock(dl2, mutex_string);
+	assert(dl2->mh != NULL);
+
+	/* UNLOCK */
+	do_unlock(dl2);
+	assert(dl2->mh == NULL);
+
+	/* UNLOCK */
+	do_unlock(dl1);
+	assert(dl1->mh == NULL);
+}
+
 /*
  * Main
  */
@@ -483,7 +520,7 @@ static const char *prog;
 
 static void usage(void)
 {
-	fprintf(stderr, "usage: %s <test> <mutex-string>\n", prog);
+	fprintf(stderr, "usage: %s <test> <mutex-string> [<arg>...]\n", prog);
 	exit(1);
 }
 
@@ -500,10 +537,11 @@ int main(int argc, const char *argv[])
 	const char *test;
 	struct sigaction sa = { .sa_handler = NULL, };
 	int ret;
+	const char *lock_file;
 
 	prog = argv[0];
 
-	if (argc != 3) {
+	if (argc < 3) {
 		usage();
 	}
 
@@ -540,6 +578,17 @@ int main(int argc, const char *argv[])
 		test_lock_wait_unlock(mem_ctx, ctdb, mutex_string);
 	} else if (strcmp(test, "lock-ppid-gone-lock-unlock") == 0) {
 		test_lock_ppid_gone_lock_unlock(mem_ctx, ctdb, mutex_string);
+	} else if (strcmp(test, "lock-file-removed-no-recheck") == 0) {
+		if (argc != 4) {
+			usage();
+		}
+
+		lock_file = argv[3];
+
+		test_lock_file_removed_no_recheck(mem_ctx,
+						  ctdb,
+						  mutex_string,
+						  lock_file);
 	} else {
 		fprintf(stderr, "Unknown test\n");
 		exit(1);
