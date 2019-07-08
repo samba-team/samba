@@ -340,6 +340,23 @@ void dptr_idlecnum(connection_struct *conn)
 }
 
 /****************************************************************************
+ Are there any SMB1 searches active on this connection struct ?
+****************************************************************************/
+
+bool dptr_activecnum(const struct smbd_server_connection *sconn,
+			const struct connection_struct *conn)
+{
+	const struct dptr_struct *dptr;
+
+	for(dptr = sconn->searches.dirptrs; dptr; dptr = dptr->next) {
+		if (dptr->conn == conn) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/****************************************************************************
  Close a dptr that matches a given path, only if it matches the spid also.
 ****************************************************************************/
 
