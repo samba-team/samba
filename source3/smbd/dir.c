@@ -546,10 +546,6 @@ NTSTATUS dptr_create(connection_struct *conn,
 		return map_nt_error_from_unix(errno);
 	}
 
-	if (sconn->searches.dirhandles_open >= MAX_OPEN_DIRECTORIES) {
-		dptr_idleoldest(sconn);
-	}
-
 	dptr = talloc_zero(NULL, struct dptr_struct);
 	if(!dptr) {
 		DEBUG(0,("talloc fail in dptr_create.\n"));
