@@ -107,52 +107,6 @@ bool init_dptrs(struct smbd_server_connection *sconn)
 	return true;
 }
 
-#if 0
-/****************************************************************************
- Idle a dptr - the directory is closed but the control info is kept.
-****************************************************************************/
-
-static void dptr_idle(struct dptr_struct *dptr)
-{
-	if (dptr->dir_hnd) {
-		DEBUG(4,("Idling dptr dnum %d\n",dptr->dnum));
-		TALLOC_FREE(dptr->dir_hnd);
-		TALLOC_FREE(dptr->dptr_cache);
-		dptr->counter = 0;
-	}
-}
-
-/****************************************************************************
- Idle the oldest dptr.
-****************************************************************************/
-
-static void dptr_idleoldest(struct smbd_server_connection *sconn)
-{
-	struct dptr_struct *dptr;
-
-	/*
-	 * Go to the end of the list.
-	 */
-	dptr = DLIST_TAIL(sconn->searches.dirptrs);
-
-	if(!dptr) {
-		DEBUG(0,("No dptrs available to idle ?\n"));
-		return;
-	}
-
-	/*
-	 * Idle the oldest pointer.
-	 */
-
-	for(; dptr; dptr = DLIST_PREV(dptr)) {
-		if (dptr->dir_hnd) {
-			dptr_idle(dptr);
-			return;
-		}
-	}
-}
-#endif
-
 /****************************************************************************
  Get the struct dptr_struct for a dir index.
 ****************************************************************************/
