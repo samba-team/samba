@@ -120,7 +120,6 @@ wbcErr wbcCtxInterfaceDetails(struct wbcContext *ctx,
 	if (wbc_status == WBC_ERR_DOMAIN_NOT_FOUND) {
 		/* maybe it's a standalone server */
 		domain = NULL;
-		wbc_status = WBC_ERR_SUCCESS;
 	} else {
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
