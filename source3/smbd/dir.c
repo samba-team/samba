@@ -527,23 +527,12 @@ NTSTATUS dptr_create(connection_struct *conn,
 		dptr->dnum = bitmap_find(sconn->searches.dptr_bmap, 0);
 
 		if(dptr->dnum == -1 || dptr->dnum > 254) {
-
-			/*
-			 * Try and close the oldest handle not marked for
-			 * expect close in the hope that the client has
-			 * finished with that one.
-			 */
-
-			dptr_close_oldest(sconn, true);
-
-			/* Now try again... */
-			dptr->dnum = bitmap_find(sconn->searches.dptr_bmap, 0);
-			if(dptr->dnum == -1 || dptr->dnum > 254) {
-				DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
-				TALLOC_FREE(dptr);
-				TALLOC_FREE(dir_hnd);
-				return NT_STATUS_TOO_MANY_OPENED_FILES;
-			}
+			DBG_ERR("returned %d: Error - all old "
+				"dirptrs in use ?\n",
+				dptr->dnum);
+			TALLOC_FREE(dptr);
+			TALLOC_FREE(dir_hnd);
+			return NT_STATUS_TOO_MANY_OPENED_FILES;
 		}
 	} else {
 
