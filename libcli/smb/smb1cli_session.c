@@ -223,7 +223,6 @@ static void smb1cli_session_setup_lm21_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	p += ret;
 
 	smb1cli_session_set_id(state->session, state->out_session_id);
 	smb1cli_session_set_action(state->session, state->out_action);
@@ -514,7 +513,6 @@ static void smb1cli_session_setup_nt1_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	p += ret;
 
 	smb1cli_session_set_id(state->session, state->out_session_id);
 	smb1cli_session_set_action(state->session, state->out_action);
