@@ -320,26 +320,6 @@ void dptr_closecnum(connection_struct *conn)
 }
 
 /****************************************************************************
- Idle all dptrs for a cnum.
-****************************************************************************/
-
-void dptr_idlecnum(connection_struct *conn)
-{
-	struct dptr_struct *dptr;
-	struct smbd_server_connection *sconn = conn->sconn;
-
-	if (sconn == NULL) {
-		return;
-	}
-
-	for(dptr = sconn->searches.dirptrs; dptr; dptr = dptr->next) {
-		if (dptr->conn == conn && dptr->dir_hnd) {
-			dptr_idle(dptr);
-		}
-	}
-}
-
-/****************************************************************************
  Are there any SMB1 searches active on this connection struct ?
 ****************************************************************************/
 
