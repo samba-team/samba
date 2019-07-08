@@ -9,12 +9,19 @@ cleanup_reclock ()
 
 setup ()
 {
-	CTDB_RECOVERY_LOCK="${EVENTSCRIPTS_TESTS_VAR_DIR}/rec.lock"
+	if [ $# -eq 1 ] ; then
+		reclock="$1"
+	else
+		reclock="${EVENTSCRIPTS_TESTS_VAR_DIR}/reclock_subdir/rec.lock"
+	fi
+	CTDB_RECOVERY_LOCK="$reclock"
 
-	cat >>"${CTDB_BASE}/ctdb.conf" <<EOF
+	if [ -n "$CTDB_RECOVERY_LOCK" ] ; then
+		cat >>"${CTDB_BASE}/ctdb.conf" <<EOF
 [cluster]
 	recovery lock = $CTDB_RECOVERY_LOCK
 EOF
+	fi
 
 	test_cleanup cleanup_reclock
 }

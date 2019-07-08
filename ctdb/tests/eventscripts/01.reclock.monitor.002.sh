@@ -4,9 +4,7 @@
 
 define_test "set to helper, check no-op"
 
-setup
-
-CTDB_RECOVERY_LOCK="!/some/recover/lock/helper foo"
+setup "!/some/recover/lock/helper foo"
 
 ok_null
 simple_test
