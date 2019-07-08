@@ -1724,6 +1724,7 @@ sub provision($$$$$$$$$)
 	dos filemode = yes
 	strict rename = yes
 	strict sync = yes
+	mangled names = yes
 	vfs objects = acl_xattr fake_acls xattr_tdb streams_depot time_audit full_audit
 
 	full_audit:syslog = no
