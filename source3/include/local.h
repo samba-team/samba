@@ -98,7 +98,6 @@
    them unless you know what you are doing. These are all in seconds */
 #define SMBD_RELOAD_CHECK (180)
 #define IDLE_CLOSED_TIMEOUT (60)
-#define DPTR_IDLE_TIMEOUT (120)
 #define SMBD_SELECT_TIMEOUT (60)
 #define NMBD_SELECT_LOOP (10)
 #define BROWSE_INTERVAL (60)
