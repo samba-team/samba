@@ -9,11 +9,6 @@
 /* to a maximum of 8 if old smb clients break because of long printer names. */
 #define MAXPRINTERLEN 15
 
-/* max number of directories open at once */
-/* note that with the new directory code this no longer requires a
-   file handle per directory, but large numbers do use more memory */
-#define MAX_OPEN_DIRECTORIES 256
-
 /* max number of directory handles */
 /* As this now uses the bitmap code this can be
    quite large. */
