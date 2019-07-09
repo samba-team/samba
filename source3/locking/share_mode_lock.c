@@ -593,8 +593,8 @@ struct share_mode_lock *get_share_mode_lock(
 			smb_fname,
 			old_write_time);
 		if (!NT_STATUS_IS_OK(status)) {
-			DBG_WARNING("get_static_share_mode_data failed: %s\n",
-				    nt_errstr(status));
+			DBG_DEBUG("get_static_share_mode_data failed: %s\n",
+				  nt_errstr(status));
 			TALLOC_FREE(static_share_mode_record);
 			goto fail;
 		}
