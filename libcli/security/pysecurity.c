@@ -48,7 +48,7 @@ static PyObject *py_se_access_check(PyObject *module, PyObject *args, PyObject *
 	if (!security_descriptor) {
 		PyErr_Format(PyExc_TypeError,
 			     "Expected dcerpc.security.descriptor for security_descriptor argument got  %s",
-			     talloc_get_name(pytalloc_get_ptr(py_sec_desc)));
+			     pytalloc_get_name(py_sec_desc));
 		return NULL;
 	}
 
@@ -56,7 +56,7 @@ static PyObject *py_se_access_check(PyObject *module, PyObject *args, PyObject *
 	if (!security_token) {
 		PyErr_Format(PyExc_TypeError,
 			     "Expected dcerpc.security.token for token argument, got %s",
-			     talloc_get_name(pytalloc_get_ptr(py_security_token)));
+			     pytalloc_get_name(py_sec_desc));
 		return NULL;
 	}
 
