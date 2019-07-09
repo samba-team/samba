@@ -1081,6 +1081,10 @@ bld.SAMBA3_SUBSYSTEM('tevent-glib-glue',
                     enabled=bld.CONFIG_SET('WITH_TEVENT_GLIB_GLUE'),
 )
 
+bld.SAMBA3_SUBSYSTEM('ADOUBLE',
+                    source='lib/adouble.c',
+                    deps='STRING_REPLACE')
+
 ########################## BINARIES #################################
 
 bld.SAMBA3_BINARY('smbd/smbd',

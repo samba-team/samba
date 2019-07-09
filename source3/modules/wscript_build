@@ -123,7 +123,7 @@ bld.SAMBA3_MODULE('vfs_netatalk',
 bld.SAMBA3_MODULE('vfs_fruit',
                  subsystem='vfs',
                  source='vfs_fruit.c',
-                 deps='samba-util OFFLOAD_TOKEN STRING_REPLACE HASH_INODE',
+                 deps='samba-util OFFLOAD_TOKEN STRING_REPLACE HASH_INODE ADOUBLE',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_fruit'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_fruit'))
