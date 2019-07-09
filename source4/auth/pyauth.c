@@ -76,7 +76,7 @@ static PyObject *py_copy_session_info(PyObject *module,
 		PyErr_Format(PyExc_TypeError,
 			     "Expected auth_session_info for session_info "
 			     "argument got %s",
-			     talloc_get_name(pytalloc_get_ptr(py_session)));
+			     pytalloc_get_name(py_session));
 		return NULL;
 	}
 
@@ -258,7 +258,7 @@ static PyObject *py_session_info_fill_unix(PyObject *module,
 	if (!session_info) {
 		PyErr_Format(PyExc_TypeError,
 			     "Expected auth_session_info for session_info argument got %s",
-			     talloc_get_name(pytalloc_get_ptr(py_session)));
+			     pytalloc_get_name(py_session));
 		return NULL;
 	}
 
