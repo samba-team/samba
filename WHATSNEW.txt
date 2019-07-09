@@ -312,6 +312,7 @@ smb.conf changes
   mangled names                      Changed default            illegal
   web port                           Removed
   fruit:zero_file_id                 Changed default            False
+  debug encryption                   New: dump encryption keys  False
 
 
 KNOWN ISSUES
