@@ -674,7 +674,8 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 }
 
 static bool vfs_gpfs_nfs4_ace_to_gpfs_ace(SMB_ACE4PROP_T *nfs4_ace,
-					  struct gpfs_ace_v4 *gace)
+					  struct gpfs_ace_v4 *gace,
+					  uid_t owner_uid)
 {
 	gace->aceType = nfs4_ace->aceType;
 	gace->aceFlags = nfs4_ace->aceFlags;
@@ -687,8 +688,35 @@ static bool vfs_gpfs_nfs4_ace_to_gpfs_ace(SMB_ACE4PROP_T *nfs4_ace,
 			gace->aceWho = ACE4_SPECIAL_EVERYONE;
 			break;
 		case SMB_ACE4_WHO_OWNER:
-			gace->aceIFlags = ACE4_IFLAG_SPECIAL_ID;
-			gace->aceWho = ACE4_SPECIAL_OWNER;
+			/*
+			 * With GPFS it is not possible to deny ACL or
+			 * attribute access to the owner. Setting an
+			 * ACL with such an entry is not possible.
+			 * Denying ACL or attribute access for the
+			 * owner through a named ACL entry can be
+			 * stored in an ACL, it is just not effective.
+			 *
+			 * Map this case to a named entry to allow at
+			 * least setting this ACL, which will be
+			 * enforced by the smbd permission check. Do
+			 * not do this for an inheriting OWNER entry,
+			 * as this represents a CREATOR OWNER ACE. The
+			 * remaining limitation is that CREATOR OWNER
+			 * cannot deny ACL or attribute access.
+			 */
+			if (!nfs_ace_is_inherit(nfs4_ace) &&
+			    nfs4_ace->aceType ==
+					SMB_ACE4_ACCESS_DENIED_ACE_TYPE &&
+			    nfs4_ace->aceMask & (SMB_ACE4_READ_ATTRIBUTES|
+						 SMB_ACE4_WRITE_ATTRIBUTES|
+						 SMB_ACE4_READ_ACL|
+						 SMB_ACE4_WRITE_ACL)) {
+				gace->aceIFlags = 0;
+				gace->aceWho = owner_uid;
+			} else {
+				gace->aceIFlags = ACE4_IFLAG_SPECIAL_ID;
+				gace->aceWho = ACE4_SPECIAL_OWNER;
+			}
 			break;
 		case SMB_ACE4_WHO_GROUP:
 			gace->aceIFlags = ACE4_IFLAG_SPECIAL_ID;
@@ -744,7 +772,8 @@ static struct gpfs_acl *vfs_gpfs_smbacl2gpfsacl(TALLOC_CTX *mem_ctx,
 		SMB_ACE4PROP_T	*aceprop = smb_get_ace4(smbace);
 		bool add_ace;
 
-		add_ace = vfs_gpfs_nfs4_ace_to_gpfs_ace(aceprop, gace);
+		add_ace = vfs_gpfs_nfs4_ace_to_gpfs_ace(aceprop, gace,
+							fsp->fsp_name->st.st_ex_uid);
 		if (!add_ace) {
 			continue;
 		}
