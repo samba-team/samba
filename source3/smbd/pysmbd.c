@@ -595,7 +595,7 @@ static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args, PyObject *kw
 		if (!session_info) {
 			PyErr_Format(PyExc_TypeError,
 				     "Expected auth_session_info for session_info argument got %s",
-				     talloc_get_name(pytalloc_get_ptr(py_session)));
+				     pytalloc_get_name(py_session));
 			return NULL;
 		}
 	}
@@ -663,7 +663,7 @@ static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args, PyObject *kw
 				PyExc_TypeError,
 				"Expected auth_session_info for "
 				"session_info argument got %s",
-				talloc_get_name(pytalloc_get_ptr(py_session)));
+				pytalloc_get_name(py_session));
 			return NULL;
 		}
 	}
