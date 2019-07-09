@@ -331,3 +331,12 @@ _PUBLIC_ int pytalloc_BaseObject_PyType_Ready(PyTypeObject *type)
 
 	return PyType_Ready(type);
 }
+
+_PUBLIC_ const char *_pytalloc_get_name(PyObject *obj)
+{
+	void *ptr = pytalloc_get_ptr(obj);
+	if (ptr == NULL) {
+		return "non-talloc object";
+	}
+	return talloc_get_name(ptr);
+}

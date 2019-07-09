@@ -54,6 +54,10 @@ void *_pytalloc_get_ptr(PyObject *py_obj);
 TALLOC_CTX *_pytalloc_get_mem_ctx(PyObject *py_obj);
 #define pytalloc_get_mem_ctx(py_obj) _pytalloc_get_mem_ctx((PyObject *)(py_obj))
 
+const char *_pytalloc_get_name(PyObject *py_obj);
+#define pytalloc_get_name(py_obj) _pytalloc_get_name((PyObject *)(py_obj))
+
+
 PyObject *pytalloc_steal_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr);
 PyObject *pytalloc_steal(PyTypeObject *py_type, void *ptr);
 PyObject *pytalloc_reference_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, void *ptr);
