@@ -800,7 +800,8 @@ static bool ad_convert_xattr(vfs_handle_struct *handle,
 		if (mappings == NULL) {
 			return false;
 		}
-		string_replace_cmaps = string_replace_init_map(mappings);
+		string_replace_cmaps = string_replace_init_map(
+			handle->conn->sconn, mappings);
 		TALLOC_FREE(mappings);
 	}
 

@@ -88,7 +88,7 @@ static struct share_mapping_entry *add_srt(int snum, const char **mappings)
 		return sme;
 	}
 
-	sme->mappings = string_replace_init_map(mappings);
+	sme->mappings = string_replace_init_map(sme, mappings);
 
 	return sme;
 }

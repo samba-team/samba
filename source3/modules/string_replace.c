@@ -87,7 +87,8 @@ static bool build_ranges(struct char_mappings **cmaps,
 	return True;
 }
 
-struct char_mappings **string_replace_init_map(const char **mappings)
+struct char_mappings **string_replace_init_map(TALLOC_CTX *mem_ctx,
+					       const char **mappings)
 {
 	int i;
 	char *tmp;
@@ -99,7 +100,7 @@ struct char_mappings **string_replace_init_map(const char **mappings)
 		return NULL;
 	}
 
-	cmaps = TALLOC_ZERO(NULL, MAP_NUM * sizeof(struct char_mappings *));
+	cmaps = TALLOC_ZERO(mem_ctx, MAP_NUM * sizeof(struct char_mappings *));
 	if (cmaps == NULL) {
 		return NULL;
 	}
