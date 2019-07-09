@@ -189,7 +189,7 @@ static PyObject *py_gensec_start_server(PyTypeObject *type, PyObject *args, PyOb
 		if (!auth_context) {
 			PyErr_Format(PyExc_TypeError,
 				     "Expected auth.AuthContext for auth_context argument, got %s",
-				     talloc_get_name(pytalloc_get_ptr(py_auth_context)));
+				     pytalloc_get_name(py_auth_context));
 			return NULL;
 		}
 	}
