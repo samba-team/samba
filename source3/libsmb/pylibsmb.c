@@ -1558,7 +1558,7 @@ static PyObject *py_smb_setacl(struct py_cli_state *self, PyObject *args)
 	if (!sd) {
 		PyErr_Format(PyExc_TypeError,
 			"Expected dcerpc.security.descriptor as argument, got %s",
-			talloc_get_name(pytalloc_get_ptr(py_sd)));
+			pytalloc_get_name(py_sd));
 		return NULL;
 	}
 
