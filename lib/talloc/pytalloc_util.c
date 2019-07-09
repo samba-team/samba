@@ -247,7 +247,7 @@ static void *_pytalloc_get_checked_type(PyObject *py_obj, const char *type_name,
 	mem_ctx = _pytalloc_get_mem_ctx(py_obj);
 	ptr = _pytalloc_get_ptr(py_obj);
 
-	if (mem_ctx != ptr) {
+	if (mem_ctx != ptr || ptr == NULL) {
 		if (check_only) {
 			return NULL;
 		}
