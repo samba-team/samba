@@ -214,6 +214,8 @@ allowing Samba to efficiently select objects changed since the last
 replication cycle.  This in turn improves performance during
 replication of large domains.
 
+https://wiki.samba.org/index.php/LDB_Greater_than_and_Less_than_indexing
+
 Improvements to ldb search performance
 --------------------------------------
 
