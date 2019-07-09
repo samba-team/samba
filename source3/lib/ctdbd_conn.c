@@ -398,15 +398,16 @@ static int ctdb_read_packet(int fd, int timeout, TALLOC_CTX *mem_ctx,
 static int ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
 			 TALLOC_CTX *mem_ctx, struct ctdb_req_header **result)
 {
-	struct ctdb_req_header *hdr;
+	struct ctdb_req_header *hdr = NULL;
 	int ret;
 
  next_pkt:
 
 	ret = ctdb_read_packet(conn->fd, conn->timeout, mem_ctx, &hdr);
-	if (ret != 0) {
+	if (hdr == NULL || ret != 0) {
 		DBG_ERR("ctdb_read_packet failed: %s\n", strerror(ret));
 		cluster_fatal("failed to read data from ctdbd\n");
+		return -1;
 	}
 
 	DEBUG(11, ("Received ctdb packet\n"));
