@@ -31,3 +31,5 @@ NTSTATUS string_replace_allocate(connection_struct *conn,
 				 TALLOC_CTX *mem_ctx,
 				 char **mapped_name,
 				 enum vfs_translate_direction direction);
+
+extern const char *macos_string_replace_map;

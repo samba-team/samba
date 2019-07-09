@@ -171,18 +171,6 @@ static const struct enum_list fruit_encoding[] = {
 	{ -1, NULL}
 };
 
-static const char *fruit_catia_maps =
-	"0x01:0xf001,0x02:0xf002,0x03:0xf003,0x04:0xf004,"
-	"0x05:0xf005,0x06:0xf006,0x07:0xf007,0x08:0xf008,"
-	"0x09:0xf009,0x0a:0xf00a,0x0b:0xf00b,0x0c:0xf00c,"
-	"0x0d:0xf00d,0x0e:0xf00e,0x0f:0xf00f,0x10:0xf010,"
-	"0x11:0xf011,0x12:0xf012,0x13:0xf013,0x14:0xf014,"
-	"0x15:0xf015,0x16:0xf016,0x17:0xf017,0x18:0xf018,"
-	"0x19:0xf019,0x1a:0xf01a,0x1b:0xf01b,0x1c:0xf01c,"
-	"0x1d:0xf01d,0x1e:0xf01e,0x1f:0xf01f,"
-	"0x22:0xf020,0x2a:0xf021,0x3a:0xf022,0x3c:0xf023,"
-	"0x3e:0xf024,0x3f:0xf025,0x5c:0xf026,0x7c:0xf027";
-
 struct fio {
 	/* tcon config handle */
 	struct fruit_config_data *config;
@@ -1294,7 +1282,7 @@ static int fruit_connect(vfs_handle_struct *handle,
 	if (config->encoding == FRUIT_ENC_NATIVE) {
 		lp_do_parameter(SNUM(handle->conn),
 				"catia:mappings",
-				fruit_catia_maps);
+				macos_string_replace_map);
 	}
 
 	if (config->time_machine) {
@@ -3988,7 +3976,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 
 		ret = ad_convert(handle,
 				 smb_fname,
-				 fruit_catia_maps,
+				 macos_string_replace_map,
 				 conv_flags);
 		if (ret != 0) {
 			DBG_ERR("ad_convert() failed\n");
@@ -4100,7 +4088,7 @@ static NTSTATUS fruit_readdir_attr(struct vfs_handle_struct *handle,
 		conv_flags |= AD_CONV_DELETE;
 	}
 
-	ret = ad_convert(handle, fname, fruit_catia_maps, conv_flags);
+	ret = ad_convert(handle, fname, macos_string_replace_map, conv_flags);
 	if (ret != 0) {
 		DBG_ERR("ad_convert() failed\n");
 		return NT_STATUS_UNSUCCESSFUL;
