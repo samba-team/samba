@@ -98,7 +98,7 @@ static int ctdb_async_ctx_init_internal(TALLOC_CTX *mem_ctx,
 				    &ctdb_async_ctx.async_conn);
 	unbecome_root();
 
-	if (ctdb_async_ctx.async_conn == NULL) {
+	if (ret != 0 || ctdb_async_ctx.async_conn == NULL) {
 		DBG_ERR("ctdbd_init_connection failed\n");
 		return EIO;
 	}
