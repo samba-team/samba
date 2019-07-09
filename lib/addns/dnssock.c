@@ -125,7 +125,7 @@ static DNS_ERROR dns_udp_open( const char *nameserver,
 {
 	struct addrinfo hints;
 	struct sockaddr_storage RecvAddr;
-	struct dns_connection *conn;
+	struct dns_connection *conn = NULL;
 	DNS_ERROR dns_ret;
 	socklen_t RecvAddrLen;
 	char service[16];
