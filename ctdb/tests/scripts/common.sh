@@ -2,6 +2,11 @@
 
 # Common variables and functions for all CTDB tests.
 
+
+# Commands on different platforms may quote or sort things differently
+# without this
+export LANG=C
+
 # Print a message and exit.
 die ()
 {
