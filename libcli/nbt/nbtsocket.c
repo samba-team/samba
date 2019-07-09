@@ -62,7 +62,7 @@ static int nbt_name_request_destructor(struct nbt_name_request *req)
 */
 static void nbt_name_socket_send(struct nbt_name_socket *nbtsock)
 {
-	struct nbt_name_request *req = nbtsock->send_queue;
+	struct nbt_name_request *req;
 	TALLOC_CTX *tmp_ctx = talloc_new(nbtsock);
 	NTSTATUS status;
 
