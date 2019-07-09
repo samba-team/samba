@@ -906,7 +906,7 @@ static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
 		return NULL;
 	}
 
-	if (!PyArg_ParseTuple(args, "|O", &py_cp)) {
+	if (!PyArg_ParseTuple(args, "O", &py_cp)) {
 		return NULL;
 	}
 
