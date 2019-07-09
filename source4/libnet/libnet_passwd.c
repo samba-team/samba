@@ -331,10 +331,6 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 	struct samr_SetUserInfo2 sui;
 	union samr_UserInfo u_info;
 	DATA_BLOB session_key;
-	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-	uint8_t confounder[16];	
-	gnutls_hash_hd_t hash_hnd = NULL;
-	int rc;
 
 	if (!r->samr_handle.in.info21) {
 		return NT_STATUS_INVALID_PARAMETER_MIX;
@@ -344,7 +340,6 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 	ZERO_STRUCT(u_info);
 	u_info.info25.info = *r->samr_handle.in.info21;
 	u_info.info25.info.fields_present |= SAMR_FIELD_NT_PASSWORD_PRESENT;
-	encode_pw_buffer(u_info.info25.password.data, r->samr_handle.in.newpassword, STR_UNICODE);
 
 	status = dcerpc_fetch_session_key(r->samr_handle.in.dcerpc_pipe, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -354,36 +349,17 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 		return status;
 	}
 
-	generate_random_buffer((uint8_t *)confounder, 16);
-
-	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
-	if (rc < 0) {
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
-		goto out;
+	status = encode_rc4_passwd_buffer(r->samr_handle.in.newpassword,
+					  &session_key,
+					  &u_info.info25.password);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->samr_handle.out.error_string =
+			talloc_asprintf(mem_ctx,
+					"encode_rc4_passwd_buffer failed: %s",
+					nt_errstr(status));
+		return status;
 	}
 
-	rc = gnutls_hash(hash_hnd, confounder, 16);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd, session_key.data, session_key.length);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
-		goto out;
-	}
-
-	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
-
-	arcfour_crypt_blob(u_info.info25.password.data, 516, &confounded_session_key);
-	ZERO_ARRAY_LEN(confounded_session_key.data,
-		       confounded_session_key.length);
-	data_blob_free(&confounded_session_key);
-
-	memcpy(&u_info.info25.password.data[516], confounder, 16);
-	ZERO_ARRAY(confounder);
 
 	sui.in.user_handle = r->samr_handle.in.user_handle;
 	sui.in.info = &u_info;
@@ -401,7 +377,6 @@ static NTSTATUS libnet_SetPassword_samr_handle_25(struct libnet_context *ctx, TA
 					  r->samr_handle.in.account_name, nt_errstr(status));
 	}
 
-out:
 	return status;
 }
 
