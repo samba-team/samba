@@ -527,6 +527,11 @@ static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ct
 	result->storev = db_ctdb_storev_transaction;
 	result->delete_rec = db_ctdb_delete_transaction;
 
+	if (ctx->transaction == NULL) {
+		DEBUG(0, ("no transaction available\n"));
+		TALLOC_FREE(result);
+		return NULL;
+	}
 	if (pull_newest_from_marshall_buffer(ctx->transaction->m_write, key,
 					     NULL, result, &result->value)) {
 		return result;
