@@ -672,6 +672,43 @@ static NTSTATUS gpfsacl_get_nt_acl(vfs_handle_struct *handle,
 	return map_nt_error_from_unix(errno);
 }
 
+static bool vfs_gpfs_nfs4_ace_to_gpfs_ace(SMB_ACE4PROP_T *nfs4_ace,
+					  struct gpfs_ace_v4 *gace)
+{
+	gace->aceType = nfs4_ace->aceType;
+	gace->aceFlags = nfs4_ace->aceFlags;
+	gace->aceMask = nfs4_ace->aceMask;
+
+	if (nfs4_ace->flags & SMB_ACE4_ID_SPECIAL) {
+		switch(nfs4_ace->who.special_id) {
+		case SMB_ACE4_WHO_EVERYONE:
+			gace->aceIFlags = ACE4_IFLAG_SPECIAL_ID;
+			gace->aceWho = ACE4_SPECIAL_EVERYONE;
+			break;
+		case SMB_ACE4_WHO_OWNER:
+			gace->aceIFlags = ACE4_IFLAG_SPECIAL_ID;
+			gace->aceWho = ACE4_SPECIAL_OWNER;
+			break;
+		case SMB_ACE4_WHO_GROUP:
+			gace->aceIFlags = ACE4_IFLAG_SPECIAL_ID;
+			gace->aceWho = ACE4_SPECIAL_GROUP;
+			break;
+		default:
+			DBG_WARNING("Unsupported special_id %d\n",
+				    nfs4_ace->who.special_id);
+			return false;
+		}
+
+		return true;
+	}
+
+	gace->aceIFlags = 0;
+	gace->aceWho = (nfs4_ace->aceFlags & SMB_ACE4_IDENTIFIER_GROUP) ?
+		nfs4_ace->who.gid : nfs4_ace->who.uid;
+
+	return true;
+}
+
 static struct gpfs_acl *vfs_gpfs_smbacl2gpfsacl(TALLOC_CTX *mem_ctx,
 						files_struct *fsp,
 						struct SMB4ACL_T *smbacl,
@@ -704,35 +741,11 @@ static struct gpfs_acl *vfs_gpfs_smbacl2gpfsacl(TALLOC_CTX *mem_ctx,
 	for (smbace=smb_first_ace4(smbacl); smbace!=NULL; smbace = smb_next_ace4(smbace)) {
 		struct gpfs_ace_v4 *gace = gpfs_ace_ptr(gacl, gacl->acl_nace);
 		SMB_ACE4PROP_T	*aceprop = smb_get_ace4(smbace);
+		bool add_ace;
 
-		gace->aceType = aceprop->aceType;
-		gace->aceFlags = aceprop->aceFlags;
-		gace->aceMask = aceprop->aceMask;
-		gace->aceIFlags = (aceprop->flags&SMB_ACE4_ID_SPECIAL) ? ACE4_IFLAG_SPECIAL_ID : 0;
-
-		if (aceprop->flags&SMB_ACE4_ID_SPECIAL)
-		{
-			switch(aceprop->who.special_id)
-			{
-			case SMB_ACE4_WHO_EVERYONE:
-				gace->aceWho = ACE4_SPECIAL_EVERYONE;
-				break;
-			case SMB_ACE4_WHO_OWNER:
-				gace->aceWho = ACE4_SPECIAL_OWNER;
-				break;
-			case SMB_ACE4_WHO_GROUP:
-				gace->aceWho = ACE4_SPECIAL_GROUP;
-				break;
-			default:
-				DEBUG(8, ("unsupported special_id %d\n", aceprop->who.special_id));
-				continue; /* don't add it !!! */
-			}
-		} else {
-			/* just only for the type safety... */
-			if (aceprop->aceFlags&SMB_ACE4_IDENTIFIER_GROUP)
-				gace->aceWho = aceprop->who.gid;
-			else
-				gace->aceWho = aceprop->who.uid;
+		add_ace = vfs_gpfs_nfs4_ace_to_gpfs_ace(aceprop, gace);
+		if (!add_ace) {
+			continue;
 		}
 
 		gacl->acl_nace++;
