@@ -1086,6 +1086,9 @@ bld.SAMBA3_SUBSYSTEM('ADOUBLE',
                     source='lib/adouble.c',
                     deps='STRING_REPLACE')
 
+bld.SAMBA3_SUBSYSTEM('STRING_REPLACE',
+                    source='lib/string_replace.c')
+
 ########################## BINARIES #################################
 
 bld.SAMBA3_BINARY('smbd/smbd',

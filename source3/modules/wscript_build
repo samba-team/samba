@@ -33,9 +33,6 @@ bld.SAMBA3_SUBSYSTEM('OFFLOAD_TOKEN',
                     source='offload_token.c',
                     deps='samba-util')
 
-bld.SAMBA3_SUBSYSTEM('STRING_REPLACE',
-                    source='string_replace.c')
-
 bld.SAMBA3_SUBSYSTEM('HASH_INODE',
                     source='hash_inode.c',
                     deps='gnutls')
