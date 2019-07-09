@@ -157,12 +157,43 @@ static void torture_rc4_passwd_buffer(void **state)
 	talloc_free(password_decoded);
 }
 
+static void torture_endode_decode_rc4_passwd_buffer(void **state)
+{
+	char *password_decoded = NULL;
+	size_t password_decoded_len = 0;
+	DATA_BLOB session_key = data_blob_const("SystemLibraryDTC", 16);
+	struct samr_CryptPasswordEx out_pwd_buf = {
+		.data = {0},
+	};
+	NTSTATUS status;
+	bool ok;
+
+	status = encode_rc4_passwd_buffer(PASSWORD,
+					  &session_key,
+					  &out_pwd_buf);
+	assert_true(NT_STATUS_IS_OK(status));
+
+	status = decode_rc4_passwd_buffer(&session_key, &out_pwd_buf);
+	assert_true(NT_STATUS_IS_OK(status));
+
+	ok = decode_pw_buffer(NULL,
+			      out_pwd_buf.data,
+			      &password_decoded,
+			      &password_decoded_len,
+			      CH_UTF16);
+	assert_true(ok);
+	assert_int_equal(password_decoded_len, strlen(PASSWORD));
+	assert_string_equal(password_decoded, PASSWORD);
+	talloc_free(password_decoded);
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(torture_decode_rc4_passwd_buffer),
 		cmocka_unit_test(torture_rc4_passwd_buffer),
+		cmocka_unit_test(torture_endode_decode_rc4_passwd_buffer),
 	};
 
 	if (argc == 2) {
