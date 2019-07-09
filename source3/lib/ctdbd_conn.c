@@ -1946,7 +1946,7 @@ static void ctdbd_parse_done(struct tevent_req *subreq)
 
 	ret = ctdb_pkt_recv_recv(subreq, state, &hdr);
 	TALLOC_FREE(subreq);
-	if (tevent_req_error(req, ret)) {
+	if ((hdr == NULL) || tevent_req_error(req, ret)) {
 		DBG_ERR("ctdb_pkt_recv_recv returned %s\n", strerror(ret));
 		return;
 	}
