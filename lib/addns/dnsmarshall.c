@@ -388,10 +388,10 @@ DNS_ERROR dns_unmarshall_request(TALLOC_CTX *mem_ctx,
 {
 	struct dns_request *req;
 	uint16_t i;
-	DNS_ERROR err;
+	DNS_ERROR err = ERROR_DNS_NO_MEMORY;
 
 	if (!(req = talloc_zero(mem_ctx, struct dns_request))) {
-		return ERROR_DNS_NO_MEMORY;
+		return err;
 	}
 
 	dns_unmarshall_uint16(buf, &req->id);
@@ -401,7 +401,10 @@ DNS_ERROR dns_unmarshall_request(TALLOC_CTX *mem_ctx,
 	dns_unmarshall_uint16(buf, &req->num_auths);
 	dns_unmarshall_uint16(buf, &req->num_additionals);
 
-	if (!ERR_DNS_IS_OK(buf->error)) goto error;
+	if (!ERR_DNS_IS_OK(buf->error)){
+		err = buf->error;
+		goto error;
+	}
 
 	err = ERROR_DNS_NO_MEMORY;
 
@@ -452,7 +455,6 @@ DNS_ERROR dns_unmarshall_request(TALLOC_CTX *mem_ctx,
 	return ERROR_DNS_SUCCESS;
 
  error:
-	err = buf->error;
 	TALLOC_FREE(req);
 	return err;
 }
