@@ -182,6 +182,13 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 		      charset_t string_charset);
 
 /***********************************************************
+ Encode an arc4 password change buffer.
+************************************************************/
+NTSTATUS encode_rc4_passwd_buffer(const char *passwd,
+				  const DATA_BLOB *session_key,
+				  struct samr_CryptPasswordEx *out_crypt_pwd);
+
+/***********************************************************
  Decode an arc4 encrypted password change buffer.
 ************************************************************/
 NTSTATUS decode_rc4_passwd_buffer(const DATA_BLOB *psession_key,

@@ -840,6 +840,48 @@ bool decode_pw_buffer(TALLOC_CTX *ctx,
 }
 
 /***********************************************************
+ Encode an arc4 password change buffer.
+************************************************************/
+NTSTATUS encode_rc4_passwd_buffer(const char *passwd,
+				  const DATA_BLOB *session_key,
+				  struct samr_CryptPasswordEx *out_crypt_pwd)
+{
+	uint8_t _confounder[16] = {0};
+	DATA_BLOB confounder = data_blob_const(_confounder, 16);
+	DATA_BLOB pw_data = data_blob_const(out_crypt_pwd->data, 516);
+	bool ok;
+	int rc;
+
+	ok = encode_pw_buffer(pw_data.data, passwd, STR_UNICODE);
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	generate_random_buffer(confounder.data, confounder.length);
+
+	rc = samba_gnutls_arcfour_confounded_md5(&confounder,
+						 session_key,
+						 &pw_data,
+						 SAMBA_GNUTLS_ENCRYPT);
+	if (rc < 0) {
+		ZERO_ARRAY(_confounder);
+		data_blob_clear(&pw_data);
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+	}
+
+	/*
+	 * The packet format is the 516 byte RC4 encrypted
+	 * pasword followed by the 16 byte counfounder
+	 * The confounder is a salt to prevent pre-computed hash attacks on the
+	 * database.
+	 */
+	memcpy(&out_crypt_pwd->data[516], confounder.data, confounder.length);
+	ZERO_ARRAY(_confounder);
+
+	return NT_STATUS_OK;
+}
+
+/***********************************************************
  Decode an arc4 encrypted password change buffer.
 ************************************************************/
 
