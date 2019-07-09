@@ -267,10 +267,10 @@ from the 'server services' smb.conf parameter). This service was unused and has
 now been removed from Samba.
 
 
-samba-tool join subdommain
---------------------------
+samba-tool join subdomain
+-------------------------
 
-The subdommain role has been removed from the join command.  This option did
+The subdomain role has been removed from the join command.  This option did
 not work and has no tests.
 
 
