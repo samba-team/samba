@@ -5185,9 +5185,8 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			if(!NT_STATUS_IS_OK(status)) {
 				break;
 			}
-			status = decode_rc4_passwd_buffer(
-				info->info25.password.data,
-				&session_key);
+			status = decode_rc4_passwd_buffer(&session_key,
+					&info->info25.password);
 			if (!NT_STATUS_IS_OK(status)) {
 				break;
 			}
@@ -5204,9 +5203,8 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			if(!NT_STATUS_IS_OK(status)) {
 				break;
 			}
-			status = decode_rc4_passwd_buffer(
-				info->info26.password.data,
-				&session_key);
+			status = decode_rc4_passwd_buffer(&session_key,
+					&info->info26.password);
 			if (!NT_STATUS_IS_OK(status)) {
 				break;
 			}
