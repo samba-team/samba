@@ -708,29 +708,6 @@ static struct gpfs_acl *vfs_gpfs_smbacl2gpfsacl(TALLOC_CTX *mem_ctx,
 		gace->aceType = aceprop->aceType;
 		gace->aceFlags = aceprop->aceFlags;
 		gace->aceMask = aceprop->aceMask;
-
-		/*
-		 * GPFS can't distinguish between WRITE and APPEND on
-		 * files, so one being set without the other is an
-		 * error. Sorry for the many ()'s :-)
-		 */
-
-		if (!fsp->is_directory
-		    &&
-		    ((((gace->aceMask & ACE4_MASK_WRITE) == 0)
-		      && ((gace->aceMask & ACE4_MASK_APPEND) != 0))
-		     ||
-		     (((gace->aceMask & ACE4_MASK_WRITE) != 0)
-		      && ((gace->aceMask & ACE4_MASK_APPEND) == 0)))
-		    &&
-		    lp_parm_bool(fsp->conn->params->service, "gpfs",
-				 "merge_writeappend", True)) {
-			DEBUG(2, ("vfs_gpfs.c: file [%s]: ACE contains "
-				  "WRITE^APPEND, setting WRITE|APPEND\n",
-				  fsp_str_dbg(fsp)));
-			gace->aceMask |= ACE4_MASK_WRITE|ACE4_MASK_APPEND;
-		}
-
 		gace->aceIFlags = (aceprop->flags&SMB_ACE4_ID_SPECIAL) ? ACE4_IFLAG_SPECIAL_ID : 0;
 
 		if (aceprop->flags&SMB_ACE4_ID_SPECIAL)
