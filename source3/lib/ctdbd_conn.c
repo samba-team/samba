@@ -1039,7 +1039,7 @@ int ctdbd_traverse(struct ctdbd_connection *conn, uint32_t db_id,
 	int ret;
 	TDB_DATA key, data;
 	struct ctdb_traverse_start t;
-	int32_t cstatus;
+	int32_t cstatus = 0;
 
 	if (ctdbd_conn_has_async_reqs(conn)) {
 		/*
