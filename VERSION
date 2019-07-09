@@ -24,7 +24,7 @@
 #  ->  "3.0.0"                                         #
 ########################################################
 SAMBA_VERSION_MAJOR=4
-SAMBA_VERSION_MINOR=11
+SAMBA_VERSION_MINOR=12
 SAMBA_VERSION_RELEASE=0
 
 ########################################################
