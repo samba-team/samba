@@ -72,7 +72,7 @@ int smbacl4_get_vfs_params(struct connection_struct *conn,
 	};
 	int enumval;
 
-	ZERO_STRUCTP(params);
+	*params = (struct smbacl4_vfs_params) { 0 };
 
 	enumval = lp_parm_enum(SNUM(conn), SMBACL4_PARAM_TYPE_NAME, "mode",
 			       enum_smbacl4_modes, e_simple);
