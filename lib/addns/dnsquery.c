@@ -205,7 +205,7 @@ NTSTATUS ads_dns_lookup_srv(TALLOC_CTX *ctx,
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
-	size_t num_srvs;
+	size_t num_srvs = 0;
 
 	ev = samba_tevent_context_init(ctx);
 	if (ev == NULL) {
@@ -219,7 +219,9 @@ NTSTATUS ads_dns_lookup_srv(TALLOC_CTX *ctx,
 		goto fail;
 	}
 	status = ads_dns_lookup_srv_recv(req, ctx, dclist, &num_srvs);
-	*numdcs = num_srvs;	/* size_t->int */
+	if (NT_STATUS_IS_OK(status)) {
+		*numdcs = num_srvs;	/* size_t->int */
+	}
 fail:
 	TALLOC_FREE(ev);
 	return status;
