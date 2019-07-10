@@ -1229,7 +1229,8 @@ void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status)
 	 * conn->pending because that array changes in
 	 * smbXcli_req_unset_pending.
 	 */
-	while (talloc_array_length(conn->pending) > 0) {
+	while (conn->pending != NULL &&
+	       talloc_array_length(conn->pending) > 0) {
 		struct tevent_req *req;
 		struct smbXcli_req_state *state;
 		struct tevent_req **chain;
