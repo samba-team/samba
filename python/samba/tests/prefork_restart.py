@@ -404,7 +404,7 @@ class PreforkProcessRestartTests(TestCase):
     def test_master_restart_backoff(self):
 
         # get kdc master process
-        pid = self.get_process("prefork-master-kdc")
+        pid = self.get_process("prefork-master-echo")
         self.assertIsNotNone(pid)
 
         #
@@ -417,13 +417,13 @@ class PreforkProcessRestartTests(TestCase):
             # Get the worker processes
             workers = self.get_worker_pids("kdc", NUM_WORKERS)
 
-            process = self.get_process("prefork-master-kdc")
+            process = self.get_process("prefork-master-echo")
             os.kill(process, signal.SIGTERM)
             # wait for the process to restart
             start = time.time()
-            self.wait_for_process("prefork-master-kdc", process, 0, 1, 30)
+            self.wait_for_process("prefork-master-echo", process, 0, 1, 30)
             # wait for the workers to restart as well
-            self.wait_for_workers("kdc", workers)
+            self.wait_for_workers("echo", workers)
             end = time.time()
             duration = end - start
 
@@ -434,7 +434,7 @@ class PreforkProcessRestartTests(TestCase):
             self.assertGreaterEqual(duration, expected)
 
         # check that the worker processes have restarted
-        new_workers = self.get_worker_pids("kdc", NUM_WORKERS)
+        new_workers = self.get_worker_pids("echo", NUM_WORKERS)
         for x in range(NUM_WORKERS):
             self.assertNotEquals(workers[x], new_workers[x])
 
@@ -449,12 +449,12 @@ class PreforkProcessRestartTests(TestCase):
         #      prefork maximum backoff   = 10
         backoff_increment = 5
         for expected in [0, 5, 10, 10]:
-            process = self.get_process("prefork-worker-kdc-2")
+            process = self.get_process("prefork-worker-echo-2")
             self.assertIsNotNone(process)
             os.kill(process, signal.SIGTERM)
             # wait for the process to restart
             start = time.time()
-            self.wait_for_process("prefork-worker-kdc-2", process, 0, 1, 30)
+            self.wait_for_process("prefork-worker-echo-2", process, 0, 1, 30)
             end = time.time()
             duration = end - start
 
