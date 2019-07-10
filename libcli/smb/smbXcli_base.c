@@ -4868,7 +4868,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	uint16_t hash_selected;
 	gnutls_hash_hd_t hash_hnd = NULL;
 	struct smb2_negotiate_context *cipher = NULL;
-	struct iovec sent_iov[3];
+	struct iovec sent_iov[3] = {{0}, {0}, {0}};
 	static const struct smb2cli_req_expected_response expected[] = {
 	{
 		.status = NT_STATUS_OK,
