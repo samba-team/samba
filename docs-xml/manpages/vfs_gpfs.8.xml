@@ -204,26 +204,6 @@
 		</varlistentry>
 		<varlistentry>
 
-		<term>gpfs:merge_writeappend = [ yes | no ]</term>
-		<listitem>
-		<para>
-		GPFS ACLs doesn't know about the 'APPEND' right.
-		This option lets Samba map the 'APPEND' right to 'WRITE'.
-		</para>
-
-		<itemizedlist>
-		<listitem><para>
-		<command>yes(default)</command> - map 'APPEND' to 'WRITE'.
-		</para></listitem>
-		<listitem><para>
-		<command>no</command> - do not map 'APPEND' to 'WRITE'.
-		</para></listitem>
-		</itemizedlist>
-		</listitem>
-
-		</varlistentry>
-		<varlistentry>
-
 		<term>gpfs:acl = [ yes | no ]</term>
 		<listitem>
 		<para>
