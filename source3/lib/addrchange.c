@@ -214,7 +214,6 @@ static void addrchange_done(struct tevent_req *subreq)
 
 	state->addr.ss_family = ifa->ifa_family;
 
-	rta = IFA_RTA(ifa);
 	len = h->nlmsg_len - sizeof(struct nlmsghdr) + sizeof(struct ifaddrmsg);
 
 	found = false;
