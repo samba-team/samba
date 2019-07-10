@@ -480,7 +480,7 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 {
 	TALLOC_CTX *frame;
 	struct messaging_context *ctx;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 	int ret;
 	const char *lck_path;
 	const char *priv_path;
