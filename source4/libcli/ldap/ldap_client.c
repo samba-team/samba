@@ -1020,7 +1020,7 @@ _PUBLIC_ NTSTATUS ldap_result_one(struct ldap_request *req, struct ldap_message 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	if ((*msg)->type != type) {
+	if ((*msg) != NULL && (*msg)->type != type) {
 		*msg = NULL;
 		return NT_STATUS_UNEXPECTED_NETWORK_ERROR;
 	}
