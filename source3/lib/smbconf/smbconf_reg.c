@@ -120,7 +120,7 @@ static sbcErr smbconf_reg_open_service_key(TALLOC_CTX *mem_ctx,
 static bool smbconf_value_exists(struct registry_key *key, const char *param)
 {
 	bool ret = false;
-	WERROR werr = WERR_OK;
+	WERROR werr;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	struct registry_value *value = NULL;
 
@@ -175,7 +175,7 @@ static sbcErr smbconf_reg_set_value(struct registry_key *key,
 				    const char *valstr)
 {
 	struct registry_value val;
-	WERROR werr = WERR_OK;
+	WERROR werr;
 	sbcErr err;
 	char *subkeyname;
 	const char *canon_valname;
@@ -441,7 +441,7 @@ static sbcErr smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 				     char ***value_strings)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
-	WERROR werr = WERR_OK;
+	WERROR werr;
 	sbcErr err;
 	uint32_t count;
 	struct registry_value *valvalue = NULL;
@@ -580,7 +580,7 @@ done:
  */
 static sbcErr smbconf_reg_init(struct smbconf_ctx *ctx, const char *path)
 {
-	WERROR werr = WERR_OK;
+	WERROR werr;
 	sbcErr err;
 	struct security_token *token;
 
@@ -709,7 +709,7 @@ static void smbconf_reg_get_csn(struct smbconf_ctx *ctx,
 static sbcErr smbconf_reg_drop(struct smbconf_ctx *ctx)
 {
 	char *path, *p;
-	WERROR werr = WERR_OK;
+	WERROR werr;
 	sbcErr err = SBC_ERR_OK;
 	struct registry_key *parent_key = NULL;
 	struct registry_key *new_key = NULL;
@@ -992,7 +992,7 @@ static sbcErr smbconf_reg_get_parameter(struct smbconf_ctx *ctx,
 					const char *param,
 					char **valstr)
 {
-	WERROR werr = WERR_OK;
+	WERROR werr;
 	sbcErr err;
 	struct registry_key *key = NULL;
 	struct registry_value *value = NULL;
@@ -1100,7 +1100,6 @@ static sbcErr smbconf_reg_set_includes(struct smbconf_ctx *ctx,
 				       uint32_t num_includes,
 				       const char **includes)
 {
-	WERROR werr = WERR_OK;
 	sbcErr err;
 	struct registry_key *key = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
@@ -1112,6 +1111,7 @@ static sbcErr smbconf_reg_set_includes(struct smbconf_ctx *ctx,
 	}
 
 	if (num_includes == 0) {
+		WERROR werr;
 		if (!smbconf_value_exists(key, INCLUDES_VALNAME)) {
 			err = SBC_ERR_OK;
 			goto done;
