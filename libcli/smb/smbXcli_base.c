@@ -4327,7 +4327,7 @@ static void smbXcli_negprot_smb1_done(struct tevent_req *subreq)
 		struct smbXcli_negprot_state);
 	struct smbXcli_conn *conn = state->conn;
 	struct iovec *recv_iov = NULL;
-	uint8_t *inhdr;
+	uint8_t *inhdr = NULL;
 	uint8_t wct;
 	uint16_t *vwv;
 	uint32_t num_bytes;
@@ -4387,7 +4387,7 @@ static void smbXcli_negprot_smb1_done(struct tevent_req *subreq)
 				  NULL, /* pinbuf */
 				  expected, ARRAY_SIZE(expected));
 	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
+	if (inhdr == NULL || tevent_req_nterror(req, status)) {
 		return;
 	}
 
