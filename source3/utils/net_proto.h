@@ -457,4 +457,6 @@ int net_notify(struct net_context *c, int argc, const char **argv);
 
 int net_tdb(struct net_context *c, int argc, const char **argv);
 
+int net_vfs(struct net_context *c, int argc, const char **argv);
+
 #endif /*  _NET_PROTO_H_  */

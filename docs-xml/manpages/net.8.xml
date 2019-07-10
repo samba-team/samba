@@ -392,6 +392,26 @@
 		</para></listitem>
 		</varlistentry>
 
+		<!-- Options for net vfs stream2abouble -->
+
+		<varlistentry>
+		<term>--recursive</term>
+		<listitem><para>Traverse a directory
+		hierarchy.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--continue</term>
+		<listitem><para>Continue traversing a directory hierarchy in
+		case conversion of one file fails.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--follow-symlinks</term>
+		<listitem><para>Follow symlinks encountered while traversing a
+		directory.</para></listitem>
+		</varlistentry>
+
 		&stdarg.encrypt;
 		&popt.common.samba.client;
 
@@ -2887,6 +2907,52 @@ Dump the locking table of a certain global lock.
 		</itemizedlist>
 
 	</refsect3>
+</refsect2>
+
+<refsect2>
+  <title>vfs</title>
+  <para>Access shared filesystem through the VFS.</para>
+
+  <refsect3>
+    <title>vfs stream2abouble [--recursive] [--verbose] [--continue] [--follow-symlinks] <replaceable>share</replaceable> <replaceable>path</replaceable></title>
+
+    <para>Convert file streams to AppleDouble files.</para>
+    <itemizedlist>
+      <listitem>
+	<para><replaceable>share</replaceable>
+	A Samba share.</para>
+      </listitem>
+    </itemizedlist>
+    <itemizedlist>
+      <listitem>
+	<para><replaceable>path</replaceable> A relative path of something in
+	the Samba share. "." can be used for the root directory of the
+	share.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>Options:</para>
+    <variablelist>
+      <varlistentry>
+	<term>--recursive</term>
+	<listitem><para>Traverse a directory hierarchy.</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>--verbose</term>
+	<listitem><para>Verbose output.</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>--continue</term>
+	<listitem><para>Continue traversing a directory hierarchy if a single
+	conversion fails.</para></listitem>
+      </varlistentry>
+      <varlistentry>
+	<term>--follow-symlinks</term>
+	<listitem><para>Follow symlinks encountered while traversing a
+	directory.</para></listitem>
+      </varlistentry>
+    </variablelist>
+  </refsect3>
 </refsect2>
 
 <refsect2>
