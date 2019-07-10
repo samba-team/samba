@@ -513,7 +513,7 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 
 	tmp_ctx = talloc_stackframe();
 
-	for (b = s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
+	for (s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
 
 		r = NULL;
 		b = a_string;
@@ -706,7 +706,7 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	for (b = s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
+	for (s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
 
 		b = a_string;
 
@@ -808,7 +808,7 @@ char *talloc_sub_advanced(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	for (b = s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
+	for (s = a_string; (p = strchr_m(s, '%')); s = a_string + (p - b)) {
 
 		b = a_string;
 
