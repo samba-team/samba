@@ -51,7 +51,7 @@ static ssize_t dbwrap_record_watchers_key(struct db_context *db,
 		return -1;
 	}
 
-	if (wkey_len >= needed) {
+	if (wkey != NULL && wkey_len >= needed) {
 		SIVAL(wkey, 0, db_id_len);
 		memcpy(wkey + sizeof(uint32_t), db_id, db_id_len);
 		memcpy(wkey + sizeof(uint32_t) + db_id_len,
