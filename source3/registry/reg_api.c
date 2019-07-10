@@ -136,7 +136,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 				   uint32_t access_desired,
 				   struct registry_key **pregkey)
 {
-	WERROR     	result = WERR_OK;
+	WERROR result;
 	struct registry_key *regkey;
 	struct registry_key_handle *key;
 
@@ -955,7 +955,7 @@ static WERROR reg_deletekey_recursive_internal(struct registry_key *parent,
 					       const char *path,
 					       bool del_key, bool lazy)
 {
-	WERROR werr = WERR_OK;
+	WERROR werr;
 	struct registry_key *key;
 	char *subkey_name = NULL;
 	uint32_t i;
