@@ -1776,6 +1776,84 @@ static void test_dacl_to_nfs4_idmap_type_both(void **state)
 	TALLOC_FREE(frame);
 }
 
+static void test_nfs4_to_dacl_remove_duplicate(void **state)
+{
+
+	struct dom_sid *sids = *state;
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct SMB4ACL_T *nfs4_acl;
+	SMB_ACE4PROP_T nfs4_ace;
+	struct security_ace *dacl_aces;
+	int good_aces;
+	struct smbacl4_vfs_params params = {
+		.mode = e_simple,
+		.do_chown = true,
+		.acedup = e_dontcare,
+		.map_full_control = true,
+	};
+
+	nfs4_acl = smb_create_smb4acl(frame);
+	assert_non_null(nfs4_acl);
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= 0,
+		.who.uid	= 1002,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= SMB_ACE4_INHERITED_ACE,
+		.aceMask	= SMB_ACE4_WRITE_DATA,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= 0,
+		.who.gid	= 1002,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= SMB_ACE4_IDENTIFIER_GROUP|
+				  SMB_ACE4_INHERITED_ACE,
+		.aceMask	= SMB_ACE4_WRITE_DATA,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= 0,
+		.who.gid	= 1002,
+		.aceType	= SMB_ACE4_ACCESS_DENIED_ACE_TYPE,
+		.aceFlags	= SMB_ACE4_IDENTIFIER_GROUP|
+				  SMB_ACE4_INHERITED_ACE,
+		.aceMask	= SMB_ACE4_WRITE_DATA,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	nfs4_ace = (SMB_ACE4PROP_T) {
+		.flags		= 0,
+		.who.gid	= 1002,
+		.aceType	= SMB_ACE4_ACCESS_ALLOWED_ACE_TYPE,
+		.aceFlags	= SMB_ACE4_IDENTIFIER_GROUP|
+				  SMB_ACE4_INHERITED_ACE,
+		.aceMask	= SMB_ACE4_WRITE_DATA,
+	};
+	assert_non_null(smb_add_ace4(nfs4_acl, &nfs4_ace));
+
+	assert_true(smbacl4_nfs42win(frame, &params, nfs4_acl,
+				     &sids[0], &sids[1], true,
+				     &dacl_aces, &good_aces));
+
+	assert_int_equal(good_aces, 2);
+	assert_non_null(dacl_aces);
+
+	assert_int_equal(dacl_aces[0].type, SEC_ACE_TYPE_ACCESS_ALLOWED);
+	assert_int_equal(dacl_aces[0].flags, SEC_ACE_FLAG_INHERITED_ACE);
+	assert_int_equal(dacl_aces[0].access_mask, SEC_FILE_WRITE_DATA);
+	assert_true(dom_sid_equal(&dacl_aces[0].trustee, &sids[2]));
+
+	assert_int_equal(dacl_aces[1].type, SEC_ACE_TYPE_ACCESS_DENIED);
+	assert_int_equal(dacl_aces[1].flags, SEC_ACE_FLAG_INHERITED_ACE);
+	assert_int_equal(dacl_aces[1].access_mask, SEC_FILE_WRITE_DATA);
+	assert_true(dom_sid_equal(&dacl_aces[1].trustee, &sids[2]));
+
+	TALLOC_FREE(frame);
+}
+
 int main(int argc, char **argv)
 {
 	const struct CMUnitTest tests[] = {
@@ -1799,6 +1877,7 @@ int main(int argc, char **argv)
 		cmocka_unit_test(test_nfs4_to_dacl_config_special),
 		cmocka_unit_test(test_nfs4_to_dacl_idmap_type_both),
 		cmocka_unit_test(test_dacl_to_nfs4_idmap_type_both),
+		cmocka_unit_test(test_nfs4_to_dacl_remove_duplicate),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
