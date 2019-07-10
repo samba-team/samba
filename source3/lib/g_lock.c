@@ -347,7 +347,7 @@ struct g_lock_lock_fn_state {
 static void g_lock_lock_fn(struct db_record *rec, void *private_data)
 {
 	struct g_lock_lock_fn_state *state = private_data;
-	struct server_id blocker;
+	struct server_id blocker = {0};
 
 	state->status = g_lock_trylock(rec, state->self, state->state->type,
 				       &blocker);
