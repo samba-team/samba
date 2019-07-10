@@ -4851,7 +4851,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 	size_t security_offset, security_length;
 	DATA_BLOB blob;
 	NTSTATUS status;
-	struct iovec *iov;
+	struct iovec *iov = NULL;
 	uint8_t *body;
 	size_t i;
 	uint16_t dialect_revision;
@@ -4879,7 +4879,7 @@ static void smbXcli_negprot_smb2_done(struct tevent_req *subreq)
 
 	status = smb2cli_req_recv(subreq, state, &iov,
 				  expected, ARRAY_SIZE(expected));
-	if (tevent_req_nterror(req, status)) {
+	if (tevent_req_nterror(req, status) || iov == NULL) {
 		return;
 	}
 
