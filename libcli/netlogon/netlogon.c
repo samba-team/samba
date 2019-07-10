@@ -180,7 +180,7 @@ void map_netlogon_samlogon_response(struct netlogon_samlogon_response *response)
 NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 				    struct nbt_netlogon_response *response)
 {
-	NTSTATUS status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	switch (response->response_type) {
 	case NETLOGON_GET_PDC:
@@ -212,6 +212,9 @@ NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 		}
 		status = NT_STATUS_OK;
 		break;
+	default:
+		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+		break;
 	}
 
 	return status;
@@ -221,7 +224,7 @@ NTSTATUS push_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 					 struct nbt_netlogon_response *response)
 {
-	NTSTATUS status = NT_STATUS_INVALID_NETWORK_RESPONSE;
+	NTSTATUS status;
 	enum netlogon_command command;
 	enum ndr_err_code ndr_err;
 	if (data->length < 4) {
@@ -273,6 +276,7 @@ NTSTATUS pull_nbt_netlogon_response(DATA_BLOB *data, TALLOC_CTX *mem_ctx,
 	case LOGON_REQUEST:
 	case NETLOGON_ANNOUNCE_UAS:
 	case LOGON_SAM_LOGON_REQUEST:
+	default:
 		status = NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
