@@ -2766,7 +2766,6 @@ bool lp_do_section(const char *pszSectionName, void *userdata)
 	bool bRetval;
 	bool isglobal = ((strwicmp(pszSectionName, GLOBAL_NAME) == 0) ||
 			 (strwicmp(pszSectionName, GLOBAL_NAME2) == 0));
-	bRetval = false;
 
 	/* if we were in a global section then do the local inits */
 	if (bInGlobalSection && !isglobal)
@@ -3863,8 +3862,6 @@ static bool lp_load_ex(const char *pszFname,
 	bool bRetval;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct loadparm_context *lp_ctx;
-
-	bRetval = false;
 
 	DEBUG(3, ("lp_load_ex: refreshing parameters\n"));
 
