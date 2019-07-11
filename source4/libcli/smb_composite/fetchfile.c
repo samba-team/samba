@@ -88,7 +88,7 @@ static NTSTATUS fetchfile_read(struct composite_context *c,
 static void fetchfile_state_handler(struct composite_context *c)
 {
 	struct fetchfile_state *state;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 	
 	state = talloc_get_type(c->private_data, struct fetchfile_state);
 
@@ -100,6 +100,9 @@ static void fetchfile_state_handler(struct composite_context *c)
 		break;
 	case FETCHFILE_READ:
 		status = fetchfile_read(c, state->io);
+		break;
+	default:
+		status = NT_STATUS_UNSUCCESSFUL;
 		break;
 	}
 
