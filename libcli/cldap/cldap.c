@@ -141,6 +141,10 @@ static bool cldap_recvfrom_setup(struct cldap_socket *c)
 
 	ev = c->incoming.ev;
 	if (ev == NULL) {
+		/* this shouldn't happen but should be protected against */
+		if (c->searches.list == NULL) {
+			return false;
+		}
 		ev = c->searches.list->caller.ev;
 	}
 
