@@ -1032,8 +1032,8 @@ static int partition_rename(struct ldb_module *module, struct ldb_request *req)
 /* start a transaction */
 int partition_start_trans(struct ldb_module *module)
 {
-	int i;
-	int ret;
+	int i = 0;
+	int ret = 0;
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 	/* Look at base DN */
@@ -1043,18 +1043,58 @@ int partition_start_trans(struct ldb_module *module)
 		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_start_trans() -> (metadata partition)");
 	}
 
-	/* This order must match that in prepare_commit() and read_lock() */
+	/*
+	 * We start a transaction on metadata.tdb first and end it last in
+	 * end_trans. This makes locking semantics follow TDB rather than MDB,
+	 * and effectively locks all partitions at once.
+	 * Detail:
+	 * Samba AD is special in that the partitions module (this file)
+	 * combines multiple independently locked databases into one overall
+	 * transaction. Changes across multiple partition DBs in a single
+	 * transaction must ALL be either visible or invisible.
+	 * The way this is achieved is by taking out a write lock on
+	 * metadata.tdb at the start of prepare_commit, while unlocking it at
+	 * the end of end_trans. This is matched by read_lock, ensuring it
+	 * can't progress until that write lock is released.
+	 *
+	 * metadata.tdb needs to be a TDB file because MDB uses independent
+	 * locks, which means a read lock and a write lock can be held at the
+	 * same time, whereas in TDB, the two locks block each other. The TDB
+	 * behaviour is required to implement the functionality described
+	 * above.
+	 *
+	 * An important additional detail here is that if prepare_commit is
+	 * called on a TDB without any changes being made, no write lock is
+	 * taken. We address this by storing a sequence number in metadata.tdb
+	 * which is updated every time a replicated attribute is modified.
+	 * The possibility of a few unreplicated attributes being out of date
+	 * turns out not to be a problem.
+	 * For this reason, a lock on sam.ldb (which is a TDB) won't achieve
+	 * the same end as locking metadata.tdb, unless we made a modification
+	 * to the @ records found there before every prepare_commit.
+	 */
+	ret = partition_metadata_start_trans(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
 	ret = ldb_next_start_trans(module);
 	if (ret != LDB_SUCCESS) {
+		partition_metadata_del_trans(module);
 		return ret;
 	}
 
 	ret = partition_reload_if_required(module, data, NULL);
 	if (ret != LDB_SUCCESS) {
 		ldb_next_del_trans(module);
+		partition_metadata_del_trans(module);
 		return ret;
 	}
 
+	/*
+	 * The following per partition locks are required mostly because TDB
+	 * and MDB require locks before read and write ops are permitted.
+	 */
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
 			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_start_trans() -> %s",
@@ -1072,20 +1112,6 @@ int partition_start_trans(struct ldb_module *module)
 		}
 	}
 
-	/*
-	 * Because in prepare_commit this must come last, to ensure
-	 * lock ordering we have to do this last here also 
-	 */
-	ret = partition_metadata_start_trans(module);
-	if (ret != LDB_SUCCESS) {
-		/* Back it out, if it fails on one */
-		for (i--; i >= 0; i--) {
-			ldb_next_del_trans(data->partitions[i]->module);
-		}
-		ldb_next_del_trans(module);
-		return ret;
-	}
-
 	data->in_transaction++;
 
 	return LDB_SUCCESS;
@@ -1098,6 +1124,15 @@ int partition_prepare_commit(struct ldb_module *module)
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 	int ret;
+
+	/*
+	 * Order of prepare_commit calls must match that in
+	 * partition_start_trans. See comment in that function for detail.
+	 */
+	ret = partition_metadata_prepare_commit(module);
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
 
 	ret = ldb_next_prepare_commit(module);
 	if (ret != LDB_SUCCESS) {
@@ -1122,9 +1157,7 @@ int partition_prepare_commit(struct ldb_module *module)
 		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_prepare_commit() -> (metadata partition)");
 	}
 
-	/* metadata prepare commit must come last, as other partitions could modify
-	 * the database inside the prepare commit method of a module */
-	return partition_metadata_prepare_commit(module);
+	return LDB_SUCCESS;
 }
 
 
@@ -1145,7 +1178,10 @@ int partition_end_trans(struct ldb_module *module)
 		data->in_transaction--;
 	}
 
-
+	/*
+	 * Order of end_trans calls must be the reverse of that in
+	 * partition_start_trans. See comment in that function for detail.
+	 */
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
 			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_end_trans() -> %s",
@@ -1184,6 +1220,10 @@ int partition_del_trans(struct ldb_module *module)
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
 
+	/*
+	 * Order of del_trans calls must be the reverse of that in
+	 * partition_start_trans. See comment in that function for detail.
+	 */
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		if (ldb_module_flags(ldb_module_get_ctx(module)) &
 		    LDB_FLG_ENABLE_TRACING) {
@@ -1382,9 +1422,9 @@ static int partition_sequence_number(struct ldb_module *module, struct ldb_reque
 /* lock all the backends */
 int partition_read_lock(struct ldb_module *module)
 {
-	int i;
-	int ret;
-	int ret2;
+	int i = 0;
+	int ret = 0;
+	int ret2 = 0;
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct partition_private_data *data = \
 		talloc_get_type(ldb_module_get_private(module),
@@ -1430,9 +1470,8 @@ int partition_read_lock(struct ldb_module *module)
 	}
 
 	/*
-	 * This will lock the metadata partition (sam.ldb) and
-	 * will also call event loops, so we do it before we
-	 * get the whole db lock.
+	 * This will lock sam.ldb and will also call event loops,
+	 * so we do it before we get the whole db lock.
 	 */
 	ret = partition_reload_if_required(module, data, NULL);
 	if (ret != LDB_SUCCESS) {
@@ -1440,8 +1479,20 @@ int partition_read_lock(struct ldb_module *module)
 	}
 
 	/*
-	 * This order must match that in prepare_commit(), start with
-	 * the top level DB (sam.ldb) lock
+	 * Order of read_lock calls must match that in partition_start_trans.
+	 * See comment in that function for detail.
+	 */
+	ret = partition_metadata_read_lock(module);
+	if (ret != LDB_SUCCESS) {
+		goto failed;
+	}
+
+	/*
+	 * The top level DB (sam.ldb) lock is not enough to block another
+	 * process in prepare_commit(), because if nothing was changed in the
+	 * specific backend, then prepare_commit() is a no-op. Therefore the
+	 * metadata.tdb lock is taken out above, as it is the best we can do
+	 * right now.
 	 */
 	ret = ldb_next_read_lock(module);
 	if (ret != LDB_SUCCESS) {
@@ -1455,12 +1506,8 @@ int partition_read_lock(struct ldb_module *module)
 	}
 
 	/*
-	 * The top level DB (sam.ldb) lock is not
-	 * enough to block another process in prepare_commit(),
-	 * because prepare_commit() is a no-op, if nothing
-	 * was changed in the specific backend.
-	 *
-	 * That means the following per partition locks are required.
+	 * The following per partition locks are required mostly because TDB
+	 * and MDB require locks before reads are permitted.
 	 */
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		if ((module && ldb_module_flags(ldb) & LDB_FLG_ENABLE_TRACING)) {
@@ -1482,15 +1529,6 @@ int partition_read_lock(struct ldb_module *module)
 			      ldb_dn_get_linearized(
 				      data->partitions[i]->ctrl->dn));
 
-		goto failed;
-	}
-
-	/*
-	 * Because in prepare_commit this must come last, to ensure
-	 * lock ordering we have to do this last here also
-	 */
-	ret = partition_metadata_read_lock(module);
-	if (ret != LDB_SUCCESS) {
 		goto failed;
 	}
 
@@ -1531,10 +1569,9 @@ int partition_read_unlock(struct ldb_module *module)
 				struct partition_private_data);
 
 	/*
-	 * This order must be similar to partition_{end,del}_trans()
-	 * the metadata partition (sam.ldb) unlock must be at the end.
+	 * Order of read_unlock calls must be the reverse of that in
+	 * partition_start_trans. See comment in that function for detail.
 	 */
-
 	for (i=0; data && data->partitions && data->partitions[i]; i++) {
 		if ((module && ldb_module_flags(ldb) & LDB_FLG_ENABLE_TRACING)) {
 			ldb_debug(ldb, LDB_DEBUG_TRACE,
@@ -1584,10 +1621,6 @@ int partition_read_unlock(struct ldb_module *module)
 		}
 	}
 
-	/*
-	 * Because in prepare_commit this must come last, to ensure
-	 * lock ordering we have to do this last here also
-	 */
 	ret = partition_metadata_read_unlock(module);
 
 	/*
