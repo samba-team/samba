@@ -154,7 +154,7 @@ NTSTATUS smb_raw_negotiate_recv(struct tevent_req *req)
 NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport, bool unicode,
 			   int minprotocol, int maxprotocol)
 {
-	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
+	NTSTATUS status;
 	struct tevent_req *subreq = NULL;
 	bool ok;
 
@@ -164,7 +164,8 @@ NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport, bool unicode,
 					minprotocol,
 					maxprotocol);
 	if (subreq == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
 	}
 
 	ok = tevent_req_poll(subreq, transport->ev);
