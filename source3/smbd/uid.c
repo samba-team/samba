@@ -427,6 +427,7 @@ static bool change_to_user_internal(connection_struct *conn,
 	current_user.conn = conn;
 	current_user.vuid = vuid;
 	current_user.need_chdir = conn->tcon_done;
+	current_user.done_chdir = false;
 
 	if (current_user.need_chdir) {
 		ok = chdir_current_service(conn);
