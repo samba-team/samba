@@ -311,9 +311,9 @@ static void print_impersonation_info(connection_struct *conn)
  stack, but modify the current_user entries.
 ****************************************************************************/
 
-static bool change_to_user_internal(connection_struct *conn,
-				    const struct auth_session_info *session_info,
-				    uint64_t vuid)
+static bool change_to_user_impersonate(connection_struct *conn,
+				       const struct auth_session_info *session_info,
+				       uint64_t vuid)
 {
 	int snum;
 	gid_t gid;
@@ -326,7 +326,6 @@ static bool change_to_user_internal(connection_struct *conn,
 
 	if ((current_user.conn == conn) &&
 	    (current_user.vuid == vuid) &&
-	    (current_user.need_chdir == conn->tcon_done) &&
 	    (current_user.ut.uid == session_info->unix_token->uid))
 	{
 		DBG_INFO("Skipping user change - already user\n");
@@ -431,6 +430,20 @@ static bool change_to_user_internal(connection_struct *conn,
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;
+	return true;
+}
+
+static bool change_to_user_internal(connection_struct *conn,
+				    const struct auth_session_info *session_info,
+				    uint64_t vuid)
+{
+	bool ok;
+
+	ok = change_to_user_impersonate(conn, session_info, vuid);
+	if (!ok) {
+		return false;
+	}
+
 	current_user.need_chdir = conn->tcon_done;
 	current_user.done_chdir = false;
 
