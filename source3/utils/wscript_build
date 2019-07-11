@@ -229,6 +229,7 @@ bld.SAMBA3_BINARY('net',
                  ../registry/reg_format.c
                  ../registry/reg_import.c
                  net_registry_util.c
+                 ../lib/util_sd.c
                  net_help_common.c''',
                  deps='''
                  talloc

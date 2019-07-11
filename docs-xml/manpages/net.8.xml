@@ -2953,6 +2953,26 @@ Dump the locking table of a certain global lock.
       </varlistentry>
     </variablelist>
   </refsect3>
+
+  <refsect3>
+    <title>vfs getntacl <replaceable>share</replaceable> <replaceable>path</replaceable></title>
+
+    <para>Display the security descriptor of a file or directory.</para>
+    <itemizedlist>
+      <listitem>
+	<para><replaceable>share</replaceable>
+	A Samba share.</para>
+      </listitem>
+    </itemizedlist>
+    <itemizedlist>
+      <listitem>
+	<para><replaceable>path</replaceable> A relative path of something in
+	the Samba share. "." can be used for the root directory of the
+	share.</para>
+      </listitem>
+    </itemizedlist>
+  </refsect3>
+
 </refsect2>
 
 <refsect2>

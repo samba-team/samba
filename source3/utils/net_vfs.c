@@ -30,6 +30,8 @@
 #include "smbd/proto.h"
 #include "locking/proto.h"
 #include "auth.h"
+#include "client.h"
+#include "util_sd.h"
 #include "lib/adouble.h"
 #include "lib/string_replace.h"
 #include "utils/net.h"
@@ -48,6 +50,13 @@ static void net_vfs_usage(void)
 	fprintf(stderr,
 		"Usage:\n"
 		"net vfs [OPTIONS] <share> ....\n");
+}
+
+static void net_vfs_getntacl_usage(void)
+{
+	fprintf(stderr,
+		"Usage:\n"
+		"net vfs getntacl <share> <path>\n");
 }
 
 static void net_vfs_stream_to_appledouble_usage(void)
@@ -188,6 +197,101 @@ done:
 	return rc;
 }
 
+static int net_vfs_get_ntacl(struct net_context *net,
+			     int argc,
+			     const char **argv)
+{
+	const char *path = NULL;
+	struct smb_filename *smb_fname = NULL;
+	files_struct *fsp = NULL;
+	struct security_descriptor *sd = NULL;
+	NTSTATUS status;
+	int ret;
+	int rc = 1;
+
+	if (argc < 2 || net->display_usage) {
+		net_vfs_getntacl_usage();
+		goto done;
+	}
+
+	ret = net_vfs_init(net, argc, argv);
+	if (ret != 0) {
+		goto done;
+	}
+
+	path = argv[1];
+	smb_fname = synthetic_smb_fname(state.mem_ctx, path, NULL, NULL, 0);
+	if (smb_fname == NULL) {
+		goto done;
+	}
+
+	ret = SMB_VFS_STAT(state.conn_tos->conn, smb_fname);
+	if (ret != 0) {
+		fprintf(stderr, "stat [%s] failed: %s\n",
+			smb_fname_str_dbg(smb_fname), strerror(errno));
+		goto done;
+	}
+
+	status = SMB_VFS_CREATE_FILE(
+		state.conn_tos->conn,
+		NULL,				/* req */
+		0,				/* root_dir_fid */
+		smb_fname,
+		FILE_READ_ATTRIBUTES|READ_CONTROL_ACCESS,
+		FILE_SHARE_READ|FILE_SHARE_WRITE,
+		FILE_OPEN,
+		0,				/* create_options */
+		0,				/* file_attributes */
+		INTERNAL_OPEN_ONLY,		/* oplock_request */
+		NULL,				/* lease */
+		0,				/* allocation_size */
+		0,				/* private_flags */
+		NULL,				/* sd */
+		NULL,				/* ea_list */
+		&fsp,
+		NULL,				/* info */
+		NULL, NULL);			/* create context */
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("SMB_VFS_CREATE_FILE [%s] failed: %s\n",
+			smb_fname_str_dbg(smb_fname), nt_errstr(status));
+		goto done;
+	}
+
+	status = SMB_VFS_FGET_NT_ACL(fsp,
+				     SECINFO_OWNER|SECINFO_GROUP|SECINFO_DACL,
+				     fsp,
+				     &sd);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("SMB_VFS_FGET_NT_ACL [%s] failed: %s\n",
+			smb_fname_str_dbg(smb_fname), nt_errstr(status));
+		goto done;
+	}
+
+	status = close_file(NULL, fsp, NORMAL_CLOSE);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("close_file [%s] failed: %s\n",
+			smb_fname_str_dbg(smb_fname),
+			nt_errstr(status));
+		goto done;
+	}
+	fsp = NULL;
+
+	sec_desc_print(NULL, stdout, sd, true);
+
+	rc = 0;
+done:
+	if (fsp != NULL) {
+		status = close_file(NULL, fsp, NORMAL_CLOSE);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("close_file [%s] failed: %s\n",
+				smb_fname_str_dbg(smb_fname),
+				nt_errstr(status));
+			rc = 1;
+		}
+	}
+	return rc;
+}
+
 static bool do_unfruit(const char *path)
 {
 	struct smb_filename *smb_fname = NULL;
@@ -323,6 +427,13 @@ done:
 }
 
 static struct functable func[] = {
+	{
+		"getntacl",
+		net_vfs_get_ntacl,
+		NET_TRANSPORT_LOCAL,
+		N_("Display security descriptor of a file or directory"),
+		N_("net vfs getntacl <share> <path> [<path> ...]")
+	},
 	{
 		NET_VFS_CMD_STREAM_TO_ADOUBLE,
 		net_vfs_stream_to_appledouble,
