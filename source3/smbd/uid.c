@@ -279,6 +279,28 @@ static bool check_user_ok(connection_struct *conn,
 	return(True);
 }
 
+static void print_impersonation_info(connection_struct *conn)
+{
+	struct smb_filename *cwdfname = NULL;
+
+	if (!CHECK_DEBUGLVL(DBGLVL_INFO)) {
+		return;
+	}
+
+	cwdfname = vfs_GetWd(talloc_tos(), conn);
+	if (cwdfname == NULL) {
+		return;
+	}
+
+	DBG_INFO("Impersonated user: uid=(%d,%d), gid=(%d,%d), cwd=[%s]\n",
+		 (int)getuid(),
+		 (int)geteuid(),
+		 (int)getgid(),
+		 (int)getegid(),
+		 cwdfname->base_name);
+	TALLOC_FREE(cwdfname);
+}
+
 /****************************************************************************
  Become the user of a connection number without changing the security context
  stack, but modify the current_user entries.
@@ -415,20 +437,7 @@ static bool change_to_user_internal(connection_struct *conn,
 		current_user.done_chdir = true;
 	}
 
-	if (CHECK_DEBUGLVL(DBGLVL_INFO)) {
-		struct smb_filename *cwdfname = vfs_GetWd(talloc_tos(), conn);
-		if (cwdfname == NULL) {
-			return false;
-		}
-		DBG_INFO("Impersonated user: uid=(%d,%d), gid=(%d,%d), cwd=[%s]\n",
-			 (int)getuid(),
-			 (int)geteuid(),
-			 (int)getgid(),
-			 (int)getegid(),
-			 cwdfname->base_name);
-		TALLOC_FREE(cwdfname);
-	}
-
+	print_impersonation_info(conn);
 	return true;
 }
 
