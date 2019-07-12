@@ -1040,7 +1040,7 @@ def build(bld):
                               ib_deps,
                          install_path='${CTDB_TEST_LIBEXECDIR}')
 
-    if bld.env.HAVE_ROBUST_MUTEXES and sys.platform.startswith('linux'):
+    if bld.env.HAVE_ROBUST_MUTEXES and sys.platform.startswith('linux') and bld.env.DEVELOPER:
         bld.SAMBA_BINARY('test_mutex_raw',
                          source='tests/src/test_mutex_raw.c',
                          deps='pthread',
