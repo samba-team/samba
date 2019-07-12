@@ -419,6 +419,7 @@ NTSTATUS _netr_NetrEnumerateTrustedDomains(struct pipes_struct *p,
 	int i;
 	uint32_t max_size = (uint32_t)-1;
 
+	ZERO_STRUCT(pol);
 	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
 
 	status = rpcint_binding_handle(p->mem_ctx,
