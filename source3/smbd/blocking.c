@@ -620,7 +620,7 @@ static void smbd_smb1_do_locks_retry(struct tevent_req *subreq)
 	/*
 	 * Make sure we run as the user again
 	 */
-	ok = change_to_user_by_fsp(state->fsp);
+	ok = change_to_user_and_service_by_fsp(state->fsp);
 	if (!ok) {
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return;

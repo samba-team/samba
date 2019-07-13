@@ -736,7 +736,7 @@ static void smb2_query_directory_fetch_write_time_done(struct tevent_req *subreq
 	/*
 	 * Make sure we run as the user again
 	 */
-	ok = change_to_user_by_fsp(state->fsp);
+	ok = change_to_user_and_service_by_fsp(state->fsp);
 	SMB_ASSERT(ok);
 
 	state->async_sharemode_count--;
@@ -765,7 +765,7 @@ static void smb2_query_directory_dos_mode_done(struct tevent_req *subreq)
 	/*
 	 * Make sure we run as the user again
 	 */
-	ok = change_to_user_by_fsp(state->fsp);
+	ok = change_to_user_and_service_by_fsp(state->fsp);
 	SMB_ASSERT(ok);
 
 	status = fetch_dos_mode_recv(subreq);

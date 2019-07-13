@@ -2493,7 +2493,7 @@ static void smb_vfs_call_get_dos_attributes_done(struct tevent_req *subreq)
 	/*
 	 * Make sure we run as the user again
 	 */
-	ok = change_to_user_by_fsp(state->dir_fsp);
+	ok = change_to_user_and_service_by_fsp(state->dir_fsp);
 	SMB_ASSERT(ok);
 
 	status = state->recv_fn(subreq,
@@ -2770,7 +2770,7 @@ static void smb_vfs_call_getxattrat_done(struct tevent_req *subreq)
 	/*
 	 * Make sure we run as the user again
 	 */
-	ok = change_to_user_by_fsp(state->dir_fsp);
+	ok = change_to_user_and_service_by_fsp(state->dir_fsp);
 	SMB_ASSERT(ok);
 
 	state->retval = state->recv_fn(subreq,

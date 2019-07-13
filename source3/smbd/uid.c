@@ -483,7 +483,14 @@ bool change_to_user_and_service(connection_struct *conn, uint64_t vuid)
 	return change_to_user_internal(conn, vuser->session_info, vuid);
 }
 
-bool change_to_user_by_fsp(struct files_struct *fsp)
+/**
+ * Impersonate user and change directory to service
+ *
+ * change_to_user_and_service_by_fsp() is used to impersonate the user
+ * associated with the given vuid and to change the working directory of the
+ * process to the service base directory.
+ **/
+bool change_to_user_and_service_by_fsp(struct files_struct *fsp)
 {
 	return change_to_user_and_service(fsp->conn, fsp->vuid);
 }

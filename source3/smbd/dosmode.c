@@ -866,7 +866,7 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 	/*
 	 * Make sure we run as the user again
 	 */
-	ok = change_to_user_by_fsp(state->dir_fsp);
+	ok = change_to_user_and_service_by_fsp(state->dir_fsp);
 	SMB_ASSERT(ok);
 
 	status = SMB_VFS_GET_DOS_ATTRIBUTES_RECV(subreq,

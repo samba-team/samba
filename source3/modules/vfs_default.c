@@ -1790,7 +1790,7 @@ static void vfswrap_offload_write_cleanup(struct tevent_req *req,
 		return;
 	}
 
-	ok = change_to_user_by_fsp(state->dst_fsp);
+	ok = change_to_user_and_service_by_fsp(state->dst_fsp);
 	SMB_ASSERT(ok);
 	state->dst_fsp = NULL;
 }
@@ -1906,7 +1906,7 @@ static struct tevent_req *vfswrap_offload_write_send(
 		return tevent_req_post(req, ev);
 	}
 
-	ok = change_to_user_by_fsp(src_fsp);
+	ok = change_to_user_and_service_by_fsp(src_fsp);
 	if (!ok) {
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return tevent_req_post(req, ev);
@@ -2021,7 +2021,7 @@ static void vfswrap_offload_write_read_done(struct tevent_req *subreq)
 
 	state->src_off += nread;
 
-	ok = change_to_user_by_fsp(state->dst_fsp);
+	ok = change_to_user_and_service_by_fsp(state->dst_fsp);
 	if (!ok) {
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
@@ -2092,7 +2092,7 @@ static void vfswrap_offload_write_write_done(struct tevent_req *subreq)
 		return;
 	}
 
-	ok = change_to_user_by_fsp(state->src_fsp);
+	ok = change_to_user_and_service_by_fsp(state->src_fsp);
 	if (!ok) {
 		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
 		return;
@@ -3253,7 +3253,7 @@ static void vfswrap_getxattrat_done(struct tevent_req *subreq)
 	/*
 	 * Make sure we run as the user again
 	 */
-	ok = change_to_user_by_fsp(state->dir_fsp);
+	ok = change_to_user_and_service_by_fsp(state->dir_fsp);
 	SMB_ASSERT(ok);
 
 	ret = pthreadpool_tevent_job_recv(subreq);

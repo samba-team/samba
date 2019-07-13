@@ -279,6 +279,7 @@
 /* Version 42 - Move SMB_VFS_SYMLINK -> SMB_VFS_SYMLINKAT. */
 /* Version 42 - Move SMB_VFS_MKDIR -> SMB_VFS_MKDIRAT. */
 /* Version 42 - Move change_to_user() -> change_to_user_and_service() */
+/* Version 42 - Move change_to_user_by_fsp() -> change_to_user_and_service_by_fsp() */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
