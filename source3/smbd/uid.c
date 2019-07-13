@@ -253,7 +253,7 @@ static bool check_user_ok(connection_struct *conn,
 
 	/*
 	 * It's actually OK to call check_user_ok() with
-	 * vuid == UID_FIELD_INVALID as called from change_to_user_by_session().
+	 * vuid == UID_FIELD_INVALID as called from become_user_by_session().
 	 * All this will do is throw away one entry in the cache.
 	 */
 
@@ -495,15 +495,6 @@ bool change_to_user_and_service_by_fsp(struct files_struct *fsp)
 	return change_to_user_and_service(fsp->conn, fsp->vuid);
 }
 
-static bool change_to_user_by_session(connection_struct *conn,
-				      const struct auth_session_info *session_info)
-{
-	SMB_ASSERT(conn != NULL);
-	SMB_ASSERT(session_info != NULL);
-
-	return change_to_user_internal(conn, session_info, UID_FIELD_INVALID);
-}
-
 /****************************************************************************
  Go back to being root without changing the security context stack,
  but modify the current_user entries.
@@ -699,6 +690,9 @@ bool become_user_by_session(connection_struct *conn,
 {
 	bool ok;
 
+	SMB_ASSERT(conn != NULL);
+	SMB_ASSERT(session_info != NULL);
+
 	ok = push_sec_ctx();
 	if (!ok) {
 		return false;
@@ -706,7 +700,7 @@ bool become_user_by_session(connection_struct *conn,
 
 	push_conn_ctx();
 
-	ok = change_to_user_by_session(conn, session_info);
+	ok = change_to_user_internal(conn, session_info, UID_FIELD_INVALID);
 	if (!ok) {
 		pop_sec_ctx();
 		pop_conn_ctx();
