@@ -466,9 +466,9 @@ bool change_to_user_and_service(connection_struct *conn, uint64_t vuid)
 	struct user_struct *vuser;
 	int snum = SNUM(conn);
 
-	if (!conn) {
-		DEBUG(2,("Connection not open\n"));
-		return(False);
+	if (conn == NULL) {
+		DBG_WARNING("Connection not open\n");
+		return false;
 	}
 
 	vuser = get_valid_user_struct(conn->sconn, vuid);
@@ -670,18 +670,23 @@ void smbd_unbecome_root(void)
 
 bool become_user(connection_struct *conn, uint64_t vuid)
 {
-	if (!push_sec_ctx())
-		return False;
+	bool ok;
+
+	ok = push_sec_ctx();
+	if (!ok) {
+		return false;
+	}
 
 	push_conn_ctx();
 
-	if (!change_to_user_and_service(conn, vuid)) {
+	ok = change_to_user_and_service(conn, vuid);
+	if (!ok) {
 		pop_sec_ctx();
 		pop_conn_ctx();
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 bool become_user_by_fsp(struct files_struct *fsp)
@@ -692,12 +697,17 @@ bool become_user_by_fsp(struct files_struct *fsp)
 bool become_user_by_session(connection_struct *conn,
 			    const struct auth_session_info *session_info)
 {
-	if (!push_sec_ctx())
+	bool ok;
+
+	ok = push_sec_ctx();
+	if (!ok) {
 		return false;
+	}
 
 	push_conn_ctx();
 
-	if (!change_to_user_by_session(conn, session_info)) {
+	ok = change_to_user_by_session(conn, session_info);
+	if (!ok) {
 		pop_sec_ctx();
 		pop_conn_ctx();
 		return false;
