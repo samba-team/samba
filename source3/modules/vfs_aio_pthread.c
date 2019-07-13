@@ -105,7 +105,7 @@ static void aio_open_handle_completion(struct tevent_req *subreq)
 		/*
 		 * Make sure we run as the user again
 		 */
-		ok = change_to_user(opd->conn, opd->conn->vuid);
+		ok = change_to_user_and_service(opd->conn, opd->conn->vuid);
 		if (!ok) {
 			smb_panic("Can't change to user");
 			return;

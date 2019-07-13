@@ -295,8 +295,8 @@ static void defer_rename_done(struct tevent_req *subreq)
 	/*
 	 * Make sure we run as the user again
 	 */
-	ok = change_to_user(state->smb2req->tcon->compat,
-			    state->smb2req->session->compat->vuid);
+	ok = change_to_user_and_service(state->smb2req->tcon->compat,
+					state->smb2req->session->compat->vuid);
 	if (!ok) {
 		tevent_req_nterror(state->req, NT_STATUS_ACCESS_DENIED);
 		return;

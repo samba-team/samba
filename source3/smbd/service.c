@@ -747,7 +747,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	}
 
 /* USER Activites: */
-	if (!change_to_user(conn, conn->vuid)) {
+	if (!change_to_user_and_service(conn, conn->vuid)) {
 		/* No point continuing if they fail the basic checks */
 		DEBUG(0,("Can't become connected user!\n"));
 		status = NT_STATUS_LOGON_FAILURE;
@@ -1162,7 +1162,7 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 
 	/* execute any "postexec = " line */
 	if (*lp_postexec(talloc_tos(), SNUM(conn)) &&
-	    change_to_user(conn, vuid))  {
+	    change_to_user_and_service(conn, vuid))  {
 		char *cmd = talloc_sub_advanced(talloc_tos(),
 					lp_const_servicename(SNUM(conn)),
 					conn->session_info->unix_info->unix_name,

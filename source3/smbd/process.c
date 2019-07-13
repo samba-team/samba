@@ -1626,7 +1626,7 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 		 * change_to_user() implies set_current_user_info()
 		 * and chdir_connect_service().
 		 */
-		if (!change_to_user(conn,session_tag)) {
+		if (!change_to_user_and_service(conn,session_tag)) {
 			DEBUG(0, ("Error: Could not change to user. Removing "
 				"deferred open, mid=%llu.\n",
 				(unsigned long long)req->mid));

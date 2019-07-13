@@ -1883,7 +1883,7 @@ static NTSTATUS smbd_smb2_request_check_tcon(struct smbd_smb2_request *req)
 		return status;
 	}
 
-	if (!change_to_user(tcon->compat, req->session->compat->vuid)) {
+	if (!change_to_user_and_service(tcon->compat, req->session->compat->vuid)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
