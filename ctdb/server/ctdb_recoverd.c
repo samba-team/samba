@@ -786,7 +786,7 @@ static void ctdb_election_timeout(struct tevent_context *ev,
 	rec->election_timeout = NULL;
 	fast_start = false;
 
-	DEBUG(DEBUG_WARNING,("Election period ended\n"));
+	D_WARNING("Election period ended, master=%u\n", rec->recmaster);
 }
 
 
