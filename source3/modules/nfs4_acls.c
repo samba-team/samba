@@ -765,13 +765,10 @@ static bool smbacl4_fill_ace4(
 	return true; /* OK */
 }
 
-static int smbacl4_MergeIgnoreReject(
-	enum smbacl4_acedup_enum acedup,
-	struct SMB4ACL_T *theacl, /* may modify it */
-	SMB_ACE4PROP_T *ace, /* the "new" ACE */
-	bool	*paddNewACE,
-	int	i
-)
+static int smbacl4_MergeIgnoreReject(enum smbacl4_acedup_enum acedup,
+				     struct SMB4ACL_T *theacl,
+				     SMB_ACE4PROP_T *ace,
+				     bool *paddNewACE)
 {
 	int	result = 0;
 	SMB_ACE4PROP_T *ace4found = smbacl4_find_equal_special(theacl, ace);
@@ -788,7 +785,7 @@ static int smbacl4_MergeIgnoreReject(
 			*paddNewACE = false;
 			break;
 		case e_reject: /* do an error */
-			DEBUG(8, ("ACL rejected by duplicate nt ace#%d\n", i));
+			DBG_INFO("ACL rejected by duplicate nt ace.\n");
 			errno = EINVAL; /* SHOULD be set on any _real_ error */
 			result = -1;
 			break;
@@ -905,7 +902,7 @@ static struct SMB4ACL_T *smbacl4_win2nfs4(
 
 		if (pparams->acedup!=e_dontcare) {
 			if (smbacl4_MergeIgnoreReject(pparams->acedup, theacl,
-						      &ace_v4, &addNewACE, i)) {
+						      &ace_v4, &addNewACE)) {
 				return NULL;
 			}
 		}
