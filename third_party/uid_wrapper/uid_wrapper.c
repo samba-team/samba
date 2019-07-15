@@ -34,6 +34,7 @@
 #include <syscall.h>
 #endif
 #include <dlfcn.h>
+#include <limits.h>
 
 #include <pthread.h>
 
@@ -86,6 +87,14 @@
 #else
 #define PRINTF_ATTRIBUTE(a,b)
 #endif /* HAVE_FUNCTION_ATTRIBUTE_FORMAT */
+
+#ifndef FALL_THROUGH
+# ifdef HAVE_FALLTHROUGH_ATTRIBUTE
+#  define FALL_THROUGH __attribute__ ((fallthrough))
+# else /* HAVE_FALLTHROUGH_ATTRIBUTE */
+#  define FALL_THROUGH
+# endif /* HAVE_FALLTHROUGH_ATTRIBUTE */
+#endif /* FALL_THROUGH */
 
 #define UWRAP_DLIST_ADD(list,item) do { \
 	if (!(list)) { \
@@ -386,14 +395,30 @@ static void *uwrap_load_lib_handle(enum uwrap_lib lib)
 	int i;
 
 #ifdef RTLD_DEEPBIND
-	flags |= RTLD_DEEPBIND;
+	const char *env_preload = getenv("LD_PRELOAD");
+	const char *env_deepbind = getenv("UID_WRAPPER_DISABLE_DEEPBIND");
+	bool enable_deepbind = true;
+
+	/* Don't do a deepbind if we run with libasan */
+	if (env_preload != NULL && strlen(env_preload) < 1024) {
+		const char *p = strstr(env_preload, "libasan.so");
+		if (p != NULL) {
+			enable_deepbind = false;
+		}
+	}
+
+	if (env_deepbind != NULL && strlen(env_deepbind) >= 1) {
+		enable_deepbind = false;
+	}
+
+	if (enable_deepbind) {
+		flags |= RTLD_DEEPBIND;
+	}
 #endif
 
 	switch (lib) {
 	case UWRAP_LIBNSL:
-		/* FALL TROUGH */
 	case UWRAP_LIBSOCKET:
-		/* FALL TROUGH */
 	case UWRAP_LIBC:
 		handle = uwrap.libc.handle;
 		if (handle == NULL) {
@@ -749,7 +774,7 @@ static int uwrap_pthread_create(pthread_t *thread,
 
 	UWRAP_LOCK(uwrap_id);
 
-	args->id->groups = malloc(sizeof(gid_t) * src_id->ngroups);
+	args->id->groups = calloc(src_id->ngroups, sizeof(gid_t));
 	if (args->id->groups == NULL) {
 		UWRAP_UNLOCK(uwrap_id);
 		SAFE_FREE(args->id);
@@ -972,6 +997,31 @@ static void uwrap_thread_child(void)
 	UWRAP_UNLOCK_ALL;
 }
 
+static unsigned long uwrap_get_xid_from_env(const char *envname)
+{
+	unsigned long xid;
+	const char *env = NULL;
+	char *endp = NULL;
+
+	env = getenv(envname);
+	if (env == NULL) {
+		return ULONG_MAX;
+	}
+
+	if (env[0] == '\0') {
+		unsetenv(envname);
+		return ULONG_MAX;
+	}
+
+	xid = strtoul(env, &endp, 10);
+	unsetenv(envname);
+	if (env == endp) {
+		return ULONG_MAX;
+	}
+
+	return xid;
+}
+
 /*
  * This initializes uid_wrapper with the IDs exported to the environment. Those
  * are normally set after we forked and executed.
@@ -980,53 +1030,38 @@ static void uwrap_init_env(struct uwrap_thread *id)
 {
 	const char *env;
 	int ngroups = 0;
+	unsigned long xid;
 
-	env = getenv("UID_WRAPPER_INITIAL_RUID");
-	if (env != NULL && env[0] != '\0') {
-		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initialize ruid with %s", env);
-		id->ruid = strtoul(env, (char **)NULL, 10);
-		unsetenv("UID_WRAPPER_INITIAL_RUID");
+	/* UIDs */
+	xid = uwrap_get_xid_from_env("UID_WRAPPER_INITIAL_RUID");
+	if (xid != ULONG_MAX) {
+		id->ruid = (uid_t)xid;
 	}
 
-	env = getenv("UID_WRAPPER_INITIAL_EUID");
-	if (env != NULL && env[0] != '\0') {
-		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initalize euid with %s", env);
-		id->euid = strtoul(env, (char **)NULL, 10);
-		unsetenv("UID_WRAPPER_INITIAL_EUID");
+	xid = uwrap_get_xid_from_env("UID_WRAPPER_INITIAL_EUID");
+	if (xid != ULONG_MAX) {
+		id->euid = (uid_t)xid;
 	}
 
-	env = getenv("UID_WRAPPER_INITIAL_SUID");
-	if (env != NULL && env[0] != '\0') {
-		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initalize suid with %s", env);
-		id->suid = strtoul(env, (char **)NULL, 10);
-		unsetenv("UID_WRAPPER_INITIAL_SUID");
+	xid = uwrap_get_xid_from_env("UID_WRAPPER_INITIAL_SUID");
+	if (xid != ULONG_MAX) {
+		id->suid = (uid_t)xid;
 	}
 
-	env = getenv("UID_WRAPPER_INITIAL_RGID");
-	if (env != NULL && env[0] != '\0') {
-		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initialize ruid with %s", env);
-		id->rgid = strtoul(env, (char **)NULL, 10);
-		unsetenv("UID_WRAPPER_INITIAL_RGID");
+	/* GIDs */
+	xid = uwrap_get_xid_from_env("UID_WRAPPER_INITIAL_RGID");
+	if (xid != ULONG_MAX) {
+		id->rgid = (gid_t)xid;
 	}
 
-	env = getenv("UID_WRAPPER_INITIAL_EGID");
-	if (env != NULL && env[0] != '\0') {
-		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initalize egid with %s", env);
-		id->egid = strtoul(env, (char **)NULL, 10);
-		unsetenv("UID_WRAPPER_INITIAL_EGID");
+	xid = uwrap_get_xid_from_env("UID_WRAPPER_INITIAL_EGID");
+	if (xid != ULONG_MAX) {
+		id->egid = (gid_t)xid;
 	}
 
-	env = getenv("UID_WRAPPER_INITIAL_SGID");
-	if (env != NULL && env[0] != '\0') {
-		UWRAP_LOG(UWRAP_LOG_DEBUG, "Initalize sgid with %s", env);
-		id->sgid = strtoul(env, (char **)NULL, 10);
-		unsetenv("UID_WRAPPER_INITIAL_SGID");
-	}
-
-	env = getenv("UID_WRAPPER_INITIAL_GROUPS_COUNT");
-	if (env != NULL && env[0] != '\0') {
-		ngroups = strtol(env, (char **)NULL, 10);
-		unsetenv("UID_WRAPPER_INITIAL_GROUPS_COUNT");
+	xid = uwrap_get_xid_from_env("UID_WRAPPER_INITIAL_SGID");
+	if (xid != ULONG_MAX) {
+		id->sgid = (gid_t)xid;
 	}
 
 	env = getenv("UID_WRAPPER_INITIAL_GROUPS_COUNT");

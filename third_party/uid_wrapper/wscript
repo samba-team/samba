@@ -3,7 +3,7 @@
 from waflib import Options
 import os, sys
 
-VERSION="1.2.4"
+VERSION="1.2.7"
 
 def configure(conf):
     if conf.CHECK_UID_WRAPPER():
