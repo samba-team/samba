@@ -219,17 +219,6 @@ void dptr_close(struct smbd_server_connection *sconn, int *key)
 	if(*key == INVALID_DPTR_KEY)
 		return;
 
-	/* OS/2 seems to use -1 to indicate "close all directories" */
-	if (*key == -1) {
-		struct dptr_struct *next;
-		for(dptr = sconn->searches.dirptrs; dptr; dptr = next) {
-			next = dptr->next;
-			dptr_close_internal(dptr);
-		}
-		*key = INVALID_DPTR_KEY;
-		return;
-	}
-
 	dptr = dptr_get(sconn, *key);
 
 	if (!dptr) {

@@ -9647,7 +9647,15 @@ void reply_findclose(struct smb_request *req)
 
 	DEBUG(3,("reply_findclose, dptr_num = %d\n", dptr_num));
 
-	dptr_close(sconn, &dptr_num);
+	/*
+	 * OS/2 seems to use -1 to indicate "close all directories"
+	 * This has to mean on this specific connection struct.
+	 */
+	if (dptr_num == -1) {
+		dptr_closecnum(req->conn);
+	} else {
+		dptr_close(sconn, &dptr_num);
+	}
 
 	reply_outbuf(req, 0, 0);
 
