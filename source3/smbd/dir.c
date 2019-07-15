@@ -276,7 +276,8 @@ void dptr_closecnum(connection_struct *conn)
 	for(dptr = sconn->searches.dirptrs; dptr; dptr = next) {
 		next = dptr->next;
 		if (dptr->conn == conn) {
-			dptr_close_internal(dptr);
+			int key = dptr->dnum;
+			dptr_close(sconn, &key);
 		}
 	}
 }
