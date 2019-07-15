@@ -3091,6 +3091,112 @@ static void recd_sig_term_handler(struct tevent_context *ev,
 	exit(0);
 }
 
+/*
+ * Periodically log elements of the cluster state
+ *
+ * This can be used to confirm a split brain has occurred
+ */
+static void maybe_log_cluster_state(struct tevent_context *ev,
+				    struct tevent_timer *te,
+				    struct timeval current_time,
+				    void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type_abort(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
+	struct tevent_timer *tt;
+
+	static struct timeval start_incomplete = {
+		.tv_sec = 0,
+	};
+
+	bool is_complete;
+	bool was_complete;
+	unsigned int i;
+	double seconds;
+	unsigned int minutes;
+	unsigned int num_connected;
+
+	if (rec->recmaster != ctdb_get_pnn(ctdb)) {
+		goto done;
+	}
+
+	if (rec->nodemap == NULL) {
+		goto done;
+	}
+
+	is_complete = true;
+	num_connected = 0;
+	for (i = 0; i < rec->nodemap->num; i++) {
+		struct ctdb_node_and_flags *n = &rec->nodemap->nodes[i];
+
+		if (n->pnn == ctdb_get_pnn(ctdb)) {
+			continue;
+		}
+		if ((n->flags & NODE_FLAGS_DELETED) != 0) {
+			continue;
+		}
+		if ((n->flags & NODE_FLAGS_DISCONNECTED) != 0) {
+			is_complete = false;
+			continue;
+		}
+
+		num_connected++;
+	}
+
+	was_complete = timeval_is_zero(&start_incomplete);
+
+	if (is_complete) {
+		if (! was_complete) {
+			D_WARNING("Cluster complete with master=%u\n",
+				  rec->recmaster);
+			start_incomplete = timeval_zero();
+		}
+		goto done;
+	}
+
+	/* Cluster is newly incomplete... */
+	if (was_complete) {
+		start_incomplete = current_time;
+		minutes = 0;
+		goto log;
+	}
+
+	/*
+	 * Cluster has been incomplete since previous check, so figure
+	 * out how long (in minutes) and decide whether to log anything
+	 */
+	seconds = timeval_elapsed2(&start_incomplete, &current_time);
+	minutes = (unsigned int)seconds / 60;
+	if (minutes >= 60) {
+		/* Over an hour, log every hour */
+		if (minutes % 60 != 0) {
+			goto done;
+		}
+	} else if (minutes >= 10) {
+		/* Over 10 minutes, log every 10 minutes */
+		if (minutes % 10 != 0) {
+			goto done;
+		}
+	}
+
+log:
+	D_WARNING("Cluster incomplete with master=%u, elapsed=%u minutes, "
+		  "connected=%u\n",
+		  rec->recmaster,
+		  minutes,
+		  num_connected);
+
+done:
+	tt = tevent_add_timer(ctdb->ev,
+			      rec,
+			      timeval_current_ofs(60, 0),
+			      maybe_log_cluster_state,
+			      rec);
+	if (tt == NULL) {
+		DBG_WARNING("Failed to set up cluster state timer\n");
+	}
+}
 
 /*
   the main monitoring loop
@@ -3123,6 +3229,19 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	if (se == NULL) {
 		DEBUG(DEBUG_ERR, ("Failed to install SIGTERM handler\n"));
 		exit(1);
+	}
+
+	if (ctdb->recovery_lock == NULL) {
+		struct tevent_timer *tt;
+
+		tt = tevent_add_timer(ctdb->ev,
+				      rec,
+				      timeval_current_ofs(60, 0),
+				      maybe_log_cluster_state,
+				      rec);
+		if (tt == NULL) {
+			DBG_WARNING("Failed to set up cluster state timer\n");
+		}
 	}
 
 	/* register a message port for sending memory dumps */
