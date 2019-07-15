@@ -585,6 +585,18 @@ out:
 
 #endif
 
+/*
+Arguments:
+- struct net_context *: Pointer to net_context*
+- argc: Number of command line arguments passed to 'net ads gpo getgpo' command
+- **argv: Command line argument string passed to 'net ads gpo getgpo' command
+
+This function performs following operations:
+1. Create  talloc context using talloc_init
+2. Preform ads_startup()
+3. Call ads_get_gpo() to retrieve gpo details inside 'struct GROUP_POLICY_OBJECT'
+4. Call dumps_gpo() to dump GPO on stdout
+*/
 static int net_ads_gpo_get_gpo(struct net_context *c, int argc, const char **argv)
 {
 	ADS_STRUCT *ads;
@@ -623,7 +635,7 @@ static int net_ads_gpo_get_gpo(struct net_context *c, int argc, const char **arg
 		goto out;
 	}
 
-	dump_gpo(&gpo, 1);
+	dump_gpo(&gpo, 0);
 
 out:
 	talloc_destroy(mem_ctx);
