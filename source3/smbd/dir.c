@@ -207,12 +207,14 @@ done:
 }
 
 /****************************************************************************
- Close a dptr given a key.
+ Close a dptr given a key. SMB1 *only*.
 ****************************************************************************/
 
 void dptr_close(struct smbd_server_connection *sconn, int *key)
 {
 	struct dptr_struct *dptr;
+
+	SMB_ASSERT(!sconn->using_smb2);
 
 	if(*key == INVALID_DPTR_KEY)
 		return;
