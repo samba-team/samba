@@ -1165,9 +1165,11 @@ int partition_prepare_commit(struct ldb_module *module)
 int partition_end_trans(struct ldb_module *module)
 {
 	int ret, ret2;
-	unsigned int i;
+	int i;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
+	bool trace = module && ldb_module_flags(ldb) & LDB_FLG_ENABLE_TRACING;
 
 	ret = LDB_SUCCESS;
 
@@ -1182,21 +1184,28 @@ int partition_end_trans(struct ldb_module *module)
 	 * Order of end_trans calls must be the reverse of that in
 	 * partition_start_trans. See comment in that function for detail.
 	 */
-	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
-			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_end_trans() -> %s",
-				  ldb_dn_get_linearized(data->partitions[i]->ctrl->dn));
-		}
-		ret2 = ldb_next_end_trans(data->partitions[i]->module);
-		if (ret2 != LDB_SUCCESS) {
-			ldb_asprintf_errstring(ldb_module_get_ctx(module), "end_trans error on %s: %s",
-					       ldb_dn_get_linearized(data->partitions[i]->ctrl->dn),
-					       ldb_errstring(ldb_module_get_ctx(module)));
-			ret = ret2;
+	if (data && data->partitions) {
+		for (i=0; data->partitions[i]; i++);;
+		for (i--; i>=0; i--) {
+			struct dsdb_partition *p = data->partitions[i];
+			if (trace) {
+				ldb_debug(ldb,
+					  LDB_DEBUG_TRACE,
+					  "partition_end_trans() -> %s",
+					  ldb_dn_get_linearized(p->ctrl->dn));
+			}
+			ret2 = ldb_next_end_trans(p->module);
+			if (ret2 != LDB_SUCCESS) {
+				ldb_asprintf_errstring(ldb,
+					"end_trans error on %s: %s",
+					ldb_dn_get_linearized(p->ctrl->dn),
+					ldb_errstring(ldb));
+				ret = ret2;
+			}
 		}
 	}
 
-	if ((module && ldb_module_flags(ldb_module_get_ctx(module)) & LDB_FLG_ENABLE_TRACING)) {
+	if (trace) {
 		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_end_trans() -> (metadata partition)");
 	}
 	ret2 = ldb_next_end_trans(module);
@@ -1216,31 +1225,38 @@ int partition_end_trans(struct ldb_module *module)
 int partition_del_trans(struct ldb_module *module)
 {
 	int ret, final_ret = LDB_SUCCESS;
-	unsigned int i;
+	int i;
+	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
+	bool trace = module && ldb_module_flags(ldb) & LDB_FLG_ENABLE_TRACING;
 
 	/*
 	 * Order of del_trans calls must be the reverse of that in
 	 * partition_start_trans. See comment in that function for detail.
 	 */
-	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		if (ldb_module_flags(ldb_module_get_ctx(module)) &
-		    LDB_FLG_ENABLE_TRACING) {
-			ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_del_trans() -> %s",
-				  ldb_dn_get_linearized(data->partitions[i]->ctrl->dn));
+	if (data && data->partitions) {
+		for (i=0; data->partitions[i]; i++);;
+		for (i--; i>=0; i--) {
+			struct dsdb_partition *p = data->partitions[i];
+			if (trace) {
+				ldb_debug(ldb,
+					  LDB_DEBUG_TRACE,
+					  "partition_del_trans() -> %s",
+					  ldb_dn_get_linearized(p->ctrl->dn));
+			}
+			ret = ldb_next_del_trans(p->module);
+			if (ret != LDB_SUCCESS) {
+				ldb_asprintf_errstring(ldb,
+					"del_trans error on %s: %s",
+					ldb_dn_get_linearized(p->ctrl->dn),
+					ldb_errstring(ldb));
+				final_ret = ret;
+			}
 		}
-		ret = ldb_next_del_trans(data->partitions[i]->module);
-		if (ret != LDB_SUCCESS) {
-			ldb_asprintf_errstring(ldb_module_get_ctx(module), "del_trans error on %s: %s",
-					       ldb_dn_get_linearized(data->partitions[i]->ctrl->dn),
-					       ldb_errstring(ldb_module_get_ctx(module)));
-			final_ret = ret;
-		}
-	}	
+	}
 
-	if (ldb_module_flags(ldb_module_get_ctx(module)) &
-	    LDB_FLG_ENABLE_TRACING) {
+	if (trace) {
 		ldb_debug(ldb_module_get_ctx(module), LDB_DEBUG_TRACE, "partition_del_trans() -> (metadata partition)");
 	}
 	ret = ldb_next_del_trans(module);
@@ -1567,39 +1583,42 @@ int partition_read_unlock(struct ldb_module *module)
 	struct partition_private_data *data = \
 		talloc_get_type(ldb_module_get_private(module),
 				struct partition_private_data);
+	bool trace = module && ldb_module_flags(ldb) & LDB_FLG_ENABLE_TRACING;
 
 	/*
 	 * Order of read_unlock calls must be the reverse of that in
 	 * partition_start_trans. See comment in that function for detail.
 	 */
-	for (i=0; data && data->partitions && data->partitions[i]; i++) {
-		if ((module && ldb_module_flags(ldb) & LDB_FLG_ENABLE_TRACING)) {
-			ldb_debug(ldb, LDB_DEBUG_TRACE,
-				  "partition_read_unlock() -> %s",
-				  ldb_dn_get_linearized(
-					  data->partitions[i]->ctrl->dn));
-		}
-		ret2 = ldb_next_read_unlock(data->partitions[i]->module);
-		if (ret2 != LDB_SUCCESS) {
-			ldb_debug_set(ldb,
-				      LDB_DEBUG_FATAL,
-				      "Failed to lock db: %s / %s for %s",
-				      ldb_errstring(ldb),
-				      ldb_strerror(ret),
-				      ldb_dn_get_linearized(
-					      data->partitions[i]->ctrl->dn));
+	if (data && data->partitions) {
+		for (i=0; data->partitions[i]; i++);;
+		for (i--; i>=0; i--) {
+			struct dsdb_partition *p = data->partitions[i];
+			if (trace) {
+				ldb_debug(ldb, LDB_DEBUG_TRACE,
+					  "partition_read_unlock() -> %s",
+					  ldb_dn_get_linearized(p->ctrl->dn));
+			}
+			ret2 = ldb_next_read_unlock(p->module);
+			if (ret2 != LDB_SUCCESS) {
+				ldb_debug_set(ldb,
+					   LDB_DEBUG_FATAL,
+					   "Failed to lock db: %s / %s for %s",
+					   ldb_errstring(ldb),
+					   ldb_strerror(ret),
+					   ldb_dn_get_linearized(p->ctrl->dn));
 
-			/*
-			 * Don't overwrite the original failure code
-			 * if there was one
-			 */
-			if (ret == LDB_SUCCESS) {
-				ret = ret2;
+				/*
+				 * Don't overwrite the original failure code
+				 * if there was one
+				 */
+				if (ret == LDB_SUCCESS) {
+					ret = ret2;
+				}
 			}
 		}
 	}
 
-	if (ldb_module_flags(ldb) & LDB_FLG_ENABLE_TRACING) {
+	if (trace) {
 		ldb_debug(ldb, LDB_DEBUG_TRACE,
 			  "partition_read_unlock() -> (metadata partition)");
 	}
