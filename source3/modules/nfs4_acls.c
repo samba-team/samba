@@ -730,18 +730,27 @@ static bool smbacl4_fill_ace4(
 			return false;
 		}
 
-		if (unixid.type == ID_TYPE_GID || unixid.type == ID_TYPE_BOTH) {
+		if (dom_sid_compare_domain(&ace_nt->trustee,
+					   &global_sid_Unix_NFS) == 0) {
+			return false;
+		}
+
+		switch (unixid.type) {
+		case ID_TYPE_BOTH:
 			ace_v4->aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
 			ace_v4->who.gid = unixid.id;
-		} else if (unixid.type == ID_TYPE_UID) {
+			break;
+		case ID_TYPE_GID:
+			ace_v4->aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
+			ace_v4->who.gid = unixid.id;
+			break;
+		case ID_TYPE_UID:
 			ace_v4->who.uid = unixid.id;
-		} else if (dom_sid_compare_domain(&ace_nt->trustee,
-						  &global_sid_Unix_NFS) == 0) {
-			return false;
-		} else {
-			DEBUG(1, ("nfs4_acls.c: could not "
-				  "convert %s to uid or gid\n",
-				  dom_sid_str_buf(&ace_nt->trustee, &buf)));
+			break;
+		case ID_TYPE_NOT_SPECIFIED:
+		default:
+			DBG_WARNING("Could not convert %s to uid or gid.\n",
+				    dom_sid_str_buf(&ace_nt->trustee, &buf));
 			return false;
 		}
 	}
