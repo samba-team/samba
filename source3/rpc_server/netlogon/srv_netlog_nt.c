@@ -1134,6 +1134,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 	int rc;
 	DATA_BLOB session_key;
 	enum samr_UserInfoLevel infolevel;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	ZERO_STRUCT(user_handle);
 
@@ -1144,7 +1145,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	rc = tsocket_address_inet_from_strings(mem_ctx,
+	rc = tsocket_address_inet_from_strings(frame,
 					       "ip",
 					       "127.0.0.1",
 					       0,
@@ -1154,7 +1155,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	status = rpcint_binding_handle(mem_ctx,
+	status = rpcint_binding_handle(frame,
 				       &ndr_table_samr,
 				       local,
 				       NULL,
@@ -1166,7 +1167,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 	}
 
 	become_root();
-	status = samr_find_machine_account(mem_ctx,
+	status = samr_find_machine_account(frame,
 					   h,
 					   account_name,
 					   SEC_FLAG_MAXIMUM_ALLOWED,
@@ -1179,7 +1180,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 	}
 
 	status = dcerpc_samr_QueryUserInfo2(h,
-					    mem_ctx,
+					    frame,
 					    &user_handle,
 					    UserControlInformation,
 					    &info,
@@ -1213,7 +1214,11 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 			infolevel = UserInternal1Information;
 
 			in = data_blob_const(cr->creds.nt_hash, 16);
-			out = data_blob_talloc_zero(mem_ctx, 16);
+			out = data_blob_talloc_zero(frame, 16);
+			if (out.data == NULL) {
+				status = NT_STATUS_NO_MEMORY;
+				goto out;
+			}
 			sess_crypt_blob(&out, &in, &session_key, true);
 			memcpy(info18.nt_pwd.hash, out.data, out.length);
 
@@ -1244,7 +1249,7 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 
 	become_root();
 	status = dcerpc_samr_SetUserInfo2(h,
-					  mem_ctx,
+					  frame,
 					  &user_handle,
 					  infolevel,
 					  info,
@@ -1260,8 +1265,9 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 
  out:
 	if (h && is_valid_policy_hnd(&user_handle)) {
-		dcerpc_samr_Close(h, mem_ctx, &user_handle, &result);
+		dcerpc_samr_Close(h, frame, &user_handle, &result);
 	}
+	TALLOC_FREE(frame);
 
 	return status;
 }
