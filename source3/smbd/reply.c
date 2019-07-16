@@ -1815,6 +1815,7 @@ void reply_search(struct smb_request *req)
 	/* dirtype &= ~FILE_ATTRIBUTE_DIRECTORY; */
 
 	if (status_len == 0) {
+		int ret;
 		struct smb_filename *smb_dname = NULL;
 		uint32_t ucf_flags = UCF_ALWAYS_ALLOW_WCARD_LCOMP |
 			ucf_flags_from_smb_request(req);
@@ -1864,9 +1865,58 @@ void reply_search(struct smb_request *req)
 			goto out;
 		}
 
+		/*
+		 * As we've cut off the last component from
+		 * smb_fname we need to re-stat smb_dname
+		 * so FILE_OPEN disposition knows the directory
+		 * exists.
+		 */
+		if (req->posix_pathnames) {
+			ret = SMB_VFS_LSTAT(conn, smb_dname);
+		} else {
+			ret = SMB_VFS_STAT(conn, smb_dname);
+		}
+		if (ret == -1) {
+			nt_status = map_nt_error_from_unix(errno);
+			reply_nterror(req, nt_status);
+			goto out;
+		}
+
+		/*
+		 * Open an fsp on this directory for the dptr.
+		 */
+		nt_status = SMB_VFS_CREATE_FILE(
+				conn, /* conn */
+				req, /* req */
+				0, /* root_dir_fid */
+				smb_dname, /* dname */
+				FILE_LIST_DIRECTORY, /* access_mask */
+				FILE_SHARE_READ|
+				FILE_SHARE_WRITE, /* share_access */
+				FILE_OPEN, /* create_disposition*/
+				FILE_DIRECTORY_FILE, /* create_options */
+				FILE_ATTRIBUTE_DIRECTORY,/* file_attributes */
+				NO_OPLOCK, /* oplock_request */
+				NULL, /* lease */
+				0, /* allocation_size */
+				0, /* private_flags */
+				NULL, /* sd */
+				NULL, /* ea_list */
+				&fsp, /* result */
+				NULL, /* pinfo */
+				NULL, /* in_context */
+				NULL);/* out_context */
+
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			DBG_ERR("failed to open directory %s\n",
+				smb_fname_str_dbg(smb_dname));
+			reply_nterror(req, nt_status);
+			goto out;
+		}
+
 		nt_status = dptr_create(conn,
 					NULL, /* req */
-					NULL, /* fsp */
+					fsp, /* fsp */
 					smb_dname,
 					True,
 					expect_close,
@@ -1874,15 +1924,33 @@ void reply_search(struct smb_request *req)
 					mask,
 					mask_contains_wcard,
 					dirtype,
-					&dirptr);
+					&fsp->dptr);
 
 		TALLOC_FREE(smb_dname);
 
 		if (!NT_STATUS_IS_OK(nt_status)) {
+			/*
+			 * Use NULL here for the first parameter (req)
+			 * as this is not a client visible handle so
+			 * can'tbe part of an SMB1 chain.
+			 */
+			close_file(NULL, fsp, NORMAL_CLOSE);
+			fsp = NULL;
 			reply_nterror(req, nt_status);
 			goto out;
 		}
-		dptr_num = dptr_dnum(dirptr);
+
+		dirptr = fsp->dptr;
+		dptr_num = dptr_dnum(fsp->dptr);
+
+		/*
+		 * At this point the struct dptr_struct *dirptr
+		 * holds a pointer to fsp, and will automaticly
+		 * close it once dptr_close() is called. We will
+		 * fetch it as needed there.
+		 */
+		fsp = NULL;
+
 	} else {
 		int status_dirtype;
 		const char *dirpath;
