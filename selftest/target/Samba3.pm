@@ -1516,6 +1516,9 @@ sub provision($$$$$$$$$)
 	my $ro_shrdir="$shrdir/root-tmp";
 	push(@dirs,$ro_shrdir);
 
+	my $noperm_shrdir="$shrdir/noperm-tmp";
+	push(@dirs,$noperm_shrdir);
+
 	my $msdfs_shrdir="$shrdir/msdfsshare";
 	push(@dirs,$msdfs_shrdir);
 
@@ -1585,6 +1588,11 @@ sub provision($$$$$$$$$)
 	chmod 0755, $lockdir;
 	chmod 0755, $piddir;
 
+
+	##
+	## Create a directory without permissions to enter
+	##
+	chmod 0000, $noperm_shrdir;
 
 	##
 	## create ro and msdfs share layout
@@ -1901,6 +1909,10 @@ sub provision($$$$$$$$$)
         guest ok = yes
 [ro-tmp]
 	path = $ro_shrdir
+	guest ok = yes
+[noperm]
+	path = $noperm_shrdir
+	wide links = yes
 	guest ok = yes
 [write-list-tmp]
 	path = $shrdir
