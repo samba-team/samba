@@ -6095,6 +6095,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	unsigned int orig_timeout;
 	struct dcerpc_binding_handle *b = pipe_hnd->binding_handle;
 	DATA_BLOB session_key = data_blob_null;
+	TALLOC_CTX *frame = NULL;
 
 	if (argc != 2) {
 		d_printf("%s\n%s",
@@ -6104,22 +6105,24 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
+	frame = talloc_stackframe();
+
 	/*
 	 * Make valid trusting domain account (ie. uppercased and with '$' appended)
 	 */
 
 	if (asprintf(&acct_name, "%s$", argv[0]) < 0) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
 	}
 
 	if (!strupper_m(acct_name)) {
-		SAFE_FREE(acct_name);
-		return NT_STATUS_INVALID_PARAMETER;
+		status = NT_STATUS_INVALID_PARAMETER;
+		goto done;
 	}
 
 	init_lsa_String(&lsa_acct_name, acct_name);
 
-	status = cli_get_session_key(mem_ctx, pipe_hnd, &session_key);
+	status = cli_get_session_key(frame, pipe_hnd, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Error getting session_key of SAM pipe. Error was %s\n",
 			nt_errstr(status)));
@@ -6127,7 +6130,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	}
 
 	/* Get samr policy handle */
-	status = dcerpc_samr_Connect2(b, mem_ctx,
+	status = dcerpc_samr_Connect2(b, frame,
 				      pipe_hnd->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &connect_pol,
@@ -6141,7 +6144,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 	}
 
 	/* Get domain policy handle */
-	status = dcerpc_samr_OpenDomain(b, mem_ctx,
+	status = dcerpc_samr_OpenDomain(b, frame,
 					&connect_pol,
 					MAXIMUM_ALLOWED_ACCESS,
 					discard_const_p(struct dom_sid2, domain_sid),
@@ -6168,7 +6171,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
 		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
 
-	status = dcerpc_samr_CreateUser2(b, mem_ctx,
+	status = dcerpc_samr_CreateUser2(b, frame,
 					 &domain_pol,
 					 &lsa_acct_name,
 					 acb_info,
@@ -6207,7 +6210,7 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 		info.info23.info.acct_flags = ACB_DOMTRUST;
 		info.info23.password = crypt_pwd;
 
-		status = dcerpc_samr_SetUserInfo2(b, mem_ctx,
+		status = dcerpc_samr_SetUserInfo2(b, frame,
 						  &user_pol,
 						  23,
 						  &info,
@@ -6224,9 +6227,11 @@ static NTSTATUS rpc_trustdom_add_internals(struct net_context *c,
 		}
 	}
 
+	status = NT_STATUS_OK;
  done:
 	SAFE_FREE(acct_name);
 	data_blob_clear_free(&session_key);
+	TALLOC_FREE(frame);
 	return status;
 }
 
