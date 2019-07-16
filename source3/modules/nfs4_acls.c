@@ -719,58 +719,54 @@ static int smbacl4_fill_ace4(
 {
 	struct dom_sid_buf buf;
 	SMB_ACE4PROP_T nfs4_ace = { 0 };
-	SMB_ACE4PROP_T *ace_v4 = &nfs4_ace;
 
 	DEBUG(10, ("got ace for %s\n",
 		   dom_sid_str_buf(&ace_nt->trustee, &buf)));
 
-	ZERO_STRUCTP(ace_v4);
-
 	/* only ACCESS|DENY supported right now */
-	ace_v4->aceType = ace_nt->type;
+	nfs4_ace.aceType = ace_nt->type;
 
-	ace_v4->aceFlags = map_windows_ace_flags_to_nfs4_ace_flags(
-		ace_nt->flags);
+	nfs4_ace.aceFlags =
+		map_windows_ace_flags_to_nfs4_ace_flags(ace_nt->flags);
 
 	/* remove inheritance flags on files */
 	if (!is_directory) {
 		DEBUG(10, ("Removing inheritance flags from a file\n"));
-		ace_v4->aceFlags &= ~(SMB_ACE4_FILE_INHERIT_ACE|
-				      SMB_ACE4_DIRECTORY_INHERIT_ACE|
-				      SMB_ACE4_NO_PROPAGATE_INHERIT_ACE|
-				      SMB_ACE4_INHERIT_ONLY_ACE);
+		nfs4_ace.aceFlags &= ~(SMB_ACE4_FILE_INHERIT_ACE|
+				       SMB_ACE4_DIRECTORY_INHERIT_ACE|
+				       SMB_ACE4_NO_PROPAGATE_INHERIT_ACE|
+				       SMB_ACE4_INHERIT_ONLY_ACE);
 	}
 
-	ace_v4->aceMask = ace_nt->access_mask &
-		(SEC_STD_ALL | SEC_FILE_ALL);
+	nfs4_ace.aceMask = ace_nt->access_mask & (SEC_STD_ALL | SEC_FILE_ALL);
 
-	se_map_generic(&ace_v4->aceMask, &file_generic_mapping);
+	se_map_generic(&nfs4_ace.aceMask, &file_generic_mapping);
 
 	if (dom_sid_equal(&ace_nt->trustee, &global_sid_World)) {
-		ace_v4->who.special_id = SMB_ACE4_WHO_EVERYONE;
-		ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
+		nfs4_ace.who.special_id = SMB_ACE4_WHO_EVERYONE;
+		nfs4_ace.flags |= SMB_ACE4_ID_SPECIAL;
 	} else if (params->mode!=e_special &&
 		   dom_sid_equal(&ace_nt->trustee,
 				 &global_sid_Creator_Owner)) {
 		DEBUG(10, ("Map creator owner\n"));
-		ace_v4->who.special_id = SMB_ACE4_WHO_OWNER;
-		ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
+		nfs4_ace.who.special_id = SMB_ACE4_WHO_OWNER;
+		nfs4_ace.flags |= SMB_ACE4_ID_SPECIAL;
 		/* A non inheriting creator owner entry has no effect. */
-		ace_v4->aceFlags |= SMB_ACE4_INHERIT_ONLY_ACE;
-		if (!(ace_v4->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
-		    && !(ace_v4->aceFlags & SMB_ACE4_FILE_INHERIT_ACE)) {
+		nfs4_ace.aceFlags |= SMB_ACE4_INHERIT_ONLY_ACE;
+		if (!(nfs4_ace.aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
+		    && !(nfs4_ace.aceFlags & SMB_ACE4_FILE_INHERIT_ACE)) {
 			return 0;
 		}
 	} else if (params->mode!=e_special &&
 		   dom_sid_equal(&ace_nt->trustee,
 				 &global_sid_Creator_Group)) {
 		DEBUG(10, ("Map creator owner group\n"));
-		ace_v4->who.special_id = SMB_ACE4_WHO_GROUP;
-		ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
+		nfs4_ace.who.special_id = SMB_ACE4_WHO_GROUP;
+		nfs4_ace.flags |= SMB_ACE4_ID_SPECIAL;
 		/* A non inheriting creator group entry has no effect. */
-		ace_v4->aceFlags |= SMB_ACE4_INHERIT_ONLY_ACE;
-		if (!(ace_v4->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
-		    && !(ace_v4->aceFlags & SMB_ACE4_FILE_INHERIT_ACE)) {
+		nfs4_ace.aceFlags |= SMB_ACE4_INHERIT_ONLY_ACE;
+		if (!(nfs4_ace.aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
+		    && !(nfs4_ace.aceFlags & SMB_ACE4_FILE_INHERIT_ACE)) {
 			return 0;
 		}
 	} else {
@@ -791,15 +787,15 @@ static int smbacl4_fill_ace4(
 
 		switch (unixid.type) {
 		case ID_TYPE_BOTH:
-			ace_v4->aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
-			ace_v4->who.gid = unixid.id;
+			nfs4_ace.aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
+			nfs4_ace.who.gid = unixid.id;
 			break;
 		case ID_TYPE_GID:
-			ace_v4->aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
-			ace_v4->who.gid = unixid.id;
+			nfs4_ace.aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
+			nfs4_ace.who.gid = unixid.id;
 			break;
 		case ID_TYPE_UID:
-			ace_v4->who.uid = unixid.id;
+			nfs4_ace.who.uid = unixid.id;
 			break;
 		case ID_TYPE_NOT_SPECIFIED:
 		default:
