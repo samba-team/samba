@@ -746,14 +746,6 @@ static int smbacl4_fill_ace4(
 
 	se_map_generic(&ace_v4->aceMask, &file_generic_mapping);
 
-	if (ace_v4->aceFlags!=ace_nt->flags)
-		DEBUG(9, ("ace_v4->aceFlags(0x%x)!=ace_nt->flags(0x%x)\n",
-			ace_v4->aceFlags, ace_nt->flags));
-
-	if (ace_v4->aceMask!=ace_nt->access_mask)
-		DEBUG(9, ("ace_v4->aceMask(0x%x)!=ace_nt->access_mask(0x%x)\n",
-			ace_v4->aceMask, ace_nt->access_mask));
-
 	if (dom_sid_equal(&ace_nt->trustee, &global_sid_World)) {
 		ace_v4->who.special_id = SMB_ACE4_WHO_EVERYONE;
 		ace_v4->flags |= SMB_ACE4_ID_SPECIAL;
