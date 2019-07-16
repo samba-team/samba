@@ -311,23 +311,6 @@ bool dptr_activecnum(const struct smbd_server_connection *sconn,
 }
 
 /****************************************************************************
- Close a dptr that matches a given path, only if it matches the spid also.
-****************************************************************************/
-
-void dptr_closepath(struct smbd_server_connection *sconn,
-		    char *path,uint16_t spid)
-{
-	struct dptr_struct *dptr, *next;
-	for(dptr = sconn->searches.dirptrs; dptr; dptr = next) {
-		next = dptr->next;
-		if (spid == dptr->spid &&
-				strequal(dptr->smb_dname->base_name,path)) {
-			dptr_close_internal(dptr);
-		}
-	}
-}
-
-/****************************************************************************
  Create a new dir ptr. If the flag old_handle is true then we must allocate
  from the bitmap range 0 - 255 as old SMBsearch directory handles are only
  one byte long. If old_handle is false we allocate from the range

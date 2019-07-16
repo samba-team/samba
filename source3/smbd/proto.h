@@ -188,8 +188,6 @@ void dptr_close(struct smbd_server_connection *sconn, int *key);
 void dptr_closecnum(connection_struct *conn);
 bool dptr_activecnum(const struct smbd_server_connection *sconn,
 			const struct connection_struct *conn);
-void dptr_closepath(struct smbd_server_connection *sconn,
-		    char *path,uint16_t spid);
 NTSTATUS dptr_create(connection_struct *conn,
 		struct smb_request *req,
 		files_struct *fsp,
