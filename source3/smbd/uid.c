@@ -686,7 +686,7 @@ bool become_user(connection_struct *conn, uint64_t vuid)
 
 	push_conn_ctx();
 
-	ok = change_to_user_internal(conn, vuser->session_info, vuid);
+	ok = change_to_user_impersonate(conn, vuser->session_info, vuid);
 	if (!ok) {
 		pop_sec_ctx();
 		pop_conn_ctx();
@@ -716,7 +716,7 @@ bool become_user_by_session(connection_struct *conn,
 
 	push_conn_ctx();
 
-	ok = change_to_user_internal(conn, session_info, UID_FIELD_INVALID);
+	ok = change_to_user_impersonate(conn, session_info, UID_FIELD_INVALID);
 	if (!ok) {
 		pop_sec_ctx();
 		pop_conn_ctx();
