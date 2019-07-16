@@ -685,16 +685,41 @@ static int smbacl4_MergeIgnoreReject(enum smbacl4_acedup_enum acedup,
 	return result;
 }
 
-static bool smbacl4_fill_ace4(
+static int nfs4_acl_add_ace(enum smbacl4_acedup_enum acedup,
+			    struct SMB4ACL_T *nfs4_acl,
+			    SMB_ACE4PROP_T *nfs4_ace)
+{
+	bool add_ace = true;
+
+	if (acedup != e_dontcare) {
+		int ret;
+
+		ret = smbacl4_MergeIgnoreReject(acedup, nfs4_acl,
+						nfs4_ace, &add_ace);
+		if (ret == -1) {
+			return -1;
+		}
+	}
+
+	if (add_ace) {
+		smb_add_ace4(nfs4_acl, nfs4_ace);
+	}
+
+	return 0;
+}
+
+static int smbacl4_fill_ace4(
 	bool is_directory,
 	const struct smbacl4_vfs_params *params,
 	uid_t ownerUID,
 	gid_t ownerGID,
 	const struct security_ace *ace_nt, /* input */
-	SMB_ACE4PROP_T *ace_v4 /* output */
+	struct SMB4ACL_T *nfs4_acl
 )
 {
 	struct dom_sid_buf buf;
+	SMB_ACE4PROP_T nfs4_ace = { 0 };
+	SMB_ACE4PROP_T *ace_v4 = &nfs4_ace;
 
 	DEBUG(10, ("got ace for %s\n",
 		   dom_sid_str_buf(&ace_nt->trustee, &buf)));
@@ -742,7 +767,7 @@ static bool smbacl4_fill_ace4(
 		ace_v4->aceFlags |= SMB_ACE4_INHERIT_ONLY_ACE;
 		if (!(ace_v4->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
 		    && !(ace_v4->aceFlags & SMB_ACE4_FILE_INHERIT_ACE)) {
-			return false;
+			return 0;
 		}
 	} else if (params->mode!=e_special &&
 		   dom_sid_equal(&ace_nt->trustee,
@@ -754,7 +779,7 @@ static bool smbacl4_fill_ace4(
 		ace_v4->aceFlags |= SMB_ACE4_INHERIT_ONLY_ACE;
 		if (!(ace_v4->aceFlags & SMB_ACE4_DIRECTORY_INHERIT_ACE)
 		    && !(ace_v4->aceFlags & SMB_ACE4_FILE_INHERIT_ACE)) {
-			return false;
+			return 0;
 		}
 	} else {
 		struct unixid unixid;
@@ -764,12 +789,12 @@ static bool smbacl4_fill_ace4(
 		if (!ok) {
 			DBG_WARNING("Could not convert %s to uid or gid.\n",
 				    dom_sid_str_buf(&ace_nt->trustee, &buf));
-			return false;
+			return 0;
 		}
 
 		if (dom_sid_compare_domain(&ace_nt->trustee,
 					   &global_sid_Unix_NFS) == 0) {
-			return false;
+			return 0;
 		}
 
 		switch (unixid.type) {
@@ -788,11 +813,11 @@ static bool smbacl4_fill_ace4(
 		default:
 			DBG_WARNING("Could not convert %s to uid or gid.\n",
 				    dom_sid_str_buf(&ace_nt->trustee, &buf));
-			return false;
+			return 0;
 		}
 	}
 
-	return true; /* OK */
+	return nfs4_acl_add_ace(params->acedup, nfs4_acl, &nfs4_ace);
 }
 
 static int smbacl4_substitute_special(
@@ -886,28 +911,13 @@ static struct SMB4ACL_T *smbacl4_win2nfs4(
 		return NULL;
 
 	for(i=0; i<dacl->num_aces; i++) {
-		SMB_ACE4PROP_T	ace_v4;
-		bool	addNewACE = true;
+		int ret;
 
-		if (!smbacl4_fill_ace4(is_directory, pparams,
-				       ownerUID, ownerGID,
-				       dacl->aces + i, &ace_v4)) {
-			struct dom_sid_buf buf;
-			DEBUG(3, ("Could not fill ace for file, SID %s\n",
-				  dom_sid_str_buf(&((dacl->aces+i)->trustee),
-						  &buf)));
-			continue;
-		}
-
-		if (pparams->acedup!=e_dontcare) {
-			if (smbacl4_MergeIgnoreReject(pparams->acedup, theacl,
-						      &ace_v4, &addNewACE)) {
-				return NULL;
-			}
-		}
-
-		if (addNewACE) {
-			smb_add_ace4(theacl, &ace_v4);
+		ret = smbacl4_fill_ace4(is_directory, pparams,
+					ownerUID, ownerGID,
+					dacl->aces + i, theacl);
+		if (ret == -1) {
+			return NULL;
 		}
 	}
 
