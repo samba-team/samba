@@ -5198,7 +5198,9 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 				break;
 			}
 
+#ifdef DEBUG_PASSWORD
 			dump_data(100, info->info23.password.data, 516);
+#endif
 
 			status = set_user_info_23(p->mem_ctx,
 						  &info->info23,
@@ -5219,7 +5221,9 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 				break;
 			}
 
+#ifdef DEBUG_PASSWORD
 			dump_data(100, info->info24.password.data, 516);
+#endif
 
 			status = set_user_info_24(p->mem_ctx,
 						  rhost,
@@ -5237,7 +5241,9 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 				break;
 			}
 
+#ifdef DEBUG_PASSWORD
 			dump_data(100, info->info25.password.data, 532);
+#endif
 
 			status = set_user_info_25(p->mem_ctx,
 						  rhost,
@@ -5255,7 +5261,9 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 				break;
 			}
 
+#ifdef DEBUG_PASSWORD
 			dump_data(100, info->info26.password.data, 516);
+#endif
 
 			status = set_user_info_26(p->mem_ctx,
 						  rhost,
