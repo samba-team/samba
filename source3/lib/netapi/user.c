@@ -290,7 +290,7 @@ static NTSTATUS construct_USER_INFO_X(uint32_t level,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS set_user_info_USER_INFO_X(TALLOC_CTX *ctx,
+static NTSTATUS set_user_info_USER_INFO_X(TALLOC_CTX *mem_ctx,
 					  struct rpc_pipe_client *pipe_cli,
 					  DATA_BLOB *session_key,
 					  struct policy_handle *user_handle,
@@ -320,7 +320,7 @@ static NTSTATUS set_user_info_USER_INFO_X(TALLOC_CTX *ctx,
 			return status;
 		}
 
-		status = dcerpc_samr_SetUserInfo2(b, talloc_tos(),
+		status = dcerpc_samr_SetUserInfo2(b, mem_ctx,
 						  user_handle,
 						  25,
 						  &user_info,
@@ -336,7 +336,7 @@ static NTSTATUS set_user_info_USER_INFO_X(TALLOC_CTX *ctx,
 				return status;
 			}
 
-			status = dcerpc_samr_SetUserInfo2(b, talloc_tos(),
+			status = dcerpc_samr_SetUserInfo2(b, mem_ctx,
 							  user_handle,
 							  23,
 							  &user_info,
@@ -353,7 +353,7 @@ static NTSTATUS set_user_info_USER_INFO_X(TALLOC_CTX *ctx,
 
 		user_info.info21 = info21;
 
-		status = dcerpc_samr_SetUserInfo(b, talloc_tos(),
+		status = dcerpc_samr_SetUserInfo(b, mem_ctx,
 						 user_handle,
 						 21,
 						 &user_info,
