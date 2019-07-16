@@ -6505,7 +6505,6 @@ void reply_rmdir(struct smb_request *req)
 	files_struct *fsp = NULL;
 	int info = 0;
 	uint32_t ucf_flags = ucf_flags_from_smb_request(req);
-	struct smbd_server_connection *sconn = req->sconn;
 
 	START_PROFILE(SMBrmdir);
 
@@ -6588,8 +6587,6 @@ void reply_rmdir(struct smb_request *req)
 	} else {
 		reply_outbuf(req, 0, 0);
 	}
-
-	dptr_closepath(sconn, smb_dname->base_name, req->smbpid);
 
 	DEBUG(3, ("rmdir %s\n", smb_fname_str_dbg(smb_dname)));
  out:
