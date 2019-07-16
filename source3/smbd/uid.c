@@ -428,13 +428,34 @@ static bool change_to_user_impersonate(connection_struct *conn,
 	return true;
 }
 
-static bool change_to_user_internal(connection_struct *conn,
-				    const struct auth_session_info *session_info,
-				    uint64_t vuid)
+/**
+ * Impersonate user and change directory to service
+ *
+ * change_to_user_and_service() is used to impersonate the user associated with
+ * the given vuid and to change the working directory of the process to the
+ * service base directory.
+ **/
+bool change_to_user_and_service(connection_struct *conn, uint64_t vuid)
 {
+	struct user_struct *vuser;
+	int snum = SNUM(conn);
 	bool ok;
 
-	ok = change_to_user_impersonate(conn, session_info, vuid);
+	if (conn == NULL) {
+		DBG_WARNING("Connection not open\n");
+		return false;
+	}
+
+	vuser = get_valid_user_struct(conn->sconn, vuid);
+	if (vuser == NULL) {
+		/* Invalid vuid sent */
+		DBG_WARNING("Invalid vuid %llu used on share %s.\n",
+			    (unsigned long long)vuid,
+			    lp_const_servicename(snum));
+		return false;
+	}
+
+	ok = change_to_user_impersonate(conn, vuser->session_info, vuid);
 	if (!ok) {
 		return false;
 	}
@@ -452,35 +473,6 @@ static bool change_to_user_internal(connection_struct *conn,
 
 	print_impersonation_info(conn);
 	return true;
-}
-
-/**
- * Impersonate user and change directory to service
- *
- * change_to_user_and_service() is used to impersonate the user associated with
- * the given vuid and to change the working directory of the process to the
- * service base directory.
- **/
-bool change_to_user_and_service(connection_struct *conn, uint64_t vuid)
-{
-	struct user_struct *vuser;
-	int snum = SNUM(conn);
-
-	if (conn == NULL) {
-		DBG_WARNING("Connection not open\n");
-		return false;
-	}
-
-	vuser = get_valid_user_struct(conn->sconn, vuid);
-	if (vuser == NULL) {
-		/* Invalid vuid sent */
-		DBG_WARNING("Invalid vuid %llu used on share %s.\n",
-			    (unsigned long long)vuid,
-			    lp_const_servicename(snum));
-		return false;
-	}
-
-	return change_to_user_internal(conn, vuser->session_info, vuid);
 }
 
 /**
