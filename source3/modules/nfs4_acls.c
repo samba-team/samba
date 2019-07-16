@@ -654,6 +654,36 @@ static SMB_ACE4PROP_T *smbacl4_find_equal_special(
 	return NULL;
 }
 
+static int smbacl4_MergeIgnoreReject(enum smbacl4_acedup_enum acedup,
+				     struct SMB4ACL_T *theacl,
+				     SMB_ACE4PROP_T *ace,
+				     bool *paddNewACE)
+{
+	int	result = 0;
+	SMB_ACE4PROP_T *ace4found = smbacl4_find_equal_special(theacl, ace);
+	if (ace4found)
+	{
+		switch(acedup)
+		{
+		case e_merge: /* "merge" flags */
+			*paddNewACE = false;
+			ace4found->aceFlags |= ace->aceFlags;
+			ace4found->aceMask |= ace->aceMask;
+			break;
+		case e_ignore: /* leave out this record */
+			*paddNewACE = false;
+			break;
+		case e_reject: /* do an error */
+			DBG_INFO("ACL rejected by duplicate nt ace.\n");
+			errno = EINVAL; /* SHOULD be set on any _real_ error */
+			result = -1;
+			break;
+		default:
+			break;
+		}
+	}
+	return result;
+}
 
 static bool smbacl4_fill_ace4(
 	bool is_directory,
@@ -765,42 +795,9 @@ static bool smbacl4_fill_ace4(
 	return true; /* OK */
 }
 
-static int smbacl4_MergeIgnoreReject(enum smbacl4_acedup_enum acedup,
-				     struct SMB4ACL_T *theacl,
-				     SMB_ACE4PROP_T *ace,
-				     bool *paddNewACE)
-{
-	int	result = 0;
-	SMB_ACE4PROP_T *ace4found = smbacl4_find_equal_special(theacl, ace);
-	if (ace4found)
-	{
-		switch(acedup)
-		{
-		case e_merge: /* "merge" flags */
-			*paddNewACE = false;
-			ace4found->aceFlags |= ace->aceFlags;
-			ace4found->aceMask |= ace->aceMask;
-			break;
-		case e_ignore: /* leave out this record */
-			*paddNewACE = false;
-			break;
-		case e_reject: /* do an error */
-			DBG_INFO("ACL rejected by duplicate nt ace.\n");
-			errno = EINVAL; /* SHOULD be set on any _real_ error */
-			result = -1;
-			break;
-		default:
-			break;
-		}
-	}
-	return result;
-}
-
-static int smbacl4_substitute_special(
-	struct SMB4ACL_T *acl,
-	uid_t ownerUID,
-	gid_t ownerGID
-)
+static void smbacl4_substitute_special(struct SMB4ACL_T *acl,
+				       uid_t ownerUID,
+				       gid_t ownerGID)
 {
 	struct SMB4ACE_T *aceint;
 
