@@ -2711,13 +2711,13 @@ static void call_trans2findfirst(connection_struct *conn,
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
-	struct dptr_struct *dirptr = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
 	uint32_t ucf_flags = UCF_SAVE_LCOMP | UCF_ALWAYS_ALLOW_WCARD_LCOMP |
 			ucf_flags_from_smb_request(req);
 	bool backup_priv = false;
 	bool as_root = false;
 	files_struct *fsp = NULL;
+	int ret;
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2915,12 +2915,62 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	}
 	params = *pparams;
 
+	/*
+	 * As we've cut off the last component from
+	 * smb_fname we need to re-stat smb_dname
+	 * so FILE_OPEN disposition knows the directory
+	 * exists.
+	 */
+	if (req->posix_pathnames) {
+		ret = SMB_VFS_LSTAT(conn, smb_dname);
+	} else {
+		ret = SMB_VFS_STAT(conn, smb_dname);
+	}
+
+	if (ret == -1) {
+		ntstatus = map_nt_error_from_unix(errno);
+		reply_nterror(req, ntstatus);
+		goto out;
+	}
+
+	/*
+	 * Open an fsp on this directory for the dptr.
+	 */
+	ntstatus = SMB_VFS_CREATE_FILE(
+			conn, /* conn */
+			req, /* req */
+			0, /* root_dir_fid */
+			smb_dname, /* dname */
+			FILE_LIST_DIRECTORY, /* access_mask */
+			FILE_SHARE_READ|
+			FILE_SHARE_WRITE, /* share_access */
+			FILE_OPEN, /* create_disposition*/
+			FILE_DIRECTORY_FILE, /* create_options */
+			FILE_ATTRIBUTE_DIRECTORY,/* file_attributes */
+			NO_OPLOCK, /* oplock_request */
+			NULL, /* lease */
+			0, /* allocation_size */
+			0, /* private_flags */
+			NULL, /* sd */
+			NULL, /* ea_list */
+			&fsp, /* result */
+			NULL, /* pinfo */
+			NULL, /* in_context */
+			NULL);/* out_context */
+
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		DBG_ERR("failed to open directory %s\n",
+			smb_fname_str_dbg(smb_dname));
+		reply_nterror(req, ntstatus);
+		goto out;
+	}
+
 	/* Save the wildcard match and attribs we are using on this directory -
 		needed as lanman2 assumes these are being saved between calls */
 
 	ntstatus = dptr_create(conn,
 				req,
-				NULL, /* fsp */
+				fsp, /* fsp */
 				smb_dname,
 				False,
 				True,
@@ -2928,9 +2978,16 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				mask,
 				mask_contains_wcard,
 				dirtype,
-				&dirptr);
+				&fsp->dptr);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
+		/*
+		 * Use NULL here for the first parameter (req)
+		 * as this is not a client visible handle so
+		 * can'tbe part of an SMB1 chain.
+		 */
+		close_file(NULL, fsp, NORMAL_CLOSE);
+		fsp = NULL;
 		reply_nterror(req, ntstatus);
 		goto out;
 	}
@@ -2938,10 +2995,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	if (backup_priv) {
 		/* Remember this in case we have
 		   to do a findnext. */
-		dptr_set_priv(dirptr);
+		dptr_set_priv(fsp->dptr);
 	}
 
-	dptr_num = dptr_dnum(dirptr);
+	dptr_num = dptr_dnum(fsp->dptr);
 	DEBUG(4,("dptr_num is %d, wcard = %s, attr = %d\n", dptr_num, mask, dirtype));
 
 	/* We don't need to check for VOL here as this is returned by
@@ -2970,7 +3027,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		} else {
 			ntstatus = get_lanman2_dir_entry(talloc_tos(),
 					conn,
-					dirptr,
+					fsp->dptr,
 					req->flags2,
 					mask,dirtype,info_level,
 					requires_resume_key,dont_descend,
@@ -3019,12 +3076,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Check if we can close the dirptr */
 	if(close_after_first || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
-		fsp = dptr_fsp(sconn, dptr_num);
 		dptr_close(sconn, &dptr_num);
-		if (fsp != NULL) {
-			close_file(NULL, fsp, NORMAL_CLOSE);
-			fsp = NULL;
-		}
+		close_file(NULL, fsp, NORMAL_CLOSE);
+		fsp = NULL;
 	}
 
 	/*
@@ -3035,8 +3089,11 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	 */
 
 	if(numentries == 0) {
-		fsp = dptr_fsp(sconn, dptr_num);
 		dptr_close(sconn, &dptr_num);
+		/*
+		 * We may have already closed the file in the
+		 * close_after_first or finished case above.
+		 */
 		if (fsp != NULL) {
 			close_file(NULL, fsp, NORMAL_CLOSE);
 			fsp = NULL;
