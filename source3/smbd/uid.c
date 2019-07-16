@@ -661,7 +661,23 @@ void smbd_unbecome_root(void)
 
 bool become_user(connection_struct *conn, uint64_t vuid)
 {
+	struct user_struct *vuser;
+	int snum = SNUM(conn);
 	bool ok;
+
+	if (conn == NULL) {
+		DBG_WARNING("Connection not open\n");
+		return false;
+	}
+
+	vuser = get_valid_user_struct(conn->sconn, vuid);
+	if (vuser == NULL) {
+		/* Invalid vuid sent */
+		DBG_WARNING("Invalid vuid %llu used on share %s.\n",
+			    (unsigned long long)vuid,
+			    lp_const_servicename(snum));
+		return false;
+	}
 
 	ok = push_sec_ctx();
 	if (!ok) {
@@ -670,7 +686,7 @@ bool become_user(connection_struct *conn, uint64_t vuid)
 
 	push_conn_ctx();
 
-	ok = change_to_user_and_service(conn, vuid);
+	ok = change_to_user_internal(conn, vuser->session_info, vuid);
 	if (!ok) {
 		pop_sec_ctx();
 		pop_conn_ctx();
