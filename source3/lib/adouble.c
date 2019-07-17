@@ -1638,7 +1638,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 
 		if (stream->size != AFP_INFO_SIZE) {
 			DBG_ERR("Bad size [%zd] on [%s]\n",
-				stream->size,
+				(ssize_t)stream->size,
 				smb_fname_str_dbg(sname));
 			ok = false;
 			goto out;
@@ -1647,7 +1647,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 		nread = SMB_VFS_PREAD(fsp, buf, stream->size, 0);
 		if (nread != AFP_INFO_SIZE) {
 			DBG_ERR("Bad size [%zd] on [%s]\n",
-				stream->size,
+				(ssize_t)stream->size,
 				smb_fname_str_dbg(sname));
 			ok = false;
 			goto out;
@@ -1684,7 +1684,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 				      0);
 		if (nread != stream->size) {
 			DBG_ERR("Bad size [%zd] on [%s]\n",
-				stream->size,
+				(ssize_t)stream->size,
 				smb_fname_str_dbg(sname));
 			ok = false;
 			goto out;
@@ -1780,7 +1780,7 @@ static bool ad_collect_one_stream(struct vfs_handle_struct *handle,
 			      0);
 	if (nread != stream->size) {
 		DBG_ERR("Bad size [%zd] on [%s]\n",
-			stream->size,
+			(ssize_t)stream->size,
 			smb_fname_str_dbg(sname));
 		ok = false;
 		goto out;
