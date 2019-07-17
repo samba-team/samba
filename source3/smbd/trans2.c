@@ -3196,7 +3196,6 @@ static void call_trans2findnext(connection_struct *conn,
 	NTSTATUS ntstatus = NT_STATUS_OK;
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
 	TALLOC_CTX *ctx = talloc_tos();
-	struct dptr_struct *dirptr;
 	struct smbd_server_connection *sconn = req->sconn;
 	bool backup_priv = false; 
 	bool as_root = false;
@@ -3353,7 +3352,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	params = *pparams;
 
 	/* Check that the dptr is valid */
-	if(!(dirptr = dptr_fetch_lanman2(sconn, dptr_num))) {
+	fsp = dptr_fetch_lanman2_fsp(sconn, dptr_num);
+	if (fsp == NULL) {
 		reply_nterror(req, STATUS_NO_MORE_FILES);
 		return;
 	}
@@ -3370,13 +3370,13 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Get the attr mask from the dptr */
 	dirtype = dptr_attr(sconn, dptr_num);
 
-	backup_priv = dptr_get_priv(dirptr);
+	backup_priv = dptr_get_priv(fsp->dptr);
 
 	DEBUG(3,("dptr_num is %d, mask = %s, attr = %x, dirptr=(0x%lX,%ld) "
 		"backup_priv = %d\n",
 		dptr_num, mask, dirtype,
-		(long)dirptr,
-		dptr_TellDir(dirptr),
+		(long)fsp->dptr,
+		dptr_TellDir(fsp->dptr),
 		(int)backup_priv));
 
 	/* We don't need to check for VOL here as this is returned by
@@ -3431,13 +3431,13 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		 * should already be at the correct place.
 		 */
 
-		finished = !dptr_SearchDir(dirptr, resume_name, &current_pos, &st);
+		finished = !dptr_SearchDir(fsp->dptr, resume_name, &current_pos, &st);
 	} /* end if resume_name && !continue_bit */
 
 	for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++) {
 		bool got_exact_match = False;
 
-		/* this is a heuristic to avoid seeking the dirptr except when 
+		/* this is a heuristic to avoid seeking the fsp->dptr except when
 			absolutely necessary. It allows for a filename of about 40 chars */
 		if (space_remaining < DIRLEN_GUESS && numentries > 0) {
 			out_of_space = True;
@@ -3445,7 +3445,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		} else {
 			ntstatus = get_lanman2_dir_entry(ctx,
 						conn,
-						dirptr,
+						fsp->dptr,
 						req->flags2,
 						mask,dirtype,info_level,
 						requires_resume_key,dont_descend,
@@ -3489,15 +3489,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		smb_fn_name(req->cmd),
 		mask, directory, dirtype, numentries ) );
 
-	/* Check if we can close the dirptr */
+	/* Check if we can close the fsp->dptr */
 	if(close_after_request || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
-		fsp = dptr_fsp(sconn, dptr_num);
 		dptr_close(sconn, &dptr_num); /* This frees up the saved mask */
-		if (fsp != NULL) {
-			close_file(NULL, fsp, NORMAL_CLOSE);
-			fsp = NULL;
-		}
+		close_file(NULL, fsp, NORMAL_CLOSE);
+		fsp = NULL;
 	}
 
 	if (as_root) {
