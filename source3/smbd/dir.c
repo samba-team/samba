@@ -229,6 +229,8 @@ done:
 void dptr_close(struct smbd_server_connection *sconn, int *key)
 {
 	struct dptr_struct *dptr;
+	files_struct *fsp = NULL;
+	struct smb_Dir *dir_hnd = NULL;
 
 	SMB_ASSERT(!sconn->using_smb2);
 
@@ -242,7 +244,18 @@ void dptr_close(struct smbd_server_connection *sconn, int *key)
 		return;
 	}
 
+	dir_hnd = dptr->dir_hnd;
+
+	if (dir_hnd != NULL && dir_hnd->fsp != NULL) {
+		SMB_ASSERT(dir_hnd->fsp->dptr->dir_hnd == dir_hnd);
+		fsp = dir_hnd->fsp;
+	}
+
 	dptr_close_internal(dptr);
+
+	if (fsp != NULL) {
+		fsp->dptr = NULL;
+	}
 
 	*key = INVALID_DPTR_KEY;
 }
