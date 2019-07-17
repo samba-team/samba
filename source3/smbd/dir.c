@@ -59,6 +59,7 @@ struct smb_Dir {
 	unsigned int file_number;
 	files_struct *fsp; /* Back pointer to containing fsp, only
 			      set from OpenDir_fsp(). */
+	bool fallback_opendir;
 };
 
 struct dptr_struct {
@@ -1433,16 +1434,24 @@ static int smb_Dir_destructor(struct smb_Dir *dir_hnd)
 	if (dir_hnd->dir != NULL) {
 		SMB_VFS_CLOSEDIR(dir_hnd->conn, dir_hnd->dir);
 		if (dir_hnd->fsp != NULL) {
+			files_struct *fsp = dir_hnd->fsp;
 			/*
 			 * The SMB_VFS_CLOSEDIR above
 			 * closes the underlying fd inside
-			 * dirp->fsp.
+			 * dirp->fsp, unless fallback_opendir
+			 * was set in which case the fd
+			 * in dir_hnd->fsp->fh->fd isn't
+			 * the one being closed. Close
+			 * it separately.
 			 */
-			dir_hnd->fsp->fh->fd = -1;
-			if (dir_hnd->fsp->dptr != NULL) {
-				SMB_ASSERT(dir_hnd->fsp->dptr->dir_hnd ==
+			if (dir_hnd->fallback_opendir) {
+				SMB_VFS_CLOSE(fsp);
+			}
+			fsp->fh->fd = -1;
+			if (fsp->dptr != NULL) {
+				SMB_ASSERT(fsp->dptr->dir_hnd ==
 					dir_hnd);
-				dir_hnd->fsp->dptr->dir_hnd = NULL;
+				fsp->dptr->dir_hnd = NULL;
 			}
 			dir_hnd->fsp = NULL;
 		}
@@ -1690,6 +1699,15 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			errno = ENOMEM;
 			goto fail;
 		}
+		/*
+		 * Remember if we used the fallback.
+		 * We need to change the destructor
+		 * to also close the fsp file descriptor
+		 * in this case as it isn't the same
+		 * one the directory handle uses.
+		 */
+		dir_hnd->fsp = fsp;
+		dir_hnd->fallback_opendir = true;
 	}
 
 	talloc_set_destructor(dir_hnd, smb_Dir_destructor);
