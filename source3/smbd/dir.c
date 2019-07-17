@@ -1930,38 +1930,39 @@ static void DirCacheAdd(struct smb_Dir *dir_hnd, const char *name, long offset)
  Don't check for veto or invisible files.
 ********************************************************************/
 
-bool SearchDir(struct smb_Dir *dirp, const char *name, long *poffset)
+bool SearchDir(struct smb_Dir *dir_hnd, const char *name, long *poffset)
 {
 	int i;
 	const char *entry = NULL;
 	char *talloced = NULL;
-	connection_struct *conn = dirp->conn;
+	connection_struct *conn = dir_hnd->conn;
 
 	/* Search back in the name cache. */
-	if (dirp->name_cache_size && dirp->name_cache) {
-		for (i = dirp->name_cache_index; i >= 0; i--) {
-			struct name_cache_entry *e = &dirp->name_cache[i];
+	if (dir_hnd->name_cache_size && dir_hnd->name_cache) {
+		for (i = dir_hnd->name_cache_index; i >= 0; i--) {
+			struct name_cache_entry *e = &dir_hnd->name_cache[i];
 			if (e->name && (conn->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
 				*poffset = e->offset;
-				SeekDir(dirp, e->offset);
+				SeekDir(dir_hnd, e->offset);
 				return True;
 			}
 		}
-		for (i = dirp->name_cache_size - 1; i > dirp->name_cache_index; i--) {
-			struct name_cache_entry *e = &dirp->name_cache[i];
+		for (i = dir_hnd->name_cache_size - 1;
+				i > dir_hnd->name_cache_index; i--) {
+			struct name_cache_entry *e = &dir_hnd->name_cache[i];
 			if (e->name && (conn->case_sensitive ? (strcmp(e->name, name) == 0) : strequal(e->name, name))) {
 				*poffset = e->offset;
-				SeekDir(dirp, e->offset);
+				SeekDir(dir_hnd, e->offset);
 				return True;
 			}
 		}
 	}
 
 	/* Not found in the name cache. Rewind directory and start from scratch. */
-	SMB_VFS_REWINDDIR(conn, dirp->dir);
-	dirp->file_number = 0;
+	SMB_VFS_REWINDDIR(conn, dir_hnd->dir);
+	dir_hnd->file_number = 0;
 	*poffset = START_OF_DIRECTORY_OFFSET;
-	while ((entry = ReadDirName(dirp, poffset, NULL, &talloced))) {
+	while ((entry = ReadDirName(dir_hnd, poffset, NULL, &talloced))) {
 		if (conn->case_sensitive ? (strcmp(entry, name) == 0) : strequal(entry, name)) {
 			TALLOC_FREE(talloced);
 			return True;
