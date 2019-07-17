@@ -1674,6 +1674,18 @@ static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
 	return dir_hnd;
 }
 
+/*
+ * Simple destructor for OpenDir() use. Don't need to
+ * care about fsp back pointer as we know we have never
+ * set it in the OpenDir() code path.
+ */
+
+static int smb_Dir_OpenDir_destructor(struct smb_Dir *dir_hnd)
+{
+	SMB_VFS_CLOSEDIR(dir_hnd->conn, dir_hnd->dir);
+	return 0;
+}
+
 struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const struct smb_filename *smb_dname,
 			const char *mask,
@@ -1687,7 +1699,7 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	if (dir_hnd == NULL) {
 		return NULL;
 	}
-	talloc_set_destructor(dir_hnd, smb_Dir_destructor);
+	talloc_set_destructor(dir_hnd, smb_Dir_OpenDir_destructor);
 	return dir_hnd;
 }
 
