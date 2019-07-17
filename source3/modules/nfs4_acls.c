@@ -719,6 +719,9 @@ static int smbacl4_fill_ace4(
 {
 	struct dom_sid_buf buf;
 	SMB_ACE4PROP_T nfs4_ace = { 0 };
+	SMB_ACE4PROP_T nfs4_ace_2 = { 0 };
+	bool add_ace2 = false;
+	int ret;
 
 	DEBUG(10, ("got ace for %s\n",
 		   dom_sid_str_buf(&ace_nt->trustee, &buf)));
@@ -789,6 +792,29 @@ static int smbacl4_fill_ace4(
 		case ID_TYPE_BOTH:
 			nfs4_ace.aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
 			nfs4_ace.who.gid = unixid.id;
+
+			if (ownerUID == unixid.id &&
+			    !nfs_ace_is_inherit(&nfs4_ace))
+			{
+				/*
+				 * IDMAP_TYPE_BOTH for owner. Add
+				 * additional user entry, which can be
+				 * mapped to special:owner to reflect
+				 * the permissions in the modebits.
+				 *
+				 * This only applies to non-inheriting
+				 * entries as only these are replaced
+				 * with SPECIAL_OWNER in nfs4:mode=simple.
+				 */
+				nfs4_ace_2 = (SMB_ACE4PROP_T) {
+					.who.uid = unixid.id,
+					.aceFlags = (nfs4_ace.aceFlags &
+						    ~SMB_ACE4_IDENTIFIER_GROUP),
+					.aceMask = nfs4_ace.aceMask,
+					.aceType = nfs4_ace.aceType,
+				};
+				add_ace2 = true;
+			}
 			break;
 		case ID_TYPE_GID:
 			nfs4_ace.aceFlags |= SMB_ACE4_IDENTIFIER_GROUP;
@@ -805,7 +831,16 @@ static int smbacl4_fill_ace4(
 		}
 	}
 
-	return nfs4_acl_add_ace(params->acedup, nfs4_acl, &nfs4_ace);
+	ret = nfs4_acl_add_ace(params->acedup, nfs4_acl, &nfs4_ace);
+	if (ret != 0) {
+		return -1;
+	}
+
+	if (!add_ace2) {
+		return 0;
+	}
+
+	return nfs4_acl_add_ace(params->acedup, nfs4_acl, &nfs4_ace_2);
 }
 
 static int smbacl4_substitute_special(
