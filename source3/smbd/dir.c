@@ -261,18 +261,9 @@ void dptr_closecnum(connection_struct *conn)
 	for(dptr = sconn->searches.dirptrs; dptr; dptr = next) {
 		next = dptr->next;
 		if (dptr->conn == conn) {
-			int key = dptr->dnum;
-			files_struct *fsp = NULL;
-
-			if (dptr->dir_hnd != NULL &&
-					dptr->dir_hnd->fsp != NULL) {
-				fsp = dptr->dir_hnd->fsp;
-			}
-			dptr_close(sconn, &key);
-			if (fsp != NULL) {
-				close_file(NULL, fsp, NORMAL_CLOSE);
-				fsp = NULL;
-			}
+			files_struct *fsp = dptr->dir_hnd->fsp;
+			close_file(NULL, fsp, NORMAL_CLOSE);
+			fsp = NULL;
 		}
 	}
 }
