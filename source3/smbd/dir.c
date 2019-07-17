@@ -327,65 +327,6 @@ void dptr_closepath(struct smbd_server_connection *sconn,
 }
 
 /****************************************************************************
- Safely do an OpenDir as root, ensuring we're in the right place.
-****************************************************************************/
-
-static struct smb_Dir *open_dir_with_privilege(connection_struct *conn,
-					struct smb_request *req,
-					const struct smb_filename *smb_dname,
-					const char *wcard,
-					uint32_t attr)
-{
-	struct smb_Dir *dir_hnd = NULL;
-	struct smb_filename *smb_fname_cwd = NULL;
-	struct smb_filename *saved_dir_fname = vfs_GetWd(talloc_tos(), conn);
-	struct privilege_paths *priv_paths = req->priv_paths;
-	int ret;
-
-	if (saved_dir_fname == NULL) {
-		return NULL;
-	}
-
-	if (vfs_ChDir(conn, smb_dname) == -1) {
-		return NULL;
-	}
-
-	/* Now check the stat value is the same. */
-	smb_fname_cwd = synthetic_smb_fname(talloc_tos(),
-					".",
-					NULL,
-					NULL,
-					smb_dname->flags);
-	if (smb_fname_cwd == NULL) {
-		goto out;
-	}
-	ret = SMB_VFS_STAT(conn, smb_fname_cwd);
-	if (ret != 0) {
-		goto out;
-	}
-
-	if (!check_same_stat(&smb_fname_cwd->st, &priv_paths->parent_name.st)) {
-		DEBUG(0,("open_dir_with_privilege: stat mismatch between %s "
-			"and %s\n",
-			smb_dname->base_name,
-			smb_fname_str_dbg(&priv_paths->parent_name)));
-		goto out;
-	}
-
-	dir_hnd = open_dir_safely(NULL, conn, smb_fname_cwd, wcard, attr);
-
-	if (dir_hnd != NULL) {
-		talloc_set_destructor(dir_hnd, smb_Dir_destructor);
-	}
-
-  out:
-
-	vfs_ChDir(conn, saved_dir_fname);
-	TALLOC_FREE(saved_dir_fname);
-	return dir_hnd;
-}
-
-/****************************************************************************
  Create a new dir ptr. If the flag old_handle is true then we must allocate
  from the bitmap range 0 - 255 as old SMBsearch directory handles are only
  one byte long. If old_handle is false we allocate from the range
@@ -425,69 +366,13 @@ NTSTATUS dptr_create(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (fsp) {
-		if (!(fsp->access_mask & SEC_DIR_LIST)) {
-			DEBUG(5,("dptr_create: directory %s "
-				"not open for LIST access\n",
-				smb_dname->base_name));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-		dir_hnd = OpenDir_fsp(NULL, conn, fsp, wcard, attr);
-	} else {
-		int ret;
-		bool backup_intent = (req && req->priv_paths);
-		NTSTATUS status;
-		struct smb_filename *smb_dname_cp =
-			cp_smb_filename(talloc_tos(), smb_dname);
-
-		if (smb_dname_cp == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		if (req != NULL && req->posix_pathnames) {
-			ret = SMB_VFS_LSTAT(conn, smb_dname_cp);
-		} else {
-			ret = SMB_VFS_STAT(conn, smb_dname_cp);
-		}
-		if (ret == -1) {
-			status = map_nt_error_from_unix(errno);
-			TALLOC_FREE(smb_dname_cp);
-			return status;
-		}
-		if (!S_ISDIR(smb_dname_cp->st.st_ex_mode)) {
-			TALLOC_FREE(smb_dname_cp);
-			return NT_STATUS_NOT_A_DIRECTORY;
-		}
-		status = smbd_check_access_rights(conn,
-						smb_dname_cp,
-						backup_intent,
-						SEC_DIR_LIST);
-		if (!NT_STATUS_IS_OK(status)) {
-			TALLOC_FREE(smb_dname_cp);
-			return status;
-		}
-		if (backup_intent) {
-			dir_hnd = open_dir_with_privilege(conn,
-						req,
-						smb_dname_cp,
-						wcard,
-						attr);
-		} else {
-			dir_hnd = open_dir_safely(NULL,
-					conn,
-					smb_dname_cp,
-					wcard,
-					attr);
-			if (dir_hnd != NULL) {
-				talloc_set_destructor(dir_hnd,
-					smb_Dir_destructor);
-			}
-		}
-
-
-		TALLOC_FREE(smb_dname_cp);
+	if (!(fsp->access_mask & SEC_DIR_LIST)) {
+		DBG_INFO("dptr_create: directory %s "
+			"not open for LIST access\n",
+			smb_dname->base_name);
+		return NT_STATUS_ACCESS_DENIED;
 	}
-
+	dir_hnd = OpenDir_fsp(NULL, conn, fsp, wcard, attr);
 	if (!dir_hnd) {
 		return map_nt_error_from_unix(errno);
 	}
