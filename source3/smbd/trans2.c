@@ -2717,6 +2717,7 @@ static void call_trans2findfirst(connection_struct *conn,
 			ucf_flags_from_smb_request(req);
 	bool backup_priv = false;
 	bool as_root = false;
+	files_struct *fsp = NULL;
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -3018,7 +3019,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Check if we can close the dirptr */
 	if(close_after_first || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
+		fsp = dptr_fsp(sconn, dptr_num);
 		dptr_close(sconn, &dptr_num);
+		if (fsp != NULL) {
+			close_file(NULL, fsp, NORMAL_CLOSE);
+			fsp = NULL;
+		}
 	}
 
 	/*
@@ -3029,7 +3035,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	 */
 
 	if(numentries == 0) {
+		fsp = dptr_fsp(sconn, dptr_num);
 		dptr_close(sconn, &dptr_num);
+		if (fsp != NULL) {
+			close_file(NULL, fsp, NORMAL_CLOSE);
+			fsp = NULL;
+		}
 		if (get_Protocol() < PROTOCOL_NT1) {
 			reply_force_doserror(req, ERRDOS, ERRnofiles);
 			goto out;
