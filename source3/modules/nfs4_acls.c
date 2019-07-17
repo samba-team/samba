@@ -992,11 +992,11 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	struct SMB4ACL_T *theacl = NULL;
 	bool	result, is_directory;
 
-	SMB_STRUCT_STAT sbuf;
 	bool set_acl_as_root = false;
 	uid_t newUID = (uid_t)-1;
 	gid_t newGID = (gid_t)-1;
 	int saved_errno;
+	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	DEBUG(10, ("smb_set_nt_acl_nfs4 invoked for %s\n", fsp_str_dbg(fsp)));
@@ -1020,25 +1020,29 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 		pparams = &params;
 	}
 
-	if (smbacl4_fGetFileOwner(fsp, &sbuf)) {
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
-		return map_nt_error_from_unix(errno);
+		return status;
 	}
 
-	is_directory = S_ISDIR(sbuf.st_ex_mode);
+	is_directory = S_ISDIR(fsp->fsp_name->st.st_ex_mode);
 
 	if (pparams->do_chown) {
 		/* chown logic is a copy/paste from posix_acl.c:set_nt_acl */
-		NTSTATUS status = unpack_nt_owners(fsp->conn, &newUID, &newGID,
-						   security_info_sent, psd);
+
+		uid_t old_uid = fsp->fsp_name->st.st_ex_uid;
+		uid_t old_gid = fsp->fsp_name->st.st_ex_uid;
+		status = unpack_nt_owners(fsp->conn, &newUID, &newGID,
+					  security_info_sent, psd);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(8, ("unpack_nt_owners failed"));
 			TALLOC_FREE(frame);
 			return status;
 		}
-		if (((newUID != (uid_t)-1) && (sbuf.st_ex_uid != newUID)) ||
-		    ((newGID != (gid_t)-1) && (sbuf.st_ex_gid != newGID))) {
-
+		if (((newUID != (uid_t)-1) && (old_uid != newUID)) ||
+		    ((newGID != (gid_t)-1) && (old_gid != newGID)))
+		{
 			status = try_chown(fsp, newUID, newGID);
 			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(3,("chown %s, %u, %u failed. Error = "
@@ -1053,11 +1057,14 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 			DEBUG(10,("chown %s, %u, %u succeeded.\n",
 				  fsp_str_dbg(fsp), (unsigned int)newUID,
 				  (unsigned int)newGID));
-			if (smbacl4_GetFileOwner(fsp->conn,
-						 fsp->fsp_name,
-						 &sbuf)){
+
+			/*
+			 * Owner change, need to update stat info.
+			 */
+			status = vfs_stat_fsp(fsp);
+			if (!NT_STATUS_IS_OK(status)) {
 				TALLOC_FREE(frame);
-				return map_nt_error_from_unix(errno);
+				return status;
 			}
 
 			/* If we successfully chowned, we know we must
@@ -1075,7 +1082,8 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 	}
 
 	theacl = smbacl4_win2nfs4(frame, is_directory, psd->dacl, pparams,
-				  sbuf.st_ex_uid, sbuf.st_ex_gid);
+				  fsp->fsp_name->st.st_ex_uid,
+				  fsp->fsp_name->st.st_ex_gid);
 	if (!theacl) {
 		TALLOC_FREE(frame);
 		return map_nt_error_from_unix(errno);
