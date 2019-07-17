@@ -1845,11 +1845,11 @@ const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
  Rewind to the start.
 ********************************************************************/
 
-void RewindDir(struct smb_Dir *dirp, long *poffset)
+void RewindDir(struct smb_Dir *dir_hnd, long *poffset)
 {
-	SMB_VFS_REWINDDIR(dirp->conn, dirp->dir);
-	dirp->file_number = 0;
-	dirp->offset = START_OF_DIRECTORY_OFFSET;
+	SMB_VFS_REWINDDIR(dir_hnd->conn, dir_hnd->dir);
+	dir_hnd->file_number = 0;
+	dir_hnd->offset = START_OF_DIRECTORY_OFFSET;
 	*poffset = START_OF_DIRECTORY_OFFSET;
 }
 
