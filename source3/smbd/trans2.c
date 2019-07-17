@@ -3143,6 +3143,7 @@ static void call_trans2findnext(connection_struct *conn,
 	struct smbd_server_connection *sconn = req->sconn;
 	bool backup_priv = false; 
 	bool as_root = false;
+	files_struct *fsp = NULL;
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -3434,7 +3435,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Check if we can close the dirptr */
 	if(close_after_request || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
+		fsp = dptr_fsp(sconn, dptr_num);
 		dptr_close(sconn, &dptr_num); /* This frees up the saved mask */
+		if (fsp != NULL) {
+			close_file(NULL, fsp, NORMAL_CLOSE);
+			fsp = NULL;
+		}
 	}
 
 	if (as_root) {
