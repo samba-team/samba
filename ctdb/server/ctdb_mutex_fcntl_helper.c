@@ -50,7 +50,6 @@ static char fcntl_lock(const char *file, int *outfd)
 	if (fcntl(fd, F_SETLK, &lock) != 0) {
 		int saved_errno = errno;
 		close(fd);
-		fd = -1;
 		if (saved_errno == EACCES ||
 		    saved_errno == EAGAIN) {
 			/* Lock contention, fail silently */
