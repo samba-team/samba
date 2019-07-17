@@ -183,7 +183,6 @@ bool init_dptrs(struct smbd_server_connection *sconn);
 const char *dptr_path(struct smbd_server_connection *sconn, int key);
 const char *dptr_wcard(struct smbd_server_connection *sconn, int key);
 uint16_t dptr_attr(struct smbd_server_connection *sconn, int key);
-files_struct *dptr_fsp(struct smbd_server_connection *sconn, int key);
 void dptr_close(struct smbd_server_connection *sconn, int *key);
 void dptr_closecnum(connection_struct *conn);
 NTSTATUS dptr_create(connection_struct *conn,
