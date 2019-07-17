@@ -819,36 +819,19 @@ files_struct *dptr_fetch_fsp(struct smbd_server_connection *sconn,
 }
 
 /****************************************************************************
- Fetch the dir ptr.
-****************************************************************************/
-
-struct dptr_struct *dptr_fetch_lanman2(struct smbd_server_connection *sconn,
-				       int dptr_num)
-{
-	struct dptr_struct *dptr  = dptr_get(sconn, dptr_num);
-
-	if (!dptr) {
-		DEBUG(3,("fetched null dirptr %d\n",dptr_num));
-		return(NULL);
-	}
-	DEBUG(3,("fetching dirptr %d for path %s\n",
-		dptr_num,
-		dptr->smb_dname->base_name));
-	return(dptr);
-}
-
-/****************************************************************************
  Fetch the fsp associated with the dptr_num.
 ****************************************************************************/
 
 files_struct *dptr_fetch_lanman2_fsp(struct smbd_server_connection *sconn,
 				       int dptr_num)
 {
-	struct dptr_struct *dptr = dptr_fetch_lanman2(sconn, dptr_num);
-
+	struct dptr_struct *dptr  = dptr_get(sconn, dptr_num);
 	if (dptr == NULL) {
 		return NULL;
 	}
+	DBG_NOTICE("fetching dirptr %d for path %s\n",
+		dptr_num,
+		dptr->smb_dname->base_name);
 	return dptr->dir_hnd->fsp;
 }
 
