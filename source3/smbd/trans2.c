@@ -9634,6 +9634,7 @@ void reply_findclose(struct smb_request *req)
 {
 	int dptr_num;
 	struct smbd_server_connection *sconn = req->sconn;
+	files_struct *fsp = NULL;
 
 	START_PROFILE(SMBfindclose);
 
@@ -9654,7 +9655,12 @@ void reply_findclose(struct smb_request *req)
 	if (dptr_num == -1) {
 		dptr_closecnum(req->conn);
 	} else {
+		fsp = dptr_fsp(sconn, dptr_num);
 		dptr_close(sconn, &dptr_num);
+		if (fsp != NULL) {
+			close_file(NULL, fsp, NORMAL_CLOSE);
+			fsp = NULL;
+		}
 	}
 
 	reply_outbuf(req, 0, 0);
