@@ -1770,7 +1770,6 @@ void reply_search(struct smb_request *req)
 	bool allow_long_path_components = (req->flags2 & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
 	TALLOC_CTX *ctx = talloc_tos();
 	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
-	struct dptr_struct *dirptr = NULL;
 	struct smbXsrv_connection *xconn = req->xconn;
 	struct smbd_server_connection *sconn = req->sconn;
 	files_struct *fsp = NULL;
@@ -1940,16 +1939,7 @@ void reply_search(struct smb_request *req)
 			goto out;
 		}
 
-		dirptr = fsp->dptr;
 		dptr_num = dptr_dnum(fsp->dptr);
-
-		/*
-		 * At this point the struct dptr_struct *dirptr
-		 * holds a pointer to fsp, and will automaticly
-		 * close it once dptr_close() is called. We will
-		 * fetch it as needed there.
-		 */
-		fsp = NULL;
 
 	} else {
 		int status_dirtype;
@@ -1966,8 +1956,8 @@ void reply_search(struct smb_request *req)
 			dirtype = status_dirtype;
 		}
 
-		dirptr = dptr_fetch(sconn, status+12,&dptr_num);
-		if (!dirptr) {
+		fsp = dptr_fetch_fsp(sconn, status+12,&dptr_num);
+		if (fsp == NULL) {
 			goto SearchEmpty;
 		}
 		dirpath = dptr_path(sconn, dptr_num);
@@ -2028,7 +2018,7 @@ void reply_search(struct smb_request *req)
 
 		for (i=numentries;(i<maxentries) && !finished;i++) {
 			finished = !get_dir_entry(ctx,
-						  dirptr,
+						  fsp->dptr,
 						  mask,
 						  dirtype,
 						  &fname,
@@ -2068,18 +2058,16 @@ void reply_search(struct smb_request *req)
   SearchEmpty:
 
 	/* If we were called as SMBffirst with smb_search_id == NULL
-		and no entries were found then return error and close dirptr 
+		and no entries were found then return error and close fsp->dptr
 		(X/Open spec) */
 
 	if (numentries == 0) {
-		fsp = dptr_fsp(sconn, dptr_num);
 		dptr_close(sconn, &dptr_num);
 		if (fsp != NULL) {
 			close_file(NULL, fsp, NORMAL_CLOSE);
 			fsp = NULL;
 		}
 	} else if(expect_close && status_len == 0) {
-		fsp = dptr_fsp(sconn, dptr_num);
 		/* Close the dptr - we know it's gone */
 		dptr_close(sconn, &dptr_num);
 		if (fsp != NULL) {
@@ -2088,10 +2076,10 @@ void reply_search(struct smb_request *req)
 		}
 	}
 
-	/* If we were called as SMBfunique, then we can close the dirptr now ! */
+	/* If we were called as SMBfunique, then we can close the fsp->dptr now ! */
 	if(dptr_num >= 0 && req->cmd == SMBfunique) {
-		fsp = dptr_fsp(sconn, dptr_num);
 		dptr_close(sconn, &dptr_num);
+		/* fsp may have been closed above. */
 		if (fsp != NULL) {
 			close_file(NULL, fsp, NORMAL_CLOSE);
 			fsp = NULL;
