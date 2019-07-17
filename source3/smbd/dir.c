@@ -1890,9 +1890,9 @@ void SeekDir(struct smb_Dir *dirp, long offset)
  Tell a dir position.
 ********************************************************************/
 
-long TellDir(struct smb_Dir *dirp)
+long TellDir(struct smb_Dir *dir_hnd)
 {
-	return(dirp->offset);
+	return(dir_hnd->offset);
 }
 
 /*******************************************************************
