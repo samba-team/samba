@@ -1431,31 +1431,25 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 
 static int smb_Dir_destructor(struct smb_Dir *dir_hnd)
 {
-	if (dir_hnd->dir != NULL) {
-		SMB_VFS_CLOSEDIR(dir_hnd->conn, dir_hnd->dir);
-		if (dir_hnd->fsp != NULL) {
-			files_struct *fsp = dir_hnd->fsp;
-			/*
-			 * The SMB_VFS_CLOSEDIR above
-			 * closes the underlying fd inside
-			 * dirp->fsp, unless fallback_opendir
-			 * was set in which case the fd
-			 * in dir_hnd->fsp->fh->fd isn't
-			 * the one being closed. Close
-			 * it separately.
-			 */
-			if (dir_hnd->fallback_opendir) {
-				SMB_VFS_CLOSE(fsp);
-			}
-			fsp->fh->fd = -1;
-			if (fsp->dptr != NULL) {
-				SMB_ASSERT(fsp->dptr->dir_hnd ==
-					dir_hnd);
-				fsp->dptr->dir_hnd = NULL;
-			}
-			dir_hnd->fsp = NULL;
-		}
+	files_struct *fsp = dir_hnd->fsp;
+
+	SMB_VFS_CLOSEDIR(dir_hnd->conn, dir_hnd->dir);
+	/*
+	 * The SMB_VFS_CLOSEDIR above
+	 * closes the underlying fd inside
+	 * dirp->fsp, unless fallback_opendir
+	 * was set in which case the fd
+	 * in dir_hnd->fsp->fh->fd isn't
+	 * the one being closed. Close
+	 * it separately.
+	 */
+	if (dir_hnd->fallback_opendir) {
+		SMB_VFS_CLOSE(fsp);
 	}
+	fsp->fh->fd = -1;
+	SMB_ASSERT(fsp->dptr->dir_hnd == dir_hnd);
+	fsp->dptr->dir_hnd = NULL;
+	dir_hnd->fsp = NULL;
 	return 0;
 }
 
