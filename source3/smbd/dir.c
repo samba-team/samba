@@ -90,7 +90,7 @@ static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
 					const struct smb_filename *smb_dname,
 					const char *wcard,
 					uint32_t attr);
-static int smb_Dir_destructor(struct smb_Dir *dirp);
+static int smb_Dir_destructor(struct smb_Dir *dir_hnd);
 
 #define INVALID_DPTR_KEY (-3)
 
@@ -1512,22 +1512,23 @@ bool is_visible_file(connection_struct *conn, const char *dir_path,
 	return ret;
 }
 
-static int smb_Dir_destructor(struct smb_Dir *dirp)
+static int smb_Dir_destructor(struct smb_Dir *dir_hnd)
 {
-	if (dirp->dir != NULL) {
-		SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
-		if (dirp->fsp != NULL) {
+	if (dir_hnd->dir != NULL) {
+		SMB_VFS_CLOSEDIR(dir_hnd->conn, dir_hnd->dir);
+		if (dir_hnd->fsp != NULL) {
 			/*
 			 * The SMB_VFS_CLOSEDIR above
 			 * closes the underlying fd inside
 			 * dirp->fsp.
 			 */
-			dirp->fsp->fh->fd = -1;
-			if (dirp->fsp->dptr != NULL) {
-				SMB_ASSERT(dirp->fsp->dptr->dir_hnd == dirp);
-				dirp->fsp->dptr->dir_hnd = NULL;
+			dir_hnd->fsp->fh->fd = -1;
+			if (dir_hnd->fsp->dptr != NULL) {
+				SMB_ASSERT(dir_hnd->fsp->dptr->dir_hnd ==
+					dir_hnd);
+				dir_hnd->fsp->dptr->dir_hnd = NULL;
 			}
-			dirp->fsp = NULL;
+			dir_hnd->fsp = NULL;
 		}
 	}
 	return 0;
