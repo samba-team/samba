@@ -2194,14 +2194,12 @@ void reply_fclose(struct smb_request *req)
 
 	memcpy(status,p,21);
 
-	if(dptr_fetch(sconn, status+12,&dptr_num)) {
-		fsp = dptr_fsp(sconn, dptr_num);
+	fsp = dptr_fetch_fsp(sconn, status+12,&dptr_num);
+	if(fsp != NULL) {
 		/*  Close the dptr - we know it's gone */
 		dptr_close(sconn, &dptr_num);
-		if (fsp != NULL) {
-			close_file(NULL, fsp, NORMAL_CLOSE);
-			fsp = NULL;
-		}
+		close_file(NULL, fsp, NORMAL_CLOSE);
+		fsp = NULL;
 	}
 
 	reply_outbuf(req, 1, 0);
