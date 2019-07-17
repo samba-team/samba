@@ -3492,7 +3492,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Check if we can close the fsp->dptr */
 	if(close_after_request || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findnext: closing dptr_num = %d\n", dptr_num));
-		dptr_close(sconn, &dptr_num); /* This frees up the saved mask */
+		dptr_num = -1;
 		close_file(NULL, fsp, NORMAL_CLOSE);
 		fsp = NULL;
 	}
