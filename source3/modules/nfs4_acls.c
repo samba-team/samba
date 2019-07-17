@@ -98,6 +98,12 @@ int smbacl4_get_vfs_params(struct connection_struct *conn,
 		return -1;
 	}
 	params->acedup = (enum smbacl4_acedup_enum)enumval;
+	if (params->acedup == e_ignore) {
+		DBG_WARNING("nfs4:acedup ignore is deprecated.\n");
+	}
+	if (params->acedup == e_reject) {
+		DBG_WARNING("nfs4:acedup ignore is deprecated.\n");
+	}
 
 	params->map_full_control = lp_acl_map_full_control(SNUM(conn));
 
