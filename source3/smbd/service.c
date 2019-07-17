@@ -1118,10 +1118,6 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 
 	file_close_conn(conn);
 
-	if (!IS_IPC(conn)) {
-		dptr_closecnum(conn);
-	}
-
 	change_to_root_user();
 
 	DEBUG(IS_IPC(conn)?3:2, ("%s (%s) closed connection to service %s\n",
