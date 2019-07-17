@@ -2062,14 +2062,14 @@ void reply_search(struct smb_request *req)
 		(X/Open spec) */
 
 	if (numentries == 0) {
-		dptr_close(sconn, &dptr_num);
+		dptr_num = -1;
 		if (fsp != NULL) {
 			close_file(NULL, fsp, NORMAL_CLOSE);
 			fsp = NULL;
 		}
 	} else if(expect_close && status_len == 0) {
 		/* Close the dptr - we know it's gone */
-		dptr_close(sconn, &dptr_num);
+		dptr_num = -1;
 		if (fsp != NULL) {
 			close_file(NULL, fsp, NORMAL_CLOSE);
 			fsp = NULL;
@@ -2078,7 +2078,7 @@ void reply_search(struct smb_request *req)
 
 	/* If we were called as SMBfunique, then we can close the fsp->dptr now ! */
 	if(dptr_num >= 0 && req->cmd == SMBfunique) {
-		dptr_close(sconn, &dptr_num);
+		dptr_num = -1;
 		/* fsp may have been closed above. */
 		if (fsp != NULL) {
 			close_file(NULL, fsp, NORMAL_CLOSE);
