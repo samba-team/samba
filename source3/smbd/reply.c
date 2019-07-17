@@ -1773,6 +1773,7 @@ void reply_search(struct smb_request *req)
 	struct dptr_struct *dirptr = NULL;
 	struct smbXsrv_connection *xconn = req->xconn;
 	struct smbd_server_connection *sconn = req->sconn;
+	files_struct *fsp = NULL;
 
 	START_PROFILE(SMBsearch);
 
@@ -2003,15 +2004,30 @@ void reply_search(struct smb_request *req)
 		(X/Open spec) */
 
 	if (numentries == 0) {
+		fsp = dptr_fsp(sconn, dptr_num);
 		dptr_close(sconn, &dptr_num);
+		if (fsp != NULL) {
+			close_file(NULL, fsp, NORMAL_CLOSE);
+			fsp = NULL;
+		}
 	} else if(expect_close && status_len == 0) {
+		fsp = dptr_fsp(sconn, dptr_num);
 		/* Close the dptr - we know it's gone */
 		dptr_close(sconn, &dptr_num);
+		if (fsp != NULL) {
+			close_file(NULL, fsp, NORMAL_CLOSE);
+			fsp = NULL;
+		}
 	}
 
 	/* If we were called as SMBfunique, then we can close the dirptr now ! */
 	if(dptr_num >= 0 && req->cmd == SMBfunique) {
+		fsp = dptr_fsp(sconn, dptr_num);
 		dptr_close(sconn, &dptr_num);
+		if (fsp != NULL) {
+			close_file(NULL, fsp, NORMAL_CLOSE);
+			fsp = NULL;
+		}
 	}
 
 	if ((numentries == 0) && !mask_contains_wcard) {
