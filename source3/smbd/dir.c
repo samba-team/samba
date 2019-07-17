@@ -170,6 +170,22 @@ uint16_t dptr_attr(struct smbd_server_connection *sconn, int key)
 }
 
 /****************************************************************************
+ Get the fsp stored in a dptr->dir_hnd.
+****************************************************************************/
+
+files_struct *dptr_fsp(struct smbd_server_connection *sconn, int key)
+{
+	struct dptr_struct *dptr = dptr_get(sconn, key);
+	if (dptr == NULL) {
+		return NULL;
+	}
+	if (dptr->dir_hnd == NULL) {
+		return NULL;
+	}
+	return dptr->dir_hnd->fsp;
+}
+
+/****************************************************************************
  Close a dptr (internal func).
 ****************************************************************************/
 
