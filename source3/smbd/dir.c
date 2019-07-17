@@ -1714,9 +1714,9 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *mask,
 			uint32_t attr)
 {
-	struct smb_Dir *dirp = talloc_zero(mem_ctx, struct smb_Dir);
+	struct smb_Dir *dir_hnd = talloc_zero(mem_ctx, struct smb_Dir);
 
-	if (!dirp) {
+	if (!dir_hnd) {
 		goto fail;
 	}
 
@@ -1730,7 +1730,7 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		goto fail;
 	}
 
-	dirp->conn = conn;
+	dir_hnd->conn = conn;
 
 	if (!conn->sconn->using_smb2) {
 		/*
@@ -1739,48 +1739,49 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 		 * position (unless it's told to restart or close-and-reopen the
 		 * listing).
 		 */
-		dirp->name_cache_size = lp_directory_name_cache_size(SNUM(conn));
+		dir_hnd->name_cache_size =
+			lp_directory_name_cache_size(SNUM(conn));
 	}
 
-	dirp->dir_smb_fname = cp_smb_filename(dirp, fsp->fsp_name);
-	if (!dirp->dir_smb_fname) {
+	dir_hnd->dir_smb_fname = cp_smb_filename(dir_hnd, fsp->fsp_name);
+	if (!dir_hnd->dir_smb_fname) {
 		errno = ENOMEM;
 		goto fail;
 	}
 
-	dirp->dir = SMB_VFS_FDOPENDIR(fsp, mask, attr);
-	if (dirp->dir != NULL) {
-		dirp->fsp = fsp;
+	dir_hnd->dir = SMB_VFS_FDOPENDIR(fsp, mask, attr);
+	if (dir_hnd->dir != NULL) {
+		dir_hnd->fsp = fsp;
 	} else {
 		DEBUG(10,("OpenDir_fsp: SMB_VFS_FDOPENDIR on %s returned "
 			"NULL (%s)\n",
-			dirp->dir_smb_fname->base_name,
+			dir_hnd->dir_smb_fname->base_name,
 			strerror(errno)));
 		if (errno != ENOSYS) {
 			goto fail;
 		}
 	}
 
-	if (dirp->dir == NULL) {
+	if (dir_hnd->dir == NULL) {
 		/* FDOPENDIR is not supported. Use OPENDIR instead. */
-		TALLOC_FREE(dirp);
-		dirp = open_dir_safely(mem_ctx,
+		TALLOC_FREE(dir_hnd);
+		dir_hnd = open_dir_safely(mem_ctx,
 					conn,
 					fsp->fsp_name,
 					mask,
 					attr);
-		if (dirp == NULL) {
+		if (dir_hnd == NULL) {
 			errno = ENOMEM;
 			goto fail;
 		}
 	}
 
-	talloc_set_destructor(dirp, smb_Dir_destructor);
+	talloc_set_destructor(dir_hnd, smb_Dir_destructor);
 
-	return dirp;
+	return dir_hnd;
 
   fail:
-	TALLOC_FREE(dirp);
+	TALLOC_FREE(dir_hnd);
 	return NULL;
 }
 
