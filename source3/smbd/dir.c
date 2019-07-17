@@ -90,6 +90,7 @@ static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
 					const struct smb_filename *smb_dname,
 					const char *wcard,
 					uint32_t attr);
+static int smb_Dir_destructor(struct smb_Dir *dirp);
 
 #define INVALID_DPTR_KEY (-3)
 
@@ -342,6 +343,10 @@ static struct smb_Dir *open_dir_with_privilege(connection_struct *conn,
 
 	dir_hnd = open_dir_safely(NULL, conn, smb_fname_cwd, wcard, attr);
 
+	if (dir_hnd != NULL) {
+		talloc_set_destructor(dir_hnd, smb_Dir_destructor);
+	}
+
   out:
 
 	vfs_ChDir(conn, saved_dir_fname);
@@ -442,7 +447,13 @@ NTSTATUS dptr_create(connection_struct *conn,
 					smb_dname_cp,
 					wcard,
 					attr);
+			if (dir_hnd != NULL) {
+				talloc_set_destructor(dir_hnd,
+					smb_Dir_destructor);
+			}
 		}
+
+
 		TALLOC_FREE(smb_dname_cp);
 	}
 
@@ -1559,8 +1570,6 @@ static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
 		dirp->name_cache_size = lp_directory_name_cache_size(SNUM(conn));
 	}
 
-	talloc_set_destructor(dirp, smb_Dir_destructor);
-
 	return dirp;
 
   fail:
@@ -1568,9 +1577,36 @@ static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
 	return NULL;
 }
 
-/****************************************************************************
- Open a directory handle by pathname, ensuring it's under the share path.
-****************************************************************************/
+/**
+ * @brief Open a directory handle by pathname, ensuring it's under the share path.
+ *
+ * First stores the $cwd, then changes directory to the passed in pathname
+ * uses check_name() to ensure this is under the connection struct share path,
+ * then operates on a pathname of "." to ensure we're in the same place.
+ *
+ * The returned struct smb_Dir * should have a talloc destrctor added to
+ * ensure that when the struct is freed the internal POSIX DIR * pointer
+ * is closed.
+ *
+ * @code
+ *
+ * static int sample_smb_Dir_destructor(struct smb_Dir *dirp)
+ * {
+ *     SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
+ * }
+ * ..
+ *     struct smb_Dir *dir_hnd = open_dir_safely(mem_ctx,
+ *                              conn,
+ *                              smb_dname,
+ *                              mask,
+ *                              attr);
+ *      if (dir_hnd == NULL) {
+ *              return NULL;
+ *      }
+ *      talloc_set_destructor(dir_hnd, smb_Dir_destructor);
+ * ..
+ * @endcode
+ */
 
 static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
 					connection_struct *conn,
@@ -1627,6 +1663,7 @@ static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
 	dir_hnd->dir_smb_fname = cp_smb_filename(dir_hnd, smb_dname);
 	if (!dir_hnd->dir_smb_fname) {
 		TALLOC_FREE(dir_hnd);
+		SMB_VFS_CLOSEDIR(conn, dir_hnd->dir);
 		errno = ENOMEM;
 	}
 
@@ -1642,11 +1679,16 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *mask,
 			uint32_t attr)
 {
-	return open_dir_safely(mem_ctx,
+	struct smb_Dir *dir_hnd = open_dir_safely(mem_ctx,
 				conn,
 				smb_dname,
 				mask,
 				attr);
+	if (dir_hnd == NULL) {
+		return NULL;
+	}
+	talloc_set_destructor(dir_hnd, smb_Dir_destructor);
+	return dir_hnd;
 }
 
 /*******************************************************************
@@ -1708,11 +1750,15 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	if (dirp->dir == NULL) {
 		/* FDOPENDIR is not supported. Use OPENDIR instead. */
 		TALLOC_FREE(dirp);
-		return open_dir_safely(mem_ctx,
+		dirp = open_dir_safely(mem_ctx,
 					conn,
 					fsp->fsp_name,
 					mask,
 					attr);
+		if (dirp == NULL) {
+			errno = ENOMEM;
+			goto fail;
+		}
 	}
 
 	talloc_set_destructor(dirp, smb_Dir_destructor);
