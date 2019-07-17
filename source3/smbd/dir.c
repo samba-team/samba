@@ -1792,38 +1792,38 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
  Don't check for veto or invisible files.
 ********************************************************************/
 
-const char *ReadDirName(struct smb_Dir *dirp, long *poffset,
+const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
 			SMB_STRUCT_STAT *sbuf, char **ptalloced)
 {
 	const char *n;
 	char *talloced = NULL;
-	connection_struct *conn = dirp->conn;
+	connection_struct *conn = dir_hnd->conn;
 
 	/* Cheat to allow . and .. to be the first entries returned. */
 	if (((*poffset == START_OF_DIRECTORY_OFFSET) ||
-	     (*poffset == DOT_DOT_DIRECTORY_OFFSET)) && (dirp->file_number < 2))
+	     (*poffset == DOT_DOT_DIRECTORY_OFFSET)) && (dir_hnd->file_number < 2))
 	{
-		if (dirp->file_number == 0) {
+		if (dir_hnd->file_number == 0) {
 			n = ".";
-			*poffset = dirp->offset = START_OF_DIRECTORY_OFFSET;
+			*poffset = dir_hnd->offset = START_OF_DIRECTORY_OFFSET;
 		} else {
 			n = "..";
-			*poffset = dirp->offset = DOT_DOT_DIRECTORY_OFFSET;
+			*poffset = dir_hnd->offset = DOT_DOT_DIRECTORY_OFFSET;
 		}
-		dirp->file_number++;
+		dir_hnd->file_number++;
 		*ptalloced = NULL;
 		return n;
 	}
 
 	if (*poffset == END_OF_DIRECTORY_OFFSET) {
-		*poffset = dirp->offset = END_OF_DIRECTORY_OFFSET;
+		*poffset = dir_hnd->offset = END_OF_DIRECTORY_OFFSET;
 		return NULL;
 	}
 
 	/* A real offset, seek to it. */
-	SeekDir(dirp, *poffset);
+	SeekDir(dir_hnd, *poffset);
 
-	while ((n = vfs_readdirname(conn, dirp->dir, sbuf, &talloced))) {
+	while ((n = vfs_readdirname(conn, dir_hnd->dir, sbuf, &talloced))) {
 		/* Ignore . and .. - we've already returned them. */
 		if (*n == '.') {
 			if ((n[1] == '\0') || (n[1] == '.' && n[2] == '\0')) {
@@ -1831,12 +1831,12 @@ const char *ReadDirName(struct smb_Dir *dirp, long *poffset,
 				continue;
 			}
 		}
-		*poffset = dirp->offset = SMB_VFS_TELLDIR(conn, dirp->dir);
+		*poffset = dir_hnd->offset = SMB_VFS_TELLDIR(conn, dir_hnd->dir);
 		*ptalloced = talloced;
-		dirp->file_number++;
+		dir_hnd->file_number++;
 		return n;
 	}
-	*poffset = dirp->offset = END_OF_DIRECTORY_OFFSET;
+	*poffset = dir_hnd->offset = END_OF_DIRECTORY_OFFSET;
 	*ptalloced = NULL;
 	return NULL;
 }

@@ -230,7 +230,7 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
 			const struct smb_filename *smb_fname,
 			const char *mask,
 			uint32_t attr);
-const char *ReadDirName(struct smb_Dir *dirp, long *poffset,
+const char *ReadDirName(struct smb_Dir *dir_hnd, long *poffset,
 			SMB_STRUCT_STAT *sbuf, char **talloced);
 void RewindDir(struct smb_Dir *dirp, long *poffset);
 void SeekDir(struct smb_Dir *dirp, long offset);
