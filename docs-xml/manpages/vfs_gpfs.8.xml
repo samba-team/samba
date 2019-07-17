@@ -372,8 +372,8 @@
 		<para>Following is the behaviour of Samba for different values :</para>
 		<itemizedlist>
 		<listitem><para><command>dontcare (default)</command> - copy the ACEs as they come</para></listitem>
-		<listitem><para><command>reject</command> - stop operation and exit with error on ACL set op</para></listitem>
-		<listitem><para><command>ignore</command> - don't include the second matching ACE</para></listitem>
+		<listitem><para><command>reject (deprecated)</command> - stop operation and exit with error on ACL set op</para></listitem>
+		<listitem><para><command>ignore (deprecated)</command> - don't include the second matching ACE</para></listitem>
 		<listitem><para><command>merge</command> - bitwise OR the 2 ace.flag fields and 2 ace.mask fields of the 2 duplicate ACEs into 1 ACE</para></listitem>
 		</itemizedlist>
 		</listitem>
