@@ -9726,7 +9726,7 @@ void reply_findclose(struct smb_request *req)
 	if (dptr_num == -1) {
 		dptr_closecnum(req->conn);
 	} else {
-		fsp = dptr_fsp(sconn, dptr_num);
+		fsp = dptr_fetch_lanman2_fsp(sconn, dptr_num);
 		dptr_close(sconn, &dptr_num);
 		if (fsp != NULL) {
 			close_file(NULL, fsp, NORMAL_CLOSE);
