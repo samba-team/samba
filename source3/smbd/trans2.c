@@ -3076,7 +3076,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	/* Check if we can close the dirptr */
 	if(close_after_first || (finished && close_if_end)) {
 		DEBUG(5,("call_trans2findfirst - (2) closing dptr_num %d\n", dptr_num));
-		dptr_close(sconn, &dptr_num);
+		dptr_num = -1;
 		close_file(NULL, fsp, NORMAL_CLOSE);
 		fsp = NULL;
 	}
@@ -3089,7 +3089,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	 */
 
 	if(numentries == 0) {
-		dptr_close(sconn, &dptr_num);
+		dptr_num = -1;
 		/*
 		 * We may have already closed the file in the
 		 * close_after_first or finished case above.
