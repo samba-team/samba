@@ -83,7 +83,7 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 			const char *mask,
 			uint32_t attr);
 
-static void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset);
+static void DirCacheAdd(struct smb_Dir *dir_hnd, const char *name, long offset);
 
 static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
 					connection_struct *conn,
@@ -1897,28 +1897,29 @@ long TellDir(struct smb_Dir *dirp)
  Add an entry into the dcache.
 ********************************************************************/
 
-static void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset)
+static void DirCacheAdd(struct smb_Dir *dir_hnd, const char *name, long offset)
 {
 	struct name_cache_entry *e;
 
-	if (dirp->name_cache_size == 0) {
+	if (dir_hnd->name_cache_size == 0) {
 		return;
 	}
 
-	if (dirp->name_cache == NULL) {
-		dirp->name_cache = talloc_zero_array(
-			dirp, struct name_cache_entry, dirp->name_cache_size);
+	if (dir_hnd->name_cache == NULL) {
+		dir_hnd->name_cache = talloc_zero_array(dir_hnd,
+						struct name_cache_entry,
+						dir_hnd->name_cache_size);
 
-		if (dirp->name_cache == NULL) {
+		if (dir_hnd->name_cache == NULL) {
 			return;
 		}
 	}
 
-	dirp->name_cache_index = (dirp->name_cache_index+1) %
-					dirp->name_cache_size;
-	e = &dirp->name_cache[dirp->name_cache_index];
+	dir_hnd->name_cache_index = (dir_hnd->name_cache_index+1) %
+					dir_hnd->name_cache_size;
+	e = &dir_hnd->name_cache[dir_hnd->name_cache_index];
 	TALLOC_FREE(e->name);
-	e->name = talloc_strdup(dirp, name);
+	e->name = talloc_strdup(dir_hnd, name);
 	e->offset = offset;
 }
 
