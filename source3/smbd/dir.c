@@ -793,10 +793,11 @@ static long map_wire_to_dir_offset(struct dptr_struct *dptr, uint32_t wire_offse
 }
 
 /****************************************************************************
- Fetch the dir ptr and seek it given the 5 byte server field.
+ Return the associated fsp and seek the dir_hnd on it it given the 5 byte
+ server field.
 ****************************************************************************/
 
-struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
+files_struct *dptr_fetch_fsp(struct smbd_server_connection *sconn,
 			       char *buf, int *num)
 {
 	unsigned int key = *(unsigned char *)buf;
@@ -804,7 +805,7 @@ struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
 	uint32_t wire_offset;
 	long seekoff;
 
-	if (!dptr) {
+	if (dptr == NULL) {
 		DEBUG(3,("fetched null dirptr %d\n",key));
 		return(NULL);
 	}
@@ -814,22 +815,6 @@ struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
 	SeekDir(dptr->dir_hnd,seekoff);
 	DEBUG(3,("fetching dirptr %d for path %s at offset %d\n",
 		key, dptr->smb_dname->base_name, (int)seekoff));
-	return(dptr);
-}
-
-/****************************************************************************
- Return the associated fsp and seek the dir_hnd on it it given the 5 byte
- server field.
-****************************************************************************/
-
-files_struct *dptr_fetch_fsp(struct smbd_server_connection *sconn,
-			       char *buf, int *num)
-{
-	struct dptr_struct *dptr = dptr_fetch(sconn, buf, num);
-
-	if (dptr == NULL) {
-		return NULL;
-	}
 	return dptr->dir_hnd->fsp;
 }
 

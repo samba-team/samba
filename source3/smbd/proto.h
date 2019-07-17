@@ -207,8 +207,6 @@ void dptr_set_priv(struct dptr_struct *dptr);
 bool dptr_SearchDir(struct dptr_struct *dptr, const char *name, long *poffset, SMB_STRUCT_STAT *pst);
 bool dptr_fill(struct smbd_server_connection *sconn,
 	       char *buf1,unsigned int key);
-struct dptr_struct *dptr_fetch(struct smbd_server_connection *sconn,
-			       char *buf,int *num);
 files_struct *dptr_fetch_fsp(struct smbd_server_connection *sconn,
 			       char *buf,int *num);
 struct dptr_struct *dptr_fetch_lanman2(struct smbd_server_connection *sconn,
