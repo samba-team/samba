@@ -2184,10 +2184,10 @@ void reply_fclose(struct smb_request *req)
 
 	fsp = dptr_fetch_fsp(sconn, status+12,&dptr_num);
 	if(fsp != NULL) {
-		/*  Close the dptr - we know it's gone */
-		dptr_close(sconn, &dptr_num);
+		/*  Close the file - we know it's gone */
 		close_file(NULL, fsp, NORMAL_CLOSE);
 		fsp = NULL;
+		dptr_num = -1;
 	}
 
 	reply_outbuf(req, 1, 0);
