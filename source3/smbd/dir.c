@@ -837,6 +837,21 @@ struct dptr_struct *dptr_fetch_lanman2(struct smbd_server_connection *sconn,
 	return(dptr);
 }
 
+/****************************************************************************
+ Fetch the fsp associated with the dptr_num.
+****************************************************************************/
+
+files_struct *dptr_fetch_lanman2_fsp(struct smbd_server_connection *sconn,
+				       int dptr_num)
+{
+	struct dptr_struct *dptr = dptr_fetch_lanman2(sconn, dptr_num);
+
+	if (dptr == NULL) {
+		return NULL;
+	}
+	return dptr->dir_hnd->fsp;
+}
+
 static bool mangle_mask_match(connection_struct *conn,
 		const char *filename,
 		const char *mask)
