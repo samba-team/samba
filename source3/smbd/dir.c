@@ -208,44 +208,6 @@ done:
 }
 
 /****************************************************************************
- Close a dptr given a key. SMB1 *only*.
-****************************************************************************/
-
-void dptr_close(struct smbd_server_connection *sconn, int *key)
-{
-	struct dptr_struct *dptr;
-	files_struct *fsp = NULL;
-	struct smb_Dir *dir_hnd = NULL;
-
-	SMB_ASSERT(!sconn->using_smb2);
-
-	if(*key == INVALID_DPTR_KEY)
-		return;
-
-	dptr = dptr_get(sconn, *key);
-
-	if (!dptr) {
-		DEBUG(0,("Invalid key %d given to dptr_close\n", *key));
-		return;
-	}
-
-	dir_hnd = dptr->dir_hnd;
-
-	if (dir_hnd != NULL && dir_hnd->fsp != NULL) {
-		SMB_ASSERT(dir_hnd->fsp->dptr->dir_hnd == dir_hnd);
-		fsp = dir_hnd->fsp;
-	}
-
-	dptr_close_internal(dptr);
-
-	if (fsp != NULL) {
-		fsp->dptr = NULL;
-	}
-
-	*key = INVALID_DPTR_KEY;
-}
-
-/****************************************************************************
  Close all dptrs for a cnum.
 ****************************************************************************/
 
