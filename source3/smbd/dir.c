@@ -85,6 +85,12 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 
 static void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset);
 
+static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
+					connection_struct *conn,
+					const struct smb_filename *smb_dname,
+					const char *wcard,
+					uint32_t attr);
+
 #define INVALID_DPTR_KEY (-3)
 
 /****************************************************************************
@@ -334,7 +340,7 @@ static struct smb_Dir *open_dir_with_privilege(connection_struct *conn,
 		goto out;
 	}
 
-	dir_hnd = OpenDir(NULL, conn, smb_fname_cwd, wcard, attr);
+	dir_hnd = open_dir_safely(NULL, conn, smb_fname_cwd, wcard, attr);
 
   out:
 
@@ -431,7 +437,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 						wcard,
 						attr);
 		} else {
-			dir_hnd = OpenDir(NULL,
+			dir_hnd = open_dir_safely(NULL,
 					conn,
 					smb_dname_cp,
 					wcard,
