@@ -29,11 +29,11 @@ from samba.gp_parse import GPParser
 # [MS-GPSB] Security Protocol Extension
 class GptTmplInfParser(GPParser):
     sections = None
-    encoding = 'utf-16le'
+    encoding = 'utf-16'
+    output_encoding = 'utf-16le'
 
     class AbstractParam:
         __metaclass__ = ABCMeta
-        encoding = 'utf-16le'
 
         def __init__(self):
             self.param_list = []
@@ -333,7 +333,10 @@ class GptTmplInfParser(GPParser):
 
     def write_binary(self, filename):
         with codecs.open(filename, 'wb+',
-                         self.encoding) as f:
+                         self.output_encoding) as f:
+            # Write the byte-order mark
+            f.write(u'\ufeff')
+
             for s in self.sections:
                 self.sections[s].write_section(s, f)
 
