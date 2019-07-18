@@ -289,24 +289,6 @@ static int smbacl4_GetFileOwner(struct connection_struct *conn,
 	return 0;
 }
 
-static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
-{
-	ZERO_STRUCTP(psbuf);
-
-	if (fsp->fh->fd == -1) {
-		return smbacl4_GetFileOwner(fsp->conn,
-					    fsp->fsp_name, psbuf);
-	}
-	if (SMB_VFS_FSTAT(fsp, psbuf) != 0)
-	{
-		DEBUG(8, ("SMB_VFS_FSTAT failed with error %s\n",
-			strerror(errno)));
-		return -1;
-	}
-
-	return 0;
-}
-
 static void check_for_duplicate_sec_ace(struct security_ace *nt_ace_list,
 					int *good_aces)
 {
@@ -565,21 +547,17 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 			      struct security_descriptor **ppdesc,
 			      struct SMB4ACL_T *theacl)
 {
-	SMB_STRUCT_STAT sbuf;
 	struct smbacl4_vfs_params params;
-	SMB_STRUCT_STAT *psbuf = NULL;
 
 	DEBUG(10, ("smb_fget_nt_acl_nfs4 invoked for %s\n", fsp_str_dbg(fsp)));
 
-	if (VALID_STAT(fsp->fsp_name->st)) {
-		psbuf = &fsp->fsp_name->st;
-	}
+	if (!VALID_STAT(fsp->fsp_name->st)) {
+		NTSTATUS status;
 
-	if (psbuf == NULL) {
-		if (smbacl4_fGetFileOwner(fsp, &sbuf)) {
-			return map_nt_error_from_unix(errno);
+		status = vfs_stat_fsp(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
-		psbuf = &sbuf;
 	}
 
 	if (pparams == NULL) {
@@ -590,7 +568,8 @@ NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
 		pparams = &params;
 	}
 
-	return smb_get_nt_acl_nfs4_common(psbuf, pparams, security_info,
+	return smb_get_nt_acl_nfs4_common(&fsp->fsp_name->st, pparams,
+					  security_info,
 					  mem_ctx, ppdesc, theacl);
 }
 
