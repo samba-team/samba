@@ -32,6 +32,21 @@
 #define GNUTLS_FIPS140_SET_STRICT_MODE()
 #endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Convert a gnutls error code to a corresponding NTSTATUS.
+ *
+ * @param[in]  gnutls_rc      The GnuTLS return code.
+ *
+ * @param[in]  blocked_status The NTSTATUS return code which should be returned
+ *                            in case the e.g. the cipher might be blocked due
+ *                            to FIPS mode.
+ *
+ * @return A corresponding NTSTATUS code.
+ */
+NTSTATUS gnutls_error_to_ntstatus(int gnutls_rc,
+				  NTSTATUS blocked_status);
+#else
 NTSTATUS _gnutls_error_to_ntstatus(int gnutls_rc,
 				   NTSTATUS blocked_status,
 				   const char *function,
@@ -39,6 +54,7 @@ NTSTATUS _gnutls_error_to_ntstatus(int gnutls_rc,
 #define gnutls_error_to_ntstatus(gnutls_rc, blocked_status) \
 	_gnutls_error_to_ntstatus(gnutls_rc, blocked_status, \
 				  __FUNCTION__, __location__)
+#endif
 
 WERROR _gnutls_error_to_werror(int gnutls_rc,
 			       WERROR blocked_werr,
