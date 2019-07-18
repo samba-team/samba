@@ -708,14 +708,12 @@ static int nfs4_acl_add_ace(enum smbacl4_acedup_enum acedup,
 	return 0;
 }
 
-static int smbacl4_fill_ace4(
-	bool is_directory,
-	const struct smbacl4_vfs_params *params,
-	uid_t ownerUID,
-	gid_t ownerGID,
-	const struct security_ace *ace_nt, /* input */
-	struct SMB4ACL_T *nfs4_acl
-)
+static int nfs4_acl_add_sec_ace(bool is_directory,
+				const struct smbacl4_vfs_params *params,
+				uid_t ownerUID,
+				gid_t ownerGID,
+				const struct security_ace *ace_nt,
+				struct SMB4ACL_T *nfs4_acl)
 {
 	struct dom_sid_buf buf;
 	SMB_ACE4PROP_T nfs4_ace = { 0 };
@@ -936,9 +934,9 @@ static struct SMB4ACL_T *smbacl4_win2nfs4(
 	for(i=0; i<dacl->num_aces; i++) {
 		int ret;
 
-		ret = smbacl4_fill_ace4(is_directory, pparams,
-					ownerUID, ownerGID,
-					dacl->aces + i, theacl);
+		ret = nfs4_acl_add_sec_ace(is_directory, pparams,
+					   ownerUID, ownerGID,
+					   dacl->aces + i, theacl);
 		if (ret == -1) {
 			return NULL;
 		}
