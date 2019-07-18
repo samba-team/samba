@@ -85,6 +85,24 @@ enum samba_gnutls_direction {
 	SAMBA_GNUTLS_DECRYPT
 };
 
+/**
+ * @brief Encrypt or decrypt a data blob using RC4 with a key and salt.
+ *
+ * One of the key input should be a session key and the other a confounder
+ * (aka salt). Which one depends on the implementation details of the
+ * protocol.
+ *
+ * @param[in]  key_input1 Either a session_key or a confounder.
+ *
+ * @param[in]  key_input2 Either a session_key or a confounder.
+ *
+ * @param[in]  data       The data blob ot either encrypt or decrypt. The data
+ *                        will be encrypted or decrypted in place.
+ *
+ * @param[in]  encrypt    The encryption direction.
+ *
+ * @return A gnutls error code.
+ */
 int samba_gnutls_arcfour_confounded_md5(const DATA_BLOB *key_input1,
 					const DATA_BLOB *key_input2,
 					DATA_BLOB *data,
