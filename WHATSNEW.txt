@@ -27,6 +27,7 @@ smb.conf changes
   Parameter Name                     Description                Default
   --------------                     -----------                -------
 
+  nfs4:acedup                        Changed default            merge
 
 KNOWN ISSUES
 ============
