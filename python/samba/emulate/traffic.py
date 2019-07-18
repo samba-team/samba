@@ -363,7 +363,8 @@ class ReplayContext(object):
                  ou=None,
                  base_dn=None,
                  domain=os.environ.get("DOMAIN"),
-                 domain_sid=None):
+                 domain_sid=None,
+                 instance_id=None):
         self.server                   = server
         self.netlogon_connection      = None
         self.creds                    = creds
@@ -379,6 +380,7 @@ class ReplayContext(object):
         self.global_tempdir           = tempdir
         self.domain_sid               = domain_sid
         self.realm                    = lp.get('realm')
+        self.instance_id              = instance_id
 
         # Bad password attempt controls
         self.badpassword_frequency    = badpassword_frequency

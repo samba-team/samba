@@ -416,7 +416,8 @@ def main():
                    ou=traffic.ou_name(ldb, opts.instance_id),
                    tempdir=tempdir,
                    stop_on_any_error=opts.stop_on_any_error,
-                   domain_sid=ldb.get_domain_sid())
+                   domain_sid=ldb.get_domain_sid(),
+                   instance_id=opts.instance_id)
 
     if opts.timing_data == '-':
         timing_dest = sys.stdout
