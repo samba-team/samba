@@ -33,10 +33,10 @@ chown = [true|false]
 - false => disable support for changing owner or group
 
 acedup = [dontcare|reject|ignore|merge]
-- dontcare: copy ACEs as they come, don't care with "duplicate" records. Default.
+- dontcare: copy ACEs as they come, don't care with "duplicate" records.
 - reject: stop operation, exit acl setter operation with an error. (deprecated)
 - ignore: don't include the second matching ACE. (deprecated)
-- merge: OR 2 ace.flag fields and 2 ace.mask fields of the 2 duplicate ACEs into 1 ACE
+- merge: OR 2 ace.flag fields and 2 ace.mask fields of the 2 duplicate ACEs into 1 ACE (default)
 
 Two ACEs are considered here "duplicate" when their type and id fields are matching.
 

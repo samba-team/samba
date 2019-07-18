@@ -91,7 +91,7 @@ int smbacl4_get_vfs_params(struct connection_struct *conn,
 		"chown", true);
 
 	enumval = lp_parm_enum(SNUM(conn), SMBACL4_PARAM_TYPE_NAME, "acedup",
-			       enum_smbacl4_acedups, e_dontcare);
+			       enum_smbacl4_acedups, e_merge);
 	if (enumval == -1) {
 		DEBUG(10, ("value for %s:acedup unknown\n",
 			   SMBACL4_PARAM_TYPE_NAME));
