@@ -55,7 +55,9 @@ class TrafficEmulatorPacketTests(samba.tests.TestCase):
                                              creds=self.credentials,
                                              tempdir=self.tempdir,
                                              ou=traffic.ou_name(self.ldb, 1),
-                                             domain_sid=self.domain_sid)
+                                             domain_sid=self.domain_sid,
+                                             total_conversations=3,
+                                             instance_id=1)
 
         self.conversation = traffic.Conversation()
         self.conversation.conversation_id = 1
