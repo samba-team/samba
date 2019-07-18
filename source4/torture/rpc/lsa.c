@@ -4914,6 +4914,11 @@ static bool test_GetUserName(struct dcerpc_binding_handle *b,
 	torture_assert_not_null(tctx, r.out.authority_name, "r.out.authority_name");
 	torture_assert_not_null(tctx, *r.out.authority_name, "*r.out.authority_name");
 
+	torture_comment(tctx,
+			"Account Name: %s, Authority Name: %s\n",
+			(*r.out.account_name)->string,
+			(*r.out.authority_name)->string);
+
 	return true;
 }
 
