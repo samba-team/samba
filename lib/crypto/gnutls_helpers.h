@@ -56,6 +56,21 @@ NTSTATUS _gnutls_error_to_ntstatus(int gnutls_rc,
 				  __FUNCTION__, __location__)
 #endif
 
+#ifdef DOXYGEN
+/**
+ * @brief Convert a gnutls error code to a corresponding WERROR.
+ *
+ * @param[in]  gnutls_rc      The GnuTLS return code.
+ *
+ * @param[in]  blocked_werr   The WERROR code which should be returned if e.g
+ *                            the cipher we want to used it not allowed to be
+ *                            used because of FIPS mode.
+ *
+ * @return A corresponding WERROR code.
+ */
+WERROR gnutls_error_to_werror(int gnutls_rc,
+			       WERROR blocked_werr);
+#else
 WERROR _gnutls_error_to_werror(int gnutls_rc,
 			       WERROR blocked_werr,
 			       const char *function,
@@ -63,6 +78,7 @@ WERROR _gnutls_error_to_werror(int gnutls_rc,
 #define gnutls_error_to_werror(gnutls_rc, blocked_werr) \
 	_gnutls_error_to_werror(gnutls_rc, blocked_werr, \
 				__FUNCTION__, __location__)
+#endif
 
 enum samba_gnutls_direction {
 	SAMBA_GNUTLS_ENCRYPT,
