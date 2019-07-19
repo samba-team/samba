@@ -419,6 +419,15 @@ struct winbindd_domain *find_auth_domain(uint8_t flags,
 		return find_domain_from_name_noinit(domain_name);
 	}
 
+	if (lp_winbind_use_krb5_enterprise_principals()) {
+		/*
+		 * If we use enterprise principals
+		 * we always go trough our primary domain
+		 * and follow the WRONG_REALM replies.
+		 */
+		flags &= ~WBFLAG_PAM_CONTACT_TRUSTDOM;
+	}
+
 	/* we can auth against trusted domains */
 	if (flags & WBFLAG_PAM_CONTACT_TRUSTDOM) {
 		domain = find_domain_from_name_noinit(domain_name);
@@ -723,7 +732,20 @@ static NTSTATUS winbindd_raw_kerberos_login(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	principal_s = talloc_asprintf(mem_ctx, "%s@%s", name_user, realm);
+	if (lp_winbind_use_krb5_enterprise_principals() &&
+	    name_namespace[0] != '\0')
+	{
+		principal_s = talloc_asprintf(mem_ctx,
+					      "%s@%s@%s",
+					      name_user,
+					      name_namespace,
+					      realm);
+	} else {
+		principal_s = talloc_asprintf(mem_ctx,
+					      "%s@%s",
+					      name_user,
+					      realm);
+	}
 	if (principal_s == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1290,30 +1312,16 @@ static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 
 	/* what domain should we contact? */
 
-	if ( IS_DC ) {
-		contact_domain = find_domain_from_name(name_namespace);
-		if (contact_domain == NULL) {
-			DEBUG(3, ("Authentication for domain for [%s] -> [%s]\\[%s] failed as %s is not a trusted domain\n",
-				  state->request->data.auth.user, name_domain, name_user, name_domain));
-			result = NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
-
+	if (lp_winbind_use_krb5_enterprise_principals()) {
+		contact_domain = find_auth_domain(0, name_namespace);
 	} else {
-		if (is_myname(name_domain)) {
-			DEBUG(3, ("Authentication for domain %s (local domain to this server) not supported at this stage\n", name_domain));
-			result =  NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
-
 		contact_domain = find_domain_from_name(name_namespace);
-		if (contact_domain == NULL) {
-			DEBUG(3, ("Authentication for domain for [%s] -> [%s]\\[%s] failed as %s is not a trusted domain\n",
-				  state->request->data.auth.user, name_domain, name_user, name_domain));
-
-			result =  NT_STATUS_NO_SUCH_USER;
-			goto done;
-		}
+	}
+	if (contact_domain == NULL) {
+		DEBUG(3, ("Authentication for domain for [%s] -> [%s]\\[%s] failed as %s is not a trusted domain\n",
+			  state->request->data.auth.user, name_domain, name_user, name_namespace));
+		result = NT_STATUS_NO_SUCH_USER;
+		goto done;
 	}
 
 	if (contact_domain->initialized &&
@@ -1326,7 +1334,8 @@ static NTSTATUS winbindd_dual_pam_auth_kerberos(struct winbindd_domain *domain,
 	}
 
 	if (!contact_domain->active_directory) {
-		DEBUG(3,("krb5 auth requested but domain is not Active Directory\n"));
+		DEBUG(3,("krb5 auth requested but domain (%s) is not Active Directory\n",
+		      contact_domain->name));
 		return NT_STATUS_INVALID_LOGON_TYPE;
 	}
 try_login:
