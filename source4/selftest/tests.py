@@ -498,6 +498,8 @@ else:
     plantestsuite("samba4.blackbox.export.keytab", "ad_dc_ntvfs:local", [os.path.join(bbdir, "test_export_keytab_mit.sh"), '$SERVER', '$USERNAME', '$REALM', '$DOMAIN', "$PREFIX", smbclient4])
     plantestsuite("samba4.blackbox.kpasswd", "ad_dc_ntvfs:local", [os.path.join(bbdir, "test_kpasswd_mit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', "$PREFIX/ad_dc_ntvfs"])
 
+plantestsuite("samba.blackbox.client_kerberos", "ad_dc", [os.path.join(bbdir, "test_client_kerberos.sh"), '$DOMAIN', '$REALM', '$USERNAME', '$PASSWORD', '$SERVER', '$PREFIX_ABS', '$SMB_CONF_PATH'])
+
 plantestsuite("samba4.blackbox.trust_ntlm", "fl2008r2dc:local", [os.path.join(bbdir, "test_trust_ntlm.sh"), '$SERVER_IP', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$TRUST_USERNAME', '$TRUST_PASSWORD', '$TRUST_REALM', '$TRUST_DOMAIN', 'forest', 'auto', 'NT_STATUS_LOGON_FAILURE'])
 plantestsuite("samba4.blackbox.trust_ntlm", "fl2003dc:local", [os.path.join(bbdir, "test_trust_ntlm.sh"), '$SERVER_IP', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$TRUST_USERNAME', '$TRUST_PASSWORD', '$TRUST_REALM', '$TRUST_DOMAIN', 'external', 'auto', 'NT_STATUS_LOGON_FAILURE'])
 plantestsuite("samba4.blackbox.trust_ntlm", "ad_member:local", [os.path.join(bbdir, "test_trust_ntlm.sh"), '$SERVER_IP', '$USERNAME', '$PASSWORD', '$SERVER', '$SERVER', '$DC_USERNAME', '$DC_PASSWORD', '$REALM', '$DOMAIN', 'member', 'auto', 'NT_STATUS_LOGON_FAILURE'])
