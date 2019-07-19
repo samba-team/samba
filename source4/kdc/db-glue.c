@@ -588,6 +588,8 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 						    bool is_rodc,
 						    uint32_t userAccountControl,
 						    enum samba_kdc_ent_type ent_type,
+						    unsigned flags,
+						    krb5_kvno requested_kvno,
 						    struct sdb_entry *entry,
 						    bool is_protected,
 						    uint32_t *supported_enctypes_out)
@@ -687,6 +689,7 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 		 * See https://bugzilla.samba.org/show_bug.cgi?id=14951
 		 */
 		current_kvno = SAMBA_KVNO_GET_VALUE(current_kvno);
+		requested_kvno = SAMBA_KVNO_GET_VALUE(requested_kvno);
 	}
 
 	/* Get keys from the db */
@@ -883,6 +886,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 					       krb5_const_principal principal,
 					       enum samba_kdc_ent_type ent_type,
 					       unsigned flags,
+					       krb5_kvno kvno,
 					       struct ldb_dn *realm_dn,
 					       struct ldb_message *msg,
 					       struct sdb_entry *entry)
@@ -1310,7 +1314,7 @@ static krb5_error_code samba_kdc_message2entry(krb5_context context,
 	/* Get keys from the db */
 	ret = samba_kdc_message2entry_keys(context, kdc_db_ctx, p, msg,
 					   rid, is_rodc, userAccountControl,
-					   ent_type, entry,
+					   ent_type, flags, kvno, entry,
 					   protected_user, &supported_enctypes);
 	if (ret) {
 		/* Could be bogus data in the entry, or out of memory */
@@ -1915,6 +1919,7 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 					       TALLOC_CTX *mem_ctx,
 					       krb5_const_principal principal,
 					       unsigned flags,
+					       krb5_kvno kvno,
 					       struct sdb_entry *entry)
 {
 	struct ldb_dn *realm_dn;
@@ -1930,7 +1935,7 @@ static krb5_error_code samba_kdc_fetch_client(krb5_context context,
 
 	ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 				      principal, SAMBA_KDC_ENT_TYPE_CLIENT,
-				      flags,
+				      flags, kvno,
 				      realm_dn, msg, entry);
 	return ret;
 }
@@ -2022,7 +2027,7 @@ static krb5_error_code samba_kdc_fetch_krbtgt(krb5_context context,
 
 		ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 					      principal, SAMBA_KDC_ENT_TYPE_KRBTGT,
-					      flags, realm_dn, msg, entry);
+					      flags, kvno, realm_dn, msg, entry);
 		if (ret != 0) {
 			krb5_warnx(context, "samba_kdc_fetch: self krbtgt message2entry failed");
 		}
@@ -2254,6 +2259,7 @@ static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 					      TALLOC_CTX *mem_ctx,
 					      krb5_const_principal principal,
 					      unsigned flags,
+					      krb5_kvno kvno,
 					      struct sdb_entry *entry)
 {
 	krb5_error_code ret;
@@ -2268,7 +2274,7 @@ static krb5_error_code samba_kdc_fetch_server(krb5_context context,
 
 	ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 				      principal, SAMBA_KDC_ENT_TYPE_SERVER,
-				      flags,
+				      flags, kvno,
 				      realm_dn, msg, entry);
 	if (ret != 0) {
 		krb5_warnx(context, "samba_kdc_fetch: message2entry failed");
@@ -2498,7 +2504,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 	ret = SDB_ERR_NOENTRY;
 
 	if (flags & SDB_F_GET_CLIENT) {
-		ret = samba_kdc_fetch_client(context, kdc_db_ctx, mem_ctx, principal, flags, entry);
+		ret = samba_kdc_fetch_client(context, kdc_db_ctx, mem_ctx, principal, flags, kvno, entry);
 		if (ret != SDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & SDB_F_GET_SERVER) {
@@ -2507,7 +2513,7 @@ krb5_error_code samba_kdc_fetch(krb5_context context,
 		if (ret != SDB_ERR_NOENTRY) goto done;
 
 		/* We return 'no entry' if it does not start with krbtgt/, so move to the common case quickly */
-		ret = samba_kdc_fetch_server(context, kdc_db_ctx, mem_ctx, principal, flags, entry);
+		ret = samba_kdc_fetch_server(context, kdc_db_ctx, mem_ctx, principal, flags, kvno, entry);
 		if (ret != SDB_ERR_NOENTRY) goto done;
 	}
 	if (flags & SDB_F_GET_KRBTGT) {
@@ -2574,6 +2580,7 @@ static krb5_error_code samba_kdc_seq(krb5_context context,
 	ret = samba_kdc_message2entry(context, kdc_db_ctx, mem_ctx,
 				      principal, SAMBA_KDC_ENT_TYPE_ANY,
 				      SDB_F_ADMIN_DATA|SDB_F_GET_ANY,
+				      0 /* kvno */,
 				      priv->realm_dn, msg, entry);
 
 out:
