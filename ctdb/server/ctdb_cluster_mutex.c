@@ -21,6 +21,7 @@
 
 #include "replace.h"
 #include "system/network.h"
+#include "system/filesys.h"
 
 #include <tevent.h>
 
@@ -32,7 +33,6 @@
 #include "lib/util/blocking.h"
 
 #include "ctdb_private.h"
-#include "common/common.h"
 
 #include "ctdb_cluster_mutex.h"
 
@@ -121,21 +121,56 @@ static bool cluster_mutex_helper_args_file(TALLOC_CTX *mem_ctx,
 					   const char *argstring,
 					   char ***argv)
 {
-	bool ok;
+	struct stat st;
+	size_t size = sizeof(cluster_mutex_helper);
+	const char *t;
 	char **args = NULL;
+	int ret;
 
-	ok = ctdb_set_helper("cluster mutex helper",
-			     cluster_mutex_helper,
-			     sizeof(cluster_mutex_helper),
-			     "CTDB_CLUSTER_MUTEX_HELPER",
-			     CTDB_HELPER_BINDIR,
-			     "ctdb_mutex_fcntl_helper");
-	if (! ok) {
-		DBG_ERR("ctdb exiting with error: "
-			"Unable to set cluster mutex helper\n");
+	if (cluster_mutex_helper[0] != '\0') {
+		goto helper_done;
+	}
+
+	t = getenv("CTDB_CLUSTER_MUTEX_HELPER");
+	if (t != NULL) {
+		size_t len;
+
+		len = strlcpy(cluster_mutex_helper, t, size);
+		if (len >= size) {
+			DBG_ERR("error: CTDB_CLUSTER_MUTEX_HELPER too long\n");
+			exit(1);
+		}
+	} else {
+		ret = snprintf(cluster_mutex_helper,
+			       size,
+			       "%s/%s",
+			       CTDB_HELPER_BINDIR,
+			       "ctdb_mutex_fcntl_helper");
+		if (ret < 0 || (size_t)ret >= size) {
+			D_ERR("Unable to set cluster mutex helper - "
+			      "path too long\n");
+			exit(1);
+		}
+	}
+
+	ret = stat(cluster_mutex_helper, &st);
+	if (ret != 0) {
+		D_ERR("Unable to set cluster mutex helper \"%s\" - %s\n",
+		      cluster_mutex_helper,
+		      strerror(errno));
 		exit(1);
 	}
 
+	if ((st.st_mode & S_IXUSR) == 0) {
+		D_ERR("Unable to set cluster_mutex helper \"%s\" - "
+		      "not executable\n",
+		      cluster_mutex_helper);
+		exit(1);
+	}
+
+	D_NOTICE("Set cluster mutex helper to \"%s\"\n", cluster_mutex_helper);
+
+helper_done:
 
 	/* Array includes default helper, file and NULL */
 	args = talloc_array(mem_ctx, char *, 3);
