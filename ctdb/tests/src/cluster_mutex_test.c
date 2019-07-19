@@ -26,6 +26,8 @@
 #include <talloc.h>
 #include <tevent.h>
 
+#include "lib/util/util.h"
+
 /*
  * ctdb_cluster_mutex.c is included below.  This requires a few hacks...
  */
@@ -512,6 +514,88 @@ static void test_lock_file_removed_no_recheck(TALLOC_CTX *mem_ctx,
 	assert(dl1->mh == NULL);
 }
 
+static void test_lock_file_wait_recheck_unlock(TALLOC_CTX *mem_ctx,
+					       struct ctdb_context *ctdb,
+					       const char *mutex_string,
+					       unsigned long wait_time)
+{
+	struct do_lock_context *dl;
+
+	dl = talloc_zero(mem_ctx, struct do_lock_context);
+	assert(dl != NULL);
+	dl->ctdb = ctdb;
+
+	/* LOCK */
+	do_lock(dl, mutex_string);
+	assert(dl->mh != NULL);
+
+	do_lock_wait_time(dl, wait_time);
+	assert(dl->mh != NULL);
+
+	/* UNLOCK */
+	do_unlock(dl);
+	assert(dl->mh == NULL);
+}
+
+static void test_lock_file_removed(TALLOC_CTX *mem_ctx,
+				   struct ctdb_context *ctdb,
+				   const char *mutex_string,
+				   const char *lock_file)
+{
+	struct do_lock_context *dl;
+	int ret;
+
+	dl = talloc_zero(mem_ctx, struct do_lock_context);
+	assert(dl != NULL);
+	dl->ctdb = ctdb;
+
+	/* LOCK */
+	do_lock(dl, mutex_string);
+	assert(dl->mh != NULL);
+
+	ret = unlink(lock_file);
+	assert(ret == 0);
+
+	while (dl->mh != NULL) {
+		/* LOST */
+		tevent_loop_once(ctdb->ev);
+	}
+}
+
+static void test_lock_file_changed(TALLOC_CTX *mem_ctx,
+				   struct ctdb_context *ctdb,
+				   const char *mutex_string,
+				   const char *lock_file)
+{
+	struct do_lock_context *dl;
+	char *t;
+	int fd;
+	int ret;
+
+	dl = talloc_zero(mem_ctx, struct do_lock_context);
+	assert(dl != NULL);
+	dl->ctdb = ctdb;
+
+	/* LOCK */
+	do_lock(dl, mutex_string);
+	assert(dl->mh != NULL);
+
+	t = talloc_asprintf(ctdb, "%s.new", lock_file);
+	assert(t != NULL);
+
+	fd = open(t, O_RDWR|O_CREAT, 0600);
+	assert(fd != -1);
+	close(fd);
+
+	ret = rename(t, lock_file);
+	assert(ret == 0);
+
+	while (dl->mh != NULL) {
+		/* LOST */
+		tevent_loop_once(ctdb->ev);
+	}
+}
+
 /*
  * Main
  */
@@ -538,6 +622,7 @@ int main(int argc, const char *argv[])
 	struct sigaction sa = { .sa_handler = NULL, };
 	int ret;
 	const char *lock_file;
+	unsigned int wait_time;
 
 	prog = argv[0];
 
@@ -589,6 +674,46 @@ int main(int argc, const char *argv[])
 						  ctdb,
 						  mutex_string,
 						  lock_file);
+	} else if (strcmp(test, "lock-file-wait-recheck-unlock") == 0) {
+		if (argc != 4) {
+			usage();
+		}
+
+		wait_time = smb_strtoul(argv[3],
+					NULL,
+					10,
+					&ret,
+					SMB_STR_STANDARD);
+		if (ret != 0) {
+			usage();
+		}
+
+		test_lock_file_wait_recheck_unlock(mem_ctx,
+						   ctdb,
+						   mutex_string,
+						   wait_time);
+	} else if (strcmp(test, "lock-file-removed") == 0) {
+		if (argc != 4) {
+			usage();
+		}
+
+		lock_file = argv[3];
+
+		test_lock_file_removed(mem_ctx,
+				       ctdb,
+				       mutex_string,
+				       lock_file);
+	} else if (strcmp(test, "lock-file-changed") == 0) {
+		if (argc != 4) {
+			usage();
+		}
+
+		lock_file = argv[3];
+
+		test_lock_file_changed(mem_ctx,
+				       ctdb,
+				       mutex_string,
+				       lock_file);
 	} else {
 		fprintf(stderr, "Unknown test\n");
 		exit(1);
