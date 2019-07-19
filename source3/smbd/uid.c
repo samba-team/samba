@@ -659,7 +659,7 @@ void smbd_unbecome_root(void)
  Saves and restores the connection context.
 ****************************************************************************/
 
-bool become_user(connection_struct *conn, uint64_t vuid)
+bool become_user_without_service(connection_struct *conn, uint64_t vuid)
 {
 	struct user_struct *vuser;
 	int snum = SNUM(conn);
@@ -696,12 +696,12 @@ bool become_user(connection_struct *conn, uint64_t vuid)
 	return true;
 }
 
-bool become_user_by_fsp(struct files_struct *fsp)
+bool become_user_without_service_by_fsp(struct files_struct *fsp)
 {
-	return become_user(fsp->conn, fsp->vuid);
+	return become_user_without_service(fsp->conn, fsp->vuid);
 }
 
-bool become_user_by_session(connection_struct *conn,
+bool become_user_without_service_by_session(connection_struct *conn,
 			    const struct auth_session_info *session_info)
 {
 	bool ok;
@@ -726,7 +726,7 @@ bool become_user_by_session(connection_struct *conn,
 	return true;
 }
 
-bool unbecome_user(void)
+bool unbecome_user_without_service(void)
 {
 	pop_sec_ctx();
 	pop_conn_ctx();

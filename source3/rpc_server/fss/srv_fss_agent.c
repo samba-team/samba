@@ -766,14 +766,14 @@ uint32_t _fss_AddToShadowCopySet(struct pipes_struct *p,
 		ret = HRES_ERROR_V(HRES_E_ACCESSDENIED);
 		goto err_tmp_free;
 	}
-	if (!become_user_by_session(conn, p->session_info)) {
+	if (!become_user_without_service_by_session(conn, p->session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		ret = HRES_ERROR_V(HRES_E_ACCESSDENIED);
 		goto err_tmp_free;
 	}
 
 	status = SMB_VFS_SNAP_CHECK_PATH(conn, frame, path_name, &base_vol);
-	unbecome_user();
+	unbecome_user_without_service();
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = FSRVP_E_NOT_SUPPORTED;
 		goto err_tmp_free;
@@ -893,7 +893,7 @@ static NTSTATUS commit_sc_with_conn(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	if (!become_user_by_session(conn, session_info)) {
+	if (!become_user_without_service_by_session(conn, session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		TALLOC_FREE(frame);
 		return NT_STATUS_ACCESS_DENIED;
@@ -903,7 +903,7 @@ static NTSTATUS commit_sc_with_conn(TALLOC_CTX *mem_ctx,
 				     sc->volume_name,
 				     &sc->create_ts, rw,
 				     base_path, snap_path);
-	unbecome_user();
+	unbecome_user_without_service();
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("snap create failed: %s\n", nt_errstr(status)));
 		TALLOC_FREE(frame);
@@ -1349,7 +1349,7 @@ uint32_t _fss_IsPathSupported(struct pipes_struct *p,
 		TALLOC_FREE(frame);
 		return HRES_ERROR_V(HRES_E_ACCESSDENIED);
 	}
-	if (!become_user_by_session(conn, p->session_info)) {
+	if (!become_user_without_service_by_session(conn, p->session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		TALLOC_FREE(frame);
 		return HRES_ERROR_V(HRES_E_ACCESSDENIED);
@@ -1357,7 +1357,7 @@ uint32_t _fss_IsPathSupported(struct pipes_struct *p,
 	status = SMB_VFS_SNAP_CHECK_PATH(conn, frame,
 					 lp_path(frame, snum),
 					 &base_vol);
-	unbecome_user();
+	unbecome_user_without_service();
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		return FSRVP_E_NOT_SUPPORTED;
@@ -1628,7 +1628,7 @@ uint32_t _fss_DeleteShareMapping(struct pipes_struct *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto err_tmp_free;
 	}
-	if (!become_user_by_session(conn, p->session_info)) {
+	if (!become_user_without_service_by_session(conn, p->session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		status = NT_STATUS_ACCESS_DENIED;
 		goto err_tmp_free;
@@ -1636,7 +1636,7 @@ uint32_t _fss_DeleteShareMapping(struct pipes_struct *p,
 
 	status = SMB_VFS_SNAP_DELETE(conn, frame, sc->volume_name,
 				     sc->sc_path);
-	unbecome_user();
+	unbecome_user_without_service();
 	if (!NT_STATUS_IS_OK(status)) {
 		goto err_tmp_free;
 	}

@@ -338,7 +338,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		 * wrote a real delete on close. */
 
 		if (get_current_vuid(conn) != fsp->vuid) {
-			become_user(conn, fsp->vuid);
+			become_user_without_service(conn, fsp->vuid);
 			became_user = True;
 		}
 		fsp->delete_on_close = true;
@@ -346,7 +346,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 				get_current_nttok(conn),
 				get_current_utok(conn));
 		if (became_user) {
-			unbecome_user();
+			unbecome_user_without_service();
 		}
 	}
 
@@ -1141,7 +1141,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		 * wrote a real delete on close. */
 
 		if (get_current_vuid(fsp->conn) != fsp->vuid) {
-			become_user(fsp->conn, fsp->vuid);
+			become_user_without_service(fsp->conn, fsp->vuid);
 			became_user = True;
 		}
 		send_stat_cache_delete_message(fsp->conn->sconn->msg_ctx,
@@ -1151,7 +1151,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 				get_current_utok(fsp->conn));
 		fsp->delete_on_close = true;
 		if (became_user) {
-			unbecome_user();
+			unbecome_user_without_service();
 		}
 	}
 

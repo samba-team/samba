@@ -186,9 +186,11 @@ static int net_vfs_init(struct net_context *c, int argc, const char **argv)
 	state.conn_tos->conn->read_only = false;
 	file_init(state.conn_tos->conn->sconn);
 
-	ok = become_user_by_session(state.conn_tos->conn, state.session_info);
+	ok = become_user_without_service_by_session(state.conn_tos->conn,
+						    state.session_info);
 	if (!ok) {
-		fprintf(stderr, "become_user_by_session failed\n");
+		fprintf(stderr,
+			"become_user_without_service_by_session failed\n");
 		goto done;
 	}
 

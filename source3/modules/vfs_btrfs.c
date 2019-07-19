@@ -214,7 +214,7 @@ static void btrfs_offload_write_cleanup(struct tevent_req *req,
 		return;
 	}
 
-	ok = unbecome_user();
+	ok = unbecome_user_without_service();
 	SMB_ASSERT(ok);
 	state->need_unbecome_user = false;
 }
@@ -311,7 +311,7 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 		return tevent_req_post(req, ev);
 	}
 
-	ok = become_user_by_fsp(src_fsp);
+	ok = become_user_without_service_by_fsp(src_fsp);
 	if (!ok) {
 		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
 		return tevent_req_post(req, ev);
@@ -342,7 +342,7 @@ static struct tevent_req *btrfs_offload_write_send(struct vfs_handle_struct *han
 		}
 	}
 
-	ok = unbecome_user();
+	ok = unbecome_user_without_service();
 	SMB_ASSERT(ok);
 	state->need_unbecome_user = false;
 

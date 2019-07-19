@@ -1198,11 +1198,11 @@ void become_root(void);
 void unbecome_root(void);
 void smbd_become_root(void);
 void smbd_unbecome_root(void);
-bool become_user(connection_struct *conn, uint64_t vuid);
-bool become_user_by_fsp(struct files_struct *fsp);
-bool become_user_by_session(connection_struct *conn,
+bool become_user_without_service(connection_struct *conn, uint64_t vuid);
+bool become_user_without_service_by_fsp(struct files_struct *fsp);
+bool become_user_without_service_by_session(connection_struct *conn,
 			    const struct auth_session_info *session_info);
-bool unbecome_user(void);
+bool unbecome_user_without_service(void);
 uid_t get_current_uid(connection_struct *conn);
 gid_t get_current_gid(connection_struct *conn);
 const struct security_unix_token *get_current_utok(connection_struct *conn);

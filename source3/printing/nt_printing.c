@@ -1071,7 +1071,7 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 		goto error_free_conn;
 	}
 
-	if (!become_user_by_session(conn, session_info)) {
+	if (!become_user_without_service_by_session(conn, session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		*perr = WERR_ACCESS_DENIED;
 		goto error_free_conn;
@@ -1167,7 +1167,7 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 	*perr = WERR_OK;
 
  error_exit:
-	unbecome_user();
+	unbecome_user_without_service();
  error_free_conn:
 	if (fsp != NULL) {
 		close_file(NULL, fsp, NORMAL_CLOSE);
@@ -1546,7 +1546,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 		goto err_free_conn;
 	}
 
-	if (!become_user_by_session(conn, session_info)) {
+	if (!become_user_without_service_by_session(conn, session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		err = WERR_ACCESS_DENIED;
 		goto err_free_conn;
@@ -1691,7 +1691,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 
 	err = WERR_OK;
  err_exit:
-	unbecome_user();
+	unbecome_user_without_service();
  err_free_conn:
 	TALLOC_FREE(frame);
 	return err;
@@ -2087,7 +2087,7 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 		goto err_free_conn;
 	}
 
-	if (!become_user_by_session(conn, session_info)) {
+	if (!become_user_without_service_by_session(conn, session_info)) {
 		DEBUG(0, ("failed to become user\n"));
 		ret = false;
 		goto err_free_conn;
@@ -2139,7 +2139,7 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 
 	ret = true;
  err_out:
-	unbecome_user();
+	unbecome_user_without_service();
  err_free_conn:
 	TALLOC_FREE(frame);
 	return ret;
