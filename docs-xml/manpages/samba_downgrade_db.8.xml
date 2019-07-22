@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="samba_downgrade_db.8">
+
+<refmeta>
+	<refentrytitle>samba_downgrade_db</refentrytitle>
+	<manvolnum>8</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">User Commands</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>samba_downgrade_db</refname>
+	<refpurpose>Samba tool for downgrading AD databases
+	</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>samba_downgrade_db</command>
+		<arg choice="opt">-H</arg>
+		<arg choice="opt">-s</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>8</manvolnum></citerefentry> suite.</para>
+
+	<para>The format of the Samba Active Directory (AD) database changed in
+	version 4.8 and 4.11. When downgrading a Samba AD Domain Controller (DC)
+	to a release that is older than either of these versions (e.g. 4.11 to
+	4.10), the AD database must be manually downgraded
+	<emphasis>before</emphasis> the Samba packages can be safely downgraded.
+	</para>
+
+	<para>This tool downgrades a Samba sam.ldb database from the format
+	used in version &doc.version; to that of version 4.7. The v4.7 database
+	format can safely be read by any version of Samba. If necessary, later
+	versions of Samba will repack and reconfigure a v4.7-format database when
+	the samba executable is first started.</para>
+
+	<para>Note that all Samba services must be stopped on the DC before running
+	this tool. Once the tool has run, do not restart samba or modify the
+	database before the Samba software package has been downgraded.
+	</para>
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+
+	<varlistentry>
+	<term>-H [sam.ldb file]</term>
+	<listitem><para>
+	Link directly to a sam.ldb file instead of using path in system
+	smb.conf
+	</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>-s [smb.conf file]</term>
+	<listitem><para>
+	Link directly to smb.conf file instead of system default (usually
+	in /usr/local/samba/etc/smb.conf)
+	</para></listitem>
+	</varlistentry>
+
+	</variablelist>
+</refsect1>
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is complete for version &doc.version; of the Samba
+	suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+	<para>The samba_downgrade_db tool was developed by the Samba team
+	at Catalyst IT Ltd.</para>
+</refsect1>
+
+</refentry>
