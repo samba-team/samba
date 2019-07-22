@@ -78,6 +78,8 @@ EXCLUDE_USAGE = {
     'selftest/tap2subunit',
     'script/show_test_time',
     'source4/scripting/bin/subunitrun',
+    'bin/samba_downgrade_db',
+    'source4/scripting/bin/samba_downgrade_db',
     'source3/selftest/tests.py',
     'selftest/tests.py',
     'python/samba/subunit/run.py',
