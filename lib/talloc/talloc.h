@@ -43,7 +43,7 @@ extern "C" {
  */
 
 #define TALLOC_VERSION_MAJOR 2
-#define TALLOC_VERSION_MINOR 2
+#define TALLOC_VERSION_MINOR 3
 
 int talloc_version_major(void);
 int talloc_version_minor(void);
