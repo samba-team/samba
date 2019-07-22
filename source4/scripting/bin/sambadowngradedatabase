@@ -1,4 +1,24 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3
+#
+# Unix SMB/CIFS implementation.
+# Copyright (C) Andrew Bartlett <abartlet@samba.org> 2019
+#
+# Downgrade a database from 4.11 format to 4.7 format. 4.7 Format will
+# run on any version of Samba AD, and Samba will repack/reconfigure the
+# database if necessary.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import print_function
 import optparse
 import sys
@@ -38,9 +58,9 @@ samdb = ldb.Ldb(url=url,
                 options=["modules:"])
 
 partitions = samdb.search(base="@PARTITION",
-			  scope=ldb.SCOPE_BASE,
+                          scope=ldb.SCOPE_BASE,
                           attrs=["backendStore", "partition"])
-    
+
 backend = str(partitions[0].get('backendStore', 'tdb'))
 
 if backend == "mdb":
