@@ -48,6 +48,7 @@ import time
 import re
 import os
 import tempfile
+from collections import OrderedDict
 from samba.compat import text_type
 from samba.compat import get_string
 from samba.netcmd import CommandError
@@ -551,11 +552,14 @@ class DCJoinContext(object):
         '''return the ntdsdsa object to add'''
 
         print("Adding %s" % ctx.ntds_dn)
-        rec = {
-            "dn": ctx.ntds_dn,
-            "objectclass": "nTDSDSA",
-            "systemFlags": str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE),
-            "dMDLocation": ctx.schema_dn}
+
+        # When joining Windows, the order of certain attributes (mostly only
+        # msDS-HasMasterNCs and HasMasterNCs) seems to matter
+        rec = OrderedDict([
+            ("dn", ctx.ntds_dn),
+            ("objectclass", "nTDSDSA"),
+            ("systemFlags", str(samba.dsdb.SYSTEM_FLAG_DISALLOW_MOVE_ON_DELETE)),
+            ("dMDLocation", ctx.schema_dn)])
 
         nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn]
 
@@ -571,12 +575,17 @@ class DCJoinContext(object):
             rec["options"] = "37"
         else:
             rec["objectCategory"] = "CN=NTDS-DSA,%s" % ctx.schema_dn
+
+            # Note that Windows seems to have an undocumented requirement that
+            # the msDS-HasMasterNCs attribute occurs before HasMasterNCs
+            if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
+                rec["msDS-HasMasterNCs"] = ctx.full_nc_list
+
             rec["HasMasterNCs"]      = []
             for nc in nc_list:
                 if nc in ctx.full_nc_list:
                     rec["HasMasterNCs"].append(nc)
-            if ctx.behavior_version >= samba.dsdb.DS_DOMAIN_FUNCTION_2003:
-                rec["msDS-HasMasterNCs"] = ctx.full_nc_list
+
             rec["options"] = "1"
             rec["invocationId"] = ndr_pack(ctx.invocation_id)
 
