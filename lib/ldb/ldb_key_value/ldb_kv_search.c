@@ -408,6 +408,18 @@ static int search_func(_UNUSED_ struct ldb_kv_private *ldb_kv,
 	return 0;
 }
 
+/*
+ * Key pointing to just before the first GUID indexed record for
+ * iterate_range
+ */
+struct ldb_val start_of_db_key = {.data=discard_const_p(uint8_t, "GUID<"),
+				  .length=6};
+/*
+ * Key pointing to just after the last GUID indexed record for
+ * iterate_range
+ */
+struct ldb_val end_of_db_key = {.data=discard_const_p(uint8_t, "GUID>"),
+				.length=6};
 
 /*
   search the database with a LDAP-like expression.
@@ -420,8 +432,23 @@ static int ldb_kv_search_full(struct ldb_kv_context *ctx)
 	    talloc_get_type(data, struct ldb_kv_private);
 	int ret;
 
+	/*
+	 * If the backend has an iterate_range op, use it to start the search
+	 * at the first GUID indexed record, skipping the indexes section.
+	 */
 	ctx->error = LDB_SUCCESS;
-	ret = ldb_kv->kv_ops->iterate(ldb_kv, search_func, ctx);
+	ret = ldb_kv->kv_ops->iterate_range(ldb_kv,
+					    start_of_db_key,
+					    end_of_db_key,
+					    search_func,
+					    ctx);
+	if (ret == LDB_ERR_OPERATIONS_ERROR) {
+		/*
+		 * If iterate_range isn't defined, it'll return an error,
+		 * so just iterate over the whole DB.
+		 */
+		ret = ldb_kv->kv_ops->iterate(ldb_kv, search_func, ctx);
+	}
 
 	if (ret < 0) {
 		return LDB_ERR_OPERATIONS_ERROR;
