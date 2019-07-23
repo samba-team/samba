@@ -3592,7 +3592,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * basefile open in the fsp fd, so lacking a distinct
 		 * fd for the stream kernel_flock will apply on the
 		 * basefile which is wrong. The actual check is
-		 * deffered to the VFS module implementing the
+		 * deferred to the VFS module implementing the
 		 * kernel_flock call.
 		 */
 		ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access, access_mask);
