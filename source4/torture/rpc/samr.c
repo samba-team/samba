@@ -2272,10 +2272,6 @@ static bool test_ChangePasswordUser2(struct dcerpc_pipe *p, struct torture_conte
 		.data = old_lm_hash,
 		.size = sizeof(old_lm_hash),
 	};
-	gnutls_datum_t old_nt_key = {
-		.data = old_nt_hash,
-		.size = sizeof(old_nt_hash),
-	};
 
 	domain_name.string = "";
 	dom_pw_info.in.domain_name = &domain_name;
@@ -2370,6 +2366,11 @@ static bool test_ChangePasswordUser2_ntstatus(struct dcerpc_pipe *p, struct tort
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 	DATA_BLOB old_nt_hash_blob
 		= data_blob_const(old_nt_hash, sizeof(old_nt_hash));
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t old_lm_key = {
+		.data = old_lm_hash,
+		.size = sizeof(old_lm_hash),
+	};
 
 	struct samr_GetDomPwInfo dom_pw_info;
 	struct samr_PwInfo info;
@@ -2406,7 +2407,16 @@ static bool test_ChangePasswordUser2_ntstatus(struct dcerpc_pipe *p, struct tort
 	E_deshash(newpass, new_lm_hash);
 
 	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII|STR_TERMINATE);
-	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
+
+	gnutls_cipher_init(&cipher_hnd,
+			   GNUTLS_CIPHER_ARCFOUR_128,
+			   &old_lm_key,
+			   NULL);
+	gnutls_cipher_encrypt(cipher_hnd,
+			      lm_pass.data,
+			      516);
+	gnutls_cipher_deinit(cipher_hnd);
+
 	E_old_pw_hash(new_nt_hash, old_lm_hash, lm_verifier.hash);
 
 	crypt_status = init_samr_CryptPassword(newpass,
