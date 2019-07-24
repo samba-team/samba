@@ -3514,7 +3514,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	/* Should we atomically (to the client at least) truncate ? */
 	if ((!new_file_created) &&
 	    (flags2 & O_TRUNC) &&
-	    (!S_ISFIFO(fsp->fsp_name->st.st_ex_mode))) {
+	    (S_ISREG(fsp->fsp_name->st.st_ex_mode))) {
 		int ret;
 
 		ret = SMB_VFS_FTRUNCATE(fsp, 0);
