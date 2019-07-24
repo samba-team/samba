@@ -226,7 +226,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 		target_hostname = conn->in.dest_host;
 	}
 
-	if (is_ipaddress(conn->in.dest_host)) {
+	if (conn->in.dest_host != NULL && is_ipaddress(conn->in.dest_host)) {
 		dest_address = conn->in.dest_host;
 	}
 
