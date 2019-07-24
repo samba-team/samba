@@ -404,6 +404,7 @@ class BlackboxTestCase(TestCaseInTempDir):
 
         python_cmds = ["samba-tool",
             "samba_dnsupdate",
+            "samba_upgradedns",
             "script/traffic_replay",
             "script/traffic_learner"]
 
