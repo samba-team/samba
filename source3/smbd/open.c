@@ -1051,13 +1051,13 @@ static NTSTATUS fd_open_atomic(struct connection_struct *conn,
 	bool file_existed = VALID_STAT(fsp->fsp_name->st);
 	int curr_flags;
 
-	*file_created = false;
-
 	if (!(flags & O_CREAT)) {
 		/*
 		 * We're not creating the file, just pass through.
 		 */
-		return fd_open(conn, fsp, flags, mode);
+		status = fd_open(conn, fsp, flags, mode);
+		*file_created = false;
+		return status;
 	}
 
 	if (flags & O_EXCL) {
@@ -1096,50 +1096,37 @@ static NTSTATUS fd_open_atomic(struct connection_struct *conn,
 	 * mapped from the ELOOP POSIX error.
 	 */
 
-	curr_flags = flags;
-
 	if (file_existed) {
-		curr_flags &= ~(O_CREAT);
+		curr_flags = flags & ~(O_CREAT);
 		retry_status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	} else {
-		curr_flags |= O_EXCL;
+		curr_flags = flags | O_EXCL;
 		retry_status = NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
 	status = fd_open(conn, fsp, curr_flags, mode);
 	if (NT_STATUS_IS_OK(status)) {
-		if (!file_existed) {
-			*file_created = true;
-		}
+		*file_created = !file_existed;
 		return NT_STATUS_OK;
 	}
-	if (!NT_STATUS_EQUAL(status, retry_status)) {
-		return status;
+	if (NT_STATUS_EQUAL(status, retry_status)) {
+
+		file_existed = !file_existed;
+
+		DBG_DEBUG("File %s %s. Retry.\n",
+			  fsp_str_dbg(fsp),
+			  file_existed ? "existed" : "did not exist");
+
+		if (file_existed) {
+			curr_flags = flags & ~(O_CREAT);
+		} else {
+			curr_flags = flags | O_EXCL;
+		}
+
+		status = fd_open(conn, fsp, curr_flags, mode);
 	}
 
-	curr_flags = flags;
-
-	/*
-	 * Keep file_existed up to date for clarity.
-	 */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		file_existed = false;
-		curr_flags |= O_EXCL;
-		DBG_DEBUG("file %s did not exist. Retry.\n",
-			smb_fname_str_dbg(fsp->fsp_name));
-	} else {
-		file_existed = true;
-		curr_flags &= ~(O_CREAT);
-		DBG_DEBUG("file %s existed. Retry.\n",
-			smb_fname_str_dbg(fsp->fsp_name));
-	}
-
-	status = fd_open(conn, fsp, curr_flags, mode);
-
-	if (NT_STATUS_IS_OK(status) && (!file_existed)) {
-		*file_created = true;
-	}
-
+	*file_created = (NT_STATUS_IS_OK(status) && !file_existed);
 	return status;
 }
 
