@@ -1166,9 +1166,6 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 	union samr_UserInfo u;
 	bool ret = true;
 	DATA_BLOB session_key;
-	DATA_BLOB confounded_session_key = data_blob_talloc(tctx, NULL, 16);
-	gnutls_hash_hd_t hash_hnd;
-	uint8_t confounder[16];
 	char *newpass;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct samr_GetUserPwInfo pwp;
@@ -1244,13 +1241,9 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 		u.info23.info.password_expired = password_expired;
 		u.info23.info.comment.string = comment;
 
-		encode_pw_buffer(u.info23.password.data, newpass, STR_UNICODE);
-
 		break;
 	case 24:
 		u.info24.password_expired = password_expired;
-
-		encode_pw_buffer(u.info24.password.data, newpass, STR_UNICODE);
 
 		break;
 	case 25:
@@ -1258,13 +1251,9 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 		u.info25.info.password_expired = password_expired;
 		u.info25.info.comment.string = comment;
 
-		encode_pw_buffer(u.info25.password.data, newpass, STR_UNICODE);
-
 		break;
 	case 26:
 		u.info26.password_expired = password_expired;
-
-		encode_pw_buffer(u.info26.password.data, newpass, STR_UNICODE);
 
 		break;
 	}
@@ -1275,13 +1264,6 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 		       s.in.level, nt_errstr(status));
 		return false;
 	}
-
-	generate_random_buffer((uint8_t *)confounder, 16);
-
-	gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
-	gnutls_hash(hash_hnd, confounder, 16);
-	gnutls_hash(hash_hnd, session_key.data, session_key.length);
-	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
 
 	switch (level) {
 	case 18:
@@ -1320,18 +1302,36 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 		}
 		break;
 	case 23:
-		arcfour_crypt_blob(u.info23.password.data, 516, &session_key);
+		status = init_samr_CryptPassword(newpass,
+						 &session_key,
+						 &u.info23.password);
+		torture_assert_ntstatus_ok(tctx,
+					   status,
+					   "init_samr_CryptPassword failed");
 		break;
 	case 24:
-		arcfour_crypt_blob(u.info24.password.data, 516, &session_key);
+		status = init_samr_CryptPassword(newpass,
+						 &session_key,
+						 &u.info24.password);
+		torture_assert_ntstatus_ok(tctx,
+					   status,
+					   "init_samr_CryptPassword failed");
 		break;
 	case 25:
-		arcfour_crypt_blob(u.info25.password.data, 516, &confounded_session_key);
-		memcpy(&u.info25.password.data[516], confounder, 16);
+		status = init_samr_CryptPasswordEx(newpass,
+						   &session_key,
+						   &u.info25.password);
+		torture_assert_ntstatus_ok(tctx,
+					   status,
+					   "init_samr_CryptPasswordEx failed");
 		break;
 	case 26:
-		arcfour_crypt_blob(u.info26.password.data, 516, &confounded_session_key);
-		memcpy(&u.info26.password.data[516], confounder, 16);
+		status = init_samr_CryptPasswordEx(newpass,
+						   &session_key,
+						   &u.info26.password);
+		torture_assert_ntstatus_ok(tctx,
+					   status,
+					   "init_samr_CryptPasswordEx failed");
 		break;
 	}
 
