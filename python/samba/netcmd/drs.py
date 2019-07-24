@@ -448,8 +448,10 @@ class cmd_drs_replicate(Command):
         self.server = SOURCE_DC
         drsuapi_connect(self)
 
+        # Override the default flag LDB_FLG_DONT_CREATE_DB
         self.local_samdb = SamDB(session_info=system_session(), url=None,
-                                 credentials=self.creds, lp=self.lp)
+                                 credentials=self.creds, lp=self.lp,
+                                 flags=0)
 
         self.samdb = SamDB(url="ldap://%s" % self.server,
                            session_info=system_session(),
