@@ -2032,6 +2032,11 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p,
 	char *newpass;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	uint8_t old_lm_hash[16], new_lm_hash[16];
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t session_key = {
+		.data = old_lm_hash,
+		.size = 16
+	};
 
 	struct samr_GetDomPwInfo dom_pw_info;
 	struct samr_PwInfo info;
@@ -2065,7 +2070,13 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p,
 	E_deshash(newpass, new_lm_hash);
 
 	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII);
-	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
+
+	gnutls_cipher_init(&cipher_hnd,
+			   GNUTLS_CIPHER_ARCFOUR_128,
+			   &session_key,
+			   NULL);
+	gnutls_cipher_encrypt(cipher_hnd, lm_pass.data, 516);
+	gnutls_cipher_deinit(cipher_hnd);
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
 
 	r.in.server = &server;
@@ -2092,7 +2103,12 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p,
 	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII);
 	/* Break the old password */
 	old_lm_hash[0]++;
-	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
+	gnutls_cipher_init(&cipher_hnd,
+			   GNUTLS_CIPHER_ARCFOUR_128,
+			   &session_key,
+			   NULL);
+	gnutls_cipher_encrypt(cipher_hnd, lm_pass.data, 516);
+	gnutls_cipher_deinit(cipher_hnd);
 	/* unbreak it for the next operation */
 	old_lm_hash[0]--;
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
@@ -2116,7 +2132,12 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p,
 	}
 
 	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII);
-	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
+	gnutls_cipher_init(&cipher_hnd,
+			   GNUTLS_CIPHER_ARCFOUR_128,
+			   &session_key,
+			   NULL);
+	gnutls_cipher_encrypt(cipher_hnd, lm_pass.data, 516);
+	gnutls_cipher_deinit(cipher_hnd);
 
 	r.in.server = &server;
 	r.in.account = &account;
@@ -2192,7 +2213,12 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p,
 	E_deshash(newpass, new_lm_hash);
 
 	encode_pw_buffer(lm_pass.data, newpass, STR_ASCII);
-	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
+	gnutls_cipher_init(&cipher_hnd,
+			   GNUTLS_CIPHER_ARCFOUR_128,
+			   &session_key,
+			   NULL);
+	gnutls_cipher_encrypt(cipher_hnd, lm_pass.data, 516);
+	gnutls_cipher_deinit(cipher_hnd);
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
 
 	r.in.server = &server;
