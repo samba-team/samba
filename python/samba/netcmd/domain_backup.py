@@ -59,7 +59,7 @@ from samba.ndr import ndr_pack
 # work out a SID (based on a free RID) to use when the domain gets restored.
 # This ensures that the restored DC's SID won't clash with any other RIDs
 # already in use in the domain
-def get_sid_for_restore(samdb):
+def get_sid_for_restore(samdb, logger):
     # Find the DN of the RID set of the server
     res = samdb.search(base=ldb.Dn(samdb, samdb.get_serverName()),
                        scope=ldb.SCOPE_BASE, attrs=["serverReference"])
@@ -78,7 +78,15 @@ def get_sid_for_restore(samdb):
                               'rIDNextRID'])
 
     # Decode the bounds of the RID allocation pools
-    rid = int(res[0].get('rIDNextRID')[0])
+    try:
+        rid = int(res[0].get('rIDNextRID')[0])
+    except IndexError:
+        logger.info("The RID pool for this DC is not initalized "
+                    "(e.g. it may be a fairly new DC).")
+        logger.info("To initialize it, create a temporary user on this DC "
+                    "(you can delete it later).")
+        raise CommandError("Cannot create backup - "
+                           "please initialize this DC's RID pool first.")
 
     def split_val(num):
         high = (0xFFFFFFFF00000000 & int(num)) >> 32
@@ -255,7 +263,7 @@ class cmd_domain_backup_online(samba.netcmd.Command):
         # Get a free RID to use as the new DC's SID (when it gets restored)
         remote_sam = SamDB(url='ldap://' + server, credentials=creds,
                            session_info=system_session(), lp=lp)
-        new_sid = get_sid_for_restore(remote_sam)
+        new_sid = get_sid_for_restore(remote_sam, logger)
         realm = remote_sam.domain_dns_name()
 
         # Grab the remote DC's sysvol files and bundle them into a tar file
@@ -838,7 +846,7 @@ class cmd_domain_backup_rename(samba.netcmd.Command):
         # get a free RID to use as the new DC's SID (when it gets restored)
         remote_sam = SamDB(url='ldap://' + server, credentials=creds,
                            session_info=system_session(), lp=lp)
-        new_sid = get_sid_for_restore(remote_sam)
+        new_sid = get_sid_for_restore(remote_sam, logger)
 
         # Grab the remote DC's sysvol files and bundle them into a tar file.
         # Note we end up with 2 sysvol dirs - the original domain's files (that
@@ -1016,7 +1024,7 @@ class cmd_domain_backup_offline(samba.netcmd.Command):
         check_targetdir(logger, targetdir)
 
         samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp)
-        sid = get_sid_for_restore(samdb)
+        sid = get_sid_for_restore(samdb, logger)
 
         backup_dirs = [paths.private_dir, paths.state_dir,
                        os.path.dirname(paths.smbconf)]  # etc dir
