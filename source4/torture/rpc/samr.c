@@ -876,14 +876,12 @@ static bool test_SetUserPass_25(struct dcerpc_pipe *p, struct torture_context *t
 	union samr_UserInfo u;
 	bool ret = true;
 	DATA_BLOB session_key;
-	DATA_BLOB confounded_session_key = data_blob_talloc(tctx, NULL, 16);
-	gnutls_hash_hd_t hash_hnd;
-	uint8_t confounder[16];
 	char *newpass;
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	struct samr_GetUserPwInfo pwp;
 	struct samr_PwInfo info;
 	int policy_min_pw_len = 0;
+
 	pwp.in.user_handle = handle;
 	pwp.out.info = &info;
 
@@ -902,8 +900,6 @@ static bool test_SetUserPass_25(struct dcerpc_pipe *p, struct torture_context *t
 
 	u.info25.info.fields_present = fields_present;
 
-	encode_pw_buffer(u.info25.password.data, newpass, STR_UNICODE);
-
 	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
@@ -911,15 +907,12 @@ static bool test_SetUserPass_25(struct dcerpc_pipe *p, struct torture_context *t
 		return false;
 	}
 
-	generate_random_buffer((uint8_t *)confounder, 16);
-
-	gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
-	gnutls_hash(hash_hnd, confounder, 16);
-	gnutls_hash(hash_hnd, session_key.data, session_key.length);
-	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
-
-	arcfour_crypt_blob(u.info25.password.data, 516, &confounded_session_key);
-	memcpy(&u.info25.password.data[516], confounder, 16);
+	status = init_samr_CryptPasswordEx(newpass,
+					   &session_key,
+					   &u.info25.password);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPasswordEx failed");
 
 	torture_comment(tctx, "Testing SetUserInfo level 25 (set password ex)\n");
 
@@ -937,10 +930,17 @@ static bool test_SetUserPass_25(struct dcerpc_pipe *p, struct torture_context *t
 	}
 
 	/* This should break the key nicely */
-	confounded_session_key.data[0]++;
+	session_key.data[0]++;
 
-	arcfour_crypt_blob(u.info25.password.data, 516, &confounded_session_key);
-	memcpy(&u.info25.password.data[516], confounder, 16);
+	status = init_samr_CryptPasswordEx(newpass,
+					   &session_key,
+					   &u.info25.password);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPasswordEx failed");
+
+	/* Reset the key */
+	session_key.data[0]--;
 
 	torture_comment(tctx, "Testing SetUserInfo level 25 (set password ex) with wrong session key\n");
 
