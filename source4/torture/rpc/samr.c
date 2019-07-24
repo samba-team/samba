@@ -2796,6 +2796,11 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 	NTTIME t;
 	struct samr_DomInfo1 *dominfo = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t old_nt_key = {
+		.data = old_nt_hash,
+		.size = sizeof(old_nt_hash),
+	};
 
 	new_random_pass = samr_very_rand_pass(tctx, 128);
 
@@ -2855,7 +2860,16 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 	mdfour(new_nt_hash, new_random_pass.data, new_random_pass.length);
 
 	set_pw_in_buffer(nt_pass.data, &new_random_pass);
-	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
+
+	gnutls_cipher_init(&cipher_hnd,
+			   GNUTLS_CIPHER_ARCFOUR_128,
+			   &old_nt_key,
+			   NULL);
+	gnutls_cipher_encrypt(cipher_hnd,
+			      nt_pass.data,
+			      516);
+	gnutls_cipher_deinit(cipher_hnd);
+
 	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
 
 	r.in.server = &server;
