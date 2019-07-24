@@ -31,7 +31,7 @@
 #include "librpc/gen_ndr/ndr_netlogon_c.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_lsa_c.h"
-#include "../lib/crypto/crypto.h"
+#include "lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "libcli/security/security.h"
 #include "torture/rpc/torture_rpc.h"
@@ -40,6 +40,8 @@
 #include "auth/gensec/gensec_proto.h"
 #include "../libcli/auth/schannel.h"
 #include "torture/util.h"
+#include "source4/librpc/rpc/dcerpc.h"
+#include "source3/rpc_client/init_samr.h"
 
 #define TEST_ACCOUNT_NAME "samrtorturetest"
 #define TEST_ACCOUNT_NAME_PWD "samrpwdlastset"
@@ -637,7 +639,6 @@ static bool test_SetUserPass(struct dcerpc_pipe *p, struct torture_context *tctx
 	s.in.info = &u;
 	s.in.level = 24;
 
-	encode_pw_buffer(u.info24.password.data, newpass, STR_UNICODE);
 	u.info24.password_expired = 0;
 
 	status = dcerpc_fetch_session_key(p, &session_key);
@@ -647,7 +648,12 @@ static bool test_SetUserPass(struct dcerpc_pipe *p, struct torture_context *tctx
 		return false;
 	}
 
-	arcfour_crypt_blob(u.info24.password.data, 516, &session_key);
+	status = init_samr_CryptPassword(newpass,
+					  &session_key,
+					  &u.info24.password);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPassword failed");
 
 	torture_comment(tctx, "Testing SetUserInfo level 24 (set password)\n");
 
