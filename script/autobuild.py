@@ -296,7 +296,7 @@ tasks = {
 
     "samba-nt4": [
         ("random-sleep", random_sleep(300, 900)),
-        ("configure", "./configure.developer --without-ads --with-selftest-prefix=./bin/ab" + samba_configure_params),
+        ("configure", "./configure.developer --without-ads --without-ad-dc --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
         ("test", make_test(include_envs=[
             "nt4_dc",

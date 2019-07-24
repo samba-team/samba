@@ -810,6 +810,9 @@ msg.msg_accrightslen = sizeof(fd);
         forced_shared_modules.extend(TO_LIST('idmap_ad idmap_rfc2307'))
     elif Options.options.with_ads == False:
         Logs.info("Building without Active Directory support (--without-ads).")
+        if not Options.options.without_ad_dc:
+            conf.fatal("Building --without-ads requires also "
+                       "building --without-ad-dc.")
     else:
         if not use_ads_krb5:
             Logs.warn("Active Directory support not available: krb5 libs don't have all required features")

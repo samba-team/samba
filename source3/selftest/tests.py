@@ -745,6 +745,8 @@ for t in tests:
     elif t == "rpc.samba3.pipes_supported_interfaces":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+    elif t == "rpc.spoolss.notify":
+        plansmbtorture4testsuite(t, "ad_member", '//$SERVER_IP/tmp -U$DC_USERNAME%$DC_PASSWORD')
     else:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
