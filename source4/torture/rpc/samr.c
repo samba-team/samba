@@ -2472,6 +2472,8 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	NTTIME t;
 	struct samr_DomInfo1 *dominfo = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
+	DATA_BLOB session_key = data_blob_const(old_nt_hash, 16);
+	NTSTATUS status;
 
 	torture_comment(tctx, "Testing ChangePasswordUser3\n");
 
@@ -2500,12 +2502,22 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	E_deshash(oldpass, old_lm_hash);
 	E_deshash(newpass, new_lm_hash);
 
-	encode_pw_buffer(lm_pass.data, newpass, STR_UNICODE);
-	arcfour_crypt(lm_pass.data, old_nt_hash, 516);
+	status = init_samr_CryptPassword(newpass,
+					 &session_key,
+					 &lm_pass);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPassword");
+
 	E_old_pw_hash(new_nt_hash, old_lm_hash, lm_verifier.hash);
 
-	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
-	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
+	status = init_samr_CryptPassword(newpass,
+					 &session_key,
+					 &nt_pass);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPassword");
+
 	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
 
 	/* Break the verification */
@@ -2534,16 +2546,28 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 		ret = false;
 	}
 
-	encode_pw_buffer(lm_pass.data, newpass, STR_UNICODE);
-	arcfour_crypt(lm_pass.data, old_nt_hash, 516);
+	status = init_samr_CryptPassword(newpass,
+					 &session_key,
+					 &lm_pass);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPassword");
+
 	E_old_pw_hash(new_nt_hash, old_lm_hash, lm_verifier.hash);
 
-	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
-	/* Break the NT hash */
-	old_nt_hash[0]++;
-	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
+	/* Break the session key */
+	session_key.data[0]++;
+
+	status = init_samr_CryptPassword(newpass,
+					 &session_key,
+					 &nt_pass);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPassword");
+
 	/* Unbreak it again */
-	old_nt_hash[0]--;
+	session_key.data[0]--;
+
 	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
 
 	r.in.server = &server;
@@ -2590,12 +2614,22 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	E_deshash(oldpass, old_lm_hash);
 	E_deshash(newpass, new_lm_hash);
 
-	encode_pw_buffer(lm_pass.data, newpass, STR_UNICODE);
-	arcfour_crypt(lm_pass.data, old_nt_hash, 516);
+	status = init_samr_CryptPassword(newpass,
+					 &session_key,
+					 &lm_pass);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPassword");
+
 	E_old_pw_hash(new_nt_hash, old_lm_hash, lm_verifier.hash);
 
-	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
-	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
+	status = init_samr_CryptPassword(newpass,
+					 &session_key,
+					 &nt_pass);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPassword");
+
 	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
 
 	r.in.server = &server;
