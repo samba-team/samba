@@ -906,6 +906,13 @@ for env in ['backupfromdc', 'offlinebackupdc', 'restoredc', 'renamedc',
     plantestsuite("samba4.blackbox.join_ldapcmp", env,
                   ["PYTHON=%s" % python, os.path.join(bbdir, "join_ldapcmp.sh")])
 
+env = 'backupfromdc'
+planoldpythontestsuite("%s:local" % env, "samba_tool_drs_no_dns",
+                       extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
+                       name="samba4.drs.samba_tool_drs_no_dns.python(%s)" % env,
+                       environ={'DC1': '$DC_SERVER', 'DC2': '$DC_SERVER'},
+                       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+
 plantestsuite_loadlist("samba4.ldap.rodc.python(rodc)", "rodc",
                        [python,
                         os.path.join(samba4srcdir, "dsdb/tests/python/rodc.py"),
