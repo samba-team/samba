@@ -706,8 +706,6 @@ static bool test_SetUserPass_23(struct dcerpc_pipe *p, struct torture_context *t
 
 	u.info23.info.fields_present = fields_present;
 
-	encode_pw_buffer(u.info23.password.data, newpass, STR_UNICODE);
-
 	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
@@ -715,7 +713,12 @@ static bool test_SetUserPass_23(struct dcerpc_pipe *p, struct torture_context *t
 		return false;
 	}
 
-	arcfour_crypt_blob(u.info23.password.data, 516, &session_key);
+	status = init_samr_CryptPassword(newpass,
+					 &session_key,
+					 &u.info23.password);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPassword failed");
 
 	torture_comment(tctx, "Testing SetUserInfo level 23 (set password)\n");
 
@@ -732,8 +735,6 @@ static bool test_SetUserPass_23(struct dcerpc_pipe *p, struct torture_context *t
 		*password = newpass;
 	}
 
-	encode_pw_buffer(u.info23.password.data, newpass, STR_UNICODE);
-
 	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
@@ -742,8 +743,17 @@ static bool test_SetUserPass_23(struct dcerpc_pipe *p, struct torture_context *t
 	}
 
 	/* This should break the key nicely */
-	session_key.length--;
-	arcfour_crypt_blob(u.info23.password.data, 516, &session_key);
+	session_key.data[0]++;
+
+	status = init_samr_CryptPassword(newpass,
+					 &session_key,
+					 &u.info23.password);
+	torture_assert_ntstatus_ok(tctx,
+				   status,
+				   "init_samr_CryptPassword failed");
+
+	/* Reset the session key */
+	session_key.data[0]--;
 
 	torture_comment(tctx, "Testing SetUserInfo level 23 (set password) with wrong password\n");
 
