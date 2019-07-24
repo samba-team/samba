@@ -33,38 +33,7 @@ NTSTATUS init_samr_CryptPasswordEx(const char *pwd,
 				   DATA_BLOB *session_key,
 				   struct samr_CryptPasswordEx *pwd_buf)
 {
-	/* samr_CryptPasswordEx */
-
-	uint8_t _confounder[16] = {0};
-	DATA_BLOB confounder = data_blob_const(_confounder, 16);
-	uint8_t pwbuf[532] = {0};
-	DATA_BLOB encrypt_pwbuf = data_blob_const(pwbuf, 516);
-	bool ok;
-	int rc;
-
-	ok = encode_pw_buffer(pwbuf, pwd, STR_UNICODE);
-	if (!ok) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	generate_random_buffer(_confounder, sizeof(_confounder));
-
-	rc = samba_gnutls_arcfour_confounded_md5(&confounder,
-						 session_key,
-						 &encrypt_pwbuf,
-						 SAMBA_GNUTLS_ENCRYPT);
-	if (rc < 0) {
-		ZERO_ARRAY(_confounder);
-		return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
-	}
-
-	memcpy(&pwbuf[516], confounder.data, confounder.length);
-	ZERO_ARRAY(_confounder);
-
-	memcpy(pwd_buf->data, pwbuf, sizeof(pwbuf));
-	ZERO_ARRAY(pwbuf);
-
-	return NT_STATUS_OK;
+	return encode_rc4_passwd_buffer(pwd, session_key, pwd_buf);
 }
 
 /*************************************************************************
