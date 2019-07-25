@@ -1451,7 +1451,6 @@ static void call_trans2open(connection_struct *conn,
 			req,
 			smb_fname,
 			access_mask,
-			share_mode,
 			create_options,
 			private_flags);
 		if (fsp == NULL) {

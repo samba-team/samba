@@ -2305,7 +2305,6 @@ void reply_open(struct smb_request *req)
 			req,
 			smb_fname,
 			access_mask,
-			share_mode,
 			create_options,
 			private_flags);
 		if (fsp == NULL) {
@@ -2493,7 +2492,6 @@ void reply_open_and_X(struct smb_request *req)
 			req,
 			smb_fname,
 			access_mask,
-			share_mode,
 			create_options,
 			private_flags);
 		if (fsp == NULL) {
