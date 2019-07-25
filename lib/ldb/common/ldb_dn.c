@@ -697,31 +697,32 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 		goto failed;
 	}
 
-	/* save last element */
-	if ( t ) {
-		/* trim back */
-		d -= (p - t);
-		l -= (p - t);
+	if (in_value) {
+		/* save last element */
+		if ( t ) {
+			/* trim back */
+			d -= (p - t);
+			l -= (p - t);
+		}
+
+		*d++ = '\0';
+		/*
+		 * This talloc_memdup() is OK with the
+		 * +1 because *d has been set to '\0'
+		 * just above.
+		 */
+		dn->components[dn->comp_num].value.length = l;
+		dn->components[dn->comp_num].value.data =
+			(uint8_t *)talloc_memdup(dn->components, dt, l + 1);
+		if ( ! dn->components[dn->comp_num].value.data) {
+			/* ouch */
+			goto failed;
+		}
+		talloc_set_name_const(dn->components[dn->comp_num].value.data,
+			(const char *)dn->components[dn->comp_num].value.data);
+
+		dn->comp_num++;
 	}
-
-	*d++ = '\0';
-	/*
-	 * This talloc_memdup() is OK with the
-	 * +1 because *d has been set to '\0'
-	 * just above.
-	 */
-	dn->components[dn->comp_num].value.length = l;
-	dn->components[dn->comp_num].value.data =
-		(uint8_t *)talloc_memdup(dn->components, dt, l + 1);
-	if ( ! dn->components[dn->comp_num].value.data) {
-		/* ouch */
-		goto failed;
-	}
-	talloc_set_name_const(dn->components[dn->comp_num].value.data,
-			      (const char *)dn->components[dn->comp_num].value.data);
-
-	dn->comp_num++;
-
 	talloc_free(data);
 	return true;
 
