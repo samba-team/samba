@@ -2222,7 +2222,9 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 				      struct files_struct *fsp,
 				      struct share_mode_lock *lck,
 				      int oplock_request,
-				      struct smb2_lease *lease)
+				      struct smb2_lease *lease,
+				      uint32_t share_access,
+				      uint32_t access_mask)
 {
 	struct share_mode_data *d = lck->data;
 	bool got_handle_lease = false;
@@ -2354,8 +2356,8 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 		get_current_uid(fsp->conn),
 		req ? req->mid : 0,
 		fsp->oplock_type,
-		fsp->share_access,
-		fsp->access_mask,
+		share_access,
+		access_mask,
 		client_guid,
 		lease_key);
 	if (!ok) {
@@ -3667,7 +3669,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * Setup the oplock info in both the shared memory and
 	 * file structs.
 	 */
-	status = grant_fsp_oplock_type(req, fsp, lck, oplock_request, lease);
+	status = grant_fsp_oplock_type(
+		req,
+		fsp,
+		lck,
+		oplock_request,
+		lease,
+		fsp->share_access,
+		fsp->access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
