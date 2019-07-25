@@ -3236,6 +3236,23 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		open_access_mask |= FILE_WRITE_DATA; /* This will cause oplock breaks. */
 	}
 
+	if (file_existed) {
+		/*
+		 * stat opens on existing files don't get oplocks.
+		 * They can get leases.
+		 *
+		 * Note that we check for stat open on the *open_access_mask*,
+		 * i.e. the access mask we actually used to do the open,
+		 * not the one the client asked for (which is in
+		 * fsp->access_mask). This is due to the fact that
+		 * FILE_OVERWRITE and FILE_OVERWRITE_IF add in O_TRUNC,
+		 * which adds FILE_WRITE_DATA to open_access_mask.
+		 */
+		if (is_stat_open(open_access_mask) && lease == NULL) {
+			oplock_request = NO_OPLOCK;
+		}
+	}
+
 	DEBUG(10, ("open_file_ntcreate: fname=%s, after mapping "
 		   "access_mask=0x%x\n", smb_fname_str_dbg(smb_fname),
 		    access_mask));
@@ -3594,23 +3611,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	} else {
 		/* But SMB1 does. */
 		fsp->access_mask = access_mask | FILE_READ_ATTRIBUTES;
-	}
-
-	if (file_existed) {
-		/*
-		 * stat opens on existing files don't get oplocks.
-		 * They can get leases.
-		 *
-		 * Note that we check for stat open on the *open_access_mask*,
-		 * i.e. the access mask we actually used to do the open,
-		 * not the one the client asked for (which is in
-		 * fsp->access_mask). This is due to the fact that
-		 * FILE_OVERWRITE and FILE_OVERWRITE_IF add in O_TRUNC,
-		 * which adds FILE_WRITE_DATA to open_access_mask.
-		 */
-		if (is_stat_open(open_access_mask) && lease == NULL) {
-			oplock_request = NO_OPLOCK;
-		}
 	}
 
 	if (new_file_created) {
