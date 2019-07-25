@@ -4756,6 +4756,8 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 	if (state->conn->max_protocol >= PROTOCOL_SMB3_10) {
 		NTSTATUS status;
 		struct smb2_negotiate_contexts c = { .num_contexts = 0, };
+		uint8_t *netname_utf16 = NULL;
+		size_t netname_utf16_len = 0;
 		uint32_t offset;
 		DATA_BLOB b;
 		uint8_t p[38];
@@ -4786,6 +4788,21 @@ static struct tevent_req *smbXcli_negprot_smb2_subreq(struct smbXcli_negprot_sta
 		b = data_blob_const(p, 6);
 		status = smb2_negotiate_context_add(state, &c,
 					SMB2_ENCRYPTION_CAPABILITIES, b);
+		if (!NT_STATUS_IS_OK(status)) {
+			return NULL;
+		}
+
+		ok = convert_string_talloc(state, CH_UNIX, CH_UTF16,
+					   state->conn->remote_name,
+					   strlen(state->conn->remote_name),
+					   &netname_utf16, &netname_utf16_len);
+		if (!ok) {
+			return NULL;
+		}
+
+		b = data_blob_const(netname_utf16, netname_utf16_len);
+		status = smb2_negotiate_context_add(state, &c,
+					SMB2_NETNAME_NEGOTIATE_CONTEXT_ID, b);
 		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
 		}
