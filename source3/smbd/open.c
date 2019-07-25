@@ -2354,6 +2354,8 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 		get_current_uid(fsp->conn),
 		req ? req->mid : 0,
 		fsp->oplock_type,
+		fsp->share_access,
+		fsp->access_mask,
 		client_guid,
 		lease_key);
 	if (!ok) {
@@ -4200,6 +4202,8 @@ static NTSTATUS open_directory(connection_struct *conn,
 		get_current_uid(conn),
 		req ? req->mid : 0,
 		NO_OPLOCK,
+		fsp->share_access,
+		fsp->access_mask,
 		NULL,
 		NULL);
 	if (!ok) {

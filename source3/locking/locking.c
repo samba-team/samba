@@ -794,6 +794,8 @@ bool set_share_mode(struct share_mode_lock *lck,
 		    uid_t uid,
 		    uint64_t mid,
 		    uint16_t op_type,
+		    uint32_t share_access,
+		    uint32_t access_mask,
 		    const struct GUID *client_guid,
 		    const struct smb2_lease_key *lease_key)
 {
@@ -812,9 +814,9 @@ bool set_share_mode(struct share_mode_lock *lck,
 
 	ZERO_STRUCTP(e);
 	e->pid = messaging_server_id(fsp->conn->sconn->msg_ctx);
-	e->share_access = fsp->share_access;
+	e->share_access = share_access;
 	e->private_options = fsp->fh->private_options;
-	e->access_mask = fsp->access_mask;
+	e->access_mask = access_mask;
 	e->op_mid = mid;
 	e->op_type = op_type;
 
