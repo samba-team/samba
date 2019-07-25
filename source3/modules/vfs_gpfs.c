@@ -157,7 +157,7 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 
 	kernel_flock(fsp->fh->fd, share_mode, access_mask);
 
-	if (!set_gpfs_sharemode(fsp, access_mask, fsp->share_access)) {
+	if (!set_gpfs_sharemode(fsp, access_mask, share_mode)) {
 		ret = -1;
 	}
 
