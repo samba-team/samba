@@ -3582,14 +3582,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 	}
 
-	/* note that we ignore failure for the following. It is
-           basically a hack for NFS, and NFS will never set one of
-           these only read them. Nobody but Samba can ever set a deny
-           mode and we have already checked our more authoritative
-           locking database for permission to set this deny mode. If
-           the kernel refuses the operations then the kernel is wrong.
-	   note that GPFS supports it as well - jmcd */
-
 	if (fsp->fh->fd != -1 && lp_kernel_share_modes(SNUM(conn))) {
 		int ret_flock;
 		/*
