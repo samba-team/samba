@@ -586,9 +586,11 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 {
 	NTSTATUS nt_status;
 	DATA_BLOB new_password;
-	DATA_BLOB co_session_key;
+
+	/* The confounder is in the last 16 bytes of the buffer */
+	DATA_BLOB confounder = data_blob_const(&pwbuf->data[516], 16);
+	DATA_BLOB pw_data = data_blob_const(pwbuf->data, 516);
 	DATA_BLOB session_key = data_blob(NULL, 0);
-	gnutls_hash_hd_t hash_hnd = NULL;
 	int rc;
 
 	nt_status = dcesrv_transport_session_key(dce_call, &session_key);
@@ -599,34 +601,14 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
-	co_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-	if (!co_session_key.data) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	rc = samba_gnutls_arcfour_confounded_md5(&confounder,
+						 &session_key,
+						 &pw_data,
+						 SAMBA_GNUTLS_DECRYPT);
 	if (rc < 0) {
 		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 		goto out;
 	}
-
-	rc = gnutls_hash(hash_hnd, &pwbuf->data[516], 16);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
-		goto out;
-	}
-	rc = gnutls_hash(hash_hnd, session_key.data, session_key.length);
-	if (rc < 0) {
-		gnutls_hash_deinit(hash_hnd, NULL);
-		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
-		goto out;
-	}
-	gnutls_hash_deinit(hash_hnd, co_session_key.data);
-
-	arcfour_crypt_blob(pwbuf->data, 516, &co_session_key);
-	ZERO_ARRAY_LEN(co_session_key.data,
-		       co_session_key.length);
 
 	if (!extract_pw_from_buffer(mem_ctx, pwbuf->data, &new_password)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
