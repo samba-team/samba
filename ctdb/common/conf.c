@@ -1130,6 +1130,14 @@ static bool conf_load_option(const char *name,
 		}
 	}
 
+	if (strlen(value_str) == 0) {
+		D_ERR("conf: empty value [%s] -> \"%s\"\n",
+		      state->s->name,
+		      name);
+		state->err = EINVAL;
+		return true;
+	}
+
 	tmp_ctx = talloc_new(state->conf);
 	if (tmp_ctx == NULL) {
 		state->err = ENOMEM;
