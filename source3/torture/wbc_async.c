@@ -30,6 +30,7 @@
 #include "nsswitch/winbind_struct_protocol.h"
 #include "nsswitch/libwbclient/wbclient.h"
 #include "wbc_async.h"
+#include "lib/util/blocking.h"
 
 wbcErr map_wbc_err_from_errno(int error)
 {
@@ -124,10 +125,7 @@ static int make_nonstd_fd(int fd)
 }
 
 /****************************************************************************
- Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
- else
- if SYSV use O_NDELAY
- if BSD use FNDELAY
+ Set a fd into blocking/nonblocking mode.
  Set close on exec also.
 ****************************************************************************/
 
@@ -140,28 +138,10 @@ static int make_safe_fd(int fd)
 		goto fail;
 	}
 
-	/* Socket should be nonblocking. */
-
-#ifdef O_NONBLOCK
-#define FLAG_TO_SET O_NONBLOCK
-#else
-#ifdef SYSV
-#define FLAG_TO_SET O_NDELAY
-#else /* BSD */
-#define FLAG_TO_SET FNDELAY
-#endif
-#endif
-
-	if ((flags = fcntl(new_fd, F_GETFL)) == -1) {
+	result = set_blocking(new_fd, false);
+	if (result == -1) {
 		goto fail;
 	}
-
-	flags |= FLAG_TO_SET;
-	if (fcntl(new_fd, F_SETFL, flags) == -1) {
-		goto fail;
-	}
-
-#undef FLAG_TO_SET
 
 	/* Socket should be closed on exec() */
 #ifdef FD_CLOEXEC
