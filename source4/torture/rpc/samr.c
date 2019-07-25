@@ -2349,11 +2349,15 @@ static bool test_ChangePasswordUser2_ntstatus(struct dcerpc_pipe *p, struct tort
 	struct dcerpc_binding_handle *b = p->binding_handle;
 	uint8_t old_nt_hash[16], new_nt_hash[16];
 	uint8_t old_lm_hash[16], new_lm_hash[16];
+	DATA_BLOB old_nt_hash_blob
+		= data_blob_const(old_nt_hash, sizeof(old_nt_hash));
 
 	struct samr_GetDomPwInfo dom_pw_info;
 	struct samr_PwInfo info;
 
 	struct lsa_String domain_name;
+	NTSTATUS crypt_status;
+
 	char *newpass;
 	int policy_min_pw_len = 0;
 
@@ -2386,8 +2390,13 @@ static bool test_ChangePasswordUser2_ntstatus(struct dcerpc_pipe *p, struct tort
 	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
 	E_old_pw_hash(new_nt_hash, old_lm_hash, lm_verifier.hash);
 
-	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
-	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
+	crypt_status = init_samr_CryptPassword(newpass,
+					       &old_nt_hash_blob,
+					       &nt_pass);
+	torture_assert_ntstatus_ok(tctx,
+				   crypt_status,
+				   "init_samr_CryptPassword failed");
+
 	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
 
 	r.in.server = &server;
