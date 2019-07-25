@@ -2472,7 +2472,7 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	NTTIME t;
 	struct samr_DomInfo1 *dominfo = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
-	DATA_BLOB session_key = data_blob_const(old_nt_hash, 16);
+	DATA_BLOB old_nt_hash_blob = data_blob_const(old_nt_hash, 16);
 	NTSTATUS status;
 
 	torture_comment(tctx, "Testing ChangePasswordUser3\n");
@@ -2502,22 +2502,45 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	E_deshash(oldpass, old_lm_hash);
 	E_deshash(newpass, new_lm_hash);
 
+	/*
+	 * The new plaintext password is encrypted using RC4 with the
+	 * old NT password hash (directly, with no confounder).  The
+	 * password is at the end of the random padded buffer,
+	 * offering a little protection.
+	 *
+	 * This is almost certainly wrong, it should be the old LM
+	 * hash, it was switched in an unrelated commit
+	 * 579c13da43d5b40ac6d6c1436399fbc1d8dfd054 in 2004.
+	 */
 	status = init_samr_CryptPassword(newpass,
-					 &session_key,
+					 &old_nt_hash_blob,
 					 &lm_pass);
 	torture_assert_ntstatus_ok(tctx,
 				   status,
 				   "init_samr_CryptPassword");
 
+	/*
+	 * Now we prepare a DES cross-hash of the old LM and new NT
+	 * passwords to link the two buffers
+	 */
 	E_old_pw_hash(new_nt_hash, old_lm_hash, lm_verifier.hash);
 
+	/*
+	 * The new plaintext password is also encrypted using RC4 with
+	 * the old NT password hash (directly, with no confounder).
+	 * The password is at the end of the random padded buffer,
+	 * offering a little protection.
+	 */
 	status = init_samr_CryptPassword(newpass,
-					 &session_key,
+					 &old_nt_hash_blob,
 					 &nt_pass);
 	torture_assert_ntstatus_ok(tctx,
 				   status,
 				   "init_samr_CryptPassword");
 
+	/*
+	 * Another DES based cross-hash
+	 */
 	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
 
 	/* Break the verification */
@@ -2547,7 +2570,7 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	}
 
 	status = init_samr_CryptPassword(newpass,
-					 &session_key,
+					 &old_nt_hash_blob,
 					 &lm_pass);
 	torture_assert_ntstatus_ok(tctx,
 				   status,
@@ -2555,18 +2578,18 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 
 	E_old_pw_hash(new_nt_hash, old_lm_hash, lm_verifier.hash);
 
-	/* Break the session key */
-	session_key.data[0]++;
+	/* Break the NT Hash */
+	old_nt_hash[0]++;
 
 	status = init_samr_CryptPassword(newpass,
-					 &session_key,
+					 &old_nt_hash_blob,
 					 &nt_pass);
 	torture_assert_ntstatus_ok(tctx,
 				   status,
 				   "init_samr_CryptPassword");
 
 	/* Unbreak it again */
-	session_key.data[0]--;
+	old_nt_hash[0]--;
 
 	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
 
@@ -2615,7 +2638,7 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	E_deshash(newpass, new_lm_hash);
 
 	status = init_samr_CryptPassword(newpass,
-					 &session_key,
+					 &old_nt_hash_blob,
 					 &lm_pass);
 	torture_assert_ntstatus_ok(tctx,
 				   status,
@@ -2624,7 +2647,7 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 	E_old_pw_hash(new_nt_hash, old_lm_hash, lm_verifier.hash);
 
 	status = init_samr_CryptPassword(newpass,
-					 &session_key,
+					 &old_nt_hash_blob,
 					 &nt_pass);
 	torture_assert_ntstatus_ok(tctx,
 				   status,
