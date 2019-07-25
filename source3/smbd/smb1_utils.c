@@ -99,7 +99,6 @@ struct files_struct *fcb_or_dos_open(
 		req,
 		fsp,
 		access_mask,
-		share_access,
 		create_options,
 		new_fsp);
 

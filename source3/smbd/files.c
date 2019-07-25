@@ -688,9 +688,12 @@ struct files_struct *file_fsp_smb2(struct smbd_smb2_request *smb2req,
  Duplicate the file handle part for a DOS or FCB open.
 ****************************************************************************/
 
-NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
-		      uint32_t access_mask, uint32_t share_access,
-		      uint32_t create_options, files_struct *to)
+NTSTATUS dup_file_fsp(
+	struct smb_request *req,
+	files_struct *from,
+	uint32_t access_mask,
+	uint32_t create_options,
+	files_struct *to)
 {
 	/* this can never happen for print files */
 	SMB_ASSERT(from->print_file == NULL);
