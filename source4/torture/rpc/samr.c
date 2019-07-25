@@ -42,6 +42,7 @@
 #include "torture/util.h"
 #include "source4/librpc/rpc/dcerpc.h"
 #include "source3/rpc_client/init_samr.h"
+#include "lib/crypto/gnutls_helpers.h"
 
 #define TEST_ACCOUNT_NAME "samrtorturetest"
 #define TEST_ACCOUNT_NAME_PWD "samrpwdlastset"
@@ -2777,9 +2778,6 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 	struct samr_SetUserInfo s;
 	union samr_UserInfo u;
 	DATA_BLOB session_key;
-	DATA_BLOB confounded_session_key = data_blob_talloc(tctx, NULL, 16);
-	uint8_t confounder[16];
-	gnutls_hash_hd_t hash_hnd;
 
 	bool ret = true;
 	struct lsa_String server, account;
@@ -2797,6 +2795,11 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 	struct samr_DomInfo1 *dominfo = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
 	gnutls_cipher_hd_t cipher_hnd = NULL;
+	uint8_t _confounder[16] = {0};
+	DATA_BLOB confounder
+		= data_blob_const(_confounder,
+				  sizeof(_confounder));
+	DATA_BLOB pw_data;
 	gnutls_datum_t old_nt_key = {
 		.data = old_nt_hash,
 		.size = sizeof(old_nt_hash),
@@ -2821,6 +2824,8 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 
 	set_pw_in_buffer(u.info25.password.data, &new_random_pass);
 
+	pw_data = data_blob_const(u.info25.password.data, 516);
+
 	status = dcerpc_fetch_session_key(p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_result(tctx, TORTURE_FAIL, "SetUserInfo level %u - no session key - %s\n",
@@ -2828,15 +2833,15 @@ bool test_ChangePasswordRandomBytes(struct dcerpc_pipe *p, struct torture_contex
 		return false;
 	}
 
-	generate_random_buffer((uint8_t *)confounder, 16);
+	generate_random_buffer(_confounder,
+			       sizeof(_confounder));
 
-	gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
-	gnutls_hash(hash_hnd, confounder, 16);
-	gnutls_hash(hash_hnd, session_key.data, session_key.length);
-	gnutls_hash_deinit(hash_hnd, confounded_session_key.data);
+	samba_gnutls_arcfour_confounded_md5(&confounder,
+					    &session_key,
+					    &pw_data,
+					    SAMBA_GNUTLS_ENCRYPT);
 
-	arcfour_crypt_blob(u.info25.password.data, 516, &confounded_session_key);
-	memcpy(&u.info25.password.data[516], confounder, 16);
+	memcpy(&u.info25.password.data[516], _confounder, sizeof(_confounder));
 
 	torture_comment(tctx, "Testing SetUserInfo level 25 (set password ex) with a password made up of only random bytes\n");
 
