@@ -71,6 +71,34 @@ EOF
 unit_test conf_test 8 "$conffile"
 
 cat > "$conffile" <<EOF
+[section1]
+    key1 =
+EOF
+
+required_error EINVAL <<EOF
+conf: empty value [section1] -> "key1"
+[section1]
+	# key1 = value1
+	# key2 = 10
+	key3 = false # temporary
+EOF
+unit_test conf_test 9 "$conffile"
+
+cat > "$conffile" <<EOF
+[section1]
+    key3 =
+EOF
+
+required_error EINVAL <<EOF
+conf: empty value [section1] -> "key3"
+[section1]
+	# key1 = value1
+	# key2 = 10
+	key3 = false # temporary
+EOF
+unit_test conf_test 9 "$conffile"
+
+cat > "$conffile" <<EOF
 
 [section1]
     key1 = value2  
