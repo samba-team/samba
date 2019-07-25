@@ -663,7 +663,6 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	fsp->vuid = smb1req->vuid;
 	fsp->open_time = e->time;
 	fsp->access_mask = e->access_mask;
-	fsp->share_access = e->share_access;
 	fsp->can_read = ((fsp->access_mask & (FILE_READ_DATA)) != 0);
 	fsp->can_write = ((fsp->access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) != 0);
 	fsp->fnum = op->local_id;

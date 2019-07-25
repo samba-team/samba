@@ -706,7 +706,6 @@ NTSTATUS dup_file_fsp(struct smb_request *req, files_struct *from,
 	to->vuid = from->vuid;
 	to->open_time = from->open_time;
 	to->access_mask = access_mask;
-	to->share_access = share_access;
 	to->oplock_type = from->oplock_type;
 	to->can_lock = from->can_lock;
 	to->can_read = ((access_mask & FILE_READ_DATA) != 0);

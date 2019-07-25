@@ -269,8 +269,10 @@
 /* Version 41 - Remove "blocking_lock" parameter from
                 SMB_VFS_BRL_LOCK_WINDOWS */
 /* Version 41 - Remove "msg_ctx" parameter from SMB_VFS_BRL_UNLOCK_WINDOWS */
+/* Bump to version 42, Samba 4.12 will ship with that */
+/* Version 42 - Remove share_access member from struct files_struct */
 
-#define SMB_VFS_INTERFACE_VERSION 41
+#define SMB_VFS_INTERFACE_VERSION 42
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -333,8 +335,6 @@ typedef struct files_struct {
 	struct write_cache *wcp;
 	struct timeval open_time;
 	uint32_t access_mask;		/* NTCreateX access bits (FILE_READ_DATA etc.) */
-	uint32_t share_access;		/* NTCreateX share constants (FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE). */
-
 	bool kernel_share_modes_taken;
 
 	bool update_write_time_triggered;
