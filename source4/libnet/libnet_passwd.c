@@ -20,7 +20,6 @@
 
 #include "includes.h"
 #include "libnet/libnet.h"
-#include "../lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "source4/librpc/rpc/dcerpc.h"
@@ -57,6 +56,16 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	uint8_t old_lm_hash[16], new_lm_hash[16];
 	struct samr_DomInfo1 *dominfo = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
+	gnutls_cipher_hd_t cipher_hnd = NULL;
+	gnutls_datum_t nt_session_key = {
+		.data = old_nt_hash,
+		.size = sizeof(old_nt_hash),
+	};
+	gnutls_datum_t lm_session_key = {
+		.data = old_lm_hash,
+		.size = sizeof(old_lm_hash),
+	};
+	int rc;
 
 	ZERO_STRUCT(c);
 
@@ -87,11 +96,47 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 
 	/* prepare samr_ChangePasswordUser3 */
 	encode_pw_buffer(lm_pass.data, r->samr.in.newpassword, STR_UNICODE);
-	arcfour_crypt(lm_pass.data, old_nt_hash, 516);
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&nt_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto disconnect;
+	}
+
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   lm_pass.data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto disconnect;
+	}
+
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
 
 	encode_pw_buffer(nt_pass.data,  r->samr.in.newpassword, STR_UNICODE);
-	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&nt_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto disconnect;
+	}
+
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   nt_pass.data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto disconnect;
+	}
+
 	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
 
 	pw3.in.server = &server;
@@ -125,11 +170,46 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 
 	/* prepare samr_ChangePasswordUser2 */
 	encode_pw_buffer(lm_pass.data, r->samr.in.newpassword, STR_ASCII|STR_TERMINATE);
-	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&lm_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto disconnect;
+	}
+
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   lm_pass.data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto disconnect;
+	}
+
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
 
 	encode_pw_buffer(nt_pass.data, r->samr.in.newpassword, STR_UNICODE);
-	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&nt_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto disconnect;
+	}
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   nt_pass.data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto disconnect;
+	}
+
 	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
 
 	pw2.in.server = &server;
@@ -161,7 +241,25 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 	a_account.string = r->samr.in.account_name;
 
 	encode_pw_buffer(lm_pass.data, r->samr.in.newpassword, STR_ASCII);
-	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
+
+	rc = gnutls_cipher_init(&cipher_hnd,
+				GNUTLS_CIPHER_ARCFOUR_128,
+				&lm_session_key,
+				NULL);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto disconnect;
+	}
+
+	rc = gnutls_cipher_encrypt(cipher_hnd,
+				   lm_pass.data,
+				   516);
+	gnutls_cipher_deinit(cipher_hnd);
+	if (rc < 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		goto disconnect;
+	}
+
 	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
 
 	oe2.in.server = &a_server;
