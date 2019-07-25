@@ -51,7 +51,7 @@ cat > "$conffile" <<EOF
 [section1]
 EOF
 
-required_result 22 <<EOF
+required_error EINVAL <<EOF
 conf: validation for section [section1] failed
 [section1]
 	# key1 = default
@@ -63,7 +63,7 @@ cat > "$conffile" <<EOF
     key1 = unknown
 EOF
 
-required_result 22 <<EOF
+required_error EINVAL <<EOF
 conf: validation for section [section1] failed
 [section1]
 	# key1 = default
@@ -104,7 +104,7 @@ cat > "$conffile" <<EOF
     foo = bar
 EOF
 
-required_result 22 <<EOF
+required_error EINVAL <<EOF
 conf: unknown section [section2]
 conf: unknown section for option "foo"
 [section1]
