@@ -3521,6 +3521,24 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
+	/*
+	 * Setup the oplock info in both the shared memory and
+	 * file structs.
+	 */
+	status = grant_fsp_oplock_type(
+		req,
+		fsp,
+		lck,
+		oplock_request,
+		lease,
+		share_access,
+		access_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(lck);
+		fd_close(fsp);
+		return status;
+	}
+
 	/* Should we atomically (to the client at least) truncate ? */
 	if ((!new_file_created) &&
 	    (flags2 & O_TRUNC) &&
@@ -3530,6 +3548,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		ret = SMB_VFS_FTRUNCATE(fsp, 0);
 		if (ret != 0) {
 			status = map_nt_error_from_unix(errno);
+			del_share_mode(lck, fsp);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
 			return status;
@@ -3549,6 +3568,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	    !is_ntfs_stream_smb_fname(smb_fname)) {
 		status = delete_all_streams(conn, smb_fname);
 		if (!NT_STATUS_IS_OK(status)) {
+			del_share_mode(lck, fsp);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
 			return status;
@@ -3569,6 +3589,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access, access_mask);
 		if(ret_flock == -1 ){
 
+			del_share_mode(lck, fsp);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
 
@@ -3613,24 +3634,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (pinfo) {
 		*pinfo = info;
-	}
-
-	/*
-	 * Setup the oplock info in both the shared memory and
-	 * file structs.
-	 */
-	status = grant_fsp_oplock_type(
-		req,
-		fsp,
-		lck,
-		oplock_request,
-		lease,
-		share_access,
-		fsp->access_mask);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(lck);
-		fd_close(fsp);
-		return status;
 	}
 
 	/* Handle strange delete on close create semantics. */
