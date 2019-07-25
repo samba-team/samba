@@ -23,6 +23,7 @@
 #include <cmocka.h>
 
 #include <ldb.h>
+#include "ldb_private.h"
 
 static void test_ldb_dn_add_child_fmt(void **state)
 {
@@ -105,12 +106,81 @@ static void test_ldb_dn_add_child_val2(void **state)
 
 }
 
+struct explode_test {
+	const char *strdn;
+	int comp_num;
+	int ext_comp_num;
+	bool special;
+	bool invalid;
+	const char *linearized;
+	const char *ext_linearized;
+	bool explode_result;
+};
+
+static void test_ldb_dn_explode(void **state)
+{
+	size_t i;
+	struct ldb_context *ldb = ldb_init(NULL, NULL);
+	struct explode_test tests[] = {
+		{"A=B", 1, 0, false, false, "A=B", "A=B", true},
+		{"", 0, 0, false, false, "", "", true},
+		{" ", -1, -1, false, false, " ", " ", false},
+		{"<>", 0, 0, false, false, "", NULL, true},
+		{"<", 0, 0, false, false, "", NULL, true},
+		{"<><", 0, 0, false, false, "", NULL, true},
+		{"<><>", 0, 0, false, false, "", NULL, true},
+		{"A=B,C=D", 2, 0, false, false, "A=B,C=D", "A=B,C=D", true},
+		{"x=🔥", 1, 0, false, false, "x=🔥", "x=🔥", true},
+	};
+
+
+	for (i = 0; i < ARRAY_SIZE(tests); i++) {
+		bool result;
+		const char *linear;
+		const char *ext_linear;
+		struct ldb_dn *dn = ldb_dn_new(ldb, ldb, tests[i].strdn);
+
+		/*
+		 * special, invalid, linear, and ext_linear are set before
+		 * explode
+		 */
+		fprintf(stderr, "%zu «%s»: ", i, tests[i].strdn);
+		linear = ldb_dn_get_linearized(dn);
+		assert_true((linear == NULL) == (tests[i].linearized == NULL));
+		assert_string_equal(linear,
+				    tests[i].linearized);
+
+		ext_linear = ldb_dn_get_extended_linearized(ldb, dn, 1);
+		assert_true((ext_linear == NULL) ==
+			    (tests[i].ext_linearized == NULL));
+
+		if (tests[i].ext_linearized != NULL) {
+			assert_string_equal(ext_linear,
+					    tests[i].ext_linearized);
+		}
+		assert_true(ldb_dn_is_special(dn) == tests[i].special);
+		assert_true(ldb_dn_is_valid(dn) != tests[i].invalid);
+
+		/* comp nums are set by explode */
+		result = ldb_dn_validate(dn);
+		fprintf(stderr, "res %i lin «%s» ext «%s»\n",
+			result, linear, ext_linear);
+
+		assert_true(result == tests[i].explode_result);
+		assert_int_equal(ldb_dn_get_comp_num(dn),
+				 tests[i].comp_num);
+		assert_int_equal(ldb_dn_get_extended_comp_num(dn),
+				 tests[i].ext_comp_num);
+	}
+}
+
 int main(void) {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_ldb_dn_add_child_fmt),
 		cmocka_unit_test(test_ldb_dn_add_child_fmt2),
 		cmocka_unit_test(test_ldb_dn_add_child_val),
 		cmocka_unit_test(test_ldb_dn_add_child_val2),
+		cmocka_unit_test(test_ldb_dn_explode),
 	};
 
 	return cmocka_run_group_tests(tests, NULL, NULL);
