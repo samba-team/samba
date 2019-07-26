@@ -2520,7 +2520,7 @@ static void kernel_oplock_poll_open_timer(struct tevent_context *ev,
 	if (!ok) {
 		exit_server("schedule_deferred_open_message_smb failed");
 	}
-	DBG_DEBUG("kernel_oplock_poll_open_timer fired. Retying open !\n");
+	DBG_DEBUG("kernel_oplock_poll_open_timer fired. Retrying open !\n");
 }
 
 /**
