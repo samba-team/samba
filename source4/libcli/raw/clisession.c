@@ -195,7 +195,7 @@ NTSTATUS smb_raw_sesssetup_recv(struct smbcli_request *req,
 		if (p) {
 			p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->old.out.os, p, -1, STR_TERMINATE);
 			p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->old.out.lanman, p, -1, STR_TERMINATE);
-			p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->old.out.domain, p, -1, STR_TERMINATE);
+			smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->old.out.domain, p, -1, STR_TERMINATE);
 		}
 		break;
 
@@ -209,7 +209,7 @@ NTSTATUS smb_raw_sesssetup_recv(struct smbcli_request *req,
 			p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->nt1.out.os, p, -1, STR_TERMINATE);
 			p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->nt1.out.lanman, p, -1, STR_TERMINATE);
 			if (p < (req->in.data + req->in.data_size)) {
-				p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->nt1.out.domain, p, -1, STR_TERMINATE);
+				smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->nt1.out.domain, p, -1, STR_TERMINATE);
 			}
 		}
 		break;
@@ -229,7 +229,7 @@ NTSTATUS smb_raw_sesssetup_recv(struct smbcli_request *req,
 		p += parms->spnego.out.secblob.length;
 		p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->spnego.out.os, p, -1, STR_TERMINATE);
 		p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->spnego.out.lanman, p, -1, STR_TERMINATE);
-		p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->spnego.out.workgroup, p, -1, STR_TERMINATE);
+		smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->spnego.out.workgroup, p, -1, STR_TERMINATE);
 		break;
 
 	case RAW_SESSSETUP_SMB2:
