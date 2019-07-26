@@ -297,6 +297,10 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 		return NT_STATUS_INVALID_LEVEL;
 
 	case RAW_FILEINFO_STANDARD:
+		if (session == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		FINFO_CHECK_SIZE(22);
 		parms->standard.out.create_time = raw_pull_dos_date2(session->transport,
 								     blob->data +  0);
@@ -310,6 +314,10 @@ static NTSTATUS smb_raw_info_backend(struct smbcli_session *session,
 		return NT_STATUS_OK;
 
 	case RAW_FILEINFO_EA_SIZE:
+		if (session == NULL) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
 		FINFO_CHECK_SIZE(26);
 		parms->ea_size.out.create_time = raw_pull_dos_date2(session->transport,
 								    blob->data +  0);
