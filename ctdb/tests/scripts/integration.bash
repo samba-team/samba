@@ -150,6 +150,14 @@ sanity_check_output ()
     return $ret
 }
 
+select_test_node ()
+{
+	try_command_on_node any ctdb pnn || return 1
+
+	test_node="$out"
+	echo "Selected node ${test_node}"
+}
+
 # This returns a list of "ip node" lines in $outfile
 all_ips_on_node()
 {
