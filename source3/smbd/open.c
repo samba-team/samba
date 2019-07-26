@@ -3454,37 +3454,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		uint32_t can_access_mask;
-		bool can_access = True;
 
 		SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION));
-
-		/*
-		 * This next line is a subtlety we need for
-		 * MS-Access. If a file open will fail due to share
-		 * permissions and also for security (access) reasons,
-		 * we need to return the access failed error, not the
-		 * share error. We can't open the file due to kernel
-		 * oplock deadlock (it's possible we failed above on
-		 * the open_mode_check()) so use a userspace check.
-		 */
-
-		if (flags & O_RDWR) {
-			can_access_mask = FILE_READ_DATA|FILE_WRITE_DATA;
-		} else if (flags & O_WRONLY) {
-			can_access_mask = FILE_WRITE_DATA;
-		} else {
-			can_access_mask = FILE_READ_DATA;
-		}
-
-		if (((can_access_mask & FILE_WRITE_DATA) &&
-		     !CAN_WRITE(conn)) ||
-		    !NT_STATUS_IS_OK(smbd_check_access_rights(conn,
-							      smb_fname,
-							      false,
-							      can_access_mask))) {
-			can_access = False;
-		}
 
 		/*
 		 * If we're returning a share violation, ensure we
@@ -3520,16 +3491,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		TALLOC_FREE(lck);
 		fd_close(fsp);
-		if (can_access) {
-			/*
-			 * We have detected a sharing violation here
-			 * so return the correct error code
-			 */
-			status = NT_STATUS_SHARING_VIOLATION;
-		} else {
-			status = NT_STATUS_ACCESS_DENIED;
-		}
-		return status;
+
+		return NT_STATUS_SHARING_VIOLATION;
 	}
 
 	/* Should we atomically (to the client at least) truncate ? */
