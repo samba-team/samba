@@ -2525,12 +2525,12 @@ void reply_open_and_X(struct smb_request *req)
 	}
 
 	fattr = dos_mode(conn, fsp->fsp_name);
-	mtime = convert_timespec_to_time_t(fsp->fsp_name->st.st_ex_mtime);
 	if (fattr & FILE_ATTRIBUTE_DIRECTORY) {
 		close_file(req, fsp, ERROR_CLOSE);
 		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 		goto out;
 	}
+	mtime = convert_timespec_to_time_t(fsp->fsp_name->st.st_ex_mtime);
 
 	/* If the caller set the extended oplock request bit
 		and we granted one (by whatever means) - set the
