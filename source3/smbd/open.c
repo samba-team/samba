@@ -50,7 +50,6 @@ struct deferred_open_record {
 
         bool delayed_for_oplocks;
 	bool async_open;
-        struct file_id id;
 
 	/*
 	 * Timer for async opens, needed because they don't use a watch on
@@ -2401,7 +2400,6 @@ static struct deferred_open_record *deferred_open_record_create(
 	*record = (struct deferred_open_record) {
 		.delayed_for_oplocks = delayed_for_oplocks,
 		.async_open = async_open,
-		.id = id,
 	};
 
 	return record;
@@ -2477,8 +2475,7 @@ static void defer_open(struct share_mode_lock *lck,
 		exit_server("tevent_req_set_endtime failed");
 	}
 
-	ok = push_deferred_open_message_smb(
-		req, timeout, open_rec->id, open_rec);
+	ok = push_deferred_open_message_smb(req, timeout, id, open_rec);
 	if (!ok) {
 		TALLOC_FREE(lck);
 		exit_server("push_deferred_open_message_smb failed");
