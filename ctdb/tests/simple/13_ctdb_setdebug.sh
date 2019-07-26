@@ -19,7 +19,7 @@ set -e
 
 cluster_is_healthy
 
-select_test_node_and_ips
+select_test_node
 
 get_debug ()
 {
