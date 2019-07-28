@@ -12,6 +12,32 @@ Samba 4.11 will be the next version of the Samba suite.
 UPGRADING
 =========
 
+AD Database compatibility
+-------------------------
+
+Samba v4.11 has changed how the AD database is stored on disk. AD users should
+not really be affected by this change when upgrading to v4.11. However, AD
+users should be extremely careful if they need to downgrade from Samba v4.11 to
+an older release.
+
+Samba v4.11 maintains database compatibility with older Samba releases. The
+database will automatically get rewritten in the new v4.11 format when you
+first start the upgraded samba executable.
+
+However, when downgrading from v4.11 you will need to manually downgrade the AD
+database yourself. Note that you will need to do this step before you install
+the downgraded Samba packages. For more details, see:
+https://wiki.samba.org/index.php/Downgrading_an_Active_Directory_DC
+
+When either upgrading or downgrading, users should also avoid making any
+database modifications between installing the new Samba packages and starting
+the samba executable.
+
+Note that when moving between major Samba releases in general, we recommend
+that the AD DC is rejoined to the domain. Using this approach avoids the need
+to explicitly downgrade the database manually. For more details, see:
+https://wiki.samba.org/index.php/Upgrading_a_Samba_AD_DC
+
 SMB1 is disabled by default
 ---------------------------
 
