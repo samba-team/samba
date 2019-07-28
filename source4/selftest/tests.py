@@ -1333,3 +1333,4 @@ planoldpythontestsuite("proclimitdc",
                        name="samba.tests.process_limits")
 
 planoldpythontestsuite("none", "samba.tests.usage")
+planpythontestsuite("fileserver", "samba.tests.dcerpc.mdssvc")
