@@ -142,6 +142,10 @@ Samba's replication code has also been improved to handle replication
 with the 2012 schema (the core of this replication fix has also been
 backported to 4.9.11 and will be in a 4.10.x release).
 
+For more about how the AD schema relates to overall Windows compatibility,
+please read:
+https://wiki.samba.org/index.php/Windows_2012_Server_compatibility
+
 GnuTLS 3.2 required
 -------------------
 
