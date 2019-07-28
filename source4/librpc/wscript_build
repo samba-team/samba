@@ -460,6 +460,13 @@ bld.SAMBA_PYTHON('dcerpc_windows_event_ids',
         cflags_end=gen_cflags
         )
 
+bld.SAMBA_PYTHON('python_mdssvc',
+        source='../../librpc/gen_ndr/py_mdssvc.c',
+        deps='RPC_NDR_MDSSVC %s %s' % (pytalloc_util, pyrpc_util),
+        realname='samba/dcerpc/mdssvc.so',
+        cflags_end=gen_cflags
+        )
+
 if bld.PYTHON_BUILD_IS_ENABLED():
     bld.SAMBA_SCRIPT('python_dcerpc_init',
 		    pattern='rpc/dcerpc.py',
