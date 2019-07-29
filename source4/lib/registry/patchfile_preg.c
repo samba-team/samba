@@ -221,9 +221,6 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 	char *buf_ptr;
 	TALLOC_CTX *mem_ctx = talloc_init("reg_preg_diff_load");
 	WERROR ret = WERR_OK;
-	DATA_BLOB data = {NULL, 0};
-	char *key = NULL;
-	char *value_name = NULL;
 
 	buf = talloc_array(mem_ctx, char, buf_size);
 	buf_ptr = buf;
@@ -249,6 +246,9 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 	/* Read the entries */
 	while(1) {
 		uint32_t value_type, length;
+		char *key = NULL;
+		char *value_name = NULL;
+		DATA_BLOB data = {NULL, 0};
 
 		if (!W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr))) {
 			break;
@@ -372,13 +372,13 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 			callbacks->add_key(callback_data, key);
 			callbacks->set_value(callback_data, key, value_name,
 					     value_type, data);
- 		}
+		}
+		TALLOC_FREE(key);
+		TALLOC_FREE(value_name);
+		data_blob_free(&data);
 	}
 cleanup:
 	close(fd);
-	talloc_free(data.data);
-	talloc_free(key);
-	talloc_free(value_name);
-	talloc_free(buf);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
