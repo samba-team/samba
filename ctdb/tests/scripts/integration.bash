@@ -314,6 +314,19 @@ node_has_status ()
 	local pnn="$1"
 	local status="$2"
 
+	case "$status" in
+	recovered)
+		! $CTDB status -n "$pnn" | \
+			grep -Eq '^Recovery mode:RECOVERY \(1\)$'
+		return
+		;;
+	notlmaster)
+		! $CTDB status -n "$pnn" | \
+			grep -Eq "^hash:.* lmaster:${pnn}\$"
+		return
+		;;
+	esac
+
 	local bits
 	case "$status" in
 	unhealthy)    bits="?|?|?|1|*" ;;
@@ -326,42 +339,26 @@ node_has_status ()
 	enabled)      bits="?|?|0|*" ;;
 	stopped)      bits="?|?|?|?|1|*" ;;
 	notstopped)   bits="?|?|?|?|0|*" ;;
-	recovered)
-		! $CTDB status -n "$pnn" | \
-			grep -Eq '^Recovery mode:RECOVERY \(1\)$'
-		return
-		;;
-	notlmaster)
-		! $CTDB status -n "$pnn" | \
-			grep -Eq "^hash:.* lmaster:${pnn}\$"
-		return
-		;;
 	*)
 		echo "node_has_status: unknown status \"$status\""
 		return 1
 	esac
+	local out x line
 
-	if [ -n "$bits" ] ; then
-		local out x line
+	out=$($CTDB -X status 2>&1) || return 1
 
-		out=$($CTDB -X status 2>&1) || return 1
-
-		{
-			read x
-			while read line ; do
-				# This needs to be done in 2 steps to
-				# avoid false matches.
-				local line_bits="${line#|${pnn}|*|}"
-				[ "$line_bits" = "$line" ] && continue
-				[ "${line_bits#${bits}}" != "$line_bits" ] && \
-					return 0
-			done
-			return 1
-		} <<<"$out" # Yay bash!
-	else
-		echo 'node_has_status: unknown mode, $bits not set'
+	{
+		read x
+		while read line ; do
+			# This needs to be done in 2 steps to
+			# avoid false matches.
+			local line_bits="${line#|${pnn}|*|}"
+			[ "$line_bits" = "$line" ] && continue
+			[ "${line_bits#${bits}}" != "$line_bits" ] && \
+				return 0
+		done
 		return 1
-	fi
+	} <<<"$out" # Yay bash!
 }
 
 wait_until_node_has_status ()
