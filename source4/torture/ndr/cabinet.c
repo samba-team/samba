@@ -4173,6 +4173,8 @@ static bool cab_file_plain_check(struct torture_context *tctx,
 
 	torture_assert_data_blob_equal(tctx, r->cfdata[0].ab, blob, "ab");
 
+	data_blob_free(&blob);
+
 	return true;
 }
 
@@ -4235,6 +4237,8 @@ static bool cab_file_MSZIP_check(struct torture_context *tctx,
 	memset(blob.data, 'A', blob.length);
 
 	torture_assert_data_blob_equal(tctx, r->cfdata[0].ab, blob, "ab");
+
+	data_blob_free(&blob);
 
 	return true;
 }
@@ -4305,6 +4309,8 @@ static bool cab_file_LZX_check(struct torture_context *tctx,
 	/* once we have LZX compression support we can enable this test */
 	torture_assert_data_blob_equal(tctx, r->cfdata[0].ab, blob, "ab");
 #endif
+	data_blob_free(&blob);
+
 	return true;
 }
 

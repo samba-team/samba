@@ -141,6 +141,9 @@ static bool clusapi_PROPERTY_LIST_check(struct torture_context *tctx,
 	torture_assert_int_equal(tctx, r->propertyValues[5].PropertyValues.Padding.length, 0, "PropertyValues.Padding.length");
 	torture_assert_int_equal(tctx, r->propertyValues[5].end_mark, CLUSPROP_SYNTAX_ENDMARK, "end_mark");
 
+	data_blob_free(&blob_dword_null);
+	data_blob_free(&blob_dword_one);
+
 	return true;
 }
 
@@ -361,6 +364,10 @@ static bool clusapi_PROPERTY_LIST_check2(struct torture_context *tctx,
 	torture_assert_data_blob_equal(tctx, r->propertyValues[11].PropertyValues.Buffer, blob_dword_null, "Buffer");
 	torture_assert_int_equal(tctx, r->propertyValues[11].PropertyValues.Padding.length, 0, "PropertyValues.Padding.length");
 	torture_assert_int_equal(tctx, r->propertyValues[11].end_mark, CLUSPROP_SYNTAX_ENDMARK, "end_mark");
+
+	data_blob_free(&blob_dword_null);
+	data_blob_free(&blob_dword_one);
+	data_blob_free(&blob_dword);
 
 	return true;
 }
