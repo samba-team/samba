@@ -318,7 +318,7 @@ node_has_status ()
 	local pnn="$1"
 	local status="$2"
 
-	local bits fpat mpat rpat
+	local bits rpat
 	case "$status" in
 	unhealthy)    bits="?|?|?|1|*" ;;
 	healthy)      bits="?|?|?|0|*" ;;
@@ -330,8 +330,6 @@ node_has_status ()
 	enabled)      bits="?|?|0|*" ;;
 	stopped)      bits="?|?|?|?|1|*" ;;
 	notstopped)   bits="?|?|?|?|0|*" ;;
-	frozen)       fpat='^[[:space:]]+frozen[[:space:]]+1$' ;;
-	unfrozen)     fpat='^[[:space:]]+frozen[[:space:]]+0$' ;;
 	recovered)    rpat='^Recovery mode:RECOVERY \(1\)$' ;;
 	notlmaster)   rpat="^hash:.* lmaster:${pnn}\$" ;;
 	*)
@@ -356,12 +354,10 @@ node_has_status ()
 			done
 			return 1
 		} <<<"$out" # Yay bash!
-	elif [ -n "$fpat" ] ; then
-		$CTDB statistics -n "$pnn" | egrep -q "$fpat"
 	elif [ -n "$rpat" ] ; then
 		! $CTDB status -n "$pnn" | egrep -q "$rpat"
 	else
-		echo 'node_has_status: unknown mode, neither $bits nor $fpat is set'
+		echo 'node_has_status: unknown mode, neither $bits nor $rpat is set'
 		return 1
 	fi
 }
