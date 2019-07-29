@@ -131,7 +131,7 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
 		/* it could be read-only */
-		status = smb2_util_setatr(tree, dname, FILE_ATTRIBUTE_NORMAL);
+		smb2_util_setatr(tree, dname, FILE_ATTRIBUTE_NORMAL);
 		status = smb2_util_unlink(tree, dname);
 	}
 	if (NT_STATUS_IS_OK(status)) {
@@ -184,7 +184,7 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 			status = smb2_util_unlink(tree, name);
 			if (NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
 				/* it could be read-only */
-				status = smb2_util_setatr(tree, name, FILE_ATTRIBUTE_NORMAL);
+				smb2_util_setatr(tree, name, FILE_ATTRIBUTE_NORMAL);
 				status = smb2_util_unlink(tree, name);
 			}
 			
@@ -206,7 +206,7 @@ int smb2_deltree(struct smb2_tree *tree, const char *dname)
 	status = smb2_util_rmdir(tree, dname);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
 		/* it could be read-only */
-		status = smb2_util_setatr(tree, dname, FILE_ATTRIBUTE_NORMAL);
+		smb2_util_setatr(tree, dname, FILE_ATTRIBUTE_NORMAL);
 		status = smb2_util_rmdir(tree, dname);
 	}
 
