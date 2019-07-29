@@ -1452,6 +1452,7 @@ static bool torture_ldb_pack_data_v2(struct torture_context *torture)
 				 binary.length,
 				 "packed data not as expected");
 	talloc_free(expect_bin);
+	TALLOC_FREE(msg.dn);
 
 	return true;
 }
@@ -1504,6 +1505,8 @@ static bool torture_ldb_pack_data_v2_special(struct torture_context *torture)
 				 binary.data,
 				 binary.length,
 				 "packed data not as expected");
+
+	TALLOC_FREE(msg.dn);
 
 	return true;
 }
