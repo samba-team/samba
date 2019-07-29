@@ -48,7 +48,6 @@ struct deferred_open_record {
 	struct smbXsrv_connection *xconn;
 	uint64_t mid;
 
-        bool delayed_for_oplocks;
 	bool async_open;
 
 	/*
@@ -2397,7 +2396,6 @@ static struct deferred_open_record *deferred_open_record_create(
 	}
 
 	*record = (struct deferred_open_record) {
-		.delayed_for_oplocks = delayed_for_oplocks,
 		.async_open = async_open,
 	};
 
