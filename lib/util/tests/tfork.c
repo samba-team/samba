@@ -656,6 +656,9 @@ static bool test_tfork_event_file_handle(struct torture_context *tctx)
 			    "tfork process 2 event fd not readable\n");
 
 done:
+	free(t1);
+	free(t2);
+
 	return ok;
 }
 
