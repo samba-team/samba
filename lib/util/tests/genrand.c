@@ -47,6 +47,8 @@ static bool test_generate_random_str(struct torture_context *tctx)
 	torture_assert_int_equal(tctx, strlen(r), 10, "right length generated");
 	r = generate_random_str(mem_ctx, 5);
 	torture_assert_int_equal(tctx, strlen(r), 5, "right length generated");
+
+	TALLOC_FREE(mem_ctx);
 	return true;
 }
 
