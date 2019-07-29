@@ -24,7 +24,7 @@ from subprocess import check_output
 from samba.samdb import SamDB
 
 COMMAND = os.path.join(os.environ.get("SRCDIR_ABS"),
-               "source4/scripting/bin/sambadowngradedatabase")
+               "source4/scripting/bin/samba_downgrade_db")
 
 
 class DowngradeTestBase(BlackboxTestCase):

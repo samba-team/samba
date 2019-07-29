@@ -25,7 +25,7 @@ samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_rebuildextendedd
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_renamedc.none.
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_repl_cleartext_pwd_py.none.
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_rodcdns.none.
-samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_sambadowngradedatabase.none.
+samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_samba_downgrade_db.none.
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_samba_gpupdate.none.
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_samba_gpupdate_.none.
 samba.tests.usage.samba.tests.usage.PythonScriptUsageTests.test_samba_kcc.none.
