@@ -3214,21 +3214,19 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		flags2 &= ~(O_CREAT|O_TRUNC);
 	}
 
-	if (lp_kernel_oplocks(SNUM(conn))) {
-		/*
-		 * With kernel oplocks the open breaking an oplock
-		 * blocks until the oplock holder has given up the
-		 * oplock or closed the file. We prevent this by always
-		 * trying to open the file with O_NONBLOCK (see "man
-		 * fcntl" on Linux).
-		 *
-		 * If a process that doesn't use the smbd open files
-		 * database or communication methods holds a kernel
-		 * oplock we must periodically poll for available open
-		 * using O_NONBLOCK.
-		 */
-		flags2 |= O_NONBLOCK;
-	}
+	/*
+	 * With kernel oplocks the open breaking an oplock
+	 * blocks until the oplock holder has given up the
+	 * oplock or closed the file. We prevent this by always
+	 * trying to open the file with O_NONBLOCK (see "man
+	 * fcntl" on Linux).
+	 *
+	 * If a process that doesn't use the smbd open files
+	 * database or communication methods holds a kernel
+	 * oplock we must periodically poll for available open
+	 * using O_NONBLOCK.
+	 */
+	flags2 |= O_NONBLOCK;
 
 	/*
 	 * Ensure we can't write on a read-only share or file.
