@@ -325,8 +325,7 @@ node_has_status ()
 		return
 		;;
 	notlmaster)
-		! $CTDB status -n "$pnn" | \
-			grep -Eq "^hash:.* lmaster:${pnn}\$"
+		! $CTDB status | grep -Eq "^hash:.* lmaster:${pnn}\$"
 		return
 		;;
 	esac
