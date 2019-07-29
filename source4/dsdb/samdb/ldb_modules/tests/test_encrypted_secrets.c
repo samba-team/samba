@@ -340,6 +340,67 @@ static void test_key_file_long_key(void **state)
 /*
  *  Test gnutls_encryption and decryption.
  */
+static void test_gnutls_value_decryption(void **state)
+{
+	struct ldbtest_ctx *test_ctx =
+		talloc_get_type_abort(*state, struct ldbtest_ctx);
+	const struct ldb_val plain_text =
+		data_blob_string_const("A text value");
+	unsigned char iv_data[] = {
+		0xe7, 0xa3, 0x85, 0x17, 0x45, 0x73, 0xf4, 0x25,
+		0xa5, 0x56, 0xde, 0x4c,
+	};
+	unsigned char encrypted_data[] = {
+		0xac, 0x13, 0x86, 0x94, 0x3b, 0xed, 0xf2, 0x51,
+		0xec, 0x85, 0x4d, 0x00, 0x37, 0x81, 0x46, 0x15,
+		0x42, 0x13, 0xb1, 0x69, 0x49, 0x10, 0xe7, 0x9e,
+		0x15, 0xbd, 0x95, 0x75, 0x6b, 0x0c, 0xc0, 0xa4,
+	};
+	struct EncryptedSecret es = {
+		.iv = {
+			.data = iv_data,
+			.length = sizeof(iv_data),
+		},
+		.header = {
+			.magic = ENCRYPTED_SECRET_MAGIC_VALUE,
+			.version = SECRET_ATTRIBUTE_VERSION,
+			.algorithm = ENC_SECRET_AES_128_AEAD,
+		},
+		.encrypted = {
+			.data = encrypted_data,
+			.length = sizeof(encrypted_data),
+		}
+	};
+	unsigned char es_keys_blob[] = {
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+		0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+	};
+	struct es_data data = {
+		.encrypt_secrets = true,
+		.keys[0] = {
+			.data = es_keys_blob,
+			.length = sizeof(es_keys_blob),
+		},
+		.encryption_algorithm = GNUTLS_CIPHER_AES_128_GCM,
+	};
+	struct PlaintextSecret *decrypted =
+		talloc_zero(test_ctx, struct PlaintextSecret);
+	int err = LDB_SUCCESS;
+
+	gnutls_decrypt_aead(&err,
+			    test_ctx,
+			    test_ctx->ldb,
+			    &es,
+			    decrypted,
+			    &data);
+	assert_int_equal(LDB_SUCCESS, err);
+	assert_int_equal(plain_text.length, decrypted->cleartext.length);
+	assert_int_equal(0, data_blob_cmp(&decrypted->cleartext, &plain_text));
+}
+
+/*
+ *  Test gnutls_encryption and decryption.
+ */
 static void test_gnutls_value_encryption(void **state)
 {
 	struct ldbtest_ctx *test_ctx =
@@ -1125,6 +1186,10 @@ int main(void) {
 			setup,
 			teardown),
 #ifdef HAVE_GNUTLS_AEAD
+		cmocka_unit_test_setup_teardown(
+			test_gnutls_value_decryption,
+			setup_with_key,
+			teardown),
 		cmocka_unit_test_setup_teardown(
 			test_gnutls_value_encryption,
 			setup_with_key,
