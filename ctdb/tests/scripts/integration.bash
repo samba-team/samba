@@ -319,53 +319,55 @@ wait_until_ready ()
 # This function is becoming nicely overloaded.  Soon it will collapse!  :-)
 node_has_status ()
 {
-    local pnn="$1"
-    local status="$2"
+	local pnn="$1"
+	local status="$2"
 
-    local bits fpat mpat rpat
-    case "$status" in
-	(unhealthy)    bits="?|?|?|1|*" ;;
-	(healthy)      bits="?|?|?|0|*" ;;
-	(disconnected) bits="1|*" ;;
-	(connected)    bits="0|*" ;;
-	(banned)       bits="?|1|*" ;;
-	(unbanned)     bits="?|0|*" ;;
-	(disabled)     bits="?|?|1|*" ;;
-	(enabled)      bits="?|?|0|*" ;;
-	(stopped)      bits="?|?|?|?|1|*" ;;
-	(notstopped)   bits="?|?|?|?|0|*" ;;
-	(frozen)       fpat='^[[:space:]]+frozen[[:space:]]+1$' ;;
-	(unfrozen)     fpat='^[[:space:]]+frozen[[:space:]]+0$' ;;
-	(recovered)    rpat='^Recovery mode:RECOVERY \(1\)$' ;;
-	(notlmaster)   rpat="^hash:.* lmaster:${pnn}\$" ;;
+	local bits fpat mpat rpat
+	case "$status" in
+	unhealthy)    bits="?|?|?|1|*" ;;
+	healthy)      bits="?|?|?|0|*" ;;
+	disconnected) bits="1|*" ;;
+	connected)    bits="0|*" ;;
+	banned)       bits="?|1|*" ;;
+	unbanned)     bits="?|0|*" ;;
+	disabled)     bits="?|?|1|*" ;;
+	enabled)      bits="?|?|0|*" ;;
+	stopped)      bits="?|?|?|?|1|*" ;;
+	notstopped)   bits="?|?|?|?|0|*" ;;
+	frozen)       fpat='^[[:space:]]+frozen[[:space:]]+1$' ;;
+	unfrozen)     fpat='^[[:space:]]+frozen[[:space:]]+0$' ;;
+	recovered)    rpat='^Recovery mode:RECOVERY \(1\)$' ;;
+	notlmaster)   rpat="^hash:.* lmaster:${pnn}\$" ;;
 	*)
-	    echo "node_has_status: unknown status \"$status\""
-	    return 1
-    esac
+		echo "node_has_status: unknown status \"$status\""
+		return 1
+	esac
 
-    if [ -n "$bits" ] ; then
-	local out x line
+	if [ -n "$bits" ] ; then
+		local out x line
 
-	out=$($CTDB -X status 2>&1) || return 1
+		out=$($CTDB -X status 2>&1) || return 1
 
-	{
-            read x
-            while read line ; do
-		# This needs to be done in 2 steps to avoid false matches.
-		local line_bits="${line#|${pnn}|*|}"
-		[ "$line_bits" = "$line" ] && continue
-		[ "${line_bits#${bits}}" != "$line_bits" ] && return 0
-            done
-	    return 1
-	} <<<"$out" # Yay bash!
-    elif [ -n "$fpat" ] ; then
-	$CTDB statistics -n "$pnn" | egrep -q "$fpat"
-    elif [ -n "$rpat" ] ; then
-        ! $CTDB status -n "$pnn" | egrep -q "$rpat"
-    else
-	echo 'node_has_status: unknown mode, neither $bits nor $fpat is set'
-	return 1
-    fi
+		{
+			read x
+			while read line ; do
+				# This needs to be done in 2 steps to
+				# avoid false matches.
+				local line_bits="${line#|${pnn}|*|}"
+				[ "$line_bits" = "$line" ] && continue
+				[ "${line_bits#${bits}}" != "$line_bits" ] && \
+					return 0
+			done
+			return 1
+		} <<<"$out" # Yay bash!
+	elif [ -n "$fpat" ] ; then
+		$CTDB statistics -n "$pnn" | egrep -q "$fpat"
+	elif [ -n "$rpat" ] ; then
+		! $CTDB status -n "$pnn" | egrep -q "$rpat"
+	else
+		echo 'node_has_status: unknown mode, neither $bits nor $fpat is set'
+		return 1
+	fi
 }
 
 wait_until_node_has_status ()
