@@ -213,7 +213,9 @@ struct smb2_request *smb2_getinfo_fs_send(struct smb2_tree *tree, union smb_fsin
 NTSTATUS smb2_getinfo_fs_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 				union smb_fsinfo *io)
 {
-	struct smb2_getinfo b;
+	struct smb2_getinfo b = {
+		.in = {0},
+	};
 	NTSTATUS status;
 
 	status = smb2_getinfo_recv(req, mem_ctx, &b);
