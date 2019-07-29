@@ -23,8 +23,8 @@ import shutil
 from subprocess import check_output
 from samba.samdb import SamDB
 
-COMMAND = os.path.join(os.path.dirname(__file__),
-               "../../../../../source4/scripting/bin/sambadowngradedatabase")
+COMMAND = os.path.join(os.environ.get("SRCDIR_ABS"),
+               "source4/scripting/bin/sambadowngradedatabase")
 
 
 class DowngradeTestBase(BlackboxTestCase):
