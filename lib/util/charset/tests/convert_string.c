@@ -1525,6 +1525,11 @@ static bool test_gd_case_utf8_handle(struct torture_context *tctx)
 	torture_assert(tctx, strncasecmp_m_handle(iconv_handle, gd_upper,
 						 gd_lower, gd_utf8.length) == 0,
 		       "case insensitive comparison upper/lower");
+
+	data_blob_free(&gd_utf8);
+	data_blob_free(&gd_utf8_upper);
+	data_blob_free(&gd_utf8_lower);
+
 	return true;
 }
 
@@ -1589,6 +1594,11 @@ static bool test_gd_case_cp850_handle(struct torture_context *tctx)
 	torture_assert(tctx, strncasecmp_m_handle(iconv_handle, gd_upper,
 						 gd_lower, gd_cp850.length) == 0,
 		       "case insensitive comparison upper/lower");
+
+	data_blob_free(&gd_cp850);
+	data_blob_free(&gd_cp850_upper);
+	data_blob_free(&gd_cp850_lower);
+
 	return true;
 }
 
