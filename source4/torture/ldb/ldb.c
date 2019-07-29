@@ -1744,7 +1744,7 @@ static bool torture_ldb_unpack_and_filter(struct torture_context *torture,
 struct torture_suite *torture_ldb(TALLOC_CTX *mem_ctx)
 {
 	int i;
-	struct ldb_val *bins = talloc_array(NULL, struct ldb_val, 2);
+	struct ldb_val *bins = talloc_array(mem_ctx, struct ldb_val, 2);
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "ldb");
 
 	if (suite == NULL) {
