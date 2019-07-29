@@ -45,6 +45,7 @@
 #include "lib/util/base64.h"
 #include "lib/util/time.h"
 #include "lib/gencache.h"
+#include "lib/util/sys_rw.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -4800,6 +4801,274 @@ static void oplock4_got_open(struct tevent_req *req)
 		*state->fnum2 = 0xffff;
 	}
 }
+
+#ifdef HAVE_KERNEL_OPLOCKS_LINUX
+
+struct oplock5_state {
+	int pipe_down_fd;
+};
+
+/*
+ * Async open the file that has a kernel oplock, do an echo to get
+ * that 100% across, close the file to signal to the child fd that the
+ * oplock can be dropped, wait for the open reply.
+ */
+
+static void oplock5_opened(struct tevent_req *subreq);
+static void oplock5_pong(struct tevent_req *subreq);
+static void oplock5_timedout(struct tevent_req *subreq);
+
+static struct tevent_req *oplock5_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *fname,
+	int pipe_down_fd)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct oplock5_state *state = NULL;
+	static uint8_t data = 0;
+
+	req = tevent_req_create(mem_ctx, &state, struct oplock5_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->pipe_down_fd = pipe_down_fd;
+
+	subreq = cli_ntcreate_send(
+		state,
+		ev,
+		cli,
+		fname,
+		0,			/* CreatFlags */
+		SEC_FILE_READ_DATA,    /* DesiredAccess */
+		FILE_ATTRIBUTE_NORMAL,  /* FileAttributes */
+		FILE_SHARE_WRITE|FILE_SHARE_READ, /* ShareAccess */
+		FILE_OPEN,		 /* CreateDisposition */
+		FILE_NON_DIRECTORY_FILE, /* CreateOptions */
+		0,			 /* Impersonation */
+		0);			 /* SecurityFlags */
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, oplock5_opened, req);
+
+	subreq = cli_echo_send(
+		state,
+		ev,
+		cli,
+		1,
+		(DATA_BLOB) { .data = &data, .length = sizeof(data) });
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, oplock5_pong, req);
+
+	subreq = tevent_wakeup_send(state, ev, timeval_current_ofs(20, 0));
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, oplock5_timedout, req);
+
+	return req;
+}
+
+static void oplock5_opened(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	NTSTATUS status;
+	uint16_t fnum;
+
+	status = cli_ntcreate_recv(subreq, &fnum, NULL);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static void oplock5_pong(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct oplock5_state *state = tevent_req_data(
+		req, struct oplock5_state);
+	NTSTATUS status;
+
+	status = cli_echo_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	close(state->pipe_down_fd);
+}
+
+static void oplock5_timedout(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	bool ok;
+
+	ok = tevent_wakeup_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		tevent_req_oom(req);
+		return;
+	}
+	tevent_req_nterror(req, NT_STATUS_TIMEOUT);
+}
+
+static NTSTATUS oplock5_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static bool run_oplock5(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	struct cli_state *cli = NULL;
+	const char *fname = "oplock5.txt";
+	int pipe_down[2], pipe_up[2];
+	pid_t child_pid;
+	uint8_t c = '\0';
+	NTSTATUS status;
+	int ret;
+	bool ok;
+
+	printf("starting oplock5\n");
+
+	if (local_path == NULL) {
+		d_fprintf(stderr, "oplock5 must be given a local path via "
+			  "-l <localpath>\n");
+		return false;
+	}
+
+	ret = pipe(pipe_down);
+	if (ret == -1) {
+		d_fprintf(stderr, "pipe() failed: %s\n", strerror(errno));
+		return false;
+	}
+	ret = pipe(pipe_up);
+	if (ret == -1) {
+		d_fprintf(stderr, "pipe() failed: %s\n", strerror(errno));
+		return false;
+	}
+
+	child_pid = fork();
+	if (child_pid == -1) {
+		d_fprintf(stderr, "fork() failed: %s\n", strerror(errno));
+		return false;
+	}
+
+	if (child_pid == 0) {
+		char *local_file = NULL;
+		int fd;
+
+		close(pipe_down[1]);
+		close(pipe_up[0]);
+
+		local_file = talloc_asprintf(
+			talloc_tos(), "%s/%s", local_path, fname);
+		if (local_file == 0) {
+			c = 1;
+			goto do_write;
+		}
+		fd = open(local_file, O_RDWR|O_CREAT, 0644);
+		if (fd == -1) {
+			d_fprintf(stderr,
+				  "open(%s) in child failed: %s\n",
+				  local_file,
+				  strerror(errno));
+			c = 2;
+			goto do_write;
+		}
+
+		signal(SIGIO, SIG_IGN);
+
+		ret = fcntl(fd, F_SETLEASE, F_WRLCK);
+		if (ret == -1) {
+			d_fprintf(stderr,
+				  "SETLEASE in child failed: %s\n",
+				  strerror(errno));
+			c = 3;
+			goto do_write;
+		}
+
+	do_write:
+		ret = sys_write(pipe_up[1], &c, sizeof(c));
+		if (ret == -1) {
+			d_fprintf(stderr,
+				  "sys_write failed: %s\n",
+				  strerror(errno));
+			exit(4);
+		}
+		ret = sys_read(pipe_down[0], &c, sizeof(c));
+		if (ret == -1) {
+			d_fprintf(stderr,
+				  "sys_read failed: %s\n",
+				  strerror(errno));
+			exit(5);
+		}
+		exit(0);
+	}
+
+	close(pipe_up[1]);
+	close(pipe_down[0]);
+
+	ret = sys_read(pipe_up[0], &c, sizeof(c));
+	if (ret != 1) {
+		d_fprintf(stderr,
+			  "sys_read failed: %s\n",
+			  strerror(errno));
+		return false;
+	}
+	if (c != 0) {
+		d_fprintf(stderr, "got error code %"PRIu8"\n", c);
+		return false;
+	}
+
+	ok = torture_open_connection(&cli, 0);
+	if (!ok) {
+		d_fprintf(stderr, "torture_open_connection failed\n");
+		return false;
+	}
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		d_fprintf(stderr, "samba_tevent_context_init failed\n");
+		return false;
+	}
+
+	req = oplock5_send(ev, ev, cli, fname, pipe_down[1]);
+	if (req == NULL) {
+		d_fprintf(stderr, "oplock5_send failed\n");
+		return false;
+	}
+
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		d_fprintf(stderr,
+			  "tevent_req_poll_ntstatus failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	status = oplock5_recv(req);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "oplock5 failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	return true;
+}
+
+#endif /* HAVE_KERNEL_OPLOCKS_LINUX */
 
 /*
   Test delete on close semantics.
@@ -13545,6 +13814,10 @@ static struct {
 	{
 		.name  = "OPLOCK4",
 		.fn    =  run_oplock4,
+	},
+	{
+		.name  = "OPLOCK5",
+		.fn    =  run_oplock5,
 	},
 	{
 		.name  = "DIR",

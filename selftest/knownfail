@@ -15,6 +15,7 @@
 ^samba3.smbtorture_s3.crypt_server # expected to give ACCESS_DENIED as SMB1 encryption isn't used
 ^samba3.smbtorture_s3.*.LOCK12.*\(fileserver\)
 ^samba3.smbtorture_s3.*.LOCK12.*\(nt4_dc\)
+^samba3.smbtorture_s3.*.OPLOCK5.*\(fileserver\)
 ^samba3.nbt.dgram.*netlogon2\(nt4_dc\)
 ^samba3.*rap.sam.*.useradd # Not provided by Samba 3
 ^samba3.*rap.sam.*.userdelete # Not provided by Samba 3
