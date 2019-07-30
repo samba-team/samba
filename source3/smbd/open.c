@@ -2488,10 +2488,10 @@ static void defer_open_done(struct tevent_req *req)
  * Actually attempt the kernel oplock polling open.
  */
 
-static void kernel_oplock_poll_open_timer(struct tevent_context *ev,
-				      struct tevent_timer *te,
-				      struct timeval current_time,
-				      void *private_data)
+static void poll_open_fn(struct tevent_context *ev,
+			 struct tevent_timer *te,
+			 struct timeval current_time,
+			 void *private_data)
 {
 	struct deferred_open_record *open_rec = talloc_get_type_abort(
 		private_data, struct deferred_open_record);
@@ -2502,22 +2502,24 @@ static void kernel_oplock_poll_open_timer(struct tevent_context *ev,
 	if (!ok) {
 		exit_server("schedule_deferred_open_message_smb failed");
 	}
-	DBG_DEBUG("kernel_oplock_poll_open_timer fired. Retrying open !\n");
+	DBG_DEBUG("timer fired. Retrying open !\n");
 }
 
 /**
  * Reschedule an open for 1 second from now, if not timed out.
  **/
-static void setup_kernel_oplock_poll_open(struct smb_request *req,
-					  struct file_id id)
+static void setup_poll_open(
+	struct smb_request *req,
+	struct file_id id,
+	struct timeval max_timeout,
+	struct timeval interval)
 {
 
 	bool ok;
 	struct deferred_open_record *open_rec = NULL;
 	/* Maximum wait time. */
-	struct timeval timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
 
-	if (request_timed_out(req, timeout)) {
+	if (request_timed_out(req, max_timeout)) {
 		return;
 	}
 
@@ -2529,18 +2531,19 @@ static void setup_kernel_oplock_poll_open(struct smb_request *req,
 	open_rec->xconn = req->xconn;
 	open_rec->mid = req->mid;
 
-	open_rec->te = tevent_add_timer(req->sconn->ev_ctx,
-					open_rec,
-					timeval_current_ofs(1, 0),
-					kernel_oplock_poll_open_timer,
-					open_rec);
+	open_rec->te = tevent_add_timer(
+		req->sconn->ev_ctx,
+		open_rec,
+		timeval_current_ofs(interval.tv_sec, interval.tv_usec),
+		poll_open_fn,
+		open_rec);
 	if (open_rec->te == NULL) {
 		DBG_WARNING("tevent_add_timer failed\n");
 		TALLOC_FREE(open_rec);
 		return;
 	}
 
-	ok = push_deferred_open_message_smb(req, timeout, id, open_rec);
+	ok = push_deferred_open_message_smb(req, max_timeout, id, open_rec);
 	if (!ok) {
 		DBG_WARNING("push_deferred_open_message_smb failed\n");
 		TALLOC_FREE(open_rec);
@@ -3304,7 +3307,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 * second to retry a non-blocking open until the time
 			 * expires.
 			 */
-			setup_kernel_oplock_poll_open(req, fsp->file_id);
+			setup_poll_open(
+				req,
+				fsp->file_id,
+				timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0),
+				timeval_set(1, 0));
 			DBG_DEBUG("No Samba oplock around after EWOULDBLOCK. "
 				"Retrying with poll\n");
 			return NT_STATUS_SHARING_VIOLATION;
@@ -3330,7 +3337,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * second to retry a non-blocking open until the time
 		 * expires.
 		 */
-		setup_kernel_oplock_poll_open(req, fsp->file_id);
+		setup_poll_open(
+			req,
+			fsp->file_id,
+			timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0),
+			timeval_set(1, 0));
 
 		TALLOC_FREE(lck);
 		DBG_DEBUG("No Samba oplock around after EWOULDBLOCK. "
