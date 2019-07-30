@@ -1449,6 +1449,9 @@ sub provision($$$$$$$$$)
 	my $widelinks_linkdir="$shrdir/widelinks_foo";
 	push(@dirs,$widelinks_linkdir);
 
+	my $fsrvp_shrdir="$shrdir/fsrvp";
+	push(@dirs,$fsrvp_shrdir);
+
 	my $shadow_tstdir="$shrdir/shadow";
 	push(@dirs,$shadow_tstdir);
 	my $shadow_mntdir="$shadow_tstdir/mount";
@@ -2024,14 +2027,14 @@ sub provision($$$$$$$$$)
 	guest ok = yes
 
 [fsrvp_share]
-	path = $shrdir
+	path = $fsrvp_shrdir
 	comment = fake shapshots using rsync
 	vfs objects = shell_snap shadow_copy2
 	shell_snap:check path command = $fake_snap_pl --check
 	shell_snap:create command = $fake_snap_pl --create
 	shell_snap:delete command = $fake_snap_pl --delete
 	# a relative path here fails, the snapshot dir is no longer found
-	shadow:snapdir = $shrdir/.snapshots
+	shadow:snapdir = $fsrvp_shrdir/.snapshots
 
 [shadow1]
 	path = $shadow_shrdir
