@@ -2384,23 +2384,6 @@ static bool request_timed_out(struct smb_request *req, struct timeval timeout)
 	return (timeval_compare(&end_time, &now) < 0);
 }
 
-static struct deferred_open_record *deferred_open_record_create(
-	bool async_open)
-{
-	struct deferred_open_record *record = NULL;
-
-	record = talloc(NULL, struct deferred_open_record);
-	if (record == NULL) {
-		return NULL;
-	}
-
-	*record = (struct deferred_open_record) {
-		.async_open = async_open,
-	};
-
-	return record;
-}
-
 struct defer_open_state {
 	struct smbXsrv_connection *xconn;
 	uint64_t mid;
@@ -2440,7 +2423,7 @@ static void defer_open(struct share_mode_lock *lck,
 		  delayed_for_oplocks ? "yes" : "no",
 		  file_id_string_tos(&id));
 
-	open_rec = deferred_open_record_create(false);
+	open_rec = talloc_zero(NULL, struct deferred_open_record);
 	if (open_rec == NULL) {
 		TALLOC_FREE(lck);
 		exit_server("talloc failed");
@@ -2538,7 +2521,7 @@ static void setup_kernel_oplock_poll_open(struct smb_request *req,
 		return;
 	}
 
-	open_rec = deferred_open_record_create(false);
+	open_rec = talloc_zero(NULL, struct deferred_open_record);
 	if (open_rec == NULL) {
 		exit_server("talloc failed");
 	}
@@ -2661,10 +2644,11 @@ static void schedule_async_open(struct smb_request *req)
 		return;
 	}
 
-	open_rec = deferred_open_record_create(true);
+	open_rec = talloc_zero(NULL, struct deferred_open_record);
 	if (open_rec == NULL) {
 		exit_server("deferred_open_record_create failed");
 	}
+	open_rec->async_open = true;
 
 	ok = push_deferred_open_message_smb(
 		req, timeout, (struct file_id){0}, open_rec);
