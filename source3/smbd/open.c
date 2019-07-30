@@ -5304,7 +5304,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	/* Save the requested allocation size. */
 	if ((info == FILE_WAS_CREATED) || (info == FILE_WAS_OVERWRITTEN)) {
-		if ((allocation_size > fsp->fsp_name->st.st_ex_size)
+		if ((allocation_size > (uint64_t)fsp->fsp_name->st.st_ex_size)
 		    && !(fsp->is_directory))
 		{
 			fsp->initial_allocation_size = smb_roundup(
