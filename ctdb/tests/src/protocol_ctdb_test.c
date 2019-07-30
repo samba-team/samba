@@ -284,7 +284,7 @@ PROTOCOL_CTDB4_TEST(struct ctdb_req_dmaster, ctdb_req_dmaster,
 PROTOCOL_CTDB4_TEST(struct ctdb_reply_dmaster, ctdb_reply_dmaster,
 			CTDB_REPLY_DMASTER);
 
-#define NUM_CONTROLS	155
+#define NUM_CONTROLS	156
 
 PROTOCOL_CTDB2_TEST(struct ctdb_req_control_data, ctdb_req_control_data);
 PROTOCOL_CTDB2_TEST(struct ctdb_reply_control_data, ctdb_reply_control_data);

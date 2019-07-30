@@ -2361,3 +2361,27 @@ int ctdb_reply_control_vacuum_fetch(struct ctdb_reply_control *reply)
 
 	return reply->status;
 }
+
+/* CTDB_CONTROL_DB_VACUUM */
+
+void ctdb_req_control_db_vacuum(struct ctdb_req_control *request,
+				struct ctdb_db_vacuum *db_vacuum)
+{
+	request->opcode = CTDB_CONTROL_DB_VACUUM;
+	request->pad = 0;
+	request->srvid = 0;
+	request->client_id = 0;
+	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_DB_VACUUM;
+	request->rdata.data.db_vacuum = db_vacuum;
+}
+
+int ctdb_reply_control_db_vacuum(struct ctdb_reply_control *reply)
+{
+	if (reply->rdata.opcode != CTDB_CONTROL_DB_VACUUM) {
+		return EPROTO;
+	}
+
+	return reply->status;
+}
