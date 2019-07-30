@@ -559,12 +559,15 @@ int ldb_unpack_get_format(const struct ldb_val *data,
 #define LDB_UNPACK_DATA_FLAG_NO_ATTRS        0x0008
 #define LDB_UNPACK_DATA_FLAG_READ_LOCKED     0x0010
 
-/* In-use packing formats */
-#define LDB_PACKING_FORMAT 0x26011967
-#define LDB_PACKING_FORMAT_V2 0x26011968
+enum ldb_pack_format {
 
-/* Old packing formats */
-#define LDB_PACKING_FORMAT_NODN 0x26011966
+	/* Old packing format (based on a somewhat arbitrary date) */
+	LDB_PACKING_FORMAT_NODN = 0x26011966,
+
+	/* In-use packing formats */
+	LDB_PACKING_FORMAT,
+	LDB_PACKING_FORMAT_V2
+};
 
 /**
  Forces a specific ldb handle to use the global event context.
