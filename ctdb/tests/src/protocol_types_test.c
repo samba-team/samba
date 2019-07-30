@@ -38,6 +38,7 @@ PROTOCOL_TYPE3_TEST(struct ctdb_dbid, ctdb_dbid);
 PROTOCOL_TYPE3_TEST(struct ctdb_dbid_map, ctdb_dbid_map);
 PROTOCOL_TYPE3_TEST(struct ctdb_pulldb, ctdb_pulldb);
 PROTOCOL_TYPE3_TEST(struct ctdb_pulldb_ext, ctdb_pulldb_ext);
+PROTOCOL_TYPE3_TEST(struct ctdb_db_vacuum, ctdb_db_vacuum);
 PROTOCOL_TYPE1_TEST(struct ctdb_ltdb_header, ctdb_ltdb_header);
 PROTOCOL_TYPE3_TEST(struct ctdb_rec_data, ctdb_rec_data);
 PROTOCOL_TYPE3_TEST(struct ctdb_rec_buffer, ctdb_rec_buffer);
@@ -143,6 +144,7 @@ int main(int argc, char *argv[])
 	TEST_FUNC(ctdb_dbid_map)();
 	TEST_FUNC(ctdb_pulldb)();
 	TEST_FUNC(ctdb_pulldb_ext)();
+	TEST_FUNC(ctdb_db_vacuum)();
 	TEST_FUNC(ctdb_ltdb_header)();
 	TEST_FUNC(ctdb_rec_data)();
 	TEST_FUNC(ctdb_rec_buffer)();
