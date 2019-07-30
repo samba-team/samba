@@ -1378,28 +1378,23 @@ static void vacuum_child_handler(struct tevent_context *ev,
 /*
  * this event is called every time we need to start a new vacuum process
  */
-static void ctdb_vacuum_event(struct tevent_context *ev,
-			      struct tevent_timer *te,
-			      struct timeval t, void *private_data)
+static int vacuum_db_child(TALLOC_CTX *mem_ctx,
+			   struct ctdb_db_context *ctdb_db,
+			   bool full_vacuum_run,
+			   struct ctdb_vacuum_child_context **out)
 {
-	struct ctdb_vacuum_handle *vacuum_handle = talloc_get_type(private_data, struct ctdb_vacuum_handle);
-	struct ctdb_db_context *ctdb_db = vacuum_handle->ctdb_db;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
 	struct ctdb_vacuum_child_context *child_ctx;
 	struct tevent_fd *fde;
-	bool full_vacuum_run = false;
 	int ret;
 
 	/* we don't vacuum if we are in recovery mode, or db frozen */
 	if (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE ||
 	    ctdb_db_frozen(ctdb_db)) {
-		DEBUG(DEBUG_INFO, ("Not vacuuming %s (%s)\n", ctdb_db->db_name,
-				   ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE ?
-					"in recovery" : "frozen"));
-		tevent_add_timer(ctdb->ev, vacuum_handle,
-				 timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
-				 ctdb_vacuum_event, vacuum_handle);
-		return;
+		D_INFO("Not vacuuming %s (%s)\n", ctdb_db->db_name,
+		       ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE ?
+		       "in recovery" : "frozen");
+		return EAGAIN;
 	}
 
 	/* Do not allow multiple vacuuming child processes to be active at the
@@ -1407,35 +1402,22 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 	 * new vacuuming event to stagger vacuuming events.
 	 */
 	if (ctdb->vacuumer != NULL) {
-		tevent_add_timer(ctdb->ev, vacuum_handle,
-				 timeval_current_ofs(0, 500*1000),
-				 ctdb_vacuum_event, vacuum_handle);
-		return;
+		return EBUSY;
 	}
 
-	child_ctx = talloc(vacuum_handle, struct ctdb_vacuum_child_context);
+	child_ctx = talloc_zero(mem_ctx, struct ctdb_vacuum_child_context);
 	if (child_ctx == NULL) {
-		DEBUG(DEBUG_CRIT, (__location__ " Failed to allocate child context for vacuuming of %s\n", ctdb_db->db_name));
-		ctdb_fatal(ctdb, "Out of memory when crating vacuum child context. Shutting down\n");
+		DBG_ERR("Failed to allocate child context for vacuuming of %s\n",
+			ctdb_db->db_name);
+		return ENOMEM;
 	}
 
 
 	ret = pipe(child_ctx->fd);
 	if (ret != 0) {
 		talloc_free(child_ctx);
-		DEBUG(DEBUG_ERR, ("Failed to create pipe for vacuum child process.\n"));
-		tevent_add_timer(ctdb->ev, vacuum_handle,
-				 timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
-				 ctdb_vacuum_event, vacuum_handle);
-		return;
-	}
-
-	if (vacuum_handle->fast_path_count >=
-	    ctdb->tunable.vacuum_fast_path_count) {
-		if (ctdb->tunable.vacuum_fast_path_count > 0) {
-			full_vacuum_run = true;
-		}
-		vacuum_handle->fast_path_count = 0;
+		D_ERR("Failed to create pipe for vacuum child process.\n");
+		return EAGAIN;
 	}
 
 	child_ctx->child_pid = ctdb_fork(ctdb);
@@ -1443,11 +1425,8 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 		close(child_ctx->fd[0]);
 		close(child_ctx->fd[1]);
 		talloc_free(child_ctx);
-		DEBUG(DEBUG_ERR, ("Failed to fork vacuum child process.\n"));
-		tevent_add_timer(ctdb->ev, vacuum_handle,
-				 timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
-				 ctdb_vacuum_event, vacuum_handle);
-		return;
+		D_ERR("Failed to fork vacuum child process.\n");
+		return EAGAIN;
 	}
 
 
@@ -1455,11 +1434,15 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 		char cc = 0;
 		close(child_ctx->fd[0]);
 
-		DEBUG(DEBUG_INFO,("Vacuuming child process %d for db %s started\n", getpid(), ctdb_db->db_name));
+		D_INFO("Vacuuming child process %d for db %s started\n",
+		       getpid(),
+		       ctdb_db->db_name);
 		prctl_set_comment("ctdb_vacuum");
-		if (switch_from_server_to_client(ctdb) != 0) {
-			DEBUG(DEBUG_CRIT, (__location__ "ERROR: failed to switch vacuum daemon into client mode. Shutting down.\n"));
-			_exit(1);
+		ret = switch_from_server_to_client(ctdb);
+		if (ret != 0) {
+			DBG_ERR("ERROR: failed to switch vacuum daemon "
+				"into client mode.\n");
+			return EIO;
 		}
 
 		cc = ctdb_vacuum_and_repack_db(ctdb_db, full_vacuum_run);
@@ -1483,9 +1466,8 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 	talloc_free(ctdb_db->delete_queue);
 	ctdb_db->delete_queue = trbt_create(ctdb_db, 0);
 	if (ctdb_db->delete_queue == NULL) {
-		/* fatal here? ... */
-		ctdb_fatal(ctdb, "Out of memory when re-creating delete queue "
-				 "in parent context. Shutting down\n");
+		DBG_ERR("Out of memory when re-creating vacuum tree\n");
+		return ENOMEM;
 	}
 
 	talloc_free(ctdb_db->fetch_queue);
@@ -1496,16 +1478,72 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 	}
 
 	tevent_add_timer(ctdb->ev, child_ctx,
-			 timeval_current_ofs(ctdb->tunable.vacuum_max_run_time, 0),
+			 timeval_current_ofs(ctdb->tunable.vacuum_max_run_time,
+					     0),
 			 vacuum_child_timeout, child_ctx);
 
-	DEBUG(DEBUG_DEBUG, (__location__ " Created PIPE FD:%d to child vacuum process\n", child_ctx->fd[0]));
+	DBG_DEBUG(" Created PIPE FD:%d to child vacuum process\n",
+		  child_ctx->fd[0]);
 
 	fde = tevent_add_fd(ctdb->ev, child_ctx, child_ctx->fd[0],
 			    TEVENT_FD_READ, vacuum_child_handler, child_ctx);
 	tevent_fd_set_auto_close(fde);
 
-	child_ctx->vacuum_handle = vacuum_handle;
+	child_ctx->vacuum_handle = ctdb_db->vacuum_handle;
+
+	*out = child_ctx;
+	return 0;
+}
+
+static void ctdb_vacuum_event(struct tevent_context *ev,
+			      struct tevent_timer *te,
+			      struct timeval t, void *private_data)
+{
+	struct ctdb_vacuum_handle *vacuum_handle = talloc_get_type(
+		private_data, struct ctdb_vacuum_handle);
+	struct ctdb_db_context *ctdb_db = vacuum_handle->ctdb_db;
+	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	struct ctdb_vacuum_child_context *child_ctx = NULL;
+	uint32_t fast_path_max = ctdb->tunable.vacuum_fast_path_count;
+	bool full_vacuum_run = false;
+	int ret;
+
+	if (vacuum_handle->fast_path_count >= fast_path_max) {
+		if (fast_path_max > 0) {
+			full_vacuum_run = true;
+		}
+		vacuum_handle->fast_path_count = 0;
+	}
+
+	ret = vacuum_db_child(vacuum_handle,
+			      ctdb_db,
+			      full_vacuum_run,
+			      &child_ctx);
+
+	if (ret == 0) {
+		return;
+	}
+
+	switch (ret) {
+	case EBUSY:
+		/* Stagger */
+		tevent_add_timer(ctdb->ev,
+				 vacuum_handle,
+				 timeval_current_ofs(0, 500*1000),
+				 ctdb_vacuum_event,
+				 vacuum_handle);
+		break;
+
+	default:
+		/* Temporary failure, schedule next attempt */
+		tevent_add_timer(ctdb->ev,
+				 vacuum_handle,
+				 timeval_current_ofs(
+					 get_vacuum_interval(ctdb_db), 0),
+				 ctdb_vacuum_event,
+				 vacuum_handle);
+	}
+
 }
 
 void ctdb_stop_vacuuming(struct ctdb_context *ctdb)
