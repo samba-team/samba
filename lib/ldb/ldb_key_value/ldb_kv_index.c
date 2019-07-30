@@ -3584,9 +3584,11 @@ static int re_pack(struct ldb_kv_private *ldb_kv,
 	 */
 	if ((!ctx->normal_record_seen) && (!ldb_dn_is_special(msg->dn))) {
 		ldb_debug(ldb, LDB_DEBUG_ALWAYS_LOG,
-			  "Repacking database from v%u to v%u format",
+			  "Repacking database from v%u to v%u format "
+			  "(first record %s)",
 			  displayable_pack_version(ctx->old_version),
-			  displayable_pack_version(ldb_kv->pack_format_version));
+			  displayable_pack_version(ldb_kv->pack_format_version),
+			  ldb_dn_get_linearized(msg->dn));
 		ctx->normal_record_seen = true;
 	}
 
