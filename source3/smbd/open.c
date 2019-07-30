@@ -2523,15 +2523,11 @@ static void setup_kernel_oplock_poll_open(struct smb_request *req,
 
 	open_rec = talloc_zero(NULL, struct deferred_open_record);
 	if (open_rec == NULL) {
-		exit_server("talloc failed");
+		DBG_WARNING("talloc failed\n");
+		return;
 	}
 	open_rec->xconn = req->xconn;
 	open_rec->mid = req->mid;
-
-	ok = push_deferred_open_message_smb(req, timeout, id, open_rec);
-	if (!ok) {
-		exit_server("push_deferred_open_message_smb failed");
-	}
 
 	open_rec->te = tevent_add_timer(req->sconn->ev_ctx,
 					open_rec,
@@ -2539,7 +2535,16 @@ static void setup_kernel_oplock_poll_open(struct smb_request *req,
 					kernel_oplock_poll_open_timer,
 					open_rec);
 	if (open_rec->te == NULL) {
-		exit_server("tevent_add_timer failed");
+		DBG_WARNING("tevent_add_timer failed\n");
+		TALLOC_FREE(open_rec);
+		return;
+	}
+
+	ok = push_deferred_open_message_smb(req, timeout, id, open_rec);
+	if (!ok) {
+		DBG_WARNING("push_deferred_open_message_smb failed\n");
+		TALLOC_FREE(open_rec);
+		return;
 	}
 
 	DBG_DEBUG("poll request time [%s] mid [%" PRIu64 "] file_id [%s]\n",
