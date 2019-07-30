@@ -490,7 +490,7 @@ static ssize_t sl_pack_string(char *s, char *buf, ssize_t offset, size_t bufsize
 	}
 
 	memset(buf + offset, 0, octets * 8);
-	strncpy(buf + offset, s, len);
+	memcpy(buf + offset, s, len);
 	offset += octets * 8;
 
 	return offset;
