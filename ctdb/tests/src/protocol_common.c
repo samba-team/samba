@@ -310,6 +310,19 @@ void verify_ctdb_pulldb_ext(struct ctdb_pulldb_ext *p1,
 	assert(p1->srvid == p2->srvid);
 }
 
+void fill_ctdb_db_vacuum(TALLOC_CTX *mem_ctx, struct ctdb_db_vacuum *p)
+{
+	fill_ctdb_uint32(&p->db_id);
+	fill_ctdb_bool(&p->full_vacuum_run);
+}
+
+void verify_ctdb_db_vacuum(struct ctdb_db_vacuum *p1,
+			    struct ctdb_db_vacuum *p2)
+{
+	verify_ctdb_uint32(&p1->db_id, &p2->db_id);
+	verify_ctdb_bool(&p1->full_vacuum_run, &p2->full_vacuum_run);
+}
+
 void fill_ctdb_ltdb_header(struct ctdb_ltdb_header *p)
 {
 	p->rsn = rand64();

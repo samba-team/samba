@@ -83,6 +83,16 @@ void ctdb_pulldb_ext_push(struct ctdb_pulldb_ext *in, uint8_t *buf,
 int ctdb_pulldb_ext_pull(uint8_t *buf, size_t buflen, TALLOC_CTX *mem_ctx,
 			 struct ctdb_pulldb_ext **out, size_t *npull);
 
+size_t ctdb_db_vacuum_len(struct ctdb_db_vacuum *in);
+void ctdb_db_vacuum_push(struct ctdb_db_vacuum *in,
+			 uint8_t *buf,
+			 size_t *npush);
+int ctdb_db_vacuum_pull(uint8_t *buf,
+			size_t buflen,
+			TALLOC_CTX *mem_ctx,
+			struct ctdb_db_vacuum **out,
+			size_t *npull);
+
 size_t ctdb_traverse_start_len(struct ctdb_traverse_start *in);
 void ctdb_traverse_start_push(struct ctdb_traverse_start *in, uint8_t *buf,
 			      size_t *npush);
