@@ -1251,6 +1251,24 @@ bld.SAMBA3_BINARY('msg_source',
                       ''',
                  install=False)
 
+bld.SAMBA3_BINARY('test_mdsparser_es',
+                 source='''
+                 rpc_server/mdssvc/test_mdsparser_es.c
+                 rpc_server/mdssvc/es_parser.y
+                 rpc_server/mdssvc/es_lexer.l
+                 rpc_server/mdssvc/es_mapping.c
+                 ''',
+                 deps='''
+                 samba3-util
+                 talloc
+                 smbconf
+                 jansson
+                 cmocka
+                 popt_samba3_cmdline
+                 ''',
+                 enabled=bld.env.spotlight_backend_es,
+                 install=False)
+
 bld.SAMBA3_BINARY('pdbtest',
                  source='torture/pdbtest.c',
                  deps='''
