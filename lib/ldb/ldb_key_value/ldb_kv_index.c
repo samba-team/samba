@@ -3599,6 +3599,7 @@ static int re_pack(struct ldb_kv_private *ldb_kv,
 			  ctx->count);
 	}
 
+	talloc_free(msg);
 	return 0;
 }
 
