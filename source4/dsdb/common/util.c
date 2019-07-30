@@ -3582,18 +3582,12 @@ int samdb_dns_host_name(struct ldb_context *sam_ctx, const char **host_name)
 
 	ret = dsdb_search_dn(sam_ctx, tmp_ctx, &res, NULL, attrs, 0);
 
-	if (res->count != 1 || ret != LDB_SUCCESS) {
+	if (res == NULL || res->count != 1 || ret != LDB_SUCCESS) {
 		DEBUG(0, ("Failed to get rootDSE for dnsHostName: %s",
 			  ldb_errstring(sam_ctx)));
 		TALLOC_FREE(tmp_ctx);
 		return ret;
 	}
-	/* satisfy clang */
-	if (res == NULL) {
-		TALLOC_FREE(tmp_ctx);
-		return LDB_ERR_OTHER;
-	}
-
 
 	_host_name = ldb_msg_find_attr_as_string(res->msgs[0],
 						 "dnsHostName",
