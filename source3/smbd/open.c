@@ -2567,6 +2567,36 @@ static bool setup_poll_open(
 	return true;
 }
 
+bool defer_smb1_sharing_violation(struct smb_request *req)
+{
+	bool ok;
+	int timeout_usecs;
+
+	if (!lp_defer_sharing_violations()) {
+		return false;
+	}
+
+	/*
+	 * Try every 200msec up to (by default) one second. To be
+	 * precise, according to behaviour note <247> in [MS-CIFS],
+	 * the server tries 5 times. But up to one second should be
+	 * close enough.
+	 */
+
+	timeout_usecs = lp_parm_int(
+		SNUM(req->conn),
+		"smbd",
+		"sharedelay",
+		SHARING_VIOLATION_USEC_WAIT);
+
+	ok = setup_poll_open(
+		req,
+		(struct file_id) {0},
+		(struct timeval) { .tv_usec = timeout_usecs },
+		(struct timeval) { .tv_usec = 200000 });
+	return ok;
+}
+
 /****************************************************************************
  On overwrite open ensure that the attributes match.
 ****************************************************************************/
