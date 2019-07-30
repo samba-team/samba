@@ -220,6 +220,9 @@ struct tevent_context;
 enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR,
 		      LDB_DEBUG_WARNING, LDB_DEBUG_TRACE};
 
+/* alias for something that's not a fatal error but we really want to log */
+#define LDB_DEBUG_ALWAYS_LOG  LDB_DEBUG_FATAL
+
 /**
   the user can optionally supply a debug function. The function
   is based on the vfprintf() style of interface, but with the addition

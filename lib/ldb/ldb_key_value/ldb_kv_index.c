@@ -3571,7 +3571,7 @@ static int re_pack(struct ldb_kv_private *ldb_kv,
 	 * want to spam the log.
 	 */
 	if ((!ctx->normal_record_seen) && (!ldb_dn_is_special(msg->dn))) {
-		ldb_debug(ldb, LDB_DEBUG_WARNING,
+		ldb_debug(ldb, LDB_DEBUG_ALWAYS_LOG,
 			  "Repacking database with format %#010x",
 			  ldb_kv->pack_format_version);
 		ctx->normal_record_seen = true;
