@@ -3506,38 +3506,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION));
 
-		/*
-		 * If we're returning a share violation, ensure we
-		 * cope with the braindead 1 second delay (SMB1 only).
-		 */
-
-		if (!(oplock_request & INTERNAL_OPEN_ONLY) &&
-		    !conn->sconn->using_smb2 &&
-		    lp_defer_sharing_violations()) {
-			struct timeval timeout;
-			int timeout_usecs;
-
-			/* this is a hack to speed up torture tests
-			   in 'make test' */
-			timeout_usecs = lp_parm_int(SNUM(conn),
-						    "smbd","sharedelay",
-						    SHARING_VIOLATION_USEC_WAIT);
-
-			/* This is a relative time, added to the absolute
-			   request_time value to get the absolute timeout time.
-			   Note that if this is the second or greater time we enter
-			   this codepath for this particular request mid then
-			   request_time is left as the absolute time of the *first*
-			   time this request mid was processed. This is what allows
-			   the request to eventually time out. */
-
-			timeout = timeval_set(0, timeout_usecs);
-
-			if (!request_timed_out(req, timeout)) {
-				defer_open(lck, timeout, req, false, id);
-			}
-		}
-
 		TALLOC_FREE(lck);
 		fd_close(fsp);
 

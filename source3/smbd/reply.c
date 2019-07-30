@@ -2308,6 +2308,10 @@ void reply_open(struct smb_request *req)
 			create_options,
 			private_flags);
 		if (fsp == NULL) {
+			bool ok = defer_smb1_sharing_violation(req);
+			if (ok) {
+				goto out;
+			}
 			reply_openerror(req, status);
 			goto out;
 		}
@@ -2495,9 +2499,15 @@ void reply_open_and_X(struct smb_request *req)
 			create_options,
 			private_flags);
 		if (fsp == NULL) {
+			bool ok = defer_smb1_sharing_violation(req);
+			if (ok) {
+				goto out;
+			}
 			reply_openerror(req, status);
 			goto out;
 		}
+
+
 		smb_action = FILE_WAS_OPENED;
 	}
 
@@ -2748,6 +2758,12 @@ void reply_mknew(struct smb_request *req)
 			/* We have re-scheduled this call. */
 			goto out;
 		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+			bool ok = defer_smb1_sharing_violation(req);
+			if (ok) {
+				goto out;
+			}
+		}
 		reply_openerror(req, status);
 		goto out;
 	}
@@ -2884,6 +2900,13 @@ void reply_ctemp(struct smb_request *req)
 			if (open_was_deferred(req->xconn, req->mid)) {
 				/* We have re-scheduled this call. */
 				goto out;
+			}
+			if (NT_STATUS_EQUAL(
+				    status, NT_STATUS_SHARING_VIOLATION)) {
+				bool ok = defer_smb1_sharing_violation(req);
+				if (ok) {
+					goto out;
+				}
 			}
 			reply_openerror(req, status);
 			goto out;
@@ -3401,6 +3424,12 @@ void reply_unlink(struct smb_request *req)
 		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
 			goto out;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+			bool ok = defer_smb1_sharing_violation(req);
+			if (ok) {
+				goto out;
+			}
 		}
 		reply_nterror(req, status);
 		goto out;
@@ -6545,6 +6574,12 @@ void reply_rmdir(struct smb_request *req)
 			/* We have re-scheduled this call. */
 			goto out;
 		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+			bool ok = defer_smb1_sharing_violation(req);
+			if (ok) {
+				goto out;
+			}
+		}
 		reply_nterror(req, status);
 		goto out;
 	}
@@ -7677,6 +7712,12 @@ void reply_mv(struct smb_request *req)
 		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
 			goto out;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+			bool ok = defer_smb1_sharing_violation(req);
+			if (ok) {
+				goto out;
+			}
 		}
 		reply_nterror(req, status);
 		goto out;

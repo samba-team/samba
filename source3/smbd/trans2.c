@@ -1454,9 +1454,14 @@ static void call_trans2open(connection_struct *conn,
 			create_options,
 			private_flags);
 		if (fsp == NULL) {
+			bool ok = defer_smb1_sharing_violation(req);
+			if (ok) {
+				goto out;
+			}
 			reply_openerror(req, status);
 			goto out;
 		}
+
 		smb_action = FILE_WAS_OPENED;
 	}
 
@@ -6370,6 +6375,12 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			/* We have re-scheduled this call. */
 			return;
 		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+			bool ok = defer_smb1_sharing_violation(req);
+			if (ok) {
+				return;
+			}
+		}
 		reply_nterror(req, status);
 		return;
 	}
@@ -9321,6 +9332,12 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */
 			return;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+			bool ok = defer_smb1_sharing_violation(req);
+			if (ok) {
+				return;
+			}
 		}
 		if (NT_STATUS_EQUAL(status, NT_STATUS_EVENT_PENDING)) {
 			/* We have re-scheduled this call. */
