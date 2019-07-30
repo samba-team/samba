@@ -44,6 +44,9 @@
 extern const struct generic_mapping file_generic_mapping;
 
 struct deferred_open_record {
+	struct smbXsrv_connection *xconn;
+	uint64_t mid;
+
         bool delayed_for_oplocks;
 	bool async_open;
         struct file_id id;
@@ -2504,10 +2507,12 @@ static void kernel_oplock_poll_open_timer(struct tevent_context *ev,
 				      struct timeval current_time,
 				      void *private_data)
 {
+	struct deferred_open_record *open_rec = talloc_get_type_abort(
+		private_data, struct deferred_open_record);
 	bool ok;
-	struct smb_request *req = (struct smb_request *)private_data;
 
-	ok = schedule_deferred_open_message_smb(req->xconn, req->mid);
+	ok = schedule_deferred_open_message_smb(
+		open_rec->xconn, open_rec->mid);
 	if (!ok) {
 		exit_server("schedule_deferred_open_message_smb failed");
 	}
@@ -2535,6 +2540,8 @@ static void setup_kernel_oplock_poll_open(struct timeval request_time,
 	if (open_rec == NULL) {
 		exit_server("talloc failed");
 	}
+	open_rec->xconn = req->xconn;
+	open_rec->mid = req->mid;
 
 	ok = push_deferred_open_message_smb(req,
 					    request_time,
@@ -2545,15 +2552,11 @@ static void setup_kernel_oplock_poll_open(struct timeval request_time,
 		exit_server("push_deferred_open_message_smb failed");
 	}
 
-	/*
-	 * As this timer event is owned by req, it will
-	 * disappear if req it talloc_freed.
-	 */
 	open_rec->te = tevent_add_timer(req->sconn->ev_ctx,
-					req,
+					open_rec,
 					timeval_current_ofs(1, 0),
 					kernel_oplock_poll_open_timer,
-					req);
+					open_rec);
 	if (open_rec->te == NULL) {
 		exit_server("tevent_add_timer failed");
 	}
