@@ -3526,6 +3526,18 @@ static int re_index(struct ldb_kv_private *ldb_kv,
 	return 0;
 }
 
+/*
+ * Convert the 4-byte pack format version to a number that's slightly
+ * more intelligible to a user e.g. version 0, 1, 2, etc.
+ */
+static uint32_t displayable_pack_version(uint32_t version) {
+	if (version < LDB_PACKING_FORMAT_NODN) {
+		return version; /* unknown - can't convert */
+	}
+
+	return (version - LDB_PACKING_FORMAT_NODN);
+}
+
 static int re_pack(struct ldb_kv_private *ldb_kv,
 		   _UNUSED_ struct ldb_val key,
 		   struct ldb_val val,
@@ -3572,8 +3584,9 @@ static int re_pack(struct ldb_kv_private *ldb_kv,
 	 */
 	if ((!ctx->normal_record_seen) && (!ldb_dn_is_special(msg->dn))) {
 		ldb_debug(ldb, LDB_DEBUG_ALWAYS_LOG,
-			  "Repacking database with format %#010x",
-			  ldb_kv->pack_format_version);
+			  "Repacking database from v%u to v%u format",
+			  displayable_pack_version(ctx->old_version),
+			  displayable_pack_version(ldb_kv->pack_format_version));
 		ctx->normal_record_seen = true;
 	}
 
