@@ -4382,8 +4382,8 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 {
 	struct stream_struct *stream_info = NULL;
 	files_struct **streams = NULL;
-	int i;
-	unsigned int num_streams = 0;
+	int j;
+	unsigned int i, num_streams = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 	NTSTATUS status;
 
@@ -4478,14 +4478,14 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 	 * don't touch the variable "status" beyond this point :-)
 	 */
 
-	for (i -= 1 ; i >= 0; i--) {
-		if (streams[i] == NULL) {
+	for (j = i-1 ; j >= 0; j--) {
+		if (streams[j] == NULL) {
 			continue;
 		}
 
-		DEBUG(10, ("Closing stream # %d, %s\n", i,
-			   fsp_str_dbg(streams[i])));
-		close_file(NULL, streams[i], NORMAL_CLOSE);
+		DEBUG(10, ("Closing stream # %d, %s\n", j,
+			   fsp_str_dbg(streams[j])));
+		close_file(NULL, streams[j], NORMAL_CLOSE);
 	}
 
  fail:
