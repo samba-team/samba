@@ -175,6 +175,7 @@ struct ldb_kv_repack_context {
 	int error;
 	uint32_t count;
 	bool normal_record_seen;
+	uint32_t old_version;
 };
 
 
