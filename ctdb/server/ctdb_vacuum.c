@@ -37,6 +37,8 @@
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
+#include "protocol/protocol_private.h"
+
 #include "common/rb_tree.h"
 #include "common/common.h"
 #include "common/logging.h"
@@ -1553,6 +1555,93 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 				 vacuum_handle);
 	}
 
+}
+
+struct vacuum_control_state {
+	struct ctdb_vacuum_child_context *child_ctx;
+	struct ctdb_req_control_old *c;
+	struct ctdb_context *ctdb;
+};
+
+static int vacuum_control_state_destructor(struct vacuum_control_state *state)
+{
+	struct ctdb_vacuum_child_context *child_ctx = state->child_ctx;
+	int32_t status;
+
+	status = (child_ctx->status == VACUUM_OK ? 0 : -1);
+	ctdb_request_control_reply(state->ctdb, state->c, NULL, status, NULL);
+
+	return 0;
+}
+
+int32_t ctdb_control_db_vacuum(struct ctdb_context *ctdb,
+			       struct ctdb_req_control_old *c,
+			       TDB_DATA indata,
+			       bool *async_reply)
+{
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_vacuum_child_context *child_ctx = NULL;
+	struct ctdb_db_vacuum *db_vacuum;
+	struct vacuum_control_state *state;
+	size_t np;
+	int ret;
+
+	ret = ctdb_db_vacuum_pull(indata.dptr,
+				  indata.dsize,
+				  ctdb,
+				  &db_vacuum,
+				  &np);
+	if (ret != 0) {
+		DBG_ERR("Invalid data\n");
+		return -1;
+	}
+
+	ctdb_db = find_ctdb_db(ctdb, db_vacuum->db_id);
+	if (ctdb_db == NULL) {
+		DBG_ERR("Unknown db id 0x%08x\n", db_vacuum->db_id);
+		talloc_free(db_vacuum);
+		return -1;
+	}
+
+	state = talloc(ctdb, struct vacuum_control_state);
+	if (state == NULL) {
+		DBG_ERR("Memory allocation error\n");
+		return -1;
+	}
+
+	ret = vacuum_db_child(ctdb_db,
+			      ctdb_db,
+			      false,
+			      db_vacuum->full_vacuum_run,
+			      &child_ctx);
+
+	talloc_free(db_vacuum);
+
+	if (ret == 0) {
+		(void) talloc_steal(child_ctx, state);
+
+		state->child_ctx = child_ctx;
+		state->c = talloc_steal(state, c);
+		state->ctdb = ctdb;
+
+		talloc_set_destructor(state, vacuum_control_state_destructor);
+
+		*async_reply = true;
+		return 0;
+	}
+
+	talloc_free(state);
+
+	switch (ret) {
+	case EBUSY:
+		DBG_WARNING("Vacuuming collision\n");
+		break;
+
+	default:
+		DBG_ERR("Temporary vacuuming failure, ret=%d\n", ret);
+	}
+
+	return -1;
 }
 
 void ctdb_stop_vacuuming(struct ctdb_context *ctdb)

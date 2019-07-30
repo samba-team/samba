@@ -986,6 +986,11 @@ int32_t ctdb_control_uptime(struct ctdb_context *ctdb, TDB_DATA *outdata);
 
 /* from ctdb_vacuum.c */
 
+int32_t ctdb_control_db_vacuum(struct ctdb_context *ctdb,
+			       struct ctdb_req_control_old *c,
+			       TDB_DATA indata,
+			       bool *async_reply);
+
 void ctdb_stop_vacuuming(struct ctdb_context *ctdb);
 int ctdb_vacuum_init(struct ctdb_db_context *ctdb_db);
 
