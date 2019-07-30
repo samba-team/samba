@@ -3595,9 +3595,12 @@ int ldb_kv_repack(struct ldb_module *module)
 	struct ldb_kv_repack_context ctx;
 	int ret;
 
+	ctx.old_version = ldb_kv->pack_format_version;
 	ctx.count = 0;
 	ctx.error = LDB_SUCCESS;
 	ctx.normal_record_seen = false;
+
+	ldb_kv->pack_format_version = ldb_kv->target_pack_format_version;
 
 	/* Iterate all database records and repack them in the new format */
 	ret = ldb_kv->kv_ops->iterate(ldb_kv, re_pack, &ctx);

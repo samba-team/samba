@@ -315,8 +315,6 @@ static int ldb_kv_maybe_repack(struct ldb_kv_private *ldb_kv) {
 	    ldb_kv->target_pack_format_version) {
 		int r;
 		struct ldb_context *ldb = ldb_module_get_ctx(ldb_kv->module);
-		ldb_kv->pack_format_version =
-			ldb_kv->target_pack_format_version;
 		r = ldb_kv_repack(ldb_kv->module);
 		if (r != LDB_SUCCESS) {
 			ldb_debug(ldb, LDB_DEBUG_ERROR,
