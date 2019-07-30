@@ -594,6 +594,12 @@ void fill_ctdb_req_control_data(TALLOC_CTX *mem_ctx,
 		assert(cd->data.recbuf != NULL);
 		fill_ctdb_rec_buffer(mem_ctx, cd->data.recbuf);
 		break;
+
+	case CTDB_CONTROL_DB_VACUUM:
+		cd->data.db_vacuum = talloc(mem_ctx, struct ctdb_db_vacuum);
+		assert(cd->data.db_vacuum != NULL);
+		fill_ctdb_db_vacuum(mem_ctx, cd->data.db_vacuum);
+		break;
 	}
 }
 
@@ -983,6 +989,10 @@ void verify_ctdb_req_control_data(struct ctdb_req_control_data *cd,
 
 	case CTDB_CONTROL_VACUUM_FETCH:
 		verify_ctdb_rec_buffer(cd->data.recbuf, cd2->data.recbuf);
+		break;
+
+	case CTDB_CONTROL_DB_VACUUM:
+		verify_ctdb_db_vacuum(cd->data.db_vacuum, cd2->data.db_vacuum);
 		break;
 	}
 }
@@ -1381,6 +1391,8 @@ void fill_ctdb_reply_control_data(TALLOC_CTX *mem_ctx,
 	case CTDB_CONTROL_VACUUM_FETCH:
 		break;
 
+	case CTDB_CONTROL_DB_VACUUM:
+		break;
 	}
 }
 
@@ -1717,6 +1729,9 @@ void verify_ctdb_reply_control_data(struct ctdb_reply_control_data *cd,
 		break;
 
 	case CTDB_CONTROL_VACUUM_FETCH:
+		break;
+
+	case CTDB_CONTROL_DB_VACUUM:
 		break;
 	}
 }
