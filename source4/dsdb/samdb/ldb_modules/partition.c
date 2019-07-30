@@ -1231,11 +1231,16 @@ int partition_del_trans(struct ldb_module *module)
 							      struct partition_private_data);
 	bool trace = module && ldb_module_flags(ldb) & LDB_FLG_ENABLE_TRACING;
 
+	if (data == NULL) {
+		DEBUG(0,("partion delete transaction with no private data\n"));
+		return ldb_operr(ldb);
+	}
+
 	/*
 	 * Order of del_trans calls must be the reverse of that in
 	 * partition_start_trans. See comment in that function for detail.
 	 */
-	if (data && data->partitions) {
+	if (data->partitions) {
 		for (i=0; data->partitions[i]; i++);;
 		for (i--; i>=0; i--) {
 			struct dsdb_partition *p = data->partitions[i];
