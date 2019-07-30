@@ -374,6 +374,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TUNNEL_REGISTER         = 152,
 		    CTDB_CONTROL_TUNNEL_DEREGISTER       = 153,
 		    CTDB_CONTROL_VACUUM_FETCH            = 154,
+		    CTDB_CONTROL_DB_VACUUM               = 155,
 };
 
 #define MAX_COUNT_BUCKETS 16
@@ -852,6 +853,12 @@ struct ctdb_pid_srvid {
 	uint64_t srvid;
 };
 
+struct ctdb_db_vacuum {
+	uint32_t db_id;
+	bool full_vacuum_run;
+
+};
+
 struct ctdb_req_control_data {
 	uint32_t opcode;
 	union {
@@ -889,6 +896,7 @@ struct ctdb_req_control_data {
 		struct ctdb_traverse_start_ext *traverse_start_ext;
 		struct ctdb_traverse_all_ext *traverse_all_ext;
 		struct ctdb_pid_srvid *pid_srvid;
+		struct ctdb_db_vacuum *db_vacuum;
 	} data;
 };
 
