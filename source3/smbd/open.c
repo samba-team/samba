@@ -2508,7 +2508,7 @@ static void poll_open_fn(struct tevent_context *ev,
 /**
  * Reschedule an open for 1 second from now, if not timed out.
  **/
-static void setup_poll_open(
+static bool setup_poll_open(
 	struct smb_request *req,
 	struct file_id id,
 	struct timeval max_timeout,
@@ -2520,13 +2520,13 @@ static void setup_poll_open(
 	/* Maximum wait time. */
 
 	if (request_timed_out(req, max_timeout)) {
-		return;
+		return false;
 	}
 
 	open_rec = talloc_zero(NULL, struct deferred_open_record);
 	if (open_rec == NULL) {
 		DBG_WARNING("talloc failed\n");
-		return;
+		return false;
 	}
 	open_rec->xconn = req->xconn;
 	open_rec->mid = req->mid;
@@ -2540,20 +2540,22 @@ static void setup_poll_open(
 	if (open_rec->te == NULL) {
 		DBG_WARNING("tevent_add_timer failed\n");
 		TALLOC_FREE(open_rec);
-		return;
+		return false;
 	}
 
 	ok = push_deferred_open_message_smb(req, max_timeout, id, open_rec);
 	if (!ok) {
 		DBG_WARNING("push_deferred_open_message_smb failed\n");
 		TALLOC_FREE(open_rec);
-		return;
+		return false;
 	}
 
 	DBG_DEBUG("poll request time [%s] mid [%" PRIu64 "] file_id [%s]\n",
 		  timeval_string(talloc_tos(), &req->request_time, false),
 		  req->mid,
 		  file_id_string_tos(&id));
+
+	return true;
 }
 
 /****************************************************************************
