@@ -280,14 +280,24 @@ tasks = {
         ("clean", "make clean"),
         ],
 
-    "samba-fileserver": [
+    "samba-simpleserver": [
         ("random-sleep", random_sleep(300, 900)),
         ("configure", "./configure.developer --without-ad-dc --without-ldap --without-ads --without-json --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
         ("test", make_test(include_envs=[
+            "simpleserver",
+            ])),
+        ("lcov", LCOV_CMD),
+        ("check-clean-tree", "script/clean-source-tree.sh"),
+        ],
+
+    "samba-fileserver": [
+        ("random-sleep", random_sleep(300, 900)),
+        ("configure", "./configure.developer --without-ad-dc --with-selftest-prefix=./bin/ab" + samba_configure_params),
+        ("make", "make -j"),
+        ("test", make_test(include_envs=[
             "fileserver",
             "maptoguest",
-            "simpleserver",
             ])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
