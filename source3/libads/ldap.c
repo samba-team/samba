@@ -2121,13 +2121,14 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 	}
 
 	ret = ads_find_machine_acct(ads, &res, machine_escaped);
-	ads_msgfree(ads, res);
-	if (ADS_ERR_OK(ret)) {
+	if (ADS_ERR_OK(ret) && ads_count_replies(ads, res) == 1) {
 		DBG_DEBUG("Host account for %s already exists.\n",
 				machine_escaped);
 		ret = ADS_ERROR_LDAP(LDAP_ALREADY_EXISTS);
+		ads_msgfree(ads, res);
 		goto done;
 	}
+	ads_msgfree(ads, res);
 
 	new_dn = talloc_asprintf(ctx, "cn=%s,%s", machine_escaped, org_unit);
 	samAccountName = talloc_asprintf(ctx, "%s$", machine_name);
