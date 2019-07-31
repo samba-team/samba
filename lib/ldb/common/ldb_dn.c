@@ -376,6 +376,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 			}
 
 			if (in_ex_value && *p == '>') {
+				struct ldb_dn_ext_component *ext_comp = NULL;
 				const struct ldb_dn_extended_syntax *ext_syntax;
 				struct ldb_val ex_val = {
 					.data = (uint8_t *)ex_value,
@@ -388,14 +389,18 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 				/* Process name and ex_value */
 
-				dn->ext_components = talloc_realloc(dn,
-								    dn->ext_components,
-								    struct ldb_dn_ext_component,
-								    dn->ext_comp_num + 1);
-				if ( ! dn->ext_components) {
+				ext_comp = talloc_realloc(
+					dn,
+					dn->ext_components,
+					struct ldb_dn_ext_component,
+					dn->ext_comp_num + 1);
+
+				if (ext_comp == NULL) {
 					/* ouch ! */
 					goto failed;
 				}
+
+				dn->ext_components = ext_comp;
 
 				ext_syntax = ldb_dn_extended_syntax_by_name(dn->ldb, ex_name);
 				if (!ext_syntax) {
