@@ -1263,7 +1263,8 @@ static WERROR generate_bkrp_server_wrap_key(TALLOC_CTX *ctx, struct ldb_context 
 	char *secret_name;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	generate_random_buffer(wrap_key.key, sizeof(wrap_key.key));
+	/* We need to use a CSPRNG which reseeds for generating session keys. */
+	generate_secret_buffer(wrap_key.key, sizeof(wrap_key.key));
 
 	ndr_err = ndr_push_struct_blob(&blob_wrap_key, ctx, &wrap_key, (ndr_push_flags_fn_t)ndr_push_bkrp_dc_serverwrap_key);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
