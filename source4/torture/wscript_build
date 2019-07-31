@@ -82,13 +82,6 @@ bld.SAMBA_SUBSYSTEM('IREMOTEWINSPOOL_COMMON',
                     deps='talloc',
                     enabled=bld.PYTHON_BUILD_IS_ENABLED())
 
-torture_rpc_backupkey = ''
-if bld.AD_DC_BUILD_IS_ENABLED():
-    if (bld.CONFIG_SET('HAVE_GNUTLS_PRIVKEY_EXPORT_X509') and
-        bld.CONFIG_SET('HAVE_GNUTLS_X509_CRT_SET_SUBJECT_UNIQUE_ID')):
-        torture_rpc_backupkey = 'rpc/backupkey.c'
-    else:
-        torture_rpc_backupkey = 'rpc/backupkey_heimdal.c'
 bld.SAMBA_MODULE('torture_rpc',
                  source='''
                         rpc/join.c
@@ -146,7 +139,7 @@ bld.SAMBA_MODULE('torture_rpc',
                         rpc/iremotewinspool.c
                         rpc/iremotewinspool_driver.c
                         rpc/mdssvc.c
-                        ''' + torture_rpc_backupkey + ntvfs_specific['source'],
+                        rpc/backupkey.c''' + ntvfs_specific['source'],
                  autoproto='rpc/proto.h',
                  subsystem='smbtorture',
                  init_function='torture_rpc_init',

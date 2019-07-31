@@ -119,23 +119,13 @@ bld.SAMBA_MODULE('dcerpc_lsarpc',
 	)
 
 
-if (bld.CONFIG_SET('HAVE_GNUTLS_PRIVKEY_EXPORT_X509') and
-    bld.CONFIG_SET('HAVE_GNUTLS_X509_CRT_SET_SUBJECT_UNIQUE_ID')):
-	bld.SAMBA_MODULE('dcerpc_backupkey',
-		source='backupkey/dcesrv_backupkey.c ',
-		autoproto='backupkey/proto.h',
-		subsystem='dcerpc_server',
-		init_function='dcerpc_server_backupkey_init',
-		deps='samdb DCERPC_COMMON NDR_BACKUPKEY RPC_NDR_BACKUPKEY gnutls',
-		)
-else:
-	bld.SAMBA_MODULE('dcerpc_backupkey',
-		source='backupkey/dcesrv_backupkey_heimdal.c ',
-		autoproto='backupkey/proto.h',
-		subsystem='dcerpc_server',
-		init_function='dcerpc_server_backupkey_init',
-		deps='samdb DCERPC_COMMON NDR_BACKUPKEY RPC_NDR_BACKUPKEY krb5 hx509 hcrypto gnutls DCERPC_COMMON',
-		)
+bld.SAMBA_MODULE('dcerpc_backupkey',
+		 source='backupkey/dcesrv_backupkey.c ',
+		 autoproto='backupkey/proto.h',
+		 subsystem='dcerpc_server',
+		 init_function='dcerpc_server_backupkey_init',
+		 deps='samdb DCERPC_COMMON NDR_BACKUPKEY RPC_NDR_BACKUPKEY gnutls',
+		 )
 
 
 bld.SAMBA_MODULE('dcerpc_drsuapi',
