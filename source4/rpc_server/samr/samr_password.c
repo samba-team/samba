@@ -733,9 +733,10 @@ NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 			 nt_errstr(nt_status)));
 
 		/*
-		 * Windows just uses a random key
+		 * Windows just uses a random key. We need to use a CSPRNG
+		 * which reseeds for generating session keys.
 		 */
-		generate_random_buffer(random_session_key,
+		generate_secret_buffer(random_session_key,
 				       sizeof(random_session_key));
 		session_key = data_blob_const(random_session_key,
 					      sizeof(random_session_key));
