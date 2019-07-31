@@ -11555,6 +11555,8 @@ static bool run_shortname_test(int dummy)
 	return correct;
 }
 
+TLDAPRC callback_code;
+
 static void pagedsearch_cb(struct tevent_req *req)
 {
 	TLDAPRC rc;
@@ -11565,6 +11567,7 @@ static void pagedsearch_cb(struct tevent_req *req)
 	if (!TLDAP_RC_IS_SUCCESS(rc)) {
 		d_printf("tldap_search_paged_recv failed: %s\n",
 			 tldap_rc2string(rc));
+		callback_code = rc;
 		return;
 	}
 	if (tldap_msg_type(msg) != TLDAP_RES_SEARCH_ENTRY) {
@@ -11629,6 +11632,18 @@ static bool run_tldap(int dummy)
 		return false;
 	}
 
+	rc = tldap_gensec_bind(ld, torture_creds, "ldap", host, NULL,
+			       loadparm_init_s3(talloc_tos(),
+						loadparm_s3_helpers()),
+			       GENSEC_FEATURE_SIGN | GENSEC_FEATURE_SEAL);
+
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
+		d_printf("tldap_gensec_bind failed\n");
+		return false;
+	}
+
+	callback_code = TLDAP_SUCCESS;
+
 	req = tldap_search_paged_send(talloc_tos(), ev, ld, basedn,
 				      TLDAP_SCOPE_SUB, "(objectclass=*)",
 				      NULL, 0, 0,
@@ -11642,6 +11657,14 @@ static bool run_tldap(int dummy)
 	tevent_req_poll(req, ev);
 
 	TALLOC_FREE(req);
+
+	rc = callback_code;
+
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
+		d_printf("tldap_search with paging failed: %s\n",
+			 tldap_errstr(talloc_tos(), ld, rc));
+		return false;
+	}
 
 	/* test search filters against rootDSE */
 	filter = "(&(|(name=samba)(nextRid<=10000000)(usnChanged>=10)(samba~=ambas)(!(name=s*m*a)))"
