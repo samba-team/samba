@@ -1433,6 +1433,7 @@ main() {
         #darwin style quota bytecount
         conf.CHECK_STRUCTURE_MEMBER('struct dqblk', 'dqb_curbytes', define='HAVE_STRUCT_DQBLK_DQB_CURBYTES',
                                 headers='sys/quota.h')
+        conf.CHECK_HEADERS('rpc/types.h rpc/xdr.h', together=True)
         if conf.CHECK_HEADERS('rpcsvc/rquota.h', lib='tirpc'):
             # Optional structure member
             conf.CHECK_STRUCTURE_MEMBER('struct getquota_rslt', 'getquota_rslt_u',
