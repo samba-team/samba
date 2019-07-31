@@ -32,6 +32,9 @@
 #undef FALSE
 #endif
 
+#ifdef HAVE_RPC_TYPES_H
+#include <rpc/types.h>
+#endif
 #include <rpc/xdr.h>
 
 #include "nfs4_acls.h"
