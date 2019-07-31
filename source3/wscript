@@ -1440,7 +1440,7 @@ main() {
                                         headers='rpcsvc/rquota.h',
                                         lib='tirpc')
 
-            # Required function for NFS quote support
+            # Required function for NFS quota support
             conf.CHECK_CODE('''
                             clnt_create("", RQUOTAPROG, RQUOTAVERS, "udp");
                             ''',
