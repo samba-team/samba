@@ -91,7 +91,6 @@ static void exit_server_common(enum server_exit_reason how,
 {
 	struct smbXsrv_client *client = global_smbXsrv_client;
 	struct smbXsrv_connection *xconn = NULL;
-	struct smbXsrv_connection *xconn_next = NULL;
 	struct smbd_server_connection *sconn = NULL;
 	struct messaging_context *msg_ctx = global_messaging_context();
 
@@ -110,10 +109,7 @@ static void exit_server_common(enum server_exit_reason how,
 	/*
 	 * Here we typically have just one connection
 	 */
-	for (; xconn != NULL; xconn = xconn_next) {
-		xconn_next = xconn->next;
-		DLIST_REMOVE(client->connections, xconn);
-
+	for (; xconn != NULL; xconn = xconn->next) {
 		/*
 		 * This is typically the disconnect for the only
 		 * (or with multi-channel last) connection of the client
@@ -128,8 +124,6 @@ static void exit_server_common(enum server_exit_reason how,
 				break;
 			}
 		}
-
-		TALLOC_FREE(xconn);
 		DO_PROFILE_INC(disconnect);
 	}
 
@@ -167,6 +161,20 @@ static void exit_server_common(enum server_exit_reason how,
 			DEBUG(0, ("exit_server_common: "
 				  "smbXsrv_session_logoff_all() failed (%s) - "
 				  "triggering cleanup\n", nt_errstr(status)));
+		}
+	}
+
+	change_to_root_user();
+
+	if (client != NULL) {
+		struct smbXsrv_connection *xconn_next = NULL;
+
+		for (xconn = client->connections;
+		     xconn != NULL;
+		     xconn = xconn_next) {
+			xconn_next = xconn->next;
+			DLIST_REMOVE(client->connections, xconn);
+			TALLOC_FREE(xconn);
 		}
 	}
 
