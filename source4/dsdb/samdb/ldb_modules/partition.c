@@ -1185,7 +1185,10 @@ int partition_end_trans(struct ldb_module *module)
 	 * partition_start_trans. See comment in that function for detail.
 	 */
 	if (data && data->partitions) {
-		for (i=0; data->partitions[i]; i++);;
+		/* Just counting the partitions */
+		for (i=0; data->partitions[i]; i++) {}
+
+		/* now walk them backwards */
 		for (i--; i>=0; i--) {
 			struct dsdb_partition *p = data->partitions[i];
 			if (trace) {
@@ -1241,7 +1244,10 @@ int partition_del_trans(struct ldb_module *module)
 	 * partition_start_trans. See comment in that function for detail.
 	 */
 	if (data->partitions) {
-		for (i=0; data->partitions[i]; i++);;
+		/* Just counting the partitions */
+		for (i=0; data->partitions[i]; i++) {}
+
+		/* now walk them backwards */
 		for (i--; i>=0; i--) {
 			struct dsdb_partition *p = data->partitions[i];
 			if (trace) {
@@ -1595,7 +1601,10 @@ int partition_read_unlock(struct ldb_module *module)
 	 * partition_start_trans. See comment in that function for detail.
 	 */
 	if (data && data->partitions) {
-		for (i=0; data->partitions[i]; i++);;
+		/* Just counting the partitions */
+		for (i=0; data->partitions[i]; i++) {}
+
+		/* now walk them backwards */
 		for (i--; i>=0; i--) {
 			struct dsdb_partition *p = data->partitions[i];
 			if (trace) {
