@@ -26,6 +26,7 @@
 #include "libcli/security/security.h"
 #include "tldap.h"
 #include "tldap_util.h"
+#include "tldap_gensec_bind.h"
 #include "../librpc/gen_ndr/svcctl.h"
 #include "../lib/util/memcache.h"
 #include "nsswitch/winbind_client.h"
@@ -46,6 +47,9 @@
 #include "lib/util/time.h"
 #include "lib/gencache.h"
 #include "lib/util/sys_rw.h"
+#include "lib/util/asn1.h"
+#include "lib/param/param.h"
+#include "auth/gensec/gensec.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -11582,6 +11586,134 @@ static void pagedsearch_cb(struct tevent_req *req)
 	TALLOC_FREE(msg);
 }
 
+enum tldap_extended_val {
+	EXTENDED_ZERO = 0,
+	EXTENDED_ONE = 1,
+	EXTENDED_NONE = 2,
+};
+
+/*
+ * Construct an extended dn control with either no value, 0 or 1
+ *
+ * No value and 0 are equivalent (non-hyphenated GUID)
+ * 1 has the hyphenated GUID
+ */
+static struct tldap_control *
+tldap_build_extended_control(enum tldap_extended_val val)
+{
+	struct tldap_control empty_control;
+	struct asn1_data *data;
+
+	ZERO_STRUCT(empty_control);
+
+	if (val != EXTENDED_NONE) {
+		data = asn1_init(talloc_tos());
+
+		if (!data) {
+			return NULL;
+		}
+
+		if (!asn1_push_tag(data, ASN1_SEQUENCE(0))) {
+			return NULL;
+		}
+
+		if (!asn1_write_Integer(data, (int)val)) {
+			return NULL;
+		}
+
+		if (!asn1_pop_tag(data)) {
+			return NULL;
+		}
+
+		if (!asn1_blob(data, &empty_control.value)) {
+			return NULL;
+		}
+	}
+
+	empty_control.oid = "1.2.840.113556.1.4.529";
+	empty_control.critical = true;
+
+	return tldap_add_control(talloc_tos(), NULL, 0, &empty_control);
+
+}
+
+static bool tldap_test_dn_guid_format(struct tldap_context *ld, const char *basedn,
+				      enum tldap_extended_val control_val)
+{
+	struct tldap_control *control = tldap_build_extended_control(control_val);
+	char *dn = NULL;
+	struct tldap_message **msg;
+	TLDAPRC rc;
+
+	rc = tldap_search(ld, basedn, TLDAP_SCOPE_BASE,
+			  "(objectClass=*)", NULL, 0, 0,
+			  control, 1, NULL,
+			  0, 0, 0, 0, talloc_tos(), &msg);
+	if (!TLDAP_RC_IS_SUCCESS(rc)) {
+		d_printf("tldap_search for domain DN failed: %s\n",
+			 tldap_errstr(talloc_tos(), ld, rc));
+		return false;
+	}
+
+	if (!tldap_entry_dn(msg[0], &dn)) {
+		d_printf("tldap_search domain DN fetch failed: %s\n",
+			 tldap_errstr(talloc_tos(), ld, rc));
+		return false;
+	}
+
+	d_printf("%s\n", dn);
+	{
+		uint32_t time_low;
+		uint32_t time_mid, time_hi_and_version;
+		uint32_t clock_seq[2];
+		uint32_t node[6];
+		char next;
+
+		switch (control_val) {
+		case EXTENDED_NONE:
+		case EXTENDED_ZERO:
+			/*
+			 * When reading GUIDs with hyphens, scanf will treat
+			 * hyphen as a hex character (and counts as part of the
+			 * width). This creates leftover GUID string which we
+			 * check will for with 'next' and closing '>'.
+			 */
+			if (12 == sscanf(dn, "<GUID=%08x%04x%04x%02x%02x%02x%02x%02x%02x%02x%02x>%c",
+					 &time_low, &time_mid,
+					 &time_hi_and_version, &clock_seq[0],
+					 &clock_seq[1], &node[0], &node[1],
+					 &node[2], &node[3], &node[4],
+					 &node[5], &next)) {
+				/* This GUID is good */
+			} else {
+				d_printf("GUID format in control (no hyphens) doesn't match output\n");
+				return false;
+			}
+
+			break;
+		case EXTENDED_ONE:
+			if (12 == sscanf(dn,
+					 "<GUID=%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x>%c",
+					 &time_low, &time_mid,
+					 &time_hi_and_version, &clock_seq[0],
+					 &clock_seq[1], &node[0], &node[1],
+					 &node[2], &node[3], &node[4],
+					 &node[5], &next)) {
+				/* This GUID is good */
+			} else {
+				d_printf("GUID format in control (with hyphens) doesn't match output\n");
+				return false;
+			}
+
+			break;
+		default:
+			return false;
+		}
+	}
+
+	return true;
+}
+
 static bool run_tldap(int dummy)
 {
 	struct tldap_context *ld;
@@ -11675,6 +11807,29 @@ static bool run_tldap(int dummy)
 			  talloc_tos(), NULL);
 	if (!TLDAP_RC_IS_SUCCESS(rc)) {
 		d_printf("tldap_search with complex filter failed: %s\n",
+			 tldap_errstr(talloc_tos(), ld, rc));
+		return false;
+	}
+
+	/*
+	 * Tests to check for regression of:
+	 *
+	 * https://bugzilla.samba.org/show_bug.cgi?id=14029
+	 *
+	 * TLDAP used here to pick apart the original string DN (with GUID)
+	 */
+	if (!tldap_test_dn_guid_format(ld, basedn, EXTENDED_NONE)) {
+		d_printf("tldap_search with extended dn (no val) failed: %s\n",
+			 tldap_errstr(talloc_tos(), ld, rc));
+		return false;
+	}
+	if (!tldap_test_dn_guid_format(ld, basedn, EXTENDED_ZERO)) {
+		d_printf("tldap_search with extended dn (0) failed: %s\n",
+			 tldap_errstr(talloc_tos(), ld, rc));
+		return false;
+	}
+	if (!tldap_test_dn_guid_format(ld, basedn, EXTENDED_ONE)) {
+		d_printf("tldap_search with extended dn (1) failed: %s\n",
 			 tldap_errstr(talloc_tos(), ld, rc));
 		return false;
 	}
