@@ -419,8 +419,8 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		 *
 		 * NOTE: We assume nonces greater than 8 bytes.
 		 */
-		generate_random_buffer((uint8_t *)&x->nonce_high_random,
-				       sizeof(x->nonce_high_random));
+		generate_nonce_buffer((uint8_t *)&x->nonce_high_random,
+				      sizeof(x->nonce_high_random));
 		switch (xconn->smb2.server.cipher) {
 		case SMB2_ENCRYPTION_AES128_CCM:
 			nonce_size = AES_CCM_128_NONCE_SIZE;
