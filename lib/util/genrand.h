@@ -28,3 +28,14 @@ void generate_random_buffer(uint8_t *out, int len);
  * Thread and fork safe random number generator for long term keys.
  */
 void generate_secret_buffer(uint8_t *out, int len);
+
+/**
+ * @brief Generate random values for a nonce buffer.
+ *
+ * This is also known as initialization vector.
+ *
+ * @param[in]  out  A pointer to the buffer to fill with random data.
+ *
+ * @param[in]  len  The size of the buffer to fill.
+ */
+void generate_nonce_buffer(uint8_t *out, int len);

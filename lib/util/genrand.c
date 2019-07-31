@@ -25,8 +25,6 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
-/* TODO: Add API for generating nonce or use gnutls_rnd directly everywhere. */
-
 _PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
 {
 	/* Thread and fork safe random number generator for temporary keys. */
@@ -41,4 +39,14 @@ _PUBLIC_ void generate_secret_buffer(uint8_t *out, int len)
 {
 	/* Thread and fork safe random number generator for long term keys. */
 	gnutls_rnd(GNUTLS_RND_KEY, out, len);
+}
+
+_PUBLIC_ void generate_nonce_buffer(uint8_t *out, int len)
+{
+	/*
+	 * The nonce generator will reseed after outputting a fixed amount of
+	 * bytes (typically few megabytes), or after few hours of operation
+	 * without reaching the limit has passed.
+	 */
+	gnutls_rnd(GNUTLS_RND_NONCE, out, len);
 }
