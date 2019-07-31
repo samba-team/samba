@@ -6254,8 +6254,8 @@ NTSTATUS smb2cli_session_set_session_key(struct smbXcli_session *session,
 	 *
 	 * NOTE: We assume nonces greater than 8 bytes.
 	 */
-	generate_random_buffer((uint8_t *)&session->smb2->nonce_high_random,
-			       sizeof(session->smb2->nonce_high_random));
+	generate_nonce_buffer((uint8_t *)&session->smb2->nonce_high_random,
+			      sizeof(session->smb2->nonce_high_random));
 	switch (conn->smb2.server.cipher) {
 	case SMB2_ENCRYPTION_AES128_CCM:
 		nonce_size = AES_CCM_128_NONCE_SIZE;
