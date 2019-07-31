@@ -1693,7 +1693,8 @@ main() {
         conf.DEFINE('WITH_SPOTLIGHT', '1')
         conf.env.with_spotlight = True
 
-    conf.CHECK_HEADERS('rpc/xdr.h', lib='tirpc')
+    if not conf.CONFIG_SET('HAVE_RPC_XDR_H'):
+        conf.CHECK_HEADERS('rpc/xdr.h', lib='tirpc')
 
     if conf.CHECK_FUNCS_IN('nscd_flush_cache', 'nscd', headers='libnscd.h'):
         conf.DEFINE('HAVE_NSCD_FLUSH_CACHE', '1')
