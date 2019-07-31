@@ -4918,7 +4918,7 @@ static NTSTATUS smb_query_posix_acl(connection_struct *conn,
 	unsigned int size_needed = 0;
 	NTSTATUS status;
 	bool ok;
-	bool close_fsp;
+	bool close_fsp = false;
 
 	/*
 	 * Ensure we always operate on a file descriptor, not just
