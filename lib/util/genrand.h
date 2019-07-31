@@ -25,7 +25,11 @@
 void generate_random_buffer(uint8_t *out, int len);
 
 /**
- * Thread and fork safe random number generator for long term keys.
+ * @brief Generate random values for key buffers (e.g. session keys)
+ *
+ * @param[in]  out  A pointer to the buffer to fill with random data.
+ *
+ * @param[in]  len  The size of the buffer to fill.
  */
 void generate_secret_buffer(uint8_t *out, int len);
 
