@@ -810,7 +810,8 @@ static void tldap_search_paged_done(struct tevent_req *subreq)
 	}
 	tevent_req_set_callback(subreq, tldap_search_paged_done, req);
 
-  err:
+	return;
+err:
 
 	TALLOC_FREE(asn1);
 	tevent_req_ldap_error(req, TLDAP_DECODING_ERROR);
