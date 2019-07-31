@@ -29,6 +29,6 @@ init)
 	esac
 
 	d=$(dirname "$recovery_lock")
-	mkdir -vp "$d"
+	mkdir -p "$d"
 	;;
 esac

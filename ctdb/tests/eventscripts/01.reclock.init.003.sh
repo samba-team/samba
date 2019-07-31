@@ -12,17 +12,7 @@ dir=$(dirname "$CTDB_RECOVERY_LOCK")
 required_result 1 ""
 unit_test test -d "$dir"
 
-# FreeBSD mkdir -v just prints the filename.  Filter the rest of the
-# message from other platforms, including any exotic quotes around the
-# filename.
-result_filter ()
-{
-	sed \
-		-e 's|^\(mkdir: created directory \)[[:punct:]]||' \
-		-e 's|[[:punct:]]$||'
-}
-
-ok "$dir"
+ok_null
 simple_test
 
 # Ensure directory exists after
