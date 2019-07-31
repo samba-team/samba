@@ -2611,7 +2611,7 @@ enum winbindd_result winbindd_dual_pam_auth_crap(struct winbindd_domain *domain,
 	uint32_t flags = 0;
 	uint16_t validation_level;
 	union netr_Validation *validation = NULL;
-	DATA_BLOB lm_resp, nt_resp;
+	DATA_BLOB lm_resp = { 0 }, nt_resp = { 0 };
 	const struct timeval start_time = timeval_current();
 	const struct tsocket_address *remote = NULL;
 	const struct tsocket_address *local = NULL;
