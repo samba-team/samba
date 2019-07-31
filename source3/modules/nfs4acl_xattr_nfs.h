@@ -21,6 +21,8 @@
 
 #define NFS4ACL_NFS_XATTR_NAME "system.nfs4_acl"
 
+struct SMB4ACL_T;
+
 NTSTATUS nfs4acl_nfs_blob_to_smb4(struct vfs_handle_struct *handle,
 				  TALLOC_CTX *mem_ctx,
 				  DATA_BLOB *blob,

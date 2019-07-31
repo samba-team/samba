@@ -29,6 +29,8 @@
 #ifndef __NFS4ACL_XATTR_NDR_H__
 #define __NFS4ACL_XATTR_NDR_H__
 
+struct SMB4ACL_T;
+
 NTSTATUS nfs4acl_ndr_blob_to_smb4(struct vfs_handle_struct *handle,
 				  TALLOC_CTX *mem_ctx,
 				  DATA_BLOB *blob,
