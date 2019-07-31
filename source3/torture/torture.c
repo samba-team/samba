@@ -13993,10 +13993,12 @@ static struct {
 		.name  = "OPLOCK4",
 		.fn    =  run_oplock4,
 	},
+#ifdef HAVE_KERNEL_OPLOCKS_LINUX
 	{
 		.name  = "OPLOCK5",
 		.fn    =  run_oplock5,
 	},
+#endif
 	{
 		.name  = "DIR",
 		.fn    =  run_dirtest,
