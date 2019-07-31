@@ -588,7 +588,9 @@ struct tldap_control *tldap_add_control(TALLOC_CTX *mem_ctx,
 	if (result == NULL) {
 		return NULL;
 	}
-	memcpy(result, ctrls, sizeof(struct tldap_control) * num_ctrls);
+	if (num_ctrls > 0) {
+		memcpy(result, ctrls, sizeof(struct tldap_control) * num_ctrls);
+	}
 	result[num_ctrls] = *ctrl;
 	return result;
 }
