@@ -2611,7 +2611,7 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertIsNone(rep)
         self.assertNotConnected()
 
-    def test_spnego_connect_request(self):
+    def _test_spnego_connect_upgrade_request(self, upgrade_auth_level):
         ndr32 = base.transfer_syntax_ndr()
 
         tsf1_list = [ndr32]
@@ -2730,9 +2730,9 @@ class TestDCERPC_BIND(RawDCERPCTest):
         self.assertEquals(rep.u.cancel_count, 0)
         self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
 
-        # Now a request with auth_info DCERPC_AUTH_LEVEL_INTEGRITY
+        # Now a request with auth_info upgrade_auth_level
         auth_info = self.generate_auth(auth_type=auth_type,
-                                       auth_level=dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY,
+                                       auth_level=upgrade_auth_level,
                                        auth_context_id=auth_context_id,
                                        auth_blob=b"\x01" + b"\x00" * 15)
         req = self.generate_request(call_id=4,
@@ -2757,6 +2757,10 @@ class TestDCERPC_BIND(RawDCERPCTest):
         rep = self.recv_pdu()
         self.assertIsNone(rep)
         self.assertNotConnected()
+
+    def test_spnego_connect_integrity_upgrade(self):
+        return self._test_spnego_connect_upgrade_request(
+                                        dcerpc.DCERPC_AUTH_LEVEL_INTEGRITY)
 
     def test_spnego_integrity_request(self):
         ndr32 = base.transfer_syntax_ndr()
