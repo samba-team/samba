@@ -2369,12 +2369,11 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 	return NT_STATUS_OK;
 }
 
-static bool request_timed_out(struct timeval request_time,
-			      struct timeval timeout)
+static bool request_timed_out(struct smb_request *req, struct timeval timeout)
 {
 	struct timeval now, end_time;
 	GetTimeOfDay(&now);
-	end_time = timeval_sum(&request_time, &timeout);
+	end_time = timeval_sum(&req->request_time, &timeout);
 	return (timeval_compare(&end_time, &now) < 0);
 }
 
@@ -2534,7 +2533,7 @@ static void setup_kernel_oplock_poll_open(struct smb_request *req,
 	/* Maximum wait time. */
 	struct timeval timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
 
-	if (request_timed_out(req->request_time, timeout)) {
+	if (request_timed_out(req, timeout)) {
 		return;
 	}
 
@@ -2632,7 +2631,7 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 
 	timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
 
-	if (request_timed_out(req->request_time, timeout)) {
+	if (request_timed_out(req, timeout)) {
 		return;
 	}
 
@@ -2657,7 +2656,7 @@ static void schedule_async_open(struct smb_request *req)
 	struct timeval timeout = timeval_set(20, 0);
 	bool ok;
 
-	if (request_timed_out(req->request_time, timeout)) {
+	if (request_timed_out(req, timeout)) {
 		return;
 	}
 
@@ -3530,7 +3529,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			timeout = timeval_set(0, timeout_usecs);
 
-			if (!request_timed_out(req->request_time, timeout)) {
+			if (!request_timed_out(req, timeout)) {
 				defer_open(lck, timeout, req, false, id);
 			}
 		}
