@@ -822,7 +822,7 @@ ctdb_defer_pinned_down_request(struct ctdb_context *ctdb, struct ctdb_db_context
 
 static void
 ctdb_update_db_stat_hot_keys(struct ctdb_db_context *ctdb_db, TDB_DATA key,
-			     int count)
+			     unsigned int count)
 {
 	int i, id;
 	char *keystr;
@@ -1983,7 +1983,7 @@ static void ctdb_migration_count_handler(TDB_DATA key, uint64_t counter,
 {
 	struct ctdb_db_context *ctdb_db = talloc_get_type_abort(
 		private_data, struct ctdb_db_context);
-	int value;
+	unsigned int value;
 
 	value = (counter < INT_MAX ? counter : INT_MAX);
 	ctdb_update_db_stat_hot_keys(ctdb_db, key, value);
