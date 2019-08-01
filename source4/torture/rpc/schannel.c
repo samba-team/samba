@@ -471,7 +471,7 @@ static bool test_schannel(struct torture_context *tctx,
 		"failed to connect lsarpc with schannel");
 
 	torture_assert(tctx,
-		test_many_LookupSids(p_lsa, tctx, NULL),
+		test_many_LookupSids(p_lsa, tctx, NULL, LSA_LOOKUP_NAMES_ALL),
 		"LsaLookupSids3 failed!\n");
 
 	status = dcerpc_binding_set_transport(b, transport);
