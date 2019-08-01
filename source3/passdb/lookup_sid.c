@@ -113,7 +113,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
 		full_name, domain, name));
 	DEBUG(10, ("lookup_name: flags = 0x0%x\n", flags));
 
-	if ((flags & LOOKUP_NAME_DOMAIN) &&
+	if (((flags & LOOKUP_NAME_DOMAIN) || (flags == 0)) &&
 	    strequal(domain, get_global_sam_name()))
 	{
 
