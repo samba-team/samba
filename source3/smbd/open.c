@@ -2525,9 +2525,8 @@ static void kernel_oplock_poll_open_timer(struct tevent_context *ev,
 /**
  * Reschedule an open for 1 second from now, if not timed out.
  **/
-static void setup_kernel_oplock_poll_open(struct timeval request_time,
-		       struct smb_request *req,
-		       struct file_id id)
+static void setup_kernel_oplock_poll_open(struct smb_request *req,
+					  struct file_id id)
 {
 
 	bool ok;
@@ -2535,7 +2534,7 @@ static void setup_kernel_oplock_poll_open(struct timeval request_time,
 	/* Maximum wait time. */
 	struct timeval timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
 
-	if (request_timed_out(request_time, timeout)) {
+	if (request_timed_out(req->request_time, timeout)) {
 		return;
 	}
 
@@ -2547,7 +2546,7 @@ static void setup_kernel_oplock_poll_open(struct timeval request_time,
 	open_rec->mid = req->mid;
 
 	ok = push_deferred_open_message_smb(req,
-					    request_time,
+					    req->request_time,
 					    timeout,
 					    id,
 					    open_rec);
@@ -2565,7 +2564,7 @@ static void setup_kernel_oplock_poll_open(struct timeval request_time,
 	}
 
 	DBG_DEBUG("poll request time [%s] mid [%" PRIu64 "] file_id [%s]\n",
-		  timeval_string(talloc_tos(), &request_time, false),
+		  timeval_string(talloc_tos(), &req->request_time, false),
 		  req->mid,
 		  file_id_string_tos(&id));
 }
@@ -3322,10 +3321,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 * second to retry a non-blocking open until the time
 			 * expires.
 			 */
-			setup_kernel_oplock_poll_open(
-				req->request_time,
-				req,
-				fsp->file_id);
+			setup_kernel_oplock_poll_open(req, fsp->file_id);
 			DBG_DEBUG("No Samba oplock around after EWOULDBLOCK. "
 				"Retrying with poll\n");
 			return NT_STATUS_SHARING_VIOLATION;
@@ -3351,8 +3347,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * second to retry a non-blocking open until the time
 		 * expires.
 		 */
-		setup_kernel_oplock_poll_open(
-			req->request_time, req, fsp->file_id);
+		setup_kernel_oplock_poll_open(req, fsp->file_id);
 
 		TALLOC_FREE(lck);
 		DBG_DEBUG("No Samba oplock around after EWOULDBLOCK. "
