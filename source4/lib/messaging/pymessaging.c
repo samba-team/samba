@@ -259,8 +259,6 @@ static PyObject *py_imessaging_deregister(PyObject *self, PyObject *args, PyObje
 
 	imessaging_deregister(iface->msg_ctx, msg_type, callback);
 
-	Py_DECREF(callback);
-
 	Py_RETURN_NONE;
 }
 
