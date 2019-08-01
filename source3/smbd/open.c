@@ -2959,7 +2959,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	mode_t unx_mode = (mode_t)0;
 	int info;
 	uint32_t existing_dos_attributes = 0;
-	struct timeval request_time = timeval_zero();
 	struct share_mode_lock *lck = NULL;
 	uint32_t open_access_mask = access_mask;
 	NTSTATUS status;
@@ -3036,12 +3035,15 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (req) {
 		struct deferred_open_record *open_rec;
+		struct timeval request_time;
 		if (get_deferred_open_message_state(req,
 				&request_time,
 				&open_rec)) {
 			/* Remember the absolute time of the original
 			   request with this mid. We'll use it later to
 			   see if this has timed out. */
+
+			req->request_time = request_time;
 
 			/* If it was an async create retry, the file
 			   didn't exist. */
@@ -3259,10 +3261,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		fsp->posix_flags |= FSP_POSIX_FLAGS_ALL;
 	}
 
-	if (timeval_is_zero(&request_time)) {
-		request_time = fsp->open_time;
-	}
-
 	if ((create_options & FILE_DELETE_ON_CLOSE) &&
 			(flags2 & O_CREAT) &&
 			!file_existed) {
@@ -3326,9 +3324,10 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 * second to retry a non-blocking open until the time
 			 * expires.
 			 */
-			setup_kernel_oplock_poll_open(request_time,
-						req,
-						fsp->file_id);
+			setup_kernel_oplock_poll_open(
+				req->request_time,
+				req,
+				fsp->file_id);
 			DBG_DEBUG("No Samba oplock around after EWOULDBLOCK. "
 				"Retrying with poll\n");
 			return NT_STATUS_SHARING_VIOLATION;
@@ -3342,8 +3341,11 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 create_disposition,
 					 first_open_attempt);
 		if (delay) {
-			schedule_defer_open(lck, fsp->file_id, request_time,
-					    req);
+			schedule_defer_open(
+				lck,
+				fsp->file_id,
+				req->request_time,
+				req);
 			TALLOC_FREE(lck);
 			DEBUG(10, ("Sent oplock break request to kernel "
 				   "oplock holder\n"));
@@ -3355,7 +3357,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * second to retry a non-blocking open until the time
 		 * expires.
 		 */
-		setup_kernel_oplock_poll_open(request_time, req, fsp->file_id);
+		setup_kernel_oplock_poll_open(
+			req->request_time, req, fsp->file_id);
 
 		TALLOC_FREE(lck);
 		DBG_DEBUG("No Samba oplock around after EWOULDBLOCK. "
@@ -3365,7 +3368,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
 		if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_RETRY)) {
-			schedule_async_open(request_time, req);
+			schedule_async_open(req->request_time, req);
 		}
 		return fsp_open;
 	}
@@ -3476,8 +3479,8 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 create_disposition,
 					 first_open_attempt);
 		if (delay) {
-			schedule_defer_open(lck, fsp->file_id,
-					    request_time, req);
+			schedule_defer_open(
+				lck, fsp->file_id, req->request_time, req);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
@@ -3544,9 +3547,13 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 			timeout = timeval_set(0, timeout_usecs);
 
-			if (!request_timed_out(request_time, timeout)) {
-				defer_open(lck, request_time, timeout, req,
-					   false, id);
+			if (!request_timed_out(req->request_time, timeout)) {
+				defer_open(lck,
+					   req->request_time,
+					   timeout,
+					   req,
+					   false,
+					   id);
 			}
 		}
 
