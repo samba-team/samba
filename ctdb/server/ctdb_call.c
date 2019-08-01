@@ -1044,7 +1044,7 @@ void ctdb_request_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		}
 	}
 	if ((c->flags & CTDB_WANT_READONLY) 
-	&&  (call->call_id == CTDB_FETCH_WITH_HEADER_FUNC)) {
+	&&  ((unsigned int)call->call_id == CTDB_FETCH_WITH_HEADER_FUNC)) {
 		TDB_DATA tdata;
 
 		tdata = tdb_fetch(ctdb_db->rottdb, call->key);
