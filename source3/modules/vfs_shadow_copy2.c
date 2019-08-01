@@ -2265,46 +2265,19 @@ static int shadow_copy2_rmdir(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname)
 {
 	time_t timestamp = 0;
-	char *stripped = NULL;
-	int saved_errno = 0;
-	int ret;
-	char *conv;
-	struct smb_filename *conv_smb_fname = NULL;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(),
 					handle,
 					smb_fname->base_name,
 					&timestamp,
-					&stripped)) {
+					NULL)) {
 		return -1;
 	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
-	}
-	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv == NULL) {
+	if (timestamp != 0) {
+		errno = EROFS;
 		return -1;
 	}
-	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					smb_fname->flags);
-	if (conv_smb_fname == NULL) {
-		TALLOC_FREE(conv);
-		return -1;
-	}
-	ret = SMB_VFS_NEXT_RMDIR(handle, conv_smb_fname);
-	if (ret == -1) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(conv_smb_fname);
-	TALLOC_FREE(conv);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
+	return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 }
 
 static int shadow_copy2_chflags(vfs_handle_struct *handle,
