@@ -72,7 +72,7 @@ struct ctdb_queue {
 
 
 
-int ctdb_queue_length(struct ctdb_queue *queue)
+uint32_t ctdb_queue_length(struct ctdb_queue *queue)
 {
 	return queue->out_queue_length;
 }

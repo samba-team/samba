@@ -27,7 +27,7 @@
 typedef void (*ctdb_queue_cb_fn_t)(uint8_t *data, size_t length,
 				   void *private_data);
 
-int ctdb_queue_length(struct ctdb_queue *queue);
+uint32_t ctdb_queue_length(struct ctdb_queue *queue);
 
 int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length);
 
