@@ -1640,39 +1640,17 @@ static int shadow_copy2_ntimes(vfs_handle_struct *handle,
 			       struct smb_file_time *ft)
 {
 	time_t timestamp = 0;
-	char *stripped = NULL;
-	int saved_errno = 0;
-	int ret;
-	struct smb_filename *conv;
 
 	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
 					 smb_fname->base_name,
-					 &timestamp, &stripped)) {
+					 &timestamp, NULL)) {
 		return -1;
 	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
-	}
-	conv = cp_smb_filename(talloc_tos(), smb_fname);
-	if (conv == NULL) {
-		errno = ENOMEM;
+	if (timestamp != 0) {
+		errno = EROFS;
 		return -1;
 	}
-	conv->base_name = shadow_copy2_convert(
-		conv, handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv->base_name == NULL) {
-		return -1;
-	}
-	ret = SMB_VFS_NEXT_NTIMES(handle, conv, ft);
-	if (ret == -1) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(conv);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
+	return SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
 }
 
 static int shadow_copy2_readlink(vfs_handle_struct *handle,
