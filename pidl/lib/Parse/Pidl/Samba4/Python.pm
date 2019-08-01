@@ -201,6 +201,14 @@ sub PythonElementGetSet($$$$$$) {
 	$self->indent;
 	$self->pidl("$cname *object = ($cname *)pytalloc_get_ptr(obj);");
 	$self->pidl("PyObject *py_$e->{NAME};");
+	my $l = $e->{LEVELS}[0];
+	if ($l->{TYPE} eq "POINTER") {
+		$self->pidl("if ($varname == NULL) {");
+		$self->indent;
+		$self->pidl("Py_RETURN_NONE;");
+		$self->deindent;
+		$self->pidl("}");
+	}
 	$self->ConvertObjectToPython("pytalloc_get_mem_ctx(obj)", $env, $e, $varname, "py_$e->{NAME}", "return NULL;");
 	$self->pidl("return py_$e->{NAME};");
 	$self->deindent;
