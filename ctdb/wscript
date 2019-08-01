@@ -935,6 +935,12 @@ def build(bld):
                      deps='''talloc tevent tdb samba-util sys_rw''',
                      install_path='${CTDB_TEST_LIBEXECDIR}')
 
+    bld.SAMBA_BINARY('ctdb-db-test',
+                     source='tests/src/db_test_tool.c',
+                     cflags='-DCTDB_DB_TEST_TOOL',
+                     deps='''ctdb-client ctdb-protocol
+                             ctdb-util samba-util talloc tevent replace''',
+                     install_path='${CTDB_TEST_LIBEXECDIR}')
 
     bld.SAMBA_SUBSYSTEM('ctdb-protocol-tests-basic',
                         source=bld.SUBDIR('tests/src',
