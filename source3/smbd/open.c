@@ -40,6 +40,7 @@
 #include "source3/lib/dbwrap/dbwrap_watch.h"
 #include "locking/leases_db.h"
 #include "librpc/gen_ndr/ndr_leases_db.h"
+#include "lib/util/time_basic.h"
 
 extern const struct generic_mapping file_generic_mapping;
 
@@ -2424,14 +2425,15 @@ static void defer_open(struct share_mode_lock *lck,
 	struct timeval abs_timeout;
 	struct defer_open_state *watch_state;
 	struct tevent_req *watch_req;
+	struct timeval_buf tvbuf1, tvbuf2;
 	bool ok;
 
 	abs_timeout = timeval_sum(&req->request_time, &timeout);
 
 	DBG_DEBUG("request time [%s] timeout [%s] mid [%" PRIu64 "] "
 		  "delayed_for_oplocks [%s] file_id [%s]\n",
-		  timeval_string(talloc_tos(), &req->request_time, false),
-		  timeval_string(talloc_tos(), &abs_timeout, false),
+		  timeval_str_buf(&req->request_time, false, true, &tvbuf1),
+		  timeval_str_buf(&abs_timeout, false, true, &tvbuf2),
 		  req->mid,
 		  delayed_for_oplocks ? "yes" : "no",
 		  file_id_string_tos(&id));
