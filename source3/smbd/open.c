@@ -2468,8 +2468,8 @@ static void defer_open(struct share_mode_lock *lck,
 		exit_server("tevent_req_set_endtime failed");
 	}
 
-	ok = push_deferred_open_message_smb(req, req->request_time, timeout,
-					    open_rec->id, open_rec);
+	ok = push_deferred_open_message_smb(
+		req, timeout, open_rec->id, open_rec);
 	if (!ok) {
 		TALLOC_FREE(lck);
 		exit_server("push_deferred_open_message_smb failed");
@@ -2545,11 +2545,7 @@ static void setup_kernel_oplock_poll_open(struct smb_request *req,
 	open_rec->xconn = req->xconn;
 	open_rec->mid = req->mid;
 
-	ok = push_deferred_open_message_smb(req,
-					    req->request_time,
-					    timeout,
-					    id,
-					    open_rec);
+	ok = push_deferred_open_message_smb(req, timeout, id, open_rec);
 	if (!ok) {
 		exit_server("push_deferred_open_message_smb failed");
 	}
@@ -2670,8 +2666,8 @@ static void schedule_async_open(struct smb_request *req)
 		exit_server("deferred_open_record_create failed");
 	}
 
-	ok = push_deferred_open_message_smb(req, req->request_time, timeout,
-					    (struct file_id){0}, open_rec);
+	ok = push_deferred_open_message_smb(
+		req, timeout, (struct file_id){0}, open_rec);
 	if (!ok) {
 		exit_server("push_deferred_open_message_smb failed");
 	}

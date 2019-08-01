@@ -936,16 +936,15 @@ bool get_deferred_open_message_state(struct smb_request *smbreq,
 ****************************************************************************/
 
 bool push_deferred_open_message_smb(struct smb_request *req,
-			       struct timeval request_time,
-			       struct timeval timeout,
-			       struct file_id id,
-			       struct deferred_open_record *open_rec)
+				    struct timeval timeout,
+				    struct file_id id,
+				    struct deferred_open_record *open_rec)
 {
 	struct timeval end_time;
 
 	if (req->smb2req) {
 		return push_deferred_open_message_smb2(req->smb2req,
-						request_time,
+						req->request_time,
 						timeout,
 						id,
 						open_rec);
@@ -959,7 +958,7 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 			"logic error unread_bytes != 0" );
 	}
 
-	end_time = timeval_sum(&request_time, &timeout);
+	end_time = timeval_sum(&req->request_time, &timeout);
 
 	DEBUG(10,("push_deferred_open_message_smb: pushing message "
 		"len %u mid %llu timeout time [%u.%06u]\n",
@@ -968,7 +967,7 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 		(unsigned int)end_time.tv_sec,
 		(unsigned int)end_time.tv_usec));
 
-	return push_queued_message(req, request_time, end_time, open_rec);
+	return push_queued_message(req, req->request_time, end_time, open_rec);
 }
 
 static void smbd_sig_term_handler(struct tevent_context *ev,
