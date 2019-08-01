@@ -2416,7 +2416,6 @@ static void defer_open_done(struct tevent_req *req);
  * sharing violation delay.
  **/
 static void defer_open(struct share_mode_lock *lck,
-		       struct timeval request_time,
 		       struct timeval timeout,
 		       struct smb_request *req,
 		       bool delayed_for_oplocks,
@@ -2428,11 +2427,11 @@ static void defer_open(struct share_mode_lock *lck,
 	struct tevent_req *watch_req;
 	bool ok;
 
-	abs_timeout = timeval_sum(&request_time, &timeout);
+	abs_timeout = timeval_sum(&req->request_time, &timeout);
 
 	DBG_DEBUG("request time [%s] timeout [%s] mid [%" PRIu64 "] "
 		  "delayed_for_oplocks [%s] file_id [%s]\n",
-		  timeval_string(talloc_tos(), &request_time, false),
+		  timeval_string(talloc_tos(), &req->request_time, false),
 		  timeval_string(talloc_tos(), &abs_timeout, false),
 		  req->mid,
 		  delayed_for_oplocks ? "yes" : "no",
@@ -2469,7 +2468,7 @@ static void defer_open(struct share_mode_lock *lck,
 		exit_server("tevent_req_set_endtime failed");
 	}
 
-	ok = push_deferred_open_message_smb(req, request_time, timeout,
+	ok = push_deferred_open_message_smb(req, req->request_time, timeout,
 					    open_rec->id, open_rec);
 	if (!ok) {
 		TALLOC_FREE(lck);
@@ -2642,7 +2641,7 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 		return;
 	}
 
-	defer_open(lck, req->request_time, timeout, req, true, id);
+	defer_open(lck, timeout, req, true, id);
 }
 
 /****************************************************************************
@@ -3542,12 +3541,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			timeout = timeval_set(0, timeout_usecs);
 
 			if (!request_timed_out(req->request_time, timeout)) {
-				defer_open(lck,
-					   req->request_time,
-					   timeout,
-					   req,
-					   false,
-					   id);
+				defer_open(lck, timeout, req, false, id);
 			}
 		}
 
