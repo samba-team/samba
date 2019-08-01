@@ -5643,6 +5643,240 @@ static bool run_deletetest(int dummy)
 	return correct;
 }
 
+struct delete_stream_state {
+	bool closed;
+};
+
+static void delete_stream_unlinked(struct tevent_req *subreq);
+static void delete_stream_closed(struct tevent_req *subreq);
+
+static struct tevent_req *delete_stream_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct cli_state *cli,
+	const char *base_fname,
+	uint16_t stream_fnum)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct delete_stream_state *state = NULL;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct delete_stream_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	subreq = cli_unlink_send(
+		state,
+		ev,
+		cli,
+		base_fname,
+		FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, delete_stream_unlinked, req);
+
+	subreq = cli_close_send(state, ev, cli, stream_fnum);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, delete_stream_closed, req);
+
+	return req;
+}
+
+static void delete_stream_unlinked(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct delete_stream_state *state = tevent_req_data(
+		req, struct delete_stream_state);
+	NTSTATUS status;
+
+	status = cli_unlink_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+		printf("cli_unlink returned %s\n",
+		       nt_errstr(status));
+		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+	if (!state->closed) {
+		/* close reply should have come in first */
+		printf("Not closed\n");
+		tevent_req_nterror(req, NT_STATUS_UNSUCCESSFUL);
+		return;
+	}
+	tevent_req_done(req);
+}
+
+static void delete_stream_closed(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct delete_stream_state *state = tevent_req_data(
+		req, struct delete_stream_state);
+	NTSTATUS status;
+
+	status = cli_close_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	/* also waiting for the unlink to come back */
+	state->closed = true;
+}
+
+static NTSTATUS delete_stream_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static bool run_delete_stream(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct tevent_req *req = NULL;
+	struct cli_state *cli = NULL;
+	const char fname[] = "delete_stream";
+	const char fname_stream[] = "delete_stream:Zone.Identifier:$DATA";
+	uint16_t fnum1, fnum2;
+	NTSTATUS status;
+	bool ok;
+
+	printf("Starting stream delete test\n");
+
+	ok = torture_open_connection(&cli, 0);
+	if (!ok) {
+		return false;
+	}
+
+	cli_setatr(cli, fname, 0, 0);
+	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+
+	/* Create the file. */
+	status = cli_ntcreate(
+		cli,
+		fname,
+		0,
+		READ_CONTROL_ACCESS,
+		0,
+		FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+		FILE_CREATE,
+		0x0,
+		0x0,
+		&fnum1,
+		NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_ntcreate of %s failed (%s)\n",
+			  fname,
+			  nt_errstr(status));
+		return false;
+	}
+	status = cli_close(cli, fnum1);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_close of %s failed (%s)\n",
+			  fname,
+			  nt_errstr(status));
+		return false;
+	}
+
+	/* Now create the stream. */
+	status = cli_ntcreate(
+		cli,
+		fname_stream,
+		0,
+		FILE_WRITE_DATA,
+		0,
+		FILE_SHARE_READ|FILE_SHARE_WRITE,
+		FILE_CREATE,
+		0x0,
+		0x0,
+		&fnum1,
+		NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "cli_ntcreate of %s failed (%s)\n",
+			  fname_stream,
+			  nt_errstr(status));
+		return false;
+	}
+
+	/* open it a second time */
+
+	status = cli_ntcreate(
+		cli,
+		fname_stream,
+		0,
+		FILE_WRITE_DATA,
+		0,
+		FILE_SHARE_READ|FILE_SHARE_WRITE,
+		FILE_OPEN,
+		0x0,
+		0x0,
+		&fnum2,
+		NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "2nd cli_ntcreate of %s failed (%s)\n",
+			  fname_stream,
+			  nt_errstr(status));
+		return false;
+	}
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		d_fprintf(stderr, "samba_tevent_context_init failed\n");
+		return false;
+	}
+
+	req = delete_stream_send(ev, ev, cli, fname, fnum1);
+	if (req == NULL) {
+		d_fprintf(stderr, "delete_stream_send failed\n");
+		return false;
+	}
+
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		d_fprintf(stderr,
+			  "tevent_req_poll_ntstatus failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	status = delete_stream_recv(req);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "delete_stream failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	status = cli_close(cli, fnum2);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "close failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	status = cli_unlink(
+		cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr,
+			  "unlink failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	return true;
+}
+
 /*
   Exercise delete on close semantics - use on the PRINT1 share in torture
   testing.
@@ -14137,6 +14371,10 @@ static struct {
 	{
 		.name  = "DELETE",
 		.fn    = run_deletetest,
+	},
+	{
+		.name  = "DELETE-STREAM",
+		.fn    = run_delete_stream,
 	},
 	{
 		.name  = "DELETE-PRINT",

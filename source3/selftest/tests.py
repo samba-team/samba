@@ -96,6 +96,7 @@ tests = ["FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7"
          "CLEANUP1",
          "CLEANUP2",
          "CLEANUP4",
+         "DELETE-STREAM",
          "BAD-NBT-SESSION"]
 
 for t in tests:
