@@ -2655,14 +2655,13 @@ static void schedule_async_open_timer(struct tevent_context *ev,
 	exit_server("async open timeout");
 }
 
-static void schedule_async_open(struct timeval request_time,
-				struct smb_request *req)
+static void schedule_async_open(struct smb_request *req)
 {
 	struct deferred_open_record *open_rec = NULL;
 	struct timeval timeout = timeval_set(20, 0);
 	bool ok;
 
-	if (request_timed_out(request_time, timeout)) {
+	if (request_timed_out(req->request_time, timeout)) {
 		return;
 	}
 
@@ -2671,7 +2670,7 @@ static void schedule_async_open(struct timeval request_time,
 		exit_server("deferred_open_record_create failed");
 	}
 
-	ok = push_deferred_open_message_smb(req, request_time, timeout,
+	ok = push_deferred_open_message_smb(req, req->request_time, timeout,
 					    (struct file_id){0}, open_rec);
 	if (!ok) {
 		exit_server("push_deferred_open_message_smb failed");
@@ -3357,7 +3356,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
 		if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_RETRY)) {
-			schedule_async_open(req->request_time, req);
+			schedule_async_open(req);
 		}
 		return fsp_open;
 	}
