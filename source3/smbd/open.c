@@ -2618,7 +2618,6 @@ static bool open_match_attributes(connection_struct *conn,
 
 static void schedule_defer_open(struct share_mode_lock *lck,
 				struct file_id id,
-				struct timeval request_time,
 				struct smb_request *req)
 {
 	/* This is a relative time, added to the absolute
@@ -2639,11 +2638,11 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 
 	timeout = timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0);
 
-	if (request_timed_out(request_time, timeout)) {
+	if (request_timed_out(req->request_time, timeout)) {
 		return;
 	}
 
-	defer_open(lck, request_time, timeout, req, true, id);
+	defer_open(lck, req->request_time, timeout, req, true, id);
 }
 
 /****************************************************************************
@@ -3341,11 +3340,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 create_disposition,
 					 first_open_attempt);
 		if (delay) {
-			schedule_defer_open(
-				lck,
-				fsp->file_id,
-				req->request_time,
-				req);
+			schedule_defer_open(lck, fsp->file_id, req);
 			TALLOC_FREE(lck);
 			DEBUG(10, ("Sent oplock break request to kernel "
 				   "oplock holder\n"));
@@ -3479,8 +3474,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 create_disposition,
 					 first_open_attempt);
 		if (delay) {
-			schedule_defer_open(
-				lck, fsp->file_id, req->request_time, req);
+			schedule_defer_open(lck, fsp->file_id, req);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
