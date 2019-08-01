@@ -2183,7 +2183,7 @@ static int control_cattdb(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	int ret;
 
 	if (argc != 1) {
-		usage("catdb");
+		usage("cattdb");
 	}
 
 	if (! db_exists(mem_ctx, ctdb, argv[0], &db_id, &db_name, &db_flags)) {
