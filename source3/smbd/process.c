@@ -45,6 +45,7 @@
 #include "lib/pthreadpool/pthreadpool_tevent.h"
 #include "util_event.h"
 #include "libcli/smb/smbXcli_base.h"
+#include "lib/util/time_basic.h"
 
 /* Internal message queue for deferred opens. */
 struct pending_message_list {
@@ -940,6 +941,7 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 				    struct file_id id,
 				    struct deferred_open_record *open_rec)
 {
+	struct timeval_buf tvbuf;
 	struct timeval end_time;
 
 	if (req->smb2req) {
@@ -960,12 +962,10 @@ bool push_deferred_open_message_smb(struct smb_request *req,
 
 	end_time = timeval_sum(&req->request_time, &timeout);
 
-	DEBUG(10,("push_deferred_open_message_smb: pushing message "
-		"len %u mid %llu timeout time [%u.%06u]\n",
-		(unsigned int) smb_len(req->inbuf)+4,
-		(unsigned long long)req->mid,
-		(unsigned int)end_time.tv_sec,
-		(unsigned int)end_time.tv_usec));
+	DBG_DEBUG("pushing message len %u mid %"PRIu64" timeout time [%s]\n",
+		  (unsigned int) smb_len(req->inbuf)+4,
+		  req->mid,
+		  timeval_str_buf(&end_time, false, true, &tvbuf));
 
 	return push_queued_message(req, req->request_time, end_time, open_rec);
 }
