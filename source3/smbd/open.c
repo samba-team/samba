@@ -2517,7 +2517,7 @@ static bool setup_poll_open(
 
 	bool ok;
 	struct deferred_open_record *open_rec = NULL;
-	/* Maximum wait time. */
+	struct timeval endtime, next_interval;
 
 	if (request_timed_out(req, max_timeout)) {
 		return false;
@@ -2531,10 +2531,19 @@ static bool setup_poll_open(
 	open_rec->xconn = req->xconn;
 	open_rec->mid = req->mid;
 
+	/*
+	 * Make sure open_rec->te does not come later than the
+	 * request's maximum endtime.
+	 */
+
+	endtime = timeval_sum(&req->request_time, &max_timeout);
+	next_interval = timeval_current_ofs(interval.tv_sec, interval.tv_usec);
+	next_interval = timeval_min(&endtime, &next_interval);
+
 	open_rec->te = tevent_add_timer(
 		req->sconn->ev_ctx,
 		open_rec,
-		timeval_current_ofs(interval.tv_sec, interval.tv_usec),
+		next_interval,
 		poll_open_fn,
 		open_rec);
 	if (open_rec->te == NULL) {
