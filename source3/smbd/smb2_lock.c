@@ -43,6 +43,7 @@ struct smbd_smb2_lock_state {
 	struct smb_request *smb1req;
 	struct files_struct *fsp;
 	bool blocking;
+	uint32_t polling_msecs;
 	uint16_t lock_count;
 	struct smbd_lock_element *locks;
 };
@@ -371,6 +372,32 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static void smbd_smb2_lock_update_polling_msecs(
+	struct smbd_smb2_lock_state *state)
+{
+	/*
+	 * The default lp_lock_spin_time() is 200ms.
+	 *
+	 * v_min is in the range of 0.002 to 20 secs
+	 * (0.2 secs by default)
+	 *
+	 * v_max is in the range of 0.02 to 200 secs
+	 * (2.0 secs by default)
+	 *
+	 * The typical steps are:
+	 * 0.2, 0.4, 0.6, 0.8, ... 2.0
+	 */
+	uint32_t v_min = MAX(2, MIN(20000, lp_lock_spin_time()));
+	uint32_t v_max = 10 * v_min;
+
+	if (state->polling_msecs >= v_max) {
+		state->polling_msecs = v_max;
+		return;
+	}
+
+	state->polling_msecs += v_min;
+}
+
 static void smbd_smb2_lock_try(struct tevent_req *req)
 {
 	struct smbd_smb2_lock_state *state = tevent_req_data(
@@ -381,6 +408,7 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 	uint64_t blocking_smblctx;
 	NTSTATUS status;
 	struct tevent_req *subreq = NULL;
+	struct timeval endtime = { 0 };
 
 	lck = get_existing_share_mode_lock(
 		talloc_tos(), state->fsp->file_id);
@@ -426,6 +454,15 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 		return;
 	}
 
+	if (blocking_smblctx == UINT64_MAX) {
+		smbd_smb2_lock_update_polling_msecs(state);
+
+		DBG_DEBUG("Blocked on a posix lock. Retry in %"PRIu32" msecs\n",
+			  state->polling_msecs);
+
+		endtime = timeval_current_ofs_msec(state->polling_msecs);
+	}
+
 	DBG_DEBUG("Watching share mode lock\n");
 
 	subreq = dbwrap_watched_watch_send(
@@ -435,6 +472,18 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 		return;
 	}
 	tevent_req_set_callback(subreq, smbd_smb2_lock_retry, req);
+
+	if (!timeval_is_zero(&endtime)) {
+		bool ok;
+
+		ok = tevent_req_set_endtime(subreq,
+					    state->ev,
+					    endtime);
+		if (!ok) {
+			tevent_req_oom(req);
+			return;
+		}
+	}
 }
 
 static void smbd_smb2_lock_retry(struct tevent_req *subreq)
@@ -457,6 +506,12 @@ static void smbd_smb2_lock_retry(struct tevent_req *subreq)
 
 	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
 	TALLOC_FREE(subreq);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		/*
+		 * This is just a trigger for a timed retry.
+		 */
+		status = NT_STATUS_OK;
+	}
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
