@@ -45,8 +45,9 @@ database_has_zero_records ()
 {
 	local n
 	for n in $notfirst ; do
-		try_command_on_node $n $CTDB cattdb "$testdb"
-		if grep -q '^key(' "$outfile" ; then
+		local num_records
+		num_records=$(db_ctdb_cattdb_count_records "$n" "$testdb")
+		if [ "$num_records" != 0 ] ; then
 			return 1
 		fi
 	done
