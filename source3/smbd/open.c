@@ -3489,18 +3489,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	status = open_mode_check(conn, lck,
 				 access_mask, share_access);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
-	    (lck->data->num_share_modes > 0)) {
-		/*
-		 * This comes from ancient times out of open_mode_check. I
-		 * have no clue whether this is still necessary. I can't think
-		 * of a case where this would actually matter further down in
-		 * this function. I leave it here for further investigation
-		 * :-)
-		 */
-		file_existed = true;
-	}
-
 	if (req != NULL) {
 		/*
 		 * Handle oplocks, deferring the request if delay_for_oplock()
