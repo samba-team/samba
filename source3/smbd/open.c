@@ -3030,15 +3030,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (req) {
 		struct deferred_open_record *open_rec;
-		struct timeval request_time;
-		if (get_deferred_open_message_state(req,
-				&request_time,
-				&open_rec)) {
-			/* Remember the absolute time of the original
-			   request with this mid. We'll use it later to
-			   see if this has timed out. */
-
-			req->request_time = request_time;
+		if (get_deferred_open_message_state(req, NULL, &open_rec)) {
 
 			/* If it was an async create retry, the file
 			   didn't exist. */
@@ -5551,6 +5543,15 @@ NTSTATUS create_file_default(connection_struct *conn,
 		  (unsigned int)private_flags,
 		  (unsigned int)root_dir_fid,
 		  ea_list, sd, smb_fname_str_dbg(smb_fname));
+
+	if (req != NULL) {
+		/*
+		 * Remember the absolute time of the original request
+		 * with this mid. We'll use it later to see if this
+		 * has timed out.
+		 */
+		get_deferred_open_message_state(req, &req->request_time, NULL);
+	}
 
 	/*
 	 * Calculate the filename from the root_dir_if if necessary.
