@@ -559,7 +559,7 @@ init_sec_context_done:
 			status = NT_STATUS_NO_MEMORY;
 		}
 
-		gss_maj = gss_release_buffer(&gss_min, &out_data);
+		gss_release_buffer(&gss_min, &out_data);
 	}
 
 done:
@@ -684,7 +684,7 @@ static NTSTATUS gse_get_server_auth_token(TALLOC_CTX *mem_ctx,
 		if (!blob.data) {
 			status = NT_STATUS_NO_MEMORY;
 		}
-		gss_maj = gss_release_buffer(&gss_min, &out_data);
+		gss_release_buffer(&gss_min, &out_data);
 	}
 
 
@@ -736,10 +736,10 @@ static char *gse_errstr(TALLOC_CTX *mem_ctx, OM_uint32 maj, OM_uint32 min)
 
 done:
 	if (msg_min.value) {
-		gss_maj = gss_release_buffer(&gss_min, &msg_min);
+		gss_release_buffer(&gss_min, &msg_min);
 	}
 	if (msg_maj.value) {
-		gss_maj = gss_release_buffer(&gss_min, &msg_maj);
+		gss_release_buffer(&gss_min, &msg_maj);
 	}
 	return errstr;
 }
