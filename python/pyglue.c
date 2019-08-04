@@ -37,9 +37,15 @@ static PyObject *py_generate_random_str(PyObject *self, PyObject *args)
 	int len;
 	PyObject *ret;
 	char *retstr;
-	if (!PyArg_ParseTuple(args, "i", &len))
+	if (!PyArg_ParseTuple(args, "i", &len)) {
 		return NULL;
-
+	}
+	if (len < 0) {
+		PyErr_Format(PyExc_ValueError,
+			     "random string length should be positive, not %d",
+			     len);
+		return NULL;
+	}
 	retstr = generate_random_str(NULL, len);
 	ret = PyUnicode_FromString(retstr);
 	talloc_free(retstr);
@@ -97,9 +103,15 @@ static PyObject *py_generate_random_bytes(PyObject *self, PyObject *args)
 	PyObject *ret;
 	uint8_t *bytes = NULL;
 
-	if (!PyArg_ParseTuple(args, "i", &len))
+	if (!PyArg_ParseTuple(args, "i", &len)) {
 		return NULL;
-
+	}
+	if (len < 0) {
+		PyErr_Format(PyExc_ValueError,
+			     "random bytes length should be positive, not %d",
+			     len);
+		return NULL;
+	}
 	bytes = talloc_zero_size(NULL, len);
 	if (bytes == NULL) {
 		PyErr_NoMemory();
