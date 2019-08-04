@@ -378,6 +378,11 @@ static void transaction_next_hash_chain(struct tdb_context *tdb, uint32_t *chain
 static int transaction_oob(struct tdb_context *tdb, tdb_off_t off,
 			   tdb_len_t len, int probe)
 {
+	/*
+	 * This duplicates functionality from tdb_oob(). Don't remove:
+	 * we still have direct callers of tdb->methods->tdb_oob()
+	 * inside transaction.c.
+	 */
 	if (off + len >= off && off + len <= tdb->map_size) {
 		return 0;
 	}

@@ -150,6 +150,11 @@ static int tdb_notrans_oob(
 		return -1;
 	}
 
+	/*
+	 * This duplicates functionality from tdb_oob(). Don't remove:
+	 * we still have direct callers of tdb->methods->tdb_oob()
+	 * inside transaction.c.
+	 */
 	if (off + len <= tdb->map_size)
 		return 0;
 	if (tdb->flags & TDB_INTERNAL) {
@@ -664,7 +669,13 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 
 int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len, int probe)
 {
-	int ret = tdb->methods->tdb_oob(tdb, off, len, probe);
+	int ret;
+
+	if (likely((off + len >= off) && (off + len <= tdb->map_size))) {
+		return 0;
+	}
+
+	ret = tdb->methods->tdb_oob(tdb, off, len, probe);
 	return ret;
 }
 
