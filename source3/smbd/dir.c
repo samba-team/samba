@@ -370,15 +370,17 @@ done:
 
 void dptr_CloseDir(files_struct *fsp)
 {
-	if (fsp->dptr) {
-		/*
-		 * The destructor for the struct smb_Dir
-		 * (fsp->dptr->dir_hnd) now handles
-		 * all resource deallocation.
-		 */
-		dptr_close_internal(fsp->dptr);
-		fsp->dptr = NULL;
+	if (fsp->dptr == NULL) {
+		return;
 	}
+
+	/*
+	 * The destructor for the struct smb_Dir (fsp->dptr->dir_hnd)
+	 * now handles all resource deallocation.
+	 */
+
+	dptr_close_internal(fsp->dptr);
+	fsp->dptr = NULL;
 }
 
 void dptr_SeekDir(struct dptr_struct *dptr, long offset)
