@@ -667,15 +667,9 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	return -1;
 }
 
-int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len, int probe)
+int _tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len, int probe)
 {
-	int ret;
-
-	if (likely((off + len >= off) && (off + len <= tdb->map_size))) {
-		return 0;
-	}
-
-	ret = tdb->methods->tdb_oob(tdb, off, len, probe);
+	int ret = tdb->methods->tdb_oob(tdb, off, len, probe);
 	return ret;
 }
 
