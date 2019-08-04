@@ -171,43 +171,6 @@ uint16_t dptr_attr(struct smbd_server_connection *sconn, int key)
 }
 
 /****************************************************************************
- Close a dptr (internal func).
-****************************************************************************/
-
-static void dptr_close_internal(struct dptr_struct *dptr)
-{
-	struct smbd_server_connection *sconn = dptr->conn->sconn;
-
-	DEBUG(4,("closing dptr key %d\n",dptr->dnum));
-
-	if (sconn == NULL) {
-		goto done;
-	}
-
-	if (sconn->using_smb2) {
-		goto done;
-	}
-
-	DLIST_REMOVE(sconn->searches.dirptrs, dptr);
-
-	/*
-	 * Free the dnum in the bitmap. Remember the dnum value is always 
-	 * biased by one with respect to the bitmap.
-	 */
-
-	if (!bitmap_query(sconn->searches.dptr_bmap, dptr->dnum - 1)) {
-		DEBUG(0,("dptr_close_internal : Error - closing dnum = %d and bitmap not set !\n",
-			dptr->dnum ));
-	}
-
-	bitmap_clear(sconn->searches.dptr_bmap, dptr->dnum - 1);
-
-done:
-	TALLOC_FREE(dptr->dir_hnd);
-	TALLOC_FREE(dptr);
-}
-
-/****************************************************************************
  Close all dptrs for a cnum.
 ****************************************************************************/
 
@@ -370,6 +333,8 @@ done:
 
 void dptr_CloseDir(files_struct *fsp)
 {
+	struct smbd_server_connection *sconn = fsp->dptr->conn->sconn;
+
 	if (fsp->dptr == NULL) {
 		return;
 	}
@@ -379,8 +344,28 @@ void dptr_CloseDir(files_struct *fsp)
 	 * now handles all resource deallocation.
 	 */
 
-	dptr_close_internal(fsp->dptr);
-	fsp->dptr = NULL;
+	DBG_INFO("closing dptr key %d\n", fsp->dptr->dnum);
+
+	if (sconn != NULL && !sconn->using_smb2) {
+		DLIST_REMOVE(sconn->searches.dirptrs, fsp->dptr);
+
+		/*
+		 * Free the dnum in the bitmap. Remember the dnum value is
+		 * always biased by one with respect to the bitmap.
+		 */
+
+		if (!bitmap_query(sconn->searches.dptr_bmap,
+				  fsp->dptr->dnum - 1))
+		{
+			DBG_ERR("closing dnum = %d and bitmap not set !\n",
+				fsp->dptr->dnum);
+		}
+
+		bitmap_clear(sconn->searches.dptr_bmap, fsp->dptr->dnum - 1);
+	}
+
+	TALLOC_FREE(fsp->dptr->dir_hnd);
+	TALLOC_FREE(fsp->dptr);
 }
 
 void dptr_SeekDir(struct dptr_struct *dptr, long offset)
