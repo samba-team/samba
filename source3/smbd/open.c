@@ -833,7 +833,11 @@ NTSTATUS fd_close(files_struct *fsp)
 		dptr_CloseDir(fsp);
 	}
 	if (fsp->fh->fd == -1) {
-		return NT_STATUS_OK; /* What we used to call a stat open. */
+		/*
+		 * Either a directory where the dptr_CloseDir() already closed
+		 * the fd or a stat open.
+		 */
+		return NT_STATUS_OK;
 	}
 	if (fsp->fh->ref_count > 1) {
 		return NT_STATUS_OK; /* Shared handle. Only close last reference. */
