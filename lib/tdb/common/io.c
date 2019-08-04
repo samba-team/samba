@@ -136,8 +136,8 @@ static int tdb_fstat(struct tdb_context *tdb, struct stat *buf)
    see if the database has been expanded by someone else and expand
    if necessary
 */
-static int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len,
-		   int probe)
+static int tdb_notrans_oob(
+	struct tdb_context *tdb, tdb_off_t off, tdb_len_t len, int probe)
 {
 	struct stat st;
 	if (len + off < len) {
@@ -782,7 +782,7 @@ static const struct tdb_methods io_methods = {
 	tdb_read,
 	tdb_write,
 	tdb_next_hash_chain,
-	tdb_oob,
+	tdb_notrans_oob,
 	tdb_expand_file,
 };
 

@@ -48,7 +48,7 @@ static const struct tdb_methods large_io_methods = {
 	tdb_read,
 	tdb_write,
 	tdb_next_hash_chain,
-	tdb_oob,
+	tdb_notrans_oob,
 	tdb_expand_file_sparse
 };
 
