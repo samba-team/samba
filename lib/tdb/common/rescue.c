@@ -60,7 +60,7 @@ static bool looks_like_valid_record(struct tdb_context *tdb,
 	if (rec->next > 0 && rec->next < TDB_DATA_START(tdb->hash_size))
 		return false;
 
-	if (tdb->methods->tdb_oob(tdb, rec->next, sizeof(*rec), 1))
+	if (tdb_oob(tdb, rec->next, sizeof(*rec), 1))
 		return false;
 
 	key->dsize = rec->key_len;
@@ -228,7 +228,7 @@ _PUBLIC_ int tdb_rescue(struct tdb_context *tdb,
 	}
 
 	/* Make sure we know true size of the underlying file. */
-	tdb->methods->tdb_oob(tdb, tdb->map_size, 1, 1);
+	tdb_oob(tdb, tdb->map_size, 1, 1);
 
 	/* Suppress logging, since we anticipate errors. */
 	tdb->log.log_fn = logging_suppressed;

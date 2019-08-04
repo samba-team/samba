@@ -655,7 +655,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 	 * As this skips tdb->hdr_ofs.
 	 */
 	tdb->map_size = 0;
-	ret = tdb->methods->tdb_oob(tdb, 0, 1, 0);
+	ret = tdb_oob(tdb, 0, 1, 0);
 	if (ret == -1) {
 		errno = EIO;
 		goto fail;
@@ -677,7 +677,7 @@ _PUBLIC_ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int td
 		goto fail;
 	}
 
-	ret = tdb->methods->tdb_oob(tdb, FREELIST_TOP, 4*tdb->hash_size, 1);
+	ret = tdb_oob(tdb, FREELIST_TOP, 4*tdb->hash_size, 1);
 	if (ret == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_open_ex: "
 			 "hash size %"PRIu32" does not fit\n", tdb->hash_size));
@@ -895,7 +895,7 @@ static int tdb_reopen_internal(struct tdb_context *tdb, bool active_lock)
 	 * As this skips tdb->hdr_ofs.
 	 */
 	tdb->map_size = 0;
-	if (tdb->methods->tdb_oob(tdb, 0, 1, 0) != 0) {
+	if (tdb_oob(tdb, 0, 1, 0) != 0) {
 		goto fail;
 	}
 #endif /* fake pread or pwrite */

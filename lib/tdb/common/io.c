@@ -216,7 +216,7 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 		return -1;
 	}
 
-	if (tdb->methods->tdb_oob(tdb, off, len, 0) != 0)
+	if (tdb_oob(tdb, off, len, 0) != 0)
 		return -1;
 
 	if (tdb->map_ptr) {
@@ -271,7 +271,7 @@ void *tdb_convert(void *buf, uint32_t size)
 static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
 		    tdb_len_t len, int cv)
 {
-	if (tdb->methods->tdb_oob(tdb, off, len, 0) != 0) {
+	if (tdb_oob(tdb, off, len, 0) != 0) {
 		return -1;
 	}
 
@@ -596,7 +596,7 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	}
 
 	/* must know about any previous expansions by another process */
-	tdb->methods->tdb_oob(tdb, tdb->map_size, 1, 1);
+	tdb_oob(tdb, tdb->map_size, 1, 1);
 
 	/*
 	 * Note: that we don't care about tdb->hdr_ofs != 0 here
@@ -662,6 +662,12 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	return -1;
 }
 
+int tdb_oob(struct tdb_context *tdb, tdb_off_t off, tdb_len_t len, int probe)
+{
+	int ret = tdb->methods->tdb_oob(tdb, off, len, probe);
+	return ret;
+}
+
 /* read/write a tdb_off_t */
 int tdb_ofs_read(struct tdb_context *tdb, tdb_off_t offset, tdb_off_t *d)
 {
@@ -714,7 +720,7 @@ int tdb_parse_data(struct tdb_context *tdb, TDB_DATA key,
 		 * Optimize by avoiding the malloc/memcpy/free, point the
 		 * parser directly at the mmap area.
 		 */
-		if (tdb->methods->tdb_oob(tdb, offset, len, 0) != 0) {
+		if (tdb_oob(tdb, offset, len, 0) != 0) {
 			return -1;
 		}
 		data.dptr = offset + (unsigned char *)tdb->map_ptr;
@@ -756,20 +762,20 @@ int tdb_rec_read(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *r
 		return -1;
 	}
 
-	ret = tdb->methods->tdb_oob(tdb, offset, rec->key_len, 1);
+	ret = tdb_oob(tdb, offset, rec->key_len, 1);
 	if (ret == -1) {
 		return -1;
 	}
-	ret = tdb->methods->tdb_oob(tdb, offset, rec->data_len, 1);
+	ret = tdb_oob(tdb, offset, rec->data_len, 1);
 	if (ret == -1) {
 		return -1;
 	}
-	ret = tdb->methods->tdb_oob(tdb, offset, rec->rec_len, 1);
+	ret = tdb_oob(tdb, offset, rec->rec_len, 1);
 	if (ret == -1) {
 		return -1;
 	}
 
-	return tdb->methods->tdb_oob(tdb, rec->next, sizeof(*rec), 0);
+	return tdb_oob(tdb, rec->next, sizeof(*rec), 0);
 }
 
 int tdb_rec_write(struct tdb_context *tdb, tdb_off_t offset, struct tdb_record *rec)
