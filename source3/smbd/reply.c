@@ -1916,7 +1916,6 @@ void reply_search(struct smb_request *req)
 		nt_status = dptr_create(conn,
 					NULL, /* req */
 					fsp, /* fsp */
-					smb_dname,
 					True,
 					expect_close,
 					req->smbpid,

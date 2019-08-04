@@ -187,7 +187,6 @@ void dptr_closecnum(connection_struct *conn);
 NTSTATUS dptr_create(connection_struct *conn,
 		struct smb_request *req,
 		files_struct *fsp,
-		const struct smb_filename *smb_dname,
 		bool old_handle,
 		bool expect_close,
 		uint16_t spid,

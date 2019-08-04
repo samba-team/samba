@@ -2971,7 +2971,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	ntstatus = dptr_create(conn,
 				req,
 				fsp, /* fsp */
-				smb_dname,
 				False,
 				True,
 				req->smbpid,

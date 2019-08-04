@@ -242,7 +242,6 @@ void dptr_closecnum(connection_struct *conn)
 NTSTATUS dptr_create(connection_struct *conn,
 		struct smb_request *req,
 		files_struct *fsp,
-		const struct smb_filename *smb_dname,
 		bool old_handle,
 		bool expect_close,
 		uint16_t spid,
@@ -255,11 +254,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 	struct dptr_struct *dptr = NULL;
 	struct smb_Dir *dir_hnd;
 
-	if (fsp && fsp->is_directory && fsp->fh->fd != -1) {
-		smb_dname = fsp->fsp_name;
-	}
-
-	DEBUG(5,("dptr_create dir=%s\n", smb_dname->base_name));
+	DBG_INFO("dir=%s\n", fsp_str_dbg(fsp));
 
 	if (sconn == NULL) {
 		DEBUG(0,("dptr_create: called with fake connection_struct\n"));
@@ -273,7 +268,7 @@ NTSTATUS dptr_create(connection_struct *conn,
 	if (!(fsp->access_mask & SEC_DIR_LIST)) {
 		DBG_INFO("dptr_create: directory %s "
 			"not open for LIST access\n",
-			smb_dname->base_name);
+			fsp_str_dbg(fsp));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 	dir_hnd = OpenDir_fsp(NULL, conn, fsp, wcard, attr);
@@ -288,8 +283,8 @@ NTSTATUS dptr_create(connection_struct *conn,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dptr->smb_dname = cp_smb_filename(dptr, smb_dname);
-	if (!dptr->smb_dname) {
+	dptr->smb_dname = cp_smb_filename(dptr, fsp->fsp_name);
+	if (dptr->smb_dname == NULL) {
 		TALLOC_FREE(dptr);
 		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
@@ -360,10 +355,8 @@ NTSTATUS dptr_create(connection_struct *conn,
 	DLIST_ADD(sconn->searches.dirptrs, dptr);
 
 done:
-	DEBUG(3,("creating new dirptr %d for path %s, expect_close = %d\n",
-		dptr->dnum,
-		dptr->smb_dname->base_name,
-		expect_close));
+	DBG_INFO("creating new dirptr [%d] for path [%s], expect_close = %d\n",
+		 dptr->dnum, fsp_str_dbg(fsp), expect_close);
 
 	*dptr_ret = dptr;
 
