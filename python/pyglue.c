@@ -101,6 +101,10 @@ static PyObject *py_generate_random_bytes(PyObject *self, PyObject *args)
 		return NULL;
 
 	bytes = talloc_zero_size(NULL, len);
+	if (bytes == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 	generate_random_buffer(bytes, len);
 	ret = PyBytes_FromStringAndSize((const char *)bytes, len);
 	talloc_free(bytes);
