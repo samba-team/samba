@@ -524,7 +524,7 @@ static int _tdb_transaction_start(struct tdb_context *tdb,
 
 	/* make sure we know about any file expansions already done by
 	   anyone else */
-	tdb->methods->tdb_oob(tdb, tdb->map_size, 1, 1);
+	tdb_oob(tdb, tdb->map_size, 1, 1);
 	tdb->transaction->old_map_size = tdb->map_size;
 
 	/* finally hook the io methods, replacing them with

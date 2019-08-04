@@ -94,7 +94,7 @@ static bool tdb_check_record(struct tdb_context *tdb,
 			 off, rec->next));
 		goto corrupt;
 	}
-	if (tdb->methods->tdb_oob(tdb, rec->next, sizeof(*rec), 0))
+	if (tdb_oob(tdb, rec->next, sizeof(*rec), 0))
 		goto corrupt;
 
 	/* Check rec_len: similar to rec->next, implies next record. */
@@ -112,7 +112,7 @@ static bool tdb_check_record(struct tdb_context *tdb,
 		goto corrupt;
 	}
 	/* OOB allows "right at the end" access, so this works for last rec. */
-	if (tdb->methods->tdb_oob(tdb, off, sizeof(*rec)+rec->rec_len, 0))
+	if (tdb_oob(tdb, off, sizeof(*rec)+rec->rec_len, 0))
 		goto corrupt;
 
 	/* Check tailer. */
@@ -362,7 +362,7 @@ _PUBLIC_ int tdb_check(struct tdb_context *tdb,
 	}
 
 	/* Make sure we know true size of the underlying file. */
-	tdb->methods->tdb_oob(tdb, tdb->map_size, 1, 1);
+	tdb_oob(tdb, tdb->map_size, 1, 1);
 
 	/* Header must be OK: also gets us the recovery ptr, if any. */
 	if (!tdb_check_header(tdb, &recovery_start))

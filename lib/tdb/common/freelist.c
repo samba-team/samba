@@ -50,7 +50,7 @@ int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct tdb_record 
 			   rec->magic, off));
 		return -1;
 	}
-	if (tdb->methods->tdb_oob(tdb, rec->next, sizeof(*rec), 0) != 0)
+	if (tdb_oob(tdb, rec->next, sizeof(*rec), 0) != 0)
 		return -1;
 	return 0;
 }

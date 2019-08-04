@@ -453,8 +453,7 @@ _PUBLIC_ int tdb_traverse_chain(struct tdb_context *tdb,
 
 			if ((tdb->transaction == NULL) &&
 			    (tdb->map_ptr != NULL)) {
-				ret = tdb->methods->tdb_oob(
-					tdb, key_ofs, full_len, 0);
+				ret = tdb_oob(tdb, key_ofs, full_len, 0);
 				if (ret == -1) {
 					goto fail;
 				}
