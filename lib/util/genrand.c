@@ -20,6 +20,7 @@
 */
 
 #include "replace.h"
+#include "lib/util/fault.h"
 #include "lib/util/genrand.h"
 
 #include <gnutls/gnutls.h>
@@ -31,10 +32,26 @@
  * https://nikmav.blogspot.com/2017/03/improving-by-simplifying-gnutls-prng.html
  */
 
+
+_NORETURN_ static void genrand_panic(int err,
+				     const char *location,
+				     const char *func)
+{
+	char buf[200];
+	snprintf(buf, sizeof(buf),
+		 "%s:%s: GnuTLS could not generate a random buffer: %s [%d]\n",
+		 location, func, gnutls_strerror_name(err), err);
+	smb_panic(buf);
+}
+
+
 _PUBLIC_ void generate_random_buffer(uint8_t *out, int len)
 {
 	/* Random number generator for temporary keys. */
-	gnutls_rnd(GNUTLS_RND_RANDOM, out, len);
+	int ret = gnutls_rnd(GNUTLS_RND_RANDOM, out, len);
+	if (ret != 0) {
+		genrand_panic(ret, __location__, __func__);
+	}
 }
 
 _PUBLIC_ void generate_secret_buffer(uint8_t *out, int len)
@@ -48,7 +65,10 @@ _PUBLIC_ void generate_secret_buffer(uint8_t *out, int len)
 	 * the limit for a re-seed. For its re-seed it mixes mixes data obtained
 	 * from the OS random device with the previous key.
 	 */
-	gnutls_rnd(GNUTLS_RND_KEY, out, len);
+	int ret = gnutls_rnd(GNUTLS_RND_KEY, out, len);
+	if (ret != 0) {
+		genrand_panic(ret, __location__, __func__);
+	}
 }
 
 _PUBLIC_ void generate_nonce_buffer(uint8_t *out, int len)
@@ -60,5 +80,8 @@ _PUBLIC_ void generate_nonce_buffer(uint8_t *out, int len)
 	 * bytes (typically few megabytes), or after few hours of operation
 	 * without reaching the limit has passed.
 	 */
-	gnutls_rnd(GNUTLS_RND_NONCE, out, len);
+	int ret = gnutls_rnd(GNUTLS_RND_NONCE, out, len);
+	if (ret != 0) {
+		genrand_panic(ret, __location__, __func__);
+	}
 }
