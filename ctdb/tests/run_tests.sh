@@ -12,6 +12,7 @@ Options:
   -D		Show diff between failed/expected test output (some tests only)
   -e		Exit on the first test failure
   -H		No headers - for running single test with other wrapper
+  -I <count>    Iterate tests <count> times, exiting on failure (implies -e, -N)
   -N		Don't print summary of tests results after running all tests
   -q		Quiet - don't show tests being run (hint: use with -s)
   -S <lib>      Use socket wrapper library <lib> for local integration tests
@@ -35,6 +36,7 @@ with_summary=true
 with_desc=false
 quiet=false
 exit_on_fail=false
+max_iterations=1
 no_header=false
 
 export TEST_VERBOSE=false
@@ -48,7 +50,7 @@ export TEST_CLEANUP=false
 export TEST_TIMEOUT=3600
 export TEST_SOCKET_WRAPPER_SO_PATH=""
 
-while getopts "AcCdDehHNqS:T:vV:xX?" opt ; do
+while getopts "AcCdDehHI:NqS:T:vV:xX?" opt ; do
 	case "$opt" in
 	A) TEST_CAT_RESULTS_OPTS="-A" ;;
 	c) TEST_LOCAL_DAEMONS="" ;;
@@ -57,6 +59,7 @@ while getopts "AcCdDehHNqS:T:vV:xX?" opt ; do
 	D) TEST_DIFF_RESULTS=true ;;
 	e) exit_on_fail=true ;;
 	H) no_header=true ;;
+	I) max_iterations="$OPTARG" ; exit_on_fail=true ; with_summary=false ;;
 	N) with_summary=false ;;
 	q) quiet=true ;;
 	S) TEST_SOCKET_WRAPPER_SO_PATH="$OPTARG" ;;
@@ -330,8 +333,26 @@ for f ; do
 	fi
 done
 
-run_tests "${tests[@]}"
-status=$?
+iterations=0
+# Special case: -I 0 means iterate forever (until failure)
+while [ "$max_iterations" -eq 0 ] || [ $iterations -lt "$max_iterations" ] ; do
+	iterations=$((iterations + 1))
+
+	if [ "$max_iterations" -ne 1 ] ; then
+		echo
+		echo "##################################################"
+		echo "ITERATION ${iterations}"
+		echo "##################################################"
+		echo
+	fi
+
+	run_tests "${tests[@]}"
+	status=$?
+
+	if [ $status -ne 0 ] ; then
+		break
+	fi
+done
 
 rm -f "$tf"
 
