@@ -917,7 +917,11 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 		return;
 	}
 
-	smb_path = synthetic_smb_fname(state, path, NULL, NULL, 0);
+	smb_path = synthetic_smb_fname(state,
+				       path,
+				       NULL,
+				       &state->smb_fname->st,
+				       0);
 	if (tevent_req_nomem(path, req)) {
 		return;
 	}
