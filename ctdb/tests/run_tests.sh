@@ -169,7 +169,7 @@ if ! which mktemp >/dev/null 2>&1 ; then
 	    if $dir ; then
 		mkdir "$t"
 	    else
-		>"$t"
+		: >"$t"
 	    fi
 	)
 	echo "$t"
