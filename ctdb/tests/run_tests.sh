@@ -153,7 +153,6 @@ ctdb_test_run ()
 tests_total=0
 tests_passed=0
 tests_failed=0
-summary=""
 
 if ! type mktemp >/dev/null 2>&1 ; then
     # Not perfect, but it will do...

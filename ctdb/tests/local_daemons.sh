@@ -18,6 +18,7 @@ export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 # to be correctly set so setup_ctdb_base() finds the etc-ctdb/
 # subdirectory and the test event script is correctly installed, so
 # fix it.
+# shellcheck disable=SC2034
 TEST_SUBDIR="$CTDB_TEST_DIR"
 
 if ! $CTDB_TESTS_ARE_INSTALLED ; then
