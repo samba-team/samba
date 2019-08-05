@@ -1108,9 +1108,9 @@ def build(bld):
                       'script_install_paths.sh',
                       destname='script_install_paths.sh', chmod=MODE_644)
 
-    sed_expr1 = 's@^\(export %s\)=.*@\\1=%s@' % (
+    sed_expr1 = 's@^\\(%s\\)=.*@\\1=%s@' % (
                     'CTDB_TEST_DIR', bld.env.CTDB_TEST_DATADIR)
-    sed_expr2 = 's@^\(export CTDB_TESTS_ARE_INSTALLED\)=false@\\1=true@'
+    sed_expr2 = 's@^\\(CTDB_TESTS_ARE_INSTALLED\\)=false@\\\\1=true@'
     bld.SAMBA_GENERATOR('ctdb-test-runner',
                         source='tests/run_tests.sh',
                         target='ctdb_run_tests.sh',

@@ -236,8 +236,9 @@ find_and_run_one_test ()
 export CTDB_TEST_MODE="yes"
 
 # Following 2 lines may be modified by installation script
-export CTDB_TESTS_ARE_INSTALLED=false
-export CTDB_TEST_DIR=$(dirname "$0")
+CTDB_TESTS_ARE_INSTALLED=false
+CTDB_TEST_DIR=$(dirname "$0")
+export CTDB_TESTS_ARE_INSTALLED CTDB_TEST_DIR
 
 if [ -z "$TEST_VAR_DIR" ] ; then
     if $CTDB_TESTS_ARE_INSTALLED ; then

@@ -5,8 +5,9 @@ set -u
 export CTDB_TEST_MODE="yes"
 
 # Following 2 lines may be modified by installation script
-export CTDB_TESTS_ARE_INSTALLED=false
-export CTDB_TEST_DIR=$(dirname "$0")
+CTDB_TESTS_ARE_INSTALLED=false
+CTDB_TEST_DIR=$(dirname "$0")
+export CTDB_TESTS_ARE_INSTALLED CTDB_TEST_DIR
 
 export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 
