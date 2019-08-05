@@ -773,11 +773,6 @@ NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 			&fsp->name_hash);
 }
 
-const struct GUID *fsp_client_guid(const files_struct *fsp)
-{
-	return &fsp->conn->sconn->client->connections->smb2.client.guid;
-}
-
 size_t fsp_fullbasepath(struct files_struct *fsp, char *buf, size_t buflen)
 {
 	int len = 0;

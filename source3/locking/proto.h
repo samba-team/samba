@@ -250,5 +250,6 @@ uint32_t map_oplock_to_lease_type(uint16_t op_type);
 uint32_t fsp_lease_type(const struct files_struct *fsp);
 uint32_t lease_type_is_exclusive(uint32_t lease_type);
 bool fsp_lease_type_is_exclusive(const struct files_struct *fsp);
+const struct GUID *fsp_client_guid(const files_struct *fsp);
 
 #endif /* _LOCKING_PROTO_H_ */

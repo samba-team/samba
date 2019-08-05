@@ -23,6 +23,7 @@
 #include "includes.h"
 #include "../librpc/gen_ndr/open_files.h"
 #include "locking/proto.h"
+#include "smbd/globals.h"
 
 uint32_t map_oplock_to_lease_type(uint16_t op_type)
 {
@@ -69,4 +70,9 @@ bool fsp_lease_type_is_exclusive(const struct files_struct *fsp)
 	uint32_t lease_type = fsp_lease_type(fsp);
 
 	return lease_type_is_exclusive(lease_type);
+}
+
+const struct GUID *fsp_client_guid(const files_struct *fsp)
+{
+	return &fsp->conn->sconn->client->connections->smb2.client.guid;
 }
