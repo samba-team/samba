@@ -7,8 +7,9 @@
 	<para>This parameter specifies the backend names which 
 	are used for Samba VFS I/O operations.  By default, normal 
 	disk I/O operations are used but these can be overloaded 
-	with one or more VFS objects. </para>
-</description>
+	with one or more VFS objects. Be aware that the definition of this
+	parameter will overwrite a possible previous definition of the
+	vfs objects parameter.</para> </description>
 
 <value type="default"/>
 <value type="example">extd_audit recycle</value>
