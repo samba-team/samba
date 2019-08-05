@@ -645,6 +645,42 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 	return (num_props != 0);
 }
 
+NTSTATUS remove_lease_if_stale(const struct share_mode_data *d,
+			       const struct GUID *client_guid,
+			       const struct smb2_lease_key *lease_key)
+{
+	uint32_t i;
+	NTSTATUS status;
+
+	for (i=0; i<d->num_share_modes; i++) {
+		const struct share_mode_entry *e = &d->share_modes[i];
+		bool same;
+
+		if (e->stale) {
+			continue;
+		}
+		if (e->op_type != LEASE_OPLOCK) {
+			continue;
+		}
+
+		same = smb2_lease_equal(
+			&e->client_guid,
+			&e->lease_key,
+			client_guid,
+			lease_key);
+		if (same) {
+			return NT_STATUS_RESOURCE_IN_USE;
+		}
+	}
+
+	status = leases_db_del(client_guid, lease_key, &d->id);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("leases_db_del failed: %s\n",
+			  nt_errstr(status));
+	}
+	return status;
+}
+
 /*
  * See if we need to remove a lease being referred to by a
  * share mode that is being marked stale or deleted.
@@ -654,7 +690,6 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 				    struct share_mode_entry *e)
 {
 	uint16_t op_type;
-	uint32_t i;
 
 	op_type = e->op_type;
 	e->op_type = NO_OPLOCK;
@@ -665,45 +700,7 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 		return;
 	}
 
-	/*
-	 * This used to reference a lease. If there's no other one referencing
-	 * it, remove it.
-	 */
-
-	for (i=0; i<d->num_share_modes; i++) {
-		struct share_mode_entry *e2 = &d->share_modes[i];
-
-		if (e2->stale) {
-			continue;
-		}
-		if (e == e2) {
-			/* Not ourselves. */
-			continue;
-		}
-		if (smb2_lease_equal(&e->client_guid,
-				     &e->lease_key,
-				     &e2->client_guid,
-				     &e2->lease_key)) {
-			break;
-		}
-	}
-	if (i < d->num_share_modes) {
-		/*
-		 * Found another one
-		 */
-		return;
-	}
-
-	{
-		NTSTATUS status;
-
-		status = leases_db_del(&e->client_guid,
-				       &e->lease_key,
-				       &d->id);
-
-		DEBUG(10, ("%s: leases_db_del returned %s\n", __func__,
-			   nt_errstr(status)));
-	}
+	remove_lease_if_stale(d, &e->client_guid, &e->lease_key);
 }
 
 /*
