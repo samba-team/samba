@@ -196,7 +196,7 @@ NTSTATUS torture_smb2_createfile(struct torture_context *tctx,
 */
 bool torture_smb2_connect(struct torture_context *tctx)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_tree *tree;
 	struct smb2_request *req;
 	struct smb2_handle h1, h2;
