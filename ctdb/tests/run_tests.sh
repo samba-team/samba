@@ -357,10 +357,12 @@ done
 rm -f "$tf"
 
 if $with_summary ; then
-    echo
-    cat "$sf"
-    echo
-    echo "${tests_passed}/${tests_total} tests passed"
+	if [ $status -eq 0 ] || ! $exit_on_fail ; then
+		echo
+		cat "$sf"
+		echo
+		echo "${tests_passed}/${tests_total} tests passed"
+	fi
 fi
 
 rm -f "$sf"
