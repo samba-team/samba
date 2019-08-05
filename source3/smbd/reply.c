@@ -1386,7 +1386,7 @@ void reply_getatr(struct smb_request *req)
 	const char *p;
 	NTSTATUS status;
 	TALLOC_CTX *ctx = talloc_tos();
-	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
+	bool ask_sharemode = lp_smbd_search_ask_sharemode(SNUM(conn));
 
 	START_PROFILE(SMBgetatr);
 
@@ -1769,7 +1769,7 @@ void reply_search(struct smb_request *req)
 	bool mask_contains_wcard = False;
 	bool allow_long_path_components = (req->flags2 & FLAGS2_LONG_PATH_COMPONENTS) ? True : False;
 	TALLOC_CTX *ctx = talloc_tos();
-	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
+	bool ask_sharemode = lp_smbd_search_ask_sharemode(SNUM(conn));
 	struct dptr_struct *dirptr = NULL;
 	struct smbXsrv_connection *xconn = req->xconn;
 	struct smbd_server_connection *sconn = req->sconn;

@@ -2710,7 +2710,7 @@ static void call_trans2findfirst(connection_struct *conn,
 	bool mask_contains_wcard = False;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
-	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
+	bool ask_sharemode = lp_smbd_search_ask_sharemode(SNUM(conn));
 	struct dptr_struct *dirptr = NULL;
 	struct smbd_server_connection *sconn = req->sconn;
 	uint32_t ucf_flags = UCF_SAVE_LCOMP | UCF_ALWAYS_ALLOW_WCARD_LCOMP |
@@ -3126,7 +3126,7 @@ static void call_trans2findnext(connection_struct *conn,
 	int space_remaining;
 	struct ea_list *ea_list = NULL;
 	NTSTATUS ntstatus = NT_STATUS_OK;
-	bool ask_sharemode = lp_parm_bool(SNUM(conn), "smbd", "search ask sharemode", true);
+	bool ask_sharemode = lp_smbd_search_ask_sharemode(SNUM(conn));
 	TALLOC_CTX *ctx = talloc_tos();
 	struct dptr_struct *dirptr;
 	struct smbd_server_connection *sconn = req->sconn;
