@@ -146,7 +146,7 @@ static int cephwrap_connect(struct vfs_handle_struct *handle,  const char *servi
 	/*
 	 * Unless we have an async implementation of getxattrat turn this off.
 	 */
-	lp_do_parameter(SNUM(handle->conn), "smbd:async dosmode", "false");
+	lp_do_parameter(SNUM(handle->conn), "smbd async dosmode", "false");
 
 	return 0;
 
