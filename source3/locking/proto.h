@@ -161,9 +161,7 @@ bool set_share_mode(struct share_mode_lock *lck,
 		    uint64_t mid,
 		    uint16_t op_type,
 		    uint32_t share_access,
-		    uint32_t access_mask,
-		    const struct GUID *client_guid,
-		    const struct smb2_lease_key *lease_key);
+		    uint32_t access_mask);
 void remove_stale_share_mode_entries(struct share_mode_data *d);
 bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp);
 bool mark_share_mode_disconnected(struct share_mode_lock *lck,

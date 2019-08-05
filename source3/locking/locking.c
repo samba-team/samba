@@ -795,9 +795,7 @@ bool set_share_mode(struct share_mode_lock *lck,
 		    uint64_t mid,
 		    uint16_t op_type,
 		    uint32_t share_access,
-		    uint32_t access_mask,
-		    const struct GUID *client_guid,
-		    const struct smb2_lease_key *lease_key)
+		    uint32_t access_mask)
 {
 	struct share_mode_data *d = lck->data;
 	struct share_mode_entry *tmp, *e;
@@ -821,8 +819,9 @@ bool set_share_mode(struct share_mode_lock *lck,
 	e->op_type = op_type;
 
 	if (op_type == LEASE_OPLOCK) {
+		const struct GUID *client_guid = fsp_client_guid(fsp);
 		e->client_guid = *client_guid;
-		e->lease_key = *lease_key;
+		e->lease_key = fsp->lease->lease.lease_key;
 	}
 
 	e->time.tv_sec = fsp->open_time.tv_sec;

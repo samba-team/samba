@@ -2231,8 +2231,6 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 	bool got_oplock = false;
 	uint32_t i;
 	uint32_t granted;
-	const struct GUID *client_guid = NULL;
-	const struct smb2_lease_key *lease_key = NULL;
 	bool ok;
 	NTSTATUS status;
 
@@ -2330,9 +2328,6 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 		}
 		*lease = fsp->lease->lease;
 
-		lease_key = &fsp->lease->lease.lease_key;
-		client_guid = fsp_client_guid(fsp);
-
 		DEBUG(10, ("lease_state=%d\n", lease->lease_state));
 	} else {
 		if (got_handle_lease) {
@@ -2357,9 +2352,7 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 		req ? req->mid : 0,
 		fsp->oplock_type,
 		share_access,
-		access_mask,
-		client_guid,
-		lease_key);
+		access_mask);
 	if (!ok) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -4210,9 +4203,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		req ? req->mid : 0,
 		NO_OPLOCK,
 		share_access,
-		fsp->access_mask,
-		NULL,
-		NULL);
+		fsp->access_mask);
 	if (!ok) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
