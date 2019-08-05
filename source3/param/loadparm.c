@@ -545,7 +545,7 @@ static void init_globals(struct loadparm_context *lp_ctx, bool reinit_globals)
 
 	init_printer_values(lp_ctx, Globals.ctx, &sDefault);
 
-	sDefault.ntvfs_handler = str_list_make_v3_const(NULL, "unixuid default", NULL);
+	sDefault.ntvfs_handler = str_list_make_v3_const(Globals.ctx, "unixuid default", NULL);
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
