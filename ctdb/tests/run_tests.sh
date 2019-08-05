@@ -26,7 +26,7 @@ EOF
 # Print a message and exit.
 die ()
 {
-    echo "$1" >&2 ; exit ${2:-1}
+    echo "$1" >&2 ; exit "${2:-1}"
 }
 
 ######################################################################
@@ -106,11 +106,11 @@ ctdb_test_end ()
     local interp="SKIPPED"
     local statstr=" (reason $*)"
     if [ -n "$status" ] ; then
-	if [ $status -eq 0 ] ; then
+	if [ "$status" -eq 0 ] ; then
 	    interp="PASSED"
 	    statstr=""
 	    echo "ALL OK: $*"
-	elif [ $status -eq 124 ] ; then
+	elif [ "$status" -eq 124 ] ; then
 	    interp="TIMEOUT"
 	    statstr=" (status $status)"
 	else
@@ -137,7 +137,7 @@ ctdb_test_run ()
 
     local status=0
     if [ -x "$1" ] ; then
-	    timeout $TEST_TIMEOUT "$@" || status=$?
+	    timeout "$TEST_TIMEOUT" "$@" || status=$?
     else
 	    echo "TEST IS NOT EXECUTABLE"
 	    status=1
@@ -202,7 +202,7 @@ run_one_test ()
 	    t="*FAILED*"
 	fi
 	if $with_desc ; then
-	    desc=$(tail -n +4 $tf | head -n 1)
+	    desc=$(tail -n +4 "$tf" | head -n 1)
 	    f="$desc"
 	fi
 	echo "$t $f" >>"$sf"
@@ -300,7 +300,8 @@ for f in "${tests[@]}" ; do
 
     if [ $status -eq 127 ] ; then
 	# Find the the top-level tests directory
-	tests_dir=$(dirname $(cd $TEST_SCRIPTS_DIR; echo $PWD))
+	d=$(cd "$TEST_SCRIPTS_DIR"; echo "$PWD")
+	tests_dir=$(dirname "$d")
 	# Strip off current directory from beginning, if there, just
 	# to make paths more friendly.
 	tests_dir=${tests_dir#$PWD/}
