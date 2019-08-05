@@ -217,7 +217,11 @@ find_and_run_one_test ()
 
     if [ -d "$f" ] ; then
 	local i
-	for i in $(ls "${f%/}/"*".sh" 2>/dev/null) ; do
+	for i in "${f%/}/"*".sh" ; do
+	    # Only happens if test removed (unlikely) or empty directory
+	    if [ ! -f "$i" ] ; then
+		break
+	    fi
 	    run_one_test "$i"
 	    if $exit_on_fail && [ $status -ne 0 ] ; then
 		break
