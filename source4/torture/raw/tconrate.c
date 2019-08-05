@@ -162,7 +162,7 @@ bool torture_bench_treeconnect(struct torture_context *tctx)
 	int nprocs = torture_setting_int(tctx, "nprocs", 4);
 
 	int *curr_counts = map_count_buffer(nprocs, sizeof(int));
-	int *last_counts = talloc_zero_array(NULL, int, nprocs);
+	int *last_counts = talloc_zero_array(tctx, int, nprocs);
 
 	struct timeval now, last, start;
 	int i, delta;
