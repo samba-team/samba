@@ -199,7 +199,7 @@ uint32_t get_lease_type(const struct share_mode_data *d,
  Remove a file oplock with lock already held. Copes with level II and exclusive.
 ****************************************************************************/
 
-bool remove_oplock_under_lock(files_struct *fsp, struct share_mode_lock *lck)
+static bool remove_oplock_under_lock(files_struct *fsp, struct share_mode_lock *lck)
 {
 	bool ret;
 

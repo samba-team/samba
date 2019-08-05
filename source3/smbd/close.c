@@ -306,7 +306,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 	/* Remove the oplock before potentially deleting the file. */
 	if(fsp->oplock_type) {
-		remove_oplock_under_lock(fsp, lck);
+		remove_oplock(fsp);
 	}
 
 	if (fsp->write_time_forced) {

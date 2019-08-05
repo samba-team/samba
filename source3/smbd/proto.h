@@ -719,7 +719,6 @@ uint32_t get_lease_type(const struct share_mode_data *d,
 
 void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp);
 NTSTATUS set_file_oplock(files_struct *fsp);
-bool remove_oplock_under_lock(files_struct *fsp, struct share_mode_lock *lck);
 bool remove_oplock(files_struct *fsp);
 bool downgrade_oplock(files_struct *fsp);
 bool fsp_lease_update(struct files_struct *fsp);
