@@ -236,6 +236,37 @@ find_and_run_one_test ()
     fi
 }
 
+run_tests ()
+{
+	local tests=("$@")
+
+	for f in "${tests[@]}" ; do
+		find_and_run_one_test "$f"
+
+		if [ $status -eq 127 ] ; then
+			# Find the the top-level tests directory
+			d=$(cd "$TEST_SCRIPTS_DIR" && echo "$PWD")
+			if [ -z "$d" ] ; then
+				local t="$TEST_SCRIPTS_DIR"
+				die "Unable to find TEST_SCRIPTS_DIR=\"${t}\""
+			fi
+			tests_dir=$(dirname "$d")
+			# Strip off current directory from beginning,
+			# if there, just to make paths more friendly.
+			tests_dir="${tests_dir#${PWD}/}"
+			find_and_run_one_test "$f" "$tests_dir"
+		fi
+
+		if [ $status -eq 127 ] ; then
+			die "test \"$f\" is not recognised"
+		fi
+
+		if $exit_on_fail && [ $status -ne 0 ] ; then
+			return $status
+		fi
+	done
+}
+
 export CTDB_TEST_MODE="yes"
 
 # Following 2 lines may be modified by installation script
@@ -299,30 +330,8 @@ for f ; do
 	fi
 done
 
-for f in "${tests[@]}" ; do
-    find_and_run_one_test "$f"
-
-    if [ $status -eq 127 ] ; then
-	# Find the the top-level tests directory
-	d=$(cd "$TEST_SCRIPTS_DIR" && echo "$PWD")
-	if [ -z "$d" ] ; then
-	    die "Unable to find TEST_SCRIPTS_DIR=\"${TEST_SCRIPTS_DIR}\""
-	fi
-	tests_dir=$(dirname "$d")
-	# Strip off current directory from beginning, if there, just
-	# to make paths more friendly.
-	tests_dir=${tests_dir#$PWD/}
-	find_and_run_one_test "$f" "$tests_dir"
-    fi
-
-    if [ $status -eq 127 ] ; then
-	    die "test \"$f\" is not recognised"
-    fi
-
-    if $exit_on_fail && [ $status -ne 0 ] ; then
-	    break
-    fi
-done
+run_tests "${tests[@]}"
+status=$?
 
 rm -f "$tf"
 
