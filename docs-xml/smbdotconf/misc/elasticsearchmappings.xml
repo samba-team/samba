@@ -1,0 +1,14 @@
+<samba:parameter name="elasticsearch:mappings"
+                 context="G"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+      Path to a file specifying metadata attribute mappings in JSON format. Use
+      by the Elasticsearch backend of the Spotlight RPC service.
+    </para>
+  </description>
+
+  <value type="default">&pathconfig.SAMBA_DATADIR;/elasticsearch_mappings.json</value>
+  <value type="example">/usr/share/foo/mymappings.json</value>
+</samba:parameter>

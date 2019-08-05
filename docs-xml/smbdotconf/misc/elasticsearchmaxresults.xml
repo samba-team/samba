@@ -1,0 +1,15 @@
+<samba:parameter name="elasticsearch:max results"
+                 context="S"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+      Path to a file specifying metadata attribute mappings in JSON format. Used
+      by the Elasticsearch backend of the Spotlight RPC service. A value of 0
+      means no limit.
+    </para>
+  </description>
+
+  <value type="default">100</value>
+  <value type="example">10</value>
+</samba:parameter>

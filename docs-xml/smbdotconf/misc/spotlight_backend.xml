@@ -19,6 +19,10 @@
 	Gnome Tracker.
 	</para></listitem>
 
+	<listitem><para><constant>elasticsearch</constant> -
+	a backend that uses JSON and REST over HTTP(s) to query an
+	Elasticsearch server.
+	</para></listitem>
 	</itemizedlist>
 	</para>
 </description>

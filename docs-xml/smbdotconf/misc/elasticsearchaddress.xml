@@ -1,0 +1,14 @@
+<samba:parameter name="elasticsearch:address"
+                 context="S"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+      Specifies the name of the Elasticsearch server to use for Spotlight
+      queries when using the Elasticsearch backend.
+    </para>
+  </description>
+
+  <value type="default">localhost</value>
+  <value type="example">needle.haystack.samba.org</value>
+</samba:parameter>

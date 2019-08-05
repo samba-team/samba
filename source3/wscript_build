@@ -1335,6 +1335,16 @@ bld.SAMBA3_BINARY('spotlight2sparql',
                  enabled=bld.env.spotlight_backend_tracker,
                  install=False)
 
+bld.SAMBA3_BINARY('spotlight2es',
+                 source='''
+                 rpc_server/mdssvc/es_parser_test.c
+                 rpc_server/mdssvc/es_parser.y
+                 rpc_server/mdssvc/es_lexer.l
+                 rpc_server/mdssvc/es_mapping.c''',
+                 deps='samba3-util talloc jansson smbconf',
+                 enabled=bld.env.spotlight_backend_es,
+                 install=False)
+
 bld.SAMBA3_BINARY('tevent_glib_glue_test',
                  source='lib/tevent_glib_glue_tests.c',
                  deps='''

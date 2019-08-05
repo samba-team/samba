@@ -1,0 +1,142 @@
+{
+    "attribute_mappings": {
+        "*": {
+            "type": "fts",
+            "attribute": ""
+        },
+        "kMDItemTextContent": {
+            "type": "str",
+            "attribute": "content"
+        },
+        "_kMDItemGroupId": {
+            "type": "type",
+            "attribute": "file.content_type"
+        },
+        "kMDItemContentType": {
+            "type": "type",
+            "attribute": "file.content_type"
+        },
+        "kMDItemContentTypeTree": {
+            "type": "type",
+            "attribute": "file.content_type"
+        },
+        "kMDItemFSContentChangeDate": {
+            "type": "date",
+            "attribute": "file.last_modified"
+        },
+        "kMDItemFSCreationDate": {
+            "type": "date",
+            "attribute": "file.created"
+        },
+        "kMDItemFSName": {
+            "type": "str",
+            "attribute": "file.filename"
+        },
+        "kMDItemFSOwnerGroupID": {
+            "type": "str",
+            "attribute": "attributes.owner"
+        },
+        "kMDItemFSOwnerUserID": {
+            "type": "str",
+            "attribute": "attributes.group"
+        },
+        "kMDItemFSSize": {
+            "type": "num",
+            "attribute": "file.filesize"
+        },
+        "kMDItemPath": {
+            "type": "str",
+            "attribute": "path.real"
+        },
+        "kMDItemAttributeChangeDate": {
+            "type": "date",
+            "attribute": "file.last_modified"
+        },
+        "kMDItemAuthors": {
+            "type": "str",
+            "attribute": "meta.author"
+        },
+        "kMDItemContentCreationDate": {
+            "type": "date",
+            "attribute": "file.created"
+        },
+        "kMDItemContentModificationDate": {
+            "type": "date",
+            "attribute": "file.last_modified"
+        },
+        "kMDItemCreator": {
+            "type": "str",
+            "attribute": "meta.raw.creator"
+        },
+        "kMDItemDescription": {
+            "type": "str",
+            "attribute": "meta.raw.description"
+        },
+        "kMDItemDisplayName": {
+            "type": "str",
+            "attribute": "file.filename"
+        },
+        "kMDItemDurationSeconds": {
+            "type": "num",
+            "attribute": "meta.raw.xmpDM:duration"
+        },
+        "kMDItemNumberOfPages": {
+            "type": "num",
+            "attribute": "meta.raw.xmpTPg:NPages"
+        },
+        "kMDItemTitle": {
+            "type": "str",
+            "attribute": "meta.title"
+        },
+        "kMDItemAlbum": {
+            "type": "str",
+            "attribute": "meta.raw.xmpDM:album"
+        },
+        "kMDItemBitsPerSample": {
+            "type": "num",
+            "attribute": "meta.raw.tiff:BitsPerSample"
+        },
+        "kMDItemPixelHeight": {
+            "type": "num",
+            "attribute": "meta.raw.Image Height"
+        },
+        "kMDItemPixelWidth": {
+            "type": "num",
+            "attribute": "meta.raw.Image Width"
+        },
+        "kMDItemResolutionHeightDPI": {
+            "type": "num",
+            "attribute": "meta.raw.Y Resolution"
+        },
+        "kMDItemResolutionWidthDPI": {
+            "type": "num",
+            "attribute": "meta.raw.X Resolution"
+        }
+    },
+    "mime_mappings": {
+        "1": "message/rfc822",
+        "2": "text/x-vcard",
+        "6": "text/x-vcard",
+        "7": "video/*",
+        "8": "application/octet-stream",
+        "9": "text/directory",
+        "10": "audio/*",
+        "11": "application/pdf",
+        "12": "application/vnd.oasis.opendocument.presentation",
+        "13": "image/*",
+        "public.content": "message/rfc822 application/pdf application/vnd.oasis.opendocument.presentation image/* text/*",
+        "public.jpeg": "image/jpeg",
+        "public.tiff": "image/tiff",
+        "com.compuserve.gif": "image/gif",
+        "public.png": "image/png",
+        "com.microsoft.bmp": "image/bmp",
+        "public.mp3": "audio/mpeg",
+        "public.mpeg-4-audio": "audio/x-aac",
+        "public.text": "text/*",
+        "public.plain-text": "text/plain",
+        "public.rtf": "text/rtf",
+        "public.html": "text/html",
+        "public.xml": "text/xml",
+        "public.archive": "application/zip application/x-bzip application/x-bzip2 application/x-tar application/x-7z-compressed"
+    }
+}

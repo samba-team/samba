@@ -161,6 +161,18 @@ if bld.env.spotlight_backend_tracker:
                           '''
     rpc_mdssvc_deps += 'tevent-glib-glue ' + bld.env['libtracker']
 
+if bld.env.spotlight_backend_es:
+    rpc_mdssvc_sources += '''
+                          mdssvc/mdssvc_es.c
+                          mdssvc/es_mapping.c
+                          mdssvc/es_parser.y
+                          mdssvc/es_lexer.l
+                          '''
+    rpc_mdssvc_deps += ' http jansson'
+    if bld.SAMBA3_IS_ENABLED_MODULE('rpc_mdssvc_module'):
+        bld.INSTALL_FILES(bld.env.SAMBA_DATADIR,
+                          'mdssvc/elasticsearch_mappings.json')
+
 bld.SAMBA3_MODULE('rpc_mdssvc_module',
                   subsystem='rpc',
                   allow_undefined_symbols=True,

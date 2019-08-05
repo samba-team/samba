@@ -31,6 +31,9 @@
 #ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
 #include "mdssvc_tracker.h"
 #endif
+#ifdef HAVE_SPOTLIGHT_BACKEND_ES
+#include "mdssvc_es.h"
+#endif
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -1422,6 +1425,15 @@ static struct mdssvc_ctx *mdssvc_init(struct tevent_context *ev)
 		return NULL;
 	}
 
+#ifdef HAVE_SPOTLIGHT_BACKEND_ES
+	ok = mdsscv_backend_es.init(mdssvc_ctx);
+	if (!ok) {
+		DBG_ERR("backend init failed\n");
+		TALLOC_FREE(mdssvc_ctx);
+		return NULL;
+	}
+#endif
+
 #ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
 	ok = mdsscv_backend_tracker.init(mdssvc_ctx);
 	if (!ok) {
@@ -1457,6 +1469,14 @@ bool mds_shutdown(void)
 	if (!ok) {
 		goto fail;
 	}
+
+#ifdef HAVE_SPOTLIGHT_BACKEND_ES
+	ok = mdsscv_backend_es.shutdown(mdssvc_ctx);
+	if (!ok) {
+		goto fail;
+	}
+#endif
+
 #ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
 	ok = mdsscv_backend_tracker.shutdown(mdssvc_ctx);
 	if (!ok) {
@@ -1528,6 +1548,13 @@ struct mds_ctx *mds_init_ctx(TALLOC_CTX *mem_ctx,
 	case SPOTLIGHT_BACKEND_NOINDEX:
 		mds_ctx->backend = &mdsscv_backend_noindex;
 		break;
+
+#ifdef HAVE_SPOTLIGHT_BACKEND_ES
+	case SPOTLIGHT_BACKEND_ES:
+		mds_ctx->backend = &mdsscv_backend_es;
+		break;
+#endif
+
 #ifdef HAVE_SPOTLIGHT_BACKEND_TRACKER
 	case SPOTLIGHT_BACKEND_TRACKER:
 		mds_ctx->backend = &mdsscv_backend_tracker;

@@ -1,0 +1,16 @@
+<samba:parameter name="elasticsearch:index"
+                 context="S"
+                 type="string"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+      Specifies the name of the Elasticsearch index to use for Spotlight queries
+      when using the Elasticsearch backend. The default value of "_all" is a
+      special Elasticsearch value that performs the search operation on all
+      indices.
+    </para>
+  </description>
+
+  <value type="default">_all</value>
+  <value type="example">spotlight</value>
+</samba:parameter>

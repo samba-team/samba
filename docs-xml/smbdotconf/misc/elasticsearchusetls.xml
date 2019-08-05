@@ -1,0 +1,14 @@
+<samba:parameter name="elasticsearch:use tls"
+                 context="S"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+      Specifies whether to use HTTPS when talking to the Elasticsearch server
+      used for Spotlight queries when using the Elasticsearch backend.
+    </para>
+  </description>
+
+  <value type="default">no</value>
+  <value type="example">yes</value>
+</samba:parameter>

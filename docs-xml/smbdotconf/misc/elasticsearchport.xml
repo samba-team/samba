@@ -1,0 +1,14 @@
+<samba:parameter name="elasticsearch:port"
+                 context="S"
+                 type="integer"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+  <description>
+    <para>
+      Specifies the TCP port of the Elasticsearch server to use for Spotlight
+      queries when using the Elasticsearch backend.
+    </para>
+  </description>
+
+  <value type="default">9200</value>
+  <value type="example">9201</value>
+</samba:parameter>
