@@ -200,7 +200,7 @@ static bool torture_smb2_find_scan(struct torture_context *tctx)
 */
 static bool torture_smb2_scan(struct torture_context *tctx)
 {
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
 	struct smb2_tree *tree;
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
