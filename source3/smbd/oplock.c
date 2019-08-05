@@ -196,26 +196,6 @@ uint32_t get_lease_type(const struct share_mode_data *d,
 }
 
 /****************************************************************************
- Remove a file oplock with lock already held. Copes with level II and exclusive.
-****************************************************************************/
-
-static bool remove_oplock_under_lock(files_struct *fsp, struct share_mode_lock *lck)
-{
-	bool ret;
-
-	ret = remove_share_oplock(lck, fsp);
-	if (!ret) {
-		DBG_ERR("failed to remove share oplock for "
-			"file %s, %s, %s\n",
-			fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
-			file_id_string_tos(&fsp->file_id));
-	}
-	release_file_oplock(fsp);
-
-	return ret;
-}
-
-/****************************************************************************
  Remove a file oplock. Copes with level II and exclusive.
  Locks then unlocks the share mode lock. Client can decide to go directly
  to none even if a "break-to-level II" was sent.
@@ -236,7 +216,14 @@ bool remove_oplock(files_struct *fsp)
 		return false;
 	}
 
-	ret = remove_oplock_under_lock(fsp, lck);
+	ret = remove_share_oplock(lck, fsp);
+	if (!ret) {
+		DBG_ERR("failed to remove share oplock for "
+			"file %s, %s, %s\n",
+			fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
+			file_id_string_tos(&fsp->file_id));
+	}
+	release_file_oplock(fsp);
 
 	TALLOC_FREE(lck);
 	return ret;
