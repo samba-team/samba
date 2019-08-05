@@ -300,7 +300,10 @@ for f in "${tests[@]}" ; do
 
     if [ $status -eq 127 ] ; then
 	# Find the the top-level tests directory
-	d=$(cd "$TEST_SCRIPTS_DIR"; echo "$PWD")
+	d=$(cd "$TEST_SCRIPTS_DIR" && echo "$PWD")
+	if [ -z "$d" ] ; then
+	    die "Unable to find TEST_SCRIPTS_DIR=\"${TEST_SCRIPTS_DIR}\""
+	fi
 	tests_dir=$(dirname "$d")
 	# Strip off current directory from beginning, if there, just
 	# to make paths more friendly.
