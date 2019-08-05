@@ -14,7 +14,7 @@ Options:
   -H		No headers - for running single test with other wrapper
   -I <count>    Iterate tests <count> times, exiting on failure (implies -e, -N)
   -N		Don't print summary of tests results after running all tests
-  -q		Quiet - don't show tests being run (hint: use with -s)
+  -q		Quiet - don't show tests being run (still displays summary)
   -S <lib>      Use socket wrapper library <lib> for local integration tests
   -v		Verbose - print test output for non-failures (only some tests)
   -V <dir>	Use <dir> as TEST_VAR_DIR
