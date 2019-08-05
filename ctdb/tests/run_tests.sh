@@ -155,7 +155,7 @@ tests_passed=0
 tests_failed=0
 summary=""
 
-if ! which mktemp >/dev/null 2>&1 ; then
+if ! type mktemp >/dev/null 2>&1 ; then
     # Not perfect, but it will do...
     mktemp ()
     {
