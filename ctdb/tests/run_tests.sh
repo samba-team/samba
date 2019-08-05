@@ -119,7 +119,7 @@ ctdb_test_end ()
 	fi
     fi
 
-    testduration=$(($(date +%s)-$teststarttime))
+    testduration=$(($(date +%s) - teststarttime))
 
     echo "=========================================================================="
     echo "TEST ${interp}: ${name}${statstr} (duration: ${testduration}s)"
@@ -185,14 +185,14 @@ run_one_test ()
 {
     local f="$1"
 
-    tests_total=$(($tests_total + 1))
+    tests_total=$((tests_total + 1))
 
     ctdb_test_run "$f" | tee "$tf" | show_progress
     status=$?
     if [ $status -eq 0 ] ; then
-	tests_passed=$(($tests_passed + 1))
+	tests_passed=$((tests_passed + 1))
     else
-	tests_failed=$(($tests_failed + 1))
+	tests_failed=$((tests_failed + 1))
     fi
     if $with_summary ; then
 	local t
