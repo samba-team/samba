@@ -267,6 +267,7 @@ class cmd_domain_backup_online(samba.netcmd.Command):
         realm = remote_sam.domain_dns_name()
 
         # Grab the remote DC's sysvol files and bundle them into a tar file
+        logger.info("Backing up sysvol files (via SMB)...")
         sysvol_tar = os.path.join(tmpdir, 'sysvol.tar.gz')
         smb_conn = smb_sysvol_conn(server, lp, creds)
         backup_online(smb_conn, sysvol_tar, remote_sam.get_domain_sid())
