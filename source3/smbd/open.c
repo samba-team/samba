@@ -2207,20 +2207,16 @@ static int map_lease_type_to_oplock(uint32_t lease_type)
 	return result;
 }
 
-static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
-				      struct files_struct *fsp,
+static NTSTATUS grant_fsp_oplock_type(struct files_struct *fsp,
 				      struct share_mode_lock *lck,
 				      int oplock_request,
-				      const struct smb2_lease *lease,
-				      uint32_t share_access,
-				      uint32_t access_mask)
+				      const struct smb2_lease *lease)
 {
 	struct share_mode_data *d = lck->data;
 	bool got_handle_lease = false;
 	bool got_oplock = false;
 	uint32_t i;
 	uint32_t granted;
-	bool ok;
 	NTSTATUS status;
 
 	if (oplock_request & INTERNAL_OPEN_ONLY) {
@@ -2331,29 +2327,6 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 			 */
 			fsp->oplock_type = NO_OPLOCK;
 		}
-	}
-
-	ok = set_share_mode(
-		lck,
-		fsp,
-		get_current_uid(fsp->conn),
-		req ? req->mid : 0,
-		fsp->oplock_type,
-		share_access,
-		access_mask);
-	if (!ok) {
-		if (fsp->oplock_type == LEASE_OPLOCK) {
-			status = remove_lease_if_stale(
-				lck->data,
-				fsp_client_guid(fsp),
-				&fsp->lease->lease.lease_key);
-			if (!NT_STATUS_IS_OK(status)) {
-				DBG_WARNING("remove_lease_if_stale "
-					    "failed: %s\n",
-					    nt_errstr(status));
-			}
-		}
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (granted & SMB2_LEASE_READ) {
@@ -3021,6 +2994,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
 	struct timespec old_write_time;
 	struct file_id id;
+	bool ok;
 
 	if (conn->printer) {
 		/*
@@ -3526,17 +3500,37 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	 * file structs.
 	 */
 	status = grant_fsp_oplock_type(
-		req,
 		fsp,
 		lck,
 		oplock_request,
-		lease,
-		share_access,
-		access_mask);
+		lease);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
 		return status;
+	}
+
+	ok = set_share_mode(
+		lck,
+		fsp,
+		get_current_uid(fsp->conn),
+		req ? req->mid : 0,
+		fsp->oplock_type,
+		share_access,
+		access_mask);
+	if (!ok) {
+		if (fsp->oplock_type == LEASE_OPLOCK) {
+			status = remove_lease_if_stale(
+				lck->data,
+				fsp_client_guid(fsp),
+				&fsp->lease->lease.lease_key);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_WARNING("remove_lease_if_stale "
+					    "failed: %s\n",
+					    nt_errstr(status));
+			}
+		}
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Should we atomically (to the client at least) truncate ? */
