@@ -2354,6 +2354,17 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 		share_access,
 		access_mask);
 	if (!ok) {
+		if (fsp->oplock_type == LEASE_OPLOCK) {
+			status = remove_lease_if_stale(
+				lck->data,
+				fsp_client_guid(fsp),
+				&fsp->lease->lease.lease_key);
+			if (!NT_STATUS_IS_OK(status)) {
+				DBG_WARNING("remove_lease_if_stale "
+					    "failed: %s\n",
+					    nt_errstr(status));
+			}
+		}
 		return NT_STATUS_NO_MEMORY;
 	}
 
