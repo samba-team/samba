@@ -2999,7 +2999,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (req == NULL) {
 		/* Ensure req == NULL means INTERNAL_OPEN_ONLY */
-		SMB_ASSERT(((oplock_request & INTERNAL_OPEN_ONLY) != 0));
+		SMB_ASSERT(oplock_request == INTERNAL_OPEN_ONLY);
 	} else {
 		/* And req != NULL means no INTERNAL_OPEN_ONLY */
 		SMB_ASSERT(((oplock_request & INTERNAL_OPEN_ONLY) == 0));
