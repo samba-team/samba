@@ -33,6 +33,7 @@
 #include "librpc/rpc/dcerpc_proto.h"
 #include "lib/param/param.h"
 #include "libcli/http/http.h"
+#include "lib/util/util_net.h"
 
 static ssize_t tstream_roh_pending_bytes(struct tstream_context *stream);
 static struct tevent_req * tstream_roh_readv_send(
@@ -122,6 +123,105 @@ NTSTATUS dcerpc_pipe_open_roh_recv(struct tevent_req *req,
 	*queue = http_conn_send_queue(
 			roh_stream_ctx->roh_conn->default_channel_in->http_conn);
 
+	tevent_req_received(req);
+
+	return NT_STATUS_OK;
+}
+
+struct roh_connect_channel_state {
+	struct roh_channel *channel;
+};
+
+static void roh_connect_channel_done(struct tevent_req *subreq);
+static struct tevent_req *roh_connect_channel_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					const char *rpcproxy_ip_address,
+					unsigned int rpcproxy_port,
+					struct cli_credentials *credentials,
+					bool tls,
+					struct tstream_tls_params *tls_params)
+{
+	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
+	struct roh_connect_channel_state *state = NULL;
+
+	DBG_DEBUG("Connecting ROH channel socket, RPC proxy is "
+		  "%s:%d (TLS: %s)\n", rpcproxy_ip_address, rpcproxy_port,
+		  (tls ? "true" : "false"));
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct roh_connect_channel_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	if (!is_ipaddress(rpcproxy_ip_address)) {
+		DBG_ERR("Invalid host (%s), needs to be an IP address\n",
+			rpcproxy_ip_address);
+		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
+		return tevent_req_post(req, ev);
+	}
+
+	/* Initialize channel structure */
+	state->channel = talloc_zero(state, struct roh_channel);
+	if (tevent_req_nomem(state->channel, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->channel->channel_cookie = GUID_random();
+
+	subreq = http_connect_send(state,
+				   ev,
+				   rpcproxy_ip_address,
+				   rpcproxy_port,
+				   credentials,
+				   tls ? tls_params : NULL);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, roh_connect_channel_done, req);
+
+	return req;
+}
+
+static void roh_connect_channel_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = NULL;
+	struct roh_connect_channel_state *state = NULL;
+	NTSTATUS status;
+	int ret;
+
+	req = tevent_req_callback_data(subreq, struct tevent_req);
+	state = tevent_req_data(req, struct roh_connect_channel_state);
+
+	ret = http_connect_recv(subreq,
+				state->channel,
+				&state->channel->http_conn);
+	TALLOC_FREE(subreq);
+	if (ret != 0) {
+		status = map_nt_error_from_unix_common(ret);
+		tevent_req_nterror(req, status);
+		return;
+	}
+
+	DBG_DEBUG("HTTP connected\n");
+	tevent_req_done(req);
+}
+
+static NTSTATUS roh_connect_channel_recv(struct tevent_req *req,
+					 TALLOC_CTX *mem_ctx,
+					 struct roh_channel **channel)
+{
+	struct roh_connect_channel_state *state = tevent_req_data(
+		req, struct roh_connect_channel_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		tevent_req_received(req);
+		return status;
+	}
+
+	*channel = talloc_move(mem_ctx, &state->channel);
 	tevent_req_received(req);
 
 	return NT_STATUS_OK;
