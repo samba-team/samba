@@ -349,13 +349,13 @@ static void roh_continue_resolve_name(struct composite_context *ctx)
 	 * always use local proxy. Otherwise, run the proxy use discovery
 	 */
 	state->roh->connection_state = ROH_STATE_OPEN_START;
-	subreq = roh_connect_channel_in_send(state,
-					     state->event_ctx,
-					     state->rpcproxy_addresses[state->rpcproxy_address_index],
-					     state->rpc_proxy_port,
-					     state->credentials,
-					     state->roh, state->tls,
-					     state->tls_params);
+	subreq = roh_connect_channel_send(state,
+					  state->event_ctx,
+					  state->rpcproxy_addresses[state->rpcproxy_address_index],
+					  state->rpc_proxy_port,
+					  state->credentials,
+					  state->tls,
+					  state->tls_params);
 	if (tevent_req_nomem(subreq, state->req)) {
 		return;
 	}
@@ -372,20 +372,20 @@ static void roh_connect_channel_in_done(struct tevent_req *subreq)
 	req = tevent_req_callback_data(subreq, struct tevent_req);
 	state = tevent_req_data(req, struct roh_open_connection_state);
 
-	status = roh_connect_channel_in_recv(subreq);
+	status = roh_connect_channel_recv(subreq, state->roh,
+					  &state->roh->default_channel_in);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
 
-	subreq = roh_connect_channel_out_send(state,
-					      state->event_ctx,
-					      state->rpcproxy_addresses[state->rpcproxy_address_index],
-					      state->rpc_proxy_port,
-					      state->credentials,
-					      state->roh,
-					      state->tls,
-					      state->tls_params);
+	subreq = roh_connect_channel_send(state,
+					  state->event_ctx,
+					  state->rpcproxy_addresses[state->rpcproxy_address_index],
+					  state->rpc_proxy_port,
+					  state->credentials,
+					  state->tls,
+					  state->tls_params);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -402,7 +402,8 @@ static void roh_connect_channel_out_done(struct tevent_req *subreq)
 	req = tevent_req_callback_data(subreq, struct tevent_req);
 	state = tevent_req_data(req, struct roh_open_connection_state);
 
-	status = roh_connect_channel_out_recv(subreq);
+	status = roh_connect_channel_recv(subreq, state->roh,
+					  &state->roh->default_channel_out);
 	TALLOC_FREE(subreq);
 	if (tevent_req_nterror(req, status)) {
 		return;
