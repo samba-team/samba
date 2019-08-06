@@ -85,8 +85,7 @@ static NTSTATUS http_parse_auth_response(const DATA_BLOB prefix,
 struct http_auth_state {
 	struct tevent_context *ev;
 
-	struct tstream_context *stream;
-	struct tevent_queue *send_queue;
+	struct http_conn *http_conn;
 
 	enum http_auth_method auth;
 	DATA_BLOB prefix;
@@ -106,8 +105,7 @@ static void http_send_auth_request_http_rep_done(struct tevent_req *subreq);
 
 struct tevent_req *http_send_auth_request_send(TALLOC_CTX *mem_ctx,
 					       struct tevent_context *ev,
-					       struct tstream_context *stream,
-					       struct tevent_queue *send_queue,
+					       struct http_conn *http_conn,
 					       const struct http_request *original_request,
 					       struct cli_credentials *credentials,
 					       struct loadparm_context *lp_ctx,
@@ -126,8 +124,7 @@ struct tevent_req *http_send_auth_request_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->ev = ev;
-	state->stream = stream;
-	state->send_queue = send_queue;
+	state->http_conn = http_conn;
 	state->auth = auth;
 	state->original_request = original_request;
 
@@ -264,8 +261,7 @@ static void http_send_auth_request_gensec_done(struct tevent_req *subreq)
 	}
 
 	subreq = http_send_request_send(state, state->ev,
-					state->stream,
-					state->send_queue,
+					state->http_conn,
 					state->next_request);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -312,7 +308,7 @@ static void http_send_auth_request_http_req_done(struct tevent_req *subreq)
 	 * from the socket, but for now we just ignore the bytes.
 	 */
 	subreq = http_read_response_send(state, state->ev,
-					 state->stream,
+					 state->http_conn,
 					 UINT16_MAX);
 	if (tevent_req_nomem(subreq, req)) {
 		return;

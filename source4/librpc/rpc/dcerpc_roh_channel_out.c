@@ -162,8 +162,6 @@ struct tevent_req *roh_send_RPC_DATA_OUT_send(TALLOC_CTX *mem_ctx,
 	const char			*path;
 	char				*query;
 	char				*uri;
-	struct tstream_context          *stream = NULL;
-	struct tevent_queue             *send_queue = NULL;
 
 	DEBUG(8, ("%s: Sending RPC_OUT_DATA request\n", __func__));
 
@@ -221,13 +219,9 @@ struct tevent_req *roh_send_RPC_DATA_OUT_send(TALLOC_CTX *mem_ctx,
 	http_add_header(state, &state->request->headers,
 			"Pragma", "no-cache");
 
-	stream = http_conn_tstream(roh->default_channel_out->http_conn);
-	send_queue = http_conn_send_queue(roh->default_channel_out->http_conn);
-
 	subreq = http_send_auth_request_send(state,
 					ev,
-					stream,
-					send_queue,
+					roh->default_channel_out->http_conn,
 					state->request,
 					credentials,
 					lp_ctx,
@@ -412,7 +406,6 @@ struct tevent_req *roh_recv_out_channel_response_send(TALLOC_CTX *mem_ctx,
 	struct tevent_req		*req;
 	struct tevent_req		*subreq;
 	struct roh_recv_response_state	*state;
-	struct tstream_context          *stream = NULL;
 
 	DEBUG(8, ("%s: Waiting for RPC_OUT_DATA response\n", __func__));
 
@@ -421,10 +414,8 @@ struct tevent_req *roh_recv_out_channel_response_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	stream = http_conn_tstream(roh->default_channel_out->http_conn);
-
 	subreq = http_read_response_send(state, ev,
-					 stream,
+					 roh->default_channel_out->http_conn,
 					 0); /* we'll get the content later */
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

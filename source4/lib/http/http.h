@@ -118,15 +118,14 @@ struct tstream_context *http_conn_tstream(struct http_conn *http_conn);
 /* HTTP request */
 struct tevent_req *http_send_request_send(TALLOC_CTX *,
 					  struct tevent_context *,
-					  struct tstream_context *,
-					  struct tevent_queue *,
+					  struct http_conn *,
 					  struct http_request *);
 NTSTATUS http_send_request_recv(struct tevent_req *);
 
 /* HTTP response */
 struct tevent_req *http_read_response_send(TALLOC_CTX *,
 					   struct tevent_context *,
-					   struct tstream_context *,
+					   struct http_conn *,
 					   size_t max_content_length);
 NTSTATUS http_read_response_recv(struct tevent_req *,
 			    TALLOC_CTX *,
@@ -135,8 +134,7 @@ NTSTATUS http_read_response_recv(struct tevent_req *,
 /* HTTP authenticated request */
 struct tevent_req *http_send_auth_request_send(TALLOC_CTX *,
 					       struct tevent_context *,
-					       struct tstream_context *,
-					       struct tevent_queue *,
+					       struct http_conn *,
 					       const struct http_request *,
 					       struct cli_credentials *,
 					       struct loadparm_context *,

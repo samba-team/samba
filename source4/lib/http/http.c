@@ -559,7 +559,7 @@ static int http_read_response_next_vector(struct tstream_context *stream,
 static void http_read_response_done(struct tevent_req *);
 struct tevent_req *http_read_response_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
-					   struct tstream_context *stream,
+					   struct http_conn *http_conn,
 					   size_t max_content_length)
 {
 	struct tevent_req		*req;
@@ -569,7 +569,7 @@ struct tevent_req *http_read_response_send(TALLOC_CTX *mem_ctx,
 	DEBUG(11, ("%s: Reading HTTP response\n", __func__));
 
 	/* Sanity checks */
-	if (!ev || !stream) {
+	if (ev == NULL || http_conn == NULL) {
 		DEBUG(0, ("%s: Invalid parameter\n", __func__));
 		return NULL;
 	}
@@ -587,7 +587,7 @@ struct tevent_req *http_read_response_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	subreq = tstream_readv_pdu_send(state, ev, stream,
+	subreq = tstream_readv_pdu_send(state, ev, http_conn->tstreams.active,
 					http_read_response_next_vector,
 					state);
 	if (tevent_req_nomem(subreq,req)) {
@@ -776,8 +776,7 @@ struct http_send_request_state {
 static void http_send_request_done(struct tevent_req *);
 struct tevent_req *http_send_request_send(TALLOC_CTX *mem_ctx,
 					  struct tevent_context *ev,
-					  struct tstream_context *stream,
-					  struct tevent_queue *send_queue,
+					  struct http_conn *http_conn,
 					  struct http_request *request)
 {
 	struct tevent_req		*req;
@@ -788,7 +787,7 @@ struct tevent_req *http_send_request_send(TALLOC_CTX *mem_ctx,
 	DEBUG(11, ("%s: Sending HTTP request\n", __func__));
 
 	/* Sanity checks */
-	if (!ev || !stream || !send_queue || !request) {
+	if (ev == NULL || request == NULL || http_conn == NULL) {
 		DEBUG(0, ("%s: Invalid parameter\n", __func__));
 		return NULL;
 	}
@@ -824,7 +823,10 @@ struct tevent_req *http_send_request_send(TALLOC_CTX *mem_ctx,
 
 	state->iov.iov_base = (char *) state->buffer.data;
 	state->iov.iov_len = state->buffer.length;
-	subreq = tstream_writev_queue_send(state, ev, stream, send_queue,
+	subreq = tstream_writev_queue_send(state,
+					   ev,
+					   http_conn->tstreams.active,
+					   http_conn->send_queue,
 					   &state->iov, 1);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);

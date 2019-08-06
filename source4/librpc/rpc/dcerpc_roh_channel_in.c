@@ -162,8 +162,6 @@ struct tevent_req *roh_send_RPC_DATA_IN_send(TALLOC_CTX *mem_ctx,
 	const char			*path;
 	char				*query;
 	char				*uri;
-	struct tstream_context		*stream = NULL;
-	struct tevent_queue		*send_queue = NULL;
 
 	DEBUG(8, ("%s: Sending RPC_IN_DATA request\n", __func__));
 
@@ -221,13 +219,9 @@ struct tevent_req *roh_send_RPC_DATA_IN_send(TALLOC_CTX *mem_ctx,
 	http_add_header(state, &state->request->headers,
 			"Pragma", "no-cache");
 
-	stream = http_conn_tstream(roh->default_channel_in->http_conn);
-	send_queue = http_conn_send_queue(roh->default_channel_in->http_conn);
-
 	subreq = http_send_auth_request_send(state,
 					ev,
-					stream,
-					send_queue,
+					roh->default_channel_in->http_conn,
 					state->request,
 					credentials,
 					lp_ctx,
