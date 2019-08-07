@@ -53,7 +53,23 @@ static pid_t ctdb_fork(struct ctdb_context *ctdb)
 
 static int ctdb_kill(struct ctdb_context *ctdb, pid_t pid, int signum)
 {
-	return kill(pid, signum);
+	/*
+	 * Tests need to wait for the child to exit to ensure that the
+	 * lock really has been released.  The PID is only accessible
+	 * in ctdb_cluster_mutex.c, so make a best attempt to ensure
+	 * that the child process is waited for after it is killed.
+	 * Avoid waiting if the process is already gone.
+	 */
+	int ret;
+
+	if (signum == 0) {
+		return kill(pid, signum);
+	}
+
+	ret = kill(pid, signum);
+	waitpid(pid, NULL, 0);
+
+	return ret;
 }
 
 #include "server/ctdb_cluster_mutex.c"
