@@ -2220,7 +2220,7 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 				      struct files_struct *fsp,
 				      struct share_mode_lock *lck,
 				      int oplock_request,
-				      struct smb2_lease *lease,
+				      const struct smb2_lease *lease,
 				      uint32_t share_access,
 				      uint32_t access_mask)
 {
