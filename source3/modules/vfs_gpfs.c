@@ -2306,8 +2306,24 @@ static uint64_t vfs_gpfs_disk_free(vfs_handle_struct *handle,
 					      bsize, dfree, dsize);
 	}
 
-	err = get_gpfs_quota(smb_fname->base_name,
-			GPFS_GRPQUOTA, utok->gid, &qi_group);
+	/*
+	 * If new files created under this folder get this folder's
+	 * GID, then available space is governed by the quota of the
+	 * folder's GID, not the primary group of the creating user.
+	 */
+	if (VALID_STAT(smb_fname->st) &&
+	    S_ISDIR(smb_fname->st.st_ex_mode) &&
+	    smb_fname->st.st_ex_mode & S_ISGID) {
+		become_root();
+		err = get_gpfs_quota(smb_fname->base_name, GPFS_GRPQUOTA,
+				     smb_fname->st.st_ex_gid, &qi_group);
+		unbecome_root();
+
+	} else {
+		err = get_gpfs_quota(smb_fname->base_name, GPFS_GRPQUOTA,
+				     utok->gid, &qi_group);
+	}
+
 	if (err) {
 		return SMB_VFS_NEXT_DISK_FREE(handle, smb_fname,
 					      bsize, dfree, dsize);
