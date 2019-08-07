@@ -847,12 +847,17 @@ static int sl_unpack_CNID(DALLOC_CTX *query,
 		return -1;
 	}
 
-	if (length <= 16) {
+	if (length < 8) {
+		return -1;
+	}
+	if (length == 8) {
 		/*
-		 * That's permitted, iirc length = 16 is an empty
-		 * array, so anything lesser then 16 should probably
-		 * be treated as an error, but I'm not quite sure.
+		 * That's permitted, length=8 is an empty CNID array.
 		 */
+		result = dalloc_add(query, cnids, sl_cnids_t);
+		if (result != 0) {
+			return -1;
+		}
 		return 0;
 	}
 
