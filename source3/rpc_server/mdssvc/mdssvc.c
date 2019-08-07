@@ -820,12 +820,13 @@ static void tracker_cursor_cb(GObject *object,
 	 * not as the user.
 	 */
 	if (!become_authenticated_pipe_user(slq->mds_ctx->pipe_session_info)) {
-		DBG_ERR("can't become authenticated user: %d\n", slq->mds_ctx->uid);
+		DBG_ERR("can't become authenticated user: %d\n",
+			slq->mds_ctx->uid);
 		smb_panic("can't become authenticated user");
 	}
 
 	if (geteuid() != slq->mds_ctx->uid) {
-		DEBUG(0, ("uid mismatch: %d/%d\n", geteuid(), slq->mds_ctx->uid));
+		DBG_ERR("uid mismatch: %d/%d\n", geteuid(), slq->mds_ctx->uid);
 		smb_panic("uid mismatch");
 	}
 
@@ -854,8 +855,11 @@ static void tracker_cursor_cb(GObject *object,
 		 * set of IDs. Note that we're faking CNIDs by using
 		 * filesystem inode numbers here
 		 */
-		ok = bsearch(&ino64, slq->cnids, slq->cnids_num,
-			     sizeof(uint64_t), cnid_comp_fn);
+		ok = bsearch(&ino64,
+			     slq->cnids,
+			     slq->cnids_num,
+			     sizeof(uint64_t),
+			     cnid_comp_fn);
 		if (!ok) {
 			goto done;
 		}
@@ -866,16 +870,19 @@ static void tracker_cursor_cb(GObject *object,
 	 * we return as part of the result set of a query
 	 */
 	result = dalloc_add_copy(slq->query_results->cnids->ca_cnids,
-				 &ino64, uint64_t);
+				 &ino64,
+				 uint64_t);
 	if (result != 0) {
-		DEBUG(1, ("dalloc error\n"));
+		DBG_ERR("dalloc error\n");
 		slq->state = SLQ_STATE_ERROR;
 		return;
 	}
-	ok = add_filemeta(slq->reqinfo, slq->query_results->fm_array,
-			  path, &sb);
+	ok = add_filemeta(slq->reqinfo,
+			  slq->query_results->fm_array,
+			  path,
+			  &sb);
 	if (!ok) {
-		DEBUG(1, ("add_filemeta error\n"));
+		DBG_ERR("add_filemeta error\n");
 		slq->state = SLQ_STATE_ERROR;
 		return;
 	}
@@ -1250,7 +1257,6 @@ static bool slrpc_open_query(struct mds_ctx *mds_ctx,
 	if (slq->path_scope == NULL) {
 		goto error;
 	}
-
 
 	reqinfo = dalloc_value_for_key(query, "DALLOC_CTX", 0,
 				       "DALLOC_CTX", 1, "kMDAttributeArray");
