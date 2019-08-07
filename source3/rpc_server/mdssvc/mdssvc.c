@@ -33,26 +33,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-#define SLQ_DEBUG(lvl, _slq, state) do { if (CHECK_DEBUGLVL(lvl)) {	\
-	const struct sl_query *__slq = _slq;				\
-	struct timeval_buf start_buf;					\
-	const char *start;						\
-	struct timeval_buf last_used_buf;				\
-	const char *last_used;						\
-	struct timeval_buf expire_buf;					\
-	const char *expire;						\
-	start = timeval_str_buf(&__slq->start_time, false,		\
-				true, &start_buf);			\
-	last_used = timeval_str_buf(&__slq->last_used, false,		\
-				    true, &last_used_buf);		\
-	expire = timeval_str_buf(&__slq->expire_time, false,		\
-				 true, &expire_buf);			\
-	DEBUG(lvl,("%s slq[0x%jx,0x%jx], start: %s, last_used: %s, "	\
-		   "expires: %s, query: '%s'\n", state,			\
-		   (uintmax_t)__slq->ctx1, (uintmax_t)__slq->ctx2,	\
-		   start, last_used, expire, __slq->query_string));	\
-}} while(0)
-
 struct slrpc_cmd {
 	const char *name;
 	bool (*function)(struct mds_ctx *mds_ctx,
