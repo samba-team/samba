@@ -271,6 +271,7 @@
 /* Version 41 - Remove "msg_ctx" parameter from SMB_VFS_BRL_UNLOCK_WINDOWS */
 /* Bump to version 42, Samba 4.12 will ship with that */
 /* Version 42 - Remove share_access member from struct files_struct */
+/* Version 42 - Make "lease" a const* in create_file_fn */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -714,7 +715,7 @@ struct vfs_fn_pointers {
 				   uint32_t create_options,
 				   uint32_t file_attributes,
 				   uint32_t oplock_request,
-				   struct smb2_lease *lease,
+				   const struct smb2_lease *lease,
 				   uint64_t allocation_size,
 				   uint32_t private_flags,
 				   struct security_descriptor *sd,
@@ -1211,7 +1212,7 @@ NTSTATUS smb_vfs_call_create_file(struct vfs_handle_struct *handle,
 				  uint32_t create_options,
 				  uint32_t file_attributes,
 				  uint32_t oplock_request,
-				  struct smb2_lease *lease,
+				  const struct smb2_lease *lease,
 				  uint64_t allocation_size,
 				  uint32_t private_flags,
 				  struct security_descriptor *sd,
@@ -1649,7 +1650,7 @@ NTSTATUS vfs_not_implemented_create_file(struct vfs_handle_struct *handle,
 				uint32_t create_options,
 				uint32_t file_attributes,
 				uint32_t oplock_request,
-				struct smb2_lease *lease,
+				const struct smb2_lease *lease,
 				uint64_t allocation_size,
 				uint32_t private_flags,
 				struct security_descriptor *sd,
