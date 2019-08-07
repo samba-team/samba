@@ -2339,6 +2339,66 @@ static NTSTATUS grant_fsp_oplock_type(struct files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS handle_share_mode_lease(
+	files_struct *fsp,
+	struct share_mode_lock *lck,
+	uint32_t create_disposition,
+	uint32_t access_mask,
+	uint32_t share_access,
+	int oplock_request,
+	const struct smb2_lease *lease,
+	bool first_open_attempt)
+{
+	bool sharing_violation = false;
+	bool delay = false;
+	NTSTATUS status;
+
+	status = open_mode_check(
+		fsp->conn, lck, access_mask, share_access);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+		sharing_violation = true;
+		status = NT_STATUS_OK; /* handled later */
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (oplock_request == INTERNAL_OPEN_ONLY) {
+		if (sharing_violation) {
+			DBG_DEBUG("Sharing violation for internal open\n");
+			return NT_STATUS_SHARING_VIOLATION;
+		}
+
+		/*
+		 * Internal opens never do oplocks or leases. We don't
+		 * need to go through delay_for_oplock().
+		 */
+		fsp->oplock_type = NO_OPLOCK;
+
+		return NT_STATUS_OK;
+	}
+
+	delay = delay_for_oplock(
+		fsp,
+		oplock_request,
+		lease,
+		lck,
+		sharing_violation,
+		create_disposition,
+		first_open_attempt);
+	if (delay) {
+		return NT_STATUS_RETRY;
+	}
+
+	if (sharing_violation) {
+		return NT_STATUS_SHARING_VIOLATION;
+	}
+
+	status = grant_fsp_oplock_type(fsp, lck, oplock_request, lease);
+	return status;
+}
+
 static bool request_timed_out(struct smb_request *req, struct timeval timeout)
 {
 	struct timeval now, end_time;
@@ -3460,50 +3520,23 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return NT_STATUS_DELETE_PENDING;
 	}
 
-	status = open_mode_check(conn, lck,
-				 access_mask, share_access);
+	status = handle_share_mode_lease(
+		fsp,
+		lck,
+		create_disposition,
+		access_mask,
+		share_access,
+		oplock_request,
+		lease,
+		first_open_attempt);
 
-	if (req != NULL) {
-		/*
-		 * Handle oplocks, deferring the request if delay_for_oplock()
-		 * triggered a break message and we have to wait for the break
-		 * response.
-		 */
-		bool delay;
-		bool sharing_violation = NT_STATUS_EQUAL(
-			status, NT_STATUS_SHARING_VIOLATION);
-
-		delay = delay_for_oplock(fsp, oplock_request, lease, lck,
-					 sharing_violation,
-					 create_disposition,
-					 first_open_attempt);
-		if (delay) {
-			schedule_defer_open(lck, fsp->file_id, req);
-			TALLOC_FREE(lck);
-			fd_close(fsp);
-			return NT_STATUS_SHARING_VIOLATION;
-		}
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-
-		SMB_ASSERT(NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION));
-
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+		schedule_defer_open(lck, fsp->file_id, req);
 		TALLOC_FREE(lck);
 		fd_close(fsp);
-
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
-	/*
-	 * Setup the oplock info in both the shared memory and
-	 * file structs.
-	 */
-	status = grant_fsp_oplock_type(
-		fsp,
-		lck,
-		oplock_request,
-		lease);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(lck);
 		fd_close(fsp);
