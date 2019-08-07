@@ -4961,7 +4961,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 				     uint32_t create_options,
 				     uint32_t file_attributes,
 				     uint32_t oplock_request,
-				     struct smb2_lease *lease,
+				     const struct smb2_lease *lease,
 				     uint64_t allocation_size,
 				     uint32_t private_flags,
 				     struct security_descriptor *sd,
@@ -4970,6 +4970,7 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 				     files_struct **result,
 				     int *pinfo)
 {
+	struct smb2_lease none_lease;
 	int info = FILE_WAS_OPENED;
 	files_struct *base_fsp = NULL;
 	files_struct *fsp = NULL;
@@ -5023,9 +5024,11 @@ static NTSTATUS create_file_unixpath(connection_struct *conn,
 				&epoch);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
 			/* Dynamic share file. No leases and update epoch... */
-			lease->lease_state = SMB2_LEASE_NONE;
-			lease->lease_epoch = epoch;
-			lease->lease_version = version;
+			none_lease = *lease;
+			none_lease.lease_state = SMB2_LEASE_NONE;
+			none_lease.lease_epoch = epoch;
+			none_lease.lease_version = version;
+			lease = &none_lease;
 		} else if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
