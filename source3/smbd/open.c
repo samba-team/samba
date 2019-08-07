@@ -2964,7 +2964,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			    uint32_t create_options,	/* options such as delete on close. */
 			    uint32_t new_dos_attributes,	/* attributes used for new file. */
 			    int oplock_request, 	/* internal Samba oplock codes. */
-			    struct smb2_lease *lease,
+			    const struct smb2_lease *lease,
 				 			/* Information (FILE_EXISTS etc.) */
 			    uint32_t private_flags,     /* Samba specific flags. */
 			    int *pinfo,
