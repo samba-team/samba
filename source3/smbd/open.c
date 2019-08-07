@@ -4817,7 +4817,7 @@ static void lease_match_parser(
 
 static NTSTATUS lease_match(connection_struct *conn,
 			    struct smb_request *req,
-			    struct smb2_lease_key *lease_key,
+			    const struct smb2_lease_key *lease_key,
 			    const char *servicepath,
 			    const struct smb_filename *fname,
 			    uint16_t *p_version,
