@@ -2324,9 +2324,8 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 			return status;
 
 		}
-		*lease = fsp->lease->lease;
 
-		DEBUG(10, ("lease_state=%d\n", lease->lease_state));
+		DBG_DEBUG("lease_state=%d\n", fsp->lease->lease.lease_state);
 	} else {
 		if (got_handle_lease) {
 			granted = SMB2_LEASE_NONE;
