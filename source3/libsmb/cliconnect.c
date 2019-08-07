@@ -305,6 +305,18 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 	 * only if required!
 	 */
 	setenv(KRB5_ENV_CCNAME, "MEMORY:cliconnect", 1);
+
+	if (cli->last_prepared_creds == creds) {
+		DBG_DEBUG("Re-using previously prepared Kerberos credentials "
+			  "for %s to access %s.\n",
+			  user_principal,
+			  target_hostname);
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	cli->last_prepared_creds = NULL;
+
 	ret = kerberos_kinit_password_ext(user_principal,
 					  pass,
 					  0,
@@ -361,6 +373,8 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 		  user_principal,
 		  canon_principal,
 		  target_hostname);
+
+	cli->last_prepared_creds = creds;
 
 	TALLOC_FREE(frame);
 	return NT_STATUS_OK;

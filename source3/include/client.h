@@ -95,6 +95,14 @@ struct cli_state {
 		struct smbXcli_tcon *tcon;
 		struct idr_context *open_handles;
 	} smb2;
+
+	/*
+	 * We don't want to kinit twice if
+	 * cli_session_creds_prepare_krb5()
+	 * is called more than once for a given
+	 * cli_state cli_credentials combination.
+	 */
+	const struct cli_credentials *last_prepared_creds;
 };
 
 struct file_info {
