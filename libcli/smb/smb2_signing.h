@@ -21,10 +21,10 @@
 #ifndef _LIBCLI_SMB_SMB2_SIGNING_H_
 #define _LIBCLI_SMB_SMB2_SIGNING_H_
 
-#include <gnutls/gnutls.h>
-#include <gnutls/crypto.h>
-
 struct iovec;
+ /* Forward declaration of GnuTLS typedefs */
+struct hmac_hd_st;
+typedef struct hmac_hd_st* gnutls_hmac_hd_t;
 
 struct smb2_signing_key {
 	gnutls_hmac_hd_t hmac_hnd;
