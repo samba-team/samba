@@ -397,7 +397,7 @@ bool ads_cldap_netlogon(TALLOC_CTX *mem_ctx,
 			  "failed: %s\n", nt_errstr(status)));
 		return false;
 	}
-	if (responses[0] == NULL) {
+	if (responses == NULL || responses[0] == NULL) {
 		DEBUG(2, ("ads_cldap_netlogon: did not get a reply\n"));
 		TALLOC_FREE(responses);
 		return false;
