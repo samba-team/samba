@@ -2709,7 +2709,7 @@ NTSTATUS internal_resolve_name(const char *name,
 			}
 		} else if (strequal(tok, "wins")) {
 			/* don't resolve 1D via WINS */
-			struct sockaddr_storage *ss_list;
+			struct sockaddr_storage *ss_list = NULL;
 			if (name_type != 0x1D) {
 				status = resolve_wins(name, name_type,
 						      talloc_tos(),
@@ -2725,7 +2725,7 @@ NTSTATUS internal_resolve_name(const char *name,
 				}
 			}
 		} else if (strequal(tok, "bcast")) {
-			struct sockaddr_storage *ss_list;
+			struct sockaddr_storage *ss_list = NULL;
 			status = name_resolve_bcast(
 				name, name_type, talloc_tos(),
 				&ss_list, return_count);
