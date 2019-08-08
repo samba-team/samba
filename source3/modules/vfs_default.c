@@ -1087,6 +1087,31 @@ static int vfswrap_rename(vfs_handle_struct *handle,
 	return result;
 }
 
+static int vfswrap_renameat(vfs_handle_struct *handle,
+			  files_struct *srcfsp,
+			  const struct smb_filename *smb_fname_src,
+			  files_struct *dstfsp,
+			  const struct smb_filename *smb_fname_dst)
+{
+	int result = -1;
+
+	START_PROFILE(syscall_renameat);
+
+	SMB_ASSERT(srcfsp->fh->fd == AT_FDCWD);
+	SMB_ASSERT(dstfsp->fh->fd == AT_FDCWD);
+
+	if (smb_fname_src->stream_name || smb_fname_dst->stream_name) {
+		errno = ENOENT;
+		goto out;
+	}
+
+	result = rename(smb_fname_src->base_name, smb_fname_dst->base_name);
+
+ out:
+	END_PROFILE(syscall_renameat);
+	return result;
+}
+
 static int vfswrap_stat(vfs_handle_struct *handle,
 			struct smb_filename *smb_fname)
 {
@@ -3439,6 +3464,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.sendfile_fn = vfswrap_sendfile,
 	.recvfile_fn = vfswrap_recvfile,
 	.rename_fn = vfswrap_rename,
+	.renameat_fn = vfswrap_renameat,
 	.fsync_send_fn = vfswrap_fsync_send,
 	.fsync_recv_fn = vfswrap_fsync_recv,
 	.stat_fn = vfswrap_stat,

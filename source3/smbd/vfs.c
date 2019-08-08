@@ -1831,6 +1831,20 @@ int smb_vfs_call_rename(struct vfs_handle_struct *handle,
 	return handle->fns->rename_fn(handle, smb_fname_src, smb_fname_dst);
 }
 
+int smb_vfs_call_renameat(struct vfs_handle_struct *handle,
+			files_struct *srcfsp,
+			const struct smb_filename *smb_fname_src,
+			files_struct *dstfsp,
+			const struct smb_filename *smb_fname_dst)
+{
+	VFS_FIND(renameat);
+	return handle->fns->renameat_fn(handle,
+				srcfsp,
+				smb_fname_src,
+				dstfsp,
+				smb_fname_dst);
+}
+
 struct smb_vfs_call_fsync_state {
 	int (*recv_fn)(struct tevent_req *req, struct vfs_aio_state *vfs_aio_state);
 	int retval;

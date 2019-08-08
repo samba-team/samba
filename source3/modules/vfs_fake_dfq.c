@@ -198,7 +198,7 @@ static void dfq_fake_stat(struct vfs_handle_struct *handle,
 	int len;
 	gid_t gid;
 
-	len = full_path_tos(handle->conn->cwd_fname->base_name,
+	len = full_path_tos(handle->conn->cwd_fsp->fsp_name->base_name,
 			    smb_fname->base_name,
 			    path, sizeof(path),
 			    &full_path, &to_free);

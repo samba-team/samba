@@ -190,6 +190,11 @@
 #define SMB_VFS_NEXT_RENAME(handle, old, new) \
 	smb_vfs_call_rename((handle)->next, (old), (new))
 
+#define SMB_VFS_RENAMEAT(conn, oldfsp, old, newfsp, new) \
+	smb_vfs_call_renameat((conn)->vfs_handles, (oldfsp), (old), (newfsp), (new))
+#define SMB_VFS_NEXT_RENAMEAT(handle, oldfsp, old, newfsp, new) \
+	smb_vfs_call_renameat((handle)->next, (oldfsp), (old), (newfsp), (new))
+
 #define SMB_VFS_FSYNC(fsp) \
 	smb_vfs_call_fsync((fsp)->conn->vfs_handles, (fsp))
 #define SMB_VFS_NEXT_FSYNC(handle, fsp) \
