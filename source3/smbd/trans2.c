@@ -7572,6 +7572,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 
 	if (lock_type == UNLOCK_LOCK) {
 		struct smbd_lock_element l = {
+			.req_guid = smbd_request_guid(req, 0),
 			.smblctx = smblctx,
 			.brltype = UNLOCK_LOCK,
 			.offset = offset,
@@ -7587,6 +7588,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 	}
 
 	*lck = (struct smbd_lock_element) {
+		.req_guid = smbd_request_guid(req, 0),
 		.smblctx = smblctx,
 		.brltype = lock_type,
 		.count = count,

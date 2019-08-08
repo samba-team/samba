@@ -2621,6 +2621,7 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	bool netatalk_already_open_for_writing = false;
 	bool netatalk_already_open_with_deny_read = false;
 	bool netatalk_already_open_with_deny_write = false;
+	struct GUID req_guid = GUID_random();
 
 	/* FIXME: hardcoded data fork, add resource fork */
 	enum apple_fork fork_type = APPLE_FORK_DATA;
@@ -2684,8 +2685,11 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 	/* Set NetAtalk locks matching our access */
 	if (access_mask & FILE_READ_DATA) {
 		off = access_to_netatalk_brl(fork_type, FILE_READ_DATA);
+		req_guid.time_hi_and_version = __LINE__;
 		status = do_lock(
 			fsp,
+			talloc_tos(),
+			&req_guid,
 			fsp->op->global->open_persistent_id,
 			1,
 			off,
@@ -2701,8 +2705,11 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 
 	if (!share_for_read) {
 		off = denymode_to_netatalk_brl(fork_type, DENY_READ);
+		req_guid.time_hi_and_version = __LINE__;
 		status = do_lock(
 			fsp,
+			talloc_tos(),
+			&req_guid,
 			fsp->op->global->open_persistent_id,
 			1,
 			off,
@@ -2718,8 +2725,11 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 
 	if (access_mask & FILE_WRITE_DATA) {
 		off = access_to_netatalk_brl(fork_type, FILE_WRITE_DATA);
+		req_guid.time_hi_and_version = __LINE__;
 		status = do_lock(
 			fsp,
+			talloc_tos(),
+			&req_guid,
 			fsp->op->global->open_persistent_id,
 			1,
 			off,
@@ -2735,8 +2745,11 @@ static NTSTATUS fruit_check_access(vfs_handle_struct *handle,
 
 	if (!share_for_write) {
 		off = denymode_to_netatalk_brl(fork_type, DENY_WRITE);
+		req_guid.time_hi_and_version = __LINE__;
 		status = do_lock(
 			fsp,
+			talloc_tos(),
+			&req_guid,
 			fsp->op->global->open_persistent_id,
 			1,
 			off,

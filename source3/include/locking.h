@@ -30,6 +30,7 @@ enum brl_type {READ_LOCK, WRITE_LOCK, UNLOCK_LOCK};
 enum brl_flavour {WINDOWS_LOCK = 0, POSIX_LOCK = 1};
 
 #include "librpc/gen_ndr/server_id.h"
+#include "librpc/gen_ndr/misc.h"
 
 /* This contains elements that differentiate locks. The smbpid is a
    client supplied pid, and is essentially the locking context for
@@ -62,6 +63,7 @@ struct lock_struct {
 };
 
 struct smbd_lock_element {
+	struct GUID req_guid;
 	uint64_t smblctx;
 	enum brl_type brltype;
 	uint64_t offset;

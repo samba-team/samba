@@ -115,6 +115,8 @@ DATA_BLOB negprot_spnego(TALLOC_CTX *ctx, struct smbXsrv_connection *xconn);
 void smbd_lock_socket(struct smbXsrv_connection *xconn);
 void smbd_unlock_socket(struct smbXsrv_connection *xconn);
 
+struct GUID smbd_request_guid(struct smb_request *smb1req, uint16_t idx);
+
 NTSTATUS smbd_do_unlocking(struct smb_request *req,
 			   files_struct *fsp,
 			   uint16_t num_ulocks,

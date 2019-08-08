@@ -3842,6 +3842,7 @@ void reply_lockread(struct smb_request *req)
 	 */
 
 	*lck = (struct smbd_lock_element) {
+		.req_guid = smbd_request_guid(req, 0),
 		.smblctx = req->smbpid,
 		.brltype = WRITE_LOCK,
 		.count = SVAL(req->vwv+1, 0),
@@ -4869,6 +4870,7 @@ void reply_writeunlock(struct smb_request *req)
 
 	if (numtowrite && !fsp->print_file) {
 		struct smbd_lock_element l = {
+			.req_guid = smbd_request_guid(req, 0),
 			.smblctx = req->smbpid,
 			.brltype = UNLOCK_LOCK,
 			.offset = startpos,
@@ -5764,6 +5766,7 @@ void reply_lock(struct smb_request *req)
 	}
 
 	*lck = (struct smbd_lock_element) {
+		.req_guid = smbd_request_guid(req, 0),
 		.smblctx = req->smbpid,
 		.brltype = WRITE_LOCK,
 		.count = IVAL(req->vwv+1, 0),
@@ -5855,6 +5858,7 @@ void reply_unlock(struct smb_request *req)
 	}
 
 	lck = (struct smbd_lock_element) {
+		.req_guid = smbd_request_guid(req, 0),
 		.smblctx = req->smbpid,
 		.brltype = UNLOCK_LOCK,
 		.offset = IVAL(req->vwv+3, 0),
@@ -8433,6 +8437,8 @@ void reply_lockingX(struct smb_request *req)
 		 * smb_unlkrng structs
 		 */
 		for (i = 0; i < num_ulocks; i++) {
+			ulocks[i].req_guid = smbd_request_guid(req,
+				UINT16_MAX - i),
 			ulocks[i].smblctx = get_lock_pid(
 				data, i, large_file_format);
 			ulocks[i].count = get_lock_count(
@@ -8490,6 +8496,7 @@ void reply_lockingX(struct smb_request *req)
 	}
 
 	for (i = 0; i < num_locks; i++) {
+		locks[i].req_guid = smbd_request_guid(req, i),
 		locks[i].smblctx = get_lock_pid(data, i, large_file_format);
 		locks[i].count = get_lock_count(data, i, large_file_format);
 		locks[i].offset = get_lock_offset(data, i, large_file_format);
