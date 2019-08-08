@@ -45,9 +45,9 @@ int ctdb_set_transport(struct ctdb_context *ctdb, const char *transport)
 	return 0;
 }
 
-/* Return the PNN for nodeip, CTDB_UNKNOWN_PNN if nodeip is invalid */
-uint32_t ctdb_ip_to_pnn(struct ctdb_context *ctdb,
-			const ctdb_sock_addr *nodeip)
+/* Return the node structure for nodeip, NULL if nodeip is invalid */
+struct ctdb_node *ctdb_ip_to_node(struct ctdb_context *ctdb,
+				  const ctdb_sock_addr *nodeip)
 {
 	unsigned int nodeid;
 
@@ -56,11 +56,25 @@ uint32_t ctdb_ip_to_pnn(struct ctdb_context *ctdb,
 			continue;
 		}
 		if (ctdb_same_ip(&ctdb->nodes[nodeid]->address, nodeip)) {
-			return ctdb->nodes[nodeid]->pnn;
+			return ctdb->nodes[nodeid];
 		}
 	}
 
-	return CTDB_UNKNOWN_PNN;
+	return NULL;
+}
+
+/* Return the PNN for nodeip, CTDB_UNKNOWN_PNN if nodeip is invalid */
+uint32_t ctdb_ip_to_pnn(struct ctdb_context *ctdb,
+			const ctdb_sock_addr *nodeip)
+{
+	struct ctdb_node *node;
+
+	node = ctdb_ip_to_node(ctdb, nodeip);
+	if (node == NULL) {
+		return CTDB_UNKNOWN_PNN;
+	}
+
+	return node->pnn;
 }
 
 /* Load a nodes list file into a nodes array */
