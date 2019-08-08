@@ -60,7 +60,7 @@ static krb5_error_code flush_keytab(krb5_context krbctx, krb5_keytab keytab)
 				  "failed (%s)\n", error_message(ret)));
 			goto out;
 		}
-		ret = smb_krb5_kt_free_entry(krbctx, &kt_entry);
+		smb_krb5_kt_free_entry(krbctx, &kt_entry);
 		ZERO_STRUCT(kt_entry);
 
 		/* now reopen */
