@@ -8,6 +8,7 @@ packages:
   - bind-utils
   - binutils
   - bison
+  - compat-gnutls34-devel
   - cups-devel
   - curl
   - dbus-devel
@@ -20,7 +21,6 @@ packages:
   - git
   - glib2-devel
   - glibc-common
-  - gnutls-devel
   - gpgme-devel
   - gzip
   - hostname

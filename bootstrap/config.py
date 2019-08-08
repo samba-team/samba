@@ -214,6 +214,8 @@ set -xueo pipefail
 
 yum update -y
 yum install -y epel-release
+yum install -y yum-plugin-copr
+yum copr enable -y sergiomb/SambaAD
 yum update -y
 
 yum install -y \
@@ -478,6 +480,7 @@ RPM_DISTS = {
             'glusterfs-api-devel': '',
             'glusterfs-devel': '',
             'libcephfs-devel': '',
+            'gnutls-devel': 'compat-gnutls34-devel',
         }
     },
     'fedora28': {
