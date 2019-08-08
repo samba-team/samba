@@ -931,7 +931,7 @@ bool name_status_find(const char *q_name,
 	struct sockaddr_storage ss;
 	struct node_status *addrs = NULL;
 	struct nmb_name nname;
-	int count, i;
+	int count = 0, i;
 	bool result = false;
 	NTSTATUS status;
 
