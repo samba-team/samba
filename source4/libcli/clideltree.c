@@ -110,7 +110,7 @@ int smbcli_deltree(struct smbcli_tree *tree, const char *dname)
 	}
 	if (NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
 		/* it could be read-only */
-		status = smbcli_setatr(tree, dname, FILE_ATTRIBUTE_NORMAL, 0);
+		smbcli_setatr(tree, dname, FILE_ATTRIBUTE_NORMAL, 0);
 		if (NT_STATUS_IS_OK(smbcli_unlink(tree, dname))) {
 			return 1;
 		}
@@ -128,7 +128,7 @@ int smbcli_deltree(struct smbcli_tree *tree, const char *dname)
 	status = smbcli_rmdir(dstate.tree, dname);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_CANNOT_DELETE)) {
 		/* it could be read-only */
-		status = smbcli_setatr(dstate.tree, dname, FILE_ATTRIBUTE_NORMAL, 0);
+		smbcli_setatr(dstate.tree, dname, FILE_ATTRIBUTE_NORMAL, 0);
 		status = smbcli_rmdir(dstate.tree, dname);
 	}
 	if (NT_STATUS_IS_ERR(status)) {
