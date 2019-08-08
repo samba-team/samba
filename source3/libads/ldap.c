@@ -2098,6 +2098,127 @@ ADS_STATUS ads_add_service_principal_names(ADS_STRUCT *ads,
 	return ret;
 }
 
+static uint32_t ads_get_acct_ctrl(ADS_STRUCT *ads,
+				  LDAPMessage *msg)
+{
+	uint32_t acct_ctrl = 0;
+	bool ok;
+
+	ok = ads_pull_uint32(ads, msg, "userAccountControl", &acct_ctrl);
+	if (!ok) {
+		return 0;
+	}
+
+	return acct_ctrl;
+}
+
+static ADS_STATUS ads_change_machine_acct(ADS_STRUCT *ads,
+					  LDAPMessage *msg,
+					  const struct berval *machine_pw_val)
+{
+	ADS_MODLIST mods;
+	ADS_STATUS ret;
+	TALLOC_CTX *frame = talloc_stackframe();
+	uint32_t acct_control;
+	char *control_str = NULL;
+	const char *attrs[] = {
+		"objectSid",
+		NULL
+	};
+	LDAPMessage *res = NULL;
+	char *dn = NULL;
+
+	dn = ads_get_dn(ads, frame, msg);
+	if (dn == NULL) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	acct_control = ads_get_acct_ctrl(ads, msg);
+	if (acct_control == 0) {
+		ret = ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+		goto done;
+	}
+
+	/*
+	 * Changing the password, disables the account. So we need to change the
+	 * userAccountControl flags to enable it again.
+	 */
+	mods = ads_init_mods(frame);
+	if (mods == NULL) {
+		ret = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	ads_mod_ber(frame, &mods, "unicodePwd", machine_pw_val);
+
+	ret = ads_gen_mod(ads, dn, mods);
+	if (!ADS_ERR_OK(ret)) {
+		goto done;
+	}
+	TALLOC_FREE(mods);
+
+	/*
+	 * To activate the account, we need to disable and enable it.
+	 */
+	acct_control |= UF_ACCOUNTDISABLE;
+
+	control_str = talloc_asprintf(frame, "%u", acct_control);
+	if (control_str == NULL) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	mods = ads_init_mods(frame);
+	if (mods == NULL) {
+		ret = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	ads_mod_str(frame, &mods, "userAccountControl", control_str);
+
+	ret = ads_gen_mod(ads, dn, mods);
+	if (!ADS_ERR_OK(ret)) {
+		goto done;
+	}
+	TALLOC_FREE(mods);
+	TALLOC_FREE(control_str);
+
+	/*
+	 * Enable the account again.
+	 */
+	acct_control &= ~UF_ACCOUNTDISABLE;
+
+	control_str = talloc_asprintf(frame, "%u", acct_control);
+	if (control_str == NULL) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	mods = ads_init_mods(frame);
+	if (mods == NULL) {
+		ret = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	ads_mod_str(frame, &mods, "userAccountControl", control_str);
+
+	ret = ads_gen_mod(ads, dn, mods);
+	if (!ADS_ERR_OK(ret)) {
+		goto done;
+	}
+	TALLOC_FREE(mods);
+	TALLOC_FREE(control_str);
+
+	ret = ads_search_dn(ads, &res, dn, attrs);
+	ads_msgfree(ads, res);
+
+done:
+	talloc_free(frame);
+
+	return ret;
+}
+
 /**
  * adds a machine account to the ADS server
  * @param ads An intialized ADS_STRUCT
@@ -2149,11 +2270,34 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 		goto done;
 	}
 
+	utf8_pw = talloc_asprintf(ctx, "\"%s\"", machine_password);
+	if (utf8_pw == NULL) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
+	}
+	utf8_pw_len = strlen(utf8_pw);
+
+	ok = convert_string_talloc(ctx,
+				   CH_UTF8, CH_UTF16MUNGED,
+				   utf8_pw, utf8_pw_len,
+				   (void *)&utf16_pw, &utf16_pw_len);
+	if (!ok) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	machine_pw_val = (struct berval) {
+		.bv_val = utf16_pw,
+		.bv_len = utf16_pw_len,
+	};
+
 	/* Check if the machine account already exists. */
 	ret = ads_find_machine_acct(ads, &res, machine_escaped);
 	if (ADS_ERR_OK(ret)) {
-		ret = ADS_ERROR_LDAP(LDAP_ALREADY_EXISTS);
+		/* Change the machine account password */
+		ret = ads_change_machine_acct(ads, res, &machine_pw_val);
 		ads_msgfree(ads, res);
+
 		goto done;
 	}
 	ads_msgfree(ads, res);
@@ -2235,27 +2379,6 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto done;
 	}
-
-	utf8_pw = talloc_asprintf(ctx, "\"%s\"", machine_password);
-	if (utf8_pw == NULL) {
-		ret = ADS_ERROR(LDAP_NO_MEMORY);
-		goto done;
-	}
-	utf8_pw_len = strlen(utf8_pw);
-
-	ok = convert_string_talloc(ctx,
-				   CH_UTF8, CH_UTF16MUNGED,
-				   utf8_pw, utf8_pw_len,
-				   (void *)&utf16_pw, &utf16_pw_len);
-	if (!ok) {
-		ret = ADS_ERROR(LDAP_NO_MEMORY);
-		goto done;
-	}
-
-	machine_pw_val = (struct berval) {
-		.bv_val = utf16_pw,
-		.bv_len = utf16_pw_len,
-	};
 
 	mods = ads_init_mods(ctx);
 	if (mods == NULL) {
