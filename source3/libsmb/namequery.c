@@ -2749,7 +2749,7 @@ NTSTATUS internal_resolve_name(const char *name,
 	SAFE_FREE(*return_iplist);
 	*return_count = 0;
 
-	return NT_STATUS_UNSUCCESSFUL;
+	return status;
 
   done:
 
