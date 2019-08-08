@@ -10,7 +10,8 @@ bld.SAMBA3_BINARY('test_nfs4_acls',
                   install=False)
 
 bld.SAMBA3_SUBSYSTEM('vfs_acl_common',
-                     source='vfs_acl_common.c')
+                     source='vfs_acl_common.c',
+                     deps='gnutls')
 
 bld.SAMBA3_SUBSYSTEM('POSIXACL_XATTR',
                  source='posixacl_xattr.c',
