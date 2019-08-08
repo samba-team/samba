@@ -462,13 +462,12 @@ static int put_compressed_name_ptr(unsigned char *buf,
 				struct res_rec *rec,
 				int ptr_offset)
 {
-	int ret=0;
+	int ret=offset;
 	if (buf) {
 		buf[offset] = (0xC0 | ((ptr_offset >> 8) & 0xFF));
 		buf[offset+1] = (ptr_offset & 0xFF);
 	}
 	offset += 2;
-	ret += 2;
 	if (buf) {
 		RSSVAL(buf,offset,rec->rr_type);
 		RSSVAL(buf,offset+2,rec->rr_class);
@@ -477,7 +476,7 @@ static int put_compressed_name_ptr(unsigned char *buf,
 		memcpy(buf+offset+10,rec->rdata,rec->rdlength);
 	}
 	offset += 10+rec->rdlength;
-	ret += 10+rec->rdlength;
+	ret = (offset - ret);
 
 	return ret;
 }
