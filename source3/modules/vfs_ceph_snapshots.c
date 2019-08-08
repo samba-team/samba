@@ -1430,40 +1430,20 @@ static int ceph_snap_gmt_removexattr(vfs_handle_struct *handle,
 				const char *aname)
 {
 	time_t timestamp = 0;
-	char stripped[PATH_MAX + 1];
-	char conv[PATH_MAX + 1];
 	int ret;
-	struct smb_filename *new_fname;
-	int saved_errno;
 
 	ret = ceph_snap_gmt_strip_snapshot(handle,
 					csmb_fname->base_name,
-					&timestamp, stripped, sizeof(stripped));
+					&timestamp, NULL, 0);
 	if (ret < 0) {
 		errno = -ret;
 		return -1;
 	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_REMOVEXATTR(handle, csmb_fname, aname);
-	}
-	ret = ceph_snap_gmt_convert(handle, stripped,
-					timestamp, conv, sizeof(conv));
-	if (ret < 0) {
-		errno = -ret;
+	if (timestamp != 0) {
+		errno = EROFS;
 		return -1;
 	}
-	new_fname = cp_smb_filename(talloc_tos(), csmb_fname);
-	if (new_fname == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-	new_fname->base_name = conv;
-
-	ret = SMB_VFS_NEXT_REMOVEXATTR(handle, new_fname, aname);
-	saved_errno = errno;
-	TALLOC_FREE(new_fname);
-	errno = saved_errno;
-	return ret;
+	return SMB_VFS_NEXT_REMOVEXATTR(handle, csmb_fname, aname);
 }
 
 static int ceph_snap_gmt_setxattr(struct vfs_handle_struct *handle,
