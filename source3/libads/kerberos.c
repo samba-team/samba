@@ -189,9 +189,10 @@ int kerberos_kinit_password_ext(const char *principal,
 		goto out;
 	}
 
-	canon_princ = me;
 #ifndef SAMBA4_USES_HEIMDAL /* MIT */
 	canon_princ = my_creds.client;
+#else
+	canon_princ = me;
 #endif /* MIT */
 
 	if ((code = krb5_cc_initialize(ctx, cc, canon_princ))) {
