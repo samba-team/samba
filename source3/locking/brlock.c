@@ -46,6 +46,8 @@ static struct db_context *brlock_db;
 
 struct byte_range_lock {
 	struct files_struct *fsp;
+	TALLOC_CTX *req_mem_ctx;
+	const struct GUID *req_guid;
 	unsigned int num_locks;
 	bool modified;
 	struct lock_struct *lock_data;
@@ -82,6 +84,25 @@ unsigned int brl_num_locks(const struct byte_range_lock *brl)
 struct files_struct *brl_fsp(struct byte_range_lock *brl)
 {
 	return brl->fsp;
+}
+
+TALLOC_CTX *brl_req_mem_ctx(const struct byte_range_lock *brl)
+{
+	if (brl->req_mem_ctx == NULL) {
+		return talloc_get_type_abort(brl, struct byte_range_lock);
+	}
+
+	return brl->req_mem_ctx;
+}
+
+const struct GUID *brl_req_guid(const struct byte_range_lock *brl)
+{
+	if (brl->req_guid == NULL) {
+		static const struct GUID brl_zero_req_guid;
+		return &brl_zero_req_guid;
+	}
+
+	return brl->req_guid;
 }
 
 /****************************************************************************
@@ -1823,6 +1844,25 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 	return br_lck;
 }
 
+struct byte_range_lock *brl_get_locks_for_locking(TALLOC_CTX *mem_ctx,
+						  files_struct *fsp,
+						  TALLOC_CTX *req_mem_ctx,
+						  const struct GUID *req_guid)
+{
+	struct byte_range_lock *br_lck = NULL;
+
+	br_lck = brl_get_locks(mem_ctx, fsp);
+	if (br_lck == NULL) {
+		return NULL;
+	}
+	SMB_ASSERT(req_mem_ctx != NULL);
+	br_lck->req_mem_ctx = req_mem_ctx;
+	SMB_ASSERT(req_guid != NULL);
+	br_lck->req_guid = req_guid;
+
+	return br_lck;
+}
+
 struct brl_get_locks_readonly_state {
 	TALLOC_CTX *mem_ctx;
 	struct byte_range_lock **br_lock;
@@ -1884,13 +1924,10 @@ struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp)
 		/*
 		 * No locks on this file. Return an empty br_lock.
 		 */
-		br_lock = talloc(fsp, struct byte_range_lock);
+		br_lock = talloc_zero(fsp, struct byte_range_lock);
 		if (br_lock == NULL) {
 			return NULL;
 		}
-
-		br_lock->num_locks = 0;
-		br_lock->lock_data = NULL;
 
 	} else if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("Could not parse byte range lock record: "

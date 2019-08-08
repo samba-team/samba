@@ -232,6 +232,8 @@ static void decrement_current_lock_count(files_struct *fsp,
 
 struct do_lock_state {
 	struct files_struct *fsp;
+	TALLOC_CTX *req_mem_ctx;
+	const struct GUID *req_guid;
 	uint64_t smblctx;
 	uint64_t count;
 	uint64_t offset;
@@ -251,7 +253,10 @@ static void do_lock_fn(
 	struct do_lock_state *state = private_data;
 	struct byte_range_lock *br_lck = NULL;
 
-	br_lck = brl_get_locks(talloc_tos(), state->fsp);
+	br_lck = brl_get_locks_for_locking(talloc_tos(),
+					   state->fsp,
+					   state->req_mem_ctx,
+					   state->req_guid);
 	if (br_lck == NULL) {
 		state->status = NT_STATUS_NO_MEMORY;
 		return;
@@ -272,6 +277,8 @@ static void do_lock_fn(
 }
 
 NTSTATUS do_lock(files_struct *fsp,
+		 TALLOC_CTX *req_mem_ctx,
+		 const struct GUID *req_guid,
 		 uint64_t smblctx,
 		 uint64_t count,
 		 uint64_t offset,
@@ -282,6 +289,8 @@ NTSTATUS do_lock(files_struct *fsp,
 {
 	struct do_lock_state state = {
 		.fsp = fsp,
+		.req_mem_ctx = req_mem_ctx,
+		.req_guid = req_guid,
 		.smblctx = smblctx,
 		.count = count,
 		.offset = offset,

@@ -45,6 +45,8 @@ NTSTATUS smbd_do_locks_try(
 
 		status = do_lock(
 			fsp,
+			locks, /* req_mem_ctx */
+			&e->req_guid,
 			e->smblctx,
 			e->count,
 			e->offset,

@@ -30,6 +30,8 @@ void brl_shutdown(void);
 
 unsigned int brl_num_locks(const struct byte_range_lock *brl);
 struct files_struct *brl_fsp(struct byte_range_lock *brl);
+TALLOC_CTX *brl_req_mem_ctx(const struct byte_range_lock *brl);
+const struct GUID *brl_req_guid(const struct byte_range_lock *brl);
 
 bool byte_range_valid(uint64_t ofs, uint64_t len);
 bool byte_range_overlap(uint64_t ofs1,
@@ -76,6 +78,10 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 			  br_off start, br_off size,
 			  void *private_data),
 	       void *private_data);
+struct byte_range_lock *brl_get_locks_for_locking(TALLOC_CTX *mem_ctx,
+						  files_struct *fsp,
+						  TALLOC_CTX *req_mem_ctx,
+						  const struct GUID *req_guid);
 struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 					files_struct *fsp);
 struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp);
@@ -100,6 +106,8 @@ NTSTATUS query_lock(files_struct *fsp,
 			enum brl_type *plock_type,
 			enum brl_flavour lock_flav);
 NTSTATUS do_lock(files_struct *fsp,
+		 TALLOC_CTX *req_mem_ctx,
+		 const struct GUID *req_guid,
 		 uint64_t smblctx,
 		 uint64_t count,
 		 uint64_t offset,
