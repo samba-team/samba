@@ -141,10 +141,10 @@ testit "test spn service doensn't exist in AD but is present in keytab file afte
 # SPN parser is very basic but does detect some illegal combination
 
 windows_spn="$spn_service/$spn_host:"
-testit_expect_failure "test (dedicated keytab) fail to parse windows spn with missing port" $VALGRIND $net_tool ads keytab add $windows_spn -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1
+testit_expect_failure "test (dedicated keytab) fail to parse windows spn with missing port" $VALGRIND $net_tool ads keytab add $windows_spn -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
 
 windows_spn="$spn_service/$spn_host/"
-testit_expect_failure "test (dedicated keytab) fail to parse windows spn with missing servicename" $VALGRIND $net_tool ads keytab add $windows_spn -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1
+testit_expect_failure "test (dedicated keytab) fail to parse windows spn with missing servicename" $VALGRIND $net_tool ads keytab add $windows_spn -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
 
 testit "changetrustpw (dedicated keytab)" $VALGRIND $net_tool ads changetrustpw || failed=`expr $failed + 1`
 
