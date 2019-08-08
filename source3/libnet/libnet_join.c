@@ -968,6 +968,7 @@ static ADS_STATUS libnet_join_post_processing_ads_modify(TALLOC_CTX *mem_ctx,
 
 		if (r->in.ads->auth.ccache_name != NULL) {
 			ads_kdestroy(r->in.ads->auth.ccache_name);
+			r->in.ads->auth.ccache_name = NULL;
 		}
 
 		ads_destroy(&r->in.ads);
