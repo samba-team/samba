@@ -138,6 +138,7 @@ NTSTATUS share_mode_do_locked(
 		   bool *modified_dependent,
 		   void *private_data),
 	void *private_data);
+NTSTATUS share_mode_wakeup_waiters(struct file_id id);
 
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 						  struct file_id id);

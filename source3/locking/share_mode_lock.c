@@ -771,6 +771,18 @@ NTSTATUS share_mode_do_locked(
 	return NT_STATUS_OK;
 }
 
+static void share_mode_wakeup_waiters_fn(struct db_record *rec,
+					 bool *modified_dependent,
+					 void *private_data)
+{
+	*modified_dependent = true;
+}
+
+NTSTATUS share_mode_wakeup_waiters(struct file_id id)
+{
+	return share_mode_do_locked(id, share_mode_wakeup_waiters_fn, NULL);
+}
+
 struct fetch_share_mode_unlocked_state {
 	TALLOC_CTX *mem_ctx;
 	struct share_mode_lock *lck;
