@@ -6929,6 +6929,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 	struct share_mode_lock *lck = NULL;
 	uint32_t access_mask = SEC_DIR_ADD_FILE;
 	bool dst_exists, old_is_stream, new_is_stream;
+	int ret;
 
 	status = check_name(conn, smb_fname_dst_in);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -7157,7 +7158,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	SMB_ASSERT(lck != NULL);
 
-	if(SMB_VFS_RENAME(conn, fsp->fsp_name, smb_fname_dst) == 0) {
+	ret = SMB_VFS_RENAME(conn,
+			fsp->fsp_name,
+			smb_fname_dst);
+	if (ret == 0) {
 		uint32_t create_options = fsp->fh->private_options;
 
 		DEBUG(3, ("rename_internals_fsp: succeeded doing rename on "
