@@ -27,22 +27,18 @@ struct ctdb_tcp {
 };
 
 /*
-  state associated with an incoming connection
-*/
-struct ctdb_incoming {
-	struct ctdb_context *ctdb;
-	int fd;
-	struct ctdb_queue *queue;
-};
-
-/*
   state associated with one tcp node
 */
 struct ctdb_tcp_node {
 	int out_fd;
 	struct ctdb_queue *out_queue;
+
 	struct tevent_fd *connect_fde;
 	struct tevent_timer *connect_te;
+
+	struct ctdb_context *ctdb;
+	int in_fd;
+	struct ctdb_queue *in_queue;
 };
 
 
