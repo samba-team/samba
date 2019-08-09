@@ -251,8 +251,23 @@ pwdLastSet: 0
         else:
             self.transaction_commit()
 
+    def group_member_filter(self, member, member_types):
+        filter = ""
+
+        if 'user' in member_types:
+            filter += ('(&(sAMAccountName=%s)(objectclass=user))' %
+                       ldb.binary_encode(member))
+        if 'group' in member_types:
+            filter += ('(&(sAMAccountName=%s)(objectclass=group))' %
+                       ldb.binary_encode(member))
+
+        filter = "(|%s)" % filter
+
+        return filter
+
     def add_remove_group_members(self, groupname, members,
-                                 add_members_operation=True):
+                                 add_members_operation=True,
+                                 member_types=[ 'user', 'group' ]):
         """Adds or removes group members
 
         :param groupname: Name of the target group
@@ -280,8 +295,7 @@ changetype: modify
 """ % (str(targetgroup[0].dn))
 
             for member in members:
-                filter = ('(&(sAMAccountName=%s)(|(objectclass=user)'
-                          '(objectclass=group)))' % ldb.binary_encode(member))
+                filter = self.group_member_filter(member, member_types)
                 foreign_msg = None
                 try:
                     membersid = security.dom_sid(member)
