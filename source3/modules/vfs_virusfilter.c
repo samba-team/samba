@@ -1490,6 +1490,47 @@ static int virusfilter_vfs_rename(
 	return 0;
 }
 
+static int virusfilter_vfs_renameat(
+	struct vfs_handle_struct *handle,
+	files_struct *srcfsp,
+	const struct smb_filename *smb_fname_src,
+	files_struct *dstfsp,
+	const struct smb_filename *smb_fname_dst)
+{
+	int ret = SMB_VFS_NEXT_RENAMEAT(handle,
+			srcfsp,
+			smb_fname_src,
+			dstfsp,
+			smb_fname_dst);
+	struct virusfilter_config *config = NULL;
+	char *fname = NULL;
+	char *dst_fname = NULL;
+	char *cwd_fname = handle->conn->cwd_fsp->fsp_name->base_name;
+
+	if (ret != 0) {
+		return ret;
+	}
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct virusfilter_config, return -1);
+
+	if (config->cache == NULL) {
+		return 0;
+	}
+
+	fname = smb_fname_src->base_name;
+	dst_fname = smb_fname_dst->base_name;
+
+	DBG_DEBUG("Renaming cache entry: fname: %s to: %s\n",
+		  fname, dst_fname);
+	virusfilter_cache_entry_rename(config->cache,
+				       cwd_fname, fname,
+				       dst_fname);
+
+	return 0;
+}
+
+
 /* VFS operations */
 static struct vfs_fn_pointers vfs_virusfilter_fns = {
 	.connect_fn	= virusfilter_vfs_connect,
@@ -1498,6 +1539,7 @@ static struct vfs_fn_pointers vfs_virusfilter_fns = {
 	.close_fn	= virusfilter_vfs_close,
 	.unlink_fn	= virusfilter_vfs_unlink,
 	.rename_fn	= virusfilter_vfs_rename,
+	.renameat_fn	= virusfilter_vfs_renameat,
 };
 
 NTSTATUS vfs_virusfilter_init(TALLOC_CTX *);
