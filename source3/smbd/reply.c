@@ -7158,8 +7158,10 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	SMB_ASSERT(lck != NULL);
 
-	ret = SMB_VFS_RENAME(conn,
+	ret = SMB_VFS_RENAMEAT(conn,
+			conn->cwd_fsp,
 			fsp->fsp_name,
+			conn->cwd_fsp,
 			smb_fname_dst);
 	if (ret == 0) {
 		uint32_t create_options = fsp->fh->private_options;
