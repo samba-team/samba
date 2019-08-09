@@ -1752,6 +1752,70 @@ done:
 	return rc;
 }
 
+static int fruit_renameat(struct vfs_handle_struct *handle,
+			files_struct *srcfsp,
+			const struct smb_filename *smb_fname_src,
+			files_struct *dstfsp,
+			const struct smb_filename *smb_fname_dst)
+{
+	int rc = -1;
+	struct fruit_config_data *config = NULL;
+	struct smb_filename *src_adp_smb_fname = NULL;
+	struct smb_filename *dst_adp_smb_fname = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	if (!VALID_STAT(smb_fname_src->st)) {
+		DBG_ERR("Need valid stat for [%s]\n",
+			smb_fname_str_dbg(smb_fname_src));
+		return -1;
+	}
+
+	rc = SMB_VFS_NEXT_RENAMEAT(handle,
+				srcfsp,
+				smb_fname_src,
+				dstfsp,
+				smb_fname_dst);
+	if (rc != 0) {
+		return -1;
+	}
+
+	if ((config->rsrc != FRUIT_RSRC_ADFILE) ||
+	    (!S_ISREG(smb_fname_src->st.st_ex_mode)))
+	{
+		return 0;
+	}
+
+	rc = adouble_path(talloc_tos(), smb_fname_src, &src_adp_smb_fname);
+	if (rc != 0) {
+		goto done;
+	}
+
+	rc = adouble_path(talloc_tos(), smb_fname_dst, &dst_adp_smb_fname);
+	if (rc != 0) {
+		goto done;
+	}
+
+	DBG_DEBUG("%s -> %s\n",
+		  smb_fname_str_dbg(src_adp_smb_fname),
+		  smb_fname_str_dbg(dst_adp_smb_fname));
+
+	rc = SMB_VFS_NEXT_RENAMEAT(handle,
+			srcfsp,
+			src_adp_smb_fname,
+			dstfsp,
+			dst_adp_smb_fname);
+	if (errno == ENOENT) {
+		rc = 0;
+	}
+
+done:
+	TALLOC_FREE(src_adp_smb_fname);
+	TALLOC_FREE(dst_adp_smb_fname);
+	return rc;
+}
+
 static int fruit_unlink_meta_stream(vfs_handle_struct *handle,
 				    const struct smb_filename *smb_fname)
 {
@@ -5056,6 +5120,7 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.chown_fn = fruit_chown,
 	.unlink_fn = fruit_unlink,
 	.rename_fn = fruit_rename,
+	.renameat_fn = fruit_renameat,
 	.rmdir_fn = fruit_rmdir,
 	.open_fn = fruit_open,
 	.close_fn = fruit_close,
