@@ -229,12 +229,27 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
+        Option("--object-types",
+               help=("Comma separated list of object types.\n"
+                     "The types are used to filter the search for the "
+                     "specified members.\n"
+                     "Valid values are: user, group, computer, serviceaccount, "
+                     "contact and all.\n"
+                     "Default: user,group,computer"),
+               default="user,group,computer",
+               type=str),
     ]
 
     takes_args = ["groupname", "listofmembers"]
 
-    def run(self, groupname, listofmembers, credopts=None, sambaopts=None,
-            versionopts=None, H=None):
+    def run(self,
+            groupname,
+            listofmembers,
+            credopts=None,
+            sambaopts=None,
+            versionopts=None,
+            H=None,
+            object_types="user,group,computer"):
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -243,8 +258,10 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
             groupmembers = listofmembers.split(',')
+            group_member_types = object_types.split(',')
             samdb.add_remove_group_members(groupname, groupmembers,
-                                           add_members_operation=True)
+                                           add_members_operation=True,
+                                           member_types=group_member_types)
         except Exception as e:
             # FIXME: catch more specific exception
             raise CommandError('Failed to add members "%s" to group "%s"' % (
