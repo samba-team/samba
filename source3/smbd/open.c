@@ -2218,13 +2218,6 @@ static NTSTATUS grant_fsp_oplock_type(struct files_struct *fsp,
 	uint32_t granted;
 	NTSTATUS status;
 
-	if (oplock_request & INTERNAL_OPEN_ONLY) {
-		/* No oplocks on internal open. */
-		oplock_request = NO_OPLOCK;
-		DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
-			fsp->oplock_type, fsp_str_dbg(fsp)));
-	}
-
 	if (oplock_request == LEASE_OPLOCK) {
 		if (lease == NULL) {
 			/*
