@@ -353,9 +353,7 @@ cli_set_user_quota(struct cli_state *cli, int quota_fnum, SMB_NTQUOTA_LIST *qtl)
 		 * smb1 doesn't send NT_STATUS_NO_MORE_ENTRIES so swallow
 		 * this status.
 		 */
-		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
-			status = NT_STATUS_OK;
-		} else {
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)) {
 			goto cleanup;
 		}
 	}
