@@ -2551,43 +2551,16 @@ static int snapper_gmt_chflags(vfs_handle_struct *handle,
 				unsigned int flags)
 {
 	time_t timestamp = 0;
-	char *stripped = NULL;
-	int ret = -1;
-	int saved_errno = 0;
-	char *conv = NULL;
-	struct smb_filename *conv_smb_fname = NULL;
 
 	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle,
-				smb_fname->base_name, &timestamp, &stripped)) {
+				smb_fname->base_name, &timestamp, NULL)) {
 		return -1;
 	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags);
-	}
-	conv = snapper_gmt_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv == NULL) {
+	if (timestamp != 0) {
+		errno = EROFS;
 		return -1;
 	}
-	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					smb_fname->flags);
-	TALLOC_FREE(conv);
-	if (conv_smb_fname == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-	ret = SMB_VFS_NEXT_CHFLAGS(handle, conv_smb_fname, flags);
-	if (ret == -1) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(conv_smb_fname);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
+	return SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags);
 }
 
 static ssize_t snapper_gmt_getxattr(vfs_handle_struct *handle,
