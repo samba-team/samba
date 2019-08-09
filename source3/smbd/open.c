@@ -1871,8 +1871,7 @@ static bool delay_for_oplock(files_struct *fsp,
 	const uint32_t delay_mask = have_sharing_violation ?
 		SMB2_LEASE_HANDLE : SMB2_LEASE_WRITE;
 
-	if ((oplock_request & INTERNAL_OPEN_ONLY) ||
-	    is_stat_open(fsp->access_mask)) {
+	if (is_stat_open(fsp->access_mask)) {
 		return false;
 	}
 
