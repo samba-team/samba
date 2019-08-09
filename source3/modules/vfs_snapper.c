@@ -2372,38 +2372,17 @@ static int snapper_gmt_mknod(vfs_handle_struct *handle,
 			SMB_DEV_T dev)
 {
 	time_t timestamp = (time_t)0;
-	char *stripped = NULL;
-	int ret, saved_errno = 0;
-	struct smb_filename *conv_smb_fname = NULL;
 
 	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle,
 					smb_fname->base_name,
-					&timestamp, &stripped)) {
+					&timestamp, NULL)) {
 		return -1;
 	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_MKNOD(handle, smb_fname, mode, dev);
-	}
-	conv_smb_fname = cp_smb_filename(talloc_tos(), smb_fname);
-	if (conv_smb_fname == NULL) {
-		errno = ENOMEM;
+	if (timestamp != 0) {
+		errno = EROFS;
 		return -1;
 	}
-	conv_smb_fname->base_name = snapper_gmt_convert(conv_smb_fname, handle,
-					      stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv_smb_fname->base_name == NULL) {
-		return -1;
-	}
-	ret = SMB_VFS_NEXT_MKNOD(handle, conv_smb_fname, mode, dev);
-	if (ret == -1) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(conv_smb_fname);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
+	return SMB_VFS_NEXT_MKNOD(handle, smb_fname, mode, dev);
 }
 
 static struct smb_filename *snapper_gmt_realpath(vfs_handle_struct *handle,
