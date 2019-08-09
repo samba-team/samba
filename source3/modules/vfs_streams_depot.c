@@ -274,8 +274,11 @@ static char *stream_dir(vfs_handle_struct *handle,
 				goto fail;
 			}
 
-			if (SMB_VFS_NEXT_RENAME(handle, smb_fname_hash,
-						smb_fname_new) == -1) {
+			if (SMB_VFS_NEXT_RENAMEAT(handle,
+					handle->conn->cwd_fsp,
+					smb_fname_hash,
+					handle->conn->cwd_fsp,
+					smb_fname_new) == -1) {
 				TALLOC_FREE(smb_fname_new);
 				if ((errno == EEXIST) || (errno == ENOTEMPTY)) {
 					goto again;
