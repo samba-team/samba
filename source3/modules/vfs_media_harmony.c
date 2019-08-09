@@ -1350,6 +1350,70 @@ out:
 	return status;
 }
 
+static int mh_renameat(vfs_handle_struct *handle,
+		files_struct *srcfsp,
+		const struct smb_filename *smb_fname_src,
+		files_struct *dstfsp,
+		const struct smb_filename *smb_fname_dst)
+{
+	int status;
+	struct smb_filename *srcClientFname;
+	struct smb_filename *dstClientFname;
+	TALLOC_CTX *ctx;
+
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with "
+			      "smb_fname_src->base_name '%s', "
+			      "smb_fname_dst->base_name '%s'\n",
+			      smb_fname_src->base_name,
+			      smb_fname_dst->base_name));
+
+	if (!is_in_media_files(smb_fname_src->base_name)
+				&&
+			!is_in_media_files(smb_fname_dst->base_name))
+	{
+		status = SMB_VFS_NEXT_RENAMEAT(handle,
+				srcfsp,
+				smb_fname_src,
+				dstfsp,
+				smb_fname_dst);
+		goto out;
+	}
+
+	srcClientFname = NULL;
+	dstClientFname = NULL;
+	ctx = talloc_tos();
+
+	if ((status = alloc_get_client_smb_fname(handle, ctx,
+				smb_fname_src,
+				&srcClientFname)))
+	{
+		goto err;
+	}
+
+	if ((status = alloc_get_client_smb_fname(handle, ctx,
+				smb_fname_dst,
+				&dstClientFname)))
+	{
+		goto err;
+	}
+
+	status = SMB_VFS_NEXT_RENAMEAT(handle,
+				srcfsp,
+				srcClientFname,
+				dstfsp,
+				dstClientFname);
+err:
+	TALLOC_FREE(dstClientFname);
+	TALLOC_FREE(srcClientFname);
+out:
+	DEBUG(MH_INFO_DEBUG, ("Leaving with smb_fname_src->base_name '%s',"
+				" smb_fname_dst->base_name '%s'\n",
+				smb_fname_src->base_name,
+				smb_fname_dst->base_name));
+	return status;
+}
+
 /*
  * Success: return 0
  * Failure: set errno, return -1
@@ -2282,6 +2346,7 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.open_fn = mh_open,
 	.create_file_fn = mh_create_file,
 	.rename_fn = mh_rename,
+	.renameat_fn = mh_renameat,
 	.stat_fn = mh_stat,
 	.lstat_fn = mh_lstat,
 	.fstat_fn = mh_fstat,
