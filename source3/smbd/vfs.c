@@ -1823,14 +1823,6 @@ ssize_t smb_vfs_call_recvfile(struct vfs_handle_struct *handle, int fromfd,
 	return handle->fns->recvfile_fn(handle, fromfd, tofsp, offset, count);
 }
 
-int smb_vfs_call_rename(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname_src,
-			const struct smb_filename *smb_fname_dst)
-{
-	VFS_FIND(rename);
-	return handle->fns->rename_fn(handle, smb_fname_src, smb_fname_dst);
-}
-
 int smb_vfs_call_renameat(struct vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,

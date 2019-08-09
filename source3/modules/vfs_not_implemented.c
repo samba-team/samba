@@ -288,14 +288,6 @@ ssize_t vfs_not_implemented_recvfile(vfs_handle_struct *handle, int fromfd,
 	return -1;
 }
 
-int vfs_not_implemented_rename(vfs_handle_struct *handle,
-			       const struct smb_filename *smb_fname_src,
-			       const struct smb_filename *smb_fname_dst)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 int vfs_not_implemented_renameat(vfs_handle_struct *handle,
 			       files_struct *srcfsp,
 			       const struct smb_filename *smb_fname_src,
@@ -1074,7 +1066,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.lseek_fn = vfs_not_implemented_lseek,
 	.sendfile_fn = vfs_not_implemented_sendfile,
 	.recvfile_fn = vfs_not_implemented_recvfile,
-	.rename_fn = vfs_not_implemented_rename,
 	.renameat_fn = vfs_not_implemented_renameat,
 	.fsync_send_fn = vfs_not_implemented_fsync_send,
 	.fsync_recv_fn = vfs_not_implemented_fsync_recv,

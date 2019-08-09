@@ -185,11 +185,6 @@
 #define SMB_VFS_NEXT_RECVFILE(handle, fromfd, tofsp, offset, count) \
 	smb_vfs_call_recvfile((handle)->next, (fromfd), (tofsp), (offset), (count))
 
-#define SMB_VFS_RENAME(conn, old, new) \
-	smb_vfs_call_rename((conn)->vfs_handles, (old), (new))
-#define SMB_VFS_NEXT_RENAME(handle, old, new) \
-	smb_vfs_call_rename((handle)->next, (old), (new))
-
 #define SMB_VFS_RENAMEAT(conn, oldfsp, old, newfsp, new) \
 	smb_vfs_call_renameat((conn)->vfs_handles, (oldfsp), (old), (newfsp), (new))
 #define SMB_VFS_NEXT_RENAMEAT(handle, oldfsp, old, newfsp, new) \

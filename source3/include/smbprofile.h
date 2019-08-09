@@ -61,7 +61,6 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(syscall_lseek) \
 	SMBPROFILE_STATS_BYTES(syscall_sendfile) \
 	SMBPROFILE_STATS_BYTES(syscall_recvfile) \
-	SMBPROFILE_STATS_BASIC(syscall_rename) \
 	SMBPROFILE_STATS_BASIC(syscall_renameat) \
 	SMBPROFILE_STATS_BYTES(syscall_asys_fsync) \
 	SMBPROFILE_STATS_BASIC(syscall_stat) \

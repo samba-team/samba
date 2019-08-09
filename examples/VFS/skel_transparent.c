@@ -369,13 +369,6 @@ static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd,
 	return SMB_VFS_NEXT_RECVFILE(handle, fromfd, tofsp, offset, n);
 }
 
-static int skel_rename(vfs_handle_struct *handle,
-		       const struct smb_filename *smb_fname_src,
-		       const struct smb_filename *smb_fname_dst)
-{
-	return SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
-}
-
 static int skel_renameat(vfs_handle_struct *handle,
 		       files_struct *srcfsp,
 		       const struct smb_filename *smb_fname_src,
@@ -1335,7 +1328,6 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.lseek_fn = skel_lseek,
 	.sendfile_fn = skel_sendfile,
 	.recvfile_fn = skel_recvfile,
-	.rename_fn = skel_rename,
 	.renameat_fn = skel_renameat,
 	.fsync_send_fn = skel_fsync_send,
 	.fsync_recv_fn = skel_fsync_recv,

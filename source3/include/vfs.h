@@ -272,7 +272,7 @@
 /* Bump to version 42, Samba 4.12 will ship with that */
 /* Version 42 - Remove share_access member from struct files_struct */
 /* Version 42 - Make "lease" a const* in create_file_fn */
-/* Version 42 - Add SMB_VFS_RENAMEAT. */
+/* Version 42 - Move SMB_VFS_RENAME -> SMB_VFS_RENAMEAT */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -745,9 +745,6 @@ struct vfs_fn_pointers {
 	off_t (*lseek_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t offset, int whence);
 	ssize_t (*sendfile_fn)(struct vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *header, off_t offset, size_t count);
 	ssize_t (*recvfile_fn)(struct vfs_handle_struct *handle, int fromfd, files_struct *tofsp, off_t offset, size_t count);
-	int (*rename_fn)(struct vfs_handle_struct *handle,
-			 const struct smb_filename *smb_fname_src,
-			 const struct smb_filename *smb_fname_dst);
 	int (*renameat_fn)(struct vfs_handle_struct *handle,
 			 struct files_struct *srcdir_fsp,
 			 const struct smb_filename *smb_fname_src,
@@ -1260,9 +1257,6 @@ ssize_t smb_vfs_call_sendfile(struct vfs_handle_struct *handle, int tofd,
 ssize_t smb_vfs_call_recvfile(struct vfs_handle_struct *handle, int fromfd,
 			      files_struct *tofsp, off_t offset,
 			      size_t count);
-int smb_vfs_call_rename(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname_src,
-			const struct smb_filename *smb_fname_dst);
 int smb_vfs_call_renameat(struct vfs_handle_struct *handle,
 			struct files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
@@ -1696,9 +1690,6 @@ ssize_t vfs_not_implemented_sendfile(vfs_handle_struct *handle, int tofd,
 				     off_t offset, size_t n);
 ssize_t vfs_not_implemented_recvfile(vfs_handle_struct *handle, int fromfd,
 				     files_struct *tofsp, off_t offset, size_t n);
-int vfs_not_implemented_rename(vfs_handle_struct *handle,
-			       const struct smb_filename *smb_fname_src,
-			       const struct smb_filename *smb_fname_dst);
 int vfs_not_implemented_renameat(vfs_handle_struct *handle,
 			       files_struct *srcfsp,
 			       const struct smb_filename *smb_fname_src,
