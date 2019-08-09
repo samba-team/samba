@@ -38,16 +38,16 @@ static int tnode_destructor(struct ctdb_tcp_node *tnode)
 {
   //	struct ctdb_node *node = talloc_find_parent_bytype(tnode, struct ctdb_node);
 
-	if (tnode->fd != -1) {
-		close(tnode->fd);
-		tnode->fd = -1;
+	if (tnode->out_fd != -1) {
+		close(tnode->out_fd);
+		tnode->out_fd = -1;
 	}
 
 	return 0;
 }
 
 /*
-  initialise tcp portion of a ctdb node 
+  initialise tcp portion of a ctdb node
 */
 static int ctdb_tcp_add_node(struct ctdb_node *node)
 {
@@ -55,13 +55,19 @@ static int ctdb_tcp_add_node(struct ctdb_node *node)
 	tnode = talloc_zero(node, struct ctdb_tcp_node);
 	CTDB_NO_MEMORY(node->ctdb, tnode);
 
-	tnode->fd = -1;
+	tnode->out_fd = -1;
 	node->private_data = tnode;
 	talloc_set_destructor(tnode, tnode_destructor);
 
-	tnode->out_queue = ctdb_queue_setup(node->ctdb, node, tnode->fd, CTDB_TCP_ALIGNMENT,
-					    ctdb_tcp_tnode_cb, node, "to-node-%s", node->name);
-	
+	tnode->out_queue = ctdb_queue_setup(node->ctdb,
+					    node,
+					    tnode->out_fd,
+					    CTDB_TCP_ALIGNMENT,
+					    ctdb_tcp_tnode_cb,
+					    node,
+					    "to-node-%s",
+					    node->name);
+
 	return 0;
 }
 
