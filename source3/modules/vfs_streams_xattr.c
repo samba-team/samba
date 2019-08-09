@@ -682,6 +682,99 @@ static int streams_xattr_rename(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int streams_xattr_renameat(vfs_handle_struct *handle,
+				files_struct *srcfsp,
+				const struct smb_filename *smb_fname_src,
+				files_struct *dstfsp,
+				const struct smb_filename *smb_fname_dst)
+{
+	NTSTATUS status;
+	int ret = -1;
+	char *src_xattr_name = NULL;
+	char *dst_xattr_name = NULL;
+	bool src_is_stream, dst_is_stream;
+	ssize_t oret;
+	ssize_t nret;
+	struct ea_struct ea;
+
+	src_is_stream = is_ntfs_stream_smb_fname(smb_fname_src);
+	dst_is_stream = is_ntfs_stream_smb_fname(smb_fname_dst);
+
+	if (!src_is_stream && !dst_is_stream) {
+		return SMB_VFS_NEXT_RENAMEAT(handle,
+					srcfsp,
+					smb_fname_src,
+					dstfsp,
+					smb_fname_dst);
+	}
+
+	/* For now don't allow renames from or to the default stream. */
+	if (is_ntfs_default_stream_smb_fname(smb_fname_src) ||
+	    is_ntfs_default_stream_smb_fname(smb_fname_dst)) {
+		errno = ENOSYS;
+		goto done;
+	}
+
+	/* Don't rename if the streams are identical. */
+	if (strcasecmp_m(smb_fname_src->stream_name,
+		       smb_fname_dst->stream_name) == 0) {
+		goto done;
+	}
+
+	/* Get the xattr names. */
+	status = streams_xattr_get_name(handle, talloc_tos(),
+					smb_fname_src->stream_name,
+					&src_xattr_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto fail;
+	}
+	status = streams_xattr_get_name(handle, talloc_tos(),
+					smb_fname_dst->stream_name,
+					&dst_xattr_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto fail;
+	}
+
+	/* read the old stream */
+	status = get_ea_value(talloc_tos(), handle->conn, NULL,
+			      smb_fname_src, src_xattr_name, &ea);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = ENOENT;
+		goto fail;
+	}
+
+	/* (over)write the new stream */
+	nret = SMB_VFS_SETXATTR(handle->conn, smb_fname_src,
+				dst_xattr_name, ea.value.data, ea.value.length,
+				0);
+	if (nret < 0) {
+		if (errno == ENOATTR) {
+			errno = ENOENT;
+		}
+		goto fail;
+	}
+
+	/* remove the old stream */
+	oret = SMB_VFS_REMOVEXATTR(handle->conn, smb_fname_src,
+				   src_xattr_name);
+	if (oret < 0) {
+		if (errno == ENOATTR) {
+			errno = ENOENT;
+		}
+		goto fail;
+	}
+
+ done:
+	errno = 0;
+	ret = 0;
+ fail:
+	TALLOC_FREE(src_xattr_name);
+	TALLOC_FREE(dst_xattr_name);
+	return ret;
+}
+
 static NTSTATUS walk_xattr_streams(vfs_handle_struct *handle,
 				files_struct *fsp,
 				const struct smb_filename *smb_fname,
@@ -1657,6 +1750,7 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.pwrite_recv_fn = streams_xattr_pwrite_recv,
 	.unlink_fn = streams_xattr_unlink,
 	.rename_fn = streams_xattr_rename,
+	.renameat_fn = streams_xattr_renameat,
 	.ftruncate_fn = streams_xattr_ftruncate,
 	.fallocate_fn = streams_xattr_fallocate,
 	.streaminfo_fn = streams_xattr_streaminfo,
