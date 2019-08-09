@@ -880,6 +880,66 @@ done:
 	return ret;
 }
 
+static int streams_depot_renameat(vfs_handle_struct *handle,
+				files_struct *srcfsp,
+				const struct smb_filename *smb_fname_src,
+				files_struct *dstfsp,
+				const struct smb_filename *smb_fname_dst)
+{
+	struct smb_filename *smb_fname_src_stream = NULL;
+	struct smb_filename *smb_fname_dst_stream = NULL;
+	bool src_is_stream, dst_is_stream;
+	NTSTATUS status;
+	int ret = -1;
+
+	DEBUG(10, ("streams_depot_renameat called for %s => %s\n",
+		   smb_fname_str_dbg(smb_fname_src),
+		   smb_fname_str_dbg(smb_fname_dst)));
+
+	src_is_stream = is_ntfs_stream_smb_fname(smb_fname_src);
+	dst_is_stream = is_ntfs_stream_smb_fname(smb_fname_dst);
+
+	if (!src_is_stream && !dst_is_stream) {
+		return SMB_VFS_NEXT_RENAMEAT(handle,
+					srcfsp,
+					smb_fname_src,
+					dstfsp,
+					smb_fname_dst);
+	}
+
+	/* for now don't allow renames from or to the default stream */
+	if (is_ntfs_default_stream_smb_fname(smb_fname_src) ||
+	    is_ntfs_default_stream_smb_fname(smb_fname_dst)) {
+		errno = ENOSYS;
+		goto done;
+	}
+
+	status = stream_smb_fname(handle, smb_fname_src, &smb_fname_src_stream,
+				  false);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto done;
+	}
+
+	status = stream_smb_fname(handle, smb_fname_dst,
+				  &smb_fname_dst_stream, false);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		goto done;
+	}
+
+	ret = SMB_VFS_NEXT_RENAMEAT(handle,
+				srcfsp,
+				smb_fname_src_stream,
+				dstfsp,
+				smb_fname_dst_stream);
+
+done:
+	TALLOC_FREE(smb_fname_src_stream);
+	TALLOC_FREE(smb_fname_dst_stream);
+	return ret;
+}
+
 static bool add_one_stream(TALLOC_CTX *mem_ctx, unsigned int *num_streams,
 			   struct stream_struct **streams,
 			   const char *name, off_t size,
@@ -1058,6 +1118,7 @@ static struct vfs_fn_pointers vfs_streams_depot_fns = {
 	.unlink_fn = streams_depot_unlink,
 	.rmdir_fn = streams_depot_rmdir,
 	.rename_fn = streams_depot_rename,
+	.renameat_fn = streams_depot_renameat,
 	.streaminfo_fn = streams_depot_streaminfo,
 };
 
