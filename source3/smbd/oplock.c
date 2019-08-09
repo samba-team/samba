@@ -1319,7 +1319,7 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 		 * Lazy update here. It might be that the read lease
 		 * has gone in the meantime.
 		 */
-		d->flags &= ~SHARE_MODE_HAS_READ_LEASE;
+		d->flags &= ~SHARE_MODE_LEASE_READ;
 		d->modified = true;
 	}
 

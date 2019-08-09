@@ -275,7 +275,7 @@ bool file_has_read_lease(struct files_struct *fsp)
 		return true;
 	}
 
-	return (fsp->share_mode_flags & SHARE_MODE_HAS_READ_LEASE) != 0;
+	return (fsp->share_mode_flags & SHARE_MODE_LEASE_READ) != 0;
 }
 
 static int share_mode_data_nofree_destructor(struct share_mode_data *d)
@@ -2005,7 +2005,7 @@ bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 		return false;
 	}
 
-	lck->data->flags |= SHARE_MODE_HAS_READ_LEASE;
+	lck->data->flags |= SHARE_MODE_LEASE_READ;
 	lck->data->modified = true;
 
 	return true;

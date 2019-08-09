@@ -41,7 +41,15 @@ interface open_files
 	} delete_token;
 
 	typedef [public,bitmap16bit] bitmap {
-		SHARE_MODE_HAS_READ_LEASE	= 0x01
+		SHARE_MODE_SHARE_DELETE		= 0x100,
+		SHARE_MODE_SHARE_WRITE		= 0x080,
+		SHARE_MODE_SHARE_READ		= 0x040,
+		SHARE_MODE_ACCESS_DELETE	= 0x020,
+		SHARE_MODE_ACCESS_WRITE		= 0x010,
+		SHARE_MODE_ACCESS_READ		= 0x008,
+		SHARE_MODE_LEASE_HANDLE		= 0x004,
+		SHARE_MODE_LEASE_WRITE		= 0x002,
+		SHARE_MODE_LEASE_READ		= 0x001
 	} share_mode_flags;
 
 	typedef [public] struct {

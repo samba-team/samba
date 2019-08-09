@@ -2417,7 +2417,7 @@ grant:
 	}
 
 	if (granted & SMB2_LEASE_READ) {
-		lck->data->flags |= SHARE_MODE_HAS_READ_LEASE;
+		lck->data->flags |= SHARE_MODE_LEASE_READ;
 	}
 
 	DBG_DEBUG("oplock type 0x%x on file %s\n",
