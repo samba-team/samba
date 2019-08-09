@@ -260,6 +260,27 @@ pwdLastSet: 0
         if 'group' in member_types:
             filter += ('(&(sAMAccountName=%s)(objectclass=group))' %
                        ldb.binary_encode(member))
+        if 'computer' in member_types:
+            samaccountname = member
+            if member[-1] != '$':
+                samaccountname = "%s$" % member
+            filter += ('(&(samAccountType=%d)'
+                       '(!(objectCategory=msDS-ManagedServiceAccount))'
+                       '(sAMAccountName=%s))' %
+                       (dsdb.ATYPE_WORKSTATION_TRUST,
+                        ldb.binary_encode(samaccountname)))
+        if 'serviceaccount' in member_types:
+            samaccountname = member
+            if member[-1] != '$':
+                samaccountname = "%s$" % member
+            filter += ('(&(samAccountType=%d)'
+                       '(objectCategory=msDS-ManagedServiceAccount)'
+                       '(sAMAccountName=%s))' %
+                       (dsdb.ATYPE_WORKSTATION_TRUST,
+                        ldb.binary_encode(samaccountname)))
+        if 'contact' in member_types:
+            filter += ('(&(objectCategory=Person)(!(objectSid=*))(name=%s))' %
+                       ldb.binary_encode(member))
 
         filter = "(|%s)" % filter
 
