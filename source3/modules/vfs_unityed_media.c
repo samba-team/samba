@@ -992,54 +992,6 @@ err:
 	return status;
 }
 
-static int um_rename(vfs_handle_struct *handle,
-		     const struct smb_filename *smb_fname_src,
-		     const struct smb_filename *smb_fname_dst)
-{
-	int status;
-	struct smb_filename *src_client_fname = NULL;
-	struct smb_filename *dst_client_fname = NULL;
-
-	DEBUG(10, ("Entering with "
-		   "smb_fname_src->base_name '%s', "
-		   "smb_fname_dst->base_name '%s'\n",
-		   smb_fname_src->base_name,
-		   smb_fname_dst->base_name));
-
-	if (!is_in_media_files(smb_fname_src->base_name)
-	    &&
-	    !is_in_media_files(smb_fname_dst->base_name)) {
-		return SMB_VFS_NEXT_RENAME(handle, smb_fname_src,
-					   smb_fname_dst);
-	}
-
-	status = alloc_get_client_smb_fname(handle, talloc_tos(),
-					    smb_fname_src,
-					    &src_client_fname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = alloc_get_client_smb_fname(handle, talloc_tos(),
-					    smb_fname_dst,
-					    &dst_client_fname);
-
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_RENAME(handle, src_client_fname,
-				     dst_client_fname);
-err:
-	TALLOC_FREE(dst_client_fname);
-	TALLOC_FREE(src_client_fname);
-	DEBUG(10, ("Leaving with smb_fname_src->base_name '%s',"
-		   " smb_fname_dst->base_name '%s'\n",
-		   smb_fname_src->base_name,
-		   smb_fname_dst->base_name));
-	return status;
-}
-
 static int um_renameat(vfs_handle_struct *handle,
 		files_struct *srcfsp,
 		const struct smb_filename *smb_fname_src,
@@ -1939,7 +1891,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 
 	.open_fn = um_open,
 	.create_file_fn = um_create_file,
-	.rename_fn = um_rename,
 	.renameat_fn = um_renameat,
 	.stat_fn = um_stat,
 	.lstat_fn = um_lstat,
