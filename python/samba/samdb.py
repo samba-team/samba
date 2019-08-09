@@ -258,7 +258,9 @@ pwdLastSet: 0
             filter += ('(&(sAMAccountName=%s)(samAccountType=%d))' %
                        (ldb.binary_encode(member), dsdb.ATYPE_NORMAL_ACCOUNT))
         if 'group' in member_types:
-            filter += ('(&(sAMAccountName=%s)(objectclass=group))' %
+            filter += ('(&(sAMAccountName=%s)'
+                       '(objectClass=group)'
+                       '(!(groupType:1.2.840.113556.1.4.803:=1)))' %
                        ldb.binary_encode(member))
         if 'computer' in member_types:
             samaccountname = member
