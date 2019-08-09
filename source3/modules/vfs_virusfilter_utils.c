@@ -52,7 +52,11 @@ int virusfilter_vfs_next_move(
 {
 	int result;
 
-	result = SMB_VFS_NEXT_RENAME(vfs_h, smb_fname_src, smb_fname_dst);
+	result = SMB_VFS_NEXT_RENAMEAT(vfs_h,
+			vfs_h->conn->cwd_fsp,
+			smb_fname_src,
+			vfs_h->conn->cwd_fsp,
+			smb_fname_dst);
 	if (result == 0 || errno != EXDEV) {
 		return result;
 	}
