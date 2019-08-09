@@ -1178,6 +1178,56 @@ static int shadow_copy2_rename(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
 }
 
+static int shadow_copy2_renameat(vfs_handle_struct *handle,
+				files_struct *srcfsp,
+				const struct smb_filename *smb_fname_src,
+				files_struct *dstfsp,
+				const struct smb_filename *smb_fname_dst)
+{
+	time_t timestamp_src = 0;
+	time_t timestamp_dst = 0;
+	char *snappath_src = NULL;
+	char *snappath_dst = NULL;
+
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle,
+					 smb_fname_src->base_name,
+					 &timestamp_src, NULL, &snappath_src,
+					 NULL)) {
+		return -1;
+	}
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(), handle,
+					 smb_fname_dst->base_name,
+					 &timestamp_dst, NULL, &snappath_dst,
+					 NULL)) {
+		return -1;
+	}
+	if (timestamp_src != 0) {
+		errno = EXDEV;
+		return -1;
+	}
+	if (timestamp_dst != 0) {
+		errno = EROFS;
+		return -1;
+	}
+	/*
+	 * Don't allow rename on already converted paths.
+	 */
+	if (snappath_src != NULL) {
+		errno = EXDEV;
+		return -1;
+	}
+	if (snappath_dst != NULL) {
+		errno = EROFS;
+		return -1;
+	}
+	return SMB_VFS_NEXT_RENAMEAT(handle,
+			srcfsp,
+			smb_fname_src,
+			dstfsp,
+			smb_fname_dst);
+}
+
+
 static int shadow_copy2_symlink(vfs_handle_struct *handle,
 			const char *link_contents,
 			const struct smb_filename *new_smb_fname)
@@ -3123,6 +3173,7 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.disk_free_fn = shadow_copy2_disk_free,
 	.get_quota_fn = shadow_copy2_get_quota,
 	.rename_fn = shadow_copy2_rename,
+	.renameat_fn = shadow_copy2_renameat,
 	.link_fn = shadow_copy2_link,
 	.symlink_fn = shadow_copy2_symlink,
 	.stat_fn = shadow_copy2_stat,
