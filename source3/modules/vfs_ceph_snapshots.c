@@ -788,6 +788,44 @@ static int ceph_snap_gmt_rename(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
 }
 
+static int ceph_snap_gmt_renameat(vfs_handle_struct *handle,
+			files_struct *srcfsp,
+			const struct smb_filename *smb_fname_src,
+			files_struct *dstfsp,
+			const struct smb_filename *smb_fname_dst)
+{
+	int ret;
+	time_t timestamp_src, timestamp_dst;
+
+	ret = ceph_snap_gmt_strip_snapshot(handle,
+					smb_fname_src->base_name,
+					&timestamp_src, NULL, 0);
+	if (ret < 0) {
+		errno = -ret;
+		return -1;
+	}
+	ret = ceph_snap_gmt_strip_snapshot(handle,
+					smb_fname_dst->base_name,
+					&timestamp_dst, NULL, 0);
+	if (ret < 0) {
+		errno = -ret;
+		return -1;
+	}
+	if (timestamp_src != 0) {
+		errno = EXDEV;
+		return -1;
+	}
+	if (timestamp_dst != 0) {
+		errno = EROFS;
+		return -1;
+	}
+	return SMB_VFS_NEXT_RENAMEAT(handle,
+				srcfsp,
+				smb_fname_src,
+				dstfsp,
+				smb_fname_dst);
+}
+
 /* block links from writeable shares to snapshots for now, like other modules */
 static int ceph_snap_gmt_symlink(vfs_handle_struct *handle,
 				const char *link_contents,
@@ -1595,6 +1633,7 @@ static struct vfs_fn_pointers ceph_snap_fns = {
 	.disk_free_fn = ceph_snap_gmt_disk_free,
 	.get_quota_fn = ceph_snap_gmt_get_quota,
 	.rename_fn = ceph_snap_gmt_rename,
+	.renameat_fn = ceph_snap_gmt_renameat,
 	.link_fn = ceph_snap_gmt_link,
 	.symlink_fn = ceph_snap_gmt_symlink,
 	.stat_fn = ceph_snap_gmt_stat,
