@@ -606,21 +606,6 @@ static ssize_t cephwrap_recvfile(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static int cephwrap_rename(struct vfs_handle_struct *handle,
-			  const struct smb_filename *smb_fname_src,
-			  const struct smb_filename *smb_fname_dst)
-{
-	int result = -1;
-	DBG_DEBUG("[CEPH] cephwrap_rename\n");
-	if (smb_fname_src->stream_name || smb_fname_dst->stream_name) {
-		errno = ENOENT;
-		return result;
-	}
-
-	result = ceph_rename(handle->data, smb_fname_src->base_name, smb_fname_dst->base_name);
-	WRAP_RETURN(result);
-}
-
 static int cephwrap_renameat(struct vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
@@ -1443,7 +1428,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.lseek_fn = cephwrap_lseek,
 	.sendfile_fn = cephwrap_sendfile,
 	.recvfile_fn = cephwrap_recvfile,
-	.rename_fn = cephwrap_rename,
 	.renameat_fn = cephwrap_renameat,
 	.fsync_send_fn = cephwrap_fsync_send,
 	.fsync_recv_fn = cephwrap_fsync_recv,
