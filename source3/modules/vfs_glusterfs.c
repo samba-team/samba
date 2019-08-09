@@ -1014,14 +1014,6 @@ static ssize_t vfs_gluster_recvfile(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-static int vfs_gluster_rename(struct vfs_handle_struct *handle,
-			      const struct smb_filename *smb_fname_src,
-			      const struct smb_filename *smb_fname_dst)
-{
-	return glfs_rename(handle->data, smb_fname_src->base_name,
-			   smb_fname_dst->base_name);
-}
-
 static int vfs_gluster_renameat(struct vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
@@ -1640,7 +1632,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.lseek_fn = vfs_gluster_lseek,
 	.sendfile_fn = vfs_gluster_sendfile,
 	.recvfile_fn = vfs_gluster_recvfile,
-	.rename_fn = vfs_gluster_rename,
 	.renameat_fn = vfs_gluster_renameat,
 	.fsync_send_fn = vfs_gluster_fsync_send,
 	.fsync_recv_fn = vfs_gluster_fsync_recv,
