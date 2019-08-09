@@ -396,7 +396,7 @@ typedef struct files_struct {
 	 * Cache of share_mode_data->flags
 	 */
 	int share_mode_flags_seqnum;
-	uint8_t share_mode_flags;
+	uint16_t share_mode_flags;
 
 	/*
 	 * Read-only cached brlock record, thrown away when the

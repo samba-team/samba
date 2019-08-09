@@ -40,7 +40,7 @@ interface open_files
 		security_unix_token *delete_token;
 	} delete_token;
 
-	typedef [public,bitmap8bit] bitmap {
+	typedef [public,bitmap16bit] bitmap {
 		SHARE_MODE_HAS_READ_LEASE	= 0x01
 	} share_mode_flags;
 

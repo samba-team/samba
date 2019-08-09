@@ -210,17 +210,17 @@ static void share_mode_memcache_store(struct share_mode_data *d)
  */
 
 static enum ndr_err_code get_share_mode_blob_header(
-	DATA_BLOB *blob, uint64_t *pseq, uint8_t *pflags)
+	DATA_BLOB *blob, uint64_t *pseq, uint16_t *pflags)
 {
 	struct ndr_pull ndr = {.data = blob->data, .data_size = blob->length};
 	NDR_CHECK(ndr_pull_hyper(&ndr, NDR_SCALARS, pseq));
-	NDR_CHECK(ndr_pull_uint8(&ndr, NDR_SCALARS, pflags));
+	NDR_CHECK(ndr_pull_uint16(&ndr, NDR_SCALARS, pflags));
 	return NDR_ERR_SUCCESS;
 }
 
 struct fsp_update_share_mode_flags_state {
 	enum ndr_err_code ndr_err;
-	uint8_t share_mode_flags;
+	uint16_t share_mode_flags;
 };
 
 static void fsp_update_share_mode_flags_fn(
@@ -290,7 +290,7 @@ static struct share_mode_data *share_mode_memcache_fetch(TALLOC_CTX *mem_ctx,
 	enum ndr_err_code ndr_err;
 	struct share_mode_data *d;
 	uint64_t sequence_number;
-	uint8_t flags;
+	uint16_t flags;
 	void *ptr;
 	struct file_id id;
 	DATA_BLOB key;
