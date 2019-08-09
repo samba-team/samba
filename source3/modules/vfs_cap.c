@@ -216,49 +216,6 @@ static int cap_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 	return ret;
 }
 
-static int cap_rename(vfs_handle_struct *handle,
-		      const struct smb_filename *smb_fname_src,
-		      const struct smb_filename *smb_fname_dst)
-{
-	char *capold = NULL;
-	char *capnew = NULL;
-	struct smb_filename *smb_fname_src_tmp = NULL;
-	struct smb_filename *smb_fname_dst_tmp = NULL;
-	int ret = -1;
-
-	capold = capencode(talloc_tos(), smb_fname_src->base_name);
-	capnew = capencode(talloc_tos(), smb_fname_dst->base_name);
-	if (!capold || !capnew) {
-		errno = ENOMEM;
-		goto out;
-	}
-
-	/* Setup temporary smb_filename structs. */
-	smb_fname_src_tmp = cp_smb_filename(talloc_tos(), smb_fname_src);
-	if (smb_fname_src_tmp == NULL) {
-		errno = ENOMEM;
-		goto out;
-	}
-	smb_fname_dst_tmp = cp_smb_filename(talloc_tos(), smb_fname_dst);
-	if (smb_fname_dst_tmp == NULL) {
-		errno = ENOMEM;
-		goto out;
-	}
-
-	smb_fname_src_tmp->base_name = capold;
-	smb_fname_dst_tmp->base_name = capnew;
-
-	ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src_tmp,
-				  smb_fname_dst_tmp);
- out:
-	TALLOC_FREE(capold);
-	TALLOC_FREE(capnew);
-	TALLOC_FREE(smb_fname_src_tmp);
-	TALLOC_FREE(smb_fname_dst_tmp);
-
-	return ret;
-}
-
 static int cap_renameat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
@@ -1058,7 +1015,6 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.mkdir_fn = cap_mkdir,
 	.rmdir_fn = cap_rmdir,
 	.open_fn = cap_open,
-	.rename_fn = cap_rename,
 	.renameat_fn = cap_renameat,
 	.stat_fn = cap_stat,
 	.lstat_fn = cap_lstat,
