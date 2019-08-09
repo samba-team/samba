@@ -275,7 +275,7 @@ char *dalloc_dump(DALLOC_CTX *dd, int nestinglevel)
 	}
 
 	logstring = talloc_asprintf(dd,
-				    "%s%s(#%lu): {\n",
+				    "%s%s(#%zu): {\n",
 				    tab_string1,
 				    talloc_get_name(dd),
 				    dalloc_size(dd));
