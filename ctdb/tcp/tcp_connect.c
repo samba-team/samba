@@ -262,8 +262,8 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 	ctdb_sock_addr addr;
 	socklen_t len;
 	int fd;
-	uint32_t pnn;
-	struct ctdb_incoming *in;
+	struct ctdb_node *node;
+	struct ctdb_tcp_node *tnode;
 	int one = 1;
 	int ret;
 
@@ -273,41 +273,61 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 	if (fd == -1) return;
 	smb_set_close_on_exec(fd);
 
-	pnn = ctdb_ip_to_pnn(ctdb, &addr);
-
-	if (pnn == CTDB_UNKNOWN_PNN) {
+	node = ctdb_ip_to_node(ctdb, &addr);
+	if (node == NULL) {
 		D_ERR("Refused connection from unknown node %s\n",
 		      ctdb_addr_to_str(&addr));
 		close(fd);
 		return;
 	}
 
-	in = talloc_zero(ctcp, struct ctdb_incoming);
-	in->fd = fd;
-	in->ctdb = ctdb;
-
-	ret = set_blocking(in->fd, false);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      (__location__
-		       " failed to set socket non-blocking (%s)\n",
-		       strerror(errno)));
-		close(in->fd);
-		in->fd = -1;
+	tnode = talloc_get_type_abort(node->private_data,
+				      struct ctdb_tcp_node);
+	if (tnode == NULL) {
+		/* This can't happen - see ctdb_tcp_initialise() */
+		DBG_ERR("INTERNAL ERROR setting up connection from node %s\n",
+			ctdb_addr_to_str(&addr));
+		close(fd);
 		return;
 	}
 
-	set_close_on_exec(in->fd);
-
-	DEBUG(DEBUG_DEBUG, (__location__ " Created SOCKET FD:%d to incoming ctdb connection\n", fd));
-
-        if (setsockopt(in->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one)) == -1) {
-		DEBUG(DEBUG_WARNING, ("Failed to set KEEPALIVE on fd - %s\n",
-				      strerror(errno)));
+	ret = set_blocking(fd, false);
+	if (ret != 0) {
+		DBG_ERR("Failed to set socket non-blocking (%s)\n",
+			strerror(errno));
+		close(fd);
+		return;
 	}
 
-	in->queue = ctdb_queue_setup(ctdb, in, in->fd, CTDB_TCP_ALIGNMENT,
-				     ctdb_tcp_read_cb, in, "ctdbd-%s", ctdb_addr_to_str(&addr));
+	set_close_on_exec(fd);
+
+	DBG_DEBUG("Created SOCKET FD:%d to incoming ctdb connection\n", fd);
+
+	ret = setsockopt(fd,
+			 SOL_SOCKET,
+			 SO_KEEPALIVE,
+			 (char *)&one,
+			 sizeof(one));
+	if (ret == -1) {
+		DBG_WARNING("Failed to set KEEPALIVE on fd - %s\n",
+			    strerror(errno));
+	}
+
+	tnode->in_queue = ctdb_queue_setup(ctdb,
+					   tnode,
+					   fd,
+					   CTDB_TCP_ALIGNMENT,
+					   ctdb_tcp_read_cb,
+					   tnode,
+					   "ctdbd-%s",
+					   ctdb_addr_to_str(&addr));
+	if (tnode->in_queue == NULL) {
+		DBG_ERR("Failed to set up incoming queue\n");
+		close(fd);
+		return;
+	}
+
+	tnode->in_fd = fd;
 }
 
 

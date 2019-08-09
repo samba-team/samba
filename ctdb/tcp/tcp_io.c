@@ -37,7 +37,8 @@
  */
 void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 {
-	struct ctdb_incoming *in = talloc_get_type(args, struct ctdb_incoming);
+	struct ctdb_tcp_node *tnode = talloc_get_type_abort(
+		args, struct ctdb_tcp_node);
 	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
 
 	if (data == NULL) {
@@ -69,11 +70,13 @@ void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 	}
 
 	/* tell the ctdb layer above that we have a packet */
-	in->ctdb->upcalls->recv_pkt(in->ctdb, data, cnt);
+	tnode->ctdb->upcalls->recv_pkt(tnode->ctdb, data, cnt);
 	return;
 
 failed:
-	TALLOC_FREE(in);
+	TALLOC_FREE(tnode->in_queue);
+	close(tnode->in_fd);
+	tnode->in_fd = -1;
 	TALLOC_FREE(data);
 }
 
