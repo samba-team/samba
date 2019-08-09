@@ -896,26 +896,6 @@ static ssize_t smb_time_audit_recvfile(vfs_handle_struct *handle, int fromfd,
 	return result;
 }
 
-static int smb_time_audit_rename(vfs_handle_struct *handle,
-				 const struct smb_filename *oldname,
-				 const struct smb_filename *newname)
-{
-	int result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_RENAME(handle, oldname, newname);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_smb_fname("rename", timediff, newname);
-	}
-
-	return result;
-}
-
 static int smb_time_audit_renameat(vfs_handle_struct *handle,
 				files_struct *srcfsp,
 				const struct smb_filename *oldname,
@@ -2836,7 +2816,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.lseek_fn = smb_time_audit_lseek,
 	.sendfile_fn = smb_time_audit_sendfile,
 	.recvfile_fn = smb_time_audit_recvfile,
-	.rename_fn = smb_time_audit_rename,
 	.renameat_fn = smb_time_audit_renameat,
 	.fsync_send_fn = smb_time_audit_fsync_send,
 	.fsync_recv_fn = smb_time_audit_fsync_recv,
