@@ -258,44 +258,6 @@ exit_rmdir:
 
 /* File operations */
 
-static int atalk_rename(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname_src,
-			const struct smb_filename *smb_fname_dst)
-{
-	int ret = 0;
-	char *oldname = NULL;
-	char *adbl_path = NULL;
-	char *orig_path = NULL;
-	SMB_STRUCT_STAT adbl_info;
-	SMB_STRUCT_STAT orig_info;
-	NTSTATUS status;
-
-	ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
-
-	status = get_full_smb_filename(talloc_tos(), smb_fname_src, &oldname);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ret;
-	}
-
-	if (atalk_build_paths(talloc_tos(), handle->conn->cwd_fsp->fsp_name->base_name, oldname,
-			      &adbl_path, &orig_path, &adbl_info,
-			      &orig_info) != 0)
-		goto exit_rename;
-
-	if (S_ISDIR(orig_info.st_ex_mode) || S_ISREG(orig_info.st_ex_mode)) {
-		DEBUG(3, ("ATALK: %s has passed..\n", adbl_path));		
-		goto exit_rename;
-	}
-
-	atalk_unlink_file(adbl_path);
-
-exit_rename:
-	TALLOC_FREE(oldname);
-	TALLOC_FREE(adbl_path);
-	TALLOC_FREE(orig_path);
-	return ret;
-}
-
 static int atalk_renameat(struct vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
@@ -522,7 +484,6 @@ static struct vfs_fn_pointers vfs_netatalk_fns = {
 	.opendir_fn = atalk_opendir,
 	.fdopendir_fn = atalk_fdopendir,
 	.rmdir_fn = atalk_rmdir,
-	.rename_fn = atalk_rename,
 	.renameat_fn = atalk_renameat,
 	.unlink_fn = atalk_unlink,
 	.chmod_fn = atalk_chmod,
