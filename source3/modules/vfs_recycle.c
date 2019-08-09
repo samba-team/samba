@@ -634,7 +634,11 @@ static int recycle_unlink(vfs_handle_struct *handle,
 
 	DEBUG(10, ("recycle: Moving %s to %s\n", smb_fname_str_dbg(smb_fname),
 		smb_fname_str_dbg(smb_fname_final)));
-	rc = SMB_VFS_NEXT_RENAME(handle, smb_fname, smb_fname_final);
+	rc = SMB_VFS_NEXT_RENAMEAT(handle,
+			handle->conn->cwd_fsp,
+			smb_fname,
+			handle->conn->cwd_fsp,
+			smb_fname_final);
 	if (rc != 0) {
 		DEBUG(3, ("recycle: Move error %d (%s), purging file %s "
 			  "(%s)\n", errno, strerror(errno),
