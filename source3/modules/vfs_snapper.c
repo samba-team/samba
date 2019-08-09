@@ -2688,49 +2688,20 @@ static int snapper_gmt_setxattr(struct vfs_handle_struct *handle,
 				size_t size, int flags)
 {
 	time_t timestamp = 0;
-	char *stripped = NULL;
-	ssize_t ret;
-	int saved_errno = 0;
-	char *conv = NULL;
-	struct smb_filename *conv_smb_fname = NULL;
 
 	if (!snapper_gmt_strip_snapshot(talloc_tos(),
 					handle,
 					smb_fname->base_name,
 					&timestamp,
-					&stripped)) {
+					NULL)) {
 		return -1;
 	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_SETXATTR(handle, smb_fname,
-					aname, value, size, flags);
-	}
-	conv = snapper_gmt_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv == NULL) {
+	if (timestamp != 0) {
+		errno = EROFS;
 		return -1;
 	}
-	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					smb_fname->flags);
-	TALLOC_FREE(conv);
-	if (conv_smb_fname == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-	ret = SMB_VFS_NEXT_SETXATTR(handle, conv_smb_fname,
+	return SMB_VFS_NEXT_SETXATTR(handle, smb_fname,
 				aname, value, size, flags);
-	if (ret == -1) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(conv_smb_fname);
-	TALLOC_FREE(conv);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
 }
 
 static int snapper_gmt_get_real_filename(struct vfs_handle_struct *handle,
