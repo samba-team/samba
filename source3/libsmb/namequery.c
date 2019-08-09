@@ -2916,16 +2916,16 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 		}
 	}
 	if (num_entries == 0) {
-		SAFE_FREE(ss_list);
-		return NT_STATUS_BAD_NETWORK_NAME;
+		status = NT_STATUS_BAD_NETWORK_NAME;
+		goto done;
 	}
 
 	*return_ss_arr = talloc_array(ctx,
 				struct sockaddr_storage,
 				num_entries);
 	if (!(*return_ss_arr)) {
-		SAFE_FREE(ss_list);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	for (i=0, num_entries = 0; i<count; i++) {
@@ -2937,9 +2937,9 @@ NTSTATUS resolve_name_list(TALLOC_CTX *ctx,
 
 	status = NT_STATUS_OK;
 	*p_num_entries = num_entries;
-
+done:
 	SAFE_FREE(ss_list);
-	return NT_STATUS_OK;
+	return status;
 }
 
 /********************************************************
