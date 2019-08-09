@@ -628,7 +628,12 @@ static NTSTATUS cmd_rename(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = SMB_VFS_RENAME(vfs->conn, smb_fname_src, smb_fname_dst);
+	ret = SMB_VFS_RENAMEAT(vfs->conn,
+			vfs->conn->cwd_fsp,
+			smb_fname_src,
+			vfs->conn->cwd_fsp,
+			smb_fname_dst);
+
 	TALLOC_FREE(smb_fname_src);
 	TALLOC_FREE(smb_fname_dst);
 	if (ret == -1) {
