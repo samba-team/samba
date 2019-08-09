@@ -148,8 +148,14 @@ static void ctdb_node_connect_write(struct tevent_context *ev,
 	/* the queue subsystem now owns this fd */
 	tnode->out_fd = -1;
 
-	/* tell the ctdb layer we are connected */
-	node->ctdb->upcalls->node_connected(node);
+	/*
+	 * Mark the node to which this connection has been established
+	 * as connected, but only if the corresponding listening
+	 * socket is also connected
+	 */
+	if (tnode->in_fd != -1) {
+		node->ctdb->upcalls->node_connected(node);
+	}
 }
 
 
@@ -343,7 +349,15 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 	}
 
 	tnode->in_fd = fd;
-}
+
+       /*
+	* Mark the connecting node as connected, but only if the
+	* corresponding outbound connected is also up
+	*/
+	if (tnode->out_queue != NULL) {
+		node->ctdb->upcalls->node_connected(node);
+	}
+ }
 
 
 /*
