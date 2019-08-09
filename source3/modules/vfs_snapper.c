@@ -2222,45 +2222,20 @@ static int snapper_gmt_chmod(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode)
 {
-	time_t timestamp;
-	char *stripped = NULL;
-	int ret, saved_errno;
-	char *conv = NULL;
-	struct smb_filename *conv_smb_fname = NULL;
+	time_t timestamp = 0;
 
 	if (!snapper_gmt_strip_snapshot(talloc_tos(),
 				handle,
 				smb_fname->base_name,
 				&timestamp,
-				&stripped)) {
+				NULL)) {
 		return -1;
 	}
-	if (timestamp == 0) {
-		TALLOC_FREE(stripped);
-		return SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
-	}
-	conv = snapper_gmt_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv == NULL) {
+	if (timestamp != 0) {
+		errno = EROFS;
 		return -1;
 	}
-	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					smb_fname->flags);
-	if (conv_smb_fname == NULL) {
-		TALLOC_FREE(conv);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	ret = SMB_VFS_NEXT_CHMOD(handle, conv_smb_fname, mode);
-	saved_errno = errno;
-	TALLOC_FREE(conv);
-	TALLOC_FREE(conv_smb_fname);
-	errno = saved_errno;
-	return ret;
+	return SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
 }
 
 static int snapper_gmt_chown(vfs_handle_struct *handle,
