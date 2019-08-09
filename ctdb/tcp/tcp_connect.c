@@ -50,9 +50,9 @@ void ctdb_tcp_stop_connection(struct ctdb_node *node)
 	talloc_free(tnode->connect_fde);
 	tnode->connect_fde = NULL;
 	tnode->connect_te = NULL;
-	if (tnode->fd != -1) {
-		close(tnode->fd);
-		tnode->fd = -1;
+	if (tnode->out_fd != -1) {
+		close(tnode->out_fd);
+		tnode->out_fd = -1;
 	}
 }
 
@@ -93,12 +93,13 @@ static void ctdb_node_connect_write(struct tevent_context *ev,
 	int error = 0;
 	socklen_t len = sizeof(error);
 	int one = 1;
+	int ret;
 
 	talloc_free(tnode->connect_te);
 	tnode->connect_te = NULL;
 
-	if (getsockopt(tnode->fd, SOL_SOCKET, SO_ERROR, &error, &len) != 0 ||
-	    error != 0) {
+	ret = getsockopt(tnode->out_fd, SOL_SOCKET, SO_ERROR, &error, &len);
+	if (ret != 0 || error != 0) {
 		ctdb_tcp_stop_connection(node);
 		tnode->connect_te = tevent_add_timer(ctdb->ev, tnode,
 						    timeval_current_ofs(1, 0),
@@ -109,19 +110,28 @@ static void ctdb_node_connect_write(struct tevent_context *ev,
 	talloc_free(tnode->connect_fde);
 	tnode->connect_fde = NULL;
 
-        if (setsockopt(tnode->fd,IPPROTO_TCP,TCP_NODELAY,(char *)&one,sizeof(one)) == -1) {
-		DEBUG(DEBUG_WARNING, ("Failed to set TCP_NODELAY on fd - %s\n",
-				      strerror(errno)));
+	ret = setsockopt(tnode->out_fd,
+			 IPPROTO_TCP,
+			 TCP_NODELAY,
+			 (char *)&one,
+			 sizeof(one));
+	if (ret == -1) {
+		DBG_WARNING("Failed to set TCP_NODELAY on fd - %s\n",
+			  strerror(errno));
 	}
-        if (setsockopt(tnode->fd,SOL_SOCKET,SO_KEEPALIVE,(char *)&one,sizeof(one)) == -1) {
-		DEBUG(DEBUG_WARNING, ("Failed to set KEEPALIVE on fd - %s\n",
-				      strerror(errno)));
+	ret = setsockopt(tnode->out_fd,
+			 SOL_SOCKET,
+			 SO_KEEPALIVE,(char *)&one,
+			 sizeof(one));
+	if (ret == -1) {
+		DBG_WARNING("Failed to set KEEPALIVE on fd - %s\n",
+			    strerror(errno));
 	}
 
-	ctdb_queue_set_fd(tnode->out_queue, tnode->fd);
+	ctdb_queue_set_fd(tnode->out_queue, tnode->out_fd);
 
 	/* the queue subsystem now owns this fd */
-	tnode->fd = -1;
+	tnode->out_fd = -1;
 
 	/* tell the ctdb layer we are connected */
 	node->ctdb->upcalls->node_connected(node);
@@ -149,26 +159,24 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 
 	sock_out = node->address;
 
-	tnode->fd = socket(sock_out.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
-	if (tnode->fd == -1) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to create socket\n"));
+	tnode->out_fd = socket(sock_out.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
+	if (tnode->out_fd == -1) {
+		DBG_ERR("Failed to create socket\n");
 		return;
 	}
 
-	ret = set_blocking(tnode->fd, false);
+	ret = set_blocking(tnode->out_fd, false);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      (__location__
-		       " failed to set socket non-blocking (%s)\n",
-		       strerror(errno)));
-		close(tnode->fd);
-		tnode->fd = -1;
+		DBG_ERR("Failed to set socket non-blocking (%s)\n",
+			strerror(errno));
+		close(tnode->out_fd);
+		tnode->out_fd = -1;
 		return;
 	}
 
-	set_close_on_exec(tnode->fd);
+	set_close_on_exec(tnode->out_fd);
 
-	DEBUG(DEBUG_DEBUG, (__location__ " Created TCP SOCKET FD:%d\n", tnode->fd));
+	DBG_DEBUG("Created TCP SOCKET FD:%d\n", tnode->out_fd);
 
 	/* Bind our side of the socketpair to the same address we use to listen
 	 * on incoming CTDB traffic.
@@ -197,39 +205,48 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 	default:
 		DEBUG(DEBUG_ERR, (__location__ " unknown family %u\n",
 			sock_in.sa.sa_family));
-		close(tnode->fd);
-		tnode->fd = -1;
+		close(tnode->out_fd);
+		tnode->out_fd = -1;
 		return;
 	}
 
-	if (bind(tnode->fd, (struct sockaddr *)&sock_in, sockin_size) == -1) {
-		DEBUG(DEBUG_ERR, (__location__ " Failed to bind socket %s(%d)\n",
-				  strerror(errno), errno));
-		close(tnode->fd);
-		tnode->fd = -1;
+	ret = bind(tnode->out_fd, (struct sockaddr *)&sock_in, sockin_size);
+	if (ret == -1) {
+		DBG_ERR("Failed to bind socket (%s)\n", strerror(errno));
+		close(tnode->out_fd);
+		tnode->out_fd = -1;
 		return;
 	}
 
-	if (connect(tnode->fd, (struct sockaddr *)&sock_out, sockout_size) != 0 &&
-	    errno != EINPROGRESS) {
+	ret = connect(tnode->out_fd,
+		      (struct sockaddr *)&sock_out,
+		      sockout_size);
+	if (ret != 0 && errno != EINPROGRESS) {
 		ctdb_tcp_stop_connection(node);
-		tnode->connect_te = tevent_add_timer(ctdb->ev, tnode,
+		tnode->connect_te = tevent_add_timer(ctdb->ev,
+						     tnode,
 						     timeval_current_ofs(1, 0),
-						     ctdb_tcp_node_connect, node);
+						     ctdb_tcp_node_connect,
+						     node);
 		return;
 	}
 
 	/* non-blocking connect - wait for write event */
-	tnode->connect_fde = tevent_add_fd(node->ctdb->ev, tnode, tnode->fd,
+	tnode->connect_fde = tevent_add_fd(node->ctdb->ev,
+					   tnode,
+					   tnode->out_fd,
 					   TEVENT_FD_WRITE|TEVENT_FD_READ,
-					   ctdb_node_connect_write, node);
+					   ctdb_node_connect_write,
+					   node);
 
 	/* don't give it long to connect - retry in one second. This ensures
 	   that we find a node is up quickly (tcp normally backs off a syn reply
 	   delay by quite a lot) */
-	tnode->connect_te = tevent_add_timer(ctdb->ev, tnode,
+	tnode->connect_te = tevent_add_timer(ctdb->ev,
+					     tnode,
 					     timeval_current_ofs(1, 0),
-					     ctdb_tcp_node_connect, node);
+					     ctdb_tcp_node_connect,
+					     node);
 }
 
 /*

@@ -39,7 +39,7 @@ struct ctdb_incoming {
   state associated with one tcp node
 */
 struct ctdb_tcp_node {
-	int fd;
+	int out_fd;
 	struct ctdb_queue *out_queue;
 	struct tevent_fd *connect_fde;
 	struct tevent_timer *connect_te;
