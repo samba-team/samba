@@ -256,23 +256,6 @@ static int audit_close(vfs_handle_struct *handle, files_struct *fsp)
 	return result;
 }
 
-static int audit_rename(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname_src,
-			const struct smb_filename *smb_fname_dst)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_RENAME(handle, smb_fname_src, smb_fname_dst);
-
-	syslog(audit_syslog_priority(handle), "rename %s -> %s %s%s\n",
-	       smb_fname_src->base_name,
-	       smb_fname_dst->base_name,
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : "");
-
-	return result;    
-}
-
 static int audit_renameat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
@@ -350,7 +333,6 @@ static struct vfs_fn_pointers vfs_audit_fns = {
 	.rmdir_fn = audit_rmdir,
 	.open_fn = audit_open,
 	.close_fn = audit_close,
-	.rename_fn = audit_rename,
 	.renameat_fn = audit_renameat,
 	.unlink_fn = audit_unlink,
 	.chmod_fn = audit_chmod,
