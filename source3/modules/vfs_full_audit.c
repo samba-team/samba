@@ -129,6 +129,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_SENDFILE,
 	SMB_VFS_OP_RECVFILE,
 	SMB_VFS_OP_RENAME,
+	SMB_VFS_OP_RENAMEAT,
 	SMB_VFS_OP_FSYNC,
 	SMB_VFS_OP_FSYNC_SEND,
 	SMB_VFS_OP_FSYNC_RECV,
@@ -272,6 +273,7 @@ static struct {
 	{ SMB_VFS_OP_SENDFILE,	"sendfile" },
 	{ SMB_VFS_OP_RECVFILE,  "recvfile" },
 	{ SMB_VFS_OP_RENAME,	"rename" },
+	{ SMB_VFS_OP_RENAMEAT,	"renameat" },
 	{ SMB_VFS_OP_FSYNC,	"fsync" },
 	{ SMB_VFS_OP_FSYNC_SEND,	"fsync_send" },
 	{ SMB_VFS_OP_FSYNC_RECV,	"fsync_recv" },
@@ -1362,6 +1364,27 @@ static int smb_full_audit_rename(vfs_handle_struct *handle,
 	       smb_fname_str_do_log(handle->conn, smb_fname_dst));
 
 	return result;    
+}
+
+static int smb_full_audit_renameat(vfs_handle_struct *handle,
+				files_struct *srcfsp,
+				const struct smb_filename *smb_fname_src,
+				files_struct *dstfsp,
+				const struct smb_filename *smb_fname_dst)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_RENAMEAT(handle,
+				srcfsp,
+				smb_fname_src,
+				dstfsp,
+				smb_fname_dst);
+
+	do_log(SMB_VFS_OP_RENAMEAT, (result >= 0), handle, "%s|%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname_src),
+	       smb_fname_str_do_log(handle->conn, smb_fname_dst));
+
+	return result;
 }
 
 struct smb_full_audit_fsync_state {
@@ -2847,6 +2870,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.sendfile_fn = smb_full_audit_sendfile,
 	.recvfile_fn = smb_full_audit_recvfile,
 	.rename_fn = smb_full_audit_rename,
+	.renameat_fn = smb_full_audit_renameat,
 	.fsync_send_fn = smb_full_audit_fsync_send,
 	.fsync_recv_fn = smb_full_audit_fsync_recv,
 	.stat_fn = smb_full_audit_stat,
