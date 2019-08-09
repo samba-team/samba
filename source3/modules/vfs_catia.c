@@ -559,64 +559,6 @@ static int catia_open(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int catia_rename(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname_src,
-			const struct smb_filename *smb_fname_dst)
-{
-	TALLOC_CTX *ctx = talloc_tos();
-	struct smb_filename *smb_fname_src_tmp = NULL;
-	struct smb_filename *smb_fname_dst_tmp = NULL;
-	char *src_name_mapped = NULL;
-	char *dst_name_mapped = NULL;
-	NTSTATUS status;
-	int ret = -1;
-
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname_src->base_name,
-				&src_name_mapped, vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname_dst->base_name,
-				&dst_name_mapped, vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return -1;
-	}
-
-	/* Setup temporary smb_filename structs. */
-	smb_fname_src_tmp = cp_smb_filename(ctx, smb_fname_src);
-	if (smb_fname_src_tmp == NULL) {
-		errno = ENOMEM;
-		goto out;
-	}
-
-	smb_fname_dst_tmp = cp_smb_filename(ctx, smb_fname_dst);
-	if (smb_fname_dst_tmp == NULL) {
-		errno = ENOMEM;
-		goto out;
-	}
-
-	smb_fname_src_tmp->base_name = src_name_mapped;
-	smb_fname_dst_tmp->base_name = dst_name_mapped;	
-	DEBUG(10, ("converted old name: %s\n",
-				smb_fname_str_dbg(smb_fname_src_tmp)));
-	DEBUG(10, ("converted new name: %s\n",
-				smb_fname_str_dbg(smb_fname_dst_tmp)));
-
-	ret = SMB_VFS_NEXT_RENAME(handle, smb_fname_src_tmp,
-			smb_fname_dst_tmp);
-out:
-	TALLOC_FREE(src_name_mapped);
-	TALLOC_FREE(dst_name_mapped);
-	TALLOC_FREE(smb_fname_src_tmp);
-	TALLOC_FREE(smb_fname_dst_tmp);
-	return ret;
-}
-
 static int catia_renameat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
@@ -2500,7 +2442,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.pwrite_send_fn = catia_pwrite_send,
 	.pwrite_recv_fn = catia_pwrite_recv,
 	.lseek_fn = catia_lseek,
-	.rename_fn = catia_rename,
 	.renameat_fn = catia_renameat,
 	.fsync_send_fn = catia_fsync_send,
 	.fsync_recv_fn = catia_fsync_recv,
