@@ -1888,11 +1888,7 @@ static bool delay_for_oplock(files_struct *fsp,
 			NTSTATUS status;
 
 			if (lease != NULL) {
-				bool our_lease = smb2_lease_equal(
-					fsp_client_guid(fsp),
-					&lease->lease_key,
-					&e->client_guid,
-					&e->lease_key);
+				bool our_lease = is_same_lease(fsp, e, lease);
 				if (our_lease) {
 					DBG_DEBUG("Ignoring our own lease\n");
 					continue;
