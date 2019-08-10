@@ -2165,7 +2165,6 @@ static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
 }
 
 static bool is_same_lease(const files_struct *fsp,
-			  const struct share_mode_data *d,
 			  const struct share_mode_entry *e,
 			  const struct smb2_lease *lease)
 {
@@ -2266,7 +2265,7 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 		struct share_mode_entry *e = &d->share_modes[i];
 
 		if ((granted & SMB2_LEASE_WRITE) &&
-		    !is_same_lease(fsp, d, e, lease) &&
+		    !is_same_lease(fsp, e, lease) &&
 		    !share_mode_stale_pid(d, i)) {
 			/*
 			 * Can grant only one writer
