@@ -1856,13 +1856,13 @@ static bool is_same_lease(const files_struct *fsp,
 				&e->lease_key);
 }
 
-static bool delay_for_oplock(files_struct *fsp,
-			     int oplock_request,
-			     const struct smb2_lease *lease,
-			     struct share_mode_lock *lck,
-			     bool have_sharing_violation,
-			     uint32_t create_disposition,
-			     bool first_open_attempt)
+static NTSTATUS delay_for_oplock(files_struct *fsp,
+				 int oplock_request,
+				 const struct smb2_lease *lease,
+				 struct share_mode_lock *lck,
+				 bool have_sharing_violation,
+				 uint32_t create_disposition,
+				 bool first_open_attempt)
 {
 	struct share_mode_data *d = lck->data;
 	uint32_t i;
@@ -1872,7 +1872,7 @@ static bool delay_for_oplock(files_struct *fsp,
 		SMB2_LEASE_HANDLE : SMB2_LEASE_WRITE;
 
 	if (is_stat_open(fsp->access_mask)) {
-		return false;
+		return NT_STATUS_OK;
 	}
 
 	switch (create_disposition) {
@@ -1966,7 +1966,10 @@ static bool delay_for_oplock(files_struct *fsp,
 		}
 	}
 
-	return delay;
+	if (delay) {
+		return NT_STATUS_RETRY;
+	}
+	return NT_STATUS_OK;
 }
 
 static bool file_has_brlocks(files_struct *fsp)
@@ -2342,7 +2345,6 @@ static NTSTATUS handle_share_mode_lease(
 	bool first_open_attempt)
 {
 	bool sharing_violation = false;
-	bool delay = false;
 	NTSTATUS status;
 
 	status = open_mode_check(
@@ -2371,7 +2373,7 @@ static NTSTATUS handle_share_mode_lease(
 		return NT_STATUS_OK;
 	}
 
-	delay = delay_for_oplock(
+	status = delay_for_oplock(
 		fsp,
 		oplock_request,
 		lease,
@@ -2379,8 +2381,8 @@ static NTSTATUS handle_share_mode_lease(
 		sharing_violation,
 		create_disposition,
 		first_open_attempt);
-	if (delay) {
-		return NT_STATUS_RETRY;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (sharing_violation) {
