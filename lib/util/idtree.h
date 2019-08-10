@@ -51,11 +51,6 @@ int idr_get_new(struct idr_context *idp, void *ptr, int limit);
 int idr_get_new_above(struct idr_context *idp, void *ptr, int starting_id, int limit);
 
 /**
-  allocate a new id randomly in the given range
-*/
-int idr_get_new_random(struct idr_context *idp, void *ptr, int limit);
-
-/**
   find a pointer value previously set with idr_get_new given an id
 */
 void *idr_find(struct idr_context *idp, int id);
