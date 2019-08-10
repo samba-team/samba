@@ -1829,6 +1829,23 @@ static bool validate_oplock_types(struct share_mode_lock *lck)
 	return true;
 }
 
+static bool is_same_lease(const files_struct *fsp,
+			  const struct share_mode_entry *e,
+			  const struct smb2_lease *lease)
+{
+	if (e->op_type != LEASE_OPLOCK) {
+		return false;
+	}
+	if (lease == NULL) {
+		return false;
+	}
+
+	return smb2_lease_equal(fsp_client_guid(fsp),
+				&lease->lease_key,
+				&e->client_guid,
+				&e->lease_key);
+}
+
 static bool delay_for_oplock(files_struct *fsp,
 			     int oplock_request,
 			     const struct smb2_lease *lease,
@@ -2162,23 +2179,6 @@ static NTSTATUS grant_fsp_lease(struct files_struct *fsp,
 	}
 
 	return status;
-}
-
-static bool is_same_lease(const files_struct *fsp,
-			  const struct share_mode_entry *e,
-			  const struct smb2_lease *lease)
-{
-	if (e->op_type != LEASE_OPLOCK) {
-		return false;
-	}
-	if (lease == NULL) {
-		return false;
-	}
-
-	return smb2_lease_equal(fsp_client_guid(fsp),
-				&lease->lease_key,
-				&e->client_guid,
-				&e->lease_key);
 }
 
 static int map_lease_type_to_oplock(uint32_t lease_type)
