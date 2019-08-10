@@ -4819,7 +4819,7 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 			|| i == LSA_POLICY_INFO_DNS_INT)) {
 			/* Let's look up some of these names */
 
-			struct lsa_TransNameArray tnames;
+			struct lsa_TransNameArray tnames, dnames;
 			tnames.count = 14;
 			tnames.names = talloc_zero_array(tctx, struct lsa_TranslatedName, tnames.count);
 			tnames.names[0].name.string = info->dns.name.string;
@@ -4852,6 +4852,12 @@ static bool test_QueryInfoPolicyCalls(	bool version2,
 			tnames.names[13].sid_type = SID_NAME_USER;
 			ret &= test_LookupNames(b, tctx, handle, LSA_LOOKUP_NAMES_ALL, &tnames);
 
+			/* Try to use in-forest search for the test machine */
+			dnames.count = 1;
+			dnames.names = talloc_zero_array(tctx, struct lsa_TranslatedName, dnames.count);
+			dnames.names[0].name.string = talloc_asprintf(tctx, "%s\\"TEST_MACHINENAME "$", info->dns.name.string);
+			dnames.names[0].sid_type = SID_NAME_USER;
+			ret &= test_LookupNames(b, tctx, handle, LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2, &dnames);
 		}
 	}
 
