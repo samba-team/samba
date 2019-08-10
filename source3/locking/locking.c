@@ -836,10 +836,8 @@ static struct share_mode_entry *find_share_mode_entry(
 	struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_data *d = lck->data;
-	struct server_id pid;
+	struct server_id pid = messaging_server_id(fsp->conn->sconn->msg_ctx);
 	uint32_t i;
-
-	pid = messaging_server_id(fsp->conn->sconn->msg_ctx);
 
 	for (i=0; i<d->num_share_modes; i++) {
 		struct share_mode_entry *e = &d->share_modes[i];
