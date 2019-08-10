@@ -2107,9 +2107,13 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 	bool will_overwrite;
 	const uint32_t delay_mask = have_sharing_violation ?
 		SMB2_LEASE_HANDLE : SMB2_LEASE_WRITE;
+	bool got_handle_lease = false;
+	bool got_oplock = false;
+	uint32_t granted;
+	NTSTATUS status;
 
 	if (is_stat_open(fsp->access_mask)) {
-		return NT_STATUS_OK;
+		goto grant;
 	}
 
 	switch (create_disposition) {
@@ -2131,8 +2135,6 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 		bool lease_is_breaking = false;
 
 		if (e_is_lease) {
-			NTSTATUS status;
-
 			if (lease != NULL) {
 				bool our_lease = is_same_lease(fsp, e, lease);
 				if (our_lease) {
@@ -2206,20 +2208,11 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 	if (delay) {
 		return NT_STATUS_RETRY;
 	}
-	return NT_STATUS_OK;
-}
 
-static NTSTATUS grant_fsp_oplock_type(struct files_struct *fsp,
-				      struct share_mode_lock *lck,
-				      int oplock_request,
-				      const struct smb2_lease *lease)
-{
-	struct share_mode_data *d = lck->data;
-	bool got_handle_lease = false;
-	bool got_oplock = false;
-	uint32_t i;
-	uint32_t granted;
-	NTSTATUS status;
+grant:
+	if (have_sharing_violation) {
+		return NT_STATUS_SHARING_VIOLATION;
+	}
 
 	if (oplock_request == LEASE_OPLOCK) {
 		if (lease == NULL) {
@@ -2253,8 +2246,8 @@ static NTSTATUS grant_fsp_oplock_type(struct files_struct *fsp,
 	}
 
 	if (lp_locking(fsp->conn->params) && file_has_brlocks(fsp)) {
-		DEBUG(10,("grant_fsp_oplock_type: file %s has byte range locks\n",
-			fsp_str_dbg(fsp)));
+		DBG_DEBUG("file %s has byte range locks\n",
+			  fsp_str_dbg(fsp));
 		granted &= ~SMB2_LEASE_READ;
 	}
 
@@ -2328,8 +2321,8 @@ static NTSTATUS grant_fsp_oplock_type(struct files_struct *fsp,
 		lck->data->flags |= SHARE_MODE_HAS_READ_LEASE;
 	}
 
-	DEBUG(10,("grant_fsp_oplock_type: oplock type 0x%x on file %s\n",
-		  fsp->oplock_type, fsp_str_dbg(fsp)));
+	DBG_DEBUG("oplock type 0x%x on file %s\n",
+		  fsp->oplock_type, fsp_str_dbg(fsp));
 
 	return NT_STATUS_OK;
 }
@@ -2385,12 +2378,7 @@ static NTSTATUS handle_share_mode_lease(
 		return status;
 	}
 
-	if (sharing_violation) {
-		return NT_STATUS_SHARING_VIOLATION;
-	}
-
-	status = grant_fsp_oplock_type(fsp, lck, oplock_request, lease);
-	return status;
+	return NT_STATUS_OK;
 }
 
 static bool request_timed_out(struct smb_request *req, struct timeval timeout)
