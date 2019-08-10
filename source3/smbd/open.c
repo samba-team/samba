@@ -2264,9 +2264,6 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 
 	for (i=0; i<d->num_share_modes; i++) {
 		struct share_mode_entry *e = &d->share_modes[i];
-		uint32_t e_lease_type;
-
-		e_lease_type = get_lease_type(d, e);
 
 		if ((granted & SMB2_LEASE_WRITE) &&
 		    !is_same_lease(fsp, d, e, lease) &&
@@ -2277,9 +2274,12 @@ static NTSTATUS grant_fsp_oplock_type(struct smb_request *req,
 			granted &= ~SMB2_LEASE_WRITE;
 		}
 
-		if ((e_lease_type & SMB2_LEASE_HANDLE) && !got_handle_lease &&
-		    !share_mode_stale_pid(d, i)) {
-			got_handle_lease = true;
+		if (!got_handle_lease) {
+			uint32_t e_lease_type = get_lease_type(d, e);
+			if ((e_lease_type & SMB2_LEASE_HANDLE) &&
+			    !share_mode_stale_pid(d, i)) {
+				got_handle_lease = true;
+			}
 		}
 
 		if ((e->op_type != LEASE_OPLOCK) && !got_oplock &&
