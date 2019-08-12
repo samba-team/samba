@@ -313,7 +313,10 @@ class cmd_group_list(Command):
         Option("-v", "--verbose",
                help="Verbose output, showing group type and group scope.",
                action="store_true"),
-
+        Option("--full-dn", dest="full_dn",
+               default=False,
+               action='store_true',
+               help="Display DN instead of the sAMAccountName."),
     ]
 
     takes_optiongroups = {
@@ -322,8 +325,13 @@ class cmd_group_list(Command):
         "versionopts": options.VersionOptions,
     }
 
-    def run(self, sambaopts=None, credopts=None, versionopts=None, H=None,
-            verbose=False):
+    def run(self,
+            sambaopts=None,
+            credopts=None,
+            versionopts=None,
+            H=None,
+            verbose=False,
+            full_dn=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
@@ -367,6 +375,10 @@ class cmd_group_list(Command):
                 self.outf.write("    %6u\n" % num_members)
         else:
             for msg in res:
+                if full_dn:
+                    self.outf.write("%s\n" % msg.get("dn"))
+                    continue
+
                 self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
 
 
