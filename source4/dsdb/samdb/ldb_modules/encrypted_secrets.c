@@ -447,7 +447,7 @@ static struct ldb_val samba_encrypt_aead(int *err,
 			goto error_exit;
 		}
 
-		generate_random_buffer(iv, AES_GCM_128_IV_SIZE);
+		generate_nonce_buffer(iv, AES_GCM_128_IV_SIZE);
 
 		es->iv.length = AES_GCM_128_IV_SIZE;
 		es->iv.data   = iv;
