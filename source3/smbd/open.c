@@ -1463,92 +1463,96 @@ static NTSTATUS open_file(files_struct *fsp,
 	return NT_STATUS_OK;
 }
 
+static bool mask_conflict(
+	uint32_t new_access,
+	uint32_t existing_access,
+	uint32_t access_mask,
+	uint32_t new_sharemode,
+	uint32_t existing_sharemode,
+	uint32_t sharemode_mask)
+{
+	bool want_access = (new_access & access_mask);
+	bool allow_existing = (existing_sharemode & sharemode_mask);
+	bool have_access = (existing_access & access_mask);
+	bool allow_new = (new_sharemode & sharemode_mask);
+
+	if (want_access && !allow_existing) {
+		DBG_DEBUG("Access request 0x%"PRIx32"/0x%"PRIx32" conflicts "
+			  "with existing sharemode 0x%"PRIx32"/0x%"PRIx32"\n",
+			  new_access,
+			  access_mask,
+			  existing_sharemode,
+			  sharemode_mask);
+		return true;
+	}
+	if (have_access && !allow_new) {
+		DBG_DEBUG("Sharemode request 0x%"PRIx32"/0x%"PRIx32" conflicts "
+			  "with existing access 0x%"PRIx32"/0x%"PRIx32"\n",
+			  new_sharemode,
+			  sharemode_mask,
+			  existing_access,
+			  access_mask);
+		return true;
+	}
+	return false;
+}
+
 /****************************************************************************
  Check if we can open a file with a share mode.
  Returns True if conflict, False if not.
 ****************************************************************************/
 
-static bool share_conflict(struct share_mode_entry *entry,
+static bool share_conflict(struct share_mode_entry *e,
 			   uint32_t access_mask,
 			   uint32_t share_access)
 {
-	DBG_DEBUG("entry->access_mask = 0x%"PRIx32", "
-		  "entry->share_access = 0x%"PRIx32", "
-		  "entry->private_options = 0x%"PRIx32", "
+	const uint32_t conflicting_access =
+		FILE_WRITE_DATA|
+		FILE_APPEND_DATA|
+		FILE_READ_DATA|
+		FILE_EXECUTE|
+		DELETE_ACCESS;
+	bool conflict;
+
+	DBG_DEBUG("e->access_mask = 0x%"PRIx32", "
+		  "e->share_access = 0x%"PRIx32", "
+		  "e->private_options = 0x%"PRIx32", "
 		  "access_mask = 0x%"PRIx32", "
 		  "share_access = 0x%"PRIx32"\n",
-		  entry->access_mask,
-		  entry->share_access,
-		  entry->private_options,
+		  e->access_mask,
+		  e->share_access,
+		  e->private_options,
 		  access_mask,
 		  share_access);
 
-	if (server_id_is_disconnected(&entry->pid)) {
+	if (server_id_is_disconnected(&e->pid)) {
 		return false;
 	}
 
-	if ((entry->access_mask & (FILE_WRITE_DATA|
-				   FILE_APPEND_DATA|
-				   FILE_READ_DATA|
-				   FILE_EXECUTE|
-				   DELETE_ACCESS)) == 0) {
+	if ((e->access_mask & conflicting_access) == 0) {
 		DBG_DEBUG("No conflict due to "
-			  "entry->access_mask = 0x%"PRIx32"\n",
-			  entry->access_mask);
-		return False;
+			  "e->access_mask = 0x%"PRIx32"\n",
+			  e->access_mask);
+		return false;
 	}
-
-	if ((access_mask & (FILE_WRITE_DATA|
-			    FILE_APPEND_DATA|
-			    FILE_READ_DATA|
-			    FILE_EXECUTE|
-			    DELETE_ACCESS)) == 0) {
+	if ((access_mask & conflicting_access) == 0) {
 		DBG_DEBUG("No conflict due to access_mask = 0x%"PRIx32"\n",
 			  access_mask);
-		return False;
+		return false;
 	}
 
-#if 1 /* JRA TEST - Superdebug. */
-#define CHECK_MASK(num, am, right, sa, share) \
-	DEBUG(10,("share_conflict: [%d] am (0x%x) & right (0x%x) = 0x%x\n", \
-		(unsigned int)(num), (unsigned int)(am), \
-		(unsigned int)(right), (unsigned int)(am)&(right) )); \
-	DEBUG(10,("share_conflict: [%d] sa (0x%x) & share (0x%x) = 0x%x\n", \
-		(unsigned int)(num), (unsigned int)(sa), \
-		(unsigned int)(share), (unsigned int)(sa)&(share) )); \
-	if (((am) & (right)) && !((sa) & (share))) { \
-		DEBUG(10,("share_conflict: check %d conflict am = 0x%x, right = 0x%x, \
-sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (unsigned int)(sa), \
-			(unsigned int)(share) )); \
-		return True; \
-	}
-#else
-#define CHECK_MASK(num, am, right, sa, share) \
-	if (((am) & (right)) && !((sa) & (share))) { \
-		DEBUG(10,("share_conflict: check %d conflict am = 0x%x, right = 0x%x, \
-sa = 0x%x, share = 0x%x\n", (num), (unsigned int)(am), (unsigned int)(right), (unsigned int)(sa), \
-			(unsigned int)(share) )); \
-		return True; \
-	}
-#endif
+	conflict = mask_conflict(
+		access_mask, e->access_mask, FILE_WRITE_DATA | FILE_APPEND_DATA,
+		share_access, e->share_access, FILE_SHARE_WRITE);
+	conflict |= mask_conflict(
+		access_mask, e->access_mask, FILE_READ_DATA | FILE_EXECUTE,
+		share_access, e->share_access, FILE_SHARE_READ);
+	conflict |= mask_conflict(
+		access_mask, e->access_mask, DELETE_ACCESS,
+		share_access, e->share_access, FILE_SHARE_DELETE);
 
-	CHECK_MASK(1, entry->access_mask, FILE_WRITE_DATA | FILE_APPEND_DATA,
-		   share_access, FILE_SHARE_WRITE);
-	CHECK_MASK(2, access_mask, FILE_WRITE_DATA | FILE_APPEND_DATA,
-		   entry->share_access, FILE_SHARE_WRITE);
-
-	CHECK_MASK(3, entry->access_mask, FILE_READ_DATA | FILE_EXECUTE,
-		   share_access, FILE_SHARE_READ);
-	CHECK_MASK(4, access_mask, FILE_READ_DATA | FILE_EXECUTE,
-		   entry->share_access, FILE_SHARE_READ);
-
-	CHECK_MASK(5, entry->access_mask, DELETE_ACCESS,
-		   share_access, FILE_SHARE_DELETE);
-	CHECK_MASK(6, access_mask, DELETE_ACCESS,
-		   entry->share_access, FILE_SHARE_DELETE);
-
-	DEBUG(10,("share_conflict: No conflict.\n"));
-	return False;
+	DBG_DEBUG("conflict=%s\n", conflict ? "true" : "false");
+	return conflict;
 }
 
 #if defined(DEVELOPER)
