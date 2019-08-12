@@ -90,8 +90,7 @@ static NTSTATUS dcesrv_netr_ServerReqChallenge(struct dcesrv_call_state *dce_cal
 
 	pipe_state->client_challenge = *r->in.credentials;
 
-	/* We need to use a CSPRNG which reseeds for generating session keys. */
-	generate_secret_buffer(pipe_state->server_challenge.data,
+	generate_random_buffer(pipe_state->server_challenge.data,
 			       sizeof(pipe_state->server_challenge.data));
 
 	*r->out.return_credentials = pipe_state->server_challenge;
