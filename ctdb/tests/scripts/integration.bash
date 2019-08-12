@@ -133,6 +133,46 @@ try_command_on_node ()
     fi
 }
 
+_run_onnode ()
+{
+	local thing="$1"
+	shift
+
+	local options nodespec
+
+	while : ; do
+		case "$1" in
+		-*)
+			options="${options}${options:+ }${1}"
+			shift
+			;;
+		*)
+			nodespec="$1"
+			shift
+			break
+		esac
+	done
+
+	# shellcheck disable=SC2086
+	# $options can be multi-word
+	try_command_on_node $options "$nodespec" "${thing} $*"
+}
+
+ctdb_onnode ()
+{
+	_run_onnode "$CTDB" "$@"
+}
+
+testprog_onnode ()
+{
+	_run_onnode "${CTDB_TEST_WRAPPER} ${VALGRIND}" "$@"
+}
+
+function_onnode ()
+{
+	_run_onnode "${CTDB_TEST_WRAPPER}" "$@"
+}
+
 sanity_check_output ()
 {
     local min_lines="$1"
