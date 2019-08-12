@@ -72,7 +72,7 @@ parse_options ()
 {
 	local opt
 
-	while getopts "cf:hno:pqvPi?" opt ; do
+	while getopts "cf:hnpqvPi?" opt ; do
 		case "$opt" in
 		c) current=true ;;
 		f) ctdb_nodes_file="$OPTARG" ;;
