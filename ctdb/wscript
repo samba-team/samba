@@ -1091,14 +1091,10 @@ def build(bld):
                           os.path.join('tests/scripts', t),
                           destname=os.path.join('scripts', t))
 
-    sed_expr = 's@^TEST_SCRIPTS_DIR=.*@&\\nexport TEST_BIN_DIR=\"%s\"@' % (
-               bld.env.CTDB_TEST_LIBEXECDIR)
-    bld.SAMBA_GENERATOR('ctdb-test-wrap',
-                        source='tests/scripts/test_wrap',
-                        target='test_wrap',
-                        rule='sed -e "%s" ${SRC} > ${TGT}' % sed_expr)
-    bld.INSTALL_FILES(bld.env.CTDB_TEST_DATADIR+"/scripts", 'test_wrap',
-                      destname='test_wrap', chmod=MODE_755)
+    bld.INSTALL_FILES(bld.env.CTDB_TEST_DATADIR,
+                      'tests/scripts/test_wrap',
+                      destname='scripts/test_wrap',
+                      chmod=MODE_755)
 
     bld.SAMBA_GENERATOR('ctdb-test-script-install-paths',
                         source='tests/scripts/script_install_paths.sh',
