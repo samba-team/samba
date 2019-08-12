@@ -481,6 +481,17 @@ static int skel_link(vfs_handle_struct *handle,
 	return -1;
 }
 
+static int skel_linkat(vfs_handle_struct *handle,
+			files_struct *srcfsp,
+			const struct smb_filename *old_smb_fname,
+			files_struct *dstfsp,
+			const struct smb_filename *new_smb_fname,
+			int flags)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 static int skel_mknod(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode,
@@ -1087,6 +1098,7 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.symlink_fn = skel_symlink,
 	.readlink_fn = skel_vfs_readlink,
 	.link_fn = skel_link,
+	.linkat_fn = skel_linkat,
 	.mknod_fn = skel_mknod,
 	.realpath_fn = skel_realpath,
 	.chflags_fn = skel_chflags,

@@ -2675,6 +2675,30 @@ static int vfswrap_link(vfs_handle_struct *handle,
 	return result;
 }
 
+static int vfswrap_linkat(vfs_handle_struct *handle,
+			files_struct *srcfsp,
+			const struct smb_filename *old_smb_fname,
+			files_struct *dstfsp,
+			const struct smb_filename *new_smb_fname,
+			int flags)
+{
+	int result;
+
+	START_PROFILE(syscall_linkat);
+
+	SMB_ASSERT(srcfsp == srcfsp->conn->cwd_fsp);
+	SMB_ASSERT(dstfsp == dstfsp->conn->cwd_fsp);
+
+	result = linkat(srcfsp->fh->fd,
+			old_smb_fname->base_name,
+			dstfsp->fh->fd,
+			new_smb_fname->base_name,
+			flags);
+
+	END_PROFILE(syscall_linkat);
+	return result;
+}
+
 static int vfswrap_mknod(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode,
@@ -3468,6 +3492,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.symlink_fn = vfswrap_symlink,
 	.readlink_fn = vfswrap_readlink,
 	.link_fn = vfswrap_link,
+	.linkat_fn = vfswrap_linkat,
 	.mknod_fn = vfswrap_mknod,
 	.realpath_fn = vfswrap_realpath,
 	.chflags_fn = vfswrap_chflags,

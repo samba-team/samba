@@ -311,6 +311,11 @@
 #define SMB_VFS_NEXT_LINK(handle, oldpath, newpath) \
 	smb_vfs_call_link((handle)->next, (oldpath), (newpath))
 
+#define SMB_VFS_LINKAT(conn, srcfsp, oldpath, dstfsp, newpath, flags) \
+	smb_vfs_call_linkat((conn)->vfs_handles, (srcfsp), (oldpath), (dstfsp), (newpath), (flags))
+#define SMB_VFS_NEXT_LINKAT(handle, srcfsp, oldpath, dstfsp, newpath, flags) \
+	smb_vfs_call_linkat((handle)->next, (srcfsp), (oldpath), (dstfsp), (newpath), (flags))
+
 #define SMB_VFS_MKNOD(conn, smb_fname, mode, dev) \
 	smb_vfs_call_mknod((conn)->vfs_handles, (smb_fname), (mode), (dev))
 #define SMB_VFS_NEXT_MKNOD(handle, smb_fname, mode, dev) \

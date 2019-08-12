@@ -85,6 +85,7 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(syscall_readlink) \
 	SMBPROFILE_STATS_BASIC(syscall_symlink) \
 	SMBPROFILE_STATS_BASIC(syscall_link) \
+	SMBPROFILE_STATS_BASIC(syscall_linkat) \
 	SMBPROFILE_STATS_BASIC(syscall_mknod) \
 	SMBPROFILE_STATS_BASIC(syscall_realpath) \
 	SMBPROFILE_STATS_BASIC(syscall_get_quota) \

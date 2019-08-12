@@ -2218,6 +2218,22 @@ int smb_vfs_call_link(struct vfs_handle_struct *handle,
 	return handle->fns->link_fn(handle, old_smb_fname, new_smb_fname);
 }
 
+int smb_vfs_call_linkat(struct vfs_handle_struct *handle,
+			struct files_struct *srcfsp,
+			const struct smb_filename *old_smb_fname,
+			struct files_struct *dstfsp,
+			const struct smb_filename *new_smb_fname,
+			int flags)
+{
+	VFS_FIND(linkat);
+	return handle->fns->linkat_fn(handle,
+				srcfsp,
+				old_smb_fname,
+				dstfsp,
+				new_smb_fname,
+				flags);
+}
+
 int smb_vfs_call_mknod(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode,
