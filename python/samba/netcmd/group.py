@@ -313,6 +313,9 @@ class cmd_group_list(Command):
         Option("-v", "--verbose",
                help="Verbose output, showing group type and group scope.",
                action="store_true"),
+        Option("-b", "--base-dn",
+               help="Specify base DN to use.",
+               type=str),
         Option("--full-dn", dest="full_dn",
                default=False,
                action='store_true',
@@ -331,6 +334,7 @@ class cmd_group_list(Command):
             versionopts=None,
             H=None,
             verbose=False,
+            base_dn=None,
             full_dn=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -342,6 +346,8 @@ class cmd_group_list(Command):
         if verbose:
             attrs += ["grouptype", "member"]
         domain_dn = samdb.domain_dn()
+        if base_dn:
+            domain_dn = samdb.normalize_dn_in_domain(base_dn)
         res = samdb.search(domain_dn, scope=ldb.SCOPE_SUBTREE,
                            expression=("(objectClass=group)"),
                            attrs=attrs)
