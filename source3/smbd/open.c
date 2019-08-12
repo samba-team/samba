@@ -1461,28 +1461,29 @@ static bool share_conflict(struct share_mode_entry *entry,
 			   uint32_t access_mask,
 			   uint32_t share_access)
 {
-	DEBUG(10,("share_conflict: entry->access_mask = 0x%x, "
-		  "entry->share_access = 0x%x, "
-		  "entry->private_options = 0x%x\n",
-		  (unsigned int)entry->access_mask,
-		  (unsigned int)entry->share_access,
-		  (unsigned int)entry->private_options));
+	DBG_DEBUG("entry->access_mask = 0x%"PRIx32", "
+		  "entry->share_access = 0x%"PRIx32", "
+		  "entry->private_options = 0x%"PRIx32"\n",
+		  entry->access_mask,
+		  entry->share_access,
+		  entry->private_options);
 
 	if (server_id_is_disconnected(&entry->pid)) {
 		return false;
 	}
 
-	DEBUG(10,("share_conflict: access_mask = 0x%x, share_access = 0x%x\n",
-		  (unsigned int)access_mask, (unsigned int)share_access));
+	DBG_DEBUG("access_mask = 0x%"PRIx32", share_access = 0x%"PRIx32"\n",
+		  access_mask,
+		  share_access);
 
 	if ((entry->access_mask & (FILE_WRITE_DATA|
 				   FILE_APPEND_DATA|
 				   FILE_READ_DATA|
 				   FILE_EXECUTE|
 				   DELETE_ACCESS)) == 0) {
-		DEBUG(10,("share_conflict: No conflict due to "
-			  "entry->access_mask = 0x%x\n",
-			  (unsigned int)entry->access_mask ));
+		DBG_DEBUG("No conflict due to "
+			  "entry->access_mask = 0x%"PRIx32"\n",
+			  entry->access_mask);
 		return False;
 	}
 
@@ -1491,9 +1492,8 @@ static bool share_conflict(struct share_mode_entry *entry,
 			    FILE_READ_DATA|
 			    FILE_EXECUTE|
 			    DELETE_ACCESS)) == 0) {
-		DEBUG(10,("share_conflict: No conflict due to "
-			  "access_mask = 0x%x\n",
-			  (unsigned int)access_mask ));
+		DBG_DEBUG("No conflict due to access_mask = 0x%"PRIx32"\n",
+			  access_mask);
 		return False;
 	}
 
