@@ -2238,17 +2238,16 @@ static bool pdb_samba_dsdb_get_trusteddom_pw(struct pdb_methods *m,
 
 	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
 	if (!(trust_direction_flags & LSA_TRUST_DIRECTION_OUTBOUND)) {
-		DEBUG(2, ("Trusted domain %s is is not an outbound trust.\n",
-			  domain));
+		DBG_WARNING("Trusted domain %s is not an outbound trust.\n",
+			    domain);
 		TALLOC_FREE(tmp_ctx);
 		return false;
 	}
 
 	trust_type = ldb_msg_find_attr_as_int(msg, "trustType", 0);
 	if (trust_type == LSA_TRUST_TYPE_MIT) {
-		DEBUG(1, ("Trusted domain %s is is not an AD trust "
-			  "(trustType == LSA_TRUST_TYPE_MIT).\n",
-			  domain));
+		DBG_WARNING("Trusted domain %s is not an AD trust "
+			    "(trustType == LSA_TRUST_TYPE_MIT).\n", domain);
 		TALLOC_FREE(tmp_ctx);
 		return false;
 	}
@@ -2393,17 +2392,16 @@ static NTSTATUS pdb_samba_dsdb_get_trusteddom_creds(struct pdb_methods *m,
 
 	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
 	if (!(trust_direction_flags & LSA_TRUST_DIRECTION_OUTBOUND)) {
-		DEBUG(2, ("Trusted domain %s is is not an outbound trust.\n",
-			  domain));
+		DBG_WARNING("Trusted domain %s is not an outbound trust.\n",
+			    domain);
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
 
 	trust_type = ldb_msg_find_attr_as_int(msg, "trustType", 0);
 	if (trust_type == LSA_TRUST_TYPE_MIT) {
-		DEBUG(1, ("Trusted domain %s is is not an AD trust "
-			  "(trustType == LSA_TRUST_TYPE_MIT).\n",
-			  domain));
+		DBG_WARNING("Trusted domain %s is not an AD trust "
+			    "(trustType == LSA_TRUST_TYPE_MIT).\n", domain);
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
@@ -2680,8 +2678,8 @@ static bool pdb_samba_dsdb_set_trusteddom_pw(struct pdb_methods *m,
 
 	trust_direction_flags = ldb_msg_find_attr_as_int(msg, "trustDirection", 0);
 	if (!(trust_direction_flags & LSA_TRUST_DIRECTION_OUTBOUND)) {
-		DEBUG(2, ("Trusted domain %s is is not an outbound trust, can't set a password.\n",
-			  domain));
+		DBG_WARNING("Trusted domain %s is not an outbound trust, can't set a password.\n",
+			    domain);
 		TALLOC_FREE(tmp_ctx);
 		ldb_transaction_cancel(state->ldb);
 		return false;
