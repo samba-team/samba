@@ -1177,8 +1177,7 @@ static void netlogon_creds_cli_auth_challenge_start(struct tevent_req *req)
 
 	TALLOC_FREE(state->creds);
 
-	/* We need to use a CSPRNG which reseeds for generating session keys. */
-	generate_secret_buffer(state->client_challenge.data,
+	generate_random_buffer(state->client_challenge.data,
 			       sizeof(state->client_challenge.data));
 
 	subreq = dcerpc_netr_ServerReqChallenge_send(state, state->ev,
