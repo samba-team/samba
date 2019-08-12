@@ -814,7 +814,8 @@ static NTSTATUS pdb_nds_update_login_attempts(struct pdb_methods *methods,
 				got_clear_text_pw = True;
 			}
 		} else {
-			generate_random_buffer((unsigned char *)clear_text_pw, 24);
+			/* This is a long term key */
+			generate_secret_buffer((unsigned char *)clear_text_pw, 24);
 			clear_text_pw[24] = '\0';
 			DEBUG(5,("pdb_nds_update_login_attempts: using random password %s\n", clear_text_pw));
 		}
