@@ -43,16 +43,9 @@ try_command_on_node $second $CTDB deletekey "$testdb" test1
 
 database_has_zero_records ()
 {
-	local n
-	for n in $notfirst ; do
-		local num_records
-		num_records=$(db_ctdb_cattdb_count_records "$n" "$testdb")
-		if [ "$num_records" != 0 ] ; then
-			return 1
-		fi
-	done
-
-	return 0
+	# shellcheck disable=SC2086
+	# $notfirst can be multi-word
+	check_cattdb_num_records "$testdb" 0 "$notfirst"
 }
 
 echo "Trigger a recovery"
