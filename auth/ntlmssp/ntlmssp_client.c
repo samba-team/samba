@@ -696,7 +696,7 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			.size = session_key.length,
 		};
 
-		generate_secret_buffer(client_session_key, sizeof(client_session_key));
+		generate_random_buffer(client_session_key, sizeof(client_session_key));
 
 		/* Encrypt the new session key with the old one */
 		encrypted_session_key = data_blob_talloc(ntlmssp_state,
