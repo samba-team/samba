@@ -1077,15 +1077,15 @@ static int vfswrap_renameat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_renameat);
 
-	SMB_ASSERT(srcfsp->fh->fd == AT_FDCWD);
-	SMB_ASSERT(dstfsp->fh->fd == AT_FDCWD);
-
 	if (smb_fname_src->stream_name || smb_fname_dst->stream_name) {
 		errno = ENOENT;
 		goto out;
 	}
 
-	result = rename(smb_fname_src->base_name, smb_fname_dst->base_name);
+	result = renameat(srcfsp->fh->fd,
+			smb_fname_src->base_name,
+			dstfsp->fh->fd,
+			smb_fname_dst->base_name);
 
  out:
 	END_PROFILE(syscall_renameat);
