@@ -81,7 +81,7 @@ MonitorInterval=20
       </para>
       <para>
 	For version checking, CTDB uses major and minor version.
-	For example, CTDB 4.6.1 and CTDB CTDB 4.6.2 are matching versions;
+	For example, CTDB 4.6.1 and CTDB 4.6.2 are matching versions;
 	CTDB 4.5.x and CTDB 4.6.y do not match.
       </para>
       <para>

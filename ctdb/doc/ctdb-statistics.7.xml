@@ -123,7 +123,7 @@ Statistics collected since  : (000 01:49:20) Fri Sep 12 11:43:12 2014
     <refsect2>
       <title>frozen</title>
       <para>
-	1 if the the databases are currently frozen, 0 otherwise.
+	1 if the databases are currently frozen, 0 otherwise.
       </para>
     </refsect2>
 

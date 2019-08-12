@@ -442,7 +442,7 @@
 	  </para>
 	  <para>
 	    To allow the node to take part in the cluster it must be
-	    manually continued with the the <command>ctdb
+	    manually continued with the <command>ctdb
 	    continue</command> command.
 	  </para>
 	  <para>

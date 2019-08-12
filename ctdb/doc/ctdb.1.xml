@@ -235,7 +235,7 @@
       </para>
 
       <para>
-	Note: If the the queried node is INACTIVE then the status
+	Note: If the queried node is INACTIVE then the status
 	might not be current.
       </para>
 
@@ -403,7 +403,7 @@ pnn:1 10.0.0.31        OK
       </para>
 
       <para>
-	Note: If the the queried node is INACTIVE then the status
+	Note: If the queried node is INACTIVE then the status
 	might not be current.
       </para>
     </refsect2>
