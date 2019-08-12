@@ -1463,18 +1463,18 @@ static bool share_conflict(struct share_mode_entry *entry,
 {
 	DBG_DEBUG("entry->access_mask = 0x%"PRIx32", "
 		  "entry->share_access = 0x%"PRIx32", "
-		  "entry->private_options = 0x%"PRIx32"\n",
+		  "entry->private_options = 0x%"PRIx32", "
+		  "access_mask = 0x%"PRIx32", "
+		  "share_access = 0x%"PRIx32"\n",
 		  entry->access_mask,
 		  entry->share_access,
-		  entry->private_options);
+		  entry->private_options,
+		  access_mask,
+		  share_access);
 
 	if (server_id_is_disconnected(&entry->pid)) {
 		return false;
 	}
-
-	DBG_DEBUG("access_mask = 0x%"PRIx32", share_access = 0x%"PRIx32"\n",
-		  access_mask,
-		  share_access);
 
 	if ((entry->access_mask & (FILE_WRITE_DATA|
 				   FILE_APPEND_DATA|
