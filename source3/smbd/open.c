@@ -2109,6 +2109,7 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 		SMB2_LEASE_HANDLE : SMB2_LEASE_WRITE;
 	bool got_handle_lease = false;
 	bool got_oplock = false;
+	bool have_other_lease = false;
 	uint32_t granted;
 	NTSTATUS status;
 
@@ -2154,6 +2155,24 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 				NULL, /* lease_version */
 				NULL); /* epoch */
 			SMB_ASSERT(NT_STATUS_IS_OK(status));
+		}
+
+		if (!got_handle_lease &&
+		    ((e_lease_type & SMB2_LEASE_HANDLE) != 0) &&
+		    !share_mode_stale_pid(d, i)) {
+			got_handle_lease = true;
+		}
+
+		if (!got_oplock &&
+		    (e->op_type != LEASE_OPLOCK) &&
+		    !share_mode_stale_pid(d, i)) {
+			got_oplock = true;
+		}
+
+		if (!have_other_lease &&
+		    !is_same_lease(fsp, e, lease) &&
+		    !share_mode_stale_pid(d, i)) {
+			have_other_lease = true;
 		}
 
 		break_to = e_lease_type & ~delay_mask;
@@ -2251,30 +2270,11 @@ grant:
 		granted &= ~SMB2_LEASE_READ;
 	}
 
-	for (i=0; i<d->num_share_modes; i++) {
-		struct share_mode_entry *e = &d->share_modes[i];
-
-		if ((granted & SMB2_LEASE_WRITE) &&
-		    !is_same_lease(fsp, e, lease) &&
-		    !share_mode_stale_pid(d, i)) {
-			/*
-			 * Can grant only one writer
-			 */
-			granted &= ~SMB2_LEASE_WRITE;
-		}
-
-		if (!got_handle_lease) {
-			uint32_t e_lease_type = get_lease_type(d, e);
-			if ((e_lease_type & SMB2_LEASE_HANDLE) &&
-			    !share_mode_stale_pid(d, i)) {
-				got_handle_lease = true;
-			}
-		}
-
-		if ((e->op_type != LEASE_OPLOCK) && !got_oplock &&
-		    !share_mode_stale_pid(d, i)) {
-			got_oplock = true;
-		}
+	if (have_other_lease) {
+		/*
+		 * Can grant only one writer
+		 */
+		granted &= ~SMB2_LEASE_WRITE;
 	}
 
 	if ((granted & SMB2_LEASE_READ) && !(granted & SMB2_LEASE_WRITE)) {
