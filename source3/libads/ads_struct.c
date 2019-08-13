@@ -132,7 +132,8 @@ char *ads_build_domain(const char *dn)
 */
 ADS_STRUCT *ads_init(const char *realm, 
 		     const char *workgroup,
-		     const char *ldap_server)
+		     const char *ldap_server,
+		     enum ads_sasl_state_e sasl_state)
 {
 	ADS_STRUCT *ads;
 	int wrap_flags;
@@ -150,6 +151,17 @@ ADS_STRUCT *ads_init(const char *realm,
 	wrap_flags = lp_client_ldap_sasl_wrapping();
 	if (wrap_flags == -1) {
 		wrap_flags = 0;
+	}
+
+	switch (sasl_state) {
+	case ADS_SASL_PLAIN:
+		break;
+	case ADS_SASL_SIGN:
+		wrap_flags |= ADS_AUTH_SASL_SIGN;
+		break;
+	case ADS_SASL_SEAL:
+		wrap_flags |= ADS_AUTH_SASL_SEAL;
+		break;
 	}
 
 	ads->auth.flags = wrap_flags;

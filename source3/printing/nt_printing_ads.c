@@ -227,7 +227,7 @@ WERROR nt_printer_guid_retrieve(TALLOC_CTX *mem_ctx, const char *printer,
 		return WERR_NOT_ENOUGH_MEMORY;
 	}
 
-	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
+	ads = ads_init(lp_realm(), lp_workgroup(), NULL, ADS_SASL_PLAIN);
 	if (ads == NULL) {
 		result = WERR_RPC_S_SERVER_UNAVAILABLE;
 		goto out;
@@ -577,7 +577,7 @@ WERROR nt_printer_publish(TALLOC_CTX *mem_ctx,
 
 	TALLOC_FREE(sinfo2);
 
-	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
+	ads = ads_init(lp_realm(), lp_workgroup(), NULL, ADS_SASL_PLAIN);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
 		win_rc = WERR_RPC_S_SERVER_UNAVAILABLE;
@@ -633,7 +633,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 	tmp_ctx = talloc_new(NULL);
 	if (!tmp_ctx) return WERR_NOT_ENOUGH_MEMORY;
 
-	ads = ads_init(lp_realm(), lp_workgroup(), NULL);
+	ads = ads_init(lp_realm(), lp_workgroup(), NULL, ADS_SASL_PLAIN);
 	if (!ads) {
 		DEBUG(3, ("ads_init() failed\n"));
 		return WERR_RPC_S_SERVER_UNAVAILABLE;

@@ -1414,7 +1414,10 @@ static bool dcip_check_name(TALLOC_CTX *mem_ctx,
 
 		print_sockaddr(addr, sizeof(addr), pss);
 
-		ads = ads_init(domain->alt_name, domain->name, addr);
+		ads = ads_init(domain->alt_name,
+			       domain->name,
+			       addr,
+			       ADS_SASL_PLAIN);
 		ads->auth.flags |= ADS_AUTH_NO_BIND;
 		ads->config.flags |= request_flags;
 		ads->server.no_fallback = true;

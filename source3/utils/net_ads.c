@@ -620,7 +620,10 @@ retry_connect:
 		realm = assume_own_realm(c);
 	}
 
-	ads = ads_init(realm, c->opt_target_workgroup, c->opt_host);
+	ads = ads_init(realm,
+			c->opt_target_workgroup,
+			c->opt_host,
+			ADS_SASL_PLAIN);
 
 	if (!c->opt_user_name) {
 		c->opt_user_name = "administrator";
@@ -729,7 +732,8 @@ static int net_ads_check_int(const char *realm, const char *workgroup, const cha
 	ADS_STRUCT *ads;
 	ADS_STATUS status;
 
-	if ( (ads = ads_init( realm, workgroup, host )) == NULL ) {
+	ads = ads_init(realm, workgroup, host, ADS_SASL_PLAIN);
+	if (ads == NULL ) {
 		return -1;
 	}
 
@@ -1764,7 +1768,7 @@ static void _net_ads_join_dns_updates(struct net_context *c, TALLOC_CTX *ctx, st
 	 * kinit with the machine password to do dns update.
 	 */
 
-	ads_dns = ads_init(lp_realm(), NULL, r->in.dc_name);
+	ads_dns = ads_init(lp_realm(), NULL, r->in.dc_name, ADS_SASL_PLAIN);
 
 	if (ads_dns == NULL) {
 		d_fprintf(stderr, _("DNS update failed: out of memory!\n"));
@@ -2654,7 +2658,8 @@ static int net_ads_password(struct net_context *c, int argc, const char **argv)
 
 	/* use the realm so we can eventually change passwords for users
 	in realms other than default */
-	if (!(ads = ads_init(realm, c->opt_workgroup, c->opt_host))) {
+	ads = ads_init(realm, c->opt_workgroup, c->opt_host, ADS_SASL_PLAIN);
+	if (ads == NULL) {
 		return -1;
 	}
 

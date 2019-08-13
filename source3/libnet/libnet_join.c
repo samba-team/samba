@@ -140,7 +140,8 @@ static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
 
 	my_ads = ads_init(dns_domain_name,
 			  netbios_domain_name,
-			  dc_name);
+			  dc_name,
+			  ADS_SASL_SEAL);
 	if (!my_ads) {
 		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 	}

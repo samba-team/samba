@@ -69,7 +69,7 @@ static bool ads_dc_name(const char *domain,
 
 	/* Try this 3 times then give up. */
 	for( i =0 ; i < 3; i++) {
-		ads = ads_init(realm, domain, NULL);
+		ads = ads_init(realm, domain, NULL, ADS_SASL_PLAIN);
 		if (!ads) {
 			TALLOC_FREE(sitename);
 			return False;
