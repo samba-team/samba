@@ -318,6 +318,7 @@ void _mdssvc_close(struct pipes_struct *p, struct mdssvc_close *r)
 	}
 
 	DBG_DEBUG("Close mdssvc handle for path: %s\n", mds_ctx->spath);
+	TALLOC_FREE(mds_ctx);
 
 	*r->out.out_handle = r->in.in_handle;
 	close_policy_hnd(p, &r->in.in_handle);
