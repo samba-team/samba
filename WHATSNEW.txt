@@ -15,16 +15,16 @@ UPGRADING
 AD Database compatibility
 -------------------------
 
-Samba v4.11 has changed how the AD database is stored on disk. AD users should
-not really be affected by this change when upgrading to v4.11. However, AD
-users should be extremely careful if they need to downgrade from Samba v4.11 to
+Samba 4.11 has changed how the AD database is stored on disk. AD users should
+not really be affected by this change when upgrading to 4.11. However, AD
+users should be extremely careful if they need to downgrade from Samba 4.11 to
 an older release.
 
-Samba v4.11 maintains database compatibility with older Samba releases. The
-database will automatically get rewritten in the new v4.11 format when you
+Samba 4.11 maintains database compatibility with older Samba releases. The
+database will automatically get rewritten in the new 4.11 format when you
 first start the upgraded samba executable.
 
-However, when downgrading from v4.11 you will need to manually downgrade the AD
+However, when downgrading from 4.11 you will need to manually downgrade the AD
 database yourself. Note that you will need to do this step before you install
 the downgraded Samba packages. For more details, see:
 https://wiki.samba.org/index.php/Downgrading_an_Active_Directory_DC
@@ -56,7 +56,7 @@ and LANMAN1 for client and server, as well as CORE and COREPLUS on
 the client.
 
 Note that most commandline tools e.g. smbclient, smbcacls and others
-also support the --option argument to overwrite smb.conf options,
+also support the '--option' argument to overwrite smb.conf options,
 e.g. --option='client min protocol=NT1' might be useful.
 
 As Microsoft no longer installs SMB1 support in recent releases
@@ -74,7 +74,7 @@ NEW FEATURES/CHANGES
 Default samba process model
 ---------------------------
 
-The default for the --model argument passed to the samba executable has changed
+The default for the '--model' argument passed to the samba executable has changed
 from 'standard' to 'prefork'. This means a difference in the number of samba
 child processes that are created to handle client connections. The previous
 default would create a separate process for every LDAP or NETLOGON client
@@ -102,26 +102,27 @@ where:
    <command> is the name of the command makinmg the winbind request i.e. wbinfo
    <pid>     is the process id of the requesting process.
 
-The version of the JSON Authentication messages has been changed to 1.2 from 1.1
+The version of the JSON Authentication messages has been changed from 1.1 to
+1.2.
 
 LDAP referrals
 --------------
 
 The scheme of returned LDAP referrals now reflects the scheme of the original
 request, i.e. referrals received via ldap are prefixed with "ldap://"
-and those over ldaps are prefixed with "ldaps://"
+and those over ldaps are prefixed with "ldaps://".
 
-Previously all referrals were prefixed with "ldap://"
+Previously all referrals were prefixed with "ldap://".
 
 Bind9 logging
 -------------
 
-It is now possible to log the duration of DNS operations performed by Bind9
-This should aid future diagnosis of performance issues, and could be used to
+It is now possible to log the duration of DNS operations performed by Bind9.
+This should aid future diagnosis of performance issues and could be used to
 monitor DNS performance. The logging is enabled by setting log level to
-"dns:10" in smb.conf
+"dns:10" in smb.conf.
 
-The logs are currently Human readable text only, i.e. no JSON formatted output.
+The logs are currently human readable text only, i.e. no JSON formatted output.
 
 Log lines are of the form:
 
@@ -210,7 +211,7 @@ multiple times into memory.
 Setting lmdb map size
 ---------------------
 
-It is now possible to set the lmdb map size (The maximum permitted
+It is now possible to set the lmdb map size (the maximum permitted
 size for the database).  "samba-tool" now accepts the
 "--backend-store-size" i.e. --backend-store-size=4Gb.  If not
 specified it defaults to 8Gb.
@@ -302,13 +303,11 @@ Samba still supported a Python WSGI web server (which could still be turned on
 from the 'server services' smb.conf parameter). This service was unused and has
 now been removed from Samba.
 
-
 samba-tool join subdomain
 -------------------------
 
 The subdomain role has been removed from the join command.  This option did
 not work and has no tests.
-
 
 Python2 support
 ---------------
