@@ -1207,6 +1207,45 @@ static bool do_break_lease_to_none(struct share_mode_lock *lck,
 	return false;
 }
 
+static bool do_break_oplock_to_none(struct share_mode_entry *e,
+				    bool *modified,
+				    void *private_data)
+{
+	struct break_to_none_state *state = private_data;
+
+	if (e->op_type == LEASE_OPLOCK) {
+		/*
+		 * Already being taken care of
+		 */
+		return false;
+	}
+
+	/*
+	 * As there could have been multiple writes waiting at the
+	 * lock_share_entry gate we may not be the first to
+	 * enter. Hence the state of the op_types in the share mode
+	 * entries may be partly NO_OPLOCK and partly LEVEL_II
+	 * oplock. It will do no harm to re-send break messages to
+	 * those smbd's that are still waiting their turn to remove
+	 * their LEVEL_II state, and also no harm to ignore existing
+	 * NO_OPLOCK states. JRA.
+	 */
+
+	DBG_DEBUG("e->op_type == %d\n", e->op_type);
+
+	if (e->op_type == NO_OPLOCK) {
+		return false;
+	}
+
+	/* Paranoia .... */
+	SMB_ASSERT(!EXCLUSIVE_OPLOCK_TYPE(e->op_type));
+
+	send_break_to_none(state->sconn->msg_ctx, &state->id, e);
+	state->num_broken += 1;
+
+	return false;
+}
+
 /****************************************************************************
  This function is called on any file modification or lock request. If a file
  is level 2 oplocked then it must tell all other level 2 holders to break to
@@ -1222,7 +1261,6 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 	struct share_mode_lock *lck = NULL;
 	struct share_mode_data *d = NULL;
 	bool ok, has_read_lease;
-	uint32_t i;
 
 	/*
 	 * If this file is level II oplocked then we need
@@ -1273,48 +1311,9 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 		DBG_WARNING("share_mode_forall_leases failed\n");
 	}
 
-	for(i = 0; i < d->num_share_modes; i++) {
-		struct share_mode_entry *e = &d->share_modes[i];
-
-		if (!is_valid_share_mode_entry(e)) {
-			continue;
-		}
-		if (e->op_type == LEASE_OPLOCK) {
-			/*
-			 * Took care of those in the loop above
-			 */
-			continue;
-		}
-
-		/*
-		 * As there could have been multiple writes waiting at the
-		 * lock_share_entry gate we may not be the first to
-		 * enter. Hence the state of the op_types in the share mode
-		 * entries may be partly NO_OPLOCK and partly LEVEL_II
-		 * oplock. It will do no harm to re-send break messages to
-		 * those smbd's that are still waiting their turn to remove
-		 * their LEVEL_II state, and also no harm to ignore existing
-		 * NO_OPLOCK states. JRA.
-		 */
-
-		DEBUG(10, ("%s: share_entry[%i]->op_type == %d\n", __func__,
-			   i, e->op_type ));
-
-		if (e->op_type == NO_OPLOCK) {
-			continue;
-		}
-
-		/* Paranoia .... */
-		if (EXCLUSIVE_OPLOCK_TYPE(e->op_type)) {
-			DEBUG(0,("%s: PANIC. "
-				 "share mode entry %d is an exclusive "
-				 "oplock !\n", __func__, i ));
-			TALLOC_FREE(lck);
-			abort();
-		}
-
-		send_break_to_none(state.sconn->msg_ctx, &state.id, e);
-		state.num_broken += 1;
+	ok = share_mode_forall_entries(lck, do_break_oplock_to_none, &state);
+	if (!ok) {
+		DBG_WARNING("share_mode_forall_entries failed\n");
 	}
 
 	if (state.num_broken == 0) {
