@@ -20,6 +20,7 @@ if ! $CTDB_TESTS_ARE_INSTALLED ; then
 	CTDB_SCRIPTS_HELPER_BINDIR="${top_dir}/bin"
 	CTDB_SCRIPTS_DATA_DIR="${ctdb_dir}/config"
 	CTDB_SCRIPTS_TESTS_LIBEXEC_DIR="${top_dir}/bin"
+	CTDB_SCRIPTS_TESTS_BIN_DIR="$CTDB_TEST_DIR"
 else
 	# Installed
 	CTDB_SCRIPTS_BASE="/usr/local/etc/ctdb"
@@ -30,6 +31,7 @@ else
 	CTDB_SCRIPTS_HELPER_BINDIR="/usr/local/libexec/ctdb"
 	CTDB_SCRIPTS_DATA_DIR="/usr/local/share/ctdb"
 	CTDB_SCRIPTS_TESTS_LIBEXEC_DIR="/usr/local/libexec/ctdb/tests"
+	CTDB_SCRIPTS_TESTS_BIN_DIR="/usr/local/bin"
 fi
 
 export CTDB_SCRIPTS_BASE \
@@ -40,4 +42,5 @@ export CTDB_SCRIPTS_BASE \
        CTDB_SCRIPTS_TOOLS_HELPER_DIR \
        CTDB_SCRIPTS_HELPER_BINDIR \
        CTDB_SCRIPTS_DATA_DIR \
-       CTDB_SCRIPTS_TESTS_LIBEXEC_DIR
+       CTDB_SCRIPTS_TESTS_LIBEXEC_DIR \
+       CTDB_SCRIPTS_TESTS_BIN_DIR
