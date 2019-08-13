@@ -218,9 +218,9 @@ static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
 
 	fn(&rec, private_data);
 
-	talloc_free(buf);
-
 	tdb_chainunlock(ctx->wtdb->tdb, key);
+
+	talloc_free(buf);
 
 	return NT_STATUS_OK;
 }
