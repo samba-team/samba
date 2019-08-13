@@ -2092,11 +2092,12 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 				   uint32_t etype_list)
 {
 	ADS_STATUS ret;
-	char *samAccountName, *controlstr;
-	TALLOC_CTX *ctx;
+	char *samAccountName = NULL;
+	char *controlstr = NULL;
+	TALLOC_CTX *ctx = NULL;
 	ADS_MODLIST mods;
 	char *machine_escaped = NULL;
-	char *new_dn;
+	char *new_dn = NULL;
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", "computer", NULL};
 	LDAPMessage *res = NULL;
@@ -2110,13 +2111,14 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 		return ret;
 	}
 
-	if (!(ctx = talloc_init("ads_add_machine_acct")))
+	ctx = talloc_init("ads_add_machine_acct");
+	if (ctx == NULL) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
-
-	ret = ADS_ERROR(LDAP_NO_MEMORY);
+	}
 
 	machine_escaped = escape_rdn_val_string_alloc(machine_name);
-	if (!machine_escaped) {
+	if (machine_escaped == NULL) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto done;
 	}
 
@@ -2131,17 +2133,26 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 	ads_msgfree(ads, res);
 
 	new_dn = talloc_asprintf(ctx, "cn=%s,%s", machine_escaped, org_unit);
+	if (new_dn == NULL) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
+	}
+
 	samAccountName = talloc_asprintf(ctx, "%s$", machine_name);
-
-	if ( !new_dn || !samAccountName ) {
+	if (samAccountName == NULL) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto done;
 	}
 
-	if (!(controlstr = talloc_asprintf(ctx, "%u", acct_control))) {
+	controlstr = talloc_asprintf(ctx, "%u", acct_control);
+	if (controlstr == NULL) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto done;
 	}
 
-	if (!(mods = ads_init_mods(ctx))) {
+	mods = ads_init_mods(ctx);
+	if (mods == NULL) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto done;
 	}
 
@@ -2155,6 +2166,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 
 		etype_list_str = talloc_asprintf(ctx, "%d", (int)etype_list);
 		if (etype_list_str == NULL) {
+			ret = ADS_ERROR(LDAP_NO_MEMORY);
 			goto done;
 		}
 		ads_mod_str(ctx, &mods, "msDS-SupportedEncryptionTypes",
