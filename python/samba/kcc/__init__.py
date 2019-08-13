@@ -499,6 +499,11 @@ class KCC(object):
                 local_connections.append((cn_conn, s_dnstr,
                                           packed_guid, removable))
 
+        # Avoid "ValueError: r cannot be bigger than the iterable" in
+        # for a, b in itertools.permutations(local_connections, 2):
+        if (len(local_connections) < 2):
+            return
+
         for a, b in itertools.permutations(local_connections, 2):
             cn_conn, s_dnstr, packed_guid, removable = a
             cn_conn2, s_dnstr2, packed_guid2, removable2 = b
