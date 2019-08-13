@@ -76,6 +76,9 @@ nfs:udflt:nosys = 1
 confdfqp:df:block size = 4096:disk free = 10:disk size = 80
 confdfqp:u$uid1:block size = 4096:hard limit = 40:soft limit = 40:cur blocks = 36
 confdfqp:u$uid2:block size = 4096:hard limit = 41:soft limit = 41:cur blocks = 36
+sgid:stat:sgid = 98765
+sgid:u$uid:block size = 4096:hard limit = 0:soft limit = 0:cur blocks = 80
+sgid:g98765:block size = 4096:hard limit = 50:soft limit = 50:cur blocks = 40
 ABC
 }
 
@@ -226,6 +229,12 @@ test_smbclient_dfree "Test quota->dfree inode soft limit" dfq "subdir1" "islimit
 test_smbclient_dfree "Test quota->dfree inode hard limit" dfq "subdir1" "ihlimit subdir1" "148 1024. 0" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 test_smbclient_dfree "Test quota->dfree err try group" dfq "subdir1" "trygrp1 subdir1" "240 1024. 20" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 test_smbclient_dfree "Test quota->dfree no-quota try group" dfq "subdir1" "trygrp2 subdir1" "240 1024. 16" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+
+# sgid on directory
+test_smbclient_dfree "Test quota on sgid directory" dfq "subdir1" \
+		     "sgid subdir1" "200 1024. 40" -U$USERNAME%$PASSWORD \
+		     --option=clientmaxprotocol=SMB3 \
+	|| failed=`expr $failed + 1`
 
 #block size different in quota and df systems
 test_smbclient_dfree "Test quota->dfree different block size" dfq "subdir1" "blksize subdir1" "307200 1024. 307200" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
