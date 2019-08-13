@@ -447,11 +447,26 @@ try_group_quota:
 		return false;
 	}
 
-	id.gid = getegid();
-
 	ZERO_STRUCT(D);
-	r = SMB_VFS_GET_QUOTA(conn, fname, SMB_GROUP_QUOTA_TYPE, id,
-			      &D);
+
+	/*
+	 * If new files created under this folder get this folder's
+	 * GID, then available space is governed by the quota of the
+	 * folder's GID, not the primary group of the creating user.
+	 */
+	if (VALID_STAT(fname->st) &&
+	    S_ISDIR(fname->st.st_ex_mode) &&
+	    fname->st.st_ex_mode & S_ISGID) {
+		id.gid = fname->st.st_ex_gid;
+		become_root();
+		r = SMB_VFS_GET_QUOTA(conn, fname, SMB_GROUP_QUOTA_TYPE, id,
+				      &D);
+		unbecome_root();
+	} else {
+		id.gid = getegid();
+		r = SMB_VFS_GET_QUOTA(conn, fname, SMB_GROUP_QUOTA_TYPE, id,
+				      &D);
+	}
 
 	if (r == -1) {
 		return False;
