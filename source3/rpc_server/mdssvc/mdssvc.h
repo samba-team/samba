@@ -84,7 +84,6 @@ struct sl_query {
 	struct timeval   last_used;	 /* Time of last result fetch */
 	struct timeval   expire_time;	 /* Query expiration time */
 	struct tevent_timer *te;	 /* query timeout */
-	int              snum;           /* share snum  */
 	uint64_t         ctx1;           /* client context 1 */
 	uint64_t         ctx2;           /* client context 2 */
 	sl_array_t      *reqinfo;        /* array with requested metadata */
