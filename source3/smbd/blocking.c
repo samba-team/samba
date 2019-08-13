@@ -101,6 +101,7 @@ struct smbd_smb1_do_locks_state {
 	struct tevent_context *ev;
 	struct smb_request *smbreq;
 	struct files_struct *fsp;
+	uint32_t timeout;
 	struct timeval endtime;
 	bool large_offset;	/* required for correct cancel */
 	enum brl_flavour lock_flav;
@@ -119,7 +120,7 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	struct tevent_context *ev,
 	struct smb_request **smbreq, /* talloc_move()d into our state */
 	struct files_struct *fsp,
-	uint32_t timeout,
+	uint32_t lock_timeout,
 	bool large_offset,
 	enum brl_flavour lock_flav,
 	uint16_t num_locks,
@@ -142,6 +143,7 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	state->ev = ev;
 	state->smbreq = talloc_move(state, smbreq);
 	state->fsp = fsp;
+	state->timeout = lock_timeout;
 	state->large_offset = large_offset;
 	state->lock_flav = lock_flav;
 	state->num_locks = num_locks;
@@ -155,13 +157,13 @@ struct tevent_req *smbd_smb1_do_locks_send(
 		return tevent_req_post(req, ev);
 	}
 
-	if ((timeout != 0) && (timeout != UINT32_MAX)) {
+	if ((state->timeout != 0) && (state->timeout != UINT32_MAX)) {
 		/*
 		 * Windows internal resolution for blocking locks
 		 * seems to be about 200ms... Don't wait for less than
 		 * that. JRA.
 		 */
-		timeout = MAX(timeout, lp_lock_spin_time());
+		state->timeout = MAX(state->timeout, lp_lock_spin_time());
 	}
 
 	lck = get_existing_share_mode_lock(state, state->fsp->file_id);
@@ -187,7 +189,7 @@ struct tevent_req *smbd_smb1_do_locks_send(
 		goto done;
 	}
 
-	if (timeout == 0) {
+	if (state->timeout == 0) {
 		struct smbd_lock_element *blocker = &locks[state->blocker];
 
 		if ((blocker->offset >= 0xEF000000) &&
@@ -196,7 +198,7 @@ struct tevent_req *smbd_smb1_do_locks_send(
 			 * This must be an optimization of an ancient
 			 * application bug...
 			 */
-			timeout = lp_lock_spin_time();
+			state->timeout = lp_lock_spin_time();
 		}
 
 		if ((fsp->lock_failure_seen) &&
@@ -208,15 +210,15 @@ struct tevent_req *smbd_smb1_do_locks_send(
 			 */
 			DBG_DEBUG("Delaying lock request due to previous "
 				  "failure\n");
-			timeout = lp_lock_spin_time();
+			state->timeout = lp_lock_spin_time();
 		}
 	}
 
 	DBG_DEBUG("timeout=%"PRIu32", blocking_smblctx=%"PRIu64"\n",
-		  timeout,
+		  state->timeout,
 		  blocking_smblctx);
 
-	if (timeout == 0) {
+	if (state->timeout == 0) {
 		tevent_req_nterror(req, status);
 		goto done;
 	}
@@ -229,7 +231,7 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	TALLOC_FREE(lck);
 	tevent_req_set_callback(subreq, smbd_smb1_do_locks_retry, req);
 
-	state->endtime = timeval_current_ofs_msec(timeout);
+	state->endtime = timeval_current_ofs_msec(state->timeout);
 	endtime = state->endtime;
 
 	if (blocking_smblctx == UINT64_MAX) {
