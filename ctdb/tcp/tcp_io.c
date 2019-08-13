@@ -37,8 +37,9 @@
  */
 void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 {
+	struct ctdb_node *node = talloc_get_type_abort(args, struct ctdb_node);
 	struct ctdb_tcp_node *tnode = talloc_get_type_abort(
-		args, struct ctdb_tcp_node);
+		node->private_data, struct ctdb_tcp_node);
 	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
 
 	if (data == NULL) {
@@ -77,6 +78,8 @@ failed:
 	TALLOC_FREE(tnode->in_queue);
 	close(tnode->in_fd);
 	tnode->in_fd = -1;
+	node->ctdb->upcalls->node_dead(node);
+
 	TALLOC_FREE(data);
 }
 
