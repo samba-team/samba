@@ -757,8 +757,8 @@ static void smbsock_any_connect_connected(struct tevent_req *subreq)
 	struct smbsock_any_connect_state *state = tevent_req_data(
 		req, struct smbsock_any_connect_state);
 	NTSTATUS status;
-	int fd;
-	uint16_t chosen_port;
+	int fd = 0;
+	uint16_t chosen_port = 0;
 	size_t i;
 	size_t chosen_index = 0;
 
