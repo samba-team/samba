@@ -189,6 +189,7 @@ static void smbd_smb2_request_lock_done(struct tevent_req *subreq)
 	}
 }
 
+static void smbd_smb2_lock_try(struct tevent_req *req);
 static void smbd_smb2_lock_retry(struct tevent_req *subreq);
 static bool smbd_smb2_lock_cancel(struct tevent_req *req);
 
@@ -410,10 +411,8 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 	return tevent_req_post(req, ev);
 }
 
-static void smbd_smb2_lock_retry(struct tevent_req *subreq)
+static void smbd_smb2_lock_try(struct tevent_req *req)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
 	struct smbd_smb2_lock_state *state = tevent_req_data(
 		req, struct smbd_smb2_lock_state);
 	struct share_mode_lock *lck = NULL;
@@ -421,22 +420,7 @@ static void smbd_smb2_lock_retry(struct tevent_req *subreq)
 	struct server_id blocking_pid = { 0 };
 	uint64_t blocking_smblctx;
 	NTSTATUS status;
-	bool ok;
-
-	/*
-	 * Make sure we run as the user again
-	 */
-	ok = change_to_user_by_fsp(state->fsp);
-	if (!ok) {
-		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-		return;
-	}
-
-	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
-	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
+	struct tevent_req *subreq = NULL;
 
 	lck = get_existing_share_mode_lock(
 		talloc_tos(), state->fsp->file_id);
@@ -465,6 +449,33 @@ static void smbd_smb2_lock_retry(struct tevent_req *subreq)
 		return;
 	}
 	tevent_req_set_callback(subreq, smbd_smb2_lock_retry, req);
+}
+
+static void smbd_smb2_lock_retry(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbd_smb2_lock_state *state = tevent_req_data(
+		req, struct smbd_smb2_lock_state);
+	NTSTATUS status;
+	bool ok;
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_by_fsp(state->fsp);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	smbd_smb2_lock_try(req);
 }
 
 static NTSTATUS smbd_smb2_lock_recv(struct tevent_req *req)
