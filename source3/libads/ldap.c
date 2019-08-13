@@ -1596,7 +1596,7 @@ ADS_STATUS ads_gen_add(ADS_STRUCT *ads, const char *new_dn, ADS_MODLIST mods)
 	/* make sure the end of the list is NULL */
 	mods[i] = NULL;
 
-	ret = ldap_add_s(ads->ldap.ld, utf8_dn, (LDAPMod**)mods);
+	ret = ldap_add_ext_s(ads->ldap.ld, utf8_dn, (LDAPMod**)mods, NULL, NULL);
 	ads_print_error(ret, ads->ldap.ld);
 	TALLOC_FREE(utf8_dn);
 	return ADS_ERROR(ret);
