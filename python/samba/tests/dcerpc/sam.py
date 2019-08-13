@@ -726,29 +726,7 @@ class SamrTests(RpcInterfaceTestCase):
         self.assertEquals(len(expected01), num_entries)
         check_results(expected01, actual.entries)
 
-        #
-        # Check that deleted results are handled correctly.
-        # Obtain a new resume_handle and delete entries from the DB.
-        # We will not see the deleted entries in the result set, as details
-        # need to be read from disk. Only the object GUID's are cached.
-        #
-        actual = []
-        max_size = calc_max_size(1)
-        (resume_handle, a, num_entries) = self.conn.EnumDomainUsers(
-            self.domain_handle, 0, 0, max_size)
-        self.delete_dns(extra_dns)
-        while resume_handle and num_entries:
-            self.assertEquals(1, num_entries)
-            actual.append(a.entries[0])
-            (resume_handle, a, num_entries) = self.conn.EnumDomainUsers(
-                self.domain_handle, resume_handle, 0, max_size)
-        if num_entries:
-            actual.append(a.entries[0])
-
-        self.assertEquals(len(expected), len(actual))
-        check_results(expected, actual)
-
-        self.delete_dns(dns)
+        self.delete_dns(dns + extra_dns)
 
     def test_DomGeneralInformation_num_users(self):
         info = self.conn.QueryDomainInfo(

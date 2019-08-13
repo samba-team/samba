@@ -72,6 +72,7 @@ struct samr_domain_state {
 	bool builtin;
 	struct loadparm_context *lp_ctx;
 	struct samr_guid_cache guid_caches[SAMR_LAST_CACHE];
+	struct samr_SamEntry *domain_users_cached;
 };
 
 /*
