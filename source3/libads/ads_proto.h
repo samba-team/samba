@@ -114,8 +114,10 @@ ADS_STATUS ads_add_service_principal_names(ADS_STRUCT *ads, const char *machine_
                                           const char **spns);
 ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 				   const char *machine_name,
+				   const char *machine_password,
 				   const char *org_unit,
-				   uint32_t etype_list);
+				   uint32_t etype_list,
+				   const char *dns_domain_name);
 ADS_STATUS ads_move_machine_acct(ADS_STRUCT *ads, const char *machine_name,
                                  const char *org_unit, bool *moved);
 int ads_count_replies(ADS_STRUCT *ads, void *res);

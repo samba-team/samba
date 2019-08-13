@@ -338,10 +338,22 @@ static ADS_STATUS libnet_join_precreate_machine_acct(TALLOC_CTX *mem_ctx,
 	/* Attempt to create the machine account and bail if this fails.
 	   Assume that the admin wants exactly what they requested */
 
+	if (r->in.machine_password == NULL) {
+		r->in.machine_password =
+			trust_pw_new_value(mem_ctx,
+					   r->in.secure_channel_type,
+					   SEC_ADS);
+		if (r->in.machine_password == NULL) {
+			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		}
+	}
+
 	status = ads_create_machine_acct(r->in.ads,
 					 r->in.machine_name,
+					 r->in.machine_password,
 					 r->in.account_ou,
-					 r->in.desired_encryption_types);
+					 r->in.desired_encryption_types,
+					 r->out.dns_domain_name);
 
 	if (ADS_ERR_OK(status)) {
 		DEBUG(1,("machine account creation created\n"));
@@ -2668,12 +2680,11 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		if (ADS_ERR_OK(ads_status)) {
 
 			/*
-			 * LDAP object create succeeded, now go to the rpc
-			 * password set routines
+			 * LDAP object creation succeeded.
 			 */
-
 			r->in.join_flags &= ~WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
-			goto rpc_join;
+
+			return WERR_OK;
 		}
 
 		if (initial_account_ou != NULL) {
@@ -2687,8 +2698,6 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		DBG_INFO("Failed to pre-create account in OU %s: %s\n",
 			 r->in.account_ou, ads_errstr(ads_status));
 	}
- rpc_join:
-
 #endif /* HAVE_ADS */
 
 	if ((r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_UNSECURE) &&
