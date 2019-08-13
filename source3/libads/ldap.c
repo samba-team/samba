@@ -1516,7 +1516,6 @@ ADS_STATUS ads_mod_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 			       name, (const void **) vals);
 }
 
-#if 0
 /**
  * Add a single ber-encoded value to a mod list
  * @param ctx An initialized TALLOC_CTX
@@ -1537,7 +1536,6 @@ static ADS_STATUS ads_mod_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE|LDAP_MOD_BVALUES,
 			       name, (const void **) values);
 }
-#endif
 
 static void ads_print_error(int ret, LDAP *ld)
 {
@@ -2111,8 +2109,10 @@ ADS_STATUS ads_add_service_principal_names(ADS_STRUCT *ads,
 
 ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 				   const char *machine_name,
+				   const char *machine_password,
 				   const char *org_unit,
-				   uint32_t etype_list)
+				   uint32_t etype_list,
+				   const char *dns_domain_name)
 {
 	ADS_STATUS ret;
 	char *samAccountName = NULL;
@@ -2120,13 +2120,23 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 	TALLOC_CTX *ctx = NULL;
 	ADS_MODLIST mods;
 	char *machine_escaped = NULL;
+	char *dns_hostname = NULL;
 	char *new_dn = NULL;
-	const char *objectClass[] = {"top", "person", "organizationalPerson",
-				     "user", "computer", NULL};
+	char *utf8_pw = NULL;
+	size_t utf8_pw_len = 0;
+	char *utf16_pw = NULL;
+	size_t utf16_pw_len = 0;
+	struct berval machine_pw_val;
+	bool ok;
+	const char **spn_array = NULL;
+	size_t num_spns = 0;
+	const char *spn_prefix[] = {
+		"HOST",
+		"RestrictedKrbHost",
+	};
+	size_t i;
 	LDAPMessage *res = NULL;
-	uint32_t acct_control = ( UF_WORKSTATION_TRUST_ACCOUNT |\
-	                        UF_DONT_EXPIRE_PASSWD |\
-			        UF_ACCOUNTDISABLE );
+	uint32_t acct_control = UF_WORKSTATION_TRUST_ACCOUNT;
 
 	ctx = talloc_init("ads_add_machine_acct");
 	if (ctx == NULL) {
@@ -2139,10 +2149,9 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 		goto done;
 	}
 
+	/* Check if the machine account already exists. */
 	ret = ads_find_machine_acct(ads, &res, machine_escaped);
 	if (ADS_ERR_OK(ret)) {
-		DBG_DEBUG("Host account for %s already exists.\n",
-				machine_escaped);
 		ret = ADS_ERROR_LDAP(LDAP_ALREADY_EXISTS);
 		ads_msgfree(ads, res);
 		goto done;
@@ -2155,11 +2164,71 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 		goto done;
 	}
 
+	/* Create machine account */
+
 	samAccountName = talloc_asprintf(ctx, "%s$", machine_name);
 	if (samAccountName == NULL) {
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto done;
 	}
+
+	dns_hostname = talloc_asprintf(ctx,
+				       "%s.%s",
+				       machine_name,
+				       dns_domain_name);
+	if (dns_hostname == NULL) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	/* Add dns_hostname SPNs */
+	for (i = 0; i < ARRAY_SIZE(spn_prefix); i++) {
+		char *spn = talloc_asprintf(ctx,
+					    "%s/%s",
+					    spn_prefix[i],
+					    dns_hostname);
+		if (spn == NULL) {
+			ret = ADS_ERROR(LDAP_NO_MEMORY);
+			goto done;
+		}
+
+		ok = add_string_to_array(spn_array,
+					 spn,
+					 &spn_array,
+					 &num_spns);
+		if (!ok) {
+			ret = ADS_ERROR(LDAP_NO_MEMORY);
+			goto done;
+		}
+	}
+
+	/* Add machine_name SPNs */
+	for (i = 0; i < ARRAY_SIZE(spn_prefix); i++) {
+		char *spn = talloc_asprintf(ctx,
+					    "%s/%s",
+					    spn_prefix[i],
+					    machine_name);
+		if (spn == NULL) {
+			ret = ADS_ERROR(LDAP_NO_MEMORY);
+			goto done;
+		}
+
+		ok = add_string_to_array(spn_array,
+					 spn,
+					 &spn_array,
+					 &num_spns);
+		if (!ok) {
+			ret = ADS_ERROR(LDAP_NO_MEMORY);
+			goto done;
+		}
+	}
+
+	/* Make sure to NULL terminate the array */
+	spn_array = talloc_realloc(ctx, spn_array, const char *, num_spns + 1);
+	if (spn_array == NULL) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+	spn_array[num_spns] = NULL;
 
 	controlstr = talloc_asprintf(ctx, "%u", acct_control);
 	if (controlstr == NULL) {
@@ -2167,16 +2236,39 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 		goto done;
 	}
 
+	utf8_pw = talloc_asprintf(ctx, "\"%s\"", machine_password);
+	if (utf8_pw == NULL) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
+	}
+	utf8_pw_len = strlen(utf8_pw);
+
+	ok = convert_string_talloc(ctx,
+				   CH_UTF8, CH_UTF16MUNGED,
+				   utf8_pw, utf8_pw_len,
+				   (void *)&utf16_pw, &utf16_pw_len);
+	if (!ok) {
+		ret = ADS_ERROR(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	machine_pw_val = (struct berval) {
+		.bv_val = utf16_pw,
+		.bv_len = utf16_pw_len,
+	};
+
 	mods = ads_init_mods(ctx);
 	if (mods == NULL) {
 		ret = ADS_ERROR(LDAP_NO_MEMORY);
 		goto done;
 	}
 
-	ads_mod_str(ctx, &mods, "cn", machine_name);
-	ads_mod_str(ctx, &mods, "sAMAccountName", samAccountName);
-	ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
+	ads_mod_str(ctx, &mods, "objectClass", "Computer");
+	ads_mod_str(ctx, &mods, "SamAccountName", samAccountName);
 	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
+	ads_mod_str(ctx, &mods, "DnsHostName", dns_hostname);
+	ads_mod_strlist(ctx, &mods, "ServicePrincipalName", spn_array);
+	ads_mod_ber(ctx, &mods, "unicodePwd", &machine_pw_val);
 
 	ret = ads_gen_add(ads, new_dn, mods);
 
