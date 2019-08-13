@@ -25,8 +25,8 @@ if [ -d "$CTDB_SCRIPTS_TOOLS_BIN_DIR" ] ; then
 	PATH="${CTDB_SCRIPTS_TOOLS_BIN_DIR}:${PATH}"
 fi
 
-if [ -d "$CTDB_SCRIPTS_TESTS_BINDIR" ] ; then
-	PATH="${CTDB_SCRIPTS_TESTS_BINDIR}:${PATH}"
+if [ -d "$CTDB_SCRIPTS_TESTS_LIBEXEC_DIR" ] ; then
+	PATH="${CTDB_SCRIPTS_TESTS_LIBEXEC_DIR}:${PATH}"
 fi
 
 # Wait until either timeout expires or command succeeds.  The command
