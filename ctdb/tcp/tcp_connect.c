@@ -339,7 +339,7 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 					   fd,
 					   CTDB_TCP_ALIGNMENT,
 					   ctdb_tcp_read_cb,
-					   tnode,
+					   node,
 					   "ctdbd-%s",
 					   ctdb_addr_to_str(&addr));
 	if (tnode->in_queue == NULL) {
