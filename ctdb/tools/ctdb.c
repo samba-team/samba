@@ -5557,7 +5557,13 @@ static int control_nodestatus(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 
 	ret = 0;
 	for (i=0; i<nodemap->num; i++) {
-		ret |= nodemap->node[i].flags;
+		uint32_t flags = nodemap->node[i].flags;
+
+		if ((flags & NODE_FLAGS_DELETED) != 0) {
+			continue;
+		}
+
+		ret |= flags;
 	}
 
 	return ret;
