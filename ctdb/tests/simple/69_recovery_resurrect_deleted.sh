@@ -54,18 +54,11 @@ database_has_zero_records ()
 	return 0
 }
 
-echo "Get vacuum interval"
-try_command_on_node -v $second $CTDB getvar VacuumInterval
-vacuum_interval="${out#* = }"
+echo "Trigger a recovery"
+try_command_on_node "$second" $CTDB recover
 
-echo "Wait until vacuuming deletes the record on active nodes"
-# Why 4?  Steps are:
-# 1. Original node processes delete queue, asks lmaster to fetch
-# 2. lmaster recoverd fetches
-# 3. lmaster processes delete queue
-# If vacuuming is just missed then need an extra interval
-t=$((vacuum_interval * 4))
-wait_until "${t}/10" database_has_zero_records
+echo "Checking that database has 0 records"
+database_has_zero_records
 
 echo "Continue node ${first}"
 try_command_on_node $first $CTDB continue
