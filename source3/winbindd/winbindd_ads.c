@@ -110,7 +110,10 @@ static ADS_STATUS ads_cached_connection_connect(ADS_STRUCT **adsp,
 	/* we don't want this to affect the users ccache */
 	setenv("KRB5CCNAME", WINBIND_CCACHE_NAME, 1);
 
-	ads = ads_init(target_realm, target_dom_name, ldap_server);
+	ads = ads_init(target_realm,
+		       target_dom_name,
+		       ldap_server,
+		       ADS_SASL_SEAL);
 	if (!ads) {
 		DEBUG(1,("ads_init for domain %s failed\n", target_dom_name));
 		return ADS_ERROR(LDAP_NO_MEMORY);

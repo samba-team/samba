@@ -210,7 +210,7 @@ static int py_ads_init(ADS *self, PyObject *args, PyObject *kwds)
 		self->ads_ptr = NULL;
 	}
 	/* always succeeds or crashes */
-	self->ads_ptr = ads_init(realm, workgroup, ldap_server);
+	self->ads_ptr = ads_init(realm, workgroup, ldap_server, ADS_SASL_PLAIN);
 	
 	return 0;
 }

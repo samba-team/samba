@@ -411,7 +411,10 @@ WERROR NetGetJoinableOUs_l(struct libnetapi_ctx *ctx,
 
 	dc = strip_hostname(info->dc_unc);
 
-	ads = ads_init(info->domain_name, info->domain_name, dc);
+	ads = ads_init(info->domain_name,
+		       info->domain_name,
+		       dc,
+		       ADS_SASL_PLAIN);
 	if (!ads) {
 		return WERR_GEN_FAILURE;
 	}
