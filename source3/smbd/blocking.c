@@ -109,6 +109,7 @@ struct smbd_smb1_do_locks_state {
 	uint16_t blocker;
 };
 
+static void smbd_smb1_do_locks_try(struct tevent_req *req);
 static void smbd_smb1_do_locks_retry(struct tevent_req *subreq);
 static void smbd_smb1_blocked_locks_cleanup(
 	struct tevent_req *req, enum tevent_req_state req_state);
@@ -300,10 +301,8 @@ static void smbd_smb1_blocked_locks_cleanup(
 		fsp, blocked, struct tevent_req *, num_blocked-1);
 }
 
-static void smbd_smb1_do_locks_retry(struct tevent_req *subreq)
+static void smbd_smb1_do_locks_try(struct tevent_req *req)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
 	struct smbd_smb1_do_locks_state *state = tevent_req_data(
 		req, struct smbd_smb1_do_locks_state);
 	struct files_struct *fsp = state->fsp;
@@ -315,35 +314,9 @@ static void smbd_smb1_do_locks_retry(struct tevent_req *subreq)
 	struct timeval endtime;
 	struct server_id blocking_pid = { 0 };
 	uint64_t blocking_smblctx = 0;
+	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
 	bool ok;
-
-	/*
-	 * Make sure we run as the user again
-	 */
-	ok = change_to_user_by_fsp(state->fsp);
-	if (!ok) {
-		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
-		return;
-	}
-
-	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
-	TALLOC_FREE(subreq);
-
-	DBG_DEBUG("dbwrap_watched_watch_recv returned %s\n",
-		  nt_errstr(status));
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		double elapsed = timeval_elapsed(&state->endtime);
-		if (elapsed > 0) {
-			smbd_smb1_brl_finish_by_req(
-				req, NT_STATUS_FILE_LOCK_CONFLICT);
-			return;
-		}
-		/*
-		 * This is a posix lock retry. Just retry.
-		 */
-	}
 
 	lck = get_existing_share_mode_lock(state, fsp->file_id);
 	if (tevent_req_nomem(lck, req)) {
@@ -394,6 +367,45 @@ static void smbd_smb1_do_locks_retry(struct tevent_req *subreq)
 done:
 	TALLOC_FREE(lck);
 	smbd_smb1_brl_finish_by_req(req, status);
+}
+
+static void smbd_smb1_do_locks_retry(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct smbd_smb1_do_locks_state *state = tevent_req_data(
+		req, struct smbd_smb1_do_locks_state);
+	NTSTATUS status;
+	bool ok;
+
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_by_fsp(state->fsp);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
+	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	TALLOC_FREE(subreq);
+
+	DBG_DEBUG("dbwrap_watched_watch_recv returned %s\n",
+		  nt_errstr(status));
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		double elapsed = timeval_elapsed(&state->endtime);
+		if (elapsed > 0) {
+			smbd_smb1_brl_finish_by_req(
+				req, NT_STATUS_FILE_LOCK_CONFLICT);
+			return;
+		}
+		/*
+		 * This is a posix lock retry. Just retry.
+		 */
+	}
+
+	smbd_smb1_do_locks_try(req);
 }
 
 NTSTATUS smbd_smb1_do_locks_recv(struct tevent_req *req)
