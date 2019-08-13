@@ -304,8 +304,10 @@ void _mdssvc_cmd(struct pipes_struct *p, struct mdssvc_cmd *r)
 void _mdssvc_close(struct pipes_struct *p, struct mdssvc_close *r)
 {
 	struct mds_ctx *mds_ctx;
+	bool ok;
 
-	if (!find_policy_by_hnd(p, &r->in.in_handle, (void **)(void *)&mds_ctx)) {
+	ok = find_policy_by_hnd(p, &r->in.in_handle, (void **)(void *)&mds_ctx);
+	if (!ok) {
 		DBG_WARNING("invalid handle\n");
 		if (is_zero_policy_handle(&r->in.in_handle)) {
 			p->fault_state = 0;
