@@ -223,6 +223,13 @@ bool share_mode_forall_leases(
 		   void *private_data),
 	void *private_data);
 
+bool share_mode_forall_entries(
+	struct share_mode_lock *lck,
+	bool (*fn)(struct share_mode_entry *e,
+		   bool *modified,
+		   void *private_data),
+	void *private_data);
+
 
 /* The following definitions come from locking/posix.c  */
 

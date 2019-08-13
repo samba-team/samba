@@ -1261,6 +1261,53 @@ bool file_has_open_streams(files_struct *fsp)
 	return false;
 }
 
+bool share_mode_forall_entries(
+	struct share_mode_lock *lck,
+	bool (*fn)(struct share_mode_entry *e,
+		   bool *modified,
+		   void *private_data),
+	void *private_data)
+{
+	struct share_mode_data *d = lck->data;
+	uint32_t i;
+
+	for (i=0; i<d->num_share_modes; i++) {
+		struct share_mode_entry *e = &d->share_modes[i];
+		struct server_id pid = e->pid;
+		uint64_t share_file_id = e->share_file_id;
+		bool ok, stop;
+		bool modified = false;
+
+		ok = is_valid_share_mode_entry(e);
+		if (!ok) {
+			continue;
+		}
+
+		stop = fn(e, &modified, private_data);
+
+		if (modified || e->stale) {
+			d->modified = true;
+		}
+
+		if (modified) {
+			/*
+			 * In a later commit we will sort the share
+			 * mode array keyed by pid and
+			 * share_file_id. Make sure that from within
+			 * this routine those values don't change.
+			 */
+			SMB_ASSERT(server_id_equal(&pid, &e->pid));
+			SMB_ASSERT(share_file_id == e->share_file_id);
+		}
+
+		if (stop) {
+			return true;
+		}
+	}
+
+	return true;
+}
+
 /*
  * Walk share mode entries, looking at every lease only once
  */
