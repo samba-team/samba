@@ -306,7 +306,7 @@ void _mdssvc_close(struct pipes_struct *p, struct mdssvc_close *r)
 	struct mds_ctx *mds_ctx;
 
 	if (!find_policy_by_hnd(p, &r->in.in_handle, (void **)(void *)&mds_ctx)) {
-		DEBUG(1, ("%s: invalid handle\n", __func__));
+		DBG_WARNING("invalid handle\n");
 		if (is_zero_policy_handle(&r->in.in_handle)) {
 			p->fault_state = 0;
 		} else {
@@ -315,7 +315,7 @@ void _mdssvc_close(struct pipes_struct *p, struct mdssvc_close *r)
 		return;
 	}
 
-	DEBUG(10, ("%s: path: %s\n", __func__, mds_ctx->spath));
+	DBG_DEBUG("Close mdssvc handle for path: %s\n", mds_ctx->spath);
 
 	*r->out.out_handle = r->in.in_handle;
 	close_policy_hnd(p, &r->in.in_handle);
