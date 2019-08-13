@@ -144,7 +144,6 @@ bool cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
                     &rdata, &rdrcnt                 /* return data, return size */
                    )) {
 		cli->rap_error = rparam? SVAL(rparam,0) : -1;
-		p = rdata;
 
 		if (cli->rap_error == 0) {
 			DEBUG(4,("NetWkstaUserLogon success\n"));
