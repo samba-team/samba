@@ -333,7 +333,7 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 			       int name_type,
 			       struct cli_state **pcli)
 {
-	struct cli_state *cli;
+	struct cli_state *cli = NULL;
 	NTSTATUS status;
 
 	status = do_connect(ctx, server, share,
@@ -343,6 +343,14 @@ static NTSTATUS cli_cm_connect(TALLOC_CTX *ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
+	}
+
+	/*
+	 * This can't happen, this test is to satisfy static
+	 * checkers (clang)
+	 */
+	if (cli == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Enter into the list. */
