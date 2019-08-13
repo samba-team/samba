@@ -187,11 +187,90 @@ out:
 	return rc;
 }
 
+static void dfq_fake_stat(struct vfs_handle_struct *handle,
+			  struct smb_filename *smb_fname,
+			  SMB_STRUCT_STAT *sbuf)
+{
+	int snum = SNUM(handle->conn);
+	char *full_path = NULL;
+	char *to_free = NULL;
+	char path[PATH_MAX + 1];
+	int len;
+	gid_t gid;
+
+	len = full_path_tos(handle->conn->cwd_fname->base_name,
+			    smb_fname->base_name,
+			    path, sizeof(path),
+			    &full_path, &to_free);
+	if (len == -1) {
+		DBG_ERR("Could not allocate memory in full_path_tos.\n");
+		return;
+	}
+
+	gid = dfq_load_param(snum, full_path, "stat", "sgid", 0);
+	if (gid != 0) {
+		sbuf->st_ex_gid = gid;
+		sbuf->st_ex_mode |= S_ISGID;
+	}
+
+	TALLOC_FREE(to_free);
+}
+
+static int dfq_stat(vfs_handle_struct *handle,
+		    struct smb_filename *smb_fname)
+{
+	int ret;
+
+	ret = SMB_VFS_NEXT_STAT(handle, smb_fname);
+	if (ret == -1) {
+		return ret;
+	}
+
+	dfq_fake_stat(handle, smb_fname, &smb_fname->st);
+
+	return 0;
+}
+
+static int dfq_fstat(vfs_handle_struct *handle,
+		     files_struct *fsp,
+		     SMB_STRUCT_STAT *sbuf)
+{
+	int ret;
+
+	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
+	if (ret == -1) {
+		return ret;
+	}
+
+	dfq_fake_stat(handle, fsp->fsp_name, sbuf);
+
+	return 0;
+}
+
+static int dfq_lstat(vfs_handle_struct *handle,
+		     struct smb_filename *smb_fname)
+{
+	int ret;
+
+	ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
+	if (ret == -1) {
+		return ret;
+	}
+
+	dfq_fake_stat(handle, smb_fname, &smb_fname->st);
+
+	return 0;
+}
+
 struct vfs_fn_pointers vfs_fake_dfq_fns = {
     /* Disk operations */
 
     .disk_free_fn = dfq_disk_free,
     .get_quota_fn = dfq_get_quota,
+
+    .stat_fn = dfq_stat,
+    .fstat_fn = dfq_fstat,
+    .lstat_fn = dfq_lstat,
 };
 
 static_decl_vfs;
