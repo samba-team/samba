@@ -713,6 +713,30 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 	remove_lease_if_stale(d, &e->client_guid, &e->lease_key);
 }
 
+bool share_entry_stale_pid(struct share_mode_entry *e)
+{
+	struct server_id_buf buf;
+	bool exists;
+
+	if (e->stale) {
+		return true;
+	}
+
+	exists = serverid_exists(&e->pid);
+	if (exists) {
+		DBG_DEBUG("PID %s still exists\n",
+			  server_id_str_buf(e->pid, &buf));
+		return false;
+	}
+
+	DBG_DEBUG("PID %s does not exist anymore\n",
+		  server_id_str_buf(e->pid, &buf));
+
+	e->stale = true;
+
+	return true;
+}
+
 /*
  * In case d->share_modes[i] conflicts with something or otherwise is
  * being used, we need to make sure the corresponding process still
