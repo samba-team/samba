@@ -223,6 +223,7 @@ static struct db_record *dbwrap_watched_fetch_locked(
 		db->private_data, struct db_watched_ctx);
 	struct db_record *rec;
 	struct db_watched_subrec *subrec;
+	uint8_t *watchers = NULL;
 	TDB_DATA subrec_value;
 	bool ok;
 
@@ -251,6 +252,26 @@ static struct db_record *dbwrap_watched_fetch_locked(
 	subrec_value = dbwrap_record_get_value(subrec->subrec);
 
 	ok = dbwrap_watch_rec_parse(subrec_value, &subrec->wrec);
+	if (!ok) {
+		return rec;	/* fresh record */
+	}
+
+	/*
+	 * subrec->wrec.watchers points *directly* into the
+	 * returned data in the record. We need to talloc a
+	 * copy of this so it belongs to subrec.
+	 */
+
+	watchers = talloc_memdup(
+		subrec,
+		subrec->wrec.watchers,
+		subrec->wrec.num_watchers * SERVER_ID_BUF_LENGTH);
+	if (watchers == NULL) {
+		TALLOC_FREE(rec);
+		return NULL;
+	}
+	subrec->wrec.watchers = watchers;
+
 	if (ok) {
 		rec->value = subrec->wrec.data;
 	}
@@ -314,6 +335,20 @@ static void dbwrap_watched_do_locked_fn(struct db_record *subrec,
 
 	ok = dbwrap_watch_rec_parse(subrec_value, &state->subrec.wrec);
 	if (ok) {
+		uint8_t *watchers = NULL;
+
+		/*
+		 * state->subrec.wrec.watchers points *directly* into the
+		 * returned data in the record. We need to talloc a
+		 * copy of this so it belongs to state->mem_ctx.
+		 */
+		watchers = talloc_memdup(
+			state->mem_ctx,
+			state->subrec.wrec.watchers,
+			state->subrec.wrec.num_watchers * SERVER_ID_BUF_LENGTH);
+		SMB_ASSERT(watchers != NULL);
+		state->subrec.wrec.watchers = watchers;
+
 		rec.value = state->subrec.wrec.data;
 	}
 
@@ -407,32 +442,38 @@ static NTSTATUS dbwrap_watched_save(struct db_record *rec,
 {
 	uint32_t num_watchers_buf;
 	uint8_t sizebuf[4];
-	uint8_t addbuf[SERVER_ID_BUF_LENGTH];
 	NTSTATUS status;
-	struct TDB_DATA dbufs[num_databufs+3];
+	struct TDB_DATA dbufs[num_databufs+2];
 
 	dbufs[0] = (TDB_DATA) {
 		.dptr = sizebuf, .dsize = sizeof(sizebuf)
 	};
+
+	if (addwatch != NULL) {
+		uint8_t *watchers, *new_watch;
+
+		watchers = talloc_realloc(
+			NULL,
+			wrec->watchers,
+			uint8_t,
+			(wrec->num_watchers+1) * SERVER_ID_BUF_LENGTH);
+		if (watchers == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		wrec->watchers = watchers;
+
+		new_watch = &watchers[wrec->num_watchers*SERVER_ID_BUF_LENGTH];
+		server_id_put(new_watch, *addwatch);
+		wrec->num_watchers += 1;
+	}
 
 	dbufs[1] = (TDB_DATA) {
 		.dptr = wrec->watchers,
 		.dsize = wrec->num_watchers * SERVER_ID_BUF_LENGTH
 	};
 
-	if (addwatch != NULL) {
-		server_id_put(addbuf, *addwatch);
-
-		dbufs[2] = (TDB_DATA) {
-			.dptr = addbuf, .dsize = SERVER_ID_BUF_LENGTH
-		};
-		wrec->num_watchers += 1;
-	} else {
-		dbufs[2] = (TDB_DATA) { 0 };
-	}
-
 	if (num_databufs != 0) {
-		memcpy(&dbufs[3], databufs, sizeof(TDB_DATA) * num_databufs);
+		memcpy(&dbufs[2], databufs, sizeof(TDB_DATA) * num_databufs);
 	}
 
 	num_watchers_buf = wrec->num_watchers;
