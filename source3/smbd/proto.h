@@ -95,8 +95,6 @@ bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req);
 
 /* The following definitions come from smbd/blocking.c  */
 
-struct timeval timeval_brl_min(const struct timeval *tv1,
-			const struct timeval *tv2);
 NTSTATUS smbd_do_locks_try(
 	struct files_struct *fsp,
 	enum brl_flavour lock_flav,

@@ -28,22 +28,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_LOCKING
 
-/****************************************************************************
- We need a version of timeval_min that treats zero timval as infinite.
-****************************************************************************/
-
-struct timeval timeval_brl_min(const struct timeval *tv1,
-					const struct timeval *tv2)
-{
-	if (timeval_is_zero(tv1)) {
-		return *tv2;
-	}
-	if (timeval_is_zero(tv2)) {
-		return *tv1;
-	}
-	return timeval_min(tv1, tv2);
-}
-
 NTSTATUS smbd_do_locks_try(
 	struct files_struct *fsp,
 	enum brl_flavour lock_flav,
