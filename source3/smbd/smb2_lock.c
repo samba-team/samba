@@ -383,10 +383,26 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
+		/*
+		 * This is a bug and will be changed into an assert
+		 * in a future version. We should only
+		 * ever get NT_STATUS_LOCK_NOT_GRANTED here!
+		 */
+		static uint64_t _bug_count;
+		int _level = (_bug_count++ == 0) ? DBGLVL_ERR: DBGLVL_DEBUG;
+		DBG_PREFIX(_level, ("BUG: Got %s mapping to "
+			   "NT_STATUS_LOCK_NOT_GRANTED\n",
+			   nt_errstr(status)));
+		status = NT_STATUS_LOCK_NOT_GRANTED;
+	}
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED)) {
+		TALLOC_FREE(lck);
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
+	}
 
-	if (state->blocking &&
-	    (NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED) ||
-	     NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT))) {
+	if (state->blocking) {
 		struct tevent_req *subreq;
 
 		DBG_DEBUG("Watching share mode lock\n");
