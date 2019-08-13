@@ -344,7 +344,7 @@ static void cli_posix_readlink_done(struct tevent_req *subreq)
 		req, struct cli_posix_readlink_state);
 	NTSTATUS status;
 	uint8_t *data = NULL;
-	uint32_t num_data;
+	uint32_t num_data = 0;
 	charset_t charset;
 	size_t converted_size;
 	bool ok;
@@ -357,7 +357,7 @@ static void cli_posix_readlink_done(struct tevent_req *subreq)
 	/*
 	 * num_data is > 1, we've given 1 as minimum to cli_qpathinfo_send
 	 */
-	if (data[num_data-1] != '\0') {
+	if (data == NULL || data[num_data-1] != '\0') {
 		tevent_req_nterror(req, NT_STATUS_DATA_ERROR);
 		return;
 	}
