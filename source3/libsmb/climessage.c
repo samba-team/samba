@@ -70,7 +70,6 @@ static struct tevent_req *cli_message_start_send(TALLOC_CTX *mem_ctx,
 	p += ulen;
 	*p++ = 4;
 	memcpy(p, htmp, hlen);
-	p += hlen;
 	TALLOC_FREE(htmp);
 	TALLOC_FREE(utmp);
 
