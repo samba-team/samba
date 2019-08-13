@@ -1478,7 +1478,7 @@ NTSTATUS cli_qpathinfo3(struct cli_state *cli, const char *fname,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	SMB_STRUCT_STAT st = { 0 };
-	uint32_t attr;
+	uint32_t attr = 0;
 	uint64_t pos;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
