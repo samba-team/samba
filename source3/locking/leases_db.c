@@ -47,7 +47,10 @@ bool leases_db_init(bool read_only)
 	}
 
 	leases_db = db_open(NULL, db_path, 0,
-			    TDB_DEFAULT|TDB_VOLATILE|TDB_CLEAR_IF_FIRST|
+			    TDB_DEFAULT|
+			    TDB_VOLATILE|
+			    TDB_CLEAR_IF_FIRST|
+			    TDB_SEQNUM|
 			    TDB_INCOMPATIBLE_HASH,
 			    read_only ? O_RDONLY : O_RDWR|O_CREAT, 0644,
 			    DBWRAP_LOCK_ORDER_2, DBWRAP_FLAG_NONE);
@@ -625,7 +628,79 @@ NTSTATUS leases_db_get(const struct GUID *client_guid,
 		return status;
 	}
 	return state.status;
+}
 
+struct leases_db_get_current_state_state {
+	int seqnum;
+	uint32_t current_state;
+	NTSTATUS status;
+};
+
+/*
+ * This function is an optimization that
+ * relies on the fact that the
+ * smb2_lease_state current_state
+ * (which is a uint32_t size)
+ * from struct leases_db_value is the first
+ * entry in the ndr-encoded struct leases_db_value.
+ * Read it without having to ndr decode all
+ * the values in struct leases_db_value.
+ */
+
+static void leases_db_get_current_state_fn(
+	TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	struct leases_db_get_current_state_state *state = private_data;
+	struct ndr_pull ndr;
+	enum ndr_err_code ndr_err;
+
+	if (data.dsize < sizeof(uint32_t)) {
+		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return;
+	}
+
+	state->seqnum = dbwrap_get_seqnum(leases_db);
+
+	ndr = (struct ndr_pull) {
+		.data = data.dptr, .data_size = data.dsize,
+	};
+	ndr_err = ndr_pull_uint32(&ndr, NDR_SCALARS, &state->current_state);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		state->status = ndr_map_error2ntstatus(ndr_err);
+	}
+}
+
+NTSTATUS leases_db_get_current_state(
+	const struct GUID *client_guid,
+	const struct smb2_lease_key *lease_key,
+	int *database_seqnum,
+	uint32_t *current_state)
+{
+	struct leases_db_get_current_state_state state = { 0 };
+	struct leases_db_key_buf keybuf;
+	TDB_DATA db_key = { 0 };
+	NTSTATUS status;
+
+	if (!leases_db_init(true)) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	state.seqnum = dbwrap_get_seqnum(leases_db);
+	if (*database_seqnum == state.seqnum) {
+		return NT_STATUS_OK;
+	}
+
+	db_key = leases_db_key(&keybuf, client_guid, lease_key);
+
+	status = dbwrap_parse_record(
+		leases_db, db_key, leases_db_get_current_state_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	*database_seqnum = state.seqnum;
+	*current_state = state.current_state;
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS leases_db_copy_file_ids(TALLOC_CTX *mem_ctx,

@@ -68,6 +68,11 @@ NTSTATUS leases_db_get(const struct GUID *client_guid,
 		       uint32_t	*breaking_to_required,
 		       uint16_t *lease_version,
 		       uint16_t *epoch);
+NTSTATUS leases_db_get_current_state(
+	const struct GUID *client_guid,
+	const struct smb2_lease_key *lease_key,
+	int *database_seqnum,
+	uint32_t *current_state);
 NTSTATUS leases_db_copy_file_ids(TALLOC_CTX *mem_ctx,
 			uint32_t num_files,
 			const struct leases_db_file *files,
