@@ -2966,7 +2966,7 @@ ADS_STATUS ads_current_time(ADS_STRUCT *ads)
 
 	if ( !ads->ldap.ld ) {
 		if ( (ads_s = ads_init( ads->server.realm, ads->server.workgroup, 
-			ads->server.ldap_server )) == NULL )
+			ads->server.ldap_server, ADS_SASL_PLAIN )) == NULL )
 		{
 			status = ADS_ERROR(LDAP_NO_MEMORY);
 			goto done;
@@ -3028,7 +3028,7 @@ ADS_STATUS ads_domain_func_level(ADS_STRUCT *ads, uint32_t *val)
 
 	if ( !ads->ldap.ld ) {
 		if ( (ads_s = ads_init( ads->server.realm, ads->server.workgroup, 
-			ads->server.ldap_server )) == NULL )
+			ads->server.ldap_server, ADS_SASL_PLAIN )) == NULL )
 		{
 			status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 			goto done;
