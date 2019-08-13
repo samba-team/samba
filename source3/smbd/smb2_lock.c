@@ -205,10 +205,6 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 	bool isunlock = false;
 	uint16_t i;
 	struct smbd_lock_element *locks;
-	struct share_mode_lock *lck = NULL;
-	uint16_t blocker_idx;
-	struct server_id blocking_pid = { 0 };
-	uint64_t blocking_smblctx;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -363,68 +359,16 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	lck = get_existing_share_mode_lock(
-		talloc_tos(), state->fsp->file_id);
-	if (tevent_req_nomem(lck, req)) {
+	smbd_smb2_lock_try(req);
+	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
 	}
 
-	status = smbd_do_locks_try(
-		state->fsp,
-		WINDOWS_LOCK,
-		state->lock_count,
-		state->locks,
-		&blocker_idx,
-		&blocking_pid,
-		&blocking_smblctx);
+	tevent_req_defer_callback(req, smb2req->sconn->ev_ctx);
+	aio_add_req_to_fsp(state->fsp, req);
+	tevent_req_set_cancel_fn(req, smbd_smb2_lock_cancel);
 
-	if (NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(lck);
-		tevent_req_done(req);
-		return tevent_req_post(req, ev);
-	}
-	if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
-		/*
-		 * This is a bug and will be changed into an assert
-		 * in a future version. We should only
-		 * ever get NT_STATUS_LOCK_NOT_GRANTED here!
-		 */
-		static uint64_t _bug_count;
-		int _level = (_bug_count++ == 0) ? DBGLVL_ERR: DBGLVL_DEBUG;
-		DBG_PREFIX(_level, ("BUG: Got %s mapping to "
-			   "NT_STATUS_LOCK_NOT_GRANTED\n",
-			   nt_errstr(status)));
-		status = NT_STATUS_LOCK_NOT_GRANTED;
-	}
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED)) {
-		TALLOC_FREE(lck);
-		tevent_req_nterror(req, status);
-		return tevent_req_post(req, ev);
-	}
-
-	if (state->blocking) {
-		struct tevent_req *subreq;
-
-		DBG_DEBUG("Watching share mode lock\n");
-
-		subreq = dbwrap_watched_watch_send(
-			state, state->ev, lck->data->record, blocking_pid);
-		TALLOC_FREE(lck);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq, smbd_smb2_lock_retry, req);
-
-		tevent_req_defer_callback(req, smb2req->sconn->ev_ctx);
-		aio_add_req_to_fsp(state->fsp, req);
-		tevent_req_set_cancel_fn(req, smbd_smb2_lock_cancel);
-
-		return req;
-	}
-
-	TALLOC_FREE(lck);
-	tevent_req_nterror(req, status);
-	return tevent_req_post(req, ev);
+	return req;
 }
 
 static void smbd_smb2_lock_try(struct tevent_req *req)
