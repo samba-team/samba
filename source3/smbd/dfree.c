@@ -51,8 +51,11 @@ static void disk_norm(uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
  Return number of 1K blocks available on a path and total number.
 ****************************************************************************/
 
-uint64_t sys_disk_free(connection_struct *conn, struct smb_filename *fname,
-		       uint64_t *bsize, uint64_t *dfree, uint64_t *dsize)
+static uint64_t sys_disk_free(connection_struct *conn,
+			      struct smb_filename *fname,
+			      uint64_t *bsize,
+			      uint64_t *dfree,
+			      uint64_t *dsize)
 {
 	uint64_t dfree_retval;
 	uint64_t dfree_q = 0;
