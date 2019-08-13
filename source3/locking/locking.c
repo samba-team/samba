@@ -744,8 +744,8 @@ bool share_entry_stale_pid(struct share_mode_entry *e)
  */
 bool share_mode_stale_pid(struct share_mode_data *d, uint32_t idx)
 {
-	struct server_id_buf tmp;
 	struct share_mode_entry *e;
+	bool stale;
 
 	if (idx > d->num_share_modes) {
 		DBG_WARNING("Asking for index %"PRIu32", "
@@ -755,27 +755,12 @@ bool share_mode_stale_pid(struct share_mode_data *d, uint32_t idx)
 		return false;
 	}
 	e = &d->share_modes[idx];
-	if (e->stale) {
-		/*
-		 * Checked before
-		 */
-		return true;
-	}
-	if (serverid_exists(&e->pid)) {
-		DBG_DEBUG("PID %s (index %"PRIu32" out of %"PRIu32") "
-			  "still exists\n",
-			  server_id_str_buf(e->pid, &tmp),
-			  idx,
-			  d->num_share_modes);
+
+	stale = share_entry_stale_pid(e);
+	if (!stale) {
 		return false;
 	}
-	DBG_DEBUG("PID %s (index %"PRIu32" out of %"PRIu32") "
-		  "does not exist anymore\n",
-		  server_id_str_buf(e->pid, &tmp),
-		  idx,
-		  d->num_share_modes);
-
-	e->stale = true;
+	d->modified = true;
 
 	if (d->num_delete_tokens != 0) {
 		uint32_t i;
