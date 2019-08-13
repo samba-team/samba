@@ -124,7 +124,7 @@ try_command_on_node ()
     if [ $status -ne 0 ] ; then
 	echo "Failed to execute \"$cmd\" on node(s) \"$nodespec\""
 	cat "$outfile"
-	return 1
+	return $status
     fi
 
     if $verbose ; then
