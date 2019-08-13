@@ -108,7 +108,7 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	struct tevent_context *ev,
 	struct smb_request **smbreq, /* talloc_move()d into our state */
 	struct files_struct *fsp,
-	uint32_t timeout,
+	uint32_t lock_timeout,
 	bool large_offset,
 	enum brl_flavour lock_flav,
 	uint16_t num_locks,
