@@ -42,6 +42,7 @@ struct smbd_smb2_lock_state {
 	struct smbd_smb2_request *smb2req;
 	struct smb_request *smb1req;
 	struct files_struct *fsp;
+	bool blocking;
 	uint16_t lock_count;
 	struct smbd_lock_element *locks;
 };
@@ -200,7 +201,6 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 {
 	struct tevent_req *req;
 	struct smbd_smb2_lock_state *state;
-	bool blocking = false;
 	bool isunlock = false;
 	uint16_t i;
 	struct smbd_lock_element *locks;
@@ -241,7 +241,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 			tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 			return tevent_req_post(req, ev);
 		}
-		blocking = true;
+		state->blocking = true;
 		break;
 
 	case SMB2_LOCK_FLAG_SHARED|SMB2_LOCK_FLAG_FAIL_IMMEDIATELY:
@@ -383,7 +383,7 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (blocking &&
+	if (state->blocking &&
 	    (NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED) ||
 	     NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT))) {
 		struct tevent_req *subreq;
