@@ -609,7 +609,7 @@ static ssize_t tstream_roh_pending_bytes(struct tstream_context *stream)
 
 	tstream = http_conn_tstream(
 		ctx->roh_conn->default_channel_out->http_conn);
-	if (stream == NULL) {
+	if (tstream == NULL) {
 		errno = ENOTCONN;
 		return -1;
 	}
