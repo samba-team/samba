@@ -153,7 +153,7 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 
 	*r->out.device_id = *r->in.device_id;
 	*r->out.unkn2 = *r->in.unkn2;
-	*r->out.unkn3 = *r->out.unkn3;
+	*r->out.unkn3 = *r->in.unkn3;
 	outpath[0] = '\0';
 
 	snum = lp_servicenumber(r->in.share_name);
