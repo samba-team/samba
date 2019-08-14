@@ -839,7 +839,7 @@ NTSTATUS cli_read(struct cli_state *cli, uint16_t fnum,
 		 size_t *nread)
 {
 	NTSTATUS status;
-	off_t ret;
+	off_t ret = 0;
 
 	status = cli_pull(cli, fnum, offset, size, size,
 			  cli_read_sink, &buf, &ret);
