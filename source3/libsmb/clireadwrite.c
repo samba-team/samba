@@ -1248,7 +1248,7 @@ static void cli_smb1_writeall_written(struct tevent_req *subreq)
 	struct cli_smb1_writeall_state *state = tevent_req_data(
 		req, struct cli_smb1_writeall_state);
 	NTSTATUS status;
-	size_t written, to_write;
+	size_t written = 0, to_write;
 
 	status = cli_write_andx_recv(subreq, &written);
 	TALLOC_FREE(subreq);
