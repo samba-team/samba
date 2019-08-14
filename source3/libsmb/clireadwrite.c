@@ -781,7 +781,7 @@ static void cli_read_done(struct tevent_req *subreq)
 		req, struct cli_read_state);
 	NTSTATUS status;
 	ssize_t received;
-	uint8_t *buf;
+	uint8_t *buf = NULL;
 
 	if (smbXcli_conn_protocol(state->cli->conn) >= PROTOCOL_SMB2_02) {
 		status = cli_smb2_read_recv(subreq, &received, &buf);
@@ -796,7 +796,7 @@ static void cli_read_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
-	if ((received < 0) || (received > state->buflen)) {
+	if ((buf == NULL) || (received < 0) || (received > state->buflen)) {
 		state->received = 0;
 		tevent_req_nterror(req, NT_STATUS_UNEXPECTED_IO_ERROR);
 		return;
