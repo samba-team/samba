@@ -72,7 +72,7 @@ static bool test_mdspkt_empty_cnid_fm(struct torture_context *tctx)
 	torture_assert_goto(tctx, ret, ret, done, "sl_unpack failed\n");
 
 	cnids = dalloc_get(d, "DALLOC_CTX", 0, "sl_cnids_t", 1);
-	torture_assert_not_null_goto(tctx, d, ret, done,
+	torture_assert_not_null_goto(tctx, cnids, ret, done,
 				     "dalloc_get cnids failed\n");
 
 	ncnids = dalloc_size(cnids->ca_cnids);
