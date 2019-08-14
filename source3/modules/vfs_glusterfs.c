@@ -74,12 +74,16 @@ static void smb_stat_ex_from_stat(struct stat_ex *dst, const struct stat *src)
 	dst->st_ex_btime.tv_sec = src->st_mtime;
 	dst->st_ex_blksize = src->st_blksize;
 	dst->st_ex_blocks = src->st_blocks;
+	dst->st_ex_file_id = dst->st_ex_ino;
+	dst->st_ex_iflags |= ST_EX_IFLAG_CALCULATED_FILE_ID;
 #ifdef STAT_HAVE_NSEC
 	dst->st_ex_atime.tv_nsec = src->st_atime_nsec;
 	dst->st_ex_mtime.tv_nsec = src->st_mtime_nsec;
 	dst->st_ex_ctime.tv_nsec = src->st_ctime_nsec;
 	dst->st_ex_btime.tv_nsec = src->st_mtime_nsec;
 #endif
+	dst->st_ex_itime = dst->st_ex_btime;
+	dst->st_ex_iflags |= ST_EX_IFLAG_CALCULATED_ITIME;
 }
 
 /* pre-opened glfs_t */
