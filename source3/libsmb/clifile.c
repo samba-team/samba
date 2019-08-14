@@ -5287,7 +5287,6 @@ static bool parse_ea_blob(TALLOC_CTX *ctx, const uint8_t *rdata,
 		return false;
 	}
 
-	ea_size = (size_t)IVAL(rdata,0);
 	p = rdata + 4;
 
 	for (num_eas = 0; num_eas < *pnum_eas; num_eas++ ) {
