@@ -233,37 +233,53 @@ NTSTATUS delete_all_streams(connection_struct *conn,
 	return status;
 }
 
+struct has_other_nonposix_opens_state {
+	files_struct *fsp;
+	bool found_another;
+};
+
+static bool has_other_nonposix_opens_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct has_other_nonposix_opens_state *state = private_data;
+	struct files_struct *fsp = state->fsp;
+
+	if (e->name_hash != fsp->name_hash) {
+		return false;
+	}
+	if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) &&
+	    (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
+		return false;
+	}
+	if (e->share_file_id == fsp->fh->gen_id) {
+		struct server_id self = messaging_server_id(
+			fsp->conn->sconn->msg_ctx);
+		if (server_id_equal(&self, &e->pid)) {
+			return false;
+		}
+	}
+	if (share_entry_stale_pid(e)) {
+		return false;
+	}
+
+	state->found_another = true;
+	return true;
+}
+
 bool has_other_nonposix_opens(struct share_mode_lock *lck,
 			      struct files_struct *fsp)
 {
-	struct share_mode_data *data = lck->data;
-	struct server_id self = messaging_server_id(fsp->conn->sconn->msg_ctx);
-	uint32_t i;
+	struct has_other_nonposix_opens_state state = { .fsp = fsp };
+	bool ok;
 
-	for (i=0; i<data->num_share_modes; i++) {
-		struct share_mode_entry *e = &data->share_modes[i];
-
-		if (!is_valid_share_mode_entry(e)) {
-			continue;
-		}
-		if (e->name_hash != fsp->name_hash) {
-			continue;
-		}
-		if ((fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) &&
-		    (e->flags & SHARE_MODE_FLAG_POSIX_OPEN)) {
-			continue;
-		}
-		if (serverid_equal(&self, &e->pid) &&
-		    (e->share_file_id == fsp->fh->gen_id)) {
-			continue;
-		}
-		if (share_mode_stale_pid(data, i)) {
-			continue;
-		}
-		return true;
+	ok = share_mode_forall_entries(
+		lck, has_other_nonposix_opens_fn, &state);
+	if (!ok) {
+		return false;
 	}
-
-	return false;
+	return state.found_another;
 }
 
 /****************************************************************************
