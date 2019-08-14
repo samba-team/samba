@@ -1366,7 +1366,21 @@ char *ads_parent_dn(const char *dn)
 {
 	ADS_STATUS status;
 	char *expr;
-	const char *attrs[] = {"*", "msDS-SupportedEncryptionTypes", "nTSecurityDescriptor", NULL};
+	const char *attrs[] = {
+		/* This is how Windows checks for machine accounts */
+		"objectClass",
+		"SamAccountName",
+		"userAccountControl",
+		"DnsHostName",
+		"ServicePrincipalName",
+		"unicodePwd",
+
+		/* Additional attributes Samba checks */
+		"msDS-SupportedEncryptionTypes",
+		"nTSecurityDescriptor",
+
+		NULL
+	};
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	*res = NULL;
@@ -1380,6 +1394,11 @@ char *ads_parent_dn(const char *dn)
 	}
 
 	status = ads_search(ads, res, expr, attrs);
+	if (ADS_ERR_OK(status)) {
+		if (ads_count_replies(ads, *res) != 1) {
+			status = ADS_ERROR_LDAP(LDAP_NO_SUCH_OBJECT);
+		}
+	}
 
 done:
 	TALLOC_FREE(frame);
@@ -1867,11 +1886,11 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
 	char *dn_string = NULL;
 
 	ret = ads_find_machine_acct(ads, &res, machine_name);
-	if (!ADS_ERR_OK(ret) || ads_count_replies(ads, res) != 1) {
+	if (!ADS_ERR_OK(ret)) {
 		DEBUG(5,("ads_clear_service_principal_names: WARNING: Host Account for %s not found... skipping operation.\n", machine_name));
 		DEBUG(5,("ads_clear_service_principal_names: WARNING: Service Principals for %s have NOT been cleared.\n", machine_name));
 		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
+		return ret;
 	}
 
 	DEBUG(5,("ads_clear_service_principal_names: Host account for %s found\n", machine_name));
@@ -2027,12 +2046,12 @@ ADS_STATUS ads_add_service_principal_names(ADS_STRUCT *ads,
 	const char **servicePrincipalName = spns;
 
 	ret = ads_find_machine_acct(ads, &res, machine_name);
-	if (!ADS_ERR_OK(ret) || ads_count_replies(ads, res) != 1) {
+	if (!ADS_ERR_OK(ret)) {
 		DEBUG(1,("ads_add_service_principal_name: WARNING: Host Account for %s not found... skipping operation.\n",
 			machine_name));
 		DEBUG(1,("ads_add_service_principal_name: WARNING: Service Principals have NOT been added.\n"));
 		ads_msgfree(ads, res);
-		return ADS_ERROR(LDAP_NO_SUCH_OBJECT);
+		return ret;
 	}
 
 	DEBUG(1,("ads_add_service_principal_name: Host account for %s found\n", machine_name));
@@ -2127,7 +2146,7 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 	}
 
 	ret = ads_find_machine_acct(ads, &res, machine_escaped);
-	if (ADS_ERR_OK(ret) && ads_count_replies(ads, res) == 1) {
+	if (ADS_ERR_OK(ret)) {
 		DBG_DEBUG("Host account for %s already exists.\n",
 				machine_escaped);
 		ret = ADS_ERROR_LDAP(LDAP_ALREADY_EXISTS);
@@ -3684,14 +3703,15 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	TALLOC_FREE(hostnameDN);
 
 	status = ads_find_machine_acct(ads, &res, host);
-	if (ADS_ERR_OK(status) && ads_count_replies(ads, res) == 1) {
+	if ((status.error_type == ENUM_ADS_ERROR_LDAP) &&
+	    (status.err.rc != LDAP_NO_SUCH_OBJECT)) {
 		DEBUG(3, ("Failed to remove host account.\n"));
 		SAFE_FREE(host);
 		return status;
 	}
 
 	SAFE_FREE(host);
-	return status;
+	return ADS_SUCCESS;
 }
 
 /**
