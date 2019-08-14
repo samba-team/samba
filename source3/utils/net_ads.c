@@ -1470,7 +1470,7 @@ int net_ads_testjoin(struct net_context *c, int argc, const char **argv)
 }
 
 /*******************************************************************
-  Simple configu checks before beginning the join
+  Simple config checks before beginning the join
  ********************************************************************/
 
 static WERROR check_ads_config( void )
