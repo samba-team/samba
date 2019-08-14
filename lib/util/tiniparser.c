@@ -328,7 +328,6 @@ struct tiniparser_dictionary *tiniparser_load_stream(FILE *fp)
 
 	d = malloc(sizeof(struct tiniparser_dictionary));
 	if (d == NULL) {
-		fclose(fp);
 		return NULL;
 	}
 	d->section_list = NULL;
