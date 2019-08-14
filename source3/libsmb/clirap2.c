@@ -1194,7 +1194,7 @@ int cli_NetFileGetInfo(struct cli_state *cli, uint32_t file_id, void (*fn)(const
 					rdata,
 					converter,
 					endp);
-			p += rap_getstringp(frame,
+			rap_getstringp(frame,
 					p,
 					&fuser,
 					rdata,
@@ -1522,7 +1522,7 @@ bool cli_get_pdc_name(struct cli_state *cli, const char *workgroup, char **pdc_n
 			if (count > 0) {
 				TALLOC_CTX *frame = talloc_stackframe();
 				char *dcname;
-				p += rap_getstring(frame,
+				rap_getstring(frame,
 					p,
 					&dcname,
 					endp);
@@ -2355,7 +2355,6 @@ int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation,
 
 		p = rparam + WORDSIZE;
 		GETWORD(p, converter,endp);
-		p += WORDSIZE;            /* skip rsize */
 
 		p = rdata;
 		endp = rdata + rdrcnt;
@@ -2377,7 +2376,7 @@ int cli_NetSessionGetInfo(struct cli_state *cli, const char *workstation,
 		GETDWORD(p, sess_time, endp);
 		GETDWORD(p, idle_time, endp);
 		GETDWORD(p, user_flags, endp);
-		p += rap_getstringp(frame,
+		rap_getstringp(frame,
 				p,
 				&clitype_name,
 				rdata,
