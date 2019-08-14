@@ -2127,12 +2127,6 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 	uint32_t acct_control = ( UF_WORKSTATION_TRUST_ACCOUNT |\
 	                        UF_DONT_EXPIRE_PASSWD |\
 			        UF_ACCOUNTDISABLE );
-	uint32_t func_level = 0;
-
-	ret = ads_domain_func_level(ads, &func_level);
-	if (!ADS_ERR_OK(ret)) {
-		return ret;
-	}
 
 	ctx = talloc_init("ads_add_machine_acct");
 	if (ctx == NULL) {
@@ -2183,18 +2177,6 @@ ADS_STATUS ads_create_machine_acct(ADS_STRUCT *ads,
 	ads_mod_str(ctx, &mods, "sAMAccountName", samAccountName);
 	ads_mod_strlist(ctx, &mods, "objectClass", objectClass);
 	ads_mod_str(ctx, &mods, "userAccountControl", controlstr);
-
-	if (func_level >= DS_DOMAIN_FUNCTION_2008) {
-		const char *etype_list_str;
-
-		etype_list_str = talloc_asprintf(ctx, "%d", (int)etype_list);
-		if (etype_list_str == NULL) {
-			ret = ADS_ERROR(LDAP_NO_MEMORY);
-			goto done;
-		}
-		ads_mod_str(ctx, &mods, "msDS-SupportedEncryptionTypes",
-			    etype_list_str);
-	}
 
 	ret = ads_gen_add(ads, new_dn, mods);
 
