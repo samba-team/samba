@@ -4839,7 +4839,7 @@ NTSTATUS cli_disk_size(struct cli_state *cli, const char *path, uint64_t *bsize,
 {
 	uint64_t sectors_per_block;
 	uint64_t bytes_per_sector;
-	int old_bsize, old_total, old_avail;
+	int old_bsize = 0, old_total = 0, old_avail = 0;
 	NTSTATUS status;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
