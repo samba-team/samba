@@ -356,7 +356,7 @@ static ADS_STATUS libnet_join_precreate_machine_acct(TALLOC_CTX *mem_ctx,
 					 r->out.dns_domain_name);
 
 	if (ADS_ERR_OK(status)) {
-		DEBUG(1,("machine account creation created\n"));
+		DBG_WARNING("Machine account successfully created\n");
 		return status;
 	} else  if ((status.error_type == ENUM_ADS_ERROR_LDAP) &&
 		    (status.err.rc == LDAP_ALREADY_EXISTS)) {
@@ -364,7 +364,7 @@ static ADS_STATUS libnet_join_precreate_machine_acct(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!ADS_ERR_OK(status)) {
-		DEBUG(1,("machine account creation failed\n"));
+		DBG_WARNING("Failed to create machine account\n");
 		return status;
 	}
 
