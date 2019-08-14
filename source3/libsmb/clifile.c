@@ -777,7 +777,7 @@ static void cli_posix_stat_done(struct tevent_req *subreq)
 	struct stat_state *state = tevent_req_data(req, struct stat_state);
 	SMB_STRUCT_STAT *sbuf = state->sbuf;
 	uint8_t *data;
-	uint32_t num_data;
+	uint32_t num_data = 0;
 	NTSTATUS status;
 
 	status = cli_qpathinfo_recv(subreq, state, &data, &num_data);
