@@ -2733,7 +2733,7 @@ static uint64_t vfswrap_fs_file_id(struct vfs_handle_struct *handle,
 {
 	uint64_t file_id;
 
-	if (!(psbuf->st_ex_iflags & ST_EX_IFLAG_CALCULATED_ITIME)) {
+	if (!(psbuf->st_ex_iflags & ST_EX_IFLAG_CALCULATED_FILE_ID)) {
 		return psbuf->st_ex_file_id;
 	}
 
