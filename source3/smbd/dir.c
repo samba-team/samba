@@ -333,11 +333,12 @@ done:
 
 void dptr_CloseDir(files_struct *fsp)
 {
-	struct smbd_server_connection *sconn = fsp->dptr->conn->sconn;
+	struct smbd_server_connection *sconn = NULL;
 
 	if (fsp->dptr == NULL) {
 		return;
 	}
+	sconn = fsp->dptr->conn->sconn;
 
 	/*
 	 * The destructor for the struct smb_Dir (fsp->dptr->dir_hnd)
