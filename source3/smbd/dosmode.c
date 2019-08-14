@@ -922,7 +922,7 @@ static void dos_mode_at_vfs_get_dosmode_done(struct tevent_req *subreq)
 				       NULL,
 				       &state->smb_fname->st,
 				       0);
-	if (tevent_req_nomem(path, req)) {
+	if (tevent_req_nomem(smb_path, req)) {
 		return;
 	}
 
