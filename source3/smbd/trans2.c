@@ -8737,7 +8737,6 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 				int total_data,
 				struct smb_filename *smb_fname)
 {
-	struct server_id self = messaging_server_id(conn->sconn->msg_ctx);
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp = NULL;
 	uint16_t flags = 0;
@@ -8808,7 +8807,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	other_nonposix_opens = has_other_nonposix_opens(lck, fsp, self);
+	other_nonposix_opens = has_other_nonposix_opens(lck, fsp);
 	if (other_nonposix_opens) {
 		/* Fail with sharing violation. */
 		TALLOC_FREE(lck);

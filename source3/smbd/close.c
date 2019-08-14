@@ -234,10 +234,10 @@ NTSTATUS delete_all_streams(connection_struct *conn,
 }
 
 bool has_other_nonposix_opens(struct share_mode_lock *lck,
-			      struct files_struct *fsp,
-			      struct server_id self)
+			      struct files_struct *fsp)
 {
 	struct share_mode_data *data = lck->data;
+	struct server_id self = messaging_server_id(fsp->conn->sconn->msg_ctx);
 	uint32_t i;
 
 	for (i=0; i<data->num_share_modes; i++) {
@@ -274,7 +274,6 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 					enum file_close_type close_type)
 {
 	connection_struct *conn = fsp->conn;
-	struct server_id self = messaging_server_id(conn->sconn->msg_ctx);
 	bool delete_file = false;
 	bool changed_user = false;
 	struct share_mode_lock *lck = NULL;
@@ -353,7 +352,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 	delete_file = is_delete_on_close_set(lck, fsp->name_hash);
 
-	delete_file &= !has_other_nonposix_opens(lck, fsp, self);
+	delete_file &= !has_other_nonposix_opens(lck, fsp);
 
 	/*
 	 * NT can set delete_on_close of the last open
@@ -1081,7 +1080,6 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 				enum file_close_type close_type)
 {
-	struct server_id self = messaging_server_id(fsp->conn->sconn->msg_ctx);
 	struct share_mode_lock *lck = NULL;
 	bool delete_dir = False;
 	NTSTATUS status = NT_STATUS_OK;
@@ -1160,7 +1158,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 	delete_dir = get_delete_on_close_token(lck, fsp->name_hash,
 					&del_nt_token, &del_token);
 
-	delete_dir &= !has_other_nonposix_opens(lck, fsp, self);
+	delete_dir &= !has_other_nonposix_opens(lck, fsp);
 
 	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
 				delete_dir) {
