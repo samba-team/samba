@@ -3004,7 +3004,7 @@ NTSTATUS cli_open(struct cli_state *cli, const char *fname, int flags,
 	unsigned int openfn = 0;
 	unsigned int dos_deny = 0;
 	uint32_t access_mask, share_mode, create_disposition, create_options;
-	struct smb_create_returns cr;
+	struct smb_create_returns cr = {0};
 
 	/* Do the initial mapping into OpenX parameters. */
 	if (flags & O_CREAT) {
