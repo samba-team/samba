@@ -580,7 +580,7 @@ static void cli_pull_chunk_done(struct tevent_req *subreq)
 		struct cli_pull_state);
 	NTSTATUS status;
 	size_t expected = chunk->total_size - chunk->tmp_size;
-	ssize_t received;
+	ssize_t received = 0;
 	uint8_t *buf = NULL;
 
 	chunk->subreq = NULL;
