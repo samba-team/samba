@@ -154,6 +154,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_SYMLINK,
 	SMB_VFS_OP_READLINK,
 	SMB_VFS_OP_LINK,
+	SMB_VFS_OP_LINKAT,
 	SMB_VFS_OP_MKNOD,
 	SMB_VFS_OP_REALPATH,
 	SMB_VFS_OP_CHFLAGS,
@@ -297,6 +298,7 @@ static struct {
 	{ SMB_VFS_OP_SYMLINK,	"symlink" },
 	{ SMB_VFS_OP_READLINK,	"readlink" },
 	{ SMB_VFS_OP_LINK,	"link" },
+	{ SMB_VFS_OP_LINKAT,	"linkat" },
 	{ SMB_VFS_OP_MKNOD,	"mknod" },
 	{ SMB_VFS_OP_REALPATH,	"realpath" },
 	{ SMB_VFS_OP_CHFLAGS,	"chflags" },
@@ -1768,6 +1770,28 @@ static int smb_full_audit_link(vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_full_audit_linkat(vfs_handle_struct *handle,
+			files_struct *srcfsp,
+			const struct smb_filename *old_smb_fname,
+			files_struct *dstfsp,
+			const struct smb_filename *new_smb_fname,
+			int flags)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_LINKAT(handle,
+			srcfsp,
+			old_smb_fname,
+			dstfsp,
+			new_smb_fname,
+			flags);
+
+	do_log(SMB_VFS_OP_LINKAT, (result >= 0), handle,
+	       "%s|%s", old_smb_fname->base_name, new_smb_fname->base_name);
+
+	return result;
+}
+
 static int smb_full_audit_mknod(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode,
@@ -2877,6 +2901,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.symlink_fn = smb_full_audit_symlink,
 	.readlink_fn = smb_full_audit_readlink,
 	.link_fn = smb_full_audit_link,
+	.linkat_fn = smb_full_audit_linkat,
 	.mknod_fn = smb_full_audit_mknod,
 	.realpath_fn = smb_full_audit_realpath,
 	.chflags_fn = smb_full_audit_chflags,
