@@ -4096,7 +4096,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	struct dcerpc_binding_handle *b = NULL;
 	struct netr_OneDomainInfo *odi1 = NULL;
 	struct netr_OneDomainInfo *odi2 = NULL;
-	struct netr_trust_extension *tex2 = NULL;
+	struct netr_trust_extension_info *tex2 = NULL;
 
 	torture_comment(tctx, "Testing netr_LogonGetDomainInfo\n");
 
@@ -4481,13 +4481,13 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 	for (i=0; i < info.domain_info->trusted_domain_count; i++) {
 		struct netr_OneDomainInfo *odiT =
 			&info.domain_info->trusted_domains[i];
-		struct netr_trust_extension *texT = NULL;
+		struct netr_trust_extension_info *texT = NULL;
 
 		torture_assert_int_equal(tctx, odiT->trust_extension.length, 16,
 					 "trust_list should have extension");
 		torture_assert(tctx, odiT->trust_extension.info != NULL,
 			       "trust_list should have extension");
-		texT = odiT->trust_extension.info;
+		texT = &odiT->trust_extension.info->info;
 
 		if (GUID_equal(&odiT->domain_guid, &odi1->domain_guid)) {
 			odi2 = odiT;
@@ -4562,7 +4562,7 @@ static bool test_GetDomainInfo(struct torture_context *tctx,
 				 "trust_list should have extension");
 	torture_assert(tctx, odi2->trust_extension.info != NULL,
 		       "trust_list should have extension");
-	tex2 = odi2->trust_extension.info;
+	tex2 = &odi2->trust_extension.info->info;
 	torture_assert_int_equal(tctx,
 				 tex2->flags & NETR_TRUST_FLAG_PRIMARY,
 				 NETR_TRUST_FLAG_PRIMARY,

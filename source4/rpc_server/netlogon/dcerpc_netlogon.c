@@ -2203,13 +2203,15 @@ static NTSTATUS fill_our_one_domain_info(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCTP(info);
 
 	if (is_trust_list) {
-		struct netr_trust_extension *tei = NULL;
+		struct netr_trust_extension *te = NULL;
+		struct netr_trust_extension_info *tei = NULL;
 
 		/* w2k8 only fills this on trusted domains */
-		tei = talloc_zero(mem_ctx, struct netr_trust_extension);
-		if (tei == NULL) {
+		te = talloc_zero(mem_ctx, struct netr_trust_extension);
+		if (te == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
+		tei = &te->info;
 		tei->flags |= NETR_TRUST_FLAG_PRIMARY;
 
 		/*
@@ -2230,8 +2232,7 @@ static NTSTATUS fill_our_one_domain_info(TALLOC_CTX *mem_ctx,
 		 */
 		tei->trust_attributes = 0;
 
-		info->trust_extension.info = tei;
-		info->trust_extension.length = 16;
+		info->trust_extension.info = te;
 	}
 
 	if (is_trust_list) {
@@ -2264,15 +2265,17 @@ static NTSTATUS fill_trust_one_domain_info(TALLOC_CTX *mem_ctx,
 				const struct lsa_TrustDomainInfoInfoEx *tdo,
 				struct netr_OneDomainInfo *info)
 {
-	struct netr_trust_extension *tei = NULL;
+	struct netr_trust_extension *te = NULL;
+	struct netr_trust_extension_info *tei = NULL;
 
 	ZERO_STRUCTP(info);
 
 	/* w2k8 only fills this on trusted domains */
-	tei = talloc_zero(mem_ctx, struct netr_trust_extension);
-	if (tei == NULL) {
+	te = talloc_zero(mem_ctx, struct netr_trust_extension);
+	if (te == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	tei = &te->info;
 
 	if (tdo->trust_direction & LSA_TRUST_DIRECTION_INBOUND) {
 		tei->flags |= NETR_TRUST_FLAG_INBOUND;
@@ -2294,8 +2297,7 @@ static NTSTATUS fill_trust_one_domain_info(TALLOC_CTX *mem_ctx,
 	tei->trust_type = tdo->trust_type;
 	tei->trust_attributes = tdo->trust_attributes;
 
-	info->trust_extension.info = tei;
-	info->trust_extension.length = 16;
+	info->trust_extension.info = te;
 
 	info->domainname.string = tdo->netbios_name.string;
 	if (tdo->trust_type != LSA_TRUST_TYPE_DOWNLEVEL) {
