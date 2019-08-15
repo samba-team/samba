@@ -159,9 +159,10 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	struct share_mode_lock *lck = NULL;
 	struct server_id blocking_pid = { 0 };
 	uint64_t blocking_smblctx = 0;
-	struct timeval endtime;
+	struct timeval endtime = { 0 };
 	NTSTATUS status = NT_STATUS_OK;
 	bool ok;
+	bool expired;
 
 	req = tevent_req_create(
 		mem_ctx, &state, struct smbd_smb1_do_locks_state);
@@ -251,19 +252,28 @@ struct tevent_req *smbd_smb1_do_locks_send(
 			state->timeout = lp_lock_spin_time();
 		}
 	}
+	state->endtime = timeval_current_ofs_msec(state->timeout);
 
 	DBG_DEBUG("timeout=%"PRIu32", blocking_smblctx=%"PRIu64"\n",
 		  state->timeout,
 		  blocking_smblctx);
 
 	/*
+	 * The client specified timeout expired
+	 * avoid further retries.
+	 *
+	 * Otherwise keep waiting either waiting
+	 * for changes in locking.tdb or the polling
+	 * mode timers waiting for posix locks.
+	 *
 	 * If the endtime is not elapsed yet,
 	 * it means we'll retry after a timeout.
 	 * In that case we'll have to return
 	 * NT_STATUS_FILE_LOCK_CONFLICT
 	 * instead of NT_STATUS_LOCK_NOT_GRANTED.
 	 */
-	if (state->timeout == 0) {
+	expired = timeval_expired(&state->endtime);
+	if (expired) {
 		status = state->deny_status;
 		tevent_req_nterror(req, status);
 		goto done;
@@ -278,7 +288,6 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	TALLOC_FREE(lck);
 	tevent_req_set_callback(subreq, smbd_smb1_do_locks_retry, req);
 
-	state->endtime = timeval_current_ofs_msec(state->timeout);
 	endtime = state->endtime;
 
 	if (blocking_smblctx == UINT64_MAX) {
@@ -363,13 +372,13 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 	struct smbd_smb1_do_locks_state *retry_state = tevent_req_data(
 		retry_req, struct smbd_smb1_do_locks_state);
 	struct share_mode_lock *lck;
-	struct timeval endtime;
+	struct timeval endtime = { 0 };
 	struct server_id blocking_pid = { 0 };
 	uint64_t blocking_smblctx = 0;
 	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
 	bool ok;
-	double elapsed;
+	bool expired;
 
 	lck = get_existing_share_mode_lock(state, fsp->file_id);
 	if (tevent_req_nomem(lck, req)) {
@@ -393,7 +402,7 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 	}
 
 	/*
-	 * The client specified timeout elapsed
+	 * The client specified timeout expired
 	 * avoid further retries.
 	 *
 	 * Otherwise keep waiting either waiting
@@ -406,8 +415,8 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 	 * NT_STATUS_FILE_LOCK_CONFLICT
 	 * instead of NT_STATUS_LOCK_NOT_GRANTED.
 	 */
-	elapsed = timeval_elapsed(&state->endtime);
-	if (elapsed > 0) {
+	expired = timeval_expired(&state->endtime);
+	if (expired) {
 		status = state->deny_status;
 		goto done;
 	}
