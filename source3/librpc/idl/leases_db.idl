@@ -49,6 +49,6 @@ interface leases_db
 		uint16			epoch;
 
 		uint32 num_files;
-		[size_is(num_files)] leases_db_file files[];
+		leases_db_file files[num_files];
 	} leases_db_value;
 }
