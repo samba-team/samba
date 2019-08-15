@@ -2544,7 +2544,7 @@ static void alarm_handler(int dummy)
 
 static void alarm_handler_parent(int dummy)
 {
-	smbXcli_conn_disconnect(alarm_cli->conn, NT_STATUS_OK);
+	smbXcli_conn_disconnect(alarm_cli->conn, NT_STATUS_LOCAL_DISCONNECT);
 }
 
 static void do_local_lock(int read_fd, int write_fd)
