@@ -1468,6 +1468,8 @@ static bool test_pool_nest(void)
 
 	talloc_free(p1);
 
+	talloc_free(e); /* make ASAN happy */
+
 	return true;
 }
 
