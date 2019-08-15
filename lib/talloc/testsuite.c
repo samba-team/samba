@@ -1035,6 +1035,8 @@ static bool test_realloc_on_destructor_parent(void)
 
 
 	printf("success: free_for_exit\n");
+	talloc_free(top); /* make ASAN happy */
+
 	return true;
 }
 
