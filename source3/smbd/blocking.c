@@ -117,6 +117,68 @@ static void smbd_smb1_do_locks_retry(struct tevent_req *subreq);
 static void smbd_smb1_blocked_locks_cleanup(
 	struct tevent_req *req, enum tevent_req_state req_state);
 
+static void smbd_smb1_do_locks_setup_timeout(
+	struct smbd_smb1_do_locks_state *state,
+	const struct smbd_lock_element *blocker)
+{
+	struct files_struct *fsp = state->fsp;
+
+	if (!timeval_is_zero(&state->endtime)) {
+		/*
+		 * already done
+		 */
+		return;
+	}
+
+	if ((state->timeout != 0) && (state->timeout != UINT32_MAX)) {
+		/*
+		 * Windows internal resolution for blocking locks
+		 * seems to be about 200ms... Don't wait for less than
+		 * that. JRA.
+		 */
+		state->timeout = MAX(state->timeout, lp_lock_spin_time());
+	}
+
+	if (state->timeout != 0) {
+		goto set_endtime;
+	}
+
+	if (blocker == NULL) {
+		goto set_endtime;
+	}
+
+	if ((blocker->offset >= 0xEF000000) &&
+	    ((blocker->offset >> 63) == 0)) {
+		/*
+		 * This must be an optimization of an ancient
+		 * application bug...
+		 */
+		state->timeout = lp_lock_spin_time();
+	}
+
+	if ((fsp->lock_failure_seen) &&
+	    (blocker->offset == fsp->lock_failure_offset)) {
+		/*
+		 * Delay repeated lock attempts on the same
+		 * lock. Maybe a more advanced version of the
+		 * above check?
+		 */
+		DBG_DEBUG("Delaying lock request due to previous "
+			  "failure\n");
+		state->timeout = lp_lock_spin_time();
+	}
+
+set_endtime:
+	/*
+	 * Note state->timeout might still 0,
+	 * but that's ok, as we don't want to retry
+	 * in that case.
+	 */
+	state->endtime = timeval_add(&state->smbreq->request_time,
+				     state->timeout / 1000,
+				     (state->timeout % 1000) * 1000);
+}
+
 static void smbd_smb1_do_locks_update_polling_msecs(
 	struct smbd_smb1_do_locks_state *state)
 {
@@ -196,15 +258,6 @@ struct tevent_req *smbd_smb1_do_locks_send(
 		return tevent_req_post(req, ev);
 	}
 
-	if ((state->timeout != 0) && (state->timeout != UINT32_MAX)) {
-		/*
-		 * Windows internal resolution for blocking locks
-		 * seems to be about 200ms... Don't wait for less than
-		 * that. JRA.
-		 */
-		state->timeout = MAX(state->timeout, lp_lock_spin_time());
-	}
-
 	lck = get_existing_share_mode_lock(state, state->fsp->file_id);
 	if (tevent_req_nomem(lck, req)) {
 		DBG_DEBUG("Could not get share mode lock\n");
@@ -228,32 +281,7 @@ struct tevent_req *smbd_smb1_do_locks_send(
 		goto done;
 	}
 
-	if (state->timeout == 0) {
-		struct smbd_lock_element *blocker = &locks[state->blocker];
-
-		if ((blocker->offset >= 0xEF000000) &&
-		    ((blocker->offset >> 63) == 0)) {
-			/*
-			 * This must be an optimization of an ancient
-			 * application bug...
-			 */
-			state->timeout = lp_lock_spin_time();
-		}
-
-		if ((fsp->lock_failure_seen) &&
-		    (blocker->offset == fsp->lock_failure_offset)) {
-			/*
-			 * Delay repeated lock attempts on the same
-			 * lock. Maybe a more advanced version of the
-			 * above check?
-			 */
-			DBG_DEBUG("Delaying lock request due to previous "
-				  "failure\n");
-			state->timeout = lp_lock_spin_time();
-		}
-	}
-	state->endtime = timeval_current_ofs_msec(state->timeout);
-
+	smbd_smb1_do_locks_setup_timeout(state, &locks[state->blocker]);
 	DBG_DEBUG("timeout=%"PRIu32", blocking_smblctx=%"PRIu64"\n",
 		  state->timeout,
 		  blocking_smblctx);
