@@ -67,15 +67,6 @@ static int ctdb_tcp_add_node(struct ctdb_node *node)
 	node->private_data = tnode;
 	talloc_set_destructor(tnode, tnode_destructor);
 
-	tnode->out_queue = ctdb_queue_setup(node->ctdb,
-					    node,
-					    tnode->out_fd,
-					    CTDB_TCP_ALIGNMENT,
-					    ctdb_tcp_tnode_cb,
-					    node,
-					    "to-node-%s",
-					    node->name);
-
 	return 0;
 }
 

@@ -44,8 +44,8 @@ void ctdb_tcp_stop_connection(struct ctdb_node *node)
 {
 	struct ctdb_tcp_node *tnode = talloc_get_type(
 		node->private_data, struct ctdb_tcp_node);
-	
-	ctdb_queue_set_fd(tnode->out_queue, -1);
+
+	TALLOC_FREE(tnode->out_queue);
 	TALLOC_FREE(tnode->connect_te);
 	TALLOC_FREE(tnode->connect_fde);
 	if (tnode->out_fd != -1) {
@@ -126,7 +126,24 @@ static void ctdb_node_connect_write(struct tevent_context *ev,
 			    strerror(errno));
 	}
 
-	ctdb_queue_set_fd(tnode->out_queue, tnode->out_fd);
+	tnode->out_queue = ctdb_queue_setup(node->ctdb,
+					    tnode,
+					    tnode->out_fd,
+					    CTDB_TCP_ALIGNMENT,
+					    ctdb_tcp_tnode_cb,
+					    node,
+					    "to-node-%s",
+					    node->name);
+	if (tnode->out_queue == NULL) {
+		DBG_ERR("Failed to set up outgoing queue\n");
+		ctdb_tcp_stop_connection(node);
+		tnode->connect_te = tevent_add_timer(ctdb->ev,
+						     tnode,
+						     timeval_current_ofs(1, 0),
+						     ctdb_tcp_node_connect,
+						     node);
+		return;
+	}
 
 	/* the queue subsystem now owns this fd */
 	tnode->out_fd = -1;
