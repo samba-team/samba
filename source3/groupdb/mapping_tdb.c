@@ -457,7 +457,7 @@ static NTSTATUS one_alias_membership(const struct dom_sid *member,
 	char *string_sid;
 	TDB_DATA dbuf;
 	const char *p;
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX,
