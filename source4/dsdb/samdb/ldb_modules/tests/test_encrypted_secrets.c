@@ -1162,6 +1162,53 @@ static void test_unencrypted_secret(void **state)
 	assert_int_equal(LDB_ERR_OPERATIONS_ERROR, ret);
 }
 
+/*
+ *  Test full decryption of a static value with static key
+ */
+static void test_record_decryption(void **state)
+{
+	struct ldbtest_ctx *test_ctx =
+		talloc_get_type_abort(*state, struct ldbtest_ctx);
+	unsigned char plain_data[] = {
+		0xe6, 0xa6, 0xb8, 0xff, 0xdf, 0x06, 0x6c, 0xe3,
+		0xea, 0xd0, 0x94, 0xbb, 0x79, 0xbd, 0x0a, 0x24
+	};
+	unsigned char encrypted_data[] = {
+		0x0c, 0x00, 0x00, 0x00, 0x33, 0x91, 0x74, 0x25,
+		0x26, 0xcc, 0x0b, 0x8c, 0x21, 0xc1, 0x13, 0xe2,
+		0xed, 0xad, 0x5c, 0xca, 0x01, 0x00, 0x00, 0x00,
+		0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x1a, 0xdc, 0xc9, 0x11, 0x08, 0xca, 0x2c, 0xfb,
+		0xc8, 0x32, 0x6b, 0x1b, 0x25, 0x7f, 0x52, 0xbb,
+		0xae, 0x9b, 0x88, 0x52, 0xb0, 0x18, 0x6d, 0x9d,
+		0x9b, 0xdd, 0xcd, 0x1b, 0x5f, 0x4a, 0x5c, 0x29,
+		0xca, 0x0b, 0x36, 0xaa
+	};
+	struct ldb_val cipher_text
+		= data_blob_const(encrypted_data,
+				  sizeof(encrypted_data));
+	unsigned char es_keys_blob[] = {
+		0x1d, 0xae, 0xf5, 0xaa, 0xa3, 0x85, 0x0d, 0x0a,
+		0x8c, 0x24, 0x5c, 0x4c, 0xa7, 0x0f, 0x81, 0x79
+	};
+	struct es_data data = {
+		.encrypt_secrets = true,
+		.keys[0] = {
+			.data = es_keys_blob,
+			.length = sizeof(es_keys_blob),
+		},
+#ifdef HAVE_GNUTLS_AEAD
+		.encryption_algorithm = GNUTLS_CIPHER_AES_128_GCM,
+#endif
+	};
+	int err = LDB_SUCCESS;
+	struct ldb_val dec = decrypt_value(&err, test_ctx, test_ctx->ldb, cipher_text,
+					   &data);
+	assert_int_equal(LDB_SUCCESS, err);
+	assert_int_equal(sizeof(plain_data), dec.length);
+	assert_memory_equal(dec.data, plain_data, sizeof(plain_data));
+}
+
 
 int main(void) {
 	const struct CMUnitTest tests[] = {
@@ -1229,6 +1276,10 @@ int main(void) {
 			teardown),
 		cmocka_unit_test_setup_teardown(
 			test_unencrypted_secret,
+			setup_with_key,
+			teardown),
+		cmocka_unit_test_setup_teardown(
+			test_record_decryption,
 			setup_with_key,
 			teardown),
 	};
