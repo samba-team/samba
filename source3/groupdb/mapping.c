@@ -645,7 +645,7 @@ NTSTATUS pdb_default_set_aliasinfo(struct pdb_methods *methods,
 				   const struct dom_sid *sid,
 				   struct acct_info *info)
 {
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	GROUP_MAP *map;
 
 	map = talloc_zero(NULL, GROUP_MAP);
