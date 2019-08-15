@@ -354,6 +354,14 @@ typedef struct files_struct {
 	bool write_time_forced;
 
 	int oplock_type;
+
+	/*
+	 * Cache of our lease_type, stored as "current_state" in
+	 * leases.tdb
+	 */
+	int leases_db_seqnum;
+	uint32_t lease_type;
+
 	struct fsp_lease *lease;
 	int sent_oplock_break;
 	struct tevent_timer *oplock_timeout;

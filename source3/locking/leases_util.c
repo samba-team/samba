@@ -24,6 +24,7 @@
 #include "../librpc/gen_ndr/open_files.h"
 #include "locking/proto.h"
 #include "smbd/globals.h"
+#include "locking/leases_db.h"
 
 uint32_t map_oplock_to_lease_type(uint16_t op_type)
 {
@@ -47,12 +48,27 @@ uint32_t map_oplock_to_lease_type(uint16_t op_type)
 	return ret;
 }
 
-uint32_t fsp_lease_type(const struct files_struct *fsp)
+uint32_t fsp_lease_type(struct files_struct *fsp)
 {
-	if (fsp->oplock_type == LEASE_OPLOCK) {
-		return fsp->lease->lease.lease_state;
+	NTSTATUS status;
+
+	if (fsp->oplock_type != LEASE_OPLOCK) {
+		uint32_t type = map_oplock_to_lease_type(fsp->oplock_type);
+		return type;
 	}
-	return map_oplock_to_lease_type(fsp->oplock_type);
+
+	status = leases_db_get_current_state(
+		fsp_client_guid(fsp),
+		&fsp->lease->lease.lease_key,
+		&fsp->leases_db_seqnum,
+		&fsp->lease_type);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("leases_db_get_current_state failed: %s\n",
+			  nt_errstr(status));
+		fsp->lease_type = 0; /* no lease */
+	}
+
+	return fsp->lease_type;
 }
 
 static uint32_t lease_type_is_exclusive(uint32_t lease_type)
@@ -65,7 +81,7 @@ static uint32_t lease_type_is_exclusive(uint32_t lease_type)
 	return false;
 }
 
-bool fsp_lease_type_is_exclusive(const struct files_struct *fsp)
+bool fsp_lease_type_is_exclusive(struct files_struct *fsp)
 {
 	uint32_t lease_type = fsp_lease_type(fsp);
 
