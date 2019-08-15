@@ -236,7 +236,7 @@ struct tevent_req *smbd_smb1_do_locks_send(
 
 		DBG_DEBUG("Blocked on a posix lock. Retry in one second\n");
 
-		tmp = timeval_current_ofs(1, 0);
+		tmp = timeval_current_ofs(15, 0);
 		endtime = timeval_min(&endtime, &tmp);
 	}
 
@@ -381,7 +381,7 @@ static void smbd_smb1_do_locks_retry(struct tevent_req *subreq)
 
 		DBG_DEBUG("Blocked on a posix lock. Retry in one second\n");
 
-		tmp = timeval_current_ofs(1, 0);
+		tmp = timeval_current_ofs(15, 0);
 		endtime = timeval_min(&endtime, &tmp);
 	}
 
