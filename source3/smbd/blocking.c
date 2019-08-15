@@ -545,6 +545,11 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 		goto done;
 	}
 
+	smbd_smb1_do_locks_setup_timeout(state, &state->locks[state->blocker]);
+	DBG_DEBUG("timeout=%"PRIu32", blocking_smblctx=%"PRIu64"\n",
+		  state->timeout,
+		  blocking_smblctx);
+
 	/*
 	 * The client specified timeout expired
 	 * avoid further retries.
