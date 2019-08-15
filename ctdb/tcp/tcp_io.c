@@ -87,5 +87,10 @@ int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 {
 	struct ctdb_tcp_node *tnode = talloc_get_type(node->private_data,
 						      struct ctdb_tcp_node);
+	if (tnode->out_queue == NULL) {
+		DBG_DEBUG("No outgoing connection, dropping packet\n");
+		return 0;
+	}
+
 	return ctdb_queue_send(tnode->out_queue, data, length);
 }
