@@ -226,7 +226,7 @@ static virusfilter_result virusfilter_sophos_scan(
 	const struct files_struct *fsp,
 	char **reportp)
 {
-	char *cwd_fname = fsp->conn->cwd_fname->base_name;
+	char *cwd_fname = fsp->conn->cwd_fsp->fsp_name->base_name;
 	const char *fname = fsp->fsp_name->base_name;
 	char fileurl[VIRUSFILTER_IO_URL_MAX+1];
 	int fileurl_len, fileurl_len2;

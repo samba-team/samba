@@ -579,7 +579,7 @@ static virusfilter_action infected_file_action_quarantine(
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	connection_struct *conn = handle->conn;
-	char *cwd_fname = fsp->conn->cwd_fname->base_name;
+	char *cwd_fname = fsp->conn->cwd_fsp->fsp_name->base_name;
 	char *fname = fsp->fsp_name->base_name;
 	const struct smb_filename *smb_fname = fsp->fsp_name;
 	struct smb_filename *q_smb_fname = NULL;
@@ -696,7 +696,7 @@ static virusfilter_action infected_file_action_rename(
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	connection_struct *conn = handle->conn;
-	char *cwd_fname = fsp->conn->cwd_fname->base_name;
+	char *cwd_fname = fsp->conn->cwd_fsp->fsp_name->base_name;
 	char *fname = fsp->fsp_name->base_name;
 	const struct smb_filename *smb_fname = fsp->fsp_name;
 	struct smb_filename *q_smb_fname = NULL;
@@ -784,7 +784,7 @@ static virusfilter_action infected_file_action_delete(
 	unbecome_root();
 	if (ret == -1) {
 		DBG_ERR("Delete [%s/%s] failed: %s\n",
-			fsp->conn->cwd_fname->base_name,
+			fsp->conn->cwd_fsp->fsp_name->base_name,
 			fsp->fsp_name->base_name,
 			strerror(saved_errno));
 		errno = saved_errno;
@@ -837,7 +837,7 @@ static virusfilter_action virusfilter_treat_infected_file(
 	bool is_cache)
 {
 	connection_struct *conn = handle->conn;
-	char *cwd_fname = fsp->conn->cwd_fname->base_name;
+	char *cwd_fname = fsp->conn->cwd_fsp->fsp_name->base_name;
 	char *fname = fsp->fsp_name->base_name;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	int i;
@@ -937,7 +937,7 @@ static void virusfilter_treat_scan_error(
 	bool is_cache)
 {
 	connection_struct *conn = handle->conn;
-	const char *cwd_fname = fsp->conn->cwd_fname->base_name;
+	const char *cwd_fname = fsp->conn->cwd_fsp->fsp_name->base_name;
 	const char *fname = fsp->fsp_name->base_name;
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	char *env_list = NULL;
@@ -1003,7 +1003,7 @@ static virusfilter_result virusfilter_scan(
 	virusfilter_result scan_result;
 	char *scan_report = NULL;
 	const char *fname = fsp->fsp_name->base_name;
-	const char *cwd_fname = fsp->conn->cwd_fname->base_name;
+	const char *cwd_fname = fsp->conn->cwd_fsp->fsp_name->base_name;
 	struct virusfilter_cache_entry *scan_cache_e = NULL;
 	bool is_cache = false;
 	virusfilter_action file_action = VIRUSFILTER_ACTION_DO_NOTHING;
@@ -1138,7 +1138,7 @@ static int virusfilter_vfs_open(
 {
 	TALLOC_CTX *mem_ctx = talloc_tos();
 	struct virusfilter_config *config;
-	const char *cwd_fname = fsp->conn->cwd_fname->base_name;
+	const char *cwd_fname = fsp->conn->cwd_fsp->fsp_name->base_name;
 	virusfilter_result scan_result;
 	const char *fname = fsp->fsp_name->base_name;
 	char *dir_name = NULL;
@@ -1435,7 +1435,7 @@ static int virusfilter_vfs_unlink(
 	int ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 	struct virusfilter_config *config = NULL;
 	char *fname = NULL;
-	char *cwd_fname = handle->conn->cwd_fname->base_name;
+	char *cwd_fname = handle->conn->cwd_fsp->fsp_name->base_name;
 
 	if (ret != 0 && errno != ENOENT) {
 		return ret;
@@ -1465,7 +1465,7 @@ static int virusfilter_vfs_rename(
 	struct virusfilter_config *config = NULL;
 	char *fname = NULL;
 	char *dst_fname = NULL;
-	char *cwd_fname = handle->conn->cwd_fname->base_name;
+	char *cwd_fname = handle->conn->cwd_fsp->fsp_name->base_name;
 
 	if (ret != 0) {
 		return ret;

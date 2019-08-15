@@ -680,11 +680,11 @@ static const char *smb_fname_str_do_log(struct connection_struct *conn,
 		if (!ISDOT(smb_fname->base_name)) {
 			abs_name = talloc_asprintf(do_log_ctx(),
 					"%s/%s",
-					conn->cwd_fname->base_name,
+					conn->cwd_fsp->fsp_name->base_name,
 					smb_fname->base_name);
 		} else {
 			abs_name = talloc_strdup(do_log_ctx(),
-					conn->cwd_fname->base_name);
+					conn->cwd_fsp->fsp_name->base_name);
 		}
 		if (abs_name == NULL) {
 			return "";

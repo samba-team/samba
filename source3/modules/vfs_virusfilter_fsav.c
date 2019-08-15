@@ -301,7 +301,7 @@ static virusfilter_result virusfilter_fsav_scan(
 	const struct files_struct *fsp,
 	char **reportp)
 {
-	char *cwd_fname = fsp->conn->cwd_fname->base_name;
+	char *cwd_fname = fsp->conn->cwd_fsp->fsp_name->base_name;
 	const char *fname = fsp->fsp_name->base_name;
 	struct virusfilter_io_handle *io_h = config->io_h;
 	virusfilter_result result = VIRUSFILTER_RESULT_CLEAN;

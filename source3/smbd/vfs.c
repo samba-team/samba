@@ -787,7 +787,7 @@ const char *vfs_readdirname(connection_struct *conn, void *p,
 int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 {
 	int ret;
-	struct smb_filename *old_cwd = conn->cwd_fname;
+	struct smb_filename *cwd = NULL;
 
 	if (!LastDir) {
 		LastDir = SMB_STRDUP("");
@@ -810,14 +810,14 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 	}
 
 	/*
-	 * Always replace conn->cwd_fname. We
+	 * Always replace conn->cwd_fsp. We
 	 * don't know if it's been modified by
 	 * VFS modules in the stack.
 	 */
 
 	/* conn cache. */
-	conn->cwd_fname = vfs_GetWd(conn, conn);
-	if (conn->cwd_fname == NULL) {
+	cwd = vfs_GetWd(conn, conn);
+	if (cwd == NULL) {
 		/*
 		 * vfs_GetWd() failed.
 		 * We must be able to read cwd.
@@ -826,7 +826,7 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 		 */
 		int saved_errno = errno;
 
-		if (old_cwd == NULL) {
+		if (conn->cwd_fsp->fsp_name == NULL) {
 			/*
 			 * Failed on the very first chdir()+getwd()
 			 * for this connection. We can't
@@ -836,11 +836,9 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 			/* NOTREACHED */
 			return -1;
 		}
-		/* Restore original conn->cwd_fname. */
-		conn->cwd_fname = old_cwd;
 
 		/* Return to the previous $cwd. */
-		ret = SMB_VFS_CHDIR(conn, conn->cwd_fname);
+		ret = SMB_VFS_CHDIR(conn, conn->cwd_fsp->fsp_name);
 		if (ret != 0) {
 			smb_panic("conn->cwd getwd failed\n");
 			/* NOTREACHED */
@@ -856,9 +854,18 @@ int vfs_ChDir(connection_struct *conn, const struct smb_filename *smb_fname)
 	SAFE_FREE(LastDir);
 	LastDir = SMB_STRDUP(smb_fname->base_name);
 
-	DEBUG(4,("vfs_ChDir got %s\n", conn->cwd_fname->base_name));
+	/*
+	 * (Indirect) Callers of vfs_ChDir() may still hold references to the
+	 * old conn->cwd_fsp->fsp_name. Move it to talloc_tos(), that way
+	 * callers can use it for the lifetime of the SMB request.
+	 */
+	talloc_move(talloc_tos(), &conn->cwd_fsp->fsp_name);
 
-	TALLOC_FREE(old_cwd);
+	conn->cwd_fsp->fsp_name = talloc_move(conn->cwd_fsp, &cwd);
+	conn->cwd_fsp->fh->fd = AT_FDCWD;
+
+	DBG_INFO("vfs_ChDir got %s\n", fsp_str_dbg(conn->cwd_fsp));
+
 	return ret;
 }
 

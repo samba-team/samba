@@ -90,8 +90,23 @@ connection_struct *conn_new(struct smbd_server_connection *sconn)
 		TALLOC_FREE(conn);
 		return NULL;
 	}
+	conn->cwd_fsp = talloc_zero(conn, struct files_struct);
+	if (conn->cwd_fsp == NULL) {
+		DBG_ERR("talloc_zero failed\n");
+		TALLOC_FREE(conn);
+		return NULL;
+	}
+	conn->cwd_fsp->fh = talloc_zero(conn->cwd_fsp, struct fd_handle);
+	if (conn->cwd_fsp->fh == NULL) {
+		DBG_ERR("talloc_zero failed\n");
+		TALLOC_FREE(conn);
+		return NULL;
+	}
 	conn->sconn = sconn;
 	conn->force_group_gid = (gid_t)-1;
+	conn->cwd_fsp->fh->fd = -1;
+	conn->cwd_fsp->fnum = FNUM_FIELD_INVALID;
+	conn->cwd_fsp->conn = conn;
 
 	DLIST_ADD(sconn->connections, conn);
 	sconn->num_connections++;

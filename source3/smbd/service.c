@@ -72,16 +72,16 @@ bool set_conn_connectpath(connection_struct *conn, const char *connectpath)
 	talloc_free(conn->connectpath);
 	conn->connectpath = destname;
 	/*
-	 * Ensure conn->cwd_fname is initialized.
+	 * Ensure conn->cwd_fsp->fsp_name is initialized.
 	 * start as conn->connectpath.
 	 */
-	TALLOC_FREE(conn->cwd_fname);
-	conn->cwd_fname = synthetic_smb_fname(conn,
+	TALLOC_FREE(conn->cwd_fsp->fsp_name);
+	conn->cwd_fsp->fsp_name = synthetic_smb_fname(conn,
 				conn->connectpath,
 				NULL,
 				NULL,
 				0);
-	if (conn->cwd_fname == NULL) {
+	if (conn->cwd_fsp->fsp_name == NULL) {
 		return false;
 	}
 	return true;

@@ -234,7 +234,7 @@ static int atalk_rmdir(struct vfs_handle_struct *handle,
 	const char *path = smb_fname->base_name;
 	char *dpath;
 
-	if (!handle->conn->cwd_fname->base_name || !path) goto exit_rmdir;
+	if (!handle->conn->cwd_fsp->fsp_name->base_name || !path) goto exit_rmdir;
 
 	/* due to there is no way to change bDeleteVetoFiles variable
 	 * from this module, gotta use talloc stuff..
@@ -246,7 +246,7 @@ static int atalk_rmdir(struct vfs_handle_struct *handle,
 		goto exit_rmdir;
 
 	if (!(dpath = talloc_asprintf(ctx, "%s/%s%s", 
-	  handle->conn->cwd_fname->base_name, path, add ? "/"APPLEDOUBLE : "")))
+	  handle->conn->cwd_fsp->fsp_name->base_name, path, add ? "/"APPLEDOUBLE : "")))
 		goto exit_rmdir;
 
 	atalk_rrmdir(ctx, dpath);
@@ -277,7 +277,7 @@ static int atalk_rename(struct vfs_handle_struct *handle,
 		return ret;
 	}
 
-	if (atalk_build_paths(talloc_tos(), handle->conn->cwd_fname->base_name, oldname,
+	if (atalk_build_paths(talloc_tos(), handle->conn->cwd_fsp->fsp_name->base_name, oldname,
 			      &adbl_path, &orig_path, &adbl_info,
 			      &orig_info) != 0)
 		goto exit_rename;
@@ -339,7 +339,7 @@ static int atalk_unlink(struct vfs_handle_struct *handle,
 	}
 
 	if (atalk_build_paths(talloc_tos(),
-				handle->conn->cwd_fname->base_name, path,
+				handle->conn->cwd_fsp->fsp_name->base_name, path,
 			      &adbl_path, &orig_path,
 			      &adbl_info, &orig_info) != 0)
 		goto exit_unlink;
@@ -376,7 +376,7 @@ static int atalk_chmod(struct vfs_handle_struct *handle,
 		return ret;
 
 	ret1 = atalk_build_paths(ctx,
-			handle->conn->cwd_fname->base_name,
+			handle->conn->cwd_fsp->fsp_name->base_name,
 			smb_fname->base_name,
 			&adbl_path,
 			&orig_path,
@@ -415,7 +415,7 @@ static int atalk_chown(struct vfs_handle_struct *handle,
 	if (!(ctx = talloc_init("chown_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, handle->conn->cwd_fname->base_name,
+	if (atalk_build_paths(ctx, handle->conn->cwd_fsp->fsp_name->base_name,
 				smb_fname->base_name,
 				&adbl_path, &orig_path,
 				&adbl_info, &orig_info) != 0)
@@ -452,7 +452,7 @@ static int atalk_lchown(struct vfs_handle_struct *handle,
 	if (!(ctx = talloc_init("lchown_file")))
 		return ret;
 
-	if (atalk_build_paths(ctx, handle->conn->cwd_fname->base_name,
+	if (atalk_build_paths(ctx, handle->conn->cwd_fsp->fsp_name->base_name,
 				smb_fname->base_name,
 				&adbl_path, &orig_path,
 				&adbl_info, &orig_info) != 0)

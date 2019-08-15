@@ -81,7 +81,7 @@ static virusfilter_result virusfilter_clamav_scan(
 	const struct files_struct *fsp,
 	char **reportp)
 {
-	char *cwd_fname = fsp->conn->cwd_fname->base_name;
+	char *cwd_fname = fsp->conn->cwd_fsp->fsp_name->base_name;
 	const char *fname = fsp->fsp_name->base_name;
 	size_t filepath_len = strlen(cwd_fname) + 1 /* slash */ + strlen(fname);
 	struct virusfilter_io_handle *io_h = config->io_h;

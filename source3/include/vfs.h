@@ -475,7 +475,7 @@ typedef struct connection_struct {
 	enum timestamp_set_resolution ts_res;
 	char *connectpath;
 	char *origpath;
-	struct smb_filename *cwd_fname; /* Working directory. */
+	struct files_struct *cwd_fsp; /* Working directory. */
 	bool tcon_done;
 
 	struct vfs_handle_struct *vfs_handles;		/* for the new plugins */

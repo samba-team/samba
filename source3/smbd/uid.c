@@ -581,7 +581,7 @@ static void pop_conn_ctx(void)
 	if (current_user.done_chdir && ctx_p->need_chdir) {
 		int ret;
 
-		ret = vfs_ChDir(ctx_p->conn, ctx_p->conn->cwd_fname);
+		ret = vfs_ChDir(ctx_p->conn, ctx_p->conn->cwd_fsp->fsp_name);
 		if (ret != 0) {
 			DBG_ERR("vfs_ChDir() failed!\n");
 			smb_panic("vfs_ChDir() failed!\n");
