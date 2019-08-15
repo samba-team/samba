@@ -1904,7 +1904,7 @@ NTSTATUS cli_session_setup_creds(struct cli_state *cli,
 
 NTSTATUS cli_session_setup_anon(struct cli_state *cli)
 {
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	NTSTATUS status;
 	struct cli_credentials *creds = NULL;
 
 	creds = cli_credentials_init_anon(cli);
