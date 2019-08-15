@@ -1999,6 +1999,8 @@ static bool test_magic_protection(void)
 
 	while (wait(&exit_status) != pid);
 
+	talloc_free(pool); /* make ASAN happy */
+
 	if (!WIFEXITED(exit_status)) {
 		printf("Child exited through unexpected abnormal means\n");
 		return false;
