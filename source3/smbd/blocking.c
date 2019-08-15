@@ -224,15 +224,9 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	uint16_t num_locks,
 	struct smbd_lock_element *locks)
 {
-	struct tevent_req *req = NULL, *subreq = NULL;
+	struct tevent_req *req = NULL;
 	struct smbd_smb1_do_locks_state *state = NULL;
-	struct share_mode_lock *lck = NULL;
-	struct server_id blocking_pid = { 0 };
-	uint64_t blocking_smblctx = 0;
-	struct timeval endtime = { 0 };
-	NTSTATUS status = NT_STATUS_OK;
 	bool ok;
-	bool expired;
 
 	req = tevent_req_create(
 		mem_ctx, &state, struct smbd_smb1_do_locks_state);
@@ -266,94 +260,18 @@ struct tevent_req *smbd_smb1_do_locks_send(
 		return tevent_req_post(req, ev);
 	}
 
-	lck = get_existing_share_mode_lock(state, state->fsp->file_id);
-	if (tevent_req_nomem(lck, req)) {
-		DBG_DEBUG("Could not get share mode lock\n");
+	smbd_smb1_do_locks_try(req);
+	if (!tevent_req_is_in_progress(req)) {
 		return tevent_req_post(req, ev);
-	}
-
-	status = smbd_smb1_do_locks_check(
-		state->fsp,
-		state->lock_flav,
-		state->num_locks,
-		state->locks,
-		&state->blocker,
-		&blocking_pid,
-		&blocking_smblctx);
-	if (NT_STATUS_IS_OK(status)) {
-		tevent_req_done(req);
-		goto done;
-	}
-	if (!ERROR_WAS_LOCK_DENIED(status)) {
-		tevent_req_nterror(req, status);
-		goto done;
-	}
-
-	smbd_smb1_do_locks_setup_timeout(state, &locks[state->blocker]);
-	DBG_DEBUG("timeout=%"PRIu32", blocking_smblctx=%"PRIu64"\n",
-		  state->timeout,
-		  blocking_smblctx);
-
-	/*
-	 * The client specified timeout expired
-	 * avoid further retries.
-	 *
-	 * Otherwise keep waiting either waiting
-	 * for changes in locking.tdb or the polling
-	 * mode timers waiting for posix locks.
-	 *
-	 * If the endtime is not elapsed yet,
-	 * it means we'll retry after a timeout.
-	 * In that case we'll have to return
-	 * NT_STATUS_FILE_LOCK_CONFLICT
-	 * instead of NT_STATUS_LOCK_NOT_GRANTED.
-	 */
-	expired = timeval_expired(&state->endtime);
-	if (expired) {
-		status = state->deny_status;
-		tevent_req_nterror(req, status);
-		goto done;
-	}
-	state->deny_status = NT_STATUS_FILE_LOCK_CONFLICT;
-
-	endtime = state->endtime;
-
-	if (blocking_smblctx == UINT64_MAX) {
-		struct timeval tmp;
-
-		smbd_smb1_do_locks_update_polling_msecs(state);
-
-		DBG_DEBUG("Blocked on a posix lock. Retry in %"PRIu32" msecs\n",
-			  state->polling_msecs);
-
-		tmp = timeval_current_ofs_msec(state->polling_msecs);
-		endtime = timeval_min(&endtime, &tmp);
-	}
-
-	subreq = dbwrap_watched_watch_send(
-		state, state->ev, lck->data->record, blocking_pid);
-	if (tevent_req_nomem(subreq, req)) {
-		goto done;
-	}
-	TALLOC_FREE(lck);
-	tevent_req_set_callback(subreq, smbd_smb1_do_locks_retry, req);
-
-	ok = tevent_req_set_endtime(subreq, state->ev, endtime);
-	if (!ok) {
-		tevent_req_oom(req);
-		goto done;
 	}
 
 	ok = smbd_smb1_fsp_add_blocked_lock_req(fsp, req);
 	if (!ok) {
 		tevent_req_oom(req);
-		goto done;
+		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_cleanup_fn(req, smbd_smb1_blocked_locks_cleanup);
 	return req;
-done:
-	TALLOC_FREE(lck);
-	return tevent_req_post(req, ev);
 }
 
 static void smbd_smb1_blocked_locks_cleanup(
