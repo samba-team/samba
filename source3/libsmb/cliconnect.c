@@ -677,7 +677,6 @@ static void cli_session_setup_guest_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, status);
 		return;
 	}
-	p += ret;
 
 	tevent_req_done(req);
 }
