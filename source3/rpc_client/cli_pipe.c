@@ -394,7 +394,7 @@ static NTSTATUS cli_pipe_validate_current_pdu(TALLOC_CTX *mem_ctx,
 {
 	const struct dcerpc_response *r = NULL;
 	DATA_BLOB tmp_stub = data_blob_null;
-	NTSTATUS ret = NT_STATUS_OK;
+	NTSTATUS ret;
 
 	/*
 	 * Point the return values at the real data including the RPC
@@ -1231,7 +1231,7 @@ static NTSTATUS create_rpc_bind_req(TALLOC_CTX *mem_ctx,
 {
 	DATA_BLOB auth_token = data_blob_null;
 	DATA_BLOB auth_info = data_blob_null;
-	NTSTATUS ret = NT_STATUS_OK;
+	NTSTATUS ret;
 
 	switch (auth->auth_type) {
 	case DCERPC_AUTH_TYPE_NONE:
