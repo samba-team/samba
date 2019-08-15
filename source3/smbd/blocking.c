@@ -319,6 +319,7 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 	struct tevent_req *subreq = NULL;
 	NTSTATUS status;
 	bool ok;
+	double elapsed;
 
 	lck = get_existing_share_mode_lock(state, fsp->file_id);
 	if (tevent_req_nomem(lck, req)) {
@@ -338,6 +339,24 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 		goto done;
 	}
 	if (!ERROR_WAS_LOCK_DENIED(status)) {
+		goto done;
+	}
+
+	/*
+	 * The client specified timeout elapsed
+	 * avoid further retries.
+	 *
+	 * Otherwise keep waiting either waiting
+	 * for changes in locking.tdb or the polling
+	 * mode timers waiting for posix locks.
+	 */
+	elapsed = timeval_elapsed(&state->endtime);
+	if (elapsed > 0) {
+		/*
+		 * On timeout we always return
+		 * NT_STATUS_FILE_LOCK_CONFLICT
+		 */
+		status = NT_STATUS_FILE_LOCK_CONFLICT;
 		goto done;
 	}
 
@@ -395,17 +414,12 @@ static void smbd_smb1_do_locks_retry(struct tevent_req *subreq)
 	DBG_DEBUG("dbwrap_watched_watch_recv returned %s\n",
 		  nt_errstr(status));
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		double elapsed = timeval_elapsed(&state->endtime);
-		if (elapsed > 0) {
-			smbd_smb1_brl_finish_by_req(
-				req, NT_STATUS_FILE_LOCK_CONFLICT);
-			return;
-		}
-		/*
-		 * This is a posix lock retry. Just retry.
-		 */
-	}
+	/*
+	 * We ignore any errors here, it's most likely
+	 * we just get NT_STATUS_OK or NT_STATUS_IO_TIMEOUT.
+	 *
+	 * In any case we can just give it a retry.
+	 */
 
 	smbd_smb1_do_locks_try(req);
 }
