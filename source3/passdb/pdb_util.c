@@ -38,7 +38,7 @@
 static NTSTATUS add_sid_to_builtin(const struct dom_sid *builtin_sid,
 				   const struct dom_sid *dom_sid)
 {
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 
 	if (!dom_sid || !builtin_sid) {
 		return NT_STATUS_INVALID_PARAMETER;
