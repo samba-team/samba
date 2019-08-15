@@ -1266,6 +1266,8 @@ static bool test_talloc_free_in_destructor(void)
 
 	talloc_free(level0);
 
+	talloc_free(level3); /* make ASAN happy */
+
 	printf("success: free_in_destructor\n");
 	return true;
 }
