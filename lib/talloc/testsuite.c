@@ -1540,7 +1540,7 @@ static bool test_free_ref_null_context(void)
 static bool test_rusty(void)
 {
 	void *root;
-	const char *p1;
+	char *p1;
 
 	talloc_enable_null_tracking();
 	root = talloc_new(NULL);
@@ -1549,6 +1549,8 @@ static bool test_rusty(void)
 	talloc_report_full(root, stdout);
 	talloc_free(root);
 	CHECK_BLOCKS("null_context", NULL, 2);
+	talloc_free(p1); /* make ASAN happy */
+
 	return true;
 }
 
