@@ -2546,7 +2546,7 @@ static void alarm_handler_parent(int dummy)
 	smbXcli_conn_disconnect(alarm_cli->conn, NT_STATUS_LOCAL_DISCONNECT);
 }
 
-static void do_local_lock(int read_fd, int write_fd)
+static void do_local_lock(const char *fname, int read_fd, int write_fd)
 {
 	int fd;
 	char c = '\0';
@@ -2555,7 +2555,7 @@ static void do_local_lock(int read_fd, int write_fd)
 	int ret;
 
 	local_pathname = talloc_asprintf(talloc_tos(),
-			"%s/lockt9.lck", local_path);
+			"%s/%s", local_path, fname);
 	if (!local_pathname) {
 		printf("child: alloc fail\n");
 		exit(1);
@@ -2614,10 +2614,10 @@ static void do_local_lock(int read_fd, int write_fd)
 	exit(0);
 }
 
-static bool run_locktest9(int dummy)
+static bool _run_locktest9X(const char *fname, int timeout)
 {
 	struct cli_state *cli1;
-	const char *fname = "\\lockt9.lck";
+	char *fpath = talloc_asprintf(talloc_tos(), "\\%s", fname);
 	uint16_t fnum;
 	bool correct = False;
 	int pipe_in[2], pipe_out[2];
@@ -2628,10 +2628,10 @@ static bool run_locktest9(int dummy)
 	double seconds;
 	NTSTATUS status;
 
-	printf("starting locktest9\n");
+	printf("starting locktest9X: %s\n", fname);
 
 	if (local_path == NULL) {
-		d_fprintf(stderr, "locktest9 must be given a local path via -l <localpath>\n");
+		d_fprintf(stderr, "locktest9X must be given a local path via -l <localpath>\n");
 		return false;
 	}
 
@@ -2646,7 +2646,7 @@ static bool run_locktest9(int dummy)
 
 	if (child_pid == 0) {
 		/* Child. */
-		do_local_lock(pipe_out[0], pipe_in[1]);
+		do_local_lock(fname, pipe_out[0], pipe_in[1]);
 		exit(0);
 	}
 
@@ -2669,7 +2669,7 @@ static bool run_locktest9(int dummy)
 
 	smbXcli_conn_set_sockopt(cli1->conn, sockops);
 
-	status = cli_openx(cli1, fname, O_RDWR, DENY_NONE,
+	status = cli_openx(cli1, fpath, O_RDWR, DENY_NONE,
 			  &fnum);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "cli_openx returned %s\n", nt_errstr(status));
@@ -2700,7 +2700,7 @@ static bool run_locktest9(int dummy)
 
 	start = timeval_current();
 
-	status = cli_lock32(cli1, fnum, 0, 4, -1, WRITE_LOCK);
+	status = cli_lock32(cli1, fnum, 0, 4, timeout, WRITE_LOCK);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "Unable to apply write lock on range 0:4, error was "
 		       "%s\n", nt_errstr(status));
@@ -2727,8 +2727,18 @@ fail:
 
 fail_nofd:
 
-	printf("finished locktest9\n");
+	printf("finished locktest9X: %s\n", fname);
 	return correct;
+}
+
+static bool run_locktest9a(int dummy)
+{
+	return _run_locktest9X("lock9a.dat", -1);
+}
+
+static bool run_locktest9b(int dummy)
+{
+	return _run_locktest9X("lock9b.dat", 10000);
 }
 
 struct locktest10_state {
@@ -13651,8 +13661,12 @@ static struct {
 		.fn   =  run_locktest8,
 	},
 	{
-		.name = "LOCK9",
-		.fn   =  run_locktest9,
+		.name = "LOCK9A",
+		.fn   =  run_locktest9a,
+	},
+	{
+		.name = "LOCK9B",
+		.fn   =  run_locktest9b,
 	},
 	{
 		.name = "LOCK10",
