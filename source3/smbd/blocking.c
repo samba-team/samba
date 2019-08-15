@@ -102,6 +102,7 @@ struct smbd_smb1_do_locks_state {
 	struct smb_request *smbreq;
 	struct files_struct *fsp;
 	uint32_t timeout;
+	uint32_t polling_msecs;
 	struct timeval endtime;
 	bool large_offset;	/* required for correct cancel */
 	enum brl_flavour lock_flav;
@@ -114,6 +115,32 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req);
 static void smbd_smb1_do_locks_retry(struct tevent_req *subreq);
 static void smbd_smb1_blocked_locks_cleanup(
 	struct tevent_req *req, enum tevent_req_state req_state);
+
+static void smbd_smb1_do_locks_update_polling_msecs(
+	struct smbd_smb1_do_locks_state *state)
+{
+	/*
+	 * The default lp_lock_spin_time() is 200ms.
+	 *
+	 * v_min is in the range of 0.002 to 20 secs
+	 * (0.2 secs by default)
+	 *
+	 * v_max is in the range of 0.02 to 200 secs
+	 * (2.0 secs by default)
+	 *
+	 * The typical steps are:
+	 * 0.2, 0.4, 0.6, 0.8, ... 2.0
+	 */
+	uint32_t v_min = MAX(2, MIN(20000, lp_lock_spin_time()));
+	uint32_t v_max = 10 * v_min;
+
+	if (state->polling_msecs >= v_max) {
+		state->polling_msecs = v_max;
+		return;
+	}
+
+	state->polling_msecs += v_min;
+}
 
 struct tevent_req *smbd_smb1_do_locks_send(
 	TALLOC_CTX *mem_ctx,
@@ -237,9 +264,12 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	if (blocking_smblctx == UINT64_MAX) {
 		struct timeval tmp;
 
-		DBG_DEBUG("Blocked on a posix lock. Retry in one second\n");
+		smbd_smb1_do_locks_update_polling_msecs(state);
 
-		tmp = timeval_current_ofs(1, 0);
+		DBG_DEBUG("Blocked on a posix lock. Retry in %"PRIu32" msecs\n",
+			  state->polling_msecs);
+
+		tmp = timeval_current_ofs_msec(state->polling_msecs);
 		endtime = timeval_min(&endtime, &tmp);
 	}
 
@@ -373,9 +403,12 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 	if (blocking_smblctx == UINT64_MAX) {
 		struct timeval tmp;
 
-		DBG_DEBUG("Blocked on a posix lock. Retry in one second\n");
+		smbd_smb1_do_locks_update_polling_msecs(state);
 
-		tmp = timeval_current_ofs(1, 0);
+		DBG_DEBUG("Blocked on a posix lock. Retry in %"PRIu32" msecs\n",
+			  state->polling_msecs);
+
+		tmp = timeval_current_ofs_msec(state->polling_msecs);
 		endtime = timeval_min(&endtime, &tmp);
 	}
 
