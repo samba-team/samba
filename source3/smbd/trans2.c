@@ -6408,6 +6408,7 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 		struct smb_filename *smb_fname_new)
 {
 	NTSTATUS status = NT_STATUS_OK;
+	int ret;
 	bool ok;
 
 	/* source must already exist. */
@@ -6454,7 +6455,14 @@ NTSTATUS hardlink_internals(TALLOC_CTX *ctx,
 	DEBUG(10,("hardlink_internals: doing hard link %s -> %s\n",
 		  smb_fname_old->base_name, smb_fname_new->base_name));
 
-	if (SMB_VFS_LINK(conn, smb_fname_old, smb_fname_new) != 0) {
+	ret = SMB_VFS_LINKAT(conn,
+			conn->cwd_fsp,
+			smb_fname_old,
+			conn->cwd_fsp,
+			smb_fname_new,
+			0);
+
+	if (ret != 0) {
 		status = map_nt_error_from_unix(errno);
 		DEBUG(3,("hardlink_internals: Error %s hard link %s -> %s\n",
 			 nt_errstr(status), smb_fname_old->base_name,
