@@ -48,7 +48,6 @@ def configure(conf):
         find_third_party_module(conf, module, package)
     conf.RECURSE('cmocka')
     conf.RECURSE('popt')
-    conf.RECURSE('zlib')
     conf.RECURSE('aesni-intel')
     if conf.CONFIG_GET('ENABLE_SELFTEST'):
         conf.RECURSE('socket_wrapper')
@@ -80,7 +79,6 @@ def build(bld):
         bld.INSTALL_FILES('${PYTHONARCHDIR}/samba/third_party', 'empty_file', destname='__init__.py')
 
     bld.RECURSE('cmocka')
-    bld.RECURSE('zlib')
     bld.RECURSE('popt')
     bld.RECURSE('aesni-intel')
     if bld.CONFIG_GET('SOCKET_WRAPPER'):

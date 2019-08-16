@@ -167,13 +167,14 @@ def configure(conf):
     conf.RECURSE('dynconfig')
     conf.RECURSE('selftest')
 
+    conf.CHECK_CFG(package='zlib', minversion='1.2.3',
+                   args='--cflags --libs',
+                   msg='Checking for zlib', mandetory=True)
+    conf.CHECK_FUNCS_IN('inflateInit2', 'z')
+
     if conf.CHECK_FOR_THIRD_PARTY():
         conf.RECURSE('third_party')
     else:
-        if not conf.CHECK_ZLIB():
-            raise Errors.WafError('zlib development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
-        else:
-            conf.define('USING_SYSTEM_ZLIB',1)
 
         if not conf.CHECK_POPT():
             raise Errors.WafError('popt development packages have not been found.\nIf third_party is installed, check that it is in the proper place.')
