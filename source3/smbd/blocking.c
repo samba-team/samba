@@ -116,6 +116,14 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req);
 static void smbd_smb1_do_locks_retry(struct tevent_req *subreq);
 static void smbd_smb1_blocked_locks_cleanup(
 	struct tevent_req *req, enum tevent_req_state req_state);
+static NTSTATUS smbd_smb1_do_locks_check(
+	struct files_struct *fsp,
+	enum brl_flavour lock_flav,
+	uint16_t num_locks,
+	struct smbd_lock_element *locks,
+	uint16_t *blocker_idx,
+	struct server_id *blocking_pid,
+	uint64_t *blocking_smblctx);
 
 static void smbd_smb1_do_locks_setup_timeout(
 	struct smbd_smb1_do_locks_state *state,
@@ -264,7 +272,7 @@ struct tevent_req *smbd_smb1_do_locks_send(
 		return tevent_req_post(req, ev);
 	}
 
-	status = smbd_do_locks_try(
+	status = smbd_smb1_do_locks_check(
 		state->fsp,
 		state->lock_flav,
 		state->num_locks,
@@ -390,15 +398,123 @@ static void smbd_smb1_blocked_locks_cleanup(
 		fsp, blocked, struct tevent_req *, num_blocked-1);
 }
 
+static NTSTATUS smbd_smb1_do_locks_check_blocked(
+	uint16_t num_blocked,
+	struct smbd_lock_element *blocked,
+	uint16_t num_locks,
+	struct smbd_lock_element *locks,
+	uint16_t *blocker_idx,
+	uint64_t *blocking_smblctx)
+{
+	uint16_t li;
+
+	for (li=0; li < num_locks; li++) {
+		struct smbd_lock_element *l = &locks[li];
+		uint16_t bi;
+		bool valid;
+
+		valid = byte_range_valid(l->offset, l->count);
+		if (!valid) {
+			return NT_STATUS_INVALID_LOCK_RANGE;
+		}
+
+		for (bi = 0; bi < num_blocked; bi++) {
+			struct smbd_lock_element *b = &blocked[li];
+			bool overlap;
+
+			/* Read locks never conflict. */
+			if (l->brltype == READ_LOCK && b->brltype == READ_LOCK) {
+				continue;
+			}
+
+			overlap = byte_range_overlap(l->offset,
+						     l->count,
+						     b->offset,
+						     b->count);
+			if (!overlap) {
+				continue;
+			}
+
+			*blocker_idx = li;
+			*blocking_smblctx = b->smblctx;
+			return NT_STATUS_LOCK_NOT_GRANTED;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS smbd_smb1_do_locks_check(
+	struct files_struct *fsp,
+	enum brl_flavour lock_flav,
+	uint16_t num_locks,
+	struct smbd_lock_element *locks,
+	uint16_t *blocker_idx,
+	struct server_id *blocking_pid,
+	uint64_t *blocking_smblctx)
+{
+	struct tevent_req **blocked = fsp->blocked_smb1_lock_reqs;
+	size_t num_blocked = talloc_array_length(blocked);
+	NTSTATUS status;
+	size_t bi;
+
+	/*
+	 * We check the pending/blocked requests
+	 * from the oldest to the youngest request.
+	 *
+	 * Note due to the retry logic the current request
+	 * might already be in the list.
+	 */
+
+	for (bi = 0; bi < num_blocked; bi++) {
+		struct smbd_smb1_do_locks_state *blocked_state =
+			tevent_req_data(blocked[bi],
+			struct smbd_smb1_do_locks_state);
+
+		if (blocked_state->locks == locks) {
+			SMB_ASSERT(blocked_state->num_locks == num_locks);
+			SMB_ASSERT(blocked_state->lock_flav == lock_flav);
+
+			/*
+			 * We found ourself...
+			 */
+			break;
+		}
+
+		status = smbd_smb1_do_locks_check_blocked(
+				blocked_state->num_locks,
+				blocked_state->locks,
+				num_locks,
+				locks,
+				blocker_idx,
+				blocking_smblctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			*blocking_pid = messaging_server_id(
+					fsp->conn->sconn->msg_ctx);
+			return status;
+		}
+	}
+
+	status = smbd_do_locks_try(
+		fsp,
+		lock_flav,
+		num_locks,
+		locks,
+		blocker_idx,
+		blocking_pid,
+		blocking_smblctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
 static void smbd_smb1_do_locks_try(struct tevent_req *req)
 {
 	struct smbd_smb1_do_locks_state *state = tevent_req_data(
 		req, struct smbd_smb1_do_locks_state);
 	struct files_struct *fsp = state->fsp;
-	struct tevent_req **blocked = fsp->blocked_smb1_lock_reqs;
-	struct tevent_req *retry_req = blocked[0];
-	struct smbd_smb1_do_locks_state *retry_state = tevent_req_data(
-		retry_req, struct smbd_smb1_do_locks_state);
 	struct share_mode_lock *lck;
 	struct timeval endtime = { 0 };
 	struct server_id blocking_pid = { 0 };
@@ -414,11 +530,11 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 		return;
 	}
 
-	status = smbd_do_locks_try(
+	status = smbd_smb1_do_locks_check(
 		fsp,
-		retry_state->lock_flav,
-		retry_state->num_locks,
-		retry_state->locks,
+		state->lock_flav,
+		state->num_locks,
+		state->locks,
 		&state->blocker,
 		&blocking_pid,
 		&blocking_smblctx);
