@@ -2761,6 +2761,271 @@ done:
 }
 
 /*
+  test multi4 Locking&X operation
+  This test is designed to show that
+  lock precedence on the server is based
+  on the order received, not on the ability
+  to grant.
+
+  Compared to test_multilock3() (above)
+  this test demonstrates that pending read-only/shared
+  locks doesn't block shared locks others.
+
+  The outstanding requests build an implicit
+  database that's checked before checking
+  the already granted locks in the real database.
+
+  For example:
+
+  A blocked read-lock request containing 2 locks
+  will be still be blocked, while one region
+  is still write-locked. While it doesn't block
+  other read-lock requests for the other region. E.g.
+
+  (a) lock(rw) 100->109, 120->129 (granted)
+  (b) lock(ro) 100->109, 120->129 (blocks, timeout=20s)
+  (c) lock(ro) 100->109           (blocks, timeout=MAX)
+  (d) lock(rw) 110->119           (granted)
+  (e) lock(rw) 110->119           (blocks, timeout=20s)
+  (f) unlock 100->109 (a)
+  (g) lock(ro) (c) completes and is not blocked by (a) nor (b)
+  (h) lock(rw) 100->109           (not granted, blocked by (c))
+  (i) lock(rw) 100->109 (pid (b)) (not granted(conflict), blocked by (c))
+  (j) unlock 110-119
+  (k) lock (e) completes and is not blocked by (a) nor (b)
+  (l) lock 100->109               (not granted(conflict), blocked by (b))
+  (m) lock 100->109 (pid (b))     (not granted(conflict), blocked by itself (b))
+  (n) unlock 120-129 (a)
+  (o) lock (b) completes
+*/
+static bool test_multilock4(struct torture_context *tctx,
+			    struct smbcli_state *cli)
+{
+	union smb_lock io;
+	struct smb_lock_entry lock[2];
+	union smb_lock io3;
+	struct smb_lock_entry lock3[1];
+	NTSTATUS status;
+	bool ret = true;
+	int fnum;
+	const char *fname = BASEDIR "\\multilock4_test.txt";
+	time_t t;
+	struct smbcli_request *req = NULL;
+	struct smbcli_request *req2 = NULL;
+	struct smbcli_request *req4 = NULL;
+
+	torture_assert(tctx, torture_setup_dir(cli, BASEDIR),
+		       "Failed to setup up test directory: " BASEDIR);
+
+	torture_comment(tctx, "Testing LOCKING_ANDX multi-lock 4\n");
+	io.generic.level = RAW_LOCK_LOCKX;
+
+	/* Create the test file. */
+	fnum = smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE);
+	torture_assert(tctx,(fnum != -1), talloc_asprintf(tctx,
+		       "Failed to create %s - %s\n",
+		       fname, smbcli_errstr(cli->tree)));
+
+	/*
+	 * a)
+	 * Lock regions 100->109, 120->129 as
+	 * two separate write locks in one request.
+	 */
+	io.lockx.level = RAW_LOCK_LOCKX;
+	io.lockx.in.file.fnum = fnum;
+	io.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io.lockx.in.timeout = 0;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 2;
+	io.lockx.in.mode = LOCKING_ANDX_EXCLUSIVE_LOCK;
+	lock[0].pid = cli->session->pid;
+	lock[0].offset = 100;
+	lock[0].count = 10;
+	lock[1].pid = cli->session->pid;
+	lock[1].offset = 120;
+	lock[1].count = 10;
+	io.lockx.in.locks = &lock[0];
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * b)
+	 * Now request the same locks on a different
+	 * context as blocking locks. But readonly.
+	 */
+	io.lockx.in.timeout = 20000;
+	io.lockx.in.mode = LOCKING_ANDX_SHARED_LOCK;
+	lock[0].pid = cli->session->pid+1;
+	lock[1].pid = cli->session->pid+1;
+	req = smb_raw_lock_send(cli->tree, &io);
+	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
+		       "Failed to setup timed locks (%s)\n", __location__));
+
+	/*
+	 * c)
+	 * Request the first lock again on a separate context.
+	 * Wait forever. The previous multi-lock request (b)
+	 * should take precedence. Also readonly.
+	 */
+	io.lockx.in.timeout = UINT32_MAX;
+	lock[0].pid = cli->session->pid+2;
+	io.lockx.in.lock_cnt = 1;
+	req2 = smb_raw_lock_send(cli->tree, &io);
+	torture_assert(tctx,(req2 != NULL), talloc_asprintf(tctx,
+		       "Failed to setup timed locks (%s)\n", __location__));
+
+	/*
+	 * d)
+	 * Lock regions 110->119
+	 */
+	io3.lockx.level = RAW_LOCK_LOCKX;
+	io3.lockx.in.file.fnum = fnum;
+	io3.lockx.in.mode = LOCKING_ANDX_LARGE_FILES;
+	io3.lockx.in.timeout = 0;
+	io3.lockx.in.ulock_cnt = 0;
+	io3.lockx.in.lock_cnt = 1;
+	io3.lockx.in.mode = LOCKING_ANDX_EXCLUSIVE_LOCK;
+	lock3[0].pid = cli->session->pid+3;
+	lock3[0].offset = 110;
+	lock3[0].count = 10;
+	io3.lockx.in.locks = &lock3[0];
+	status = smb_raw_lock(cli->tree, &io3);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * e)
+	 * try 110-119 again
+	 */
+	io3.lockx.in.timeout = 20000;
+	lock3[0].pid = cli->session->pid+4;
+	req4 = smb_raw_lock_send(cli->tree, &io3);
+	torture_assert(tctx,(req4 != NULL), talloc_asprintf(tctx,
+		       "Failed to setup timed locks (%s)\n", __location__));
+
+	/*
+	 * f)
+	 * Unlock (a) lock[0] 100-109
+	 */
+	io.lockx.in.mode = LOCKING_ANDX_EXCLUSIVE_LOCK;
+	io.lockx.in.timeout = 0;
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.locks = &lock[0];
+	lock[0].pid = cli->session->pid;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * g)
+	 * receive the successful blocked lock request (c)
+	 * on 110-119 while (b) 100-109/120-129 is still waiting.
+	 */
+	status = smbcli_request_simple_recv(req2);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * h)
+	 * try to lock lock[0] 100-109 again
+	 * (read/write)
+	 */
+	lock[0].pid = cli->session->pid+5;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+
+	/*
+	 * i)
+	 * try to lock lock[0] 100-109 again with the pid (b)
+	 * that's still waiting.
+	 */
+	lock[0].pid = cli->session->pid+1;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	torture_assert(tctx, req->state <= SMBCLI_REQUEST_RECV,
+		       "req should still wait");
+	torture_assert(tctx, req4->state <= SMBCLI_REQUEST_RECV,
+		       "req4 should still wait");
+
+	/*
+	 * j)
+	 * Unlock (d) lock[0] 110-119
+	 */
+	io3.lockx.in.timeout = 0;
+	io3.lockx.in.ulock_cnt = 1;
+	io3.lockx.in.lock_cnt = 0;
+	lock3[0].pid = cli->session->pid+3;
+	status = smb_raw_lock(cli->tree, &io3);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * k)
+	 * receive the successful blocked
+	 * lock request (e) on 110-119.
+	 */
+	status = smbcli_request_simple_recv(req4);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * l)
+	 * try to lock lock[0] 100-109 again
+	 */
+	lock[0].pid = cli->session->pid+6;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	/*
+	 * m)
+	 * try to lock lock[0] 100-109 again with the pid (b)
+	 * that's still waiting
+	 */
+	lock[0].pid = cli->session->pid+1;
+	io.lockx.in.ulock_cnt = 0;
+	io.lockx.in.lock_cnt = 1;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	torture_assert(tctx, req->state <= SMBCLI_REQUEST_RECV,
+		       "req should still wait");
+
+	/* Start the clock. */
+	t = time_mono(NULL);
+
+	/*
+	 * n)
+	 * Unlock (a) lock[1] 120-129
+	 */
+	io.lockx.in.timeout = 0;
+	io.lockx.in.ulock_cnt = 1;
+	io.lockx.in.lock_cnt = 0;
+	io.lockx.in.locks = &lock[1];
+	lock[1].pid = cli->session->pid;
+	status = smb_raw_lock(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/*
+	 * o)
+	 * receive the successful blocked lock request (b)
+	 */
+	status = smbcli_request_simple_recv(req);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* Fail if this took more than 2 seconds. */
+	torture_assert(tctx,!(time_mono(NULL) > t+2), talloc_asprintf(tctx,
+		       "Blocking locks were not granted immediately (%s)\n",
+		       __location__));
+done:
+	smb_raw_exit(cli->session);
+	smbcli_deltree(cli->tree, BASEDIR);
+	return ret;
+}
+
+/*
    basic testing of lock calls
 */
 struct torture_suite *torture_raw_lock(TALLOC_CTX *mem_ctx)
@@ -2783,6 +3048,7 @@ struct torture_suite *torture_raw_lock(TALLOC_CTX *mem_ctx)
 	torture_suite_add_1smb_test(suite, "multilock", test_multilock);
 	torture_suite_add_1smb_test(suite, "multilock2", test_multilock2);
 	torture_suite_add_1smb_test(suite, "multilock3", test_multilock3);
+	torture_suite_add_1smb_test(suite, "multilock4", test_multilock4);
 
 	return suite;
 }
