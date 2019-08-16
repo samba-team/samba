@@ -712,27 +712,36 @@ static NTSTATUS netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_C
 		/* Don't crypt an all-zero key, it would give away the NETLOGON pipe session key */
 		if (!all_zero(base->key.key, sizeof(base->key.key))) {
 			if (do_encrypt) {
-				netlogon_creds_aes_encrypt(creds,
-					    base->key.key,
-					    sizeof(base->key.key));
+				status = netlogon_creds_aes_encrypt(
+					creds,
+					base->key.key,
+					sizeof(base->key.key));
 			} else {
-				netlogon_creds_aes_decrypt(creds,
-					    base->key.key,
-					    sizeof(base->key.key));
+				status = netlogon_creds_aes_decrypt(
+					creds,
+					base->key.key,
+					sizeof(base->key.key));
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
 		}
 
 		if (!all_zero(base->LMSessKey.key,
 			      sizeof(base->LMSessKey.key))) {
 			if (do_encrypt) {
-				netlogon_creds_aes_encrypt(creds,
-					    base->LMSessKey.key,
-					    sizeof(base->LMSessKey.key));
-
+				status = netlogon_creds_aes_encrypt(
+					creds,
+					base->LMSessKey.key,
+					sizeof(base->LMSessKey.key));
 			} else {
-				netlogon_creds_aes_decrypt(creds,
-					    base->LMSessKey.key,
-					    sizeof(base->LMSessKey.key));
+				status = netlogon_creds_aes_decrypt(
+					creds,
+					base->LMSessKey.key,
+					sizeof(base->LMSessKey.key));
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
 		}
 	} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
@@ -818,18 +827,34 @@ static NTSTATUS netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Creden
 			h = logon->password->lmpassword.hash;
 			if (!all_zero(h, 16)) {
 				if (do_encrypt) {
-					netlogon_creds_aes_encrypt(creds, h, 16);
+					status = netlogon_creds_aes_encrypt(
+						creds,
+						h,
+						16);
 				} else {
-					netlogon_creds_aes_decrypt(creds, h, 16);
+					status = netlogon_creds_aes_decrypt(
+						creds,
+						h,
+						16);
+				}
+				if (!NT_STATUS_IS_OK(status)) {
+					return status;
 				}
 			}
 
 			h = logon->password->ntpassword.hash;
 			if (!all_zero(h, 16)) {
 				if (do_encrypt) {
-					netlogon_creds_aes_encrypt(creds, h, 16);
+					status = netlogon_creds_aes_encrypt(creds,
+								   h,
+								   16);
 				} else {
-					netlogon_creds_aes_decrypt(creds, h, 16);
+					status = netlogon_creds_aes_decrypt(creds,
+								   h,
+								   16);
+				}
+				if (!NT_STATUS_IS_OK(status)) {
+					return status;
 				}
 			}
 		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
@@ -887,13 +912,18 @@ static NTSTATUS netlogon_creds_crypt_samlogon_logon(struct netlogon_creds_Creden
 
 		if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 			if (do_encrypt) {
-				netlogon_creds_aes_encrypt(creds,
-						logon->generic->data,
-						logon->generic->length);
+				status = netlogon_creds_aes_encrypt(
+					creds,
+					logon->generic->data,
+					logon->generic->length);
 			} else {
-				netlogon_creds_aes_decrypt(creds,
-						logon->generic->data,
-						logon->generic->length);
+				status = netlogon_creds_aes_decrypt(
+					creds,
+					logon->generic->data,
+					logon->generic->length);
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
 		} else if (creds->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 			status = netlogon_creds_arcfour_crypt(creds,
