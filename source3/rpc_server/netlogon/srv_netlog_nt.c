@@ -1369,14 +1369,16 @@ NTSTATUS _netr_ServerPasswordSet2(struct pipes_struct *p,
 	SIVAL(password_buf.data, 512, r->in.new_password->length);
 
 	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_decrypt(creds, password_buf.data, 516);
+		status = netlogon_creds_aes_decrypt(creds,
+						    password_buf.data,
+						    516);
 	} else {
 		status = netlogon_creds_arcfour_crypt(creds,
 						      password_buf.data,
 						      516);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (!decode_pw_buffer(p->mem_ctx,
