@@ -1756,20 +1756,6 @@ static int smb_full_audit_readlink(vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_full_audit_link(vfs_handle_struct *handle,
-			const struct smb_filename *old_smb_fname,
-			const struct smb_filename *new_smb_fname)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_LINK(handle, old_smb_fname, new_smb_fname);
-
-	do_log(SMB_VFS_OP_LINK, (result >= 0), handle,
-	       "%s|%s", old_smb_fname->base_name, new_smb_fname->base_name);
-
-	return result;
-}
-
 static int smb_full_audit_linkat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *old_smb_fname,
@@ -2900,7 +2886,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.getlock_fn = smb_full_audit_getlock,
 	.symlink_fn = smb_full_audit_symlink,
 	.readlink_fn = smb_full_audit_readlink,
-	.link_fn = smb_full_audit_link,
 	.linkat_fn = smb_full_audit_linkat,
 	.mknod_fn = smb_full_audit_mknod,
 	.realpath_fn = smb_full_audit_realpath,
