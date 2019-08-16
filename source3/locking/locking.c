@@ -502,6 +502,65 @@ static bool rename_lease_fn(struct share_mode_lock *lck,
  Based on an initial code idea from SATOH Fumiyasu <fumiya@samba.gr.jp>
 ********************************************************************/
 
+struct rename_share_filename_state {
+	struct messaging_context *msg_ctx;
+	struct server_id self;
+	uint32_t orig_name_hash;
+	uint32_t new_name_hash;
+	struct file_rename_message msg;
+};
+
+static bool rename_share_filename_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct rename_share_filename_state *state = private_data;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	bool ok;
+
+	/*
+	 * If this is a hardlink to the inode with a different name,
+	 * skip this.
+	 */
+	if (e->name_hash != state->orig_name_hash) {
+		return false;
+	}
+	e->name_hash = state->new_name_hash;
+	*modified = true;
+
+	ok = serverid_equal(&e->pid, &state->self);
+	if (ok) {
+		return false;
+	}
+
+	state->msg.share_file_id = e->share_file_id;
+
+	ndr_err = ndr_push_struct_blob(
+		&blob,
+		talloc_tos(),
+		&state->msg,
+		(ndr_push_flags_fn_t)ndr_push_file_rename_message);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_DEBUG("ndr_push_file_rename_message failed: %s\n",
+			  ndr_errstr(ndr_err));
+		return false;
+	}
+	if (DEBUGLEVEL >= 10) {
+		struct server_id_buf tmp;
+		DBG_DEBUG("sending rename message to %s\n",
+			  server_id_str_buf(e->pid, &tmp));
+		NDR_PRINT_DEBUG(file_rename_message, &state->msg);
+	}
+
+	messaging_send(state->msg_ctx, e->pid, MSG_SMB_FILE_RENAME, &blob);
+
+	TALLOC_FREE(blob.data);
+
+	return false;
+}
+
 bool rename_share_filename(struct messaging_context *msg_ctx,
 			struct share_mode_lock *lck,
 			struct file_id id,
@@ -510,15 +569,17 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			uint32_t new_name_hash,
 			const struct smb_filename *smb_fname_dst)
 {
-	struct share_mode_data *d = lck->data;
-	struct file_rename_message msg = {
-		.id = id,
-		.servicepath = servicepath,
-		.base_name = smb_fname_dst->base_name,
-		.stream_name = smb_fname_dst->stream_name,
+	struct rename_share_filename_state state = {
+		.msg_ctx = msg_ctx,
+		.self = messaging_server_id(msg_ctx),
+		.orig_name_hash = orig_name_hash,
+		.new_name_hash = new_name_hash,
+		.msg.id = id,
+		.msg.servicepath = servicepath,
+		.msg.base_name = smb_fname_dst->base_name,
+		.msg.stream_name = smb_fname_dst->stream_name,
 	};
-	uint32_t i;
-	struct server_id self_pid = messaging_server_id(msg_ctx);
+	struct share_mode_data *d = lck->data;
 	bool ok;
 
 	DEBUG(10, ("rename_share_filename: servicepath %s newname %s\n",
@@ -529,70 +590,25 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 	 * head of newname if newname does not contain a '/'.
 	 */
 
-	if (strncmp(msg.base_name, "./", 2) == 0) {
-		msg.base_name += 2;
+	if (strncmp(state.msg.base_name, "./", 2) == 0) {
+		state.msg.base_name += 2;
 	}
 
-	d->servicepath = talloc_strdup(d, msg.servicepath);
-	d->base_name = talloc_strdup(d, msg.base_name);
-	d->stream_name = talloc_strdup(d, msg.stream_name);
+	d->servicepath = talloc_strdup(d, state.msg.servicepath);
+	d->base_name = talloc_strdup(d, state.msg.base_name);
+	d->stream_name = talloc_strdup(d, state.msg.stream_name);
 	if ((d->servicepath == NULL) ||
 	    (d->base_name == NULL) ||
-	    ((msg.stream_name != NULL) && (d->stream_name == NULL))) {
+	    ((state.msg.stream_name != NULL) && (d->stream_name == NULL))) {
 		DBG_WARNING("talloc failed\n");
 		return false;
 	}
 	d->modified = True;
 
-	/* Send the messages. */
-	for (i=0; i<d->num_share_modes; i++) {
-		struct share_mode_entry *se = &d->share_modes[i];
-		DATA_BLOB blob;
-		enum ndr_err_code ndr_err;
-
-		if (!is_valid_share_mode_entry(se)) {
-			continue;
-		}
-
-		/* If this is a hardlink to the inode
-		   with a different name, skip this. */
-		if (se->name_hash != orig_name_hash) {
-			continue;
-		}
-
-		se->name_hash = new_name_hash;
-
-		/* But not to ourselves... */
-		if (serverid_equal(&se->pid, &self_pid)) {
-			continue;
-		}
-
-		if (share_mode_stale_pid(d, i)) {
-			continue;
-		}
-
-		msg.share_file_id = se->share_file_id;
-
-		ndr_err = ndr_push_struct_blob(
-			&blob,
-			talloc_tos(),
-			&msg,
-			(ndr_push_flags_fn_t)ndr_push_file_rename_message);
-		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			DBG_DEBUG("ndr_push_file_rename_message failed: %s\n",
-				  ndr_errstr(ndr_err));
-			return false;
-		}
-		if (DEBUGLEVEL >= 10) {
-			struct server_id_buf tmp;
-			DBG_DEBUG("sending rename message to %s\n",
-				  server_id_str_buf(se->pid, &tmp));
-			NDR_PRINT_DEBUG(file_rename_message, &msg);
-		}
-
-		messaging_send(msg_ctx, se->pid, MSG_SMB_FILE_RENAME, &blob);
-
-		TALLOC_FREE(blob.data);
+	ok = share_mode_forall_entries(
+		lck, rename_share_filename_fn, &state);
+	if (!ok) {
+		DBG_WARNING("share_mode_forall_entries failed\n");
 	}
 
 	ok = share_mode_forall_leases(lck, rename_lease_fn, NULL);
