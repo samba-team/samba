@@ -1551,56 +1551,59 @@ static bool share_conflict(uint32_t e_access_mask,
 }
 
 #if defined(DEVELOPER)
-static void validate_my_share_entries(struct smbd_server_connection *sconn,
-				      const struct file_id id,
-				      int num,
-				      struct share_mode_entry *share_entry)
+
+struct validate_my_share_entries_state {
+	struct smbd_server_connection *sconn;
+	struct file_id fid;
+	struct server_id self;
+};
+
+static bool validate_my_share_entries_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
 {
-	struct server_id self = messaging_server_id(sconn->msg_ctx);
+	struct validate_my_share_entries_state *state = private_data;
 	files_struct *fsp;
 
-	if (!serverid_equal(&self, &share_entry->pid)) {
-		return;
+	if (!serverid_equal(&state->self, &e->pid)) {
+		return false;
 	}
 
-	if (share_entry->op_mid == 0) {
+	if (e->op_mid == 0) {
 		/* INTERNAL_OPEN_ONLY */
-		return;
+		return false;
 	}
 
-	if (!is_valid_share_mode_entry(share_entry)) {
-		return;
-	}
-
-	fsp = file_find_dif(sconn, id, share_entry->share_file_id);
+	fsp = file_find_dif(state->sconn, state->fid, e->share_file_id);
 	if (!fsp) {
 		DBG_ERR("PANIC : %s\n",
-			share_mode_str(talloc_tos(), num, &id,
-				       share_entry));
+			share_mode_str(talloc_tos(), 0, &state->fid, e));
 		smb_panic("validate_my_share_entries: Cannot match a "
 			  "share entry with an open file\n");
 	}
 
-	if (((uint16_t)fsp->oplock_type) != share_entry->op_type) {
+	if (((uint16_t)fsp->oplock_type) != e->op_type) {
 		goto panic;
 	}
 
-	return;
+	return false;
 
  panic:
 	{
 		char *str;
 		DBG_ERR("validate_my_share_entries: PANIC : %s\n",
-			share_mode_str(talloc_tos(), num, &id,
-				       share_entry));
+			share_mode_str(talloc_tos(), 0, &state->fid, e));
 		str = talloc_asprintf(talloc_tos(),
 			"validate_my_share_entries: "
 			"file %s, oplock_type = 0x%x, op_type = 0x%x\n",
 			 fsp->fsp_name->base_name,
 			 (unsigned int)fsp->oplock_type,
-			 (unsigned int)share_entry->op_type );
+			 (unsigned int)e->op_type);
 		smb_panic(str);
 	}
+
+	return false;
 }
 #endif
 
@@ -1672,9 +1675,17 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	 */
 
 #if defined(DEVELOPER)
-	for(i = 0; i < d->num_share_modes; i++) {
-		validate_my_share_entries(
-			conn->sconn, d->id, i, &d->share_modes[i]);
+	{
+		struct validate_my_share_entries_state validate_state = {
+			.sconn = conn->sconn,
+			.fid = lck->data->id,
+			.self = messaging_server_id(conn->sconn->msg_ctx),
+		};
+		bool ok;
+
+		ok = share_mode_forall_entries(
+			lck, validate_my_share_entries_fn, &validate_state);
+		SMB_ASSERT(ok);
 	}
 #endif
 
