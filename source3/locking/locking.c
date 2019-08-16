@@ -1269,35 +1269,50 @@ struct timespec get_share_mode_write_time(struct share_mode_lock *lck)
 	return d->old_write_time;
 }
 
+struct file_has_open_streams_state {
+	bool found_one;
+};
+
+static bool file_has_open_streams_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct file_has_open_streams_state *state = private_data;
+
+	if ((e->private_options &
+	     NTCREATEX_OPTIONS_PRIVATE_STREAM_BASEOPEN) == 0) {
+		return false;
+	}
+
+	if (share_entry_stale_pid(e)) {
+		return false;
+	}
+
+	state->found_one = true;
+	return true;
+}
+
 bool file_has_open_streams(files_struct *fsp)
 {
+	struct file_has_open_streams_state state = { .found_one = false };
 	struct share_mode_lock *lock = NULL;
-	struct share_mode_data *d = NULL;
-	uint32_t i;
+	bool ok;
 
 	lock = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lock == NULL) {
 		return false;
 	}
-	d = lock->data;
 
-	for (i = 0; i < d->num_share_modes; i++) {
-		struct share_mode_entry *e = &d->share_modes[i];
-
-		if (share_mode_stale_pid(d, i)) {
-			continue;
-		}
-
-		if (e->private_options &
-		    NTCREATEX_OPTIONS_PRIVATE_STREAM_BASEOPEN)
-		{
-			TALLOC_FREE(lock);
-			return true;
-		}
-	}
-
+	ok = share_mode_forall_entries(
+		lock, file_has_open_streams_fn, &state);
 	TALLOC_FREE(lock);
-	return false;
+
+	if (!ok) {
+		DBG_DEBUG("share_mode_forall_entries failed\n");
+		return false;
+	}
+	return state.found_one;
 }
 
 bool share_mode_forall_entries(
