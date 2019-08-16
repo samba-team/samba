@@ -747,14 +747,17 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet2(struct dcesrv_call_state *dce_cal
 	SIVAL(password_buf.data, 512, r->in.new_password->length);
 
 	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_decrypt(creds, password_buf.data, 516);
+		nt_status = netlogon_creds_aes_decrypt(creds,
+						       password_buf.data,
+						       516);
 	} else {
 		nt_status = netlogon_creds_arcfour_crypt(creds,
 							 password_buf.data,
 							 516);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
+	}
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
 
 	switch (creds->secure_channel_type) {
@@ -2803,14 +2806,16 @@ static NTSTATUS dcesrv_netr_NetrLogonSendToSam(struct dcesrv_call_state *dce_cal
 
 	/* Buffer is meant to be 16-bit aligned */
 	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_decrypt(creds, r->in.opaque_buffer, r->in.buffer_len);
+		nt_status = netlogon_creds_aes_decrypt(creds,
+						       r->in.opaque_buffer,
+						       r->in.buffer_len);
 	} else {
 		nt_status = netlogon_creds_arcfour_crypt(creds,
 							 r->in.opaque_buffer,
 							 r->in.buffer_len);
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
+	}
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
 	}
 
 	decrypted_blob.data = r->in.opaque_buffer;
