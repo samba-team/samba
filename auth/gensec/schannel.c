@@ -172,17 +172,15 @@ static NTSTATUS netsec_do_seq_num(struct schannel_state *state,
 					&key,
 					&iv);
 		if (rc < 0) {
-			DBG_ERR("ERROR: gnutls_cipher_init: %s\n",
-				gnutls_strerror(rc));
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc,
+							NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		}
 
 		rc = gnutls_cipher_encrypt(cipher_hnd, seq_num, 8);
 		gnutls_cipher_deinit(cipher_hnd);
 		if (rc < 0) {
-			DBG_ERR("ERROR: gnutls_cipher_encrypt: %s\n",
-				gnutls_strerror(rc));
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc,
+							NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		}
 
 #else /* NOT HAVE_GNUTLS_AES_CFB8 */
@@ -306,7 +304,7 @@ static NTSTATUS netsec_do_seal(struct schannel_state *state,
 				      digest2);
 		if (rc < 0) {
 			ZERO_ARRAY(digest2);
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 
 		rc = gnutls_hmac_fast(GNUTLS_MAC_MD5,
@@ -318,7 +316,7 @@ static NTSTATUS netsec_do_seal(struct schannel_state *state,
 
 		ZERO_ARRAY(digest2);
 		if (rc < 0) {
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 
 		rc = gnutls_cipher_init(&cipher_hnd,
@@ -368,7 +366,7 @@ static NTSTATUS netsec_do_sign(struct schannel_state *state,
 				      state->creds->session_key,
 				      sizeof(state->creds->session_key));
 		if (rc < 0) {
-			return NT_STATUS_NO_MEMORY;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 
 		if (confounder) {
