@@ -1,9 +1,16 @@
 <samba:parameter name="rndc command"
                  context="G"
                  type="cmdlist"
+		 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
+	<para>This option is deprecated with Samba 4.11 and will be removed
+	in future.
+	</para>
 	<para>This option specifies the path to the name server control utility.
+	</para>
+	<para>This option is only useful when Samba as an AD DC is
+	configured with BIND9_FLATFILE for DNS.
 	</para>
 
 	<para>The <filename>rndc</filename> utility should be a part of the
