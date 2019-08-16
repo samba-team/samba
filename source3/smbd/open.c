@@ -1615,24 +1615,36 @@ bool is_stat_open(uint32_t access_mask)
 		((access_mask & ~stat_open_bits) == 0));
 }
 
+struct has_delete_on_close_state {
+	bool ret;
+};
+
+static bool has_delete_on_close_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct has_delete_on_close_state *state = private_data;
+	state->ret = !share_entry_stale_pid(e);
+	return state->ret;
+}
+
 static bool has_delete_on_close(struct share_mode_lock *lck,
 				uint32_t name_hash)
 {
-	struct share_mode_data *d = lck->data;
-	uint32_t i;
+	struct has_delete_on_close_state state = { .ret = false };
+	bool ok;
 
-	if (d->num_share_modes == 0) {
-		return false;
-	}
 	if (!is_delete_on_close_set(lck, name_hash)) {
 		return false;
 	}
-	for (i=0; i<d->num_share_modes; i++) {
-		if (!share_mode_stale_pid(d, i)) {
-			return true;
-		}
+
+	ok= share_mode_forall_entries(lck, has_delete_on_close_fn, &state);
+	if (!ok) {
+		DBG_DEBUG("share_mode_forall_entries failed\n");
+		return false;
 	}
-	return false;
+	return state.ret;
 }
 
 /****************************************************************************
