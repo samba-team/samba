@@ -1785,46 +1785,6 @@ out:
  * Success: return 0
  * Failure: set errno, return -1
  */
-static int mh_link(vfs_handle_struct *handle,
-		const struct smb_filename *old_smb_fname,
-		const struct smb_filename *new_smb_fname)
-{
-	int status;
-	struct smb_filename *oldclientFname = NULL;
-	struct smb_filename *newclientFname = NULL;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering mh_link\n"));
-	if (!is_in_media_files(old_smb_fname->base_name) &&
-			!is_in_media_files(new_smb_fname->base_name)) {
-		status = SMB_VFS_NEXT_LINK(handle,
-				old_smb_fname,
-				new_smb_fname);
-		goto out;
-	}
-
-	if ((status = alloc_get_client_smb_fname(handle, talloc_tos(),
-				old_smb_fname,
-				&oldclientFname))) {
-		goto err;
-	}
-	if ((status = alloc_get_client_smb_fname(handle, talloc_tos(),
-				new_smb_fname,
-				&newclientFname))) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_LINK(handle, oldclientFname, newclientFname);
-err:
-	TALLOC_FREE(newclientFname);
-	TALLOC_FREE(oldclientFname);
-out:
-	return status;
-}
-
-/*
- * Success: return 0
- * Failure: set errno, return -1
- */
 static int mh_linkat(vfs_handle_struct *handle,
 		files_struct *srcfsp,
 		const struct smb_filename *old_smb_fname,
@@ -2353,7 +2313,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.ntimes_fn = mh_ntimes,
 	.symlink_fn = mh_symlink,
 	.readlink_fn = mh_readlink,
-	.link_fn = mh_link,
 	.linkat_fn = mh_linkat,
 	.mknod_fn = mh_mknod,
 	.realpath_fn = mh_realpath,
