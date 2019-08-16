@@ -1656,13 +1656,51 @@ static bool has_delete_on_close(struct share_mode_lock *lck,
  Returns -1 on error, or number of share modes on success (may be zero).
 ****************************************************************************/
 
+struct open_mode_check_state {
+	uint32_t access_mask;
+	uint32_t share_access;
+	bool conflict;
+};
+
+static bool open_mode_check_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct open_mode_check_state *state = private_data;
+	bool disconnected, conflict, stale;
+
+	disconnected = server_id_is_disconnected(&e->pid);
+	if (disconnected) {
+		return false;
+	}
+
+	conflict = share_conflict(
+		e->access_mask,
+		e->share_access,
+		state->access_mask,
+		state->share_access);
+	if (!conflict) {
+		return false;
+	}
+	stale = share_entry_stale_pid(e);
+	if (stale) {
+		return false;
+	}
+
+	state->conflict = true;
+	return true;
+}
+
 static NTSTATUS open_mode_check(connection_struct *conn,
 				struct share_mode_lock *lck,
 				uint32_t access_mask,
 				uint32_t share_access)
 {
-	struct share_mode_data *d = lck->data;
-	uint32_t i;
+	struct open_mode_check_state state = {
+		.access_mask = access_mask, .share_access = share_access,
+	};
+	bool ok;
 
 	if (is_stat_open(access_mask)) {
 		/* Stat open that doesn't trigger oplock breaks or share mode
@@ -1681,40 +1719,19 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 			.fid = lck->data->id,
 			.self = messaging_server_id(conn->sconn->msg_ctx),
 		};
-		bool ok;
-
 		ok = share_mode_forall_entries(
 			lck, validate_my_share_entries_fn, &validate_state);
 		SMB_ASSERT(ok);
 	}
 #endif
 
-	for(i = 0; i < d->num_share_modes; i++) {
-		struct share_mode_entry *e = &d->share_modes[i];
-		bool conflict;
-
-		if (!is_valid_share_mode_entry(e)) {
-			continue;
-		}
-		if (server_id_is_disconnected(&e->pid)) {
-			continue;
-		}
-
-		/* someone else has a share lock on it, check to see if we can
-
-		 * too */
-		conflict = share_conflict(
-			e->access_mask,
-			e->share_access,
-			access_mask,
-			share_access);
-		if (conflict) {
-			if (share_mode_stale_pid(d, i)) {
-				continue;
-			}
-
-			return NT_STATUS_SHARING_VIOLATION;
-		}
+	ok = share_mode_forall_entries(lck, open_mode_check_fn, &state);
+	if (!ok) {
+		DBG_DEBUG("share_mode_forall_entries failed\n");
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+	if (state.conflict) {
+		return NT_STATUS_SHARING_VIOLATION;
 	}
 
 	return NT_STATUS_OK;
