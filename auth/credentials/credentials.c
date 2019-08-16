@@ -1333,19 +1333,19 @@ _PUBLIC_ NTSTATUS netlogon_creds_session_encrypt(
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	if (state->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_encrypt(state,
-					   data.data,
-					   data.length);
+		status = netlogon_creds_aes_encrypt(state,
+						    data.data,
+						    data.length);
 	} else if (state->negotiate_flags & NETLOGON_NEG_ARCFOUR) {
 		status = netlogon_creds_arcfour_crypt(state,
 						      data.data,
 						      data.length);
-		if (!NT_STATUS_IS_OK(status)) {
-			return status;
-		}
 	} else {
 		DBG_ERR("Unsupported encryption option negotiated");
-		return NT_STATUS_NOT_SUPPORTED;
+		status = NT_STATUS_NOT_SUPPORTED;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 	return NT_STATUS_OK;
 }
