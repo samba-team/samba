@@ -204,6 +204,38 @@ static int syncops_link(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int syncops_linkat(vfs_handle_struct *handle,
+			files_struct *srcfsp,
+			const struct smb_filename *old_smb_fname,
+			files_struct *dstfsp,
+			const struct smb_filename *new_smb_fname,
+			int flags)
+{
+	int ret;
+	struct syncops_config_data *config;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct syncops_config_data,
+				return -1);
+
+	SMB_ASSERT(srcfsp == srcfsp->conn->cwd_fsp);
+	SMB_ASSERT(dstfsp == dstfsp->conn->cwd_fsp);
+
+	ret = SMB_VFS_NEXT_LINKAT(handle,
+			srcfsp,
+			old_smb_fname,
+			dstfsp,
+			new_smb_fname,
+			flags);
+
+	if (ret == 0 && config->onmeta && !config->disable) {
+		syncops_two_names(old_smb_fname->base_name,
+				  new_smb_fname->base_name);
+	}
+	return ret;
+}
+
+
 static int syncops_open(vfs_handle_struct *handle,
 			struct smb_filename *smb_fname, files_struct *fsp,
 			int flags, mode_t mode)
@@ -300,6 +332,7 @@ static struct vfs_fn_pointers vfs_syncops_fns = {
 	.unlink_fn = syncops_unlink,
 	.symlink_fn = syncops_symlink,
 	.link_fn = syncops_link,
+	.linkat_fn = syncops_linkat,
 	.mknod_fn = syncops_mknod,
 	.close_fn = syncops_close,
 };
