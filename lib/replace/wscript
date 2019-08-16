@@ -830,7 +830,6 @@ def build(bld):
     REPLACE_SOURCE = REPLACE_HOSTCC_SOURCE
     REPLACE_SOURCE += ' cwrap.c'
 
-    if not bld.CONFIG_SET('HAVE_CRYPT'):         REPLACE_SOURCE += ' crypt.c'
     if not bld.CONFIG_SET('HAVE_DLOPEN'):        REPLACE_SOURCE += ' dlfcn.c'
     if not bld.CONFIG_SET('HAVE_POLL'):          REPLACE_SOURCE += ' poll.c'
 
