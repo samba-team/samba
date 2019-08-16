@@ -2449,7 +2449,7 @@ static bool test_multilock2(struct torture_context *tctx,
 	lock[0].pid = cli->session->pid+2;
 	io.lockx.in.lock_cnt = 1;
 	req2 = smb_raw_lock_send(cli->tree, &io);
-	torture_assert(tctx,(req != NULL), talloc_asprintf(tctx,
+	torture_assert(tctx,(req2 != NULL), talloc_asprintf(tctx,
 		       "Failed to setup timed locks (%s)\n", __location__));
 
 	/* Unlock lock[0] */
@@ -2464,6 +2464,9 @@ static bool test_multilock2(struct torture_context *tctx,
 	/* Did the second lock complete (should time out) ? */
 	status = smbcli_request_simple_recv(req2);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
+
+	torture_assert(tctx, req->state <= SMBCLI_REQUEST_RECV,
+		       "req should still wait");
 
 	/* Start the clock. */
 	t = time_mono(NULL);
