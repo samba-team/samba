@@ -109,6 +109,7 @@
 .*net.api.delshare.*				# DelShare isn't implemented yet
 ^samba4.smb2.oplock.doc
 ^samba4.smb2.lock.valid-request
+^samba4.raw.lock.multilock6.ad_dc_ntvfs
 ^samba4.ldap.python \(ad_dc_default\).Test add_ldif\(\) with BASE64 security descriptor input using WRONG domain SID\(.*\)$
 ^samba4.raw.lock.*.async # bug 6960
 ^samba4.raw.open.ntcreatex_supersede
