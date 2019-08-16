@@ -21,7 +21,9 @@ NTSTATUS netlogon_creds_arcfour_crypt(struct netlogon_creds_CredentialState *cre
 NTSTATUS netlogon_creds_aes_encrypt(struct netlogon_creds_CredentialState *creds,
 				    uint8_t *data,
 				    size_t len);
-void netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len);
+NTSTATUS netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds,
+				    uint8_t *data,
+				    size_t len);
 
 /*****************************************************************
 The above functions are common to the client and server interface

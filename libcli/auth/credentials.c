@@ -346,7 +346,7 @@ NTSTATUS netlogon_creds_aes_encrypt(struct netlogon_creds_CredentialState *creds
 /*
   AES decrypt a password buffer using the session key
 */
-void netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len)
+NTSTATUS netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds, uint8_t *data, size_t len)
 {
 #ifdef HAVE_GNUTLS_AES_CFB8
 	gnutls_cipher_hd_t cipher_hnd = NULL;
@@ -370,18 +370,17 @@ void netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds, ui
 				&key,
 				&iv);
 	if (rc < 0) {
-		DBG_ERR("ERROR: gnutls_cipher_init: %s\n",
-			gnutls_strerror(rc));
-		return;
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_CRYPTO_SYSTEM_INVALID);
 	}
 
 	rc = gnutls_cipher_decrypt(cipher_hnd, data, len);
 	gnutls_cipher_deinit(cipher_hnd);
 	if (rc < 0) {
-		DBG_ERR("ERROR: gnutls_cipher_decrypt: %s\n",
-			gnutls_strerror(rc));
-		return;
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_CRYPTO_SYSTEM_INVALID);
 	}
+
 #else /* NOT HAVE_GNUTLS_AES_CFB8 */
 	AES_KEY key;
 	uint8_t iv[AES_BLOCK_SIZE] = {0};
@@ -390,6 +389,8 @@ void netlogon_creds_aes_decrypt(struct netlogon_creds_CredentialState *creds, ui
 
 	aes_cfb8_encrypt(data, data, len, &key, iv, AES_DECRYPT);
 #endif /* HAVE_GNUTLS_AES_CFB8 */
+
+	return NT_STATUS_OK;
 }
 
 /*****************************************************************
