@@ -42,6 +42,8 @@
 #include <gnutls/crypto.h>
 #include <gnutls/abstract.h>
 
+#include "lib/crypto/gnutls_helpers.h"
+
 #define DCESRV_INTERFACE_BACKUPKEY_BIND(context, iface) \
 	dcesrv_interface_backupkey_bind(context, iface)
 static NTSTATUS dcesrv_interface_backupkey_bind(struct dcesrv_connection_context *context,
@@ -1439,15 +1441,23 @@ static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, 
 	 * BACKUPKEY_BACKUP_GUID, it really is the whole key
 	 */
 
-	gnutls_hmac_init(&hmac_hnd,
-			 GNUTLS_MAC_SHA1,
-			 server_key.key,
-			 sizeof(server_key.key));
-	gnutls_hmac(hmac_hnd,
+	rc = gnutls_hmac_init(&hmac_hnd,
+			      GNUTLS_MAC_SHA1,
+			      server_key.key,
+			      sizeof(server_key.key));
+	if (rc != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	}
+
+	rc = gnutls_hmac(hmac_hnd,
 		    decrypt_request.r2,
 		    sizeof(decrypt_request.r2));
-	gnutls_hmac_output(hmac_hnd, symkey);
 
+	if (rc != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	}
+
+	gnutls_hmac_output(hmac_hnd, symkey);
 	dump_data_pw("symkey: \n", symkey, sizeof(symkey));
 
 	/* rc4 decrypt sid and secret using sym key */
@@ -1462,9 +1472,7 @@ static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, 
 				&cipher_key,
 				NULL);
 	if (rc != GNUTLS_E_SUCCESS) {
-		DBG_ERR("gnutls_cipher_init failed - %s\n",
-			gnutls_strerror(rc));
-		return WERR_INVALID_PARAMETER;
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
 	}
 	rc = gnutls_cipher_encrypt2(cipher_hnd,
 				    encrypted_blob.data,
@@ -1473,9 +1481,7 @@ static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, 
 				    encrypted_blob.length);
 	gnutls_cipher_deinit(cipher_hnd);
 	if (rc != GNUTLS_E_SUCCESS) {
-		DBG_ERR("gnutls_cipher_encrypt2 failed - %s\n",
-			gnutls_strerror(rc));
-		return WERR_INVALID_PARAMETER;
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
 	}
 
 	ndr_err = ndr_pull_struct_blob_all(&encrypted_blob, mem_ctx, &rc4payload,
@@ -1494,9 +1500,13 @@ static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, 
 	 * This is *not* the leading 64 bytes, as indicated in MS-BKRP 3.1.4.1.1
 	 * BACKUPKEY_BACKUP_GUID, it really is the whole key
 	 */
-	gnutls_hmac(hmac_hnd,
-		    rc4payload.r3,
-		    sizeof(rc4payload.r3));
+	rc = gnutls_hmac(hmac_hnd,
+			 rc4payload.r3,
+			 sizeof(rc4payload.r3));
+	if (rc != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	}
+
 	gnutls_hmac_deinit(hmac_hnd, mackey);
 
 	dump_data_pw("mackey: \n", mackey, sizeof(mackey));
@@ -1507,20 +1517,31 @@ static WERROR bkrp_server_wrap_decrypt_data(struct dcesrv_call_state *dce_call, 
 		return WERR_INTERNAL_ERROR;
 	}
 
-	gnutls_hmac_init(&hmac_hnd,
-			 GNUTLS_MAC_SHA1,
-			 mackey,
-			 sizeof(mackey));
-	/* SID field */
-	gnutls_hmac(hmac_hnd,
-		    sid_blob.data,
-		    sid_blob.length);
-	/* Secret field */
-	gnutls_hmac(hmac_hnd,
-		    rc4payload.secret_data.data,
-		    rc4payload.secret_data.length);
-	gnutls_hmac_deinit(hmac_hnd, mac);
+	rc = gnutls_hmac_init(&hmac_hnd,
+			      GNUTLS_MAC_SHA1,
+			      mackey,
+			      sizeof(mackey));
+	if (rc != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	}
 
+	/* SID field */
+	rc = gnutls_hmac(hmac_hnd,
+			 sid_blob.data,
+			 sid_blob.length);
+	if (rc != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	}
+
+	/* Secret field */
+	rc = gnutls_hmac(hmac_hnd,
+			 rc4payload.secret_data.data,
+			 rc4payload.secret_data.length);
+	if (rc != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	}
+
+	gnutls_hmac_deinit(hmac_hnd, mac);
 	dump_data_pw("mac: \n", mac, sizeof(mac));
 	dump_data_pw("rc4payload.mac: \n", rc4payload.mac, sizeof(rc4payload.mac));
 
@@ -1657,26 +1678,34 @@ static WERROR bkrp_server_wrap_encrypt_data(struct dcesrv_call_state *dce_call, 
 	 * This is *not* the leading 64 bytes, as indicated in MS-BKRP 3.1.4.1.1
 	 * BACKUPKEY_BACKUP_GUID, it really is the whole key
 	 */
-	gnutls_hmac_init(&hmac_hnd,
-			 GNUTLS_MAC_SHA1,
-			 server_key.key,
-			 sizeof(server_key.key));
-	gnutls_hmac(hmac_hnd,
-		    server_side_wrapped.r2,
-		    sizeof(server_side_wrapped.r2));
-	gnutls_hmac_output(hmac_hnd, symkey);
+	rc = gnutls_hmac_init(&hmac_hnd,
+			      GNUTLS_MAC_SHA1,
+			      server_key.key,
+			      sizeof(server_key.key));
+	if (rc != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	}
 
+	rc = gnutls_hmac(hmac_hnd,
+			 server_side_wrapped.r2,
+			 sizeof(server_side_wrapped.r2));
+	if (rc != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	}
+	gnutls_hmac_output(hmac_hnd, symkey);
 	dump_data_pw("symkey: \n", symkey, sizeof(symkey));
 
 	/*
 	 * This is *not* the leading 64 bytes, as indicated in MS-BKRP 3.1.4.1.1
 	 * BACKUPKEY_BACKUP_GUID, it really is the whole key
 	 */
-	gnutls_hmac(hmac_hnd,
-		    rc4payload.r3,
-		    sizeof(rc4payload.r3));
+	rc = gnutls_hmac(hmac_hnd,
+			 rc4payload.r3,
+			 sizeof(rc4payload.r3));
+	if (rc != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	}
 	gnutls_hmac_deinit(hmac_hnd, mackey);
-
 	dump_data_pw("mackey: \n", mackey, sizeof(mackey));
 
 	ndr_err = ndr_push_struct_blob(&sid_blob, mem_ctx, caller_sid,
@@ -1688,20 +1717,31 @@ static WERROR bkrp_server_wrap_encrypt_data(struct dcesrv_call_state *dce_call, 
 	rc4payload.secret_data.data = r->in.data_in;
 	rc4payload.secret_data.length = r->in.data_in_len;
 
-	gnutls_hmac_init(&hmac_hnd,
-			 GNUTLS_MAC_SHA1,
-			 mackey,
-			 sizeof(mackey));
-	/* SID field */
-	gnutls_hmac(hmac_hnd,
-		    sid_blob.data,
-		    sid_blob.length);
-	/* Secret field */
-	gnutls_hmac(hmac_hnd,
-		    rc4payload.secret_data.data,
-		    rc4payload.secret_data.length);
-	gnutls_hmac_deinit(hmac_hnd, rc4payload.mac);
+	rc = gnutls_hmac_init(&hmac_hnd,
+			      GNUTLS_MAC_SHA1,
+			      mackey,
+			      sizeof(mackey));
+	if (rc != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	}
 
+	/* SID field */
+	rc = gnutls_hmac(hmac_hnd,
+			 sid_blob.data,
+			 sid_blob.length);
+	if (rc != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	}
+
+	/* Secret field */
+	rc = gnutls_hmac(hmac_hnd,
+			 rc4payload.secret_data.data,
+			 rc4payload.secret_data.length);
+	if (rc != GNUTLS_E_SUCCESS) {
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+	}
+
+	gnutls_hmac_deinit(hmac_hnd, rc4payload.mac);
 	dump_data_pw("rc4payload.mac: \n", rc4payload.mac, sizeof(rc4payload.mac));
 
 	rc4payload.sid = *caller_sid;
@@ -1721,9 +1761,7 @@ static WERROR bkrp_server_wrap_encrypt_data(struct dcesrv_call_state *dce_call, 
 				&cipher_key,
 				NULL);
 	if (rc != GNUTLS_E_SUCCESS) {
-		DBG_ERR("gnutls_cipher_init failed - %s\n",
-			gnutls_strerror(rc));
-		return WERR_INVALID_PARAMETER;
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
 	}
 	rc = gnutls_cipher_encrypt2(cipher_hnd,
 				    encrypted_blob.data,
@@ -1732,9 +1770,7 @@ static WERROR bkrp_server_wrap_encrypt_data(struct dcesrv_call_state *dce_call, 
 				    encrypted_blob.length);
 	gnutls_cipher_deinit(cipher_hnd);
 	if (rc != GNUTLS_E_SUCCESS) {
-		DBG_ERR("gnutls_cipher_encrypt2 failed - %s\n",
-			gnutls_strerror(rc));
-		return WERR_INVALID_PARAMETER;
+		return gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
 	}
 
 	/* create server wrap structure */
