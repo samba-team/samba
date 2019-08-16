@@ -4,8 +4,7 @@ This list is to allow research into using external crypto libraries.
 Those possibly supported in the git version of GnuTLS are indicated as '# GNUTLS'
 Those possibly supported in the git version of nettle are indicated as '# NETTLE'
 
-For Samba AD with Heimdal gnutls >= 3.0.0 is required
-For Samba AD with MIT kerberos gnutls >= 3.4.7 is required
+Samba in general gnutls >= 3.4.7 is required
 Samba FS with MS Catalog support will require gnutls >= 3.5.6
 
 GnuTLS Milestone for Samba support:
