@@ -302,10 +302,8 @@ static NTSTATUS netsec_do_seal(struct schannel_state *state,
 						   confounder,
 						   8);
 			if (rc < 0) {
-				DBG_ERR("ERROR: gnutls_cipher_encrypt: %s\n",
-					gnutls_strerror(errno));
 				gnutls_cipher_deinit(cipher_hnd);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 			}
 
 			/*
@@ -317,20 +315,16 @@ static NTSTATUS netsec_do_seal(struct schannel_state *state,
 						   data,
 						   length);
 			if (rc < 0) {
-				DBG_ERR("ERROR: gnutls_cipher_encrypt: %s\n",
-					gnutls_strerror(errno));
 				gnutls_cipher_deinit(cipher_hnd);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 			}
 		} else {
 			rc = gnutls_cipher_decrypt(cipher_hnd,
 						   confounder,
 						   8);
 			if (rc < 0) {
-				DBG_ERR("ERROR: gnutls_cipher_decrypt: %s\n",
-					gnutls_strerror(errno));
 				gnutls_cipher_deinit(cipher_hnd);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 			}
 
 			/*
@@ -342,10 +336,8 @@ static NTSTATUS netsec_do_seal(struct schannel_state *state,
 						   data,
 						   length);
 			if (rc < 0) {
-				DBG_ERR("ERROR: gnutls_cipher_decrypt: %s\n",
-					gnutls_strerror(errno));
 				gnutls_cipher_deinit(cipher_hnd);
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 			}
 		}
 		gnutls_cipher_deinit(cipher_hnd);
