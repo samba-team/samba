@@ -1156,21 +1156,6 @@ static int cephwrap_readlink(struct vfs_handle_struct *handle,
 	WRAP_RETURN(result);
 }
 
-static int cephwrap_link(struct vfs_handle_struct *handle,
-		const struct smb_filename *old_smb_fname,
-		const struct smb_filename *new_smb_fname)
-{
-	int result = -1;
-	DBG_DEBUG("[CEPH] link(%p, %s, %s)\n", handle,
-			old_smb_fname->base_name,
-			new_smb_fname->base_name);
-	result = ceph_link(handle->data,
-				old_smb_fname->base_name,
-				new_smb_fname->base_name);
-	DBG_DEBUG("[CEPH] link(...) = %d\n", result);
-	WRAP_RETURN(result);
-}
-
 static int cephwrap_linkat(struct vfs_handle_struct *handle,
 		files_struct *srcfsp,
 		const struct smb_filename *old_smb_fname,
@@ -1473,7 +1458,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.getlock_fn = cephwrap_getlock,
 	.symlink_fn = cephwrap_symlink,
 	.readlink_fn = cephwrap_readlink,
-	.link_fn = cephwrap_link,
 	.linkat_fn = cephwrap_linkat,
 	.mknod_fn = cephwrap_mknod,
 	.realpath_fn = cephwrap_realpath,
