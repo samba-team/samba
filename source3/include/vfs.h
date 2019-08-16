@@ -273,7 +273,7 @@
 /* Version 42 - Remove share_access member from struct files_struct */
 /* Version 42 - Make "lease" a const* in create_file_fn */
 /* Version 42 - Move SMB_VFS_RENAME -> SMB_VFS_RENAMEAT */
-/* Version 42 - Add SMB_VFS_LINKAT. */
+/* Version 42 - Move SMB_VFS_LINK -> SMB_VFS_LINKAT. */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -800,9 +800,6 @@ struct vfs_fn_pointers {
 				const struct smb_filename *smb_fname,
 				char *buf,
 				size_t bufsiz);
-	int (*link_fn)(struct vfs_handle_struct *handle,
-				const struct smb_filename *old_smb_fname,
-				const struct smb_filename *new_smb_fname);
 	int (*linkat_fn)(struct vfs_handle_struct *handle,
 				struct files_struct *srcfsp,
 				const struct smb_filename *old_smb_fname,
@@ -1335,9 +1332,6 @@ int smb_vfs_call_readlink(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			char *buf,
 			size_t bufsiz);
-int smb_vfs_call_link(struct vfs_handle_struct *handle,
-			const struct smb_filename *old_smb_fname,
-			const struct smb_filename *new_smb_fname);
 int smb_vfs_call_linkat(struct vfs_handle_struct *handle,
 			struct files_struct *srcfsp,
 			const struct smb_filename *old_smb_fname,
@@ -1767,9 +1761,6 @@ int vfs_not_implemented_vfs_readlink(vfs_handle_struct *handle,
 				     const struct smb_filename *smb_fname,
 				     char *buf,
 				     size_t bufsiz);
-int vfs_not_implemented_link(vfs_handle_struct *handle,
-			     const struct smb_filename *old_smb_fname,
-			     const struct smb_filename *new_smb_fname);
 int vfs_not_implemented_linkat(vfs_handle_struct *handle,
 			struct files_struct *srcfsp,
 			const struct smb_filename *old_smb_fname,

@@ -2663,18 +2663,6 @@ static int vfswrap_readlink(vfs_handle_struct *handle,
 	return result;
 }
 
-static int vfswrap_link(vfs_handle_struct *handle,
-			const struct smb_filename *old_smb_fname,
-			const struct smb_filename *new_smb_fname)
-{
-	int result;
-
-	START_PROFILE(syscall_link);
-	result = link(old_smb_fname->base_name, new_smb_fname->base_name);
-	END_PROFILE(syscall_link);
-	return result;
-}
-
 static int vfswrap_linkat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *old_smb_fname,
@@ -3491,7 +3479,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.getlock_fn = vfswrap_getlock,
 	.symlink_fn = vfswrap_symlink,
 	.readlink_fn = vfswrap_readlink,
-	.link_fn = vfswrap_link,
 	.linkat_fn = vfswrap_linkat,
 	.mknod_fn = vfswrap_mknod,
 	.realpath_fn = vfswrap_realpath,

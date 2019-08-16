@@ -306,11 +306,6 @@
 #define SMB_VFS_NEXT_READLINK(handle, smb_fname, buf, bufsiz) \
 	smb_vfs_call_readlink((handle)->next, (smb_fname), (buf), (bufsiz))
 
-#define SMB_VFS_LINK(conn, oldpath, newpath) \
-	smb_vfs_call_link((conn)->vfs_handles, (oldpath), (newpath))
-#define SMB_VFS_NEXT_LINK(handle, oldpath, newpath) \
-	smb_vfs_call_link((handle)->next, (oldpath), (newpath))
-
 #define SMB_VFS_LINKAT(conn, srcfsp, oldpath, dstfsp, newpath, flags) \
 	smb_vfs_call_linkat((conn)->vfs_handles, (srcfsp), (oldpath), (dstfsp), (newpath), (flags))
 #define SMB_VFS_NEXT_LINKAT(handle, srcfsp, oldpath, dstfsp, newpath, flags) \
