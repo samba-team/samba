@@ -1213,6 +1213,7 @@ static NTSTATUS cmd_link(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 {
 	struct smb_filename *old_smb_fname = NULL;
 	struct smb_filename *new_smb_fname = NULL;
+	int ret;
 
 	if (argc != 3) {
 		printf("Usage: link <path> <link>\n");
@@ -1232,7 +1233,13 @@ static NTSTATUS cmd_link(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (SMB_VFS_LINK(vfs->conn, old_smb_fname, new_smb_fname) == -1) {
+	ret = SMB_VFS_LINKAT(vfs->conn,
+			vfs->conn->cwd_fsp,
+			old_smb_fname,
+			vfs->conn->cwd_fsp,
+			new_smb_fname,
+			0);
+	if (ret == -1) {
 		printf("link: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
