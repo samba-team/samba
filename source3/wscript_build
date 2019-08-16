@@ -1025,7 +1025,6 @@ bld.SAMBA3_LIBRARY('libcli_netlogon3',
                    deps='''
                         msrpc3
                         RPC_NDR_NETLOGON
-                        INIT_NETLOGON
                         cliauth
                         smbconf
                         NETLOGON_CREDS_CLI''',
@@ -1056,10 +1055,6 @@ bld.SAMBA3_SUBSYSTEM('RPC_CLIENT_SCHANNEL',
 
 bld.SAMBA3_SUBSYSTEM('INIT_LSA',
                     source='rpc_client/init_lsa.c',
-                    deps='samba-util')
-
-bld.SAMBA3_SUBSYSTEM('INIT_NETLOGON',
-                    source='rpc_client/init_netlogon.c',
                     deps='samba-util')
 
 bld.SAMBA3_SUBSYSTEM('INIT_SAMR',

@@ -30,7 +30,6 @@
 #include "../librpc/gen_ndr/ndr_netlogon_c.h"
 #include "../librpc/gen_ndr/schannel.h"
 #include "rpc_client/cli_netlogon.h"
-#include "rpc_client/init_netlogon.h"
 #include "rpc_client/util_netlogon.h"
 #include "../libcli/security/security.h"
 #include "lib/param/param.h"
