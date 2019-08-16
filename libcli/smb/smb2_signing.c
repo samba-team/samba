@@ -229,18 +229,18 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 					      key.data,
 					      key.size);
 			if (rc < 0) {
-				return NT_STATUS_NO_MEMORY;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 			}
 		}
 
 		rc = gnutls_hmac(signing_key->hmac_hnd, hdr, SMB2_HDR_SIGNATURE);
 		if (rc < 0) {
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 
 		rc = gnutls_hmac(signing_key->hmac_hnd, zero_sig, 16);
 		if (rc < 0) {
-			return NT_STATUS_INTERNAL_ERROR;
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 		}
 
 		for (i = 1; i < count; i++) {
@@ -248,7 +248,7 @@ NTSTATUS smb2_signing_check_pdu(struct smb2_signing_key *signing_key,
 					 vector[i].iov_base,
 					 vector[i].iov_len);
 			if (rc < 0) {
-				return NT_STATUS_INTERNAL_ERROR;
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 			}
 		}
 		gnutls_hmac_output(signing_key->hmac_hnd, res);
