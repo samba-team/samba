@@ -2485,11 +2485,14 @@ static void poll_open_fn(struct tevent_context *ev,
 	DBG_DEBUG("timer fired. Retrying open !\n");
 }
 
+static void poll_open_done(struct tevent_req *subreq);
+
 /**
  * Reschedule an open for 1 second from now, if not timed out.
  **/
 static bool setup_poll_open(
 	struct smb_request *req,
+	struct share_mode_lock *lck,
 	struct file_id id,
 	struct timeval max_timeout,
 	struct timeval interval)
@@ -2532,6 +2535,20 @@ static bool setup_poll_open(
 		return false;
 	}
 
+	if (lck != NULL) {
+		struct tevent_req *watch_req = dbwrap_watched_watch_send(
+			open_rec,
+			req->sconn->ev_ctx,
+			lck->data->record,
+			(struct server_id) {0});
+		if (watch_req == NULL) {
+			DBG_WARNING("dbwrap_watched_watch_send failed\n");
+			TALLOC_FREE(open_rec);
+			return false;
+		}
+		tevent_req_set_callback(watch_req, poll_open_done, open_rec);
+	}
+
 	ok = push_deferred_open_message_smb(req, max_timeout, id, open_rec);
 	if (!ok) {
 		DBG_WARNING("push_deferred_open_message_smb failed\n");
@@ -2545,6 +2562,25 @@ static bool setup_poll_open(
 		  file_id_string_tos(&id));
 
 	return true;
+}
+
+static void poll_open_done(struct tevent_req *subreq)
+{
+	struct deferred_open_record *open_rec = tevent_req_callback_data(
+		subreq, struct deferred_open_record);
+	NTSTATUS status;
+	bool ok;
+
+	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	TALLOC_FREE(subreq);
+	DBG_DEBUG("dbwrap_watched_watch_recv returned %s\n",
+		  nt_errstr(status));
+
+	ok = schedule_deferred_open_message_smb(
+		open_rec->xconn, open_rec->mid);
+	if (!ok) {
+		exit_server("schedule_deferred_open_message_smb failed");
+	}
 }
 
 bool defer_smb1_sharing_violation(struct smb_request *req)
@@ -2571,6 +2607,7 @@ bool defer_smb1_sharing_violation(struct smb_request *req)
 
 	ok = setup_poll_open(
 		req,
+		NULL,
 		(struct file_id) {0},
 		(struct timeval) { .tv_usec = timeout_usecs },
 		(struct timeval) { .tv_usec = 200000 });
@@ -3322,6 +3359,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			 */
 			setup_poll_open(
 				req,
+				NULL,
 				fsp->file_id,
 				timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0),
 				timeval_set(1, 0));
@@ -3352,6 +3390,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 */
 		setup_poll_open(
 			req,
+			NULL,
 			fsp->file_id,
 			timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0),
 			timeval_set(1, 0));
