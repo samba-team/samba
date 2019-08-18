@@ -169,7 +169,7 @@ def configure(conf):
 
     conf.CHECK_CFG(package='zlib', minversion='1.2.3',
                    args='--cflags --libs',
-                   msg='Checking for zlib', mandetory=True)
+                   mandatory=True)
     conf.CHECK_FUNCS_IN('inflateInit2', 'z')
 
     if conf.CHECK_FOR_THIRD_PARTY():
