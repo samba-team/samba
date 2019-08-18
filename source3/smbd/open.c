@@ -56,6 +56,16 @@ struct deferred_open_record {
 	 * opens and just terminates smbd if the async open times out.
 	 */
 	struct tevent_timer *te;
+
+	/*
+	 * For the samba kernel oplock case we use both a timeout and
+	 * a watch on locking.tdb. This way in case it's smbd holding
+	 * the kernel oplock we get directly notified for the retry
+	 * once the kernel oplock is properly broken. Store the req
+	 * here so that it can be timely discarded once the timer
+	 * above fires.
+	 */
+	struct tevent_req *watch_req;
 };
 
 /****************************************************************************
@@ -2477,6 +2487,8 @@ static void poll_open_fn(struct tevent_context *ev,
 		private_data, struct deferred_open_record);
 	bool ok;
 
+	TALLOC_FREE(open_rec->watch_req);
+
 	ok = schedule_deferred_open_message_smb(
 		open_rec->xconn, open_rec->mid);
 	if (!ok) {
@@ -2536,17 +2548,18 @@ static bool setup_poll_open(
 	}
 
 	if (lck != NULL) {
-		struct tevent_req *watch_req = dbwrap_watched_watch_send(
+		open_rec->watch_req = dbwrap_watched_watch_send(
 			open_rec,
 			req->sconn->ev_ctx,
 			lck->data->record,
 			(struct server_id) {0});
-		if (watch_req == NULL) {
+		if (open_rec->watch_req == NULL) {
 			DBG_WARNING("dbwrap_watched_watch_send failed\n");
 			TALLOC_FREE(open_rec);
 			return false;
 		}
-		tevent_req_set_callback(watch_req, poll_open_done, open_rec);
+		tevent_req_set_callback(
+			open_rec->watch_req, poll_open_done, open_rec);
 	}
 
 	ok = push_deferred_open_message_smb(req, max_timeout, id, open_rec);
@@ -3326,8 +3339,6 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			     open_access_mask, &new_file_created);
 
 	if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_NETWORK_BUSY)) {
-		bool delay;
-
 		/*
 		 * This handles the kernel oplock case:
 		 *
@@ -3351,53 +3362,27 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 */
 
 		lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
-		if (lck == NULL) {
-			/*
-			 * No oplock from Samba around. Set up a poll every 1
-			 * second to retry a non-blocking open until the time
-			 * expires.
-			 */
-			setup_poll_open(
-				req,
-				NULL,
-				fsp->file_id,
-				timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0),
-				timeval_set(1, 0));
-			DBG_DEBUG("No Samba oplock around after EWOULDBLOCK. "
-				"Retrying with poll\n");
-			return NT_STATUS_SHARING_VIOLATION;
-		}
 
-		if (!validate_oplock_types(lck)) {
+		if ((lck != NULL) && !validate_oplock_types(lck)) {
 			smb_panic("validate_oplock_types failed");
 		}
 
-		delay = delay_for_oplock(fsp, 0, lease, lck, false,
-					 create_disposition,
-					 first_open_attempt);
-		if (delay) {
-			schedule_defer_open(lck, fsp->file_id, req);
-			TALLOC_FREE(lck);
-			DEBUG(10, ("Sent oplock break request to kernel "
-				   "oplock holder\n"));
-			return NT_STATUS_SHARING_VIOLATION;
-		}
-
 		/*
-		 * No oplock from Samba around. Set up a poll every 1
-		 * second to retry a non-blocking open until the time
-		 * expires.
+		 * Retry once a second. If there's a share_mode_lock
+		 * around, also wait for it in case it was smbd
+		 * holding that kernel oplock that can quickly tell us
+		 * the oplock got removed.
 		 */
+
 		setup_poll_open(
 			req,
-			NULL,
+			lck,
 			fsp->file_id,
 			timeval_set(OPLOCK_BREAK_TIMEOUT*2, 0),
 			timeval_set(1, 0));
 
 		TALLOC_FREE(lck);
-		DBG_DEBUG("No Samba oplock around after EWOULDBLOCK. "
-			"Retrying with poll\n");
+
 		return NT_STATUS_SHARING_VIOLATION;
 	}
 
