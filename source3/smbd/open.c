@@ -1785,104 +1785,127 @@ NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 	return status;
 }
 
+struct validate_oplock_types_state {
+	bool valid;
+	bool batch;
+	bool ex_or_batch;
+	bool level2;
+	bool no_oplock;
+	uint32_t num_non_stat_opens;
+};
+
+static bool validate_oplock_types_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct validate_oplock_types_state *state = private_data;
+
+	if (e->op_mid == 0) {
+		/* INTERNAL_OPEN_ONLY */
+		return false;
+	}
+
+	if (e->op_type == NO_OPLOCK && is_stat_open(e->access_mask)) {
+		/*
+		 * We ignore stat opens in the table - they always
+		 * have NO_OPLOCK and never get or cause breaks. JRA.
+		 */
+		return false;
+	}
+
+	state->num_non_stat_opens += 1;
+
+	if (BATCH_OPLOCK_TYPE(e->op_type)) {
+		/* batch - can only be one. */
+		if (share_entry_stale_pid(e)) {
+			DBG_DEBUG("Found stale batch oplock\n");
+			return false;
+		}
+		if (state->ex_or_batch ||
+		    state->batch ||
+		    state->level2 ||
+		    state->no_oplock) {
+			DBG_ERR("Bad batch oplock entry\n");
+			state->valid = false;
+			return true;
+		}
+		state->batch = true;
+	}
+
+	if (EXCLUSIVE_OPLOCK_TYPE(e->op_type)) {
+		if (share_entry_stale_pid(e)) {
+			DBG_DEBUG("Found stale duplicate oplock\n");
+			return false;
+		}
+		/* Exclusive or batch - can only be one. */
+		if (state->ex_or_batch ||
+		    state->level2 ||
+		    state->no_oplock) {
+			DBG_ERR("Bad exclusive or batch oplock entry\n");
+			state->valid = false;
+			return true;
+		}
+		state->ex_or_batch = true;
+	}
+
+	if (LEVEL_II_OPLOCK_TYPE(e->op_type)) {
+		if (state->batch || state->ex_or_batch) {
+			if (share_entry_stale_pid(e)) {
+				DBG_DEBUG("Found stale LevelII oplock\n");
+				return false;
+			}
+			DBG_DEBUG("Bad levelII oplock entry\n");
+			state->valid = false;
+			return true;
+		}
+		state->level2 = true;
+	}
+
+	if (e->op_type == NO_OPLOCK) {
+		if (state->batch || state->ex_or_batch) {
+			if (share_entry_stale_pid(e)) {
+				DBG_DEBUG("Found stale NO_OPLOCK entry\n");
+				return false;
+			}
+			DBG_ERR("Bad no oplock entry\n");
+			state->valid = false;
+			return true;
+		}
+		state->no_oplock = true;
+	}
+
+	return false;
+}
+
 /*
  * Do internal consistency checks on the share mode for a file.
  */
 
 static bool validate_oplock_types(struct share_mode_lock *lck)
 {
-	struct share_mode_data *d = lck->data;
-	bool batch = false;
-	bool ex_or_batch = false;
-	bool level2 = false;
-	bool no_oplock = false;
-	uint32_t num_non_stat_opens = 0;
-	uint32_t i;
+	struct validate_oplock_types_state state = { .valid = true };
+	bool ok;
 
-	for (i=0; i<d->num_share_modes; i++) {
-		struct share_mode_entry *e = &d->share_modes[i];
-
-		if (!is_valid_share_mode_entry(e)) {
-			continue;
-		}
-
-		if (e->op_mid == 0) {
-			/* INTERNAL_OPEN_ONLY */
-			continue;
-		}
-
-		if (e->op_type == NO_OPLOCK && is_stat_open(e->access_mask)) {
-			/* We ignore stat opens in the table - they
-			   always have NO_OPLOCK and never get or
-			   cause breaks. JRA. */
-			continue;
-		}
-
-		num_non_stat_opens += 1;
-
-		if (BATCH_OPLOCK_TYPE(e->op_type)) {
-			/* batch - can only be one. */
-			if (share_mode_stale_pid(d, i)) {
-				DEBUG(10, ("Found stale batch oplock\n"));
-				continue;
-			}
-			if (ex_or_batch || batch || level2 || no_oplock) {
-				DEBUG(0, ("Bad batch oplock entry %u.",
-					  (unsigned)i));
-				return false;
-			}
-			batch = true;
-		}
-
-		if (EXCLUSIVE_OPLOCK_TYPE(e->op_type)) {
-			if (share_mode_stale_pid(d, i)) {
-				DEBUG(10, ("Found stale duplicate oplock\n"));
-				continue;
-			}
-			/* Exclusive or batch - can only be one. */
-			if (ex_or_batch || level2 || no_oplock) {
-				DEBUG(0, ("Bad exclusive or batch oplock "
-					  "entry %u.", (unsigned)i));
-				return false;
-			}
-			ex_or_batch = true;
-		}
-
-		if (LEVEL_II_OPLOCK_TYPE(e->op_type)) {
-			if (batch || ex_or_batch) {
-				if (share_mode_stale_pid(d, i)) {
-					DEBUG(10, ("Found stale LevelII "
-						   "oplock\n"));
-					continue;
-				}
-				DEBUG(0, ("Bad levelII oplock entry %u.",
-					  (unsigned)i));
-				return false;
-			}
-			level2 = true;
-		}
-
-		if (e->op_type == NO_OPLOCK) {
-			if (batch || ex_or_batch) {
-				if (share_mode_stale_pid(d, i)) {
-					DEBUG(10, ("Found stale NO_OPLOCK "
-						   "entry\n"));
-					continue;
-				}
-				DEBUG(0, ("Bad no oplock entry %u.",
-					  (unsigned)i));
-				return false;
-			}
-			no_oplock = true;
-		}
+	ok = share_mode_forall_entries(lck, validate_oplock_types_fn, &state);
+	if (!ok) {
+		DBG_DEBUG("share_mode_forall_entries failed\n");
+		return false;
+	}
+	if (!state.valid) {
+		DBG_DEBUG("Got invalid oplock configuration\n");
+		return false;
 	}
 
-	remove_stale_share_mode_entries(d);
+	remove_stale_share_mode_entries(lck->data);
 
-	if ((batch || ex_or_batch) && (num_non_stat_opens != 1)) {
-		DEBUG(1, ("got batch (%d) or ex (%d) non-exclusively (%d)\n",
-			  (int)batch, (int)ex_or_batch,
-			  (int)d->num_share_modes));
+	if ((state.batch || state.ex_or_batch) &&
+	    (state.num_non_stat_opens != 1)) {
+		DBG_WARNING("got batch (%d) or ex (%d) non-exclusively "
+			    "(%"PRIu32")\n",
+			    (int)state.batch,
+			    (int)state.ex_or_batch,
+			    state.num_non_stat_opens);
 		return false;
 	}
 
