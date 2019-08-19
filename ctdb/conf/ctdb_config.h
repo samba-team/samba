@@ -20,7 +20,7 @@
 #ifndef __CTDB_CONFIG_H__
 #define __CTDB_CONFIG_H__
 
-#include "common/conf.h"
+#include "conf/conf.h"
 
 struct ctdb_config {
 	/* Cluster */

@@ -20,7 +20,7 @@
 #ifndef __CTDB_EVENT_CONF_H__
 #define __CTDB_EVENT_CONF_H__
 
-#include "common/conf.h"
+#include "conf/conf.h"
 
 #define EVENT_CONF_SECTION		"event"
 

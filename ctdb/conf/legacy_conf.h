@@ -20,7 +20,7 @@
 #ifndef __CTDB_LEGACY_CONF_H__
 #define __CTDB_LEGACY_CONF_H__
 
-#include "common/conf.h"
+#include "conf/conf.h"
 
 #define LEGACY_CONF_SECTION "legacy"
 

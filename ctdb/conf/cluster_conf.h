@@ -20,7 +20,7 @@
 #ifndef __CTDB_CLUSTER_CONF_H__
 #define __CTDB_CLUSTER_CONF_H__
 
-#include "common/conf.h"
+#include "conf/conf.h"
 
 #define CLUSTER_CONF_SECTION "cluster"
 

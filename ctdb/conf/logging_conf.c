@@ -21,9 +21,9 @@
 
 #include <talloc.h>
 
-#include "common/conf.h"
 #include "common/logging.h"
 
+#include "conf/conf.h"
 #include "conf/logging_conf.h"
 
 #define LOGGING_LOCATION_DEFAULT	"file:" LOGDIR "/log.ctdb"

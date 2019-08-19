@@ -20,7 +20,7 @@
 #ifndef __CTDB_DATABASE_CONF_H__
 #define __CTDB_DATABASE_CONF_H__
 
-#include "common/conf.h"
+#include "conf/conf.h"
 
 #define DATABASE_CONF_SECTION "database"
 

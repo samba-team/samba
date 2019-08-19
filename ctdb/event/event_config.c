@@ -21,9 +21,9 @@
 
 #include <talloc.h>
 
-#include "common/conf.h"
 #include "common/path.h"
 
+#include "conf/conf.h"
 #include "conf/logging_conf.h"
 #include "conf/event_conf.h"
 

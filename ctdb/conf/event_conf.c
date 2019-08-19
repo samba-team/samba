@@ -23,9 +23,9 @@
 
 #include "lib/util/debug.h"
 
-#include "common/conf.h"
 #include "common/path.h"
 
+#include "conf/conf.h"
 #include "conf/event_conf.h"
 
 static bool event_conf_validate_debug_script(const char *key,

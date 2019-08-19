@@ -22,8 +22,8 @@
 #include "lib/util/debug.h"
 
 #include "common/path.h"
-#include "common/conf.h"
 
+#include "conf/conf.h"
 #include "conf/logging_conf.h"
 #include "conf/cluster_conf.h"
 #include "conf/database_conf.h"

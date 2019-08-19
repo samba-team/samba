@@ -25,9 +25,9 @@
 
 #include "common/logging.h"
 #include "common/cmdline.h"
-#include "common/conf.h"
 #include "common/path.h"
 
+#include "conf/conf.h"
 #include "conf/logging_conf.h"
 #include "conf/cluster_conf.h"
 #include "conf/database_conf.h"

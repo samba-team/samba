@@ -21,7 +21,7 @@
 
 #include <assert.h>
 
-#include "common/conf.c"
+#include "conf/conf.c"
 
 static void test1(void)
 {

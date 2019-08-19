@@ -20,7 +20,7 @@
 #ifndef __LOGGING_CONF_H__
 #define __LOGGING_CONF_H__
 
-#include "common/conf.h"
+#include "conf/conf.h"
 
 #define LOGGING_CONF_SECTION	"logging"
 

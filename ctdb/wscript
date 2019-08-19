@@ -437,7 +437,6 @@ def build(bld):
                         source=bld.SUBDIR('common',
                                           '''cmdline.c
                                              comm.c
-                                             conf.c
                                              db_hash.c
                                              event_script.c
                                              hash_count.c
@@ -531,7 +530,8 @@ def build(bld):
                      install_path='${CTDB_HELPER_BINDIR}')
 
     bld.SAMBA_SUBSYSTEM('ctdb-conf',
-                        source='''conf/logging_conf.c
+                        source='''conf/conf.c
+                                  conf/logging_conf.c
                                   conf/cluster_conf.c
                                   conf/database_conf.c
                                   conf/event_conf.c

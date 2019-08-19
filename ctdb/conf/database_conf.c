@@ -29,9 +29,9 @@
 #include "lib/util/debug.h"
 #include "lib/util/samba_util.h"
 
-#include "common/conf.h"
 #include "common/path.h"
 
+#include "conf/conf.h"
 #include "conf/database_conf.h"
 
 #define DATABASE_CONF_VOLATILE_DB_DIR_DEFAULT   CTDB_VARDIR "/volatile"

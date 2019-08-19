@@ -20,7 +20,7 @@
 #ifndef __CTDB_FAILOVER_CONF_H__
 #define __CTDB_FAILOVER_CONF_H__
 
-#include "common/conf.h"
+#include "conf/conf.h"
 
 #define FAILOVER_CONF_SECTION "failover"
 

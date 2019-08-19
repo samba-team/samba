@@ -21,7 +21,7 @@
 
 #include "lib/util/debug.h"
 
-#include "common/conf.h"
+#include "conf/conf.h"
 
 #include "conf/failover_conf.h"
 

@@ -26,7 +26,7 @@
 #include "lib/util/tini.h"
 #include "lib/util/debug.h"
 
-#include "common/conf.h"
+#include "conf/conf.h"
 
 struct conf_value {
 	enum conf_type type;
