@@ -819,6 +819,8 @@ int32_t ctdb_control_recd_ping(struct ctdb_context *ctdb);
 int32_t ctdb_control_set_recmaster(struct ctdb_context *ctdb,
 				   uint32_t opcode, TDB_DATA indata);
 
+void ctdb_node_become_inactive(struct ctdb_context *ctdb);
+
 int32_t ctdb_control_stop_node(struct ctdb_context *ctdb);
 int32_t ctdb_control_continue_node(struct ctdb_context *ctdb);
 
