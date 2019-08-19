@@ -533,7 +533,7 @@ int main(int argc, const char *argv[])
 	bool show_processes, show_locks, show_shares;
 	bool show_notify = false;
 	bool resolve_uids = false;
-	poptContext pc;
+	poptContext pc = NULL;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{
@@ -744,11 +744,13 @@ int main(int argc, const char *argv[])
 		case 'P':
 			/* Dump profile data */
 			ok = status_profile_dump(verbose);
-			return ok ? 0 : 1;
+			ret = ok ? 0 : 1;
+			goto done;
 		case 'R':
 			/* Continuously display rate-converted data */
 			ok = status_profile_rates(verbose);
-			return ok ? 0 : 1;
+			ret = ok ? 0 : 1;
+			goto done;
 		default:
 			break;
 	}
@@ -844,6 +846,7 @@ int main(int argc, const char *argv[])
 	}
 
 done:
+	poptFreeContext(pc);
 	TALLOC_FREE(frame);
 	return ret;
 }

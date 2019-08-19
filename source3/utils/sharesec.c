@@ -512,16 +512,19 @@ int main(int argc, const char *argv[])
 
 		if ( !sid ) {
 			fprintf( stderr, "Failed to retrieve Machine SID!\n");
-			return 3;
+			retval = 3;
+			goto done;
 		}
 
 		printf ("%s\n", dom_sid_str_buf(sid, &buf) );
-		return 0;
+		retval = 0;
+		goto done;
 	}
 
 	if ( mode == SMB_ACL_VIEW && force_acl ) {
 		fprintf( stderr, "Invalid combination of -F and -v\n");
-		return -1;
+		retval = -1;
+		goto done;
 	}
 
 	if (mode == SMB_ACL_VIEW_ALL) {
@@ -547,7 +550,8 @@ int main(int argc, const char *argv[])
 
 	if(!poptPeekArg(pc)) {
 		poptPrintUsage(pc, stderr, 0);
-		return -1;
+		retval = -1;
+		goto done;
 	}
 
 	fstrcpy(sharename, poptGetArg(pc));
@@ -556,7 +560,8 @@ int main(int argc, const char *argv[])
 
 	if ( snum == -1 && !force_acl ) {
 		fprintf( stderr, "Invalid sharename: %s\n", sharename);
-		return -1;
+		retval = -1;
+		goto done;
 	}
 
 	switch (mode) {
@@ -572,6 +577,7 @@ int main(int argc, const char *argv[])
 	}
 
 done:
+	poptFreeContext(pc);
 	talloc_destroy(ctx);
 
 	return retval;

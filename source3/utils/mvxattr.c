@@ -108,7 +108,7 @@ int main(int argc, const char *argv[])
 {
 	int c;
 	const char *path = NULL;
-	poptContext pc;
+	poptContext pc = NULL;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{
@@ -214,9 +214,9 @@ int main(int argc, const char *argv[])
 			   state.follow_symlink ? 0 : FTW_PHYS);
 	}
 
+done:
 	poptFreeContext(pc);
 
-done:
 	TALLOC_FREE(frame);
 	return ret;
 }

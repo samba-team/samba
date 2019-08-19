@@ -981,24 +981,28 @@ int main(int argc, char **argv)
 		fprintf(stderr, "%s: %s\n",
 			poptBadOption(pc, POPT_BADOPTION_NOALIAS),
 			poptStrerror(c));
-		return 1;
+		ret = 1;
+		goto done;
 	}
 
 	if ((opt.send_stdout || resume || opt.outputfile) && opt.update) {
 		fprintf(stderr, "The -o, -R or -O and -U options can not be "
 			"used together.\n");
-		return 1;
+		ret = 1;
+		goto done;
 	}
 	if ((opt.send_stdout || opt.outputfile) && recursive) {
 		fprintf(stderr, "The -o or -O and -R options can not be "
 			"used together.\n");
-		return 1;
+		ret = 1;
+		goto done;
 	}
 
 	if (opt.outputfile && opt.send_stdout) {
 		fprintf(stderr, "The -o and -O options can not be "
 			"used together.\n");
-		return 1;
+		ret = 1;
+		goto done;
 	}
 
 	popt_burn_cmdline_password(argc, argv);
@@ -1007,7 +1011,8 @@ int main(int argc, char **argv)
 
 	if (smbc_init(get_auth_data, opt.debuglevel) < 0) {
 		fprintf(stderr, "Unable to initialize libsmbclient\n");
-		return 1;
+		ret= 1;
+		goto done;
 	}
 
 	if (smb_encrypt) {
@@ -1030,6 +1035,8 @@ int main(int argc, char **argv)
 		}
 	}
 
+done:
+	poptFreeContext(pc);
 	TALLOC_FREE(frame);
 	if (ret) {
 		clean_exit();

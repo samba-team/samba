@@ -1751,6 +1751,8 @@ int main(int argc, const char **argv)
          * shell needs 0. */ 
 
 	ret = !do_command(evt_ctx, msg_ctx, argc, argv);
+
+	poptFreeContext(pc);
 	TALLOC_FREE(frame);
 	return ret;
 }

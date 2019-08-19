@@ -2534,6 +2534,7 @@ enum {
 
 	if (argc == 1) {
 		poptPrintHelp(pc, stderr, 0);
+		poptFreeContext(pc);
 		return 1;
 	}
 
@@ -2674,6 +2675,7 @@ enum {
 
 	if (diagnostics) {
 		if (!diagnose_ntlm_auth()) {
+			poptFreeContext(pc);
 			return 1;
 		}
 	} else {
@@ -2681,6 +2683,7 @@ enum {
 
 		fstr_sprintf(user, "%s%c%s", opt_domain, winbind_separator(), opt_username);
 		if (!check_plaintext_auth(user, opt_password, True)) {
+			poptFreeContext(pc);
 			return 1;
 		}
 	}

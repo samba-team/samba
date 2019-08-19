@@ -345,6 +345,7 @@ int main(int argc, const char **argv)
 		in  = fopen(infile, "r");
 		if(!in) {
 			perror("fopen");
+			poptFreeContext(pc);
 			return 1;
 		}
 	} else in = stdin;
@@ -356,6 +357,7 @@ int main(int argc, const char **argv)
 		if(!out) {
 			perror("fopen");
 			fprintf(stderr, "Can't find %s, using stdout...\n", outfile);
+			poptFreeContext(pc);
 			return 1;
 		}
 	}
@@ -398,5 +400,6 @@ int main(int argc, const char **argv)
 		fclose(out);
 	}
 
+	poptFreeContext(pc);
 	return 0;
 }

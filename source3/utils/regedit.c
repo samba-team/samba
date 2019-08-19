@@ -787,6 +787,7 @@ int main(int argc, const char **argv)
 		fprintf(stderr, "Unable to open registry: %s\n",
 			win_errstr(rv));
 		TALLOC_FREE(frame);
+		poptFreeContext(pc);
 
 		return 1;
 	}
@@ -794,6 +795,7 @@ int main(int argc, const char **argv)
 	display_window(frame, ctx);
 
 	TALLOC_FREE(frame);
+	poptFreeContext(pc);
 
 	return 0;
 }

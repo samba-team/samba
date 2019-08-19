@@ -342,6 +342,7 @@ int main(int argc, const char *argv[])
 	}
 
 done:
+	poptFreeContext(pc);
 	talloc_free(mem_ctx);
 	return ret;
 }

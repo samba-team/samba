@@ -68,6 +68,7 @@ int main(int argc, const char *argv[])
 		printf("[%s]\n", buff);
 	}
 
+	poptFreeContext(pc);
 	talloc_free(ctx);
 
 	return 0;
