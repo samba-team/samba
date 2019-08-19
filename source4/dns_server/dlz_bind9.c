@@ -554,10 +554,12 @@ static isc_result_t parse_options(struct dlz_bind9_data *state,
 		default:
 			state->log(ISC_LOG_ERROR, "dlz_bind9: Invalid option %s: %s",
 				   poptBadOption(pc, 0), poptStrerror(opt));
+			poptFreeContext(pc);
 			return ISC_R_FAILURE;
 		}
 	}
 
+	poptFreeContext(pc);
 	return ISC_R_SUCCESS;
 }
 
