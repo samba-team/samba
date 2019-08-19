@@ -31,6 +31,10 @@
 #include "lib/util/tevent_unix.h"
 #include "lib/util/gpfswrap.h"
 
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
+#include "lib/crypto/gnutls_helpers.h"
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
@@ -1609,6 +1613,40 @@ static int get_dos_attr_with_capability(struct smb_filename *smb_fname,
 	return ret;
 }
 
+static NTSTATUS vfs_gpfs_get_file_id(struct gpfs_iattr64 *iattr,
+				     uint64_t *fileid)
+{
+	uint8_t input[sizeof(gpfs_ino64_t) +
+		      sizeof(gpfs_gen64_t) +
+		      sizeof(gpfs_snapid64_t)];
+	uint8_t digest[gnutls_hash_get_len(GNUTLS_DIG_SHA1)];
+	int rc;
+
+	DBG_DEBUG("ia_inode 0x%llx, ia_gen 0x%llx, ia_modsnapid 0x%llx\n",
+		  iattr->ia_inode, iattr->ia_gen, iattr->ia_modsnapid);
+
+	SBVAL(input,
+	      0, iattr->ia_inode);
+	SBVAL(input,
+	      sizeof(gpfs_ino64_t), iattr->ia_gen);
+	SBVAL(input,
+	      sizeof(gpfs_ino64_t) + sizeof(gpfs_gen64_t), iattr->ia_modsnapid);
+
+	GNUTLS_FIPS140_SET_LAX_MODE();
+	rc = gnutls_hash_fast(GNUTLS_DIG_SHA1, input, sizeof(input), &digest);
+	GNUTLS_FIPS140_SET_STRICT_MODE();
+
+	if (rc != 0) {
+		return gnutls_error_to_ntstatus(rc,
+						NT_STATUS_HASH_NOT_SUPPORTED);
+	}
+
+	memcpy(fileid, &digest, sizeof(*fileid));
+	DBG_DEBUG("file_id 0x%" PRIx64 "\n", *fileid);
+
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 					    struct smb_filename *smb_fname,
 					    uint32_t *dosmode)
@@ -1616,6 +1654,8 @@ static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 	struct gpfs_config_data *config;
 	struct gpfs_iattr64 iattr = { };
 	unsigned int litemask = 0;
+	uint64_t file_id;
+	NTSTATUS status;
 	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -1652,10 +1692,16 @@ static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 		return map_nt_error_from_unix(errno);
 	}
 
+	status = vfs_gpfs_get_file_id(&iattr, &file_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	*dosmode |= vfs_gpfs_winattrs_to_dosmode(iattr.ia_winflags);
 	smb_fname->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_BTIME;
 	smb_fname->st.st_ex_btime.tv_sec = iattr.ia_createtime.tv_sec;
 	smb_fname->st.st_ex_btime.tv_nsec = iattr.ia_createtime.tv_nsec;
+	update_stat_ex_file_id(&smb_fname->st, file_id);
 
 	return NT_STATUS_OK;
 }
@@ -1667,6 +1713,8 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 	struct gpfs_config_data *config;
 	struct gpfs_iattr64 iattr = { };
 	unsigned int litemask;
+	uint64_t file_id;
+	NTSTATUS status;
 	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -1713,10 +1761,16 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 		return map_nt_error_from_unix(errno);
 	}
 
+	status = vfs_gpfs_get_file_id(&iattr, &file_id);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	*dosmode |= vfs_gpfs_winattrs_to_dosmode(iattr.ia_winflags);
 	fsp->fsp_name->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_BTIME;
 	fsp->fsp_name->st.st_ex_btime.tv_sec = iattr.ia_createtime.tv_sec;
 	fsp->fsp_name->st.st_ex_btime.tv_nsec = iattr.ia_createtime.tv_nsec;
+	update_stat_ex_file_id(&fsp->fsp_name->st, file_id);
 
 	return NT_STATUS_OK;
 }
