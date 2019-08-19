@@ -22,11 +22,12 @@
 #include <talloc.h>
 
 #include "common/conf.h"
-#include "common/logging_conf.h"
 #include "common/path.h"
 
+#include "conf/logging_conf.h"
+#include "conf/event_conf.h"
+
 #include "event/event_private.h"
-#include "event/event_conf.h"
 
 struct event_config {
 	char *config_file;

@@ -466,10 +466,6 @@ def build(bld):
                                 popt
                              ''')
 
-    bld.SAMBA_SUBSYSTEM('ctdb-logging-conf',
-                        source='common/logging_conf.c',
-                        deps='ctdb-util talloc')
-
     bld.SAMBA_SUBSYSTEM('ctdb-protocol-basic',
                         source=bld.SUBDIR('protocol', 'protocol_basic.c'),
                         deps='talloc tdb')
@@ -534,35 +530,21 @@ def build(bld):
                      deps='''ctdb-util samba-util talloc replace popt''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
-    bld.SAMBA_SUBSYSTEM('ctdb-cluster-conf',
-                        source='cluster/cluster_conf.c',
-                        deps='ctdb-util')
-
-    bld.SAMBA_SUBSYSTEM('ctdb-database-conf',
-                        source='database/database_conf.c',
-                        deps='ctdb-util')
-
-    bld.SAMBA_SUBSYSTEM('ctdb-event-conf',
-                        source='event/event_conf.c',
-                        deps='ctdb-util')
-
-    bld.SAMBA_SUBSYSTEM('ctdb-failover-conf',
-                        source='failover/failover_conf.c',
-                        deps='ctdb-util')
-
-    bld.SAMBA_SUBSYSTEM('ctdb-legacy-conf',
-                        source='server/legacy_conf.c',
-                        deps='ctdb-util')
+    bld.SAMBA_SUBSYSTEM('ctdb-conf',
+                        source='''conf/logging_conf.c
+                                  conf/cluster_conf.c
+                                  conf/database_conf.c
+                                  conf/event_conf.c
+                                  conf/failover_conf.c
+                                  conf/legacy_conf.c
+                                  conf/ctdb_config.c
+                               ''',
+                        deps='''ctdb-util talloc replace''')
 
     bld.SAMBA_BINARY('ctdb-config',
-                     source='common/conf_tool.c',
+                     source='conf/conf_tool.c',
                      cflags='-DCTDB_CONF_TOOL',
-                     deps='''ctdb-logging-conf
-                             ctdb-event-conf
-                             ctdb-cluster-conf
-                             ctdb-database-conf
-                             ctdb-failover-conf
-                             ctdb-legacy-conf
+                     deps='''ctdb-conf
                              ctdb-util samba-util talloc replace popt''',
                      install_path='${CTDB_HELPER_BINDIR}')
 
@@ -587,7 +569,7 @@ def build(bld):
                                           event_request.c
                                           '''),
                      deps='''ctdb-event-protocol
-                             ctdb-event-conf ctdb-logging-conf
+                             ctdb-conf
                              ctdb-server-util samba-util ctdb-util
                              talloc tevent replace popt''',
                      install_path='${CTDB_HELPER_BINDIR}')
@@ -618,17 +600,11 @@ def build(bld):
                                              ctdb_update_record.c
                                              ctdb_lock.c ctdb_fork.c
                                              ctdb_tunnel.c ctdb_client.c
-                                             ctdb_config.c
                                           '''),
                      includes='include',
                      deps='''ctdb-common ctdb-system ctdb-protocol
                              ctdb-tcp ctdb-util replace sys_rw popt
-                             ctdb-logging-conf
-                             ctdb-cluster-conf
-                             ctdb-database-conf
-                             ctdb-event-conf
-                             ctdb-failover-conf
-                             ctdb-legacy-conf
+                             ctdb-conf
                              ctdb-event-protocol
                              talloc tevent tdb-wrap tdb talloc_report''' +
                           ib_deps,

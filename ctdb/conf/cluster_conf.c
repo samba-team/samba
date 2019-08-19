@@ -24,7 +24,7 @@
 
 #include "common/conf.h"
 
-#include "cluster_conf.h"
+#include "conf/cluster_conf.h"
 
 #define CLUSTER_TRANSPORT_DEFAULT "tcp"
 

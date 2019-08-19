@@ -23,7 +23,8 @@
 
 #include "common/conf.h"
 #include "common/logging.h"
-#include "common/logging_conf.h"
+
+#include "conf/logging_conf.h"
 
 #define LOGGING_LOCATION_DEFAULT	"file:" LOGDIR "/log.ctdb"
 #define LOGGING_LOG_LEVEL_DEFAULT	"NOTICE"

@@ -32,7 +32,7 @@
 #include "common/conf.h"
 #include "common/path.h"
 
-#include "database_conf.h"
+#include "conf/database_conf.h"
 
 #define DATABASE_CONF_VOLATILE_DB_DIR_DEFAULT   CTDB_VARDIR "/volatile"
 #define DATABASE_CONF_PERSISTENT_DB_DIR_DEFAULT CTDB_VARDIR "/persistent"

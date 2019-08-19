@@ -21,17 +21,17 @@
 
 #include "lib/util/debug.h"
 
-#include "common/conf.h"
-#include "common/logging_conf.h"
 #include "common/path.h"
+#include "common/conf.h"
 
-#include "cluster/cluster_conf.h"
-#include "database/database_conf.h"
-#include "event/event_conf.h"
-#include "failover/failover_conf.h"
-#include "legacy_conf.h"
+#include "conf/logging_conf.h"
+#include "conf/cluster_conf.h"
+#include "conf/database_conf.h"
+#include "conf/event_conf.h"
+#include "conf/failover_conf.h"
+#include "conf/legacy_conf.h"
 
-#include "ctdb_config.h"
+#include "conf/ctdb_config.h"
 
 struct ctdb_config ctdb_config;
 

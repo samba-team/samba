@@ -23,7 +23,7 @@
 
 #include "common/conf.h"
 
-#include "failover/failover_conf.h"
+#include "conf/failover_conf.h"
 
 static bool check_static_boolean_change(const char *key,
 					bool old_value,

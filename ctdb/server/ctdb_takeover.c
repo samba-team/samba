@@ -45,7 +45,7 @@
 #include "common/common.h"
 #include "common/logging.h"
 
-#include "server/ctdb_config.h"
+#include "conf/ctdb_config.h"
 
 #include "server/ipalloc.h"
 

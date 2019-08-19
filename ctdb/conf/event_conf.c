@@ -26,7 +26,7 @@
 #include "common/conf.h"
 #include "common/path.h"
 
-#include "event/event_conf.h"
+#include "conf/event_conf.h"
 
 static bool event_conf_validate_debug_script(const char *key,
 					     const char *old_script,

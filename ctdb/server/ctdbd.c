@@ -40,9 +40,9 @@
 #include "common/common.h"
 #include "common/path.h"
 #include "common/logging.h"
-#include "common/logging_conf.h"
 
-#include "ctdb_config.h"
+#include "conf/logging_conf.h"
+#include "conf/ctdb_config.h"
 
 int script_log_level;
 bool fast_start;
