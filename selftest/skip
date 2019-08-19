@@ -93,6 +93,7 @@
 ^samba4.rpc.samr.passwords.*ncacn_np\(ad_dc_slowtests\) # currently fails, possibly config issue
 ^samba4.rpc.samr.passwords.*s4member       # currently fails, possibly config issue
 ^samba4.raw.scan.eamax
+^samba4.smb2.samba3misc
 ^samba4.smb2.notify
 ^samba4.smb2.scan
 ^samba4.smb2.lease
