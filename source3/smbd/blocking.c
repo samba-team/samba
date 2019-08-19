@@ -109,6 +109,7 @@ struct smbd_smb1_do_locks_state {
 	uint16_t num_locks;
 	struct smbd_lock_element *locks;
 	uint16_t blocker;
+	NTSTATUS deny_status;
 };
 
 static void smbd_smb1_do_locks_try(struct tevent_req *req);
@@ -175,6 +176,16 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	state->lock_flav = lock_flav;
 	state->num_locks = num_locks;
 	state->locks = locks;
+
+	if (lock_flav == POSIX_LOCK) {
+		/*
+		 * SMB1 posix locks always use
+		 * NT_STATUS_FILE_LOCK_CONFLICT.
+		 */
+		state->deny_status = NT_STATUS_FILE_LOCK_CONFLICT;
+	} else {
+		state->deny_status = NT_STATUS_LOCK_NOT_GRANTED;
+	}
 
 	DBG_DEBUG("state=%p, state->smbreq=%p\n", state, state->smbreq);
 
@@ -245,10 +256,19 @@ struct tevent_req *smbd_smb1_do_locks_send(
 		  state->timeout,
 		  blocking_smblctx);
 
+	/*
+	 * If the endtime is not elapsed yet,
+	 * it means we'll retry after a timeout.
+	 * In that case we'll have to return
+	 * NT_STATUS_FILE_LOCK_CONFLICT
+	 * instead of NT_STATUS_LOCK_NOT_GRANTED.
+	 */
 	if (state->timeout == 0) {
+		status = state->deny_status;
 		tevent_req_nterror(req, status);
 		goto done;
 	}
+	state->deny_status = NT_STATUS_FILE_LOCK_CONFLICT;
 
 	subreq = dbwrap_watched_watch_send(
 		state, state->ev, lck->data->record, blocking_pid);
@@ -379,16 +399,19 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 	 * Otherwise keep waiting either waiting
 	 * for changes in locking.tdb or the polling
 	 * mode timers waiting for posix locks.
+	 *
+	 * If the endtime is not expired yet,
+	 * it means we'll retry after a timeout.
+	 * In that case we'll have to return
+	 * NT_STATUS_FILE_LOCK_CONFLICT
+	 * instead of NT_STATUS_LOCK_NOT_GRANTED.
 	 */
 	elapsed = timeval_elapsed(&state->endtime);
 	if (elapsed > 0) {
-		/*
-		 * On timeout we always return
-		 * NT_STATUS_FILE_LOCK_CONFLICT
-		 */
-		status = NT_STATUS_FILE_LOCK_CONFLICT;
+		status = state->deny_status;
 		goto done;
 	}
+	state->deny_status = NT_STATUS_FILE_LOCK_CONFLICT;
 
 	subreq = dbwrap_watched_watch_send(
 		state, state->ev, lck->data->record, blocking_pid);
