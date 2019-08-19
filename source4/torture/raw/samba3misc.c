@@ -775,8 +775,8 @@ static void receive_lock_result(struct smbcli_request *req)
 }
 
 /*
- * Check that Samba3 correctly deals with conflicting posix byte range locks
- * on an underlying file
+ * Check that Samba3 correctly deals with conflicting local posix byte range
+ * locks on an underlying file via "normal" SMB1 (without unix extentions).
  *
  * Note: This test depends on "posix locking = yes".
  * Note: To run this test, use "--option=torture:localdir=<LOCALDIR>"
@@ -873,7 +873,7 @@ bool torture_samba3_posixtimedlock(struct torture_context *tctx, struct smbcli_s
 	status = smb_raw_lock(cli->tree, &io);
 
 	ret = true;
-	CHECK_STATUS(tctx, status, NT_STATUS_FILE_LOCK_CONFLICT);
+	CHECK_STATUS(tctx, status, NT_STATUS_LOCK_NOT_GRANTED);
 
 	if (!ret) {
 		goto done;
