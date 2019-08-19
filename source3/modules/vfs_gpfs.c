@@ -1567,7 +1567,8 @@ static unsigned int vfs_gpfs_dosmode_to_winattrs(uint32_t dosmode)
 }
 
 static int get_dos_attr_with_capability(struct smb_filename *smb_fname,
-					struct gpfs_winattr *attr)
+					unsigned int *litemask,
+					struct gpfs_iattr64 *iattr)
 {
 	int saved_errno = 0;
 	int ret;
@@ -1594,7 +1595,8 @@ static int get_dos_attr_with_capability(struct smb_filename *smb_fname,
 
 	set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 
-	ret = gpfswrap_get_winattrs_path(smb_fname->base_name, attr);
+	ret = gpfswrap_stat_x(smb_fname->base_name, litemask,
+			      iattr, sizeof(*iattr));
 	if (ret == -1) {
 		saved_errno = errno;
 	}
@@ -1612,7 +1614,8 @@ static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 					    uint32_t *dosmode)
 {
 	struct gpfs_config_data *config;
-	struct gpfs_winattr attrs = { };
+	struct gpfs_iattr64 iattr = { };
+	unsigned int litemask = 0;
 	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -1624,13 +1627,15 @@ static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 						       smb_fname, dosmode);
 	}
 
-	ret = gpfswrap_get_winattrs_path(smb_fname->base_name, &attrs);
+	ret = gpfswrap_stat_x(smb_fname->base_name, &litemask,
+			      &iattr, sizeof(iattr));
 	if (ret == -1 && errno == ENOSYS) {
 		return SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle, smb_fname,
 						       dosmode);
 	}
 	if (ret == -1 && errno == EACCES) {
-		ret = get_dos_attr_with_capability(smb_fname, &attrs);
+		ret = get_dos_attr_with_capability(smb_fname, &litemask,
+						   &iattr);
 	}
 
 	if (ret == -1 && errno == EBADF) {
@@ -1647,10 +1652,10 @@ static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 		return map_nt_error_from_unix(errno);
 	}
 
-	*dosmode |= vfs_gpfs_winattrs_to_dosmode(attrs.winAttrs);
+	*dosmode |= vfs_gpfs_winattrs_to_dosmode(iattr.ia_winflags);
 	smb_fname->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_BTIME;
-	smb_fname->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
-	smb_fname->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
+	smb_fname->st.st_ex_btime.tv_sec = iattr.ia_createtime.tv_sec;
+	smb_fname->st.st_ex_btime.tv_nsec = iattr.ia_createtime.tv_nsec;
 
 	return NT_STATUS_OK;
 }
