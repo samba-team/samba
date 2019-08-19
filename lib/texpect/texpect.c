@@ -401,7 +401,7 @@ int main(int argc, const char **argv)
 {
 	int optidx = 0;
 	pid_t pid;
-	poptContext pc;
+	poptContext pc = NULL;
 	const char *instruction_file;
 	const char **args;
 	const char *program;
@@ -415,7 +415,7 @@ int main(int argc, const char **argv)
 
 	if (argc == 1) {
 		poptPrintHelp(pc, stderr, 0);
-		return 1;
+		goto out;
 	}
 
 	while ((optidx = poptGetNextOpt(pc)) != -1) {
@@ -426,7 +426,7 @@ int main(int argc, const char **argv)
 	args = poptGetArgs(pc);
 	if (args == NULL) {
 		poptPrintHelp(pc, stderr, 0);
-		return 1;
+		goto out;
 	}
 
 	program_args = (char * const *)discard_const_p(char *, args);
@@ -453,7 +453,7 @@ int main(int argc, const char **argv)
 			err(1, "Failed to fork");
 
 			/* Never reached */
-			return 1;
+			goto out;
 		case 0:
 
 			if(setsid()<0)
@@ -470,7 +470,7 @@ int main(int argc, const char **argv)
 			err(1, "Failed to exec: %s", program);
 
 			/* Never reached */
-			return 1;
+			goto out;
 		default:
 			close(slave);
 			{
@@ -483,9 +483,13 @@ int main(int argc, const char **argv)
 				sigaction(SIGALRM, &sa, NULL);
 			}
 
+			poptFreeContext(pc);
 			return eval_parent(pid);
 	}
 
 	/* Never reached */
+
+out:
+	poptFreeContext(pc);
 	return 1;
 }
