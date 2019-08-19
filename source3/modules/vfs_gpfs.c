@@ -1665,7 +1665,8 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 					     uint32_t *dosmode)
 {
 	struct gpfs_config_data *config;
-	struct gpfs_winattr attrs = { };
+	struct gpfs_iattr64 iattr = { };
+	unsigned int litemask;
 	int ret;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -1676,7 +1677,7 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle, fsp, dosmode);
 	}
 
-	ret = gpfswrap_get_winattrs(fsp->fh->fd, &attrs);
+	ret = gpfswrap_fstat_x(fsp->fh->fd, &litemask, &iattr, sizeof(iattr));
 	if (ret == -1 && errno == ENOSYS) {
 		return SMB_VFS_NEXT_FGET_DOS_ATTRIBUTES(handle, fsp, dosmode);
 	}
@@ -1693,7 +1694,8 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 
 		set_effective_capability(DAC_OVERRIDE_CAPABILITY);
 
-		ret = gpfswrap_get_winattrs(fsp->fh->fd, &attrs);
+		ret = gpfswrap_fstat_x(fsp->fh->fd, &litemask,
+				       &iattr, sizeof(iattr));
 		if (ret == -1) {
 			saved_errno = errno;
 		}
@@ -1711,10 +1713,10 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 		return map_nt_error_from_unix(errno);
 	}
 
-	*dosmode |= vfs_gpfs_winattrs_to_dosmode(attrs.winAttrs);
+	*dosmode |= vfs_gpfs_winattrs_to_dosmode(iattr.ia_winflags);
 	fsp->fsp_name->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_BTIME;
-	fsp->fsp_name->st.st_ex_btime.tv_sec = attrs.creationTime.tv_sec;
-	fsp->fsp_name->st.st_ex_btime.tv_nsec = attrs.creationTime.tv_nsec;
+	fsp->fsp_name->st.st_ex_btime.tv_sec = iattr.ia_createtime.tv_sec;
+	fsp->fsp_name->st.st_ex_btime.tv_nsec = iattr.ia_createtime.tv_nsec;
 
 	return NT_STATUS_OK;
 }
