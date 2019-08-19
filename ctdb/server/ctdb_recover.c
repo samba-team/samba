@@ -1469,6 +1469,8 @@ int32_t ctdb_control_stop_node(struct ctdb_context *ctdb)
 	DEBUG(DEBUG_ERR, ("Stopping node\n"));
 	ctdb->nodes[ctdb->pnn]->flags |= NODE_FLAGS_STOPPED;
 
+	ctdb_node_become_inactive(ctdb);
+
 	return 0;
 }
 
