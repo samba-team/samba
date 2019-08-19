@@ -34,6 +34,7 @@ bld.SAMBA_MODULE('TORTURE_SMB2',
         sharemode.c
         smb2.c
         streams.c
+        samba3misc.c
         util.c
         ''',
 	subsystem='smbtorture',

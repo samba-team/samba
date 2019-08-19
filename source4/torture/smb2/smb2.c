@@ -195,6 +195,7 @@ NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 
 	torture_suite_add_suite(suite, torture_smb2_doc_init(suite));
 	torture_suite_add_suite(suite, torture_smb2_multichannel_init(suite));
+	torture_suite_add_suite(suite, torture_smb2_samba3misc_init(suite));
 
 	suite->description = talloc_strdup(suite, "SMB2-specific tests");
 
