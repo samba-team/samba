@@ -3398,6 +3398,7 @@ int main(int argc, const char *argv[])
 		const char *share = argv[1+i];
 		if (!split_unc_name(share, &servers[i].server_name, &servers[i].share_name)) {
 			printf("Invalid share name '%s'\n", share);
+			poptFreeContext(pc);
 			talloc_free(mem_ctx);
 			return -1;
 		}
@@ -3405,6 +3406,7 @@ int main(int argc, const char *argv[])
 
 	if (username_count == 0) {
 		usage(pc);
+		poptFreeContext(pc);
 		talloc_free(mem_ctx);
 		return -1;
 	}
@@ -3426,6 +3428,7 @@ int main(int argc, const char *argv[])
 		printf("gentest failed\n");
 	}
 
+	poptFreeContext(pc);
 	talloc_free(mem_ctx);
 	return ret?0:-1;
 }

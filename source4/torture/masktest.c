@@ -387,6 +387,7 @@ int main(int argc, const char *argv[])
 
 	test_mask(argc_new-1, argv_new+1, mem_ctx, cli);
 
+	poptFreeContext(pc);
 	talloc_free(mem_ctx);
 	return(0);
 }

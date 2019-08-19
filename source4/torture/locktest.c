@@ -645,6 +645,7 @@ int main(int argc, const char *argv[])
 
 	if (username_count == 0) {
 		usage(pc);
+		poptFreeContext(pc);
 		return -1;
 	}
 	if (username_count == 1) {
@@ -660,6 +661,7 @@ int main(int argc, const char *argv[])
 	srandom(seed);
 
 	ret = test_locks(ev, lp_ctx, NULL, share);
+	poptFreeContext(pc);
 	talloc_free(mem_ctx);
 	return ret;
 }
