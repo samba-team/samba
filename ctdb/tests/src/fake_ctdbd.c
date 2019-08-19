@@ -927,8 +927,10 @@ static int ltdb_fetch(struct database *db, TDB_DATA key,
 	data->dptr = talloc_memdup(mem_ctx,
 				   rec.dptr + ctdb_ltdb_header_len(header),
 				   data->dsize);
+
+	free(rec.dptr);
+
 	if (data->dptr == NULL) {
-		free(rec.dptr);
 		return ENOMEM;
 	}
 
