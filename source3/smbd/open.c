@@ -4944,6 +4944,78 @@ static void lease_match_parser(
 	return;
 }
 
+struct lease_match_break_state {
+	struct messaging_context *msg_ctx;
+	const struct smb2_lease_key *lease_key;
+	struct file_id id;
+
+	bool found_lease;
+	uint16_t version;
+	uint16_t epoch;
+};
+
+static bool lease_match_break_fn(
+	struct share_mode_entry *e,
+	void *private_data)
+{
+	struct lease_match_break_state *state = private_data;
+	bool stale, equal;
+	uint32_t e_lease_type;
+	NTSTATUS status;
+
+	stale = share_entry_stale_pid(e);
+	if (stale) {
+		return false;
+	}
+
+	equal = smb2_lease_key_equal(&e->lease_key, state->lease_key);
+	if (!equal) {
+		return false;
+	}
+
+	status = leases_db_get(
+		&e->client_guid,
+		&e->lease_key,
+		&state->id,
+		NULL, /* current_state */
+		NULL, /* breaking */
+		NULL, /* breaking_to_requested */
+		NULL, /* breaking_to_required */
+		&state->version, /* lease_version */
+		&state->epoch); /* epoch */
+	if (NT_STATUS_IS_OK(status)) {
+		state->found_lease = true;
+	} else {
+		DBG_WARNING("Could not find version/epoch: %s\n",
+			    nt_errstr(status));
+	}
+
+	e_lease_type = get_lease_type(e, state->id);
+	if (e_lease_type == SMB2_LEASE_NONE) {
+		return false;
+	}
+	send_break_message(state->msg_ctx, &state->id, e, SMB2_LEASE_NONE);
+
+	/*
+	 * Windows 7 and 8 lease clients are broken in that they will
+	 * not respond to lease break requests whilst waiting for an
+	 * outstanding open request on that lease handle on the same
+	 * TCP connection, due to holding an internal inode lock.
+	 *
+	 * This means we can't reschedule ourselves here, but must
+	 * return from the create.
+	 *
+	 * Work around:
+	 *
+	 * Send the breaks and then return SMB2_LEASE_NONE in the
+	 * lease handle to cause them to acknowledge the lease
+	 * break. Consultation with Microsoft engineering confirmed
+	 * this approach is safe.
+	 */
+
+	return false;
+}
+
 static NTSTATUS lease_match(connection_struct *conn,
 			    struct smb_request *req,
 			    const struct smb2_lease_key *lease_key,
@@ -4986,89 +5058,40 @@ static NTSTATUS lease_match(connection_struct *conn,
 
 	/* We have to break all existing leases. */
 	for (i = 0; i < state.num_file_ids; i++) {
+		struct lease_match_break_state break_state = {
+			.msg_ctx = conn->sconn->msg_ctx,
+			.lease_key = lease_key,
+		};
 		struct share_mode_lock *lck;
-		struct share_mode_data *d;
-		struct share_mode_entry *lease_entry = NULL;
-		uint32_t j;
+		bool ok;
 
 		if (file_id_equal(&state.ids[i], &state.id)) {
 			/* Don't need to break our own file. */
 			continue;
 		}
 
-		lck = get_existing_share_mode_lock(talloc_tos(), state.ids[i]);
+		break_state.id = state.ids[i];
+
+		lck = get_existing_share_mode_lock(
+			talloc_tos(), break_state.id);
 		if (lck == NULL) {
 			/* Race condition - file already closed. */
 			continue;
 		}
-		d = lck->data;
-		for (j=0; j<d->num_share_modes; j++) {
-			struct share_mode_entry *e = &d->share_modes[j];
-			uint32_t e_lease_type = get_lease_type(e, d->id);
 
-			if (share_mode_stale_pid(d, j)) {
-				continue;
-			}
-
-			if (e->op_type == LEASE_OPLOCK) {
-				if (!smb2_lease_key_equal(&e->lease_key,
-							  lease_key)) {
-					continue;
-				}
-				lease_entry = e;
-			}
-
-			if (e_lease_type == SMB2_LEASE_NONE) {
-				continue;
-			}
-
-			send_break_message(conn->sconn->msg_ctx, &d->id, e,
-					   SMB2_LEASE_NONE);
-
-			/*
-			 * Windows 7 and 8 lease clients
-			 * are broken in that they will not
-			 * respond to lease break requests
-			 * whilst waiting for an outstanding
-			 * open request on that lease handle
-			 * on the same TCP connection, due
-			 * to holding an internal inode lock.
-			 *
-			 * This means we can't reschedule
-			 * ourselves here, but must return
-			 * from the create.
-			 *
-			 * Work around:
-			 *
-			 * Send the breaks and then return
-			 * SMB2_LEASE_NONE in the lease handle
-			 * to cause them to acknowledge the
-			 * lease break. Consultation with
-			 * Microsoft engineering confirmed
-			 * this approach is safe.
-			 */
-
-		}
-
-		if (lease_entry != NULL) {
-			status = leases_db_get(
-				&lease_entry->client_guid,
-				&lease_entry->lease_key,
-				&d->id,
-				NULL, /* current_state */
-				NULL, /* breaking */
-				NULL, /* breaking_to_requested */
-				NULL, /* breaking_to_required */
-				p_version, /* lease_version */
-				p_epoch); /* epoch */
-			if (!NT_STATUS_IS_OK(status)) {
-				DBG_WARNING("Could not find version/epoch: "
-					    "%s\n",
-					    nt_errstr(status));
-			}
+		ok = share_mode_forall_leases(
+			lck, lease_match_break_fn, &break_state);
+		if (!ok) {
+			DBG_DEBUG("share_mode_forall_leases failed\n");
+			continue;
 		}
 
 		TALLOC_FREE(lck);
+
+		if (break_state.found_lease) {
+			*p_version = break_state.version;
+			*p_epoch = break_state.epoch;
+		}
 	}
 	/*
 	 * Ensure we don't grant anything more so we
