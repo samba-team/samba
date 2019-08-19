@@ -462,7 +462,7 @@ NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 			plock->context.smblctx = 0xFFFFFFFFFFFFFFFFLL;
 
 			if (errno_ret == EACCES || errno_ret == EAGAIN) {
-				status = NT_STATUS_FILE_LOCK_CONFLICT;
+				status = NT_STATUS_LOCK_NOT_GRANTED;
 				goto fail;
 			} else {
 				status = map_nt_error_from_unix(errno);
@@ -829,7 +829,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 				TALLOC_FREE(tp);
 				/* Remember who blocked us. */
 				plock->context.smblctx = curr_lock->context.smblctx;
-				return NT_STATUS_FILE_LOCK_CONFLICT;
+				return NT_STATUS_LOCK_NOT_GRANTED;
 			}
 			/* Just copy the Windows lock into the new array. */
 			memcpy(&tp[count], curr_lock, sizeof(struct lock_struct));
@@ -849,7 +849,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 				TALLOC_FREE(tp);
 				/* Remember who blocked us. */
 				plock->context.smblctx = curr_lock->context.smblctx;
-				return NT_STATUS_FILE_LOCK_CONFLICT;
+				return NT_STATUS_LOCK_NOT_GRANTED;
 			}
 
 			/* Work out overlaps. */
@@ -912,7 +912,7 @@ static NTSTATUS brl_lock_posix(struct byte_range_lock *br_lck,
 
 			if (errno_ret == EACCES || errno_ret == EAGAIN) {
 				TALLOC_FREE(tp);
-				status = NT_STATUS_FILE_LOCK_CONFLICT;
+				status = NT_STATUS_LOCK_NOT_GRANTED;
 				goto fail;
 			} else {
 				TALLOC_FREE(tp);
