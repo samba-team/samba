@@ -129,7 +129,7 @@ int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 			 ctdb_ban_node_event, ctdb);
 
 	if (!already_banned) {
-		ctdb_local_node_got_banned(ctdb);
+		ctdb_node_become_inactive(ctdb);
 	}
 	return 0;
 }
