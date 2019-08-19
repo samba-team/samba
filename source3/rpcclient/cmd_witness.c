@@ -213,6 +213,7 @@ static WERROR cmd_witness_Register(struct rpc_pipe_client *cli,
 	d_printf("%x:%s\n", hnd.handle_type, GUID_string(frame, &hnd.uuid));
 
 done:
+	poptFreeContext(optCon);
 	talloc_free(frame);
 	return result;
 }
