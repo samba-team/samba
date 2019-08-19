@@ -44,6 +44,7 @@ struct smbd_smb2_lock_state {
 	struct files_struct *fsp;
 	bool blocking;
 	uint32_t polling_msecs;
+	uint32_t retry_msecs;
 	uint16_t lock_count;
 	struct smbd_lock_element *locks;
 };
@@ -372,6 +373,33 @@ static struct tevent_req *smbd_smb2_lock_send(TALLOC_CTX *mem_ctx,
 	return req;
 }
 
+static void smbd_smb2_lock_update_retry_msecs(
+	struct smbd_smb2_lock_state *state)
+{
+	/*
+	 * The default lp_lock_spin_time() is 200ms,
+	 * we just use half of it to trigger the first retry.
+	 *
+	 * v_min is in the range of 0.001 to 10 secs
+	 * (0.1 secs by default)
+	 *
+	 * v_max is in the range of 0.01 to 100 secs
+	 * (1.0 secs by default)
+	 *
+	 * The typical steps are:
+	 * 0.1, 0.2, 0.3, 0.4, ... 1.0
+	 */
+	uint32_t v_min = MAX(2, MIN(20000, lp_lock_spin_time()))/2;
+	uint32_t v_max = 10 * v_min;
+
+	if (state->retry_msecs >= v_max) {
+		state->retry_msecs = v_max;
+		return;
+	}
+
+	state->retry_msecs += v_min;
+}
+
 static void smbd_smb2_lock_update_polling_msecs(
 	struct smbd_smb2_lock_state *state)
 {
@@ -429,6 +457,51 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 		tevent_req_done(req);
 		return;
 	}
+	if (NT_STATUS_EQUAL(status, NT_STATUS_RETRY)) {
+		/*
+		 * We got NT_STATUS_RETRY,
+		 * we reset polling_msecs so that
+		 * that the retries based on LOCK_NOT_GRANTED
+		 * will later start with small intervalls again.
+		 */
+		state->polling_msecs = 0;
+
+		/*
+		 * The backend wasn't able to decide yet.
+		 * We need to wait even for non-blocking
+		 * locks.
+		 *
+		 * The backend uses blocking_smblctx == UINT64_MAX
+		 * to indicate that we should use retry timers.
+		 *
+		 * It uses blocking_smblctx == 0 to indicate
+		 * it will use share_mode_wakeup_waiters()
+		 * to wake us. Note that unrelated changes in
+		 * locking.tdb may cause retries.
+		 */
+
+		if (blocking_smblctx != UINT64_MAX) {
+			SMB_ASSERT(blocking_smblctx == 0);
+			goto setup_retry;
+		}
+
+		smbd_smb2_lock_update_retry_msecs(state);
+
+		DBG_DEBUG("Waiting for a backend decision. "
+			  "Retry in %"PRIu32" msecs\n",
+			  state->retry_msecs);
+
+		/*
+		 * We completely ignore state->endtime here
+		 * we we'll wait for a backend decision forever.
+		 * If the backend is smart enough to implement
+		 * some NT_STATUS_RETRY logic, it has to
+		 * switch to any other status after in order
+		 * to avoid waiting forever.
+		 */
+		endtime = timeval_current_ofs_msec(state->retry_msecs);
+		goto setup_retry;
+	}
 	if (NT_STATUS_EQUAL(status, NT_STATUS_FILE_LOCK_CONFLICT)) {
 		/*
 		 * This is a bug and will be changed into an assert
@@ -447,6 +520,12 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 		tevent_req_nterror(req, status);
 		return;
 	}
+	/*
+	 * We got LOCK_NOT_GRANTED, make sure
+	 * a following STATUS_RETRY will start
+	 * with short intervalls again.
+	 */
+	state->retry_msecs = 0;
 
 	if (!state->blocking) {
 		TALLOC_FREE(lck);
@@ -463,6 +542,7 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 		endtime = timeval_current_ofs_msec(state->polling_msecs);
 	}
 
+setup_retry:
 	DBG_DEBUG("Watching share mode lock\n");
 
 	subreq = dbwrap_watched_watch_send(
