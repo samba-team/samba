@@ -142,9 +142,9 @@ static int net_vfs_init(struct net_context *c, int argc, const char **argv)
 	setup_logging("net", DEBUG_STDOUT);
 	lp_set_cmdline("log level", "0");
 
-	ok = lp_load_with_shares(get_dyn_CONFIGFILE());
+	ok = lp_load_with_registry_shares(get_dyn_CONFIGFILE());
 	if (!ok) {
-		fprintf(stderr, "lp_load_with_shares failed\n");
+		fprintf(stderr, "lp_load_with_registry_shares failed\n");
 		goto done;
 	}
 
