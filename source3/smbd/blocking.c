@@ -308,14 +308,6 @@ struct tevent_req *smbd_smb1_do_locks_send(
 	}
 	state->deny_status = NT_STATUS_FILE_LOCK_CONFLICT;
 
-	subreq = dbwrap_watched_watch_send(
-		state, state->ev, lck->data->record, blocking_pid);
-	if (tevent_req_nomem(subreq, req)) {
-		goto done;
-	}
-	TALLOC_FREE(lck);
-	tevent_req_set_callback(subreq, smbd_smb1_do_locks_retry, req);
-
 	endtime = state->endtime;
 
 	if (blocking_smblctx == UINT64_MAX) {
@@ -329,6 +321,14 @@ struct tevent_req *smbd_smb1_do_locks_send(
 		tmp = timeval_current_ofs_msec(state->polling_msecs);
 		endtime = timeval_min(&endtime, &tmp);
 	}
+
+	subreq = dbwrap_watched_watch_send(
+		state, state->ev, lck->data->record, blocking_pid);
+	if (tevent_req_nomem(subreq, req)) {
+		goto done;
+	}
+	TALLOC_FREE(lck);
+	tevent_req_set_callback(subreq, smbd_smb1_do_locks_retry, req);
 
 	ok = tevent_req_set_endtime(subreq, state->ev, endtime);
 	if (!ok) {
@@ -450,14 +450,6 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 	}
 	state->deny_status = NT_STATUS_FILE_LOCK_CONFLICT;
 
-	subreq = dbwrap_watched_watch_send(
-		state, state->ev, lck->data->record, blocking_pid);
-	if (tevent_req_nomem(subreq, req)) {
-		goto done;
-	}
-	TALLOC_FREE(lck);
-	tevent_req_set_callback(subreq, smbd_smb1_do_locks_retry, req);
-
 	endtime = state->endtime;
 
 	if (blocking_smblctx == UINT64_MAX) {
@@ -471,6 +463,14 @@ static void smbd_smb1_do_locks_try(struct tevent_req *req)
 		tmp = timeval_current_ofs_msec(state->polling_msecs);
 		endtime = timeval_min(&endtime, &tmp);
 	}
+
+	subreq = dbwrap_watched_watch_send(
+		state, state->ev, lck->data->record, blocking_pid);
+	if (tevent_req_nomem(subreq, req)) {
+		goto done;
+	}
+	TALLOC_FREE(lck);
+	tevent_req_set_callback(subreq, smbd_smb1_do_locks_retry, req);
 
 	ok = tevent_req_set_endtime(subreq, state->ev, endtime);
 	if (!ok) {
