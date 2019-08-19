@@ -128,5 +128,7 @@ static void usage(void)
 
 	printf("Converted %d records with %d failures\n", ret.count, ret.failures);
 
+	poptFreeContext(pc);
+
 	return 0;
 }
