@@ -103,7 +103,7 @@ def configure(conf):
     conf.CHECK_HEADERS('netdb.h')
     conf.CHECK_HEADERS('linux/falloc.h linux/ioctl.h')
 
-    conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod')
+    conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod mknodat')
     conf.CHECK_FUNCS('strtol strchr strupr chflags')
     conf.CHECK_FUNCS('getrlimit fsync fdatasync setpgid')
     conf.CHECK_FUNCS('setsid glob strpbrk crypt16 getauthuid')

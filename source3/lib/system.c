@@ -591,6 +591,21 @@ int sys_mknod(const char *path, mode_t mode, SMB_DEV_T dev)
 }
 
 /*******************************************************************
+ A mknodat() wrapper.
+********************************************************************/
+
+int sys_mknodat(int dirfd, const char *path, mode_t mode, SMB_DEV_T dev)
+{
+#if defined(HAVE_MKNODAT)
+	return mknodat(dirfd, path, mode, dev);
+#else
+	/* No mknod system call. */
+	errno = ENOSYS;
+	return -1;
+#endif
+}
+
+/*******************************************************************
  System wrapper for getwd. Always returns MALLOC'ed memory, or NULL
  on error (malloc fail usually).
 ********************************************************************/
