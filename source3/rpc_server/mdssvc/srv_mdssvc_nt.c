@@ -63,6 +63,8 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 	NTSTATUS status;
 	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
 	enum rpc_daemon_type_e mdssvc_type = rpc_mdssd_daemon();
+	bool external = service_mode != RPC_SERVICE_MODE_EMBEDDED ||
+			mdssvc_type != RPC_DAEMON_EMBEDDED;
 
 	mdssvc_cb.init         = mdssvc_init_cb;
 	mdssvc_cb.shutdown     = mdssvc_shutdown_cb;
@@ -73,8 +75,7 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 		return false;
 	}
 
-	if (service_mode != RPC_SERVICE_MODE_EMBEDDED
-	    || mdssvc_type != RPC_DAEMON_EMBEDDED) {
+	if (external) {
 		return true;
 	}
 
