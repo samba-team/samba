@@ -224,7 +224,7 @@ static bool mdssd_child_init(struct tevent_context *ev_ctx,
 
 	ok = init_rpc_module("mdssvc", NULL);
 	if (!ok) {
-		DBG_ERR("Failed to de-intialize RPC\n");
+		DBG_ERR("Failed to initialize mdssvc module\n");
 		return false;
 	}
 
