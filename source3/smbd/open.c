@@ -2166,6 +2166,125 @@ static int map_lease_type_to_oplock(uint32_t lease_type)
 	return result;
 }
 
+struct delay_for_oplock_state {
+	struct files_struct *fsp;
+	const struct smb2_lease *lease;
+	bool will_overwrite;
+	uint32_t delay_mask;
+	bool first_open_attempt;
+	bool got_handle_lease;
+	bool got_oplock;
+	bool have_other_lease;
+	bool delay;
+};
+
+static bool delay_for_oplock_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct delay_for_oplock_state *state = private_data;
+	struct files_struct *fsp = state->fsp;
+	const struct smb2_lease *lease = state->lease;
+	bool e_is_lease = (e->op_type == LEASE_OPLOCK);
+	uint32_t e_lease_type = get_lease_type(e, fsp->file_id);
+	uint32_t break_to;
+	bool lease_is_breaking = false;
+
+	if (e_is_lease) {
+		NTSTATUS status;
+
+		if (lease != NULL) {
+			bool our_lease = is_same_lease(fsp, e, lease);
+			if (our_lease) {
+				DBG_DEBUG("Ignoring our own lease\n");
+				return false;
+			}
+		}
+
+		status = leases_db_get(
+			&e->client_guid,
+			&e->lease_key,
+			&fsp->file_id,
+			NULL, /* current_state */
+			&lease_is_breaking,
+			NULL, /* breaking_to_requested */
+			NULL, /* breaking_to_required */
+			NULL, /* lease_version */
+			NULL); /* epoch */
+		SMB_ASSERT(NT_STATUS_IS_OK(status));
+	}
+
+	if (!state->got_handle_lease &&
+	    ((e_lease_type & SMB2_LEASE_HANDLE) != 0) &&
+	    !share_entry_stale_pid(e)) {
+		state->got_handle_lease = true;
+	}
+
+	if (!state->got_oplock &&
+	    (e->op_type != LEASE_OPLOCK) &&
+	    !share_entry_stale_pid(e)) {
+		state->got_oplock = true;
+	}
+
+	if (!state->have_other_lease &&
+	    !is_same_lease(fsp, e, lease) &&
+	    !share_entry_stale_pid(e)) {
+		state->have_other_lease = true;
+	}
+
+	break_to = e_lease_type & ~state->delay_mask;
+
+	if (state->will_overwrite) {
+		break_to &= ~(SMB2_LEASE_HANDLE|SMB2_LEASE_READ);
+	}
+
+	DBG_DEBUG("e_lease_type %u, will_overwrite: %u\n",
+		  (unsigned)e_lease_type,
+		  (unsigned)state->will_overwrite);
+
+	if ((e_lease_type & ~break_to) == 0) {
+		if (lease_is_breaking) {
+			state->delay = true;
+		}
+		return false;
+	}
+
+	if (share_entry_stale_pid(e)) {
+		return false;
+	}
+
+	if (state->will_overwrite) {
+		/*
+		 * If we break anyway break to NONE directly.
+		 * Otherwise vfs_set_filelen() will trigger the
+		 * break.
+		 */
+		break_to &= ~(SMB2_LEASE_READ|SMB2_LEASE_WRITE);
+	}
+
+	if (!e_is_lease) {
+		/*
+		 * Oplocks only support breaking to R or NONE.
+		 */
+		break_to &= ~(SMB2_LEASE_HANDLE|SMB2_LEASE_WRITE);
+	}
+
+	DBG_DEBUG("breaking from %d to %d\n",
+		  (int)e_lease_type,
+		  (int)break_to);
+	send_break_message(
+		fsp->conn->sconn->msg_ctx, &fsp->file_id, e, break_to);
+	if (e_lease_type & state->delay_mask) {
+		state->delay = true;
+	}
+	if (lease_is_breaking && !state->first_open_attempt) {
+		state->delay = true;
+	}
+
+	return false;
+};
+
 static NTSTATUS delay_for_oplock(files_struct *fsp,
 				 int oplock_request,
 				 const struct smb2_lease *lease,
@@ -2174,130 +2293,39 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 				 uint32_t create_disposition,
 				 bool first_open_attempt)
 {
-	struct share_mode_data *d = lck->data;
-	uint32_t i;
-	bool delay = false;
-	bool will_overwrite;
-	const uint32_t delay_mask = have_sharing_violation ?
-		SMB2_LEASE_HANDLE : SMB2_LEASE_WRITE;
-	bool got_handle_lease = false;
-	bool got_oplock = false;
-	bool have_other_lease = false;
+	struct delay_for_oplock_state state = {
+		.fsp = fsp,
+		.lease = lease,
+		.first_open_attempt = first_open_attempt,
+	};
 	uint32_t granted;
 	NTSTATUS status;
+	bool ok;
 
 	if (is_stat_open(fsp->access_mask)) {
 		goto grant;
 	}
 
+	state.delay_mask = have_sharing_violation ?
+		SMB2_LEASE_HANDLE : SMB2_LEASE_WRITE;
+
 	switch (create_disposition) {
 	case FILE_SUPERSEDE:
 	case FILE_OVERWRITE:
 	case FILE_OVERWRITE_IF:
-		will_overwrite = true;
+		state.will_overwrite = true;
 		break;
 	default:
-		will_overwrite = false;
+		state.will_overwrite = false;
 		break;
 	}
 
-	for (i=0; i<d->num_share_modes; i++) {
-		struct share_mode_entry *e = &d->share_modes[i];
-		bool e_is_lease = (e->op_type == LEASE_OPLOCK);
-		uint32_t e_lease_type = get_lease_type(e, d->id);
-		uint32_t break_to;
-		bool lease_is_breaking = false;
-
-		if (e_is_lease) {
-			if (lease != NULL) {
-				bool our_lease = is_same_lease(fsp, e, lease);
-				if (our_lease) {
-					DBG_DEBUG("Ignoring our own lease\n");
-					continue;
-				}
-			}
-
-			status = leases_db_get(
-				&e->client_guid,
-				&e->lease_key,
-				&fsp->file_id,
-				NULL, /* current_state */
-				&lease_is_breaking,
-				NULL, /* breaking_to_requested */
-				NULL, /* breaking_to_required */
-				NULL, /* lease_version */
-				NULL); /* epoch */
-			SMB_ASSERT(NT_STATUS_IS_OK(status));
-		}
-
-		if (!got_handle_lease &&
-		    ((e_lease_type & SMB2_LEASE_HANDLE) != 0) &&
-		    !share_mode_stale_pid(d, i)) {
-			got_handle_lease = true;
-		}
-
-		if (!got_oplock &&
-		    (e->op_type != LEASE_OPLOCK) &&
-		    !share_mode_stale_pid(d, i)) {
-			got_oplock = true;
-		}
-
-		if (!have_other_lease &&
-		    !is_same_lease(fsp, e, lease) &&
-		    !share_mode_stale_pid(d, i)) {
-			have_other_lease = true;
-		}
-
-		break_to = e_lease_type & ~delay_mask;
-
-		if (will_overwrite) {
-			break_to &= ~(SMB2_LEASE_HANDLE|SMB2_LEASE_READ);
-		}
-
-		DEBUG(10, ("entry %u: e_lease_type %u, will_overwrite: %u\n",
-			   (unsigned)i, (unsigned)e_lease_type,
-			   (unsigned)will_overwrite));
-
-		if ((e_lease_type & ~break_to) == 0) {
-			if (lease_is_breaking) {
-				delay = true;
-			}
-			continue;
-		}
-
-		if (share_mode_stale_pid(d, i)) {
-			continue;
-		}
-
-		if (will_overwrite) {
-			/*
-			 * If we break anyway break to NONE directly.
-			 * Otherwise vfs_set_filelen() will trigger the
-			 * break.
-			 */
-			break_to &= ~(SMB2_LEASE_READ|SMB2_LEASE_WRITE);
-		}
-
-		if (!e_is_lease) {
-			/*
-			 * Oplocks only support breaking to R or NONE.
-			 */
-			break_to &= ~(SMB2_LEASE_HANDLE|SMB2_LEASE_WRITE);
-		}
-
-		DEBUG(10, ("breaking from %d to %d\n",
-			   (int)e_lease_type, (int)break_to));
-		send_break_message(fsp->conn->sconn->msg_ctx, &fsp->file_id,
-				   e, break_to);
-		if (e_lease_type & delay_mask) {
-			delay = true;
-		}
-		if (lease_is_breaking && !first_open_attempt) {
-			delay = true;
-		}
+	ok = share_mode_forall_entries(lck, delay_for_oplock_fn, &state);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	if (delay) {
+	if (state.delay) {
 		return NT_STATUS_RETRY;
 	}
 
@@ -2343,7 +2371,7 @@ grant:
 		granted &= ~SMB2_LEASE_READ;
 	}
 
-	if (have_other_lease) {
+	if (state.have_other_lease) {
 		/*
 		 * Can grant only one writer
 		 */
@@ -2361,7 +2389,7 @@ grant:
 	}
 
 	if (oplock_request == LEASE_OPLOCK) {
-		if (got_oplock) {
+		if (state.got_oplock) {
 			granted &= ~SMB2_LEASE_HANDLE;
 		}
 
@@ -2375,7 +2403,7 @@ grant:
 
 		DBG_DEBUG("lease_state=%d\n", fsp->lease->lease.lease_state);
 	} else {
-		if (got_handle_lease) {
+		if (state.got_handle_lease) {
 			granted = SMB2_LEASE_NONE;
 		}
 
