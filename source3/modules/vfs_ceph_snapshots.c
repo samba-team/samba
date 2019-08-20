@@ -1157,6 +1157,33 @@ static int ceph_snap_gmt_mknod(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_MKNOD(handle, csmb_fname, mode, dev);
 }
 
+static int ceph_snap_gmt_mknodat(vfs_handle_struct *handle,
+			files_struct *dirfsp,
+			const struct smb_filename *csmb_fname,
+			mode_t mode,
+			SMB_DEV_T dev)
+{
+	time_t timestamp = 0;
+	int ret;
+
+	ret = ceph_snap_gmt_strip_snapshot(handle,
+					csmb_fname->base_name,
+					&timestamp, NULL, 0);
+	if (ret < 0) {
+		errno = -ret;
+		return -1;
+	}
+	if (timestamp != 0) {
+		errno = EROFS;
+		return -1;
+	}
+	return SMB_VFS_NEXT_MKNODAT(handle,
+			dirfsp,
+			csmb_fname,
+			mode,
+			dev);
+}
+
 static struct smb_filename *ceph_snap_gmt_realpath(vfs_handle_struct *handle,
 				TALLOC_CTX *ctx,
 				const struct smb_filename *csmb_fname)
@@ -1621,6 +1648,7 @@ static struct vfs_fn_pointers ceph_snap_fns = {
 	.ntimes_fn = ceph_snap_gmt_ntimes,
 	.readlink_fn = ceph_snap_gmt_readlink,
 	.mknod_fn = ceph_snap_gmt_mknod,
+	.mknodat_fn = ceph_snap_gmt_mknodat,
 	.realpath_fn = ceph_snap_gmt_realpath,
 	.get_nt_acl_fn = ceph_snap_gmt_get_nt_acl,
 	.fget_nt_acl_fn = ceph_snap_gmt_fget_nt_acl,
