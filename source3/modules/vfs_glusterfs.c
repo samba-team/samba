@@ -1697,6 +1697,22 @@ static int vfs_gluster_mknod(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_gluster_mknodat(struct vfs_handle_struct *handle,
+				files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				mode_t mode,
+				SMB_DEV_T dev)
+{
+	int ret;
+
+	START_PROFILE(syscall_mknodat);
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+	ret = glfs_mknod(handle->data, smb_fname->base_name, mode, dev);
+	END_PROFILE(syscall_mknodat);
+
+	return ret;
+}
+
 static int vfs_gluster_chflags(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				unsigned int flags)
@@ -1906,6 +1922,7 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.readlink_fn = vfs_gluster_readlink,
 	.linkat_fn = vfs_gluster_linkat,
 	.mknod_fn = vfs_gluster_mknod,
+	.mknodat_fn = vfs_gluster_mknodat,
 	.realpath_fn = vfs_gluster_realpath,
 	.chflags_fn = vfs_gluster_chflags,
 	.file_id_create_fn = NULL,
