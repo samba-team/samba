@@ -1,4 +1,85 @@
                    ==============================
+                   Release Notes for Samba 4.10.7
+                           August 22, 2019
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.10 release series.
+
+
+Changes since 4.10.6:
+---------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 14010: Unable to create or rename file/directory inside shares
+     configured with vfs_glusterfs_fuse module.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 13844: build: Allow build when '--disable-gnutls' is set.
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 13973: samba-tool: Add 'import samba.drs_utils' to fsmo.py.
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 14008: Fix 'Error 32 determining PSOs in system' message on old DB
+     with FL upgrade.
+   * BUG 14021: s4/libnet: Fix joining a Windows pre-2008R2 DC.
+   * BUG 14046: join: Use a specific attribute order for the DsAddEntry
+     nTDSDSA object.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14015: vfs_catia: Pass stat info to synthetic_smb_fname().
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 14091: lookup_name: Allow own domain lookup when flags == 0.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 13932: s4 librpc rpc pyrpc: Ensure tevent_context deleted last.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13915: DEBUGC and DEBUGADDC doesn't print into a class specific log
+     file.
+   * BUG 13949: Request to keep deprecated option "server schannel", 
+     VMWare Quickprep requires "auto".
+   * BUG 13967: dbcheck: Fallback to the default tombstoneLifetime of 180 days.
+   * BUG 13969: dnsProperty fails to decode values from older Windows versions.
+   * BUG 13973: samba-tool: Use only one LDAP modify for dns partition fsmo
+     role transfer.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13960: third_party: Update waf to version 2.0.17.
+
+o  Garming Sam <garming@catalyst.net.nz>
+   * BUG 14051: netcmd: Allow 'drs replicate --local' to create partitions.
+
+o  Rafael David Tinoco <rafaeldtinoco@ubuntu.com>
+   * BUG 14017: ctdb-config: Depend on /etc/ctdb/nodes file.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.10.6
                            July 8, 2019
                    ==============================
@@ -102,8 +183,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
 		   ==============================
                    Release Notes for Samba 4.10.5
