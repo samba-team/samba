@@ -29,6 +29,7 @@
 #include "libcli/security/dom_sid.h"
 #include "gen_ndr/auth.h"
 #include "mdssvc.h"
+#include "smbd/globals.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -65,6 +66,11 @@ static bool rpc_setup_mdssvc(struct tevent_context *ev_ctx,
 	enum rpc_daemon_type_e mdssvc_type = rpc_mdssd_daemon();
 	bool external = service_mode != RPC_SERVICE_MODE_EMBEDDED ||
 			mdssvc_type != RPC_DAEMON_EMBEDDED;
+	bool in_mdssd = external && am_parent == NULL;
+
+	if (external && !in_mdssd) {
+		return true;
+	}
 
 	mdssvc_cb.init         = mdssvc_init_cb;
 	mdssvc_cb.shutdown     = mdssvc_shutdown_cb;

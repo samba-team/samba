@@ -222,7 +222,7 @@ static bool mdssd_child_init(struct tevent_context *ev_ctx,
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_PREFORK_PARENT_EVENT, parent_ping);
 
-	ok = init_rpc_module("mdssvc", NULL);
+	ok = setup_rpc_module(ev_ctx, msg_ctx, "mdssvc");
 	if (!ok) {
 		DBG_ERR("Failed to initialize mdssvc module\n");
 		return false;
@@ -694,11 +694,6 @@ void start_mdssd(struct tevent_context *ev_ctx,
 			   mdssd_smb_conf_updated);
 	messaging_register(msg_ctx, ev_ctx,
 			   MSG_PREFORK_CHILD_EVENT, child_ping);
-
-	ok = setup_rpc_module(ev_ctx, msg_ctx, "mdssvc");
-	if (!ok) {
-		exit(1);
-	}
 
 	ok = mdssd_setup_children_monitor(ev_ctx, msg_ctx);
 	if (!ok) {
