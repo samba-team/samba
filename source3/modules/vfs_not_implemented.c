@@ -491,6 +491,16 @@ int vfs_not_implemented_mknod(vfs_handle_struct *handle,
 	return -1;
 }
 
+int vfs_not_implemented_mknodat(vfs_handle_struct *handle,
+			files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			mode_t mode,
+			SMB_DEV_T dev)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 struct smb_filename *vfs_not_implemented_realpath(vfs_handle_struct *handle,
 						  TALLOC_CTX *ctx,
 						  const struct smb_filename *smb_fname)
@@ -1095,6 +1105,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.readlink_fn = vfs_not_implemented_vfs_readlink,
 	.linkat_fn = vfs_not_implemented_linkat,
 	.mknod_fn = vfs_not_implemented_mknod,
+	.mknodat_fn = vfs_not_implemented_mknodat,
 	.realpath_fn = vfs_not_implemented_realpath,
 	.chflags_fn = vfs_not_implemented_chflags,
 	.file_id_create_fn = vfs_not_implemented_file_id_create,

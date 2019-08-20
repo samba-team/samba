@@ -2235,6 +2235,20 @@ int smb_vfs_call_mknod(struct vfs_handle_struct *handle,
 	return handle->fns->mknod_fn(handle, smb_fname, mode, dev);
 }
 
+int smb_vfs_call_mknodat(struct vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			mode_t mode,
+			SMB_DEV_T dev)
+{
+	VFS_FIND(mknodat);
+	return handle->fns->mknodat_fn(handle,
+				dirfsp,
+				smb_fname,
+				mode,
+				dev);
+}
+
 struct smb_filename *smb_vfs_call_realpath(struct vfs_handle_struct *handle,
 			TALLOC_CTX *ctx,
 			const struct smb_filename *smb_fname)

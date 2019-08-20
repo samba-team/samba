@@ -316,6 +316,11 @@
 #define SMB_VFS_NEXT_MKNOD(handle, smb_fname, mode, dev) \
 	smb_vfs_call_mknod((handle)->next, (smb_fname), (mode), (dev))
 
+#define SMB_VFS_MKNODAT(conn, dirfsp, smb_fname, mode, dev) \
+	smb_vfs_call_mknodat((conn)->vfs_handles, (dirfsp), (smb_fname), (mode), (dev))
+#define SMB_VFS_NEXT_MKNODAT(handle, dirfsp, smb_fname, mode, dev) \
+	smb_vfs_call_mknodat((handle)->next, (dirfsp), (smb_fname), (mode), (dev))
+
 #define SMB_VFS_REALPATH(conn, ctx, smb_fname) \
 	smb_vfs_call_realpath((conn)->vfs_handles, (ctx), (smb_fname))
 #define SMB_VFS_NEXT_REALPATH(handle, ctx, smb_fname) \
