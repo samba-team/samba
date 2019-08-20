@@ -481,7 +481,6 @@ int ctdb_ibw_init(struct ctdb_context *ctdb);
 
 /* from ctdb_banning.c */
 
-void ctdb_local_node_got_banned(struct ctdb_context *ctdb);
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_get_ban_state(struct ctdb_context *ctdb, TDB_DATA *outdata);
 void ctdb_ban_self(struct ctdb_context *ctdb);
