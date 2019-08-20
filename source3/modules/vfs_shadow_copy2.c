@@ -1729,6 +1729,30 @@ static int shadow_copy2_mknod(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_MKNOD(handle, smb_fname, mode, dev);
 }
 
+static int shadow_copy2_mknodat(vfs_handle_struct *handle,
+			files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			mode_t mode,
+			SMB_DEV_T dev)
+{
+	time_t timestamp = 0;
+
+	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
+					 smb_fname->base_name,
+					 &timestamp, NULL)) {
+		return -1;
+	}
+	if (timestamp != 0) {
+		errno = EROFS;
+		return -1;
+	}
+	return SMB_VFS_NEXT_MKNODAT(handle,
+			dirfsp,
+			smb_fname,
+			mode,
+			dev);
+}
+
 static struct smb_filename *shadow_copy2_realpath(vfs_handle_struct *handle,
 				TALLOC_CTX *ctx,
 				const struct smb_filename *smb_fname)
@@ -3151,6 +3175,7 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.ntimes_fn = shadow_copy2_ntimes,
 	.readlink_fn = shadow_copy2_readlink,
 	.mknod_fn = shadow_copy2_mknod,
+	.mknodat_fn = shadow_copy2_mknodat,
 	.realpath_fn = shadow_copy2_realpath,
 	.get_nt_acl_fn = shadow_copy2_get_nt_acl,
 	.fget_nt_acl_fn = shadow_copy2_fget_nt_acl,
