@@ -57,30 +57,6 @@ static void ctdb_ban_node_event(struct tevent_context *ev,
 	}
 }
 
-void ctdb_local_node_got_banned(struct ctdb_context *ctdb)
-{
-	struct ctdb_db_context *ctdb_db;
-
-	DEBUG(DEBUG_NOTICE, ("This node has been banned - releasing all public "
-			     "IPs and setting the generation to INVALID.\n"));
-
-	/* Reset the generation id to 1 to make us ignore any
-	   REQ/REPLY CALL/DMASTER someone sends to us.
-	   We are now banned so we shouldnt service database calls
-	   anymore.
-	*/
-	ctdb->vnn_map->generation = INVALID_GENERATION;
-	for (ctdb_db = ctdb->db_list; ctdb_db != NULL; ctdb_db = ctdb_db->next) {
-		ctdb_db->generation = INVALID_GENERATION;
-	}
-
-	/* Recovery daemon will set the recovery mode ACTIVE and freeze
-	 * databases.
-	 */
-
-	ctdb_release_all_ips(ctdb);
-}
-
 int32_t ctdb_control_set_ban_state(struct ctdb_context *ctdb, TDB_DATA indata)
 {
 	struct ctdb_ban_state *bantime = (struct ctdb_ban_state *)indata.dptr;
