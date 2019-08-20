@@ -681,6 +681,47 @@ static int cap_mknod(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int cap_mknodat(vfs_handle_struct *handle,
+		files_struct *dirfsp,
+		const struct smb_filename *smb_fname,
+		mode_t mode,
+		SMB_DEV_T dev)
+{
+	struct smb_filename *cap_smb_fname = NULL;
+	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	int ret;
+	int saved_errno = 0;
+
+	if (!cappath) {
+		errno = ENOMEM;
+		return -1;
+	}
+	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
+					cappath,
+					NULL,
+					NULL,
+					smb_fname->flags);
+	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(cappath);
+		errno = ENOMEM;
+		return -1;
+	}
+	ret = SMB_VFS_NEXT_MKNODAT(handle,
+			dirfsp,
+			cap_smb_fname,
+			mode,
+			dev);
+	if (ret == -1) {
+		saved_errno = errno;
+	}
+	TALLOC_FREE(cappath);
+	TALLOC_FREE(cap_smb_fname);
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return ret;
+}
+
 static struct smb_filename *cap_realpath(vfs_handle_struct *handle,
 			TALLOC_CTX *ctx,
 			const struct smb_filename *smb_fname)
@@ -1036,6 +1077,7 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.readlink_fn = cap_readlink,
 	.linkat_fn = cap_linkat,
 	.mknod_fn = cap_mknod,
+	.mknodat_fn = cap_mknodat,
 	.realpath_fn = cap_realpath,
 	.sys_acl_get_file_fn = cap_sys_acl_get_file,
 	.sys_acl_set_file_fn = cap_sys_acl_set_file,
