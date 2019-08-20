@@ -548,6 +548,10 @@ for t in tests:
             plansmbtorture4testsuite(t, env, '//$SERVER/tmp -k no -U$DC_USERNAME@$REALM%$DC_PASSWORD', description='ntlm user@realm')
     elif t == "raw.samba3posixtimedlock" or t == "smb2.samba3misc":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/nt4_dc/share')
+        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/brl_delay_inject1 -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/nt4_dc/share',
+                                 description="brl_delay_inject1")
+        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/brl_delay_inject2 -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/nt4_dc/share',
+                                 description="brl_delay_inject2")
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/ad_dc/share')
     elif t == "raw.chkpath":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
