@@ -2263,6 +2263,18 @@ sub provision($$$$$$$$$)
 	delay_inject:pread_send = 2000
 	delay_inject:pwrite_send = 2000
 
+[brl_delay_inject1]
+	copy = tmp
+	vfs objects = delay_inject
+	delay_inject:brl_lock_windows = 90
+	delay_inject:brl_lock_windows_use_timer = yes
+
+[brl_delay_inject2]
+	copy = tmp
+	vfs objects = delay_inject
+	delay_inject:brl_lock_windows = 90
+	delay_inject:brl_lock_windows_use_timer = no
+
 [delete_readonly]
 	path = $prefix_abs/share
 	delete readonly = yes
