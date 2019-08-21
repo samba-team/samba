@@ -7989,6 +7989,7 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 	uint32_t raw_unixmode = IVAL(pdata,84);
 	NTSTATUS status;
 	mode_t unixmode;
+	int ret;
 
 	if (total_data < 100) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -8034,7 +8035,13 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 		  (unsigned int)unixmode, smb_fname_str_dbg(smb_fname)));
 
 	/* Ok - do the mknod. */
-	if (SMB_VFS_MKNOD(conn, smb_fname, unixmode, dev) != 0) {
+	ret = SMB_VFS_MKNODAT(conn,
+			conn->cwd_fsp,
+			smb_fname,
+			unixmode,
+			dev);
+
+	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
