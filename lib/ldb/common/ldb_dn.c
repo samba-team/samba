@@ -298,19 +298,21 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	char *parse_dn;
 	bool is_index;
 
-	if ( ! dn || dn->invalid) return false;
+	if (dn == NULL || dn->invalid) {
+		return false;
+	}
 
-	if (dn->components) {
+	if (dn->components != NULL) {
 		return true;
 	}
 
-	if (dn->ext_linearized) {
+	if (dn->ext_linearized != NULL) {
 		parse_dn = dn->ext_linearized;
 	} else {
 		parse_dn = dn->linearized;
 	}
 
-	if ( ! parse_dn ) {
+	if (parse_dn == NULL) {
 		return false;
 	}
 
@@ -333,13 +335,13 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 	/* in the common case we have 3 or more components */
 	/* make sure all components are zeroed, other functions depend on it */
 	dn->components = talloc_zero_array(dn, struct ldb_dn_component, 3);
-	if ( ! dn->components) {
+	if (dn->components == NULL) {
 		return false;
 	}
 
 	/* Components data space is allocated here once */
 	data = talloc_array(dn->components, char, strlen(parse_dn) + 1);
-	if (!data) {
+	if (data == NULL) {
 		goto failed;
 	}
 
@@ -403,7 +405,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				dn->ext_components = ext_comp;
 
 				ext_syntax = ldb_dn_extended_syntax_by_name(dn->ldb, ex_name);
-				if (!ext_syntax) {
+				if (ext_syntax == NULL) {
 					/* We don't know about this type of extended DN */
 					goto failed;
 				}
@@ -486,7 +488,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				 *  with spaces trimmed) */
 				*d++ = '\0';
 				dn->components[dn->comp_num].name = talloc_strdup(dn->components, dt);
-				if ( ! dn->components[dn->comp_num].name) {
+				if (dn->components[dn->comp_num].name == NULL) {
 					/* ouch */
 					goto failed;
 				}
@@ -564,7 +566,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				}
 				/* ok found value terminator */
 
-				if ( t ) {
+				if (t != NULL) {
 					/* trim back */
 					d -= (p - t);
 					l -= (p - t);
@@ -585,7 +587,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				dn->components[dn->comp_num].value.data = \
 					(uint8_t *)talloc_memdup(dn->components, dt, l + 1);
 				dn->components[dn->comp_num].value.length = l;
-				if ( ! dn->components[dn->comp_num].value.data) {
+				if (dn->components[dn->comp_num].value.data == NULL) {
 					/* ouch ! */
 					goto failed;
 				}
@@ -600,7 +602,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 									dn->components,
 									struct ldb_dn_component,
 									dn->comp_num + 1);
-					if ( ! dn->components) {
+					if (dn->components == NULL) {
 						/* ouch ! */
 						goto failed;
 					}
@@ -618,7 +620,9 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				values, which contain a '+' or '='
 				which should normally be escaped */
 				if (is_index) {
-					if ( t ) t = NULL;
+					if (t != NULL) {
+						t = NULL;
+					}
 					*d++ = *p++;
 					l++;
 					break;
@@ -639,7 +643,9 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				*d++ = *p++;
 				l++;
 
-				if ( t ) t = NULL;
+				if (t != NULL) {
+					t = NULL;
+				}
 				break;
 
 			case '\\':
@@ -653,7 +659,9 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 				*d++ = *p++;
 				l++;
 
-				if ( t ) t = NULL;
+				if (t != NULL) {
+					t = NULL;
+				}
 				break;
 
 			default:
@@ -672,14 +680,20 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 					escape = false;
 					l++;
-					if ( t ) t = NULL;
+					if (t != NULL) {
+						t = NULL;
+					}
 					break;
 				}
 
 				if (*p == ' ') {
-					if ( ! t) t = p;
+					if (t == NULL) {
+						t = p;
+					}
 				} else {
-					if ( t ) t = NULL;
+					if (t != NULL) {
+						t = NULL;
+					}
 				}
 
 				*d++ = *p++;
@@ -699,7 +713,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 
 	if (in_value) {
 		/* save last element */
-		if ( t ) {
+		if (t != NULL) {
 			/* trim back */
 			d -= (p - t);
 			l -= (p - t);
@@ -714,7 +728,7 @@ static bool ldb_dn_explode(struct ldb_dn *dn)
 		dn->components[dn->comp_num].value.length = l;
 		dn->components[dn->comp_num].value.data =
 			(uint8_t *)talloc_memdup(dn->components, dt, l + 1);
-		if ( ! dn->components[dn->comp_num].value.data) {
+		if (dn->components[dn->comp_num].value.data == NULL) {
 			/* ouch */
 			goto failed;
 		}
