@@ -231,15 +231,6 @@ static int syncops_unlink(vfs_handle_struct *handle,
         SYNCOPS_NEXT_SMB_FNAME(UNLINK, smb_fname, (handle, smb_fname));
 }
 
-static int syncops_mknod(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode,
-			SMB_DEV_T dev)
-{
-        SYNCOPS_NEXT_SMB_FNAME(MKNOD,
-			smb_fname, (handle, smb_fname, mode, dev));
-}
-
 static int syncops_mknodat(vfs_handle_struct *handle,
 			files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -328,7 +319,6 @@ static struct vfs_fn_pointers vfs_syncops_fns = {
 	.unlink_fn = syncops_unlink,
 	.symlink_fn = syncops_symlink,
 	.linkat_fn = syncops_linkat,
-	.mknod_fn = syncops_mknod,
 	.mknodat_fn = syncops_mknodat,
 	.close_fn = syncops_close,
 };
