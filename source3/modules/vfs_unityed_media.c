@@ -1465,6 +1465,41 @@ err:
 	return status;
 }
 
+static int um_mknodat(vfs_handle_struct *handle,
+		files_struct *dirfsp,
+		const struct smb_filename *smb_fname,
+		mode_t mode,
+		SMB_DEV_T dev)
+{
+	int status;
+	struct smb_filename *client_fname = NULL;
+
+	DEBUG(10, ("Entering um_mknodat\n"));
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_MKNODAT(handle,
+				dirfsp,
+				smb_fname,
+				mode,
+				dev);
+	}
+
+	status = alloc_get_client_smb_fname(handle, talloc_tos(),
+					    smb_fname, &client_fname);
+	if (status != 0) {
+		goto err;
+	}
+
+	status = SMB_VFS_NEXT_MKNODAT(handle,
+			dirfsp,
+			client_fname,
+			mode,
+			dev);
+
+err:
+	TALLOC_FREE(client_fname);
+	return status;
+}
+
 static struct smb_filename *um_realpath(vfs_handle_struct *handle,
 				TALLOC_CTX *ctx,
 				const struct smb_filename *smb_fname)
@@ -1918,6 +1953,7 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.readlink_fn = um_readlink,
 	.linkat_fn = um_linkat,
 	.mknod_fn = um_mknod,
+	.mknodat_fn = um_mknodat,
 	.realpath_fn = um_realpath,
 	.chflags_fn = um_chflags,
 	.streaminfo_fn = um_streaminfo,
