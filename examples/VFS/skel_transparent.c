@@ -586,14 +586,6 @@ static int skel_linkat(vfs_handle_struct *handle,
 			flags);
 }
 
-static int skel_mknod(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode,
-			SMB_DEV_T dev)
-{
-	return SMB_VFS_NEXT_MKNOD(handle, smb_fname, mode, dev);
-}
-
 static int skel_mknodat(vfs_handle_struct *handle,
 			files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1374,7 +1366,6 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.symlink_fn = skel_symlink,
 	.readlink_fn = skel_vfs_readlink,
 	.linkat_fn = skel_linkat,
-	.mknod_fn = skel_mknod,
 	.mknodat_fn = skel_mknodat,
 	.realpath_fn = skel_realpath,
 	.chflags_fn = skel_chflags,

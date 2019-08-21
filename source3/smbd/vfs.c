@@ -2226,15 +2226,6 @@ int smb_vfs_call_linkat(struct vfs_handle_struct *handle,
 				flags);
 }
 
-int smb_vfs_call_mknod(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode,
-			SMB_DEV_T dev)
-{
-	VFS_FIND(mknod);
-	return handle->fns->mknod_fn(handle, smb_fname, mode, dev);
-}
-
 int smb_vfs_call_mknodat(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,

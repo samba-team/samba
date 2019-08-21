@@ -274,7 +274,7 @@
 /* Version 42 - Make "lease" a const* in create_file_fn */
 /* Version 42 - Move SMB_VFS_RENAME -> SMB_VFS_RENAMEAT */
 /* Version 42 - Move SMB_VFS_LINK -> SMB_VFS_LINKAT. */
-/* Version 42 - Add SMB_VFS_MKDNODAT. */
+/* Version 42 - Move SMB_VFS_MKNOD -> SMB_VFS_MKDNODAT. */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -807,10 +807,6 @@ struct vfs_fn_pointers {
 				struct files_struct *dstfsp,
 				const struct smb_filename *new_smb_fname,
 				int flags);
-	int (*mknod_fn)(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				mode_t mode,
-				SMB_DEV_T dev);
 	int (*mknodat_fn)(struct vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -1344,10 +1340,6 @@ int smb_vfs_call_linkat(struct vfs_handle_struct *handle,
 			struct files_struct *dstfsp,
 			const struct smb_filename *new_smb_fname,
 			int flags);
-int smb_vfs_call_mknod(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode,
-			SMB_DEV_T dev);
 int smb_vfs_call_mknodat(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1778,10 +1770,6 @@ int vfs_not_implemented_linkat(vfs_handle_struct *handle,
 			struct files_struct *dstfsp,
 			const struct smb_filename *new_smb_fname,
 			int flags);
-int vfs_not_implemented_mknod(vfs_handle_struct *handle,
-			      const struct smb_filename *smb_fname,
-			      mode_t mode,
-			      SMB_DEV_T dev);
 int vfs_not_implemented_mknodat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
