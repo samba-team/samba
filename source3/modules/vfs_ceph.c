@@ -1178,18 +1178,6 @@ static int cephwrap_linkat(struct vfs_handle_struct *handle,
 	WRAP_RETURN(result);
 }
 
-static int cephwrap_mknod(struct vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		mode_t mode,
-		SMB_DEV_T dev)
-{
-	int result = -1;
-	DBG_DEBUG("[CEPH] mknod(%p, %s)\n", handle, smb_fname->base_name);
-	result = ceph_mknod(handle->data, smb_fname->base_name, mode, dev);
-	DBG_DEBUG("[CEPH] mknod(...) = %d\n", result);
-	WRAP_RETURN(result);
-}
-
 static int cephwrap_mknodat(struct vfs_handle_struct *handle,
 		files_struct *dirfsp,
 		const struct smb_filename *smb_fname,
@@ -1473,7 +1461,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.symlink_fn = cephwrap_symlink,
 	.readlink_fn = cephwrap_readlink,
 	.linkat_fn = cephwrap_linkat,
-	.mknod_fn = cephwrap_mknod,
 	.mknodat_fn = cephwrap_mknodat,
 	.realpath_fn = cephwrap_realpath,
 	.chflags_fn = cephwrap_chflags,
