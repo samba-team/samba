@@ -1254,6 +1254,7 @@ static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	unsigned int dev_val;
 	SMB_DEV_T dev;
 	struct smb_filename *smb_fname = NULL;
+	int ret;
 
 	if (argc != 4) {
 		printf("Usage: mknod <path> <mode> <dev>\n");
@@ -1279,7 +1280,14 @@ static NTSTATUS cmd_mknod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	if (SMB_VFS_MKNOD(vfs->conn, smb_fname, mode, dev) == -1) {
+
+	ret = SMB_VFS_MKNODAT(vfs->conn,
+			vfs->conn->cwd_fsp,
+			smb_fname,
+			mode,
+			dev);
+
+	if (ret == -1) {
 		printf("mknod: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
