@@ -1367,18 +1367,22 @@ char *ads_parent_dn(const char *dn)
 	ADS_STATUS status;
 	char *expr;
 	const char *attrs[] = {"*", "msDS-SupportedEncryptionTypes", "nTSecurityDescriptor", NULL};
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	*res = NULL;
 
 	/* the easiest way to find a machine account anywhere in the tree
 	   is to look for hostname$ */
-	if (asprintf(&expr, "(samAccountName=%s$)", machine) == -1) {
-		DEBUG(1, ("asprintf failed!\n"));
-		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+	expr = talloc_asprintf(frame, "(samAccountName=%s$)", machine);
+	if (expr == NULL) {
+		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		goto done;
 	}
 
 	status = ads_search(ads, res, expr, attrs);
-	SAFE_FREE(expr);
+
+done:
+	TALLOC_FREE(frame);
 	return status;
 }
 
