@@ -2989,11 +2989,17 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 		return;
 	}
 
-	/* verify that all active nodes in the nodemap also exist in 
-	   the vnnmap.
+	/*
+	 * Verify that all active lmaster nodes in the nodemap also
+	 * exist in the vnnmap
 	 */
 	for (j=0; j<nodemap->num; j++) {
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (! ctdb_node_has_capabilities(rec->caps,
+						 ctdb->nodes[j]->pnn,
+						 CTDB_CAP_LMASTER)) {
 			continue;
 		}
 		if (nodemap->nodes[j].pnn == pnn) {
@@ -3006,8 +3012,8 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 			}
 		}
 		if (i == vnnmap->size) {
-			DEBUG(DEBUG_ERR, (__location__ " Node %u is active in the nodemap but did not exist in the vnnmap\n", 
-				  nodemap->nodes[j].pnn));
+			D_ERR("Active LMASTER node %u is not in the vnnmap\n",
+			      nodemap->nodes[j].pnn);
 			ctdb_set_culprit(rec, nodemap->nodes[j].pnn);
 			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap);
 			return;
