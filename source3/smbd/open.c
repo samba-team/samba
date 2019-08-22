@@ -497,7 +497,8 @@ static int process_symlink_open(struct connection_struct *conn,
 	}
 
 	/* Read the link target. */
-	link_len = SMB_VFS_READLINK(conn,
+	link_len = SMB_VFS_READLINKAT(conn,
+				conn->cwd_fsp,
 				smb_fname,
 				link_target,
 				PATH_MAX - 1);
