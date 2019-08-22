@@ -2650,19 +2650,6 @@ static int vfswrap_symlink(vfs_handle_struct *handle,
 	return result;
 }
 
-static int vfswrap_readlink(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			char *buf,
-			size_t bufsiz)
-{
-	int result;
-
-	START_PROFILE(syscall_readlink);
-	result = readlink(smb_fname->base_name, buf, bufsiz);
-	END_PROFILE(syscall_readlink);
-	return result;
-}
-
 static int vfswrap_readlinkat(vfs_handle_struct *handle,
 			files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -3507,7 +3494,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.linux_setlease_fn = vfswrap_linux_setlease,
 	.getlock_fn = vfswrap_getlock,
 	.symlink_fn = vfswrap_symlink,
-	.readlink_fn = vfswrap_readlink,
 	.readlinkat_fn = vfswrap_readlinkat,
 	.linkat_fn = vfswrap_linkat,
 	.mknodat_fn = vfswrap_mknodat,

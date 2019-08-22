@@ -462,15 +462,6 @@ int vfs_not_implemented_symlink(vfs_handle_struct *handle,
 	return -1;
 }
 
-int vfs_not_implemented_vfs_readlink(vfs_handle_struct *handle,
-				     const struct smb_filename *smb_fname,
-				     char *buf,
-				     size_t bufsiz)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 int vfs_not_implemented_vfs_readlinkat(vfs_handle_struct *handle,
 			files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1103,7 +1094,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.linux_setlease_fn = vfs_not_implemented_linux_setlease,
 	.getlock_fn = vfs_not_implemented_getlock,
 	.symlink_fn = vfs_not_implemented_symlink,
-	.readlink_fn = vfs_not_implemented_vfs_readlink,
 	.readlinkat_fn = vfs_not_implemented_vfs_readlinkat,
 	.linkat_fn = vfs_not_implemented_linkat,
 	.mknodat_fn = vfs_not_implemented_mknodat,

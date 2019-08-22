@@ -464,15 +464,6 @@ static int skel_symlink(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int skel_vfs_readlink(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			char *buf,
-			size_t bufsiz)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 static int skel_vfs_readlinkat(vfs_handle_struct *handle,
 			files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1099,7 +1090,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.linux_setlease_fn = skel_linux_setlease,
 	.getlock_fn = skel_getlock,
 	.symlink_fn = skel_symlink,
-	.readlink_fn = skel_vfs_readlink,
 	.readlinkat_fn = skel_vfs_readlinkat,
 	.linkat_fn = skel_linkat,
 	.mknodat_fn = skel_mknodat,

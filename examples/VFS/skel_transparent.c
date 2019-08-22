@@ -563,14 +563,6 @@ static int skel_symlink(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_SYMLINK(handle, link_contents, new_smb_fname);
 }
 
-static int skel_vfs_readlink(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			char *buf,
-			size_t bufsiz)
-{
-	return SMB_VFS_NEXT_READLINK(handle, smb_fname, buf, bufsiz);
-}
-
 static int skel_vfs_readlinkat(vfs_handle_struct *handle,
 			files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1377,7 +1369,6 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.linux_setlease_fn = skel_linux_setlease,
 	.getlock_fn = skel_getlock,
 	.symlink_fn = skel_symlink,
-	.readlink_fn = skel_vfs_readlink,
 	.readlinkat_fn = skel_vfs_readlinkat,
 	.linkat_fn = skel_linkat,
 	.mknodat_fn = skel_mknodat,
