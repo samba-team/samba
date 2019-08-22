@@ -655,8 +655,12 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 		goto err;
 	}
 
-	referral_len = SMB_VFS_READLINK(conn, smb_fname,
-				link_target, bufsize - 1);
+	referral_len = SMB_VFS_READLINKAT(conn,
+				conn->cwd_fsp,
+				smb_fname,
+				link_target,
+				bufsize - 1);
+
 	if (referral_len == -1) {
 		DEBUG(0,("is_msdfs_link_read_target: Error reading "
 			"msdfs link %s: %s\n",
