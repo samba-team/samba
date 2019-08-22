@@ -224,8 +224,57 @@ static int expand_msdfs_readlink(struct vfs_handle_struct *handle,
 	return len;
 }
 
+static int expand_msdfs_readlinkat(struct vfs_handle_struct *handle,
+				files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				char *buf,
+				size_t bufsiz)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	int result;
+	char *target = talloc_array(ctx, char, PATH_MAX+1);
+	size_t len;
+
+	if (!target) {
+		errno = ENOMEM;
+		return -1;
+	}
+	if (bufsiz == 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	result = SMB_VFS_NEXT_READLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				target,
+				PATH_MAX);
+
+	if (result <= 0)
+		return result;
+
+	target[result] = '\0';
+
+	if ((strncmp(target, "msdfs:", 6) == 0) &&
+	    (strchr_m(target, '@') != NULL)) {
+		target = expand_msdfs_target(ctx, handle->conn, target);
+		if (!target) {
+			errno = ENOENT;
+			return -1;
+		}
+	}
+
+	len = MIN(bufsiz, strlen(target));
+
+	memcpy(buf, target, len);
+
+	TALLOC_FREE(target);
+	return len;
+}
+
 static struct vfs_fn_pointers vfs_expand_msdfs_fns = {
-	.readlink_fn = expand_msdfs_readlink
+	.readlink_fn = expand_msdfs_readlink,
+	.readlinkat_fn = expand_msdfs_readlinkat
 };
 
 static_decl_vfs;
