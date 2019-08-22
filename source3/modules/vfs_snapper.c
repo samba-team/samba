@@ -2339,48 +2339,6 @@ static int snapper_gmt_ntimes(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
 }
 
-static int snapper_gmt_readlink(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				char *buf,
-				size_t bufsiz)
-{
-	time_t timestamp = 0;
-	char *stripped = NULL;
-	int ret;
-	int saved_errno = 0;
-	struct smb_filename *conv = NULL;
-
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle,
-					smb_fname->base_name,
-					&timestamp, &stripped)) {
-		return -1;
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_READLINK(handle, smb_fname, buf, bufsiz);
-	}
-	conv = cp_smb_filename(talloc_tos(), smb_fname);
-	if (conv == NULL) {
-		TALLOC_FREE(stripped);
-		errno = ENOMEM;
-		return -1;
-	}
-	conv->base_name = snapper_gmt_convert(conv, handle,
-					      stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv->base_name == NULL) {
-		return -1;
-	}
-	ret = SMB_VFS_NEXT_READLINK(handle, conv, buf, bufsiz);
-	if (ret == -1) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(conv);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
-}
-
 static int snapper_gmt_readlinkat(vfs_handle_struct *handle,
 				files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -2936,7 +2894,6 @@ static struct vfs_fn_pointers snapper_fns = {
 	.chown_fn = snapper_gmt_chown,
 	.chdir_fn = snapper_gmt_chdir,
 	.ntimes_fn = snapper_gmt_ntimes,
-	.readlink_fn = snapper_gmt_readlink,
 	.readlinkat_fn = snapper_gmt_readlinkat,
 	.mknodat_fn = snapper_gmt_mknodat,
 	.realpath_fn = snapper_gmt_realpath,
