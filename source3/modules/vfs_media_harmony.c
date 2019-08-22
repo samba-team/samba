@@ -1782,6 +1782,47 @@ out:
 }
 
 /*
+ * Success: return byte count
+ * Failure: set errno, return -1
+ */
+static int mh_readlinkat(vfs_handle_struct *handle,
+		files_struct *dirfsp,
+		const struct smb_filename *smb_fname,
+		char *buf,
+		size_t bufsiz)
+{
+	int status;
+	struct smb_filename *clientFname = NULL;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering mh_readlinkat\n"));
+	if (!is_in_media_files(smb_fname->base_name)) {
+		status = SMB_VFS_NEXT_READLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				buf,
+				bufsiz);
+		goto out;
+	}
+
+	if ((status = alloc_get_client_smb_fname(handle, talloc_tos(),
+				smb_fname,
+				&clientFname))) {
+		goto err;
+	}
+
+	status = SMB_VFS_NEXT_READLINKAT(handle,
+				dirfsp,
+				clientFname,
+				buf,
+				bufsiz);
+
+err:
+	TALLOC_FREE(clientFname);
+out:
+	return status;
+}
+
+/*
  * Success: return 0
  * Failure: set errno, return -1
  */
@@ -2323,6 +2364,7 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.ntimes_fn = mh_ntimes,
 	.symlink_fn = mh_symlink,
 	.readlink_fn = mh_readlink,
+	.readlinkat_fn = mh_readlinkat,
 	.linkat_fn = mh_linkat,
 	.mknodat_fn = mh_mknodat,
 	.realpath_fn = mh_realpath,
