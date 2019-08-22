@@ -1668,48 +1668,6 @@ static int shadow_copy2_ntimes(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
 }
 
-static int shadow_copy2_readlink(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				char *buf,
-				size_t bufsiz)
-{
-	time_t timestamp = 0;
-	char *stripped = NULL;
-	int saved_errno = 0;
-	int ret;
-	struct smb_filename *conv = NULL;
-
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
-					 smb_fname->base_name,
-					 &timestamp, &stripped)) {
-		return -1;
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_READLINK(handle, smb_fname, buf, bufsiz);
-	}
-	conv = cp_smb_filename(talloc_tos(), smb_fname);
-	if (conv == NULL) {
-		TALLOC_FREE(stripped);
-		errno = ENOMEM;
-		return -1;
-	}
-	conv->base_name = shadow_copy2_convert(
-		conv, handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv->base_name == NULL) {
-		return -1;
-	}
-	ret = SMB_VFS_NEXT_READLINK(handle, conv, buf, bufsiz);
-	if (ret == -1) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(conv);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
-}
-
 static int shadow_copy2_readlinkat(vfs_handle_struct *handle,
 				files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -3205,7 +3163,6 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.chown_fn = shadow_copy2_chown,
 	.chdir_fn = shadow_copy2_chdir,
 	.ntimes_fn = shadow_copy2_ntimes,
-	.readlink_fn = shadow_copy2_readlink,
 	.readlinkat_fn = shadow_copy2_readlinkat,
 	.mknodat_fn = shadow_copy2_mknodat,
 	.realpath_fn = shadow_copy2_realpath,
