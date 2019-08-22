@@ -396,6 +396,10 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
+        Option("--full-dn", dest="full_dn",
+               default=False,
+               action='store_true',
+               help="Display DN instead of the sAMAccountName.")
     ]
 
     takes_optiongroups = {
@@ -406,7 +410,13 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
 
     takes_args = ["groupname"]
 
-    def run(self, groupname, credopts=None, sambaopts=None, versionopts=None, H=None):
+    def run(self,
+            groupname,
+            credopts=None,
+            sambaopts=None,
+            versionopts=None,
+            H=None,
+            full_dn=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
@@ -437,6 +447,10 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
                 return
 
             for msg in res:
+                if full_dn:
+                    self.outf.write("%s\n" % msg.get("dn"))
+                    continue
+
                 member_name = msg.get("samAccountName", idx=0)
                 if member_name is None:
                     member_name = msg.get("cn", idx=0)
