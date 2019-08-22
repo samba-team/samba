@@ -527,6 +527,10 @@ class cmd_computer_list(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                type=str, metavar="URL", dest="H"),
+        Option("--full-dn", dest="full_dn",
+               default=False,
+               action="store_true",
+               help="Display DN instead of the sAMAccountName.")
     ]
 
     takes_optiongroups = {
@@ -535,7 +539,12 @@ class cmd_computer_list(Command):
         "versionopts": options.VersionOptions,
     }
 
-    def run(self, sambaopts=None, credopts=None, versionopts=None, H=None):
+    def run(self,
+            sambaopts=None,
+            credopts=None,
+            versionopts=None,
+            H=None,
+            full_dn=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
@@ -552,6 +561,10 @@ class cmd_computer_list(Command):
             return
 
         for msg in res:
+            if full_dn:
+                self.outf.write("%s\n" % msg.get("dn"))
+                continue
+
             self.outf.write("%s\n" % msg.get("samaccountname", idx=0))
 
 
