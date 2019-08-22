@@ -5841,9 +5841,12 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 #else
 				return NT_STATUS_DOS(ERRDOS, ERRbadlink);
 #endif
-				link_len = SMB_VFS_READLINK(conn,
-						       smb_fname,
-						       buffer, PATH_MAX);
+				link_len = SMB_VFS_READLINKAT(conn,
+							conn->cwd_fsp,
+							smb_fname,
+							buffer,
+							PATH_MAX);
+
 				if (link_len == -1) {
 					return map_nt_error_from_unix(errno);
 				}
