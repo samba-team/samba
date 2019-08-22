@@ -1093,48 +1093,6 @@ static int ceph_snap_gmt_ntimes(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_NTIMES(handle, csmb_fname, ft);
 }
 
-static int ceph_snap_gmt_readlink(vfs_handle_struct *handle,
-				const struct smb_filename *csmb_fname,
-				char *buf,
-				size_t bufsiz)
-{
-	time_t timestamp = 0;
-	char stripped[PATH_MAX + 1];
-	char conv[PATH_MAX + 1];
-	int ret;
-	struct smb_filename *new_fname;
-	int saved_errno;
-
-	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
-					&timestamp, stripped, sizeof(stripped));
-	if (ret < 0) {
-		errno = -ret;
-		return -1;
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_READLINK(handle, csmb_fname, buf, bufsiz);
-	}
-	ret = ceph_snap_gmt_convert(handle, stripped,
-					timestamp, conv, sizeof(conv));
-	if (ret < 0) {
-		errno = -ret;
-		return -1;
-	}
-	new_fname = cp_smb_filename(talloc_tos(), csmb_fname);
-	if (new_fname == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-	new_fname->base_name = conv;
-
-	ret = SMB_VFS_NEXT_READLINK(handle, new_fname, buf, bufsiz);
-	saved_errno = errno;
-	TALLOC_FREE(new_fname);
-	errno = saved_errno;
-	return ret;
-}
-
 static int ceph_snap_gmt_readlinkat(vfs_handle_struct *handle,
 				files_struct *dirfsp,
 				const struct smb_filename *csmb_fname,
@@ -1675,7 +1633,6 @@ static struct vfs_fn_pointers ceph_snap_fns = {
 	.chown_fn = ceph_snap_gmt_chown,
 	.chdir_fn = ceph_snap_gmt_chdir,
 	.ntimes_fn = ceph_snap_gmt_ntimes,
-	.readlink_fn = ceph_snap_gmt_readlink,
 	.readlinkat_fn = ceph_snap_gmt_readlinkat,
 	.mknodat_fn = ceph_snap_gmt_mknodat,
 	.realpath_fn = ceph_snap_gmt_realpath,
