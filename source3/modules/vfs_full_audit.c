@@ -153,6 +153,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_GETLOCK,
 	SMB_VFS_OP_SYMLINK,
 	SMB_VFS_OP_READLINK,
+	SMB_VFS_OP_READLINKAT,
 	SMB_VFS_OP_LINKAT,
 	SMB_VFS_OP_MKNODAT,
 	SMB_VFS_OP_REALPATH,
@@ -296,6 +297,7 @@ static struct {
 	{ SMB_VFS_OP_GETLOCK,	"getlock" },
 	{ SMB_VFS_OP_SYMLINK,	"symlink" },
 	{ SMB_VFS_OP_READLINK,	"readlink" },
+	{ SMB_VFS_OP_READLINKAT,"readlinkat" },
 	{ SMB_VFS_OP_LINKAT,	"linkat" },
 	{ SMB_VFS_OP_MKNODAT,	"mknodat" },
 	{ SMB_VFS_OP_REALPATH,	"realpath" },
@@ -1754,6 +1756,26 @@ static int smb_full_audit_readlink(vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_full_audit_readlinkat(vfs_handle_struct *handle,
+			files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			char *buf,
+			size_t bufsiz)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_READLINKAT(handle,
+			dirfsp,
+			smb_fname,
+			buf,
+			bufsiz);
+
+	do_log(SMB_VFS_OP_READLINKAT, (result >= 0), handle, "%s",
+			smb_fname->base_name);
+
+	return result;
+}
+
 static int smb_full_audit_linkat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *old_smb_fname,
@@ -2889,6 +2911,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.getlock_fn = smb_full_audit_getlock,
 	.symlink_fn = smb_full_audit_symlink,
 	.readlink_fn = smb_full_audit_readlink,
+	.readlinkat_fn = smb_full_audit_readlinkat,
 	.linkat_fn = smb_full_audit_linkat,
 	.mknodat_fn = smb_full_audit_mknodat,
 	.realpath_fn = smb_full_audit_realpath,
