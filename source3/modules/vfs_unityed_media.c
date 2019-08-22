@@ -1365,34 +1365,6 @@ err:
 	return status;
 }
 
-static int um_readlink(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			char *buf,
-			size_t bufsiz)
-{
-	int status;
-	struct smb_filename *client_fname = NULL;
-
-	DEBUG(10, ("Entering um_readlink\n"));
-
-	if (!is_in_media_files(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_READLINK(handle, smb_fname,
-				buf, bufsiz);
-	}
-
-	status = alloc_get_client_smb_fname(handle, talloc_tos(),
-					    smb_fname, &client_fname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_READLINK(handle, client_fname, buf, bufsiz);
-
-err:
-	TALLOC_FREE(client_fname);
-	return status;
-}
-
 static int um_readlinkat(vfs_handle_struct *handle,
 			files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1960,7 +1932,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.chdir_fn = um_chdir,
 	.ntimes_fn = um_ntimes,
 	.symlink_fn = um_symlink,
-	.readlink_fn = um_readlink,
 	.readlinkat_fn = um_readlinkat,
 	.linkat_fn = um_linkat,
 	.mknodat_fn = um_mknodat,
