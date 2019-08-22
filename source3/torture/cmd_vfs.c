@@ -1197,8 +1197,13 @@ static NTSTATUS cmd_readlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 	if (smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	if ((size = SMB_VFS_READLINK(vfs->conn, smb_fname,
-				buffer, PATH_MAX)) == -1) {
+	size = SMB_VFS_READLINKAT(vfs->conn,
+			vfs->conn->cwd_fsp,
+			smb_fname,
+			buffer,
+			PATH_MAX);
+
+	if (size == -1) {
 		printf("readlink: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
