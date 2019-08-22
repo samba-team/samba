@@ -2210,6 +2210,20 @@ int smb_vfs_call_readlink(struct vfs_handle_struct *handle,
 	return handle->fns->readlink_fn(handle, smb_fname, buf, bufsiz);
 }
 
+int smb_vfs_call_readlinkat(struct vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			char *buf,
+			size_t bufsiz)
+{
+	VFS_FIND(readlinkat);
+	return handle->fns->readlinkat_fn(handle,
+				dirfsp,
+				smb_fname,
+				buf,
+				bufsiz);
+}
+
 int smb_vfs_call_linkat(struct vfs_handle_struct *handle,
 			struct files_struct *srcfsp,
 			const struct smb_filename *old_smb_fname,

@@ -2663,6 +2663,27 @@ static int vfswrap_readlink(vfs_handle_struct *handle,
 	return result;
 }
 
+static int vfswrap_readlinkat(vfs_handle_struct *handle,
+			files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			char *buf,
+			size_t bufsiz)
+{
+	int result;
+
+	START_PROFILE(syscall_readlinkat);
+
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	result = readlinkat(dirfsp->fh->fd,
+			smb_fname->base_name,
+			buf,
+			bufsiz);
+
+	END_PROFILE(syscall_readlinkat);
+	return result;
+}
+
 static int vfswrap_linkat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *old_smb_fname,
@@ -3487,6 +3508,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.getlock_fn = vfswrap_getlock,
 	.symlink_fn = vfswrap_symlink,
 	.readlink_fn = vfswrap_readlink,
+	.readlinkat_fn = vfswrap_readlinkat,
 	.linkat_fn = vfswrap_linkat,
 	.mknodat_fn = vfswrap_mknodat,
 	.realpath_fn = vfswrap_realpath,

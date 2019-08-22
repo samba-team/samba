@@ -275,6 +275,7 @@
 /* Version 42 - Move SMB_VFS_RENAME -> SMB_VFS_RENAMEAT */
 /* Version 42 - Move SMB_VFS_LINK -> SMB_VFS_LINKAT. */
 /* Version 42 - Move SMB_VFS_MKNOD -> SMB_VFS_MKDNODAT. */
+/* Version 42 - Add SMB_VFS_READLINKAT. */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -798,6 +799,11 @@ struct vfs_fn_pointers {
 				const char *link_contents,
 				const struct smb_filename *new_smb_fname);
 	int (*readlink_fn)(struct vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname,
+				char *buf,
+				size_t bufsiz);
+	int (*readlinkat_fn)(struct vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
 				char *buf,
 				size_t bufsiz);
@@ -1334,6 +1340,11 @@ int smb_vfs_call_readlink(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			char *buf,
 			size_t bufsiz);
+int smb_vfs_call_readlinkat(struct vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			char *buf,
+			size_t bufsiz);
 int smb_vfs_call_linkat(struct vfs_handle_struct *handle,
 			struct files_struct *srcfsp,
 			const struct smb_filename *old_smb_fname,
@@ -1764,6 +1775,11 @@ int vfs_not_implemented_vfs_readlink(vfs_handle_struct *handle,
 				     const struct smb_filename *smb_fname,
 				     char *buf,
 				     size_t bufsiz);
+int vfs_not_implemented_vfs_readlinkat(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			char *buf,
+			size_t bufsiz);
 int vfs_not_implemented_linkat(vfs_handle_struct *handle,
 			struct files_struct *srcfsp,
 			const struct smb_filename *old_smb_fname,
