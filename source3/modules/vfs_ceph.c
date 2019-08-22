@@ -1156,6 +1156,23 @@ static int cephwrap_readlink(struct vfs_handle_struct *handle,
 	WRAP_RETURN(result);
 }
 
+static int cephwrap_readlinkat(struct vfs_handle_struct *handle,
+		files_struct *dirfsp,
+		const struct smb_filename *smb_fname,
+		char *buf,
+		size_t bufsiz)
+{
+	int result = -1;
+	DBG_DEBUG("[CEPH] readlink(%p, %s, %p, %llu)\n", handle,
+			smb_fname->base_name, buf, llu(bufsiz));
+
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	result = ceph_readlink(handle->data, smb_fname->base_name, buf, bufsiz);
+	DBG_DEBUG("[CEPH] readlink(...) = %d\n", result);
+	WRAP_RETURN(result);
+}
+
 static int cephwrap_linkat(struct vfs_handle_struct *handle,
 		files_struct *srcfsp,
 		const struct smb_filename *old_smb_fname,
@@ -1460,6 +1477,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.getlock_fn = cephwrap_getlock,
 	.symlink_fn = cephwrap_symlink,
 	.readlink_fn = cephwrap_readlink,
+	.readlinkat_fn = cephwrap_readlinkat,
 	.linkat_fn = cephwrap_linkat,
 	.mknodat_fn = cephwrap_mknodat,
 	.realpath_fn = cephwrap_realpath,
