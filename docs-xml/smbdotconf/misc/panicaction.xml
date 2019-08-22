@@ -12,5 +12,5 @@
 </description>
 
 <value type="default"></value>
-<value type="example">&quot;/bin/sleep 90000&quot;</value>
+<value type="example">/bin/sleep 90000</value>
 </samba:parameter>
