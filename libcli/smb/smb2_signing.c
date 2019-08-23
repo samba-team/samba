@@ -652,7 +652,7 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 					     algo,
 					     &key);
 		if (rc < 0) {
-			status = NT_STATUS_NO_MEMORY;
+			status = gnutls_error_to_ntstatus(rc, NT_STATUS_INTERNAL_ERROR);
 			goto out;
 		}
 	}
@@ -710,10 +710,9 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 						ptext,
 						&ptext_size);
 		if (rc < 0 || ptext_size != m_total) {
-			DBG_ERR("ERROR: %s\n", gnutls_strerror(rc));
 			TALLOC_FREE(ptext);
 			TALLOC_FREE(ctext);
-			status = NT_STATUS_INTERNAL_ERROR;
+			status = gnutls_error_to_ntstatus(rc, NT_STATUS_INTERNAL_ERROR);
 			goto out;
 		}
 
