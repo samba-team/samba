@@ -115,26 +115,22 @@ def smbdotconf_generate_parameter_list(task):
     articles = task.inputs
 
     entities = bld.pathconfig_entities()
-    t = "<!DOCTYPE section [\n"
-
-    for entity in entities:
-        t += "%s\n" % entity
 
     # We need this if we build with Heimdal
     mit_kdc_path = '"/usr/sbin/krb5kdc"'
-
     # The MIT krb5kdc path is set if we build with MIT Kerberos
     if bld.CONFIG_SET('MIT_KDC_PATH'):
         mit_kdc_path = bld.CONFIG_GET('MIT_KDC_PATH')
 
-    t += "<!ENTITY pathconfig.MITKDCPATH   %s>\n" % mit_kdc_path
+    t = "<!DOCTYPE section [\n" +\
+        "\n".join(entities) +\
+        "\n" +\
+        "<!ENTITY pathconfig.MITKDCPATH   " + mit_kdc_path + ">\n" +\
+        "]>\n" +\
+        "<section>\n" +\
+        "".join(art.read() for art in articles) +\
+	"</section>\n"
 
-    t += "]>\n"
-    t += "<section>\n"
-    for article in articles:
-        t += article.read()
-
-    t += "</section>\n"
     save_file(parameter_all, t , create_dir=True)
     return 0
 
