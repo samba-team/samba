@@ -806,10 +806,6 @@ int pthreadpool_add_job(struct pthreadpool *pool, int job_id,
 		return 0;
 	}
 
-	/*
-	 * No thread could be created to run job, fallback to sync
-	 * call.
-	 */
 	pthreadpool_undo_put_job(pool);
 
 	unlock_res = pthread_mutex_unlock(&pool->mutex);
