@@ -392,12 +392,11 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 				  int count)
 {
 	uint8_t *tf;
-	int i;
 	size_t a_total;
 	ssize_t m_total;
 	uint32_t iv_size = 0;
 	uint32_t key_size = 0;
-	uint32_t tag_size = 0;
+	size_t tag_size = 0;
 	uint8_t _key[16] = {0};
 	gnutls_cipher_algorithm_t algo = 0;
 	gnutls_datum_t key;
@@ -479,12 +478,40 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 	       0,
 	       16 - iv_size);
 
+#ifdef HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2
+	{
+		uint8_t tag[tag_size];
+		giovec_t auth_iov[1];
+
+		auth_iov[0] = (giovec_t) {
+			.iov_base = tf + SMB2_TF_NONCE,
+			.iov_len  = a_total,
+		};
+
+		rc = gnutls_aead_cipher_encryptv2(encryption_key->cipher_hnd,
+						  iv.data,
+						  iv.size,
+						  auth_iov,
+						  1,
+						  &vector[1],
+						  count - 1,
+						  tag,
+						  &tag_size);
+		if (rc < 0) {
+			status = gnutls_error_to_ntstatus(rc, NT_STATUS_INTERNAL_ERROR);
+			goto out;
+		}
+
+		memcpy(tf + SMB2_TF_SIGNATURE, tag, tag_size);
+	}
+#else /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
 	{
 		size_t ptext_size = m_total;
 		uint8_t *ptext = NULL;
 		size_t ctext_size = m_total + tag_size;
 		uint8_t *ctext = NULL;
 		size_t len = 0;
+		int i;
 
 		ptext = talloc_size(talloc_tos(), ptext_size);
 		if (ptext == NULL) {
@@ -543,6 +570,7 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 		TALLOC_FREE(ptext);
 		TALLOC_FREE(ctext);
 	}
+#endif /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
 
 	DBG_INFO("Enencrypted SMB2 message\n");
 
