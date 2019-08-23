@@ -18,7 +18,7 @@ interface mdssvc
 	);
 
 	void mdssvc_unknown1(
-		[in]        policy_handle   handle,
+		[in]        policy_handle   *handle,
 		[in]        uint32          unkn1, /* always 0, some status ? */
 		[in]        uint32          device_id,
 		[in]        uint32          unkn3, /* = mdssvc_open.unkn2 ? */
@@ -37,7 +37,7 @@ interface mdssvc
 	} mdssvc_blob;
 
 	void mdssvc_cmd(
-		[in]        policy_handle   handle,
+		[in]        policy_handle   *handle,
 		[in]        uint32          unkn1, /* always 0, status ? */
 		[in]        uint32          device_id,
 		[in]        uint32          unkn3, /* = mdssvc_open.unkn2 ? */
@@ -57,7 +57,7 @@ interface mdssvc
 	);
 
 	void mdssvc_close(
-		[in]        policy_handle   in_handle,
+		[in]        policy_handle   *in_handle,
 		[in]        uint32          unkn1, /* always 0, some status ? */
 		[in]        uint32          device_id,
 		[in]        uint32          unkn2, /* = mdssvc_open.unkn2 ? */

@@ -70,7 +70,7 @@ static NTSTATUS cmd_mdssvc_fetch_properties(
 	}
 
 	status = dcerpc_mdssvc_unknown1(b, mem_ctx,
-					share_handle,
+					&share_handle,
 					0,
 					device_id,
 					unkn1,
@@ -160,7 +160,7 @@ static NTSTATUS cmd_mdssvc_fetch_properties(
 	request_blob.size = len;
 
 	status =  dcerpc_mdssvc_cmd(b, mem_ctx,
-				    share_handle,
+				    &share_handle,
 				    0,
 				    device_id,
 				    23,
@@ -248,7 +248,7 @@ static NTSTATUS cmd_mdssvc_fetch_attributes(
 	}
 
 	status = dcerpc_mdssvc_unknown1(b, mem_ctx,
-					share_handle,
+					&share_handle,
 					0,
 					device_id,
 					unkn1,
@@ -386,7 +386,7 @@ static NTSTATUS cmd_mdssvc_fetch_attributes(
 	request_blob.size = len;
 
 	status = dcerpc_mdssvc_cmd(b, mem_ctx,
-				   share_handle,
+				   &share_handle,
 				   0,
 				   device_id,
 				   23,

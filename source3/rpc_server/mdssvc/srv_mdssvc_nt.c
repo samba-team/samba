@@ -211,8 +211,8 @@ void _mdssvc_unknown1(struct pipes_struct *p, struct mdssvc_unknown1 *r)
 {
 	struct mds_ctx *mds_ctx;
 
-	if (!find_policy_by_hnd(p, &r->in.handle, (void **)(void *)&mds_ctx)) {
-		if (is_zero_policy_handle(&r->in.handle)) {
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&mds_ctx)) {
+		if (is_zero_policy_handle(r->in.handle)) {
 			p->fault_state = 0;
 		} else {
 			p->fault_state = DCERPC_NCA_S_PROTO_ERROR;
@@ -238,8 +238,8 @@ void _mdssvc_cmd(struct pipes_struct *p, struct mdssvc_cmd *r)
 	char *rbuf;
 	struct mds_ctx *mds_ctx;
 
-	if (!find_policy_by_hnd(p, &r->in.handle, (void **)(void *)&mds_ctx)) {
-		if (is_zero_policy_handle(&r->in.handle)) {
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&mds_ctx)) {
+		if (is_zero_policy_handle(r->in.handle)) {
 			p->fault_state = 0;
 		} else {
 			p->fault_state = DCERPC_NCA_S_PROTO_ERROR;
@@ -313,10 +313,10 @@ void _mdssvc_close(struct pipes_struct *p, struct mdssvc_close *r)
 	struct mds_ctx *mds_ctx;
 	bool ok;
 
-	ok = find_policy_by_hnd(p, &r->in.in_handle, (void **)(void *)&mds_ctx);
+	ok = find_policy_by_hnd(p, r->in.in_handle, (void **)(void *)&mds_ctx);
 	if (!ok) {
 		DBG_WARNING("invalid handle\n");
-		if (is_zero_policy_handle(&r->in.in_handle)) {
+		if (is_zero_policy_handle(r->in.in_handle)) {
 			p->fault_state = 0;
 		} else {
 			p->fault_state = DCERPC_NCA_S_PROTO_ERROR;
@@ -327,8 +327,8 @@ void _mdssvc_close(struct pipes_struct *p, struct mdssvc_close *r)
 	DBG_DEBUG("Close mdssvc handle for path: %s\n", mds_ctx->spath);
 	TALLOC_FREE(mds_ctx);
 
-	*r->out.out_handle = r->in.in_handle;
-	close_policy_hnd(p, &r->in.in_handle);
+	*r->out.out_handle = *r->in.in_handle;
+	close_policy_hnd(p, r->in.in_handle);
 
 	*r->out.status = 0;
 
