@@ -68,6 +68,20 @@ in the following years. If you have a strong requirement for SMB1
 (except for supporting old Linux Kernels), please file a bug
 at https://bugzilla.samba.org and let us know about the details.
 
+BIND9_FLATFILE deprecated
+-------------------------
+
+The BIND9_FLATFILE DNS backend is deprecated in this release and will
+be removed in the future.  This was only practically useful on a single
+domain controller or under expert care and supervision.
+
+This release therefore deprecates the "rndc command" smb.conf
+parameter, which is used to support this configuration.  After writing
+out a list of DCs permitted to make changes to the DNS Zone "rndc
+command" is called with reload to tell the 'named' server if a DC was
+added/removed to to the domain.
+
+
 NEW FEATURES/CHANGES
 ====================
 
@@ -342,6 +356,7 @@ smb.conf changes
   web port                           Removed
   fruit:zero_file_id                 Changed default            False
   debug encryption                   New: dump encryption keys  False
+  rndc command                       Deprecated
 
 
 KNOWN ISSUES
