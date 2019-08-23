@@ -508,44 +508,46 @@ static void delete_lock_ref_count(const files_struct *fsp)
  ref count is non zero.
 ****************************************************************************/
 
+struct add_fd_to_close_entry_state {
+	const struct files_struct *fsp;
+};
+
+static void add_fd_to_close_entry_fn(
+	struct db_record *rec, void *private_data)
+{
+	struct add_fd_to_close_entry_state *state = private_data;
+	TDB_DATA values[] = {
+		dbwrap_record_get_value(rec),
+		{ .dptr = (uint8_t *)&(state->fsp->fh->fd),
+		  .dsize = sizeof(state->fsp->fh->fd) },
+	};
+	NTSTATUS status;
+
+	SMB_ASSERT((values[0].dsize % sizeof(int)) == 0);
+
+	status = dbwrap_record_storev(rec, values, ARRAY_SIZE(values), 0);
+	SMB_ASSERT(NT_STATUS_IS_OK(status));
+}
+
 /****************************************************************************
  Add an fd to the pending close db.
 ****************************************************************************/
 
 static void add_fd_to_close_entry(const files_struct *fsp)
 {
-	struct db_record *rec;
-	int *fds;
-	size_t num_fds;
+	struct add_fd_to_close_entry_state state = { .fsp = fsp };
 	NTSTATUS status;
-	TDB_DATA value;
 
-	rec = dbwrap_fetch_locked(
-		posix_pending_close_db, talloc_tos(),
-		fd_array_key_fsp(fsp));
-
-	SMB_ASSERT(rec != NULL);
-
-	value = dbwrap_record_get_value(rec);
-	SMB_ASSERT((value.dsize % sizeof(int)) == 0);
-
-	num_fds = value.dsize / sizeof(int);
-	fds = talloc_array(rec, int, num_fds+1);
-
-	SMB_ASSERT(fds != NULL);
-
-	memcpy(fds, value.dptr, value.dsize);
-	fds[num_fds] = fsp->fh->fd;
-
-	status = dbwrap_record_store(
-		rec, make_tdb_data((uint8_t *)fds, talloc_get_size(fds)), 0);
-
+	status = dbwrap_do_locked(
+		posix_pending_close_db,
+		fd_array_key_fsp(fsp),
+		add_fd_to_close_entry_fn,
+		&state);
 	SMB_ASSERT(NT_STATUS_IS_OK(status));
 
-	TALLOC_FREE(rec);
-
-	DEBUG(10,("add_fd_to_close_entry: added fd %d file %s\n",
-		  fsp->fh->fd, fsp_str_dbg(fsp)));
+	DBG_DEBUG("added fd %d file %s\n",
+		  fsp->fh->fd,
+		  fsp_str_dbg(fsp));
 }
 
 /****************************************************************************
