@@ -588,13 +588,12 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 {
 	uint8_t *tf;
 	uint16_t flags;
-	int i;
 	size_t a_total;
 	ssize_t m_total;
 	uint32_t msg_size = 0;
 	uint32_t iv_size = 0;
 	uint32_t key_size = 0;
-	uint32_t tag_size = 0;
+	size_t tag_size = 0;
 	uint8_t _key[16] = {0};
 	gnutls_cipher_algorithm_t algo = 0;
 	gnutls_datum_t key;
@@ -680,12 +679,37 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 		}
 	}
 
+#ifdef HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2
+	{
+		giovec_t auth_iov[1];
+
+		auth_iov[0] = (giovec_t) {
+			.iov_base = tf + SMB2_TF_NONCE,
+			.iov_len  = a_total,
+		};
+
+		rc = gnutls_aead_cipher_decryptv2(decryption_key->cipher_hnd,
+						  iv.data,
+						  iv.size,
+						  auth_iov,
+						  1,
+						  &vector[1],
+						  count - 1,
+						  tf + SMB2_TF_SIGNATURE,
+						  tag_size);
+		if (rc < 0) {
+			status = gnutls_error_to_ntstatus(rc, NT_STATUS_INTERNAL_ERROR);
+			goto out;
+		}
+	}
+#else /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
 	{
 		size_t ctext_size = m_total + tag_size;
 		uint8_t *ctext = NULL;
 		size_t ptext_size = m_total;
 		uint8_t *ptext = NULL;
 		size_t len = 0;
+		int i;
 
 		/* GnuTLS doesn't have a iovec API for decryption yet */
 
@@ -751,6 +775,7 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 		TALLOC_FREE(ptext);
 		TALLOC_FREE(ctext);
 	}
+#endif /* HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2 */
 
 	DBG_INFO("Decrypted SMB2 message\n");
 
