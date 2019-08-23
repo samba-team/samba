@@ -756,58 +756,6 @@ bool share_entry_stale_pid(struct share_mode_entry *e)
 	return true;
 }
 
-/*
- * In case d->share_modes[i] conflicts with something or otherwise is
- * being used, we need to make sure the corresponding process still
- * exists.
- */
-bool share_mode_stale_pid(struct share_mode_data *d, uint32_t idx)
-{
-	struct share_mode_entry *e;
-	bool stale;
-
-	if (idx > d->num_share_modes) {
-		DBG_WARNING("Asking for index %"PRIu32", "
-			    "only %"PRIu32" around\n",
-			    idx,
-			    d->num_share_modes);
-		return false;
-	}
-	e = &d->share_modes[idx];
-
-	stale = share_entry_stale_pid(e);
-	if (!stale) {
-		return false;
-	}
-	d->modified = true;
-
-	if (d->num_delete_tokens != 0) {
-		uint32_t i;
-
-		for (i=0; i<d->num_share_modes; i++) {
-			bool valid = !d->share_modes[i].stale;
-			if (valid) {
-				break;
-			}
-		}
-
-		if (i == d->num_share_modes) {
-			/*
-			 * No valid (non-stale) share mode found, all
-			 * who might have set the delete token are
-			 * gone.
-			 */
-			TALLOC_FREE(d->delete_tokens);
-			d->num_delete_tokens = 0;
-		}
-	}
-
-	remove_share_mode_lease(d, e);
-
-	d->modified = true;
-	return true;
-}
-
 void remove_stale_share_mode_entries(struct share_mode_data *d)
 {
 	uint32_t i;
@@ -821,6 +769,11 @@ void remove_stale_share_mode_entries(struct share_mode_data *d)
 			continue;
 		}
 		i += 1;
+	}
+
+	if (d->num_share_modes == 0) {
+		TALLOC_FREE(d->delete_tokens);
+		d->num_delete_tokens = 0;
 	}
 }
 

@@ -170,7 +170,6 @@ void get_file_infos(struct file_id id,
 		    struct timespec *write_time);
 bool is_valid_share_mode_entry(const struct share_mode_entry *e);
 bool share_entry_stale_pid(struct share_mode_entry *e);
-bool share_mode_stale_pid(struct share_mode_data *d, uint32_t idx);
 bool set_share_mode(struct share_mode_lock *lck,
 		    struct files_struct *fsp,
 		    uid_t uid,
