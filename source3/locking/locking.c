@@ -895,6 +895,29 @@ static struct share_mode_entry *find_share_mode_entry(
 	return NULL;
 }
 
+bool reset_share_mode_entry(
+	struct share_mode_lock *lck,
+	struct server_id old_pid,
+	uint64_t old_share_file_id,
+	struct server_id new_pid,
+	uint64_t new_mid,
+	uint64_t new_share_file_id)
+{
+	struct share_mode_entry *e = find_share_mode_entry(
+		lck, old_pid, old_share_file_id);
+
+	if (e == NULL) {
+		return false;
+	}
+
+	e->pid = new_pid;
+	e->op_mid = new_mid;
+	e->share_file_id = new_share_file_id;
+
+	lck->data->modified = true;
+	return true;
+}
+
 /*******************************************************************
  Del the share mode of a file for this process.
 ********************************************************************/

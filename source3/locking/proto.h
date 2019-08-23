@@ -178,6 +178,13 @@ bool set_share_mode(struct share_mode_lock *lck,
 		    uint16_t op_type,
 		    uint32_t share_access,
 		    uint32_t access_mask);
+bool reset_share_mode_entry(
+	struct share_mode_lock *lck,
+	struct server_id old_pid,
+	uint64_t old_share_file_id,
+	struct server_id new_pid,
+	uint64_t new_mid,
+	uint64_t new_share_file_id);
 NTSTATUS remove_lease_if_stale(const struct share_mode_data *d,
 			       const struct GUID *client_guid,
 			       const struct smb2_lease_key *lease_key);
