@@ -15,6 +15,9 @@ conf.SET_TARGET_TYPE('gnutls', 'SYSLIB')
 # Check for gnutls_pkcs7_get_embedded_data_oid (>= 3.5.5) required by libmscat
 conf.CHECK_FUNCS_IN('gnutls_pkcs7_get_embedded_data_oid', 'gnutls')
 
+# Check for gnutls_aead_cipher_encryptv2 (>= 3.6.10)
+conf.CHECK_FUNCS_IN('gnutls_aead_cipher_encryptv2', 'gnutls')
+
 if conf.CHECK_VALUEOF('GNUTLS_CIPHER_AES_128_CFB8', headers='gnutls/gnutls.h'):
     conf.DEFINE('HAVE_GNUTLS_AES_CFB8', 1)
 else:
