@@ -100,9 +100,7 @@ def _drs_fetch_pfm(server, samdb, creds, lp):
     pfm_it = pfm.mappings[-1]
     assert pfm_it.id_prefix == 0
     assert pfm_it.oid.length == 21
-    s = ''
-    for x in pfm_it.oid.binary_oid:
-        s += chr(x)
+    s = "".join(chr(x) for x in pfm_it.oid.binary_oid)
     pfm_schi = ndr_unpack(drsblobs.schemaInfoBlob, s)
     assert pfm_schi.marker == 0xFF
     # remove schemaInfo element
