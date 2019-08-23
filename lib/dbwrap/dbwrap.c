@@ -339,7 +339,7 @@ static void dbwrap_delete_fn(struct db_record *rec, void *private_data)
 
 NTSTATUS dbwrap_delete(struct db_context *db, TDB_DATA key)
 {
-	struct dbwrap_delete_state state;
+	struct dbwrap_delete_state state = { .status = NT_STATUS_NOT_FOUND };
 	NTSTATUS status;
 
 	status = dbwrap_do_locked(db, key, dbwrap_delete_fn, &state);
