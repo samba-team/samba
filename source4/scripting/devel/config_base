@@ -30,11 +30,10 @@ if not os.path.isdir(config_dir):
 if not os.path.isfile(config_file):
     open(config_file, mode='w').close()
 
-options = " --configfile=${PREFIX}/etc/smb.conf"
+options = (
+          " --configfile=${PREFIX}/etc/smb.conf"
+          "".join(" --option=%s=%s" % (v.replace(" ",""), vars[v]) for v in vars)
+	  ).replace("${PREFIX}", prefix)
 
-for v in vars:
-    options += " --option=%s=%s" % (v.replace(" ",""), vars[v])
-
-options = options.replace("${PREFIX}", prefix)
 
 print(options)

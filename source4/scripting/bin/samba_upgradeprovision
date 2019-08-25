@@ -1063,14 +1063,10 @@ def reload_full_schema(samdb, names):
     schemadn = str(names.schemadn)
     current = samdb.search(expression="objectClass=*", base=schemadn,
                                 scope=SCOPE_SUBTREE)
-    schema_ldif = ""
-    prefixmap_data = ""
 
-    for ent in current:
-        schema_ldif += samdb.write_ldif(ent, ldb.CHANGETYPE_NONE)
+    schema_ldif = "".join(samdb.write_ldif(ent, ldb.CHANGETYPE_NONE) for ent in current)
 
-    prefixmap_data = open(setup_path("prefixMap.txt"), 'rb').read()
-    prefixmap_data = b64encode(prefixmap_data).decode('utf8')
+    prefixmap_data = b64encode(open(setup_path("prefixMap.txt"), 'rb').read()).decode('utf8')
 
     # We don't actually add this ldif, just parse it
     prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (schemadn, prefixmap_data)
