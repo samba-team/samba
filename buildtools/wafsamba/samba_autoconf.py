@@ -23,13 +23,12 @@ def DEFINE(conf, d, v, add_to_cflags=False, quote=False):
 
 def hlist_to_string(conf, headers=None):
     '''convert a headers list to a set of #include lines'''
-    hdrs=''
     hlist = conf.env.hlist
     if headers:
         hlist = hlist[:]
         hlist.extend(TO_LIST(headers))
-    for h in hlist:
-        hdrs += '#include <%s>\n' % h
+    hdrs = "\n".join('#include <%s>' % h for h in hlist)
+
     return hdrs
 
 
