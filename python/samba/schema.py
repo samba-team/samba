@@ -111,9 +111,7 @@ class Schema(object):
             setup_path('ad-schema/%s' % Schema.base_schemas[base_schema][1]))
 
         if files is not None:
-            for file in files:
-                data = get_string(open(file, 'rb').read())
-                self.schema_data += data
+            self.schema_data = "".join(get_string(open(file, 'rb').read()) for file in files)
 
         self.schema_data = substitute_var(self.schema_data,
                                           {"SCHEMADN": schemadn})
@@ -135,8 +133,7 @@ class Schema(object):
             self.prefixmap_data = open(setup_path("prefixMap.txt"), 'rb').read()
 
         if additional_prefixmap is not None:
-            for map in additional_prefixmap:
-                self.prefixmap_data += "%s\n" % map
+            self.prefixmap_data += "".join("%s\n" % map for map in additional_prefixmap)
 
         self.prefixmap_data = b64encode(self.prefixmap_data).decode('utf8')
 
