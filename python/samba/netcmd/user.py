@@ -23,7 +23,6 @@ import pwd
 import os
 import io
 import re
-import tempfile
 import difflib
 import fcntl
 import signal
@@ -2411,6 +2410,7 @@ LDAP server using the 'nano' editor.
         except IndexError:
             raise CommandError('Unable to find user "%s"' % (username))
 
+        import tempfile
         for msg in res:
             result_ldif = common.get_ldif_for_editor(samdb, msg)
 
