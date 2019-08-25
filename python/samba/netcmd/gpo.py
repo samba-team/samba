@@ -110,9 +110,7 @@ def parse_gplink(gplink):
 
 def encode_gplink(gplist):
     '''Encode an array of dn and options into gPLink string'''
-    ret = ''
-    for g in gplist:
-        ret += "[LDAP://%s;%d]" % (g['dn'], g['options'])
+    ret = "".join("[LDAP://%s;%d]" % (g['dn'], g['options']) for g in gplist)
     return ret
 
 
@@ -1079,9 +1077,8 @@ class cmd_backup(GPOCommand):
             entities = cmd_backup.generalize_xml_entities(self.outf, gpodir,
                                                           gpodir)
             import operator
-            ents = ''
-            for ent in sorted(entities.items(), key=operator.itemgetter(1)):
-                ents += '<!ENTITY {} "{}">\n'.format(ent[1].strip('&;'), ent[0])
+            ents = "".join('<!ENTITY {} "{}\n">'.format(ent[1].strip('&;'), ent[0]) \
+                             for ent in sorted(entities.items(), key=operator.itemgetter(1)))
 
             if ent_file:
                 with open(ent_file, 'w') as f:
