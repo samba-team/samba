@@ -204,8 +204,8 @@ def CHECK_BUNDLED_SYSTEM(conf, libname, minversion='0.0.0',
     version_checks = '%s >= %s' % (pkg, minversion)
     if maxversion is not None:
         version_checks += ' %s <= %s' % (pkg, maxversion)
-    for v in version_blacklist:
-        version_checks += ' %s != %s' % (pkg, v)
+
+    version_checks += "".join(' %s != %s' % (pkg, v) for v in version_blacklist)
 
     # try pkgconfig first
     if (conf.CHECK_CFG(package=pkg,
