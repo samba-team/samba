@@ -94,8 +94,7 @@ class AuthLogTestsWinbind(AuthLogTestBase, BlackboxTestCase):
         msgs = list(filter(is_sam_logon, self.dc_msgs))
         if msgs:
             for m in msgs:
-                m += "\n"
-                os.write(w1, get_bytes(m))
+                os.write(w1, get_bytes(m+"\n"))
         else:
             os.write(w1, get_bytes("None\n"))
         os.close(w1)
