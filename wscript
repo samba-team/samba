@@ -419,10 +419,9 @@ def wafdocs(ctx):
     os.system('pwd')
     list = recursive_dirlist('../buildtools/wafsamba', '.', pattern='*.py')
 
-    cmd='PYTHONPATH=bin/python pydoctor --project-name=wafsamba --project-url=http://www.samba.org --make-html --docformat=restructuredtext'
     print(list)
-    for f in list:
-        cmd += ' --add-module %s' % f
+    cmd='PYTHONPATH=bin/python pydoctor --project-name=wafsamba --project-url=http://www.samba.org --make-html --docformat=restructuredtext' +\
+        "".join(' --add-module %s' % f for f in list)
     print("Running: %s" % cmd)
     status = os.system(cmd)
     if os.WEXITSTATUS(status):
