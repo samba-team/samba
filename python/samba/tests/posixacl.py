@@ -61,8 +61,8 @@ class PosixAclMappingTests(SmbdBaseTests):
     def print_posix_acl(self, posix_acl):
         aclstr = ""
         for entry in posix_acl.acl:
-            aclstr += "a_type: %d\n" % entry.a_type
-            aclstr += "a_perm: %o\n" % entry.a_perm
+            aclstr += "a_type: %d\n" % entry.a_type +\
+                      "a_perm: %o\n" % entry.a_perm
             if entry.a_type == smb_acl.SMB_ACL_USER:
                 aclstr += "uid: %d\n" % entry.info.uid
             if entry.a_type == smb_acl.SMB_ACL_GROUP:
