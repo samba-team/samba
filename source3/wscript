@@ -1907,11 +1907,9 @@ main() {
         conf.env[static_env] = []
         conf.env[shared_env] = []
         if p in static_list:
-            decl_list=""
+            decl_list = " ".join("extern NTSTATUS %s_init(TALLOC_CTX *mem_ctx); " % entry for entry in static_list[p])
             for entry in static_list[p]:
-                decl_list += "extern NTSTATUS %s_init(TALLOC_CTX *mem_ctx); " % entry
                 conf.env[static_env].append('%s' % entry)
-            decl_list = decl_list.rstrip()
             conf.DEFINE('static_decl_%s' % p, decl_list)
             conf.DEFINE('static_init_%s(mem_ctx)' % p, '{ %s_init((mem_ctx)); }' % '_init((mem_ctx));  '.join(static_list[p]))
         else:
