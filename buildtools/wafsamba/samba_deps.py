@@ -253,10 +253,8 @@ def add_init_functions(self):
                 cflags.append('-DSTATIC_%s_MODULES_PROTO=%s' % (m, proto))
         else:
             cflags.append('-DSTATIC_%s_MODULES=%s' % (m, ','.join(init_fn_list) + ',' + sentinel))
-            proto=''
-            for f in init_fn_list:
-                proto += '_MODULE_PROTO(%s)' % f
-            proto += "extern void __%s_dummy_module_proto(void)" % (m)
+            proto = "".join('_MODULE_PROTO(%s)' % f for f in init_fn_list) +\
+                    "extern void __%s_dummy_module_proto(void)" % (m)
             cflags.append('-DSTATIC_%s_MODULES_PROTO=%s' % (m, proto))
     self.cflags = cflags
 
