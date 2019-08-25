@@ -453,9 +453,7 @@ class ReplayContext(object):
         # lookup all the GPO DNs
         res = db.search(db.domain_dn(), scope=ldb.SCOPE_SUBTREE, attrs=['dn'],
                         expression='(objectclass=groupPolicyContainer)')
-        gpos_by_dn = ""
-        for msg in res:
-            gpos_by_dn += "(distinguishedName={0})".format(msg['dn'])
+        gpos_by_dn = "".join("(distinguishedName={0})".format(msg['dn']) for msg in res)
 
         # a search for the 'gPCFileSysPath' attribute is probably a GPO search
         # (as per the MS-GPOL spec) which searches for GPOs by DN
