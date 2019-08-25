@@ -72,9 +72,7 @@ def parse_sigs(sigs, abi_match):
 
 def save_sigs(sig_file, parsed_sigs):
     '''save ABI signatures to a file'''
-    sigs = ''
-    for s in sorted(parsed_sigs.keys()):
-        sigs += '%s: %s\n' % (s, parsed_sigs[s])
+    sigs = "".join('%s: %s\n' % (s, parsed_sigs[s]) for s in sorted(parsed_sigs.keys()))
     return samba_utils.save_file(sig_file, sigs, create_dir=True)
 
 
