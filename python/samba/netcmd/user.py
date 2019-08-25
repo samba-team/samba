@@ -1899,15 +1899,13 @@ samba-tool user syncpasswords --terminate \\
                 self.password_attrs = password_attrs
                 self.decrypt_samba_gpg = decrypt_samba_gpg
                 self.sync_command = sync_command
-                add_ldif  = "dn: %s\n" % self.cache_dn
-                add_ldif += "objectClass: userSyncPasswords\n"
-                add_ldif += "samdbUrl:: %s\n" % base64.b64encode(get_bytes(self.samdb_url)).decode('utf8')
-                add_ldif += "dirsyncFilter:: %s\n" % base64.b64encode(get_bytes(self.dirsync_filter)).decode('utf8')
-                for a in self.dirsync_attrs:
-                    add_ldif += "dirsyncAttribute:: %s\n" % base64.b64encode(get_bytes(a)).decode('utf8')
-                add_ldif += "dirsyncControl: %s\n" % self.dirsync_controls[0]
-                for a in self.password_attrs:
-                    add_ldif += "passwordAttribute:: %s\n" % base64.b64encode(get_bytes(a)).decode('utf8')
+                add_ldif = "dn: %s\n" % self.cache_dn +\
+                           "objectClass: userSyncPasswords\n" +\
+                           "samdbUrl:: %s\n" % base64.b64encode(get_bytes(self.samdb_url)).decode('utf8') +\
+                           "dirsyncFilter:: %s\n" % base64.b64encode(get_bytes(self.dirsync_filter)).decode('utf8') +\
+                           "".join("dirsyncAttribute:: %s\n" % base64.b64encode(get_bytes(a)).decode('utf8') for a in self.dirsync_attrs) +\
+                           "dirsyncControl: %s\n" % self.dirsync_controls[0] +\
+                           "".join("passwordAttribute:: %s\n" % base64.b64encode(get_bytes(a)).decode('utf8') for a in self.password_attrs)
                 if self.decrypt_samba_gpg:
                     add_ldif += "decryptSambaGPG: TRUE\n"
                 else:
@@ -2104,13 +2102,13 @@ samba-tool user syncpasswords --terminate \\
             if self.current_pid is not None:
                 log_msg("currentPid: %d\n" % self.current_pid)
 
-            modify_ldif = "dn: %s\n" % (self.cache_dn)
-            modify_ldif += "changetype: modify\n"
-            modify_ldif += "replace: currentPid\n"
+            modify_ldif = "dn: %s\n" % (self.cache_dn) +\
+                          "changetype: modify\n" +\
+                          "replace: currentPid\n"
             if self.current_pid is not None:
                 modify_ldif += "currentPid: %d\n" % (self.current_pid)
-            modify_ldif += "replace: currentTime\n"
-            modify_ldif += "currentTime: %s\n" % ldb.timestring(int(time.time()))
+            modify_ldif += "replace: currentTime\n" +\
+                           "currentTime: %s\n" % ldb.timestring(int(time.time()))
             self.cache.modify_ldif(modify_ldif)
             return
 
@@ -2122,12 +2120,12 @@ samba-tool user syncpasswords --terminate \\
             # This cookie can be extremely long
             # log_msg("dirsyncControls: %r\n" % self.dirsync_controls)
 
-            modify_ldif = "dn: %s\n" % (self.cache_dn)
-            modify_ldif += "changetype: modify\n"
-            modify_ldif += "replace: dirsyncControl\n"
-            modify_ldif += "dirsyncControl: %s\n" % (self.dirsync_controls[0])
-            modify_ldif += "replace: currentTime\n"
-            modify_ldif += "currentTime: %s\n" % ldb.timestring(int(time.time()))
+            modify_ldif = "dn: %s\n" % (self.cache_dn) +\
+                          "changetype: modify\n" +\
+                          "replace: dirsyncControl\n" +\
+                          "dirsyncControl: %s\n" % (self.dirsync_controls[0]) +\
+                          "replace: currentTime\n" +\
+                          "currentTime: %s\n" % ldb.timestring(int(time.time()))
             self.cache.modify_ldif(modify_ldif)
             return
 
@@ -2163,18 +2161,18 @@ samba-tool user syncpasswords --terminate \\
                                         expression="(objectClass=*)",
                                         attrs=["lastCookie"])
                 if len(res) == 0:
-                    add_ldif  = "dn: %s\n" % (dn)
-                    add_ldif += "objectClass: userCookie\n"
-                    add_ldif += "lastCookie: %s\n" % (lastCookie)
-                    add_ldif += "currentTime: %s\n" % ldb.timestring(int(time.time()))
+                    add_ldif  = "dn: %s\n" % (dn) +\
+                                "objectClass: userCookie\n" +\
+                                "lastCookie: %s\n" % (lastCookie) +\
+                                "currentTime: %s\n" % ldb.timestring(int(time.time()))
                     self.cache.add_ldif(add_ldif)
                 else:
-                    modify_ldif = "dn: %s\n" % (dn)
-                    modify_ldif += "changetype: modify\n"
-                    modify_ldif += "replace: lastCookie\n"
-                    modify_ldif += "lastCookie: %s\n" % (lastCookie)
-                    modify_ldif += "replace: currentTime\n"
-                    modify_ldif += "currentTime: %s\n" % ldb.timestring(int(time.time()))
+                    modify_ldif = "dn: %s\n" % (dn) +\
+                                  "changetype: modify\n" +\
+                                  "replace: lastCookie\n" +\
+                                  "lastCookie: %s\n" % (lastCookie) +\
+                                  "replace: currentTime\n" +\
+                                  "currentTime: %s\n" % ldb.timestring(int(time.time()))
                     self.cache.modify_ldif(modify_ldif)
                 self.cache.transaction_commit()
             except Exception as e:
