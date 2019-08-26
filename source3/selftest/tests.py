@@ -509,7 +509,8 @@ nbt = ["nbt.dgram"]
 libsmbclient = ["libsmbclient.version", "libsmbclient.initialize",
                 "libsmbclient.configuration", "libsmbclient.setConfiguration",
                 "libsmbclient.options", "libsmbclient.opendir",
-                "libsmbclient.list_shares", "libsmbclient.readdirplus"]
+                "libsmbclient.list_shares", "libsmbclient.readdirplus",
+		"libsmbclient.readdirplus_seek"]
 
 vfs = [
     "vfs.fruit",
