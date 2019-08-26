@@ -133,11 +133,31 @@ static int ldbtest_setup(void **state)
 {
 	struct ldbtest_ctx *test_ctx;
 	int ret;
+	/*
+	 * We need to to set GUID index mode as it's required now required
+	 * by LDB
+	 */
+	struct ldb_ldif *ldif;
+	const char *index_ldif =
+		"dn: @INDEXLIST\n"
+		"@IDXGUID: objectUUID\n"
+		"@IDX_DN_GUID: GUID\n"
+		"\n";
+	/*
+	 * Set the lmdb map size to 8Gb
+	 */
+	const char *options[] = {"lmdb_env_size:8589934592", NULL};
 
 	ldbtest_noconn_setup((void **) &test_ctx);
 
-	ret = ldb_connect(test_ctx->ldb, test_ctx->dbpath, 0, NULL);
+
+	ret = ldb_connect(test_ctx->ldb, test_ctx->dbpath, 0, options);
 	assert_int_equal(ret, 0);
+
+	while ((ldif = ldb_ldif_read_string(test_ctx->ldb, &index_ldif))) {
+		ret = ldb_add(test_ctx->ldb, ldif->msg);
+		assert_int_equal(ret, LDB_SUCCESS);
+	}
 
 	*state = test_ctx;
 	return 0;
@@ -171,12 +191,27 @@ static void test_db_size_gt_4GB(void **state)
 	memset(blob, 'x', MB);
 
 
+	/*
+	 * Write 6144 1Mb records to the database, this will require more than
+	 * 4GiB of disk space
+	 */
 	for (x = 0; x < 6144; x++) {
+		char uuid[24];
 		msg = ldb_msg_new(tmp_ctx);
 		assert_non_null(msg);
 
+		/*
+		 * Generate a unique dn for each record
+		 */
 		msg->dn = ldb_dn_new_fmt(msg, test_ctx->ldb, "dc=test%d", x);
 		assert_non_null(msg->dn);
+
+		/*
+		 * Generate a unique uuid for each added record
+		 */
+		sprintf(uuid, "000000000000%04d", x);
+		ret = ldb_msg_add_string(msg, "objectUUID", uuid);
+		assert_int_equal(ret, 0);
 
 		ldb_transaction_start(test_ctx->ldb);
 		ret = ldb_msg_add_string(msg, "blob", blob);
@@ -193,6 +228,9 @@ static void test_db_size_gt_4GB(void **state)
 		struct stat s;
 		ret = stat(test_ctx->dbfile, &s);
 		assert_int_equal(ret, 0);
+		/*
+		 * There should have been at least 6GiB written to disk
+		 */
 		assert_true(s.st_size > (6144LL * MB));
 	}
 }
