@@ -1672,34 +1672,42 @@ SMBC_telldir_ctx(SMBCCTX *context,
 
 /*
  * A routine to run down the list and see if the entry is OK
+ * Modifies the dir list and the dirplus list (if it exists)
+ * to point at the correct next entry on success.
  */
 
-static struct smbc_dir_list *
-check_dir_ent(struct smbc_dir_list *list,
-              struct smbc_dirent *dirent)
+static bool update_dir_ents(SMBCFILE *dir, struct smbc_dirent *dirent)
 {
+	struct smbc_dir_list *tmp_dir = dir->dir_list;
+	struct smbc_dirplus_list *tmp_dirplus = dir->dirplus_list;
 
-	/* Run down the list looking for what we want */
+	/*
+	 * Run down the list looking for what we want.
+	 * If we're enumerating files both dir_list
+	 * and dirplus_list contain the same entry
+	 * list, as they were seeded from the same
+	 * cli_list callback.
+	 *
+	 * If we're enumerating servers then
+	 * dirplus_list will be NULL, so don't
+	 * update in that case.
+	 */
 
-	if (dirent) {
-
-		struct smbc_dir_list *tmp = list;
-
-		while (tmp) {
-
-			if (tmp->dirent == dirent)
-				return tmp;
-
-			tmp = tmp->next;
-
+	while (tmp_dir != NULL) {
+		if (tmp_dir->dirent == dirent) {
+			dir->dir_next = tmp_dir;
+			if (tmp_dirplus != NULL) {
+				dir->dirplus_next = tmp_dirplus;
+			}
+			return true;
 		}
-
+		tmp_dir = tmp_dir->next;
+		if (tmp_dirplus != NULL) {
+			tmp_dirplus = tmp_dirplus->next;
+		}
 	}
-
-	return NULL;  /* Not found, or an error */
-
+	return false;
 }
-
 
 /*
  * Routine to seek on a directory
@@ -1712,8 +1720,8 @@ SMBC_lseekdir_ctx(SMBCCTX *context,
 {
 	long int l_offset = offset;  /* Handle problems of size */
 	struct smbc_dirent *dirent = (struct smbc_dirent *)l_offset;
-	struct smbc_dir_list *list_ent = (struct smbc_dir_list *)NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
+	bool ok;
 
 	if (!context || !context->internal->initialized) {
 
@@ -1736,6 +1744,10 @@ SMBC_lseekdir_ctx(SMBCCTX *context,
 	if (dirent == NULL) {  /* Seek to the begining of the list */
 
 		dir->dir_next = dir->dir_list;
+
+		/* Do the same for dirplus. */
+		dir->dirplus_next = dir->dirplus_list;
+
 		TALLOC_FREE(frame);
 		return 0;
 
@@ -1743,20 +1755,25 @@ SMBC_lseekdir_ctx(SMBCCTX *context,
 
         if (offset == -1) {     /* Seek to the end of the list */
                 dir->dir_next = NULL;
+
+		/* Do the same for dirplus. */
+		dir->dirplus_next = NULL;
+
 		TALLOC_FREE(frame);
                 return 0;
         }
 
-	/* Now, run down the list and make sure that the entry is OK       */
-	/* This may need to be changed if we change the format of the list */
+        /*
+         * Run down the list and make sure that the entry is OK.
+         * Update the position of both dir and dirplus lists.
+         */
 
-	if ((list_ent = check_dir_ent(dir->dir_list, dirent)) == NULL) {
+	ok = update_dir_ents(dir, dirent);
+	if (!ok) {
 		errno = EINVAL;   /* Bad entry */
 		TALLOC_FREE(frame);
 		return -1;
 	}
-
-	dir->dir_next = list_ent;
 
 	TALLOC_FREE(frame);
 	return 0;
