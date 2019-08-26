@@ -386,6 +386,27 @@ fail:
 	return NULL;
 }
 
+static void remove_stale_share_mode_entries(struct share_mode_data *d)
+{
+	uint32_t i;
+
+	i = 0;
+	while (i < d->num_share_modes) {
+		if (d->share_modes[i].stale) {
+			struct share_mode_entry *m = d->share_modes;
+			m[i] = m[d->num_share_modes-1];
+			d->num_share_modes -= 1;
+			continue;
+		}
+		i += 1;
+	}
+
+	if (d->num_share_modes == 0) {
+		TALLOC_FREE(d->delete_tokens);
+		d->num_delete_tokens = 0;
+	}
+}
+
 /*******************************************************************
  If modified, store the share_mode_data back into the database.
 ********************************************************************/

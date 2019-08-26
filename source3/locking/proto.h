@@ -187,7 +187,6 @@ bool reset_share_mode_entry(
 NTSTATUS remove_lease_if_stale(struct share_mode_lock *lck,
 			       const struct GUID *client_guid,
 			       const struct smb2_lease_key *lease_key);
-void remove_stale_share_mode_entries(struct share_mode_data *d);
 bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp);
 bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 				  struct files_struct *fsp);
