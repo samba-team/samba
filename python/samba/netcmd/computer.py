@@ -527,6 +527,9 @@ class cmd_computer_list(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                type=str, metavar="URL", dest="H"),
+        Option("-b", "--base-dn",
+               help="Specify base DN to use",
+               type=str),
         Option("--full-dn", dest="full_dn",
                default=False,
                action="store_true",
@@ -544,6 +547,7 @@ class cmd_computer_list(Command):
             credopts=None,
             versionopts=None,
             H=None,
+            base_dn=None,
             full_dn=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -553,8 +557,12 @@ class cmd_computer_list(Command):
 
         filter = "(sAMAccountType=%u)" % (dsdb.ATYPE_WORKSTATION_TRUST)
 
-        domain_dn = samdb.domain_dn()
-        res = samdb.search(domain_dn, scope=ldb.SCOPE_SUBTREE,
+        search_dn = samdb.domain_dn()
+        if base_dn:
+            search_dn = samdb.normalize_dn_in_domain(base_dn)
+
+        res = samdb.search(search_dn,
+                           scope=ldb.SCOPE_SUBTREE,
                            expression=filter,
                            attrs=["samaccountname"])
         if (len(res) == 0):
