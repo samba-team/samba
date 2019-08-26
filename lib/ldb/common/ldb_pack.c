@@ -1256,5 +1256,6 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 
 	return 0;
 failed:
+	TALLOC_FREE(filtered_msg->elements);
 	return -1;
 }

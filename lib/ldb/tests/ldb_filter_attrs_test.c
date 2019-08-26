@@ -384,6 +384,7 @@ static void test_filter_attrs_two_dup_attr_matched_one_attr(void **state)
 
 	/* This should fail the pidgenhole test */
 	assert_int_equal(ret, -1);
+	assert_null(filtered_msg->elements);
 }
 
 /*
@@ -772,6 +773,7 @@ static void test_filter_attrs_one_attr_matched_star_no_dn(void **state)
 			       attrs,
 			       filtered_msg);
 	assert_int_equal(ret, -1);
+	assert_null(filtered_msg->elements);
 }
 
 /*
