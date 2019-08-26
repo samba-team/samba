@@ -512,6 +512,11 @@ def build(bld):
                          deps='cmocka ldb ldb_tdb_err_map',
                          install=False)
 
+        bld.SAMBA_BINARY('ldb_filter_attrs_test',
+                         source='tests/ldb_filter_attrs_test.c',
+                         deps='cmocka ldb ldb_tdb_err_map',
+                         install=False)
+
         bld.SAMBA_BINARY('ldb_key_value_sub_txn_tdb_test',
                          bld.SUBDIR('ldb_key_value',
                              '''ldb_kv_search.c
