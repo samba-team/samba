@@ -17,6 +17,28 @@ NEW FEATURES/CHANGES
 ====================
 
 
+GnuTLS 3.4.7 required
+---------------------
+
+Samba is making efforts to remove in-tree cryptographic functionality,
+and to instead rely on externally maintained libraries.  To this end,
+Samba has chosen GnuTLS as our standard cryptographic provider.
+
+Samba now requires GnuTLS 3.4.7 to be installed (including development
+headers at build time) for all configurations, not just the Samba AD
+DC.
+
+NOTE WELL: The use of GnuTLS means that Samba will honour the
+system-wide 'FIPS mode' (a reference to the US FIPS-140 cryptographic
+standard) and so will not operate in many still common situations if
+this system-wide parameter is in effect, as many of our protocols rely
+on outdated cryptography.
+
+A future Samba version will mitigate this to some extent where good
+cryptography effectively wraps bad cryptography, but for now that above
+applies.
+
+
 REMOVED FEATURES
 ================
 
