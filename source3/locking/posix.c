@@ -550,53 +550,22 @@ static void add_fd_to_close_entry(const files_struct *fsp)
 		  fsp_str_dbg(fsp));
 }
 
-/****************************************************************************
- Remove all fd entries for a specific dev/inode pair from the tdb.
-****************************************************************************/
-
-static void delete_close_entries(const files_struct *fsp)
+static void fd_close_posix_fn(
+	struct db_record *rec, void *private_data)
 {
-	struct db_record *rec;
+	TDB_DATA data = dbwrap_record_get_value(rec);
+	size_t num_fds, i;
 
-	rec = dbwrap_fetch_locked(
-		posix_pending_close_db, talloc_tos(),
-		fd_array_key_fsp(fsp));
+	SMB_ASSERT((data.dsize % sizeof(int)) == 0);
+	num_fds = data.dsize / sizeof(int);
 
-	SMB_ASSERT(rec != NULL);
+	for (i=0; i<num_fds; i++) {
+		int fd;
+		memcpy(&fd, data.dptr, sizeof(int));
+		close(fd);
+		data.dptr += sizeof(int);
+	}
 	dbwrap_record_delete(rec);
-	TALLOC_FREE(rec);
-}
-
-/****************************************************************************
- Get the array of POSIX pending close records for an open fsp. Returns number
- of entries.
-****************************************************************************/
-
-static size_t get_posix_pending_close_entries(TALLOC_CTX *mem_ctx,
-					const files_struct *fsp,
-					int **entries)
-{
-	TDB_DATA dbuf;
-	NTSTATUS status;
-
-	status = dbwrap_fetch(
-		posix_pending_close_db, mem_ctx, fd_array_key_fsp(fsp),
-		&dbuf);
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
-		*entries = NULL;
-		return 0;
-	}
-
-	SMB_ASSERT(NT_STATUS_IS_OK(status));
-
-	if (dbuf.dsize == 0) {
-		*entries = NULL;
-		return 0;
-	}
-
-	*entries = (int *)dbuf.dptr;
-	return (size_t)(dbuf.dsize / sizeof(int));
 }
 
 /****************************************************************************
@@ -609,8 +578,7 @@ int fd_close_posix(const struct files_struct *fsp)
 {
 	int saved_errno = 0;
 	int ret;
-	int *fd_array = NULL;
-	size_t count, i;
+	NTSTATUS status;
 
 	if (!lp_locking(fsp->conn->params) ||
 	    !lp_posix_locking(fsp->conn->params) ||
@@ -637,32 +605,15 @@ int fd_close_posix(const struct files_struct *fsp)
 		return 0;
 	}
 
-	/*
-	 * No outstanding locks. Get the pending close fd's
-	 * from the db and close them all.
-	 */
-
-	count = get_posix_pending_close_entries(talloc_tos(), fsp, &fd_array);
-
-	if (count) {
-		DEBUG(10,("fd_close_posix: doing close on %u fd's.\n",
-			  (unsigned int)count));
-
-		for(i = 0; i < count; i++) {
-			if (close(fd_array[i]) == -1) {
-				saved_errno = errno;
-			}
-		}
-
-		/*
-		 * Delete all fd's stored in the db
-		 * for this dev/inode pair.
-		 */
-
-		delete_close_entries(fsp);
+	status = dbwrap_do_locked(
+		posix_pending_close_db,
+		fd_array_key_fsp(fsp),
+		fd_close_posix_fn,
+		NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("dbwrap_do_locked failed: %s\n",
+			    nt_errstr(status));
 	}
-
-	TALLOC_FREE(fd_array);
 
 	/* Don't need a lock ref count on this dev/ino anymore. */
 	delete_lock_ref_count(fsp);
