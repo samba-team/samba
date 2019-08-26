@@ -1163,7 +1163,10 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 	} else if (i == 0) {
 		return 0;
 
-	/* Otherwise we are copying at most as many element as we have attributes */
+	/*
+	 * Otherwise we are copying at most as many elements as we
+	 * have attributes
+	 */
 	} else {
 		elements_size = i;
 	}
@@ -1177,7 +1180,12 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 
 	for (i = 0; i < msg->num_elements; i++) {
 		struct ldb_message_element *el = &msg->elements[i];
-		struct ldb_message_element *el2 = &filtered_msg->elements[num_elements];
+
+		/*
+		 * el2 is assigned after the Pigeonhole principle
+		 * check below for clarity
+		 */
+		struct ldb_message_element *el2 = NULL;
 		unsigned int j;
 
 		if (keep_all == false) {
@@ -1193,6 +1201,18 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 				continue;
 			}
 		}
+
+		/*
+		 * Pigeonhole principle: we can't have more elements
+		 * than the number of attributes if they are unique in
+		 * the DB.
+		 */
+		if (num_elements >= elements_size) {
+			goto failed;
+		}
+
+		el2 = &filtered_msg->elements[num_elements];
+
 		*el2 = *el;
 		el2->name = talloc_strdup(filtered_msg->elements,
 					  el->name);
@@ -1211,13 +1231,6 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 			}
 		}
 		num_elements++;
-
-		/* Pidginhole principle: we can't have more elements
-		 * than the number of attributes if they are unique in
-		 * the DB */
-		if (num_elements > elements_size) {
-			goto failed;
-		}
 	}
 
 	filtered_msg->num_elements = num_elements;
