@@ -1357,6 +1357,17 @@ SMBC_getdents_ctx(SMBCCTX *context,
 		}
 
 		dir->dir_next = dirlist = dirlist -> next;
+
+		/*
+		 * If we are returning file entries, we
+		 * have a duplicate list in dirplus.
+		 *
+		 * Update dirplus_next also so readdir and
+		 * readdirplus are kept in sync.
+		 */
+		if (dir->dirplus_list != NULL) {
+			dir->dirplus_next = dir->dirplus_next->next;
+		}
 	}
 
 	TALLOC_FREE(frame);
