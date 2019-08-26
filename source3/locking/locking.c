@@ -715,7 +715,7 @@ NTSTATUS remove_lease_if_stale(const struct share_mode_data *d,
  * share mode that is being marked stale or deleted.
  */
 
-static void remove_share_mode_lease(struct share_mode_data *d,
+static void remove_share_mode_lease(struct share_mode_lock *lck,
 				    struct share_mode_entry *e)
 {
 	uint16_t op_type;
@@ -723,13 +723,13 @@ static void remove_share_mode_lease(struct share_mode_data *d,
 	op_type = e->op_type;
 	e->op_type = NO_OPLOCK;
 
-	d->modified = true;
+	lck->data->modified = true;
 
 	if (op_type != LEASE_OPLOCK) {
 		return;
 	}
 
-	remove_lease_if_stale(d, &e->client_guid, &e->lease_key);
+	remove_lease_if_stale(lck->data, &e->client_guid, &e->lease_key);
 }
 
 bool share_entry_stale_pid(struct share_mode_entry *e)
@@ -886,7 +886,7 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 	if (e == NULL) {
 		return False;
 	}
-	remove_share_mode_lease(lck->data, e);
+	remove_share_mode_lease(lck, e);
 	*e = lck->data->share_modes[lck->data->num_share_modes-1];
 	lck->data->num_share_modes -= 1;
 	return True;
@@ -936,7 +936,6 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 
 bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
-	struct share_mode_data *d = lck->data;
 	struct share_mode_entry *e;
 
 	e = find_share_mode_entry(
@@ -947,7 +946,7 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 		return False;
 	}
 
-	remove_share_mode_lease(d, e);
+	remove_share_mode_lease(lck, e);
 	return true;
 }
 
