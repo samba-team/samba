@@ -1251,8 +1251,7 @@ int ldb_filter_attrs(struct ldb_context *ldb,
 			goto failed;
 		}
 	} else {
-		talloc_free(filtered_msg->elements);
-		filtered_msg->elements = NULL;
+		TALLOC_FREE(filtered_msg->elements);
 	}
 
 	return 0;
