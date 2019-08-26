@@ -48,6 +48,7 @@
 #include "util_tdb.h"
 #include "../librpc/gen_ndr/ndr_open_files.h"
 #include "librpc/gen_ndr/ndr_file_id.h"
+#include "librpc/gen_ndr/ndr_leases_db.h"
 #include "locking/leases_db.h"
 
 #undef DBGC_CLASS
@@ -1368,71 +1369,88 @@ bool share_mode_forall_entries(
  * Walk share mode entries, looking at every lease only once
  */
 
+struct share_mode_forall_leases_state {
+	TALLOC_CTX *mem_ctx;
+	struct leases_db_key *leases;
+	bool (*fn)(struct share_mode_entry *e,
+		   void *private_data);
+	void *private_data;
+	NTSTATUS status;
+};
+
+static bool share_mode_forall_leases_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct share_mode_forall_leases_state *state = private_data;
+	struct leases_db_key *leases = state->leases;
+	size_t i, num_leases;
+	bool stop;
+
+	if (e->op_type != LEASE_OPLOCK) {
+		return false;
+	}
+
+	num_leases = talloc_array_length(leases);
+
+	for (i=0; i<num_leases; i++) {
+		struct leases_db_key *l = &leases[i];
+		bool same = smb2_lease_equal(
+			&e->client_guid,
+			&e->lease_key,
+			&l->client_guid,
+			&l->lease_key);
+		if (same) {
+			return false;
+		}
+	}
+
+	leases = talloc_realloc(
+		state->mem_ctx,
+		leases,
+		struct leases_db_key,
+		num_leases+1);
+	if (leases == NULL) {
+		state->status = NT_STATUS_NO_MEMORY;
+		return true;
+	}
+	leases[num_leases] = (struct leases_db_key) {
+		.client_guid = e->client_guid,
+		.lease_key = e->lease_key,
+	};
+	state->leases = leases;
+
+	stop = state->fn(e, state->private_data);
+	return stop;
+}
+
 bool share_mode_forall_leases(
 	struct share_mode_lock *lck,
 	bool (*fn)(struct share_mode_entry *e,
 		   void *private_data),
 	void *private_data)
 {
-	struct share_mode_data *d = lck->data;
-	uint32_t *leases = NULL;
-	uint32_t num_leases = 0;
-	uint32_t i;
+	struct share_mode_forall_leases_state state = {
+		.mem_ctx = talloc_tos(),
+		.fn = fn,
+		.private_data = private_data
+	};
+	bool ok;
 
-	leases = talloc_array(talloc_tos(), uint32_t, d->num_share_modes);
-	if (leases == NULL) {
+	ok = share_mode_forall_entries(
+		lck, share_mode_forall_leases_fn, &state);
+	TALLOC_FREE(state.leases);
+	if (!ok) {
+		DBG_DEBUG("share_mode_forall_entries failed\n");
 		return false;
 	}
 
-	for (i=0; i<d->num_share_modes; i++) {
-		struct share_mode_entry *e = &d->share_modes[i];
-		uint32_t j;
-		bool ok, stop;
-
-		ok = is_valid_share_mode_entry(e);
-		if (!ok) {
-			continue;
-		}
-
-		if (e->op_type != LEASE_OPLOCK) {
-			continue;
-		}
-
-		/*
-		 * See if we have already seen "e"'s lease. This is
-		 * O(n^2). If we sort "leases", we can get this down
-		 * to O(n).
-		 */
-
-		for (j=0; j<num_leases; j++) {
-			uint32_t idx = leases[j];
-			struct share_mode_entry *l = &d->share_modes[idx];
-
-			if (smb2_lease_equal(&e->client_guid,
-					     &e->lease_key,
-					     &l->client_guid,
-					     &l->lease_key)) {
-				break;
-			}
-		}
-		if (j < num_leases) {
-			/*
-			 * Don't look at "e"'s lease, we've already
-			 * seen it.
-			 */
-			continue;
-		}
-
-		stop = fn(e, private_data);
-		if (stop) {
-			TALLOC_FREE(leases);
-			return true;
-		}
-
-		leases[num_leases] = i;
-		num_leases += 1;
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_DEBUG("share_mode_forall_leases_fn returned %s\n",
+			  nt_errstr(state.status));
+		return false;
 	}
 
-	TALLOC_FREE(leases);
 	return true;
 }
