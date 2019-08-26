@@ -674,10 +674,11 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 	return (num_props != 0);
 }
 
-NTSTATUS remove_lease_if_stale(const struct share_mode_data *d,
+NTSTATUS remove_lease_if_stale(struct share_mode_lock *lck,
 			       const struct GUID *client_guid,
 			       const struct smb2_lease_key *lease_key)
 {
+	struct share_mode_data *d = lck->data;
 	uint32_t i;
 	NTSTATUS status;
 
@@ -729,7 +730,7 @@ static void remove_share_mode_lease(struct share_mode_lock *lck,
 		return;
 	}
 
-	remove_lease_if_stale(lck->data, &e->client_guid, &e->lease_key);
+	remove_lease_if_stale(lck, &e->client_guid, &e->lease_key);
 }
 
 bool share_entry_stale_pid(struct share_mode_entry *e)

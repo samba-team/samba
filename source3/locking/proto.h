@@ -184,7 +184,7 @@ bool reset_share_mode_entry(
 	struct server_id new_pid,
 	uint64_t new_mid,
 	uint64_t new_share_file_id);
-NTSTATUS remove_lease_if_stale(const struct share_mode_data *d,
+NTSTATUS remove_lease_if_stale(struct share_mode_lock *lck,
 			       const struct GUID *client_guid,
 			       const struct smb2_lease_key *lease_key);
 void remove_stale_share_mode_entries(struct share_mode_data *d);

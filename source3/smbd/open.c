@@ -3638,7 +3638,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (!ok) {
 		if (fsp->oplock_type == LEASE_OPLOCK) {
 			status = remove_lease_if_stale(
-				lck->data,
+				lck,
 				fsp_client_guid(fsp),
 				&fsp->lease->lease.lease_key);
 			if (!NT_STATUS_IS_OK(status)) {
