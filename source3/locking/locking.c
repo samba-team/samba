@@ -889,7 +889,6 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 	remove_share_mode_lease(lck->data, e);
 	*e = lck->data->share_modes[lck->data->num_share_modes-1];
 	lck->data->num_share_modes -= 1;
-	lck->data->modified = True;
 	return True;
 }
 
@@ -949,7 +948,6 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 	}
 
 	remove_share_mode_lease(d, e);
-	d->modified = True;
 	return true;
 }
 
