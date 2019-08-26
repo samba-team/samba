@@ -674,33 +674,55 @@ bool is_valid_share_mode_entry(const struct share_mode_entry *e)
 	return (num_props != 0);
 }
 
+struct find_lease_ref_state {
+	const struct GUID *client_guid;
+	const struct smb2_lease_key *lease_key;
+	bool found_same;
+};
+
+static bool find_lease_ref_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct find_lease_ref_state *state = private_data;
+
+	if (e->stale) {
+		return false;
+	}
+	if (e->op_type != LEASE_OPLOCK) {
+		return false;
+	}
+
+	state->found_same = smb2_lease_equal(
+		&e->client_guid,
+		&e->lease_key,
+		state->client_guid,
+		state->lease_key);
+	/*
+	 * If we found a lease reference, look no further (i.e. return true)
+	 */
+	return state->found_same;
+}
+
 NTSTATUS remove_lease_if_stale(struct share_mode_lock *lck,
 			       const struct GUID *client_guid,
 			       const struct smb2_lease_key *lease_key)
 {
+	struct find_lease_ref_state state = {
+		.client_guid = client_guid, .lease_key = lease_key,
+	};
 	struct share_mode_data *d = lck->data;
-	uint32_t i;
 	NTSTATUS status;
+	bool ok;
 
-	for (i=0; i<d->num_share_modes; i++) {
-		const struct share_mode_entry *e = &d->share_modes[i];
-		bool same;
+	ok = share_mode_forall_entries(lck, find_lease_ref_fn, &state);
+	if (!ok) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
-		if (e->stale) {
-			continue;
-		}
-		if (e->op_type != LEASE_OPLOCK) {
-			continue;
-		}
-
-		same = smb2_lease_equal(
-			&e->client_guid,
-			&e->lease_key,
-			client_guid,
-			lease_key);
-		if (same) {
-			return NT_STATUS_RESOURCE_IN_USE;
-		}
+	if (state.found_same) {
+		return NT_STATUS_RESOURCE_IN_USE;
 	}
 
 	status = leases_db_del(client_guid, lease_key, &d->id);
