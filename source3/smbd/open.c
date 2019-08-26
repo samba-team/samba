@@ -1897,8 +1897,6 @@ static bool validate_oplock_types(struct share_mode_lock *lck)
 		return false;
 	}
 
-	remove_stale_share_mode_entries(lck->data);
-
 	if ((state.batch || state.ex_or_batch) &&
 	    (state.num_non_stat_opens != 1)) {
 		DBG_WARNING("got batch (%d) or ex (%d) non-exclusively "
