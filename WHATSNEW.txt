@@ -16,6 +16,16 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
+Python 3.5 Required
+-------------------
+
+Samba's minimum runtime requirement for python was raised to Python
+3.4 with samba 4.11.  Samba 4.12 raises this minimum version to Python
+3.5 both to access new features and because this is the oldest version
+we test with in our CI infrastructure.
+
+(Build time support for the file server with Python 2.6 has not
+changed)
 
 GnuTLS 3.4.7 required
 ---------------------
