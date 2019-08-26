@@ -1230,6 +1230,17 @@ SMBC_readdirplus_ctx(SMBCCTX *context,
 	}
 	dir->dirplus_next = dir->dirplus_next->next;
 
+	/*
+	 * If we are returning file entries, we
+	 * have a duplicate list in dir_list
+	 *
+	 * Update dir_next also so readdir and
+	 * readdirplus are kept in sync.
+	 */
+	if (dir->dir_list) {
+		dir->dir_next = dir->dir_next->next;
+	}
+
 	TALLOC_FREE(frame);
 	return smb_finfo;
 }
