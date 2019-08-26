@@ -481,6 +481,9 @@ class cmd_user_list(Command):
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
+        Option("-b", "--base-dn",
+               help="Specify base DN to use",
+               type=str),
         Option("--full-dn", dest="full_dn",
                default=False,
                action='store_true',
@@ -498,6 +501,7 @@ class cmd_user_list(Command):
             credopts=None,
             versionopts=None,
             H=None,
+            base_dn=None,
             full_dn=False):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -505,8 +509,12 @@ class cmd_user_list(Command):
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
 
-        domain_dn = samdb.domain_dn()
-        res = samdb.search(domain_dn, scope=ldb.SCOPE_SUBTREE,
+        search_dn = samdb.domain_dn()
+        if base_dn:
+            search_dn = samdb.normalize_dn_in_domain(base_dn)
+
+        res = samdb.search(search_dn,
+                           scope=ldb.SCOPE_SUBTREE,
                            expression=("(&(objectClass=user)(userAccountControl:%s:=%u))"
                                        % (ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT)),
                            attrs=["samaccountname"])
