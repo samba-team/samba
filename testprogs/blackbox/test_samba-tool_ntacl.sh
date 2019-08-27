@@ -2,11 +2,9 @@
 # Blackbox tests for samba-tool ntacl get/set on member server
 # Copyright (C) 2018 Björn Baumbach <bb@sernet.de>
 
-if [ $# -lt 1 ]; then
-cat <<EOF
-Usage: test_net_ads_dns.sh PREFIX
-EOF
-exit 1;
+if [ $# -ne 2 ]; then
+	echo "Usage: test_samba-tool_ntacl.sh PREFIX DOMSID"
+	exit 1
 fi
 
 PREFIX=$1
