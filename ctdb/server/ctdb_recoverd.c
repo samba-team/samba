@@ -2990,7 +2990,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 			continue;
 		}
 		if (! ctdb_node_has_capabilities(rec->caps,
-						 ctdb->nodes[j]->pnn,
+						 nodemap->nodes[j].pnn,
 						 CTDB_CAP_LMASTER)) {
 			continue;
 		}
