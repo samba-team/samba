@@ -209,6 +209,26 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             found = self.assertMatch(out, str(name),
                                      "computer '%s' not found" % name)
 
+    def test_list_base_dn(self):
+        base_dn = str(self.samdb.domain_dn())
+        (result, out, err) = self.runsubcmd("computer", "list", "-b", base_dn)
+        self.assertCmdSuccess(result, out, err, "Error running list")
+
+        search_filter = ("(sAMAccountType=%u)" %
+                         dsdb.ATYPE_WORKSTATION_TRUST)
+
+        computerlist = self.samdb.search(base=base_dn,
+                                         scope=ldb.SCOPE_SUBTREE,
+                                         expression=search_filter,
+                                         attrs=["name"])
+
+        self.assertTrue(len(computerlist) > 0, "no computers found in samdb")
+
+        for computerobj in computerlist:
+            name = computerobj.get("name", idx=0)
+            found = self.assertMatch(out, str(name),
+                                     "computer '%s' not found" % name)
+
     def test_move(self):
         parentou = self._randomOU({"name": "parentOU"})
         (result, out, err) = self._create_ou(parentou)
