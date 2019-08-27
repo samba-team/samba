@@ -1,4 +1,82 @@
                    ==============================
+                   Release Notes for Samba 4.9.12
+                           August 27, 2019
+                   ==============================
+
+
+This is the latest stable release of the Samba 4.9 release series.
+
+
+Changes since 4.9.11:
+---------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 13972: vfs:glusterfs_fuse: Different Device Id for GlusterFS FUSE mount
+     is causing data loss in CTDB cluster.
+   * BUG 14010: vfs:glusterfs_fuse: Unable to create or rename file/directory
+     inside shares configured with vfs_glusterfs_fuse module.
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 13973: samba-tool: Add 'import samba.drs_utils' to fsmo.py.
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 14008: dsdb: Handle DB corner-case where PSO container doesn't exist.
+   * BUG 14021: s4/libnet: Fix joining a Windows pre-2008R2 DC.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14015: vfs_catia: Pass stat info to synthetic_smb_fname().
+   * BUG 14033: Samba 4.9 doesn't build with libtevent 0.9.39.
+
+o  Alexander Bokovoy <ab@samba.org>
+   * BUG 14091: lookup_name: Allow own domain lookup when flags == 0.
+
+o  Isaac Boukris <iboukris@gmail.com>
+   * BUG 11362: Add PrimaryGroupId to group array in DC response.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 14035: vfs_glusterfs: Enable profiling for file system operations.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 13915: DEBUGC and DEBUGADDC doesn't print into a class specific log
+     file. 
+   * BUG 13949: Request to keep deprecated option "server schannel", VMWare
+     Quickprep requires "auto".
+   * BUG 13967: dbcheck: Fallback to the default tombstoneLifetime of 180 days.
+   * BUG 13969: dnsProperty fails to decode values from older Windows versions.
+   * BUG 13973: samba-tool: fsmo transfer is not reliable for the dns related
+     partitions role transfer.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 14032: vfs_gpfs: Fix NFSv4 ACL for owner with IDMAP_TYPE_BOTH.
+
+o  Rafael David Tinoco <rafaeldtinoco@ubuntu.com>
+   * BUG 14017: ctdb-config: Depend on /etc/ctdb/nodes file.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.9.11
                             July 03, 2019
                    ==============================
@@ -41,8 +119,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.9.10
