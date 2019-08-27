@@ -204,6 +204,25 @@ class ContactCmdTestCase(SambaToolCmdTest):
             self.assertMatch(out, str(contactobj.dn),
                              "contact '%s' not found" % str(contactobj.dn))
 
+    def test_list_base_dn(self):
+        base_dn = str(self.samdb.domain_dn())
+        (result, out, err) = self.runsubcmd("contact", "list",
+                                            "-b", base_dn)
+        self.assertCmdSuccess(result, out, err, "Error running list")
+
+        search_filter = "(objectClass=contact)"
+        contactlist = self.samdb.search(base=base_dn,
+                                         scope=ldb.SCOPE_SUBTREE,
+                                         expression=search_filter,
+                                         attrs=["name"])
+
+        self.assertTrue(len(contactlist) > 0, "no contacts found in samdb")
+
+        for contactobj in contactlist:
+            name = contactobj.get("name", idx=0)
+            self.assertMatch(out, str(name),
+                             "contact '%s' not found" % name)
+
     def test_move(self):
         parentou = self._randomOU({"name": "parentOU"})
         (result, out, err) = self._create_ou(parentou)
