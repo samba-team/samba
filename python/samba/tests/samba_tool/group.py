@@ -214,6 +214,29 @@ class GroupCmdTestCase(SambaToolCmdTest):
             name = str(groupobj.get("samAccountName", idx=0))
             found = self.assertMatch(out, name, "group '%s' not found" % name)
 
+
+    def test_listmembers_full_dn(self):
+        (result, out, err) = self.runsubcmd("group", "listmembers", "Domain Users",
+                                            "--full-dn",
+                                            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running listmembers")
+
+        search_filter = "(|(primaryGroupID=513)(memberOf=CN=Domain Users,CN=Users,%s))" % self.samdb.domain_dn()
+
+        grouplist = self.samdb.search(base=self.samdb.domain_dn(),
+                                      scope=ldb.SCOPE_SUBTREE,
+                                      expression=search_filter,
+                                      attrs=["dn"])
+
+        self.assertTrue(len(grouplist) > 0, "no groups found in samdb")
+
+        for groupobj in grouplist:
+            name = str(groupobj.get("dn", idx=0))
+            found = self.assertMatch(out, name, "group '%s' not found" % name)
+
+
     def test_move(self):
         full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest"))
         (result, out, err) = self.runsubcmd("ou", "create", full_ou_dn)
