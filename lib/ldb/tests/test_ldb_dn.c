@@ -113,9 +113,41 @@ struct explode_test {
 	bool special;
 	bool invalid;
 	const char *linearized;
-	const char *ext_linearized;
+	const char *ext_linearized_1;
 	bool explode_result;
 };
+
+static int extended_dn_read_ID(struct ldb_context *ldb, void *mem_ctx,
+			       const struct ldb_val *in, struct ldb_val *out)
+{
+
+	/* Allow to check we can cope with validity checks */
+	if (in->length != 4) {
+		return -1;
+	}
+
+	*out = *in;
+	out->data = talloc_memdup(mem_ctx, in->data, in->length);
+	if (out->data == NULL) {
+		return -1;
+	}
+
+	return 0;
+}
+
+/* write out (resued for both HEX and clear for now) */
+static int extended_dn_write_ID(struct ldb_context *ldb, void *mem_ctx,
+				 const struct ldb_val *in, struct ldb_val *out)
+{
+	*out = *in;
+
+	out->data = talloc_memdup(mem_ctx, in->data, in->length);
+	if (out->data == NULL) {
+		return -1;
+	}
+	return 0;
+}
+
 
 static void test_ldb_dn_explode(void **state)
 {
@@ -130,9 +162,22 @@ static void test_ldb_dn_explode(void **state)
 		{"<><", 0, 0, false, false, "", NULL, true},
 		{"<><>", 0, 0, false, false, "", NULL, true},
 		{"A=B,C=D", 2, 0, false, false, "A=B,C=D", "A=B,C=D", true},
+		{"<X=Y>A=B,C=D", -1, -1, false, false, "", NULL, false},
+		{"<X=Y>;A=B,C=D", -1, -1, false, false, "A=B,C=D", NULL, false},
+		{"<ID=ABC>;A=B,C=D", -1, -1, false, true, "A=B,C=D", NULL, false},
+		{"<ID=ABCD>;A=B,C=D", 2, 1, false, false, "A=B,C=D", "<ID=ABCD>;A=B,C=D", true},
 		{"x=🔥", 1, 0, false, false, "x=🔥", "x=🔥", true},
+		{"@FOO", 0, 0, true, false, "@FOO", "@FOO", true},
 	};
 
+	struct ldb_dn_extended_syntax syntax = {
+		.name		  = "ID",
+		.read_fn          = extended_dn_read_ID,
+		.write_clear_fn   = extended_dn_write_ID,
+		.write_hex_fn     = extended_dn_write_ID
+	};
+
+	ldb_dn_extended_add_syntax(ldb, 0, &syntax);
 
 	for (i = 0; i < ARRAY_SIZE(tests); i++) {
 		bool result;
@@ -152,11 +197,11 @@ static void test_ldb_dn_explode(void **state)
 
 		ext_linear = ldb_dn_get_extended_linearized(ldb, dn, 1);
 		assert_true((ext_linear == NULL) ==
-			    (tests[i].ext_linearized == NULL));
+			    (tests[i].ext_linearized_1 == NULL));
 
-		if (tests[i].ext_linearized != NULL) {
+		if (tests[i].ext_linearized_1 != NULL) {
 			assert_string_equal(ext_linear,
-					    tests[i].ext_linearized);
+					    tests[i].ext_linearized_1);
 		}
 		assert_true(ldb_dn_is_special(dn) == tests[i].special);
 		assert_true(ldb_dn_is_valid(dn) != tests[i].invalid);
