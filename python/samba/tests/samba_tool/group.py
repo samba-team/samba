@@ -173,6 +173,27 @@ class GroupCmdTestCase(SambaToolCmdTest):
                         "Command='%s'\nLDAP='%s'" %(output_memberships,
                                                     ldap_memberships))
 
+    def test_list_full_dn(self):
+        (result, out, err) = self.runsubcmd("group", "list", "--full-dn",
+                                            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running list")
+
+        search_filter = "(objectClass=group)"
+
+        grouplist = self.samdb.search(base=self.samdb.domain_dn(),
+                                      scope=ldb.SCOPE_SUBTREE,
+                                      expression=search_filter,
+                                      attrs=[])
+
+        self.assertTrue(len(grouplist) > 0, "no groups found in samdb")
+
+        for groupobj in grouplist:
+            name = str(groupobj.get("dn", idx=0))
+            found = self.assertMatch(out, name,
+                                     "group '%s' not found" % name)
+
     def test_listmembers(self):
         (result, out, err) = self.runsubcmd("group", "listmembers", "Domain Users",
                                             "-H", "ldap://%s" % os.environ["DC_SERVER"],
