@@ -145,6 +145,25 @@ class OUCmdTestCase(SambaToolCmdTest):
             found = self.assertMatch(out, str(name),
                                      "ou '%s' not found" % name)
 
+    def test_list_base_dn(self):
+        base_dn = str(self.samdb.domain_dn())
+        (result, out, err) = self.runsubcmd("ou", "list", "-b", base_dn)
+        self.assertCmdSuccess(result, out, err, "Error running list")
+
+        search_filter = "(objectClass=organizationalUnit)"
+
+        oulist = self.samdb.search(base=base_dn,
+                                   scope=ldb.SCOPE_SUBTREE,
+                                   expression=search_filter,
+                                   attrs=["name"])
+
+        self.assertTrue(len(oulist) > 0, "no ous found in samdb")
+
+        for ouobj in oulist:
+            name = ouobj.get("name", idx=0)
+            found = self.assertMatch(out, str(name),
+                                     "ou '%s' not found" % name)
+
     def test_rename(self):
         for ou in self.ous:
             ousuffix = "RenameTest"
