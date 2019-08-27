@@ -871,11 +871,15 @@ char *ldb_dn_get_extended_linearized(TALLOC_CTX *mem_ctx, struct ldb_dn *dn, int
 		}
 
 		if (i == 0) {
-			p = talloc_asprintf(mem_ctx, "<%s=%s>", 
-					    name, val.data);
+			p = talloc_asprintf(mem_ctx, "<%s=%.*s>",
+					    name,
+					    (int)val.length,
+					    val.data);
 		} else {
-			p = talloc_asprintf_append_buffer(p, ";<%s=%s>",
-							  name, val.data);
+			p = talloc_asprintf_append_buffer(p, ";<%s=%.*s>",
+							  name,
+							  (int)val.length,
+							  val.data);
 		}
 
 		talloc_free(val.data);
