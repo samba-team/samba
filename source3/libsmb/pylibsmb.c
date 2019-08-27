@@ -1142,6 +1142,237 @@ static PyObject *py_cli_delete_on_close(struct py_cli_state *self,
 	Py_RETURN_NONE;
 }
 
+struct py_cli_notify_state {
+	PyObject_HEAD
+	struct py_cli_state *py_cli_state;
+	struct tevent_req *req;
+};
+
+static void py_cli_notify_state_dealloc(struct py_cli_notify_state *self)
+{
+	TALLOC_FREE(self->req);
+	if (self->py_cli_state != NULL) {
+		Py_DECREF(self->py_cli_state);
+		self->py_cli_state = NULL;
+	}
+	Py_TYPE(self)->tp_free(self);
+}
+
+static PyTypeObject py_cli_notify_state_type;
+
+static PyObject *py_cli_notify(struct py_cli_state *self,
+			       PyObject *args,
+			       PyObject *kwds)
+{
+	static const char *kwlist[] = {
+		"fnum",
+		"buffer_size",
+		"completion_filter",
+		"recursive",
+		NULL
+	};
+	unsigned fnum = 0;
+	unsigned buffer_size = 0;
+	unsigned completion_filter = 0;
+	PyObject *py_recursive = Py_False;
+	bool recursive = false;
+	struct tevent_req *req = NULL;
+	struct tevent_queue *send_queue = NULL;
+	struct tevent_req *flush_req = NULL;
+	bool ok;
+	struct py_cli_notify_state *py_notify_state = NULL;
+	struct timeval endtime;
+
+	ok = ParseTupleAndKeywords(args,
+				   kwds,
+				   "IIIO",
+				   kwlist,
+				   &fnum,
+				   &buffer_size,
+				   &completion_filter,
+				   &py_recursive);
+	if (!ok) {
+		return NULL;
+	}
+
+	recursive = PyObject_IsTrue(py_recursive);
+
+	req = cli_notify_send(NULL,
+			      self->ev,
+			      self->cli,
+			      fnum,
+			      buffer_size,
+			      completion_filter,
+			      recursive);
+	if (req == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/*
+	 * Just wait for the request being submitted to
+	 * the kernel/socket/wire.
+	 */
+	send_queue = smbXcli_conn_send_queue(self->cli->conn);
+	flush_req = tevent_queue_wait_send(req,
+					   self->ev,
+					   send_queue);
+	endtime = timeval_current_ofs_msec(self->cli->timeout);
+	ok = tevent_req_set_endtime(flush_req,
+				    self->ev,
+				    endtime);
+	if (!ok) {
+		TALLOC_FREE(req);
+		PyErr_NoMemory();
+		return NULL;
+	}
+	ok = py_tevent_req_wait_exc(self, flush_req);
+	if (!ok) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
+	TALLOC_FREE(flush_req);
+
+	py_notify_state = (struct py_cli_notify_state *)
+		py_cli_notify_state_type.tp_alloc(&py_cli_notify_state_type, 0);
+	if (py_notify_state == NULL) {
+		TALLOC_FREE(req);
+		PyErr_NoMemory();
+		return NULL;
+	}
+	Py_INCREF(self);
+	py_notify_state->py_cli_state = self;
+	py_notify_state->req = req;
+
+	return (PyObject *)py_notify_state;
+}
+
+static PyObject *py_cli_notify_get_changes(struct py_cli_notify_state *self,
+					   PyObject *args,
+					   PyObject *kwds)
+{
+	struct py_cli_state *py_cli_state = self->py_cli_state;
+	struct tevent_req *req = self->req;
+	uint32_t i;
+	uint32_t num_changes = 0;
+	struct notify_change *changes = NULL;
+	PyObject *result = NULL;
+	NTSTATUS status;
+	bool ok;
+	static const char *kwlist[] = {
+		"wait",
+		NULL
+	};
+	PyObject *py_wait = Py_False;
+	bool wait = false;
+	bool pending;
+
+	ok = ParseTupleAndKeywords(args,
+				   kwds,
+				   "O",
+				   kwlist,
+				   &py_wait);
+	if (!ok) {
+		return NULL;
+	}
+
+	wait = PyObject_IsTrue(py_wait);
+
+	if (req == NULL) {
+		PyErr_SetString(PyExc_RuntimeError,
+				"TODO req == NULL "
+				"- missing change notify request?");
+		return NULL;
+	}
+
+	pending = tevent_req_is_in_progress(req);
+	if (pending && !wait) {
+		Py_RETURN_NONE;
+	}
+
+	if (pending) {
+		struct timeval endtime;
+
+		endtime = timeval_current_ofs_msec(py_cli_state->cli->timeout);
+		ok = tevent_req_set_endtime(req,
+					    py_cli_state->ev,
+					    endtime);
+		if (!ok) {
+			TALLOC_FREE(req);
+			PyErr_NoMemory();
+			return NULL;
+		}
+	}
+
+	ok = py_tevent_req_wait_exc(py_cli_state, req);
+	self->req = NULL;
+	Py_DECREF(self->py_cli_state);
+	self->py_cli_state = NULL;
+	if (!ok) {
+		return NULL;
+	}
+
+	status = cli_notify_recv(req, req, &num_changes, &changes);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(req);
+		PyErr_SetNTSTATUS(status);
+		return NULL;
+	}
+
+	result = Py_BuildValue("[]");
+	if (result == NULL) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
+
+	for (i = 0; i < num_changes; i++) {
+		PyObject *change = NULL;
+		int ret;
+
+		change = Py_BuildValue("{s:s,s:I}",
+				       "name", changes[i].name,
+				       "action", changes[i].action);
+		if (change == NULL) {
+			TALLOC_FREE(req);
+			return NULL;
+		}
+
+		ret = PyList_Append(result, change);
+		if (ret == -1) {
+			TALLOC_FREE(req);
+			return NULL;
+		}
+	}
+
+	TALLOC_FREE(req);
+	return result;
+}
+
+static PyMethodDef py_cli_notify_state_methods[] = {
+	{ "get_changes",
+	  (PyCFunction)py_cli_notify_get_changes,
+	  METH_VARARGS|METH_KEYWORDS,
+	  "Wait for change notifications: \n"
+	  "N.get_changes(wait=BOOLEAN) -> "
+	  "change notifications as a dictionary\n"
+	  "\t\tList contents of a directory. The keys are, \n"
+	  "\t\t\tname: name of changed object\n"
+	  "\t\t\taction: type of the change\n"
+	  "None is returned if there's no response jet and wait=False is passed"
+	},
+	{ NULL }
+};
+
+static PyTypeObject py_cli_notify_state_type = {
+	PyVarObject_HEAD_INIT(NULL, 0)
+	.tp_name = "libsmb_samba_cwrapper.Notify",
+	.tp_basicsize = sizeof(struct py_cli_notify_state),
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+	.tp_doc = "notify request",
+	.tp_dealloc = (destructor)py_cli_notify_state_dealloc,
+	.tp_methods = py_cli_notify_state_methods,
+};
+
 /*
  * Helper to add directory listing entries to an overall Python list
  */
@@ -1471,6 +1702,11 @@ static PyMethodDef py_cli_state_methods[] = {
 					 py_cli_delete_on_close),
 	  METH_VARARGS|METH_KEYWORDS,
 	  "Set/Reset the delete on close flag" },
+	{ "notify", PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_notify),
+	  METH_VARARGS|METH_KEYWORDS,
+	  "Wait for change notifications: \n"
+	  "notify(fnum, buffer_size, completion_filter...) -> "
+	  "libsmb_samba_internal.Notify request handle\n" },
 	{ "list", PY_DISCARD_FUNC_SIG(PyCFunction, py_cli_list),
 		METH_VARARGS|METH_KEYWORDS,
 	  "list(directory, mask='*', attribs=DEFAULT_ATTRS) -> "
@@ -1553,6 +1789,10 @@ MODULE_INIT_FUNC(libsmb_samba_cwrapper)
 	if (PyType_Ready(&py_cli_state_type) < 0) {
 		return NULL;
 	}
+	if (PyType_Ready(&py_cli_notify_state_type) < 0) {
+		return NULL;
+	}
+
 	Py_INCREF(&py_cli_state_type);
 	PyModule_AddObject(m, "LibsmbCConn", (PyObject *)&py_cli_state_type);
 
@@ -1578,6 +1818,32 @@ MODULE_INIT_FUNC(libsmb_samba_cwrapper)
 	ADD_FLAGS(FILE_SHARE_READ);
 	ADD_FLAGS(FILE_SHARE_WRITE);
 	ADD_FLAGS(FILE_SHARE_DELETE);
+
+	/* change notify completion filter flags */
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_FILE_NAME);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_DIR_NAME);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_ATTRIBUTES);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_SIZE);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_LAST_WRITE);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_LAST_ACCESS);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_CREATION);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_EA);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_SECURITY);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_STREAM_NAME);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_STREAM_SIZE);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_STREAM_WRITE);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_NAME);
+	ADD_FLAGS(FILE_NOTIFY_CHANGE_ALL);
+
+	/* change notify action results */
+	ADD_FLAGS(NOTIFY_ACTION_ADDED);
+	ADD_FLAGS(NOTIFY_ACTION_REMOVED);
+	ADD_FLAGS(NOTIFY_ACTION_MODIFIED);
+	ADD_FLAGS(NOTIFY_ACTION_OLD_NAME);
+	ADD_FLAGS(NOTIFY_ACTION_NEW_NAME);
+	ADD_FLAGS(NOTIFY_ACTION_ADDED_STREAM);
+	ADD_FLAGS(NOTIFY_ACTION_REMOVED_STREAM);
+	ADD_FLAGS(NOTIFY_ACTION_MODIFIED_STREAM);
 
 	return m;
 }
