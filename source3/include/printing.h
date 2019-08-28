@@ -258,8 +258,8 @@ void close_all_print_db(void);
 TDB_DATA get_printer_notify_pid_list(struct tdb_context *tdb, const char *printer_name, bool cleanlist);
 
 void print_queue_receive(struct messaging_context *msg,
-				void *private_data,
-				uint32_t msg_type,
-				struct server_id server_id,
-				DATA_BLOB *data);
+			 void *private_data,
+			 uint32_t msg_type,
+			 struct server_id server_id,
+			 DATA_BLOB *data);
 #endif /* PRINTING_H_ */
