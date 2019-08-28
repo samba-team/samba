@@ -1,6 +1,3 @@
-#ifndef PRINTING_H_
-#define PRINTING_H_
-
 /* 
    Unix SMB/CIFS implementation.
    printing definitions
@@ -24,6 +21,9 @@
    This file defines the low-level printing system interfaces used by the
    SAMBA printing subsystem.
 */
+#ifndef PRINTING_H_
+#define PRINTING_H_
+
 #include <tdb.h>
 #include "lib/param/loadparm.h"
 
