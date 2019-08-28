@@ -380,6 +380,28 @@ class UserCmdTestCase(SambaToolCmdTest):
             found = self.assertMatch(out, name,
                                      "user '%s' not found" % name)
 
+    def test_list_full_dn(self):
+        (result, out, err) = self.runsubcmd("user", "list", "--full-dn",
+                                            "-H", "ldap://%s" % os.environ["DC_SERVER"],
+                                            "-U%s%%%s" % (os.environ["DC_USERNAME"],
+                                                          os.environ["DC_PASSWORD"]))
+        self.assertCmdSuccess(result, out, err, "Error running list")
+
+        search_filter = ("(&(objectClass=user)(userAccountControl:%s:=%u))" %
+                         (ldb.OID_COMPARATOR_AND, dsdb.UF_NORMAL_ACCOUNT))
+
+        userlist = self.samdb.search(base=self.samdb.domain_dn(),
+                                     scope=ldb.SCOPE_SUBTREE,
+                                     expression=search_filter,
+                                     attrs=["dn"])
+
+        self.assertTrue(len(userlist) > 0, "no users found in samdb")
+
+        for userobj in userlist:
+            name = str(userobj.get("dn", idx=0))
+            found = self.assertMatch(out, name,
+                                     "user '%s' not found" % name)
+
     def test_show(self):
         for user in self.users:
             (result, out, err) = self.runsubcmd(
