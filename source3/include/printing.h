@@ -90,22 +90,22 @@ struct printjob {
 /* Information for print interfaces */
 struct printif
 {
-  /* value of the 'printing' option for this service */
-  enum printing_types type;
+	/* value of the 'printing' option for this service */
+	enum printing_types type;
 
-  int (*queue_get)(const char *printer_name,
-                   enum printing_types printing_type,
-                   char *lpq_command,
-                   print_queue_struct **q,
-                   print_status_struct *status);
-  int (*queue_pause)(int snum);
-  int (*queue_resume)(int snum);
-  int (*job_delete)(const char *sharename, const char *lprm_command, struct printjob *pjob);
-  int (*job_pause)(int snum, struct printjob *pjob);
-  int (*job_resume)(int snum, struct printjob *pjob);
-  int (*job_submit)(int snum, struct printjob *pjob,
-		    enum printing_types printing_type,
-		    char *lpq_command);
+	int (*queue_get)(const char *printer_name,
+			 enum printing_types printing_type,
+			 char *lpq_command,
+			 print_queue_struct **q,
+			 print_status_struct *status);
+	int (*queue_pause)(int snum);
+	int (*queue_resume)(int snum);
+	int (*job_delete)(const char *sharename, const char *lprm_command, struct printjob *pjob);
+	int (*job_pause)(int snum, struct printjob *pjob);
+	int (*job_resume)(int snum, struct printjob *pjob);
+	int (*job_submit)(int snum, struct printjob *pjob,
+			  enum printing_types printing_type,
+			  char *lpq_command);
 };
 
 extern struct printif	generic_printif;
