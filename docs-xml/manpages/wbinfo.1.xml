@@ -260,7 +260,7 @@
 
 		<varlistentry>
 		<term>--krb5ccname <replaceable>KRB5CCNAME</replaceable></term>
-		<listitem><para>Allows one to request a sepcific kerberos credential
+		<listitem><para>Allows one to request a specific kerberos credential
 				cache type used for authentication.
 		</para></listitem>
 		</varlistentry>
