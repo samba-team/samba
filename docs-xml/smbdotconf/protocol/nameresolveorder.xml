@@ -61,7 +61,7 @@
     <para><command moreinfo="none">name resolve order = wins bcast</command></para>
 
     <para>DC lookups will still be done via DNS, but fallbacks to netbios names will
-		not inundate your DNS servers with needless querys for DOMAIN&lt;0x1c&gt; lookups.</para>
+		not inundate your DNS servers with needless queries for DOMAIN&lt;0x1c&gt; lookups.</para>
  
 </description>
 
