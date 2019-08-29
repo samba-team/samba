@@ -67,7 +67,7 @@ Samba.  First and foremost remember that:
 
 <para>
 Portability is a primary consideration in adding function, as is network
-compatability with de facto, existing, real world CIFS/SMB implementations.
+compatibility with de facto, existing, real world CIFS/SMB implementations.
 There are lots of platforms that Samba builds on so use caution when adding
 a call to a library function that is not invoked in existing Samba code.
 Also note that there are many quite different SMB/CIFS clients that Samba
