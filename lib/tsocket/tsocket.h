@@ -481,7 +481,7 @@ int tstream_disconnect_recv(struct tevent_req *req,
  * @defgroup tsocket_bsd  tsocket_bsd - inet, inet6 and unix
  * @ingroup tsocket
  *
- * The main tsocket library comes with implentations for BSD style ipv4, ipv6
+ * The main tsocket library comes with implementations for BSD style ipv4, ipv6
  * and unix sockets.
  *
  * @{

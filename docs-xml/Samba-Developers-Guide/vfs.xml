@@ -120,7 +120,7 @@ subsystem. Each operation could perform in a following ways:
   this mode;</para></listitem>
   <listitem><para><emphasis>splitter</emphasis>, a way when some file system
   activity is done in addition to the transparently calling previous
-  implentation. This usually involves mangling the result of that call
+  implementation. This usually involves mangling the result of that call
   before returning it back to the caller. This mode is selected by
   <literal>SMB_VFS_LAYER_SPLITTER</literal> constant;</para></listitem>
   <listitem><para><emphasis>logger</emphasis> does not change anything or
