@@ -373,7 +373,7 @@ It is also possible that this may sometimes be the number of bytes returned.
 <para>
 When call_api() returns, rparam points to the returned parameters.  The
 first if these is the result code.  It will be zero if the API call
-suceeded.  This value by be read with "SVAL(rparam,0)".
+succeeded.  This value by be read with "SVAL(rparam,0)".
 </para>
 
 <para>
