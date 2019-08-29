@@ -1617,7 +1617,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 	 * then skip the SPN tests.
 	 */
 	if (test_data->as_req_spn && test_data->krb5_hostname[0] == '\0') {
-		torture_skip(tctx, "This test needs a hostname specified as --option=torture:krb5-hostname=hostname.example.com and optinally --option=torture:krb5-service=service (defaults to host) to run");
+		torture_skip(tctx, "This test needs a hostname specified as --option=torture:krb5-hostname=hostname.example.com and optionally --option=torture:krb5-service=service (defaults to host) to run");
 	}
 
 	if (test_data->removedollar &&
