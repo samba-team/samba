@@ -184,7 +184,7 @@ struct fio {
 	/*
 	 * AFP_AfpInfo stream created, but not written yet, thus still a fake
 	 * pipe fd. This is set to true in fruit_open_meta if there was no
-	 * exisiting stream but the caller requested O_CREAT. It is later set to
+	 * existing stream but the caller requested O_CREAT. It is later set to
 	 * false when we get a write on the stream that then does open and
 	 * create the stream.
 	 */
@@ -547,7 +547,7 @@ static off_t denymode_to_netatalk_brl(enum apple_fork fork_type,
 
 /**
  * Call fcntl() with an exclusive F_GETLK request in order to
- * determine if there's an exisiting shared lock
+ * determine if there's an existing shared lock
  *
  * @return true if the requested lock was found or any error occurred
  *         false if the lock was not found

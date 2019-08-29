@@ -45,7 +45,7 @@
 		to access a Gluster filesystem using a Gluster FUSE mount. It provides support
 		for the <command>get_real_filename</command> VFS call which enhances file access performance
 		by avoiding multiple expensive case folding lookup calls to detect the appropriate
-		case of an exisiting filename.
+		case of an existing filename.
 	</para>
 
 	<para>

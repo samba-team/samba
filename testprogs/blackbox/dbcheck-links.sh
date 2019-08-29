@@ -97,7 +97,7 @@ check_expected_after_objects() {
 }
 
 duplicate_member() {
-    # We use an exisiting group so we have a stable GUID in the
+    # We use an existing group so we have a stable GUID in the
     # dbcheck output
     LDIF1=$(TZ=UTC $ldbsearch -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb -b 'CN=Enterprise Admins,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp' -s base --reveal --extended-dn member)
     DN=$(echo "${LDIF1}" | grep '^dn: ')
