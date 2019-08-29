@@ -2032,7 +2032,7 @@ static bool test_EnumAccountsWithUserRight(struct dcerpc_binding_handle *b,
 	torture_assert_ntstatus_ok(tctx, dcerpc_lsa_EnumAccountsWithUserRight_r(b, tctx, &r),
 		"EnumAccountsWithUserRight failed");
 
-	/* NT_STATUS_NO_MORE_ENTRIES means noone has this privilege */
+	/* NT_STATUS_NO_MORE_ENTRIES means no one has this privilege */
 	if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_NO_MORE_ENTRIES)) {
 		return true;
 	}
