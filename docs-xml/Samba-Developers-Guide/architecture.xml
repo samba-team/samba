@@ -28,7 +28,7 @@ It also tries to answer some of the frequently asked questions such as:
 <orderedlist>
 <listitem><para>
 	Is Samba secure when running on Unix? The xyz platform?
-	What about the root priveliges issue?
+	What about the root privileges issue?
 </para></listitem>
 
 <listitem><para>Pros and cons of multithreading in various parts of Samba</para></listitem>
