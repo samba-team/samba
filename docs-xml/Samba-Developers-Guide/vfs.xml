@@ -311,7 +311,7 @@ typedef enum _vfs_op_layer {
 
 <para>
 As each Samba module a VFS module should have a
-<programlisting>NTSTATUS vfs_example_init(void);</programlisting> function if it's staticly linked to samba or
+<programlisting>NTSTATUS vfs_example_init(void);</programlisting> function if it's statically linked to samba or
 <programlisting>NTSTATUS init_module(void);</programlisting> function if it's a shared module.
 </para>
 
