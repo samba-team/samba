@@ -860,7 +860,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 			{
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_SID_OR_SID_HISTORY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_NT4_ACCOUNT,
-				.comment = "BUITIN SID -> NT4 account",
+				.comment = "BUILTIN SID -> NT4 account",
 				.str = SID_BUILTIN,
 				.status = DRSUAPI_DS_NAME_STATUS_NO_MAPPING,
 				.alternate_status = DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE
