@@ -567,7 +567,7 @@ def call_samba_tool(d, op="add", zone=None):
         args = [rpc_server_ip, zone, short_name, "AAAA", d.ip]
     if d.type == "SRV":
         if op == "add" and d.existing_port is not None:
-            print("Not handling modify of exising SRV %s using samba-tool" % d)
+            print("Not handling modify of existing SRV %s using samba-tool" % d)
             return False
             op = "update"
             args = [rpc_server_ip, zone, short_name, "SRV",
