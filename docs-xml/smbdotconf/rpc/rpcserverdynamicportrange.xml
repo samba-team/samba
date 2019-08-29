@@ -9,7 +9,7 @@
 		allowed to use to create a listening socket for LSA, SAM,
 		Netlogon and others without wellknown tcp ports.
 		The first value is the lowest number of the port
-		range and the second the hightest.
+		range and the second the highest.
 	</para>
 	<para>
 		This applies to RPC servers in all server roles.
