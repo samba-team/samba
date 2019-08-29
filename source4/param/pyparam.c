@@ -643,7 +643,7 @@ static PyMethodDef pyparam_methods[] = {
 	{ "default_path", (PyCFunction)py_default_path, METH_NOARGS,
 		"Returns the default smb.conf path." },
 	{ "setup_dir", (PyCFunction)py_setup_dir, METH_NOARGS,
-		"Returns the compiled in location of provision tempates." },
+		"Returns the compiled in location of provision templates." },
 	{ "modules_dir", (PyCFunction)py_modules_dir, METH_NOARGS,
 		"Returns the compiled in location of modules." },
 	{ "bin_dir", (PyCFunction)py_bin_dir, METH_NOARGS,
