@@ -418,7 +418,7 @@ static NTSTATUS scripts_process_group_policy(TALLOC_CTX *mem_ctx,
 			werr = scripts_apply(ini_ctx->mem_ctx, token, root_key,
 					     flags, list[i], gpo, entries, num_entries);
 			if (!W_ERROR_IS_OK(werr)) {
-				continue; /* FIXME: finally fix storing emtpy strings and REG_QWORD! */
+				continue; /* FIXME: finally fix storing empty strings and REG_QWORD! */
 			}
 		}
 

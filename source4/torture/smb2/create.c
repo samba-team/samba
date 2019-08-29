@@ -1703,7 +1703,7 @@ static bool test_dir_alloc_size(struct torture_context *tctx,
 	 * smb_roundup(..., stat.st_size) which would be 1 MB by
 	 * default.
 	 *
-	 * Windows returns 0 for emtpy directories, once directories
+	 * Windows returns 0 for empty directories, once directories
 	 * have a few entries it starts replying with values > 0.
 	 */
 	c.in.alloc_size = 1024*1024*1024;

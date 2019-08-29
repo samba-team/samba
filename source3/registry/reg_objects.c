@@ -89,7 +89,7 @@ WERROR regsubkey_ctr_init(TALLOC_CTX *mem_ctx, struct regsubkey_ctr **ctr)
 }
 
 /**
- * re-initialize the list of subkeys (to the emtpy list)
+ * re-initialize the list of subkeys (to the empty list)
  * in an already allocated regsubkey_ctr
  */
 

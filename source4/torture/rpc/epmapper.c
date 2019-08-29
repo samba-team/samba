@@ -426,7 +426,7 @@ static bool test_Map_simple(struct torture_context *tctx,
 
 	torture_assert(tctx,
 		       ndr_policy_handle_empty(&entry_handle),
-		       "epm_Map_simple failed - The policy handle should be emtpy.");
+		       "epm_Map_simple failed - The policy handle should be empty.");
 
 	return true;
 }
@@ -526,7 +526,7 @@ static bool test_Lookup_simple(struct torture_context *tctx,
 
 	torture_assert(tctx,
 		       ndr_policy_handle_empty(&entry_handle),
-		       "epm_Lookup failed - The policy handle should be emtpy.");
+		       "epm_Lookup failed - The policy handle should be empty.");
 
 	return true;
 }

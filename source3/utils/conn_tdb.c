@@ -104,7 +104,7 @@ static int traverse_tcon_fn(struct smbXsrv_tcon_global0 *global,
 	if (strlen(global->share_name) == 0) {
 		/*
 		 * when a smbXsrv_tcon is created it's created
-		 * with emtpy share_name first in order to allocate
+		 * with empty share_name first in order to allocate
 		 * an id, before filling in the details.
 		 */
 		return 0;

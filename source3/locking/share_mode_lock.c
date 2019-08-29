@@ -411,7 +411,7 @@ static NTSTATUS share_mode_data_store(struct share_mode_data *d)
 
 	if (d->num_share_modes == 0) {
 		if (d->fresh) {
-			DBG_DEBUG("Ignoring fresh emtpy record\n");
+			DBG_DEBUG("Ignoring fresh empty record\n");
 			return NT_STATUS_OK;
 		}
 		status = dbwrap_record_delete(d->record);
