@@ -1676,7 +1676,7 @@ static int replmd_update_rpmd_element(struct ldb_context *ldb,
 	md1->local_usn                 = *seq_num;
 
 	if (is_forced_rodc) {
-		/* Force version to 0 to be overriden later via replication */
+		/* Force version to 0 to be overridden later via replication */
 		md1->version = 0;
 	}
 

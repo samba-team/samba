@@ -30,7 +30,7 @@
     network.  See the <command moreinfo="none">client lanman
     auth</command> to disable this for Samba's clients (such as smbclient)</para>
 
-    <para>This parameter is overriden by <parameter moreinfo="none">ntlm
+    <para>This parameter is overridden by <parameter moreinfo="none">ntlm
     auth</parameter>, so unless that it is also set to
     <constant>ntlmv1-permitted</constant> or <constant>yes</constant>,
     then only NTLMv2 logins will be permited and no LM hash will be

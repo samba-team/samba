@@ -4113,7 +4113,7 @@ class cmd_domain_schema_upgrade(Command):
         from samba.ms_schema_markdown import read_ms_markdown
         from samba.schema import Schema
 
-        updates_allowed_overriden = False
+        updates_allowed_overridden = False
         sambaopts = kwargs.get("sambaopts")
         credopts = kwargs.get("credopts")
         lp = sambaopts.get_loadparm()
@@ -4131,7 +4131,7 @@ class cmd_domain_schema_upgrade(Command):
         if lp.get("dsdb:schema update allowed") is None:
             lp.set("dsdb:schema update allowed", "yes")
             print("Temporarily overriding 'dsdb:schema update allowed' setting")
-            updates_allowed_overriden = True
+            updates_allowed_overridden = True
 
         own_dn = ldb.Dn(samdb, samdb.get_dsServiceName())
         master = get_fsmo_roleowner(samdb, str(samdb.get_schema_basedn()),
@@ -4220,7 +4220,7 @@ class cmd_domain_schema_upgrade(Command):
             samdb.transaction_cancel()
             error_encountered = True
 
-        if updates_allowed_overriden:
+        if updates_allowed_overridden:
             lp.set("dsdb:schema update allowed", "no")
 
         if temp_folder:
@@ -4257,7 +4257,7 @@ class cmd_domain_functional_prep(Command):
     ]
 
     def run(self, **kwargs):
-        updates_allowed_overriden = False
+        updates_allowed_overridden = False
         sambaopts = kwargs.get("sambaopts")
         credopts = kwargs.get("credopts")
         lp = sambaopts.get_loadparm()
@@ -4273,7 +4273,7 @@ class cmd_domain_functional_prep(Command):
         if lp.get("dsdb:schema update allowed") is None:
             lp.set("dsdb:schema update allowed", "yes")
             print("Temporarily overriding 'dsdb:schema update allowed' setting")
-            updates_allowed_overriden = True
+            updates_allowed_overridden = True
 
         if forest_prep is None and domain_prep is None:
             forest_prep = True
@@ -4329,7 +4329,7 @@ class cmd_domain_functional_prep(Command):
                 samdb.transaction_cancel()
                 error_encountered = True
 
-        if updates_allowed_overriden:
+        if updates_allowed_overridden:
             lp.set("dsdb:schema update allowed", "no")
 
         if error_encountered:
