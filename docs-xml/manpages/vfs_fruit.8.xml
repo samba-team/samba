@@ -232,7 +232,7 @@
 	      backup. The option takes a number plus an optional unit.</para>
 	      <para><emphasis>IMPORTANT</emphasis>: This is an approximated
 	      calculation that only takes into account the contents of Time
-	      Machine sparsebundle images. Therefor you <emphasis>MUST
+	      Machine sparsebundle images. Therefore you <emphasis>MUST
 	      NOT</emphasis> use this volume to store other content when using
 	      this option, because it would NOT be accounted.</para>
 	      <para>The calculation works by reading the band size from the
