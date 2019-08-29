@@ -190,7 +190,7 @@
 		<emphasis>Warning: </emphasis> this option should not be used
 		with the <emphasis>streams_xattr</emphasis> module due to the
 		extended attributes size limitations of most
-		filesytems.</para></listitem>
+		filesystems.</para></listitem>
 	      </itemizedlist>
 
 	    </listitem>
