@@ -81,7 +81,7 @@ testit "testjoin (dedicated keytab)" $VALGRIND $net_tool ads testjoin -kP || fai
 netbios=$(grep "netbios name" $BASEDIR/$WORKDIR/client.conf | cut -f2 -d= | awk '{$1=$1};1')
 uc_netbios=$(echo $netbios | tr '[:lower:]' '[:upper:]')
 lc_realm=$(echo $REALM | tr '[:upper:]' '[:lower:]')
-fqdns="$netbios.$lc_realm"
+fqdn="$netbios.$lc_realm"
 
 krb_princ="primary/instance@$REALM"
 testit "test (dedicated keytab) add a fully qualified krb5 principal" $VALGRIND $net_tool ads keytab add $krb_princ -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
@@ -99,7 +99,7 @@ testit "test (dedicated keytab) at least one krb5 principal created from $machin
 service="nfs"
 testit "test (dedicated keytab) add a $service service to keytab" $VALGRIND $net_tool ads keytab add $service -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" || failed=`expr $failed + 1`
 
-search_str="$service/$fqdns@$REALM"
+search_str="$service/$fqdn@$REALM"
 found=`$net_tool ads keytab list -U$DC_USERNAME%$DC_PASSWORD --option="kerberosmethod=dedicatedkeytab" --option="dedicatedkeytabfile=$dedicated_keytab_file" | grep $search_str | wc -l`
 testit "test (dedicated keytab) at least one (long form) krb5 principal created from service added is present in keytab" test $found -gt 1 || failed=`expr $failed + 1`
 
@@ -205,6 +205,9 @@ testit "ldb check for existence of machine account" $ldbsearch -U$DC_USERNAME%$D
 testit "join" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
 testit "testjoin" $VALGRIND $net_tool ads testjoin || failed=`expr $failed + 1`
+
+testit_grep "check dNSHostName" $fqdn $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ dNSHostName || failed=`expr $failed + 1`
+testit_grep "check SPN" ${uc_netbios}.${lc_realm} $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ servicePrincipalName || failed=`expr $failed + 1`
 
 ##Goodbye...
 testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
