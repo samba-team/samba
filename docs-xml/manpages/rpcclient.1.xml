@@ -96,8 +96,8 @@
 			<para>The supported options are:</para>
 
 			<itemizedlist>
-			<listitem><para><parameter moreinfo="none">sign</parameter> - Use RPC integrity autentication level</para></listitem>
-			<listitem><para><parameter moreinfo="none">seal</parameter> - Enable RPC privacy (encryption) autentication level</para></listitem>
+			<listitem><para><parameter moreinfo="none">sign</parameter> - Use RPC integrity authentication level</para></listitem>
+			<listitem><para><parameter moreinfo="none">seal</parameter> - Enable RPC privacy (encryption) authentication level</para></listitem>
 			<listitem><para><parameter moreinfo="none">connect</parameter> - Use RPC connect level authentication (auth, but no sign or seal)</para></listitem>
 			<listitem><para><parameter moreinfo="none">packet</parameter> - Use RPC packet authentication level</para></listitem>
 
