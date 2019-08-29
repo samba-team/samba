@@ -395,7 +395,7 @@ password.</para>
 
 <para>If a password is specified on the command line and this
 option is also defined the password on the command line will
-be silently ingnored and no password will be used.</para></listitem>
+be silently ignored and no password will be used.</para></listitem>
 </varlistentry>'>
 
 <!ENTITY pct "&#37;">
