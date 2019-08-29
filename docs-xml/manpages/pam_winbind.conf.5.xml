@@ -129,7 +129,7 @@
 
 		<para>When using th KCM type, the supported mechanism is
 		<quote>KCM:UID</quote>, which uses a Kerberos credential
-		manaager to store credentials on a per-UID basis simliar to
+		manaager to store credentials on a per-UID basis similar to
 		KEYRING. This is the recommended choice on latest Linux
 		distributions, offering a Kerberos Credential Manager. If not
 		we suggest to use KEYRING as those are the most secure and
