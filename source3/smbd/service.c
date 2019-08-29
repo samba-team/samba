@@ -836,7 +836,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	conn->origpath = talloc_strdup(conn, conn->connectpath);
 
 	/* Figure out the characteristics of the underlying filesystem. This
-	 * assumes that all the filesystem mounted withing a share path have
+	 * assumes that all the filesystem mounted within a share path have
 	 * the same characteristics, which is likely but not guaranteed.
 	 */
 

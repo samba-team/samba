@@ -28,7 +28,7 @@
 
 /***********************************************************************
  Utility function for splitting the base path of a registry path off
- by setting base and new_path to the apprapriate offsets withing the
+ by setting base and new_path to the apprapriate offsets within the
  path.
 
  WARNING!!  Does modify the original string!
@@ -57,7 +57,7 @@ bool reg_split_path(char *path, char **base, char **new_path)
 
 /***********************************************************************
  Utility function for splitting the base path of a registry path off
- by setting base and new_path to the appropriate offsets withing the
+ by setting base and new_path to the appropriate offsets within the
  path.
 
  WARNING!!  Does modify the original string!

@@ -205,7 +205,7 @@ buffer buf to the value val.</para>
 
 <sect2>
 <title>SIVALS(buf,pos,val)</title>
-<para>sets the signed 32 bit little-endian integer at offset pos withing buffer
+<para>sets the signed 32 bit little-endian integer at offset pos within buffer
 buf to the value val.</para>
 </sect2>
 

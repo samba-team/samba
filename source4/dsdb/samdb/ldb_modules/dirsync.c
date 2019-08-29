@@ -1286,7 +1286,7 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 		}
 
 		/*
-		* Let's search for the max usn withing the cookie
+		* Let's search for the max usn within the cookie
 		*/
 		if (GUID_equal(&(cookie.blob.guid1), dsc->our_invocation_id)) {
 			/*
