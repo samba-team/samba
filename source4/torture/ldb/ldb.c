@@ -782,10 +782,10 @@ static bool torture_ldb_dn_extended(struct torture_context *torture)
 				 "casefolded DN incorrect");
 
 	torture_assert_str_equal(torture, ldb_dn_get_component_name(dn, 0), "cn", 
-				 "componet zero incorrect");
+				 "component zero incorrect");
 
 	torture_assert_data_blob_equal(torture, *ldb_dn_get_component_val(dn, 0), data_blob_string_const("admin"), 
-				 "componet zero incorrect");
+				 "component zero incorrect");
 
 	torture_assert_str_equal(torture, ldb_dn_get_extended_linearized(mem_ctx, dn, 1),
 				 talloc_asprintf(mem_ctx, "<GUID=%s>;<SID=%s>;%s", 
@@ -853,7 +853,7 @@ static bool torture_ldb_dn_extended(struct torture_context *torture)
 		       "Should not find an SID on this DN");
 
 	torture_assert_int_equal(torture, ldb_dn_get_comp_num(dn), 0, 
-		       "Should not find an 'normal' componet on this DN");
+		       "Should not find an 'normal' component on this DN");
 
 	torture_assert(torture, ldb_dn_get_extended_component(dn, "GUID") != NULL, 
 		       "Should find an GUID on this DN");
