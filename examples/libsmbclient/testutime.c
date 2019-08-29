@@ -52,7 +52,7 @@ int main(int argc, char * argv[])
            (long long)st.st_ctime, ctime_r(&st.st_ctime, c_time),
            (long long)st.st_atime, ctime_r(&st.st_atime, a_time));
     
-    utimbuf.actime = t;         /* unchangeable (wont change) */
+    utimbuf.actime = t;         /* unchangeable (won't change) */
     utimbuf.modtime = t;        /* this one should succeed */
     if (smbc_utime(pSmbPath, &utimbuf) < 0)
     {

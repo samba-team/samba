@@ -257,7 +257,7 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 	}
 
         /*
-         * Assume we wont find an authentication domain to parse, so default
+         * Assume we won't find an authentication domain to parse, so default
          * to the workgroup in the provided context.
          */
 	if (pp_workgroup != NULL) {
