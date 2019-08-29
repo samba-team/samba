@@ -21,7 +21,7 @@
 
     <para>By default with <command moreinfo="none">ntlm auth</command> set to
     <constant>ntlmv2-only</constant> only NTLMv2 logins will be
-    permited.  All modern clients support NTLMv2 by default, but some older
+    permitted.  All modern clients support NTLMv2 by default, but some older
     clients will require special configuration to use it.</para>
 
     <para>The primary user of NTLMv1 is MSCHAPv2 for VPNs and 802.1x.</para>
