@@ -223,7 +223,7 @@ struct spn_struct *parse_spn(TALLOC_CTX *ctx, const char *srvprinc)
 		    || result->port > 65535
 		    || errno == ERANGE) {
 			DBG_ERR("Failed to parse spn %s, port number "
-				"convertion failed\n", srvprinc);
+				"conversion failed\n", srvprinc);
 			errno = 0;
 			goto fail;
 		}

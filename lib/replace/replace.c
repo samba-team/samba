@@ -547,7 +547,7 @@ long long int rep_strtoll(const char *str, char **endptr, int base)
 	if (errno == EINVAL) {
 		if (base == 0 || (base >1 && base <37)) {
 			/* Base was ok so it's because we were not
-			 * able to make the convertion.
+			 * able to make the conversion.
 			 * Let's reset errno.
 			 */
 			errno = saved_errno;
@@ -583,7 +583,7 @@ unsigned long long int rep_strtoull(const char *str, char **endptr, int base)
 	if (errno == EINVAL) {
 		if (base == 0 || (base >1 && base <37)) {
 			/* Base was ok so it's because we were not
-			 * able to make the convertion.
+			 * able to make the conversion.
 			 * Let's reset errno.
 			 */
 			errno = saved_errno;

@@ -404,7 +404,7 @@ def configure(conf):
                 msg="Checking whether we can use SO_PEERCRED to get socket credentials",
                 headers='sys/types.h sys/socket.h')
 
-    #Some OS (ie. freebsd) return EINVAL if the convertion could not be done, it's not what we expect
+    #Some OS (ie. freebsd) return EINVAL if the conversion could not be done, it's not what we expect
     #Let's detect those cases
     if conf.CONFIG_SET('HAVE_STRTOLL'):
         conf.CHECK_CODE('''
