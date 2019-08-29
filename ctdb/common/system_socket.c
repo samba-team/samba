@@ -457,7 +457,7 @@ int ctdb_sys_send_arp(const ctdb_sock_addr *addr, const char *iface)
 				   &ether_dhost,
 				   &len);
 		if (ret != 0) {
-			DBG_ERR("Failed to build IPv6 neighbor advertisment\n");
+			DBG_ERR("Failed to build IPv6 neighbor advertisement\n");
 			goto fail;
 		}
 
