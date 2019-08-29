@@ -371,7 +371,7 @@ typedef struct _vfs_op_tuple {
 </varlistentry>
 
 <varlistentry><term>layer</term>
-<listitem><para>the vfs_op_layer in whitch the function operates.</para></listitem>
+<listitem><para>the vfs_op_layer in which the function operates.</para></listitem>
 </varlistentry>
 
 </variablelist>
