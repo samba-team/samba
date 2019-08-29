@@ -160,8 +160,8 @@ be replaced with the names of the plugins to build.
 </para>
 
 <para>You must make sure all .c files that contain defines that can
-be changed by ./configure are rebuilded in the 'modules_clean' make target.
-Practically, this means all c files that contain <command>static_init_subsystem;</command> calls need to be rebuilded.
+be changed by ./configure are rebuilt in the 'modules_clean' make target.
+Practically, this means all c files that contain <command>static_init_subsystem;</command> calls need to be rebuilt.
 </para>
 
 <note>
