@@ -9,7 +9,7 @@
 	altered, as the client tools (nss_winbind etc) do not honour
 	this parameter.  Client tools must then be advised of the
 	altered path with the WINBINDD_SOCKET_DIR environment
-	varaible.</para>
+	variable.</para>
 </description>
 
 <value type="default">&pathconfig.WINBINDD_SOCKET_DIR;</value>
