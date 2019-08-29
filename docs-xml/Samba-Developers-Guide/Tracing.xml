@@ -104,7 +104,7 @@ that smbd makes.
 <para>
 So how do you interpret the results? Generally I search through the
 output for strings that I know will appear when the problem
-happens. For example, if I am having touble with permissions on a file
+happens. For example, if I am having trouble with permissions on a file
 I would search for that files name in the strace output and look at
 the surrounding lines. Another trick is to match up file descriptor
 numbers and "follow" what happens to an open file until it is closed.
