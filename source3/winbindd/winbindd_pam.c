@@ -2085,7 +2085,7 @@ enum winbindd_result winbindd_dual_pam_auth(struct winbindd_domain *domain,
 					       state->request->data.auth.user,
 					       &mapped_user);
 
-	/* If the name normalization didnt' actually do anything,
+	/* If the name normalization didn't actually do anything,
 	   just use the original name */
 
 	if (!NT_STATUS_IS_OK(name_map_status) &&
