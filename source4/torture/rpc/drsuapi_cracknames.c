@@ -673,7 +673,7 @@ bool test_DsCrackNames(struct torture_context *tctx,
 				.format_offered	= DRSUAPI_DS_NAME_FORMAT_DISPLAY,
 				.format_desired	= DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
 				.str = test_dc,
-				.comment = "DISLPAY NAME search for DC short name",
+				.comment = "DISPLAY NAME search for DC short name",
 				.status = DRSUAPI_DS_NAME_STATUS_NOT_FOUND
 			},
 			{
