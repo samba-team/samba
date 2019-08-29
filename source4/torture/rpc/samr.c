@@ -2127,7 +2127,7 @@ static bool test_OemChangePasswordUser2(struct dcerpc_pipe *p,
 
 	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_PASSWORD_RESTRICTION)
 	    && !NT_STATUS_EQUAL(r.out.result, NT_STATUS_WRONG_PASSWORD)) {
-		torture_result(tctx, TORTURE_FAIL, "OemChangePasswordUser2 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalidly encrpted password - %s\n",
+		torture_result(tctx, TORTURE_FAIL, "OemChangePasswordUser2 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalidly encrypted password - %s\n",
 			nt_errstr(r.out.result));
 		ret = false;
 	}
@@ -2612,7 +2612,7 @@ bool test_ChangePasswordUser3(struct dcerpc_pipe *p, struct torture_context *tct
 			oldpass, newpass, nt_errstr(r.out.result));
 	if (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_PASSWORD_RESTRICTION) &&
 	    (!NT_STATUS_EQUAL(r.out.result, NT_STATUS_WRONG_PASSWORD))) {
-		torture_result(tctx, TORTURE_FAIL, "ChangePasswordUser3 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalidly encrpted password - %s\n",
+		torture_result(tctx, TORTURE_FAIL, "ChangePasswordUser3 failed, should have returned WRONG_PASSWORD (or at least 'PASSWORD_RESTRICTON') for invalidly encrypted password - %s\n",
 			nt_errstr(r.out.result));
 		ret = false;
 	}
