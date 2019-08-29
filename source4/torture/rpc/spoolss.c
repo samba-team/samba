@@ -2896,7 +2896,7 @@ static bool test_Forms_args(struct torture_context *tctx,
 			"failed to set form");
 		torture_assert(tctx,
 			test_GetForm_args(tctx, b, handle, form_name, 1, &info),
-			"failed to get setted form");
+			"failed to get set form");
 
 		torture_assert_int_equal(tctx, info.info1.size.width, add_info.info1->size.width, "width mismatch");
 	}
