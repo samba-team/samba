@@ -199,7 +199,7 @@ enum ndr_err_code ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, const s
 }
 
 /*
-  parse a dom_sid28 - this is a dom_sid in a fixed 28 byte buffer, so we need to ensure there are only upto 5 sub_auth
+  parse a dom_sid28 - this is a dom_sid in a fixed 28 byte buffer, so we need to ensure there are only up to 5 sub_auth
 */
 enum ndr_err_code ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct dom_sid *sid)
 {
@@ -246,7 +246,7 @@ enum ndr_err_code ndr_push_dom_sid28(struct ndr_push *ndr, int ndr_flags, const 
 
 	if (sid->num_auths > 5) {
 		return ndr_push_error(ndr, NDR_ERR_RANGE, 
-				      "dom_sid28 allows only upto 5 sub auth [%u]", 
+				      "dom_sid28 allows only up to 5 sub auth [%u]", 
 				      sid->num_auths);
 	}
 

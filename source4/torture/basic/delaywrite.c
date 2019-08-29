@@ -1440,7 +1440,7 @@ static bool test_delayed_write_update3(struct torture_context *tctx,
 	/*
 	 * make sure the write time is updated 2 seconds later
 	 * calcuated from the first write
-	 * (but expect upto 5 seconds extra time for a busy server)
+	 * (but expect up to 5 seconds extra time for a busy server)
 	 */
 	start = timeval_current();
 	end = timeval_add(&start, 7 * sec, 0);
@@ -1602,7 +1602,7 @@ static bool test_delayed_write_update3a(struct torture_context *tctx,
 	/*
 	 * make sure the write time is updated 2 seconds later
 	 * calcuated from the first write
-	 * (but expect upto 5 seconds extra time for a busy server)
+	 * (but expect up to 5 seconds extra time for a busy server)
 	 */
 	start = timeval_current();
 	end = timeval_add(&start, 7 * sec, 0);
@@ -1813,7 +1813,7 @@ static bool test_delayed_write_update3b(struct torture_context *tctx,
 	/*
 	 * make sure the write time is updated 2 seconds later
 	 * calcuated from the first write
-	 * (but expect upto 5 seconds extra time for a busy server)
+	 * (but expect up to 5 seconds extra time for a busy server)
 	 */
 	start = timeval_current();
 	end = timeval_add(&start, 7 * sec, 0);
@@ -2188,7 +2188,7 @@ static bool test_delayed_write_update4(struct torture_context *tctx,
 	/*
 	 * make sure the write time is updated 2 seconds later
 	 * calcuated from the first write
-	 * (but expect upto 3 seconds extra time for a busy server)
+	 * (but expect up to 3 seconds extra time for a busy server)
 	 */
 	start = timeval_current();
 	end = timeval_add(&start, 5 * sec, 0);
