@@ -611,7 +611,7 @@ static bool pipe_auth_generic_verify_final(TALLOC_CTX *mem_ctx,
 					    (auth_level ==
 						DCERPC_AUTH_LEVEL_PRIVACY));
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, (__location__ ": Client failed to negotatie proper "
+		DEBUG(0, (__location__ ": Client failed to negotiate proper "
 			  "security for rpc connection\n"));
 		return false;
 	}
