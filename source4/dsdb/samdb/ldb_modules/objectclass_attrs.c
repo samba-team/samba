@@ -347,7 +347,7 @@ static int attr_handler2(struct oc_context *ac)
 		return ldb_operr(ldb);
 	}
 
-	/* We rely here on the preceeding "objectclass" LDB module which did
+	/* We rely here on the preceding "objectclass" LDB module which did
 	 * already fix up the objectclass list (inheritance, order...). */
 	oc_element = ldb_msg_find_element(ac->search_res->message,
 					  "objectClass");

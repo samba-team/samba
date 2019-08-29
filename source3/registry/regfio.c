@@ -519,7 +519,7 @@ static REGF_HBIN* read_hbin_block( REGF_FILE *file, off_t offset )
 	   previous 4 bytes contains the amount of free space remaining 
 	   in the hbin block. */
 
-	/* remember that the record_size is in the 4 bytes preceeding the record itself */
+	/* remember that the record_size is in the 4 bytes preceding the record itself */
 
 	if ( !prs_set_offset( &hbin->ps, file->data_offset+HBIN_HDR_SIZE-sizeof(uint32_t) ) )
 		return NULL;

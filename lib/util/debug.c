@@ -857,7 +857,7 @@ static bool debug_parse_param(char *param)
 /****************************************************************************
  Parse the debug levels from smb.conf. Example debug level string:
   3 tdb:5 printdrivers:7
- Note: the 1st param has no "name:" preceeding it.
+ Note: the 1st param has no "name:" preceding it.
 ****************************************************************************/
 
 bool debug_parse_levels(const char *params_str)

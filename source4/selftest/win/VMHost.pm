@@ -298,7 +298,7 @@ use VMware::Vix::API::Constants;
 				}
 			}
 		} else {
-			# Strip if preceeding path from $src_path.
+			# Strip if preceding path from $src_path.
 			my $src_file = substr($src_path, ($idx + 1), $len);
 			my $dest_path = $dest_dir . $src_file;
 

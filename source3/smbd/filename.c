@@ -287,7 +287,7 @@ static NTSTATUS rearrange_snapshot_path(struct smb_filename *smb_fname,
 	if (*endp == '\0') {
 		/*
 		 * @GMT-token was at end of path.
-		 * Remove any preceeding '/'
+		 * Remove any preceding '/'
 		 */
 		if (startp > smb_fname->base_name && startp[-1] == '/') {
 			startp--;
