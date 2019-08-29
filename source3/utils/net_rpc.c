@@ -236,7 +236,7 @@ int run_rpc_command(struct net_context *c,
 		DEBUG(1, ("rpc command function failed! (%s)\n", nt_errstr(nt_status)));
 	} else {
 		ret = 0;
-		DEBUG(5, ("rpc command function succedded\n"));
+		DEBUG(5, ("rpc command function succeeded\n"));
 	}
 
 	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
