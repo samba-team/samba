@@ -1490,7 +1490,7 @@ static void ctdb_remove_connection(struct ctdb_vnn *vnn, struct ctdb_connection 
 
 
 	/* See if we know this connection
-	   if we don't know this connection  then we dont need to do anything
+	   if we don't know this connection  then we don't need to do anything
 	 */
 	tcpp = ctdb_tcp_find(vnn->tcp_array, conn);
 	if (tcpp == NULL) {

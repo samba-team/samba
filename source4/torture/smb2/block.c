@@ -343,7 +343,7 @@ static bool torture_block_tcp_transport_name_internal(
 
 	if (unblock) {
 		filter_tcp_setup_name(tctx, name, true);
-		/* better dont cleanup here */
+		/* better don't cleanup here */
 		/* filter_tcp_setup(tctx, true); */
 	}
 
