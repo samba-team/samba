@@ -2638,7 +2638,7 @@ string.</member>
    <varlistentry><term>--reg-version={1,2,3}</term>
       <listitem><para>
 	Specify the format of the registry database. If not given it defaults to
-	the value of the binary or, if an registry.tdb is explizitly stated at
+	the value of the binary or, if an registry.tdb is explicitly stated at
 	the commandline, to the value found in the INFO/version record.
       </para></listitem>
     </varlistentry>
