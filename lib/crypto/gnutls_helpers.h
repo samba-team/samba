@@ -96,7 +96,7 @@ enum samba_gnutls_direction {
  *
  * @param[in]  key_input2 Either a session_key or a confounder.
  *
- * @param[in]  data       The data blob ot either encrypt or decrypt. The data
+ * @param[in]  data       The data blob to either encrypt or decrypt. The data
  *                        will be encrypted or decrypted in place.
  *
  * @param[in]  encrypt    The encryption direction.

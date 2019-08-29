@@ -74,7 +74,7 @@ write(1, "hello\n", 6)                  = 6
 
 <para>
 Ok, now you're familiar with strace. To use it on Samba you need to
-strace the running smbd daemon. The way I tend ot use it is to first
+strace the running smbd daemon. The way I tend to use it is to first
 login from my Windows PC to the Samba server, then use smbstatus to
 find which process ID that client is attached to, then as root I do
 <command>strace -p PID</command> to attach to that process. I normally redirect the

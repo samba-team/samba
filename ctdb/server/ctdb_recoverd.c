@@ -2093,7 +2093,7 @@ static void monitor_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 }
 
 /*
-  handler for when we need to push out flag changes ot all other nodes
+  handler for when we need to push out flag changes to all other nodes
 */
 static void push_flags_handler(uint64_t srvid, TDB_DATA data,
 			       void *private_data)
