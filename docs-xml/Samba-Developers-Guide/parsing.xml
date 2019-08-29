@@ -104,7 +104,7 @@ continuation is ignored for blank and comment lines.
 <para>
 If the last (non-whitespace) character within a section header or on
 a parameter line is a backslash, then the next line will be
-(logically) concatonated with the current line by the lexical
+(logically) concatenated with the current line by the lexical
 analyzer.  For example:
 </para>
 
@@ -147,7 +147,7 @@ lines.
 
 <para>
 The middle line is *not* parsed as a blank line because it is first
-concatonated with the top line.  The result is
+concatenated with the top line.  The result is
 </para>
 
 <para><programlisting>
