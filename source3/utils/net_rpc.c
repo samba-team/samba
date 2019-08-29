@@ -7803,9 +7803,9 @@ int rpc_printer_migrate(struct net_context *c, int argc, const char **argv)
 			"security",
 			rpc_printer_migrate_security,
 			NET_TRANSPORT_RPC,
-			N_("Mirgate printer ACLs to local server"),
+			N_("Migrate printer ACLs to local server"),
 			N_("net rpc printer migrate security\n"
-			   "    Mirgate printer ACLs to local server")
+			   "    Migrate printer ACLs to local server")
 		},
 		{
 			"settings",

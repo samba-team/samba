@@ -5455,13 +5455,13 @@ msgid ""
 msgstr ""
 
 #: ../../utils/net_rpc.c:6811
-msgid "Mirgate printer ACLs to local server"
+msgid "Migrate printer ACLs to local server"
 msgstr ""
 
 #: ../../utils/net_rpc.c:6812
 msgid ""
 "net rpc printer migrate security\n"
-"    Mirgate printer ACLs to local server"
+"    Migrate printer ACLs to local server"
 msgstr ""
 
 #: ../../utils/net_rpc.c:6819
