@@ -43,6 +43,7 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 bool smbXcli_conn_is_connected(struct smbXcli_conn *conn);
 void smbXcli_conn_disconnect(struct smbXcli_conn *conn, NTSTATUS status);
 
+struct tevent_queue *smbXcli_conn_send_queue(struct smbXcli_conn *conn);
 bool smbXcli_conn_has_async_calls(struct smbXcli_conn *conn);
 
 bool smbXcli_conn_dfs_supported(struct smbXcli_conn *conn);

@@ -2743,6 +2743,11 @@ NTSTATUS smb1cli_req_chain_submit(struct tevent_req **reqs, int num_reqs)
 	return NT_STATUS_OK;
 }
 
+struct tevent_queue *smbXcli_conn_send_queue(struct smbXcli_conn *conn)
+{
+	return conn->outgoing;
+}
+
 bool smbXcli_conn_has_async_calls(struct smbXcli_conn *conn)
 {
 	return ((tevent_queue_length(conn->outgoing) != 0)
