@@ -1633,7 +1633,7 @@ static bool torture_ldb_unpack_and_filter(struct torture_context *torture,
 	struct ldb_val data = *discard_const_p(struct ldb_val, data_p);
 	struct ldb_message *unpack_msg = ldb_msg_new(mem_ctx);
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
-	const char *lookup_names[] = {"instanceType", "nonexistant",
+	const char *lookup_names[] = {"instanceType", "nonexistent",
 				      "whenChanged", "objectClass",
 				      "uSNCreated", "showInAdvancedViewOnly",
 				      "name", "cnNotHere", NULL};
