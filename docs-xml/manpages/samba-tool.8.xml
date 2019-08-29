@@ -886,7 +886,7 @@
 	<title>ntacl changedomsid <replaceable>original-domain-SID</replaceable> <replaceable>new-domain-SID</replaceable> <replaceable>file</replaceable> [options]</title>
 	<para>Change the domain SID for ACLs.
 	Can be used to change all entries in acl_xattr when the machine's SID
-	has accidentially changed or the data set has been copied
+	has accidentally changed or the data set has been copied
 	to another machine either via backup/restore or rsync.</para>
 
 	<variablelist>

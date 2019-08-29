@@ -2098,7 +2098,7 @@ static bool handler_smb_lockingx(int instance)
 	parm[0].lockx.in.mode = gen_lock_mode();
 	parm[0].lockx.in.timeout = gen_timeout();
 	do {
-		/* make sure we don't accidentially generate an oplock
+		/* make sure we don't accidentally generate an oplock
 		   break ack - otherwise the server can just block forever */
 		parm[0].lockx.in.ulock_cnt = gen_lock_count();
 		parm[0].lockx.in.lock_cnt = gen_lock_count();
