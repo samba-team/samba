@@ -1425,7 +1425,7 @@ static void cli_session_setup_creds_cleanup(struct tevent_req *req,
 	 * We only call data_blob_clear() as
 	 * some of the blobs point to the same memory.
 	 *
-	 * We let the talloc hierachy free the memory.
+	 * We let the talloc hierarchy free the memory.
 	 */
 	data_blob_clear(&state->apassword_blob);
 	data_blob_clear(&state->upassword_blob);

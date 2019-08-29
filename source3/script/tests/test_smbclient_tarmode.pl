@@ -1511,7 +1511,7 @@ sub DESTROY {
 
 =head4 C<< File::walk( sub { ... }, @files) >>
 
-Iterate on file hierachy in C<@files> and return accumulated results.
+Iterate on file hierarchy in C<@files> and return accumulated results.
 
 Use C<$_> in the sub to access the current C<File>.
 

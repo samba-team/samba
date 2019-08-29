@@ -267,7 +267,7 @@ static bool test_tfork_process_hierarchy(struct torture_context *tctx)
 
 		ret = sscanf(line, "%d", &ppid);
 		torture_assert_goto(tctx, ret == 1, ok, child_fail, "sscanf failed\n");
-		torture_assert_goto(tctx, ppid == pid, ok, child_fail, "process hierachy not rooted at caller\n");
+		torture_assert_goto(tctx, ppid == pid, ok, child_fail, "process hierarchy not rooted at caller\n");
 
 		_exit(0);
 
