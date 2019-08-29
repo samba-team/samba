@@ -246,7 +246,7 @@ proc expect_prompt { remote_prompt } {
 }
 
 # This function will create a telnet login shell to $remote_host as $username.
-# If expected dialogue is not recieved, return with a specific error if one
+# If expected dialogue is not received, return with a specific error if one
 # is recognized. Otherwise return a generic error indicating the function
 # name.
 proc telnet_login { remote_prompt remote_host username password } {

@@ -2010,7 +2010,7 @@ static bool test_magic_protection(void)
 		return false;
 	}
 	if (WIFSIGNALED(exit_status)) {
-		printf("Child recieved unexpected signal\n");
+		printf("Child received unexpected signal\n");
 		return false;
 	}
 
@@ -2074,7 +2074,7 @@ static bool test_magic_free_protection(void)
 		return false;
 	}
 	if (WIFSIGNALED(exit_status)) {
-		printf("Child recieved unexpected signal\n");
+		printf("Child received unexpected signal\n");
 		return false;
 	}
 

@@ -226,7 +226,7 @@ class BaseSortTests(samba.tests.TestCase):
                 if expected_order != received_order:
                     print(attr, ['forward', 'reverse'][rev])
                     print("expected", expected_order)
-                    print("recieved", received_order)
+                    print("received", received_order)
                     print("unnormalised:", [x[attr][0] for x in res])
                     print("unnormalised: «%s»" % '»  «'.join(str(x[attr][0])
                                                              for x in res))
@@ -273,7 +273,7 @@ class BaseSortTests(samba.tests.TestCase):
                         print(attr, lang)
                         print(['forward', 'reverse'][rev])
                         print("expected: ", expected_order)
-                        print("recieved: ", received_order)
+                        print("received: ", received_order)
                         print("unnormalised:", [x[attr][0] for x in res])
                         print("unnormalised: «%s»" % '»  «'.join(str(x[attr][0])
                                                                  for x in res))
@@ -322,7 +322,7 @@ class BaseSortTests(samba.tests.TestCase):
                 if expected_order != received_order:
                     print(sort_attr, result_attr, ['forward', 'reverse'][rev])
                     print("expected", expected_order)
-                    print("recieved", received_order)
+                    print("received", received_order)
                     print("unnormalised:", [x[result_attr][0] for x in res])
                     print("unnormalised: «%s»" % '»  «'.join(str(x[result_attr][0])
                                                              for x in res))
