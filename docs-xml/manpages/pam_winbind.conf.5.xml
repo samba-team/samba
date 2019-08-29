@@ -136,7 +136,7 @@
 		predictable method.</para>
 
 		<para>It is also possible to define custom filepaths and use the "%u"
-		pattern in order to substitue the numeric user id.
+		pattern in order to substitute the numeric user id.
 		Examples:</para>
 
 		<variablelist>
