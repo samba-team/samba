@@ -371,7 +371,7 @@ is for a printer or a print job</para></listitem>
 
 <listitem><para>The field is the flag identifying the event</para></listitem>
 
-<listitem><para>the notify_data union contains the new valuie of the
+<listitem><para>the notify_data union contains the new value of the
 attribute</para></listitem>
 
 <listitem><para>The enc_type defines the size of the structure for marshalling
