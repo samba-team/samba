@@ -1761,7 +1761,7 @@ msgstr ""
 
 #: ../../utils/net_ads_gpo.c:458
 msgid ""
-"  Lists gPLink of a containter\n"
+"  Lists gPLink of a container\n"
 "    container\tContainer to get link for\n"
 msgstr ""
 
@@ -1828,13 +1828,13 @@ msgid ""
 msgstr ""
 
 #: ../../utils/net_ads_gpo.c:667
-msgid "Lists gPLink of containter"
+msgid "Lists gPLink of container"
 msgstr ""
 
 #: ../../utils/net_ads_gpo.c:668
 msgid ""
 "net ads gpo linkget\n"
-"    Lists gPLink of containter"
+"    Lists gPLink of container"
 msgstr ""
 
 #: ../../utils/net_ads_gpo.c:675

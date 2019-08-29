@@ -466,7 +466,7 @@ static int net_ads_gpo_link_get(struct net_context *c, int argc, const char **ar
 		d_printf("%s\n%s\n%s",
 			 _("Usage:"),
 			 _("net ads gpo linkget <container>"),
-			 _("  Lists gPLink of a containter\n"
+			 _("  Lists gPLink of a container\n"
 			   "    container\tContainer to get link for\n"));
 		return -1;
 	}
@@ -673,9 +673,9 @@ int net_ads_gpo(struct net_context *c, int argc, const char **argv)
 			"linkget",
 			net_ads_gpo_link_get,
 			NET_TRANSPORT_ADS,
-			N_("Lists gPLink of containter"),
+			N_("Lists gPLink of container"),
 			N_("net ads gpo linkget\n"
-			   "    Lists gPLink of containter")
+			   "    Lists gPLink of container")
 		},
 		{
 			"list",

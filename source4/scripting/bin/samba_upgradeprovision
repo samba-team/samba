@@ -667,7 +667,7 @@ def gen_dn_index_hash(listMissing):
     return hash
 
 def add_deletedobj_containers(ref_samdb, samdb, names):
-    """Add the object containter: CN=Deleted Objects
+    """Add the object container: CN=Deleted Objects
 
     This function create the container for each partition that need one and
     then reference the object into the root of the partition
