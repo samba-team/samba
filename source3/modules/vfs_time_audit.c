@@ -1398,6 +1398,31 @@ static int smb_time_audit_symlink(vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_time_audit_symlinkat(vfs_handle_struct *handle,
+				const char *link_contents,
+				struct files_struct *dirfsp,
+				const struct smb_filename *new_smb_fname)
+{
+	int result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_SYMLINKAT(handle,
+				link_contents,
+				dirfsp,
+				new_smb_fname);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fname("symlinkat", timediff,
+			new_smb_fname->base_name);
+	}
+
+	return result;
+}
+
 static int smb_time_audit_readlinkat(vfs_handle_struct *handle,
 				files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -2856,6 +2881,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.linux_setlease_fn = smb_time_audit_linux_setlease,
 	.getlock_fn = smb_time_audit_getlock,
 	.symlink_fn = smb_time_audit_symlink,
+	.symlinkat_fn = smb_time_audit_symlinkat,
 	.readlinkat_fn = smb_time_audit_readlinkat,
 	.linkat_fn = smb_time_audit_linkat,
 	.mknodat_fn = smb_time_audit_mknodat,
