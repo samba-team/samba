@@ -36,6 +36,11 @@
 
 #define ZFSACL_MODULE_NAME "zfsacl"
 
+struct zfsacl_config_data {
+	struct smbacl4_vfs_params nfs4_params;
+	bool zfsacl_denymissingspecial;
+};
+
 /* zfs_get_nt_acl()
  * read the local file's acls and return it in NT form
  * using the NFSv4 format conversion
@@ -146,6 +151,11 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 	struct SMB4ACE_T *smbace;
 	TALLOC_CTX	*mem_ctx;
 	bool have_special_id = false;
+	struct zfsacl_config_data *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct zfsacl_config_data,
+				return False);
 
 	/* allocate the field of ZFS aces */
 	mem_ctx = talloc_tos();
@@ -187,9 +197,7 @@ static bool zfs_process_smbacl(vfs_handle_struct *handle, files_struct *fsp,
 		}
 	}
 
-	if (!have_special_id
-	    && lp_parm_bool(fsp->conn->params->service, "zfsacl",
-			    "denymissingspecial", false)) {
+	if (!have_special_id && config->zfsacl_denymissingspecial) {
 		errno = EACCES;
 		return false;
 	}
@@ -395,9 +403,44 @@ static int zfsacl_fail__sys_acl_blob_get_fd(vfs_handle_struct *handle, files_str
 	return -1;
 }
 
+static int zfsacl_connect(struct vfs_handle_struct *handle,
+			    const char *service, const char *user)
+{
+	struct zfsacl_config_data *config = NULL;
+	int ret;
+
+	ret = SMB_VFS_NEXT_CONNECT(handle, service, user);
+	if (ret < 0) {
+		return ret;
+	}
+
+	config = talloc_zero(handle->conn, struct zfsacl_config_data);
+	if (!config) {
+		DBG_ERR("talloc_zero() failed\n");
+		errno = ENOMEM;
+		return -1;
+	}
+
+	config->zfsacl_denymissingspecial = lp_parm_bool(SNUM(handle->conn),
+				"zfsacl", "denymissingspecial", false);
+
+	ret = smbacl4_get_vfs_params(handle->conn, &config->nfs4_params);
+	if (ret < 0) {
+		TALLOC_FREE(config);
+		return ret;
+	}
+
+	SMB_VFS_HANDLE_SET_DATA(handle, config,
+				NULL, struct zfsacl_config_data,
+				return -1);
+
+	return 0;
+}
+
 /* VFS operations structure */
 
 static struct vfs_fn_pointers zfsacl_fns = {
+	.connect_fn = zfsacl_connect,
 	.sys_acl_get_file_fn = zfsacl_fail__sys_acl_get_file,
 	.sys_acl_get_fd_fn = zfsacl_fail__sys_acl_get_fd,
 	.sys_acl_blob_get_file_fn = zfsacl_fail__sys_acl_blob_get_file,
