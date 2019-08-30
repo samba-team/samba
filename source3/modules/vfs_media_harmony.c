@@ -1751,6 +1751,52 @@ out:
 }
 
 /*
+ * Success: return 0
+ * Failure: set errno, return -1
+ */
+
+static int mh_symlinkat(vfs_handle_struct *handle,
+		const char *link_contents,
+		struct files_struct *dirfsp,
+		const struct smb_filename *new_smb_fname)
+{
+	int status = -1;
+	char *client_link_contents = NULL;
+	struct smb_filename *newclientFname = NULL;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering mh_symlinkat\n"));
+	if (!is_in_media_files(link_contents) &&
+			!is_in_media_files(new_smb_fname->base_name)) {
+		status = SMB_VFS_NEXT_SYMLINKAT(handle,
+				link_contents,
+				dirfsp,
+				new_smb_fname);
+		goto out;
+	}
+
+	if ((status = alloc_get_client_path(handle, talloc_tos(),
+				link_contents,
+				&client_link_contents))) {
+		goto err;
+	}
+	if ((status = alloc_get_client_smb_fname(handle, talloc_tos(),
+				new_smb_fname,
+				&newclientFname))) {
+		goto err;
+	}
+
+	status = SMB_VFS_NEXT_SYMLINKAT(handle,
+				client_link_contents,
+				dirfsp,
+				newclientFname);
+err:
+	TALLOC_FREE(client_link_contents);
+	TALLOC_FREE(newclientFname);
+out:
+	return status;
+}
+
+/*
  * Success: return byte count
  * Failure: set errno, return -1
  */
@@ -2332,6 +2378,7 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.chdir_fn = mh_chdir,
 	.ntimes_fn = mh_ntimes,
 	.symlink_fn = mh_symlink,
+	.symlinkat_fn = mh_symlinkat,
 	.readlinkat_fn = mh_readlinkat,
 	.linkat_fn = mh_linkat,
 	.mknodat_fn = mh_mknodat,
