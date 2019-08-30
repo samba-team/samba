@@ -166,25 +166,6 @@ static int syncops_renameat(vfs_handle_struct *handle,
 	return ret; \
 } while (0)
 
-static int syncops_symlink(vfs_handle_struct *handle,
-			const char *link_contents,
-			const struct smb_filename *new_smb_fname)
-{
-	int ret;
-	struct syncops_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct syncops_config_data,
-				return -1);
-
-	ret = SMB_VFS_NEXT_SYMLINK(handle, link_contents, new_smb_fname);
-	if (ret == 0 && config->onmeta && !config->disable) {
-		syncops_two_names(link_contents,
-				  new_smb_fname->base_name);
-	}
-	return ret;
-}
-
 static int syncops_symlinkat(vfs_handle_struct *handle,
 			const char *link_contents,
 			struct files_struct *dirfsp,
@@ -341,7 +322,6 @@ static struct vfs_fn_pointers vfs_syncops_fns = {
 	.open_fn = syncops_open,
 	.renameat_fn = syncops_renameat,
 	.unlink_fn = syncops_unlink,
-	.symlink_fn = syncops_symlink,
 	.symlinkat_fn = syncops_symlinkat,
 	.linkat_fn = syncops_linkat,
 	.mknodat_fn = syncops_mknodat,
