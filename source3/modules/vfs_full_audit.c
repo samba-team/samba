@@ -151,7 +151,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_KERNEL_FLOCK,
 	SMB_VFS_OP_LINUX_SETLEASE,
 	SMB_VFS_OP_GETLOCK,
-	SMB_VFS_OP_SYMLINK,
 	SMB_VFS_OP_SYMLINKAT,
 	SMB_VFS_OP_READLINKAT,
 	SMB_VFS_OP_LINKAT,
@@ -295,7 +294,6 @@ static struct {
 	{ SMB_VFS_OP_KERNEL_FLOCK,	"kernel_flock" },
 	{ SMB_VFS_OP_LINUX_SETLEASE, "linux_setlease" },
 	{ SMB_VFS_OP_GETLOCK,	"getlock" },
-	{ SMB_VFS_OP_SYMLINK,	"symlink" },
 	{ SMB_VFS_OP_SYMLINKAT,	"symlinkat" },
 	{ SMB_VFS_OP_READLINKAT,"readlinkat" },
 	{ SMB_VFS_OP_LINKAT,	"linkat" },
@@ -1727,20 +1725,6 @@ static bool smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp,
 	return result;
 }
 
-static int smb_full_audit_symlink(vfs_handle_struct *handle,
-			const char *link_contents,
-			const struct smb_filename *new_smb_fname)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_SYMLINK(handle, link_contents, new_smb_fname);
-
-	do_log(SMB_VFS_OP_SYMLINK, (result >= 0), handle,
-	       "%s|%s", link_contents, new_smb_fname->base_name);
-
-	return result;
-}
-
 static int smb_full_audit_symlinkat(vfs_handle_struct *handle,
 			const char *link_contents,
 			struct files_struct *dirfsp,
@@ -2912,7 +2896,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.kernel_flock_fn = smb_full_audit_kernel_flock,
 	.linux_setlease_fn = smb_full_audit_linux_setlease,
 	.getlock_fn = smb_full_audit_getlock,
-	.symlink_fn = smb_full_audit_symlink,
 	.symlinkat_fn = smb_full_audit_symlinkat,
 	.readlinkat_fn = smb_full_audit_readlinkat,
 	.linkat_fn = smb_full_audit_linkat,
