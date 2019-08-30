@@ -296,11 +296,6 @@
 #define SMB_VFS_NEXT_GETLOCK(handle, fsp, poffset, pcount, ptype, ppid) \
 	smb_vfs_call_getlock((handle)->next, (fsp), (poffset), (pcount), (ptype), (ppid))
 
-#define SMB_VFS_SYMLINK(conn, oldpath, newpath) \
-	smb_vfs_call_symlink((conn)->vfs_handles, (oldpath), (newpath))
-#define SMB_VFS_NEXT_SYMLINK(handle, oldpath, newpath) \
-	smb_vfs_call_symlink((handle)->next, (oldpath), (newpath))
-
 #define SMB_VFS_SYMLINKAT(conn, oldpath, dirfsp, newpath) \
 	smb_vfs_call_symlinkat((conn)->vfs_handles, (oldpath), (dirfsp), (newpath))
 #define SMB_VFS_NEXT_SYMLINKAT(handle, oldpath, dirfsp, newpath) \
