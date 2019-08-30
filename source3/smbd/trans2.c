@@ -6930,6 +6930,7 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 {
 	char *link_target = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
+	int ret;
 
 	/* Set a symbolic link. */
 	/* Don't allow this if follow links is false. */
@@ -6952,7 +6953,11 @@ static NTSTATUS smb_set_file_unix_link(connection_struct *conn,
 	DEBUG(10,("smb_set_file_unix_link: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
 			new_smb_fname->base_name, link_target ));
 
-	if (SMB_VFS_SYMLINK(conn,link_target,new_smb_fname) != 0) {
+	ret = SMB_VFS_SYMLINKAT(conn,
+			link_target,
+			conn->cwd_fsp,
+			new_smb_fname);
+	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
