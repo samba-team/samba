@@ -79,9 +79,6 @@ bool is_attr_in_list(const char * const * attrs, const char *attr);
 
 struct GUID;
 
-char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid);
-NTSTATUS NS_GUID_from_string(const char *s, struct GUID *guid);
-
 struct ldb_context;
 
 int dsdb_werror_at(struct ldb_context *ldb, int ldb_ecode, WERROR werr,

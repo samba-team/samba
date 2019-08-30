@@ -5264,58 +5264,6 @@ int dsdb_create_partial_replica_NC(struct ldb_context *ldb,  struct ldb_dn *dn)
 	return LDB_SUCCESS;
 }
 
-/**
-  build a GUID from a string
-*/
-_PUBLIC_ NTSTATUS NS_GUID_from_string(const char *s, struct GUID *guid)
-{
-	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
-	uint32_t time_low;
-	uint32_t time_mid, time_hi_and_version;
-	uint32_t clock_seq[2];
-	uint32_t node[6];
-	int i;
-
-	if (s == NULL) {
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	status =  parse_guid_string(s,
-				    &time_low,
-				    &time_mid,
-				    &time_hi_and_version,
-				    clock_seq,
-				    node);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	guid->time_low = time_low;
-	guid->time_mid = time_mid;
-	guid->time_hi_and_version = time_hi_and_version;
-	guid->clock_seq[0] = clock_seq[0];
-	guid->clock_seq[1] = clock_seq[1];
-	for (i=0;i<6;i++) {
-		guid->node[i] = node[i];
-	}
-
-	return NT_STATUS_OK;
-}
-
-_PUBLIC_ char *NS_GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
-{
-	return talloc_asprintf(mem_ctx, 
-			       "%08x-%04x%04x-%02x%02x%02x%02x-%02x%02x%02x%02x",
-			       guid->time_low, guid->time_mid,
-			       guid->time_hi_and_version,
-			       guid->clock_seq[0],
-			       guid->clock_seq[1],
-			       guid->node[0], guid->node[1],
-			       guid->node[2], guid->node[3],
-			       guid->node[4], guid->node[5]);
-}
-
 /*
  * Return the effective badPwdCount
  *
