@@ -35,7 +35,7 @@
 #include "../lib/util/tevent_ntstatus.h"
 #include "lib/param/param.h"
 #include "lib/util/server_id_db.h"
-#include "lib/util/talloc_report.h"
+#include "lib/util/talloc_report_printf.h"
 #include "../source3/lib/messages_dgm.h"
 #include "../source3/lib/messages_dgm_ref.h"
 #include "../source3/lib/messages_util.h"
@@ -108,21 +108,21 @@ static void pool_message(struct imessaging_context *msg,
 			 int *fds,
 			 DATA_BLOB *data)
 {
-	char *report;
+	FILE *f = NULL;
 
-	if (num_fds != 0) {
+	if (num_fds != 1) {
 		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
 		return;
 	}
 
-	report = talloc_report_str(msg, NULL);
-
-	if (report != NULL) {
-		DATA_BLOB blob = { .data = (uint8_t *)report,
-				   .length = talloc_get_size(report) - 1};
-		imessaging_send(msg, src, MSG_POOL_USAGE, &blob);
+	f = fdopen(fds[0], "w");
+	if (f == NULL) {
+		DBG_DEBUG("fopen failed: %s\n", strerror(errno));
+		return;
 	}
-	talloc_free(report);
+
+	talloc_full_report_printf(NULL, f);
+	fclose(f);
 }
 
 static void ringbuf_log_msg(struct imessaging_context *msg,

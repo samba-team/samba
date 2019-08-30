@@ -125,18 +125,6 @@ static void print_pid_string_cb(struct messaging_context *msg,
 	num_replies++;
 }
 
-/* Message handler callback that displays a string on stdout */
-
-static void print_string_cb(struct messaging_context *msg,
-			    void *private_data, 
-			    uint32_t msg_type, 
-			    struct server_id pid,
-			    DATA_BLOB *data)
-{
-	printf("%*s", (int)data->length, (const char *)data->data);
-	num_replies++;
-}
-
 /* Send no message.  Useful for testing. */
 
 static bool do_noop(struct tevent_context *ev_ctx,
@@ -861,31 +849,32 @@ static bool do_ip_dropped(struct tevent_context *ev_ctx,
 
 static bool do_poolusage(struct tevent_context *ev_ctx,
 			 struct messaging_context *msg_ctx,
-			 const struct server_id pid,
+			 const struct server_id dst,
 			 const int argc, const char **argv)
 {
+	pid_t pid = procid_to_pid(&dst);
+	int stdout_fd = 1;
+
 	if (argc != 1) {
 		fprintf(stderr, "Usage: smbcontrol <dest> pool-usage\n");
 		return False;
 	}
 
-	messaging_register(msg_ctx, NULL, MSG_POOL_USAGE, print_string_cb);
+	if (pid == 0) {
+		fprintf(stderr, "Can only send to a specific PID\n");
+		return false;
+	}
 
-	/* Send a message and register our interest in a reply */
+	messaging_send_iov(
+		msg_ctx,
+		dst,
+		MSG_REQ_POOL_USAGE,
+		NULL,
+		0,
+		&stdout_fd,
+		1);
 
-	if (!send_message(msg_ctx, pid, MSG_REQ_POOL_USAGE, NULL, 0))
-		return False;
-
-	wait_replies(ev_ctx, msg_ctx, procid_to_pid(&pid) == 0);
-
-	/* No replies were received within the timeout period */
-
-	if (num_replies == 0)
-		printf("No replies received\n");
-
-	messaging_deregister(msg_ctx, MSG_POOL_USAGE, NULL);
-
-	return num_replies;
+	return true;
 }
 
 /* Fetch and print the ringbuf log */

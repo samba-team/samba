@@ -429,7 +429,7 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         server_id_db
                         messages_util
                         messages_dgm
-                        talloc_report
+                        talloc_report_printf
                         access
                         TDB_LIB
                         ''')

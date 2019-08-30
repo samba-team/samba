@@ -18,92 +18,69 @@
 
 #include "includes.h"
 #include "messages.h"
-#include "lib/util/talloc_report.h"
+#include "lib/util/talloc_report_printf.h"
 #ifdef HAVE_MALLINFO
 #include <malloc.h>
 #endif /* HAVE_MALLINFO */
 
- /**
- * Prepare memory allocation report based on mallinfo()
- **/
-static char *get_mallinfo_report(void *mem_ctx)
+static bool pool_usage_filter(struct messaging_rec *rec, void *private_data)
 {
-	char *report = NULL;
-#ifdef HAVE_MALLINFO
-	struct mallinfo mi;
+	if (rec->msg_type != MSG_REQ_POOL_USAGE) {
+		return false;
+	}
 
-	mi = mallinfo();
-	report = talloc_asprintf(mem_ctx,
-				 "mallinfo:\n"
-				 "    arena: %d\n"
-				 "    ordblks: %d\n"
-				 "    smblks: %d\n"
-				 "    hblks: %d\n"
-				 "    hblkhd: %d\n"
-				 "    usmblks: %d\n"
-				 "    fsmblks: %d\n"
-				 "    uordblks: %d\n"
-				 "    fordblks: %d\n"
-				 "    keepcost: %d\n",
-				 mi.arena,
-				 mi.ordblks,
-				 mi.smblks,
-				 mi.hblks,
-				 mi.hblkhd,
-				 mi.usmblks,
-				 mi.fsmblks,
-				 mi.uordblks,
-				 mi.fordblks,
-				 mi.keepcost);
-#endif /* HAVE_MALLINFO */
+	DBG_DEBUG("Got MSG_REQ_POOL_USAGE\n");
 
-	return report;
+	if (rec->num_fds != 1) {
+		DBG_DEBUG("Got %"PRIu8" fds, expected one\n", rec->num_fds);
+		return false;
+	}
+
+	return true;
 }
-/**
- * Respond to a POOL_USAGE message by sending back string form of memory
- * usage stats.
- **/
-static void msg_pool_usage(struct messaging_context *msg_ctx,
-			   void *private_data, 
-			   uint32_t msg_type, 
-			   struct server_id src,
-			   DATA_BLOB *data)
+
+
+static void msg_pool_usage_do(struct tevent_req *req)
 {
-	char *report = NULL;
-	char *mreport = NULL;
-	int iov_size = 0;
-	struct iovec iov[2];
+	struct messaging_context *msg_ctx = tevent_req_callback_data(
+		req, struct messaging_context);
+	struct messaging_rec *rec = NULL;
+	FILE *f = NULL;
+	int ret;
 
-	SMB_ASSERT(msg_type == MSG_REQ_POOL_USAGE);
-
-	DEBUG(2,("Got POOL_USAGE\n"));
-
-	report = talloc_report_str(msg_ctx, NULL);
-	if (report != NULL) {
-		iov[iov_size].iov_base = report;
-		iov[iov_size].iov_len = talloc_get_size(report) - 1;
-		iov_size++;
+	ret = messaging_filtered_read_recv(req, talloc_tos(), &rec);
+	TALLOC_FREE(req);
+	if (ret != 0) {
+		DBG_DEBUG("messaging_filtered_read_recv returned %s\n",
+			  strerror(ret));
+		return;
 	}
 
-	mreport = get_mallinfo_report(msg_ctx);
-	if (mreport != NULL) {
-		iov[iov_size].iov_base = mreport;
-		iov[iov_size].iov_len = talloc_get_size(mreport) - 1;
-		iov_size++;
+	f = fdopen(rec->fds[0], "w");
+	if (f == NULL) {
+		close(rec->fds[0]);
+		TALLOC_FREE(rec);
+		DBG_DEBUG("fdopen failed: %s\n", strerror(errno));
 	}
 
-	if (iov_size) {
-		messaging_send_iov(msg_ctx,
-				   src,
-				   MSG_POOL_USAGE,
-				   iov,
-				   iov_size,
-				   NULL,
-				   0);
-	}
+	TALLOC_FREE(rec);
 
-	TALLOC_FREE(report);
-	TALLOC_FREE(mreport);
+	talloc_full_report_printf(NULL, f);
+
+	fclose(f);
+	f = NULL;
+
+	req = messaging_filtered_read_send(
+		msg_ctx,
+		messaging_tevent_context(msg_ctx),
+		msg_ctx,
+		pool_usage_filter,
+		NULL);
+	if (req == NULL) {
+		DBG_WARNING("messaging_filtered_read_send failed\n");
+		return;
+	}
+	tevent_req_set_callback(req, msg_pool_usage_do, msg_ctx);
 }
 
 /**
@@ -111,6 +88,18 @@ static void msg_pool_usage(struct messaging_context *msg_ctx,
  **/
 void register_msg_pool_usage(struct messaging_context *msg_ctx)
 {
-	messaging_register(msg_ctx, NULL, MSG_REQ_POOL_USAGE, msg_pool_usage);
+	struct tevent_req *req = NULL;
+
+	req = messaging_filtered_read_send(
+		msg_ctx,
+		messaging_tevent_context(msg_ctx),
+		msg_ctx,
+		pool_usage_filter,
+		NULL);
+	if (req == NULL) {
+		DBG_WARNING("messaging_filtered_read_send failed\n");
+		return;
+	}
+	tevent_req_set_callback(req, msg_pool_usage_do, msg_ctx);
 	DEBUG(2, ("Registered MSG_REQ_POOL_USAGE\n"));
-}	
+}
