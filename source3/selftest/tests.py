@@ -689,6 +689,8 @@ for t in tests:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/delete_readonly -U$USERNAME%$PASSWORD --option=torture:delete_readonly=true')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
+    elif t == "smb2.fileid":
+        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit_xattr -U$USERNAME%$PASSWORD')
     elif t == "rpc.wkssvc":
         plansmbtorture4testsuite(t, "ad_member", '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
     elif t == "rpc.srvsvc":
