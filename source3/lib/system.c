@@ -355,6 +355,26 @@ void update_stat_ex_file_id(struct stat_ex *dst, uint64_t file_id)
 	dst->st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_FILE_ID;
 }
 
+void update_stat_ex_from_saved_stat(struct stat_ex *dst,
+				    const struct stat_ex *src)
+{
+	if (!VALID_STAT(*src)) {
+		return;
+	}
+
+	if (!(src->st_ex_iflags & ST_EX_IFLAG_CALCULATED_BTIME)) {
+		update_stat_ex_create_time(dst, src->st_ex_btime);
+	}
+
+	if (!(src->st_ex_iflags & ST_EX_IFLAG_CALCULATED_ITIME)) {
+		update_stat_ex_itime(dst, src->st_ex_itime);
+	}
+
+	if (!(src->st_ex_iflags & ST_EX_IFLAG_CALCULATED_FILE_ID)) {
+		update_stat_ex_file_id(dst, src->st_ex_file_id);
+	}
+}
+
 void init_stat_ex_from_stat (struct stat_ex *dst,
 			    const struct stat *src,
 			    bool fake_dir_create_times)
