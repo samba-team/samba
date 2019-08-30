@@ -1226,6 +1226,51 @@ static int shadow_copy2_symlink(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_SYMLINK(handle, link_contents, new_smb_fname);
 }
 
+static int shadow_copy2_symlinkat(vfs_handle_struct *handle,
+			const char *link_contents,
+			struct files_struct *dirfsp,
+			const struct smb_filename *new_smb_fname)
+{
+	time_t timestamp_old = 0;
+	time_t timestamp_new = 0;
+	char *snappath_old = NULL;
+	char *snappath_new = NULL;
+
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
+				handle,
+				link_contents,
+				&timestamp_old,
+				NULL,
+				&snappath_old,
+				NULL)) {
+		return -1;
+	}
+	if (!shadow_copy2_strip_snapshot_internal(talloc_tos(),
+				handle,
+				new_smb_fname->base_name,
+				&timestamp_new,
+				NULL,
+				&snappath_new,
+				NULL)) {
+		return -1;
+	}
+	if ((timestamp_old != 0) || (timestamp_new != 0)) {
+		errno = EROFS;
+		return -1;
+	}
+	/*
+	 * Don't allow symlinks on already converted paths.
+	 */
+	if ((snappath_old != NULL) || (snappath_new != NULL)) {
+		errno = EROFS;
+		return -1;
+	}
+	return SMB_VFS_NEXT_SYMLINKAT(handle,
+				link_contents,
+				dirfsp,
+				new_smb_fname);
+}
+
 static int shadow_copy2_linkat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *old_smb_fname,
@@ -3154,6 +3199,7 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.renameat_fn = shadow_copy2_renameat,
 	.linkat_fn = shadow_copy2_linkat,
 	.symlink_fn = shadow_copy2_symlink,
+	.symlinkat_fn = shadow_copy2_symlinkat,
 	.stat_fn = shadow_copy2_stat,
 	.lstat_fn = shadow_copy2_lstat,
 	.fstat_fn = shadow_copy2_fstat,
