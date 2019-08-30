@@ -1143,6 +1143,25 @@ static int cephwrap_symlink(struct vfs_handle_struct *handle,
 	WRAP_RETURN(result);
 }
 
+static int cephwrap_symlinkat(struct vfs_handle_struct *handle,
+		const char *link_target,
+		struct files_struct *dirfsp,
+		const struct smb_filename *new_smb_fname)
+{
+	int result = -1;
+	DBG_DEBUG("[CEPH] symlink(%p, %s, %s)\n", handle,
+			link_target,
+			new_smb_fname->base_name);
+
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	result = ceph_symlink(handle->data,
+			link_target,
+			new_smb_fname->base_name);
+	DBG_DEBUG("[CEPH] symlink(...) = %d\n", result);
+	WRAP_RETURN(result);
+}
+
 static int cephwrap_readlinkat(struct vfs_handle_struct *handle,
 		files_struct *dirfsp,
 		const struct smb_filename *smb_fname,
@@ -1463,6 +1482,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.linux_setlease_fn = cephwrap_linux_setlease,
 	.getlock_fn = cephwrap_getlock,
 	.symlink_fn = cephwrap_symlink,
+	.symlinkat_fn = cephwrap_symlinkat,
 	.readlinkat_fn = cephwrap_readlinkat,
 	.linkat_fn = cephwrap_linkat,
 	.mknodat_fn = cephwrap_mknodat,
