@@ -2201,8 +2201,20 @@ int smb_vfs_call_symlink(struct vfs_handle_struct *handle,
 	return handle->fns->symlink_fn(handle, link_target, new_smb_fname);
 }
 
-int smb_vfs_call_readlinkat(struct vfs_handle_struct *handle,
+int smb_vfs_call_symlinkat(struct vfs_handle_struct *handle,
+			const char *link_target,
 			struct files_struct *dirfsp,
+			const struct smb_filename *new_smb_fname)
+{
+	VFS_FIND(symlinkat);
+	return handle->fns->symlinkat_fn(handle,
+				link_target,
+				dirfsp,
+				new_smb_fname);
+}
+
+int smb_vfs_call_readlinkat(struct vfs_handle_struct *handle,
+			files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			char *buf,
 			size_t bufsiz)

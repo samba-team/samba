@@ -2650,6 +2650,24 @@ static int vfswrap_symlink(vfs_handle_struct *handle,
 	return result;
 }
 
+static int vfswrap_symlinkat(vfs_handle_struct *handle,
+			const char *link_target,
+			struct files_struct *dirfsp,
+			const struct smb_filename *new_smb_fname)
+{
+	int result;
+
+	START_PROFILE(syscall_symlinkat);
+
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	result = symlinkat(link_target,
+			dirfsp->fh->fd,
+			new_smb_fname->base_name);
+	END_PROFILE(syscall_symlinkat);
+	return result;
+}
+
 static int vfswrap_readlinkat(vfs_handle_struct *handle,
 			files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -3494,6 +3512,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.linux_setlease_fn = vfswrap_linux_setlease,
 	.getlock_fn = vfswrap_getlock,
 	.symlink_fn = vfswrap_symlink,
+	.symlinkat_fn = vfswrap_symlinkat,
 	.readlinkat_fn = vfswrap_readlinkat,
 	.linkat_fn = vfswrap_linkat,
 	.mknodat_fn = vfswrap_mknodat,
