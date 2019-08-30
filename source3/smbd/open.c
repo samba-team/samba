@@ -3710,6 +3710,15 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 	if (info == FILE_WAS_CREATED) {
 		smb_fname->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_ITIME;
+
+		if (lp_store_dos_attributes(SNUM(conn)) &&
+		    smb_fname->st.st_ex_iflags & ST_EX_IFLAG_CALCULATED_FILE_ID)
+		{
+			uint64_t file_id;
+
+			file_id = make_file_id_from_itime(&smb_fname->st);
+			update_stat_ex_file_id(&smb_fname->st, file_id);
+		}
 	}
 
 	if (info != FILE_WAS_OPENED) {
@@ -3862,6 +3871,14 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	smb_dname->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_ITIME;
 
 	if (lp_store_dos_attributes(SNUM(conn))) {
+		if (smb_dname->st.st_ex_iflags & ST_EX_IFLAG_CALCULATED_FILE_ID)
+		{
+			uint64_t file_id;
+
+			file_id = make_file_id_from_itime(&smb_dname->st);
+			update_stat_ex_file_id(&smb_dname->st, file_id);
+		}
+
 		if (!posix_open) {
 			file_set_dosmode(conn, smb_dname,
 					 file_attributes | FILE_ATTRIBUTE_DIRECTORY,
