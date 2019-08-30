@@ -1157,6 +1157,7 @@ static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
+	int ret;
 	struct smb_filename *new_smb_fname = NULL;
 
 	if (argc != 3) {
@@ -1170,7 +1171,11 @@ static NTSTATUS cmd_symlink(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 	if (new_smb_fname == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	if (SMB_VFS_SYMLINK(vfs->conn, argv[1], new_smb_fname) == -1) {
+	ret = SMB_VFS_SYMLINKAT(vfs->conn,
+			argv[1],
+			vfs->conn->cwd_fsp,
+			new_smb_fname);
+	if (ret == -1) {
 		printf("symlink: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
