@@ -67,6 +67,13 @@ bld.SAMBA_LIBRARY('talloc_report',
                   private_library=True
                   )
 
+bld.SAMBA_LIBRARY('talloc_report_printf',
+                  source='talloc_report_printf.c',
+                  local_include=False,
+                  public_deps='talloc',
+                  private_library=True
+                  )
+
 bld.SAMBA_SUBSYSTEM('samba-util-core',
                     source='''data_blob.c util_file.c sys_popen.c time.c
                               signal.c util.c idtree.c fault.c
