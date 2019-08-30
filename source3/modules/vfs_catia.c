@@ -2377,6 +2377,10 @@ static NTSTATUS catia_get_dos_attributes(struct vfs_handle_struct *handle,
 	status = SMB_VFS_NEXT_GET_DOS_ATTRIBUTES(handle,
 						 mapped_smb_fname,
 						 dosmode);
+	if (NT_STATUS_IS_OK(status)) {
+		smb_fname->st = mapped_smb_fname->st;
+	}
+
 	TALLOC_FREE(mapped_name);
 	TALLOC_FREE(mapped_smb_fname);
 
