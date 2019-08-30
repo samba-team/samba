@@ -125,6 +125,21 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>zfsacl:denymissingspecial = [yes|no]</term>
+		<listitem>
+		<para>Prevent users from setting an ACL that lacks NFSv4 special entries
+		(owner@, group@, everyone@). ZFS will automatically generate these these entries
+		when calculating the inherited ACL of new files if the ACL of the parent directory
+		lacks an inheriting special entry. This may result in user confusion and unexpected
+		change in permissions of files and directories as the inherited ACL is generated.</para>
+		<itemizedlist>
+		<listitem><para><command>yes</command></para></listitem>
+		<listitem><para><command>no (default)</command></para></listitem>
+		</itemizedlist>
+		</listitem>
+		</varlistentry>
+
 	</variablelist>
 </refsect1>
 
