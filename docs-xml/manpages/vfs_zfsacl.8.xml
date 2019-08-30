@@ -140,6 +140,25 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term>zfsacl:map_dacl_protected = [yes|no]</term>
+		<listitem>
+		<para>If enabled and the ZFS ACL on the underlying filesystem does not contain
+		any inherited access control entires, then set the SEC_DESC_DACL_PROTECTED flag
+		on the Security Descriptor returned to SMB clients.
+		This ensures correct Windows client behavior when disabling inheritance on
+		directories.</para>
+
+		<para>Following is the behaviour of Samba for different values : </para>
+		<itemizedlist>
+		<listitem><para><command>yes</command> - Enable mapping to
+		SEC_DESC_DACL_PROTECTED</para></listitem>
+		<listitem><para><command>no (default)</command></para></listitem>
+		</itemizedlist>
+		</listitem>
+		</varlistentry>
+
+
 	</variablelist>
 </refsect1>
 

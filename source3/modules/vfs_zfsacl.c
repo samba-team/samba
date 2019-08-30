@@ -38,6 +38,7 @@
 
 struct zfsacl_config_data {
 	struct smbacl4_vfs_params nfs4_params;
+	bool zfsacl_map_dacl_protected;
 	bool zfsacl_denymissingspecial;
 };
 
@@ -57,6 +58,7 @@ static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 	SMB_STRUCT_STAT sbuf;
 	const SMB_STRUCT_STAT *psbuf = NULL;
 	int ret;
+	bool inherited_is_present = false;
 	bool is_dir;
 
 	if (VALID_STAT(smb_fname->st)) {
@@ -123,6 +125,11 @@ static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 			aceprop.aceMask |= SMB_ACE4_DELETE_CHILD;
 		}
 
+#ifdef ACE_INHERITED_ACE
+		if (aceprop.aceFlags & ACE_INHERITED_ACE) {
+			inherited_is_present = true;
+		}
+#endif
 		if(aceprop.aceFlags & ACE_OWNER) {
 			aceprop.flags = SMB_ACE4_ID_SPECIAL;
 			aceprop.who.special_id = SMB_ACE4_WHO_OWNER;
@@ -139,6 +146,15 @@ static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 			return NT_STATUS_NO_MEMORY;
 	}
 
+#ifdef ACE_INHERITED_ACE
+	if (!inherited_is_present && config->zfsacl_map_dacl_protected) {
+		DBG_DEBUG("Setting SEC_DESC_DACL_PROTECTED on [%s]\n",
+			  smb_fname_str_dbg(smb_fname));
+		smbacl4_set_controlflags(pacl,
+					 SEC_DESC_DACL_PROTECTED |
+					 SEC_DESC_SELF_RELATIVE);
+	}
+#endif
 	*ppacl = pacl;
 	return NT_STATUS_OK;
 }
@@ -442,6 +458,9 @@ static int zfsacl_connect(struct vfs_handle_struct *handle,
 		errno = ENOMEM;
 		return -1;
 	}
+
+	config->zfsacl_map_dacl_protected = lp_parm_bool(SNUM(handle->conn),
+				"zfsacl", "map_dacl_protected", false);
 
 	config->zfsacl_denymissingspecial = lp_parm_bool(SNUM(handle->conn),
 				"zfsacl", "denymissingspecial", false);
