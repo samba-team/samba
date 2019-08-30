@@ -1673,6 +1673,23 @@ static int vfs_gluster_symlink(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_gluster_symlinkat(struct vfs_handle_struct *handle,
+				const char *link_target,
+				struct files_struct *dirfsp,
+				const struct smb_filename *new_smb_fname)
+{
+	int ret;
+
+	START_PROFILE(syscall_symlinkat);
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+	ret = glfs_symlink(handle->data,
+			link_target,
+			new_smb_fname->base_name);
+	END_PROFILE(syscall_symlinkat);
+
+	return ret;
+}
+
 static int vfs_gluster_readlinkat(struct vfs_handle_struct *handle,
 				files_struct *dirfsp,
 				const struct smb_filename *smb_fname,
@@ -1933,6 +1950,7 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.linux_setlease_fn = vfs_gluster_linux_setlease,
 	.getlock_fn = vfs_gluster_getlock,
 	.symlink_fn = vfs_gluster_symlink,
+	.symlinkat_fn = vfs_gluster_symlinkat,
 	.readlinkat_fn = vfs_gluster_readlinkat,
 	.linkat_fn = vfs_gluster_linkat,
 	.mknodat_fn = vfs_gluster_mknodat,
