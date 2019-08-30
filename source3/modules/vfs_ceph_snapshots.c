@@ -795,37 +795,6 @@ static int ceph_snap_gmt_renameat(vfs_handle_struct *handle,
 }
 
 /* block links from writeable shares to snapshots for now, like other modules */
-static int ceph_snap_gmt_symlink(vfs_handle_struct *handle,
-				const char *link_contents,
-				const struct smb_filename *new_smb_fname)
-{
-	int ret;
-	time_t timestamp_old = 0;
-	time_t timestamp_new = 0;
-
-	ret = ceph_snap_gmt_strip_snapshot(handle,
-				link_contents,
-				&timestamp_old,
-				NULL, 0);
-	if (ret < 0) {
-		errno = -ret;
-		return -1;
-	}
-	ret = ceph_snap_gmt_strip_snapshot(handle,
-				new_smb_fname->base_name,
-				&timestamp_new,
-				NULL, 0);
-	if (ret < 0) {
-		errno = -ret;
-		return -1;
-	}
-	if ((timestamp_old != 0) || (timestamp_new != 0)) {
-		errno = EROFS;
-		return -1;
-	}
-	return SMB_VFS_NEXT_SYMLINK(handle, link_contents, new_smb_fname);
-}
-
 static int ceph_snap_gmt_symlinkat(vfs_handle_struct *handle,
 				const char *link_contents,
 				struct files_struct *dirfsp,
@@ -1659,7 +1628,6 @@ static struct vfs_fn_pointers ceph_snap_fns = {
 	.get_quota_fn = ceph_snap_gmt_get_quota,
 	.renameat_fn = ceph_snap_gmt_renameat,
 	.linkat_fn = ceph_snap_gmt_linkat,
-	.symlink_fn = ceph_snap_gmt_symlink,
 	.symlinkat_fn = ceph_snap_gmt_symlinkat,
 	.stat_fn = ceph_snap_gmt_stat,
 	.lstat_fn = ceph_snap_gmt_lstat,
