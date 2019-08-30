@@ -1327,44 +1327,6 @@ err:
 	return status;
 }
 
-static int um_symlink(vfs_handle_struct *handle,
-			const char *link_contents,
-			const struct smb_filename *new_smb_fname)
-{
-	int status;
-	char *client_link_contents = NULL;
-	struct smb_filename *new_client_fname = NULL;
-
-	DEBUG(10, ("Entering um_symlink\n"));
-
-	if (!is_in_media_files(link_contents) &&
-			!is_in_media_files(new_smb_fname->base_name)) {
-		return SMB_VFS_NEXT_SYMLINK(handle,
-				link_contents,
-				new_smb_fname);
-	}
-
-	status = alloc_get_client_path(handle, talloc_tos(),
-				link_contents, &client_link_contents);
-	if (status != 0) {
-		goto err;
-	}
-	status = alloc_get_client_smb_fname(handle, talloc_tos(),
-					    new_smb_fname, &new_client_fname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_SYMLINK(handle,
-					client_link_contents,
-					new_client_fname);
-
-err:
-	TALLOC_FREE(client_link_contents);
-	TALLOC_FREE(new_client_fname);
-	return status;
-}
-
 static int um_symlinkat(vfs_handle_struct *handle,
 			const char *link_contents,
 			struct files_struct *dirfsp,
@@ -1972,7 +1934,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.lchown_fn = um_lchown,
 	.chdir_fn = um_chdir,
 	.ntimes_fn = um_ntimes,
-	.symlink_fn = um_symlink,
 	.symlinkat_fn = um_symlinkat,
 	.readlinkat_fn = um_readlinkat,
 	.linkat_fn = um_linkat,
