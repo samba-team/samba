@@ -1658,21 +1658,6 @@ static bool vfs_gluster_getlock(struct vfs_handle_struct *handle,
 	return true;
 }
 
-static int vfs_gluster_symlink(struct vfs_handle_struct *handle,
-				const char *link_target,
-				const struct smb_filename *new_smb_fname)
-{
-	int ret;
-
-	START_PROFILE(syscall_symlink);
-	ret = glfs_symlink(handle->data,
-			link_target,
-			new_smb_fname->base_name);
-	END_PROFILE(syscall_symlink);
-
-	return ret;
-}
-
 static int vfs_gluster_symlinkat(struct vfs_handle_struct *handle,
 				const char *link_target,
 				struct files_struct *dirfsp,
@@ -1949,7 +1934,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.kernel_flock_fn = vfs_gluster_kernel_flock,
 	.linux_setlease_fn = vfs_gluster_linux_setlease,
 	.getlock_fn = vfs_gluster_getlock,
-	.symlink_fn = vfs_gluster_symlink,
 	.symlinkat_fn = vfs_gluster_symlinkat,
 	.readlinkat_fn = vfs_gluster_readlinkat,
 	.linkat_fn = vfs_gluster_linkat,
