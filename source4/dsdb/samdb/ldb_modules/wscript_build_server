@@ -426,15 +426,6 @@ bld.SAMBA_MODULE('ldb_aclread',
 	deps='talloc samba-security samdb DSDB_MODULE_HELPERS',
 	)
 
-bld.SAMBA_MODULE('ldb_simple_dn',
-	source='simple_dn.c',
-	subsystem='ldb',
-	init_function='ldb_simple_dn_module_init',
-	module_init_name='ldb_init_module',
-	internal_module=False,
-	deps='talloc DSDB_MODULE_HELPERS'
-	)
-
 bld.SAMBA_MODULE('ldb_dirsync',
 	source='dirsync.c',
 	subsystem='ldb',
