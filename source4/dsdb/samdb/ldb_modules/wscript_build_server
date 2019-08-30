@@ -179,16 +179,6 @@ bld.SAMBA_MODULE('ldb_samba3sid',
 	)
 
 
-bld.SAMBA_MODULE('ldb_simple_ldap_map',
-	source='simple_ldap_map.c',
-	subsystem='ldb',
-	init_function='ldb_simple_ldap_map_module_init',
-	module_init_name='ldb_init_module',
-	internal_module=False,
-	deps='talloc ldb ndr ldbsamba samdb-common'
-	)
-
-
 bld.SAMBA_MODULE('ldb_rootdse',
 	source='rootdse.c',
 	subsystem='ldb',
