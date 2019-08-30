@@ -199,15 +199,6 @@ bld.SAMBA_MODULE('ldb_password_hash',
 	)
 
 
-bld.SAMBA_MODULE('ldb_local_password',
-	source='local_password.c',
-	subsystem='ldb',
-	init_function='ldb_local_password_module_init',
-	module_init_name='ldb_init_module',
-	internal_module=False,
-	deps='talloc ndr samdb'
-	)
-
 bld.SAMBA_MODULE('ldb_extended_dn_in',
 	source='extended_dn_in.c',
 	subsystem='ldb',
