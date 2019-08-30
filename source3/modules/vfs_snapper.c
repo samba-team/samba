@@ -2042,34 +2042,6 @@ static int snapper_gmt_renameat(vfs_handle_struct *handle,
 			smb_fname_dst);
 }
 
-static int snapper_gmt_symlink(vfs_handle_struct *handle,
-				const char *link_contents,
-				const struct smb_filename *new_smb_fname)
-{
-	time_t timestamp_old = 0;
-	time_t timestamp_new = 0;
-
-	if (!snapper_gmt_strip_snapshot(talloc_tos(),
-				handle,
-				link_contents,
-				&timestamp_old,
-				NULL)) {
-		return -1;
-	}
-	if (!snapper_gmt_strip_snapshot(talloc_tos(),
-				handle,
-				new_smb_fname->base_name,
-				&timestamp_new,
-				NULL)) {
-		return -1;
-	}
-	if ((timestamp_old != 0) || (timestamp_new != 0)) {
-		errno = EROFS;
-		return -1;
-	}
-	return SMB_VFS_NEXT_SYMLINK(handle, link_contents, new_smb_fname);
-}
-
 static int snapper_gmt_symlinkat(vfs_handle_struct *handle,
 				const char *link_contents,
 				struct files_struct *dirfsp,
@@ -2916,7 +2888,6 @@ static struct vfs_fn_pointers snapper_fns = {
 	.get_quota_fn = snapper_gmt_get_quota,
 	.renameat_fn = snapper_gmt_renameat,
 	.linkat_fn = snapper_gmt_linkat,
-	.symlink_fn = snapper_gmt_symlink,
 	.symlinkat_fn = snapper_gmt_symlinkat,
 	.stat_fn = snapper_gmt_stat,
 	.lstat_fn = snapper_gmt_lstat,
