@@ -1316,7 +1316,8 @@ bool share_mode_forall_entries(
 	struct share_mode_data *d = lck->data;
 	uint32_t i;
 
-	for (i=0; i<d->num_share_modes; i++) {
+	i = 0;
+	while (i<d->num_share_modes) {
 		struct share_mode_entry *e = &d->share_modes[i];
 		struct server_id pid = e->pid;
 		uint64_t share_file_id = e->share_file_id;
@@ -1347,6 +1348,13 @@ bool share_mode_forall_entries(
 
 		if (stop) {
 			return true;
+		}
+
+		if (e->stale) {
+			*e = d->share_modes[d->num_share_modes-1];
+			d->num_share_modes -= 1;
+		} else {
+			i += 1;
 		}
 	}
 
