@@ -892,7 +892,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			continue;
 		}
 
-		if (ask_sharemode) {
+		if (ask_sharemode && !S_ISDIR(smb_fname.st.st_ex_mode)) {
 			struct timespec write_time_ts;
 			struct file_id fileid;
 

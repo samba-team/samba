@@ -618,7 +618,9 @@ static bool smb2_query_directory_next_entry(struct tevent_req *req)
 		}
 	}
 
-	if (state->async_ask_sharemode) {
+	if (state->async_ask_sharemode &&
+	    !S_ISDIR(smb_fname->st.st_ex_mode))
+	{
 		struct tevent_req *subreq = NULL;
 		char *buf = state->base_data + state->last_entry_off;
 
