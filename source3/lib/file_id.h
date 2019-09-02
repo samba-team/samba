@@ -27,6 +27,13 @@
 /* The following definitions come from lib/file_id.c  */
 
 bool file_id_equal(const struct file_id *id1, const struct file_id *id2);
+
+/*
+ * strlen("18446744073709551615")=20 times 3 plus 2 colons plus trailing 0
+ */
+struct file_id_buf { char buf[63]; };
+char *file_id_str_buf(struct file_id fid, struct file_id_buf *dst);
+
 /*
   a static-like (on talloc_tos()) string for a file_id structure
  */

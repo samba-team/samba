@@ -39,6 +39,17 @@ const char *file_id_string_tos(const struct file_id *id)
 	return file_id_string(talloc_tos(), id);
 }
 
+char *file_id_str_buf(struct file_id fid, struct file_id_buf *dst)
+{
+	snprintf(dst->buf,
+		 sizeof(dst->buf),
+		 "%"PRIu64":%"PRIu64":%"PRIu64,
+		 fid.devid,
+		 fid.inode,
+		 fid.extid);
+	return dst->buf;
+}
+
 /*
   an allocated string for a file_id structure
  */
