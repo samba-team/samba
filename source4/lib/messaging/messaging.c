@@ -364,8 +364,8 @@ NTSTATUS imessaging_process_cleanup(
 	pid_t pid)
 {
 	struct irpc_name_records *names = NULL;
-	int i = 0;
-	int j = 0;
+	uint32_t i = 0;
+	uint32_t j = 0;
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
 	if (mem_ctx == NULL) {
