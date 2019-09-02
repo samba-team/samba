@@ -28,14 +28,7 @@ shellcheck_test ()
 		# SC2164: Use cd ... || exit in case cd fails.
 		#         - Most hits are on known directories.  Too
 		#           much churn, maybe later.
-		# SC2166: Prefer [ p ] && [ q ] as [ p -a q ] is not
-		#         well defined.
-		# SC2166: Prefer [ p ] || [ q ] as [ p -o q ] is not
-		#         well defined.
-		#         - This can cause issues but the number of
-		#           true positives will be very low.  Too much
-		#           churn, maybe later.
-		_excludes="SC1090,SC1091,SC2162,SC2164,SC2166"
+		_excludes="SC1090,SC1091,SC2162,SC2164"
 		unit_test shellcheck --exclude="$_excludes" "$@"
 	else
 		echo "WARNING: shellcheck not installed, skipping test"

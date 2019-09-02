@@ -139,7 +139,7 @@ nfs_check_service ()
 	fi
 
 	if $_ok ; then
-	    if [ $unhealthy_after -ne 1 -o $restart_every -ne 0 ] ; then
+	    if [ $unhealthy_after -ne 1 ] || [ $restart_every -ne 0 ] ; then
 		ctdb_counter_init "$_progname"
 	    fi
 	    exit 0
@@ -179,7 +179,7 @@ nfs_check_service ()
 # shellcheck disable=SC2031
 nfs_restart_service ()
 {
-    if [ -z "$service_stop_cmd" -o -z "$service_start_cmd" ] ; then
+    if [ -z "$service_stop_cmd" ] || [ -z "$service_start_cmd" ] ; then
 	die "ERROR: Can not restart service \"${_progname}\" without corresponding service_start_cmd/service_stop_cmd settings"
     fi
 

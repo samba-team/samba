@@ -106,7 +106,7 @@ echo_nth ()
 	    node="$1"
     fi
 
-    if [ -n "$node" -a "$node" != "#DEAD" ] ; then
+    if [ -n "$node" ] && [ "$node" != "#DEAD" ] ; then
 	echo "$node"
     else
 	echo "${prog}: \"node ${n}\" does not exist" >&2
@@ -213,7 +213,7 @@ get_nodes ()
 	local f="${CTDB_BASE}/nodes"
 	if [ -n "$ctdb_nodes_file" ] ; then
 		f="$ctdb_nodes_file"
-		if [ ! -e "$f" -a "${f#/}" = "$f" ] ; then
+		if [ ! -e "$f" ] && [ "${f#/}" = "$f" ] ; then
 			# $f is relative, try in $CTDB_BASE
 			f="${CTDB_BASE}/${f}"
 		fi

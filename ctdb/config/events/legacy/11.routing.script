@@ -39,7 +39,7 @@ updateip)
 	oiface=$2
 	niface=$3
 	while read iface dest gw; do
-	    if [ "$niface" = "$iface" -o "$oiface" = "$iface" ] ; then
+	    if [ "$niface" = "$iface" ] || [ "$oiface" = "$iface" ] ; then
 		ip route add "$dest" via "$gw" dev "$iface" >/dev/null 2>&1
 	    fi
 	done <"${CTDB_BASE}/static-routes"

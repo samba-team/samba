@@ -20,8 +20,8 @@ table_id_prefix="ctdb."
 [ "$CTDB_PER_IP_ROUTING_TABLE_ID_LOW" -lt "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] 2>/dev/null || \
     die "error: CTDB_PER_IP_ROUTING_TABLE_ID_LOW[$CTDB_PER_IP_ROUTING_TABLE_ID_LOW] and/or CTDB_PER_IP_ROUTING_TABLE_ID_HIGH[$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH] improperly configured"
 
-if [ "$CTDB_PER_IP_ROUTING_TABLE_ID_LOW" -le 253 -a \
-    255 -le "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] ; then
+if [ "$CTDB_PER_IP_ROUTING_TABLE_ID_LOW" -le 253 ] &&  \
+	   [ 255 -le "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] ; then
     die "error: range CTDB_PER_IP_ROUTING_TABLE_ID_LOW[$CTDB_PER_IP_ROUTING_TABLE_ID_LOW]..CTDB_PER_IP_ROUTING_TABLE_ID_HIGH[$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH] must not include 253-255"
 fi
 
@@ -49,7 +49,7 @@ ipv4_is_valid_addr()
     for _o in $(export IFS="." ; echo $_ip) ; do
 	# The 2>/dev/null stops output from failures where an "octet"
 	# is not numeric.  The test will still fail.
-	if ! [ 0 -le $_o -a $_o -le 255 ] 2>/dev/null ; then
+	if ! [ 0 -le $_o ] && [ $_o -le 255 ] 2>/dev/null ; then
 	    return 1
 	fi
 	_count=$((_count + 1))
@@ -149,8 +149,9 @@ ensure_table_id_for_ip ()
 	    fi
 	    # Potentially update the new table id to be used.  The
 	    # redirect stops error spam for a non-numeric value.
-	    if [ "$_new" -le "$_t" -a \
-		"$_t" -le "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] 2>/dev/null ; then
+	    if [ "$_new" -le "$_t" ] && \
+		       [ "$_t" -le "$CTDB_PER_IP_ROUTING_TABLE_ID_HIGH" ] \
+			       2>/dev/null ; then
 		_new=$((_t + 1))
 	    fi
 	done <"$rt_tables"
@@ -317,8 +318,8 @@ add_missing_routes ()
 	    [ -n "$_iface" ] || continue
 
 	    _table_id="${table_id_prefix}${_ip}"
-	    if [ -z "$(ip route show table "$_table_id" 2>/dev/null)" -o \
-		"$1" = "force" ]  ; then
+	    if [ -z "$(ip route show table "$_table_id" 2>/dev/null)" ] || \
+		       [ "$1" = "force" ]  ; then
 		add_routing_for_ip "$_iface" "$_ip"
 	    fi
 	done

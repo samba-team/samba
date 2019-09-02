@@ -217,7 +217,7 @@ t=$(date +%s)
 for i in $nodes; do
     t2=$(onnode "$i" date +%s)
     d=$((t2 - t))
-    if [ "$d" -gt 30 -o "$d" -lt -30 ]; then
+    if [ "$d" -gt 30 ] || [ "$d" -lt -30 ]; then
 	error "time on node $i differs by $d seconds"
     fi
 done
