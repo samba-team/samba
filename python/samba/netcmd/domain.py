@@ -4110,7 +4110,11 @@ class cmd_domain_schema_upgrade(Command):
         return count
 
     def run(self, **kwargs):
-        from samba.ms_schema_markdown import read_ms_markdown
+        try:
+            from samba.ms_schema_markdown import read_ms_markdown
+        except ImportError as e:
+            self.outf.write("Exception in importing markdown: %s" % e)
+            raise CommandError('Failed to import module markdown')
         from samba.schema import Schema
 
         updates_allowed_overridden = False
