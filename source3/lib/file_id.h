@@ -19,6 +19,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef __LIB_FILE_ID_H__
+#define __LIB_FILE_ID_H__
+
 #include "librpc/gen_ndr/file_id.h"
 
 /* The following definitions come from lib/file_id.c  */
@@ -40,3 +43,5 @@ void pull_file_id_24(const char *buf, struct file_id *id);
  * Make a SMB File-ID from itime
  */
 uint64_t make_file_id_from_itime(SMB_STRUCT_STAT *st);
+
+#endif
