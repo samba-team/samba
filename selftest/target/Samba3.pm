@@ -1450,6 +1450,9 @@ sub provision($$$$$$$$$)
 	my $ro_shrdir="$shrdir/root-tmp";
 	push(@dirs,$ro_shrdir);
 
+	my $noperm_shrdir="$shrdir/noperm-tmp";
+	push(@dirs,$noperm_shrdir);
+
 	my $msdfs_shrdir="$shrdir/msdfsshare";
 	push(@dirs,$msdfs_shrdir);
 
@@ -1473,6 +1476,9 @@ sub provision($$$$$$$$$)
 
 	my $widelinks_linkdir="$shrdir/widelinks_foo";
 	push(@dirs,$widelinks_linkdir);
+
+	my $fsrvp_shrdir="$shrdir/fsrvp";
+	push(@dirs,$fsrvp_shrdir);
 
 	my $shadow_tstdir="$shrdir/shadow";
 	push(@dirs,$shadow_tstdir);
@@ -1516,6 +1522,11 @@ sub provision($$$$$$$$$)
 	chmod 0755, $lockdir;
 	chmod 0755, $piddir;
 
+
+	##
+	## Create a directory without permissions to enter
+	##
+	chmod 0000, $noperm_shrdir;
 
 	##
 	## create ro and msdfs share layout
@@ -1825,6 +1836,10 @@ sub provision($$$$$$$$$)
 [ro-tmp]
 	path = $ro_shrdir
 	guest ok = yes
+[noperm]
+	path = $noperm_shrdir
+	wide links = yes
+	guest ok = yes
 [write-list-tmp]
 	path = $shrdir
         read only = yes
@@ -2009,14 +2024,14 @@ sub provision($$$$$$$$$)
 	guest ok = yes
 
 [fsrvp_share]
-	path = $shrdir
+	path = $fsrvp_shrdir
 	comment = fake shapshots using rsync
 	vfs objects = shell_snap shadow_copy2
 	shell_snap:check path command = $fake_snap_pl --check
 	shell_snap:create command = $fake_snap_pl --create
 	shell_snap:delete command = $fake_snap_pl --delete
 	# a relative path here fails, the snapshot dir is no longer found
-	shadow:snapdir = $shrdir/.snapshots
+	shadow:snapdir = $fsrvp_shrdir/.snapshots
 
 [shadow1]
 	path = $shadow_shrdir

@@ -1,4 +1,62 @@
                    ==============================
+                   Release Notes for Samba 4.9.13
+                         September 03, 2019
+                   ==============================
+
+
+This is a security release in order to address the following defect:
+
+o  CVE-2019-10197: Combination of parameters and permissions can allow user
+                   to escape from the share path definition.
+
+=======
+Details
+=======
+
+o  CVE-2019-10197:
+   Under certain parameter configurations, when an SMB client accesses a network
+   share and the user does not have permission to access the share root
+   directory, it is possible for the user to escape from the share to see the
+   complete '/' filesystem. Unix permission checks in the kernel are still
+   enforced.
+
+
+Changes since 4.9.12:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14035: CVE-2019-10197: Permissions check deny can allow user to escape
+     from the share.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14035: CVE-2019-10197: Permissions check deny can allow user to escape
+     from the share.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.9.12
                            August 27, 2019
                    ==============================
@@ -73,8 +131,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.9.11
