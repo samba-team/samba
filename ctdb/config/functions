@@ -228,8 +228,6 @@ ctdb_get_ip_address ()
 	    awk -F '|' 'NR == 2 { print $3 }' >"$_ip_addr_file"
     fi
 
-    # ip_address is used by caller
-    # shellcheck disable=SC2034
     cat "$_ip_addr_file"
 }
 
