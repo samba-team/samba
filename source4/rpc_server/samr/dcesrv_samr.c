@@ -1649,6 +1649,11 @@ static int user_iterate_callback(struct ldb_request *req,
 
 		ent = &(ac->entries[ac->num_entries++]);
 		val = ldb_msg_find_ldb_val(msg, "samaccountname");
+		if (val == NULL) {
+			DBG_WARNING("samaccountname attribute not found\n");
+			ret = ldb_request_done(req, LDB_ERR_OPERATIONS_ERROR);
+			break;
+		}
 		ent->name.string = talloc_steal(ac->entries,
 					        (char *)val->data);
 		ent->idx = rid;
