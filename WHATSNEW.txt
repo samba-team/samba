@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.11.  This is *not*
+This is the third release candidate of Samba 4.11.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -357,6 +357,51 @@ smb.conf changes
   fruit:zero_file_id                 Changed default            False
   debug encryption                   New: dump encryption keys  False
   rndc command                       Deprecated
+
+
+CHANGES SINCE 4.11.0rc2
+=======================
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 13972: Different Device Id for GlusterFS FUSE mount is causing data
+     loss in CTDB cluster.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14035: CVE-2019-10197: Permissions check deny can allow user to escape
+     from the share.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14059: ldb: Release ldb 2.0.6 (log database repack so users know what
+     is happening).
+   * BUG 14092: docs: Deprecate "rndc command" for Samba 4.11.
+
+o  Tim Beale <timbeale@catalyst.net.nz>
+   * BUG 14059: ldb: Free memory when repacking database.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14089: vfs_default: Use correct flag in vfswrap_fs_file_id.
+   * BUG 14090: vfs_glusterfs: Initialize st_ex_file_id, st_ex_itime and
+     st_ex_iflags.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 14093: vfs_glusterfs: Enable profiling for file system operations.
+
+o  Aaron Haslett <aaronhaslett@catalyst.net.nz>
+   * BUG 14059: Backport sambadowngradedatabase for v4.11.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14035: CVE-2019-10197: Permissions check deny can allow user to escape
+     from the share.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 14032: vfs_gpfs: Implement special case for denying owner access to
+     ACL.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14084: Avoid marking a node as connected before it can receive packets.
+   * BUG 14086: Fix onnode test failure with ShellCheck >= 0.4.7.
+   * BUG 14087: ctdb-daemon: Stop "ctdb stop" from completing before freezing
+     databases.
 
 
 KNOWN ISSUES
