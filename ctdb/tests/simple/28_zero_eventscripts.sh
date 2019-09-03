@@ -19,7 +19,7 @@ if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
 	exit 0
 fi
 
-ctdb_test_init --no-event_scripts
+ctdb_test_init --no-event-scripts
 
 cluster_is_healthy
 
