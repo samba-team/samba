@@ -107,7 +107,6 @@ bool run_local_conv_auth_info(int dummy);
 bool run_local_sprintf_append(int dummy);
 bool run_cleanup1(int dummy);
 bool run_cleanup2(int dummy);
-bool run_cleanup3(int dummy);
 bool run_cleanup4(int dummy);
 bool run_notify_bench2(int dummy);
 bool run_notify_bench3(int dummy);

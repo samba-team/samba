@@ -14587,10 +14587,6 @@ static struct {
 		.fn    = run_cleanup2,
 	},
 	{
-		.name  = "CLEANUP3",
-		.fn    = run_cleanup3,
-	},
-	{
 		.name  = "CLEANUP4",
 		.fn    = run_cleanup4,
 	},
