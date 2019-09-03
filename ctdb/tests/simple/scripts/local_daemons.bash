@@ -43,12 +43,12 @@ setup_ctdb ()
 		exit 1
 	fi
 
-	local pnn
-	for pnn in $(seq 0 $((TEST_LOCAL_DAEMONS - 1))) ; do
-		if $no_event_scripts ; then
+	if $no_event_scripts ; then
+		local pnn
+		for pnn in $(seq 0 $((TEST_LOCAL_DAEMONS - 1))) ; do
 			rm -vf "${CTDB_BASE}/events/legacy/"*
-		fi
-	done
+		done
+	fi
 }
 
 start_ctdb_1 ()
