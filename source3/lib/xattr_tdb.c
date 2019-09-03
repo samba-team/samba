@@ -181,9 +181,10 @@ ssize_t xattr_tdb_getattr(struct db_context *db_ctx,
 	ssize_t result = -1;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct file_id_buf buf;
 
-	DEBUG(10, ("xattr_tdb_getattr called for file %s, name %s\n",
-		   file_id_string(frame, id), name));
+	DBG_DEBUG("xattr_tdb_getattr called for file %s, name %s\n",
+		  file_id_str_buf(*id, &buf), name);
 
 	status = xattr_tdb_load_attrs(frame, db_ctx, id, &attribs);
 
