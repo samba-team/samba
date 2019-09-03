@@ -957,6 +957,15 @@ void round_timespec_to_usec(struct timespec *ts)
 }
 
 /****************************************************************************
+ Round a timespec to NTTIME resolution.
+****************************************************************************/
+
+void round_timespec_to_nttime(struct timespec *ts)
+{
+	ts->tv_nsec = (ts->tv_nsec / 100) * 100;
+}
+
+/****************************************************************************
  Put a 8 byte filetime from a struct timespec. Uses GMT.
 ****************************************************************************/
 
