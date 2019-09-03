@@ -404,11 +404,12 @@ static int ctdb_read_req(struct ctdbd_connection *conn, uint32_t reqid,
  next_pkt:
 
 	ret = ctdb_read_packet(conn->fd, conn->timeout, mem_ctx, &hdr);
-	if (hdr == NULL || ret != 0) {
+	if (ret != 0) {
 		DBG_ERR("ctdb_read_packet failed: %s\n", strerror(ret));
 		cluster_fatal("failed to read data from ctdbd\n");
 		return -1;
 	}
+	SMB_ASSERT(hdr != NULL);
 
 	DEBUG(11, ("Received ctdb packet\n"));
 	ctdb_packet_dump(hdr);
@@ -605,6 +606,7 @@ void ctdbd_socket_readable(struct tevent_context *ev,
 		DBG_ERR("ctdb_read_packet failed: %s\n", strerror(ret));
 		cluster_fatal("failed to read data from ctdbd\n");
 	}
+	SMB_ASSERT(hdr != NULL);
 
 	ret = ctdb_handle_message(ev, conn, hdr);
 
@@ -1086,6 +1088,7 @@ int ctdbd_traverse(struct ctdbd_connection *conn, uint32_t db_id,
 			DBG_ERR("ctdb_read_packet failed: %s\n", strerror(ret));
 			cluster_fatal("failed to read data from ctdbd\n");
 		}
+		SMB_ASSERT(hdr != NULL);
 
 		if (hdr->operation != CTDB_REQ_MESSAGE) {
 			DEBUG(0, ("Got operation %u, expected a message\n",
@@ -1946,10 +1949,11 @@ static void ctdbd_parse_done(struct tevent_req *subreq)
 
 	ret = ctdb_pkt_recv_recv(subreq, state, &hdr);
 	TALLOC_FREE(subreq);
-	if ((hdr == NULL) || tevent_req_error(req, ret)) {
+	if (tevent_req_error(req, ret)) {
 		DBG_ERR("ctdb_pkt_recv_recv returned %s\n", strerror(ret));
 		return;
 	}
+	SMB_ASSERT(hdr != NULL);
 
 	if (hdr->operation != CTDB_REPLY_CALL) {
 		DBG_ERR("received invalid reply\n");
