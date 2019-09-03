@@ -23,7 +23,7 @@ if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
 fi
 
 echo "Starting CTDB with failover disabled..."
-ctdb_test_init --disable-failover
+ctdb_test_init -F
 
 cluster_is_healthy
 
@@ -41,7 +41,7 @@ echo "GOOD: All IP addresses are unassigned"
 echo "----------------------------------------"
 
 echo "Starting CTDB with an empty public addresses configuration..."
-ctdb_test_init --no-public-addresses
+ctdb_test_init -P /dev/null
 
 cluster_is_healthy
 

@@ -21,7 +21,7 @@ if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
 fi
 
 echo "Starting CTDB with recovery lock command configured..."
-ctdb_test_init --reclock-use-command
+ctdb_test_init -R
 
 cluster_is_healthy
 

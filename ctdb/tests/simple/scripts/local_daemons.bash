@@ -19,23 +19,16 @@ export ONNODE_SSH="${ctdb_local_daemons} ssh"
 
 setup_ctdb ()
 {
-	local public_addresses=""
 	local no_event_scripts=false
-	local disable_failover=""
-	local reclock_use_command=""
+
+	# All other options are passed through to local_daemons.sh setup
 	case "$1" in
-	--no-public-addresses) public_addresses="/dev/null" ;;
-	--no-event-scripts)    no_event_scripts=true    ;;
-	--disable-failover)    disable_failover="yes"   ;;
-	--reclock-use-command) reclock_use_command="yes" ;;
+	--no-event-scripts) no_event_scripts=true ; shift ;;
 	esac
 
-	$ctdb_local_daemons setup \
+	$ctdb_local_daemons setup "$@" \
 		-n "$TEST_LOCAL_DAEMONS" \
-		${disable_failover:+-F} \
-		${public_addresses:+-P} ${public_addresses} \
 		${CTDB_USE_IPV6:+-6} \
-		${reclock_use_command:+-R} \
 		${TEST_SOCKET_WRAPPER_SO_PATH:+-S ${TEST_SOCKET_WRAPPER_SO_PATH}}
 	# Burying the above in an if-statement condition reduces readability.
 	# shellcheck disable=SC2181
