@@ -904,6 +904,7 @@ int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *sc
 		const struct ldb_val *rdn;
 		struct ldb_val guid;
 		NTSTATUS status;
+		int ret;
 		struct ldb_dn *dn = ldb_dn_new(NULL, ldb, cur->defaultObjectCategory);
 
 		if (!dn) {
@@ -925,7 +926,12 @@ int dsdb_schema_fill_extended_dn(struct ldb_context *ldb, struct dsdb_schema *sc
 			talloc_free(dn);
 			return ldb_operr(ldb);
 		}
-		ldb_dn_set_extended_component(dn, "GUID", &guid);
+		ret = ldb_dn_set_extended_component(dn, "GUID", &guid);
+		if (ret != LDB_SUCCESS) {
+			ret = ldb_error(ldb, ret, "Could not set GUID");
+			talloc_free(dn);
+			return ret;
+		}
 
 		cur->defaultObjectCategory = ldb_dn_get_extended_linearized(cur, dn, 1);
 		talloc_free(dn);
