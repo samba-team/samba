@@ -834,6 +834,14 @@ static const struct ldb_message *encrypt_secret_attributes(
 			struct ldb_message_element* enc = NULL;
 			if (encrypted_msg == NULL) {
 				encrypted_msg = ldb_msg_copy_shallow(ctx, msg);
+				if (encrypted_msg == NULL) {
+					ldb_set_errstring(
+						ldb,
+						"Out of memory, allocating "
+						"ldb_message_element\n");
+					*err = LDB_ERR_OPERATIONS_ERROR;
+					return NULL;
+				}
 				encrypted_msg->dn = msg->dn;
 			}
 			enc = encrypt_element(err,
