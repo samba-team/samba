@@ -288,6 +288,12 @@ static uint64_t fileid_extid_mapping_zero(struct fileid_handle_data *data,
 	return 0;
 }
 
+static uint64_t fileid_extid_mapping_pid(struct fileid_handle_data *data,
+					 const SMB_STRUCT_STAT *sbuf)
+{
+	return getpid();
+}
+
 static int get_connectpath_ino(struct vfs_handle_struct *handle,
 			       ino_t *ino)
 {
@@ -369,6 +375,17 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 	} else if (strcmp("fsname_norootdir", algorithm) == 0) {
 		data->device_mapping_fn	= fileid_device_mapping_fsname;
 		data->extid_mapping_fn = fileid_extid_mapping_zero;
+
+		ret = get_connectpath_ino(handle, &data->nolockinode);
+		if (ret != 0) {
+			saved_errno = errno;
+			SMB_VFS_NEXT_DISCONNECT(handle);
+			errno = saved_errno;
+			return -1;
+		}
+	} else if (strcmp("fsname_norootdir_ext", algorithm) == 0) {
+		data->device_mapping_fn	= fileid_device_mapping_fsname;
+		data->extid_mapping_fn = fileid_extid_mapping_pid;
 
 		ret = get_connectpath_ino(handle, &data->nolockinode);
 		if (ret != 0) {

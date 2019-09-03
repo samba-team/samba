@@ -87,6 +87,14 @@
 		algorithm. This can be used to deliberately break lock coherency
 		in a cluster for the root directory of a share.
 		</para>
+		<para>The <command>fsname_norootdir_ext</command> algorithm
+		generates device ids by hashing the kernel device name, except
+		for the root directory of shares where it will use the hostname
+		algorithm. Additionally it generates an extid based on the
+		process pid. This can be used to deliberately break lock
+		coherency between all smbd processes in the whole cluster for
+		the root directory of a share.
+		</para>
 		</listitem>
 		</varlistentry>
 
