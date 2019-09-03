@@ -1832,10 +1832,11 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 
 	if (DEBUGLEVEL >= 10) {
 		unsigned int i;
+		struct file_id_buf buf;
 		struct lock_struct *locks = br_lck->lock_data;
-		DEBUG(10,("brl_get_locks_internal: %u current locks on file_id %s\n",
-			br_lck->num_locks,
-			  file_id_string_tos(&fsp->file_id)));
+		DBG_DEBUG("%u current locks on file_id %s\n",
+			  br_lck->num_locks,
+			  file_id_str_buf(fsp->file_id, &buf));
 		for( i = 0; i < br_lck->num_locks; i++) {
 			print_lock_struct(i, &locks[i]);
 		}
