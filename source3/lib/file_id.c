@@ -55,10 +55,8 @@ char *file_id_str_buf(struct file_id fid, struct file_id_buf *dst)
  */
 const char *file_id_string(TALLOC_CTX *mem_ctx, const struct file_id *id)
 {
-	char *result = talloc_asprintf(mem_ctx, "%llx:%llx:%llx",
-				       (unsigned long long)id->devid,
-				       (unsigned long long)id->inode,
-				       (unsigned long long)id->extid);
+	struct file_id_buf buf;
+	char *result = talloc_strdup(mem_ctx, file_id_str_buf(*id, &buf));
 	SMB_ASSERT(result != NULL);
 	return result;
 }
