@@ -230,9 +230,10 @@ int xattr_tdb_setattr(struct db_context *db_ctx,
 	uint32_t i;
 	TDB_DATA data;
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct file_id_buf buf;
 
-	DEBUG(10, ("xattr_tdb_setattr called for file %s, name %s\n",
-		   file_id_string(frame, id), name));
+	DBG_DEBUG("xattr_tdb_setattr called for file %s, name %s\n",
+		  file_id_str_buf(*id, &buf), name);
 
 	rec = xattr_tdb_lock_attrs(frame, db_ctx, id);
 
