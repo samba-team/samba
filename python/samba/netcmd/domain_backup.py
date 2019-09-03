@@ -251,48 +251,49 @@ class cmd_domain_backup_online(samba.netcmd.Command):
 
         # Run a clone join on the remote
         include_secrets = not no_secrets
-        ctx = join_clone(logger=logger, creds=creds, lp=lp,
-                         include_secrets=include_secrets, server=server,
-                         dns_backend='SAMBA_INTERNAL', targetdir=tmpdir,
-                         backend_store=backend_store)
+        try:
+            ctx = join_clone(logger=logger, creds=creds, lp=lp,
+                             include_secrets=include_secrets, server=server,
+                             dns_backend='SAMBA_INTERNAL', targetdir=tmpdir,
+                             backend_store=backend_store)
 
-        # get the paths used for the clone, then drop the old samdb connection
-        paths = ctx.paths
-        del ctx
+            # get the paths used for the clone, then drop the old samdb connection
+            paths = ctx.paths
+            del ctx
 
-        # Get a free RID to use as the new DC's SID (when it gets restored)
-        remote_sam = SamDB(url='ldap://' + server, credentials=creds,
-                           session_info=system_session(), lp=lp)
-        new_sid = get_sid_for_restore(remote_sam, logger)
-        realm = remote_sam.domain_dns_name()
+            # Get a free RID to use as the new DC's SID (when it gets restored)
+            remote_sam = SamDB(url='ldap://' + server, credentials=creds,
+                               session_info=system_session(), lp=lp)
+            new_sid = get_sid_for_restore(remote_sam, logger)
+            realm = remote_sam.domain_dns_name()
 
-        # Grab the remote DC's sysvol files and bundle them into a tar file
-        logger.info("Backing up sysvol files (via SMB)...")
-        sysvol_tar = os.path.join(tmpdir, 'sysvol.tar.gz')
-        smb_conn = smb_sysvol_conn(server, lp, creds)
-        backup_online(smb_conn, sysvol_tar, remote_sam.get_domain_sid())
+            # Grab the remote DC's sysvol files and bundle them into a tar file
+            logger.info("Backing up sysvol files (via SMB)...")
+            sysvol_tar = os.path.join(tmpdir, 'sysvol.tar.gz')
+            smb_conn = smb_sysvol_conn(server, lp, creds)
+            backup_online(smb_conn, sysvol_tar, remote_sam.get_domain_sid())
 
-        # remove the default sysvol files created by the clone (we want to
-        # make sure we restore the sysvol.tar.gz files instead)
-        shutil.rmtree(paths.sysvol)
+            # remove the default sysvol files created by the clone (we want to
+            # make sure we restore the sysvol.tar.gz files instead)
+            shutil.rmtree(paths.sysvol)
 
-        # Edit the downloaded sam.ldb to mark it as a backup
-        samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp)
-        time_str = get_timestamp()
-        add_backup_marker(samdb, "backupDate", time_str)
-        add_backup_marker(samdb, "sidForRestore", new_sid)
-        add_backup_marker(samdb, "backupType", "online")
+            # Edit the downloaded sam.ldb to mark it as a backup
+            samdb = SamDB(url=paths.samdb, session_info=system_session(), lp=lp)
+            time_str = get_timestamp()
+            add_backup_marker(samdb, "backupDate", time_str)
+            add_backup_marker(samdb, "sidForRestore", new_sid)
+            add_backup_marker(samdb, "backupType", "online")
 
-        # ensure the admin user always has a password set (same as provision)
-        if no_secrets:
-            set_admin_password(logger, samdb)
+            # ensure the admin user always has a password set (same as provision)
+            if no_secrets:
+                set_admin_password(logger, samdb)
 
-        # Add everything in the tmpdir to the backup tar file
-        backup_file = backup_filepath(targetdir, realm, time_str)
-        create_log_file(tmpdir, lp, "online", server, include_secrets)
-        create_backup_tar(logger, tmpdir, backup_file)
-
-        shutil.rmtree(tmpdir)
+            # Add everything in the tmpdir to the backup tar file
+            backup_file = backup_filepath(targetdir, realm, time_str)
+            create_log_file(tmpdir, lp, "online", server, include_secrets)
+            create_backup_tar(logger, tmpdir, backup_file)
+        finally:
+            shutil.rmtree(tmpdir)
 
 
 class cmd_domain_backup_restore(cmd_fsmo_seize):
