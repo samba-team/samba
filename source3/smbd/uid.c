@@ -279,14 +279,36 @@ static bool check_user_ok(connection_struct *conn,
 	return(True);
 }
 
+static void print_impersonation_info(connection_struct *conn)
+{
+	struct smb_filename *cwdfname = NULL;
+
+	if (!CHECK_DEBUGLVL(DBGLVL_INFO)) {
+		return;
+	}
+
+	cwdfname = vfs_GetWd(talloc_tos(), conn);
+	if (cwdfname == NULL) {
+		return;
+	}
+
+	DBG_INFO("Impersonated user: uid=(%d,%d), gid=(%d,%d), cwd=[%s]\n",
+		 (int)getuid(),
+		 (int)geteuid(),
+		 (int)getgid(),
+		 (int)getegid(),
+		 cwdfname->base_name);
+	TALLOC_FREE(cwdfname);
+}
+
 /****************************************************************************
  Become the user of a connection number without changing the security context
  stack, but modify the current_user entries.
 ****************************************************************************/
 
-static bool change_to_user_internal(connection_struct *conn,
-				    const struct auth_session_info *session_info,
-				    uint64_t vuid)
+static bool change_to_user_impersonate(connection_struct *conn,
+				       const struct auth_session_info *session_info,
+				       uint64_t vuid)
 {
 	int snum;
 	gid_t gid;
@@ -299,7 +321,6 @@ static bool change_to_user_internal(connection_struct *conn,
 
 	if ((current_user.conn == conn) &&
 	    (current_user.vuid == vuid) &&
-	    (current_user.need_chdir == conn->tcon_done) &&
 	    (current_user.ut.uid == session_info->unix_token->uid))
 	{
 		DBG_INFO("Skipping user change - already user\n");
@@ -404,7 +425,22 @@ static bool change_to_user_internal(connection_struct *conn,
 
 	current_user.conn = conn;
 	current_user.vuid = vuid;
+	return true;
+}
+
+static bool change_to_user_internal(connection_struct *conn,
+				    const struct auth_session_info *session_info,
+				    uint64_t vuid)
+{
+	bool ok;
+
+	ok = change_to_user_impersonate(conn, session_info, vuid);
+	if (!ok) {
+		return false;
+	}
+
 	current_user.need_chdir = conn->tcon_done;
+	current_user.done_chdir = false;
 
 	if (current_user.need_chdir) {
 		ok = chdir_current_service(conn);
@@ -415,20 +451,7 @@ static bool change_to_user_internal(connection_struct *conn,
 		current_user.done_chdir = true;
 	}
 
-	if (CHECK_DEBUGLVL(DBGLVL_INFO)) {
-		struct smb_filename *cwdfname = vfs_GetWd(talloc_tos(), conn);
-		if (cwdfname == NULL) {
-			return false;
-		}
-		DBG_INFO("Impersonated user: uid=(%d,%d), gid=(%d,%d), cwd=[%s]\n",
-			 (int)getuid(),
-			 (int)geteuid(),
-			 (int)getgid(),
-			 (int)getegid(),
-			 cwdfname->base_name);
-		TALLOC_FREE(cwdfname);
-	}
-
+	print_impersonation_info(conn);
 	return true;
 }
 
@@ -614,6 +637,9 @@ void smbd_become_root(void)
 	}
 	push_conn_ctx();
 	set_root_sec_ctx();
+
+	current_user.need_chdir = false;
+	current_user.done_chdir = false;
 }
 
 /* Unbecome the root user */

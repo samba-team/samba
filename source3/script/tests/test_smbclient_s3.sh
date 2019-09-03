@@ -1329,6 +1329,32 @@ EOF
     fi
 }
 
+#
+# Regression test for CVE-2019-10197
+# we should always get ACCESS_DENIED
+#
+test_noperm_share_regression()
+{
+    cmd='$SMBCLIENT -U$USERNAME%$PASSWORD //$SERVER/noperm -I $SERVER_IP $LOCAL_ADDARGS -c "ls;ls"  2>&1'
+    eval echo "$cmd"
+    out=`eval $cmd`
+    ret=$?
+    if [ $ret -eq 0 ] ; then
+       echo "$out"
+       echo "failed accessing no perm share should not work"
+       return 1
+    fi
+
+    num=`echo "$out" | grep 'NT_STATUS_ACCESS_DENIED' | wc -l`
+    if [ "$num" -ne "2" ] ; then
+       echo "$out"
+       echo "failed num[$num] - two NT_STATUS_ACCESS_DENIED lines expected"
+       return 1
+    fi
+
+    return 0
+}
+
 # Test smbclient deltree command
 test_deltree()
 {
@@ -1855,6 +1881,10 @@ testit "follow symlinks = no" \
 
 testit "follow local symlinks" \
     test_local_symlinks || \
+    failed=`expr $failed + 1`
+
+testit "noperm share regression" \
+    test_noperm_share_regression || \
     failed=`expr $failed + 1`
 
 testit "smbclient deltree command" \
