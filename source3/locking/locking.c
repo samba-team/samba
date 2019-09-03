@@ -1124,14 +1124,13 @@ static struct delete_token *find_delete_on_close_token(
 {
 	uint32_t i;
 
-	DEBUG(10, ("find_delete_on_close_token: name_hash = 0x%x\n",
-		   (unsigned int)name_hash));
+	DBG_DEBUG("name_hash = 0x%"PRIx32"\n", name_hash);
 
 	for (i=0; i<d->num_delete_tokens; i++) {
 		struct delete_token *dt = &d->delete_tokens[i];
 
-		DEBUG(10, ("find__delete_on_close_token: dt->name_hash = 0x%x\n",
-			   (unsigned int)dt->name_hash ));
+		DBG_DEBUG("dt->name_hash = 0x%"PRIx32"\n",
+			  dt->name_hash);
 		if (dt->name_hash == name_hash) {
 			return dt;
 		}
