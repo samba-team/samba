@@ -542,6 +542,10 @@ plansmbtorture4testsuite('base.xcopy', "ad_dc_ntvfs", ['//$NETBIOSNAME/xcopy_sha
 plansmbtorture4testsuite('base.xcopy', "ad_dc_ntvfs", ['//$NETBIOSNAME/xcopy_share', '-k', 'no', '--signing=required', '-U%'], modname="samba4.smb.signing --signing=required anon")
 plansmbtorture4testsuite('base.xcopy', "s4member", ['//$NETBIOSNAME/xcopy_share', '-k', 'no', '--signing=no', '-U%'], modname="samba4.smb.signing --signing=no anon")
 
+# Test SPNEGO without issuing an optimistic token
+opt='--option=spnego:client_no_optimistic=yes'
+plansmbtorture4testsuite('base.xcopy', "ad_dc", ['//$NETBIOSNAME/xcopy_share', '-U$USERNAME%$PASSWORD', opt, '-k', 'no'], modname="samba4.smb.spnego.ntlmssp.no_optimistic")
+plansmbtorture4testsuite('base.xcopy', "ad_dc", ['//$NETBIOSNAME/xcopy_share', '-U$USERNAME%$PASSWORD', opt, '-k', 'yes'], modname="samba4.smb.spnego.krb5.no_optimistic")
 
 wb_opts_default = ["--option=\"torture:strict mode=no\"", "--option=\"torture:timelimit=1\"", "--option=\"torture:winbindd_separator=/\"", "--option=\"torture:winbindd_netbios_name=$SERVER\"", "--option=\"torture:winbindd_netbios_domain=$DOMAIN\""]
 
