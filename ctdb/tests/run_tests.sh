@@ -8,7 +8,6 @@ Options:
   -A		Use "cat -A" to print test output (only some tests)
   -c		Run integration tests on a cluster
   -C		Remove TEST_VAR_DIR when done
-  -d		Print descriptions of tests instead of filenames (dodgy!)
   -D		Show diff between failed/expected test output (some tests only)
   -e		Exit on the first test failure
   -H		No headers - for running single test with other wrapper
@@ -33,7 +32,6 @@ die ()
 ######################################################################
 
 with_summary=true
-with_desc=false
 quiet=false
 exit_on_fail=false
 max_iterations=1
@@ -50,12 +48,11 @@ export TEST_CLEANUP=false
 export TEST_TIMEOUT=3600
 export TEST_SOCKET_WRAPPER_SO_PATH=""
 
-while getopts "AcCdDehHI:NqS:T:vV:xX?" opt ; do
+while getopts "AcCDehHI:NqS:T:vV:xX?" opt ; do
 	case "$opt" in
 	A) TEST_CAT_RESULTS_OPTS="-A" ;;
 	c) TEST_LOCAL_DAEMONS="" ;;
 	C) TEST_CLEANUP=true ;;
-	d) with_desc=true ;;  # 4th line of output is description
 	D) TEST_DIFF_RESULTS=true ;;
 	e) exit_on_fail=true ;;
 	H) no_header=true ;;
@@ -178,7 +175,6 @@ if ! type mktemp >/dev/null 2>&1 ; then
     }
 fi
 
-tf=$(mktemp) || die "mktemp failed for tf - is TMPDIR missing?"
 sf=$(mktemp) || die "mktemp failed for sf - is TMPDIR missing?"
 
 set -o pipefail
@@ -189,7 +185,7 @@ run_one_test ()
 
     tests_total=$((tests_total + 1))
 
-    ctdb_test_run "$f" | tee "$tf" | show_progress
+    ctdb_test_run "$f" | show_progress
     status=$?
     if [ $status -eq 0 ] ; then
 	tests_passed=$((tests_passed + 1))
@@ -202,10 +198,6 @@ run_one_test ()
 	    t=" PASSED "
 	else
 	    t="*FAILED*"
-	fi
-	if $with_desc ; then
-	    desc=$(tail -n +4 "$tf" | head -n 1)
-	    f="$desc"
 	fi
 	echo "$t $f" >>"$sf"
     fi
@@ -353,8 +345,6 @@ while [ "$max_iterations" -eq 0 ] || [ $iterations -lt "$max_iterations" ] ; do
 		break
 	fi
 done
-
-rm -f "$tf"
 
 if $with_summary ; then
 	if [ $status -eq 0 ] || ! $exit_on_fail ; then
