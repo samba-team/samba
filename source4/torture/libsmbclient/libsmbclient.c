@@ -421,7 +421,7 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 		filename[i] = talloc_asprintf(tctx,
 				"test_readdirplus_%u.txt",
 				i);
-		if (full_filename == NULL) {
+		if (filename[i] == NULL) {
 			torture_fail_goto(tctx,
 				done,
 				"talloc fail\n");
@@ -430,7 +430,7 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 				"%s/%s",
 				dname,
 				filename[i]);
-		if (full_filename == NULL) {
+		if (full_filename[i] == NULL) {
 			torture_fail_goto(tctx,
 				done,
 				"talloc fail\n");
