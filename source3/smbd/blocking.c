@@ -334,6 +334,15 @@ static void smbd_smb1_do_locks_retry(struct tevent_req *subreq)
 	NTSTATUS status;
 	bool ok;
 
+	/*
+	 * Make sure we run as the user again
+	 */
+	ok = change_to_user_by_fsp(state->fsp);
+	if (!ok) {
+		tevent_req_nterror(req, NT_STATUS_ACCESS_DENIED);
+		return;
+	}
+
 	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
 	TALLOC_FREE(subreq);
 
