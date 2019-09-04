@@ -393,6 +393,31 @@ static int cephwrap_mkdir(struct vfs_handle_struct *handle,
 	return WRAP_RETURN(result);
 }
 
+static int cephwrap_mkdirat(struct vfs_handle_struct *handle,
+			files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
+{
+	int result;
+	char *parent = NULL;
+	const char *path = smb_fname->base_name;
+
+	DBG_DEBUG("[CEPH] mkdir(%p, %s)\n", handle, path);
+
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	if (lp_inherit_acls(SNUM(handle->conn))
+	    && parent_dirname(talloc_tos(), path, &parent, NULL)
+	    && directory_has_default_acl(handle->conn, parent)) {
+		mode = 0777;
+	}
+
+	TALLOC_FREE(parent);
+
+	result = ceph_mkdir(handle->data, path, mode);
+	return WRAP_RETURN(result);
+}
+
 static int cephwrap_rmdir(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname)
 {
@@ -1429,6 +1454,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.telldir_fn = cephwrap_telldir,
 	.rewind_dir_fn = cephwrap_rewinddir,
 	.mkdir_fn = cephwrap_mkdir,
+	.mkdirat_fn = cephwrap_mkdirat,
 	.rmdir_fn = cephwrap_rmdir,
 	.closedir_fn = cephwrap_closedir,
 
