@@ -210,6 +210,26 @@ static int audit_mkdir(vfs_handle_struct *handle,
 	return result;
 }
 
+static int audit_mkdirat(vfs_handle_struct *handle,
+		struct files_struct *dirfsp,
+		const struct smb_filename *smb_fname,
+		mode_t mode)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_MKDIRAT(handle,
+			dirfsp,
+			smb_fname,
+			mode);
+
+	syslog(audit_syslog_priority(handle), "mkdirat %s %s%s\n",
+	       smb_fname->base_name,
+	       (result < 0) ? "failed: " : "",
+	       (result < 0) ? strerror(errno) : "");
+
+	return result;
+}
+
 static int audit_rmdir(vfs_handle_struct *handle,
 		const struct smb_filename *smb_fname)
 {
@@ -330,6 +350,7 @@ static struct vfs_fn_pointers vfs_audit_fns = {
 	.disconnect_fn = audit_disconnect,
 	.opendir_fn = audit_opendir,
 	.mkdir_fn = audit_mkdir,
+	.mkdirat_fn = audit_mkdirat,
 	.rmdir_fn = audit_rmdir,
 	.open_fn = audit_open,
 	.close_fn = audit_close,
