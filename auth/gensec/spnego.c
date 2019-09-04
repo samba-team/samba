@@ -1321,6 +1321,10 @@ static NTSTATUS gensec_spnego_server_negTokenInit_step(
 			spnego_state->mic_requested = true;
 		}
 
+		if (sub_in.length == 0) {
+			spnego_state->no_optimistic = true;
+		}
+
 		/*
 		 * Note that 'cur_sec' is temporary memory, but
 		 * cur_sec->oid points to a const string in the
@@ -1955,6 +1959,15 @@ static void gensec_spnego_update_pre(struct tevent_req *req)
 		 * Skip optimistic token per conf.
 		 */
 		state->sub.status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	} else if (spnego_state->state_position == SPNEGO_SERVER_START &&
+		   state->sub.in.length == 0 && spnego_state->no_optimistic) {
+		/*
+		 * If we didn't like the mechanism for which the client sent us
+		 * an optimistic token, or if he didn't send any, don't call
+		 * the sub mechanism just yet.
+		 */
+		state->sub.status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+		spnego_state->no_optimistic = false;
 	} else {
 		/*
 		 * MORE_PROCESSING_REQUIRED =>
