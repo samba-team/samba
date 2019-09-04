@@ -1540,9 +1540,9 @@ struct tevent_req *ctdb_delete_record_send(TALLOC_CTX *mem_ctx,
 
 	ret = tdb_store(h->db->ltdb->tdb, h->key, rec, TDB_REPLACE);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR,
-		      ("fetch_lock delete: %s tdb_sore failed, %s\n",
-		       h->db->db_name, tdb_errorstr(h->db->ltdb->tdb)));
+		D_ERR("fetch_lock delete: %s tdb_store failed, %s\n",
+		      h->db->db_name,
+		      tdb_errorstr(h->db->ltdb->tdb));
 		tevent_req_error(req, EIO);
 		return tevent_req_post(req, ev);
 	}
@@ -1576,9 +1576,9 @@ static void ctdb_delete_record_done(struct tevent_req *subreq)
 	status = ctdb_client_control_recv(subreq, &ret, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (! status) {
-		DEBUG(DEBUG_ERR,
-		      ("delete_record: %s SCHDULE_FOR_DELETION failed, "
-		       "ret=%d\n", state->h->db->db_name, ret));
+		D_ERR("delete_record: %s SCHEDULE_FOR_DELETION failed, ret=%d\n",
+		      state->h->db->db_name,
+		      ret);
 		tevent_req_error(req, ret);
 		return;
 	}
