@@ -277,6 +277,7 @@
 /* Version 42 - Move SMB_VFS_MKNOD -> SMB_VFS_MKDNODAT. */
 /* Version 42 - Move SMB_VFS_READLINK -> SMB_VFS_READLINKAT. */
 /* Version 42 - Move SMB_VFS_SYMLINK -> SMB_VFS_SYMLINKAT. */
+/* Version 42 - Add SMB_VFS_MKDIRAT. */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -699,6 +700,10 @@ struct vfs_fn_pointers {
 	long (*telldir_fn)(struct vfs_handle_struct *handle, DIR *dirp);
 	void (*rewind_dir_fn)(struct vfs_handle_struct *handle, DIR *dirp);
 	int (*mkdir_fn)(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname,
+			mode_t mode);
+	int (*mkdirat_fn)(struct vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			mode_t mode);
 	int (*rmdir_fn)(struct vfs_handle_struct *handle,
@@ -1208,6 +1213,10 @@ void smb_vfs_call_rewind_dir(struct vfs_handle_struct *handle,
 int smb_vfs_call_mkdir(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode);
+int smb_vfs_call_mkdirat(struct vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			mode_t mode);
 int smb_vfs_call_rmdir(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname);
 int smb_vfs_call_closedir(struct vfs_handle_struct *handle,
@@ -1653,6 +1662,10 @@ void vfs_not_implemented_seekdir(vfs_handle_struct *handle, DIR *dirp, long offs
 long vfs_not_implemented_telldir(vfs_handle_struct *handle, DIR *dirp);
 void vfs_not_implemented_rewind_dir(vfs_handle_struct *handle, DIR *dirp);
 int vfs_not_implemented_mkdir(vfs_handle_struct *handle,
+		const struct smb_filename *smb_fname,
+		mode_t mode);
+int vfs_not_implemented_mkdirat(vfs_handle_struct *handle,
+		struct files_struct *dirfsp,
 		const struct smb_filename *smb_fname,
 		mode_t mode);
 int vfs_not_implemented_rmdir(vfs_handle_struct *handle,
