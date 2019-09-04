@@ -889,6 +889,45 @@ static int catia_mkdir(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int catia_mkdirat(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
+{
+	char *name = NULL;
+	NTSTATUS status;
+	int ret;
+	struct smb_filename *catia_smb_fname = NULL;
+
+	status = catia_string_replace_allocate(handle->conn,
+				smb_fname->base_name,
+				&name,
+				vfs_translate_to_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return -1;
+	}
+	catia_smb_fname = synthetic_smb_fname(talloc_tos(),
+					name,
+					NULL,
+					&smb_fname->st,
+					smb_fname->flags);
+	if (catia_smb_fname == NULL) {
+		TALLOC_FREE(name);
+		errno = ENOMEM;
+		return -1;
+	}
+
+	ret = SMB_VFS_NEXT_MKDIRAT(handle,
+			dirfsp,
+			catia_smb_fname,
+			mode);
+	TALLOC_FREE(name);
+	TALLOC_FREE(catia_smb_fname);
+
+	return ret;
+}
+
 static int catia_chdir(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname)
 {
@@ -2433,6 +2472,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 
 	/* Directory operations */
 	.mkdir_fn = catia_mkdir,
+	.mkdirat_fn = catia_mkdirat,
 	.rmdir_fn = catia_rmdir,
 	.opendir_fn = catia_opendir,
 	.readdir_attr_fn = catia_readdir_attr,
