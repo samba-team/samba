@@ -175,8 +175,6 @@ if ! type mktemp >/dev/null 2>&1 ; then
     }
 fi
 
-sf=$(mktemp) || die "mktemp failed for sf - is TMPDIR missing?"
-
 set -o pipefail
 
 run_one_test ()
@@ -199,7 +197,7 @@ run_one_test ()
 	else
 	    t="*FAILED*"
 	fi
-	echo "$t $f" >>"$sf"
+	echo "$t $f" >>"$summary_file"
     fi
 }
 
@@ -278,6 +276,9 @@ if [ -z "$TEST_VAR_DIR" ] ; then
 fi
 mkdir -p "$TEST_VAR_DIR"
 
+summary_file="${TEST_VAR_DIR}/.summary"
+: >"$summary_file"
+
 export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 
 unit_tests="
@@ -349,13 +350,12 @@ done
 if $with_summary ; then
 	if [ $status -eq 0 ] || ! $exit_on_fail ; then
 		echo
-		cat "$sf"
+		cat "$summary_file"
 		echo
 		echo "${tests_passed}/${tests_total} tests passed"
 	fi
 fi
-
-rm -f "$sf"
+rm -f "$summary_file"
 
 echo
 
