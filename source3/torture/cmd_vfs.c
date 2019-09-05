@@ -229,6 +229,7 @@ static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 static NTSTATUS cmd_mkdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	struct smb_filename *smb_fname = NULL;
+	int ret;
 
 	if (argc != 2) {
 		printf("Usage: mkdir <path>\n");
@@ -245,7 +246,11 @@ static NTSTATUS cmd_mkdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (SMB_VFS_MKDIR(vfs->conn, smb_fname, 00755) == -1) {
+	ret = SMB_VFS_MKDIRAT(vfs->conn,
+				vfs->conn->cwd_fsp,
+				smb_fname,
+				00755);
+	if (ret == -1) {
 		printf("mkdir error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
