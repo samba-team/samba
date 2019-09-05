@@ -2293,6 +2293,30 @@ static int shadow_copy2_mkdir(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_MKDIR(handle, smb_fname, mode);
 }
 
+static int shadow_copy2_mkdirat(vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				mode_t mode)
+{
+	time_t timestamp = 0;
+
+	if (!shadow_copy2_strip_snapshot(talloc_tos(),
+					handle,
+					smb_fname->base_name,
+					&timestamp,
+					NULL)) {
+		return -1;
+	}
+	if (timestamp != 0) {
+		errno = EROFS;
+		return -1;
+	}
+	return SMB_VFS_NEXT_MKDIRAT(handle,
+			dirfsp,
+			smb_fname,
+			mode);
+}
+
 static int shadow_copy2_rmdir(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname)
 {
@@ -3173,6 +3197,7 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.fget_nt_acl_fn = shadow_copy2_fget_nt_acl,
 	.get_shadow_copy_data_fn = shadow_copy2_get_shadow_copy_data,
 	.mkdir_fn = shadow_copy2_mkdir,
+	.mkdirat_fn = shadow_copy2_mkdirat,
 	.rmdir_fn = shadow_copy2_rmdir,
 	.getxattr_fn = shadow_copy2_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
