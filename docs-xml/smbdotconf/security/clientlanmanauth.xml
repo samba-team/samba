@@ -1,8 +1,17 @@
 <samba:parameter name="client lanman auth"
                  context="G"
                  type="boolean"
+		 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
+    <para>This parameter has been deprecated since Samba 4.13 and
+    support for LanMan (as distinct from NTLM, NTLMv2 or
+    Kerberos) authentication as a client
+    will be removed in a future Samba release.</para>
+    <para>That is, in the future, the current default of
+    <command>client NTLMv2 auth = yes</command>
+    will be the enforced behaviour.</para>
+
     <para>This parameter determines whether or not <citerefentry><refentrytitle>smbclient</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> and other samba client
     tools will attempt to authenticate itself to servers using the
