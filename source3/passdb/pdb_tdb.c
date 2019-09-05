@@ -715,7 +715,7 @@ static bool tdb_delete_samacct_only( struct samu *sam_pass )
 static NTSTATUS tdbsam_delete_sam_account(struct pdb_methods *my_methods,
 					  struct samu *sam_pass)
 {
-	NTSTATUS        nt_status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS        nt_status;
 	fstring 	keystr;
 	uint32_t	rid;
 	fstring		name;
