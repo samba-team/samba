@@ -599,7 +599,6 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 	 * Now we verify the new password.
 	 */
 	idx = 0;
-	idx_current = idx;
 	nt_hashes[idx++] = current_nt_hash;
 	num_nt_hashes = idx;
 	status = netlogon_creds_cli_lck_auth(context, b,
