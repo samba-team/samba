@@ -485,47 +485,6 @@ wait_until_node_has_no_ips ()
 
 #######################################
 
-_service_ctdb ()
-{
-    cmd="$1"
-
-    if [ -e /etc/redhat-release ] ; then
-	service ctdb "$cmd"
-    else
-	/etc/init.d/ctdb "$cmd"
-    fi
-}
-
-# Stop/start CTDB on all nodes.  Override for local daemons.
-ctdb_stop_all ()
-{
-	onnode -p all $CTDB_TEST_WRAPPER _service_ctdb stop
-}
-ctdb_start_all ()
-{
-	onnode -p all $CTDB_TEST_WRAPPER _service_ctdb start
-}
-
-setup_ctdb ()
-{
-	ctdb_enable_cluster_test_event_scripts
-}
-
-start_ctdb_1 ()
-{
-    onnode "$1" $CTDB_TEST_WRAPPER _service_ctdb start
-}
-
-stop_ctdb_1 ()
-{
-    onnode "$1" $CTDB_TEST_WRAPPER _service_ctdb stop
-}
-
-restart_ctdb_1 ()
-{
-    onnode "$1" $CTDB_TEST_WRAPPER _service_ctdb restart
-}
-
 ctdb_init ()
 {
     local i
@@ -698,30 +657,17 @@ db_ctdb_tstore_dbseqnum ()
     db_ctdb_tstore $1 "$2" "$_key" "$_value"
 }
 
-#######################################
-
-# Enables all of the event scripts used in cluster tests, except for
-# the mandatory scripts
-ctdb_enable_cluster_test_event_scripts ()
-{
-	local scripts="
-		       06.nfs
-		       10.interface
-		       49.winbind
-		       50.samba
-		       60.nfs
-		      "
-
-	local s
-	for s in $scripts ; do
-		try_command_on_node all ctdb event script enable legacy "$s"
-	done
-}
-
 ########################################
 
 # Make sure that $CTDB is set.
 : ${CTDB:=ctdb}
+
+if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
+	. "${TEST_SCRIPTS_DIR}/integration_real_cluster.bash"
+else
+	. "${TEST_SCRIPTS_DIR}/integration_local_daemons.bash"
+fi
+
 
 local="${CTDB_TEST_SUITE_DIR}/scripts/local.bash"
 if [ -r "$local" ] ; then

@@ -1065,10 +1065,12 @@ def build(bld):
             bld.INSTALL_FILES(bld.env.CTDB_TEST_DATADIR, 'tests/%s' % fmode[0],
                               destname=fmode[0], chmod=fmode[1])
 
-    # Install tests/scripts directory without test_wrap
+    # Install tests/scripts directory, excluding files that need munging
     test_scripts = [
         'common.sh',
         'integration.bash',
+        'integration_local_daemons.bash',
+        'integration_real_cluster.bash',
         'unit.sh'
     ]
 
