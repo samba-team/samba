@@ -367,7 +367,6 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
 	unsigned char *smbpwd = smbpasswd_state->smbpwd;
 	unsigned char *smbntpwd = smbpasswd_state->smbntpwd;
 	char linebuf[256];
-	int c;
 	unsigned char *p;
 	long uidval;
 	size_t linebuf_len;
@@ -402,8 +401,8 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
 		}
 
 		if (linebuf[linebuf_len - 1] != '\n') {
-			c = '\0';
 			while (!ferror(fp) && !feof(fp)) {
+				int c;
 				c = fgetc(fp);
 				if (c == '\n') {
 					break;
@@ -740,7 +739,6 @@ static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 #define LINEBUF_SIZE 255
 	char linebuf[LINEBUF_SIZE + 1];
 	char readbuf[1024];
-	int c;
 	char ascii_p16[FSTRING_LEN + 20];
 	fstring encode_bits;
 	unsigned char *p = NULL;
@@ -806,8 +804,8 @@ static bool mod_smbfilepwd_entry(struct smbpasswd_privates *smbpasswd_state, con
 		 */
 		linebuf_len = strlen(linebuf);
 		if (linebuf[linebuf_len - 1] != '\n') {
-			c = '\0';
 			while (!ferror(fp) && !feof(fp)) {
+				int c;
 				c = fgetc(fp);
 				if (c == '\n') {
 					break;
