@@ -31,10 +31,6 @@ struct db_context;
 
 enum dbwrap_lock_order {
 	DBWRAP_LOCK_ORDER_NONE = 0, /* Don't check lock orders for this db. */
-	/*
-	 * We only allow orders 1, 2, 3:
-	 * These are the orders that CTDB currently supports.
-	 */
 	DBWRAP_LOCK_ORDER_1 = 1,
 	DBWRAP_LOCK_ORDER_2 = 2,
 	DBWRAP_LOCK_ORDER_3 = 3
