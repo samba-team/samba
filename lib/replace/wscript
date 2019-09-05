@@ -422,7 +422,7 @@ def configure(conf):
                         define = 'HAVE_BSD_STRTOLL',
                         )
     conf.CHECK_FUNCS('if_nametoindex strerror_r')
-    conf.CHECK_FUNCS('getdirentries getdents syslog')
+    conf.CHECK_FUNCS('syslog')
     conf.CHECK_FUNCS('gai_strerror get_current_dir_name')
     conf.CHECK_FUNCS('timegm getifaddrs freeifaddrs mmap setgroups syscall setsid')
     conf.CHECK_FUNCS('getgrent_r getgrgid_r getgrnam_r getgrouplist getpagesize')

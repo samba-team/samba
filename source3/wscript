@@ -393,7 +393,7 @@ __fchdir fchmod fchown _fcntl __fcntl fcvt fcvtl fdatasync
 _fork __fork fseeko
 _fstat __fstat fsync
 futimens futimes __fxstat getauthuid
-getcwd _getcwd __getcwd getdents __getdents getdirentries
+getcwd _getcwd __getcwd
 getgrent getgrnam getgrouplist getgrset getmntent getpagesize
 getpwanam getpwent_r getrlimit
 glob grantpt hstrerror initgroups innetgr
