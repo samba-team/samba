@@ -68,6 +68,18 @@ in the following years. If you have a strong requirement for SMB1
 (except for supporting old Linux Kernels), please file a bug
 at https://bugzilla.samba.org and let us know about the details.
 
+LanMan and plaintext authentication deprecated
+----------------------------------------------
+
+The "lanman auth" and "encrypt passwords" parameters are deprecated
+with this release as both are only applicable to SMB1 and are quite
+insecure.  NTLM, NTLMv2 and Kerberos authentication are unaffected, as
+"encrypt passwords = yes" has been the default since Samba 3.0.0.
+
+If you have a strong requirement for these authentication protocols,
+please file a bug at https://bugzilla.samba.org and let us know about
+the details.
+
 BIND9_FLATFILE deprecated
 -------------------------
 
@@ -357,6 +369,8 @@ smb.conf changes
   fruit:zero_file_id                 Changed default            False
   debug encryption                   New: dump encryption keys  False
   rndc command                       Deprecated
+  lanman auth                        Deprecated
+  encrypt passwords                  Deprecated
 
 
 CHANGES SINCE 4.11.0rc2
