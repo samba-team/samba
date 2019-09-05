@@ -12,9 +12,6 @@ fi
 
 ctdb_local_daemons="${helper} ${SIMPLE_TESTS_VAR_DIR}"
 
-# onnode will execute this, which fakes ssh against local daemons
-export ONNODE_SSH="${ctdb_local_daemons} ssh"
-
 #######################################
 
 setup_ctdb ()
@@ -74,5 +71,7 @@ restart_ctdb_1 ()
 	start_ctdb_1 "$1"
 }
 
-# onnode just needs the nodes file, so use the common one
-export CTDB_BASE="$SIMPLE_TESTS_VAR_DIR"
+onnode ()
+{
+	$ctdb_local_daemons onnode "$@"
+}
