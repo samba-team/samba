@@ -188,6 +188,20 @@ run_one_test ()
 	    CTDB_TEST_SUITE_DIR=$(cd "$CTDB_TEST_SUITE_DIR" && pwd)
     fi
 
+    # Set CTDB_TEST_TMP_DIR
+    #
+    # Determine the relative test suite subdirectory.  The top-level
+    # test directory needs to be a prefix of the test suite directory,
+    # so make absolute versions of both.
+    local test_dir test_suite_dir reldir
+    test_dir=$(cd "$CTDB_TEST_DIR" && pwd)
+    test_suite_dir=$(cd "$CTDB_TEST_SUITE_DIR" && pwd)
+    reldir="${test_suite_dir#${test_dir}/}"
+
+    export CTDB_TEST_TMP_DIR="${TEST_VAR_DIR}/${reldir}"
+    rm -rf "$CTDB_TEST_TMP_DIR"
+    mkdir -p "$CTDB_TEST_TMP_DIR"
+
     tests_total=$((tests_total + 1))
 
     ctdb_test_run "$f" | show_progress
