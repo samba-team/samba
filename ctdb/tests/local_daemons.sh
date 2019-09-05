@@ -13,14 +13,6 @@ export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 
 . "${TEST_SCRIPTS_DIR}/common.sh"
 
-# common.sh will set TEST_SUBDIR to a stupid value when installed
-# because common.sh is usually sourced by a test.  TEST_SUBDIR needs
-# to be correctly set so setup_ctdb_base() finds the etc-ctdb/
-# subdirectory and the test event script is correctly installed, so
-# fix it.
-# shellcheck disable=SC2034
-TEST_SUBDIR="$CTDB_TEST_DIR"
-
 if ! $CTDB_TESTS_ARE_INSTALLED ; then
 	hdir="$CTDB_SCRIPTS_HELPER_BINDIR"
 	export CTDB_EVENTD="${hdir}/ctdb-eventd"
@@ -205,7 +197,15 @@ local_daemons_setup ()
 	fi
 
 	for _n in $(seq 0 $((_num_nodes - 1))) ; do
-		setup_ctdb_base "$directory" "node.${_n}" \
+		# common.sh will set TEST_SUBDIR to a stupid value
+		# when installed because common.sh is usually sourced
+		# by a test.  TEST_SUBDIR needs to be correctly set so
+		# setup_ctdb_base() finds the etc-ctdb/ subdirectory
+		# and the test event script is correctly installed, so
+		# fix it.
+		# shellcheck disable=SC2034
+		TEST_SUBDIR="$CTDB_TEST_DIR" \
+			   setup_ctdb_base "$directory" "node.${_n}" \
 				functions notify.sh debug-hung-script.sh
 
 		cp "$_nodes_all" "${CTDB_BASE}/nodes"
