@@ -68,7 +68,7 @@ NTSTATUS copy_netr_SamInfo3(TALLOC_CTX *mem_ctx,
 {
 	struct netr_SamInfo3 *info3 = NULL;
 	unsigned int i;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 
 	info3 = talloc_zero(mem_ctx, struct netr_SamInfo3);
 	if (info3 == NULL) {
@@ -196,7 +196,7 @@ NTSTATUS copy_netr_SamInfo6(TALLOC_CTX *mem_ctx,
 {
 	struct netr_SamInfo6 *info6 = NULL;
 	unsigned int i;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 
 	info6 = talloc_zero(mem_ctx, struct netr_SamInfo6);
 	if (info6 == NULL) {
