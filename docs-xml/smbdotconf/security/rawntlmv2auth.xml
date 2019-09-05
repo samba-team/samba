@@ -1,8 +1,16 @@
 <samba:parameter name="raw NTLMv2 auth"
                  context="G"
                  type="boolean"
+		 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
+    <para>This parameter has been deprecated since Samba 4.13 and
+    support for NTLMv2 authentication without NTLMSSP will be removed
+    in a future Samba release.</para>
+    <para>That is, in the future, the current default of
+    <command>raw NTLMv2 auth = no</command>
+    will be the enforced behaviour.</para>
+
     <para>This parameter determines whether or not <citerefentry><refentrytitle>smbd</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> will allow SMB1 clients without
     extended security (without SPNEGO) to use NTLMv2 authentication.</para>
