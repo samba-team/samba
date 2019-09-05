@@ -619,38 +619,6 @@ _ctdb_scriptstatus_changed ()
 
 #######################################
 
-nfs_test_setup ()
-{
-    select_test_node_and_ips
-
-    nfs_first_export=$(showmount -e $test_ip | sed -n -e '2s/ .*//p')
-
-    echo "Creating test subdirectory..."
-    try_command_on_node $test_node "TMPDIR=$nfs_first_export mktemp -d"
-    nfs_test_dir="$out"
-    try_command_on_node $test_node "chmod 777 $nfs_test_dir"
-
-    nfs_mnt_d=$(mktemp -d)
-    nfs_local_file="${nfs_mnt_d}/${nfs_test_dir##*/}/TEST_FILE"
-    nfs_remote_file="${nfs_test_dir}/TEST_FILE"
-
-    ctdb_test_exit_hook_add nfs_test_cleanup
-
-    echo "Mounting ${test_ip}:${nfs_first_export} on ${nfs_mnt_d} ..."
-    mount -o timeo=1,hard,intr,vers=3 \
-	"[${test_ip}]:${nfs_first_export}" ${nfs_mnt_d}
-}
-
-nfs_test_cleanup ()
-{
-    rm -f "$nfs_local_file"
-    umount -f "$nfs_mnt_d"
-    rmdir "$nfs_mnt_d"
-    onnode -q $test_node rmdir "$nfs_test_dir"
-}
-
-#######################################
-
 # If the given IP is hosted then print 2 items: maskbits and iface
 ip_maskbits_iface ()
 {
