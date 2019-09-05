@@ -10,7 +10,7 @@ else
 	helper="${CTDB_TEST_DIR}/local_daemons.sh"
 fi
 
-ctdb_local_daemons="${helper} ${SIMPLE_TESTS_VAR_DIR}"
+ctdb_local_daemons="${helper} ${CTDB_TEST_TMP_DIR}"
 
 #######################################
 
