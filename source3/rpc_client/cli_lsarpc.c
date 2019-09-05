@@ -179,7 +179,7 @@ static NTSTATUS dcerpc_lsa_lookup_sids_noalloc(struct dcerpc_binding_handle *h,
 					       bool use_lookupsids3,
 					       NTSTATUS *presult)
 {
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	struct lsa_SidArray sid_array;
 	struct lsa_RefDomainList *ref_domains = NULL;
