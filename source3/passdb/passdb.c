@@ -2499,7 +2499,7 @@ NTSTATUS pdb_get_trust_credentials(const char *netbios_domain,
 				   struct cli_credentials **_creds)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
+	NTSTATUS status;
 	struct loadparm_context *lp_ctx;
 	enum netr_SchannelType channel;
 	time_t last_set_time;
