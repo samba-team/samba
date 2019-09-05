@@ -96,6 +96,92 @@ static bool brl_same_context(const struct lock_context *ctx1,
 		(ctx1->tid == ctx2->tid));
 }
 
+bool byte_range_valid(uint64_t ofs, uint64_t len)
+{
+	uint64_t max_len = UINT64_MAX - ofs;
+	uint64_t effective_len;
+
+	/*
+	 * [MS-FSA] specifies this:
+	 *
+	 * If (((FileOffset + Length - 1) < FileOffset) && Length != 0) {
+	 *   return STATUS_INVALID_LOCK_RANGE
+	 * }
+	 *
+	 * We avoid integer wrapping and calculate
+	 * max and effective len instead.
+	 */
+
+	if (len == 0) {
+		return true;
+	}
+
+	effective_len = len - 1;
+	if (effective_len <= max_len) {
+		return true;
+	}
+
+	return false;
+}
+
+bool byte_range_overlap(uint64_t ofs1,
+			uint64_t len1,
+			uint64_t ofs2,
+			uint64_t len2)
+{
+	uint64_t last1;
+	uint64_t last2;
+	bool valid;
+
+	/*
+	 * This is based on [MS-FSA] 2.1.4.10
+	 * Algorithm for Determining If a Range Access
+	 * Conflicts with Byte-Range Locks
+	 */
+
+	/*
+	 * The {0, 0} range doesn't conflict with any byte-range lock
+	 */
+	if (ofs1 == 0 && len1 == 0) {
+		return false;
+	}
+	if (ofs2 == 0 && len2 == 0) {
+		return false;
+	}
+
+	/*
+	 * The caller should have checked that the ranges are
+	 * valid. But currently we gracefully handle
+	 * the overflow of a read/write check.
+	 */
+	valid = byte_range_valid(ofs1, len1);
+	if (valid) {
+		last1 = ofs1 + len1 - 1;
+	} else {
+		last1 = UINT64_MAX;
+	}
+	valid = byte_range_valid(ofs2, len2);
+	if (valid) {
+		last2 = ofs2 + len2 - 1;
+	} else {
+		last2 = UINT64_MAX;
+	}
+
+	/*
+	 * If one range starts after the last
+	 * byte of the other range there's
+	 * no conflict.
+	 */
+	if (ofs1 > last2) {
+		return false;
+	}
+	if (ofs2 > last1) {
+		return false;
+	}
+
+	return true;
+}
+
 /****************************************************************************
  See if lck1 and lck2 overlap.
 ****************************************************************************/
@@ -103,20 +189,10 @@ static bool brl_same_context(const struct lock_context *ctx1,
 static bool brl_overlap(const struct lock_struct *lck1,
                         const struct lock_struct *lck2)
 {
-	/* XXX Remove for Win7 compatibility. */
-	/* this extra check is not redundant - it copes with locks
-	   that go beyond the end of 64 bit file space */
-	if (lck1->size != 0 &&
-	    lck1->start == lck2->start &&
-	    lck1->size == lck2->size) {
-		return True;
-	}
-
-	if (lck1->start >= (lck2->start+lck2->size) ||
-	    lck2->start >= (lck1->start+lck1->size)) {
-		return False;
-	}
-	return True;
+	return byte_range_overlap(lck1->start,
+				  lck1->size,
+				  lck2->start,
+				  lck2->size);
 }
 
 /****************************************************************************
@@ -336,11 +412,12 @@ NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 	files_struct *fsp = br_lck->fsp;
 	struct lock_struct *locks = br_lck->lock_data;
 	NTSTATUS status;
+	bool valid;
 
 	SMB_ASSERT(plock->lock_type != UNLOCK_LOCK);
 
-	if ((plock->start + plock->size - 1 < plock->start) &&
-			plock->size != 0) {
+	valid = byte_range_valid(plock->start, plock->size);
+	if (!valid) {
 		return NT_STATUS_INVALID_LOCK_RANGE;
 	}
 

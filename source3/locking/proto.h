@@ -31,6 +31,12 @@ void brl_shutdown(void);
 unsigned int brl_num_locks(const struct byte_range_lock *brl);
 struct files_struct *brl_fsp(struct byte_range_lock *brl);
 
+bool byte_range_valid(uint64_t ofs, uint64_t len);
+bool byte_range_overlap(uint64_t ofs1,
+			uint64_t len1,
+			uint64_t ofs2,
+			uint64_t len2);
+
 NTSTATUS brl_lock_windows_default(struct byte_range_lock *br_lck,
 				  struct lock_struct *plock);
 
