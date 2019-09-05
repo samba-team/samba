@@ -258,6 +258,19 @@ static int syncops_mkdir(vfs_handle_struct *handle,
         SYNCOPS_NEXT_SMB_FNAME(MKDIR, smb_fname, (handle, smb_fname, mode));
 }
 
+static int syncops_mkdirat(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			mode_t mode)
+{
+        SYNCOPS_NEXT_SMB_FNAME(MKDIRAT,
+			smb_fname,
+				(handle,
+				dirfsp,
+				smb_fname,
+				mode));
+}
+
 static int syncops_rmdir(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname)
 {
@@ -318,6 +331,7 @@ static int syncops_connect(struct vfs_handle_struct *handle, const char *service
 static struct vfs_fn_pointers vfs_syncops_fns = {
 	.connect_fn = syncops_connect,
 	.mkdir_fn = syncops_mkdir,
+	.mkdirat_fn = syncops_mkdirat,
 	.rmdir_fn = syncops_rmdir,
 	.open_fn = syncops_open,
 	.renameat_fn = syncops_renameat,
