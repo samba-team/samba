@@ -1080,6 +1080,48 @@ out:
  * Success: return 0
  * Failure: set errno, return -1
  */
+static int mh_mkdirat(vfs_handle_struct *handle,
+		struct files_struct *dirfsp,
+		const struct smb_filename *smb_fname,
+		mode_t mode)
+{
+	int status;
+	struct smb_filename *clientFname = NULL;
+	const char *path = smb_fname->base_name;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering with path '%s'\n", path));
+
+	if (!is_in_media_files(path)) {
+		status = SMB_VFS_NEXT_MKDIRAT(handle,
+				dirfsp,
+				smb_fname,
+				mode);
+		goto out;
+	}
+
+	status = alloc_get_client_smb_fname(handle,
+				talloc_tos(),
+				smb_fname,
+				&clientFname);
+	if (status != 0) {
+		goto err;
+	}
+
+	status = SMB_VFS_NEXT_MKDIRAT(handle,
+			dirfsp,
+			clientFname,
+			mode);
+err:
+	TALLOC_FREE(clientFname);
+out:
+	DEBUG(MH_INFO_DEBUG, ("Leaving with path '%s'\n", path));
+	return status;
+}
+
+/*
+ * Success: return 0
+ * Failure: set errno, return -1
+ */
 static int mh_rmdir(vfs_handle_struct *handle,
 		const struct smb_filename *smb_fname)
 {
@@ -2317,6 +2359,7 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.telldir_fn = mh_telldir,
 	.rewind_dir_fn = mh_rewinddir,
 	.mkdir_fn = mh_mkdir,
+	.mkdirat_fn = mh_mkdirat,
 	.rmdir_fn = mh_rmdir,
 	.closedir_fn = mh_closedir,
 
