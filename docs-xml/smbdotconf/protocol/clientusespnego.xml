@@ -1,8 +1,16 @@
 <samba:parameter name="client use spnego"
                  context="G"
                  type="boolean"
+		 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
+    <para>This parameter has been deprecated since Samba 4.13 and
+    support for NTLMv2, NTLM and LanMan authentication outside NTLMSSP
+    will be removed in a future Samba release.</para>
+    <para>That is, in the future, the current default of
+    <command>client use spnego = yes</command>
+    will be the enforced behaviour.</para>
+
     <para> This variable controls whether Samba clients will try 
     to use Simple and Protected NEGOciation (as specified by rfc2478) with 
     supporting servers (including WindowsXP, Windows2000 and Samba
