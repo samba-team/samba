@@ -625,11 +625,11 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	}
 
 	if (e->share_file_id != op->global->open_persistent_id) {
-		DEBUG(5, ("vfs_default_durable_reconnect: denying durable "
-			  "share_file_id changed %llu != %llu"
-			  "(e.g. another client had opened the file)\n",
-			  (unsigned long long)e->share_file_id,
-			  (unsigned long long)op->global->open_persistent_id));
+		DBG_INFO("denying durable "
+			 "share_file_id changed %"PRIu64" != %"PRIu64" "
+			 "(e.g. another client had opened the file)\n",
+			 e->share_file_id,
+			 op->global->open_persistent_id);
 		TALLOC_FREE(lck);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
