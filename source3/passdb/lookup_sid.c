@@ -833,7 +833,7 @@ NTSTATUS lookup_sids(TALLOC_CTX *mem_ctx, int num_sids,
 		     struct lsa_name_info **ret_names)
 {
 	TALLOC_CTX *tmp_ctx;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result;
 	struct lsa_name_info *name_infos;
 	struct lsa_dom_info *dom_infos = NULL;
 
