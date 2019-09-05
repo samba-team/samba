@@ -62,7 +62,7 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32_t rid,
 
 NTSTATUS smb_register_passdb(int version, const char *name, pdb_init_function init) 
 {
-	struct pdb_init_function_entry *entry = backends;
+	struct pdb_init_function_entry *entry = NULL;
 
 	if(version != PASSDB_INTERFACE_VERSION) {
 		DEBUG(0,("Can't register passdb backend!\n"
@@ -137,7 +137,7 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
 	char *module_name = smb_xstrdup(selected);
 	char *module_location = NULL, *p;
 	struct pdb_init_function_entry *entry;
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS nt_status;
 
 	lazy_initialize_passdb();
 
