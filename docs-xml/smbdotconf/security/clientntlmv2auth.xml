@@ -1,8 +1,17 @@
 <samba:parameter name="client NTLMv2 auth"
                  context="G"
                  type="boolean"
+		 deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
+    <para>This parameter has been deprecated since Samba 4.13 and
+    support for NTLM and LanMan (as distinct from NTLMv2 or
+    Kerberos authentication)
+    will be removed in a future Samba release.</para>
+    <para>That is, in the future, the current default of
+    <command>client NTLMv2 auth = yes</command>
+    will be the enforced behaviour.</para>
+
     <para>This parameter determines whether or not <citerefentry><refentrytitle>smbclient</refentrytitle>
     <manvolnum>8</manvolnum></citerefentry> will attempt to
     authenticate itself to servers using the NTLMv2 encrypted password
