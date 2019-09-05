@@ -95,8 +95,87 @@ static int linux_xfs_sgid_mkdir(vfs_handle_struct *handle,
 	return mkdir_res;
 }
 
+static int linux_xfs_sgid_mkdirat(vfs_handle_struct *handle,
+		struct files_struct *dirfsp,
+		const struct smb_filename *smb_fname,
+		mode_t mode)
+{
+	struct smb_filename fname = { 0, };
+	int mkdir_res;
+	int res;
+
+	DEBUG(10, ("Calling linux_xfs_sgid_mkdirat(%s)\n",
+		smb_fname->base_name));
+
+	mkdir_res = SMB_VFS_NEXT_MKDIRAT(handle,
+			dirfsp,
+			smb_fname,
+			mode);
+	if (mkdir_res == -1) {
+		DEBUG(10, ("SMB_VFS_NEXT_MKDIRAT returned error: %s\n",
+			   strerror(errno)));
+		return mkdir_res;
+	}
+
+	if (!parent_dirname(talloc_tos(),
+			smb_fname->base_name,
+			&fname.base_name,
+			NULL)) {
+		DEBUG(1, ("parent_dirname failed\n"));
+		/* return success, we did the mkdir */
+		return mkdir_res;
+	}
+
+	res = SMB_VFS_NEXT_STAT(handle, &fname);
+	if (res == -1) {
+		DEBUG(10, ("NEXT_STAT(%s) failed: %s\n", fname.base_name,
+			   strerror(errno)));
+		/* return success, we did the mkdir */
+		return mkdir_res;
+	}
+	TALLOC_FREE(fname.base_name);
+	if ((fname.st.st_ex_mode & S_ISGID) == 0) {
+		/* No SGID to inherit */
+		DEBUG(10, ("No SGID to inherit\n"));
+		return mkdir_res;
+	}
+
+	fname.base_name = discard_const_p(char, smb_fname->base_name);
+
+	res = SMB_VFS_NEXT_STAT(handle, &fname);
+	if (res == -1) {
+		DEBUG(2, ("Could not stat just created dir %s: %s\n",
+			smb_fname->base_name,
+			strerror(errno)));
+		/* return success, we did the mkdir */
+		return mkdir_res;
+	}
+	fname.st.st_ex_mode |= S_ISGID;
+	fname.st.st_ex_mode &= ~S_IFDIR;
+
+	/*
+	 * Yes, we have to do this as root. If you do it as
+	 * non-privileged user, XFS on Linux will just ignore us and
+	 * return success. What can you do...
+	 */
+	become_root();
+	res = SMB_VFS_NEXT_CHMOD(handle,
+			smb_fname,
+			fname.st.st_ex_mode);
+	unbecome_root();
+
+	if (res == -1) {
+		DEBUG(2, ("CHMOD(%s, %o) failed: %s\n", smb_fname->base_name,
+			  (int)fname.st.st_ex_mode, strerror(errno)));
+		/* return success, we did the mkdir */
+		return mkdir_res;
+	}
+	return mkdir_res;
+}
+
 static struct vfs_fn_pointers linux_xfs_sgid_fns = {
 	.mkdir_fn = linux_xfs_sgid_mkdir,
+	.mkdirat_fn = linux_xfs_sgid_mkdirat,
 };
 
 static_decl_vfs;
