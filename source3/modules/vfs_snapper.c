@@ -2562,6 +2562,27 @@ static int snapper_gmt_mkdir(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_MKDIR(handle, fname, mode);
 }
 
+static int snapper_gmt_mkdirat(vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *fname,
+				mode_t mode)
+{
+	time_t timestamp = 0;
+
+	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle, fname->base_name,
+					&timestamp, NULL)) {
+		return -1;
+	}
+	if (timestamp != 0) {
+		errno = EROFS;
+		return -1;
+	}
+	return SMB_VFS_NEXT_MKDIRAT(handle,
+			dirfsp,
+			fname,
+			mode);
+}
+
 static int snapper_gmt_rmdir(vfs_handle_struct *handle,
 				const struct smb_filename *fname)
 {
@@ -2903,6 +2924,7 @@ static struct vfs_fn_pointers snapper_fns = {
 	.get_nt_acl_fn = snapper_gmt_get_nt_acl,
 	.fget_nt_acl_fn = snapper_gmt_fget_nt_acl,
 	.mkdir_fn = snapper_gmt_mkdir,
+	.mkdirat_fn = snapper_gmt_mkdirat,
 	.rmdir_fn = snapper_gmt_rmdir,
 	.getxattr_fn = snapper_gmt_getxattr,
 	.getxattrat_send_fn = vfs_not_implemented_getxattrat_send,
