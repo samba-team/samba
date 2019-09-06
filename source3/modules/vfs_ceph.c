@@ -371,28 +371,6 @@ static void cephwrap_rewinddir(struct vfs_handle_struct *handle, DIR *dirp)
 	ceph_rewinddir(handle->data, (struct ceph_dir_result *) dirp);
 }
 
-static int cephwrap_mkdir(struct vfs_handle_struct *handle,
-			  const struct smb_filename *smb_fname,
-			  mode_t mode)
-{
-	int result;
-	char *parent = NULL;
-	const char *path = smb_fname->base_name;
-
-	DBG_DEBUG("[CEPH] mkdir(%p, %s)\n", handle, path);
-
-	if (lp_inherit_acls(SNUM(handle->conn))
-	    && parent_dirname(talloc_tos(), path, &parent, NULL)
-	    && directory_has_default_acl(handle->conn, parent)) {
-		mode = 0777;
-	}
-
-	TALLOC_FREE(parent);
-
-	result = ceph_mkdir(handle->data, path, mode);
-	return WRAP_RETURN(result);
-}
-
 static int cephwrap_mkdirat(struct vfs_handle_struct *handle,
 			files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1453,7 +1431,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.seekdir_fn = cephwrap_seekdir,
 	.telldir_fn = cephwrap_telldir,
 	.rewind_dir_fn = cephwrap_rewinddir,
-	.mkdir_fn = cephwrap_mkdir,
 	.mkdirat_fn = cephwrap_mkdirat,
 	.rmdir_fn = cephwrap_rmdir,
 	.closedir_fn = cephwrap_closedir,
