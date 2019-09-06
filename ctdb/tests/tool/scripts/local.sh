@@ -1,11 +1,9 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-[ -n "$TEST_VAR_DIR" ] || die "TEST_VAR_DIR unset"
-
 PATH="${PATH}:${CTDB_SCRIPTS_TOOLS_HELPER_DIR}"
 PATH="${PATH}:${CTDB_SCRIPTS_HELPER_BINDIR}"
 
-setup_ctdb_base "$TEST_VAR_DIR" "unit_tool" \
+setup_ctdb_base "$CTDB_TEST_TMP_DIR" "ctdb-etc" \
 		functions
 
 if "$TEST_VERBOSE" ; then
