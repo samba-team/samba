@@ -1647,6 +1647,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 				uint32_t access_mask,
 				uint32_t share_access)
 {
+	struct share_mode_data *d = lck->data;
 	uint32_t i;
 
 	if (is_stat_open(access_mask)) {
@@ -1660,24 +1661,24 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	 */
 
 #if defined(DEVELOPER)
-	for(i = 0; i < lck->data->num_share_modes; i++) {
-		validate_my_share_entries(conn->sconn, lck->data->id, i,
-					  &lck->data->share_modes[i]);
+	for(i = 0; i < d->num_share_modes; i++) {
+		validate_my_share_entries(
+			conn->sconn, d->id, i, &d->share_modes[i]);
 	}
 #endif
 
-	for(i = 0; i < lck->data->num_share_modes; i++) {
+	for(i = 0; i < d->num_share_modes; i++) {
+		struct share_mode_entry *e = &d->share_modes[i];
 
-		if (!is_valid_share_mode_entry(&lck->data->share_modes[i])) {
+		if (!is_valid_share_mode_entry(e)) {
 			continue;
 		}
 
 		/* someone else has a share lock on it, check to see if we can
 		 * too */
-		if (share_conflict(&lck->data->share_modes[i],
-				   access_mask, share_access)) {
+		if (share_conflict(e, access_mask, share_access)) {
 
-			if (share_mode_stale_pid(lck->data, i)) {
+			if (share_mode_stale_pid(d, i)) {
 				continue;
 			}
 
