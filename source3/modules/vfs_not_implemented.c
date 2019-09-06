@@ -162,14 +162,6 @@ void vfs_not_implemented_rewind_dir(vfs_handle_struct *handle, DIR *dirp)
 	;
 }
 
-int vfs_not_implemented_mkdir(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		mode_t mode)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 int vfs_not_implemented_mkdirat(vfs_handle_struct *handle,
 		struct files_struct *dirfsp,
 		const struct smb_filename *smb_fname,
@@ -1063,7 +1055,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.seekdir_fn = vfs_not_implemented_seekdir,
 	.telldir_fn = vfs_not_implemented_telldir,
 	.rewind_dir_fn = vfs_not_implemented_rewind_dir,
-	.mkdir_fn = vfs_not_implemented_mkdir,
 	.mkdirat_fn = vfs_not_implemented_mkdirat,
 	.rmdir_fn = vfs_not_implemented_rmdir,
 	.closedir_fn = vfs_not_implemented_closedir,

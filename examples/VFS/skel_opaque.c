@@ -165,14 +165,6 @@ static void skel_rewind_dir(vfs_handle_struct *handle, DIR *dirp)
 	;
 }
 
-static int skel_mkdir(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		mode_t mode)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 static int skel_mkdirat(vfs_handle_struct *handle,
 		struct files_struct *dirfsp,
 		const struct smb_filename *smb_fname,
@@ -1059,7 +1051,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.seekdir_fn = skel_seekdir,
 	.telldir_fn = skel_telldir,
 	.rewind_dir_fn = skel_rewind_dir,
-	.mkdir_fn = skel_mkdir,
 	.mkdirat_fn = skel_mkdirat,
 	.rmdir_fn = skel_rmdir,
 	.closedir_fn = skel_closedir,

@@ -493,30 +493,6 @@ static void vfswrap_rewinddir(vfs_handle_struct *handle, DIR *dirp)
 	END_PROFILE(syscall_rewinddir);
 }
 
-static int vfswrap_mkdir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			mode_t mode)
-{
-	int result;
-	const char *path = smb_fname->base_name;
-	char *parent = NULL;
-
-	START_PROFILE(syscall_mkdir);
-
-	if (lp_inherit_acls(SNUM(handle->conn))
-	    && parent_dirname(talloc_tos(), path, &parent, NULL)
-	    && directory_has_default_acl(handle->conn, parent)) {
-		mode = (0777 & lp_directory_mask(SNUM(handle->conn)));
-	}
-
-	TALLOC_FREE(parent);
-
-	result = mkdir(path, mode);
-
-	END_PROFILE(syscall_mkdir);
-	return result;
-}
-
 static int vfswrap_mkdirat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -3486,7 +3462,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.seekdir_fn = vfswrap_seekdir,
 	.telldir_fn = vfswrap_telldir,
 	.rewind_dir_fn = vfswrap_rewinddir,
-	.mkdir_fn = vfswrap_mkdir,
 	.mkdirat_fn = vfswrap_mkdirat,
 	.rmdir_fn = vfswrap_rmdir,
 	.closedir_fn = vfswrap_closedir,

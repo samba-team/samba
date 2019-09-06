@@ -48,7 +48,6 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(syscall_seekdir) \
 	SMBPROFILE_STATS_BASIC(syscall_telldir) \
 	SMBPROFILE_STATS_BASIC(syscall_rewinddir) \
-	SMBPROFILE_STATS_BASIC(syscall_mkdir) \
 	SMBPROFILE_STATS_BASIC(syscall_mkdirat) \
 	SMBPROFILE_STATS_BASIC(syscall_rmdir) \
 	SMBPROFILE_STATS_BASIC(syscall_closedir) \
