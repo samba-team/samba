@@ -56,6 +56,9 @@ static connection_struct *get_conn_tos(
 	struct conn_struct_tos *c = NULL;
 	int snum = -1;
 	NTSTATUS status;
+	char *cwd = NULL;
+	struct smb_filename cwd_fname = {0};
+	int ret;
 
 	if (!posix_locking_init(false)) {
 		PyErr_NoMemory();
@@ -80,6 +83,29 @@ static connection_struct *get_conn_tos(
 	/* Ignore read-only and share restrictions */
 	c->conn->read_only = false;
 	c->conn->share_access = SEC_RIGHTS_FILE_ALL;
+
+	/* Provided by libreplace if not present. Always mallocs. */
+	cwd = get_current_dir_name();
+	if (cwd == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	cwd_fname.base_name = cwd;
+	/*
+	 * We need to call vfs_ChDir() to initialize
+	 * conn->cwd_fsp correctly. Change directory
+	 * to current directory (so no change for process).
+	 */
+	ret = vfs_ChDir(c->conn, &cwd_fname);
+	if (ret != 0) {
+		status = map_nt_error_from_unix(errno);
+		SAFE_FREE(cwd);
+		PyErr_NTSTATUS_IS_ERR_RAISE(status);
+	}
+
+	SAFE_FREE(cwd);
+
 	return c->conn;
 }
 
