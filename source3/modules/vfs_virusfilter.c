@@ -159,13 +159,14 @@ static bool quarantine_create_dir(
 				goto done;
 			}
 
-			ret = SMB_VFS_NEXT_MKDIR(handle,
+			ret = SMB_VFS_NEXT_MKDIRAT(handle,
+					handle->conn->cwd_fsp,
 					smb_fname,
 					config->quarantine_dir_mode);
 			if (ret != 0) {
 				TALLOC_FREE(smb_fname);
 
-				DBG_WARNING("quarantine: mkdir failed for %s "
+				DBG_WARNING("quarantine: mkdirat failed for %s "
 					    "with error: %s\n", new_dir,
 					    strerror(errno));
 				status = false;
