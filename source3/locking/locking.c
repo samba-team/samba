@@ -442,6 +442,7 @@ char *share_mode_str(TALLOC_CTX *ctx, int num,
 		     const struct share_mode_entry *e)
 {
 	struct server_id_buf tmp;
+	struct file_id_buf ftmp;
 
 	return talloc_asprintf(ctx, "share_mode_entry[%d]: "
 		 "pid = %s, share_access = 0x%x, private_options = 0x%x, "
@@ -453,7 +454,7 @@ char *share_mode_str(TALLOC_CTX *ctx, int num,
 		 e->access_mask, (unsigned long long)e->op_mid,
 		 e->op_type, (unsigned long long)e->share_file_id,
 		 (unsigned int)e->uid, (unsigned int)e->flags,
-		 file_id_string_tos(id),
+		 file_id_str_buf(*id, &ftmp),
 		 (unsigned int)e->name_hash);
 }
 
