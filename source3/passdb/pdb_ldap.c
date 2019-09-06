@@ -491,7 +491,6 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 	uint8_t 	smblmpwd[LM_HASH_LEN],
 			smbntpwd[NT_HASH_LEN];
 	bool 		use_samba_attrs = True;
-	uint32_t 		acct_ctrl = 0;
 	uint16_t		logon_divs;
 	uint16_t 		bad_password_count = 0,
 			logon_count = 0;
@@ -911,6 +910,7 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 				LDAP_ATTR_ACB_INFO),
 			ctx);
 	if (temp) {
+		uint32_t acct_ctrl = 0;
 		acct_ctrl = pdb_decode_acct_ctrl(temp);
 
 		if (acct_ctrl == 0) {
@@ -918,8 +918,6 @@ static bool init_sam_from_ldap(struct ldapsam_privates *ldap_state,
 		}
 
 		pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
-	} else {
-		acct_ctrl |= ACB_NORMAL;
 	}
 
 	pdb_set_hours_len(sampass, hours_len, PDB_SET);
