@@ -786,35 +786,6 @@ static void um_rewinddir(vfs_handle_struct *handle,
 			       ((um_dirinfo_struct*)dirp)->dirstream);
 }
 
-static int um_mkdir(vfs_handle_struct *handle,
-		    const struct smb_filename *smb_fname,
-		    mode_t mode)
-{
-	int status;
-	const char *path = smb_fname->base_name;
-	struct smb_filename *client_fname = NULL;
-
-	DEBUG(10, ("Entering with path '%s'\n", path));
-
-	if (!is_in_media_files(path) || !is_in_media_dir(path)) {
-		return SMB_VFS_NEXT_MKDIR(handle, smb_fname, mode);
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&client_fname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_MKDIR(handle, client_fname, mode);
-err:
-	TALLOC_FREE(client_fname);
-	DEBUG(10, ("Leaving with path '%s'\n", path));
-	return status;
-}
-
 static int um_mkdirat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1952,7 +1923,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.seekdir_fn = um_seekdir,
 	.telldir_fn = um_telldir,
 	.rewind_dir_fn = um_rewinddir,
-	.mkdir_fn = um_mkdir,
 	.mkdirat_fn = um_mkdirat,
 	.rmdir_fn = um_rmdir,
 	.closedir_fn = um_closedir,
