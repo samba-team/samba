@@ -2455,6 +2455,56 @@ _PUBLIC_ NTSTATUS dcesrv_init_ep_server(struct dcesrv_context *dce_ctx,
 	return NT_STATUS_OK;
 }
 
+_PUBLIC_ NTSTATUS dcesrv_shutdown_registered_ep_servers(
+					struct dcesrv_context *dce_ctx)
+{
+	NTSTATUS status;
+	int i;
+
+	for (i = 0; i < num_ep_servers; i++) {
+		status = dcesrv_shutdown_ep_server(dce_ctx,
+					ep_servers[i].ep_server->name);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ NTSTATUS dcesrv_shutdown_ep_server(struct dcesrv_context *dce_ctx,
+					    const char *ep_server_name)
+{
+	struct dcesrv_endpoint_server *ep_server = NULL;
+	NTSTATUS status;
+
+	ep_server = discard_const_p(struct dcesrv_endpoint_server,
+				    dcesrv_ep_server_byname(ep_server_name));
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to find endpoint server '%s'\n",
+			ep_server_name);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (!ep_server->initialized) {
+		return NT_STATUS_OK;
+	}
+
+	DBG_INFO("Shutting down DCE/RPC endpoint server '%s'\n",
+		 ep_server_name);
+
+	status = ep_server->shutdown_server(dce_ctx, ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to shutdown endpoint server '%s': %s\n",
+			ep_server_name, nt_errstr(status));
+		return status;
+	}
+
+	ep_server->initialized = false;
+
+	return NT_STATUS_OK;
+}
+
 /*
   register a DCERPC endpoint server.
 

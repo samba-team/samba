@@ -262,6 +262,12 @@ static NTSTATUS spoolss__op_init_server(struct dcesrv_context *dce_ctx, const st
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS spoolss__op_shutdown_server(struct dcesrv_context *dce_ctx,
+				const struct dcesrv_endpoint_server *ep_server)
+{
+	return NT_STATUS_OK;
+}
+
 static bool test_OpenPrinter(struct torture_context *tctx,
 			     struct dcerpc_pipe *p,
 			     struct policy_handle *handle,
@@ -462,6 +468,7 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 
 	/* fill in all the operations */
 	ep_server.init_server = spoolss__op_init_server;
+	ep_server.shutdown_server = spoolss__op_shutdown_server;
 
 	ep_server.interface_by_uuid = spoolss__op_interface_by_uuid;
 	ep_server.interface_by_name = spoolss__op_interface_by_name;

@@ -333,6 +333,10 @@ struct dcesrv_endpoint_server {
 	 */
 	NTSTATUS (*init_server)(struct dcesrv_context *, const struct dcesrv_endpoint_server *);
 
+	/* this function should cleanup endpoint server state and unregister
+	 * the endpoint server from dcesrv_context */
+	NTSTATUS (*shutdown_server)(struct dcesrv_context *, const struct dcesrv_endpoint_server *);
+
 	/* this function can be used by other endpoint servers to
 	 * ask for a dcesrv_interface implementation
 	 * - iface must be reference to an already existing struct !
@@ -450,8 +454,11 @@ NTSTATUS dcerpc_register_ep_server(const struct dcesrv_endpoint_server *ep_serve
 NTSTATUS dcesrv_init_ep_servers(struct dcesrv_context *dce_ctx,
 				const char **ep_servers);
 NTSTATUS dcesrv_init_registered_ep_servers(struct dcesrv_context *dce_ctx);
+NTSTATUS dcesrv_shutdown_registered_ep_servers(struct dcesrv_context *dce_ctx);
 NTSTATUS dcesrv_init_ep_server(struct dcesrv_context *dce_ctx,
 			       const char *ep_server_name);
+NTSTATUS dcesrv_shutdown_ep_server(struct dcesrv_context *dce_ctx,
+				   const char *name);
 const struct dcesrv_endpoint_server *dcesrv_ep_server_byname(const char *name);
 
 NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,

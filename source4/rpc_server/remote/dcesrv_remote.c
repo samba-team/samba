@@ -446,6 +446,12 @@ static NTSTATUS remote_op_init_server(struct dcesrv_context *dce_ctx, const stru
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS remote_op_shutdown_server(struct dcesrv_context *dce_ctx,
+				const struct dcesrv_endpoint_server *ep_server)
+{
+	return NT_STATUS_OK;
+}
+
 static bool remote_fill_interface(struct dcesrv_interface *iface, const struct ndr_interface_table *if_tabl)
 {
 	iface->name = if_tabl->name;
@@ -500,6 +506,7 @@ NTSTATUS dcerpc_server_remote_init(TALLOC_CTX *ctx)
 
 		/* fill in all the operations */
 		.init_server = remote_op_init_server,
+		.shutdown_server = remote_op_shutdown_server,
 
 		.interface_by_uuid = remote_op_interface_by_uuid,
 		.interface_by_name = remote_op_interface_by_name
