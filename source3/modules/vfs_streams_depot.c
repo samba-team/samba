@@ -128,6 +128,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 	char *rootdir = NULL;
 	struct smb_filename *rootdir_fname = NULL;
 	struct smb_filename *tmp_fname = NULL;
+	int ret;
 
 	check_valid = lp_parm_bool(SNUM(handle->conn),
 		      "streams_depot", "check_valid", true);
@@ -295,8 +296,11 @@ static char *stream_dir(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	if ((SMB_VFS_NEXT_MKDIR(handle, rootdir_fname, 0755) != 0)
-	    && (errno != EEXIST)) {
+	ret = SMB_VFS_NEXT_MKDIRAT(handle,
+				handle->conn->cwd_fsp,
+				rootdir_fname,
+				0755);
+	if ((ret != 0) && (errno != EEXIST)) {
 		goto fail;
 	}
 
@@ -316,8 +320,11 @@ static char *stream_dir(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	if ((SMB_VFS_NEXT_MKDIR(handle, tmp_fname, 0755) != 0)
-	    && (errno != EEXIST)) {
+	ret = SMB_VFS_NEXT_MKDIRAT(handle,
+				handle->conn->cwd_fsp,
+				tmp_fname,
+				0755);
+	if ((ret != 0) && (errno != EEXIST)) {
 		goto fail;
 	}
 
@@ -341,8 +348,11 @@ static char *stream_dir(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	if ((SMB_VFS_NEXT_MKDIR(handle, tmp_fname, 0755) != 0)
-	    && (errno != EEXIST)) {
+	ret = SMB_VFS_NEXT_MKDIRAT(handle,
+			handle->conn->cwd_fsp,
+			tmp_fname,
+			0755);
+	if ((ret != 0) && (errno != EEXIST)) {
 		goto fail;
 	}
 
@@ -350,8 +360,11 @@ static char *stream_dir(vfs_handle_struct *handle,
 	TALLOC_FREE(tmp_fname);
 
 	/* smb_fname_hash is the struct smb_filename version of 'result' */
-	if ((SMB_VFS_NEXT_MKDIR(handle, smb_fname_hash, 0755) != 0)
-	    && (errno != EEXIST)) {
+	ret = SMB_VFS_NEXT_MKDIRAT(handle,
+			handle->conn->cwd_fsp,
+			smb_fname_hash,
+			0755);
+	if ((ret != 0) && (errno != EEXIST)) {
 		goto fail;
 	}
 
