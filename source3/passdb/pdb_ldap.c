@@ -1930,7 +1930,7 @@ static NTSTATUS ldapsam_delete_sam_account(struct pdb_methods *my_methods,
 
 static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, struct samu * newpwd)
 {
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS ret;
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc = 0;
 	char *dn;
@@ -4091,7 +4091,7 @@ static NTSTATUS ldapsam_get_account_policy(struct pdb_methods *methods,
 					   enum pdb_policy_type type,
 					   uint32_t *value)
 {
-	NTSTATUS ntstatus = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS ntstatus;
 
 	if (cache_account_policy_get(type, value)) {
 		DEBUG(11,("ldapsam_get_account_policy: got valid value from "
