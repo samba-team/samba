@@ -1310,27 +1310,6 @@ static NTSTATUS ceph_snap_gmt_get_nt_acl(vfs_handle_struct *handle,
 	return status;
 }
 
-static int ceph_snap_gmt_mkdir(vfs_handle_struct *handle,
-				const struct smb_filename *csmb_fname,
-				mode_t mode)
-{
-	time_t timestamp = 0;
-	int ret;
-
-	ret = ceph_snap_gmt_strip_snapshot(handle,
-					csmb_fname->base_name,
-					&timestamp, NULL, 0);
-	if (ret < 0) {
-		errno = -ret;
-		return -1;
-	}
-	if (timestamp != 0) {
-		errno = EROFS;
-		return -1;
-	}
-	return SMB_VFS_NEXT_MKDIR(handle, csmb_fname, mode);
-}
-
 static int ceph_snap_gmt_mkdirat(vfs_handle_struct *handle,
 				struct files_struct *dirfsp,
 				const struct smb_filename *csmb_fname,
@@ -1668,7 +1647,6 @@ static struct vfs_fn_pointers ceph_snap_fns = {
 	.get_nt_acl_fn = ceph_snap_gmt_get_nt_acl,
 	.fget_nt_acl_fn = ceph_snap_gmt_fget_nt_acl,
 	.get_nt_acl_fn = ceph_snap_gmt_get_nt_acl,
-	.mkdir_fn = ceph_snap_gmt_mkdir,
 	.mkdirat_fn = ceph_snap_gmt_mkdirat,
 	.rmdir_fn = ceph_snap_gmt_rmdir,
 	.getxattr_fn = ceph_snap_gmt_getxattr,
