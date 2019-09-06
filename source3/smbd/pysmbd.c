@@ -846,12 +846,15 @@ static PyObject *py_smbd_mkdir(PyObject *self, PyObject *args, PyObject *kwargs)
 	   so set our umask to 0 */
 	saved_umask = umask(0);
 
-	ret = SMB_VFS_MKDIR(conn, smb_fname, 00755);
+	ret = SMB_VFS_MKDIRAT(conn,
+			conn->cwd_fsp,
+			smb_fname,
+			00755);
 
 	umask(saved_umask);
 
 	if (ret == -1) {
-		DBG_ERR("mkdir error=%d (%s)\n", errno, strerror(errno));
+		DBG_ERR("mkdirat error=%d (%s)\n", errno, strerror(errno));
 		TALLOC_FREE(frame);
 		return NULL;
 	}
