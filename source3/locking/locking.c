@@ -1168,11 +1168,12 @@ bool is_delete_on_close_set(struct share_mode_lock *lck, uint32_t name_hash)
 bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 {
 	struct share_mode_lock *lck;
+	struct file_id_buf ftmp;
 
-	DEBUG(5,("set_sticky_write_time: %s id=%s\n",
+	DBG_INFO("%s id=%s\n",
 		 timestring(talloc_tos(),
 			    convert_timespec_to_time_t(write_time)),
-		 file_id_string_tos(&fileid)));
+		 file_id_str_buf(fileid, &ftmp));
 
 	lck = get_existing_share_mode_lock(talloc_tos(), fileid);
 	if (lck == NULL) {
