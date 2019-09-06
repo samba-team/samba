@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-socket="${TEST_VAR_DIR}/test_sock.$$"
+socket="${CTDB_TEST_TMP_DIR}/test_sock.$$"
 num_clients=10
 
 remove_socket ()

@@ -4,7 +4,7 @@
 
 PATH="$PATH:$CTDB_SCRIPTS_HELPER_BINDIR"
 
-setup_ctdb_base "${TEST_VAR_DIR}" "cunit"
+setup_ctdb_base "${CTDB_TEST_TMP_DIR}" "ctdb-etc"
 
 conffile="${CTDB_BASE}/ctdb.conf"
 scriptfile="${CTDB_BASE}/debug_locks.sh"

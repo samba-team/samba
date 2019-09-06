@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-scriptdir="${TEST_VAR_DIR}/cunit/scriptdir"
+scriptdir="${CTDB_TEST_TMP_DIR}/scriptdir"
 mkdir -p "${scriptdir}"
 
 scriptdir=$(cd "$scriptdir" && echo "$PWD")

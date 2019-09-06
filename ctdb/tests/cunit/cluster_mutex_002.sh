@@ -6,7 +6,7 @@
 
 export CTDB_CLUSTER_MUTEX_HELPER="/bin/false"
 
-lockfile="${TEST_VAR_DIR}/cluster_mutex.lockfile"
+lockfile="${CTDB_TEST_TMP_DIR}/cluster_mutex.lockfile"
 trap 'rm ${lockfile}' 0
 
 t="${CTDB_SCRIPTS_HELPER_BINDIR}/ctdb_mutex_fcntl_helper"

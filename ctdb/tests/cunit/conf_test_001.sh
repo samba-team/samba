@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-conffile="${TEST_VAR_DIR}/config.$$"
+conffile="${CTDB_TEST_TMP_DIR}/config.$$"
 
 remove_files ()
 {

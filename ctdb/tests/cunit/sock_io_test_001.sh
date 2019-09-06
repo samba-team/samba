@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-sockpath="${TEST_VAR_DIR}/sock_daemon_test.sock.$$"
+sockpath="${CTDB_TEST_TMP_DIR}/sock_daemon_test.sock.$$"
 
 ok_null
 

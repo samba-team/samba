@@ -9,7 +9,7 @@
 
 export CTDB_CLUSTER_MUTEX_HELPER="/bin/false"
 
-lockfile="${TEST_VAR_DIR}/cluster_mutex.lockfile"
+lockfile="${CTDB_TEST_TMP_DIR}/cluster_mutex.lockfile"
 trap 'rm ${lockfile}' 0
 
 if [ -n "$CTDB_TEST_MUTEX_HELPER" ] ; then

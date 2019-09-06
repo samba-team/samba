@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-tfile="${TEST_VAR_DIR}/line.$$"
+tfile="${CTDB_TEST_TMP_DIR}/line.$$"
 
 remove_files ()
 {

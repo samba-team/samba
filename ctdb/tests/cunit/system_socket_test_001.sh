@@ -2,7 +2,7 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-out_file="${TEST_VAR_DIR}/cunit/packet.out"
+out_file="${CTDB_TEST_TMP_DIR}/packet.out"
 
 remove_file ()
 {

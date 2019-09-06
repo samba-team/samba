@@ -2,8 +2,8 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-pidfile="${TEST_VAR_DIR}/sock_daemon_test.pid.$$"
-sockpath="${TEST_VAR_DIR}/sock_daemon_test.sock.$$"
+pidfile="${CTDB_TEST_TMP_DIR}/sock_daemon_test.pid.$$"
+sockpath="${CTDB_TEST_TMP_DIR}/sock_daemon_test.sock.$$"
 
 remove_files ()
 {
