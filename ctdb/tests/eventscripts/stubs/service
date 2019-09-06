@@ -1,6 +1,6 @@
 #!/bin/sh
 
-service_status_dir="${EVENTSCRIPTS_TESTS_VAR_DIR}/service_fake_status"
+service_status_dir="${CTDB_TEST_TMP_DIR}/service_fake_status"
 mkdir -p "$service_status_dir"
 
 service="$1"

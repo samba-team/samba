@@ -3,7 +3,7 @@ setup ()
 	if [ $# -eq 1 ] ; then
 		reclock="$1"
 	else
-		reclock="${EVENTSCRIPTS_TESTS_VAR_DIR}/reclock_subdir/rec.lock"
+		reclock="${CTDB_TEST_TMP_DIR}/reclock_subdir/rec.lock"
 	fi
 	CTDB_RECOVERY_LOCK="$reclock"
 

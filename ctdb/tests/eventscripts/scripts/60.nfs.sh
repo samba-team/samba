@@ -15,7 +15,7 @@ setup ()
 	setup_script_options <<EOF
 CTDB_NFS_SKIP_SHARE_CHECK="no"
 # This doesn't even need to exist
-CTDB_NFS_EXPORTS_FILE="$EVENTSCRIPTS_TESTS_VAR_DIR/etc-exports"
+CTDB_NFS_EXPORTS_FILE="${CTDB_TEST_TMP_DIR}/etc-exports"
 EOF
 
 	export RPCNFSDCOUNT
@@ -112,7 +112,7 @@ nfs_setup_fake_threads ()
 
 	case "$_prog" in
 	nfsd)
-		export PROCFS_PATH="${EVENTSCRIPTS_TESTS_VAR_DIR}/proc"
+		export PROCFS_PATH="${CTDB_TEST_TMP_DIR}/proc"
 		_threads="${PROCFS_PATH}/fs/nfsd/threads"
 		mkdir -p $(dirname "$_threads")
 		echo $# >"$_threads"
@@ -232,9 +232,9 @@ rpc_set_service_failure_response ()
 	[ -r "$_file" ] || \
 		die "RPC check file \"$_file\" does not exist or is not unique"
 
-	_out="${EVENTSCRIPTS_TESTS_VAR_DIR}/rpc_failure_output"
+	_out="${CTDB_TEST_TMP_DIR}/rpc_failure_output"
 	: >"$_out"
-	_rc_file="${EVENTSCRIPTS_TESTS_VAR_DIR}/rpc_result"
+	_rc_file="${CTDB_TEST_TMP_DIR}/rpc_result"
 
 	(
 		# Subshell to restrict scope variables...

@@ -60,7 +60,7 @@ set -- $args
 setup_tickles ()
 {
     # Make sure tickles file exists.
-    tickles_file="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb/tickles"
+    tickles_file="${CTDB_TEST_TMP_DIR}/fake-ctdb/tickles"
     mkdir -p $(dirname "$tickles_file")
     touch "$tickles_file"
 }
@@ -330,7 +330,7 @@ ctdb_setvar ()
 
 _t_setup ()
 {
-    _t_dir="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb/fake-tdb/$1"
+    _t_dir="${CTDB_TEST_TMP_DIR}/fake-ctdb/fake-tdb/$1"
     mkdir -p "$_t_dir"
 }
 

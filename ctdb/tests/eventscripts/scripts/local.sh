@@ -21,37 +21,30 @@ PATH="${stubs_dir}:${PATH}"
 
 export CTDB="ctdb"
 
-[ -n "$TEST_VAR_DIR" ] || die "TEST_VAR_DIR unset"
-export EVENTSCRIPTS_TESTS_VAR_DIR="${TEST_VAR_DIR}/unit_eventscripts"
-if [ -d "$EVENTSCRIPTS_TESTS_VAR_DIR" ] ; then
-	rm -r "$EVENTSCRIPTS_TESTS_VAR_DIR"
-fi
-mkdir -p "$EVENTSCRIPTS_TESTS_VAR_DIR"
-
 # Force this to be absolute - event scripts can change directory
-EVENTSCRIPTS_TESTS_VAR_DIR=$(cd "$EVENTSCRIPTS_TESTS_VAR_DIR" && echo "$PWD")
+CTDB_TEST_TMP_DIR=$(cd "$CTDB_TEST_TMP_DIR" && echo "$PWD")
 
-export CTDB_LOGGING="file:${EVENTSCRIPTS_TESTS_VAR_DIR}/log.ctdb"
+export CTDB_LOGGING="file:${CTDB_TEST_TMP_DIR}/log.ctdb"
 touch "${CTDB_LOGGING#file:}" || \
     die "Unable to setup logging for \"$CTDB_LOGGING\""
 
 if [ -d "${CTDB_TEST_SUITE_DIR}/etc" ] ; then
-    cp -a "${CTDB_TEST_SUITE_DIR}/etc" "$EVENTSCRIPTS_TESTS_VAR_DIR"
-    export CTDB_SYS_ETCDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/etc"
+    cp -a "${CTDB_TEST_SUITE_DIR}/etc" "$CTDB_TEST_TMP_DIR"
+    export CTDB_SYS_ETCDIR="${CTDB_TEST_TMP_DIR}/etc"
 else
     die "Unable to setup \$CTDB_SYS_ETCDIR"
 fi
 
-setup_ctdb_base "$EVENTSCRIPTS_TESTS_VAR_DIR" "etc-ctdb" \
+setup_ctdb_base "$CTDB_TEST_TMP_DIR" "etc-ctdb" \
 		functions \
 		nfs-checks.d \
 		nfs-linux-kernel-callout \
 		statd-callout
 
-export FAKE_CTDB_STATE="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-ctdb"
+export FAKE_CTDB_STATE="${CTDB_TEST_TMP_DIR}/fake-ctdb"
 mkdir -p "$FAKE_CTDB_STATE"
 
-export FAKE_NETWORK_STATE="$EVENTSCRIPTS_TESTS_VAR_DIR/fake-network-state"
+export FAKE_NETWORK_STATE="${CTDB_TEST_TMP_DIR}/fake-network-state"
 mkdir -p "$FAKE_NETWORK_STATE"
 
 ######################################################################
@@ -100,7 +93,7 @@ setup_script_options ()
 
 setup_dbdir ()
 {
-	export CTDB_DBDIR_BASE="${EVENTSCRIPTS_TESTS_VAR_DIR}/db"
+	export CTDB_DBDIR_BASE="${CTDB_TEST_TMP_DIR}/db"
 	CTDB_DBDIR="${CTDB_DBDIR_BASE}/volatile"
 	CTDB_DBDIR_PERSISTENT="${CTDB_DBDIR_BASE}/persistent"
 	CTDB_DBDIR_STATE="${CTDB_DBDIR_BASE}/state"
@@ -166,7 +159,7 @@ setup_shares ()
 	# Create 3 fake shares/exports.
 	export FAKE_SHARES=""
 	for i in $(seq 1 3) ; do
-		_s="${EVENTSCRIPTS_TESTS_VAR_DIR}/shares/share${i}"
+		_s="${CTDB_TEST_TMP_DIR}/shares/share${i}"
 		mkdir -p "$_s"
 		FAKE_SHARES="${FAKE_SHARES}${FAKE_SHARES:+ }${_s}"
 	done
@@ -311,7 +304,7 @@ ctdb_set_pnn ()
     export FAKE_CTDB_PNN="$1"
     echo "Setting up PNN ${FAKE_CTDB_PNN}"
 
-    CTDB_SCRIPT_VARDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/scripts/${FAKE_CTDB_PNN}"
+    CTDB_SCRIPT_VARDIR="${CTDB_TEST_TMP_DIR}/scripts/${FAKE_CTDB_PNN}"
     export CTDB_SCRIPT_VARDIR
     mkdir -p "$CTDB_SCRIPT_VARDIR"
 }
