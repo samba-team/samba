@@ -3776,6 +3776,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 	bool posix_open = false;
 	bool need_re_stat = false;
 	uint32_t access_mask = SEC_DIR_ADD_SUBDIR;
+	int ret;
 
 	if (!CAN_WRITE(conn) || (access_mask & ~(conn->share_access))) {
 		DEBUG(5,("mkdir_internal: failing share access "
@@ -3807,7 +3808,11 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 		return status;
 	}
 
-	if (SMB_VFS_MKDIR(conn, smb_dname, mode) != 0) {
+	ret = SMB_VFS_MKDIRAT(conn,
+			conn->cwd_fsp,
+			smb_dname,
+			mode);
+	if (ret != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
