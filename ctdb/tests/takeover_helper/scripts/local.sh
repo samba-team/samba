@@ -11,7 +11,7 @@ fi
 PATH="${PATH}:${CTDB_SCRIPTS_TOOLS_HELPER_DIR}"
 PATH="${PATH}:${CTDB_SCRIPTS_HELPER_BINDIR}"
 
-setup_ctdb_base "$TEST_VAR_DIR" "takeover_helper"
+setup_ctdb_base "$CTDB_TEST_TMP_DIR" "ctdb-etc"
 
 ctdbd_socket=$(ctdb-path socket "ctdbd")
 ctdbd_pidfile=$(ctdb-path pidfile "ctdbd")
@@ -79,7 +79,7 @@ test_ctdb_ip_all ()
 	unit_test ctdb -d "$CTDB_DEBUGLEVEL" ip all || exit $?
 }
 
-takeover_helper_out="${TEST_VAR_DIR}/takover_helper.out"
+takeover_helper_out="${CTDB_TEST_TMP_DIR}/takover_helper.out"
 
 takeover_helper_format_outfd ()
 {
