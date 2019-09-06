@@ -1502,7 +1502,8 @@ static bool mask_conflict(
  Returns True if conflict, False if not.
 ****************************************************************************/
 
-static bool share_conflict(struct share_mode_entry *e,
+static bool share_conflict(uint32_t e_access_mask,
+			   uint32_t e_share_access,
 			   uint32_t access_mask,
 			   uint32_t share_access)
 {
@@ -1514,25 +1515,19 @@ static bool share_conflict(struct share_mode_entry *e,
 		DELETE_ACCESS;
 	bool conflict;
 
-	DBG_DEBUG("e->access_mask = 0x%"PRIx32", "
-		  "e->share_access = 0x%"PRIx32", "
-		  "e->private_options = 0x%"PRIx32", "
+	DBG_DEBUG("existing access_mask = 0x%"PRIx32", "
+		  "existing share access = 0x%"PRIx32", "
 		  "access_mask = 0x%"PRIx32", "
 		  "share_access = 0x%"PRIx32"\n",
-		  e->access_mask,
-		  e->share_access,
-		  e->private_options,
+		  e_access_mask,
+		  e_share_access,
 		  access_mask,
 		  share_access);
 
-	if (server_id_is_disconnected(&e->pid)) {
-		return false;
-	}
-
-	if ((e->access_mask & conflicting_access) == 0) {
+	if ((e_access_mask & conflicting_access) == 0) {
 		DBG_DEBUG("No conflict due to "
-			  "e->access_mask = 0x%"PRIx32"\n",
-			  e->access_mask);
+			  "existing access_mask = 0x%"PRIx32"\n",
+			  e_access_mask);
 		return false;
 	}
 	if ((access_mask & conflicting_access) == 0) {
@@ -1542,14 +1537,14 @@ static bool share_conflict(struct share_mode_entry *e,
 	}
 
 	conflict = mask_conflict(
-		access_mask, e->access_mask, FILE_WRITE_DATA | FILE_APPEND_DATA,
-		share_access, e->share_access, FILE_SHARE_WRITE);
+		access_mask, e_access_mask, FILE_WRITE_DATA | FILE_APPEND_DATA,
+		share_access, e_share_access, FILE_SHARE_WRITE);
 	conflict |= mask_conflict(
-		access_mask, e->access_mask, FILE_READ_DATA | FILE_EXECUTE,
-		share_access, e->share_access, FILE_SHARE_READ);
+		access_mask, e_access_mask, FILE_READ_DATA | FILE_EXECUTE,
+		share_access, e_share_access, FILE_SHARE_READ);
 	conflict |= mask_conflict(
-		access_mask, e->access_mask, DELETE_ACCESS,
-		share_access, e->share_access, FILE_SHARE_DELETE);
+		access_mask, e_access_mask, DELETE_ACCESS,
+		share_access, e_share_access, FILE_SHARE_DELETE);
 
 	DBG_DEBUG("conflict=%s\n", conflict ? "true" : "false");
 	return conflict;
@@ -1673,15 +1668,24 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 
 	for(i = 0; i < d->num_share_modes; i++) {
 		struct share_mode_entry *e = &d->share_modes[i];
+		bool conflict;
 
 		if (!is_valid_share_mode_entry(e)) {
 			continue;
 		}
+		if (server_id_is_disconnected(&e->pid)) {
+			continue;
+		}
 
 		/* someone else has a share lock on it, check to see if we can
-		 * too */
-		if (share_conflict(e, access_mask, share_access)) {
 
+		 * too */
+		conflict = share_conflict(
+			e->access_mask,
+			e->share_access,
+			access_mask,
+			share_access);
+		if (conflict) {
 			if (share_mode_stale_pid(d, i)) {
 				continue;
 			}
