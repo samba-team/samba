@@ -444,6 +444,17 @@ void become_user_permanently(uid_t uid, gid_t gid)
 	assert_gid(gid, gid);
 }
 
+#ifdef HAVE___THREAD
+	struct cache_t {
+		bool active;
+		uid_t uid;
+		gid_t gid;
+		size_t setlen;
+		uintptr_t gidset;
+	};
+
+static __thread struct cache_t cache;
+#endif
 /**********************************************************
  Function to set thread specific credentials. Leave
  saved-set uid/gid alone.Must be thread-safe code.
@@ -461,14 +472,6 @@ int set_thread_credentials(uid_t uid,
 	 * available.
 	 */
 #ifdef HAVE___THREAD
-	static struct {
-		bool active;
-		uid_t uid;
-		gid_t gid;
-		size_t setlen;
-		uintptr_t gidset;
-	} __thread cache;
-
 	if (cache.active &&
 	    cache.uid == uid &&
 	    cache.gid == gid &&
