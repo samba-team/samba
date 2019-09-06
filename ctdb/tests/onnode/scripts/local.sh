@@ -8,14 +8,7 @@ stubs_dir="${CTDB_TEST_SUITE_DIR}/stubs"
 [ -d "${stubs_dir}" ] || die "Failed to locate stubs/ subdirectory"
 PATH="${stubs_dir}:${PATH}"
 
-[ -n "$TEST_VAR_DIR" ] || die "TEST_VAR_DIR unset"
-export ONNODE_TESTS_VAR_DIR="${TEST_VAR_DIR}/unit_onnode"
-if [ -d "$ONNODE_TESTS_VAR_DIR" ] ; then
-	rm -r "$ONNODE_TESTS_VAR_DIR"
-fi
-mkdir -p "$ONNODE_TESTS_VAR_DIR"
-
-setup_ctdb_base "$ONNODE_TESTS_VAR_DIR" "etc-ctdb" \
+setup_ctdb_base "$CTDB_TEST_TMP_DIR" "etc-ctdb" \
 		functions
 
 define_test ()
@@ -28,10 +21,10 @@ define_test ()
 # Set output for ctdb command.  Option 1st argument is return code.
 ctdb_set_output ()
 {
-    _out="$ONNODE_TESTS_VAR_DIR/ctdb.out"
+    _out="${CTDB_TEST_TMP_DIR}/ctdb.out"
     cat >"$_out"
 
-    _rc="$ONNODE_TESTS_VAR_DIR/ctdb.rc"
+    _rc="${CTDB_TEST_TMP_DIR}/ctdb.rc"
     echo "${1:-0}" >"$_rc"
 
     test_cleanup "rm -f $_out $_rc"

@@ -2,11 +2,11 @@
 
 # Fake ctdb client for onnode tests.
 
-out="${ONNODE_TESTS_VAR_DIR}/ctdb.out"
+out="${CTDB_TEST_TMP_DIR}/ctdb.out"
 if [ -r "$out" ] ; then
     cat "$out"
 
-    rc="${ONNODE_TESTS_VAR_DIR}/ctdb.rc"
+    rc="${CTDB_TEST_TMP_DIR}/ctdb.rc"
     if [ -r "$rc" ] ; then
 	exit $(cat "$rc")
     fi
