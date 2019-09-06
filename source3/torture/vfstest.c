@@ -469,7 +469,7 @@ int main(int argc, const char *argv[])
 	struct vfs_state *vfs;
 	int i;
 	char *filename = NULL;
-	char cwd[MAXPATHLEN];
+	char *cwd = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct auth_session_info *session_info = NULL;
 	NTSTATUS status = NT_STATUS_OK;
@@ -560,11 +560,18 @@ int main(int argc, const char *argv[])
 		return 1;
 	}
 
-	status = create_conn_struct_tos(global_messaging_context(),
+	/* Provided by libreplace if not present. Always mallocs. */
+	cwd = get_current_dir_name();
+	if (cwd == NULL) {
+		return -1;
+	}
+
+	status = create_conn_struct_tos_cwd(global_messaging_context(),
 					-1,
-					getcwd(cwd, sizeof(cwd)),
+					cwd,
 					session_info,
 					&c);
+	SAFE_FREE(cwd);
 	if (!NT_STATUS_IS_OK(status)) {
 		return 1;
 	}
