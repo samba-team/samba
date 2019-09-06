@@ -10,7 +10,7 @@ else
     debug () { : ; }
 fi
 
-setup_ctdb_base "${TEST_VAR_DIR}" "eventd"
+setup_ctdb_base "$CTDB_TEST_TMP_DIR" "ctdb-etc"
 
 ctdb_config=$(ctdb-path config)
 eventd_socket=$(ctdb-path socket eventd)
