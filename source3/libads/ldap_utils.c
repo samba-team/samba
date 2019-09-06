@@ -49,7 +49,7 @@ static ADS_STATUS ads_do_search_retry_internal(ADS_STRUCT *ads, const char *bind
 					       const char **attrs, void *args,
 					       LDAPMessage **res)
 {
-	ADS_STATUS status = ADS_SUCCESS;
+	ADS_STATUS status;
 	int count = 3;
 	char *bp;
 
