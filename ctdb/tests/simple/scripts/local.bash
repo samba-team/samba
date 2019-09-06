@@ -7,5 +7,5 @@ export SIMPLE_TESTS_VAR_DIR="${TEST_VAR_DIR}/simple"
 mkdir -p "$SIMPLE_TESTS_VAR_DIR"
 
 if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
-	. "${TEST_SUBDIR}/scripts/local_daemons.bash"
+	. "${CTDB_TEST_SUITE_DIR}/scripts/local_daemons.bash"
 fi

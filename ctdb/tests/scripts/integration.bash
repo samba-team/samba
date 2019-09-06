@@ -723,7 +723,7 @@ ctdb_enable_cluster_test_event_scripts ()
 # Make sure that $CTDB is set.
 : ${CTDB:=ctdb}
 
-local="${TEST_SUBDIR}/scripts/local.bash"
+local="${CTDB_TEST_SUITE_DIR}/scripts/local.bash"
 if [ -r "$local" ] ; then
     . "$local"
 fi

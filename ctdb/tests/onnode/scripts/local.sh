@@ -4,7 +4,7 @@
 : ${ONNODE:=onnode}
 
 # Augment PATH with relevant stubs/ directory
-stubs_dir="${TEST_SUBDIR}/stubs"
+stubs_dir="${CTDB_TEST_SUITE_DIR}/stubs"
 [ -d "${stubs_dir}" ] || die "Failed to locate stubs/ subdirectory"
 PATH="${stubs_dir}:${PATH}"
 

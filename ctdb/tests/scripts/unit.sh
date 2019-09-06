@@ -240,7 +240,7 @@ test_cleanup ()
 
 trap 'eval $test_cleanup_hooks' 0
 
-local="${TEST_SUBDIR}/scripts/local.sh"
+local="${CTDB_TEST_SUITE_DIR}/scripts/local.sh"
 if [ -r "$local" ] ; then
     . "$local"
 fi

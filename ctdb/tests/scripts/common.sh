@@ -14,9 +14,9 @@ die ()
 }
 
 # This expands the most probable problem cases like "." and "..".
-TEST_SUBDIR=$(dirname "$0")
-if [ "$(dirname "$TEST_SUBDIR")" = "." ] ; then
-	TEST_SUBDIR=$(cd "$TEST_SUBDIR" && pwd)
+CTDB_TEST_SUITE_DIR=$(dirname "$0")
+if [ "$(dirname "$CTDB_TEST_SUITE_DIR")" = "." ] ; then
+	CTDB_TEST_SUITE_DIR=$(cd "$CTDB_TEST_SUITE_DIR" && pwd)
 fi
 
 . "${TEST_SCRIPTS_DIR}/script_install_paths.sh"
@@ -102,11 +102,11 @@ setup_ctdb_base ()
 
 	mkdir -p "${CTDB_BASE}/events/legacy"
 
-	if [ -z "$TEST_SUBDIR" ] ; then
+	if [ -z "$CTDB_TEST_SUITE_DIR" ] ; then
 		return
 	fi
 
-	for _i in "${TEST_SUBDIR}/etc-ctdb/"* ; do
+	for _i in "${CTDB_TEST_SUITE_DIR}/etc-ctdb/"* ; do
 		# No/empty etc-ctdb directory
 		[ -e "$_i" ] || break
 

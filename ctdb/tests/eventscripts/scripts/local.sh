@@ -4,7 +4,7 @@
 # Augment PATH with relevant stubs/ directories.
 #
 
-stubs_dir="${TEST_SUBDIR}/stubs"
+stubs_dir="${CTDB_TEST_SUITE_DIR}/stubs"
 [ -d "${stubs_dir}" ] || die "Failed to locate stubs/ subdirectory"
 
 # Make the path absolute for tests that change directory
@@ -35,8 +35,8 @@ export CTDB_LOGGING="file:${EVENTSCRIPTS_TESTS_VAR_DIR}/log.ctdb"
 touch "${CTDB_LOGGING#file:}" || \
     die "Unable to setup logging for \"$CTDB_LOGGING\""
 
-if [ -d "${TEST_SUBDIR}/etc" ] ; then
-    cp -a "${TEST_SUBDIR}/etc" "$EVENTSCRIPTS_TESTS_VAR_DIR"
+if [ -d "${CTDB_TEST_SUITE_DIR}/etc" ] ; then
+    cp -a "${CTDB_TEST_SUITE_DIR}/etc" "$EVENTSCRIPTS_TESTS_VAR_DIR"
     export CTDB_SYS_ETCDIR="${EVENTSCRIPTS_TESTS_VAR_DIR}/etc"
 else
     die "Unable to setup \$CTDB_SYS_ETCDIR"
@@ -495,7 +495,7 @@ define_test ()
 	printf "%-17s %-10s %-4s - %s\n\n" \
 	       "$script_short" "$event" "$_num" "$desc"
 
-	_f="${TEST_SUBDIR}/scripts/${script_short}.sh"
+	_f="${CTDB_TEST_SUITE_DIR}/scripts/${script_short}.sh"
 	if [ -r "$_f" ] ; then
 		. "$_f"
 	fi
