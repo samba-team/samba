@@ -1009,7 +1009,7 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 				       const char *site_name,
 				       struct netr_DsRGetDCNameInfo **info)
 {
-	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	NTSTATUS status;
 	struct ip_service_name *dclist = NULL;
 	int num_dcs;
 
@@ -1096,7 +1096,7 @@ static NTSTATUS dsgetdcname_internal(TALLOC_CTX *mem_ctx,
 		     uint32_t flags,
 		     struct netr_DsRGetDCNameInfo **info)
 {
-	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	NTSTATUS status;
 	struct netr_DsRGetDCNameInfo *myinfo = NULL;
 	bool first = true;
 	struct netr_DsRGetDCNameInfo *first_info = NULL;
