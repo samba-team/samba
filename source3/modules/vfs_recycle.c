@@ -295,6 +295,7 @@ static bool recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 			DEBUG(10, ("recycle: dir %s already exists\n", new_dir));
 		else {
 			struct smb_filename *smb_fname = NULL;
+			int retval;
 
 			DEBUG(5, ("recycle: creating new dir %s\n", new_dir));
 
@@ -307,8 +308,15 @@ static bool recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 				goto done;
 			}
 
-			if (SMB_VFS_NEXT_MKDIR(handle, smb_fname, mode) != 0) {
-				DEBUG(1,("recycle: mkdir failed for %s with error: %s\n", new_dir, strerror(errno)));
+			retval = SMB_VFS_NEXT_MKDIRAT(handle,
+					handle->conn->cwd_fsp,
+					smb_fname,
+					mode);
+			if (retval != 0) {
+				DBG_WARNING("recycle: mkdirat failed "
+					"for %s with error: %s\n",
+					new_dir,
+					strerror(errno));
 				TALLOC_FREE(smb_fname);
 				ret = False;
 				goto done;
