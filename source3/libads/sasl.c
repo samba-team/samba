@@ -216,7 +216,6 @@ static ADS_STATUS ads_sasl_spnego_gensec_bind(ADS_STRUCT *ads,
 	}
 
 	rc = LDAP_SASL_BIND_IN_PROGRESS;
-	nt_status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 	if (use_spnego_principal) {
 		blob_in = data_blob_dup_talloc(talloc_tos(), server_blob);
 		if (blob_in.length == 0) {
