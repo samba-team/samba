@@ -268,6 +268,9 @@ NTSTATUS dcerpc_server_$name\_init(TALLOC_CTX *ctx)
 	    /* fill in our name */
 	    .name = \"$name\",
 
+	    /* Initialization flag */
+	    .initialized = false,
+
 	    /* fill in all the operations */
 #ifdef DCESRV_INTERFACE_$uname\_INIT_SERVER
 	    .init_server = DCESRV_INTERFACE_$uname\_INIT_SERVER,

@@ -325,6 +325,9 @@ struct dcesrv_endpoint_server {
 	/* this is the name of the endpoint server */
 	const char *name;
 
+	/* true if the endpoint server has been initialized */
+	bool initialized;
+
 	/* this function should register endpoints and some other setup stuff,
 	 * it is called when the dcesrv_context gets initialized.
 	 */
@@ -446,6 +449,9 @@ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 NTSTATUS dcerpc_register_ep_server(const struct dcesrv_endpoint_server *ep_server);
 NTSTATUS dcesrv_init_ep_servers(struct dcesrv_context *dce_ctx,
 				const char **ep_servers);
+NTSTATUS dcesrv_init_registered_ep_servers(struct dcesrv_context *dce_ctx);
+NTSTATUS dcesrv_init_ep_server(struct dcesrv_context *dce_ctx,
+			       const char *ep_server_name);
 const struct dcesrv_endpoint_server *dcesrv_ep_server_byname(const char *name);
 
 NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,

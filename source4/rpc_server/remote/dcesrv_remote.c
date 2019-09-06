@@ -496,6 +496,8 @@ NTSTATUS dcerpc_server_remote_init(TALLOC_CTX *ctx)
 		/* fill in our name */
 		.name = "remote",
 
+		.initialized = false,
+
 		/* fill in all the operations */
 		.init_server = remote_op_init_server,
 

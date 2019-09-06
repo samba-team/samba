@@ -2361,18 +2361,10 @@ _PUBLIC_ NTSTATUS dcesrv_init_ep_servers(struct dcesrv_context *dce_ctx,
 	}
 
 	for (i=0;endpoint_servers[i];i++) {
-		const struct dcesrv_endpoint_server *ep_server;
-
-		ep_server = dcesrv_ep_server_byname(endpoint_servers[i]);
-		if (!ep_server) {
-			DEBUG(0,("dcesrv_init_context: failed to find endpoint server = '%s'\n", endpoint_servers[i]));
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
-		status = ep_server->init_server(dce_ctx, ep_server);
+		status = dcesrv_init_ep_server(dce_ctx, endpoint_servers[i]);
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0,("dcesrv_init_context: failed to init endpoint server = '%s': %s\n", endpoint_servers[i],
-				nt_errstr(status)));
+			DBG_ERR("failed to init endpoint server = '%s': %s\n",
+				endpoint_servers[i], nt_errstr(status));
 			return status;
 		}
 	}
@@ -2386,6 +2378,53 @@ static struct ep_server {
 	struct dcesrv_endpoint_server *ep_server;
 } *ep_servers = NULL;
 static int num_ep_servers = 0;
+
+_PUBLIC_ NTSTATUS dcesrv_init_registered_ep_servers(
+					struct dcesrv_context *dce_ctx)
+{
+	NTSTATUS status;
+	int i;
+
+	for (i = 0; i < num_ep_servers; i++) {
+		status = dcesrv_init_ep_server(dce_ctx,
+					       ep_servers[i].ep_server->name);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+_PUBLIC_ NTSTATUS dcesrv_init_ep_server(struct dcesrv_context *dce_ctx,
+					const char *ep_server_name)
+{
+	struct dcesrv_endpoint_server *ep_server = NULL;
+	NTSTATUS status;
+
+	ep_server = discard_const_p(struct dcesrv_endpoint_server,
+				    dcesrv_ep_server_byname(ep_server_name));
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to find endpoint server '%s'\n",
+			ep_server_name);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (ep_server->initialized) {
+		return NT_STATUS_OK;
+	}
+
+	status = ep_server->init_server(dce_ctx, ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to init endpoint server '%s': %s\n",
+			ep_server_name, nt_errstr(status));
+		return status;
+	}
+
+	ep_server->initialized = true;
+
+	return NT_STATUS_OK;
+}
 
 /*
   register a DCERPC endpoint server.

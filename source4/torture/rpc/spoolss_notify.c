@@ -458,6 +458,8 @@ static bool test_start_dcerpc_server(struct torture_context *tctx,
 	/* fill in our name */
 	ep_server.name = "spoolss";
 
+	ep_server.initialized = false;
+
 	/* fill in all the operations */
 	ep_server.init_server = spoolss__op_init_server;
 
