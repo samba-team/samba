@@ -597,19 +597,6 @@ static void vfs_gluster_rewinddir(struct vfs_handle_struct *handle, DIR *dirp)
 	END_PROFILE(syscall_rewinddir);
 }
 
-static int vfs_gluster_mkdir(struct vfs_handle_struct *handle,
-			     const struct smb_filename *smb_fname,
-			     mode_t mode)
-{
-	int ret;
-
-	START_PROFILE(syscall_mkdir);
-	ret = glfs_mkdir(handle->data, smb_fname->base_name, mode);
-	END_PROFILE(syscall_mkdir);
-
-	return ret;
-}
-
 static int vfs_gluster_mkdirat(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1908,7 +1895,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.seekdir_fn = vfs_gluster_seekdir,
 	.telldir_fn = vfs_gluster_telldir,
 	.rewind_dir_fn = vfs_gluster_rewinddir,
-	.mkdir_fn = vfs_gluster_mkdir,
 	.mkdirat_fn = vfs_gluster_mkdirat,
 	.rmdir_fn = vfs_gluster_rmdir,
 	.closedir_fn = vfs_gluster_closedir,
