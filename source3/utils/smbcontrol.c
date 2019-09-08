@@ -1562,9 +1562,13 @@ static void usage(poptContext pc)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "<message-type> is one of:\n");
 
-	for (i = 0; msg_types[i].name; i++) 
-	    fprintf(stderr, "\t%-30s%s\n", msg_types[i].name, 
-		    msg_types[i].help);
+	for (i = 0; msg_types[i].name; i++) {
+		const char *help = msg_types[i].help;
+		if (help == NULL) {
+			help = "";
+		}
+		fprintf(stderr, "\t%-30s%s\n", msg_types[i].name, help);
+	}
 
 	fprintf(stderr, "\n");
 
