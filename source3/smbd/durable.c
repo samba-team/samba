@@ -842,6 +842,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	(void)dos_mode(fsp->conn, fsp->fsp_name);
+
 	ok = vfs_default_durable_reconnect_check_stat(&cookie.stat_info,
 						      &fsp->fsp_name->st,
 						      fsp_str_dbg(fsp));

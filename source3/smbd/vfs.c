@@ -1406,6 +1406,7 @@ int vfs_stat_smb_basename(struct connection_struct *conn,
 NTSTATUS vfs_stat_fsp(files_struct *fsp)
 {
 	int ret;
+	struct stat_ex saved_stat = fsp->fsp_name->st;
 
 	if(fsp->fh->fd == -1) {
 		if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
@@ -1419,6 +1420,7 @@ NTSTATUS vfs_stat_fsp(files_struct *fsp)
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
 	}
+	update_stat_ex_from_saved_stat(&fsp->fsp_name->st, &saved_stat);
 	return NT_STATUS_OK;
 }
 
