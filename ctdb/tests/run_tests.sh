@@ -237,17 +237,35 @@ run_tests ()
 		fi
 
 		if [ -d "$f" ] ; then
-			local i
-			for i in "${f%/}/"*".sh" ; do
-				# Probably empty directory
-				if [ ! -f "$i" ] ; then
-					break
+			local test_dir dir reldir subtests
+
+			test_dir=$(cd "$CTDB_TEST_DIR" && pwd)
+			dir=$(cd "$f" && pwd)
+			reldir="${dir#${test_dir}/}"
+
+			case "$reldir" in
+			*/*/*)
+				die "test \"$f\" is not recognised"
+				;;
+			*/*|simple|complex)
+				# A single test suite
+				subtests=$(echo "${f%/}/"*".sh")
+				if [ "$subtests" = "${f%/}/*.sh" ] ; then
+					# Probably empty directory
+					die "test \"$f\" is not recognised"
 				fi
-				run_one_test "$i"
-				if $exit_on_fail && [ $status -ne 0 ] ; then
-					break
-				fi
-			done
+				;;
+			UNIT)
+				# A collection of test suites
+				subtests=$(echo "${f%/}/"*)
+				;;
+			*)
+				die "test \"$f\" is not recognised"
+			esac
+
+			# Recurse - word-splitting wanted
+			# shellcheck disable=SC2086
+			run_tests $subtests
 		elif [ -f "$f" ] ; then
 			run_one_test "$f"
 		else
