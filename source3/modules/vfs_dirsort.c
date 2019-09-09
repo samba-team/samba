@@ -44,17 +44,20 @@ static bool get_sorted_dir_mtime(vfs_handle_struct *handle,
 {
 	int ret;
 	struct timespec mtime;
+	NTSTATUS status;
 
 	if (data->fsp) {
-		ret = fsp_stat(data->fsp);
+		status = vfs_stat_fsp(data->fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 		mtime = data->fsp->fsp_name->st.st_ex_mtime;
 	} else {
 		ret = SMB_VFS_STAT(handle->conn, data->smb_fname);
+		if (ret == -1) {
+			return false;
+		}
 		mtime = data->smb_fname->st.st_ex_mtime;
-	}
-
-	if (ret == -1) {
-		return false;
 	}
 
 	*ret_mtime = mtime;
