@@ -102,6 +102,8 @@ uint64_t make_file_id_from_itime(SMB_STRUCT_STAT *st)
 		return ino;
 	}
 
+	round_timespec_to_nttime(&itime);
+
 	file_id_low = itime.tv_nsec;
 	if (file_id_low == 0) {
 		/*
