@@ -350,9 +350,8 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		}
 	}
 
-	delete_file = is_delete_on_close_set(lck, fsp->name_hash);
-
-	delete_file &= !has_other_nonposix_opens(lck, fsp);
+	delete_file = is_delete_on_close_set(lck, fsp->name_hash) &&
+		!has_other_nonposix_opens(lck, fsp);
 
 	/*
 	 * NT can set delete_on_close of the last open
@@ -1156,10 +1155,9 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		}
 	}
 
-	delete_dir = get_delete_on_close_token(lck, fsp->name_hash,
-					&del_nt_token, &del_token);
-
-	delete_dir &= !has_other_nonposix_opens(lck, fsp);
+	delete_dir = get_delete_on_close_token(
+		lck, fsp->name_hash, &del_nt_token, &del_token) &&
+		!has_other_nonposix_opens(lck, fsp);
 
 	if ((close_type == NORMAL_CLOSE || close_type == SHUTDOWN_CLOSE) &&
 				delete_dir) {
