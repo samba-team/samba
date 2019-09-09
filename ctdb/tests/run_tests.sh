@@ -37,6 +37,8 @@ exit_on_fail=false
 max_iterations=1
 no_header=false
 test_state_dir=""
+cleanup=false
+test_time_limit=3600
 
 export TEST_VERBOSE=false
 export TEST_COMMAND_TRACE=false
@@ -44,15 +46,13 @@ export TEST_CAT_RESULTS_OPTS=""
 export TEST_DIFF_RESULTS=false
 export TEST_LOCAL_DAEMONS
 [ -n "$TEST_LOCAL_DAEMONS" ] || TEST_LOCAL_DAEMONS=3
-export TEST_CLEANUP=false
-export TEST_TIMEOUT=3600
 export TEST_SOCKET_WRAPPER_SO_PATH=""
 
 while getopts "AcCDehHI:NqS:T:vV:xX?" opt ; do
 	case "$opt" in
 	A) TEST_CAT_RESULTS_OPTS="-A" ;;
 	c) TEST_LOCAL_DAEMONS="" ;;
-	C) TEST_CLEANUP=true ;;
+	C) cleanup=true ;;
 	D) TEST_DIFF_RESULTS=true ;;
 	e) exit_on_fail=true ;;
 	H) no_header=true ;;
@@ -60,7 +60,7 @@ while getopts "AcCDehHI:NqS:T:vV:xX?" opt ; do
 	N) with_summary=false ;;
 	q) quiet=true ;;
 	S) TEST_SOCKET_WRAPPER_SO_PATH="$OPTARG" ;;
-	T) TEST_TIMEOUT="$OPTARG" ;;
+	T) test_time_limit="$OPTARG" ;;
 	v) TEST_VERBOSE=true ;;
 	V) test_state_dir="$OPTARG" ;;
 	x) set -x ;;
@@ -137,7 +137,7 @@ ctdb_test_run ()
 
     local status=0
     if [ -x "$1" ] ; then
-	    timeout "$TEST_TIMEOUT" "$@" || status=$?
+	    timeout "$test_time_limit" "$@" || status=$?
     else
 	    echo "TEST IS NOT EXECUTABLE"
 	    status=1
@@ -315,7 +315,7 @@ fi
 
 do_cleanup ()
 {
-    if $TEST_CLEANUP ; then
+    if $cleanup ; then
 	echo "Removing test state directory: ${test_state_dir}"
 	rm -rf "$test_state_dir"
     else
