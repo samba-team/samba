@@ -3662,6 +3662,7 @@ void reply_readbraw(struct smb_request *req)
 	files_struct *fsp;
 	struct lock_struct lock;
 	off_t size = 0;
+	NTSTATUS status;
 
 	START_PROFILE(SMBreadbraw);
 
@@ -3759,7 +3760,8 @@ void reply_readbraw(struct smb_request *req)
 		return;
 	}
 
-	if (fsp_stat(fsp) == 0) {
+	status = vfs_stat_fsp(fsp);
+	if (NT_STATUS_IS_OK(status)) {
 		size = fsp->fsp_name->st.st_ex_size;
 	}
 
@@ -4090,6 +4092,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	ssize_t nread = -1;
 	struct lock_struct lock;
 	int saved_errno = 0;
+	NTSTATUS status;
 
 	init_strict_lock_struct(fsp, (uint64_t)req->smbpid,
 	    (uint64_t)startpos, (uint64_t)smb_maxcnt, READ_LOCK,
@@ -4114,8 +4117,9 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		uint8_t headerbuf[smb_size + 12 * 2 + 1 /* padding byte */];
 		DATA_BLOB header;
 
-		if(fsp_stat(fsp) == -1) {
-			reply_nterror(req, map_nt_error_from_unix(errno));
+		status = vfs_stat_fsp(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, status);
 			goto out;
 		}
 
@@ -5323,6 +5327,7 @@ void reply_lseek(struct smb_request *req)
 	off_t res= -1;
 	int mode,umode;
 	files_struct *fsp;
+	NTSTATUS status;
 
 	START_PROFILE(SMBlseek);
 
@@ -5367,9 +5372,9 @@ void reply_lseek(struct smb_request *req)
 			if(errno == EINVAL) {
 				off_t current_pos = startpos;
 
-				if(fsp_stat(fsp) == -1) {
-					reply_nterror(req,
-						map_nt_error_from_unix(errno));
+				status = vfs_stat_fsp(fsp);
+				if (!NT_STATUS_IS_OK(status)) {
+					reply_nterror(req, status);
 					END_PROFILE(SMBlseek);
 					return;
 				}
@@ -8739,6 +8744,7 @@ void reply_getattrE(struct smb_request *req)
 	int mode;
 	files_struct *fsp;
 	struct timespec create_ts;
+	NTSTATUS status;
 
 	START_PROFILE(SMBgetattrE);
 
@@ -8757,8 +8763,9 @@ void reply_getattrE(struct smb_request *req)
 	}
 
 	/* Do an fstat on this file */
-	if(fsp_stat(fsp)) {
-		reply_nterror(req, map_nt_error_from_unix(errno));
+	status = vfs_stat_fsp(fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_nterror(req, status);
 		END_PROFILE(SMBgetattrE);
 		return;
 	}
