@@ -248,6 +248,7 @@ static void print_brl(struct file_id id,
 	char *fname = NULL;
 	struct share_mode_lock *share_mode;
 	struct server_id_buf tmp;
+	struct file_id_buf ftmp;
 
 	if (count==0) {
 		d_printf("Byte range locks:\n");
@@ -280,7 +281,8 @@ static void print_brl(struct file_id id,
 	}
 
 	d_printf("%-10s %-15s %-4s %-9jd %-9jd %-24s %-24s\n",
-		 server_id_str_buf(pid, &tmp), file_id_string_tos(&id),
+		 server_id_str_buf(pid, &tmp),
+		 file_id_str_buf(id, &ftmp),
 		 desc,
 		 (intmax_t)start, (intmax_t)size,
 		 sharepath, fname);
