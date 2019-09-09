@@ -303,7 +303,7 @@ summary_file="${test_state_dir}/.summary"
 export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 
 unit_tests="
-	cunit
+	UNIT/cunit
 	eventd
 	eventscripts
 	onnode
