@@ -2526,10 +2526,10 @@ static bool setup_poll_open(
 	struct timeval max_timeout,
 	struct timeval interval)
 {
-
 	bool ok;
 	struct deferred_open_record *open_rec = NULL;
 	struct timeval endtime, next_interval;
+	struct file_id_buf ftmp;
 
 	if (request_timed_out(req, max_timeout)) {
 		return false;
@@ -2589,7 +2589,7 @@ static bool setup_poll_open(
 	DBG_DEBUG("poll request time [%s] mid [%" PRIu64 "] file_id [%s]\n",
 		  timeval_string(talloc_tos(), &req->request_time, false),
 		  req->mid,
-		  file_id_string_tos(&id));
+		  file_id_str_buf(id, &ftmp));
 
 	return true;
 }
