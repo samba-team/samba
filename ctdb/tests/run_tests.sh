@@ -222,56 +222,36 @@ run_one_test ()
     fi
 }
 
-find_and_run_one_test ()
-{
-    local t="$1"
-    local dir="$2"
-
-    local f="${dir}${dir:+/}${t}"
-
-    if [ -d "$f" ] ; then
-	local i
-	for i in "${f%/}/"*".sh" ; do
-	    # Only happens if test removed (unlikely) or empty directory
-	    if [ ! -f "$i" ] ; then
-		break
-	    fi
-	    run_one_test "$i"
-	    if $exit_on_fail && [ $status -ne 0 ] ; then
-		break
-	    fi
-	done
-	# No tests found?  Not a tests directory!  Not found...
-	[ -n "$status" ] || status=127
-    elif [ -f "$f" ] ; then
-	run_one_test "$f"
-    else
-	status=127
-    fi
-}
-
 run_tests ()
 {
 	local tests=("$@")
 
-	for f in "${tests[@]}" ; do
-		find_and_run_one_test "$f"
+	local f
 
-		if [ $status -eq 127 ] ; then
-			# Find the the top-level tests directory
-			d=$(cd "$TEST_SCRIPTS_DIR" && echo "$PWD")
-			if [ -z "$d" ] ; then
-				local t="$TEST_SCRIPTS_DIR"
-				die "Unable to find TEST_SCRIPTS_DIR=\"${t}\""
-			fi
-			tests_dir=$(dirname "$d")
+	for f in "${tests[@]}" ; do
+		if [ ! -e "$f" ] ; then
+			# Can't find it?  Check relative to CTDB_TEST_DIR.
 			# Strip off current directory from beginning,
 			# if there, just to make paths more friendly.
-			tests_dir="${tests_dir#${PWD}/}"
-			find_and_run_one_test "$f" "$tests_dir"
+			f="${CTDB_TEST_DIR#${PWD}/}/${f}"
 		fi
 
-		if [ $status -eq 127 ] ; then
+		if [ -d "$f" ] ; then
+			local i
+			for i in "${f%/}/"*".sh" ; do
+				# Probably empty directory
+				if [ ! -f "$i" ] ; then
+					break
+				fi
+				run_one_test "$i"
+				if $exit_on_fail && [ $status -ne 0 ] ; then
+					break
+				fi
+			done
+		elif [ -f "$f" ] ; then
+			run_one_test "$f"
+		else
+			# Time to give up
 			die "test \"$f\" is not recognised"
 		fi
 
