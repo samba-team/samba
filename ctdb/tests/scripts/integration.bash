@@ -77,7 +77,7 @@ ctdb_test_init ()
 # * Tests should use $outfile for handling large output
 # * $outfile is removed after each test
 out=""
-outfile="${TEST_VAR_DIR}/try_command_on_node.out"
+outfile="${CTDB_TEST_TMP_DIR}/try_command_on_node.out"
 
 outfile_cleanup ()
 {
