@@ -99,32 +99,22 @@ ctdb_test_begin ()
 
 ctdb_test_end ()
 {
-    local name="$1" ; shift
-    local status="$1" ; shift
-    # "$@" is command-line
+	local f="$1"
+	local status="$2"
+	local interp="$3"
 
-    local interp="SKIPPED"
-    local statstr=" (reason $*)"
-    if [ -n "$status" ] ; then
+	local statstr=""
 	if [ "$status" -eq 0 ] ; then
-	    interp="PASSED"
-	    statstr=""
-	    echo "ALL OK: $*"
-	elif [ "$status" -eq 124 ] ; then
-	    interp="TIMEOUT"
-	    statstr=" (status $status)"
+		statstr=""
 	else
-	    interp="FAILED"
-	    statstr=" (status $status)"
+		statstr=" (status $status)"
 	fi
-    fi
 
-    testduration=$(($(date +%s) - teststarttime))
+	testduration=$(($(date +%s) - teststarttime))
 
-    echo "=========================================================================="
-    echo "TEST ${interp}: ${name}${statstr} (duration: ${testduration}s)"
-    echo "=========================================================================="
-
+	echo "=========================================================================="
+	echo "TEST ${interp}: ${f}${statstr} (duration: ${testduration}s)"
+	echo "=========================================================================="
 }
 
 ctdb_test_run ()
@@ -142,7 +132,35 @@ ctdb_test_run ()
 		status=1
 	fi
 
-	$no_header || ctdb_test_end "$f" "$status"
+	tests_total=$((tests_total + 1))
+
+	local interp
+	case "$status" in
+	0)
+		interp="PASSED"
+		tests_passed=$((tests_passed + 1))
+		;;
+	124)
+		interp="TIMEDOUT"
+		tests_failed=$((tests_failed + 1))
+		;;
+	*)
+		interp="FAILED"
+		tests_failed=$((tests_failed + 1))
+		;;
+	esac
+
+	$no_header || ctdb_test_end "$f" "$status" "$interp"
+
+	if $with_summary ; then
+		local t
+		if [ $status -eq 0 ] ; then
+			t=" ${interp}"
+		else
+			t="*${interp}*"
+		fi
+		printf '%-10s %s\n' "$t" "$f" >>"$summary_file"
+	fi
 
 	return $status
 }
@@ -201,24 +219,8 @@ run_one_test ()
     rm -rf "$CTDB_TEST_TMP_DIR"
     mkdir -p "$CTDB_TEST_TMP_DIR"
 
-    tests_total=$((tests_total + 1))
-
     ctdb_test_run "$f"
     status=$?
-    if [ $status -eq 0 ] ; then
-	tests_passed=$((tests_passed + 1))
-    else
-	tests_failed=$((tests_failed + 1))
-    fi
-    if $with_summary ; then
-	local t
-	if [ $status -eq 0 ] ; then
-	    t=" PASSED "
-	else
-	    t="*FAILED*"
-	fi
-	echo "$t $f" >>"$summary_file"
-    fi
 }
 
 run_tests ()
