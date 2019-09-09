@@ -62,7 +62,7 @@ Some of the more useful options include:
 
   -e  Exit on the first test failure
 
-  -C  Clean up - kill daemons and remove $TEST_VAR_DIR when done
+  -C  Clean up when done by removing test state directory
 
       Tests uses a temporary/var directory for test state.  By default,
       this directory is not removed when tests are complete, so you
@@ -70,9 +70,7 @@ Some of the more useful options include:
       have failed against the same directory (with the same local
       daemons setup).  So this option cleans things up.
 
-      Also kills local daemons associated with directory.
-
-  -V  Use <dir> as $TEST_VAR_DIR
+  -V  Use <dir> as test state directory
 
       Use the specified temporary temporary/var directory.
 

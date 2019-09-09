@@ -7,7 +7,7 @@ Usage: $0 [OPTIONS] [TESTS]
 Options:
   -A		Use "cat -A" to print test output (only some tests)
   -c		Run integration tests on a cluster
-  -C		Remove TEST_VAR_DIR when done
+  -C		Clean up when done by removing test state directory (see -V)
   -D		Show diff between failed/expected test output (some tests only)
   -e		Exit on the first test failure
   -H		No headers - for running single test with other wrapper
@@ -16,7 +16,7 @@ Options:
   -q		Quiet - don't show tests being run (still displays summary)
   -S <lib>      Use socket wrapper library <lib> for local integration tests
   -v		Verbose - print test output for non-failures (only some tests)
-  -V <dir>	Use <dir> as TEST_VAR_DIR
+  -V <dir>	Use <dir> as test state directory
   -x		Trace this script with the -x option
   -X		Trace certain scripts run by tests using -x (only some tests)
 EOF
@@ -36,6 +36,7 @@ quiet=false
 exit_on_fail=false
 max_iterations=1
 no_header=false
+test_state_dir=""
 
 export TEST_VERBOSE=false
 export TEST_COMMAND_TRACE=false
@@ -43,7 +44,6 @@ export TEST_CAT_RESULTS_OPTS=""
 export TEST_DIFF_RESULTS=false
 export TEST_LOCAL_DAEMONS
 [ -n "$TEST_LOCAL_DAEMONS" ] || TEST_LOCAL_DAEMONS=3
-export TEST_VAR_DIR=""
 export TEST_CLEANUP=false
 export TEST_TIMEOUT=3600
 export TEST_SOCKET_WRAPPER_SO_PATH=""
@@ -62,7 +62,7 @@ while getopts "AcCDehHI:NqS:T:vV:xX?" opt ; do
 	S) TEST_SOCKET_WRAPPER_SO_PATH="$OPTARG" ;;
 	T) TEST_TIMEOUT="$OPTARG" ;;
 	v) TEST_VERBOSE=true ;;
-	V) TEST_VAR_DIR="$OPTARG" ;;
+	V) test_state_dir="$OPTARG" ;;
 	x) set -x ;;
 	X) TEST_COMMAND_TRACE=true ;;
 	\?|h) usage ;;
@@ -198,7 +198,7 @@ run_one_test ()
     test_suite_dir=$(cd "$CTDB_TEST_SUITE_DIR" && pwd)
     reldir="${test_suite_dir#${test_dir}/}"
 
-    export CTDB_TEST_TMP_DIR="${TEST_VAR_DIR}/${reldir}"
+    export CTDB_TEST_TMP_DIR="${test_state_dir}/${reldir}"
     rm -rf "$CTDB_TEST_TMP_DIR"
     mkdir -p "$CTDB_TEST_TMP_DIR"
 
@@ -288,16 +288,16 @@ CTDB_TESTS_ARE_INSTALLED=false
 CTDB_TEST_DIR=$(dirname "$0")
 export CTDB_TESTS_ARE_INSTALLED CTDB_TEST_DIR
 
-if [ -z "$TEST_VAR_DIR" ] ; then
+if [ -z "$test_state_dir" ] ; then
     if $CTDB_TESTS_ARE_INSTALLED ; then
-	TEST_VAR_DIR=$(mktemp -d)
+	test_state_dir=$(mktemp -d)
     else
-	TEST_VAR_DIR="${CTDB_TEST_DIR}/var"
+	test_state_dir="${CTDB_TEST_DIR}/var"
     fi
 fi
-mkdir -p "$TEST_VAR_DIR"
+mkdir -p "$test_state_dir"
 
-summary_file="${TEST_VAR_DIR}/.summary"
+summary_file="${test_state_dir}/.summary"
 : >"$summary_file"
 
 export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
@@ -325,10 +325,10 @@ fi
 do_cleanup ()
 {
     if $TEST_CLEANUP ; then
-	echo "Removing TEST_VAR_DIR=$TEST_VAR_DIR"
-	rm -rf "$TEST_VAR_DIR"
+	echo "Removing test state directory: ${test_state_dir}"
+	rm -rf "$test_state_dir"
     else
-	echo "Not cleaning up TEST_VAR_DIR=$TEST_VAR_DIR"
+	echo "Not cleaning up test state directory: ${test_state_dir}"
     fi
 }
 
