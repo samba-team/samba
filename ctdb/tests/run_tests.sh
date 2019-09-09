@@ -251,15 +251,15 @@ run_tests ()
 			*/*/*)
 				die "test \"$f\" is not recognised"
 				;;
-			*/*|simple|complex)
-				# A single test suite
+			*/*|simple)
+				# This is a test suite
 				subtests=$(echo "${f%/}/"*".sh")
 				if [ "$subtests" = "${f%/}/*.sh" ] ; then
 					# Probably empty directory
 					die "test \"$f\" is not recognised"
 				fi
 				;;
-			UNIT)
+			CLUSTER|UNIT)
 				# A collection of test suites
 				subtests=$(echo "${f%/}/"*)
 				;;
@@ -309,7 +309,7 @@ if [ -z "$1" ] ; then
 	if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
 		set -- UNIT simple
 	else
-		set -- simple complex
+		set -- simple CLUSTER
     fi
 fi
 

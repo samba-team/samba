@@ -1048,8 +1048,8 @@ def build(bld):
                          install_path='${CTDB_TEST_LIBEXECDIR}')
 
     test_subdirs = [
+        'CLUSTER',
         'UNIT',
-        'complex',
         'etc-ctdb',
         'simple'
     ]
