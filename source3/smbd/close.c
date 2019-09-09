@@ -421,14 +421,15 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
 
 	if (!file_id_equal(&fsp->file_id, &id)) {
+		struct file_id_buf ftmp1, ftmp2;
 		DEBUG(5,("close_remove_share_mode: file %s. Delete on close "
 			 "was set and dev and/or inode does not match\n",
 			 fsp_str_dbg(fsp)));
 		DEBUG(5,("close_remove_share_mode: file %s. stored file_id %s, "
 			 "stat file_id %s\n",
 			 fsp_str_dbg(fsp),
-			 file_id_string_tos(&fsp->file_id),
-			 file_id_string_tos(&id)));
+			 file_id_str_buf(fsp->file_id, &ftmp1),
+			 file_id_str_buf(id, &ftmp2)));
 		/*
 		 * Don't save the errno here, we ignore this error
 		 */
