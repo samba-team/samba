@@ -1051,7 +1051,6 @@ def build(bld):
         'UNIT',
         'complex',
         'etc-ctdb',
-        'eventd',
         'eventscripts',
         'onnode',
         'shellcheck',

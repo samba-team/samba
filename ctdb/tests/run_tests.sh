@@ -304,7 +304,7 @@ export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 
 unit_tests="
 	UNIT/cunit
-	eventd
+	UNIT/eventd
 	eventscripts
 	onnode
 	shellcheck
