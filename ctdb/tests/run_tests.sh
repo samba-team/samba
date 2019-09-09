@@ -310,7 +310,7 @@ unit_tests="
 	UNIT/shellcheck
 	UNIT/takeover
 	UNIT/takeover_helper
-	tool
+	UNIT/tool
 "
 
 # If no tests specified then run some defaults

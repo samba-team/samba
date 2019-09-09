@@ -1051,8 +1051,7 @@ def build(bld):
         'UNIT',
         'complex',
         'etc-ctdb',
-        'simple',
-        'tool'
+        'simple'
     ]
 
     if bld.env.standalone_ctdb:
