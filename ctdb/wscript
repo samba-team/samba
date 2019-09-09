@@ -1049,9 +1049,9 @@ def build(bld):
 
     test_subdirs = [
         'CLUSTER',
+        'INTEGRATION',
         'UNIT',
-        'etc-ctdb',
-        'simple'
+        'etc-ctdb'
     ]
 
     if bld.env.standalone_ctdb:

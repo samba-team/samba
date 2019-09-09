@@ -251,7 +251,7 @@ run_tests ()
 			*/*/*)
 				die "test \"$f\" is not recognised"
 				;;
-			*/*|simple)
+			*/*)
 				# This is a test suite
 				subtests=$(echo "${f%/}/"*".sh")
 				if [ "$subtests" = "${f%/}/*.sh" ] ; then
@@ -259,7 +259,7 @@ run_tests ()
 					die "test \"$f\" is not recognised"
 				fi
 				;;
-			CLUSTER|UNIT)
+			CLUSTER|INTEGRATION|UNIT)
 				# A collection of test suites
 				subtests=$(echo "${f%/}/"*)
 				;;
@@ -307,9 +307,9 @@ export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 # If no tests specified then run some defaults
 if [ -z "$1" ] ; then
 	if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
-		set -- UNIT simple
+		set -- UNIT INTEGRATION
 	else
-		set -- simple CLUSTER
+		set -- INTEGRATION CLUSTER
     fi
 fi
 
