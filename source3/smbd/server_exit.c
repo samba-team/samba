@@ -199,27 +199,6 @@ static void exit_server_common(enum server_exit_reason how,
 	if (am_parent && sconn != NULL) {
 		dcesrv_shutdown_registered_ep_servers(sconn->dce_ctx);
 
-		rpc_wkssvc_shutdown();
-		rpc_dssetup_shutdown();
-#ifdef DEVELOPER
-		rpc_rpcecho_shutdown();
-#endif
-		rpc_netdfs_shutdown();
-		rpc_initshutdown_shutdown();
-		rpc_eventlog_shutdown();
-		rpc_ntsvcs_shutdown();
-		rpc_svcctl_shutdown();
-		rpc_spoolss_shutdown();
-
-		rpc_srvsvc_shutdown();
-		rpc_winreg_shutdown();
-
-		rpc_netlogon_shutdown();
-		rpc_samr_shutdown();
-		rpc_lsarpc_shutdown();
-
-		rpc_FileServerVssAgent_shutdown();
-
 		global_dcesrv_context_free();
 	}
 
