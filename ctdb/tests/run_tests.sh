@@ -224,11 +224,9 @@ run_one_test ()
 
 run_tests ()
 {
-	local tests=("$@")
-
 	local f
 
-	for f in "${tests[@]}" ; do
+	for f ; do
 		case "$f" in
 		*/README|*/README.md)
 			continue
