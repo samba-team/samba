@@ -306,17 +306,6 @@ summary_file="${test_state_dir}/.summary"
 
 export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 
-unit_tests="
-	UNIT/cunit
-	UNIT/eventd
-	UNIT/eventscripts
-	UNIT/onnode
-	UNIT/shellcheck
-	UNIT/takeover
-	UNIT/takeover_helper
-	UNIT/tool
-"
-
 # If no tests specified then run some defaults
 if [ -z "$1" ] ; then
 	if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
@@ -339,18 +328,6 @@ do_cleanup ()
 trap "do_cleanup ; exit 130" SIGINT
 trap "do_cleanup ; exit 143" SIGTERM
 
-declare -a tests
-i=0
-for f ; do
-	if [ "$f" = "UNIT" ] ; then
-		for t in $unit_tests ; do
-			tests[i++]="$t"
-		done
-	else
-		tests[i++]="$f"
-	fi
-done
-
 iterations=0
 # Special case: -I 0 means iterate forever (until failure)
 while [ "$max_iterations" -eq 0 ] || [ $iterations -lt "$max_iterations" ] ; do
@@ -364,7 +341,7 @@ while [ "$max_iterations" -eq 0 ] || [ $iterations -lt "$max_iterations" ] ; do
 		echo
 	fi
 
-	run_tests "${tests[@]}"
+	run_tests "$@"
 	status=$?
 
 	if [ $status -ne 0 ] ; then
