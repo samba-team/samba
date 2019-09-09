@@ -309,7 +309,7 @@ unit_tests="
 	UNIT/onnode
 	UNIT/shellcheck
 	UNIT/takeover
-	takeover_helper
+	UNIT/takeover_helper
 	tool
 "
 
