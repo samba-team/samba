@@ -1052,7 +1052,6 @@ def build(bld):
         'complex',
         'etc-ctdb',
         'simple',
-        'takeover',
         'takeover_helper',
         'tool'
     ]

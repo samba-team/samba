@@ -308,7 +308,7 @@ unit_tests="
 	UNIT/eventscripts
 	UNIT/onnode
 	UNIT/shellcheck
-	takeover
+	UNIT/takeover
 	takeover_helper
 	tool
 "
