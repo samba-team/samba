@@ -2417,6 +2417,7 @@ static void defer_open(struct share_mode_lock *lck,
 	struct defer_open_state *watch_state;
 	struct tevent_req *watch_req;
 	struct timeval_buf tvbuf1, tvbuf2;
+	struct file_id_buf fbuf;
 	bool ok;
 
 	abs_timeout = timeval_sum(&req->request_time, &timeout);
@@ -2427,7 +2428,7 @@ static void defer_open(struct share_mode_lock *lck,
 		  timeval_str_buf(&abs_timeout, false, true, &tvbuf2),
 		  req->mid,
 		  delayed_for_oplocks ? "yes" : "no",
-		  file_id_string_tos(&id));
+		  file_id_str_buf(id, &fbuf));
 
 	open_rec = talloc_zero(NULL, struct deferred_open_record);
 	if (open_rec == NULL) {
