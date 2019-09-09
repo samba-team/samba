@@ -1413,13 +1413,11 @@ NTSTATUS vfs_stat_fsp(files_struct *fsp)
 		} else {
 			ret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name);
 		}
-		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
-		}
 	} else {
-		if(SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) != 0) {
-			return map_nt_error_from_unix(errno);
-		}
+		ret = SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st);
+	}
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
 	}
 	return NT_STATUS_OK;
 }
