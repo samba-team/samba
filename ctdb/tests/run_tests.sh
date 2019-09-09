@@ -129,23 +129,21 @@ ctdb_test_end ()
 
 ctdb_test_run ()
 {
-    local name="$1" ; shift
+	local f="$1"
 
-    [ -n "$1" ] || set -- "$name"
+	$no_header || ctdb_test_begin "$f"
 
-    $no_header || ctdb_test_begin "$name"
+	local status=0
+	if [ -x "$f" ] ; then
+		timeout "$test_time_limit" "$f" || status=$?
+	else
+		echo "TEST IS NOT EXECUTABLE"
+		status=1
+	fi
 
-    local status=0
-    if [ -x "$1" ] ; then
-	    timeout "$test_time_limit" "$@" || status=$?
-    else
-	    echo "TEST IS NOT EXECUTABLE"
-	    status=1
-    fi
+	$no_header || ctdb_test_end "$f" "$status"
 
-    $no_header || ctdb_test_end "$name" "$status" "$*"
-
-    return $status
+	return $status
 }
 
 ######################################################################
