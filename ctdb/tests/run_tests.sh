@@ -181,6 +181,13 @@ run_one_test ()
 {
     local f="$1"
 
+    CTDB_TEST_SUITE_DIR=$(dirname "$f")
+    export CTDB_TEST_SUITE_DIR
+    # This expands the most probable problem cases like "." and "..".
+    if [ "$(dirname "$CTDB_TEST_SUITE_DIR")" = "." ] ; then
+	    CTDB_TEST_SUITE_DIR=$(cd "$CTDB_TEST_SUITE_DIR" && pwd)
+    fi
+
     tests_total=$((tests_total + 1))
 
     ctdb_test_run "$f" | show_progress

@@ -197,12 +197,9 @@ local_daemons_setup ()
 	fi
 
 	for _n in $(seq 0 $((_num_nodes - 1))) ; do
-		# common.sh will set CTDB_TEST_SUITE_DIR to a stupid
-		# value when installed because common.sh is usually
-		# sourced by a test.  CTDB_TEST_SUITE_DIR needs to be
-		# correctly set so setup_ctdb_base() finds the
-		# etc-ctdb/ subdirectory and the test event script is
-		# correctly installed, so fix it.
+		# CTDB_TEST_SUITE_DIR needs to be correctly set so
+		# setup_ctdb_base() finds the etc-ctdb/ subdirectory
+		# and the test event script is correctly installed
 		# shellcheck disable=SC2034
 		CTDB_TEST_SUITE_DIR="$CTDB_TEST_DIR" \
 			   setup_ctdb_base "$directory" "node.${_n}" \

@@ -13,12 +13,6 @@ die ()
 	echo "$1" >&2 ; exit "${2:-1}"
 }
 
-# This expands the most probable problem cases like "." and "..".
-CTDB_TEST_SUITE_DIR=$(dirname "$0")
-if [ "$(dirname "$CTDB_TEST_SUITE_DIR")" = "." ] ; then
-	CTDB_TEST_SUITE_DIR=$(cd "$CTDB_TEST_SUITE_DIR" && pwd)
-fi
-
 . "${TEST_SCRIPTS_DIR}/script_install_paths.sh"
 
 if [ -d "$CTDB_SCRIPTS_TOOLS_BIN_DIR" ] ; then
