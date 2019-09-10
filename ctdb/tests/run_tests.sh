@@ -87,14 +87,11 @@ fi
 
 ctdb_test_begin ()
 {
-    local name="$1"
+	local name="$1"
 
-    teststarttime=$(date '+%s')
-    testduration=0
-
-    echo "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--"
-    echo "Running test $name ($(date '+%T'))"
-    echo "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--"
+	echo "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--"
+	echo "Running test $name ($(date '+%T'))"
+	echo "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--"
 }
 
 ctdb_test_end ()
@@ -102,6 +99,7 @@ ctdb_test_end ()
 	local f="$1"
 	local status="$2"
 	local interp="$3"
+	local duration="$4"
 
 	local statstr=""
 	if [ "$status" -eq 0 ] ; then
@@ -110,10 +108,8 @@ ctdb_test_end ()
 		statstr=" (status $status)"
 	fi
 
-	testduration=$(($(date +%s) - teststarttime))
-
 	echo "=========================================================================="
-	echo "TEST ${interp}: ${f}${statstr} (duration: ${testduration}s)"
+	echo "TEST ${interp}: ${f}${statstr} (duration: ${duration}s)"
 	echo "=========================================================================="
 }
 
@@ -124,6 +120,10 @@ ctdb_test_run ()
 	$no_header || ctdb_test_begin "$f"
 
 	local status=0
+	local start_time
+
+	start_time=$(date '+%s')
+
 	if [ -x "$f" ] ; then
 		timeout "$test_time_limit" "$f" | show_progress
 		status=$?
@@ -131,6 +131,8 @@ ctdb_test_run ()
 		echo "TEST IS NOT EXECUTABLE"
 		status=99
 	fi
+
+	local duration=$(($(date +%s) - start_time))
 
 	tests_total=$((tests_total + 1))
 
@@ -158,7 +160,7 @@ ctdb_test_run ()
 		;;
 	esac
 
-	$no_header || ctdb_test_end "$f" "$status" "$interp"
+	$no_header || ctdb_test_end "$f" "$status" "$interp" "$duration"
 
 	if $with_summary ; then
 		local t
