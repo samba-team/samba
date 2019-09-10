@@ -710,8 +710,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 
 /* The following definitions come from smbd/oplock.c  */
 
-uint32_t get_lease_type(const struct share_mode_data *d,
-			const struct share_mode_entry *e);
+uint32_t get_lease_type(const struct share_mode_entry *e, struct file_id id);
 
 void break_kernel_oplock(struct messaging_context *msg_ctx, files_struct *fsp);
 NTSTATUS set_file_oplock(files_struct *fsp);

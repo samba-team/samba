@@ -209,7 +209,7 @@ static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
 			continue;
 		}
 
-		e_lease_type = get_lease_type(d, e);
+		e_lease_type = get_lease_type(e, d->id);
 
 		if (!(e_lease_type & SMB2_LEASE_HANDLE)) {
 			continue;

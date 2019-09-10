@@ -2204,7 +2204,7 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 	for (i=0; i<d->num_share_modes; i++) {
 		struct share_mode_entry *e = &d->share_modes[i];
 		bool e_is_lease = (e->op_type == LEASE_OPLOCK);
-		uint32_t e_lease_type = get_lease_type(d, e);
+		uint32_t e_lease_type = get_lease_type(e, d->id);
 		uint32_t break_to;
 		bool lease_is_breaking = false;
 
@@ -4976,7 +4976,7 @@ static NTSTATUS lease_match(connection_struct *conn,
 		d = lck->data;
 		for (j=0; j<d->num_share_modes; j++) {
 			struct share_mode_entry *e = &d->share_modes[j];
-			uint32_t e_lease_type = get_lease_type(d, e);
+			uint32_t e_lease_type = get_lease_type(e, d->id);
 
 			if (share_mode_stale_pid(d, j)) {
 				continue;
