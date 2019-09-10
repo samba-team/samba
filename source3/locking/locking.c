@@ -469,11 +469,21 @@ struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
 	return get_share_mode_lock(mem_ctx, id, NULL, NULL, NULL);
 }
 
+struct rename_share_filename_state {
+	struct share_mode_lock *lck;
+	struct messaging_context *msg_ctx;
+	struct server_id self;
+	uint32_t orig_name_hash;
+	uint32_t new_name_hash;
+	struct file_rename_message msg;
+};
+
 static bool rename_lease_fn(struct share_mode_lock *lck,
 			    struct share_mode_entry *e,
 			    void *private_data)
 {
-	struct share_mode_data *d = lck->data;
+	struct rename_share_filename_state *state = private_data;
+	struct share_mode_data *d = state->lck->data;
 	NTSTATUS status;
 
 	status = leases_db_rename(&e->client_guid,
@@ -501,14 +511,6 @@ static bool rename_lease_fn(struct share_mode_lock *lck,
  process id's that have this file open.
  Based on an initial code idea from SATOH Fumiyasu <fumiya@samba.gr.jp>
 ********************************************************************/
-
-struct rename_share_filename_state {
-	struct messaging_context *msg_ctx;
-	struct server_id self;
-	uint32_t orig_name_hash;
-	uint32_t new_name_hash;
-	struct file_rename_message msg;
-};
 
 static bool rename_share_filename_fn(
 	struct share_mode_entry *e,
@@ -570,6 +572,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 			const struct smb_filename *smb_fname_dst)
 {
 	struct rename_share_filename_state state = {
+		.lck = lck,
 		.msg_ctx = msg_ctx,
 		.self = messaging_server_id(msg_ctx),
 		.orig_name_hash = orig_name_hash,
@@ -611,7 +614,7 @@ bool rename_share_filename(struct messaging_context *msg_ctx,
 		DBG_WARNING("share_mode_forall_entries failed\n");
 	}
 
-	ok = share_mode_forall_leases(lck, rename_lease_fn, NULL);
+	ok = share_mode_forall_leases(lck, rename_lease_fn, &state);
 	if (!ok) {
 		/*
 		 * Ignore error here. Not sure what to do..
