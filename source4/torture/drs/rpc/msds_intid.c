@@ -600,13 +600,13 @@ static bool test_dsintid_schema(struct torture_context *tctx, struct DsIntIdTest
 			       la->attid == dsdb_attr->attributeID_id,
 			       _make_error_message(ctx, la->attid,
 						   dsdb_attr,
-						   la->identifier))
+						   la->identifier));
 		if (dsdb_attr->msDS_IntId) {
 			torture_assert(tctx,
 				       la->attid != dsdb_attr->msDS_IntId,
 				       _make_error_message(ctx, la->attid,
 							   dsdb_attr,
-							   la->identifier))
+							   la->identifier));
 		}
 	}
 

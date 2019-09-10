@@ -2517,7 +2517,7 @@ static bool torture_samba3_rpc_sharesec(struct torture_context *torture)
 			torture, torture, sd, cli->session,
 			torture_setting_string(torture, "share", NULL),
 			user_sid, SEC_FILE_ALL, NT_STATUS_OK, NT_STATUS_OK),
-			"failed to test tcon with SEC_FILE_ALL access_mask")
+			"failed to test tcon with SEC_FILE_ALL access_mask");
 
 	return true;
 }

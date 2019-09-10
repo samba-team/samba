@@ -722,7 +722,7 @@ static bool test_multichannel_oplock_break_test2(struct torture_context *tctx,
 						  credentials,
 						  &transport2_options,
 						  &tree2A, &tree2B, &tree2C);
-	torture_assert(tctx, ret, "Could not create channels.\n")
+	torture_assert(tctx, ret, "Could not create channels.\n");
 
 	torture_comment(tctx, "client2 opens fname1 via session 2A\n");
 	io1.in.oplock_level = smb2_util_oplock_level("b");
