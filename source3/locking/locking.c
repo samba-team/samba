@@ -478,8 +478,7 @@ struct rename_share_filename_state {
 	struct file_rename_message msg;
 };
 
-static bool rename_lease_fn(struct share_mode_lock *lck,
-			    struct share_mode_entry *e,
+static bool rename_lease_fn(struct share_mode_entry *e,
 			    void *private_data)
 {
 	struct rename_share_filename_state *state = private_data;
@@ -1371,8 +1370,7 @@ bool share_mode_forall_entries(
 
 bool share_mode_forall_leases(
 	struct share_mode_lock *lck,
-	bool (*fn)(struct share_mode_lock *lck,
-		   struct share_mode_entry *e,
+	bool (*fn)(struct share_mode_entry *e,
 		   void *private_data),
 	void *private_data)
 {
@@ -1425,7 +1423,7 @@ bool share_mode_forall_leases(
 			continue;
 		}
 
-		stop = fn(lck, e, private_data);
+		stop = fn(e, private_data);
 		if (stop) {
 			TALLOC_FREE(leases);
 			return true;

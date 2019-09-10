@@ -1077,8 +1077,7 @@ struct cleanup_disconnected_lease_state {
 	struct file_id fid;
 };
 
-static bool cleanup_disconnected_lease(struct share_mode_lock *lck,
-				       struct share_mode_entry *e,
+static bool cleanup_disconnected_lease(struct share_mode_entry *e,
 				       void *private_data)
 {
 	struct cleanup_disconnected_lease_state *state = private_data;

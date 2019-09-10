@@ -1154,8 +1154,7 @@ struct break_to_none_state {
 	size_t num_broken;
 };
 
-static bool do_break_lease_to_none(struct share_mode_lock *lck,
-				   struct share_mode_entry *e,
+static bool do_break_lease_to_none(struct share_mode_entry *e,
 				   void *private_data)
 {
 	struct break_to_none_state *state = private_data;

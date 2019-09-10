@@ -218,8 +218,7 @@ bool share_mode_cleanup_disconnected(struct file_id id,
 				     uint64_t open_persistent_id);
 bool share_mode_forall_leases(
 	struct share_mode_lock *lck,
-	bool (*fn)(struct share_mode_lock *lck,
-		   struct share_mode_entry *e,
+	bool (*fn)(struct share_mode_entry *e,
 		   void *private_data),
 	void *private_data);
 
