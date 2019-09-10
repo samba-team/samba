@@ -33,11 +33,6 @@ When either upgrading or downgrading, users should also avoid making any
 database modifications between installing the new Samba packages and starting
 the samba executable.
 
-Note that when moving between major Samba releases in general, we recommend
-that the AD DC is rejoined to the domain. Using this approach avoids the need
-to explicitly downgrade the database manually. For more details, see:
-https://wiki.samba.org/index.php/Upgrading_a_Samba_AD_DC
-
 SMB1 is disabled by default
 ---------------------------
 
