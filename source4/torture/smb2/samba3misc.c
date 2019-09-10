@@ -127,7 +127,8 @@ static bool torture_samba3_localposixlock1(struct torture_context *tctx,
 	rc = fcntl(fd, F_SETLK, &posix_lock);
 	if (rc == -1) {
 		torture_warning(tctx, "fcntl failed: %s\n", strerror(errno));
-		torture_assert(tctx, rc != -1, "fcntl lock\n");
+		torture_assert_goto(tctx, rc != -1, ret, done,
+				    "fcntl lock\n");
 	}
 
 	el[0].offset		= 0;
@@ -147,13 +148,13 @@ static bool torture_samba3_localposixlock1(struct torture_context *tctx,
 	torture_comment(tctx, "  remote async blocking lock\n");
 	el[0].flags		= SMB2_LOCK_FLAG_EXCLUSIVE;
 	req = smb2_lock_send(tree, &lck);
-	torture_assert(tctx, req != NULL, "smb2_lock_send()\n");
+	torture_assert_goto(tctx, req != NULL, ret, done, "smb2_lock_send()\n");
 
 	te = tevent_add_timer(tctx->ev,
 			      tctx, timeval_current_ofs(5, 0),
 			      torture_smb2_tree_disconnect_timer,
 			      tree);
-	torture_assert(tctx, te != NULL, "tevent_add_timer\n");
+	torture_assert_goto(tctx, te != NULL, ret, done, "tevent_add_timer\n");
 
 	torture_comment(tctx, "  remote wait for STATUS_PENDING\n");
 	WAIT_FOR_ASYNC_RESPONSE(req);
