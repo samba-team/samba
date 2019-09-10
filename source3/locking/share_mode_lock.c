@@ -1073,14 +1073,18 @@ int share_entry_forall(int (*fn)(struct file_id fid,
 	return share_mode_forall(share_entry_traverse_fn, &state);
 }
 
+struct cleanup_disconnected_lease_state {
+	struct file_id fid;
+};
+
 static bool cleanup_disconnected_lease(struct share_mode_lock *lck,
 				       struct share_mode_entry *e,
 				       void *private_data)
 {
-	struct share_mode_data *d = lck->data;
+	struct cleanup_disconnected_lease_state *state = private_data;
 	NTSTATUS status;
 
-	status = leases_db_del(&e->client_guid, &e->lease_key, &d->id);
+	status = leases_db_del(&e->client_guid, &e->lease_key, &state->fid);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("leases_db_del failed: %s\n",
@@ -1093,6 +1097,7 @@ static bool cleanup_disconnected_lease(struct share_mode_lock *lck,
 bool share_mode_cleanup_disconnected(struct file_id fid,
 				     uint64_t open_persistent_id)
 {
+	struct cleanup_disconnected_lease_state state = { .fid = fid };
 	bool ret = false;
 	TALLOC_CTX *frame = talloc_stackframe();
 	unsigned n;
@@ -1147,7 +1152,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 		}
 	}
 
-	ok = share_mode_forall_leases(lck, cleanup_disconnected_lease, NULL);
+	ok = share_mode_forall_leases(lck, cleanup_disconnected_lease, &state);
 	if (!ok) {
 		DBG_DEBUG("failed to clean up leases associated "
 			  "with file (file-id='%s', servicepath='%s', "
