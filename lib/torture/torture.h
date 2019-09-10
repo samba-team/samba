@@ -249,18 +249,20 @@ void torture_warning(struct torture_context *test, const char *comment, ...) PRI
 void torture_result(struct torture_context *test,
 			enum torture_result, const char *reason, ...) PRINTF_ATTRIBUTE(3,4);
 
-#define torture_assert(torture_ctx,expr,cmt) \
+#define torture_assert(torture_ctx,expr,cmt) do { \
 	if (!(expr)) { \
 		torture_result(torture_ctx, TORTURE_FAIL, __location__": Expression `%s' failed: %s", __STRING(expr), cmt); \
 		return false; \
-	}
+	} \
+} while(0)
 
-#define torture_assert_goto(torture_ctx,expr,ret,label,cmt) \
+#define torture_assert_goto(torture_ctx,expr,ret,label,cmt) do { \
 	if (!(expr)) { \
 		torture_result(torture_ctx, TORTURE_FAIL, __location__": Expression `%s' failed: %s", __STRING(expr), cmt); \
 		ret = false; \
 		goto label; \
-	}
+	} \
+} while(0)
 
 #define torture_assert_werr_equal(torture_ctx, got, expected, cmt) \
 	do { WERROR __got = got, __expected = expected; \
