@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.11.  This is *not*
+This is the fourth release candidate of Samba 4.11.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -366,6 +366,45 @@ smb.conf changes
   rndc command                       Deprecated
   lanman auth                        Deprecated
   encrypt passwords                  Deprecated
+
+
+CHANGES SINCE 4.11.0rc3
+=======================
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14049: ldb: Don't try to save a value that isn't there.
+   * ldb_dn: Free dn components on explode failure.
+   * ldb: Do not allow adding a DN as a base to itself.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * ldb: Release ldb 2.0.7.
+   * BUG 13695: ldb: Correct Pigeonhole principle validation in
+     ldb_filter_attrs().
+   * BUG 14049: Fix ldb dn crash.
+   * BUG 14117: Deprecate "lanman auth = yes" and "encrypt passwords = no".
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14038: Fix compiling ctdb on older systems lacking POSIX robust
+     mutexes.
+   * BUG 14121: smbd returns bad File-ID on filehandle used to create a file or
+     directory.
+
+o  Poornima G <pgurusid@redhat.com>
+   * BUG 14098: vfs_glusterfs: Use pthreadpool for scheduling aio operations.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14055: Add the target server name of SMB 3.1.1 connections as a hint to
+     load balancers or servers with "multi-tenancy" support.
+   * BUG 14113: Fix byte range locking bugs/regressions.
+
+o  Swen Schillig <swen@linux.ibm.com>
+   * ldb: Fix mem-leak if talloc_realloc fails.
+
+o  Evgeny Sinelnikov <sin@altlinux.org>
+   * BUG 14007: Fix join with don't exists machine account.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14085: ctdb-recoverd: Only check for LMASTER nodes in the VNN map.
 
 
 CHANGES SINCE 4.11.0rc2
