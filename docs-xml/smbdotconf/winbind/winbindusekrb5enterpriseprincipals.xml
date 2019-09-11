@@ -1,0 +1,34 @@
+<samba:parameter name="winbind use krb5 enterprise principals"
+                 context="G"
+                 type="boolean"
+                 xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
+<description>
+	<para>winbindd is able to get kerberos tickets for
+	pam_winbind with krb5_auth or wbinfo -K/--krb5auth=.
+	</para>
+
+	<para>winbindd (at least on a domain member) is never be able
+	to have a complete picture of the trust topology (which is managed by the DCs).
+	There might be uPNSuffixes and msDS-SPNSuffixes values,
+	which don't belong to any AD domain at all.
+	</para>
+
+	<para>With <smbconfoption name="winbind scan trusted domains">no</smbconfoption>
+	winbindd don't even get an incomplete picture of the topology.
+	</para>
+
+	<para>It is not really required to know about the trust topology.
+	We can just rely on the [K]DCs of our primary domain (e.g. PRIMARY.A.EXAMPLE.COM)
+	and use enterprise principals e.g. upnfromB@B.EXAMPLE.COM@PRIMARY.A.EXAMPLE.COM
+	and follow the WRONG_REALM referrals in order to find the correct DC.
+	The final principal might be userfromB@INTERNALB.EXAMPLE.PRIVATE.
+	</para>
+
+	<para>With <smbconfoption name="winbind use krb5 enterprise principals">yes</smbconfoption>
+	winbindd enterprise principals will be used.
+	</para>
+</description>
+
+<value type="default">no</value>
+<value type="example">yes</value>
+</samba:parameter>
