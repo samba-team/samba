@@ -1067,6 +1067,7 @@ def build(bld):
 
     # Install tests/scripts directory, excluding files that need munging
     test_scripts = [
+        'cluster.bash',
         'common.sh',
         'integration.bash',
         'integration_local_daemons.bash',
