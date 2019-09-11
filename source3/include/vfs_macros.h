@@ -226,6 +226,11 @@
 #define SMB_VFS_NEXT_UNLINK(handle, path) \
 	smb_vfs_call_unlink((handle)->next, (path))
 
+#define SMB_VFS_UNLINKAT(conn, dirfsp, path, flags) \
+	smb_vfs_call_unlinkat((conn)->vfs_handles, (dirfsp), (path), (flags))
+#define SMB_VFS_NEXT_UNLINKAT(handle, dirfsp, path, flags) \
+	smb_vfs_call_unlinkat((handle)->next, (dirfsp), (path), (flags))
+
 #define SMB_VFS_CHMOD(conn, smb_fname, mode) \
 	smb_vfs_call_chmod((conn)->vfs_handles, (smb_fname), (mode))
 #define SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode) \

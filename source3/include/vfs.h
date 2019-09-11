@@ -281,6 +281,7 @@
 /* Version 42 - Move change_to_user() -> change_to_user_and_service() */
 /* Version 42 - Move change_to_user_by_fsp() -> change_to_user_and_service_by_fsp() */
 /* Version 42 - Move [un]become_user*() -> [un]become_user_without_service*() */
+/* Version 42 - Add SMB_VFS_UNLINKAT. */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -778,6 +779,10 @@ struct vfs_fn_pointers {
 	uint64_t (*get_alloc_size_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_STAT *sbuf);
 	int (*unlink_fn)(struct vfs_handle_struct *handle,
 			 const struct smb_filename *smb_fname);
+	int (*unlinkat_fn)(struct vfs_handle_struct *handle,
+			struct files_struct *srcdir_fsp,
+			const struct smb_filename *smb_fname,
+			int flags);
 	int (*chmod_fn)(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode);
@@ -1305,6 +1310,10 @@ uint64_t smb_vfs_call_get_alloc_size(struct vfs_handle_struct *handle,
 				     const SMB_STRUCT_STAT *sbuf);
 int smb_vfs_call_unlink(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname);
+int smb_vfs_call_unlinkat(struct vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags);
 int smb_vfs_call_chmod(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode);
@@ -1742,6 +1751,10 @@ uint64_t vfs_not_implemented_get_alloc_size(struct vfs_handle_struct *handle,
 					    const SMB_STRUCT_STAT *sbuf);
 int vfs_not_implemented_unlink(vfs_handle_struct *handle,
 			       const struct smb_filename *smb_fname);
+int vfs_not_implemented_unlinkat(vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				int flags);
 int vfs_not_implemented_chmod(vfs_handle_struct *handle,
 			      const struct smb_filename *smb_fname,
 			      mode_t mode);

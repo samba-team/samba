@@ -468,6 +468,17 @@ static int skel_unlink(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 }
 
+static int skel_unlinkat(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags)
+{
+	return SMB_VFS_NEXT_UNLINKAT(handle,
+			dirfsp,
+			smb_fname,
+			flags);
+}
+
 static int skel_chmod(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode)
@@ -1362,6 +1373,7 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.lstat_fn = skel_lstat,
 	.get_alloc_size_fn = skel_get_alloc_size,
 	.unlink_fn = skel_unlink,
+	.unlinkat_fn = skel_unlinkat,
 	.chmod_fn = skel_chmod,
 	.fchmod_fn = skel_fchmod,
 	.chown_fn = skel_chown,
