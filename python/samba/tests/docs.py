@@ -123,7 +123,6 @@ class SmbDotConfTests(TestCase):
         'template homedir',
         'max open files',
         'include system krb5 conf',
-        'rpc server dynamic port range',
         'mit kdc command',
         'smbd max async dosmode',
     ])
@@ -247,7 +246,6 @@ class SmbDotConfTests(TestCase):
 
             exceptions = set([
                 'printing',
-                'rpc server dynamic port range',
                 'smbd max async dosmode',
             ])
 

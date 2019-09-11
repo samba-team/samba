@@ -1474,8 +1474,16 @@ bool handle_rpc_server_dynamic_port_range(struct loadparm_context *lp_ctx,
 					  const char *pszParmValue,
 					  char **ptr)
 {
+	static int parm_num = -1;
 	int low_port = -1, high_port = -1;
 	int rc;
+
+	if (parm_num == -1) {
+		parm_num = lpcfg_map_parameter("rpc server dynamic port range");
+		if (parm_num == -1) {
+			return false;
+		}
+	}
 
 	if (pszParmValue == NULL || pszParmValue[0] == '\0') {
 		return false;
@@ -1491,6 +1499,12 @@ bool handle_rpc_server_dynamic_port_range(struct loadparm_context *lp_ctx,
 	}
 
 	if (low_port < SERVER_TCP_PORT_MIN|| high_port > SERVER_TCP_PORT_MAX) {
+		return false;
+	}
+
+	if (!set_variable_helper(lp_ctx->globals->ctx, parm_num, ptr,
+				 "rpc server dynamic port range",
+				 pszParmValue)) {
 		return false;
 	}
 
