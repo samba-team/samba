@@ -1,46 +1,37 @@
 #!/bin/bash
 
-test_info()
-{
-    cat <<EOF
-Verify that it is possible to ping a public address after disabling a node.
+# Verify that it is possible to ping a public address after disabling a node.
 
-We ping a public IP, disable the node hosting it and then ping the
-public IP again.
+# We ping a public IP, disable the node hosting it and then ping the
+# public IP again.
 
-Prerequisites:
+# Prerequisites:
 
-* An active CTDB cluster with at least 2 nodes with public addresses.
+# * An active CTDB cluster with at least 2 nodes with public addresses.
 
-* Test must be run on a real or virtual cluster rather than against
-  local daemons.
+# * Test must be run on a real or virtual cluster rather than against
+#   local daemons.
 
-* Test must not be run from a cluster node.
+# * Test must not be run from a cluster node.
 
-Steps:
+# Steps:
 
-1. Verify that the cluster is healthy.
-2. Select a public address and its corresponding node.
-3. Send a single ping request packet to the selected public address.
-4. Disable the selected node.
-5. Send another single ping request packet to the selected public address.
+# 1. Verify that the cluster is healthy.
+# 2. Select a public address and its corresponding node.
+# 3. Send a single ping request packet to the selected public address.
+# 4. Disable the selected node.
+# 5. Send another single ping request packet to the selected public address.
 
-Expected results:
+# Expected results:
 
-* When a node is disabled the public address fails over and the
-  address is still pingable.
-EOF
-}
+# * When a node is disabled the public address fails over and the
+#   address is still pingable.
 
-. "${TEST_SCRIPTS_DIR}/integration.bash"
+. "${TEST_SCRIPTS_DIR}/cluster.bash"
 
 set -e
 
 ctdb_test_init
-
-ctdb_test_check_real_cluster
-
-cluster_is_healthy
 
 select_test_node_and_ips
 

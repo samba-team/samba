@@ -1,40 +1,31 @@
 #!/bin/bash
 
-test_info()
-{
-    cat <<EOF
-Verify that a newly started CTDB node gets updated tickle details
+# Verify that a newly started CTDB node gets updated tickle details
 
-Prerequisites:
+# Prerequisites:
 
-* An active CTDB cluster with at least 2 nodes with public addresses.
+# * An active CTDB cluster with at least 2 nodes with public addresses.
 
-* Test must be run on a real or virtual cluster rather than against
-  local daemons.
+# * Test must be run on a real or virtual cluster rather than against
+#   local daemons.
 
-* Cluster nodes must be listening on the NFS TCP port (2049).
+# * Cluster nodes must be listening on the NFS TCP port (2049).
 
-Steps:
+# Steps:
 
-As with 31_nfs_tickle.sh but restart a node after the tickle is
-registered.
+# As with 31_nfs_tickle.sh but restart a node after the tickle is
+# registered.
 
-Expected results:
+# Expected results:
 
-* CTDB should correctly communicated tickles to new CTDB instances as
-  they join the cluster.
-EOF
-}
+# * CTDB should correctly communicated tickles to new CTDB instances as
+#   they join the cluster.
 
-. "${TEST_SCRIPTS_DIR}/integration.bash"
+. "${TEST_SCRIPTS_DIR}/cluster.bash"
 
 set -e
 
 ctdb_test_init
-
-ctdb_test_check_real_cluster
-
-cluster_is_healthy
 
 # We need this for later, so we know how long to run nc for.
 try_command_on_node any $CTDB getvar MonitorInterval

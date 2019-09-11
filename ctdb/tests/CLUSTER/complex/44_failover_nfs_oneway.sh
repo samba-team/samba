@@ -1,52 +1,43 @@
 #!/bin/bash
 
-test_info()
-{
-    cat <<EOF
-Verify that a file created on a node is readable via NFS after a failover.
+# Verify that a file created on a node is readable via NFS after a failover.
 
-We write a file into an exported directory on a node, mount the NFS
-share from a node, verify that we can read the file via NFS and that
-we can still read it after a failover.
+# We write a file into an exported directory on a node, mount the NFS
+# share from a node, verify that we can read the file via NFS and that
+# we can still read it after a failover.
 
-Prerequisites:
+# Prerequisites:
 
-* An active CTDB cluster with at least 2 nodes with public addresses.
+# * An active CTDB cluster with at least 2 nodes with public addresses.
 
-* Test must be run on a real or virtual cluster rather than against
-  local daemons.
+# * Test must be run on a real or virtual cluster rather than against
+#   local daemons.
 
-* Test must not be run from a cluster node.
+# * Test must not be run from a cluster node.
 
-Steps:
+# Steps:
 
-1.  Verify that the cluster is healthy.
-2.  Select a public address and its corresponding node.
-3.  Select the 1st NFS share exported on the node.
-4.  Write a file into exported directory on the node and calculate its
-    checksum.
-5.  Mount the selected NFS share.
-6.  Read the file via the NFS mount and calculate its checksum.
-7.  Compare checksums.
-8.  Disable the selected node.
-9.  Read the file via NFS and calculate its checksum.
-10. Compare the checksums.
+# 1.  Verify that the cluster is healthy.
+# 2.  Select a public address and its corresponding node.
+# 3.  Select the 1st NFS share exported on the node.
+# 4.  Write a file into exported directory on the node and calculate its
+#     checksum.
+# 5.  Mount the selected NFS share.
+# 6.  Read the file via the NFS mount and calculate its checksum.
+# 7.  Compare checksums.
+# 8.  Disable the selected node.
+# 9.  Read the file via NFS and calculate its checksum.
+# 10. Compare the checksums.
 
-Expected results:
+# Expected results:
 
-* Checksums for the file on all 3 occasions should be the same.
-EOF
-}
+# * Checksums for the file on all 3 occasions should be the same.
 
-. "${TEST_SCRIPTS_DIR}/integration.bash"
+. "${TEST_SCRIPTS_DIR}/cluster.bash"
 
 set -e
 
 ctdb_test_init
-
-ctdb_test_check_real_cluster
-
-cluster_is_healthy
 
 nfs_test_setup
 

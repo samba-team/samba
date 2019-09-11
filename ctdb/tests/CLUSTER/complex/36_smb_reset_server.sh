@@ -1,37 +1,28 @@
 #!/bin/bash
 
-test_info()
-{
-    cat <<EOF
-Verify that the server end of an SMB connection is correctly reset
+# Verify that the server end of an SMB connection is correctly reset
 
-Prerequisites:
+# Prerequisites:
 
-* An active CTDB cluster with at least 2 nodes with public addresses.
+# * An active CTDB cluster with at least 2 nodes with public addresses.
 
-* Test must be run on a real or virtual cluster rather than against
-  local daemons.
+# * Test must be run on a real or virtual cluster rather than against
+#   local daemons.
 
-* Test must not be run from a cluster node.
+# * Test must not be run from a cluster node.
 
-* Clustered Samba must be listening on TCP port 445.
+# * Clustered Samba must be listening on TCP port 445.
 
-Expected results:
+# Expected results:
 
-* CTDB should correctly record the connection and the releasing node
-  should reset the server end of the connection.
-EOF
-}
+# * CTDB should correctly record the connection and the releasing node
+#   should reset the server end of the connection.
 
-. "${TEST_SCRIPTS_DIR}/integration.bash"
+. "${TEST_SCRIPTS_DIR}/cluster.bash"
 
 set -e
 
 ctdb_test_init
-
-ctdb_test_check_real_cluster
-
-cluster_is_healthy
 
 # We need this for later, so we know how long to sleep.
 try_command_on_node 0 $CTDB getvar MonitorInterval

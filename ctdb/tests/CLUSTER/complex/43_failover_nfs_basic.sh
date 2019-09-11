@@ -1,50 +1,41 @@
 #!/bin/bash
 
-test_info()
-{
-    cat <<EOF
-Verify that a mounted NFS share is still operational after failover.
+# Verify that a mounted NFS share is still operational after failover.
 
-We mount an NFS share from a node, write a file via NFS and then
-confirm that we can correctly read the file after a failover.
+# We mount an NFS share from a node, write a file via NFS and then
+# confirm that we can correctly read the file after a failover.
 
-Prerequisites:
+# Prerequisites:
 
-* An active CTDB cluster with at least 2 nodes with public addresses.
+# * An active CTDB cluster with at least 2 nodes with public addresses.
 
-* Test must be run on a real or virtual cluster rather than against
-  local daemons.
+# * Test must be run on a real or virtual cluster rather than against
+#   local daemons.
 
-* Test must not be run from a cluster node.
+# * Test must not be run from a cluster node.
 
-Steps:
+# Steps:
 
-1. Verify that the cluster is healthy.
-2. Select a public address and its corresponding node.
-3. Select the 1st NFS share exported on the node.
-4. Mount the selected NFS share.
-5. Create a file in the NFS mount and calculate its checksum.
-6. Disable the selected node.
-7. Read the file and calculate its checksum.
-8. Compare the checksums.
+# 1. Verify that the cluster is healthy.
+# 2. Select a public address and its corresponding node.
+# 3. Select the 1st NFS share exported on the node.
+# 4. Mount the selected NFS share.
+# 5. Create a file in the NFS mount and calculate its checksum.
+# 6. Disable the selected node.
+# 7. Read the file and calculate its checksum.
+# 8. Compare the checksums.
 
-Expected results:
+# Expected results:
 
-* When a node is disabled the public address fails over and it is
-  possible to correctly read a file over NFS.  The checksums should be
-  the same before and after.
-EOF
-}
+# * When a node is disabled the public address fails over and it is
+#   possible to correctly read a file over NFS.  The checksums should be
+#   the same before and after.
 
-. "${TEST_SCRIPTS_DIR}/integration.bash"
+. "${TEST_SCRIPTS_DIR}/cluster.bash"
 
 set -e
 
 ctdb_test_init
-
-ctdb_test_check_real_cluster
-
-cluster_is_healthy
 
 nfs_test_setup
 

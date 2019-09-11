@@ -1,41 +1,32 @@
 #!/bin/bash
 
-test_info()
-{
-    cat <<EOF
-Verify that NFS connections are monitored and that NFS tickles are sent.
+# Verify that NFS connections are monitored and that NFS tickles are sent.
 
-Create a connection to the NFS server on a node. Then disable the
-relevant NFS server node and ensure that it sends an appropriate reset
-packet.  The packet must come from the releasing node.
+# Create a connection to the NFS server on a node. Then disable the
+# relevant NFS server node and ensure that it sends an appropriate reset
+# packet.  The packet must come from the releasing node.
 
-Prerequisites:
+# Prerequisites:
 
-* An active CTDB cluster with at least 2 nodes with public addresses.
+# * An active CTDB cluster with at least 2 nodes with public addresses.
 
-* Test must be run on a real or virtual cluster rather than against
-  local daemons.
+# * Test must be run on a real or virtual cluster rather than against
+#   local daemons.
 
-* Test must not be run from a cluster node.
+# * Test must not be run from a cluster node.
 
-* Cluster nodes must be listening on the NFS TCP port (2049).
+# * Cluster nodes must be listening on the NFS TCP port (2049).
 
-Expected results:
+# Expected results:
 
-* CTDB on the releasing node should correctly send a reset packet when
-  the node is disabled.
-EOF
-}
+# * CTDB on the releasing node should correctly send a reset packet when
+#   the node is disabled.
 
-. "${TEST_SCRIPTS_DIR}/integration.bash"
+. "${TEST_SCRIPTS_DIR}/cluster.bash"
 
 set -e
 
 ctdb_test_init
-
-ctdb_test_check_real_cluster
-
-cluster_is_healthy
 
 select_test_node_and_ips
 

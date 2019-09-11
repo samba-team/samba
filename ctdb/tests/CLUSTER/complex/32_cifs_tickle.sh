@@ -1,42 +1,33 @@
 #!/bin/bash
 
-test_info()
-{
-    cat <<EOF
-Verify that CIFS connections are monitored and that CIFS tickles are sent.
+# Verify that CIFS connections are monitored and that CIFS tickles are sent.
 
-We create a connection to the CIFS server on a node and confirm that
-this connection is registered by CTDB.  Then disable the relevant CIFS
-server node and ensure that the takeover node sends an appropriate
-reset packet.
+# We create a connection to the CIFS server on a node and confirm that
+# this connection is registered by CTDB.  Then disable the relevant CIFS
+# server node and ensure that the takeover node sends an appropriate
+# reset packet.
 
-Prerequisites:
+# Prerequisites:
 
-* An active CTDB cluster with at least 2 nodes with public addresses.
+# * An active CTDB cluster with at least 2 nodes with public addresses.
 
-* Test must be run on a real or virtual cluster rather than against
-  local daemons.
+# * Test must be run on a real or virtual cluster rather than against
+#   local daemons.
 
-* Test must not be run from a cluster node.
+# * Test must not be run from a cluster node.
 
-* Clustered Samba must be listening on TCP port 445.
+# * Clustered Samba must be listening on TCP port 445.
 
-Expected results:
+# Expected results:
 
-* CTDB should correctly record the connection and the takeover node
-  should send a reset packet.
-EOF
-}
+# * CTDB should correctly record the connection and the takeover node
+#   should send a reset packet.
 
-. "${TEST_SCRIPTS_DIR}/integration.bash"
+. "${TEST_SCRIPTS_DIR}/cluster.bash"
 
 set -e
 
 ctdb_test_init
-
-ctdb_test_check_real_cluster
-
-cluster_is_healthy
 
 # We need this for later, so we know how long to sleep.
 try_command_on_node 0 $CTDB getvar MonitorInterval

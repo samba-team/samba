@@ -1,42 +1,33 @@
 #!/bin/bash
 
-test_info()
-{
-    cat <<EOF
-Verify that NFS connections are monitored and that NFS tickles are sent.
+# Verify that NFS connections are monitored and that NFS tickles are sent.
 
-We create a connection to the NFS server on a node and confirm that
-this connection is registered in the nfs-tickles/ subdirectory in
-shared storage.  Then kill ctdbd on the relevant NFS server node and
-ensure that the takeover node sends an appropriate reset packet.
+# We create a connection to the NFS server on a node and confirm that
+# this connection is registered in the nfs-tickles/ subdirectory in
+# shared storage.  Then kill ctdbd on the relevant NFS server node and
+# ensure that the takeover node sends an appropriate reset packet.
 
-Prerequisites:
+# Prerequisites:
 
-* An active CTDB cluster with at least 2 nodes with public addresses.
+# * An active CTDB cluster with at least 2 nodes with public addresses.
 
-* Test must be run on a real or virtual cluster rather than against
-  local daemons.
+# * Test must be run on a real or virtual cluster rather than against
+#   local daemons.
 
-* Test must not be run from a cluster node.
+# * Test must not be run from a cluster node.
 
-* Cluster nodes must be listening on the NFS TCP port (2049).
+# * Cluster nodes must be listening on the NFS TCP port (2049).
 
-Expected results:
+# Expected results:
 
-* CTDB should correctly record the socket and on failover the takeover
-  node should send a reset packet.
-EOF
-}
+# * CTDB should correctly record the socket and on failover the takeover
+#   node should send a reset packet.
 
-. "${TEST_SCRIPTS_DIR}/integration.bash"
+. "${TEST_SCRIPTS_DIR}/cluster.bash"
 
 set -e
 
 ctdb_test_init
-
-ctdb_test_check_real_cluster
-
-cluster_is_healthy
 
 # We need this for later, so we know how long to run nc for.
 try_command_on_node any $CTDB getvar MonitorInterval

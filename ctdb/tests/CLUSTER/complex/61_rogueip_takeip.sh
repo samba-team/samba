@@ -1,21 +1,14 @@
 #!/bin/bash
 
-test_info()
-{
-    cat <<EOF
-Verify that TAKE_IP will work for an IP that is already on an interface
+# Verify that TAKE_IP will work for an IP that is already on an interface
 
-This is a variation of simple/60_recoverd_missing_ip.sh
-EOF
-}
+# This is a variation of simple/60_recoverd_missing_ip.sh
 
-. "${TEST_SCRIPTS_DIR}/integration.bash"
-
-ctdb_test_init
+. "${TEST_SCRIPTS_DIR}/cluster.bash"
 
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 select_test_node_and_ips
 

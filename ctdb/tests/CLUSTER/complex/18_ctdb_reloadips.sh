@@ -1,37 +1,28 @@
 #!/bin/bash
 
-test_info()
-{
-    cat <<EOF
-Verify that adding/deleting IPs using 'ctdb reloadips' works
+# Verify that adding/deleting IPs using 'ctdb reloadips' works
 
-Checks that when IPs are added to and deleted from a single node then
-those IPs are actually assigned and unassigned from the specified
-interface.
+# Checks that when IPs are added to and deleted from a single node then
+# those IPs are actually assigned and unassigned from the specified
+# interface.
 
-Prerequisites:
+# Prerequisites:
 
-* An active CTDB cluster with public IP addresses configured
+# * An active CTDB cluster with public IP addresses configured
 
-Expected results:
+# Expected results:
 
-* When IPs are added to a single node then they are assigned to an
-  interface.
+# * When IPs are added to a single node then they are assigned to an
+#   interface.
 
-* When IPs are deleted from a single node then they disappear from an
-  interface.
-EOF
-}
+# * When IPs are deleted from a single node then they disappear from an
+#   interface.
 
-. "${TEST_SCRIPTS_DIR}/integration.bash"
+. "${TEST_SCRIPTS_DIR}/cluster.bash"
 
 set -e
 
 ctdb_test_init
-
-ctdb_test_check_real_cluster
-
-cluster_is_healthy
 
 select_test_node_and_ips
 

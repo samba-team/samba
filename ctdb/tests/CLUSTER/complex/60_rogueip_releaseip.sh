@@ -1,21 +1,14 @@
 #!/bin/bash
 
-test_info()
-{
-    cat <<EOF
-Verify that the recovery daemon correctly handles a rogue IP
+# Verify that the recovery daemon correctly handles a rogue IP
 
-It should be released...
-EOF
-}
+# It should be released...
 
-. "${TEST_SCRIPTS_DIR}/integration.bash"
-
-ctdb_test_init
+. "${TEST_SCRIPTS_DIR}/cluster.bash"
 
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 select_test_node_and_ips
 

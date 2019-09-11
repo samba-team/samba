@@ -1,23 +1,14 @@
 #!/bin/bash
 
-test_info()
-{
-    cat <<EOF
-Verify that a node's public IP address can be deleted using 'ctdb deleteip'.
+# Verify that a node's public IP address can be deleted using 'ctdb deleteip'.
 
-This is an extended version of simple/17_ctdb_config_delete_ip.sh
-EOF
-}
+# This is an extended version of simple/17_ctdb_config_delete_ip.sh
 
-. "${TEST_SCRIPTS_DIR}/integration.bash"
+. "${TEST_SCRIPTS_DIR}/cluster.bash"
 
 set -e
 
 ctdb_test_init
-
-ctdb_test_check_real_cluster
-
-cluster_is_healthy
 
 select_test_node_and_ips
 get_test_ip_mask_and_iface
