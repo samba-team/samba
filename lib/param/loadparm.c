@@ -1445,7 +1445,7 @@ bool handle_smb_ports(struct loadparm_context *lp_ctx, struct loadparm_service *
 		}
 	}
 
-	if(!set_variable_helper(lp_ctx->globals->ctx, parm_num, ptr, "smb ports",
+	if (!set_variable_helper(lp_ctx->globals->ctx, parm_num, ptr, "smb ports",
 			       	pszParmValue)) {
 		return false;
 	}
