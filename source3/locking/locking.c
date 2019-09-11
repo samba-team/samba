@@ -871,10 +871,11 @@ bool set_share_mode(struct share_mode_lock *lck,
 }
 
 static struct share_mode_entry *find_share_mode_entry(
-	struct share_mode_lock *lck, files_struct *fsp)
+	struct share_mode_lock *lck,
+	struct server_id pid,
+	uint64_t share_file_id)
 {
 	struct share_mode_data *d = lck->data;
-	struct server_id pid = messaging_server_id(fsp->conn->sconn->msg_ctx);
 	uint32_t i;
 
 	for (i=0; i<d->num_share_modes; i++) {
@@ -886,7 +887,7 @@ static struct share_mode_entry *find_share_mode_entry(
 		if (!serverid_equal(&pid, &e->pid)) {
 			continue;
 		}
-		if (fsp->fh->gen_id != e->share_file_id) {
+		if (share_file_id != e->share_file_id) {
 			continue;
 		}
 		return e;
@@ -902,7 +903,10 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry *e;
 
-	e = find_share_mode_entry(lck, fsp);
+	e = find_share_mode_entry(
+		lck,
+		messaging_server_id(fsp->conn->sconn->msg_ctx),
+		fsp->fh->gen_id);
 	if (e == NULL) {
 		return False;
 	}
@@ -929,7 +933,10 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 		return false;
 	}
 
-	e = find_share_mode_entry(lck, fsp);
+	e = find_share_mode_entry(
+		lck,
+		messaging_server_id(fsp->conn->sconn->msg_ctx),
+		fsp->fh->gen_id);
 	if (e == NULL) {
 		return false;
 	}
@@ -957,7 +964,10 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 	struct share_mode_data *d = lck->data;
 	struct share_mode_entry *e;
 
-	e = find_share_mode_entry(lck, fsp);
+	e = find_share_mode_entry(
+		lck,
+		messaging_server_id(fsp->conn->sconn->msg_ctx),
+		fsp->fh->gen_id);
 	if (e == NULL) {
 		return False;
 	}
@@ -975,7 +985,10 @@ bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 {
 	struct share_mode_entry *e;
 
-	e = find_share_mode_entry(lck, fsp);
+	e = find_share_mode_entry(
+		lck,
+		messaging_server_id(fsp->conn->sconn->msg_ctx),
+		fsp->fh->gen_id);
 	if (e == NULL) {
 		return False;
 	}
