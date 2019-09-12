@@ -123,7 +123,7 @@
 	if (!NT_STATUS_IS_OK(status)) { \
 		torture_comment(tctx, \
 		    "(%s) Failed to set attrib 0x%x on %s\n", \
-		       __location__, sattrib, fname); \
+		       __location__, (unsigned int)(sattrib), fname); \
 	}} while (0)
 
 /*
