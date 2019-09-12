@@ -385,6 +385,22 @@ static int posix_eadb_rmdir(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int posix_eadb_unlinkat(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags)
+{
+	int ret;
+
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+	if (flags & AT_REMOVEDIR) {
+		ret = posix_eadb_rmdir(handle, smb_fname);
+	} else {
+		ret = posix_eadb_unlink(handle, smb_fname);
+	}
+	return ret;
+}
+
 /*
  * Destructor for the VFS private data
  */
@@ -441,6 +457,7 @@ static struct vfs_fn_pointers vfs_posix_eadb_fns = {
 	.removexattr_fn = posix_eadb_removexattr,
 	.fremovexattr_fn = posix_eadb_fremovexattr,
 	.unlink_fn = posix_eadb_unlink,
+	.unlinkat_fn = posix_eadb_unlinkat,
 	.rmdir_fn = posix_eadb_rmdir,
 	.connect_fn = posix_eadb_connect,
 };
