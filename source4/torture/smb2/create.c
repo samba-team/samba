@@ -1135,8 +1135,16 @@ static bool test_smb2_open_for_delete(struct torture_context *tctx,
 	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
 	status = smb2_create(tree, tctx, &(io.smb2));
 	CHECK_STATUS(status, NT_STATUS_OK);
+	smb2_util_close(tree, io.smb2.out.file.handle);
 
-	smb2_util_unlink(tree, fname);
+	/* Clear readonly flag to allow file deletion */
+	io.smb2.in.desired_access = SEC_FILE_READ_ATTRIBUTE |
+				SEC_FILE_WRITE_ATTRIBUTE;
+	status = smb2_create(tree, tctx, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	h1 = io.smb2.out.file.handle;
+	SET_ATTRIB(FILE_ATTRIBUTE_ARCHIVE);
+	smb2_util_close(tree, h1);
 
 	smb2_util_close(tree, h);
 	smb2_util_unlink(tree, fname);
