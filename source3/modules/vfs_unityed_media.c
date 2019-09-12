@@ -1196,6 +1196,40 @@ err:
 	return status;
 }
 
+static int um_unlinkat(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags)
+{
+	int ret;
+	struct smb_filename *client_fname = NULL;
+
+	DEBUG(10, ("Entering um_unlinkat\n"));
+
+	if (!is_in_media_files(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				flags);
+	}
+
+	ret = alloc_get_client_smb_fname(handle, talloc_tos(),
+					    smb_fname,
+					    &client_fname);
+	if (ret != 0) {
+		goto err;
+	}
+
+	ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				client_fname,
+				flags);
+
+err:
+	TALLOC_FREE(client_fname);
+	return ret;
+}
+
 static int um_chmod(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode)
@@ -1936,6 +1970,7 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.lstat_fn = um_lstat,
 	.fstat_fn = um_fstat,
 	.unlink_fn = um_unlink,
+	.unlinkat_fn = um_unlinkat,
 	.chmod_fn = um_chmod,
 	.chown_fn = um_chown,
 	.lchown_fn = um_lchown,
