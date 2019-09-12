@@ -594,6 +594,24 @@ static int streams_xattr_unlink(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int streams_xattr_unlinkat(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags)
+{
+	int ret;
+	if (flags & AT_REMOVEDIR) {
+		ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				flags);
+	} else {
+		ret = streams_xattr_unlink(handle,
+				smb_fname);
+	}
+	return ret;
+}
+
 static int streams_xattr_renameat(vfs_handle_struct *handle,
 				files_struct *srcfsp,
 				const struct smb_filename *smb_fname_src,
@@ -1661,6 +1679,7 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.pwrite_send_fn = streams_xattr_pwrite_send,
 	.pwrite_recv_fn = streams_xattr_pwrite_recv,
 	.unlink_fn = streams_xattr_unlink,
+	.unlinkat_fn = streams_xattr_unlinkat,
 	.renameat_fn = streams_xattr_renameat,
 	.ftruncate_fn = streams_xattr_ftruncate,
 	.fallocate_fn = streams_xattr_fallocate,
