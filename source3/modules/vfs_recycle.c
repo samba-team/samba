@@ -670,8 +670,29 @@ done:
 	return rc;
 }
 
+static int recycle_unlinkat(vfs_handle_struct *handle,
+		struct files_struct *dirfsp,
+		const struct smb_filename *smb_fname,
+		int flags)
+{
+	int ret;
+
+	if (flags & AT_REMOVEDIR) {
+		ret = SMB_VFS_NEXT_UNLINKAT(handle,
+					dirfsp,
+					smb_fname,
+					flags);
+	} else {
+		SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+		ret = recycle_unlink(handle,
+					smb_fname);
+	}
+	return ret;
+}
+
 static struct vfs_fn_pointers vfs_recycle_fns = {
-	.unlink_fn = recycle_unlink
+	.unlink_fn = recycle_unlink,
+	.unlinkat_fn = recycle_unlinkat
 };
 
 static_decl_vfs;
