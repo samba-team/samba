@@ -1457,6 +1457,38 @@ static int virusfilter_vfs_unlink(
 	return 0;
 }
 
+static int virusfilter_vfs_unlinkat(struct vfs_handle_struct *handle,
+		struct files_struct *dirfsp,
+		const struct smb_filename *smb_fname,
+		int flags)
+{
+	int ret = SMB_VFS_NEXT_UNLINKAT(handle,
+			dirfsp,
+			smb_fname,
+			flags);
+	struct virusfilter_config *config = NULL;
+	char *fname = NULL;
+	char *cwd_fname = handle->conn->cwd_fsp->fsp_name->base_name;
+
+	if (ret != 0 && errno != ENOENT) {
+		return ret;
+	}
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct virusfilter_config, return -1);
+
+	if (config->cache == NULL) {
+		return 0;
+	}
+
+	fname = smb_fname->base_name;
+
+	DBG_DEBUG("Removing cache entry (if existent): fname: %s\n", fname);
+	virusfilter_cache_remove(config->cache, cwd_fname, fname);
+
+	return 0;
+}
+
 static int virusfilter_vfs_renameat(
 	struct vfs_handle_struct *handle,
 	files_struct *srcfsp,
@@ -1505,6 +1537,7 @@ static struct vfs_fn_pointers vfs_virusfilter_fns = {
 	.open_fn	= virusfilter_vfs_open,
 	.close_fn	= virusfilter_vfs_close,
 	.unlink_fn	= virusfilter_vfs_unlink,
+	.unlinkat_fn	= virusfilter_vfs_unlinkat,
 	.renameat_fn	= virusfilter_vfs_renameat,
 };
 
