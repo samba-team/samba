@@ -32,6 +32,7 @@
 
 #include "includes.h"
 #include "smbd/smbd.h"
+#include "system/filesys.h"
 #include <dirent.h>
 #include <sys/statvfs.h>
 #include "cephfs/libcephfs.h"
@@ -951,6 +952,30 @@ static int cephwrap_unlink(struct vfs_handle_struct *handle,
 	WRAP_RETURN(result);
 }
 
+static int cephwrap_unlinkat(struct vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags)
+{
+	int result = -1;
+
+	DBG_DEBUG("[CEPH] unlink(%p, %s)\n",
+		handle,
+		smb_fname_str_dbg(smb_fname));
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+	if (smb_fname->stream_name) {
+		errno = ENOENT;
+		return result;
+	}
+	if (flags & AT_REMOVEDIR) {
+		result = ceph_rmdir(handle->data, smb_fname->base_name);
+	} else {
+		result = ceph_unlink(handle->data, smb_fname->base_name);
+	}
+	DBG_DEBUG("[CEPH] unlink(...) = %d\n", result);
+	WRAP_RETURN(result);
+}
+
 static int cephwrap_chmod(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			mode_t mode)
@@ -1455,6 +1480,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.fstat_fn = cephwrap_fstat,
 	.lstat_fn = cephwrap_lstat,
 	.unlink_fn = cephwrap_unlink,
+	.unlinkat_fn = cephwrap_unlinkat,
 	.chmod_fn = cephwrap_chmod,
 	.fchmod_fn = cephwrap_fchmod,
 	.chown_fn = cephwrap_chown,
