@@ -1294,6 +1294,25 @@ static int vfs_gluster_unlink(struct vfs_handle_struct *handle,
 	return ret;
 }
 
+static int vfs_gluster_unlinkat(struct vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags)
+{
+	int ret;
+
+	START_PROFILE(syscall_unlinkat);
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+	if (flags & AT_REMOVEDIR) {
+		ret = glfs_rmdir(handle->data, smb_fname->base_name);
+	} else {
+		ret = glfs_unlink(handle->data, smb_fname->base_name);
+	}
+	END_PROFILE(syscall_unlinkat);
+
+	return ret;
+}
+
 static int vfs_gluster_chmod(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				mode_t mode)
@@ -1922,6 +1941,7 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.lstat_fn = vfs_gluster_lstat,
 	.get_alloc_size_fn = vfs_gluster_get_alloc_size,
 	.unlink_fn = vfs_gluster_unlink,
+	.unlinkat_fn = vfs_gluster_unlinkat,
 
 	.chmod_fn = vfs_gluster_chmod,
 	.fchmod_fn = vfs_gluster_fchmod,
