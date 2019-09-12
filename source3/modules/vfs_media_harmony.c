@@ -1548,6 +1548,47 @@ out:
  * Success: return 0
  * Failure: set errno, return -1
  */
+static int mh_unlinkat(vfs_handle_struct *handle,
+		struct files_struct *dirfsp,
+		const struct smb_filename *smb_fname,
+		int flags)
+{
+	int status;
+	struct smb_filename *clientFname;
+	TALLOC_CTX *ctx;
+
+	DEBUG(MH_INFO_DEBUG, ("Entering mh_unlinkat\n"));
+	if (!is_in_media_files(smb_fname->base_name)) {
+		status = SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				flags);
+		goto out;
+	}
+
+	clientFname = NULL;
+	ctx = talloc_tos();
+
+	if ((status = alloc_get_client_smb_fname(handle, ctx,
+				smb_fname,
+				&clientFname))) {
+		goto err;
+	}
+
+	status = SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				clientFname,
+				flags);
+err:
+	TALLOC_FREE(clientFname);
+out:
+	return status;
+}
+
+/*
+ * Success: return 0
+ * Failure: set errno, return -1
+ */
 static int mh_chmod(vfs_handle_struct *handle,
 		const struct smb_filename *smb_fname,
 		mode_t mode)
@@ -2335,6 +2376,7 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 	.lstat_fn = mh_lstat,
 	.fstat_fn = mh_fstat,
 	.unlink_fn = mh_unlink,
+	.unlinkat_fn = mh_unlinkat,
 	.chmod_fn = mh_chmod,
 	.chown_fn = mh_chown,
 	.lchown_fn = mh_lchown,
