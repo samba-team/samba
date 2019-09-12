@@ -844,6 +844,21 @@ static int streams_depot_rmdir(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int streams_depot_unlinkat(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags)
+{
+	int ret;
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+	if (flags & AT_REMOVEDIR) {
+		ret = streams_depot_rmdir(handle, smb_fname);
+	} else {
+		ret = streams_depot_unlink(handle, smb_fname);
+	}
+	return ret;
+}
+
 static int streams_depot_renameat(vfs_handle_struct *handle,
 				files_struct *srcfsp,
 				const struct smb_filename *smb_fname_src,
@@ -1080,6 +1095,7 @@ static struct vfs_fn_pointers vfs_streams_depot_fns = {
 	.stat_fn = streams_depot_stat,
 	.lstat_fn = streams_depot_lstat,
 	.unlink_fn = streams_depot_unlink,
+	.unlinkat_fn = streams_depot_unlinkat,
 	.rmdir_fn = streams_depot_rmdir,
 	.renameat_fn = streams_depot_renameat,
 	.streaminfo_fn = streams_depot_streaminfo,
