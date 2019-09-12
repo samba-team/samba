@@ -1073,17 +1073,20 @@ int share_entry_forall(int (*fn)(struct file_id fid,
 	return share_mode_forall(share_entry_traverse_fn, &state);
 }
 
-struct cleanup_disconnected_lease_state {
-	struct file_id fid;
+struct cleanup_disconnected_state {
+	struct share_mode_lock *lck;
+	uint64_t open_persistent_id;
+	bool found_connected;
 };
 
 static bool cleanup_disconnected_lease(struct share_mode_entry *e,
 				       void *private_data)
 {
-	struct cleanup_disconnected_lease_state *state = private_data;
+	struct cleanup_disconnected_state *state = private_data;
 	NTSTATUS status;
 
-	status = leases_db_del(&e->client_guid, &e->lease_key, &state->fid);
+	status = leases_db_del(
+		&e->client_guid, &e->lease_key, &state->lck->data->id);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("leases_db_del failed: %s\n",
@@ -1093,65 +1096,90 @@ static bool cleanup_disconnected_lease(struct share_mode_entry *e,
 	return false;
 }
 
+static bool share_mode_cleanup_disconnected_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct cleanup_disconnected_state *state = private_data;
+	struct share_mode_data *d = state->lck->data;
+	bool disconnected;
+
+	disconnected = server_id_is_disconnected(&e->pid);
+	if (!disconnected) {
+		struct file_id_buf tmp1;
+		struct server_id_buf tmp2;
+		DBG_INFO("file (file-id='%s', servicepath='%s', "
+			 "base_name='%s%s%s') "
+			 "is used by server %s ==> do not cleanup\n",
+			 file_id_str_buf(d->id, &tmp1),
+			 d->servicepath,
+			 d->base_name,
+			 (d->stream_name == NULL)
+			 ? "" : "', stream_name='",
+			 (d->stream_name == NULL)
+			 ? "" : d->stream_name,
+			 server_id_str_buf(e->pid, &tmp2));
+		state->found_connected = true;
+		return true;
+	}
+
+	if (state->open_persistent_id != e->share_file_id) {
+		struct file_id_buf tmp;
+		DBG_INFO("entry for file "
+			 "(file-id='%s', servicepath='%s', "
+			 "base_name='%s%s%s') "
+			 "has share_file_id %"PRIu64" but expected "
+			 "%"PRIu64"==> do not cleanup\n",
+			 file_id_str_buf(d->id, &tmp),
+			 d->servicepath,
+			 d->base_name,
+			 (d->stream_name == NULL)
+			 ? "" : "', stream_name='",
+			 (d->stream_name == NULL)
+			 ? "" : d->stream_name,
+			 e->share_file_id,
+			 state->open_persistent_id);
+		state->found_connected = true;
+		return true;
+	}
+
+	return false;
+}
+
 bool share_mode_cleanup_disconnected(struct file_id fid,
 				     uint64_t open_persistent_id)
 {
-	struct cleanup_disconnected_lease_state state = { .fid = fid };
+	struct cleanup_disconnected_state state = {
+		.open_persistent_id = open_persistent_id
+	};
+	struct share_mode_data *data;
 	bool ret = false;
 	TALLOC_CTX *frame = talloc_stackframe();
-	unsigned n;
-	struct share_mode_data *data;
-	struct share_mode_lock *lck;
 	bool ok;
 
-	lck = get_existing_share_mode_lock(frame, fid);
-	if (lck == NULL) {
+	state.lck = get_existing_share_mode_lock(frame, fid);
+	if (state.lck == NULL) {
 		DEBUG(5, ("share_mode_cleanup_disconnected: "
 			  "Could not fetch share mode entry for %s\n",
 			  file_id_string(frame, &fid)));
 		goto done;
 	}
-	data = lck->data;
+	data = state.lck->data;
 
-	for (n=0; n < data->num_share_modes; n++) {
-		struct share_mode_entry *entry = &data->share_modes[n];
-
-		if (!server_id_is_disconnected(&entry->pid)) {
-			struct server_id_buf tmp;
-			DEBUG(5, ("share_mode_cleanup_disconnected: "
-				  "file (file-id='%s', servicepath='%s', "
-				  "base_name='%s%s%s') "
-				  "is used by server %s ==> do not cleanup\n",
-				  file_id_string(frame, &fid),
-				  data->servicepath,
-				  data->base_name,
-				  (data->stream_name == NULL)
-				  ? "" : "', stream_name='",
-				  (data->stream_name == NULL)
-				  ? "" : data->stream_name,
-				  server_id_str_buf(entry->pid, &tmp)));
-			goto done;
-		}
-		if (open_persistent_id != entry->share_file_id) {
-			DBG_INFO("entry for file "
-				 "(file-id='%s', servicepath='%s', "
-				 "base_name='%s%s%s') "
-				 "has share_file_id %"PRIu64" but expected "
-				 "%"PRIu64"==> do not cleanup\n",
-				 file_id_string(frame, &fid),
-				 data->servicepath,
-				 data->base_name,
-				 (data->stream_name == NULL)
-				 ? "" : "', stream_name='",
-				 (data->stream_name == NULL)
-				 ? "" : data->stream_name,
-				 entry->share_file_id,
-				 open_persistent_id);
-			goto done;
-		}
+	ok = share_mode_forall_entries(
+		state.lck, share_mode_cleanup_disconnected_fn, &state);
+	if (!ok) {
+		DBG_DEBUG("share_mode_forall_entries failed\n");
+		goto done;
+	}
+	if (state.found_connected) {
+		DBG_DEBUG("Found connected entry\n");
+		goto done;
 	}
 
-	ok = share_mode_forall_leases(lck, cleanup_disconnected_lease, &state);
+	ok = share_mode_forall_leases(
+		state.lck, cleanup_disconnected_lease, &state);
 	if (!ok) {
 		DBG_DEBUG("failed to clean up leases associated "
 			  "with file (file-id='%s', servicepath='%s', "
