@@ -2165,6 +2165,22 @@ exit_rmdir:
 	return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 }
 
+static int fruit_unlinkat(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags)
+{
+	int ret;
+
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+	if (flags & AT_REMOVEDIR) {
+		ret = fruit_rmdir(handle, smb_fname);
+	} else {
+		ret = fruit_unlink(handle, smb_fname);
+	}
+	return ret;
+}
+
 static ssize_t fruit_pread_meta_stream(vfs_handle_struct *handle,
 				       files_struct *fsp, void *data,
 				       size_t n, off_t offset)
@@ -5078,6 +5094,7 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.chmod_fn = fruit_chmod,
 	.chown_fn = fruit_chown,
 	.unlink_fn = fruit_unlink,
+	.unlinkat_fn = fruit_unlinkat,
 	.renameat_fn = fruit_renameat,
 	.rmdir_fn = fruit_rmdir,
 	.open_fn = fruit_open,
