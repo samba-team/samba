@@ -38,6 +38,8 @@ struct fileid_mount_entry {
 struct fileid_handle_data {
 	uint64_t (*device_mapping_fn)(struct fileid_handle_data *data,
 				      const SMB_STRUCT_STAT *sbuf);
+	uint64_t (*extid_mapping_fn)(struct fileid_handle_data *data,
+				      const SMB_STRUCT_STAT *sbuf);
 	char **fstype_deny_list;
 	char **fstype_allow_list;
 	char **mntdir_deny_list;
@@ -280,6 +282,12 @@ static uint64_t fileid_device_mapping_fsid(struct fileid_handle_data *data,
 	return m->devid;
 }
 
+static uint64_t fileid_extid_mapping_zero(struct fileid_handle_data *data,
+					  const SMB_STRUCT_STAT *sbuf)
+{
+	return 0;
+}
+
 static int get_connectpath_ino(struct vfs_handle_struct *handle,
 			       ino_t *ino)
 {
@@ -348,14 +356,19 @@ static int fileid_connect(struct vfs_handle_struct *handle,
 					 algorithm);
 	if (strcmp("fsname", algorithm) == 0) {
 		data->device_mapping_fn	= fileid_device_mapping_fsname;
+		data->extid_mapping_fn = fileid_extid_mapping_zero;
 	} else if (strcmp("fsname_nodirs", algorithm) == 0) {
 		data->device_mapping_fn = fileid_device_mapping_fsname_nodirs;
+		data->extid_mapping_fn = fileid_extid_mapping_zero;
 	} else if (strcmp("fsid", algorithm) == 0) {
 		data->device_mapping_fn	= fileid_device_mapping_fsid;
+		data->extid_mapping_fn = fileid_extid_mapping_zero;
 	} else if (strcmp("hostname", algorithm) == 0) {
 		data->device_mapping_fn = fileid_device_mapping_hostname;
+		data->extid_mapping_fn = fileid_extid_mapping_zero;
 	} else if (strcmp("fsname_norootdir", algorithm) == 0) {
 		data->device_mapping_fn	= fileid_device_mapping_fsname;
+		data->extid_mapping_fn = fileid_extid_mapping_zero;
 
 		ret = get_connectpath_ino(handle, &data->nolockinode);
 		if (ret != 0) {
@@ -459,6 +472,7 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 	if ((data->nolockinode != 0) &&
 	    (sbuf->st_ex_ino == data->nolockinode)) {
 		devid = fileid_device_mapping_hostname(data, sbuf);
+		id.extid = data->extid_mapping_fn(data, sbuf);
 	} else {
 		devid = data->device_mapping_fn(data, sbuf);
 	}
@@ -466,8 +480,8 @@ static struct file_id fileid_file_id_create(struct vfs_handle_struct *handle,
 	id.inode	= sbuf->st_ex_ino;
 	id.devid        = devid;
 
-	DBG_DEBUG("Returning dev [%jx] inode [%jx]\n",
-		  (uintmax_t)id.devid, (uintmax_t)id.inode);
+	DBG_DEBUG("Returning dev [%jx] inode [%jx] extid [%jx]\n",
+		  (uintmax_t)id.devid, (uintmax_t)id.inode, (uintmax_t)id.extid);
 
 	return id;
 }
