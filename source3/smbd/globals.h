@@ -18,6 +18,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _SOURCE3_SMBD_GLOBALS_H_
+#define _SOURCE3_SMBD_GLOBALS_H_
+
 #include "system/select.h"
 #include "librpc/gen_ndr/smbXsrv.h"
 #include "smbprofile.h"
@@ -901,3 +904,5 @@ struct smbd_server_connection {
 extern struct smbXsrv_client *global_smbXsrv_client;
 
 void smbd_init_globals(void);
+
+#endif /* _SOURCE3_SMBD_GLOBALS_H_ */
