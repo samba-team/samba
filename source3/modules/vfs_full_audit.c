@@ -139,6 +139,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_LSTAT,
 	SMB_VFS_OP_GET_ALLOC_SIZE,
 	SMB_VFS_OP_UNLINK,
+	SMB_VFS_OP_UNLINKAT,
 	SMB_VFS_OP_CHMOD,
 	SMB_VFS_OP_FCHMOD,
 	SMB_VFS_OP_CHOWN,
@@ -282,6 +283,7 @@ static struct {
 	{ SMB_VFS_OP_LSTAT,	"lstat" },
 	{ SMB_VFS_OP_GET_ALLOC_SIZE,	"get_alloc_size" },
 	{ SMB_VFS_OP_UNLINK,	"unlink" },
+	{ SMB_VFS_OP_UNLINKAT,	"unlinkat" },
 	{ SMB_VFS_OP_CHMOD,	"chmod" },
 	{ SMB_VFS_OP_FCHMOD,	"fchmod" },
 	{ SMB_VFS_OP_CHOWN,	"chown" },
@@ -1522,6 +1524,24 @@ static int smb_full_audit_unlink(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
 
 	do_log(SMB_VFS_OP_UNLINK, (result >= 0), handle, "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
+
+	return result;
+}
+
+static int smb_full_audit_unlinkat(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags)
+{
+	int result;
+
+	result = SMB_VFS_NEXT_UNLINKAT(handle,
+			dirfsp,
+			smb_fname,
+			flags);
+
+	do_log(SMB_VFS_OP_UNLINKAT, (result >= 0), handle, "%s",
 	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
@@ -2964,6 +2984,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.lstat_fn = smb_full_audit_lstat,
 	.get_alloc_size_fn = smb_full_audit_get_alloc_size,
 	.unlink_fn = smb_full_audit_unlink,
+	.unlinkat_fn = smb_full_audit_unlinkat,
 	.chmod_fn = smb_full_audit_chmod,
 	.fchmod_fn = smb_full_audit_fchmod,
 	.chown_fn = smb_full_audit_chown,
