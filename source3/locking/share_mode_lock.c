@@ -1027,33 +1027,49 @@ int share_mode_forall(int (*fn)(struct file_id fid,
 }
 
 struct share_entry_forall_state {
+	struct file_id fid;
+	const struct share_mode_data *data;
 	int (*fn)(struct file_id fid,
 		  const struct share_mode_data *data,
 		  const struct share_mode_entry *entry,
 		  void *private_data);
 	void *private_data;
+	int ret;
 };
+
+static bool share_entry_traverse_walker(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct share_entry_forall_state *state = private_data;
+
+	state->ret = state->fn(
+		state->fid, state->data, e, state->private_data);
+	return (state->ret != 0);
+}
 
 static int share_entry_traverse_fn(struct file_id fid,
 				   const struct share_mode_data *data,
 				   void *private_data)
 {
 	struct share_entry_forall_state *state = private_data;
-	uint32_t i;
+	struct share_mode_lock lck = {
+		.data = discard_const_p(struct share_mode_data, data)
+	};
+	bool ok;
 
-	for (i=0; i<data->num_share_modes; i++) {
-		int ret;
+	state->fid = fid;
+	state->data = data;
 
-		ret = state->fn(fid,
-				data,
-				&data->share_modes[i],
-				state->private_data);
-		if (ret != 0) {
-			return ret;
-		}
+	ok = share_mode_forall_entries(
+		&lck, share_entry_traverse_walker, state);
+	if (!ok) {
+		DBG_DEBUG("share_mode_forall_entries failed\n");
+		return false;
 	}
 
-	return 0;
+	return state->ret;
 }
 
 /*******************************************************************
