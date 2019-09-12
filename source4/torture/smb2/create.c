@@ -1138,7 +1138,7 @@ static bool test_smb2_open_for_delete(struct torture_context *tctx,
 
 	smb2_util_unlink(tree, fname);
 
-	smb2_util_close(tree, h1);
+	smb2_util_close(tree, h);
 	smb2_util_unlink(tree, fname);
 	smb2_deltree(tree, DNAME);
 
