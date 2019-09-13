@@ -1776,9 +1776,13 @@ done:
 }
 
 static int fruit_unlink_meta_stream(vfs_handle_struct *handle,
-				    const struct smb_filename *smb_fname)
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname)
 {
-	return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+	return SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				0);
 }
 
 static int fruit_unlink_meta_netatalk(vfs_handle_struct *handle,
@@ -1801,7 +1805,9 @@ static int fruit_unlink_meta(vfs_handle_struct *handle,
 
 	switch (config->meta) {
 	case FRUIT_META_STREAM:
-		rc = fruit_unlink_meta_stream(handle, smb_fname);
+		rc = fruit_unlink_meta_stream(handle,
+				dirfsp,
+				smb_fname);
 		break;
 
 	case FRUIT_META_NETATALK:
