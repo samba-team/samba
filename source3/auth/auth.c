@@ -35,7 +35,7 @@ static struct auth_init_function_entry *auth_find_backend_entry(const char *name
 
 NTSTATUS smb_register_auth(int version, const char *name, auth_init_function init)
 {
-	struct auth_init_function_entry *entry = auth_backends;
+	struct auth_init_function_entry *entry = NULL;
 
 	if (version != AUTH_INTERFACE_VERSION) {
 		DEBUG(0,("Can't register auth_method!\n"
