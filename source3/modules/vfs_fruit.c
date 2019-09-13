@@ -1928,8 +1928,9 @@ static int fruit_unlink_rsrc_xattr(vfs_handle_struct *handle,
 }
 
 static int fruit_unlink_rsrc(vfs_handle_struct *handle,
-			     const struct smb_filename *smb_fname,
-			     bool force_unlink)
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			bool force_unlink)
 {
 	struct fruit_config_data *config = NULL;
 	int rc;
@@ -1974,7 +1975,10 @@ static int fruit_unlink_internal(vfs_handle_struct *handle,
 				dirfsp,
 				smb_fname);
 	} else if (is_afpresource_stream(smb_fname->stream_name)) {
-		return fruit_unlink_rsrc(handle, smb_fname, false);
+		return fruit_unlink_rsrc(handle,
+				dirfsp,
+				smb_fname,
+				false);
 	} else if (is_ntfs_stream_smb_fname(smb_fname)) {
 		return SMB_VFS_NEXT_UNLINKAT(handle,
 				dirfsp,
@@ -2002,7 +2006,7 @@ static int fruit_unlink_internal(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	rc = fruit_unlink_rsrc(handle, rsrc_smb_fname, true);
+	rc = fruit_unlink_rsrc(handle, dirfsp, rsrc_smb_fname, true);
 	if ((rc != 0) && (errno != ENOENT)) {
 		DBG_ERR("Forced unlink of [%s] failed [%s]\n",
 			smb_fname_str_dbg(rsrc_smb_fname), strerror(errno));
