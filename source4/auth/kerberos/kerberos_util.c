@@ -313,6 +313,8 @@ done:
 	 */
 	krb5_get_init_creds_opt_set_win2k(smb_krb5_context->krb5_context,
 					  krb_options, true);
+	krb5_get_init_creds_opt_set_canonicalize(smb_krb5_context->krb5_context,
+						 krb_options, true);
 #else /* MIT */
 	krb5_get_init_creds_opt_set_canonicalize(krb_options, true);
 #endif
