@@ -550,7 +550,10 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs
 		return PyErr_NoMemory();
 	}
 
-	ret = SMB_VFS_UNLINK(conn, smb_fname);
+	ret = SMB_VFS_UNLINKAT(conn,
+			conn->cwd_fsp,
+			smb_fname,
+			0);
 	if (ret != 0) {
 		TALLOC_FREE(frame);
 		errno = ret;
