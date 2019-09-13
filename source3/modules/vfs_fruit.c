@@ -1823,8 +1823,9 @@ static int fruit_unlink_meta(vfs_handle_struct *handle,
 }
 
 static int fruit_unlink_rsrc_stream(vfs_handle_struct *handle,
-				    const struct smb_filename *smb_fname,
-				    bool force_unlink)
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				bool force_unlink)
 {
 	int ret;
 
@@ -1860,7 +1861,10 @@ static int fruit_unlink_rsrc_stream(vfs_handle_struct *handle,
 		}
 	}
 
-	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+	ret = SMB_VFS_NEXT_UNLINKAT(handle,
+			dirfsp,
+			smb_fname,
+			0);
 	if ((ret != 0) && (errno == ENOENT) && force_unlink) {
 		ret = 0;
 	}
@@ -1940,7 +1944,10 @@ static int fruit_unlink_rsrc(vfs_handle_struct *handle,
 
 	switch (config->rsrc) {
 	case FRUIT_RSRC_STREAM:
-		rc = fruit_unlink_rsrc_stream(handle, smb_fname, force_unlink);
+		rc = fruit_unlink_rsrc_stream(handle,
+				dirfsp,
+				smb_fname,
+				force_unlink);
 		break;
 
 	case FRUIT_RSRC_ADFILE:
