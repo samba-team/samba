@@ -202,12 +202,20 @@ base_dn="DC=addom,DC=samba,DC=example,DC=com"
 computers_dn="CN=Computers,$base_dn"
 testit "ldb check for existence of machine account" $ldbsearch -U$DC_USERNAME%$DC_PASSWORD -H ldap://$SERVER.$REALM -s base -b "cn=$HOSTNAME,$computers_dn" || failed=`expr $failed + 1`
 
-testit "join" $VALGRIND $net_tool ads join -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
+dns_alias1="${netbios}_alias1.other.${lc_realm}"
+dns_alias2="${netbios}_alias2.other2.${lc_realm}"
+testit "join" $VALGRIND $net_tool --option=additionaldnshostnames=$dns_alias1,$dns_alias2 ads join -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`
 
 testit "testjoin" $VALGRIND $net_tool ads testjoin || failed=`expr $failed + 1`
 
 testit_grep "check dNSHostName" $fqdn $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ dNSHostName || failed=`expr $failed + 1`
 testit_grep "check SPN" ${uc_netbios}.${lc_realm} $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ servicePrincipalName || failed=`expr $failed + 1`
+
+testit_grep "dns alias SPN" $dns_alias1 $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ servicePrincipalName || failed=`expr $failed + 1`
+testit_grep "dns alias SPN" $dns_alias2 $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ servicePrincipalName || failed=`expr $failed + 1`
+
+testit_grep "dns alias addl" $dns_alias1 $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ msDS-AdditionalDnsHostName || failed=`expr $failed + 1`
+testit_grep "dns alias addl" $dns_alias2 $VALGRIND $net_tool ads search -P samaccountname=$netbios\$ msDS-AdditionalDnsHostName || failed=`expr $failed + 1`
 
 ##Goodbye...
 testit "leave" $VALGRIND $net_tool ads leave -U$DC_USERNAME%$DC_PASSWORD || failed=`expr $failed + 1`

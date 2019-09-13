@@ -511,6 +511,7 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	size_t num_spns = 0;
 	char *spn = NULL;
 	const char **netbios_aliases = NULL;
+	const char **addl_hostnames = NULL;
 
 	/* Find our DN */
 
@@ -602,6 +603,22 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	for (addl_hostnames = lp_additional_dns_hostnames();
+	     addl_hostnames != NULL && *addl_hostnames != NULL;
+	     addl_hostnames++) {
+
+		spn = talloc_asprintf(frame, "HOST/%s", *addl_hostnames);
+		if (spn == NULL) {
+			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			goto done;
+		}
+
+		status = add_uniq_spn(frame, spn, &spn_array, &num_spns);
+		if (!ADS_ERR_OK(status)) {
+			goto done;
+		}
+	}
+
 	/* make sure to NULL terminate the array */
 	spn_array = talloc_realloc(frame, spn_array, const char *, num_spns + 1);
 	if (spn_array == NULL) {
@@ -627,6 +644,16 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 				 spn_array);
 	if (!ADS_ERR_OK(status)) {
 		goto done;
+	}
+
+	addl_hostnames = lp_additional_dns_hostnames();
+	if (addl_hostnames != NULL && *addl_hostnames != NULL) {
+		status = ads_mod_strlist(mem_ctx, &mods,
+					 "msDS-AdditionalDnsHostName",
+					 addl_hostnames);
+		if (!ADS_ERR_OK(status)) {
+			goto done;
+		}
 	}
 
 	status = ads_gen_mod(r->in.ads, r->out.dn, mods);
