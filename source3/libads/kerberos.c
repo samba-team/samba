@@ -167,7 +167,10 @@ int kerberos_kinit_password_ext(const char *given_principal,
 	krb5_get_init_creds_opt_set_forwardable(opt, True);
 
 	/* Turn on canonicalization for lower case realm support */
-#ifndef SAMBA4_USES_HEIMDAL /* MIT */
+#ifdef SAMBA4_USES_HEIMDAL
+	krb5_get_init_creds_opt_set_win2k(ctx, opt, true);
+	krb5_get_init_creds_opt_set_canonicalize(ctx, opt, true);
+#else /* MIT */
 	krb5_get_init_creds_opt_set_canonicalize(opt, true);
 #endif /* MIT */
 #if 0
@@ -196,11 +199,7 @@ int kerberos_kinit_password_ext(const char *given_principal,
 		goto out;
 	}
 
-#ifndef SAMBA4_USES_HEIMDAL /* MIT */
 	canon_princ = my_creds.client;
-#else
-	canon_princ = me;
-#endif /* MIT */
 
 	code = smb_krb5_unparse_name(frame,
 				     ctx,
