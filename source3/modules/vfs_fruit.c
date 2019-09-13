@@ -2161,7 +2161,10 @@ static int fruit_rmdir_internal(struct vfs_handle_struct *handle,
 		}
 		TALLOC_FREE(ad);
 
-		ret = SMB_VFS_NEXT_UNLINK(handle, ad_smb_fname);
+		ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				ad_smb_fname,
+				0);
 		if (ret != 0) {
 			DBG_ERR("Deleting [%s] failed\n",
 				smb_fname_str_dbg(ad_smb_fname));
