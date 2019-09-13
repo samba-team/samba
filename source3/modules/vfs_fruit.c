@@ -1952,6 +1952,7 @@ static int fruit_unlink_rsrc(vfs_handle_struct *handle,
 }
 
 static int fruit_unlink_internal(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname)
 {
 	int rc;
@@ -2168,7 +2169,9 @@ exit_rmdir:
 static int fruit_unlink(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname)
 {
-	return fruit_unlink_internal(handle, smb_fname);
+	return fruit_unlink_internal(handle,
+				handle->conn->cwd_fsp,
+				smb_fname);
 }
 
 static int fruit_unlinkat(vfs_handle_struct *handle,
@@ -2182,7 +2185,9 @@ static int fruit_unlinkat(vfs_handle_struct *handle,
 	if (flags & AT_REMOVEDIR) {
 		ret = fruit_rmdir(handle, smb_fname);
 	} else {
-		ret = fruit_unlink_internal(handle, smb_fname);
+		ret = fruit_unlink_internal(handle,
+				dirfsp,
+				smb_fname);
 	}
 	return ret;
 }
