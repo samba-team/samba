@@ -203,6 +203,12 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
 	krb5_get_init_creds_opt_set_renew_life(opts, 0);
 	krb5_get_init_creds_opt_set_forwardable(opts, 0);
 	krb5_get_init_creds_opt_set_proxiable(opts, 0);
+#ifdef SAMBA4_USES_HEIMDAL
+	krb5_get_init_creds_opt_set_win2k(context, opts, true);
+	krb5_get_init_creds_opt_set_canonicalize(context, opts, true);
+#else /* MIT */
+	krb5_get_init_creds_opt_set_canonicalize(opts, true);
+#endif /* MIT */
 
     /* note that heimdal will fill in the local addresses if the addresses
      * in the creds_init_opt are all empty and then later fail with invalid
