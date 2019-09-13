@@ -215,7 +215,10 @@ NTSTATUS delete_all_streams(connection_struct *conn,
 			goto fail;
 		}
 
-		res = SMB_VFS_UNLINK(conn, smb_fname_stream);
+		res = SMB_VFS_UNLINKAT(conn,
+				conn->cwd_fsp,
+				smb_fname_stream,
+				0);
 
 		if (res == -1) {
 			status = map_nt_error_from_unix(errno);
