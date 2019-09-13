@@ -2098,7 +2098,7 @@ static int fruit_chown(vfs_handle_struct *handle,
 	return rc;
 }
 
-static int fruit_rmdir(struct vfs_handle_struct *handle,
+static int fruit_rmdir_internal(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname)
 {
 	DIR *dh = NULL;
@@ -2173,6 +2173,13 @@ exit_rmdir:
 		SMB_VFS_CLOSEDIR(handle->conn, dh);
 	}
 	return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
+}
+
+static int fruit_rmdir(struct vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
+{
+	return fruit_rmdir_internal(handle,
+				smb_fname);
 }
 
 static int fruit_unlink(vfs_handle_struct *handle,
