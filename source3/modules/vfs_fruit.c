@@ -3498,7 +3498,10 @@ static NTSTATUS delete_invalid_meta_stream(
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = SMB_VFS_NEXT_UNLINK(handle, sname);
+	ret = SMB_VFS_NEXT_UNLINKAT(handle,
+			handle->conn->cwd_fsp,
+			sname,
+			0);
 	TALLOC_FREE(sname);
 	if (ret != 0) {
 		DBG_ERR("Removing [%s] failed\n", smb_fname_str_dbg(sname));
