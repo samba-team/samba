@@ -303,6 +303,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	const struct security_token *del_nt_token = NULL;
 	bool got_tokens = false;
 	bool normal_close;
+	int ret;
 
 	/* Ensure any pending write time updates are done. */
 	if (fsp->update_write_time_event) {
@@ -483,7 +484,11 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	}
 
 
-	if (SMB_VFS_UNLINK(conn, fsp->fsp_name) != 0) {
+	ret = SMB_VFS_UNLINKAT(conn,
+			conn->cwd_fsp,
+			fsp->fsp_name,
+			0);
+	if (ret != 0) {
 		/*
 		 * This call can potentially fail as another smbd may
 		 * have had the file open with delete on close set and
