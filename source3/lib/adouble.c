@@ -1387,9 +1387,10 @@ static bool ad_convert_delete_adfile(vfs_handle_struct *handle,
  * otherwise
  **/
 int ad_convert(struct vfs_handle_struct *handle,
-	       const struct smb_filename *smb_fname,
-	       const char *catia_mappings,
-	       uint32_t flags)
+		struct files_struct *dirfsp,
+		const struct smb_filename *smb_fname,
+		const char *catia_mappings,
+		uint32_t flags)
 {
 	struct adouble *ad = NULL;
 	bool ok;
