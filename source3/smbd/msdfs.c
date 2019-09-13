@@ -1419,7 +1419,11 @@ bool create_msdfs_link(const struct junction_map *jucn)
 			smb_fname);
 	if (retval < 0) {
 		if (errno == EEXIST) {
-			if(SMB_VFS_UNLINK(conn, smb_fname)!=0) {
+			retval = SMB_VFS_UNLINKAT(conn,
+						conn->cwd_fsp,
+						smb_fname,
+						0);
+			if (retval != 0) {
 				TALLOC_FREE(smb_fname);
 				goto out;
 			}
