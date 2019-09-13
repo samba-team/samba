@@ -280,7 +280,7 @@ bool make_user_info_for_reply(TALLOC_CTX *mem_ctx,
 
 	DATA_BLOB local_lm_blob;
 	DATA_BLOB local_nt_blob;
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS ret;
 	char *plaintext_password_string;
 	/*
 	 * Not encrypted - do so.
@@ -2002,7 +2002,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				struct auth_serversupplied_info **server_info,
 				const struct netr_SamInfo3 *info3)
 {
-	NTSTATUS nt_status = NT_STATUS_OK;
+	NTSTATUS nt_status;
 	char *found_username = NULL;
 	const char *nt_domain;
 	const char *nt_username;
