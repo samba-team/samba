@@ -853,6 +853,7 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 	long offset = 0;
 	SMB_STRUCT_STAT st;
 	struct smb_Dir *dir_hnd;
+	int retval;
 
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
 
@@ -907,8 +908,14 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 			if(SMB_VFS_RMDIR(conn, smb_dname_full) != 0) {
 				goto err_break;
 			}
-		} else if(SMB_VFS_UNLINK(conn, smb_dname_full) != 0) {
-			goto err_break;
+		} else {
+			retval = SMB_VFS_UNLINKAT(conn,
+					conn->cwd_fsp,
+					smb_dname_full,
+					0);
+			if (retval != 0) {
+				goto err_break;
+			}
 		}
 
 		/* Successful iteration. */
