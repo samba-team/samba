@@ -8164,7 +8164,10 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		if (SMB_VFS_STAT(conn, smb_fname_tmp) != 0) {
 			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(smb_fname_tmp);
-			SMB_VFS_UNLINK(conn, smb_fname);
+			SMB_VFS_UNLINKAT(conn,
+				conn->cwd_fsp,
+				smb_fname,
+				0);
 			return status;
 		}
 
@@ -8241,7 +8244,10 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		if (ret != 0) {
 			status = map_nt_error_from_unix(errno);
 			if (delete_on_fail) {
-				SMB_VFS_UNLINK(conn, smb_fname);
+				SMB_VFS_UNLINKAT(conn,
+					conn->cwd_fsp,
+					smb_fname,
+					0);
 			}
 			return status;
 		}
@@ -8272,7 +8278,10 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		if (ret != 0) {
 			status = map_nt_error_from_unix(errno);
 			if (delete_on_fail) {
-				SMB_VFS_UNLINK(conn, smb_fname);
+				SMB_VFS_UNLINKAT(conn,
+					conn->cwd_fsp,
+					smb_fname,
+					0);
 			}
 			return status;
 		}
