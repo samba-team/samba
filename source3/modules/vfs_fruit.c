@@ -2257,7 +2257,10 @@ static ssize_t fruit_pread_meta_stream(vfs_handle_struct *handle,
 	DBG_ERR("Removing [%s] after short read [%zd]\n",
 		fsp_str_dbg(fsp), nread);
 
-	ret = SMB_VFS_NEXT_UNLINK(handle, fsp->fsp_name);
+	ret = SMB_VFS_NEXT_UNLINKAT(handle,
+			fsp->conn->cwd_fsp,
+			fsp->fsp_name,
+			0);
 	if (ret != 0) {
 		DBG_ERR("Removing [%s] failed\n", fsp_str_dbg(fsp));
 		return -1;
