@@ -959,7 +959,10 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 		if (!(S_ISDIR(smb_dname->st.st_ex_mode))) {
 			return NT_STATUS_NOT_A_DIRECTORY;
 		}
-		ret = SMB_VFS_UNLINK(conn, smb_dname);
+		ret = SMB_VFS_UNLINKAT(conn,
+				conn->cwd_fsp,
+				smb_dname,
+				0);
 	} else {
 		ret = SMB_VFS_RMDIR(conn, smb_dname);
 	}
@@ -1069,8 +1072,14 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 					smb_dname_full) != 0) {
 					goto err_break;
 				}
-			} else if(SMB_VFS_UNLINK(conn, smb_dname_full) != 0) {
-				goto err_break;
+			} else {
+				int retval = SMB_VFS_UNLINKAT(conn,
+						conn->cwd_fsp,
+						smb_dname_full,
+						0);
+				if(retval != 0) {
+					goto err_break;
+				}
 			}
 
 			/* Successful iteration. */
