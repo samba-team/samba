@@ -1455,6 +1455,7 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 	bool ret = False;
 	struct smb_filename *smb_fname;
 	bool ok;
+	int retval;
 
 	ok = junction_to_local_path_tos(jucn, &path, &conn);
 	if (!ok) {
@@ -1473,7 +1474,11 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 		return false;
 	}
 
-	if( SMB_VFS_UNLINK(conn, smb_fname) == 0 ) {
+	retval = SMB_VFS_UNLINKAT(conn,
+			conn->cwd_fsp,
+			smb_fname,
+			0);
+	if (retval == 0) {
 		ret = True;
 	}
 
