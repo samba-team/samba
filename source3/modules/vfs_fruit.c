@@ -1967,9 +1967,15 @@ static int fruit_unlink_internal(vfs_handle_struct *handle,
 	} else if (is_afpresource_stream(smb_fname->stream_name)) {
 		return fruit_unlink_rsrc(handle, smb_fname, false);
 	} else if (is_ntfs_stream_smb_fname(smb_fname)) {
-		return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+		return SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				0);
 	} else if (is_adouble_file(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+		return SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				0);
 	}
 
 	/*
@@ -1996,7 +2002,10 @@ static int fruit_unlink_internal(vfs_handle_struct *handle,
 	}
 	TALLOC_FREE(rsrc_smb_fname);
 
-	return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+	return SMB_VFS_NEXT_UNLINKAT(handle,
+			dirfsp,
+			smb_fname,
+			0);
 }
 
 static int fruit_chmod(vfs_handle_struct *handle,
