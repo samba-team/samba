@@ -701,6 +701,11 @@ krb5_error_code smb_krb5_parse_name(krb5_context context,
 	}
 
 	ret = krb5_parse_name(context, utf8_name, principal);
+	if (ret == KRB5_PARSE_MALFORMED) {
+		ret = krb5_parse_name_flags(context, utf8_name,
+					    KRB5_PRINCIPAL_PARSE_ENTERPRISE,
+					    principal);
+	}
 	TALLOC_FREE(frame);
 	return ret;
 }
