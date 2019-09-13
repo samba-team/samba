@@ -2111,14 +2111,12 @@ krb5_error_code smb_krb5_kinit_password_ccache(krb5_context ctx,
 		return code;
 	}
 
-#ifndef SAMBA4_USES_HEIMDAL /* MIT */
 	/*
 	 * We need to store the principal as returned from the KDC to the
 	 * credentials cache. If we don't do that the KRB5 library is not
 	 * able to find the tickets it is looking for
 	 */
 	principal = my_creds.client;
-#endif
 	code = krb5_cc_initialize(ctx, cc, principal);
 	if (code) {
 		goto done;
