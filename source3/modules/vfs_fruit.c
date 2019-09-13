@@ -1790,7 +1790,8 @@ static int fruit_unlink_meta_netatalk(vfs_handle_struct *handle,
 }
 
 static int fruit_unlink_meta(vfs_handle_struct *handle,
-			     const struct smb_filename *smb_fname)
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname)
 {
 	struct fruit_config_data *config = NULL;
 	int rc;
@@ -1963,7 +1964,9 @@ static int fruit_unlink_internal(vfs_handle_struct *handle,
 				struct fruit_config_data, return -1);
 
 	if (is_afpinfo_stream(smb_fname->stream_name)) {
-		return fruit_unlink_meta(handle, smb_fname);
+		return fruit_unlink_meta(handle,
+				dirfsp,
+				smb_fname);
 	} else if (is_afpresource_stream(smb_fname->stream_name)) {
 		return fruit_unlink_rsrc(handle, smb_fname, false);
 	} else if (is_ntfs_stream_smb_fname(smb_fname)) {
