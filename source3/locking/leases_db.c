@@ -53,7 +53,7 @@ bool leases_db_init(bool read_only)
 			    TDB_SEQNUM|
 			    TDB_INCOMPATIBLE_HASH,
 			    read_only ? O_RDONLY : O_RDWR|O_CREAT, 0644,
-			    DBWRAP_LOCK_ORDER_2, DBWRAP_FLAG_NONE);
+			    DBWRAP_LOCK_ORDER_4, DBWRAP_FLAG_NONE);
 	TALLOC_FREE(db_path);
 	if (leases_db == NULL) {
 		DEBUG(1, ("ERROR: Failed to initialise leases database\n"));
