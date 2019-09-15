@@ -33,7 +33,8 @@ enum dbwrap_lock_order {
 	DBWRAP_LOCK_ORDER_NONE = 0, /* Don't check lock orders for this db. */
 	DBWRAP_LOCK_ORDER_1 = 1,
 	DBWRAP_LOCK_ORDER_2 = 2,
-	DBWRAP_LOCK_ORDER_3 = 3
+	DBWRAP_LOCK_ORDER_3 = 3,
+	DBWRAP_LOCK_ORDER_4 = 4
 };
 
 #define DBWRAP_FLAG_NONE                     0x0000000000000000ULL
