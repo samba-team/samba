@@ -18,11 +18,11 @@ cluster_is_healthy
 testdb="rec_test.tdb"
 
 echo "Getting list of nodes..."
-try_command_on_node -v any "onnode -pq all ctdb pnn | grep '^[0-9][0-9]*$'"
+ctdb_get_all_pnns
 
-first=$(sed -n -e '1p' "$outfile")
-second=$(sed -n -e '2p' "$outfile")
-notfirst=$(tail -n +2 "$outfile")
+first=$(echo "$all_pnns" | sed -n -e '1p')
+second=$(echo "$all_pnns" | sed -n -e '2p')
+notfirst=$(echo "$all_pnns" | tail -n +2)
 
 echo "Create/wipe test database ${testdb}"
 try_command_on_node $first $CTDB attach "$testdb"
