@@ -146,6 +146,9 @@ rekinit:
 							  False, /* no PAC required anymore */
 							  True,
 							  WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
+							  NULL,
+							  NULL,
+							  NULL,
 							  NULL);
 			gain_root_privilege();
 
@@ -343,6 +346,9 @@ static void krb5_ticket_gain_handler(struct tevent_context *event_ctx,
 					  False, /* no PAC required anymore */
 					  True,
 					  WINBINDD_PAM_AUTH_KRB5_RENEW_TIME,
+					  NULL,
+					  NULL,
+					  NULL,
 					  NULL);
 	gain_root_privilege();
 
