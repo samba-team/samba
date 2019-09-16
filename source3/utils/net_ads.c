@@ -3353,6 +3353,9 @@ static int net_ads_kerberos_kinit(struct net_context *c, int argc, const char **
 					  true,
 					  true,
 					  2592000, /* one month */
+					  NULL,
+					  NULL,
+					  NULL,
 					  &status);
 	if (ret) {
 		d_printf(_("failed to kinit password: %s\n"),

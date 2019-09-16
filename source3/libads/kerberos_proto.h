@@ -45,7 +45,7 @@ struct PAC_DATA_CTR {
 
 /* The following definitions come from libads/kerberos.c  */
 
-int kerberos_kinit_password_ext(const char *principal,
+int kerberos_kinit_password_ext(const char *given_principal,
 				const char *password,
 				int time_offset,
 				time_t *expire_time,
@@ -54,6 +54,9 @@ int kerberos_kinit_password_ext(const char *principal,
 				bool request_pac,
 				bool add_netbios_addr,
 				time_t renewable_time,
+				TALLOC_CTX *mem_ctx,
+				char **_canon_principal,
+				char **_canon_realm,
 				NTSTATUS *ntstatus);
 int ads_kdestroy(const char *cc_name);
 

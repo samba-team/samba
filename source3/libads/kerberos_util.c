@@ -66,7 +66,8 @@ int ads_kinit_password(ADS_STRUCT *ads)
 					  ads->auth.time_offset,
 					  &ads->auth.tgt_expire, NULL,
 					  ads->auth.ccache_name, false, false,
-					  ads->auth.renewable, NULL);
+					  ads->auth.renewable,
+					  NULL, NULL, NULL, NULL);
 
 	if (ret) {
 		DEBUG(0,("kerberos_kinit_password %s failed: %s\n",
