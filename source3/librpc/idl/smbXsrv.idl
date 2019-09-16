@@ -18,7 +18,7 @@ interface smbXsrv
 	 * rolling code upgrades in future (within a cluster).
 	 *
 	 * This just adds the infrastructure,
-	 * but we does not implement it yet!
+	 * but it does not implement it yet!
 	 *
 	 * Currently it only prevents that
 	 * nodes with a different version numbers
