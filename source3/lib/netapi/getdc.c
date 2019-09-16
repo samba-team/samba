@@ -170,7 +170,7 @@ WERROR DsGetDcName_r(struct libnetapi_ctx *ctx,
 		     struct DsGetDcName *r)
 {
 	WERROR werr;
-	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	NTSTATUS status;
 	struct dcerpc_binding_handle *b;
 
 	werr = libnetapi_get_binding_handle(ctx, r->in.server_name,
