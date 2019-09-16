@@ -51,7 +51,6 @@ interface open_files
 		[string,charset(UTF8)] char *base_name;
 		[string,charset(UTF8)] char *stream_name;
 		uint32 num_share_modes;
-		[size_is(num_share_modes)] share_mode_entry share_modes[];
 		uint32 num_delete_tokens;
 		[size_is(num_delete_tokens)] delete_token delete_tokens[];
 		timespec old_write_time;

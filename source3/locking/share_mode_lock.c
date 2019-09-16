@@ -59,6 +59,7 @@
 
 /* the locking database handle */
 static struct db_context *lock_db;
+static struct db_context *share_entries_db;
 
 static bool locking_init_internal(bool read_only)
 {
@@ -97,7 +98,29 @@ static bool locking_init_internal(bool read_only)
 		return false;
 	}
 
+	db_path = lock_path(talloc_tos(), "share_entries.tdb");
+	if (db_path == NULL) {
+		return false;
+	}
+
+	share_entries_db = db_open(
+		NULL, db_path,
+		SMB_OPEN_DATABASE_TDB_HASH_SIZE,
+		TDB_DEFAULT|
+		TDB_VOLATILE|
+		TDB_CLEAR_IF_FIRST|
+		TDB_INCOMPATIBLE_HASH,
+		read_only?O_RDONLY:O_RDWR|O_CREAT, 0644,
+		DBWRAP_LOCK_ORDER_3, DBWRAP_FLAG_NONE);
+	TALLOC_FREE(db_path);
+
+	if (share_entries_db == NULL) {
+		TALLOC_FREE(lock_db);
+		return false;
+	}
+
 	if (!posix_locking_init(read_only)) {
+		TALLOC_FREE(share_entries_db);
 		TALLOC_FREE(lock_db);
 		return False;
 	}
@@ -1251,4 +1274,864 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 done:
 	talloc_free(frame);
 	return ret;
+}
+
+static int share_mode_entry_cmp(
+	struct server_id pid1,
+	uint64_t share_file_id1,
+	struct server_id pid2,
+	uint64_t share_file_id2)
+{
+	int cmp;
+
+	cmp = server_id_cmp(&pid1, &pid2);
+	if (cmp != 0) {
+		return cmp;
+	}
+	if (share_file_id1 != share_file_id2) {
+		return (share_file_id1 < share_file_id2) ? -1 : 1;
+	}
+	return 0;
+}
+
+/*
+ * 132 is the sizeof an ndr-encoded struct share_mode_entry_buf.
+ * Reading/writing entries will immediately error out if this
+ * size differs (push/pull is done without allocs).
+ */
+
+struct share_mode_entry_buf {
+	uint8_t buf[132];
+};
+#define SHARE_MODE_ENTRY_SIZE (sizeof(struct share_mode_entry_buf))
+
+static bool share_mode_entry_put(
+	const struct share_mode_entry *e,
+	struct share_mode_entry_buf *dst)
+{
+	DATA_BLOB blob = { .data = dst->buf, .length = sizeof(dst->buf) };
+	enum ndr_err_code ndr_err;
+
+	if (DEBUGLEVEL>=10) {
+		DBG_DEBUG("share_mode_entry:\n");
+		NDR_PRINT_DEBUG(share_mode_entry, discard_const_p(void, e));
+	}
+
+	ndr_err = ndr_push_struct_into_fixed_blob(
+		&blob,
+		e,
+		(ndr_push_flags_fn_t)ndr_push_share_mode_entry);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_WARNING("ndr_push_share_mode_entry failed: %s\n",
+			    ndr_errstr(ndr_err));
+		return false;
+	}
+
+	return true;
+}
+
+static bool share_mode_entry_get(
+	DATA_BLOB blob, struct share_mode_entry *e)
+{
+	enum ndr_err_code ndr_err = NDR_ERR_SUCCESS;
+
+	ndr_err = ndr_pull_struct_blob_all_noalloc(
+		&blob, e, (ndr_pull_flags_fn_t)ndr_pull_share_mode_entry);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_WARNING("ndr_pull_share_mode_entry failed\n");
+		return false;
+	}
+	return true;
+}
+
+static size_t share_mode_entry_find(
+	uint8_t *data,
+	size_t num_share_modes,
+	struct server_id pid,
+	uint64_t share_file_id,
+	struct share_mode_entry *e,
+	bool *match)
+{
+	ssize_t left, right, middle;
+
+	if (num_share_modes == 0) {
+		*match = false;
+		return 0;
+	}
+
+	left = 0;
+	right = (num_share_modes-1);
+
+	while (left <= right) {
+		DATA_BLOB blob;
+		int cmp;
+		bool ok;
+
+		middle = left + ((right - left) / 2);
+
+		DBG_DEBUG("left=%zu, right=%zu, middle=%zu\n",
+			  left,
+			  right,
+			  middle);
+
+		blob = (DATA_BLOB) {
+			.data = data + middle * SHARE_MODE_ENTRY_SIZE,
+			.length = SHARE_MODE_ENTRY_SIZE,
+		};
+
+		DBG_DEBUG("blob.data=%p, blob.length=%zu\n",
+			  blob.data,
+			  blob.length);
+
+		ok = share_mode_entry_get(blob, e);
+		if (!ok) {
+			DBG_DEBUG("share_mode_entry_get failed\n");
+			return false;
+		}
+
+		cmp = share_mode_entry_cmp(
+			e->pid, e->share_file_id, pid, share_file_id);
+		if (cmp == 0) {
+			*match = true;
+			return middle;
+		}
+
+		if (cmp < 0) {
+			right = middle-1;
+		} else {
+			left = middle+1;
+		}
+	}
+
+	*match = false;
+	return left;
+}
+
+struct set_share_mode_state {
+	struct share_mode_entry e;
+	uint32_t num_share_modes;
+	NTSTATUS status;
+};
+
+static void set_share_mode_fn(struct db_record *rec, void *private_data)
+{
+	struct set_share_mode_state *state = private_data;
+	TDB_DATA data = dbwrap_record_get_value(rec);
+	size_t idx, num_share_modes;
+	struct share_mode_entry tmp;
+	struct share_mode_entry_buf buf;
+	bool ok, found;
+
+	TDB_DATA dbufs[3];
+	size_t num_dbufs = 0;
+
+	if ((data.dsize % SHARE_MODE_ENTRY_SIZE) != 0) {
+		DBG_WARNING("Got invalid record size %zu\n", data.dsize);
+		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return;
+	}
+	num_share_modes = data.dsize / SHARE_MODE_ENTRY_SIZE;
+
+	ok = share_mode_entry_put(&state->e, &buf);
+	if (!ok) {
+		DBG_DEBUG("share_mode_entry_put failed\n");
+		state->status = NT_STATUS_INTERNAL_ERROR;
+		return;
+	}
+
+	DBG_DEBUG("num_share_modes=%zu\n", num_share_modes);
+
+	idx = share_mode_entry_find(
+		data.dptr,
+		num_share_modes,
+		state->e.pid,
+		state->e.share_file_id,
+		&tmp,
+		&found);
+	if (found) {
+		DBG_WARNING("Found duplicate share mode\n");
+		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return;
+	}
+
+	DBG_DEBUG("idx=%zu, found=%d\n", idx, (int)found);
+
+	if (idx > 0) {
+		dbufs[num_dbufs] = (TDB_DATA) {
+			.dptr = data.dptr,
+			.dsize = idx * SHARE_MODE_ENTRY_SIZE,
+		};
+		num_dbufs += 1;
+	}
+
+	dbufs[num_dbufs] = (TDB_DATA) {
+		.dptr = buf.buf, .dsize = SHARE_MODE_ENTRY_SIZE,
+	};
+	num_dbufs += 1;
+
+	if (idx < num_share_modes) {
+		dbufs[num_dbufs] = (TDB_DATA) {
+			.dptr = data.dptr + idx * SHARE_MODE_ENTRY_SIZE,
+			.dsize = (num_share_modes-idx) * SHARE_MODE_ENTRY_SIZE,
+		};
+		num_dbufs += 1;
+	}
+
+	{
+		size_t i;
+		for (i=0; i<num_dbufs; i++) {
+			DBG_DEBUG("dbufs[%zu]=(%p, %zu)\n",
+				  i,
+				  dbufs[i].dptr,
+				  dbufs[i].dsize);
+		}
+	}
+
+	state->num_share_modes = num_share_modes+1;
+	state->status = dbwrap_record_storev(rec, dbufs, num_dbufs, 0);
+}
+
+bool set_share_mode(struct share_mode_lock *lck,
+		    struct files_struct *fsp,
+		    uid_t uid,
+		    uint64_t mid,
+		    uint16_t op_type,
+		    uint32_t share_access,
+		    uint32_t access_mask)
+{
+	struct share_mode_data *d = lck->data;
+	struct set_share_mode_state state = {
+		.status = NT_STATUS_OK,
+		.e.pid = messaging_server_id(fsp->conn->sconn->msg_ctx),
+		.e.share_access = share_access,
+		.e.private_options = fsp->fh->private_options,
+		.e.access_mask = access_mask,
+		.e.op_mid = mid,
+		.e.op_type = op_type,
+		.e.time.tv_sec = fsp->open_time.tv_sec,
+		.e.time.tv_usec = fsp->open_time.tv_usec,
+		.e.share_file_id = fsp->fh->gen_id,
+		.e.uid = (uint32_t)uid,
+		.e.flags = (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) ?
+		SHARE_MODE_FLAG_POSIX_OPEN : 0,
+		.e.name_hash = fsp->name_hash,
+	};
+	NTSTATUS status;
+
+	if (op_type == LEASE_OPLOCK) {
+		const struct GUID *client_guid = fsp_client_guid(fsp);
+		state.e.client_guid = *client_guid;
+		state.e.lease_key = fsp->lease->lease.lease_key;
+	}
+
+	status = dbwrap_do_locked(
+		share_entries_db,
+		locking_key(&d->id),
+		set_share_mode_fn,
+		&state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("dbwrap_do_locked failed: %s\n",
+			    nt_errstr(status));
+		return false;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_WARNING("set_share_mode_fn failed: %s\n",
+			    nt_errstr(state.status));
+		return false;
+	}
+
+	d->num_share_modes = state.num_share_modes;
+	d->modified = true;
+
+	return true;
+}
+
+struct share_mode_forall_entries_state {
+	struct share_mode_lock *lck;
+	bool (*fn)(struct share_mode_entry *e,
+		   bool *modified,
+		   void *private_data);
+	void *private_data;
+	size_t num_share_modes;
+	bool ok;
+};
+
+static bool share_mode_for_one_entry(
+	struct share_mode_forall_entries_state *state,
+	size_t *i,
+	size_t *num_share_modes,
+	TDB_DATA data,
+	bool *writeback)
+{
+	DATA_BLOB blob = {
+		.data = data.dptr + (*i) * SHARE_MODE_ENTRY_SIZE,
+		.length = SHARE_MODE_ENTRY_SIZE,
+	};
+	struct share_mode_entry e = {.pid.pid=0};
+	enum ndr_err_code ndr_err = NDR_ERR_SUCCESS;
+	bool modified = false;
+	bool stop = false;
+	struct server_id e_pid;
+	uint64_t e_share_file_id;
+
+	ndr_err = ndr_pull_struct_blob_all_noalloc(
+		&blob,
+		&e,
+		(ndr_pull_flags_fn_t)ndr_pull_share_mode_entry);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DBG_WARNING("ndr_pull_share_mode_entry failed\n");
+		*i += 1;
+		return false;
+	}
+	if (DEBUGLEVEL >= 10) {
+		DBG_DEBUG("entry[%zu]:\n", *i);
+		NDR_PRINT_DEBUG(share_mode_entry, &e);
+	}
+
+	e_pid = e.pid;
+	e_share_file_id = e.share_file_id;
+
+	stop = state->fn(&e, &modified, state->private_data);
+
+	DBG_DEBUG("entry[%zu]: modified=%d, e.stale=%d\n",
+		  *i,
+		  (int)modified,
+		  (int)e.stale);
+
+	if (modified) {
+		if (DEBUGLEVEL>=10) {
+			DBG_DEBUG("share_mode_entry:\n");
+			NDR_PRINT_DEBUG(share_mode_entry, &e);
+		}
+
+		/*
+		 * Make sure sorting order is kept intact
+		 */
+		SMB_ASSERT(server_id_equal(&e_pid, &e.pid));
+		SMB_ASSERT(e_share_file_id == e.share_file_id);
+
+		ndr_err = ndr_push_struct_into_fixed_blob(
+			&blob,
+			&e,
+			(ndr_push_flags_fn_t)
+			ndr_push_share_mode_entry);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			DBG_WARNING("ndr_push_share_mode_entry "
+				    "failed: %s\n",
+				    ndr_errstr(ndr_err));
+			/*
+			 * Not much we can do, just ignore it
+			 */
+		}
+		*i += 1;
+		*writeback = true;
+		return stop;
+	}
+
+	if (e.stale) {
+		if (*i < *num_share_modes) {
+			memmove(blob.data,
+				blob.data + SHARE_MODE_ENTRY_SIZE,
+				(*num_share_modes - *i - 1) *
+				SHARE_MODE_ENTRY_SIZE);
+		}
+		*num_share_modes -= 1;
+		*writeback = true;
+		return stop;
+	}
+
+	if (stop) {
+		return true;
+	}
+
+	*i += 1;
+	return false;
+}
+
+static void share_mode_forall_entries_fn(
+	struct db_record *rec, void *private_data)
+{
+	struct share_mode_forall_entries_state *state = private_data;
+	struct share_mode_data *d = state->lck->data;
+	struct TDB_DATA data = dbwrap_record_get_value(rec);
+	size_t num_share_modes;
+	bool writeback = false;
+	NTSTATUS status;
+	bool stop = false;
+	size_t i;
+
+	if ((data.dsize % SHARE_MODE_ENTRY_SIZE) != 0) {
+		DBG_WARNING("Invalid data size %zu\n", data.dsize);
+		return;
+	}
+	num_share_modes = data.dsize / SHARE_MODE_ENTRY_SIZE;
+
+	DBG_DEBUG("num_share_modes=%zu\n", num_share_modes);
+
+	i = 0;
+	while (i<num_share_modes) {
+		stop = share_mode_for_one_entry(
+			state, &i, &num_share_modes, data, &writeback);
+		if (stop) {
+			break;
+		}
+	}
+
+	DBG_DEBUG("num_share_modes=%zu, writeback=%d\n",
+		  num_share_modes,
+		  (int)writeback);
+
+	if (!writeback) {
+		state->ok = true;
+		return;
+	}
+
+	if (num_share_modes != d->num_share_modes) {
+		d->num_share_modes = num_share_modes;
+		d->modified = true;
+	}
+
+	if (num_share_modes == 0) {
+		status = dbwrap_record_delete(rec);
+	} else {
+		TDB_DATA value = {
+			.dptr = data.dptr,
+			.dsize = num_share_modes * SHARE_MODE_ENTRY_SIZE,
+		};
+		status = dbwrap_record_store(rec, value, 0);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("Storing record with %zu entries failed: %s\n",
+			  num_share_modes,
+			  nt_errstr(status));
+		return;
+	}
+
+
+	state->ok = true;
+}
+
+bool share_mode_forall_entries(
+	struct share_mode_lock *lck,
+	bool (*fn)(struct share_mode_entry *e,
+		   bool *modified,
+		   void *private_data),
+	void *private_data)
+{
+	struct share_mode_forall_entries_state state = {
+		.lck = lck,
+		.fn = fn,
+		.private_data = private_data,
+	};
+	NTSTATUS status;
+
+	status = dbwrap_do_locked(
+		share_entries_db,
+		locking_key(&lck->data->id),
+		share_mode_forall_entries_fn,
+		&state);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		status = NT_STATUS_OK;
+		state.ok = true;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dbwrap_parse_record returned %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	return state.ok;
+}
+
+struct share_mode_entry_do_state {
+	struct server_id pid;
+	uint64_t share_file_id;
+	void (*fn)(struct share_mode_entry *e,
+		   bool *modified,
+		   void *private_data);
+	void *private_data;
+	size_t num_share_modes;
+	NTSTATUS status;
+};
+
+static void share_mode_entry_do_fn(struct db_record *rec, void *private_data)
+{
+	struct share_mode_entry_do_state *state = private_data;
+	struct TDB_DATA data = dbwrap_record_get_value(rec);
+	size_t idx;
+	bool found = false;
+	bool modified;
+	struct share_mode_entry e;
+	struct share_mode_entry_buf buf;
+	TDB_DATA dbufs[3];
+	size_t num_dbufs = 0;
+	NTSTATUS status;
+
+	if ((data.dsize % SHARE_MODE_ENTRY_SIZE) != 0) {
+		DBG_WARNING("Invalid data size %zu\n", data.dsize);
+		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return;
+	}
+	state->num_share_modes = data.dsize / SHARE_MODE_ENTRY_SIZE;
+
+	DBG_DEBUG("state->num_share_modes=%zu\n", state->num_share_modes);
+
+	idx = share_mode_entry_find(
+		data.dptr,
+		state->num_share_modes,
+		state->pid,
+		state->share_file_id,
+		&e,
+		&found);
+	if (!found) {
+		DBG_WARNING("Did not find share mode entry for %"PRIu64"\n",
+			    state->share_file_id);
+		state->status = NT_STATUS_NOT_FOUND;
+		return;
+	}
+
+	state->fn(&e, &modified, state->private_data);
+
+	if (!e.stale && !modified) {
+		state->status = NT_STATUS_OK;
+		return;
+	}
+
+	if (idx > 0) {
+		dbufs[num_dbufs] = (TDB_DATA) {
+			.dptr = data.dptr,
+			.dsize = idx * SHARE_MODE_ENTRY_SIZE,
+		};
+		num_dbufs += 1;
+	}
+
+	if (!e.stale) {
+		bool ok = share_mode_entry_put(&e, &buf);
+		if (!ok) {
+			DBG_DEBUG("share_mode_entry_put failed\n");
+			state->status = NT_STATUS_INTERNAL_ERROR;
+			return;
+		}
+
+		dbufs[num_dbufs] = (TDB_DATA) {
+			.dptr = buf.buf, .dsize = SHARE_MODE_ENTRY_SIZE,
+		};
+		num_dbufs += 1;
+	}
+
+	idx += 1;
+
+	if (idx < state->num_share_modes) {
+		size_t behind = state->num_share_modes - idx;
+		dbufs[num_dbufs] = (TDB_DATA) {
+			.dptr = data.dptr + idx * SHARE_MODE_ENTRY_SIZE,
+			.dsize = behind * SHARE_MODE_ENTRY_SIZE,
+		};
+		num_dbufs += 1;
+	}
+
+	if (e.stale) {
+		state->num_share_modes -= 1;
+	}
+
+	state->status = dbwrap_record_storev(rec, dbufs, num_dbufs, 0);
+	if (!NT_STATUS_IS_OK(state->status)) {
+		DBG_DEBUG("dbwrap_record_storev failed: %s\n",
+			  nt_errstr(status));
+		return;
+	}
+}
+
+static bool share_mode_entry_do(
+	struct share_mode_lock *lck,
+	struct server_id pid,
+	uint64_t share_file_id,
+	void (*fn)(struct share_mode_entry *e,
+		   bool *modified,
+		   void *private_data),
+	void *private_data)
+{
+	struct share_mode_data *d = lck->data;
+	struct share_mode_entry_do_state state = {
+		.pid = pid,
+		.share_file_id = share_file_id,
+		.fn = fn,
+		.private_data = private_data,
+	};
+	NTSTATUS status;
+
+	status = dbwrap_do_locked(
+		share_entries_db,
+		locking_key(&d->id),
+		share_mode_entry_do_fn,
+		&state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("share_mode_forall_entries failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_DEBUG("share_mode_entry_do_fn failed: %s\n",
+			  nt_errstr(status));
+		return false;
+	}
+
+	if (d->num_share_modes != state.num_share_modes) {
+		d->num_share_modes = state.num_share_modes;
+		d->modified = true;
+	}
+
+	return true;
+}
+
+struct del_share_mode_state {
+	bool ok;
+};
+
+static void del_share_mode_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct del_share_mode_state *state = private_data;
+	e->stale = true;
+	state->ok = true;
+}
+
+bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
+{
+	struct del_share_mode_state state = { .ok = false };
+	bool ok;
+
+	ok = share_mode_entry_do(
+		lck,
+		messaging_server_id(fsp->conn->sconn->msg_ctx),
+		fsp->fh->gen_id,
+		del_share_mode_fn,
+		&state);
+	if (!ok) {
+		DBG_DEBUG("share_mode_entry_do failed\n");
+		return false;
+	}
+	if (!state.ok) {
+		DBG_DEBUG("del_share_mode_fn failed\n");
+		return false;
+	}
+	return true;
+}
+
+struct remove_share_oplock_state {
+	bool ok;
+};
+
+static void remove_share_oplock_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct remove_share_oplock_state *state = private_data;
+
+	e->op_type = NO_OPLOCK;
+	*modified = true;
+	state->ok = true;
+}
+
+bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
+{
+	struct remove_share_oplock_state state = { .ok = false };
+	bool ok;
+
+	ok = share_mode_entry_do(
+		lck,
+		messaging_server_id(fsp->conn->sconn->msg_ctx),
+		fsp->fh->gen_id,
+		remove_share_oplock_fn,
+		&state);
+	if (!ok) {
+		DBG_DEBUG("share_mode_entry_do failed\n");
+		return false;
+	}
+	if (!state.ok) {
+		DBG_DEBUG("remove_share_oplock_fn failed\n");
+		return false;
+	}
+
+	if (fsp->oplock_type == LEASE_OPLOCK) {
+		remove_lease_if_stale(
+			lck,
+			fsp_client_guid(fsp),
+			&fsp->lease->lease.lease_key);
+	}
+
+	lck->data->modified = true; /* signal watchers */
+
+	return true;
+}
+
+struct downgrade_share_oplock_state {
+	bool ok;
+};
+
+static void downgrade_share_oplock_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct downgrade_share_oplock_state *state = private_data;
+
+	e->op_type = LEVEL_II_OPLOCK;
+	*modified = true;
+	state->ok = true;
+}
+
+bool downgrade_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
+{
+	struct downgrade_share_oplock_state state = { .ok = false };
+	bool ok;
+
+	ok = share_mode_entry_do(
+		lck,
+		messaging_server_id(fsp->conn->sconn->msg_ctx),
+		fsp->fh->gen_id,
+		downgrade_share_oplock_fn,
+		&state);
+	if (!ok) {
+		DBG_DEBUG("share_mode_entry_do failed\n");
+		return false;
+	}
+	if (!state.ok) {
+		DBG_DEBUG("downgrade_share_oplock_fn failed\n");
+		return false;
+	}
+
+	lck->data->flags |= SHARE_MODE_HAS_READ_LEASE;
+	lck->data->modified = true;
+
+	return true;
+}
+
+struct mark_share_mode_disconnected_state {
+	uint64_t open_persistent_id;
+	bool ok;
+};
+
+static void mark_share_mode_disconnected_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct mark_share_mode_disconnected_state *state = private_data;
+	server_id_set_disconnected(&e->pid);
+	e->share_file_id = state->open_persistent_id;
+	*modified = true;
+	state->ok = true;
+}
+
+bool mark_share_mode_disconnected(struct share_mode_lock *lck,
+				  struct files_struct *fsp)
+{
+	struct mark_share_mode_disconnected_state state = {
+		.open_persistent_id = fsp->op->global->open_persistent_id,
+	};
+	bool ok;
+
+	if (lck->data->num_share_modes != 1) {
+		return false;
+	}
+
+	if (fsp->op == NULL) {
+		return false;
+	}
+	if (!fsp->op->global->durable) {
+		return false;
+	}
+
+	ok = share_mode_entry_do(
+		lck,
+		messaging_server_id(fsp->conn->sconn->msg_ctx),
+		fsp->fh->gen_id,
+		mark_share_mode_disconnected_fn,
+		&state);
+	if (!ok) {
+		DBG_DEBUG("share_mode_entry_do failed\n");
+		return false;
+	}
+	if (!state.ok) {
+		DBG_DEBUG("mark_share_mode_disconnected_fn failed\n");
+		return false;
+	}
+
+	lck->data->modified = true;
+	return true;
+}
+
+static void reset_share_mode_entry_del_fn(
+	struct share_mode_entry *e,
+	bool *modified,
+	void *private_data)
+{
+	struct set_share_mode_state *state = private_data;
+
+	state->e = *e;
+	e->stale = true;
+	state->status = NT_STATUS_OK;
+}
+
+bool reset_share_mode_entry(
+	struct share_mode_lock *lck,
+	struct server_id old_pid,
+	uint64_t old_share_file_id,
+	struct server_id new_pid,
+	uint64_t new_mid,
+	uint64_t new_share_file_id)
+{
+	struct share_mode_data *d = lck->data;
+	struct set_share_mode_state state = {
+		.status = NT_STATUS_INTERNAL_ERROR,
+	};
+	NTSTATUS status;
+	bool ok;
+
+	ok = share_mode_entry_do(
+		lck,
+		old_pid,
+		old_share_file_id,
+		reset_share_mode_entry_del_fn,
+		&state);
+	if (!ok) {
+		DBG_DEBUG("share_mode_entry_do failed\n");
+		return false;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_DEBUG("reset_share_mode_entry_del_fn failed: %s\n",
+			  nt_errstr(state.status));
+		return false;
+	}
+
+	state.status = NT_STATUS_INTERNAL_ERROR;
+	state.e.pid = new_pid;
+	state.e.op_mid = new_mid;
+	state.e.share_file_id = new_share_file_id;
+
+	status = dbwrap_do_locked(
+		share_entries_db,
+		locking_key(&d->id),
+		set_share_mode_fn,
+		&state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("dbwrap_do_locked failed: %s\n",
+			    nt_errstr(status));
+		return false;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_WARNING("set_share_mode_fn failed: %s\n",
+			    nt_errstr(state.status));
+		return false;
+	}
+
+	d->num_share_modes = state.num_share_modes;
+	d->modified = true;
+
+	return true;
 }
