@@ -1031,7 +1031,6 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 	krb5_keyblock key;
 	DATA_BLOB aes_256_b = data_blob_null;
 	DATA_BLOB aes_128_b = data_blob_null;
-	DATA_BLOB des_md5_b = data_blob_null;
 	bool ok;
 #endif /* HAVE_ADS */
 	DATA_BLOB arc4_b = data_blob_null;
@@ -1177,32 +1176,6 @@ static int secrets_domain_info_kerberos_keys(struct secrets_domain_info1_passwor
 		return ENOMEM;
 	}
 
-	krb5_ret = smb_krb5_create_key_from_string(krb5_ctx,
-						   NULL,
-						   &salt,
-						   &cleartext_utf8,
-						   ENCTYPE_DES_CBC_MD5,
-						   &key);
-	if (krb5_ret != 0) {
-		DBG_ERR("generation of a des-cbc-md5 key failed: %s\n",
-			smb_get_krb5_error_message(krb5_ctx, krb5_ret, keys));
-		krb5_free_context(krb5_ctx);
-		TALLOC_FREE(keys);
-		TALLOC_FREE(salt_data);
-		return krb5_ret;
-	}
-	des_md5_b = data_blob_talloc(keys,
-				     KRB5_KEY_DATA(&key),
-				     KRB5_KEY_LENGTH(&key));
-	krb5_free_keyblock_contents(krb5_ctx, &key);
-	if (des_md5_b.data == NULL) {
-		DBG_ERR("data_blob_talloc failed for des-cbc-md5.\n");
-		krb5_free_context(krb5_ctx);
-		TALLOC_FREE(keys);
-		TALLOC_FREE(salt_data);
-		return ENOMEM;
-	}
-
 	krb5_free_context(krb5_ctx);
 no_kerberos:
 
@@ -1226,15 +1199,6 @@ no_kerberos:
 	keys[idx].iteration_count	= 4096;
 	keys[idx].value			= arc4_b;
 	idx += 1;
-
-#ifdef HAVE_ADS
-	if (des_md5_b.length != 0) {
-		keys[idx].keytype		= ENCTYPE_DES_CBC_MD5;
-		keys[idx].iteration_count	= 4096;
-		keys[idx].value			= des_md5_b;
-		idx += 1;
-	}
-#endif /* HAVE_ADS */
 
 	p->salt_data = salt_data;
 	p->default_iteration_count = 4096;
