@@ -1343,9 +1343,10 @@ static bool ad_convert_blank_rfork(vfs_handle_struct *handle,
 }
 
 static bool ad_convert_delete_adfile(vfs_handle_struct *handle,
-				     struct adouble *ad,
-				     const struct smb_filename *smb_fname,
-				     uint32_t flags)
+				struct adouble *ad,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				uint32_t flags)
 {
 	struct smb_filename *ad_name = NULL;
 	int rc;
@@ -1363,7 +1364,10 @@ static bool ad_convert_delete_adfile(vfs_handle_struct *handle,
 		return false;
 	}
 
-	rc = SMB_VFS_NEXT_UNLINK(handle, ad_name);
+	rc = SMB_VFS_NEXT_UNLINKAT(handle,
+			dirfsp,
+			ad_name,
+			0);
 	if (rc != 0) {
 		DBG_ERR("Unlinking [%s] failed: %s\n",
 			smb_fname_str_dbg(ad_name), strerror(errno));
@@ -1435,7 +1439,11 @@ int ad_convert(struct vfs_handle_struct *handle,
 		goto done;
 	}
 
-	ok = ad_convert_delete_adfile(handle, ad, smb_fname, flags);
+	ok = ad_convert_delete_adfile(handle,
+			ad,
+			dirfsp,
+			smb_fname,
+			flags);
 	if (!ok) {
 		ret = -1;
 		goto done;
