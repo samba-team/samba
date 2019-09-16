@@ -830,11 +830,10 @@ static NTSTATUS smbXsrv_tcon_create(struct smbXsrv_tcon_table *table,
 	}
 
 	if (DEBUGLVL(10)) {
-		struct smbXsrv_tconB tcon_blob;
-
-		ZERO_STRUCT(tcon_blob);
-		tcon_blob.version = SMBXSRV_VERSION_0;
-		tcon_blob.info.info0 = tcon;
+		struct smbXsrv_tconB tcon_blob = {
+			.version = SMBXSRV_VERSION_0,
+			.info.info0 = tcon,
+		};
 
 		DEBUG(10,("smbXsrv_tcon_create: global_id (0x%08x) stored\n",
 			 tcon->global->tcon_global_id));
@@ -875,11 +874,10 @@ NTSTATUS smbXsrv_tcon_update(struct smbXsrv_tcon *tcon)
 	}
 
 	if (DEBUGLVL(10)) {
-		struct smbXsrv_tconB tcon_blob;
-
-		ZERO_STRUCT(tcon_blob);
-		tcon_blob.version = SMBXSRV_VERSION_0;
-		tcon_blob.info.info0 = tcon;
+		struct smbXsrv_tconB tcon_blob = {
+			.version = SMBXSRV_VERSION_0,
+			.info.info0 = tcon,
+		};
 
 		DEBUG(10,("smbXsrv_tcon_update: global_id (0x%08x) stored\n",
 			  tcon->global->tcon_global_id));

@@ -533,12 +533,11 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(client, smbXsrv_client_destructor);
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
-		struct smbXsrv_clientB client_blob;
+		struct smbXsrv_clientB client_blob = {
+			.version = SMBXSRV_VERSION_0,
+			.info.info0 = client,
+		};
 		struct GUID_txt_buf buf;
-
-		ZERO_STRUCT(client_blob);
-		client_blob.version = SMBXSRV_VERSION_0;
-		client_blob.info.info0 = client;
 
 		DBG_DEBUG("client_guid[%s] stored\n",
 			  GUID_buf_string(&global->client_guid, &buf));
@@ -732,12 +731,11 @@ NTSTATUS smbXsrv_client_update(struct smbXsrv_client *client)
 	}
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
-		struct smbXsrv_clientB client_blob;
+		struct smbXsrv_clientB client_blob = {
+			.version = SMBXSRV_VERSION_0,
+			.info.info0 = client,
+		};
 		struct GUID_txt_buf buf;
-
-		ZERO_STRUCT(client_blob);
-		client_blob.version = SMBXSRV_VERSION_0;
-		client_blob.info.info0 = client;
 
 		DBG_DEBUG("client_guid[%s] stored\n",
 			  GUID_buf_string(&client->global->client_guid,
@@ -783,12 +781,11 @@ NTSTATUS smbXsrv_client_remove(struct smbXsrv_client *client)
 	}
 
 	if (DEBUGLVL(DBGLVL_DEBUG)) {
-		struct smbXsrv_clientB client_blob;
+		struct smbXsrv_clientB client_blob = {
+			.version = SMBXSRV_VERSION_0,
+			.info.info0 = client,
+		};
 		struct GUID_txt_buf buf;
-
-		ZERO_STRUCT(client_blob);
-		client_blob.version = SMBXSRV_VERSION_0;
-		client_blob.info.info0 = client;
 
 		DBG_DEBUG("client_guid[%s] stored\n",
 			  GUID_buf_string(&client->global->client_guid, &buf));

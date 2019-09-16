@@ -901,11 +901,10 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 	}
 
 	if (CHECK_DEBUGLVL(10)) {
-		struct smbXsrv_openB open_blob;
-
-		ZERO_STRUCT(open_blob);
-		open_blob.version = SMBXSRV_VERSION_0;
-		open_blob.info.info0 = op;
+		struct smbXsrv_openB open_blob = {
+			.version = SMBXSRV_VERSION_0,
+			.info.info0 = op,
+		};
 
 		DEBUG(10,("smbXsrv_open_create: global_id (0x%08x) stored\n",
 			 op->global->open_global_id));
@@ -1046,11 +1045,10 @@ NTSTATUS smbXsrv_open_update(struct smbXsrv_open *op)
 	}
 
 	if (CHECK_DEBUGLVL(10)) {
-		struct smbXsrv_openB open_blob;
-
-		ZERO_STRUCT(open_blob);
-		open_blob.version = SMBXSRV_VERSION_0;
-		open_blob.info.info0 = op;
+		struct smbXsrv_openB open_blob = {
+			.version = SMBXSRV_VERSION_0,
+			.info.info0 = op,
+		};
 
 		DEBUG(10,("smbXsrv_open_update: global_id (0x%08x) stored\n",
 			  op->global->open_global_id));
@@ -1120,11 +1118,10 @@ NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now)
 		}
 
 		if (NT_STATUS_IS_OK(status) && CHECK_DEBUGLVL(10)) {
-			struct smbXsrv_openB open_blob;
-
-			ZERO_STRUCT(open_blob);
-			open_blob.version = SMBXSRV_VERSION_0;
-			open_blob.info.info0 = op;
+			struct smbXsrv_openB open_blob = {
+				.version = SMBXSRV_VERSION_0,
+				.info.info0 = op,
+			};
 
 			DEBUG(10,("smbXsrv_open_close(0x%08x): "
 				  "stored disconnect\n",
@@ -1437,11 +1434,9 @@ NTSTATUS smb2srv_open_recreate(struct smbXsrv_connection *conn,
 	}
 
 	if (CHECK_DEBUGLVL(10)) {
-		struct smbXsrv_openB open_blob;
-
-		ZERO_STRUCT(open_blob);
-		open_blob.version = 0;
-		open_blob.info.info0 = op;
+		struct smbXsrv_openB open_blob = {
+			.info.info0 = op,
+		};
 
 		DEBUG(10,("smbXsrv_open_recreate: global_id (0x%08x) stored\n",
 			 op->global->open_global_id));

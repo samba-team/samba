@@ -1321,11 +1321,10 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 	}
 
 	if (DEBUGLVL(10)) {
-		struct smbXsrv_sessionB session_blob;
-
-		ZERO_STRUCT(session_blob);
-		session_blob.version = SMBXSRV_VERSION_0;
-		session_blob.info.info0 = session;
+		struct smbXsrv_sessionB session_blob = {
+			.version = SMBXSRV_VERSION_0,
+			.info.info0 = session,
+		};
 
 		DEBUG(10,("smbXsrv_session_create: global_id (0x%08x) stored\n",
 			 session->global->session_global_id));
@@ -1416,11 +1415,10 @@ NTSTATUS smbXsrv_session_update(struct smbXsrv_session *session)
 	}
 
 	if (DEBUGLVL(10)) {
-		struct smbXsrv_sessionB session_blob;
-
-		ZERO_STRUCT(session_blob);
-		session_blob.version = SMBXSRV_VERSION_0;
-		session_blob.info.info0 = session;
+		struct smbXsrv_sessionB session_blob = {
+			.version = SMBXSRV_VERSION_0,
+			.info.info0 = session,
+		};
 
 		DEBUG(10,("smbXsrv_session_update: global_id (0x%08x) stored\n",
 			  session->global->session_global_id));
