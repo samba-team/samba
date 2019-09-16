@@ -1380,7 +1380,7 @@ WERROR NetGroupEnum_r(struct libnetapi_ctx *ctx,
 	uint32_t returned_size = 0;
 
 	NTSTATUS result = NT_STATUS_OK;
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	WERROR werr, tmp_werr;
 
 	ZERO_STRUCT(connect_handle);
@@ -1518,7 +1518,7 @@ WERROR NetGroupGetUsers_r(struct libnetapi_ctx *ctx,
 	int i;
 	uint32_t entries_read = 0;
 
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
 	WERROR werr;
 
@@ -1715,7 +1715,7 @@ WERROR NetGroupSetUsers_r(struct libnetapi_ctx *ctx,
 
 	int i, k;
 
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
 	WERROR werr;
 
