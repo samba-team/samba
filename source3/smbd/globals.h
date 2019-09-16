@@ -621,7 +621,6 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 			     struct auth_session_info *session_info,
 			     NTTIME now,
 			     struct smbXsrv_open **_open);
-uint32_t smbXsrv_open_hash(struct smbXsrv_open *_open);
 NTSTATUS smbXsrv_open_update(struct smbXsrv_open *_open);
 NTSTATUS smbXsrv_open_close(struct smbXsrv_open *op, NTTIME now);
 NTSTATUS smb1srv_open_table_init(struct smbXsrv_connection *conn);

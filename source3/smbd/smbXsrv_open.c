@@ -915,26 +915,6 @@ NTSTATUS smbXsrv_open_create(struct smbXsrv_connection *conn,
 	return NT_STATUS_OK;
 }
 
-uint32_t smbXsrv_open_hash(struct smbXsrv_open *_open)
-{
-	uint8_t buf[8+8+8];
-	uint32_t ret;
-	TDB_DATA key;
-
-	SBVAL(buf,  0, _open->global->open_persistent_id);
-	SBVAL(buf,  8, _open->global->open_volatile_id);
-	SBVAL(buf, 16, _open->global->open_time);
-
-	key = (TDB_DATA) { .dptr = buf, .dsize = sizeof(buf) };
-	ret = tdb_jenkins_hash(&key);
-
-	if (ret == 0) {
-		ret = 1;
-	}
-
-	return ret;
-}
-
 static NTSTATUS smbXsrv_open_set_replay_cache(struct smbXsrv_open *op)
 {
 	struct GUID *create_guid;
