@@ -256,13 +256,15 @@ main(int argc,			/* I - Number of command-line arguments */
 
 	/*
 	 * Find the URI ...
-	 */
-	if (dev_uri == NULL) {
-		env = getenv("DEVICE_URI");
-		if (env != NULL && env[0] != '\0') {
-			dev_uri = env;
-		}
-	}
+         *
+         * The URI in argv[0] is sanitized to remove username/password, so
+         * use DEVICE_URI if available. Otherwise keep the URI already
+         * discovered in argv.
+         */
+        env = getenv("DEVICE_URI");
+        if (env != NULL && env[0] != '\0') {
+          dev_uri = env;
+        }
 
 	if (dev_uri == NULL) {
 		fprintf(stderr,
