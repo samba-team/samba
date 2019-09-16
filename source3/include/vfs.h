@@ -321,7 +321,7 @@ struct fd_handle {
 				 * DELETE_ON_CLOSE is not stored in the share
 				 * mode database.
 				 */
-	unsigned long gen_id;
+	uint64_t gen_id;
 };
 
 struct fsp_lease {

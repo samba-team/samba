@@ -149,10 +149,11 @@ static bool linux_set_kernel_oplock(struct kernel_oplocks *ctx,
 		return False;
 	}
 	
-	DEBUG(3,("linux_set_kernel_oplock: got kernel oplock on file %s, "
-		 "file_id = %s gen_id = %lu\n",
-		 fsp_str_dbg(fsp), file_id_string_tos(&fsp->file_id),
-		 fsp->fh->gen_id));
+	DBG_NOTICE("got kernel oplock on file %s, "
+		   "file_id = %s gen_id = %"PRIu64"\n",
+		   fsp_str_dbg(fsp),
+		   file_id_string_tos(&fsp->file_id),
+		   fsp->fh->gen_id);
 
 	return True;
 }
@@ -171,10 +172,12 @@ static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
 		 */
 		int state = fcntl(fsp->fh->fd, F_GETLEASE, 0);
 		dbgtext("linux_release_kernel_oplock: file %s, file_id = %s "
-			"gen_id = %lu has kernel oplock state "
-			"of %x.\n", fsp_str_dbg(fsp),
+			"gen_id = %"PRIu64" has kernel oplock state "
+			"of %x.\n",
+			fsp_str_dbg(fsp),
 		        file_id_string_tos(&fsp->file_id),
-			fsp->fh->gen_id, state );
+			fsp->fh->gen_id,
+			state);
 	}
 
 	/*
@@ -184,10 +187,12 @@ static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
 		if (DEBUGLVL(0)) {
 			dbgtext("linux_release_kernel_oplock: Error when "
 				"removing kernel oplock on file " );
-			dbgtext("%s, file_id = %s, gen_id = %lu. "
-				"Error was %s\n", fsp_str_dbg(fsp),
+			dbgtext("%s, file_id = %s, gen_id = %"PRIu64". "
+				"Error was %s\n",
+				fsp_str_dbg(fsp),
 				file_id_string_tos(&fsp->file_id),
-				fsp->fh->gen_id, strerror(errno) );
+				fsp->fh->gen_id,
+				strerror(errno));
 		}
 	}
 }

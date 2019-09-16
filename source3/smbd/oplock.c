@@ -79,11 +79,13 @@ NTSTATUS set_file_oplock(files_struct *fsp)
 		sconn->oplocks.exclusive_open++;
 	}
 
-	DEBUG(5,("set_file_oplock: granted oplock on file %s, %s/%lu, "
-		    "tv_sec = %x, tv_usec = %x\n",
-		 fsp_str_dbg(fsp), file_id_string_tos(&fsp->file_id),
-		 fsp->fh->gen_id, (int)fsp->open_time.tv_sec,
-		 (int)fsp->open_time.tv_usec ));
+	DBG_INFO("granted oplock on file %s, %s/%"PRIu64", "
+		 "tv_sec = %x, tv_usec = %x\n",
+		 fsp_str_dbg(fsp),
+		 file_id_string_tos(&fsp->file_id),
+		 fsp->fh->gen_id,
+		 (int)fsp->open_time.tv_sec,
+		 (int)fsp->open_time.tv_usec);
 
 	return NT_STATUS_OK;
 }
@@ -763,10 +765,12 @@ static files_struct *initial_break_processing(
 	 */
 
 	if(fsp->oplock_type == NO_OPLOCK) {
-		DEBUG(3, ("initial_break_processing: file %s (file_id = %s "
-			  "gen_id = %lu) has no oplock. Allowing break to "
-			  "succeed regardless.\n", fsp_str_dbg(fsp),
-			  file_id_string_tos(&id), fsp->fh->gen_id));
+		DBG_NOTICE("file %s (file_id = %s gen_id = %"PRIu64") "
+			   "has no oplock. "
+			   "Allowing break to succeed regardless.\n",
+			   fsp_str_dbg(fsp),
+			   file_id_string_tos(&id),
+			   fsp->fh->gen_id);
 		return NULL;
 	}
 
