@@ -31,15 +31,17 @@
  * path = /tmp
  * vfs objects = full_audit
  * full_audit:prefix = %u|%I
- * full_audit:success = open opendir
+ * full_audit:success = open opendir create_file
  * full_audit:failure = all
  *
  * vfs op can be "all" which means log all operations.
  * vfs op can be "none" which means no logging.
  *
  * This leads to syslog entries of the form:
- * smbd_audit: nobody|192.168.234.1|opendir|ok|.
- * smbd_audit: nobody|192.168.234.1|open|fail (File not found)|r|x.txt
+ * smbd_audit: nobody|192.168.234.1|opendir|ok|/tmp
+ * smbd_audit: nobody|192.168.234.1|create_file|fail (No such file or directory)|0x1|file|open|/ts/doesNotExist
+ * smbd_audit: nobody|192.168.234.1|open|ok|w|/tmp/file.txt
+ * smbd_audit: nobody|192.168.234.1|create_file|ok|0x3|file|open|/tmp/file.txt
  *
  * where "nobody" is the connected username and "192.168.234.1" is the
  * client's IP address. 
@@ -793,7 +795,11 @@ static uint64_t smb_full_audit_disk_free(vfs_handle_struct *handle,
 
 	/* Don't have a reasonable notion of failure here */
 
-	do_log(SMB_VFS_OP_DISK_FREE, True, handle, "%s", smb_fname->base_name);
+	do_log(SMB_VFS_OP_DISK_FREE,
+	       True,
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -808,8 +814,11 @@ static int smb_full_audit_get_quota(struct vfs_handle_struct *handle,
 
 	result = SMB_VFS_NEXT_GET_QUOTA(handle, smb_fname, qtype, id, qt);
 
-	do_log(SMB_VFS_OP_GET_QUOTA, (result >= 0), handle, "%s",
-			smb_fname->base_name);
+	do_log(SMB_VFS_OP_GET_QUOTA,
+	       (result >= 0),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -934,8 +943,11 @@ static DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
 
 	result = SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
 
-	do_log(SMB_VFS_OP_OPENDIR, (result != NULL), handle, "%s",
-		smb_fname->base_name);
+	do_log(SMB_VFS_OP_OPENDIR,
+	       (result != NULL),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -1008,8 +1020,11 @@ static int smb_full_audit_mkdirat(vfs_handle_struct *handle,
 			smb_fname,
 			mode);
 
-	do_log(SMB_VFS_OP_MKDIRAT, (result >= 0), handle, "%s",
-		smb_fname->base_name);
+	do_log(SMB_VFS_OP_MKDIRAT,
+	       (result >= 0),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -1021,8 +1036,11 @@ static int smb_full_audit_rmdir(vfs_handle_struct *handle,
 	
 	result = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
 
-	do_log(SMB_VFS_OP_RMDIR, (result >= 0), handle, "%s",
-		smb_fname->base_name);
+	do_log(SMB_VFS_OP_RMDIR,
+	       (result >= 0),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -1517,9 +1535,12 @@ static int smb_full_audit_chmod(vfs_handle_struct *handle,
 
 	result = SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
 
-	do_log(SMB_VFS_OP_CHMOD, (result >= 0), handle, "%s|%o",
-		smb_fname->base_name,
-		mode);
+	do_log(SMB_VFS_OP_CHMOD,
+	       (result >= 0),
+	       handle,
+	       "%s|%o",
+	       smb_fname_str_do_log(handle->conn, smb_fname),
+	       mode);
 
 	return result;
 }
@@ -1587,8 +1608,11 @@ static int smb_full_audit_chdir(vfs_handle_struct *handle,
 
 	result = SMB_VFS_NEXT_CHDIR(handle, smb_fname);
 
-	do_log(SMB_VFS_OP_CHDIR, (result >= 0), handle, "chdir|%s",
-		smb_fname->base_name);
+	do_log(SMB_VFS_OP_CHDIR,
+	       (result >= 0),
+	       handle,
+	       "chdir|%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -1742,8 +1766,12 @@ static int smb_full_audit_symlinkat(vfs_handle_struct *handle,
 				dirfsp,
 				new_smb_fname);
 
-	do_log(SMB_VFS_OP_SYMLINKAT, (result >= 0), handle,
-	       "%s|%s", link_contents, new_smb_fname->base_name);
+	do_log(SMB_VFS_OP_SYMLINKAT,
+	       (result >= 0),
+	       handle,
+	       "%s|%s",
+	       link_contents,
+	       smb_fname_str_do_log(handle->conn, new_smb_fname));
 
 	return result;
 }
@@ -1762,8 +1790,11 @@ static int smb_full_audit_readlinkat(vfs_handle_struct *handle,
 			buf,
 			bufsiz);
 
-	do_log(SMB_VFS_OP_READLINKAT, (result >= 0), handle, "%s",
-			smb_fname->base_name);
+	do_log(SMB_VFS_OP_READLINKAT,
+	       (result >= 0),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -1784,8 +1815,12 @@ static int smb_full_audit_linkat(vfs_handle_struct *handle,
 			new_smb_fname,
 			flags);
 
-	do_log(SMB_VFS_OP_LINKAT, (result >= 0), handle,
-	       "%s|%s", old_smb_fname->base_name, new_smb_fname->base_name);
+	do_log(SMB_VFS_OP_LINKAT,
+	       (result >= 0),
+	       handle,
+	       "%s|%s",
+	       smb_fname_str_do_log(handle->conn, old_smb_fname),
+	       smb_fname_str_do_log(handle->conn, new_smb_fname));
 
 	return result;
 }
@@ -1804,8 +1839,11 @@ static int smb_full_audit_mknodat(vfs_handle_struct *handle,
 				mode,
 				dev);
 
-	do_log(SMB_VFS_OP_MKNODAT, (result >= 0), handle, "%s",
-		smb_fname->base_name);
+	do_log(SMB_VFS_OP_MKNODAT,
+	       (result >= 0),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -1818,8 +1856,11 @@ static struct smb_filename *smb_full_audit_realpath(vfs_handle_struct *handle,
 
 	result_fname = SMB_VFS_NEXT_REALPATH(handle, ctx, smb_fname);
 
-	do_log(SMB_VFS_OP_REALPATH, (result_fname != NULL), handle, "%s",
-			smb_fname->base_name);
+	do_log(SMB_VFS_OP_REALPATH,
+	       (result_fname != NULL),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result_fname;
 }
@@ -1832,8 +1873,11 @@ static int smb_full_audit_chflags(vfs_handle_struct *handle,
 
 	result = SMB_VFS_NEXT_CHFLAGS(handle, smb_fname, flags);
 
-	do_log(SMB_VFS_OP_CHFLAGS, (result != 0), handle, "%s",
-		smb_fname->base_name);
+	do_log(SMB_VFS_OP_CHFLAGS,
+	       (result != 0),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -1881,8 +1925,11 @@ static NTSTATUS smb_full_audit_streaminfo(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_STREAMINFO(handle, fsp, smb_fname, mem_ctx,
 					 pnum_streams, pstreams);
 
-	do_log(SMB_VFS_OP_STREAMINFO, NT_STATUS_IS_OK(result), handle,
-	       "%s", smb_fname->base_name);
+	do_log(SMB_VFS_OP_STREAMINFO,
+	       NT_STATUS_IS_OK(result),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -1911,8 +1958,11 @@ static const char *smb_full_audit_connectpath(vfs_handle_struct *handle,
 
 	result = SMB_VFS_NEXT_CONNECTPATH(handle, smb_fname);
 
-	do_log(SMB_VFS_OP_CONNECTPATH, result != NULL, handle,
-	       "%s", smb_fname->base_name);
+	do_log(SMB_VFS_OP_CONNECTPATH,
+	       result != NULL,
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -2425,8 +2475,11 @@ static SMB_ACL_T smb_full_audit_sys_acl_get_file(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, smb_fname,
 				type, mem_ctx);
 
-	do_log(SMB_VFS_OP_SYS_ACL_GET_FILE, (result != NULL), handle,
-	       "%s", smb_fname->base_name);
+	do_log(SMB_VFS_OP_SYS_ACL_GET_FILE,
+	       (result != NULL),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -2455,8 +2508,11 @@ static int smb_full_audit_sys_acl_blob_get_file(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_SYS_ACL_BLOB_GET_FILE(handle, smb_fname,
 			mem_ctx, blob_description, blob);
 
-	do_log(SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE, (result >= 0), handle,
-	       "%s", smb_fname->base_name);
+	do_log(SMB_VFS_OP_SYS_ACL_BLOB_GET_FILE,
+	       (result >= 0),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -2487,8 +2543,11 @@ static int smb_full_audit_sys_acl_set_file(vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, smb_fname, acltype,
 					       theacl);
 
-	do_log(SMB_VFS_OP_SYS_ACL_SET_FILE, (result >= 0), handle,
-	       "%s", smb_fname->base_name);
+	do_log(SMB_VFS_OP_SYS_ACL_SET_FILE,
+	       (result >= 0),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -2513,8 +2572,11 @@ static int smb_full_audit_sys_acl_delete_def_file(vfs_handle_struct *handle,
 
 	result = SMB_VFS_NEXT_SYS_ACL_DELETE_DEF_FILE(handle, smb_fname);
 
-	do_log(SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE, (result >= 0), handle,
-	       "%s", smb_fname->base_name);
+	do_log(SMB_VFS_OP_SYS_ACL_DELETE_DEF_FILE,
+	       (result >= 0),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -2527,8 +2589,12 @@ static ssize_t smb_full_audit_getxattr(struct vfs_handle_struct *handle,
 
 	result = SMB_VFS_NEXT_GETXATTR(handle, smb_fname, name, value, size);
 
-	do_log(SMB_VFS_OP_GETXATTR, (result >= 0), handle,
-	       "%s|%s", smb_fname->base_name, name);
+	do_log(SMB_VFS_OP_GETXATTR,
+	       (result >= 0),
+	       handle,
+	       "%s|%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname),
+	       name);
 
 	return result;
 }
@@ -2689,8 +2755,11 @@ static ssize_t smb_full_audit_listxattr(struct vfs_handle_struct *handle,
 
 	result = SMB_VFS_NEXT_LISTXATTR(handle, smb_fname, list, size);
 
-	do_log(SMB_VFS_OP_LISTXATTR, (result >= 0), handle, "%s",
-			smb_fname->base_name);
+	do_log(SMB_VFS_OP_LISTXATTR,
+	       (result >= 0),
+	       handle,
+	       "%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return result;
 }
@@ -2717,8 +2786,12 @@ static int smb_full_audit_removexattr(struct vfs_handle_struct *handle,
 
 	result = SMB_VFS_NEXT_REMOVEXATTR(handle, smb_fname, name);
 
-	do_log(SMB_VFS_OP_REMOVEXATTR, (result >= 0), handle,
-	       "%s|%s", smb_fname->base_name, name);
+	do_log(SMB_VFS_OP_REMOVEXATTR,
+	       (result >= 0),
+	       handle,
+	       "%s|%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname),
+	       name);
 
 	return result;
 }
@@ -2747,8 +2820,12 @@ static int smb_full_audit_setxattr(struct vfs_handle_struct *handle,
 	result = SMB_VFS_NEXT_SETXATTR(handle, smb_fname, name, value, size,
 				       flags);
 
-	do_log(SMB_VFS_OP_SETXATTR, (result >= 0), handle,
-	       "%s|%s", smb_fname->base_name, name);
+	do_log(SMB_VFS_OP_SETXATTR,
+	       (result >= 0),
+	       handle,
+	       "%s|%s",
+	       smb_fname_str_do_log(handle->conn, smb_fname),
+	       name);
 
 	return result;
 }
