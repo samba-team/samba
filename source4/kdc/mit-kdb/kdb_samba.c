@@ -139,7 +139,7 @@ static void kdb_samba_db_free_principal_e_data(krb5_context context,
 
 kdb_vftabl kdb_function_table = {
 	.maj_ver                   = KRB5_KDB_DAL_MAJOR_VERSION,
-	.min_ver                   = 1,
+	.min_ver                   = KRB5_KDB_DAL_MAJOR_VERSION == 6 ? 1 : 0,
 
 	.init_library              = kdb_samba_init_library,
 	.fini_library              = kdb_samba_fini_library,
