@@ -83,6 +83,17 @@ fail:
 	return status;
 }
 
+void fsp_set_gen_id(files_struct *fsp)
+{
+	static uint64_t gen_id = 1;
+
+	/*
+	 * A billion of 64-bit increments per second gives us
+	 * more than 500 years of runtime without wrap.
+	 */
+	fsp->fh->gen_id = gen_id++;
+}
+
 /****************************************************************************
  Find first available file slot.
 ****************************************************************************/
@@ -116,11 +127,12 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		fsp->op = op;
 		op->compat = fsp;
 		fsp->fnum = op->local_id;
-		fsp->fh->gen_id = smbXsrv_open_hash(op);
 	} else {
 		DEBUG(10, ("%s: req==NULL, INTERNAL_OPEN_ONLY, smbXsrv_open "
 			   "allocated\n", __func__));
 	}
+
+	fsp_set_gen_id(fsp);
 
 	/*
 	 * Create an smb_filename with "" for the base_name.  There are very

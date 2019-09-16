@@ -368,6 +368,7 @@ NTSTATUS filename_convert_with_privilege(TALLOC_CTX *mem_ctx,
 
 NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
 		 files_struct **result);
+void fsp_set_gen_id(files_struct *fsp);
 NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result);
 void file_close_conn(connection_struct *conn);

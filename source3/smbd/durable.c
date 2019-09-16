@@ -657,7 +657,6 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	}
 
 	fsp->fh->private_options = e->private_options;
-	fsp->fh->gen_id = smbXsrv_open_hash(op);
 	fsp->file_id = file_id;
 	fsp->file_pid = smb1req->smbpid;
 	fsp->vuid = smb1req->vuid;
@@ -666,6 +665,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	fsp->can_read = ((fsp->access_mask & (FILE_READ_DATA)) != 0);
 	fsp->can_write = ((fsp->access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) != 0);
 	fsp->fnum = op->local_id;
+	fsp_set_gen_id(fsp);
 
 	/*
 	 * TODO:
