@@ -330,27 +330,6 @@ static int audit_renameat(vfs_handle_struct *handle,
 	return result;
 }
 
-static int audit_unlink(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
-
-	if (lp_syslog() > 0) {
-		syslog(audit_syslog_priority(handle), "unlink %s %s%s\n",
-		       smb_fname->base_name,
-		       (result < 0) ? "failed: " : "",
-		       (result < 0) ? strerror(errno) : "");
-	}
-	DEBUG(0, ("vfs_extd_audit: unlink %s %s %s\n",
-	       smb_fname_str_dbg(smb_fname),
-	       (result < 0) ? "failed: " : "",
-	       (result < 0) ? strerror(errno) : ""));
-
-	return result;
-}
-
 static int audit_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -428,7 +407,6 @@ static struct vfs_fn_pointers vfs_extd_audit_fns = {
 	.open_fn = audit_open,
 	.close_fn = audit_close,
 	.renameat_fn = audit_renameat,
-	.unlink_fn = audit_unlink,
 	.unlinkat_fn = audit_unlinkat,
 	.chmod_fn = audit_chmod,
 	.fchmod_fn = audit_fchmod,
