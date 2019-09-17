@@ -1293,7 +1293,7 @@ WERROR NetUserEnum_r(struct libnetapi_ctx *ctx,
 	int i;
 	uint32_t entries_read = 0;
 
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
 	WERROR werr;
 	struct dcerpc_binding_handle *b = NULL;
@@ -1613,7 +1613,7 @@ WERROR NetQueryDisplayInformation_r(struct libnetapi_ctx *ctx,
 	uint32_t total_size = 0;
 	uint32_t returned_size = 0;
 
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
 	WERROR werr;
 	WERROR werr_tmp;
@@ -2993,7 +2993,7 @@ WERROR NetUserGetGroups_r(struct libnetapi_ctx *ctx,
 	int i;
 	uint32_t entries_read = 0;
 
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
 	WERROR werr;
 	struct dcerpc_binding_handle *b = NULL;
@@ -3187,7 +3187,7 @@ WERROR NetUserSetGroups_r(struct libnetapi_ctx *ctx,
 
 	int i, k;
 
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
 	WERROR werr;
 	struct dcerpc_binding_handle *b = NULL;
@@ -3525,7 +3525,7 @@ WERROR NetUserGetLocalGroups_r(struct libnetapi_ctx *ctx,
 	int i;
 	uint32_t entries_read = 0;
 
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_OK;
 	WERROR werr;
 	struct dcerpc_binding_handle *b = NULL;
