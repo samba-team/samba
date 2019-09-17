@@ -778,7 +778,10 @@ static virusfilter_action infected_file_action_delete(
 	int saved_errno = 0;
 
 	become_root();
-	ret = SMB_VFS_NEXT_UNLINK(handle, fsp->fsp_name);
+	ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				handle->conn->cwd_fsp,
+				fsp->fsp_name,
+				0);
 	if (ret == -1) {
 		saved_errno = errno;
 	}
