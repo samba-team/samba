@@ -367,7 +367,7 @@ static NTSTATUS resolve_and_ping_netbios(ADS_STRUCT *ads,
 {
 	int count, i;
 	struct ip_service *ip_list;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 
 	DEBUG(6, ("resolve_and_ping_netbios: (cldap) looking for domain '%s'\n",
 		  domain));
@@ -414,7 +414,7 @@ static NTSTATUS resolve_and_ping_dns(ADS_STRUCT *ads, const char *sitename,
 {
 	int count;
 	struct ip_service *ip_list = NULL;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status;
 
 	DEBUG(6, ("resolve_and_ping_dns: (cldap) looking for realm '%s'\n",
 		  realm));
@@ -1780,7 +1780,7 @@ uint32_t ads_get_kvno(ADS_STRUCT *ads, const char *account_name)
 	char *filter;
 	const char *attrs[] = {"msDS-KeyVersionNumber", NULL};
 	char *dn_string = NULL;
-	ADS_STATUS ret = ADS_ERROR(LDAP_SUCCESS);
+	ADS_STATUS ret;
 
 	DEBUG(5,("ads_get_kvno: Searching for account %s\n", account_name));
 	if (asprintf(&filter, "(samAccountName=%s)", account_name) == -1) {
@@ -1859,7 +1859,7 @@ ADS_STATUS ads_clear_service_principal_names(ADS_STRUCT *ads, const char *machin
 	LDAPMessage *res = NULL;
 	ADS_MODLIST mods;
 	const char *servicePrincipalName[1] = {NULL};
-	ADS_STATUS ret = ADS_ERROR(LDAP_SUCCESS);
+	ADS_STATUS ret;
 	char *dn_string = NULL;
 
 	ret = ads_find_machine_acct(ads, &res, machine_name);
