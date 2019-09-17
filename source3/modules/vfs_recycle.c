@@ -452,8 +452,10 @@ static void recycle_do_touch(vfs_handle_struct *handle,
 /**
  * Check if file should be recycled
  **/
-static int recycle_unlink(vfs_handle_struct *handle,
-    const struct smb_filename *smb_fname)
+static int recycle_unlink_internal(vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				int flags)
 {
 	connection_struct *conn = handle->conn;
 	char *path_name = NULL;
@@ -670,6 +672,15 @@ done:
 	return rc;
 }
 
+static int recycle_unlink(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname)
+{
+	return recycle_unlink_internal(handle,
+				handle->conn->cwd_fsp,
+				smb_fname,
+				0);
+}
+
 static int recycle_unlinkat(vfs_handle_struct *handle,
 		struct files_struct *dirfsp,
 		const struct smb_filename *smb_fname,
@@ -684,8 +695,10 @@ static int recycle_unlinkat(vfs_handle_struct *handle,
 					flags);
 	} else {
 		SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
-		ret = recycle_unlink(handle,
-					smb_fname);
+		ret = recycle_unlink_internal(handle,
+					dirfsp,
+					smb_fname,
+					flags);
 	}
 	return ret;
 }
