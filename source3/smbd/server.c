@@ -2020,7 +2020,8 @@ extern void build_options(bool screen);
 	   after the fork on every single connection.  This is a small
 	   performance improvment and reduces the total number of system
 	   fds used. */
-	if (!share_info_db_init()) {
+	status = share_info_db_init();
+	if (!NT_STATUS_IS_OK(status)) {
 		exit_daemon("ERROR: failed to load share info db.", EACCES);
 	}
 

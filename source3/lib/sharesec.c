@@ -24,6 +24,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "util_tdb.h"
+#include "libcli/util/ntstatus.h"
 
 /*******************************************************************
  Create the share security tdb.
@@ -136,7 +137,7 @@ static int upgrade_v2_to_v3(struct db_record *rec, void *priv)
 	return 0;
 }
 
-bool share_info_db_init(void)
+NTSTATUS share_info_db_init(void)
 {
 	const char *vstring = "INFO/version";
 	int32_t vers_id = 0;
@@ -145,12 +146,12 @@ bool share_info_db_init(void)
 	char *db_path;
 
 	if (share_db != NULL) {
-		return True;
+		return NT_STATUS_OK;
 	}
 
 	db_path = state_path(talloc_tos(), "share_info.tdb");
 	if (db_path == NULL) {
-		return false;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	share_db = db_open(NULL, db_path, 0,
@@ -160,7 +161,7 @@ bool share_info_db_init(void)
 		DEBUG(0,("Failed to open share info database %s (%s)\n",
 			 db_path, strerror(errno)));
 		TALLOC_FREE(db_path);
-		return False;
+		return map_nt_error_from_unix_common(errno);
 	}
 	TALLOC_FREE(db_path);
 
@@ -170,13 +171,13 @@ bool share_info_db_init(void)
 	}
 
 	if (vers_id == SHARE_DATABASE_VERSION_V3) {
-		return true;
+		return NT_STATUS_OK;
 	}
 
 	if (dbwrap_transaction_start(share_db) != 0) {
 		DEBUG(0, ("transaction_start failed\n"));
 		TALLOC_FREE(share_db);
-		return false;
+		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
 	status = dbwrap_fetch_int32_bystring(share_db, vstring, &vers_id);
@@ -191,7 +192,7 @@ bool share_info_db_init(void)
 		if (dbwrap_transaction_cancel(share_db)) {
 			smb_panic("transaction_cancel failed");
 		}
-		return true;
+		return NT_STATUS_OK;
 	}
 
 	/* Move to at least V2. */
@@ -228,10 +229,16 @@ bool share_info_db_init(void)
 	/* Finally upgrade to version 3, with canonicalized sharenames. */
 
 	status = dbwrap_traverse(share_db, upgrade_v2_to_v3, &upgrade_ok, NULL);
-	if (!NT_STATUS_IS_OK(status) || upgrade_ok == false) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("traverse failed\n"));
 		goto cancel;
 	}
+	if (!upgrade_ok) {
+		DBG_ERR("upgrade failed.\n");
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto cancel;
+	}
+
 	status = dbwrap_store_int32_bystring(
 		share_db, vstring, SHARE_DATABASE_VERSION_V3);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -242,17 +249,17 @@ bool share_info_db_init(void)
 
 	if (dbwrap_transaction_commit(share_db) != 0) {
 		DEBUG(0, ("transaction_commit failed\n"));
-		return false;
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	return true;
+	return NT_STATUS_OK;
 
  cancel:
 	if (dbwrap_transaction_cancel(share_db)) {
 		smb_panic("transaction_cancel failed");
 	}
 
-	return false;
+	return status;
 }
 
 /*******************************************************************
@@ -304,7 +311,8 @@ struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *ser
 		return NULL;
 	}
 
-	if (!share_info_db_init()) {
+	status = share_info_db_init();
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(c_servicename);
 		return NULL;
 	}
@@ -362,7 +370,8 @@ bool set_share_security(const char *share_name, struct security_descriptor *psd)
 		goto out;
 	}
 
-	if (!share_info_db_init()) {
+	status = share_info_db_init();
+	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
 
@@ -410,7 +419,8 @@ bool delete_share_security(const char *servicename)
 		return NULL;
 	}
 
-	if (!share_info_db_init()) {
+	status = share_info_db_init();
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(c_servicename);
 		return False;
 	}
