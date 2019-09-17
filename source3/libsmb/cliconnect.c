@@ -375,6 +375,8 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 		/*
 		 * Ignore the error and hope that NTLM will work
 		 */
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
 	}
 
 	DBG_DEBUG("Successfully authenticated as %s to access %s using "
