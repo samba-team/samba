@@ -644,6 +644,7 @@ static NTSTATUS share_mode_data_ltdb_store(struct share_mode_data *d,
 					   size_t num_share_mode_dbufs)
 {
 	DATA_BLOB blob = { 0 };
+	int flags = 0;
 	NTSTATUS status;
 
 	if (!d->modified) {
@@ -685,11 +686,15 @@ static NTSTATUS share_mode_data_ltdb_store(struct share_mode_data *d,
 	ltdb->share_mode_data_len = blob.length;
 
 store:
+	if (d->num_persistent > 0) {
+		flags |= DBWRAP_STORE_PERSISTENT;
+	}
+
 	status = locking_tdb_data_store(key,
 					ltdb,
 					share_mode_dbufs,
 					num_share_mode_dbufs,
-					0);
+					flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("locking_tdb_data_store failed: %s\n",
 			nt_errstr(status));
