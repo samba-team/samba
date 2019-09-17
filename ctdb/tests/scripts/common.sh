@@ -23,6 +23,30 @@ if [ -d "$CTDB_SCRIPTS_TESTS_LIBEXEC_DIR" ] ; then
 	PATH="${CTDB_SCRIPTS_TESTS_LIBEXEC_DIR}:${PATH}"
 fi
 
+ctdb_test_error ()
+{
+	if [ $# -gt 0 ] ; then
+		echo "$*"
+	fi
+	exit 1
+}
+
+ctdb_test_fail ()
+{
+	if [ $# -gt 0 ] ; then
+		echo "$*"
+	fi
+	exit 1
+}
+
+ctdb_test_skip ()
+{
+	if [ $# -gt 0 ] ; then
+		echo "$*"
+	fi
+	exit 0
+}
+
 # Wait until either timeout expires or command succeeds.  The command
 # will be tried once per second, unless timeout has format T/I, where
 # I is the recheck interval.
