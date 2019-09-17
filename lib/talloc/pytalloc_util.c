@@ -230,7 +230,7 @@ static void *_pytalloc_get_checked_type(PyObject *py_obj, const char *type_name,
 {
 	TALLOC_CTX *mem_ctx;
 	void *ptr = NULL;
-	void *type_obj = talloc_check_name(ptr, type_name);
+	void *type_obj;
 
 	mem_ctx = _pytalloc_get_mem_ctx(py_obj);
 	ptr = _pytalloc_get_ptr(py_obj);
