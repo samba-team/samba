@@ -1157,7 +1157,10 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 	if (is_directory) {
 		ret = SMB_VFS_NEXT_RMDIR(handle, &local_fname);
 	} else {
-		ret = SMB_VFS_NEXT_UNLINK(handle, &local_fname);
+		ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				conn->cwd_fsp,
+				&local_fname,
+				0);
 	}
 	unbecome_root();
 
@@ -1211,7 +1214,10 @@ int unlink_acl_common(struct vfs_handle_struct *handle,
 	int ret;
 
 	/* Try the normal unlink first. */
-	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+	ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				flags);
 	if (ret == 0) {
 		return 0;
 	}
