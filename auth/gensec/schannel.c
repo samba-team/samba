@@ -306,11 +306,6 @@ static NTSTATUS netsec_do_seal(struct schannel_state *state,
 				return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 			}
 
-			/*
-			 * Looks like we have to reuse the initial IV which is
-			 * cryptographically wrong!
-			 */
-			gnutls_cipher_set_iv(cipher_hnd, iv.data, iv.size);
 			rc = gnutls_cipher_encrypt(cipher_hnd,
 						   data,
 						   length);
@@ -319,25 +314,43 @@ static NTSTATUS netsec_do_seal(struct schannel_state *state,
 				return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 			}
 		} else {
+
+			/*
+			 * Workaround bug present in gnutls 3.6.8:
+			 *
+			 * gnutls_cipher_decrypt() uses an optimization
+			 * internally that breaks decryption when processing
+			 * buffers with their length not being a multiple
+			 * of the blocksize.
+			 */
+
+			uint8_t tmp[16] = { 0, };
+			uint32_t tmp_dlength = MIN(length, sizeof(tmp) - 8);
+
+			memcpy(tmp, confounder, 8);
+			memcpy(tmp + 8, data, tmp_dlength);
+
 			rc = gnutls_cipher_decrypt(cipher_hnd,
-						   confounder,
-						   8);
+						   tmp,
+						   8 + tmp_dlength);
 			if (rc < 0) {
+				ZERO_STRUCT(tmp);
 				gnutls_cipher_deinit(cipher_hnd);
 				return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 			}
 
-			/*
-			 * Looks like we have to reuse the initial IV which is
-			 * cryptographically wrong!
-			 */
-			gnutls_cipher_set_iv(cipher_hnd, iv.data, iv.size);
-			rc = gnutls_cipher_decrypt(cipher_hnd,
-						   data,
-						   length);
-			if (rc < 0) {
-				gnutls_cipher_deinit(cipher_hnd);
-				return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+			memcpy(confounder, tmp, 8);
+			memcpy(data, tmp + 8, tmp_dlength);
+			ZERO_STRUCT(tmp);
+
+			if (length > tmp_dlength) {
+				rc = gnutls_cipher_decrypt(cipher_hnd,
+							   data + tmp_dlength,
+							   length - tmp_dlength);
+				if (rc < 0) {
+					gnutls_cipher_deinit(cipher_hnd);
+					return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+				}
 			}
 		}
 		gnutls_cipher_deinit(cipher_hnd);
