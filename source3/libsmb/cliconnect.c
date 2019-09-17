@@ -229,6 +229,8 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 	const char *user_account = NULL;
 	const char *user_domain = NULL;
 	const char *pass = NULL;
+	char *canon_principal = NULL;
+	char *canon_realm = NULL;
 	const char *target_hostname = NULL;
 	const DATA_BLOB *server_blob = NULL;
 	bool got_kerberos_mechanism = false;
@@ -237,6 +239,7 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 	bool need_kinit = false;
 	bool auth_requested = true;
 	int ret;
+	bool ok;
 
 	target_hostname = smbXcli_conn_remote_name(cli->conn);
 	server_blob = smbXcli_conn_server_gss_blob(cli->conn);
@@ -245,7 +248,6 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 	if (server_blob != NULL && server_blob->length != 0) {
 		char *OIDs[ASN1_MAX_OIDS] = { NULL, };
 		size_t i;
-		bool ok;
 
 		/*
 		 * The server sent us the first part of the SPNEGO exchange in the
@@ -354,9 +356,19 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 	 * only if required!
 	 */
 	setenv(KRB5_ENV_CCNAME, "MEMORY:cliconnect", 1);
-	ret = kerberos_kinit_password(user_principal, pass,
-				0 /* no time correction for now */,
-				NULL);
+	ret = kerberos_kinit_password_ext(user_principal,
+					  pass,
+					  0,
+					  0,
+					  0,
+					  NULL,
+					  false,
+					  false,
+					  0,
+					  frame,
+					  &canon_principal,
+					  &canon_realm,
+					  NULL);
 	if (ret != 0) {
 		int dbglvl = DBGLVL_NOTICE;
 
@@ -379,9 +391,26 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 		return NT_STATUS_OK;
 	}
 
-	DBG_DEBUG("Successfully authenticated as %s to access %s using "
+	ok = cli_credentials_set_principal(creds,
+					   canon_principal,
+					   CRED_SPECIFIED);
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ok = cli_credentials_set_realm(creds,
+				       canon_realm,
+				       CRED_SPECIFIED);
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	DBG_DEBUG("Successfully authenticated as %s (%s) to access %s using "
 		  "Kerberos\n",
 		  user_principal,
+		  canon_principal,
 		  target_hostname);
 
 	TALLOC_FREE(frame);
