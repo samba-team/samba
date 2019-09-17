@@ -168,11 +168,11 @@ if with_pam:
     plantestsuite("samba.tests.pam_winbind(local)", "ad_member",
                   [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
                    valgrindify(python), pam_wrapper_so_path,
-                   "$SERVER", "$USERNAME", "$PASSWORD"])
+                   "$SERVER", "$USERNAME", "$PASSWORD", "''"])
     plantestsuite("samba.tests.pam_winbind(domain)", "ad_member",
                   [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
                    valgrindify(python), pam_wrapper_so_path,
-                   "$DOMAIN", "$DC_USERNAME", "$DC_PASSWORD"])
+                   "$DOMAIN", "$DC_USERNAME", "$DC_PASSWORD", "''"])
 
     for pam_options in ["''", "use_authtok", "try_authtok"]:
         plantestsuite("samba.tests.pam_winbind_chauthtok with options %s" % pam_options, "ad_member",
@@ -185,7 +185,7 @@ if with_pam:
     plantestsuite("samba.tests.pam_winbind_warn_pwd_expire(domain)", "ad_member",
                   [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind_warn_pwd_expire.sh"),
                    valgrindify(python), pam_wrapper_so_path,
-                   "$DOMAIN", "alice", "Secret007"])
+                   "$DOMAIN", "alice", "Secret007", "''"])
 
 
 plantestsuite("samba.unittests.krb5samba", "none",

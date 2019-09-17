@@ -53,11 +53,11 @@ PAM_WRAPPER_DEBUGLEVEL=${PAM_WRAPPER_DEBUGLEVEL:="2"}
 export PAM_WRAPPER_DEBUGLEVEL
 
 case $PAM_OPTIONS in
-    use_authtok)
+    *use_authtok*)
         PAM_AUTHTOK="$NEWPASSWORD"
         export PAM_AUTHTOK
     ;;
-    try_authtok)
+    *try_authtok*)
         PAM_AUTHTOK="$NEWPASSWORD"
         export PAM_AUTHTOK
     ;;
