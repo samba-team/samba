@@ -317,34 +317,6 @@ static int cap_lstat(vfs_handle_struct *handle, struct smb_filename *smb_fname)
 	return ret;
 }
 
-static int cap_unlink(vfs_handle_struct *handle,
-		      const struct smb_filename *smb_fname)
-{
-	struct smb_filename *smb_fname_tmp = NULL;
-	char *cappath = NULL;
-	int ret;
-
-	cappath = capencode(talloc_tos(), smb_fname->base_name);
-	if (!cappath) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	/* Setup temporary smb_filename structs. */
-	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
-	if (smb_fname_tmp == NULL) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	smb_fname_tmp->base_name = cappath;
-
-	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname_tmp);
-
-	TALLOC_FREE(smb_fname_tmp);
-	return ret;
-}
-
 static int cap_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1074,7 +1046,6 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.renameat_fn = cap_renameat,
 	.stat_fn = cap_stat,
 	.lstat_fn = cap_lstat,
-	.unlink_fn = cap_unlink,
 	.unlinkat_fn = cap_unlinkat,
 	.chmod_fn = cap_chmod,
 	.chown_fn = cap_chown,
