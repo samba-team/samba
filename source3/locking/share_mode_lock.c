@@ -524,7 +524,8 @@ static NTSTATUS locking_tdb_data_store(
 	TDB_DATA key,
 	const struct locking_tdb_data *ltdb,
 	const TDB_DATA *share_mode_dbufs,
-	size_t num_share_mode_dbufs)
+	size_t num_share_mode_dbufs,
+	int flags)
 {
 	uint8_t share_mode_data_len_buf[4];
 	TDB_DATA dbufs[num_share_mode_dbufs+3];
@@ -536,7 +537,7 @@ static NTSTATUS locking_tdb_data_store(
 		/*
 		 * Nothing to write
 		 */
-		status = share_mode_g_lock_writev(key, NULL, 0, 0);
+		status = share_mode_g_lock_writev(key, NULL, 0, flags);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_ERR("share_mode_g_lock_writev(NULL) failed: %s\n",
 				nt_errstr(status));
@@ -570,7 +571,7 @@ static NTSTATUS locking_tdb_data_store(
 		       num_share_mode_dbufs * sizeof(TDB_DATA));
 	}
 
-	status = share_mode_g_lock_writev(key, dbufs, ARRAY_SIZE(dbufs), 0);
+	status = share_mode_g_lock_writev(key, dbufs, ARRAY_SIZE(dbufs), flags);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("share_mode_g_lock_writev() failed: %s\n",
 			nt_errstr(status));
@@ -687,7 +688,8 @@ store:
 	status = locking_tdb_data_store(key,
 					ltdb,
 					share_mode_dbufs,
-					num_share_mode_dbufs);
+					num_share_mode_dbufs,
+					0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("locking_tdb_data_store failed: %s\n",
 			nt_errstr(status));
