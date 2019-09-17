@@ -725,7 +725,7 @@ NTSTATUS dcerpc_winreg_enumvals(TALLOC_CTX *mem_ctx,
 
 
 	WERROR result = WERR_OK;
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 
 	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
@@ -894,7 +894,7 @@ NTSTATUS dcerpc_winreg_delete_subkeys_recursive(TALLOC_CTX *mem_ctx,
 	struct policy_handle key_hnd;
 	struct winreg_String wkey = { 0, };
 	WERROR result = WERR_OK;
-	NTSTATUS status = NT_STATUS_OK;
+	NTSTATUS status;
 	uint32_t i;
 
 	ZERO_STRUCT(key_hnd);
