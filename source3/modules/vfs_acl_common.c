@@ -1204,7 +1204,9 @@ int rmdir_acl_common(struct vfs_handle_struct *handle,
 }
 
 int unlink_acl_common(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags)
 {
 	int ret;
 

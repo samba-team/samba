@@ -281,7 +281,10 @@ static int connect_acl_xattr(struct vfs_handle_struct *handle,
 static int acl_xattr_unlink(vfs_handle_struct *handle,
                         const struct smb_filename *smb_fname)
 {
-	return unlink_acl_common(handle, smb_fname);
+	return unlink_acl_common(handle,
+				handle->conn->cwd_fsp,
+				smb_fname,
+				0);
 }
 
 static int acl_xattr_unlinkat(vfs_handle_struct *handle,
@@ -294,7 +297,10 @@ static int acl_xattr_unlinkat(vfs_handle_struct *handle,
 	if (flags & AT_REMOVEDIR) {
 		ret = rmdir_acl_common(handle, smb_fname);
 	} else {
-		ret = unlink_acl_common(handle, smb_fname);
+		ret = unlink_acl_common(handle,
+				dirfsp,
+				smb_fname,
+				flags);
 	}
 	return ret;
 }
