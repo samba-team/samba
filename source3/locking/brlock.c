@@ -1727,7 +1727,8 @@ static bool brl_parse_data(struct byte_range_lock *br_lck, TDB_DATA data)
  TALLOC_FREE(brl) will release the lock in the destructor.
 ********************************************************************/
 
-struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
+static struct byte_range_lock *brl_get_locks_internal(TALLOC_CTX *mem_ctx,
+						      struct file_id *file_id)
 {
 	TDB_DATA key, data;
 	struct byte_range_lock *br_lck;
@@ -1737,9 +1738,7 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 		return NULL;
 	}
 
-	br_lck->fsp = fsp;
-
-	key.dptr = (uint8_t *)&fsp->file_id;
+	key.dptr = (uint8_t *)file_id;
 	key.dsize = sizeof(struct file_id);
 
 	br_lck->record = dbwrap_fetch_locked(brlock_db, br_lck, key);
@@ -1765,13 +1764,32 @@ struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx, files_struct *fsp)
 		struct lock_struct *locks = br_lck->lock_data;
 		DBG_DEBUG("%u current locks on file_id %s\n",
 			  br_lck->num_locks,
-			  file_id_str_buf(fsp->file_id, &buf));
+			  file_id_str_buf(*file_id, &buf));
 		for( i = 0; i < br_lck->num_locks; i++) {
 			print_lock_struct(i, &locks[i]);
 		}
 	}
 
 	return br_lck;
+}
+
+struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
+				      files_struct *fsp)
+{
+	struct byte_range_lock *brl = NULL;
+
+	brl = brl_get_locks_internal(mem_ctx, &fsp->file_id);
+	if (brl == NULL) {
+		return NULL;
+	}
+	brl->fsp = fsp;
+	return brl;
+}
+
+struct byte_range_lock *brl_get_locks_for_cleanup(TALLOC_CTX *mem_ctx,
+						  struct file_id *file_id)
+{
+	return brl_get_locks_internal(mem_ctx, file_id);
 }
 
 struct brl_get_locks_readonly_state {

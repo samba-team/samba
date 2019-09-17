@@ -103,6 +103,8 @@ NTSTATUS share_mode_do_locked_brl(files_struct *fsp,
 		 void *private_data);
 struct byte_range_lock *brl_get_locks(TALLOC_CTX *mem_ctx,
 					files_struct *fsp);
+struct byte_range_lock *brl_get_locks_for_cleanup(TALLOC_CTX *mem_ctx,
+						  struct file_id *file_id);
 struct byte_range_lock *brl_get_locks_readonly(files_struct *fsp);
 bool brl_cleanup_disconnected(struct file_id fid, uint64_t open_persistent_id);
 void brl_set_modified(struct byte_range_lock *br_lck, bool modified);
