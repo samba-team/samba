@@ -726,7 +726,12 @@ bool share_entry_stale_pid(struct share_mode_entry *e)
 	struct server_id_buf buf;
 	bool exists;
 
+	if (e->protect) {
+		SMB_ASSERT(!e->stale);
+		return false;
+	}
 	if (e->stale) {
+		SMB_ASSERT(!e->protect);
 		return true;
 	}
 
@@ -739,6 +744,11 @@ bool share_entry_stale_pid(struct share_mode_entry *e)
 
 	DBG_DEBUG("PID %s does not exist anymore\n",
 		  server_id_str_buf(e->pid, &buf));
+
+	if (e->flags & SHARE_ENTRY_FLAG_PERSISTENT_OPEN) {
+		e->protect = true;
+		return false;
+	}
 
 	e->stale = true;
 
