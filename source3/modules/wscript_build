@@ -115,14 +115,6 @@ bld.SAMBA3_MODULE('vfs_recycle',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_recycle'),
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_recycle'))
 
-bld.SAMBA3_MODULE('vfs_netatalk',
-                 subsystem='vfs',
-                 source='vfs_netatalk.c',
-                 deps='samba-util',
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('vfs_netatalk'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_netatalk'))
-
 bld.SAMBA3_MODULE('vfs_fruit',
                  subsystem='vfs',
                  source='vfs_fruit.c',
