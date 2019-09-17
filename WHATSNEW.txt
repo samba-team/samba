@@ -1,12 +1,11 @@
-Release Announcements
-=====================
+                   ==============================
+                   Release Notes for Samba 4.11.0
+                         September 17, 2019
+		   ==============================
 
-This is the fourth release candidate of Samba 4.11.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
 
-Samba 4.11 will be the next version of the Samba suite.
+This is the first stable release of the Samba 4.11 release series.
+Please read the release notes carefully before upgrading.
 
 
 UPGRADING
@@ -366,6 +365,10 @@ smb.conf changes
   rndc command                       Deprecated
   lanman auth                        Deprecated
   encrypt passwords                  Deprecated
+
+
+CHANGES SINCE 4.11.0rc4
+=======================
 
 
 CHANGES SINCE 4.11.0rc3
