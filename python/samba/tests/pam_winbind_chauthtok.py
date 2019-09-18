@@ -31,6 +31,9 @@ class PamChauthtokTests(samba.tests.TestCase):
         expected_rc = 0 # PAM_SUCCESS
 
         tc = pypamtest.TestCase(pypamtest.PAMTEST_CHAUTHTOK, expected_rc)
-        res = pypamtest.run_pamtest(unix_username, "samba", [tc], [password, newpassword, newpassword])
+        try:
+            res = pypamtest.run_pamtest(unix_username, "samba", [tc], [password, newpassword, newpassword])
+        except pypamtest.PamTestError as e:
+            raise AssertionError(str(e))
 
         self.assertTrue(res is not None)
