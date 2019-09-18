@@ -593,65 +593,6 @@ static int xattr_tdb_mkdirat(vfs_handle_struct *handle,
 /*
  * On unlink we need to delete the tdb record
  */
-static int xattr_tdb_unlink(vfs_handle_struct *handle,
-			    const struct smb_filename *smb_fname)
-{
-	struct smb_filename *smb_fname_tmp = NULL;
-	struct file_id id;
-	struct db_context *db;
-	int ret = -1;
-	bool remove_record = false;
-	TALLOC_CTX *frame = talloc_stackframe();
-
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
-				if (!xattr_tdb_init(-1, frame, &db))
-				{
-					TALLOC_FREE(frame); return -1;
-				});
-
-	smb_fname_tmp = cp_smb_filename(frame, smb_fname);
-	if (smb_fname_tmp == NULL) {
-		TALLOC_FREE(frame);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	if (smb_fname_tmp->flags & SMB_FILENAME_POSIX_PATH) {
-		ret = SMB_VFS_NEXT_LSTAT(handle, smb_fname_tmp);
-	} else {
-		ret = SMB_VFS_NEXT_STAT(handle, smb_fname_tmp);
-	}
-	if (ret == -1) {
-		goto out;
-	}
-
-	if (smb_fname_tmp->st.st_ex_nlink == 1) {
-		/* Only remove record on last link to file. */
-		remove_record = true;
-	}
-
-	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname_tmp);
-
-	if (ret == -1) {
-		goto out;
-	}
-
-	if (!remove_record) {
-		goto out;
-	}
-
-	id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &smb_fname_tmp->st);
-
-	xattr_tdb_remove_all_attrs(db, &id);
-
- out:
-	TALLOC_FREE(frame);
-	return ret;
-}
-
-/*
- * On unlink we need to delete the tdb record
- */
 static int xattr_tdb_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -815,7 +756,6 @@ static struct vfs_fn_pointers vfs_xattr_tdb_fns = {
 	.fremovexattr_fn = xattr_tdb_fremovexattr,
 	.open_fn = xattr_tdb_open,
 	.mkdirat_fn = xattr_tdb_mkdirat,
-	.unlink_fn = xattr_tdb_unlink,
 	.unlinkat_fn = xattr_tdb_unlinkat,
 	.rmdir_fn = xattr_tdb_rmdir,
 	.connect_fn = xattr_tdb_connect,
