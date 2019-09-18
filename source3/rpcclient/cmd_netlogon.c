@@ -927,6 +927,46 @@ static NTSTATUS cmd_netlogon_capabilities(struct rpc_pipe_client *cli,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS cmd_netlogon_logongetdomaininfo(struct rpc_pipe_client *cli,
+						TALLOC_CTX *mem_ctx, int argc,
+						const char **argv)
+{
+	union netr_WorkstationInfo query;
+	struct netr_WorkstationInformation workstation_info;
+	union netr_DomainInfo *domain_info;
+	NTSTATUS status;
+	char *s;
+
+	if (argc > 1) {
+		fprintf(stderr, "Usage: %s\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	ZERO_STRUCT(workstation_info);
+
+	query.workstation_info = &workstation_info;
+
+	status = netlogon_creds_cli_LogonGetDomainInfo(rpcclient_netlogon_creds,
+						       cli->binding_handle,
+						       mem_ctx,
+						       1,
+						       &query,
+						       &domain_info);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "netlogon_creds_cli_LogonGetDomainInfo failed: %s\n",
+			nt_errstr(status));
+		return status;
+	}
+
+	s = NDR_PRINT_STRUCT_STRING(mem_ctx, netr_DomainInformation, domain_info->domain_info);
+	if (s) {
+		printf("%s\n", s);
+		TALLOC_FREE(s);
+	}
+
+	return NT_STATUS_OK;
+}
+
 /* List of commands exported by this module */
 
 struct cmd_set netlogon_commands[] = {
@@ -1128,7 +1168,17 @@ struct cmd_set netlogon_commands[] = {
 		.usage              = "",
 		.use_netlogon_creds = true,
 	},
-
+	{
+		.name               = "logongetdomaininfo",
+		.returntype         = RPC_RTYPE_NTSTATUS,
+		.ntfn               = cmd_netlogon_logongetdomaininfo,
+		.wfn                = NULL,
+		.table              = &ndr_table_netlogon,
+		.rpc_pipe           = NULL,
+		.description        = "Return LogonGetDomainInfo",
+		.usage              = "",
+		.use_netlogon_creds = true,
+	},
 	{
 		.name = NULL,
 	}
