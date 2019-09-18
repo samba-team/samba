@@ -230,12 +230,6 @@ static int syncops_open(vfs_handle_struct *handle,
 			       (handle, smb_fname, fsp, flags, mode));
 }
 
-static int syncops_unlink(vfs_handle_struct *handle,
-			  const struct smb_filename *smb_fname)
-{
-        SYNCOPS_NEXT_SMB_FNAME(UNLINK, smb_fname, (handle, smb_fname));
-}
-
 static int syncops_unlinkat(vfs_handle_struct *handle,
 			files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -340,7 +334,6 @@ static struct vfs_fn_pointers vfs_syncops_fns = {
 	.rmdir_fn = syncops_rmdir,
 	.open_fn = syncops_open,
 	.renameat_fn = syncops_renameat,
-	.unlink_fn = syncops_unlink,
 	.unlinkat_fn = syncops_unlinkat,
 	.symlinkat_fn = syncops_symlinkat,
 	.linkat_fn = syncops_linkat,
