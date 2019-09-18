@@ -2219,23 +2219,6 @@ static int snapper_gmt_open(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int snapper_gmt_unlink(vfs_handle_struct *handle,
-			      const struct smb_filename *smb_fname)
-{
-	time_t timestamp = 0;
-
-	if (!snapper_gmt_strip_snapshot(talloc_tos(), handle,
-					smb_fname->base_name,
-					&timestamp, NULL)) {
-		return -1;
-	}
-	if (timestamp != 0) {
-		errno = EROFS;
-		return -1;
-	}
-	return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
-}
-
 static int snapper_gmt_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -2918,7 +2901,6 @@ static struct vfs_fn_pointers snapper_fns = {
 	.stat_fn = snapper_gmt_stat,
 	.lstat_fn = snapper_gmt_lstat,
 	.open_fn = snapper_gmt_open,
-	.unlink_fn = snapper_gmt_unlink,
 	.unlinkat_fn = snapper_gmt_unlinkat,
 	.chmod_fn = snapper_gmt_chmod,
 	.chown_fn = snapper_gmt_chown,
