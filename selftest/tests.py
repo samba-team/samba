@@ -185,10 +185,35 @@ if with_pam:
                        valgrindify(python), pam_wrapper_so_path,
                        "$SERVER", "$USERNAME", "$PASSWORD",
                        pam_options])
-        plantestsuite("samba.tests.pam_winbind(domain+%s)" % description, env,
+        plantestsuite("samba.tests.pam_winbind(domain1+%s)" % description, env,
                       [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
                        valgrindify(python), pam_wrapper_so_path,
                        "$DOMAIN", "$DC_USERNAME", "$DC_PASSWORD",
+                       pam_options])
+        plantestsuite("samba.tests.pam_winbind(domain2+%s)" % description, env,
+                      [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
+                       valgrindify(python), pam_wrapper_so_path,
+                       "$REALM", "$DC_USERNAME", "$DC_PASSWORD",
+                       pam_options])
+        plantestsuite("samba.tests.pam_winbind(domain3+%s)" % description, env,
+                      [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
+                       valgrindify(python), pam_wrapper_so_path,
+                       "''", "${DC_USERNAME}@${DOMAIN}", "$DC_PASSWORD",
+                       pam_options])
+        plantestsuite("samba.tests.pam_winbind(domain4+%s)" % description, env,
+                      [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
+                       valgrindify(python), pam_wrapper_so_path,
+                       "''", "${DC_USERNAME}@${REALM}", "$DC_PASSWORD",
+                       pam_options])
+        plantestsuite("samba.tests.pam_winbind(domain5+%s)" % description, env,
+                      [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
+                       valgrindify(python), pam_wrapper_so_path,
+                       "$REALM", "${DC_USERNAME}@${DOMAIN}", "$DC_PASSWORD",
+                       pam_options])
+        plantestsuite("samba.tests.pam_winbind(domain6+%s)" % description, env,
+                      [os.path.join(srcdir(), "python/samba/tests/test_pam_winbind.sh"),
+                       valgrindify(python), pam_wrapper_so_path,
+                       "$DOMAIN", "${DC_USERNAME}@${REALM}", "$DC_PASSWORD",
                        pam_options])
 
         for authtok_options in ["", "use_authtok", "try_authtok"]:
