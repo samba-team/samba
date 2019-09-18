@@ -2204,24 +2204,6 @@ static uint64_t vfswrap_get_alloc_size(vfs_handle_struct *handle,
 	return result;
 }
 
-static int vfswrap_unlink(vfs_handle_struct *handle,
-			  const struct smb_filename *smb_fname)
-{
-	int result = -1;
-
-	START_PROFILE(syscall_unlink);
-
-	if (smb_fname->stream_name) {
-		errno = ENOENT;
-		goto out;
-	}
-	result = unlink(smb_fname->base_name);
-
- out:
-	END_PROFILE(syscall_unlink);
-	return result;
-}
-
 static int vfswrap_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -3511,7 +3493,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.fstat_fn = vfswrap_fstat,
 	.lstat_fn = vfswrap_lstat,
 	.get_alloc_size_fn = vfswrap_get_alloc_size,
-	.unlink_fn = vfswrap_unlink,
 	.unlinkat_fn = vfswrap_unlinkat,
 	.chmod_fn = vfswrap_chmod,
 	.fchmod_fn = vfswrap_fchmod,

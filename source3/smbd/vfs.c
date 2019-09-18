@@ -1974,13 +1974,6 @@ uint64_t smb_vfs_call_get_alloc_size(struct vfs_handle_struct *handle,
 	return handle->fns->get_alloc_size_fn(handle, fsp, sbuf);
 }
 
-int smb_vfs_call_unlink(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	VFS_FIND(unlink);
-	return handle->fns->unlink_fn(handle, smb_fname);
-}
-
 int smb_vfs_call_unlinkat(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,

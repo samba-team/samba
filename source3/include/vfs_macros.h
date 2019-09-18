@@ -221,11 +221,6 @@
 #define SMB_VFS_NEXT_GET_ALLOC_SIZE(conn, fsp, sbuf) \
 	smb_vfs_call_get_alloc_size((conn)->next, (fsp), (sbuf))
 
-#define SMB_VFS_UNLINK(conn, path) \
-	smb_vfs_call_unlink((conn)->vfs_handles, (path))
-#define SMB_VFS_NEXT_UNLINK(handle, path) \
-	smb_vfs_call_unlink((handle)->next, (path))
-
 #define SMB_VFS_UNLINKAT(conn, dirfsp, path, flags) \
 	smb_vfs_call_unlinkat((conn)->vfs_handles, (dirfsp), (path), (flags))
 #define SMB_VFS_NEXT_UNLINKAT(handle, dirfsp, path, flags) \

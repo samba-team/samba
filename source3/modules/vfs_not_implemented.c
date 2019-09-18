@@ -342,13 +342,6 @@ uint64_t vfs_not_implemented_get_alloc_size(struct vfs_handle_struct *handle,
 	return -1;
 }
 
-int vfs_not_implemented_unlink(vfs_handle_struct *handle,
-			       const struct smb_filename *smb_fname)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 int vfs_not_implemented_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1089,7 +1082,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.fstat_fn = vfs_not_implemented_fstat,
 	.lstat_fn = vfs_not_implemented_lstat,
 	.get_alloc_size_fn = vfs_not_implemented_get_alloc_size,
-	.unlink_fn = vfs_not_implemented_unlink,
 	.unlinkat_fn = vfs_not_implemented_unlinkat,
 	.chmod_fn = vfs_not_implemented_chmod,
 	.fchmod_fn = vfs_not_implemented_fchmod,
