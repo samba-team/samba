@@ -135,7 +135,8 @@ ctdb_test_run ()
 
 	local status=0
 	if [ -x "$f" ] ; then
-		timeout "$test_time_limit" "$f" || status=$?
+		timeout "$test_time_limit" "$f" | show_progress
+		status=$?
 	else
 		echo "TEST IS NOT EXECUTABLE"
 		status=1
@@ -202,7 +203,7 @@ run_one_test ()
 
     tests_total=$((tests_total + 1))
 
-    ctdb_test_run "$f" | show_progress
+    ctdb_test_run "$f"
     status=$?
     if [ $status -eq 0 ] ; then
 	tests_passed=$((tests_passed + 1))
