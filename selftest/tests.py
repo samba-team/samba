@@ -216,6 +216,10 @@ if with_pam:
     env = "ad_member"
     options = [
         {
+            "description": "krb5",
+            "pam_options": "krb5_auth krb5_ccache_type=FILE",
+        },
+        {
             "description": "default",
             "pam_options": "",
         },
