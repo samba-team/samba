@@ -602,15 +602,6 @@ static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int streams_xattr_unlink(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	return streams_xattr_unlink_internal(handle,
-				handle->conn->cwd_fsp,
-				smb_fname,
-				0);
-}
-
 static int streams_xattr_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1697,7 +1688,6 @@ static struct vfs_fn_pointers vfs_streams_xattr_fns = {
 	.pread_recv_fn = streams_xattr_pread_recv,
 	.pwrite_send_fn = streams_xattr_pwrite_send,
 	.pwrite_recv_fn = streams_xattr_pwrite_recv,
-	.unlink_fn = streams_xattr_unlink,
 	.unlinkat_fn = streams_xattr_unlinkat,
 	.renameat_fn = streams_xattr_renameat,
 	.ftruncate_fn = streams_xattr_ftruncate,
