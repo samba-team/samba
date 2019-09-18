@@ -152,6 +152,7 @@ static bool wrap_ndr_inout_pull_test(struct torture_context *tctx,
 	ndr = ndr_pull_init_blob(&(data->data_context), tctx);
 	torture_assert(tctx, ndr, "ndr init failed");
 
+	ndr->flags |= data->flags;
 	ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 	torture_assert_ndr_success(tctx,
@@ -174,6 +175,7 @@ static bool wrap_ndr_inout_pull_test(struct torture_context *tctx,
 	ndr = ndr_pull_init_blob(&(data->data), tctx);
 	torture_assert(tctx, ndr, "ndr init failed");
 
+	ndr->flags |= data->flags;
 	ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 	torture_assert_ndr_success(tctx,
@@ -204,6 +206,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 					DATA_BLOB db_in,
 					DATA_BLOB db_out,
 					size_t struct_size,
+					int flags,
 					bool (*check_fn) (struct torture_context *ctx, void *data))
 {
 	struct torture_test *test;
@@ -221,6 +224,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 	data->data = db_out;
 	data->data_context = db_in;
 	data->ndr_flags = 0;
+	data->flags = flags;
 	data->struct_size = struct_size;
 	data->pull_fn = pull_fn;
 	test->data = data;

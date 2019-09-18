@@ -41,6 +41,7 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 					DATA_BLOB db_in,
 					DATA_BLOB db_out,
 					size_t struct_size,
+					int flags,
 					bool (*check_fn) (struct torture_context *ctx, void *data));
 
 #define torture_suite_add_ndr_pull_test(suite,name,data,check_fn) \
@@ -112,6 +113,15 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 			 data_blob_const(data_in, sizeof(data_in)), \
 			 data_blob_const(data_out, sizeof(data_out)), \
 			 sizeof(struct name), \
+			 0, \
 			 (bool (*) (struct torture_context *, void *)) check_fn_out);
 
+#define torture_suite_add_ndr_pull_io_test_flags(suite,name,data_in,data_out,flags,check_fn_out) \
+		_torture_suite_add_ndr_pull_inout_test(suite, #name "_INOUT_" #flags, \
+			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
+			 data_blob_const(data_in, sizeof(data_in)), \
+			 data_blob_const(data_out, sizeof(data_out)), \
+			 sizeof(struct name), \
+			 flags, \
+			 (bool (*) (struct torture_context *, void *)) check_fn_out);
 #endif /* __TORTURE_NDR_H__ */
