@@ -36,10 +36,17 @@ static void do_inject_fault(struct imessaging_context *msg,
 			    void *private_data,
 			    uint32_t msg_type,
 			    struct server_id src,
+			    size_t num_fds,
+			    int *fds,
 			    DATA_BLOB *data)
 {
 	int sig;
 	struct server_id_buf tmp;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
 
 	if (data->length != sizeof(sig)) {
 		DBG_ERR("Process %s sent bogus signal injection request\n",
@@ -76,10 +83,17 @@ static void do_sleep(struct imessaging_context *msg,
 		     void *private_data,
 		     uint32_t msg_type,
 		     struct server_id src,
+		     size_t num_fds,
+		     int *fds,
 		     DATA_BLOB *data)
 {
 	unsigned int seconds;
 	struct server_id_buf tmp;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
 
 	if (data->length != sizeof(seconds)) {
 		DBG_ERR("Process %s sent bogus sleep request\n",

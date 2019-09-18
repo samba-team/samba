@@ -57,13 +57,22 @@ NTSTATUS pvfs_async_setup(struct ntvfs_module_context *ntvfs,
   receive a completion message for a wait
 */
 static void pvfs_wait_dispatch(struct imessaging_context *msg,
-			       void *private_data, uint32_t msg_type,
-			       struct server_id src, DATA_BLOB *data)
+			       void *private_data,
+			       uint32_t msg_type,
+			       struct server_id src,
+			       size_t num_fds,
+			       int *fds,
+			       DATA_BLOB *data)
 {
 	struct pvfs_wait *pwait = talloc_get_type(private_data,
 						  struct pvfs_wait);
 	struct ntvfs_request *req;
 	void *p = NULL;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
 
 	/* we need to check that this one is for us. See
 	   imessaging_send_ptr() for the other side of this.

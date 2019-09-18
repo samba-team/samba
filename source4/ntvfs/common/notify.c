@@ -62,8 +62,13 @@ struct notify_list {
 #define NOTIFY_ENABLE_DEFAULT	true
 
 static NTSTATUS notify_remove_all(struct notify_context *notify);
-static void notify_handler(struct imessaging_context *msg_ctx, void *private_data,
-			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data);
+static void notify_handler(struct imessaging_context *msg_ctx,
+			   void *private_data,
+			   uint32_t msg_type,
+			   struct server_id server_id,
+			   size_t num_fds,
+			   int *fds,
+			   DATA_BLOB *data);
 
 /*
   destroy the notify context
@@ -236,14 +241,24 @@ static NTSTATUS notify_save(struct notify_context *notify)
 /*
   handle incoming notify messages
 */
-static void notify_handler(struct imessaging_context *msg_ctx, void *private_data,
-			   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
+static void notify_handler(struct imessaging_context *msg_ctx,
+			   void *private_data,
+			   uint32_t msg_type,
+			   struct server_id server_id,
+			   size_t num_fds,
+			   int *fds,
+			   DATA_BLOB *data)
 {
 	struct notify_context *notify = talloc_get_type(private_data, struct notify_context);
 	enum ndr_err_code ndr_err;
 	struct notify_event ev;
 	TALLOC_CTX *tmp_ctx = talloc_new(notify);
 	struct notify_list *listel;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
 
 	if (tmp_ctx == NULL) {
 		return;

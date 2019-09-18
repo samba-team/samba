@@ -341,6 +341,8 @@ static void samba_parent_shutdown(struct imessaging_context *msg,
 				  void *private_data,
 				  uint32_t msg_type,
 				  struct server_id src,
+				  size_t num_fds,
+				  int *fds,
 				  DATA_BLOB *data)
 {
 	struct server_state *state =
@@ -349,6 +351,11 @@ static void samba_parent_shutdown(struct imessaging_context *msg,
 	struct server_id_buf src_buf;
 	struct server_id dst = imessaging_get_server_id(msg);
 	struct server_id_buf dst_buf;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
 
 	DBG_ERR("samba_shutdown of %s %s: from %s\n",
 		state->binary_name,

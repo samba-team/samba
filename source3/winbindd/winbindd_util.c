@@ -849,9 +849,16 @@ static void wb_imsg_new_trusted_domain(struct imessaging_context *msg,
 				       void *private_data,
 				       uint32_t msg_type,
 				       struct server_id server_id,
+				       size_t num_fds,
+				       int *fds,
 				       DATA_BLOB *data)
 {
 	bool ok;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
 
 	DBG_NOTICE("Rescanning trusted domains\n");
 

@@ -159,12 +159,21 @@ static void pvfs_oplock_break(struct pvfs_oplock *opl, uint8_t level)
 }
 
 static void pvfs_oplock_break_dispatch(struct imessaging_context *msg,
-				       void *private_data, uint32_t msg_type,
-				       struct server_id src, DATA_BLOB *data)
+				       void *private_data,
+				       uint32_t msg_type,
+				       struct server_id src,
+				       size_t num_fds,
+				       int *fds,
+				       DATA_BLOB *data)
 {
 	struct pvfs_oplock *opl = talloc_get_type(private_data,
 						  struct pvfs_oplock);
 	struct opendb_oplock_break opb;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
 
 	ZERO_STRUCT(opb);
 

@@ -177,14 +177,24 @@ static PyObject *py_imessaging_send(PyObject *self, PyObject *args, PyObject *kw
 	Py_RETURN_NONE;
 }
 
-static void py_msg_callback_wrapper(struct imessaging_context *msg, void *private_data,
-			       uint32_t msg_type, 
-			       struct server_id server_id, DATA_BLOB *data)
+static void py_msg_callback_wrapper(struct imessaging_context *msg,
+				    void *private_data,
+				    uint32_t msg_type,
+				    struct server_id server_id,
+				    size_t num_fds,
+				    int *fds,
+				    DATA_BLOB *data)
 {
 	PyObject *py_server_id, *callback_and_tuple = (PyObject *)private_data;
 	PyObject *callback, *py_private;
 
 	struct server_id *p_server_id = talloc(NULL, struct server_id);
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
+
 	if (!p_server_id) {
 		PyErr_NoMemory();
 		return;

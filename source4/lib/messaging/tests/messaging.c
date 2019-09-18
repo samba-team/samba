@@ -34,26 +34,58 @@
 
 static uint32_t msg_pong;
 
-static void ping_message(struct imessaging_context *msg, void *private_data,
-			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
+static void ping_message(struct imessaging_context *msg,
+			 void *private_data,
+			 uint32_t msg_type,
+			 struct server_id src,
+			 size_t num_fds,
+			 int *fds,
+			 DATA_BLOB *data)
 {
 	NTSTATUS status;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
+
 	status = imessaging_send(msg, src, msg_pong, data);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("pong failed - %s\n", nt_errstr(status));
 	}
 }
 
-static void pong_message(struct imessaging_context *msg, void *private_data,
-			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
+static void pong_message(struct imessaging_context *msg,
+			 void *private_data,
+			 uint32_t msg_type,
+			 struct server_id src,
+			 size_t num_fds,
+			 int *fds,
+			 DATA_BLOB *data)
 {
 	int *count = (int *)private_data;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
+
 	(*count)++;
 }
 
-static void exit_message(struct imessaging_context *msg, void *private_data,
-			 uint32_t msg_type, struct server_id src, DATA_BLOB *data)
+static void exit_message(struct imessaging_context *msg,
+			 void *private_data,
+			 uint32_t msg_type,
+			 struct server_id src,
+			 size_t num_fds,
+			 int *fds,
+			 DATA_BLOB *data)
 {
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
+
 	talloc_free(private_data);
 	exit(0);
 }
@@ -223,9 +255,16 @@ static void overflow_md5_child_handler(struct imessaging_context *msg,
 				       void *private_data,
 				       uint32_t msg_type,
 				       struct server_id server_id,
+				       size_t num_fds,
+				       int *fds,
 				       DATA_BLOB *data)
 {
 	struct overflow_parent_child *state = private_data;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
 
 	if (data->length == 0) {
 		state->done = true;
@@ -244,9 +283,16 @@ static void overflow_md5_parent_handler(struct imessaging_context *msg_ctx,
 					void *private_data,
 					uint32_t msg_type,
 					struct server_id server_id,
+					size_t num_fds,
+					int *fds,
 					DATA_BLOB *data)
 {
 	struct overflow_child_parent *state = private_data;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
 
 	if (data->length != sizeof(state->final)) {
 		memset(state->final, 0, sizeof(state->final));
@@ -410,10 +456,17 @@ static void multi_ctx_server_handler(struct imessaging_context *msg,
 				     void *private_data,
 				     uint32_t msg_type,
 				     struct server_id server_id,
+				     size_t num_fds,
+				     int *fds,
 				     DATA_BLOB *data)
 {
 	struct test_multi_ctx *state = private_data;
 	char *str = NULL;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
 
 	torture_assert_goto(state->tctx, state->num_missing >= 1,
 			    state->ok, fail,
@@ -443,10 +496,17 @@ static void multi_ctx_client_0_1_handler(struct imessaging_context *msg,
 					 void *private_data,
 					 uint32_t msg_type,
 					 struct server_id server_id,
+					 size_t num_fds,
+					 int *fds,
 					 DATA_BLOB *data)
 {
 	struct test_multi_ctx *state = private_data;
 	char *str = NULL;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
 
 	torture_assert_goto(state->tctx, state->num_missing >= 2,
 			    state->ok, fail,
@@ -481,10 +541,17 @@ static void multi_ctx_client_2_3_handler(struct imessaging_context *msg,
 					 void *private_data,
 					 uint32_t msg_type,
 					 struct server_id server_id,
+					 size_t num_fds,
+					 int *fds,
 					 DATA_BLOB *data)
 {
 	struct test_multi_ctx *state = private_data;
 	char *str = NULL;
+
+	if (num_fds != 0) {
+		DBG_WARNING("Received %zu fds, ignoring message\n", num_fds);
+		return;
+	}
 
 	torture_assert_goto(state->tctx, state->num_missing >= 2,
 			    state->ok, fail,

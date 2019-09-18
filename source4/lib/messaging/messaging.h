@@ -29,9 +29,14 @@ struct imessaging_context;
 /* taskid for messaging of parent process */
 #define SAMBA_PARENT_TASKID     0
 
-typedef void (*msg_callback_t)(struct imessaging_context *msg, void *private_data,
-			       uint32_t msg_type,
-			       struct server_id server_id, DATA_BLOB *data);
+typedef void (*msg_callback_t)(
+	struct imessaging_context *msg,
+	void *private_data,
+	uint32_t msg_type,
+	struct server_id server_id,
+	size_t num_fds,
+	int *fds,
+	DATA_BLOB *data);
 
 NTSTATUS imessaging_send(struct imessaging_context *msg, struct server_id server,
 			uint32_t msg_type, const DATA_BLOB *data);
