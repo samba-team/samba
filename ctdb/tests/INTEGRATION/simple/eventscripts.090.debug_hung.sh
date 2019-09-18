@@ -19,14 +19,11 @@ EOF
 
 set -e
 
+ctdb_test_skip_on_cluster
+
 ctdb_test_init
 
 cluster_is_healthy
-
-if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
-	echo "SKIPPING this test - only runs against local daemons"
-	exit 0
-fi
 
 # This is overkill but it at least provides a valid test node
 select_test_node_and_ips

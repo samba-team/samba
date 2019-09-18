@@ -15,10 +15,7 @@ EOF
 
 set -e
 
-if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
-	echo "SKIPPING this test - only runs against local daemons"
-	exit 0
-fi
+ctdb_test_skip_on_cluster
 
 echo "Starting CTDB with recovery lock command configured..."
 ctdb_test_init -R

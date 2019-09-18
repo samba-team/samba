@@ -75,6 +75,14 @@ ctdb_test_init ()
 	echo  "*** SETUP COMPLETE AT $(date '+%F %T'), RUNNING TEST..."
 }
 
+ctdb_test_skip_on_cluster ()
+{
+	if ctdb_test_on_cluster ; then
+		ctdb_test_skip \
+			"SKIPPING this test - only runs against local daemons"
+	fi
+}
+
 ########################################
 
 # Sets: $out, $outfile
