@@ -1446,7 +1446,7 @@ interface netlogon
 		[case(2)] netr_LsaPolicyInformation *lsa_policy_info;
 	} netr_DomainInfo;
 	
-	NTSTATUS netr_LogonGetDomainInfo(
+	[public] NTSTATUS netr_LogonGetDomainInfo(
 		[in]         [string,charset(UTF16)] uint16 *server_name,
 		[in,unique]  [string,charset(UTF16)] uint16 *computer_name,
 		[in,ref]     netr_Authenticator *credential,
