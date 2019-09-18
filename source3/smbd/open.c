@@ -2673,6 +2673,7 @@ grant:
 	}
 
 	granted = requested;
+	granted &= fsp->conn->tcon->smb_max_lease_mask;
 
 	if (fsp->fsp_flags.is_directory) {
 		/*
