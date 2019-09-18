@@ -556,7 +556,10 @@ static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
 	char *xattr_name = NULL;
 
 	if (!is_ntfs_stream_smb_fname(smb_fname)) {
-		return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+		return SMB_VFS_NEXT_UNLINKAT(handle,
+					dirfsp,
+					smb_fname,
+					flags);
 	}
 
 	/* If the default stream is requested, just open the base file. */
@@ -569,7 +572,10 @@ static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
 			return -1;
 		}
 
-		ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname_base);
+		ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname_base,
+				flags);
 
 		TALLOC_FREE(smb_fname_base);
 		return ret;
