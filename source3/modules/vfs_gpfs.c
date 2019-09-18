@@ -1647,6 +1647,11 @@ static NTSTATUS vfs_gpfs_get_file_id(struct gpfs_iattr64 *iattr,
 	return NT_STATUS_OK;
 }
 
+static struct timespec gpfs_timestruc64_to_timespec(struct gpfs_timestruc64 g)
+{
+	return (struct timespec) { .tv_sec = g.tv_sec, .tv_nsec = g.tv_nsec };
+}
+
 static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 					    struct smb_filename *smb_fname,
 					    uint32_t *dosmode)
@@ -1654,6 +1659,7 @@ static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 	struct gpfs_config_data *config;
 	struct gpfs_iattr64 iattr = { };
 	unsigned int litemask = 0;
+	struct timespec ts;
 	uint64_t file_id;
 	NTSTATUS status;
 	int ret;
@@ -1697,10 +1703,10 @@ static NTSTATUS vfs_gpfs_get_dos_attributes(struct vfs_handle_struct *handle,
 		return status;
 	}
 
+	ts = gpfs_timestruc64_to_timespec(iattr.ia_createtime);
+
 	*dosmode |= vfs_gpfs_winattrs_to_dosmode(iattr.ia_winflags);
-	smb_fname->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_BTIME;
-	smb_fname->st.st_ex_btime.tv_sec = iattr.ia_createtime.tv_sec;
-	smb_fname->st.st_ex_btime.tv_nsec = iattr.ia_createtime.tv_nsec;
+	update_stat_ex_create_time(&smb_fname->st, ts);
 	update_stat_ex_file_id(&smb_fname->st, file_id);
 
 	return NT_STATUS_OK;
@@ -1713,6 +1719,7 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 	struct gpfs_config_data *config;
 	struct gpfs_iattr64 iattr = { };
 	unsigned int litemask;
+	struct timespec ts;
 	uint64_t file_id;
 	NTSTATUS status;
 	int ret;
@@ -1766,10 +1773,10 @@ static NTSTATUS vfs_gpfs_fget_dos_attributes(struct vfs_handle_struct *handle,
 		return status;
 	}
 
+	ts = gpfs_timestruc64_to_timespec(iattr.ia_createtime);
+
 	*dosmode |= vfs_gpfs_winattrs_to_dosmode(iattr.ia_winflags);
-	fsp->fsp_name->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_BTIME;
-	fsp->fsp_name->st.st_ex_btime.tv_sec = iattr.ia_createtime.tv_sec;
-	fsp->fsp_name->st.st_ex_btime.tv_nsec = iattr.ia_createtime.tv_nsec;
+	update_stat_ex_create_time(&fsp->fsp_name->st, ts);
 	update_stat_ex_file_id(&fsp->fsp_name->st, file_id);
 
 	return NT_STATUS_OK;
