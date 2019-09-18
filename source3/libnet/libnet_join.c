@@ -483,6 +483,19 @@ static ADS_STATUS libnet_join_get_machine_spns(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+static ADS_STATUS add_uniq_spn(TALLOC_CTX *mem_ctx, const  char *spn,
+			       const char ***array, size_t *num)
+{
+	bool ok = ads_element_in_array(*array, *num, spn);
+	if (!ok) {
+		ok = add_string_to_array(mem_ctx, spn, array, num);
+		if (!ok) {
+			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		}
+	}
+	return ADS_SUCCESS;
+}
+
 /****************************************************************
  Set a machines dNSHostName and servicePrincipalName attributes
 ****************************************************************/
@@ -497,7 +510,6 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	const char **spn_array = NULL;
 	size_t num_spns = 0;
 	char *spn = NULL;
-	bool ok;
 	const char **netbios_aliases = NULL;
 
 	/* Find our DN */
@@ -527,14 +539,9 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	ok = ads_element_in_array(spn_array, num_spns, spn);
-	if (!ok) {
-		ok = add_string_to_array(frame, spn,
-					 &spn_array, &num_spns);
-		if (!ok) {
-			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
-			goto done;
-		}
+	status = add_uniq_spn(frame, spn, &spn_array, &num_spns);
+	if (!ADS_ERR_OK(status)) {
+		goto done;
 	}
 
 	fstr_sprintf(my_fqdn, "%s.%s", r->in.machine_name, lp_dnsdomain());
@@ -550,14 +557,9 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	ok = ads_element_in_array(spn_array, num_spns, spn);
-	if (!ok) {
-		ok = add_string_to_array(frame, spn,
-					 &spn_array, &num_spns);
-		if (!ok) {
-			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
-			goto done;
-		}
+	status = add_uniq_spn(frame, spn, &spn_array, &num_spns);
+	if (!ADS_ERR_OK(status)) {
+		goto done;
 	}
 
 	for (netbios_aliases = lp_netbios_aliases();
@@ -576,14 +578,8 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		ok = ads_element_in_array(spn_array, num_spns, spn);
-		if (ok) {
-			continue;
-		}
-		ok = add_string_to_array(spn_array, spn,
-					 &spn_array, &num_spns);
-		if (!ok) {
-			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		status = add_uniq_spn(frame, spn, &spn_array, &num_spns);
+		if (!ADS_ERR_OK(status)) {
 			goto done;
 		}
 
@@ -600,14 +596,8 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		ok = ads_element_in_array(spn_array, num_spns, spn);
-		if (ok) {
-			continue;
-		}
-		ok = add_string_to_array(spn_array, spn,
-					 &spn_array, &num_spns);
-		if (!ok) {
-			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		status = add_uniq_spn(frame, spn, &spn_array, &num_spns);
+		if (!ADS_ERR_OK(status)) {
 			goto done;
 		}
 	}
