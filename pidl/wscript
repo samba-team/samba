@@ -34,7 +34,6 @@ def configure(conf):
 
     # yapp is used for building the parser
     conf.find_program('yapp', var='YAPP')
-    conf.find_program('pod2man', var='POD2MAN')
 
 def build(bld):
 
