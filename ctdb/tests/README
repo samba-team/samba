@@ -6,111 +6,81 @@ machine from within the git repository is:
 
   make test
 
-This runs all unit tests (onnode, takeover, tool, eventscripts) and
-the tests against local daemons (simple) using the script
-tests/run_tests.sh.
-
-When running tests against a real or virtual cluster the script
-tests/run_cluster_tests.sh can be used.  This runs all integration
-tests (simple, complex).
-
-Both of these scripts can also take a list of tests to run.  You can
-also pass options, which are then passed to run_tests.  However, if
-you just try to pass options to run_tests then you lose the default
-list of tests that are run.  You can't have everything...
+This runs all UNIT and INTEGRATION tests.
 
 tests/run_tests.sh
 ------------------
 
-This script can be used to manually run all or selected unit tests and
-simple integration tests against local daemons. Test selection is done
-by specifying optional call parameters. If no parameter is given,
-all unit tests and simple integration tests are run.
+This script can be used to manually run all tests or selected tests,
+with a variety of options.  For usage, run:
 
-This runs all unit tests of the "tool" category:
+  tests/run_tests.sh -h
 
-  ./tests/run_tests.sh tool
+If no tests are specified this runs all of the UNIT and INTEGRATION
+tests.
 
-In order to run a single test, one simply specifies the path of the
-test script to run as the last parameter, e.g.:
+By default:
 
-  ./tests/run_tests.sh ./tests/eventscripts/00.ctdb.monitor.001
-  ./tests/run_tests.sh ./tests/simple/76_ctdb_pdb_recovery.sh
+* INTEGRATION tests are run against 3 local daemons
 
-One can also specify multiple test suites and tests:
+  Set TEST_LOCAL_DAEMONS to a different number if desired
 
-  ./tests/run_tests.sh eventscripts tool ./tests/onnode/0001.sh
+* When testing is complete, a summary showing a list is printed
+  showing the tests run and their results
 
-The script also has number of command-line switches.
-Some of the more useful options include:
+Tests can be selected in various ways:
 
-  -s  Print a summary of tests results after running all tests
+* tests/run_tests.sh UNIT INTEGRATION
 
-  -l  Use local daemons for integration tests
+  runs all UNIT and INTEGRATION tests, and is like specifying no tests
 
-      This allows the tests in "simple" to be run against local
-      daemons.
+* tests/run_tests.sh UNIT/tool
 
-      All integration tests communicate with cluster nodes using
-      onnode or the ctdb tool, which both have some test hooks to
-      support local daemons.
+  runs all of the "tool" UNIT tests
 
-      By default 3 daemons are used.  If you want to use a different
-      number of daemons then do not use this option but set
-      TEST_LOCAL_DAEMONS to the desired number of daemons instead.
-      The -l option just sets TEST_LOCAL_DAEMONS to 3...  :-)
+* tests/run_tests.sh tests/UNIT/eventscripts/00.ctdb.setup.001.sh
+  tests/run_tests.sh tests/INTEGRATION/simple/basics.001.listnodes.sh
 
-  -e  Exit on the first test failure
+  each runs a single specified test case
 
-  -C  Clean up when done by removing test state directory
+* tests/run_tests.sh UNIT/eventscripts UNIT/tool tests/UNIT/onnode/0001.sh
 
-      Tests uses a temporary/var directory for test state.  By default,
-      this directory is not removed when tests are complete, so you
-      can do forensics or, for integration tests, re-run tests that
-      have failed against the same directory (with the same local
-      daemons setup).  So this option cleans things up.
+  runs a combination of UNIT test suites and a single UNIT test
 
-  -V  Use <dir> as test state directory
+Testing on a cluster
+--------------------
 
-      Use the specified temporary temporary/var directory.
-
-  -H  No headers - for running single test with other wrapper
-
-      This allows tests to be embedded in some other test framework
-      and executed one-by-one with all the required
-      environment/infrastructure.
-
-      This replaces the old ctdb_test_env script.
-
-How do the tests find remote test programs?
--------------------------------------------
+INTEGRATION and CLUSTER tests can be run on a real or virtual cluster
+using tests/run_cluster_tests.sh (or "tests/run_tests.sh -c").  The
+test code needs to be available on all cluster nodes, as well as the
+test client node.  The test client node needs to have a nodes file
+where the onnode(1) command will find it.
 
 If the all of the cluster nodes have the CTDB git tree in the same
 location as on the test client then no special action is necessary.
 The simplest way of doing this is to share the tree to cluster nodes
 and test clients via NFS.
 
-If cluster nodes do not have the CTDB git tree then
-CTDB_TEST_REMOTE_DIR can be set to a directory that, on each cluster
-node, contains the contents of tests/scripts/ and tests/bin/.
+Alternatively, the tests can be installed on all nodes.  One technique
+is to build a package containing the tests and install it on all
+nodes.  CTDB developers do a lot of testing this way using the
+provided sample packaging, which produces a ctdb-tests RPM package.
 
-In the future this will hopefully (also) be supported via a ctdb-test
-package.
+Finally, if the test code is installed in a different place on the
+cluster nodes, then CTDB_TEST_REMOTE_DIR can be set on the test client
+node to point to a directory that contains the test_wrap script on the
+cluster nodes.
 
-Running the ctdb tool under valgrind
-------------------------------------
+Running tests under valgrind
+----------------------------
 
 The easiest way of doing this is something like:
 
-  VALGRIND="valgrind -q" scripts/run_tests ...
+  VALGRIND="valgrind -q" tests/run_tests ...
 
-This can be used to cause all invocations of the ctdb client (and,
-with local daemons, the ctdbd daemons themselves) to occur under
-valgrind.
-
-NOTE: Some libc calls seem to do weird things and perhaps cause
-spurious output from ctdbd at start time.  Please read valgrind output
-carefully before reporting bugs.  :-)
+This can be used to cause all invocations of the ctdb tool, test
+programs and, with local daemons, the ctdbd daemons themselves to run
+under valgrind.
 
 How is the ctdb tool invoked?
 -----------------------------
