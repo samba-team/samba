@@ -1494,23 +1494,6 @@ static int shadow_copy2_open(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int shadow_copy2_unlink(vfs_handle_struct *handle,
-			       const struct smb_filename *smb_fname)
-{
-	time_t timestamp = 0;
-
-	if (!shadow_copy2_strip_snapshot(talloc_tos(), handle,
-					 smb_fname->base_name,
-					 &timestamp, NULL)) {
-		return -1;
-	}
-	if (timestamp != 0) {
-		errno = EROFS;
-		return -1;
-	}
-	return SMB_VFS_NEXT_UNLINK(handle, smb_fname);
-}
-
 static int shadow_copy2_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -3187,7 +3170,6 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.lstat_fn = shadow_copy2_lstat,
 	.fstat_fn = shadow_copy2_fstat,
 	.open_fn = shadow_copy2_open,
-	.unlink_fn = shadow_copy2_unlink,
 	.unlinkat_fn = shadow_copy2_unlinkat,
 	.chmod_fn = shadow_copy2_chmod,
 	.chown_fn = shadow_copy2_chown,
