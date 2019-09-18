@@ -44,7 +44,7 @@ ctdb_test_skip ()
 	if [ $# -gt 0 ] ; then
 		echo "$*"
 	fi
-	exit 0
+	exit 77
 }
 
 # Wait until either timeout expires or command succeeds.  The command

@@ -140,6 +140,10 @@ ctdb_test_run ()
 		interp="PASSED"
 		tests_passed=$((tests_passed + 1))
 		;;
+	77)
+		interp="SKIPPED"
+		tests_skipped=$((tests_skipped + 1))
+		;;
 	99)
 		interp="ERROR"
 		tests_failed=$((tests_failed + 1))
@@ -173,6 +177,7 @@ ctdb_test_run ()
 
 tests_total=0
 tests_passed=0
+tests_skipped=0
 tests_failed=0
 
 if ! type mktemp >/dev/null 2>&1 ; then
@@ -356,8 +361,14 @@ if $with_summary ; then
 	if [ $status -eq 0 ] || ! $exit_on_fail ; then
 		echo
 		cat "$summary_file"
+
 		echo
-		echo "${tests_passed}/${tests_total} tests passed"
+		tests_run=$((tests_total - tests_skipped))
+		printf '%d/%d tests passed' $tests_passed $tests_run
+		if [ $tests_skipped -gt 0 ] ; then
+			printf ' (%d skipped)' $tests_skipped
+		fi
+		printf '\n'
 	fi
 fi
 rm -f "$summary_file"
