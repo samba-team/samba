@@ -417,6 +417,7 @@ sub setup_ad_member
 	auth event notification = true
 	password server = $dcvars->{SERVER}
 	winbind scan trusted domains = no
+	winbind use krb5 enterprise principals = yes
 
 [sub_dug]
 	path = $share_dir/D_%D/U_%U/G_%G
