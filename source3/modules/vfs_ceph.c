@@ -937,21 +937,6 @@ static int cephwrap_ntimes(struct vfs_handle_struct *handle,
 }
 #endif /* HAVE_CEPH_STATX */
 
-static int cephwrap_unlink(struct vfs_handle_struct *handle,
-			  const struct smb_filename *smb_fname)
-{
-	int result = -1;
-
-	DBG_DEBUG("[CEPH] unlink(%p, %s)\n", handle, smb_fname_str_dbg(smb_fname));
-	if (smb_fname->stream_name) {
-		errno = ENOENT;
-		return result;
-	}
-	result = ceph_unlink(handle->data, smb_fname->base_name);
-	DBG_DEBUG("[CEPH] unlink(...) = %d\n", result);
-	WRAP_RETURN(result);
-}
-
 static int cephwrap_unlinkat(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -1479,7 +1464,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.stat_fn = cephwrap_stat,
 	.fstat_fn = cephwrap_fstat,
 	.lstat_fn = cephwrap_lstat,
-	.unlink_fn = cephwrap_unlink,
 	.unlinkat_fn = cephwrap_unlinkat,
 	.chmod_fn = cephwrap_chmod,
 	.fchmod_fn = cephwrap_fchmod,
