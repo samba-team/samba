@@ -1065,25 +1065,6 @@ static uint64_t smb_time_audit_get_alloc_size(vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_time_audit_unlink(vfs_handle_struct *handle,
-				 const struct smb_filename *path)
-{
-	int result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_UNLINK(handle, path);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_smb_fname("unlink", timediff, path);
-	}
-
-	return result;
-}
-
 static int smb_time_audit_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *path,
@@ -2872,7 +2853,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.fstat_fn = smb_time_audit_fstat,
 	.lstat_fn = smb_time_audit_lstat,
 	.get_alloc_size_fn = smb_time_audit_get_alloc_size,
-	.unlink_fn = smb_time_audit_unlink,
 	.unlinkat_fn = smb_time_audit_unlinkat,
 	.chmod_fn = smb_time_audit_chmod,
 	.fchmod_fn = smb_time_audit_fchmod,
