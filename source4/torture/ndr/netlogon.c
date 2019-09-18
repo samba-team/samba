@@ -195,17 +195,41 @@ struct torture_suite *ndr_netlogon_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "netlogon");
 
-	torture_suite_add_ndr_pull_fn_test(suite, netr_ServerReqChallenge, netrserverreqchallenge_in_data, NDR_IN, netrserverreqchallenge_in_check );
-	torture_suite_add_ndr_pull_fn_test(suite, netr_ServerReqChallenge, netrserverreqchallenge_out_data, NDR_OUT, netrserverreqchallenge_out_check );
+	torture_suite_add_ndr_pull_fn_test(suite,
+					   netr_ServerReqChallenge,
+					   netrserverreqchallenge_in_data,
+					   NDR_IN,
+					   netrserverreqchallenge_in_check);
+	torture_suite_add_ndr_pull_fn_test(suite,
+					   netr_ServerReqChallenge,
+					   netrserverreqchallenge_out_data,
+					   NDR_OUT,
+					   netrserverreqchallenge_out_check);
 
-	torture_suite_add_ndr_pull_fn_test(suite, netr_ServerAuthenticate3, netrserverauthenticate3_in_data, NDR_IN, netrserverauthenticate3_in_check );
-	torture_suite_add_ndr_pull_fn_test(suite, netr_ServerAuthenticate3, netrserverauthenticate3_out_data, NDR_OUT, netrserverauthenticate3_out_check );
+	torture_suite_add_ndr_pull_fn_test(suite,
+					   netr_ServerAuthenticate3,
+					   netrserverauthenticate3_in_data,
+					   NDR_IN,
+					   netrserverauthenticate3_in_check);
+	torture_suite_add_ndr_pull_fn_test(suite,
+					   netr_ServerAuthenticate3,
+					   netrserverauthenticate3_out_data,
+					   NDR_OUT,
+					   netrserverauthenticate3_out_check);
 
-	torture_suite_add_ndr_pull_fn_test(suite, netr_LogonSamLogon, netrlogonsamlogon_w2k_in_data, NDR_IN, netrlogonsamlogon_w2k_in_check );
+	torture_suite_add_ndr_pull_fn_test(suite,
+					   netr_LogonSamLogon,
+					   netrlogonsamlogon_w2k_in_data,
+					   NDR_IN,
+					   netrlogonsamlogon_w2k_in_check);
 #if 0
 	/* samba currently fails to parse a validation level 6 samlogon reply
 	 * from w2k and other servers - gd */
-	torture_suite_add_ndr_pull_io_test(suite, netr_LogonSamLogon, netrlogonsamlogon_w2k_in_data, netrlogonsamlogon_w2k_out_data, netrlogonsamlogon_w2k_out_check);
+	torture_suite_add_ndr_pull_io_test(suite,
+					   netr_LogonSamLogon,
+					   netrlogonsamlogon_w2k_in_data,
+					   netrlogonsamlogon_w2k_out_data,
+					   netrlogonsamlogon_w2k_out_check);
 #endif
 
 	return suite;
