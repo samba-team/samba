@@ -234,47 +234,6 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 }
 
 /*********************************************************************
- On unlink we need to delete the tdb record (if using tdb).
-*********************************************************************/
-
-static int unlink_acl_tdb(vfs_handle_struct *handle,
-			  const struct smb_filename *smb_fname)
-{
-	struct smb_filename *smb_fname_tmp = NULL;
-	struct db_context *db = acl_db;
-	int ret = -1;
-
-	smb_fname_tmp = cp_smb_filename_nostream(talloc_tos(), smb_fname);
-	if (smb_fname_tmp == NULL) {
-		errno = ENOMEM;
-		goto out;
-	}
-
-	if (smb_fname_tmp->flags & SMB_FILENAME_POSIX_PATH) {
-		ret = SMB_VFS_LSTAT(handle->conn, smb_fname_tmp);
-	} else {
-		ret = SMB_VFS_STAT(handle->conn, smb_fname_tmp);
-	}
-
-	if (ret == -1) {
-		goto out;
-	}
-
-	ret = unlink_acl_common(handle,
-			handle->conn->cwd_fsp,
-			smb_fname_tmp,
-			0);
-
-	if (ret == -1) {
-		goto out;
-	}
-
-	acl_tdb_delete(handle, db, &smb_fname_tmp->st);
- out:
-	return ret;
-}
-
-/*********************************************************************
  On unlinkat we need to delete the tdb record (if using tdb).
 *********************************************************************/
 
@@ -539,7 +498,6 @@ static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.connect_fn = connect_acl_tdb,
 	.disconnect_fn = disconnect_acl_tdb,
 	.rmdir_fn = rmdir_acl_tdb,
-	.unlink_fn = unlink_acl_tdb,
 	.unlinkat_fn = unlinkat_acl_tdb,
 	.chmod_fn = chmod_acl_module_common,
 	.fchmod_fn = fchmod_acl_module_common,
