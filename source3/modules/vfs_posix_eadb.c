@@ -390,15 +390,6 @@ static int posix_eadb_rmdir(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int posix_eadb_unlink(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	return posix_eadb_unlink_internal(handle,
-				handle->conn->cwd_fsp,
-				smb_fname,
-				0);
-}
-
 static int posix_eadb_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -473,7 +464,6 @@ static struct vfs_fn_pointers vfs_posix_eadb_fns = {
 	.flistxattr_fn = posix_eadb_flistxattr,
 	.removexattr_fn = posix_eadb_removexattr,
 	.fremovexattr_fn = posix_eadb_fremovexattr,
-	.unlink_fn = posix_eadb_unlink,
 	.unlinkat_fn = posix_eadb_unlinkat,
 	.rmdir_fn = posix_eadb_rmdir,
 	.connect_fn = posix_eadb_connect,
