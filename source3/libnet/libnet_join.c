@@ -490,6 +490,7 @@ static ADS_STATUS libnet_join_get_machine_spns(TALLOC_CTX *mem_ctx,
 static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 					      struct libnet_JoinCtx *r)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
 	ADS_STATUS status;
 	ADS_MODLIST mods;
 	fstring my_fqdn;
@@ -506,7 +507,7 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 
-	status = libnet_join_get_machine_spns(mem_ctx,
+	status = libnet_join_get_machine_spns(frame,
 					      r,
 					      discard_const_p(char **, &spn_array),
 					      &num_spns);
@@ -516,40 +517,46 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 
 	/* Windows only creates HOST/shortname & HOST/fqdn. */
 
-	spn = talloc_asprintf(mem_ctx, "HOST/%s", r->in.machine_name);
+	spn = talloc_asprintf(frame, "HOST/%s", r->in.machine_name);
 	if (spn == NULL) {
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
 	}
 	if (!strupper_m(spn)) {
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
 	}
 
 	ok = ads_element_in_array(spn_array, num_spns, spn);
 	if (!ok) {
-		ok = add_string_to_array(spn_array, spn,
+		ok = add_string_to_array(frame, spn,
 					 &spn_array, &num_spns);
 		if (!ok) {
-			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			goto done;
 		}
 	}
 
 	fstr_sprintf(my_fqdn, "%s.%s", r->in.machine_name, lp_dnsdomain());
 
 	if (!strlower_m(my_fqdn)) {
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
 	}
 
-	spn = talloc_asprintf(mem_ctx, "HOST/%s", my_fqdn);
+	spn = talloc_asprintf(frame, "HOST/%s", my_fqdn);
 	if (spn == NULL) {
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
 	}
 
 	ok = ads_element_in_array(spn_array, num_spns, spn);
 	if (!ok) {
-		ok = add_string_to_array(spn_array, spn,
+		ok = add_string_to_array(frame, spn,
 					 &spn_array, &num_spns);
 		if (!ok) {
-			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			goto done;
 		}
 	}
 
@@ -559,28 +566,26 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 		/*
 		 * Add HOST/NETBIOSNAME
 		 */
-		spn = talloc_asprintf(mem_ctx, "HOST/%s", *netbios_aliases);
+		spn = talloc_asprintf(frame, "HOST/%s", *netbios_aliases);
 		if (spn == NULL) {
-			TALLOC_FREE(spn);
-			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			goto done;
 		}
 		if (!strupper_m(spn)) {
-			TALLOC_FREE(spn);
-			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			goto done;
 		}
 
 		ok = ads_element_in_array(spn_array, num_spns, spn);
 		if (ok) {
-			TALLOC_FREE(spn);
 			continue;
 		}
 		ok = add_string_to_array(spn_array, spn,
 					 &spn_array, &num_spns);
 		if (!ok) {
-			TALLOC_FREE(spn);
-			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			goto done;
 		}
-		TALLOC_FREE(spn);
 
 		/*
 		 * Add HOST/netbiosname.domainname
@@ -589,51 +594,56 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 			     *netbios_aliases,
 			     lp_dnsdomain());
 
-		spn = talloc_asprintf(mem_ctx, "HOST/%s", my_fqdn);
+		spn = talloc_asprintf(frame, "HOST/%s", my_fqdn);
 		if (spn == NULL) {
-			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			goto done;
 		}
 
 		ok = ads_element_in_array(spn_array, num_spns, spn);
 		if (ok) {
-			TALLOC_FREE(spn);
 			continue;
 		}
 		ok = add_string_to_array(spn_array, spn,
 					 &spn_array, &num_spns);
 		if (!ok) {
-			TALLOC_FREE(spn);
-			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+			goto done;
 		}
-		TALLOC_FREE(spn);
 	}
 
 	/* make sure to NULL terminate the array */
-	spn_array = talloc_realloc(mem_ctx, spn_array, const char *, num_spns + 1);
+	spn_array = talloc_realloc(frame, spn_array, const char *, num_spns + 1);
 	if (spn_array == NULL) {
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
 	}
 	spn_array[num_spns] = NULL;
 
 	mods = ads_init_mods(mem_ctx);
 	if (!mods) {
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
 	}
 
 	/* fields of primary importance */
 
 	status = ads_mod_str(mem_ctx, &mods, "dNSHostName", my_fqdn);
 	if (!ADS_ERR_OK(status)) {
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
 	}
 
 	status = ads_mod_strlist(mem_ctx, &mods, "servicePrincipalName",
 				 spn_array);
 	if (!ADS_ERR_OK(status)) {
-		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
 	}
 
-	return ads_gen_mod(r->in.ads, r->out.dn, mods);
+	status = ads_gen_mod(r->in.ads, r->out.dn, mods);
+
+done:
+	TALLOC_FREE(frame);
+	return status;
 }
 
 /****************************************************************
