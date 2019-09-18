@@ -144,7 +144,7 @@ struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *ser
 			      size_t *psize);
 NTSTATUS set_share_security(const char *share_name,
 			    struct security_descriptor *psd);
-bool delete_share_security(const char *servicename);
+NTSTATUS delete_share_security(const char *servicename);
 bool share_access_check(const struct security_token *token,
 			const char *sharename,
 			uint32_t desired_access,

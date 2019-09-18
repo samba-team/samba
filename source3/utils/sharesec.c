@@ -246,7 +246,8 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 	    old = sd;
 	    break;
 	case SMB_SD_DELETE:
-	    if (!delete_share_security(sharename)) {
+	    status = delete_share_security(sharename);
+	    if (!NT_STATUS_IS_OK(status)) {
 		fprintf( stderr, "Failed to delete security descriptor for "
 			 "share [%s]\n", sharename );
 		return -1;

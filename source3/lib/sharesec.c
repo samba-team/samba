@@ -410,27 +410,27 @@ NTSTATUS set_share_security(const char *share_name,
  Delete a security descriptor.
 ********************************************************************/
 
-bool delete_share_security(const char *servicename)
+NTSTATUS delete_share_security(const char *servicename)
 {
 	TDB_DATA kbuf;
 	char *key;
 	NTSTATUS status;
 	char *c_servicename = canonicalize_servicename(talloc_tos(), servicename);
 
-	if (!c_servicename) {
-		return NULL;
+	if (c_servicename == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = share_info_db_init();
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(c_servicename);
-		return False;
+		return status;
 	}
 
 	if (!(key = talloc_asprintf(talloc_tos(), SHARE_SECURITY_DB_KEY_PREFIX_STR "%s",
 				    c_servicename))) {
 		TALLOC_FREE(c_servicename);
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 	kbuf = string_term_tdb_data(key);
 
@@ -439,11 +439,11 @@ bool delete_share_security(const char *servicename)
 		DEBUG(0, ("delete_share_security: Failed to delete entry for "
 			  "share %s: %s\n", c_servicename, nt_errstr(status)));
 		TALLOC_FREE(c_servicename);
-		return False;
+		return status;
 	}
 
 	TALLOC_FREE(c_servicename);
-	return True;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
