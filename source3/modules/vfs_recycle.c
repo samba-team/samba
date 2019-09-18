@@ -35,9 +35,6 @@ static int vfs_recycle_debug_level = DBGC_VFS;
 #undef DBGC_CLASS
 #define DBGC_CLASS vfs_recycle_debug_level
  
-static int recycle_unlink(vfs_handle_struct *handle,
-			  const struct smb_filename *smb_fname);
-
 static const char *recycle_repository(vfs_handle_struct *handle)
 {
 	const char *tmp_str = NULL;
@@ -710,15 +707,6 @@ done:
 	return rc;
 }
 
-static int recycle_unlink(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	return recycle_unlink_internal(handle,
-				handle->conn->cwd_fsp,
-				smb_fname,
-				0);
-}
-
 static int recycle_unlinkat(vfs_handle_struct *handle,
 		struct files_struct *dirfsp,
 		const struct smb_filename *smb_fname,
@@ -742,7 +730,6 @@ static int recycle_unlinkat(vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_recycle_fns = {
-	.unlink_fn = recycle_unlink,
 	.unlinkat_fn = recycle_unlinkat
 };
 
