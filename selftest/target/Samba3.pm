@@ -412,6 +412,7 @@ sub setup_ad_member
         realm = $dcvars->{REALM}
         netbios aliases = foo bar
 	template homedir = /home/%D/%G/%U
+	winbind scan trusted domains = no
 
 [sub_dug]
 	path = $share_dir/D_%D/U_%U/G_%G
