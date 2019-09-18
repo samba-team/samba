@@ -715,7 +715,10 @@ static int streams_depot_unlink_internal(vfs_handle_struct *handle,
 			return -1;
 		}
 
-		ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname_stream);
+		ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname_stream,
+				0);
 
 		TALLOC_FREE(smb_fname_stream);
 		return ret;
@@ -774,7 +777,10 @@ static int streams_depot_unlink_internal(vfs_handle_struct *handle,
 		TALLOC_FREE(dirname);
 	}
 
-	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname);
+	ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				flags);
 	TALLOC_FREE(smb_fname_base);
 	return ret;
 }
