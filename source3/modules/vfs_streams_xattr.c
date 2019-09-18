@@ -546,8 +546,10 @@ static int streams_xattr_close(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int streams_xattr_unlink(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
+static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags)
 {
 	NTSTATUS status;
 	int ret = -1;
@@ -594,6 +596,15 @@ static int streams_xattr_unlink(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int streams_xattr_unlink(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
+{
+	return streams_xattr_unlink_internal(handle,
+				handle->conn->cwd_fsp,
+				smb_fname,
+				0);
+}
+
 static int streams_xattr_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -606,8 +617,10 @@ static int streams_xattr_unlinkat(vfs_handle_struct *handle,
 				smb_fname,
 				flags);
 	} else {
-		ret = streams_xattr_unlink(handle,
-				smb_fname);
+		ret = streams_xattr_unlink_internal(handle,
+				dirfsp,
+				smb_fname,
+				flags);
 	}
 	return ret;
 }
