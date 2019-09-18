@@ -416,6 +416,7 @@ sub setup_ad_member
 	template homedir = /home/%D/%G/%U
 	auth event notification = true
 	password server = $dcvars->{SERVER}
+	winbind scan trusted domains = no
 
 [sub_dug]
 	path = $share_dir/D_%D/U_%U/G_%G
