@@ -862,6 +862,10 @@ static int wbc_auth_error_to_pam_error(struct pwb_context *ctx,
 	}
 
 	ret = wbc_error_to_pam_error(status);
+	_pam_log(ctx, LOG_ERR,
+		 "request %s failed: %s, PAM error: %s (%d)!",
+		 fn, wbcErrorString(status),
+		 _pam_error_code_str(ret), ret);
 	return pam_winbind_request_log(ctx, ret, username, fn);
 }
 
