@@ -1099,10 +1099,10 @@ static uint32_t fss_sc_expose(struct smbconf_ctx *fconf_ctx,
 			DEBUG(2, ("no share SD to clone for %s snapshot\n",
 				  sc_smap->share_name));
 		} else {
-			bool ok;
-			ok = set_share_security(sc_smap->sc_share_name, sd);
+			NTSTATUS status;
+			status = set_share_security(sc_smap->sc_share_name, sd);
 			TALLOC_FREE(sd);
-			if (!ok) {
+			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0, ("failed to set %s share SD\n",
 					  sc_smap->sc_share_name));
 				err = HRES_ERROR_V(HRES_E_FAIL);

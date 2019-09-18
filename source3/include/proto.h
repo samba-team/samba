@@ -142,7 +142,8 @@ NTSTATUS share_info_db_init(void);
 struct security_descriptor *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32_t def_access);
 struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *servicename,
 			      size_t *psize);
-bool set_share_security(const char *share_name, struct security_descriptor *psd);
+NTSTATUS set_share_security(const char *share_name,
+			    struct security_descriptor *psd);
 bool delete_share_security(const char *servicename);
 bool share_access_check(const struct security_token *token,
 			const char *sharename,

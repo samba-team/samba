@@ -357,16 +357,17 @@ struct security_descriptor *get_share_security( TALLOC_CTX *ctx, const char *ser
  Store a security descriptor in the share db.
  ********************************************************************/
 
-bool set_share_security(const char *share_name, struct security_descriptor *psd)
+NTSTATUS set_share_security(const char *share_name,
+			    struct security_descriptor *psd)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *key;
-	bool ret = False;
 	TDB_DATA blob;
 	NTSTATUS status;
 	char *c_share_name = canonicalize_servicename(frame, share_name);
 
-	if (!c_share_name) {
+	if (c_share_name == NULL) {
+		status = NT_STATUS_INVALID_PARAMETER;
 		goto out;
 	}
 
@@ -385,6 +386,7 @@ bool set_share_security(const char *share_name, struct security_descriptor *psd)
 
 	if (!(key = talloc_asprintf(frame, SHARE_SECURITY_DB_KEY_PREFIX_STR "%s", c_share_name))) {
 		DEBUG(0, ("talloc_asprintf failed\n"));
+		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 
@@ -397,11 +399,11 @@ bool set_share_security(const char *share_name, struct security_descriptor *psd)
 	}
 
 	DEBUG(5,("set_share_security: stored secdesc for %s\n", share_name ));
-	ret = True;
+	status = NT_STATUS_OK;
 
  out:
 	TALLOC_FREE(frame);
-	return ret;
+	return status;
 }
 
 /*******************************************************************

@@ -1936,13 +1936,16 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	if (psd) {
 		struct security_descriptor *old_sd;
 		size_t sd_size;
+		NTSTATUS status;
 
 		old_sd = get_share_security(p->mem_ctx, lp_servicename(talloc_tos(), snum), &sd_size);
 
 		if (old_sd && !security_descriptor_equal(old_sd, psd)) {
-			if (!set_share_security(share_name, psd))
+			status = set_share_security(share_name, psd);
+			if (!NT_STATUS_IS_OK(status)) {
 				DEBUG(0,("_srvsvc_NetShareSetInfo: Failed to change security info in share %s.\n",
 					share_name ));
+			}
 		}
 	}
 
@@ -2131,9 +2134,11 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 
 	if (psd) {
+		NTSTATUS status;
 		/* Note we use share_name here, not share_name_in as
 		   we need a canonicalized name for setting security. */
-		if (!set_share_security(share_name, psd)) {
+		status = set_share_security(share_name, psd);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("_srvsvc_NetShareAdd: Failed to add security info to share %s.\n",
 				share_name ));
 		}

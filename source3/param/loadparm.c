@@ -3329,6 +3329,7 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	char *canon_name = NULL;
 	bool added_service = false;
 	int ret = -1;
+	NTSTATUS status;
 
 	/* Ensure share name doesn't contain invalid characters. */
 	if (!validate_net_name(file_name, INVALID_SHARENAME_CHARS, strlen(file_name))) {
@@ -3365,7 +3366,6 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 
 	{
 		TDB_DATA data;
-		NTSTATUS status;
 
 		status = dbwrap_fetch_bystring(ServiceHash, canon_name,
 					       canon_name, &data);
@@ -3462,7 +3462,8 @@ static int process_usershare_file(const char *dir_name, const char *file_name, i
 	}
 
 	/* Write the ACL of the new/modified share. */
-	if (!set_share_security(canon_name, psd)) {
+	status = set_share_security(canon_name, psd);
+	if (!NT_STATUS_IS_OK(status)) {
 		 DEBUG(0, ("process_usershare_file: Failed to set share "
 			"security for user share %s\n",
 			canon_name ));

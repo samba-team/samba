@@ -163,6 +163,7 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 	struct security_descriptor *old = NULL;
 	size_t sd_size = 0;
 	uint32_t i, j;
+	NTSTATUS status;
 
 	if (mode != SMB_ACL_SET && mode != SMB_SD_DELETE) {
 	    if (!(old = get_share_security( mem_ctx, sharename, &sd_size )) ) {
@@ -259,7 +260,8 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 	/* Denied ACE entries must come before allowed ones */
 	sort_acl(old->dacl);
 
-	if ( !set_share_security( sharename, old ) ) {
+	status = set_share_security(sharename, old);
+	if (!NT_STATUS_IS_OK(status)) {
 	    fprintf( stderr, "Failed to store acl for share [%s]\n", sharename );
 	    return 2;
 	}
@@ -269,7 +271,7 @@ static int change_share_sec(TALLOC_CTX *mem_ctx, const char *sharename, char *th
 static int set_sharesec_sddl(const char *sharename, const char *sddl)
 {
 	struct security_descriptor *sd;
-	bool ret;
+	NTSTATUS status;
 
 	sd = sddl_decode(talloc_tos(), sddl, get_global_sam_sid());
 	if (sd == NULL) {
@@ -277,9 +279,9 @@ static int set_sharesec_sddl(const char *sharename, const char *sddl)
 		return -1;
 	}
 
-	ret = set_share_security(sharename, sd);
+	status = set_share_security(sharename, sd);
 	TALLOC_FREE(sd);
-	if (!ret) {
+	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "Failed to store acl for share [%s]\n",
 			sharename);
 		return -1;
