@@ -691,8 +691,10 @@ static int streams_depot_open(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int streams_depot_unlink(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
+static int streams_depot_unlink_internal(vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				int flags)
 {
 	struct smb_filename *smb_fname_base = NULL;
 	int ret = -1;
@@ -777,6 +779,15 @@ static int streams_depot_unlink(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int streams_depot_unlink(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname)
+{
+	return streams_depot_unlink_internal(handle,
+				handle->conn->cwd_fsp,
+				smb_fname,
+				0);
+}
+
 static int streams_depot_rmdir(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname)
 {
@@ -854,7 +865,10 @@ static int streams_depot_unlinkat(vfs_handle_struct *handle,
 	if (flags & AT_REMOVEDIR) {
 		ret = streams_depot_rmdir(handle, smb_fname);
 	} else {
-		ret = streams_depot_unlink(handle, smb_fname);
+		ret = streams_depot_unlink_internal(handle,
+				dirfsp,
+				smb_fname,
+				flags);
 	}
 	return ret;
 }
