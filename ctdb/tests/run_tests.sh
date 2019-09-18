@@ -129,7 +129,7 @@ ctdb_test_run ()
 		status=$?
 	else
 		echo "TEST IS NOT EXECUTABLE"
-		status=1
+		status=99
 	fi
 
 	tests_total=$((tests_total + 1))
@@ -139,6 +139,10 @@ ctdb_test_run ()
 	0)
 		interp="PASSED"
 		tests_passed=$((tests_passed + 1))
+		;;
+	99)
+		interp="ERROR"
+		tests_failed=$((tests_failed + 1))
 		;;
 	124)
 		interp="TIMEDOUT"

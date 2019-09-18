@@ -28,7 +28,7 @@ ctdb_test_error ()
 	if [ $# -gt 0 ] ; then
 		echo "$*"
 	fi
-	exit 1
+	exit 99
 }
 
 ctdb_test_fail ()
