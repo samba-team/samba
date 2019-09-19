@@ -290,8 +290,10 @@ static bool posix_eadb_init(int snum, struct tdb_wrap **p_db)
 /*
  * On unlink we need to delete the tdb record
  */
-static int posix_eadb_unlink(vfs_handle_struct *handle,
-			    const struct smb_filename *smb_fname)
+static int posix_eadb_unlink_internal(vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			int flags)
 {
 	struct smb_filename *smb_fname_tmp = NULL;
 	int ret = -1;
@@ -333,7 +335,10 @@ static int posix_eadb_unlink(vfs_handle_struct *handle,
 		}
 	}
 
-	ret = SMB_VFS_NEXT_UNLINK(handle, smb_fname_tmp);
+	ret = SMB_VFS_NEXT_UNLINKAT(handle,
+			dirfsp,
+			smb_fname_tmp,
+			flags);
 
 	if (ret == -1) {
 		tdb_transaction_cancel(ea_tdb->tdb);
@@ -385,6 +390,15 @@ static int posix_eadb_rmdir(vfs_handle_struct *handle,
 	return ret;
 }
 
+static int posix_eadb_unlink(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
+{
+	return posix_eadb_unlink_internal(handle,
+				handle->conn->cwd_fsp,
+				smb_fname,
+				0);
+}
+
 static int posix_eadb_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -396,7 +410,10 @@ static int posix_eadb_unlinkat(vfs_handle_struct *handle,
 	if (flags & AT_REMOVEDIR) {
 		ret = posix_eadb_rmdir(handle, smb_fname);
 	} else {
-		ret = posix_eadb_unlink(handle, smb_fname);
+		ret = posix_eadb_unlink_internal(handle,
+					dirfsp,
+					smb_fname,
+					flags);
 	}
 	return ret;
 }
