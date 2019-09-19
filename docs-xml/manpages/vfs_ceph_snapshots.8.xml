@@ -35,7 +35,7 @@
 		The <command>vfs_ceph_snapshots</command> VFS module exposes
 		CephFS snapshots for use by Samba. When enabled, SMB clients
 		such as Windows Explorer's Previous Versions dialog, can
-		enumerate snaphots and access them via "timewarp" tokens.
+		enumerate snapshots and access them via "timewarp" tokens.
 	</para>
 
 	<para>
