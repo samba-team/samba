@@ -1600,9 +1600,9 @@ static void byte_range_lock_flush(struct byte_range_lock *br_lck)
 			 */
 			locks[i] = locks[br_lck->num_locks-1];
 			br_lck->num_locks -= 1;
-		} else {
-			i += 1;
+			continue;
 		}
+		i += 1;
 	}
 
 	if (br_lck->num_locks == 0) {
