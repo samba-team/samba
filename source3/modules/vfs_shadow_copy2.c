@@ -1005,7 +1005,7 @@ static char *shadow_copy2_do_convert(TALLOC_CTX *mem_ctx,
 		if (errno == ENOTDIR) {
 			/*
 			 * This is a valid condition: We appended the
-			 * .snaphots/@GMT.. to a file name. Just try
+			 * .snapshots/@GMT.. to a file name. Just try
 			 * with the upper levels.
 			 */
 			continue;
