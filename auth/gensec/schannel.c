@@ -296,6 +296,15 @@ static NTSTATUS netsec_do_seal(struct schannel_state *state,
 			ZERO_ARRAY(_sealing_key);
 			return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		}
+		gnutls_cipher_deinit(cipher_hnd);
+		rc = gnutls_cipher_init(&cipher_hnd,
+					GNUTLS_CIPHER_ARCFOUR_128,
+					&sealing_key,
+					NULL);
+		if (rc < 0) {
+			ZERO_ARRAY(_sealing_key);
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
+		}
 		rc = gnutls_cipher_encrypt(cipher_hnd,
 					   data,
 					   length);
