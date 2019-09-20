@@ -27,7 +27,10 @@ class PamChauthtokTests(samba.tests.TestCase):
         username = os.environ["USERNAME"]
         password = os.environ["PASSWORD"]
         newpassword = os.environ["NEWPASSWORD"]
-        unix_username = "%s/%s" % (domain, username)
+        if domain != "":
+            unix_username = "%s/%s" % (domain, username)
+        else:
+            unix_username = "%s" % username
         expected_rc = 0 # PAM_SUCCESS
 
         tc = pypamtest.TestCase(pypamtest.PAMTEST_CHAUTHTOK, expected_rc)

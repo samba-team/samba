@@ -26,7 +26,10 @@ class SimplePamTests(samba.tests.TestCase):
         domain = os.environ["DOMAIN"]
         username = os.environ["USERNAME"]
         password = os.environ["PASSWORD"]
-        unix_username = "%s/%s" % (domain, username)
+        if domain != "":
+            unix_username = "%s/%s" % (domain, username)
+        else:
+            unix_username = "%s" % username
         expected_rc = 0  # PAM_SUCCESS
 
         tc = pypamtest.TestCase(pypamtest.PAMTEST_AUTHENTICATE, expected_rc)
@@ -41,7 +44,10 @@ class SimplePamTests(samba.tests.TestCase):
         domain = os.environ["DOMAIN"]
         username = os.environ["USERNAME"]
         password = "WrongPassword"
-        unix_username = "%s/%s" % (domain, username)
+        if domain != "":
+            unix_username = "%s/%s" % (domain, username)
+        else:
+            unix_username = "%s" % username
         expected_rc = 7  # PAM_AUTH_ERR
 
         tc = pypamtest.TestCase(pypamtest.PAMTEST_AUTHENTICATE, expected_rc)
