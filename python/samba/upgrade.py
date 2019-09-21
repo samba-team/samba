@@ -474,7 +474,7 @@ def upgrade_from_samba3(samba3, logger, targetdir, session_info=None,
         ldappass = secrets_db.get_ldap_bind_pw(ldapuser)
         if ldappass is None:
             raise ProvisioningError("ldapsam passdb backend detected but no LDAP Bind PW found in secrets.tdb for user %s.  Please point this tool at the secrets.tdb that was used by the previous installation.")
-        ldappass = ldappass.strip('\x00')
+        ldappass = ldappass.decode('utf-8').strip('\x00')
         ldap = True
     else:
         ldapuser = None
