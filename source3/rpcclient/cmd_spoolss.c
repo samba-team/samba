@@ -4094,6 +4094,46 @@ static WERROR cmd_spoolss_add_permachineconnection(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static WERROR cmd_spoolss_del_permachineconnection(struct rpc_pipe_client *cli,
+						   TALLOC_CTX *mem_ctx, int argc,
+						   const char **argv)
+{
+	NTSTATUS status;
+	WERROR result;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	const char *servername = cli->srv_name_slash;
+	const char *printername = "Microsoft Print to PDF";
+	const char *composed_printername;
+
+	if (argc > 3) {
+		printf("usage: %s [servername] [printername]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc > 1) {
+		servername = argv[1];
+	}
+	if (argc > 2) {
+		printername = argv[2];
+	}
+
+	composed_printername = talloc_asprintf(mem_ctx, "%s\\%s", servername,
+			printername);
+	if (composed_printername == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+
+	status = dcerpc_spoolss_DeletePerMachineConnection(b, mem_ctx,
+							   servername,
+							   composed_printername,
+							   &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	return result;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -4510,6 +4550,16 @@ struct cmd_set spoolss_commands[] = {
 		.table              = &ndr_table_spoolss,
 		.rpc_pipe           = NULL,
 		.description        = "Add Per Machine Connection",
+		.usage              = "",
+	},
+	{
+		.name               = "delpermachineconnection",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_spoolss_del_permachineconnection,
+		.table              = &ndr_table_spoolss,
+		.rpc_pipe           = NULL,
+		.description        = "Delete Per Machine Connection",
 		.usage              = "",
 	},
 	{
