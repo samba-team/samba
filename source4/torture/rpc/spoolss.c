@@ -6127,6 +6127,159 @@ static bool test_add_print_processor(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_AddPerMachineConnection(struct torture_context *tctx,
+					 struct dcerpc_binding_handle *b,
+					 const char *servername,
+					 const char *printername,
+					 const char *printserver,
+					 const char *provider,
+					 WERROR expected_error)
+{
+	struct spoolss_AddPerMachineConnection r;
+	const char *composed_printername = printername;
+
+	if (servername != NULL) {
+		composed_printername = talloc_asprintf(tctx, "%s\\%s",
+						servername,
+						printername);
+	}
+	r.in.server = servername;
+	r.in.printername = composed_printername;
+	r.in.printserver = printserver;
+	r.in.provider = provider;
+
+	torture_comment(tctx, "Testing AddPerMachineConnection(%s|%s|%s)\n",
+		printername, printserver, provider);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_AddPerMachineConnection_r(b, tctx, &r),
+		"spoolss_AddPerMachineConnection failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_error,
+		"spoolss_AddPerMachineConnection failed");
+
+	return true;
+}
+
+static bool test_DeletePerMachineConnection(struct torture_context *tctx,
+					    struct dcerpc_binding_handle *b,
+					    const char *servername,
+					    const char *printername,
+					    WERROR expected_error)
+{
+	struct spoolss_DeletePerMachineConnection r;
+	const char *composed_printername = printername;
+
+	if (servername != NULL) {
+		composed_printername = talloc_asprintf(tctx, "%s\\%s",
+						servername,
+						printername);
+	}
+
+	r.in.server = servername;
+	r.in.printername = composed_printername;
+
+	torture_comment(tctx, "Testing DeletePerMachineConnection(%s)\n",
+		printername);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_DeletePerMachineConnection_r(b, tctx, &r),
+		"spoolss_DeletePerMachineConnection failed");
+	torture_assert_werr_equal(tctx, r.out.result, expected_error,
+		"spoolss_DeletePerMachineConnection failed");
+
+	return true;
+}
+
+static bool test_addpermachineconnection(struct torture_context *tctx,
+					 void *private_data)
+{
+	struct test_spoolss_context *ctx =
+		talloc_get_type_abort(private_data, struct test_spoolss_context);
+	struct dcerpc_pipe *p = ctx->spoolss_pipe;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	const char *server_name_slash = talloc_asprintf(tctx, "\\\\%s", dcerpc_server_name(p));
+	int i;
+
+	struct {
+		const char *servername;
+		const char *printername;
+		const char *printserver;
+		const char *provider;
+		WERROR expected_add_result;
+		WERROR expected_del_result;
+	} tests[] = {
+		{
+			.servername		= NULL,
+			.printername		= "foo",
+			.printserver		= "",
+			.provider		= "unknown",
+			.expected_add_result	= WERR_INVALID_PRINTER_NAME,
+			.expected_del_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.servername		= NULL,
+			.printername		= "Microsoft Print to PDF",
+			.printserver		= "samba.org",
+			.provider		= "unknown",
+			.expected_add_result	= WERR_INVALID_PRINTER_NAME,
+			.expected_del_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.servername		= NULL,
+			.printername		= "Microsoft Print to PDF",
+			.printserver		= "samba.org",
+			.provider		= "",
+			.expected_add_result	= WERR_INVALID_PRINTER_NAME,
+			.expected_del_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.servername		= server_name_slash,
+			.printername		= "foo",
+			.printserver		= "",
+			.provider		= "unknown",
+			.expected_add_result	= WERR_FILE_NOT_FOUND,
+			.expected_del_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.servername		= server_name_slash,
+			.printername		= "foo",
+			.printserver		= "",
+			.provider		= "",
+			.expected_add_result	= WERR_OK,
+			.expected_del_result	= WERR_OK
+		},{
+			.servername		= server_name_slash,
+			.printername		= "Microsoft Print to PDF",
+			.printserver		= "samba.org",
+			.provider		= "unknown",
+			.expected_add_result	= WERR_FILE_NOT_FOUND,
+			.expected_del_result	= WERR_INVALID_PRINTER_NAME
+		},{
+			.servername		= server_name_slash,
+			.printername		= "Microsoft Print to PDF",
+			.printserver		= "samba.org",
+			.provider		= "",
+			.expected_add_result	= WERR_OK,
+			.expected_del_result	= WERR_OK
+		}
+	};
+
+	for (i=0; i < ARRAY_SIZE(tests); i++) {
+		torture_assert(tctx,
+			test_AddPerMachineConnection(tctx, b,
+						     tests[i].servername,
+						     tests[i].printername,
+						     tests[i].printserver,
+						     tests[i].provider,
+						     tests[i].expected_add_result),
+			"add per machine connection failed");
+		torture_assert(tctx,
+			test_DeletePerMachineConnection(tctx, b,
+							tests[i].servername,
+							tests[i].printername,
+							tests[i].expected_del_result),
+			"delete per machine connection failed");
+	}
+
+	return true;
+}
+
 static bool test_GetChangeID_PrinterData(struct torture_context *tctx,
 					 struct dcerpc_binding_handle *b,
 					 struct policy_handle *handle,
@@ -9654,6 +9807,7 @@ struct torture_suite *torture_rpc_spoolss(TALLOC_CTX *mem_ctx)
 	torture_tcase_add_simple_test(tcase, "get_printer", test_get_printer_printserverhandle);
 	torture_tcase_add_simple_test(tcase, "set_printer", test_set_printer_printserverhandle);
 	torture_tcase_add_simple_test(tcase, "printserver_info_winreg", test_printserver_info_winreg);
+	torture_tcase_add_simple_test(tcase, "addpermachineconnection", test_addpermachineconnection);
 
 	torture_suite_add_suite(suite, torture_rpc_spoolss_printer(suite));
 

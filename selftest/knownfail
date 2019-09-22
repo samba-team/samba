@@ -216,6 +216,7 @@
 ^samba3.rpc.spoolss.printer.addprinterex.driver_info_winreg # knownfail or flapping?
 ^samba3.rpc.spoolss.printer.*.publish_toggle\(.*\)$ # needs spoolss AD member env
 ^samba3.rpc.spoolss.printer.*.log_jobinfo\(.*\)$ # not implemented yet
+^samba3.rpc.spoolss.printserver.*.addpermachineconnection\(.*\)$ # not implemented yet
 ^samba3.rpc.spoolss.printserver.*.add_processor\(.*\)$
 ^samba3.rpc.spoolss.printserver.*.get_core_printer_drivers\(.*\)$
 ^samba3.rpc.spoolss.printserver.*.get_printer_driver_package_path\(.*\)$
