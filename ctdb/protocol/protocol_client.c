@@ -2311,6 +2311,8 @@ void ctdb_req_control_tunnel_register(struct ctdb_req_control *request,
 	request->srvid = tunnel_id;
 	request->client_id = 0;
 	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_TUNNEL_REGISTER;
 }
 
 int ctdb_reply_control_tunnel_register(struct ctdb_reply_control *reply)
@@ -2332,6 +2334,8 @@ void ctdb_req_control_tunnel_deregister(struct ctdb_req_control *request,
 	request->srvid = tunnel_id;
 	request->client_id = 0;
 	request->flags = 0;
+
+	request->rdata.opcode = CTDB_CONTROL_TUNNEL_DEREGISTER;
 }
 
 int ctdb_reply_control_tunnel_deregister(struct ctdb_reply_control *reply)
