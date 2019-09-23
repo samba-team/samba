@@ -917,13 +917,13 @@ class DCJoinContext(object):
 
         secrets_ldb = Ldb(ctx.paths.secrets, session_info=system_session(), lp=ctx.lp)
 
-        presult = provision_fill(ctx.local_samdb, secrets_ldb,
-                                 ctx.logger, ctx.names, ctx.paths,
-                                 dom_for_fun_level=DS_DOMAIN_FUNCTION_2003,
-                                 targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
-                                 machinepass=ctx.acct_pass, serverrole="active directory domain controller",
-                                 lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6,
-                                 dns_backend=ctx.dns_backend, adminpass=ctx.adminpass)
+        provision_fill(ctx.local_samdb, secrets_ldb,
+                       ctx.logger, ctx.names, ctx.paths,
+                       dom_for_fun_level=DS_DOMAIN_FUNCTION_2003,
+                       targetdir=ctx.targetdir, samdb_fill=FILL_SUBDOMAIN,
+                       machinepass=ctx.acct_pass, serverrole="active directory domain controller",
+                       lp=ctx.lp, hostip=ctx.names.hostip, hostip6=ctx.names.hostip6,
+                       dns_backend=ctx.dns_backend, adminpass=ctx.adminpass)
         print("Provision OK for domain %s" % ctx.names.dnsdomain)
 
     def create_replicator(ctx, repl_creds, binding_options):
