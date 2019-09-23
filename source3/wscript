@@ -116,7 +116,6 @@ def configure(conf):
     conf.CHECK_FUNCS('fstatat')
     conf.CHECK_FUNCS('getpwent_r setenv clearenv strcasecmp fcvt fcvtl')
     conf.CHECK_FUNCS('syslog vsyslog timegm setlocale')
-    conf.CHECK_FUNCS_IN('nanosleep', 'rt')
     conf.CHECK_FUNCS('lutimes futimes utimensat futimens')
     conf.CHECK_FUNCS('mlock munlock mlockall munlockall')
     conf.CHECK_FUNCS('memalign posix_memalign hstrerror')
