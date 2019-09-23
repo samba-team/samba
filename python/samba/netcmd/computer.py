@@ -515,7 +515,7 @@ class cmd_computer_edit(Command):
             samdb.modify(res_msg_diff)
         except Exception as e:
             raise CommandError("Failed to modify computer '%s': " %
-                               (computername, e))
+                               computername, e)
 
         self.outf.write("Modified computer '%s' successfully\n" % computername)
 
