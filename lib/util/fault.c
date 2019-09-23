@@ -78,7 +78,11 @@ static void fault_report(int sig)
 
 	DEBUGSEP(0);
 	DEBUG(0,("INTERNAL ERROR: Signal %d in pid %d (%s)",sig,(int)getpid(),SAMBA_VERSION_STRING));
-	DEBUG(0,("\nPlease read the Trouble-Shooting section of the Samba HOWTO\n"));
+	DEBUG(0,("\nIf you are running a recent Samba version, and "
+		 "if you think this problem is not yet fixed in the "
+		 "latest versions, please consider reporting this "
+		 "bug, see "
+		 "https://wiki.samba.org/index.php/Bug_Reporting\n"));
 	DEBUGSEP(0);
 
 	smb_panic("internal error");
