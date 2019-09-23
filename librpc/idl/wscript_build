@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 bld.SAMBA_PIDL_LIST('PIDL',
-                    '''drsuapi.idl epmapper.idl initshutdown.idl
+                    '''drsuapi.idl epmapper.idl
                        eventlog.idl
                        ntsvcs.idl remact.idl unixinfo.idl
                        browser.idl dfs.idl dssetup.idl frsapi.idl
@@ -19,6 +19,11 @@ bld.SAMBA_PIDL_LIST('PIDL',
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''atsvc.idl''',
                     options='--header --ndr-parser --client --python',
+                    output_dir='../gen_ndr')
+
+bld.SAMBA_PIDL_LIST('PIDL',
+                    '''initshutdown.idl''',
+                    options='--header --ndr-parser --client --python --samba3-ndr-server',
                     output_dir='../gen_ndr')
 
 bld.SAMBA_PIDL_LIST('PIDL',
