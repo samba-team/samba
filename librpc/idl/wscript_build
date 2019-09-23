@@ -6,7 +6,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        browser.idl dssetup.idl frsapi.idl
                        spoolss.idl
                        dnsserver.idl echo.idl lsa.idl
-                       oxidresolver.idl samr.idl srvsvc.idl winreg.idl
+                       samr.idl srvsvc.idl winreg.idl
                        mgmt.idl netlogon.idl
                        svcctl.idl wkssvc.idl eventlog6.idl backupkey.idl
                        fsrvp.idl witness.idl clusapi.idl
@@ -35,7 +35,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
 
 # DCOM stuff
 bld.SAMBA_PIDL_LIST('PIDL',
-                    '''remact.idl''',
+                    '''oxidresolver.idl remact.idl''',
                     options='--header --ndr-parser --client',
                     output_dir='../gen_ndr')
 
