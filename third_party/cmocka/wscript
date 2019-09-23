@@ -12,8 +12,13 @@ def build(bld):
     if bld.CONFIG_SET('USING_SYSTEM_CMOCKA'):
         return
 
+    extra_libs=''
+
+    # Link to librt if needed for clock_gettime()
+    if bld.CONFIG_SET('HAVE_LIBRT'): extra_libs += ' rt'
+
     bld.SAMBA_LIBRARY('cmocka',
                       source='cmocka.c',
-                      deps='rt',
+                      deps=extra_libs,
                       allow_warnings=True,
                       private_library=True)
