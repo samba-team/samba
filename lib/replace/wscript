@@ -554,6 +554,11 @@ def configure(conf):
     PTHREAD_LDFLAGS='error'
 
     if PTHREAD_LDFLAGS == 'error':
+        # Check if pthread_attr_init() is provided by libc first!
+        if conf.CHECK_FUNCS('pthread_attr_init'):
+            PTHREAD_CFLAGS='-D_REENTRANT'
+            PTHREAD_LDFLAGS=''
+    if PTHREAD_LDFLAGS == 'error':
         if conf.CHECK_FUNCS_IN('pthread_attr_init', 'pthread'):
             PTHREAD_CFLAGS='-D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS'
             PTHREAD_LDFLAGS='-lpthread'
@@ -565,10 +570,7 @@ def configure(conf):
         if conf.CHECK_FUNCS_IN('pthread_attr_init', 'c_r'):
             PTHREAD_CFLAGS='-D_THREAD_SAFE -pthread'
             PTHREAD_LDFLAGS='-pthread'
-    if PTHREAD_LDFLAGS == 'error':
-        if conf.CHECK_FUNCS('pthread_attr_init'):
-            PTHREAD_CFLAGS='-D_REENTRANT'
-            PTHREAD_LDFLAGS='-lpthread'
+
     # especially for HP-UX, where the CHECK_FUNC macro fails to test for
     # pthread_attr_init. On pthread_mutex_lock it works there...
     if PTHREAD_LDFLAGS == 'error':
