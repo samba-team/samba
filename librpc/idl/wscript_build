@@ -3,7 +3,6 @@
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''drsuapi.idl epmapper.idl
                        eventlog.idl
-                       unixinfo.idl
                        browser.idl dfs.idl dssetup.idl frsapi.idl
                        rot.idl spoolss.idl w32time.idl
                        dnsserver.idl echo.idl lsa.idl
@@ -26,6 +25,12 @@ bld.SAMBA_PIDL_LIST('PIDL',
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''initshutdown.idl ntsvcs.idl''',
                     options='--header --ndr-parser --client --python --samba3-ndr-server',
+                    output_dir='../gen_ndr')
+
+# Services that we only have a server in the source4 style
+bld.SAMBA_PIDL_LIST('PIDL',
+                    '''unixinfo.idl''',
+                    options='--header --ndr-parser --client --python --server',
                     output_dir='../gen_ndr')
 
 # DCOM stuff
