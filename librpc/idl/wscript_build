@@ -16,16 +16,19 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     options='--header --ndr-parser --samba3-ndr-server --server --client --python',
                     output_dir='../gen_ndr')
 
+# Services that we only have a client for
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''atsvc.idl''',
                     options='--header --ndr-parser --client --python',
                     output_dir='../gen_ndr')
 
+# Services that we only have a server in the source3 style
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''initshutdown.idl ntsvcs.idl''',
                     options='--header --ndr-parser --client --python --samba3-ndr-server',
                     output_dir='../gen_ndr')
 
+# DCOM stuff
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''remact.idl''',
                     options='--header --ndr-parser --client',
