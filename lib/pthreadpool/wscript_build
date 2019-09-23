@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 
 if bld.env.WITH_PTHREADPOOL:
+    extra_libs=''
+
+    # Link to librt if needed for clock_gettime()
+    if bld.CONFIG_SET('HAVE_LIBRT'): extra_libs += ' rt'
+
     bld.SAMBA_SUBSYSTEM('PTHREADPOOL',
                          source='''pthreadpool.c
                                    pthreadpool_pipe.c
                                    pthreadpool_tevent.c
                                 ''',
-                         deps='pthread rt replace tevent-util')
+                         deps='pthread replace tevent-util' + extra_libs)
 else:
     bld.SAMBA_SUBSYSTEM('PTHREADPOOL',
                          source='''pthreadpool_sync.c
