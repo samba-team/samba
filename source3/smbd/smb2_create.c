@@ -1274,6 +1274,9 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 	DEBUG(10, ("smbd_smb2_create_send: "
 		   "response construction phase\n"));
 
+	state->out_file_attributes = dos_mode(state->result->conn,
+					      state->result->fsp_name);
+
 	if (state->mxac != NULL) {
 		NTTIME last_write_time;
 
@@ -1472,8 +1475,6 @@ static void smbd_smb2_create_finish(struct tevent_req *req)
 		state->out_create_action = state->info;
 	}
 	result->op->create_action = state->out_create_action;
-	state->out_file_attributes = dos_mode(result->conn,
-					   result->fsp_name);
 
 	state->out_creation_ts = get_create_timespec(smb1req->conn,
 					result, result->fsp_name);
