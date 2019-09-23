@@ -61,13 +61,17 @@ while [ $n -lt $num_nodes ] ; do
     read pid
     try_command_on_node $n "ls -l /proc/${pid}/exe | sed -e 's@.*/@@'"
     echo -n "Node ${n}, PID ${pid} looks to be running \"$out\" - "
-    if [ "$out" = "ctdbd" ] ; then
-	echo "GOOD!"
-    elif [ -n "$VALGRIND" -a "$out" = "memcheck" ] ; then
-	# We could check cmdline too if this isn't good enough.
-	echo "GOOD enough!"
-    else
-	die "BAD!"
-    fi
+    case "$out" in
+    ctdbd) : ;;
+    memcheck*)
+	    if [ -z "$VALGRIND" ] ; then
+		    die "BAD"
+	    fi
+	    ;;
+    *) die "BAD"
+    esac
+
+    echo "GOOD!"
+
     n=$(($n + 1))
 done <<<"$pids_onnode"
