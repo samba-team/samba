@@ -220,6 +220,7 @@ bld.SAMBA3_SUBSYSTEM('SMBREGISTRY',
                           lib/util_nttoken.c
                           registry/reg_backend_db.c
                           registry/reg_parse_internal.c
+                          registry/reg_parse.c
                           lib/srprs.c
                           registry/reg_init_basic.c
                           ''',
