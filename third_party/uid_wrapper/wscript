@@ -119,6 +119,6 @@ def build(bld):
         # breaks preloading!
         bld.SAMBA_LIBRARY('uid_wrapper',
                           source='uid_wrapper.c',
-                          deps='dl',
+                          deps='dl pthread',
                           install=False,
                           realname='libuid-wrapper.so')
