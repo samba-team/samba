@@ -4,7 +4,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     '''drsuapi.idl epmapper.idl
                        eventlog.idl
                        browser.idl dssetup.idl frsapi.idl
-                       rot.idl spoolss.idl w32time.idl
+                       spoolss.idl w32time.idl
                        dnsserver.idl echo.idl lsa.idl
                        oxidresolver.idl samr.idl srvsvc.idl winreg.idl
                        mgmt.idl netlogon.idl
@@ -58,6 +58,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     msgsvc.idl
                     orpc.idl
                     policyagent.idl
+                    rot.idl
                     scerpc.idl
                     trkwks.idl
                     wzcsvc.idl

@@ -163,7 +163,6 @@ bld.SAMBA_MODULE('torture_rpc',
                       RPC_NDR_SPOOLSS
                       RPC_NDR_SRVSVC
                       RPC_NDR_WKSSVC
-                      RPC_NDR_ROT
                       RPC_NDR_DSSETUP
                       RPC_NDR_REMACT
                       RPC_NDR_OXIDRESOLVER
