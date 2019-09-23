@@ -46,7 +46,7 @@ try_command_on_node -i $test_node tee "$script_options" <<<"\
 CTDB_RUN_TIMEOUT_MONITOR=yes
 CTDB_DEBUG_HUNG_SCRIPT_LOGFILE=\"$debug_output\"
 CTDB_DEBUG_HUNG_SCRIPT_STACKPAT='exportfs|rpcinfo|sleep'
-CTDB_SCRIPT_VARDIR=\"$CTDB_BASE\""
+CTDB_SCRIPT_VARDIR=\"$ctdb_base\""
 
 ####################
 
