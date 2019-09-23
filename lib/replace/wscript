@@ -458,11 +458,28 @@ def configure(conf):
     conf.CHECK_C_PROTOTYPE('dlopen', 'void *dlopen(const char* filename, unsigned int flags)',
                            define='DLOPEN_TAKES_UNSIGNED_FLAGS', headers='dlfcn.h dl.h')
 
-    if conf.CHECK_FUNCS_IN('fdatasync', 'rt', checklibc=True):
+    #
+    # Check for clock_gettime and fdatasync
+    #
+    # First check libc to avoid linking libreplace against librt.
+    #
+    if conf.CHECK_FUNCS('fdatasync'):
         # some systems are missing the declaration
         conf.CHECK_DECLS('fdatasync')
+    else:
+        if conf.CHECK_FUNCS_IN('fdatasync', 'rt'):
+            # some systems are missing the declaration
+            conf.CHECK_DECLS('fdatasync')
 
-    if conf.CHECK_FUNCS_IN('clock_gettime', 'rt', checklibc=True):
+    has_clock_gettime = False
+    if conf.CHECK_FUNCS('clock_gettime'):
+        has_clock_gettime = True
+
+    if not has_clock_gettime:
+        if conf.CHECK_FUNCS_IN('clock_gettime', 'rt', checklibc=True):
+            has_clock_gettime = True
+
+    if has_clock_gettime:
         for c in ['CLOCK_MONOTONIC', 'CLOCK_PROCESS_CPUTIME_ID', 'CLOCK_REALTIME']:
             conf.CHECK_CODE('''
                 #if TIME_WITH_SYS_TIME
@@ -816,6 +833,7 @@ def build(bld):
 
     extra_libs = ''
     if bld.CONFIG_SET('HAVE_LIBBSD'): extra_libs += ' bsd'
+    if bld.CONFIG_SET('HAVE_LIBRT'): extra_libs += ' rt'
 
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_HOSTCC',
         REPLACE_HOSTCC_SOURCE,
@@ -856,7 +874,7 @@ def build(bld):
                       # at the moment:
                       # hide_symbols=bld.BUILTIN_LIBRARY('replace'),
                       private_library=True,
-                      deps='crypt dl nsl socket rt attr' + extra_libs)
+                      deps='crypt dl nsl socket attr' + extra_libs)
 
     replace_test_cflags = ''
     if bld.CONFIG_SET('HAVE_WNO_FORMAT_TRUNCATION'):
