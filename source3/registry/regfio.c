@@ -482,7 +482,7 @@ static bool read_regf_block( REGF_FILE *file )
 	
 	prs_mem_free( &ps );
 	
-	if ( file->checksum !=  checksum ) {
+	if ( file->checksum != checksum && !file->ignore_checksums) {
 		DEBUG(0,("read_regf_block: invalid checksum\n" ));
 		return False;
 	}
@@ -1242,6 +1242,7 @@ out:
 	}
 	ZERO_STRUCTP( rb );
 	rb->fd = -1;
+	rb->ignore_checksums = false;
 	
 	if ( !(rb->mem_ctx = talloc_init( "regfio_open" )) ) {
 		regfio_close( rb );

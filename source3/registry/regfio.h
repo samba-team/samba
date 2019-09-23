@@ -199,6 +199,13 @@ typedef struct {
 	
 	REGF_SK_REC *sec_desc_list;	/* list of security descriptors referenced by NK records */
 
+	/* Ignore checksums in input data. Used by fuzzing code to allow more
+	 * coverage without having to calcuate a valid checksum. The checksums
+	 * are merely to detect data corruption and don't provide a security
+	 * value.
+	 */
+	bool ignore_checksums;
+
 	/* unknowns used to simply writing */
 	
 	uint32_t unknown1;
