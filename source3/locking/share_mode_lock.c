@@ -2031,9 +2031,7 @@ static void mark_share_mode_disconnected_fn(
 bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 				  struct files_struct *fsp)
 {
-	struct mark_share_mode_disconnected_state state = {
-		.open_persistent_id = fsp->op->global->open_persistent_id,
-	};
+	struct mark_share_mode_disconnected_state state;
 	bool ok;
 
 	if (lck->data->num_share_modes != 1) {
@@ -2046,6 +2044,10 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 	if (!fsp->op->global->durable) {
 		return false;
 	}
+
+	state = (struct mark_share_mode_disconnected_state) {
+		.open_persistent_id = fsp->op->global->open_persistent_id,
+	};
 
 	ok = share_mode_entry_do(
 		lck,
