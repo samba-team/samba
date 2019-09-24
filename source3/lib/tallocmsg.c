@@ -61,6 +61,7 @@ static void msg_pool_usage_do(struct tevent_req *req)
 		close(rec->fds[0]);
 		TALLOC_FREE(rec);
 		DBG_DEBUG("fdopen failed: %s\n", strerror(errno));
+		return;
 	}
 
 	TALLOC_FREE(rec);
