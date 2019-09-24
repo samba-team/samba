@@ -27,7 +27,7 @@ struct tfork;
  * @brief a fork() that avoids SIGCHLD and waitpid
  *
  * This function is a solution to the problem of fork() requiring special
- * preperations in the caller to handle SIGCHLD signals and to reap the child by
+ * preparations in the caller to handle SIGCHLD signals and to reap the child by
  * wait()ing for it.
  *
  * The advantage over fork() is that the child process termination is signalled
