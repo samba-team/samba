@@ -18,20 +18,9 @@
  */
 
 #include "replace.h"
-#include <errno.h>
-#include <sys/types.h>
-#include <dirent.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include "memory.h"
-#include "debug.h"
-#include "replace.h"
-#include "system/locale.h"
-#include "lib/util/asn1.h"
+#include "system/filesys.h"
+#include "system/dir.h"
 #include "lib/util/debug.h"
-#include "lib/util/samba_util.h"
 
 #include "tftw.h"
 
