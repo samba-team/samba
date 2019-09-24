@@ -3689,8 +3689,9 @@ static bool test_raw_oplock_batch26(struct torture_context *tctx,
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname1;
 
-	torture_comment(tctx, "BATCH26: open a file with an batch oplock "
-	    "(share mode: none)\n");
+	torture_comment(tctx,
+			"BATCH26: open a file with an batch oplock "
+			"(share mode: all)\n");
 
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
