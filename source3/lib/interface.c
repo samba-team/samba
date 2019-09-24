@@ -449,17 +449,6 @@ static void interpret_interface(char *token)
 	bool cap_set = false;
 	bool if_index_set = false;
 
-	/* first check if it is an interface name */
-	for (i=0;i<total_probed;i++) {
-		if (gen_fnmatch(token, probed_ifaces[i].name) == 0) {
-			add_interface(&probed_ifaces[i]);
-			added = true;
-		}
-	}
-	if (added) {
-		return;
-	}
-
 	/*
 	 * extract speed / capability information if present
 	 */
@@ -476,6 +465,26 @@ static void interpret_interface(char *token)
 		if (if_index != 0) {
 			if_index_set = true;
 		}
+	}
+
+	/* first check if it is an interface name */
+	for (i=0;i<total_probed;i++) {
+		if (gen_fnmatch(token, probed_ifaces[i].name) == 0) {
+			if (speed_set) {
+				probed_ifaces[i].linkspeed = speed;
+			}
+			if (cap_set) {
+				probed_ifaces[i].capability = cap;
+			}
+			if (if_index_set) {
+				probed_ifaces[i].if_index = if_index;
+			}
+			add_interface(&probed_ifaces[i]);
+			added = true;
+		}
+	}
+	if (added) {
+		return;
 	}
 
 	p = strchr_m(token,'/');
