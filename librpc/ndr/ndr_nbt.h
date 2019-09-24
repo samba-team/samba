@@ -37,5 +37,6 @@ enum ndr_err_code ndr_pull_NETLOGON_SAM_LOGON_RESPONSE_EX_with_flags(struct ndr_
 								     uint32_t nt_version_flags);
 enum ndr_err_code ndr_push_netlogon_samlogon_response(struct ndr_push *ndr, int ndr_flags, const struct netlogon_samlogon_response *r);
 enum ndr_err_code ndr_pull_netlogon_samlogon_response(struct ndr_pull *ndr, int ndr_flags, struct netlogon_samlogon_response *r);
+void ndr_print_netlogon_samlogon_response(struct ndr_print *ndr, const char *name, struct netlogon_samlogon_response *r);
 
 #endif /* _LIBRPC_NDR_NDR_NBT_H */

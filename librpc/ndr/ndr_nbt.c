@@ -449,3 +449,16 @@ _PUBLIC_ enum ndr_err_code ndr_pull_netlogon_samlogon_response(struct ndr_pull *
 
 	return NDR_ERR_SUCCESS;
 }
+
+_PUBLIC_ void ndr_print_netlogon_samlogon_response(struct ndr_print *ndr, const char *name, struct netlogon_samlogon_response *r)
+{
+	ndr_print_struct(ndr, name, "netlogon_samlogon_response");
+	if (r == NULL) { ndr_print_null(ndr); return; }
+	if (r->ntver == NETLOGON_NT_VERSION_1) {
+		ndr_print_NETLOGON_SAM_LOGON_RESPONSE_NT40(ndr, "data.nt4", &r->data.nt4);
+	} else if (r->ntver & NETLOGON_NT_VERSION_5EX) {
+		ndr_print_NETLOGON_SAM_LOGON_RESPONSE_EX(ndr, "data.nt5_ex", &r->data.nt5_ex);
+	} else if (r->ntver & NETLOGON_NT_VERSION_5) {
+		ndr_print_NETLOGON_SAM_LOGON_RESPONSE(ndr, "data.nt5", &r->data.nt5);
+	}
+}
