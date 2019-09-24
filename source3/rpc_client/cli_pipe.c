@@ -2665,9 +2665,14 @@ static NTSTATUS rpc_pipe_open_tcp_port(TALLOC_CTX *mem_ctx, const char *host,
 	result->transfer_syntax = ndr_transfer_syntax_ndr;
 
 	result->desthost = talloc_strdup(result, host);
+	if (result->desthost == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);
-	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
+	if (result->srv_name_slash == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
@@ -2912,9 +2917,14 @@ NTSTATUS rpc_pipe_open_ncalrpc(TALLOC_CTX *mem_ctx, const char *socket_path,
 	result->transfer_syntax = ndr_transfer_syntax_ndr;
 
 	result->desthost = get_myname(result);
+	if (result->desthost == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
 	result->srv_name_slash = talloc_asprintf_strupper_m(
 		result, "\\\\%s", result->desthost);
-	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
+	if (result->srv_name_slash == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
@@ -3006,16 +3016,22 @@ static NTSTATUS rpc_pipe_open_np(struct cli_state *cli,
 
 	result->abstract_syntax = table->syntax_id;
 	result->transfer_syntax = ndr_transfer_syntax_ndr;
-	result->desthost = talloc_strdup(result, smbXcli_conn_remote_name(cli->conn));
-	result->srv_name_slash = talloc_asprintf_strupper_m(
-		result, "\\\\%s", result->desthost);
 
-	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
-
-	if ((result->desthost == NULL) || (result->srv_name_slash == NULL)) {
+	result->desthost = talloc_strdup(
+		result, smbXcli_conn_remote_name(cli->conn));
+	if (result->desthost == NULL) {
 		TALLOC_FREE(result);
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	result->srv_name_slash = talloc_asprintf_strupper_m(
+		result, "\\\\%s", result->desthost);
+	if (result->srv_name_slash == NULL) {
+		TALLOC_FREE(result);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result->max_xmit_frag = RPC_MAX_PDU_FRAG_LEN;
 
 	status = rpc_transport_np_init(result, cli, table,
 				       &result->transport);
