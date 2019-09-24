@@ -2328,6 +2328,333 @@ done:
 	return ret;
 }
 
+static bool test_fileid_dir(struct torture_context *tctx,
+			    struct smb2_tree *tree)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	const char *dname = DNAME "\\foo";
+	const char *sname = DNAME "\\foo:bar";
+	struct smb2_handle testdirh;
+	struct smb2_handle h1;
+	struct smb2_create create;
+	union smb_fileinfo finfo;
+	union smb_setfileinfo sinfo;
+	struct smb2_find f;
+	unsigned int count;
+	union smb_search_data *d;
+	uint64_t expected_fileid;
+	uint64_t returned_fileid;
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree, DNAME);
+
+	status = torture_smb2_testdir(tree, DNAME, &testdirh);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir failed\n");
+
+	/*
+	 * Initial directory create with QFID
+	 */
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY,
+		.in.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+		.in.fname = dname,
+		.in.query_on_disk_id = true,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"test file could not be created\n");
+	h1 = create.out.file.handle;
+	expected_fileid = BVAL(&create.out.on_disk_id, 0);
+
+	/*
+	 * Getinfo the File-ID on the just opened handle
+	 */
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir\n");
+	smb2_util_close(tree, h1);
+	torture_assert_u64_equal_goto(tctx, finfo.all_info2.out.file_id,
+				      expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * Open existing directory with QFID
+	 */
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY,
+		.in.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+		.in.fname = dname,
+		.in.query_on_disk_id = true,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"test file could not be created\n");
+	h1 = create.out.file.handle;
+	returned_fileid = BVAL(&create.out.on_disk_id, 0);
+	torture_assert_u64_equal_goto(tctx, returned_fileid, expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * Getinfo the File-ID on the just opened handle
+	 */
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir\n");
+	smb2_util_close(tree, h1);
+	torture_assert_u64_equal_goto(tctx, finfo.all_info2.out.file_id,
+				      expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * Create stream, check the stream's File-ID, should be the same as the
+	 * base file (sic!, tested against Windows).
+	 */
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.create_disposition = NTCREATEX_DISP_CREATE,
+		.in.fname = sname,
+		.in.query_on_disk_id = true,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"test file could not be created\n");
+	h1 = create.out.file.handle;
+	returned_fileid = BVAL(&create.out.on_disk_id, 0);
+	torture_assert_u64_equal_goto(tctx, returned_fileid, expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * Getinfo the File-ID on the created stream
+	 */
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed\n");
+	smb2_util_close(tree, h1);
+	torture_assert_u64_equal_goto(tctx, finfo.all_info2.out.file_id,
+				      expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * Open stream, check the stream's File-ID, should be the same as the
+	 * base file (sic!, tested against Windows).
+	 */
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.fname = sname,
+		.in.query_on_disk_id = true,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"test file could not be created\n");
+	h1 = create.out.file.handle;
+	returned_fileid = BVAL(&create.out.on_disk_id, 0);
+	torture_assert_u64_equal_goto(tctx, returned_fileid, expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * Getinfo the File-ID on the opened stream
+	 */
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed\n");
+	smb2_util_close(tree, h1);
+	torture_assert_u64_equal_goto(tctx, finfo.all_info2.out.file_id,
+				      expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * Overwrite stream, check the stream's File-ID, should be the same as
+	 * the base file (sic!, tested against Windows).
+	 */
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.create_disposition = NTCREATEX_DISP_OVERWRITE,
+		.in.fname = sname,
+		.in.query_on_disk_id = true,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"test file could not be created\n");
+	h1 = create.out.file.handle;
+	returned_fileid = BVAL(&create.out.on_disk_id, 0);
+	torture_assert_u64_equal_goto(tctx, returned_fileid, expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * Getinfo the File-ID on the overwritten stream
+	 */
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed\n");
+	smb2_util_close(tree, h1);
+	torture_assert_u64_equal_goto(tctx, finfo.all_info2.out.file_id,
+				      expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * Do some modifications on the stream (IO, setinfo), verifying File-ID
+	 * after earch step.
+	 */
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.fname = sname,
+		.in.query_on_disk_id = true,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"test file could not be created\n");
+	h1 = create.out.file.handle;
+
+	status = smb2_util_write(tree, h1, "foo", 0, strlen("foo"));
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_util_write failed\n");
+
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+	status = smb2_getinfo_file(tree, tctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed\n");
+	torture_assert_u64_equal_goto(tctx, finfo.all_info2.out.file_id,
+				      expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	sinfo = (union smb_setfileinfo) {
+		.basic_info.level = RAW_SFILEINFO_BASIC_INFORMATION,
+		.basic_info.in.file.handle = h1,
+	};
+	unix_to_nt_time(&sinfo.basic_info.in.write_time, time(NULL));
+
+	status = smb2_setinfo_file(tree, &sinfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_setinfo_file failed\n");
+
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+	status = smb2_getinfo_file(tree, tctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_getinfo_file failed\n");
+	smb2_util_close(tree, h1);
+	torture_assert_u64_equal_goto(tctx, finfo.all_info2.out.file_id,
+				      expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * Final open of the directory with QFID
+	 */
+	create = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = FILE_ATTRIBUTE_DIRECTORY,
+		.in.create_options = NTCREATEX_OPTIONS_DIRECTORY,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.fname = dname,
+		.in.query_on_disk_id = true,
+	};
+
+	status = smb2_create(tree, tctx, &create);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"test file could not be created\n");
+	h1 = create.out.file.handle;
+	returned_fileid = BVAL(&create.out.on_disk_id, 0);
+	torture_assert_u64_equal_goto(tctx, returned_fileid, expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * Final Getinfo checking File-ID
+	 */
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+
+	status = smb2_getinfo_file(tree, tctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"torture_smb2_testdir\n");
+	smb2_util_close(tree, h1);
+	torture_assert_u64_equal_goto(tctx, finfo.all_info2.out.file_id,
+				      expected_fileid,
+				      ret, done, "bad fileid\n");
+
+	/*
+	 * Final list directory, verifying the operations on basefile and stream
+	 * didn't modify the base file metadata.
+	 */
+	f = (struct smb2_find) {
+		.in.file.handle = testdirh,
+		.in.pattern = "foo",
+		.in.max_response_size = 0x1000,
+		.in.level = SMB2_FIND_ID_BOTH_DIRECTORY_INFO,
+		.in.continue_flags = SMB2_CONTINUE_FLAG_RESTART,
+	};
+
+	status = smb2_find_level(tree, tree, &f, &count, &d);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_find_level failed\n");
+	torture_assert_u64_equal_goto(tctx,
+				      d->id_both_directory_info.file_id,
+				      expected_fileid,
+				      ret, done, "bad fileid\n");
+
+done:
+	smb2_util_close(tree, testdirh);
+	smb2_deltree(tree, DNAME);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 /*
    basic testing of SMB2 read
 */
@@ -2374,6 +2701,7 @@ struct torture_suite *torture_smb2_fileid_init(TALLOC_CTX *ctx)
 	struct torture_suite *suite = torture_suite_create(ctx, "fileid");
 
 	torture_suite_add_1smb2_test(suite, "fileid", test_fileid);
+	torture_suite_add_1smb2_test(suite, "fileid-dir", test_fileid_dir);
 
 	suite->description = talloc_strdup(suite, "SMB2-CREATE tests");
 
