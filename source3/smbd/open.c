@@ -3708,7 +3708,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		fsp->initial_delete_on_close = True;
 	}
 
-	if (info == FILE_WAS_CREATED) {
+	if (info == FILE_WAS_CREATED && !is_named_stream(smb_fname)) {
 		smb_fname->st.st_ex_iflags &= ~ST_EX_IFLAG_CALCULATED_ITIME;
 
 		if (lp_store_dos_attributes(SNUM(conn)) &&
