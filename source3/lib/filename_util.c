@@ -278,7 +278,7 @@ bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname)
 		return false;
 	}
 
-	return strcasecmp_m(smb_fname->stream_name, "::$DATA") == 0;
+	return strequal_m(smb_fname->stream_name, "::$DATA");
 }
 
 /****************************************************************************
