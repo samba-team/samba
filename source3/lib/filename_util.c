@@ -272,7 +272,9 @@ bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
  ***************************************************************************/
 bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname)
 {
-	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+	assert_valid_stream_smb_fname(smb_fname);
+
+	if (smb_fname->stream_name == NULL) {
 		return false;
 	}
 
