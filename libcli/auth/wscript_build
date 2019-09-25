@@ -63,3 +63,11 @@ bld.SAMBA_BINARY('test_rc4_passwd_buffer',
                       cmocka
                       ''',
                  install=False)
+
+bld.SAMBA_BINARY('test_schannel',
+                 source='tests/test_schannel.c',
+                 deps='''
+                      gensec
+                      cmocka
+                      ''',
+                 install=False)
