@@ -111,7 +111,6 @@ static bool dnsp_dnsProperty_addr_array_check(struct torture_context *tctx,
 	const struct dnsp_dns_addr *a1 = NULL;
 	const struct dnsp_dns_addr *a2 = NULL;
 
-	 NDR_PRINT_DEBUG(dnsp_DnsProperty, r);
 	/*
 	 * NDR_PRINT_DEBUG(dnsp_DnsProperty, r); gave:
 	 *
