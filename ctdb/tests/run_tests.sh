@@ -229,6 +229,12 @@ run_tests ()
 	local f
 
 	for f in "${tests[@]}" ; do
+		case "$f" in
+		*/README|*/README.md)
+			continue
+			;;
+		esac
+
 		if [ ! -e "$f" ] ; then
 			# Can't find it?  Check relative to CTDB_TEST_DIR.
 			# Strip off current directory from beginning,
