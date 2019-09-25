@@ -54,3 +54,11 @@ bld.SAMBA_BINARY(
         ''',
         install=False
     )
+
+bld.SAMBA_BINARY('test_schannel',
+                 source='tests/test_schannel.c',
+                 deps='''
+                      gensec
+                      cmocka
+                      ''',
+                 install=False)
