@@ -250,7 +250,7 @@ bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
 	}
 
 	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
-		return false;
+		SMB_ASSERT(smb_fname->stream_name == NULL);
 	}
 
 	if (smb_fname->stream_name == NULL) {
