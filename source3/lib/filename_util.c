@@ -239,10 +239,7 @@ struct smb_filename *cp_smb_filename(TALLOC_CTX *mem_ctx,
 	return out;
 }
 
-/****************************************************************************
- Simple check to determine if the filename is a stream.
- ***************************************************************************/
-bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
+static void assert_valid_stream_smb_fname(const struct smb_filename *smb_fname)
 {
 	/* stream_name must always be NULL if there is no stream. */
 	if (smb_fname->stream_name) {
@@ -252,6 +249,15 @@ bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
 	if (smb_fname->flags & SMB_FILENAME_POSIX_PATH) {
 		SMB_ASSERT(smb_fname->stream_name == NULL);
 	}
+}
+
+/****************************************************************************
+ Simple check to determine if the filename is a stream.
+ ***************************************************************************/
+
+bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
+{
+	assert_valid_stream_smb_fname(smb_fname);
 
 	if (smb_fname->stream_name == NULL) {
 		return false;
