@@ -253,7 +253,11 @@ bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
 		return false;
 	}
 
-	return smb_fname->stream_name != NULL;
+	if (smb_fname->stream_name == NULL) {
+		return false;
+	}
+
+	return true;
 }
 
 /****************************************************************************
