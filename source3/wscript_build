@@ -1151,6 +1151,10 @@ bld.SAMBA3_BINARY('smbspool_krb5_wrapper',
                  install_path='${LIBEXECDIR}/samba',
                  enabled=bld.CONFIG_SET('HAVE_CUPS'))
 
+bld.SAMBA3_BINARY('smbspool_argv_wrapper',
+		  source='script/tests/smbspool_argv_wrapper.c',
+		  install=False)
+
 bld.SAMBA3_BINARY('locktest2',
                  source='torture/locktest2.c',
                  deps='''

@@ -22,6 +22,7 @@ incdir=`dirname $0`/../../../testprogs/blackbox
 samba_bindir="$BINDIR"
 samba_vlp="$samba_bindir/vlp"
 samba_smbspool="$samba_bindir/smbspool"
+samba_argv_wrapper="$samba_bindir/smbspool_argv_wrapper"
 samba_smbtorture3="$samba_bindir/smbtorture3"
 samba_smbspool_krb5="$samba_bindir/smbspool_krb5_wrapper"
 
@@ -221,6 +222,28 @@ DEVICE_URI="smb://$USERNAME:$PASSWORD@$SERVER_IP/print1"
 export DEVICE_URI
 testit "smbspool print DEVICE_URI example.ps via stdin" \
 	$samba_smbspool 200 $USERNAME "Testprint" 1 "options" < $SRCDIR/testdata/printing/example.ps || \
+	failed=$(expr $failed + 1)
+unset DEVICE_URI
+
+testit "vlp verify example.ps" \
+	test_vlp_verify \
+	|| failed=$(expr $failed + 1)
+
+DEVICE_URI="smb://$USERNAME:$PASSWORD@$SERVER_IP/print1"
+export DEVICE_URI
+testit "smbspool print sanitized Device URI in argv0 example.ps" \
+	$smbspool_argv_wrapper $samba_smbspool smb://$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps || \
+	failed=$(expr $failed + 1)
+unset DEVICE_URI
+
+testit "vlp verify example.ps" \
+	test_vlp_verify \
+	|| failed=$(expr $failed + 1)
+
+DEVICE_URI="smb://$USERNAME:$PASSWORD@$SERVER_IP/print1"
+export DEVICE_URI
+testit "smbspool print sanitized Device URI in argv0 example.ps via stdin" \
+	$smbspool_argv_wrapper $samba_smbspool smb://$SERVER_IP/print1 200 $USERNAME "Testprint" 1 "options" < $SRCDIR/testdata/printing/example.ps || \
 	failed=$(expr $failed + 1)
 unset DEVICE_URI
 
