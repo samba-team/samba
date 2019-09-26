@@ -252,7 +252,8 @@ static void assert_valid_stream_smb_fname(const struct smb_filename *smb_fname)
 }
 
 /****************************************************************************
- Simple check to determine if the filename is a stream.
+ Simple check to determine if a smb_fname is a real named stream or the
+ default stream.
  ***************************************************************************/
 
 bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
