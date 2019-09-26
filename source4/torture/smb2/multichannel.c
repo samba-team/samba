@@ -1872,7 +1872,7 @@ struct torture_suite *torture_smb2_multichannel_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, suite_oplocks);
 	torture_suite_add_suite(suite, suite_leases);
 
-	torture_suite_add_1smb2_test(suite, "interface_info",
+	torture_suite_add_1smb2_test(suite_generic, "interface_info",
 				     test_multichannel_interface_info);
 	torture_suite_add_1smb2_test(suite_generic, "num_channels",
 				     test_multichannel_num_channels);
