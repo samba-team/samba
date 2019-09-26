@@ -233,6 +233,45 @@ done:
 	}
 }
 
+bool test_multichannel_create_channel_array(
+				struct torture_context *tctx,
+				const char *host,
+				const char *share,
+				struct cli_credentials *credentials,
+				struct smbcli_options *transport_options,
+				uint8_t num_trees,
+				struct smb2_tree **trees)
+{
+	uint8_t i;
+
+	transport_options->client_guid = GUID_random();
+
+	for (i = 0; i < num_trees; i++) {
+		struct smb2_tree *parent_tree = NULL;
+		struct smb2_tree *tree = NULL;
+		struct smb2_transport *transport = NULL;
+		uint16_t local_port = 0;
+
+		if (i > 0) {
+			parent_tree = trees[0];
+		}
+
+		torture_comment(tctx, "Setting up connection %d\n", i);
+		tree = test_multichannel_create_channel(tctx, host, share,
+					credentials, transport_options,
+					parent_tree);
+		torture_assert(tctx, tree, "failed to created new channel");
+
+		trees[i] = tree;
+		transport = tree->session->transport;
+		local_port = torture_get_local_port_from_transport(transport);
+		torture_comment(tctx, "transport[%d] uses tcp port: %d\n",
+				i, local_port);
+	}
+
+	return true;
+}
+
 bool test_multichannel_create_channels(
 				struct torture_context *tctx,
 				const char *host,
@@ -244,59 +283,34 @@ bool test_multichannel_create_channels(
 				struct smb2_tree **tree2C
 				)
 {
-	struct smb2_tree *tree;
-	struct smb2_transport *transport2A;
-	struct smb2_transport *transport2B;
-	struct smb2_transport *transport2C;
-	uint16_t local_port = 0;
+	struct smb2_tree **trees = NULL;
+	size_t num_trees = 0;
+	bool ret;
 
-	transport_options->client_guid = GUID_random();
-
-	/* Session 2A */
-	torture_comment(tctx, "Setting up connection 2A\n");
-	tree = test_multichannel_create_channel(tctx, host, share,
-				credentials, transport_options, NULL);
-	if (!tree) {
-		goto done;
+	torture_assert(tctx, tree2A, "tree2A required!");
+	num_trees += 1;
+	torture_assert(tctx, tree2B, "tree2B required!");
+	num_trees += 1;
+	if (tree2C != NULL) {
+		num_trees += 1;
 	}
-	*tree2A = tree;
-	transport2A = tree->session->transport;
-	local_port = torture_get_local_port_from_transport(transport2A);
-	torture_comment(tctx, "transport2A uses tcp port: %d\n", local_port);
+	trees = talloc_zero_array(tctx, struct smb2_tree *, num_trees);
+	torture_assert(tctx, trees, "out of memory");
 
-	/* Session 2B */
-	if (tree2B) {
-		torture_comment(tctx, "Setting up connection 2B\n");
-		tree = test_multichannel_create_channel(tctx, host, share,
-				credentials, transport_options, *tree2A);
-		if (!tree) {
-			goto done;
-		}
-		*tree2B = tree;
-		transport2B = tree->session->transport;
-		local_port = torture_get_local_port_from_transport(transport2B);
-		torture_comment(tctx, "transport2B uses tcp port: %d\n",
-								local_port);
+	ret = test_multichannel_create_channel_array(tctx, host, share, credentials,
+						     transport_options,
+						     num_trees, trees);
+	if (!ret) {
+		return false;
 	}
 
-	/* Session 2C */
-	if (tree2C) {
-		torture_comment(tctx, "Setting up connection 2C\n");
-		tree = test_multichannel_create_channel(tctx, host, share,
-				credentials, transport_options, *tree2A);
-		if (!tree) {
-			goto done;
-		}
-		*tree2C = tree;
-		transport2C = tree->session->transport;
-		local_port = torture_get_local_port_from_transport(transport2C);
-		torture_comment(tctx, "transport2C uses tcp port: %d\n",
-								local_port);
+	*tree2A = trees[0];
+	*tree2B = trees[1];
+	if (tree2C != NULL) {
+		*tree2C = trees[2];
 	}
 
 	return true;
-done:
-	return false;
 }
 
 static void test_multichannel_free_channels(struct smb2_tree *tree2A,
