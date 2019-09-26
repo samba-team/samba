@@ -268,6 +268,32 @@ bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname)
 }
 
 /****************************************************************************
+ Simple check to determine if a smb_fname is pointing to a normal file or
+ a named stream that is not the default stream "::$DATA".
+
+  foo           -> false
+  foo::$DATA    -> false
+  foo:bar       -> true
+  foo:bar:$DATA -> true
+
+ ***************************************************************************/
+
+bool is_named_stream(const struct smb_filename *smb_fname)
+{
+	assert_valid_stream_smb_fname(smb_fname);
+
+	if (smb_fname->stream_name == NULL) {
+		return false;
+	}
+
+	if (strequal_m(smb_fname->stream_name, "::$DATA")) {
+		return false;
+	}
+
+	return true;
+}
+
+/****************************************************************************
  Returns true if the filename's stream == "::$DATA"
  ***************************************************************************/
 bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname)

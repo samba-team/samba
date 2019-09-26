@@ -985,6 +985,7 @@ struct smb_filename *cp_smb_filename_nostream(TALLOC_CTX *mem_ctx,
 				     const struct smb_filename *in);
 bool is_ntfs_stream_smb_fname(const struct smb_filename *smb_fname);
 bool is_ntfs_default_stream_smb_fname(const struct smb_filename *smb_fname);
+bool is_named_stream(const struct smb_filename *smb_fname);
 bool is_invalid_windows_ea_name(const char *name);
 bool ea_list_has_invalid_name(struct ea_list *ea_list);
 bool split_stream_filename(TALLOC_CTX *ctx,
