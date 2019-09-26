@@ -68,6 +68,44 @@ static uint8_t map_samba_oplock_levels_to_smb2(int oplock_type)
 	}
 }
 
+/*
+ MS-FSA 2.1.5.1 Server Requests an Open of a File
+ Trailing '/' or '\\' checker.
+ Must be done before the filename parser removes any
+ trailing characters. If we decide to add this to SMB1
+ NTCreate processing we can make this public.
+
+ Note this is Windows pathname processing only. When
+ POSIX pathnames are added to SMB2 this will not apply.
+*/
+
+static NTSTATUS windows_name_trailing_check(const char *name,
+			uint32_t create_options)
+{
+	size_t name_len = strlen(name);
+	char trail_c;
+
+	if (name_len <= 1) {
+		return NT_STATUS_OK;
+	}
+
+	trail_c = name[name_len-1];
+
+	/*
+	 * Trailing '/' is always invalid.
+	 */
+	if (trail_c == '/') {
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
+
+	if (create_options & FILE_NON_DIRECTORY_FILE) {
+		if (trail_c == '\\') {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+	}
+	return NT_STATUS_OK;
+}
+
 static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 			struct tevent_context *ev,
 			struct smbd_smb2_request *smb2req,
@@ -756,6 +794,13 @@ static struct tevent_req *smbd_smb2_create_send(TALLOC_CTX *mem_ctx,
 
 		smbd_smb2_create_finish(req);
 		return req;
+	}
+
+	/* Check for trailing slash specific directory handling. */
+	status = windows_name_trailing_check(state->fname, in_create_options);
+	if (!NT_STATUS_IS_OK(status)) {
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, state->ev);
 	}
 
 	smbd_smb2_create_before_exec(req);
