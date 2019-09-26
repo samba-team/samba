@@ -149,8 +149,7 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 	 * fd, so lacking a distinct fd for the stream we have to skip
 	 * kernel_flock and set_gpfs_sharemode for stream.
 	 */
-	if (is_ntfs_stream_smb_fname(fsp->fsp_name) &&
-	    !is_ntfs_default_stream_smb_fname(fsp->fsp_name)) {
+	if (is_named_stream(fsp->fsp_name)) {
 		DEBUG(2,("%s: kernel_flock on stream\n", fsp_str_dbg(fsp)));
 		return 0;
 	}

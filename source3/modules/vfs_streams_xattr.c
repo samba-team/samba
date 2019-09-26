@@ -264,19 +264,14 @@ static int streams_xattr_stat(vfs_handle_struct *handle,
 	int result = -1;
 	char *xattr_name = NULL;
 
-	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_STAT(handle, smb_fname);
 	}
 
 	/* Note if lp_posix_paths() is true, we can never
-	 * get here as is_ntfs_stream_smb_fname() is
+	 * get here as is_named_stream() is
 	 * always false. So we never need worry about
 	 * not following links here. */
-
-	/* If the default stream is requested, just stat the base file. */
-	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
-		return streams_xattr_stat_base(handle, smb_fname, true);
-	}
 
 	/* Populate the stat struct with info from the base file. */
 	if (streams_xattr_stat_base(handle, smb_fname, true) == -1) {
@@ -322,13 +317,8 @@ static int streams_xattr_lstat(vfs_handle_struct *handle,
 	int result = -1;
 	char *xattr_name = NULL;
 
-	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_LSTAT(handle, smb_fname);
-	}
-
-	/* If the default stream is requested, just stat the base file. */
-	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
-		return streams_xattr_stat_base(handle, smb_fname, false);
 	}
 
 	/* Populate the stat struct with info from the base file. */
@@ -388,22 +378,8 @@ static int streams_xattr_open(vfs_handle_struct *handle,
 	DEBUG(10, ("streams_xattr_open called for %s with flags 0x%x\n",
 		   smb_fname_str_dbg(smb_fname), flags));
 
-	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	}
-
-	/* If the default stream is requested, just open the base file. */
-	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
-		char *tmp_stream_name;
-
-		tmp_stream_name = smb_fname->stream_name;
-		smb_fname->stream_name = NULL;
-
-		ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-
-		smb_fname->stream_name = tmp_stream_name;
-
-		return ret;
 	}
 
 	status = streams_xattr_get_name(handle, talloc_tos(),
@@ -532,11 +508,7 @@ static int streams_xattr_close(vfs_handle_struct *handle,
 	DBG_DEBUG("streams_xattr_close called [%s] fd [%d]\n",
 			smb_fname_str_dbg(fsp->fsp_name), fd);
 
-	if (!is_ntfs_stream_smb_fname(fsp->fsp_name)) {
-		return SMB_VFS_NEXT_CLOSE(handle, fsp);
-	}
-
-	if (is_ntfs_default_stream_smb_fname(fsp->fsp_name)) {
+	if (!is_named_stream(fsp->fsp_name)) {
 		return SMB_VFS_NEXT_CLOSE(handle, fsp);
 	}
 
@@ -555,30 +527,11 @@ static int streams_xattr_unlink_internal(vfs_handle_struct *handle,
 	int ret = -1;
 	char *xattr_name = NULL;
 
-	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_UNLINKAT(handle,
 					dirfsp,
 					smb_fname,
 					flags);
-	}
-
-	/* If the default stream is requested, just open the base file. */
-	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
-		struct smb_filename *smb_fname_base = NULL;
-
-		smb_fname_base = cp_smb_filename(talloc_tos(), smb_fname);
-		if (smb_fname_base == NULL) {
-			errno = ENOMEM;
-			return -1;
-		}
-
-		ret = SMB_VFS_NEXT_UNLINKAT(handle,
-				dirfsp,
-				smb_fname_base,
-				flags);
-
-		TALLOC_FREE(smb_fname_base);
-		return ret;
 	}
 
 	status = streams_xattr_get_name(handle, talloc_tos(),

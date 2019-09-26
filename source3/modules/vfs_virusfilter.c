@@ -1152,7 +1152,7 @@ static int virusfilter_vfs_open(
 	size_t test_suffix;
 	int rename_trap_count = 0;
 	int ret;
-	bool ok1, ok2;
+	bool ok1;
 	char *sret = NULL;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -1172,9 +1172,7 @@ static int virusfilter_vfs_open(
 		rename_trap_count++;
 	}
 
-	ok1 = is_ntfs_stream_smb_fname(smb_fname);
-	ok2 = is_ntfs_default_stream_smb_fname(smb_fname);
-	if (ok1 && !ok2) {
+	if (is_named_stream(smb_fname)) {
 		DBG_INFO("Not scanned: only file backed streams can be scanned:"
 			 " %s/%s\n", cwd_fname, fname);
 		goto virusfilter_vfs_open_next;
@@ -1318,7 +1316,6 @@ static int virusfilter_vfs_close(
 	int close_errno = 0;
 	virusfilter_result scan_result;
 	int scan_errno = 0;
-	bool ok1, ok2;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct virusfilter_config, return -1);
@@ -1352,9 +1349,7 @@ static int virusfilter_vfs_close(
 		return close_result;
 	}
 
-	ok1 = is_ntfs_stream_smb_fname(fsp->fsp_name);
-	ok2 = is_ntfs_default_stream_smb_fname(fsp->fsp_name);
-	if (ok1 && !ok2) {
+	if (is_named_stream(fsp->fsp_name)) {
 		if (config->scan_on_open && fsp->modified) {
 			if (config->cache) {
 				DBG_DEBUG("Removing cache entry (if existent)"

@@ -736,14 +736,9 @@ static uint32_t dos_mode_post(uint32_t dosmode,
 	 * BUG: https://bugzilla.samba.org/show_bug.cgi?id=13380
 	 */
 
-	if (is_ntfs_stream_smb_fname(smb_fname)) {
+	if (is_named_stream(smb_fname)) {
 		/* is_ntfs_stream_smb_fname() returns false for a POSIX path. */
-		if (!is_ntfs_default_stream_smb_fname(smb_fname)) {
-			/*
-			 * Non-default stream name, not a posix path.
-			 */
-			dosmode &= ~(FILE_ATTRIBUTE_DIRECTORY);
-		}
+		dosmode &= ~(FILE_ATTRIBUTE_DIRECTORY);
 	}
 
 	if (conn->fs_capabilities & FILE_FILE_COMPRESSION) {

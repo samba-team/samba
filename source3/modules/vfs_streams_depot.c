@@ -537,28 +537,6 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-/**
- * Helper to stat/lstat the base file of an smb_fname. This will actually
- * fills in the stat struct in smb_filename.
- */
-static int streams_depot_stat_base(vfs_handle_struct *handle,
-				   struct smb_filename *smb_fname,
-				   bool follow_links)
-{
-	char *tmp_stream_name;
-	int result;
-
-	tmp_stream_name = smb_fname->stream_name;
-	smb_fname->stream_name = NULL;
-	if (follow_links) {
-		result = SMB_VFS_NEXT_STAT(handle, smb_fname);
-	} else {
-		result = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
-	}
-	smb_fname->stream_name = tmp_stream_name;
-	return result;
-}
-
 static int streams_depot_stat(vfs_handle_struct *handle,
 			      struct smb_filename *smb_fname)
 {
@@ -569,13 +547,8 @@ static int streams_depot_stat(vfs_handle_struct *handle,
 	DEBUG(10, ("streams_depot_stat called for [%s]\n",
 		   smb_fname_str_dbg(smb_fname)));
 
-	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_STAT(handle, smb_fname);
-	}
-
-	/* If the default stream is requested, just stat the base file. */
-	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
-		return streams_depot_stat_base(handle, smb_fname, true);
 	}
 
 	/* Stat the actual stream now. */
@@ -608,13 +581,8 @@ static int streams_depot_lstat(vfs_handle_struct *handle,
 	DEBUG(10, ("streams_depot_lstat called for [%s]\n",
 		   smb_fname_str_dbg(smb_fname)));
 
-	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_LSTAT(handle, smb_fname);
-	}
-
-	/* If the default stream is requested, just stat the base file. */
-	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
-		return streams_depot_stat_base(handle, smb_fname, false);
 	}
 
 	/* Stat the actual stream now. */
@@ -642,20 +610,8 @@ static int streams_depot_open(vfs_handle_struct *handle,
 	NTSTATUS status;
 	int ret = -1;
 
-	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-	}
-
-	/* If the default stream is requested, just open the base file. */
-	if (is_ntfs_default_stream_smb_fname(smb_fname)) {
-		char *tmp_stream_name;
-
-		tmp_stream_name = smb_fname->stream_name;
-		smb_fname->stream_name = NULL;
-		ret = SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
-		smb_fname->stream_name = tmp_stream_name;
-
-		return ret;
 	}
 
 	/* Ensure the base file still exists. */
@@ -703,8 +659,7 @@ static int streams_depot_unlink_internal(vfs_handle_struct *handle,
 		   smb_fname_str_dbg(smb_fname)));
 
 	/* If there is a valid stream, just unlink the stream and return. */
-	if (is_ntfs_stream_smb_fname(smb_fname) &&
-	    !is_ntfs_default_stream_smb_fname(smb_fname)) {
+	if (is_named_stream(smb_fname)) {
 		struct smb_filename *smb_fname_stream = NULL;
 		NTSTATUS status;
 

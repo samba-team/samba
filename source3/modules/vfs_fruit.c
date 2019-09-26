@@ -1613,7 +1613,7 @@ static int fruit_open(vfs_handle_struct *handle,
 
 	DBG_DEBUG("Path [%s]\n", smb_fname_str_dbg(smb_fname));
 
-	if (!is_ntfs_stream_smb_fname(smb_fname)) {
+	if (!is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_OPEN(handle, smb_fname, fsp, flags, mode);
 	}
 
@@ -1696,7 +1696,7 @@ static int fruit_close(vfs_handle_struct *handle,
 
 	DBG_DEBUG("Path [%s] fd [%d]\n", smb_fname_str_dbg(fsp->fsp_name), fd);
 
-	if (!is_ntfs_stream_smb_fname(fsp->fsp_name)) {
+	if (!is_named_stream(fsp->fsp_name)) {
 		return SMB_VFS_NEXT_CLOSE(handle, fsp);
 	}
 
@@ -1993,7 +1993,7 @@ static int fruit_unlink_internal(vfs_handle_struct *handle,
 				dirfsp,
 				smb_fname,
 				false);
-	} else if (is_ntfs_stream_smb_fname(smb_fname)) {
+	} else if (is_named_stream(smb_fname)) {
 		return SMB_VFS_NEXT_UNLINKAT(handle,
 				dirfsp,
 				smb_fname,
@@ -3202,8 +3202,7 @@ static int fruit_stat(vfs_handle_struct *handle,
 	DEBUG(10, ("fruit_stat called for %s\n",
 		   smb_fname_str_dbg(smb_fname)));
 
-	if (!is_ntfs_stream_smb_fname(smb_fname)
-	    || is_ntfs_default_stream_smb_fname(smb_fname)) {
+	if (!is_named_stream(smb_fname)) {
 		rc = SMB_VFS_NEXT_STAT(handle, smb_fname);
 		if (rc == 0) {
 			update_btime(handle, smb_fname);
@@ -3244,8 +3243,7 @@ static int fruit_lstat(vfs_handle_struct *handle,
 	DEBUG(10, ("fruit_lstat called for %s\n",
 		   smb_fname_str_dbg(smb_fname)));
 
-	if (!is_ntfs_stream_smb_fname(smb_fname)
-	    || is_ntfs_default_stream_smb_fname(smb_fname)) {
+	if (!is_named_stream(smb_fname)) {
 		rc = SMB_VFS_NEXT_LSTAT(handle, smb_fname);
 		if (rc == 0) {
 			update_btime(handle, smb_fname);
@@ -4117,8 +4115,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 	if (global_fruit_config.nego_aapl &&
 	    create_disposition == FILE_OPEN &&
 	    smb_fname->st.st_ex_size == 0 &&
-	    is_ntfs_stream_smb_fname(smb_fname) &&
-	    !(is_ntfs_default_stream_smb_fname(smb_fname)))
+	    is_named_stream(smb_fname))
 	{
 		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 		goto fail;
@@ -4129,7 +4126,7 @@ static NTSTATUS fruit_create_file(vfs_handle_struct *handle,
 		fio->created = true;
 	}
 
-	if (is_ntfs_stream_smb_fname(smb_fname)
+	if (is_named_stream(smb_fname)
 	    || fsp->is_directory) {
 		return status;
 	}
