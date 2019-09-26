@@ -551,7 +551,7 @@ static int vfswrap_open(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_open);
 
-	if (smb_fname->stream_name) {
+	if (is_named_stream(smb_fname)) {
 		errno = ENOENT;
 		goto out;
 	}
@@ -1080,7 +1080,7 @@ static int vfswrap_renameat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_renameat);
 
-	if (smb_fname_src->stream_name || smb_fname_dst->stream_name) {
+	if (is_named_stream(smb_fname_src) || is_named_stream(smb_fname_dst)) {
 		errno = ENOENT;
 		goto out;
 	}
@@ -1102,7 +1102,7 @@ static int vfswrap_stat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_stat);
 
-	if (smb_fname->stream_name) {
+	if (is_named_stream(smb_fname)) {
 		errno = ENOENT;
 		goto out;
 	}
@@ -1132,7 +1132,7 @@ static int vfswrap_lstat(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_lstat);
 
-	if (smb_fname->stream_name) {
+	if (is_named_stream(smb_fname)) {
 		errno = ENOENT;
 		goto out;
 	}
@@ -2215,7 +2215,7 @@ static int vfswrap_unlinkat(vfs_handle_struct *handle,
 
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 
-	if (smb_fname->stream_name) {
+	if (is_named_stream(smb_fname)) {
 		errno = ENOENT;
 		goto out;
 	}
@@ -2348,7 +2348,7 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_ntimes);
 
-	if (smb_fname->stream_name) {
+	if (is_named_stream(smb_fname)) {
 		errno = ENOENT;
 		goto out;
 	}
