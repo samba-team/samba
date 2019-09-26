@@ -14579,6 +14579,10 @@ static struct {
 		.fn    = run_smb2_dir_fsync,
 	},
 	{
+		.name  = "SMB2-PATH-SLASH",
+		.fn    = run_smb2_path_slash,
+	},
+	{
 		.name  = "CLEANUP1",
 		.fn    = run_cleanup1,
 	},

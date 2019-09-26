@@ -2335,3 +2335,208 @@ bool run_smb2_dir_fsync(int dummy)
 	}
 	return true;
 }
+
+bool run_smb2_path_slash(int dummy)
+{
+	struct cli_state *cli = NULL;
+	NTSTATUS status;
+	uint64_t fid_persistent;
+	uint64_t fid_volatile;
+	const char *dname_noslash = "smb2_dir_slash";
+	const char *dname_backslash = "smb2_dir_slash\\";
+	const char *dname_slash = "smb2_dir_slash/";
+	const char *fname_noslash = "smb2_file_slash";
+	const char *fname_backslash = "smb2_file_slash\\";
+	const char *fname_slash = "smb2_file_slash/";
+
+	printf("Starting SMB2-PATH-SLASH\n");
+
+	if (!torture_init_connection(&cli)) {
+		return false;
+	}
+
+	status = smbXcli_negprot(cli->conn, cli->timeout,
+				 PROTOCOL_SMB2_02, PROTOCOL_SMB2_02);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smbXcli_negprot returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_session_setup_creds(cli, torture_creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_session_setup returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	status = cli_tree_connect(cli, share, "?????", NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("cli_tree_connect returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	(void)cli_unlink(cli, dname_noslash, 0);
+	(void)cli_rmdir(cli, dname_noslash);
+	(void)cli_unlink(cli, fname_noslash, 0);
+	(void)cli_rmdir(cli, fname_noslash);
+
+	/* Try to create a directory with the backslash name. */
+	status = smb2cli_create(cli->conn,
+			cli->timeout,
+			cli->smb2.session,
+			cli->smb2.tcon,
+			dname_backslash,
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			FILE_READ_DATA|FILE_READ_ATTRIBUTES, /* desired_access, */
+			0, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_CREATE, /* create_disposition, */
+			FILE_DIRECTORY_FILE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&fid_persistent,
+			&fid_volatile,
+			NULL, NULL, NULL);
+
+	/* directory ending in '\\' should be success. */
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_create '%s' returned %s - "
+			"should be NT_STATUS_OK\n",
+			dname_backslash,
+			nt_errstr(status));
+		return false;
+	}
+	status = smb2cli_close(cli->conn,
+				cli->timeout,
+				cli->smb2.session,
+				cli->smb2.tcon,
+				0,
+				fid_persistent,
+				fid_volatile);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("smb2cli_close returned %s\n", nt_errstr(status));
+		return false;
+	}
+
+	(void)cli_rmdir(cli, dname_noslash);
+
+	/* Try to create a directory with the slash name. */
+	status = smb2cli_create(cli->conn,
+			cli->timeout,
+			cli->smb2.session,
+			cli->smb2.tcon,
+			dname_slash,
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			FILE_READ_DATA|FILE_READ_ATTRIBUTES, /* desired_access, */
+			0, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_CREATE, /* create_disposition, */
+			FILE_DIRECTORY_FILE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&fid_persistent,
+			&fid_volatile,
+			NULL, NULL, NULL);
+
+	/* directory ending in '/' is an error. */
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_INVALID)) {
+		printf("smb2cli_create '%s' returned %s - "
+			"should be NT_STATUS_OBJECT_NAME_INVALID\n",
+			dname_slash,
+			nt_errstr(status));
+		if (NT_STATUS_IS_OK(status)) {
+			(void)smb2cli_close(cli->conn,
+					cli->timeout,
+					cli->smb2.session,
+					cli->smb2.tcon,
+					0,
+					fid_persistent,
+					fid_volatile);
+		}
+		(void)cli_rmdir(cli, dname_noslash);
+		return false;
+	}
+
+	(void)cli_rmdir(cli, dname_noslash);
+
+	/* Try to create a file with the backslash name. */
+	status = smb2cli_create(cli->conn,
+			cli->timeout,
+			cli->smb2.session,
+			cli->smb2.tcon,
+			fname_backslash,
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			FILE_READ_DATA|FILE_READ_ATTRIBUTES, /* desired_access, */
+			0, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_CREATE, /* create_disposition, */
+			FILE_NON_DIRECTORY_FILE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&fid_persistent,
+			&fid_volatile,
+			NULL, NULL, NULL);
+
+	/* file ending in '\\' should be error. */
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_INVALID)) {
+		printf("smb2cli_create '%s' returned %s - "
+			"should be NT_STATUS_OBJECT_NAME_INVALID\n",
+			fname_backslash,
+			nt_errstr(status));
+		if (NT_STATUS_IS_OK(status)) {
+			(void)smb2cli_close(cli->conn,
+					cli->timeout,
+					cli->smb2.session,
+					cli->smb2.tcon,
+					0,
+					fid_persistent,
+					fid_volatile);
+		}
+		(void)cli_unlink(cli, fname_noslash, 0);
+		return false;
+	}
+
+	(void)cli_unlink(cli, fname_noslash, 0);
+
+	/* Try to create a file with the slash name. */
+	status = smb2cli_create(cli->conn,
+			cli->timeout,
+			cli->smb2.session,
+			cli->smb2.tcon,
+			fname_slash,
+			SMB2_OPLOCK_LEVEL_NONE, /* oplock_level, */
+			SMB2_IMPERSONATION_IMPERSONATION, /* impersonation_level, */
+			FILE_READ_DATA|FILE_READ_ATTRIBUTES, /* desired_access, */
+			0, /* file_attributes, */
+			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, /* share_access, */
+			FILE_CREATE, /* create_disposition, */
+			FILE_NON_DIRECTORY_FILE, /* create_options, */
+			NULL, /* smb2_create_blobs *blobs */
+			&fid_persistent,
+			&fid_volatile,
+			NULL, NULL, NULL);
+
+	/* file ending in '/' should be error. */
+
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_INVALID)) {
+		printf("smb2cli_create '%s' returned %s - "
+			"should be NT_STATUS_OBJECT_NAME_INVALID\n",
+			fname_slash,
+			nt_errstr(status));
+		if (NT_STATUS_IS_OK(status)) {
+			(void)smb2cli_close(cli->conn,
+					cli->timeout,
+					cli->smb2.session,
+					cli->smb2.tcon,
+					0,
+					fid_persistent,
+					fid_volatile);
+		}
+		(void)cli_unlink(cli, fname_noslash, 0);
+		return false;
+	}
+
+	(void)cli_unlink(cli, fname_noslash, 0);
+	return true;
+}

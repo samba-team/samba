@@ -9,6 +9,8 @@
  ^samba3.smbtorture_s3.crypt_server\(nt4_dc\).SMB2-SESSION-REAUTH # expected to give ACCESS_DENIED SMB2.1 doesn't have encryption
 ^samba3.smbtorture_s3.crypt_server\(nt4_dc\).SMB2-SESSION-RECONNECT # expected to give CONNECTION_DISCONNECTED, we need to fix the test
 ^samba3.smbtorture_s3.plain.*SMB2-DIR-FSYNC.*\(ad_dc_ntvfs\)
+^samba3.smbtorture_s3.plain.*SMB2-PATH-SLASH.*\(ad_dc_ntvfs\)
+^samba3.smbtorture_s3.plain.*SMB2-PATH-SLASH.*\(fileserver\)
 ^samba3.smbtorture_s3.plain.LOCK11.*\(ad_dc_ntvfs\)
 ^samba3.smb2.session enc.reconnect # expected to give CONNECTION_DISCONNECTED, we need to fix the test
 ^samba3.raw.session enc # expected to give ACCESS_DENIED as SMB1 encryption isn't used
