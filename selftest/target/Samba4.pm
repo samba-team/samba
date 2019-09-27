@@ -715,8 +715,8 @@ sub provision_raw_step1($$)
 	log level = $ctx->{server_loglevel}
 	lanman auth = Yes
 	ntlm auth = Yes
-	client min protocol = CORE
-	server min protocol = LANMAN1
+	client min protocol = SMB2_02
+	server min protocol = SMB2_02
 	mangled names = yes
 	dns update command = $ctx->{samba_dnsupdate}
 	spn update command = $ctx->{python} $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate -s $ctx->{smb_conf}

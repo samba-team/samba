@@ -2018,8 +2018,8 @@ sub provision($$)
 	panic action = cd $self->{srcdir} && $self->{srcdir}/selftest/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
 	smbd:suicide mode = yes
 
-	client min protocol = CORE
-	server min protocol = LANMAN1
+	client min protocol = SMB2_02
+	server min protocol = SMB2_02
 
 	workgroup = $domain
 
