@@ -1230,6 +1230,7 @@ int vfs_allocate_file_space(files_struct *fsp, uint64_t len);
 int vfs_set_filelen(files_struct *fsp, off_t len);
 int vfs_slow_fallocate(files_struct *fsp, off_t offset, off_t len);
 int vfs_fill_sparse(files_struct *fsp, off_t len);
+int vfs_set_blocking(files_struct *fsp, bool set);
 off_t vfs_transfer_file(files_struct *in, files_struct *out, off_t n);
 const char *vfs_readdirname(connection_struct *conn, void *p,
 			    SMB_STRUCT_STAT *sbuf, char **talloced);

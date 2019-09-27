@@ -1327,7 +1327,7 @@ static NTSTATUS open_file(files_struct *fsp,
 			 * too. With blocking file descriptors this
 			 * does not happen.
 			 */
-			ret = set_blocking(fsp->fh->fd, true);
+			ret = vfs_set_blocking(fsp, true);
 			if (ret == -1) {
 				status = map_nt_error_from_unix(errno);
 				DBG_WARNING("Could not set fd to blocking: "

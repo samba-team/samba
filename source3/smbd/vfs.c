@@ -711,6 +711,37 @@ int vfs_fill_sparse(files_struct *fsp, off_t len)
 	return ret;
 }
 
+/*******************************************************************************
+ Set a fd into blocking/nonblocking mode through VFS
+*******************************************************************************/
+
+int vfs_set_blocking(files_struct *fsp, bool set)
+{
+	int val;
+#ifdef O_NONBLOCK
+#define FLAG_TO_SET O_NONBLOCK
+#else
+#ifdef SYSV
+#define FLAG_TO_SET O_NDELAY
+#else /* BSD */
+#define FLAG_TO_SET FNDELAY
+#endif
+#endif
+	val = SMB_VFS_FCNTL(fsp, F_GETFL, 0);
+	if (val == -1) {
+		return -1;
+	}
+
+	if (set) {
+		val &= ~FLAG_TO_SET;
+	} else {
+		val |= FLAG_TO_SET;
+	}
+
+	return SMB_VFS_FCNTL(fsp, F_SETFL, val);
+#undef FLAG_TO_SET
+}
+
 /****************************************************************************
  Transfer some data (n bytes) between two file_struct's.
 ****************************************************************************/
