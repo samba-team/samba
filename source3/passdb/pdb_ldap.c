@@ -2119,7 +2119,6 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 
 static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct samu * newpwd)
 {
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
 	int rc;
 	LDAPMessage 	*result = NULL;
@@ -2338,8 +2337,8 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, struct s
 			break;
 	}
 
-	ret = ldapsam_modify_entry(my_methods,newpwd,dn,mods,ldap_op, pdb_element_is_set_or_changed);
-	if (!NT_STATUS_IS_OK(ret)) {
+	status = ldapsam_modify_entry(my_methods,newpwd,dn,mods,ldap_op, pdb_element_is_set_or_changed);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("ldapsam_add_sam_account: failed to modify/add user with uid = %s (dn = %s)\n",
 			 pdb_get_username(newpwd),dn));
 		ldap_mods_free(mods, true);
