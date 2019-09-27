@@ -2702,6 +2702,198 @@ krb5_error_code smb_krb5_kinit_s4u2_ccache(krb5_context ctx,
 
 	return 0;
 }
+
+#else /* MIT */
+
+static bool princ_compare_no_dollar(krb5_context ctx,
+				    krb5_principal a,
+				    krb5_principal b)
+{
+	krb5_principal mod = NULL;
+	bool cmp;
+
+	if (a->length == 1 && b->length == 1 &&
+	    a->data[0].length != 0 && b->data[0].length != 0 &&
+	    a->data[0].data[a->data[0].length - 1] !=
+	    b->data[0].data[b->data[0].length - 1]) {
+		if (a->data[0].data[a->data[0].length - 1] == '$') {
+			mod = a;
+			mod->data[0].length--;
+		} else if (b->data[0].data[b->data[0].length - 1] == '$') {
+			mod = b;
+			mod->data[0].length--;
+		}
+	}
+
+	cmp = krb5_principal_compare_flags(ctx,
+					   a,
+					   b,
+					   KRB5_PRINCIPAL_COMPARE_CASEFOLD);
+	if (mod != NULL) {
+		mod->data[0].length++;
+	}
+
+	return cmp;
+}
+
+krb5_error_code smb_krb5_kinit_s4u2_ccache(krb5_context ctx,
+					   krb5_ccache store_cc,
+					   krb5_principal init_principal,
+					   const char *init_password,
+					   krb5_principal impersonate_principal,
+					   const char *self_service,
+					   const char *target_service,
+					   krb5_get_init_creds_opt *krb_options,
+					   time_t *expire_time,
+					   time_t *kdc_time)
+{
+	krb5_error_code code;
+	krb5_principal self_princ = NULL;
+	krb5_principal target_princ = NULL;
+	krb5_creds *store_creds = NULL;
+	krb5_creds *s4u2self_creds = NULL;
+	krb5_creds *s4u2proxy_creds = NULL;
+	krb5_creds init_creds = {0};
+	krb5_creds mcreds = {0};
+	krb5_flags options = KRB5_GC_NO_STORE;
+	krb5_ccache tmp_cc;
+	bool s4u2proxy = false;
+	bool ok;
+
+	code = krb5_cc_new_unique(ctx, "MEMORY", NULL, &tmp_cc);
+	if (code != 0) {
+		return code;
+	}
+
+	code = krb5_get_init_creds_password(ctx,
+					    &init_creds,
+					    init_principal,
+					    init_password,
+					    NULL,
+					    NULL,
+					    0,
+					    NULL,
+					    krb_options);
+	if (code != 0) {
+		goto done;
+	}
+
+	code = krb5_cc_initialize(ctx, tmp_cc, init_creds.client);
+	if (code != 0) {
+		goto done;
+	}
+
+	code = krb5_cc_store_cred(ctx, tmp_cc, &init_creds);
+	if (code != 0) {
+		goto done;
+	}
+
+	/*
+	 * Check if we also need S4U2Proxy or if S4U2Self is
+	 * enough in order to get a ticket for the target.
+	 */
+	if (target_service == NULL) {
+		s4u2proxy = false;
+	} else if (strcmp(target_service, self_service) == 0) {
+		s4u2proxy = false;
+	} else {
+		s4u2proxy = true;
+	}
+
+	code = krb5_parse_name(ctx, self_service, &self_princ);
+	if (code != 0) {
+		goto done;
+	}
+
+	/*
+	 * MIT lacks aliases support in S4U, for S4U2Self we require the tgt
+	 * client and the request server to be the same principal name.
+	 */
+	ok = princ_compare_no_dollar(ctx, init_creds.client, self_princ);
+	if (!ok) {
+		code = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
+		goto done;
+	}
+
+	mcreds.client = impersonate_principal;
+	mcreds.server = init_creds.client;
+
+	code = krb5_get_credentials_for_user(ctx, options, tmp_cc, &mcreds,
+					     NULL, &s4u2self_creds);
+	if (code != 0) {
+		goto done;
+	}
+
+	if (s4u2proxy) {
+		code = krb5_parse_name(ctx, target_service, &target_princ);
+		if (code != 0) {
+			goto done;
+		}
+
+		mcreds.client = init_creds.client;
+		mcreds.server = target_princ;
+		mcreds.second_ticket = s4u2self_creds->ticket;
+
+		code = krb5_get_credentials(ctx, options |
+					    KRB5_GC_CONSTRAINED_DELEGATION,
+					    tmp_cc, &mcreds, &s4u2proxy_creds);
+		if (code != 0) {
+			goto done;
+		}
+
+		/* Check KDC support of S4U2Proxy extension */
+		if (!krb5_principal_compare(ctx, s4u2self_creds->client,
+					    s4u2proxy_creds->client)) {
+			code = KRB5KDC_ERR_PADATA_TYPE_NOSUPP;
+			goto done;
+		}
+
+		store_creds = s4u2proxy_creds;
+	} else {
+		store_creds = s4u2self_creds;;
+
+		/* We need to save the ticket with the requested server name
+		 * or the caller won't be able to find it in cache. */
+		if (!krb5_principal_compare(ctx, self_princ,
+			store_creds->server)) {
+			krb5_free_principal(ctx, store_creds->server);
+			store_creds->server = NULL;
+			code = krb5_copy_principal(ctx, self_princ,
+						   &store_creds->server);
+			if (code != 0) {
+				goto done;
+			}
+		}
+	}
+
+	code = krb5_cc_initialize(ctx, store_cc, store_creds->client);
+	if (code != 0) {
+		goto done;
+	}
+
+	code = krb5_cc_store_cred(ctx, store_cc, store_creds);
+	if (code != 0) {
+		goto done;
+	}
+
+	if (expire_time) {
+		*expire_time = (time_t) store_creds->times.endtime;
+	}
+
+	if (kdc_time) {
+		*kdc_time = (time_t) store_creds->times.starttime;
+	}
+
+done:
+	krb5_cc_destroy(ctx, tmp_cc);
+	krb5_free_cred_contents(ctx, &init_creds);
+	krb5_free_creds(ctx, s4u2self_creds);
+	krb5_free_creds(ctx, s4u2proxy_creds);
+	krb5_free_principal(ctx, self_princ);
+	krb5_free_principal(ctx, target_princ);
+
+	return code;
+}
 #endif
 
 #if !defined(HAVE_KRB5_MAKE_PRINCIPAL) && defined(HAVE_KRB5_BUILD_PRINCIPAL_ALLOC_VA)

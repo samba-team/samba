@@ -234,9 +234,7 @@ done:
 {
 	krb5_error_code ret;
 	const char *password;
-#ifdef SAMBA4_USES_HEIMDAL
 	const char *self_service;
-#endif
 	const char *target_service;
 	time_t kdc_time = 0;
 	krb5_principal princ;
@@ -268,9 +266,7 @@ done:
 		return ret;
 	}
 
-#ifdef SAMBA4_USES_HEIMDAL
 	self_service = cli_credentials_get_self_service(credentials);
-#endif
 	target_service = cli_credentials_get_target_service(credentials);
 
 	password = cli_credentials_get_password(credentials);
@@ -331,7 +327,6 @@ done:
 #endif
 		if (password) {
 			if (impersonate_principal) {
-#ifdef SAMBA4_USES_HEIMDAL
 				ret = smb_krb5_kinit_s4u2_ccache(smb_krb5_context->krb5_context,
 								 ccache,
 								 princ,
@@ -342,12 +337,6 @@ done:
 								 krb_options,
 								 NULL,
 								 &kdc_time);
-#else
-				talloc_free(mem_ctx);
-				(*error_string) = "INTERNAL error: s4u2 ops "
-					"are not supported with MIT build yet";
-				return EINVAL;
-#endif
 			} else {
 				ret = smb_krb5_kinit_password_ccache(smb_krb5_context->krb5_context,
 								     ccache,

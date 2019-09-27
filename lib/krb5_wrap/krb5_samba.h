@@ -252,7 +252,6 @@ krb5_error_code smb_krb5_kinit_password_ccache(krb5_context ctx,
 					       krb5_get_init_creds_opt *krb_options,
 					       time_t *expire_time,
 					       time_t *kdc_time);
-#ifdef SAMBA4_USES_HEIMDAL
 krb5_error_code smb_krb5_kinit_s4u2_ccache(krb5_context ctx,
 					   krb5_ccache store_cc,
 					   krb5_principal init_principal,
@@ -263,7 +262,6 @@ krb5_error_code smb_krb5_kinit_s4u2_ccache(krb5_context ctx,
 					   krb5_get_init_creds_opt *krb_options,
 					   time_t *expire_time,
 					   time_t *kdc_time);
-#endif
 
 #if defined(HAVE_KRB5_MAKE_PRINCIPAL)
 #define smb_krb5_make_principal krb5_make_principal
