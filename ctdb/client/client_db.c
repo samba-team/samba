@@ -37,6 +37,11 @@
 #include "client/client_private.h"
 #include "client/client.h"
 
+struct tdb_context *client_db_tdb(struct ctdb_db_context *db)
+{
+	return db->ltdb->tdb;
+}
+
 static struct ctdb_db_context *client_db_handle(
 					struct ctdb_client_context *client,
 					const char *db_name)
@@ -835,11 +840,11 @@ int ctdb_db_traverse_local(struct ctdb_db_context *db, bool readonly,
 	state.error = 0;
 
 	if (readonly) {
-		ret = tdb_traverse_read(db->ltdb->tdb,
+		ret = tdb_traverse_read(client_db_tdb(db),
 					ctdb_db_traverse_local_handler,
 					&state);
 	} else {
-		ret = tdb_traverse(db->ltdb->tdb,
+		ret = tdb_traverse(client_db_tdb(db),
 				   ctdb_db_traverse_local_handler, &state);
 	}
 
@@ -1105,14 +1110,14 @@ int ctdb_ltdb_fetch(struct ctdb_db_context *db, TDB_DATA key,
 	size_t np;
 	int ret;
 
-	rec = tdb_fetch(db->ltdb->tdb, key);
+	rec = tdb_fetch(client_db_tdb(db), key);
 	if (rec.dsize < sizeof(struct ctdb_ltdb_header)) {
 		/* No record present */
 		if (rec.dptr != NULL) {
 			free(rec.dptr);
 		}
 
-		if (tdb_error(db->ltdb->tdb) != TDB_ERR_NOEXIST) {
+		if (tdb_error(client_db_tdb(db)) != TDB_ERR_NOEXIST) {
 			return EIO;
 		}
 
@@ -1235,18 +1240,18 @@ static int ctdb_fetch_lock_check(struct tevent_req *req)
 	int ret, err = 0;
 	bool do_migrate = false;
 
-	ret = tdb_chainlock(h->db->ltdb->tdb, h->key);
+	ret = tdb_chainlock(client_db_tdb(h->db), h->key);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      ("fetch_lock: %s tdb_chainlock failed, %s\n",
-		       h->db->db_name, tdb_errorstr(h->db->ltdb->tdb)));
+		       h->db->db_name, tdb_errorstr(client_db_tdb(h->db))));
 		err = EIO;
 		goto failed;
 	}
 
-	data = tdb_fetch(h->db->ltdb->tdb, h->key);
+	data = tdb_fetch(client_db_tdb(h->db), h->key);
 	if (data.dptr == NULL) {
-		if (tdb_error(h->db->ltdb->tdb) == TDB_ERR_NOEXIST) {
+		if (tdb_error(client_db_tdb(h->db)) == TDB_ERR_NOEXIST) {
 			goto migrate;
 		} else {
 			err = EIO;
@@ -1297,11 +1302,11 @@ failed:
 	if (data.dptr != NULL) {
 		free(data.dptr);
 	}
-	ret = tdb_chainunlock(h->db->ltdb->tdb, h->key);
+	ret = tdb_chainunlock(client_db_tdb(h->db), h->key);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      ("fetch_lock: %s tdb_chainunlock failed, %s\n",
-		       h->db->db_name, tdb_errorstr(h->db->ltdb->tdb)));
+		       h->db->db_name, tdb_errorstr(client_db_tdb(h->db))));
 		return EIO;
 	}
 
@@ -1377,11 +1382,11 @@ static int ctdb_record_handle_destructor(struct ctdb_record_handle *h)
 {
 	int ret;
 
-	ret = tdb_chainunlock(h->db->ltdb->tdb, h->key);
+	ret = tdb_chainunlock(client_db_tdb(h->db), h->key);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      ("fetch_lock: %s tdb_chainunlock failed, %s\n",
-		       h->db->db_name, tdb_errorstr(h->db->ltdb->tdb)));
+		       h->db->db_name, tdb_errorstr(client_db_tdb(h->db))));
 	}
 	free(h->data.dptr);
 	return 0;
@@ -1487,11 +1492,11 @@ int ctdb_store_record(struct ctdb_record_handle *h, TDB_DATA data)
 	rec[1].dsize = data.dsize;
 	rec[1].dptr = data.dptr;
 
-	ret = tdb_storev(h->db->ltdb->tdb, h->key, rec, 2, TDB_REPLACE);
+	ret = tdb_storev(client_db_tdb(h->db), h->key, rec, 2, TDB_REPLACE);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR,
 		      ("store_record: %s tdb_storev failed, %s\n",
-		       h->db->db_name, tdb_errorstr(h->db->ltdb->tdb)));
+		       h->db->db_name, tdb_errorstr(client_db_tdb(h->db))));
 		return EIO;
 	}
 
@@ -1538,11 +1543,11 @@ struct tevent_req *ctdb_delete_record_send(TALLOC_CTX *mem_ctx,
 	rec.dsize = np;
 	rec.dptr = header;
 
-	ret = tdb_store(h->db->ltdb->tdb, h->key, rec, TDB_REPLACE);
+	ret = tdb_store(client_db_tdb(h->db), h->key, rec, TDB_REPLACE);
 	if (ret != 0) {
 		D_ERR("fetch_lock delete: %s tdb_store failed, %s\n",
 		      h->db->db_name,
-		      tdb_errorstr(h->db->ltdb->tdb));
+		      tdb_errorstr(client_db_tdb(h->db)));
 		tevent_req_error(req, EIO);
 		return tevent_req_post(req, ev);
 	}
