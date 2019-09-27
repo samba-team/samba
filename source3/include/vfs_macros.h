@@ -286,6 +286,11 @@
 #define SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_mode, access_mask)	\
 	smb_vfs_call_kernel_flock((handle)->next, (fsp), (share_mode), (access_mask))
 
+#define SMB_VFS_FCNTL(fsp, cmd, ...) \
+	smb_vfs_call_fcntl((fsp)->conn->vfs_handles, (fsp), (cmd), (__VA_ARGS__))
+#define SMB_VFS_NEXT_FCNTL(handle, fsp, cmd, ...) \
+	smb_vfs_call_fcntl((handle)->next, (fsp), (cmd), (__VA_ARGS__))
+
 #define SMB_VFS_LINUX_SETLEASE(fsp, leasetype) \
 	smb_vfs_call_linux_setlease((fsp)->conn->vfs_handles, (fsp), (leasetype))
 #define SMB_VFS_NEXT_LINUX_SETLEASE(handle, fsp, leasetype) \

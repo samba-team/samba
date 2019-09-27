@@ -2615,6 +2615,51 @@ static int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 	return 0;
 }
 
+static int vfswrap_fcntl(vfs_handle_struct *handle, files_struct *fsp, int cmd,
+			 va_list cmd_arg)
+{
+	void *argp;
+	va_list dup_cmd_arg;
+	int result;
+	int val;
+
+	START_PROFILE(syscall_fcntl);
+
+	va_copy(dup_cmd_arg, cmd_arg);
+
+	switch(cmd) {
+	case F_SETLK:
+	case F_SETLKW:
+	case F_GETLK:
+#if defined(HAVE_OFD_LOCKS)
+	case F_OFD_SETLK:
+	case F_OFD_SETLKW:
+	case F_OFD_GETLK:
+#endif
+#if defined(HAVE_F_OWNER_EX)
+	case F_GETOWN_EX:
+	case F_SETOWN_EX:
+#endif
+#if defined(HAVE_RW_HINTS)
+	case F_GET_RW_HINT:
+	case F_SET_RW_HINT:
+	case F_GET_FILE_RW_HINT:
+	case F_SET_FILE_RW_HINT:
+#endif
+		argp = va_arg(dup_cmd_arg, void *);
+		result = sys_fcntl_ptr(fsp->fh->fd, cmd, argp);
+		break;
+	default:
+		val = va_arg(dup_cmd_arg, int);
+		result = sys_fcntl_int(fsp->fh->fd, cmd, val);
+	}
+
+	va_end(dup_cmd_arg);
+
+	END_PROFILE(syscall_fcntl);
+	return result;
+}
+
 static bool vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid)
 {
 	bool result;
@@ -3506,6 +3551,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.fallocate_fn = vfswrap_fallocate,
 	.lock_fn = vfswrap_lock,
 	.kernel_flock_fn = vfswrap_kernel_flock,
+	.fcntl_fn = vfswrap_fcntl,
 	.linux_setlease_fn = vfswrap_linux_setlease,
 	.getlock_fn = vfswrap_getlock,
 	.symlinkat_fn = vfswrap_symlinkat,

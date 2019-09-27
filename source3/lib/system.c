@@ -108,6 +108,20 @@ int sys_fcntl_long(int fd, int cmd, long arg)
 	return ret;
 }
 
+/*******************************************************************
+A fcntl wrapper that will deal with EINTR.
+********************************************************************/
+
+int sys_fcntl_int(int fd, int cmd, int arg)
+{
+	int ret;
+
+	do {
+		ret = fcntl(fd, cmd, arg);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
 /****************************************************************************
  Get/Set all the possible time fields from a stat struct as a timespec.
 ****************************************************************************/

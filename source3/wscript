@@ -1119,6 +1119,115 @@ err:
             execute=True,
             msg="Checking whether fcntl lock supports open file description locks")
 
+    conf.CHECK_CODE('''
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+
+int main(void)
+{
+        int sockfd, ret;
+        struct f_owner_ex owner, get_owner;
+
+        sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+        if (sockfd == -1) {
+            goto err;
+        }
+
+        owner.type = F_OWNER_PID;
+        owner.pid = getpid();
+
+        ret = fcntl(sockfd, F_SETOWN_EX, &owner);
+        if (ret == -1) {
+            goto err;
+        }
+
+        ret = fcntl(sockfd, F_GETOWN_EX, &get_owner);
+        if (ret == -1) {
+            goto err;
+        }
+
+        if (get_owner.type != F_OWNER_PID) {
+            goto err;
+        }
+
+        if (get_owner.pid != getpid()) {
+            goto err;
+        }
+
+        close(sockfd);
+        exit(0);
+err:
+        close(sockfd);
+        exit(1);
+}''',
+            'HAVE_F_OWNER_EX',
+            addmain=False,
+            execute=True,
+            msg="Checking whether fcntl supports flags to send direct I/O availability signals")
+
+    conf.CHECK_CODE('''
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+#define DATA "hinttest.fcntl"
+
+int main(void)
+{
+        uint64_t *hint, get_hint;
+        int fd;
+
+        fd = open(DATA, O_RDONLY | O_CREAT | O_EXCL);
+        if (fd == -1) {
+            goto err;
+        }
+
+        *hint = RWH_WRITE_LIFE_SHORT;
+        int ret = fcntl(fd, F_SET_RW_HINT, hint);
+        if (ret == -1) {
+            goto err;
+        }
+
+        ret = fcntl(fd, F_GET_RW_HINT, &get_hint);
+        if (ret == -1) {
+            goto err;
+        }
+
+        if (get_hint != RWH_WRITE_LIFE_SHORT) {
+            goto err;
+        }
+
+        *hint = RWH_WRITE_LIFE_EXTREME;
+        ret = fcntl(fd, F_SET_FILE_RW_HINT, hint);
+        if (ret == -1) {
+            goto err;
+        }
+
+        ret = fcntl(fd, F_GET_FILE_RW_HINT, &get_hint);
+        if (ret == -1) {
+            goto err;
+        }
+
+        if (get_hint != RWH_WRITE_LIFE_EXTREME) {
+            goto err;
+        }
+
+        close(fd);
+        unlink(DATA);
+        exit(0);
+err:
+        close(fd);
+        unlink(DATA);
+        exit(1);
+}''',
+            'HAVE_RW_HINTS',
+            addmain=False,
+            execute=True,
+            msg="Checking whether fcntl supports setting/geting hints")
+
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtim.tv_nsec',
                                 define='HAVE_STRUCT_STAT_ST_MTIM_TV_NSEC') # Linux, Solaris
     conf.CHECK_STRUCTURE_MEMBER('struct stat', 'st_mtimensec',

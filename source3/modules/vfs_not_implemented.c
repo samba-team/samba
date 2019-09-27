@@ -442,6 +442,14 @@ int vfs_not_implemented_kernel_flock(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+int vfs_not_implemented_fcntl(struct vfs_handle_struct *handle,
+			      struct files_struct *fsp, int cmd,
+			      va_list cmd_arg)
+{
+	errno = ENOSYS;
+	return -1;
+}
+
 int vfs_not_implemented_linux_setlease(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp, int leasetype)
 {
@@ -1095,6 +1103,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.fallocate_fn = vfs_not_implemented_fallocate,
 	.lock_fn = vfs_not_implemented_lock,
 	.kernel_flock_fn = vfs_not_implemented_kernel_flock,
+	.fcntl_fn = vfs_not_implemented_fcntl,
 	.linux_setlease_fn = vfs_not_implemented_linux_setlease,
 	.getlock_fn = vfs_not_implemented_getlock,
 	.symlinkat_fn = vfs_not_implemented_symlinkat,

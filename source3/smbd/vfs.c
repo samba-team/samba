@@ -2195,6 +2195,21 @@ int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
 					 access_mask);
 }
 
+int smb_vfs_call_fcntl(struct vfs_handle_struct *handle,
+		       struct files_struct *fsp, int cmd, ...)
+{
+	int result;
+	va_list cmd_arg;
+
+	VFS_FIND(fcntl);
+
+	va_start(cmd_arg, cmd);
+	result = handle->fns->fcntl_fn(handle, fsp, cmd, cmd_arg);
+	va_end(cmd_arg);
+
+	return result;
+}
+
 int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, int leasetype)
 {

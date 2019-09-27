@@ -1344,6 +1344,31 @@ static int smb_time_audit_kernel_flock(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_time_audit_fcntl(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				int cmd, va_list cmd_arg)
+{
+	void *arg;
+	va_list dup_cmd_arg;
+	int result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	va_copy(dup_cmd_arg, cmd_arg);
+	arg = va_arg(dup_cmd_arg, void *);
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_FCNTL(handle, fsp, cmd, arg);
+	clock_gettime_mono(&ts2);
+	va_end(dup_cmd_arg);
+
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+	if (timediff > audit_timeout) {
+		smb_time_audit_log_fsp("kernel_flock", timediff, fsp);
+	}
+
+	return result;
+}
+
 static int smb_time_audit_linux_setlease(vfs_handle_struct *handle,
 					 files_struct *fsp,
 					 int leasetype)
@@ -2866,6 +2891,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.fallocate_fn = smb_time_audit_fallocate,
 	.lock_fn = smb_time_audit_lock,
 	.kernel_flock_fn = smb_time_audit_kernel_flock,
+	.fcntl_fn = smb_time_audit_fcntl,
 	.linux_setlease_fn = smb_time_audit_linux_setlease,
 	.getlock_fn = smb_time_audit_getlock,
 	.symlinkat_fn = smb_time_audit_symlinkat,

@@ -282,6 +282,7 @@
 /* Version 42 - Move change_to_user_by_fsp() -> change_to_user_and_service_by_fsp() */
 /* Version 42 - Move [un]become_user*() -> [un]become_user_without_service*() */
 /* Version 42 - Move SMB_VFS_UNLINK -> SMB_VFS_UNLINKAT. */
+/* Version 42 - Add SMB_VFS_FCNTL */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -810,6 +811,8 @@ struct vfs_fn_pointers {
 	bool (*lock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, off_t offset, off_t count, int type);
 	int (*kernel_flock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp,
 			       uint32_t share_mode, uint32_t access_mask);
+	int (*fcntl_fn)(struct vfs_handle_struct *handle,
+			struct files_struct *fsp, int cmd, va_list cmd_arg);
 	int (*linux_setlease_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype);
 	bool (*getlock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid);
 	int (*symlinkat_fn)(struct vfs_handle_struct *handle,
@@ -1345,6 +1348,8 @@ bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
 int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, uint32_t share_mode,
 			      uint32_t access_mask);
+int smb_vfs_call_fcntl(struct vfs_handle_struct *handle,
+		       struct files_struct *fsp, int cmd, ...);
 int smb_vfs_call_linux_setlease(struct vfs_handle_struct *handle,
 				struct files_struct *fsp, int leasetype);
 bool smb_vfs_call_getlock(struct vfs_handle_struct *handle,
@@ -1780,6 +1785,8 @@ bool vfs_not_implemented_lock(vfs_handle_struct *handle, files_struct *fsp, int 
 int vfs_not_implemented_kernel_flock(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp,
 				     uint32_t share_mode, uint32_t access_mask);
+int vfs_not_implemented_fcntl(struct vfs_handle_struct *handle,
+			      struct files_struct *fsp, int cmd, va_list cmd_arg);
 int vfs_not_implemented_linux_setlease(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp, int leasetype);
 bool vfs_not_implemented_getlock(vfs_handle_struct *handle, files_struct *fsp,

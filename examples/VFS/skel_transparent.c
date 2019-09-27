@@ -552,6 +552,21 @@ static int skel_kernel_flock(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_mode, access_mask);
 }
 
+static int skel_fcntl(struct vfs_handle_struct *handle,
+		      struct files_struct *fsp, int cmd, va_list cmd_arg)
+{
+	void *arg;
+	va_list dup_cmd_arg;
+	int result;
+
+	va_copy(dup_cmd_arg, cmd_arg);
+	arg = va_arg(dup_cmd_arg, void *);
+	result = SMB_VFS_NEXT_FCNTL(handle, fsp, cmd, arg);
+	va_end(dup_cmd_arg);
+
+	return result;
+}
+
 static int skel_linux_setlease(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp, int leasetype)
 {
@@ -1379,6 +1394,7 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.fallocate_fn = skel_fallocate,
 	.lock_fn = skel_lock,
 	.kernel_flock_fn = skel_kernel_flock,
+	.fcntl_fn = skel_fcntl,
 	.linux_setlease_fn = skel_linux_setlease,
 	.getlock_fn = skel_getlock,
 	.symlinkat_fn = skel_symlinkat,

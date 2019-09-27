@@ -151,6 +151,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_FALLOCATE,
 	SMB_VFS_OP_LOCK,
 	SMB_VFS_OP_KERNEL_FLOCK,
+	SMB_VFS_OP_FCNTL,
 	SMB_VFS_OP_LINUX_SETLEASE,
 	SMB_VFS_OP_GETLOCK,
 	SMB_VFS_OP_SYMLINKAT,
@@ -1734,6 +1735,25 @@ static int smb_full_audit_kernel_flock(struct vfs_handle_struct *handle,
 	return result;
 }
 
+static int smb_full_audit_fcntl(struct vfs_handle_struct *handle,
+				struct files_struct *fsp,
+				int cmd, va_list cmd_arg)
+{
+	void *arg;
+	va_list dup_cmd_arg;
+	int result;
+
+	va_copy(dup_cmd_arg, cmd_arg);
+	arg = va_arg(dup_cmd_arg, void *);
+	result = SMB_VFS_NEXT_FCNTL(handle, fsp, cmd, arg);
+	va_end(dup_cmd_arg);
+
+	do_log(SMB_VFS_OP_FCNTL, (result >= 0), handle, "%s",
+	       fsp_str_do_log(fsp));
+
+	return result;
+}
+
 static int smb_full_audit_linux_setlease(vfs_handle_struct *handle, files_struct *fsp,
                                  int leasetype)
 {
@@ -2981,6 +3001,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.fallocate_fn = smb_full_audit_fallocate,
 	.lock_fn = smb_full_audit_lock,
 	.kernel_flock_fn = smb_full_audit_kernel_flock,
+	.fcntl_fn = smb_full_audit_fcntl,
 	.linux_setlease_fn = smb_full_audit_linux_setlease,
 	.getlock_fn = smb_full_audit_getlock,
 	.symlinkat_fn = smb_full_audit_symlinkat,
