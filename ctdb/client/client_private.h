@@ -77,6 +77,10 @@ struct ctdb_tunnel_context {
 void ctdb_client_reply_call(struct ctdb_client_context *client,
 			    uint8_t *buf, size_t buflen, uint32_t reqid);
 
+/* From client_db.c */
+
+struct tdb_context *client_db_tdb(struct ctdb_db_context *db);
+
 /* From client_message.c */
 
 void ctdb_client_req_message(struct ctdb_client_context *client,
