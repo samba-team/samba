@@ -2197,8 +2197,8 @@ static int net_ads_dns_gethostbyname(struct net_context *c, int argc, const char
 			 _("Usage:"),
 			 _("net ads dns gethostbyname <server> <name>\n"),
 			 _("  Look up hostname from the AD\n"
-			   "    server\tName server to use\n"
-			   "    name\tName to look up\n"));
+			   "    nameserver\tName server to use\n"
+			   "    hostname\tName to look up\n"));
 		return -1;
 	}
 
