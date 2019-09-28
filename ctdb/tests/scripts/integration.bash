@@ -60,6 +60,34 @@ ctdb_test_exit_hook_add ()
     ctdb_test_exit_hook="${ctdb_test_exit_hook}${ctdb_test_exit_hook:+ ; }$*"
 }
 
+# Setting cleanup_pid to <pid>@<node> will cause <pid> to be killed on
+# <node> when the test completes.  To cancel, just unset cleanup_pid.
+ctdb_test_cleanup_pid=""
+ctdb_test_cleanup_pid_exit_hook ()
+{
+	if [ -n "$ctdb_test_cleanup_pid" ] ; then
+		local pid="${ctdb_test_cleanup_pid%@*}"
+		local node="${ctdb_test_cleanup_pid#*@}"
+
+		try_command_on_node "$node" "kill ${pid}"
+	fi
+}
+
+ctdb_test_exit_hook_add ctdb_test_cleanup_pid_exit_hook
+
+ctdb_test_cleanup_pid_set ()
+{
+	local node="$1"
+	local pid="$2"
+
+	ctdb_test_cleanup_pid="${pid}@${node}"
+}
+
+ctdb_test_cleanup_pid_clear ()
+{
+	ctdb_test_cleanup_pid=""
+}
+
 ctdb_test_init ()
 {
 	trap "ctdb_test_exit" 0
