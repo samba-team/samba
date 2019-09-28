@@ -855,12 +855,6 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
 	TALLOC_CTX *mem_ctx;
 
-	if (cmd_entry->table == &ndr_table_samr &&
-	    !dom_sid_is_valid_account_domain(&domain_sid))
-	{
-		return NT_STATUS_INVALID_DOMAIN_STATE;
-	}
-
 	/* Create mem_ctx */
 
 	if (!(mem_ctx = talloc_stackframe())) {
