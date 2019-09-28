@@ -32,7 +32,7 @@
 #include "rpc_client/init_lsa.h"
 #include "../libcli/security/security.h"
 
-extern struct dom_sid domain_sid;
+static struct dom_sid domain_sid;
 
 /****************************************************************************
  display samr_user_info_7 structure
@@ -276,20 +276,87 @@ static NTSTATUS rpccli_try_samr_connects(
 	uint32_t access_mask,
 	struct policy_handle *connect_pol)
 {
+	struct dcerpc_binding_handle *b = cli->binding_handle;
 	NTSTATUS status;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32_t start_idx = 0;
+	uint32_t i, num_entries;
+	struct samr_SamArray *sam = NULL;
+	struct dom_sid *domsid = NULL;
 
-	status = dcerpc_try_samr_connects(cli->binding_handle,
-					  mem_ctx,
-					  cli->srv_name_slash,
-					  access_mask,
-					  connect_pol,
-					  &result);
+	status = dcerpc_try_samr_connects(
+		b,
+		mem_ctx,
+		cli->srv_name_slash,
+		access_mask,
+		connect_pol,
+		&result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
 
-	return result;
+	if (!is_null_sid(&domain_sid)) {
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * Look up the servers domain SID. Just pick the first
+	 * non-builtin domain from samr_EnumDomains.
+	 */
+
+	status = dcerpc_samr_EnumDomains(
+		b,
+		mem_ctx,
+		connect_pol,
+		&start_idx,
+		&sam,
+		0xffff,
+		&num_entries,
+		&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto fail;
+	}
+
+	for (i=0; i<num_entries; i++) {
+		if (!strequal(sam->entries[i].name.string, "builtin")) {
+			break;
+		}
+	}
+	if (i == num_entries) {
+		status = NT_STATUS_NOT_FOUND;
+		goto fail;
+	}
+
+	status = dcerpc_samr_LookupDomain(
+		b,
+		mem_ctx,
+		connect_pol,
+		&sam->entries[i].name,
+		&domsid,
+		&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	if (!NT_STATUS_IS_OK(result)) {
+		status = result;
+		goto fail;
+	}
+
+	sid_copy(&domain_sid, domsid);
+	TALLOC_FREE(domsid);
+
+	return NT_STATUS_OK;
+
+fail:
+	dcerpc_samr_Close(b, mem_ctx, connect_pol, &result);
+	return status;
 }
 
 /****************************************************************************
