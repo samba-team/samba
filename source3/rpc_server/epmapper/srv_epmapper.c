@@ -378,8 +378,8 @@ error_status_t _epm_Insert(struct pipes_struct *p,
 		return EPMAPPER_STATUS_NO_MEMORY;
 	}
 
-	DEBUG(3, ("_epm_Insert: Trying to add %u new entries.\n",
-		  r->in.num_ents));
+	DBG_NOTICE("Trying to add %"PRIu32" new entries.\n",
+		   r->in.num_ents);
 
 	for (i = 0; i < r->in.num_ents; i++) {
 		enum dcerpc_transport_t transport;
