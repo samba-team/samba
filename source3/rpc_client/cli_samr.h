@@ -218,9 +218,4 @@ NTSTATUS dcerpc_try_samr_connects(struct dcerpc_binding_handle *h,
 				  struct policy_handle *connect_pol,
 				  NTSTATUS *presult);
 
-NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx,
-				  uint32_t access_mask,
-				  struct policy_handle *connect_pol);
-
 #endif /* _CLI_SAMR_H */

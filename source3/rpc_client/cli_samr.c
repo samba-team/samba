@@ -503,25 +503,4 @@ NTSTATUS dcerpc_try_samr_connects(struct dcerpc_binding_handle *h,
 	return status;
 }
 
-NTSTATUS rpccli_try_samr_connects(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx,
-				  uint32_t access_mask,
-				  struct policy_handle *connect_pol)
-{
-	NTSTATUS status;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	status = dcerpc_try_samr_connects(cli->binding_handle,
-					  mem_ctx,
-					  cli->srv_name_slash,
-					  access_mask,
-					  connect_pol,
-					  &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return result;
-}
-
 /* vim: set ts=8 sw=8 noet cindent: */

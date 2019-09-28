@@ -270,6 +270,28 @@ static void display_sam_info_5(struct samr_DispEntryAscii *r)
 	printf("Account: %s\n", r->account_name.string);
 }
 
+static NTSTATUS rpccli_try_samr_connects(
+	struct rpc_pipe_client *cli,
+	TALLOC_CTX *mem_ctx,
+	uint32_t access_mask,
+	struct policy_handle *connect_pol)
+{
+	NTSTATUS status;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	status = dcerpc_try_samr_connects(cli->binding_handle,
+					  mem_ctx,
+					  cli->srv_name_slash,
+					  access_mask,
+					  connect_pol,
+					  &result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	return result;
+}
+
 /****************************************************************************
  ****************************************************************************/
 
