@@ -12,7 +12,6 @@ bld.SAMBA3_BINARY('rpcclient',
                  cmd_dssetup.c
                  cmd_echo.c
                  cmd_shutdown.c
-                 cmd_test.c
                  cmd_wkssvc.c
                  cmd_ntsvcs.c
                  cmd_drsuapi.c

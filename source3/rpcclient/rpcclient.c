@@ -789,7 +789,6 @@ extern struct cmd_set ds_commands[];
 extern struct cmd_set echo_commands[];
 extern struct cmd_set epmapper_commands[];
 extern struct cmd_set shutdown_commands[];
-extern struct cmd_set test_commands[];
 extern struct cmd_set wkssvc_commands[];
 extern struct cmd_set ntsvcs_commands[];
 extern struct cmd_set drsuapi_commands[];
@@ -813,7 +812,6 @@ static struct cmd_set *rpcclient_command_list[] = {
 	echo_commands,
 	epmapper_commands,
 	shutdown_commands,
- 	test_commands,
 	wkssvc_commands,
 	ntsvcs_commands,
 	drsuapi_commands,
