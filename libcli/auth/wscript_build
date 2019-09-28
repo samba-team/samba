@@ -71,3 +71,12 @@ bld.SAMBA_BINARY('test_schannel',
                       cmocka
                       ''',
                  install=False)
+
+bld.SAMBA_BINARY('test_gnutls',
+                 source='tests/test_gnutls.c',
+                 deps='''
+                      gnutls
+                      cmocka
+                      samba-util
+                      ''',
+                 install=False)
