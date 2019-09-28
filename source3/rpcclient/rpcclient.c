@@ -44,8 +44,6 @@ enum pipe_auth_type_spnego {
 	PIPE_AUTH_TYPE_SPNEGO_KRB5
 };
 
-struct dom_sid domain_sid;
-
 static enum dcerpc_AuthType pipe_default_auth_type = DCERPC_AUTH_TYPE_NONE;
 static enum pipe_auth_type_spnego pipe_default_auth_spnego_type = 0;
 static enum dcerpc_AuthLevel pipe_default_auth_level = DCERPC_AUTH_LEVEL_NONE;
@@ -152,74 +150,6 @@ static char *next_command (char **cmdstr)
 		*cmdstr = NULL;
 
 	return command;
-}
-
-/* Fetch the SID for this computer */
-
-static void fetch_machine_sid(struct cli_state *cli)
-{
-	struct policy_handle pol;
-	NTSTATUS result = NT_STATUS_OK, status;
-	static bool got_domain_sid;
-	TALLOC_CTX *mem_ctx;
-	struct rpc_pipe_client *lsapipe = NULL;
-	union lsa_PolicyInformation *info = NULL;
-	struct dcerpc_binding_handle *b;
-
-	if (got_domain_sid) return;
-
-	if (!(mem_ctx=talloc_init("fetch_machine_sid"))) {
-		DEBUG(0,("fetch_machine_sid: talloc_init returned NULL!\n"));
-		goto error;
-	}
-
-	result = cli_rpc_pipe_open_noauth(cli, &ndr_table_lsarpc,
-					  &lsapipe);
-	if (!NT_STATUS_IS_OK(result)) {
-		fprintf(stderr, "could not initialise lsa pipe. Error was %s\n", nt_errstr(result) );
-		goto error;
-	}
-
-	b = lsapipe->binding_handle;
-
-	result = rpccli_lsa_open_policy(lsapipe, mem_ctx, True, 
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto error;
-	}
-
-	status = dcerpc_lsa_QueryInfoPolicy(b, mem_ctx,
-					    &pol,
-					    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
-					    &info,
-					    &result);
-	if (!NT_STATUS_IS_OK(status)) {
-		result = status;
-		goto error;
-	}
-	if (!NT_STATUS_IS_OK(result)) {
-		goto error;
-	}
-
-	got_domain_sid = True;
-	sid_copy(&domain_sid, info->account_domain.sid);
-
-	dcerpc_lsa_Close(b, mem_ctx, &pol, &result);
-	TALLOC_FREE(lsapipe);
-	talloc_destroy(mem_ctx);
-
-	return;
-
- error:
-
-	if (lsapipe) {
-		TALLOC_FREE(lsapipe);
-	}
-
-	fprintf(stderr, "could not obtain sid from server\n");
-
-	return;
 }
 
 /* List the available commands on a given pipe */
@@ -1329,8 +1259,6 @@ out_free:
 	}
 
 	default_transport = dcerpc_binding_get_transport(binding);
-
-	fetch_machine_sid(cli);
 
        /* Do anything specified with -c */
         if (cmdstr && cmdstr[0]) {
