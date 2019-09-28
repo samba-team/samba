@@ -1194,7 +1194,7 @@ static NTSTATUS cmd_samr_enum_domains(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	/* Enumerate alias groups */
+	/* Enumerate domains */
 
 	start_idx = 0;
 	size = 0xffff;
