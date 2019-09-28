@@ -53,7 +53,6 @@ static unsigned int timeout = 0;
 static enum dcerpc_transport_t default_transport = NCACN_NP;
 
 struct messaging_context *rpcclient_msg_ctx;
-struct cli_state *rpcclient_cli_state;
 struct netlogon_creds_cli_context *rpcclient_netlogon_creds;
 static const char *rpcclient_netlogon_domain;
 
@@ -1323,7 +1322,6 @@ out_free:
 #endif
 
 	/* Load command lists */
-	rpcclient_cli_state = cli;
 
 	timeout = 10000;
 	cli_set_timeout(cli, timeout);
@@ -1377,7 +1375,6 @@ out_free:
 	}
 
 done:
-	rpcclient_cli_state = NULL;
 	if (cli != NULL) {
 		cli_shutdown(cli);
 	}

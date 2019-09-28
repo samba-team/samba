@@ -43,7 +43,6 @@ struct cmd_set {
 };
 
 extern struct messaging_context *rpcclient_msg_ctx;
-extern struct cli_state *rpcclient_cli_state;
 extern struct netlogon_creds_cli_context *rpcclient_netlogon_creds;
 
 #endif /* RPCCLIENT_H */
