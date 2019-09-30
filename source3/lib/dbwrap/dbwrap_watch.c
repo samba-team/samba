@@ -255,6 +255,7 @@ static struct db_record *dbwrap_watched_fetch_locked(
 	if (!ok) {
 		return rec;	/* fresh record */
 	}
+	rec->value = subrec->wrec.data;
 
 	/*
 	 * subrec->wrec.watchers points *directly* into the
@@ -271,10 +272,6 @@ static struct db_record *dbwrap_watched_fetch_locked(
 		return NULL;
 	}
 	subrec->wrec.watchers = watchers;
-
-	if (ok) {
-		rec->value = subrec->wrec.data;
-	}
 
 	return rec;
 }
