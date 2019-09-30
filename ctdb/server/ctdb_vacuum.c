@@ -814,7 +814,7 @@ static void ctdb_process_delete_list(struct ctdb_db_context *ctdb_db,
 		 */
 		records = (struct ctdb_marshall_buffer *)outdata.dptr;
 		rec = (struct ctdb_rec_data_old *)&records->data[0];
-		while (records->count-- > 1) {
+		while (records->count-- > 0) {
 			TDB_DATA reckey, recdata;
 			struct ctdb_ltdb_header *rechdr;
 			struct delete_record_data *dd;
