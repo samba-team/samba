@@ -32,7 +32,7 @@ struct tevent_req *tstream_npa_connect_send(TALLOC_CTX *mem_ctx,
 					    const struct tsocket_address *remote_client_addr,
 					    const char *remote_client_name_in,
 					    const struct tsocket_address *local_server_addr,
-					    const char *local_server_name,
+					    const char *local_server_name_in,
 					    const struct auth_session_info_transport *session_info);
 int _tstream_npa_connect_recv(struct tevent_req *req,
 			      int *perrno,
