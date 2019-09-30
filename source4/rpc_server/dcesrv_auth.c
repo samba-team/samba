@@ -23,8 +23,6 @@
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/dcerpc_server_proto.h"
-#include "rpc_server/common/proto.h"
-#include "librpc/rpc/dcerpc_proto.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"

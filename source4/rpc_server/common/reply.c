@@ -21,25 +21,13 @@
 */
 
 #include "includes.h"
-#include "auth/auth.h"
 #include "auth/gensec/gensec.h"
-#include "../lib/util/dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/dcerpc_server_proto.h"
-#include "rpc_server/common/proto.h"
 #include "librpc/rpc/dcerpc_proto.h"
-#include "system/filesys.h"
-#include "libcli/security/security.h"
 #include "param/param.h"
-#include "../lib/tsocket/tsocket.h"
-#include "../libcli/named_pipe_auth/npa_tstream.h"
-#include "smbd/service_stream.h"
-#include "../lib/tsocket/tsocket.h"
-#include "lib/socket/socket.h"
-#include "smbd/process_model.h"
-#include "lib/messaging/irpc.h"
 #include "librpc/rpc/rpc_common.h"
-
 
 /*
   move a call from an existing linked list to the specified list. This

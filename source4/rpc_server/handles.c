@@ -20,10 +20,10 @@
 */
 
 #include "includes.h"
-#include "../lib/util/dlinklist.h"
+#include "lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 #include "libcli/security/security.h"
-#include "auth/session.h"
+#include "librpc/gen_ndr/auth.h"
 
 /*
   destroy a rpc handle

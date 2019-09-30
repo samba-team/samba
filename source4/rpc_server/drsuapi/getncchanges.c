@@ -31,7 +31,6 @@
 #include "libcli/security/security.h"
 #include "libcli/security/session.h"
 #include "rpc_server/drsuapi/dcesrv_drsuapi.h"
-#include "rpc_server/dcerpc_server_proto.h"
 #include "rpc_server/common/sid_helper.h"
 #include "../libcli/drsuapi/drsuapi.h"
 #include "lib/util/binsearch.h"
