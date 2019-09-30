@@ -196,6 +196,7 @@ struct db_watched_ctx {
 struct db_watched_subrec {
 	struct db_record *subrec;
 	struct dbwrap_watch_rec wrec;
+	bool added_watcher;
 };
 
 static NTSTATUS dbwrap_watched_subrec_storev(
@@ -385,7 +386,7 @@ static void dbwrap_watched_subrec_wakeup(
 	struct db_context *db = rec->db;
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
-	size_t i;
+	size_t i, num_to_wakeup;
 	size_t db_id_len = dbwrap_db_id(db, NULL, 0);
 	uint8_t db_id[db_id_len];
 	uint8_t len_buf[4];
@@ -403,7 +404,17 @@ static void dbwrap_watched_subrec_wakeup(
 
 	i = 0;
 
-	while (i < wrec->num_watchers) {
+	num_to_wakeup = wrec->num_watchers;
+
+	if (subrec->added_watcher) {
+		/*
+		 * Don't alert our own watcher that we just added to
+		 * the end of the array.
+		 */
+		num_to_wakeup -= 1;
+	}
+
+	while (i < num_to_wakeup) {
 		struct server_id watcher;
 		NTSTATUS status;
 		struct server_id_buf tmp;
@@ -916,6 +927,7 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 		      state->me);
 	wrec->watchers = watchers;
 	wrec->num_watchers += 1;
+	subrec->added_watcher = true;
 
 	status = dbwrap_watched_save(
 		subrec->subrec, wrec, &wrec->data, 1, 0);
