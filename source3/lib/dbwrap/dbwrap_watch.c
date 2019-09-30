@@ -211,7 +211,6 @@ static void dbwrap_watched_subrec_wakeup(
 	struct db_record *rec, struct db_watched_subrec *subrec);
 static NTSTATUS dbwrap_watched_save(struct db_record *rec,
 				    struct dbwrap_watch_rec *wrec,
-				    struct server_id *addwatch,
 				    const TDB_DATA *databufs,
 				    size_t num_databufs,
 				    int flags);
@@ -432,7 +431,6 @@ static void dbwrap_watched_subrec_wakeup(
 
 static NTSTATUS dbwrap_watched_save(struct db_record *rec,
 				    struct dbwrap_watch_rec *wrec,
-				    struct server_id *addwatch,
 				    const TDB_DATA *databufs,
 				    size_t num_databufs,
 				    int flags)
@@ -445,24 +443,6 @@ static NTSTATUS dbwrap_watched_save(struct db_record *rec,
 	dbufs[0] = (TDB_DATA) {
 		.dptr = sizebuf, .dsize = sizeof(sizebuf)
 	};
-
-	if (addwatch != NULL) {
-		uint8_t *watchers, *new_watch;
-
-		watchers = talloc_realloc(
-			NULL,
-			wrec->watchers,
-			uint8_t,
-			(wrec->num_watchers+1) * SERVER_ID_BUF_LENGTH);
-		if (watchers == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		wrec->watchers = watchers;
-
-		new_watch = &watchers[wrec->num_watchers*SERVER_ID_BUF_LENGTH];
-		server_id_put(new_watch, *addwatch);
-		wrec->num_watchers += 1;
-	}
 
 	dbufs[1] = (TDB_DATA) {
 		.dptr = wrec->watchers,
@@ -494,8 +474,8 @@ static NTSTATUS dbwrap_watched_subrec_storev(
 
 	subrec->wrec.deleted = false;
 
-	status = dbwrap_watched_save(subrec->subrec, &subrec->wrec, NULL,
-				     dbufs, num_dbufs, flags);
+	status = dbwrap_watched_save(
+		subrec->subrec, &subrec->wrec, dbufs, num_dbufs, flags);
 	return status;
 }
 
@@ -525,8 +505,8 @@ static NTSTATUS dbwrap_watched_subrec_delete(
 
 	subrec->wrec.deleted = true;
 
-	status = dbwrap_watched_save(subrec->subrec, &subrec->wrec,
-				     NULL, NULL, 0, 0);
+	status = dbwrap_watched_save(
+		subrec->subrec, &subrec->wrec, NULL, 0, 0);
 	return status;
 }
 
@@ -938,7 +918,7 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 	wrec->num_watchers += 1;
 
 	status = dbwrap_watched_save(
-		subrec->subrec, wrec, NULL, &wrec->data, 1, 0);
+		subrec->subrec, wrec, &wrec->data, 1, 0);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1004,6 +984,7 @@ static int dbwrap_watched_watch_state_destructor(
 {
 	struct db_record *rec;
 	struct db_watched_subrec *subrec;
+	struct dbwrap_watch_rec *wrec = NULL;
 	TDB_DATA key;
 	bool ok;
 
@@ -1021,12 +1002,13 @@ static int dbwrap_watched_watch_state_destructor(
 
 	subrec = talloc_get_type_abort(
 		rec->private_data, struct db_watched_subrec);
+	wrec = &subrec->wrec;
 
-	ok = dbwrap_watched_remove_waiter(&subrec->wrec, state->me);
+	ok = dbwrap_watched_remove_waiter(wrec, state->me);
 	if (ok) {
 		NTSTATUS status;
-		status = dbwrap_watched_save(subrec->subrec, &subrec->wrec,
-					     NULL, &subrec->wrec.data, 1, 0);
+		status = dbwrap_watched_save(
+			subrec->subrec, wrec, &wrec->data, 1, 0);
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_WARNING("dbwrap_watched_save failed: %s\n",
 				    nt_errstr(status));
