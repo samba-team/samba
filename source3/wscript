@@ -383,31 +383,78 @@ int main(int argc, char **argv) {
                     msg="Checking for LL suffix on long long integers")
 
     conf.CHECK_FUNCS('''
+DNSServiceRegister
 atexit
-chflags chmod
-crypt16 devnm dirfd
-DNSServiceRegister endmntent execl
-fchmod fchown fcvt fcvtl fdatasync
+chflags
+chmod
+crypt16
+devnm
+dirfd
+endmntent
+execl
+fchmod
+fchown
+fcvt
+fcvtl
+fdatasync
 fseeko
 fsync
-futimens futimes getauthuid
+futimens
+futimes
+getauthuid
 getcwd
-getgrent getgrnam getgrouplist getgrset getmntent getpagesize
-getpwanam getpwent_r getrlimit
-glob grantpt hstrerror initgroups innetgr
+getgrent
+getgrnam
+getgrouplist
+getgrset
+getmntent
+getpagesize
+getpwanam
+getpwent_r
+getrlimit
+glob
+grantpt
+hstrerror
+initgroups
+innetgr
 llseek
 lutimes
-memalign mknod mlock mlockall munlock munlockall
+memalign
+mknod
+mlock
+mlockall
+munlock
+munlockall
 pathconf poll
-posix_memalign pread
+posix_memalign
+pread
 pwrite
 rdchk
-select setenv setgidx setgroups setlocale setluid
-setmntent setpgid setpriv setsid setuidx
+select
+setenv
+setgidx
+setgroups
+setlocale
+setluid
+setmntent
+setpgid
+setpriv
+setsid
+setuidx
 statvfs
-strcasecmp strchr strpbrk strsignal strtol strupr sysconf sysctl sysctlbyname
-syslog timegm
-utimensat vsyslog
+strcasecmp
+strchr
+strpbrk
+strsignal
+strtol
+strupr
+sysconf
+sysctl
+sysctlbyname
+syslog
+timegm
+utimensat
+vsyslog
 ''')
 
     conf.CHECK_SAMBA3_CHARSET() # see build/charset.py
