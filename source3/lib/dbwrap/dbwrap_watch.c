@@ -859,6 +859,8 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
 	struct db_watched_subrec *subrec = NULL;
+	struct dbwrap_watch_rec *wrec = NULL;
+	uint8_t *watchers = NULL;
 	struct tevent_req *req, *subreq;
 	struct dbwrap_watched_watch_state *state;
 	ssize_t needed;
@@ -920,8 +922,23 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 	}
 	tevent_req_set_callback(subreq, dbwrap_watched_watch_done, req);
 
-	status = dbwrap_watched_save(subrec->subrec, &subrec->wrec, &state->me,
-				     &subrec->wrec.data, 1, 0);
+	wrec = &subrec->wrec;
+
+	watchers = talloc_realloc(
+		NULL,
+		wrec->watchers,
+		uint8_t,
+		(wrec->num_watchers + 1) * SERVER_ID_BUF_LENGTH);
+	if (tevent_req_nomem(watchers, req)) {
+		return tevent_req_post(req, ev);
+	}
+	server_id_put(&watchers[wrec->num_watchers * SERVER_ID_BUF_LENGTH],
+		      state->me);
+	wrec->watchers = watchers;
+	wrec->num_watchers += 1;
+
+	status = dbwrap_watched_save(
+		subrec->subrec, wrec, NULL, &wrec->data, 1, 0);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
