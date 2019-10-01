@@ -58,7 +58,7 @@ static WERROR dcesrv_mgmt_inq_if_ids(struct dcesrv_call_state *dce_call, TALLOC_
 	for (l = ep->interface_list; l; l = l->next) {
 		vector->count++;
 		vector->if_id = talloc_realloc(mem_ctx, vector->if_id, struct ndr_syntax_id_p, vector->count);
-		vector->if_id[vector->count-1].id = &l->iface.syntax_id;
+		vector->if_id[vector->count-1].id = &l->iface->syntax_id;
 	}
 	return WERR_OK;
 }
@@ -119,7 +119,7 @@ static WERROR dcesrv_mgmt_inq_princ_name(struct dcesrv_call_state *dce_call, TAL
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_mgmt_s.c"
 
-const struct dcesrv_interface dcesrv_get_mgmt_interface(void)
+const struct dcesrv_interface *dcesrv_get_mgmt_interface(void)
 {
-	return dcesrv_mgmt_interface;
+	return &dcesrv_mgmt_interface;
 }

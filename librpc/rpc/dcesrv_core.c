@@ -122,8 +122,8 @@ static const struct dcesrv_interface *find_interface_by_binding(struct dcesrv_co
 		if (endpoints_match(ep->ep_description, binding)) {
 			struct dcesrv_if_list *ifl;
 			for (ifl=ep->interface_list; ifl; ifl=ifl->next) {
-				if (interface_match(&(ifl->iface), iface)) {
-					return &(ifl->iface);
+				if (interface_match(ifl->iface, iface)) {
+					return ifl->iface;
 				}
 			}
 		}
@@ -149,8 +149,8 @@ const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv_endpoi
 {
 	struct dcesrv_if_list *ifl;
 	for (ifl=endpoint->interface_list; ifl; ifl=ifl->next) {
-		if (interface_match_by_uuid(&(ifl->iface), uuid, if_version)) {
-			return &(ifl->iface);
+		if (interface_match_by_uuid(ifl->iface, uuid, if_version)) {
+			return ifl->iface;
 		}
 	}
 	return NULL;
@@ -322,7 +322,13 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		ifl->iface = dcesrv_get_mgmt_interface();
+		ifl->iface = talloc_memdup(ifl,
+					   dcesrv_get_mgmt_interface(),
+					   sizeof(struct dcesrv_interface));
+		if (ifl->iface == NULL) {
+			talloc_free(ep);
+			return NT_STATUS_NO_MEMORY;
+		}
 
 		DLIST_ADD(ep->interface_list, ifl);
 	}
@@ -346,7 +352,13 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 	}
 
 	/* copy the given interface struct to the one on the endpoints interface list */
-	memcpy(&(ifl->iface),iface, sizeof(struct dcesrv_interface));
+	ifl->iface = talloc_memdup(ifl,
+				   iface,
+				   sizeof(struct dcesrv_interface));
+	if (ifl->iface == NULL) {
+		talloc_free(ep);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* if we have a security descriptor given,
 	 * we should see if we can set it up on the endpoint

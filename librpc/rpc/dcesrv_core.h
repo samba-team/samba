@@ -404,7 +404,7 @@ struct dcesrv_context {
 		/* the list of interfaces available on this endpoint */
 		struct dcesrv_if_list {
 			struct dcesrv_if_list *next, *prev;
-			struct dcesrv_interface iface;
+			struct dcesrv_interface *iface;
 		} *interface_list;
 
 		/*

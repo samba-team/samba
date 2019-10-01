@@ -508,7 +508,7 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx,
 		DEBUG(0,("service_setup_stream_socket(address=%s,port=%u) for ",
 			 address, port));
 		for (iface = e->interface_list; iface; iface = iface->next) {
-			DEBUGADD(0, ("%s ", iface->iface.name));
+			DEBUGADD(0, ("%s ", iface->iface->name));
 		}
 		DEBUGADD(0, ("failed - %s\n",
 			     nt_errstr(status)));
@@ -528,7 +528,7 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx,
 		DEBUG(4,("Successfully listening on ncacn_ip_tcp endpoint [%s]:[%s] for ",
 			 address, port_str));
 		for (iface = e->interface_list; iface; iface = iface->next) {
-			DEBUGADD(4, ("%s ", iface->iface.name));
+			DEBUGADD(4, ("%s ", iface->iface->name));
 		}
 		DEBUGADD(4, ("\n"));
 	}
