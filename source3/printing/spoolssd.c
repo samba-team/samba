@@ -25,6 +25,7 @@
 #include "printing/queue_process.h"
 #include "printing/pcap.h"
 #include "printing/load.h"
+#include "printing/spoolssd.h"
 #include "ntdomain.h"
 #include "librpc/gen_ndr/srv_winreg.h"
 #include "librpc/gen_ndr/srv_spoolss.h"
@@ -55,9 +56,6 @@ static struct pf_daemon_config default_pf_spoolss_cfg = {
 	.child_min_life = 60 /* 1 minute minimum life time */
 };
 static struct pf_daemon_config pf_spoolss_cfg = { 0 };
-
-pid_t start_spoolssd(struct tevent_context *ev_ctx,
-		     struct messaging_context *msg_ctx);
 
 static void spoolss_reopen_logs(int child_id)
 {
