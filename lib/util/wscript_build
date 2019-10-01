@@ -82,7 +82,7 @@ bld.SAMBA_SUBSYSTEM('samba-util-core',
                               become_daemon.c mkdir_p.c''',
                     deps='''time-basic samba-debug socket-blocking talloc
                             tevent execinfo pthread strv tini''',
-                    public_deps='systemd systemd-daemon sys_rw',
+                    public_deps='systemd systemd-daemon sys_rw LIBUNWIND',
                     local_include=False)
 
 bld.SAMBA_LIBRARY('iov_buf',
