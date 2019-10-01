@@ -2349,6 +2349,35 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
+_PUBLIC_ NTSTATUS dcesrv_reinit_context(struct dcesrv_context *dce_ctx)
+{
+	NTSTATUS status;
+
+	status = dcesrv_shutdown_registered_ep_servers(dce_ctx);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* Clear endpoints */
+	while (dce_ctx->endpoint_list != NULL) {
+		struct dcesrv_endpoint *e = dce_ctx->endpoint_list;
+		DLIST_REMOVE(dce_ctx->endpoint_list, e);
+		TALLOC_FREE(e);
+	}
+
+	/* Remove broken connections */
+	dcesrv_cleanup_broken_connections(dce_ctx);
+
+	/* Reinit assoc group idr */
+	TALLOC_FREE(dce_ctx->assoc_groups_idr);
+	dce_ctx->assoc_groups_idr = idr_init(dce_ctx);
+	if (dce_ctx->assoc_groups_idr == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	return NT_STATUS_OK;
+}
+
 _PUBLIC_ NTSTATUS dcesrv_init_ep_servers(struct dcesrv_context *dce_ctx,
 					 const char **endpoint_servers)
 {

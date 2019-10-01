@@ -458,6 +458,7 @@ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 			     struct loadparm_context *lp_ctx,
 			     struct dcesrv_context_callbacks *cb,
 			     struct dcesrv_context **_dce_ctx);
+NTSTATUS dcesrv_reinit_context(struct dcesrv_context *dce_ctx);
 
 NTSTATUS dcesrv_reply(struct dcesrv_call_state *call);
 struct dcesrv_handle *dcesrv_handle_create(struct dcesrv_call_state *call,
