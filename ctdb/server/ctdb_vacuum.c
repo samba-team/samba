@@ -1257,9 +1257,6 @@ static int ctdb_vacuum_db(struct ctdb_db_context *ctdb_db,
 
 	talloc_free(tmp_ctx);
 
-	/* this ensures we run our event queue */
-	ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
-
 	return 0;
 }
 
