@@ -38,6 +38,10 @@ Samba now requires GnuTLS 3.4.7 to be installed (including development
 headers at build time) for all configurations, not just the Samba AD
 DC.
 
+Using GnuTLS for SMB3 encryption you will notice huge performance and copy
+speed improvements. Tests with the CIFS Kernel client from Linux Kernel 5.3
+show a 3x speed improvement for writing and a 2.5x speed improvement for reads!
+
 NOTE WELL: The use of GnuTLS means that Samba will honour the
 system-wide 'FIPS mode' (a reference to the US FIPS-140 cryptographic
 standard) and so will not operate in many still common situations if
