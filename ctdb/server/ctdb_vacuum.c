@@ -1107,8 +1107,9 @@ static int ctdb_vacuum_and_repack_db(struct ctdb_db_context *ctdb_db,
 		return 0;
 	}
 
-	DEBUG(DEBUG_INFO, ("Repacking %s with %u freelist entries\n",
-			   name, freelist_size));
+	D_NOTICE("Repacking %s with %u freelist entries\n",
+		 name,
+		 freelist_size);
 
 	ret = tdb_repack(ctdb_db->ltdb->tdb);
 	if (ret != 0) {
