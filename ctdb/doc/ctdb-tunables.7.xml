@@ -574,10 +574,6 @@ MonitorInterval=20
         <varname>RepackLimit</varname>, then the database is repacked
         to get rid of the freelist records to avoid fragmentation.
       </para>
-      <para>
-        Databases are repacked only if both <varname>RepackLimit</varname>
-        and <varname>VacuumLimit</varname> are exceeded.
-      </para>
     </refsect2>
 
     <refsect2>
@@ -680,20 +676,6 @@ MonitorInterval=20
       <para>
         Periodic interval in seconds when vacuuming is triggered for
         volatile databases.
-      </para>
-    </refsect2>
-
-    <refsect2>
-      <title>VacuumLimit</title>
-      <para>Default: 5000</para>
-      <para>
-        During vacuuming, if the number of deleted records are more than
-        <varname>VacuumLimit</varname>, then databases are repacked to
-        avoid fragmentation.
-      </para>
-      <para>
-        Databases are repacked only if both <varname>RepackLimit</varname>
-        and <varname>VacuumLimit</varname> are exceeded.
       </para>
     </refsect2>
 

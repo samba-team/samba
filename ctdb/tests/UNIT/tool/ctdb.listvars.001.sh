@@ -41,7 +41,6 @@ RecoveryDropAllIPs         = 120
 VacuumInterval             = 10
 VacuumMaxRunTime           = 120
 RepackLimit                = 10000
-VacuumLimit                = 5000
 VacuumFastPathCount        = 60
 MaxQueueDropMsg            = 1000000
 AllowUnhealthyDBRead       = 0

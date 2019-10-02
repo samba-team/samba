@@ -323,7 +323,6 @@ TickleUpdateInterval
 TraverseTimeout
 VacuumFastPathCount
 VacuumInterval
-VacuumLimit
 VacuumMaxRunTime
 VerboseMemoryNames
 EOF
@@ -336,6 +335,7 @@ check_removed_tunable ()
 
 	grep -Fiqx "$_tunable" <<EOF
 NoIPHostOnAllDisabled
+VacuumLimit
 EOF
 }
 
