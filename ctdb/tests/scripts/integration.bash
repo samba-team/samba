@@ -23,6 +23,11 @@ PATH="${TEST_SCRIPTS_DIR}:${PATH}"
 
 ######################################################################
 
+ctdb_test_on_cluster ()
+{
+	[ -z "$TEST_LOCAL_DAEMONS" ]
+}
+
 ctdb_test_exit ()
 {
     local status=$?
@@ -217,7 +222,7 @@ get_test_ip_mask_and_iface ()
     try_command_on_node $test_node "$CTDB ip -v -X | awk -F'|' -v ip=$test_ip '\$2 == ip { print \$4 }'"
     iface="$out"
 
-    if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
+    if ctdb_test_on_cluster ; then
 	# Find the netmask
 	try_command_on_node $test_node ip addr show to $test_ip
 	mask="${out##*/}"
@@ -662,7 +667,7 @@ db_ctdb_tstore_dbseqnum ()
 # Make sure that $CTDB is set.
 : ${CTDB:=ctdb}
 
-if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
+if ctdb_test_on_cluster ; then
 	. "${TEST_SCRIPTS_DIR}/integration_real_cluster.bash"
 else
 	. "${TEST_SCRIPTS_DIR}/integration_local_daemons.bash"

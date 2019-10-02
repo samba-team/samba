@@ -35,7 +35,7 @@ try_command_on_node -v all $CTDB ip
 
 my_exit_hook ()
 {
-    if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
+    if ctdb_test_on_cluster ; then
 	onnode -q all $CTDB event script enable legacy "10.interface"
     fi
 }
@@ -50,7 +50,7 @@ try_command_on_node $test_node $CTDB sync
 # in the middle of a monitor event and will have the expected effect.
 wait_for_monitor_event $test_node
 
-if [ -z "$TEST_LOCAL_DAEMONS" ] ; then
+if ctdb_test_on_cluster ; then
     # Stop monitor events from bringing up the link status of an interface
     try_command_on_node $test_node $CTDB event script disable legacy 10.interface
 fi

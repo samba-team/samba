@@ -43,7 +43,7 @@ machineout=$(sed -r \
 	-e 's@\]@@g' \
 	"$outfile")
 
-if [ -z "$TEST_LOCAL_DAEMONS" ]; then
+if ctdb_test_on_cluster ; then
 	while read ip pnn ; do
 		try_command_on_node $pnn "ip addr show to ${ip}"
 		if [ -n "$out" ] ; then
