@@ -106,7 +106,18 @@ def configure(conf):
             conf.SET_TARGET_TYPE('nsl', 'SYSLIB')
     conf.CHECK_HEADERS('rpcsvc/nis.h rpcsvc/ypclnt.h', lib='tirpc nsl')
 
-    conf.CHECK_HEADERS('sys/sysctl.h')
+    # This file is decprecated with glibc >= 2.30 so we need to check if it
+    # includes a deprecation warning:
+    # #warning "The <sys/sysctl.h> header is deprecated and will be removed."
+    conf.CHECK_CODE('''
+                    #include <sys/sysctl.h>
+                    int main(void) { return 0; }
+                    ''',
+                    define='HAVE_SYS_SYSCTL_H',
+                    cflags=['-Werror=cpp'],
+                    addmain=False,
+                    msg='Checking for header sys/sysctl.h')
+
     conf.CHECK_HEADERS('sys/fileio.h sys/filesys.h sys/dustat.h sys/sysmacros.h')
     conf.CHECK_HEADERS('xfs/libxfs.h netgroup.h')
 
