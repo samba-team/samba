@@ -2873,9 +2873,38 @@ done:
 
 /**
  * Test lock replay detection
+ *
+ * This test checks the SMB 2.1.0 behaviour of lock sequence checking,
+ * which is only turned on for resilient handles.
+ *
+ * Make it clear that this test is supposed to pass against the legacy
+ * Windows servers which violate the specification:
+ *
+ *   [MS-SMB2] 3.3.5.14 Receiving an SMB2 LOCK Request
+ *
+ *   ...
+ *
+ *   ... if Open.IsResilient or Open.IsDurable or Open.IsPersistent is
+ *   TRUE or if Connection.Dialect belongs to the SMB 3.x dialect family
+ *   and Connection.ServerCapabilities includes
+ *   SMB2_GLOBAL_CAP_MULTI_CHANNEL bit, the server SHOULD<314>
+ *   perform lock sequence verification ...
+ *
+ *   ...
+ *
+ *   <314> Section 3.3.5.14: Windows 7 and Windows Server 2008 R2 perform
+ *   lock sequence verification only when Open.IsResilient is TRUE.
+ *   Windows 8 through Windows 10 v1909 and Windows Server 2012 through
+ *   Windows Server v1909 perform lock sequence verification only when
+ *   Open.IsResilient or Open.IsPersistent is TRUE.
+ *
+ * Note <314> also applies to all versions (at least) up to Windows Server v2004.
+ *
+ * Hopefully this will be fixed in future Windows versions and they
+ * will avoid Note <314>.
  */
-static bool test_replay(struct torture_context *torture,
-			  struct smb2_tree *tree)
+static bool test_replay_broken_windows(struct torture_context *torture,
+				       struct smb2_tree *tree)
 {
 	NTSTATUS status;
 	bool ret = true;
@@ -2884,11 +2913,11 @@ static bool test_replay(struct torture_context *torture,
 	struct smb2_lock lck;
 	struct smb2_lock_element el;
 	uint8_t res_req[8];
-	const char *fname = BASEDIR "\\replay.txt";
+	const char *fname = BASEDIR "\\replay_broken_windows.txt";
 	struct smb2_transport *transport = tree->session->transport;
 
 	if (smbXcli_conn_protocol(transport->conn) < PROTOCOL_SMB2_10) {
-		torture_skip(torture, "SMB 2.100 Dialect family or above \
+		torture_skip(torture, "SMB 2.1.0 Dialect family or above \
 				required for Lock Replay tests\n");
 	}
 
@@ -2919,7 +2948,27 @@ static bool test_replay(struct torture_context *torture,
 	status = smb2_lock(tree, &lck);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	status = smb2_lock(tree, &lck);
+	if (NT_STATUS_IS_OK(status)) {
+		lck.in.lock_sequence = 0x020 + 0x2;
+		status = smb2_lock(tree, &lck);
+		CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+		lck.in.lock_sequence = 0x010 + 0x1;
+		status = smb2_lock(tree, &lck);
+		CHECK_STATUS(status, NT_STATUS_OK);
+		if (smbXcli_conn_protocol(transport->conn) > PROTOCOL_SMB2_10) {
+			torture_skip_goto(torture, done,
+					  "SMB3 Server implements LockSequence "
+					  "for all handles\n");
+		}
+	}
 	CHECK_STATUS(status, NT_STATUS_LOCK_NOT_GRANTED);
+	if (smbXcli_conn_protocol(transport->conn) > PROTOCOL_SMB2_10) {
+		torture_comment(torture,
+				"\nSMB3 Server implements LockSequence as SMB 2.1.0"
+				" LEGACY BROKEN Windows!!!\n\n");
+	}
+	torture_comment(torture,
+			"Testing SMB 2.1.0 LockSequence for ResilientHandles\n");
 
 	el.flags = SMB2_LOCK_FLAG_UNLOCK;
 	status = smb2_lock(tree, &lck);
@@ -3183,7 +3232,8 @@ struct torture_suite *torture_smb2_lock_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "range", test_range);
 	torture_suite_add_2smb2_test(suite, "overlap", test_overlap);
 	torture_suite_add_1smb2_test(suite, "truncate", test_truncate);
-	torture_suite_add_1smb2_test(suite, "replay", test_replay);
+	torture_suite_add_1smb2_test(suite, "replay_broken_windows",
+				     test_replay_broken_windows);
 	torture_suite_add_1smb2_test(suite, "ctdb-delrec-deadlock", test_deadlock);
 
 	suite->description = talloc_strdup(suite, "SMB2-LOCK tests");
