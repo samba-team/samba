@@ -27,6 +27,7 @@
 #include "../lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/dcerpc_server_proto.h"
+#include "librpc/rpc/dcerpc.h"
 #include "system/filesys.h"
 #include "lib/messaging/irpc.h"
 #include "system/network.h"

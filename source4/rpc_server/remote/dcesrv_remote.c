@@ -25,6 +25,7 @@
 #include "rpc_server/dcerpc_server.h"
 #include "auth/auth.h"
 #include "auth/credentials/credentials.h"
+#include "librpc/rpc/dcerpc.h"
 #include "librpc/ndr/ndr_table.h"
 #include "param/param.h"
 

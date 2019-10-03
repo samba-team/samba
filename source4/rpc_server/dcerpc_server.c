@@ -26,7 +26,6 @@
 #include "lib/util/dlinklist.h"
 #include "rpc_server/dcerpc_server.h"
 #include "rpc_server/dcerpc_server_proto.h"
-#include "librpc/rpc/dcerpc_proto.h"
 #include "system/filesys.h"
 #include "libcli/security/security.h"
 #include "param/param.h"

@@ -23,7 +23,7 @@
 #ifndef SAMBA_DCERPC_SERVER_H
 #define SAMBA_DCERPC_SERVER_H
 
-#include "librpc/rpc/dcerpc.h"
+#include "librpc/rpc/rpc_common.h"
 #include "librpc/ndr/libndr.h"
 
 /* modules can use the following to determine if the interface has changed
