@@ -447,4 +447,9 @@ struct ndr_syntax_id dcerpc_construct_bind_time_features(uint64_t features);
 
 NTSTATUS dcerpc_generic_session_key(DATA_BLOB *session_key);
 
+NTSTATUS dcerpc_ncacn_push_auth(DATA_BLOB *blob,
+				TALLOC_CTX *mem_ctx,
+				struct ncacn_packet *pkt,
+				struct dcerpc_auth *auth_info);
+
 #endif /* __DEFAULT_LIBRPC_RPCCOMMON_H__ */

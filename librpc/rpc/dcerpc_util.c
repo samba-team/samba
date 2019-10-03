@@ -1350,3 +1350,58 @@ NTSTATUS dcerpc_generic_session_key(DATA_BLOB *session_key)
 	session_key->length = 16;
 	return NT_STATUS_OK;
 }
+
+/*
+   push a ncacn_packet into a blob, potentially with auth info
+*/
+NTSTATUS dcerpc_ncacn_push_auth(DATA_BLOB *blob,
+				TALLOC_CTX *mem_ctx,
+				struct ncacn_packet *pkt,
+				struct dcerpc_auth *auth_info)
+{
+	struct ndr_push *ndr;
+	enum ndr_err_code ndr_err;
+
+	ndr = ndr_push_init_ctx(mem_ctx);
+	if (!ndr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (auth_info) {
+		pkt->auth_length = auth_info->credentials.length;
+	} else {
+		pkt->auth_length = 0;
+	}
+
+	ndr_err = ndr_push_ncacn_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
+
+	if (auth_info) {
+#if 0
+		/* the s3 rpc server doesn't handle auth padding in
+		   bind requests. Use zero auth padding to keep us
+		   working with old servers */
+		uint32_t offset = ndr->offset;
+		ndr_err = ndr_push_align(ndr, 16);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+		auth_info->auth_pad_length = ndr->offset - offset;
+#else
+		auth_info->auth_pad_length = 0;
+#endif
+		ndr_err = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, auth_info);
+		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+			return ndr_map_error2ntstatus(ndr_err);
+		}
+	}
+
+	*blob = ndr_push_blob(ndr);
+
+	/* fill in the frag length */
+	dcerpc_set_frag_length(blob, blob->length);
+
+	return NT_STATUS_OK;
+}
