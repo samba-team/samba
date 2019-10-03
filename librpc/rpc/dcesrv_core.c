@@ -75,16 +75,18 @@ static bool endpoints_match(const struct dcerpc_binding *ep1,
 /*
   find an endpoint in the dcesrv_context
 */
-static struct dcesrv_endpoint *dcesrv_find_endpoint(struct dcesrv_context *dce_ctx,
-				const struct dcerpc_binding *ep_description)
+static NTSTATUS dcesrv_find_endpoint(struct dcesrv_context *dce_ctx,
+				const struct dcerpc_binding *ep_description,
+				struct dcesrv_endpoint **_out)
 {
-	struct dcesrv_endpoint *ep;
+	struct dcesrv_endpoint *ep = NULL;
 	for (ep=dce_ctx->endpoint_list; ep; ep=ep->next) {
 		if (endpoints_match(ep->ep_description, ep_description)) {
-			return ep;
+			*_out = ep;
+			return NT_STATUS_OK;
 		}
 	}
-	return NULL;
+	return NT_STATUS_NOT_FOUND;
 }
 
 /*
@@ -281,9 +283,8 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 
 	/* check if this endpoint exists
 	 */
-	ep = dcesrv_find_endpoint(dce_ctx, binding);
-
-	if (ep != NULL) {
+	status = dcesrv_find_endpoint(dce_ctx, binding, &ep);
+	if (NT_STATUS_IS_OK(status)) {
 		/*
 		 * We want a new port on ncacn_ip_tcp for NETLOGON, so
 		 * it can be multi-process.  Other processes can also
@@ -306,7 +307,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		}
 	}
 
-	if (ep == NULL || add_ep) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND) || add_ep) {
 		ep = talloc_zero(dce_ctx, struct dcesrv_endpoint);
 		if (!ep) {
 			return NT_STATUS_NO_MEMORY;
@@ -331,6 +332,9 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 		}
 
 		DLIST_ADD(ep->interface_list, ifl);
+	} else if (!NT_STATUS_IS_OK(status)) {
+		DBG_NOTICE("Failed to find endpoint: %s\n", nt_errstr(status));
+		return status;
 	}
 
 	/*
