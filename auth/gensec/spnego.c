@@ -511,7 +511,11 @@ static NTSTATUS gensec_spnego_client_negTokenInit_start(
 	}
 
 	n->mech_idx = 0;
-	n->mech_types = spnego_in->negTokenInit.mechTypes;
+
+	/* Do not use server mech list as it isn't protected. Instead, get all
+	 * supported mechs (excluding SPNEGO). */
+	n->mech_types = gensec_security_oids(gensec_security, n,
+					     GENSEC_OID_SPNEGO);
 	if (n->mech_types == NULL) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -658,13 +662,30 @@ static NTSTATUS gensec_spnego_client_negTokenInit_finish(
 					DATA_BLOB *out)
 {
 	struct spnego_data spnego_out;
-	const char *my_mechs[] = {NULL, NULL};
+	const char * const *mech_types = NULL;
 	bool ok;
 
-	my_mechs[0] = spnego_state->neg_oid;
+	if (n->mech_types == NULL) {
+		DBG_WARNING("No mech_types list\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	for (mech_types = n->mech_types; *mech_types != NULL; mech_types++) {
+		int cmp = strcmp(*mech_types, spnego_state->neg_oid);
+
+		if (cmp == 0) {
+			break;
+		}
+	}
+
+	if (*mech_types == NULL) {
+		DBG_ERR("Can't find selected sub mechanism in mech_types\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	/* compose reply */
 	spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego_out.negTokenInit.mechTypes = my_mechs;
+	spnego_out.negTokenInit.mechTypes = mech_types;
 	spnego_out.negTokenInit.reqFlags = data_blob_null;
 	spnego_out.negTokenInit.reqFlagsPadding = 0;
 	spnego_out.negTokenInit.mechListMIC = data_blob_null;
@@ -676,7 +697,7 @@ static NTSTATUS gensec_spnego_client_negTokenInit_finish(
 	}
 
 	ok = spnego_write_mech_types(spnego_state,
-				     my_mechs,
+				     mech_types,
 				     &spnego_state->mech_types);
 	if (!ok) {
 		DBG_ERR("failed to write mechTypes\n");
