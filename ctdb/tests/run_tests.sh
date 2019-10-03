@@ -85,7 +85,7 @@ fi
 
 ######################################################################
 
-ctdb_test_begin ()
+test_header ()
 {
 	local name="$1"
 
@@ -94,7 +94,7 @@ ctdb_test_begin ()
 	echo "--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--==--"
 }
 
-ctdb_test_end ()
+test_footer ()
 {
 	local f="$1"
 	local status="$2"
@@ -117,7 +117,7 @@ ctdb_test_run ()
 {
 	local f="$1"
 
-	$no_header || ctdb_test_begin "$f"
+	$no_header || test_header "$f"
 
 	local status=0
 	local start_time
@@ -160,7 +160,7 @@ ctdb_test_run ()
 		;;
 	esac
 
-	$no_header || ctdb_test_end "$f" "$status" "$interp" "$duration"
+	$no_header || test_footer "$f" "$status" "$interp" "$duration"
 
 	if $with_summary ; then
 		local t
