@@ -632,6 +632,16 @@ bld.SAMBA_LIBRARY('dcerpc-binding',
     public_headers='rpc/rpc_common.h',
     vnum='0.0.1')
 
+bld.SAMBA_LIBRARY('dcerpc-server-core',
+    source='''
+           rpc/dcesrv_core.c
+           ''',
+    deps='ndr dcerpc-binding',
+    pc_files=[],
+    public_headers='rpc/dcesrv_core.h',
+    autoproto='rpc/dcesrv_core_proto.h',
+    vnum='0.0.1')
+
 bld.SAMBA_SUBSYSTEM('NDR_WINBIND',
 	source='gen_ndr/ndr_winbind.c',
 	public_deps='ndr NDR_LSA'
