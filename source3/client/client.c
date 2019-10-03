@@ -4918,6 +4918,10 @@ static bool browse_host(bool sort)
 		return false;
 	}
 
+	if (smbXcli_conn_protocol(cli->conn) > PROTOCOL_NT1) {
+		return false;
+	}
+
 	ret = cli_RNetShareEnum(cli, browse_fn, NULL);
 	if (ret == -1) {
 		NTSTATUS status = cli_nt_error(cli);
