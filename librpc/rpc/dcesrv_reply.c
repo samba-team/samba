@@ -21,12 +21,11 @@
 */
 
 #include "includes.h"
+#include "librpc/rpc/dcesrv_core.h"
+#include "librpc/rpc/dcesrv_core_proto.h"
 #include "auth/gensec/gensec.h"
 #include "lib/util/dlinklist.h"
-#include "rpc_server/dcerpc_server.h"
-#include "rpc_server/dcerpc_server_proto.h"
 #include "param/param.h"
-#include "librpc/rpc/rpc_common.h"
 
 /*
   move a call from an existing linked list to the specified list. This

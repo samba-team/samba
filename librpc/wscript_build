@@ -635,6 +635,9 @@ bld.SAMBA_LIBRARY('dcerpc-binding',
 bld.SAMBA_LIBRARY('dcerpc-server-core',
     source='''
            rpc/dcesrv_core.c
+           rpc/dcesrv_auth.c
+           rpc/dcesrv_mgmt.c
+           rpc/dcesrv_reply.c
            ''',
     deps='ndr dcerpc-binding',
     pc_files=[],

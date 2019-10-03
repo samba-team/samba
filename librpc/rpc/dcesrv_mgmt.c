@@ -1,27 +1,27 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    endpoint server for the mgmt pipe
 
    Copyright (C) Jelmer Vernooij 2006
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
-#include "rpc_server/dcerpc_server.h"
-#include "rpc_server/dcerpc_server_proto.h"
+#include "librpc/rpc/dcesrv_core.h"
+#include "librpc/rpc/dcesrv_core_proto.h"
 #include "librpc/gen_ndr/ndr_mgmt.h"
 
 #define DCESRV_INTERFACE_MGMT_BIND(context, iface) \
@@ -42,8 +42,8 @@ static NTSTATUS dcesrv_interface_mgmt_bind(struct dcesrv_connection_context *con
 	return dcesrv_interface_bind_allow_connect(context, iface);
 }
 
-/* 
-  mgmt_inq_if_ids 
+/*
+  mgmt_inq_if_ids
 */
 static WERROR dcesrv_mgmt_inq_if_ids(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_inq_if_ids *r)
@@ -64,8 +64,8 @@ static WERROR dcesrv_mgmt_inq_if_ids(struct dcesrv_call_state *dce_call, TALLOC_
 }
 
 
-/* 
-  mgmt_inq_stats 
+/*
+  mgmt_inq_stats
 */
 static WERROR dcesrv_mgmt_inq_stats(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_inq_stats *r)
@@ -85,8 +85,8 @@ static WERROR dcesrv_mgmt_inq_stats(struct dcesrv_call_state *dce_call, TALLOC_C
 }
 
 
-/* 
-  mgmt_is_server_listening 
+/*
+  mgmt_is_server_listening
 */
 static uint32_t dcesrv_mgmt_is_server_listening(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_is_server_listening *r)
@@ -96,8 +96,8 @@ static uint32_t dcesrv_mgmt_is_server_listening(struct dcesrv_call_state *dce_ca
 }
 
 
-/* 
-  mgmt_stop_server_listening 
+/*
+  mgmt_stop_server_listening
 */
 static WERROR dcesrv_mgmt_stop_server_listening(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_stop_server_listening *r)
@@ -106,8 +106,8 @@ static WERROR dcesrv_mgmt_stop_server_listening(struct dcesrv_call_state *dce_ca
 }
 
 
-/* 
-  mgmt_inq_princ_name 
+/*
+  mgmt_inq_princ_name
 */
 static WERROR dcesrv_mgmt_inq_princ_name(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct mgmt_inq_princ_name *r)

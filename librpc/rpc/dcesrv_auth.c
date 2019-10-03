@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    server side dcerpc authentication code
@@ -10,25 +10,24 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "includes.h"
-#include "rpc_server/dcerpc_server.h"
-#include "rpc_server/dcerpc_server_proto.h"
+#include "librpc/rpc/dcesrv_core.h"
+#include "librpc/rpc/dcesrv_core_proto.h"
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
 #include "auth/auth.h"
 #include "param/param.h"
-#include "librpc/rpc/rpc_common.h"
 
 static NTSTATUS dcesrv_auth_negotiate_hdr_signing(struct dcesrv_call_state *call,
 						  struct ncacn_packet *pkt)
@@ -477,7 +476,7 @@ bool dcesrv_auth_prepare_auth3(struct dcesrv_call_state *call)
 
 /*
   parse any auth information from a dcerpc alter request
-  return false if we can't handle the auth request for some 
+  return false if we can't handle the auth request for some
   reason (in which case we send a bind_nak (is this true for here?))
 */
 bool dcesrv_auth_alter(struct dcesrv_call_state *call)
@@ -637,7 +636,7 @@ bool dcesrv_auth_pkt_pull(struct dcesrv_call_state *call,
 	return true;
 }
 
-/* 
+/*
    push a signed or sealed dcerpc request packet into a blob
 */
 bool dcesrv_auth_pkt_push(struct dcesrv_call_state *call,

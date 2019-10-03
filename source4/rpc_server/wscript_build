@@ -22,7 +22,7 @@ bld.SAMBA_SUBSYSTEM('DCERPC_COMMON',
 	)
 
 bld.SAMBA_LIBRARY('dcerpc_server',
-	source='dcerpc_server.c dcesrv_auth.c dcesrv_mgmt.c handles.c dcesrv_reply.c',
+	source='dcerpc_server.c handles.c',
 	pc_files='dcerpc_server.pc',
 	deps='LIBCLI_AUTH ndr samba_server_gensec service auth',
 	public_deps='dcerpc dcerpc-server-core',
