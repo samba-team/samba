@@ -2349,7 +2349,7 @@ _PUBLIC_ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx,
 static struct ep_server {
 	struct dcesrv_endpoint_server *ep_server;
 } *ep_servers = NULL;
-static int num_ep_servers;
+static int num_ep_servers = 0;
 
 /*
   register a DCERPC endpoint server.
