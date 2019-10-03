@@ -47,21 +47,6 @@ static NTSTATUS dcesrv_negotiate_contexts(struct dcesrv_call_state *call,
 				struct dcerpc_ack_ctx *ack_ctx_list);
 
 /*
-  find an association group given a assoc_group_id
- */
-static struct dcesrv_assoc_group *dcesrv_assoc_group_find(struct dcesrv_context *dce_ctx,
-							  uint32_t id)
-{
-	void *id_ptr;
-
-	id_ptr = idr_find(dce_ctx->assoc_groups_idr, id);
-	if (id_ptr == NULL) {
-		return NULL;
-	}
-	return talloc_get_type_abort(id_ptr, struct dcesrv_assoc_group);
-}
-
-/*
   take a reference to an existing association group
  */
 static struct dcesrv_assoc_group *dcesrv_assoc_group_reference(struct dcesrv_connection *conn,
@@ -71,12 +56,16 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_reference(struct dcesrv_con
 	enum dcerpc_transport_t transport =
 		dcerpc_binding_get_transport(endpoint->ep_description);
 	struct dcesrv_assoc_group *assoc_group;
+	void *id_ptr = NULL;
 
-	assoc_group = dcesrv_assoc_group_find(conn->dce_ctx, id);
-	if (assoc_group == NULL) {
+	/* find an association group given a assoc_group_id */
+	id_ptr = idr_find(conn->dce_ctx->assoc_groups_idr, id);
+	if (id_ptr == NULL) {
 		DBG_NOTICE("Failed to find assoc_group 0x%08x\n", id);
 		return NULL;
 	}
+	assoc_group = talloc_get_type_abort(id_ptr, struct dcesrv_assoc_group);
+
 	if (assoc_group->transport != transport) {
 		const char *at =
 			derpc_transport_string_by_transport(
