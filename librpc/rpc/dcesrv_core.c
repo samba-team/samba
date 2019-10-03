@@ -75,8 +75,8 @@ static bool endpoints_match(const struct dcerpc_binding *ep1,
 /*
   find an endpoint in the dcesrv_context
 */
-static struct dcesrv_endpoint *find_endpoint(struct dcesrv_context *dce_ctx,
-					     const struct dcerpc_binding *ep_description)
+static struct dcesrv_endpoint *dcesrv_find_endpoint(struct dcesrv_context *dce_ctx,
+				const struct dcerpc_binding *ep_description)
 {
 	struct dcesrv_endpoint *ep;
 	for (ep=dce_ctx->endpoint_list; ep; ep=ep->next) {
@@ -281,7 +281,7 @@ _PUBLIC_ NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
 
 	/* check if this endpoint exists
 	 */
-	ep = find_endpoint(dce_ctx, binding);
+	ep = dcesrv_find_endpoint(dce_ctx, binding);
 
 	if (ep != NULL) {
 		/*
