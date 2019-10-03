@@ -595,6 +595,9 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 				struct tevent_context *event_ctx,
 				uint32_t state_flags,
 				struct dcesrv_connection **_p);
+_PUBLIC_ NTSTATUS dcesrv_find_endpoint(struct dcesrv_context *dce_ctx,
+				const struct dcerpc_binding *ep_description,
+				struct dcesrv_endpoint **_out);
 
 _PUBLIC_ void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn,
 					  const char *reason);

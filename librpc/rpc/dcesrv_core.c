@@ -75,7 +75,7 @@ static bool endpoints_match(const struct dcerpc_binding *ep1,
 /*
   find an endpoint in the dcesrv_context
 */
-static NTSTATUS dcesrv_find_endpoint(struct dcesrv_context *dce_ctx,
+_PUBLIC_ NTSTATUS dcesrv_find_endpoint(struct dcesrv_context *dce_ctx,
 				const struct dcerpc_binding *ep_description,
 				struct dcesrv_endpoint **_out)
 {
