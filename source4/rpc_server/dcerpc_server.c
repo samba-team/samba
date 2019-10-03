@@ -127,6 +127,52 @@ static struct dcesrv_assoc_group *dcesrv_assoc_group_new(struct dcesrv_connectio
 	return assoc_group;
 }
 
+NTSTATUS dcesrv_assoc_group_find(struct dcesrv_call_state *call)
+{
+	/*
+	  if provided, check the assoc_group is valid
+	 */
+	if (call->pkt.u.bind.assoc_group_id != 0) {
+		call->conn->assoc_group =
+			dcesrv_assoc_group_reference(call->conn,
+					call->pkt.u.bind.assoc_group_id);
+	} else {
+		call->conn->assoc_group = dcesrv_assoc_group_new(call->conn);
+	}
+
+	/*
+	 * The NETLOGON server does not use handles and so
+	 * there is no need to support association groups, but
+	 * we need to give back a number regardless.
+	 *
+	 * We have to do this when it is not run as a single process,
+	 * because then it can't see the other valid association
+	 * groups.  We handle this genericly for all endpoints not
+	 * running in single process mode.
+	 *
+	 * We know which endpoint we are on even before checking the
+	 * iface UUID, so for simplicity we enforce the same policy
+	 * for all interfaces on the endpoint.
+	 *
+	 * This means that where NETLOGON
+	 * shares an endpoint (such as ncalrpc or of 'lsa over
+	 * netlogon' is set) we will still check association groups.
+	 *
+	 */
+
+	if (call->conn->assoc_group == NULL &&
+	    !call->conn->endpoint->use_single_process) {
+		call->conn->assoc_group
+			= dcesrv_assoc_group_new(call->conn);
+	}
+
+	if (call->conn->assoc_group == NULL) {
+		/* TODO Return correct status */
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
+}
 
 /*
   see if two endpoints match
@@ -1032,42 +1078,10 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	call->conn->max_recv_frag = max_rep;
 	call->conn->max_xmit_frag = max_rep;
 
-	/*
-	  if provided, check the assoc_group is valid
-	 */
-	if (call->pkt.u.bind.assoc_group_id != 0) {
-		call->conn->assoc_group = dcesrv_assoc_group_reference(call->conn,
-								       call->pkt.u.bind.assoc_group_id);
-	} else {
-		call->conn->assoc_group = dcesrv_assoc_group_new(call->conn);
-	}
-
-	/*
-	 * The NETLOGON server does not use handles and so
-	 * there is no need to support association groups, but
-	 * we need to give back a number regardless.
-	 *
-	 * We have to do this when it is not run as a single process,
-	 * because then it can't see the other valid association
-	 * groups.  We handle this genericly for all endpoints not
-	 * running in single process mode.
-	 *
-	 * We know which endpoint we are on even before checking the
-	 * iface UUID, so for simplicity we enforce the same policy
-	 * for all interfaces on the endpoint.
-	 *
-	 * This means that where NETLOGON
-	 * shares an endpoint (such as ncalrpc or of 'lsa over
-	 * netlogon' is set) we will still check association groups.
-	 *
-	 */
-
-	if (call->conn->assoc_group == NULL &&
-	    !call->conn->endpoint->use_single_process) {
-		call->conn->assoc_group
-			= dcesrv_assoc_group_new(call->conn);
-	}
-	if (call->conn->assoc_group == NULL) {
+	status = call->conn->dce_ctx->callbacks.assoc_group.find(call);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_NOTICE("Failed to find assoc_group 0x%08x: %s\n",
+			   call->pkt.u.bind.assoc_group_id, nt_errstr(status));
 		return dcesrv_bind_nak(call, 0);
 	}
 

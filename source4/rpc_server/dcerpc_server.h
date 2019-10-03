@@ -373,6 +373,9 @@ struct dcesrv_context_callbacks {
 					struct dcesrv_call_state *call,
 					struct gensec_security **out);
 	} auth;
+	struct {
+		NTSTATUS (*find)(struct dcesrv_call_state *);
+	} assoc_group;
 };
 
 /* server-wide context information for the dcerpc server */
