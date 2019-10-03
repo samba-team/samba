@@ -1041,8 +1041,10 @@ struct tevent_req *dcerpc_bind_send(TALLOC_CTX *mem_ctx,
 	pkt.u.bind.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = ncacn_push_auth(&blob, state, &pkt,
-				 p->conn->security_state.tmp_auth_info.out);
+	status = dcerpc_ncacn_push_auth(&blob,
+				state,
+				&pkt,
+				p->conn->security_state.tmp_auth_info.out);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1290,8 +1292,10 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	}
 
 	/* construct the NDR form of the packet */
-	status = ncacn_push_auth(&blob, mem_ctx, &pkt,
-				 p->conn->security_state.tmp_auth_info.out);
+	status = dcerpc_ncacn_push_auth(&blob,
+				mem_ctx,
+				&pkt,
+				p->conn->security_state.tmp_auth_info.out);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2126,8 +2130,10 @@ struct tevent_req *dcerpc_alter_context_send(TALLOC_CTX *mem_ctx,
 	pkt.u.alter.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = ncacn_push_auth(&blob, state, &pkt,
-				 p->conn->security_state.tmp_auth_info.out);
+	status = dcerpc_ncacn_push_auth(&blob,
+				state,
+				&pkt,
+				p->conn->security_state.tmp_auth_info.out);
 	if (tevent_req_nterror(req, status)) {
 		return tevent_req_post(req, ev);
 	}

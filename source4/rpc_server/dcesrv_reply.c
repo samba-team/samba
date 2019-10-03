@@ -116,7 +116,7 @@ NTSTATUS dcesrv_fault_with_flags(struct dcesrv_call_state *call,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ncacn_push_auth(&rep->blob, call, &pkt, NULL);
+	status = dcerpc_ncacn_push_auth(&rep->blob, call, &pkt, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

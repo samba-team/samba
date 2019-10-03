@@ -52,9 +52,10 @@ const struct ndr_interface_call *dcerpc_iface_find_call(const struct ndr_interfa
 /* 
    push a ncacn_packet into a blob, potentially with auth info
 */
-NTSTATUS ncacn_push_auth(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
-			 struct ncacn_packet *pkt,
-			 struct dcerpc_auth *auth_info)
+NTSTATUS dcerpc_ncacn_push_auth(DATA_BLOB *blob,
+				TALLOC_CTX *mem_ctx,
+				struct ncacn_packet *pkt,
+				struct dcerpc_auth *auth_info)
 {
 	struct ndr_push *ndr;
 	enum ndr_err_code ndr_err;
