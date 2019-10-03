@@ -658,6 +658,18 @@ sub setup_ad_member
 	winbind scan trusted domains = no
 	winbind use krb5 enterprise principals = yes
 
+	allow dcerpc auth level connect:lsarpc = yes
+	dcesrv:max auth states = 8
+
+	rpc_server:epmapper = external
+	rpc_server:lsarpc = external
+	rpc_server:samr = external
+	rpc_server:netlogon = disabled
+	rpc_server:register_embedded_np = yes
+
+	rpc_daemon:epmd = fork
+	rpc_daemon:lsasd = fork
+
 [sub_dug]
 	path = $share_dir/D_%D/U_%U/G_%G
 	writeable = yes
