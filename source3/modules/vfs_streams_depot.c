@@ -741,7 +741,8 @@ static int streams_depot_unlink_internal(vfs_handle_struct *handle,
 }
 
 static int streams_depot_rmdir_internal(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname)
 {
 	struct smb_filename *smb_fname_base = NULL;
 	int ret = -1;
@@ -820,7 +821,9 @@ static int streams_depot_unlinkat(vfs_handle_struct *handle,
 	int ret;
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 	if (flags & AT_REMOVEDIR) {
-		ret = streams_depot_rmdir_internal(handle, smb_fname);
+		ret = streams_depot_rmdir_internal(handle,
+				dirfsp,
+				smb_fname);
 	} else {
 		ret = streams_depot_unlink_internal(handle,
 				dirfsp,
@@ -834,6 +837,7 @@ static int streams_depot_rmdir(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname)
 {
 	return streams_depot_rmdir_internal(handle,
+				handle->conn->cwd_fsp,
 				smb_fname);
 }
 
