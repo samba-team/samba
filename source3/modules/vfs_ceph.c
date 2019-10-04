@@ -397,17 +397,6 @@ static int cephwrap_mkdirat(struct vfs_handle_struct *handle,
 	return WRAP_RETURN(result);
 }
 
-static int cephwrap_rmdir(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	int result;
-
-	DBG_DEBUG("[CEPH] rmdir(%p, %s)\n", handle, smb_fname->base_name);
-	result = ceph_rmdir(handle->data, smb_fname->base_name);
-	DBG_DEBUG("[CEPH] rmdir(...) = %d\n", result);
-	WRAP_RETURN(result);
-}
-
 static int cephwrap_closedir(struct vfs_handle_struct *handle, DIR *dirp)
 {
 	int result;
@@ -1442,7 +1431,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.telldir_fn = cephwrap_telldir,
 	.rewind_dir_fn = cephwrap_rewinddir,
 	.mkdirat_fn = cephwrap_mkdirat,
-	.rmdir_fn = cephwrap_rmdir,
 	.closedir_fn = cephwrap_closedir,
 
 	/* File operations */
