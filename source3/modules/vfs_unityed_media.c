@@ -822,34 +822,6 @@ err:
 	return status;
 }
 
-static int um_rmdir(vfs_handle_struct *handle,
-		    const struct smb_filename *smb_fname)
-{
-	int status;
-	const char *path = smb_fname->base_name;
-	struct smb_filename *client_fname = NULL;
-
-	DEBUG(10, ("Entering with path '%s'\n", path));
-
-	if (!is_in_media_files(path)) {
-		return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&client_fname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_RMDIR(handle, client_fname);
-err:
-	TALLOC_FREE(client_fname);
-	DEBUG(10, ("Leaving with path '%s'\n", path));
-	return status;
-}
-
 static int um_closedir(vfs_handle_struct *handle,
 		       DIR *dirp)
 {
@@ -1932,7 +1904,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.telldir_fn = um_telldir,
 	.rewind_dir_fn = um_rewinddir,
 	.mkdirat_fn = um_mkdirat,
-	.rmdir_fn = um_rmdir,
 	.closedir_fn = um_closedir,
 
 	/* File operations */
