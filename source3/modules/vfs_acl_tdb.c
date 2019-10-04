@@ -263,7 +263,9 @@ static int unlinkat_acl_tdb(vfs_handle_struct *handle,
 	}
 
 	if (flags & AT_REMOVEDIR) {
-		ret = rmdir_acl_common(handle, smb_fname_tmp);
+		ret = rmdir_acl_common(handle,
+				dirfsp,
+				smb_fname_tmp);
 	} else {
 		ret = unlink_acl_common(handle,
 				dirfsp,
@@ -297,7 +299,9 @@ static int rmdir_acl_tdb(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = rmdir_acl_common(handle, smb_fname);
+	ret = rmdir_acl_common(handle,
+			handle->conn->cwd_fsp,
+			smb_fname);
 	if (ret == -1) {
 		return -1;
 	}
