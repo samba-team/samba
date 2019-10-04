@@ -282,34 +282,6 @@ static int unlinkat_acl_tdb(vfs_handle_struct *handle,
 	return ret;
 }
 
-/*********************************************************************
- On rmdir we need to delete the tdb record (if using tdb).
-*********************************************************************/
-
-static int rmdir_acl_tdb(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname)
-{
-
-	SMB_STRUCT_STAT sbuf;
-	struct db_context *db = acl_db;
-	int ret = -1;
-
-	ret = vfs_stat_smb_basename(handle->conn, smb_fname, &sbuf);
-	if (ret == -1) {
-		return -1;
-	}
-
-	ret = rmdir_acl_common(handle,
-			handle->conn->cwd_fsp,
-			smb_fname);
-	if (ret == -1) {
-		return -1;
-	}
-
-	acl_tdb_delete(handle, db, &sbuf);
-	return 0;
-}
-
 /*******************************************************************
  Handle opening the storage tdb if so configured.
 *******************************************************************/
@@ -501,7 +473,6 @@ static NTSTATUS acl_tdb_fset_nt_acl(vfs_handle_struct *handle,
 static struct vfs_fn_pointers vfs_acl_tdb_fns = {
 	.connect_fn = connect_acl_tdb,
 	.disconnect_fn = disconnect_acl_tdb,
-	.rmdir_fn = rmdir_acl_tdb,
 	.unlinkat_fn = unlinkat_acl_tdb,
 	.chmod_fn = chmod_acl_module_common,
 	.fchmod_fn = fchmod_acl_module_common,
