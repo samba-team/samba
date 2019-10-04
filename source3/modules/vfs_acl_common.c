@@ -1192,7 +1192,10 @@ int rmdir_acl_common(struct vfs_handle_struct *handle,
 	int ret;
 
 	/* Try the normal rmdir first. */
-	ret = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
+	ret = SMB_VFS_NEXT_UNLINKAT(handle,
+			dirfsp,
+			smb_fname,
+			AT_REMOVEDIR);
 	if (ret == 0) {
 		return 0;
 	}
