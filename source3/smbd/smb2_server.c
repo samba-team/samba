@@ -3835,6 +3835,8 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 			talloc_free(e->mem_ctx);
 
 			if (!NT_STATUS_IS_OK(status)) {
+				smbXsrv_connection_disconnect_transport(xconn,
+									status);
 				return status;
 			}
 			continue;
@@ -3857,7 +3859,10 @@ static NTSTATUS smbd_smb2_flush_send_queue(struct smbXsrv_connection *xconn)
 			return NT_STATUS_OK;
 		}
 		if (err != 0) {
-			return map_nt_error_from_unix_common(err);
+			status = map_nt_error_from_unix_common(err);
+			smbXsrv_connection_disconnect_transport(xconn,
+								status);
+			return status;
 		}
 
 		ok = iov_advance(&e->vector, &e->count, ret);
@@ -3944,7 +3949,10 @@ again:
 	ret = recvmsg(xconn->transport.sock, &msg, 0);
 	if (ret == 0) {
 		/* propagate end of file */
-		return NT_STATUS_END_OF_FILE;
+		status = NT_STATUS_END_OF_FILE;
+		smbXsrv_connection_disconnect_transport(xconn,
+							status);
+		return status;
 	}
 	err = socket_error_from_errno(ret, errno, &retry);
 	if (retry) {
@@ -3953,7 +3961,10 @@ again:
 		return NT_STATUS_OK;
 	}
 	if (err != 0) {
-		return map_nt_error_from_unix_common(err);
+		status = map_nt_error_from_unix_common(err);
+		smbXsrv_connection_disconnect_transport(xconn,
+							status);
+		return status;
 	}
 
 	if (ret < state->vector.iov_len) {
