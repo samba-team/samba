@@ -2203,7 +2203,10 @@ exit_rmdir:
 	if (dh) {
 		SMB_VFS_CLOSEDIR(handle->conn, dh);
 	}
-	return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
+	return SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				AT_REMOVEDIR);
 }
 
 static int fruit_rmdir(struct vfs_handle_struct *handle,
