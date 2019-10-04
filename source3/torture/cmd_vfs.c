@@ -454,7 +454,10 @@ static NTSTATUS cmd_pathfunc(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int arg
 	}
 
 	if (strcmp("rmdir", argv[0]) == 0 ) {
-		ret = SMB_VFS_RMDIR(vfs->conn, smb_fname);
+		ret = SMB_VFS_UNLINKAT(vfs->conn,
+				vfs->conn->cwd_fsp,
+				smb_fname,
+				AT_REMOVEDIR);
 		TALLOC_FREE(smb_fname);
 	} else if (strcmp("unlink", argv[0]) == 0 ) {
 		TALLOC_FREE(smb_fname);
