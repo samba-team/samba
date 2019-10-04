@@ -298,14 +298,6 @@ static int acl_xattr_unlinkat(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int acl_xattr_rmdir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_dname)
-{
-	return rmdir_acl_common(handle,
-				handle->conn->cwd_fsp,
-				smb_dname);
-}
-
 static NTSTATUS acl_xattr_fget_nt_acl(vfs_handle_struct *handle,
 				      files_struct *fsp,
 				      uint32_t security_info,
@@ -344,7 +336,6 @@ static NTSTATUS acl_xattr_fset_nt_acl(vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_acl_xattr_fns = {
 	.connect_fn = connect_acl_xattr,
-	.rmdir_fn = acl_xattr_rmdir,
 	.unlinkat_fn = acl_xattr_unlinkat,
 	.chmod_fn = chmod_acl_module_common,
 	.fchmod_fn = fchmod_acl_module_common,
