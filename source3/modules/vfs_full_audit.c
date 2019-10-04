@@ -111,7 +111,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_TELLDIR,
 	SMB_VFS_OP_REWINDDIR,
 	SMB_VFS_OP_MKDIRAT,
-	SMB_VFS_OP_RMDIR,
 	SMB_VFS_OP_CLOSEDIR,
 
 	/* File operations */
@@ -258,7 +257,6 @@ static struct {
 	{ SMB_VFS_OP_TELLDIR,   "telldir" },
 	{ SMB_VFS_OP_REWINDDIR, "rewinddir" },
 	{ SMB_VFS_OP_MKDIRAT,	"mkdirat" },
-	{ SMB_VFS_OP_RMDIR,	"rmdir" },
 	{ SMB_VFS_OP_CLOSEDIR,	"closedir" },
 	{ SMB_VFS_OP_OPEN,	"open" },
 	{ SMB_VFS_OP_CREATE_FILE, "create_file" },
@@ -1022,22 +1020,6 @@ static int smb_full_audit_mkdirat(vfs_handle_struct *handle,
 			mode);
 
 	do_log(SMB_VFS_OP_MKDIRAT,
-	       (result >= 0),
-	       handle,
-	       "%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname));
-
-	return result;
-}
-
-static int smb_full_audit_rmdir(vfs_handle_struct *handle,
-		       const struct smb_filename *smb_fname)
-{
-	int result;
-	
-	result = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
-
-	do_log(SMB_VFS_OP_RMDIR,
 	       (result >= 0),
 	       handle,
 	       "%s",
@@ -2967,7 +2949,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.telldir_fn = smb_full_audit_telldir,
 	.rewind_dir_fn = smb_full_audit_rewinddir,
 	.mkdirat_fn = smb_full_audit_mkdirat,
-	.rmdir_fn = smb_full_audit_rmdir,
 	.closedir_fn = smb_full_audit_closedir,
 	.open_fn = smb_full_audit_open,
 	.create_file_fn = smb_full_audit_create_file,
