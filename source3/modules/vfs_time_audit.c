@@ -531,27 +531,6 @@ static int smb_time_audit_mkdirat(vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_time_audit_rmdir(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	int result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_smb_fname("rmdir",
-			timediff,
-			smb_fname);
-	}
-
-	return result;
-}
-
 static int smb_time_audit_closedir(vfs_handle_struct *handle,
 				   DIR *dirp)
 {
@@ -2857,7 +2836,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.telldir_fn = smb_time_audit_telldir,
 	.rewind_dir_fn = smb_time_audit_rewinddir,
 	.mkdirat_fn = smb_time_audit_mkdirat,
-	.rmdir_fn = smb_time_audit_rmdir,
 	.closedir_fn = smb_time_audit_closedir,
 	.open_fn = smb_time_audit_open,
 	.create_file_fn = smb_time_audit_create_file,
