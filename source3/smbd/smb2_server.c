@@ -1135,6 +1135,127 @@ static size_t smbXsrv_client_valid_connections(struct smbXsrv_client *client)
 	return num_ok;
 }
 
+struct smbXsrv_connection_shutdown_state {
+	struct tevent_queue *wait_queue;
+};
+
+static void smbXsrv_connection_shutdown_wait_done(struct tevent_req *subreq);
+
+static struct tevent_req *smbXsrv_connection_shutdown_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct smbXsrv_connection *xconn)
+{
+	struct tevent_req *req = NULL;
+	struct smbXsrv_connection_shutdown_state *state = NULL;
+	struct tevent_req *subreq = NULL;
+	size_t len = 0;
+	struct smbd_smb2_request *preq = NULL;
+	NTSTATUS status;
+
+	/*
+	 * The caller should have called
+	 * smbXsrv_connection_disconnect_transport() before.
+	 */
+	SMB_ASSERT(!NT_STATUS_IS_OK(xconn->transport.status));
+
+	req = tevent_req_create(mem_ctx, &state,
+				struct smbXsrv_connection_shutdown_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	status = smbXsrv_session_disconnect_xconn(xconn);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->wait_queue = tevent_queue_create(state, "smbXsrv_connection_shutdown_queue");
+	if (tevent_req_nomem(state->wait_queue, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	for (preq = xconn->smb2.requests; preq != NULL; preq = preq->next) {
+		/*
+		 * The connection is gone so we
+		 * don't need to take care of
+		 * any crypto
+		 */
+		preq->session = NULL;
+		preq->do_signing = false;
+		preq->do_encryption = false;
+		preq->preauth = NULL;
+
+		if (preq->subreq != NULL) {
+			tevent_req_cancel(preq->subreq);
+		}
+
+		/*
+		 * Now wait until the request is finished.
+		 *
+		 * We don't set a callback, as we just want to block the
+		 * wait queue and the talloc_free() of the request will
+		 * remove the item from the wait queue.
+		 */
+		subreq = tevent_queue_wait_send(preq, ev, state->wait_queue);
+		if (tevent_req_nomem(subreq, req)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	len = tevent_queue_length(state->wait_queue);
+	if (len == 0) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	/*
+	 * Now we add our own waiter to the end of the queue,
+	 * this way we get notified when all pending requests are finished
+	 * and send to the socket.
+	 */
+	subreq = tevent_queue_wait_send(state, ev, state->wait_queue);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, smbXsrv_connection_shutdown_wait_done, req);
+
+	return req;
+}
+
+static void smbXsrv_connection_shutdown_wait_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req =
+		tevent_req_callback_data(subreq,
+		struct tevent_req);
+
+	tevent_queue_wait_recv(subreq);
+	TALLOC_FREE(subreq);
+
+	tevent_req_done(req);
+}
+
+static NTSTATUS smbXsrv_connection_shutdown_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static void smbd_server_connection_terminate_done(struct tevent_req *subreq)
+{
+	struct smbXsrv_connection *xconn =
+		tevent_req_callback_data(subreq,
+		struct smbXsrv_connection);
+	struct smbXsrv_client *client = xconn->client;
+	NTSTATUS status;
+
+	status = smbXsrv_connection_shutdown_recv(subreq);
+	if (!NT_STATUS_IS_OK(status)) {
+		exit_server("smbXsrv_connection_shutdown_recv failed");
+	}
+
+	DLIST_REMOVE(client->connections, xconn);
+	TALLOC_FREE(xconn);
+}
+
 void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 					 const char *reason,
 					 const char *location)
@@ -1158,9 +1279,17 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 		  reason, location);
 
 	if (num_ok != 0) {
-		/* TODO: cancel pending requests */
-		DLIST_REMOVE(client->connections, xconn);
-		TALLOC_FREE(xconn);
+		struct tevent_req *subreq = NULL;
+
+		subreq = smbXsrv_connection_shutdown_send(client,
+							  client->raw_ev_ctx,
+							  xconn);
+		if (subreq == NULL) {
+			exit_server("smbXsrv_connection_shutdown_send failed");
+		}
+		tevent_req_set_callback(subreq,
+					smbd_server_connection_terminate_done,
+					xconn);
 		return;
 	}
 
