@@ -729,7 +729,10 @@ static int streams_depot_unlink_internal(vfs_handle_struct *handle,
 				errno = ENOMEM;
 				return -1;
 			}
-			SMB_VFS_NEXT_RMDIR(handle, smb_fname_dir);
+			SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname_dir,
+				AT_REMOVEDIR);
 			TALLOC_FREE(smb_fname_dir);
 		}
 		TALLOC_FREE(dirname);
