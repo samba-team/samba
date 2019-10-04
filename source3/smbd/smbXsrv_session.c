@@ -1293,7 +1293,7 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 	global->creation_time = now;
 	global->expiration_time = GENSEC_EXPIRE_TIME_INFINITY;
 
-	status = smbXsrv_session_add_channel(session, conn, &channel);
+	status = smbXsrv_session_add_channel(session, conn, now, &channel);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(session);
 		return status;
@@ -1338,6 +1338,7 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 
 NTSTATUS smbXsrv_session_add_channel(struct smbXsrv_session *session,
 				     struct smbXsrv_connection *conn,
+				     NTTIME now,
 				     struct smbXsrv_channel_global0 **_c)
 {
 	struct smbXsrv_session_global0 *global = session->global;
@@ -1363,6 +1364,8 @@ NTSTATUS smbXsrv_session_add_channel(struct smbXsrv_session *session,
 	ZERO_STRUCTP(c);
 
 	c->server_id = messaging_server_id(conn->client->msg_ctx);
+	c->channel_id = conn->channel_id;
+	c->creation_time = now;
 	c->local_address = tsocket_address_string(conn->local_address,
 						  global->channels);
 	if (c->local_address == NULL) {
@@ -1438,10 +1441,16 @@ NTSTATUS smbXsrv_session_find_channel(const struct smbXsrv_session *session,
 	for (i=0; i < session->global->num_channels; i++) {
 		struct smbXsrv_channel_global0 *c = &session->global->channels[i];
 
-		if (c->connection == conn) {
-			*_c = c;
-			return NT_STATUS_OK;
+		if (c->channel_id != conn->channel_id) {
+			continue;
 		}
+
+		if (c->connection != conn) {
+			continue;
+		}
+
+		*_c = c;
+		return NT_STATUS_OK;
 	}
 
 	return NT_STATUS_USER_SESSION_DELETED;

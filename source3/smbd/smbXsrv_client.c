@@ -523,7 +523,9 @@ NTSTATUS smbXsrv_client_create(TALLOC_CTX *mem_ctx,
 	client->msg_ctx = msg_ctx;
 
 	client->server_multi_channel_enabled = lp_server_multi_channel_support();
-
+	if (client->server_multi_channel_enabled) {
+		client->next_channel_id = 1;
+	}
 	client->table = talloc_move(client, &table);
 	table = client->table;
 
@@ -673,7 +675,10 @@ static void smbXsrv_client_connection_pass_loop(struct tevent_req *subreq)
 
 	DBG_ERR("got connection sockfd[%d]\n", sock_fd);
 	NDR_PRINT_DEBUG(smbXsrv_connection_passB, &pass_blob);
-	status = smbd_add_connection(client, sock_fd, &xconn);
+	status = smbd_add_connection(client,
+				     sock_fd,
+				     pass_info0->initial_connect_time,
+				     &xconn);
 	if (!NT_STATUS_IS_OK(status)) {
 		close(sock_fd);
 		sock_fd = -1;

@@ -141,6 +141,7 @@ interface smbXsrv
 		 */
 		[ignore] struct smbXsrv_connection	*connections;
 		boolean8		server_multi_channel_enabled;
+		hyper			next_channel_id;
 	} smbXsrv_client;
 
 	typedef union {
@@ -200,6 +201,8 @@ interface smbXsrv
 
 	typedef struct {
 		server_id				server_id;
+		hyper					channel_id;
+		NTTIME					creation_time;
 		[charset(UTF8),string] char		local_address[];
 		[charset(UTF8),string] char		remote_address[];
 		[charset(UTF8),string] char		remote_name[];
