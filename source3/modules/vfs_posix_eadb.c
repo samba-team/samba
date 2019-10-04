@@ -358,7 +358,7 @@ out:
 /*
  * On rmdir we need to delete the tdb record
  */
-static int posix_eadb_rmdir(vfs_handle_struct *handle,
+static int posix_eadb_rmdir_internal(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname)
 {
 	NTSTATUS status;
@@ -399,7 +399,7 @@ static int posix_eadb_unlinkat(vfs_handle_struct *handle,
 
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 	if (flags & AT_REMOVEDIR) {
-		ret = posix_eadb_rmdir(handle, smb_fname);
+		ret = posix_eadb_rmdir_internal(handle, smb_fname);
 	} else {
 		ret = posix_eadb_unlink_internal(handle,
 					dirfsp,
@@ -407,6 +407,16 @@ static int posix_eadb_unlinkat(vfs_handle_struct *handle,
 					flags);
 	}
 	return ret;
+}
+
+/*
+ * On rmdir we need to delete the tdb record
+ */
+static int posix_eadb_rmdir(vfs_handle_struct *handle,
+			const struct smb_filename *smb_fname)
+{
+	return posix_eadb_rmdir_internal(handle,
+					smb_fname);
 }
 
 /*
