@@ -51,6 +51,7 @@ struct dirsync_context {
 	uint64_t fromreqUSN;
 	uint32_t cursor_size;
 	bool noextended;
+	int extended_type;
 	bool linkIncrVal;
 	bool localonly;
 	bool partial;
@@ -481,7 +482,8 @@ skip:
 				}
 
 				ldb_dn_extended_filter(dn->dn, myaccept);
-				dn_ln = ldb_dn_get_extended_linearized(dn, dn->dn, 1);
+				dn_ln = dsdb_dn_get_extended_linearized(dn, dn,
+							dsc->extended_type);
 				if (dn_ln == NULL)
 				{
 					talloc_free(dn);
@@ -998,6 +1000,7 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 	struct ldb_control *control;
 	struct ldb_result *acl_res;
 	struct ldb_dirsync_control *dirsync_ctl;
+	struct ldb_control *extended = NULL;
 	struct ldb_request *down_req;
 	struct dirsync_context *dsc;
 	struct ldb_context *ldb;
@@ -1229,7 +1232,19 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 		dsc->nbDefaultAttrs = 3;
 	}
 
-	if (!ldb_request_get_control(req, LDB_CONTROL_EXTENDED_DN_OID)) {
+	/* check if there's an extended dn control */
+	extended = ldb_request_get_control(req, LDB_CONTROL_EXTENDED_DN_OID);
+	if (extended != NULL) {
+		struct ldb_extended_dn_control *extended_ctrl = NULL;
+
+		if (extended->data != NULL) {
+			extended_ctrl = talloc_get_type(extended->data,
+						struct ldb_extended_dn_control);
+		}
+		if (extended_ctrl != NULL) {
+			dsc->extended_type = extended_ctrl->type;
+		}
+	} else {
 		ret = ldb_request_add_control(req, LDB_CONTROL_EXTENDED_DN_OID, false, NULL);
 		if (ret != LDB_SUCCESS) {
 			return ret;
