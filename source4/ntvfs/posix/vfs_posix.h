@@ -245,7 +245,6 @@ struct pvfs_search_state {
 #define PVFS_FLAG_STRICT_LOCKING (1<<6)
 #define PVFS_FLAG_XATTR_ENABLE   (1<<7)
 #define PVFS_FLAG_FAKE_OPLOCKS   (1<<8)
-#define PVFS_FLAG_LINUX_AIO      (1<<9)
 #define PVFS_FLAG_PERM_OVERRIDE  (1<<10)
 
 /* forward declare some anonymous structures */
@@ -268,7 +267,6 @@ struct pvfs_odb_retry;
 #define PVFS_ALLOCATION_ROUNDING	"posix:allocationrounding"
 #define PVFS_SEARCH_INACTIVITY		"posix:searchinactivity"
 #define PVFS_ACL			"posix:acl"
-#define PVFS_AIO			"posix:aio"
 #define PVFS_PERM_OVERRIDE		"posix:permission override"
 
 #define PVFS_XATTR_DEFAULT			true
@@ -288,10 +286,5 @@ struct pvfs_acl_ops {
 
 #include "ntvfs/posix/vfs_posix_proto.h"
 #include "ntvfs/posix/vfs_acl_proto.h"
-
-NTSTATUS pvfs_aio_pread(struct ntvfs_request *req, union smb_read *rd,
-			struct pvfs_file *f, uint32_t maxcnt);
-NTSTATUS pvfs_aio_pwrite(struct ntvfs_request *req, union smb_write *wr,
-			 struct pvfs_file *f);
 
 #endif /* _VFS_POSIX_H_ */

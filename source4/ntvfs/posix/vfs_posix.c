@@ -58,8 +58,6 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 		pvfs->flags |= PVFS_FLAG_CI_FILESYSTEM;
 	if (share_bool_option(scfg, PVFS_FAKE_OPLOCKS, PVFS_FAKE_OPLOCKS_DEFAULT))
 		pvfs->flags |= PVFS_FLAG_FAKE_OPLOCKS;
-	if (share_bool_option(scfg, PVFS_AIO, false))
-		pvfs->flags |= PVFS_FLAG_LINUX_AIO;
 
 #if defined(O_DIRECTORY) && defined(O_NOFOLLOW)
 	/* set PVFS_PERM_OVERRIDE by default only if the system
