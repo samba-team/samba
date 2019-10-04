@@ -318,7 +318,7 @@ struct ctdb_context {
 
 	TALLOC_CTX *banning_ctx;
 
-	struct ctdb_vacuum_child_context *vacuumers;
+	struct ctdb_vacuum_child_context *vacuumer;
 
 	/* mapping from pid to ctdb_client * */
 	struct ctdb_client_pid_list *client_pids;
