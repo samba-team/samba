@@ -81,6 +81,17 @@ static void exit_server_common(enum server_exit_reason how,
 	struct smbXsrv_connection *xconn = NULL;
 	struct smbd_server_connection *sconn = NULL;
 	struct messaging_context *msg_ctx = global_messaging_context();
+	NTSTATUS disconnect_status;
+
+	switch (how) {
+	case SERVER_EXIT_NORMAL:
+		disconnect_status = NT_STATUS_LOCAL_DISCONNECT;
+		break;
+	case SERVER_EXIT_ABNORMAL:
+	default:
+		disconnect_status = NT_STATUS_INTERNAL_ERROR;
+		break;
+	}
 
 	if (client != NULL) {
 		sconn = client->sconn;
@@ -100,19 +111,12 @@ static void exit_server_common(enum server_exit_reason how,
 	for (; xconn != NULL; xconn = xconn->next) {
 		/*
 		 * This is typically the disconnect for the only
-		 * (or with multi-channel last) connection of the client
+		 * (or with multi-channel last) connection of the client.
+		 *
+		 * smbXsrv_connection_disconnect_transport() might be called already,
+		 * but calling it again is a no-op.
 		 */
-		if (NT_STATUS_IS_OK(xconn->transport.status)) {
-			switch (how) {
-			case SERVER_EXIT_ABNORMAL:
-				xconn->transport.status = NT_STATUS_INTERNAL_ERROR;
-				break;
-			case SERVER_EXIT_NORMAL:
-				xconn->transport.status = NT_STATUS_LOCAL_DISCONNECT;
-				break;
-			}
-		}
-		DO_PROFILE_INC(disconnect);
+		smbXsrv_connection_disconnect_transport(xconn, disconnect_status);
 	}
 
 	change_to_root_user();

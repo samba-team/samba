@@ -220,6 +220,8 @@ NTSTATUS smbd_calculate_access_mask(connection_struct *conn,
 
 void smbd_notify_cancel_by_smbreq(const struct smb_request *smbreq);
 
+void smbXsrv_connection_disconnect_transport(struct smbXsrv_connection *xconn,
+					     NTSTATUS status);
 void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 					 const char *reason,
 					 const char *location);

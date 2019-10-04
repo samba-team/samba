@@ -1106,6 +1106,21 @@ static NTSTATUS smbd_smb2_request_setup_out(struct smbd_smb2_request *req)
 	return NT_STATUS_OK;
 }
 
+void smbXsrv_connection_disconnect_transport(struct smbXsrv_connection *xconn,
+					     NTSTATUS status)
+{
+	if (!NT_STATUS_IS_OK(xconn->transport.status)) {
+		return;
+	}
+
+	xconn->transport.status = status;
+	TALLOC_FREE(xconn->transport.fde);
+	if (xconn->transport.sock != -1) {
+		xconn->transport.sock = -1;
+	}
+	DO_PROFILE_INC(disconnect);
+}
+
 void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 					 const char *reason,
 					 const char *location)
