@@ -250,7 +250,10 @@ static char *stream_dir(vfs_handle_struct *handle,
 			      smb_fname_hash->base_name));
 			recursive_rmdir(talloc_tos(), handle->conn,
 					smb_fname_hash);
-			SMB_VFS_NEXT_RMDIR(handle, smb_fname_hash);
+			SMB_VFS_NEXT_UNLINKAT(handle,
+					handle->conn->cwd_fsp,
+					smb_fname_hash,
+					AT_REMOVEDIR);
 		} else {
 			newname = talloc_asprintf(talloc_tos(), "lost-%lu",
 						  random());
