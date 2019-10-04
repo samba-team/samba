@@ -660,46 +660,6 @@ static int xattr_tdb_unlinkat(vfs_handle_struct *handle,
 }
 
 /*
- * On rmdir we need to delete the tdb record
- */
-static int xattr_tdb_rmdir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	SMB_STRUCT_STAT sbuf;
-	struct file_id id;
-	struct db_context *db;
-	int ret;
-	TALLOC_CTX *frame = talloc_stackframe();
-
-	SMB_VFS_HANDLE_GET_DATA(handle, db, struct db_context,
-				if (!xattr_tdb_init(-1, frame, &db))
-				{
-					TALLOC_FREE(frame); return -1;
-				});
-
-	if (vfs_stat_smb_basename(handle->conn,
-				smb_fname,
-				&sbuf) == -1) {
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	ret = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
-
-	if (ret == -1) {
-		TALLOC_FREE(frame);
-		return -1;
-	}
-
-	id = SMB_VFS_NEXT_FILE_ID_CREATE(handle, &sbuf);
-
-	xattr_tdb_remove_all_attrs(db, &id);
-
-	TALLOC_FREE(frame);
-	return 0;
-}
-
-/*
  * Destructor for the VFS private data
  */
 
@@ -757,7 +717,6 @@ static struct vfs_fn_pointers vfs_xattr_tdb_fns = {
 	.open_fn = xattr_tdb_open,
 	.mkdirat_fn = xattr_tdb_mkdirat,
 	.unlinkat_fn = xattr_tdb_unlinkat,
-	.rmdir_fn = xattr_tdb_rmdir,
 	.connect_fn = xattr_tdb_connect,
 };
 
