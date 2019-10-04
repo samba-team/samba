@@ -796,13 +796,19 @@ static int streams_depot_rmdir(vfs_handle_struct *handle,
 				errno = ENOMEM;
 				return -1;
 			}
-			SMB_VFS_NEXT_RMDIR(handle, smb_fname_dir);
+			SMB_VFS_NEXT_UNLINKAT(handle,
+					dirfsp,
+					smb_fname_dir,
+					AT_REMOVEDIR);
 			TALLOC_FREE(smb_fname_dir);
 		}
 		TALLOC_FREE(dirname);
 	}
 
-	ret = SMB_VFS_NEXT_RMDIR(handle, smb_fname_base);
+	ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname_base,
+				AT_REMOVEDIR);
 	TALLOC_FREE(smb_fname_base);
 	return ret;
 }
