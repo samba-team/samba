@@ -48,7 +48,6 @@
 enum vacuum_child_status { VACUUM_RUNNING, VACUUM_OK, VACUUM_ERROR, VACUUM_TIMEOUT};
 
 struct ctdb_vacuum_child_context {
-	struct ctdb_vacuum_child_context *next, *prev;
 	struct ctdb_vacuum_handle *vacuum_handle;
 	/* fd child writes status to */
 	int fd[2];
@@ -59,7 +58,6 @@ struct ctdb_vacuum_child_context {
 
 struct ctdb_vacuum_handle {
 	struct ctdb_db_context *ctdb_db;
-	struct ctdb_vacuum_child_context *child_ctx;
 	uint32_t fast_path_count;
 };
 
@@ -1326,7 +1324,7 @@ static int vacuum_child_destructor(struct ctdb_vacuum_child_context *child_ctx)
 		child_ctx->vacuum_handle->fast_path_count++;
 	}
 
-	DLIST_REMOVE(ctdb->vacuumers, child_ctx);
+	ctdb->vacuumer = NULL;
 
 	tevent_add_timer(ctdb->ev, child_ctx->vacuum_handle,
 			 timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
@@ -1408,7 +1406,7 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 	 * same time.  If there is vacuuming child process active, delay
 	 * new vacuuming event to stagger vacuuming events.
 	 */
-	if (ctdb->vacuumers != NULL) {
+	if (ctdb->vacuumer != NULL) {
 		tevent_add_timer(ctdb->ev, vacuum_handle,
 				 timeval_current_ofs(0, 500*1000),
 				 ctdb_vacuum_event, vacuum_handle);
@@ -1476,7 +1474,7 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 	child_ctx->status = VACUUM_RUNNING;
 	child_ctx->start_time = timeval_current();
 
-	DLIST_ADD(ctdb->vacuumers, child_ctx);
+	ctdb->vacuumer = child_ctx;
 	talloc_set_destructor(child_ctx, vacuum_child_destructor);
 
 	/*
@@ -1507,19 +1505,17 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 			    TEVENT_FD_READ, vacuum_child_handler, child_ctx);
 	tevent_fd_set_auto_close(fde);
 
-	vacuum_handle->child_ctx = child_ctx;
 	child_ctx->vacuum_handle = vacuum_handle;
 }
 
 void ctdb_stop_vacuuming(struct ctdb_context *ctdb)
 {
-	/* Simply free them all. */
-	while (ctdb->vacuumers) {
-		DEBUG(DEBUG_INFO, ("Aborting vacuuming for %s (%i)\n",
-			   ctdb->vacuumers->vacuum_handle->ctdb_db->db_name,
-			   (int)ctdb->vacuumers->child_pid));
+	if (ctdb->vacuumer != NULL) {
+		D_INFO("Aborting vacuuming for %s (%i)\n",
+		       ctdb->vacuumer->vacuum_handle->ctdb_db->db_name,
+		       (int)ctdb->vacuumer->child_pid);
 		/* vacuum_child_destructor kills it, removes from list */
-		talloc_free(ctdb->vacuumers);
+		talloc_free(ctdb->vacuumer);
 	}
 }
 
