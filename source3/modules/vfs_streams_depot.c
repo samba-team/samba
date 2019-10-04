@@ -839,14 +839,6 @@ static int streams_depot_unlinkat(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int streams_depot_rmdir(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname)
-{
-	return streams_depot_rmdir_internal(handle,
-				handle->conn->cwd_fsp,
-				smb_fname);
-}
-
 static int streams_depot_renameat(vfs_handle_struct *handle,
 				files_struct *srcfsp,
 				const struct smb_filename *smb_fname_src,
@@ -1083,7 +1075,6 @@ static struct vfs_fn_pointers vfs_streams_depot_fns = {
 	.stat_fn = streams_depot_stat,
 	.lstat_fn = streams_depot_lstat,
 	.unlinkat_fn = streams_depot_unlinkat,
-	.rmdir_fn = streams_depot_rmdir,
 	.renameat_fn = streams_depot_renameat,
 	.streaminfo_fn = streams_depot_streaminfo,
 };
