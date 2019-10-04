@@ -1155,7 +1155,10 @@ static int acl_common_remove_object(vfs_handle_struct *handle,
 
 	become_root();
 	if (is_directory) {
-		ret = SMB_VFS_NEXT_RMDIR(handle, &local_fname);
+		ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				conn->cwd_fsp,
+				&local_fname,
+				AT_REMOVEDIR);
 	} else {
 		ret = SMB_VFS_NEXT_UNLINKAT(handle,
 				conn->cwd_fsp,
