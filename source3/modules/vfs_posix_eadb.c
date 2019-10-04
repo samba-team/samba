@@ -378,7 +378,10 @@ static int posix_eadb_rmdir_internal(vfs_handle_struct *handle,
 		tdb_transaction_cancel(ea_tdb->tdb);
 	}
 
-	ret = SMB_VFS_NEXT_RMDIR(handle, smb_fname);
+	ret = SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				AT_REMOVEDIR);
 
 	if (ret == -1) {
 		tdb_transaction_cancel(ea_tdb->tdb);
