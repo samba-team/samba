@@ -46,7 +46,6 @@
 #include "system/terminal.h"
 #include "system/time.h"
 #include "system/wait.h"
-#include "system/aio.h"
 
 #define TESTFILE "testfile.dat"
 
