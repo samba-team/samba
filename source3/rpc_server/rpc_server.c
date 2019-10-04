@@ -1260,10 +1260,40 @@ void dcesrv_log_successful_authz(struct dcesrv_call_state *call)
 	TALLOC_FREE(frame);
 }
 
+static NTSTATUS dcesrv_assoc_group_new(struct dcesrv_call_state *call,
+				       uint32_t assoc_group_id)
+{
+	struct dcesrv_connection *conn = call->conn;
+	struct dcesrv_context *dce_ctx = conn->dce_ctx;
+	const struct dcesrv_endpoint *endpoint = conn->endpoint;
+	enum dcerpc_transport_t transport =
+		dcerpc_binding_get_transport(endpoint->ep_description);
+	struct dcesrv_assoc_group *assoc_group = NULL;
+
+	assoc_group = talloc_zero(conn, struct dcesrv_assoc_group);
+	if (assoc_group == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	assoc_group->transport = transport;
+	assoc_group->id = assoc_group_id;
+	assoc_group->dce_ctx = dce_ctx;
+
+	call->conn->assoc_group = assoc_group;
+
+	return NT_STATUS_OK;
+}
+
 NTSTATUS dcesrv_assoc_group_find(struct dcesrv_call_state *call)
 {
-	/* TODO */
-	return NT_STATUS_NOT_IMPLEMENTED;
+	uint32_t assoc_group_id = call->pkt.u.bind.assoc_group_id;
+
+	/* If not requested by client create a new association group */
+	if (assoc_group_id == 0) {
+		assoc_group_id = 0x53F0;
+	}
+
+	return dcesrv_assoc_group_new(call, assoc_group_id);
 }
 
 /* vim: set ts=8 sw=8 noet cindent syntax=c.doxygen: */
