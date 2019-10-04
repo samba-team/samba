@@ -740,14 +740,13 @@ static int streams_depot_unlink_internal(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int streams_depot_rmdir(vfs_handle_struct *handle,
+static int streams_depot_rmdir_internal(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname)
 {
 	struct smb_filename *smb_fname_base = NULL;
 	int ret = -1;
 
-	DEBUG(10, ("streams_depot_rmdir called for %s\n",
-		smb_fname->base_name));
+	DBG_DEBUG("called for %s\n", smb_fname->base_name);
 
 	/*
 	 * We potentially need to delete the per-inode streams directory
@@ -821,7 +820,7 @@ static int streams_depot_unlinkat(vfs_handle_struct *handle,
 	int ret;
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 	if (flags & AT_REMOVEDIR) {
-		ret = streams_depot_rmdir(handle, smb_fname);
+		ret = streams_depot_rmdir_internal(handle, smb_fname);
 	} else {
 		ret = streams_depot_unlink_internal(handle,
 				dirfsp,
@@ -829,6 +828,13 @@ static int streams_depot_unlinkat(vfs_handle_struct *handle,
 				flags);
 	}
 	return ret;
+}
+
+static int streams_depot_rmdir(vfs_handle_struct *handle,
+				const struct smb_filename *smb_fname)
+{
+	return streams_depot_rmdir_internal(handle,
+				smb_fname);
 }
 
 static int streams_depot_renameat(vfs_handle_struct *handle,
