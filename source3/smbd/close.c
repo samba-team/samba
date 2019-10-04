@@ -968,7 +968,10 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 				smb_dname,
 				0);
 	} else {
-		ret = SMB_VFS_RMDIR(conn, smb_dname);
+		ret = SMB_VFS_UNLINKAT(conn,
+				conn->cwd_fsp,
+				smb_dname,
+				AT_REMOVEDIR);
 	}
 	if (ret == 0) {
 		notify_fname(conn, NOTIFY_ACTION_REMOVED,
@@ -1068,12 +1071,16 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 				goto err_break;
 			}
 			if(smb_dname_full->st.st_ex_mode & S_IFDIR) {
+				int retval;
 				if(!recursive_rmdir(ctx, conn,
 						    smb_dname_full)) {
 					goto err_break;
 				}
-				if(SMB_VFS_RMDIR(conn,
-					smb_dname_full) != 0) {
+				retval = SMB_VFS_UNLINKAT(conn,
+						conn->cwd_fsp,
+						smb_dname_full,
+						AT_REMOVEDIR);
+				if(retval != 0) {
 					goto err_break;
 				}
 			} else {
@@ -1098,7 +1105,10 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 		}
 		TALLOC_FREE(dir_hnd);
 		/* Retry the rmdir */
-		ret = SMB_VFS_RMDIR(conn, smb_dname);
+		ret = SMB_VFS_UNLINKAT(conn,
+				conn->cwd_fsp,
+				smb_dname,
+				AT_REMOVEDIR);
 	}
 
   err:
