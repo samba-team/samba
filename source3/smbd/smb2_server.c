@@ -1127,6 +1127,15 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 {
 	struct smbXsrv_client *client = xconn->client;
 
+	/*
+	 * Make sure that no new request will be able to use this session.
+	 *
+	 * smbXsrv_connection_disconnect_transport() might be called already,
+	 * but calling it again is a no-op.
+	 */
+	smbXsrv_connection_disconnect_transport(xconn,
+					NT_STATUS_CONNECTION_DISCONNECTED);
+
 	DEBUG(10,("smbd_server_connection_terminate_ex: conn[%s] reason[%s] at %s\n",
 		  smbXsrv_connection_dbg(xconn), reason, location));
 
@@ -1134,7 +1143,6 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 		/* TODO: cancel pending requests */
 		DLIST_REMOVE(client->connections, xconn);
 		TALLOC_FREE(xconn);
-		DO_PROFILE_INC(disconnect);
 		return;
 	}
 
