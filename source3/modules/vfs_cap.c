@@ -169,31 +169,6 @@ static int cap_mkdirat(vfs_handle_struct *handle,
 			mode);
 }
 
-static int cap_rmdir(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname)
-{
-	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
-	struct smb_filename *cap_smb_fname = NULL;
-
-	if (!cappath) {
-		errno = ENOMEM;
-		return -1;
-	}
-
-	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
-					cappath,
-					NULL,
-					NULL,
-					smb_fname->flags);
-	if (cap_smb_fname == NULL) {
-		TALLOC_FREE(cappath);
-		errno = ENOMEM;
-		return -1;
-	}
-
-	return SMB_VFS_NEXT_RMDIR(handle, cap_smb_fname);
-}
-
 static int cap_open(vfs_handle_struct *handle, struct smb_filename *smb_fname,
 		    files_struct *fsp, int flags, mode_t mode)
 {
@@ -1041,7 +1016,6 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.opendir_fn = cap_opendir,
 	.readdir_fn = cap_readdir,
 	.mkdirat_fn = cap_mkdirat,
-	.rmdir_fn = cap_rmdir,
 	.open_fn = cap_open,
 	.renameat_fn = cap_renameat,
 	.stat_fn = cap_stat,
