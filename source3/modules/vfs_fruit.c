@@ -2209,14 +2209,6 @@ exit_rmdir:
 				AT_REMOVEDIR);
 }
 
-static int fruit_rmdir(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	return fruit_rmdir_internal(handle,
-				handle->conn->cwd_fsp,
-				smb_fname);
-}
-
 static int fruit_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
@@ -5159,7 +5151,6 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 	.chown_fn = fruit_chown,
 	.unlinkat_fn = fruit_unlinkat,
 	.renameat_fn = fruit_renameat,
-	.rmdir_fn = fruit_rmdir,
 	.open_fn = fruit_open,
 	.close_fn = fruit_close,
 	.pread_fn = fruit_pread,
