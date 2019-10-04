@@ -1121,11 +1121,26 @@ void smbXsrv_connection_disconnect_transport(struct smbXsrv_connection *xconn,
 	DO_PROFILE_INC(disconnect);
 }
 
+static size_t smbXsrv_client_valid_connections(struct smbXsrv_client *client)
+{
+	struct smbXsrv_connection *xconn = NULL;
+	size_t num_ok = 0;
+
+	for (xconn = client->connections; xconn != NULL; xconn = xconn->next) {
+		if (NT_STATUS_IS_OK(xconn->transport.status)) {
+			num_ok++;
+		}
+	}
+
+	return num_ok;
+}
+
 void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 					 const char *reason,
 					 const char *location)
 {
 	struct smbXsrv_client *client = xconn->client;
+	size_t num_ok = 0;
 
 	/*
 	 * Make sure that no new request will be able to use this session.
@@ -1136,10 +1151,13 @@ void smbd_server_connection_terminate_ex(struct smbXsrv_connection *xconn,
 	smbXsrv_connection_disconnect_transport(xconn,
 					NT_STATUS_CONNECTION_DISCONNECTED);
 
-	DEBUG(10,("smbd_server_connection_terminate_ex: conn[%s] reason[%s] at %s\n",
-		  smbXsrv_connection_dbg(xconn), reason, location));
+	num_ok = smbXsrv_client_valid_connections(client);
 
-	if (client->connections->next != NULL) {
+	DBG_DEBUG("conn[%s] num_ok[%zu] reason[%s] at %s\n",
+		  smbXsrv_connection_dbg(xconn), num_ok,
+		  reason, location);
+
+	if (num_ok != 0) {
 		/* TODO: cancel pending requests */
 		DLIST_REMOVE(client->connections, xconn);
 		TALLOC_FREE(xconn);
