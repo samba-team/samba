@@ -416,17 +416,6 @@ static int posix_eadb_unlinkat(vfs_handle_struct *handle,
 }
 
 /*
- * On rmdir we need to delete the tdb record
- */
-static int posix_eadb_rmdir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	return posix_eadb_rmdir_internal(handle,
-					handle->conn->cwd_fsp,
-					smb_fname);
-}
-
-/*
  * Destructor for the VFS private data
  */
 
@@ -482,7 +471,6 @@ static struct vfs_fn_pointers vfs_posix_eadb_fns = {
 	.removexattr_fn = posix_eadb_removexattr,
 	.fremovexattr_fn = posix_eadb_fremovexattr,
 	.unlinkat_fn = posix_eadb_unlinkat,
-	.rmdir_fn = posix_eadb_rmdir,
 	.connect_fn = posix_eadb_connect,
 };
 
