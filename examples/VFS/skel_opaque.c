@@ -174,13 +174,6 @@ static int skel_mkdirat(vfs_handle_struct *handle,
 	return -1;
 }
 
-static int skel_rmdir(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 static int skel_closedir(vfs_handle_struct *handle, DIR *dir)
 {
 	errno = ENOSYS;
@@ -1061,7 +1054,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.telldir_fn = skel_telldir,
 	.rewind_dir_fn = skel_rewind_dir,
 	.mkdirat_fn = skel_mkdirat,
-	.rmdir_fn = skel_rmdir,
 	.closedir_fn = skel_closedir,
 
 	/* File operations */

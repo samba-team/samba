@@ -520,17 +520,6 @@ static int vfswrap_mkdirat(vfs_handle_struct *handle,
 	return result;
 }
 
-static int vfswrap_rmdir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	int result;
-
-	START_PROFILE(syscall_rmdir);
-	result = rmdir(smb_fname->base_name);
-	END_PROFILE(syscall_rmdir);
-	return result;
-}
-
 static int vfswrap_closedir(vfs_handle_struct *handle, DIR *dirp)
 {
 	int result;
@@ -3514,7 +3503,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.telldir_fn = vfswrap_telldir,
 	.rewind_dir_fn = vfswrap_rewinddir,
 	.mkdirat_fn = vfswrap_mkdirat,
-	.rmdir_fn = vfswrap_rmdir,
 	.closedir_fn = vfswrap_closedir,
 
 	/* File operations */

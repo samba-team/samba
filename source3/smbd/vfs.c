@@ -1623,13 +1623,6 @@ int smb_vfs_call_mkdirat(struct vfs_handle_struct *handle,
 			mode);
 }
 
-int smb_vfs_call_rmdir(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname)
-{
-	VFS_FIND(rmdir);
-	return handle->fns->rmdir_fn(handle, smb_fname);
-}
-
 int smb_vfs_call_closedir(struct vfs_handle_struct *handle,
 			  DIR *dir)
 {

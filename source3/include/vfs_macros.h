@@ -114,11 +114,6 @@
 #define SMB_VFS_NEXT_MKDIRAT(handle, dirfsp, smb_fname, mode) \
 	smb_vfs_call_mkdirat((handle)->next,(dirfsp), (smb_fname), (mode))
 
-#define SMB_VFS_RMDIR(conn, smb_fname) \
-	smb_vfs_call_rmdir((conn)->vfs_handles, (smb_fname))
-#define SMB_VFS_NEXT_RMDIR(handle, smb_fname) \
-	smb_vfs_call_rmdir((handle)->next, (smb_fname))
-
 #define SMB_VFS_CLOSEDIR(conn, dir) \
 	smb_vfs_call_closedir((conn)->vfs_handles, dir)
 #define SMB_VFS_NEXT_CLOSEDIR(handle, dir) \

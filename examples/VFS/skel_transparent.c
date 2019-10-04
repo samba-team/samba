@@ -175,12 +175,6 @@ static int skel_mkdirat(vfs_handle_struct *handle,
 			mode);
 }
 
-static int skel_rmdir(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname)
-{
-	return SMB_VFS_NEXT_RMDIR(handle, smb_fname);
-}
-
 static int skel_closedir(vfs_handle_struct *handle, DIR *dir)
 {
 	return SMB_VFS_NEXT_CLOSEDIR(handle, dir);
@@ -1357,7 +1351,6 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.telldir_fn = skel_telldir,
 	.rewind_dir_fn = skel_rewind_dir,
 	.mkdirat_fn = skel_mkdirat,
-	.rmdir_fn = skel_rmdir,
 	.closedir_fn = skel_closedir,
 
 	/* File operations */

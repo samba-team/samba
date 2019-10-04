@@ -283,6 +283,8 @@
 /* Version 42 - Move [un]become_user*() -> [un]become_user_without_service*() */
 /* Version 42 - Move SMB_VFS_UNLINK -> SMB_VFS_UNLINKAT. */
 /* Version 42 - Add SMB_VFS_FCNTL */
+/* Version 42 - Remove SMB_VFS_RMDIR.
+		Use SMB_VFS_UNLINKAT(.., AT_REMOVEDIR) instead. */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -716,8 +718,6 @@ struct vfs_fn_pointers {
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			mode_t mode);
-	int (*rmdir_fn)(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname);
 	int (*closedir_fn)(struct vfs_handle_struct *handle, DIR *dir);
 
 	/* File operations */
@@ -1228,8 +1228,6 @@ int smb_vfs_call_mkdirat(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			mode_t mode);
-int smb_vfs_call_rmdir(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname);
 int smb_vfs_call_closedir(struct vfs_handle_struct *handle,
 			  DIR *dir);
 int smb_vfs_call_open(struct vfs_handle_struct *handle,
@@ -1680,8 +1678,6 @@ int vfs_not_implemented_mkdirat(vfs_handle_struct *handle,
 		struct files_struct *dirfsp,
 		const struct smb_filename *smb_fname,
 		mode_t mode);
-int vfs_not_implemented_rmdir(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname);
 int vfs_not_implemented_closedir(vfs_handle_struct *handle, DIR *dir);
 int vfs_not_implemented_open(vfs_handle_struct *handle,
 			     struct smb_filename *smb_fname,
