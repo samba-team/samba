@@ -905,7 +905,11 @@ bool recursive_rmdir(TALLOC_CTX *ctx,
 			if(!recursive_rmdir(ctx, conn, smb_dname_full)) {
 				goto err_break;
 			}
-			if(SMB_VFS_RMDIR(conn, smb_dname_full) != 0) {
+			retval = SMB_VFS_UNLINKAT(conn,
+					conn->cwd_fsp,
+					smb_dname_full,
+					AT_REMOVEDIR);
+			if (retval != 0) {
 				goto err_break;
 			}
 		} else {
