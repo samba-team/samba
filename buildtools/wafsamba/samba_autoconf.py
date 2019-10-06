@@ -423,9 +423,9 @@ def CHECK_CODE(conf, code, define,
     cflags.extend(ccflags)
 
     if on_target:
-        exec_args = conf.SAMBA_CROSS_ARGS(msg=msg)
+        test_args = conf.SAMBA_CROSS_ARGS(msg=msg)
     else:
-        exec_args = []
+        test_args = []
 
     conf.COMPOUND_START(msg)
 
@@ -440,7 +440,7 @@ def CHECK_CODE(conf, code, define,
                      type=type,
                      msg=msg,
                      quote=quote,
-                     exec_args=exec_args,
+                     test_args=test_args,
                      define_ret=define_ret)
     except Exception:
         if always:

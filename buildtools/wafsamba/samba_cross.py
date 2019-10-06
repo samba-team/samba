@@ -139,7 +139,7 @@ class cross_Popen(Utils.subprocess.Popen):
 
 @conf
 def SAMBA_CROSS_ARGS(conf, msg=None):
-    '''get exec_args to pass when running cross compiled binaries'''
+    '''get test_args to pass when running cross compiled binaries'''
     if not conf.env.CROSS_COMPILE:
         return []
 
