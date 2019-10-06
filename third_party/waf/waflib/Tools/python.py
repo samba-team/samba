@@ -79,14 +79,19 @@ def process_py(self, node):
 	"""
 	Add signature of .py file, so it will be byte-compiled when necessary
 	"""
-	assert(hasattr(self, 'install_path')), 'add features="py"'
+	assert(hasattr(self, 'install_path')), 'add features="py" for target "%s" in "%s/wscript".' % (self.target, self.path.nice_path())
+	self.install_from = getattr(self, 'install_from', None)
+	relative_trick = getattr(self, 'relative_trick', True)
+	if self.install_from:
+		assert isinstance(self.install_from, Node.Node), \
+		'add features="py" for target "%s" in "%s/wscript" (%s).' % (self.target, self.path.nice_path(), type(self.install_from))
 
 	# where to install the python file
 	if self.install_path:
 		if self.install_from:
-			self.add_install_files(install_to=self.install_path, install_from=node, cwd=self.install_from, relative_trick=True)
+			self.add_install_files(install_to=self.install_path, install_from=node, cwd=self.install_from, relative_trick=relative_trick)
 		else:
-			self.add_install_files(install_to=self.install_path, install_from=node, relative_trick=True)
+			self.add_install_files(install_to=self.install_path, install_from=node, relative_trick=relative_trick)
 
 	lst = []
 	if self.env.PYC:
@@ -96,9 +101,11 @@ def process_py(self, node):
 
 	if self.install_path:
 		if self.install_from:
-			pyd = Utils.subst_vars("%s/%s" % (self.install_path, node.path_from(self.install_from)), self.env)
+			target_dir = node.path_from(self.install_from) if relative_trick else node.name
+			pyd = Utils.subst_vars("%s/%s" % (self.install_path, target_dir), self.env)
 		else:
-			pyd = Utils.subst_vars("%s/%s" % (self.install_path, node.path_from(self.path)), self.env)
+			target_dir = node.path_from(self.path) if relative_trick else node.name
+			pyd = Utils.subst_vars("%s/%s" % (self.install_path, target_dir), self.env)
 	else:
 		pyd = node.abspath()
 
@@ -115,7 +122,7 @@ def process_py(self, node):
 		tsk.pyd = pyd
 
 		if self.install_path:
-			self.add_install_files(install_to=os.path.dirname(pyd), install_from=pyobj, cwd=node.parent.get_bld(), relative_trick=True)
+			self.add_install_files(install_to=os.path.dirname(pyd), install_from=pyobj, cwd=node.parent.get_bld(), relative_trick=relative_trick)
 
 class pyc(Task.Task):
 	"""
@@ -433,11 +440,11 @@ def check_python_headers(conf, features='pyembed pyext'):
 
 	# Code using the Python API needs to be compiled with -fno-strict-aliasing
 	if env.CC_NAME == 'gcc':
-		env.append_value('CFLAGS_PYEMBED', ['-fno-strict-aliasing'])
-		env.append_value('CFLAGS_PYEXT', ['-fno-strict-aliasing'])
+		env.append_unique('CFLAGS_PYEMBED', ['-fno-strict-aliasing'])
+		env.append_unique('CFLAGS_PYEXT', ['-fno-strict-aliasing'])
 	if env.CXX_NAME == 'gcc':
-		env.append_value('CXXFLAGS_PYEMBED', ['-fno-strict-aliasing'])
-		env.append_value('CXXFLAGS_PYEXT', ['-fno-strict-aliasing'])
+		env.append_unique('CXXFLAGS_PYEMBED', ['-fno-strict-aliasing'])
+		env.append_unique('CXXFLAGS_PYEXT', ['-fno-strict-aliasing'])
 
 	if env.CC_NAME == "msvc":
 		from distutils.msvccompiler import MSVCCompiler

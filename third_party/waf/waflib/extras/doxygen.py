@@ -85,6 +85,12 @@ class doxygen(Task.Task):
 		if not getattr(self, 'pars', None):
 			txt = self.inputs[0].read()
 			self.pars = parse_doxy(txt)
+
+			# Override with any parameters passed to the task generator
+			if getattr(self.generator, 'pars', None):
+				for k, v in self.generator.pars.items():
+					self.pars[k] = v
+
 			if self.pars.get('OUTPUT_DIRECTORY'):
 				# Use the path parsed from the Doxyfile as an absolute path
 				output_node = self.inputs[0].parent.get_bld().make_node(self.pars['OUTPUT_DIRECTORY'])
@@ -93,11 +99,6 @@ class doxygen(Task.Task):
 				output_node = self.inputs[0].parent.get_bld().make_node(self.inputs[0].name + '.doxy')
 			output_node.mkdir()
 			self.pars['OUTPUT_DIRECTORY'] = output_node.abspath()
-
-			# Override with any parameters passed to the task generator
-			if getattr(self.generator, 'pars', None):
-				for k, v in self.generator.pars.items():
-					self.pars[k] = v
 
 			self.doxy_inputs = getattr(self, 'doxy_inputs', [])
 			if not self.pars.get('INPUT'):

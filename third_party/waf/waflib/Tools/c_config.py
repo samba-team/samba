@@ -659,20 +659,21 @@ class test_exec(Task.Task):
 	"""
 	color = 'PINK'
 	def run(self):
+		cmd = [self.inputs[0].abspath()] + getattr(self.generator, 'test_args', [])
 		if getattr(self.generator, 'rpath', None):
 			if getattr(self.generator, 'define_ret', False):
-				self.generator.bld.retval = self.generator.bld.cmd_and_log([self.inputs[0].abspath()])
+				self.generator.bld.retval = self.generator.bld.cmd_and_log(cmd)
 			else:
-				self.generator.bld.retval = self.generator.bld.exec_command([self.inputs[0].abspath()])
+				self.generator.bld.retval = self.generator.bld.exec_command(cmd)
 		else:
 			env = self.env.env or {}
 			env.update(dict(os.environ))
 			for var in ('LD_LIBRARY_PATH', 'DYLD_LIBRARY_PATH', 'PATH'):
 				env[var] = self.inputs[0].parent.abspath() + os.path.pathsep + env.get(var, '')
 			if getattr(self.generator, 'define_ret', False):
-				self.generator.bld.retval = self.generator.bld.cmd_and_log([self.inputs[0].abspath()], env=env)
+				self.generator.bld.retval = self.generator.bld.cmd_and_log(cmd, env=env)
 			else:
-				self.generator.bld.retval = self.generator.bld.exec_command([self.inputs[0].abspath()], env=env)
+				self.generator.bld.retval = self.generator.bld.exec_command(cmd, env=env)
 
 @feature('test_exec')
 @after_method('apply_link')

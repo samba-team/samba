@@ -16,3 +16,4 @@ def configure(conf):
 	conf.env.ASLNK_TGT_F = ['-o']
 	conf.find_ar()
 	conf.load('asm')
+	conf.env.ASM_NAME = 'gas'

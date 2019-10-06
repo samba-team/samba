@@ -905,7 +905,7 @@ def process_subst(self):
 		# paranoid safety measure for the general case foo.in->foo.h with ambiguous dependencies
 		for xt in HEADER_EXTS:
 			if b.name.endswith(xt):
-				tsk.ext_in = tsk.ext_in + ['.h']
+				tsk.ext_out = tsk.ext_out + ['.h']
 				break
 
 		inst_to = getattr(self, 'install_path', None)
