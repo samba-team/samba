@@ -47,9 +47,11 @@ def sniff_features(**kw):
 		if x in exts:
 			feats.append('cxx')
 			break
-
 	if 'c' in exts or 'vala' in exts or 'gs' in exts:
 		feats.append('c')
+
+	if 's' in exts or 'S' in exts:
+		feats.append('asm')
 
 	for x in 'f f90 F F90 for FOR'.split():
 		if x in exts:
@@ -66,7 +68,7 @@ def sniff_features(**kw):
 	if typ in ('program', 'shlib', 'stlib'):
 		will_link = False
 		for x in feats:
-			if x in ('cxx', 'd', 'fc', 'c'):
+			if x in ('cxx', 'd', 'fc', 'c', 'asm'):
 				feats.append(x + typ)
 				will_link = True
 		if not will_link and not kw.get('features', []):

@@ -246,7 +246,7 @@ def use_javac_files(self):
 				self.javac_task.dep_nodes.extend(tg.jar_task.outputs)
 			else:
 				if hasattr(tg, 'outdir'):
-					base_node = tg.outdir.abspath()
+					base_node = tg.outdir
 				else:
 					base_node = tg.path.get_bld()
 

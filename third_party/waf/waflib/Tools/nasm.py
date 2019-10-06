@@ -24,3 +24,8 @@ def configure(conf):
 	conf.env.ASLNK_TGT_F = ['-o']
 	conf.load('asm')
 	conf.env.ASMPATH_ST = '-I%s' + os.sep
+	txt = conf.cmd_and_log(conf.env.AS + ['--version'])
+	if 'yasm' in txt.lower():
+		conf.env.ASM_NAME = 'yasm'
+	else:
+		conf.env.ASM_NAME = 'nasm'

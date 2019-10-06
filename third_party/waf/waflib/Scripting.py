@@ -332,7 +332,12 @@ def distclean(ctx):
 		else:
 			remove_and_log(env.out_dir, shutil.rmtree)
 
-		for k in (env.out_dir, env.top_dir, env.run_dir):
+		env_dirs = [env.out_dir]
+		if not ctx.options.no_lock_in_top:
+			env_dirs.append(env.top_dir)
+		if not ctx.options.no_lock_in_run:
+			env_dirs.append(env.run_dir)
+		for k in env_dirs:
 			p = os.path.join(k, Options.lockfile)
 			remove_and_log(p, os.remove)
 
