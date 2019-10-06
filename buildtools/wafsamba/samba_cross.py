@@ -147,6 +147,8 @@ def SAMBA_CROSS_ARGS(conf, msg=None):
     if real_Popen is None:
         real_Popen  = Utils.subprocess.Popen
         Utils.subprocess.Popen = cross_Popen
+        Utils.run_process = Utils.run_regular_process
+        Utils.get_process = Utils.alloc_process_pool = Utils.nada
 
     ret = []
 
