@@ -218,6 +218,23 @@ if [ ! -f /usr/bin/python3 ]; then
 fi
 """
 
+CENTOS8_YUM_BOOTSTRAP = r"""
+#!/bin/bash
+{GENERATED_MARKER}
+set -xueo pipefail
+
+yum update -y
+yum install -y dnf-plugins-core
+yum install -y epel-release
+yum config-manager --set-enabled PowerTools -y
+yum update -y
+
+yum install -y \
+    --setopt=install_weak_deps=False \
+    {pkgs}
+
+yum clean all
+"""
 
 DNF_BOOTSTRAP = r"""
 #!/bin/bash
@@ -471,6 +488,22 @@ RPM_DISTS = {
             'glusterfs-devel': '',
             'libcephfs-devel': '',
             'gnutls-devel': 'compat-gnutls34-devel',
+        }
+    },
+    'centos8': {
+        'docker_image': 'centos:8',
+        'vagrant_box': 'centos/8',
+        'bootstrap': CENTOS8_YUM_BOOTSTRAP,
+        'replace': {
+            'lsb-release': 'redhat-lsb',
+            '@development-tools': '"@Development Tools"',  # add quotes
+            'libsemanage-python': 'python3-libsemanage',
+            'lcov': '', # does not exist
+            'perl-JSON-Parse': '', # does not exist?
+            'perl-Test-Base': 'perl-Test-Simple',
+            'policycoreutils-python': 'python3-policycoreutils',
+            'python3-crypto': '',
+            'quota-devel': '', # FIXME: Add me back, once available!
         }
     },
     'fedora28': {

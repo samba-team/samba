@@ -24,6 +24,13 @@ Vagrant.configure("2") do |config|
         v.vm.provision :shell, path: "centos7/locale.sh"
     end
 
+    config.vm.define "centos8" do |v|
+        v.vm.box = "centos/8"
+        v.vm.hostname = "centos8"
+        v.vm.provision :shell, path: "centos8/bootstrap.sh"
+        v.vm.provision :shell, path: "centos8/locale.sh"
+    end
+
     config.vm.define "debian7" do |v|
         v.vm.box = "debian/wheezy64"
         v.vm.hostname = "debian7"

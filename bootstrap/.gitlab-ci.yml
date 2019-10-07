@@ -110,6 +110,9 @@ fedora29:
 fedora28:
   extends: .build_image_template_force_broken
 
+centos8:
+  extends: .build_image_template
+
 centos7:
   extends: .build_image_template
   variables:
