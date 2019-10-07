@@ -1608,6 +1608,7 @@ sub provision($$$$$$$$$)
 	my $dfqconffile="$libdir/dfq.conf";
 	my $errorinjectconf="$libdir/error_inject.conf";
 	my $delayinjectconf="$libdir/delay_inject.conf";
+	my $globalinjectconf="$libdir/global_inject.conf";
 
 	my $nss_wrapper_pl = "$ENV{PERL} $self->{srcdir}/third_party/nss_wrapper/nss_wrapper.pl";
 	my $nss_wrapper_passwd = "$privatedir/passwd";
@@ -1795,6 +1796,8 @@ sub provision($$$$$$$$$)
 	#this does not mean that we use non-secure test env,
 	#it just means we ALLOW one to be configured.
 	allow insecure wide links = yes
+
+	include = $globalinjectconf
 
 	# Begin extra options
 	$extra_options
@@ -2330,6 +2333,12 @@ sub provision($$$$$$$$$)
 		return undef;
 	}
 	close(DFQCONF);
+
+	unless (open(DELAYCONF, ">$globalinjectconf")) {
+		warn("Unable to open $globalinjectconf");
+		return undef;
+	}
+	close(DELAYCONF);
 
 	##
 	## create a test account
