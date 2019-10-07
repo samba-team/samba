@@ -84,11 +84,6 @@ dnf install -y \
     popt-devel \
     procps-ng \
     psmisc \
-    python-crypto \
-    python-devel \
-    python-dns \
-    python-markdown \
-    python2-gpg \
     python3 \
     python3-crypto \
     python3-devel \

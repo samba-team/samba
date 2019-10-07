@@ -78,11 +78,6 @@ zypper --non-interactive install \
     popt-devel \
     procps \
     psmisc \
-    python-crypto \
-    python-devel \
-    python-markdown \
-    python2-dnspython \
-    python2-gpg \
     python2-semanage \
     python3 \
     python3-Markdown \

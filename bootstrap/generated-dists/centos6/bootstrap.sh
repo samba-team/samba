@@ -83,11 +83,6 @@ yum install -y \
     popt-devel \
     procps \
     psmisc \
-    pygpgme \
-    python-crypto \
-    python-devel \
-    python-dns \
-    python-markdown \
     python3-crypto \
     python3-dns \
     python3-markdown \

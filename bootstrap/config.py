@@ -127,16 +127,6 @@ PKGS = [
     ('', 'rpcsvc-proto-devel'), # for <rpcsvc/rquota.h> header
     ('mawk', 'gawk'),
 
-    # python
-    ('python-dev', 'python-devel'),
-    ('python-dbg', ''),
-    ('python-iso8601', ''),
-    ('python-gpg', 'python2-gpg'),  # defaults to ubuntu/fedora latest
-    ('python-crypto', 'python-crypto'),
-    ('python-markdown', 'python-markdown'),
-    ('python-dnspython', 'python-dns'),
-    ('python-pexpect', ''),  # for wintest only
-
     ('python3', 'python3'),
     ('python3-dev', 'python3-devel'),
     ('python3-dbg', ''),

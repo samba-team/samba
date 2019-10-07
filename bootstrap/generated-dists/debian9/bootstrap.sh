@@ -80,14 +80,6 @@ apt-get -y install \
     pkg-config \
     procps \
     psmisc \
-    python-crypto \
-    python-dbg \
-    python-dev \
-    python-dnspython \
-    python-gpg \
-    python-iso8601 \
-    python-markdown \
-    python-pexpect \
     python3 \
     python3-crypto \
     python3-dbg \

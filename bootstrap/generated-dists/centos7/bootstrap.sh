@@ -83,11 +83,6 @@ yum install -y \
     popt-devel \
     procps-ng \
     psmisc \
-    pygpgme \
-    python-crypto \
-    python-devel \
-    python-dns \
-    python-markdown \
     python36 \
     python36-crypto \
     python36-devel \
