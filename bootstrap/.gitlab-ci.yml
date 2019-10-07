@@ -6,6 +6,7 @@ services:
   stage: images
   tags:
     - docker
+    - shared
   variables:
     SAMBA_CI_IS_BROKEN_IMAGE: "no"
   before_script:
