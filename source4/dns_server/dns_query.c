@@ -645,17 +645,9 @@ static void handle_authoritative_done(struct tevent_req *subreq)
 
 static WERROR handle_authoritative_recv(struct tevent_req *req)
 {
-	struct handle_authoritative_state *state = tevent_req_data(
-		req, struct handle_authoritative_state);
 	WERROR werr;
 
 	if (tevent_req_is_werror(req, &werr)) {
-		return werr;
-	}
-
-	werr = add_zone_authority_record(state->dns, state, state->question,
-					 state->nsrecs);
-	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
 
@@ -1091,6 +1083,7 @@ static void dns_server_process_query_got_auth(struct tevent_req *subreq)
 	struct dns_server_process_query_state *state = tevent_req_data(
 		req, struct dns_server_process_query_state);
 	WERROR werr;
+	WERROR werr2;
 
 	werr = handle_authoritative_recv(subreq);
 	TALLOC_FREE(subreq);
@@ -1103,6 +1096,20 @@ static void dns_server_process_query_got_auth(struct tevent_req *subreq)
 
 		/* If you have run out of forwarders, simply finish */
 		if (state->forwarders == NULL) {
+			werr2 = add_zone_authority_record(state->dns,
+							  state,
+							  state->question,
+							  &state->nsrecs);
+			if (tevent_req_werror(req, werr2)) {
+				DBG_WARNING("Failed to add SOA record: %s\n",
+					    win_errstr(werr2));
+				return;
+			}
+
+			state->ancount = talloc_array_length(state->answers);
+			state->nscount = talloc_array_length(state->nsrecs);
+			state->arcount = talloc_array_length(state->additional);
+
 			tevent_req_werror(req, werr);
 			return;
 		}
@@ -1122,6 +1129,16 @@ static void dns_server_process_query_got_auth(struct tevent_req *subreq)
 		tevent_req_set_callback(subreq,
 					dns_server_process_query_got_auth,
 					req);
+		return;
+	}
+
+	werr2 = add_zone_authority_record(state->dns,
+					  state,
+					  state->question,
+					  &state->nsrecs);
+	if (tevent_req_werror(req, werr2)) {
+		DBG_WARNING("Failed to add SOA record: %s\n",
+				win_errstr(werr2));
 		return;
 	}
 
