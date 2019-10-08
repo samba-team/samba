@@ -1766,7 +1766,6 @@ static void share_mode_entry_do_fn(struct db_record *rec, void *private_data)
 	struct share_mode_entry_buf buf;
 	TDB_DATA dbufs[3];
 	size_t num_dbufs = 0;
-	NTSTATUS status;
 
 	if ((data.dsize % SHARE_MODE_ENTRY_SIZE) != 0) {
 		DBG_WARNING("Invalid data size %zu\n", data.dsize);
@@ -1838,7 +1837,7 @@ static void share_mode_entry_do_fn(struct db_record *rec, void *private_data)
 	state->status = dbwrap_record_storev(rec, dbufs, num_dbufs, 0);
 	if (!NT_STATUS_IS_OK(state->status)) {
 		DBG_DEBUG("dbwrap_record_storev failed: %s\n",
-			  nt_errstr(status));
+			  nt_errstr(state->status));
 		return;
 	}
 }
