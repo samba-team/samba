@@ -264,6 +264,25 @@ class TestSimpleQueries(DNSTest):
         # But we do respond with an authority section
         self.assertEqual(response.nscount, 1)
 
+    def test_soa_unknown_hostname_query(self):
+        "create a SOA query for an unknown hostname"
+        p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
+        questions = []
+
+        name = "foobar.%s" % (self.get_dns_domain())
+        q = self.make_name_question(name, dns.DNS_QTYPE_SOA, dns.DNS_QCLASS_IN)
+        questions.append(q)
+
+        self.finish_name_packet(p, questions)
+        (response, response_packet) =\
+            self.dns_transaction_udp(p, host=server_ip)
+        self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NXDOMAIN)
+        self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
+        # We don't get SOA records for single hosts
+        self.assertEquals(response.ancount, 0)
+        # But we do respond with an authority section
+        self.assertEqual(response.nscount, 1)
+
     def test_soa_domain_query(self):
         "create a SOA query for a domain"
         p = self.make_name_packet(dns.DNS_OPCODE_QUERY)
