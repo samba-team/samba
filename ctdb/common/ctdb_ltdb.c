@@ -167,55 +167,96 @@ static void ltdb_initial_header(struct ctdb_db_context *ctdb_db,
 	header->flags = CTDB_REC_FLAG_AUTOMATIC;
 }
 
+struct ctdb_ltdb_fetch_state {
+	struct ctdb_ltdb_header *header;
+	TALLOC_CTX *mem_ctx;
+	TDB_DATA *data;
+	int ret;
+	bool found;
+};
+
+static int ctdb_ltdb_fetch_fn(TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	struct ctdb_ltdb_fetch_state *state = private_data;
+	struct ctdb_ltdb_header *header = state->header;
+	TDB_DATA *dstdata = state->data;
+
+	if (data.dsize < sizeof(*header)) {
+		return 0;
+	}
+
+	state->found = true;
+	memcpy(header, data.dptr, sizeof(*header));
+
+	if (dstdata != NULL) {
+		dstdata->dsize = data.dsize - sizeof(struct ctdb_ltdb_header);
+		dstdata->dptr = talloc_memdup(
+			state->mem_ctx,
+			data.dptr + sizeof(struct ctdb_ltdb_header),
+			dstdata->dsize);
+		if (dstdata->dptr == NULL) {
+			state->ret = -1;
+		}
+	}
+
+	return 0;
+}
 
 /*
   fetch a record from the ltdb, separating out the header information
   and returning the body of the record. A valid (initial) header is
   returned if the record is not present
 */
-int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db, 
-		    TDB_DATA key, struct ctdb_ltdb_header *header, 
+int ctdb_ltdb_fetch(struct ctdb_db_context *ctdb_db,
+		    TDB_DATA key, struct ctdb_ltdb_header *header,
 		    TALLOC_CTX *mem_ctx, TDB_DATA *data)
 {
-	TDB_DATA rec;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
+	struct ctdb_ltdb_fetch_state state = {
+		.header = header,
+		.mem_ctx = mem_ctx,
+		.data = data,
+		.found = false,
+	};
+	int ret;
 
-	rec = tdb_fetch(ctdb_db->ltdb->tdb, key);
-	if (rec.dsize < sizeof(*header)) {
-		/* return an initial header */
-		if (rec.dptr) free(rec.dptr);
-		if (ctdb->vnn_map == NULL) {
-			/* called from the client */
-			ZERO_STRUCTP(data);
-			header->dmaster = (uint32_t)-1;
+	ret = tdb_parse_record(
+		ctdb_db->ltdb->tdb, key, ctdb_ltdb_fetch_fn, &state);
+
+	if (ret == -1) {
+		enum TDB_ERROR err = tdb_error(ctdb_db->ltdb->tdb);
+		if (err != TDB_ERR_NOEXIST) {
 			return -1;
 		}
-		ltdb_initial_header(ctdb_db, key, header);
-		if (data) {
-			*data = tdb_null;
-		}
-		if (ctdb_db_persistent(ctdb_db) ||
-		    header->dmaster == ctdb_db->ctdb->pnn) {
-			if (ctdb_ltdb_store(ctdb_db, key, header, tdb_null) != 0) {
-				DEBUG(DEBUG_NOTICE,
-				      (__location__ "failed to store initial header\n"));
-			}
-		}
+	}
+
+	if (state.ret != 0) {
+		DBG_DEBUG("ctdb_ltdb_fetch_fn failed\n");
+		return state.ret;
+	}
+
+	if (state.found) {
 		return 0;
 	}
 
-	*header = *(struct ctdb_ltdb_header *)rec.dptr;
-
-	if (data) {
-		data->dsize = rec.dsize - sizeof(struct ctdb_ltdb_header);
-		data->dptr = talloc_memdup(mem_ctx, 
-					   sizeof(struct ctdb_ltdb_header)+rec.dptr,
-					   data->dsize);
+	if (data != NULL) {
+		*data = tdb_null;
 	}
 
-	free(rec.dptr);
-	if (data) {
-		CTDB_NO_MEMORY(ctdb, data->dptr);
+	if (ctdb->vnn_map == NULL) {
+		/* called from the client */
+		header->dmaster = (uint32_t)-1;
+		return -1;
+	}
+
+	ltdb_initial_header(ctdb_db, key, header);
+	if (ctdb_db_persistent(ctdb_db) ||
+	    header->dmaster == ctdb_db->ctdb->pnn) {
+
+		ret = ctdb_ltdb_store(ctdb_db, key, header, tdb_null);
+		if (ret != 0) {
+			DBG_NOTICE("failed to store initial header\n");
+		}
 	}
 
 	return 0;
