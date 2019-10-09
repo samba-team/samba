@@ -206,7 +206,22 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
 	krb5_get_init_creds_opt_set_win2k(context, opts, true);
 	krb5_get_init_creds_opt_set_canonicalize(context, opts, true);
 #else /* MIT */
+#if 0
+	/*
+	 * FIXME
+	 *
+	 * Due to an upstream MIT Kerberos bug, this feature is not
+	 * not working. Affection versions (2019-10-09): <= 1.17
+	 *
+	 * Reproducer:
+	 * kinit -C aDmInIsTrAtOr@ACME.COM -S kadmin/changepw@ACME.COM
+	 *
+	 * This is NOT a problem if the service is a krbtgt.
+	 *
+	 * https://bugzilla.samba.org/show_bug.cgi?id=14155
+	 */
 	krb5_get_init_creds_opt_set_canonicalize(opts, true);
+#endif
 #endif /* MIT */
 
 	/* note that heimdal will fill in the local addresses if the addresses
