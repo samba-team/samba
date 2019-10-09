@@ -483,12 +483,22 @@ tasks = {
         ("configure-native", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("configure-cross-execute", "./configure.developer --out ./bin-xe --cross-compile --cross-execute=script/identity_cc.sh" \
             " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xe/ab" + samba_configure_params),
+        ("verify-cross-execute-output", "grep '^Checking value of NSIG' ./bin-xe/cross-answers.txt"),
         ("configure-cross-answers", "./configure.developer --out ./bin-xa --cross-compile" \
             " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xa/ab" + samba_configure_params),
         ("compare-results", "script/compare_cc_results.py "
             "./bin/c4che/default{} "
             "./bin-xe/c4che/default{} "
             "./bin-xa/c4che/default{}".format(*([CACHE_SUFFIX]*3))),
+        ("modify-cross-answers", "sed -i.bak -e 's/^\\(Checking value of NSIG:\\) .*/\\1 \"1234\"/' ./bin-xe/cross-answers.txt"),
+        ("configure-cross-answers-modified", "./configure.developer --out ./bin-xa2 --cross-compile" \
+            " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xa2/ab" + samba_configure_params),
+        ("verify-cross-answers", "test $(sed -n -e 's/VALUEOF_NSIG = \\(.*\\)/\\1/p' ./bin-xa2/c4che/default{})" \
+            " = \"'1234'\"".format(CACHE_SUFFIX)),
+        ("invalidate-cross-answers", "sed -i.bak -e '/^Checking value of NSIG/d' ./bin-xe/cross-answers.txt"),
+        ("configure-cross-answers-fail", "./configure.developer --out ./bin-xa3 --cross-compile" \
+            " --cross-answers=./bin-xe/cross-answers.txt --with-selftest-prefix=./bin-xa3/ab" + samba_configure_params + \
+            " ; test $? -ne 0"),
         ],
 
     # test build with -O3 -- catches extra warnings and bugs, tests the ad_dc environments
