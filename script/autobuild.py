@@ -125,6 +125,7 @@ builddirs = {
     "samba-nt4": ".",
     "samba-fileserver": ".",
     "samba-ad-member": ".",
+    "samba-ad-member-mitkrb5": ".",
     "samba-xc": ".",
     "samba-o3": ".",
     "samba-ctdb": ".",
@@ -132,14 +133,15 @@ builddirs = {
     "samba-static": ".",
     "samba-none-env": ".",
     "samba-ad-dc-1": ".",
+    "samba-ad-dc-1-mitkrb5": ".",
     "samba-ad-dc-2": ".",
     "samba-ad-dc-3": ".",
     "samba-ad-dc-4": ".",
+    "samba-ad-dc-4-mitkrb5": ".",
     "samba-ad-dc-5": ".",
     "samba-ad-dc-6": ".",
     "samba-ad-dc-ntvfs": ".",
     "samba-ad-dc-backup": ".",
-    "samba-systemkrb5": ".",
     "samba-nopython": ".",
     "samba-nopython-py2": ".",
     "samba-schemaupgrade": ".",
@@ -427,6 +429,47 @@ tasks = {
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
 
+    "samba-ad-member-mitkrb5": [
+        ("random-sleep", random_sleep(300, 900)),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
+        ("make", "make -j"),
+        ("test", make_test(include_envs=[
+            "ad_member",
+            "ad_member_idmap_rid",
+            "ad_member_idmap_ad",
+            "ad_member_rfc2307",
+            ])),
+        ("lcov", LCOV_CMD),
+        ("check-clean-tree", "script/clean-source-tree.sh"),
+        ],
+
+    "samba-ad-dc-1-mitkrb5": [
+        ("random-sleep", random_sleep(1, 1)),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
+        ("make", "make -j"),
+        ("test", make_test(include_envs=[
+            "ad_dc",
+            "ad_dc_no_nss",
+            "ad_dc_no_ntlm",
+            ])),
+        ("lcov", LCOV_CMD),
+        ("check-clean-tree", "script/clean-source-tree.sh"),
+        ],
+
+    "samba-ad-dc-4-mitkrb5": [
+        ("random-sleep", random_sleep(1, 1)),
+        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
+        ("make", "make -j"),
+        ("test", make_test(include_envs=[
+            "fl2000dc",
+            "fl2003dc",
+            "fl2008dc",
+            "fl2008r2dc",
+            ])),
+        ("lcov", LCOV_CMD),
+        ("check-clean-tree", "script/clean-source-tree.sh"),
+        ],
+
     "samba-test-only": [
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab  --abi-check-disable" + samba_configure_params),
         ("make", "make -j"),
@@ -536,19 +579,6 @@ tasks = {
         ("nonshared-distclean", "make distclean"),
         ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=talloc,tdb,pytdb,ldb,pyldb,tevent,pytevent --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd"),
         ("nonshared-make", "make -j"),
-        ],
-
-    "samba-systemkrb5": [
-        ("random-sleep", random_sleep(900, 1500)),
-        ("configure", "./configure.developer " + samba_configure_params + " --with-system-mitkrb5 --with-experimental-mit-ad-dc"),
-        ("make", "make -j"),
-        # we currently cannot run a full make test, a limited list of tests could be run
-        # via "make test TESTS=sometests"
-        ("test", make_test(include_envs=["ktest"])),
-        ("lcov", LCOV_CMD),
-        ("install", "make install"),
-        ("check-clean-tree", "script/clean-source-tree.sh"),
-        ("clean", "make clean"),
         ],
 
     # Test Samba without python still builds.  When this test fails

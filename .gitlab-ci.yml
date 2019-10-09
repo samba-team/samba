@@ -119,9 +119,6 @@ samba-nopython:
 samba-nopython-py2:
   extends: .shared_template
 
-samba-systemkrb5:
-  extends: .shared_template
-
 samba-xc:
   extends: .shared_template
 
@@ -158,6 +155,12 @@ samba-ctdb:
 samba-ad-dc-ntvfs:
   extends: .shared_template
 
+samba-ad-member-mitkrb5:
+  extends: .shared_template
+
+samba-ad-dc-4-mitkrb5:
+  extends: .shared_template
+
 .private_template:
   extends: .shared_template
   tags:
@@ -189,6 +192,9 @@ samba-nt4:
 samba-schemaupgrade:
   extends: .private_template
 
+samba-ad-dc-1-mitkrb5:
+  extends: .private_template
+
 # 'pages' is a special job which can publish artifacts in `public` dir to gitlab pages
 pages:
   image: ${SAMBA_CI_CONTAINER_REGISTRY}/samba-ci-${SAMBA_CI_CONTAINER_IMAGE}:${SAMBA_CI_CONTAINER_TAG}
@@ -199,14 +205,17 @@ pages:
   dependencies:  # tell gitlab to download artifacts for these jobs
     - samba
     - samba-ad-dc-1
+    - samba-ad-dc-1-mitkrb5
     - samba-ad-dc-2
     - samba-ad-dc-3
     - samba-ad-dc-4
+    - samba-ad-dc-4-mitkrb5
     - samba-ad-dc-5
     - samba-ad-dc-6
     - samba-ad-dc-backup
     - samba-ad-dc-ntvfs
     - samba-ad-member
+    - samba-ad-member-mitkrb5
     - samba-ctdb
     - samba-fileserver
     - samba-libs
@@ -216,7 +225,6 @@ pages:
     - samba-nt4
     - samba-schemaupgrade
     - samba-static
-    - samba-systemkrb5
     - samba-xc
     # - ctdb  # TODO
     - others
