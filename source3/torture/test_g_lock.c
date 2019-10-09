@@ -421,7 +421,7 @@ static void lock4_check(const struct g_lock_rec *locks,
 		return;
 	}
 
-	if (!serverid_equal(&state->me, &locks[0].pid)) {
+	if (!server_id_equal(&state->me, &locks[0].pid)) {
 		struct server_id_buf buf1, buf2;
 		fprintf(stderr, "me=%s, locker=%s\n",
 			server_id_str_buf(state->me, &buf1),

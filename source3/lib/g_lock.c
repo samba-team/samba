@@ -244,7 +244,7 @@ static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
 
 		g_lock_get_rec(&lck, i, &lock);
 
-		if (serverid_equal(&self, &lock.pid)) {
+		if (server_id_equal(&self, &lock.pid)) {
 			if (lock.lock_type == type) {
 				status = NT_STATUS_WAS_LOCKED;
 				goto done;
@@ -528,7 +528,7 @@ static void g_lock_unlock_fn(struct db_record *rec,
 	for (i=0; i<lck.num_recs; i++) {
 		struct g_lock_rec lockrec;
 		g_lock_get_rec(&lck, i, &lockrec);
-		if (serverid_equal(&state->self, &lockrec.pid)) {
+		if (server_id_equal(&state->self, &lockrec.pid)) {
 			break;
 		}
 	}
@@ -601,7 +601,7 @@ static void g_lock_write_data_fn(struct db_record *rec,
 		struct g_lock_rec lockrec;
 		g_lock_get_rec(&lck, i, &lockrec);
 		if ((lockrec.lock_type == G_LOCK_WRITE) &&
-		    serverid_equal(&state->self, &lockrec.pid)) {
+		    server_id_equal(&state->self, &lockrec.pid)) {
 			break;
 		}
 	}

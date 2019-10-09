@@ -1040,7 +1040,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 
 	/* Need to wait before sending a break
 	   message if we sent ourselves this message. */
-	if (serverid_equal(&self, &src)) {
+	if (server_id_equal(&self, &src)) {
 		wait_before_sending_break();
 	}
 

@@ -156,7 +156,7 @@ static int show_share_parseable(const struct connections_key *key,
 
 	for (i=0; i<ids->num_entries; i++) {
 		struct server_id id = ids->entries[i].pid;
-		if (serverid_equal(&id, &crec->pid)) {
+		if (server_id_equal(&id, &crec->pid)) {
 			guest = false;
 			break;
 		}

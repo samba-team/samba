@@ -532,7 +532,7 @@ static bool rename_share_filename_fn(
 	e->name_hash = state->new_name_hash;
 	*modified = true;
 
-	ok = serverid_equal(&e->pid, &state->self);
+	ok = server_id_equal(&e->pid, &state->self);
 	if (ok) {
 		return false;
 	}

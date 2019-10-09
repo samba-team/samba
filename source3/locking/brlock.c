@@ -112,7 +112,7 @@ const struct GUID *brl_req_guid(const struct byte_range_lock *brl)
 static bool brl_same_context(const struct lock_context *ctx1,
 			     const struct lock_context *ctx2)
 {
-	return (serverid_equal(&ctx1->pid, &ctx2->pid) &&
+	return (server_id_equal(&ctx1->pid, &ctx2->pid) &&
 		(ctx1->smblctx == ctx2->smblctx) &&
 		(ctx1->tid == ctx2->tid));
 }
@@ -1466,7 +1466,8 @@ void brl_close_fnum(struct byte_range_lock *br_lck)
 	for (i=0; i < num_locks_copy; i++) {
 		struct lock_struct *lock = &locks_copy[i];
 
-		if (lock->context.tid == tid && serverid_equal(&lock->context.pid, &pid) &&
+		if (lock->context.tid == tid &&
+		    server_id_equal(&lock->context.pid, &pid) &&
 				(lock->fnum == fnum)) {
 			brl_unlock(
 				br_lck,
@@ -1525,7 +1526,7 @@ bool brl_mark_disconnected(struct files_struct *fsp)
 			return false;
 		}
 
-		if (!serverid_equal(&lock->context.pid, &self)) {
+		if (!server_id_equal(&lock->context.pid, &self)) {
 			TALLOC_FREE(br_lck);
 			return false;
 		}

@@ -862,7 +862,7 @@ static int count_sess_files_fn(struct file_id fid,
 		*/
 		struct sessionid *sess = &info->session_list[rh + i];
 		if ((e->uid == sess->uid) &&
-		     serverid_equal(&e->pid, &sess->pid)) {
+		     server_id_equal(&e->pid, &sess->pid)) {
 
 			info->ctr->array[i].num_open++;
 			return 0;
@@ -981,7 +981,8 @@ static int share_file_fn(struct file_id fid,
 
 	if (strequal(d->servicepath, sfs->in_sharepath)) {
 		for (i=0; i < sfs->resp_entries; i++) {
-			if (serverid_equal(&e->pid, &sfs->svrid_arr[offset + i])) {
+			if (server_id_equal(
+				    &e->pid, &sfs->svrid_arr[offset + i])) {
 				sfs->netconn_arr[i].num_open ++;
 				return 0;
 			}

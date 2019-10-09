@@ -1566,7 +1566,7 @@ static bool validate_my_share_entries_fn(
 	struct validate_my_share_entries_state *state = private_data;
 	files_struct *fsp;
 
-	if (!serverid_equal(&state->self, &e->pid)) {
+	if (!server_id_equal(&state->self, &e->pid)) {
 		return false;
 	}
 

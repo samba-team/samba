@@ -399,7 +399,6 @@ uint32_t map_share_mode_to_deny_mode(uint32_t share_access, uint32_t private_opt
 
 #include "lib/util_procid.h"
 
-#define serverid_equal(p1, p2) server_id_equal(p1,p2)
 struct server_id interpret_pid(const char *pid_string);
 bool is_offset_safe(const char *buf_base, size_t buf_len, char *ptr, size_t off);
 char *get_safe_ptr(const char *buf_base, size_t buf_len, char *ptr, size_t off);

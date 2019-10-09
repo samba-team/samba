@@ -516,7 +516,7 @@ static int shutdown_other_smbds(struct smbXsrv_session_global0 *session,
 		return 0;
 	}
 
-	if (serverid_equal(&pid, &self_pid)) {
+	if (server_id_equal(&pid, &self_pid)) {
 		DEBUG(10, ("It's me\n"));
 		return 0;
 	}
