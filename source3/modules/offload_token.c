@@ -83,73 +83,90 @@ static int fsp_token_link_destructor(struct fsp_token_link *link)
 	return 0;
 }
 
+struct vfs_offload_token_db_store_fsp_state {
+	const struct files_struct *fsp;
+	const DATA_BLOB *token_blob;
+	NTSTATUS status;
+};
+
+static void vfs_offload_token_db_store_fsp_fn(
+	struct db_record *rec, TDB_DATA value, void *private_data)
+{
+	struct vfs_offload_token_db_store_fsp_state *state = private_data;
+	const struct files_struct *fsp = state->fsp;
+	const DATA_BLOB *token_blob = state->token_blob;
+	files_struct *token_db_fsp = NULL;
+	void *ptr = NULL;
+
+	if (value.dsize == 0) {
+		value = make_tdb_data((uint8_t *)&fsp, sizeof(files_struct *));
+		state->status = dbwrap_record_store(rec, value, 0);
+		return;
+	}
+
+	if (value.dsize != sizeof(ptr)) {
+		DBG_ERR("Bad db entry for token:\n");
+		dump_data(1, token_blob->data, token_blob->length);
+		state->status = NT_STATUS_INTERNAL_ERROR;
+		return;
+	}
+	memcpy(&ptr, value.dptr, value.dsize);
+
+	token_db_fsp = talloc_get_type_abort(ptr, struct files_struct);
+	if (token_db_fsp != fsp) {
+		DBG_ERR("token for fsp [%s] matches already known "
+			"but different fsp [%s]:\n",
+			fsp_str_dbg(fsp),
+			fsp_str_dbg(token_db_fsp));
+		dump_data(1, token_blob->data, token_blob->length);
+		state->status = NT_STATUS_INTERNAL_ERROR;
+		return;
+	}
+}
+
 NTSTATUS vfs_offload_token_db_store_fsp(struct vfs_offload_ctx *ctx,
 					const files_struct *fsp,
 					const DATA_BLOB *token_blob)
 {
-	struct db_record *rec = NULL;
+	struct vfs_offload_token_db_store_fsp_state state = {
+		.fsp = fsp, .token_blob = token_blob,
+	};
 	struct fsp_token_link *link = NULL;
 	TDB_DATA key = make_tdb_data(token_blob->data, token_blob->length);
-	TDB_DATA value;
 	NTSTATUS status;
 
-	rec = dbwrap_fetch_locked(ctx->db_ctx, talloc_tos(), key);
-	if (rec == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	value = dbwrap_record_get_value(rec);
-	if (value.dsize != 0) {
-		void *ptr = NULL;
-		files_struct *token_db_fsp = NULL;
-
-		if (value.dsize != sizeof(ptr)) {
-			DBG_ERR("Bad db entry for token:\n");
-			dump_data(1, token_blob->data, token_blob->length);
-			TALLOC_FREE(rec);
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-		memcpy(&ptr, value.dptr, value.dsize);
-		TALLOC_FREE(rec);
-
-		token_db_fsp = talloc_get_type_abort(ptr, struct files_struct);
-		if (token_db_fsp != fsp) {
-			DBG_ERR("token for fsp [%s] matches already known "
-				"but different fsp [%s]:\n",
-				fsp_str_dbg(fsp), fsp_str_dbg(token_db_fsp));
-			dump_data(1, token_blob->data, token_blob->length);
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
-		return NT_STATUS_OK;
-	}
-
-	link = talloc_zero(fsp, struct fsp_token_link);
+	link = talloc(fsp, struct fsp_token_link);
 	if (link == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	link->ctx = ctx;
-	link->token_blob = data_blob_talloc(link, token_blob->data,
-					    token_blob->length);
+	*link = (struct fsp_token_link) {
+		.ctx = ctx,
+		.token_blob = data_blob_dup_talloc(link, *token_blob),
+	};
 	if (link->token_blob.data == NULL) {
 		TALLOC_FREE(link);
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_set_destructor(link, fsp_token_link_destructor);
 
-	value = make_tdb_data((uint8_t *)&fsp, sizeof(files_struct *));
-
-	status = dbwrap_record_store(rec, value, 0);
+	status = dbwrap_do_locked(
+		ctx->db_ctx,
+		key,
+		vfs_offload_token_db_store_fsp_fn,
+		&state);
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_ERR("dbwrap_record_store for [%s] failed: %s. Token\n",
-			fsp_str_dbg(fsp), nt_errstr(status));
-		dump_data(0, token_blob->data, token_blob->length);
+		DBG_DEBUG("dbwrap_do_locked failed: %s\n",
+			  nt_errstr(status));
 		TALLOC_FREE(link);
-		TALLOC_FREE(rec);
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_DEBUG("vfs_offload_token_db_store_fsp_fn failed: %s\n",
+			  nt_errstr(status));
+		TALLOC_FREE(link);
 		return status;
 	}
 
-	TALLOC_FREE(rec);
+	talloc_set_destructor(link, fsp_token_link_destructor);
 	return NT_STATUS_OK;
 }
 
