@@ -72,3 +72,8 @@ def build(bld):
                      source='test_smb1cli_session.c',
                      deps='cmocka cli_smb_common',
                      for_selftest=True)
+
+    bld.SAMBA_BINARY('test_util_translate',
+                     source='test_util_translate.c',
+                     deps='cmocka cli_smb_common',
+                     for_selftest=True)

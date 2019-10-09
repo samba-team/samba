@@ -24,6 +24,9 @@
 #include "smb_constants.h"
 #include <talloc.h>
 
+#ifndef _SMB_UTIL_H
+#define _SMB_UTIL_H
+
 const char *smb_protocol_types_string(enum protocol_types protocol);
 char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib);
 uint32_t unix_perms_to_wire(mode_t perms);
@@ -46,3 +49,7 @@ NTSTATUS smb_bytes_pull_str(TALLOC_CTX *mem_ctx, char **_str, bool ucs2,
 			    const uint8_t *buf, size_t buf_len,
 			    const uint8_t *position,
 			    size_t *_consumed);
+
+enum smb_signing_setting smb_signing_setting_translate(const char *str);
+
+#endif /* _SMB_UTIL_H */
