@@ -294,6 +294,8 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
 						       struct db_tdb_ctx);
+	struct tdb_context *tdb = ctx->wtdb->tdb;
+	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
 	/*
@@ -302,8 +304,12 @@ static NTSTATUS db_tdb_storev(struct db_record *rec,
 	 * anymore after it was stored.
 	 */
 
-	ret = tdb_storev(ctx->wtdb->tdb, rec->key, dbufs, num_dbufs, flag);
-	return (ret == 0) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	ret = tdb_storev(tdb, rec->key, dbufs, num_dbufs, flag);
+	if (ret == -1) {
+		enum TDB_ERROR err = tdb_error(tdb);
+		status = map_nt_error_from_tdb(err);
+	}
+	return status;
 }
 
 static NTSTATUS db_tdb_delete(struct db_record *rec)
