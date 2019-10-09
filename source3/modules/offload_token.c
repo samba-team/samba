@@ -153,40 +153,50 @@ NTSTATUS vfs_offload_token_db_store_fsp(struct vfs_offload_ctx *ctx,
 	return NT_STATUS_OK;
 }
 
+struct vfs_offload_token_db_fetch_fsp_state {
+	struct files_struct **fsp;
+	NTSTATUS status;
+};
+
+static void vfs_offload_token_db_fetch_fsp_fn(
+	TDB_DATA key, TDB_DATA value, void *private_data)
+{
+	struct vfs_offload_token_db_fetch_fsp_state *state = private_data;
+	void *ptr;
+
+	if (value.dsize != sizeof(ptr)) {
+		DBG_ERR("Bad db entry for token:\n");
+		dump_data(1, key.dptr, key.dsize);
+		state->status = NT_STATUS_INTERNAL_ERROR;
+		return;
+	}
+
+	memcpy(&ptr, value.dptr, value.dsize);
+	*state->fsp = talloc_get_type_abort(ptr, struct files_struct);
+}
+
 NTSTATUS vfs_offload_token_db_fetch_fsp(struct vfs_offload_ctx *ctx,
 					const DATA_BLOB *token_blob,
 					files_struct **fsp)
 {
-	struct db_record *rec = NULL;
+	struct vfs_offload_token_db_fetch_fsp_state state = { .fsp = fsp };
 	TDB_DATA key = make_tdb_data(token_blob->data, token_blob->length);
-	TDB_DATA value;
-	void *ptr = NULL;
+	NTSTATUS status;
 
-	rec = dbwrap_fetch_locked(ctx->db_ctx, talloc_tos(), key);
-	if (rec == NULL) {
-		return NT_STATUS_INTERNAL_ERROR;
+	status = dbwrap_parse_record(
+		ctx->db_ctx,
+		key,
+		vfs_offload_token_db_fetch_fsp_fn,
+		&state);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-
-	value = dbwrap_record_get_value(rec);
-	if (value.dsize == 0) {
+	if (!NT_STATUS_IS_OK(status)) {
 		DBG_DEBUG("Unknown token:\n");
 		dump_data(10, token_blob->data, token_blob->length);
-		TALLOC_FREE(rec);
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		return status;
 	}
-
-	if (value.dsize != sizeof(ptr)) {
-		DBG_ERR("Bad db entry for token:\n");
-		dump_data(1, token_blob->data, token_blob->length);
-		TALLOC_FREE(rec);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-
-	memcpy(&ptr, value.dptr, value.dsize);
-	TALLOC_FREE(rec);
-
-	*fsp = talloc_get_type_abort(ptr, struct files_struct);
-	return NT_STATUS_OK;
+	return state.status;
 }
 
 NTSTATUS vfs_offload_token_create_blob(TALLOC_CTX *mem_ctx,
