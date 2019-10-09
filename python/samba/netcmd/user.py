@@ -1958,7 +1958,8 @@ samba-tool user syncpasswords --terminate \\
             assert res is None
 
             input = "%s" % (ldif)
-            reply = sync_command_p.communicate(input)[0]
+            reply = sync_command_p.communicate(
+                input.encode('utf-8'))[0].decode('utf-8')
             log_msg("%s\n" % (reply))
             res = sync_command_p.poll()
             if res is None:
