@@ -405,46 +405,6 @@ static int fake_acls_sys_acl_delete_def_file(vfs_handle_struct *handle,
 	return ret;
 }
 
-static int fake_acls_chown(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid)
-{
-	int ret;
-	uint8_t id_buf[4];
-	if (uid != -1) {
-		uid_t current_uid = get_current_uid(handle->conn);
-
-		if (current_uid != 0 && current_uid != uid) {
-			return EACCES;
-		}
-
-		SIVAL(id_buf, 0, uid);
-		ret = SMB_VFS_NEXT_SETXATTR(handle,
-				smb_fname,
-				FAKE_UID,
-				id_buf,
-				sizeof(id_buf),
-				0);
-		if (ret != 0) {
-			return ret;
-		}
-	}
-	if (gid != -1) {
-		SIVAL(id_buf, 0, gid);
-		ret = SMB_VFS_NEXT_SETXATTR(handle,
-				smb_fname,
-				FAKE_GID,
-				id_buf,
-				sizeof(id_buf),
-				0);
-		if (ret != 0) {
-			return ret;
-		}
-	}
-	return 0;
-}
-
 static int fake_acls_lchown(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			uid_t uid,
@@ -761,7 +721,6 @@ static struct vfs_fn_pointers vfs_fake_acls_fns = {
 	.sys_acl_set_file_fn = fake_acls_sys_acl_set_file,
 	.sys_acl_set_fd_fn = fake_acls_sys_acl_set_fd,
 	.sys_acl_delete_def_file_fn = fake_acls_sys_acl_delete_def_file,
-	.chown_fn = fake_acls_chown,
 	.lchown_fn = fake_acls_lchown,
 	.fchown_fn = fake_acls_fchown,
 	
