@@ -285,6 +285,7 @@
 /* Version 42 - Add SMB_VFS_FCNTL */
 /* Version 42 - Remove SMB_VFS_RMDIR.
 		Use SMB_VFS_UNLINKAT(.., AT_REMOVEDIR) instead. */
+/* Version 42 - Remove SMB_VFS_CHOWN */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -786,10 +787,6 @@ struct vfs_fn_pointers {
 			const struct smb_filename *smb_fname,
 			mode_t mode);
 	int (*fchmod_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
-	int (*chown_fn)(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid);
 	int (*fchown_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, uid_t uid, gid_t gid);
 	int (*lchown_fn)(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
@@ -1316,10 +1313,6 @@ int smb_vfs_call_chmod(struct vfs_handle_struct *handle,
 			mode_t mode);
 int smb_vfs_call_fchmod(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, mode_t mode);
-int smb_vfs_call_chown(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid);
 int smb_vfs_call_fchown(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, uid_t uid, gid_t gid);
 int smb_vfs_call_lchown(struct vfs_handle_struct *handle,
@@ -1755,10 +1748,6 @@ int vfs_not_implemented_chmod(vfs_handle_struct *handle,
 			      mode_t mode);
 int vfs_not_implemented_fchmod(vfs_handle_struct *handle, files_struct *fsp,
 			       mode_t mode);
-int vfs_not_implemented_chown(vfs_handle_struct *handle,
-			      const struct smb_filename *smb_fname,
-			      uid_t uid,
-			      gid_t gid);
 int vfs_not_implemented_fchown(vfs_handle_struct *handle, files_struct *fsp,
 			       uid_t uid, gid_t gid);
 int vfs_not_implemented_lchown(vfs_handle_struct *handle,

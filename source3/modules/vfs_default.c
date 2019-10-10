@@ -2245,19 +2245,6 @@ static int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t m
 	return result;
 }
 
-static int vfswrap_chown(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid)
-{
-	int result;
-
-	START_PROFILE(syscall_chown);
-	result = chown(smb_fname->base_name, uid, gid);
-	END_PROFILE(syscall_chown);
-	return result;
-}
-
 static int vfswrap_fchown(vfs_handle_struct *handle, files_struct *fsp, uid_t uid, gid_t gid)
 {
 #ifdef HAVE_FCHOWN
@@ -3529,7 +3516,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.unlinkat_fn = vfswrap_unlinkat,
 	.chmod_fn = vfswrap_chmod,
 	.fchmod_fn = vfswrap_fchmod,
-	.chown_fn = vfswrap_chown,
 	.fchown_fn = vfswrap_fchown,
 	.lchown_fn = vfswrap_lchown,
 	.chdir_fn = vfswrap_chdir,

@@ -359,15 +359,6 @@ int vfs_not_implemented_fchmod(vfs_handle_struct *handle, files_struct *fsp,
 	return -1;
 }
 
-int vfs_not_implemented_chown(vfs_handle_struct *handle,
-			      const struct smb_filename *smb_fname,
-			      uid_t uid,
-			      gid_t gid)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 int vfs_not_implemented_fchown(vfs_handle_struct *handle, files_struct *fsp,
 			       uid_t uid, gid_t gid)
 {
@@ -1085,7 +1076,6 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.unlinkat_fn = vfs_not_implemented_unlinkat,
 	.chmod_fn = vfs_not_implemented_chmod,
 	.fchmod_fn = vfs_not_implemented_fchmod,
-	.chown_fn = vfs_not_implemented_chown,
 	.fchown_fn = vfs_not_implemented_fchown,
 	.lchown_fn = vfs_not_implemented_lchown,
 	.chdir_fn = vfs_not_implemented_chdir,

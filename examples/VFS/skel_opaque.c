@@ -361,15 +361,6 @@ static int skel_fchmod(vfs_handle_struct *handle, files_struct *fsp,
 	return -1;
 }
 
-static int skel_chown(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid)
-{
-	errno = ENOSYS;
-	return -1;
-}
-
 static int skel_fchown(vfs_handle_struct *handle, files_struct *fsp,
 		       uid_t uid, gid_t gid)
 {
@@ -1080,7 +1071,6 @@ static struct vfs_fn_pointers skel_opaque_fns = {
 	.unlinkat_fn = skel_unlinkat,
 	.chmod_fn = skel_chmod,
 	.fchmod_fn = skel_fchmod,
-	.chown_fn = skel_chown,
 	.fchown_fn = skel_fchown,
 	.lchown_fn = skel_lchown,
 	.chdir_fn = skel_chdir,

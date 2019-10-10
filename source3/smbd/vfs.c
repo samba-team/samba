@@ -2025,15 +2025,6 @@ int smb_vfs_call_fchmod(struct vfs_handle_struct *handle,
 	return handle->fns->fchmod_fn(handle, fsp, mode);
 }
 
-int smb_vfs_call_chown(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid)
-{
-	VFS_FIND(chown);
-	return handle->fns->chown_fn(handle, smb_fname, uid, gid);
-}
-
 int smb_vfs_call_fchown(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, uid_t uid, gid_t gid)
 {

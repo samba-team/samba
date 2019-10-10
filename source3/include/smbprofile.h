@@ -69,7 +69,6 @@ struct tevent_context;
 	SMBPROFILE_STATS_BASIC(syscall_unlinkat) \
 	SMBPROFILE_STATS_BASIC(syscall_chmod) \
 	SMBPROFILE_STATS_BASIC(syscall_fchmod) \
-	SMBPROFILE_STATS_BASIC(syscall_chown) \
 	SMBPROFILE_STATS_BASIC(syscall_fchown) \
 	SMBPROFILE_STATS_BASIC(syscall_lchown) \
 	SMBPROFILE_STATS_BASIC(syscall_chdir) \

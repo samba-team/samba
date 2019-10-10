@@ -480,14 +480,6 @@ static int skel_fchmod(vfs_handle_struct *handle, files_struct *fsp,
 	return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
 }
 
-static int skel_chown(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid)
-{
-	return SMB_VFS_NEXT_CHOWN(handle, smb_fname, uid, gid);
-}
-
 static int skel_fchown(vfs_handle_struct *handle, files_struct *fsp,
 		       uid_t uid, gid_t gid)
 {
@@ -1377,7 +1369,6 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.unlinkat_fn = skel_unlinkat,
 	.chmod_fn = skel_chmod,
 	.fchmod_fn = skel_fchmod,
-	.chown_fn = skel_chown,
 	.fchown_fn = skel_fchown,
 	.lchown_fn = skel_lchown,
 	.chdir_fn = skel_chdir,

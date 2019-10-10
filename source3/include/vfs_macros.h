@@ -231,11 +231,6 @@
 #define SMB_VFS_NEXT_FCHMOD(handle, fsp, mode) \
 	smb_vfs_call_fchmod((handle)->next, (fsp), (mode))
 
-#define SMB_VFS_CHOWN(conn, smb_fname, uid, gid) \
-	smb_vfs_call_chown((conn)->vfs_handles, (smb_fname), (uid), (gid))
-#define SMB_VFS_NEXT_CHOWN(handle, smb_fname, uid, gid) \
-	smb_vfs_call_chown((handle)->next, (smb_fname), (uid), (gid))
-
 #define SMB_VFS_FCHOWN(fsp, uid, gid) \
 	smb_vfs_call_fchown((fsp)->conn->vfs_handles, (fsp), (uid), (gid))
 #define SMB_VFS_NEXT_FCHOWN(handle, fsp, uid, gid) \
