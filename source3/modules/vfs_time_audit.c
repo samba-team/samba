@@ -1109,29 +1109,6 @@ static int smb_time_audit_fchmod(vfs_handle_struct *handle, files_struct *fsp,
 	return result;
 }
 
-static int smb_time_audit_chown(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid)
-{
-	int result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_CHOWN(handle, smb_fname, uid, gid);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_fname("chown",
-			timediff,
-			smb_fname->base_name);
-	}
-
-	return result;
-}
-
 static int smb_time_audit_fchown(vfs_handle_struct *handle, files_struct *fsp,
 				 uid_t uid, gid_t gid)
 {
@@ -2859,7 +2836,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.unlinkat_fn = smb_time_audit_unlinkat,
 	.chmod_fn = smb_time_audit_chmod,
 	.fchmod_fn = smb_time_audit_fchmod,
-	.chown_fn = smb_time_audit_chown,
 	.fchown_fn = smb_time_audit_fchown,
 	.lchown_fn = smb_time_audit_lchown,
 	.chdir_fn = smb_time_audit_chdir,
