@@ -140,7 +140,6 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_UNLINKAT,
 	SMB_VFS_OP_CHMOD,
 	SMB_VFS_OP_FCHMOD,
-	SMB_VFS_OP_CHOWN,
 	SMB_VFS_OP_FCHOWN,
 	SMB_VFS_OP_LCHOWN,
 	SMB_VFS_OP_CHDIR,
@@ -283,7 +282,6 @@ static struct {
 	{ SMB_VFS_OP_UNLINKAT,	"unlinkat" },
 	{ SMB_VFS_OP_CHMOD,	"chmod" },
 	{ SMB_VFS_OP_FCHMOD,	"fchmod" },
-	{ SMB_VFS_OP_CHOWN,	"chown" },
 	{ SMB_VFS_OP_FCHOWN,	"fchown" },
 	{ SMB_VFS_OP_LCHOWN,	"lchown" },
 	{ SMB_VFS_OP_CHDIR,	"chdir" },
@@ -1542,21 +1540,6 @@ static int smb_full_audit_fchmod(vfs_handle_struct *handle, files_struct *fsp,
 
 	do_log(SMB_VFS_OP_FCHMOD, (result >= 0), handle,
 	       "%s|%o", fsp_str_do_log(fsp), mode);
-
-	return result;
-}
-
-static int smb_full_audit_chown(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid)
-{
-	int result;
-
-	result = SMB_VFS_NEXT_CHOWN(handle, smb_fname, uid, gid);
-
-	do_log(SMB_VFS_OP_CHOWN, (result >= 0), handle, "%s|%ld|%ld",
-	       smb_fname->base_name, (long int)uid, (long int)gid);
 
 	return result;
 }
@@ -2972,7 +2955,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.unlinkat_fn = smb_full_audit_unlinkat,
 	.chmod_fn = smb_full_audit_chmod,
 	.fchmod_fn = smb_full_audit_fchmod,
-	.chown_fn = smb_full_audit_chown,
 	.fchown_fn = smb_full_audit_fchown,
 	.lchown_fn = smb_full_audit_lchown,
 	.chdir_fn = smb_full_audit_chdir,
