@@ -232,8 +232,6 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 	char *canon_principal = NULL;
 	char *canon_realm = NULL;
 	const char *target_hostname = NULL;
-	const DATA_BLOB *server_blob = NULL;
-	bool got_kerberos_mechanism = false;
 	enum credentials_use_kerberos krb5_state;
 	bool try_kerberos = false;
 	bool need_kinit = false;
@@ -242,48 +240,6 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 	bool ok;
 
 	target_hostname = smbXcli_conn_remote_name(cli->conn);
-	server_blob = smbXcli_conn_server_gss_blob(cli->conn);
-
-	/* the server might not even do spnego */
-	if (server_blob != NULL && server_blob->length != 0) {
-		char *OIDs[ASN1_MAX_OIDS] = { NULL, };
-		size_t i;
-
-		/*
-		 * The server sent us the first part of the SPNEGO exchange in the
-		 * negprot reply. It is WRONG to depend on the principal sent in the
-		 * negprot reply, but right now we do it. If we don't receive one,
-		 * we try to best guess, then fall back to NTLM.
-		 */
-		ok = spnego_parse_negTokenInit(frame,
-					       *server_blob,
-					       OIDs,
-					       NULL,
-					       NULL);
-		if (!ok) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-		if (OIDs[0] == NULL) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_INVALID_PARAMETER;
-		}
-
-		/* make sure the server understands kerberos */
-		for (i = 0; OIDs[i] != NULL; i++) {
-			if (i == 0) {
-				DEBUG(3,("got OID=%s\n", OIDs[i]));
-			} else {
-				DEBUGADD(3,("got OID=%s\n", OIDs[i]));
-			}
-
-			if (strcmp(OIDs[i], OID_KERBEROS5_OLD) == 0 ||
-			    strcmp(OIDs[i], OID_KERBEROS5) == 0) {
-				got_kerberos_mechanism = true;
-				break;
-			}
-		}
-	}
 
 	auth_requested = cli_credentials_authentication_requested(creds);
 	if (auth_requested) {
@@ -333,12 +289,6 @@ NTSTATUS cli_session_creds_prepare_krb5(struct cli_state *cli,
 		need_kinit = false;
 	} else if (krb5_state == CRED_MUST_USE_KERBEROS) {
 		need_kinit = try_kerberos;
-	} else if (!got_kerberos_mechanism) {
-		/*
-		 * Most likely the server doesn't support
-		 * Kerberos, don't waste time doing a kinit
-		 */
-		need_kinit = false;
 	} else {
 		need_kinit = try_kerberos;
 	}
