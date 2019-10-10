@@ -2079,52 +2079,6 @@ static int fruit_chmod(vfs_handle_struct *handle,
 	return rc;
 }
 
-static int fruit_chown(vfs_handle_struct *handle,
-		       const struct smb_filename *smb_fname,
-		       uid_t uid,
-		       gid_t gid)
-{
-	int rc = -1;
-	struct fruit_config_data *config = NULL;
-	struct smb_filename *adp_smb_fname = NULL;
-
-	rc = SMB_VFS_NEXT_CHOWN(handle, smb_fname, uid, gid);
-	if (rc != 0) {
-		return rc;
-	}
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	if (config->rsrc != FRUIT_RSRC_ADFILE) {
-		return 0;
-	}
-
-	if (!VALID_STAT(smb_fname->st)) {
-		return 0;
-	}
-
-	if (!S_ISREG(smb_fname->st.st_ex_mode)) {
-		return 0;
-	}
-
-	rc = adouble_path(talloc_tos(), smb_fname, &adp_smb_fname);
-	if (rc != 0) {
-		goto done;
-	}
-
-	DEBUG(10, ("fruit_chown: %s\n", adp_smb_fname->base_name));
-
-	rc = SMB_VFS_NEXT_CHOWN(handle, adp_smb_fname, uid, gid);
-	if (errno == ENOENT) {
-		rc = 0;
-	}
-
- done:
-	TALLOC_FREE(adp_smb_fname);
-	return rc;
-}
-
 static int fruit_rmdir_internal(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname)
@@ -5148,7 +5102,6 @@ static struct vfs_fn_pointers vfs_fruit_fns = {
 
 	/* File operations */
 	.chmod_fn = fruit_chmod,
-	.chown_fn = fruit_chown,
 	.unlinkat_fn = fruit_unlinkat,
 	.renameat_fn = fruit_renameat,
 	.open_fn = fruit_open,
