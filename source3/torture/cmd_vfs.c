@@ -946,38 +946,6 @@ static NTSTATUS cmd_fchmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_chown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
-{
-	struct smb_filename *smb_fname = NULL;
-	uid_t uid;
-	gid_t gid;
-	if (argc != 4) {
-		printf("Usage: chown <path> <uid> <gid>\n");
-		return NT_STATUS_OK;
-	}
-
-	uid = atoi(argv[2]);
-	gid = atoi(argv[3]);
-
-	smb_fname = synthetic_smb_fname(talloc_tos(),
-					argv[1],
-					NULL,
-					NULL,
-					ssf_flags());
-	if (smb_fname == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (SMB_VFS_CHOWN(vfs->conn, smb_fname, uid, gid) == -1) {
-		printf("chown: error=%d (%s)\n", errno, strerror(errno));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	printf("chown: ok\n");
-	return NT_STATUS_OK;
-}
-
-
 static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	uid_t uid;
@@ -2006,7 +1974,6 @@ struct cmd_set vfs_commands[] = {
 	{ "unlink",   cmd_pathfunc,   "VFS unlink()",    "unlink <fname>" },
 	{ "chmod",   cmd_chmod,   "VFS chmod()",    "chmod <path> <mode>" },
 	{ "fchmod",   cmd_fchmod,   "VFS fchmod()",    "fchmod <fd> <mode>" },
-	{ "chown",   cmd_chown,   "VFS chown()",    "chown <path> <uid> <gid>" },
 	{ "fchown",   cmd_fchown,   "VFS fchown()",    "fchown <fd> <uid> <gid>" },
 	{ "chdir",   cmd_pathfunc,   "VFS chdir()",    "chdir <path>" },
 	{ "getwd",   cmd_getwd,   "VFS getwd()",    "getwd" },
