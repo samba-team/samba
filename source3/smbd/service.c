@@ -567,9 +567,9 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	conn->case_preserve = lp_preserve_case(snum);
 	conn->short_case_preserve = lp_short_preserve_case(snum);
 
-	conn->encrypt_level = lp_smb_encrypt(snum);
+	conn->encrypt_level = lp_server_smb_encrypt(snum);
 	if (conn->encrypt_level > SMB_SIGNING_OFF) {
-		if (lp_smb_encrypt(-1) == SMB_SIGNING_OFF) {
+		if (lp_server_smb_encrypt(-1) == SMB_SIGNING_OFF) {
 			if (conn->encrypt_level == SMB_SIGNING_REQUIRED) {
 				DBG_ERR("Service [%s] requires encryption, but "
 					"it is disabled globally!\n",
