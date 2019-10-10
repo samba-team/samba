@@ -1536,27 +1536,6 @@ static int shadow_copy2_chmod(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_CHMOD(handle, smb_fname, mode);
 }
 
-static int shadow_copy2_chown(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid)
-{
-	time_t timestamp = 0;
-
-	if (!shadow_copy2_strip_snapshot(talloc_tos(),
-				handle,
-				smb_fname->base_name,
-				&timestamp,
-				NULL)) {
-		return -1;
-	}
-	if (timestamp != 0) {
-		errno = EROFS;
-		return -1;
-	}
-	return SMB_VFS_NEXT_CHOWN(handle, smb_fname, uid, gid);
-}
-
 static void store_cwd_data(vfs_handle_struct *handle,
 				const char *connectpath)
 {
@@ -3153,7 +3132,6 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.open_fn = shadow_copy2_open,
 	.unlinkat_fn = shadow_copy2_unlinkat,
 	.chmod_fn = shadow_copy2_chmod,
-	.chown_fn = shadow_copy2_chown,
 	.chdir_fn = shadow_copy2_chdir,
 	.ntimes_fn = shadow_copy2_ntimes,
 	.readlinkat_fn = shadow_copy2_readlinkat,
