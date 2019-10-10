@@ -972,18 +972,6 @@ static int cephwrap_fchmod(struct vfs_handle_struct *handle, files_struct *fsp, 
 	WRAP_RETURN(result);
 }
 
-static int cephwrap_chown(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid)
-{
-	int result;
-	DBG_DEBUG("[CEPH] chown(%p, %s, %d, %d)\n", handle, smb_fname->base_name, uid, gid);
-	result = ceph_chown(handle->data, smb_fname->base_name, uid, gid);
-	DBG_DEBUG("[CEPH] chown(...) = %d\n", result);
-	WRAP_RETURN(result);
-}
-
 static int cephwrap_fchown(struct vfs_handle_struct *handle, files_struct *fsp, uid_t uid, gid_t gid)
 {
 	int result;
@@ -1455,7 +1443,6 @@ static struct vfs_fn_pointers ceph_fns = {
 	.unlinkat_fn = cephwrap_unlinkat,
 	.chmod_fn = cephwrap_chmod,
 	.fchmod_fn = cephwrap_fchmod,
-	.chown_fn = cephwrap_chown,
 	.fchown_fn = cephwrap_fchown,
 	.lchown_fn = cephwrap_lchown,
 	.chdir_fn = cephwrap_chdir,
