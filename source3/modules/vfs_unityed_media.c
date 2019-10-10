@@ -1204,35 +1204,6 @@ err:
 	return status;
 }
 
-static int um_chown(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid)
-{
-	int status;
-	struct smb_filename *client_fname = NULL;
-
-	DEBUG(10, ("Entering um_chown\n"));
-
-	if (!is_in_media_files(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_CHOWN(handle, smb_fname, uid, gid);
-	}
-
-	status = alloc_get_client_smb_fname(handle,
-				talloc_tos(),
-				smb_fname,
-				&client_fname);
-	if (status != 0) {
-		goto err;
-	}
-
-	status = SMB_VFS_NEXT_CHOWN(handle, client_fname, uid, gid);
-
-err:
-	TALLOC_FREE(client_fname);
-	return status;
-}
-
 static int um_lchown(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			uid_t uid,
@@ -1916,7 +1887,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 	.fstat_fn = um_fstat,
 	.unlinkat_fn = um_unlinkat,
 	.chmod_fn = um_chmod,
-	.chown_fn = um_chown,
 	.lchown_fn = um_lchown,
 	.chdir_fn = um_chdir,
 	.ntimes_fn = um_ntimes,
