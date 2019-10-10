@@ -47,10 +47,16 @@ class GensecTests(samba.tests.TestCase):
     def test_info_uninitialized(self):
         self.assertRaises(RuntimeError, self.gensec.session_info)
 
-    def _test_update(self, mech, client_mech=None):
+    def _test_update(self, mech, client_mech=None, client_only_opt=None):
         """Test GENSEC by doing an exchange with ourselves using GSSAPI against a KDC"""
 
         """Start up a client and server GENSEC instance to test things with"""
+
+        if client_only_opt:
+            orig_client_opt = self.lp_ctx.get(client_only_opt)
+            if not orig_client_opt:
+                orig_client_opt = ''
+            self.lp_ctx.set(client_only_opt, "yes")
 
         self.gensec_client = gensec.Security.start_client(self.settings)
         self.gensec_client.set_credentials(self.get_credentials())
@@ -59,6 +65,9 @@ class GensecTests(samba.tests.TestCase):
             self.gensec_client.start_mech_by_name(client_mech)
         else:
             self.gensec_client.start_mech_by_sasl_name(mech)
+
+        if client_only_opt:
+            self.lp_ctx.set(client_only_opt, "no")
 
         self.gensec_server = gensec.Security.start_server(settings=self.settings,
                                                           auth_context=auth.AuthContext(lp_ctx=self.lp_ctx))
@@ -78,11 +87,15 @@ class GensecTests(samba.tests.TestCase):
         """Run the actual call loop"""
         while True:
             if not client_finished:
+                if client_only_opt:
+                    self.lp_ctx.set(client_only_opt, "yes")
                 print("running client gensec_update")
                 try:
                     (client_finished, client_to_server) = self.gensec_client.update(server_to_client)
                 except samba.NTSTATUSError as nt:
                     raise AssertionError(nt)
+                if client_only_opt:
+                    self.lp_ctx.set(client_only_opt, "no")
             if not server_finished:
                 print("running server gensec_update")
                 try:
@@ -92,6 +105,9 @@ class GensecTests(samba.tests.TestCase):
 
             if client_finished and server_finished:
                 break
+
+        if client_only_opt:
+            self.lp_ctx.set(client_only_opt, orig_client_opt)
 
         self.assertTrue(server_finished)
         self.assertTrue(client_finished)
@@ -120,6 +136,12 @@ class GensecTests(samba.tests.TestCase):
 
     def test_update_spnego(self):
         self._test_update("GSS-SPNEGO")
+
+    def test_update_spnego_downgrade(self):
+        self._test_update("GSS-SPNEGO", "spnego", "gensec:gssapi_krb5")
+
+    def test_update_no_optimistic_spnego(self):
+        self._test_update("GSS-SPNEGO", "spnego", "spnego:client_no_optimistic")
 
     def test_update_w2k_spnego_client(self):
         self.lp_ctx.set("spnego:simulate_w2k", "yes")
