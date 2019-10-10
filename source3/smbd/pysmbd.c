@@ -472,11 +472,11 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 	const char * const kwnames[] = { "fname", "uid", "gid", "service", NULL };
 	connection_struct *conn;
 	int ret;
-
+	NTSTATUS status;
 	char *fname, *service = NULL;
 	int uid, gid;
 	TALLOC_CTX *frame;
-	struct smb_filename *smb_fname = NULL;
+	struct files_struct *fsp = NULL;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sii|z",
 					 discard_const_p(char *, kwnames),
@@ -491,25 +491,45 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 		return NULL;
 	}
 
-	smb_fname = synthetic_smb_fname(talloc_tos(),
-					fname,
-					NULL,
-					NULL,
-					lp_posix_pathnames() ?
-						SMB_FILENAME_POSIX_PATH : 0);
-	if (smb_fname == NULL) {
-		TALLOC_FREE(frame);
-		errno = ENOMEM;
-		return PyErr_SetFromErrno(PyExc_OSError);
+	/* first, try to open it as a file with flag O_RDWR */
+	status = init_files_struct(frame,
+				   fname,
+				   conn,
+				   O_RDWR,
+				   &fsp);
+	if (!NT_STATUS_IS_OK(status) && errno == EISDIR) {
+		/* if fail, try to open as dir */
+		status = init_files_struct(frame,
+					   fname,
+					   conn,
+					   DIRECTORY_FLAGS,
+					   &fsp);
 	}
 
-	ret = SMB_VFS_CHOWN(conn, smb_fname, uid, gid);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("init_files_struct failed: %s\n",
+			nt_errstr(status));
+		if (fsp != NULL) {
+			SMB_VFS_CLOSE(fsp);
+		}
+		TALLOC_FREE(frame);
+		/*
+		 * The following macro raises a python
+		 * error then returns NULL.
+		 */
+		PyErr_NTSTATUS_IS_ERR_RAISE(status);
+	}
+
+	ret = SMB_VFS_FCHOWN(fsp, uid, gid);
 	if (ret != 0) {
+		int saved_errno = errno;
+		SMB_VFS_CLOSE(fsp);
 		TALLOC_FREE(frame);
-		errno = ret;
+		errno = saved_errno;
 		return PyErr_SetFromErrno(PyExc_OSError);
 	}
 
+	SMB_VFS_CLOSE(fsp);
 	TALLOC_FREE(frame);
 
 	Py_RETURN_NONE;
