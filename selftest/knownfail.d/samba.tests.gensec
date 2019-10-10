@@ -1,0 +1,2 @@
+^samba.tests.gensec.samba.tests.gensec.GensecTests.test_update_no_optimistic_spnego
+^samba.tests.gensec.samba.tests.gensec.GensecTests.test_update_spnego_downgrade
