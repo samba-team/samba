@@ -1322,20 +1322,6 @@ static int vfs_gluster_fchmod(struct vfs_handle_struct *handle,
 	return ret;
 }
 
-static int vfs_gluster_chown(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			uid_t uid,
-			gid_t gid)
-{
-	int ret;
-
-	START_PROFILE(syscall_chown);
-	ret = glfs_chown(handle->data, smb_fname->base_name, uid, gid);
-	END_PROFILE(syscall_chown);
-
-	return ret;
-}
-
 static int vfs_gluster_fchown(struct vfs_handle_struct *handle,
 			      files_struct *fsp, uid_t uid, gid_t gid)
 {
@@ -1918,7 +1904,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 
 	.chmod_fn = vfs_gluster_chmod,
 	.fchmod_fn = vfs_gluster_fchmod,
-	.chown_fn = vfs_gluster_chown,
 	.fchown_fn = vfs_gluster_fchown,
 	.lchown_fn = vfs_gluster_lchown,
 	.chdir_fn = vfs_gluster_chdir,
