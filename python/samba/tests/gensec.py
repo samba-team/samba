@@ -79,10 +79,16 @@ class GensecTests(samba.tests.TestCase):
         while True:
             if not client_finished:
                 print("running client gensec_update")
-                (client_finished, client_to_server) = self.gensec_client.update(server_to_client)
+                try:
+                    (client_finished, client_to_server) = self.gensec_client.update(server_to_client)
+                except samba.NTSTATUSError as nt:
+                    raise AssertionError(nt)
             if not server_finished:
                 print("running server gensec_update")
-                (server_finished, server_to_client) = self.gensec_server.update(client_to_server)
+                try:
+                    (server_finished, server_to_client) = self.gensec_server.update(client_to_server)
+                except samba.NTSTATUSError as nt:
+                    raise AssertionError(nt)
 
             if client_finished and server_finished:
                 break
