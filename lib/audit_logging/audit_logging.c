@@ -170,11 +170,10 @@ static NTSTATUS get_event_server(
 		&servers);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_NOTICE(
-			"Failed to find '%s' registered on the message bus to "
-			"send JSON audit events to: %s\n",
-			server_name,
-			nt_errstr(status));
+		DBG_DEBUG("Failed to find the target '%s' on the message bus "
+			  "to send JSON audit events to: %s\n",
+			  server_name,
+			  nt_errstr(status));
 		TALLOC_FREE(frame);
 		return status;
 	}
