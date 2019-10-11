@@ -37,6 +37,9 @@ struct file_id share_mode_lock_file_id(const struct share_mode_lock *lck);
 struct share_mode_lock *get_existing_share_mode_lock(TALLOC_CTX *mem_ctx,
 						     struct file_id id);
 
+bool del_share_mode_open_id(struct share_mode_lock *lck,
+			    struct server_id open_pid,
+			    uint64_t open_file_id);
 bool del_share_mode(struct share_mode_lock *lck,
 		    struct files_struct *fsp);
 bool downgrade_share_oplock(struct share_mode_lock *lck,

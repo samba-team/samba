@@ -2495,7 +2495,9 @@ static void del_share_mode_fn(
 	state->ok = true;
 }
 
-bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
+bool del_share_mode_open_id(struct share_mode_lock *lck,
+			    struct server_id open_pid,
+			    uint64_t open_file_id)
 {
 	struct del_share_mode_state state = { .ok = false };
 	struct share_mode_data *d = NULL;
@@ -2504,21 +2506,14 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 
 	status = share_mode_lock_access_private_data(lck, &d);
 	if (!NT_STATUS_IS_OK(status)) {
-		struct file_id id = share_mode_lock_file_id(lck);
-		struct file_id_buf id_buf;
 		/* Any error recovery possible here ? */
-		DBG_ERR("share_mode_lock_access_private_data() failed for "
-			"%s %s - %s\n",
-			file_id_str_buf(id, &id_buf),
-			fsp_str_dbg(fsp),
-			nt_errstr(status));
 		return false;
 	}
 
 	ok = share_mode_entry_do(
 		d,
-		messaging_server_id(fsp->conn->sconn->msg_ctx),
-		fh_get_gen_id(fsp->fh),
+		open_pid,
+		open_file_id,
 		del_share_mode_fn,
 		&state);
 	if (!ok) {
@@ -2527,6 +2522,25 @@ bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
 	}
 	if (!state.ok) {
 		DBG_DEBUG("del_share_mode_fn failed\n");
+		return false;
+	}
+	return true;
+}
+
+bool del_share_mode(struct share_mode_lock *lck, files_struct *fsp)
+{
+	struct server_id pid =
+		messaging_server_id(fsp->conn->sconn->msg_ctx);
+	bool ok;
+
+	ok = del_share_mode_open_id(lck, pid, fh_get_gen_id(fsp->fh));
+	if (!ok) {
+		struct file_id id = share_mode_lock_file_id(lck);
+		struct file_id_buf id_buf;
+		DBG_ERR("share_mode_lock_access_private_data() failed for "
+			"%s %s\n",
+			file_id_str_buf(id, &id_buf),
+			fsp_str_dbg(fsp));
 		return false;
 	}
 	return true;
