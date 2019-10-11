@@ -544,6 +544,7 @@ static void fd_close_posix_fn(
 	TDB_DATA data,
 	void *private_data)
 {
+	int *saved_errno = (int *)private_data;
 	size_t num_fds, i;
 
 	SMB_ASSERT((data.dsize % sizeof(int)) == 0);
@@ -551,8 +552,12 @@ static void fd_close_posix_fn(
 
 	for (i=0; i<num_fds; i++) {
 		int fd;
+		int ret;
 		memcpy(&fd, data.dptr, sizeof(int));
-		close(fd);
+		ret = close(fd);
+		if (ret == -1) {
+			*saved_errno = errno;
+		}
 		data.dptr += sizeof(int);
 	}
 	dbwrap_record_delete(rec);
@@ -597,7 +602,7 @@ int fd_close_posix(const struct files_struct *fsp)
 		posix_pending_close_db,
 		fd_array_key_fsp(fsp),
 		fd_close_posix_fn,
-		NULL);
+		&saved_errno);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("dbwrap_do_locked failed: %s\n",
 			    nt_errstr(status));
