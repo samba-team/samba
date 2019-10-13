@@ -103,9 +103,7 @@ setup_nodes ()
 
 simple_test_other ()
 {
-	(unit_test $CTDB -d $CTDB_DEBUGLEVEL "$@")
-	status=$?
-	[ $status -eq 0 ] || exit $status
+	unit_test $CTDB -d $CTDB_DEBUGLEVEL "$@"
 }
 
 simple_test ()
