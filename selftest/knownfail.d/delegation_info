@@ -1,0 +1,2 @@
+^samba4.rpc.pac.*ncacn_np.netr-mem-arcfour.s4u2proxy-arcfour
+^samba4.rpc.pac.*ncacn_np.netr-mem-aes.s4u2proxy-aes

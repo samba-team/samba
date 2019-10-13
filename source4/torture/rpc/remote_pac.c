@@ -35,12 +35,16 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "param/param.h"
+#include <ldb.h>
+#include "ldb_wrap.h"
+#include "dsdb/samdb/samdb.h"
 
 #define TEST_MACHINE_NAME_BDC "torturepacbdc"
 #define TEST_MACHINE_NAME_WKSTA "torturepacwksta"
 #define TEST_MACHINE_NAME_WKSTA_DES "torturepacwkdes"
 #define TEST_MACHINE_NAME_S4U2SELF_BDC "tests4u2selfbdc"
 #define TEST_MACHINE_NAME_S4U2SELF_WKSTA "tests4u2selfwk"
+#define TEST_MACHINE_NAME_S4U2PROXY_WKSTA "tests4u2proxywk"
 
 struct pac_data {
 	DATA_BLOB pac_blob;
@@ -1000,6 +1004,227 @@ static bool test_S4U2Self_workstation_aes(struct torture_context *tctx,
 			     TEST_MACHINE_NAME_S4U2SELF_WKSTA,
 			     NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES);
 }
+
+static bool test_S4U2Proxy(struct torture_context *tctx,
+			   struct dcerpc_pipe *p,
+			   struct cli_credentials *credentials,
+			   enum netr_SchannelType secure_channel_type,
+			   const char *test_machine_name,
+			   uint32_t negotiate_flags)
+{
+	NTSTATUS status;
+	struct gensec_security *gensec_client_context = NULL;
+	struct gensec_security *gensec_server_context = NULL;
+	struct cli_credentials *server_creds = NULL;
+	size_t num_pac_buffers;
+	struct auth4_context *auth_context = NULL;
+	struct auth_session_info *session_info = NULL;
+	struct pac_data *pac_data = NULL;
+	const struct PAC_BUFFER *pac_buf = NULL;
+	char *impersonate_princ = NULL, *self_princ = NULL, *target_princ = NULL;
+	enum ndr_err_code ndr_err;
+	struct PAC_DATA pac_data_struct;
+	struct PAC_CONSTRAINED_DELEGATION *deleg = NULL;
+
+	DATA_BLOB client_to_server, server_to_client;
+
+	auth_context = talloc_zero(tctx, struct auth4_context);
+	torture_assert_not_null(tctx, auth_context, "talloc_new() failed");
+
+	auth_context->generate_session_info_pac = test_generate_session_info_pac;
+
+	torture_comment(tctx,
+		"Testing S4U2Proxy (secure_channel_type: %d, machine: %s, negotiate_flags: 0x%08x\n",
+		secure_channel_type, test_machine_name, negotiate_flags);
+
+	impersonate_princ = cli_credentials_get_principal(popt_get_cmdline_credentials(), tctx);
+	torture_assert_not_null(tctx, impersonate_princ, "Failed to get impersonate client name");
+
+	server_creds = cli_credentials_shallow_copy(tctx, credentials);
+	torture_assert_not_null(tctx, server_creds, "Failed to copy of credentials");
+
+	self_princ = talloc_asprintf(tctx, "host/%s", test_machine_name);
+	cli_credentials_invalidate_ccache(server_creds, CRED_SPECIFIED);
+	cli_credentials_set_impersonate_principal(server_creds, impersonate_princ, self_princ);
+
+	/* Trigger S4U2Proxy by setting a target_service different than self_principal */
+	target_princ = talloc_asprintf(tctx, "%s$", test_machine_name);
+	cli_credentials_set_target_service(server_creds, target_princ);
+
+	status = gensec_client_start(tctx, &gensec_client_context,
+				     lpcfg_gensec_settings(tctx, tctx->lp_ctx));
+	torture_assert_ntstatus_ok(tctx, status, "gensec_client_start (client) failed");
+
+	status = gensec_set_target_principal(gensec_client_context, target_princ);
+	torture_assert_ntstatus_ok(tctx, status, "gensec_set_target_hostname (client) failed");
+
+	/* We now set the same credentials on both client and server contexts */
+	status = gensec_set_credentials(gensec_client_context, server_creds);
+	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (client) failed");
+
+	status = gensec_start_mech_by_sasl_name(gensec_client_context, "GSSAPI");
+	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (client) failed");
+
+	status = gensec_server_start(tctx,
+				     lpcfg_gensec_settings(tctx, tctx->lp_ctx),
+				     auth_context, &gensec_server_context);
+	torture_assert_ntstatus_ok(tctx, status, "gensec_server_start (server) failed");
+
+	status = gensec_set_credentials(gensec_server_context, server_creds);
+	torture_assert_ntstatus_ok(tctx, status, "gensec_set_credentials (server) failed");
+
+	status = gensec_start_mech_by_sasl_name(gensec_server_context, "GSSAPI");
+	torture_assert_ntstatus_ok(tctx, status, "gensec_start_mech_by_sasl_name (server) failed");
+
+	server_to_client = data_blob(NULL, 0);
+
+	do {
+		/* Do a client-server update dance */
+		status = gensec_update(gensec_client_context, tctx, server_to_client, &client_to_server);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
+			torture_assert_ntstatus_ok(tctx, status, "gensec_update (client) failed");
+		}
+
+		status = gensec_update(gensec_server_context, tctx, client_to_server, &server_to_client);
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {;
+			torture_assert_ntstatus_ok(tctx, status, "gensec_update (server) failed");
+		}
+
+		if (NT_STATUS_IS_OK(status)) {
+			break;
+		}
+	} while (1);
+
+	/* Extract the PAC using Samba's code */
+
+	status = gensec_session_info(gensec_server_context, gensec_server_context, &session_info);
+	torture_assert_ntstatus_ok(tctx, status, "gensec_session_info failed");
+
+	pac_data = talloc_get_type(auth_context->private_data, struct pac_data);
+
+	torture_assert_not_null(tctx, pac_data, "gensec_update failed to fill in pac_data in auth_context");
+	torture_assert_not_null(tctx, pac_data->pac_srv_sig, "pac_srv_sig not present");
+	torture_assert_not_null(tctx, pac_data->pac_kdc_sig, "pac_kdc_sig not present");
+
+	ndr_err = ndr_pull_struct_blob(&pac_data->pac_blob, tctx, &pac_data_struct,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_pull_struct_blob of PAC_DATA structure failed");
+
+	num_pac_buffers = 6;
+
+	torture_assert_int_equal(tctx, pac_data_struct.version, 0, "version");
+	torture_assert_int_equal(tctx, pac_data_struct.num_buffers, num_pac_buffers, "num_buffers");
+
+	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_LOGON_INFO);
+	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_LOGON_INFO");
+	torture_assert_not_null(tctx, pac_buf->info, "PAC_TYPE_LOGON_INFO info");
+
+	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_LOGON_NAME);
+	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_LOGON_NAME");
+	torture_assert_not_null(tctx, pac_buf->info, "PAC_TYPE_LOGON_NAME info");
+
+	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_UPN_DNS_INFO);
+	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_UPN_DNS_INFO");
+	torture_assert_not_null(tctx, pac_buf->info, "PAC_TYPE_UPN_DNS_INFO info");
+
+	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_SRV_CHECKSUM);
+	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_SRV_CHECKSUM");
+	torture_assert_not_null(tctx, pac_buf->info, "PAC_TYPE_SRV_CHECKSUM info");
+
+	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_KDC_CHECKSUM);
+	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_KDC_CHECKSUM");
+	torture_assert_not_null(tctx, pac_buf->info, "PAC_TYPE_KDC_CHECKSUM info");
+
+	pac_buf = get_pac_buffer(&pac_data_struct, PAC_TYPE_CONSTRAINED_DELEGATION);
+	torture_assert_not_null(tctx, pac_buf, "PAC_TYPE_CONSTRAINED_DELEGATION");
+	torture_assert_not_null(tctx, pac_buf->info, "PAC_TYPE_CONSTRAINED_DELEGATION info");
+
+	deleg = pac_buf->info->constrained_delegation.info;
+	torture_assert_str_equal(tctx, deleg->proxy_target.string, target_princ, "wrong proxy_target");
+	torture_assert_int_equal(tctx, deleg->num_transited_services, 1, "wrong transited_services number");
+	torture_assert_str_equal(tctx, deleg->transited_services[0].string,
+				 talloc_asprintf(tctx, "%s@%s", self_princ, cli_credentials_get_realm(credentials)),
+				 "wrong transited_services[0]");
+
+	return netlogon_validate_pac(tctx, p, server_creds, secure_channel_type, test_machine_name,
+				     negotiate_flags, pac_data, session_info);
+}
+
+static bool setup_constrained_delegation(struct torture_context *tctx,
+					 struct dcerpc_pipe *p,
+					 struct test_join *join_ctx,
+					 const char *machine_name)
+{
+	struct samr_SetUserInfo r;
+	union samr_UserInfo user_info;
+	struct dcerpc_pipe *samr_pipe = torture_join_samr_pipe(join_ctx);
+	const char *server_dn_str = NULL;
+	struct ldb_context *sam_ctx = NULL;
+	struct ldb_dn *server_dn = NULL;
+	struct ldb_message *msg = NULL;
+	char *url = NULL;
+	int ret;
+
+	url = talloc_asprintf(tctx, "ldap://%s", dcerpc_server_name(p));
+	sam_ctx = ldb_wrap_connect(tctx, tctx->ev, tctx->lp_ctx, url, NULL, popt_get_cmdline_credentials(), 0);
+	torture_assert_not_null(tctx, sam_ctx, "Connection to the SAMDB on DC failed!");
+
+	server_dn_str = samdb_search_string(sam_ctx, tctx, ldb_get_default_basedn(sam_ctx), "distinguishedName",
+					    "samaccountname=%s$", machine_name);
+	torture_assert_not_null(tctx, server_dn_str, "samdb_search_string()");
+
+	server_dn = ldb_dn_new(tctx, sam_ctx, server_dn_str);
+	torture_assert_not_null(tctx, server_dn, "ldb_dn_new()");
+
+	msg = ldb_msg_new(tctx);
+	torture_assert_not_null(tctx, msg, "ldb_msg_new()");
+
+	msg->dn = server_dn;
+	ret = ldb_msg_add_string(msg, "msDS-AllowedToDelegateTo", talloc_asprintf(tctx, "%s$", machine_name));
+	torture_assert_int_equal(tctx, ret, 0, "ldb_msg_add_string())");
+
+	ret = ldb_modify(sam_ctx, msg);
+	torture_assert_int_equal(tctx, ret, 0, "ldb_modify()");
+
+	/* Allow forwardable flag in S4U2Self */
+	user_info.info16.acct_flags = ACB_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION | ACB_WSTRUST;
+	r.in.user_handle = torture_join_samr_user_policy(join_ctx);
+	r.in.level = 16;
+	r.in.info = &user_info;
+
+	torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetUserInfo_r(samr_pipe->binding_handle, tctx, &r),
+		"failed to set ACB_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION info account flags");
+	torture_assert_ntstatus_ok(tctx, r.out.result,
+		"failed to set ACB_TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION into account flags");
+
+	return true;
+}
+
+static bool test_S4U2Proxy_workstation_arcfour(struct torture_context *tctx,
+					       struct dcerpc_pipe *p,
+					       struct cli_credentials *credentials,
+					       struct test_join *join_ctx)
+{
+	torture_assert(tctx, setup_constrained_delegation(tctx, p, join_ctx,
+							  TEST_MACHINE_NAME_S4U2PROXY_WKSTA),
+							  "setup_constrained_delegation() failed");
+	return test_S4U2Proxy(tctx, p, credentials, SEC_CHAN_WKSTA,
+			      TEST_MACHINE_NAME_S4U2PROXY_WKSTA,
+			      NETLOGON_NEG_AUTH2_ADS_FLAGS);
+}
+
+static bool test_S4U2Proxy_workstation_aes(struct torture_context *tctx,
+					   struct dcerpc_pipe *p,
+					   struct cli_credentials *credentials,
+					   struct test_join *join_ctx)
+{
+	torture_assert(tctx, setup_constrained_delegation(tctx, p, join_ctx,
+							  TEST_MACHINE_NAME_S4U2PROXY_WKSTA),
+							  "setup_constrained_delegation() failed");
+	return test_S4U2Proxy(tctx, p, credentials, SEC_CHAN_WKSTA,
+			      TEST_MACHINE_NAME_S4U2PROXY_WKSTA,
+			      NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES);
+}
 #endif
 
 struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
@@ -1042,6 +1267,14 @@ struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netr-mem-aes",
 								      &ndr_table_netlogon, TEST_MACHINE_NAME_S4U2SELF_WKSTA);
 	torture_rpc_tcase_add_test_creds(tcase, "s4u2self-aes", test_S4U2Self_workstation_aes);
+
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netr-mem-arcfour",
+								      &ndr_table_netlogon, TEST_MACHINE_NAME_S4U2PROXY_WKSTA);
+	torture_rpc_tcase_add_test_join(tcase, "s4u2proxy-arcfour", test_S4U2Proxy_workstation_arcfour);
+
+	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netr-mem-aes",
+								      &ndr_table_netlogon, TEST_MACHINE_NAME_S4U2PROXY_WKSTA);
+	torture_rpc_tcase_add_test_join(tcase, "s4u2proxy-aes", test_S4U2Proxy_workstation_aes);
 #endif
 	return suite;
 }
