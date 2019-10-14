@@ -156,7 +156,7 @@ static int print_share_mode(struct file_id fid,
 			case DENY_ALL:  d_printf("DENY_ALL   "); break;
 			case DENY_DOS:  d_printf("DENY_DOS   "); break;
 			case DENY_READ: d_printf("DENY_READ  "); break;
-			case DENY_WRITE:printf("DENY_WRITE "); break;
+			case DENY_WRITE:d_printf("DENY_WRITE "); break;
 			case DENY_FCB:  d_printf("DENY_FCB "); break;
 			default: {
 				d_printf("unknown-please report ! "
