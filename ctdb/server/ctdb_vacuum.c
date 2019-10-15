@@ -54,6 +54,7 @@ struct ctdb_vacuum_child_context {
 	pid_t child_pid;
 	enum vacuum_child_status status;
 	struct timeval start_time;
+	bool scheduled;
 };
 
 struct ctdb_vacuum_handle {
@@ -1326,9 +1327,14 @@ static int vacuum_child_destructor(struct ctdb_vacuum_child_context *child_ctx)
 
 	ctdb->vacuumer = NULL;
 
-	tevent_add_timer(ctdb->ev, child_ctx->vacuum_handle,
-			 timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
-			 ctdb_vacuum_event, child_ctx->vacuum_handle);
+	if (child_ctx->scheduled) {
+		tevent_add_timer(
+			ctdb->ev,
+			child_ctx->vacuum_handle,
+			timeval_current_ofs(get_vacuum_interval(ctdb_db), 0),
+			ctdb_vacuum_event,
+			child_ctx->vacuum_handle);
+	}
 
 	return 0;
 }
@@ -1380,6 +1386,7 @@ static void vacuum_child_handler(struct tevent_context *ev,
  */
 static int vacuum_db_child(TALLOC_CTX *mem_ctx,
 			   struct ctdb_db_context *ctdb_db,
+			   bool scheduled,
 			   bool full_vacuum_run,
 			   struct ctdb_vacuum_child_context **out)
 {
@@ -1455,6 +1462,7 @@ static int vacuum_db_child(TALLOC_CTX *mem_ctx,
 	close(child_ctx->fd[1]);
 
 	child_ctx->status = VACUUM_RUNNING;
+	child_ctx->scheduled = scheduled;
 	child_ctx->start_time = timeval_current();
 
 	ctdb->vacuumer = child_ctx;
@@ -1517,6 +1525,7 @@ static void ctdb_vacuum_event(struct tevent_context *ev,
 
 	ret = vacuum_db_child(vacuum_handle,
 			      ctdb_db,
+			      true,
 			      full_vacuum_run,
 			      &child_ctx);
 
