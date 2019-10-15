@@ -8301,14 +8301,16 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 
 	/* Deal with any size changes. */
 
-	status = smb_set_file_size(conn, req,
-				   fsp,
-				   smb_fname,
-				   &sbuf,
-				   size,
-				   false);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
+	if (S_ISREG(sbuf.st_ex_mode)) {
+		status = smb_set_file_size(conn, req,
+					   fsp,
+					   smb_fname,
+					   &sbuf,
+					   size,
+					   false);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	/* Deal with any time changes. */
