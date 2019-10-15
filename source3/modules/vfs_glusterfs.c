@@ -268,6 +268,8 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 			       const char *service,
 			       const char *user)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	const char *volfile_servers;
 	const char *volume;
 	char *logfile;
@@ -281,14 +283,21 @@ static int vfs_gluster_connect(struct vfs_handle_struct *handle,
 		ret = -1;
 		goto done;
 	}
-	logfile = lp_parm_talloc_string(tmp_ctx, SNUM(handle->conn), "glusterfs",
-				       "logfile", NULL);
+	logfile = lp_parm_substituted_string(tmp_ctx,
+					     lp_sub,
+					     SNUM(handle->conn),
+					     "glusterfs",
+					     "logfile",
+					     NULL);
 
 	loglevel = lp_parm_int(SNUM(handle->conn), "glusterfs", "loglevel", -1);
 
-	volfile_servers = lp_parm_talloc_string(tmp_ctx, SNUM(handle->conn),
-					       "glusterfs", "volfile_server",
-					       NULL);
+	volfile_servers = lp_parm_substituted_string(tmp_ctx,
+						     lp_sub,
+						     SNUM(handle->conn),
+						     "glusterfs",
+						     "volfile_server",
+						     NULL);
 	if (volfile_servers == NULL) {
 		volfile_servers = DEFAULT_VOLFILE_SERVER;
 	}
