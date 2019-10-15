@@ -8016,6 +8016,11 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 #endif
 
 	switch (file_type) {
+		/* We can't create other objects here. */
+		case UNIX_TYPE_FILE:
+		case UNIX_TYPE_DIR:
+		case UNIX_TYPE_SYMLINK:
+			return NT_STATUS_ACCESS_DENIED;
 #if defined(S_IFIFO)
 		case UNIX_TYPE_FIFO:
 			unixmode |= S_IFIFO;
