@@ -476,6 +476,8 @@ static int nfs4acl_connect(struct vfs_handle_struct *handle,
 			   const char *service,
 			   const char *user)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct nfs4acl_config *config = NULL;
 	const struct enum_list *default_acl_style_list = NULL;
 	const char *default_xattr_name = NULL;
@@ -551,7 +553,7 @@ static int nfs4acl_connect(struct vfs_handle_struct *handle,
 						 default_acl_style_list,
 						 DEFAULT_ACL_EVERYONE);
 
-	config->xattr_name = lp_parm_talloc_string(config,
+	config->xattr_name = lp_parm_substituted_string(config, lp_sub,
 						   SNUM(handle->conn),
 						   "nfs4acl_xattr",
 						   "xattr_name",
