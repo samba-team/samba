@@ -57,6 +57,8 @@ static uint64_t sys_disk_free(connection_struct *conn,
 			      uint64_t *dfree,
 			      uint64_t *dsize)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	uint64_t dfree_retval;
 	uint64_t dfree_q = 0;
 	uint64_t bsize_q = 0;
@@ -72,7 +74,7 @@ static uint64_t sys_disk_free(connection_struct *conn,
 	 * If external disk calculation specified, use it.
 	 */
 
-	dfree_command = lp_dfree_command(talloc_tos(), SNUM(conn));
+	dfree_command = lp_dfree_command(talloc_tos(), lp_sub, SNUM(conn));
 	if (dfree_command && *dfree_command) {
 		const char *p;
 		char **lines = NULL;
