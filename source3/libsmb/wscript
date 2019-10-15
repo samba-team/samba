@@ -16,6 +16,7 @@ def build(bld):
                               libsmb_xattr.c
                               libsmb_setget.c''',
                        public_deps='''
+                                   pthread
                                    talloc
                                    smbconf
                                    libsmb
