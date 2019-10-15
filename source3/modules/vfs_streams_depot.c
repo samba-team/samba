@@ -115,6 +115,8 @@ static char *stream_dir(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			const SMB_STRUCT_STAT *base_sbuf, bool create_it)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	uint32_t hash;
 	struct smb_filename *smb_fname_hash = NULL;
 	char *result = NULL;
@@ -141,7 +143,7 @@ static char *stream_dir(vfs_handle_struct *handle,
 		goto fail;
 	}
 
-	rootdir = lp_parm_talloc_string(talloc_tos(),
+	rootdir = lp_parm_substituted_string(talloc_tos(), lp_sub,
 		SNUM(handle->conn), "streams_depot", "directory",
 		tmp);
 	if (rootdir == NULL) {
