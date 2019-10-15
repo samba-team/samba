@@ -20,7 +20,7 @@ bld.SAMBA_BINARY('nsstest',
 if bld.CONFIG_SET('HAVE_PTHREAD'):
     bld.SAMBA_BINARY('stress-nss-libwbclient',
 		     source='stress-nss-libwbclient.c',
-		     deps='wbclient',
+		     deps='wbclient pthread',
 		     install=False
 		     )
 
