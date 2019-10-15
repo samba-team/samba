@@ -433,6 +433,7 @@ static void dbwrap_watched_subrec_wakeup(
 		}
 		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 			dbwrap_watch_rec_del_watcher(wrec, i);
+			num_to_wakeup -= 1;
 			continue;
 		}
 
