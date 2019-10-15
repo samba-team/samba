@@ -141,38 +141,34 @@ static const struct PAC_BUFFER *get_pac_buffer(const struct PAC_DATA *pac_data,
 
 /* Also happens to be a really good one-step verfication of our Kerberos stack */
 
+static bool netlogon_validate_pac(struct torture_context *tctx,
+				  struct dcerpc_pipe *p1,
+				  struct cli_credentials *server_creds,
+				  enum netr_SchannelType secure_channel_type,
+				  const char *test_machine_name,
+				  uint32_t negotiate_flags,
+				  struct pac_data *pac_data,
+				  struct auth_session_info *session_info);
+
 static bool test_PACVerify(struct torture_context *tctx,
-			   struct dcerpc_pipe *p1,
+			   struct dcerpc_pipe *p,
 			   struct cli_credentials *credentials,
 			   enum netr_SchannelType secure_channel_type,
 			   const char *test_machine_name,
 			   uint32_t negotiate_flags)
 {
 	NTSTATUS status;
+	bool ok;
 	bool pkinit_in_use = torture_setting_bool(tctx, "pkinit_in_use", false);
 	bool expect_pac_upn_dns_info = torture_setting_bool(tctx, "expect_pac_upn_dns_info", true);
 	size_t num_pac_buffers;
-
-	struct netr_LogonSamLogon r;
-
-	union netr_LogonLevel logon;
-	union netr_Validation validation;
-	uint8_t authoritative;
-	struct netr_Authenticator return_authenticator;
-
-	struct netr_GenericInfo generic;
-	struct netr_Authenticator auth, auth2;
-
-	struct netlogon_creds_CredentialState *creds;
 	struct gensec_security *gensec_client_context;
 	struct gensec_security *gensec_server_context;
 	struct cli_credentials *client_creds;
 	struct cli_credentials *server_creds;
 
-	DATA_BLOB client_to_server, server_to_client, pac_wrapped, payload;
-	struct PAC_Validate pac_wrapped_struct;
+	DATA_BLOB client_to_server, server_to_client;
 	struct PAC_DATA pac_data_struct;
-
 	enum ndr_err_code ndr_err;
 
 	struct auth4_context *auth_context;
@@ -180,8 +176,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 	struct pac_data *pac_data;
 	const struct PAC_BUFFER *pac_buf = NULL;
 
-	struct dcerpc_pipe *p = NULL;
-	struct dcerpc_binding_handle *b = NULL;
 	TALLOC_CTX *tmp_ctx = talloc_new(tctx);
 	torture_assert(tctx, tmp_ctx != NULL, "talloc_new() failed");
 
@@ -206,17 +200,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 	server_creds = cli_credentials_shallow_copy(tmp_ctx,
 						    credentials);
 	torture_assert(tctx, server_creds, "Failed to copy of credentials");
-
-	if (!test_SetupCredentials2(p1, tctx, negotiate_flags,
-				    server_creds, secure_channel_type,
-				    &creds)) {
-		return false;
-	}
-	if (!test_SetupCredentialsPipe(p1, tctx, server_creds, creds,
-				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
-		return false;
-	}
-	b = p->binding_handle;
 
 	auth_context = talloc_zero(tmp_ctx, struct auth4_context);
 	torture_assert(tctx, auth_context != NULL, "talloc_new() failed");
@@ -331,11 +314,53 @@ static bool test_PACVerify(struct torture_context *tctx,
 		       pac_buf->info != NULL,
 		       "PAC_TYPE_KDC_CHECKSUM info");
 
+	ok = netlogon_validate_pac(tctx, p, server_creds, secure_channel_type, test_machine_name,
+				   negotiate_flags, pac_data, session_info);
+
+	talloc_free(tmp_ctx);
+
+	return ok;
+}
+
+static bool netlogon_validate_pac(struct torture_context *tctx,
+				  struct dcerpc_pipe *p1,
+				  struct cli_credentials *server_creds,
+				  enum netr_SchannelType secure_channel_type,
+				  const char *test_machine_name,
+				  uint32_t negotiate_flags,
+				  struct pac_data *pac_data,
+				  struct auth_session_info *session_info)
+{
+	struct PAC_Validate pac_wrapped_struct;
+	struct netlogon_creds_CredentialState *creds = NULL;
+	struct netr_Authenticator return_authenticator;
+	struct netr_Authenticator auth, auth2;
+	struct netr_GenericInfo generic;
+	struct netr_LogonSamLogon r;
+	union netr_Validation validation;
+	union netr_LogonLevel logon;
+	uint8_t authoritative;
+	struct dcerpc_pipe *p = NULL;
+	struct dcerpc_binding_handle *b = NULL;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB payload, pac_wrapped;
+
+	if (!test_SetupCredentials2(p1, tctx, negotiate_flags,
+				    server_creds, secure_channel_type,
+				    &creds)) {
+		return false;
+	}
+	if (!test_SetupCredentialsPipe(p1, tctx, server_creds, creds,
+				       DCERPC_SIGN | DCERPC_SEAL, &p)) {
+		return false;
+	}
+	b = p->binding_handle;
+
 	pac_wrapped_struct.ChecksumLength = pac_data->pac_srv_sig->signature.length;
 	pac_wrapped_struct.SignatureType = pac_data->pac_kdc_sig->type;
 	pac_wrapped_struct.SignatureLength = pac_data->pac_kdc_sig->signature.length;
 	pac_wrapped_struct.ChecksumAndSignature = payload
-		= data_blob_talloc(tmp_ctx, NULL,
+		= data_blob_talloc(tctx, NULL,
 				   pac_wrapped_struct.ChecksumLength
 				   + pac_wrapped_struct.SignatureLength);
 	memcpy(&payload.data[0],
@@ -345,7 +370,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	       pac_data->pac_kdc_sig->signature.data,
 	       pac_wrapped_struct.SignatureLength);
 
-	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, &pac_wrapped_struct,
+	ndr_err = ndr_push_struct_blob(&pac_wrapped, tctx, &pac_wrapped_struct,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_Validate);
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 
@@ -444,7 +469,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	pac_wrapped_struct.SignatureLength = pac_data->pac_kdc_sig->signature.length;
 	pac_wrapped_struct.ChecksumAndSignature = payload
-		= data_blob_talloc(tmp_ctx, NULL,
+		= data_blob_talloc(tctx, NULL,
 				   pac_wrapped_struct.ChecksumLength
 				   + pac_wrapped_struct.SignatureLength);
 	memcpy(&payload.data[0],
@@ -454,7 +479,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	       pac_data->pac_kdc_sig->signature.data,
 	       pac_wrapped_struct.SignatureLength);
 
-	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, &pac_wrapped_struct,
+	ndr_err = ndr_push_struct_blob(&pac_wrapped, tctx, &pac_wrapped_struct,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_Validate);
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 
@@ -493,7 +518,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	pac_wrapped_struct.SignatureLength = pac_data->pac_kdc_sig->signature.length;
 
 	pac_wrapped_struct.ChecksumAndSignature = payload
-		= data_blob_talloc(tmp_ctx, NULL,
+		= data_blob_talloc(tctx, NULL,
 				   pac_wrapped_struct.ChecksumLength
 				   + pac_wrapped_struct.SignatureLength);
 	memcpy(&payload.data[0],
@@ -506,7 +531,7 @@ static bool test_PACVerify(struct torture_context *tctx,
 	/* Break the signature length */
 	pac_wrapped_struct.SignatureLength++;
 
-	ndr_err = ndr_push_struct_blob(&pac_wrapped, tmp_ctx, &pac_wrapped_struct,
+	ndr_err = ndr_push_struct_blob(&pac_wrapped, tctx, &pac_wrapped_struct,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_Validate);
 	torture_assert(tctx, NDR_ERR_CODE_IS_SUCCESS(ndr_err), "ndr_push_struct_blob of PACValidate structure failed");
 
@@ -539,8 +564,6 @@ static bool test_PACVerify(struct torture_context *tctx,
 
 	torture_assert(tctx, netlogon_creds_client_check(creds, &r.out.return_authenticator->cred),
 		       "Credential chaining failed");
-
-	talloc_free(tmp_ctx);
 
 	return true;
 }
