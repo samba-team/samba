@@ -1254,20 +1254,6 @@ char *lp_parm_substituted_string(TALLOC_CTX *mem_ctx,
 	return lpcfg_substituted_string(mem_ctx, lp_sub, data->value);
 }
 
-char *lp_parm_talloc_string(TALLOC_CTX *mem_ctx,
-			    int snum,
-			    const char *type,
-			    const char *option,
-			    const char *def)
-{
-	return lp_parm_substituted_string(mem_ctx,
-					  &s3_global_substitution,
-					  snum,
-					  type,
-					  option,
-					  def);
-}
-
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
 const char *lp_parm_const_string(int snum, const char *type, const char *option, const char *def)

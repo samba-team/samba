@@ -769,7 +769,6 @@ int lp_wi_scan_global_parametrics(
 		   void *private_data),
 	void *private_data);
 
-char *lp_parm_talloc_string(TALLOC_CTX *ctx, int snum, const char *type, const char *option, const char *def);
 const char *lp_parm_const_string(int snum, const char *type, const char *option, const char *def);
 struct loadparm_service;
 const char *lp_parm_const_string_service(struct loadparm_service *service, const char *type,
