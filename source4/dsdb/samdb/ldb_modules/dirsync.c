@@ -1358,11 +1358,12 @@ static int dirsync_ldb_search(struct ldb_module *module, struct ldb_request *req
 
 	}
 	/*
-	 * Remove our control from the list of controls
+	 * Mark dirsync control as uncritical (done)
+	 *
+	 * We need this so ranged_results knows how to behave with
+	 * dirsync
 	 */
-	if (!ldb_save_controls(control, req, NULL)) {
-		return ldb_operr(ldb);
-	}
+	control->critical = false;
 	dsc->schema = dsdb_get_schema(ldb, dsc);
 	/*
 	 * At the begining we make the hypothesis that we will return a complete
