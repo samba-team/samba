@@ -880,32 +880,3 @@ char *talloc_sub_full(TALLOC_CTX *ctx,
 	TALLOC_FREE(a_string);
 	return ret_string;
 }
-
-/******************************************************************************
- version of standard_sub_basic() for string lists; uses talloc_sub_basic()
- for the work
- *****************************************************************************/
-
-bool str_list_sub_basic( char **list, const char *smb_name,
-			 const char *domain_name )
-{
-	TALLOC_CTX *ctx = list;
-	char *s, *tmpstr;
-
-	while ( *list ) {
-		s = *list;
-		tmpstr = talloc_sub_basic(ctx, smb_name, domain_name, s);
-		if ( !tmpstr ) {
-			DEBUG(0,("str_list_sub_basic: "
-				"talloc_sub_basic() return NULL!\n"));
-			return false;
-		}
-
-		TALLOC_FREE(*list);
-		*list = tmpstr;
-
-		list++;
-	}
-
-	return true;
-}

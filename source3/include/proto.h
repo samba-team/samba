@@ -620,8 +620,6 @@ size_t strlen_m(const char *s);
 size_t strlen_m_term(const char *s);
 size_t strlen_m_term_null(const char *s);
 int fstr_sprintf(fstring s, const char *fmt, ...);
-bool str_list_sub_basic( char **list, const char *smb_name,
-			 const char *domain_name );
 bool str_list_substitute(char **list, const char *pattern, const char *insert);
 
 char *ipstr_list_make(char **ipstr_list,
