@@ -965,7 +965,7 @@ sub setup_fileserver
 	spotlight backend = elasticsearch
 	elasticsearch:address = 127.0.0.35
 	elasticsearch:port = 8080
-	elasticsearch:mappings = \"$srcdir_abs/source3/rpc_server/mdssvc/elasticsearch_mappings.json\"
+	elasticsearch:mappings = $srcdir_abs/source3/rpc_server/mdssvc/elasticsearch_mappings.json
 
 	usershare path = $usershare_dir
 	usershare max shares = 10

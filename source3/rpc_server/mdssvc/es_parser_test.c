@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 	json_t *mappings = NULL;
 	json_error_t json_error;
 	char *default_path = NULL;
-	char *path = NULL;
+	const char *path = NULL;
 	const char *query_string = NULL;
 	const char *path_scope = NULL;
 	char *es_query = NULL;
@@ -67,12 +67,10 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	path = lp_parm_talloc_string(mem_ctx,
-				     GLOBAL_SECTION_SNUM,
-				     "elasticsearch",
-				     "mappings",
-				     default_path);
-	TALLOC_FREE(default_path);
+	path = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+				    "elasticsearch",
+				    "mappings",
+				    default_path);
 	if (path == NULL) {
 		TALLOC_FREE(mem_ctx);
 		return 1;

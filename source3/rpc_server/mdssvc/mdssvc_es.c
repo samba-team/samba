@@ -55,7 +55,7 @@ static bool mdssvc_es_init(struct mdssvc_ctx *mdssvc_ctx)
 	struct mdssvc_es_ctx *mdssvc_es_ctx = NULL;
 	json_error_t json_error;
 	char *default_path = NULL;
-	char *path = NULL;
+	const char *path = NULL;
 
 	mdssvc_es_ctx = talloc_zero(mdssvc_ctx, struct mdssvc_es_ctx);
 	if (mdssvc_es_ctx == NULL) {
@@ -78,12 +78,10 @@ static bool mdssvc_es_init(struct mdssvc_ctx *mdssvc_ctx)
 		return false;
 	}
 
-	path = lp_parm_talloc_string(mdssvc_es_ctx,
-				     GLOBAL_SECTION_SNUM,
-				     "elasticsearch",
-				     "mappings",
-				     default_path);
-	TALLOC_FREE(default_path);
+	path = lp_parm_const_string(GLOBAL_SECTION_SNUM,
+				    "elasticsearch",
+				    "mappings",
+				    default_path);
 	if (path == NULL) {
 		TALLOC_FREE(mdssvc_es_ctx);
 		return false;
@@ -93,11 +91,10 @@ static bool mdssvc_es_init(struct mdssvc_ctx *mdssvc_ctx)
 	if (mdssvc_es_ctx->mappings == NULL) {
 		DBG_ERR("Opening mapping file [%s] failed: %s\n",
 			path, json_error.text);
-		TALLOC_FREE(path);
 		TALLOC_FREE(mdssvc_es_ctx);
 		return false;
 	}
-	TALLOC_FREE(path);
+	TALLOC_FREE(default_path);
 
 	mdssvc_ctx->backend_private = mdssvc_es_ctx;
 	return true;
@@ -187,6 +184,7 @@ static struct tevent_req *mds_es_connect_send(
 	struct tevent_req *req = NULL;
 	struct tevent_req *subreq = NULL;
 	struct mds_es_connect_state *state = NULL;
+	const char *server_addr = NULL;
 	bool use_tls;
 	NTSTATUS status;
 
@@ -199,12 +197,16 @@ static struct tevent_req *mds_es_connect_send(
 		.mds_es_ctx = mds_es_ctx,
 	};
 
-	state->server_addr = lp_parm_talloc_string(
-		state,
+	server_addr = lp_parm_const_string(
 		mds_es_ctx->mds_ctx->snum,
 		"elasticsearch",
 		"address",
 		"localhost");
+	state->server_addr = talloc_strdup(state, server_addr);
+	if (tevent_req_nomem(state->server_addr, req)) {
+		return tevent_req_post(req, ev);
+	}
+
 	state->server_port = lp_parm_int(
 		mds_es_ctx->mds_ctx->snum,
 		"elasticsearch",
