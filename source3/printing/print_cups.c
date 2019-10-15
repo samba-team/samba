@@ -953,6 +953,8 @@ static int cups_job_submit(int snum, struct printjob *pjob,
 			   char *lpq_cmd)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int		ret = 1;		/* Return value */
 	http_t		*http = NULL;		/* HTTP connection to server */
 	ipp_t		*request = NULL,	/* IPP Request */
@@ -1060,7 +1062,7 @@ static int cups_job_submit(int snum, struct printjob *pjob,
 	 */
 
 	if (!push_utf8_talloc(frame, &cupsoptions,
-			      lp_cups_options(talloc_tos(), snum), &size)) {
+			      lp_cups_options(talloc_tos(), lp_sub, snum), &size)) {
 		goto out;
 	}
 	num_options = 0;
