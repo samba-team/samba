@@ -89,6 +89,8 @@ static void tsmsm_free_data(void **pptr) {
 static int tsmsm_connect(struct vfs_handle_struct *handle,
 			 const char *service,
 			 const char *user) {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct tsmsm_struct *tsmd;
 	const char *fres;
 	const char *tsmname;
@@ -115,18 +117,18 @@ static int tsmsm_connect(struct vfs_handle_struct *handle,
 	tsmname = (handle->param ? handle->param : "tsmsm");
 	
 	/* Get 'hsm script' and 'dmapi attribute' parameters to tsmd context */
-	tsmd->hsmscript = lp_parm_talloc_string(
-		tsmd, SNUM(handle->conn), tsmname,
+	tsmd->hsmscript = lp_parm_substituted_string(
+		tsmd, lp_sub, SNUM(handle->conn), tsmname,
 		"hsm script", NULL);
 	talloc_steal(tsmd, tsmd->hsmscript);
 	
-	tsmd->attrib_name = lp_parm_talloc_string(
-		tsmd, SNUM(handle->conn), tsmname,
+	tsmd->attrib_name = lp_parm_substituted_string(
+		tsmd, lp_sub, SNUM(handle->conn), tsmname,
 		"dmapi attribute", DM_ATTRIB_OBJECT);
 	talloc_steal(tsmd, tsmd->attrib_name);
 	
-	tsmd->attrib_value = lp_parm_talloc_string(
-		tsmd, SNUM(handle->conn), tsmname,
+	tsmd->attrib_value = lp_parm_substituted_string(
+		tsmd, lp_sub, SNUM(handle->conn), tsmname,
 		"dmapi value", NULL);
 	talloc_steal(tsmd, tsmd->attrib_value);
 	
