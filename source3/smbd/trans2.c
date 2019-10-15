@@ -8028,11 +8028,18 @@ static NTSTATUS smb_unix_mknod(connection_struct *conn,
 #endif
 #if defined(S_IFCHR)
 		case UNIX_TYPE_CHARDEV:
+			/* This is only allowed for root. */
+			if (get_current_uid(conn) != sec_initial_uid()) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
 			unixmode |= S_IFCHR;
 			break;
 #endif
 #if defined(S_IFBLK)
 		case UNIX_TYPE_BLKDEV:
+			if (get_current_uid(conn) != sec_initial_uid()) {
+				return NT_STATUS_ACCESS_DENIED;
+			}
 			unixmode |= S_IFBLK;
 			break;
 #endif
