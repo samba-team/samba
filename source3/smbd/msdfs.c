@@ -1264,6 +1264,8 @@ bool create_junction(TALLOC_CTX *ctx,
 		bool allow_broken_path,
 		struct junction_map *jucn)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int snum;
 	bool dummy;
 	struct dfs_path *pdp = talloc(ctx,struct dfs_path);
@@ -1299,7 +1301,7 @@ bool create_junction(TALLOC_CTX *ctx,
 
 	jucn->service_name = talloc_strdup(ctx, pdp->servicename);
 	jucn->volume_name = talloc_strdup(ctx, pdp->reqpath);
-	jucn->comment = lp_comment(ctx, snum);
+	jucn->comment = lp_comment(ctx, lp_sub, snum);
 
 	TALLOC_FREE(pdp);
 	if (!jucn->service_name || !jucn->volume_name || ! jucn->comment) {

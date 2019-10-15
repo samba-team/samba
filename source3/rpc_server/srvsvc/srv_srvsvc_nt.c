@@ -221,8 +221,10 @@ static void init_srv_share_info_1(struct pipes_struct *p,
 				  struct srvsvc_NetShareInfo1 *r,
 				  int snum)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *net_name = lp_servicename(talloc_tos(), snum);
-	char *remark = lp_comment(p->mem_ctx, snum);
+	char *remark = lp_comment(p->mem_ctx, lp_sub, snum);
 
 	if (remark) {
 		remark = talloc_sub_full(
@@ -245,13 +247,15 @@ static void init_srv_share_info_2(struct pipes_struct *p,
 				  struct srvsvc_NetShareInfo2 *r,
 				  int snum)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *remark = NULL;
 	char *path = NULL;
 	int max_connections = lp_max_connections(snum);
 	uint32_t max_uses = max_connections!=0 ? max_connections : (uint32_t)-1;
 	char *net_name = lp_servicename(talloc_tos(), snum);
 
-	remark = lp_comment(p->mem_ctx, snum);
+	remark = lp_comment(p->mem_ctx, lp_sub, snum);
 	if (remark) {
 		remark = talloc_sub_full(
 			p->mem_ctx, lp_servicename(talloc_tos(), snum),
@@ -314,8 +318,10 @@ static void map_generic_share_sd_bits(struct security_descriptor *psd)
 static void init_srv_share_info_501(struct pipes_struct *p,
 				    struct srvsvc_NetShareInfo501 *r, int snum)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	const char *net_name = lp_servicename(talloc_tos(), snum);
-	char *remark = lp_comment(p->mem_ctx, snum);
+	char *remark = lp_comment(p->mem_ctx, lp_sub, snum);
 
 	if (remark) {
 		remark = talloc_sub_full(
@@ -343,13 +349,15 @@ static void init_srv_share_info_501(struct pipes_struct *p,
 static void init_srv_share_info_502(struct pipes_struct *p,
 				    struct srvsvc_NetShareInfo502 *r, int snum)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	const char *net_name = lp_servicename(talloc_tos(), snum);
 	char *path = NULL;
 	struct security_descriptor *sd = NULL;
 	struct sec_desc_buf *sd_buf = NULL;
 	size_t sd_size = 0;
 	TALLOC_CTX *ctx = p->mem_ctx;
-	char *remark = lp_comment(ctx, snum);
+	char *remark = lp_comment(ctx, lp_sub, snum);
 
 	if (remark) {
 		remark = talloc_sub_full(
@@ -390,7 +398,9 @@ static void init_srv_share_info_1004(struct pipes_struct *p,
 				     struct srvsvc_NetShareInfo1004 *r,
 				     int snum)
 {
-	char *remark = lp_comment(p->mem_ctx, snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	char *remark = lp_comment(p->mem_ctx, lp_sub, snum);
 
 	if (remark) {
 		remark = talloc_sub_full(
@@ -1711,6 +1721,8 @@ WERROR _srvsvc_NetShareGetInfo(struct pipes_struct *p,
 WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 			       struct srvsvc_NetShareSetInfo *r)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *command = NULL;
 	char *share_name = NULL;
 	char *comment = NULL;
@@ -1831,7 +1843,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 		}
 
 		pathname = lp_path(ctx, snum);
-		comment = lp_comment(ctx, snum);
+		comment = lp_comment(ctx, lp_sub, snum);
 		type = STYPE_DISKTREE;
 		break;
 	case 1006:
@@ -1839,7 +1851,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 		return WERR_ACCESS_DENIED;
 	case 1501:
 		pathname = lp_path(ctx, snum);
-		comment = lp_comment(ctx, snum);
+		comment = lp_comment(ctx, lp_sub, snum);
 		psd = info->info1501->sd;
 		map_generic_share_sd_bits(psd);
 		type = STYPE_DISKTREE;
@@ -1879,7 +1891,8 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 
 	/* Only call modify function if something changed. */
 
-	if (strcmp(path, lp_path(talloc_tos(), snum)) || strcmp(comment, lp_comment(talloc_tos(), snum))
+	if (strcmp(path, lp_path(talloc_tos(), snum))
+			|| strcmp(comment, lp_comment(talloc_tos(), lp_sub, snum))
 			|| (lp_max_connections(snum) != max_connections)
 			|| csc_policy_changed) {
 

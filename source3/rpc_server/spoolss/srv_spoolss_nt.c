@@ -2805,10 +2805,12 @@ static void spoolss_notify_comment(struct messaging_context *msg_ctx,
 				   struct spoolss_PrinterInfo2 *pinfo2,
 				   TALLOC_CTX *mem_ctx)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	const char *p;
 
 	if (*pinfo2->comment == '\0') {
-		p = lp_comment(talloc_tos(), snum);
+		p = lp_comment(talloc_tos(), lp_sub, snum);
 	} else {
 		p = pinfo2->comment;
 	}
@@ -3970,12 +3972,14 @@ static WERROR construct_printer_info1(TALLOC_CTX *mem_ctx,
 				      struct spoolss_PrinterInfo1 *r,
 				      int snum)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	WERROR result;
 
 	r->flags		= flags;
 
 	if (info2->comment == NULL || info2->comment[0] == '\0') {
-		r->comment	= lp_comment(mem_ctx, snum);
+		r->comment	= lp_comment(mem_ctx, lp_sub, snum);
 	} else {
 		r->comment	= talloc_strdup(mem_ctx, info2->comment); /* saved comment */
 	}
@@ -4007,6 +4011,8 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
 				      struct spoolss_PrinterInfo2 *r,
 				      int snum)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int count;
 	print_status_struct status;
 	WERROR result;
@@ -4033,7 +4039,7 @@ static WERROR construct_printer_info2(TALLOC_CTX *mem_ctx,
 	W_ERROR_HAVE_NO_MEMORY(r->drivername);
 
 	if (info2->comment[0] == '\0') {
-		r->comment	= lp_comment(mem_ctx, snum);
+		r->comment	= lp_comment(mem_ctx, lp_sub, snum);
 	} else {
 		r->comment	= talloc_strdup(mem_ctx, info2->comment);
 	}

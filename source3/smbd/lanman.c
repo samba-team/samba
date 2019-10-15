@@ -1888,6 +1888,8 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
  			   char** buf, int* buflen,
  			   char** stringbuf, int* stringspace, char* baseaddr)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int struct_len;
 	char* p;
 	char* p2;
@@ -1915,7 +1917,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		len = 0;
 
 		if (uLevel > 0) {
-			len += StrlenExpanded(conn,snum,lp_comment(talloc_tos(), snum));
+			len += StrlenExpanded(conn,snum,lp_comment(talloc_tos(), lp_sub, snum));
 		}
 		if (uLevel > 1) {
 			len += strlen(lp_path(talloc_tos(), snum)) + 1;
@@ -1962,7 +1964,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		}
 		SSVAL(p,14,type);		/* device type */
 		SIVAL(p,16,PTR_DIFF(p2,baseaddr));
-		len += CopyExpanded(conn,snum,&p2,lp_comment(talloc_tos(),snum),&l2);
+		len += CopyExpanded(conn,snum,&p2,lp_comment(talloc_tos(), lp_sub, snum),&l2);
 	}
 
 	if (uLevel > 1) {
