@@ -175,3 +175,106 @@ fail:
 	TALLOC_FREE(ev);
 	return ret;
 }
+
+/*
+ * Test autocleanup of dead watchers
+ */
+
+bool run_dbwrap_watch3(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct db_context *backend = NULL;
+	struct db_context *db = NULL;
+	const char *keystr = "key";
+	TDB_DATA key = string_term_tdb_data(keystr);
+	NTSTATUS status;
+	bool ret = false;
+	pid_t child, waited;
+	int wstatus, exit_status;
+
+	BlockSignals(true, SIGCHLD);
+
+	child = fork();
+	if (child == -1) {
+		fprintf(stderr,
+			"fork failed: %s\n",
+			strerror(errno));
+		goto fail;
+	}
+
+	ev = samba_tevent_context_init(talloc_tos());
+	if (ev == NULL) {
+		fprintf(stderr, "tevent_context_init failed\n");
+		goto fail;
+	}
+	msg = messaging_init(ev, ev);
+	if (msg == NULL) {
+		fprintf(stderr, "messaging_init failed\n");
+		goto fail;
+	}
+	backend = db_open(msg, "test_watch.tdb", 0, TDB_CLEAR_IF_FIRST,
+			  O_CREAT|O_RDWR, 0644, DBWRAP_LOCK_ORDER_1,
+			  DBWRAP_FLAG_NONE);
+	if (backend == NULL) {
+		fprintf(stderr, "db_open failed: %s\n", strerror(errno));
+		goto fail;
+	}
+
+	db = db_open_watched(ev, &backend, msg);
+	if (db == NULL) {
+		fprintf(stderr, "db_open_watched failed\n");
+		goto fail;
+	}
+
+	if (child == 0) {
+		struct db_record *rec = dbwrap_fetch_locked(db, db, key);
+		struct tevent_req *req = NULL;
+
+		if (rec == NULL) {
+			fprintf(stderr, "dbwrap_fetch_locked failed\n");
+			exit(1);
+		}
+
+		req = dbwrap_watched_watch_send(
+			db, ev, rec, (struct server_id) { 0 });
+		if (req == NULL) {
+			fprintf(stderr, "dbwrap_watched_watch_send failed\n");
+			exit(2);
+		}
+
+		exit(0);
+	}
+
+	waited = waitpid(child, &wstatus, 0);
+	if (waited == -1) {
+		fprintf(stderr, "waitpid failed: %s\n", strerror(errno));
+		goto fail;
+	}
+	if (!WIFEXITED(wstatus)) {
+		fprintf(stderr, "child did not exit normally\n");
+		goto fail;
+	}
+
+	exit_status = WEXITSTATUS(wstatus);
+	if (exit_status != 0) {
+		fprintf(stderr, "exit status is %d\n", exit_status);
+		goto fail;
+	}
+
+	status = dbwrap_store_uint32_bystring(db, keystr, 1);
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_OK)) {
+		fprintf(stderr,
+			"dbwrap_store_uint32 returned %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	(void)unlink("test_watch.tdb");
+	ret = true;
+fail:
+	TALLOC_FREE(db);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return ret;
+}
