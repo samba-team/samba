@@ -731,6 +731,8 @@ NTSTATUS trust_pw_change(struct netlogon_creds_cli_context *context,
 
 /* The following definitions come from param/loadparm.c  */
 
+const struct loadparm_substitution *loadparm_s3_global_substitution(void);
+
 #include "source3/param/param_proto.h"
 
 char *lp_servicename(TALLOC_CTX *ctx, int);

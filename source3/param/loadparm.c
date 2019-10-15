@@ -53,6 +53,7 @@
  *
  */
 
+#define LOADPARM_SUBSTITUTION_INTERNALS 1
 #include "includes.h"
 #include "system/filesys.h"
 #include "util_tdb.h"
@@ -991,7 +992,11 @@ static struct loadparm_context *setup_lp_context(TALLOC_CTX *mem_ctx)
  callers without affecting the source string.
 ********************************************************************/
 
-char *lp_string(TALLOC_CTX *mem_ctx, const char *s)
+static char *loadparm_s3_global_substitution_fn(
+			TALLOC_CTX *mem_ctx,
+			const struct loadparm_substitution *lp_sub,
+			const char *s,
+			void *private_data)
 {
 	char *ret;
 
@@ -1021,6 +1026,20 @@ char *lp_string(TALLOC_CTX *mem_ctx, const char *s)
 		}
 	}
 	return ret;
+}
+
+static const struct loadparm_substitution s3_global_substitution = {
+	.substituted_string_fn = loadparm_s3_global_substitution_fn,
+};
+
+const struct loadparm_substitution *loadparm_s3_global_substitution(void)
+{
+	return &s3_global_substitution;
+}
+
+char *lp_string(TALLOC_CTX *ctx, const char *s)
+{
+	return lpcfg_substituted_string(ctx, &s3_global_substitution, s);
 }
 
 /*
