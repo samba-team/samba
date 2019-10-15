@@ -1232,19 +1232,40 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 
 /* Return parametric option from a given service. Type is a part of option before ':' */
 /* Parametric option has following syntax: 'Type: option = value' */
-char *lp_parm_talloc_string(TALLOC_CTX *ctx, int snum, const char *type, const char *option, const char *def)
+char *lp_parm_substituted_string(TALLOC_CTX *mem_ctx,
+				 const struct loadparm_substitution *lp_sub,
+				 int snum,
+				 const char *type,
+				 const char *option,
+				 const char *def)
 {
 	struct parmlist_entry *data = get_parametrics(snum, type, option);
 
+	SMB_ASSERT(lp_sub != NULL);
+
 	if (data == NULL||data->value==NULL) {
 		if (def) {
-			return lp_string(ctx, def);
+			return lpcfg_substituted_string(mem_ctx, lp_sub, def);
 		} else {
 			return NULL;
 		}
 	}
 
-	return lp_string(ctx, data->value);
+	return lpcfg_substituted_string(mem_ctx, lp_sub, data->value);
+}
+
+char *lp_parm_talloc_string(TALLOC_CTX *mem_ctx,
+			    int snum,
+			    const char *type,
+			    const char *option,
+			    const char *def)
+{
+	return lp_parm_substituted_string(mem_ctx,
+					  &s3_global_substitution,
+					  snum,
+					  type,
+					  option,
+					  def);
 }
 
 /* Return parametric option from a given service. Type is a part of option before ':' */
