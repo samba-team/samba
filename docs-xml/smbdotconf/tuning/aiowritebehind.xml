@@ -1,6 +1,7 @@
 <samba:parameter name="aio write behind"
                  context="S"
 		 type="string"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>If Samba has been built with asynchronous I/O support,

@@ -530,6 +530,8 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 					const char *pdev)
 {
 	struct smbd_server_connection *sconn = xconn->client->sconn;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct smb_filename *smb_fname_cpath = NULL;
 	fstring dev;
 	int ret;
@@ -824,7 +826,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		set_namearray( &conn->veto_oplock_list,
 			       lp_veto_oplock_files(talloc_tos(), snum));
 		set_namearray( &conn->aio_write_behind_list,
-				lp_aio_write_behind(talloc_tos(), snum));
+				lp_aio_write_behind(talloc_tos(), lp_sub, snum));
 	}
 	smb_fname_cpath = synthetic_smb_fname(talloc_tos(),
 					conn->connectpath,
