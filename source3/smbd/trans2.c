@@ -8103,7 +8103,6 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	uid_t set_owner = (uid_t)SMB_UID_NO_CHANGE;
 	gid_t set_grp = (uid_t)SMB_GID_NO_CHANGE;
 	NTSTATUS status = NT_STATUS_OK;
-	bool delete_on_fail = False;
 	enum perm_type ptype;
 	files_struct *all_fsps = NULL;
 	bool modify_mtime = true;
@@ -8222,12 +8221,6 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 
 		if (ret != 0) {
 			status = map_nt_error_from_unix(errno);
-			if (delete_on_fail) {
-				SMB_VFS_UNLINKAT(conn,
-					conn->cwd_fsp,
-					smb_fname,
-					0);
-			}
 			return status;
 		}
 	}
@@ -8256,12 +8249,6 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		}
 		if (ret != 0) {
 			status = map_nt_error_from_unix(errno);
-			if (delete_on_fail) {
-				SMB_VFS_UNLINKAT(conn,
-					conn->cwd_fsp,
-					smb_fname,
-					0);
-			}
 			return status;
 		}
 	}
