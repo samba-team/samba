@@ -167,6 +167,15 @@ static struct loadparm_context *global_loadparm_context;
 	 return lp_ctx->globals->var_name ? talloc_strdup(ctx, lpcfg_string(lp_ctx->globals->var_name)) : talloc_strdup(ctx, ""); \
 }
 
+#define FN_GLOBAL_SUBSTITUTED_STRING(fn_name,var_name) \
+ _PUBLIC_ char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx, \
+		 const struct loadparm_substitution *lp_sub, TALLOC_CTX *mem_ctx) \
+{ \
+	 if (lp_ctx == NULL) return NULL;				\
+	 return lpcfg_substituted_string(mem_ctx, lp_sub, \
+			 lp_ctx->globals->var_name ? lp_ctx->globals->var_name : ""); \
+}
+
 #define FN_GLOBAL_CONST_STRING(fn_name,var_name)				\
  _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx) { \
 	if (lp_ctx == NULL) return NULL;				\
@@ -198,6 +207,9 @@ static struct loadparm_context *global_loadparm_context;
 					struct loadparm_service *sDefault, TALLOC_CTX *ctx) { \
 	 return(talloc_strdup(ctx, lpcfg_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val)))); \
  }
+
+/* just a copy for now */
+#define FN_LOCAL_SUBSTITUTED_STRING(fn_name,val) FN_LOCAL_STRING(fn_name,val)
 
 #define FN_LOCAL_CONST_STRING(fn_name,val) \
  _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_service *service, \

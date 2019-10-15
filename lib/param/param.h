@@ -21,6 +21,7 @@
 #define _PARAM_H 
 
 struct loadparm_s3_helpers;
+struct loadparm_substitution;
 
 struct parmlist_entry;
 

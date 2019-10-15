@@ -26,6 +26,7 @@
 #include "lib/util/samba_util.h"
 #include "lib/util_path.h"
 
+struct loadparm_substitution;
 struct share_params;
 #include "source3/param/param_proto.h"
 
