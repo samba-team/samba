@@ -179,7 +179,7 @@ static int uint32_t_cmp(uint32_t a1, uint32_t a2)
 	return a1 > a2 ? 1 : -1;
 }
 
-static int uint32_t_ptr_cmp(uint32_t *a1, uint32_t *a2, void *unused)
+static int uint32_t_ptr_cmp(uint32_t *a1, uint32_t *a2)
 {
 	if (*a1 == *a2) return 0;
 	return *a1 > *a2 ? 1 : -1;
@@ -992,8 +992,7 @@ static WERROR get_nc_changes_udv(struct ldb_context *sam_ctx,
 /* comparison function for linked attributes - see CompareLinks() in
  * MS-DRSR section 4.1.10.5.17 */
 static int linked_attribute_compare(const struct la_for_sorting *la1,
-				    const struct la_for_sorting *la2,
-				    void *opaque)
+				    const struct la_for_sorting *la2)
 {
 	int c;
 	c = memcmp(la1->source_guid,
@@ -2086,7 +2085,7 @@ static WERROR getncchanges_get_sorted_array(const struct drsuapi_DsReplicaLinked
 		TALLOC_FREE(frame);
 	}
 
-	LDB_TYPESAFE_QSORT(guid_array, link_count, NULL, linked_attribute_compare);
+	TYPESAFE_QSORT(guid_array, link_count, linked_attribute_compare);
 
 	*ret_array = guid_array;
 
@@ -3244,10 +3243,9 @@ allowed:
 							   NULL);
 		}
 
-		LDB_TYPESAFE_QSORT(local_pas,
-				   req10->partial_attribute_set->num_attids,
-				   NULL,
-				   uint32_t_ptr_cmp);
+		TYPESAFE_QSORT(local_pas,
+			       req10->partial_attribute_set->num_attids,
+			       uint32_t_ptr_cmp);
 	}
 
 	/*
