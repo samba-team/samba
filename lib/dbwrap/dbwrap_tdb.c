@@ -17,12 +17,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
+#include "replace.h"
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_private.h"
 #include "dbwrap/dbwrap_tdb.h"
 #include "lib/tdb_wrap/tdb_wrap.h"
 #include "lib/util/util_tdb.h"
+#include "lib/util/debug.h"
+#include "lib/util/samba_util.h"
 #include "system/filesys.h"
 #include "lib/param/param.h"
 #include "libcli/util/error.h"
