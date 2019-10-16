@@ -356,7 +356,7 @@ local_daemons_stop ()
 
 	onnode_common
 
-	onnode -p "$_nodes" "${VALGRIND:-} ${CTDB:-ctdb} shutdown"
+	onnode -p "$_nodes" "${CTDB:-${VALGRIND:-} ctdb} shutdown"
 }
 
 local_daemons_onnode_usage ()
