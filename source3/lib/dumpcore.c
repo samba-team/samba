@@ -315,7 +315,7 @@ void dump_core_setup(const char *progname, const char *log_file)
 			DEBUG(0,("dumping core in %s\n", corepath));
 		} else {
 			DEBUG(0,("coredump is handled by helper binary "
-				 "specified at /proc/sys/kernel/core_pattern"));
+				 "specified at /proc/sys/kernel/core_pattern\n"));
 		}
 	}
 
