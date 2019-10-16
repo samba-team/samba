@@ -892,8 +892,7 @@ static int add_uint64_element(struct ldb_context *ldb, struct ldb_message *msg,
 }
 
 static int replmd_replPropertyMetaData1_attid_sort(const struct replPropertyMetaData1 *m1,
-						   const struct replPropertyMetaData1 *m2,
-						   const uint32_t *rdn_attid)
+						   const struct replPropertyMetaData1 *m2)
 {
 	/*
 	 * This assignment seems inoccous, but it is critical for the
@@ -943,8 +942,8 @@ static int replmd_replPropertyMetaDataCtr1_sort_and_verify(struct ldb_context *l
 							   struct ldb_dn *dn)
 {
 	/* Note this is O(n^2) for the almost-sorted case, which this is */
-	LDB_TYPESAFE_QSORT(ctr1->array, ctr1->count, NULL,
-			   replmd_replPropertyMetaData1_attid_sort);
+	TYPESAFE_QSORT(ctr1->array, ctr1->count,
+		       replmd_replPropertyMetaData1_attid_sort);
 	return replmd_replPropertyMetaDataCtr1_verify(ldb, ctr1, dn);
 }
 
