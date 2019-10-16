@@ -1035,8 +1035,7 @@ static int get_pso_count(struct ldb_module *module, TALLOC_CTX *mem_ctx,
  * The PSO with the lowest precedence is better, otherwise (if the precedence
  * is equal) the PSO with the lower GUID wins.
  */
-static int pso_compare(struct ldb_message **m1, struct ldb_message **m2,
-		       TALLOC_CTX *mem_ctx)
+static int pso_compare(struct ldb_message **m1, struct ldb_message **m2)
 {
 	uint32_t prec1;
 	uint32_t prec2;
@@ -1134,7 +1133,7 @@ static int pso_find_best(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 	}
 
 	/* sort the list so that the best PSO is first */
-	LDB_TYPESAFE_QSORT(res->msgs, res->count, mem_ctx, pso_compare);
+	TYPESAFE_QSORT(res->msgs, res->count, pso_compare);
 
 	if (res->count > 0) {
 		*best_pso = res->msgs[0];
