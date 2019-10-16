@@ -42,24 +42,24 @@ static NTSTATUS db_tdb_delete(struct db_record *rec);
 
 static void db_tdb_log_key(const char *prefix, TDB_DATA key)
 {
-	size_t len;
-	char *keystr;
-	TALLOC_CTX *frame;
 	if (DEBUGLEVEL < 10) {
 		return;
 	}
-	frame = talloc_stackframe();
-	len = key.dsize;
 	if (DEBUGLEVEL == 10) {
 		/*
 		 * Only fully spam at debuglevel > 10
 		 */
-		len = MIN(10, key.dsize);
+		key.dsize = MIN(10, key.dsize);
 	}
-	keystr = hex_encode_talloc(frame, (unsigned char *)(key.dptr),
-				   len);
-	DBG_DEBUG("%s key %s\n", prefix, keystr);
-	TALLOC_FREE(frame);
+
+	if (key.dsize < 1024) {
+		char keystr[key.dsize*2+1];
+		hex_encode_buf(keystr, key.dptr, key.dsize);
+		DBG_DEBUG("%s key %s\n", prefix, keystr);
+		return;
+	}
+
+	dump_data(DEBUGLEVEL, key.dptr, key.dsize);
 }
 
 static int db_tdb_record_destr(struct db_record* data)
