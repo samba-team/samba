@@ -1130,7 +1130,7 @@ def test(ctx):
 
 def autotest(ctx):
     env = samba_utils.LOAD_ENVIRONMENT()
-    cmd = 'tests/run_tests.sh -e -S %s' % env.SOCKET_WRAPPER_SO_PATH
+    cmd = 'tests/run_tests.sh -eL -S %s' % env.SOCKET_WRAPPER_SO_PATH
     ret = samba_utils.RUN_COMMAND(cmd)
     if ret != 0:
         print('autotest exited with exit status %d' % ret)
