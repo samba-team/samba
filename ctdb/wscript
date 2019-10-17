@@ -1116,7 +1116,7 @@ def build(bld):
 
 
 def testonly(ctx):
-    cmd = 'tests/run_tests.sh -V tests/var'
+    cmd = 'tests/run_tests.sh'
     ret = samba_utils.RUN_COMMAND(cmd)
     if ret != 0:
         print('tests exited with exit status %d' % ret)
