@@ -1,4 +1,120 @@
                    ==============================
+                   Release Notes for Samba 4.10.9
+                          October 17, 2019
+                   ==============================
+
+
+
+Changes since 4.10.8:
+---------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 13972: Different Device Id for GlusterFS FUSE mount is causing data
+     loss in CTDB cluster.
+   * BUG 14141: winbind: Provide passwd struct for group sid with ID_TYPE_BOTH
+     mapping (again).
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14094: smbc_readdirplus() is incompatible with smbc_telldir() and
+     smbc_lseekdir().
+   * BUG 14152: s3: smbclient: Stop an SMB2-connection from blundering into
+     SMB1-specific calls.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 13978: s4/scripting: MORE py3 compatible print functions.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * ldb: Release ldb 1.5.6
+   * BUG 13978: undoduididx: Add "or later" to warning about using tools from
+     Samba 4.8.
+   * BUG 13959: ldb_tdb fails to check error return when parsing pack formats.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14038: ctdb: Fix compilation on systems with glibc robust mutexes.
+
+o  Isaac Boukris <iboukris@gmail.com>
+   * BUG 11362: GPO security filtering based on the groups in Kerberos PAC (but
+     primary group is missing).
+   * BUG 14106: Fix spnego fallback from kerberos to ntlmssp in smbd server.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14130: s3-winbindd: fix forest trusts with additional trust attributes.
+
+o  Poornima G <pgurusid@redhat.com>
+   * BUG 14098: vfs_glusterfs: Use pthreadpool for scheduling aio operations.
+
+o  Aaron Haslett <aaronhaslett@catalyst.net.nz>
+   * BUG 13977: ldb: baseinfo pack format check on init.
+   * BUG 13978: ldb: ldbdump key and pack format version comments.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 14140: Overlinking libreplace against librt and pthread against every
+     binary or library causes issues.
+   * BUG 14147: ctdb-vacuum: Process all records not deleted on a remote node.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 14136: classicupgrade: Fix uncaught exception.
+   * BUG 14139: fault.c: Improve fault_report message text pointing to our wiki.
+
+o  Bryan Mason <bmason@redhat.com>
+   * BUG 14128: s3:client:Use DEVICE_URI, instead of argv[0],for Device URI.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14055: We should send SMB2_NETNAME_NEGOTIATE_CONTEXT_ID negotiation
+     context.
+   * BUG 14124: 'pam_winbind' with 'krb5_auth' or 'wbinfo -K' doesn't work for
+     users of trusted domains/forests principals" logic.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 14093: vfs_glusterfs: Enable profiling for file system operations.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 14032: vfs_gpfs: Implement special case for denying owner access to
+     ACL.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13884: Joining Active Directory should not use SAMR to set the
+     password.
+   * BUG 14106: s3:libsmb: Do not check the SPNEGO neg token for KRB5.
+   * BUG 14140: Overlinking libreplace against librt and pthread against every
+     binary or library causes issues.
+   * BUG 14155: 'kpasswd' fails when built with MIT Kerberos.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14084: CTDB replies can be lost before nodes are bidirectionally
+     connected.
+   * BUG 14087: "ctdb stop" command completes before databases are frozen.
+   * BUG 14129: ctdb-tools: Stop deleted nodes from influencing ctdb nodestatus
+     exit code.
+
+o  Evgeny Sinelnikov <sin@altlinux.org>
+   * BUG 14007: s3:ldap: Fix join with don't exists machine account.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.10.8
                           September 3, 2019
                    ==============================
@@ -53,8 +169,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.10.7
