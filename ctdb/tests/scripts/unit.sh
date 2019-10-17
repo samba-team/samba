@@ -74,7 +74,7 @@ result_print ()
     _out="$2"
     _rc="$3"
 
-    if "$TEST_VERBOSE" || ! $_passed ; then
+    if "$CTDB_TEST_VERBOSE" || ! $_passed ; then
 	extra_header
 
 cat <<EOF
@@ -83,7 +83,7 @@ Output (Exit status: ${_rc}):
 --------------------------------------------------
 EOF
 	# Avoid echo, which might expand unintentional escapes
-	printf '%s\n' "$_out" | result_filter | cat $TEST_CAT_RESULTS_OPTS
+	printf '%s\n' "$_out" | result_filter | cat $CTDB_TEST_CAT_RESULTS_OPTS
     fi
 
     if ! $_passed ; then
@@ -93,9 +93,9 @@ Required output (Exit status: ${required_rc}):
 --------------------------------------------------
 EOF
 	# Avoid echo, which might expand unintentional escapes
-	printf '%s\n' "$required_output" | cat $TEST_CAT_RESULTS_OPTS
+	printf '%s\n' "$required_output" | cat $CTDB_TEST_CAT_RESULTS_OPTS
 
-	if $TEST_DIFF_RESULTS ; then
+	if $CTDB_TEST_DIFF_RESULTS ; then
 	    _outr=$(mktemp)
 	    # Avoid echo, which might expand unintentional escapes
 	    printf '%s\n' "$required_output" >"$_outr"
@@ -119,7 +119,7 @@ result_footer ()
 {
     _passed="$1"
 
-    if "$TEST_VERBOSE" || ! $_passed ; then
+    if "$CTDB_TEST_VERBOSE" || ! $_passed ; then
 	extra_footer
     fi
 
@@ -196,7 +196,7 @@ unit_test ()
     test_header "$@"
 
     _wrapper="$VALGRIND"
-    if $TEST_COMMAND_TRACE ; then
+    if $CTDB_TEST_COMMAND_TRACE ; then
 	_wrapper="strace"
     fi
     _out=$($_wrapper "$@" 2>&1)
@@ -210,7 +210,7 @@ script_test ()
     test_header "$@"
 
     _shell=""
-    if ${TEST_COMMAND_TRACE} ; then
+    if ${CTDB_TEST_COMMAND_TRACE} ; then
 	_shell="sh -x"
     else
 	_shell="sh"

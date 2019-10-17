@@ -25,7 +25,7 @@ PATH="${TEST_SCRIPTS_DIR}:${PATH}"
 
 ctdb_test_on_cluster ()
 {
-	[ -z "$TEST_LOCAL_DAEMONS" ]
+	[ -z "$CTDB_TEST_LOCAL_DAEMONS" ]
 }
 
 ctdb_test_exit ()

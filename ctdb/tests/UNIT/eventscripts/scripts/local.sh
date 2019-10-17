@@ -49,7 +49,7 @@ mkdir -p "$FAKE_NETWORK_STATE"
 
 ######################################################################
 
-if "$TEST_VERBOSE" ; then
+if "$CTDB_TEST_VERBOSE" ; then
 	debug ()
 	{
 		if [ -n "$1" ] ; then

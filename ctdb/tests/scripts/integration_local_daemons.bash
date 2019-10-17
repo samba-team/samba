@@ -24,9 +24,9 @@ setup_ctdb ()
 	esac
 
 	$ctdb_local_daemons setup "$@" \
-		-n "$TEST_LOCAL_DAEMONS" \
+		-n "$CTDB_TEST_LOCAL_DAEMONS" \
 		${CTDB_USE_IPV6:+-6} \
-		${TEST_SOCKET_WRAPPER_SO_PATH:+-S ${TEST_SOCKET_WRAPPER_SO_PATH}}
+		${CTDB_TEST_SWRAP_SO_PATH:+-S ${CTDB_TEST_SWRAP_SO_PATH}}
 	# Burying the above in an if-statement condition reduces readability.
 	# shellcheck disable=SC2181
 	if [ $? -ne 0 ] ; then
@@ -35,7 +35,7 @@ setup_ctdb ()
 
 	if $no_event_scripts ; then
 		local pnn
-		for pnn in $(seq 0 $((TEST_LOCAL_DAEMONS - 1))) ; do
+		for pnn in $(seq 0 $((CTDB_TEST_LOCAL_DAEMONS - 1))) ; do
 			rm -vf "${CTDB_BASE}/events/legacy/"*
 		done
 	fi

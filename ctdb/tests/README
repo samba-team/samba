@@ -23,7 +23,7 @@ By default:
 
 * INTEGRATION tests are run against 3 local daemons
 
-  Set TEST_LOCAL_DAEMONS to a different number if desired
+  Set CTDB_TEST_LOCAL_DAEMONS to a different number if desired
 
 * When testing is complete, a summary showing a list is printed
   showing the tests run and their results

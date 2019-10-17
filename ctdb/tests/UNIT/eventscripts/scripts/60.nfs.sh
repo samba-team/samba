@@ -389,7 +389,7 @@ EOF
 		fi
 		_out=$(simple_test 2>&1)
 		_ret=$?
-		if "$TEST_VERBOSE" || [ $_ret -ne 0 ] ; then
+		if "$CTDB_TEST_VERBOSE" || [ $_ret -ne 0 ] ; then
 			cat <<EOF
 ##################################################
 Iteration ${_iteration}:

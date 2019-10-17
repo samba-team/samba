@@ -1,6 +1,6 @@
 # Hey Emacs, this is a -*- shell-script -*- !!!  :-)
 
-if "$TEST_VERBOSE" ; then
+if "$CTDB_TEST_VERBOSE" ; then
 	debug () { echo "$@" ; }
 else
 	debug () { : ; }

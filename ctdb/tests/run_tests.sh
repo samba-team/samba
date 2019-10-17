@@ -41,33 +41,33 @@ test_state_dir=""
 cleanup=false
 test_time_limit=3600
 
-export TEST_VERBOSE=false
-export TEST_COMMAND_TRACE=false
-export TEST_CAT_RESULTS_OPTS=""
-export TEST_DIFF_RESULTS=false
+export CTDB_TEST_VERBOSE=false
+export CTDB_TEST_COMMAND_TRACE=false
+export CTDB_TEST_CAT_RESULTS_OPTS=""
+export CTDB_TEST_DIFF_RESULTS=false
 export CTDB_TEST_PRINT_LOGS_ON_ERROR=false
-export TEST_LOCAL_DAEMONS
-[ -n "$TEST_LOCAL_DAEMONS" ] || TEST_LOCAL_DAEMONS=3
-export TEST_SOCKET_WRAPPER_SO_PATH=""
+export CTDB_TEST_LOCAL_DAEMONS
+[ -n "$CTDB_TEST_LOCAL_DAEMONS" ] || CTDB_TEST_LOCAL_DAEMONS=3
+export CTDB_TEST_SWRAP_SO_PATH=""
 
 while getopts "AcCDehHI:LNqS:T:vV:xX?" opt ; do
 	case "$opt" in
-	A) TEST_CAT_RESULTS_OPTS="-A" ;;
-	c) TEST_LOCAL_DAEMONS="" ;;
+	A) CTDB_TEST_CAT_RESULTS_OPTS="-A" ;;
+	c) CTDB_TEST_LOCAL_DAEMONS="" ;;
 	C) cleanup=true ;;
-	D) TEST_DIFF_RESULTS=true ;;
+	D) CTDB_TEST_DIFF_RESULTS=true ;;
 	e) exit_on_fail=true ;;
 	H) no_header=true ;;
 	I) max_iterations="$OPTARG" ; exit_on_fail=true ; with_summary=false ;;
 	L) CTDB_TEST_PRINT_LOGS_ON_ERROR=true ;;
 	N) with_summary=false ;;
 	q) quiet=true ;;
-	S) TEST_SOCKET_WRAPPER_SO_PATH="$OPTARG" ;;
+	S) CTDB_TEST_SWRAP_SO_PATH="$OPTARG" ;;
 	T) test_time_limit="$OPTARG" ;;
-	v) TEST_VERBOSE=true ;;
+	v) CTDB_TEST_VERBOSE=true ;;
 	V) test_state_dir="$OPTARG" ;;
 	x) set -x ;;
-	X) TEST_COMMAND_TRACE=true ;;
+	X) CTDB_TEST_COMMAND_TRACE=true ;;
 	\?|h) usage ;;
 	esac
 done
@@ -76,7 +76,7 @@ shift $((OPTIND - 1))
 case $(basename "$0") in
     *run_cluster_tests*)
 	# Running on a cluster...  same as -c
-	TEST_LOCAL_DAEMONS=""
+	CTDB_TEST_LOCAL_DAEMONS=""
 	;;
 esac
 
@@ -321,7 +321,7 @@ export TEST_SCRIPTS_DIR="${CTDB_TEST_DIR}/scripts"
 
 # If no tests specified then run some defaults
 if [ -z "$1" ] ; then
-	if [ -n "$TEST_LOCAL_DAEMONS" ] ; then
+	if [ -n "$CTDB_TEST_LOCAL_DAEMONS" ] ; then
 		set -- UNIT INTEGRATION
 	else
 		set -- INTEGRATION CLUSTER

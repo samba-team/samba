@@ -4,7 +4,7 @@
 
 PATH="$PATH:$CTDB_SCRIPTS_TOOLS_HELPER_DIR"
 
-if "$TEST_VERBOSE" ; then
+if "$CTDB_TEST_VERBOSE" ; then
     debug () { echo "$@" ; }
 else
     debug () { : ; }

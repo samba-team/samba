@@ -48,7 +48,7 @@ simple_test ()
 	_sort="sort"
     fi
 
-    if $TEST_COMMAND_TRACE ; then
+    if $CTDB_TEST_COMMAND_TRACE ; then
 	_onnode=$(which "$1") ; shift
 	_out=$(bash -x "$_onnode" "$@" 2>&1)
     else
