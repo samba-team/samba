@@ -4211,11 +4211,20 @@ static bool run_trans2test(int dummy)
 	bool correct = True;
 	NTSTATUS status;
 	uint32_t fs_attr;
+	uint64_t ino;
 
 	printf("starting trans2 test\n");
 
 	if (!torture_open_connection(&cli, 0)) {
 		return False;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		/* Ensure ino is zero, SMB2 gets a real one. */
+		ino = 0;
+	} else {
+		/* Ensure ino is -1, SMB1 never gets a real one. */
+		ino = (uint64_t)-1;
 	}
 
 	status = cli_get_fs_attr_info(cli, &fs_attr);
@@ -4289,7 +4298,7 @@ static bool run_trans2test(int dummy)
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE, &fnum);
 	cli_close(cli, fnum);
 	status = cli_qpathinfo2(cli, fname, &c_time_ts, &a_time_ts, &w_time_ts,
-				&m_time_ts, &size, NULL, NULL);
+				&m_time_ts, &size, NULL, &ino);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("ERROR: qpathinfo2 failed (%s)\n", nt_errstr(status));
 		correct = False;
@@ -4298,6 +4307,19 @@ static bool run_trans2test(int dummy)
 			printf("write time=%s", ctime(&w_time_ts.tv_sec));
 			printf("This system appears to set a initial 0 write time\n");
 			correct = False;
+		}
+		if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+			/* SMB2 should always return an inode. */
+			if (ino == 0) {
+				printf("SMB2 bad inode (0)\n");
+				correct = false;
+			}
+		} else {
+			/* SMB1 must always return zero here. */
+			if (ino != 0) {
+				printf("SMB1 bad inode (!0)\n");
+				correct = false;
+			}
 		}
 	}
 
@@ -11593,9 +11615,18 @@ static bool run_dir_createtime(int dummy)
 	struct timespec create_time1;
 	uint16_t fnum;
 	bool ret = false;
+	uint64_t ino;
 
 	if (!torture_open_connection(&cli, 0)) {
 		return false;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		/* Ensure ino is zero, SMB2 gets a real one. */
+		ino = 0;
+	} else {
+		/* Ensure ino is -1, SMB1 never gets a real one. */
+		ino = (uint64_t)-1;
 	}
 
 	cli_unlink(cli, fname, FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN);
@@ -11608,11 +11639,25 @@ static bool run_dir_createtime(int dummy)
 	}
 
 	status = cli_qpathinfo2(cli, dname, &create_time, NULL, NULL, NULL,
-				NULL, NULL, NULL);
+				NULL, NULL, &ino);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("cli_qpathinfo2 returned %s\n",
 		       nt_errstr(status));
 		goto out;
+	}
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		/* SMB2 should always return an inode. */
+		if (ino == 0) {
+			printf("SMB2 bad inode (0)\n");
+			goto out;
+		}
+	} else {
+		/* SMB1 must always return zero here. */
+		if (ino != 0) {
+			printf("SMB1 bad inode (!0)\n");
+			goto out;
+		}
 	}
 
 	/* Sleep 3 seconds, then create a file. */
