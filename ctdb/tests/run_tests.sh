@@ -12,6 +12,7 @@ Options:
   -e		Exit on the first test failure
   -H		No headers - for running single test with other wrapper
   -I <count>    Iterate tests <count> times, exiting on failure (implies -e, -N)
+  -l <count>    Use <count> daemons for local daemon integration tests
   -L            Print daemon logs on test failure (only some tests)
   -N		Don't print summary of tests results after running all tests
   -q		Quiet - don't show tests being run (still displays summary)
@@ -46,11 +47,10 @@ export CTDB_TEST_COMMAND_TRACE=false
 export CTDB_TEST_CAT_RESULTS_OPTS=""
 export CTDB_TEST_DIFF_RESULTS=false
 export CTDB_TEST_PRINT_LOGS_ON_ERROR=false
-export CTDB_TEST_LOCAL_DAEMONS
-[ -n "$CTDB_TEST_LOCAL_DAEMONS" ] || CTDB_TEST_LOCAL_DAEMONS=3
+export CTDB_TEST_LOCAL_DAEMONS=3
 export CTDB_TEST_SWRAP_SO_PATH=""
 
-while getopts "AcCDehHI:LNqS:T:vV:xX?" opt ; do
+while getopts "AcCDehHI:l:LNqS:T:vV:xX?" opt ; do
 	case "$opt" in
 	A) CTDB_TEST_CAT_RESULTS_OPTS="-A" ;;
 	c) CTDB_TEST_LOCAL_DAEMONS="" ;;
@@ -59,6 +59,7 @@ while getopts "AcCDehHI:LNqS:T:vV:xX?" opt ; do
 	e) exit_on_fail=true ;;
 	H) no_header=true ;;
 	I) max_iterations="$OPTARG" ; exit_on_fail=true ; with_summary=false ;;
+	l) CTDB_TEST_LOCAL_DAEMONS="$OPTARG" ;;
 	L) CTDB_TEST_PRINT_LOGS_ON_ERROR=true ;;
 	N) with_summary=false ;;
 	q) quiet=true ;;
