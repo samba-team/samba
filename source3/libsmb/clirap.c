@@ -855,7 +855,15 @@ NTSTATUS cli_qpathinfo2_recv(struct tevent_req *req,
                 *size = IVAL2_TO_SMB_BIG_UINT(state->data,48);
 	}
 	if (ino) {
-		*ino = IVAL(state->data, 64);
+		/*
+		 * SMB1 qpathinfo2 uses SMB_QUERY_FILE_ALL_INFO
+		 * which doesn't return an inode number (fileid).
+		 * We can't change this to one of the FILE_ID
+		 * info levels as only Win2003 and above support
+		 * these [MS-SMB: 2.2.2.3.1] and the SMB1 code
+		 * needs to support older servers.
+		 */
+		*ino = 0;
 	}
 	return NT_STATUS_OK;
 }
