@@ -39,6 +39,10 @@ setup_ctdb ()
 			rm -vf "${CTDB_BASE}/events/legacy/"*
 		done
 	fi
+
+	if $CTDB_TEST_PRINT_LOGS_ON_ERROR ; then
+		ctdb_test_exit_hook_add _print_logs_on_test_failure
+	fi
 }
 
 start_ctdb_1 ()
@@ -74,4 +78,17 @@ restart_ctdb_1 ()
 onnode ()
 {
 	$ctdb_local_daemons onnode "$@"
+}
+
+_print_logs_on_test_failure ()
+{
+	# This is called from ctdb_test_exit() where $status is available
+	# shellcheck disable=SC2154
+	if [ "$status" -eq 0 ] ; then
+		return
+	fi
+
+	echo "*** LOG START --------------------"
+	$ctdb_local_daemons print-log all | tail -n 100
+	echo "*** LOG END   --------------------"
 }
