@@ -105,7 +105,7 @@ def configure(conf):
 
     conf.CHECK_FUNCS('getcwd fchown chmod fchmod mknod mknodat')
     conf.CHECK_FUNCS('strtol strchr strupr chflags')
-    conf.CHECK_FUNCS('getrlimit fsync fdatasync setpgid')
+    conf.CHECK_FUNCS('getrlimit fsync setpgid')
     conf.CHECK_FUNCS('setsid glob strpbrk crypt16 getauthuid')
     conf.CHECK_FUNCS('innetgr')
     conf.CHECK_FUNCS('initgroups select poll rdchk getgrnam getgrent pathconf')
@@ -123,7 +123,6 @@ def configure(conf):
     conf.CHECK_FUNCS_IN('yp_get_default_domain', 'nsl')
     conf.CHECK_FUNCS_IN('dn_expand _dn_expand __dn_expand', 'resolv')
     conf.CHECK_FUNCS_IN('dn_expand', 'inet')
-    conf.CHECK_DECLS('fdatasync', reverse=True)
     conf.CHECK_DECLS('readahead', reverse=True, headers='fcntl.h')
 
     if conf.CHECK_CODE('''
@@ -396,7 +395,6 @@ fchmod
 fchown
 fcvt
 fcvtl
-fdatasync
 fseeko
 fsync
 futimens
