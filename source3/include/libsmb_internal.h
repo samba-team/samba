@@ -522,6 +522,11 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 
 
 /* Functions in libsmb_stat.c */
+void setup_stat(struct stat *st,
+		const char *fname,
+		off_t size,
+		int mode);
+
 int
 SMBC_stat_ctx(SMBCCTX *context,
               const char *fname,
