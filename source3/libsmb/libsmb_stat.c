@@ -49,7 +49,11 @@ void setup_stat(struct stat *st,
 		const char *fname,
 		off_t size,
 		int mode,
-		ino_t ino)
+		ino_t ino,
+		dev_t dev,
+		struct timespec access_time_ts,
+		struct timespec change_time_ts,
+		struct timespec write_time_ts)
 {
 	st->st_mode = 0;
 
@@ -96,6 +100,11 @@ void setup_stat(struct stat *st,
 	} else {
 		st->st_ino = generate_inode(fname);
 	}
+
+	st->st_dev = dev;
+	st->st_atime = convert_timespec_to_time_t(access_time_ts);
+	st->st_ctime = convert_timespec_to_time_t(change_time_ts);
+	st->st_mtime = convert_timespec_to_time_t(write_time_ts);
 }
 
 /*
@@ -180,12 +189,15 @@ SMBC_stat_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	setup_stat(st, fname, size, mode, ino);
-
-	st->st_atime = convert_timespec_to_time_t(access_time_ts);
-	st->st_ctime = convert_timespec_to_time_t(change_time_ts);
-	st->st_mtime = convert_timespec_to_time_t(write_time_ts);
-	st->st_dev   = srv->dev;
+	setup_stat(st,
+		fname,
+		size,
+		mode,
+		ino,
+		srv->dev,
+		access_time_ts,
+		change_time_ts,
+		write_time_ts);
 
 	TALLOC_FREE(frame);
 	return 0;
@@ -283,12 +295,15 @@ SMBC_fstat_ctx(SMBCCTX *context,
 		write_time_ts = convert_time_t_to_timespec(write_time);
 	}
 
-	setup_stat(st, file->fname, size, mode, ino);
-
-	st->st_atime = convert_timespec_to_time_t(access_time_ts);
-	st->st_ctime = convert_timespec_to_time_t(change_time_ts);
-	st->st_mtime = convert_timespec_to_time_t(write_time_ts);
-	st->st_dev = file->srv->dev;
+	setup_stat(st,
+		file->fname,
+		size,
+		mode,
+		ino,
+		file->srv->dev,
+		access_time_ts,
+		change_time_ts,
+		write_time_ts);
 
 	TALLOC_FREE(frame);
 	return 0;
