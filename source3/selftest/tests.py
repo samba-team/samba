@@ -509,7 +509,8 @@ libsmbclient = ["libsmbclient.version", "libsmbclient.initialize",
                 "libsmbclient.configuration", "libsmbclient.setConfiguration",
                 "libsmbclient.options", "libsmbclient.opendir",
                 "libsmbclient.list_shares", "libsmbclient.readdirplus",
-		"libsmbclient.readdirplus_seek"]
+		"libsmbclient.readdirplus_seek",
+		"libsmbclient.readdirplus2"]
 
 vfs = [
     "vfs.fruit",
