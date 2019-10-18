@@ -1,4 +1,90 @@
                    ==============================
+                   Release Notes for Samba 4.11.1
+                          October 18, 2019
+		   ==============================
+
+
+This is the latest stable release of the Samba 4.11 release series.
+
+
+Changes since 4.11.0:
+---------------------
+
+o  Michael Adam <obnox@samba.org>
+   * BUG 14141: getpwnam and getpwuid need to return data for ID_TYPE_BOTH
+     group.
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14094: smbc_readdirplus() is incompatible with smbc_telldir() and
+     smbc_lseekdir().
+   * BUG 14152: s3: smbclient: Stop an SMB2-connection from blundering into
+     SMB1-specific calls.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14137: Fix stale file handle error when using mkstemp on a share.
+
+o  Isaac Boukris <iboukris@gmail.com>
+   * BUG 14106: Fix spnego fallback from kerberos to ntlmssp in smbd server.
+   * BUG 14140: Overlinking libreplace against librt and pthread against every
+     binary or library causes issues.
+
+o  Günther Deschner <gd@samba.org>
+   * BUG 14130: s3-winbindd: Fix forest trusts with additional trust attributes.
+   * BUG 14134: auth/gensec: Fix non-AES schannel seal.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 14147: Deleted records can be resurrected during recovery.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 14136: Fix uncaught exception in classicupgrade.
+   * BUG 14139: fault.c: Improve fault_report message text pointing to our wiki.
+
+o  Bryan Mason <bmason@redhat.com>
+   * BUG 14128: s3:client: Use DEVICE_URI, instead of argv[0], for Device URI.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14124: pam_winbind with krb5_auth or wbinfo -K doesn't work for users
+     of trusted domains/forests.
+
+o  Mathieu Parent <math.parent@gmail.com>
+   * BUG 14131: Remove 'pod2man' as it is no longer needed.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 13884: Joining Active Directory should not use SAMR to set the
+     password.
+   * BUG 14140: Overlinking libreplace against librt and pthread against every
+     binary or library causes issues.
+   * BUG 14155: 'kpasswd' fails when built with MIT Kerberos.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14129: Exit code of ctdb nodestatus should not be influenced by deleted
+     nodes.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.11.0
                          September 17, 2019
 		   ==============================
