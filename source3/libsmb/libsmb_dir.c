@@ -1253,6 +1253,105 @@ SMBC_readdirplus_ctx(SMBCCTX *context,
 }
 
 /*
+ * Routine to get a directory entry plus a filled in stat structure if
+ * requested.
+ */
+
+const struct libsmb_file_info *SMBC_readdirplus2_ctx(SMBCCTX *context,
+			SMBCFILE *dir,
+			struct stat *st)
+{
+	struct libsmb_file_info *smb_finfo = NULL;
+	struct smbc_dirplus_list *dp_list = NULL;
+	ino_t ino;
+	char *full_pathname = NULL;
+	TALLOC_CTX *frame = NULL;
+
+	/*
+	 * Allow caller to pass in NULL for stat pointer if
+	 * required. This makes this call identical to
+	 * smbc_readdirplus().
+	 */
+
+	if (st == NULL) {
+		return SMBC_readdirplus_ctx(context, dir);
+	}
+
+	frame = talloc_stackframe();
+
+	/* Check that all is ok first ... */
+	if (context == NULL || !context->internal->initialized) {
+		DBG_ERR("Invalid context in SMBC_readdirplus2_ctx()\n");
+		TALLOC_FREE(frame);
+		errno = EINVAL;
+		return NULL;
+	}
+
+	if (dir == NULL ||
+	    SMBC_dlist_contains(context->internal->files,
+					dir) == 0)
+	{
+		DBG_ERR("Invalid dir in SMBC_readdirplus2_ctx()\n");
+		TALLOC_FREE(frame);
+		errno = EBADF;
+		return NULL;
+	}
+
+	dp_list = dir->dirplus_next;
+	if (dp_list == NULL) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	ino = (ino_t)dp_list->ino;
+
+	smb_finfo = dp_list->smb_finfo;
+	if (smb_finfo == NULL) {
+		TALLOC_FREE(frame);
+		errno = ENOENT;
+		return NULL;
+	}
+
+	full_pathname = talloc_asprintf(frame,
+				"%s/%s",
+				dir->fname,
+				smb_finfo->name);
+	if (full_pathname == NULL) {
+		TALLOC_FREE(frame);
+		errno = ENOENT;
+		return NULL;
+	}
+
+	setup_stat(st,
+		full_pathname,
+		smb_finfo->size,
+		smb_finfo->attrs,
+		ino,
+		dir->srv->dev,
+		smb_finfo->atime_ts,
+		smb_finfo->ctime_ts,
+		smb_finfo->mtime_ts);
+
+	TALLOC_FREE(full_pathname);
+
+	dir->dirplus_next = dir->dirplus_next->next;
+
+	/*
+	 * If we are returning file entries, we
+	 * have a duplicate list in dir_list
+	 *
+	 * Update dir_next also so readdir and
+	 * readdirplus are kept in sync.
+	 */
+	if (dir->dir_list) {
+		dir->dir_next = dir->dir_next->next;
+	}
+
+	TALLOC_FREE(frame);
+	return smb_finfo;
+}
+
+/*
  * Routine to get directory entries
  */
 

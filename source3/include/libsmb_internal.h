@@ -306,6 +306,11 @@ const struct libsmb_file_info *
 SMBC_readdirplus_ctx(SMBCCTX *context,
                      SMBCFILE *dir);
 
+const struct libsmb_file_info *
+SMBC_readdirplus2_ctx(SMBCCTX *context,
+		SMBCFILE *dir,
+		struct stat *st);
+
 int
 SMBC_getdents_ctx(SMBCCTX *context,
                   SMBCFILE *dir,

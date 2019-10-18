@@ -1046,6 +1046,12 @@ typedef const struct libsmb_file_info * (*smbc_readdirplus_fn)(SMBCCTX *c,
 smbc_readdirplus_fn smbc_getFunctionReaddirPlus(SMBCCTX *c);
 void smbc_setFunctionReaddirPlus(SMBCCTX *c, smbc_readdirplus_fn fn);
 
+typedef const struct libsmb_file_info * (*smbc_readdirplus2_fn)(SMBCCTX *c,
+					SMBCFILE *dir,
+					struct stat *st);
+smbc_readdirplus2_fn smbc_getFunctionReaddirPlus2(SMBCCTX *c);
+void smbc_setFunctionReaddirPlus2(SMBCCTX *c, smbc_readdirplus2_fn fn);
+
 typedef int (*smbc_getdents_fn)(SMBCCTX *c,
                                 SMBCFILE *dir,
                                 struct smbc_dirent *dirp,
@@ -1654,6 +1660,25 @@ struct smbc_dirent* smbc_readdir(unsigned int dh);
  */
 const struct libsmb_file_info *smbc_readdirplus(unsigned int dh);
 
+/**@ingroup directory
+ * Works similar as smbc_readdirplus as well as fills up stat structure if
+ * provided.
+ *
+ * @param dh        Valid directory as returned by smbc_opendir()
+ *
+ * @param stat      Pointer to stat structure which will receive the
+ *                  information. If this pointer is null the call
+ *                  is identical to smbc_readdirplus.
+ *
+ * @return          A const pointer to a libsmb_file_info structure,
+ *                  or NULL if an error occurs or end-of-directory is reached:
+ *                  - EBADF Invalid directory handle
+ *                  - EINVAL smbc_init() failed or has not been called
+ *
+ * @see             smbc_open(), smbc_readdir(), smbc_readdirplus2()
+ */
+const struct libsmb_file_info *smbc_readdirplus2(unsigned int dh,
+					struct stat *st);
 
 /**@ingroup directory
  * Get the current directory offset.
@@ -3104,6 +3129,7 @@ struct _SMBCCTX
         smbc_closedir_fn                closedir DEPRECATED_SMBC_INTERFACE;
         smbc_readdir_fn                 readdir DEPRECATED_SMBC_INTERFACE;
         smbc_readdirplus_fn             readdirplus DEPRECATED_SMBC_INTERFACE;
+	smbc_readdirplus2_fn            readdirplus2 DEPRECATED_SMBC_INTERFACE;
         smbc_getdents_fn                getdents DEPRECATED_SMBC_INTERFACE;
         smbc_mkdir_fn                   mkdir DEPRECATED_SMBC_INTERFACE;
         smbc_rmdir_fn                   rmdir DEPRECATED_SMBC_INTERFACE;

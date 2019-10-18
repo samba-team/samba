@@ -907,6 +907,16 @@ void smbc_setFunctionReaddirPlus(SMBCCTX *c, smbc_readdirplus_fn fn)
 	c->readdirplus = fn;
 }
 
+smbc_readdirplus2_fn smbc_getFunctionReaddirPlus2(SMBCCTX *c)
+{
+	return c->readdirplus2;
+}
+
+void smbc_setFunctionReaddirPlus2(SMBCCTX *c, smbc_readdirplus2_fn fn)
+{
+	c->readdirplus2 = fn;
+}
+
 smbc_getdents_fn
 smbc_getFunctionGetdents(SMBCCTX *c)
 {

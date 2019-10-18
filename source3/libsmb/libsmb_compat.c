@@ -291,6 +291,13 @@ const struct libsmb_file_info *smbc_readdirplus(unsigned int dh)
 	return smbc_getFunctionReaddirPlus(statcont)(statcont, file);
 }
 
+const struct libsmb_file_info *smbc_readdirplus2(unsigned int dh,
+		struct stat *st)
+{
+	SMBCFILE *file = find_fd(dh);
+	return smbc_getFunctionReaddirPlus2(statcont)(statcont, file, st);
+}
+
 off_t
 smbc_telldir(int dh)
 {
