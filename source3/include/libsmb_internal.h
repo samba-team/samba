@@ -525,7 +525,8 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 void setup_stat(struct stat *st,
 		const char *fname,
 		off_t size,
-		int mode);
+		int mode,
+		ino_t ino);
 
 int
 SMBC_stat_ctx(SMBCCTX *context,

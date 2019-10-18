@@ -48,7 +48,8 @@ static ino_t generate_inode(const char *name)
 void setup_stat(struct stat *st,
 		const char *fname,
 		off_t size,
-		int mode)
+		int mode,
+		ino_t ino)
 {
 	st->st_mode = 0;
 
@@ -90,7 +91,9 @@ void setup_stat(struct stat *st,
 		st->st_nlink = 1;
 	}
 
-	if (st->st_ino == 0) {
+	if (ino != 0) {
+		st->st_ino = ino;
+	} else {
 		st->st_ino = generate_inode(fname);
 	}
 }
@@ -177,9 +180,7 @@ SMBC_stat_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	st->st_ino = ino;
-
-	setup_stat(st, fname, size, mode);
+	setup_stat(st, fname, size, mode, ino);
 
 	st->st_atime = convert_timespec_to_time_t(access_time_ts);
 	st->st_ctime = convert_timespec_to_time_t(change_time_ts);
@@ -282,9 +283,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
 		write_time_ts = convert_time_t_to_timespec(write_time);
 	}
 
-	st->st_ino = ino;
-
-	setup_stat(st, file->fname, size, mode);
+	setup_stat(st, file->fname, size, mode, ino);
 
 	st->st_atime = convert_timespec_to_time_t(access_time_ts);
 	st->st_ctime = convert_timespec_to_time_t(change_time_ts);
