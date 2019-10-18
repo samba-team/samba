@@ -1095,6 +1095,7 @@ int create_pipe_sock(const char *socket_dir,
 	int sock = -1;
 	mode_t old_umask;
 	char *path = NULL;
+	size_t path_len;
 
 	old_umask = umask(0);
 
@@ -1121,7 +1122,17 @@ int create_pipe_sock(const char *socket_dir,
 	unlink(path);
 	memset(&sunaddr, 0, sizeof(sunaddr));
 	sunaddr.sun_family = AF_UNIX;
-	strlcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path));
+
+	path_len = strlcpy(sunaddr.sun_path, path, sizeof(sunaddr.sun_path));
+	if (path_len > sizeof(sunaddr.sun_path)) {
+		DBG_ERR("Refusing to attempt to create pipe socket "
+			"%s.  Path is longer than permitted for a "
+			"unix domain socket.  It would truncate to "
+			"%s\n",
+			path,
+			sunaddr.sun_path);
+		goto out_close;
+	}
 
 	if (bind(sock, (struct sockaddr *)&sunaddr, sizeof(sunaddr)) == -1) {
 		DEBUG(0, ("bind failed on pipe socket %s: %s\n", path,
