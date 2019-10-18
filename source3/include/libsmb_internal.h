@@ -526,7 +526,11 @@ void setup_stat(struct stat *st,
 		const char *fname,
 		off_t size,
 		int mode,
-		ino_t ino);
+		ino_t ino,
+		dev_t dev,
+		struct timespec access_time_ts,
+		struct timespec change_time_ts,
+		struct timespec write_time_ts);
 
 int
 SMBC_stat_ctx(SMBCCTX *context,
