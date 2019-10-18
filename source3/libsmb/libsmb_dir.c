@@ -170,6 +170,7 @@ static int add_dirplus(SMBCFILE *dir, struct file_info *finfo)
 		return -1;
 	}
 	ZERO_STRUCTP(new_entry);
+	new_entry->ino = finfo->ino;
 
 	info = SMB_MALLOC_P(struct libsmb_file_info);
 	if (info == NULL) {
