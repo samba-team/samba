@@ -228,8 +228,18 @@ static NTSTATUS zfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			   uint32_t security_info_sent,
 			   const struct security_descriptor *psd)
 {
-        return smb_set_nt_acl_nfs4(handle, fsp, NULL, security_info_sent, psd,
-				   zfs_process_smbacl);
+	struct zfsacl_config_data *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct zfsacl_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
+	return smb_set_nt_acl_nfs4(handle,
+				fsp,
+				&config->nfs4_params,
+				security_info_sent,
+				psd,
+				zfs_process_smbacl);
 }
 
 static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
