@@ -48,7 +48,8 @@ struct zfsacl_config_data {
 static NTSTATUS zfs_get_nt_acl_common(struct connection_struct *conn,
 				      TALLOC_CTX *mem_ctx,
 				      const struct smb_filename *smb_fname,
-				      struct SMB4ACL_T **ppacl)
+				      struct SMB4ACL_T **ppacl,
+				      struct zfsacl_config_data *config)
 {
 	int naces, i;
 	ace_t *acebuf;
@@ -250,10 +251,16 @@ static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 {
 	struct SMB4ACL_T *pacl;
 	NTSTATUS status;
+	struct zfsacl_config_data *config = NULL;
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct zfsacl_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	status = zfs_get_nt_acl_common(handle->conn, frame,
-				       fsp->fsp_name, &pacl);
+				       fsp->fsp_name, &pacl, config);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
@@ -286,9 +293,14 @@ static NTSTATUS zfsacl_get_nt_acl(struct vfs_handle_struct *handle,
 {
 	struct SMB4ACL_T *pacl;
 	NTSTATUS status;
+	struct zfsacl_config_data *config = NULL;
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct zfsacl_config_data,
+				return NT_STATUS_INTERNAL_ERROR);
+
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	status = zfs_get_nt_acl_common(handle->conn, frame, smb_fname, &pacl);
+	status = zfs_get_nt_acl_common(handle->conn, frame, smb_fname, &pacl, config);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
 		if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
