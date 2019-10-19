@@ -4,6 +4,8 @@
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
 
+#include "lib/crypto/gnutls_helpers.h"
+
 /* this file contains prototypes for functions that are private 
  * to this subsystem or library. These functions should not be 
  * used outside this particular subsystem! */
@@ -217,6 +219,8 @@ WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 /* The following definitions come from /home/jeremy/src/samba/git/master/source3/../source4/../libcli/auth/smbdes.c  */
 
 void des_crypt56(uint8_t out[8], const uint8_t in[8], const uint8_t key[7], int forw);
+int des_crypt56_gnutls(uint8_t out[8], const uint8_t in[8], const uint8_t key[7],
+		       enum samba_gnutls_direction encrypt);
 void E_P16(const uint8_t *p14,uint8_t *p16);
 void E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24);
 void D_P16(const uint8_t *p14, const uint8_t *in, uint8_t *out);

@@ -13,7 +13,7 @@ bld.SAMBA_SUBSYSTEM('MSRPC_PARSE',
 
 bld.SAMBA_SUBSYSTEM('NTLM_CHECK',
                     source='ntlm_check.c',
-                    deps = 'talloc'
+                    deps = 'talloc LIBCLI_AUTH'
                     )
 
 bld.SAMBA_SUBSYSTEM('LIBCLI_AUTH',

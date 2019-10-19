@@ -10,7 +10,7 @@ bld.SAMBA3_MODULE('pdb_tdbsam',
 
 bld.SAMBA3_MODULE('pdb_ldapsam',
                  subsystem='pdb',
-                 deps='smbldap smbldaphelper',
+                 deps='smbldap smbldaphelper LIBCLI_AUTH',
                  source='pdb_ldap.c pdb_nds.c',
                  init_function='',
                  internal_module=bld.SAMBA3_IS_STATIC_MODULE('pdb_ldapsam'),
