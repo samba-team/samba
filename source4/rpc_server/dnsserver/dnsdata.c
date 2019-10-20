@@ -801,10 +801,11 @@ struct dns_tree *dns_build_tree(TALLOC_CTX *mem_ctx, const char *name, struct ld
 			goto failed;
 		}
 
-		if (strcmp(ptr, "@") == 0) {
-			base->data = res->msgs[i];
-			continue;
-		} else if (strcasecmp(ptr, name) == 0) {
+		/*
+		 * This might be the sub-domain in the zone being
+		 * requested, or @ for the root of the zone
+		 */
+		if (strcasecmp(ptr, name) == 0) {
 			base->data = res->msgs[i];
 			continue;
 		}
