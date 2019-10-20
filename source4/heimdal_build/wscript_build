@@ -140,7 +140,7 @@ def HEIMDAL_ASN1(name, source,
             samba_cflags   = CURRENT_CFLAGS(bld, name, ''),
             depends_on     = '',
             samba_deps     = to_list('roken replace'),
-            samba_includes = includes + ["/usr/include/heimdal"],
+            samba_includes = includes,
             local_include  = True)
 
 
