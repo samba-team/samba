@@ -795,10 +795,11 @@ struct dns_tree *dns_build_tree(TALLOC_CTX *mem_ctx, const char *name, struct ld
 	for (i=0; i<res->count; i++) {
 		ptr = ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL);
 
-		if (strcmp(ptr, "@") == 0) {
-			base->data = res->msgs[i];
-			continue;
-		} else if (strcasecmp(ptr, name) == 0) {
+		/*
+		 * This might be the sub-domain in the zone being
+		 * requested, or @ for the root of the zone
+		 */
+		if (strcasecmp(ptr, name) == 0) {
 			base->data = res->msgs[i];
 			continue;
 		}
