@@ -244,12 +244,6 @@ static void torture_gnutls_des_crypt56(void **state)
 	uint8_t decrypt[8];
 	int rc;
 
-	des_crypt56(crypt, clear, key, 1);
-	assert_memory_equal(crypt, crypt_expected, 8);
-
-	des_crypt56(decrypt, crypt, key, 0);
-	assert_memory_equal(decrypt, clear, 8);
-
 	rc = des_crypt56_gnutls(crypt, clear, key, SAMBA_GNUTLS_ENCRYPT);
 	assert_int_equal(rc, 0);
 	assert_memory_equal(crypt, crypt_expected, 8);
