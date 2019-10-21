@@ -202,10 +202,35 @@ def configure(conf):
     conf.CHECK_TYPE_IN('sig_atomic_t', 'signal.h', define='HAVE_SIG_ATOMIC_T_TYPE')
     conf.CHECK_FUNCS('sigsetmask siggetmask sigprocmask sigblock sigaction sigset')
 
-    conf.CHECK_FUNCS_IN('''inet_ntoa inet_aton inet_ntop inet_pton connect gethostbyname
-                           getaddrinfo getnameinfo freeaddrinfo gai_strerror socketpair''',
-                        'socket nsl', checklibc=True,
-                        headers='sys/socket.h netinet/in.h arpa/inet.h netdb.h')
+    # Those functions are normally available in libc
+    if not conf.CHECK_FUNCS('''
+                            inet_ntoa
+                            inet_aton
+                            inet_ntop
+                            inet_pton
+                            connect
+                            gethostbyname
+                            getaddrinfo
+                            getnameinfo
+                            freeaddrinfo
+                            gai_strerror
+                            socketpair''',
+                            headers='sys/socket.h netinet/in.h arpa/inet.h netdb.h'):
+        conf.CHECK_FUNCS_IN('''
+                            inet_ntoa
+                            inet_aton
+                            inet_ntop
+                            inet_pton
+                            connect
+                            gethostbyname
+                            getaddrinfo
+                            getnameinfo
+                            freeaddrinfo
+                            gai_strerror
+                            socketpair''',
+                            'socket nsl',
+                            headers='sys/socket.h netinet/in.h arpa/inet.h netdb.h')
+        conf.DEFINE('REPLACE_REQUIRES_LIBSOCKET_LIBNSL', 1)
 
     conf.CHECK_FUNCS('memset_s memset_explicit')
 
@@ -848,6 +873,7 @@ def build(bld):
     extra_libs = ''
     if bld.CONFIG_SET('HAVE_LIBBSD'): extra_libs += ' bsd'
     if bld.CONFIG_SET('HAVE_LIBRT'): extra_libs += ' rt'
+    if bld.CONFIG_SET('REPLACE_REQUIRES_LIBSOCKET_LIBNSL'): extra_libs += ' socket nsl'
 
     bld.SAMBA_SUBSYSTEM('LIBREPLACE_HOSTCC',
         REPLACE_HOSTCC_SOURCE,
@@ -887,7 +913,7 @@ def build(bld):
                       # at the moment:
                       # hide_symbols=bld.BUILTIN_LIBRARY('replace'),
                       private_library=True,
-                      deps='crypt dl nsl socket attr' + extra_libs)
+                      deps='crypt dl attr' + extra_libs)
 
     replace_test_cflags = ''
     if bld.CONFIG_SET('HAVE_WNO_FORMAT_TRUNCATION'):
