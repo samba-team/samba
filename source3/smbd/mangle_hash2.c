@@ -89,11 +89,6 @@
 #define FLAG_POSSIBLE3 64
 #define FLAG_POSSIBLE4 128
 
-/* by default have a max of 4096 entries in the cache. */
-#ifndef MANGLE_CACHE_SIZE
-#define MANGLE_CACHE_SIZE 4096
-#endif
-
 #define FNV1_PRIME 0x01000193
 /*the following number is a fnv1 of the string: idra@samba.org 2002 */
 #define FNV1_INIT  0xa6b93095
