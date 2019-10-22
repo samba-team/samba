@@ -190,7 +190,7 @@ static void init_tables(void)
 #endif
 }
 
-#else
+#else /* DYNAMIC_MANGLE_TABLES */
 
 /*
  * These tables were initialized by a single run of the above
@@ -270,7 +270,7 @@ static uint8_t base_reverse[256] = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-#endif
+#endif /* DYNAMIC_MANGLE_TABLES */
 
 /* 
    hash a string of the specified length. The string does not need to be
