@@ -122,7 +122,7 @@ samba-nopython-py2:
 samba-xc:
   extends: .shared_template
 
-samba-ad-member:
+samba-admem:
   extends: .shared_template
 
 samba-ad-dc-2:
@@ -155,7 +155,7 @@ samba-ctdb:
 samba-ad-dc-ntvfs:
   extends: .shared_template
 
-samba-ad-member-mitkrb5:
+samba-admem-mit:
   extends: .shared_template
 
 samba-ad-dc-4-mitkrb5:
@@ -214,8 +214,8 @@ pages:
     - samba-ad-dc-6
     - samba-ad-dc-backup
     - samba-ad-dc-ntvfs
-    - samba-ad-member
-    - samba-ad-member-mitkrb5
+    - samba-admem
+    - samba-admem-mit
     - samba-ctdb
     - samba-fileserver
     - samba-libs

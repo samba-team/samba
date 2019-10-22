@@ -124,8 +124,8 @@ builddirs = {
     "samba": ".",
     "samba-nt4": ".",
     "samba-fileserver": ".",
-    "samba-ad-member": ".",
-    "samba-ad-member-mitkrb5": ".",
+    "samba-admem": ".",
+    "samba-admem-mit": ".",
     "samba-xc": ".",
     "samba-o3": ".",
     "samba-ctdb": ".",
@@ -305,7 +305,7 @@ tasks = {
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
 
-    "samba-ad-member": [
+    "samba-admem": [
         ("random-sleep", random_sleep(300, 900)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
@@ -429,7 +429,7 @@ tasks = {
         ("check-clean-tree", "script/clean-source-tree.sh"),
         ],
 
-    "samba-ad-member-mitkrb5": [
+    "samba-admem-mit": [
         ("random-sleep", random_sleep(300, 900)),
         ("configure", "./configure.developer --with-selftest-prefix=./bin/ab --with-system-mitkrb5 --with-experimental-mit-ad-dc" + samba_configure_params),
         ("make", "make -j"),
