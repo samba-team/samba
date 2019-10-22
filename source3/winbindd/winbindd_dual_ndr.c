@@ -30,7 +30,8 @@
 #include "winbindd/winbindd.h"
 #include "winbindd/winbindd_proto.h"
 #include "ntdomain.h"
-#include "librpc/gen_ndr/srv_winbind.h"
+#include "librpc/rpc/dcesrv_core.h"
+#include "librpc/gen_ndr/ndr_winbind.h"
 
 struct wbint_bh_state {
 	struct winbindd_domain *domain;
@@ -346,41 +347,67 @@ struct dcerpc_binding_handle *wbint_binding_handle(TALLOC_CTX *mem_ctx,
 enum winbindd_result winbindd_dual_ndrcmd(struct winbindd_domain *domain,
 					  struct winbindd_cli_state *state)
 {
-	struct pipes_struct p;
-	const struct api_struct *fns;
-	int num_fns;
-	bool ret;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
+	struct dcesrv_interface iface;
+	const struct ndr_syntax_id *abstract_syntax;
+	bool ok;
+	uint32_t opnum = state->request->data.ndrcmd;
+	struct pipes_struct *p;
+	TALLOC_CTX *mem_ctx;
+	DATA_BLOB in;
+	DATA_BLOB out;
+	NTSTATUS status;
 
-	fns = winbind_get_pipe_fns(&num_fns);
+	DBG_DEBUG("Running command %s (domain '%s')\n",
+		  ndr_table_winbind.calls[opnum].name,
+		  domain ? domain->name : "(null)");
 
-	if (state->request->data.ndrcmd >= num_fns) {
+	ep_server = dcesrv_ep_server_byname(ndr_table_winbind.name);
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get DCE/RPC endpoint server '%s'\n",
+			ndr_table_winbind.name);
 		return WINBINDD_ERROR;
 	}
 
-	DEBUG(10, ("winbindd_dual_ndrcmd: Running command %s (%s)\n",
-		   fns[state->request->data.ndrcmd].name,
-		   domain ? domain->name : "no domain"));
+	abstract_syntax = &ndr_table_winbind.syntax_id;
+	ok = ep_server->interface_by_uuid(&iface, &abstract_syntax->uuid,
+					  abstract_syntax->if_version);
+	if (!ok) {
+		DBG_ERR("Failed to get DCE/RPC interface\n");
+		return WINBINDD_ERROR;
+	}
 
-	ZERO_STRUCT(p);
-	p.mem_ctx = talloc_stackframe();
-	p.in_data.data = data_blob_const(state->request->extra_data.data,
-					 state->request->extra_len);
+	mem_ctx = talloc_stackframe();
+	if (mem_ctx == NULL) {
+		DBG_ERR("No memory");
+		return WINBINDD_ERROR;
+	}
 
-	ret = fns[state->request->data.ndrcmd].fn(&p);
-	if (!ret) {
-		TALLOC_FREE(p.mem_ctx);
+	p = talloc_zero(mem_ctx, struct pipes_struct);
+	if (p == NULL) {
+		DBG_ERR("No memory\n");
+		return WINBINDD_ERROR;
+	}
+	p->mem_ctx = mem_ctx;
+
+	in = data_blob_const(state->request->extra_data.data,
+			     state->request->extra_len);
+
+	status = iface.local(p, opnum, mem_ctx, &in, &out);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(mem_ctx);
 		return WINBINDD_ERROR;
 	}
 
 	state->response->extra_data.data =
-		talloc_move(state->mem_ctx, &p.out_data.rdata.data);
-	state->response->length += p.out_data.rdata.length;
-	p.out_data.rdata.length = 0;
+		talloc_steal(state->mem_ctx, out.data);
+	state->response->length += out.length;
 
-	TALLOC_FREE(p.mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	if (state->response->extra_data.data == NULL) {
 		return WINBINDD_ERROR;
 	}
+
 	return WINBINDD_OK;
 }

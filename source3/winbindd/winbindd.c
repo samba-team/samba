@@ -31,6 +31,7 @@
 #include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_lsa_scompat.h"
 #include "librpc/gen_ndr/ndr_samr_scompat.h"
+#include "librpc/gen_ndr/ndr_winbind_scompat.h"
 #include "secrets.h"
 #include "rpc_client/cli_netlogon.h"
 #include "idmap.h"
@@ -1961,6 +1962,18 @@ int main(int argc, const char **argv)
 	status = dcerpc_register_ep_server(ep_server);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Failed to register 'samr' endpoint "
+			"server: %s\n", nt_errstr(status));
+		exit(1);
+	}
+
+	ep_server = winbind_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'winbind' endpoint server\n");
+		exit(1);
+	}
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register 'winbind' endpoint "
 			"server: %s\n", nt_errstr(status));
 		exit(1);
 	}

@@ -1899,3 +1899,5 @@ reconnect:
 
 	return status;
 }
+
+#include "librpc/gen_ndr/ndr_winbind_scompat.c"
