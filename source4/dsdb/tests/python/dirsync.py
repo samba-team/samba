@@ -681,6 +681,37 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
         self.assertEqual(res[0].get("member;range=1-1"), None)
         self.assertEqual(len(res[0].get("member;range=0-0")), 2)
 
+    def test_dirsync_extended_dn(self):
+        """Check that dirsync works together with the extended_dn control"""
+        # Let's search for members
+        self.ldb_simple = self.get_ldb_connection(self.simple_user, self.user_pass)
+        res = self.ldb_simple.search(self.base_dn,
+                                     expression="(name=Administrators)",
+                                     controls=["dirsync:1:1:1"])
+
+        self.assertTrue(len(res[0].get("member")) > 0)
+        size = len(res[0].get("member"))
+
+        resEX1 = self.ldb_simple.search(self.base_dn,
+                                        expression="(name=Administrators)",
+                                        controls=["dirsync:1:1:1","extended_dn:1:1"])
+        self.assertTrue(len(resEX1[0].get("member")) > 0)
+        sizeEX1 = len(resEX1[0].get("member"))
+        self.assertEqual(sizeEX1, size)
+        self.assertIn(res[0]["member"][0], resEX1[0]["member"][0])
+        self.assertIn(b"<GUID=", resEX1[0]["member"][0])
+        self.assertIn(b">;<SID=S-1-5-21-", resEX1[0]["member"][0])
+
+        resEX0 = self.ldb_simple.search(self.base_dn,
+                                        expression="(name=Administrators)",
+                                        controls=["dirsync:1:1:1","extended_dn:1:0"])
+        self.assertTrue(len(resEX0[0].get("member")) > 0)
+        sizeEX0 = len(resEX0[0].get("member"))
+        self.assertEqual(sizeEX0, size)
+        self.assertIn(res[0]["member"][0], resEX0[0]["member"][0])
+        self.assertIn(b"<GUID=", resEX0[0]["member"][0])
+        self.assertIn(b">;<SID=010500000000000515", resEX0[0]["member"][0])
+
     def test_dirsync_deleted_items(self):
         """Check that dirsync returnd deleted objects too"""
         # Let's create an OU
