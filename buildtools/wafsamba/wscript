@@ -6,6 +6,7 @@ import os, sys
 from waflib import Configure, Logs, Options, Utils, Context, Errors
 import wafsamba
 from samba_utils import os_path_relpath
+from samba_utils import symlink
 from optparse import SUPPRESS_HELP
 
 # this forces configure to be re-run if any of the configure
@@ -598,6 +599,11 @@ struct foo bar = { .y = 'X', .x = 1 };
         conf.DEFINE('ENABLE_LIBFUZZER', 1)
 
     conf.load('clang_compilation_database')
+
+    # Create a symlink of the compile db for clangd
+    symlink(os.path.join(conf.bldnode.abspath(), 'default/compile_commands.json'),
+            os.path.join(conf.srcnode.abspath(), 'compile_commands.json'),
+            force=True)
 
     conf.SAMBA_BUILD_ENV()
 
