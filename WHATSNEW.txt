@@ -1,4 +1,86 @@
                    ==============================
+                   Release Notes for Samba 4.9.14
+                          October 22, 2019
+                   ==============================
+
+
+This is the last bugfix release of the Samba 4.9 release series. There will be
+security releases only beyond this point.
+
+
+Changes since 4.9.13:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14094: smbc_readdirplus() is incompatible with smbc_telldir() and
+     smbc_lseekdir().
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 13978: s4/scripting: MORE py3 compatible print functions.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * ldb: release ldb 1.4.8
+   * BUG 13959: ldb_tdb fails to check error return when parsing pack formats.
+   * BUG 13978: undoguididx: Add "or later" to warning about using tools from
+     Samba 4.8.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 14038: ctdb: Fix compilation on systems with glibc robust mutexes.
+
+o  Isaac Boukris <iboukris@gmail.com>
+   * BUG 14106: Fix spnego fallback from kerberos to ntlmssp in smbd server.
+
+o  Poornima G <pgurusid@redhat.com>
+   * BUG 14098: vfs_glusterfs: Use pthreadpool for scheduling aio operations.
+
+o  Aaron Haslett <aaronhaslett@catalyst.net.nz>
+   * BUG 13977: ldb: baseinfo pack format check on init.
+   * BUG 13978: sambaundoguidindex is untested and py2-only.
+
+o  Amitay Isaacs <amitay@gmail.com>
+   * BUG 14147: ctdb-vacuum: Process all records not deleted on a remote node.
+
+o  Björn Jacke <bj@sernet.de>
+   * BUG 14139: Fault.c: Improve fault_report message text pointing to our wiki.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14055: libcli/smb: send SMB2_NETNAME_NEGOTIATE_CONTEXT_ID.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14084: ctdb-tcp: Mark node as disconnected if incoming connection goes
+     away.
+   * BUG 14087: 'ctdb stop' command completes before databases are frozen.
+   * BUG 14129: Exit code of ctdb nodestatus should not be influenced by deleted
+     nodes.
+
+o  Evgeny Sinelnikov <sin@altlinux.org>
+   * BUG 14007: s3:ldap: Fix join with don't exists machine account.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.9.13
                          September 03, 2019
                    ==============================
@@ -53,8 +135,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.9.12
