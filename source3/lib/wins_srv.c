@@ -208,7 +208,7 @@ static void parse_ip(struct tagged_ip *ip, const char *str)
 char **wins_srv_tags(void)
 {
 	char **ret = NULL;
-	int count=0, i, j;
+	unsigned int count=0, i, j;
 	const char **list;
 
 	if (lp_we_are_a_wins_server()) {
