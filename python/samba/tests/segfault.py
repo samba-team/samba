@@ -152,3 +152,8 @@ class SegfaultTests(samba.tests.TestCase):
     @segfault_detector
     def test_messaging_deregister(self):
         messaging.deregister('s', 's', 's', False)
+
+    @segfault_detector
+    def test_rpcecho(self):
+        from dcerpc import echo
+        echo.rpcecho("")
