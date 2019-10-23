@@ -184,6 +184,7 @@ static struct db_record *db_tdb_try_fetch_locked(
 
 static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
 				 void (*fn)(struct db_record *rec,
+					    TDB_DATA value,
 					    void *private_data),
 				 void *private_data)
 {
@@ -218,7 +219,7 @@ static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
 		.private_data = ctx
 	};
 
-	fn(&rec, private_data);
+	fn(&rec, rec.value, private_data);
 
 	tdb_chainunlock(ctx->wtdb->tdb, key);
 

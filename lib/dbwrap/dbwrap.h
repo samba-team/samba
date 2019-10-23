@@ -81,6 +81,7 @@ struct db_context *dbwrap_record_get_db(struct db_record *rec);
 
 NTSTATUS dbwrap_do_locked(struct db_context *db, TDB_DATA key,
 			  void (*fn)(struct db_record *rec,
+				     TDB_DATA value,
 				     void *private_data),
 			  void *private_data);
 

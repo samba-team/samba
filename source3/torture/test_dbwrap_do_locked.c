@@ -31,7 +31,10 @@ struct do_locked1_state {
 	NTSTATUS status;
 };
 
-static void do_locked1_cb(struct db_record *rec, void *private_data)
+static void do_locked1_cb(
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data)
 {
 	struct do_locked1_state *state =
 		(struct do_locked1_state *)private_data;
@@ -55,7 +58,10 @@ static void do_locked1_check(TDB_DATA key, TDB_DATA value,
 	state->status = NT_STATUS_OK;
 }
 
-static void do_locked1_del(struct db_record *rec, void *private_data)
+static void do_locked1_del(
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data)
 {
 	struct do_locked1_state *state =
 		(struct do_locked1_state *)private_data;

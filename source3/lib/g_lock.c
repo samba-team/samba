@@ -348,7 +348,10 @@ struct g_lock_lock_fn_state {
 	NTSTATUS status;
 };
 
-static void g_lock_lock_fn(struct db_record *rec, void *private_data)
+static void g_lock_lock_fn(
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data)
 {
 	struct g_lock_lock_fn_state *state = private_data;
 	struct server_id blocker = {0};
@@ -509,16 +512,15 @@ struct g_lock_unlock_state {
 	NTSTATUS status;
 };
 
-static void g_lock_unlock_fn(struct db_record *rec,
-			     void *private_data)
+static void g_lock_unlock_fn(
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data)
 {
 	struct g_lock_unlock_state *state = private_data;
-	TDB_DATA value;
 	struct g_lock lck;
 	size_t i;
 	bool ok;
-
-	value = dbwrap_record_get_value(rec);
 
 	ok = g_lock_parse(value.dptr, value.dsize, &lck);
 	if (!ok) {
@@ -581,16 +583,15 @@ struct g_lock_write_data_state {
 	NTSTATUS status;
 };
 
-static void g_lock_write_data_fn(struct db_record *rec,
-				 void *private_data)
+static void g_lock_write_data_fn(
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data)
 {
 	struct g_lock_write_data_state *state = private_data;
-	TDB_DATA value;
 	struct g_lock lck;
 	size_t i;
 	bool ok;
-
-	value = dbwrap_record_get_value(rec);
 
 	ok = g_lock_parse(value.dptr, value.dsize, &lck);
 	if (!ok) {

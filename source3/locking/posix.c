@@ -513,11 +513,13 @@ struct add_fd_to_close_entry_state {
 };
 
 static void add_fd_to_close_entry_fn(
-	struct db_record *rec, void *private_data)
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data)
 {
 	struct add_fd_to_close_entry_state *state = private_data;
 	TDB_DATA values[] = {
-		dbwrap_record_get_value(rec),
+		value,
 		{ .dptr = (uint8_t *)&(state->fsp->fh->fd),
 		  .dsize = sizeof(state->fsp->fh->fd) },
 	};
@@ -551,9 +553,10 @@ static void add_fd_to_close_entry(const files_struct *fsp)
 }
 
 static void fd_close_posix_fn(
-	struct db_record *rec, void *private_data)
+	struct db_record *rec,
+	TDB_DATA data,
+	void *private_data)
 {
-	TDB_DATA data = dbwrap_record_get_value(rec);
 	size_t num_fds, i;
 
 	SMB_ASSERT((data.dsize % sizeof(int)) == 0);

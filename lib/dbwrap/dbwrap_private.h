@@ -70,6 +70,7 @@ struct db_context {
 	NTSTATUS (*parse_record_recv)(struct tevent_req *req);
 	NTSTATUS (*do_locked)(struct db_context *db, TDB_DATA key,
 			      void (*fn)(struct db_record *rec,
+					 TDB_DATA value,
 					 void *private_data),
 			      void *private_data);
 	int (*exists)(struct db_context *db,TDB_DATA key);

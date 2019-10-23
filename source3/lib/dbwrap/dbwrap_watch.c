@@ -279,7 +279,9 @@ static struct db_record *dbwrap_watched_fetch_locked(
 struct dbwrap_watched_do_locked_state {
 	TALLOC_CTX *mem_ctx;
 	struct db_context *db;
-	void (*fn)(struct db_record *rec, void *private_data);
+	void (*fn)(struct db_record *rec,
+		   TDB_DATA value,
+		   void *private_data);
 	void *private_data;
 
 	struct db_watched_subrec subrec;
@@ -310,17 +312,19 @@ static NTSTATUS dbwrap_watched_do_locked_delete(struct db_record *rec)
 	return status;
 }
 
-static void dbwrap_watched_do_locked_fn(struct db_record *subrec,
-					void *private_data)
+static void dbwrap_watched_do_locked_fn(
+	struct db_record *subrec,
+	TDB_DATA subrec_value,
+	void *private_data)
 {
 	struct dbwrap_watched_do_locked_state *state =
 		(struct dbwrap_watched_do_locked_state *)private_data;
-	TDB_DATA subrec_value = dbwrap_record_get_value(subrec);
 	struct db_record rec;
 	bool ok;
 
 	rec = (struct db_record) {
-		.db = state->db, .key = dbwrap_record_get_key(subrec),
+		.db = state->db,
+		.key = dbwrap_record_get_key(subrec),
 		.storev = dbwrap_watched_do_locked_storev,
 		.delete_rec = dbwrap_watched_do_locked_delete,
 		.private_data = state
@@ -349,11 +353,12 @@ static void dbwrap_watched_do_locked_fn(struct db_record *subrec,
 		rec.value = state->subrec.wrec.data;
 	}
 
-	state->fn(&rec, state->private_data);
+	state->fn(&rec, state->subrec.wrec.data, state->private_data);
 }
 
 static NTSTATUS dbwrap_watched_do_locked(struct db_context *db, TDB_DATA key,
 					 void (*fn)(struct db_record *rec,
+						    TDB_DATA value,
 						    void *private_data),
 					 void *private_data)
 {

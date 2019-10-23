@@ -307,7 +307,10 @@ struct dbwrap_store_state {
 	NTSTATUS status;
 };
 
-static void dbwrap_store_fn(struct db_record *rec, void *private_data)
+static void dbwrap_store_fn(
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data)
 {
 	struct dbwrap_store_state *state = private_data;
 	state->status = dbwrap_record_store(rec, state->data, state->flags);
@@ -331,7 +334,10 @@ struct dbwrap_delete_state {
 	NTSTATUS status;
 };
 
-static void dbwrap_delete_fn(struct db_record *rec, void *private_data)
+static void dbwrap_delete_fn(
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data)
 {
 	struct dbwrap_delete_state *state = private_data;
 	state->status = dbwrap_record_delete(rec);
@@ -514,6 +520,7 @@ NTSTATUS dbwrap_parse_record_recv(struct tevent_req *req)
 
 NTSTATUS dbwrap_do_locked(struct db_context *db, TDB_DATA key,
 			  void (*fn)(struct db_record *rec,
+				     TDB_DATA value,
 				     void *private_data),
 			  void *private_data)
 {
@@ -542,7 +549,7 @@ NTSTATUS dbwrap_do_locked(struct db_context *db, TDB_DATA key,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	fn(rec, private_data);
+	fn(rec, rec->value, private_data);
 
 	TALLOC_FREE(rec);
 

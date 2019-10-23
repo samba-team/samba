@@ -720,13 +720,14 @@ struct share_mode_do_locked_state {
 	void *private_data;
 };
 
-static void share_mode_do_locked_fn(struct db_record *rec,
-				    void *private_data)
+static void share_mode_do_locked_fn(
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data)
 {
 	struct share_mode_do_locked_state *state = private_data;
 	bool modified_dependent = false;
 	bool reset_static_share_mode_record = false;
-	TDB_DATA value = dbwrap_record_get_value(rec);
 
 	if (static_share_mode_record == NULL) {
 		static_share_mode_record = rec;
@@ -1415,10 +1416,12 @@ struct set_share_mode_state {
 	NTSTATUS status;
 };
 
-static void set_share_mode_fn(struct db_record *rec, void *private_data)
+static void set_share_mode_fn(
+	struct db_record *rec,
+	TDB_DATA data,
+	void *private_data)
 {
 	struct set_share_mode_state *state = private_data;
-	TDB_DATA data = dbwrap_record_get_value(rec);
 	size_t idx, num_share_modes;
 	struct share_mode_entry tmp;
 	struct share_mode_entry_buf buf;
@@ -1651,11 +1654,12 @@ static bool share_mode_for_one_entry(
 }
 
 static void share_mode_forall_entries_fn(
-	struct db_record *rec, void *private_data)
+	struct db_record *rec,
+	TDB_DATA data,
+	void *private_data)
 {
 	struct share_mode_forall_entries_state *state = private_data;
 	struct share_mode_data *d = state->lck->data;
-	struct TDB_DATA data = dbwrap_record_get_value(rec);
 	size_t num_share_modes;
 	bool writeback = false;
 	NTSTATUS status;
@@ -1757,10 +1761,12 @@ struct share_mode_entry_do_state {
 	NTSTATUS status;
 };
 
-static void share_mode_entry_do_fn(struct db_record *rec, void *private_data)
+static void share_mode_entry_do_fn(
+	struct db_record *rec,
+	TDB_DATA data,
+	void *private_data)
 {
 	struct share_mode_entry_do_state *state = private_data;
-	struct TDB_DATA data = dbwrap_record_get_value(rec);
 	size_t idx;
 	bool found = false;
 	bool modified;

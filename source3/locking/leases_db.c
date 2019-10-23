@@ -97,10 +97,12 @@ struct leases_db_do_locked_state {
 	NTSTATUS status;
 };
 
-static void leases_db_do_locked_fn(struct db_record *rec, void *private_data)
+static void leases_db_do_locked_fn(
+	struct db_record *rec,
+	TDB_DATA db_value,
+	void *private_data)
 {
 	struct leases_db_do_locked_state *state = private_data;
-	TDB_DATA db_value = dbwrap_record_get_value(rec);
 	DATA_BLOB blob = { .data = db_value.dptr, .length = db_value.dsize };
 	struct leases_db_value *value = NULL;
 	enum ndr_err_code ndr_err;
