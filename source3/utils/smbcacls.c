@@ -1700,7 +1700,7 @@ int main(int argc, char *argv[])
 			.argInfo    = POPT_ARG_NONE,
 			.arg        = NULL,
 			.val        = 'x',
-			.descrip    = "Query maximum persmissions",
+			.descrip    = "Query maximum permissions",
 		},
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
