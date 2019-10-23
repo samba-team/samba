@@ -562,6 +562,12 @@ NTSTATUS dbwrap_do_locked(struct db_context *db, TDB_DATA key,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/*
+	 * Invalidate rec->value, nobody shall assume it's set from
+	 * within dbwrap_do_locked().
+	 */
+	rec->value_valid = false;
+
 	fn(rec, rec->value, private_data);
 
 	TALLOC_FREE(rec);

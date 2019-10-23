@@ -214,14 +214,14 @@ static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
 
 	rec = (struct db_record) {
 		.db = db, .key = key,
-		.value = (struct TDB_DATA) { .dptr = buf,
-					     .dsize = talloc_get_size(buf) },
-		.value_valid = true,
+		.value_valid = false,
 		.storev = db_tdb_storev, .delete_rec = db_tdb_delete,
 		.private_data = ctx
 	};
 
-	fn(&rec, rec.value, private_data);
+	fn(&rec,
+	   (TDB_DATA) { .dptr = buf, .dsize = talloc_get_size(buf) },
+	   private_data);
 
 	tdb_chainunlock(ctx->wtdb->tdb, key);
 

@@ -350,9 +350,6 @@ static void dbwrap_watched_do_locked_fn(
 			state->subrec.wrec.num_watchers * SERVER_ID_BUF_LENGTH);
 		SMB_ASSERT(watchers != NULL);
 		state->subrec.wrec.watchers = watchers;
-
-		rec.value = state->subrec.wrec.data;
-		rec.value_valid = true;
 	}
 
 	state->fn(&rec, state->subrec.wrec.data, state->private_data);
