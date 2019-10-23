@@ -198,19 +198,19 @@ static bool g_lock_conflicts(enum g_lock_type l1, enum g_lock_type l2)
 	return true;
 }
 
-static NTSTATUS g_lock_trylock(struct db_record *rec, struct server_id self,
-			       enum g_lock_type type,
-			       struct server_id *blocker)
+static NTSTATUS g_lock_trylock(
+	struct db_record *rec,
+	TDB_DATA data,
+	struct server_id self,
+	enum g_lock_type type,
+	struct server_id *blocker)
 {
-	TDB_DATA data;
 	size_t i;
 	struct g_lock lck;
 	struct g_lock_rec mylock = {0};
 	NTSTATUS status;
 	bool modified = false;
 	bool ok;
-
-	data = dbwrap_record_get_value(rec);
 
 	ok = g_lock_parse(data.dptr, data.dsize, &lck);
 	if (!ok) {
@@ -356,8 +356,8 @@ static void g_lock_lock_fn(
 	struct g_lock_lock_fn_state *state = private_data;
 	struct server_id blocker = {0};
 
-	state->status = g_lock_trylock(rec, state->self, state->state->type,
-				       &blocker);
+	state->status = g_lock_trylock(
+		rec, value, state->self, state->state->type, &blocker);
 	if (!NT_STATUS_EQUAL(state->status, NT_STATUS_LOCK_NOT_GRANTED)) {
 		return;
 	}
