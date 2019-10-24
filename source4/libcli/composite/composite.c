@@ -23,7 +23,6 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
-#include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/composite/composite.h"
 #include "../libcli/nbt/libnbt.h"
