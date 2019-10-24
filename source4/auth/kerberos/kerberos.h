@@ -50,7 +50,7 @@ struct keytab_container {
 #define TOK_ID_GSS_GETMIC	((const uint8_t *)"\x01\x01")
 #define TOK_ID_GSS_WRAP		((const uint8_t *)"\x02\x01")
 
-#define ENC_ALL_TYPES (ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5 |	\
+#define ENC_ALL_TYPES (ENC_RC4_HMAC_MD5 |	\
 		       ENC_HMAC_SHA1_96_AES128 | ENC_HMAC_SHA1_96_AES256)
 
 #ifndef HAVE_KRB5_SET_DEFAULT_TGS_KTYPES
