@@ -783,56 +783,21 @@ static int setup_kerberos_keys(struct setup_password_fields_io *io)
 	}
 
 	/*
-	 * create ENCTYPE_DES_CBC_MD5 key out of
-	 * the salt and the cleartext password
+	 * As per RFC-6649 single DES encryption types are no longer considered
+	 * secure to be used in Kerberos, we store random keys instead of the
+	 * ENCTYPE_DES_CBC_MD5 and ENCTYPE_DES_CBC_CRC keys.
 	 */
-	krb5_ret = smb_krb5_create_key_from_string(io->smb_krb5_context->krb5_context,
-						   NULL,
-						   &salt,
-						   &cleartext_data,
-						   ENCTYPE_DES_CBC_MD5,
-						   &key);
-	if (krb5_ret) {
-		ldb_asprintf_errstring(ldb,
-				       "setup_kerberos_keys: "
-				       "generation of a des-cbc-md5 key failed: %s",
-				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context,
-								  krb5_ret, io->ac));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	io->g.des_md5 = data_blob_talloc(io->ac,
-					 KRB5_KEY_DATA(&key),
-					 KRB5_KEY_LENGTH(&key));
-	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
+	io->g.des_md5 = data_blob_talloc(io->ac, NULL, 8);
 	if (!io->g.des_md5.data) {
 		return ldb_oom(ldb);
 	}
+	generate_secret_buffer(io->g.des_md5.data, 8);
 
-	/*
-	 * create ENCTYPE_DES_CBC_CRC key out of
-	 * the salt and the cleartext password
-	 */
-	krb5_ret = smb_krb5_create_key_from_string(io->smb_krb5_context->krb5_context,
-						   NULL,
-						   &salt,
-						   &cleartext_data,
-						   ENCTYPE_DES_CBC_CRC,
-						   &key);
-	if (krb5_ret) {
-		ldb_asprintf_errstring(ldb,
-				       "setup_kerberos_keys: "
-				       "generation of a des-cbc-crc key failed: %s",
-				       smb_get_krb5_error_message(io->smb_krb5_context->krb5_context,
-								  krb5_ret, io->ac));
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-	io->g.des_crc = data_blob_talloc(io->ac,
-					 KRB5_KEY_DATA(&key),
-					 KRB5_KEY_LENGTH(&key));
-	krb5_free_keyblock_contents(io->smb_krb5_context->krb5_context, &key);
+	io->g.des_crc = data_blob_talloc(io->ac, NULL, 8);
 	if (!io->g.des_crc.data) {
 		return ldb_oom(ldb);
 	}
+	generate_secret_buffer(io->g.des_crc.data, 8);
 
 	return LDB_SUCCESS;
 }
