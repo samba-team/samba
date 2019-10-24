@@ -43,7 +43,7 @@ test_keytab() {
 
 	echo "test: $testname"
 
-	NKEYS=$($VALGRIND $samba4ktutil $keytab | grep -i "$principal" | egrep -c "des|aes|arcfour")
+	NKEYS=$($VALGRIND $samba4ktutil $keytab | grep -i "$principal" | egrep -c "aes|arcfour")
 	status=$?
 	if [ x$status != x0 ]; then
 		echo "failure: $testname"
@@ -64,22 +64,22 @@ unc="//$SERVER/tmp"
 testit "create user locally" $VALGRIND $PYTHON $newuser nettestuser $USERPASS $@ || failed=`expr $failed + 1`
 
 testit "dump keytab from domain" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab $@ || failed=`expr $failed + 1`
-test_keytab "read keytab from domain" "$PREFIX/tmpkeytab" "$SERVER\\\$" 5
+test_keytab "read keytab from domain" "$PREFIX/tmpkeytab" "$SERVER\\\$" 3
 testit "dump keytab from domain (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab $@ || failed=`expr $failed + 1`
-test_keytab "read keytab from domain (2nd time)" "$PREFIX/tmpkeytab" "$SERVER\\\$" 5
+test_keytab "read keytab from domain (2nd time)" "$PREFIX/tmpkeytab" "$SERVER\\\$" 3
 
 testit "dump keytab from domain for cifs principal" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN $@ || failed=`expr $failed + 1`
-test_keytab "read keytab from domain for cifs principal" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" 5
+test_keytab "read keytab from domain for cifs principal" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" 3
 testit "dump keytab from domain for cifs principal (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-server --principal=cifs/$SERVER_FQDN $@ || failed=`expr $failed + 1`
-test_keytab "read keytab from domain for cifs principal (2nd time)" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" 5
+test_keytab "read keytab from domain for cifs principal (2nd time)" "$PREFIX/tmpkeytab-server" "cifs/$SERVER_FQDN" 3
 
 testit "dump keytab from domain for user principal" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-2 --principal=nettestuser $@ || failed=`expr $failed + 1`
-test_keytab "dump keytab from domain for user principal" "$PREFIX/tmpkeytab-2" "nettestuser@$REALM" 5
+test_keytab "dump keytab from domain for user principal" "$PREFIX/tmpkeytab-2" "nettestuser@$REALM" 3
 testit "dump keytab from domain for user principal (2nd time)" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-2 --principal=nettestuser@$REALM $@ || failed=`expr $failed + 1`
-test_keytab "dump keytab from domain for user principal (2nd time)" "$PREFIX/tmpkeytab-2" "nettestuser@$REALM" 5
+test_keytab "dump keytab from domain for user principal (2nd time)" "$PREFIX/tmpkeytab-2" "nettestuser@$REALM" 3
 
 testit "dump keytab from domain for user principal with SPN as UPN" $VALGRIND $PYTHON $samba_tool domain exportkeytab $PREFIX/tmpkeytab-3 --principal=http/testupnspn.$DNSDOMAIN $@ || failed=`expr $failed + 1`
-test_keytab "dump keytab from domain for user principal" "$PREFIX/tmpkeytab-3" "http/testupnspn.$DNSDOMAIN@$REALM" 5
+test_keytab "dump keytab from domain for user principal" "$PREFIX/tmpkeytab-3" "http/testupnspn.$DNSDOMAIN@$REALM" 3
 
 KRB5CCNAME="$PREFIX/tmpuserccache"
 export KRB5CCNAME
