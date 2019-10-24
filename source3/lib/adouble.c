@@ -2180,7 +2180,9 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 	}
 
 	/* Now parse entries */
-	ok = ad_unpack(ad, ADEID_NUM_DOT_UND, size);
+	ok = ad_unpack(ad,
+		       ADEID_NUM_DOT_UND,
+		       ad->ad_fsp->fsp_name->st.st_ex_size);
 	if (!ok) {
 		DBG_ERR("invalid AppleDouble resource %s\n",
 			smb_fname->base_name);
