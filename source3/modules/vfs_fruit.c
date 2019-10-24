@@ -1719,7 +1719,8 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 
 	if ((ad_getentryoff(ad, ADEID_FINDERI) != ADEDOFF_FINDERI_DOT_UND)
 	    || (ad_getentrylen(ad, ADEID_FINDERI) < ADEDLEN_FINDERI)
-	    || (ad_getentryoff(ad, ADEID_RFORK)	< ADEDOFF_RFORK_DOT_UND)) {
+	    || (ad_getentryoff(ad, ADEID_RFORK) < ADEDOFF_RFORK_DOT_UND))
+	{
 		DBG_ERR("invalid AppleDouble resource %s\n",
 			smb_fname->base_name);
 		errno = EINVAL;
