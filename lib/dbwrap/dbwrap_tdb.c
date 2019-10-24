@@ -108,6 +108,7 @@ static int db_tdb_fetchlock_parse(TDB_DATA key, TDB_DATA data,
 	else {
 		result->value.dptr = NULL;
 	}
+	result->value_valid = true;
 
 	return 0;
 }
@@ -215,6 +216,7 @@ static NTSTATUS db_tdb_do_locked(struct db_context *db, TDB_DATA key,
 		.db = db, .key = key,
 		.value = (struct TDB_DATA) { .dptr = buf,
 					     .dsize = talloc_get_size(buf) },
+		.value_valid = true,
 		.storev = db_tdb_storev, .delete_rec = db_tdb_delete,
 		.private_data = ctx
 	};
@@ -344,6 +346,7 @@ static int db_tdb_traverse_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 
 	rec.key = kbuf;
 	rec.value = dbuf;
+	rec.value_valid = true;
 	rec.storev = db_tdb_storev;
 	rec.delete_rec = db_tdb_delete;
 	rec.private_data = ctx->db->private_data;
@@ -387,6 +390,7 @@ static int db_tdb_traverse_read_func(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA d
 
 	rec.key = kbuf;
 	rec.value = dbuf;
+	rec.value_valid = true;
 	rec.storev = db_tdb_storev_deny;
 	rec.delete_rec = db_tdb_delete_deny;
 	rec.private_data = ctx->db->private_data;

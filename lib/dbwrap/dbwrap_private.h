@@ -29,6 +29,7 @@ struct tevent_req;
 struct db_record {
 	struct db_context *db;
 	TDB_DATA key, value;
+	bool value_valid;
 	NTSTATUS (*storev)(struct db_record *rec, const TDB_DATA *dbufs,
 			   int num_dbufs, int flag);
 	NTSTATUS (*delete_rec)(struct db_record *rec);

@@ -554,6 +554,7 @@ static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ct
 		DEBUG(0, ("talloc failed\n"));
 		TALLOC_FREE(result);
 	}
+	result->value_valid = true;
 
 	SAFE_FREE(ctdb_data.dptr);
 
@@ -1246,6 +1247,7 @@ again:
 			TALLOC_FREE(result);
 		}
 	}
+	result->value_valid = true;
 
 	SAFE_FREE(ctdb_data.dptr);
 

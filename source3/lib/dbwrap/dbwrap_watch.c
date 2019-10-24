@@ -248,6 +248,7 @@ static struct db_record *dbwrap_watched_fetch_locked(
 	rec->key = dbwrap_record_get_key(subrec->subrec);
 	rec->storev = dbwrap_watched_storev;
 	rec->delete_rec = dbwrap_watched_delete;
+	rec->value_valid = true;
 
 	subrec_value = dbwrap_record_get_value(subrec->subrec);
 
@@ -351,6 +352,7 @@ static void dbwrap_watched_do_locked_fn(
 		state->subrec.wrec.watchers = watchers;
 
 		rec.value = state->subrec.wrec.data;
+		rec.value_valid = true;
 	}
 
 	state->fn(&rec, state->subrec.wrec.data, state->private_data);
@@ -556,6 +558,7 @@ static int dbwrap_watched_traverse_fn(struct db_record *rec,
 	}
 
 	prec.value = wrec.data;
+	prec.value_valid = true;
 
 	return state->fn(&prec, state->private_data);
 }

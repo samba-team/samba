@@ -79,6 +79,7 @@ TDB_DATA dbwrap_record_get_key(const struct db_record *rec)
 
 TDB_DATA dbwrap_record_get_value(const struct db_record *rec)
 {
+	SMB_ASSERT(rec->value_valid);
 	return rec->value;
 }
 
@@ -86,6 +87,12 @@ NTSTATUS dbwrap_record_storev(struct db_record *rec,
 			      const TDB_DATA *dbufs, int num_dbufs, int flags)
 {
 	NTSTATUS status;
+
+	/*
+	 * Invalidate before rec->storev() is called, give
+	 * rec->storev() the chance to re-validate rec->value.
+	 */
+	rec->value_valid = false;
 
 	status = rec->storev(rec, dbufs, num_dbufs, flags);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -102,6 +109,12 @@ NTSTATUS dbwrap_record_store(struct db_record *rec, TDB_DATA data, int flags)
 NTSTATUS dbwrap_record_delete(struct db_record *rec)
 {
 	NTSTATUS status;
+
+	/*
+	 * Invalidate before rec->delete_rec() is called, give
+	 * rec->delete_rec() the chance to re-validate rec->value.
+	 */
+	rec->value_valid = false;
 
 	status = rec->delete_rec(rec);
 	if (!NT_STATUS_IS_OK(status)) {
