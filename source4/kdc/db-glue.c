@@ -359,10 +359,10 @@ static krb5_error_code samba_kdc_message2entry_keys(krb5_context context,
 
 	/* If UF_USE_DES_KEY_ONLY has been set, then don't allow use of the newer enc types */
 	if (userAccountControl & UF_USE_DES_KEY_ONLY) {
-		supported_enctypes = ENC_CRC32|ENC_RSA_MD5;
+		supported_enctypes = 0;
 	} else {
 		/* Otherwise, add in the default enc types */
-		supported_enctypes |= ENC_CRC32 | ENC_RSA_MD5 | ENC_RC4_HMAC_MD5;
+		supported_enctypes |= ENC_RC4_HMAC_MD5;
 	}
 
 	/* Is this the krbtgt or a RODC krbtgt */
