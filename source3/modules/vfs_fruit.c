@@ -1697,7 +1697,11 @@ static ssize_t ad_read_rsrc_adouble(vfs_handle_struct *handle,
 		ad->ad_data = p_ad;
 	}
 
-	len = SMB_VFS_NEXT_PREAD(handle, ad->ad_fsp, ad->ad_data, talloc_array_length(ad->ad_data), 0);
+	len = SMB_VFS_NEXT_PREAD(handle,
+				 ad->ad_fsp,
+				 ad->ad_data,
+				 talloc_array_length(ad->ad_data),
+				 0);
 	if (len != talloc_array_length(ad->ad_data)) {
 		DBG_NOTICE("%s %s: bad size: %zd\n",
 			   smb_fname->base_name, strerror(errno), len);
