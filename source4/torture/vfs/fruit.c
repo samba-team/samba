@@ -2397,6 +2397,35 @@ static bool test_write_atalk_rfork_io(struct torture_context *tctx,
 			    fname, AFPRESOURCE_STREAM_NAME,
 			    (off_t)64*1024*1024, 10, rfork_content);
 
+	/* Check size after write */
+
+	ZERO_STRUCT(io);
+	io.smb2.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.smb2.in.desired_access = SEC_FILE_READ_ATTRIBUTE |
+		SEC_FILE_WRITE_ATTRIBUTE;
+	io.smb2.in.fname = rfork;
+	status = smb2_create(tree, mem_ctx, &(io.smb2));
+	CHECK_STATUS(status, NT_STATUS_OK);
+	filehandle = io.smb2.out.file.handle;
+
+	torture_comment(tctx, "(%s) check resource fork size after write\n",
+	    __location__);
+
+	ZERO_STRUCT(finfo);
+	finfo.generic.level = RAW_FILEINFO_ALL_INFORMATION;
+	finfo.generic.in.file.handle = filehandle;
+	status = smb2_getinfo_file(tree, mem_ctx, &finfo);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	if (finfo.all_info.out.size != 64*1024*1024 + 10) {
+		torture_result(tctx, TORTURE_FAIL,
+			       "(%s) Incorrect resource fork size\n",
+			       __location__);
+		ret = false;
+		smb2_util_close(tree, filehandle);
+		goto done;
+	}
+	smb2_util_close(tree, filehandle);
+
 	ret &= check_stream(tree, __location__, tctx, mem_ctx,
 			    fname, AFPRESOURCE_STREAM_NAME,
 			    (off_t)64*1024*1024, 10, 0, 10, rfork_content);
