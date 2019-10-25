@@ -111,8 +111,9 @@ struct lock2_parser_state {
 	bool ok;
 };
 
-static void lock2_parser(const struct g_lock_rec *locks,
-			 size_t num_locks,
+static void lock2_parser(struct server_id exclusive,
+			 size_t num_shared,
+			 struct server_id *shared,
 			 const uint8_t *data,
 			 size_t datalen,
 			 void *private_data)
@@ -211,13 +212,16 @@ struct lock3_parser_state {
 	bool ok;
 };
 
-static void lock3_parser(const struct g_lock_rec *locks,
-			 size_t num_locks,
+static void lock3_parser(struct server_id exclusive,
+			 size_t num_shared,
+			 struct server_id *shared,
 			 const uint8_t *data,
 			 size_t datalen,
 			 void *private_data)
 {
 	struct lock3_parser_state *state = private_data;
+	size_t num_locks = num_shared + ((exclusive.pid != 0) ? 1 : 0);
+	struct server_id *pid;
 
 	if (datalen != 0) {
 		fprintf(stderr, "datalen=%zu\n", datalen);
@@ -227,15 +231,25 @@ static void lock3_parser(const struct g_lock_rec *locks,
 		fprintf(stderr, "num_locks=%zu\n", num_locks);
 		return;
 	}
-	if (locks[0].lock_type != state->lock_type) {
-		fprintf(stderr, "found type %d, expected %d\n",
-			(int)locks[0].lock_type, (int)state->lock_type);
-		return;
+
+	if (state->lock_type == G_LOCK_WRITE) {
+		if (exclusive.pid == 0) {
+			fprintf(stderr, "Found READ, expected WRITE\n");
+			return;
+		}
+	} else {
+		if (exclusive.pid != 0) {
+			fprintf(stderr, "Found WRITE, expected READ\n");
+			return;
+		}
 	}
-	if (!server_id_equal(&locks[0].pid, &state->self)) {
+
+	pid = (exclusive.pid != 0) ? &exclusive : &shared[0];
+
+	if (!server_id_equal(pid, &state->self)) {
 		struct server_id_buf tmp1, tmp2;
 		fprintf(stderr, "found pid %s, expected %s\n",
-			server_id_str_buf(locks[0].pid, &tmp1),
+			server_id_str_buf(*pid, &tmp1),
 			server_id_str_buf(state->self, &tmp2));
 		return;
 	}
@@ -408,30 +422,31 @@ struct lock4_check_state {
 	bool ok;
 };
 
-static void lock4_check(const struct g_lock_rec *locks,
-			size_t num_locks,
+static void lock4_check(struct server_id exclusive,
+			size_t num_shared,
+			struct server_id *shared,
 			const uint8_t *data,
 			size_t datalen,
 			void *private_data)
 {
 	struct lock4_check_state *state = private_data;
+	size_t num_locks = num_shared + ((exclusive.pid != 0) ? 1 : 0);
 
 	if (num_locks != 1) {
 		fprintf(stderr, "num_locks=%zu\n", num_locks);
 		return;
 	}
 
-	if (!server_id_equal(&state->me, &locks[0].pid)) {
-		struct server_id_buf buf1, buf2;
-		fprintf(stderr, "me=%s, locker=%s\n",
-			server_id_str_buf(state->me, &buf1),
-			server_id_str_buf(locks[0].pid, &buf2));
+	if (exclusive.pid == 0) {
+		fprintf(stderr, "Wrong lock type, not WRITE\n");
 		return;
 	}
 
-	if (locks[0].lock_type != G_LOCK_WRITE) {
-		fprintf(stderr, "wrong lock type: %d\n",
-			(int)locks[0].lock_type);
+	if (!server_id_equal(&state->me, &exclusive)) {
+		struct server_id_buf buf1, buf2;
+		fprintf(stderr, "me=%s, locker=%s\n",
+			server_id_str_buf(state->me, &buf1),
+			server_id_str_buf(exclusive, &buf2));
 		return;
 	}
 
@@ -565,14 +580,15 @@ struct lock5_parser_state {
 	size_t num_locks;
 };
 
-static void lock5_parser(const struct g_lock_rec *locks,
-			 size_t num_locks,
+static void lock5_parser(struct server_id exclusive,
+			 size_t num_shared,
+			 struct server_id *shared,
 			 const uint8_t *data,
 			 size_t datalen,
 			 void *private_data)
 {
 	struct lock5_parser_state *state = private_data;
-	state->num_locks = num_locks;
+	state->num_locks = num_shared + ((exclusive.pid != 0) ? 1 : 0);
 }
 
 /*
@@ -711,14 +727,15 @@ struct lock6_parser_state {
 	size_t num_locks;
 };
 
-static void lock6_parser(const struct g_lock_rec *locks,
-			 size_t num_locks,
+static void lock6_parser(struct server_id exclusive,
+			 size_t num_shared,
+			 struct server_id *shared,
 			 const uint8_t *data,
 			 size_t datalen,
 			 void *private_data)
 {
 	struct lock6_parser_state *state = private_data;
-	state->num_locks = num_locks;
+	state->num_locks = num_shared + ((exclusive.pid != 0) ? 1 : 0);
 }
 
 /*

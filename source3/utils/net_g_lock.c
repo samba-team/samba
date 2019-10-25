@@ -111,19 +111,24 @@ done:
 	return result;
 }
 
-static void net_g_lock_dump_fn(const struct g_lock_rec *locks,
-			       size_t num_locks,
-			       const uint8_t *data,
-			       size_t datalen,
-			       void *private_data)
+static void net_g_lock_dump_fn(struct server_id exclusive,
+				size_t num_shared,
+				struct server_id *shared,
+				const uint8_t *data,
+				size_t datalen,
+				void *private_data)
 {
-	size_t i;
+	struct server_id_buf idbuf;
 
-	for (i=0; i<num_locks; i++) {
-		const struct g_lock_rec *l = &locks[i];
-		struct server_id_buf idbuf;
-		d_printf("%s: %s\n", server_id_str_buf(l->pid, &idbuf),
-			 (l->lock_type & 1) ? "WRITE" : "READ");
+	if (exclusive.pid != 0) {
+		d_printf("%s: WRITE\n",
+			 server_id_str_buf(exclusive, &idbuf));
+	} else {
+		size_t i;
+		for (i=0; i<num_shared; i++) {
+			d_printf("%s: READ\n",
+				 server_id_str_buf(shared[i], &idbuf));
+		}
 	}
 	dump_data_file(data, datalen, true, stdout);
 }

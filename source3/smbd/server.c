@@ -1417,8 +1417,9 @@ struct smbd_claim_version_state {
 	char *version;
 };
 
-static void smbd_claim_version_parser(const struct g_lock_rec *locks,
-				      size_t num_locks,
+static void smbd_claim_version_parser(struct server_id exclusive,
+				      size_t num_shared,
+				      struct server_id *shared,
 				      const uint8_t *data,
 				      size_t datalen,
 				      void *private_data)

@@ -681,8 +681,9 @@ int g_lock_locks(struct g_lock_ctx *ctx,
 struct g_lock_dump_state {
 	TALLOC_CTX *mem_ctx;
 	TDB_DATA key;
-	void (*fn)(const struct g_lock_rec *locks,
-		   size_t num_locks,
+	void (*fn)(struct server_id exclusive,
+		   size_t num_shared,
+		   struct server_id *shared,
 		   const uint8_t *data,
 		   size_t datalen,
 		   void *private_data);
@@ -694,8 +695,10 @@ static void g_lock_dump_fn(TDB_DATA key, TDB_DATA data,
 			   void *private_data)
 {
 	struct g_lock_dump_state *state = private_data;
-	struct g_lock_rec *recs;
+	struct g_lock_rec *recs = NULL;
 	struct g_lock lck;
+	struct server_id exclusive = { .pid = 0 };
+	struct server_id *shared = NULL;
 	size_t i;
 	bool ok;
 
@@ -713,24 +716,52 @@ static void g_lock_dump_fn(TDB_DATA key, TDB_DATA data,
 	if (recs == NULL) {
 		DBG_DEBUG("talloc failed\n");
 		state->status = NT_STATUS_NO_MEMORY;
-		return;
+		goto fail;
 	}
 
 	for (i=0; i<lck.num_recs; i++) {
 		g_lock_get_rec(&lck, i, &recs[i]);
 	}
 
-	state->fn(recs, lck.num_recs, lck.data, lck.datalen,
+	if ((lck.num_recs == 1) && (recs[0].lock_type == G_LOCK_WRITE)) {
+		exclusive = recs[0].pid;
+		lck.num_recs = 0;
+	} else {
+		shared = talloc_array(recs, struct server_id, lck.num_recs);
+		if (shared == NULL) {
+			DBG_DEBUG("talloc_array failed\n");
+			state->status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+		for (i=0; i<lck.num_recs; i++) {
+			if (recs[i].lock_type != G_LOCK_READ) {
+				DBG_WARNING("locks[%zu] has wrong type %d\n",
+					    i,
+					    (int)recs[i].lock_type);
+				state->status =
+					NT_STATUS_INTERNAL_DB_CORRUPTION;
+				goto fail;
+			}
+			shared[i] = recs[i].pid;
+		}
+	}
+
+	state->fn(exclusive,
+		  lck.num_recs,
+		  shared,
+		  lck.data,
+		  lck.datalen,
 		  state->private_data);
 
-	TALLOC_FREE(recs);
-
 	state->status = NT_STATUS_OK;
+fail:
+	TALLOC_FREE(recs);
 }
 
 NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, TDB_DATA key,
-		     void (*fn)(const struct g_lock_rec *locks,
-				size_t num_locks,
+		     void (*fn)(struct server_id exclusive,
+				size_t num_shared,
+				struct server_id *shared,
 				const uint8_t *data,
 				size_t datalen,
 				void *private_data),
