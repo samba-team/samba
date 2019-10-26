@@ -255,7 +255,7 @@ def check_for_DNS(refprivate, private, refbinddns_dir, binddns_dir, dns_backend)
 def populate_links(samdb, schemadn):
     """Populate an array with all the back linked attributes
 
-    This attributes that are modified automaticaly when
+    This attributes that are modified automatically when
     front attibutes are changed
 
     :param samdb: A LDB object for sam.ldb file
@@ -829,10 +829,10 @@ def checkKeepAttributeWithMetadata(delta, att, message, reference, current,
                             the reference provision.
         :param current: A message object for the current entry commin from
                             the current provision.
-        :param hash_attr_usn: A dictionnary with attribute name as keys,
+        :param hash_attr_usn: A dictionary with attribute name as keys,
                                 USN and invocation id as values.
         :param basedn: The DN of the partition
-        :param usns: A dictionnary with invocation ID as keys and USN ranges
+        :param usns: A dictionary with invocation ID as keys and USN ranges
                      as values.
         :param samdb: A ldb object pointing to the sam DB
 
@@ -1089,7 +1089,7 @@ def update_partition(ref_samdb, samdb, basedn, names, schema, provisionUSNs, pre
     :param basedn: String value of the DN of the partition
     :param names: List of key provision parameters
     :param schema: A Schema object
-    :param provisionUSNs:  A dictionnary with range of USN modified during provision
+    :param provisionUSNs:  A dictionary with range of USN modified during provision
                             or upgradeprovision. Ranges are grouped by invocationID.
     :param prereloadfunc: A function that must be executed just before the reload
                   of the schema
@@ -1349,7 +1349,7 @@ def update_samdb(ref_samdb, samdb, names, provisionUSNs, schema, prereloadfunc):
     :param samdb: An LDB object connected to the sam.ldb of the update
                   provision
     :param names: List of key provision parameters
-    :param provisionUSNs:  A dictionnary with range of USN modified during provision
+    :param provisionUSNs:  A dictionary with range of USN modified during provision
                             or upgradeprovision. Ranges are grouped by invocationID.
     :param schema: A Schema object that represent the schema of the provision
     :param prereloadfunc: A function that must be executed just before the reload
