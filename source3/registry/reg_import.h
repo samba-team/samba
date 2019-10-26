@@ -34,7 +34,7 @@ struct registry_value;
 struct regval_blob;
 
 /**
- * Protoype for function called to open a key.
+ * Prototype for function called to open a key.
  *
  * @param private_data
  * @param[in] parent    the parent of the key to open, may be NULL
@@ -49,7 +49,7 @@ typedef	WERROR (*reg_import_callback_openkey_t) (void* private_data,
 						void** key);
 
 /**
- * Protoype for function called to close a key.
+ * Prototype for function called to close a key.
  *
  * @param private_data
  * @param key the key to close
@@ -60,7 +60,7 @@ typedef	WERROR (*reg_import_callback_closekey_t) (void* private_data,
 						  void* key);
 
 /**
- * Protoype for function called to create (or open an existing) key.
+ * Prototype for function called to create (or open an existing) key.
  *
  * @param private_data
  * @param[in] parent    the parent of the key to create, may be NULL
@@ -77,7 +77,7 @@ typedef	WERROR (*reg_import_callback_createkey_t)(void* private_data,
 						bool* existing);
 
 /**
- * Protoype for function called to delete a key.
+ * Prototype for function called to delete a key.
  *
  * @param private_data
  * @param parent    the parent of the key to delete, may be NULL
@@ -90,7 +90,7 @@ typedef	WERROR (*reg_import_callback_deletekey_t)(void* private_data,
 						  const char* name);
 
 /**
- * Protoype for function called to delete a value.
+ * Prototype for function called to delete a value.
  *
  * @param private_data
  * @param parent    the key of the value to delete
@@ -103,7 +103,7 @@ typedef	WERROR (*reg_import_callback_deleteval_t)(void* private_data,
 						const char* name);
 
 /**
- * Protoype for function called to set a value.
+ * Prototype for function called to set a value.
  *
  * @param private_data
  * @param parent the key of the value to set
@@ -122,7 +122,7 @@ typedef	WERROR (*reg_import_callback_setval_blob_t)(void* private_data,
 						  uint32_t size);
 
 /**
- * Protoype for function called to set a value given as struct registry_value.
+ * Prototype for function called to set a value given as struct registry_value.
  *
  * @param private_data
  * @param parent the key of the value to set
@@ -138,7 +138,7 @@ typedef	WERROR (*reg_import_callback_setval_registry_value_t) (
 	const struct registry_value* val);
 
 /**
- * Protoype for function called to set a value given as struct struct regval_blob.
+ * Prototype for function called to set a value given as struct struct regval_blob.
  *
  * @param private_data
  * @param parent the key of the value to set
