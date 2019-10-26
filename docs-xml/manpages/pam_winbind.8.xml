@@ -141,7 +141,7 @@
 		skew), winbindd will fallback to samlogon authentication over
 		MSRPC. When this parameter is used in conjunction with
 		<parameter>winbind refresh tickets</parameter>, winbind will
-		keep your Ticket Granting Ticket (TGT) uptodate by refreshing
+		keep your Ticket Granting Ticket (TGT) up-to-date by refreshing
 		it whenever necessary.
 
 		</para></listitem>
