@@ -1598,7 +1598,7 @@ static NTSTATUS dcesrv_lsa_lookup_name_builtin(
 			return NT_STATUS_NONE_MAPPED;
 		}
 		/*
-		 * We know we're authoritive
+		 * We know we're authoritative
 		 */
 		status = NT_STATUS_OK;
 	}
@@ -1639,7 +1639,7 @@ static NTSTATUS dcesrv_lsa_lookup_sid_builtin(
 				       &item->type);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
 		/*
-		 * We know we're authoritive
+		 * We know we're authoritative
 		 */
 		status = NT_STATUS_OK;
 	}
@@ -1805,7 +1805,7 @@ static NTSTATUS dcesrv_lsa_lookup_name_account(
 			return NT_STATUS_NONE_MAPPED;
 		}
 		/*
-		 * We know we're authoritive
+		 * We know we're authoritative
 		 */
 		status = NT_STATUS_OK;
 	}
@@ -1849,7 +1849,7 @@ static NTSTATUS dcesrv_lsa_lookup_sid_account(
 				       &item->type);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
 		/*
-		 * We know we're authoritive
+		 * We know we're authoritative
 		 */
 		status = NT_STATUS_OK;
 	}
