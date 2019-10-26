@@ -32,7 +32,7 @@
 /* If you take this file as template for your module
  * please make sure that you remove all skel_XXX() functions you don't
  * want to implement!! The passthrough operations are not
- * neccessary in a real module.
+ * necessary in a real module.
  *
  * --metze
  */
