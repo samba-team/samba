@@ -97,7 +97,7 @@ Once the child process has finished revoking all delegations it will set the fla
 REVOKE_COMPLETE for this record to signal to the main daemon that the record has been
 successfully revoked.
 At this stage the child process will also trigger an event in the main daemon that
-revoke is complete and that the main dameon should start re-processing all deferred
+revoke is complete and that the main daemon should start re-processing all deferred
 requests.
 
 
@@ -272,7 +272,7 @@ HAVE_DELEGATIONS flag for the record and then proceeds to perform the migration 
 
 When receiving a ctdb_call without the flag we want all delegations to be revoked,
 so we must take care that the delegations are revoked unconditionally before we even
-check if we are already the DMASTER (in which case thie ctdb_call would normally just
+check if we are already the DMASTER (in which case the ctdb_call would normally just
 be  no-op  (*B below))
 
 
@@ -333,7 +333,7 @@ Non-readonly locking daemons must be able to interoperate with readonly locking 
 Non-readonly enabled daemons fetching records from Readonly enabled daemons:
 Non-readonly enabled daemons do not know, and never set the WANT_READONLY flag so these daemons will always request a full migration for a full fetch-lock for all records. Thus a request from a non-readonly enabled daemon will always cause any existing delegations to be immediately revoked. Access will work but performance may be harmed since there will be a lot of revoking of delegations.
 
-Readonly enabled dameons fetching records with WANT_READONLY from non-readonly enabled daemons:
+Readonly enabled daemons fetching records with WANT_READONLY from non-readonly enabled daemons:
 Non-readonly enabled daemons ingore the WANT_READONLY flag and never return delegations. They always return a full record migration.
 Full record migration is allowed by the protocol, even if the originator only requests the 'hint' WANT_READONLY,
 so this access also interoperates between daemons with different capabilities.
