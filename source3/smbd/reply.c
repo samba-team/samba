@@ -254,7 +254,7 @@ NTSTATUS check_path_syntax_posix(char *path)
 }
 
 /****************************************************************************
- Pull a string and check the path allowing a wilcard - provide for error return.
+ Pull a string and check the path allowing a wildcard - provide for error return.
  Passes in posix flag.
 ****************************************************************************/
 
@@ -302,7 +302,7 @@ static size_t srvstr_get_path_wcard_internal(TALLOC_CTX *ctx,
 }
 
 /****************************************************************************
- Pull a string and check the path allowing a wilcard - provide for error return.
+ Pull a string and check the path allowing a wildcard - provide for error return.
 ****************************************************************************/
 
 size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
@@ -328,7 +328,7 @@ size_t srvstr_get_path_wcard(TALLOC_CTX *ctx,
 }
 
 /****************************************************************************
- Pull a string and check the path allowing a wilcard - provide for error return.
+ Pull a string and check the path allowing a wildcard - provide for error return.
  posix_pathnames version.
 ****************************************************************************/
 
