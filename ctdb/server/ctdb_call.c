@@ -65,7 +65,7 @@ struct ctdb_sticky_record {
 }
 
 /*
-  a varient of input packet that can be used in lock requeue
+  a variant of input packet that can be used in lock requeue
 */
 static void ctdb_call_input_pkt(void *p, struct ctdb_req_header *hdr)
 {
@@ -484,7 +484,7 @@ static void *insert_ddq_callback(void *parm, void *data)
 }
 
 /**
- * This function is used to reigster a key in database that needs to be updated.
+ * This function is used to register a key in database that needs to be updated.
  * Any requests for that key should get deferred till this is completed.
  */
 static int dmaster_defer_setup(struct ctdb_db_context *ctdb_db,
@@ -508,7 +508,7 @@ static int dmaster_defer_setup(struct ctdb_db_context *ctdb_db,
 			return 0;
 		}
 
-		/* Recovery ocurred - get rid of old queue. All the deferred
+		/* Recovery occurred - get rid of old queue. All the deferred
 		 * requests will be resent anyway from ctdb_call_resend_db.
 		 */
 		talloc_free(ddq);
