@@ -135,7 +135,7 @@ static bool quarantine_create_dir(
 		}
 	}
 
-	/* Create directory tree if neccessary */
+	/* Create directory tree if necessary */
 	for (token = strtok_r(tok_str, "/", &saveptr);
 	     token != NULL;
 	     token = strtok_r(NULL, "/", &saveptr))
