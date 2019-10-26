@@ -12,7 +12,7 @@ from samba_utils import LIB_PATH, MODE_755, install_rpath, build_rpath
 @after('apply_core')
 @before('apply_link', 'apply_obj_vars')
 def install_binary(self):
-    '''install a binary, taking account of the different rpath varients'''
+    '''install a binary, taking account of the different rpath variants'''
     bld = self.bld
 
     # get the ldflags we will use for install and build
@@ -54,7 +54,7 @@ def install_binary(self):
 @after('apply_core')
 @before('apply_link', 'apply_obj_vars')
 def install_library(self):
-    '''install a library, taking account of the different rpath varients'''
+    '''install a library, taking account of the different rpath variants'''
     if getattr(self, 'done_install_library', False):
         return
 
@@ -156,7 +156,7 @@ def install_library(self):
 @after('apply_implib')
 @before('apply_vnum')
 def apply_soname(self):
-    '''install a library, taking account of the different rpath varients'''
+    '''install a library, taking account of the different rpath variants'''
 
     if self.env.SONAME_ST and getattr(self, 'soname', ''):
         self.env.append_value('LINKFLAGS', self.env.SONAME_ST % self.soname)
