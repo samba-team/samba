@@ -52,7 +52,7 @@ struct regval_blob;
 typedef struct reg_format reg_format;
 
 /**
- * Protoype for function called to output a line.
+ * Prototype for function called to output a line.
  *
  * @param private_data
  * @param line line to write in UNIX charset
