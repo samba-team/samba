@@ -198,7 +198,7 @@
       <varlistentry><term>--usage</term>
       <listitem>
 	<para>
-	  Print useage information to the screen.
+	  Print usage information to the screen.
 	</para>
       </listitem>
       </varlistentry>
@@ -1359,7 +1359,7 @@ DB Statistics: locking.tdb
 	If a PERSISTENT database is not in a healthy state the database
 	is flagged as UNHEALTHY. If there's at least one completely
 	healthy node running in the cluster, it's possible that the
-	content is restored by a recovery run automaticly. Otherwise an
+	content is restored by a recovery run automatically. Otherwise an
 	administrator needs to analyze the problem.
       </para>
       <para>
