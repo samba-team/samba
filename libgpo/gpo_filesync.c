@@ -219,7 +219,7 @@ static NTSTATUS gpo_sync_func(const char *mnt,
 
 
 /****************************************************************
- list a remote directory and download recursivly
+ list a remote directory and download recursively
 ****************************************************************/
 
 NTSTATUS gpo_sync_directories(TALLOC_CTX *mem_ctx,
