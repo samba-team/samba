@@ -4070,7 +4070,7 @@ static NTSTATUS copy_fn(const char *mnt, struct file_info *f,
 }
 
 /**
- * sync files, can be called recursivly to list files
+ * sync files, can be called recursively to list files
  * and then call copy_fn for each file
  *
  * @param cp_clistate	pointer to the copy_clistate we work with
