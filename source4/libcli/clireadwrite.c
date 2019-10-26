@@ -80,7 +80,7 @@ ssize_t smbcli_read(struct smbcli_tree *tree, int fnum, void *_buf, off_t offset
 
 /****************************************************************************
   write to a file
-  write_mode: 0x0001 disallow write cacheing
+  write_mode: 0x0001 disallow write caching
               0x0002 return bytes remaining
               0x0004 use raw named pipe protocol
               0x0008 start of message mode named pipe protocol
