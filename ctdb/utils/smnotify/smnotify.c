@@ -34,7 +34,7 @@ static int stateval       = 0;
 static int clientport     = 0;
 static int sendport       = 0;
 
-static void useage(void)
+static void usage(void)
 {
 	exit(0);
 }
@@ -95,22 +95,22 @@ int main(int argc, const char *argv[])
 
 	if (client == NULL) {
 		printf("ERROR: client not specified\n");
-		useage();
+		usage();
 	}
 
 	if (ip == NULL) {
 		printf("ERROR: ip not specified\n");
-		useage();
+		usage();
 	}
 
 	if (server == NULL) {
 		printf("ERROR: server not specified\n");
-		useage();
+		usage();
 	}
 
 	if (stateval == 0) {
 		printf("ERROR: stateval not specified\n");
-		useage();
+		usage();
 	}
 
 
