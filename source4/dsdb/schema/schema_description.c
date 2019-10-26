@@ -31,7 +31,7 @@
 
 char *schema_attribute_description(TALLOC_CTX *mem_ctx, 
 					  enum dsdb_schema_convert_target target,
-					  const char *seperator,
+					  const char *separator,
 					  const char *oid, 
 					  const char *name,
 					  const char *equality, 
@@ -45,78 +45,78 @@ char *schema_attribute_description(TALLOC_CTX *mem_ctx,
 					  bool indexed, bool system_only)
 {
 	char *schema_entry = talloc_asprintf(mem_ctx, 
-					     "(%s%s%s", seperator, oid, seperator);
+					     "(%s%s%s", separator, oid, separator);
 	
 	schema_entry = talloc_asprintf_append(schema_entry, 
-					      "NAME '%s'%s", name, seperator);
+					      "NAME '%s'%s", name, separator);
 	IF_NULL_FAIL_RET(schema_entry);
 	
 	if (equality) {
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "EQUALITY %s%s", equality, seperator);
+						      "EQUALITY %s%s", equality, separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 	if (substring) {
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "SUBSTR %s%s", substring, seperator);
+						      "SUBSTR %s%s", substring, separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
 	if (syntax) {
 		schema_entry = talloc_asprintf_append(schema_entry,
-						      "SYNTAX %s%s", syntax, seperator);
+						      "SYNTAX %s%s", syntax, separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
 	if (single_value) {
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "SINGLE-VALUE%s", seperator);
+						      "SINGLE-VALUE%s", separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 	
 	if (operational) {
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "NO-USER-MODIFICATION%s", seperator);
+						      "NO-USER-MODIFICATION%s", separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
 	if (range_lower) {
 		schema_entry = talloc_asprintf_append(schema_entry,
 						      "RANGE-LOWER '%u'%s",
-						      *range_lower, seperator);
+						      *range_lower, separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
 	if (range_upper) {
 		schema_entry = talloc_asprintf_append(schema_entry,
 						      "RANGE-UPPER '%u'%s",
-						      *range_upper, seperator);
+						      *range_upper, separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
 	if (property_guid) {
 		schema_entry = talloc_asprintf_append(schema_entry,
 						      "PROPERTY-GUID '%s'%s",
-						      property_guid, seperator);
+						      property_guid, separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
 	if (property_set_guid) {
 		schema_entry = talloc_asprintf_append(schema_entry,
 						      "PROPERTY-SET-GUID '%s'%s",
-						      property_set_guid, seperator);
+						      property_set_guid, separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
 	if (indexed) {
 		schema_entry = talloc_asprintf_append(schema_entry,
-						      "INDEXED%s", seperator);
+						      "INDEXED%s", separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
 	if (system_only) {
 		schema_entry = talloc_asprintf_append(schema_entry,
-						      "SYSTEM-ONLY%s", seperator);
+						      "SYSTEM-ONLY%s", separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
@@ -189,7 +189,7 @@ char *schema_attribute_to_extendedInfo(TALLOC_CTX *mem_ctx, const struct dsdb_at
 				IF_NULL_FAIL_RET(schema_entry);		\
 				if (target == TARGET_OPENLDAP && ((k+1)%5 == 0)) { \
 					schema_entry = talloc_asprintf_append(schema_entry, \
-									      "$%s ", seperator); \
+									      "$%s ", separator); \
 					IF_NULL_FAIL_RET(schema_entry);	\
 				} else {				\
 					schema_entry = talloc_asprintf_append(schema_entry, \
@@ -209,7 +209,7 @@ char *schema_attribute_to_extendedInfo(TALLOC_CTX *mem_ctx, const struct dsdb_at
 
 char *schema_class_description(TALLOC_CTX *mem_ctx, 
 			       enum dsdb_schema_convert_target target,
-			       const char *seperator,
+			       const char *separator,
 			       const char *oid, 
 			       const char *name,
 			       const char **auxillary_classes,
@@ -220,12 +220,12 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 			       const char *schemaHexGUID)
 {
 	char *schema_entry = talloc_asprintf(mem_ctx, 
-					     "(%s%s%s", seperator, oid, seperator);
+					     "(%s%s%s", separator, oid, separator);
 	
 	IF_NULL_FAIL_RET(schema_entry);
 
 	schema_entry = talloc_asprintf_append(schema_entry, 
-					      "NAME '%s'%s", name, seperator);
+					      "NAME '%s'%s", name, separator);
 	IF_NULL_FAIL_RET(schema_entry);
 	
 	if (auxillary_classes) {
@@ -236,13 +236,13 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 		APPEND_ATTRS(auxillary_classes);
 		
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      ")%s", seperator);
+						      ")%s", separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
 	if (subClassOf && strcasecmp(subClassOf, name) != 0) {
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "SUP %s%s", subClassOf, seperator);
+						      "SUP %s%s", subClassOf, separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 	
@@ -257,22 +257,22 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 		 *	 but w2k3 gives STRUCTURAL here!
 		 */
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "STRUCTURAL%s", seperator);
+						      "STRUCTURAL%s", separator);
 		IF_NULL_FAIL_RET(schema_entry);
 		break;
 	case 1:
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "STRUCTURAL%s", seperator);
+						      "STRUCTURAL%s", separator);
 		IF_NULL_FAIL_RET(schema_entry);
 		break;
 	case 2:
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "ABSTRACT%s", seperator);
+						      "ABSTRACT%s", separator);
 		IF_NULL_FAIL_RET(schema_entry);
 		break;
 	case 3:
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      "AUXILIARY%s", seperator);
+						      "AUXILIARY%s", separator);
 		IF_NULL_FAIL_RET(schema_entry);
 		break;
 	}
@@ -285,7 +285,7 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 		APPEND_ATTRS(must);
 		
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      ")%s", seperator);
+						      ")%s", separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 	
@@ -297,14 +297,14 @@ char *schema_class_description(TALLOC_CTX *mem_ctx,
 		APPEND_ATTRS(may);
 		
 		schema_entry = talloc_asprintf_append(schema_entry, 
-						      ")%s", seperator);
+						      ")%s", separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
 	if (schemaHexGUID) {
 		schema_entry = talloc_asprintf_append(schema_entry,
 						      "CLASS-GUID '%s'%s",
-						      schemaHexGUID, seperator);
+						      schemaHexGUID, separator);
 		IF_NULL_FAIL_RET(schema_entry);
 	}
 
