@@ -417,7 +417,7 @@ int scsi_persistent_reserve_in_read_keys(int fd)
 	cdb[8]=data_size&0xff;
 
 
-	printf("PRESISTENT RESERVE IN: READ KEYS\n");
+	printf("PERSISTENT RESERVE IN: READ KEYS\n");
 
 	res=scsi_io(fd, cdb, sizeof(cdb), SG_DXFER_FROM_DEV, data, &data_size, sense, &sense_len);
 	if(res){
@@ -477,7 +477,7 @@ int scsi_persistent_reserve_in_read_reservation(int fd)
 	cdb[8]=data_size&0xff;
 
 
-	printf("PRESISTENT RESERVE IN: READ RESERVATION\n");
+	printf("PERSISTENT RESERVE IN: READ RESERVATION\n");
 
 	res=scsi_io(fd, cdb, sizeof(cdb), SG_DXFER_FROM_DEV, data, &data_size, sense, &sense_len);
 	if(res){
@@ -537,7 +537,7 @@ int scsi_persistent_reserve_in_report_capabilities(int fd)
 	cdb[8]=data_size&0xff;
 
 
-	printf("PRESISTENT RESERVE IN: REPORT CAPABILITIES\n");
+	printf("PERSISTENT RESERVE IN: REPORT CAPABILITIES\n");
 
 	res=scsi_io(fd, cdb, sizeof(cdb), SG_DXFER_FROM_DEV, data, &data_size, sense, &sense_len);
 	if(res){
@@ -572,7 +572,7 @@ int scsi_persistent_reserve_in_report_capabilities(int fd)
 	/* Persistent Reservation Type Mask */
 	type_mask=data[4];
 	type_mask<<=8;type_mask|=data[5];
-	printf("Presistent Reservation Type Mask:0x%04x\n", type_mask);
+	printf("Persistent Reservation Type Mask:0x%04x\n", type_mask);
 	printf("WR_EX_AR:%d EX_AC_RO:%d WR_EX_RO:%d EX_AC:%d WR_EX:%d EX_AC_AR:%d\n",
 		!!(data[4]&0x80),
 		!!(data[4]&0x40),
@@ -602,7 +602,7 @@ int scsi_persistent_reserve_in_read_full_status(int fd)
 	cdb[8]=data_size&0xff;
 
 
-	printf("PRESISTENT RESERVE IN: READ FULL STATUS\n");
+	printf("PERSISTENT RESERVE IN: READ FULL STATUS\n");
 
 	res=scsi_io(fd, cdb, sizeof(cdb), SG_DXFER_FROM_DEV, data, &data_size, sense, &sense_len);
 	if(res){
@@ -694,7 +694,7 @@ int scsi_persistent_reserve_out_clear(int fd)
 	/* Spec_ip_ti=0 all_tg_pt=1 aptpl=0 */
 	data[20]=0x04;
 
-	printf("PRESISTENT RESERVE IN: CLEAR\n");
+	printf("PERSISTENT RESERVE IN: CLEAR\n");
 
 	res=scsi_io(fd, cdb, sizeof(cdb), SG_DXFER_TO_DEV, data, &data_size, sense, &sense_len);
 	if(res){
@@ -771,7 +771,7 @@ int scsi_persistent_reserve_out_reserve(int fd)
 	/* Spec_ip_ti=0 all_tg_pt=1 aptpl=0 */
 	data[20]=0x04;
 
-	printf("PRESISTENT RESERVE IN: RESERVE\n");
+	printf("PERSISTENT RESERVE IN: RESERVE\n");
 
 	res=scsi_io(fd, cdb, sizeof(cdb), SG_DXFER_TO_DEV, data, &data_size, sense, &sense_len);
 	if(res){
@@ -854,7 +854,7 @@ int scsi_persistent_reserve_out_preempt(int fd)
 	/* Spec_ip_ti=0 all_tg_pt=1 aptpl=0 */
 	data[20]=0x04;
 
-	printf("PRESISTENT RESERVE IN: RESERVE\n");
+	printf("PERSISTENT RESERVE IN: RESERVE\n");
 
 	res=scsi_io(fd, cdb, sizeof(cdb), SG_DXFER_TO_DEV, data, &data_size, sense, &sense_len);
 	if(res){
@@ -930,7 +930,7 @@ int scsi_persistent_reserve_out_register_and_ignore_existing_key(int fd)
 	/* Spec_ip_ti=0 all_tg_pt=1 aptpl=0 */
 	data[20]=0x04;
 
-	printf("PRESISTENT RESERVE IN: REGISTER AND IGNORE EXISTING KEY\n");
+	printf("PERSISTENT RESERVE IN: REGISTER AND IGNORE EXISTING KEY\n");
 
 	res=scsi_io(fd, cdb, sizeof(cdb), SG_DXFER_TO_DEV, data, &data_size, sense, &sense_len);
 	if(res){
@@ -1006,7 +1006,7 @@ int scsi_persistent_reserve_out_unregister_key(int fd)
 	/* Spec_ip_ti=0 all_tg_pt=1 aptpl=0 */
 	data[20]=0x04;
 
-	printf("PRESISTENT RESERVE IN: UNREGISTER KEY\n");
+	printf("PERSISTENT RESERVE IN: UNREGISTER KEY\n");
 
 	res=scsi_io(fd, cdb, sizeof(cdb), SG_DXFER_TO_DEV, data, &data_size, sense, &sense_len);
 	if(res){
