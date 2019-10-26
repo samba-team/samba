@@ -66,12 +66,12 @@ class SambaIndentedHelpFormatter (optparse.IndentedHelpFormatter):
 # 'OPTION'    - the configure option to overwrite the default (optional)
 # 'HELPTEXT'  - the help text of the configure option (optional)
 #
-# 'OVERWRITE' - The option referrs to itself and was already from
+# 'OVERWRITE' - The option refers to itself and was already from
 #               the basic GNU options from the gnu_dirs tool.
 #               We may overwrite the related path. (Default: False)
 #
-# 'DELAY'     - The option referrs to other options in the dynconfig list.
-#               We delay the intialization into a later stage. This
+# 'DELAY'     - The option refers to other options in the dynconfig list.
+#               We delay the initalization into a later stage. This
 #               makes sure the recursion works. (Default: False)
 #
 dynconfig = {
@@ -341,7 +341,7 @@ def configure(conf):
     # defaults stage 1 after the explicit block
     for varname in dynconfig.keys():
         if 'DELAY' in dynconfig[varname] and dynconfig[varname]['DELAY']:
-            # this option referrs to other options,
+            # this option refers to other options,
             # so it needs to wait for stage 2.
             continue
         value = EXPAND_VARIABLES(conf, dyn_vars[varname])
@@ -361,7 +361,7 @@ def configure(conf):
             # only overwrite if not specified explicitly on the command line
             conf.env[varname] = value
 
-    # display the expanded pathes for the user
+    # display the expanded paths for the user
     for varname in dynconfig.keys():
         value = conf.env[varname]
         conf.start_msg("Dynconfig[%s]: " % (varname))
