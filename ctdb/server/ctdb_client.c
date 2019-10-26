@@ -642,7 +642,7 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 	}
 
 	/* state->outdata now uses resources from c so we don't want c
-	   to just dissappear from under us while state is still alive
+	   to just disappear from under us while state is still alive
 	*/
 	talloc_steal(state, c);
 
@@ -848,7 +848,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 			timeout, errormsg);
 
 	/* FIXME: Error conditions in ctdb_control_send return NULL without
-	 * setting errormsg.  So, there is no way to distinguish between sucess
+	 * setting errormsg.  So, there is no way to distinguish between success
 	 * and failure when CTDB_CTRL_FLAG_NOREPLY is set */
 	if (flags & CTDB_CTRL_FLAG_NOREPLY) {
 		if (status != NULL) {
@@ -1603,7 +1603,7 @@ uint32_t ctdb_get_pnn(struct ctdb_context *ctdb)
 
 /*
   callback for the async helpers used when sending the same control
-  to multiple nodes in parallell.
+  to multiple nodes in parallel.
 */
 static void async_callback(struct ctdb_client_control_state *state)
 {
