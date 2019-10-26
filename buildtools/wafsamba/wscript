@@ -92,7 +92,7 @@ def options(opt):
     gr = opt.option_group('developer options')
 
     gr.add_option('-C',
-                   help='enable configure cacheing',
+                   help='enable configure caching',
                    action='store_true', dest='enable_configure_cache')
     gr.add_option('--enable-auto-reconfigure',
                    help='enable automatic reconfigure on build',
