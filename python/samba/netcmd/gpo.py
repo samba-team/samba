@@ -1000,6 +1000,7 @@ class cmd_fetch(GPOCommand):
 
         # Copy GPT
         tmpdir, gpodir = self.construct_tmpdir(tmpdir, gpo)
+
         try:
             copy_directory_remote_to_local(conn, sharepath, gpodir)
         except Exception as e:
