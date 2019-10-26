@@ -37,7 +37,7 @@ give a speed value.
 
 replay_trace can intuit the existence of previous data in the tdb (ie.
 activity prior to the trace(s) supplied) and will prepopulate as
-neccessary.
+necessary.
 
 You can run --quiet for straight benchmark results, and -n to run multiple
 times (this saves time, since it need only calculate dependencies once).
