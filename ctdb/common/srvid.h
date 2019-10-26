@@ -29,7 +29,7 @@
  * @brief Database of message handlers based on srvid
  *
  * CTDB can be used to send messages between clients across nodes using
- * CTDB_REQ_MESSAGE. Clients register for mesages based on srvid. CTDB itself
+ * CTDB_REQ_MESSAGE. Clients register for messages based on srvid. CTDB itself
  * uses a small set of srvid messages. A large range (2^56) of srvid messages
  * is reserved for Samba.
  */
