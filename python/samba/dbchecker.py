@@ -870,15 +870,15 @@ newSuperior: %s""" % (str(from_dn), str(to_rdn), str(to_base)))
                                 scope=ldb.SCOPE_BASE, attrs=["dsServiceName"])
         assert len(res) == 1
         serviceName = str(res[0]["dsServiceName"][0])
-        if not self.confirm_all('Sieze role %s onto current DC by adding fSMORoleOwner=%s' % (obj.dn, serviceName), 'seize_fsmo_role'):
-            self.report("Not Siezing role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName))
+        if not self.confirm_all('Seize role %s onto current DC by adding fSMORoleOwner=%s' % (obj.dn, serviceName), 'seize_fsmo_role'):
+            self.report("Not Seizing role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName))
             return
         m = ldb.Message()
         m.dn = obj.dn
         m['value'] = ldb.MessageElement(serviceName, ldb.FLAG_MOD_ADD, 'fSMORoleOwner')
         if self.do_modify(m, [],
-                          "Failed to sieze role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName)):
-            self.report("Siezed role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName))
+                          "Failed to seize role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName)):
+            self.report("Seized role %s onto current DC by adding fSMORoleOwner=%s" % (obj.dn, serviceName))
 
     def err_missing_parent(self, obj):
         '''handle a missing parent'''
