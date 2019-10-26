@@ -947,7 +947,7 @@ static bool add_trusted_domains_dc(void)
 
 			/* Even in the parent winbindd we'll need to
 			   talk to the DC, so try and see if we can
-			   contact it. Theoretically this isn't neccessary
+			   contact it. Theoretically this isn't necessary
 			   as the init_dc_connection() in init_child_recv()
 			   will do this, but we can start detecting the DC
 			   early here. */
@@ -1021,7 +1021,7 @@ static bool add_trusted_domains_dc(void)
 		if (sec_chan_type != SEC_CHAN_NULL) {
 			/* Even in the parent winbindd we'll need to
 			   talk to the DC, so try and see if we can
-			   contact it. Theoretically this isn't neccessary
+			   contact it. Theoretically this isn't necessary
 			   as the init_dc_connection() in init_child_recv()
 			   will do this, but we can start detecting the DC
 			   early here. */
@@ -1313,7 +1313,7 @@ bool init_domain_list(void)
 		}
 		/* Even in the parent winbindd we'll need to
 		   talk to the DC, so try and see if we can
-		   contact it. Theoretically this isn't neccessary
+		   contact it. Theoretically this isn't necessary
 		   as the init_dc_connection() in init_child_recv()
 		   will do this, but we can start detecting the DC
 		   early here. */
