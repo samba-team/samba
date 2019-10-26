@@ -310,7 +310,7 @@ renamed the SMB protocol CIFS (Common Internet File System) and have
 published new specifications. These are far superior to the old
 X/Open documents but there are still undocumented calls and features.
 This specification is actively being worked on by a CIFS developers
-mailing list hosted by Microsft.
+mailing list hosted by Microsoft.
 </para>
 </sect1>
 </chapter>
