@@ -467,7 +467,7 @@ static int ibwtest_get_address(const char *address, struct in_addr *addr)
 	if (inet_pton(AF_INET, address, addr) <= 0) {
 		struct hostent *he = gethostbyname(address);
 		if (he == NULL || he->h_length > sizeof(*addr)) {
-			DEBUG(DEBUG_ERR, ("invalid nework address '%s'\n", address));
+			DEBUG(DEBUG_ERR, ("invalid network address '%s'\n", address));
 			return -1;
 		}
 		memcpy(addr, he->h_addr, he->h_length);
