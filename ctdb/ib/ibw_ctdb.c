@@ -44,7 +44,7 @@ int ctdb_ibw_get_address(struct ctdb_context *ctdb,
 	if (inet_pton(AF_INET, address, addr) <= 0) {
 		struct hostent *he = gethostbyname(address);
 		if (he == NULL || he->h_length > sizeof(*addr)) {
-			ctdb_set_error(ctdb, "invalid nework address '%s'\n", 
+			ctdb_set_error(ctdb, "invalid network address '%s'\n", 
 				       address);
 			return -1;
 		}
