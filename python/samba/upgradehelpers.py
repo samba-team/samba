@@ -767,7 +767,7 @@ def findprovisionrange(samdb, basedn):
 def print_provision_ranges(dic, limit_print, dest, samdb_path, invocationid):
     """ print the differents ranges passed as parameter
 
-        :param dic: A dictionnary as returned by findprovisionrange
+        :param dic: A dictionary as returned by findprovisionrange
         :param limit_print: minimum number of object in a range in order to print it
         :param dest: Destination directory
         :param samdb_path: Path to the sam.ldb file
