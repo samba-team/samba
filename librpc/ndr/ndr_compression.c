@@ -118,11 +118,11 @@ static enum ndr_err_code ndr_pull_compression_mszip_cab_chunk(struct ndr_pull *n
 	/*
 	 * Each MSZIP CDATA contains a complete deflate stream
 	 * i.e. the stream starts and ends in the CFDATA but the
-	 * _dictionnary_ is shared between all CFDATA of a CFFOLDER.
+	 * _dictionary_ is shared between all CFDATA of a CFFOLDER.
 	 *
-	 * When decompressing, the initial dictionnary of the first
+	 * When decompressing, the initial dictionary of the first
 	 * CDATA is empty. All other CFDATA use the previous CFDATA
-	 * uncompressed output as dictionnary.
+	 * uncompressed output as dictionary.
 	 */
 
 	if (state->alg.mszip.dict_size) {
@@ -157,7 +157,7 @@ static enum ndr_err_code ndr_pull_compression_mszip_cab_chunk(struct ndr_pull *n
 	}
 
 	/*
-	 * Keep a copy of the output to set as dictionnary for the
+	 * Keep a copy of the output to set as dictionary for the
 	 * next decompression call.
 	 *
 	 * The input pointer seems to be still valid between calls, so
@@ -231,7 +231,7 @@ static enum ndr_err_code ndr_push_compression_mszip_cab_chunk(struct ndr_push *n
 	 *
 	 * The CFDATA block contains a full deflate stream. Each stream
 	 * uses the uncompressed input of the previous CFDATA in the
-	 * same CFFOLDER as a dictionnary for the compression.
+	 * same CFFOLDER as a dictionary for the compression.
 	 */
 
 	if (state->alg.mszip.dict_size) {
@@ -280,7 +280,7 @@ static enum ndr_err_code ndr_push_compression_mszip_cab_chunk(struct ndr_push *n
 	}
 
 	/*
-	 * Keep a copy of the input to set as dictionnary for the next
+	 * Keep a copy of the input to set as dictionary for the next
 	 * compression call.
 	 *
 	 * Ideally we would just store the input pointer and length
@@ -807,7 +807,7 @@ static enum ndr_err_code generic_mszip_init(TALLOC_CTX *mem_ctx,
 
 	state->alg.mszip.z = z;
 	state->alg.mszip.dict_size = 0;
-	/* pre-alloc dictionnary */
+	/* pre-alloc dictionary */
 	state->alg.mszip.dict = talloc_array(mem_ctx, uint8_t, 0x8000);
 	NDR_ERR_HAVE_NO_MEMORY(state->alg.mszip.dict);
 
