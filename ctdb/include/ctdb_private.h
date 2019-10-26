@@ -87,7 +87,7 @@ struct ctdb_node {
 	   if the node becomes disconnected */
 	struct daemon_control_state *pending_controls;
 
-	/* used by the recovery dameon to track when a node should be banned */
+	/* used by the recovery daemon to track when a node should be banned */
 	struct ctdb_banning_state *ban_state; 
 };
 
