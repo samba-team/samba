@@ -573,15 +573,15 @@ static void reprocess_deferred_call(struct tevent_context *ev,
    fetch-lock has finished.
    at this stage, immediately start reprocessing the queued up deferred
    calls so they get reprocessed immediately (and since we are dmaster at
-   this stage, trigger the waiting smbd processes to pick up and aquire the
+   this stage, trigger the waiting smbd processes to pick up and acquire the
    record right away.
 */
 static int deferred_fetch_queue_destructor(struct ctdb_deferred_fetch_queue *dfq)
 {
 
-	/* need to reprocess the packets from the queue explicitely instead of
-	   just using a normal destructor since we want, need, to
-	   call the clients in the same oder as the requests queued up
+	/* need to reprocess the packets from the queue explicitly instead of
+	   just using a normal destructor since we need to
+	   call the clients in the same order as the requests queued up
 	*/
 	while (dfq->deferred_calls != NULL) {
 		struct ctdb_client *client;
