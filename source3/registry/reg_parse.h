@@ -34,7 +34,7 @@
 #include <stdbool.h>
 
 /**
- * Protoype for function called on key found.
+ * Prototype for function called on key found.
  * The usual action to take is delete the key if del==true, open it if
  * already existing or create a new one.
  *
@@ -53,7 +53,7 @@ typedef int (*reg_parse_callback_key_t) (void* private_data,
 					 bool del);
 
 /**
- * Protoype for function called on value found.
+ * Prototype for function called on value found.
  * The usual action to take is set the value of the last opened key.
  *
  * @param private_data
@@ -73,7 +73,7 @@ typedef int (*reg_parse_callback_val_t) (void*  private_data,
 					 size_t len);
 
 /**
- * Protoype for function called on value delete found.
+ * Prototype for function called on value delete found.
  * Delete value from the last opened key. It is usually no error if
  * no such value exist.
  *
@@ -89,7 +89,7 @@ typedef int (*reg_parse_callback_val_del_t) (void* private_data,
 
 
 /**
- * Protoype for function called on comment found.
+ * Prototype for function called on comment found.
  *
  * @param private_data
  * @param line comment with marker removed.
