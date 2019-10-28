@@ -150,21 +150,59 @@
 		<varlistentry>
 		<term>krb5_ccache_type=[type]</term>
 		<listitem><para>
-		
+
 		When pam_winbind is configured to try kerberos authentication
 		by enabling the <parameter>krb5_auth</parameter> option, it can
 		store the retrieved Ticket Granting Ticket (TGT) in a
-		credential cache. The type of credential cache can be set with
-		this option. Currently the only supported value is:
-		<parameter>FILE</parameter>. In that case a credential cache in
-		the form of /tmp/krb5cc_UID will be created, where UID is
-		replaced with the numeric user id.  Leave empty to just do
-		kerberos authentication without having a ticket cache after the
-		logon has succeeded.
+		credential cache. The type of credential cache can be
+		controlled with this option.  The supported values are:
+		<parameter>KCM</parameter> or <parameter>KEYRING</parameter>
+		(when supported by the system's Kerberos library and
+		operating system),
+		<parameter>FILE</parameter> and <parameter>DIR</parameter>
+		(when the DIR type is supported by the system's Kerberos
+		library). In case of FILE a credential cache in the form of
+		/tmp/krb5cc_UID will be created -  in case of DIR you NEED
+		to specify a directory. UID is replaced with the numeric
+		user id. The UID directory is being created. The path up to
+		the directory should already exist. Check the details of the
+		Kerberos implmentation.</para>
 
-		</para></listitem>
+		<para>When using the KEYRING type, the supported mechanism is
+		<quote>KEYRING:persistent:UID</quote>, which uses the Linux
+		kernel keyring to store credentials on a per-UID basis.
+		The KEYRING has its limitations. As it is secure kernel memory,
+		for example bulk sorage of credentils is for not possible.</para>
+
+		<para>When using th KCM type, the supported mechanism is
+		<quote>KCM:UID</quote>, which uses a Kerberos credential
+		manaager to store credentials on a per-UID basis similar to
+		KEYRING. This is the recommended choice on latest Linux
+		distributions, offering a Kerberos Credential Manager. If not
+		we suggest to use KEYRING as those are the most secure and
+		predictable method.</para>
+
+		<para>It is also possible to define custom filepaths and use the "%u"
+		pattern in order to substitute the numeric user id.
+		Examples:</para>
+
+		<variablelist>
+			<varlistentry>
+				<term>krb5_ccache_type = DIR:/run/user/%u/krb5cc</term>
+					<listitem><para>This will create a credential cache file in the specified directory.</para></listitem>
+			</varlistentry>
+			<varlistentry>
+				<term>krb5_ccache_type = FILE:/tmp/krb5cc_%u</term>
+					<listitem><para>This will create a credential cache file.</para></listitem>
+			</varlistentry>
+		</variablelist>
+
+		<para>Leave empty to just do kerberos authentication without
+		having a ticket cache after the logon has succeeded.
+		This setting is empty by default.</para>
+		</listitem>
 		</varlistentry>
-	
+
 		<varlistentry>
 		<term>cached_login</term>
 		<listitem><para>
