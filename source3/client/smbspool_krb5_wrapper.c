@@ -156,10 +156,12 @@ int main(int argc, char *argv[])
 	} else {
 		CUPS_SMB_DEBUG("AUTH_INFO_REQUIRED=%s", env);
 
-		snprintf(auth_info_required,
-			 sizeof(auth_info_required),
-			 "%s",
-			 env);
+		cmp = strcmp(env, "none");
+		if (cmp == 0) {
+			CUPS_SMB_DEBUG("Authenticate using none (anonymous) - "
+				       "execute smbspool");
+			goto smbspool;
+		}
 
 		cmp = strcmp(env, "username,password");
 		if (cmp == 0) {
@@ -168,13 +170,17 @@ int main(int argc, char *argv[])
 			goto smbspool;
 		}
 
-		/* if AUTH_INFO_REQUIRED=none */
 		cmp = strcmp(env, "negotiate");
 		if (cmp != 0) {
 			CUPS_SMB_ERROR("Authentication unsupported");
 			fprintf(stderr, "ATTR: auth-info-required=negotiate\n");
 			return CUPS_BACKEND_AUTH_REQUIRED;
 		}
+
+		snprintf(auth_info_required,
+			 sizeof(auth_info_required),
+			 "%s",
+			 env);
 	}
 
 	uid = getuid();

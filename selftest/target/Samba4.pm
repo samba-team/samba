@@ -1845,6 +1845,9 @@ sub provision_ad_dc($$$$$$)
 	copy = print1
 [print3]
 	copy = print1
+[print4]
+	copy = print1
+	guest ok = yes
 [lp]
 	copy = print1
 ";
