@@ -287,7 +287,7 @@ main(int argc,			/* I - Number of command-line arguments */
 
 	auth_info_required = getenv("AUTH_INFO_REQUIRED");
 	if (auth_info_required == NULL) {
-		auth_info_required = "none";
+		auth_info_required = "samba";
 	}
 
 	/*
@@ -718,7 +718,9 @@ smb_connect(struct cli_state **output_cli,
 
 		fprintf(stderr,
 			"DEBUG: Try to connect using username/password ...\n");
-	} else {
+	} else if (strcmp(auth_info_required, "none") == 0) {
+		goto anonymous;
+	} else if (strcmp(auth_info_required, "samba") == 0) {
 		if (username != NULL) {
 			flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 		} else if (kerberos_ccache_is_valid()) {
@@ -731,6 +733,8 @@ smb_connect(struct cli_state **output_cli,
 				"DEBUG: This backend requires credentials!\n");
 			return NT_STATUS_ACCESS_DENIED;
 		}
+	} else {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	nt_status = smb_complete_connection(&cli,
@@ -780,6 +784,7 @@ smb_connect(struct cli_state **output_cli,
          * last try. Use anonymous authentication
          */
 
+anonymous:
 	nt_status = smb_complete_connection(&cli,
 					    myname,
 					    server,
