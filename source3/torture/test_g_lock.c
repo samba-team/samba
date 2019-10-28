@@ -68,7 +68,7 @@ bool run_g_lock1(int dummy)
 		goto fail;
 	}
 
-	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_READ,
+	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_WRITE,
 			     (struct timeval) { .tv_sec = 1 });
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_lock failed: %s\n",
@@ -76,7 +76,7 @@ bool run_g_lock1(int dummy)
 		goto fail;
 	}
 
-	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_READ,
+	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_WRITE,
 			     (struct timeval) { .tv_sec = 1 });
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_WAS_LOCKED)) {
 		fprintf(stderr, "Double lock got %s\n",
@@ -284,14 +284,6 @@ bool run_g_lock3(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_lock returned %s\n",
 			nt_errstr(status));
-		goto fail;
-	}
-
-	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_READ,
-			     (struct timeval) { .tv_sec = 1 });
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_WAS_LOCKED)) {
-		fprintf(stderr, "g_lock_lock returned %s, expected %s\n",
-			nt_errstr(status), nt_errstr(NT_STATUS_WAS_LOCKED));
 		goto fail;
 	}
 
