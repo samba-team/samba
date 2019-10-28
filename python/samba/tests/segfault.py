@@ -25,7 +25,7 @@ import sys
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 from samba.credentials import DONT_USE_KERBEROS
 from samba import NTSTATUSError, ntstatus
-from samba.dcerpc import misc, drsuapi
+from samba.dcerpc import misc, drsuapi, samr, unixinfo
 from samba import auth, gensec
 from samba.samdb import SamDB
 from samba import netbios
@@ -157,3 +157,15 @@ class SegfaultTests(samba.tests.TestCase):
     def test_rpcecho(self):
         from dcerpc import echo
         echo.rpcecho("")
+
+    @segfault_detector
+    def test_dcerpc_idl_ref_elements(self):
+        """There are many pidl generated functions that crashed on this
+        pattern, where a NULL pointer was created rather than an empty
+        structure."""
+        samr.Connect5().out_info_out = 1
+
+    @segfault_detector
+    def test_dcerpc_idl_unixinfo_elements(self):
+        """Dereferencing is sufficient to crash"""
+        unixinfo.GetPWUid().out_infos
