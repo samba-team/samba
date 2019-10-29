@@ -43,11 +43,6 @@ static int tnode_destructor(struct ctdb_tcp_node *tnode)
 		tnode->out_fd = -1;
 	}
 
-	if (tnode->in_fd != -1) {
-		close(tnode->in_fd);
-		tnode->in_fd = -1;
-	}
-
 	return 0;
 }
 
@@ -61,7 +56,6 @@ static int ctdb_tcp_add_node(struct ctdb_node *node)
 	CTDB_NO_MEMORY(node->ctdb, tnode);
 
 	tnode->out_fd = -1;
-	tnode->in_fd = -1;
 	tnode->ctdb = node->ctdb;
 
 	node->private_data = tnode;
