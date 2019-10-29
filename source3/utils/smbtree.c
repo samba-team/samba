@@ -26,6 +26,7 @@
 #include "libsmb/libsmb.h"
 #include "libsmb/namequery.h"
 #include "libsmb/clirap.h"
+#include "../libcli/smb/smbXcli_base.h"
 
 static int use_bcast;
 
@@ -230,6 +231,10 @@ static bool get_shares(char *server_name, const struct user_auth_info *user_info
 
 	if (get_rpc_shares(cli, add_name, &shares))
 		return True;
+
+	if (smbXcli_conn_protocol(cli->conn) > PROTOCOL_NT1) {
+		return false;
+	}
 
         if (!cli_RNetShareEnum(cli, add_name, &shares))
                 return False;
