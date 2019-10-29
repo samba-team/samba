@@ -856,7 +856,12 @@ SMBC_opendir_ctx(SMBCCTX *context,
 							list_fn,
 							(void *)dir);
 				if (rc != 0 &&
-				    lp_client_min_protocol() <= PROTOCOL_NT1) {
+				    smbXcli_conn_protocol(srv->cli->conn) <=
+						PROTOCOL_NT1) {
+					/*
+					 * Only call cli_RNetShareEnum()
+					 * on SMB1 connections, not SMB2+.
+					 */
 					rc = cli_RNetShareEnum(srv->cli,
 							       list_fn,
 							       (void *)dir);
