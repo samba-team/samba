@@ -760,6 +760,9 @@ NTSTATUS cli_posix_whoami(struct cli_state *cli,
 
 /* The following definitions come from libsmb/clilist.c  */
 
+NTSTATUS is_bad_finfo_name(const struct cli_state *cli,
+			const struct file_info *finfo);
+
 NTSTATUS cli_list_old(struct cli_state *cli,const char *Mask,uint16_t attribute,
 		      NTSTATUS (*fn)(const char *, struct file_info *,
 				 const char *, void *), void *state);

@@ -1993,7 +1993,7 @@ sub provision_chgdcpass($$)
 	print "PROVISIONING CHGDCPASS...\n";
 	# This environment disallows the use of this password
 	# (and also removes the default AD complexity checks)
-	my $unacceptable_password = "widk3Dsle32jxdBdskldsk55klASKQ";
+	my $unacceptable_password = "Paßßword-widk3Dsle32jxdBdskldsk55klASKQ";
 	my $extra_smb_conf = "
 	check password script = $self->{srcdir}/selftest/checkpassword_arg1.sh ${unacceptable_password}
 	allow dcerpc auth level connect:lsarpc = yes
