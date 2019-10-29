@@ -355,8 +355,6 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 		return;
 	}
 
-	tnode->in_fd = fd;
-
        /*
 	* Mark the connecting node as connected, but only if the
 	* corresponding outbound connected is also up
