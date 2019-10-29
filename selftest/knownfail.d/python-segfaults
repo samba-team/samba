@@ -1,2 +1,1 @@
 samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_net_replicate_init__3
-samba.tests.segfault.samba.tests.segfault.SegfaultTests.test_dcerpc_idl_inline_arrays

@@ -2289,7 +2289,11 @@ sub ConvertObjectToPythonLevel($$$$$$$)
 			$self->indent;
 			my $member_var = "py_$e->{NAME}_$l->{LEVEL_INDEX}";
 			$self->pidl("PyObject *$member_var;");
-			$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, $var_name."[$counter]", $member_var, $fail, $recurse);
+			if (ArrayDynamicallyAllocated($e, $l)) {
+				$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, $var_name."[$counter]", $member_var, $fail, $recurse);
+			} else {
+				$self->ConvertObjectToPythonLevel($mem_ctx, $env, $e, $nl, $var_name."[$counter]", $member_var, $fail, $recurse);
+			}
 			$self->pidl("PyList_SetItem($py_var, $counter, $member_var);");
 			$self->deindent;
 			$self->pidl("}");
