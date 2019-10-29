@@ -661,6 +661,7 @@ bld.SAMBA_LIBRARY('dcerpc-server-core',
            rpc/dcesrv_auth.c
            rpc/dcesrv_mgmt.c
            rpc/dcesrv_reply.c
+           rpc/dcesrv_handles.c
            ''',
     deps='ndr dcerpc-binding samba-util-core gnutls GNUTLS_HELPERS',
     pc_files=[],
