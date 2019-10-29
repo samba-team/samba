@@ -25,7 +25,7 @@ import sys
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 from samba.credentials import DONT_USE_KERBEROS
 from samba import NTSTATUSError, ntstatus
-from samba.dcerpc import misc, drsuapi, samr, unixinfo
+from samba.dcerpc import misc, drsuapi, samr, unixinfo, dnsserver
 from samba import auth, gensec
 from samba.samdb import SamDB
 from samba import netbios
@@ -169,3 +169,8 @@ class SegfaultTests(samba.tests.TestCase):
     def test_dcerpc_idl_unixinfo_elements(self):
         """Dereferencing is sufficient to crash"""
         unixinfo.GetPWUid().out_infos
+
+    @segfault_detector
+    def test_dcerpc_idl_inline_arrays(self):
+        """Inline arrays were incorrectly handled."""
+        dnsserver.DNS_RPC_SERVER_INFO_DOTNET().pExtensions
