@@ -1763,6 +1763,7 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 	struct DNS_RPC_RECORDS_ARRAY *recs;
 	char **add_names = NULL;
 	char *rname;
+	const char *preference_name = NULL;
 	int add_count = 0;
 	int i, ret, len;
 	WERROR status;
@@ -1779,6 +1780,7 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 		ret = ldb_search(dsstate->samdb, tmp_ctx, &res, z->zone_dn,
 				 LDB_SCOPE_ONELEVEL, attrs,
 				 "(&(objectClass=dnsNode)(!(dNSTombstoned=TRUE)))");
+		preference_name = "@";
 	} else {
 		char *encoded_name
 			= ldb_binary_encode_string(tmp_ctx, name);
@@ -1786,6 +1788,7 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 				 LDB_SCOPE_ONELEVEL, attrs,
 				 "(&(objectClass=dnsNode)(|(name=%s)(name=*.%s))(!(dNSTombstoned=TRUE)))",
 				 encoded_name, encoded_name);
+		preference_name = name;
 	}
 	if (ret != LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
@@ -1799,16 +1802,18 @@ static WERROR dnsserver_enumerate_records(struct dnsserver_state *dsstate,
 	recs = talloc_zero(mem_ctx, struct DNS_RPC_RECORDS_ARRAY);
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(recs, tmp_ctx);
 
-	/* Sort the names, so that the first record is the parent record */
-	ldb_qsort(res->msgs, res->count, sizeof(struct ldb_message *), name,
-			(ldb_qsort_cmp_fn_t)dns_name_compare);
+	/*
+	 * Sort the names, so that the records are in order by the child
+	 * component below "name".
+	 *
+	 * A full tree sort is not required, so we pass in "name" so
+	 * we know which level to sort, as only direct children are
+	 * eventually returned
+	 */
+	LDB_TYPESAFE_QSORT(res->msgs, res->count, name, dns_name_compare);
 
 	/* Build a tree of name components from dns name */
-	if (strcasecmp(name, z->name) == 0) {
-		tree = dns_build_tree(tmp_ctx, "@", res);
-	} else {
-		tree = dns_build_tree(tmp_ctx, name, res);
-	}
+	tree = dns_build_tree(tmp_ctx, preference_name, res);
 	W_ERROR_HAVE_NO_MEMORY_AND_FREE(tree, tmp_ctx);
 
 	/* Find the parent record in the tree */
