@@ -153,7 +153,7 @@ static void ctdb_node_connect_write(struct tevent_context *ev,
 	 * as connected, but only if the corresponding listening
 	 * socket is also connected
 	 */
-	if (tnode->in_fd != -1) {
+	if (tnode->in_queue != NULL) {
 		node->ctdb->upcalls->node_connected(node);
 	}
 }
