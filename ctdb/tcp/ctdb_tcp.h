@@ -37,7 +37,6 @@ struct ctdb_tcp_node {
 	struct tevent_timer *connect_te;
 
 	struct ctdb_context *ctdb;
-	int in_fd;
 	struct ctdb_queue *in_queue;
 };
 
