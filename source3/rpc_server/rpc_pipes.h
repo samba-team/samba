@@ -134,21 +134,19 @@ bool pipe_access_check(struct pipes_struct *p);
 void *_policy_handle_create(struct pipes_struct *p,
 			struct policy_handle *hnd,
 			uint8_t handle_type,
-			uint32_t access_granted,
 			size_t data_size,
 			const char *type,
 			NTSTATUS *pstatus);
-#define policy_handle_create(_p, _hnd, _hnd_type, _access, _type, _pstatus) \
-	(_type *)_policy_handle_create((_p), (_hnd), (_hnd_type), (_access), sizeof(_type), #_type, \
+#define policy_handle_create(_p, _hnd, _hnd_type, _type, _pstatus) \
+	(_type *)_policy_handle_create((_p), (_hnd), (_hnd_type), sizeof(_type), #_type, \
 				       (_pstatus))
 
 void *_policy_handle_find(struct pipes_struct *p,
 			  const struct policy_handle *hnd,
-			  uint32_t access_required, uint32_t *paccess_granted,
 			  const char *name, const char *location,
 			  NTSTATUS *pstatus);
-#define policy_handle_find(_p, _hnd, _access_required, _access_granted, _type, _pstatus) \
-	(_type *)_policy_handle_find((_p), (_hnd), (_access_required), \
-				     (_access_granted), #_type, __location__, (_pstatus))
+#define policy_handle_find(_p, _hnd, _type, _pstatus) \
+	(_type *)_policy_handle_find((_p), (_hnd), \
+	#_type, __location__, (_pstatus))
 
 #endif /* _RPC_PIPES_H_ */

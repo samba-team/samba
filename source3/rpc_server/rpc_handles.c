@@ -130,7 +130,6 @@ int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
 struct dcesrv_handle_old {
 	struct dcesrv_handle_old *prev, *next;
 	struct policy_handle wire_handle;
-	uint32_t access_granted;
 	void *data;
 };
 
@@ -456,7 +455,6 @@ bool pipe_access_check(struct pipes_struct *p)
 void *_policy_handle_create(struct pipes_struct *p,
 			struct policy_handle *hnd,
 			uint8_t handle_type,
-			uint32_t access_granted,
 			size_t data_size,
 			const char *type,
 			NTSTATUS *pstatus)
@@ -487,15 +485,12 @@ void *_policy_handle_create(struct pipes_struct *p,
 		*pstatus = NT_STATUS_NO_MEMORY;
 		return NULL;
 	}
-	rpc_hnd->access_granted = access_granted;
 	*pstatus = NT_STATUS_OK;
 	return data;
 }
 
 void *_policy_handle_find(struct pipes_struct *p,
 			  const struct policy_handle *hnd,
-			  uint32_t access_required,
-			  uint32_t *paccess_granted,
 			  const char *name, const char *location,
 			  NTSTATUS *pstatus)
 {
@@ -513,26 +508,8 @@ void *_policy_handle_find(struct pipes_struct *p,
 		*pstatus = NT_STATUS_INVALID_HANDLE;
 		return NULL;
 	}
-	if ((access_required & rpc_hnd->access_granted) != access_required) {
-		if (root_mode()) {
-			DEBUG(4, ("%s: ACCESS should be DENIED (granted: "
-				  "%#010x; required: %#010x)\n", location,
-				  rpc_hnd->access_granted, access_required));
-			DEBUGADD(4,("but overwritten by euid == 0\n"));
-			goto okay;
-		}
-		DEBUG(2,("%s: ACCESS DENIED (granted: %#010x; required: "
-			 "%#010x)\n", location, rpc_hnd->access_granted,
-			 access_required));
-		*pstatus = NT_STATUS_ACCESS_DENIED;
-		return NULL;
-	}
 
- okay:
 	DEBUG(10, ("found handle of type %s\n", talloc_get_name(data)));
-	if (paccess_granted != NULL) {
-		*paccess_granted = rpc_hnd->access_granted;
-	}
 	*pstatus = NT_STATUS_OK;
 	return data;
 }
