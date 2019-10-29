@@ -2088,21 +2088,36 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 						const uint32_t pwdProperties,
 						const uint32_t minPwdLength)
 {
-	const char *utf8_pw = (const char *)utf8_blob->data;
-	size_t utf8_len = strlen_m(utf8_pw);
 	char *password_script = NULL;
+	const char *utf8_pw = (const char *)utf8_blob->data;
+
+	/*
+	 * This looks strange because it is.
+	 *
+	 * The check for the number of characters in the password
+	 * should clearly not be against the byte length, or else a
+	 * single UTF8 character would count for more than one.
+	 *
+	 * We have chosen to use the number of 16-bit units that the
+	 * password encodes to as the measure of length.  This is not
+	 * the same as the number of codepoints, if a password
+	 * contains a character beyond the Basic Multilingual Plane
+	 * (above 65535) it will count for more than one "character".
+	 */
+
+	size_t password_characters_roughly = strlen_m(utf8_pw);
 
 	/* checks if the "minPwdLength" property is satisfied */
-	if (minPwdLength > utf8_len) {
+	if (minPwdLength > password_characters_roughly) {
 		return SAMR_VALIDATION_STATUS_PWD_TOO_SHORT;
 	}
 
-	/* checks the password complexity */
+	/* We might not be asked to check the password complexity */
 	if (!(pwdProperties & DOMAIN_PASSWORD_COMPLEX)) {
 		return SAMR_VALIDATION_STATUS_SUCCESS;
 	}
 
-	if (utf8_len == 0) {
+	if (password_characters_roughly == 0) {
 		return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
 	}
 
@@ -2110,6 +2125,7 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 	if (password_script != NULL && *password_script != '\0') {
 		int check_ret = 0;
 		int error = 0;
+		ssize_t nwritten = 0;
 		struct tevent_context *event_ctx = NULL;
 		struct tevent_req *req = NULL;
 		struct samba_runcmd_state *run_cmd = NULL;
@@ -2134,7 +2150,12 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 					tevent_timeval_current_ofs(10, 0),
 					100, 100, cmd, NULL);
 		run_cmd = tevent_req_data(req, struct samba_runcmd_state);
-		if (write(run_cmd->fd_stdin, utf8_pw, utf8_len) != utf8_len) {
+		nwritten = write(run_cmd->fd_stdin,
+				 utf8_blob->data,
+				 utf8_blob->length);
+		if (nwritten != utf8_blob->length) {
+			close(run_cmd->fd_stdin);
+			run_cmd->fd_stdin = -1;
 			TALLOC_FREE(password_script);
 			TALLOC_FREE(event_ctx);
 			return SAMR_VALIDATION_STATUS_PASSWORD_FILTER_ERROR;
