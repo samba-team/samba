@@ -188,8 +188,8 @@ struct DNS_ADDR_ARRAY *dns_addr_array_copy(TALLOC_CTX *mem_ctx, struct DNS_ADDR_
 int dns_split_name_components(TALLOC_CTX *mem_ctx, const char *name, char ***components);
 char *dns_split_node_name(TALLOC_CTX *mem_ctx, const char *node_name, const char *zone_name);
 
-int dns_name_compare(const struct ldb_message **m1, const struct ldb_message **m2,
-			char *search_name);
+int dns_name_compare(struct ldb_message * const *m1, struct ldb_message * const *m2,
+		     const char *search_name);
 bool dns_record_match(struct dnsp_DnssrvRpcRecord *rec1, struct dnsp_DnssrvRpcRecord *rec2);
 
 void dnsp_to_dns_copy(TALLOC_CTX *mem_ctx, struct dnsp_DnssrvRpcRecord *dnsp,
