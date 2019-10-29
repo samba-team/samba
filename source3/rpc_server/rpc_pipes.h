@@ -96,6 +96,7 @@ struct pipes_struct {
 
 	/* handle database to use on this pipe. */
 	struct handle_list *pipe_handles;
+	struct dcesrv_call_state *dce_call;
 
 	/* call id retrieved from the pdu header */
 	uint32_t call_id;

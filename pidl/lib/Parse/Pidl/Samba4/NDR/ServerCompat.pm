@@ -344,6 +344,7 @@ sub boilerplate_iface($)
 	$self->pidl("p = dcesrv_get_pipes_struct(dce_call->conn);");
 	$self->pidl("/* Update pipes struct opnum */");
 	$self->pidl("p->opnum = opnum;");
+	$self->pidl("p->dce_call = dce_call;");
 	$self->pidl("/* Update pipes struct session info */");
 	$self->pidl("pipe_session_info = p->session_info;");
 	$self->pidl("p->session_info = dce_call->auth_state->session_info;");
@@ -388,6 +389,7 @@ sub boilerplate_iface($)
 	$self->pidl("}");
 	$self->pidl("");
 
+	$self->pidl("p->dce_call = NULL;");
 	$self->pidl("/* Restore session info */");
 	$self->pidl("p->session_info = pipe_session_info;");
 	$self->pidl("p->auth.auth_type = 0;");

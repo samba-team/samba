@@ -131,6 +131,7 @@ static NTSTATUS iremotewinspool__op_dispatch_internal(struct dcesrv_call_state *
 	p = dcesrv_get_pipes_struct(dce_call->conn);
 	/* Update pipes struct opnum */
 	p->opnum = opnum;
+	p->dce_call = dce_call;
 	/* Update pipes struct session info */
 	pipe_session_info = p->session_info;
 	p->session_info = dce_call->auth_state->session_info;
@@ -1268,6 +1269,7 @@ fail:
 		unbecome_authenticated_pipe_user();
 	}
 
+	p->dce_call = NULL;
 	/* Restore session info */
 	p->session_info = pipe_session_info;
 	p->auth.auth_type = 0;
