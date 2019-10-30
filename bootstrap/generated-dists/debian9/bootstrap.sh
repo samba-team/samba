@@ -73,7 +73,6 @@ apt-get -y install \
     make \
     mawk \
     mingw-w64 \
-    nettle-dev \
     patch \
     perl \
     perl-modules \

@@ -69,7 +69,6 @@ yum install -y \
     make \
     mingw64-gcc \
     ncurses-devel \
-    nettle-devel \
     openldap-devel \
     pam-devel \
     patch \

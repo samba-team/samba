@@ -51,7 +51,6 @@ zypper --non-interactive install \
     libcephfs-devel \
     libicu-devel \
     libjansson-devel \
-    libnettle-devel \
     libnsl-devel \
     libpcap-devel \
     libtasn1-devel \

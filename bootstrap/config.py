@@ -66,7 +66,6 @@ PKGS = [
     # NAME1-dev, NAME2-devel
     ('lmdb-utils', 'lmdb'),
     ('mingw-w64', 'mingw64-gcc'),
-    ('nettle-dev', 'nettle-devel'),
     ('zlib1g-dev', 'zlib-devel'),
     ('libbsd-dev', 'libbsd-devel'),
     ('libaio-dev', 'libaio-devel'),
@@ -487,7 +486,6 @@ RPM_DISTS = {
             'glusterfs-api-devel': '',
             'glusterfs-devel': '',
             'libcephfs-devel': '',
-            'nettle-devel': 'compat-nettle32-devel',
             'gnutls-devel': 'compat-gnutls34-devel',
         }
     },
@@ -549,7 +547,6 @@ RPM_DISTS = {
             'krb5-workstation': 'krb5-client',
             'libnsl2-devel': 'libnsl-devel',
             'libsemanage-python': 'python2-semanage',
-            'nettle-devel': 'libnettle-devel',
             'openldap-devel': 'openldap2-devel',
             'perl-Archive-Tar': 'perl-Archive-Tar-Wrapper',
             'perl-JSON-Parse': 'perl-JSON-XS',
@@ -582,7 +579,6 @@ RPM_DISTS = {
             'krb5-workstation': 'krb5-client',
             'libnsl2-devel': 'libnsl-devel',
             'libsemanage-python': 'python2-semanage',
-            'nettle-devel': 'libnettle-devel',
             'openldap-devel': 'openldap2-devel',
             'perl-Archive-Tar': 'perl-Archive-Tar-Wrapper',
             'perl-JSON-Parse': 'perl-JSON-XS',

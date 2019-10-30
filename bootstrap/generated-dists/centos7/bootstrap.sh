@@ -23,7 +23,6 @@ yum install -y \
     binutils \
     bison \
     compat-gnutls34-devel \
-    compat-nettle32-devel \
     cups-devel \
     curl \
     dbus-devel \
