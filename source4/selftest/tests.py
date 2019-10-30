@@ -455,6 +455,7 @@ if have_heimdal_support:
     plantestsuite("samba4.blackbox.kinit_trust(fl2003dc:local)", "fl2003dc:local", [os.path.join(bbdir, "test_kinit_trusts_heimdal.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$TRUST_SERVER', '$TRUST_USERNAME', '$TRUST_PASSWORD', '$TRUST_REALM', '$TRUST_DOMAIN', '$PREFIX', "external", "arcfour-hmac-md5"])
     plantestsuite("samba4.blackbox.export.keytab(ad_dc_ntvfs:local)", "ad_dc_ntvfs:local", [os.path.join(bbdir, "test_export_keytab_heimdal.sh"), '$SERVER', '$USERNAME', '$REALM', '$DOMAIN', "$PREFIX", smbclient4])
     plantestsuite("samba4.blackbox.kpasswd(ad_dc_ntvfs:local)", "ad_dc_ntvfs:local", [os.path.join(bbdir, "test_kpasswd_heimdal.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', "$PREFIX/ad_dc_ntvfs"])
+    plantestsuite("samba4.blackbox.krb5.s4u", "fl2008r2dc:local", [os.path.join(bbdir, "test_s4u_heimdal.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', configuration])
 else:
     plantestsuite("samba4.blackbox.kinit(ad_dc_ntvfs:local)", "ad_dc_ntvfs:local", [os.path.join(bbdir, "test_kinit_mit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', smbclient4, configuration])
     plantestsuite("samba4.blackbox.kinit(fl2000dc:local)", "fl2000dc:local", [os.path.join(bbdir, "test_kinit_mit.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$REALM', '$DOMAIN', '$PREFIX', smbclient4, configuration])
