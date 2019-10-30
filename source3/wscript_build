@@ -459,7 +459,6 @@ bld.SAMBA3_LIBRARY('libsmb',
                           libsmb/cliprint.c
                           libsmb/clitrans.c
                           libsmb/clisecdesc.c
-                          libsmb/clidgram.c
                           libsmb/clistr.c
                           libsmb/cliquota.c
                           libsmb/clifsinfo.c
@@ -893,12 +892,14 @@ bld.SAMBA3_SUBSYSTEM('LIBNMB',
                             libsmb/unexpected.c
                             libsmb/namecache.c
                             libsmb/nmblib.c
+                            libsmb/clidgram.c
                             libsmb/namequery.c
                             libsmb/conncache.c
                             libads/sitename_cache.c
                             ''',
                      deps='''
                           LIBTSOCKET
+                          LIBCLI_NETLOGON
                           samba3util
                           addns
                           lmhosts
