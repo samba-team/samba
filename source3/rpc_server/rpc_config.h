@@ -69,4 +69,8 @@ enum rpc_daemon_type_e rpc_daemon_type(const char *name);
 #define rpc_fss_daemon() rpc_daemon_type("fssd")
 #define rpc_mdssd_daemon() rpc_daemon_type("mdssd")
 
+struct dcesrv_context;
+struct dcesrv_context *global_dcesrv_context(void);
+void global_dcesrv_context_free(void);
+
 #endif /* _RPC_CONFIG_H */
