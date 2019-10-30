@@ -65,4 +65,15 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx,
 				void *private_data),
 		     void *private_data);
 
+struct tevent_req *g_lock_watch_data_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct g_lock_ctx *ctx,
+	TDB_DATA key,
+	struct server_id blocker);
+NTSTATUS g_lock_watch_data_recv(
+	struct tevent_req *req,
+	bool *blockerdead,
+	struct server_id *blocker);
+
 #endif
