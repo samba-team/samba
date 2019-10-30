@@ -948,13 +948,22 @@ bld.SAMBA3_SUBSYSTEM('SLCACHE',
                          tdb
                          ''')
 
-bld.SAMBA3_SUBSYSTEM('DCUTIL',
+bld.SAMBA3_SUBSYSTEM('dsgetdcname',
                     source='''
-                           libsmb/namequery_dc.c
                            libsmb/dsgetdcname.c
                            ''',
                     deps='''
+                         CLDAP
+                         LIBNMB
+                         ''')
+
+bld.SAMBA3_SUBSYSTEM('DCUTIL',
+                    source='''
+                           libsmb/namequery_dc.c
+                           ''',
+                    deps='''
                          ads
+                         dsgetdcname
                          msrpc3
                          libcli_lsa3
                          ''')
