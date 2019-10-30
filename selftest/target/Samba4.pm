@@ -20,14 +20,15 @@ use Archive::Tar;
 use File::Path 'make_path';
 
 sub new($$$$$) {
-	my ($classname, $bindir, $srcdir, $server_maxtime) = @_;
+	my ($classname, $SambaCtx, $bindir, $srcdir, $server_maxtime) = @_;
 
 	my $self = {
 		vars => {},
+		SambaCtx => $SambaCtx,
 		bindir => $bindir,
 		srcdir => $srcdir,
 		server_maxtime => $server_maxtime,
-		target3 => new Samba3($bindir, $srcdir, $server_maxtime)
+		target3 => new Samba3($SambaCtx, $bindir, $srcdir, $server_maxtime)
 	};
 	bless $self;
 	return $self;
@@ -89,6 +90,7 @@ sub check_or_start($$$)
 		FULL_CMD => [ @full_cmd ],
 		LOG_FILE => $env_vars->{SAMBA_TEST_LOG},
 		TEE_STDOUT => 1,
+		PCAP_FILE => "env-$ENV{ENVNAME}-samba",
 		ENV_VARS => $samba_envs,
 	};
 	my $pid = Samba::fork_and_exec($self, $env_vars, $daemon_ctx, $STDIN_READER);
@@ -323,13 +325,9 @@ sub setup_dns_hub_internal($$$)
 		FULL_CMD => [ @full_cmd ],
 		LOG_FILE => $env->{DNS_HUB_LOG},
 		TEE_STDOUT => 1,
+		PCAP_FILE => "env-$ENV{ENVNAME}-dns_hub",
 		ENV_VARS => {},
 	};
-
-	my $pcap_dir = $ENV{SOCKET_WRAPPER_PCAP_DIR};
-	if (defined $pcap_dir) {
-		$daemon_ctx->{PCAP_FILE} = "$pcap_dir/env-$hostname$.pcap",
-	}
 
 	# use a pipe for stdin in the child processes. This allows
 	# those processes to monitor the pipe for EOF to ensure they

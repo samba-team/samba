@@ -18,11 +18,11 @@ sub new($$$$$) {
 	    $opt_socket_wrapper_pcap, $opt_socket_wrapper_keep_pcap) = @_;
 
 	my $self = {
-	    samba3 => new Samba3($bindir, $srcdir, $server_maxtime),
-	    samba4 => new Samba4($bindir, $srcdir, $server_maxtime),
 	    opt_socket_wrapper_pcap => $opt_socket_wrapper_pcap,
 	    opt_socket_wrapper_keep_pcap => $opt_socket_wrapper_keep_pcap,
 	};
+	$self->{samba3} = new Samba3($self, $bindir, $srcdir, $server_maxtime);
+	$self->{samba4} = new Samba4($self, $bindir, $srcdir, $server_maxtime);
 	bless $self;
 	return $self;
 }
@@ -670,6 +670,8 @@ sub get_env_for_process
 sub fork_and_exec
 {
 	my ($self, $env_vars, $daemon_ctx, $STDIN_READER) = @_;
+	my $SambaCtx = $self;
+	$SambaCtx = $self->{SambaCtx} if defined($self->{SambaCtx});
 
 	unlink($daemon_ctx->{LOG_FILE});
 	print "STARTING $daemon_ctx->{NAME} for $ENV{ENVNAME}...";
@@ -694,7 +696,7 @@ sub fork_and_exec
 
 		SocketWrapper::set_default_iface($env_vars->{SOCKET_WRAPPER_DEFAULT_IFACE});
 		if (defined($daemon_ctx->{PCAP_FILE})) {
-			SocketWrapper::setup_pcap($daemon_ctx->{PCAP_FILE});
+			$SambaCtx->setup_pcap("$daemon_ctx->{PCAP_FILE}");
 		}
 
 		# setup ENV variables in the child process

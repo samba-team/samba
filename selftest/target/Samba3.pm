@@ -54,8 +54,9 @@ sub get_fs_specific_conf($$)
 }
 
 sub new($$) {
-	my ($classname, $bindir, $srcdir, $server_maxtime) = @_;
+	my ($classname, $SambaCtx, $bindir, $srcdir, $server_maxtime) = @_;
 	my $self = { vars => {},
+		     SambaCtx => $SambaCtx,
 		     bindir => $bindir,
 		     srcdir => $srcdir,
 		     server_maxtime => $server_maxtime
@@ -1346,6 +1347,7 @@ sub check_or_start($$$$$) {
 		BINARY_PATH => $binary,
 		FULL_CMD => [ @full_cmd ],
 		LOG_FILE => $env_vars->{NMBD_TEST_LOG},
+		PCAP_FILE => "env-$ENV{ENVNAME}-nmbd",
 		ENV_VARS => $nmbd_envs,
 	};
 	if ($nmbd ne "yes") {
@@ -1370,6 +1372,7 @@ sub check_or_start($$$$$) {
 		BINARY_PATH => $binary,
 		FULL_CMD => [ @full_cmd ],
 		LOG_FILE => $env_vars->{WINBINDD_TEST_LOG},
+		PCAP_FILE => "env-$ENV{ENVNAME}-winbindd",
 	};
 	if ($winbindd ne "yes") {
 		$daemon_ctx->{SKIP_DAEMON} = 1;
@@ -1390,6 +1393,7 @@ sub check_or_start($$$$$) {
 		BINARY_PATH => $binary,
 		FULL_CMD => [ @full_cmd ],
 		LOG_FILE => $env_vars->{SMBD_TEST_LOG},
+		PCAP_FILE => "env-$ENV{ENVNAME}-smbd",
 	};
 	if ($smbd ne "yes") {
 		$daemon_ctx->{SKIP_DAEMON} = 1;
