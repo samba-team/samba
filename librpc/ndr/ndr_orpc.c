@@ -37,7 +37,7 @@ enum ndr_err_code ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, 
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &num_entries));
 	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &security_offset));
 
-	ar->stringbindings = talloc_array(ndr, struct STRINGBINDING *, num_entries);
+	ar->stringbindings = talloc_array(ndr, struct STRINGBINDING *, 1);
 	ar->stringbindings[0] = NULL;
 
 	do {
@@ -56,7 +56,7 @@ enum ndr_err_code ndr_pull_DUALSTRINGARRAY(struct ndr_pull *ndr, int ndr_flags, 
 	ar->stringbindings[towernum] = NULL;
 	towernum = 0;
 
-	ar->securitybindings = talloc_array(ndr, struct SECURITYBINDING *, num_entries);
+	ar->securitybindings = talloc_array(ndr, struct SECURITYBINDING *, 1);
 	ar->securitybindings[0] = NULL;
 
 	do {
