@@ -18,6 +18,7 @@ if krb5_config:
             elif l.startswith("includedir="):
                 include_path = l.strip()[len("includedir="):]
                 heimdal_includedirs.append(include_path)
+                conf.ADD_EXTRA_INCLUDES(include_path)
                 conf.define('HEIMDAL_KRB5_TYPES_PATH',
                             include_path + "/krb5-types.h")
     finally:
@@ -97,3 +98,5 @@ finally:
 
 check_system_heimdal_binary("compile_et")
 check_system_heimdal_binary("asn1_compile")
+
+conf.define('USING_SYSTEM_KRB5', 1)
