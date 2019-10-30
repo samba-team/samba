@@ -187,6 +187,9 @@ samba-simpleserver:
 samba-fileserver:
   extends: .private_template
 
+samba-ktest-heimdal:
+  extends: .private_template
+
 samba-ad-dc-1:
   extends: .private_template
 
