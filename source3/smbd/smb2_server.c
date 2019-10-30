@@ -3148,8 +3148,14 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 	struct iovec *outbody_v;
 	struct iovec *outdyn_v;
 	uint32_t next_command_ofs;
+	uint64_t mid;
 
-	DBG_DEBUG("idx[%d] status[%s] body[%u] dyn[%s:%u] at %s\n",
+	outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
+	mid = BVAL(outhdr, SMB2_HDR_MESSAGE_ID);
+
+	DBG_DEBUG("mid [%"PRIu64"] idx[%d] status[%s] "
+		  "body[%u] dyn[%s:%u] at %s\n",
+		  mid,
 		  req->current_idx,
 		  nt_errstr(status),
 		  (unsigned int)body.length,
@@ -3165,7 +3171,6 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 		return smbd_smb2_request_error(req, NT_STATUS_INTERNAL_ERROR);
 	}
 
-	outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 	outbody_v = SMBD_SMB2_OUT_BODY_IOV(req);
 	outdyn_v = SMBD_SMB2_OUT_DYN_IOV(req);
 
