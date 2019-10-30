@@ -30,6 +30,7 @@ apt-get -y install \
     git \
     glusterfs-common \
     gzip \
+    heimdal-multidev \
     hostname \
     htop \
     krb5-config \
