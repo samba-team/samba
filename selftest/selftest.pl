@@ -686,6 +686,9 @@ if ($opt_quick) {
 }
 $ENV{SELFTEST_MAXTIME} = $torture_maxtime;
 
+my $selftest_resolv_conf_path = "$tmpdir_abs/selftest.resolv.conf";
+$ENV{RESOLV_CONF} = "${selftest_resolv_conf_path}.global";
+
 my $selftest_krbt_ccache_path = "$tmpdir_abs/selftest.krb5_ccache";
 $ENV{KRB5CCNAME} = "FILE:${selftest_krbt_ccache_path}.global";
 
@@ -823,6 +826,7 @@ sub setup_env($$)
 	delete $ENV{SOCKET_WRAPPER_DEFAULT_IFACE};
 	delete $ENV{SMB_CONF_PATH};
 
+	$ENV{RESOLV_CONF} = "${selftest_resolv_conf_path}.${envname}/ignore";
 	$ENV{KRB5CCNAME} = "FILE:${selftest_krbt_ccache_path}.${envname}/ignore";
 
 	if (defined(get_running_env($envname))) {

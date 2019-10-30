@@ -113,6 +113,7 @@ sub setup_env($$$)
 	# Avoid hitting system krb5.conf -
 	# An env that needs Kerberos will reset this to the real value.
 	$ENV{KRB5_CONFIG} = "$path/no_krb5.conf";
+	$ENV{RESOLV_CONF} = "$path/no_resolv.conf";
 
 	my $setup_name = $ENV_TARGETS{$envname}."::setup_".$envname;
 	my $setup_sub = \&$setup_name;

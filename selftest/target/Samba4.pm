@@ -888,6 +888,7 @@ sub provision_raw_step2($$$)
 
 	my $testallowed_account = "testallowed";
 	my $samba_tool_cmd = "";
+	$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
@@ -898,6 +899,7 @@ sub provision_raw_step2($$$)
 	}
 
 	my $ldbmodify = "";
+	$ldbmodify .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$ldbmodify .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$ldbmodify .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
 	$ldbmodify .= Samba::bindir_path($self, "ldbmodify");
@@ -931,6 +933,7 @@ servicePrincipalName: host/testallowed
 	close(LDIF);
 
 	$samba_tool_cmd = "";
+	$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
@@ -951,6 +954,7 @@ userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
 	close(LDIF);
 
 	$samba_tool_cmd = "";
+	$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
@@ -973,6 +977,7 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 	close(LDIF);
 
 	$samba_tool_cmd = "";
+	$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
 	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
@@ -988,6 +993,7 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 	foreach my $user_account (@{$user_account_array}) {
 		my $samba_tool_cmd = "";
 
+		$samba_tool_cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 		$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 		$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
 		$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
@@ -1042,6 +1048,7 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 
 	# Change the userPrincipalName for jane
 	$ldbmodify = "";
+	$ldbmodify .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$ldbmodify .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$ldbmodify .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
 	$ldbmodify .= Samba::bindir_path($self, "ldbmodify");
@@ -2773,6 +2780,7 @@ sub create_backup
 	} else {
 		$cmd_env .= "RESOLV_WRAPPER_HOSTS=\"$env->{RESOLV_WRAPPER_HOSTS}\" ";
 	}
+	$cmd_env .= "RESOLV_CONF=\"$env->{RESOLV_CONF}\" ";
 	# Note: use the backupfrom-DC's krb5.conf to do the backup
 	$cmd_env .= " KRB5_CONFIG=\"$dcvars->{KRB5_CONFIG}\" ";
 	$cmd_env .= "KRB5CCNAME=\"$env->{KRB5_CCACHE}\" ";

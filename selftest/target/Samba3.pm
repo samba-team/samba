@@ -721,6 +721,7 @@ sub setup_ad_member
 	} else {
 		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
 	}
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION}";
@@ -844,6 +845,7 @@ sub setup_ad_member_rfc2307
 	} else {
 		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
 	}
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION}";
@@ -942,6 +944,7 @@ sub setup_ad_member_idmap_rid
 	} else {
 		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
 	}
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION}";
@@ -1039,6 +1042,7 @@ sub setup_ad_member_idmap_ad
 	} else {
 		$cmd .= "RESOLV_WRAPPER_HOSTS=\"$ret->{RESOLV_WRAPPER_HOSTS}\" ";
 	}
+	$cmd .= "RESOLV_CONF=\"$ret->{RESOLV_CONF}\" ";
 	$cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
 	$cmd .= "$net join $ret->{CONFIGURATION}";
@@ -2759,6 +2763,7 @@ force_user:x:$gid_force_user:
 	} else {
 		$createuser_env{RESOLV_WRAPPER_CONF} = $resolv_conf;
 	}
+	$createuser_env{RESOLV_CONF} = $resolv_conf;
 
 	createuser($self, $unix_name, $password, $conffile, \%createuser_env) || die("Unable to create user");
 	createuser($self, "force_user", $password, $conffile, \%createuser_env) || die("Unable to create force_user");
@@ -2810,6 +2815,7 @@ force_user:x:$gid_force_user:
 	} else {
 		$ret{RESOLV_WRAPPER_CONF} = $resolv_conf;
 	}
+	$ret{RESOLV_CONF} = $resolv_conf;
 	$ret{LOCAL_PATH} = "$shrdir";
         $ret{LOGDIR} = $logdir;
 
