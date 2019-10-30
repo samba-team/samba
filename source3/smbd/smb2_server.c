@@ -3149,12 +3149,13 @@ NTSTATUS smbd_smb2_request_done_ex(struct smbd_smb2_request *req,
 	struct iovec *outdyn_v;
 	uint32_t next_command_ofs;
 
-	DEBUG(10,("smbd_smb2_request_done_ex: "
-		  "idx[%d] status[%s] body[%u] dyn[%s:%u] at %s\n",
-		  req->current_idx, nt_errstr(status), (unsigned int)body.length,
-		  dyn ? "yes": "no",
+	DBG_DEBUG("idx[%d] status[%s] body[%u] dyn[%s:%u] at %s\n",
+		  req->current_idx,
+		  nt_errstr(status),
+		  (unsigned int)body.length,
+		  dyn ? "yes" : "no",
 		  (unsigned int)(dyn ? dyn->length : 0),
-		  location));
+		  location);
 
 	if (body.length < 2) {
 		return smbd_smb2_request_error(req, NT_STATUS_INTERNAL_ERROR);
