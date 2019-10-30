@@ -1247,10 +1247,14 @@ sub ParseElementPullLevel
 
 		if ($deferred and ContainsDeferred($e, $l)) {
 			$self->pidl("for ($counter = 0; $counter < ($length); $counter++) {");
+			$self->defer("for ($counter = 0; $counter < ($length); $counter++) {");
+			$self->defer_indent;
 			$self->indent;
 			$self->ParseElementPullLevel($e,GetNextLevel($e,$l), $ndr, $var_name, $env, 0, 1);
 			$self->deindent;
+			$self->defer_deindent;
 			$self->pidl("}");
+			$self->defer("}");
 		}
 
 		$self->ParseMemCtxPullEnd($e, $l, $ndr);
