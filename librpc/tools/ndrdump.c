@@ -261,8 +261,18 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	bool assume_ndr64 = false;
 	bool quiet = false;
 	bool hex_input = false;
+	bool stop_on_parse_failure = false;
 	int opt;
-	enum {OPT_CONTEXT_FILE=1000, OPT_VALIDATE, OPT_DUMP_DATA, OPT_LOAD_DSO, OPT_NDR64, OPT_QUIET, OPT_HEX_INPUT};
+	enum {
+		OPT_CONTEXT_FILE=1000,
+		OPT_VALIDATE,
+		OPT_DUMP_DATA,
+		OPT_LOAD_DSO,
+		OPT_NDR64,
+		OPT_QUIET,
+		OPT_HEX_INPUT,
+		OPT_STOP_ON_PARSE_FAILURE,
+	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{"context-file", 'c', POPT_ARG_STRING, NULL, OPT_CONTEXT_FILE, "In-filename to parse first", "CTX-FILE" },
@@ -272,6 +282,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		{"ndr64", 0, POPT_ARG_NONE, NULL, OPT_NDR64, "Assume NDR64 data", NULL },
 		{"quiet", 0, POPT_ARG_NONE, NULL, OPT_QUIET, "Don't actually dump anything", NULL },
 		{"hex-input", 0, POPT_ARG_NONE, NULL, OPT_HEX_INPUT, "Read the input file in as a hex dump", NULL },
+		{"stop-on-parse-failure", 0, POPT_ARG_NONE, NULL, OPT_STOP_ON_PARSE_FAILURE,
+		 "Do not try to print structures that fail to parse.", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		{ NULL }
@@ -315,6 +327,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			break;
 		case OPT_HEX_INPUT:
 			hex_input = true;
+			break;
+		case OPT_STOP_ON_PARSE_FAILURE:
+			stop_on_parse_failure = true;
 			break;
 		}
 	}
@@ -508,6 +523,11 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	status = ndr_map_error2ntstatus(ndr_err);
 
 	printf("pull returned %s\n", nt_errstr(status));
+
+	if (stop_on_parse_failure  && !NT_STATUS_IS_OK(status)) {
+		printf("not printing because --stop-on-parse-failure\n");
+		exit(1);
+	}
 
 	if (ndr_pull->offset > ndr_pull->relative_highest_offset) {
 		highest_ofs = ndr_pull->offset;
