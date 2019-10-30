@@ -125,6 +125,7 @@ builddirs = {
     "samba-mitkrb5": ".",
     "samba-nt4": ".",
     "samba-fileserver": ".",
+    "samba-ktest-heimdal": ".",
     "samba-admem": ".",
     "samba-admem-mit": ".",
     "samba-xc": ".",
@@ -352,6 +353,17 @@ tasks = {
         ("test", make_test(include_envs=[
             "fileserver",
             "maptoguest",
+            ])),
+        ("lcov", LCOV_CMD),
+        ("check-clean-tree", "script/clean-source-tree.sh"),
+        ],
+
+    "samba-ktest-heimdal": [
+        ("random-sleep", random_sleep(300, 900)),
+        ("configure", "./configure.developer --without-ad-dc --with-system-heimdalkrb5 --with-selftest-prefix=./bin/ab" + samba_configure_params),
+        ("make", "make -j"),
+        ("test", make_test(include_envs=[
+            "ktest",
             ])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),
