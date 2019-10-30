@@ -29,6 +29,7 @@ apt-get -y install \
     gdb \
     git \
     gzip \
+    heimdal-multidev \
     hostname \
     htop \
     krb5-config \

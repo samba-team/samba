@@ -102,6 +102,7 @@ PKGS = [
     ('libunwind-dev', 'libunwind-devel'),  # for back trace
     ('libglib2.0-dev', 'glib2-devel'),
     ('libicu-dev', 'libicu-devel'),
+    ('heimdal-multidev', ''),
 
     # NAME1, NAME2
     # for debian, locales provide locale support with language packs
