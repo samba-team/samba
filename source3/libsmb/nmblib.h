@@ -54,5 +54,6 @@ void sort_query_replies(char *data, int n, struct in_addr ip);
 char *name_mangle(TALLOC_CTX *mem_ctx, const char *In, char name_type);
 int name_extract(unsigned char *buf,size_t buf_len, unsigned int ofs, fstring name);
 int name_len(unsigned char *s1, size_t buf_len);
+int cli_set_message(char *buf,int num_words,int num_bytes,bool zero);
 
 #endif /* _LIBSMB_NMBLIB_H_ */

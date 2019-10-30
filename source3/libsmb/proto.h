@@ -187,7 +187,6 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 
 /* The following definitions come from libsmb/clientgen.c  */
 
-int cli_set_message(char *buf,int num_words,int num_bytes,bool zero);
 unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout);
 bool cli_set_backup_intent(struct cli_state *cli, bool flag);
 extern struct GUID cli_state_client_guid;
