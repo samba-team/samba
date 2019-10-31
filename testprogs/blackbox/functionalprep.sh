@@ -61,7 +61,7 @@ provision_2012r2() {
 ldapcmp_ignore() {
     # At some point we will need to ignore, but right now, it should be perfect
     IGNORE_ATTRS=$1
-    $PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX_ABS/$2/private/sam.ldb tdb://$PREFIX_ABS/$3/private/sam.ldb --two --skip-missing-dn
+    $PYTHON $BINDIR/samba-tool ldapcmp tdb://$PREFIX_ABS/$2/private/sam.ldb tdb://$PREFIX_ABS/$3/private/sam.ldb --two --skip-missing-dn --filter msDS-SupportedEncryptionTypes
 }
 
 ldapcmp() {
