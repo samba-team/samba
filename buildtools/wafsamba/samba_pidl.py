@@ -108,14 +108,22 @@ def SAMBA_PIDL(bld, pname, source,
     t.more_includes = '#' + bld.path.path_from(bld.srcnode)
 Build.BuildContext.SAMBA_PIDL = SAMBA_PIDL
 
-
 def SAMBA_PIDL_LIST(bld, name, source,
                     options='',
                     output_dir='.',
-                    generate_tables=True):
+                    generate_tables=True,
+                    generate_fuzzers=True):
     '''A wrapper for building a set of IDL files'''
     for p in TO_LIST(source):
         bld.SAMBA_PIDL(name, p, options=options, output_dir=output_dir, generate_tables=generate_tables)
+
+        # Some IDL files don't exactly match between name and
+        # "interface" so we need a way to skip those, while other IDL
+        # files have the table generation skipped entirely, on which
+        # the fuzzers rely
+        if generate_tables and generate_fuzzers:
+            interface = p[0:-4] # strip off the .idl suffix
+            bld.SAMBA_NDR_FUZZ(interface)
 Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 
 

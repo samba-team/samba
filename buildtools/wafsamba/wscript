@@ -605,7 +605,7 @@ struct foo bar = { .y = 'X', .x = 1 };
 
     conf.env.enable_libfuzzer = Options.options.enable_libfuzzer
     if conf.env.enable_libfuzzer:
-        conf.DEFINE('ENABLE_LIBFUZZER', 1)
+        conf.DEFINE('FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION', 1)
         conf.env.FUZZ_TARGET_LDFLAGS = Options.options.FUZZ_TARGET_LDFLAGS
 
     conf.load('clang_compilation_database')

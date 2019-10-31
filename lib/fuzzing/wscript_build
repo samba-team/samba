@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from waflib import Build
+
 bld.SAMBA_SUBSYSTEM('fuzzing',
     source='fuzzing.c',
     deps='talloc',
@@ -40,3 +42,81 @@ bld.SAMBA_BINARY('fuzz_ldb_parse_tree',
                  source='fuzz_ldb_parse_tree.c',
                  deps='fuzzing ldb',
                  fuzzer=True)
+
+def SAMBA_NDR_FUZZ(bld, interface):
+    name = "fuzz_ndr_%s" % (interface.lower())
+    fuzz_dir = os.path.join(bld.env.srcdir, 'lib/fuzzing')
+    fuzz_reldir = os.path.relpath(fuzz_dir, bld.path.abspath())
+    fuzz_src = os.path.join(fuzz_reldir, 'fuzz_ndr_X.c')
+    fuzz_named_src = os.path.join(fuzz_reldir,
+                                  'fuzz_ndr_%s.c' % interface.lower())
+
+    # Work around an issue that WAF is invoked from up to 3 different
+    # directories so doesn't create a unique name for the multiple .o
+    # files like it would if called from just one place.
+    bld.SAMBA_GENERATOR(fuzz_named_src,
+                        source=fuzz_src,
+                        target=fuzz_named_src,
+                        rule='cp ${SRC} ${TGT}')
+
+    bld.SAMBA_BINARY(name, source=fuzz_named_src,
+                     cflags = "-D FUZZ_PIPE_TABLE=ndr_table_%s" % interface,
+                     deps = "ndr-table NDR_DCERPC",
+                     install=False,
+                     fuzzer=True)
+
+Build.BuildContext.SAMBA_NDR_FUZZ = SAMBA_NDR_FUZZ
+
+# fuzz_ndr_X is generated from the list if IDL fed to PIDL
+# however there are exceptions to the normal pattern
+bld.SAMBA_NDR_FUZZ('IOXIDResolver') # oxidresolver.idl
+bld.SAMBA_NDR_FUZZ('IRemoteActivation') # remact.idl
+bld.SAMBA_NDR_FUZZ('iremotewinspool') # winspool.idl
+bld.SAMBA_NDR_FUZZ('FileServerVssAgent') # fsvrp.idl
+bld.SAMBA_NDR_FUZZ('lsarpc') # lsa.idl
+bld.SAMBA_NDR_FUZZ('netdfs') # dfs.idl
+bld.SAMBA_NDR_FUZZ('nfs4acl_interface') # nfs4acl.idl
+bld.SAMBA_NDR_FUZZ('ObjectRpcBaseTypes') # orpc.idl
+bld.SAMBA_NDR_FUZZ('rpcecho') # echo.idl
+
+# quota.idl
+bld.SAMBA_NDR_FUZZ('file_quota')
+bld.SAMBA_NDR_FUZZ('smb2_query_quota')
+bld.SAMBA_NDR_FUZZ('smb1_nt_transact_query_quota')
+
+# ioctl.idl
+bld.SAMBA_NDR_FUZZ('copychunk')
+bld.SAMBA_NDR_FUZZ('compression')
+bld.SAMBA_NDR_FUZZ('netinterface')
+bld.SAMBA_NDR_FUZZ('sparse')
+bld.SAMBA_NDR_FUZZ('resiliency')
+bld.SAMBA_NDR_FUZZ('trim')
+
+# Skipped: dsbackup (all todo)
+
+# WMI tables
+bld.SAMBA_NDR_FUZZ('IWbemClassObject')
+bld.SAMBA_NDR_FUZZ('IWbemServices')
+bld.SAMBA_NDR_FUZZ('IEnumWbemClassObject')
+bld.SAMBA_NDR_FUZZ('IWbemContext')
+bld.SAMBA_NDR_FUZZ('IWbemLevel1Login')
+bld.SAMBA_NDR_FUZZ('IWbemWCOSmartEnum')
+bld.SAMBA_NDR_FUZZ('IWbemFetchSmartEnum')
+bld.SAMBA_NDR_FUZZ('IWbemCallResult')
+bld.SAMBA_NDR_FUZZ('IWbemObjectSink')
+
+# DCOM tables
+bld.SAMBA_NDR_FUZZ('dcom_Unknown')
+bld.SAMBA_NDR_FUZZ('IUnknown')
+bld.SAMBA_NDR_FUZZ('IClassFactory')
+bld.SAMBA_NDR_FUZZ('IRemUnknown')
+bld.SAMBA_NDR_FUZZ('IClassActivator')
+bld.SAMBA_NDR_FUZZ('ISCMLocalActivator')
+bld.SAMBA_NDR_FUZZ('IMachineLocalActivator')
+bld.SAMBA_NDR_FUZZ('ILocalObjectExporter')
+bld.SAMBA_NDR_FUZZ('ISystemActivator')
+bld.SAMBA_NDR_FUZZ('IRemUnknown2')
+bld.SAMBA_NDR_FUZZ('IDispatch')
+bld.SAMBA_NDR_FUZZ('IMarshal')
+bld.SAMBA_NDR_FUZZ('ICoffeeMachine')
+bld.SAMBA_NDR_FUZZ('IStream')

@@ -5,15 +5,25 @@ bld.SAMBA_PIDL_LIST('PIDL',
                        eventlog.idl
                        browser.idl dssetup.idl frsapi.idl
                        spoolss.idl
-                       dnsserver.idl echo.idl lsa.idl
+                       dnsserver.idl
                        samr.idl srvsvc.idl winreg.idl
                        mgmt.idl netlogon.idl
                        svcctl.idl wkssvc.idl eventlog6.idl backupkey.idl
-                       fsrvp.idl witness.idl clusapi.idl
-                       mdssvc.idl
-                       winspool.idl''',
+                       witness.idl clusapi.idl
+                       mdssvc.idl''',
                     options='--header --ndr-parser --samba3-ndr-server --server --client --python',
                     output_dir='../gen_ndr')
+
+# The interface names here are not the same as the IDL name, so the
+# auto-genration of the fuzzer fails to link
+bld.SAMBA_PIDL_LIST('PIDL',
+                    '''echo.idl
+                       fsrvp.idl
+                       lsa.idl
+                       winspool.idl''',
+                    options='--header --ndr-parser --samba3-ndr-server --server --client --python',
+                    output_dir='../gen_ndr',
+                    generate_fuzzers=False)
 
 # Services that we only have a client for
 bld.SAMBA_PIDL_LIST('PIDL',
@@ -23,26 +33,42 @@ bld.SAMBA_PIDL_LIST('PIDL',
 
 # Services that we only have a server in the source3 style
 bld.SAMBA_PIDL_LIST('PIDL',
-                    '''dfs.idl initshutdown.idl ntsvcs.idl''',
+                    '''initshutdown.idl ntsvcs.idl''',
                     options='--header --ndr-parser --client --python --samba3-ndr-server',
                     output_dir='../gen_ndr')
 
-# Services that we only have a server in the source4 style
+# The interface names here are not the same as the IDL name, so the
+# auto-genration of the fuzzer fails to link
+bld.SAMBA_PIDL_LIST('PIDL',
+                    '''dfs.idl''',
+                    options='--header --ndr-parser --client --python --samba3-ndr-server',
+                    output_dir='../gen_ndr',
+                    generate_fuzzers=False)
+
+# Services that we only have a server in the source4 style. 
+
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''unixinfo.idl''',
                     options='--header --ndr-parser --client --python --server',
                     output_dir='../gen_ndr')
 
 # DCOM stuff
+
+# The interface names here are not the same as the IDL name, so the
+# auto-genration of the fuzzer fails to link
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''oxidresolver.idl remact.idl''',
                     options='--header --ndr-parser --client',
-                    output_dir='../gen_ndr')
+                    output_dir='../gen_ndr',
+                    generate_fuzzers=False)
 
+# The interface names here are not the same as the IDL name, so the
+# auto-genration of the fuzzer fails to link
 bld.SAMBA_PIDL_LIST('PIDL',
                     'wmi.idl dcom.idl',
                     options='--header --ndr-parser --server --client --dcom-proxy --com-header',
-                    output_dir='../gen_ndr')
+                    output_dir='../gen_ndr',
+                    generate_fuzzers=False)
 
 # DCE/RPC protocols which Samba does not implement a client or server
 # for
@@ -50,13 +76,11 @@ bld.SAMBA_PIDL_LIST('PIDL',
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''
                     audiosrv.idl
-                    dsbackup.idl
                     efs.idl
                     frstrans.idl
                     frsrpc.idl
                     keysvc.idl
                     msgsvc.idl
-                    orpc.idl
                     policyagent.idl
                     rot.idl
                     scerpc.idl
@@ -66,6 +90,18 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     ''',
                     options='--header --ndr-parser',
                     output_dir='../gen_ndr')
+
+# The interface names here are not the same as the IDL name, so the
+# auto-genration of the fuzzer fails to link
+
+bld.SAMBA_PIDL_LIST('PIDL',
+                    '''
+                    dsbackup.idl
+                    orpc.idl
+                    ''',
+                    options='--header --ndr-parser',
+                    output_dir='../gen_ndr',
+                    generate_fuzzers=False)
 
 # Non-DCE/RPC protocols encoded in IDL for Samba or helper IDLs for
 # DCE/RPC protocols (eg defining constands or structures but not
@@ -78,20 +114,30 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     file_id.idl
                     fscc.idl
                     fsrvp_state.idl
-                    ioctl.idl
                     named_pipe_auth.idl
                     negoex.idl
-                    nfs4acl.idl
                     notify.idl
                     ntprinting.idl
                     printcap.idl
-                    quota.idl
                     rap.idl
                     schannel.idl
                     smb2_lease_struct.idl
                     ''',
                     options='--header --ndr-parser',
                     output_dir='../gen_ndr')
+
+# The interface names here are not the same as the IDL name, so the
+# auto-genration of the fuzzer fails to link
+
+bld.SAMBA_PIDL_LIST('PIDL',
+                    '''
+                    ioctl.idl
+                    nfs4acl.idl
+                    quota.idl
+                    ''',
+                    options='--header --ndr-parser',
+                    output_dir='../gen_ndr',
+                    generate_fuzzers=False)
 
 # Non-DCE/RPC protocls with Python bindings
 # (for structures or constants)

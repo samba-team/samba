@@ -2604,6 +2604,31 @@ sub ParseFunctionPull($$)
 	$self->pidl("if (flags & NDR_OUT) {");
 	$self->indent;
 
+	$self->pidl("#ifdef FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION");
+
+	# This for fuzzers of ndr_pull where the out elements refer to
+	# in elements in size_is or length_is.
+	#
+	# Not actually very harmful but also not useful outsie a fuzzer
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		next unless (grep(/in/, @{$e->{DIRECTION}}));
+		next unless ($e->{LEVELS}[0]->{TYPE} eq "POINTER" and
+		             $e->{LEVELS}[0]->{POINTER_TYPE} eq "ref");
+		next if (($e->{LEVELS}[1]->{TYPE} eq "DATA") and
+				 ($e->{LEVELS}[1]->{DATA_TYPE} eq "string"));
+		next if ($e->{LEVELS}[1]->{TYPE} eq "PIPE");
+		next if ($e->{LEVELS}[1]->{TYPE} eq "ARRAY");
+
+		$self->pidl("if (r->in.$e->{NAME} == NULL) {");
+		$self->indent;
+		$self->pidl("NDR_PULL_ALLOC($ndr, r->in.$e->{NAME});");
+		$self->pidl("NDR_ZERO_STRUCTP(r->in.$e->{NAME});");
+		$self->deindent;
+		$self->pidl("}");
+	}
+
+	$self->pidl("#endif /* FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION */");
+
 	$env = GenerateFunctionOutEnv($fn);
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		next unless grep(/out/, @{$e->{DIRECTION}});

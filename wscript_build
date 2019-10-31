@@ -38,6 +38,11 @@ bld.CONFIGURE_FILE('docs-xml/build/DTD/samba.build.version',
                    DOC_VERSION=bld.env.DOC_VERSION)
 bld.RECURSE('docs-xml')
 
+# This needs to be earlier than anything containing IDL
+# That in turn allows the build rules for fuzz_ndr_X to be
+# near the code
+bld.RECURSE('lib/fuzzing')
+
 bld.RECURSE('lib/replace')
 bld.RECURSE('lib/socket')
 bld.RECURSE('lib/talloc')
@@ -150,7 +155,6 @@ bld.RECURSE('dfs_server')
 bld.RECURSE('file_server')
 bld.RECURSE('lib/krb5_wrap')
 bld.RECURSE('packaging')
-bld.RECURSE('lib/fuzzing')
 
 bld.RECURSE('testsuite/headers')
 
