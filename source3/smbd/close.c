@@ -39,6 +39,8 @@
 static NTSTATUS check_magic(struct files_struct *fsp)
 {
 	int ret;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	const char *magic_output = NULL;
 	SMB_STRUCT_STAT st;
 	int tmp_fd, outfd;
@@ -69,8 +71,8 @@ static NTSTATUS check_magic(struct files_struct *fsp)
 		goto out;
 	}
 
-	if (*lp_magic_output(talloc_tos(), SNUM(conn))) {
-		magic_output = lp_magic_output(talloc_tos(), SNUM(conn));
+	if (*lp_magic_output(talloc_tos(), lp_sub, SNUM(conn))) {
+		magic_output = lp_magic_output(talloc_tos(), lp_sub, SNUM(conn));
 	} else {
 		magic_output = talloc_asprintf(ctx,
 				"%s.out",
