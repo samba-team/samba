@@ -611,7 +611,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	conn->vuid = vuser->vuid;
 
 	{
-		char *s = talloc_sub_advanced(talloc_tos(),
+		char *s = talloc_sub_full(talloc_tos(),
 					lp_const_servicename(SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
@@ -727,7 +727,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	 * to below */
 	/* execute any "root preexec = " line */
 	if (*lp_root_preexec(talloc_tos(), snum)) {
-		char *cmd = talloc_sub_advanced(talloc_tos(),
+		char *cmd = talloc_sub_full(talloc_tos(),
 					lp_const_servicename(SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
@@ -765,7 +765,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 
 	/* execute any "preexec = " line */
 	if (*lp_preexec(talloc_tos(), snum)) {
-		char *cmd = talloc_sub_advanced(talloc_tos(),
+		char *cmd = talloc_sub_full(talloc_tos(),
 					lp_const_servicename(SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
@@ -1163,7 +1163,7 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 	/* execute any "postexec = " line */
 	if (*lp_postexec(talloc_tos(), SNUM(conn)) &&
 	    change_to_user_and_service(conn, vuid))  {
-		char *cmd = talloc_sub_advanced(talloc_tos(),
+		char *cmd = talloc_sub_full(talloc_tos(),
 					lp_const_servicename(SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
@@ -1179,7 +1179,7 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 	change_to_root_user();
 	/* execute any "root postexec = " line */
 	if (*lp_root_postexec(talloc_tos(), SNUM(conn)))  {
-		char *cmd = talloc_sub_advanced(talloc_tos(),
+		char *cmd = talloc_sub_full(talloc_tos(),
 					lp_const_servicename(SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
 					conn->connectpath,

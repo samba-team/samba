@@ -35,7 +35,7 @@ char *virusfilter_string_sub(
 	connection_struct *conn,
 	const char *str)
 {
-	return talloc_sub_advanced(mem_ctx,
+	return talloc_sub_full(mem_ctx,
 		lp_servicename(mem_ctx, SNUM(conn)),
 		conn->session_info->unix_info->unix_name,
 		conn->connectpath,

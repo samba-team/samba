@@ -790,7 +790,7 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 /****************************************************************************
 ****************************************************************************/
 
-char *talloc_sub_advanced(TALLOC_CTX *ctx,
+char *talloc_sub_full(TALLOC_CTX *ctx,
 			const char *servicename,
 			const char *user,
 			const char *connectpath,
@@ -804,7 +804,7 @@ char *talloc_sub_advanced(TALLOC_CTX *ctx,
 
 	a_string = talloc_strdup(talloc_tos(), str);
 	if (a_string == NULL) {
-		DEBUG(0, ("talloc_sub_advanced: Out of memory!\n"));
+		DBG_ERR("Out of memory!\n");
 		return NULL;
 	}
 
