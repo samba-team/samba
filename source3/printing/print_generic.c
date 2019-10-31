@@ -56,6 +56,8 @@ static int print_run_command(int snum, const char* printername, bool do_sub,
 		return -1;
 	}
 
+	DBG_DEBUG("Incoming command '%s'\n", syscmd);
+
 	while ((arg = va_arg(ap, char *))) {
 		char *value = va_arg(ap,char *);
 		syscmd = talloc_string_sub(ctx, syscmd, arg, value);
