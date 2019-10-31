@@ -790,21 +790,19 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 /****************************************************************************
 ****************************************************************************/
 
-char *talloc_sub_full(TALLOC_CTX *ctx,
+char *talloc_sub_advanced(TALLOC_CTX *ctx,
 			const char *servicename,
 			const char *user,
 			const char *connectpath,
 			gid_t gid,
-			const char *smb_name,
-			const char *domain_name,
 			const char *str)
 {
-	char *a_string, *ret_string;
+	char *a_string;
 	char *b, *p, *s;
 
 	a_string = talloc_strdup(talloc_tos(), str);
 	if (a_string == NULL) {
-		DBG_ERR("Out of memory!\n");
+		DEBUG(0, ("talloc_sub_advanced_only: Out of memory!\n"));
 		return NULL;
 	}
 
@@ -856,6 +854,26 @@ char *talloc_sub_full(TALLOC_CTX *ctx,
 		if (a_string == NULL) {
 			return NULL;
 		}
+	}
+
+	return a_string;
+}
+
+char *talloc_sub_full(TALLOC_CTX *ctx,
+			const char *servicename,
+			const char *user,
+			const char *connectpath,
+			gid_t gid,
+			const char *smb_name,
+			const char *domain_name,
+			const char *str)
+{
+	char *a_string, *ret_string;
+
+	a_string = talloc_sub_advanced(ctx, servicename, user, connectpath,
+				       gid, str);
+	if (a_string == NULL) {
+		return NULL;
 	}
 
 	ret_string = talloc_sub_basic(ctx, smb_name, domain_name, a_string);
