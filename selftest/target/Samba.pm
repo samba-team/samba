@@ -436,6 +436,20 @@ sub mk_mitkdc_conf($$)
 	close(KDCCONF);
 }
 
+sub mk_resolv_conf($$)
+{
+	my ($ctx) = @_;
+
+	unless (open(RESOLV_CONF, ">$ctx->{resolv_conf}")) {
+		warn("can't open $ctx->{resolv_conf}$?");
+		return undef;
+	}
+
+	print RESOLV_CONF "nameserver $ctx->{dns_ipv4}\n";
+	print RESOLV_CONF "nameserver $ctx->{dns_ipv6}\n";
+	close(RESOLV_CONF);
+}
+
 sub realm_to_ip_mappings
 {
 	# this maps the DNS realms for the various testenvs to the corresponding

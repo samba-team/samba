@@ -298,10 +298,11 @@ sub setup_dns_hub_internal($$$)
 	$env->{RESOLV_CONF} = "$prefix_abs/resolv.conf";
 	$env->{TESTENV_DIR} = $prefix_abs;
 
-	open(RESOLV_CONF, ">$env->{RESOLV_CONF}");
-	print RESOLV_CONF "nameserver $env->{SERVER_IP}\n";
-	print RESOLV_CONF "nameserver $env->{SERVER_IPV6}\n";
-	close(RESOLV_CONF);
+	my $ctx = undef;
+	$ctx->{resolv_conf} = $env->{RESOLV_CONF};
+	$ctx->{dns_ipv4} = $env->{SERVER_IP};
+	$ctx->{dns_ipv6} = $env->{SERVER_IPV6};
+	Samba::mk_resolv_conf($ctx);
 
 	my @preargs = ();
 	my @args = ();
