@@ -151,6 +151,8 @@ static NTSTATUS create_mdssvc_policy_handle(TALLOC_CTX *mem_ctx,
 
 void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int snum;
 	char *outpath = discard_const_p(char, r->out.share_path);
 	char *path;
@@ -168,7 +170,7 @@ void _mdssvc_open(struct pipes_struct *p, struct mdssvc_open *r)
 		return;
 	}
 
-	path = lp_path(talloc_tos(), snum);
+	path = lp_path(talloc_tos(), lp_sub, snum);
 	if (path == NULL) {
 		DBG_ERR("Couldn't create policy handle for %s\n",
 			r->in.share_name);

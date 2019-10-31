@@ -109,6 +109,8 @@ void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
 
 int register_homes_share(const char *username)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int result;
 	struct passwd *pwd;
 
@@ -116,7 +118,7 @@ int register_homes_share(const char *username)
 	if (result != -1) {
 		DEBUG(3, ("Using static (or previously created) service for "
 			  "user '%s'; path = '%s'\n", username,
-			  lp_path(talloc_tos(), result)));
+			  lp_path(talloc_tos(), lp_sub, result)));
 		return result;
 	}
 

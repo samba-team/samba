@@ -1557,6 +1557,8 @@ static bool hash_a_service(const char *name, int idx)
 bool lp_add_home(const char *pszHomename, int iDefaultService,
 		 const char *user, const char *pszHomedir)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int i;
 	char *global_path;
 
@@ -1570,7 +1572,7 @@ bool lp_add_home(const char *pszHomename, int iDefaultService,
 	if (i < 0)
 		return false;
 
-	global_path = lp_path(talloc_tos(), GLOBAL_SECTION_SNUM);
+	global_path = lp_path(talloc_tos(), lp_sub, GLOBAL_SECTION_SNUM);
 	if (!(*(ServicePtrs[iDefaultService]->path))
 	    || strequal(ServicePtrs[iDefaultService]->path, global_path)) {
 		lpcfg_string_set(ServicePtrs[i], &ServicePtrs[i]->path,

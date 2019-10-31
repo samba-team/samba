@@ -57,6 +57,8 @@ NTSTATUS print_spool_open(files_struct *fsp,
 			  const char *fname,
 			  uint64_t current_vuid)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	NTSTATUS status;
 	TALLOC_CTX *tmp_ctx;
 	struct print_file_data *pf;
@@ -119,6 +121,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 
 	pf->filename = talloc_asprintf(pf, "%s/%sXXXXXX",
 					lp_path(talloc_tos(),
+						lp_sub,
 						SNUM(fsp->conn)),
 					PRINT_SPOOL_PREFIX);
 	if (!pf->filename) {

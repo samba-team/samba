@@ -2688,6 +2688,8 @@ static WERROR print_job_checks(const struct auth_session_info *server_info,
 			       int snum, int *njobs)
 {
 	const char *sharename = lp_const_servicename(snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	uint64_t dspace, dsize;
 	uint64_t minspace;
 	int ret;
@@ -2708,7 +2710,7 @@ static WERROR print_job_checks(const struct auth_session_info *server_info,
 	/* see if we have sufficient disk space */
 	if (lp_min_print_space(snum)) {
 		minspace = lp_min_print_space(snum);
-		ret = sys_fsusage(lp_path(talloc_tos(), snum), &dspace, &dsize);
+		ret = sys_fsusage(lp_path(talloc_tos(), lp_sub, snum), &dspace, &dsize);
 		if (ret == 0 && dspace < 2*minspace) {
 			DEBUG(3, ("print_job_checks: "
 				  "disk space check failed.\n"));
@@ -2743,6 +2745,8 @@ static WERROR print_job_spool_file(int snum, uint32_t jobid,
 				   const char *output_file,
 				   struct printjob *pjob)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	WERROR werr;
 	SMB_STRUCT_STAT st;
 	const char *path;
@@ -2754,7 +2758,7 @@ static WERROR print_job_spool_file(int snum, uint32_t jobid,
 	 * Verify that the file name is ok, within path, and it is
 	 * already already there */
 	if (output_file) {
-		path = lp_path(talloc_tos(), snum);
+		path = lp_path(talloc_tos(), lp_sub, snum);
 		len = strlen(path);
 		if (strncmp(output_file, path, len) == 0 &&
 		    (output_file[len - 1] == '/' || output_file[len] == '/')) {
@@ -2783,7 +2787,7 @@ static WERROR print_job_spool_file(int snum, uint32_t jobid,
 	}
 
 	slprintf(pjob->filename, sizeof(pjob->filename)-1,
-		 "%s/%sXXXXXX", lp_path(talloc_tos(), snum),
+		 "%s/%sXXXXXX", lp_path(talloc_tos(), lp_sub, snum),
 		 PRINT_SPOOL_PREFIX);
 	mask = umask(S_IRWXO | S_IRWXG);
 	pjob->fd = mkstemp(pjob->filename);
@@ -2823,6 +2827,8 @@ WERROR print_job_start(const struct auth_session_info *server_info,
 	struct printjob pjob;
 	const char *sharename = lp_const_servicename(snum);
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int njobs;
 	WERROR werr;
 
@@ -2830,7 +2836,7 @@ WERROR print_job_start(const struct auth_session_info *server_info,
 		return WERR_INTERNAL_DB_CORRUPTION;
 	}
 
-	path = lp_path(talloc_tos(), snum);
+	path = lp_path(talloc_tos(), lp_sub, snum);
 
 	werr = print_job_checks(server_info, msg_ctx, snum, &njobs);
 	if (!W_ERROR_IS_OK(werr)) {

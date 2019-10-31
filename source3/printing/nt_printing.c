@@ -80,6 +80,9 @@ static bool print_driver_directories_init(void)
 	char *driver_path;
 	bool ok;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+
 	const char *dir_list[] = {
 		"W32X86/PCC",
 		"x64/PCC",
@@ -94,7 +97,7 @@ static bool print_driver_directories_init(void)
 		return true;
 	}
 
-	driver_path = lp_path(mem_ctx, service);
+	driver_path = lp_path(mem_ctx, lp_sub, service);
 	if (driver_path == NULL) {
 		talloc_free(mem_ctx);
 		return false;
@@ -987,6 +990,8 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 				   WERROR *perr)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int cversion = -1;
 	NTSTATUS          nt_status;
 	struct smb_filename *smb_fname = NULL;
@@ -1028,7 +1033,7 @@ static uint32_t get_correct_cversion(const struct auth_session_info *session_inf
 		return -1;
 	}
 
-	printdollar_path = lp_path(frame, printdollar_snum);
+	printdollar_path = lp_path(frame, lp_sub, printdollar_snum);
 	if (printdollar_path == NULL) {
 		*perr = WERR_NOT_ENOUGH_MEMORY;
 		TALLOC_FREE(frame);
@@ -1477,6 +1482,8 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 				    const char *driver_directory)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct spoolss_AddDriverInfo3 *driver;
 	struct spoolss_AddDriverInfo3 converted_driver;
 	const char *short_architecture;
@@ -1527,7 +1534,7 @@ WERROR move_driver_to_download_area(const struct auth_session_info *session_info
 
 	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
 					       printdollar_snum,
-					       lp_path(frame, printdollar_snum),
+					       lp_path(frame, lp_sub, printdollar_snum),
 					       session_info,
 					       &c);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2041,6 +2048,8 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 			 const struct spoolss_DriverInfo8 *r)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	const char *short_arch;
 	struct conn_struct_tos *c = NULL;
 	connection_struct *conn = NULL;
@@ -2069,7 +2078,7 @@ bool delete_driver_files(const struct auth_session_info *session_info,
 
 	nt_status = create_conn_struct_tos_cwd(global_messaging_context(),
 					       printdollar_snum,
-					       lp_path(frame, printdollar_snum),
+					       lp_path(frame, lp_sub, printdollar_snum),
 					       session_info,
 					       &c);
 	if (!NT_STATUS_IS_OK(nt_status)) {

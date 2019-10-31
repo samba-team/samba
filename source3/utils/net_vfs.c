@@ -114,6 +114,8 @@ static bool net_vfs_make_session_info(struct auth_session_info **session_info)
 
 static int net_vfs_init(struct net_context *c, int argc, const char **argv)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	const char *service = NULL;
 	char *share_root = NULL;
 	int snum;
@@ -166,7 +168,7 @@ static int net_vfs_init(struct net_context *c, int argc, const char **argv)
 		goto done;
 	}
 
-	share_root = lp_path(state.mem_ctx, snum);
+	share_root = lp_path(state.mem_ctx, lp_sub, snum);
 	if (share_root == NULL) {
 		fprintf(stderr, "Failed to find share root for service: %s\n",
 			service);

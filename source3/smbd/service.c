@@ -624,7 +624,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
-					lp_path(talloc_tos(), snum));
+					lp_path(talloc_tos(), lp_sub, snum));
 		if (!s) {
 			status = NT_STATUS_NO_MEMORY;
 			goto err_root_exit;

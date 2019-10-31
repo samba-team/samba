@@ -286,12 +286,14 @@ static NTSTATUS fss_conn_create_tos(struct messaging_context *msg_ctx,
 				    int snum,
 				    struct connection_struct **conn_out)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct conn_struct_tos *c = NULL;
 	NTSTATUS status;
 
 	status = create_conn_struct_tos(msg_ctx,
 					snum,
-					lp_path(talloc_tos(), snum),
+					lp_path(talloc_tos(), lp_sub, snum),
 					session_info,
 					&c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -730,6 +732,8 @@ uint32_t _fss_AddToShadowCopySet(struct pipes_struct *p,
 	struct connection_struct *conn;
 	NTSTATUS status;
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	if (!fss_permitted(p)) {
 		ret = HRES_ERROR_V(HRES_E_ACCESSDENIED);
@@ -755,7 +759,7 @@ uint32_t _fss_AddToShadowCopySet(struct pipes_struct *p,
 		goto err_tmp_free;
 	}
 
-	path_name = lp_path(frame, snum);
+	path_name = lp_path(frame, lp_sub, snum);
 	if (path_name == NULL) {
 		ret = HRES_ERROR_V(HRES_E_OUTOFMEMORY);
 		goto err_tmp_free;
@@ -1325,6 +1329,8 @@ uint32_t _fss_IsPathSupported(struct pipes_struct *p,
 	struct connection_struct *conn;
 	char *share;
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	if (!fss_permitted(p)) {
 		TALLOC_FREE(frame);
@@ -1355,7 +1361,7 @@ uint32_t _fss_IsPathSupported(struct pipes_struct *p,
 		return HRES_ERROR_V(HRES_E_ACCESSDENIED);
 	}
 	status = SMB_VFS_SNAP_CHECK_PATH(conn, frame,
-					 lp_path(frame, snum),
+					 lp_path(frame, lp_sub, snum),
 					 &base_vol);
 	unbecome_user_without_service();
 	if (!NT_STATUS_IS_OK(status)) {

@@ -1920,7 +1920,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 			len += StrlenExpanded(conn,snum,lp_comment(talloc_tos(), lp_sub, snum));
 		}
 		if (uLevel > 1) {
-			len += strlen(lp_path(talloc_tos(), snum)) + 1;
+			len += strlen(lp_path(talloc_tos(), lp_sub, snum)) + 1;
 		}
 		if (buflen) {
 			*buflen = struct_len;
@@ -1972,7 +1972,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		SSVALS(p,22,-1);		/* max uses */
 		SSVAL(p,24,1); /* current uses */
 		SIVAL(p,26,PTR_DIFF(p2,baseaddr)); /* local pathname */
-		len += CopyAndAdvance(&p2,lp_path(talloc_tos(),snum),&l2);
+		len += CopyAndAdvance(&p2,lp_path(talloc_tos(),lp_sub, snum),&l2);
 		memset(p+30,0,SHPWLEN+2); /* passwd (reserved), pad field */
 	}
 

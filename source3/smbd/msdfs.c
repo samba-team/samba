@@ -1115,7 +1115,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 
 	status = create_conn_struct_tos_cwd(global_messaging_context(),
 					    snum,
-					    lp_path(frame, snum),
+					    lp_path(frame, lp_sub, snum),
 					    NULL,
 					    &c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1320,6 +1320,8 @@ static bool junction_to_local_path_tos(const struct junction_map *jucn,
 				       char **pp_path_out,
 				       connection_struct **conn_out)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct conn_struct_tos *c = NULL;
 	int snum;
 	char *path_out = NULL;
@@ -1331,7 +1333,7 @@ static bool junction_to_local_path_tos(const struct junction_map *jucn,
 	}
 	status = create_conn_struct_tos_cwd(global_messaging_context(),
 					    snum,
-					    lp_path(talloc_tos(), snum),
+					    lp_path(talloc_tos(), lp_sub, snum),
 					    NULL,
 					    &c);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1340,7 +1342,7 @@ static bool junction_to_local_path_tos(const struct junction_map *jucn,
 
 	path_out = talloc_asprintf(c,
 			"%s/%s",
-			lp_path(talloc_tos(), snum),
+			lp_path(talloc_tos(), lp_sub, snum),
 			jucn->volume_name);
 	if (path_out == NULL) {
 		TALLOC_FREE(c);
@@ -1503,7 +1505,7 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 	DIR *dirp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	const char *connect_path = lp_path(frame, snum);
+	const char *connect_path = lp_path(frame, lp_sub, snum);
 	const char *msdfs_proxy = lp_msdfs_proxy(frame, lp_sub, snum);
 	struct conn_struct_tos *c = NULL;
 	connection_struct *conn = NULL;
@@ -1595,7 +1597,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	DIR *dirp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
-	const char *connect_path = lp_path(frame, snum);
+	const char *connect_path = lp_path(frame, lp_sub, snum);
 	char *service_name = lp_servicename(frame, snum);
 	const char *msdfs_proxy = lp_msdfs_proxy(frame, lp_sub, snum);
 	struct conn_struct_tos *c = NULL;
