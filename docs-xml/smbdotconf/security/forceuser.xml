@@ -1,6 +1,7 @@
 <samba:parameter name="force user"
                  type="string"
                  context="S"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This specifies a UNIX user name that will be 
