@@ -121,11 +121,15 @@
 		library). In case of FILE a credential cache in the form of
 		/tmp/krb5cc_UID will be created -  in case of DIR you NEED
 		to specify a directory. UID is replaced with the numeric
-		user id.</para>
+		user id. The UID directory is being created. The path up to
+		the directory should already exist. Check the details of the
+		Kerberos implmentation.</para>
 
 		<para>When using the KEYRING type, the supported mechanism is
 		<quote>KEYRING:persistent:UID</quote>, which uses the Linux
-		kernel keyring to store credentials on a per-UID basis.</para>
+		kernel keyring to store credentials on a per-UID basis.
+		The KEYRING has its limitations. As it is secure kernel memory,
+		for example bulk sorage of credentils is for not possible.</para>
 
 		<para>When using th KCM type, the supported mechanism is
 		<quote>KCM:UID</quote>, which uses a Kerberos credential
