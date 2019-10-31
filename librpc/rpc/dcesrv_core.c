@@ -147,7 +147,7 @@ static bool interface_match_by_uuid(const struct dcesrv_interface *iface,
 /*
   find the interface operations on an endpoint by uuid
 */
-const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv_endpoint *endpoint,
+_PUBLIC_ const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv_endpoint *endpoint,
 						      const struct GUID *uuid, uint32_t if_version)
 {
 	struct dcesrv_if_list *ifl;
