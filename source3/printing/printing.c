@@ -2819,7 +2819,7 @@ WERROR print_job_start(const struct auth_session_info *server_info,
 		       struct spoolss_DeviceMode *devmode, uint32_t *_jobid)
 {
 	uint32_t jobid;
-	char *path;
+	char *path = NULL, *userstr = NULL;
 	struct printjob pjob;
 	const char *sharename = lp_const_servicename(snum);
 	struct tdb_print_db *pdb = get_print_db_byname(sharename);
@@ -2866,13 +2866,19 @@ WERROR print_job_start(const struct auth_session_info *server_info,
 
 	fstrcpy(pjob.clientmachine, clientmachine);
 
-	fstrcpy(pjob.user, lp_printjob_username(snum));
-	standard_sub_advanced(sharename,
+	userstr = talloc_sub_advanced(talloc_tos(),
+			      sharename,
 			      server_info->unix_info->sanitized_username,
 			      path, server_info->unix_token->gid,
 			      server_info->unix_info->sanitized_username,
 			      server_info->info->domain_name,
-			      pjob.user, sizeof(pjob.user));
+			      lp_printjob_username(snum));
+	if (userstr == NULL) {
+		werr = WERR_NOT_ENOUGH_MEMORY;
+		goto fail;
+	}
+	strlcpy(pjob.user, userstr, sizeof(pjob.user));
+	TALLOC_FREE(userstr);
 
 	fstrcpy(pjob.queuename, lp_const_servicename(snum));
 
