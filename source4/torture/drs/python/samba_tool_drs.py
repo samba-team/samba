@@ -210,6 +210,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
         self._disable_inbound_repl(self.dnsname_dc1)
         self._disable_inbound_repl(self.dnsname_dc2)
 
+        self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1)
         self._net_drs_replicate(DC=self.dnsname_dc1, fromDC=self.dnsname_dc2)
 
         # add an object with link on dc1
@@ -232,7 +233,7 @@ class SambaToolDrsTests(drs_base.DrsBaseTestCase):
 
         (obj_1, link_1) = get_num_obj_links(out)
 
-        self.assertEqual(obj_1, 2)
+        self.assertGreaterEqual(obj_1, 2)
         self.assertEqual(link_1, 1)
 
         # pull that change with --local into local db from dc2: shouldn't send link or object
