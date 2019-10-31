@@ -991,7 +991,7 @@ static struct loadparm_context *setup_lp_context(TALLOC_CTX *mem_ctx)
  callers without affecting the source string.
 ********************************************************************/
 
-char *lp_string(TALLOC_CTX *ctx, const char *s)
+char *lp_string(TALLOC_CTX *mem_ctx, const char *s)
 {
 	char *ret;
 
@@ -1007,14 +1007,14 @@ char *lp_string(TALLOC_CTX *ctx, const char *s)
 		return NULL;
 	}
 
-	ret = talloc_sub_basic(ctx,
+	ret = talloc_sub_basic(mem_ctx,
 			get_current_username(),
 			current_user_info.domain,
 			s);
 	if (trim_char(ret, '\"', '\"')) {
 		if (strchr(ret,'\"') != NULL) {
 			TALLOC_FREE(ret);
-			ret = talloc_sub_basic(ctx,
+			ret = talloc_sub_basic(mem_ctx,
 					get_current_username(),
 					current_user_info.domain,
 					s);
