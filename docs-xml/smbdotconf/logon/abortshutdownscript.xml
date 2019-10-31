@@ -1,6 +1,7 @@
 <samba:parameter name="abort shutdown script"
                  context="G"
-				 type="string"
+                 type="string"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This a full path name to a script called by <citerefentry><refentrytitle>smbd</refentrytitle>
