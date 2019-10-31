@@ -2721,6 +2721,8 @@ static void call_trans2findfirst(connection_struct *conn,
 	bool backup_priv = false;
 	bool as_root = false;
 	files_struct *fsp = NULL;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int ret;
 
 	if (total_params < 13) {
@@ -3008,9 +3010,9 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		a different TRANS2 call. */
 
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-		 directory,lp_dont_descend(talloc_tos(), SNUM(conn))));
+		 directory,lp_dont_descend(talloc_tos(), lp_sub, SNUM(conn))));
 	if (in_list(directory,
-			lp_dont_descend(talloc_tos(), SNUM(conn)),
+		    lp_dont_descend(talloc_tos(), lp_sub, SNUM(conn)),
 			conn->case_sensitive)) {
 		dont_descend = True;
 	}
@@ -3203,6 +3205,8 @@ static void call_trans2findnext(connection_struct *conn,
 	bool backup_priv = false; 
 	bool as_root = false;
 	files_struct *fsp = NULL;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	if (total_params < 13) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -3386,8 +3390,8 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		a different TRANS2 call. */
 
 	DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-		 directory,lp_dont_descend(ctx, SNUM(conn))));
-	if (in_list(directory,lp_dont_descend(ctx, SNUM(conn)),conn->case_sensitive))
+		 directory,lp_dont_descend(ctx, lp_sub, SNUM(conn))));
+	if (in_list(directory,lp_dont_descend(ctx, lp_sub, SNUM(conn)),conn->case_sensitive))
 		dont_descend = True;
 
 	p = pdata;

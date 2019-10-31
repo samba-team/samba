@@ -1774,6 +1774,8 @@ void reply_search(struct smb_request *req)
 	struct smbXsrv_connection *xconn = req->xconn;
 	struct smbd_server_connection *sconn = req->sconn;
 	files_struct *fsp = NULL;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	START_PROFILE(SMBsearch);
 
@@ -2011,8 +2013,8 @@ void reply_search(struct smb_request *req)
 		maxentries = MIN(maxentries, available_space/DIR_STRUCT_SIZE);
 
 		DEBUG(8,("dirpath=<%s> dontdescend=<%s>\n",
-			 directory,lp_dont_descend(ctx, SNUM(conn))));
-		if (in_list(directory, lp_dont_descend(ctx, SNUM(conn)),True)) {
+			 directory,lp_dont_descend(ctx, lp_sub, SNUM(conn))));
+		if (in_list(directory, lp_dont_descend(ctx, lp_sub, SNUM(conn)),True)) {
 			check_descend = True;
 		}
 
