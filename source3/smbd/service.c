@@ -826,7 +826,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		set_namearray( &conn->veto_list,
 			       lp_veto_files(talloc_tos(), snum));
 		set_namearray( &conn->hide_list,
-			       lp_hide_files(talloc_tos(), snum));
+			       lp_hide_files(talloc_tos(), lp_sub, snum));
 		set_namearray( &conn->veto_oplock_list,
 			       lp_veto_oplock_files(talloc_tos(), snum));
 		set_namearray( &conn->aio_write_behind_list,

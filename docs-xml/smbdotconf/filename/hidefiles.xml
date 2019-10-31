@@ -1,6 +1,7 @@
 <samba:parameter name="hide files"
-				 type="string"
+                 type="string"
                  context="S"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This is a list of files or directories that are not 
