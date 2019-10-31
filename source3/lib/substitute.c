@@ -863,22 +863,6 @@ char *talloc_sub_advanced(TALLOC_CTX *ctx,
 	return ret_string;
 }
 
-void standard_sub_advanced(const char *servicename, const char *user,
-			   const char *connectpath, gid_t gid,
-			   const char *smb_name, const char *domain_name,
-			   char *str, size_t len)
-{
-	char *s = talloc_sub_advanced(talloc_tos(),
-				servicename, user, connectpath,
-				gid, smb_name, domain_name, str);
-
-	if (!s) {
-		return;
-	}
-	strlcpy( str, s, len );
-	TALLOC_FREE( s );
-}
-
 /******************************************************************************
  version of standard_sub_basic() for string lists; uses talloc_sub_basic()
  for the work

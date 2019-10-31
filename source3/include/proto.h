@@ -185,10 +185,6 @@ char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
 			  const char *connectpath, gid_t gid,
 			  const char *smb_name, const char *domain_name,
 			  const char *str);
-void standard_sub_advanced(const char *servicename, const char *user,
-			   const char *connectpath, gid_t gid,
-			   const char *smb_name, const char *domain_name,
-			   char *str, size_t len);
 
 /* The following definitions come from lib/sysquotas.c  */
 
