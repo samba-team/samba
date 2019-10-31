@@ -1717,7 +1717,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 	/* don't strip out characters like '$' from the printername */
 
 	lpqcommand = talloc_string_sub2(ctx,
-			lp_lpq_command(talloc_tos(), snum),
+			lp_lpq_command(snum),
 			"%p",
 			lp_printername(talloc_tos(), snum),
 			false, false, false);
@@ -1737,7 +1737,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 	}
 
 	lprmcommand = talloc_string_sub2(ctx,
-			lp_lprm_command(talloc_tos(), snum),
+			lp_lprm_command(snum),
 			"%p",
 			lp_printername(talloc_tos(), snum),
 			false, false, false);
@@ -2199,7 +2199,7 @@ static bool print_job_delete1(struct tevent_context *ev,
 	{
 		result = (*(current_printif->job_delete))(
 			lp_printername(talloc_tos(), snum),
-			lp_lprm_command(talloc_tos(), snum),
+			lp_lprm_command(snum),
 			pjob);
 
 		/* Delete the tdb entry if the delete succeeded or the job hasn't
@@ -3027,7 +3027,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 
 	/* don't strip out characters like '$' from the printername */
 	lpq_cmd = talloc_string_sub2(tmp_ctx,
-				     lp_lpq_command(talloc_tos(), snum),
+				     lp_lpq_command(snum),
 				     "%p",
 				     lp_printername(talloc_tos(), snum),
 				     false, false, false);
