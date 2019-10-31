@@ -2867,7 +2867,8 @@ WERROR print_job_start(const struct auth_session_info *server_info,
 	fstrcpy(pjob.clientmachine, clientmachine);
 
 	fstrcpy(pjob.user, lp_printjob_username(snum));
-	standard_sub_advanced(sharename, server_info->unix_info->sanitized_username,
+	standard_sub_advanced(sharename,
+			      server_info->unix_info->sanitized_username,
 			      path, server_info->unix_token->gid,
 			      server_info->unix_info->sanitized_username,
 			      server_info->info->domain_name,
