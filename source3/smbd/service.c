@@ -270,13 +270,15 @@ static NTSTATUS find_forced_group(bool force_user,
 {
 	NTSTATUS result = NT_STATUS_NO_SUCH_GROUP;
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct dom_sid group_sid;
 	enum lsa_SidType type;
 	char *groupname;
 	bool user_must_be_member = False;
 	gid_t gid;
 
-	groupname = lp_force_group(talloc_tos(), snum);
+	groupname = lp_force_group(talloc_tos(), lp_sub, snum);
 	if (groupname == NULL) {
 		DEBUG(1, ("talloc_strdup failed\n"));
 		result = NT_STATUS_NO_MEMORY;
@@ -405,6 +407,8 @@ static NTSTATUS create_connection_session_info(struct smbd_server_connection *sc
 
 NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	NTSTATUS status;
 
 	if (*lp_force_user(talloc_tos(), snum)) {
@@ -457,7 +461,7 @@ NTSTATUS set_conn_force_user_group(connection_struct *conn, int snum)
 	 * any groupid stored for the connecting user.
 	 */
 
-	if (*lp_force_group(talloc_tos(), snum)) {
+	if (*lp_force_group(talloc_tos(), lp_sub, snum)) {
 
 		status = find_forced_group(
 			conn->force_user, snum, conn->session_info->unix_info->unix_name,

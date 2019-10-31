@@ -308,6 +308,8 @@ static bool change_to_user_impersonate(connection_struct *conn,
 				       const struct auth_session_info *session_info,
 				       uint64_t vuid)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int snum;
 	gid_t gid;
 	uid_t uid;
@@ -350,7 +352,7 @@ static bool change_to_user_impersonate(connection_struct *conn,
 	 * See if we should force group for this service. If so this overrides
 	 * any group set in the force user code.
 	 */
-	force_group_name = lp_force_group(talloc_tos(), snum);
+	force_group_name = lp_force_group(talloc_tos(), lp_sub, snum);
 	group_c = *force_group_name;
 
 	if ((group_c != '\0') && (conn->force_group_gid == (gid_t)-1)) {
