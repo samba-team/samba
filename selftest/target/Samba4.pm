@@ -2848,7 +2848,7 @@ sub restore_backup_file
 sub prepare_dc_testenv
 {
 	my ($self, $prefix, $dcname, $domain, $realm,
-		$password, $conf_options) = @_;
+		$password, $conf_options, $dnsupdate_options) = @_;
 
 	my $ctx = $self->provision_raw_prepare($prefix, "domain controller",
 					       $dcname,
@@ -2868,6 +2868,10 @@ sub prepare_dc_testenv
 	$ctx->{share} = "$ctx->{prefix_abs}/share";
 	push(@{$ctx->{directories}}, "$ctx->{share}");
 	push(@{$ctx->{directories}}, "$ctx->{share}/test1");
+
+	if (defined($dnsupdate_options)) {
+		$ctx->{samba_dnsupdate} .= $dnsupdate_options;
+	}
 
 	$ctx->{smb_conf_extra_options} = "
 	$conf_options
@@ -2919,12 +2923,14 @@ sub setup_restoredc
 	server min protocol = SMB2
 	client min protocol = SMB2
 	prefork children = 1";
+	my $dnsupdate_options = " --use-samba-tool --no-credentials";
 
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "restoredc",
 						    $dcvars->{DOMAIN},
 						    $dcvars->{REALM},
 						    $dcvars->{PASSWORD},
-						    $extra_conf);
+						    $extra_conf,
+						    $dnsupdate_options);
 
 	# create a backup of the 'backupfromdc'
 	my $backupdir = File::Temp->newdir();
@@ -2944,6 +2950,16 @@ sub setup_restoredc
 	unless ($ret == 0) {
 		return undef;
 	}
+
+	#
+	# As we create a the same domain as a clone
+	# we need a separate resolv.conf!
+	#
+	$ctx->{resolv_conf} = "$ctx->{etcdir}/resolv.conf";
+	$ctx->{dns_ipv4} = $ctx->{ipv4};
+	$ctx->{dns_ipv6} = $ctx->{ipv6};
+	Samba::mk_resolv_conf($ctx);
+	$env->{RESOLV_CONF} = $ctx->{resolv_conf};
 
 	# start samba for the restored DC
 	if (not defined($self->check_or_start($env))) {
@@ -3010,11 +3026,14 @@ sub setup_offlinebackupdc
 	my ($self, $prefix, $dcvars) = @_;
 	print "Preparing OFFLINE BACKUP DC...\n";
 	my $extra_conf = "prefork children = 1";
+	my $dnsupdate_options = " --use-samba-tool --no-credentials";
 
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, "offlinebackupdc",
 						    $dcvars->{DOMAIN},
 						    $dcvars->{REALM},
-						    $dcvars->{PASSWORD}, $extra_conf);
+						    $dcvars->{PASSWORD},
+						    $extra_conf,
+						    $dnsupdate_options);
 
 	# create an offline backup of the 'backupfromdc' target
 	my $backupdir = File::Temp->newdir();
@@ -3034,6 +3053,16 @@ sub setup_offlinebackupdc
 	unless ($ret == 0) {
 		return undef;
 	}
+
+	#
+	# As we create a the same domain as a clone
+	# we need a separate resolv.conf!
+	#
+	$ctx->{resolv_conf} = "$ctx->{etcdir}/resolv.conf";
+	$ctx->{dns_ipv4} = $ctx->{ipv4};
+	$ctx->{dns_ipv6} = $ctx->{ipv6};
+	Samba::mk_resolv_conf($ctx);
+	$env->{RESOLV_CONF} = $ctx->{resolv_conf};
 
 	# re-create the testenv's krb5.conf (the restore may have overwritten it)
 	Samba::mk_krb5_conf($ctx);
@@ -3157,6 +3186,7 @@ sub setup_customdc
 	my $dc_name = "customdc";
 	my $password = "locDCpass1";
 	my $backup_file = $ENV{'BACKUP_FILE'};
+	my $dnsupdate_options = " --use-samba-tool --no-credentials";
 
 	# user must specify a backup file to restore via an ENV variable, i.e.
 	# BACKUP_FILE=backup-blah.tar.bz2 SELFTEST_TESTENV=customdc make testenv
@@ -3174,7 +3204,8 @@ sub setup_customdc
 
 	# create a placeholder directory and smb.conf, as well as the env vars.
 	my ($env, $ctx) = $self->prepare_dc_testenv($prefix, $dc_name,
-						    $domain, $realm, $password, "");
+						    $domain, $realm, $password, "",
+						    $dnsupdate_options);
 
 	# restore the specified backup file to populate the testenv
 	my $restore_dir = abs_path($prefix);
@@ -3184,6 +3215,16 @@ sub setup_customdc
 	unless ($ret == 0) {
 		return undef;
 	}
+
+	#
+	# As we create a the same domain as a clone
+	# we need a separate resolv.conf!
+	#
+	$ctx->{resolv_conf} = "$ctx->{etcdir}/resolv.conf";
+	$ctx->{dns_ipv4} = $ctx->{ipv4};
+	$ctx->{dns_ipv6} = $ctx->{ipv6};
+	Samba::mk_resolv_conf($ctx);
+	$env->{RESOLV_CONF} = $ctx->{resolv_conf};
 
 	# Change the admin password to the testenv default, just in case it's
 	# different, or in case this was a --no-secrets backup
