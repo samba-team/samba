@@ -180,7 +180,7 @@ char *talloc_sub_specified(TALLOC_CTX *mem_ctx,
 			const char *domain,
 			uid_t uid,
 			gid_t gid);
-char *talloc_sub_advanced(TALLOC_CTX *mem_ctx,
+char *talloc_sub_full(TALLOC_CTX *mem_ctx,
 			  const char *servicename, const char *user,
 			  const char *connectpath, gid_t gid,
 			  const char *smb_name, const char *domain_name,

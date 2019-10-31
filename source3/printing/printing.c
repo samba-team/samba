@@ -1724,7 +1724,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 	if (!lpqcommand) {
 		return;
 	}
-	lpqcommand = talloc_sub_advanced(ctx,
+	lpqcommand = talloc_sub_full(ctx,
 			lp_servicename(talloc_tos(), snum),
 			current_user_info.unix_name,
 			"",
@@ -1744,7 +1744,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 	if (!lprmcommand) {
 		return;
 	}
-	lprmcommand = talloc_sub_advanced(ctx,
+	lprmcommand = talloc_sub_full(ctx,
 			lp_servicename(talloc_tos(), snum),
 			current_user_info.unix_name,
 			"",
@@ -2866,7 +2866,7 @@ WERROR print_job_start(const struct auth_session_info *server_info,
 
 	fstrcpy(pjob.clientmachine, clientmachine);
 
-	userstr = talloc_sub_advanced(talloc_tos(),
+	userstr = talloc_sub_full(talloc_tos(),
 			      sharename,
 			      server_info->unix_info->sanitized_username,
 			      path, server_info->unix_token->gid,
@@ -3035,7 +3035,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 		status = NT_STATUS_PRINT_CANCELLED;
 		goto fail;
 	}
-	lpq_cmd = talloc_sub_advanced(tmp_ctx,
+	lpq_cmd = talloc_sub_full(tmp_ctx,
 				      lp_servicename(talloc_tos(), snum),
 				      current_user_info.unix_name,
 				      "",

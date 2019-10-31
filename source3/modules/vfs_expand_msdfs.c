@@ -154,7 +154,7 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	targethost = talloc_sub_advanced(ctx,
+	targethost = talloc_sub_full(ctx,
 				lp_servicename(talloc_tos(), SNUM(conn)),
 				conn->session_info->unix_info->unix_name,
 				conn->connectpath,
