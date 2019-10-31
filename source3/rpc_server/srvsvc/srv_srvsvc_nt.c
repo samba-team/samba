@@ -226,7 +226,7 @@ static void init_srv_share_info_1(struct pipes_struct *p,
 	char *remark = lp_comment(p->mem_ctx, snum);
 
 	if (remark) {
-		remark = talloc_sub_advanced(
+		remark = talloc_sub_full(
 			p->mem_ctx, lp_servicename(talloc_tos(), snum),
 			get_current_username(), lp_path(talloc_tos(), snum),
 			p->session_info->unix_token->uid, get_current_username(),
@@ -254,7 +254,7 @@ static void init_srv_share_info_2(struct pipes_struct *p,
 
 	remark = lp_comment(p->mem_ctx, snum);
 	if (remark) {
-		remark = talloc_sub_advanced(
+		remark = talloc_sub_full(
 			p->mem_ctx, lp_servicename(talloc_tos(), snum),
 			get_current_username(), lp_path(talloc_tos(), snum),
 			p->session_info->unix_token->uid, get_current_username(),
@@ -319,7 +319,7 @@ static void init_srv_share_info_501(struct pipes_struct *p,
 	char *remark = lp_comment(p->mem_ctx, snum);
 
 	if (remark) {
-		remark = talloc_sub_advanced(
+		remark = talloc_sub_full(
 			p->mem_ctx, lp_servicename(talloc_tos(), snum),
 			get_current_username(), lp_path(talloc_tos(), snum),
 			p->session_info->unix_token->uid, get_current_username(),
@@ -353,7 +353,7 @@ static void init_srv_share_info_502(struct pipes_struct *p,
 	char *remark = lp_comment(ctx, snum);
 
 	if (remark) {
-		remark = talloc_sub_advanced(
+		remark = talloc_sub_full(
 			p->mem_ctx, lp_servicename(talloc_tos(), snum),
 			get_current_username(), lp_path(talloc_tos(), snum),
 			p->session_info->unix_token->uid, get_current_username(),
@@ -394,7 +394,7 @@ static void init_srv_share_info_1004(struct pipes_struct *p,
 	char *remark = lp_comment(p->mem_ctx, snum);
 
 	if (remark) {
-		remark = talloc_sub_advanced(
+		remark = talloc_sub_full(
 			p->mem_ctx, lp_servicename(talloc_tos(), snum),
 			get_current_username(), lp_path(talloc_tos(), snum),
 			p->session_info->unix_token->uid, get_current_username(),

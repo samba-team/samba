@@ -115,7 +115,7 @@ static int CopyExpanded(connection_struct *conn,
 		*p_space_remaining = 0;
 		return 0;
 	}
-	buf = talloc_sub_advanced(ctx,
+	buf = talloc_sub_full(ctx,
 				  lp_servicename(ctx, SNUM(conn)),
 				conn->session_info->unix_info->unix_name,
 				conn->connectpath,
@@ -166,7 +166,7 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 	if (!buf) {
 		return 0;
 	}
-	buf = talloc_sub_advanced(ctx,
+	buf = talloc_sub_full(ctx,
 				  lp_servicename(ctx, SNUM(conn)),
 				conn->session_info->unix_info->unix_name,
 				conn->connectpath,

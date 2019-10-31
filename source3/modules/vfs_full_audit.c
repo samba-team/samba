@@ -485,7 +485,7 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 	if (!prefix) {
 		return NULL;
 	}
-	result = talloc_sub_advanced(ctx,
+	result = talloc_sub_full(ctx,
 			lp_servicename(talloc_tos(), SNUM(conn)),
 			conn->session_info->unix_info->unix_name,
 			conn->connectpath,
