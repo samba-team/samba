@@ -73,14 +73,17 @@ static int print_run_command(int snum, const char* printername, bool do_sub,
 		return -1;
 	}
 
+	syscmd = lp_string(ctx, syscmd);
+	if (syscmd == NULL) {
+		return -1;
+	}
+
 	if (do_sub && snum != -1) {
-		syscmd = talloc_sub_full(ctx,
+		syscmd = talloc_sub_advanced(ctx,
 				lp_servicename(talloc_tos(), snum),
 				current_user_info.unix_name,
 				"",
 				get_current_gid(NULL),
-				get_current_username(),
-				current_user_info.domain,
 				syscmd);
 		if (!syscmd) {
 			return -1;
@@ -120,7 +123,7 @@ static int generic_job_pause(int snum, struct printjob *pjob)
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
 	return print_run_command(snum, lp_printername(talloc_tos(), snum), True,
-				 lp_lppause_command(talloc_tos(), snum), NULL,
+				 lp_lppause_command(snum), NULL,
 				 "%j", jobstr,
 				 NULL);
 }
@@ -135,7 +138,7 @@ static int generic_job_resume(int snum, struct printjob *pjob)
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
 	return print_run_command(snum, lp_printername(talloc_tos(), snum), True,
-				 lp_lpresume_command(talloc_tos(), snum), NULL,
+				 lp_lpresume_command(snum), NULL,
 				 "%j", jobstr,
 				 NULL);
 }
@@ -257,7 +260,7 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 
 	/* send it to the system spooler */
 	ret = print_run_command(snum, lp_printername(talloc_tos(), snum), True,
-			lp_print_command(talloc_tos(), snum), NULL,
+			lp_print_command(snum), NULL,
 			"%s", p,
 			"%J", jobname,
 			"%f", p,
@@ -310,7 +313,7 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 static int generic_queue_pause(int snum)
 {
 	return print_run_command(snum, lp_printername(talloc_tos(), snum), True,
-				 lp_queuepause_command(talloc_tos(), snum), NULL, NULL);
+				 lp_queuepause_command(snum), NULL, NULL);
 }
 
 /****************************************************************************
@@ -319,7 +322,7 @@ static int generic_queue_pause(int snum)
 static int generic_queue_resume(int snum)
 {
 	return print_run_command(snum, lp_printername(talloc_tos(), snum), True,
-				 lp_queueresume_command(talloc_tos(), snum), NULL, NULL);
+				 lp_queueresume_command(snum), NULL, NULL);
 }
 
 /****************************************************************************

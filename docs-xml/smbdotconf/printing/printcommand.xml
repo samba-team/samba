@@ -1,6 +1,7 @@
 <samba:parameter name="print command"
                  context="S"
                  type="string"
+                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>After a print job has finished spooling to 

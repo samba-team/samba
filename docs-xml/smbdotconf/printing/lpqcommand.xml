@@ -1,6 +1,7 @@
 <samba:parameter name="lpq command"
                  context="S"
                  type="string"
+                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
     <para>This parameter specifies the command to be 
