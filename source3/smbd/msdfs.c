@@ -1009,6 +1009,8 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			   bool *self_referralp)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct conn_struct_tos *c = NULL;
 	struct connection_struct *conn = NULL;
 	char *targetpath = NULL;
@@ -1058,7 +1060,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		}
 	}
 
-	if (!lp_msdfs_root(snum) && (*lp_msdfs_proxy(talloc_tos(), snum) == '\0')) {
+	if (!lp_msdfs_root(snum) && (*lp_msdfs_proxy(talloc_tos(), lp_sub, snum) == '\0')) {
 		DEBUG(3,("get_referred_path: |%s| in dfs path %s is not "
 			"a dfs root.\n",
 			pdp->servicename, dfs_path));
@@ -1079,7 +1081,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		struct referral *ref;
 		int refcount;
 
-		if (*lp_msdfs_proxy(talloc_tos(), snum) == '\0') {
+		if (*lp_msdfs_proxy(talloc_tos(), lp_sub, snum) == '\0') {
 			TALLOC_FREE(frame);
 			return self_ref(ctx,
 					dfs_path,
@@ -1094,7 +1096,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
  		 */
 
 		tmp = talloc_asprintf(frame, "msdfs:%s",
-				      lp_msdfs_proxy(frame, snum));
+				      lp_msdfs_proxy(frame, lp_sub, snum));
 		if (tmp == NULL) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
@@ -1495,12 +1497,14 @@ bool remove_msdfs_link(const struct junction_map *jucn)
 static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	size_t cnt = 0;
 	DIR *dirp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
 	const char *connect_path = lp_path(frame, snum);
-	const char *msdfs_proxy = lp_msdfs_proxy(frame, snum);
+	const char *msdfs_proxy = lp_msdfs_proxy(frame, lp_sub, snum);
 	struct conn_struct_tos *c = NULL;
 	connection_struct *conn = NULL;
 	NTSTATUS status;
@@ -1585,13 +1589,15 @@ static int form_junctions(TALLOC_CTX *ctx,
 				size_t jn_remain)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	size_t cnt = 0;
 	DIR *dirp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
 	const char *connect_path = lp_path(frame, snum);
 	char *service_name = lp_servicename(frame, snum);
-	const char *msdfs_proxy = lp_msdfs_proxy(frame, snum);
+	const char *msdfs_proxy = lp_msdfs_proxy(frame, lp_sub, snum);
 	struct conn_struct_tos *c = NULL;
 	connection_struct *conn = NULL;
 	struct referral *ref = NULL;

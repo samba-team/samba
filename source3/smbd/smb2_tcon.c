@@ -191,6 +191,8 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				       uint32_t *out_tree_id,
 				       bool *disconnect)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct smbXsrv_connection *conn = req->xconn;
 	const char *share = in_path;
 	char *service = NULL;
@@ -276,7 +278,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 
 	/* Handle non-DFS clients attempting connections to msdfs proxy */
 	if (lp_host_msdfs()) {
-		char *proxy = lp_msdfs_proxy(talloc_tos(), snum);
+		char *proxy = lp_msdfs_proxy(talloc_tos(), lp_sub, snum);
 
 		if ((proxy != NULL) && (*proxy != '\0')) {
 			DBG_NOTICE("refusing connection to dfs proxy share "

@@ -1027,6 +1027,8 @@ connection_struct *make_connection(struct smb_request *req,
 				   NTSTATUS *status)
 {
 	struct smbd_server_connection *sconn = req->sconn;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	uid_t euid;
 	struct user_struct *vuser = NULL;
 	char *service = NULL;
@@ -1127,10 +1129,10 @@ connection_struct *make_connection(struct smb_request *req,
 	}
 
 	/* Handle non-Dfs clients attempting connections to msdfs proxy */
-	if (lp_host_msdfs() && (*lp_msdfs_proxy(talloc_tos(), snum) != '\0'))  {
+	if (lp_host_msdfs() && (*lp_msdfs_proxy(talloc_tos(), lp_sub, snum) != '\0'))  {
 		DEBUG(3, ("refusing connection to dfs proxy share '%s' "
 			  "(pointing to %s)\n", 
-			service, lp_msdfs_proxy(talloc_tos(), snum)));
+			service, lp_msdfs_proxy(talloc_tos(), lp_sub, snum)));
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
