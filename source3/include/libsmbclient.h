@@ -1647,7 +1647,7 @@ int smbc_getdents(unsigned int dh, struct smbc_dirent *dirp, int count);
 struct smbc_dirent* smbc_readdir(unsigned int dh);
 
 /**@ingroup directory
- * Works similar as smbc_readdir but returns more information about file.
+ * Works similar as smbc_readdir() but returns more information about file.
  *
  * @param dh        Valid directory as returned by smbc_opendir()
  *
@@ -1661,7 +1661,7 @@ struct smbc_dirent* smbc_readdir(unsigned int dh);
 const struct libsmb_file_info *smbc_readdirplus(unsigned int dh);
 
 /**@ingroup directory
- * Works similar as smbc_readdirplus as well as fills up stat structure if
+ * Works similar as smbc_readdirplus() as well as fills up stat structure if
  * provided.
  *
  * @param dh        Valid directory as returned by smbc_opendir()
