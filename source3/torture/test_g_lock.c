@@ -25,6 +25,7 @@
 #include "lib/util/server_id.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/util_tdb.h"
+#include "lib/util/tevent_ntstatus.h"
 
 static bool get_g_lock_ctx(TALLOC_CTX *mem_ctx,
 			   struct tevent_context **ev,
@@ -1205,6 +1206,81 @@ fail:
 	TALLOC_FREE(msg);
 	TALLOC_FREE(ev);
 	return ret;
+}
+
+bool run_g_lock8(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct g_lock_ctx *ctx = NULL;
+	struct tevent_req *req = NULL;
+	TDB_DATA lockname = string_term_tdb_data("lock8");
+	NTSTATUS status;
+	bool ok;
+
+	ok = get_g_lock_ctx(talloc_tos(), &ev, &msg, &ctx);
+	if (!ok) {
+		fprintf(stderr, "get_g_lock_ctx failed");
+		return false;
+	}
+
+	req = g_lock_watch_data_send(
+		ev, ev, ctx, lockname, (struct server_id) { .pid = 0 });
+	if (req == NULL) {
+		fprintf(stderr, "get_g_lock_ctx failed");
+		return false;
+	}
+
+	status = g_lock_lock(
+		ctx,
+		lockname,
+		G_LOCK_WRITE,
+		(struct timeval) { .tv_sec = 999 });
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,
+			"g_lock_lock failed: %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = g_lock_write_data(
+		ctx, lockname, lockname.dptr, lockname.dsize);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,
+			"g_lock_write_data failed: %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = g_lock_write_data(ctx, lockname, NULL, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,
+			"g_lock_write_data failed: %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	status = g_lock_unlock(ctx, lockname);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,
+			"g_lock_unlock failed: %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	ok = tevent_req_poll_ntstatus(req, ev, &status);
+	if (!ok) {
+		fprintf(stderr, "tevent_req_poll_ntstatus failed\n");
+		return false;
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,
+			"tevent_req_poll_ntstatus failed: %s\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	return true;
 }
 
 extern int torture_numops;

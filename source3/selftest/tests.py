@@ -233,6 +233,7 @@ local_tests = [
     "LOCAL-G-LOCK5",
     "LOCAL-G-LOCK6",
     "LOCAL-G-LOCK7",
+    "LOCAL-G-LOCK8",
     "LOCAL-NAMEMAP-CACHE1",
     "LOCAL-IDMAP-CACHE1",
     "LOCAL-hex_encode_buf",
