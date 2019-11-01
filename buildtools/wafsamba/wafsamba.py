@@ -360,12 +360,23 @@ def SAMBA_BINARY(bld, binname, source,
                  subdir=None,
                  install=True,
                  install_path=None,
-                 enabled=True):
+                 enabled=True,
+                 fuzzer=False):
     '''define a Samba binary'''
 
     if not enabled:
         SET_TARGET_TYPE(bld, binname, 'DISABLED')
         return
+
+    # Fuzzing builds do not build normal binaries
+    # however we must build asn1compile etc
+
+    if not use_hostcc and bld.env.enable_libfuzzer != fuzzer:
+        SET_TARGET_TYPE(bld, binname, 'DISABLED')
+        return
+
+    if fuzzer:
+        install = False
 
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
         return

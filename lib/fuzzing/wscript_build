@@ -9,47 +9,34 @@ bld.SAMBA_SUBSYSTEM('fuzzing',
 bld.SAMBA_BINARY('fuzz_tiniparser',
                  source='fuzz_tiniparser.c',
                  deps='fuzzing tiniparser talloc',
-                 install=False,
-                 enabled=bld.env.enable_libfuzzer)
+                 fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_oLschema2ldif',
                  source='fuzz_oLschema2ldif.c',
                  deps='fuzzing oLschema2ldif-lib',
-                 install=False,
-                 enabled=bld.env.enable_libfuzzer,
-                 )
+                 fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_reg_parse',
                  source='fuzz_reg_parse.c',
                  deps='fuzzing samba3-util smbconf REGFIO',
-                 install=False,
-                 enabled=bld.env.enable_libfuzzer,
-                 )
+                 fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_regfio',
                  source='fuzz_regfio.c',
                  deps='fuzzing samba3-util smbconf REGFIO',
-                 install=False,
-                 enabled=bld.env.enable_libfuzzer,
-                 )
+                 fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_lzxpress',
                  source='fuzz_lzxpress.c',
                  deps='fuzzing LZXPRESS',
-                 install=False,
-                 enabled=bld.env.enable_libfuzzer,
-                 )
+                 fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_ldap_decode',
                  source='fuzz_ldap_decode.c',
                  deps='fuzzing cli-ldap',
-                 install=False,
-                 enabled=bld.env.enable_libfuzzer,
-                 )
+                 fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_ldb_parse_tree',
                  source='fuzz_ldb_parse_tree.c',
                  deps='fuzzing ldb',
-                 install=False,
-                 enabled=bld.env.enable_libfuzzer
-                 )
+                 fuzzer=True)
