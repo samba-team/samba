@@ -27,7 +27,7 @@ interface file_quota {
 	} file_quota_information;
 }
 
-interface smb2_query_quoata
+interface smb2_query_quota
 {
 	/* MS-SMB2 2.2.37.1 */
 	typedef [public] struct {
