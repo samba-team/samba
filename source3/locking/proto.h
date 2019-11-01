@@ -23,6 +23,8 @@
 #ifndef _LOCKING_PROTO_H_
 #define _LOCKING_PROTO_H_
 
+#include <tdb.h>
+
 /* The following definitions come from locking/brlock.c  */
 
 void brl_init(bool read_only);
@@ -142,7 +144,7 @@ bool file_has_read_lease(struct files_struct *fsp);
 struct db_record;
 NTSTATUS share_mode_do_locked(
 	struct file_id id,
-	void (*fn)(struct db_record *rec,
+	void (*fn)(TDB_DATA value,
 		   bool *modified_dependent,
 		   void *private_data),
 	void *private_data);

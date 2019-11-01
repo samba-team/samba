@@ -225,10 +225,9 @@ struct fsp_update_share_mode_flags_state {
 };
 
 static void fsp_update_share_mode_flags_fn(
-	struct db_record *rec, bool *modified_dependent, void *private_data)
+	TDB_DATA value, bool *modified_dependent, void *private_data)
 {
 	struct fsp_update_share_mode_flags_state *state = private_data;
-	TDB_DATA value = dbwrap_record_get_value(rec);
 	DATA_BLOB blob = { .data = value.dptr, .length = value.dsize };
 	uint64_t seq;
 
@@ -715,7 +714,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 }
 
 struct share_mode_do_locked_state {
-	void (*fn)(struct db_record *rec,
+	void (*fn)(TDB_DATA value,
 		   bool *modified_dependent,
 		   void *private_data);
 	void *private_data;
@@ -727,6 +726,7 @@ static void share_mode_do_locked_fn(struct db_record *rec,
 	struct share_mode_do_locked_state *state = private_data;
 	bool modified_dependent = false;
 	bool reset_static_share_mode_record = false;
+	TDB_DATA value = dbwrap_record_get_value(rec);
 
 	if (static_share_mode_record == NULL) {
 		static_share_mode_record = rec;
@@ -736,7 +736,7 @@ static void share_mode_do_locked_fn(struct db_record *rec,
 		SMB_ASSERT(static_share_mode_record == rec);
 	}
 
-	state->fn(rec, &modified_dependent, state->private_data);
+	state->fn(value, &modified_dependent, state->private_data);
 
 	if (modified_dependent) {
 		dbwrap_watched_wakeup(rec);
@@ -749,7 +749,7 @@ static void share_mode_do_locked_fn(struct db_record *rec,
 
 NTSTATUS share_mode_do_locked(
 	struct file_id id,
-	void (*fn)(struct db_record *rec,
+	void (*fn)(TDB_DATA value,
 		   bool *modified_dependent,
 		   void *private_data),
 	void *private_data)
@@ -759,7 +759,7 @@ NTSTATUS share_mode_do_locked(
 
 	if (static_share_mode_record != NULL) {
 		bool modified_dependent = false;
-		TDB_DATA static_key;
+		TDB_DATA static_key, static_value;
 		int cmp;
 
 		static_key = dbwrap_record_get_key(static_share_mode_record);
@@ -771,9 +771,9 @@ NTSTATUS share_mode_do_locked(
 			return NT_STATUS_INVALID_LOCK_SEQUENCE;
 		}
 
-		fn(static_share_mode_record,
-		   &modified_dependent,
-		   private_data);
+		static_value = dbwrap_record_get_value(static_share_mode_record);
+
+		fn(static_value, &modified_dependent, private_data);
 
 		if (modified_dependent) {
 			dbwrap_watched_wakeup(static_share_mode_record);
@@ -798,7 +798,7 @@ NTSTATUS share_mode_do_locked(
 	return NT_STATUS_OK;
 }
 
-static void share_mode_wakeup_waiters_fn(struct db_record *rec,
+static void share_mode_wakeup_waiters_fn(TDB_DATA value,
 					 bool *modified_dependent,
 					 void *private_data)
 {

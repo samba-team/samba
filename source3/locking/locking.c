@@ -247,7 +247,7 @@ struct do_lock_state {
 };
 
 static void do_lock_fn(
-	struct db_record *rec,
+	TDB_DATA value,
 	bool *modified_dependent,
 	void *private_data)
 {
