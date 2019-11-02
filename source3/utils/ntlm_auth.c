@@ -731,7 +731,6 @@ static NTSTATUS ntlm_auth_generate_session_info(struct auth4_context *auth_conte
 						struct auth_session_info **session_info_out)
 {
 	const char *unix_username = (const char *)server_returned_info;
-	bool ok;
 	struct dom_sid *sids = NULL;
 	struct auth_session_info *session_info = NULL;
 
@@ -764,21 +763,9 @@ static NTSTATUS ntlm_auth_generate_session_info(struct auth4_context *auth_conte
 		TALLOC_FREE(session_info);
 		return NT_STATUS_NO_MEMORY;
 	}
-	ok = dom_sid_parse(SID_WORLD, &sids[0]);
-	if (!ok) {
-		TALLOC_FREE(session_info);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	ok = dom_sid_parse(SID_NT_NETWORK, &sids[1]);
-	if (!ok) {
-		TALLOC_FREE(session_info);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
-	ok = dom_sid_parse(SID_NT_AUTHENTICATED_USERS, &sids[2]);
-	if (!ok) {
-		TALLOC_FREE(session_info);
-		return NT_STATUS_INTERNAL_ERROR;
-	}
+	sid_copy(&sids[0], &global_sid_World);
+	sid_copy(&sids[1], &global_sid_Network);
+	sid_copy(&sids[2], &global_sid_Authenticated_Users);
 
 	session_info->security_token->num_sids = talloc_array_length(sids);
 	session_info->security_token->sids = sids;
