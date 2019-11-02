@@ -66,6 +66,31 @@ test_smbspool_authinforequired_none()
 	return 0
 }
 
+test_smbspool_authinforequired_unknown()
+{
+	cmd='$samba_smbspool_krb5 smb://$SERVER_IP/print4 200 $USERNAME "Testprint" 1 "options" $SRCDIR/testdata/printing/example.ps 2>&1'
+
+	# smbspool_krb5_wrapper must ignore AUTH_INFO_REQUIRED unknown to him and pass the task to smbspool
+	# smbspool must fail with NT_STATUS_ACCESS_DENIED (22)
+	# "jjf4wgmsbc0" is just a random string
+	AUTH_INFO_REQUIRED="jjf4wgmsbc0"
+	export AUTH_INFO_REQUIRED
+	eval echo "$cmd"
+	out=$(eval $cmd)
+	ret=$?
+	unset AUTH_INFO_REQUIRED
+
+	case "$ret" in
+		2 ) return 0 ;;
+		* )
+			echo "ret=$ret"
+			echo "$out"
+			echo "failed to test $smbspool_krb5 against unknown value of AUTH_INFO_REQUIRED"
+			return 1
+		;;
+	esac
+}
+
 #
 # The test enviornment uses 'vlp' (virtual lp) as the printing backend.
 #
@@ -185,6 +210,10 @@ testit "smbspool_krb5_wrapper no args" \
 
 testit "smbspool_krb5_wrapper AuthInfoRequired=none" \
 	test_smbspool_authinforequired_none || \
+	failed=$(expr $failed + 1)
+
+testit "smbspool_krb5_wrapper AuthInfoRequired=(sth unknown)" \
+	test_smbspool_authinforequired_unknown || \
 	failed=$(expr $failed + 1)
 
 testit "smbspool print example.ps" \

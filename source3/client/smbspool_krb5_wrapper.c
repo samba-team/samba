@@ -145,36 +145,56 @@ int main(int argc, char *argv[])
 		snprintf(device_uri, sizeof(device_uri), "%s", env);
 	}
 
-	/* Check if AuthInfoRequired is set to negotiate */
+	/* We must handle the following values of AUTH_INFO_REQUIRED:
+	 *  none: Anonymous/guest printing
+	 *  username,password: A username (of the form "username" or "DOMAIN\username")
+	 *                     and password are required
+	 *  negotiate: Kerberos authentication
+	 *  NULL (not set): will never happen when called from cupsd
+	 * https://www.cups.org/doc/spec-ipp.html#auth-info-required
+	 * https://github.com/apple/cups/issues/5674
+	 */
 	env = getenv("AUTH_INFO_REQUIRED");
 
         /* If not set, then just call smbspool. */
 	if (env == NULL || env[0] == 0) {
 		CUPS_SMB_DEBUG("AUTH_INFO_REQUIRED is not set - "
-			       "execute smbspool");
+			       "executing smbspool");
+		/* Pass this printing task to smbspool without Kerberos auth */
 		goto smbspool;
 	} else {
 		CUPS_SMB_DEBUG("AUTH_INFO_REQUIRED=%s", env);
 
+		/* First test the value of AUTH_INFO_REQUIRED
+		 * against known possible values
+		 */
 		cmp = strcmp(env, "none");
 		if (cmp == 0) {
 			CUPS_SMB_DEBUG("Authenticate using none (anonymous) - "
-				       "execute smbspool");
+				       "executing smbspool");
 			goto smbspool;
 		}
 
 		cmp = strcmp(env, "username,password");
 		if (cmp == 0) {
 			CUPS_SMB_DEBUG("Authenticate using username/password - "
-				       "execute smbspool");
+				       "executing smbspool");
 			goto smbspool;
 		}
 
+		/* Now, if 'goto smbspool' still has not happened,
+		 * there are only two variants left:
+		 * 1) AUTH_INFO_REQUIRED is "negotiate" and then
+		 *    we have to continue working
+		 * 2) or it is something not known to us, then Kerberos
+		 *    authentication is not required, so just also pass
+		 *    this task to smbspool
+		 */
 		cmp = strcmp(env, "negotiate");
 		if (cmp != 0) {
-			CUPS_SMB_ERROR("Authentication unsupported");
-			fprintf(stderr, "ATTR: auth-info-required=negotiate\n");
-			return CUPS_BACKEND_AUTH_REQUIRED;
+			CUPS_SMB_DEBUG("Value of AUTH_INFO_REQUIRED is not known "
+				       "to smbspool_krb5_wrapper, executing smbspool");
+			goto smbspool;
 		}
 
 		snprintf(auth_info_required,
