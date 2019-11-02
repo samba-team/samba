@@ -699,8 +699,8 @@ smb_connect(struct cli_state **output_cli,
 	if (strcmp(auth_info_required, "negotiate") == 0) {
 		if (!kerberos_ccache_is_valid()) {
 			fprintf(stderr,
-				"ERROR: No valid Kerberos credential cache "
-				"found!\n");
+				"ERROR: No valid Kerberos credential cache found! "
+				"Using smbspool_krb5_wrapper may help.\n");
 			return NT_STATUS_LOGON_FAILURE;
 		}
 		user = jobusername;
