@@ -379,7 +379,7 @@ DATA_BLOB get_challenge(void)
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
-static bool parse_ntlm_auth_domain_user(const char *domuser, fstring domain, 
+static bool parse_ntlm_auth_domain_user(const char *domuser, fstring domain,
 				     fstring user)
 {
 
@@ -420,7 +420,7 @@ static bool get_require_membership_sid(void) {
 
 	ret = wbcLookupName(domain, name, &sid, &type);
 	if (!WBC_ERROR_IS_OK(ret)) {
-		DEBUG(0, ("Winbindd lookupname failed to resolve %s into a SID!\n", 
+		DEBUG(0, ("Winbindd lookupname failed to resolve %s into a SID!\n",
 			  require_membership_of));
 		return False;
 	}
@@ -435,8 +435,8 @@ static bool get_require_membership_sid(void) {
 	return False;
 }
 
-/* 
- * Get some configuration from pam_winbind.conf to see if we 
+/*
+ * Get some configuration from pam_winbind.conf to see if we
  * need to contact trusted domain
  */
 
@@ -566,14 +566,14 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
         fstrcpy(request.data.auth_crap.user, username);
 	fstrcpy(request.data.auth_crap.domain, domain);
 
-	fstrcpy(request.data.auth_crap.workstation, 
+	fstrcpy(request.data.auth_crap.workstation,
 		workstation);
 
 	memcpy(request.data.auth_crap.chal, challenge->data, MIN(challenge->length, 8));
 
 	if (lm_response && lm_response->length) {
-		memcpy(request.data.auth_crap.lm_resp, 
-		       lm_response->data, 
+		memcpy(request.data.auth_crap.lm_resp,
+		       lm_response->data,
 		       MIN(lm_response->length, sizeof(request.data.auth_crap.lm_resp)));
 		request.data.auth_crap.lm_resp_len = lm_response->length;
 	}
@@ -615,7 +615,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 
 	nt_status = (NT_STATUS(response.data.auth.nt_status));
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		if (error_string) 
+		if (error_string)
 			*error_string = smb_xstrdup(response.data.auth.error_string);
 		*pauthoritative = response.data.auth.authoritative;
 		winbindd_free_response(&response);
@@ -623,11 +623,11 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	}
 
 	if ((flags & WBFLAG_PAM_LMKEY) && lm_key) {
-		memcpy(lm_key, response.data.auth.first_8_lm_hash, 
+		memcpy(lm_key, response.data.auth.first_8_lm_hash,
 		       sizeof(response.data.auth.first_8_lm_hash));
 	}
 	if ((flags & WBFLAG_PAM_USER_SESSION_KEY) && user_session_key) {
-		memcpy(user_session_key, response.data.auth.user_session_key, 
+		memcpy(user_session_key, response.data.auth.user_session_key,
 			sizeof(response.data.auth.user_session_key));
 	}
 
@@ -920,10 +920,10 @@ static NTSTATUS ntlm_auth_get_challenge(struct auth4_context *auth_ctx,
 }
 
 /**
- * NTLM2 authentication modifies the effective challenge, 
+ * NTLM2 authentication modifies the effective challenge,
  * @param challenge The new challenge value
  */
-static NTSTATUS ntlm_auth_set_challenge(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by) 
+static NTSTATUS ntlm_auth_set_challenge(struct auth4_context *auth_ctx, const uint8_t chal[8], const char *set_by)
 {
 	auth_ctx->challenge.set_by = talloc_strdup(auth_ctx, set_by);
 	NT_STATUS_HAVE_NO_MEMORY(auth_ctx->challenge.set_by);
@@ -935,32 +935,32 @@ static NTSTATUS ntlm_auth_set_challenge(struct auth4_context *auth_ctx, const ui
 }
 
 /**
- * Check the password on an NTLMSSP login.  
+ * Check the password on an NTLMSSP login.
  *
  * Return the session keys used on the connection.
  */
 
-static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context, 
+static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 				 TALLOC_CTX *mem_ctx,
-				 const struct auth_usersupplied_info *user_info, 
+				 const struct auth_usersupplied_info *user_info,
 				 uint8_t *pauthoritative,
 				 void **server_returned_info,
 				 DATA_BLOB *session_key, DATA_BLOB *lm_session_key)
 {
 	NTSTATUS nt_status;
 	char *error_string = NULL;
-	uint8_t lm_key[8]; 
-	uint8_t user_sess_key[16]; 
+	uint8_t lm_key[8];
+	uint8_t user_sess_key[16];
 	char *unix_name = NULL;
 
-	nt_status = contact_winbind_auth_crap(user_info->client.account_name, user_info->client.domain_name, 
-					      user_info->workstation_name, 
+	nt_status = contact_winbind_auth_crap(user_info->client.account_name, user_info->client.domain_name,
+					      user_info->workstation_name,
 					      &auth4_context->challenge.data,
 					      &user_info->password.response.lanman,
 					      &user_info->password.response.nt,
 					      WBFLAG_PAM_LMKEY | WBFLAG_PAM_USER_SESSION_KEY | WBFLAG_PAM_UNIX_NAME,
 					      0,
-					      lm_key, user_sess_key, 
+					      lm_key, user_sess_key,
 					      pauthoritative,
 					      &error_string, &unix_name);
 
@@ -978,9 +978,9 @@ static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 						      unix_name);
 	} else {
 		DEBUG(NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED) ? 0 : 3, 
-		      ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
+		      ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n",
 		       user_info->client.domain_name, user_info->client.account_name,
-		       user_info->workstation_name, 
+		       user_info->workstation_name,
 		       error_string ? error_string : "unknown error (NULL)"));
 	}
 
@@ -989,7 +989,7 @@ static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 	return nt_status;
 }
 
-static NTSTATUS local_pw_check(struct auth4_context *auth4_context, 
+static NTSTATUS local_pw_check(struct auth4_context *auth4_context,
 				TALLOC_CTX *mem_ctx,
 				const struct auth_usersupplied_info *user_info,
 				uint8_t *pauthoritative,
@@ -1010,18 +1010,18 @@ static NTSTATUS local_pw_check(struct auth4_context *auth4_context,
 					&user_info->password.response.nt,
 					user_info->client.account_name,
 					user_info->client.account_name,
-					user_info->client.domain_name, 
+					user_info->client.domain_name,
 					&lm_pw, &nt_pw, session_key, lm_session_key);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		*server_returned_info = talloc_asprintf(mem_ctx,
 							"%s%c%s", user_info->client.domain_name,
-							*lp_winbind_separator(), 
+							*lp_winbind_separator(),
 							user_info->client.account_name);
 	} else {
-		DEBUG(3, ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n", 
+		DEBUG(3, ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n",
 			  user_info->client.domain_name, user_info->client.account_name,
-			  user_info->workstation_name, 
+			  user_info->workstation_name,
 			  nt_errstr(nt_status)));
 	}
 	return nt_status;
@@ -1131,7 +1131,7 @@ static NTSTATUS ntlm_auth_prepare_gensec_server(TALLOC_CTX *mem_ctx,
 	struct gensec_settings *gensec_settings;
 	size_t idx = 0;
 	struct cli_credentials *server_credentials;
-	
+
 	struct auth4_context *auth4_context;
 
 	tmp_ctx = talloc_new(mem_ctx);
@@ -1142,15 +1142,15 @@ static NTSTATUS ntlm_auth_prepare_gensec_server(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	gensec_settings = lpcfg_gensec_settings(tmp_ctx, lp_ctx);
 	if (lp_ctx == NULL) {
 		DEBUG(10, ("lpcfg_gensec_settings failed\n"));
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-	
-	/* 
+
+	/*
 	 * This should be a 'netbios domain -> DNS domain'
 	 * mapping, and can currently validly return NULL on
 	 * poorly configured systems.
@@ -1165,15 +1165,15 @@ static NTSTATUS ntlm_auth_prepare_gensec_server(TALLOC_CTX *mem_ctx,
 		gensec_settings->server_netbios_name = get_winbind_netbios_name();
 		gensec_settings->server_netbios_domain = get_winbind_domain();
 	}
-	
+
 	gensec_settings->server_dns_domain = strlower_talloc(gensec_settings,
 							     get_mydnsdomname(talloc_tos()));
 	gensec_settings->server_dns_name = strlower_talloc(gensec_settings,
 							   get_mydnsfullname());
-	
+
 	backends = talloc_zero_array(gensec_settings,
 				     const struct gensec_security_ops *, 4);
-	
+
 	if (backends == NULL) {
 		TALLOC_FREE(tmp_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -1181,7 +1181,7 @@ static NTSTATUS ntlm_auth_prepare_gensec_server(TALLOC_CTX *mem_ctx,
 	gensec_settings->backends = backends;
 
 	gensec_init();
-	
+
 	/* These need to be in priority order, krb5 before NTLMSSP */
 #if defined(HAVE_KRB5)
 	backends[idx++] = &gensec_gse_krb5_security_ops;
@@ -1200,23 +1200,23 @@ static NTSTATUS ntlm_auth_prepare_gensec_server(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("auth_generic_prepare: Failed to init server credentials\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
-	
+
 	cli_credentials_set_conf(server_credentials, lp_ctx);
-	
+
 	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC || lp_security() == SEC_ADS || USE_KERBEROS_KEYTAB) {
 		cli_credentials_set_kerberos_state(server_credentials, CRED_AUTO_USE_KERBEROS);
 	} else {
 		cli_credentials_set_kerberos_state(server_credentials, CRED_DONT_USE_KERBEROS);
 	}
-	
+
 	nt_status = gensec_server_start(tmp_ctx, gensec_settings,
 					auth4_context, &gensec_security);
-	
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		TALLOC_FREE(tmp_ctx);
 		return nt_status;
 	}
-	
+
 	gensec_set_credentials(gensec_security, server_credentials);
 
 	/*
@@ -1663,7 +1663,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 				   struct ntlm_auth_state *state,
 						char *buf, int length, void **private2)
 {
-	char *request, *parameter;	
+	char *request, *parameter;
 	static DATA_BLOB challenge;
 	static DATA_BLOB lm_response;
 	static DATA_BLOB nt_response;
@@ -1675,7 +1675,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	static bool ntlm_server_1_lm_session_key;
 
 	if (strequal(buf, ".")) {
-		if (!full_username && !username) {	
+		if (!full_username && !username) {
 			printf("Error: No username supplied!\n");
 		} else if (plaintext_password) {
 			/* handle this request as plaintext */
@@ -1693,7 +1693,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 			}
 		} else if (!lm_response.data && !nt_response.data) {
 			printf("Error: No password supplied!\n");
-		} else if (!challenge.data) {	
+		} else if (!challenge.data) {
 			printf("Error: No lanman-challenge supplied!\n");
 		} else {
 			char *error_string = NULL;
@@ -1802,11 +1802,11 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 					TALLOC_FREE(hex_lm_key);
 				}
 
-				if (ntlm_server_1_user_session_key 
+				if (ntlm_server_1_user_session_key
 				    && (!all_zero(user_session_key,
 						  sizeof(user_session_key)))) {
 					hex_user_session_key = hex_encode_talloc(NULL,
-									  (const unsigned char *)user_session_key, 
+									  (const unsigned char *)user_session_key,
 									  sizeof(user_session_key));
 					printf("User-Session-Key: %s\n",
 					       hex_user_session_key);
@@ -1908,7 +1908,7 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 						  struct ntlm_auth_state *state,
 						  char *buf, int length, void **private2)
 {
-	char *request, *parameter;	
+	char *request, *parameter;
 	static DATA_BLOB new_nt_pswd;
 	static DATA_BLOB old_nt_hash_enc;
 	static DATA_BLOB new_lm_pswd;
@@ -1942,7 +1942,7 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 			E_md4hash(newpswd, new_nt_hash);
 
 			/* E_deshash returns false for 'long'
-			   passwords (> 14 DOS chars).  
+			   passwords (> 14 DOS chars).
 
 			   Therefore, don't send a buffer
 			   encrypted with the truncated hash
@@ -2008,7 +2008,7 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 			ZERO_ARRAY(new_lm_hash);
 		}
 
-		if (!full_username && !username) {	
+		if (!full_username && !username) {
 			printf("Error: No username supplied!\n");
 		} else if ((!new_nt_pswd.data || !old_nt_hash_enc.data) &&
 			   (!new_lm_pswd.data || old_lm_hash_enc.data) ) {
@@ -2265,22 +2265,22 @@ static bool check_auth_crap(void)
 
 	setbuf(stdout, NULL);
 
-	if (request_lm_key) 
+	if (request_lm_key)
 		flags |= WBFLAG_PAM_LMKEY;
 
-	if (request_user_session_key) 
+	if (request_user_session_key)
 		flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
 	flags |= WBFLAG_PAM_NT_STATUS_SQUASH;
 
-	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain,
 					      opt_workstation,
-					      &opt_challenge, 
-					      &opt_lm_response, 
-					      &opt_nt_response, 
+					      &opt_challenge,
+					      &opt_lm_response,
+					      &opt_nt_response,
 					      flags, 0,
-					      (unsigned char *)lm_key, 
-					      (unsigned char *)user_session_key, 
+					      (unsigned char *)lm_key,
+					      (unsigned char *)user_session_key,
 					      &authoritative,
 					      &error_string, NULL);
 
@@ -2291,17 +2291,17 @@ static bool check_auth_crap(void)
 		return False;
 	}
 
-	if (request_lm_key 
+	if (request_lm_key
 	    && (!all_zero((uint8_t *)lm_key, sizeof(lm_key)))) {
 		hex_lm_key = hex_encode_talloc(talloc_tos(), (const unsigned char *)lm_key,
 					sizeof(lm_key));
 		printf("LM_KEY: %s\n", hex_lm_key);
 		TALLOC_FREE(hex_lm_key);
 	}
-	if (request_user_session_key 
+	if (request_user_session_key
 	    && (!all_zero((uint8_t *)user_session_key,
 			  sizeof(user_session_key)))) {
-		hex_user_session_key = hex_encode_talloc(talloc_tos(), (const unsigned char *)user_session_key, 
+		hex_user_session_key = hex_encode_talloc(talloc_tos(), (const unsigned char *)user_session_key,
 						  sizeof(user_session_key));
 		printf("NT_KEY: %s\n", hex_user_session_key);
 		TALLOC_FREE(hex_user_session_key);
@@ -2347,11 +2347,11 @@ enum {
 	poptContext pc;
 
 	/* NOTE: DO NOT change this interface without considering the implications!
-	   This is an external interface, which other programs will use to interact 
+	   This is an external interface, which other programs will use to interact
 	   with this helper.
 	*/
 
-	/* We do not use single-letter command abbreviations, because they harm future 
+	/* We do not use single-letter command abbreviations, because they harm future
 	   interface stability. */
 
 	struct poptOption long_options[] = {
@@ -2552,7 +2552,7 @@ enum {
 				exit(1);
 			}
 			break;
-		case OPT_LM: 
+		case OPT_LM:
 			opt_lm_response = strhex_to_data_blob(NULL, hex_lm_response);
 			if (opt_lm_response.length != 24) {
 				fprintf(stderr, "hex decode of %s failed! "
@@ -2563,7 +2563,7 @@ enum {
 			}
 			break;
 
-		case OPT_NT: 
+		case OPT_NT:
 			opt_nt_response = strhex_to_data_blob(NULL, hex_nt_response);
 			if (opt_nt_response.length < 24) {
 				fprintf(stderr, "hex decode of %s failed! "
@@ -2646,7 +2646,7 @@ enum {
 			exit(1);
 		}
 		exit(0);
-	} 
+	}
 
 	if (!opt_password) {
 		char pwd[256] = {0};
