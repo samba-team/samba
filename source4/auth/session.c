@@ -135,16 +135,10 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!dom_sid_parse(SID_WORLD, &sids[num_sids])) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_INTERNAL_ERROR;
-		}
+		sid_copy(&sids[num_sids], &global_sid_World);
 		num_sids++;
 
-		if (!dom_sid_parse(SID_NT_NETWORK, &sids[num_sids])) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_INTERNAL_ERROR;
-		}
+		sid_copy(&sids[num_sids], &global_sid_Network);
 		num_sids++;
 	}
 
@@ -155,10 +149,7 @@ _PUBLIC_ NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!dom_sid_parse(SID_NT_AUTHENTICATED_USERS, &sids[num_sids])) {
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_INTERNAL_ERROR;
-		}
+		sid_copy(&sids[num_sids], &global_sid_Authenticated_Users);
 		num_sids++;
 	}
 
