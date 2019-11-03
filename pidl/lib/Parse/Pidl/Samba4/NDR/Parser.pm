@@ -2788,7 +2788,6 @@ sub FunctionTable($$)
 	}
 	return if ($#{$interface->{FUNCTIONS}}+1 == 0 and
 		   $count_public_structs == 0);
-	return unless defined ($interface->{PROPERTIES}->{uuid});
 
 	foreach my $d (@{$interface->{INHERITED_FUNCTIONS}},@{$interface->{FUNCTIONS}}) {
 		$self->FunctionCallPipes($d);
@@ -2832,16 +2831,18 @@ sub FunctionTable($$)
 		$interface->{PROPERTIES}->{authservice} = "\"host\"";
 	}
 
-	$self->AuthServiceStruct($interface->{NAME}, 
+	$self->AuthServiceStruct($interface->{NAME},
 		                     $interface->{PROPERTIES}->{authservice});
 
 	$self->pidl("\nconst struct ndr_interface_table ndr_table_$interface->{NAME} = {");
 	$self->pidl("\t.name\t\t= \"$interface->{NAME}\",");
-	$self->pidl("\t.syntax_id\t= {");
-	$self->pidl("\t\t" . print_uuid($interface->{UUID}) .",");
-	$self->pidl("\t\tNDR_$uname\_VERSION");
-	$self->pidl("\t},");
-	$self->pidl("\t.helpstring\t= NDR_$uname\_HELPSTRING,");
+	if (defined $interface->{PROPERTIES}->{uuid}) {
+		$self->pidl("\t.syntax_id\t= {");
+		$self->pidl("\t\t" . print_uuid($interface->{UUID}) .",");
+		$self->pidl("\t\tNDR_$uname\_VERSION");
+		$self->pidl("\t},");
+		$self->pidl("\t.helpstring\t= NDR_$uname\_HELPSTRING,");
+	}
 	$self->pidl("\t.num_calls\t= $count,");
 	$self->pidl("\t.calls\t\t= $interface->{NAME}\_calls,");
 	$self->pidl("\t.num_public_structs\t= $count_public_structs,");
@@ -2910,7 +2911,15 @@ sub HeaderInterface($$$)
 
 		if(!defined $interface->{PROPERTIES}->{helpstring}) { $interface->{PROPERTIES}->{helpstring} = "NULL"; }
 		$self->pidl_hdr("#define NDR_$name\_HELPSTRING $interface->{PROPERTIES}->{helpstring}");
+	}
 
+	my $count_public_structs = 0;
+	foreach my $d (@{$interface->{TYPES}}) {
+	        next unless (has_property($d, "public"));
+		$count_public_structs += 1;
+	}
+	if ($#{$interface->{FUNCTIONS}}+1 > 0 or
+		   $count_public_structs > 0) {
 		$self->pidl_hdr("extern const struct ndr_interface_table ndr_table_$interface->{NAME};");
 	}
 
