@@ -114,11 +114,18 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     security.idl
                     server_id.idl
                     smb_acl.idl
-                    windows_event_ids.idl
                     xattr.idl
                     ''',
                     options='--header --ndr-parser --python',
                     output_dir='../gen_ndr')
+
+bld.SAMBA_PIDL_LIST('PIDL',
+		    '''
+                    windows_event_ids.idl
+                    ''',
+                    options='--header --ndr-parser --python',
+                    output_dir='../gen_ndr',
+                    generate_tables=False)
 
 bld.SAMBA_PIDL_LIST('PIDL',
                     'winbind.idl',
