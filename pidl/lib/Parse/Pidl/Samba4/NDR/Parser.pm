@@ -2768,7 +2768,7 @@ sub StructEntry($$)
 	$self->pidl("\t\t.struct_size = sizeof($type_decl),");
 	$self->pidl("\t\t.ndr_push = (ndr_push_flags_fn_t) ndr_push_$d->{NAME},");
 	$self->pidl("\t\t.ndr_pull = (ndr_pull_flags_fn_t) ndr_pull_$d->{NAME},");
-	$self->pidl("\t\t.ndr_print = (ndr_print_function_t) ndr_print_$d->{NAME},");
+	$self->pidl("\t\t.ndr_print = (ndr_print_function_t) ndr_print_flags_$d->{NAME},");
 	$self->pidl("\t},");
 	return 1;
 }
@@ -3022,6 +3022,18 @@ sub ParseTypePrintFunction($$$)
 	my $args = $typefamily{$e->{TYPE}}->{DECL}->($e, "print", $e->{NAME}, $varname);
 
 	$self->pidl_hdr("void ".TypeFunctionName("ndr_print", $e)."(struct ndr_print *ndr, const char *name, $args);");
+
+	if (has_property($e, "public")) {
+                $self->pidl("static void ".TypeFunctionName("ndr_print_flags", $e).
+                             "(struct ndr_print *$ndr, const char *name, int unused, $args)"
+                             );
+		$self->pidl("{");
+		$self->indent;
+		$self->pidl(TypeFunctionName("ndr_print", $e)."($ndr, name, $varname);");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
+	}
 
 	return if (has_property($e, "noprint"));
 
