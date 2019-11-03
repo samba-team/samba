@@ -58,6 +58,7 @@ NTSTATUS set_file_oplock(files_struct *fsp)
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
 	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
 			(koplocks != NULL);
+	file_id_buf buf;
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK && use_kernel) {
 		DEBUG(10, ("Refusing level2 oplock, kernel oplocks "
@@ -82,7 +83,7 @@ NTSTATUS set_file_oplock(files_struct *fsp)
 	DBG_INFO("granted oplock on file %s, %s/%"PRIu64", "
 		 "tv_sec = %x, tv_usec = %x\n",
 		 fsp_str_dbg(fsp),
-		 file_id_string_tos(&fsp->file_id),
+		 file_id_str_buf(fsp->file_id, &buf),
 		 fsp->fh->gen_id,
 		 (int)fsp->open_time.tv_sec,
 		 (int)fsp->open_time.tv_usec);
