@@ -125,6 +125,18 @@ bld.SAMBA_SUBSYSTEM('ndr-table',
                     NDR_CLUSAPI
                     NDR_WINSPOOL
                     NDR_CAB
+                    NDR_FSRVP_STATE
+                    NDR_IOCTL
+                    NDR_COMPRESSION
+                    NDR_PRINTCAP
+                    NDR_QUOTA
+                    NDR_RAP
+                    NDR_DCERPC
+                    NDR_MESSAGING
+                    NDR_SMB_ACL
+                    NDR_PERFCOUNT
+                    NDR_SECRETS
+                    NDR_LEASES_DB
                     ''',
         depends_on='GEN_NDR_TABLES'
         )
