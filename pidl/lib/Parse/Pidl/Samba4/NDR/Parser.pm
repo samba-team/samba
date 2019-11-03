@@ -3093,7 +3093,16 @@ sub ParseInterface($$$)
 		($needed->{"ndr_print_$d->{NAME}"}) && $self->ParseFunctionPrint($d);
 	}
 
+        # Allow compilation of generated files where replacement functions
+        # for structures declared nopull/nopush have not been provided.
+        #
+        # This makes sense when only the print functions are used
+        #
+        # Otherwise the ndr_table XXX will reference these
+
+        $self->pidl("#ifndef SKIP_NDR_TABLE_$interface->{NAME}");
 	$self->FunctionTable($interface);
+        $self->pidl("#endif /* SKIP_NDR_TABLE_$interface->{NAME} */");
 
 	$self->pidl_hdr("#endif /* _HEADER_NDR_$interface->{NAME} */");
 }
