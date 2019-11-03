@@ -5,10 +5,17 @@ import os
 topinclude=os.path.join(bld.srcnode.abspath(), 'librpc/idl')
 
 bld.SAMBA_PIDL_LIST('PIDL',
-                    '''libnetapi.idl open_files.idl
-                       perfcount.idl secrets.idl libnet_join.idl
+                    '''open_files.idl
+                       perfcount.idl secrets.idl
                        smbXsrv.idl
                        leases_db.idl
                     ''',
                     options='--includedir=%s --header --ndr-parser' % topinclude,
                     output_dir='../gen_ndr')
+
+bld.SAMBA_PIDL_LIST('PIDL',
+                    '''libnetapi.idl libnet_join.idl
+                    ''',
+                    options='--includedir=%s --header --ndr-parser' % topinclude,
+                    output_dir='../gen_ndr',
+                    generate_tables=False)
