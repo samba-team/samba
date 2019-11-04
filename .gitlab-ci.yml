@@ -110,6 +110,9 @@ others:
 samba:
   extends: .shared_template
 
+samba-mitkrb5:
+  extends: .shared_template
+
 samba-none-env:
   extends: .shared_template
 
