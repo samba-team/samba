@@ -4421,9 +4421,12 @@ void lp_remove_service(int snum)
 	ServicePtrs[snum]->valid = false;
 }
 
-const char *lp_printername(TALLOC_CTX *ctx, int snum)
+const char *lp_printername(TALLOC_CTX *ctx,
+			   const struct loadparm_substitution *lp_sub,
+			   int snum)
 {
-	const char *ret = lp__printername(ctx, snum);
+	const char *ret = lp__printername(ctx, lp_sub, snum);
+
 	if (ret == NULL || *ret == '\0') {
 		ret = lp_const_servicename(snum);
 	}

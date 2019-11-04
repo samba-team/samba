@@ -56,6 +56,8 @@ static void delete_and_reload_printers_full(struct tevent_context *ev,
 {
 	struct auth_session_info *session_info = NULL;
 	struct spoolss_PrinterInfo2 *pinfo2 = NULL;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int n_services;
 	int pnum;
 	int snum;
@@ -91,7 +93,7 @@ static void delete_and_reload_printers_full(struct tevent_context *ev,
 		}
 
 		sname = lp_const_servicename(snum);
-		pname = lp_printername(session_info, snum);
+		pname = lp_printername(session_info, lp_sub, snum);
 
 		/* check printer, but avoid removing non-autoloaded printers */
 		if (lp_autoloaded(snum) && !pcap_printername_ok(pname)) {

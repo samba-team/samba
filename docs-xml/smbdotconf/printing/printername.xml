@@ -2,6 +2,7 @@
                  context="S"
                  type="string"
                  function="_printername"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <synonym>printer</synonym>
 <description>

@@ -2243,6 +2243,8 @@ WERROR print_access_check(const struct auth_session_info *session_info,
 			  int access_type)
 {
 	struct spoolss_security_descriptor *secdesc = NULL;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	uint32_t access_granted;
 	size_t sd_size;
 	NTSTATUS status;
@@ -2262,7 +2264,7 @@ WERROR print_access_check(const struct auth_session_info *session_info,
 
 	/* Get printer name */
 
-	pname = lp_printername(talloc_tos(), snum);
+	pname = lp_printername(talloc_tos(), lp_sub, snum);
 
 	if (!pname || !*pname) {
 		return WERR_ACCESS_DENIED;

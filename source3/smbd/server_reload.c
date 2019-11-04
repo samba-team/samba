@@ -58,6 +58,8 @@ void delete_and_reload_printers(void)
 	bool ok;
 	time_t pcap_last_update;
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	ok = pcap_cache_loaded(&pcap_last_update);
 	if (!ok) {
@@ -96,7 +98,7 @@ void delete_and_reload_printers(void)
 			continue;
 		}
 
-		pname = lp_printername(frame, snum);
+		pname = lp_printername(frame, lp_sub, snum);
 
 		/* check printer, but avoid removing non-autoloaded printers */
 		if (lp_autoloaded(snum) && !pcap_printername_ok(pname)) {

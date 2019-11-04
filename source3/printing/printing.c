@@ -1711,6 +1711,8 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 	int type;
 	struct printif *current_printif;
 	TALLOC_CTX *ctx = talloc_tos();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	fstrcpy( sharename, lp_const_servicename(snum));
 
@@ -1719,7 +1721,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 	lpqcommand = talloc_string_sub2(ctx,
 			lp_lpq_command(snum),
 			"%p",
-			lp_printername(talloc_tos(), snum),
+			lp_printername(talloc_tos(), lp_sub, snum),
 			false, false, false);
 	if (!lpqcommand) {
 		return;
@@ -1739,7 +1741,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 	lprmcommand = talloc_string_sub2(ctx,
 			lp_lprm_command(snum),
 			"%p",
-			lp_printername(talloc_tos(), snum),
+			lp_printername(talloc_tos(), lp_sub, snum),
 			false, false, false);
 	if (!lprmcommand) {
 		return;
@@ -2157,6 +2159,8 @@ static bool print_job_delete1(struct tevent_context *ev,
 			      int snum, uint32_t jobid)
 {
 	const char* sharename = lp_const_servicename(snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct printjob *pjob;
 	int result = 0;
 	struct printif *current_printif = get_printer_fns( snum );
@@ -2198,7 +2202,7 @@ static bool print_job_delete1(struct tevent_context *ev,
 	if (pjob->spooled && pjob->sysjob != -1)
 	{
 		result = (*(current_printif->job_delete))(
-			lp_printername(talloc_tos(), snum),
+			lp_printername(talloc_tos(), lp_sub, snum),
 			lp_lprm_command(snum),
 			pjob);
 
@@ -2264,6 +2268,8 @@ WERROR print_job_delete(const struct auth_session_info *server_info,
 			int snum, uint32_t jobid)
 {
 	const char* sharename = lp_const_servicename(snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct printjob *pjob;
 	bool 	owner;
 	WERROR werr;
@@ -2283,7 +2289,7 @@ WERROR print_job_delete(const struct auth_session_info *server_info,
 		DEBUG(0, ("print job delete denied."
 			  "User name: %s, Printer name: %s.",
 			  uidtoname(server_info->unix_token->uid),
-			  lp_printername(tmp_ctx, snum)));
+			  lp_printername(tmp_ctx, lp_sub, snum)));
 
 		werr = WERR_ACCESS_DENIED;
 		goto err_out;
@@ -2338,6 +2344,8 @@ WERROR print_job_pause(const struct auth_session_info *server_info,
 		     int snum, uint32_t jobid)
 {
 	const char* sharename = lp_const_servicename(snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct printjob *pjob;
 	int ret = -1;
 	struct printif *current_printif = get_printer_fns( snum );
@@ -2368,7 +2376,7 @@ WERROR print_job_pause(const struct auth_session_info *server_info,
 		DEBUG(0, ("print job pause denied."
 			  "User name: %s, Printer name: %s.",
 			  uidtoname(server_info->unix_token->uid),
-			  lp_printername(tmp_ctx, snum)));
+			  lp_printername(tmp_ctx, lp_sub, snum)));
 
 		werr = WERR_ACCESS_DENIED;
 		goto err_out;
@@ -2406,6 +2414,8 @@ WERROR print_job_resume(const struct auth_session_info *server_info,
 		      int snum, uint32_t jobid)
 {
 	const char *sharename = lp_const_servicename(snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct printjob *pjob;
 	int ret;
 	struct printif *current_printif = get_printer_fns( snum );
@@ -2435,7 +2445,7 @@ WERROR print_job_resume(const struct auth_session_info *server_info,
 		DEBUG(0, ("print job resume denied."
 			  "User name: %s, Printer name: %s.",
 			  uidtoname(server_info->unix_token->uid),
-			  lp_printername(tmp_ctx, snum)));
+			  lp_printername(tmp_ctx, lp_sub, snum)));
 
 		werr = WERR_ACCESS_DENIED;
 		goto err_out;
@@ -2958,6 +2968,8 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 		       uint32_t jobid, enum file_close_type close_type)
 {
 	const char* sharename = lp_const_servicename(snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct printjob *pjob;
 	int ret;
 	SMB_STRUCT_STAT sbuf;
@@ -3035,7 +3047,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 	lpq_cmd = talloc_string_sub2(tmp_ctx,
 				     lp_lpq_command(snum),
 				     "%p",
-				     lp_printername(talloc_tos(), snum),
+				     lp_printername(talloc_tos(), lp_sub, snum),
 				     false, false, false);
 	if (lpq_cmd == NULL) {
 		status = NT_STATUS_PRINT_CANCELLED;

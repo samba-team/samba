@@ -860,7 +860,9 @@ bool lp_preferred_master(void);
 void lp_remove_service(int snum);
 void lp_copy_service(int snum, const char *new_name);
 int lp_default_server_announce(void);
-const char *lp_printername(TALLOC_CTX *ctx, int snum);
+const char *lp_printername(TALLOC_CTX *ctx,
+			   const struct loadparm_substitution *lp_sub,
+			   int snum);
 void lp_set_logfile(const char *name);
 int lp_maxprintjobs(int snum);
 const char *lp_printcapname(void);

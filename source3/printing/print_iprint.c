@@ -603,6 +603,8 @@ static int iprint_job_pause(int snum, struct printjob *pjob)
 	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI];	/* printer-uri attribute */
 	char		httpPath[HTTP_MAX_URI];	/* path portion of the printer-uri */
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 
 	DEBUG(5,("iprint_job_pause(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
@@ -660,7 +662,7 @@ static int iprint_job_pause(int snum, struct printjob *pjob)
 	             "attributes-natural-language", NULL, language->language);
 
 	slprintf(uri, sizeof(uri) - 1, "ipp://%s/ipp/%s", iprint_server(),
-		 lp_printername(talloc_tos(), snum));
+		 lp_printername(talloc_tos(), lp_sub, snum));
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
@@ -674,7 +676,7 @@ static int iprint_job_pause(int snum, struct printjob *pjob)
 	*/
 
 	slprintf(httpPath, sizeof(httpPath) - 1, "/ipp/%s",
-		 lp_printername(talloc_tos(), snum));
+		 lp_printername(talloc_tos(), lp_sub, snum));
 
 	if ((response = cupsDoRequest(http, request, httpPath)) != NULL) {
 		if (ippGetStatusCode(response) >= IPP_OK_CONFLICT) {
@@ -715,6 +717,8 @@ static int iprint_job_resume(int snum, struct printjob *pjob)
 	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI];	/* printer-uri attribute */
 	char		httpPath[HTTP_MAX_URI];	/* path portion of the printer-uri */
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 
 	DEBUG(5,("iprint_job_resume(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
@@ -772,7 +776,7 @@ static int iprint_job_resume(int snum, struct printjob *pjob)
 	             "attributes-natural-language", NULL, language->language);
 
 	slprintf(uri, sizeof(uri) - 1, "ipp://%s/ipp/%s", iprint_server(),
-		 lp_printername(talloc_tos(), snum));
+		 lp_printername(talloc_tos(), lp_sub, snum));
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI, "printer-uri", NULL, uri);
 
@@ -786,7 +790,7 @@ static int iprint_job_resume(int snum, struct printjob *pjob)
 	*/
 
 	slprintf(httpPath, sizeof(httpPath) - 1, "/ipp/%s",
-		 lp_printername(talloc_tos(), snum));
+		 lp_printername(talloc_tos(), lp_sub, snum));
 
 	if ((response = cupsDoRequest(http, request, httpPath)) != NULL) {
 		if (ippGetStatusCode(response) >= IPP_OK_CONFLICT) {
@@ -829,6 +833,8 @@ static int iprint_job_submit(int snum, struct printjob *pjob,
 	ipp_attribute_t	*attr;		/* Current attribute */
 	cups_lang_t	*language = NULL;	/* Default language */
 	char		uri[HTTP_MAX_URI]; /* printer-uri attribute */
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	DEBUG(5,("iprint_job_submit(%d, %p (%d))\n", snum, pjob, pjob->sysjob));
 
@@ -885,7 +891,7 @@ static int iprint_job_submit(int snum, struct printjob *pjob,
 	             "attributes-natural-language", NULL, language->language);
 
 	slprintf(uri, sizeof(uri) - 1, "ipp://%s/ipp/%s", iprint_server(),
-		 lp_printername(talloc_tos(), snum));
+		 lp_printername(talloc_tos(), lp_sub, snum));
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
 	             "printer-uri", NULL, uri);
@@ -904,19 +910,19 @@ static int iprint_job_submit(int snum, struct printjob *pjob,
 	* Do the request and get back a response...
 	*/
 
-	slprintf(uri, sizeof(uri) - 1, "/ipp/%s", lp_printername(talloc_tos(), snum));
+	slprintf(uri, sizeof(uri) - 1, "/ipp/%s", lp_printername(talloc_tos(), lp_sub, snum));
 
 	if ((response = cupsDoFileRequest(http, request, uri, pjob->filename)) != NULL) {
 		if (ippGetStatusCode(response) >= IPP_OK_CONFLICT) {
 			DEBUG(0,("Unable to print file to %s - %s\n",
-				 lp_printername(talloc_tos(), snum),
+				 lp_printername(talloc_tos(), lp_sub, snum),
 			         ippErrorString(cupsLastError())));
 		} else {
 			ret = 0;
 		}
 	} else {
 		DEBUG(0,("Unable to print file to `%s' - %s\n",
-			 lp_printername(talloc_tos(), snum),
+			 lp_printername(talloc_tos(), lp_sub, snum),
 			 ippErrorString(cupsLastError())));
 	}
 

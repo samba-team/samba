@@ -118,11 +118,13 @@ pause a job
 ****************************************************************************/
 static int generic_job_pause(int snum, struct printjob *pjob)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	fstring jobstr;
 	
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
-	return print_run_command(snum, lp_printername(talloc_tos(), snum), True,
+	return print_run_command(snum, lp_printername(talloc_tos(), lp_sub, snum), True,
 				 lp_lppause_command(snum), NULL,
 				 "%j", jobstr,
 				 NULL);
@@ -133,11 +135,13 @@ resume a job
 ****************************************************************************/
 static int generic_job_resume(int snum, struct printjob *pjob)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	fstring jobstr;
 
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
-	return print_run_command(snum, lp_printername(talloc_tos(), snum), True,
+	return print_run_command(snum, lp_printername(talloc_tos(), lp_sub, snum), True,
 				 lp_lpresume_command(snum), NULL,
 				 "%j", jobstr,
 				 NULL);
@@ -208,6 +212,8 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 			      char *lpq_cmd)
 {
 	int ret = -1;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *current_directory = NULL;
 	char *print_directory = NULL;
 	char *wd = NULL;
@@ -259,7 +265,7 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 	slprintf(job_size, sizeof(job_size)-1, "%lu", (unsigned long)pjob->size);
 
 	/* send it to the system spooler */
-	ret = print_run_command(snum, lp_printername(talloc_tos(), snum), True,
+	ret = print_run_command(snum, lp_printername(talloc_tos(), lp_sub, snum), True,
 			lp_print_command(snum), NULL,
 			"%s", p,
 			"%J", jobname,
@@ -277,7 +283,7 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 	 * determine the backend job identifier (sysjob).
 	 */
 	pjob->sysjob = -1;
-	ret = generic_queue_get(lp_printername(talloc_tos(), snum),
+	ret = generic_queue_get(lp_printername(talloc_tos(), lp_sub, snum),
 				printing_type, lpq_cmd, &q, &status);
 	if (ret > 0) {
 		int i;
@@ -312,7 +318,10 @@ static int generic_job_submit(int snum, struct printjob *pjob,
 ****************************************************************************/
 static int generic_queue_pause(int snum)
 {
-	return print_run_command(snum, lp_printername(talloc_tos(), snum), True,
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+
+	return print_run_command(snum, lp_printername(talloc_tos(), lp_sub, snum), True,
 				 lp_queuepause_command(snum), NULL, NULL);
 }
 
@@ -321,7 +330,10 @@ static int generic_queue_pause(int snum)
 ****************************************************************************/
 static int generic_queue_resume(int snum)
 {
-	return print_run_command(snum, lp_printername(talloc_tos(), snum), True,
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+
+	return print_run_command(snum, lp_printername(talloc_tos(), lp_sub, snum), True,
 				 lp_queueresume_command(snum), NULL, NULL);
 }
 
