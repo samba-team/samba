@@ -927,6 +927,8 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 {
 	connection_struct *conn = fsp->conn;
 	struct smb_filename *smb_dname = fsp->fsp_name;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int ret;
 
 	SMB_ASSERT(!is_ntfs_stream_smb_fname(smb_dname));
@@ -961,7 +963,7 @@ static NTSTATUS rmdir_internals(TALLOC_CTX *ctx, files_struct *fsp)
 		return NT_STATUS_OK;
 	}
 
-	if(((errno == ENOTEMPTY)||(errno == EEXIST)) && *lp_veto_files(talloc_tos(), SNUM(conn))) {
+	if(((errno == ENOTEMPTY)||(errno == EEXIST)) && *lp_veto_files(talloc_tos(), lp_sub, SNUM(conn))) {
 		/*
 		 * Check to see if the only thing in this directory are
 		 * vetoed files/directories. If so then delete them and

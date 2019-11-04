@@ -1254,6 +1254,8 @@ static int fruit_connect(vfs_handle_struct *handle,
 	int rc;
 	char *list = NULL, *newlist = NULL;
 	struct fruit_config_data *config;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	DEBUG(10, ("fruit_connect\n"));
 
@@ -1271,7 +1273,7 @@ static int fruit_connect(vfs_handle_struct *handle,
 				struct fruit_config_data, return -1);
 
 	if (config->veto_appledouble) {
-		list = lp_veto_files(talloc_tos(), SNUM(handle->conn));
+		list = lp_veto_files(talloc_tos(), lp_sub, SNUM(handle->conn));
 
 		if (list) {
 			if (strstr(list, "/" ADOUBLE_NAME_PREFIX "*/") == NULL) {
