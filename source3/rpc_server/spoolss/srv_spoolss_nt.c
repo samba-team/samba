@@ -6363,7 +6363,9 @@ static bool check_printer_ok(TALLOC_CTX *mem_ctx,
 
 static WERROR add_port_hook(TALLOC_CTX *ctx, struct security_token *token, const char *portname, const char *uri)
 {
-	char *cmd = lp_addport_command(talloc_tos());
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	char *cmd = lp_addport_command(talloc_tos(), lp_sub);
 	char *command = NULL;
 	int ret;
 	bool is_print_op = false;
