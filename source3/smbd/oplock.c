@@ -744,12 +744,14 @@ static files_struct *initial_break_processing(
 	unsigned long file_id)
 {
 	files_struct *fsp = NULL;
+	struct file_id_buf idbuf;
 
-	DEBUG(3, ("initial_break_processing: called for %s/%u\n"
-		  "Current oplocks_open (exclusive = %d, levelII = %d)\n",
-		  file_id_string_tos(&id), (int)file_id,
-		  sconn->oplocks.exclusive_open,
-		  sconn->oplocks.level_II_open));
+	DBG_NOTICE("called for %s/%u\n"
+		   "Current oplocks_open (exclusive = %d, levelII = %d)\n",
+		   file_id_str_buf(id, &idbuf),
+		   (int)file_id,
+		   sconn->oplocks.exclusive_open,
+		   sconn->oplocks.level_II_open);
 
 	/*
 	 * We need to search the file open table for the
@@ -761,9 +763,11 @@ static files_struct *initial_break_processing(
 
 	if(fsp == NULL) {
 		/* The file could have been closed in the meantime - return success. */
-		DEBUG(3, ("initial_break_processing: cannot find open file "
-			  "with file_id %s gen_id = %lu, allowing break to "
-			  "succeed.\n", file_id_string_tos(&id), file_id));
+		DBG_NOTICE("cannot find open file "
+			   "with file_id %s gen_id = %lu, allowing break to "
+			   "succeed.\n",
+			   file_id_str_buf(id, &idbuf),
+			   file_id);
 		return NULL;
 	}
 
@@ -782,7 +786,7 @@ static files_struct *initial_break_processing(
 			   "has no oplock. "
 			   "Allowing break to succeed regardless.\n",
 			   fsp_str_dbg(fsp),
-			   file_id_string_tos(&id),
+			   file_id_str_buf(id, &idbuf),
 			   fsp->fh->gen_id);
 		return NULL;
 	}
