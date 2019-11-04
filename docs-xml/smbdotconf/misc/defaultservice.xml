@@ -2,6 +2,7 @@
                  context="G"
                  type="string"
                  function="defaultservice"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>default</synonym>
 <description>
