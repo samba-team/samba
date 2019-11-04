@@ -93,7 +93,9 @@ iprint_passwd_cb(const char *prompt)	/* I - Prompt */
 
 static const char *iprint_server(void)
 {
-	const char *server = lp_iprint_server(talloc_tos());
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	const char *server = lp_iprint_server(talloc_tos(), lp_sub);
 
 	if ((server != NULL) && (strlen(server) > 0)) {
 		DEBUG(10, ("iprint server explicitly set to %s\n",
