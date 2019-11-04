@@ -108,14 +108,16 @@ cups_passwd_cb(const char *prompt)	/* I - Prompt */
 
 static http_t *cups_connect(TALLOC_CTX *frame)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	http_t *http = NULL;
 	char *server = NULL, *p = NULL;
 	int port;
 	int timeout = lp_cups_connection_timeout();
 	size_t size;
 
-	if (lp_cups_server(talloc_tos()) != NULL && strlen(lp_cups_server(talloc_tos())) > 0) {
-		if (!push_utf8_talloc(frame, &server, lp_cups_server(talloc_tos()), &size)) {
+	if (lp_cups_server(talloc_tos(), lp_sub) != NULL && strlen(lp_cups_server(talloc_tos(), lp_sub)) > 0) {
+		if (!push_utf8_talloc(frame, &server, lp_cups_server(talloc_tos(), lp_sub), &size)) {
 			return NULL;
 		}
 	} else {
