@@ -2187,6 +2187,8 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	int snum;
 	bool is_disk_op;
 	TALLOC_CTX *ctx = p->mem_ctx;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	DEBUG(5,("_srvsvc_NetShareDel: %d\n", __LINE__));
 
@@ -2219,14 +2221,14 @@ WERROR _srvsvc_NetShareDel(struct pipes_struct *p,
 	if (p->session_info->unix_token->uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
-	if (!lp_delete_share_command(talloc_tos()) || !*lp_delete_share_command(talloc_tos())) {
+	if (!lp_delete_share_command(talloc_tos(), lp_sub) || !*lp_delete_share_command(talloc_tos(), lp_sub)) {
 		DBG_WARNING("_srvsvc_NetShareDel: No \"delete share command\" parameter set in smb.conf.\n");
 		return WERR_ACCESS_DENIED;
 	}
 
 	command = talloc_asprintf(ctx,
 			"%s \"%s\" \"%s\"",
-			lp_delete_share_command(talloc_tos()),
+			lp_delete_share_command(talloc_tos(), lp_sub),
 			get_dyn_CONFIGFILE(),
 			share_name);
 	if (!command) {
