@@ -295,7 +295,7 @@ static bool store_ldap_admin_pw (char* pw)
 	if (!secrets_init())
 		return False;
 
-	return secrets_store_ldap_pw(lp_ldap_admin_dn(talloc_tos()), pw);
+	return secrets_store_ldap_pw(lp_ldap_admin_dn(), pw);
 }
 
 
@@ -310,7 +310,7 @@ static int process_root(int local_flags)
 	char *old_passwd = NULL;
 
 	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW) {
-		char *ldap_admin_dn = lp_ldap_admin_dn(talloc_tos());
+		const char *ldap_admin_dn = lp_ldap_admin_dn();
 		if ( ! *ldap_admin_dn ) {
 			DEBUG(0,("ERROR: 'ldap admin dn' not defined! Please check your smb.conf\n"));
 			goto done;

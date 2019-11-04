@@ -324,7 +324,7 @@ bool fetch_ldap_pw(char **dn, char** pw)
 	char *key = NULL;
 	size_t size = 0;
 
-	*dn = smb_xstrdup(lp_ldap_admin_dn(talloc_tos()));
+	*dn = smb_xstrdup(lp_ldap_admin_dn());
 
 	if (asprintf(&key, "%s/%s", SECRETS_LDAP_BIND_PW, *dn) < 0) {
 		SAFE_FREE(*dn);
