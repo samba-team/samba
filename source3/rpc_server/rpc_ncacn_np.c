@@ -306,12 +306,6 @@ static NTSTATUS make_internal_ncacn_conn(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 
-	if (!init_pipe_handles(ncacn_conn->p, &table->syntax_id)) {
-		DBG_ERR("init_pipe_handles failed.\n");
-		status = NT_STATUS_UNSUCCESSFUL;
-		goto fail;
-	}
-
 	context_fns = talloc_zero(ncacn_conn->p, struct pipe_rpc_fns);
 	if (context_fns == NULL) {
 		DBG_ERR("No memory");

@@ -750,8 +750,7 @@ static WERROR open_printer_hnd(struct pipes_struct *p,
 
 	new_printer->access_granted = access_granted;
 
-	DEBUG(5, ("%d printer handles active\n",
-		  (int)num_pipe_handles(p)));
+	DBG_INFO("%d printer handles active\n", (int)num_pipe_handles());
 
 	return WERR_OK;
 }

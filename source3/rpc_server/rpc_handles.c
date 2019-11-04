@@ -33,7 +33,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-static struct pipes_struct *InternalPipes;
+static size_t num_handles = 0;
 
 /* TODO
  * the following prototypes are declared here to avoid
@@ -85,160 +85,22 @@ int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	DLIST_ADD(InternalPipes, p);
-	talloc_set_destructor(p, close_internal_rpc_pipe_hnd);
-
 	*_p = p;
 	return 0;
 }
 
-
 bool check_open_pipes(void)
 {
-	struct pipes_struct *p;
-
-	for (p = InternalPipes; p != NULL; p = p->next) {
-		if (num_pipe_handles(p) != 0) {
-			return true;
-		}
+	if (num_handles > 0) {
+		return true;
 	}
+
 	return false;
 }
 
-/****************************************************************************
- Close an rpc pipe.
-****************************************************************************/
-
-int close_internal_rpc_pipe_hnd(struct pipes_struct *p)
+size_t num_pipe_handles(void)
 {
-	if (!p) {
-		DEBUG(0,("Invalid pipe in close_internal_rpc_pipe_hnd\n"));
-		return False;
-	}
-
-	/* Free the handles database. */
-	close_policy_by_pipe(p);
-
-	DLIST_REMOVE(InternalPipes, p);
-
-	return 0;
-}
-
-/*
- * Handle database - stored per pipe.
- */
-
-struct dcesrv_handle_old {
-	struct dcesrv_handle_old *prev, *next;
-	struct policy_handle wire_handle;
-	void *data;
-};
-
-struct handle_list {
-	struct dcesrv_handle_old *handles;	/* List of pipe handles. */
-	size_t count;			/* Current number of handles. */
-	size_t pipe_ref_count;		/* Number of pipe handles referring
-					 * to this tree. */
-};
-
-/* This is the max handles across all instances of a pipe name. */
-#ifndef MAX_OPEN_POLS
-#define MAX_OPEN_POLS 2048
-#endif
-
-/****************************************************************************
- Hack as handles need to be persistent over lsa pipe closes so long as a samr
- pipe is open. JRA.
-****************************************************************************/
-
-static bool is_samr_lsa_pipe(const struct ndr_syntax_id *syntax)
-{
-	return (ndr_syntax_id_equal(syntax, &ndr_table_samr.syntax_id)
-		|| ndr_syntax_id_equal(syntax, &ndr_table_lsarpc.syntax_id));
-}
-
-size_t num_pipe_handles(struct pipes_struct *p)
-{
-	if (p->pipe_handles == NULL) {
-		return 0;
-	}
-	return p->pipe_handles->count;
-}
-
-/****************************************************************************
- Initialise a policy handle list on a pipe. Handle list is shared between all
- pipes of the same name.
-****************************************************************************/
-
-bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *syntax)
-{
-	struct pipes_struct *plist;
-	struct handle_list *hl;
-
-	for (plist = InternalPipes; plist; plist = plist->next) {
-		struct pipe_rpc_fns *p_ctx;
-		bool stop = false;
-
-		for (p_ctx = plist->contexts;
-		     p_ctx != NULL;
-		     p_ctx = p_ctx->next) {
-			if (ndr_syntax_id_equal(syntax, &p_ctx->syntax)) {
-				stop = true;
-				break;
-			}
-			if (is_samr_lsa_pipe(&p_ctx->syntax)
-			    && is_samr_lsa_pipe(syntax)) {
-				/*
-				 * samr and lsa share a handle space (same process
-				 * under Windows?)
-				 */
-				stop = true;
-				break;
-			}
-		}
-
-		if (stop) {
-			break;
-		}
-	}
-
-	if (plist != NULL) {
-		hl = plist->pipe_handles;
-		if (hl == NULL) {
-			return false;
-		}
-	} else {
-		/*
-		 * First open, we have to create the handle list
-		 */
-		hl = talloc_zero(NULL, struct handle_list);
-		if (hl == NULL) {
-			return false;
-		}
-
-		DEBUG(10,("init_pipe_handle_list: created handle list for "
-			  "pipe %s\n",
-			  ndr_interface_name(&syntax->uuid,
-					     syntax->if_version)));
-	}
-
-	/*
-	 * One more pipe is using this list.
-	 */
-
-	hl->pipe_ref_count++;
-
-	/*
-	 * Point this pipe at this list.
-	 */
-
-	p->pipe_handles = hl;
-
-	DEBUG(10,("init_pipe_handle_list: pipe_handles ref count = %lu for "
-		  "pipe %s\n", (unsigned long)p->pipe_handles->pipe_ref_count,
-		  ndr_interface_name(&syntax->uuid, syntax->if_version)));
-
-	return True;
+       return num_handles;
 }
 
 /****************************************************************************
@@ -249,76 +111,26 @@ bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *synta
   data_ptr is TALLOC_FREE()'ed
 ****************************************************************************/
 
-static struct dcesrv_handle_old *create_rpc_handle_internal(
-				struct pipes_struct *p,
-				struct policy_handle *hnd,
-				uint8_t handle_type,
-				void *data_ptr)
+bool create_policy_hnd(struct pipes_struct *p,
+		       struct policy_handle *hnd,
+		       uint8_t handle_type,
+		       void *data_ptr)
 {
-	struct dcesrv_handle_old *rpc_hnd = NULL;
-	static uint32_t pol_hnd_low  = 0;
-	static uint32_t pol_hnd_high = 0;
-	time_t t = time(NULL);
+	struct dcesrv_handle *rpc_hnd = NULL;
 
-	if (p->pipe_handles->count > MAX_OPEN_POLS) {
-		DEBUG(0,("create_policy_hnd: ERROR: too many handles (%d) on this pipe.\n",
-				(int)p->pipe_handles->count));
-		return NULL;
-	}
-
-	rpc_hnd = talloc_zero(p->pipe_handles, struct dcesrv_handle_old);
-	if (!rpc_hnd) {
-		DEBUG(0,("create_policy_hnd: ERROR: out of memory!\n"));
-		return NULL;
+	rpc_hnd = dcesrv_handle_create(p->dce_call, handle_type);
+	if (rpc_hnd == NULL) {
+		return false;
 	}
 
 	if (data_ptr != NULL) {
 		rpc_hnd->data = talloc_move(rpc_hnd, &data_ptr);
 	}
 
-	pol_hnd_low++;
-	if (pol_hnd_low == 0) {
-		pol_hnd_high++;
-	}
-
-	rpc_hnd->wire_handle.handle_type = handle_type;
-
-	/* second bit is incrementing */
-	SIVAL(&rpc_hnd->wire_handle.uuid.time_low, 0 , pol_hnd_low);
-	SSVAL(&rpc_hnd->wire_handle.uuid.time_mid, 0 , pol_hnd_high);
-	SSVAL(&rpc_hnd->wire_handle.uuid.time_hi_and_version, 0, (pol_hnd_high >> 16));
-
-	/* split the current time into two 16 bit values */
-
-	/* something random */
-	SSVAL(rpc_hnd->wire_handle.uuid.clock_seq, 0, (t >> 16));
-	/* something random */
-	SSVAL(rpc_hnd->wire_handle.uuid.node, 0, t);
-	/* something more random */
-	SIVAL(rpc_hnd->wire_handle.uuid.node, 2, getpid());
-
-	DLIST_ADD(p->pipe_handles->handles, rpc_hnd);
-	p->pipe_handles->count++;
-
 	*hnd = rpc_hnd->wire_handle;
 
-	DEBUG(6, ("Opened policy hnd[%d] ", (int)p->pipe_handles->count));
-	dump_data(6, (uint8_t *)hnd, sizeof(*hnd));
+	num_handles++;
 
-	return rpc_hnd;
-}
-
-bool create_policy_hnd(struct pipes_struct *p,
-			struct policy_handle *hnd,
-			uint8_t handle_type,
-			void *data_ptr)
-{
-	struct dcesrv_handle_old *rpc_hnd = NULL;
-
-	rpc_hnd = create_rpc_handle_internal(p, hnd, handle_type, data_ptr);
-	if (rpc_hnd == NULL) {
-		return false;
-	}
 	return true;
 }
 
@@ -326,40 +138,35 @@ bool create_policy_hnd(struct pipes_struct *p,
   find policy by handle - internal version.
 ****************************************************************************/
 
-static struct dcesrv_handle_old *find_policy_by_hnd_internal(
+static struct dcesrv_handle *find_policy_by_hnd_internal(
 					struct pipes_struct *p,
 					const struct policy_handle *hnd,
 					uint8_t handle_type,
 					void **data_p)
 {
-	struct dcesrv_handle_old *h = NULL;
-	unsigned int count;
+	struct dcesrv_handle *h = NULL;
 
 	if (data_p) {
 		*data_p = NULL;
 	}
 
-	count = 0;
-	for (h = p->pipe_handles->handles; h != NULL; h = h->next) {
-		if (memcmp(&h->wire_handle, hnd, sizeof(*hnd)) == 0) {
-			DEBUG(6,("Found policy hnd[%u] ", count));
-			dump_data(6, (const uint8_t *)hnd, sizeof(*hnd));
-			if (handle_type != DCESRV_HANDLE_ANY &&
-			    h->wire_handle.handle_type != handle_type) {
-				/* Just return NULL, do not set a fault
-				 * state in pipes_struct */
-				return NULL;
-			}
-			if (data_p) {
-				*data_p = h->data;
-			}
-			return h;
+	/*
+	 * Do not pass handle_type to avoid setting the fault_state in the
+	 * pipes_struct if the handle type does not match
+	 */
+	h = dcesrv_handle_lookup(p->dce_call, hnd, DCESRV_HANDLE_ANY);
+	if (h != NULL) {
+		if (handle_type != DCESRV_HANDLE_ANY &&
+			h->wire_handle.handle_type != handle_type) {
+			/* Just return NULL, do not set a fault
+			 * state in pipes_struct */
+			return NULL;
 		}
-		count++;
+		if (data_p) {
+			*data_p = h->data;
+		}
+		return h;
 	}
-
-	DEBUG(4,("Policy not found: "));
-	dump_data(4, (const uint8_t *)hnd, sizeof(*hnd));
 
 	p->fault_state = DCERPC_FAULT_CONTEXT_MISMATCH;
 
@@ -375,7 +182,7 @@ bool find_policy_by_hnd(struct pipes_struct *p,
 			uint8_t handle_type,
 			void **data_p)
 {
-	struct dcesrv_handle_old *rpc_hnd = NULL;
+	struct dcesrv_handle *rpc_hnd = NULL;
 
 	rpc_hnd = find_policy_by_hnd_internal(p, hnd, handle_type, data_p);
 	if (rpc_hnd == NULL) {
@@ -388,51 +195,22 @@ bool find_policy_by_hnd(struct pipes_struct *p,
   Close a policy.
 ****************************************************************************/
 
-bool close_policy_hnd(struct pipes_struct *p, struct policy_handle *hnd)
+bool close_policy_hnd(struct pipes_struct *p,
+		      struct policy_handle *hnd)
 {
-	struct dcesrv_handle_old *rpc_hnd = NULL;
+	struct dcesrv_handle *rpc_hnd = NULL;
 
 	rpc_hnd = find_policy_by_hnd_internal(p, hnd, DCESRV_HANDLE_ANY, NULL);
-
 	if (rpc_hnd == NULL) {
 		DEBUG(3, ("Error closing policy (policy not found)\n"));
 		return false;
 	}
 
-	DEBUG(6,("Closed policy\n"));
-
-	p->pipe_handles->count--;
-
-	DLIST_REMOVE(p->pipe_handles->handles, rpc_hnd);
 	TALLOC_FREE(rpc_hnd);
 
+	num_handles--;
+
 	return true;
-}
-
-/****************************************************************************
- Close a pipe - free the handle set if it was the last pipe reference.
-****************************************************************************/
-
-void close_policy_by_pipe(struct pipes_struct *p)
-{
-	if (p->pipe_handles == NULL) {
-		return;
-	}
-
-	p->pipe_handles->pipe_ref_count--;
-
-	if (p->pipe_handles->pipe_ref_count == 0) {
-		/*
-		 * Last pipe open on this list - free the list.
-		 */
-		TALLOC_FREE(p->pipe_handles);
-
-		DBG_DEBUG("Deleted handle list for RPC connection %s\n",
-				p->contexts ?
-				ndr_interface_name(&p->contexts->syntax.uuid,
-					p->contexts->syntax.if_version) :
-				"Unknown");
-	}
 }
 
 /*******************************************************************

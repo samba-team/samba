@@ -232,14 +232,6 @@ sub boilerplate_iface($)
 	$self->pidl("");
 	$self->pidl("/* Retrieve pipes struct */");
 	$self->pidl("p = dcesrv_get_pipes_struct(context->conn);");
-	$self->pidl("/* Init pipe handles */");
-	$self->pidl("ok = init_pipe_handles(p, &iface->syntax_id);");
-	$self->pidl("if (!ok) {");
-	$self->indent();
-	$self->pidl("DBG_ERR(\"Failed to init pipe handles\\n\");");
-	$self->pidl("return NT_STATUS_UNSUCCESSFUL;");
-	$self->deindent();
-	$self->pidl("}");
 	$self->pidl("");
 
 	$self->pidl("/* TODO check loop */");

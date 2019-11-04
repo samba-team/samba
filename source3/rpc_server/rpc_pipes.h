@@ -30,6 +30,7 @@ struct dcesrv_ep_entry_list;
 struct tsocket_address;
 struct handle_list;
 struct pipes_struct;
+struct dcesrv_context;
 
 struct pipe_rpc_fns {
 
@@ -117,11 +118,10 @@ int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
 			   const struct tsocket_address *remote_address,
 			   const struct tsocket_address *local_address,
 			   struct pipes_struct **_p);
-bool check_open_pipes(void);
-int close_internal_rpc_pipe_hnd(struct pipes_struct *p);
 
-size_t num_pipe_handles(struct pipes_struct *p);
-bool init_pipe_handles(struct pipes_struct *p, const struct ndr_syntax_id *syntax);
+bool check_open_pipes(void);
+size_t num_pipe_handles(void);
+
 bool create_policy_hnd(struct pipes_struct *p,
 			struct policy_handle *hnd,
 			uint8_t handle_type,

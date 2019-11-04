@@ -39,12 +39,6 @@ static NTSTATUS iremotewinspool__op_bind(struct dcesrv_connection_context *conte
 
 	/* Retrieve pipes struct */
 	p = dcesrv_get_pipes_struct(context->conn);
-	/* Init pipe handles */
-	ok = init_pipe_handles(p, &iface->syntax_id);
-	if (!ok) {
-		DBG_ERR("Failed to init pipe handles\n");
-		return NT_STATUS_UNSUCCESSFUL;
-	}
 
 	/* TODO check loop */
 	/* Init pipe context */
