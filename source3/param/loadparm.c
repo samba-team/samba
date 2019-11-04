@@ -2901,7 +2901,7 @@ bool lp_snum_ok(int iService)
  Auto-load some home services.
 ***************************************************************************/
 
-static void lp_add_auto_services(char *str)
+static void lp_add_auto_services(const char *str)
 {
 	char *s;
 	char *p;
