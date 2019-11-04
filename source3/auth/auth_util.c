@@ -49,10 +49,12 @@
 static int _smb_create_user(const char *domain, const char *unix_username, const char *homedir)
 {
 	TALLOC_CTX *ctx = talloc_tos();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *add_script;
 	int ret;
 
-	add_script = lp_add_user_script(ctx);
+	add_script = lp_add_user_script(ctx, lp_sub);
 	if (!add_script || !*add_script) {
 		return -1;
 	}

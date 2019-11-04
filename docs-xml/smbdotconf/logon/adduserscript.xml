@@ -1,6 +1,7 @@
 <samba:parameter name="add user script"
                  context="G"
-				 type="string"
+                 type="string"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
