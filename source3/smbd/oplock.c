@@ -252,10 +252,12 @@ bool downgrade_oplock(files_struct *fsp)
 	}
 	ret = downgrade_share_oplock(lck, fsp);
 	if (!ret) {
-		DEBUG(0,("downgrade_oplock: failed to downgrade share oplock "
-			 "for file %s, %s, file_id %s\n",
-			 fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
-			 file_id_string_tos(&fsp->file_id)));
+		struct file_id_buf idbuf;
+		DBG_ERR("failed to downgrade share oplock "
+			"for file %s, %s, file_id %s\n",
+			fsp_str_dbg(fsp),
+			fsp_fnum_dbg(fsp),
+			file_id_str_buf(fsp->file_id, &idbuf));
 	}
 	downgrade_file_oplock(fsp);
 
