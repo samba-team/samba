@@ -5,7 +5,7 @@ import os
 import optparse
 import textwrap
 from waflib import Logs, Errors, Options, Build, Context
-from samba_utils import EXPAND_VARIABLES, os_path_relpath
+from samba_utils import EXPAND_VARIABLES
 
 class SambaIndentedHelpFormatter (optparse.IndentedHelpFormatter):
     """Format help with indented section bodies.
@@ -425,7 +425,7 @@ def build(bld):
     bld.SAMBA_SUBSYSTEM('DYNCONFIG',
                         'dynconfig.c',
                         deps='replace',
-                        public_headers=os_path_relpath(os.path.join(Context.launch_dir, version_header), bld.path.abspath()),
+                        public_headers=os.path.relpath(os.path.join(Context.launch_dir, version_header), bld.path.abspath()),
                         header_path='samba',
                         cflags=cflags)
 

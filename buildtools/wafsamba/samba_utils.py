@@ -205,24 +205,6 @@ def process_depends_on(self):
                   self.includes += " " + y.more_includes
 
 
-os_path_relpath = getattr(os.path, 'relpath', None)
-if os_path_relpath is None:
-    # Python < 2.6 does not have os.path.relpath, provide a replacement
-    # (imported from Python2.6.5~rc2)
-    def os_path_relpath(path, start):
-        """Return a relative version of a path"""
-        start_list = os.path.abspath(start).split("/")
-        path_list = os.path.abspath(path).split("/")
-
-        # Work out how much of the filepath is shared by start and path.
-        i = len(os.path.commonprefix([start_list, path_list]))
-
-        rel_list = ['..'] * (len(start_list)-i) + path_list[i:]
-        if not rel_list:
-            return start
-        return os.path.join(*rel_list)
-
-
 def unique_list(seq):
     '''return a uniquified list in the same order as the existing list'''
     seen = {}
@@ -286,7 +268,7 @@ def recursive_dirlist(dir, relbase, pattern=None):
         else:
             if pattern and not fnmatch.fnmatch(f, pattern):
                 continue
-            ret.append(os_path_relpath(f2, relbase))
+            ret.append(os.path.relpath(f2, relbase))
     return ret
 
 
@@ -476,7 +458,7 @@ def RECURSE(ctx, directory):
         # already done it
         return
     visited_dirs.add(key)
-    relpath = os_path_relpath(abspath, ctx.path.abspath())
+    relpath = os.path.relpath(abspath, ctx.path.abspath())
     if ctxclass in ['tmp', 'OptionsContext', 'ConfigurationContext', 'BuildContext']:
         return ctx.recurse(relpath)
     if 'waflib.extras.compat15' in sys.modules:

@@ -1,5 +1,4 @@
 import os
-from samba_utils import os_path_relpath
 
 def build_test_headers(task):
     '''symlink a header in the build tree'''
@@ -13,7 +12,7 @@ def build_test_headers(task):
         f.write('#include "%s"\n' % os.path.normpath(h))
     f.close()
 
-relpath1 = os_path_relpath(bld.srcnode.abspath(), bld.path.abspath())
+relpath1 = os.path.relpath(bld.srcnode.abspath(), bld.path.abspath())
 public_headers = []
 for h in bld.env.public_headers_list:
     public_headers.append(os.path.join(relpath1, bld.env.build_public_headers, h))

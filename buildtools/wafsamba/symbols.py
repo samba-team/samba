@@ -4,7 +4,7 @@
 import os, re, subprocess
 from waflib import Utils, Build, Options, Logs, Errors
 from waflib.Logs import debug
-from samba_utils import TO_LIST, LOCAL_CACHE, get_tgt_list, os_path_relpath
+from samba_utils import TO_LIST, LOCAL_CACHE, get_tgt_list
 
 # these are the data structures used in symbols.py:
 #
@@ -617,7 +617,7 @@ def symbols_dupcheck(task, fail_on_error=False):
     build_library_dict(bld, tgt_list)
     for t in tgt_list:
         if t.samba_type == 'BINARY':
-            binname = os_path_relpath(t.link_task.outputs[0].abspath(bld.env), os.getcwd())
+            binname = os.path.relpath(t.link_task.outputs[0].abspath(bld.env), os.getcwd())
             symbols_dupcheck_binary(bld, binname, fail_on_error)
 
 

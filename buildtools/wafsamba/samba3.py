@@ -3,7 +3,7 @@
 
 import os
 from waflib import Build
-from samba_utils import os_path_relpath, TO_LIST
+from samba_utils import TO_LIST
 from samba_autoconf import library_flags
 
 def SAMBA3_IS_STATIC_MODULE(bld, module):
@@ -31,7 +31,7 @@ def s3_fix_kwargs(bld, kwargs):
     '''fix the build arguments for s3 build rules to include the
     necessary includes, subdir and cflags options '''
     s3dir = os.path.join(bld.env.srcdir, 'source3')
-    s3reldir = os_path_relpath(s3dir, bld.path.abspath())
+    s3reldir = os.path.relpath(s3dir, bld.path.abspath())
 
     # the extra_includes list is relative to the source3 directory
     extra_includes = [ '.', 'include', 'lib' ]

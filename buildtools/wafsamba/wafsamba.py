@@ -858,7 +858,7 @@ def INSTALL_WILDCARD(bld, destdir, pattern, chmod=MODE_644, flat=False,
     if trim_path:
         files2 = []
         for f in files:
-            files2.append(os_path_relpath(f, trim_path))
+            files2.append(os.path.relpath(f, trim_path))
         files = files2
 
     if exclude:

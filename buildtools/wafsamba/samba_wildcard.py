@@ -3,7 +3,7 @@
 import os, datetime, fnmatch
 from waflib import Scripting, Utils, Options, Logs, Errors
 from waflib import ConfigSet, Context
-from samba_utils import LOCAL_CACHE, os_path_relpath
+from samba_utils import LOCAL_CACHE
 
 def run_task(t, k):
     '''run a single build task'''
@@ -24,7 +24,7 @@ def run_named_build_task(cmd):
 
     # cope with builds of bin/*/*
     if os.path.islink(cmd):
-        cmd = os_path_relpath(os.readlink(cmd), os.getcwd())
+        cmd = os.path.relpath(os.readlink(cmd), os.getcwd())
 
     if cmd[0:12] == "bin/default/":
         cmd = cmd[12:]

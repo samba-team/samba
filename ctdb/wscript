@@ -769,7 +769,7 @@ def build(bld):
                 continue
             mode = os.lstat(fl).st_mode & MODE_777
             if arg['trim_path']:
-                fl = samba_utils.os_path_relpath(fl, arg['trim_path'])
+                fl = samba_utils.os.path.relpath(fl, arg['trim_path'])
             arg['file_list'].append([fl, mode])
 
     def SUBDIR_MODE(path, trim_path=None):
