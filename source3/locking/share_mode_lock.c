@@ -564,7 +564,6 @@ static NTSTATUS get_static_share_mode_data(
 	}
 
 	d->id = id;
-	d->record = rec;
 
 	static_share_mode_data = d;
 
@@ -684,13 +683,6 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 			nt_errstr(status));
 		smb_panic("Could not store share mode data\n");
 	}
-
-	/*
-	 * Drop the locking.tdb lock before moving the share_mode_data
-	 * to memcache
-	 */
-	SMB_ASSERT(static_share_mode_data->record == static_share_mode_record);
-	static_share_mode_data->record = NULL;
 
 	if (static_share_mode_record_talloced) {
 		TALLOC_FREE(static_share_mode_record);
