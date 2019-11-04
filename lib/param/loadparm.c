@@ -72,6 +72,7 @@
 #include "libds/common/roles.h"
 #include "lib/util/samba_util.h"
 #include "libcli/auth/ntlm_check.h"
+#include "lib/crypto/gnutls_helpers.h"
 
 #ifdef HAVE_HTTPCONNECTENCRYPT
 #include <cups/http.h>
@@ -94,6 +95,19 @@ int lpcfg_rpc_low_port(struct loadparm_context *lp_ctx)
 int lpcfg_rpc_high_port(struct loadparm_context *lp_ctx)
 {
 	return lp_ctx->globals->rpc_high_port;
+}
+
+enum samba_weak_crypto lpcfg_weak_crypto(struct loadparm_context *lp_ctx)
+{
+	if (lp_ctx->globals->weak_crypto == SAMBA_WEAK_CRYPTO_UNKNOWN) {
+		lp_ctx->globals->weak_crypto = SAMBA_WEAK_CRYPTO_DISALLOWED;
+
+		if (samba_gnutls_weak_crypto_allowed()) {
+			lp_ctx->globals->weak_crypto = SAMBA_WEAK_CRYPTO_ALLOWED;
+		}
+	}
+
+	return lp_ctx->globals->weak_crypto;
 }
 
 /**
@@ -2607,6 +2621,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_ctx->globals->ctx = lp_ctx->globals;
 	lp_ctx->globals->rpc_low_port = SERVER_TCP_LOW_PORT;
 	lp_ctx->globals->rpc_high_port = SERVER_TCP_HIGH_PORT;
+	lp_ctx->globals->weak_crypto = SAMBA_WEAK_CRYPTO_UNKNOWN;
 	lp_ctx->sDefault = talloc_zero(lp_ctx, struct loadparm_service);
 	lp_ctx->flags = talloc_zero_array(lp_ctx, unsigned int, num_parameters());
 

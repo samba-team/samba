@@ -765,6 +765,7 @@ bool lp_widelinks(int );
 int lp_rpc_low_port(void);
 int lp_rpc_high_port(void);
 bool lp_lanman_auth(void);
+enum samba_weak_crypto lp_weak_crypto(void);
 
 int lp_wi_scan_global_parametrics(
 	const char *regex, size_t max_matches,

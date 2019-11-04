@@ -73,6 +73,7 @@
 #include "librpc/gen_ndr/nbt.h"
 #include "source4/lib/tls/tls.h"
 #include "libcli/auth/ntlm_check.h"
+#include "lib/crypto/gnutls_helpers.h"
 
 #ifdef HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
@@ -4735,4 +4736,17 @@ unsigned int * get_flags(void)
 	}
 
 	return flags_list;
+}
+
+enum samba_weak_crypto lp_weak_crypto()
+{
+	if (Globals.weak_crypto == SAMBA_WEAK_CRYPTO_UNKNOWN) {
+		Globals.weak_crypto = SAMBA_WEAK_CRYPTO_DISALLOWED;
+
+		if (samba_gnutls_weak_crypto_allowed()) {
+			Globals.weak_crypto = SAMBA_WEAK_CRYPTO_ALLOWED;
+		}
+	}
+
+	return Globals.weak_crypto;
 }

@@ -255,6 +255,13 @@ enum spotlight_backend_options {
 	SPOTLIGHT_BACKEND_ES,
 };
 
+/* FIPS values */
+enum samba_weak_crypto {
+	SAMBA_WEAK_CRYPTO_UNKNOWN,
+	SAMBA_WEAK_CRYPTO_ALLOWED,
+	SAMBA_WEAK_CRYPTO_DISALLOWED,
+};
+
 /*
  * Default passwd chat script.
  */
@@ -292,7 +299,8 @@ enum spotlight_backend_options {
 	struct parmlist_entry *param_opt;				\
 	char *dnsdomain;						\
 	int rpc_low_port;						\
-	int rpc_high_port;
+	int rpc_high_port;						\
+	enum samba_weak_crypto weak_crypto;
 
 const char* server_role_str(uint32_t role);
 int lp_find_server_role(int server_role, int security, int domain_logons, int domain_master);

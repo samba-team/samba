@@ -40,7 +40,7 @@ bld.SAMBA_LIBRARY('samba-hostconfig',
 	pc_files='samba-hostconfig.pc',
 	vnum='0.0.1',
 	deps='DYNCONFIG server-role tdb',
-	public_deps='samba-util param_local.h',
+	public_deps='GNUTLS_HELPERS samba-util param_local.h',
 	public_headers='param.h',
 	autoproto='param_proto.h'
 	)
