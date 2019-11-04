@@ -1,6 +1,7 @@
 <samba:parameter name="delete group script"
                  context="G"
-				 type="string"
+                 type="string"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This is the full pathname to a script that will 

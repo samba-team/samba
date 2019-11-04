@@ -280,16 +280,18 @@ int smb_create_group(const char *unix_group, gid_t *new_gid)
 
 int smb_delete_group(const char *unix_group)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *del_script = NULL;
 	int ret = -1;
 
 	/* defer to scripts */
 
-	if ( *lp_delete_group_script(talloc_tos()) ) {
+	if ( *lp_delete_group_script(talloc_tos(), lp_sub) ) {
 		TALLOC_CTX *ctx = talloc_tos();
 
 		del_script = talloc_strdup(ctx,
-				lp_delete_group_script(ctx));
+				lp_delete_group_script(ctx, lp_sub));
 		if (!del_script) {
 			return -1;
 		}
