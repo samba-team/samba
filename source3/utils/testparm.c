@@ -35,6 +35,7 @@
 #include "system/filesys.h"
 #include "popt_common.h"
 #include "lib/param/loadparm.h"
+#include "lib/crypto/gnutls_helpers.h"
 #include "cmdline_contexts.h"
 
 #include <regex.h>
@@ -653,6 +654,7 @@ static void do_per_share_checks(int s)
 	const char *caddr;
 	static int show_defaults;
 	static int skip_logic_checks = 0;
+	const char *weak_crypo_str = "";
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -757,6 +759,13 @@ static void do_per_share_checks(int s)
 	}
 
 	fprintf(stderr,"Loaded services file OK.\n");
+
+	if (samba_gnutls_weak_crypto_allowed()) {
+		weak_crypo_str = "allowed";
+	} else {
+		weak_crypo_str = "disallowed";
+	}
+	fprintf(stderr, "Weak crypto is %s\n", weak_crypo_str);
 
 	if (skip_logic_checks == 0) {
 		ret = do_global_checks();

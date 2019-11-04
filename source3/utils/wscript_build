@@ -175,6 +175,7 @@ bld.SAMBA3_BINARY('testparm',
                  smbconf
                  popt_samba3
                  cmdline_contexts
+                 GNUTLS_HELPERS
                  ''')
 
 bld.SAMBA3_BINARY('net',
