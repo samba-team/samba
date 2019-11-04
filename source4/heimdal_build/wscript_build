@@ -314,47 +314,19 @@ def HEIMDAL_BINARY(binname, source,
                  install_path=None):
     '''define a Samba binary'''
 
-    if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
-        return
+    source = heimdal_paths(source)
 
-    features = 'c cprogram symlink_bin install_bin'
-
-    obj_target = binname + '.objlist'
-
-    if group == 'build_compilers':
-        subsystem_group = 'compiler_libraries'
-    else:
-        subsystem_group = group
-
-    # first create a target for building the object files for this binary
-    # by separating in this way, we avoid recompiling the C files
-    # separately for the install binary and the build binary
-    HEIMDAL_SUBSYSTEM(obj_target,
-                      source         = source,
-                      deps           = deps,
-                      includes       = includes,
-                      cflags         = cflags,
-                      group          = subsystem_group,
-                      use_hostcc     = use_hostcc,
-                      use_global_deps= use_global_deps)
-
-    bld.set_group(group)
-
-    # the binary itself will depend on that object target
-    deps = to_list(deps)
-    deps.append(obj_target)
-
-    t = bld(
-        features       = features,
-        source         = [],
-        target         = binname,
-        samba_deps     = deps,
-        samba_includes = includes,
-        local_include  = True,
-        top            = True,
-        install_path   = None,
-        samba_install  = install
-        )
+    bld.SAMBA_BINARY(binname,
+                     source         = source,
+                     deps           = deps,
+                     includes       = includes,
+                     cflags         = cflags,
+                     group          = group,
+                     use_hostcc     = use_hostcc,
+                     use_global_deps= use_global_deps,
+                     install_path   = None,
+                     install        = install,
+                     allow_warnings = True)
 
 
 if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):

@@ -354,6 +354,7 @@ def SAMBA_BINARY(bld, binname, source,
                  local_include=True,
                  global_include=True,
                  subsystem_name=None,
+                 allow_warnings=False,
                  pyembed=False,
                  vars=None,
                  subdir=None,
@@ -382,6 +383,8 @@ def SAMBA_BINARY(bld, binname, source,
 
     if group == 'binaries':
         subsystem_group = 'main'
+    elif group == 'build_compilers':
+        subsystem_group = 'compiler_libraries'
     else:
         subsystem_group = group
 
@@ -410,6 +413,7 @@ def SAMBA_BINARY(bld, binname, source,
                         global_include = global_include,
                         use_hostcc     = use_hostcc,
                         pyext          = pyembed,
+                        allow_warnings = allow_warnings,
                         use_global_deps= use_global_deps)
 
     bld.SET_BUILD_GROUP(group)
