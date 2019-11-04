@@ -2604,7 +2604,7 @@ const char *lp_ldap_user_suffix(TALLOC_CTX *ctx)
 	if (Globals._ldap_user_suffix[0])
 		return append_ldap_suffix(ctx, Globals._ldap_user_suffix);
 
-	return lp_string(ctx, Globals.ldap_suffix);
+	return talloc_strdup(ctx, Globals.ldap_suffix);
 }
 
 const char *lp_ldap_group_suffix(TALLOC_CTX *ctx)
