@@ -447,6 +447,8 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 					TALLOC_CTX *tmp_ctx, const char *name,
 					uint32_t acb_info, uint32_t *rid)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct samu *sam_pass;
 	NTSTATUS status;
 	struct passwd *pwd;
@@ -463,7 +465,7 @@ static NTSTATUS pdb_default_create_user(struct pdb_methods *methods,
 		if ((acb_info & ACB_NORMAL) && name[strlen(name)-1] != '$') {
 			add_script = lp_add_user_script(tmp_ctx);
 		} else {
-			add_script = lp_add_machine_script(tmp_ctx);
+			add_script = lp_add_machine_script(tmp_ctx, lp_sub);
 		}
 
 		if (!add_script || add_script[0] == '\0') {
