@@ -990,16 +990,18 @@ NTSTATUS check_password_complexity(const char *username,
 				   enum samPwdChangeReason *samr_reject_reason)
 {
 	TALLOC_CTX *tosctx = talloc_tos();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int check_ret;
 	char *cmd;
 
 	/* Use external script to check password complexity */
-	if ((lp_check_password_script(tosctx) == NULL)
-	    || (*(lp_check_password_script(tosctx)) == '\0')) {
+	if ((lp_check_password_script(tosctx, lp_sub) == NULL)
+	    || (*(lp_check_password_script(tosctx, lp_sub)) == '\0')){
 		return NT_STATUS_OK;
 	}
 
-	cmd = talloc_string_sub(tosctx, lp_check_password_script(tosctx), "%u",
+	cmd = talloc_string_sub(tosctx, lp_check_password_script(tosctx, lp_sub), "%u",
 				username);
 	if (!cmd) {
 		return NT_STATUS_PASSWORD_RESTRICTION;

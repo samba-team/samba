@@ -518,6 +518,8 @@ NTSTATUS _samr_OpenDomain(struct pipes_struct *p,
 NTSTATUS _samr_GetUserPwInfo(struct pipes_struct *p,
 			     struct samr_GetUserPwInfo *r)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct samr_user_info *uinfo;
 	enum lsa_SidType sid_type;
 	uint32_t min_password_length = 0;
@@ -554,8 +556,8 @@ NTSTATUS _samr_GetUserPwInfo(struct pipes_struct *p,
 					       &password_properties);
 			unbecome_root();
 
-			if (lp_check_password_script(talloc_tos())
-			    && *lp_check_password_script(talloc_tos())) {
+			if (lp_check_password_script(talloc_tos(), lp_sub)
+			    && *lp_check_password_script(talloc_tos(), lp_sub)) {
 				password_properties |= DOMAIN_PASSWORD_COMPLEX;
 			}
 
@@ -1883,6 +1885,8 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 	enum samPwdChangeReason reject_reason;
 	struct samr_DomInfo1 *dominfo = NULL;
 	struct userPwdChangeFailureInformation *reject = NULL;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	uint32_t tmp;
 	char *rhost;
 
@@ -1972,8 +1976,8 @@ NTSTATUS _samr_ChangePasswordUser3(struct pipes_struct *p,
 		unix_to_nt_time_abs((NTTIME *)&dominfo->max_password_age, u_expire);
 		unix_to_nt_time_abs((NTTIME *)&dominfo->min_password_age, u_min_age);
 
-		if (lp_check_password_script(talloc_tos())
-			&& *lp_check_password_script(talloc_tos())) {
+		if (lp_check_password_script(talloc_tos(), lp_sub)
+			&& *lp_check_password_script(talloc_tos(), lp_sub)) {
 			dominfo->password_properties |= DOMAIN_PASSWORD_COMPLEX;
 		}
 
@@ -3217,6 +3221,8 @@ static uint32_t samr_get_server_role(void)
 static NTSTATUS query_dom_info_1(TALLOC_CTX *mem_ctx,
 				 struct samr_DomInfo1 *r)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	uint32_t account_policy_temp;
 	time_t u_expire, u_min_age;
 
@@ -3246,7 +3252,7 @@ static NTSTATUS query_dom_info_1(TALLOC_CTX *mem_ctx,
 	unix_to_nt_time_abs((NTTIME *)&r->max_password_age, u_expire);
 	unix_to_nt_time_abs((NTTIME *)&r->min_password_age, u_min_age);
 
-	if (lp_check_password_script(talloc_tos()) && *lp_check_password_script(talloc_tos())) {
+	if (lp_check_password_script(talloc_tos(), lp_sub) && *lp_check_password_script(talloc_tos(), lp_sub)){
 		r->password_properties |= DOMAIN_PASSWORD_COMPLEX;
 	}
 
@@ -6258,6 +6264,8 @@ NTSTATUS _samr_SetAliasInfo(struct pipes_struct *p,
 NTSTATUS _samr_GetDomPwInfo(struct pipes_struct *p,
 			    struct samr_GetDomPwInfo *r)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	uint32_t min_password_length = 0;
 	uint32_t password_properties = 0;
 
@@ -6277,7 +6285,7 @@ NTSTATUS _samr_GetDomPwInfo(struct pipes_struct *p,
 			       &password_properties);
 	unbecome_root();
 
-	if (lp_check_password_script(talloc_tos()) && *lp_check_password_script(talloc_tos())) {
+	if (lp_check_password_script(talloc_tos(), lp_sub) && *lp_check_password_script(talloc_tos(), lp_sub)) {
 		password_properties |= DOMAIN_PASSWORD_COMPLEX;
 	}
 

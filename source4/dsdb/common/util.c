@@ -2041,6 +2041,8 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 						const uint32_t pwdProperties,
 						const uint32_t minPwdLength)
 {
+	const struct loadparm_substitution *lp_sub =
+		lpcfg_noop_substitution();
 	char *password_script = NULL;
 	const char *utf8_pw = (const char *)utf8_blob->data;
 
@@ -2074,7 +2076,7 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 		return SAMR_VALIDATION_STATUS_NOT_COMPLEX_ENOUGH;
 	}
 
-	password_script = lpcfg_check_password_script(lp_ctx, mem_ctx);
+	password_script = lpcfg_check_password_script(lp_ctx, lp_sub, mem_ctx);
 	if (password_script != NULL && *password_script != '\0') {
 		int check_ret = 0;
 		int error = 0;
