@@ -403,7 +403,7 @@ static bool test_mdssvc_close(struct torture_context *tctx,
 				     &close_ph,
 				     &close_status);
 	torture_assert_ntstatus_ok_goto(tctx, status, ok, done,
-					"dcerpc_mdssvc_open failed\n");
+					"dcerpc_mdssvc_close failed\n");
 
 	torture_assert_data_blob_equal(tctx, close_ph_blob, ph_blob,
 				       "bad blob");
