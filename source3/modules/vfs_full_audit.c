@@ -1877,6 +1877,7 @@ static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *ha
 {
 	struct file_id id_zero;
 	struct file_id result;
+	struct file_id_buf idbuf;
 
 	ZERO_STRUCT(id_zero);
 
@@ -1884,7 +1885,9 @@ static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *ha
 
 	do_log(SMB_VFS_OP_FILE_ID_CREATE,
 	       !file_id_equal(&id_zero, &result),
-	       handle, "%s", file_id_string_tos(&result));
+	       handle,
+	       "%s",
+	       file_id_str_buf(result, &idbuf));
 
 	return result;
 }
