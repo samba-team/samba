@@ -551,6 +551,8 @@ NTSTATUS pdb_create_user(TALLOC_CTX *mem_ctx, const char *name, uint32_t flags,
 
 static int smb_delete_user(const char *unix_user)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *del_script = NULL;
 	int ret;
 
@@ -561,7 +563,7 @@ static int smb_delete_user(const char *unix_user)
 		return -1;
 	}
 
-	del_script = lp_delete_user_script(talloc_tos());
+	del_script = lp_delete_user_script(talloc_tos(), lp_sub);
 	if (!del_script || !*del_script) {
 		return -1;
 	}
