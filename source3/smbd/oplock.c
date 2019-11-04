@@ -1313,8 +1313,9 @@ static void contend_level2_oplocks_begin_default(files_struct *fsp,
 
 	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
 	if (lck == NULL) {
+		struct file_id_buf idbuf;
 		DBG_WARNING("failed to lock share mode entry for file %s.\n",
-			    file_id_string_tos(&state.id));
+			    file_id_str_buf(state.id, &idbuf));
 		return;
 	}
 	d = lck->data;
