@@ -732,7 +732,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	/* Preexecs are done here as they might make the dir we are to ChDir
 	 * to below */
 	/* execute any "root preexec = " line */
-	if (*lp_root_preexec(talloc_tos(), snum)) {
+	if (*lp_root_preexec(talloc_tos(), lp_sub, snum)) {
 		char *cmd = talloc_sub_full(talloc_tos(),
 					lp_const_servicename(SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
@@ -740,7 +740,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
-					lp_root_preexec(talloc_tos(), snum));
+					lp_root_preexec(talloc_tos(), lp_sub, snum));
 		DEBUG(5,("cmd=%s\n",cmd));
 		ret = smbrun(cmd, NULL, NULL);
 		TALLOC_FREE(cmd);
