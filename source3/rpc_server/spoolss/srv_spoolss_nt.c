@@ -6426,7 +6426,9 @@ static bool add_printer_hook(TALLOC_CTX *ctx, struct security_token *token,
 			     const char *remote_machine,
 			     struct messaging_context *msg_ctx)
 {
-	char *cmd = lp_addprinter_command(talloc_tos());
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	char *cmd = lp_addprinter_command(talloc_tos(), lp_sub);
 	char **qlines;
 	char *command = NULL;
 	int numlines;
@@ -6931,6 +6933,8 @@ static WERROR update_printer(struct pipes_struct *p,
 	struct spoolss_SetPrinterInfo2 *printer = info_ctr->info.info2;
 	struct spoolss_PrinterInfo2 *old_printer;
 	struct printer_handle *Printer = find_printer_index_by_hnd(p, handle);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int snum;
 	WERROR result = WERR_OK;
 	TALLOC_CTX *tmp_ctx;
@@ -6988,7 +6992,7 @@ static WERROR update_printer(struct pipes_struct *p,
 	/* Call addprinter hook */
 	/* Check changes to see if this is really needed */
 
-	if (*lp_addprinter_command(talloc_tos()) &&
+	if (*lp_addprinter_command(talloc_tos(), lp_sub) &&
 			(!strequal(printer->drivername, old_printer->drivername) ||
 			 !strequal(printer->comment, old_printer->comment) ||
 			 !strequal(printer->portname, old_printer->portname) ||
@@ -8403,6 +8407,8 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 {
 	struct spoolss_SetPrinterInfo2 *info2 = info_ctr->info.info2;
 	uint32_t info2_mask = SPOOLSS_PRINTER_INFO_ALL;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int	snum;
 	WERROR err = WERR_OK;
 
@@ -8448,7 +8454,7 @@ static WERROR spoolss_addprinterex_level_2(struct pipes_struct *p,
 	/* FIXME!!!  smbd should check to see if the driver is installed before
 	   trying to add a printer like this  --jerry */
 
-	if (*lp_addprinter_command(talloc_tos()) ) {
+	if (*lp_addprinter_command(talloc_tos(), lp_sub) ) {
 		char *raddr;
 
 		raddr = tsocket_address_inet_addr_string(p->remote_address,
