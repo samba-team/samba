@@ -1,6 +1,7 @@
 <samba:parameter name="deleteprinter command"
                  context="G"
                  type="string"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>With the introduction of MS-RPC based printer
