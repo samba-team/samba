@@ -630,9 +630,11 @@ static char *strip_mount_options(TALLOC_CTX *ctx, const char *str)
 #ifdef WITH_NISPLUS_HOME
 char *automount_lookup(TALLOC_CTX *ctx, const char *user_name)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *value = NULL;
 
-	char *nis_map = (char *)lp_homedir_map(talloc_tos());
+	char *nis_map = (char *)lp_homedir_map(talloc_tos(), lp_sub);
 
 	char buffer[NIS_MAXATTRVAL + 1];
 	nis_result *result;
@@ -678,13 +680,15 @@ char *automount_lookup(TALLOC_CTX *ctx, const char *user_name)
 
 char *automount_lookup(TALLOC_CTX *ctx, const char *user_name)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *value = NULL;
 
 	int nis_error;        /* returned by yp all functions */
 	char *nis_result;     /* yp_match inits this */
 	int nis_result_len;  /* and set this */
 	char *nis_domain;     /* yp_get_default_domain inits this */
-	char *nis_map = lp_homedir_map(talloc_tos());
+	char *nis_map = lp_homedir_map(talloc_tos(), lp_sub);
 
 	if ((nis_error = yp_get_default_domain(&nis_domain)) != 0) {
 		DEBUG(3, ("YP Error: %s\n", yperr_string(nis_error)));
