@@ -244,10 +244,12 @@ static struct {
 
 static int command_get_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	const char *get_quota_command;
 	char **lines = NULL;
 
-	get_quota_command = lp_get_quota_command(talloc_tos());
+	get_quota_command = lp_get_quota_command(talloc_tos(), lp_sub);
 	if (get_quota_command && *get_quota_command) {
 		const char *p;
 		char *p2;
