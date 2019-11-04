@@ -4285,8 +4285,10 @@ int lp_servicenumber(const char *pszServiceName)
 
 const char *volume_label(TALLOC_CTX *ctx, int snum)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *ret;
-	const char *label = lp_volume(ctx, snum);
+	const char *label = lp_volume(ctx, lp_sub, snum);
 	size_t end = 32;
 
 	if (!*label) {
