@@ -1992,6 +1992,8 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 	int max_connections = 0;
 	SMB_STRUCT_STAT st;
 	TALLOC_CTX *ctx = p->mem_ctx;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	DEBUG(5,("_srvsvc_NetShareAdd: %d\n", __LINE__));
 
@@ -2004,7 +2006,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 	if (p->session_info->unix_token->uid != sec_initial_uid()  && !is_disk_op )
 		return WERR_ACCESS_DENIED;
 
-	if (!lp_add_share_command(talloc_tos()) || !*lp_add_share_command(talloc_tos())) {
+	if (!lp_add_share_command(talloc_tos(), lp_sub) || !*lp_add_share_command(talloc_tos(), lp_sub)) {
 		DBG_WARNING("_srvsvc_NetShareAdd: No \"add share command\" parameter set in smb.conf.\n");
 		return WERR_ACCESS_DENIED;
 	}
@@ -2110,7 +2112,7 @@ WERROR _srvsvc_NetShareAdd(struct pipes_struct *p,
 
 	command = talloc_asprintf(ctx,
 			"%s \"%s\" \"%s\" \"%s\" \"%s\" %d",
-			lp_add_share_command(talloc_tos()),
+			lp_add_share_command(talloc_tos(), lp_sub),
 			get_dyn_CONFIGFILE(),
 			share_name_in,
 			path,
