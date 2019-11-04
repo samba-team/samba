@@ -150,6 +150,14 @@ NTSTATUS share_mode_do_locked(
 	void *private_data);
 NTSTATUS share_mode_wakeup_waiters(struct file_id id);
 
+struct tevent_req *share_mode_watch_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct file_id id,
+	struct server_id blocker);
+NTSTATUS share_mode_watch_recv(
+	struct tevent_req *req, bool *blockerdead, struct server_id *blocker);
+
 struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 						  struct file_id id);
 struct tevent_req *fetch_share_mode_send(TALLOC_CTX *mem_ctx,

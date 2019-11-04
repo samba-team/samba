@@ -815,6 +815,89 @@ NTSTATUS share_mode_wakeup_waiters(struct file_id id)
 	return share_mode_do_locked(id, share_mode_wakeup_waiters_fn, NULL);
 }
 
+struct share_mode_watch_state {
+	struct tevent_context *ev;
+	bool blockerdead;
+	struct server_id blocker;
+	struct tevent_req *subreq;
+};
+
+static void share_mode_watch_fn(
+	TDB_DATA value, bool *modified_dependent, void *private_data)
+{
+	struct share_mode_watch_state *state = talloc_get_type_abort(
+		private_data, struct share_mode_watch_state);
+
+	state->subreq = dbwrap_watched_watch_send(
+		state, state->ev, static_share_mode_record, state->blocker);
+}
+
+static void share_mode_watch_done(struct tevent_req *subreq);
+
+struct tevent_req *share_mode_watch_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct file_id id,
+	struct server_id blocker)
+{
+	struct tevent_req *req = NULL;
+	struct share_mode_watch_state *state = NULL;
+	NTSTATUS status;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct share_mode_watch_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->ev = ev;
+	state->blocker = blocker;
+
+	status = share_mode_do_locked(id, share_mode_watch_fn, state);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
+	if (tevent_req_nomem(state->subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(state->subreq, share_mode_watch_done, req);
+	return req;
+}
+
+static void share_mode_watch_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct share_mode_watch_state *state = tevent_req_data(
+		req, struct share_mode_watch_state);
+	NTSTATUS status;
+
+	status = dbwrap_watched_watch_recv(
+		subreq, &state->blockerdead, &state->blocker);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS share_mode_watch_recv(
+	struct tevent_req *req, bool *blockerdead, struct server_id *blocker)
+{
+	struct share_mode_watch_state *state = tevent_req_data(
+		req, struct share_mode_watch_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (blockerdead != NULL) {
+		*blockerdead = state->blockerdead;
+	}
+	if (blocker != NULL) {
+		*blocker = state->blocker;
+	}
+	return NT_STATUS_OK;
+}
+
 struct fetch_share_mode_unlocked_state {
 	TALLOC_CTX *mem_ctx;
 	struct share_mode_lock *lck;
