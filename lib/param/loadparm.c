@@ -3132,13 +3132,15 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 	struct debug_settings settings;
 	int max_protocol, min_protocol;
 	TALLOC_CTX *tmp_ctx;
+	const struct loadparm_substitution *lp_sub =
+		lpcfg_noop_substitution();
 
 	tmp_ctx = talloc_new(lp_ctx);
 	if (tmp_ctx == NULL) {
 		return false;
 	}
 
-	lpcfg_add_auto_services(lp_ctx, lpcfg_auto_services(lp_ctx, tmp_ctx));
+	lpcfg_add_auto_services(lp_ctx, lpcfg_auto_services(lp_ctx, lp_sub, tmp_ctx));
 
 	if (!lp_ctx->globals->wins_server_list && lp_ctx->globals->we_are_a_wins_server) {
 		lpcfg_do_global_parameter(lp_ctx, "wins server", "127.0.0.1");

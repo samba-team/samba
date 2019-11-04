@@ -3989,7 +3989,9 @@ static bool lp_load_ex(const char *pszFname,
 	}
 
 	{
-		char *serv = lp_auto_services(talloc_tos());
+		const struct loadparm_substitution *lp_sub =
+			loadparm_s3_global_substitution();
+		char *serv = lp_auto_services(talloc_tos(), lp_sub);
 		lp_add_auto_services(serv);
 		TALLOC_FREE(serv);
 	}

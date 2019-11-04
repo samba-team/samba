@@ -1,6 +1,7 @@
 <samba:parameter name="auto services"
                  context="G"
                  type="string"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>preload</synonym>
 <description>
