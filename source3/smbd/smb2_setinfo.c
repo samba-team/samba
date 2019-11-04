@@ -265,10 +265,10 @@ static struct tevent_req *delay_rename_for_lease_break(struct tevent_req *req,
 
 	talloc_set_destructor(rename_state, defer_rename_state_destructor);
 
-	subreq = dbwrap_watched_watch_send(
+	subreq = share_mode_watch_send(
 				rename_state,
 				ev,
-				lck->data->record,
+				lck->data->id,
 				(struct server_id){0});
 
 	if (subreq == NULL) {
@@ -296,7 +296,7 @@ static void defer_rename_done(struct tevent_req *subreq)
 	int ret_size = 0;
 	bool ok;
 
-	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	status = share_mode_watch_recv(subreq, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("dbwrap_record_watch_recv returned %s\n",

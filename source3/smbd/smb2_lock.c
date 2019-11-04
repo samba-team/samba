@@ -546,8 +546,8 @@ static void smbd_smb2_lock_try(struct tevent_req *req)
 setup_retry:
 	DBG_DEBUG("Watching share mode lock\n");
 
-	subreq = dbwrap_watched_watch_send(
-		state, state->ev, lck->data->record, blocking_pid);
+	subreq = share_mode_watch_send(
+		state, state->ev, lck->data->id, blocking_pid);
 	TALLOC_FREE(lck);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
@@ -585,7 +585,7 @@ static void smbd_smb2_lock_retry(struct tevent_req *subreq)
 		return;
 	}
 
-	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	status = share_mode_watch_recv(subreq, NULL, NULL);
 	TALLOC_FREE(subreq);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		/*

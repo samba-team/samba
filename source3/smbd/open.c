@@ -2702,10 +2702,11 @@ static void defer_open(struct share_mode_lock *lck,
 
 	DBG_DEBUG("defering mid %" PRIu64 "\n", req->mid);
 
-	watch_req = dbwrap_watched_watch_send(watch_state,
-					      req->sconn->ev_ctx,
-					      lck->data->record,
-					      (struct server_id){0});
+	watch_req = share_mode_watch_send(
+		watch_state,
+		req->sconn->ev_ctx,
+		lck->data->id,
+		(struct server_id){0});
 	if (watch_req == NULL) {
 		exit_server("Could not watch share mode record");
 	}
@@ -2730,7 +2731,7 @@ static void defer_open_done(struct tevent_req *req)
 	NTSTATUS status;
 	bool ret;
 
-	status = dbwrap_watched_watch_recv(req, NULL, NULL);
+	status = share_mode_watch_recv(req, NULL, NULL);
 	TALLOC_FREE(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("dbwrap_watched_watch_recv returned %s\n",
@@ -2822,13 +2823,13 @@ static bool setup_poll_open(
 	}
 
 	if (lck != NULL) {
-		open_rec->watch_req = dbwrap_watched_watch_send(
+		open_rec->watch_req = share_mode_watch_send(
 			open_rec,
 			req->sconn->ev_ctx,
-			lck->data->record,
+			lck->data->id,
 			(struct server_id) {0});
 		if (open_rec->watch_req == NULL) {
-			DBG_WARNING("dbwrap_watched_watch_send failed\n");
+			DBG_WARNING("share_mode_watch_send failed\n");
 			TALLOC_FREE(open_rec);
 			return false;
 		}
@@ -2858,7 +2859,7 @@ static void poll_open_done(struct tevent_req *subreq)
 	NTSTATUS status;
 	bool ok;
 
-	status = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	status = share_mode_watch_recv(subreq, NULL, NULL);
 	TALLOC_FREE(subreq);
 	DBG_DEBUG("dbwrap_watched_watch_recv returned %s\n",
 		  nt_errstr(status));
