@@ -1,6 +1,7 @@
 <samba:parameter name="postexec"
                  context="S"
                  type="string"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This option specifies a command to be run 

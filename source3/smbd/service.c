@@ -1151,6 +1151,8 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 {
 	char rootpath[2] = { '/', '\0'};
 	struct smb_filename root_fname = { .base_name = rootpath };
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	file_close_conn(conn);
 
@@ -1169,7 +1171,7 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 	SMB_VFS_DISCONNECT(conn);
 
 	/* execute any "postexec = " line */
-	if (*lp_postexec(talloc_tos(), SNUM(conn)) &&
+	if (*lp_postexec(talloc_tos(), lp_sub, SNUM(conn)) &&
 	    change_to_user_and_service(conn, vuid))  {
 		char *cmd = talloc_sub_full(talloc_tos(),
 					lp_const_servicename(SNUM(conn)),
@@ -1178,7 +1180,7 @@ void close_cnum(connection_struct *conn, uint64_t vuid)
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
-					lp_postexec(talloc_tos(), SNUM(conn)));
+					lp_postexec(talloc_tos(), lp_sub, SNUM(conn)));
 		smbrun(cmd, NULL, NULL);
 		TALLOC_FREE(cmd);
 		change_to_root_user();
