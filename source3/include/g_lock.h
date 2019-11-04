@@ -75,5 +75,6 @@ NTSTATUS g_lock_watch_data_recv(
 	struct tevent_req *req,
 	bool *blockerdead,
 	struct server_id *blocker);
+void g_lock_wake_watchers(struct g_lock_ctx *ctx, TDB_DATA key);
 
 #endif

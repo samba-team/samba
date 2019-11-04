@@ -1241,3 +1241,38 @@ NTSTATUS g_lock_watch_data_recv(
 
 	return NT_STATUS_OK;
 }
+
+static void g_lock_wake_watchers_fn(
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data)
+{
+	struct g_lock lck = { .exclusive.pid = 0 };
+	NTSTATUS status;
+	bool ok;
+
+	ok = g_lock_parse(value.dptr, value.dsize, &lck);
+	if (!ok) {
+		DBG_WARNING("g_lock_parse failed\n");
+		return;
+	}
+
+	lck.data_seqnum += 1;
+
+	status = g_lock_store(rec, &lck, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("g_lock_store failed: %s\n", nt_errstr(status));
+		return;
+	}
+}
+
+void g_lock_wake_watchers(struct g_lock_ctx *ctx, TDB_DATA key)
+{
+	NTSTATUS status;
+
+	status = dbwrap_do_locked(ctx->db, key, g_lock_wake_watchers_fn, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dbwrap_do_locked returned %s\n",
+			  nt_errstr(status));
+	}
+}
