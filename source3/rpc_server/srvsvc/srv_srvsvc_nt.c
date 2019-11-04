@@ -1889,7 +1889,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 	string_replace(comment, '"', ' ');
 
 	DEBUG(10,("_srvsvc_NetShareSetInfo: change share command = %s\n",
-		lp_change_share_command(talloc_tos()) ? lp_change_share_command(talloc_tos()) : "NULL" ));
+		lp_change_share_command(talloc_tos(), lp_sub) ? lp_change_share_command(talloc_tos(), lp_sub) : "NULL" ));
 
 	/* Only call modify function if something changed. */
 
@@ -1898,14 +1898,14 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 			|| (lp_max_connections(snum) != max_connections)
 			|| csc_policy_changed) {
 
-		if (!lp_change_share_command(talloc_tos()) || !*lp_change_share_command(talloc_tos())) {
+		if (!lp_change_share_command(talloc_tos(), lp_sub) || !*lp_change_share_command(talloc_tos(), lp_sub)) {
 			DEBUG(10,("_srvsvc_NetShareSetInfo: No change share command\n"));
 			return WERR_ACCESS_DENIED;
 		}
 
 		command = talloc_asprintf(p->mem_ctx,
 				"%s \"%s\" \"%s\" \"%s\" \"%s\" %d \"%s\"",
-				lp_change_share_command(talloc_tos()),
+				lp_change_share_command(talloc_tos(), lp_sub),
 				get_dyn_CONFIGFILE(),
 				share_name,
 				path,
