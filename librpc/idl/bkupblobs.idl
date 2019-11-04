@@ -12,7 +12,7 @@ import "fscc.idl";
 ]
 
 
-interface bkup
+interface bkupblobs
 {
 	typedef [v1_enum] enum {
 		STREAM_ID_DATA	= 1,
