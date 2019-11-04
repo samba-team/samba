@@ -101,10 +101,12 @@ struct imessaging_context *winbind_imessaging_context(void)
 
 static bool reload_services_file(const char *lfile)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	bool ret;
 
 	if (lp_loaded()) {
-		char *fname = lp_next_configfile(talloc_tos());
+		char *fname = lp_next_configfile(talloc_tos(), lp_sub);
 
 		if (file_exist(fname) && !strcsequal(fname,get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);

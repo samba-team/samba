@@ -120,11 +120,13 @@ bool reload_services(struct smbd_server_connection *sconn,
 		     bool (*snumused) (struct smbd_server_connection *, int),
 		     bool test)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct smbXsrv_connection *xconn = NULL;
 	bool ret;
 
 	if (lp_loaded()) {
-		char *fname = lp_next_configfile(talloc_tos());
+		char *fname = lp_next_configfile(talloc_tos(), lp_sub);
 		if (file_exist(fname) &&
 		    !strcsequal(fname, get_dyn_CONFIGFILE())) {
 			set_dyn_CONFIGFILE(fname);

@@ -2,6 +2,7 @@
                  context="G"
                  type="string"
                  function="next_configfile"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This allows you to override the config file 
