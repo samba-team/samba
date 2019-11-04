@@ -1104,6 +1104,7 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 					DATA_BLOB *data)
 {
 	struct file_id id;
+	struct file_id_buf idbuf;
 	unsigned long file_id;
 	files_struct *fsp;
 	struct smbd_server_connection *sconn =
@@ -1125,9 +1126,10 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	pull_file_id_24((char *)data->data, &id);
 	file_id = (unsigned long)IVAL(data->data, 24);
 
-	DEBUG(10, ("Got kernel oplock break message from pid %s: %s/%u\n",
-		   server_id_str_buf(src, &tmp), file_id_string_tos(&id),
-		   (unsigned int)file_id));
+	DBG_DEBUG("Got kernel oplock break message from pid %s: %s/%u\n",
+		  server_id_str_buf(src, &tmp),
+		  file_id_str_buf(id, &idbuf),
+		  (unsigned int)file_id);
 
 	fsp = initial_break_processing(sconn, id, file_id);
 
