@@ -480,9 +480,11 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 	uint16_t lease_version, epoch;
 	NTSTATUS status;
 	uint32_t i;
+	struct file_id_buf idbuf;
 
-	DEBUG(10, ("%s: Downgrading %s to %x\n", __func__,
-		   file_id_string_tos(&id), (unsigned)lease_state));
+	DBG_DEBUG("Downgrading %s to %"PRIu32"\n",
+		  file_id_str_buf(id, &idbuf),
+		  lease_state);
 
 	lck = get_existing_share_mode_lock(talloc_tos(), id);
 	if (lck == NULL) {
@@ -652,8 +654,10 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 		}
 	}
 
-	DEBUG(10, ("%s: Downgrading %s to %x => %s\n", __func__,
-		   file_id_string_tos(&id), (unsigned)lease_state, nt_errstr(status)));
+	DBG_DEBUG("Downgrading %s to %"PRIu32" => %s\n",
+		  file_id_str_buf(id, &idbuf),
+		  lease_state,
+		  nt_errstr(status));
 
 	/*
 	 * No, we did not modify the share mode array. We did modify
@@ -666,8 +670,11 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 	fsps_lease_update(sconn, &id, key);
 
 	TALLOC_FREE(lck);
-	DEBUG(10, ("%s: Downgrading %s to %x => %s\n", __func__,
-		   file_id_string_tos(&id), (unsigned)lease_state, nt_errstr(status)));
+
+	DBG_DEBUG("Downgrading %s to %"PRIu32" => %s\n",
+		  file_id_str_buf(id, &idbuf),
+		  lease_state,
+		  nt_errstr(status));
 
 	/*
 	 * Dynamic share case. Ensure other opens are copies.
@@ -682,8 +689,10 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 
 		fsps_lease_update(sconn, &ids[i], key);
 
-		DEBUG(10, ("%s: Downgrading %s to %x => %s\n", __func__,
-			file_id_string_tos(&ids[i]), (unsigned)lease_state, nt_errstr(status)));
+		DBG_DEBUG("Downgrading %s to %"PRIu32" => %s\n",
+			  file_id_str_buf(ids[i], &idbuf),
+			  lease_state,
+			  nt_errstr(status));
 
 		TALLOC_FREE(lck);
 	}
