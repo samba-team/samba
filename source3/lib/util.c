@@ -632,7 +632,7 @@ char *automount_lookup(TALLOC_CTX *ctx, const char *user_name)
 {
 	char *value = NULL;
 
-	char *nis_map = (char *)lp_homedir_map();
+	char *nis_map = (char *)lp_homedir_map(talloc_tos());
 
 	char buffer[NIS_MAXATTRVAL + 1];
 	nis_result *result;
