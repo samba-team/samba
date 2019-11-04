@@ -414,7 +414,8 @@ fail:
  If modified, store the share_mode_data back into the database.
 ********************************************************************/
 
-static NTSTATUS share_mode_data_store(struct share_mode_data *d)
+static NTSTATUS share_mode_data_store(
+	struct share_mode_data *d, struct db_record *rec)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
@@ -440,7 +441,7 @@ static NTSTATUS share_mode_data_store(struct share_mode_data *d)
 			DBG_DEBUG("Ignoring fresh empty record\n");
 			return NT_STATUS_OK;
 		}
-		status = dbwrap_record_delete(d->record);
+		status = dbwrap_record_delete(rec);
 		return status;
 	}
 
@@ -453,7 +454,7 @@ static NTSTATUS share_mode_data_store(struct share_mode_data *d)
 	}
 
 	status = dbwrap_record_store(
-		d->record,
+		rec,
 		(TDB_DATA) { .dptr = blob.data, .dsize = blob.length },
 		TDB_REPLACE);
 	TALLOC_FREE(blob.data);
@@ -676,7 +677,8 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 		return 0;
 	}
 
-	status = share_mode_data_store(static_share_mode_data);
+	status = share_mode_data_store(
+		static_share_mode_data, static_share_mode_record);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("share_mode_data_store failed: %s\n",
 			nt_errstr(status));
