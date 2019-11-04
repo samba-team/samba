@@ -770,7 +770,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	 * to below */
 
 	/* execute any "preexec = " line */
-	if (*lp_preexec(talloc_tos(), snum)) {
+	if (*lp_preexec(talloc_tos(), lp_sub, snum)) {
 		char *cmd = talloc_sub_full(talloc_tos(),
 					lp_const_servicename(SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
@@ -778,7 +778,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 					conn->session_info->unix_token->gid,
 					conn->session_info->unix_info->sanitized_username,
 					conn->session_info->info->domain_name,
-					lp_preexec(talloc_tos(), snum));
+					lp_preexec(talloc_tos(), lp_sub, snum));
 		ret = smbrun(cmd, NULL, NULL);
 		TALLOC_FREE(cmd);
 		if (ret != 0 && lp_preexec_close(snum)) {
