@@ -58,7 +58,7 @@ NTSTATUS set_file_oplock(files_struct *fsp)
 	struct kernel_oplocks *koplocks = sconn->oplocks.kernel_ops;
 	bool use_kernel = lp_kernel_oplocks(SNUM(fsp->conn)) &&
 			(koplocks != NULL);
-	file_id_buf buf;
+	struct file_id_buf buf;
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK && use_kernel) {
 		DEBUG(10, ("Refusing level2 oplock, kernel oplocks "
@@ -220,10 +220,12 @@ bool remove_oplock(files_struct *fsp)
 
 	ret = remove_share_oplock(lck, fsp);
 	if (!ret) {
+		struct file_id_buf buf;
+
 		DBG_ERR("failed to remove share oplock for "
 			"file %s, %s, %s\n",
 			fsp_str_dbg(fsp), fsp_fnum_dbg(fsp),
-			file_id_string_tos(&fsp->file_id));
+			file_id_str_buf(fsp->file_id, &buf));
 	}
 	release_file_oplock(fsp);
 
