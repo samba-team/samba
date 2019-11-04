@@ -2620,7 +2620,7 @@ const char *lp_ldap_idmap_suffix(TALLOC_CTX *ctx)
 	if (Globals._ldap_idmap_suffix[0])
 		return append_ldap_suffix(ctx, Globals._ldap_idmap_suffix);
 
-	return lp_string(ctx, Globals.ldap_suffix);
+	return talloc_strdup(ctx, Globals.ldap_suffix);
 }
 
 /**
