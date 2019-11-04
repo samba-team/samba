@@ -108,4 +108,11 @@ int samba_gnutls_arcfour_confounded_md5(const DATA_BLOB *key_input1,
 					DATA_BLOB *data,
 					enum samba_gnutls_direction encrypt);
 
+/**
+ * @brief Check if weak crypto is allowed.
+ *
+ * @return true if weak crypo is allowed, false otherwise.
+ */
+bool samba_gnutls_weak_crypto_allowed(void);
+
 #endif /* _GNUTLS_HELPERS_H */

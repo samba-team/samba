@@ -10,6 +10,7 @@ bld.SAMBA_SUBSYSTEM('GNUTLS_HELPERS',
                     source='''
                     gnutls_error.c
                     gnutls_arcfour_confounded_md5.c
+                    gnutls_weak_crypto.c
                     ''',
                     deps='gnutls samba-errors');
 
