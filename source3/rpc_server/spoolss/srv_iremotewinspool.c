@@ -34,36 +34,10 @@ static bool forward_opnum_to_spoolss(uint16_t opnum) {
 static NTSTATUS iremotewinspool__op_bind(struct dcesrv_connection_context *context, const struct dcesrv_interface *iface)
 {
 	struct pipes_struct *p = NULL;
-	struct pipe_rpc_fns *context_fns = NULL;
-	bool ok = false;
 
 	/* Retrieve pipes struct */
 	p = dcesrv_get_pipes_struct(context->conn);
-
-	/* TODO check loop */
-	/* Init pipe context */
 	p->pipe_bound = true;
-	for (context_fns = p->contexts; context_fns != NULL; context_fns = context_fns->next) {
-		if (context_fns->context_id != context->context_id) {
-			continue;
-		}
-		ok = ndr_syntax_id_equal(&context_fns->syntax, &iface->syntax_id);
-		if (ok) {
-			break;
-		}
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-	if (context_fns == NULL) {
-		context_fns = talloc_zero(p, struct pipe_rpc_fns);
-		if (context_fns == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		context_fns->next = context_fns->prev = NULL;
-		context_fns->context_id = context->context_id;
-		context_fns->syntax = iface->syntax_id;
-		DLIST_ADD( p->contexts, context_fns);
-	}
 #ifdef DCESRV_INTERFACE_IREMOTEWINSPOOL_BIND
 	return DCESRV_INTERFACE_IREMOTEWINSPOOL_BIND(context,iface);
 #else

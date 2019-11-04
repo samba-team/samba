@@ -34,7 +34,6 @@
 #include "rpc_server/rpc_pipes.h"
 #include "../lib/tsocket/tsocket.h"
 #include "../lib/util/tevent_ntstatus.h"
-#include "rpc_contexts.h"
 #include "rpc_server/rpc_config.h"
 #include "librpc/ndr/ndr_table.h"
 #include "rpc_server/rpc_server.h"
@@ -249,7 +248,6 @@ static NTSTATUS make_internal_ncacn_conn(TALLOC_CTX *mem_ctx,
 				struct messaging_context *msg_ctx,
 				struct dcerpc_ncacn_conn **_out)
 {
-	struct pipe_rpc_fns *context_fns;
 	struct dcerpc_ncacn_conn *ncacn_conn = NULL;
 	const char *pipe_name = NULL;
 	NTSTATUS status;
@@ -296,7 +294,6 @@ static NTSTATUS make_internal_ncacn_conn(TALLOC_CTX *mem_ctx,
 				     msg_ctx,
 				     pipe_name,
 				     NCALRPC,
-				     RPC_LITTLE_ENDIAN,
 				     ncacn_conn->remote_client_addr,
 				     ncacn_conn->local_server_addr,
 				     &ncacn_conn->p);
@@ -305,20 +302,6 @@ static NTSTATUS make_internal_ncacn_conn(TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
-
-	context_fns = talloc_zero(ncacn_conn->p, struct pipe_rpc_fns);
-	if (context_fns == NULL) {
-		DBG_ERR("No memory");
-		status = NT_STATUS_NO_MEMORY;
-		goto fail;
-	}
-
-	context_fns->next = context_fns->prev = NULL;
-	context_fns->context_id = 0;
-	context_fns->syntax = table->syntax_id;
-
-	/* add to the list of open contexts */
-	DLIST_ADD(ncacn_conn->p->contexts, context_fns);
 
 	DEBUG(4,("Created internal pipe %s\n", pipe_name));
 

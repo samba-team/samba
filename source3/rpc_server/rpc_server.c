@@ -53,7 +53,7 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 	int ret;
 
 	ret = make_base_pipes_struct(mem_ctx, msg_ctx, pipe_name,
-				     transport, RPC_LITTLE_ENDIAN,
+				     transport,
 				     remote_address, local_address, &p);
 	if (ret) {
 		*perrno = ret;

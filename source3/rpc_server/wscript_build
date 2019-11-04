@@ -10,7 +10,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_CONFIG',
                     deps='talloc')
 
 bld.SAMBA3_SUBSYSTEM('RPC_NCACN_NP',
-                    source='rpc_ncacn_np.c rpc_handles.c rpc_contexts.c',
+                    source='rpc_ncacn_np.c rpc_handles.c',
                     deps='RPC_CONFIG auth common_auth npa_tstream')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SERVER_LOOP',

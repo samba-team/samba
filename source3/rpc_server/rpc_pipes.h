@@ -28,29 +28,8 @@
 
 struct dcesrv_ep_entry_list;
 struct tsocket_address;
-struct handle_list;
 struct pipes_struct;
 struct dcesrv_context;
-
-struct pipe_rpc_fns {
-
-	struct pipe_rpc_fns *next, *prev;
-
-	/* RPC function table associated with the current rpc_bind (associated by context) */
-
-	uint32_t context_id;
-	struct ndr_syntax_id syntax;
-
-	/*
-	 * shall we allow "connect" auth level for this interface ?
-	 */
-	bool allow_connect;
-
-	/*
-	 * minimal required auth level
-	 */
-	enum dcerpc_AuthLevel min_auth_level;
-};
 
 /*
  * DCE/RPC-specific samba-internal-specific handling of data on
@@ -69,11 +48,6 @@ struct pipes_struct {
 
 	struct dcesrv_ep_entry_list *ep_entries;
 
-	/* linked list of rpc dispatch tables associated 
-	   with the open rpc contexts */
-
-	struct pipe_rpc_fns *contexts;
-
 	struct pipe_auth_data auth;
 
 	/*
@@ -86,17 +60,11 @@ struct pipes_struct {
 	 */
 	int fault_state;
 
-	/*
-	 * Set to RPC_BIG_ENDIAN when dealing with big-endian PDU's
-	 */
-	bool endian;
-
 	/* This context is used for PDU data and is freed between each pdu.
 		Don't use for pipe state storage. */
 	TALLOC_CTX *mem_ctx;
 
 	/* handle database to use on this pipe. */
-	struct handle_list *pipe_handles;
 	struct dcesrv_call_state *dce_call;
 
 	/* call id retrieved from the pdu header */
@@ -114,7 +82,6 @@ int make_base_pipes_struct(TALLOC_CTX *mem_ctx,
 			   struct messaging_context *msg_ctx,
 			   const char *pipe_name,
 			   enum dcerpc_transport_t transport,
-			   bool endian,
 			   const struct tsocket_address *remote_address,
 			   const struct tsocket_address *local_address,
 			   struct pipes_struct **_p);
