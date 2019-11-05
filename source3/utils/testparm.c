@@ -211,6 +211,8 @@ static int do_global_checks(void)
 	int ret = 0;
 	SMB_STRUCT_STAT st;
 	const char *socket_options;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	if (lp_security() >= SEC_DOMAIN && !lp_encrypt_passwords()) {
 		fprintf(stderr, "ERROR: in 'security=domain' mode the "
@@ -407,7 +409,7 @@ static int do_global_checks(void)
 		}
 #endif
 
-		if(lp_passwd_chat(talloc_tos()) == NULL) {
+		if(lp_passwd_chat(talloc_tos(), lp_sub) == NULL) {
 			fprintf(stderr,
 				"ERROR: the 'unix password sync' parameter is "
 				"set and there is no valid 'passwd chat' "
@@ -434,14 +436,14 @@ static int do_global_checks(void)
 		 */
 
 		if(lp_encrypt_passwords()) {
-			if(strstr_m( lp_passwd_chat(talloc_tos()), "%o")!=NULL) {
+			if(strstr_m( lp_passwd_chat(talloc_tos(), lp_sub), "%o")!=NULL) {
 				fprintf(stderr,
 					"ERROR: the 'passwd chat' script [%s] "
 					"expects to use the old plaintext "
 					"password via the %%o substitution. With "
 					"encrypted passwords this is not "
 					"possible.\n\n",
-					lp_passwd_chat(talloc_tos()) );
+					lp_passwd_chat(talloc_tos(), lp_sub) );
 				ret = 1;
 			}
 		}

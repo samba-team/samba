@@ -510,6 +510,8 @@ while we were waiting\n", WTERMSIG(wstat)));
 bool chgpasswd(const char *name, const char *rhost, const struct passwd *pass,
 	       const char *oldpass, const char *newpass, bool as_root)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *passwordprogram = NULL;
 	char *chatsequence = NULL;
 	size_t i;
@@ -597,7 +599,7 @@ bool chgpasswd(const char *name, const char *rhost, const struct passwd *pass,
 		DEBUG(2, ("chgpasswd: Null password program - no password changing\n"));
 		return false;
 	}
-	chatsequence = lp_passwd_chat(ctx);
+	chatsequence = lp_passwd_chat(ctx, lp_sub);
 	if (!chatsequence || !*chatsequence) {
 		DEBUG(2, ("chgpasswd: Null chat sequence - no password changing\n"));
 		return false;
