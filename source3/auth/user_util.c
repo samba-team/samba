@@ -288,7 +288,7 @@ bool map_username(TALLOC_CTX *ctx, const char *user_in, char **p_user_out)
 	char *s;
 	char buf[512];
 	bool mapped_user = False;
-	char *cmd = lp_username_map_script(talloc_tos());
+	char *cmd = lp_username_map_script(talloc_tos(), lp_sub);
 
 	*p_user_out = NULL;
 
