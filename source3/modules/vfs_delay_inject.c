@@ -334,8 +334,9 @@ static void vfs_delay_inject_brl_lock_timer(struct tevent_context *ev,
 
 	status = share_mode_wakeup_waiters(state->fsp->file_id);
 	if (!NT_STATUS_IS_OK(status)) {
+		struct file_id_buf idbuf;
 		DBG_ERR("share_mode_wakeup_waiters(%s) %s\n",
-			file_id_string_tos(&state->fsp->file_id),
+			file_id_str_buf(state->fsp->file_id, &idbuf),
 			nt_errstr(status));
 	}
 }
