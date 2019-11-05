@@ -16,7 +16,7 @@ srvid="0xaebbccdd12345678"
 dummy_client -d INFO -s "$ctdbd_socket" -n 10 -S "$srvid" &
 pid=$!
 
-wait_until 10 $CTDB process-exists "$pid"
+wait_until 10 $CTDB process-exists "$pid" "$srvid"
 
 srvid2="0x1234567812345678"
 required_result 1 "PID $pid with SRVID $srvid2 does not exist"
