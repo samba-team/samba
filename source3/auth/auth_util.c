@@ -411,13 +411,15 @@ bool make_user_info_guest(TALLOC_CTX *mem_ctx,
 static NTSTATUS log_nt_token(struct security_token *token)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *command;
 	char *group_sidstr;
 	struct dom_sid_buf buf;
 	size_t i;
 
-	if ((lp_log_nt_token_command(frame) == NULL) ||
-	    (strlen(lp_log_nt_token_command(frame)) == 0)) {
+	if ((lp_log_nt_token_command(frame, lp_sub) == NULL) ||
+	    (strlen(lp_log_nt_token_command(frame, lp_sub)) == 0)) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
 	}
@@ -430,7 +432,7 @@ static NTSTATUS log_nt_token(struct security_token *token)
 	}
 
 	command = talloc_string_sub(
-		frame, lp_log_nt_token_command(frame),
+		frame, lp_log_nt_token_command(frame, lp_sub),
 		"%s", dom_sid_str_buf(&token->sids[0], &buf));
 	command = talloc_string_sub(frame, command, "%t", group_sidstr);
 
