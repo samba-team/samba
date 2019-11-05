@@ -897,7 +897,7 @@ if (delete_list or update_list) and not opts.nocreds:
 for d in delete_list:
     if d.rpc or (not use_nsupdate and use_samba_tool):
         if opts.verbose:
-            print("update (samba-tool): %s" % d)
+            print("delete (samba-tool): %s" % d)
         call_samba_tool(d, op="delete", zone=d.zone)
 
     elif am_rodc:
