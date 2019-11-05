@@ -506,14 +506,6 @@ RPM_DISTS = {
             'quota-devel': '', # FIXME: Add me back, once available!
         }
     },
-    'fedora28': {
-        'docker_image': 'fedora:28',
-        'vagrant_box': 'fedora/28-cloud-base',
-        'bootstrap': DNF_BOOTSTRAP,
-        'replace': {
-            'lsb-release': 'redhat-lsb',
-        }
-    },
     'fedora29': {
         'docker_image': 'fedora:29',
         'vagrant_box': 'fedora/29-cloud-base',

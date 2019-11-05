@@ -107,9 +107,6 @@ fedora30:
 fedora29:
   extends: .build_image_template
 
-fedora28:
-  extends: .build_image_template_force_broken
-
 centos8:
   extends: .build_image_template
 
