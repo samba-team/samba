@@ -1,2 +1,0 @@
-^samba.tests.blackbox.ndrdump.samba.tests.blackbox.ndrdump.NdrDumpTests.test_ndrdump_with_binary_struct_name
-^samba.tests.blackbox.ndrdump.samba.tests.blackbox.ndrdump.NdrDumpTests.test_ndrdump_with_hex_struct_name

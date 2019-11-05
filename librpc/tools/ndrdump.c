@@ -375,7 +375,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 
 	if (strcmp(type, "struct") == 0) {
-		flags = 0; /* neither NDR_IN nor NDR_OUT */
+		flags = NDR_SCALARS|NDR_BUFFERS; /* neither NDR_IN nor NDR_OUT */
 		f = find_struct(p, format, &f_buffer);
 	} else {
 		f = find_function(p, format);
