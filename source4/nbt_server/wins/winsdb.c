@@ -985,6 +985,8 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx,
 				     const char *owner,
 				     enum winsdb_handle_caller caller)
 {
+	const struct loadparm_substitution *lp_sub =
+		lpcfg_noop_substitution();
 	struct winsdb_handle *h = NULL;
 	unsigned int flags = 0;
 	bool ret;
@@ -1005,7 +1007,7 @@ struct winsdb_handle *winsdb_connect(TALLOC_CTX *mem_ctx,
 	if (!h->ldb) goto failed;
 
 	h->caller = caller;
-	h->hook_script = lpcfg_wins_hook(lp_ctx, h);
+	h->hook_script = lpcfg_wins_hook(lp_ctx, lp_sub, h);
 
 	h->local_owner = talloc_strdup(h, owner);
 	if (!h->local_owner) goto failed;

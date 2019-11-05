@@ -1,6 +1,7 @@
 <samba:parameter name="wins hook"
                  context="G"
-				 type="string"
+                 type="string"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>When Samba is running as a WINS server this 
