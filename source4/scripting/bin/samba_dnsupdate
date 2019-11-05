@@ -877,7 +877,7 @@ else:
 use_samba_tool = opts.use_samba_tool
 use_nsupdate = opts.use_nsupdate
 # get our krb5 creds
-if delete_list or update_list and not opts.nocreds:
+if (delete_list or update_list) and not opts.nocreds:
     try:
         creds = get_credentials(lp)
     except RuntimeError as e:
