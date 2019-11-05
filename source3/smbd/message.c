@@ -43,6 +43,8 @@ struct msg_state {
 static void msg_deliver(struct msg_state *state)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *name = NULL;
 	int i;
 	int fd;
@@ -53,7 +55,7 @@ static void msg_deliver(struct msg_state *state)
 	char *s;
 	mode_t mask;
 
-	if (! (*lp_message_command(frame))) {
+	if (! (*lp_message_command(frame, lp_sub))) {
 		DEBUG(1,("no messaging command specified\n"));
 		goto done;
 	}
@@ -100,7 +102,7 @@ static void msg_deliver(struct msg_state *state)
 	close(fd);
 
 	/* run the command */
-	s = lp_message_command(frame);
+	s = lp_message_command(frame, lp_sub);
 	if (s == NULL) {
 		goto done;
 	}
@@ -143,6 +145,8 @@ static void msg_deliver(struct msg_state *state)
 
 void reply_sends(struct smb_request *req)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct msg_state *state;
 	int len;
 	const uint8_t *msg;
@@ -150,7 +154,7 @@ void reply_sends(struct smb_request *req)
 
 	START_PROFILE(SMBsends);
 
-	if (!(*lp_message_command(talloc_tos()))) {
+	if (!(*lp_message_command(talloc_tos(), lp_sub))) {
 		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		END_PROFILE(SMBsends);
 		return;
@@ -194,12 +198,14 @@ void reply_sends(struct smb_request *req)
 
 void reply_sendstrt(struct smb_request *req)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct smbXsrv_connection *xconn = req->xconn;
 	const uint8_t *p;
 
 	START_PROFILE(SMBsendstrt);
 
-	if (!(*lp_message_command(talloc_tos()))) {
+	if (!(*lp_message_command(talloc_tos(), lp_sub))) {
 		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		END_PROFILE(SMBsendstrt);
 		return;
@@ -242,6 +248,8 @@ void reply_sendstrt(struct smb_request *req)
 
 void reply_sendtxt(struct smb_request *req)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct smbXsrv_connection *xconn = req->xconn;
 	int len;
 	const char *msg;
@@ -250,7 +258,7 @@ void reply_sendtxt(struct smb_request *req)
 
 	START_PROFILE(SMBsendtxt);
 
-	if (! (*lp_message_command(talloc_tos()))) {
+	if (! (*lp_message_command(talloc_tos(), lp_sub))) {
 		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		END_PROFILE(SMBsendtxt);
 		return;
@@ -297,10 +305,12 @@ void reply_sendtxt(struct smb_request *req)
 
 void reply_sendend(struct smb_request *req)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct smbXsrv_connection *xconn = req->xconn;
 	START_PROFILE(SMBsendend);
 
-	if (! (*lp_message_command(talloc_tos()))) {
+	if (! (*lp_message_command(talloc_tos(), lp_sub))) {
 		reply_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
 		END_PROFILE(SMBsendend);
 		return;
