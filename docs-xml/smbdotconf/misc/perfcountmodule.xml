@@ -1,6 +1,7 @@
 <samba:parameter name="perfcount module"
                  context="G"
                  type="string"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies the perfcount backend to be used when monitoring SMB

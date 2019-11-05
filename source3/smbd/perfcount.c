@@ -174,9 +174,11 @@ void smb_init_perfcount_data(struct smb_perfcount_data *pcd)
 
 bool smb_perfcount_init(void)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *perfcount_object;
 
-	perfcount_object = lp_perfcount_module(talloc_tos());
+	perfcount_object = lp_perfcount_module(talloc_tos(), lp_sub);
 
 	/* don't init */
 	if (!perfcount_object || !perfcount_object[0])
