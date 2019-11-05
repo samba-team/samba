@@ -542,13 +542,15 @@ void browse_sync_remote(time_t t)
 	char *p;
 	unstring myname;
 	TALLOC_CTX *frame = NULL;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	if (last_time && (t < (last_time + REMOTE_ANNOUNCE_INTERVAL)))
 		return;
 
 	last_time = t;
 
-	s = lp_remote_browse_sync(talloc_tos());
+	s = lp_remote_browse_sync(talloc_tos(), lp_sub);
 	if (!*s)
 		return;
 
