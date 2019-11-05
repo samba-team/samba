@@ -1324,6 +1324,8 @@ WERROR _srvsvc_NetFileEnum(struct pipes_struct *p,
 WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 			     struct srvsvc_NetSrvGetInfo *r)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	WERROR status = WERR_OK;
 
 	DEBUG(5,("_srvsvc_NetSrvGetInfo: %d\n", __LINE__));
@@ -1352,7 +1354,7 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 		info102->version_major	= SAMBA_MAJOR_NBT_ANNOUNCE_VERSION;
 		info102->version_minor	= SAMBA_MINOR_NBT_ANNOUNCE_VERSION;
 		info102->server_type	= lp_default_server_announce();
-		info102->comment	= string_truncate(lp_server_string(talloc_tos()),
+		info102->comment	= string_truncate(lp_server_string(talloc_tos(), lp_sub),
 						MAX_SERVER_STRING_LENGTH);
 		info102->users		= 0xffffffff;
 		info102->disc		= 0xf;
@@ -1378,7 +1380,7 @@ WERROR _srvsvc_NetSrvGetInfo(struct pipes_struct *p,
 		info101->version_major	= SAMBA_MAJOR_NBT_ANNOUNCE_VERSION;
 		info101->version_minor	= SAMBA_MINOR_NBT_ANNOUNCE_VERSION;
 		info101->server_type	= lp_default_server_announce();
-		info101->comment	= string_truncate(lp_server_string(talloc_tos()),
+		info101->comment	= string_truncate(lp_server_string(talloc_tos(), lp_sub),
 						MAX_SERVER_STRING_LENGTH);
 
 		r->out.info->info101 = info101;

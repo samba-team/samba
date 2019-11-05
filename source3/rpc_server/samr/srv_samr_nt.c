@@ -3266,6 +3266,8 @@ static NTSTATUS query_dom_info_2(TALLOC_CTX *mem_ctx,
 				 struct samr_DomGeneralInformation *r,
 				 struct samr_domain_info *dinfo)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	uint32_t u_logout;
 	time_t seq_num;
 
@@ -3289,7 +3291,7 @@ static NTSTATUS query_dom_info_2(TALLOC_CTX *mem_ctx,
 
 	unbecome_root();
 
-	r->oem_information.string	= lp_server_string(r);
+	r->oem_information.string	= lp_server_string(r, lp_sub);
 	r->domain_name.string		= lp_workgroup();
 	r->primary.string		= lp_netbios_name();
 	r->sequence_num			= seq_num;
@@ -3333,7 +3335,10 @@ static NTSTATUS query_dom_info_3(TALLOC_CTX *mem_ctx,
 static NTSTATUS query_dom_info_4(TALLOC_CTX *mem_ctx,
 				 struct samr_DomOEMInformation *r)
 {
-	r->oem_information.string = lp_server_string(r);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+
+	r->oem_information.string = lp_server_string(r, lp_sub);
 
 	return NT_STATUS_OK;
 }

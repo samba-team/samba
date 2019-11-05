@@ -34,6 +34,8 @@
 static WERROR NetServerGetInfo_l_101(struct libnetapi_ctx *ctx,
 				     uint8_t **buffer)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct SERVER_INFO_101 i;
 
 	i.sv101_platform_id	= PLATFORM_ID_NT;
@@ -41,7 +43,7 @@ static WERROR NetServerGetInfo_l_101(struct libnetapi_ctx *ctx,
 	i.sv101_version_major	= SAMBA_MAJOR_NBT_ANNOUNCE_VERSION;
 	i.sv101_version_minor	= SAMBA_MINOR_NBT_ANNOUNCE_VERSION;
 	i.sv101_type		= lp_default_server_announce();
-	i.sv101_comment		= lp_server_string(ctx);
+	i.sv101_comment		= lp_server_string(ctx, lp_sub);
 
 	*buffer = (uint8_t *)talloc_memdup(ctx, &i, sizeof(i));
 	if (!*buffer) {
@@ -57,9 +59,11 @@ static WERROR NetServerGetInfo_l_101(struct libnetapi_ctx *ctx,
 static WERROR NetServerGetInfo_l_1005(struct libnetapi_ctx *ctx,
 				      uint8_t **buffer)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct SERVER_INFO_1005 info1005;
 
-	info1005.sv1005_comment = lp_server_string(ctx);
+	info1005.sv1005_comment = lp_server_string(ctx, lp_sub);
 	*buffer = (uint8_t *)talloc_memdup(ctx, &info1005, sizeof(info1005));
 	if (!*buffer) {
 		return WERR_NOT_ENOUGH_MEMORY;

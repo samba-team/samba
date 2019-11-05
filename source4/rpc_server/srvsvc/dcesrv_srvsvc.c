@@ -1437,6 +1437,8 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 {
 	struct dcesrv_context *dce_ctx = dce_call->conn->dce_ctx;
 	struct dcerpc_server_info *server_info = lpcfg_dcerpc_server_info(mem_ctx, dce_ctx->lp_ctx);
+	const struct loadparm_substitution *lp_sub =
+		lpcfg_noop_substitution();
 
 	ZERO_STRUCTP(r->out.info);
 
@@ -1469,7 +1471,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		info101->version_major	= server_info->version_major;
 		info101->version_minor	= server_info->version_minor;
 		info101->server_type	= dcesrv_common_get_server_type(mem_ctx, dce_call->event_ctx, dce_ctx);
-		info101->comment	= lpcfg_server_string(dce_ctx->lp_ctx, mem_ctx);
+		info101->comment	= lpcfg_server_string(dce_ctx->lp_ctx, lp_sub, mem_ctx);
 		W_ERROR_HAVE_NO_MEMORY(info101->comment);
 
 		r->out.info->info101 = info101;
@@ -1489,7 +1491,7 @@ static WERROR dcesrv_srvsvc_NetSrvGetInfo(struct dcesrv_call_state *dce_call, TA
 		info102->version_major	= server_info->version_major;
 		info102->version_minor	= server_info->version_minor;
 		info102->server_type	= dcesrv_common_get_server_type(mem_ctx, dce_call->event_ctx, dce_ctx);
-		info102->comment	= lpcfg_server_string(dce_ctx->lp_ctx, mem_ctx);
+		info102->comment	= lpcfg_server_string(dce_ctx->lp_ctx, lp_sub, mem_ctx);
 		W_ERROR_HAVE_NO_MEMORY(info102->comment);
 
 		info102->users		= dcesrv_common_get_users(mem_ctx, dce_ctx);
