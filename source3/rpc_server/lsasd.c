@@ -62,7 +62,9 @@ static struct pf_daemon_config pf_lsasd_cfg = { 0 };
 
 static void lsasd_reopen_logs(int child_id)
 {
-	char *lfile = lp_logfile(talloc_tos());
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	char *lfile = lp_logfile(talloc_tos(), lp_sub);
 	char *extension;
 	int rc;
 
@@ -83,11 +85,11 @@ static void lsasd_reopen_logs(int child_id)
 		if (strstr(lfile, extension) == NULL) {
 			if (child_id) {
 				rc = asprintf(&lfile, "%s.%d",
-						lp_logfile(talloc_tos()),
+						lp_logfile(talloc_tos(), lp_sub),
 						child_id);
 			} else {
 				rc = asprintf(&lfile, "%s.%s",
-						lp_logfile(talloc_tos()),
+						lp_logfile(talloc_tos(), lp_sub),
 						extension);
 			}
 		}

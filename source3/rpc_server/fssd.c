@@ -42,7 +42,9 @@ void start_fssd(struct tevent_context *ev_ctx,
 
 static void fssd_reopen_logs(void)
 {
-	char *lfile = lp_logfile(NULL);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	char *lfile = lp_logfile(NULL, lp_sub);
 	int rc;
 
 	if (lfile == NULL || lfile[0] == '\0') {
@@ -53,7 +55,7 @@ static void fssd_reopen_logs(void)
 		}
 	} else {
 		if (strstr(lfile, DAEMON_NAME) == NULL) {
-			rc = asprintf(&lfile, "%s.%s", lp_logfile(NULL), DAEMON_NAME);
+			rc = asprintf(&lfile, "%s.%s", lp_logfile(NULL, lp_sub), DAEMON_NAME);
 			if (rc > 0) {
 				lp_set_logfile(lfile);
 				SAFE_FREE(lfile);

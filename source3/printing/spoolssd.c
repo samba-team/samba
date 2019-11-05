@@ -59,7 +59,9 @@ static struct pf_daemon_config pf_spoolss_cfg = { 0 };
 
 static void spoolss_reopen_logs(int child_id)
 {
-	char *lfile = lp_logfile(talloc_tos());
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	char *lfile = lp_logfile(talloc_tos(), lp_sub);
 	char *ext;
 	int rc;
 
@@ -81,11 +83,11 @@ static void spoolss_reopen_logs(int child_id)
 		if (strstr(lfile, ext) == NULL) {
 			if (child_id) {
 				rc = asprintf(&lfile, "%s.%d",
-					      lp_logfile(talloc_tos()),
+					      lp_logfile(talloc_tos(), lp_sub),
 					      child_id);
 			} else {
 				rc = asprintf(&lfile, "%s.%s",
-					      lp_logfile(talloc_tos()),
+					      lp_logfile(talloc_tos(), lp_sub),
 					      ext);
 			}
 		}
@@ -580,14 +582,16 @@ static void print_queue_forward(struct messaging_context *msg,
 
 static char *get_bq_logfile(void)
 {
-	char *lfile = lp_logfile(talloc_tos());
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	char *lfile = lp_logfile(talloc_tos(), lp_sub);
 	int rc;
 
 	if (lfile == NULL || lfile[0] == '\0') {
 		rc = asprintf(&lfile, "%s/log.%s.bq",
 					get_dyn_LOGFILEBASE(), DAEMON_NAME);
 	} else {
-		rc = asprintf(&lfile, "%s.bq", lp_logfile(talloc_tos()));
+		rc = asprintf(&lfile, "%s.bq", lp_logfile(talloc_tos(), lp_sub));
 	}
 	if (rc == -1) {
 		lfile = NULL;

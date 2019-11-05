@@ -1652,6 +1652,8 @@ int main(int argc, const char **argv)
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	poptContext pc;
 	int opt;
 	TALLOC_CTX *frame;
@@ -1681,7 +1683,7 @@ int main(int argc, const char **argv)
  	CatchSignal(SIGUSR2, SIG_IGN);
 
 	fault_setup();
-	dump_core_setup("winbindd", lp_logfile(talloc_tos()));
+	dump_core_setup("winbindd", lp_logfile(talloc_tos(), lp_sub));
 
 	smb_init_locale();
 
@@ -1741,7 +1743,7 @@ int main(int argc, const char **argv)
 	 * is often not related to the path where winbindd is actually run
 	 * in production.
 	 */
-	dump_core_setup("winbindd", lp_logfile(talloc_tos()));
+	dump_core_setup("winbindd", lp_logfile(talloc_tos(), lp_sub));
 	if (is_daemon && interactive) {
 		d_fprintf(stderr,"\nERROR: "
 			  "Option -i|--interactive is not allowed together with -D|--daemon\n\n");
@@ -1785,7 +1787,7 @@ int main(int argc, const char **argv)
 	 * as the log file might have been set in the configuration and cores's
 	 * path is by default basename(lp_logfile()).
 	 */
-	dump_core_setup("winbindd", lp_logfile(talloc_tos()));
+	dump_core_setup("winbindd", lp_logfile(talloc_tos(), lp_sub));
 
 	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC
 	    && !lp_parm_bool(-1, "server role check", "inhibit", false)) {

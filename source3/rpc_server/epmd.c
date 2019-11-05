@@ -38,7 +38,9 @@
 
 static void epmd_reopen_logs(void)
 {
-	char *lfile = lp_logfile(talloc_tos());
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	char *lfile = lp_logfile(talloc_tos(), lp_sub);
 	int rc;
 
 	if (lfile == NULL || lfile[0] == '\0') {
@@ -50,7 +52,7 @@ static void epmd_reopen_logs(void)
 	} else {
 		if (strstr(lfile, DAEMON_NAME) == NULL) {
 			rc = asprintf(&lfile, "%s.%s",
-				      lp_logfile(talloc_tos()), DAEMON_NAME);
+				      lp_logfile(talloc_tos(), lp_sub), DAEMON_NAME);
 			if (rc > 0) {
 				lp_set_logfile(lfile);
 				SAFE_FREE(lfile);

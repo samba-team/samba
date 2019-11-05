@@ -851,6 +851,8 @@ static bool open_sockets(bool isdaemon, int port)
 		POPT_COMMON_SAMBA
 		POPT_TABLEEND
 	};
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	TALLOC_CTX *frame;
 	NTSTATUS status;
 	bool ok;
@@ -916,7 +918,7 @@ static bool open_sockets(bool isdaemon, int port)
 	}
 
 	fault_setup();
-	dump_core_setup("nmbd", lp_logfile(talloc_tos()));
+	dump_core_setup("nmbd", lp_logfile(talloc_tos(), lp_sub));
 
 	/* POSIX demands that signals are inherited. If the invoking process has
 	 * these signals masked, we will have problems, as we won't receive them. */

@@ -101,7 +101,9 @@ static void popt_common_callback(poptContext con,
 		}
 
 		if (override_logfile) {
-			char *logfile = lp_logfile(mem_ctx);
+			const struct loadparm_substitution *lp_sub =
+				loadparm_s3_global_substitution();
+			char *logfile = lp_logfile(mem_ctx, lp_sub);
 			if (logfile == NULL) {
 				talloc_free(mem_ctx);
 				exit(1);

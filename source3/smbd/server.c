@@ -1628,6 +1628,8 @@ extern void build_options(bool screen);
 	struct tevent_signal *se;
 	int profiling_level;
 	char *np_dir = NULL;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	static const struct smbd_shim smbd_shim_fns =
 	{
 		.send_stat_cache_delete_message = smbd_send_stat_cache_delete_message,
@@ -1741,7 +1743,7 @@ extern void build_options(bool screen);
 	gain_root_group_privilege();
 
 	fault_setup();
-	dump_core_setup("smbd", lp_logfile(talloc_tos()));
+	dump_core_setup("smbd", lp_logfile(talloc_tos(), lp_sub));
 
 	/* we are never interested in SIGPIPE */
 	BlockSignals(True,SIGPIPE);

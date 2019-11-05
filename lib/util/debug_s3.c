@@ -40,8 +40,10 @@ bool reopen_logs(void)
 			.debug_uid = lp_debug_uid(),
 			.debug_class = lp_debug_class(),
 		};
+		const struct loadparm_substitution *lp_sub =
+			loadparm_s3_global_substitution();
 
-		debug_set_logfile(lp_logfile(talloc_tos()));
+		debug_set_logfile(lp_logfile(talloc_tos(), lp_sub));
 		debug_parse_levels(lp_log_level(talloc_tos()));
 		debug_set_settings(&settings,
 				   lp_logging(talloc_tos()),

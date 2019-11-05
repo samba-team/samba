@@ -757,13 +757,16 @@ void setup_child(struct winbindd_domain *domain, struct winbindd_child *child,
 		 const char *logprefix,
 		 const char *logname)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+
 	if (logprefix && logname) {
 		char *logbase = NULL;
 
-		if (*lp_logfile(talloc_tos())) {
+		if (*lp_logfile(talloc_tos(), lp_sub)) {
 			char *end = NULL;
 
-			if (asprintf(&logbase, "%s", lp_logfile(talloc_tos())) < 0) {
+			if (asprintf(&logbase, "%s", lp_logfile(talloc_tos(), lp_sub)) < 0) {
 				smb_panic("Internal error: asprintf failed");
 			}
 
