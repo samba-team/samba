@@ -151,12 +151,12 @@ static NTSTATUS g_lock_store(struct db_record *rec, struct g_lock *lck,
 	return dbwrap_record_storev(rec, dbufs, ARRAY_SIZE(dbufs), 0);
 }
 
-struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
-				   struct messaging_context *msg)
+struct g_lock_ctx *g_lock_ctx_init_backend(
+	TALLOC_CTX *mem_ctx,
+	struct messaging_context *msg,
+	struct db_context **backend)
 {
 	struct g_lock_ctx *result;
-	struct db_context *backend;
-	char *db_path;
 
 	result = talloc(mem_ctx, struct g_lock_ctx);
 	if (result == NULL) {
@@ -164,31 +164,44 @@ struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 	}
 	result->msg = msg;
 
-	db_path = lock_path(talloc_tos(), "g_lock.tdb");
-	if (db_path == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	backend = db_open(result, db_path, 0,
-			  TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
-			  O_RDWR|O_CREAT, 0600,
-			  DBWRAP_LOCK_ORDER_3,
-			  DBWRAP_FLAG_NONE);
-	TALLOC_FREE(db_path);
-	if (backend == NULL) {
-		DBG_WARNING("Could not open g_lock.tdb\n");
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	result->db = db_open_watched(result, &backend, msg);
+	result->db = db_open_watched(result, backend, msg);
 	if (result->db == NULL) {
 		DBG_WARNING("db_open_watched failed\n");
 		TALLOC_FREE(result);
 		return NULL;
 	}
 	return result;
+}
+
+struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
+				   struct messaging_context *msg)
+{
+	char *db_path = NULL;
+	struct db_context *backend = NULL;
+	struct g_lock_ctx *ctx = NULL;
+
+	db_path = lock_path(mem_ctx, "g_lock.tdb");
+	if (db_path == NULL) {
+		return NULL;
+	}
+
+	backend = db_open(
+		mem_ctx,
+		db_path,
+		0,
+		TDB_CLEAR_IF_FIRST|TDB_INCOMPATIBLE_HASH,
+		O_RDWR|O_CREAT,
+		0600,
+		DBWRAP_LOCK_ORDER_3,
+		DBWRAP_FLAG_NONE);
+	TALLOC_FREE(db_path);
+	if (backend == NULL) {
+		DBG_WARNING("Could not open g_lock.tdb\n");
+		return NULL;
+	}
+
+	ctx = g_lock_ctx_init_backend(mem_ctx, msg, &backend);
+	return ctx;
 }
 
 static bool g_lock_conflicts(enum g_lock_type l1, enum g_lock_type l2)
