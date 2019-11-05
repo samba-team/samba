@@ -3,7 +3,7 @@
 bld.SAMBA_SUBSYSTEM('fuzzing',
     source='fuzzing.c',
     deps='talloc',
-    enabled=bld.env.enable_libfuzzer,
+    enabled=bld.env.enable_libfuzzer
     )
 
 bld.SAMBA_BINARY('fuzz_tiniparser',

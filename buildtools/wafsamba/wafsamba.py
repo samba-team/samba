@@ -377,6 +377,8 @@ def SAMBA_BINARY(bld, binname, source,
 
     if fuzzer:
         install = False
+        if ldflags is None:
+            ldflags = bld.env['FUZZ_TARGET_LDFLAGS']
 
     if not SET_TARGET_TYPE(bld, binname, 'BINARY'):
         return
