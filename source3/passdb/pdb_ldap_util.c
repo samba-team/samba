@@ -54,7 +54,7 @@ static NTSTATUS add_new_domain_account_policies(struct smbldap_state *ldap_state
 
 	if (asprintf(&dn, "%s=%s,%s",
 		get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
-		escape_domain_name, lp_ldap_suffix(talloc_tos())) < 0) {
+		escape_domain_name, lp_ldap_suffix()) < 0) {
 		SAFE_FREE(escape_domain_name);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -176,7 +176,7 @@ static NTSTATUS add_new_domain_info(struct smbldap_state *ldap_state,
 
 	if (asprintf(&dn, "%s=%s,%s",
 		     get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN),
-		     escape_domain_name, lp_ldap_suffix(talloc_tos())) < 0) {
+		     escape_domain_name, lp_ldap_suffix()) < 0) {
 		SAFE_FREE(escape_domain_name);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -286,7 +286,7 @@ NTSTATUS smbldap_search_domain_info(struct smbldap_state *ldap_state,
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(2,("smbldap_search_domain_info: Problem during LDAPsearch: %s\n", ldap_err2string (rc)));
-		DEBUG(2,("smbldap_search_domain_info: Query was: %s, %s\n", lp_ldap_suffix(talloc_tos()), filter));
+		DEBUG(2,("smbldap_search_domain_info: Query was: %s, %s\n", lp_ldap_suffix(), filter));
 		goto failed;
 	}
 

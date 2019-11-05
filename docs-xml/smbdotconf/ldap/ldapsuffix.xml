@@ -1,6 +1,7 @@
 <samba:parameter name="ldap suffix"
                  context="G"
                  type="string"
+		 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>Specifies the base for all ldap suffixes and for storing the sambaDomain object.</para>
