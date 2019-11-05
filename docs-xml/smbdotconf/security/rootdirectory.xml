@@ -1,6 +1,7 @@
 <samba:parameter name="root directory"
                  context="G"
                  type="string"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>root</synonym>
 <synonym>root dir</synonym>

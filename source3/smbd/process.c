@@ -3899,6 +3899,8 @@ void smbd_process(struct tevent_context *ev_ctx,
 		.ev = ev_ctx,
 		.frame = talloc_stackframe(),
 	};
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct smbXsrv_client *client = NULL;
 	struct smbd_server_connection *sconn = NULL;
 	struct smbXsrv_connection *xconn = NULL;
@@ -4029,7 +4031,7 @@ void smbd_process(struct tevent_context *ev_ctx,
 		exit_server("Could not open account policy tdb.\n");
 	}
 
-	chroot_dir = lp_root_directory(talloc_tos());
+	chroot_dir = lp_root_directory(talloc_tos(), lp_sub);
 	if (chroot_dir[0] != '\0') {
 		rc = chdir(chroot_dir);
 		if (rc != 0) {
