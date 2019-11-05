@@ -2,6 +2,7 @@
                  type="string"
                  context="G"
                  handler="handle_debug_list"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>debuglevel</synonym>
 <description>
