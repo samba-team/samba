@@ -1,6 +1,7 @@
 <samba:parameter name="usershare path"
                  context="G"
                  type="string"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter specifies the absolute path of the directory on the
