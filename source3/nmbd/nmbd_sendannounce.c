@@ -461,7 +461,7 @@ void announce_my_servers_removed(void)
 
 void announce_remote(time_t t)
 {
-	char *s;
+	char *s = NULL;
 	const char *ptr;
 	static time_t last_time = 0;
 	char *s2;
@@ -469,13 +469,15 @@ void announce_remote(time_t t)
 	char *comment;
 	int stype = lp_default_server_announce();
 	TALLOC_CTX *frame = NULL;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 
 	if (last_time && (t < (last_time + REMOTE_ANNOUNCE_INTERVAL)))
 		return;
 
 	last_time = t;
 
-	s = lp_remote_announce(talloc_tos());
+	s = lp_remote_announce(talloc_tos(), lp_sub);
 	if (!*s)
 		return;
 
