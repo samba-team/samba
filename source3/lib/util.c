@@ -821,6 +821,8 @@ gid_t nametogid(const char *name)
 
 void smb_panic_s3(const char *why)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *cmd;
 	int result;
 
@@ -835,7 +837,7 @@ void smb_panic_s3(const char *why)
 	prctl(PR_SET_PTRACER, getpid(), 0, 0, 0);
 #endif
 
-	cmd = lp_panic_action(talloc_tos());
+	cmd = lp_panic_action(talloc_tos(), lp_sub);
 	if (cmd && *cmd) {
 		DEBUG(0, ("smb_panic(): calling panic action [%s]\n", cmd));
 		result = system(cmd);
