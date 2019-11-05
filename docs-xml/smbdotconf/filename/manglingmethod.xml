@@ -1,6 +1,7 @@
 <samba:parameter name="mangling method"
                  context="G"
                  type="string"
+                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para> controls the algorithm used for the generating

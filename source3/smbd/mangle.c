@@ -45,7 +45,7 @@ static void mangle_init(void)
 	if (mangle_fns)
 		return;
 
-	method = lp_mangling_method(talloc_tos());
+	method = lp_mangling_method();
 
 	/* find the first mangling method that manages to initialise and
 	   matches the "mangling method" parameter */
