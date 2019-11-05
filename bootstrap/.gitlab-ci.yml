@@ -101,6 +101,9 @@ debian8:
 debian7:
   extends: .build_image_template_force_broken
 
+fedora31:
+  extends: .build_image_template
+
 fedora30:
   extends: .build_image_template
 

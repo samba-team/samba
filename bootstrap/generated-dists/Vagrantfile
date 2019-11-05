@@ -66,6 +66,13 @@ Vagrant.configure("2") do |config|
         v.vm.provision :shell, path: "fedora30/locale.sh"
     end
 
+    config.vm.define "fedora31" do |v|
+        v.vm.box = "fedora/31-cloud-base"
+        v.vm.hostname = "fedora31"
+        v.vm.provision :shell, path: "fedora31/bootstrap.sh"
+        v.vm.provision :shell, path: "fedora31/locale.sh"
+    end
+
     config.vm.define "opensuse150" do |v|
         v.vm.box = "opensuse/openSUSE-15.0-x86_64"
         v.vm.hostname = "opensuse150"
