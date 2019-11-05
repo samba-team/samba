@@ -1,6 +1,7 @@
 <samba:parameter name="set quota command"
                  context="G"
-				 type="string"
+                 type="string"
+                 substitution="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>The <command>set quota command</command> should only be used 

@@ -425,9 +425,11 @@ invalid_param:
 
 static int command_set_quota(const char *path, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *dp)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	const char *set_quota_command;
 
-	set_quota_command = lp_set_quota_command(talloc_tos());
+	set_quota_command = lp_set_quota_command(talloc_tos(), lp_sub);
 	if (set_quota_command && *set_quota_command) {
 		char **lines = NULL;
 		int _id = -1;
