@@ -2,6 +2,7 @@
                  context="G"
                  type="string"
                  handler="handle_rpc_server_dynamic_port_range"
+                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
