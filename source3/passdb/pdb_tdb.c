@@ -1001,6 +1001,8 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 					  struct samu *old_acct,
 					  const char *newname)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct samu      *new_acct = NULL;
 	char *rename_script = NULL;
 	int              rename_ret;
@@ -1013,7 +1015,7 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	rename_script = lp_rename_user_script(new_acct);
+	rename_script = lp_rename_user_script(new_acct, lp_sub);
 	if (!rename_script) {
 		TALLOC_FREE(new_acct);
 		return NT_STATUS_NO_MEMORY;

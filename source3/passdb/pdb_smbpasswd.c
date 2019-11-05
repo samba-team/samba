@@ -1444,13 +1444,15 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 					      struct samu *old_acct,
 					      const char *newname)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *rename_script = NULL;
 	struct samu *new_acct = NULL;
 	bool interim_account = False;
 	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
 
-	if (!*(lp_rename_user_script(talloc_tos())))
+	if (!*(lp_rename_user_script(talloc_tos(), lp_sub)))
 		goto done;
 
 	if ( !(new_acct = samu_new( NULL )) ) {
@@ -1470,7 +1472,7 @@ static NTSTATUS smbpasswd_rename_sam_account (struct pdb_methods *my_methods,
 	interim_account = True;
 
 	/* rename the posix user */
-	rename_script = lp_rename_user_script(ctx);
+	rename_script = lp_rename_user_script(ctx, lp_sub);
 	if (!rename_script) {
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;

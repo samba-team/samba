@@ -2040,6 +2040,8 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 					   struct samu *old_acct,
 					   const char *newname)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	const char *oldname;
 	int rc;
 	char *rename_script = NULL;
@@ -2057,7 +2059,7 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 	oldname = pdb_get_username(old_acct);
 
 	/* rename the posix user */
-	rename_script = lp_rename_user_script(talloc_tos());
+	rename_script = lp_rename_user_script(talloc_tos(), lp_sub);
 	if (rename_script == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
