@@ -941,7 +941,9 @@ class cmd_add_record(Command):
                                          0, server, zone, name, add_rec_buf, None)
         except WERRORError as e:
             if e.args[0] == werror.WERR_DNS_ERROR_NAME_DOES_NOT_EXIST:
-                raise CommandError('Zone does not exist; record could not be added.')
+                raise CommandError('Zone does not exist; record could not be added. zone[%s] name[%s]' % (zone, name))
+            if e.args[0] == werror.WERR_DNS_ERROR_RECORD_ALREADY_EXISTS:
+                raise CommandError('Record already exist; record could not be added. zone[%s] name[%s]' % (zone, name))
             raise e
 
         self.outf.write('Record added successfully\n')
