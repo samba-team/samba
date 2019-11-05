@@ -281,8 +281,10 @@ bool user_in_list(TALLOC_CTX *ctx, const char *user, const char * const *list)
 
 bool map_username(TALLOC_CTX *ctx, const char *user_in, char **p_user_out)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	FILE *f;
-	char *mapfile = lp_username_map(talloc_tos());
+	char *mapfile = lp_username_map(talloc_tos(), lp_sub);
 	char *s;
 	char buf[512];
 	bool mapped_user = False;
