@@ -1064,6 +1064,11 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, TDB_DATA key,
 	return NT_STATUS_OK;
 }
 
+int g_lock_seqnum(struct g_lock_ctx *ctx)
+{
+	return dbwrap_get_seqnum(ctx->db);
+}
+
 struct g_lock_watch_data_state {
 	struct tevent_context *ev;
 	struct g_lock_ctx *ctx;

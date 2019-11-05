@@ -64,6 +64,7 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx,
 				size_t datalen,
 				void *private_data),
 		     void *private_data);
+int g_lock_seqnum(struct g_lock_ctx *ctx);
 
 struct tevent_req *g_lock_watch_data_send(
 	TALLOC_CTX *mem_ctx,
