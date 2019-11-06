@@ -310,4 +310,21 @@ bool store_lp_set_cmdline(const char *pszParmName, const char *pszParmValue);
 
 int num_parameters(void);
 
+struct loadparm_substitution;
+#ifdef LOADPARM_SUBSTITUTION_INTERNALS
+struct loadparm_substitution {
+	char *(*substituted_string_fn)(
+			TALLOC_CTX *mem_ctx,
+			const struct loadparm_substitution *lp_sub,
+			const char *raw_value,
+			void *private_data);
+	void *private_data;
+};
+#endif /* LOADPARM_SUBSTITUTION_INTERNALS */
+
+const struct loadparm_substitution *lpcfg_noop_substitution(void);
+char *lpcfg_substituted_string(TALLOC_CTX *mem_ctx,
+			       const struct loadparm_substitution *lp_sub,
+			       const char *raw_value);
+
 #endif /* _LOADPARM_H */

@@ -61,6 +61,7 @@
 #include "system/network.h" /* needed for TCP_NODELAY */
 #include "../lib/util/dlinklist.h"
 #include "lib/param/param.h"
+#define LOADPARM_SUBSTITUTION_INTERNALS 1
 #include "lib/param/loadparm.h"
 #include "auth/gensec/gensec.h"
 #include "lib/param/s3_param.h"
@@ -3597,4 +3598,32 @@ bool lpcfg_lanman_auth(struct loadparm_context *lp_ctx)
 	} else {
 		return false;
 	}
+}
+
+static char *lpcfg_noop_substitution_fn(
+			TALLOC_CTX *mem_ctx,
+			const struct loadparm_substitution *lp_sub,
+			const char *raw_value,
+			void *private_data)
+{
+	return talloc_strdup(mem_ctx, raw_value);
+}
+
+static const struct loadparm_substitution global_noop_substitution = {
+	.substituted_string_fn = lpcfg_noop_substitution_fn,
+};
+
+const struct loadparm_substitution *lpcfg_noop_substitution(void)
+{
+	return &global_noop_substitution;
+}
+
+char *lpcfg_substituted_string(TALLOC_CTX *mem_ctx,
+			       const struct loadparm_substitution *lp_sub,
+			       const char *raw_value)
+{
+	return lp_sub->substituted_string_fn(mem_ctx,
+					     lp_sub,
+					     raw_value,
+					     lp_sub->private_data);
 }
