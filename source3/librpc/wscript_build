@@ -2,7 +2,8 @@
 
 bld.SAMBA3_SUBSYSTEM('NDR_LIBNETAPI',
 	source='gen_ndr/ndr_libnetapi.c',
-	public_deps='ndr'
+	public_deps='ndr',
+	allow_warnings=True
 	)
 
 bld.SAMBA3_SUBSYSTEM('NDR_LIBNET_JOIN',
