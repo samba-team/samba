@@ -41,7 +41,6 @@
 
 #define TEST_MACHINE_NAME_BDC "torturepacbdc"
 #define TEST_MACHINE_NAME_WKSTA "torturepacwksta"
-#define TEST_MACHINE_NAME_WKSTA_DES "torturepacwkdes"
 #define TEST_MACHINE_NAME_S4U2SELF_BDC "tests4u2selfbdc"
 #define TEST_MACHINE_NAME_S4U2SELF_WKSTA "tests4u2selfwk"
 #define TEST_MACHINE_NAME_S4U2PROXY_WKSTA "tests4u2proxywk"
@@ -606,39 +605,6 @@ static bool test_PACVerify_workstation_aes(struct torture_context *tctx,
 	return test_PACVerify(tctx, p, credentials, SEC_CHAN_WKSTA,
 			      TEST_MACHINE_NAME_WKSTA,
 			      NETLOGON_NEG_AUTH2_ADS_FLAGS | NETLOGON_NEG_SUPPORTS_AES);
-}
-
-static bool test_PACVerify_workstation_des(struct torture_context *tctx,
-					   struct dcerpc_pipe *p, struct cli_credentials *credentials, struct test_join *join_ctx)
-{
-	struct samr_SetUserInfo r;
-	union samr_UserInfo user_info;
-	struct dcerpc_pipe *samr_pipe = torture_join_samr_pipe(join_ctx);
-	struct smb_krb5_context *smb_krb5_context;
-	krb5_error_code ret;
-
-	ret = cli_credentials_get_krb5_context(popt_get_cmdline_credentials(),
-			tctx->lp_ctx, &smb_krb5_context);
-	torture_assert_int_equal(tctx, ret, 0, "cli_credentials_get_krb5_context() failed");
-
-	if (smb_krb5_get_allowed_weak_crypto(smb_krb5_context->krb5_context) == FALSE) {
-		torture_skip(tctx, "Cannot test DES without [libdefaults] allow_weak_crypto = yes");
-	}
-
-	/* Mark this workstation with DES-only */
-	user_info.info16.acct_flags = ACB_USE_DES_KEY_ONLY | ACB_WSTRUST;
-	r.in.user_handle = torture_join_samr_user_policy(join_ctx);
-	r.in.level = 16;
-	r.in.info = &user_info;
-
-	torture_assert_ntstatus_ok(tctx, dcerpc_samr_SetUserInfo_r(samr_pipe->binding_handle, tctx, &r),
-		"failed to set DES info account flags");
-	torture_assert_ntstatus_ok(tctx, r.out.result,
-		"failed to set DES into account flags");
-
-	return test_PACVerify(tctx, p, credentials, SEC_CHAN_WKSTA,
-			      TEST_MACHINE_NAME_WKSTA_DES,
-			      NETLOGON_NEG_AUTH2_ADS_FLAGS);
 }
 
 #ifdef SAMBA4_USES_HEIMDAL
@@ -1248,9 +1214,6 @@ struct torture_suite *torture_rpc_remote_pac(TALLOC_CTX *mem_ctx)
 								      &ndr_table_netlogon, TEST_MACHINE_NAME_WKSTA);
 	torture_rpc_tcase_add_test_creds(tcase, "verify-sig-aes", test_PACVerify_workstation_aes);
 
-	tcase = torture_suite_add_machine_workstation_rpc_iface_tcase(suite, "netlogon-member-des",
-								      &ndr_table_netlogon, TEST_MACHINE_NAME_WKSTA_DES);
-	torture_rpc_tcase_add_test_join(tcase, "verify-sig", test_PACVerify_workstation_des);
 #ifdef SAMBA4_USES_HEIMDAL
 	tcase = torture_suite_add_machine_bdc_rpc_iface_tcase(suite, "netr-bdc-arcfour",
 							      &ndr_table_netlogon, TEST_MACHINE_NAME_S4U2SELF_BDC);
