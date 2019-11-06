@@ -913,7 +913,7 @@ def build(bld):
                       # at the moment:
                       # hide_symbols=bld.BUILTIN_LIBRARY('replace'),
                       private_library=True,
-                      deps='crypt dl attr' + extra_libs)
+                      deps='dl attr' + extra_libs)
 
     replace_test_cflags = ''
     if bld.CONFIG_SET('HAVE_WNO_FORMAT_TRUNCATION'):

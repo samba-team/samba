@@ -916,6 +916,7 @@ bld.SAMBA3_SUBSYSTEM('PLAINTEXT_AUTH',
                            auth/pass_check.c
                            ''',
                     deps='''
+                         crypt
                          pam
                          PAM_ERRORS
                          ''')
