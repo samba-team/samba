@@ -1275,6 +1275,7 @@ MODULE_INIT_FUNC(credentials)
 		return NULL;
 
 	PyModule_AddObject(m, "UNINITIALISED", PyLong_FromLong(CRED_UNINITIALISED));
+	PyModule_AddObject(m, "SMB_CONF", PyLong_FromLong(CRED_SMB_CONF));
 	PyModule_AddObject(m, "CALLBACK", PyLong_FromLong(CRED_CALLBACK));
 	PyModule_AddObject(m, "GUESS_ENV", PyLong_FromLong(CRED_GUESS_ENV));
 	PyModule_AddObject(m, "GUESS_FILE", PyLong_FromLong(CRED_GUESS_FILE));

@@ -324,7 +324,7 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         os.environ["USER"] = "env_user"
         creds.guess(lp)
         realm = "realm.example.com"
-        creds.set_realm(realm, credentials.UNINITIALISED)
+        creds.set_realm(realm, credentials.SMB_CONF)
         creds.parse_string("user")
         self.assertEqual(creds.get_username(), "user")
         self.assertEqual(creds.get_domain(), lp.get("workgroup").upper())
@@ -352,7 +352,7 @@ class CredentialsTests(samba.tests.TestCaseInTempDir):
         os.environ["USER"] = "env_user"
         creds.guess(lp)
         realm = "realm.example.com"
-        creds.set_realm(realm, credentials.UNINITIALISED)
+        creds.set_realm(realm, credentials.SMB_CONF)
         self.assertEqual(creds.get_username(), "env_user")
         self.assertEqual(creds.get_domain(), lp.get("workgroup").upper())
         self.assertEqual(creds.get_realm(), realm.upper())

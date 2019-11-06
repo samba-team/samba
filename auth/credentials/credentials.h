@@ -42,6 +42,7 @@ struct db_context;
 /* In order of priority */
 enum credentials_obtained { 
 	CRED_UNINITIALISED = 0,  /* We don't even have a guess yet */
+	CRED_SMB_CONF,           /* Current value should be used, which comes from smb.conf */
 	CRED_CALLBACK, 		 /* Callback should be used to obtain value */
 	CRED_GUESS_ENV,	         /* Current value should be used, which was guessed */
 	CRED_GUESS_FILE,	 /* A guess from a file (or file pointed at in env variable) */
