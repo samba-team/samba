@@ -1,7 +1,6 @@
 <samba:parameter name="mit kdc command"
                  context="G"
                  type="list"
-                 advanced="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option specifies the path to the MIT kdc binary.</para>
