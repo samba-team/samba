@@ -36,12 +36,28 @@ NTSTATUS ndr_table_register(const struct ndr_interface_table *table)
 	struct ndr_interface_list *l;
 
 	for (l = ndr_interfaces; l; l = l->next) {
-		if (GUID_equal(&table->syntax_id.uuid, &l->table->syntax_id.uuid)) {
-			DEBUG(0, ("Attempt to register interface %s which has the "
-				  "same UUID as already registered interface %s\n", 
-				  table->name, l->table->name));
-			return NT_STATUS_OBJECT_NAME_COLLISION;
+		/*
+		 * If no GUID is supplied, use the name to determine
+		 * uniquness.
+		 */
+		if (GUID_all_zero(&table->syntax_id.uuid)) {
+			if (strcmp(table->name,
+				   l->table->name) != 0) {
+				continue;
+			}
+			DBG_ERR("Attempt to register interface %s which has the "
+				"same name as already registered interface\n",
+				table->name);
+		} else {
+			if (!GUID_equal(&table->syntax_id.uuid,
+					&l->table->syntax_id.uuid)) {
+				continue;
+			}
+			DBG_ERR("Attempt to register interface %s which has the "
+				"same UUID as already registered interface %s\n",
+				table->name, l->table->name);
 		}
+		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
 	/*
