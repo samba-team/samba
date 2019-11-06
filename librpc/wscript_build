@@ -639,7 +639,7 @@ bld.SAMBA_LIBRARY('dcerpc-server-core',
            rpc/dcesrv_mgmt.c
            rpc/dcesrv_reply.c
            ''',
-    deps='ndr dcerpc-binding',
+    deps='ndr dcerpc-binding samba-util-core gnutls GNUTLS_HELPERS',
     pc_files=[],
     public_headers='rpc/dcesrv_core.h',
     autoproto='rpc/dcesrv_core_proto.h',

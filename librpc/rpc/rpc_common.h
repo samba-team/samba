@@ -458,4 +458,25 @@ void dcerpc_log_packet(const char *packet_log_dir,
 		       const DATA_BLOB *pkt,
 		       const char *why);
 
+#ifdef DEVELOPER
+void dcerpc_save_ndr_fuzz_seed(TALLOC_CTX *mem_ctx,
+			       DATA_BLOB raw_blob,
+			       const char *dump_dir,
+			       const char *iface_name,
+			       int flags,
+			       int opnum,
+			       bool ndr64);
+#else
+static inline void dcerpc_save_ndr_fuzz_seed(TALLOC_CTX *mem_ctx,
+					     DATA_BLOB raw_blob,
+					     const char *dump_dir,
+					     const char *iface_name,
+					     int flags,
+					     int opnum,
+					     bool ndr64)
+{
+	return;
+}
+#endif
+
 #endif /* __DEFAULT_LIBRPC_RPCCOMMON_H__ */

@@ -174,6 +174,10 @@ _PUBLIC_ NTSTATUS dcesrv_reply(struct dcesrv_call_state *call)
 
 	stub = ndr_push_blob(push);
 
+	dcesrv_save_ndr_fuzz_seed(stub,
+				  call,
+				  NDR_OUT);
+
 	total_length = stub.length;
 
 	/* we can write a full max_recv_frag size, minus the dcerpc

@@ -1401,6 +1401,7 @@ static bool api_pipe_request(struct pipes_struct *p,
 	bool ret = False;
 	struct pipe_rpc_fns *pipe_fns;
 	const char *interface_name = NULL;
+	const char *dump_dir = NULL;
 
 	if (!p->pipe_bound) {
 		DEBUG(1, ("Pipe not bound!\n"));
@@ -1465,6 +1466,16 @@ static bool api_pipe_request(struct pipes_struct *p,
 		break;
 	}
 
+	dump_dir = lp_parm_const_string(0, "dcesrv", "fuzz directory", NULL);
+
+	dcerpc_save_ndr_fuzz_seed(p,
+				  p->in_data.data,
+				  dump_dir,
+				  interface_name,
+				  NDR_IN,
+				  pkt->u.request.opnum,
+				  false);
+
 	if (!srv_pipe_check_verification_trailer(p, pkt, pipe_fns)) {
 		DEBUG(1, ("srv_pipe_check_verification_trailer: failed\n"));
 		set_incoming_fault(p);
@@ -1486,6 +1497,14 @@ static bool api_pipe_request(struct pipes_struct *p,
 	ret = api_rpcTNP(p, pkt, pipe_fns->cmds, pipe_fns->n_cmds,
 			 &pipe_fns->syntax);
 	unbecome_authenticated_pipe_user();
+
+	dcerpc_save_ndr_fuzz_seed(p,
+				  p->out_data.rdata,
+				  dump_dir,
+				  interface_name,
+				  NDR_OUT,
+				  pkt->u.request.opnum,
+				  false);
 
 	TALLOC_FREE(frame);
 	return ret;

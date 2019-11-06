@@ -1436,6 +1436,9 @@ sub provision($$$$$$$$$)
 	my $privatedir="$prefix_abs/private";
 	push(@dirs,$privatedir);
 
+	my $cachedir = "$prefix_abs/cachedir";
+	push(@dirs, $cachedir);
+
 	my $binddnsdir = "$prefix_abs/bind-dns";
 	push(@dirs, $binddnsdir);
 
@@ -1702,6 +1705,7 @@ sub provision($$$$$$$$$)
 
 	print CONF "
 [global]
+        dcesrv:fuzz directory = $cachedir/fuzz
 	netbios name = $server
 	interfaces = $interfaces
 	bind interfaces only = yes

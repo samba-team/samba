@@ -29,6 +29,9 @@
 #include "rpc_common.h"
 #include "lib/util/bitmap.h"
 #include "auth/gensec/gensec.h"
+#include "lib/util/mkdir_p.h"
+#include "lib/crypto/gnutls_helpers.h"
+#include <gnutls/crypto.h>
 
 /* we need to be able to get/set the fragment length without doing a full
    decode */
@@ -1447,3 +1450,129 @@ void dcerpc_log_packet(const char *packet_log_dir,
 		free(name);
 	}
 }
+
+
+#ifdef DEVELOPER
+
+/*
+ * Save valid, well-formed DCE/RPC stubs to use as a seed for
+ * ndr_fuzz_X
+ */
+void dcerpc_save_ndr_fuzz_seed(TALLOC_CTX *mem_ctx,
+			       DATA_BLOB raw_blob,
+			       const char *dump_dir,
+			       const char *iface_name,
+			       int flags,
+			       int opnum,
+			       bool ndr64)
+{
+	char *fname = NULL;
+	const char *sub_dir = NULL;
+	TALLOC_CTX *temp_ctx = talloc_new(mem_ctx);
+	DATA_BLOB blob;
+	int ret, rc;
+	uint8_t digest[20];
+	DATA_BLOB digest_blob;
+	char *digest_hex;
+	uint16_t fuzz_flags = 0;
+
+	/*
+	 * We want to save the 'stub' in a per-pipe subdirectory, with
+	 * the ndr_fuzz_X header 4 byte header. For the sake of
+	 * convenience (this is a developer only function), we mkdir
+	 * -p the sub-directories when they are needed.
+	 */
+
+	if (dump_dir == NULL) {
+		return;
+	}
+
+	temp_ctx = talloc_stackframe();
+
+	sub_dir = talloc_asprintf(temp_ctx, "%s/%s",
+				  dump_dir,
+				  iface_name);
+	if (sub_dir == NULL) {
+		talloc_free(temp_ctx);
+		return;
+	}
+	ret = mkdir_p(sub_dir, 0755);
+	if (ret && errno != EEXIST) {
+		DBG_ERR("could not create %s\n", sub_dir);
+		talloc_free(temp_ctx);
+		return;
+	}
+
+	blob.length = raw_blob.length + 4;
+	blob.data = talloc_array(sub_dir,
+				 uint8_t,
+				 blob.length);
+	if (blob.data == NULL) {
+		DBG_ERR("could not allocate for fuzz seeds! (%s)\n",
+			iface_name);
+		talloc_free(temp_ctx);
+		return;
+	}
+
+	if (ndr64) {
+		fuzz_flags = 4;
+	}
+	if (flags & NDR_IN) {
+		fuzz_flags |= 1;
+	} else if (flags & NDR_OUT) {
+		fuzz_flags |= 2;
+	}
+
+	SSVAL(blob.data, 0, fuzz_flags);
+	SSVAL(blob.data, 2, opnum);
+
+	memcpy(&blob.data[4],
+	       raw_blob.data,
+	       raw_blob.length);
+
+	/*
+	 * This matches how oss-fuzz names the corpus input files, due
+	 * to a preference from libFuzzer
+	 */
+	rc = gnutls_hash_fast(GNUTLS_DIG_SHA1,
+			      blob.data,
+			      blob.length,
+			      digest);
+	if (rc < 0) {
+		/*
+		 * This prints a better error message, eg if SHA1 is
+		 * disabled
+		 */
+		NTSTATUS status = gnutls_error_to_ntstatus(rc,
+						  NT_STATUS_HASH_NOT_SUPPORTED);
+		DBG_ERR("Failed to generate SHA1 to save fuzz seed: %s",
+			nt_errstr(status));
+		talloc_free(temp_ctx);
+		return;
+	}
+
+	digest_blob.data = digest;
+	digest_blob.length = sizeof(digest);
+	digest_hex = data_blob_hex_string_lower(temp_ctx, &digest_blob);
+
+	fname = talloc_asprintf(temp_ctx, "%s/%s",
+				sub_dir,
+				digest_hex);
+	if (fname == NULL) {
+		talloc_free(temp_ctx);
+		return;
+	}
+
+	/*
+	 * If this fails, it is most likely because that file already
+	 * exists.  This is fine, it means we already have this
+	 * sample
+	 */
+	file_save(fname,
+		  blob.data,
+		  blob.length);
+
+	talloc_free(temp_ctx);
+}
+
+#endif /*if DEVELOPER, enveloping _dcesrv_save_ndr_fuzz_seed() */

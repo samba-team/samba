@@ -605,4 +605,18 @@ _PUBLIC_ void dcesrv_sock_report_output_data(struct dcesrv_connection *dce_conn)
 
 _PUBLIC_ NTSTATUS dcesrv_connection_loop_start(struct dcesrv_connection *conn);
 
+
+void _dcesrv_save_ndr_fuzz_seed(DATA_BLOB call_blob,
+				struct dcesrv_call_state *call,
+				int flags);
+
+#if DEVELOPER
+#define  dcesrv_save_ndr_fuzz_seed(stub, call, flags) \
+	_dcesrv_save_ndr_fuzz_seed(stub, call, flags)
+#else
+#define  dcesrv_save_ndr_fuzz_seed(stub, call, flags) \
+        /* */
+#endif
+
+
 #endif /* _LIBRPC_RPC_DCESRV_CORE_H_ */

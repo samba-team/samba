@@ -33,6 +33,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "lib/util/tevent_ntstatus.h"
 
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
@@ -1705,6 +1706,32 @@ static void dcesrv_save_call(struct dcesrv_call_state *call, const char *why)
 #endif
 }
 
+#ifdef DEVELOPER
+/*
+  Save the call for use as a seed for fuzzing.
+
+  This is only enabled in a developer build, and only has effect if the
+  "dcesrv fuzz directory" param is set.
+*/
+void _dcesrv_save_ndr_fuzz_seed(DATA_BLOB call_blob,
+				struct dcesrv_call_state *call,
+				int flags)
+{
+	const char *dump_dir = lpcfg_parm_string(call->conn->dce_ctx->lp_ctx,
+						 NULL,
+						 "dcesrv", "fuzz directory");
+
+	dcerpc_save_ndr_fuzz_seed(call,
+				  call_blob,
+				  dump_dir,
+				  call->context->iface->name,
+				  flags,
+				  call->pkt.u.request.opnum,
+				  call->ndr_pull->flags & LIBNDR_FLAG_NDR64);
+}
+#endif /*if DEVELOPER, enveloping _dcesrv_save_ndr_fuzz_seed() */
+
+
 static NTSTATUS dcesrv_check_verification_trailer(struct dcesrv_call_state *call)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -1848,8 +1875,13 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		} else {
 			dcesrv_save_call(call, "pullfail");
 		}
+
 		return dcesrv_fault_with_flags(call, call->fault_code, extra_flags);
 	}
+
+	dcesrv_save_ndr_fuzz_seed(call->pkt.u.request.stub_and_verifier,
+				  call,
+				  NDR_IN);
 
 	if (pull->offset != pull->data_size) {
 		dcesrv_save_call(call, "extrabytes");
