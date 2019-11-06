@@ -1607,7 +1607,7 @@ static bool torture_ldb_pack_format_perf(struct torture_context *torture)
 		}
 	}
 	diff = (clock() - start) * 1000 / CLOCKS_PER_SEC;
-	printf("\n%d pack runs took: %ldms\n", i, diff);
+	printf("\n%d pack runs took: %ldms\n", i, (long)diff);
 
 	i = 0;
 	start = clock();
@@ -1620,7 +1620,7 @@ static bool torture_ldb_pack_format_perf(struct torture_context *torture)
 		}
 	}
 	diff = (clock() - start) * 1000 / CLOCKS_PER_SEC;
-	printf("%d unpack runs took: %ldms\n", i, diff);
+	printf("%d unpack runs took: %ldms\n", i, (long)diff);
 
 	return true;
 }
