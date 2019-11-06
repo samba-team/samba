@@ -23,6 +23,7 @@ yum install -y \
     binutils \
     bison \
     compat-gnutls34-devel \
+    compat-nettle32-devel \
     cups-devel \
     curl \
     dbus-devel \
@@ -66,7 +67,6 @@ yum install -y \
     make \
     mingw64-gcc \
     ncurses-devel \
-    nettle-devel \
     openldap-devel \
     pam-devel \
     patch \

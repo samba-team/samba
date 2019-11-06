@@ -487,6 +487,7 @@ RPM_DISTS = {
             'glusterfs-api-devel': '',
             'glusterfs-devel': '',
             'libcephfs-devel': '',
+            'nettle-devel': 'compat-nettle32-devel',
             'gnutls-devel': 'compat-gnutls34-devel',
         }
     },
