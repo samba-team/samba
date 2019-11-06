@@ -41,7 +41,6 @@
 #include "../libcli/smb/smb_seal.h"
 #include "lib/param/param.h"
 #include "../libcli/smb/smb2_negotiate_context.h"
-#include "libads/krb5_errs.h"
 
 #define STAR_SMBSERVER "*SMBSERVER"
 

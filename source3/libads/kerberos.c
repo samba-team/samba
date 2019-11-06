@@ -31,7 +31,6 @@
 #include "secrets.h"
 #include "../lib/tsocket/tsocket.h"
 #include "lib/util/asn1.h"
-#include "krb5_errs.h"
 
 #ifdef HAVE_KRB5
 

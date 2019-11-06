@@ -44,7 +44,6 @@
 #include "lib/afs/afs_funcs.h"
 #include "libsmb/samlogon_cache.h"
 #include "rpc_client/util_netlogon.h"
-#include "libads/krb5_errs.h"
 #include "param/param.h"
 #include "messaging/messaging.h"
 #include "lib/crypto/gnutls_helpers.h"

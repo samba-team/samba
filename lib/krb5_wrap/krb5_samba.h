@@ -406,4 +406,7 @@ int ads_krb5_cli_get_ticket(TALLOC_CTX *mem_ctx,
 			    time_t *tgs_expire,
 			    const char *impersonate_princ_s);
 
+NTSTATUS krb5_to_nt_status(krb5_error_code kerberos_error);
+krb5_error_code nt_status_to_krb5(NTSTATUS nt_status);
+
 #endif /* _KRB5_SAMBA_H */

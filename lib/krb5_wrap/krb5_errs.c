@@ -1,26 +1,24 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Kerberos error mapping functions
  *  Copyright (C) Guenther Deschner 2005
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "includes.h"
-#include "smb_krb5.h"
-
-#include "krb5_errs.h"
+#include "krb5_samba.h"
 
 #ifdef HAVE_KRB5
 
@@ -81,11 +79,11 @@ convert a KRB5 error to a NT status32 code
  NTSTATUS krb5_to_nt_status(krb5_error_code kerberos_error)
 {
 	int i;
-	
+
 	if (kerberos_error == 0) {
 		return NT_STATUS_OK;
 	}
-	
+
 	for (i=0; NT_STATUS_V(krb5_to_nt_status_map[i].ntstatus); i++) {
 		if (kerberos_error == krb5_to_nt_status_map[i].krb5_code)
 			return krb5_to_nt_status_map[i].ntstatus;
@@ -100,11 +98,11 @@ convert an NT status32 code to a KRB5 error
  krb5_error_code nt_status_to_krb5(NTSTATUS nt_status)
 {
 	int i;
-	
+
 	if NT_STATUS_IS_OK(nt_status) {
 		return 0;
 	}
-	
+
 	for (i=0; NT_STATUS_V(nt_status_to_krb5_map[i].ntstatus); i++) {
 		if (NT_STATUS_EQUAL(nt_status,nt_status_to_krb5_map[i].ntstatus))
 			return nt_status_to_krb5_map[i].krb5_code;
@@ -114,4 +112,3 @@ convert an NT status32 code to a KRB5 error
 }
 
 #endif
-

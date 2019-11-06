@@ -25,7 +25,6 @@
 #include "rpc_client/cli_pipe.h"
 #include "../libcli/drsuapi/drsuapi.h"
 #include "../librpc/gen_ndr/ndr_drsuapi_c.h"
-#include "libads/krb5_errs.h"
 
 /****************************************************************
 ****************************************************************/

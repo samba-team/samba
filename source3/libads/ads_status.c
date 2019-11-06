@@ -25,7 +25,6 @@
 #include "system/gssapi.h"
 #include "smb_ldap.h"
 #include "libads/ads_status.h"
-#include "krb5_errs.h"
 
 /*
   build a ADS_STATUS structure

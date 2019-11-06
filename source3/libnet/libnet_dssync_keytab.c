@@ -23,7 +23,6 @@
 #include "libnet/libnet_dssync.h"
 #include "libnet/libnet_keytab.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
-#include "libads/krb5_errs.h"
 
 #if defined(HAVE_ADS)
 

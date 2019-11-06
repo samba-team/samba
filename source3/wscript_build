@@ -406,7 +406,6 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                           lib/server_prefork.c
                           lib/server_prefork_util.c
                           lib/ldap_escape.c
-                          libads/krb5_errs.c
                           lib/system_smbd.c
                           lib/audit.c
                           lib/tevent_wait.c

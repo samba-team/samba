@@ -5,7 +5,19 @@ if bld.CONFIG_SET('SAMBA4_USES_HEIMDAL'):
     add_deps = ' asn1'
 
 bld.SAMBA_LIBRARY('krb5samba',
-                  source='krb5_samba.c gss_samba.c keytab_util.c enctype_convert.c',
-                  deps='samba-util talloc krb5 com_err gssapi' + add_deps,
+                  source='''
+                      krb5_samba.c
+                      gss_samba.c
+                      keytab_util.c
+                      enctype_convert.c
+                      krb5_errs.c
+                  ''',
+                  deps='''
+                      samba-util
+                      talloc
+                      krb5
+                      com_err
+                      gssapi
+                  ''' + add_deps,
                   private_library=True
                  )
