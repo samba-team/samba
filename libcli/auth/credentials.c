@@ -253,25 +253,40 @@ static NTSTATUS netlogon_creds_step(struct netlogon_creds_CredentialState *creds
 	return NT_STATUS_OK;
 }
 
-
 /*
   DES encrypt a 8 byte LMSessionKey buffer using the Netlogon session key
 */
-void netlogon_creds_des_encrypt_LMKey(struct netlogon_creds_CredentialState *creds, struct netr_LMSessionKey *key)
+NTSTATUS netlogon_creds_des_encrypt_LMKey(struct netlogon_creds_CredentialState *creds,
+					  struct netr_LMSessionKey *key)
 {
+	int rc;
 	struct netr_LMSessionKey tmp;
-	des_crypt56(tmp.key, key->key, creds->session_key, 1);
+
+	rc = des_crypt56_gnutls(tmp.key, key->key, creds->session_key, SAMBA_GNUTLS_ENCRYPT);
+	if (rc < 0) {
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+	}
 	*key = tmp;
+
+	return NT_STATUS_OK;
 }
 
 /*
   DES decrypt a 8 byte LMSessionKey buffer using the Netlogon session key
 */
-void netlogon_creds_des_decrypt_LMKey(struct netlogon_creds_CredentialState *creds, struct netr_LMSessionKey *key)
+NTSTATUS netlogon_creds_des_decrypt_LMKey(struct netlogon_creds_CredentialState *creds,
+					  struct netr_LMSessionKey *key)
 {
+	int rc;
 	struct netr_LMSessionKey tmp;
-	des_crypt56(tmp.key, key->key, creds->session_key, 0);
+
+	rc = des_crypt56_gnutls(tmp.key, key->key, creds->session_key, SAMBA_GNUTLS_DECRYPT);
+	if (rc < 0) {
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+	}
 	*key = tmp;
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -849,11 +864,14 @@ static NTSTATUS netlogon_creds_crypt_samlogon_validation(struct netlogon_creds_C
 		if (!all_zero(base->LMSessKey.key,
 			      sizeof(base->LMSessKey.key))) {
 			if (do_encrypt) {
-				netlogon_creds_des_encrypt_LMKey(creds,
-						&base->LMSessKey);
+				status = netlogon_creds_des_encrypt_LMKey(creds,
+									  &base->LMSessKey);
 			} else {
-				netlogon_creds_des_decrypt_LMKey(creds,
-						&base->LMSessKey);
+				status = netlogon_creds_des_decrypt_LMKey(creds,
+									  &base->LMSessKey);
+			}
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
 		}
 	}
