@@ -34,6 +34,14 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 	TALLOC_CTX *mem_ctx;
 	struct conv_options opt;
 
+	if (len == 0) {
+		/*
+		 * Otherwise fmemopen() will return null and set errno
+		 * to EINVAL
+		 */
+		return 0;
+	}
+
 	mem_ctx = talloc_init(__FUNCTION__);
 
 	opt.in = fmemopen(buf, len, "r");

@@ -27,7 +27,15 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 
 int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 {
-	FILE *fp;
+	FILE *fp = NULL;
+
+	if (len == 0) {
+		/*
+		 * Otherwise fmemopen() will return null and set errno
+		 * to EINVAL
+		 */
+		return 0;
+	}
 
 	fp = fmemopen(buf, len, "r");
 
