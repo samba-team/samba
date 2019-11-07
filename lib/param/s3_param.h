@@ -11,7 +11,6 @@ struct loadparm_s3_helpers
 	bool (*load)(const char *filename);
 	bool (*store_cmdline)(const char *pszParmName, const char *pszParmValue);
 	void (*dump)(FILE *f, bool show_defaults, int maxtoprint);
-	char * (*lp_string)(TALLOC_CTX *ctx, const char *in);
 	bool (*lp_include)(struct loadparm_context*, struct loadparm_service *,
 		       	const char *, char **);
 	void (*init_ldap_debugging)(void);

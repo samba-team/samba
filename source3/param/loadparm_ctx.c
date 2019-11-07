@@ -66,7 +66,6 @@ static struct loadparm_s3_helpers s3_fns =
 	.load = lp_load_for_s4_ctx,
 	.store_cmdline = store_lp_set_cmdline,
 	.dump = lp_dump,
-	.lp_string = lp_string,
 	.lp_include = lp_include,
 	.init_ldap_debugging = init_ldap_debugging,
 	.set_netbios_aliases = set_netbios_aliases,

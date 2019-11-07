@@ -1037,11 +1037,6 @@ const struct loadparm_substitution *loadparm_s3_global_substitution(void)
 	return &s3_global_substitution;
 }
 
-char *lp_string(TALLOC_CTX *ctx, const char *s)
-{
-	return lpcfg_substituted_string(ctx, &s3_global_substitution, s);
-}
-
 /*
    In this section all the functions that are used to access the
    parameters from the rest of the program are defined

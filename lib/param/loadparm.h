@@ -301,7 +301,6 @@ bool lp_is_security_and_server_role_valid(int server_role, int security);
 
 struct loadparm_global * get_globals(void);
 unsigned int * get_flags(void);
-char * lp_string(TALLOC_CTX *, const char *);
 int getservicebyname(const char *, struct loadparm_service *);
 bool lp_include(struct loadparm_context *, struct loadparm_service *,
 	       	const char *, char **);
