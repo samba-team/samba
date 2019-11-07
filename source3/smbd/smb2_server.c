@@ -1600,7 +1600,6 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	uint8_t *outhdr = NULL;
 	const uint8_t *inhdr = NULL;
 	uint8_t *tf = NULL;
-	size_t tf_len = 0;
 	uint8_t *hdr = NULL;
 	uint8_t *body = NULL;
 	uint8_t *dyn = NULL;
@@ -1646,7 +1645,6 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	}
 
 	tf = state->buf + NBT_HDR_SIZE;
-	tf_len = SMB2_TF_HDR_SIZE;
 
 	hdr = tf + SMB2_TF_HDR_SIZE;
 	body = hdr + SMB2_HDR_BODY;
@@ -1696,7 +1694,8 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 
 	if (req->do_encryption) {
 		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_base   = tf;
-		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_len    = tf_len;
+		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_len    =
+							SMB2_TF_HDR_SIZE;
 	} else {
 		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_base   = NULL;
 		state->vector[1+SMBD_SMB2_TF_IOV_OFS].iov_len    = 0;
