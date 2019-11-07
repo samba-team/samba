@@ -140,9 +140,9 @@ NTSTATUS SMBsesskeygen_ntv2(const uint8_t kr[16],
 			    const uint8_t *nt_resp,
 			    uint8_t sess_key[16]);
 void SMBsesskeygen_ntv1(const uint8_t kr[16], uint8_t sess_key[16]);
-void SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
-			       const uint8_t lm_resp[24], /* only uses 8 */ 
-			       uint8_t sess_key[16]);
+NTSTATUS SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
+				   const uint8_t lm_resp[24], /* only uses 8 */
+				   uint8_t sess_key[16]);
 DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx, 
 				     const char *hostname, 
 				     const char *domain);

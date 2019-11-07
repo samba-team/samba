@@ -447,8 +447,10 @@ static void torture_gnutls_SMBsesskeygen_lm_sess_key(void **state)
 	};
 
 	uint8_t crypt_sess_key[16];
+	NTSTATUS status;
 
-	SMBsesskeygen_lm_sess_key(lm_hash, lm_resp, crypt_sess_key);
+	status = SMBsesskeygen_lm_sess_key(lm_hash, lm_resp, crypt_sess_key);
+	assert_true(NT_STATUS_IS_OK(status));
 	assert_memory_equal(crypt_sess_key, crypt_expected, 16);
 }
 

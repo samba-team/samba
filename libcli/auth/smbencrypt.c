@@ -380,7 +380,7 @@ void SMBsesskeygen_ntv1(const uint8_t kr[16], uint8_t sess_key[16])
 #endif
 }
 
-void SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
+NTSTATUS SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
 			       const uint8_t lm_resp[24], /* only uses 8 */
 			       uint8_t sess_key[16])
 {
@@ -388,12 +388,19 @@ void SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
 	   but changes with each session) */
 	uint8_t p24[24];
 	uint8_t partial_lm_hash[14];
+	int rc;
 
 	memcpy(partial_lm_hash, lm_hash, 8);
 	memset(partial_lm_hash + 8, 0xbd, 6);
 
-	des_crypt56(p24,   lm_resp, partial_lm_hash,     1);
-	des_crypt56(p24+8, lm_resp, partial_lm_hash + 7, 1);
+	rc = des_crypt56_gnutls(p24, lm_resp, partial_lm_hash, SAMBA_GNUTLS_ENCRYPT);
+	if (rc < 0) {
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+	}
+	rc = des_crypt56_gnutls(p24+8, lm_resp, partial_lm_hash + 7, SAMBA_GNUTLS_ENCRYPT);
+	if (rc < 0) {
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+	}
 
 	memcpy(sess_key, p24, 16);
 
@@ -401,6 +408,8 @@ void SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
 	DEBUG(100, ("SMBsesskeygen_lm_sess_key: \n"));
 	dump_data(100, sess_key, 16);
 #endif
+
+	return NT_STATUS_OK;
 }
 
 DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx,

@@ -970,8 +970,12 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 				if (session_key.data == NULL) {
 					return NT_STATUS_NO_MEMORY;
 				}
-				SMBsesskeygen_lm_sess_key(lm_session_key.data, ntlmssp_state->lm_resp.data,
-							  session_key.data);
+				nt_status = SMBsesskeygen_lm_sess_key(lm_session_key.data,
+								      ntlmssp_state->lm_resp.data,
+								      session_key.data);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					return nt_status;
+				}
 				DEBUG(10,("ntlmssp_server_auth: Created NTLM session key.\n"));
 			} else {
 				static const uint8_t zeros[24] = {0, };
@@ -980,8 +984,11 @@ static NTSTATUS ntlmssp_server_postauth(struct gensec_security *gensec_security,
 				if (session_key.data == NULL) {
 					return NT_STATUS_NO_MEMORY;
 				}
-				SMBsesskeygen_lm_sess_key(zeros, zeros,
-							  session_key.data);
+				nt_status = SMBsesskeygen_lm_sess_key(zeros, zeros,
+								      session_key.data);
+				if (!NT_STATUS_IS_OK(nt_status)) {
+					return nt_status;
+				}
 				DEBUG(10,("ntlmssp_server_auth: Created NTLM session key.\n"));
 			}
 			dump_data_pw("LM session key:\n", session_key.data,

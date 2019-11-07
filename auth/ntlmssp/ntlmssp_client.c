@@ -673,12 +673,20 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 	    && ntlmssp_state->allow_lm_key && lm_session_key.length == 16) {
 		DATA_BLOB new_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 		if (lm_response.length == 24) {
-			SMBsesskeygen_lm_sess_key(lm_session_key.data, lm_response.data,
-						  new_session_key.data);
+			nt_status = SMBsesskeygen_lm_sess_key(lm_session_key.data,
+							      lm_response.data,
+							      new_session_key.data);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				return nt_status;
+			}
 		} else {
 			static const uint8_t zeros[24];
-			SMBsesskeygen_lm_sess_key(lm_session_key.data, zeros,
-						  new_session_key.data);
+			nt_status = SMBsesskeygen_lm_sess_key(lm_session_key.data,
+                                                              zeros,
+                                                              new_session_key.data);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				return nt_status;
+			}
 		}
 		session_key = new_session_key;
 		dump_data_pw("LM session key\n", session_key.data, session_key.length);
