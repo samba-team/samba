@@ -105,6 +105,7 @@ bool E_md4hash(const char *passwd, uint8_t p16[16])
 bool E_deshash(const char *passwd, uint8_t p16[16])
 {
 	bool ret;
+	int rc;
 	uint8_t dospwd[14];
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -133,7 +134,10 @@ bool E_deshash(const char *passwd, uint8_t p16[16])
 	 * case to avoid returning a fixed 'password' buffer, but
 	 * callers should not use it when E_deshash returns false */
 
-	E_P16((const uint8_t *)dospwd, p16);
+	rc = E_P16((const uint8_t *)dospwd, p16);
+	if (rc != 0) {
+		ret = false;
+	}
 
 	ZERO_STRUCT(dospwd);
 

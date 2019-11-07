@@ -274,7 +274,10 @@ static void torture_gnutls_E_P16(void **state)
 		0x1D, 0xEA, 0xD9, 0xFF, 0xB0, 0xA9, 0xA4, 0x05
 	};
 
-	E_P16(key, buffer);
+	int rc;
+
+	rc = E_P16(key, buffer);
+	assert_int_equal(rc, 0);
 	assert_memory_equal(buffer, crypt_expected, 16);
 }
 
