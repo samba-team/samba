@@ -30,4 +30,17 @@ export LD
 
 make -j
 
-cp bin/fuzz_* $OUT/
+# Make a directory for the system shared libraries to be copied into
+mkdir -p $OUT/lib
+
+# We can't static link to all the system libs with waf, so copy them
+# to $OUT/lib and set the rpath to point there.  This is similar to how
+# firefox handles this.
+
+for x in bin/fuzz_*
+do
+    cp $x $OUT/
+    bin=`basename $x`
+    ldd $OUT/$bin | cut -f 2 -d '>' | cut -f 1 -d \( | cut -f 2 -d  ' ' | xargs -i cp \{\} $OUT/lib/
+    chrpath -r '$ORIGIN/lib' $OUT/$bin
+done
