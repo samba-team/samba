@@ -28,6 +28,7 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 {
 	FILE *fp = NULL;
+	struct tiniparser_dictionary *d = NULL;
 
 	if (len == 0) {
 		/*
@@ -39,7 +40,10 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 
 	fp = fmemopen(buf, len, "r");
 
-	tiniparser_load_stream(fp);
+	d = tiniparser_load_stream(fp);
+	if (d != NULL) {
+		tiniparser_freedict(d);
+	}
 
 	fclose(fp);
 
