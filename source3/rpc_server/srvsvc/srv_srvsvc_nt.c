@@ -210,7 +210,10 @@ static enum srvsvc_ShareType get_share_type(int snum)
 static void init_srv_share_info_0(struct pipes_struct *p,
 				  struct srvsvc_NetShareInfo0 *r, int snum)
 {
-	r->name		= lp_servicename(talloc_tos(), snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+
+	r->name		= lp_servicename(talloc_tos(), lp_sub, snum);
 }
 
 /*******************************************************************
@@ -223,12 +226,12 @@ static void init_srv_share_info_1(struct pipes_struct *p,
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	char *net_name = lp_servicename(talloc_tos(), snum);
+	char *net_name = lp_servicename(talloc_tos(), lp_sub, snum);
 	char *remark = lp_comment(p->mem_ctx, lp_sub, snum);
 
 	if (remark) {
 		remark = talloc_sub_full(
-			p->mem_ctx, lp_servicename(talloc_tos(), snum),
+			p->mem_ctx, lp_servicename(talloc_tos(), lp_sub, snum),
 			get_current_username(), lp_path(talloc_tos(), lp_sub, snum),
 			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
@@ -253,12 +256,12 @@ static void init_srv_share_info_2(struct pipes_struct *p,
 	char *path = NULL;
 	int max_connections = lp_max_connections(snum);
 	uint32_t max_uses = max_connections!=0 ? max_connections : (uint32_t)-1;
-	char *net_name = lp_servicename(talloc_tos(), snum);
+	char *net_name = lp_servicename(talloc_tos(), lp_sub, snum);
 
 	remark = lp_comment(p->mem_ctx, lp_sub, snum);
 	if (remark) {
 		remark = talloc_sub_full(
-			p->mem_ctx, lp_servicename(talloc_tos(), snum),
+			p->mem_ctx, lp_servicename(talloc_tos(), lp_sub, snum),
 			get_current_username(), lp_path(talloc_tos(), lp_sub, snum),
 			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
@@ -320,12 +323,12 @@ static void init_srv_share_info_501(struct pipes_struct *p,
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	const char *net_name = lp_servicename(talloc_tos(), snum);
+	const char *net_name = lp_servicename(talloc_tos(), lp_sub, snum);
 	char *remark = lp_comment(p->mem_ctx, lp_sub, snum);
 
 	if (remark) {
 		remark = talloc_sub_full(
-			p->mem_ctx, lp_servicename(talloc_tos(), snum),
+			p->mem_ctx, lp_servicename(talloc_tos(), lp_sub, snum),
 			get_current_username(), lp_path(talloc_tos(), lp_sub, snum),
 			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
@@ -351,7 +354,7 @@ static void init_srv_share_info_502(struct pipes_struct *p,
 {
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
-	const char *net_name = lp_servicename(talloc_tos(), snum);
+	const char *net_name = lp_servicename(talloc_tos(), lp_sub, snum);
 	char *path = NULL;
 	struct security_descriptor *sd = NULL;
 	struct sec_desc_buf *sd_buf = NULL;
@@ -361,7 +364,7 @@ static void init_srv_share_info_502(struct pipes_struct *p,
 
 	if (remark) {
 		remark = talloc_sub_full(
-			p->mem_ctx, lp_servicename(talloc_tos(), snum),
+			p->mem_ctx, lp_servicename(talloc_tos(), lp_sub, snum),
 			get_current_username(), lp_path(talloc_tos(), lp_sub, snum),
 			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
@@ -375,7 +378,7 @@ static void init_srv_share_info_502(struct pipes_struct *p,
 		string_replace(path, '/', '\\');
 	}
 
-	sd = get_share_security(ctx, lp_servicename(talloc_tos(), snum), &sd_size);
+	sd = get_share_security(ctx, lp_servicename(talloc_tos(), lp_sub, snum), &sd_size);
 
 	sd_buf = make_sec_desc_buf(p->mem_ctx, sd_size, sd);
 
@@ -404,7 +407,7 @@ static void init_srv_share_info_1004(struct pipes_struct *p,
 
 	if (remark) {
 		remark = talloc_sub_full(
-			p->mem_ctx, lp_servicename(talloc_tos(), snum),
+			p->mem_ctx, lp_servicename(talloc_tos(), lp_sub, snum),
 			get_current_username(), lp_path(talloc_tos(), lp_sub, snum),
 			p->session_info->unix_token->uid, get_current_username(),
 			"", remark);
@@ -463,12 +466,14 @@ static void init_srv_share_info_1501(struct pipes_struct *p,
 				     struct sec_desc_buf **r,
 				     int snum)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct security_descriptor *sd;
 	struct sec_desc_buf *sd_buf = NULL;
 	size_t sd_size;
 	TALLOC_CTX *ctx = p->mem_ctx;
 
-	sd = get_share_security(ctx, lp_servicename(talloc_tos(), snum), &sd_size);
+	sd = get_share_security(ctx, lp_servicename(talloc_tos(), lp_sub, snum), &sd_size);
 	if (sd) {
 		sd_buf = make_sec_desc_buf(p->mem_ctx, sd_size, sd);
 	}
@@ -482,7 +487,9 @@ static void init_srv_share_info_1501(struct pipes_struct *p,
 
 static bool is_hidden_share(int snum)
 {
-	const char *net_name = lp_servicename(talloc_tos(), snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	const char *net_name = lp_servicename(talloc_tos(), lp_sub, snum);
 
 	return (net_name[strlen(net_name) - 1] == '$') ? True : False;
 }
@@ -493,6 +500,9 @@ static bool is_hidden_share(int snum)
 static bool is_enumeration_allowed(struct pipes_struct *p,
                                    int snum)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+
 	if (!lp_access_based_share_enum(snum)) {
 		return true;
 	}
@@ -504,7 +514,7 @@ static bool is_enumeration_allowed(struct pipes_struct *p,
 	}
 
 	return share_access_check(p->session_info->security_token,
-				  lp_servicename(talloc_tos(), snum),
+				  lp_servicename(talloc_tos(), lp_sub, snum),
 				  FILE_READ_DATA, NULL);
 }
 
@@ -561,6 +571,8 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
 				      uint32_t *total_entries,
 				      bool all_shares)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	uint32_t num_entries = 0;
 	uint32_t alloc_entries = 0;
 	int num_services = 0;
@@ -591,12 +603,12 @@ static WERROR init_srv_share_info_ctr(struct pipes_struct *p,
                     is_enumeration_allowed(p, snum) &&
                     (all_shares || !is_hidden_share(snum)) ) {
                         DEBUG(10, ("counting service %s\n",
-				lp_servicename(talloc_tos(), snum) ? lp_servicename(talloc_tos(), snum) : "(null)"));
+				lp_servicename(talloc_tos(), lp_sub, snum) ? lp_servicename(talloc_tos(), lp_sub, snum) : "(null)"));
                         allowed[snum] = true;
                         num_entries++;
                 } else {
                         DEBUG(10, ("NOT counting service %s\n",
-				lp_servicename(talloc_tos(), snum) ? lp_servicename(talloc_tos(), snum) : "(null)"));
+				lp_servicename(talloc_tos(), lp_sub, snum) ? lp_servicename(talloc_tos(), lp_sub, snum) : "(null)"));
                 }
         }
 
@@ -1955,7 +1967,7 @@ WERROR _srvsvc_NetShareSetInfo(struct pipes_struct *p,
 		size_t sd_size;
 		NTSTATUS status;
 
-		old_sd = get_share_security(p->mem_ctx, lp_servicename(talloc_tos(), snum), &sd_size);
+		old_sd = get_share_security(p->mem_ctx, lp_servicename(talloc_tos(), lp_sub, snum), &sd_size);
 
 		if (old_sd && !security_descriptor_equal(old_sd, psd)) {
 			status = set_share_security(share_name, psd);

@@ -112,6 +112,8 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 				connection_struct *conn,
 				char *target)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *mapfilename = NULL;
 	char *filename_start = strchr_m(target, '@');
 	char *filename_end = NULL;
@@ -155,7 +157,7 @@ static char *expand_msdfs_target(TALLOC_CTX *ctx,
 	}
 
 	targethost = talloc_sub_full(ctx,
-				lp_servicename(talloc_tos(), SNUM(conn)),
+				lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 				conn->session_info->unix_info->unix_name,
 				conn->connectpath,
 				conn->session_info->unix_token->gid,

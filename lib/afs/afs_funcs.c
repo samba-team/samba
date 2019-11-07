@@ -221,6 +221,8 @@ char *afs_createtoken_str(const char *username, const char *cell)
 
 bool afs_login(connection_struct *conn)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	DATA_BLOB ticket;
 	char *afs_username = NULL;
 	char *cell = NULL;
@@ -239,7 +241,7 @@ bool afs_login(connection_struct *conn)
 	}
 
 	afs_username = talloc_sub_advanced(ctx,
-				lp_servicename(ctx, SNUM(conn)),
+				lp_servicename(ctx, lp_sub, SNUM(conn)),
 				conn->session_info->unix_info->unix_name,
 				conn->connectpath,
 				conn->session_info->unix_token->gid,

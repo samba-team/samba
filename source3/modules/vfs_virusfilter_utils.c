@@ -35,8 +35,11 @@ char *virusfilter_string_sub(
 	connection_struct *conn,
 	const char *str)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+
 	return talloc_sub_full(mem_ctx,
-		lp_servicename(mem_ctx, SNUM(conn)),
+		lp_servicename(mem_ctx, lp_sub, SNUM(conn)),
 		conn->session_info->unix_info->unix_name,
 		conn->connectpath,
 		conn->session_info->unix_token->gid,

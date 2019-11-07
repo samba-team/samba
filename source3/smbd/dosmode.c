@@ -1122,6 +1122,8 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 			 files_struct *fsp,
 			 bool sparse)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	uint32_t old_dosmode;
 	uint32_t new_dosmode;
 	NTSTATUS status;
@@ -1131,7 +1133,7 @@ NTSTATUS file_set_sparse(connection_struct *conn,
 			"on readonly share[%s]\n",
 			smb_fname_str_dbg(fsp->fsp_name),
 			sparse,
-			lp_servicename(talloc_tos(), SNUM(conn))));
+			lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
 		return NT_STATUS_MEDIA_WRITE_PROTECTED;
 	}
 

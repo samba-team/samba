@@ -104,7 +104,10 @@ static NTSTATUS cmd_show_data(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 
 static NTSTATUS cmd_connect(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	SMB_VFS_CONNECT(vfs->conn, lp_servicename(talloc_tos(), SNUM(vfs->conn)), "vfstest");
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+
+	SMB_VFS_CONNECT(vfs->conn, lp_servicename(talloc_tos(), lp_sub, SNUM(vfs->conn)), "vfstest");
 	return NT_STATUS_OK;
 }
 

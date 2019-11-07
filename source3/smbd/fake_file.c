@@ -126,6 +126,8 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 				uint32_t access_mask,
 				files_struct **result)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 
@@ -134,7 +136,7 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("open_fake_file: smbd_calculate_access_mask "
 			"on service[%s] file[%s] returned %s\n",
-			lp_servicename(talloc_tos(), SNUM(conn)),
+			lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 			smb_fname_str_dbg(smb_fname),
 			nt_errstr(status)));
 		return status;
@@ -144,7 +146,7 @@ NTSTATUS open_fake_file(struct smb_request *req, connection_struct *conn,
 	if (geteuid() != sec_initial_uid()) {
 		DEBUG(3, ("open_fake_file_shared: access_denied to "
 			  "service[%s] file[%s] user[%s]\n",
-			  lp_servicename(talloc_tos(), SNUM(conn)),
+			  lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 			  smb_fname_str_dbg(smb_fname),
 			  conn->session_info->unix_info->unix_name));
 		return NT_STATUS_ACCESS_DENIED;

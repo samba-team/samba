@@ -3522,7 +3522,10 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 
 unsigned char *create_volume_objectid(connection_struct *conn, unsigned char objid[16])
 {
-	E_md4hash(lp_servicename(talloc_tos(), SNUM(conn)),objid);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+
+	E_md4hash(lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),objid);
 	return objid;
 }
 
@@ -3572,6 +3575,8 @@ NTSTATUS smbd_do_qfsinfo(struct smbXsrv_connection *xconn,
 			 char **ppdata,
 			 int *ret_data_len)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *pdata, *end_data;
 	int data_len = 0;
 	size_t len = 0;
@@ -3680,7 +3685,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
 			 */
-			SIVAL(pdata,0,str_checksum(lp_servicename(talloc_tos(), snum)) ^ (str_checksum(get_local_machine_name())<<16) );
+			SIVAL(pdata,0,str_checksum(lp_servicename(talloc_tos(), lp_sub, snum)) ^ (str_checksum(get_local_machine_name())<<16) );
 			/*
 			 * Win2k3 and previous mess this up by sending a name length
 			 * one byte short. I believe only older clients (OS/2 Win9x) use
@@ -3762,7 +3767,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 			 * Add volume serial number - hash of a combination of
 			 * the called hostname and the service name.
 			 */
-			SIVAL(pdata,8,str_checksum(lp_servicename(talloc_tos(), snum)) ^
+			SIVAL(pdata,8,str_checksum(lp_servicename(talloc_tos(), lp_sub, snum)) ^
 				(str_checksum(get_local_machine_name())<<16));
 
 			/* Max label len is 32 characters. */
@@ -3777,7 +3782,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_ex_dev, (u
 
 			DEBUG(5,("smbd_do_qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol=%s serv=%s\n",
 				(int)strlen(vname),vname,
-				lp_servicename(talloc_tos(), snum)));
+				lp_servicename(talloc_tos(), lp_sub, snum)));
 			if (max_data_bytes >= 24 && data_len > max_data_bytes) {
 				/* the client only requested a portion of the
 				   volume label */
@@ -3910,7 +3915,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			if (get_current_uid(conn) != 0) {
 				DEBUG(0,("get_user_quota: access_denied "
 					 "service [%s] user [%s]\n",
-					 lp_servicename(talloc_tos(), SNUM(conn)),
+					 lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 					 conn->session_info->unix_info->unix_name));
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -3918,14 +3923,14 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			status = vfs_get_ntquota(&fsp, SMB_USER_FS_QUOTA_TYPE,
 						 NULL, &quotas);
 			if (!NT_STATUS_IS_OK(status)) {
-				DEBUG(0,("vfs_get_ntquota() failed for service [%s]\n",lp_servicename(talloc_tos(), SNUM(conn))));
+				DEBUG(0,("vfs_get_ntquota() failed for service [%s]\n",lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
 				return status;
 			}
 
 			data_len = 48;
 
 			DEBUG(10,("SMB_FS_QUOTA_INFORMATION: for service [%s]\n",
-				  lp_servicename(talloc_tos(), SNUM(conn))));
+				  lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
 
 			/* Unknown1 24 NULL bytes*/
 			SBIG_UINT(pdata,0,(uint64_t)0);
@@ -4071,7 +4076,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				return NT_STATUS_INVALID_LEVEL;
 #endif /* EOPNOTSUPP */
 			} else {
-				DEBUG(0,("vfs_statvfs() failed for service [%s]\n",lp_servicename(talloc_tos(), SNUM(conn))));
+				DEBUG(0,("vfs_statvfs() failed for service [%s]\n",lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
 				return NT_STATUS_DOS(ERRSRV, ERRerror);
 			}
 			break;
@@ -4202,6 +4207,8 @@ static NTSTATUS smb_set_fsquota(connection_struct *conn,
 			files_struct *fsp,
 			const DATA_BLOB *qdata)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	NTSTATUS status;
 	SMB_NTQUOTA_STRUCT quotas;
 
@@ -4210,7 +4217,7 @@ static NTSTATUS smb_set_fsquota(connection_struct *conn,
 	/* access check */
 	if ((get_current_uid(conn) != 0) || !CAN_WRITE(conn)) {
 		DEBUG(3, ("set_fsquota: access_denied service [%s] user [%s]\n",
-			  lp_servicename(talloc_tos(), SNUM(conn)),
+			  lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 			  conn->session_info->unix_info->unix_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -4247,7 +4254,7 @@ static NTSTATUS smb_set_fsquota(connection_struct *conn,
 	/* now set the quotas */
 	if (vfs_set_ntquota(fsp, SMB_USER_FS_QUOTA_TYPE, NULL, &quotas)!=0) {
 		DEBUG(1, ("vfs_set_ntquota() failed for service [%s]\n",
-			  lp_servicename(talloc_tos(), SNUM(conn))));
+			  lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
 		status =  map_nt_error_from_unix(errno);
 	} else {
 		status = NT_STATUS_OK;
@@ -4343,13 +4350,15 @@ static void call_trans2setfsinfo(connection_struct *conn,
 				 char **ppdata, int total_data,
 				 unsigned int max_data_bytes)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct smbXsrv_connection *xconn = req->xconn;
 	char *pdata = *ppdata;
 	char *params = *pparams;
 	uint16_t info_level;
 
 	DEBUG(10,("call_trans2setfsinfo: for service [%s]\n",
-		  lp_servicename(talloc_tos(), SNUM(conn))));
+		  lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
 
 	/*  */
 	if (total_params < 4) {
@@ -9667,6 +9676,8 @@ static void call_trans2ioctl(connection_struct *conn,
 			     char **ppdata, int total_data,
 			     unsigned int max_data_bytes)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *pdata = *ppdata;
 	files_struct *fsp = file_fsp(req, SVAL(req->vwv+15, 0));
 	NTSTATUS status;
@@ -9702,7 +9713,7 @@ static void call_trans2ioctl(connection_struct *conn,
 			return;
 		}
 		status = srvstr_push(pdata, req->flags2, pdata+18,
-			    lp_servicename(talloc_tos(), SNUM(conn)), 13,
+			    lp_servicename(talloc_tos(), lp_sub, SNUM(conn)), 13,
 			    STR_ASCII|STR_TERMINATE, &len); /* Service name */
 		if (!NT_STATUS_IS_OK(status)) {
 			reply_nterror(req, status);

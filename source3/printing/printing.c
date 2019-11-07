@@ -1727,7 +1727,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 		return;
 	}
 	lpqcommand = talloc_sub_full(ctx,
-			lp_servicename(talloc_tos(), snum),
+			lp_servicename(talloc_tos(), lp_sub, snum),
 			current_user_info.unix_name,
 			"",
 			get_current_gid(NULL),
@@ -1747,7 +1747,7 @@ static void print_queue_update(struct messaging_context *msg_ctx,
 		return;
 	}
 	lprmcommand = talloc_sub_full(ctx,
-			lp_servicename(talloc_tos(), snum),
+			lp_servicename(talloc_tos(), lp_sub, snum),
 			current_user_info.unix_name,
 			"",
 			get_current_gid(NULL),
@@ -3054,7 +3054,7 @@ NTSTATUS print_job_end(struct messaging_context *msg_ctx, int snum,
 		goto fail;
 	}
 	lpq_cmd = talloc_sub_full(tmp_ctx,
-				      lp_servicename(talloc_tos(), snum),
+				      lp_servicename(talloc_tos(), lp_sub, snum),
 				      current_user_info.unix_name,
 				      "",
 				      get_current_gid(NULL),
@@ -3105,6 +3105,8 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 				  struct tdb_print_db *pdb, int snum,
 				  int *pcount, print_queue_struct **ppqueue)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	TDB_DATA data, cgdata, jcdata;
 	print_queue_struct *queue = NULL;
 	uint32_t qcount = 0;
@@ -3115,7 +3117,7 @@ static bool get_stored_queue_info(struct messaging_context *msg_ctx,
 	uint32_t i;
 	int max_reported_jobs = lp_max_reported_print_jobs(snum);
 	bool ret = false;
-	const char* sharename = lp_servicename(talloc_tos(), snum);
+	const char* sharename = lp_servicename(talloc_tos(), lp_sub, snum);
 	TALLOC_CTX *tmp_ctx = talloc_new(msg_ctx);
 	if (tmp_ctx == NULL) {
 		return false;

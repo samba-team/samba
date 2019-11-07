@@ -261,7 +261,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		snum = compat_vuser->homes_snum;
 	} else if ((compat_vuser->homes_snum != -1)
                    && strequal(service,
-			lp_servicename(talloc_tos(), compat_vuser->homes_snum))) {
+			lp_servicename(talloc_tos(), lp_sub, compat_vuser->homes_snum))) {
 		snum = compat_vuser->homes_snum;
 	} else {
 		snum = find_service(talloc_tos(), service, &service);
@@ -341,6 +341,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	}
 
 	tcon->global->share_name = lp_servicename(tcon->global,
+						  lp_sub,
 						  SNUM(compat_conn));
 	if (tcon->global->share_name == NULL) {
 		conn_free(compat_conn);

@@ -4049,6 +4049,8 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 			       struct smb_filename *smb_dname,
 			       uint32_t file_attributes)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	mode_t mode;
 	char *parent_dir = NULL;
 	NTSTATUS status;
@@ -4059,7 +4061,7 @@ static NTSTATUS mkdir_internal(connection_struct *conn,
 
 	if (!CAN_WRITE(conn) || (access_mask & ~(conn->share_access))) {
 		DEBUG(5,("mkdir_internal: failing share access "
-			 "%s\n", lp_servicename(talloc_tos(), SNUM(conn))));
+			 "%s\n", lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 

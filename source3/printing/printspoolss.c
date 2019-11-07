@@ -80,7 +80,7 @@ NTSTATUS print_spool_open(files_struct *fsp,
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
-	pf->svcname = lp_servicename(pf, SNUM(fsp->conn));
+	pf->svcname = lp_servicename(pf, lp_sub, SNUM(fsp->conn));
 
 	/* the document name is derived from the file name.
 	 * "Remote Downlevel Document" is added in front to

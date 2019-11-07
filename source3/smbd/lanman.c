@@ -97,6 +97,8 @@ static int CopyExpanded(connection_struct *conn,
 			int snum, char **dst, char *src, int *p_space_remaining)
 {
 	TALLOC_CTX *ctx = talloc_tos();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *buf = NULL;
 	int l;
 
@@ -110,13 +112,13 @@ static int CopyExpanded(connection_struct *conn,
 		*p_space_remaining = 0;
 		return 0;
 	}
-	buf = talloc_string_sub(ctx, buf,"%S", lp_servicename(ctx, snum));
+	buf = talloc_string_sub(ctx, buf,"%S", lp_servicename(ctx, lp_sub, snum));
 	if (!buf) {
 		*p_space_remaining = 0;
 		return 0;
 	}
 	buf = talloc_sub_full(ctx,
-				  lp_servicename(ctx, SNUM(conn)),
+				  lp_servicename(ctx, lp_sub, SNUM(conn)),
 				conn->session_info->unix_info->unix_name,
 				conn->connectpath,
 				conn->session_info->unix_token->gid,
@@ -154,6 +156,8 @@ static int CopyAndAdvance(char **dst, char *src, int *n)
 static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 {
 	TALLOC_CTX *ctx = talloc_tos();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *buf = NULL;
 	if (!s) {
 		return 0;
@@ -162,12 +166,12 @@ static int StrlenExpanded(connection_struct *conn, int snum, char *s)
 	if (!buf) {
 		return 0;
 	}
-	buf = talloc_string_sub(ctx,buf,"%S",lp_servicename(ctx, snum));
+	buf = talloc_string_sub(ctx,buf,"%S",lp_servicename(ctx, lp_sub, snum));
 	if (!buf) {
 		return 0;
 	}
 	buf = talloc_sub_full(ctx,
-				  lp_servicename(ctx, SNUM(conn)),
+				  lp_servicename(ctx, lp_sub, SNUM(conn)),
 				conn->session_info->unix_info->unix_name,
 				conn->connectpath,
 				conn->session_info->unix_token->gid,
@@ -1949,7 +1953,7 @@ static int fill_share_info(connection_struct *conn, int snum, int uLevel,
 		baseaddr = p;
 	}
 
-	push_ascii(p,lp_servicename(talloc_tos(), snum),13, STR_TERMINATE);
+	push_ascii(p,lp_servicename(talloc_tos(), lp_sub, snum),13, STR_TERMINATE);
 
 	if (uLevel > 0) {
 		int type;
@@ -2076,6 +2080,8 @@ static bool api_RNetShareEnum(struct smbd_server_connection *sconn,
 				int               *rdata_len,
 				int               *rparam_len )
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *str1 = get_safe_str_ptr(param,tpscnt,param,2);
 	char *str2 = skip_string(param,tpscnt,str1);
 	char *p = skip_string(param,tpscnt,str2);
@@ -2113,7 +2119,7 @@ static bool api_RNetShareEnum(struct smbd_server_connection *sconn,
 		if (!(lp_browseable(i) && lp_snum_ok(i))) {
 			continue;
 		}
-		push_ascii_fstring(servicename_dos, lp_servicename(talloc_tos(), i));
+		push_ascii_fstring(servicename_dos, lp_servicename(talloc_tos(), lp_sub, i));
 		/* Maximum name length = 13. */
 		if( lp_browseable( i ) && lp_snum_ok( i ) && (strlen(servicename_dos) < 13)) {
 			total++;
@@ -2146,7 +2152,7 @@ static bool api_RNetShareEnum(struct smbd_server_connection *sconn,
 		}
 
 		push_ascii_fstring(servicename_dos,
-				   lp_servicename(talloc_tos(), i));
+				   lp_servicename(talloc_tos(), lp_sub, i));
 		if (lp_browseable(i) && lp_snum_ok(i) && (strlen(servicename_dos) < 13)) {
 			if (fill_share_info( conn,i,uLevel,&p,&f_len,&p2,&s_len,*rdata ) < 0) {
 				break;

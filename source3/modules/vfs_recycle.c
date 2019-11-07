@@ -454,6 +454,8 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				int flags)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	connection_struct *conn = handle->conn;
 	char *path_name = NULL;
        	char *temp_name = NULL;
@@ -467,7 +469,7 @@ static int recycle_unlink_internal(vfs_handle_struct *handle,
 	bool exist;
 	int rc = -1;
 
-	repository = talloc_sub_full(NULL, lp_servicename(talloc_tos(), SNUM(conn)),
+	repository = talloc_sub_full(NULL, lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 					conn->session_info->unix_info->unix_name,
 					conn->connectpath,
 					conn->session_info->unix_token->gid,

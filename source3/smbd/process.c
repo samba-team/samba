@@ -1503,6 +1503,8 @@ static void smb1srv_update_crypto_flags(struct smbXsrv_session *session,
 
 static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int flags;
 	uint64_t session_tag;
 	connection_struct *conn = NULL;
@@ -1671,7 +1673,7 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 			if (req->cmd != SMBtrans2 && req->cmd != SMBtranss2) {
 				DEBUG(1,("service[%s] requires encryption"
 					"%s ACCESS_DENIED. mid=%llu\n",
-					lp_servicename(talloc_tos(), SNUM(conn)),
+					lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 					smb_fn_name(type),
 					(unsigned long long)req->mid));
 				reply_nterror(req, NT_STATUS_ACCESS_DENIED);

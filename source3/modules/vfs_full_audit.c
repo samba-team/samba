@@ -475,6 +475,8 @@ static int audit_syslog_priority(vfs_handle_struct *handle)
 
 static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *prefix = NULL;
 	char *result;
 
@@ -485,7 +487,7 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 		return NULL;
 	}
 	result = talloc_sub_full(ctx,
-			lp_servicename(talloc_tos(), SNUM(conn)),
+			lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 			conn->session_info->unix_info->unix_name,
 			conn->connectpath,
 			conn->session_info->unix_token->gid,
@@ -771,10 +773,13 @@ static int smb_full_audit_connect(vfs_handle_struct *handle,
 
 static void smb_full_audit_disconnect(vfs_handle_struct *handle)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+
 	SMB_VFS_NEXT_DISCONNECT(handle);
 
 	do_log(SMB_VFS_OP_DISCONNECT, True, handle,
-	       "%s", lp_servicename(talloc_tos(), SNUM(handle->conn)));
+	       "%s", lp_servicename(talloc_tos(), lp_sub, SNUM(handle->conn)));
 
 	/* The bitmaps will be disconnected when the private
 	   data is deleted. */

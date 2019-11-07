@@ -82,7 +82,7 @@ static int print_run_command(int snum, const char* printername, bool do_sub,
 
 	if (do_sub && snum != -1) {
 		syscmd = talloc_sub_advanced(ctx,
-				lp_servicename(talloc_tos(), snum),
+				lp_servicename(talloc_tos(), lp_sub, snum),
 				current_user_info.unix_name,
 				"",
 				get_current_gid(NULL),

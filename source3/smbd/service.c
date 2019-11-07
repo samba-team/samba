@@ -922,6 +922,8 @@ static connection_struct *make_connection_smb1(struct smb_request *req,
 					const char *pdev,
 					NTSTATUS *pstatus)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct smbXsrv_tcon *tcon;
 	NTSTATUS status;
 	struct connection_struct *conn;
@@ -957,7 +959,7 @@ static connection_struct *make_connection_smb1(struct smb_request *req,
 		return NULL;
 	}
 
-	tcon->global->share_name = lp_servicename(tcon->global, SNUM(conn));
+	tcon->global->share_name = lp_servicename(tcon->global, lp_sub, SNUM(conn));
 	if (tcon->global->share_name == NULL) {
 		conn_free(conn);
 		TALLOC_FREE(tcon);

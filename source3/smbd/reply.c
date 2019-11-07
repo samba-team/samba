@@ -868,6 +868,8 @@ void reply_tcon(struct smb_request *req)
 
 void reply_tcon_and_X(struct smb_request *req)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	connection_struct *conn = req->conn;
 	const char *service = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -1142,7 +1144,7 @@ void reply_tcon_and_X(struct smb_request *req)
 
 		if (lp_msdfs_root(SNUM(conn)) && lp_host_msdfs()) {
 			DEBUG(2,("Serving %s as a Dfs root\n",
-				 lp_servicename(ctx, SNUM(conn)) ));
+				 lp_servicename(ctx, lp_sub, SNUM(conn)) ));
 			optional_support |= SMB_SHARE_IN_DFS;
 		}
 
@@ -1183,6 +1185,8 @@ void reply_unknown_new(struct smb_request *req, uint8_t type)
 
 void reply_ioctl(struct smb_request *req)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	connection_struct *conn = req->conn;
 	uint16_t device;
 	uint16_t function;
@@ -1249,6 +1253,7 @@ void reply_ioctl(struct smb_request *req)
 				status = srvstr_push((char *)req->outbuf, req->flags2,
 					    p+18,
 					    lp_servicename(talloc_tos(),
+							   lp_sub,
 							   SNUM(conn)),
 					    13, STR_TERMINATE|STR_ASCII, &len);
 				if (!NT_STATUS_IS_OK(status)) {
@@ -6210,6 +6215,8 @@ void reply_printclose(struct smb_request *req)
 
 void reply_printqueue(struct smb_request *req)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	connection_struct *conn = req->conn;
 	int max_count;
 	int start_index;
@@ -6248,7 +6255,7 @@ void reply_printqueue(struct smb_request *req)
 		TALLOC_CTX *mem_ctx = talloc_tos();
 		NTSTATUS status;
 		WERROR werr;
-		const char *sharename = lp_servicename(mem_ctx, SNUM(conn));
+		const char *sharename = lp_servicename(mem_ctx, lp_sub, SNUM(conn));
 		struct rpc_pipe_client *cli = NULL;
 		struct dcerpc_binding_handle *b = NULL;
 		struct policy_handle handle;

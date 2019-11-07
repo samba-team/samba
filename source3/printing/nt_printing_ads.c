@@ -619,6 +619,8 @@ done:
 
 WERROR check_published_printers(struct messaging_context *msg_ctx)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	ADS_STATUS ads_rc;
 	ADS_STRUCT *ads = NULL;
 	int snum;
@@ -666,7 +668,7 @@ WERROR check_published_printers(struct messaging_context *msg_ctx)
 		}
 
 		result = winreg_get_printer_internal(tmp_ctx, session_info, msg_ctx,
-					    lp_servicename(talloc_tos(), snum),
+					    lp_servicename(talloc_tos(), lp_sub, snum),
 					    &pinfo2);
 		if (!W_ERROR_IS_OK(result)) {
 			continue;

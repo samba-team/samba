@@ -532,6 +532,8 @@ static int do_global_checks(void)
  */
 static void do_per_share_checks(int s)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	const char **deny_list = lp_hosts_deny(s);
 	const char **allow_list = lp_hosts_allow(s);
 	const char **vfs_objects = NULL;
@@ -550,7 +552,7 @@ static void do_per_share_checks(int s)
 					"(%s) for service %s.\n\n",
 					hasstar ? *hasstar : *hasquery,
 					deny_list[i],
-					lp_servicename(talloc_tos(), s));
+					lp_servicename(talloc_tos(), lp_sub, s));
 			}
 		}
 	}
@@ -565,7 +567,7 @@ static void do_per_share_checks(int s)
 					"list (%s) for service %s.\n\n",
 					hasstar ? *hasstar : *hasquery,
 					allow_list[i],
-					lp_servicename(talloc_tos(), s));
+					lp_servicename(talloc_tos(), lp_sub, s));
 			}
 		}
 	}
@@ -574,7 +576,7 @@ static void do_per_share_checks(int s)
 		fprintf(stderr, "Invalid combination of parameters for service "
 				"%s. Level II oplocks can only be set if oplocks "
 				"are also set.\n\n",
-				lp_servicename(talloc_tos(), s));
+				lp_servicename(talloc_tos(), lp_sub, s));
 	}
 
 	if (!lp_store_dos_attributes(s) && lp_map_hidden(s)
@@ -584,7 +586,7 @@ static void do_per_share_checks(int s)
 			"Invalid combination of parameters for service %s. Map "
 			"hidden can only work if create mask includes octal "
 			"01 (S_IXOTH).\n\n",
-			lp_servicename(talloc_tos(), s));
+			lp_servicename(talloc_tos(), lp_sub, s));
 	}
 	if (!lp_store_dos_attributes(s) && lp_map_hidden(s)
 	    && (lp_force_create_mode(s) & S_IXOTH))
@@ -593,7 +595,7 @@ static void do_per_share_checks(int s)
 			"Invalid combination of parameters for service "
 			"%s. Map hidden can only work if force create mode "
 			"excludes octal 01 (S_IXOTH).\n\n",
-			lp_servicename(talloc_tos(), s));
+			lp_servicename(talloc_tos(), lp_sub, s));
 	}
 	if (!lp_store_dos_attributes(s) && lp_map_system(s)
 	    && !(lp_create_mask(s) & S_IXGRP))
@@ -602,7 +604,7 @@ static void do_per_share_checks(int s)
 			"Invalid combination of parameters for service "
 			"%s. Map system can only work if create mask includes "
 			"octal 010 (S_IXGRP).\n\n",
-			lp_servicename(talloc_tos(), s));
+			lp_servicename(talloc_tos(), lp_sub, s));
 	}
 	if (!lp_store_dos_attributes(s) && lp_map_system(s)
 	    && (lp_force_create_mode(s) & S_IXGRP))
@@ -611,13 +613,13 @@ static void do_per_share_checks(int s)
 			"Invalid combination of parameters for service "
 			"%s. Map system can only work if force create mode "
 			"excludes octal 010 (S_IXGRP).\n\n",
-			lp_servicename(talloc_tos(), s));
+			lp_servicename(talloc_tos(), lp_sub, s));
 	}
 	if (lp_printing(s) == PRINT_CUPS && *(lp_print_command(s)) != '\0') {
 		fprintf(stderr,
 			"Warning: Service %s defines a print command, but "
 			"parameter is ignored when using CUPS libraries.\n\n",
-			lp_servicename(talloc_tos(), s));
+			lp_servicename(talloc_tos(), lp_sub, s));
 	}
 
 	vfs_objects = lp_vfs_objects(s);
@@ -638,6 +640,8 @@ static void do_per_share_checks(int s)
  int main(int argc, const char *argv[])
 {
 	const char *config_file = get_dyn_CONFIGFILE();
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int s;
 	static int silent_mode = False;
 	static int show_all_parameters = False;
@@ -817,10 +821,10 @@ static void do_per_share_checks(int s)
 				if (allow_access(lp_hosts_deny(-1), lp_hosts_allow(-1), cname, caddr)
 				    && allow_access(lp_hosts_deny(s), lp_hosts_allow(s), cname, caddr)) {
 					fprintf(stderr,"Allow connection from %s (%s) to %s\n",
-						   cname,caddr,lp_servicename(talloc_tos(), s));
+						   cname,caddr,lp_servicename(talloc_tos(), lp_sub, s));
 				} else {
 					fprintf(stderr,"Deny connection from %s (%s) to %s\n",
-						   cname,caddr,lp_servicename(talloc_tos(), s));
+						   cname,caddr,lp_servicename(talloc_tos(), lp_sub, s));
 				}
 			}
 		}

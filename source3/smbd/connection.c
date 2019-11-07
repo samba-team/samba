@@ -83,9 +83,11 @@ int count_current_connections(const char *sharename, bool verify)
 
 bool connections_snum_used(struct smbd_server_connection *unused, int snum)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	int active;
 
-	active = count_current_connections(lp_servicename(talloc_tos(), snum),
+	active = count_current_connections(lp_servicename(talloc_tos(), lp_sub, snum),
 					   true);
 	if (active > 0) {
 		return true;

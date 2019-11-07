@@ -534,7 +534,9 @@ int main(int argc, const char *argv[])
 
 		for (i=0; i<lp_numservices(); i++) {
 			TALLOC_CTX *frame = talloc_stackframe();
-			const char *service = lp_servicename(frame, i);
+			const struct loadparm_substitution *lp_sub =
+				loadparm_s3_global_substitution();
+			const char *service = lp_servicename(frame, lp_sub, i);
 
 			if (service == NULL) {
 				continue;

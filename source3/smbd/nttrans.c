@@ -2603,6 +2603,8 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 					    uint32_t data_count,
 					    uint32_t max_data_count)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	NTSTATUS nt_status = NT_STATUS_OK;
 	char *params = *ppparams;
 	char *pdata = *ppdata;
@@ -2625,7 +2627,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 	/* access check */
 	if (get_current_uid(conn) != sec_initial_uid()) {
 		DEBUG(1,("get_user_quota: access_denied service [%s] user "
-			 "[%s]\n", lp_servicename(talloc_tos(), SNUM(conn)),
+			 "[%s]\n", lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 			 conn->session_info->unix_info->unix_name));
 		nt_status = NT_STATUS_ACCESS_DENIED;
 		goto error;
@@ -2733,6 +2735,8 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 					    uint32_t data_count,
 					    uint32_t max_data_count)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *params = *ppparams;
 	char *pdata = *ppdata;
 	int data_len=0,param_len=0;
@@ -2749,7 +2753,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 	/* access check */
 	if (get_current_uid(conn) != sec_initial_uid()) {
 		DEBUG(1,("set_user_quota: access_denied service [%s] user "
-			 "[%s]\n", lp_servicename(talloc_tos(), SNUM(conn)),
+			 "[%s]\n", lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 			 conn->session_info->unix_info->unix_name));
 		status = NT_STATUS_ACCESS_DENIED;
 		goto error;

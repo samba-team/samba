@@ -83,6 +83,8 @@ bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
 
 void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	connection_struct *conn, *next;
 	bool close_all = false;
 
@@ -107,7 +109,7 @@ void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename
 
 		if (close_all) {
 			do_close = true;
-		} else if (strequal(lp_servicename(talloc_tos(), SNUM(conn)),
+		} else if (strequal(lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 				    sharename)) {
 			DEBUG(1, ("conn_force_tdis: Forcing close of "
 				  "share '%s' (wire_id=0x%08x)\n",

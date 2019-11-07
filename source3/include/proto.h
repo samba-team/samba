@@ -742,7 +742,7 @@ char *lp_parm_substituted_string(TALLOC_CTX *mem_ctx,
 
 #include "source3/param/param_proto.h"
 
-char *lp_servicename(TALLOC_CTX *ctx, int);
+char *lp_servicename(TALLOC_CTX *ctx, const struct loadparm_substitution *, int);
 const char *lp_const_servicename(int);
 bool lp_autoloaded(int);
 const char *lp_dnsdomain(void);

@@ -423,7 +423,9 @@ void notify_printer_status(struct tevent_context *ev,
 			   struct messaging_context *msg_ctx,
 			   int snum, uint32_t status)
 {
-	const char *sharename = lp_servicename(talloc_tos(), snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	const char *sharename = lp_servicename(talloc_tos(), lp_sub, snum);
 
 	if (sharename)
 		notify_printer_status_byname(ev, msg_ctx, sharename, status);
@@ -511,7 +513,9 @@ void notify_printer_driver(struct tevent_context *ev,
 			   struct messaging_context *msg_ctx,
 			   int snum, const char *driver_name)
 {
-	const char *sharename = lp_servicename(talloc_tos(), snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	const char *sharename = lp_servicename(talloc_tos(), lp_sub, snum);
 
 	send_notify_field_buffer(
 		ev, msg_ctx,
@@ -523,7 +527,9 @@ void notify_printer_comment(struct tevent_context *ev,
 			    struct messaging_context *msg_ctx,
 			    int snum, const char *comment)
 {
-	const char *sharename = lp_servicename(talloc_tos(), snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	const char *sharename = lp_servicename(talloc_tos(), lp_sub, snum);
 
 	send_notify_field_buffer(
 		ev, msg_ctx,
@@ -535,7 +541,9 @@ void notify_printer_sharename(struct tevent_context *ev,
 			      struct messaging_context *msg_ctx,
 			      int snum, const char *share_name)
 {
-	const char *sharename = lp_servicename(talloc_tos(), snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	const char *sharename = lp_servicename(talloc_tos(), lp_sub, snum);
 
 	send_notify_field_buffer(
 		ev, msg_ctx,
@@ -547,7 +555,9 @@ void notify_printer_printername(struct tevent_context *ev,
 				struct messaging_context *msg_ctx,
 				int snum, const char *printername)
 {
-	const char *sharename = lp_servicename(talloc_tos(), snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	const char *sharename = lp_servicename(talloc_tos(), lp_sub, snum);
 
 	send_notify_field_buffer(
 		ev, msg_ctx,
@@ -559,7 +569,9 @@ void notify_printer_port(struct tevent_context *ev,
 			 struct messaging_context *msg_ctx,
 			 int snum, const char *port_name)
 {
-	const char *sharename = lp_servicename(talloc_tos(), snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	const char *sharename = lp_servicename(talloc_tos(), lp_sub, snum);
 
 	send_notify_field_buffer(
 		ev, msg_ctx,
@@ -571,7 +583,9 @@ void notify_printer_location(struct tevent_context *ev,
 			     struct messaging_context *msg_ctx,
 			     int snum, const char *location)
 {
-	const char *sharename = lp_servicename(talloc_tos(), snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	const char *sharename = lp_servicename(talloc_tos(), lp_sub, snum);
 
 	send_notify_field_buffer(
 		ev, msg_ctx,
@@ -583,7 +597,9 @@ void notify_printer_sepfile(struct tevent_context *ev,
 			    struct messaging_context *msg_ctx,
 			    int snum, const char *sepfile)
 {
-	const char *sharename = lp_servicename(talloc_tos(), snum);
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	const char *sharename = lp_servicename(talloc_tos(), lp_sub, snum);
 
 	send_notify_field_buffer(
 		ev, msg_ctx,

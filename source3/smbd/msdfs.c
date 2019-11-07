@@ -61,6 +61,8 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 				struct dfs_path *pdp, /* MUST BE TALLOCED */
 				bool *ppath_contains_wcard)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *pathname_local;
 	char *p,*temp;
 	char *servicename;
@@ -162,9 +164,9 @@ static NTSTATUS parse_dfs_path(connection_struct *conn,
 	}
 
 	/* Is this really our servicename ? */
-	if (conn && !( strequal(servicename, lp_servicename(talloc_tos(), SNUM(conn)))
+	if (conn && !( strequal(servicename, lp_servicename(talloc_tos(), lp_sub, SNUM(conn)))
 			|| (strequal(servicename, HOMES_NAME)
-			&& strequal(lp_servicename(talloc_tos(), SNUM(conn)),
+			&& strequal(lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 				get_current_username()) )) ) {
 		DEBUG(10,("parse_dfs_path: %s is not our servicename\n",
 			servicename));
@@ -872,6 +874,8 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 			char **pp_path_out,
 			bool *ppath_contains_wcard)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	NTSTATUS status;
 	bool search_wcard_flag = (ucf_flags &
 		(UCF_COND_ALLOW_WCARD_LCOMP|UCF_ALWAYS_ALLOW_WCARD_LCOMP));
@@ -923,9 +927,9 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 		return NT_STATUS_OK;
 	}
 
-	if (!( strequal(pdp->servicename, lp_servicename(talloc_tos(), SNUM(conn)))
+	if (!( strequal(pdp->servicename, lp_servicename(talloc_tos(), lp_sub, SNUM(conn)))
 			|| (strequal(pdp->servicename, HOMES_NAME)
-			&& strequal(lp_servicename(talloc_tos(), SNUM(conn)),
+			&& strequal(lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
 				conn->session_info->unix_info->sanitized_username) )) ) {
 
 		/* The given sharename doesn't match this connection. */
@@ -1598,7 +1602,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	const char *dname = NULL;
 	char *talloced = NULL;
 	const char *connect_path = lp_path(frame, lp_sub, snum);
-	char *service_name = lp_servicename(frame, snum);
+	char *service_name = lp_servicename(frame, lp_sub, snum);
 	const char *msdfs_proxy = lp_msdfs_proxy(frame, lp_sub, snum);
 	struct conn_struct_tos *c = NULL;
 	connection_struct *conn = NULL;

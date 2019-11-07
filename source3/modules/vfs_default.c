@@ -123,6 +123,8 @@ static int vfswrap_statvfs(struct vfs_handle_struct *handle,
 static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 		enum timestamp_set_resolution *p_ts_res)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	connection_struct *conn = handle->conn;
 	uint32_t caps = FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
 	struct smb_filename *smb_fname_cpath = NULL;
@@ -174,7 +176,7 @@ static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle,
 			"resolution of %s "
 			"available on share %s, directory %s\n",
 			*p_ts_res == TIMESTAMP_SET_MSEC ? "msec" : "sec",
-			lp_servicename(talloc_tos(), conn->params->service),
+			lp_servicename(talloc_tos(), lp_sub, conn->params->service),
 			conn->connectpath ));
 	}
 	TALLOC_FREE(smb_fname_cpath);

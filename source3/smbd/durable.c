@@ -520,6 +520,8 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 				       files_struct **result,
 				       DATA_BLOB *new_cookie)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	struct share_mode_lock *lck;
 	struct share_mode_entry e;
 	struct files_struct *fsp = NULL;
@@ -650,7 +652,7 @@ NTSTATUS vfs_default_durable_reconnect(struct connection_struct *conn,
 	{
 		DEBUG(5, ("vfs_default_durable_reconnect: denying durable "
 			  "share[%s] is not writeable anymore\n",
-			  lp_servicename(talloc_tos(), SNUM(conn))));
+			  lp_servicename(talloc_tos(), lp_sub, SNUM(conn))));
 		TALLOC_FREE(lck);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}

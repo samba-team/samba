@@ -1097,7 +1097,7 @@ int lp_winbind_max_domain_connections(void)
 
 #include "lib/param/param_functions.c"
 
-FN_LOCAL_STRING(servicename, szService)
+FN_LOCAL_SUBSTITUTED_STRING(servicename, szService)
 FN_LOCAL_CONST_STRING(const_servicename, szService)
 
 /* These functions cannot be auto-generated */
@@ -3795,13 +3795,15 @@ int load_usershare_shares(struct smbd_server_connection *sconn,
 	tmp_ctx = talloc_stackframe();
 	for (iService = iNumServices - 1; iService >= 0; iService--) {
 		if (VALID(iService) && (ServicePtrs[iService]->usershare == USERSHARE_PENDING_DELETE)) {
+			const struct loadparm_substitution *lp_sub =
+				loadparm_s3_global_substitution();
 			char *servname;
 
 			if (snumused && snumused(sconn, iService)) {
 				continue;
 			}
 
-			servname = lp_servicename(tmp_ctx, iService);
+			servname = lp_servicename(tmp_ctx, lp_sub, iService);
 
 			/* Remove from the share ACL db. */
 			DEBUG(10,("load_usershare_shares: Removing deleted usershare %s\n",
@@ -4292,7 +4294,7 @@ const char *volume_label(TALLOC_CTX *ctx, int snum)
 	size_t end = 32;
 
 	if (!*label) {
-		label = lp_servicename(ctx, snum);
+		label = lp_servicename(ctx, lp_sub, snum);
 	}
 
 	/*
