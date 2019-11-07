@@ -137,8 +137,14 @@ static void ctdb_tcp_shutdown(struct ctdb_context *ctdb)
 {
 	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data,
 						struct ctdb_tcp);
+	uint32_t i;
+
 	talloc_free(ctcp);
 	ctdb->private_data = NULL;
+
+	for (i=0; i<ctdb->num_nodes; i++) {
+		TALLOC_FREE(ctdb->nodes[i]->private_data);
+	}
 }
 
 /*
