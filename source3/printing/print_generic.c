@@ -31,6 +31,8 @@ extern userdom_struct current_user_info;
 static int print_run_command(int snum, const char* printername, bool do_sub,
 			     const char *command, int *outfd, ...)
 {
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
 	char *syscmd;
 	char *arg;
 	int ret;
@@ -73,7 +75,7 @@ static int print_run_command(int snum, const char* printername, bool do_sub,
 		return -1;
 	}
 
-	syscmd = lp_string(ctx, syscmd);
+	syscmd = lpcfg_substituted_string(ctx, lp_sub, syscmd);
 	if (syscmd == NULL) {
 		return -1;
 	}
