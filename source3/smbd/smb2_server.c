@@ -1607,7 +1607,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 	flags = IVAL(outhdr, SMB2_HDR_FLAGS);
 	message_id = BVAL(outhdr, SMB2_HDR_MESSAGE_ID);
-	session_id = BVAL(outhdr, SMB2_HDR_SESSION_ID);
+	session_id = req->session->global->session_wire_id;
 
 	async_id = message_id; /* keep it simple for now... */
 
