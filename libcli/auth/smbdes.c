@@ -418,15 +418,20 @@ void des_crypt112_16(uint8_t out[16], const uint8_t in[16], const uint8_t key[14
 /* Decode a sam password hash into a password.  The password hash is the
    same method used to store passwords in the NT registry.  The DES key
    used is based on the RID of the user. */
-void sam_rid_crypt(unsigned int rid, const uint8_t *in, uint8_t *out, int forw)
+int sam_rid_crypt(unsigned int rid, const uint8_t *in, uint8_t *out,
+		  enum samba_gnutls_direction encrypt)
 {
 	uint8_t s[14];
+	int ret;
 
 	s[0] = s[4] = s[8] = s[12] = (uint8_t)(rid & 0xFF);
 	s[1] = s[5] = s[9] = s[13] = (uint8_t)((rid >> 8) & 0xFF);
 	s[2] = s[6] = s[10]        = (uint8_t)((rid >> 16) & 0xFF);
 	s[3] = s[7] = s[11]        = (uint8_t)((rid >> 24) & 0xFF);
 
-	des_crypt56(out, in, s, forw);
-	des_crypt56(out+8, in+8, s+7, forw);
+	ret = des_crypt56_gnutls(out, in, s, encrypt);
+	if (ret != 0) {
+		return ret;
+	}
+	return des_crypt56_gnutls(out+8, in+8, s+7, encrypt);
 }

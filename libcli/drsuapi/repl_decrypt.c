@@ -135,7 +135,13 @@ static WERROR drsuapi_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 		num_hashes = plain_buffer.length / 16;
 		for (i = 0; i < num_hashes; i++) {
 			uint32_t offset = i * 16;
-			sam_rid_crypt(rid, checked_buffer.data + offset, plain_buffer.data + offset, 0);
+			rc = sam_rid_crypt(rid, checked_buffer.data + offset,
+					   plain_buffer.data + offset,
+					   SAMBA_GNUTLS_DECRYPT);
+			if (rc != 0) {
+				result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+				goto out;
+			}
 		}
 	}
 
@@ -255,7 +261,13 @@ static WERROR drsuapi_encrypt_attribute_value(TALLOC_CTX *mem_ctx,
 		num_hashes = rid_crypt_out.length / 16;
 		for (i = 0; i < num_hashes; i++) {
 			uint32_t offset = i * 16;
-			sam_rid_crypt(rid, in->data + offset, rid_crypt_out.data + offset, 1);
+			rc = sam_rid_crypt(rid, in->data + offset,
+					   rid_crypt_out.data + offset,
+					   SAMBA_GNUTLS_ENCRYPT);
+			if (rc != 0) {
+				result = gnutls_error_to_werror(rc, WERR_INTERNAL_ERROR);
+				goto out;
+			}
 		}
 		in = &rid_crypt_out;
 	}

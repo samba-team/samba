@@ -422,11 +422,14 @@ static void torture_gnutls_sam_rid_crypt(void **state)
 	uint8_t crypt[16];
 	uint8_t decrypt[16];
 	int rid = 500;
+	int rc;
 
-	sam_rid_crypt(rid, clear, crypt, 1);
+	rc = sam_rid_crypt(rid, clear, crypt, SAMBA_GNUTLS_ENCRYPT);
+	assert_int_equal(rc, 0);
 	assert_memory_equal(crypt, crypt_expected, 16);
 
-	sam_rid_crypt(rid, crypt, decrypt, 0);
+	rc = sam_rid_crypt(rid, crypt, decrypt, SAMBA_GNUTLS_DECRYPT);
+	assert_int_equal(rc, 0);
 	assert_memory_equal(decrypt, clear, 16);
 }
 
