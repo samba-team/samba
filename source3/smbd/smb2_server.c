@@ -1604,10 +1604,7 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	uint8_t *body = NULL;
 	uint8_t *dyn = NULL;
 	uint32_t flags = 0;
-	uint64_t session_id = 0;
 	uint64_t message_id = 0;
-	uint64_t nonce_high = 0;
-	uint64_t nonce_low = 0;
 	uint64_t async_id = 0;
 	NTSTATUS status;
 	bool ok;
@@ -1619,7 +1616,6 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	outhdr = SMBD_SMB2_OUT_HDR_PTR(req);
 	flags = IVAL(outhdr, SMB2_HDR_FLAGS);
 	message_id = BVAL(outhdr, SMB2_HDR_MESSAGE_ID);
-	session_id = req->session->global->session_wire_id;
 
 	async_id = message_id; /* keep it simple for now... */
 
@@ -1651,6 +1647,10 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 	dyn = body + 8;
 
 	if (req->do_encryption) {
+		uint64_t nonce_high = 0;
+		uint64_t nonce_low = 0;
+		uint64_t session_id = req->session->global->session_wire_id;
+
 		status = smb2_get_new_nonce(req->session,
 					    &nonce_high,
 					    &nonce_low);
@@ -1659,12 +1659,12 @@ static void smbd_smb2_request_pending_timer(struct tevent_context *ev,
 							 nt_errstr(status));
 			return;
 		}
-	}
 
-	SIVAL(tf, SMB2_TF_PROTOCOL_ID, SMB2_TF_MAGIC);
-	SBVAL(tf, SMB2_TF_NONCE+0, nonce_low);
-	SBVAL(tf, SMB2_TF_NONCE+8, nonce_high);
-	SBVAL(tf, SMB2_TF_SESSION_ID, session_id);
+		SIVAL(tf, SMB2_TF_PROTOCOL_ID, SMB2_TF_MAGIC);
+		SBVAL(tf, SMB2_TF_NONCE+0, nonce_low);
+		SBVAL(tf, SMB2_TF_NONCE+8, nonce_high);
+		SBVAL(tf, SMB2_TF_SESSION_ID, session_id);
+	}
 
 	SIVAL(hdr, SMB2_HDR_PROTOCOL_ID, SMB2_MAGIC);
 	SSVAL(hdr, SMB2_HDR_LENGTH, SMB2_HDR_BODY);
