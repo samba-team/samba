@@ -193,14 +193,11 @@ static struct loadparm_context *global_loadparm_context;
 /* Local parameters don't need the ->s3_fns because the struct
  * loadparm_service is shared and lpcfg_service() checks the ->s3_fns
  * hook */
-#define FN_LOCAL_STRING(fn_name,val) \
+#define FN_LOCAL_SUBSTITUTED_STRING(fn_name,val) \
  _PUBLIC_ char *lpcfg_ ## fn_name(struct loadparm_service *service, \
 					struct loadparm_service *sDefault, TALLOC_CTX *ctx) { \
 	 return(talloc_strdup(ctx, lpcfg_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val)))); \
  }
-
-/* just a copy for now */
-#define FN_LOCAL_SUBSTITUTED_STRING(fn_name,val) FN_LOCAL_STRING(fn_name,val)
 
 #define FN_LOCAL_CONST_STRING(fn_name,val) \
  _PUBLIC_ const char *lpcfg_ ## fn_name(struct loadparm_service *service, \

@@ -1061,8 +1061,6 @@ char *lp_ ## fn_name(TALLOC_CTX *ctx, const struct loadparm_substitution *lp_sub
 #define FN_GLOBAL_INTEGER(fn_name,ptr) \
  int lp_ ## fn_name(void) {return(*(int *)(&Globals.ptr));}
 
-#define FN_LOCAL_STRING(fn_name,val) \
-char *lp_ ## fn_name(TALLOC_CTX *ctx,int i) {return(lp_string((ctx), (LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
 #define FN_LOCAL_SUBSTITUTED_STRING(fn_name,val) \
 char *lp_ ## fn_name(TALLOC_CTX *ctx, const struct loadparm_substitution *lp_sub, int i) \
  {return lpcfg_substituted_string((ctx), lp_sub, (LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val);}
