@@ -118,9 +118,16 @@ _PUBLIC_ enum ndr_err_code ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, 
 		break;
 
 	case LIBNDR_FLAG_STR_NULLTERM:
+		/*
+		 * We ensure that conv_str_len cannot return 0 by
+		 * requring that there be enough bytes for at least
+		 * the NULL terminator
+		 */
 		if (byte_mul == 1) {
+			NDR_PULL_NEED_BYTES(ndr, 1);
 			conv_src_len = ascii_len_n((const char *)(ndr->data+ndr->offset), ndr->data_size - ndr->offset);
 		} else {
+			NDR_PULL_NEED_BYTES(ndr, 2);
 			conv_src_len = utf16_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 		}
 		byte_mul = 1; /* the length is now absolute */
