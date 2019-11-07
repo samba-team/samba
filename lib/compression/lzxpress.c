@@ -252,8 +252,24 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 	offset = 0;
 	nibble_index = 0;
 
+#define __CHECK_BYTES(__size, __index, __needed) do { \
+	if (unlikely(__index >= __size)) { \
+		return -1; \
+	} else { \
+		uint32_t __avail = __size - __index; \
+		if (unlikely(__needed > __avail)) { \
+			return -1; \
+		} \
+	} \
+} while(0)
+#define CHECK_INPUT_BYTES(__needed) \
+	__CHECK_BYTES(input_size, input_index, __needed)
+#define CHECK_OUTPUT_BYTES(__needed) \
+	__CHECK_BYTES(max_output_size, output_index, __needed)
+
 	do {
 		if (indicator_bit == 0) {
+			CHECK_INPUT_BYTES(4);
 			indicator = PULL_LE_UINT32(input, input_index);
 			input_index += sizeof(uint32_t);
 			indicator_bit = 32;
@@ -266,10 +282,13 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 		 * check whether the 4th bit of the value in indicator is set
 		 */
 		if (((indicator >> indicator_bit) & 1) == 0) {
+			CHECK_INPUT_BYTES(1);
+			CHECK_OUTPUT_BYTES(1);
 			output[output_index] = input[input_index];
 			input_index += sizeof(uint8_t);
 			output_index += sizeof(uint8_t);
 		} else {
+			CHECK_INPUT_BYTES(2);
 			length = PULL_LE_UINT16(input, input_index);
 			input_index += sizeof(uint16_t);
 			offset = length / 8;
@@ -277,6 +296,7 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 
 			if (length == 7) {
 				if (nibble_index == 0) {
+					CHECK_INPUT_BYTES(1);
 					nibble_index = input_index;
 					length = input[input_index] % 16;
 					input_index += sizeof(uint8_t);
@@ -286,9 +306,11 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 				}
 
 				if (length == 15) {
+					CHECK_INPUT_BYTES(1);
 					length = input[input_index];
 					input_index += sizeof(uint8_t);
 					if (length == 255) {
+						CHECK_INPUT_BYTES(2);
 						length = PULL_LE_UINT16(input, input_index);
 						input_index += sizeof(uint16_t);
 						length -= (15 + 7);
@@ -299,10 +321,16 @@ ssize_t lzxpress_decompress(const uint8_t *input,
 			}
 
 			length += 3;
+			if (length == 0) {
+				return -1;
+			}
+
+			if (offset >= output_index) {
+				return -1;
+			}
+			CHECK_OUTPUT_BYTES(length);
 
 			do {
-				if ((output_index >= max_output_size) || ((offset + 1) > output_index)) break;
-
 				output[output_index] = output[output_index - offset - 1];
 
 				output_index += sizeof(uint8_t);
