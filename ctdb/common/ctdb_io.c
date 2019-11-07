@@ -290,8 +290,7 @@ static void queue_io_write(struct ctdb_queue *queue)
 				queue->out_queue_length--;
 				talloc_free(pkt);
 			}
-			talloc_free(queue->fde);
-			queue->fde = NULL;
+			TALLOC_FREE(queue->fde);
 			queue->fd = -1;
 			tevent_schedule_immediate(queue->im, queue->ctdb->ev,
 						  queue_dead, queue);
@@ -363,8 +362,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 	    !(queue->ctdb->flags & CTDB_FLAG_TORTURE)) {
 		ssize_t n = write(queue->fd, data, length2);
 		if (n == -1 && errno != EAGAIN && errno != EWOULDBLOCK) {
-			talloc_free(queue->fde);
-			queue->fde = NULL;
+			TALLOC_FREE(queue->fde);
 			queue->fd = -1;
 			tevent_schedule_immediate(queue->im, queue->ctdb->ev,
 						  queue_dead, queue);
@@ -430,8 +428,7 @@ int ctdb_queue_send(struct ctdb_queue *queue, uint8_t *data, uint32_t length)
 int ctdb_queue_set_fd(struct ctdb_queue *queue, int fd)
 {
 	queue->fd = fd;
-	talloc_free(queue->fde);
-	queue->fde = NULL;
+	TALLOC_FREE(queue->fde);
 
 	if (fd != -1) {
 		queue->fde = tevent_add_fd(queue->ctdb->ev, queue, fd,

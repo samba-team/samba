@@ -93,8 +93,7 @@ static void ctdb_node_connect_write(struct tevent_context *ev,
 	int one = 1;
 	int ret;
 
-	talloc_free(tnode->connect_te);
-	tnode->connect_te = NULL;
+	TALLOC_FREE(tnode->connect_te);
 
 	ret = getsockopt(tnode->out_fd, SOL_SOCKET, SO_ERROR, &error, &len);
 	if (ret != 0 || error != 0) {
@@ -105,8 +104,7 @@ static void ctdb_node_connect_write(struct tevent_context *ev,
 		return;
 	}
 
-	talloc_free(tnode->connect_fde);
-	tnode->connect_fde = NULL;
+	TALLOC_FREE(tnode->connect_fde);
 
 	ret = setsockopt(tnode->out_fd,
 			 IPPROTO_TCP,
