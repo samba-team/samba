@@ -398,11 +398,17 @@ void E_old_pw_hash( uint8_t *p14, const uint8_t *in, uint8_t *out)
 }
 
 /* des encryption with a 128 bit key */
-void des_crypt128(uint8_t out[8], const uint8_t in[8], const uint8_t key[16])
+int des_crypt128(uint8_t out[8], const uint8_t in[8], const uint8_t key[16])
 {
 	uint8_t buf[8];
-	des_crypt56(buf, in, key, 1);
-	des_crypt56(out, buf, key+9, 1);
+	int ret;
+
+	ret = des_crypt56_gnutls(buf, in, key, SAMBA_GNUTLS_ENCRYPT);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return des_crypt56_gnutls(out, buf, key+9, SAMBA_GNUTLS_ENCRYPT);
 }
 
 /* des encryption with a 112 bit (14 byte) key */

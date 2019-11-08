@@ -362,8 +362,10 @@ static void torture_gnutls_des_crypt128(void **state)
 	};
 
 	uint8_t crypt[8];
+	int rc;
 
-	des_crypt128(crypt, clear, key);
+	rc = des_crypt128(crypt, clear, key);
+	assert_int_equal(rc, 0);
 	assert_memory_equal(crypt, crypt_expected, 8);
 }
 

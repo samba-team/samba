@@ -66,6 +66,7 @@ static NTSTATUS netlogon_creds_init_64bit(struct netlogon_creds_CredentialState 
 {
 	uint32_t sum[2];
 	uint8_t sum2[8];
+	int rc;
 
 	sum[0] = IVAL(client_challenge->data, 0) + IVAL(server_challenge->data, 0);
 	sum[1] = IVAL(client_challenge->data, 4) + IVAL(server_challenge->data, 4);
@@ -75,7 +76,10 @@ static NTSTATUS netlogon_creds_init_64bit(struct netlogon_creds_CredentialState 
 
 	ZERO_ARRAY(creds->session_key);
 
-	des_crypt128(creds->session_key, sum2, machine_password->hash);
+	rc = des_crypt128(creds->session_key, sum2, machine_password->hash);
+	if (rc != 0) {
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+	}
 
 	return NT_STATUS_OK;
 }
