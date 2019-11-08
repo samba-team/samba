@@ -28,6 +28,7 @@
 #include "auth/ntlm/auth_proto.h"
 #include "librpc/gen_ndr/drsuapi.h"
 #include "dsdb/samdb/samdb.h"
+#include "lib/crypto/gnutls_helpers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -41,6 +42,7 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth4_context *auth_conte
 			   const struct auth_usersupplied_info *user_info_in,
 			   const struct auth_usersupplied_info **user_info_encrypted)
 {
+	int rc;
 	NTSTATUS nt_status;
 	struct auth_usersupplied_info *user_info_temp;
 	switch (to_state) {
@@ -103,12 +105,17 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth4_context *auth_conte
 				data_blob_free(&ntlmv2_session_key);
 			} else {
 				DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, 24);
-				SMBOWFencrypt(user_info_in->password.hash.nt->hash, chal, blob.data);
-
+				rc = SMBOWFencrypt(user_info_in->password.hash.nt->hash, chal, blob.data);
+				if (rc != 0) {
+					return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+				}
 				user_info_temp->password.response.nt = blob;
 				if (lpcfg_client_lanman_auth(auth_context->lp_ctx) && user_info_in->password.hash.lanman) {
 					DATA_BLOB lm_blob = data_blob_talloc(mem_ctx, NULL, 24);
-					SMBOWFencrypt(user_info_in->password.hash.lanman->hash, chal, blob.data);
+					rc = SMBOWFencrypt(user_info_in->password.hash.lanman->hash, chal, blob.data);
+					if (rc != 0) {
+						return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+					}
 					user_info_temp->password.response.lanman = lm_blob;
 				} else {
 					/* if not sending the LM password, send the NT password twice */

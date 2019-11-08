@@ -99,7 +99,7 @@ NTSTATUS sess_decrypt_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob, const DAT
 
 /* The following definitions come from /home/jeremy/src/samba/git/master/source3/../source4/../libcli/auth/smbencrypt.c  */
 
-void SMBencrypt_hash(const uint8_t lm_hash[16], const uint8_t *c8, uint8_t p24[24]);
+int SMBencrypt_hash(const uint8_t lm_hash[16], const uint8_t *c8, uint8_t p24[24]);
 bool SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24]);
 
 /**
@@ -129,9 +129,9 @@ void nt_lm_owf_gen(const char *pwd, uint8_t nt_p16[16], uint8_t p16[16]);
 bool ntv2_owf_gen(const uint8_t owf[16],
 		  const char *user_in, const char *domain_in,
 		  uint8_t kr_buf[16]);
-void SMBOWFencrypt(const uint8_t passwd[16], const uint8_t *c8, uint8_t p24[24]);
-void SMBNTencrypt_hash(const uint8_t nt_hash[16], const uint8_t *c8, uint8_t *p24);
-void SMBNTencrypt(const char *passwd, const uint8_t *c8, uint8_t *p24);
+int SMBOWFencrypt(const uint8_t passwd[16], const uint8_t *c8, uint8_t p24[24]);
+int SMBNTencrypt_hash(const uint8_t nt_hash[16], const uint8_t *c8, uint8_t *p24);
+int SMBNTencrypt(const char *passwd, const uint8_t *c8, uint8_t *p24);
 NTSTATUS SMBOWFencrypt_ntv2(const uint8_t kr[16],
 			    const DATA_BLOB *srv_chal,
 			    const DATA_BLOB *smbcli_chal,
@@ -224,7 +224,7 @@ void des_crypt56(uint8_t out[8], const uint8_t in[8], const uint8_t key[7], int 
 int des_crypt56_gnutls(uint8_t out[8], const uint8_t in[8], const uint8_t key[7],
 		       enum samba_gnutls_direction encrypt);
 int E_P16(const uint8_t *p14,uint8_t *p16);
-void E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24);
+int E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24);
 void E_old_pw_hash( uint8_t *p14, const uint8_t *in, uint8_t *out);
 void des_crypt128(uint8_t out[8], const uint8_t in[8], const uint8_t key[16]);
 void des_crypt112(uint8_t out[8], const uint8_t in[8], const uint8_t key[14], int forw);

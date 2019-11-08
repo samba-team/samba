@@ -374,11 +374,21 @@ int E_P16(const uint8_t *p14,uint8_t *p16)
 	return des_crypt56_gnutls(p16+8, sp8, p14+7, SAMBA_GNUTLS_ENCRYPT);
 }
 
-void E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24)
+int E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24)
 {
-	des_crypt56(p24, c8, p21, 1);
-	des_crypt56(p24+8, c8, p21+7, 1);
-	des_crypt56(p24+16, c8, p21+14, 1);
+	int ret;
+
+	ret = des_crypt56_gnutls(p24, c8, p21, SAMBA_GNUTLS_ENCRYPT);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = des_crypt56_gnutls(p24+8, c8, p21+7, SAMBA_GNUTLS_ENCRYPT);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return des_crypt56_gnutls(p24+16, c8, p21+14, SAMBA_GNUTLS_ENCRYPT);
 }
 
 void E_old_pw_hash( uint8_t *p14, const uint8_t *in, uint8_t *out)

@@ -32,14 +32,15 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
-void SMBencrypt_hash(const uint8_t lm_hash[16], const uint8_t *c8, uint8_t p24[24])
+int SMBencrypt_hash(const uint8_t lm_hash[16], const uint8_t *c8, uint8_t p24[24])
 {
 	uint8_t p21[21];
+	int rc;
 
 	memset(p21,'\0',21);
 	memcpy(p21, lm_hash, 16);
 
-	SMBOWFencrypt(p21, c8, p24);
+	rc = SMBOWFencrypt(p21, c8, p24);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("SMBencrypt_hash: lm#, challenge, response\n"));
@@ -47,6 +48,8 @@ void SMBencrypt_hash(const uint8_t lm_hash[16], const uint8_t *c8, uint8_t p24[2
 	dump_data(100, c8, 8);
 	dump_data(100, p24, 24);
 #endif
+
+	return rc;
 }
 
 /*
@@ -61,9 +64,13 @@ bool SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24])
 {
 	bool ret;
 	uint8_t lm_hash[16];
+	int rc;
 
 	ret = E_deshash(passwd, lm_hash);
-	SMBencrypt_hash(lm_hash, c8, p24);
+	rc = SMBencrypt_hash(lm_hash, c8, p24);
+	if (rc != 0) {
+		ret = false;
+	}
 	return ret;
 }
 
@@ -266,25 +273,26 @@ out:
 }
 
 /* Does the des encryption from the NT or LM MD4 hash. */
-void SMBOWFencrypt(const uint8_t passwd[16], const uint8_t *c8, uint8_t p24[24])
+int SMBOWFencrypt(const uint8_t passwd[16], const uint8_t *c8, uint8_t p24[24])
 {
 	uint8_t p21[21];
 
 	ZERO_STRUCT(p21);
 
 	memcpy(p21, passwd, 16);
-	E_P24(p21, c8, p24);
+	return E_P24(p21, c8, p24);
 }
 
 /* Does the des encryption. */
 
-void SMBNTencrypt_hash(const uint8_t nt_hash[16], const uint8_t *c8, uint8_t *p24)
+int SMBNTencrypt_hash(const uint8_t nt_hash[16], const uint8_t *c8, uint8_t *p24)
 {
 	uint8_t p21[21];
+	int rc;
 
 	memset(p21,'\0',21);
 	memcpy(p21, nt_hash, 16);
-	SMBOWFencrypt(p21, c8, p24);
+	rc = SMBOWFencrypt(p21, c8, p24);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("SMBNTencrypt: nt#, challenge, response\n"));
@@ -292,15 +300,17 @@ void SMBNTencrypt_hash(const uint8_t nt_hash[16], const uint8_t *c8, uint8_t *p2
 	dump_data(100, c8, 8);
 	dump_data(100, p24, 24);
 #endif
+
+	return rc;
 }
 
 /* Does the NT MD4 hash then des encryption. Plaintext version of the above. */
 
-void SMBNTencrypt(const char *passwd, const uint8_t *c8, uint8_t *p24)
+int SMBNTencrypt(const char *passwd, const uint8_t *c8, uint8_t *p24)
 {
 	uint8_t nt_hash[16];
 	E_md4hash(passwd, nt_hash);
-	SMBNTencrypt_hash(nt_hash, c8, p24);
+	return SMBNTencrypt_hash(nt_hash, c8, p24);
 }
 
 

@@ -47,6 +47,7 @@
 #include "libads/krb5_errs.h"
 #include "param/param.h"
 #include "messaging/messaging.h"
+#include "lib/crypto/gnutls_helpers.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/crypto.h>
@@ -1792,8 +1793,14 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 			}
 			data_blob_free(&names_blob);
 		} else {
+			int rc;
 			lm_resp = data_blob_null;
-			SMBNTencrypt(pass, chal, local_nt_response);
+			rc = SMBNTencrypt(pass, chal, local_nt_response);
+			if (rc != 0) {
+				DEBUG(0, ("winbindd_pam_auth: SMBNTencrypt() failed!\n"));
+				result = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+				goto done;
+			}
 
 			nt_resp = data_blob_talloc(mem_ctx, local_nt_response,
 						   sizeof(local_nt_response));

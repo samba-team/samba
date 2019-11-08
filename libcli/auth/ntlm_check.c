@@ -36,6 +36,7 @@ static bool smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
 {
 	/* Finish the encryption of part_passwd. */
 	uint8_t p24[24];
+	int rc;
 
 	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));
@@ -55,7 +56,10 @@ static bool smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	SMBOWFencrypt(part_passwd, sec_blob->data, p24);
+	rc = SMBOWFencrypt(part_passwd, sec_blob->data, p24);
+	if (rc != 0) {
+		return false;
+	}
 
 #if DEBUG_PASSWORD
 	DEBUG(100,("Part password (P16) was |\n"));

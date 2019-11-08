@@ -37,6 +37,7 @@
 #include "dbwrap/dbwrap.h"
 #include "dbwrap/dbwrap_open.h"
 #include "util_tdb.h"
+#include "lib/crypto/gnutls_helpers.h"
 
 
 NTSTATUS rpccli_pre_open_netlogon_creds(void)
@@ -528,6 +529,7 @@ NTSTATUS rpccli_netlogon_password_logon(
 	case NetlogonNetworkTransitiveInformation: {
 		struct netr_NetworkInfo *network_info;
 		uint8_t chal[8];
+		int rc;
 
 		ZERO_STRUCT(lm);
 		ZERO_STRUCT(nt);
@@ -541,7 +543,11 @@ NTSTATUS rpccli_netlogon_password_logon(
 		generate_random_buffer(chal, 8);
 
 		SMBencrypt(password, chal, local_lm_response);
-		SMBNTencrypt(password, chal, local_nt_response);
+		rc = SMBNTencrypt(password, chal, local_nt_response);
+		if (rc != 0) {
+			TALLOC_FREE(frame);
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		}
 
 		lm.length = 24;
 		lm.data = local_lm_response;

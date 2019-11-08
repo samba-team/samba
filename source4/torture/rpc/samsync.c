@@ -36,6 +36,7 @@
 #include "librpc/gen_ndr/ndr_samr_c.h"
 #include "librpc/gen_ndr/ndr_security.h"
 #include "param/param.h"
+#include "lib/crypto/gnutls_helpers.h"
 
 #define TEST_MACHINE_NAME "samsynctest"
 #define TEST_WKSTA_MACHINE_NAME "samsynctest2"
@@ -61,6 +62,7 @@ static NTSTATUS test_SamLogon(struct torture_context *tctx,
 	union netr_Validation validation;
 	uint8_t authoritative;
 	struct dcerpc_binding_handle *b = p->binding_handle;
+	int rc;
 
 	ninfo.identity_info.domain_name.string = domain;
 	ninfo.identity_info.parameter_control = 0;
@@ -72,7 +74,11 @@ static NTSTATUS test_SamLogon(struct torture_context *tctx,
 	if (nt_hash) {
 		ninfo.nt.length = 24;
 		ninfo.nt.data = talloc_array(mem_ctx, uint8_t, 24);
-		SMBOWFencrypt(nt_hash->hash, ninfo.challenge, ninfo.nt.data);
+		rc = SMBOWFencrypt(nt_hash->hash, ninfo.challenge,
+				   ninfo.nt.data);
+		if (rc != 0) {
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		}
 	} else {
 		ninfo.nt.length = 0;
 		ninfo.nt.data = NULL;
@@ -81,7 +87,11 @@ static NTSTATUS test_SamLogon(struct torture_context *tctx,
 	if (lm_hash) {
 		ninfo.lm.length = 24;
 		ninfo.lm.data = talloc_array(mem_ctx, uint8_t, 24);
-		SMBOWFencrypt(lm_hash->hash, ninfo.challenge, ninfo.lm.data);
+		rc = SMBOWFencrypt(lm_hash->hash, ninfo.challenge,
+				   ninfo.lm.data);
+		if (rc != 0) {
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		}
 	} else {
 		ninfo.lm.length = 0;
 		ninfo.lm.data = NULL;

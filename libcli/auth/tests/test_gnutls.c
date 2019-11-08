@@ -298,8 +298,10 @@ static void torture_gnutls_E_P24(void **state)
 	};
 
 	uint8_t crypt[24];
+	int rc;
 
-	E_P24(key, c8, crypt);
+	rc = E_P24(key, c8, crypt);
+	assert_int_equal(rc, 0);
 	assert_memory_equal(crypt, crypt_expected, 24);
 }
 
@@ -319,8 +321,10 @@ static void torture_gnutls_SMBOWFencrypt(void **state)
 	};
 
 	uint8_t crypt[24];
+	int rc;
 
-	SMBOWFencrypt(password, c8, crypt);
+	rc = SMBOWFencrypt(password, c8, crypt);
+	assert_int_equal(rc, 0);
 	assert_memory_equal(crypt, crypt_expected, 24);
 }
 

@@ -51,6 +51,7 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 	DATA_BLOB lm_session_key = data_blob_null;
 	DATA_BLOB session_key = data_blob_null;
 	const struct samr_Password *nt_hash = NULL;
+	int rc;
 
 	if (cred->use_kerberos == CRED_MUST_USE_KERBEROS) {
 		TALLOC_FREE(frame);
@@ -159,7 +160,6 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 		uint8_t session_nonce[16];
 		uint8_t session_nonce_hash[16];
 		uint8_t user_session_key[16];
-		int rc;
 
 		lm_response = data_blob_talloc_zero(frame, 24);
 		if (lm_response.data == NULL) {
@@ -188,9 +188,13 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
-		SMBOWFencrypt(nt_hash->hash,
-			      session_nonce_hash,
-			      nt_response.data);
+		rc = SMBOWFencrypt(nt_hash->hash,
+				   session_nonce_hash,
+                                   nt_response.data);
+		if (rc != 0) {
+			TALLOC_FREE(frame);
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		}
 
 		ZERO_ARRAY(session_nonce_hash);
 
@@ -228,8 +232,12 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 			TALLOC_FREE(frame);
 			return NT_STATUS_NO_MEMORY;
 		}
-		SMBOWFencrypt(nt_hash->hash, challenge.data,
-			      nt_response.data);
+		rc = SMBOWFencrypt(nt_hash->hash, challenge.data,
+				   nt_response.data);
+		if (rc != 0) {
+			TALLOC_FREE(frame);
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		}
 
 		session_key = data_blob_talloc_zero(frame, 16);
 		if (session_key.data == NULL) {
@@ -254,9 +262,14 @@ _PUBLIC_ NTSTATUS cli_credentials_get_ntlm_response(struct cli_credentials *cred
 				return NT_STATUS_NO_MEMORY;
 			}
 
-			SMBencrypt_hash(lm_hash,
-					challenge.data,
-					lm_response.data);
+			rc = SMBencrypt_hash(lm_hash,
+					     challenge.data,
+					     lm_response.data);
+			if (rc != 0) {
+				ZERO_STRUCT(lm_hash);
+				TALLOC_FREE(frame);
+				return gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+			}
 		} else {
 			/* just copy the nt_response */
 			lm_response = data_blob_dup_talloc(frame, nt_response);

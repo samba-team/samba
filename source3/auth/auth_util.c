@@ -209,6 +209,7 @@ bool make_user_info_netlogon_interactive(TALLOC_CTX *mem_ctx,
 	struct samr_Password nt_pwd;
 	unsigned char local_lm_response[24];
 	unsigned char local_nt_response[24];
+	int rc;
 
 	if (lm_interactive_pwd)
 		memcpy(lm_pwd.hash, lm_interactive_pwd, sizeof(lm_pwd.hash));
@@ -216,13 +217,21 @@ bool make_user_info_netlogon_interactive(TALLOC_CTX *mem_ctx,
 	if (nt_interactive_pwd)
 		memcpy(nt_pwd.hash, nt_interactive_pwd, sizeof(nt_pwd.hash));
 
-	if (lm_interactive_pwd)
-		SMBOWFencrypt(lm_pwd.hash, chal,
-			      local_lm_response);
+	if (lm_interactive_pwd) {
+		rc = SMBOWFencrypt(lm_pwd.hash, chal,
+				   local_lm_response);
+		if (rc != 0) {
+			return false;
+		}
+	}
 
-	if (nt_interactive_pwd)
-		SMBOWFencrypt(nt_pwd.hash, chal,
+	if (nt_interactive_pwd) {
+		rc = SMBOWFencrypt(nt_pwd.hash, chal,
 			      local_nt_response);
+		if (rc != 0) {
+			return false;
+		}
+	}
 
 	{
 		bool ret;
