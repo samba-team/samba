@@ -23,7 +23,7 @@
 # see bug 8412
 ^samba3.smb2.rename.*.simple_nodelete
 ^samba3.smb2.rename.*.no_share_delete_no_delete_access
-^samba3.blackbox.smbclient_machine_auth.plain \(nt4_dc:local\)# the NT4 DC does not currently set up a self-join
+^samba3.blackbox.smbclient_machine_auth.plain.*nt4_dc:local # the NT4 DC does not currently set up a self-join
 ^samba3.raw.samba3hide.samba3hide\(ad_dc\) # This test fails against the ad_dc environment.
 ^samba3.raw.samba3closeerr.samba3closeerr\(nt4_dc\) # This test fails against an smbd environment with NT ACLs enabled
 ^samba3.raw.acls nfs4acl_xattr-simple-40.INHERITFLAGS\(nt4_dc\) # This (and the follow nfs4acl_xattr tests fail because our NFSv4 backend isn't a complete mapping yet.
@@ -320,8 +320,8 @@
 # fl2000dc doesn't support AES
 ^samba4.krb5.kdc.*as-req-aes.*fl2000dc
 # nt4_member and ad_member don't support ntlmv1 (not even over SMB1)
-^samba3.blackbox.smbclient_auth.plain.*_member.*option=clientntlmv2auth=no.member.creds.*as.user
-^samba3.blackbox.smbclient_auth.plain.*_member.*option=clientntlmv2auth=no.*mNT1.member.creds.*as.user
+^samba3.blackbox.smbclient_auth.plain.*option=clientntlmv2auth=no.member.creds.*as.user.*_member
+^samba3.blackbox.smbclient_auth.plain.*option=clientntlmv2auth=no.*mNT1.member.creds.*as.user.*_member
 #nt-vfs server blocks read with execute access
 ^samba4.smb2.read.access
 #ntvfs server blocks copychunk with execute access on read handle
