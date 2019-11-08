@@ -141,6 +141,7 @@ PKGS = [
     ('python3-dnspython', 'python3-dns'),
     ('python3-pexpect', ''),  # for wintest only
     ('python3-pyasn1', 'python3-pyasn1'), # for krb5 tests
+    ('python3-setproctitle', 'python3-setproctitle'),
 
     ('', 'libsemanage-python'),
     ('', 'policycoreutils-python'),
@@ -451,6 +452,7 @@ RPM_DISTS = {
             'libcephfs-devel': '',
             'gnutls-devel': 'compat-gnutls34-devel',
             'liburing-devel': '',   # not available
+            'python3-setproctitle': 'python36-setproctitle',
         }
     },
     'centos8': {

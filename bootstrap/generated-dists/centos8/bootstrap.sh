@@ -98,6 +98,7 @@ yum install -y \
     python3-markdown \
     python3-policycoreutils \
     python3-pyasn1 \
+    python3-setproctitle \
     quota-devel \
     readline-devel \
     redhat-lsb \

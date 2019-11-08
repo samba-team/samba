@@ -88,6 +88,7 @@ zypper --non-interactive install \
     python3-gpg \
     python3-iso8601 \
     python3-pyasn1 \
+    python3-setproctitle \
     readline-devel \
     rng-tools \
     rpcgen \
