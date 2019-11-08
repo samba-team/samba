@@ -3117,6 +3117,7 @@ const char *lp_default_path(void)
 static bool lpcfg_update(struct loadparm_context *lp_ctx)
 {
 	struct debug_settings settings;
+	int max_protocol, min_protocol;
 	TALLOC_CTX *tmp_ctx;
 
 	tmp_ctx = talloc_new(lp_ctx);
@@ -3158,6 +3159,19 @@ static bool lpcfg_update(struct loadparm_context *lp_ctx)
 		setenv("SOCKET_TESTNONBLOCK", "1", 1);
 	} else {
 		unsetenv("SOCKET_TESTNONBLOCK");
+	}
+
+	/* Check if command line max protocol < min protocol, if so
+	 * report a warning to the user.
+	 */
+	max_protocol = lpcfg_client_max_protocol(lp_ctx);
+	min_protocol = lpcfg_client_min_protocol(lp_ctx);
+	if (lpcfg_client_max_protocol(lp_ctx) < lpcfg_client_min_protocol(lp_ctx)) {
+		const char *max_protocolp, *min_protocolp;
+		max_protocolp = lpcfg_get_smb_protocol(max_protocol);
+		min_protocolp = lpcfg_get_smb_protocol(min_protocol);
+		DBG_ERR("Max protocol %s is less than min protocol %s.\n",
+			max_protocolp, min_protocolp);
 	}
 
 	TALLOC_FREE(tmp_ctx);

@@ -61,6 +61,17 @@ static const struct enum_list enum_protocol[] = {
 	{-1, NULL}
 };
 
+const char* lpcfg_get_smb_protocol(int type)
+{
+	int i;
+	for (i = 1; enum_protocol[i].value != -1; i++) {
+		if (enum_protocol[i].value == type) {
+			return enum_protocol[i].name;
+		}
+	}
+	return NULL;
+}
+
 static const struct enum_list enum_security[] = {
 	{SEC_AUTO, "AUTO"},
 	{SEC_USER, "USER"},
