@@ -35,10 +35,6 @@ struct file_id_buf { char buf[63]; };
 char *file_id_str_buf(struct file_id fid, struct file_id_buf *dst);
 
 /*
-  a static-like (on talloc_tos()) string for a file_id structure
- */
-const char *file_id_string_tos(const struct file_id *id);
-/*
   an allocated string for a file_id structure
  */
 const char *file_id_string(TALLOC_CTX *mem_ctx, const struct file_id *id);

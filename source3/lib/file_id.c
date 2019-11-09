@@ -31,14 +31,6 @@ bool file_id_equal(const struct file_id *id1, const struct file_id *id2)
 	    id1->extid == id2->extid;
 }
 
-/*
-  a static-like (on talloc_tos()) string for a file_id structure
- */
-const char *file_id_string_tos(const struct file_id *id)
-{
-	return file_id_string(talloc_tos(), id);
-}
-
 char *file_id_str_buf(struct file_id fid, struct file_id_buf *dst)
 {
 	snprintf(dst->buf,
