@@ -37,7 +37,6 @@ char *file_id_str_buf(struct file_id fid, struct file_id_buf *dst);
 /*
   an allocated string for a file_id structure
  */
-const char *file_id_string(TALLOC_CTX *mem_ctx, const struct file_id *id);
 void push_file_id_16(char *buf, const struct file_id *id);
 void push_file_id_24(char *buf, const struct file_id *id);
 void pull_file_id_24(const char *buf, struct file_id *id);

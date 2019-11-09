@@ -43,17 +43,6 @@ char *file_id_str_buf(struct file_id fid, struct file_id_buf *dst)
 }
 
 /*
-  an allocated string for a file_id structure
- */
-const char *file_id_string(TALLOC_CTX *mem_ctx, const struct file_id *id)
-{
-	struct file_id_buf buf;
-	char *result = talloc_strdup(mem_ctx, file_id_str_buf(*id, &buf));
-	SMB_ASSERT(result != NULL);
-	return result;
-}
-
-/*
   push a 16 byte version of a file id into a buffer.  This ignores the extid
   and is needed when dev/inodes are stored in persistent storage (tdbs).
  */
