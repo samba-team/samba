@@ -344,11 +344,12 @@ files_struct *file_find_dif(struct smbd_server_connection *sconn,
 			if ((fsp->fh->fd == -1) &&
 			    (fsp->oplock_type != NO_OPLOCK &&
 			     fsp->oplock_type != LEASE_OPLOCK)) {
+				struct file_id_buf idbuf;
 				DEBUG(0,("file_find_dif: file %s file_id = "
 					 "%s, gen = %u oplock_type = %u is a "
 					 "stat open with oplock type !\n",
 					 fsp_str_dbg(fsp),
-					 file_id_string_tos(&fsp->file_id),
+					 file_id_str_buf(fsp->file_id, &idbuf),
 					 (unsigned int)fsp->fh->gen_id,
 					 (unsigned int)fsp->oplock_type ));
 				smb_panic("file_find_dif");
