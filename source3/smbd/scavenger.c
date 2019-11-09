@@ -500,12 +500,13 @@ static void scavenger_add_timer(struct smbd_scavenger_state *state,
 	struct tevent_timer *te;
 	struct scavenger_timer_context *ctx;
 	struct timeval until;
+	struct file_id_buf idbuf;
 
 	nttime_to_timeval(&until, msg->until);
 
-	DEBUG(10, ("scavenger: schedule file %s for cleanup at %s\n",
-		   file_id_string_tos(&msg->file_id),
-		   timeval_string(talloc_tos(), &until, true)));
+	DBG_DEBUG("schedule file %s for cleanup at %s\n",
+		  file_id_str_buf(msg->file_id, &idbuf),
+		  timeval_string(talloc_tos(), &until, true));
 
 	ctx = talloc_zero(state, struct scavenger_timer_context);
 	if (ctx == NULL) {
