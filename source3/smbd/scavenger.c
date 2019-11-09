@@ -410,6 +410,7 @@ void scavenger_schedule_disconnected(struct files_struct *fsp)
 	struct scavenger_message msg;
 	DATA_BLOB msg_blob;
 	struct server_id_buf tmp;
+	struct file_id_buf idbuf;
 
 	if (fsp->op == NULL) {
 		return;
@@ -428,7 +429,7 @@ void scavenger_schedule_disconnected(struct files_struct *fsp)
 	DEBUG(10, ("smbd: %s mark file %s as disconnected at %s with timeout "
 		   "at %s in %fs\n",
 		   server_id_str_buf(self, &tmp),
-		   file_id_string_tos(&fsp->file_id),
+		   file_id_str_buf(fsp->file_id, &idbuf),
 		   timeval_string(talloc_tos(), &disconnect_time, true),
 		   timeval_string(talloc_tos(), &until, true),
 		   fsp->op->global->durable_timeout_msec/1000.0));
