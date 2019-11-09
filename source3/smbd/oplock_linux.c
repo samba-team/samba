@@ -140,19 +140,22 @@ static void linux_oplock_signal_handler(struct tevent_context *ev_ctx,
 static bool linux_set_kernel_oplock(struct kernel_oplocks *ctx,
 				    files_struct *fsp, int oplock_type)
 {
+	struct file_id_buf idbuf;
+
 	if ( SMB_VFS_LINUX_SETLEASE(fsp, F_WRLCK) == -1) {
-		DEBUG(3,("linux_set_kernel_oplock: Refused oplock on file %s, "
-			 "fd = %d, file_id = %s. (%s)\n",
-			 fsp_str_dbg(fsp), fsp->fh->fd,
-			 file_id_string_tos(&fsp->file_id),
-			 strerror(errno)));
+		DBG_NOTICE("Refused oplock on file %s, "
+			   "fd = %d, file_id = %s. (%s)\n",
+			   fsp_str_dbg(fsp),
+			   fsp->fh->fd,
+			   file_id_str_buf(fsp->file_id, &idbuf),
+			   strerror(errno));
 		return False;
 	}
 	
 	DBG_NOTICE("got kernel oplock on file %s, "
 		   "file_id = %s gen_id = %"PRIu64"\n",
 		   fsp_str_dbg(fsp),
-		   file_id_string_tos(&fsp->file_id),
+		   file_id_str_buf(fsp->file_id, &idbuf),
 		   fsp->fh->gen_id);
 
 	return True;
