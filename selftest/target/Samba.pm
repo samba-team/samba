@@ -252,6 +252,7 @@ sub mk_krb5_conf($$)
 						 $ctx->{dnsname},
 						 $ctx->{domain},
 						 $ctx->{kdc_ipv4});
+	my $lc_domain = lc($ctx->{domain});
 	print KRB5CONF "
 #Generated krb5.conf for $ctx->{realm}
 
@@ -262,6 +263,11 @@ sub mk_krb5_conf($$)
  ticket_lifetime = 24h
  forwardable = yes
  allow_weak_crypto = yes
+
+ name_canon_rules=as-is:realm=$ctx->{realm}
+ name_canon_rules=as-is:realm=$ctx->{dnsname}
+ name_canon_rules=as-is:realm=$ctx->{domain}
+ name_canon_rules=as-is:realm=$lc_domain
 
  # We are running on the same machine, do not correct
  # system clock differences
