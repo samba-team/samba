@@ -24,6 +24,7 @@
 #include <cmocka.h>
 
 #include "includes.h"
+#include "libcli/auth/libcli_auth.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -227,11 +228,34 @@ static void torture_gnutls_aes_128_cfb(void **state)
 #endif
 }
 
+static void torture_gnutls_des_crypt56(void **state)
+{
+	static const uint8_t key[7] = {
+		0x69, 0x88, 0x96, 0x8E, 0xB5, 0x3A, 0x24
+	};
+	static const uint8_t clear[8] = {
+		0x3F, 0x49, 0x5B, 0x20, 0xA7, 0x84, 0xC2, 0x34
+	};
+	static const uint8_t crypt_expected[8] = {
+		0x54, 0x86, 0xCF, 0x51, 0x49, 0x3A, 0x53, 0x5B
+	};
+
+	uint8_t crypt[8];
+	uint8_t decrypt[8];
+
+	des_crypt56(crypt, clear, key, 1);
+	assert_memory_equal(crypt, crypt_expected, 8);
+
+	des_crypt56(decrypt, crypt, key, 0);
+	assert_memory_equal(decrypt, clear, 8);
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(torture_gnutls_aes_128_cfb),
+		cmocka_unit_test(torture_gnutls_des_crypt56),
 	};
 
 	if (argc == 2) {

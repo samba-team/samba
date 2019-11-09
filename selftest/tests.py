@@ -391,6 +391,8 @@ plantestsuite("samba.unittests.byteorder", "none",
               [os.path.join(bindir(), "default/lib/util/test_byteorder")])
 plantestsuite("samba.unittests.ntlm_check", "none",
               [os.path.join(bindir(), "default/libcli/auth/test_ntlm_check")])
+plantestsuite("samba.unittests.gnutls", "none",
+              [os.path.join(bindir(), "default/libcli/auth/test_gnutls")])
 plantestsuite("samba.unittests.rc4_passwd_buffer", "none",
               [os.path.join(bindir(), "default/libcli/auth/test_rc4_passwd_buffer")])
 plantestsuite("samba.unittests.schannel", "none",

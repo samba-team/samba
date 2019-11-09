@@ -76,6 +76,7 @@ bld.SAMBA_BINARY('test_gnutls',
                  source='tests/test_gnutls.c',
                  deps='''
                       gnutls
+                      LIBCLI_AUTH
                       cmocka
                       samba-util
                       ''',
