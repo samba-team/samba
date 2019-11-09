@@ -1199,13 +1199,13 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 	struct share_mode_data *data;
 	bool ret = false;
 	TALLOC_CTX *frame = talloc_stackframe();
+	struct file_id_buf idbuf;
 	bool ok;
 
 	state.lck = get_existing_share_mode_lock(frame, fid);
 	if (state.lck == NULL) {
-		DEBUG(5, ("share_mode_cleanup_disconnected: "
-			  "Could not fetch share mode entry for %s\n",
-			  file_id_string(frame, &fid)));
+		DBG_INFO("Could not fetch share mode entry for %s\n",
+			 file_id_str_buf(fid, &idbuf));
 		goto done;
 	}
 	data = state.lck->data;
@@ -1228,7 +1228,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 			  "with file (file-id='%s', servicepath='%s', "
 			  "base_name='%s%s%s') and open_persistent_id %"PRIu64" "
 			  "==> do not cleanup\n",
-			  file_id_string(frame, &fid),
+			  file_id_str_buf(fid, &idbuf),
 			  data->servicepath,
 			  data->base_name,
 			  (data->stream_name == NULL)
@@ -1244,7 +1244,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 			  "with file (file-id='%s', servicepath='%s', "
 			  "base_name='%s%s%s') and open_persistent_id %"PRIu64" "
 			  "==> do not cleanup\n",
-			  file_id_string(frame, &fid),
+			  file_id_str_buf(fid, &idbuf),
 			  data->servicepath,
 			  data->base_name,
 			  (data->stream_name == NULL)
@@ -1260,7 +1260,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 		  "base_name='%s%s%s') "
 		  "from open_persistent_id %"PRIu64"\n",
 		  data->num_share_modes,
-		  file_id_string(frame, &fid),
+		  file_id_str_buf(fid, &idbuf),
 		  data->servicepath,
 		  data->base_name,
 		  (data->stream_name == NULL)
