@@ -294,6 +294,7 @@ static struct share_mode_data *share_mode_memcache_fetch(TALLOC_CTX *mem_ctx,
 	uint16_t flags;
 	void *ptr;
 	struct file_id id;
+	struct file_id_buf idbuf;
 	DATA_BLOB key;
 
 	/* Ensure this is a locking_key record. */
@@ -308,17 +309,17 @@ static struct share_mode_data *share_mode_memcache_fetch(TALLOC_CTX *mem_ctx,
 			SHARE_MODE_LOCK_CACHE,
 			key);
 	if (ptr == NULL) {
-		DEBUG(10,("failed to find entry for key %s\n",
-			file_id_string(mem_ctx, &id)));
+		DBG_DEBUG("failed to find entry for key %s\n",
+			  file_id_str_buf(id, &idbuf));
 		return NULL;
 	}
 	/* sequence number key is at start of blob. */
 	ndr_err = get_share_mode_blob_header(blob, &sequence_number, &flags);
 	if (ndr_err != NDR_ERR_SUCCESS) {
 		/* Bad blob. Remove entry. */
-		DEBUG(10,("bad blob %u key %s\n",
-			(unsigned int)ndr_err,
-			file_id_string(mem_ctx, &id)));
+		DBG_DEBUG("bad blob %u key %s\n",
+			  (unsigned int)ndr_err,
+			  file_id_str_buf(id, &idbuf));
 		memcache_delete(NULL,
 			SHARE_MODE_LOCK_CACHE,
 			key);
@@ -331,7 +332,7 @@ static struct share_mode_data *share_mode_memcache_fetch(TALLOC_CTX *mem_ctx,
 			  "for key %s\n",
 			  d->sequence_number,
 			  sequence_number,
-			  file_id_string(mem_ctx, &id));
+			  file_id_str_buf(id, &idbuf));
 		/* Cache out of date. Remove entry. */
 		memcache_delete(NULL,
 			SHARE_MODE_LOCK_CACHE,
@@ -359,7 +360,7 @@ static struct share_mode_data *share_mode_memcache_fetch(TALLOC_CTX *mem_ctx,
 	DBG_DEBUG("fetched entry for file %s seq %"PRIx64" key %s\n",
 		  d->base_name,
 		  d->sequence_number,
-		  file_id_string(mem_ctx, &id));
+		  file_id_str_buf(id, &idbuf));
 
 	return d;
 }
