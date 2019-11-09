@@ -177,11 +177,12 @@ static DATA_BLOB memcache_key(const struct file_id *id)
 static void share_mode_memcache_store(struct share_mode_data *d)
 {
 	const DATA_BLOB key = memcache_key(&d->id);
+	struct file_id_buf idbuf;
 
 	DBG_DEBUG("stored entry for file %s seq %"PRIx64" key %s\n",
 		  d->base_name,
 		  d->sequence_number,
-		  file_id_string(talloc_tos(), &d->id));
+		  file_id_str_buf(d->id, &idbuf));
 
 	/* Ensure everything stored in the cache is pristine. */
 	d->modified = false;
