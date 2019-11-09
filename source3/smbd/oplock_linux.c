@@ -168,6 +168,8 @@ static bool linux_set_kernel_oplock(struct kernel_oplocks *ctx,
 static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
 					files_struct *fsp, int oplock_type)
 {
+	struct file_id_buf idbuf;
+
 	if (DEBUGLVL(10)) {
 		/*
 		 * Check and print out the current kernel
@@ -178,7 +180,7 @@ static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
 			"gen_id = %"PRIu64" has kernel oplock state "
 			"of %x.\n",
 			fsp_str_dbg(fsp),
-		        file_id_string_tos(&fsp->file_id),
+		        file_id_str_buf(fsp->file_id, &idbuf),
 			fsp->fh->gen_id,
 			state);
 	}
@@ -193,7 +195,7 @@ static void linux_release_kernel_oplock(struct kernel_oplocks *ctx,
 			dbgtext("%s, file_id = %s, gen_id = %"PRIu64". "
 				"Error was %s\n",
 				fsp_str_dbg(fsp),
-				file_id_string_tos(&fsp->file_id),
+				file_id_str_buf(fsp->file_id, &idbuf),
 				fsp->fh->gen_id,
 				strerror(errno));
 		}
