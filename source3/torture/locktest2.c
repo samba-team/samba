@@ -156,8 +156,11 @@ static void print_brl(struct file_id id, struct server_id pid,
 		      br_off start, br_off size,
 		      void *private_data)
 {
+	struct file_id_buf idbuf;
+
 	printf("%6d   %s    %s  %.0f:%.0f(%.0f)\n", 
-	       (int)procid_to_pid(&pid), file_id_string_tos(&id),
+	       (int)procid_to_pid(&pid),
+	       file_id_str_buf(id, &idbuf),
 	       lock_type==READ_LOCK?"R":"W",
 	       (double)start, (double)start+size-1,(double)size);
 
