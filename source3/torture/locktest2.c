@@ -177,6 +177,11 @@ static struct cli_state *connect_one(char *share)
 	fstring myname;
 	static int count;
 	NTSTATUS nt_status;
+	bool use_kerberos = false;
+	bool fallback_after_kerberos = false;
+	bool use_ccache = false;
+	bool pw_nt_hash = false;
+	struct cli_credentials *creds = NULL;
 
 	fstrcpy(server,share+2);
 	share = strchr_m(server,'\\');
@@ -196,12 +201,25 @@ static struct cli_state *connect_one(char *share)
 		}
 	}
 
+	creds = cli_session_creds_init(NULL,
+				       username,
+				       lp_workgroup(),
+				       NULL, /* realm (use default) */
+				       password,
+				       use_kerberos,
+				       fallback_after_kerberos,
+				       use_ccache,
+				       pw_nt_hash);
+	if (creds == NULL) {
+		DEBUG(0, ("cli_session_creds_init failed\n"));
+		return NULL;
+	}
+
 	slprintf(myname,sizeof(myname), "lock-%lu-%u", (unsigned long)getpid(), count++);
 
-	nt_status = cli_full_connection(&c, myname, server_n, NULL, 0, share, "?????", 
-					username, lp_workgroup(), password, 0,
-					SMB_SIGNING_DEFAULT);
-
+	nt_status = cli_full_connection_creds(&c, myname, server_n, NULL, 0, share, "?????",
+					      creds, 0, SMB_SIGNING_DEFAULT);
+	TALLOC_FREE(creds);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("cli_full_connection failed with error %s\n", nt_errstr(nt_status)));
 		return NULL;
