@@ -195,12 +195,18 @@ NTSTATUS connect_to_ipc_anonymous(struct net_context *c,
 				const char *server_name)
 {
 	NTSTATUS nt_status;
+	struct cli_credentials *anon_creds = NULL;
 
-	nt_status = cli_full_connection(cli_ctx, c->opt_requester_name,
+	anon_creds = cli_credentials_init_anon(c);
+	if (anon_creds == NULL) {
+		DBG_ERR("cli_credentials_init_anon() failed\n");
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	nt_status = cli_full_connection_creds(cli_ctx, c->opt_requester_name,
 					server_name, server_ss, c->opt_port,
 					"IPC$", "IPC",
-					"", "",
-					"", 0, SMB_SIGNING_DEFAULT);
+					anon_creds, 0, SMB_SIGNING_OFF);
 
 	if (NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
