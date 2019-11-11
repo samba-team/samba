@@ -781,6 +781,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
         ipc_srv = SMBC_find_server(ctx, context, server, "*IPC$",
                                    pp_workgroup, pp_username, pp_password);
         if (!ipc_srv) {
+		struct cli_credentials *creds = NULL;
 		int signing_state = SMB_SIGNING_DEFAULT;
 
                 /* We didn't find a cached connection.  Get the password */
@@ -797,38 +798,41 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                 }
 
                 flags = 0;
-                if (smbc_getOptionUseKerberos(context)) {
-                        flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
-                }
-                if (smbc_getOptionUseCCache(context)) {
-                        flags |= CLI_FULL_CONNECTION_USE_CCACHE;
-                }
+
+		creds = SMBC_auth_credentials(NULL,
+					      context,
+					      *pp_workgroup,
+					      *pp_username,
+					      *pp_password);
+		if (creds == NULL) {
+			errno = ENOMEM;
+			return NULL;
+		}
+
 		if (context->internal->smb_encryption_level != SMBC_ENCRYPTLEVEL_NONE) {
 			signing_state = SMB_SIGNING_REQUIRED;
 		}
 
-                nt_status = cli_full_connection(&ipc_cli,
+		nt_status = cli_full_connection_creds(&ipc_cli,
 						lp_netbios_name(), server,
 						NULL, 0, "IPC$", "?????",
-						*pp_username,
-						*pp_workgroup,
-						*pp_password,
+						creds,
 						flags,
 						signing_state);
                 if (! NT_STATUS_IS_OK(nt_status)) {
+			TALLOC_FREE(creds);
                         DEBUG(1,("cli_full_connection failed! (%s)\n",
                                  nt_errstr(nt_status)));
                         errno = ENOTSUP;
                         return NULL;
                 }
+		talloc_steal(ipc_cli, creds);
 
 		if (context->internal->smb_encryption_level) {
 			/* Attempt encryption. */
-			nt_status = cli_cm_force_encryption(ipc_cli,
-							    *pp_username,
-							    *pp_password,
-							    *pp_workgroup,
-							    "IPC$");
+			nt_status = cli_cm_force_encryption_creds(ipc_cli,
+								  creds,
+								  "IPC$");
 			if (!NT_STATUS_IS_OK(nt_status)) {
 
 				/*
