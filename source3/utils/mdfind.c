@@ -61,12 +61,10 @@ int main(int argc, char **argv)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct tevent_context *ev = NULL;
 	struct user_auth_info *auth = NULL;
+	struct cli_credentials *creds = NULL;
 	struct rpc_pipe_client *rpccli = NULL;
 	struct mdscli_ctx *mdscli_ctx = NULL;
 	struct mdscli_search_ctx *search = NULL;
-	const char *auth_username = NULL;
-	const char *auth_passwd = NULL;
-	const char *auth_domain = NULL;
 	const char *server = NULL;
 	const char *share = NULL;
 	const char *mds_query = NULL;
@@ -121,9 +119,7 @@ int main(int argc, char **argv)
 	}
 
 	auth = popt_get_cmdline_auth_info();
-	auth_username = get_cmdline_auth_info_username(auth);
-	auth_passwd = get_cmdline_auth_info_password(auth);
-	auth_domain = get_cmdline_auth_info_domain(auth);
+	creds = get_cmdline_auth_info_creds(auth);
 
 	signing_state = get_cmdline_auth_info_signing_state(auth);
 	switch (signing_state) {
@@ -133,17 +129,6 @@ int main(int argc, char **argv)
 	case SMB_SIGNING_REQUIRED:
 		lp_set_cmdline("client ipc signing", "required");
 		break;
-	}
-
-	if (get_cmdline_auth_info_use_kerberos(auth)) {
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
-			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
-	}
-	if (get_cmdline_auth_info_use_ccache(auth)) {
-		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
-	}
-	if (get_cmdline_auth_info_use_pw_nt_hash(auth)) {
-		flags |= CLI_FULL_CONNECTION_USE_NT_HASH;
 	}
 
 	ev = samba_tevent_context_init(frame);
@@ -160,29 +145,23 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	status = cli_full_connection(&cli,
-				     lp_netbios_name(),
-				     server,
-				     NULL,
-				     0,
-				     "IPC$",
-				     "IPC",
-				     auth_username,
-				     auth_domain,
-				     auth_passwd,
-				     flags,
-				     SMB_SIGNING_IPC_DEFAULT);
+	status = cli_full_connection_creds(&cli,
+					   lp_netbios_name(),
+					   server,
+					   NULL,
+					   0,
+					   "IPC$",
+					   "IPC",
+					   creds,
+					   flags,
+					   SMB_SIGNING_IPC_DEFAULT);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("Cannot connect to server: %s\n", nt_errstr(status));
 		goto fail;
 	}
 
 	if (get_cmdline_auth_info_smb_encrypt(auth)) {
-		status = cli_cm_force_encryption(cli,
-						 auth_username,
-						 auth_passwd,
-						 auth_domain,
-						 "IPC$");
+		status = cli_cm_force_encryption_creds(cli, creds, "IPC$");
 		if (!NT_STATUS_IS_OK(status)) {
 			goto fail;
 		}
