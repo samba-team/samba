@@ -46,7 +46,7 @@ Usage: test5 [<options>] <command> [<args>]
 Help Options:
   -h, --help     Show this help message
 
-Commands:
+Action Commands:
   action one      action one help
   action two      action two help
 Usage: test5 [<options>] <command> [<args>]
@@ -54,7 +54,7 @@ Usage: test5 [<options>] <command> [<args>]
 Help Options:
   -h, --help     Show this help message
 
-Commands:
+Action Commands:
   action one      action one help
   action two      action two help
 Usage: test5 [<options>] <command> [<args>]
@@ -62,7 +62,7 @@ Usage: test5 [<options>] <command> [<args>]
 Help Options:
   -h, --help     Show this help message
 
-Commands:
+Action Commands:
   action one      action one help
   action two      action two help
 EOF

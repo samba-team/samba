@@ -286,7 +286,7 @@ static void test5(void)
 	ret = cmdline_init(mem_ctx,
 			   "test5",
 			   NULL,
-			   NULL,
+			   "Action",
 			   action_commands,
 			   &cmdline);
 	assert(ret == 0);
