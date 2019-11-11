@@ -1692,15 +1692,22 @@ NTSTATUS libnet_join_ok(struct messaging_context *msg_ctx,
 					   SMB_SIGNING_IPC_DEFAULT);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		status = cli_full_connection(&cli, NULL,
-					     dc_name,
-					     NULL, 0,
-					     "IPC$", "IPC",
-					     "",
-					     NULL,
-					     "",
-					     0,
-					     SMB_SIGNING_IPC_DEFAULT);
+		struct cli_credentials *anon_creds = NULL;
+
+		anon_creds = cli_credentials_init_anon(frame);
+		if (anon_creds == NULL) {
+			TALLOC_FREE(frame);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		status = cli_full_connection_creds(&cli,
+						   NULL,
+						   dc_name,
+						   NULL, 0,
+						   "IPC$", "IPC",
+						   anon_creds,
+						   0,
+						   SMB_SIGNING_OFF);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
