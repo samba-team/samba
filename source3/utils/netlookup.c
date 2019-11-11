@@ -62,6 +62,7 @@ static struct con_struct *create_cs(struct net_context *c,
 {
 	NTSTATUS nt_status;
 	struct sockaddr_storage loopback_ss;
+	struct cli_credentials *anon_creds = NULL;
 
 	*perr = NT_STATUS_OK;
 
@@ -84,34 +85,20 @@ static struct con_struct *create_cs(struct net_context *c,
 		return NULL;
 	}
 
+	anon_creds = cli_credentials_init_anon(cs);
+	if (anon_creds == NULL) {
+		TALLOC_FREE(cs);
+		*perr = NT_STATUS_NO_MEMORY;
+		return NULL;
+	}
+
 	ZERO_STRUCTP(cs);
 	talloc_set_destructor(cs, cs_destructor);
 
-	/* Connect to localhost with given username/password. */
-	/* JRA. Pretty sure we can just do this anonymously.... */
-#if 0
-	if (!opt_password && !opt_machine_pass) {
-		char *pass = getpass("Password:");
-		if (pass) {
-			opt_password = SMB_STRDUP(pass);
-		}
-	}
-#endif
-
-	nt_status = cli_full_connection(&cs->cli, lp_netbios_name(), lp_netbios_name(),
+	nt_status = cli_full_connection_creds(&cs->cli, lp_netbios_name(), lp_netbios_name(),
 					&loopback_ss, 0,
 					"IPC$", "IPC",
-#if 0
-					c->opt_user_name,
-					c->opt_workgroup,
-					c->opt_password,
-#else
-					"",
-					c->opt_workgroup,
-					"",
-#endif
-					0,
-					SMB_SIGNING_DEFAULT);
+					anon_creds, 0, SMB_SIGNING_OFF);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(2,("create_cs: Connect failed. Error was %s\n", nt_errstr(nt_status)));
