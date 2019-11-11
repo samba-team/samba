@@ -31,9 +31,17 @@ static const struct ndr_interface_call *find_function(
 	const struct ndr_interface_table *p,
 	const char *function)
 {
-	int i;
+	unsigned int i;
 	if (isdigit(function[0])) {
-		i = strtol(function, NULL, 0);
+		char *eptr = NULL;
+		i = strtoul(function, &eptr, 0);
+		if (i >= p->num_calls
+		    || eptr == NULL
+		    || eptr[0] != '\0') {
+			printf("Function number '%s' not found\n",
+			       function);
+			exit(1);
+		}
 		return &p->calls[i];
 	}
 	for (i=0;i<p->num_calls;i++) {
@@ -57,7 +65,19 @@ static const struct ndr_interface_call *find_struct(
 	const char *struct_name,
 	struct ndr_interface_call *out_buffer)
 {
-	int i;
+	unsigned int i;
+	if (isdigit(struct_name[0])) {
+		char *eptr = NULL;
+		i = strtoul(struct_name, &eptr, 0);
+		if (i >= p->num_public_structs
+		    || eptr == NULL
+		    || eptr[0] != '\0') {
+			printf("Public structure number '%s' not found\n",
+			       struct_name);
+			exit(1);
+		}
+		return &p->calls[i];
+	}
 	for (i=0;i<p->num_public_structs;i++) {
 		if (strcmp(p->public_structs[i].name, struct_name) == 0) {
 			break;
