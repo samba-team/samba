@@ -1425,19 +1425,19 @@ void dcerpc_log_packet(const char *lockdir,
 	for (i=0;i<num_examples;i++) {
 		char *name=NULL;
 		int ret;
+		bool saved;
 		ret = asprintf(&name, "%s/rpclog/%s-%u.%d.%s",
 			       lockdir, ndr->name, opnum, i,
 			       (flags&NDR_IN)?"in":"out");
 		if (ret == -1) {
 			return;
 		}
-		if (!file_exist(name)) {
-			if (file_save(name, pkt->data, pkt->length)) {
-				DEBUG(10,("Logged rpc packet to %s\n", name));
-			}
-			free(name);
+
+		saved = file_save(name, pkt->data, pkt->length);
+		free(name);
+		if (saved) {
+			DBG_DEBUG("Logged rpc packet to %s\n", name);
 			break;
 		}
-		free(name);
 	}
 }
