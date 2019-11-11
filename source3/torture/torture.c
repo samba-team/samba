@@ -148,10 +148,6 @@ static struct cli_state *open_nbt_connection(void)
 		flags |= CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS;
 	}
 
-	if (use_kerberos) {
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
-	}
-
 	if (force_dos_errors) {
 		flags |= CLI_FULL_CONNECTION_FORCE_DOS_ERRORS;
 	}
