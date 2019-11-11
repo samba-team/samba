@@ -282,28 +282,6 @@ int net_use_krb_machine_account(struct net_context *c)
 	return 0;
 }
 
-/****************************************************************************
- Use the machine account name and password for this session.
-****************************************************************************/
-
-int net_use_machine_account(struct net_context *c)
-{
-	char *user_name = NULL;
-
-	if (!secrets_init()) {
-		d_fprintf(stderr,_("ERROR: Unable to open secrets database\n"));
-		exit(1);
-	}
-
-	c->opt_password = secrets_fetch_machine_password(
-				c->opt_target_workgroup, NULL, NULL);
-	if (asprintf(&user_name, "%s$", lp_netbios_name()) == -1) {
-		return -1;
-	}
-	c->opt_user_name = user_name;
-	return 0;
-}
-
 bool net_find_server(struct net_context *c,
 			const char *domain,
 			unsigned flags,
