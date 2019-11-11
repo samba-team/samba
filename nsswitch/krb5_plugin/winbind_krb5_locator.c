@@ -412,7 +412,11 @@ const krb5plugin_service_locate_ftable SMB_KRB5_LOCATOR_SYMBOL_NAME = {
 	.minor_version	= 0,
 	.init		= smb_krb5_locator_init,
 	.fini		= smb_krb5_locator_close,
+#ifdef KRB5_PLUGIN_LOCATE_VERSION_2
+	.old_lookup	= smb_krb5_locator_lookup,
+#else
 	.lookup	= smb_krb5_locator_lookup,
+#endif
 };
 
 #endif
