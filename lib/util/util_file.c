@@ -329,7 +329,7 @@ _PUBLIC_ bool file_save_mode(const char *fname, const void *packet,
 {
 	ssize_t num_written;
 	int fd;
-	fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC, mode);
+	fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, mode);
 	if (fd == -1) {
 		return false;
 	}

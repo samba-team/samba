@@ -53,6 +53,13 @@ cryptography effectively wraps bad cryptography, but for now that above
 applies.
 
 
+"net ads kerberos pac save" and "net eventlog export"
+-----------------------------------------------------
+
+The "net ads kerberos pac save" and "net eventlog export" tools will
+no longer silently overwrite an existing file during data export.  If
+the filename given exits, an error will be shown.
+
 REMOVED FEATURES
 ================
 
