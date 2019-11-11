@@ -38,12 +38,10 @@ static struct cli_state *connect_one(const struct user_auth_info *auth_info,
 			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 	}
 
-	nt_status = cli_full_connection(&c, lp_netbios_name(), server,
+	nt_status = cli_full_connection_creds(&c, lp_netbios_name(), server,
 				NULL, port,
 				share, "?????",
-				get_cmdline_auth_info_username(auth_info),
-				lp_workgroup(),
-				get_cmdline_auth_info_password(auth_info),
+				get_cmdline_auth_info_creds(auth_info),
 				flags,
 				get_cmdline_auth_info_signing_state(auth_info));
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -53,11 +51,9 @@ static struct cli_state *connect_one(const struct user_auth_info *auth_info,
 	}
 
 	if (get_cmdline_auth_info_smb_encrypt(auth_info)) {
-		nt_status = cli_cm_force_encryption(
+		nt_status = cli_cm_force_encryption_creds(
 			c,
-			get_cmdline_auth_info_username(auth_info),
-			get_cmdline_auth_info_password(auth_info),
-			lp_workgroup(),
+			get_cmdline_auth_info_creds(auth_info),
 			share);
                 if (!NT_STATUS_IS_OK(nt_status)) {
 			cli_shutdown(c);
