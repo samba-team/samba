@@ -72,3 +72,27 @@ ok <<EOF
 arg1
 EOF
 unit_test cmdline_test 6
+
+ok <<EOF
+Usage: test7 [<options>] <command> [<args>]
+
+Help Options:
+  -h, --help     Show this help message
+
+Basic Commands:
+  cmd1      command one help
+  cmd2      command two help
+
+Advanced Commands:
+  cmd3      command three help
+  cmd4      command four help
+
+Ultimate Commands:
+  cmd5      command five help
+  cmd6      command six help
+
+one
+three
+six
+EOF
+unit_test cmdline_test 7

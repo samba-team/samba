@@ -350,6 +350,91 @@ static void test6(void)
 	talloc_free(mem_ctx);
 }
 
+static int test7_func(TALLOC_CTX *mem_ctx,
+		      int argc,
+		      const char **argv,
+		      void *private_data)
+{
+	assert(argc == 1);
+
+	printf("%s\n", argv[0]);
+
+	return 0;
+}
+
+static struct cmdline_command test7_basic_commands[] = {
+	{ "cmd1", test7_func, "command one help", NULL },
+	{ "cmd2", test7_func, "command two help", NULL },
+	CMDLINE_TABLEEND
+};
+
+static struct cmdline_command test7_advanced_commands[] = {
+	{ "cmd3", test7_func, "command three help", NULL },
+	{ "cmd4", test7_func, "command four help", NULL },
+	CMDLINE_TABLEEND
+};
+
+static struct cmdline_command test7_ultimate_commands[] = {
+	{ "cmd5", test7_func, "command five help", NULL },
+	{ "cmd6", test7_func, "command six help", NULL },
+	CMDLINE_TABLEEND
+};
+
+static void test7(void)
+{
+	TALLOC_CTX *mem_ctx;
+	struct cmdline_context *cmdline;
+	const char *argv1[] = { "cmd1", "one" };
+	const char *argv2[] = { "cmd3", "three" };
+	const char *argv3[] = { "cmd6", "six" };
+	int ret, result;
+
+	mem_ctx = talloc_new(NULL);
+	assert(mem_ctx != NULL);
+
+	ret = cmdline_init(mem_ctx,
+			   "test7",
+			   NULL,
+			   "Basic",
+			   test7_basic_commands,
+			   &cmdline);
+	assert(ret == 0);
+
+	ret = cmdline_add(cmdline, "Advanced", test7_advanced_commands);
+	assert(ret == 0);
+
+	ret = cmdline_add(cmdline, "Ultimate", test7_ultimate_commands);
+	assert(ret == 0);
+
+	cmdline_usage(cmdline, NULL);
+
+	printf("\n");
+
+	ret = cmdline_parse(cmdline, 2, argv1, false);
+	assert(ret == 0);
+
+	ret = cmdline_run(cmdline, NULL, &result);
+	assert(ret == 0);
+	assert(result == 0);
+
+	ret = cmdline_parse(cmdline, 2, argv2, false);
+	assert(ret == 0);
+
+	ret = cmdline_run(cmdline, NULL, &result);
+	assert(ret == 0);
+	assert(result == 0);
+
+	ret = cmdline_parse(cmdline, 2, argv3, false);
+	assert(ret == 0);
+
+	ret = cmdline_run(cmdline, NULL, &result);
+	assert(ret == 0);
+	assert(result == 0);
+
+	talloc_free(mem_ctx);
+}
+
+
 int main(int argc, const char **argv)
 {
 	int num;
@@ -384,6 +469,10 @@ int main(int argc, const char **argv)
 
 	case 6:
 		test6();
+		break;
+
+	case 7:
+		test7();
 		break;
 	}
 
