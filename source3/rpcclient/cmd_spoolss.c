@@ -3532,17 +3532,12 @@ static WERROR cmd_spoolss_printercmp(struct rpc_pipe_client *cli,
 
 	/* first get the connection to the remote server */
 
-	nt_status = cli_full_connection(&cli_server2, lp_netbios_name(), argv[2],
+	nt_status = cli_full_connection_creds(&cli_server2, lp_netbios_name(), argv[2],
 				NULL, 0,
 				"IPC$", "IPC",
-				get_cmdline_auth_info_username(
+				get_cmdline_auth_info_creds(
 					popt_get_cmdline_auth_info()),
-				lp_workgroup(),
-				get_cmdline_auth_info_password(
-					popt_get_cmdline_auth_info()),
-				get_cmdline_auth_info_use_kerberos(
-					popt_get_cmdline_auth_info()) ?
-					CLI_FULL_CONNECTION_USE_KERBEROS : 0,
+				0, /* flags */
 				get_cmdline_auth_info_signing_state(
 					popt_get_cmdline_auth_info()));
 
