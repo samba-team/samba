@@ -3597,66 +3597,6 @@ NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
 	return status;
 }
 
-NTSTATUS cli_full_connection(struct cli_state **output_cli,
-			     const char *my_name,
-			     const char *dest_host,
-			     const struct sockaddr_storage *dest_ss, int port,
-			     const char *service, const char *service_type,
-			     const char *user, const char *domain,
-			     const char *password, int flags,
-			     int signing_state)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	NTSTATUS status;
-	bool use_kerberos = false;
-	bool fallback_after_kerberos = false;
-	bool use_ccache = false;
-	bool pw_nt_hash = false;
-	struct cli_credentials *creds = NULL;
-
-	if (flags & CLI_FULL_CONNECTION_USE_KERBEROS) {
-		use_kerberos = true;
-	}
-
-	if (flags & CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS) {
-		fallback_after_kerberos = true;
-	}
-
-	if (flags & CLI_FULL_CONNECTION_USE_CCACHE) {
-		use_ccache = true;
-	}
-
-	if (flags & CLI_FULL_CONNECTION_USE_NT_HASH) {
-		pw_nt_hash = true;
-	}
-
-	creds = cli_session_creds_init(frame,
-				       user,
-				       domain,
-				       NULL, /* realm (use default) */
-				       password,
-				       use_kerberos,
-				       fallback_after_kerberos,
-				       use_ccache,
-				       pw_nt_hash);
-	if (creds == NULL) {
-		TALLOC_FREE(frame);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = cli_full_connection_creds(output_cli, my_name,
-					   dest_host, dest_ss, port,
-					   service, service_type,
-					   creds, flags, signing_state);
-	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
-		return status;
-	}
-
-	TALLOC_FREE(frame);
-	return NT_STATUS_OK;
-}
-
 /****************************************************************************
  Send an old style tcon.
 ****************************************************************************/

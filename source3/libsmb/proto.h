@@ -111,14 +111,6 @@ NTSTATUS cli_full_connection_creds(struct cli_state **output_cli,
 				   struct cli_credentials *creds,
 				   int flags,
 				   int signing_state);
-NTSTATUS cli_full_connection(struct cli_state **output_cli,
-			     const char *my_name,
-			     const char *dest_host,
-			     const struct sockaddr_storage *dest_ss, int port,
-			     const char *service, const char *service_type,
-			     const char *user, const char *domain,
-			     const char *password, int flags,
-			     int signing_state);
 NTSTATUS cli_raw_tcon(struct cli_state *cli,
 		      const char *service, const char *pass, const char *dev,
 		      uint16_t *max_xmit, uint16_t *tid);
