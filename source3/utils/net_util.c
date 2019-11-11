@@ -466,6 +466,10 @@ const char *net_prompt_pass(struct net_context *c, const char *user)
 		return NULL;
 	}
 
+	if (c->opt_ccache) {
+		return NULL;
+	}
+
 	if (asprintf(&prompt, _("Enter %s's password:"), user) == -1) {
 		return NULL;
 	}
