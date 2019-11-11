@@ -2380,6 +2380,7 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 	char *prt_dn, *srv_dn, **srv_cn;
 	char *srv_cn_escaped = NULL, *printername_escaped = NULL;
 	LDAPMessage *res = NULL;
+	struct cli_credentials *creds = NULL;
 	bool ok;
 
 	if (argc < 1 || c->display_usage) {
@@ -2417,12 +2418,19 @@ static int net_ads_printer_publish(struct net_context *c, int argc, const char *
 		return -1;
 	}
 
-	nt_status = cli_full_connection(&cli, lp_netbios_name(), servername,
+	creds = net_context_creds(c, mem_ctx);
+	if (creds == NULL) {
+		d_fprintf(stderr, "net_context_creds() failed\n");
+		ads_destroy(&ads);
+		talloc_destroy(mem_ctx);
+		return -1;
+	}
+	cli_credentials_set_kerberos_state(creds, CRED_MUST_USE_KERBEROS);
+
+	nt_status = cli_full_connection_creds(&cli, lp_netbios_name(), servername,
 					&server_ss, 0,
 					"IPC$", "IPC",
-					c->opt_user_name, c->opt_workgroup,
-					c->opt_password ? c->opt_password : "",
-					CLI_FULL_CONNECTION_USE_KERBEROS,
+					creds, 0,
 					SMB_SIGNING_IPC_DEFAULT);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
