@@ -99,34 +99,6 @@ NTSTATUS cli_cm_force_encryption_creds(struct cli_state *c,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS cli_cm_force_encryption(struct cli_state *c,
-			const char *username,
-			const char *password,
-			const char *domain,
-			const char *sharename)
-{
-	struct cli_credentials *creds = NULL;
-	NTSTATUS status;
-
-	creds = cli_session_creds_init(c,
-				       username,
-				       domain,
-				       NULL, /* default realm */
-				       password,
-				       c->use_kerberos,
-				       c->fallback_after_kerberos,
-				       c->use_ccache,
-				       c->pw_nt_hash);
-	if (creds == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	status = cli_cm_force_encryption_creds(c, creds, sharename);
-	/* gensec currently references the creds so we can't free them here */
-	talloc_unlink(c, creds);
-	return status;
-}
-
 /********************************************************************
  Return a connection to a server.
 ********************************************************************/
