@@ -409,10 +409,10 @@ static krb5_error_code smb_krb5_locator_lookup(void *private_data,
 #endif
 
 const krb5plugin_service_locate_ftable SMB_KRB5_LOCATOR_SYMBOL_NAME = {
-	0, /* version */
-	smb_krb5_locator_init,
-	smb_krb5_locator_close,
-	smb_krb5_locator_lookup,
+	.minor_version	= 0,
+	.init		= smb_krb5_locator_init,
+	.fini		= smb_krb5_locator_close,
+	.lookup	= smb_krb5_locator_lookup,
 };
 
 #endif
