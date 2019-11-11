@@ -254,6 +254,39 @@ check_server_cache:
         return NULL;
 }
 
+static struct cli_credentials *SMBC_auth_credentials(TALLOC_CTX *mem_ctx,
+						     SMBCCTX *context,
+						     const char *domain,
+						     const char *username,
+						     const char *password)
+{
+	struct cli_credentials *creds = NULL;
+	bool use_kerberos = false;
+	bool fallback_after_kerberos = false;
+	bool use_ccache = false;
+	bool pw_nt_hash = false;
+
+	use_kerberos = smbc_getOptionUseKerberos(context);
+	fallback_after_kerberos = smbc_getOptionFallbackAfterKerberos(context);
+	use_ccache = smbc_getOptionUseCCache(context);
+	pw_nt_hash = smbc_getOptionUseNTHash(context);
+
+	creds = cli_session_creds_init(mem_ctx,
+				       username,
+				       domain,
+				       NULL, /* realm */
+				       password,
+				       use_kerberos,
+				       fallback_after_kerberos,
+				       use_ccache,
+				       pw_nt_hash);
+	if (creds == NULL) {
+		return NULL;
+	}
+
+	return creds;
+}
+
 /*
  * Connect to a server, possibly on an existing connection
  *
@@ -291,10 +324,6 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	struct smbXcli_tcon *tcon = NULL;
 	int signing_state = SMB_SIGNING_DEFAULT;
 	struct cli_credentials *creds = NULL;
-	bool use_kerberos = false;
-	bool fallback_after_kerberos = false;
-	bool use_ccache = false;
-	bool pw_nt_hash = false;
 
 	*in_cache = false;
 
@@ -443,22 +472,6 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 
 	status = NT_STATUS_UNSUCCESSFUL;
 
-	if (smbc_getOptionUseKerberos(context)) {
-		use_kerberos = true;
-	}
-
-	if (smbc_getOptionFallbackAfterKerberos(context)) {
-		fallback_after_kerberos = true;
-	}
-
-	if (smbc_getOptionUseCCache(context)) {
-		use_ccache = true;
-	}
-
-	if (smbc_getOptionUseNTHash(context)) {
-		pw_nt_hash = true;
-	}
-
 	if (context->internal->smb_encryption_level != SMBC_ENCRYPTLEVEL_NONE) {
 		signing_state = SMB_SIGNING_REQUIRED;
 	}
@@ -511,15 +524,11 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	username_used = *pp_username;
 	password_used = *pp_password;
 
-	creds = cli_session_creds_init(c,
-				       username_used,
-				       *pp_workgroup,
-				       NULL, /* realm */
-				       password_used,
-				       use_kerberos,
-				       fallback_after_kerberos,
-				       use_ccache,
-				       pw_nt_hash);
+	creds = SMBC_auth_credentials(c,
+				      context,
+				      *pp_workgroup,
+				      username_used,
+				      password_used);
 	if (creds == NULL) {
 		cli_shutdown(c);
 		errno = ENOMEM;
