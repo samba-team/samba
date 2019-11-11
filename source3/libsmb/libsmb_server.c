@@ -394,6 +394,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                                 smbc_getFunctionRemoveCachedServer(context)(context,
                                                                             srv);
                                 srv = NULL;
+				goto not_found;
                         }
 
                         /* Determine if this share supports case sensitivity */
@@ -402,7 +403,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                                       ("IPC$ so ignore case sensitivity\n"));
                                 status = NT_STATUS_OK;
                         } else {
-                                status = cli_get_fs_attr_info(c, &fs_attrs);
+                                status = cli_get_fs_attr_info(srv->cli, &fs_attrs);
                         }
 
                         if (!NT_STATUS_IS_OK(status)) {
@@ -416,9 +417,9 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                                  * user-specified case sensitivity setting.
                                  */
                                 if (smbc_getOptionCaseSensitive(context)) {
-                                        cli_set_case_sensitive(c, True);
+                                        cli_set_case_sensitive(srv->cli, true);
                                 } else {
-                                        cli_set_case_sensitive(c, False);
+                                        cli_set_case_sensitive(srv->cli, false);
                                 }
                         } else if (!is_ipc) {
                                 DEBUG(4,
@@ -427,7 +428,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                                         ? "True"
                                         : "False")));
                                 cli_set_case_sensitive(
-                                        c,
+                                        srv->cli,
                                         (fs_attrs & FILE_CASE_SENSITIVE_SEARCH
                                          ? True
                                          : False));
@@ -446,6 +447,8 @@ SMBC_server_internal(TALLOC_CTX *ctx,
                         }
                 }
         }
+
+ not_found:
 
         /* If we have a connection... */
         if (srv) {
