@@ -62,9 +62,35 @@ class NdrDumpTests(BlackboxTestCase):
                 self.data_path("dns-decode_dns_name_packet-hex.dat")))
 
     def test_ndrdump_with_hex_struct_name(self):
+        expected = open(self.data_path("dns-decode_dns_name_packet-hex.txt")).read()
         try:
-            self.check_run(
+            actual = self.check_output(
                 "ndrdump dns dns_name_packet struct --hex-input %s" %
                 self.data_path("dns-decode_dns_name_packet-hex.dat"))
         except BlackboxProcessError as e:
             self.fail(e)
+
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertEqual(actual, expected.encode('utf-8'))
+
+    def test_ndrdump_with_binary_struct_name(self):
+        # Prefix of the expected unparsed PAC data (without times, as
+        # these vary by host)
+        expected = '''pull returned NT_STATUS_OK
+    PAC_DATA: struct PAC_DATA
+        num_buffers              : 0x00000005 (5)
+        version                  : 0x00000000 (0)
+        buffers: ARRAY(5)'''
+        try:
+            actual = self.check_output(
+                "ndrdump krb5pac PAC_DATA struct %s" %
+                self.data_path("krb5pac-PAC_DATA.dat"))
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertEqual(actual[:len(expected)],
+                         expected.encode('utf-8'))
+        self.assertTrue(actual.endswith(b"dump OK\n"))

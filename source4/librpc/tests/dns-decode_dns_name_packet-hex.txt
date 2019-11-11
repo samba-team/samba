@@ -1,0 +1,35 @@
+pull returned NT_STATUS_OK
+    dns_name_packet: struct dns_name_packet
+        id                       : 0xecef (60655)
+        operation                : 0x2800 (10240)
+            0x00: DNS_RCODE                 (0)
+               0: DNS_FLAG_RECURSION_AVAIL 
+               0: DNS_FLAG_RECURSION_DESIRED
+               0: DNS_FLAG_TRUNCATION      
+               0: DNS_FLAG_AUTHORITATIVE   
+            0x05: DNS_OPCODE                (5)
+               0: DNS_FLAG_REPLY           
+        qdcount                  : 0x0001 (1)
+        ancount                  : 0x0000 (0)
+        nscount                  : 0x0001 (1)
+        arcount                  : 0x0000 (0)
+        questions: ARRAY(1)
+            questions: struct dns_name_question
+                name                     : 'samba2003.example.com'
+                question_type            : DNS_QTYPE_SOA (0x6)
+                question_class           : DNS_QCLASS_IN (0x1)
+        answers: ARRAY(0)
+        nsrecs: ARRAY(1)
+            nsrecs: struct dns_res_rec
+                name                     : 'cnamedotprefix0.samba2003.example.com'
+                rr_type                  : DNS_QTYPE_CNAME (0x5)
+                rr_class                 : DNS_QCLASS_IN (0x1)
+                ttl                      : 0x00000384 (900)
+                length                   : 0x0013 (19)
+                rdata                    : union dns_rdata(case 0x5)
+                cname_record             : ''
+                unexpected               : DATA_BLOB length=18
+[0000] 0F 62 6E 61 6D 65 64 6F   74 70 72 65 66 69 78 32   .bnamedo tprefix2
+[0010] C0 0C                                              .. 
+        additional: ARRAY(0)
+dump OK
