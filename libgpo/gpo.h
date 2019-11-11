@@ -166,10 +166,6 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 				 char **service,
 				 char **nt_path,
 				 char **unix_path);
-NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
-                         ADS_STRUCT *ads,
-                         const char *cache_dir,
-			 const struct GROUP_POLICY_OBJECT *gpo);
 NTSTATUS gpo_get_sysvol_gpt_version(TALLOC_CTX *mem_ctx,
 				    const char *unix_path,
 				    uint32_t *sysvol_version,
@@ -232,16 +228,6 @@ NTSTATUS gpo_process_gpo_list(TALLOC_CTX *mem_ctx,
 			      const struct GROUP_POLICY_OBJECT *changed_gpo_list,
 			      const char *extensions_guid_filter,
 			      uint32_t flags);
-NTSTATUS check_refresh_gpo(ADS_STRUCT *ads,
-			   TALLOC_CTX *mem_ctx,
-                           const char *cache_dir,
-			   uint32_t flags,
-			   const struct GROUP_POLICY_OBJECT *gpo);
-NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
-				TALLOC_CTX *mem_ctx,
-                                const char *cache_dir,
-				uint32_t flags,
-				const struct GROUP_POLICY_OBJECT *gpo_list);
 NTSTATUS gpo_get_unix_path(TALLOC_CTX *mem_ctx,
                            const char *cache_dir,
 			   const struct GROUP_POLICY_OBJECT *gpo,
