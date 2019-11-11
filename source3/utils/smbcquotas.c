@@ -522,20 +522,10 @@ static struct cli_state *connect_one(const char *share)
 	NTSTATUS nt_status;
 	uint32_t flags = 0;
 
-	if (get_cmdline_auth_info_use_kerberos(popt_get_cmdline_auth_info())) {
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
-			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
-
-	}
-
-	nt_status = cli_full_connection(&c, lp_netbios_name(), server,
+	nt_status = cli_full_connection_creds(&c, lp_netbios_name(), server,
 					    NULL, 0,
 					    share, "?????",
-					    get_cmdline_auth_info_username(
-						popt_get_cmdline_auth_info()),
-					    get_cmdline_auth_info_domain(
-						popt_get_cmdline_auth_info()),
-					    get_cmdline_auth_info_password(
+					    get_cmdline_auth_info_creds(
 						popt_get_cmdline_auth_info()),
 					    flags,
 					    get_cmdline_auth_info_signing_state(
@@ -546,12 +536,9 @@ static struct cli_state *connect_one(const char *share)
 	}
 
 	if (get_cmdline_auth_info_smb_encrypt(popt_get_cmdline_auth_info())) {
-		nt_status = cli_cm_force_encryption(c,
-					get_cmdline_auth_info_username(
+		nt_status = cli_cm_force_encryption_creds(c,
+					get_cmdline_auth_info_creds(
 						popt_get_cmdline_auth_info()),
-					get_cmdline_auth_info_password(
-						popt_get_cmdline_auth_info()),
-					lp_workgroup(),
 					share);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			cli_shutdown(c);
