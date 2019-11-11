@@ -99,6 +99,19 @@ int cmdline_init(TALLOC_CTX *mem_ctx,
 		 struct cmdline_command *commands,
 		 struct cmdline_context **result);
 
+
+/**
+ * @brief Add command line section/commands
+ *
+ * @param[in] cmdline Cmdline context
+ * @param[in] section Name of section grouping specified commands
+ * @param[in] commands Commands array
+ * @return 0 on success, errno on failure
+ */
+int cmdline_add(struct cmdline_context *cmdline,
+		const char *section,
+		struct cmdline_command *commands);
+
 /**
  * @brief Parse command line options and commands/arguments
  *

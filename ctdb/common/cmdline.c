@@ -326,6 +326,13 @@ static int cmdline_context_destructor(struct cmdline_context *cmdline)
 	return 0;
 }
 
+int cmdline_add(struct cmdline_context *cmdline,
+		const char *name,
+		struct cmdline_command *commands)
+{
+	return cmdline_section_add(cmdline, name, commands);
+}
+
 static int cmdline_parse_options(struct cmdline_context *cmdline,
 				 int argc,
 				 const char **argv)
