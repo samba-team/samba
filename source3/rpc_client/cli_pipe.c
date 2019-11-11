@@ -3188,7 +3188,6 @@ NTSTATUS cli_rpc_pipe_open_with_creds(struct cli_state *cli,
 	struct rpc_pipe_client *result;
 	struct pipe_auth_data *auth = NULL;
 	const char *target_service = table->authservices->names[0];
-
 	NTSTATUS status;
 
 	status = cli_rpc_pipe_open(cli, transport, table, &result);
@@ -3202,21 +3201,22 @@ NTSTATUS cli_rpc_pipe_open_with_creds(struct cli_state *cli,
 						     creds,
 						     &auth);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("rpccli_generic_bind_data returned %s\n",
-			  nt_errstr(status)));
+		DBG_ERR("rpccli_generic_bind_data_from_creds returned %s\n",
+			nt_errstr(status));
 		goto err;
 	}
 
 	status = rpc_pipe_bind(result, auth);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("cli_rpc_pipe_open_generic_auth: cli_rpc_pipe_bind failed with error %s\n",
-			nt_errstr(status) ));
+		DBG_ERR("cli_rpc_pipe_bind failed with error %s\n",
+			nt_errstr(status));
 		goto err;
 	}
 
-	DEBUG(10,("cli_rpc_pipe_open_generic_auth: opened pipe %s to "
-		"machine %s and bound as user %s.\n", table->name,
-		  result->desthost, cli_credentials_get_unparsed_name(creds, talloc_tos())));
+	DBG_DEBUG("opened pipe %s to machine %s and bound as user %s.\n",
+		  table->name,
+		  result->desthost,
+		  cli_credentials_get_unparsed_name(creds, talloc_tos()));
 
 	*presult = result;
 	return NT_STATUS_OK;
