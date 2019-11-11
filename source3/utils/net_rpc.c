@@ -6587,6 +6587,7 @@ static int rpc_trustdom_establish(struct net_context *c, int argc,
 	};
 
 	c->opt_user_name = acct_name;
+	c->opt_user_specified = true;
 
 	/* find the domain controller */
 	if (!net_find_pdc(&server_ss, pdc_name, domain_name)) {
