@@ -33,11 +33,6 @@ static struct cli_state *connect_one(const struct user_auth_info *auth_info,
 	NTSTATUS nt_status;
 	uint32_t flags = 0;
 
-	if (get_cmdline_auth_info_use_kerberos(auth_info)) {
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
-			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
-	}
-
 	nt_status = cli_full_connection_creds(&c, lp_netbios_name(), server,
 				NULL, port,
 				share, "?????",
