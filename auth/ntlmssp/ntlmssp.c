@@ -305,6 +305,7 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.name		= "ntlmssp",
 	.sasl_name	= GENSEC_SASL_NAME_NTLMSSP, /* "NTLM" */
 	.auth_type	= DCERPC_AUTH_TYPE_NTLMSSP,
+	.weak_crypto    = true,
 	.oid            = gensec_ntlmssp_oids,
 	.client_start   = gensec_ntlmssp_client_start,
 	.server_start   = gensec_ntlmssp_server_start,
@@ -329,6 +330,7 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 
 static const struct gensec_security_ops gensec_ntlmssp_resume_ccache_ops = {
 	.name		= "ntlmssp_resume_ccache",
+	.weak_crypto    = true,
 	.client_start   = gensec_ntlmssp_resume_ccache_start,
 	.update_send	= gensec_ntlmssp_update_send,
 	.update_recv	= gensec_ntlmssp_update_recv,
