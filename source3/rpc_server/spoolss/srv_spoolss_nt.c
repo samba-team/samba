@@ -2449,6 +2449,7 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe, struct c
 	NTSTATUS ret;
 	struct sockaddr_storage rm_addr;
 	char addr[INET6_ADDRSTRLEN];
+	struct cli_credentials *anon_creds = NULL;
 
 	if ( is_zero_addr(client_ss) ) {
 		DEBUG(2,("spoolss_connect_to_client: resolving %s\n",
@@ -2471,14 +2472,17 @@ static bool spoolss_connect_to_client(struct rpc_pipe_client **pp_pipe, struct c
 		return false;
 	}
 
-	/* setup the connection */
-	ret = cli_full_connection( pp_cli, lp_netbios_name(), remote_machine,
-		&rm_addr, 0, "IPC$", "IPC",
-		"", /* username */
-		"", /* domain */
-		"", /* password */
-		0, lp_client_signing());
+	anon_creds = cli_credentials_init_anon(NULL);
+	if (anon_creds == NULL) {
+		DBG_ERR("cli_credentials_init_anon() failed\n");
+		return false;
+	}
 
+	/* setup the connection */
+	ret = cli_full_connection_creds( pp_cli, lp_netbios_name(), remote_machine,
+		&rm_addr, 0, "IPC$", "IPC",
+		anon_creds, 0, SMB_SIGNING_OFF);
+	TALLOC_FREE(anon_creds);
 	if ( !NT_STATUS_IS_OK( ret ) ) {
 		DEBUG(2,("spoolss_connect_to_client: connection to [%s] failed!\n",
 			remote_machine ));
