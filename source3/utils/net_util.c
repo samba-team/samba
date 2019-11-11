@@ -29,6 +29,8 @@
 #include "secrets.h"
 #include "../libcli/security/security.h"
 #include "libsmb/libsmb.h"
+#include "lib/param/param.h"
+#include "auth/gensec/gensec.h"
 
 NTSTATUS net_rpc_lookup_name(struct net_context *c,
 			     TALLOC_CTX *mem_ctx, struct cli_state *cli,
@@ -475,6 +477,107 @@ const char *net_prompt_pass(struct net_context *c, const char *user)
 	}
 
 	return SMB_STRDUP(pwd);
+}
+
+struct cli_credentials *net_context_creds(struct net_context *c,
+					  TALLOC_CTX *mem_ctx)
+{
+	struct cli_credentials *creds = NULL;
+	struct loadparm_context *lp_ctx = NULL;
+
+	c->opt_password = net_prompt_pass(c, c->opt_user_name);
+
+	creds = cli_credentials_init(mem_ctx);
+	if (creds == NULL) {
+		d_printf("ERROR: Unable to allocate memory!\n");
+		exit(-1);
+	}
+
+	lp_ctx = loadparm_init_s3(creds, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		d_printf("loadparm_init_s3 failed\n");
+		exit(-1);
+	}
+
+	cli_credentials_guess(creds, lp_ctx);
+
+	if (c->opt_kerberos && c->opt_user_specified) {
+		cli_credentials_set_kerberos_state(creds,
+						   CRED_AUTO_USE_KERBEROS);
+	} else if (c->opt_kerberos) {
+		cli_credentials_set_kerberos_state(creds,
+						   CRED_MUST_USE_KERBEROS);
+	} else {
+		cli_credentials_set_kerberos_state(creds,
+						   CRED_DONT_USE_KERBEROS);
+	}
+
+	if (c->opt_ccache) {
+		uint32_t features;
+
+		features = cli_credentials_get_gensec_features(creds);
+		features |= GENSEC_FEATURE_NTLM_CCACHE;
+		cli_credentials_set_gensec_features(creds, features);
+
+		if (c->opt_password != NULL && strlen(c->opt_password) == 0) {
+			/*
+			 * some callers pass "" as no password
+			 *
+			 * GENSEC_FEATURE_NTLM_CCACHE only handles
+			 * NULL as no password.
+			 */
+			c->opt_password = NULL;
+		}
+	}
+
+	if (c->opt_user_specified) {
+		const char *default_domain =
+			cli_credentials_get_domain(creds);
+		char *username = NULL;
+		const char *domain = NULL;
+		char *tmp = NULL;
+		char *p = NULL;
+		bool is_default;
+
+		tmp = talloc_strdup(creds, c->opt_user_name);
+		if (tmp == NULL) {
+			exit(-1);
+		}
+		username = tmp;
+
+		/* allow for workgroups as part of the username */
+		if ((p = strchr_m(tmp, '\\')) ||
+		    (p = strchr_m(tmp, '/')) ||
+		    (p = strchr_m(tmp, *lp_winbind_separator()))) {
+			*p = 0;
+			username = p + 1;
+			domain = tmp;
+		}
+
+		if (domain == NULL) {
+			domain = c->opt_workgroup;
+		}
+
+		/*
+		 * Don't overwrite the value from cli_credentials_guess()
+		 * with CRED_SPECIFIED, unless we have to.
+		 */
+		is_default = strequal_m(domain, default_domain);
+		if (!is_default) {
+			cli_credentials_set_domain(creds,
+						   domain,
+						   CRED_SPECIFIED);
+		}
+
+		cli_credentials_set_username(creds,
+					     username,
+					     CRED_SPECIFIED);
+		cli_credentials_set_password(creds,
+					     c->opt_password,
+					     CRED_SPECIFIED);
+	}
+
+	return creds;
 }
 
 int net_run_function(struct net_context *c, int argc, const char **argv,
