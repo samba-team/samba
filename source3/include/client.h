@@ -76,11 +76,6 @@ struct cli_state {
 	/* The list of pipes currently open on this connection. */
 	struct rpc_pipe_client *pipe_list;
 
-	bool use_kerberos;
-	bool fallback_after_kerberos;
-	bool use_ccache;
-	bool pw_nt_hash;
-
 	bool use_oplocks; /* should we use oplocks? */
 
 	/* Where (if anywhere) this is mounted under DFS. */
@@ -119,15 +114,11 @@ struct file_info {
 };
 
 #define CLI_FULL_CONNECTION_DONT_SPNEGO 0x0001
-#define CLI_FULL_CONNECTION_USE_KERBEROS 0x0002
 #define CLI_FULL_CONNECTION_ANONYMOUS_FALLBACK 0x0004
-#define CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS 0x0008
 #define CLI_FULL_CONNECTION_OPLOCKS 0x0010
 #define CLI_FULL_CONNECTION_LEVEL_II_OPLOCKS 0x0020
-#define CLI_FULL_CONNECTION_USE_CCACHE 0x0040
 #define CLI_FULL_CONNECTION_FORCE_DOS_ERRORS 0x0080
 #define CLI_FULL_CONNECTION_FORCE_ASCII 0x0100
-#define CLI_FULL_CONNECTION_USE_NT_HASH 0x0200
 #define CLI_FULL_CONNECTION_FORCE_SMB1 0x0400
 #define CLI_FULL_CONNECTION_DISABLE_SMB1 0x0800
 

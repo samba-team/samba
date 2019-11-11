@@ -1433,8 +1433,6 @@ struct tevent_req *cli_session_setup_creds_send(TALLOC_CTX *mem_ctx,
 	uint16_t sec_mode = smb1cli_conn_server_security_mode(cli->conn);
 	bool use_spnego = false;
 	int flags = 0;
-	enum credentials_use_kerberos krb5_state;
-	uint32_t gensec_features;
 	const char *username = "";
 	const char *domain = "";
 	DATA_BLOB target_info = data_blob_null;
@@ -1455,30 +1453,6 @@ struct tevent_req *cli_session_setup_creds_send(TALLOC_CTX *mem_ctx,
 	state->cli = cli;
 
 	tevent_req_set_cleanup_fn(req, cli_session_setup_creds_cleanup);
-
-	krb5_state = cli_credentials_get_kerberos_state(creds);
-	gensec_features = cli_credentials_get_gensec_features(creds);
-
-	switch (krb5_state) {
-	case CRED_MUST_USE_KERBEROS:
-		cli->use_kerberos = true;
-		cli->fallback_after_kerberos = false;
-		break;
-	case CRED_AUTO_USE_KERBEROS:
-		cli->use_kerberos = true;
-		cli->fallback_after_kerberos = true;
-		break;
-	case CRED_DONT_USE_KERBEROS:
-		cli->use_kerberos = false;
-		cli->fallback_after_kerberos = false;
-		break;
-	}
-
-	if (gensec_features & GENSEC_FEATURE_NTLM_CCACHE) {
-		cli->use_ccache = true;
-	} else {
-		cli->use_ccache = false;
-	}
 
 	/*
 	 * Now work out what sort of session setup we are going to
@@ -3391,8 +3365,6 @@ struct tevent_req *cli_full_connection_creds_send(
 {
 	struct tevent_req *req, *subreq;
 	struct cli_full_connection_creds_state *state;
-	enum credentials_use_kerberos krb5_state;
-	uint32_t gensec_features = 0;
 
 	req = tevent_req_create(mem_ctx, &state,
 				struct cli_full_connection_creds_state);
@@ -3400,30 +3372,6 @@ struct tevent_req *cli_full_connection_creds_send(
 		return NULL;
 	}
 	talloc_set_destructor(state, cli_full_connection_creds_state_destructor);
-
-	flags &= ~CLI_FULL_CONNECTION_USE_KERBEROS;
-	flags &= ~CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
-	flags &= ~CLI_FULL_CONNECTION_USE_CCACHE;
-	flags &= ~CLI_FULL_CONNECTION_USE_NT_HASH;
-
-	krb5_state = cli_credentials_get_kerberos_state(creds);
-	switch (krb5_state) {
-	case CRED_MUST_USE_KERBEROS:
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
-		flags &= ~CLI_FULL_CONNECTION_DONT_SPNEGO;
-		break;
-	case CRED_AUTO_USE_KERBEROS:
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
-		flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
-		break;
-	case CRED_DONT_USE_KERBEROS:
-		break;
-	}
-
-	gensec_features = cli_credentials_get_gensec_features(creds);
-	if (gensec_features & GENSEC_FEATURE_NTLM_CCACHE) {
-		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
-	}
 
 	state->ev = ev;
 	state->service = service;

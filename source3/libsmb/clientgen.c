@@ -131,20 +131,6 @@ struct cli_state *cli_state_create(TALLOC_CTX *mem_ctx,
 
 	if (flags & CLI_FULL_CONNECTION_DONT_SPNEGO) {
 		use_spnego = false;
-	} else if (flags & CLI_FULL_CONNECTION_USE_KERBEROS) {
-		cli->use_kerberos = true;
-	}
-	if ((flags & CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS) &&
-	     cli->use_kerberos) {
-		cli->fallback_after_kerberos = true;
-	}
-
-	if (flags & CLI_FULL_CONNECTION_USE_CCACHE) {
-		cli->use_ccache = true;
-	}
-
-	if (flags & CLI_FULL_CONNECTION_USE_NT_HASH) {
-		cli->pw_nt_hash = true;
 	}
 
 	if (flags & CLI_FULL_CONNECTION_OPLOCKS) {

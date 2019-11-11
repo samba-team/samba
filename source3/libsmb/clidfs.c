@@ -150,19 +150,6 @@ static NTSTATUS do_connect(TALLOC_CTX *ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (get_cmdline_auth_info_use_kerberos(auth_info)) {
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
-	}
-	if (get_cmdline_auth_info_fallback_after_kerberos(auth_info)) {
-		flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
-	}
-	if (get_cmdline_auth_info_use_ccache(auth_info)) {
-		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
-	}
-	if (get_cmdline_auth_info_use_pw_nt_hash(auth_info)) {
-		flags |= CLI_FULL_CONNECTION_USE_NT_HASH;
-	}
-
 	status = cli_connect_nb(
 		server, dest_ss, port, name_type, NULL,
 		signing_state,
