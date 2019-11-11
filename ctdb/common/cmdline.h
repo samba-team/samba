@@ -85,6 +85,7 @@ struct cmdline_command {
  * @param[in] mem_ctx Talloc memory context
  * @param[in] prog Program name
  * @param[in] options Command-line options
+ * @param[in] section Name of section grouping specified commands
  * @param[in] commands Commands array
  * @param[out] result New cmdline context
  * @return 0 on success, errno on failure
@@ -94,6 +95,7 @@ struct cmdline_command {
 int cmdline_init(TALLOC_CTX *mem_ctx,
 		 const char *prog,
 		 struct poptOption *options,
+		 const char *section,
 		 struct cmdline_command *commands,
 		 struct cmdline_context **result);
 

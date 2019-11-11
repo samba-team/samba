@@ -32,6 +32,7 @@
 struct cmdline_context {
 	const char *prog;
 	struct poptOption *options;
+	const char *section;
 	struct cmdline_command *commands;
 	int max_len;
 	poptContext pc;
@@ -209,6 +210,7 @@ static int cmdline_context_destructor(struct cmdline_context *cmdline);
 int cmdline_init(TALLOC_CTX *mem_ctx,
 		 const char *prog,
 		 struct poptOption *options,
+		 const char *section,
 		 struct cmdline_command *commands,
 		 struct cmdline_context **result)
 {
@@ -247,6 +249,7 @@ int cmdline_init(TALLOC_CTX *mem_ctx,
 		talloc_free(cmdline);
 		return ret;
 	}
+	cmdline->section = section;
 	cmdline->commands = commands;
 	cmdline->max_len = max_len;
 
@@ -449,7 +452,11 @@ static void cmdline_usage_full(struct cmdline_context *cmdline)
 	poptSetOtherOptionHelp(cmdline->pc, "[<options>] <command> [<args>]");
 	poptPrintHelp(cmdline->pc, stdout, 0);
 
-	printf("\nCommands:\n");
+	printf("\n");
+	if (cmdline->section != NULL) {
+		printf("%s ", cmdline->section);
+	}
+	printf("Commands:\n");
 	for (i=0; cmdline->commands[i].name != NULL; i++) {
 		cmdline_usage_command(cmdline, &cmdline->commands[i], true);
 

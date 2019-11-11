@@ -699,6 +699,7 @@ int event_tool_init(TALLOC_CTX *mem_ctx,
 	ret = cmdline_init(mem_ctx,
 			   prog,
 			   options,
+			   NULL,
 			   event_commands,
 			   &ctx->cmdline);
 	if (ret != 0) {

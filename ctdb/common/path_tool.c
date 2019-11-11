@@ -315,7 +315,12 @@ int path_tool_init(TALLOC_CTX *mem_ctx,
 		return ENOMEM;
 	}
 
-	ret = cmdline_init(ctx, prog, options, path_commands, &ctx->cmdline);
+	ret = cmdline_init(ctx,
+			   prog,
+			   options,
+			   NULL,
+			   path_commands,
+			   &ctx->cmdline);
 	if (ret != 0) {
 		D_ERR("Failed to initialize cmdline, ret=%d\n", ret);
 		talloc_free(ctx);

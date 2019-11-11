@@ -51,13 +51,18 @@ static void test1(void)
 	mem_ctx = talloc_new(NULL);
 	assert(mem_ctx != NULL);
 
-	ret = cmdline_init(mem_ctx, NULL, NULL, NULL, &cmdline);
+	ret = cmdline_init(mem_ctx, NULL, NULL, NULL, NULL, &cmdline);
 	assert(ret == EINVAL);
 
-	ret = cmdline_init(mem_ctx, "test1", NULL, NULL, &cmdline);
+	ret = cmdline_init(mem_ctx, "test1", NULL, NULL, NULL, &cmdline);
 	assert(ret == EINVAL);
 
-	ret = cmdline_init(mem_ctx, "test1", dummy_options, NULL, &cmdline);
+	ret = cmdline_init(mem_ctx,
+			   "test1",
+			   dummy_options,
+			   NULL,
+			   NULL,
+			   &cmdline);
 	assert(ret == EINVAL);
 
 	talloc_free(mem_ctx);
@@ -102,19 +107,44 @@ static void test2(void)
 	mem_ctx = talloc_new(NULL);
 	assert(mem_ctx != NULL);
 
-	ret = cmdline_init(mem_ctx, "test2", NULL, test2_nofunc, &cmdline);
+	ret = cmdline_init(mem_ctx,
+			   "test2",
+			   NULL,
+			   NULL,
+			   test2_nofunc,
+			   &cmdline);
 	assert(ret == EINVAL);
 
-	ret = cmdline_init(mem_ctx, "test2", NULL, test2_nohelp, &cmdline);
+	ret = cmdline_init(mem_ctx,
+			   "test2",
+			   NULL,
+			   NULL,
+			   test2_nohelp,
+			   &cmdline);
 	assert(ret == EINVAL);
 
-	ret = cmdline_init(mem_ctx, "test2", NULL, test2_long, &cmdline);
+	ret = cmdline_init(mem_ctx,
+			   "test2",
+			   NULL,
+			   NULL,
+			   test2_long,
+			   &cmdline);
 	assert(ret == EINVAL);
 
-	ret = cmdline_init(mem_ctx, "test2", NULL, test2_longhelp, &cmdline);
+	ret = cmdline_init(mem_ctx,
+			   "test2",
+			   NULL,
+			   NULL,
+			   test2_longhelp,
+			   &cmdline);
 	assert(ret == EINVAL);
 
-	ret = cmdline_init(mem_ctx, "test2", NULL, test2_twowords, &cmdline);
+	ret = cmdline_init(mem_ctx,
+			   "test2",
+			   NULL,
+			   NULL,
+			   test2_twowords,
+			   &cmdline);
 	assert(ret == 0);
 
 	talloc_free(mem_ctx);
@@ -154,6 +184,7 @@ static void test3(void)
 	ret = cmdline_init(mem_ctx,
 			   "test3",
 			   test3_noname,
+			   NULL,
 			   dummy_commands,
 			   &cmdline);
 	assert(ret == EINVAL);
@@ -161,6 +192,7 @@ static void test3(void)
 	ret = cmdline_init(mem_ctx,
 			   "test3",
 			   test3_notype,
+			   NULL,
 			   dummy_commands,
 			   &cmdline);
 	assert(ret == EINVAL);
@@ -168,6 +200,7 @@ static void test3(void)
 	ret = cmdline_init(mem_ctx,
 			   "test3",
 			   test3_noarg,
+			   NULL,
 			   dummy_commands,
 			   &cmdline);
 	assert(ret == EINVAL);
@@ -207,6 +240,7 @@ static void test4(void)
 	ret = cmdline_init(mem_ctx,
 			   "test4",
 			   test4_options,
+			   NULL,
 			   test4_commands,
 			   &cmdline);
 	assert(ret == 0);
@@ -249,7 +283,12 @@ static void test5(void)
 	mem_ctx = talloc_new(NULL);
 	assert(mem_ctx != NULL);
 
-	ret = cmdline_init(mem_ctx, "test5", NULL, action_commands, &cmdline);
+	ret = cmdline_init(mem_ctx,
+			   "test5",
+			   NULL,
+			   NULL,
+			   action_commands,
+			   &cmdline);
 	assert(ret == 0);
 
 	ret = cmdline_parse(cmdline, 2, argv1, true);
@@ -279,7 +318,12 @@ static void test6(void)
 	mem_ctx = talloc_new(NULL);
 	assert(mem_ctx != NULL);
 
-	ret = cmdline_init(mem_ctx, "test6", NULL, action_commands, &cmdline);
+	ret = cmdline_init(mem_ctx,
+			   "test6",
+			   NULL,
+			   NULL,
+			   action_commands,
+			   &cmdline);
 	assert(ret == 0);
 
 	ret = cmdline_parse(cmdline, 2, argv1, false);

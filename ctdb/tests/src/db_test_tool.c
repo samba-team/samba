@@ -653,6 +653,7 @@ int db_test_tool_init(TALLOC_CTX *mem_ctx,
 	ret = cmdline_init(mem_ctx,
 			   prog,
 			   options,
+			   NULL,
 			   db_test_commands,
 			   &ctx->cmdline);
 	if (ret != 0) {
