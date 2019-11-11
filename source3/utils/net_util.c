@@ -108,32 +108,23 @@ NTSTATUS connect_to_service(struct net_context *c,
 			    const char *service_type)
 {
 	NTSTATUS nt_status;
-	int flags = 0;
 	enum smb_signing_setting signing_setting = SMB_SIGNING_DEFAULT;
+	struct cli_credentials *creds = NULL;
 
-	c->opt_password = net_prompt_pass(c, c->opt_user_name);
-
-	if (c->opt_kerberos) {
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
-	}
-
-	if (c->opt_kerberos && c->opt_password) {
-		flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
-	}
-
-	if (c->opt_ccache) {
-		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
+	creds = net_context_creds(c, c);
+	if (creds == NULL) {
+		d_fprintf(stderr, "net_context_creds() failed.\n");
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	if (strequal(service_type, "IPC")) {
 		signing_setting = SMB_SIGNING_IPC_DEFAULT;
 	}
 
-	nt_status = cli_full_connection(cli_ctx, NULL, server_name,
+	nt_status = cli_full_connection_creds(cli_ctx, NULL, server_name,
 					server_ss, c->opt_port,
 					service_name, service_type,
-					c->opt_user_name, c->opt_workgroup,
-					c->opt_password, flags,
+					creds, 0,
 					signing_setting);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, _("Could not connect to server %s\n"),
@@ -158,11 +149,9 @@ NTSTATUS connect_to_service(struct net_context *c,
 	}
 
 	if (c->smb_encrypt) {
-		nt_status = cli_cm_force_encryption(*cli_ctx,
-						    c->opt_user_name,
-						    c->opt_password,
-						    c->opt_workgroup,
-						    service_name);
+		nt_status = cli_cm_force_encryption_creds(*cli_ctx,
+							  creds,
+							  service_name);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			cli_shutdown(*cli_ctx);
 			*cli_ctx = NULL;
