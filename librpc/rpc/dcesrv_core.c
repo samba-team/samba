@@ -541,7 +541,10 @@ _PUBLIC_ NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
 
 	p->dce_ctx = dce_ctx;
 	p->endpoint = ep;
-	p->packet_log_dir = lpcfg_lock_directory(dce_ctx->lp_ctx);
+	p->packet_log_dir = lpcfg_parm_string(dce_ctx->lp_ctx,
+					      NULL,
+					      "dcesrv",
+					      "stubs directory");
 	p->event_ctx = event_ctx;
 	p->state_flags = state_flags;
 	p->allow_bind = true;
@@ -1693,21 +1696,12 @@ static void dcesrv_alter_done(struct tevent_req *subreq)
 static void dcesrv_save_call(struct dcesrv_call_state *call, const char *why)
 {
 #ifdef DEVELOPER
-	char *fname;
-	const char *dump_dir;
-	dump_dir = lpcfg_parm_string(call->conn->dce_ctx->lp_ctx, NULL, "dcesrv", "stubs directory");
-	if (!dump_dir) {
-		return;
-	}
-	fname = talloc_asprintf(call, "%s/RPC-%s-%u-%s.dat",
-				dump_dir,
-				call->context->iface->name,
-				call->pkt.u.request.opnum,
-				why);
-	if (file_save(fname, call->pkt.u.request.stub_and_verifier.data, call->pkt.u.request.stub_and_verifier.length)) {
-		DEBUG(0,("RPC SAVED %s\n", fname));
-	}
-	talloc_free(fname);
+	dcerpc_log_packet(call->conn->packet_log_dir,
+			  call->context->iface->name,
+			  call->pkt.u.request.opnum,
+			  NDR_IN,
+			  &call->pkt.u.request.stub_and_verifier,
+			  why);
 #endif
 }
 

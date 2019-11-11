@@ -258,9 +258,5 @@ NTSTATUS dcerpc_secondary_auth_connection(struct dcerpc_pipe *p,
 
 struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p,
 							   const struct dcerpc_binding *b);
-void dcerpc_log_packet(const char *lockdir, 
-		       const struct ndr_interface_table *ndr,
-		       uint32_t opnum, uint32_t flags,
-		       const DATA_BLOB *pkt);
 
 #endif /* __S4_DCERPC_H__ */

@@ -68,9 +68,6 @@ static NTSTATUS spoolss__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_
         /* unravel the NDR for the packet */
 	ndr_err = ndr_table_spoolss.calls[opnum].ndr_pull(pull, NDR_IN, *r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		dcerpc_log_packet(dce_call->conn->packet_log_dir,
-						  &ndr_table_spoolss, opnum, NDR_IN,
-				  &dce_call->pkt.u.request.stub_and_verifier);
 		dce_call->fault_code = DCERPC_FAULT_NDR;
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
@@ -185,9 +182,6 @@ static NTSTATUS spoolss__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	if (dce_call->fault_code != 0) {
-		dcerpc_log_packet(dce_call->conn->packet_log_dir,
-						  &ndr_table_spoolss, opnum, NDR_IN,
-				  &dce_call->pkt.u.request.stub_and_verifier);
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
 	return NT_STATUS_OK;

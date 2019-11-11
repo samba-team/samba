@@ -1410,25 +1410,30 @@ NTSTATUS dcerpc_ncacn_push_auth(DATA_BLOB *blob,
   log a rpc packet in a format suitable for ndrdump. This is especially useful
   for sealed packets, where ethereal cannot easily see the contents
 
-  this triggers on a debug level of >= 10
+  this triggers if "dcesrv:stubs directory" is set and present
+  for all packets that fail to parse
 */
-void dcerpc_log_packet(const char *lockdir,
-		       const struct ndr_interface_table *ndr,
+void dcerpc_log_packet(const char *packet_log_dir,
+		       const char *interface_name,
 		       uint32_t opnum, uint32_t flags,
-		       const DATA_BLOB *pkt)
+		       const DATA_BLOB *pkt,
+		       const char *why)
 {
 	const int num_examples = 20;
 	int i;
 
-	if (lockdir == NULL) return;
+	if (packet_log_dir == NULL) {
+		return;
+	}
 
 	for (i=0;i<num_examples;i++) {
 		char *name=NULL;
 		int ret;
 		bool saved;
-		ret = asprintf(&name, "%s/rpclog/%s-%u.%d.%s",
-			       lockdir, ndr->name, opnum, i,
-			       (flags&NDR_IN)?"in":"out");
+		ret = asprintf(&name, "%s/%s-%u.%d.%s.%s",
+			       packet_log_dir, interface_name, opnum, i,
+			       (flags&NDR_IN)?"in":"out",
+			       why);
 		if (ret == -1) {
 			return;
 		}

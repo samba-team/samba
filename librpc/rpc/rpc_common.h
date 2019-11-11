@@ -452,9 +452,10 @@ NTSTATUS dcerpc_ncacn_push_auth(DATA_BLOB *blob,
 				struct ncacn_packet *pkt,
 				struct dcerpc_auth *auth_info);
 
-void dcerpc_log_packet(const char *lockdir,
-		       const struct ndr_interface_table *ndr,
+void dcerpc_log_packet(const char *packet_log_dir,
+		       const char *interface_name,
 		       uint32_t opnum, uint32_t flags,
-		       const DATA_BLOB *pkt);
+		       const DATA_BLOB *pkt,
+		       const char *why);
 
 #endif /* __DEFAULT_LIBRPC_RPCCOMMON_H__ */
