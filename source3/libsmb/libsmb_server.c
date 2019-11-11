@@ -444,22 +444,18 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	status = NT_STATUS_UNSUCCESSFUL;
 
 	if (smbc_getOptionUseKerberos(context)) {
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
 		use_kerberos = true;
 	}
 
 	if (smbc_getOptionFallbackAfterKerberos(context)) {
-		flags |= CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
 		fallback_after_kerberos = true;
 	}
 
 	if (smbc_getOptionUseCCache(context)) {
-		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
 		use_ccache = true;
 	}
 
 	if (smbc_getOptionUseNTHash(context)) {
-		flags |= CLI_FULL_CONNECTION_USE_NT_HASH;
 		pw_nt_hash = true;
 	}
 
