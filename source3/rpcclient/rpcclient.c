@@ -1193,18 +1193,6 @@ out_free:
 		break;
 	}
 
-	if (get_cmdline_auth_info_use_kerberos(popt_get_cmdline_auth_info())) {
-		flags |= CLI_FULL_CONNECTION_USE_KERBEROS |
-			 CLI_FULL_CONNECTION_FALLBACK_AFTER_KERBEROS;
-	}
-	if (get_cmdline_auth_info_use_ccache(popt_get_cmdline_auth_info())) {
-		flags |= CLI_FULL_CONNECTION_USE_CCACHE;
-	}
-	if (get_cmdline_auth_info_use_pw_nt_hash(
-			popt_get_cmdline_auth_info())) {
-		flags |= CLI_FULL_CONNECTION_USE_NT_HASH;
-	}
-
 	rpcclient_netlogon_domain = get_cmdline_auth_info_domain(
 			popt_get_cmdline_auth_info());
 	if (rpcclient_netlogon_domain == NULL ||
