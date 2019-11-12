@@ -769,11 +769,13 @@ static NTSTATUS check_oem_password(const char *user,
 		.size = 16,
 	};
 
+	GNUTLS_FIPS140_SET_LAX_MODE();
 	rc = gnutls_cipher_init(&cipher_hnd,
 				GNUTLS_CIPHER_ARCFOUR_128,
 				&enc_key,
 				NULL);
 	if (rc < 0) {
+		GNUTLS_FIPS140_SET_STRICT_MODE();
 		return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 	}
 
@@ -781,6 +783,7 @@ static NTSTATUS check_oem_password(const char *user,
 				   password_encrypted,
 				   516);
 	gnutls_cipher_deinit(cipher_hnd);
+	GNUTLS_FIPS140_SET_STRICT_MODE();
 	if (rc < 0) {
 		return gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 	}

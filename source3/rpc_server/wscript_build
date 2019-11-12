@@ -85,7 +85,7 @@ bld.SAMBA3_SUBSYSTEM('RPC_SAMR',
                     source='''samr/srv_samr_nt.c
                     samr/srv_samr_util.c
                     samr/srv_samr_chgpasswd.c''',
-                    deps='PLAINTEXT_AUTH SRV_ACCESS_CHECK')
+                    deps='PLAINTEXT_AUTH SRV_ACCESS_CHECK DCERPC_HELPER')
 
 bld.SAMBA3_SUBSYSTEM('RPC_SPOOLSS',
                     source='''spoolss/srv_spoolss_nt.c

@@ -46,6 +46,8 @@
 #include "rpc_server/srv_access_check.h"
 #include "../lib/tsocket/tsocket.h"
 #include "lib/util/base64.h"
+#include "param/param.h"
+#include "librpc/rpc/dcerpc_helper.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -1887,6 +1889,7 @@ NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 	char *user_name = NULL;
 	char *rhost;
 	const char *wks = NULL;
+	bool encrypted;
 
 	DEBUG(5,("_samr_ChangePasswordUser2: %d\n", __LINE__));
 
@@ -1913,6 +1916,12 @@ NTSTATUS _samr_ChangePasswordUser2(struct pipes_struct *p,
 						 talloc_tos());
 	if (rhost == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	encrypted = dcerpc_is_transport_encrypted(p->session_info);
+	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED &&
+	    !encrypted) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/*
@@ -1948,6 +1957,7 @@ NTSTATUS _samr_OemChangePasswordUser2(struct pipes_struct *p,
 	char *user_name = NULL;
 	const char *wks = NULL;
 	char *rhost;
+	bool encrypted;
 
 	DEBUG(5,("_samr_OemChangePasswordUser2: %d\n", __LINE__));
 
@@ -1983,6 +1993,12 @@ NTSTATUS _samr_OemChangePasswordUser2(struct pipes_struct *p,
 						 talloc_tos());
 	if (rhost == NULL) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	encrypted = dcerpc_is_transport_encrypted(p->session_info);
+	if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED &&
+	    !encrypted) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	status = pass_oem_change(user_name,
@@ -5200,8 +5216,13 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 	char *rhost;
 	DATA_BLOB session_key;
 	struct dom_sid_buf buf;
+	struct loadparm_context *lp_ctx = NULL;
+	bool encrypted;
 
-	DEBUG(5,("_samr_SetUserInfo: %d\n", __LINE__));
+	lp_ctx = loadparm_init_s3(p->mem_ctx, loadparm_s3_helpers());
+	if (lp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* This is tricky.  A WinXP domain join sets
 	  (SAMR_USER_ACCESS_SET_PASSWORD|SAMR_USER_ACCESS_SET_ATTRIBUTES|SAMR_USER_ACCESS_GET_ATTRIBUTES)
@@ -5390,13 +5411,27 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 23:
+			encrypted =
+				dcerpc_is_transport_encrypted(p->session_info);
+			if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED &&
+			    !encrypted) {
+				status = NT_STATUS_ACCESS_DENIED;
+				break;
+			}
+
 			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
 			if(!NT_STATUS_IS_OK(status)) {
 				break;
 			}
+			/*
+			 * This can be allowed as it requires a session key
+			 * which we only have if we have a SMB session.
+			 */
+			GNUTLS_FIPS140_SET_LAX_MODE();
 			status = arc4_decrypt_data(session_key,
 						   info->info23.password.data,
 						   516);
+			GNUTLS_FIPS140_SET_STRICT_MODE();
 			if(!NT_STATUS_IS_OK(status)) {
 				break;
 			}
@@ -5412,14 +5447,27 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 24:
+			encrypted =
+				dcerpc_is_transport_encrypted(p->session_info);
+			if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED &&
+			    !encrypted) {
+				status = NT_STATUS_ACCESS_DENIED;
+				break;
+			}
 
 			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
 			if(!NT_STATUS_IS_OK(status)) {
 				break;
 			}
+			/*
+			 * This can be allowed as it requires a session key
+			 * which we only have if we have a SMB session.
+			 */
+			GNUTLS_FIPS140_SET_LAX_MODE();
 			status = arc4_decrypt_data(session_key,
 						   info->info24.password.data,
 						   516);
+			GNUTLS_FIPS140_SET_STRICT_MODE();
 			if(!NT_STATUS_IS_OK(status)) {
 				break;
 			}
@@ -5434,12 +5482,26 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 25:
+			encrypted =
+				dcerpc_is_transport_encrypted(p->session_info);
+			if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED &&
+			    !encrypted) {
+				status = NT_STATUS_ACCESS_DENIED;
+				break;
+			}
+
 			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
 			if(!NT_STATUS_IS_OK(status)) {
 				break;
 			}
+			/*
+			 * This can be allowed as it requires a session key
+			 * which we only have if we have a SMB session.
+			 */
+			GNUTLS_FIPS140_SET_LAX_MODE();
 			status = decode_rc4_passwd_buffer(&session_key,
 					&info->info25.password);
+			GNUTLS_FIPS140_SET_STRICT_MODE();
 			if (!NT_STATUS_IS_OK(status)) {
 				break;
 			}
@@ -5454,12 +5516,26 @@ NTSTATUS _samr_SetUserInfo(struct pipes_struct *p,
 			break;
 
 		case 26:
+			encrypted =
+				dcerpc_is_transport_encrypted(p->session_info);
+			if (lp_weak_crypto() == SAMBA_WEAK_CRYPTO_DISALLOWED &&
+			    !encrypted) {
+				status = NT_STATUS_ACCESS_DENIED;
+				break;
+			}
+
 			status = session_extract_session_key(p->session_info, &session_key, KEY_USE_16BYTES);
 			if(!NT_STATUS_IS_OK(status)) {
 				break;
 			}
+			/*
+			 * This can be allowed as it requires a session key
+			 * which we only have if we have a SMB session.
+			 */
+			GNUTLS_FIPS140_SET_LAX_MODE();
 			status = decode_rc4_passwd_buffer(&session_key,
 					&info->info26.password);
+			GNUTLS_FIPS140_SET_STRICT_MODE();
 			if (!NT_STATUS_IS_OK(status)) {
 				break;
 			}
