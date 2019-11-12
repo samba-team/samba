@@ -487,7 +487,8 @@ def CHECK_STRUCTURE_MEMBER(conf, structname, member,
 
 
 @conf
-def CHECK_CFLAGS(conf, cflags, fragment='int main(void) { return 0; }\n'):
+def CHECK_CFLAGS(conf, cflags, fragment='int main(void) { return 0; }\n',
+                 mandatory=False):
     '''check if the given cflags are accepted by the compiler
     '''
     check_cflags = TO_LIST(cflags)
@@ -495,19 +496,20 @@ def CHECK_CFLAGS(conf, cflags, fragment='int main(void) { return 0; }\n'):
         check_cflags.extend(conf.env['WERROR_CFLAGS'])
     return conf.check(fragment=fragment,
                       execute=0,
-                      mandatory=False,
+                      mandatory=mandatory,
                       type='nolink',
                       cflags=check_cflags,
                       msg="Checking compiler accepts %s" % cflags)
 
 @conf
-def CHECK_LDFLAGS(conf, ldflags):
+def CHECK_LDFLAGS(conf, ldflags,
+                  mandatory=False):
     '''check if the given ldflags are accepted by the linker
     '''
     return conf.check(fragment='int main(void) { return 0; }\n',
                       execute=0,
                       ldflags=ldflags,
-                      mandatory=False,
+                      mandatory=mandatory,
                       msg="Checking linker accepts %s" % ldflags)
 
 
@@ -813,11 +815,19 @@ int main(void) {
     #
     # The CFLAGS and LDFLAGS environment variables are also
     # used for the configure checks which might impact their results.
+    #
+    # If these variables don't pass a smoke test, fail the configure
+
     conf.add_os_flags('ADDITIONAL_CFLAGS')
-    if conf.env.ADDITIONAL_CFLAGS and conf.CHECK_CFLAGS(conf.env['ADDITIONAL_CFLAGS']):
+    if conf.env.ADDITIONAL_CFLAGS:
+        conf.CHECK_CFLAGS(conf.env['ADDITIONAL_CFLAGS'],
+                          mandatory=True)
         conf.env['EXTRA_CFLAGS'].extend(conf.env['ADDITIONAL_CFLAGS'])
+
     conf.add_os_flags('ADDITIONAL_LDFLAGS')
-    if conf.env.ADDITIONAL_LDFLAGS and conf.CHECK_LDFLAGS(conf.env['ADDITIONAL_LDFLAGS']):
+    if conf.env.ADDITIONAL_LDFLAGS:
+        conf.CHECK_LDFLAGS(conf.env['ADDITIONAL_LDFLAGS'],
+                           mandatory=True)
         conf.env['EXTRA_LDFLAGS'].extend(conf.env['ADDITIONAL_LDFLAGS'])
 
     if path is None:
