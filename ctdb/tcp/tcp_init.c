@@ -135,12 +135,9 @@ static void ctdb_tcp_restart(struct ctdb_node *node)
 */
 static void ctdb_tcp_shutdown(struct ctdb_context *ctdb)
 {
-	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->transport_data,
-						struct ctdb_tcp);
 	uint32_t i;
 
-	talloc_free(ctcp);
-	ctdb->transport_data = NULL;
+	TALLOC_FREE(ctdb->transport_data);
 
 	for (i=0; i<ctdb->num_nodes; i++) {
 		TALLOC_FREE(ctdb->nodes[i]->transport_data);
