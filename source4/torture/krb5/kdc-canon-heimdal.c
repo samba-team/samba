@@ -33,6 +33,7 @@
 #include "auth/auth_sam_reply.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
+#include "zlib.h"
 
 #define TEST_CANONICALIZE     0x0000001
 #define TEST_ENTERPRISE       0x0000002
@@ -214,6 +215,17 @@ static bool test_accept_ticket(struct torture_context *tctx,
 	return true;
 }
 
+static void
+zCRC32_checksum(const void *data,
+		size_t len,
+		Checksum *C)
+{
+	uint32_t *crc = C->checksum.data;
+	*crc = ~(crc32(0xffffffff, data, len));
+	C->checksum.length = 4;
+	C->cksumtype = 1;
+}
+
 krb5_error_code
 _krb5_s4u2self_to_checksumdata(krb5_context context,
 			       const PA_S4U2Self *self,
@@ -252,11 +264,7 @@ static bool change_for_user_principal(struct torture_krb5_context *test_context,
 	torture_assert_int_equal(test_context->tctx,
 				 _krb5_s4u2self_to_checksumdata(k5_ctx, &mod_self, &cksum_data),
 				 0, "_krb5_s4u2self_to_checksumdata() failed");
-	torture_assert_int_equal(test_context->tctx,
-				 krb5_create_checksum(k5_ctx, NULL, KRB5_KU_OTHER_CKSUM,
-						      CKSUMTYPE_CRC32, cksum_data.data,
-						      cksum_data.length, &mod_self.cksum),
-				 0, "krb5_create_checksum() failed");
+	zCRC32_checksum(cksum_data.data, cksum_data.length, &mod_self.cksum);
 
 	ASN1_MALLOC_ENCODE(PA_S4U2Self, for_user->padata_value.data, for_user->padata_value.length,
 			   &mod_self, &used, ret);
@@ -270,7 +278,6 @@ static bool change_for_user_principal(struct torture_krb5_context *test_context,
 
 	free_PA_S4U2Self(&self);
 	krb5_data_free(&cksum_data);
-	free_Checksum(&mod_self.cksum);
 
 	return true;
 }
