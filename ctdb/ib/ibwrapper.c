@@ -32,7 +32,6 @@
 
 #include "common/logging.h"
 
-#include <infiniband/kern-abi.h>
 #include <rdma/rdma_cma_abi.h>
 #include <rdma/rdma_cma.h>
 
