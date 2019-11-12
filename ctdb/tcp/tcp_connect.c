@@ -43,7 +43,7 @@
 void ctdb_tcp_stop_connection(struct ctdb_node *node)
 {
 	struct ctdb_tcp_node *tnode = talloc_get_type(
-		node->private_data, struct ctdb_tcp_node);
+		node->transport_data, struct ctdb_tcp_node);
 
 	TALLOC_FREE(tnode->out_queue);
 	TALLOC_FREE(tnode->connect_te);
@@ -63,7 +63,7 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 {
 	struct ctdb_node *node = talloc_get_type(private_data, struct ctdb_node);
 	struct ctdb_tcp_node *tnode = talloc_get_type(
-		node->private_data, struct ctdb_tcp_node);
+		node->transport_data, struct ctdb_tcp_node);
 
 	if (data == NULL) {
 		node->ctdb->upcalls->node_dead(node);
@@ -85,7 +85,7 @@ static void ctdb_node_connect_write(struct tevent_context *ev,
 {
 	struct ctdb_node *node = talloc_get_type(private_data,
 						 struct ctdb_node);
-	struct ctdb_tcp_node *tnode = talloc_get_type(node->private_data,
+	struct ctdb_tcp_node *tnode = talloc_get_type(node->transport_data,
 						      struct ctdb_tcp_node);
 	struct ctdb_context *ctdb = node->ctdb;
 	int error = 0;
@@ -165,7 +165,7 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 {
 	struct ctdb_node *node = talloc_get_type(private_data,
 						 struct ctdb_node);
-	struct ctdb_tcp_node *tnode = talloc_get_type(node->private_data, 
+	struct ctdb_tcp_node *tnode = talloc_get_type(node->transport_data,
 						      struct ctdb_tcp_node);
 	struct ctdb_context *ctdb = node->ctdb;
         ctdb_sock_addr sock_in;
@@ -300,7 +300,7 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 		return;
 	}
 
-	tnode = talloc_get_type_abort(node->private_data,
+	tnode = talloc_get_type_abort(node->transport_data,
 				      struct ctdb_tcp_node);
 	if (tnode == NULL) {
 		/* This can't happen - see ctdb_tcp_initialise() */
