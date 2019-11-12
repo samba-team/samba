@@ -277,7 +277,8 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 			      uint16_t flags, void *private_data)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
-	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data, struct ctdb_tcp);
+	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->transport_data,
+						struct ctdb_tcp);
 	ctdb_sock_addr addr;
 	socklen_t len;
 	int fd;
@@ -368,7 +369,7 @@ static void ctdb_listen_event(struct tevent_context *ev, struct tevent_fd *fde,
 */
 static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 {
-	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data,
+	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->transport_data,
 						struct ctdb_tcp);
         ctdb_sock_addr sock;
 	int lock_fd;
@@ -509,7 +510,7 @@ failed:
 */
 int ctdb_tcp_listen(struct ctdb_context *ctdb)
 {
-	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data,
+	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->transport_data,
 						struct ctdb_tcp);
         ctdb_sock_addr sock;
 	int sock_size;

@@ -135,12 +135,12 @@ static void ctdb_tcp_restart(struct ctdb_node *node)
 */
 static void ctdb_tcp_shutdown(struct ctdb_context *ctdb)
 {
-	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->private_data,
+	struct ctdb_tcp *ctcp = talloc_get_type(ctdb->transport_data,
 						struct ctdb_tcp);
 	uint32_t i;
 
 	talloc_free(ctcp);
-	ctdb->private_data = NULL;
+	ctdb->transport_data = NULL;
 
 	for (i=0; i<ctdb->num_nodes; i++) {
 		TALLOC_FREE(ctdb->nodes[i]->transport_data);
@@ -191,7 +191,7 @@ static const struct ctdb_methods ctdb_tcp_methods = {
 
 static int tcp_ctcp_destructor(struct ctdb_tcp *ctcp)
 {
-	ctcp->ctdb->private_data = NULL;
+	ctcp->ctdb->transport_data = NULL;
 	ctcp->ctdb->methods = NULL;
 	
 	return 0;
@@ -209,7 +209,7 @@ int ctdb_tcp_init(struct ctdb_context *ctdb)
 
 	ctcp->listen_fd = -1;
 	ctcp->ctdb      = ctdb;
-	ctdb->private_data = ctcp;
+	ctdb->transport_data = ctcp;
 	ctdb->methods = &ctdb_tcp_methods;
 
 	talloc_set_destructor(ctcp, tcp_ctcp_destructor);
