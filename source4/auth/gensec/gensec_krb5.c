@@ -267,8 +267,7 @@ static NTSTATUS gensec_krb5_common_client_start(struct gensec_security *gensec_s
 }
 
 static NTSTATUS gensec_krb5_common_client_creds(struct gensec_security *gensec_security,
-						struct tevent_context *ev,
-						bool gssapi)
+						struct tevent_context *ev)
 {
 	struct gensec_krb5_state *gensec_krb5_state;
 	krb5_error_code ret;
@@ -518,7 +517,7 @@ static NTSTATUS gensec_krb5_update_internal(struct gensec_security *gensec_secur
 	{
 		DATA_BLOB unwrapped_out;
 		
-		nt_status = gensec_krb5_common_client_creds(gensec_security, ev, gensec_krb5_state->gssapi);
+		nt_status = gensec_krb5_common_client_creds(gensec_security, ev);
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			return nt_status;
 		}
