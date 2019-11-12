@@ -573,7 +573,10 @@ static struct dirent *vfs_gluster_readdir(struct vfs_handle_struct *handle,
 	}
 
 	if (sbuf != NULL) {
-		smb_stat_ex_from_stat(sbuf, &stat);
+		SET_STAT_INVALID(*sbuf);
+		if (!S_ISLNK(stat.st_mode)) {
+			smb_stat_ex_from_stat(sbuf, &stat);
+		}
 	}
 
 	END_PROFILE(syscall_readdir);
