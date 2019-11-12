@@ -286,7 +286,7 @@ struct ctdb_context {
 	char *err_msg;
 	const struct ctdb_methods *methods; /* transport methods */
 	const struct ctdb_upcalls *upcalls; /* transport upcalls */
-	void *private_data; /* private to transport */
+	void *transport_data; /* private to transport */
 	struct ctdb_db_context *db_list;
 	struct srvid_context *srv;
 	struct srvid_context *tunnels;

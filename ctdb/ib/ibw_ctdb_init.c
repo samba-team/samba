@@ -40,7 +40,8 @@
 
 static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
 {
-	struct ibw_ctx *ictx = talloc_get_type(ctdb->private_data, struct ibw_ctx);
+	struct ibw_ctx *ictx = talloc_get_type(ctdb->transport_data,
+					       struct ibw_ctx);
 
 	assert(ictx!=NULL);
 
@@ -62,7 +63,8 @@ static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
  */
 static int ctdb_ibw_add_node(struct ctdb_node *node)
 {
-	struct ibw_ctx *ictx = talloc_get_type(node->ctdb->private_data, struct ibw_ctx);
+	struct ibw_ctx *ictx = talloc_get_type(node->ctdb->transport_data,
+					       struct ibw_ctx);
 	struct ctdb_ibw_node *cn = talloc_zero(node, struct ctdb_ibw_node);
 
 	assert(cn!=NULL);
@@ -246,7 +248,7 @@ int ctdb_ibw_init(struct ctdb_context *ctdb)
 	}
 
 	ctdb->methods = &ctdb_ibw_methods;
-	ctdb->private_data = ictx;
+	ctdb->transport_data = ictx;
 	
 	DEBUG(DEBUG_DEBUG, ("ctdb_ibw_init succeeded.\n"));
 	return 0;
