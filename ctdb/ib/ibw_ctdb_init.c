@@ -67,7 +67,7 @@ static int ctdb_ibw_add_node(struct ctdb_node *node)
 
 	assert(cn!=NULL);
 	cn->conn = ibw_conn_new(ictx, node);
-	node->private_data = (void *)cn;
+	node->transport_data = (void *)cn;
 
 	return (cn->conn!=NULL ? 0 : -1);
 }
@@ -153,7 +153,8 @@ int ctdb_flush_cn_queue(struct ctdb_ibw_node *cn)
 
 static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 {
-	struct ctdb_ibw_node *cn = talloc_get_type(node->private_data, struct ctdb_ibw_node);
+	struct ctdb_ibw_node *cn = talloc_get_type(node->transport_data,
+						   struct ctdb_ibw_node);
 	int	rc;
 
 	assert(length>=sizeof(uint32_t));

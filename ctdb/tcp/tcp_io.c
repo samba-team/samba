@@ -39,7 +39,7 @@ void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 {
 	struct ctdb_node *node = talloc_get_type_abort(args, struct ctdb_node);
 	struct ctdb_tcp_node *tnode = talloc_get_type_abort(
-		node->private_data, struct ctdb_tcp_node);
+		node->transport_data, struct ctdb_tcp_node);
 	struct ctdb_req_header *hdr = (struct ctdb_req_header *)data;
 
 	if (data == NULL) {
@@ -86,7 +86,7 @@ failed:
 */
 int ctdb_tcp_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t length)
 {
-	struct ctdb_tcp_node *tnode = talloc_get_type(node->private_data,
+	struct ctdb_tcp_node *tnode = talloc_get_type(node->transport_data,
 						      struct ctdb_tcp_node);
 	if (tnode->out_queue == NULL) {
 		DBG_DEBUG("No outgoing connection, dropping packet\n");

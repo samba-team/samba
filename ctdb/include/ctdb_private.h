@@ -74,7 +74,7 @@ struct ctdb_node {
 	struct ctdb_context *ctdb;
 	ctdb_sock_addr address;
 	const char *name; /* for debug messages */
-	void *private_data; /* private to transport */
+	void *transport_data; /* private to transport */
 	uint32_t pnn;
 	uint32_t flags;
 

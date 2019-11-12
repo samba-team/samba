@@ -58,7 +58,7 @@ static int ctdb_tcp_add_node(struct ctdb_node *node)
 	tnode->out_fd = -1;
 	tnode->ctdb = node->ctdb;
 
-	node->private_data = tnode;
+	node->transport_data = tnode;
 	talloc_set_destructor(tnode, tnode_destructor);
 
 	return 0;
@@ -97,7 +97,7 @@ static int ctdb_tcp_connect_node(struct ctdb_node *node)
 {
 	struct ctdb_context *ctdb = node->ctdb;
 	struct ctdb_tcp_node *tnode = talloc_get_type(
-		node->private_data, struct ctdb_tcp_node);
+		node->transport_data, struct ctdb_tcp_node);
 
 	/* startup connection to the other server - will happen on
 	   next event loop */
@@ -118,7 +118,7 @@ static int ctdb_tcp_connect_node(struct ctdb_node *node)
 static void ctdb_tcp_restart(struct ctdb_node *node)
 {
 	struct ctdb_tcp_node *tnode = talloc_get_type(
-		node->private_data, struct ctdb_tcp_node);
+		node->transport_data, struct ctdb_tcp_node);
 
 	DEBUG(DEBUG_NOTICE,("Tearing down connection to dead node :%d\n", node->pnn));
 
@@ -143,7 +143,7 @@ static void ctdb_tcp_shutdown(struct ctdb_context *ctdb)
 	ctdb->private_data = NULL;
 
 	for (i=0; i<ctdb->num_nodes; i++) {
-		TALLOC_FREE(ctdb->nodes[i]->private_data);
+		TALLOC_FREE(ctdb->nodes[i]->transport_data);
 	}
 }
 
