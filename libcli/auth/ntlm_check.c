@@ -93,6 +93,7 @@ static bool smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 	uint8_t kr[16];
 	uint8_t value_from_encryption[16];
 	DATA_BLOB client_key_data;
+	NTSTATUS status;
 
 	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));
@@ -125,7 +126,13 @@ static bool smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	SMBOWFencrypt_ntv2(kr, sec_blob, &client_key_data, value_from_encryption);
+	status = SMBOWFencrypt_ntv2(kr,
+				    sec_blob,
+				    &client_key_data,
+				    value_from_encryption);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
 
 #if DEBUG_PASSWORD
 	DEBUG(100,("Part password (P16) was |\n"));
@@ -142,7 +149,6 @@ static bool smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 	data_blob_clear_free(&client_key_data);
 	if (memcmp(value_from_encryption, ntv2_response->data, 16) == 0) { 
 		if (user_sess_key != NULL) {
-			NTSTATUS status;
 			*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
 
 			status = SMBsesskeygen_ntv2(kr,
@@ -202,7 +208,13 @@ static bool smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
-	SMBOWFencrypt_ntv2(kr, sec_blob, &client_key_data, value_from_encryption);
+	status = SMBOWFencrypt_ntv2(kr,
+				    sec_blob,
+				    &client_key_data,
+				    value_from_encryption);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
 	*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
 	status = SMBsesskeygen_ntv2(kr,
 				    value_from_encryption,

@@ -493,6 +493,7 @@ static DATA_BLOB NTLMv2_generate_response(TALLOC_CTX *out_mem_ctx,
 	uint8_t ntlmv2_response[16];
 	DATA_BLOB ntlmv2_client_data;
 	DATA_BLOB final_response;
+	NTSTATUS status;
 
 	TALLOC_CTX *mem_ctx = talloc_named(out_mem_ctx, 0,
 					   "NTLMv2_generate_response internal context");
@@ -507,7 +508,14 @@ static DATA_BLOB NTLMv2_generate_response(TALLOC_CTX *out_mem_ctx,
 	ntlmv2_client_data = NTLMv2_generate_client_data(mem_ctx, nttime, names_blob);
 
 	/* Given that data, and the challenge from the server, generate a response */
-	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, &ntlmv2_client_data, ntlmv2_response);
+	status = SMBOWFencrypt_ntv2(ntlm_v2_hash,
+				    server_chal,
+				    &ntlmv2_client_data,
+				    ntlmv2_response);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(mem_ctx);
+		return data_blob(NULL, 0);
+	}
 
 	final_response = data_blob_talloc(out_mem_ctx, NULL, sizeof(ntlmv2_response) + ntlmv2_client_data.length);
 
@@ -528,13 +536,21 @@ static DATA_BLOB LMv2_generate_response(TALLOC_CTX *mem_ctx,
 	uint8_t lmv2_response[16];
 	DATA_BLOB lmv2_client_data = data_blob_talloc(mem_ctx, NULL, 8);
 	DATA_BLOB final_response = data_blob_talloc(mem_ctx, NULL,24);
+	NTSTATUS status;
 
 	/* LMv2 */
 	/* client-supplied random data */
 	generate_random_buffer(lmv2_client_data.data, lmv2_client_data.length);
 
 	/* Given that data, and the challenge from the server, generate a response */
-	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, &lmv2_client_data, lmv2_response);
+	status = SMBOWFencrypt_ntv2(ntlm_v2_hash,
+				    server_chal,
+				    &lmv2_client_data,
+				    lmv2_response);
+	if (!NT_STATUS_IS_OK(status)) {
+		data_blob_free(&lmv2_client_data);
+		return data_blob(NULL, 0);
+	}
 	memcpy(final_response.data, lmv2_response, sizeof(lmv2_response));
 
 	/* after the first 16 bytes is the random data we generated above,
