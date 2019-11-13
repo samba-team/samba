@@ -62,8 +62,6 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 	} \
 } while (0)
 
-	TLSCHECK(gnutls_global_init());
-
 	DEBUG(0,("Attempting to autogenerate TLS self-signed keys for https for hostname '%s'\n", 
 		 hostname));
 
@@ -150,7 +148,6 @@ void tls_cert_generate(TALLOC_CTX *mem_ctx,
 	gnutls_x509_privkey_deinit(cakey);
 	gnutls_x509_crt_deinit(cacrt);
 	gnutls_x509_crt_deinit(crt);
-	gnutls_global_deinit();
 
 	DEBUG(0,("TLS self-signed keys generated OK\n"));
 	return;

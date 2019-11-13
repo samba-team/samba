@@ -903,12 +903,6 @@ NTSTATUS tstream_tls_params_client(TALLOC_CTX *mem_ctx,
 	struct tstream_tls_params *tlsp;
 	int ret;
 
-	ret = gnutls_global_init();
-	if (ret != GNUTLS_E_SUCCESS) {
-		DEBUG(0,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
-		return NT_STATUS_NOT_SUPPORTED;
-	}
-
 	tlsp = talloc_zero(mem_ctx, struct tstream_tls_params);
 	NT_STATUS_HAVE_NO_MEMORY(tlsp);
 
@@ -1121,12 +1115,6 @@ NTSTATUS tstream_tls_params_server(TALLOC_CTX *mem_ctx,
 
 		*_tlsp = tlsp;
 		return NT_STATUS_OK;
-	}
-
-	ret = gnutls_global_init();
-	if (ret != GNUTLS_E_SUCCESS) {
-		DEBUG(0,("TLS %s - %s\n", __location__, gnutls_strerror(ret)));
-		return NT_STATUS_NOT_SUPPORTED;
 	}
 
 	tlsp = talloc_zero(mem_ctx, struct tstream_tls_params);
