@@ -33,9 +33,9 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
-static void netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *creds,
-				      const struct netr_Credential *in,
-				      struct netr_Credential *out)
+static NTSTATUS netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *creds,
+					  const struct netr_Credential *in,
+					  struct netr_Credential *out)
 {
 	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		memcpy(out->data, in->data, sizeof(out->data));
@@ -44,6 +44,8 @@ static void netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *cre
 	} else {
 		des_crypt112(out->data, in->data, creds->session_key, 1);
 	}
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -178,9 +180,21 @@ static NTSTATUS netlogon_creds_first_step(struct netlogon_creds_CredentialState 
 					  const struct netr_Credential *client_challenge,
 					  const struct netr_Credential *server_challenge)
 {
-	netlogon_creds_step_crypt(creds, client_challenge, &creds->client);
+	NTSTATUS status;
 
-	netlogon_creds_step_crypt(creds, server_challenge, &creds->server);
+	status = netlogon_creds_step_crypt(creds,
+					   client_challenge,
+					   &creds->client);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = netlogon_creds_step_crypt(creds,
+					   server_challenge,
+					   &creds->server);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	creds->seed = creds->client;
 
@@ -204,7 +218,12 @@ static NTSTATUS netlogon_creds_step(struct netlogon_creds_CredentialState *creds
 
 	DEBUG(5,("\tseed+time   %08x:%08x\n", IVAL(time_cred.data, 0), IVAL(time_cred.data, 4)));
 
-	netlogon_creds_step_crypt(creds, &time_cred, &creds->client);
+	status = netlogon_creds_step_crypt(creds,
+					   &time_cred,
+					   &creds->client);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	DEBUG(5,("\tCLIENT      %08x:%08x\n",
 		 IVAL(creds->client.data, 0), IVAL(creds->client.data, 4)));
@@ -215,7 +234,10 @@ static NTSTATUS netlogon_creds_step(struct netlogon_creds_CredentialState *creds
 	DEBUG(5,("\tseed+time+1 %08x:%08x\n",
 		 IVAL(time_cred.data, 0), IVAL(time_cred.data, 4)));
 
-	netlogon_creds_step_crypt(creds, &time_cred, &creds->server);
+	status = netlogon_creds_step_crypt(creds, &time_cred, &creds->server);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	DEBUG(5,("\tSERVER      %08x:%08x\n",
 		 IVAL(creds->server.data, 0), IVAL(creds->server.data, 4)));
