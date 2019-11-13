@@ -370,21 +370,29 @@ void SMBOWFencrypt_ntv2(const uint8_t kr[16],
 #endif
 }
 
-void SMBsesskeygen_ntv2(const uint8_t kr[16],
-			const uint8_t * nt_resp, uint8_t sess_key[16])
+NTSTATUS SMBsesskeygen_ntv2(const uint8_t kr[16],
+			    const uint8_t *nt_resp,
+			    uint8_t sess_key[16])
 {
+	int rc;
+
 	/* a very nice, 128 bit, variable session key */
-	gnutls_hmac_fast(GNUTLS_MAC_MD5,
-			 kr,
-			 16,
-			 nt_resp,
-			 16,
-			 sess_key);
+	rc = gnutls_hmac_fast(GNUTLS_MAC_MD5,
+			      kr,
+			      16,
+			      nt_resp,
+			      16,
+			      sess_key);
+	if (rc != 0) {
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
+	}
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBsesskeygen_ntv2:\n"));
 	dump_data(100, sess_key, 16);
 #endif
+
+	return NT_STATUS_OK;
 }
 
 void SMBsesskeygen_ntv1(const uint8_t kr[16], uint8_t sess_key[16])

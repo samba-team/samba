@@ -139,8 +139,9 @@ void SMBOWFencrypt_ntv2(const uint8_t kr[16],
 			const DATA_BLOB *srv_chal,
 			const DATA_BLOB *smbcli_chal,
 			uint8_t resp_buf[16]);
-void SMBsesskeygen_ntv2(const uint8_t kr[16],
-			const uint8_t * nt_resp, uint8_t sess_key[16]);
+NTSTATUS SMBsesskeygen_ntv2(const uint8_t kr[16],
+			    const uint8_t *nt_resp,
+			    uint8_t sess_key[16]);
 void SMBsesskeygen_ntv1(const uint8_t kr[16], uint8_t sess_key[16]);
 void SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
 			       const uint8_t lm_resp[24], /* only uses 8 */ 
