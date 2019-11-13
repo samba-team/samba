@@ -206,7 +206,6 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 	struct file_id id;
 	TDB_DATA data = { .dptr = pblob->data, .dsize = pblob->length };
 	struct db_context *db = acl_db;
-	struct db_record *rec;
 	NTSTATUS status;
 
 	DEBUG(10,("store_acl_blob_fsp: storing blob length %u on file %s\n",
@@ -221,14 +220,10 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 
 	/* For backwards compatibility only store the dev/inode. */
 	push_file_id_16((char *)id_buf, &id);
-	rec = dbwrap_fetch_locked(db, talloc_tos(),
-				  make_tdb_data(id_buf,
-						sizeof(id_buf)));
-	if (rec == NULL) {
-		DEBUG(0, ("store_acl_blob_fsp_tdb: fetch_lock failed\n"));
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	return dbwrap_record_store(rec, data, 0);
+
+	status = dbwrap_store(
+		db, make_tdb_data(id_buf, sizeof(id_buf)), data, 0);
+	return status;
 }
 
 /*********************************************************************
