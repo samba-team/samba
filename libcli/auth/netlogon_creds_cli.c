@@ -1547,7 +1547,11 @@ struct tevent_req *netlogon_creds_cli_check_send(TALLOC_CTX *mem_ctx,
 	 */
 	tevent_req_defer_callback(req, state->ev);
 
-	netlogon_creds_client_authenticator(state->creds, &state->req_auth);
+	status = netlogon_creds_client_authenticator(state->creds,
+						     &state->req_auth);
+	if (tevent_req_nterror(req, status)) {
+		return tevent_req_post(req, ev);
+	}
 	ZERO_STRUCT(state->rep_auth);
 
 	subreq = dcerpc_netr_LogonGetCapabilities_send(state, state->ev,
@@ -1981,8 +1985,11 @@ static void netlogon_creds_cli_ServerPasswordSet_locked(struct tevent_req *subre
 	tevent_req_defer_callback(req, state->ev);
 
 	state->tmp_creds = *state->creds;
-	netlogon_creds_client_authenticator(&state->tmp_creds,
-					    &state->req_auth);
+	status = netlogon_creds_client_authenticator(&state->tmp_creds,
+						     &state->req_auth);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 	ZERO_STRUCT(state->rep_auth);
 
 	if (state->tmp_creds.negotiate_flags & NETLOGON_NEG_PASSWORD_SET2) {
@@ -2416,8 +2423,12 @@ static void netlogon_creds_cli_LogonSamLogon_start(struct tevent_req *req)
 	}
 
 	state->tmp_creds = *state->lk_creds;
-	netlogon_creds_client_authenticator(&state->tmp_creds,
-					    &state->req_auth);
+	status = netlogon_creds_client_authenticator(&state->tmp_creds,
+						     &state->req_auth);
+	if (tevent_req_nterror(req, status)) {
+		netlogon_creds_cli_LogonSamLogon_cleanup(req, status);
+		return;
+	}
 	ZERO_STRUCT(state->rep_auth);
 
 	state->logon = netlogon_creds_shallow_copy_logon(state,
@@ -2848,8 +2859,11 @@ static void netlogon_creds_cli_DsrUpdateReadOnlyServerDnsRecords_locked(struct t
 	tevent_req_defer_callback(req, state->ev);
 
 	state->tmp_creds = *state->creds;
-	netlogon_creds_client_authenticator(&state->tmp_creds,
-					    &state->req_auth);
+	status = netlogon_creds_client_authenticator(&state->tmp_creds,
+						     &state->req_auth);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 	ZERO_STRUCT(state->rep_auth);
 
 	subreq = dcerpc_netr_DsrUpdateReadOnlyServerDnsRecords_send(state, state->ev,
@@ -3100,8 +3114,11 @@ static void netlogon_creds_cli_ServerGetTrustInfo_locked(struct tevent_req *subr
 	tevent_req_defer_callback(req, state->ev);
 
 	state->tmp_creds = *state->creds;
-	netlogon_creds_client_authenticator(&state->tmp_creds,
-					    &state->req_auth);
+	status = netlogon_creds_client_authenticator(&state->tmp_creds,
+						     &state->req_auth);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 	ZERO_STRUCT(state->rep_auth);
 
 	subreq = dcerpc_netr_ServerGetTrustInfo_send(state, state->ev,
@@ -3402,8 +3419,11 @@ static void netlogon_creds_cli_GetForestTrustInformation_locked(struct tevent_re
 	tevent_req_defer_callback(req, state->ev);
 
 	state->tmp_creds = *state->creds;
-	netlogon_creds_client_authenticator(&state->tmp_creds,
-					    &state->req_auth);
+	status = netlogon_creds_client_authenticator(&state->tmp_creds,
+						     &state->req_auth);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 	ZERO_STRUCT(state->rep_auth);
 
 	subreq = dcerpc_netr_GetForestTrustInformation_send(state, state->ev,
@@ -3679,8 +3699,11 @@ static void netlogon_creds_cli_SendToSam_locked(struct tevent_req *subreq)
 	tevent_req_defer_callback(req, state->ev);
 
 	state->tmp_creds = *state->creds;
-	netlogon_creds_client_authenticator(&state->tmp_creds,
-					    &state->req_auth);
+	status = netlogon_creds_client_authenticator(&state->tmp_creds,
+						     &state->req_auth);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 	ZERO_STRUCT(state->rep_auth);
 
 	if (state->tmp_creds.negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
@@ -3944,8 +3967,11 @@ static void netlogon_creds_cli_LogonGetDomainInfo_locked(struct tevent_req *subr
 	tevent_req_defer_callback(req, state->ev);
 
 	state->tmp_creds = *state->creds;
-	netlogon_creds_client_authenticator(&state->tmp_creds,
-					    &state->req_auth);
+	status = netlogon_creds_client_authenticator(&state->tmp_creds,
+						     &state->req_auth);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
 	ZERO_STRUCT(state->rep_auth);
 
 	subreq = dcerpc_netr_LogonGetDomainInfo_send(state, state->ev,
