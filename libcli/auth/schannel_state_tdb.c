@@ -236,6 +236,7 @@ NTSTATUS schannel_get_creds_state(TALLOC_CTX *mem_ctx,
 
 	db_sc = open_schannel_session_store(tmpctx, lp_ctx);
 	if (!db_sc) {
+		TALLOC_FREE(tmpctx);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
