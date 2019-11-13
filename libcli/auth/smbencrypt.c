@@ -551,6 +551,7 @@ bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 			   DATA_BLOB *lm_session_key, DATA_BLOB *user_session_key)
 {
 	uint8_t ntlm_v2_hash[16];
+	NTSTATUS status;
 
 	/* We don't use the NT# directly.  Instead we use it mashed up with
 	   the username and domain.
@@ -580,7 +581,12 @@ bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 
 			/* The NTLMv2 calculations also provide a session key, for signing etc later */
 			/* use only the first 16 bytes of nt_response for session key */
-			SMBsesskeygen_ntv2(ntlm_v2_hash, nt_response->data, user_session_key->data);
+			status = SMBsesskeygen_ntv2(ntlm_v2_hash,
+						    nt_response->data,
+						    user_session_key->data);
+			if (!NT_STATUS_IS_OK(status)) {
+				return false;
+			}
 		}
 	}
 
@@ -599,7 +605,12 @@ bool SMBNTLMv2encrypt_hash(TALLOC_CTX *mem_ctx,
 
 			/* The NTLMv2 calculations also provide a session key, for signing etc later */
 			/* use only the first 16 bytes of lm_response for session key */
-			SMBsesskeygen_ntv2(ntlm_v2_hash, lm_response->data, lm_session_key->data);
+			status = SMBsesskeygen_ntv2(ntlm_v2_hash,
+						    lm_response->data,
+						    lm_session_key->data);
+			if (!NT_STATUS_IS_OK(status)) {
+				return false;
+			}
 		}
 	}
 
