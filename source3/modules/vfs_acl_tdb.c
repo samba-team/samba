@@ -204,7 +204,7 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 {
 	uint8_t id_buf[16];
 	struct file_id id;
-	TDB_DATA data;
+	TDB_DATA data = { .dptr = pblob->data, .dsize = pblob->length };
 	struct db_context *db = acl_db;
 	struct db_record *rec;
 	NTSTATUS status;
@@ -228,8 +228,6 @@ static NTSTATUS store_acl_blob_fsp(vfs_handle_struct *handle,
 		DEBUG(0, ("store_acl_blob_fsp_tdb: fetch_lock failed\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-	data.dptr = pblob->data;
-	data.dsize = pblob->length;
 	return dbwrap_record_store(rec, data, 0);
 }
 
