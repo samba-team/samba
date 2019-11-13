@@ -191,9 +191,10 @@ static NTSTATUS netlogon_creds_first_step(struct netlogon_creds_CredentialState 
   step the credentials to the next element in the chain, updating the
   current client and server credentials and the seed
 */
-static void netlogon_creds_step(struct netlogon_creds_CredentialState *creds)
+static NTSTATUS netlogon_creds_step(struct netlogon_creds_CredentialState *creds)
 {
 	struct netr_Credential time_cred;
+	NTSTATUS status;
 
 	DEBUG(5,("\tseed        %08x:%08x\n",
 		 IVAL(creds->seed.data, 0), IVAL(creds->seed.data, 4)));
@@ -220,6 +221,8 @@ static void netlogon_creds_step(struct netlogon_creds_CredentialState *creds)
 		 IVAL(creds->server.data, 0), IVAL(creds->server.data, 4)));
 
 	creds->seed = time_cred;
+
+	return NT_STATUS_OK;
 }
 
 
@@ -518,6 +521,7 @@ netlogon_creds_client_authenticator(struct netlogon_creds_CredentialState *creds
 				    struct netr_Authenticator *next)
 {
 	uint32_t t32n = (uint32_t)time(NULL);
+	NTSTATUS status;
 
 	/*
 	 * we always increment and ignore an overflow here
@@ -540,7 +544,10 @@ netlogon_creds_client_authenticator(struct netlogon_creds_CredentialState *creds
 		}
 	}
 
-	netlogon_creds_step(creds);
+	status = netlogon_creds_step(creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	next->cred = creds->client;
 	next->timestamp = creds->sequence;
@@ -686,6 +693,8 @@ NTSTATUS netlogon_creds_server_step_check(struct netlogon_creds_CredentialState 
 				 const struct netr_Authenticator *received_authenticator,
 				 struct netr_Authenticator *return_authenticator)
 {
+	NTSTATUS status;
+
 	if (!received_authenticator || !return_authenticator) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -695,7 +704,12 @@ NTSTATUS netlogon_creds_server_step_check(struct netlogon_creds_CredentialState 
 	}
 
 	creds->sequence = received_authenticator->timestamp;
-	netlogon_creds_step(creds);
+	status = netlogon_creds_step(creds);
+	if (!NT_STATUS_IS_OK(status)) {
+		ZERO_STRUCTP(return_authenticator);
+		return status;
+	}
+
 	if (netlogon_creds_server_check_internal(creds, &received_authenticator->cred)) {
 		return_authenticator->cred = creds->server;
 		return_authenticator->timestamp = 0;
