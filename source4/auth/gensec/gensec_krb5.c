@@ -107,17 +107,12 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	gensec_krb5_state = talloc(gensec_security, struct gensec_krb5_state);
+	gensec_krb5_state = talloc_zero(gensec_security, struct gensec_krb5_state);
 	if (!gensec_krb5_state) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	gensec_security->private_data = gensec_krb5_state;
-	gensec_krb5_state->smb_krb5_context = NULL;
-	gensec_krb5_state->auth_context = NULL;
-	gensec_krb5_state->ticket = NULL;
-	ZERO_STRUCT(gensec_krb5_state->enc_ticket);
-	gensec_krb5_state->keyblock = NULL;
 	gensec_krb5_state->gssapi = gssapi;
 
 	talloc_set_destructor(gensec_krb5_state, gensec_krb5_destroy); 
