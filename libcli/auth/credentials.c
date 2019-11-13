@@ -174,15 +174,17 @@ static NTSTATUS netlogon_creds_init_hmac_sha256(struct netlogon_creds_Credential
 	return NT_STATUS_OK;
 }
 
-static void netlogon_creds_first_step(struct netlogon_creds_CredentialState *creds,
-				      const struct netr_Credential *client_challenge,
-				      const struct netr_Credential *server_challenge)
+static NTSTATUS netlogon_creds_first_step(struct netlogon_creds_CredentialState *creds,
+					  const struct netr_Credential *client_challenge,
+					  const struct netr_Credential *server_challenge)
 {
 	netlogon_creds_step_crypt(creds, client_challenge, &creds->client);
 
 	netlogon_creds_step_crypt(creds, server_challenge, &creds->server);
 
 	creds->seed = creds->client;
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -470,7 +472,13 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 		}
 	}
 
-	netlogon_creds_first_step(creds, client_challenge, server_challenge);
+	status = netlogon_creds_first_step(creds,
+					   client_challenge,
+					   server_challenge);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(creds);
+		return NULL;
+	}
 
 	dump_data_pw("Session key", creds->session_key, 16);
 	dump_data_pw("Credential ", creds->client.data, 8);
@@ -643,7 +651,13 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 		}
 	}
 
-	netlogon_creds_first_step(creds, client_challenge, server_challenge);
+	status = netlogon_creds_first_step(creds,
+					   client_challenge,
+					   server_challenge);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(creds);
+		return NULL;
+	}
 
 	dump_data_pw("Session key", creds->session_key, 16);
 	dump_data_pw("Client Credential ", creds->client.data, 8);
