@@ -40,8 +40,9 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 								  uint32_t negotiate_flags);
 struct netlogon_creds_CredentialState *netlogon_creds_client_init_session_key(TALLOC_CTX *mem_ctx, 
 									      const uint8_t session_key[16]);
-void netlogon_creds_client_authenticator(struct netlogon_creds_CredentialState *creds,
-				struct netr_Authenticator *next);
+NTSTATUS
+netlogon_creds_client_authenticator(struct netlogon_creds_CredentialState *creds,
+				    struct netr_Authenticator *next);
 bool netlogon_creds_client_check(struct netlogon_creds_CredentialState *creds,
 			const struct netr_Credential *received_credentials);
 struct netlogon_creds_CredentialState *netlogon_creds_copy(

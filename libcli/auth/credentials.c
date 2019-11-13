@@ -513,8 +513,9 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init_session_key(TA
   produce the next authenticator in the sequence ready to send to
   the server
 */
-void netlogon_creds_client_authenticator(struct netlogon_creds_CredentialState *creds,
-				struct netr_Authenticator *next)
+NTSTATUS
+netlogon_creds_client_authenticator(struct netlogon_creds_CredentialState *creds,
+				    struct netr_Authenticator *next)
 {
 	uint32_t t32n = (uint32_t)time(NULL);
 
@@ -543,6 +544,8 @@ void netlogon_creds_client_authenticator(struct netlogon_creds_CredentialState *
 
 	next->cred = creds->client;
 	next->timestamp = creds->sequence;
+
+	return NT_STATUS_OK;
 }
 
 /*
