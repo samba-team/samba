@@ -334,12 +334,13 @@ void SMBNTencrypt(const char *passwd, const uint8_t *c8, uint8_t *p24)
 
 
 /* Does the md5 encryption from the Key Response for NTLMv2. */
-void SMBOWFencrypt_ntv2(const uint8_t kr[16],
-			const DATA_BLOB *srv_chal,
-			const DATA_BLOB *smbcli_chal,
-			uint8_t resp_buf[16])
+NTSTATUS SMBOWFencrypt_ntv2(const uint8_t kr[16],
+			    const DATA_BLOB *srv_chal,
+			    const DATA_BLOB *smbcli_chal,
+			    uint8_t resp_buf[16])
 {
 	gnutls_hmac_hd_t hmac_hnd = NULL;
+	NTSTATUS status;
 	int rc;
 
 	rc = gnutls_hmac_init(&hmac_hnd,
@@ -347,20 +348,19 @@ void SMBOWFencrypt_ntv2(const uint8_t kr[16],
 			      kr,
 			      16);
 	if (rc < 0) {
-		return;
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
 	}
 
 	rc = gnutls_hmac(hmac_hnd, srv_chal->data, srv_chal->length);
 	if (rc < 0) {
-		return;
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+		goto out;
 	}
 	rc = gnutls_hmac(hmac_hnd, smbcli_chal->data, smbcli_chal->length);
 	if (rc < 0) {
-		gnutls_hmac_deinit(hmac_hnd, NULL);
-		return;
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+		goto out;
 	}
-
-	gnutls_hmac_deinit(hmac_hnd, resp_buf);
 
 #ifdef DEBUG_PASSWORD
 	DEBUG(100, ("SMBOWFencrypt_ntv2: srv_chal, smbcli_chal, resp_buf\n"));
@@ -368,6 +368,11 @@ void SMBOWFencrypt_ntv2(const uint8_t kr[16],
 	dump_data(100, smbcli_chal->data, smbcli_chal->length);
 	dump_data(100, resp_buf, 16);
 #endif
+
+	status = NT_STATUS_OK;
+out:
+	gnutls_hmac_deinit(hmac_hnd, resp_buf);
+	return status;
 }
 
 NTSTATUS SMBsesskeygen_ntv2(const uint8_t kr[16],

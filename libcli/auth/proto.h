@@ -135,10 +135,10 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 void SMBOWFencrypt(const uint8_t passwd[16], const uint8_t *c8, uint8_t p24[24]);
 void SMBNTencrypt_hash(const uint8_t nt_hash[16], const uint8_t *c8, uint8_t *p24);
 void SMBNTencrypt(const char *passwd, const uint8_t *c8, uint8_t *p24);
-void SMBOWFencrypt_ntv2(const uint8_t kr[16],
-			const DATA_BLOB *srv_chal,
-			const DATA_BLOB *smbcli_chal,
-			uint8_t resp_buf[16]);
+NTSTATUS SMBOWFencrypt_ntv2(const uint8_t kr[16],
+			    const DATA_BLOB *srv_chal,
+			    const DATA_BLOB *smbcli_chal,
+			    uint8_t resp_buf[16]);
 NTSTATUS SMBsesskeygen_ntv2(const uint8_t kr[16],
 			    const uint8_t *nt_resp,
 			    uint8_t sess_key[16]);
