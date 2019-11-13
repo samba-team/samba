@@ -834,8 +834,6 @@ static bool test_RestoreGUID_ko(struct torture_context *tctx,
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
 
-	gnutls_global_init();
-
 	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 
 	if (auth_level == DCERPC_AUTH_LEVEL_PRIVACY) {
@@ -853,8 +851,6 @@ static bool test_RestoreGUID_ko(struct torture_context *tctx,
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
 
-	gnutls_global_deinit();
-
 	return true;
 }
 
@@ -867,8 +863,6 @@ static bool test_RestoreGUID_wrongversion(struct torture_context *tctx,
 	struct bkrp_client_side_unwrapped resp;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
-
-	gnutls_global_init();
 
 	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 
@@ -887,8 +881,6 @@ static bool test_RestoreGUID_wrongversion(struct torture_context *tctx,
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
 
-	gnutls_global_deinit();
-
 	return true;
 }
 
@@ -901,8 +893,6 @@ static bool test_RestoreGUID_wronguser(struct torture_context *tctx,
 	struct bkrp_client_side_unwrapped resp;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
-
-	gnutls_global_init();
 
 	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 
@@ -921,8 +911,6 @@ static bool test_RestoreGUID_wronguser(struct torture_context *tctx,
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
 
-	gnutls_global_deinit();
-
 	return true;
 }
 
@@ -935,8 +923,6 @@ static bool test_RestoreGUID_v3(struct torture_context *tctx,
 	struct bkrp_client_side_unwrapped resp;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
-
-	gnutls_global_init();
 
 	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 
@@ -956,8 +942,6 @@ static bool test_RestoreGUID_v3(struct torture_context *tctx,
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
 
-	gnutls_global_deinit();
-
 	return true;
 }
 
@@ -969,8 +953,6 @@ static bool test_RestoreGUID(struct torture_context *tctx,
 	struct bkrp_client_side_unwrapped resp;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
-
-	gnutls_global_init();
 
 	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 
@@ -993,8 +975,6 @@ static bool test_RestoreGUID(struct torture_context *tctx,
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
 
-	gnutls_global_deinit();
-
 	return true;
 }
 
@@ -1007,8 +987,6 @@ static bool test_RestoreGUID_badmagiconsecret(struct torture_context *tctx,
 	struct bkrp_client_side_unwrapped resp;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
-
-	gnutls_global_init();
 
 	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 
@@ -1027,8 +1005,6 @@ static bool test_RestoreGUID_badmagiconsecret(struct torture_context *tctx,
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
 
-	gnutls_global_deinit();
-
 	return true;
 }
 
@@ -1039,8 +1015,6 @@ static bool test_RestoreGUID_emptyrequest(struct torture_context *tctx,
 	DATA_BLOB out_blob;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
-
-	gnutls_global_init();
 
 	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 
@@ -1061,8 +1035,6 @@ static bool test_RestoreGUID_emptyrequest(struct torture_context *tctx,
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
 
-	gnutls_global_deinit();
-
 	return true;
 }
 
@@ -1075,8 +1047,6 @@ static bool test_RestoreGUID_badcertguid(struct torture_context *tctx,
 	struct bkrp_client_side_unwrapped resp;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
-
-	gnutls_global_init();
 
 	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 
@@ -1102,8 +1072,6 @@ static bool test_RestoreGUID_badcertguid(struct torture_context *tctx,
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
 
-	gnutls_global_deinit();
-
 	return true;
 }
 
@@ -1116,8 +1084,6 @@ static bool test_RestoreGUID_badmagicaccesscheck(struct torture_context *tctx,
 	struct bkrp_client_side_unwrapped resp;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
-
-	gnutls_global_init();
 
 	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 
@@ -1136,8 +1102,6 @@ static bool test_RestoreGUID_badmagicaccesscheck(struct torture_context *tctx,
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
 
-	gnutls_global_deinit();
-
 	return true;
 }
 
@@ -1150,8 +1114,6 @@ static bool test_RestoreGUID_badhashaccesscheck(struct torture_context *tctx,
 	struct bkrp_client_side_unwrapped resp;
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
-
-	gnutls_global_init();
 
 	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 
@@ -1170,8 +1132,6 @@ static bool test_RestoreGUID_badhashaccesscheck(struct torture_context *tctx,
 			NT_STATUS_ACCESS_DENIED, "Get GUID");
 	}
 
-	gnutls_global_init();
-
 	return true;
 }
 
@@ -1186,8 +1146,6 @@ static bool test_RetrieveBackupKeyGUID_validate(struct torture_context *tctx,
 	struct bkrp_BackupKey *r = createRetrieveBackupKeyGUIDStruct(tctx, p, 2, &out_blob);
 	enum dcerpc_AuthType auth_type;
 	enum dcerpc_AuthLevel auth_level;
-
-	gnutls_global_init();
 
 	torture_assert(tctx, r != NULL, "test_RetrieveBackupKeyGUID_validate failed");
 
@@ -1375,8 +1333,6 @@ static bool test_RetrieveBackupKeyGUID_validate(struct torture_context *tctx,
 						NT_STATUS_ACCESS_DENIED,
 						"Get GUID");
 	}
-
-	gnutls_global_deinit();
 
 	return true;
 }
@@ -2091,8 +2047,6 @@ static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 	enum dcerpc_AuthLevel auth_level;
 	ZERO_STRUCT(r);
 
-	gnutls_global_init();
-
 	dcerpc_binding_handle_auth_info(b, &auth_type, &auth_level);
 
 	/* Encrypt */
@@ -2267,8 +2221,6 @@ static bool test_ServerWrap_decrypt_wrong_stuff(struct torture_context *tctx,
 					  WERR_INVALID_PARAMETER,
 					  "decrypt should fail with WERR_INVALID_PARAMETER");
 	}
-
-	gnutls_global_deinit();
 
 	return true;
 }
