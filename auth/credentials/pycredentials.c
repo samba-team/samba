@@ -832,6 +832,7 @@ static PyObject *py_creds_new_client_authenticator(PyObject *self,
 	struct cli_credentials *creds = NULL;
 	struct netlogon_creds_CredentialState *nc = NULL;
 	PyObject *ret = NULL;
+	NTSTATUS status;
 
 	creds = PyCredentials_AsCliCredentials(self);
 	if (creds == NULL) {
@@ -848,9 +849,13 @@ static PyObject *py_creds_new_client_authenticator(PyObject *self,
 		return NULL;
 	}
 
-	netlogon_creds_client_authenticator(
-		nc,
-		&auth);
+	status = netlogon_creds_client_authenticator(nc, &auth);
+	if (!NT_STATUS_IS_OK(status)) {
+		PyErr_SetString(PyExc_ValueError,
+				"Failed to create client authenticator");
+		return NULL;
+	}
+
 	ret = Py_BuildValue("{s"PYARG_BYTES_LEN"si}",
 			    "credential",
 			    (const char *) &auth.cred, sizeof(auth.cred),
