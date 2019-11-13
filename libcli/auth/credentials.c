@@ -51,10 +51,10 @@ static void netlogon_creds_step_crypt(struct netlogon_creds_CredentialState *cre
 
   this call is made after the netr_ServerReqChallenge call
 */
-static void netlogon_creds_init_64bit(struct netlogon_creds_CredentialState *creds,
-				      const struct netr_Credential *client_challenge,
-				      const struct netr_Credential *server_challenge,
-				      const struct samr_Password *machine_password)
+static NTSTATUS netlogon_creds_init_64bit(struct netlogon_creds_CredentialState *creds,
+					 const struct netr_Credential *client_challenge,
+					 const struct netr_Credential *server_challenge,
+					 const struct samr_Password *machine_password)
 {
 	uint32_t sum[2];
 	uint8_t sum2[8];
@@ -68,6 +68,8 @@ static void netlogon_creds_init_64bit(struct netlogon_creds_CredentialState *cre
 	ZERO_ARRAY(creds->session_key);
 
 	des_crypt128(creds->session_key, sum2, machine_password->hash);
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -458,7 +460,14 @@ struct netlogon_creds_CredentialState *netlogon_creds_client_init(TALLOC_CTX *me
 			return NULL;
 		}
 	} else {
-		netlogon_creds_init_64bit(creds, client_challenge, server_challenge, machine_password);
+		status = netlogon_creds_init_64bit(creds,
+						   client_challenge,
+						   server_challenge,
+						   machine_password);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(creds);
+			return NULL;
+		}
 	}
 
 	netlogon_creds_first_step(creds, client_challenge, server_challenge);
@@ -624,8 +633,14 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 			return NULL;
 		}
 	} else {
-		netlogon_creds_init_64bit(creds, client_challenge, server_challenge,
-					  machine_password);
+		status = netlogon_creds_init_64bit(creds,
+						   client_challenge,
+						   server_challenge,
+						   machine_password);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(creds);
+			return NULL;
+		}
 	}
 
 	netlogon_creds_first_step(creds, client_challenge, server_challenge);
