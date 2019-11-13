@@ -456,10 +456,16 @@ static void continue_bind_auth(struct composite_context *ctx)
 	/* if we have a AES encrypted connection, verify the capabilities */
 	if (ndr_syntax_id_equal(&s->table->syntax_id,
 				&ndr_table_netlogon.syntax_id)) {
+		NTSTATUS status;
 		ZERO_STRUCT(s->return_auth);
 
 		s->save_creds_state = *s->creds_state;
-		netlogon_creds_client_authenticator(&s->save_creds_state, &s->auth);
+		status = netlogon_creds_client_authenticator(&s->save_creds_state,
+							     &s->auth);
+		if (!NT_STATUS_IS_OK(status)) {
+			composite_error(c, status);
+			return;
+		}
 
 		s->c.in.server_name = talloc_asprintf(c,
 						      "\\\\%s",
