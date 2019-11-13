@@ -1802,8 +1802,6 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 	/* At which level we start to add more debug of what is done in the protocol */
 	const int debuglevel = 4;
 
-	gnutls_global_init();
-
 	if (DEBUGLVL(debuglevel)) {
 		const struct tsocket_address *remote_address;
 		remote_address = dcesrv_connection_get_remote_address(dce_call->conn);
@@ -1856,7 +1854,6 @@ static WERROR dcesrv_bkrp_BackupKey(struct dcesrv_call_state *dce_call,
 	}
 	/*else: I am a RODC so I don't handle backup key protocol */
 
-	gnutls_global_deinit();
 	talloc_unlink(mem_ctx, ldb_ctx);
 	return error;
 }
