@@ -90,24 +90,6 @@ static void disconnect_acl_tdb(struct vfs_handle_struct *handle)
 }
 
 /*******************************************************************
- Fetch_lock the tdb acl record for a file
-*******************************************************************/
-
-static struct db_record *acl_tdb_lock(TALLOC_CTX *mem_ctx,
-					struct db_context *db,
-					const struct file_id *id)
-{
-	uint8_t id_buf[16];
-
-	/* For backwards compatibility only store the dev/inode. */
-	push_file_id_16((char *)id_buf, id);
-	return dbwrap_fetch_locked(db,
-				   mem_ctx,
-				   make_tdb_data(id_buf,
-						 sizeof(id_buf)));
-}
-
-/*******************************************************************
  Delete the tdb acl record for a file
 *******************************************************************/
 
@@ -117,20 +99,12 @@ static NTSTATUS acl_tdb_delete(vfs_handle_struct *handle,
 {
 	NTSTATUS status;
 	struct file_id id = vfs_file_id_from_sbuf(handle->conn, psbuf);
-	struct db_record *rec = acl_tdb_lock(talloc_tos(), db, &id);
+	uint8_t id_buf[16];
 
-	/*
-	 * If rec == NULL there's not much we can do about it
-	 */
+	/* For backwards compatibility only store the dev/inode. */
+	push_file_id_16((char *)id_buf, &id);
 
-	if (rec == NULL) {
-		DEBUG(10,("acl_tdb_delete: rec == NULL\n"));
-		TALLOC_FREE(rec);
-		return NT_STATUS_OK;
-	}
-
-	status = dbwrap_record_delete(rec);
-	TALLOC_FREE(rec);
+	status = dbwrap_delete(db, make_tdb_data(id_buf, sizeof(id_buf)));
 	return status;
 }
 
