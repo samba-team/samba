@@ -129,6 +129,10 @@ const struct ndr_interface_table *ndr_table_by_name(const char *name)
 const struct ndr_interface_table *ndr_table_by_syntax(const struct ndr_syntax_id *syntax)
 {
 	const struct ndr_interface_list *l;
+	if (GUID_all_zero(&syntax->uuid)) {
+		/* These are not unique */
+		return NULL;
+	}
 	for (l=ndr_table_list();l;l=l->next) {
 		if (ndr_syntax_id_equal(&l->table->syntax_id, syntax)) {
 			return l->table;
@@ -143,6 +147,10 @@ const struct ndr_interface_table *ndr_table_by_syntax(const struct ndr_syntax_id
 const struct ndr_interface_table *ndr_table_by_uuid(const struct GUID *uuid)
 {
 	const struct ndr_interface_list *l;
+	if (GUID_all_zero(uuid)) {
+		/* These are not unique */
+		return NULL;
+	}
 	for (l=ndr_table_list();l;l=l->next) {
 		if (GUID_equal(&l->table->syntax_id.uuid, uuid)) {
 			return l->table;
