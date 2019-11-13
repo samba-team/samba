@@ -243,9 +243,18 @@ enum nwrap_dbglvl_e {
 	NWRAP_LOG_TRACE
 };
 
-#ifdef NDEBUG
-# define NWRAP_LOG(...)
+#ifndef HAVE_GETPROGNAME
+static const char *getprogname(void)
+{
+#if defined(HAVE_PROGRAM_INVOCATION_SHORT_NAME)
+	return program_invocation_short_name;
+#elif defined(HAVE_GETEXECNAME)
+	return getexecname();
 #else
+	return NULL;
+#endif /* HAVE_PROGRAM_INVOCATION_SHORT_NAME */
+}
+#endif /* HAVE_GETPROGNAME */
 
 static void nwrap_log(enum nwrap_dbglvl_e dbglvl, const char *func, const char *format, ...) PRINTF_ATTRIBUTE(3, 4);
 # define NWRAP_LOG(dbglvl, ...) nwrap_log((dbglvl), __func__, __VA_ARGS__)
@@ -258,43 +267,49 @@ static void nwrap_log(enum nwrap_dbglvl_e dbglvl,
 	va_list va;
 	const char *d;
 	unsigned int lvl = 0;
-	int pid = getpid();
+	const char *prefix = "NWRAP";
+	const char *progname = getprogname();
 
 	d = getenv("NSS_WRAPPER_DEBUGLEVEL");
 	if (d != NULL) {
 		lvl = atoi(d);
 	}
 
+	if (lvl < dbglvl) {
+		return;
+	}
+
 	va_start(va, format);
 	vsnprintf(buffer, sizeof(buffer), format, va);
 	va_end(va);
 
-	if (lvl >= dbglvl) {
-		switch (dbglvl) {
-			case NWRAP_LOG_ERROR:
-				fprintf(stderr,
-					"NWRAP_ERROR(%d) - %s: %s\n",
-					pid, func, buffer);
-				break;
-			case NWRAP_LOG_WARN:
-				fprintf(stderr,
-					"NWRAP_WARN(%d) - %s: %s\n",
-					pid, func, buffer);
-				break;
-			case NWRAP_LOG_DEBUG:
-				fprintf(stderr,
-					"NWRAP_DEBUG(%d) - %s: %s\n",
-					pid, func, buffer);
-				break;
-			case NWRAP_LOG_TRACE:
-				fprintf(stderr,
-					"NWRAP_TRACE(%d) - %s: %s\n",
-					pid, func, buffer);
-				break;
-		}
+	switch (dbglvl) {
+		case NWRAP_LOG_ERROR:
+			prefix = "NWRAP_ERROR";
+			break;
+		case NWRAP_LOG_WARN:
+			prefix = "NWRAP_WARN";
+			break;
+		case NWRAP_LOG_DEBUG:
+			prefix = "NWRAP_DEBUG";
+			break;
+		case NWRAP_LOG_TRACE:
+			prefix = "NWRAP_TRACE";
+			break;
 	}
+
+	if (progname == NULL) {
+		progname = "<unknown>";
+	}
+
+	fprintf(stderr,
+		"%s[%s (%u)] - %s: %s\n",
+		prefix,
+		progname,
+		(unsigned int)getpid(),
+		func,
+		buffer);
 }
-#endif /* NDEBUG NWRAP_LOG */
 
 struct nwrap_libc_fns {
 	struct passwd *(*_libc_getpwnam)(const char *name);
@@ -824,7 +839,6 @@ enum nwrap_lib {
     NWRAP_LIBSOCKET,
 };
 
-#ifndef NDEBUG
 static const char *nwrap_str_lib(enum nwrap_lib lib)
 {
 	switch (lib) {
@@ -839,7 +853,6 @@ static const char *nwrap_str_lib(enum nwrap_lib lib)
 	/* Compiler would warn us about unhandled enum value if we get here */
 	return "unknown";
 }
-#endif
 
 static void *nwrap_load_lib_handle(enum nwrap_lib lib)
 {
@@ -848,14 +861,24 @@ static void *nwrap_load_lib_handle(enum nwrap_lib lib)
 	int i;
 
 #ifdef RTLD_DEEPBIND
-	const char *env = getenv("LD_PRELOAD");
+	const char *env_preload = getenv("LD_PRELOAD");
+	const char *env_deepbind = getenv("NSS_WRAPPER_DISABLE_DEEPBIND");
+	bool enable_deepbind = true;
 
 	/* Don't do a deepbind if we run with libasan */
-	if (env != NULL && strlen(env) < 1024) {
-		const char *p = strstr(env, "libasan.so");
-		if (p == NULL) {
-			flags |= RTLD_DEEPBIND;
+	if (env_preload != NULL && strlen(env_preload) < 1024) {
+		const char *p = strstr(env_preload, "libasan.so");
+		if (p != NULL) {
+			enable_deepbind = false;
 		}
+	}
+
+	if (env_deepbind != NULL && strlen(env_deepbind) >= 1) {
+		enable_deepbind = false;
+	}
+
+	if (enable_deepbind) {
+		flags |= RTLD_DEEPBIND;
 	}
 #endif
 
