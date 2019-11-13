@@ -1995,9 +1995,13 @@ static void netlogon_creds_cli_ServerPasswordSet_locked(struct tevent_req *subre
 	if (state->tmp_creds.negotiate_flags & NETLOGON_NEG_PASSWORD_SET2) {
 
 		if (state->tmp_creds.negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-			netlogon_creds_aes_encrypt(&state->tmp_creds,
-					state->samr_crypt_password.data,
-					516);
+			status = netlogon_creds_aes_encrypt(&state->tmp_creds,
+							    state->samr_crypt_password.data,
+							    516);
+			if (tevent_req_nterror(req, status)) {
+				netlogon_creds_cli_ServerPasswordSet_cleanup(req, status);
+				return;
+			}
 		} else {
 			status = netlogon_creds_arcfour_crypt(&state->tmp_creds,
 							      state->samr_crypt_password.data,
@@ -3707,9 +3711,13 @@ static void netlogon_creds_cli_SendToSam_locked(struct tevent_req *subreq)
 	ZERO_STRUCT(state->rep_auth);
 
 	if (state->tmp_creds.negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		netlogon_creds_aes_encrypt(&state->tmp_creds,
-					   state->opaque.data,
-					   state->opaque.length);
+		status = netlogon_creds_aes_encrypt(&state->tmp_creds,
+						    state->opaque.data,
+						    state->opaque.length);
+		if (tevent_req_nterror(req, status)) {
+			netlogon_creds_cli_SendToSam_cleanup(req, status);
+			return;
+		}
 	} else {
 		status = netlogon_creds_arcfour_crypt(&state->tmp_creds,
 						      state->opaque.data,

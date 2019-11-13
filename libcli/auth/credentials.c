@@ -37,10 +37,16 @@ static NTSTATUS netlogon_creds_step_crypt(struct netlogon_creds_CredentialState 
 					  const struct netr_Credential *in,
 					  struct netr_Credential *out)
 {
+	NTSTATUS status;
 	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		memcpy(out->data, in->data, sizeof(out->data));
 
-		netlogon_creds_aes_encrypt(creds, out->data, sizeof(out->data));
+		status = netlogon_creds_aes_encrypt(creds,
+						    out->data,
+						    sizeof(out->data));
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	} else {
 		des_crypt112(out->data, in->data, creds->session_key, 1);
 	}
