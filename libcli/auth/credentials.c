@@ -580,6 +580,8 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 {
 
 	struct netlogon_creds_CredentialState *creds = talloc_zero(mem_ctx, struct netlogon_creds_CredentialState);
+	NTSTATUS status;
+
 
 	if (!creds) {
 		return NULL;
@@ -604,8 +606,6 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 	}
 
 	if (negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
-		NTSTATUS status;
-
 		status = netlogon_creds_init_hmac_sha256(creds,
 							 client_challenge,
 							 server_challenge,
@@ -615,8 +615,14 @@ struct netlogon_creds_CredentialState *netlogon_creds_server_init(TALLOC_CTX *me
 			return NULL;
 		}
 	} else if (negotiate_flags & NETLOGON_NEG_STRONG_KEYS) {
-		netlogon_creds_init_128bit(creds, client_challenge, server_challenge,
-					   machine_password);
+		status = netlogon_creds_init_128bit(creds,
+						    client_challenge,
+						    server_challenge,
+						    machine_password);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(creds);
+			return NULL;
+		}
 	} else {
 		netlogon_creds_init_64bit(creds, client_challenge, server_challenge,
 					  machine_password);
