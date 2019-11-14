@@ -66,6 +66,7 @@ static const struct ndr_interface_call *find_struct(
 	struct ndr_interface_call *out_buffer)
 {
 	unsigned int i;
+	const struct ndr_interface_public_struct *public_struct = NULL;
 	if (isdigit(struct_name[0])) {
 		char *eptr = NULL;
 		i = strtoul(struct_name, &eptr, 0);
@@ -76,23 +77,25 @@ static const struct ndr_interface_call *find_struct(
 			       struct_name);
 			exit(1);
 		}
-		return &p->calls[i];
-	}
-	for (i=0;i<p->num_public_structs;i++) {
-		if (strcmp(p->public_structs[i].name, struct_name) == 0) {
-			break;
+		public_struct = &p->public_structs[i];
+	} else {
+		for (i=0;i<p->num_public_structs;i++) {
+			if (strcmp(p->public_structs[i].name, struct_name) == 0) {
+				break;
+			}
 		}
-	}
-	if (i == p->num_public_structs) {
-		printf("Public structure '%s' not found\n", struct_name);
-		exit(1);
+		if (i == p->num_public_structs) {
+			printf("Public structure '%s' not found\n", struct_name);
+			exit(1);
+		}
+		public_struct = &p->public_structs[i];
 	}
 	*out_buffer = (struct ndr_interface_call) {
-		.name = p->public_structs[i].name,
-		.struct_size = p->public_structs[i].struct_size,
-		.ndr_pull = p->public_structs[i].ndr_pull,
-		.ndr_push = p->public_structs[i].ndr_push,
-		.ndr_print = p->public_structs[i].ndr_print
+		.name = public_struct->name,
+		.struct_size = public_struct->struct_size,
+		.ndr_pull = public_struct->ndr_pull,
+		.ndr_push = public_struct->ndr_push,
+		.ndr_print = public_struct->ndr_print
 	};
 	return out_buffer;
 }
