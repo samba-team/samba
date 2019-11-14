@@ -94,3 +94,19 @@ class NdrDumpTests(BlackboxTestCase):
         self.assertEqual(actual[:len(expected)],
                          expected.encode('utf-8'))
         self.assertTrue(actual.endswith(b"dump OK\n"))
+
+    def test_ndrdump_with_binary_struct_number(self):
+        expected = '''pull returned NT_STATUS_OK
+    0                        : 33323130-3534-3736-3839-616263646566
+dump OK
+'''
+        try:
+            actual = self.check_output(
+                "ndrdump misc 0 struct %s" %
+                self.data_path("misc-GUID.dat"))
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertEqual(actual, expected.encode('utf-8'))

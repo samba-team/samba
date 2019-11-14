@@ -11,6 +11,12 @@
 ]
 interface misc
 {
+	/*
+	 * While structures are not normally known by their order,
+	 * please keep this as the first struct, we use this for a
+	 * test of 'ndrdump misc 0 struct' (this helps debug failures
+	 * from our NDR fuzzing tool, which doesn't use string names)
+	 */
 	typedef [public,noprint,gensize] struct {
 		uint32 time_low;
 		uint16 time_mid;
