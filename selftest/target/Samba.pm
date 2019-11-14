@@ -116,7 +116,10 @@ sub setup_env($$$)
 
 	my $setup_name = $ENV_TARGETS{$envname}."::setup_".$envname;
 	my $setup_sub = \&$setup_name;
+	my $setup_pcap_file = $self->setup_pcap("env-$ENV{ENVNAME}-setup");
 	my $env = &$setup_sub($target, "$path/$envname", @dep_vars);
+	$self->cleanup_pcap($setup_pcap_file, not defined($env));
+	SocketWrapper::setup_pcap(undef);
 
 	if (not defined($env)) {
 		warn("failed to start up environment '$envname'");
