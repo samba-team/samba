@@ -641,8 +641,6 @@ sub ParseElementPushLevel
 				$self->pidl("NDR_CHECK(ndr_push_array_$nl->{DATA_TYPE}($ndr, $ndr_flags, $var_name, $length));");
 				return;
 			} 
-		} elsif ($l->{TYPE} eq "SWITCH") {
-			$self->ParseSwitchPush($e, $l, $ndr, $var_name, $env);
 		} elsif ($l->{TYPE} eq "DATA") {
 			$self->ParseDataPush($e, $l, $ndr, $var_name, $primitives, $deferred);
 		} elsif ($l->{TYPE} eq "TYPEDEF") {
@@ -703,6 +701,14 @@ sub ParseElementPushLevel
 			$self->pidl("}");
 		}
 	} elsif ($l->{TYPE} eq "SWITCH") {
+		my $nl = GetNextLevel($e,$l);
+		my $needs_deferred_switch = is_deferred_switch_non_empty($nl);
+
+		# Avoid setting a switch value if it will not be
+		# consumed again in the NDR_BUFFERS pull
+		if ($needs_deferred_switch or !$deferred) {
+			$self->ParseSwitchPush($e, $l, $ndr, $var_name, $env);
+		}
 		$self->ParseElementPushLevel($e, GetNextLevel($e, $l), $ndr, $var_name, $env, $primitives, $deferred);
 	}
 }
@@ -1168,8 +1174,6 @@ sub ParseElementPullLevel
 			}
 		} elsif ($l->{TYPE} eq "POINTER") {
 			$self->ParsePtrPull($e, $l, $ndr, $var_name);
-		} elsif ($l->{TYPE} eq "SWITCH") {
-			$self->ParseSwitchPull($e, $l, $ndr, $var_name, $env);
 		} elsif ($l->{TYPE} eq "DATA") {
 			$self->ParseDataPull($e, $l, $ndr, $var_name, $primitives, $deferred);
 		} elsif ($l->{TYPE} eq "TYPEDEF") {
@@ -1254,7 +1258,15 @@ sub ParseElementPullLevel
 		$self->ParseMemCtxPullEnd($e, $l, $ndr);
 
 	} elsif ($l->{TYPE} eq "SWITCH") {
-		$self->ParseElementPullLevel($e, GetNextLevel($e,$l), $ndr, $var_name, $env, $primitives, $deferred);
+		my $nl = GetNextLevel($e,$l);
+		my $needs_deferred_switch = is_deferred_switch_non_empty($nl);
+
+		# Avoid setting a switch value if it will not be
+		# consumed again in the NDR_BUFFERS pull
+		if ($needs_deferred_switch or !$deferred) {
+			$self->ParseSwitchPull($e, $l, $ndr, $var_name, $env);
+		}
+		$self->ParseElementPullLevel($e, $nl, $ndr, $var_name, $env, $primitives, $deferred);
 	}
 }
 
@@ -1872,8 +1884,6 @@ sub ParseUnionPushPrimitives($$$$)
 
 	my $have_default = 0;
 
-	$self->pidl("uint32_t level = ndr_push_get_switch_value($ndr, $varname);");
-
 	if (defined($e->{SWITCH_TYPE})) {
 		if (defined($e->{ALIGN})) {
 			$self->pidl("NDR_CHECK(ndr_push_union_align($ndr, $e->{ALIGN}));");
@@ -1930,7 +1940,6 @@ sub ParseUnionPushDeferred($$$$)
 
 	my $have_default = 0;
 
-	$self->pidl("uint32_t level = ndr_push_get_switch_value($ndr, $varname);");
 	if (defined($e->{PROPERTIES}{relative_base})) {
 		# retrieve the current offset as base for relative pointers
 		# based on the toplevel struct/union
@@ -1967,17 +1976,28 @@ sub ParseUnionPush($$$$)
 	my ($self,$e,$ndr,$varname) = @_;
 	my $have_default = 0;
 
+	$self->pidl("uint32_t level;");
 	$self->start_flags($e, $ndr);
 
 	$self->pidl("NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);");
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
+	$self->pidl("/* This token is not used again (except perhaps below in the NDR_BUFFERS case) */");
+	$self->pidl("level = ndr_push_steal_switch_value($ndr, $varname);");
+
 	$self->ParseUnionPushPrimitives($e, $ndr, $varname);
 	$self->deindent;
 	$self->pidl("}");
         if (is_deferred_switch_non_empty($e)) {
                 $self->pidl("if (ndr_flags & NDR_BUFFERS) {");
                 $self->indent;
+                # In case we had ndr_flags of NDR_SCALERS|NDR_BUFFERS
+                $self->pidl("if (!(ndr_flags & NDR_SCALARS)) {");
+                $self->indent;
+                $self->pidl("/* We didn't get it above, and the token is not needed after this. */");
+                $self->pidl("level = ndr_push_steal_switch_value($ndr, $varname);");
+                $self->deindent;
+                $self->pidl("}");
                 $self->ParseUnionPushDeferred($e, $ndr, $varname);
                 $self->deindent;
                 $self->pidl("}");
@@ -2150,20 +2170,21 @@ sub ParseUnionPull($$$$)
 	$self->pidl("NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);");
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
-	if (! $needs_deferred_switch) {
-		$self->pidl("/* This token is not used again */");
-		$self->pidl("level = ndr_pull_steal_switch_value($ndr, $varname);");
-	} else {
-		$self->pidl("level = ndr_pull_get_switch_value($ndr, $varname);");
-	}
+	$self->pidl("/* This token is not used again (except perhaps below in the NDR_BUFFERS case) */");
+	$self->pidl("level = ndr_pull_steal_switch_value($ndr, $varname);");
 	$self->ParseUnionPullPrimitives($e,$ndr,$varname,$switch_type);
 	$self->deindent;
 	$self->pidl("}");
 	if ($needs_deferred_switch) {
 		$self->pidl("if (ndr_flags & NDR_BUFFERS) {");
 		$self->indent;
-		$self->pidl("/* The token is not needed after this. */");
+		# In case we had ndr_flags of NDR_SCALERS|NDR_BUFFERS
+		$self->pidl("if (!(ndr_flags & NDR_SCALARS)) {");
+		$self->indent;
+		$self->pidl("/* We didn't get it above, and the token is not needed after this. */");
 		$self->pidl("level = ndr_pull_steal_switch_value($ndr, $varname);");
+		$self->deindent;
+		$self->pidl("}");
 		$self->ParseUnionPullDeferred($e,$ndr,$varname);
 		$self->deindent;
 		$self->pidl("}");
