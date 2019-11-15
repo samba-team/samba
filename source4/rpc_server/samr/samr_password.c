@@ -599,10 +599,9 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 
 	nt_status = dcesrv_transport_session_key(dce_call, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(3,("samr: failed to get session key: %s "
-			 "=> NT_STATUS_WRONG_PASSWORD\n",
-			nt_errstr(nt_status)));
-		return NT_STATUS_WRONG_PASSWORD;
+		DBG_NOTICE("samr: failed to get session key: %s\n",
+			   nt_errstr(nt_status));
+		return nt_status;
 	}
 
 	_session_key = (gnutls_datum_t) {
