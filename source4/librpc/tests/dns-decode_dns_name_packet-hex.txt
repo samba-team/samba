@@ -1,4 +1,4 @@
-pull returned NT_STATUS_OK
+pull returned Success
     dns_name_packet: struct dns_name_packet
         id                       : 0xecef (60655)
         operation                : 0x2800 (10240)

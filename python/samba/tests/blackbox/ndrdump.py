@@ -77,7 +77,7 @@ class NdrDumpTests(BlackboxTestCase):
     def test_ndrdump_with_binary_struct_name(self):
         # Prefix of the expected unparsed PAC data (without times, as
         # these vary by host)
-        expected = '''pull returned NT_STATUS_OK
+        expected = '''pull returned Success
     PAC_DATA: struct PAC_DATA
         num_buffers              : 0x00000005 (5)
         version                  : 0x00000000 (0)
@@ -96,7 +96,7 @@ class NdrDumpTests(BlackboxTestCase):
         self.assertTrue(actual.endswith(b"dump OK\n"))
 
     def test_ndrdump_with_binary_struct_number(self):
-        expected = '''pull returned NT_STATUS_OK
+        expected = '''pull returned Success
     0                        : 33323130-3534-3736-3839-616263646566
 dump OK
 '''

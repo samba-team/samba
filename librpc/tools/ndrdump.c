@@ -193,7 +193,6 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 				struct ndr_print *ndr_print,
 				const struct ndr_interface_call_pipes *pipes)
 {
-	NTSTATUS status;
 	enum ndr_err_code ndr_err;
 	uint32_t i;
 
@@ -221,12 +220,12 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 			ndr_pull->current_mem_ctx = c;
 			ndr_err = pipes->pipes[i].ndr_pull(ndr_pull, NDR_SCALARS, c);
 			ndr_pull->current_mem_ctx = saved_mem_ctx;
-			status = ndr_map_error2ntstatus(ndr_err);
 
-			printf("pull returned %s\n", nt_errstr(status));
-			if (!NT_STATUS_IS_OK(status)) {
+			printf("pull returned %s\n",
+			       ndr_map_error2string(ndr_err));
+			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				talloc_free(c);
-				return status;
+				return ndr_map_error2ntstatus(ndr_err);
 			}
 			pipes->pipes[i].ndr_print(ndr_print, n, c);
 			talloc_free(c);
@@ -467,8 +466,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		}
 
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-			status = ndr_map_error2ntstatus(ndr_err);
-			printf("pull for context file returned %s\n", nt_errstr(status));
+			printf("pull for context file returned %s\n",
+			       ndr_map_error2string(ndr_err));
 			exit(1);
 		}
 		memcpy(v_st, st, f->struct_size);
@@ -513,10 +512,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	ndr_print->depth = 1;
 
 	ndr_err = ndr_pop_dcerpc_sec_verification_trailer(ndr_pull, mem_ctx, &sec_vt);
-	status = ndr_map_error2ntstatus(ndr_err);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		printf("ndr_pop_dcerpc_sec_verification_trailer returned %s\n",
-		       nt_errstr(status));
+		       ndr_map_error2string(ndr_err));
 	}
 
 	if (sec_vt != NULL && sec_vt->count.count > 0) {
@@ -543,11 +541,10 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 
 	ndr_err = f->ndr_pull(ndr_pull, flags, st);
-	status = ndr_map_error2ntstatus(ndr_err);
+	printf("pull returned %s\n",
+	       ndr_map_error2string(ndr_err));
 
-	printf("pull returned %s\n", nt_errstr(status));
-
-	if (stop_on_parse_failure  && !NT_STATUS_IS_OK(status)) {
+	if (stop_on_parse_failure && !NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		printf("not printing because --stop-on-parse-failure\n");
 		exit(1);
 	}
@@ -571,11 +568,6 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 
 	f->ndr_print(ndr_print, format, flags, st);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("dump FAILED\n");
-		exit(1);
-	}
 
 	if (flags & NDR_IN) {
 		status = ndrdump_pull_and_print_pipes(format,
@@ -631,8 +623,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		ndr_v_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 		ndr_err = f->ndr_pull(ndr_v_pull, flags, v_st);
-		status = ndr_map_error2ntstatus(ndr_err);
-		printf("pull returned %s\n", nt_errstr(status));
+		printf("pull returned %s\n",
+		       ndr_map_error2string(ndr_err));
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			printf("validate pull FAILED\n");
 			exit(1);
