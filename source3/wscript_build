@@ -786,7 +786,10 @@ bld.SAMBA3_SUBSYSTEM('LEASES_UTIL',
 if bld.CONFIG_GET("WITH_PROFILE"):
     bld.SAMBA3_SUBSYSTEM('PROFILE',
                          source='profile/profile.c',
-                         deps='samba-util')
+                         deps='''
+                              samba-util
+                              gnutls
+                              ''')
 else:
     bld.SAMBA3_SUBSYSTEM('PROFILE',
                          source='profile/profile_dummy.c',
