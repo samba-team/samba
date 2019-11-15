@@ -4540,6 +4540,78 @@ done:
 	return ret;
 }
 
+static bool torture_rpc_lsa_over_netlogon(struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	bool ret = false;
+	struct smbcli_options options;
+	struct smb2_tree *tree;
+	struct dcerpc_pipe *netlogon_pipe;
+	struct dcerpc_binding_handle *lsa_handle;
+	struct lsa_ObjectAttribute attr;
+	struct lsa_QosInfo qos;
+	struct lsa_OpenPolicy2 o;
+	struct policy_handle handle;
+
+	torture_comment(torture, "Testing if we can access LSA server over "
+			"\\\\pipe\\netlogon rather than \\\\pipe\\lsarpc\n");
+
+	mem_ctx = talloc_init("torture_samba3_rpc_lsa_over_netlogon");
+	torture_assert(torture, (mem_ctx != NULL), "talloc_init failed");
+
+	lpcfg_smbcli_options(torture->lp_ctx, &options);
+
+	status = smb2_connect(mem_ctx,
+			      torture_setting_string(torture, "host", NULL),
+			      lpcfg_smb_ports(torture->lp_ctx),
+			      "IPC$",
+			      lpcfg_resolve_context(torture->lp_ctx),
+			      popt_get_cmdline_credentials(),
+			      &tree,
+			      torture->ev,
+			      &options,
+			      lpcfg_socket_options(torture->lp_ctx),
+			      lpcfg_gensec_settings(torture, torture->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_connect failed");
+
+	status = pipe_bind_smb2(torture, mem_ctx, tree, "netlogon",
+			        &ndr_table_lsarpc, &netlogon_pipe);
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"pipe_bind_smb2 failed");
+	lsa_handle = netlogon_pipe->binding_handle;
+
+	qos.len = 0;
+	qos.impersonation_level = 2;
+	qos.context_mode = 1;
+	qos.effective_only = 0;
+
+	attr.len = 0;
+	attr.root_dir = NULL;
+	attr.object_name = NULL;
+	attr.attributes = 0;
+	attr.sec_desc = NULL;
+	attr.sec_qos = &qos;
+
+	o.in.system_name = "\\";
+	o.in.attr = &attr;
+	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	o.out.handle = &handle;
+
+	torture_assert_ntstatus_ok(torture,
+			dcerpc_lsa_OpenPolicy2_r(lsa_handle, torture, &o),
+			"OpenPolicy2 failed");
+	torture_assert_ntstatus_ok(torture,
+				   o.out.result,
+				   "OpenPolicy2 failed");
+
+	ret = true;
+ done:
+	talloc_free(mem_ctx);
+	return ret;
+}
 
 struct torture_suite *torture_rpc_samba3(TALLOC_CTX *mem_ctx)
 {
@@ -4567,6 +4639,9 @@ struct torture_suite *torture_rpc_samba3(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite, "smb2-pipe-read-close", torture_rpc_smb2_pipe_read_close);
 	torture_suite_add_simple_test(suite, "smb2-pipe-read-tdis", torture_rpc_smb2_pipe_read_tdis);
 	torture_suite_add_simple_test(suite, "smb2-pipe-read-logoff", torture_rpc_smb2_pipe_read_logoff);
+	torture_suite_add_simple_test(suite,
+				      "lsa_over_netlogon",
+				      torture_rpc_lsa_over_netlogon);
 
 	suite->description = talloc_strdup(suite, "samba3 DCERPC interface tests");
 
