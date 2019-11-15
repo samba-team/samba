@@ -36,6 +36,17 @@
 
 #define NDR_BASE_MARSHALL_SIZE 1024
 
+/*
+ * This value is arbitary, but designed to reduce the memory a client
+ * can allocate and the work the client can force in processing a
+ * malicious packet.
+ *
+ * In an ideal world this would be controlled by range() restrictions
+ * on array sizes and careful IDL construction to avoid arbitary
+ * linked lists, but this is a backstop for now.
+ */
+#define NDR_TOKEN_MAX_LIST_SIZE 65535
+
 /* this guid indicates NDR encoding in a protocol tower */
 const struct ndr_syntax_id ndr_transfer_syntax_ndr = {
   { 0x8a885d04, 0x1ceb, 0x11c9, {0x9f, 0xe8}, {0x08,0x00,0x2b,0x10,0x48,0x60} },
@@ -974,8 +985,21 @@ _PUBLIC_ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
 	} else {
 		struct ndr_token *new_tokens = NULL;
 		uint32_t alloc_count = talloc_array_length(list->tokens);
+
+		/*
+		 * Check every time we have not allocated too many
+		 * tokens.  This ensures developer sanity when
+		 * debugging the boundary condition
+		 */
+		if (list->count >= NDR_TOKEN_MAX_LIST_SIZE) {
+			return NDR_ERR_RANGE;
+		}
 		if (list->count == alloc_count) {
 			unsigned new_alloc;
+			/*
+			 * Double the list, until we start in chunks
+			 * of 1000
+			 */
 			unsigned increment = MIN(list->count, 1000);
 			new_alloc = alloc_count + increment;
 			if (new_alloc < alloc_count) {
@@ -1059,9 +1083,16 @@ _PUBLIC_ uint32_t ndr_token_peek(struct ndr_token_list *list, const void *key)
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_array_size(struct ndr_pull *ndr, const void *p)
 {
+	enum ndr_err_code ret;
 	uint32_t size;
 	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &size));
-	return ndr_token_store(ndr, &ndr->array_size_list, p, size);
+	ret = ndr_token_store(ndr, &ndr->array_size_list, p, size);
+	if (ret == NDR_ERR_RANGE) {
+		return ndr_pull_error(ndr, ret,
+				      "More than %d NDR tokens stored for array_size",
+				      NDR_TOKEN_MAX_LIST_SIZE);
+	}
+	return ret;
 }
 
 /*
@@ -1092,6 +1123,7 @@ _PUBLIC_ enum ndr_err_code ndr_check_array_size(struct ndr_pull *ndr, void *p, u
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_array_length(struct ndr_pull *ndr, const void *p)
 {
+	enum ndr_err_code ret;
 	uint32_t length, offset;
 	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &offset));
 	if (offset != 0) {
@@ -1099,7 +1131,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_array_length(struct ndr_pull *ndr, const voi
 				      "non-zero array offset %u\n", offset);
 	}
 	NDR_CHECK(ndr_pull_uint3264(ndr, NDR_SCALARS, &length));
-	return ndr_token_store(ndr, &ndr->array_length_list, p, length);
+	ret = ndr_token_store(ndr, &ndr->array_length_list, p, length);
+	if (ret == NDR_ERR_RANGE) {
+		return ndr_pull_error(ndr, ret,
+				      "More than %d NDR tokens stored for array_length_list",
+				      NDR_TOKEN_MAX_LIST_SIZE);
+	}
+	return ret;
 }
 
 /*
@@ -1164,12 +1202,27 @@ _PUBLIC_ enum ndr_err_code ndr_check_pipe_chunk_trailer(struct ndr_pull *ndr, in
  */
 _PUBLIC_ enum ndr_err_code ndr_push_set_switch_value(struct ndr_push *ndr, const void *p, uint32_t val)
 {
-	return ndr_token_store(ndr, &ndr->switch_list, p, val);
+	enum ndr_err_code ret =
+		ndr_token_store(ndr, &ndr->switch_list, p, val);
+	if (ret == NDR_ERR_RANGE) {
+		return ndr_push_error(ndr, ret,
+				      "More than %d NDR tokens stored for switch_list",
+				      NDR_TOKEN_MAX_LIST_SIZE);
+	}
+	return ret;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_pull_set_switch_value(struct ndr_pull *ndr, const void *p, uint32_t val)
 {
-	return ndr_token_store(ndr, &ndr->switch_list, p, val);
+
+	enum ndr_err_code ret =
+		ndr_token_store(ndr, &ndr->switch_list, p, val);
+	if (ret == NDR_ERR_RANGE) {
+		return ndr_pull_error(ndr, ret,
+				      "More than %d NDR tokens stored for switch_list",
+				      NDR_TOKEN_MAX_LIST_SIZE);
+	}
+	return ret;
 }
 
 _PUBLIC_ enum ndr_err_code ndr_print_set_switch_value(struct ndr_print *ndr, const void *p, uint32_t val)
@@ -1482,8 +1535,15 @@ _PUBLIC_ void ndr_push_restore_relative_base_offset(struct ndr_push *ndr, uint32
 */
 _PUBLIC_ enum ndr_err_code ndr_push_setup_relative_base_offset1(struct ndr_push *ndr, const void *p, uint32_t offset)
 {
+	enum ndr_err_code ret;
 	ndr->relative_base_offset = offset;
-	return ndr_token_store(ndr, &ndr->relative_base_list, p, offset);
+	ret = ndr_token_store(ndr, &ndr->relative_base_list, p, offset);
+	if (ret == NDR_ERR_RANGE) {
+		return ndr_push_error(ndr, ret,
+				      "More than %d NDR tokens stored for relative_base_list",
+				      NDR_TOKEN_MAX_LIST_SIZE);
+	}
+	return ret;
 }
 
 /*
@@ -1501,12 +1561,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_setup_relative_base_offset2(struct ndr_push 
 */
 _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr1(struct ndr_push *ndr, const void *p)
 {
+	enum ndr_err_code ret;
 	if (p == NULL) {
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		return NDR_ERR_SUCCESS;
 	}
 	NDR_CHECK(ndr_push_align(ndr, 4));
-	NDR_CHECK(ndr_token_store(ndr, &ndr->relative_list, p, ndr->offset));
+	ret = ndr_token_store(ndr, &ndr->relative_list, p, ndr->offset);
+	if (ret == NDR_ERR_RANGE) {
+		return ndr_push_error(ndr, ret,
+				      "More than %d NDR tokens stored for relative_list",
+				      NDR_TOKEN_MAX_LIST_SIZE);
+	}
+	NDR_CHECK(ret);
 	return ndr_push_uint32(ndr, NDR_SCALARS, 0xFFFFFFFF);
 }
 
@@ -1516,12 +1583,19 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr1(struct ndr_push *ndr, const vo
 */
 _PUBLIC_ enum ndr_err_code ndr_push_short_relative_ptr1(struct ndr_push *ndr, const void *p)
 {
+	enum ndr_err_code ret;
 	if (p == NULL) {
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, 0));
 		return NDR_ERR_SUCCESS;
 	}
 	NDR_CHECK(ndr_push_align(ndr, 2));
-	NDR_CHECK(ndr_token_store(ndr, &ndr->relative_list, p, ndr->offset));
+	ret = ndr_token_store(ndr, &ndr->relative_list, p, ndr->offset);
+	if (ret == NDR_ERR_RANGE) {
+		return ndr_push_error(ndr, ret,
+				      "More than %d NDR tokens stored for relative_list",
+				      NDR_TOKEN_MAX_LIST_SIZE);
+	}
+	NDR_CHECK(ret);
 	return ndr_push_uint16(ndr, NDR_SCALARS, 0xFFFF);
 }
 /*
@@ -1617,6 +1691,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_short_relative_ptr2(struct ndr_push *ndr, co
 */
 _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_start(struct ndr_push *ndr, const void *p)
 {
+	enum ndr_err_code ret;
 	if (p == NULL) {
 		return NDR_ERR_SUCCESS;
 	}
@@ -1655,8 +1730,16 @@ _PUBLIC_ enum ndr_err_code ndr_push_relative_ptr2_start(struct ndr_push *ndr, co
 			      "ndr_push_relative_ptr2_start RELATIVE_REVERSE flag set and relative_end_offset %d",
 			      ndr->relative_end_offset);
 	}
-	NDR_CHECK(ndr_token_store(ndr, &ndr->relative_begin_list, p, ndr->offset));
-	return NDR_ERR_SUCCESS;
+	ret = ndr_token_store(ndr,
+			      &ndr->relative_begin_list,
+			      p,
+			      ndr->offset);
+	if (ret == NDR_ERR_RANGE) {
+		return ndr_push_error(ndr, ret,
+				      "More than %d NDR tokens stored for array_size",
+				      NDR_TOKEN_MAX_LIST_SIZE);
+	}
+	return ret;
 }
 
 /*
@@ -1786,8 +1869,15 @@ _PUBLIC_ void ndr_pull_restore_relative_base_offset(struct ndr_pull *ndr, uint32
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_setup_relative_base_offset1(struct ndr_pull *ndr, const void *p, uint32_t offset)
 {
+	enum ndr_err_code ret;
 	ndr->relative_base_offset = offset;
-	return ndr_token_store(ndr, &ndr->relative_base_list, p, offset);
+	ret = ndr_token_store(ndr, &ndr->relative_base_list, p, offset);
+	if (ret == NDR_ERR_RANGE) {
+		return ndr_pull_error(ndr, ret,
+				      "More than %d NDR tokens stored for relative_base_list",
+				      NDR_TOKEN_MAX_LIST_SIZE);
+	}
+	return ret;
 }
 
 /*
@@ -1805,13 +1895,20 @@ _PUBLIC_ enum ndr_err_code ndr_pull_setup_relative_base_offset2(struct ndr_pull 
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr1(struct ndr_pull *ndr, const void *p, uint32_t rel_offset)
 {
+	enum ndr_err_code ret;
 	rel_offset += ndr->relative_base_offset;
 	if (rel_offset > ndr->data_size) {
 		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,
 				      "ndr_pull_relative_ptr1 rel_offset(%u) > ndr->data_size(%u)",
 				      rel_offset, ndr->data_size);
 	}
-	return ndr_token_store(ndr, &ndr->relative_list, p, rel_offset);
+	ret = ndr_token_store(ndr, &ndr->relative_list, p, rel_offset);
+	if (ret == NDR_ERR_RANGE) {
+		return ndr_pull_error(ndr, ret,
+				      "More than %d NDR tokens stored for relative_list",
+				      NDR_TOKEN_MAX_LIST_SIZE);
+	}
+	return ret;
 }
 
 /*
