@@ -31,6 +31,8 @@
 #include "../lib/util/util_ldb.h"
 #include "rpc_server/samr/proto.h"
 #include "auth/auth_sam.h"
+#include "lib/param/loadparm.h"
+#include "librpc/rpc/dcerpc_helper.h"
 
 #include "lib/crypto/gnutls_helpers.h"
 #include <gnutls/gnutls.h>
@@ -129,6 +131,8 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	struct dom_sid *user_objectSid = NULL;
 	gnutls_cipher_hd_t cipher_hnd = NULL;
 	gnutls_datum_t lm_session_key;
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
+	bool encrypted;
 	int rc;
 
 	if (pwbuf == NULL) {
@@ -142,6 +146,12 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	/* this call can only work with lanman auth */
 	if (!lpcfg_lanman_auth(dce_call->conn->dce_ctx->lp_ctx)) {
 		return NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER;
+	}
+
+	encrypted = dcerpc_is_transport_encrypted(session_info);
+	if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED &&
+	    !encrypted) {
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Connect to a SAMDB with system privileges for fetching the old pw
@@ -188,11 +198,13 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 		.size = sizeof(lm_pwd->hash),
 	};
 
+	GNUTLS_FIPS140_SET_LAX_MODE();
 	rc = gnutls_cipher_init(&cipher_hnd,
 				GNUTLS_CIPHER_ARCFOUR_128,
 				&lm_session_key,
 				NULL);
 	if (rc < 0) {
+		GNUTLS_FIPS140_SET_STRICT_MODE();
 		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		goto failed;
 	}
@@ -201,6 +213,7 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 				   pwbuf->data,
 				   516);
 	gnutls_cipher_deinit(cipher_hnd);
+	GNUTLS_FIPS140_SET_STRICT_MODE();
 	if (rc < 0) {
 		status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		goto failed;
@@ -607,7 +620,17 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	gnutls_cipher_hd_t cipher_hnd = NULL;
 	gnutls_datum_t _session_key;
+	struct auth_session_info *session_info =
+		dcesrv_call_session_info(dce_call);
+	struct loadparm_context *lp_ctx = dce_call->conn->dce_ctx->lp_ctx;
 	int rc;
+	bool encrypted;
+
+	encrypted = dcerpc_is_transport_encrypted(session_info);
+	if (lpcfg_weak_crypto(lp_ctx) == SAMBA_WEAK_CRYPTO_DISALLOWED &&
+	    !encrypted) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	nt_status = dcesrv_transport_session_key(dce_call, &session_key);
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -621,11 +644,17 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 		.size = session_key.length,
 	};
 
+	/*
+	 * This is safe to support as we only have a session key
+	 * over a SMB connection which we force to be encrypted.
+	 */
+	GNUTLS_FIPS140_SET_LAX_MODE();
 	rc = gnutls_cipher_init(&cipher_hnd,
 				GNUTLS_CIPHER_ARCFOUR_128,
 				&_session_key,
 				NULL);
 	if (rc < 0) {
+		GNUTLS_FIPS140_SET_STRICT_MODE();
 		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		goto out;
 	}
@@ -634,6 +663,7 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 				   pwbuf->data,
 				   516);
 	gnutls_cipher_deinit(cipher_hnd);
+	GNUTLS_FIPS140_SET_STRICT_MODE();
 	if (rc < 0) {
 		nt_status = gnutls_error_to_ntstatus(rc, NT_STATUS_CRYPTO_SYSTEM_INVALID);
 		goto out;
