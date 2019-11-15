@@ -39,12 +39,28 @@
 #include "../librpc/gen_ndr/srv_svcctl.h"
 #include "../librpc/gen_ndr/srv_wkssvc.h"
 
+#include "librpc/gen_ndr/ndr_winreg_scompat.h"
+#include "librpc/gen_ndr/ndr_srvsvc_scompat.h"
+#include "librpc/gen_ndr/ndr_lsa_scompat.h"
+#include "librpc/gen_ndr/ndr_samr_scompat.h"
+#include "librpc/gen_ndr/ndr_netlogon_scompat.h"
+#include "librpc/gen_ndr/ndr_dfs_scompat.h"
+#include "librpc/gen_ndr/ndr_echo_scompat.h"
+#include "librpc/gen_ndr/ndr_dssetup_scompat.h"
+#include "librpc/gen_ndr/ndr_wkssvc_scompat.h"
+#include "librpc/gen_ndr/ndr_spoolss_scompat.h"
+#include "librpc/gen_ndr/ndr_svcctl_scompat.h"
+#include "librpc/gen_ndr/ndr_ntsvcs_scompat.h"
+#include "librpc/gen_ndr/ndr_eventlog_scompat.h"
+#include "librpc/gen_ndr/ndr_initshutdown_scompat.h"
+
 #include "printing/nt_printing_migrate_internal.h"
 #include "rpc_server/eventlog/srv_eventlog_reg.h"
 #include "rpc_server/svcctl/srv_svcctl_reg.h"
 #include "rpc_server/spoolss/srv_spoolss_nt.h"
 #include "rpc_server/svcctl/srv_svcctl_nt.h"
 
+#include "librpc/rpc/dcesrv_core.h"
 #include "librpc/rpc/dcerpc_ep.h"
 #include "rpc_server/rpc_sock_helper.h"
 #include "rpc_server/rpc_service_setup.h"
@@ -105,10 +121,26 @@ static NTSTATUS rpc_setup_winreg(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_winreg;
 	const char *pipe_name = "winreg";
 	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = winreg_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'winreg' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server: "
+			"%s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	status = rpc_winreg_init(NULL);
@@ -130,10 +162,26 @@ static NTSTATUS rpc_setup_srvsvc(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_srvsvc;
 	const char *pipe_name = "srvsvc";
 	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = srvsvc_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'srvsvc' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server: "
+			"%s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	status = rpc_srvsvc_init(NULL);
@@ -156,11 +204,27 @@ static NTSTATUS rpc_setup_lsarpc(struct tevent_context *ev_ctx,
 	const char *pipe_name = "lsarpc";
 	enum rpc_daemon_type_e lsasd_type = rpc_lsasd_daemon();
 	NTSTATUS status;
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	/* Register the endpoint server in DCERPC core */
+	ep_server = lsarpc_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'lsarpc' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED ||
 	    lsasd_type != RPC_DAEMON_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server: "
+			"%s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	status = rpc_lsarpc_init(NULL);
@@ -183,11 +247,27 @@ static NTSTATUS rpc_setup_samr(struct tevent_context *ev_ctx,
 	const char *pipe_name = "samr";
 	enum rpc_daemon_type_e lsasd_type = rpc_lsasd_daemon();
 	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = samr_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'samr' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED ||
 	    lsasd_type != RPC_DAEMON_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server: "
+			"%s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	status = rpc_samr_init(NULL);
@@ -210,11 +290,27 @@ static NTSTATUS rpc_setup_netlogon(struct tevent_context *ev_ctx,
 	const char *pipe_name = "netlogon";
 	enum rpc_daemon_type_e lsasd_type = rpc_lsasd_daemon();
 	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = netlogon_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'netlogon' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED ||
 	    lsasd_type != RPC_DAEMON_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server: "
+			"%s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	status = rpc_netlogon_init(NULL);
@@ -236,10 +332,26 @@ static NTSTATUS rpc_setup_netdfs(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_netdfs;
 	const char *pipe_name = "netdfs";
 	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = netdfs_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'netdfs' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server: "
+			"%s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	status = rpc_netdfs_init(NULL);
@@ -262,10 +374,26 @@ static NTSTATUS rpc_setup_rpcecho(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_rpcecho;
 	const char *pipe_name = "rpcecho";
 	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = rpcecho_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'rpcecho' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server: "
+			"%s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	status = rpc_rpcecho_init(NULL);
@@ -288,10 +416,26 @@ static NTSTATUS rpc_setup_dssetup(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_dssetup;
 	const char *pipe_name = "dssetup";
 	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = dssetup_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'dssetup' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server: "
+			"%s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	status = rpc_dssetup_init(NULL);
@@ -313,10 +457,26 @@ static NTSTATUS rpc_setup_wkssvc(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_wkssvc;
 	const char *pipe_name = "wkssvc";
 	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = wkssvc_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'wkssvc' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server: "
+			"%s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	status = rpc_wkssvc_init(NULL);
@@ -363,15 +523,31 @@ static NTSTATUS rpc_setup_spoolss(struct tevent_context *ev_ctx,
 	struct rpc_srv_callbacks spoolss_cb;
 	enum rpc_daemon_type_e spoolss_type = rpc_spoolss_daemon();
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
 	if (lp__disable_spoolss()) {
 		return NT_STATUS_OK;
 	}
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = spoolss_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'spoolss' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED ||
 	    spoolss_type != RPC_DAEMON_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server"
+			": %s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	spoolss_cb.init         = spoolss_init_cb;
@@ -422,10 +598,26 @@ static NTSTATUS rpc_setup_svcctl(struct tevent_context *ev_ctx,
 	const char *pipe_name = "svcctl";
 	struct rpc_srv_callbacks svcctl_cb;
 	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = svcctl_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'svcctl' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server"
+			": %s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	svcctl_cb.init         = svcctl_init_cb;
@@ -450,10 +642,26 @@ static NTSTATUS rpc_setup_ntsvcs(struct tevent_context *ev_ctx,
 {
 	const struct ndr_interface_table *t = &ndr_table_ntsvcs;
 	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = ntsvcs_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'ntsvcs' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server"
+			": %s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	status = rpc_ntsvcs_init(NULL);
@@ -489,10 +697,26 @@ static NTSTATUS rpc_setup_eventlog(struct tevent_context *ev_ctx,
 	const struct ndr_interface_table *t = &ndr_table_eventlog;
 	struct rpc_srv_callbacks eventlog_cb;
 	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = eventlog_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'eventlog' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint server"
+			": %s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	eventlog_cb.init         = eventlog_init_cb;
@@ -517,10 +741,26 @@ static NTSTATUS rpc_setup_initshutdown(struct tevent_context *ev_ctx,
 {
 	const struct ndr_interface_table *t = &ndr_table_initshutdown;
 	NTSTATUS status;
-	enum rpc_service_mode_e service_mode = rpc_service_mode(t->name);
+	enum rpc_service_mode_e service_mode;
+	const struct dcesrv_endpoint_server *ep_server = NULL;
 
+	/* Register the endpoint server in DCERPC core */
+	ep_server = initshutdown_get_ep_server();
+	if (ep_server == NULL) {
+		DBG_ERR("Failed to get 'initshutdown' endpoint server\n");
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	service_mode = rpc_service_mode(ep_server->name);
 	if (service_mode != RPC_SERVICE_MODE_EMBEDDED) {
 		return NT_STATUS_OK;
+	}
+
+	status = dcerpc_register_ep_server(ep_server);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to register '%s' endpoint "
+			"server: %s\n", ep_server->name, nt_errstr(status));
+		return status;
 	}
 
 	status = rpc_initshutdown_init(NULL);
@@ -548,6 +788,8 @@ NTSTATUS dcesrv_ep_setup(struct tevent_context *ev_ctx,
 	if (tmp_ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	DBG_INFO("Registering DCE/RPC endpoint servers\n");
 
 	status = rpc_setup_winreg(ev_ctx, msg_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -647,6 +889,7 @@ NTSTATUS dcesrv_ep_setup(struct tevent_context *ev_ctx,
 		goto done;
 	}
 
+	/* The RPC module setup function has to register the endpoint server */
 	ok = setup_rpc_modules(ev_ctx, msg_ctx);
 	if (!ok) {
 		DBG_ERR("Shared DCE/RPC modules setup failed\n");
