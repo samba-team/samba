@@ -587,9 +587,11 @@ _PUBLIC_ void ndr_set_flags(uint32_t *pflags, uint32_t new_flags)
 /*
   return and possibly log an NDR error
 */
-_PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
-				 enum ndr_err_code ndr_err,
-				 const char *format, ...)
+_PUBLIC_ enum ndr_err_code _ndr_pull_error(struct ndr_pull *ndr,
+					   enum ndr_err_code ndr_err,
+					   const char *function,
+					   const char *location,
+					   const char *format, ...)
 {
 	char *s=NULL;
 	va_list ap;
@@ -612,7 +614,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
 		return NDR_ERR_ALLOC;
 	}
 
-	DEBUG(1,("ndr_pull_error(%u): %s\n", ndr_err, s));
+	D_WARNING("%s: ndr_pull_error(%s): %s at %s\n",
+		  function,
+		  ndr_map_error2string(ndr_err),
+		  s,
+		  location);
 
 	free(s);
 
@@ -622,9 +628,11 @@ _PUBLIC_ enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
 /*
   return and possibly log an NDR error
 */
-_PUBLIC_ enum ndr_err_code ndr_push_error(struct ndr_push *ndr,
-				 enum ndr_err_code ndr_err,
-				 const char *format, ...)
+_PUBLIC_ enum ndr_err_code _ndr_push_error(struct ndr_push *ndr,
+					   enum ndr_err_code ndr_err,
+					   const char *function,
+					   const char *location,
+					   const char *format, ...)
 {
 	char *s=NULL;
 	va_list ap;
@@ -638,7 +646,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_error(struct ndr_push *ndr,
 		return NDR_ERR_ALLOC;
 	}
 
-	DEBUG(1,("ndr_push_error(%u): %s\n", ndr_err, s));
+	D_WARNING("%s: ndr_push_error(%s): %s at %s\n",
+		  function,
+		  ndr_map_error2string(ndr_err),
+		  s,
+		  location);
 
 	free(s);
 

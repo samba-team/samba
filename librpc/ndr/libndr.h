@@ -559,12 +559,28 @@ char *ndr_print_function_string(TALLOC_CTX *mem_ctx,
 				ndr_print_function_t fn, const char *name,
 				int flags, void *ptr);
 void ndr_set_flags(uint32_t *pflags, uint32_t new_flags);
-enum ndr_err_code ndr_pull_error(struct ndr_pull *ndr,
-				 enum ndr_err_code ndr_err,
-				 const char *format, ...) PRINTF_ATTRIBUTE(3,4);
-enum ndr_err_code ndr_push_error(struct ndr_push *ndr,
-				 enum ndr_err_code ndr_err,
-				 const char *format, ...)  PRINTF_ATTRIBUTE(3,4);
+enum ndr_err_code _ndr_pull_error(struct ndr_pull *ndr,
+				  enum ndr_err_code ndr_err,
+				  const char *function,
+				  const char *location,
+				  const char *format, ...) PRINTF_ATTRIBUTE(5,6);
+#define ndr_pull_error(ndr, ndr_err, ...) \
+	_ndr_pull_error(ndr, \
+		        ndr_err,      \
+		        __FUNCTION__, \
+		        __location__, \
+			__VA_ARGS__)
+enum ndr_err_code _ndr_push_error(struct ndr_push *ndr,
+				  enum ndr_err_code ndr_err,
+				  const char *function,
+				  const char *location,
+				  const char *format, ...)  PRINTF_ATTRIBUTE(5,6);
+#define ndr_push_error(ndr, ndr_err, ...) \
+	_ndr_push_error(ndr, \
+		        ndr_err, \
+		        __FUNCTION__, \
+		        __location__, \
+			__VA_ARGS__)
 enum ndr_err_code ndr_pull_subcontext_start(struct ndr_pull *ndr,
 				   struct ndr_pull **_subndr,
 				   size_t header_size,
