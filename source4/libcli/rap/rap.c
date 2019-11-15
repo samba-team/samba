@@ -476,6 +476,7 @@ static enum ndr_err_code ndr_pull_rap_NetPrintQEnum_data(struct ndr_pull *ndr, s
 		NDR_CHECK(ndr_pull_rap_printq_info(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 	}
 	for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
 		NDR_CHECK(ndr_pull_rap_printq_info(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
 	}
 	NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
@@ -864,6 +865,7 @@ static enum ndr_err_code ndr_pull_rap_NetPrintJobEnum_data(struct ndr_pull *ndr,
 		NDR_CHECK(ndr_pull_rap_printj_info(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 	}
 	for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
 		NDR_CHECK(ndr_pull_rap_printj_info(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
 	}
 	NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
@@ -1413,6 +1415,7 @@ static enum ndr_err_code ndr_pull_rap_NetSessionEnum_data(struct ndr_pull *ndr, 
 		NDR_CHECK(ndr_pull_rap_session_info(ndr, NDR_SCALARS, &r->out.info[cntr_info_0]));
 	}
 	for (cntr_info_0 = 0; cntr_info_0 < r->out.count; cntr_info_0++) {
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->out.info[cntr_info_0], r->in.level));
 		NDR_CHECK(ndr_pull_rap_session_info(ndr, NDR_BUFFERS, &r->out.info[cntr_info_0]));
 	}
 	NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, 0);
