@@ -2109,11 +2109,6 @@ sub ParseUnionPullDeferred($$$$)
 	my ($self,$e,$ndr,$varname) = @_;
 	my $have_default = 0;
 
-	if (defined($e->{PROPERTIES}{relative_base})) {
-		# retrieve the current offset as base for relative pointers
-		# based on the toplevel struct/union
-		$self->pidl("NDR_CHECK(ndr_pull_setup_relative_base_offset2($ndr, $varname));");
-	}
 	$self->pidl("switch (level) {");
 	$self->indent;
 	foreach my $el (@{$e->{ELEMENTS}}) {
@@ -2124,6 +2119,11 @@ sub ParseUnionPullDeferred($$$$)
 		$self->pidl("$el->{CASE}:");
 		if ($el->{TYPE} ne "EMPTY") {
 			$self->indent;
+			if (defined($e->{PROPERTIES}{relative_base})) {
+				# retrieve the current offset as base for relative pointers
+				# based on the toplevel struct/union
+				$self->pidl("NDR_CHECK(ndr_pull_setup_relative_base_offset2($ndr, $varname));");
+			}
 			$self->ParseElementPull($el, $ndr, {$el->{NAME} => "$varname->$el->{NAME}"}, 0, 1);
 			$self->deindent;
 		}
