@@ -297,3 +297,170 @@ fail:
 	TALLOC_FREE(ev);
 	return ret;
 }
+
+/*
+ * Test that we can't add two watchers in the same
+ * fetch_lock/do_locked round
+ */
+
+struct dbwrap_watch4_state {
+	TALLOC_CTX *mem_ctx;
+	struct tevent_context *ev;
+	struct db_context *db;
+	TDB_DATA key;
+
+	NTSTATUS status;
+
+	struct tevent_req *req1;
+	NTSTATUS status1;
+
+	struct tevent_req *req2;
+	NTSTATUS status2;
+};
+
+static void dbwrap_watch4_done1(struct tevent_req *subreq);
+static void dbwrap_watch4_done2(struct tevent_req *subreq);
+
+static void dbwrap_watch4_fn(struct db_record *rec,
+			     TDB_DATA value,
+			     void *private_data)
+{
+	struct dbwrap_watch4_state *state = private_data;
+	bool ok;
+
+	state->req1 = dbwrap_watched_watch_send(
+		state->mem_ctx, state->ev, rec, (struct server_id) { .pid=0 });
+	if (state->req1 == NULL) {
+		goto nomem;
+	}
+	tevent_req_set_callback(state->req1, dbwrap_watch4_done1, state);
+	state->status1 = NT_STATUS_EVENT_PENDING;
+
+	ok = tevent_req_set_endtime(
+		state->req1, state->ev, timeval_current_ofs(1, 0));
+	if (!ok) {
+		goto nomem;
+	}
+
+	state->req2 = dbwrap_watched_watch_send(
+		state->mem_ctx, state->ev, rec, (struct server_id) { .pid=0 });
+	if (state->req2 == NULL) {
+		goto nomem;
+	}
+	tevent_req_set_callback(state->req2, dbwrap_watch4_done2, state);
+	state->status2 = NT_STATUS_EVENT_PENDING;
+
+	ok = tevent_req_set_endtime(
+		state->req2, state->ev, timeval_current_ofs(1, 0));
+	if (!ok) {
+		goto nomem;
+	}
+
+	state->status = NT_STATUS_OK;
+	return;
+
+	nomem:
+	state->status = NT_STATUS_NO_MEMORY;
+}
+
+static void dbwrap_watch4_done1(struct tevent_req *subreq)
+{
+	struct dbwrap_watch4_state *state = tevent_req_callback_data_void(subreq);
+	state->status1 = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	TALLOC_FREE(subreq);
+	printf("req1 finished: %s\n", nt_errstr(state->status1));
+	state->req1 = NULL;
+}
+
+static void dbwrap_watch4_done2(struct tevent_req *subreq)
+{
+	struct dbwrap_watch4_state *state = tevent_req_callback_data_void(subreq);
+	state->status2 = dbwrap_watched_watch_recv(subreq, NULL, NULL);
+	TALLOC_FREE(subreq);
+	printf("req2 finished: %s\n", nt_errstr(state->status2));
+	state->req2 = NULL;
+}
+
+bool run_dbwrap_watch4(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct db_context *backend = NULL;
+	struct db_context *db = NULL;
+	const char *keystr = "key";
+	TDB_DATA key = string_term_tdb_data(keystr);
+	struct dbwrap_watch4_state state = { 0 };
+	NTSTATUS status;
+	bool ret = false;
+	bool ok;
+
+	ok = test_dbwrap_watch_init(
+		talloc_tos(), "test_watch.tdb", &ev, &msg, &backend, &db);
+	if (!ok) {
+		goto fail;
+	}
+
+	state = (struct dbwrap_watch4_state) {
+		.mem_ctx = talloc_tos(),
+		.ev = ev,
+		.db = db,
+		.key = key,
+	};
+
+	status = dbwrap_do_locked(db, key, dbwrap_watch4_fn, &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,
+			"dbwrap_do_locked failed: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		fprintf(stderr,
+			"dbwrap_watch4_fn failed: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	status = dbwrap_store(db, key, key, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,
+			"dbwrap_store failed: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	while (NT_STATUS_EQUAL(state.status1, NT_STATUS_EVENT_PENDING) ||
+	       NT_STATUS_EQUAL(state.status2, NT_STATUS_EVENT_PENDING)) {
+		int res = tevent_loop_once(ev);
+		if (res != 0) {
+			fprintf(stderr,
+				"tevent_loop_once failed: %s\n",
+				strerror(errno));
+			goto fail;
+		}
+	}
+
+	if (!NT_STATUS_IS_OK(state.status1)) {
+		fprintf(stderr,
+			"req1 returned %s\n",
+			nt_errstr(state.status1));
+		goto fail;
+	}
+
+	if (!NT_STATUS_EQUAL(state.status2, NT_STATUS_REQUEST_NOT_ACCEPTED)) {
+		fprintf(stderr,
+			"req2 returned %s\n",
+			nt_errstr(state.status2));
+		goto fail;
+	}
+
+	(void)unlink("test_watch.tdb");
+	ret = true;
+fail:
+	TALLOC_FREE(state.req2);
+	TALLOC_FREE(state.req1);
+	TALLOC_FREE(db);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return ret;
+}
