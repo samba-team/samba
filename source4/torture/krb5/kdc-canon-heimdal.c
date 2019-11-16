@@ -737,13 +737,12 @@ static bool torture_krb5_post_recv_tgs_req_canon_test(struct torture_krb5_contex
 					 error.pvno, 5,
 					 "Got wrong error.pvno");
 		expected_error = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN - KRB5KDC_ERR_NONE;
-		if (error.error_code != expected_error && test_context->test_data->mitm_s4u2self) {
-			expected_error = KRB5KRB_AP_ERR_INAPP_CKSUM - KRB5KDC_ERR_NONE;
+		if (!test_context->test_data->mitm_s4u2self) {
+			torture_assert_int_equal(test_context->tctx,
+						 error.error_code,
+						 expected_error,
+						 "Got wrong error.error_code");
 		}
-		torture_assert_int_equal(test_context->tctx,
-					 error.error_code,
-					 expected_error,
-					 "Got wrong error.error_code");
 	} else {
 		torture_assert_int_equal(test_context->tctx,
 					 decode_TGS_REP(recv_buf->data, recv_buf->length,
@@ -2090,8 +2089,7 @@ static bool torture_krb5_as_req_canon(struct torture_context *tctx, const void *
 			|| test_data->upn == false)) {
 
 			if (test_data->mitm_s4u2self) {
-				torture_assert_int_equal(tctx, k5ret, KRB5KRB_AP_ERR_INAPP_CKSUM,
-							 assertion_message);
+				torture_assert_int_not_equal(tctx, k5ret, 0, assertion_message);
 				/* Done testing mitm-s4u2self */
 				return true;
 			}
