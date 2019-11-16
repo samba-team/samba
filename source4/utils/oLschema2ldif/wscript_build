@@ -15,5 +15,6 @@ bld.SAMBA_BINARY('test_oLschema2ldif',
 	source='test.c',
 	deps='cmocka oLschema2ldif-lib',
 	local_include=False,
+	enabled=bld.CONFIG_SET('HAVE_FMEMOPEN'),
 	install=False,
 	)
