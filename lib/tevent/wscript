@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 APPNAME = 'tevent'
-VERSION = '0.10.1'
+VERSION = '0.10.2'
 
 import sys, os
 
