@@ -228,10 +228,11 @@ static NTSTATUS ndrdump_pull_and_print_pipes(const char *function,
 				return ndr_map_error2ntstatus(ndr_err);
 			}
 			pipes->pipes[i].ndr_print(ndr_print, n, c);
-			talloc_free(c);
 			if (*count == 0) {
+				talloc_free(c);
 				break;
 			}
+			talloc_free(c);
 			idx++;
 		}
 	}
