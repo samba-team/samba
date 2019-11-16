@@ -25,6 +25,76 @@
 #include "lib/dbwrap/dbwrap_watch.h"
 #include "lib/util/util_tdb.h"
 
+static bool test_dbwrap_watch_init(
+	TALLOC_CTX *mem_ctx,
+	const char *dbname,
+	struct tevent_context **pev,
+	struct messaging_context **pmsg,
+	struct db_context **pbackend,
+	struct db_context **pdb)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct db_context *backend = NULL;
+	struct db_context *db = NULL;
+
+	ev = samba_tevent_context_init(mem_ctx);
+	if (ev == NULL) {
+		fprintf(stderr, "tevent_context_init failed\n");
+		goto fail;
+	}
+
+	msg = messaging_init(ev, ev);
+	if (msg == NULL) {
+		fprintf(stderr, "messaging_init failed\n");
+		goto fail;
+	}
+
+	backend = db_open(
+		msg,
+		dbname,
+		0,
+		TDB_CLEAR_IF_FIRST,
+		O_CREAT|O_RDWR,
+		0644,
+		DBWRAP_LOCK_ORDER_1,
+		DBWRAP_FLAG_NONE);
+	if (backend == NULL) {
+		fprintf(stderr, "db_open failed: %s\n", strerror(errno));
+		goto fail;
+	}
+
+	{
+		struct db_context *backend_copy = backend;
+
+		db = db_open_watched(ev, &backend_copy, msg);
+		if (db == NULL) {
+			fprintf(stderr, "db_open_watched failed\n");
+			goto fail;
+		}
+	}
+
+	if (pev != NULL) {
+		*pev = ev;
+	}
+	if (pmsg != NULL) {
+		*pmsg = msg;
+	}
+	if (pbackend != NULL) {
+		*pbackend = backend;
+	}
+	if (pdb != NULL) {
+		*pdb = db;
+	}
+	return true;
+
+fail:
+	TALLOC_FREE(backend);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return false;
+}
+
 bool run_dbwrap_watch1(int dummy)
 {
 	struct tevent_context *ev = NULL;
@@ -38,25 +108,11 @@ bool run_dbwrap_watch1(int dummy)
 	NTSTATUS status;
 	bool ret = false;
 
-	ev = samba_tevent_context_init(talloc_tos());
-	if (ev == NULL) {
-		fprintf(stderr, "tevent_context_init failed\n");
+	ret = test_dbwrap_watch_init(
+		talloc_tos(), "test_watch.tdb", &ev, &msg, &backend, &db);
+	if (!ret) {
 		goto fail;
 	}
-	msg = messaging_init(ev, ev);
-	if (msg == NULL) {
-		fprintf(stderr, "messaging_init failed\n");
-		goto fail;
-	}
-	backend = db_open(msg, "test_watch.tdb", 0, TDB_CLEAR_IF_FIRST,
-			  O_CREAT|O_RDWR, 0644, DBWRAP_LOCK_ORDER_1,
-			  DBWRAP_FLAG_NONE);
-	if (backend == NULL) {
-		fprintf(stderr, "db_open failed: %s\n", strerror(errno));
-		goto fail;
-	}
-
-	db = db_open_watched(ev, &backend, msg);
 
 	rec = dbwrap_fetch_locked(db, db, key);
 	if (rec == NULL) {
@@ -124,21 +180,9 @@ bool run_dbwrap_watch2(int dummy)
 	NTSTATUS status;
 	bool ret = false;
 
-	ev = samba_tevent_context_init(talloc_tos());
-	if (ev == NULL) {
-		fprintf(stderr, "tevent_context_init failed\n");
-		goto fail;
-	}
-	msg = messaging_init(ev, ev);
-	if (msg == NULL) {
-		fprintf(stderr, "messaging_init failed\n");
-		goto fail;
-	}
-	backend = db_open(msg, "test_watch.tdb", 0, TDB_CLEAR_IF_FIRST,
-			  O_CREAT|O_RDWR, 0644, DBWRAP_LOCK_ORDER_1,
-			  DBWRAP_FLAG_NONE);
-	if (backend == NULL) {
-		fprintf(stderr, "db_open failed: %s\n", strerror(errno));
+	ret = test_dbwrap_watch_init(
+		talloc_tos(), "test_watch.tdb", &ev, &msg, &backend, &db);
+	if (!ret) {
 		goto fail;
 	}
 
@@ -152,13 +196,6 @@ bool run_dbwrap_watch2(int dummy)
 			nt_errstr(status));
 		goto fail;
 	}
-
-	db = db_open_watched(ev, &backend, msg);
-	if (db == NULL) {
-		fprintf(stderr, "db_open_watched failed\n");
-		goto fail;
-	}
-	backend = NULL;		/* open_watch talloc_moves backend */
 
 	status = dbwrap_parse_record(db, key, NULL, NULL);
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
@@ -203,27 +240,9 @@ bool run_dbwrap_watch3(int dummy)
 		goto fail;
 	}
 
-	ev = samba_tevent_context_init(talloc_tos());
-	if (ev == NULL) {
-		fprintf(stderr, "tevent_context_init failed\n");
-		goto fail;
-	}
-	msg = messaging_init(ev, ev);
-	if (msg == NULL) {
-		fprintf(stderr, "messaging_init failed\n");
-		goto fail;
-	}
-	backend = db_open(msg, "test_watch.tdb", 0, TDB_CLEAR_IF_FIRST,
-			  O_CREAT|O_RDWR, 0644, DBWRAP_LOCK_ORDER_1,
-			  DBWRAP_FLAG_NONE);
-	if (backend == NULL) {
-		fprintf(stderr, "db_open failed: %s\n", strerror(errno));
-		goto fail;
-	}
-
-	db = db_open_watched(ev, &backend, msg);
-	if (db == NULL) {
-		fprintf(stderr, "db_open_watched failed\n");
+	ret = test_dbwrap_watch_init(
+		talloc_tos(), "test_watch.tdb", &ev, &msg, &backend, &db);
+	if (!ret) {
 		goto fail;
 	}
 
