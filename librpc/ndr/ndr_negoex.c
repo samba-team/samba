@@ -439,6 +439,7 @@ enum ndr_err_code ndr_pull_negoex_MESSAGE(struct ndr_pull *ndr, int ndr_flags, s
 		NDR_PULL_NEED_BYTES(ndr, r->message_length);
 		ndr->data_size = ndr->offset + r->message_length;
 		ndr->offset = saved_offset;
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->p, r->type));
 		NDR_CHECK(ndr_pull_negoex_PAYLOAD(ndr, NDR_BUFFERS, &r->p));
 		ndr->offset = ndr->data_size;
 		ndr->data_size = start_data_size;
