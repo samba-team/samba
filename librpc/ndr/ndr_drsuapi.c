@@ -577,7 +577,7 @@ enum ndr_err_code ndr_pull_drsuapi_DsBindInfo(struct ndr_pull *ndr, int ndr_flag
 _PUBLIC_ void ndr_print_drsuapi_DsBindInfo(struct ndr_print *ndr, const char *name, const union drsuapi_DsBindInfo *r)
 {
 	uint32_t level;
-	level = ndr_print_get_switch_value(ndr, r);
+	level = ndr_print_steal_switch_value(ndr, r);
 	ndr_print_union(ndr, name, level, "drsuapi_DsBindInfo");
 	switch (level) {
 		case 24:

@@ -2019,7 +2019,7 @@ sub ParseUnionPrint($$$$$)
 
 	$self->start_flags($e, $ndr);
 
-	$self->pidl("level = ndr_print_get_switch_value($ndr, $varname);");
+	$self->pidl("level = ndr_print_steal_switch_value($ndr, $varname);");
 
 	$self->pidl("ndr_print_union($ndr, name, level, \"$name\");");
 
