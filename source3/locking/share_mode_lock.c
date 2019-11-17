@@ -528,6 +528,7 @@ static size_t static_share_mode_data_refcount = 0;
  * need to share with a nested get_share_mode_lock call.
  */
 static struct db_record *static_share_mode_record = NULL;
+static TDB_DATA static_share_mode_record_value = {0};
 static bool static_share_mode_record_talloced = false;
 
 /*******************************************************************
@@ -611,6 +612,8 @@ struct share_mode_lock *get_share_mode_lock(
 			goto fail;
 		}
 		static_share_mode_record_talloced = true;
+		static_share_mode_record_value = dbwrap_record_get_value(
+			static_share_mode_record);
 
 		status = get_static_share_mode_data(
 			static_share_mode_record,
@@ -731,6 +734,7 @@ static void share_mode_do_locked_fn(
 
 	if (static_share_mode_record == NULL) {
 		static_share_mode_record = rec;
+		static_share_mode_record_value = value;
 		static_share_mode_record_talloced = false;
 		reset_static_share_mode_record = true;
 	} else {
@@ -760,7 +764,7 @@ NTSTATUS share_mode_do_locked(
 
 	if (static_share_mode_record != NULL) {
 		bool modified_dependent = false;
-		TDB_DATA static_key, static_value;
+		TDB_DATA static_key;
 		int cmp;
 
 		static_key = dbwrap_record_get_key(static_share_mode_record);
@@ -772,9 +776,9 @@ NTSTATUS share_mode_do_locked(
 			return NT_STATUS_INVALID_LOCK_SEQUENCE;
 		}
 
-		static_value = dbwrap_record_get_value(static_share_mode_record);
-
-		fn(static_value, &modified_dependent, private_data);
+		fn(static_share_mode_record_value,
+		   &modified_dependent,
+		   private_data);
 
 		if (modified_dependent) {
 			dbwrap_watched_wakeup(static_share_mode_record);
