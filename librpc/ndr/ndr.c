@@ -972,6 +972,7 @@ _PUBLIC_ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
 			NDR_ERR_HAVE_NO_MEMORY(list->tokens);
 		}
 	} else {
+		struct ndr_token *new_tokens = NULL;
 		uint32_t alloc_count = talloc_array_length(list->tokens);
 		if (list->count == alloc_count) {
 			unsigned new_alloc;
@@ -980,11 +981,10 @@ _PUBLIC_ enum ndr_err_code ndr_token_store(TALLOC_CTX *mem_ctx,
 			if (new_alloc < alloc_count) {
 				return NDR_ERR_RANGE;
 			}
-			list->tokens = talloc_realloc(mem_ctx, list->tokens,
-						      struct ndr_token, new_alloc);
-			if (list->tokens == NULL) {
-				NDR_ERR_HAVE_NO_MEMORY(list->tokens);
-			}
+			new_tokens = talloc_realloc(mem_ctx, list->tokens,
+						    struct ndr_token, new_alloc);
+			NDR_ERR_HAVE_NO_MEMORY(new_tokens);
+			list->tokens = new_tokens;
 		}
 	}
 	list->tokens[list->count].key = key;
