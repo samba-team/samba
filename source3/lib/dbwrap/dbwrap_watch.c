@@ -895,6 +895,10 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 		tevent_req_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return tevent_req_post(req, ev);
 	}
+	if (subrec->added_watcher) {
+		tevent_req_nterror(req, NT_STATUS_REQUEST_NOT_ACCEPTED);
+		return tevent_req_post(req, ev);
+	}
 
 	state->me = messaging_server_id(ctx->msg);
 
