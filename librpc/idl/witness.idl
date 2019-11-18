@@ -123,7 +123,7 @@ interface witness
 		witness_notifyResponse_type type;
 		[value(ndr_size_witness_notifyResponse(r, ndr->flags)-20)] uint32 length;
 		uint32 num;
-		[subcontext(4), subcontext_size(length), flag(NDR_REMAINING), switch_is(type)] witness_notifyResponse_message messages[num];
+	        [subcontext(4), subcontext_size(length), flag(NDR_REMAINING), switch_is(type), size_is(num)] witness_notifyResponse_message *messages;
 	} witness_notifyResponse;
 
 	[public] WERROR witness_AsyncNotify(
