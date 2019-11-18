@@ -486,12 +486,23 @@ NTSTATUS dcesrv_create_ncalrpc_socket(struct dcesrv_endpoint *e, int *out_fd)
 						    "endpoint");
 	if (endpoint == NULL) {
 		/*
-		 * No identifier specified: use DEFAULT.
+		 * No identifier specified: use DEFAULT or SMBD.
+		 *
+		 * When role is AD DC we run two rpc server instances, the one
+		 * started by 'samba' and the one embedded in 'smbd'.
+		 * Avoid listening in DEFAULT socket for NCALRPC as both
+		 * servers will race to accept connections. In this case smbd
+		 * will listen in SMBD socket and rpcint binding handle
+		 * implementation will pick the right socket to use.
 		 *
 		 * TODO: DO NOT hardcode this value anywhere else. Rather,
 		 * specify no endpoint and let the epmapper worry about it.
 		 */
-		endpoint = "DEFAULT";
+		if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+			endpoint = "SMBD";
+		} else {
+			endpoint = "DEFAULT";
+		}
 		status = dcerpc_binding_set_string_option(e->ep_description,
 							  "endpoint",
 							  endpoint);
