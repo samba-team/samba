@@ -106,14 +106,6 @@ bool SMBencrypt(const char *passwd, const uint8_t *c8, uint8_t p24[24]);
 bool E_md4hash(const char *passwd, uint8_t p16[16]);
 
 /**
- * Creates the MD5 Hash of a combination of 16 byte salt and 16 byte NT hash.
- * @param 16 byte salt.
- * @param 16 byte NT hash.
- * @param 16 byte return hashed with md5, caller allocated 16 byte buffer
- */
-void E_md5hash(const uint8_t salt[16], const uint8_t nthash[16], uint8_t hash_out[16]);
-
-/**
  * Creates the DES forward-only Hash of the users password in DOS ASCII charset
  * @param passwd password in 'unix' charset.
  * @param p16 return password hashed with DES, caller allocated 16 byte buffer
