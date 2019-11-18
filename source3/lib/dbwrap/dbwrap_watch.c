@@ -28,67 +28,6 @@
 #include "server_id_watch.h"
 #include "lib/dbwrap/dbwrap_private.h"
 
-static ssize_t dbwrap_record_watchers_key(struct db_context *db,
-					  struct db_record *rec,
-					  uint8_t *wkey, size_t wkey_len)
-{
-	size_t db_id_len = dbwrap_db_id(db, NULL, 0);
-	uint8_t db_id[db_id_len];
-	size_t needed;
-	TDB_DATA key;
-
-	dbwrap_db_id(db, db_id, db_id_len);
-
-	key = dbwrap_record_get_key(rec);
-
-	needed = sizeof(uint32_t) + db_id_len;
-	if (needed < sizeof(uint32_t)) {
-		return -1;
-	}
-
-	needed += key.dsize;
-	if (needed < key.dsize) {
-		return -1;
-	}
-
-	if (wkey != NULL && wkey_len >= needed) {
-		SIVAL(wkey, 0, db_id_len);
-		memcpy(wkey + sizeof(uint32_t), db_id, db_id_len);
-		memcpy(wkey + sizeof(uint32_t) + db_id_len,
-		       key.dptr, key.dsize);
-	}
-
-	return needed;
-}
-
-static bool dbwrap_record_watchers_key_parse(
-	TDB_DATA wkey, uint8_t **p_db_id, size_t *p_db_id_len, TDB_DATA *key)
-{
-	size_t db_id_len;
-
-	if (wkey.dsize < sizeof(uint32_t)) {
-		DBG_WARNING("Invalid watchers key, dsize=%zu\n", wkey.dsize);
-		return false;
-	}
-	db_id_len = IVAL(wkey.dptr, 0);
-	if (db_id_len > (wkey.dsize - sizeof(uint32_t))) {
-		DBG_WARNING("Invalid watchers key, wkey.dsize=%zu, "
-			    "db_id_len=%zu\n", wkey.dsize, db_id_len);
-		return false;
-	}
-	if (p_db_id != NULL) {
-		*p_db_id = wkey.dptr + sizeof(uint32_t);
-	}
-	if (p_db_id_len != NULL) {
-		*p_db_id_len = db_id_len;
-	}
-	if (key != NULL) {
-		key->dptr = wkey.dptr + sizeof(uint32_t) + db_id_len;
-		key->dsize = wkey.dsize - sizeof(uint32_t) - db_id_len;
-	}
-	return true;
-}
-
 struct dbwrap_watcher {
 	/*
 	 * Process watching this record
@@ -861,7 +800,7 @@ struct db_context *db_open_watched(TALLOC_CTX *mem_ctx,
 struct dbwrap_watched_watch_state {
 	struct db_context *db;
 	struct dbwrap_watcher watcher;
-	TDB_DATA w_key;
+	TDB_DATA key;
 	struct server_id blocker;
 	bool blockerdead;
 };
@@ -886,7 +825,6 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 	uint8_t *watchers = NULL;
 	struct tevent_req *req, *subreq;
 	struct dbwrap_watched_watch_state *state;
-	ssize_t needed;
 	NTSTATUS status;
 
 	static uint64_t instance = 1;
@@ -933,19 +871,10 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 		.instance = instance++,
 	};
 
-	needed = dbwrap_record_watchers_key(db, rec, NULL, 0);
-	if (needed == -1) {
-		tevent_req_nterror(req, NT_STATUS_INSUFFICIENT_RESOURCES);
+	state->key = tdb_data_talloc_copy(state, rec->key);
+	if (tevent_req_nomem(state->key.dptr, req)) {
 		return tevent_req_post(req, ev);
 	}
-	state->w_key.dsize = needed;
-
-	state->w_key.dptr = talloc_array(state, uint8_t, state->w_key.dsize);
-	if (tevent_req_nomem(state->w_key.dptr, req)) {
-		return tevent_req_post(req, ev);
-	}
-	dbwrap_record_watchers_key(db, rec, state->w_key.dptr,
-				   state->w_key.dsize);
 
 	subreq = messaging_filtered_read_send(
 		state, ev, ctx->msg, dbwrap_watched_msg_filter, state);
@@ -1042,16 +971,9 @@ static int dbwrap_watched_watch_state_destructor(
 	struct db_record *rec;
 	struct db_watched_subrec *subrec;
 	struct dbwrap_watch_rec *wrec = NULL;
-	TDB_DATA key;
 	bool ok;
 
-	ok = dbwrap_record_watchers_key_parse(state->w_key, NULL, NULL, &key);
-	if (!ok) {
-		DBG_WARNING("dbwrap_record_watchers_key_parse failed\n");
-		return 0;
-	}
-
-	rec = dbwrap_fetch_locked(state->db, state, key);
+	rec = dbwrap_fetch_locked(state->db, state, state->key);
 	if (rec == NULL) {
 		DBG_WARNING("dbwrap_fetch_locked failed\n");
 		return 0;
