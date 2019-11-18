@@ -901,11 +901,29 @@ static bool password_in_history(uint8_t nt_pw[NT_HASH_LEN],
 				return true;
 			}
 		} else {
+			gnutls_hash_hd_t hash_hnd = NULL;
+			int rc;
+
 			/*
 			 * Old format: md5sum of salted nt hash.
 			 * Create salted version of new pw to compare.
 			 */
-			E_md5hash(current_salt, nt_pw, new_nt_pw_salted_md5_hash);
+			rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+			if (rc < 0) {
+				return false;
+			}
+
+			rc = gnutls_hash(hash_hnd, current_salt, 16);
+			if (rc < 0) {
+				gnutls_hash_deinit(hash_hnd, NULL);
+				return false;
+			}
+			rc = gnutls_hash(hash_hnd, nt_pw, 16);
+			if (rc < 0) {
+				gnutls_hash_deinit(hash_hnd, NULL);
+				return false;
+			}
+			gnutls_hash_deinit(hash_hnd, new_nt_pw_salted_md5_hash);
 
 			if (memcmp(new_nt_pw_salted_md5_hash,
 				   old_nt_pw_salted_md5_hash,
