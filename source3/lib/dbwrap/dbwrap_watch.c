@@ -423,20 +423,6 @@ static void dbwrap_watched_subrec_wakeup(
 	struct db_watched_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_watched_ctx);
 	size_t i, num_to_wakeup;
-	size_t db_id_len = dbwrap_db_id(db, NULL, 0);
-	uint8_t db_id[db_id_len];
-	uint8_t len_buf[4];
-	struct iovec iov[3];
-
-	SIVAL(len_buf, 0, db_id_len);
-
-	iov[0] = (struct iovec) { .iov_base = len_buf,
-				  .iov_len = sizeof(len_buf) };
-	iov[1] = (struct iovec) { .iov_base = db_id, .iov_len = db_id_len };
-	iov[2] = (struct iovec) { .iov_base = rec->key.dptr,
-				  .iov_len = rec->key.dsize };
-
-	dbwrap_db_id(db, db_id, db_id_len);
 
 	i = 0;
 
@@ -454,6 +440,7 @@ static void dbwrap_watched_subrec_wakeup(
 		struct dbwrap_watcher watcher;
 		NTSTATUS status;
 		struct server_id_buf tmp;
+		uint8_t instance_buf[8];
 
 		dbwrap_watch_rec_get_watcher(wrec, i, &watcher);
 
@@ -461,14 +448,14 @@ static void dbwrap_watched_subrec_wakeup(
 			  server_id_str_buf(watcher.pid, &tmp),
 			  watcher.instance);
 
-		status = messaging_send_iov(
+		SBVAL(instance_buf, 0, watcher.instance);
+
+		status = messaging_send_buf(
 			ctx->msg,
 			watcher.pid,
 			MSG_DBWRAP_MODIFIED,
-			iov,
-			ARRAY_SIZE(iov),
-			NULL,
-			0);
+			instance_buf,
+			sizeof(instance_buf));
 		if (!NT_STATUS_IS_OK(status)) {
 			DBG_DEBUG("messaging_send_iov to %s failed: %s\n",
 				  server_id_str_buf(watcher.pid, &tmp),
@@ -1094,7 +1081,7 @@ static bool dbwrap_watched_msg_filter(struct messaging_rec *rec,
 {
 	struct dbwrap_watched_watch_state *state = talloc_get_type_abort(
 		private_data, struct dbwrap_watched_watch_state);
-	int cmp;
+	uint64_t instance;
 
 	if (rec->msg_type != MSG_DBWRAP_MODIFIED) {
 		return false;
@@ -1102,13 +1089,24 @@ static bool dbwrap_watched_msg_filter(struct messaging_rec *rec,
 	if (rec->num_fds != 0) {
 		return false;
 	}
-	if (rec->buf.length != state->w_key.dsize) {
+
+	if (rec->buf.length != sizeof(instance)) {
+		DBG_DEBUG("Got size %zu, expected %zu\n",
+			  rec->buf.length,
+			  sizeof(instance));
 		return false;
 	}
 
-	cmp = memcmp(rec->buf.data, state->w_key.dptr, rec->buf.length);
+	instance = BVAL(rec->buf.data, 0);
 
-	return (cmp == 0);
+	if (instance != state->watcher.instance) {
+		DBG_DEBUG("Got instance %"PRIu64", expected %"PRIu64"\n",
+			  instance,
+			  state->watcher.instance);
+		return false;
+	}
+
+	return true;
 }
 
 static void dbwrap_watched_watch_done(struct tevent_req *subreq)
