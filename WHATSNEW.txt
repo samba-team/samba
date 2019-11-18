@@ -93,6 +93,26 @@ make changes to the DNS Zone and nudging the 'named' server if a new
 DC was added to the domain.  Administrators using BIND9_FLATFILE will
 need to maintain this manually from now on.
 
+
+Retiring DES encryption types in Kerberos.
+------------------------------------------
+With this release, support for DES encryption types has been removed from
+Samba, and setting DES_ONLY flag for an account will cause Kerberos
+authentication to fail for that account (see RFC-6649).
+
+Samba-DC: DES keys no longer saved in DB.
+-----------------------------------------
+When a new password is set for an account, Samba DC will store random keys
+in DB instead of DES keys derived from the password.  If the account is being
+migrated to Windbows or to an older version of Samba in order to use DES keys,
+the password must be reset to make it work.
+
+Heimdal-DC: removal of weak-crypto.
+-----------------------------------
+Following removal of DES encryption types from Samba, the embedded Heimdal
+build has been updated to not compile weak crypto code (HEIM_WEAK_CRYPTO).
+
+
 smb.conf changes
 ================
 
