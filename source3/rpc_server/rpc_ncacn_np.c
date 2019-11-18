@@ -42,14 +42,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
-static NTSTATUS make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
-				const struct ndr_syntax_id *syntax,
-				const struct tsocket_address *remote_address,
-				const struct tsocket_address *local_address,
-				const struct auth_session_info *session_info,
-				struct messaging_context *msg_ctx,
-				struct pipes_struct **p);
-
 struct np_proxy_state {
 	uint16_t file_type;
 	uint16_t device_state;
@@ -249,118 +241,274 @@ out:
 	return status;
 }
 
-/****************************************************************************
- Make an internal namedpipes structure
-****************************************************************************/
-
-static NTSTATUS make_internal_rpc_pipe_p(TALLOC_CTX *mem_ctx,
-				const struct ndr_syntax_id *syntax,
+static NTSTATUS make_internal_ncacn_conn(TALLOC_CTX *mem_ctx,
+				const struct ndr_interface_table *table,
 				const struct tsocket_address *remote_address,
 				const struct tsocket_address *local_address,
 				const struct auth_session_info *session_info,
 				struct messaging_context *msg_ctx,
-				struct pipes_struct **p)
+				struct dcerpc_ncacn_conn **_out)
 {
-	struct pipes_struct *out;
 	struct pipe_rpc_fns *context_fns;
-	const char *pipe_name;
+	struct dcerpc_ncacn_conn *ncacn_conn = NULL;
+	const char *pipe_name = NULL;
+	NTSTATUS status;
 	int ret;
-	const struct ndr_interface_table *table;
 
-	table = ndr_table_by_uuid(&syntax->uuid);
-	if (table == NULL) {
-		DBG_ERR("Unknown interface\n");
-		return NT_STATUS_RPC_INTERFACE_NOT_FOUND;
-	}
-
-	pipe_name = dcerpc_default_transport_endpoint(mem_ctx, NCACN_NP, table);
+	pipe_name = dcerpc_default_transport_endpoint(mem_ctx,
+						      NCACN_NP,
+						      table);
 
 	DBG_INFO("Create pipe requested %s\n", pipe_name);
 
-	ret = make_base_pipes_struct(mem_ctx, msg_ctx, pipe_name,
-				     NCALRPC, RPC_LITTLE_ENDIAN,
-				     remote_address, local_address, &out);
+	ncacn_conn = talloc_zero(mem_ctx, struct dcerpc_ncacn_conn);
+	if (ncacn_conn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	ncacn_conn->msg_ctx = msg_ctx;
+
+	if (remote_address != NULL) {
+		ncacn_conn->remote_client_addr =
+			tsocket_address_copy(remote_address, ncacn_conn);
+		if (ncacn_conn->remote_client_addr == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+	}
+
+	if (local_address != NULL) {
+		ncacn_conn->local_server_addr =
+			tsocket_address_copy(local_address, ncacn_conn);
+		if (ncacn_conn->local_server_addr == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+	}
+
+	ncacn_conn->session_info = copy_session_info(ncacn_conn, session_info);
+	if (ncacn_conn->session_info == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	ret = make_base_pipes_struct(ncacn_conn,
+				     msg_ctx,
+				     pipe_name,
+				     NCALRPC,
+				     RPC_LITTLE_ENDIAN,
+				     ncacn_conn->remote_client_addr,
+				     ncacn_conn->local_server_addr,
+				     &ncacn_conn->p);
 	if (ret) {
 		DBG_ERR("No memory for pipes_struct!\n");
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
-	if (!init_pipe_handles(out, syntax)) {
+	if (!init_pipe_handles(ncacn_conn->p, &table->syntax_id)) {
 		DBG_ERR("init_pipe_handles failed.\n");
-		TALLOC_FREE(out);
-		return NT_STATUS_UNSUCCESSFUL;
+		status = NT_STATUS_UNSUCCESSFUL;
+		goto fail;
 	}
 
-	out->session_info = copy_session_info(out, session_info);
-	if (out->session_info == NULL) {
-		DBG_ERR("copy_serverinfo failed\n");
-		close_policy_by_pipe(out);
-		TALLOC_FREE(out);
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	context_fns = talloc_zero(out, struct pipe_rpc_fns);
+	context_fns = talloc_zero(ncacn_conn->p, struct pipe_rpc_fns);
 	if (context_fns == NULL) {
 		DBG_ERR("No memory");
-		TALLOC_FREE(out);
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
 	}
 
 	context_fns->next = context_fns->prev = NULL;
 	context_fns->context_id = 0;
-	context_fns->syntax = *syntax;
+	context_fns->syntax = table->syntax_id;
 
 	/* add to the list of open contexts */
-	DLIST_ADD(out->contexts, context_fns);
+	DLIST_ADD(ncacn_conn->p->contexts, context_fns);
 
 	DEBUG(4,("Created internal pipe %s\n", pipe_name));
 
-	*p = out;
+	*_out = ncacn_conn;
 
 	return NT_STATUS_OK;
+
+fail:
+	talloc_free(ncacn_conn);
+	return status;
 }
 
-static NTSTATUS rpcint_dispatch(struct pipes_struct *p,
+static NTSTATUS find_ncalrpc_default_endpoint(struct dcesrv_context *dce_ctx,
+					      struct dcesrv_endpoint **ep)
+{
+	TALLOC_CTX *tmp_ctx = NULL;
+	struct dcerpc_binding *binding = NULL;
+	const char *ep_description = NULL;
+	NTSTATUS status;
+
+	tmp_ctx = talloc_new(dce_ctx);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/*
+	 * Some services use a rpcint binding handle in their initialization,
+	 * before the server is fully initialized. Search the NCALRPC endpoint
+	 * with and without endpoint
+	 */
+	status = dcerpc_parse_binding(tmp_ctx, "ncalrpc:", &binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = dcesrv_find_endpoint(dce_ctx, binding, ep);
+	if (NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
+		ep_description = "ncalrpc:[SMBD]";
+	} else {
+		ep_description = "ncalrpc:[DEFAULT]";
+	}
+
+	status = dcerpc_parse_binding(tmp_ctx, ep_description, &binding);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+	status = dcesrv_find_endpoint(dce_ctx, binding, ep);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto out;
+	}
+
+out:
+	talloc_free(tmp_ctx);
+	return status;
+}
+
+static NTSTATUS make_internal_dcesrv_connection(TALLOC_CTX *mem_ctx,
 				const struct ndr_interface_table *ndr_table,
-				TALLOC_CTX *mem_ctx,
-				uint32_t opnum,
-				const DATA_BLOB *in_data,
-				DATA_BLOB *out_data)
+				struct dcerpc_ncacn_conn *ncacn_conn,
+				struct dcesrv_connection **_out)
+{
+	struct dcesrv_connection *conn = NULL;
+	struct dcesrv_connection_context *context = NULL;
+	struct dcesrv_endpoint *endpoint = NULL;
+	NTSTATUS status;
+
+	conn = talloc_zero(mem_ctx, struct dcesrv_connection);
+	if (conn == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	conn->dce_ctx = global_dcesrv_context();
+	conn->preferred_transfer = &ndr_transfer_syntax_ndr;
+	conn->transport.private_data = ncacn_conn;
+
+	status = find_ncalrpc_default_endpoint(conn->dce_ctx, &endpoint);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto fail;
+	}
+	conn->endpoint = endpoint;
+
+	conn->default_auth_state = talloc_zero(conn, struct dcesrv_auth);
+	if (conn->default_auth_state == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	conn->default_auth_state->session_info = ncacn_conn->session_info;
+	conn->default_auth_state->auth_finished = true;
+
+	context = talloc_zero(conn, struct dcesrv_connection_context);
+	if (context == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+	context->conn = conn;
+	context->context_id = 0;
+	context->transfer_syntax = *(conn->preferred_transfer);
+	context->iface = find_interface_by_uuid(conn->endpoint,
+					&ndr_table->syntax_id.uuid,
+					ndr_table->syntax_id.if_version);
+	if (context->iface == NULL) {
+		status = NT_STATUS_RPC_INTERFACE_NOT_FOUND;
+		goto fail;
+	}
+
+	DLIST_ADD(conn->contexts, context);
+
+	*_out = conn;
+
+	return NT_STATUS_OK;
+fail:
+	talloc_free(conn);
+	return status;
+}
+
+static NTSTATUS rpcint_dispatch(struct dcesrv_call_state *call)
 {
 	NTSTATUS status;
-	const struct dcesrv_endpoint_server *ep_server = NULL;
-	struct dcesrv_interface iface;
-	const struct ndr_syntax_id *abstract_syntax = &ndr_table->syntax_id;
-	bool ok;
+	struct ndr_pull *pull = NULL;
+	struct ndr_push *push = NULL;
+	struct data_blob_list_item *rep = NULL;
 
-	ep_server = dcesrv_ep_server_byname(ndr_table->name);
-	if (ep_server == NULL) {
-		DBG_ERR("Failed to get DCE/RPC endpoint server '%s'\n",
-			ndr_table->name);
-		return NT_STATUS_NOT_FOUND;
+	pull = ndr_pull_init_blob(&call->pkt.u.request.stub_and_verifier,
+				  call);
+	if (pull == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
-	ok = ep_server->interface_by_uuid(&iface, &abstract_syntax->uuid,
-					  abstract_syntax->if_version);
-	if (!ok) {
-		DBG_ERR("Failed to get DCE/RPC interface\n");
-		return NT_STATUS_NOT_FOUND;
-	}
+	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
-	status = iface.local(p, opnum, mem_ctx, in_data, out_data);
+	call->ndr_pull = pull;
+
+	/* unravel the NDR for the packet */
+	status = call->context->iface->ndr_pull(call, call, pull, &call->r);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_ERR("DCE/RPC fault in call %s:%02X - %s\n",
-			iface.name, opnum,
-			dcerpc_errstr(mem_ctx, p->fault_state));
+			call->context->iface->name,
+			call->pkt.u.request.opnum,
+			dcerpc_errstr(call, call->fault_code));
 		return status;
 	}
+
+	status = call->context->iface->local(call, call, call->r);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("DCE/RPC fault in call %s:%02X - %s\n",
+			call->context->iface->name,
+			call->pkt.u.request.opnum,
+			dcerpc_errstr(call, call->fault_code));
+		return status;
+	}
+
+	push = ndr_push_init_ctx(call);
+	if (push == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	push->ptr_count = call->ndr_pull->ptr_count;
+
+	status = call->context->iface->ndr_push(call, call, push, call->r);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("DCE/RPC fault in call %s:%02X - %s\n",
+			call->context->iface->name,
+			call->pkt.u.request.opnum,
+			dcerpc_errstr(call, call->fault_code));
+		return status;
+	}
+
+	rep = talloc_zero(call, struct data_blob_list_item);
+	if (rep == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	rep->blob = ndr_push_blob(push);
+	DLIST_ADD_END(call->replies, rep);
 
 	return NT_STATUS_OK;
 }
 
 struct rpcint_bh_state {
-	struct pipes_struct *p;
-	const struct ndr_interface_table *ndr_table;
+	struct dcesrv_connection *conn;
 };
 
 static bool rpcint_bh_is_connected(struct dcerpc_binding_handle *h)
@@ -368,7 +516,7 @@ static bool rpcint_bh_is_connected(struct dcerpc_binding_handle *h)
 	struct rpcint_bh_state *hs = dcerpc_binding_handle_data(h,
 				     struct rpcint_bh_state);
 
-	if (!hs->p) {
+	if (hs->conn == NULL) {
 		return false;
 	}
 
@@ -383,9 +531,7 @@ static uint32_t rpcint_bh_set_timeout(struct dcerpc_binding_handle *h,
 }
 
 struct rpcint_bh_raw_call_state {
-	DATA_BLOB in_data;
-	DATA_BLOB out_data;
-	uint32_t out_flags;
+	struct dcesrv_call_state *call;
 };
 
 static struct tevent_req *rpcint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
@@ -402,6 +548,7 @@ static struct tevent_req *rpcint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 		struct rpcint_bh_state);
 	struct tevent_req *req;
 	struct rpcint_bh_raw_call_state *state;
+	struct dcesrv_context *dce_ctx = global_dcesrv_context();
 	bool ok;
 	NTSTATUS status;
 
@@ -410,8 +557,6 @@ static struct tevent_req *rpcint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->in_data.data = discard_const_p(uint8_t, in_data);
-	state->in_data.length = in_length;
 
 	ok = rpcint_bh_is_connected(h);
 	if (!ok) {
@@ -419,13 +564,33 @@ static struct tevent_req *rpcint_bh_raw_call_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
+	state->call = talloc_zero(hs->conn, struct dcesrv_call_state);
+	if (tevent_req_nomem(state->call, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	state->call->event_ctx = ev;
+	state->call->conn = hs->conn;
+	state->call->context = hs->conn->contexts;
+	state->call->auth_state = hs->conn->default_auth_state;
+
+	if (hs->conn->assoc_group == NULL) {
+		ZERO_STRUCT(state->call->pkt);
+		state->call->pkt.u.bind.assoc_group_id = 0;
+		status = dce_ctx->callbacks.assoc_group.find(state->call);
+		if (tevent_req_nterror(req, status)) {
+			return tevent_req_post(req, ev);
+		}
+	}
+
+	ZERO_STRUCT(state->call->pkt);
+	state->call->pkt.u.request.opnum = opnum;
+	state->call->pkt.u.request.context_id = 0;
+	state->call->pkt.u.request.stub_and_verifier.data = discard_const_p(uint8_t, in_data);
+	state->call->pkt.u.request.stub_and_verifier.length = in_length;
+
 	/* TODO: allow async */
-	status = rpcint_dispatch(hs->p,
-				 hs->ndr_table,
-				 state,
-				 opnum,
-				 &state->in_data,
-				 &state->out_data);
+	status = rpcint_dispatch(state->call);
 	if (!NT_STATUS_IS_OK(status)) {
 		tevent_req_nterror(req, status);
 		return tevent_req_post(req, ev);
@@ -444,6 +609,7 @@ static NTSTATUS rpcint_bh_raw_call_recv(struct tevent_req *req,
 	struct rpcint_bh_raw_call_state *state =
 		tevent_req_data(req,
 		struct rpcint_bh_raw_call_state);
+	struct data_blob_list_item *rep = NULL;
 	NTSTATUS status;
 
 	if (tevent_req_is_nterror(req, &status)) {
@@ -451,9 +617,15 @@ static NTSTATUS rpcint_bh_raw_call_recv(struct tevent_req *req,
 		return status;
 	}
 
-	*out_data = talloc_move(mem_ctx, &state->out_data.data);
-	*out_length = state->out_data.length;
+	rep = state->call->replies;
+	DLIST_REMOVE(state->call->replies, rep);
+
+	*out_data = talloc_steal(mem_ctx, rep->blob.data);
+	*out_length = rep->blob.length;
 	*out_flags = 0;
+
+	talloc_free(rep);
+
 	tevent_req_received(req);
 	return NT_STATUS_OK;
 }
@@ -487,9 +659,9 @@ static struct tevent_req *rpcint_bh_disconnect_send(TALLOC_CTX *mem_ctx,
 	/*
 	 * TODO: do a real async disconnect ...
 	 *
-	 * For now the caller needs to free pipes_struct
+	 * For now the caller needs to free dcesrv_connection
 	 */
-	hs->p = NULL;
+	hs->conn = NULL;
 
 	tevent_req_done(req);
 	return tevent_req_post(req, ev);
@@ -562,11 +734,8 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
 {
 	struct dcerpc_binding_handle *h;
 	struct rpcint_bh_state *hs;
+	struct dcerpc_ncacn_conn *ncacn_conn = NULL;
 	NTSTATUS status;
-
-	if (ndr_table) {
-		abstract_syntax = &ndr_table->syntax_id;
-	}
 
 	h = dcerpc_binding_handle_create(mem_ctx,
 					 &rpcint_bh_ops,
@@ -579,15 +748,22 @@ static NTSTATUS rpcint_binding_handle_ex(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	hs->ndr_table = ndr_table;
-
-	status = make_internal_rpc_pipe_p(hs,
-					  abstract_syntax,
+	status = make_internal_ncacn_conn(hs,
+					  ndr_table,
 					  remote_address,
 					  local_address,
 					  session_info,
 					  msg_ctx,
-					  &hs->p);
+					  &ncacn_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(h);
+		return status;
+	}
+
+	status = make_internal_dcesrv_connection(ncacn_conn,
+						 ndr_table,
+						 ncacn_conn,
+						 &hs->conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(h);
 		return status;

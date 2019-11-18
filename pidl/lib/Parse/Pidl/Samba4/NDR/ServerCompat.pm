@@ -212,67 +212,6 @@ sub gen_reply_switch($)
 	}
 }
 
-# generate the switch statement for local function dispatch
-sub gen_local_dispatch_switch($)
-{
-	my ($self, $interface) = @_;
-
-	my @alloc_error_block = ("p->fault_state = DCERPC_FAULT_CANT_PERFORM;",
-				 "return NT_STATUS_NO_MEMORY;");
-
-	foreach my $fn (@{$interface->{FUNCTIONS}}) {
-		next if not defined($fn->{OPNUM});
-
-		$self->pidl("case $fn->{OPNUM}: { /* $fn->{NAME} */");
-		$self->indent();
-		$self->pidl("struct $fn->{NAME} *r2 = (struct $fn->{NAME} *)r;");
-		$self->pidl("if (DEBUGLEVEL >= 10) {\n");
-		$self->indent();
-		$self->pidl("NDR_PRINT_FUNCTION_DEBUG($fn->{NAME}, NDR_IN, r2);");
-		$self->deindent();
-		$self->pidl("}");
-
-		$self->gen_fn_out($fn, \@alloc_error_block);
-
-		if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
-			$self->pidl("r2->out.result = _$fn->{NAME}(p, r2);");
-		} else {
-			$self->pidl("_$fn->{NAME}(p, r2);");
-		}
-		$self->pidl("break;");
-		$self->deindent();
-		$self->pidl("}");
-	}
-}
-
-#####################################################
-# generate the switch statement for local function reply
-sub gen_local_reply_switch($)
-{
-	my ($self, $interface) = @_;
-
-	foreach my $fn (@{$interface->{FUNCTIONS}}) {
-		next if not defined($fn->{OPNUM});
-
-		$self->pidl("case $fn->{OPNUM}: { /* $fn->{NAME} */");
-		$self->indent();
-		$self->pidl("struct $fn->{NAME} *r2 = (struct $fn->{NAME} *)r;");
-		$self->pidl("if (DEBUGLEVEL >= 10 && p->fault_state == 0) {");
-		$self->indent();
-		$self->pidl("NDR_PRINT_FUNCTION_DEBUG($fn->{NAME}, NDR_OUT | NDR_SET_VALUES, r2);");
-		$self->deindent();
-		$self->pidl("}");
-		$self->pidl("if (p->fault_state != 0) {\n");
-		$self->indent();
-		$self->pidl("DBG_WARNING(\"dcerpc_fault %s in $fn->{NAME}\\n\", dcerpc_errstr(mem_ctx, p->fault_state));");
-		$self->deindent();
-		$self->pidl("}");
-		$self->pidl("break;");
-		$self->deindent();
-		$self->pidl("}");
-	}
-}
-
 #####################################################################
 # produce boilerplate code for a interface
 sub boilerplate_iface($)
@@ -392,15 +331,14 @@ sub boilerplate_iface($)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl_hdr("NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r);");
-	$self->pidl("NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)");
+	$self->pidl("static NTSTATUS $name\__op_dispatch_internal(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r, enum s3compat_rpc_dispatch dispatch)");
 	$self->pidl("{");
 	$self->indent();
 	$self->pidl("uint16_t opnum = dce_call->pkt.u.request.opnum;");
 	$self->pidl("struct pipes_struct *p = NULL;");
 	$self->pidl("struct auth_session_info *pipe_session_info = NULL;");
 	$self->pidl("NTSTATUS status = NT_STATUS_OK;");
-	$self->pidl("bool impersonated;");
+	$self->pidl("bool impersonated = false;");
 	$self->pidl("");
 	$self->pidl("/* Retrieve pipes struct */");
 	$self->pidl("p = dcesrv_get_pipes_struct(dce_call->conn);");
@@ -417,12 +355,16 @@ sub boilerplate_iface($)
 	$self->pidl("");
 
 	$self->pidl("/* Impersonate */");
+	$self->pidl("if (dispatch == S3COMPAT_RPC_DISPATCH_EXTERNAL) {");
+	$self->indent();
 	$self->pidl("impersonated = become_authenticated_pipe_user(p->session_info);");
 	$self->pidl("if (!impersonated) {");
 	$self->indent();
 	$self->pidl("dce_call->fault_code = DCERPC_FAULT_ACCESS_DENIED;");
 	$self->pidl("status = NT_STATUS_NET_WRITE_FAULT;");
 	$self->pidl("goto fail;");
+	$self->deindent();
+	$self->pidl("}");
 	$self->deindent();
 	$self->pidl("}");
 	$self->pidl("");
@@ -465,6 +407,15 @@ sub boilerplate_iface($)
 	$self->pidl("");
 
 	$self->pidl("return status;");
+	$self->deindent();
+	$self->pidl("}");
+	$self->pidl("");
+
+	$self->pidl_hdr("NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r);");
+	$self->pidl("NTSTATUS $name\__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)");
+	$self->pidl("{");
+	$self->indent();
+	$self->pidl("return $name\__op_dispatch_internal(dce_call, mem_ctx, r, S3COMPAT_RPC_DISPATCH_EXTERNAL);");
 	$self->deindent();
 	$self->pidl("}");
 	$self->pidl("");
@@ -519,112 +470,11 @@ sub boilerplate_iface($)
 	##############################
 	####    LOCAL DISPATCH    ####
 	##############################
-	$self->pidl_hdr("NTSTATUS $name\__op_local(void *q, int opnum, TALLOC_CTX *mem_ctx, const DATA_BLOB *in, DATA_BLOB *out);");
-	$self->pidl("NTSTATUS $name\__op_local(void *q, int opnum, TALLOC_CTX *mem_ctx, const DATA_BLOB *in, DATA_BLOB *out)");
+	$self->pidl_hdr("NTSTATUS $name\__op_local(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r);");
+	$self->pidl("NTSTATUS $name\__op_local(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, void *r)");
 	$self->pidl("{");
 	$self->indent();
-	$self->pidl("struct pipes_struct *p = talloc_get_type_abort(q, struct pipes_struct);");
-	$self->pidl("void *r;");
-	$self->pidl("struct ndr_pull *pull;");
-	$self->pidl("struct ndr_push *push;");
-	$self->pidl("enum ndr_err_code ndr_err;");
-	$self->pidl("");
-	$self->pidl("p->fault_state = 0;");
-	$self->pidl("if (opnum >= ndr_table_$name.num_calls) {");
-	$self->indent();
-	$self->pidl("p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;");
-	$self->pidl("return NT_STATUS_NET_WRITE_FAULT;");
-	$self->deindent();
-	$self->pidl("}");
-	$self->pidl("");
-	$self->pidl("r = talloc_named(mem_ctx, ndr_table_$name.calls[opnum].struct_size, \"struct %s\", ndr_table_$name.calls[opnum].name);");
-	$self->pidl("if (r == NULL) {");
-	$self->indent();
-	$self->pidl("p->fault_state = DCERPC_FAULT_CANT_PERFORM;");
-	$self->pidl("return NT_STATUS_NO_MEMORY;");
-	$self->deindent();
-	$self->pidl("}");
-	$self->pidl("");
-	$self->pidl("pull = ndr_pull_init_blob(in, r);");
-	$self->pidl("if (pull == NULL) {");
-	$self->indent();
-	$self->pidl("talloc_free(r);");
-	$self->pidl("p->fault_state = DCERPC_FAULT_CANT_PERFORM;");
-	$self->pidl("return NT_STATUS_NO_MEMORY;");
-	$self->deindent();
-	$self->pidl("}");
-	$self->pidl("");
-	$self->pidl("pull->flags |= LIBNDR_FLAG_REF_ALLOC;");
-	$self->pidl("if (p->endian) {");
-	$self->indent();
-	$self->pidl("pull->flags |= LIBNDR_FLAG_BIGENDIAN;");
-	$self->deindent();
-	$self->pidl("}");
-	$self->pidl("");
-	$self->pidl("ndr_err = ndr_table_$name.calls[opnum].ndr_pull(pull, NDR_IN, r);");
-	$self->pidl("if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {");
-	$self->indent();
-	$self->pidl("p->fault_state = DCERPC_FAULT_NDR;");
-	$self->pidl("talloc_free(r);");
-	$self->pidl("return NT_STATUS_NET_WRITE_FAULT;");
-	$self->deindent();
-	$self->pidl("}");
-	$self->pidl("");
-	$self->pidl("switch (opnum) {");
-	$self->gen_local_dispatch_switch($interface);
-	$self->pidl("default:");
-	$self->indent();
-	$self->pidl("p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;");
-	$self->pidl("break;");
-	$self->deindent();
-	$self->pidl("}");
-	$self->pidl("");
-	$self->pidl("if (p->fault_state != 0) {");
-	$self->indent();
-	$self->pidl("talloc_free(r);");
-	$self->pidl("return NT_STATUS_NET_WRITE_FAULT;");
-	$self->deindent();
-	$self->pidl("}");
-	$self->pidl("");
-	$self->pidl("switch (opnum) {");
-	$self->gen_local_reply_switch($interface);
-	$self->pidl("default:");
-	$self->indent();
-	$self->pidl("p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;");
-	$self->pidl("break;");
-	$self->deindent();
-	$self->pidl("}");
-	$self->pidl("");
-	$self->pidl("push = ndr_push_init_ctx(r);");
-	$self->pidl("if (push == NULL) {");
-	$self->indent();
-	$self->pidl("talloc_free(r);");
-	$self->pidl("p->fault_state = DCERPC_FAULT_CANT_PERFORM;");
-	$self->pidl("return NT_STATUS_NO_MEMORY;");
-	$self->deindent();
-	$self->pidl("}");
-	$self->pidl("");
-	$self->pidl("/*");
-	$self->pidl(" * carry over the pointer count to the reply in case we are");
-	$self->pidl(" * using full pointer. See NDR specification for full pointers");
-	$self->pidl(" */");
-	$self->pidl("push->ptr_count = pull->ptr_count;");
-	$self->pidl("");
-	$self->pidl("ndr_err = ndr_table_$name.calls[opnum].ndr_push(push, NDR_OUT, r);");
-	$self->pidl("if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {");
-	$self->indent();
-	$self->pidl("p->fault_state = DCERPC_FAULT_NDR;");
-	$self->pidl("talloc_free(r);");
-	$self->pidl("return NT_STATUS_NET_WRITE_FAULT;");
-	$self->deindent();
-	$self->pidl("}");
-	$self->pidl("");
-	$self->pidl("*out = ndr_push_blob(push);");
-	$self->pidl("talloc_steal(mem_ctx, out->data);");
-	$self->pidl("");
-	$self->pidl("talloc_free(r);");
-	$self->pidl("");
-	$self->pidl("return NT_STATUS_OK;");
+	$self->pidl("return $name\__op_dispatch_internal(dce_call, mem_ctx, r, S3COMPAT_RPC_DISPATCH_INTERNAL);");
 	$self->deindent();
 	$self->pidl("}");
 	$self->pidl("");
@@ -853,6 +703,13 @@ sub Parse($$)
 	$self->pidl("#include <rpc_server/rpc_config.h>");
 	$self->pidl("#include <rpc_server/rpc_server.h>");
 	$self->pidl("#include <util/debug.h>");
+	$self->pidl("");
+	$self->pidl("enum s3compat_rpc_dispatch {");
+	$self->indent();
+	$self->pidl("S3COMPAT_RPC_DISPATCH_EXTERNAL = 0x00000001,");
+	$self->pidl("S3COMPAT_RPC_DISPATCH_INTERNAL = 0x00000002,");
+	$self->deindent();
+	$self->pidl("};");
 	$self->pidl("");
 
 	foreach my $x (@{$ndr}) {

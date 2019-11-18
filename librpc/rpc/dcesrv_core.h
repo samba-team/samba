@@ -69,7 +69,7 @@ struct dcesrv_interface {
 
 	/* the local dispatch function for the chosen interface.
 	 */
-	NTSTATUS (*local)(void *p, int opnum, TALLOC_CTX *, const DATA_BLOB *in, DATA_BLOB *out);
+	NTSTATUS (*local)(struct dcesrv_call_state *, TALLOC_CTX *, void *);
 
 	/* for any private use by the interface code */
 	const void *private_data;
