@@ -419,13 +419,18 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 
 	st = talloc_zero_size(mem_ctx, f->struct_size);
 	if (!st) {
-		printf("Unable to allocate %d bytes\n", (int)f->struct_size);
+		printf("Unable to allocate %d bytes for %s structure\n",
+		       (int)f->struct_size,
+		       f->name);
 		exit(1);
 	}
 
 	v_st = talloc_zero_size(mem_ctx, f->struct_size);
 	if (!v_st) {
-		printf("Unable to allocate %d bytes\n", (int)f->struct_size);
+		printf("Unable to allocate %d bytes for %s validation "
+		       "structure\n",
+		       (int)f->struct_size,
+		       f->name);
 		exit(1);
 	}
 
