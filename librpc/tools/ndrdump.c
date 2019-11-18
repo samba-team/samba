@@ -422,6 +422,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		printf("Unable to allocate %d bytes for %s structure\n",
 		       (int)f->struct_size,
 		       f->name);
+		TALLOC_FREE(mem_ctx);
 		exit(1);
 	}
 
@@ -431,18 +432,21 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		       "structure\n",
 		       (int)f->struct_size,
 		       f->name);
+		TALLOC_FREE(mem_ctx);
 		exit(1);
 	}
 
 	if (ctx_filename) {
 		if (flags & NDR_IN) {
 			printf("Context file can only be used for \"out\" packages\n");
+			TALLOC_FREE(mem_ctx);
 			exit(1);
 		}
 			
 		data = (uint8_t *)file_load(ctx_filename, &size, 0, mem_ctx);
 		if (!data) {
 			perror(ctx_filename);
+			TALLOC_FREE(mem_ctx);
 			exit(1);
 		}
 
@@ -452,6 +456,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
 		if (ndr_pull == NULL) {
 			perror("ndr_pull_init_blob");
+			TALLOC_FREE(mem_ctx);
 			exit(1);
 		}
 		ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
@@ -474,6 +479,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			printf("pull for context file returned %s\n",
 			       ndr_map_error2string(ndr_err));
+			TALLOC_FREE(mem_ctx);
 			exit(1);
 		}
 		memcpy(v_st, st, f->struct_size);
@@ -502,6 +508,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
 	if (ndr_pull == NULL) {
 		perror("ndr_pull_init_blob");
+		TALLOC_FREE(mem_ctx);
 		exit(1);
 	}
 	ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
@@ -542,6 +549,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 						      &f->out_pipes);
 		if (!NT_STATUS_IS_OK(status)) {
 			printf("dump FAILED\n");
+			TALLOC_FREE(mem_ctx);
 			exit(1);
 		}
 	}
@@ -552,6 +560,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 
 	if (stop_on_parse_failure && !NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		printf("not printing because --stop-on-parse-failure\n");
+		TALLOC_FREE(mem_ctx);
 		exit(1);
 	}
 
@@ -611,6 +620,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		       ndr_map_error2string(ndr_err));
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			printf("validate push FAILED\n");
+			TALLOC_FREE(mem_ctx);
 			exit(1);
 		}
 
@@ -624,6 +634,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		ndr_v_pull = ndr_pull_init_blob(&v_blob, mem_ctx);
 		if (ndr_v_pull == NULL) {
 			perror("ndr_pull_init_blob");
+			TALLOC_FREE(mem_ctx);
 			exit(1);
 		}
 		ndr_v_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
@@ -633,6 +644,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		       ndr_map_error2string(ndr_err));
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			printf("validate pull FAILED\n");
+			TALLOC_FREE(mem_ctx);
 			exit(1);
 		}
 
@@ -694,7 +706,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 
 	printf("dump OK\n");
-	talloc_free(mem_ctx);
+	TALLOC_FREE(mem_ctx);
 
 	poptFreeContext(pc);
 	
