@@ -48,6 +48,9 @@
 #include "param/param.h"
 #include "messaging/messaging.h"
 
+#include "lib/crypto/gnutls_helpers.h"
+#include <gnutls/crypto.h>
+
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
@@ -1086,7 +1089,25 @@ static NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		/* In this case we didn't store the nt_hash itself,
 		   but the MD5 combination of salt + nt_hash. */
 		uchar salted_hash[NT_HASH_LEN];
-		E_md5hash(cached_salt, new_nt_pass, salted_hash);
+		gnutls_hash_hd_t hash_hnd = NULL;
+		int rc;
+
+		rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+		if (rc < 0) {
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
+		}
+
+		rc = gnutls_hash(hash_hnd, cached_salt, 16);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
+		}
+		rc = gnutls_hash(hash_hnd, new_nt_pass, 16);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
+		}
+		gnutls_hash_deinit(hash_hnd, salted_hash);
 
 		password_good = (memcmp(cached_nt_pass, salted_hash,
 					NT_HASH_LEN) == 0);
