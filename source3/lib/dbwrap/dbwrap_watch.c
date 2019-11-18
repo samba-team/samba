@@ -94,9 +94,14 @@ struct dbwrap_watcher {
 	 * Process watching this record
 	 */
 	struct server_id pid;
+	/*
+	 * Individual instance inside the waiter, incremented each
+	 * time a watcher is created
+	 */
+	uint64_t instance;
 };
 
-#define DBWRAP_WATCHER_BUF_LENGTH (SERVER_ID_BUF_LENGTH)
+#define DBWRAP_WATCHER_BUF_LENGTH (SERVER_ID_BUF_LENGTH + sizeof(uint64_t))
 
 /*
  * Watched records contain a header of:
@@ -177,12 +182,14 @@ static void dbwrap_watcher_get(struct dbwrap_watcher *w,
 			       const uint8_t buf[DBWRAP_WATCHER_BUF_LENGTH])
 {
 	server_id_get(&w->pid, buf);
+	w->instance = BVAL(buf, SERVER_ID_BUF_LENGTH);
 }
 
 static void dbwrap_watcher_put(uint8_t buf[DBWRAP_WATCHER_BUF_LENGTH],
 			       const struct dbwrap_watcher *w)
 {
 	server_id_put(buf, w->pid);
+	SBVAL(buf, SERVER_ID_BUF_LENGTH, w->instance);
 }
 
 static void dbwrap_watch_rec_get_watcher(
@@ -450,8 +457,9 @@ static void dbwrap_watched_subrec_wakeup(
 
 		dbwrap_watch_rec_get_watcher(wrec, i, &watcher);
 
-		DBG_DEBUG("Alerting %s\n",
-			  server_id_str_buf(watcher.pid, &tmp));
+		DBG_DEBUG("Alerting %s:%"PRIu64"\n",
+			  server_id_str_buf(watcher.pid, &tmp),
+			  watcher.instance);
 
 		status = messaging_send_iov(
 			ctx->msg,
@@ -894,6 +902,8 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 	ssize_t needed;
 	NTSTATUS status;
 
+	static uint64_t instance = 1;
+
 	req = tevent_req_create(mem_ctx, &state,
 				struct dbwrap_watched_watch_state);
 	if (req == NULL) {
@@ -933,6 +943,7 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 
 	state->watcher = (struct dbwrap_watcher) {
 		.pid = messaging_server_id(ctx->msg),
+		.instance = instance++,
 	};
 
 	needed = dbwrap_record_watchers_key(db, rec, NULL, 0);
@@ -1020,15 +1031,17 @@ static bool dbwrap_watched_remove_watcher(
 	for (i=0; i<wrec->num_watchers; i++) {
 		struct dbwrap_watcher watcher;
 		dbwrap_watch_rec_get_watcher(wrec, i, &watcher);
-		if (server_id_equal(&to_remove->pid, &watcher.pid)) {
+		if ((to_remove->instance == watcher.instance) &&
+		    server_id_equal(&to_remove->pid, &watcher.pid)) {
 			break;
 		}
 	}
 
 	if (i == wrec->num_watchers) {
 		struct server_id_buf buf;
-		DBG_WARNING("Did not find %s in state->watchers\n",
-			    server_id_str_buf(to_remove->pid, &buf));
+		DBG_WARNING("Did not find %s:%"PRIu64" in state->watchers\n",
+			    server_id_str_buf(to_remove->pid, &buf),
+			    to_remove->instance);
 		return false;
 	}
 
