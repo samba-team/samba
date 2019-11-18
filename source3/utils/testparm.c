@@ -375,8 +375,8 @@ static int do_global_checks(void)
 		if (!lp_pam_password_change()) {
 #endif
 
-			if((lp_passwd_program(talloc_tos()) == NULL) ||
-			   (strlen(lp_passwd_program(talloc_tos())) == 0))
+			if((lp_passwd_program(talloc_tos(), lp_sub) == NULL) ||
+			   (strlen(lp_passwd_program(talloc_tos(), lp_sub)) == 0))
 			{
 				fprintf(stderr,
 					"ERROR: the 'unix password sync' "
@@ -388,7 +388,7 @@ static int do_global_checks(void)
 				char *truncated_prog = NULL;
 				const char *p;
 
-				passwd_prog = lp_passwd_program(talloc_tos());
+				passwd_prog = lp_passwd_program(talloc_tos(), lp_sub);
 				p = passwd_prog;
 				next_token_talloc(talloc_tos(),
 						&p,
@@ -417,15 +417,15 @@ static int do_global_checks(void)
 			ret = 1;
 		}
 
-		if ((lp_passwd_program(talloc_tos()) != NULL) &&
-		    (strlen(lp_passwd_program(talloc_tos())) > 0))
+		if ((lp_passwd_program(talloc_tos(), lp_sub) != NULL) &&
+		    (strlen(lp_passwd_program(talloc_tos(), lp_sub)) > 0))
 		{
 			/* check if there's a %u parameter present */
-			if(strstr_m(lp_passwd_program(talloc_tos()), "%u") == NULL) {
+			if(strstr_m(lp_passwd_program(talloc_tos(), lp_sub), "%u") == NULL) {
 				fprintf(stderr,
 					"ERROR: the 'passwd program' (%s) "
 					"requires a '%%u' parameter.\n\n",
-					lp_passwd_program(talloc_tos()));
+					lp_passwd_program(talloc_tos(), lp_sub));
 				ret = 1;
 			}
 		}

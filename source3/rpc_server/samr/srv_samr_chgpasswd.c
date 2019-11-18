@@ -594,7 +594,7 @@ bool chgpasswd(const char *name, const char *rhost, const struct passwd *pass,
 		return false;
 	}
 
-	passwordprogram = lp_passwd_program(ctx);
+	passwordprogram = lp_passwd_program(ctx, lp_sub);
 	if (!passwordprogram || !*passwordprogram) {
 		DEBUG(2, ("chgpasswd: Null password program - no password changing\n"));
 		return false;
