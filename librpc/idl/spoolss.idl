@@ -10,7 +10,7 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 [ uuid("12345678-1234-abcd-ef00-0123456789ab"),
   version(1.0),
-  endpoint("ncacn_np:[\\pipe\\spoolss]"),
+  endpoint("ncacn_np:[\\pipe\\spoolss]", "ncalrpc:"),
   pointer_default(unique),
   helpstring("Spooler SubSystem"),
   helper("../librpc/ndr/ndr_spoolss_buf.h")
