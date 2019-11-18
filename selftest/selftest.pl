@@ -298,7 +298,9 @@ unless (defined($ENV{VALGRIND})) {
 $ENV{PYTHONUNBUFFERED} = 1;
 
 # do not depend on the users setup
+# see also bootstrap/config.py
 $ENV{TZ} = "UTC";
+$ENV{LC_ALL} = $ENV{LANG} = "en_US.utf8";
 
 my $bindir_abs = abs_path($bindir);
 
