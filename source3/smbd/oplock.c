@@ -1032,7 +1032,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	if ((break_from == SMB2_LEASE_NONE) && !break_needed) {
+	if (break_from == SMB2_LEASE_NONE) {
 		struct file_id_buf idbuf;
 		DBG_NOTICE("Already downgraded oplock to none on %s: %s\n",
 			   file_id_str_buf(fsp->file_id, &idbuf),
@@ -1043,7 +1043,7 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	DEBUG(10, ("break_from=%u, break_to=%u\n",
 		   (unsigned)break_from, (unsigned)break_to));
 
-	if ((break_from == break_to) && !break_needed) {
+	if (break_from == break_to) {
 		struct file_id_buf idbuf;
 		DBG_NOTICE("Already downgraded oplock to %u on %s: %s\n",
 			   (unsigned)break_to,
