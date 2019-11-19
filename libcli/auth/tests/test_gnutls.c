@@ -421,6 +421,28 @@ static void torture_gnutls_sam_rid_crypt(void **state)
 	assert_memory_equal(decrypt, clear, 16);
 }
 
+static void torture_gnutls_SMBsesskeygen_lm_sess_key(void **state)
+{
+	static const uint8_t lm_hash[16] = {
+		0xFB, 0x67, 0x99, 0xA4, 0x83, 0xF3, 0xD4, 0xED,
+		0x9C, 0x14, 0xDD, 0xE1, 0x39, 0x23, 0xE0, 0x55
+	};
+	static const uint8_t lm_resp[24] = {
+		0x02, 0xFA, 0x3B, 0xEE, 0xE8, 0xBA, 0x06, 0x01,
+		0x02, 0xFA, 0x3B, 0xEE, 0xE8, 0xBA, 0x06, 0x01,
+		0x1E, 0x38, 0x27, 0x5B, 0x3B, 0xB8, 0x67, 0xEB
+	};
+	static const uint8_t crypt_expected[16] = {
+		0x52, 0x8D, 0xB2, 0xD3, 0x89, 0x83, 0xFB, 0x9C,
+		0x96, 0x45, 0x15, 0x4B, 0xC3, 0xF5, 0xD5, 0x7F
+	};
+
+	uint8_t crypt_sess_key[16];
+
+	SMBsesskeygen_lm_sess_key(lm_hash, lm_resp, crypt_sess_key);
+	assert_memory_equal(crypt_sess_key, crypt_expected, 16);
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -435,6 +457,7 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(torture_gnutls_des_crypt112),
 		cmocka_unit_test(torture_gnutls_des_crypt112_16),
 		cmocka_unit_test(torture_gnutls_sam_rid_crypt),
+		cmocka_unit_test(torture_gnutls_SMBsesskeygen_lm_sess_key),
 	};
 
 	if (argc == 2) {
