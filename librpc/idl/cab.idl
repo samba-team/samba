@@ -110,8 +110,8 @@ import "misc.idl";
 		[flag(r->attribs & _A_NAME_IS_UTF ? STR_UTF8|STR_NULLTERM : STR_ASCII|STR_NULLTERM)] string szName;
 	} CFFILE;
 
-	typedef [public,flag(NDR_PAHEX|NDR_LITTLE_ENDIAN|NDR_NOALIGN)] struct {
-		[value(ndr_cab_generate_checksum(r))] uint32 csum;		/* checksum of this CFDATA entry */
+	typedef [flag(NDR_PAHEX|NDR_LITTLE_ENDIAN|NDR_NOALIGN),nopull,nopush] struct {
+		uint32 csum;		/* checksum of this CFDATA entry */
 		uint16 cbData;		/* number of compressed bytes in this block */
 		uint16 cbUncomp;	/* number of uncompressed bytes in this block */
 #if 0
