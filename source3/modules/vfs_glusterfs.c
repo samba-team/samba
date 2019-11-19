@@ -1495,6 +1495,10 @@ static int vfs_gluster_fallocate(struct vfs_handle_struct *handle,
 
 	if (punch_hole) {
 		ret = glfs_discard(glfd, offset, len);
+		if (ret != 0) {
+			DBG_DEBUG("glfs_discard failed: %s\n",
+				  strerror(errno));
+		}
 	}
 
 	ret = glfs_fallocate(glfd, keep_size, offset, len);
