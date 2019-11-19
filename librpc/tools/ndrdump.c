@@ -602,8 +602,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		}
 
 		ndr_err = f->ndr_push(ndr_v_push, flags, st);
-		status = ndr_map_error2ntstatus(ndr_err);
-		printf("push returned %s\n", nt_errstr(status));
+		printf("push returned %s\n",
+		       ndr_map_error2string(ndr_err));
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			printf("validate push FAILED\n");
 			exit(1);
