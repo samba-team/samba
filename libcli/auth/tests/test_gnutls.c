@@ -311,6 +311,27 @@ static void torture_gnutls_SMBOWFencrypt(void **state)
 	SMBOWFencrypt(password, c8, crypt);
 	assert_memory_equal(crypt, crypt_expected, 24);
 }
+
+static void torture_gnutls_E_old_pw_hash(void **state)
+{
+	static uint8_t key[14] = {
+		0x98, 0xFD, 0xCB, 0x3A, 0xF7, 0xB5, 0x1C, 0xF8,
+		0x69, 0x88, 0x96, 0x8E, 0xB5, 0x3A
+	};
+	uint8_t clear[16] = {
+		0x9C, 0x14, 0xDD, 0xE1, 0x39, 0x23, 0xE0, 0x55,
+		0x3F, 0x49, 0x5B, 0x20, 0xA7, 0x84, 0xC2, 0x34
+	};
+	static const uint8_t crypt_expected[16] = {
+		0x6A, 0xC7, 0x08, 0xCA, 0x2A, 0xC1, 0xAA, 0x64,
+		0x37, 0xEF, 0xBE, 0x58, 0xC2, 0x59, 0x33, 0xEC
+	};
+	uint8_t crypt[16];
+
+	E_old_pw_hash(key, clear, crypt);
+	assert_memory_equal(crypt, crypt_expected, 16);
+}
+
 static void torture_gnutls_sam_rid_crypt(void **state)
 {
 	static const uint8_t clear[16] = {
@@ -342,6 +363,7 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(torture_gnutls_E_P16),
 		cmocka_unit_test(torture_gnutls_E_P24),
 		cmocka_unit_test(torture_gnutls_SMBOWFencrypt),
+		cmocka_unit_test(torture_gnutls_E_old_pw_hash),
 		cmocka_unit_test(torture_gnutls_sam_rid_crypt),
 	};
 
