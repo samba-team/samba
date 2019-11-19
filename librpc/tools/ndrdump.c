@@ -265,7 +265,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	 * name of a public structure
 	 */
 	const char *format = NULL;
-	uint8_t *data;
+	const uint8_t *data;
 	size_t size;
 	DATA_BLOB blob;
 	struct ndr_pull *ndr_pull;
@@ -450,8 +450,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			exit(1);
 		}
 
-		blob.data = data;
-		blob.length = size;
+		blob = data_blob_const(data, size);
 
 		ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
 		if (ndr_pull == NULL) {
@@ -499,10 +498,11 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	}
 	
 	if (hex_input) {
-		blob = hexdump_to_data_blob(mem_ctx, (char *)data, size);
+		blob = hexdump_to_data_blob(mem_ctx,
+					    (const char *)data,
+					    size);
 	} else {
-		blob.data = data;
-		blob.length = size;
+		blob = data_blob_const(data, size);
 	}
 
 	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
