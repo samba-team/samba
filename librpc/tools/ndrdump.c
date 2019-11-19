@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "lib/cmdline/popt_common.h"
 #include "param/param.h"
+#include "lib/util/base64.h"
 
 static const struct ndr_interface_call *find_function(
 	const struct ndr_interface_table *p,
@@ -265,6 +266,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	 * name of a public structure
 	 */
 	const char *format = NULL;
+	const char *cmdline_input = NULL;
 	const uint8_t *data;
 	size_t size;
 	DATA_BLOB blob;
@@ -284,6 +286,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	bool assume_ndr64 = false;
 	bool quiet = false;
 	bool hex_input = false;
+	bool base64_input = false;
 	bool stop_on_parse_failure = false;
 	int opt;
 	enum {
@@ -293,7 +296,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		OPT_LOAD_DSO,
 		OPT_NDR64,
 		OPT_QUIET,
+		OPT_BASE64_INPUT,
 		OPT_HEX_INPUT,
+		OPT_CMDLINE_INPUT,
 		OPT_STOP_ON_PARSE_FAILURE,
 	};
 	struct poptOption long_options[] = {
@@ -304,7 +309,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		{"load-dso", 'l', POPT_ARG_STRING, NULL, OPT_LOAD_DSO, "load from shared object file", NULL },
 		{"ndr64", 0, POPT_ARG_NONE, NULL, OPT_NDR64, "Assume NDR64 data", NULL },
 		{"quiet", 0, POPT_ARG_NONE, NULL, OPT_QUIET, "Don't actually dump anything", NULL },
+		{"base64-input", 0, POPT_ARG_NONE, NULL, OPT_BASE64_INPUT, "Read the input file in as a base64 string", NULL },
 		{"hex-input", 0, POPT_ARG_NONE, NULL, OPT_HEX_INPUT, "Read the input file in as a hex dump", NULL },
+		{"input", 0, POPT_ARG_STRING, NULL, OPT_CMDLINE_INPUT, "Provide the input on the command line (use with --base64-input)", "INPUT" },
 		{"stop-on-parse-failure", 0, POPT_ARG_NONE, NULL, OPT_STOP_ON_PARSE_FAILURE,
 		 "Do not try to print structures that fail to parse.", NULL },
 		POPT_COMMON_SAMBA
@@ -348,8 +355,14 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		case OPT_QUIET:
 			quiet = true;
 			break;
+		case OPT_BASE64_INPUT:
+			base64_input = true;
+			break;
 		case OPT_HEX_INPUT:
 			hex_input = true;
+			break;
+		case OPT_CMDLINE_INPUT:
+			cmdline_input = poptGetOptArg(pc);
 			break;
 		case OPT_STOP_ON_PARSE_FAILURE:
 			stop_on_parse_failure = true;
@@ -484,10 +497,18 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		memcpy(v_st, st, f->struct_size);
 	}
 
-	if (filename)
+	if (filename && cmdline_input) {
+		printf("cannot combine --input with a filename\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	} else if (cmdline_input) {
+		data = (const uint8_t *)cmdline_input;
+		size = strlen(cmdline_input);
+	} else if (filename) {
 		data = (uint8_t *)file_load(filename, &size, 0, mem_ctx);
-	else
+	} else {
 		data = (uint8_t *)stdin_load(mem_ctx, &size);
+	}
 
 	if (!data) {
 		if (filename)
@@ -497,10 +518,19 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		exit(1);
 	}
 	
-	if (hex_input) {
-		blob = hexdump_to_data_blob(mem_ctx,
-					    (const char *)data,
-					    size);
+	if (hex_input && base64_input) {
+		printf("cannot combine --hex-input with --base64-input\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+
+	} else if (hex_input) {
+		blob = hexdump_to_data_blob(mem_ctx, (const char *)data, size);
+	} else if (base64_input) {
+		/* Use talloc_strndup() to ensure null termination */
+		blob = base64_decode_data_blob(talloc_strndup(mem_ctx,
+							      (const char *)data, size));
+		/* base64_decode_data_blob() allocates on NULL */
+		talloc_steal(mem_ctx, blob.data);
 	} else {
 		blob = data_blob_const(data, size);
 	}
