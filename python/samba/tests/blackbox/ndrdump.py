@@ -110,3 +110,32 @@ dump OK
         # check_output will return bytes
         # convert expected to bytes for python 3
         self.assertEqual(actual, expected.encode('utf-8'))
+
+    def test_ndrdump_fuzzed_clusapi_QueryAllValues(self):
+        expected = b'''pull returned Success
+WARNING! 53 unread bytes
+[0000] 00 FF 00 00 FF 00 00 00   00 09 00 00 00 08 00 33   ........ .......3
+[0010] 33 32 37 36 32 36 39 33   32 37 36 38 34 01 00 00   32762693 27684...
+[0020] 80 32 0D FF 00 00 FF 00   00 00 00 08 00 00 00 1C   .2...... ........
+[0030] F1 29 08 00 00                                     .)... ''' \
+        b'''
+    clusapi_QueryAllValues: struct clusapi_QueryAllValues
+        out: struct clusapi_QueryAllValues
+            pcbData                  : *
+                pcbData                  : 0x01000000 (16777216)
+            ppData                   : *
+                ppData: ARRAY(1)
+                    ppData                   : NULL
+            rpc_status               : *
+                rpc_status               : WERR_OK
+            result                   : WERR_NOT_ENOUGH_MEMORY
+dump OK
+'''
+        try:
+            actual = self.check_output(
+                'ndrdump clusapi clusapi_QueryAllValues out ' +\
+                '--base64-input --input=' +\
+                'AAAAAQEAAAAAAAAAAAAAAAgAAAAA/wAA/wAAAAAJAAAACAAzMzI3NjI2OTMyNzY4NAEAAIAyDf8AAP8AAAAACAAAABzxKQgAAA==')
+        except BlackboxProcessError as e:
+            self.fail(e)
+        self.assertEqual(actual, expected)
