@@ -492,7 +492,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			printf("pull for context file returned %s\n",
 			       ndr_map_error2string(ndr_err));
 			TALLOC_FREE(mem_ctx);
-			exit(1);
+			exit(2);
 		}
 		memcpy(v_st, st, f->struct_size);
 	}
@@ -584,9 +584,9 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 						      ndr_print,
 						      &f->out_pipes);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("dump FAILED\n");
+			printf("pull and dump of pipes FAILED\n");
 			TALLOC_FREE(mem_ctx);
-			exit(1);
+			exit(2);
 		}
 	}
 
@@ -597,7 +597,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	if (stop_on_parse_failure && !NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		printf("not printing because --stop-on-parse-failure\n");
 		TALLOC_FREE(mem_ctx);
-		exit(1);
+		exit(2);
 	}
 
 	if (ndr_pull->offset > ndr_pull->relative_highest_offset) {
