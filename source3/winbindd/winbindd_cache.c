@@ -1392,17 +1392,20 @@ NTSTATUS wcache_save_creds(struct winbindd_domain *domain,
 
 	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
 	if (rc < 0) {
+		centry_free(centry);
 		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 
 	rc = gnutls_hash(hash_hnd, cred_salt, 16);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
+		centry_free(centry);
 		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 	rc = gnutls_hash(hash_hnd, nt_pass, 16);
 	if (rc < 0) {
 		gnutls_hash_deinit(hash_hnd, NULL);
+		centry_free(centry);
 		return gnutls_error_to_ntstatus(rc, NT_STATUS_HASH_NOT_SUPPORTED);
 	}
 	gnutls_hash_deinit(hash_hnd, salted_hash);
