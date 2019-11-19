@@ -438,6 +438,7 @@ class BlackboxTestCase(TestCaseInTempDir):
                                        stdoutdata,
                                        stderrdata,
                                        msg)
+        return stdoutdata
 
     def check_output(self, line):
         use_shell = not isinstance(line, list)
