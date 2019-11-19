@@ -30,11 +30,6 @@ enum g_lock_type {
 	G_LOCK_WRITE = 1,
 };
 
-struct g_lock_rec {
-	enum g_lock_type lock_type;
-	struct server_id pid;
-};
-
 struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg);
 

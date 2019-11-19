@@ -38,6 +38,11 @@ struct g_lock_ctx {
 	struct messaging_context *msg;
 };
 
+struct g_lock_rec {
+	enum g_lock_type lock_type;
+	struct server_id pid;
+};
+
 /*
  * The "g_lock.tdb" file contains records, indexed by the 0-terminated
  * lockname. The record contains an array of "struct g_lock_rec"
