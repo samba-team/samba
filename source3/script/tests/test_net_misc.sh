@@ -14,10 +14,16 @@ SERVERCONFFILE="$2"
 NET="$3"
 CONFIGURATION="$4"
 
-NET="$VALGRIND ${NET:-$BINDIR/net} $CONFIGURATION"
+# optional protocl, default to NT1
+if [ $# -gt 4 ]; then
+	PROTOCOL="$5"
+else
+	PROTOCOL="NT1"
+fi
 
-NETTIME="${NET} time"
-NETLOOKUP="${NET} lookup"
+NET="$VALGRIND ${NET:-$BINDIR/net} $CONFIGURATION"
+NETTIME="${NET}   --option=clientmaxprotocol=${PROTOCOL} time"
+NETLOOKUP="${NET} --option=clientmaxprotocol=${PROTOCOL} lookup"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
