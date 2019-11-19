@@ -1,0 +1,134 @@
+pull returned Success
+WARNING! 188 unread bytes
+[0000] 04 33 32 31 35 32 31 31   35 30 32 36 33 31 34 36   .3215211 50263146
+[0010] 38 37 FE FE FE FE FE FE   FE FE FE FE FE FE FE FE   87...... ........
+[0020] FE FE FE FE FE FE FE FE   FE FE FE FE FE FE FE FE   ........ ........
+[0030] FE FE FE FE FE FE FE FE   FE FE FE FE FE FE FE FE   ........ ........
+[0040] FE FE FE FE FE FE FE FE   FE FE FE FE FE FE FE FE   ........ ........
+[0050] FE FE FE FE FE FE FE FE   FE FE FE FE FE FE FE FE   ........ ........
+[0060] FE FE FE FE FE FE FE FE   FE FE FE FE FE FE FE FE   ........ ........
+[0070] FE FE FE FE FE FE FE FE   FE FE FE FE FE FE FE FE   ........ ........
+[0080] FE FE FE FE FE FE FE FE   FE FE FE FE FE FE FE FE   ........ ........
+[0090] FE FE FE FE FE FE FE FE   FE FE FE FE FE FE FE FE   ........ ........
+[00A0] FE FE FE FE FE E7 E4 F6   75 E9 01 F2 F7 D6 DD BA   ........ u.......
+[00B0] DF DD 6A C3 44 37 33 39   00 00 00 00               ..j.D739 ....
+    AUTHENTICATE_MESSAGE: struct AUTHENTICATE_MESSAGE
+        Signature                : ''
+        MessageType              : UNKNOWN_ENUM_VALUE (0)
+        LmChallengeResponseLen   : 0x0000 (0)
+        LmChallengeResponseMaxLen: 0x0000 (0)
+        LmChallengeResponse      : NULL
+        NtChallengeResponseLen   : 0x0000 (0)
+        NtChallengeResponseMaxLen: 0x0000 (0)
+        NtChallengeResponse      : NULL
+        DomainNameLen            : 0x0000 (0)
+        DomainNameMaxLen         : 0x0000 (0)
+        DomainName               : NULL
+        UserNameLen              : 0x0000 (0)
+        UserNameMaxLen           : 0x0001 (1)
+        UserName                 : NULL
+        WorkstationLen           : 0x3933 (14643)
+        WorkstationMaxLen        : 0x0000 (0)
+        Workstation              : NULL
+        EncryptedRandomSessionKeyLen: 0x0100 (256)
+        EncryptedRandomSessionKeyMaxLen: 0x0000 (0)
+        EncryptedRandomSessionKey: NULL
+        NegotiateFlags           : 0xfeff0000 (4278124544)
+               0: NTLMSSP_NEGOTIATE_UNICODE
+               0: NTLMSSP_NEGOTIATE_OEM    
+               0: NTLMSSP_REQUEST_TARGET   
+               0: NTLMSSP_NEGOTIATE_SIGN   
+               0: NTLMSSP_NEGOTIATE_SEAL   
+               0: NTLMSSP_NEGOTIATE_DATAGRAM
+               0: NTLMSSP_NEGOTIATE_LM_KEY 
+               0: NTLMSSP_NEGOTIATE_NETWARE
+               0: NTLMSSP_NEGOTIATE_NTLM   
+               0: NTLMSSP_NEGOTIATE_NT_ONLY
+               0: NTLMSSP_ANONYMOUS        
+               0: NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED
+               0: NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED
+               0: NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL
+               0: NTLMSSP_NEGOTIATE_ALWAYS_SIGN
+               1: NTLMSSP_TARGET_TYPE_DOMAIN
+               1: NTLMSSP_TARGET_TYPE_SERVER
+               1: NTLMSSP_TARGET_TYPE_SHARE
+               1: NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY
+               1: NTLMSSP_NEGOTIATE_IDENTIFY
+               1: NTLMSSP_REQUEST_NON_NT_SESSION_KEY
+               1: NTLMSSP_NEGOTIATE_TARGET_INFO
+               1: NTLMSSP_NEGOTIATE_VERSION
+               1: NTLMSSP_NEGOTIATE_128    
+               1: NTLMSSP_NEGOTIATE_KEY_EXCH
+               1: NTLMSSP_NEGOTIATE_56     
+        Version: struct ntlmssp_VERSION
+            ProductMajorVersion      : UNKNOWN_ENUM_VALUE (0)
+            ProductMinorVersion      : NTLMSSP_WINDOWS_MINOR_VERSION_0 (0)
+            ProductBuild             : 0x0000 (0)
+            Reserved: ARRAY(3)
+                [0]                      : 0x00 (0)
+                [1]                      : 0x00 (0)
+                [2]                      : 0x00 (0)
+            NTLMRevisionCurrent      : UNKNOWN_ENUM_VALUE (0)
+push returned Success
+pull returned Success
+    AUTHENTICATE_MESSAGE: struct AUTHENTICATE_MESSAGE
+        Signature                : 'NTLMSSP'
+        MessageType              : NtLmAuthenticate (3)
+        LmChallengeResponseLen   : 0x0000 (0)
+        LmChallengeResponseMaxLen: 0x0000 (0)
+        LmChallengeResponse      : NULL
+        NtChallengeResponseLen   : 0x0000 (0)
+        NtChallengeResponseMaxLen: 0x0000 (0)
+        NtChallengeResponse      : NULL
+        DomainNameLen            : 0x0000 (0)
+        DomainNameMaxLen         : 0x0000 (0)
+        DomainName               : NULL
+        UserNameLen              : 0x0000 (0)
+        UserNameMaxLen           : 0x0000 (0)
+        UserName                 : NULL
+        WorkstationLen           : 0x0000 (0)
+        WorkstationMaxLen        : 0x0000 (0)
+        Workstation              : NULL
+        EncryptedRandomSessionKeyLen: 0x0000 (0)
+        EncryptedRandomSessionKeyMaxLen: 0x0000 (0)
+        EncryptedRandomSessionKey: NULL
+        NegotiateFlags           : 0xfeff0000 (4278124544)
+               0: NTLMSSP_NEGOTIATE_UNICODE
+               0: NTLMSSP_NEGOTIATE_OEM    
+               0: NTLMSSP_REQUEST_TARGET   
+               0: NTLMSSP_NEGOTIATE_SIGN   
+               0: NTLMSSP_NEGOTIATE_SEAL   
+               0: NTLMSSP_NEGOTIATE_DATAGRAM
+               0: NTLMSSP_NEGOTIATE_LM_KEY 
+               0: NTLMSSP_NEGOTIATE_NETWARE
+               0: NTLMSSP_NEGOTIATE_NTLM   
+               0: NTLMSSP_NEGOTIATE_NT_ONLY
+               0: NTLMSSP_ANONYMOUS        
+               0: NTLMSSP_NEGOTIATE_OEM_DOMAIN_SUPPLIED
+               0: NTLMSSP_NEGOTIATE_OEM_WORKSTATION_SUPPLIED
+               0: NTLMSSP_NEGOTIATE_THIS_IS_LOCAL_CALL
+               0: NTLMSSP_NEGOTIATE_ALWAYS_SIGN
+               1: NTLMSSP_TARGET_TYPE_DOMAIN
+               1: NTLMSSP_TARGET_TYPE_SERVER
+               1: NTLMSSP_TARGET_TYPE_SHARE
+               1: NTLMSSP_NEGOTIATE_EXTENDED_SESSIONSECURITY
+               1: NTLMSSP_NEGOTIATE_IDENTIFY
+               1: NTLMSSP_REQUEST_NON_NT_SESSION_KEY
+               1: NTLMSSP_NEGOTIATE_TARGET_INFO
+               1: NTLMSSP_NEGOTIATE_VERSION
+               1: NTLMSSP_NEGOTIATE_128    
+               1: NTLMSSP_NEGOTIATE_KEY_EXCH
+               1: NTLMSSP_NEGOTIATE_56     
+        Version: struct ntlmssp_VERSION
+            ProductMajorVersion      : UNKNOWN_ENUM_VALUE (0)
+            ProductMinorVersion      : NTLMSSP_WINDOWS_MINOR_VERSION_0 (0)
+            ProductBuild             : 0x0000 (0)
+            Reserved: ARRAY(3)
+                [0]                      : 0x00 (0)
+                [1]                      : 0x00 (0)
+                [2]                      : 0x00 (0)
+            NTLMRevisionCurrent      : UNKNOWN_ENUM_VALUE (0)
+WARNING! orig bytes:260 validated pushed bytes:72
+WARNING! orig and validated differ at byte 0x00 (0)
+WARNING! orig byte[0x00] = 0x00 validated byte[0x00] = 0x4E
+dump OK

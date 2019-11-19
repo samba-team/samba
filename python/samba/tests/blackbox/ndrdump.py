@@ -198,3 +198,15 @@ dump OK
         except BlackboxProcessError as e:
             self.fail(e)
         self.assertRegex(actual.decode('utf8'), expected + "$")
+
+    def test_ndrdump_fuzzed_ntlmsssp_AUTHENTICATE_MESSAGE(self):
+        expected = open(self.data_path("fuzzed_ntlmssp-AUTHENTICATE_MESSAGE.txt")).read()
+        try:
+            actual = self.check_output(
+                "ndrdump ntlmssp AUTHENTICATE_MESSAGE struct --base64-input %s --validate" %
+                self.data_path("fuzzed_ntlmssp-AUTHENTICATE_MESSAGE.b64.txt"))
+        except BlackboxProcessError as e:
+            self.fail(e)
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertEqual(actual, expected.encode('utf-8'))
