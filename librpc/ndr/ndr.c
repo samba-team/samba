@@ -1522,6 +1522,11 @@ _PUBLIC_ size_t ndr_size_union(const void *p, int flags, uint32_t level, ndr_pus
 	/* avoid recursion */
 	if (flags & LIBNDR_FLAG_NO_NDR_SIZE) return 0;
 
+	/* Avoid following a NULL pointer */
+	if (p == NULL) {
+		return 0;
+	}
+
 	ndr = ndr_push_init_ctx(NULL);
 	if (!ndr) return 0;
 	ndr->flags |= flags | LIBNDR_FLAG_NO_NDR_SIZE;
