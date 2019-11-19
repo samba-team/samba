@@ -17,7 +17,13 @@ USERNAME=$3
 PASSWORD=$4
 PREFIX=$5
 smbclient=$6
-shift 6
+if [ $# -gt 6 ]; then
+	PROTOCOL_LIST=$7
+	shift 7
+else
+	PROTOCOL_LIST="NT1 SMB2 SMB3"
+	shift 6
+fi
 failed=0
 
 incdir=`dirname $0`/../../../testprogs/blackbox
@@ -40,7 +46,6 @@ test_smbclient() {
 	return $status
 }
 
-PROTOCOL_LIST="NT1 SMB2 SMB3"
 SHARE="lowercase"
 
 for PROTOCOL in $PROTOCOL_LIST; do
