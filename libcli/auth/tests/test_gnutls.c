@@ -269,6 +269,28 @@ static void torture_gnutls_E_P16(void **state)
 	assert_memory_equal(buffer, crypt_expected, 16);
 }
 
+static void torture_gnutls_sam_rid_crypt(void **state)
+{
+	static const uint8_t clear[16] = {
+		0x02, 0xFA, 0x3B, 0xEE, 0xE8, 0xBA, 0x06, 0x01,
+		0x3F, 0x49, 0x5B, 0x20, 0xA7, 0x84, 0xC2, 0x34
+	};
+	static const uint8_t crypt_expected[16] = {
+		0x1E, 0x38, 0x27, 0x5B, 0x3B, 0xB8, 0x67, 0xEB,
+		0xFB, 0x67, 0x99, 0xA4, 0x83, 0xF3, 0xD4, 0xED
+	};
+
+	uint8_t crypt[16];
+	uint8_t decrypt[16];
+	int rid = 500;
+
+	sam_rid_crypt(rid, clear, crypt, 1);
+	assert_memory_equal(crypt, crypt_expected, 16);
+
+	sam_rid_crypt(rid, crypt, decrypt, 0);
+	assert_memory_equal(decrypt, clear, 16);
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -276,6 +298,7 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(torture_gnutls_aes_128_cfb),
 		cmocka_unit_test(torture_gnutls_des_crypt56),
 		cmocka_unit_test(torture_gnutls_E_P16),
+		cmocka_unit_test(torture_gnutls_sam_rid_crypt),
 	};
 
 	if (argc == 2) {
