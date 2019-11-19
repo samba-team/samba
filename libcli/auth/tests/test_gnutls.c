@@ -269,6 +269,48 @@ static void torture_gnutls_E_P16(void **state)
 	assert_memory_equal(buffer, crypt_expected, 16);
 }
 
+static void torture_gnutls_E_P24(void **state)
+{
+	static const uint8_t key[21] = {
+		0xFB, 0x67, 0x99, 0xA4, 0x83, 0xF3, 0xD4, 0xED,
+		0x98, 0xFD, 0xCB, 0x3A, 0xF7, 0xB5, 0x1C, 0xF8,
+		0x69, 0x88, 0x96, 0x8E, 0x3A
+	};
+	const uint8_t c8[8] = {
+		0x44, 0xFB, 0xAC, 0xFB, 0x83, 0xB6, 0x75, 0x2A
+	};
+	static const uint8_t crypt_expected[24] = {
+		0x1A, 0x5E, 0x11, 0xA1, 0x59, 0xA9, 0x6B, 0x4E,
+		0x12, 0x5D, 0x81, 0x75, 0xA6, 0x62, 0x15, 0x6D,
+		0x5D, 0x20, 0x25, 0xC1, 0xA3, 0x92, 0xB3, 0x28
+	};
+
+	uint8_t crypt[24];
+
+	E_P24(key, c8, crypt);
+	assert_memory_equal(crypt, crypt_expected, 24);
+}
+
+static void torture_gnutls_SMBOWFencrypt(void **state)
+{
+	static const uint8_t password[16] = {
+		'M', 'y', 'p', 'a', 's', 's', 'w', 'o',
+		'r', 'd', 'i', 's', '1', '1', '1', '1'
+	};
+	const uint8_t c8[8] = {
+		0x79, 0x88, 0x5A, 0x3D, 0xD3, 0x40, 0x1E, 0x69
+	};
+	static const uint8_t crypt_expected[24] = {
+		0x3F, 0xE3, 0x53, 0x75, 0x81, 0xB4, 0xF0, 0xE7,
+		0x0C, 0xDE, 0xCD, 0xAE, 0x39, 0x1F, 0x14, 0xB4,
+		0xA4, 0x2B, 0x3E, 0x39, 0x16, 0xFD, 0x1D, 0x62
+	};
+
+	uint8_t crypt[24];
+
+	SMBOWFencrypt(password, c8, crypt);
+	assert_memory_equal(crypt, crypt_expected, 24);
+}
 static void torture_gnutls_sam_rid_crypt(void **state)
 {
 	static const uint8_t clear[16] = {
@@ -298,6 +340,8 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(torture_gnutls_aes_128_cfb),
 		cmocka_unit_test(torture_gnutls_des_crypt56),
 		cmocka_unit_test(torture_gnutls_E_P16),
+		cmocka_unit_test(torture_gnutls_E_P24),
+		cmocka_unit_test(torture_gnutls_SMBOWFencrypt),
 		cmocka_unit_test(torture_gnutls_sam_rid_crypt),
 	};
 
