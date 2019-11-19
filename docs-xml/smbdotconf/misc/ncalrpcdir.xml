@@ -1,7 +1,6 @@
 <samba:parameter name="ncalrpc dir"
                  context="G"
                  type="string"
-                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This directory will hold a series of named pipes to allow RPC over inter-process communication.</para>

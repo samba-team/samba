@@ -1,7 +1,6 @@
 <samba:parameter name="private dir"
                  context="G"
                  type="string"
-                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>private directory</synonym>
 <description>

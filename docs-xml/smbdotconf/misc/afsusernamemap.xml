@@ -1,7 +1,6 @@
 <samba:parameter name="afs username map"
                  context="G"
                  type="string"
-                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
 	<para>If you are using the fake kaserver AFS feature, you might

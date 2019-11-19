@@ -1,7 +1,6 @@
 <samba:parameter name="smb passwd file"
                  type="string"
                  context="G"
-                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
     <para>This option sets the path to the encrypted smbpasswd file. By

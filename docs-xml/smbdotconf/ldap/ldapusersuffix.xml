@@ -2,7 +2,6 @@
                  context="G"
                  type="string"
                  function="_ldap_user_suffix"
-                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>

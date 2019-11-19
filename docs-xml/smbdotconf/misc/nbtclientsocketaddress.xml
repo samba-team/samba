@@ -1,7 +1,6 @@
 <samba:parameter name="nbt client socket address"
                  context="G"
                  type="string"
-                 constant="1"
                  deprecated="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>socket address</synonym>

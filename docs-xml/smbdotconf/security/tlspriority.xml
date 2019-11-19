@@ -1,7 +1,6 @@
 <samba:parameter name="tls priority"
                  type="string"
                  context="G"
-                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
  <description>
    <para>This option can be set to a string describing the TLS protocols

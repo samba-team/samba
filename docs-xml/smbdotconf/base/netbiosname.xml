@@ -1,7 +1,6 @@
 <samba:parameter name="netbios name"
                  context="G"
                  type="ustring"
-                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
         <para>

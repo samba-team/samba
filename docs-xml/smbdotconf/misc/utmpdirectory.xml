@@ -1,7 +1,6 @@
 <samba:parameter name="utmp directory"
                  context="G"
                  type="string"
-                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter is only available if Samba has 

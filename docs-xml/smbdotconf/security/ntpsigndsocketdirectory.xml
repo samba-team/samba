@@ -1,7 +1,6 @@
 <samba:parameter name="ntp signd socket directory"
                  context="G"
                  type="string"
-                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This setting controls the location of the socket that

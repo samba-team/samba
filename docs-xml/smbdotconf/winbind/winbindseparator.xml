@@ -1,7 +1,6 @@
 <samba:parameter name="winbind separator"
                  context="G"
                  type="string"
-                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>This parameter allows an admin to define the character 

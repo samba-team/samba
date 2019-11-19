@@ -1,7 +1,6 @@
 <samba:parameter name="binddns dir"
                  context="G"
                  type="string"
-                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <synonym>bind dns directory</synonym>
 <description>

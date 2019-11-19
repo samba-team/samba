@@ -1,7 +1,6 @@
 <samba:parameter name="netbios scope"
                  context="G"
                  type="ustring"
-                 constant="1"
                  xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
         <para>This sets the NetBIOS scope that Samba will 
