@@ -505,6 +505,12 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		blob = data_blob_const(data, size);
 	}
 
+	if (data != NULL && blob.data == NULL) {
+		printf("failed to decode input data\n");
+		TALLOC_FREE(mem_ctx);
+		exit(1);
+	}
+
 	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
 	if (ndr_pull == NULL) {
 		perror("ndr_pull_init_blob");
