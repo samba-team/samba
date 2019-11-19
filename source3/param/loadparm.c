@@ -1047,8 +1047,6 @@ char *lp_string(TALLOC_CTX *ctx, const char *s)
    parameters from the rest of the program are defined
 */
 
-#define FN_GLOBAL_STRING(fn_name,ptr) \
-char *lp_ ## fn_name(TALLOC_CTX *ctx) {return(lp_string((ctx), *(char **)(&Globals.ptr) ? *(char **)(&Globals.ptr) : ""));}
 #define FN_GLOBAL_SUBSTITUTED_STRING(fn_name,ptr) \
 char *lp_ ## fn_name(TALLOC_CTX *ctx, const struct loadparm_substitution *lp_sub) \
  {return lpcfg_substituted_string(ctx, lp_sub, *(char **)(&Globals.ptr) ? *(char **)(&Globals.ptr) : "");}

@@ -158,15 +158,6 @@ static const char *lpcfg_string(const char *s)
 /* this global context supports the lp_*() function varients */
 static struct loadparm_context *global_loadparm_context;
 
-#define FN_GLOBAL_STRING(fn_name,var_name) \
- _PUBLIC_ char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx, TALLOC_CTX *ctx) {\
-	 if (lp_ctx == NULL) return NULL;				\
-	 if (lp_ctx->s3_fns) {						\
-		 return lp_ctx->globals->var_name ? lp_ctx->s3_fns->lp_string(ctx, lp_ctx->globals->var_name) : talloc_strdup(ctx, ""); \
-	 }								\
-	 return lp_ctx->globals->var_name ? talloc_strdup(ctx, lpcfg_string(lp_ctx->globals->var_name)) : talloc_strdup(ctx, ""); \
-}
-
 #define FN_GLOBAL_SUBSTITUTED_STRING(fn_name,var_name) \
  _PUBLIC_ char *lpcfg_ ## fn_name(struct loadparm_context *lp_ctx, \
 		 const struct loadparm_substitution *lp_sub, TALLOC_CTX *mem_ctx) \
