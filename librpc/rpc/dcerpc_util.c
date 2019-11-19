@@ -1434,10 +1434,11 @@ void dcerpc_log_packet(const char *lockdir,
 		}
 
 		saved = file_save(name, pkt->data, pkt->length);
-		free(name);
 		if (saved) {
 			DBG_DEBUG("Logged rpc packet to %s\n", name);
+			free(name);
 			break;
 		}
+		free(name);
 	}
 }
