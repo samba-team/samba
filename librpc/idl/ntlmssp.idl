@@ -271,7 +271,7 @@ interface ntlmssp
 		[value(ndr_ntlmssp_string_length(NegotiateFlags, Workstation))] uint16 WorkstationLen;
 		[value(WorkstationLen)] uint16 WorkstationMaxLen;
 		[relative] [subcontext(0),subcontext_size(WorkstationLen)] [flag(ndr_ntlmssp_negotiated_string_flags(r->NegotiateFlags))] string *Workstation;
-		[value(EncryptedRandomSessionKey->length)] uint16 EncryptedRandomSessionKeyLen;
+		[value(EncryptedRandomSessionKey == NULL ? 0 : EncryptedRandomSessionKey->length)] uint16 EncryptedRandomSessionKeyLen;
 		[value(EncryptedRandomSessionKeyLen)] uint16 EncryptedRandomSessionKeyMaxLen;
 		[relative] [subcontext(0),subcontext_size(EncryptedRandomSessionKeyLen)] DATA_BLOB *EncryptedRandomSessionKey;
 		NEGOTIATE NegotiateFlags;
