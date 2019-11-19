@@ -594,15 +594,20 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	printf("pull returned %s\n",
 	       ndr_map_error2string(ndr_err));
 
-	if (!print_after_parse_failure && !NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		TALLOC_FREE(mem_ctx);
-		exit(2);
-	}
-
 	if (ndr_pull->offset > ndr_pull->relative_highest_offset) {
 		highest_ofs = ndr_pull->offset;
 	} else {
 		highest_ofs = ndr_pull->relative_highest_offset;
+	}
+
+	if (dumpdata) {
+		printf("%d bytes consumed\n", highest_ofs);
+		ndrdump_data(blob.data, blob.length, dumpdata);
+	}
+
+	if (!print_after_parse_failure && !NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		TALLOC_FREE(mem_ctx);
+		exit(2);
 	}
 
 	if (highest_ofs != ndr_pull->data_size) {
@@ -612,9 +617,10 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			     dumpdata);
 	}
 
-	if (dumpdata) {
-		printf("%d bytes consumed\n", highest_ofs);
-		ndrdump_data(blob.data, blob.length, dumpdata);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		printf("WARNING: pull of %s was incomplete, "
+		       "therefore the parse below may SEGFAULT\n",
+			f->name);
 	}
 
 	f->ndr_print(ndr_print, format, flags, st);
