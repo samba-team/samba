@@ -26,8 +26,10 @@ struct g_lock_ctx;
 struct messaging_context;
 
 enum g_lock_type {
-	G_LOCK_READ = 0,
-	G_LOCK_WRITE = 1,
+	G_LOCK_READ,
+	G_LOCK_WRITE,
+	G_LOCK_UPGRADE,
+	G_LOCK_DOWNGRADE,
 };
 
 struct g_lock_ctx *g_lock_ctx_init_backend(
@@ -53,7 +55,8 @@ NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, TDB_DATA key,
 int g_lock_locks(struct g_lock_ctx *ctx,
 		 int (*fn)(TDB_DATA key, void *private_data),
 		 void *private_data);
-NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, TDB_DATA key,
+NTSTATUS g_lock_dump(struct g_lock_ctx *ctx,
+		     TDB_DATA key,
 		     void (*fn)(struct server_id exclusive,
 				size_t num_shared,
 				struct server_id *shared,

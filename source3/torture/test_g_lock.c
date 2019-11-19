@@ -301,7 +301,7 @@ bool run_g_lock3(int dummy)
 		goto fail;
 	}
 
-	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_WRITE,
+	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_UPGRADE,
 			     (struct timeval) { .tv_sec = 1 });
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_lock returned %s\n",
@@ -895,7 +895,7 @@ bool run_g_lock6(int dummy)
 		}
 	}
 
-	status = g_lock_lock(ctx, lockname, G_LOCK_WRITE,
+	status = g_lock_lock(ctx, lockname, G_LOCK_UPGRADE,
 			     (struct timeval) { .tv_sec = 1 });
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "g_lock_lock failed: %s\n",
