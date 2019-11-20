@@ -1558,7 +1558,7 @@ static void store_cwd_data(vfs_handle_struct *handle,
 	}
 	TALLOC_FREE(priv->shadow_connectpath);
 	if (connectpath) {
-		DBG_DEBUG("shadow conectpath = %s\n", connectpath);
+		DBG_DEBUG("shadow connectpath = %s\n", connectpath);
 		priv->shadow_connectpath = talloc_strdup(priv, connectpath);
 		if (priv->shadow_connectpath == NULL) {
 			smb_panic("talloc failed\n");
