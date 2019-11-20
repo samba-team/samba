@@ -638,6 +638,14 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		}
 	}
 
+	/* Do not proceed to validate if we got an error */
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		printf("dump of failed-to-parse %s complete\n",
+		       f->name);
+		TALLOC_FREE(mem_ctx);
+		exit(2);
+	}
+
 	if (validate) {
 		DATA_BLOB v_blob;
 		struct ndr_push *ndr_v_push;
