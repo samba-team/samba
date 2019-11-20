@@ -680,7 +680,8 @@ static NTSTATUS dcesrv_netr_ServerPasswordSet(struct dcesrv_call_state *dce_call
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
 
-	netlogon_creds_des_decrypt(creds, r->in.new_password);
+	nt_status = netlogon_creds_des_decrypt(creds, r->in.new_password);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
 	/* fetch the old password hashes (the NT hash has to exist) */
 
@@ -4206,11 +4207,17 @@ static NTSTATUS dcesrv_netr_ServerGetTrustInfo(struct dcesrv_call_state *dce_cal
 
 	if (curNtHash != NULL) {
 		*r->out.new_owf_password = *curNtHash;
-		netlogon_creds_des_encrypt(creds, r->out.new_owf_password);
+		nt_status = netlogon_creds_des_encrypt(creds, r->out.new_owf_password);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
 	}
 	if (prevNtHash != NULL) {
 		*r->out.old_owf_password = *prevNtHash;
-		netlogon_creds_des_encrypt(creds, r->out.old_owf_password);
+		nt_status = netlogon_creds_des_encrypt(creds, r->out.old_owf_password);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
 	}
 
 	if (trust_info != NULL) {

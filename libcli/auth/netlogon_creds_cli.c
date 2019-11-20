@@ -2032,8 +2032,12 @@ static void netlogon_creds_cli_ServerPasswordSet_locked(struct tevent_req *subre
 			return;
 		}
 	} else {
-		netlogon_creds_des_encrypt(&state->tmp_creds,
-					   &state->samr_password);
+		status = netlogon_creds_des_encrypt(&state->tmp_creds,
+						    &state->samr_password);
+		if (tevent_req_nterror(req, status)) {
+			netlogon_creds_cli_ServerPasswordSet_cleanup(req, status);
+			return;
+		}
 
 		subreq = dcerpc_netr_ServerPasswordSet_send(state, state->ev,
 					state->binding_handle,
@@ -3187,14 +3191,22 @@ static void netlogon_creds_cli_ServerGetTrustInfo_done(struct tevent_req *subreq
 	cmp = memcmp(state->new_owf_password.hash,
 		     zero.hash, sizeof(zero.hash));
 	if (cmp != 0) {
-		netlogon_creds_des_decrypt(&state->tmp_creds,
-					   &state->new_owf_password);
+		status = netlogon_creds_des_decrypt(&state->tmp_creds,
+						    &state->new_owf_password);
+		if (tevent_req_nterror(req, status)) {
+			netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
+			return;
+		}
 	}
 	cmp = memcmp(state->old_owf_password.hash,
 		     zero.hash, sizeof(zero.hash));
 	if (cmp != 0) {
-		netlogon_creds_des_decrypt(&state->tmp_creds,
-					   &state->old_owf_password);
+		status = netlogon_creds_des_decrypt(&state->tmp_creds,
+						    &state->old_owf_password);
+		if (tevent_req_nterror(req, status)) {
+			netlogon_creds_cli_ServerGetTrustInfo_cleanup(req, status);
+			return;
+		}
 	}
 
 	*state->creds = state->tmp_creds;

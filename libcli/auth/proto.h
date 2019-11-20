@@ -17,8 +17,10 @@ NTSTATUS netlogon_creds_des_encrypt_LMKey(struct netlogon_creds_CredentialState 
 					  struct netr_LMSessionKey *key);
 NTSTATUS netlogon_creds_des_decrypt_LMKey(struct netlogon_creds_CredentialState *creds,
 					  struct netr_LMSessionKey *key);
-void netlogon_creds_des_encrypt(struct netlogon_creds_CredentialState *creds, struct samr_Password *pass);
-void netlogon_creds_des_decrypt(struct netlogon_creds_CredentialState *creds, struct samr_Password *pass);
+NTSTATUS netlogon_creds_des_encrypt(struct netlogon_creds_CredentialState *creds,
+				    struct samr_Password *pass);
+NTSTATUS netlogon_creds_des_decrypt(struct netlogon_creds_CredentialState *creds,
+				    struct samr_Password *pass);
 NTSTATUS netlogon_creds_arcfour_crypt(struct netlogon_creds_CredentialState *creds,
 				      uint8_t *data,
 				      size_t len);
@@ -229,7 +231,8 @@ int E_old_pw_hash( uint8_t *p14, const uint8_t *in, uint8_t *out);
 int des_crypt128(uint8_t out[8], const uint8_t in[8], const uint8_t key[16]);
 int des_crypt112(uint8_t out[8], const uint8_t in[8], const uint8_t key[14],
 		 enum samba_gnutls_direction encrypt);
-void des_crypt112_16(uint8_t out[16], const uint8_t in[16], const uint8_t key[14], int forw);
+int des_crypt112_16(uint8_t out[16], const uint8_t in[16], const uint8_t key[14],
+		    enum samba_gnutls_direction encrypt);
 int sam_rid_crypt(unsigned int rid, const uint8_t *in, uint8_t *out,
 		  enum samba_gnutls_direction encrypt);
 #undef _PRINTF_ATTRIBUTE

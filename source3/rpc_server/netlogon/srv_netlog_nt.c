@@ -1311,7 +1311,10 @@ NTSTATUS _netr_ServerPasswordSet(struct pipes_struct *p,
 	DEBUG(3,("_netr_ServerPasswordSet: Server Password Set by remote machine:[%s] on account [%s]\n",
 			r->in.computer_name, creds->computer_name));
 
-	netlogon_creds_des_decrypt(creds, r->in.new_password);
+	status = netlogon_creds_des_decrypt(creds, r->in.new_password);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	DEBUG(100,("_netr_ServerPasswordSet: new given value was :\n"));
 	for(i = 0; i < sizeof(r->in.new_password->hash); i++)
@@ -2560,6 +2563,7 @@ static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
 {
 	enum ndr_err_code ndr_err;
 	struct trustAuthInOutBlob trustAuth;
+	NTSTATUS status;
 
 	ndr_err = ndr_pull_struct_blob_all(trustAuth_blob, mem_ctx, &trustAuth,
 					   (ndr_pull_flags_fn_t)ndr_pull_trustAuthInOutBlob);
@@ -2572,7 +2576,10 @@ static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
 		mdfour(current_pw_enc->hash,
 		       trustAuth.current.array[0].AuthInfo.clear.password,
 		       trustAuth.current.array[0].AuthInfo.clear.size);
-		netlogon_creds_des_encrypt(creds, current_pw_enc);
+		status = netlogon_creds_des_encrypt(creds, current_pw_enc);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	} else {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -2583,7 +2590,10 @@ static NTSTATUS get_password_from_trustAuth(TALLOC_CTX *mem_ctx,
 		mdfour(previous_pw_enc->hash,
 		       trustAuth.previous.array[0].AuthInfo.clear.password,
 		       trustAuth.previous.array[0].AuthInfo.clear.size);
-		netlogon_creds_des_encrypt(creds, previous_pw_enc);
+		status = netlogon_creds_des_encrypt(creds, previous_pw_enc);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	} else {
 		ZERO_STRUCTP(previous_pw_enc);
 	}

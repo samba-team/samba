@@ -442,10 +442,17 @@ int des_crypt112(uint8_t out[8], const uint8_t in[8], const uint8_t key[14],
 }
 
 /* des encryption of a 16 byte lump of data with a 112 bit key */
-void des_crypt112_16(uint8_t out[16], const uint8_t in[16], const uint8_t key[14], int forw)
+int des_crypt112_16(uint8_t out[16], const uint8_t in[16], const uint8_t key[14],
+		    enum samba_gnutls_direction encrypt)
 {
-        des_crypt56(out, in, key, forw);
-        des_crypt56(out + 8, in + 8, key+7, forw);
+	int ret;
+
+	ret = des_crypt56_gnutls(out, in, key, encrypt);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return des_crypt56_gnutls(out + 8, in + 8, key+7, encrypt);
 }
 
 /* Decode a sam password hash into a password.  The password hash is the
