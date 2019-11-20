@@ -111,17 +111,6 @@ static uint32_t ndr_cab_compute_checksum(uint8_t *data, uint32_t length, uint32_
 	return checksum;
 }
 
-uint32_t ndr_cab_generate_checksum(const struct CFDATA *r)
-{
-	uint32_t csumPartial;
-
-	csumPartial = ndr_cab_compute_checksum(&r->ab.data[0], r->cbData, 0);
-
-	return ndr_cab_compute_checksum((uint8_t *)discard_const(&r->cbData),
-					sizeof(r->cbData) + sizeof(r->cbUncomp),
-					csumPartial);
-}
-
 /* Push all CFDATA of a folder.
  *
  * This works on a folder level because compression type is set per
