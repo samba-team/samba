@@ -44,7 +44,6 @@ static NTSTATUS smbsrv_recv_generic_request(void *private_data, DATA_BLOB blob)
 	if (CVAL(blob.data,0) != 0) {
 		status = smbsrv_init_smb_connection(smb_conn, smb_conn->lp_ctx);
 		NT_STATUS_NOT_OK_RETURN(status);
-		packet_set_callback(smb_conn->packet, smbsrv_recv_smb_request);
 		return smbsrv_recv_smb_request(smb_conn, blob);
 	}
 
