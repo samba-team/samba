@@ -906,6 +906,171 @@ bool run_g_lock6(int dummy)
 	return true;
 }
 
+/*
+ * Test upgrade deadlock
+ */
+
+bool run_g_lock7(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct g_lock_ctx *ctx = NULL;
+	const char *lockname = "lock7";
+	TDB_DATA key = string_term_tdb_data(lockname);
+	pid_t child;
+	int ready_pipe[2];
+	int down_pipe[2];
+	ssize_t n;
+	NTSTATUS status;
+	bool ret = false;
+	bool ok = true;
+
+	if ((pipe(ready_pipe) != 0) || (pipe(down_pipe) != 0)) {
+		perror("pipe failed");
+		return false;
+	}
+
+	child = fork();
+
+	ok = get_g_lock_ctx(talloc_tos(), &ev, &msg, &ctx);
+	if (!ok) {
+		goto fail;
+	}
+
+	if (child == -1) {
+		perror("fork failed");
+		return false;
+	}
+
+	if (child == 0) {
+		struct tevent_req *req = NULL;
+
+		close(ready_pipe[0]);
+		ready_pipe[0] = -1;
+		close(down_pipe[1]);
+		down_pipe[1] = -1;
+
+		status = reinit_after_fork(msg, ev, false, "");
+		if (!NT_STATUS_IS_OK(status)) {
+			fprintf(stderr,
+				"reinit_after_fork failed: %s\n",
+				nt_errstr(status));
+			exit(1);
+		}
+
+		printf("%d: locking READ\n", (int)getpid());
+
+		status = g_lock_lock(
+			ctx,
+			key,
+			G_LOCK_READ,
+			(struct timeval) { .tv_usec = 1 });
+		if (!NT_STATUS_IS_OK(status)) {
+			fprintf(stderr,
+				"g_lock_lock(READ) failed: %s\n",
+				nt_errstr(status));
+			exit(1);
+		}
+
+		ok = true;
+
+		n = sys_write(ready_pipe[1], &ok, sizeof(ok));
+		if (n != sizeof(ok)) {
+			fprintf(stderr,
+				"sys_write failed: %s\n",
+				strerror(errno));
+			exit(1);
+		}
+
+		n = sys_read(down_pipe[0], &ok, sizeof(ok));
+		if (n != sizeof(ok)) {
+			fprintf(stderr,
+				"sys_read failed: %s\n",
+				strerror(errno));
+			exit(1);
+		}
+
+		printf("%d: starting UPGRADE\n", (int)getpid());
+
+		req = g_lock_lock_send(
+			msg,
+			ev,
+			ctx,
+			key,
+			G_LOCK_UPGRADE);
+		if (req == NULL) {
+			fprintf(stderr, "g_lock_lock_send(UPGRADE) failed\n");
+			exit(1);
+		}
+
+		n = sys_write(ready_pipe[1], &ok, sizeof(ok));
+		if (n != sizeof(ok)) {
+			fprintf(stderr,
+				"sys_write failed: %s\n",
+				strerror(errno));
+			exit(1);
+		}
+
+		exit(0);
+	}
+
+	close(ready_pipe[1]);
+	close(down_pipe[0]);
+
+	if (sys_read(ready_pipe[0], &ok, sizeof(ok)) != sizeof(ok)) {
+		perror("read failed");
+		return false;
+	}
+	if (!ok) {
+		fprintf(stderr, "child returned error\n");
+		return false;
+	}
+
+	status = g_lock_lock(
+		ctx,
+		key,
+		G_LOCK_READ,
+		(struct timeval) { .tv_usec = 1 });
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,
+			"g_lock_lock(READ) failed: %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	n = sys_write(down_pipe[1], &ok, sizeof(ok));
+	if (n != sizeof(ok)) {
+		fprintf(stderr,
+			"sys_write failed: %s\n",
+			strerror(errno));
+		goto fail;
+	}
+
+	if (sys_read(ready_pipe[0], &ok, sizeof(ok)) != sizeof(ok)) {
+		perror("read failed");
+		goto fail;
+	}
+
+	status = g_lock_lock(
+		ctx,
+		key,
+		G_LOCK_UPGRADE,
+		(struct timeval) { .tv_sec = 10 });
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_POSSIBLE_DEADLOCK)) {
+		fprintf(stderr,
+			"g_lock_lock returned %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	ret = true;
+fail:
+	TALLOC_FREE(ctx);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return ret;
+}
+
 extern int torture_numops;
 extern int torture_nprocs;
 
