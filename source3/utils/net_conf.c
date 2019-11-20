@@ -745,6 +745,7 @@ static int net_conf_delshare(struct net_context *c,
 	int ret = -1;
 	const char *sharename = NULL;
 	sbcErr err;
+	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (argc != 1 || c->display_usage) {
@@ -761,6 +762,14 @@ static int net_conf_delshare(struct net_context *c,
 	if (!SBC_ERROR_IS_OK(err)) {
 		d_fprintf(stderr, _("Error deleting share %s: %s\n"),
 			  sharename, sbcErrorString(err));
+		goto done;
+	}
+
+	status = delete_share_security(sharename);
+	if (!NT_STATUS_IS_OK(status) &&
+	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
+		d_fprintf(stderr, _("deleting share acl failed for %s: %s\n"),
+			  sharename, nt_errstr(status));
 		goto done;
 	}
 
