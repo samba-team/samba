@@ -97,7 +97,7 @@ class NdrDumpTests(BlackboxTestCase):
 
     def test_ndrdump_with_binary_struct_number(self):
         expected = '''pull returned Success
-    0                        : 33323130-3534-3736-3839-616263646566
+    GUID                     : 33323130-3534-3736-3839-616263646566
 dump OK
 '''
         try:

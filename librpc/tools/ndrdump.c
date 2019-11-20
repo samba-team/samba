@@ -623,7 +623,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 			f->name);
 	}
 
-	f->ndr_print(ndr_print, format, flags, st);
+	f->ndr_print(ndr_print, f->name, flags, st);
 
 	if (flags & NDR_IN) {
 		status = ndrdump_pull_and_print_pipes(format,
