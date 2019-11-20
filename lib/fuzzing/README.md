@@ -32,4 +32,30 @@ buildtools/bin/waf --targets=fuzz_tiniparser build && \
   --rlimit_rss 100 -f .../tiniparser-corpus -- bin/fuzz_tiniparser
 ```
 
+# oss-fuzz
+
+Samba can be fuzzed by Google's oss-fuzz system.  Assuming you have an
+oss-fuzz checkout from https://github.com/google/oss-fuzz with Samba's
+metadata in projects/samba, the following guides will help:
+
+## Testing locally
+
+https://google.github.io/oss-fuzz/getting-started/new-project-guide/#testing-locally
+
+## Debugging oss-fuzz
+
+See https://google.github.io/oss-fuzz/advanced-topics/debugging/
+
+## Samba-specific hints
+
+A typical debugging workflow is:
+
+oss-fuzz$ python infra/helper.py shell samba
+git fetch $REMOTE $BRANCH
+git checkout FETCH_HEAD
+lib/fuzzing/oss-fuzz/build_image.sh
+compile
+
+This will pull in any new Samba deps and build Samba's fuzzers.
+
 # vim: set sw=8 sts=8 ts=8 tw=79 :
