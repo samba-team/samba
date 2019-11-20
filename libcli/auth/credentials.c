@@ -38,6 +38,8 @@ static NTSTATUS netlogon_creds_step_crypt(struct netlogon_creds_CredentialState 
 					  struct netr_Credential *out)
 {
 	NTSTATUS status;
+	int rc;
+
 	if (creds->negotiate_flags & NETLOGON_NEG_SUPPORTS_AES) {
 		memcpy(out->data, in->data, sizeof(out->data));
 
@@ -48,7 +50,11 @@ static NTSTATUS netlogon_creds_step_crypt(struct netlogon_creds_CredentialState 
 			return status;
 		}
 	} else {
-		des_crypt112(out->data, in->data, creds->session_key, 1);
+		rc = des_crypt112(out->data, in->data, creds->session_key, SAMBA_GNUTLS_ENCRYPT);
+		if (rc != 0) {
+			return gnutls_error_to_ntstatus(rc,
+							NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		}
 	}
 
 	return NT_STATUS_OK;

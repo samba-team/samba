@@ -418,16 +418,27 @@ int des_crypt128(uint8_t out[8], const uint8_t in[8], const uint8_t key[16])
 }
 
 /* des encryption with a 112 bit (14 byte) key */
-void des_crypt112(uint8_t out[8], const uint8_t in[8], const uint8_t key[14], int forw)
+int des_crypt112(uint8_t out[8], const uint8_t in[8], const uint8_t key[14],
+		 enum samba_gnutls_direction encrypt)
 {
 	uint8_t buf[8];
-	if (forw) {
-		des_crypt56(buf, in, key, forw);
-		des_crypt56(out, buf, key+7, forw);
-	} else {
-		des_crypt56(buf, in, key+7, forw);
-		des_crypt56(out, buf, key, forw);
+	int ret;
+
+	if (encrypt == SAMBA_GNUTLS_ENCRYPT) {
+		ret = des_crypt56_gnutls(buf, in, key, SAMBA_GNUTLS_ENCRYPT);
+		if (ret != 0) {
+			return ret;
+		}
+
+		return des_crypt56_gnutls(out, buf, key+7, SAMBA_GNUTLS_ENCRYPT);
 	}
+
+	ret = des_crypt56_gnutls(buf, in, key+7, SAMBA_GNUTLS_DECRYPT);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return des_crypt56_gnutls(out, buf, key, SAMBA_GNUTLS_DECRYPT);
 }
 
 /* des encryption of a 16 byte lump of data with a 112 bit key */

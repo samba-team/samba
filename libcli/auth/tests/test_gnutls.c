@@ -386,11 +386,14 @@ static void torture_gnutls_des_crypt112(void **state)
 
 	uint8_t crypt[8];
 	uint8_t decrypt[8];
+	int rc;
 
-	des_crypt112(crypt, clear, key, 1);
+	rc = des_crypt112(crypt, clear, key, SAMBA_GNUTLS_ENCRYPT);
+	assert_int_equal(rc, 0);
 	assert_memory_equal(crypt, crypt_expected, 8);
 
-	des_crypt112(decrypt, crypt, key, 0);
+	rc = des_crypt112(decrypt, crypt, key, SAMBA_GNUTLS_DECRYPT);
+	assert_int_equal(rc, 0);
 	assert_memory_equal(decrypt, clear, 8);
 }
 
