@@ -443,6 +443,34 @@ static void torture_gnutls_SMBsesskeygen_lm_sess_key(void **state)
 	assert_memory_equal(crypt_sess_key, crypt_expected, 16);
 }
 
+static void torture_gnutls_sess_crypt_blob(void **state)
+{
+	static uint8_t _key[16] = {
+		0x1E, 0x38, 0x27, 0x5B, 0x3B, 0xB8, 0x67, 0xEB,
+		0xFA, 0xEE, 0xE8, 0xBA, 0x06, 0x01, 0x2D, 0x95
+	};
+	DATA_BLOB key = data_blob_const(_key, 16);
+	static const uint8_t _clear[24] = {
+		0x98, 0xFD, 0xCB, 0x3A, 0xF7, 0xB5, 0x1C, 0xF8,
+		0x02, 0xFA, 0x3B, 0xEE, 0xE8, 0xBA, 0x06, 0x01,
+		0x3F, 0x49, 0x5B, 0x20, 0xA7, 0x84, 0xC2, 0x34
+	};
+	DATA_BLOB clear = data_blob_const(_clear, 24);
+	static const uint8_t crypt_expected[24] = {
+		0x2B, 0xDD, 0x3B, 0xFA, 0x48, 0xC9, 0x63, 0x56,
+		0xAE, 0x8B, 0x3E, 0xCF, 0xEF, 0xDF, 0x7A, 0x42,
+		0xB3, 0x00, 0x71, 0x7F, 0x5D, 0x1D, 0xE4, 0x70
+	};
+	DATA_BLOB crypt = data_blob(NULL, 24);
+	DATA_BLOB decrypt = data_blob(NULL, 24);
+
+	sess_crypt_blob(&crypt, &clear, &key, true);
+	assert_memory_equal(crypt.data, crypt_expected, 24);
+
+	sess_crypt_blob(&decrypt, &crypt, &key, false);
+	assert_memory_equal(decrypt.data, clear.data, 24);
+}
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -458,6 +486,7 @@ int main(int argc, char *argv[])
 		cmocka_unit_test(torture_gnutls_des_crypt112_16),
 		cmocka_unit_test(torture_gnutls_sam_rid_crypt),
 		cmocka_unit_test(torture_gnutls_SMBsesskeygen_lm_sess_key),
+		cmocka_unit_test(torture_gnutls_sess_crypt_blob),
 	};
 
 	if (argc == 2) {
