@@ -650,7 +650,7 @@ msg.msg_accrightslen = sizeof(fd);
             conf.CHECK_CFG(path=conf.env.CUPS_CONFIG, args="--cflags --ldflags",
                            package="", uselib_store="CUPS")
         conf.CHECK_HEADERS('cups/cups.h cups/language.h', lib='cups')
-        conf.CHECK_FUNCS_IN('httpConnect httpConnectEncrypt', 'cups')
+        conf.CHECK_FUNCS_IN('httpConnect httpConnect2 httpConnectEncrypt', 'cups')
         if conf.CONFIG_SET('HAVE_CUPS_CUPS_H') and conf.CONFIG_SET('HAVE_CUPS_LANGUAGE_H'):
             conf.DEFINE('HAVE_CUPS', '1')
         else:

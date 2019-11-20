@@ -143,7 +143,18 @@ static http_t *cups_connect(TALLOC_CTX *frame)
                 alarm(timeout);
         }
 
-#ifdef HAVE_HTTPCONNECTENCRYPT
+#if defined(HAVE_HTTPCONNECT2)
+	http = httpConnect2(server,
+			    port,
+			    NULL,
+			    AF_UNSPEC,
+			    lp_cups_encrypt() ?
+				HTTP_ENCRYPTION_ALWAYS :
+				HTTP_ENCRYPTION_IF_REQUESTED,
+			    1, /* blocking */
+			    30 * 1000, /* timeout */
+			    NULL);
+#elif defined(HAVE_HTTPCONNECTENCRYPT)
 	http = httpConnectEncrypt(server, port, lp_cups_encrypt());
 #else
 	http = httpConnect(server, port);

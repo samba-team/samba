@@ -375,7 +375,19 @@ bool iprint_cache_reload(struct pcap_cache **_pcache)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(iprint_server(), ippPort())) == NULL) {
+#ifdef HAVE_HTTPCONNECT2
+	http = httpConnect2(iprint_server(),
+			    ippPort(),
+			    NULL,
+			    AF_UNSPEC,
+			    HTTP_ENCRYPTION_NEVER,
+			    1, /* blocking */
+			    30 * 1000, /* timeout */
+			    NULL);
+#else
+	http = httpConnect(iprint_server(), ippPort());
+#endif
+	if (http == NULL) {
 		DEBUG(0,("Unable to connect to iPrint server %s - %s\n", 
 			 iprint_server(), strerror(errno)));
 		goto out;
@@ -495,7 +507,19 @@ static int iprint_job_delete(const char *sharename, const char *lprm_command, st
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(iprint_server(), ippPort())) == NULL) {
+#ifdef HAVE_HTTPCONNECT2
+	http = httpConnect2(iprint_server(),
+			    ippPort(),
+			    NULL,
+			    AF_UNSPEC,
+			    HTTP_ENCRYPTION_NEVER,
+			    1, /* blocking */
+			    30 * 1000, /* timeout */
+			    NULL);
+#else
+	http = httpConnect(iprint_server(), ippPort());
+#endif
+	if (http == NULL) {
 		DEBUG(0,("Unable to connect to iPrint server %s - %s\n", 
 			 iprint_server(), strerror(errno)));
 		goto out;
@@ -593,7 +617,19 @@ static int iprint_job_pause(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(iprint_server(), ippPort())) == NULL) {
+#ifdef HAVE_HTTPCONNECT2
+	http = httpConnect2(iprint_server(),
+			    ippPort(),
+			    NULL,
+			    AF_UNSPEC,
+			    HTTP_ENCRYPTION_NEVER,
+			    1, /* blocking */
+			    30 * 1000, /* timeout */
+			    NULL);
+#else
+	http = httpConnect(iprint_server(), ippPort());
+#endif
+	if (http == NULL) {
 		DEBUG(0,("Unable to connect to iPrint server %s - %s\n", 
 			 iprint_server(), strerror(errno)));
 		goto out;
@@ -693,7 +729,19 @@ static int iprint_job_resume(int snum, struct printjob *pjob)
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(iprint_server(), ippPort())) == NULL) {
+#ifdef HAVE_HTTPCONNECT2
+	http = httpConnect2(iprint_server(),
+			    ippPort(),
+			    NULL,
+			    AF_UNSPEC,
+			    HTTP_ENCRYPTION_NEVER,
+			    1, /* blocking */
+			    30 * 1000, /* timeout */
+			    NULL);
+#else
+	http = httpConnect(iprint_server(), ippPort());
+#endif
+	if (http == NULL) {
 		DEBUG(0,("Unable to connect to iPrint server %s - %s\n", 
 			 iprint_server(), strerror(errno)));
 		goto out;
@@ -794,7 +842,19 @@ static int iprint_job_submit(int snum, struct printjob *pjob,
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(iprint_server(), ippPort())) == NULL) {
+#ifdef HAVE_HTTPCONNECT2
+	http = httpConnect2(iprint_server(),
+			    ippPort(),
+			    NULL,
+			    AF_UNSPEC,
+			    HTTP_ENCRYPTION_NEVER,
+			    1, /* blocking */
+			    30 * 1000, /* timeout */
+			    NULL);
+#else
+	http = httpConnect(iprint_server(), ippPort());
+#endif
+	if (http == NULL) {
 		DEBUG(0,("Unable to connect to iPrint server %s - %s\n", 
 			 iprint_server(), strerror(errno)));
 		goto out;
@@ -959,7 +1019,19 @@ static int iprint_queue_get(const char *sharename,
 	* Try to connect to the server...
 	*/
 
-	if ((http = httpConnect(iprint_server(), ippPort())) == NULL) {
+#ifdef HAVE_HTTPCONNECT2
+	http = httpConnect2(iprint_server(),
+			    ippPort(),
+			    NULL,
+			    AF_UNSPEC,
+			    HTTP_ENCRYPTION_NEVER,
+			    1, /* blocking */
+			    30 * 1000, /* timeout */
+			    NULL);
+#else
+	http = httpConnect(iprint_server(), ippPort());
+#endif
+	if (http == NULL) {
 		DEBUG(0,("Unable to connect to iPrint server %s - %s\n", 
 			 iprint_server(), strerror(errno)));
 		goto out;
