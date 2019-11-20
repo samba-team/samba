@@ -568,7 +568,11 @@ bool cli_oem_change_password(struct cli_state *cli, const char *user, const char
 	 */
 	E_deshash(new_password, new_pw_hash);
 
-	E_old_pw_hash( new_pw_hash, old_pw_hash, (uchar *)&data[516]);
+	rc = E_old_pw_hash( new_pw_hash, old_pw_hash, (uchar *)&data[516]);
+	if (rc != 0) {
+		DBG_ERR("E_old_pw_hash failed: %s\n", gnutls_strerror(rc));
+		return false;
+	}
 
 	data_len = 532;
 

@@ -39,6 +39,7 @@ NTSTATUS dcerpc_samr_chgpasswd_user(struct dcerpc_binding_handle *h,
 				    NTSTATUS *presult)
 {
 	NTSTATUS status;
+	int rc;
 	struct samr_Password hash1, hash2, hash3, hash4, hash5, hash6;
 
 	uint8_t old_nt_hash[16] = {0};
@@ -54,12 +55,36 @@ NTSTATUS dcerpc_samr_chgpasswd_user(struct dcerpc_binding_handle *h,
 	E_deshash(oldpassword, old_lm_hash);
 	E_deshash(newpassword, new_lm_hash);
 
-	E_old_pw_hash(new_lm_hash, old_lm_hash, hash1.hash);
-	E_old_pw_hash(old_lm_hash, new_lm_hash, hash2.hash);
-	E_old_pw_hash(new_nt_hash, old_nt_hash, hash3.hash);
-	E_old_pw_hash(old_nt_hash, new_nt_hash, hash4.hash);
-	E_old_pw_hash(old_lm_hash, new_nt_hash, hash5.hash);
-	E_old_pw_hash(old_nt_hash, new_lm_hash, hash6.hash);
+	rc = E_old_pw_hash(new_lm_hash, old_lm_hash, hash1.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
+	rc = E_old_pw_hash(old_lm_hash, new_lm_hash, hash2.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
+	rc = E_old_pw_hash(new_nt_hash, old_nt_hash, hash3.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
+	rc = E_old_pw_hash(old_nt_hash, new_nt_hash, hash4.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
+	rc = E_old_pw_hash(old_lm_hash, new_nt_hash, hash5.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
+	rc = E_old_pw_hash(old_nt_hash, new_lm_hash, hash6.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
 
 	status = dcerpc_samr_ChangePasswordUser(h,
 						mem_ctx,
@@ -76,6 +101,7 @@ NTSTATUS dcerpc_samr_chgpasswd_user(struct dcerpc_binding_handle *h,
 						&hash6,
 						presult);
 
+done:
 	ZERO_ARRAY(old_nt_hash);
 	ZERO_ARRAY(old_lm_hash);
 	ZERO_ARRAY(new_nt_hash);
@@ -117,6 +143,7 @@ NTSTATUS dcerpc_samr_chgpasswd_user2(struct dcerpc_binding_handle *h,
 				     NTSTATUS *presult)
 {
 	NTSTATUS status;
+	int rc;
 	struct samr_CryptPassword new_nt_password;
 	struct samr_CryptPassword new_lm_password;
 	struct samr_Password old_nt_hash_enc;
@@ -153,7 +180,11 @@ NTSTATUS dcerpc_samr_chgpasswd_user2(struct dcerpc_binding_handle *h,
 			return status;
 		}
 
-		E_old_pw_hash(new_nt_hash, old_lanman_hash, old_lanman_hash_enc.hash);
+		rc = E_old_pw_hash(new_nt_hash, old_lanman_hash, old_lanman_hash_enc.hash);
+		if (rc != 0) {
+			status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+			goto done;
+		}
 	} else {
 		ZERO_STRUCT(new_lm_password);
 		ZERO_STRUCT(old_lanman_hash_enc);
@@ -165,7 +196,11 @@ NTSTATUS dcerpc_samr_chgpasswd_user2(struct dcerpc_binding_handle *h,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	E_old_pw_hash(new_nt_hash, old_nt_hash, old_nt_hash_enc.hash);
+	rc = E_old_pw_hash(new_nt_hash, old_nt_hash, old_nt_hash_enc.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
 
 	status = dcerpc_samr_ChangePasswordUser2(h,
 						 mem_ctx,
@@ -178,6 +213,7 @@ NTSTATUS dcerpc_samr_chgpasswd_user2(struct dcerpc_binding_handle *h,
 						 &old_lanman_hash_enc,
 						 presult);
 
+done:
 	ZERO_STRUCT(new_nt_password);
 	ZERO_STRUCT(new_lm_password);
 	ZERO_STRUCT(old_nt_hash_enc);
@@ -312,6 +348,7 @@ NTSTATUS dcerpc_samr_chgpasswd_user3(struct dcerpc_binding_handle *h,
 				     NTSTATUS *presult)
 {
 	NTSTATUS status;
+	int rc;
 
 	struct samr_CryptPassword new_nt_password;
 	struct samr_CryptPassword new_lm_password;
@@ -350,7 +387,11 @@ NTSTATUS dcerpc_samr_chgpasswd_user3(struct dcerpc_binding_handle *h,
 			return status;
 		}
 
-		E_old_pw_hash(new_nt_hash, old_lanman_hash, old_lanman_hash_enc.hash);
+		rc = E_old_pw_hash(new_nt_hash, old_lanman_hash, old_lanman_hash_enc.hash);
+		if (rc != 0) {
+			status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+			goto done;
+		}
 	} else {
 		ZERO_STRUCT(new_lm_password);
 		ZERO_STRUCT(old_lanman_hash_enc);
@@ -363,7 +404,11 @@ NTSTATUS dcerpc_samr_chgpasswd_user3(struct dcerpc_binding_handle *h,
 		return status;
 	}
 
-	E_old_pw_hash(new_nt_hash, old_nt_hash, old_nt_hash_enc.hash);
+	rc = E_old_pw_hash(new_nt_hash, old_nt_hash, old_nt_hash_enc.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto done;
+	}
 
 	status = dcerpc_samr_ChangePasswordUser3(h,
 						 mem_ctx,
@@ -379,6 +424,7 @@ NTSTATUS dcerpc_samr_chgpasswd_user3(struct dcerpc_binding_handle *h,
 						 reject,
 						 presult);
 
+done:
 	ZERO_STRUCT(new_nt_password);
 	ZERO_STRUCT(new_lm_password);
 	ZERO_STRUCT(old_nt_hash_enc);

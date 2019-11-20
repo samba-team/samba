@@ -1980,8 +1980,13 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 					gnutls_cipher_deinit(cipher_hnd);
 					return;
 				}
-				E_old_pw_hash(new_nt_hash, old_lm_hash,
+				rc = E_old_pw_hash(new_nt_hash, old_lm_hash,
 					      old_lm_hash_enc.data);
+				if (rc != 0) {
+					DBG_ERR("E_old_pw_hash failed: %s\n",
+						gnutls_strerror(rc));
+					return;
+				}
 			} else {
 				new_lm_pswd.data = NULL;
 				new_lm_pswd.length = 0;
@@ -1999,8 +2004,13 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode stdio_h
 			if (rc < 0) {
 				return;
 			}
-			E_old_pw_hash(new_nt_hash, old_nt_hash,
+			rc = E_old_pw_hash(new_nt_hash, old_nt_hash,
 				      old_nt_hash_enc.data);
+			if (rc != 0) {
+				DBG_ERR("E_old_pw_hash failed: %s\n",
+					gnutls_strerror(rc));
+				return;
+			}
 
 			ZERO_ARRAY(old_nt_hash);
 			ZERO_ARRAY(old_lm_hash);

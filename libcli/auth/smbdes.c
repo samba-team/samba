@@ -391,10 +391,16 @@ int E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24)
 	return des_crypt56_gnutls(p24+16, c8, p21+14, SAMBA_GNUTLS_ENCRYPT);
 }
 
-void E_old_pw_hash( uint8_t *p14, const uint8_t *in, uint8_t *out)
+int E_old_pw_hash( uint8_t *p14, const uint8_t *in, uint8_t *out)
 {
-        des_crypt56(out, in, p14, 1);
-        des_crypt56(out+8, in+8, p14+7, 1);
+	int ret;
+
+        ret = des_crypt56_gnutls(out, in, p14, SAMBA_GNUTLS_ENCRYPT);
+	if (ret != 0) {
+		return ret;
+	}
+
+        return des_crypt56_gnutls(out+8, in+8, p14+7, SAMBA_GNUTLS_ENCRYPT);
 }
 
 /* des encryption with a 128 bit key */

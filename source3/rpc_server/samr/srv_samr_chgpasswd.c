@@ -806,7 +806,11 @@ static NTSTATUS check_oem_password(const char *user,
 			/*
 			 * check the NT verifier
 			 */
-			E_old_pw_hash(new_nt_hash, nt_pw, verifier);
+			rc = E_old_pw_hash(new_nt_hash, nt_pw, verifier);
+			if (rc != 0) {
+				NTSTATUS status = NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER;
+				return gnutls_error_to_ntstatus(rc, status);
+			}
 			if (memcmp(verifier, old_nt_hash_encrypted, 16)) {
 				DEBUG(0, ("check_oem_password: old nt "
 					  "password doesn't match.\n"));
@@ -833,7 +837,11 @@ static NTSTATUS check_oem_password(const char *user,
 			/*
 			 * check the lm verifier
 			 */
-			E_old_pw_hash(new_nt_hash, lanman_pw, verifier);
+			rc = E_old_pw_hash(new_nt_hash, lanman_pw, verifier);
+			if (rc != 0) {
+				NTSTATUS status = NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER;
+				return gnutls_error_to_ntstatus(rc, status);
+			}
 			if (memcmp(verifier, old_lm_hash_encrypted, 16)) {
 				DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
 				return NT_STATUS_WRONG_PASSWORD;
@@ -853,7 +861,11 @@ static NTSTATUS check_oem_password(const char *user,
 		/*
 		 * check the lm verifier
 		 */
-		E_old_pw_hash(new_lm_hash, lanman_pw, verifier);
+		rc = E_old_pw_hash(new_lm_hash, lanman_pw, verifier);
+		if (rc != 0) {
+			NTSTATUS status = NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER;
+			return gnutls_error_to_ntstatus(rc, status);
+		}
 		if (memcmp(verifier, old_lm_hash_encrypted, 16)) {
 			DEBUG(0,("check_oem_password: old lm password doesn't match.\n"));
 			return NT_STATUS_WRONG_PASSWORD;

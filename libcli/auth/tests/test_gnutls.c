@@ -343,8 +343,10 @@ static void torture_gnutls_E_old_pw_hash(void **state)
 		0x37, 0xEF, 0xBE, 0x58, 0xC2, 0x59, 0x33, 0xEC
 	};
 	uint8_t crypt[16];
+	int rc;
 
-	E_old_pw_hash(key, clear, crypt);
+	rc = E_old_pw_hash(key, clear, crypt);
+	assert_int_equal(rc, 0);
 	assert_memory_equal(crypt, crypt_expected, 16);
 }
 

@@ -237,7 +237,11 @@ NTSTATUS dcesrv_samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call,
 	new_unicode_password.length = unicode_pw_len;
 
 	E_deshash(new_pass, new_lm_hash);
-	E_old_pw_hash(new_lm_hash, lm_pwd->hash, lm_verifier.hash);
+	rc = E_old_pw_hash(new_lm_hash, lm_pwd->hash, lm_verifier.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto failed;
+	}
 	if (memcmp(lm_verifier.hash, r->in.hash->hash, 16) != 0) {
 		authsam_update_bad_pwd_count(sam_ctx, res[0], ldb_get_default_basedn(sam_ctx));
 		status =  NT_STATUS_WRONG_PASSWORD;
@@ -446,6 +450,10 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	mdfour(new_nt_hash, new_password.data, new_password.length);
 
 	E_old_pw_hash(new_nt_hash, nt_pwd->hash, nt_verifier.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto failed;
+	}
 	if (memcmp(nt_verifier.hash, r->in.nt_verifier->hash, 16) != 0) {
 		status = NT_STATUS_WRONG_PASSWORD;
 		goto failed;
@@ -464,7 +472,11 @@ NTSTATUS dcesrv_samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 					  new_password.length,
 					  (void **)&new_pass, &converted_size)) {
 			E_deshash(new_pass, new_lm_hash);
-			E_old_pw_hash(new_nt_hash, lm_pwd->hash, lm_verifier.hash);
+			rc = E_old_pw_hash(new_nt_hash, lm_pwd->hash, lm_verifier.hash);
+			if (rc != 0) {
+				status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+				goto failed;
+			}
 			if (memcmp(lm_verifier.hash, r->in.lm_verifier->hash, 16) != 0) {
 				status = NT_STATUS_WRONG_PASSWORD;
 				goto failed;

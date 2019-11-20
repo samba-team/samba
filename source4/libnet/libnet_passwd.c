@@ -115,7 +115,11 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 		goto disconnect;
 	}
 
-	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+	rc = E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto disconnect;
+	}
 
 	encode_pw_buffer(nt_pass.data,  r->samr.in.newpassword, STR_UNICODE);
 
@@ -137,7 +141,11 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 		goto disconnect;
 	}
 
-	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+	rc = E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto disconnect;
+	}
 
 	pw3.in.server = &server;
 	pw3.in.account = &account;
@@ -189,7 +197,11 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 		goto disconnect;
 	}
 
-	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+	rc = E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto disconnect;
+	}
 
 	encode_pw_buffer(nt_pass.data, r->samr.in.newpassword, STR_UNICODE);
 
@@ -210,7 +222,11 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 		goto disconnect;
 	}
 
-	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+	rc = E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto disconnect;
+	}
 
 	pw2.in.server = &server;
 	pw2.in.account = &account;
@@ -260,7 +276,11 @@ static NTSTATUS libnet_ChangePassword_samr(struct libnet_context *ctx, TALLOC_CT
 		goto disconnect;
 	}
 
-	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+	rc = E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+	if (rc != 0) {
+		status = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		goto disconnect;
+	}
 
 	oe2.in.server = &a_server;
 	oe2.in.account = &a_account;
