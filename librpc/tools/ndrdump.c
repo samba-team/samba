@@ -287,7 +287,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	bool quiet = false;
 	bool hex_input = false;
 	bool base64_input = false;
-	bool stop_on_parse_failure = false;
+	bool print_after_parse_failure = false;
 	int opt;
 	enum {
 		OPT_CONTEXT_FILE=1000,
@@ -299,7 +299,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		OPT_BASE64_INPUT,
 		OPT_HEX_INPUT,
 		OPT_CMDLINE_INPUT,
-		OPT_STOP_ON_PARSE_FAILURE,
+		OPT_PRINT_AFTER_PARSE_FAILURE,
 	};
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -312,8 +312,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		{"base64-input", 0, POPT_ARG_NONE, NULL, OPT_BASE64_INPUT, "Read the input file in as a base64 string", NULL },
 		{"hex-input", 0, POPT_ARG_NONE, NULL, OPT_HEX_INPUT, "Read the input file in as a hex dump", NULL },
 		{"input", 0, POPT_ARG_STRING, NULL, OPT_CMDLINE_INPUT, "Provide the input on the command line (use with --base64-input)", "INPUT" },
-		{"stop-on-parse-failure", 0, POPT_ARG_NONE, NULL, OPT_STOP_ON_PARSE_FAILURE,
-		 "Do not try to print structures that fail to parse.", NULL },
+		{"print-after-parse-failure", 0, POPT_ARG_NONE, NULL, OPT_PRINT_AFTER_PARSE_FAILURE,
+		 "Try to print structures that fail to parse (used to develop parsers, segfaults are likely).", NULL },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_VERSION
 		{ NULL }
@@ -364,8 +364,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 		case OPT_CMDLINE_INPUT:
 			cmdline_input = poptGetOptArg(pc);
 			break;
-		case OPT_STOP_ON_PARSE_FAILURE:
-			stop_on_parse_failure = true;
+		case OPT_PRINT_AFTER_PARSE_FAILURE:
+			print_after_parse_failure = true;
 			break;
 		}
 	}
@@ -594,8 +594,7 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 	printf("pull returned %s\n",
 	       ndr_map_error2string(ndr_err));
 
-	if (stop_on_parse_failure && !NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		printf("not printing because --stop-on-parse-failure\n");
+	if (!print_after_parse_failure && !NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		TALLOC_FREE(mem_ctx);
 		exit(2);
 	}
