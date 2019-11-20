@@ -111,6 +111,57 @@ dump OK
         # convert expected to bytes for python 3
         self.assertEqual(actual, expected.encode('utf-8'))
 
+    def test_ndrdump_input_cmdline_short_struct_name(self):
+        expected = '''pull returned Buffer Size Error
+'''
+        try:
+            actual = self.check_exit_code(
+                "ndrdump -d0 misc GUID struct --input=abcdefg", 2)
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertEqual(actual, expected.encode('utf-8'))
+
+    def test_ndrdump_input_cmdline_short_struct_name_dump(self):
+        expected = '''pull returned Buffer Size Error
+6 bytes consumed
+[0000] 61 62 63 64 65 66 67                               abcdefg ''' \
+        '''
+'''
+        try:
+            actual = self.check_exit_code(
+                "ndrdump -d0 misc GUID struct --input=abcdefg --dump-data", 2)
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertEqual(actual, expected.encode('utf-8'))
+
+    def test_ndrdump_input_cmdline_short_struct_name_print_fail(self):
+        expected = '''pull returned Buffer Size Error
+6 bytes consumed
+[0000] 61 62 63 64 65 66 67                               abcdefg ''' \
+        '''
+WARNING! 1 unread bytes
+[0000] 67                                                 g ''' \
+    '''
+WARNING: pull of GUID was incomplete, therefore the parse below may SEGFAULT
+    GUID                     : 64636261-6665-0000-0000-000000000000
+dump of failed-to-parse GUID complete
+'''
+        try:
+            actual = self.check_exit_code(
+                "ndrdump -d0 misc GUID struct --input=abcdefg --dump-data --print-after-parse-failure", 2)
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertEqual(actual, expected.encode('utf-8'))
+
     def test_ndrdump_fuzzed_clusapi_QueryAllValues(self):
         expected = b'''pull returned Success
 WARNING! 53 unread bytes
