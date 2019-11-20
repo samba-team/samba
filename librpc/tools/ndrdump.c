@@ -584,7 +584,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 						      ndr_print,
 						      &f->out_pipes);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("pull and dump of pipes FAILED\n");
+			printf("pull and dump of OUT pipes FAILED: %s\n",
+			       nt_errstr(status));
 			TALLOC_FREE(mem_ctx);
 			exit(2);
 		}
@@ -631,7 +632,8 @@ static void ndr_print_dummy(struct ndr_print *ndr, const char *format, ...)
 						      ndr_print,
 						      &f->in_pipes);
 		if (!NT_STATUS_IS_OK(status)) {
-			printf("dump FAILED\n");
+			printf("pull and dump of IN pipes FAILED: %s\n",
+			       nt_errstr(status));
 			exit(1);
 		}
 	}
