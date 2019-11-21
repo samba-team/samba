@@ -1007,14 +1007,14 @@ static bool test_SetUserPass_18(struct dcerpc_pipe *p, struct torture_context *t
 		DATA_BLOB in,out;
 		in = data_blob_const(nt_hash, 16);
 		out = data_blob_talloc_zero(tctx, 16);
-		sess_crypt_blob(&out, &in, &session_key, true);
+		sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
 		memcpy(u.info18.nt_pwd.hash, out.data, out.length);
 	}
 	{
 		DATA_BLOB in,out;
 		in = data_blob_const(lm_hash, 16);
 		out = data_blob_talloc_zero(tctx, 16);
-		sess_crypt_blob(&out, &in, &session_key, true);
+		sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
 		memcpy(u.info18.lm_pwd.hash, out.data, out.length);
 	}
 
@@ -1096,7 +1096,7 @@ static bool test_SetUserPass_21(struct dcerpc_pipe *p, struct torture_context *t
 		in = data_blob_const(u.info21.lm_owf_password.array,
 				     u.info21.lm_owf_password.length);
 		out = data_blob_talloc_zero(tctx, 16);
-		sess_crypt_blob(&out, &in, &session_key, true);
+		sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
 		u.info21.lm_owf_password.array = (uint16_t *)out.data;
 	}
 
@@ -1105,7 +1105,7 @@ static bool test_SetUserPass_21(struct dcerpc_pipe *p, struct torture_context *t
 		in = data_blob_const(u.info21.nt_owf_password.array,
 				     u.info21.nt_owf_password.length);
 		out = data_blob_talloc_zero(tctx, 16);
-		sess_crypt_blob(&out, &in, &session_key, true);
+		sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
 		u.info21.nt_owf_password.array = (uint16_t *)out.data;
 	}
 
@@ -1272,14 +1272,14 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 			DATA_BLOB in,out;
 			in = data_blob_const(u.info18.nt_pwd.hash, 16);
 			out = data_blob_talloc_zero(tctx, 16);
-			sess_crypt_blob(&out, &in, &session_key, true);
+			sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
 			memcpy(u.info18.nt_pwd.hash, out.data, out.length);
 		}
 		{
 			DATA_BLOB in,out;
 			in = data_blob_const(u.info18.lm_pwd.hash, 16);
 			out = data_blob_talloc_zero(tctx, 16);
-			sess_crypt_blob(&out, &in, &session_key, true);
+			sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
 			memcpy(u.info18.lm_pwd.hash, out.data, out.length);
 		}
 
@@ -1290,7 +1290,7 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 			in = data_blob_const(u.info21.lm_owf_password.array,
 					     u.info21.lm_owf_password.length);
 			out = data_blob_talloc_zero(tctx, 16);
-			sess_crypt_blob(&out, &in, &session_key, true);
+			sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
 			u.info21.lm_owf_password.array = (uint16_t *)out.data;
 		}
 		if (fields_present & SAMR_FIELD_NT_PASSWORD_PRESENT) {
@@ -1298,7 +1298,7 @@ static bool test_SetUserPass_level_ex(struct dcerpc_pipe *p,
 			in = data_blob_const(u.info21.nt_owf_password.array,
 					     u.info21.nt_owf_password.length);
 			out = data_blob_talloc_zero(tctx, 16);
-			sess_crypt_blob(&out, &in, &session_key, true);
+			sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
 			u.info21.nt_owf_password.array = (uint16_t *)out.data;
 		}
 		break;

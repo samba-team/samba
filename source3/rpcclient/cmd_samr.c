@@ -3133,6 +3133,7 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 	uint8_t password_expired = 0;
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	TALLOC_CTX *frame = NULL;
+	int rc;
 
 	if (argc < 4) {
 		printf("Usage: %s username level password [password_expired]\n",
@@ -3175,7 +3176,11 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 				status = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
-			sess_crypt_blob(&out, &in, &session_key, true);
+			rc = sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
+			if (rc != 0) {
+				status = gnutls_error_to_ntstatus(rc,
+								  NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+			}
 			memcpy(nt_hash, out.data, out.length);
 		}
 		{
@@ -3186,7 +3191,11 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 				status = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
-			sess_crypt_blob(&out, &in, &session_key, true);
+			rc = sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
+			if (rc != 0) {
+				status = gnutls_error_to_ntstatus(rc,
+								  NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+			}
 			memcpy(lm_hash, out.data, out.length);
 		}
 
@@ -3223,7 +3232,11 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 				status = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
-			sess_crypt_blob(&out, &in, &session_key, true);
+			rc = sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
+			if (rc != 0) {
+				status = gnutls_error_to_ntstatus(rc,
+								  NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+			}
 			info.info21.nt_owf_password.array =
 				(uint16_t *)talloc_memdup(frame, out.data, 16);
 		}
@@ -3231,7 +3244,11 @@ static NTSTATUS cmd_samr_setuserinfo_int(struct rpc_pipe_client *cli,
 			DATA_BLOB in,out;
 			in = data_blob_const(lm_hash, 16);
 			out = data_blob_talloc_zero(frame, 16);
-			sess_crypt_blob(&out, &in, &session_key, true);
+			rc = sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
+			if (rc != 0) {
+				status = gnutls_error_to_ntstatus(rc,
+								  NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+			}
 			info.info21.lm_owf_password.array =
 				(uint16_t *)talloc_memdup(frame, out.data, 16);
 			if (out.data == NULL) {

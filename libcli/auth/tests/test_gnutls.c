@@ -494,11 +494,14 @@ static void torture_gnutls_sess_crypt_blob(void **state)
 	};
 	DATA_BLOB crypt = data_blob(NULL, 24);
 	DATA_BLOB decrypt = data_blob(NULL, 24);
+	int rc;
 
-	sess_crypt_blob(&crypt, &clear, &key, true);
+	rc = sess_crypt_blob(&crypt, &clear, &key, SAMBA_GNUTLS_ENCRYPT);
+	assert_int_equal(rc, 0);
 	assert_memory_equal(crypt.data, crypt_expected, 24);
 
-	sess_crypt_blob(&decrypt, &crypt, &key, false);
+	rc = sess_crypt_blob(&decrypt, &crypt, &key, SAMBA_GNUTLS_DECRYPT);
+	assert_int_equal(rc, 0);
 	assert_memory_equal(decrypt.data, clear.data, 24);
 }
 

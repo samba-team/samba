@@ -90,8 +90,8 @@ union netr_LogonLevel *netlogon_creds_shallow_copy_logon(TALLOC_CTX *mem_ctx,
 
 /* The following definitions come from /home/jeremy/src/samba/git/master/source3/../source4/../libcli/auth/session.c  */
 
-void sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *session_key,
-		     bool forward);
+int sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *session_key,
+		    enum samba_gnutls_direction encrypt);
 DATA_BLOB sess_encrypt_string(const char *str, const DATA_BLOB *session_key);
 char *sess_decrypt_string(TALLOC_CTX *mem_ctx, 
 			  DATA_BLOB *blob, const DATA_BLOB *session_key);

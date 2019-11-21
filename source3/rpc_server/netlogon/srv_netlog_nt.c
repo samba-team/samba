@@ -1220,7 +1220,12 @@ static NTSTATUS netr_set_machine_account_password(TALLOC_CTX *mem_ctx,
 				status = NT_STATUS_NO_MEMORY;
 				goto out;
 			}
-			sess_crypt_blob(&out, &in, &session_key, true);
+			rc = sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_ENCRYPT);
+			if (rc != 0) {
+				status = gnutls_error_to_ntstatus(rc,
+								  NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+				goto out;
+			}
 			memcpy(info18.nt_pwd.hash, out.data, out.length);
 
 			info18.nt_pwd_active = true;

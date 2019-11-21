@@ -740,6 +740,7 @@ NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB in, out;
 	NTSTATUS nt_status = NT_STATUS_OK;
+	int rc;
 
 	nt_status = dcesrv_transport_session_key(dce_call, &session_key);
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_USER_SESSION_KEY)) {
@@ -764,7 +765,11 @@ NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 		in = data_blob_const(lm_pwd_hash, 16);
 		out = data_blob_talloc_zero(mem_ctx, 16);
 
-		sess_crypt_blob(&out, &in, &session_key, false);
+		rc = sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_DECRYPT);
+		if (rc != 0) {
+			return gnutls_error_to_ntstatus(rc,
+							NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		}
 
 		d_lm_pwd_hash = (struct samr_Password *) out.data;
 	}
@@ -772,7 +777,11 @@ NTSTATUS samr_set_password_buffers(struct dcesrv_call_state *dce_call,
 		in = data_blob_const(nt_pwd_hash, 16);
 		out = data_blob_talloc_zero(mem_ctx, 16);
 
-		sess_crypt_blob(&out, &in, &session_key, false);
+		rc = sess_crypt_blob(&out, &in, &session_key, SAMBA_GNUTLS_DECRYPT);
+		if (rc != 0) {
+			return gnutls_error_to_ntstatus(rc,
+							NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		}
 
 		d_nt_pwd_hash = (struct samr_Password *) out.data;
 	}

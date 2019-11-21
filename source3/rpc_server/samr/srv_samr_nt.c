@@ -4422,6 +4422,8 @@ static NTSTATUS set_user_info_18(struct samr_UserInfo18 *id18,
 				 DATA_BLOB *session_key,
 				 struct samu *pwd)
 {
+	int rc;
+
 	if (id18 == NULL) {
 		DEBUG(2, ("set_user_info_18: id18 is NULL\n"));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -4440,7 +4442,11 @@ static NTSTATUS set_user_info_18(struct samr_UserInfo18 *id18,
 		in = data_blob_const(id18->nt_pwd.hash, 16);
 		out = data_blob_talloc_zero(mem_ctx, 16);
 
-		sess_crypt_blob(&out, &in, session_key, false);
+		rc = sess_crypt_blob(&out, &in, session_key, SAMBA_GNUTLS_DECRYPT);
+		if (rc != 0) {
+			return gnutls_error_to_ntstatus(rc,
+							NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		}
 
 		if (!pdb_set_nt_passwd(pwd, out.data, PDB_CHANGED)) {
 			return NT_STATUS_ACCESS_DENIED;
@@ -4456,7 +4462,11 @@ static NTSTATUS set_user_info_18(struct samr_UserInfo18 *id18,
 		in = data_blob_const(id18->lm_pwd.hash, 16);
 		out = data_blob_talloc_zero(mem_ctx, 16);
 
-		sess_crypt_blob(&out, &in, session_key, false);
+		rc = sess_crypt_blob(&out, &in, session_key, SAMBA_GNUTLS_DECRYPT);
+		if (rc != 0) {
+			return gnutls_error_to_ntstatus(rc,
+							NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		}
 
 		if (!pdb_set_lanman_passwd(pwd, out.data, PDB_CHANGED)) {
 			return NT_STATUS_ACCESS_DENIED;
@@ -4498,6 +4508,7 @@ static NTSTATUS set_user_info_21(struct samr_UserInfo21 *id21,
 				 struct samu *pwd)
 {
 	NTSTATUS status;
+	int rc;
 
 	if (id21 == NULL) {
 		DEBUG(5, ("set_user_info_21: NULL id21\n"));
@@ -4528,7 +4539,11 @@ static NTSTATUS set_user_info_21(struct samr_UserInfo21 *id21,
 			in = data_blob_const(id21->nt_owf_password.array, 16);
 			out = data_blob_talloc_zero(mem_ctx, 16);
 
-			sess_crypt_blob(&out, &in, session_key, false);
+			rc = sess_crypt_blob(&out, &in, session_key, SAMBA_GNUTLS_DECRYPT);
+			if (rc != 0) {
+				return gnutls_error_to_ntstatus(rc,
+								NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+			}
 
 			pdb_set_nt_passwd(pwd, out.data, PDB_CHANGED);
 			pdb_set_pass_last_set_time(pwd, time(NULL), PDB_CHANGED);
@@ -4551,7 +4566,11 @@ static NTSTATUS set_user_info_21(struct samr_UserInfo21 *id21,
 			in = data_blob_const(id21->lm_owf_password.array, 16);
 			out = data_blob_talloc_zero(mem_ctx, 16);
 
-			sess_crypt_blob(&out, &in, session_key, false);
+			rc = sess_crypt_blob(&out, &in, session_key, SAMBA_GNUTLS_DECRYPT);
+			if (rc != 0) {
+				return gnutls_error_to_ntstatus(rc,
+								NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+			}
 
 			pdb_set_lanman_passwd(pwd, out.data, PDB_CHANGED);
 			pdb_set_pass_last_set_time(pwd, time(NULL), PDB_CHANGED);
