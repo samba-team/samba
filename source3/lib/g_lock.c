@@ -36,6 +36,7 @@
 struct g_lock_ctx {
 	struct db_context *db;
 	struct messaging_context *msg;
+	enum dbwrap_lock_order lock_order;
 };
 
 struct g_lock {
@@ -193,6 +194,7 @@ struct g_lock_ctx *g_lock_ctx_init_backend(
 		return NULL;
 	}
 	result->msg = msg;
+	result->lock_order = DBWRAP_LOCK_ORDER_NONE;
 
 	result->db = db_open_watched(result, backend, msg);
 	if (result->db == NULL) {
@@ -201,6 +203,12 @@ struct g_lock_ctx *g_lock_ctx_init_backend(
 		return NULL;
 	}
 	return result;
+}
+
+void g_lock_set_lock_order(struct g_lock_ctx *ctx,
+			   enum dbwrap_lock_order lock_order)
+{
+	ctx->lock_order = lock_order;
 }
 
 struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
@@ -690,7 +698,23 @@ static void g_lock_lock_retry(struct tevent_req *subreq)
 
 NTSTATUS g_lock_lock_recv(struct tevent_req *req)
 {
-	return tevent_req_simple_recv_ntstatus(req);
+	struct g_lock_lock_state *state = tevent_req_data(
+		req, struct g_lock_lock_state);
+	struct g_lock_ctx *ctx = state->ctx;
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	if ((ctx->lock_order != DBWRAP_LOCK_ORDER_NONE) &&
+	    ((state->type == G_LOCK_READ) ||
+	     (state->type == G_LOCK_WRITE))) {
+		const char *name = dbwrap_name(ctx->db);
+		dbwrap_lock_order_lock(name, ctx->lock_order);
+	}
+
+	return NT_STATUS_OK;
 }
 
 struct g_lock_lock_simple_state {
@@ -769,6 +793,10 @@ NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 			return status;
 		}
 		if (NT_STATUS_IS_OK(state.status)) {
+			if (ctx->lock_order != DBWRAP_LOCK_ORDER_NONE) {
+				const char *name = dbwrap_name(ctx->db);
+				dbwrap_lock_order_lock(name, ctx->lock_order);
+			}
 			return NT_STATUS_OK;
 		}
 		if (!NT_STATUS_EQUAL(
@@ -887,6 +915,11 @@ NTSTATUS g_lock_unlock(struct g_lock_ctx *ctx, TDB_DATA key)
 		DBG_WARNING("g_lock_unlock_fn failed: %s\n",
 			    nt_errstr(state.status));
 		return state.status;
+	}
+
+	if (ctx->lock_order != DBWRAP_LOCK_ORDER_NONE) {
+		const char *name = dbwrap_name(ctx->db);
+		dbwrap_lock_order_unlock(name, ctx->lock_order);
 	}
 
 	return NT_STATUS_OK;

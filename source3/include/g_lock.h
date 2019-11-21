@@ -36,6 +36,8 @@ struct g_lock_ctx *g_lock_ctx_init_backend(
 	TALLOC_CTX *mem_ctx,
 	struct messaging_context *msg,
 	struct db_context **backend);
+void g_lock_set_lock_order(struct g_lock_ctx *ctx,
+			   enum dbwrap_lock_order lock_order);
 struct g_lock_ctx *g_lock_ctx_init(TALLOC_CTX *mem_ctx,
 				   struct messaging_context *msg);
 
