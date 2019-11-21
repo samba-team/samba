@@ -112,7 +112,7 @@ bld.SAMBA3_BINARY('test_tldap',
                        smbconf
                        cmocka
                        ''',
-                  install=False)
+                  for_selftest=True)
 
 # libpdb.so should not expose internal symbols that are only usable
 # to the statically linked modules that are merged into libpdb.
@@ -207,7 +207,7 @@ bld.SAMBA_BINARY('test_registry_regfio',
                  source='registry/tests/test_regfio.c',
                  deps='cmocka samba3-util smbconf REGFIO',
                  local_include=False,
-                 install=False)
+                 for_selftest=True)
 
 # Do not link against this use 'smbconf'
 bld.SAMBA3_SUBSYSTEM('SMBREGISTRY',
@@ -1158,7 +1158,7 @@ bld.SAMBA3_BINARY('smbspool_krb5_wrapper',
 
 bld.SAMBA3_BINARY('smbspool_argv_wrapper',
 		  source='script/tests/smbspool_argv_wrapper.c',
-		  install=False)
+		  for_selftest=True)
 
 bld.SAMBA3_BINARY('locktest2',
                  source='torture/locktest2.c',
@@ -1168,7 +1168,7 @@ bld.SAMBA3_BINARY('locktest2',
                       libsmb
                       LOCKING
                       ''',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  source='''
@@ -1225,7 +1225,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                       samba-cluster-support
                       ''',
                  cflags='-DWINBINDD_SOCKET_DIR=\"%s\"' % bld.env.WINBINDD_SOCKET_DIR,
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA3_BINARY('smbconftort',
                  source='lib/smbconf/testsuite.c',
@@ -1234,7 +1234,7 @@ bld.SAMBA3_BINARY('smbconftort',
                       smbconf
                       popt_samba3
                       ''',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA3_BINARY('msgtest',
                  source='torture/msgtest.c',
@@ -1276,7 +1276,7 @@ bld.SAMBA3_BINARY('test_mdsparser_es',
                  popt_samba3_cmdline
                  ''',
                  enabled=bld.env.spotlight_backend_es,
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA3_BINARY('pdbtest',
                  source='torture/pdbtest.c',
@@ -1287,7 +1287,7 @@ bld.SAMBA3_BINARY('pdbtest',
                       AUTH_COMMON
                       auth
                       ''',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA3_BINARY('vfstest',
                  source='''
@@ -1301,7 +1301,7 @@ bld.SAMBA3_BINARY('vfstest',
                       smbconf
                       SMBREADLINE
                       ''',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA3_BINARY('versiontest',
                  source='lib/version_test.c',
@@ -1313,7 +1313,7 @@ bld.SAMBA3_BINARY('versiontest',
 
 bld.SAMBA3_BINARY('timelimit',
                  source='script/tests/timelimit.c',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA3_BINARY('rpc_open_tcp',
                  source='torture/rpc_open_tcp.c',
@@ -1321,7 +1321,7 @@ bld.SAMBA3_BINARY('rpc_open_tcp',
                       talloc
                       msrpc3
                       ''',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA3_BINARY('vlp',
                  source='printing/tests/vlp.c',
@@ -1329,7 +1329,7 @@ bld.SAMBA3_BINARY('vlp',
                       talloc
                       smbconf
                       ''',
-                 install=False)
+                 for_selftest=True)
 
 
 pyrpc_util = bld.pyembed_libname('pyrpc_util')
@@ -1380,7 +1380,7 @@ bld.SAMBA3_BINARY('tevent_glib_glue_test',
                  popt_samba3
                  tevent-glib-glue''',
                  enabled=bld.CONFIG_SET('WITH_TEVENT_GLIB_GLUE'),
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA3_BINARY('tevent_glib_tracker',
                  source='utils/async-tracker.c',

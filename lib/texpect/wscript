@@ -4,4 +4,4 @@ def configure(conf):
     conf.CHECK_FUNCS_IN('openpty', 'util', checklibc=True, headers='pty.h util.h bsd/libutil.h libutil.h')
 
 def build(bld):
-    bld.SAMBA_BINARY('texpect', 'texpect.c', deps='popt util replace', install=False)
+    bld.SAMBA_BINARY('texpect', 'texpect.c', deps='popt util replace', for_selftest=True)

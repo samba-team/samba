@@ -52,7 +52,7 @@ bld.SAMBA_BINARY(
              cmocka
              talloc
         ''',
-        install=False
+        for_selftest=True
     )
 
 bld.SAMBA_BINARY('test_rc4_passwd_buffer',
@@ -62,7 +62,7 @@ bld.SAMBA_BINARY('test_rc4_passwd_buffer',
                       LIBCLI_AUTH
                       cmocka
                       ''',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA_BINARY('test_schannel',
                  source='tests/test_schannel.c',
@@ -70,7 +70,7 @@ bld.SAMBA_BINARY('test_schannel',
                       gensec
                       cmocka
                       ''',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA_BINARY('test_gnutls',
                  source='tests/test_gnutls.c',
@@ -79,4 +79,4 @@ bld.SAMBA_BINARY('test_gnutls',
                       cmocka
                       samba-util
                       ''',
-                 install=False)
+                 for_selftest=True)

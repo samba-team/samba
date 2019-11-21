@@ -269,22 +269,22 @@ else:
                      source='tests/rfc1738.c',
                      deps='cmocka replace samba-util',
                      local_include=False,
-                     install=False)
+                     for_selftest=True)
 
     bld.SAMBA_BINARY('test_ms_fnmatch',
                      source='tests/test_ms_fnmatch.c',
                      deps='cmocka replace samba-util',
                      local_include=False,
-                     install=False)
+                     for_selftest=True)
 
     bld.SAMBA_BINARY('test_talloc_keep_secret',
                      source='tests/test_talloc_keep_secret.c',
                      deps='cmocka replace samba-util',
                      local_include=False,
-                     install=False)
+                     for_selftest=True)
 
     bld.SAMBA_BINARY('test_byteorder',
                      source='tests/test_byteorder.c',
                      deps='cmocka replace samba-util',
                      local_include=False,
-                     install=False)
+                     for_selftest=True)

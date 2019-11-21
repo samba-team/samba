@@ -69,4 +69,4 @@ def build(bld):
     bld.SAMBA_BINARY('test_smb1cli_session',
                      source='test_smb1cli_session.c',
                      deps='cmocka cli_smb_common',
-                     install=False)
+                     for_selftest=True)

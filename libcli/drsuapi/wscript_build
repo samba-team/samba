@@ -6,15 +6,14 @@ bld.SAMBA_SUBSYSTEM('LIBCLI_DRSUAPI',
 	public_deps='LIBCLI_AUTH samdb z'
 	)
 
-if bld.CONFIG_GET('ENABLE_SELFTEST'):
-    bld.SAMBA_BINARY(
-        'test_repl_decrypt',
-        source='tests/test_repl_decrypt.c',
-        deps='''
-            LIBCLI_DRSUAPI
-            cmocka
-            talloc
-        ''',
-        install=False,
-        enabled=bld.AD_DC_BUILD_IS_ENABLED()
-    )
+bld.SAMBA_BINARY(
+    'test_repl_decrypt',
+    source='tests/test_repl_decrypt.c',
+    deps='''
+    LIBCLI_DRSUAPI
+    cmocka
+    talloc
+    ''',
+    for_selftest=True,
+    enabled=bld.AD_DC_BUILD_IS_ENABLED()
+)

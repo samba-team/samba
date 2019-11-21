@@ -9,7 +9,7 @@ bld.SAMBA_SUBSYSTEM(
     source='audit_logging.c'
 )
 
-if bld.AD_DC_BUILD_IS_ENABLED() and bld.CONFIG_GET('ENABLE_SELFTEST'):
+if bld.AD_DC_BUILD_IS_ENABLED():
     bld.SAMBA_BINARY(
         'audit_logging_test',
         source='tests/audit_logging_test.c',
@@ -21,10 +21,10 @@ if bld.AD_DC_BUILD_IS_ENABLED() and bld.CONFIG_GET('ENABLE_SELFTEST'):
              samba-util
              LIBTSOCKET
         ''',
-        install=False
+        for_selftest=True
     )
 
-if bld.AD_DC_BUILD_IS_ENABLED() and bld.CONFIG_GET('ENABLE_SELFTEST'):
+if bld.AD_DC_BUILD_IS_ENABLED():
     bld.SAMBA_BINARY(
         'audit_logging_error_test',
         source='tests/audit_logging_error_test.c',
@@ -36,7 +36,7 @@ if bld.AD_DC_BUILD_IS_ENABLED() and bld.CONFIG_GET('ENABLE_SELFTEST'):
              samba-util
              LIBTSOCKET
         ''',
-        install=False,
+        for_selftest=True,
         ldflags='''
             -Wl,--wrap,json_object_set_new
             -Wl,--wrap,json_object_update

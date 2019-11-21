@@ -10,5 +10,5 @@ bld.SAMBA_SUBSYSTEM('LIBASYNC_REQ',
 bld.SAMBA_BINARY('async_connect_send_test',
                  source='async_connect_send_test.c',
                  deps='LIBASYNC_REQ',
-                 install=False
+                 for_selftest=True
 )

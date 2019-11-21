@@ -361,8 +361,12 @@ def SAMBA_BINARY(bld, binname, source,
                  install=True,
                  install_path=None,
                  enabled=True,
-                 fuzzer=False):
+                 fuzzer=False,
+                 for_selftest=False):
     '''define a Samba binary'''
+
+    if for_selftest and not bld.CONFIG_GET('ENABLE_SELFTEST'):
+        enabled=False
 
     if not enabled:
         SET_TARGET_TYPE(bld, binname, 'DISABLED')

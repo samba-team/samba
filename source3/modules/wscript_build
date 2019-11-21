@@ -7,7 +7,7 @@ bld.SAMBA3_SUBSYSTEM('NFS4_ACLS',
 bld.SAMBA3_BINARY('test_nfs4_acls',
                   source='test_nfs4_acls.c',
                   deps='smbd_base cmocka',
-                  install=False)
+                  for_selftest=True)
 
 bld.SAMBA3_SUBSYSTEM('vfs_acl_common',
                      source='vfs_acl_common.c',

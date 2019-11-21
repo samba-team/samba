@@ -14,14 +14,14 @@ bld.SAMBA_LIBRARY('winbind-client',
 bld.SAMBA_BINARY('nsstest',
 		 source='nsstest.c',
 		 deps='replace dl',
-                 install=False
+                 for_selftest=True
 		 )
 
 if bld.CONFIG_SET('HAVE_PTHREAD'):
     bld.SAMBA_BINARY('stress-nss-libwbclient',
 		     source='stress-nss-libwbclient.c',
 		     deps='wbclient pthread',
-		     install=False
+		     for_selftest=True
 		     )
 
 # The nss_wrapper code relies strictly on the linux implementation and

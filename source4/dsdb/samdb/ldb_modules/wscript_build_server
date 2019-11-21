@@ -21,7 +21,7 @@ bld.SAMBA_BINARY('test_audit_util',
                  audit_logging
                  DSDB_MODULE_HELPERS
                  ''',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA_BINARY('test_audit_log',
                  source='tests/test_audit_log.c',
@@ -35,7 +35,7 @@ bld.SAMBA_BINARY('test_audit_log',
                  DSDB_MODULE_HELPERS
                  DSDB_MODULE_HELPERS_AUDIT
                  ''',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA_BINARY('test_audit_log_errors',
                  source='tests/test_audit_log_errors.c',
@@ -54,7 +54,7 @@ bld.SAMBA_BINARY('test_audit_log_errors',
                      -Wl,--wrap,json_add_version
                      -Wl,--wrap,json_add_timestamp
                  ''',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA_BINARY('test_group_audit',
                  source='tests/test_group_audit.c',
@@ -68,7 +68,7 @@ bld.SAMBA_BINARY('test_group_audit',
                  DSDB_MODULE_HELPERS
                  DSDB_MODULE_HELPERS_AUDIT
                  ''',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA_BINARY('test_group_audit_errors',
                  source='tests/test_group_audit_errors.c',
@@ -87,7 +87,7 @@ bld.SAMBA_BINARY('test_group_audit_errors',
                      -Wl,--wrap,json_add_version
                      -Wl,--wrap,json_add_timestamp
                  ''',
-                 install=False)
+                 for_selftest=True)
 
 bld.SAMBA_MODULE('ldb_samba_dsdb',
 	source='samba_dsdb.c',

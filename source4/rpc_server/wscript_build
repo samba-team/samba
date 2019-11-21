@@ -167,16 +167,15 @@ bld.SAMBA_MODULE('service_dcerpc',
 	deps='dcerpc_server'
 	)
 
-if bld.CONFIG_GET('ENABLE_SELFTEST'):
-    bld.SAMBA_BINARY(
-        'test_rpc_dns_server_dnsutils',
-        source='tests/rpc_dns_server_dnsutils_test.c',
-        deps='''
+bld.SAMBA_BINARY(
+    'test_rpc_dns_server_dnsutils',
+    source='tests/rpc_dns_server_dnsutils_test.c',
+    deps='''
             dnsserver_common
             dcerpc_server
             cmocka
             talloc
-        ''',
-        install=False,
-        enabled=bld.AD_DC_BUILD_IS_ENABLED()
-    )
+    ''',
+    for_selftest=True,
+    enabled=bld.AD_DC_BUILD_IS_ENABLED()
+)

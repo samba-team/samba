@@ -27,7 +27,7 @@ bld.SAMBA_BINARY('test_unique_object_sids',
             cmocka
             DSDB_MODULE_HELPERS
         ''',
-        install=False)
+        for_selftest=True)
 bld.SAMBA_BINARY('test_encrypted_secrets_tdb',
         source='tests/test_encrypted_secrets.c',
         cflags='-DTEST_BE=\"tdb\"',
@@ -40,7 +40,7 @@ bld.SAMBA_BINARY('test_encrypted_secrets_tdb',
             gnutls
             DSDB_MODULE_HELPERS
         ''',
-        install=False)
+        for_selftest=True)
 if conf.env.HAVE_LMDB:
     bld.SAMBA_BINARY('test_encrypted_secrets_mdb',
             source='tests/test_encrypted_secrets.c',
@@ -54,7 +54,7 @@ if conf.env.HAVE_LMDB:
                 gnutls
                 DSDB_MODULE_HELPERS
             ''',
-            install=False)
+            for_selftest=True)
 
 if bld.AD_DC_BUILD_IS_ENABLED():
     bld.PROCESS_SEPARATE_RULE("server")
