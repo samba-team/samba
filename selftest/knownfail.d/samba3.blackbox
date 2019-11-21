@@ -1,0 +1,4 @@
+^samba3.blackbox.timestamps.time=0\(fileserver\)
+^samba3.blackbox.timestamps.time=-1\(fileserver\)
+^samba3.blackbox.timestamps.time=-2\(fileserver\)
+^samba3.blackbox.timestamps.time=1968\(fileserver\)
