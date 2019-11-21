@@ -34,13 +34,16 @@ int sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *sessio
 {
 	int i, k, rc;
 
+	if (in->length % 8 != 0) {
+		return GNUTLS_E_INVALID_REQUEST;
+	}
+
 	for (i=0,k=0;
 	     i<in->length;
 	     i += 8, k += 7) {
 		uint8_t bin[8], bout[8], key[7];
 
-		memset(bin, 0, 8);
-		memcpy(bin,  &in->data[i], MIN(8, in->length-i));
+		memcpy(bin,  &in->data[i], 8);
 
 		if (k + 7 > session_key->length) {
 			k = (session_key->length - k);
@@ -52,7 +55,7 @@ int sess_crypt_blob(DATA_BLOB *out, const DATA_BLOB *in, const DATA_BLOB *sessio
 			return rc;
 		}
 
-		memcpy(&out->data[i], bout, MIN(8, in->length-i));
+		memcpy(&out->data[i], bout, 8);
 	}
 	return 0;
 }
