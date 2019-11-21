@@ -334,13 +334,6 @@ time_t nt_time_to_unix_abs(const NTTIME *nt)
 	return (time_t)d;
 }
 
-time_t uint64s_nt_time_to_unix_abs(const uint64_t *src)
-{
-	NTTIME nttime;
-	nttime = *src;
-	return nt_time_to_unix_abs(&nttime);
-}
-
 /****************************************************************************
  Convert a time_t to a NTTIME structure
 
