@@ -67,7 +67,8 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 	const char *base;
 	struct loadparm_context *lp_ctx = NULL;
 
-	if (!DBWRAP_LOCK_ORDER_VALID(lock_order)) {
+	if ((lock_order != DBWRAP_LOCK_ORDER_NONE) &&
+	    !DBWRAP_LOCK_ORDER_VALID(lock_order)) {
 		errno = EINVAL;
 		return NULL;
 	}
