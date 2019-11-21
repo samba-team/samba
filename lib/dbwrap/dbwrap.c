@@ -138,8 +138,8 @@ static void debug_lock_order(int level)
 	DEBUGADD(level, ("\n"));
 }
 
-static void dbwrap_lock_order_lock(const char *db_name,
-				   enum dbwrap_lock_order lock_order)
+void dbwrap_lock_order_lock(const char *db_name,
+			    enum dbwrap_lock_order lock_order)
 {
 	int idx;
 
@@ -172,8 +172,8 @@ static void dbwrap_lock_order_lock(const char *db_name,
 	debug_lock_order(10);
 }
 
-static void dbwrap_lock_order_unlock(const char *db_name,
-				     enum dbwrap_lock_order lock_order)
+void dbwrap_lock_order_unlock(const char *db_name,
+			      enum dbwrap_lock_order lock_order)
 {
 	DBG_INFO("release lock order %d for %s\n",
 		 (int)lock_order,

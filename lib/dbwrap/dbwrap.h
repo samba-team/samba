@@ -79,6 +79,11 @@ struct db_record *dbwrap_try_fetch_locked(struct db_context *db,
 					  TDB_DATA key);
 struct db_context *dbwrap_record_get_db(struct db_record *rec);
 
+void dbwrap_lock_order_lock(const char *db_name,
+			    enum dbwrap_lock_order lock_order);
+void dbwrap_lock_order_unlock(const char *db_name,
+			      enum dbwrap_lock_order lock_order);
+
 NTSTATUS dbwrap_do_locked(struct db_context *db, TDB_DATA key,
 			  void (*fn)(struct db_record *rec,
 				     TDB_DATA value,
