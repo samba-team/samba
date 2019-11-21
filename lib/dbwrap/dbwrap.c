@@ -123,79 +123,96 @@ NTSTATUS dbwrap_record_delete(struct db_record *rec)
 	return NT_STATUS_OK;
 }
 
-static void debug_lock_order(int level, struct db_context *dbs[])
+const char *locked_dbs[DBWRAP_LOCK_ORDER_MAX];
+
+static void debug_lock_order(int level)
 {
 	int i;
 	DEBUG(level, ("lock order: "));
 	for (i=0; i<DBWRAP_LOCK_ORDER_MAX; i++) {
-		DEBUGADD(level, (" %d:%s", i + 1, dbs[i] ? dbs[i]->name : "<none>"));
+		DEBUGADD(level,
+			 (" %d:%s",
+			  i + 1,
+			  locked_dbs[i] ? locked_dbs[i] : "<none>"));
 	}
 	DEBUGADD(level, ("\n"));
 }
 
-static void dbwrap_lock_order_lock(struct db_context *db,
-				   struct db_context ***lockptr)
+static void dbwrap_lock_order_lock(const char *db_name,
+				   enum dbwrap_lock_order lock_order)
 {
-	static struct db_context *locked_dbs[DBWRAP_LOCK_ORDER_MAX];
 	int idx;
 
-	DBG_INFO("check lock order %d for %s\n", (int)db->lock_order,
-		 db->name);
+	DBG_INFO("check lock order %d for %s\n",
+		 (int)lock_order,
+		 db_name);
 
-	if (!DBWRAP_LOCK_ORDER_VALID(db->lock_order)) {
+	if (!DBWRAP_LOCK_ORDER_VALID(lock_order)) {
 		DBG_ERR("Invalid lock order %d of %s\n",
-			(int)db->lock_order, db->name);
+			lock_order,
+			db_name);
 		smb_panic("lock order violation");
 	}
 
-	for (idx=db->lock_order-1; idx<DBWRAP_LOCK_ORDER_MAX; idx++) {
+	for (idx=lock_order-1; idx<DBWRAP_LOCK_ORDER_MAX; idx++) {
 		if (locked_dbs[idx] != NULL) {
 			DBG_ERR("Lock order violation: Trying %s at %d while "
 				"%s at %d is locked\n",
-				db->name, (int)db->lock_order,
-				locked_dbs[idx]->name, idx + 1);
-			debug_lock_order(0, locked_dbs);
+				db_name,
+				(int)lock_order,
+				locked_dbs[idx],
+				idx + 1);
+			debug_lock_order(0);
 			smb_panic("lock order violation");
 		}
 	}
 
-	locked_dbs[db->lock_order-1] = db;
-	*lockptr = &locked_dbs[db->lock_order-1];
+	locked_dbs[lock_order-1] = db_name;
 
-	debug_lock_order(10, locked_dbs);
+	debug_lock_order(10);
 }
 
-static void dbwrap_lock_order_unlock(struct db_context *db,
-				     struct db_context **lockptr)
+static void dbwrap_lock_order_unlock(const char *db_name,
+				     enum dbwrap_lock_order lock_order)
 {
 	DBG_INFO("release lock order %d for %s\n",
-		 (int)db->lock_order, db->name);
+		 (int)lock_order,
+		 db_name);
 
-	if (*lockptr == NULL) {
-		DBG_ERR("db %s at order %d unlocked\n", db->name,
-			(int)db->lock_order);
+	if (!DBWRAP_LOCK_ORDER_VALID(lock_order)) {
+		DBG_ERR("Invalid lock order %d of %s\n",
+			lock_order,
+			db_name);
 		smb_panic("lock order violation");
 	}
 
-	if (*lockptr != db) {
+	if (locked_dbs[lock_order-1] == NULL) {
+		DBG_ERR("db %s at order %d unlocked\n",
+			db_name,
+			(int)lock_order);
+		smb_panic("lock order violation");
+	}
+
+	if (locked_dbs[lock_order-1] != db_name) {
 		DBG_ERR("locked db at lock order %d is %s, expected %s\n",
-			(int)(*lockptr)->lock_order, (*lockptr)->name,
-			db->name);
+			(int)lock_order,
+			locked_dbs[lock_order-1],
+			db_name);
 		smb_panic("lock order violation");
 	}
 
-	*lockptr = NULL;
+	locked_dbs[lock_order-1] = NULL;
 }
 
 struct dbwrap_lock_order_state {
 	struct db_context *db;
-	struct db_context **lockptr;
 };
 
 static int dbwrap_lock_order_state_destructor(
 	struct dbwrap_lock_order_state *s)
 {
-	dbwrap_lock_order_unlock(s->db, s->lockptr);
+	struct db_context *db = s->db;
+	dbwrap_lock_order_unlock(db->name, db->lock_order);
 	return 0;
 }
 
@@ -211,7 +228,7 @@ static struct dbwrap_lock_order_state *dbwrap_check_lock_order(
 	}
 	state->db = db;
 
-	dbwrap_lock_order_lock(db, &state->lockptr);
+	dbwrap_lock_order_lock(db->name, db->lock_order);
 	talloc_set_destructor(state, dbwrap_lock_order_state_destructor);
 
 	return state;
@@ -540,18 +557,16 @@ NTSTATUS dbwrap_do_locked(struct db_context *db, TDB_DATA key,
 	struct db_record *rec;
 
 	if (db->do_locked != NULL) {
-		struct db_context **lockptr = NULL;
 		NTSTATUS status;
 
 		if (db->lock_order != DBWRAP_LOCK_ORDER_NONE) {
-			dbwrap_lock_order_lock(db, &lockptr);
+			dbwrap_lock_order_lock(db->name, db->lock_order);
 		}
 
 		status = db->do_locked(db, key, fn, private_data);
 
-		if (db->lock_order != DBWRAP_LOCK_ORDER_NONE &&
-		    lockptr != NULL) {
-			dbwrap_lock_order_unlock(db, lockptr);
+		if (db->lock_order != DBWRAP_LOCK_ORDER_NONE) {
+			dbwrap_lock_order_unlock(db->name, db->lock_order);
 		}
 
 		return status;
