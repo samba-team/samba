@@ -581,9 +581,7 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 
 	/* Set options in kerberos */
 
-	krb5_set_dns_canonicalize_hostname(kctx,
-			lpcfg_parm_bool(lp_ctx, NULL, "krb5",
-					"set_dns_canonicalize", false));
+	krb5_set_dns_canonicalize_hostname(kctx, false);
 #endif
 	talloc_steal(parent_ctx, *smb_krb5_context);
 	talloc_free(tmp_ctx);
