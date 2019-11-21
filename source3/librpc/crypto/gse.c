@@ -214,6 +214,16 @@ static NTSTATUS gse_context_init(TALLOC_CTX *mem_ctx,
 		goto err_out;
 	}
 
+#ifdef SAMBA4_USES_HEIMDAL
+	k5ret = gsskrb5_set_dns_canonicalize(false);
+	if (k5ret) {
+		DBG_ERR("gsskrb5_set_dns_canonicalize() failed (%s)\n",
+			error_message(k5ret));
+		status = NT_STATUS_INTERNAL_ERROR;
+		goto err_out;
+	}
+#endif
+
 	if (!ccache_name) {
 		ccache_name = krb5_cc_default_name(gse_ctx->k5ctx);
 	}
