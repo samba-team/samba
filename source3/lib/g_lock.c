@@ -653,14 +653,98 @@ NTSTATUS g_lock_lock_recv(struct tevent_req *req)
 	return tevent_req_simple_recv_ntstatus(req);
 }
 
+struct g_lock_lock_simple_state {
+	struct server_id me;
+	enum g_lock_type type;
+	NTSTATUS status;
+};
+
+static void g_lock_lock_simple_fn(
+	struct db_record *rec,
+	TDB_DATA value,
+	void *private_data)
+{
+	struct g_lock_lock_simple_state *state = private_data;
+	struct g_lock lck = { .exclusive.pid = 0 };
+	bool ok;
+
+	ok = g_lock_parse(value.dptr, value.dsize, &lck);
+	if (!ok) {
+		DBG_DEBUG("g_lock_parse failed\n");
+		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return;
+	}
+
+	if (lck.exclusive.pid != 0) {
+		goto not_granted;
+	}
+
+	if (state->type == G_LOCK_WRITE) {
+		if (lck.num_shared != 0) {
+			goto not_granted;
+		}
+		lck.exclusive = state->me;
+		state->status = g_lock_store(rec, &lck, NULL);
+		return;
+	}
+
+	if (state->type == G_LOCK_READ) {
+		g_lock_cleanup_shared(&lck);
+		state->status = g_lock_store(rec, &lck, &state->me);
+		return;
+	}
+
+not_granted:
+	state->status = NT_STATUS_LOCK_NOT_GRANTED;
+}
+
 NTSTATUS g_lock_lock(struct g_lock_ctx *ctx, TDB_DATA key,
 		     enum g_lock_type type, struct timeval timeout)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
+	TALLOC_CTX *frame;
 	struct tevent_context *ev;
 	struct tevent_req *req;
 	struct timeval end;
-	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	NTSTATUS status;
+
+	if ((type == G_LOCK_READ) || (type == G_LOCK_WRITE)) {
+		/*
+		 * This is an abstraction violation: Normally we do
+		 * the sync wrappers around async functions with full
+		 * nested event contexts. However, this is used in
+		 * very hot code paths, so avoid the event context
+		 * creation for the good path where there's no lock
+		 * contention. My benchmark gave a factor of 2
+		 * improvement for lock/unlock.
+		 */
+		struct g_lock_lock_simple_state state = {
+			.me = messaging_server_id(ctx->msg),
+			.type = type,
+		};
+		status = dbwrap_do_locked(
+			ctx->db, key, g_lock_lock_simple_fn, &state);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("dbwrap_do_locked() failed: %s\n",
+				  nt_errstr(status));
+			return status;
+		}
+		if (NT_STATUS_IS_OK(state.status)) {
+			return NT_STATUS_OK;
+		}
+		if (!NT_STATUS_EQUAL(
+			    state.status, NT_STATUS_LOCK_NOT_GRANTED)) {
+			return state.status;
+		}
+
+		/*
+		 * Fall back to the full g_lock_trylock logic,
+		 * g_lock_lock_simple_fn() called above only covers
+		 * the uncontended path.
+		 */
+	}
+
+	frame = talloc_stackframe();
+	status = NT_STATUS_NO_MEMORY;
 
 	ev = samba_tevent_context_init(frame);
 	if (ev == NULL) {
