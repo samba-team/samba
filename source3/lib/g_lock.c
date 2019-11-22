@@ -325,7 +325,6 @@ static NTSTATUS g_lock_trylock(
 	struct g_lock lck = { .exclusive.pid = 0 };
 	struct server_id_buf tmp;
 	NTSTATUS status;
-	bool exists;
 	bool ok;
 
 	ok = g_lock_parse(data.dptr, data.dsize, &lck);
@@ -345,7 +344,7 @@ static NTSTATUS g_lock_trylock(
 		bool self_exclusive = server_id_equal(&self, &lck.exclusive);
 
 		if (!self_exclusive) {
-			exists = serverid_exists(&lck.exclusive);
+			bool exists = serverid_exists(&lck.exclusive);
 			if (!exists) {
 				lck.exclusive = (struct server_id) { .pid=0 };
 				goto noexclusive;
