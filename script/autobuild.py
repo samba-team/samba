@@ -544,7 +544,8 @@ tasks = {
         ("random-sleep", random_sleep(300, 900)),
         ("configure", "ADDITIONAL_CFLAGS='-O3 -Wp,-D_FORTIFY_SOURCE=2' ./configure.developer --with-selftest-prefix=./bin/ab --abi-check-disable" + samba_configure_params),
         ("make", "make -j"),
-        ("test", make_test(cmd='make quicktest', include_envs=["ad_dc"])),
+        ("test", make_test(cmd='make test', include_envs=["none"])),
+        ("quicktest", make_test(cmd='make quicktest', include_envs=["ad_dc"])),
         ("lcov", LCOV_CMD),
         ("install", "make install"),
         ("check-clean-tree", "script/clean-source-tree.sh"),
@@ -612,14 +613,6 @@ tasks = {
         ("allshared-distclean", "make distclean"),
         ("allshared-configure", samba_libs_configure_samba + " --with-shared-modules=ALL"),
         ("allshared-make", "make -j"),
-        ],
-
-    "samba-none-env": [
-        ("random-sleep", random_sleep(1, 1)),
-        ("configure", "./configure.developer --with-selftest-prefix=./bin/ab" + samba_configure_params),
-        ("make", "make -j"),
-        ("test", make_test(include_envs=["none"])),
-        ("lcov", LCOV_CMD),
         ],
 
     "samba-static": [

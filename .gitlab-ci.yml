@@ -119,9 +119,6 @@ samba:
 samba-mitkrb5:
   extends: .shared_template
 
-samba-none-env:
-  extends: .shared_template
-
 samba-nopython:
   extends: .shared_template
 
@@ -221,7 +218,6 @@ pages:
     - others
     - samba
     - samba-mitkrb5
-    - samba-none-env
     - samba-nopython
     - samba-nopython-py2
     - samba-xc
