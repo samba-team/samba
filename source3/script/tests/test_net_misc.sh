@@ -24,6 +24,7 @@ fi
 NET="$VALGRIND ${NET:-$BINDIR/net} $CONFIGURATION"
 NETTIME="${NET}   --option=clientmaxprotocol=${PROTOCOL} time"
 NETLOOKUP="${NET} --option=clientmaxprotocol=${PROTOCOL} lookup"
+NETSHARE="${NET} -U${USERNAME}%${PASSWORD} --option=clientmaxprotocol=${PROTOCOL} -S ${SERVER} share"
 
 incdir=`dirname $0`/../../../testprogs/blackbox
 . $incdir/subunit.sh
@@ -44,6 +45,13 @@ test_lookup()
 	${NETLOOKUP} ${PARAM}
 }
 
+test_share()
+{
+	PARAM="$1"
+
+	${NETSHARE} ${PARAM}
+}
+
 testit "get the time" \
 	test_time || \
 	failed=`expr $failed + 1`
@@ -62,6 +70,11 @@ testit "lookup the PDC" \
 
 testit "lookup the master browser" \
 	test_lookup master || \
+	failed=`expr $failed + 1`
+
+# This test attempts to lookup shares
+testit "lookup share list" \
+	test_share list || \
 	failed=`expr $failed + 1`
 
 testok $0 $failed
