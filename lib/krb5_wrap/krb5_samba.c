@@ -3611,6 +3611,12 @@ krb5_error_code smb_krb5_init_context_common(krb5_context *_krb5_context)
 			error_message(ret));
 	}
 #endif
+
+#ifdef SAMBA4_USES_HEIMDAL
+	/* Set options in kerberos */
+	krb5_set_dns_canonicalize_hostname(krb5_ctx, false);
+#endif
+
 	*_krb5_context = krb5_ctx;
 	return 0;
 }

@@ -511,6 +511,12 @@ smb_krb5_init_context_basic(TALLOC_CTX *tmp_ctx,
 		return ret;
 	}
 
+	/*
+	 * This is already called in smb_krb5_init_context_common(),
+	 * but krb5_set_config_files() may resets it.
+	 */
+	krb5_set_dns_canonicalize_hostname(krb5_ctx, false);
+
 	realm = lpcfg_realm(lp_ctx);
 	if (realm != NULL) {
 		ret = krb5_set_default_realm(krb5_ctx, realm);
@@ -578,10 +584,6 @@ krb5_error_code smb_krb5_init_context(void *parent_ctx,
 		return ret;
 	}
 	krb5_set_warn_dest(kctx, logf);
-
-	/* Set options in kerberos */
-
-	krb5_set_dns_canonicalize_hostname(kctx, false);
 #endif
 	talloc_steal(parent_ctx, *smb_krb5_context);
 	talloc_free(tmp_ctx);
