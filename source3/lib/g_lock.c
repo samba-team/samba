@@ -266,6 +266,34 @@ static ssize_t g_lock_find_shared(
 	return -1;
 }
 
+static void g_lock_cleanup_shared(struct g_lock *lck)
+{
+	size_t i;
+	struct server_id check;
+	bool exists;
+
+	if (lck->num_shared == 0) {
+		return;
+	}
+
+	/*
+	 * Read locks can stay around forever if the process dies. Do
+	 * a heuristic check for process existence: Check one random
+	 * process for existence. Hopefully this will keep runaway
+	 * read locks under control.
+	 */
+	i = generate_random() % lck->num_shared;
+	g_lock_get_shared(lck, i, &check);
+
+	exists = serverid_exists(&check);
+	if (!exists) {
+		struct server_id_buf tmp;
+		DBG_DEBUG("Shared locker %s died -- removing\n",
+			  server_id_str_buf(check, &tmp));
+		g_lock_del_shared(lck, i);
+	}
+}
+
 struct g_lock_lock_state {
 	struct tevent_context *ev;
 	struct g_lock_ctx *ctx;
@@ -295,10 +323,8 @@ static NTSTATUS g_lock_trylock(
 	enum g_lock_type type = req_state->type;
 	bool retry = req_state->retry;
 	struct g_lock lck = { .exclusive.pid = 0 };
-	struct server_id check;
 	struct server_id_buf tmp;
 	NTSTATUS status;
-	size_t i;
 	bool exists;
 	bool ok;
 
@@ -465,31 +491,7 @@ do_shared:
 		return status;
 	}
 
-	/*
-	 * Read locks can stay around forever if the process dies. Do
-	 * a heuristic check for process existence: Check one random
-	 * process for existence. Hopefully this will keep runaway
-	 * read locks under control.
-	 */
-
-	i = generate_random() % lck.num_shared;
-
-	g_lock_get_shared(&lck, i, &check);
-
-	if (!serverid_exists(&check)) {
-
-		DBG_DEBUG("Shared locker %s died -- removing\n",
-			  server_id_str_buf(check, &tmp));
-
-		g_lock_del_shared(&lck, i);
-
-		status = g_lock_store(rec, &lck, NULL);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("g_lock_store() failed: %s\n",
-				  nt_errstr(status));
-			return status;
-		}
-	}
+	g_lock_cleanup_shared(&lck);
 
 	status = g_lock_store(rec, &lck, &self);
 	if (!NT_STATUS_IS_OK(status)) {
