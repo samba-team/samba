@@ -408,10 +408,10 @@ def SAMBA_BINARY(bld, binname, source,
         subsystem_group = group
 
     # only specify PIE flags for binaries
-    pie_cflags = cflags
+    pie_cflags = TO_LIST(cflags)
     pie_ldflags = TO_LIST(ldflags)
     if bld.env['ENABLE_PIE'] is True:
-        pie_cflags += ' -fPIE'
+        pie_cflags.extend(TO_LIST('-fPIE'))
         pie_ldflags.extend(TO_LIST('-pie'))
     if bld.env['ENABLE_RELRO'] is True:
         pie_ldflags.extend(TO_LIST('-Wl,-z,relro,-z,now'))
