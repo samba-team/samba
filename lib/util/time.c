@@ -496,7 +496,7 @@ _PUBLIC_ const char *nt_time_string(TALLOC_CTX *mem_ctx, NTTIME nt)
 	if (nt == 0) {
 		return "NTTIME(0)";
 	}
-	t = nt_time_to_unix(nt);
+	t = nt_time_to_full_time_t(nt);
 	return timestring(mem_ctx, t);
 }
 
