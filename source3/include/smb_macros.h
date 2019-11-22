@@ -43,14 +43,6 @@
 /* these are useful macros for checking validity of handles */
 #define IS_IPC(conn)       ((conn) && (conn)->ipc)
 #define IS_PRINT(conn)       ((conn) && (conn)->printer)
-/* you must add the following extern declaration to files using this macro
- * (do not add it to the macro as that causes nested extern declaration warnings)
- * extern struct current_user current_user;
- */
-#define FSP_BELONGS_CONN(fsp,conn) do {\
-			if (!((fsp) && (conn) && ((conn)==(fsp)->conn) && (current_user.vuid==(fsp)->vuid))) \
-				return ERROR_NT(NT_STATUS_INVALID_HANDLE); \
-			} while(0)
 
 #define CHECK_READ(fsp,req) (((fsp)->fh->fd != -1) && ((fsp)->can_read || \
 			((req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) && \
