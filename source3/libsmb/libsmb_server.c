@@ -657,6 +657,15 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	ZERO_STRUCTP(srv);
 	DLIST_ADD(srv->cli, c);
 	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
+	srv->try_posixinfo = false;
+	/*
+	 * Until SMB2 POSIX is done, only
+	 * try POSIX stat on SMB1 with POSIX capabilities.
+	 */
+	if ((smbXcli_conn_protocol(c->conn) < PROTOCOL_SMB2_02) &&
+	    (smb1cli_conn_capabilities(c->conn) & CAP_UNIX)) {
+		srv->try_posixinfo = true;
+	}
         srv->no_pathinfo = False;
         srv->no_pathinfo2 = False;
 	srv->no_pathinfo3 = False;
