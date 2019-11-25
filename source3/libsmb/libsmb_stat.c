@@ -123,13 +123,7 @@ SMBC_stat_ctx(SMBCCTX *context,
 	char *password = NULL;
 	char *workgroup = NULL;
 	char *path = NULL;
-	struct timespec write_time_ts;
-        struct timespec access_time_ts;
-        struct timespec change_time_ts;
-	off_t size = 0;
-	uint16_t mode = 0;
 	uint16_t port = 0;
-	SMB_INO_T ino = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal->initialized) {
@@ -178,26 +172,11 @@ SMBC_stat_ctx(SMBCCTX *context,
 		return -1;  /* errno set by SMBC_server */
 	}
 
-	if (!SMBC_getatr(context, srv, path, &mode, &size,
-			 NULL,
-                         &access_time_ts,
-                         &write_time_ts,
-                         &change_time_ts,
-                         &ino)) {
+	if (!SMBC_getatr(context, srv, path, st)) {
 		errno = SMBC_errno(context, srv->cli);
 		TALLOC_FREE(frame);
 		return -1;
 	}
-
-	setup_stat(st,
-		path,
-		size,
-		mode,
-		ino,
-		srv->dev,
-		access_time_ts,
-		change_time_ts,
-		write_time_ts);
 
 	TALLOC_FREE(frame);
 	return 0;

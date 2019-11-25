@@ -475,7 +475,6 @@ SMBC_opendir_ctx(SMBCCTX *context,
 	char *workgroup = NULL;
 	char *path = NULL;
 	size_t path_len = 0;
-        uint16_t mode;
 	uint16_t port = 0;
 	SMBCSRV *srv  = NULL;
 	SMBCFILE *dir = NULL;
@@ -962,6 +961,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 				saved_errno = SMBC_errno(context, targetcli);
 
                                 if (saved_errno == EINVAL) {
+					struct stat sb = {0};
                                         /*
                                          * See if they asked to opendir
                                          * something other than a directory.
@@ -971,11 +971,11 @@ SMBC_opendir_ctx(SMBCCTX *context,
                                          */
                                         path[path_len] = '\0'; /* restore original path */
 
-                                        if (SMBC_getatr(context, srv, path,
-                                                        &mode, NULL,
-                                                        NULL, NULL, NULL, NULL,
-                                                        NULL) &&
-                                            ! IS_DOS_DIR(mode)) {
+                                        if (SMBC_getatr(context,
+							srv,
+							path,
+							&sb) &&
+                                            !S_ISDIR(sb.st_mode)) {
 
                                                 /* It is.  Correct the error value */
                                                 saved_errno = ENOTDIR;
@@ -2224,20 +2224,11 @@ SMBC_unlink_ctx(SMBCCTX *context,
 		if (errno == EACCES) { /* Check if the file is a directory */
 
 			int saverr = errno;
-			off_t size = 0;
-			uint16_t mode = 0;
-			struct timespec write_time_ts;
-                        struct timespec access_time_ts;
-                        struct timespec change_time_ts;
-			SMB_INO_T ino = 0;
+			struct stat sb = {0};
+			bool ok;
 
-			if (!SMBC_getatr(context, srv, path, &mode, &size,
-					 NULL,
-                                         &access_time_ts,
-                                         &write_time_ts,
-                                         &change_time_ts,
-                                         &ino)) {
-
+			ok = SMBC_getatr(context, srv, path, &sb);
+			if (!ok) {
 				/* Hmmm, bad error ... What? */
 
 				errno = SMBC_errno(context, targetcli);
@@ -2247,7 +2238,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
 			}
 			else {
 
-				if (IS_DOS_DIR(mode))
+				if (S_ISDIR(sb.st_mode))
 					errno = EISDIR;
 				else
 					errno = saverr;  /* Restore this */

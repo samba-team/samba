@@ -408,13 +408,7 @@ bool
 SMBC_getatr(SMBCCTX * context,
             SMBCSRV *srv,
             const char *path,
-            uint16_t *mode,
-            off_t *size,
-            struct timespec *create_time_ts,
-            struct timespec *access_time_ts,
-            struct timespec *write_time_ts,
-            struct timespec *change_time_ts,
-            SMB_INO_T *ino);
+	    struct stat *sbuf);
 
 bool
 SMBC_setatr(SMBCCTX * context, SMBCSRV *srv, char *path,
