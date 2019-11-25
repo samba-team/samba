@@ -155,12 +155,6 @@ EOF
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
-get_attribute_base64_control() {
-	$PYTHON ${STpath}/source4/scripting/bin/samba-tool group show \
-		testgroup1 --attributes=displayName \
-		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
-}
-
 # Test edit group - change attributes with LDB_FLAG_FORCE_NO_BASE64_LDIF
 change_attribute_force_no_base64() {
 	# create editor.sh
