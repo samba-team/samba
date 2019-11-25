@@ -504,6 +504,26 @@ SMBC_getatr(SMBCCTX * context,
 		return False;
 	}
 
+	if (srv->try_posixinfo) {
+		SMB_STRUCT_STAT sbuf;
+
+		status = cli_posix_stat(targetcli, frame, &sbuf);
+		if (NT_STATUS_IS_OK(status)) {
+			setup_stat_from_stat_ex(&sbuf, path, sb);
+
+			TALLOC_FREE(frame);
+			return true;
+		}
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED) ||
+		    NT_STATUS_EQUAL(status, NT_STATUS_INVALID_LEVEL)) {
+			/*
+			 * Turn this off if the server doesn't
+			 * support it.
+			 */
+			srv->try_posixinfo = false;
+		}
+	}
+
 	if (!srv->no_pathinfo2) {
 		status = cli_qpathinfo2(targetcli,
 					targetpath,
