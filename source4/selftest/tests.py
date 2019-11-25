@@ -218,7 +218,10 @@ for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
 
 for bindoptions in [""] + validate_list + ["bigendian"]:
     for t in auto_rpc_tests:
-        plansmbtorture4testsuite(t, "ad_dc_default", ["$SERVER[%s]" % bindoptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s with %s" % (t, bindoptions))
+        env = "ad_dc_default"
+        if t in ["rpc.srvsvc", "rpc.mgmt"]:
+            env = "ad_dc_ntvfs"
+        plansmbtorture4testsuite(t, env, ["$SERVER[%s]" % bindoptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s with %s" % (t, bindoptions))
 
 t = "rpc.countcalls"
 plansmbtorture4testsuite(t, "ad_dc_default:local", ["$SERVER[%s]" % bindoptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], modname="samba4.%s" % t)
