@@ -944,7 +944,7 @@ plantestsuite_loadlist("samba4.ldap.subtree_rename.python(ad_dc_ntvfs)",
                         '$LISTOPT'])
 
 planoldpythontestsuite(
-    "ad_dc_default",
+    "ad_dc_ntvfs",
     "samba.tests.ldap_referrals",
     environ={
         'SERVER': '$SERVER',
