@@ -76,6 +76,7 @@ typedef struct DOS_ATTR_DESC {
 struct _SMBCSRV {
 	struct cli_state *cli;
 	dev_t dev;
+	bool try_posixinfo;
 	bool no_pathinfo;
 	bool no_pathinfo2;
 	bool no_pathinfo3;
