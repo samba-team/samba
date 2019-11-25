@@ -36,6 +36,7 @@ from samba.auth import system_session
 from samba.samdb import SamDB
 from samba.compat import get_bytes
 from subprocess import check_call, CalledProcessError
+from . import common
 
 from samba import (
     credentials,
@@ -457,8 +458,6 @@ class cmd_computer_edit(Command):
 
     def run(self, computername, credopts=None, sambaopts=None, versionopts=None,
             H=None, editor=None):
-        from . import common
-
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
         samdb = SamDB(url=H, session_info=system_session(),
@@ -639,7 +638,7 @@ attribute.
                                samaccountname)
 
         for msg in res:
-            computer_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
+            computer_ldif = common.get_ldif_for_editor(samdb, msg)
             self.outf.write(computer_ldif)
 
 

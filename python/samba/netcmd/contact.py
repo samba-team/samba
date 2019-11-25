@@ -37,6 +37,7 @@ from samba.netcmd import (
     Option,
 )
 from samba.compat import get_bytes
+from . import common
 
 
 class cmd_create(Command):
@@ -365,8 +366,6 @@ class cmd_edit(Command):
             versionopts=None,
             H=None,
             editor=None):
-        from . import common
-
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
         samdb = SamDB(url=H, session_info=system_session(),
@@ -548,7 +547,7 @@ class cmd_show(Command):
                                contactname)
 
         for msg in res:
-            contact_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
+            contact_ldif = common.get_ldif_for_editor(samdb, msg)
             self.outf.write(contact_ldif)
 
 

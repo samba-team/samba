@@ -39,6 +39,7 @@ from subprocess import check_call, CalledProcessError
 from samba.compat import get_bytes
 import os
 import tempfile
+from . import common
 
 security_group = dict({"Builtin": GTYPE_SECURITY_BUILTIN_LOCAL_GROUP,
                        "Domain": GTYPE_SECURITY_DOMAIN_LOCAL_GROUP,
@@ -589,7 +590,7 @@ Example3 shows how to display a groups objectGUID and member attributes.
             raise CommandError('Unable to find group "%s"' % (groupname))
 
         for msg in res:
-            group_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
+            group_ldif = common.get_ldif_for_editor(samdb, msg)
             self.outf.write(group_ldif)
 
 
@@ -747,8 +748,6 @@ class cmd_group_edit(Command):
 
     def run(self, groupname, credopts=None, sambaopts=None, versionopts=None,
             H=None, editor=None):
-        from . import common
-
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
         samdb = SamDB(url=H, session_info=system_session(),

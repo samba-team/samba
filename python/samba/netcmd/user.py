@@ -56,7 +56,7 @@ from samba.netcmd import (
 from samba.compat import text_type
 from samba.compat import get_bytes
 from samba.compat import get_string
-
+from . import common
 
 # python[3]-gpgme is abandoned since ubuntu 1804 and debian 9
 # have to use python[3]-gpg instead
@@ -2389,8 +2389,6 @@ LDAP server using the 'nano' editor.
 
     def run(self, username, credopts=None, sambaopts=None, versionopts=None,
             H=None, editor=None):
-        from . import common
-
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
         samdb = SamDB(url=H, session_info=system_session(),
@@ -2520,7 +2518,7 @@ Example3 shows how to display a users objectSid and memberOf attributes.
             raise CommandError('Unable to find user "%s"' % (username))
 
         for msg in res:
-            user_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
+            user_ldif = common.get_ldif_for_editor(samdb, msg)
             self.outf.write(user_ldif)
 
 
