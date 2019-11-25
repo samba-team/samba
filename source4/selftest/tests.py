@@ -658,7 +658,7 @@ planpythontestsuite("ad_dc_default:local", "samba.tests.dsdb")
 planpythontestsuite("none", "samba.tests.dsdb_lock")
 planpythontestsuite("ad_dc_default:local", "samba.tests.dcerpc.bare")
 planpythontestsuite("ad_dc_default:local", "samba.tests.dcerpc.unix")
-planpythontestsuite("ad_dc_default:local", "samba.tests.dcerpc.srvsvc")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.dcerpc.srvsvc")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.timecmd")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.join")
 planpythontestsuite("ad_dc_default",
