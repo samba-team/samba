@@ -2083,7 +2083,7 @@ sub check_env($$)
 	# aliases in order to split autbuild tasks
 	fl2008dc             => ["ad_dc_ntvfs"],
 	ad_dc_default        => ["ad_dc"],
-	ad_dc_slowtests      => ["ad_dc_ntvfs"],
+	ad_dc_slowtests      => ["ad_dc"],
 	ad_dc_backup         => ["ad_dc"],
 
 	schema_dc      => ["dns_hub"],
