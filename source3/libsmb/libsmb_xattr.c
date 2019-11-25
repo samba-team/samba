@@ -552,13 +552,7 @@ dos_attr_query(SMBCCTX *context,
                const char *filename,
                SMBCSRV *srv)
 {
-        struct timespec create_time_ts;
-        struct timespec write_time_ts;
-        struct timespec access_time_ts;
-        struct timespec change_time_ts;
-        off_t size = 0;
-        uint16_t mode = 0;
-	SMB_INO_T inode = 0;
+	struct stat sb = {0};
         DOS_ATTR_DESC *ret;
 
         ret = talloc(ctx, DOS_ATTR_DESC);
@@ -568,26 +562,20 @@ dos_attr_query(SMBCCTX *context,
         }
 
         /* Obtain the DOS attributes */
-        if (!SMBC_getatr(context, srv, filename,
-                         &mode, &size,
-                         &create_time_ts,
-                         &access_time_ts,
-                         &write_time_ts,
-                         &change_time_ts,
-                         &inode)) {
+        if (!SMBC_getatr(context, srv, filename, &sb)) {
                 errno = SMBC_errno(context, srv->cli);
                 DEBUG(5, ("dos_attr_query Failed to query old attributes\n"));
 		TALLOC_FREE(ret);
                 return NULL;
         }
 
-        ret->mode = mode;
-        ret->size = size;
-        ret->create_time = convert_timespec_to_time_t(create_time_ts);
-        ret->access_time = convert_timespec_to_time_t(access_time_ts);
-        ret->write_time = convert_timespec_to_time_t(write_time_ts);
-        ret->change_time = convert_timespec_to_time_t(change_time_ts);
-        ret->inode = inode;
+        ret->mode = sb.st_mode;
+        ret->size = sb.st_size;
+        ret->create_time = sb.st_ctime;
+        ret->access_time = sb.st_atime;
+        ret->write_time = sb.st_mtime;
+        ret->change_time = sb.st_mtime;
+        ret->inode = sb.st_ino;
 
         return ret;
 }
@@ -736,17 +724,6 @@ cacl_get(SMBCCTX *context,
         char *name;
         char *pExclude;
         char *p;
-        struct timespec create_time_ts;
-	struct timespec write_time_ts;
-        struct timespec access_time_ts;
-        struct timespec change_time_ts;
-	time_t create_time = (time_t)0;
-	time_t write_time = (time_t)0;
-        time_t access_time = (time_t)0;
-        time_t change_time = (time_t)0;
-	off_t size = 0;
-	uint16_t mode = 0;
-	SMB_INO_T ino = 0;
 	struct cli_state *cli = srv->cli;
         struct {
                 const char * create_time_attr;
@@ -1155,25 +1132,31 @@ cacl_get(SMBCCTX *context,
         }
 
         if (all || some_dos) {
+		struct stat sb = {0};
+		time_t create_time = (time_t)0;
+		time_t write_time = (time_t)0;
+		time_t access_time = (time_t)0;
+		time_t change_time = (time_t)0;
+		off_t size = 0;
+		uint16_t mode = 0;
+		SMB_INO_T ino = 0;
+
                 /* Point to the portion after "system.dos_attr." */
                 name += 16;     /* if (all) this will be invalid but unused */
 
                 /* Obtain the DOS attributes */
-                if (!SMBC_getatr(context, srv, filename, &mode, &size, 
-                                 &create_time_ts,
-                                 &access_time_ts,
-                                 &write_time_ts,
-                                 &change_time_ts,
-                                 &ino)) {
-
+                if (!SMBC_getatr(context, srv, filename, &sb)) {
                         errno = SMBC_errno(context, srv->cli);
                         return -1;
                 }
 
-                create_time = convert_timespec_to_time_t(create_time_ts);
-                access_time = convert_timespec_to_time_t(access_time_ts);
-                write_time = convert_timespec_to_time_t(write_time_ts);
-                change_time = convert_timespec_to_time_t(change_time_ts);
+		create_time = sb.st_ctime;
+		access_time = sb.st_atime;
+		write_time  = sb.st_mtime;
+		change_time = sb.st_mtime;
+		size        = sb.st_size;
+		mode        = sb.st_mode;
+		ino         = sb.st_ino;
 
                 if (! exclude_dos_mode) {
                         if (all || all_dos) {
