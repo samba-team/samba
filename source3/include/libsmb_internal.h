@@ -532,6 +532,9 @@ void setup_stat(struct stat *st,
 		struct timespec access_time_ts,
 		struct timespec change_time_ts,
 		struct timespec write_time_ts);
+void setup_stat_from_stat_ex(const struct stat_ex *stex,
+			     const char *fname,
+			     struct stat *st);
 
 int
 SMBC_stat_ctx(SMBCCTX *context,
