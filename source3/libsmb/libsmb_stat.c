@@ -107,6 +107,43 @@ void setup_stat(struct stat *st,
 	st->st_mtime = convert_timespec_to_time_t(write_time_ts);
 }
 
+void setup_stat_from_stat_ex(const struct stat_ex *stex,
+			     const char *fname,
+			     struct stat *st)
+{
+	st->st_atime = convert_timespec_to_time_t(stex->st_ex_atime);
+	st->st_ctime = convert_timespec_to_time_t(stex->st_ex_ctime);
+	st->st_mtime = convert_timespec_to_time_t(stex->st_ex_mtime);
+
+	st->st_mode = stex->st_ex_mode;
+	st->st_size = stex->st_ex_size;
+#ifdef HAVE_STAT_ST_BLKSIZE
+	st->st_blksize = 512;
+#endif
+#ifdef HAVE_STAT_ST_BLOCKS
+	st->st_blocks = (st->st_size + 511) / 512;
+#endif
+#ifdef HAVE_STRUCT_STAT_ST_RDEV
+	st->st_rdev = 0;
+#endif
+	st->st_uid = stex->st_ex_uid;
+	st->st_gid = stex->st_ex_gid;
+
+	st->st_nlink = stex->st_ex_nlink;
+
+	if (stex->st_ex_ino == 0) {
+		st->st_ino = 0;
+		if (fname != NULL) {
+			st->st_ino = generate_inode(fname);
+		}
+	} else {
+		st->st_ino = stex->st_ex_ino;
+	}
+
+	st->st_dev = stex->st_ex_dev;
+
+}
+
 /*
  * Routine to stat a file given a name
  */
