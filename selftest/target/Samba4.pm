@@ -2081,7 +2081,7 @@ sub check_env($$)
 	labdc                => ["backupfromdc"],
 
 	# aliases in order to split autbuild tasks
-	fl2008dc             => ["ad_dc_ntvfs"],
+	fl2008dc             => ["ad_dc"],
 	ad_dc_default        => ["ad_dc"],
 	ad_dc_slowtests      => ["ad_dc"],
 	ad_dc_backup         => ["ad_dc"],
