@@ -543,7 +543,7 @@ LDAP server.
 Example3:
 samba-tool group show Group3 --attributes=member,objectGUID
 
-Example3 shows how to display a users objectGUID and member attributes.
+Example3 shows how to display a groups objectGUID and member attributes.
 """
     synopsis = "%prog <group name> [options]"
 
@@ -589,8 +589,8 @@ Example3 shows how to display a users objectGUID and member attributes.
             raise CommandError('Unable to find group "%s"' % (groupname))
 
         for msg in res:
-            user_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
-            self.outf.write(user_ldif)
+            group_ldif = samdb.write_ldif(msg, ldb.CHANGETYPE_NONE)
+            self.outf.write(group_ldif)
 
 
 class cmd_group_stats(Command):
