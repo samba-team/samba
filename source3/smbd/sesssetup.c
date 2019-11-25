@@ -312,7 +312,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		session->compat->session = session;
 		session->compat->homes_snum = -1;
 		session->compat->session_info = session_info;
-		session->compat->session_keystr = NULL;
 		session->compat->vuid = session->global->session_wire_id;
 		DLIST_ADD(sconn->users, session->compat);
 		sconn->num_users++;
@@ -1074,7 +1073,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	session->compat->session = session;
 	session->compat->homes_snum = -1;
 	session->compat->session_info = session_info;
-	session->compat->session_keystr = NULL;
 	session->compat->vuid = session->global->session_wire_id;
 	DLIST_ADD(sconn->users, session->compat);
 	sconn->num_users++;

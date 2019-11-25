@@ -838,8 +838,6 @@ struct user_struct {
 	struct user_struct *next, *prev;
 	uint64_t vuid; /* Tag for this entry. */
 
-	char *session_keystr; /* used by utmp and pam session code.
-				 TDB key string */
 	int homes_snum;
 
 	struct auth_session_info *session_info;
