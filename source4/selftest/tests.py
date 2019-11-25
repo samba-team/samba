@@ -692,7 +692,7 @@ for env in ["ad_dc_ntvfs", "ad_dc", "offlinebackupdc", "renamedc",
     planpythontestsuite(env + ":local", "samba.tests.samba_tool.gpo")
 
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.processes")
-planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.user")
+planpythontestsuite("ad_dc_ntvfs:local", "samba.tests.samba_tool.user")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.user_wdigest")
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user")
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.user_virtualCryptSHA")
