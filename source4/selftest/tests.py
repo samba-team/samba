@@ -87,7 +87,7 @@ finally:
 have_heimdal_support = ("SAMBA4_USES_HEIMDAL" in config_hash)
 
 for options in ['-U"$USERNAME%$PASSWORD"']:
-    plantestsuite("samba4.ldb.ldaps with options %s(ad_dc_default)" % options, "ad_dc_default",
+    plantestsuite("samba4.ldb.ldaps with options %s(ad_dc_ntvfs)" % options, "ad_dc_ntvfs",
                   "%s/test_ldb.sh ldaps $SERVER_IP %s" % (bbdir, options))
 
 creds_options = [
