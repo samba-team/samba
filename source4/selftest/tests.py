@@ -203,6 +203,8 @@ for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
         else:
             raise AssertionError("invalid transport %r" % transport)
         for t in tests:
+            if t == "rpc.netlogon":
+                env = "ad_dc_ntvfs"
             plansmbtorture4testsuite(t, env + local, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s with %s" % (t, transport, bindoptions))
         plansmbtorture4testsuite('rpc.samba3-sharesec', env + local, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=torture:share=tmp'], "samba4.rpc.samba3.sharesec on %s with %s" % (transport, bindoptions))
 
