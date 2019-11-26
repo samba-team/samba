@@ -36,7 +36,7 @@ extern fstring remote_proto;
  * this is the entry point if SMB2 is selected via
  * the SMB negprot and the given dialect.
  */
-static void reply_smb20xx(struct smb_request *req, uint16_t dialect)
+static NTSTATUS reply_smb20xx(struct smb_request *req, uint16_t dialect)
 {
 	uint8_t *smb2_inpdu;
 	uint8_t *smb2_hdr;
@@ -48,7 +48,7 @@ static void reply_smb20xx(struct smb_request *req, uint16_t dialect)
 	if (smb2_inpdu == NULL) {
 		DEBUG(0, ("Could not push spnego blob\n"));
 		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 	smb2_hdr = smb2_inpdu;
 	smb2_body = smb2_hdr + SMB2_HDR_BODY;
@@ -64,8 +64,7 @@ static void reply_smb20xx(struct smb_request *req, uint16_t dialect)
 
 	req->outbuf = NULL;
 
-	smbd_smb2_process_negprot(req->xconn, 0, smb2_inpdu, len);
-	return;
+	return smbd_smb2_process_negprot(req->xconn, 0, smb2_inpdu, len);
 }
 
 /*
