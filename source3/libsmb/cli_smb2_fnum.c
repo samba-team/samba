@@ -1017,6 +1017,13 @@ NTSTATUS cli_smb2_list(struct cli_state *cli,
 				goto fail;
 			}
 
+			/* Protect against server attack. */
+			status = is_bad_finfo_name(cli, finfo);
+			if (!NT_STATUS_IS_OK(status)) {
+				smbXcli_conn_disconnect(cli->conn, status);
+				goto fail;
+			}
+
 			if (dir_check_ftype((uint32_t)finfo->mode,
 					(uint32_t)attribute)) {
 				/*

@@ -1,4 +1,78 @@
                    ==============================
+                   Release Notes for Samba 4.9.15
+                          October 29, 2019
+                   ==============================
+
+
+This is a security release in order to address the following defects:
+
+o CVE-2019-10218: Client code can return filenames containing path separators.
+o CVE-2019-14833: Samba AD DC check password script does not receive the full
+		  password.
+o CVE-2019-14847: User with "get changes" permission can crash AD DC LDAP server
+		  via dirsync.
+
+=======
+Details
+=======
+
+o  CVE-2019-10218:
+   Malicious servers can cause Samba client code to return filenames containing
+   path separators to calling code.
+
+o  CVE-2019-14833:
+   When the password contains multi-byte (non-ASCII) characters, the check
+   password script does not receive the full password string.
+
+o  CVE-2019-14847:
+   Users with the "get changes" extended access right can crash the AD DC LDAP
+   server by requesting an attribute using the range= syntax.
+
+For more details and workarounds, please refer to the security advisories.
+
+
+Changes since 4.9.14:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14071: CVE-2019-10218 - s3: libsmb: Protect SMB1 and SMB2 client code
+     from evil server returned names.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 12438: CVE-2019-14833: Use utf8 characters in the unacceptable
+     password.
+   * BUG 14040: CVE-2019-14847 dsdb: Correct behaviour of ranged_results when
+     combined with dirsync.
+
+o  Björn Baumbach <bb@sernet.de>
+   * BUG 12438: CVE-2019-14833 dsdb: Send full password to check password
+     script.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.9.14
                           October 22, 2019
                    ==============================
@@ -77,8 +151,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.9.13

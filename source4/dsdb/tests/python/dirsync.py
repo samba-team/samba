@@ -28,6 +28,7 @@ from samba.tests.subunitrun import TestProgram, SubunitOptions
 import samba.getopt as options
 import base64
 
+import ldb
 from ldb import LdbError, SCOPE_BASE
 from ldb import Message, MessageElement, Dn
 from ldb import FLAG_MOD_ADD, FLAG_MOD_DELETE
@@ -589,6 +590,31 @@ class SimpleDirsyncTests(DirsyncBaseTests):
 
 
 class ExtendedDirsyncTests(SimpleDirsyncTests):
+
+    def test_dirsync_linkedattributes_range(self):
+        self.ldb_simple = self.get_ldb_connection(self.simple_user, self.user_pass)
+        res = self.ldb_admin.search(self.base_dn,
+                                    attrs=["member;range=1-1"],
+                                    expression="(name=Administrators)",
+                                    controls=["dirsync:1:0:0"])
+
+        self.assertTrue(len(res) > 0)
+        self.assertTrue(res[0].get("member;range=1-1") is None)
+        self.assertTrue(res[0].get("member") is not None)
+        self.assertTrue(len(res[0].get("member")) > 0)
+
+    def test_dirsync_linkedattributes_range_user(self):
+        self.ldb_simple = self.get_ldb_connection(self.simple_user, self.user_pass)
+        try:
+            res = self.ldb_simple.search(self.base_dn,
+                                         attrs=["member;range=1-1"],
+                                         expression="(name=Administrators)",
+                                        controls=["dirsync:1:0:0"])
+        except LdbError as e:
+            (num, _) = e.args
+            self.assertEquals(num, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS)
+        else:
+            self.fail()
 
     def test_dirsync_linkedattributes(self):
         flag_incr_linked = 2147483648

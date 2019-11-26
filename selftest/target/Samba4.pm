@@ -1986,7 +1986,7 @@ sub provision_chgdcpass($$)
 	my $extra_provision_options = undef;
 	# This environment disallows the use of this password
 	# (and also removes the default AD complexity checks)
-	my $unacceptable_password = "widk3Dsle32jxdBdskldsk55klASKQ";
+	my $unacceptable_password = "Paßßword-widk3Dsle32jxdBdskldsk55klASKQ";
 	push (@{$extra_provision_options}, "--dns-backend=BIND9_DLZ");
 	my $ret = $self->provision($prefix,
 				   "domain controller",
