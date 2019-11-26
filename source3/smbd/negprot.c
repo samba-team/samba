@@ -588,7 +588,6 @@ void reply_negprot(struct smb_request *req)
 		END_PROFILE(SMBnegprot);
 		exit_server_cleanly("multiple negprot's are not permitted");
 	}
-	xconn->smb1.negprot.done = true;
 
 	if (req->buflen == 0) {
 		DEBUG(0, ("negprot got no protocols\n"));
@@ -777,6 +776,8 @@ void reply_negprot(struct smb_request *req)
 	DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
 
 	DBG_INFO("negprot index=%zu\n", choice);
+
+	xconn->smb1.negprot.done = true;
 
 	/* We always have xconn->smb1.signing_state also for >= SMB2_02 */
 	signing_required = smb_signing_is_mandatory(xconn->smb1.signing_state);
