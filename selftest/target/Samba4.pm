@@ -1405,8 +1405,6 @@ sub provision_vampire_dc($$$)
 					       $dcvars->{SERVER_IP},
 					       $dcvars->{SERVER_IPV6});
 
-	push (@{$ctx->{provision_options}}, "--use-ntvfs");
-
 	$ctx->{smb_conf_extra_options} = "
 	max xmit = 32K
 	server max protocol = SMB2
@@ -1433,7 +1431,7 @@ sub provision_vampire_dc($$$)
 	my $cmd = $self->get_cmd_env_vars($ret);
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD} --domain-critical-only";
-	$cmd .= " --machinepass=machine$ret->{PASSWORD} --use-ntvfs";
+	$cmd .= " --machinepass=machine$ret->{PASSWORD}";
 	$cmd .= " --backend-store=mdb";
 
 	unless (system($cmd) == 0) {
