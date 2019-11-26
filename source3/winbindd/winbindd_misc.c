@@ -477,5 +477,10 @@ bool winbindd_priv_pipe_dir(struct winbindd_cli_state *state)
 	state->response->length +=
 		strlen((char *)state->response->extra_data.data) + 1;
 
+	DBG_NOTICE("[%s (%u)]: response location of privileged pipe: %s\n",
+		   state->client_name,
+		   (unsigned int)state->pid,
+		   priv_dir);
+
 	return true;
 }
