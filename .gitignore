@@ -3,6 +3,7 @@
 /st/
 .waf*
 .lock-wscript
+.build.log
 *~
 *.swp
 /tags
