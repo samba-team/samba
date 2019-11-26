@@ -234,8 +234,8 @@ bool smbd_smb2_is_compound(const struct smbd_smb2_request *req);
 NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 			     struct smbXsrv_connection **_xconn);
 
-void reply_smb2002(struct smb_request *req, uint16_t choice);
-void reply_smb20ff(struct smb_request *req, uint16_t choice);
+NTSTATUS reply_smb2002(struct smb_request *req, uint16_t choice);
+NTSTATUS reply_smb20ff(struct smb_request *req, uint16_t choice);
 NTSTATUS smbd_smb2_process_negprot(struct smbXsrv_connection *xconn,
 			       uint64_t expected_seq_low,
 			       const uint8_t *inpdu, size_t size);
