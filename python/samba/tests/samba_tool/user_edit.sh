@@ -106,6 +106,12 @@ get_attribute_base64_control() {
 		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
 }
 
+get_attribute_force_no_base64() {
+	# LDB_FLAG_FORCE_NO_BASE64_LDIF should be used here.
+	$PYTHON ${STpath}/source4/scripting/bin/samba-tool user show \
+		sambatool1 --attributes=displayName \
+		-H "ldap://$SERVER" "-U$USERNAME" "--password=$PASSWORD"
+}
 
 # Test edit user - change base64 attribute value including control character
 change_attribute_base64_control() {
@@ -163,6 +169,7 @@ testit "add_attribute_base64_control" add_attribute_base64_control || failed=`ex
 testit_grep "get_attribute_base64_control" "^displayName:: $display_name_con_b64" get_attribute_base64_control || failed=`expr $failed + 1`
 testit "change_attribute_base64_control" change_attribute_base64_control || failed=`expr $failed + 1`
 testit_grep "get_attribute_base64" "^displayName:: $display_name_b64" get_attribute_base64 || failed=`expr $failed + 1`
+testit_grep "get_attribute_force_no_base64" "^displayName: $display_name" get_attribute_force_no_base64 || failed=`expr $failed + 1`
 testit "change_attribute_force_no_base64" change_attribute_force_no_base64 || failed=`expr $failed + 1`
 testit_grep "get_changed_attribute_force_no_base64" "^displayName: $display_name_new" get_changed_attribute_force_no_base64 || failed=`expr $failed + 1`
 testit "delete_user" delete_user || failed=`expr $failed + 1`
