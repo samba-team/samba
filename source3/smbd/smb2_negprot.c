@@ -71,20 +71,20 @@ static NTSTATUS reply_smb20xx(struct smb_request *req, uint16_t dialect)
  * this is the entry point if SMB2 is selected via
  * the SMB negprot and the "SMB 2.002" dialect.
  */
-void reply_smb2002(struct smb_request *req, uint16_t choice)
+NTSTATUS reply_smb2002(struct smb_request *req, uint16_t choice)
 {
-	reply_smb20xx(req, SMB2_DIALECT_REVISION_202);
+	return reply_smb20xx(req, SMB2_DIALECT_REVISION_202);
 }
 
 /*
  * this is the entry point if SMB2 is selected via
  * the SMB negprot and the "SMB 2.???" dialect.
  */
-void reply_smb20ff(struct smb_request *req, uint16_t choice)
+NTSTATUS reply_smb20ff(struct smb_request *req, uint16_t choice)
 {
 	struct smbXsrv_connection *xconn = req->xconn;
 	xconn->smb2.allow_2ff = true;
-	reply_smb20xx(req, SMB2_DIALECT_REVISION_2FF);
+	return reply_smb20xx(req, SMB2_DIALECT_REVISION_2FF);
 }
 
 enum protocol_types smbd_smb2_protocol_dialect_match(const uint8_t *indyn,
