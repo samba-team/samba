@@ -1641,8 +1641,6 @@ sub provision_rodc($$$)
 		return undef;
 	}
 
-	push (@{$ctx->{provision_options}}, "--use-ntvfs");
-
 	$ctx->{share} = "$ctx->{prefix_abs}/share";
 	push(@{$ctx->{directories}}, "$ctx->{share}");
 
@@ -1677,7 +1675,7 @@ sub provision_rodc($$$)
 	my $cmd = $self->get_cmd_env_vars($ret);
 	$cmd .= "$samba_tool domain join $ret->{CONFIGURATION} $dcvars->{REALM} RODC";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
-	$cmd .= " --server=$dcvars->{DC_SERVER} --use-ntvfs";
+	$cmd .= " --server=$dcvars->{DC_SERVER}";
 
 	unless (system($cmd) == 0) {
 		warn("RODC join failed\n$cmd");
