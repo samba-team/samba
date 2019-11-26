@@ -1595,7 +1595,7 @@ sub provision_fl2008r2dc($$$)
 
 	print "PROVISIONING DC WITH FOREST LEVEL 2008r2...\n";
         my $extra_conf_options = "ldap server require strong auth = no";
-	my $extra_provision_options = ["--use-ntvfs", "--base-schema=2008_R2"];
+	my $extra_provision_options = ["--base-schema=2008_R2"];
 	my $ret = $self->provision($prefix,
 				   "domain controller",
 				   "dc7",
