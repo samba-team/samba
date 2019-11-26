@@ -233,7 +233,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
                                                           os.environ["DC_PASSWORD"]))
         self.assertCmdSuccess(result, out, err)
         self.assertEquals(err, "", "Shouldn't be any error messages")
-        self.assertIn("dn: CN=Domain Users,CN=Users,DC=samba,DC=example,DC=com", out)
+        self.assertIn("dn: CN=Domain Users,CN=Users,DC=addom,DC=samba,DC=example,DC=com", out)
 
     def _randomGroup(self, base={}):
         """create a group with random attribute values, you can specify base
