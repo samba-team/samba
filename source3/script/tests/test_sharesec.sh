@@ -10,15 +10,17 @@
 # Copyright (C) 2015 Christof Schmitt
 
 if [ $# -lt 3 ]; then
-	echo Usage: test_sharesec.sh SERVERCONFFILE SHARESEC SHARE
+	echo Usage: test_sharesec.sh SERVERCONFFILE SHARESEC NET SHARE
 exit 1
 fi
 
 CONF=$1
 SHARESEC=$2
-SHARE=$3
+NET=$3
+SHARE=$4
 
 CMD="$SHARESEC $CONF $SHARE"
+NET_CMD="$NET $CONF"
 
 incdir=$(dirname $0)/../../../testprogs/blackbox
 . $incdir/subunit.sh

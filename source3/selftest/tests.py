@@ -769,7 +769,8 @@ plantestsuite("samba3.blackbox.rpcclient_samlogon", "ad_member:local", [os.path.
                                                                         "$DC_USERNAME", "$DC_PASSWORD", "ncacn_np:$DC_SERVER", configuration])
 plantestsuite("samba3.blackbox.sharesec", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_sharesec.sh"),
-               configuration, os.path.join(bindir(), "sharesec"), "tmp"])
+               configuration, os.path.join(bindir(), "sharesec"),
+               os.path.join(bindir(), "net"), "tmp"])
 
 plantestsuite("samba3.blackbox.net_tdb", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_tdb.sh"),
