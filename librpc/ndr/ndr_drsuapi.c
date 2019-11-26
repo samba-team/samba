@@ -496,12 +496,11 @@ enum ndr_err_code ndr_push_drsuapi_DsBindInfo(struct ndr_push *ndr, int ndr_flag
 
 enum ndr_err_code ndr_pull_drsuapi_DsBindInfo(struct ndr_pull *ndr, int ndr_flags, union drsuapi_DsBindInfo *r)
 {
-	uint32_t level;
 	uint32_t _flags_save = ndr->flags;
 	ndr->flags = ndr->flags & ~LIBNDR_FLAG_NDR64;
-	level = ndr_pull_get_switch_value(ndr, r);
 	NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
 	if (ndr_flags & NDR_SCALARS) {
+		uint32_t level = ndr_pull_steal_switch_value(ndr, r);
 		NDR_CHECK(ndr_pull_union_align(ndr, 4));
 		switch (level) {
 			case 24: {
@@ -548,25 +547,6 @@ enum ndr_err_code ndr_pull_drsuapi_DsBindInfo(struct ndr_pull *ndr, int ndr_flag
 					NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_Fallback, 0, level));
 				}
 			break; }
-
-		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		switch (level) {
-			case 24:
-			break;
-
-			case 28:
-			break;
-
-			case 48:
-			break;
-
-			case 52:
-			break;
-
-			default:
-			break;
 
 		}
 	}
