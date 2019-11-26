@@ -31,6 +31,7 @@
 #include "librpc/gen_ndr/ndr_spoolss_c.h"
 #include "librpc/gen_ndr/ndr_winreg_c.h"
 #include "librpc/gen_ndr/ndr_wkssvc_c.h"
+#include "librpc/gen_ndr/ndr_svcctl_c.h"
 #include "lib/cmdline/popt_common.h"
 #include "torture/rpc/torture_rpc.h"
 #include "libcli/libcli.h"
@@ -4613,6 +4614,73 @@ static bool torture_rpc_lsa_over_netlogon(struct torture_context *torture)
 	return ret;
 }
 
+static bool torture_rpc_pipes_supported_interfaces(
+					struct torture_context *torture)
+{
+	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
+	bool ret = false;
+	struct smbcli_options options;
+	struct smb2_tree *tree;
+	struct dcerpc_pipe *pipe1;
+	struct dcerpc_pipe *pipe2;
+	struct dcerpc_pipe *pipe3;
+
+	torture_comment(torture, "Testing only appropiate interfaces are "
+			"available in smb pipes\n");
+
+	mem_ctx = talloc_init("torture_samba3_rpc_pipes_supported_interfaces");
+	torture_assert(torture, (mem_ctx != NULL), "talloc_init failed");
+
+	lpcfg_smbcli_options(torture->lp_ctx, &options);
+
+	status = smb2_connect(mem_ctx,
+			      torture_setting_string(torture, "host", NULL),
+			      lpcfg_smb_ports(torture->lp_ctx),
+			      "IPC$",
+			      lpcfg_resolve_context(torture->lp_ctx),
+			      popt_get_cmdline_credentials(),
+			      &tree,
+			      torture->ev,
+			      &options,
+			      lpcfg_socket_options(torture->lp_ctx),
+			      lpcfg_gensec_settings(torture, torture->lp_ctx)
+			      );
+	torture_assert_ntstatus_ok_goto(torture, status, ret, done,
+					"smb2_connect failed");
+
+	/* Test embedded services pipes. The svcctl interface is
+	 * not available if we open the winreg pipe. */
+	status = pipe_bind_smb2(torture, mem_ctx, tree, "winreg",
+			        &ndr_table_svcctl, &pipe1);
+	torture_assert_ntstatus_equal(torture,
+			status,
+			NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX,
+			"svcctl interface not supported in winreg pipe");
+
+	/* Test it is not possible to bind to S4 server provided services */
+	status = pipe_bind_smb2(torture, mem_ctx, tree, "srvsvc",
+			        &ndr_table_samr, &pipe2);
+	torture_assert_ntstatus_equal(torture,
+			status,
+			NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX,
+			"samr interface not supported in srvsvc pipe");
+
+	/* Test pipes in forked daemons like lsassd. The lsarpc interface is
+	 * not available if we open the SAMR pipe. */
+	status = pipe_bind_smb2(torture, mem_ctx, tree, "samr",
+			        &ndr_table_lsarpc, &pipe3);
+	torture_assert_ntstatus_equal(torture,
+			status,
+			NT_STATUS_RPC_UNSUPPORTED_NAME_SYNTAX,
+			"lsarpc interface not supported in samr pipe");
+
+	ret = true;
+ done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 struct torture_suite *torture_rpc_samba3(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "samba3");
@@ -4642,6 +4710,9 @@ struct torture_suite *torture_rpc_samba3(TALLOC_CTX *mem_ctx)
 	torture_suite_add_simple_test(suite,
 				      "lsa_over_netlogon",
 				      torture_rpc_lsa_over_netlogon);
+	torture_suite_add_simple_test(suite,
+				      "pipes_supported_interfaces",
+				      torture_rpc_pipes_supported_interfaces);
 
 	suite->description = talloc_strdup(suite, "samba3 DCERPC interface tests");
 

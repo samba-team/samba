@@ -516,7 +516,7 @@ rpc = ["rpc.authcontext", "rpc.samba3.bind", "rpc.samba3.srvsvc", "rpc.samba3.sh
        "rpc.samba3.netlogon", "rpc.samba3.sessionkey", "rpc.samba3.getusername",
        "rpc.samba3.smb1-pipe-name", "rpc.samba3.smb2-pipe-name",
        "rpc.samba3.smb-reauth1", "rpc.samba3.smb-reauth2",
-       "rpc.samba3.lsa_over_netlogon",
+       "rpc.samba3.lsa_over_netlogon", "rpc.samba3.pipes_supported_interfaces",
        "rpc.svcctl", "rpc.ntsvcs", "rpc.winreg", "rpc.eventlog",
        "rpc.spoolss.printserver", "rpc.spoolss.win", "rpc.spoolss.notify", "rpc.spoolss.printer",
        "rpc.spoolss.driver",
@@ -742,6 +742,9 @@ for t in tests:
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
     elif t == "rpc.samba3.lsa_over_netlogon":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+    elif t == "rpc.samba3.pipes_supported_interfaces":
+        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "ad_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
     else:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
