@@ -236,7 +236,7 @@ NTSTATUS smbd_add_connection(struct smbXsrv_client *client, int sock_fd,
 
 void reply_smb2002(struct smb_request *req, uint16_t choice);
 void reply_smb20ff(struct smb_request *req, uint16_t choice);
-void smbd_smb2_process_negprot(struct smbXsrv_connection *xconn,
+NTSTATUS smbd_smb2_process_negprot(struct smbXsrv_connection *xconn,
 			       uint64_t expected_seq_low,
 			       const uint8_t *inpdu, size_t size);
 

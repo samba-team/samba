@@ -3613,7 +3613,7 @@ static NTSTATUS smbd_smb2_request_next_incoming(struct smbXsrv_connection *xconn
 	return NT_STATUS_OK;
 }
 
-void smbd_smb2_process_negprot(struct smbXsrv_connection *xconn,
+NTSTATUS smbd_smb2_process_negprot(struct smbXsrv_connection *xconn,
 			       uint64_t expected_seq_low,
 			       const uint8_t *inpdu, size_t size)
 {
@@ -3627,25 +3627,25 @@ void smbd_smb2_process_negprot(struct smbXsrv_connection *xconn,
 	status = smbd_initialize_smb2(xconn, expected_seq_low);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(xconn, nt_errstr(status));
-		return;
+		return status;
 	}
 
 	status = smbd_smb2_request_create(xconn, inpdu, size, &req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(xconn, nt_errstr(status));
-		return;
+		return status;
 	}
 
 	status = smbd_smb2_request_validate(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(xconn, nt_errstr(status));
-		return;
+		return status;
 	}
 
 	status = smbd_smb2_request_setup_out(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(xconn, nt_errstr(status));
-		return;
+		return status;
 	}
 
 #ifdef WITH_PROFILE
@@ -3660,16 +3660,17 @@ void smbd_smb2_process_negprot(struct smbXsrv_connection *xconn,
 	status = smbd_smb2_request_dispatch(req);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(xconn, nt_errstr(status));
-		return;
+		return status;
 	}
 
 	status = smbd_smb2_request_next_incoming(xconn);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbd_server_connection_terminate(xconn, nt_errstr(status));
-		return;
+		return status;
 	}
 
 	sconn->num_requests++;
+	return NT_STATUS_OK;
 }
 
 static int socket_error_from_errno(int ret,
