@@ -991,3 +991,26 @@ _PUBLIC_ NTTIME unix_timespec_to_nt_time(struct timespec ts)
 
 	return d;
 }
+
+/*
+ * Functions supporting the full range of time_t and struct timespec values,
+ * including 0, -1 and all other negative values. These functions don't use 0 or
+ * -1 values as sentinel to denote "unset" variables, but use the POSIX 2008
+ * define UTIME_OMIT from utimensat(2).
+ */
+
+/**
+ * Check if it's a to be omitted timespec.
+ **/
+bool is_omit_timespec(const struct timespec *ts)
+{
+	return ts->tv_nsec == SAMBA_UTIME_OMIT;
+}
+
+/**
+ * Return a to be omitted timespec.
+ **/
+struct timespec make_omit_timespec(void)
+{
+	return (struct timespec){.tv_nsec = SAMBA_UTIME_OMIT};
+}

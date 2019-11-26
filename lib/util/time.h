@@ -333,4 +333,13 @@ void round_timespec_to_usec(struct timespec *ts);
 void round_timespec_to_nttime(struct timespec *ts);
 NTTIME unix_timespec_to_nt_time(struct timespec ts);
 
+/*
+ * Functions supporting the full range of time_t and struct timespec values,
+ * including 0, -1 and all other negative values. These functions don't use 0 or
+ * -1 values as sentinel to denote "unset" variables, but use the POSIX 2008
+ * define UTIME_OMIT from utimensat(2).
+ */
+bool is_omit_timespec(const struct timespec *ts);
+struct timespec make_omit_timespec(void);
+
 #endif /* _SAMBA_TIME_H_ */
