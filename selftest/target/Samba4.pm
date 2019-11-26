@@ -1503,7 +1503,7 @@ sub provision_fl2000dc($$)
 	spnego:simulate_w2k=yes
 	ntlmssp_server:force_old_spnego=yes
 ";
-	my $extra_provision_options = ["--use-ntvfs", "--base-schema=2008_R2"];
+	my $extra_provision_options = ["--base-schema=2008_R2"];
 	# This environment uses plain text secrets
 	# i.e. secret attributes are not encrypted on disk.
 	# This allows testing of the --plaintext-secrets option for
