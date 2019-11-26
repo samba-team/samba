@@ -876,6 +876,9 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 			return ldb_oom(ldb);
 		}
 
+		/*
+		 * Force SD propagation on children of this record
+		 */
 		ret = dsdb_module_schedule_sd_propagation(module, nc_root,
 							  dn, false);
 		if (ret != LDB_SUCCESS) {
@@ -966,6 +969,10 @@ static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 			return ldb_oom(ldb);
 		}
 
+		/*
+		 * Force SD propagation on this record (get a new
+		 * inherited SD from the potentially new parent
+		 */
 		ret = dsdb_module_schedule_sd_propagation(module, nc_root,
 							  newdn, true);
 		if (ret != LDB_SUCCESS) {
