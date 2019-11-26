@@ -1332,8 +1332,6 @@ sub provision_promoted_dc($$$)
 					       $dcvars->{SERVER_IP},
 					       $dcvars->{SERVER_IPV6});
 
-	push (@{$ctx->{provision_options}}, "--use-ntvfs");
-
 	$ctx->{smb_conf_extra_options} = "
 	max xmit = 32K
 	server max protocol = SMB2
@@ -1370,7 +1368,7 @@ sub provision_promoted_dc($$$)
 	my $cmd = $self->get_cmd_env_vars($ret);
 	$cmd .= "$samba_tool domain dcpromo $ret->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
-	$cmd .= " --machinepass=machine$ret->{PASSWORD} --use-ntvfs --dns-backend=BIND9_DLZ";
+	$cmd .= " --machinepass=machine$ret->{PASSWORD} --dns-backend=BIND9_DLZ";
 
 	unless (system($cmd) == 0) {
 		warn("Join failed\n$cmd");
