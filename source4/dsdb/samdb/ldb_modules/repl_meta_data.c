@@ -5527,6 +5527,15 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	replmd_ldb_message_sort(msg, ar->schema);
 
 	if (!remote_isDeleted) {
+		/*
+		 * Ensure any local ACL inheritence is applied from
+		 * the parent object.
+		 *
+		 * This is needed because descriptor is above
+		 * repl_meta_data in the module stack, so this will
+		 * not be trigered 'naturally' by the flow of
+		 * operations.
+		 */
 		ret = dsdb_module_schedule_sd_propagation(ar->module,
 							  ar->objs->partition_dn,
 							  msg->dn, true);
@@ -6309,9 +6318,20 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	}
 
 	if (sd_updated && !isDeleted) {
+		/*
+		 * This is an existing object, so there is no need to
+		 * inherit from the parent, but we must inherit any
+		 * incoming changes to our child objects.
+		 *
+		 * This is needed because descriptor is above
+		 * repl_meta_data in the module stack, so this will
+		 * not be trigered 'naturally' by the flow of
+		 * operations.
+		 */
 		ret = dsdb_module_schedule_sd_propagation(ar->module,
 							  ar->objs->partition_dn,
-							  msg->dn, true);
+							  msg->dn,
+							  false);
 		if (ret != LDB_SUCCESS) {
 			return ldb_operr(ldb);
 		}
