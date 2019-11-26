@@ -580,6 +580,7 @@ void reply_negprot(struct smb_request *req)
 	bool signing_required = true;
 	int max_proto;
 	int min_proto;
+	NTSTATUS status;
 
 	START_PROFILE(SMBnegprot);
 
@@ -768,7 +769,11 @@ void reply_negprot(struct smb_request *req)
 
 	fstrcpy(remote_proto,supported_protocols[protocol].short_name);
 	reload_services(sconn, conn_snum_used, true);
-	supported_protocols[protocol].proto_reply_fn(req, choice);
+	status = supported_protocols[protocol].proto_reply_fn(req, choice);
+	if (!NT_STATUS_IS_OK(status)) {
+		exit_server_cleanly("negprot function failed\n");
+	}
+
 	DEBUG(3,("Selected protocol %s\n",supported_protocols[protocol].proto_name));
 
 	DBG_INFO("negprot index=%zu\n", choice);
