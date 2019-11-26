@@ -1,4 +1,49 @@
                    ==============================
+                   Release Notes for Samba 4.9.16
+                          November 27, 2019
+                   ==============================
+
+
+This is an additional bug fix release to address bug #14175 (CTDB: Incoming
+queue can be orphaned causing communication breakdown). Please see
+https://bugzilla.samba.org/show_bug.cgi?id=14175 for details.
+
+
+Changes since 4.9.15:
+---------------------
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14175: ctdb: Avoid communication breakdown on node reconnect.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14175: ctdb: Incoming queue can be orphaned causing communication
+     breakdown.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.9.15
                           October 29, 2019
                    ==============================
@@ -69,8 +114,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.9.14
