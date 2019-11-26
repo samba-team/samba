@@ -7,7 +7,7 @@
 #
 # The test uses well-known SIDs to not require looking up names and SIDs
 #
-# Copyright (C) 2015 Christof Schmitt
+# Copyright (C) 2015, 2019 Christof Schmitt
 
 if [ $# -lt 3 ]; then
 	echo Usage: test_sharesec.sh SERVERCONFFILE SHARESEC NET SHARE
@@ -122,6 +122,19 @@ testit "Verify standard ACL count" test $COUNT -eq 1 || \
 	failed=$(expr $failed + 1)
 ACL=$($CMD --view | grep ACL: | sed -e 's/^ACL://')
 testit "Verify standard ACL" test $ACL = S-1-1-0:ALLOWED/0x0/FULL || \
+	failed=$(expr $failed + 1)
+
+testit "Create new share" $NET_CMD conf addshare tmp_share /tmp || \
+	failed=$(expr $failed + 1)
+testit "Change ACL" $SHARESEC $CONF --replace S-1-1-0:DENIED/0x0/FULL tmp_share || \
+	failed=$(expr $failed + 1)
+testit "Delete share" $NET_CMD conf delshare tmp_share || \
+	failed=$(expr $failed + 1)
+testit "Create share again" $NET_CMD conf addshare tmp_share /tmp || \
+	failed=$(expr $failed + 1)
+ACL=$($SHARESEC $CONF --view tmp_share | grep 'ACL:')
+testit "Check for default ACL" \
+       test "$ACL" = "ACL:S-1-1-0:ALLOWED/0x0/FULL" || \
 	failed=$(expr $failed + 1)
 
 testok $0 $failed
