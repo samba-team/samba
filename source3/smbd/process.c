@@ -1969,7 +1969,14 @@ static void process_smb(struct smbXsrv_connection *xconn,
 		if (smbd_is_smb2_header(inbuf, nread)) {
 			const uint8_t *inpdu = inbuf + NBT_HDR_SIZE;
 			size_t pdulen = nread - NBT_HDR_SIZE;
-			smbd_smb2_process_negprot(xconn, 0, inpdu, pdulen);
+			NTSTATUS status = smbd_smb2_process_negprot(
+						xconn,
+						0,
+						inpdu,
+						pdulen);
+			if (!NT_STATUS_IS_OK(status)) {
+				exit_server_cleanly("SMB2 negprot fail");
+			}
 			return;
 		}
 		if (nread >= smb_size && valid_smb_header(inbuf)
