@@ -192,9 +192,10 @@ auto_rpc_tests = list(filter(lambda t: t not in all_rpc_tests, rpc_tests))
 for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
     for transport in ["ncalrpc", "ncacn_np", "ncacn_ip_tcp"]:
         env = "ad_dc_default"
+        local = ""
         if transport == "ncalrpc":
             tests = ncalrpc_tests
-            env = "ad_dc_default:local"
+            local = ":local"
         elif transport == "ncacn_np":
             tests = ncacn_np_tests
         elif transport == "ncacn_ip_tcp":
@@ -202,8 +203,8 @@ for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
         else:
             raise AssertionError("invalid transport %r" % transport)
         for t in tests:
-            plansmbtorture4testsuite(t, env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s with %s" % (t, transport, bindoptions))
-        plansmbtorture4testsuite('rpc.samba3-sharesec', env, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=torture:share=tmp'], "samba4.rpc.samba3.sharesec on %s with %s" % (transport, bindoptions))
+            plansmbtorture4testsuite(t, env + local, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s with %s" % (t, transport, bindoptions))
+        plansmbtorture4testsuite('rpc.samba3-sharesec', env + local, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=torture:share=tmp'], "samba4.rpc.samba3.sharesec on %s with %s" % (transport, bindoptions))
 
 # Plugin S4 DC tests (confirms named pipe auth forwarding).  This can be expanded once kerberos is supported in the plugin DC
 #
