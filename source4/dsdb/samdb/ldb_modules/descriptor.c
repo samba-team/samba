@@ -1199,6 +1199,9 @@ static int descriptor_sd_propagation_recursive(struct ldb_module *module,
 	 * LDB_SCOPE_SUBTREE searches are expensive.
 	 *
 	 * Note: that we do not search for deleted/recycled objects
+	 *
+	 * We know this is safe against a rename race as we are in the
+	 * prepare_commit(), so must be in a transaction.
 	 */
 	ret = dsdb_module_search(module,
 				 change,
