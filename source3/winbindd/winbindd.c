@@ -764,6 +764,8 @@ static struct tevent_req *process_request_send(
 	ok = false;
 
 	if (i < ARRAY_SIZE(bool_dispatch_table)) {
+		cli_state->cmd_name = bool_dispatch_table[i].cmd_name;
+
 		DBG_DEBUG("process_request: request fn %s\n",
 			  bool_dispatch_table[i].cmd_name);
 		ok = bool_dispatch_table[i].fn(cli_state);
