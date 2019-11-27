@@ -17,7 +17,9 @@ USERNAME=$3
 PASSWORD=$4
 PREFIX=$5
 smbclient=$6
-shift 6
+protocol=$7
+
+shift 7
 failed=0
 
 incdir=`dirname $0`/../../../testprogs/blackbox
@@ -47,12 +49,18 @@ test_smbclient_dfree() {
 	return $status
 }
 
+if [ $protocol = "SMB3" ]; then
+	test_smbclient_dfree "Test dfree command share root SMB3" dfree "l" "2000 1024. 20" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+	test_smbclient_dfree "Test dfree command subdir1 SMB3" dfree "cd subdir1; l" "8000 1024. 80" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+	test_smbclient_dfree "Test dfree command subdir2 SMB3" dfree "cd subdir2; l" "32000 1024. 320" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 
-test_smbclient_dfree "Test dfree command share root SMB3" dfree "l" "2000 1024. 20" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
-test_smbclient_dfree "Test dfree command share root NT1" dfree "l" "2000 1024. 20" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=NT1 || failed=`expr $failed + 1`
-test_smbclient_dfree "Test dfree command subdir1 SMB3" dfree "cd subdir1; l" "8000 1024. 80" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
-test_smbclient_dfree "Test dfree command subdir2 SMB3" dfree "cd subdir2; l" "32000 1024. 320" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
+elif [ $protocol = "NT1" ]; then
+	test_smbclient_dfree "Test dfree command share root NT1" dfree "l" "2000 1024. 20" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=NT1 || failed=`expr $failed + 1`
 #SMB1 queries disk usage stat on the share's root, regardless of working directory
-test_smbclient_dfree "Test dfree command subdir1 NT1" dfree "cd subdir1; l" "2000 1024. 20" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=NT1 || failed=`expr $failed + 1`
+	test_smbclient_dfree "Test dfree command subdir1 NT1" dfree "cd subdir1; l" "2000 1024. 20" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=NT1 || failed=`expr $failed + 1`
 
+else
+	echo "unsupported protocol $protocol" |  subunit_fail_test "Test dfree command"
+	$failed=`expr $failed + 1`
+fi
 exit $failed
