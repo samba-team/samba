@@ -1516,25 +1516,6 @@ void *smb_xmalloc_array(size_t size, unsigned int count)
 	return p;
 }
 
-/*
-  vasprintf that aborts on malloc fail
-*/
-
- int smb_xvasprintf(char **ptr, const char *format, va_list ap)
-{
-	int n;
-	va_list ap2;
-
-	va_copy(ap2, ap);
-
-	n = vasprintf(ptr, format, ap2);
-	va_end(ap2);
-	if (n == -1 || ! *ptr) {
-		smb_panic("smb_xvasprintf: out of memory");
-	}
-	return n;
-}
-
 /*****************************************************************
  Get local hostname and cache result.
 *****************************************************************/
