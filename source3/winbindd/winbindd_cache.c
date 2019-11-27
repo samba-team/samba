@@ -710,6 +710,7 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	va_list ap;
 	char *kstr;
 	struct cache_entry *centry;
+	int ret;
 
 	if (!winbindd_use_cache() ||
 	    is_my_own_sam_domain(domain) ||
@@ -720,8 +721,12 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 	refresh_sequence_number(domain);
 
 	va_start(ap, format);
-	smb_xvasprintf(&kstr, format, ap);
+	ret = vasprintf(&kstr, format, ap);
 	va_end(ap);
+
+	if (ret == -1) {
+		return NULL;
+	}
 
 	centry = wcache_fetch_raw(kstr);
 	if (centry == NULL) {
@@ -752,10 +757,15 @@ static void wcache_delete(const char *format, ...)
 	va_list ap;
 	char *kstr;
 	TDB_DATA key;
+	int ret;
 
 	va_start(ap, format);
-	smb_xvasprintf(&kstr, format, ap);
+	ret = vasprintf(&kstr, format, ap);
 	va_end(ap);
+
+	if (ret == -1) {
+		return;
+	}
 
 	key = string_tdb_data(kstr);
 
@@ -927,14 +937,19 @@ static void centry_end(struct cache_entry *centry, const char *format, ...)
 	va_list ap;
 	char *kstr;
 	TDB_DATA key, data;
+	int ret;
 
 	if (!winbindd_use_cache()) {
 		return;
 	}
 
 	va_start(ap, format);
-	smb_xvasprintf(&kstr, format, ap);
+	ret = vasprintf(&kstr, format, ap);
 	va_end(ap);
+
+	if (ret == -1) {
+		return;
+	}
 
 	key = string_tdb_data(kstr);
 	data.dptr = centry->data;
