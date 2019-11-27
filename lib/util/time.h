@@ -41,6 +41,8 @@
 #define TIME_T_MAX MIN(INT32_MAX,_TYPE_MAXIMUM(time_t))
 #endif
 
+#define SAMBA_UTIME_NOW UTIME_NOW
+#define SAMBA_UTIME_OMIT UTIME_OMIT
 
 /* 64 bit time (100 nanosec) 1601 - cifs6.txt, section 3.5, page 30, 4 byte aligned */
 typedef uint64_t NTTIME;
