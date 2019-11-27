@@ -96,4 +96,11 @@ int rep_clock_gettime(clockid_t clk_id, struct timespec *tp);
 #define CUSTOM_CLOCK_MONOTONIC_IS_REALTIME
 #endif
 
+#ifndef UTIME_NOW
+#define UTIME_NOW ((1l << 30) - 1l)
+#endif
+#ifndef UTIME_OMIT
+#define UTIME_OMIT ((1l << 30) - 2l)
+#endif
+
 #endif
