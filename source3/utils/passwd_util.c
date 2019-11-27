@@ -25,6 +25,7 @@
 */
 
 #include "includes.h"
+#include "passwd_proto.h"
 
 /*************************************************************
  Utility function to prompt for passwords from stdin. Each

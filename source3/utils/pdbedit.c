@@ -26,6 +26,7 @@
 #include "../libcli/security/security.h"
 #include "passdb.h"
 #include "cmdline_contexts.h"
+#include "passwd_proto.h"
 
 #define BIT_BACKEND	0x00000004
 #define BIT_VERBOSE	0x00000008

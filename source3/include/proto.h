@@ -909,10 +909,6 @@ NTSTATUS sessionid_traverse_read(int (*fn)(const char *key,
 					   void *private_data),
 				 void *private_data);
 
-/* The following definitions come from utils/passwd_util.c  */
-
-char *get_pass( const char *prompt, bool stdin_get);
-
 /* The following definitions come from lib/avahi.c */
 
 struct AvahiPoll *tevent_avahi_poll(TALLOC_CTX *mem_ctx,

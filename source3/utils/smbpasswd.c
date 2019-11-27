@@ -24,6 +24,7 @@
 #include "libsmb/proto.h"
 #include "passdb.h"
 #include "cmdline_contexts.h"
+#include "passwd_proto.h"
 
 /*
  * Next two lines needed for SunOS and don't

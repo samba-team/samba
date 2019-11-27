@@ -51,6 +51,7 @@
 #include "cmdline_contexts.h"
 #include "lib/gencache.h"
 #include "auth/credentials/credentials.h"
+#include "source3/utils/passwd_proto.h"
 
 #ifdef WITH_FAKE_KASERVER
 #include "utils/net_afs.h"
