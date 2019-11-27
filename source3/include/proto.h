@@ -911,7 +911,6 @@ NTSTATUS sessionid_traverse_read(int (*fn)(const char *key,
 
 /* The following definitions come from utils/passwd_util.c  */
 
-char *stdin_new_passwd( void);
 char *get_pass( const char *prompt, bool stdin_get);
 
 /* The following definitions come from lib/avahi.c */

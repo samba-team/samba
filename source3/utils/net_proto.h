@@ -441,7 +441,6 @@ NTSTATUS net_lookup_sid_from_name(struct net_context *c, TALLOC_CTX *ctx,
 
 /* The following definitions come from utils/passwd_util.c  */
 
-char *stdin_new_passwd( void);
 char *get_pass( const char *prompt, bool stdin_get);
 
 /* The following definitions come from utils/net_g_lock.c  */

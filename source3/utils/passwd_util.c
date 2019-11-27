@@ -30,7 +30,7 @@
  Utility function to prompt for passwords from stdin. Each
  password entered must end with a newline.
 *************************************************************/
-char *stdin_new_passwd( void)
+static char *stdin_new_passwd( void)
 {
 	static fstring new_pw;
 	size_t len;

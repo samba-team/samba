@@ -26,7 +26,6 @@
 
 /* The following definitions come from utils/passwd_util.c  */
 
-char *stdin_new_passwd( void);
 char *get_pass( const char *prompt, bool stdin_get);
 
 #endif /*  _PASSWD_PROTO_H_  */
