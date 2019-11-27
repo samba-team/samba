@@ -339,8 +339,6 @@ typedef char fstring[FSTRING_LEN];
 
 
 /* add varargs prototypes with printf checking */
-/*PRINTFLIKE2 */
-int fdprintf(int , const char *, ...) PRINTF_ATTRIBUTE(2,3);
 /*PRINTFLIKE1 */
 int d_printf(const char *, ...) PRINTF_ATTRIBUTE(1,2);
 /*PRINTFLIKE2 */
