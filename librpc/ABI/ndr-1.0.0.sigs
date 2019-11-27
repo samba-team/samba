@@ -215,6 +215,7 @@ ndr_push_setup_relative_base_offset1: enum ndr_err_code (struct ndr_push *, cons
 ndr_push_setup_relative_base_offset2: enum ndr_err_code (struct ndr_push *, const void *)
 ndr_push_short_relative_ptr1: enum ndr_err_code (struct ndr_push *, const void *)
 ndr_push_short_relative_ptr2: enum ndr_err_code (struct ndr_push *, const void *)
+ndr_push_steal_switch_value: uint32_t (struct ndr_push *, const void *)
 ndr_push_string: enum ndr_err_code (struct ndr_push *, int, const char *)
 ndr_push_string_array: enum ndr_err_code (struct ndr_push *, int, const char **)
 ndr_push_struct_blob: enum ndr_err_code (DATA_BLOB *, TALLOC_CTX *, const void *, ndr_push_flags_fn_t)

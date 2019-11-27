@@ -1238,6 +1238,20 @@ _PUBLIC_ uint32_t ndr_push_get_switch_value(struct ndr_push *ndr, const void *p)
 	return ndr_token_peek(&ndr->switch_list, p);
 }
 
+/* retrieve a switch value (for push) and remove it from the list */
+_PUBLIC_ uint32_t ndr_push_steal_switch_value(struct ndr_push *ndr, const void *p)
+{
+	enum ndr_err_code status;
+	uint32_t v;
+
+	status = ndr_token_retrieve(&ndr->switch_list, p, &v);
+	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
+		return 0;
+	}
+
+	return v;
+}
+
 _PUBLIC_ uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, const void *p)
 {
 	return ndr_token_peek(&ndr->switch_list, p);

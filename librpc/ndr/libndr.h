@@ -617,6 +617,7 @@ enum ndr_err_code ndr_push_set_switch_value(struct ndr_push *ndr, const void *p,
 enum ndr_err_code ndr_pull_set_switch_value(struct ndr_pull *ndr, const void *p, uint32_t val);
 enum ndr_err_code ndr_print_set_switch_value(struct ndr_print *ndr, const void *p, uint32_t val);
 uint32_t ndr_push_get_switch_value(struct ndr_push *ndr, const void *p);
+uint32_t ndr_push_steal_switch_value(struct ndr_push *ndr, const void *p);
 uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, const void *p);
 uint32_t ndr_print_get_switch_value(struct ndr_print *ndr, const void *p);
 uint32_t ndr_pull_steal_switch_value(struct ndr_pull *ndr, const void *p);
