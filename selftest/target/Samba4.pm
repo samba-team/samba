@@ -1518,6 +1518,9 @@ sub provision_ad_dc_ntvfs($$$)
 	dsdb password event notification = true
 	dsdb group change notification = true
 	server schannel = auto
+	# override the new SMB2 only default
+	client min protocol = CORE
+	server min protocol = LANMAN1
 	";
 	push (@{$extra_provision_options}, "--use-ntvfs");
 	my $ret = $self->provision($prefix,
