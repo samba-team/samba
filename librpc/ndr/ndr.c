@@ -1230,14 +1230,6 @@ _PUBLIC_ enum ndr_err_code ndr_print_set_switch_value(struct ndr_print *ndr, con
 	return ndr_token_store(ndr, &ndr->switch_list, p, val);
 }
 
-/*
-  retrieve a switch value
- */
-_PUBLIC_ uint32_t ndr_push_get_switch_value(struct ndr_push *ndr, const void *p)
-{
-	return ndr_token_peek(&ndr->switch_list, p);
-}
-
 /* retrieve a switch value (for push) and remove it from the list */
 _PUBLIC_ uint32_t ndr_push_steal_switch_value(struct ndr_push *ndr, const void *p)
 {
@@ -1250,11 +1242,6 @@ _PUBLIC_ uint32_t ndr_push_steal_switch_value(struct ndr_push *ndr, const void *
 	}
 
 	return v;
-}
-
-_PUBLIC_ uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, const void *p)
-{
-	return ndr_token_peek(&ndr->switch_list, p);
 }
 
 /* retrieve a switch value and remove it from the list */

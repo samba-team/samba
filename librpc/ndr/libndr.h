@@ -616,9 +616,7 @@ enum ndr_err_code ndr_check_pipe_chunk_trailer(struct ndr_pull *ndr, int ndr_fla
 enum ndr_err_code ndr_push_set_switch_value(struct ndr_push *ndr, const void *p, uint32_t val);
 enum ndr_err_code ndr_pull_set_switch_value(struct ndr_pull *ndr, const void *p, uint32_t val);
 enum ndr_err_code ndr_print_set_switch_value(struct ndr_print *ndr, const void *p, uint32_t val);
-uint32_t ndr_push_get_switch_value(struct ndr_push *ndr, const void *p);
 uint32_t ndr_push_steal_switch_value(struct ndr_push *ndr, const void *p);
-uint32_t ndr_pull_get_switch_value(struct ndr_pull *ndr, const void *p);
 uint32_t ndr_print_steal_switch_value(struct ndr_print *ndr, const void *p);
 uint32_t ndr_pull_steal_switch_value(struct ndr_pull *ndr, const void *p);
 enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p, ndr_pull_flags_fn_t fn);
