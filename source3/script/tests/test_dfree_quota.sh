@@ -19,7 +19,8 @@ WORKDIR=$5/dfree
 smbclient=$6
 smbcquotas=$7
 smbcacls=$8
-shift 8
+protocol=$9
+shift 9
 failed=0
 
 CONFFILE=$ENVDIR/lib/dfq.conf
@@ -196,13 +197,22 @@ test_smbcquotas() {
 	return $status
 }
 
+if [ $protocol != "SMB3" -a $protocol != "NT1"]; then
+	echo "unsupported protocol $protocol" | subunit_fail_test "Test dfree quota"
+	failed=`expr $failed + 1`
+fi
+
+if [ $protocol = "NT1" ]; then
+	setup_conf
+	#basic quota test (SMB1 only)
+	test_smbcquotas "Test user quota" confq1 $USERNAME "40960/4096000/3072000" "smb1" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=NT1 || failed=`expr $failed + 1`
+	exit $failed
+fi
+
 #basic disk-free tests
 test_smbclient_dfree "Test dfree share root SMB3 no quota" dfq "." "conf1 ." "10 1024. 5" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
 test_smbclient_dfree "Test dfree subdir SMB3 no quota" dfq "subdir1" "conf1 . conf2 subdir1" "20 1024. 10" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
-test_smbclient_dfree "Test dfree subdir NT1 no quota" dfq "subdir1" "conf1 . conf2 subdir1" "10 1024. 5" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=NT1 || failed=`expr $failed + 1`
 test_smbclient_dfree "Test large disk" dfq "." "conf3 ." "1125899906842624 1024. 3000" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB3 || failed=`expr $failed + 1`
-#basic quota test (SMB1 only)
-test_smbcquotas "Test user quota" confq1 $USERNAME "40960/4096000/3072000" "smb1" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=NT1 || failed=`expr $failed + 1`
 #basic quota test (SMB2 only)
 test_smbcquotas "Test user quota" confq1 $USERNAME "40960/4096000/3072000" "smb2" -U$USERNAME%$PASSWORD --option=clientmaxprotocol=SMB2 || failed=`expr $failed + 1`
 
