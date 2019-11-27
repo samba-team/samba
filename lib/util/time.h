@@ -133,6 +133,11 @@ time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset);
 
 char *timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires);
 
+struct timeval_buf;
+const char *timespec_string_buf(const struct timespec *tp,
+				bool hires,
+				struct timeval_buf *buf);
+
 /**
  Return the current date and time as a string (optionally with microseconds)
 

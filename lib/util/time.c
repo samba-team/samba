@@ -359,6 +359,62 @@ char *timeval_string(TALLOC_CTX *ctx, const struct timeval *tp, bool hires)
 	return result;
 }
 
+/****************************************************************************
+ Return the date and time as a string
+****************************************************************************/
+
+const char *timespec_string_buf(const struct timespec *tp,
+				bool hires,
+				struct timeval_buf *buf)
+{
+	time_t t;
+	struct tm *tm = NULL;
+	size_t len;
+
+	if (is_omit_timespec(tp)) {
+		strlcpy(buf->buf, "SAMBA_UTIME_OMIT", sizeof(buf->buf));
+		return buf->buf;
+	}
+
+	t = (time_t)tp->tv_sec;
+	tm = localtime(&t);
+
+	if (tm == NULL) {
+		if (hires) {
+			len = snprintf(buf->buf, sizeof(buf->buf),
+				       "%ld.%09ld seconds since the Epoch",
+				       (long)tp->tv_sec, (long)tp->tv_nsec);
+		} else {
+			len = snprintf(buf->buf, sizeof(buf->buf),
+				       "%ld seconds since the Epoch", (long)t);
+		}
+	} else if (!hires) {
+		len = snprintf(buf->buf, sizeof(buf->buf),
+			       "%04d/%02d/%02d %02d:%02d:%02d",
+			       1900 + tm->tm_year,
+			       tm->tm_mon + 1,
+			       tm->tm_mday,
+			       tm->tm_hour,
+			       tm->tm_min,
+			       tm->tm_sec);
+	} else {
+		len = snprintf(buf->buf, sizeof(buf->buf),
+			       "%04d/%02d/%02d %02d:%02d:%02d.%09ld",
+			       1900 + tm->tm_year,
+			       tm->tm_mon + 1,
+			       tm->tm_mday,
+			       tm->tm_hour,
+			       tm->tm_min,
+			       tm->tm_sec,
+			       (long)tp->tv_nsec);
+	}
+	if (len == -1) {
+		return "";
+	}
+
+	return buf->buf;
+}
+
 char *current_timestring(TALLOC_CTX *ctx, bool hires)
 {
 	struct timeval tv;
