@@ -123,7 +123,7 @@ def SAMBA_PIDL_LIST(bld, name, source,
         # the fuzzers rely
         if generate_tables and generate_fuzzers:
             interface = p[0:-4] # strip off the .idl suffix
-            bld.SAMBA_NDR_FUZZ(interface)
+            bld.SAMBA_NDR_FUZZ(interface, auto_deps=True)
 Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 
 

@@ -43,7 +43,7 @@ bld.SAMBA_BINARY('fuzz_ldb_parse_tree',
                  deps='fuzzing ldb',
                  fuzzer=True)
 
-def SAMBA_NDR_FUZZ(bld, interface):
+def SAMBA_NDR_FUZZ(bld, interface, auto_deps=False):
     name = "fuzz_ndr_%s" % (interface.lower())
     fuzz_dir = os.path.join(bld.env.srcdir, 'lib/fuzzing')
     fuzz_reldir = os.path.relpath(fuzz_dir, bld.path.abspath())
@@ -59,9 +59,14 @@ def SAMBA_NDR_FUZZ(bld, interface):
                         target=fuzz_named_src,
                         rule='cp ${SRC} ${TGT}')
 
+    if auto_deps:
+        deps = "talloc ndr NDR_%s" % interface.upper()
+    else:
+        deps = "ndr-table NDR_DCERPC"
+
     bld.SAMBA_BINARY(name, source=fuzz_named_src,
                      cflags = "-D FUZZ_PIPE_TABLE=ndr_table_%s" % interface,
-                     deps = "ndr-table NDR_DCERPC",
+                     deps = deps,
                      install=False,
                      fuzzer=True)
 
