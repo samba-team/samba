@@ -14,6 +14,17 @@ select_test_node_and_ips
 
 echo "Running test against node $test_node and IP $test_ip"
 
+# This test puts an address on an interface and then needs to quickly
+# configure that address and cause an IP takeover.  However, an IPv6
+# address will be tentative for a while so "quickly" is not possible".
+# When ctdb_control_takeover_ip() calls ctdb_sys_have_ip() it will
+# decide that the address is not present.  It then attempts a takeip,
+# which can fail if the address is suddenly present because it is no
+# longer tentative.
+case "$test_ip" in
+*:*) ctdb_test_skip "This test is not supported for IPv6 addresses" ;;
+esac
+
 get_test_ip_mask_and_iface
 
 echo "Deleting IP $test_ip from all nodes"

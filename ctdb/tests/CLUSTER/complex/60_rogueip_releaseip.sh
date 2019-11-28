@@ -14,6 +14,13 @@ select_test_node_and_ips
 
 echo "Using $test_ip, which is onnode $test_node"
 
+# This test depends on being able to assign a duplicate address on a
+# 2nd node.  However, IPv6 guards against this and causes the test to
+# fail.
+case "$test_ip" in
+*:*) ctdb_test_skip "This test is not supported for IPv6 addresses" ;;
+esac
+
 get_test_ip_mask_and_iface
 
 echo "Finding another node that knows about $test_ip"
