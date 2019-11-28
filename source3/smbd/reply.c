@@ -8362,20 +8362,24 @@ uint64_t get_lock_offset(const uint8_t *data, int data_offset,
 	return offset;
 }
 
-NTSTATUS smbd_do_unlocking(struct smb_request *req,
-			   files_struct *fsp,
-			   uint16_t num_ulocks,
-			   struct smbd_lock_element *ulocks,
-			   enum brl_flavour lock_flav)
+struct smbd_do_unlocking_state {
+	struct files_struct *fsp;
+	uint16_t num_ulocks;
+	struct smbd_lock_element *ulocks;
+	enum brl_flavour lock_flav;
+	NTSTATUS status;
+};
+
+static void smbd_do_unlocking_fn(
+	TDB_DATA value, bool *pmodified_dependent, void *private_data)
 {
-	struct share_mode_lock *lck;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	struct smbd_do_unlocking_state *state = private_data;
+	struct files_struct *fsp = state->fsp;
+	enum brl_flavour lock_flav = state->lock_flav;
 	uint16_t i;
 
-	lck = get_existing_share_mode_lock(talloc_tos(), fsp->file_id);
-
-	for(i = 0; i < num_ulocks; i++) {
-		struct smbd_lock_element *e = &ulocks[i];
+	for (i = 0; i < state->num_ulocks; i++) {
+		struct smbd_lock_element *e = &state->ulocks[i];
 
 		DBG_DEBUG("unlock start=%"PRIu64", len=%"PRIu64" for "
 			  "pid %"PRIu64", file %s\n",
@@ -8386,35 +8390,55 @@ NTSTATUS smbd_do_unlocking(struct smb_request *req,
 
 		if (e->brltype != UNLOCK_LOCK) {
 			/* this can only happen with SMB2 */
-			status = NT_STATUS_INVALID_PARAMETER;
-			goto done;
+			state->status = NT_STATUS_INVALID_PARAMETER;
+			return;
 		}
 
-		status = do_unlock(
-			fsp,
-			e->smblctx,
-			e->count,
-			e->offset,
-			lock_flav);
+		state->status = do_unlock(
+			fsp, e->smblctx, e->count, e->offset, lock_flav);
 
-		DEBUG(10, ("%s: unlock returned %s\n", __func__,
-			   nt_errstr(status)));
+		DBG_DEBUG("do_unlock returned %s\n",
+			  nt_errstr(state->status));
 
-		if (!NT_STATUS_IS_OK(status)) {
-			goto done;
+		if (!NT_STATUS_IS_OK(state->status)) {
+			return;
 		}
 	}
 
-	DEBUG(3, ("%s: %s num_ulocks=%d\n", __func__, fsp_fnum_dbg(fsp),
-		  num_ulocks));
+	*pmodified_dependent = true;
+}
 
-done:
-	if (NT_STATUS_IS_OK(status) && (lck != NULL)) {
-		lck->data->modified = true;
+NTSTATUS smbd_do_unlocking(struct smb_request *req,
+			   files_struct *fsp,
+			   uint16_t num_ulocks,
+			   struct smbd_lock_element *ulocks,
+			   enum brl_flavour lock_flav)
+{
+	struct smbd_do_unlocking_state state = {
+		.fsp = fsp,
+		.num_ulocks = num_ulocks,
+		.ulocks = ulocks,
+		.lock_flav = lock_flav,
+	};
+	NTSTATUS status;
+
+	DBG_NOTICE("%s num_ulocks=%"PRIu16"\n", fsp_fnum_dbg(fsp), num_ulocks);
+
+	status = share_mode_do_locked(
+		fsp->file_id, smbd_do_unlocking_fn, &state);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("share_mode_do_locked failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_DEBUG("smbd_do_unlocking_fn failed: %s\n",
+			  nt_errstr(status));
+		return state.status;
 	}
 
-	TALLOC_FREE(lck);
-	return status;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
