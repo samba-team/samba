@@ -141,6 +141,10 @@ void srv_put_dos_date3(char *buf,int offset,time_t unixdate)
 
 void round_timespec(enum timestamp_set_resolution res, struct timespec *ts)
 {
+	if (is_omit_timespec(ts)) {
+		return;
+	}
+
 	switch (res) {
 		case TIMESTAMP_SET_SECONDS:
 			round_timespec_to_sec(ts);
