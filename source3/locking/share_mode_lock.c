@@ -615,18 +615,6 @@ struct share_mode_lock *get_share_mode_lock(
 		static_share_mode_record_value = dbwrap_record_get_value(
 			static_share_mode_record);
 
-		status = get_static_share_mode_data(
-			static_share_mode_record,
-			id,
-			servicepath,
-			smb_fname,
-			old_write_time);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_DEBUG("get_static_share_mode_data failed: %s\n",
-				  nt_errstr(status));
-			TALLOC_FREE(static_share_mode_record);
-			goto fail;
-		}
 	} else {
 		TDB_DATA static_key;
 		int cmp;
@@ -639,18 +627,18 @@ struct share_mode_lock *get_share_mode_lock(
 				    "simultaneously\n");
 			return NULL;
 		}
+	}
 
-		status = get_static_share_mode_data(
-			static_share_mode_record,
-			id,
-			servicepath,
-			smb_fname,
-			old_write_time);
-		if (!NT_STATUS_IS_OK(status)) {
-			DBG_WARNING("get_static_share_mode_data failed: %s\n",
-				    nt_errstr(status));
-			goto fail;
-		}
+	status = get_static_share_mode_data(static_share_mode_record,
+					    id,
+					    servicepath,
+					    smb_fname,
+					    old_write_time);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("get_static_share_mode_data failed: %s\n",
+			  nt_errstr(status));
+		TALLOC_FREE(static_share_mode_record);
+		goto fail;
 	}
 
 done:
