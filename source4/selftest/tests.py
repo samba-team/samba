@@ -1126,6 +1126,11 @@ for env in ['vampire_dc', 'promoted_dc']:
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
                            extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
+    planoldpythontestsuite(env, "repl_secdesc",
+                           name="samba4.drs.repl_secdesc.python(%s)" % env,
+                           extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
+                           environ={'DC1': "$DC_SERVER", 'DC2': '$SERVER'},
+                           extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
     planoldpythontestsuite(env, "repl_move",
                            extra_path=[os.path.join(samba4srcdir, 'torture/drs/python')],
                            name="samba4.drs.repl_move.python(%s)" % env,
