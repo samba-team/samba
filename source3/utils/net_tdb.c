@@ -51,7 +51,9 @@ static int net_tdb_locking_fetch(TALLOC_CTX *mem_ctx, const char *hexkey,
 
 	blob = strhex_to_data_blob(mem_ctx, hexkey);
 	if (blob.length != sizeof(struct file_id)) {
-		d_printf("Invalid length of key\n");
+		d_printf("Invalid length %zu of key, expected %zu\n",
+			 blob.length,
+			 sizeof(struct file_id));
 		return -1;
 	}
 
