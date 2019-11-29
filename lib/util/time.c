@@ -326,6 +326,11 @@ _PUBLIC_ time_t pull_dos_date2(const uint8_t *date_ptr, int zone_offset)
 _PUBLIC_ time_t pull_dos_date3(const uint8_t *date_ptr, int zone_offset)
 {
 	time_t t = (time_t)IVAL(date_ptr,0);
+
+	if (t == (time_t)0xFFFFFFFF) {
+		t = (time_t)-1;
+	}
+
 	if (!null_time(t)) {
 		t += zone_offset;
 	}
