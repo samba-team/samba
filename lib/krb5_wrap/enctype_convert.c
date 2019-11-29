@@ -83,13 +83,17 @@ krb5_error_code ms_suptypes_to_ietf_enctypes(TALLOC_CTX *mem_ctx,
 					     uint32_t enctype_bitmap,
 					     krb5_enctype **enctypes)
 {
-	unsigned int i, j = 0;
+	size_t max_bits = 8 * sizeof(enctype_bitmap);
+	size_t j = 0;
+	ssize_t i;
+
 	*enctypes = talloc_zero_array(mem_ctx, krb5_enctype,
-					(8 * sizeof(enctype_bitmap)) + 1);
+				      max_bits + 1);
 	if (!*enctypes) {
 		return ENOMEM;
 	}
-	for (i = 0; i < (8 * sizeof(enctype_bitmap)); i++) {
+
+	for (i = max_bits - 1; i >= 0; i--) {
 		uint32_t bit_value = (1U << i) & enctype_bitmap;
 		if (bit_value & enctype_bitmap) {
 			(*enctypes)[j] = ms_suptype_to_ietf_enctype(bit_value);
