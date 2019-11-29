@@ -287,6 +287,9 @@ void srv_put_dos_date2(char *buf,int offset, time_t unixdate);
 void srv_put_dos_date3(char *buf,int offset,time_t unixdate);
 void round_timespec(enum timestamp_set_resolution res, struct timespec *ts);
 void put_long_date_timespec(enum timestamp_set_resolution res, char *p, struct timespec ts);
+void put_long_date_full_timespec(enum timestamp_set_resolution res,
+				 char *p,
+				 const struct timespec *ts);
 void put_long_date(char *p, time_t t);
 void dos_filetime_timespec(struct timespec *tsp);
 time_t make_unix_date(const void *date_ptr, int zone_offset);
