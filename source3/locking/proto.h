@@ -244,6 +244,7 @@ bool share_mode_forall_entries(
 		   void *private_data),
 	void *private_data);
 
+NTSTATUS share_mode_count_entries(struct file_id fid, size_t *num_share_modes);
 
 /* The following definitions come from locking/posix.c  */
 

@@ -1838,6 +1838,52 @@ bool share_mode_forall_entries(
 	return state.ok;
 }
 
+struct share_mode_count_entries_state {
+	size_t num_share_modes;
+	NTSTATUS status;
+};
+
+static void share_mode_count_entries_fn(
+	TDB_DATA key, TDB_DATA data, void *private_data)
+{
+	struct share_mode_count_entries_state *state = private_data;
+
+	if ((data.dsize % SHARE_MODE_ENTRY_SIZE) != 0) {
+		DBG_WARNING("Invalid data size %zu\n", data.dsize);
+		state->status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+		return;
+	}
+	state->num_share_modes = data.dsize / SHARE_MODE_ENTRY_SIZE;
+	state->status = NT_STATUS_OK;
+}
+
+NTSTATUS share_mode_count_entries(struct file_id fid, size_t *num_share_modes)
+{
+	struct share_mode_count_entries_state state = {
+		.status = NT_STATUS_NOT_FOUND,
+	};
+	NTSTATUS status;
+
+	status = dbwrap_parse_record(
+		share_entries_db,
+		locking_key(&fid),
+		share_mode_count_entries_fn,
+		&state);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dbwrap_parse_record failed: %s\n",
+			  nt_errstr(status));
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_DEBUG("share_mode_forall_entries_fn failed: %s\n",
+			  nt_errstr(state.status));
+		return state.status;
+	}
+
+	*num_share_modes = state.num_share_modes;
+	return NT_STATUS_OK;
+}
+
 struct share_mode_entry_do_state {
 	struct server_id pid;
 	uint64_t share_file_id;
