@@ -1466,8 +1466,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_timespec(struct ndr_pull *ndr,
 _PUBLIC_ void ndr_print_timespec(struct ndr_print *ndr, const char *name,
 				 const struct timespec *t)
 {
-	ndr->print(ndr, "%-25s: %s.%ld", name, timestring(ndr, t->tv_sec),
-		   (long)t->tv_nsec);
+	char *str = timestring(ndr, t->tv_sec);
+	ndr->print(ndr, "%-25s: %s.%ld", name, str, t->tv_nsec);
+	TALLOC_FREE(str);
 }
 
 _PUBLIC_ enum ndr_err_code ndr_push_timeval(struct ndr_push *ndr,
