@@ -234,6 +234,11 @@ int main(int argc, char *argv[])
 	}
 	uid = (uid_t)tmp;
 
+	/* If we are printing as the root user, we're done here. */
+	if (uid == 0) {
+		goto smbspool;
+	}
+
 	pwd = getpwuid(uid);
 	if (pwd == NULL) {
 		CUPS_SMB_ERROR("Failed to find system user: %u - %s",
