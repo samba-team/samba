@@ -1823,7 +1823,7 @@ bool share_mode_forall_entries(
 		state.ok = true;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
-		DBG_DEBUG("dbwrap_parse_record returned %s\n",
+		DBG_DEBUG("dbwrap_do_locked failed: %s\n",
 			  nt_errstr(status));
 		return false;
 	}
