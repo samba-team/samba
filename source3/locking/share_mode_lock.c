@@ -1923,6 +1923,15 @@ static void share_mode_entry_do_fn(
 		state->num_share_modes -= 1;
 	}
 
+	if (state->num_share_modes == 0) {
+		state->status = dbwrap_record_delete(rec);
+		if (!NT_STATUS_IS_OK(state->status)) {
+			DBG_DEBUG("dbwrap_record_delete failed: %s\n",
+				  nt_errstr(state->status));
+		}
+		return;
+	}
+
 	state->status = dbwrap_record_storev(rec, dbufs, num_dbufs, 0);
 	if (!NT_STATUS_IS_OK(state->status)) {
 		DBG_DEBUG("dbwrap_record_storev failed: %s\n",
