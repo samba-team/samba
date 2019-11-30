@@ -37,7 +37,7 @@ sub new($) {
 sub pidl_hdr ($$)
 {
 	my $self = shift;
-	$self->{res_hdr} .= shift;
+	$self->{res_hdr} .= shift . "\n";
 }
 
 sub pidl($$)
@@ -83,7 +83,7 @@ sub Import
 	foreach (@imports) {
 		$_ = unmake_str($_);
 		s/\.idl$//;
-		$self->pidl_hdr("#include \"librpc/gen_ndr/$_\.h\"\n");
+		$self->pidl_hdr("#include \"librpc/gen_ndr/$_\.h\"");
 		$self->register_module_import("samba.dcerpc.$_");
 	}
 }
@@ -395,7 +395,7 @@ sub PythonStruct($$$$$$)
 		$self->pidl("");
 	}
 
-	$self->pidl_hdr("static PyTypeObject $name\_Type;\n");
+	$self->pidl_hdr("static PyTypeObject $name\_Type;");
 	$self->pidl("");
 	my $docstring = $self->DocString($d, $name);
 	my $typeobject = "$name\_Type";
@@ -926,7 +926,7 @@ sub PythonFunctionStruct($$$$)
 	$self->pidl("};");
 	$self->pidl("");
 
-	$self->pidl_hdr("static PyTypeObject $name\_Type;\n");
+	$self->pidl_hdr("static PyTypeObject $name\_Type;");
 	$self->pidl("");
 	my $docstring = $self->DocString($fn, $name);
 	my $typeobject = "$name\_Type";
@@ -1357,7 +1357,7 @@ sub PythonType($$$$)
 		$self->pidl("");
 
 		$self->pidl("");
-		$self->pidl_hdr("static PyTypeObject $typeobject;\n");
+		$self->pidl_hdr("static PyTypeObject $typeobject;");
 		$self->pidl("static PyTypeObject $typeobject = {");
 		$self->indent;
 		$self->pidl("PyVarObject_HEAD_INIT(NULL, 0)");
@@ -1412,7 +1412,7 @@ sub Interface($$$)
 	}
 
 	if (defined $interface->{PROPERTIES}->{uuid}) {
-		$self->pidl_hdr("static PyTypeObject $interface->{NAME}_InterfaceType;\n");
+		$self->pidl_hdr("static PyTypeObject $interface->{NAME}_InterfaceType;");
 		$self->pidl("");
 
 		my @fns = ();
@@ -1545,7 +1545,7 @@ sub Interface($$$)
 						     ""]);
 	}
 
-	$self->pidl_hdr("\n");
+	$self->pidl_hdr("");
 }
 
 sub register_module_method($$$$$)
@@ -2387,7 +2387,6 @@ static inline long long ndr_sizeof2intmax(size_t var_size)
 
 	return 0;
 }
-
 ");
 
 	foreach my $x (@$ndr) {
@@ -2439,7 +2438,7 @@ static inline long long ndr_sizeof2intmax(size_t var_size)
 	foreach my $h (@{$self->{type_imports}}) {
 		my $type_var = "$h->{'key'}\_Type";
 		my $module_path = $h->{'val'};
-		$self->pidl_hdr("static PyTypeObject *$type_var;\n");
+		$self->pidl_hdr("static PyTypeObject *$type_var;");
 		my $pretty_name = PrettifyTypeName($h->{'key'}, $module_path);
 		my $module_var = "dep_$module_path";
 		$module_var =~ s/\./_/g;
