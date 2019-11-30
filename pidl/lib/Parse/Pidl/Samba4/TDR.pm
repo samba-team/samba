@@ -9,8 +9,10 @@ use Parse::Pidl::Util qw(has_property ParseExpr is_constant);
 use Parse::Pidl::Samba4 qw(is_intree choose_header);
 use Parse::Pidl::Typelist qw(mapTypeName);
 
+use base Parse::Pidl::Base;
+
 use Exporter;
-@ISA = qw(Exporter);
+push @ISA, qw(Exporter);
 @EXPORT_OK = qw(ParserType $res $res_hdr);
 
 use vars qw($VERSION);
@@ -24,10 +26,6 @@ sub new($) {
 	bless($self, $class);
 }
 
-sub indent($) { my $self = shift; $self->{tabs}.="\t"; }
-sub deindent($) { my $self = shift; $self->{tabs} = substr($self->{tabs}, 1); }
-sub pidl($$) { my $self = shift; $self->{res} .= $self->{tabs}.(shift)."\n"; }
-sub pidl_hdr($$) { my $self = shift; $self->{res_hdr} .= (shift)."\n"; }
 sub typearg($) { 
 	my $t = shift; 
 	return(", const char *name") if ($t eq "print");
