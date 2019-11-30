@@ -4,9 +4,10 @@
 # released under the GNU GPL
 
 package Parse::Pidl::Samba4::Python;
+use parent Parse::Pidl::Base;
 
 use Exporter;
-@ISA = qw(Exporter);
+push @ISA, 'Exporter';
 
 use strict;
 use Parse::Pidl qw(warning fatal error);
@@ -16,6 +17,7 @@ use Parse::Pidl::NDR qw(ReturnTypeElement GetPrevLevel GetNextLevel ContainsDefe
 use Parse::Pidl::CUtil qw(get_value_of get_pointer_to);
 use Parse::Pidl::Samba4 qw(ArrayDynamicallyAllocated);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
+
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -32,36 +34,6 @@ sub new($) {
 				 patch_type_calls => [], prereadycode => [],
 			 	 postreadycode => []};
 	bless($self, $class);
-}
-
-sub pidl_hdr ($$)
-{
-	my $self = shift;
-	$self->{res_hdr} .= shift . "\n";
-}
-
-sub pidl($$)
-{
-	my ($self, $d) = @_;
-	if ($d) {
-		if ((!($d =~ /^#/))) {
-			$self->{res} .= $self->{tabs};
-		}
-		$self->{res} .= $d;
-	}
-	$self->{res} .= "\n";
-}
-
-sub indent($)
-{
-	my ($self) = @_;
-	$self->{tabs} .= "\t";
-}
-
-sub deindent($)
-{
-	my ($self) = @_;
-	$self->{tabs} = substr($self->{tabs}, 0, -1);
 }
 
 sub PrettifyTypeName($$)
