@@ -372,18 +372,18 @@ static void smbd_smb2_request_create_done(struct tevent_req *tsubreq)
 	SCVAL(outbody.data, 0x03, 0);		/* reserved */
 	SIVAL(outbody.data, 0x04,
 	      out_create_action);		/* create action */
-	put_long_date_timespec(conn->ts_res,
+	put_long_date_full_timespec(conn->ts_res,
 	      (char *)outbody.data + 0x08,
-	      out_creation_ts);			/* creation time */
-	put_long_date_timespec(conn->ts_res,
+	      &out_creation_ts);		/* creation time */
+	put_long_date_full_timespec(conn->ts_res,
 	      (char *)outbody.data + 0x10,
-	      out_last_access_ts);		/* last access time */
-	put_long_date_timespec(conn->ts_res,
+	      &out_last_access_ts);		/* last access time */
+	put_long_date_full_timespec(conn->ts_res,
 	      (char *)outbody.data + 0x18,
-	      out_last_write_ts);		/* last write time */
-	put_long_date_timespec(conn->ts_res,
+	      &out_last_write_ts);		/* last write time */
+	put_long_date_full_timespec(conn->ts_res,
 	      (char *)outbody.data + 0x20,
-	      out_change_ts);			/* change time */
+	      &out_change_ts);			/* change time */
 	SBVAL(outbody.data, 0x28,
 	      out_allocation_size);		/* allocation size */
 	SBVAL(outbody.data, 0x30,

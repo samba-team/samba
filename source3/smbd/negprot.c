@@ -371,7 +371,7 @@ static NTSTATUS reply_nt1(struct smb_request *req, uint16_t choice)
 	SIVAL(req->outbuf,smb_vwv7+1, getpid()); /* session key */
 	SIVAL(req->outbuf,smb_vwv9+1, capabilities); /* capabilities */
 	clock_gettime(CLOCK_REALTIME,&ts);
-	put_long_date_timespec(TIMESTAMP_SET_NT_OR_BETTER,(char *)req->outbuf+smb_vwv11+1,ts);
+	put_long_date_full_timespec(TIMESTAMP_SET_NT_OR_BETTER,(char *)req->outbuf+smb_vwv11+1,&ts);
 	SSVALS(req->outbuf,smb_vwv15+1,set_server_zone_offset(ts.tv_sec)/60);
 
 	if (!negotiate_spnego) {

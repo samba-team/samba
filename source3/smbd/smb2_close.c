@@ -132,14 +132,14 @@ static void smbd_smb2_request_close_done(struct tevent_req *subreq)
 	SSVAL(outbody.data, 0x00, 0x3C);	/* struct size */
 	SSVAL(outbody.data, 0x02, out_flags);
 	SIVAL(outbody.data, 0x04, 0);		/* reserved */
-	put_long_date_timespec(conn->ts_res,
-		(char *)outbody.data + 0x08, out_creation_ts);
-	put_long_date_timespec(conn->ts_res,
-		(char *)outbody.data + 0x10, out_last_access_ts);
-	put_long_date_timespec(conn->ts_res,
-		(char *)outbody.data + 0x18, out_last_write_ts);
-	put_long_date_timespec(conn->ts_res,
-		(char *)outbody.data + 0x20, out_change_ts);
+	put_long_date_full_timespec(conn->ts_res,
+		(char *)outbody.data + 0x08, &out_creation_ts);
+	put_long_date_full_timespec(conn->ts_res,
+		(char *)outbody.data + 0x10, &out_last_access_ts);
+	put_long_date_full_timespec(conn->ts_res,
+		(char *)outbody.data + 0x18, &out_last_write_ts);
+	put_long_date_full_timespec(conn->ts_res,
+		(char *)outbody.data + 0x20, &out_change_ts);
 	SBVAL(outbody.data, 0x28, out_allocation_size);
 	SBVAL(outbody.data, 0x30, out_end_of_file);
 	SIVAL(outbody.data, 0x38, out_file_attributes);

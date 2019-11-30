@@ -950,9 +950,9 @@ static void fetch_write_time_done(struct tevent_req *subreq)
 		return;
 	}
 
-	put_long_date_timespec(state->conn->ts_res,
+	put_long_date_full_timespec(state->conn->ts_res,
 			       state->entry_marshall_buf + off,
-			       write_time);
+			       &write_time);
 
 	tevent_req_done(req);
 	return;
@@ -1076,9 +1076,9 @@ static void fetch_dos_mode_done(struct tevent_req *subreq)
 		dos_filetime_timespec(&btime_ts);
 	}
 
-	put_long_date_timespec(state->dir_fsp->conn->ts_res,
+	put_long_date_full_timespec(state->dir_fsp->conn->ts_res,
 			       (char *)state->entry_marshall_buf + btime_off,
-			       btime_ts);
+			       &btime_ts);
 
 	switch (state->info_level) {
 	case SMB_FIND_ID_BOTH_DIRECTORY_INFO:
