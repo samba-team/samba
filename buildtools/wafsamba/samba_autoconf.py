@@ -725,6 +725,9 @@ def SAMBA_CONFIG_H(conf, path=None):
     if Options.options.debug:
         conf.ADD_CFLAGS('-g', testflags=True)
 
+    if Options.options.pidl_developer:
+        conf.env.PIDL_DEVELOPER_MODE = True
+
     if Options.options.developer:
         conf.env.DEVELOPER_MODE = True
 

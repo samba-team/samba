@@ -102,6 +102,9 @@ def options(opt):
     gr.add_option('--enable-developer',
                    help=("Turn on developer warnings and debugging"),
                    action="store_true", dest='developer', default=False)
+    gr.add_option('--pidl-developer',
+                   help=("annotate PIDL-generated code for developers"),
+                   action="store_true", dest='pidl_developer', default=False)
     gr.add_option('--disable-warnings-as-errors',
                    help=("Do not treat all warnings as errors (disable -Werror)"),
                    action="store_true", dest='disable_warnings_as_errors', default=False)

@@ -69,6 +69,10 @@ def SAMBA_PIDL(bld, pname, source,
     if cpp == "CPP=xlc_r":
         cpp = ""
 
+    if bld.env['PIDL_DEVELOPER_MODE']:
+        pidl_dev = 'PIDL_DEVELOPER=1 '
+    else:
+        pidl_dev = ''
 
     if bld.CONFIG_SET("CC"):
         if isinstance(bld.CONFIG_GET("CC"), list):
@@ -76,7 +80,7 @@ def SAMBA_PIDL(bld, pname, source,
         else:
             cc = 'CC="%s"' % bld.CONFIG_GET("CC")
 
-    t = bld(rule='cd ${PIDL_LAUNCH_DIR} && %s %s ${PERL} ${PIDL} --quiet ${OPTIONS} --outputdir ${OUTPUTDIR} -- "${IDLSRC}"' % (cpp, cc),
+    t = bld(rule='cd ${PIDL_LAUNCH_DIR} && %s%s %s ${PERL} ${PIDL} --quiet ${OPTIONS} --outputdir ${OUTPUTDIR} -- "${IDLSRC}"' % (pidl_dev, cpp, cc),
             ext_out    = '.c',
             before     = 'c',
             update_outputs = True,
