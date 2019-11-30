@@ -117,7 +117,7 @@ sub GetElementLevelTable($$$)
 		warning($e, "[out] argument `$e->{NAME}' not a pointer") if ($needptrs > $e->{POINTERS});
 	}
 
-	my $allow_pipe = ($e->{PARENT}->{TYPE} eq "FUNCTION");
+	my $allow_pipe = (($e->{PARENT}->{TYPE} // '') eq "FUNCTION");
 	my $is_pipe = typeIs($e->{TYPE}, "PIPE");
 
 	if ($is_pipe) {
@@ -910,7 +910,7 @@ sub ParseInterface($)
 
 	return { 
 		NAME => $idl->{NAME},
-		UUID => lc(has_property($idl, "uuid")),
+		UUID => lc(has_property($idl, "uuid") // ''),
 		VERSION => $version,
 		TYPE => "INTERFACE",
 		PROPERTIES => $idl->{PROPERTIES},
