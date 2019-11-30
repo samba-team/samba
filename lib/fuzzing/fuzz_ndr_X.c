@@ -162,6 +162,20 @@ int LLVMFuzzerTestOneInput(uint8_t *data, size_t size) {
 	const struct ndr_interface_call *f = NULL;
 	NTSTATUS status;
 
+/*
+ * This allows us to build binaries to fuzz just one target function
+ *
+ * In this mode the input becomes the 'stub data', there is no prefix.
+ *
+ * There is no NDR64 support in this mode at this time.
+ */
+#if defined(FUZZ_TYPE) && defined(FUZZ_FUNCTION)
+#undef HEADER_SIZE
+#define HEADER_SIZE 0
+	fuzz_packet_flags = 0;
+	type = FUZZ_TYPE;
+	function = FUZZ_FUNCTION;
+#else
 	if (size < HEADER_SIZE) {
 		/*
 		 * the first few bytes decide what is being fuzzed --
@@ -178,6 +192,7 @@ int LLVMFuzzerTestOneInput(uint8_t *data, size_t size) {
 	function = SVAL(data, 2);
 
 	type = fuzz_packet_flags & 3;
+#endif
 
 	switch (type) {
 	case TYPE_STRUCT:

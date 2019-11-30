@@ -43,14 +43,25 @@ bld.SAMBA_BINARY('fuzz_ldb_parse_tree',
                  deps='fuzzing ldb',
                  fuzzer=True)
 
-def SAMBA_NDR_FUZZ(bld, interface, auto_deps=False):
+# The fuzz_type and fuzz_function parameters make the built
+# fuzzer take the same input as ndrdump and so the same that
+# could be sent to the client or server as the stub data.
+
+def SAMBA_NDR_FUZZ(bld, interface, auto_deps=False,
+                   fuzz_type=None, fuzz_function=None):
     name = "fuzz_ndr_%s" % (interface.lower())
     fuzz_dir = os.path.join(bld.env.srcdir, 'lib/fuzzing')
     fuzz_reldir = os.path.relpath(fuzz_dir, bld.path.abspath())
     fuzz_src = os.path.join(fuzz_reldir, 'fuzz_ndr_X.c')
-    fuzz_named_src = os.path.join(fuzz_reldir,
-                                  'fuzz_ndr_%s.c' % interface.lower())
 
+    cflags = "-D FUZZ_PIPE_TABLE=ndr_table_%s" % interface
+    if fuzz_type and fuzz_function:
+        name += "_%s_%d" % (fuzz_type, fuzz_function)
+        cflags += " -D FUZZ_TYPE=%s -DFUZZ_FUNCTION=%d" % (fuzz_type,
+                                                           fuzz_function)
+
+    fuzz_named_src = os.path.join(fuzz_reldir,
+                                  '%s.c' % (name))
     # Work around an issue that WAF is invoked from up to 3 different
     # directories so doesn't create a unique name for the multiple .o
     # files like it would if called from just one place.
@@ -65,7 +76,7 @@ def SAMBA_NDR_FUZZ(bld, interface, auto_deps=False):
         deps = "ndr-table NDR_DCERPC"
 
     bld.SAMBA_BINARY(name, source=fuzz_named_src,
-                     cflags = "-D FUZZ_PIPE_TABLE=ndr_table_%s" % interface,
+                     cflags = cflags,
                      deps = deps,
                      fuzzer=True)
 
@@ -124,3 +135,10 @@ bld.SAMBA_NDR_FUZZ('IDispatch')
 bld.SAMBA_NDR_FUZZ('IMarshal')
 bld.SAMBA_NDR_FUZZ('ICoffeeMachine')
 bld.SAMBA_NDR_FUZZ('IStream')
+
+# Specific struct or function on the interface
+
+bld.SAMBA_NDR_FUZZ('spoolss',
+                   auto_deps=True,
+                   fuzz_type="TYPE_IN",
+                   fuzz_function=65)
