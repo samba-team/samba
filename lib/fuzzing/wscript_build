@@ -67,7 +67,6 @@ def SAMBA_NDR_FUZZ(bld, interface, auto_deps=False):
     bld.SAMBA_BINARY(name, source=fuzz_named_src,
                      cflags = "-D FUZZ_PIPE_TABLE=ndr_table_%s" % interface,
                      deps = deps,
-                     install=False,
                      fuzzer=True)
 
 Build.BuildContext.SAMBA_NDR_FUZZ = SAMBA_NDR_FUZZ
