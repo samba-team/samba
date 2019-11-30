@@ -81,7 +81,8 @@ my $scalar_alignment = {
 	'ipv4address' => 4,
 	'ipv6address' => 4, #16?
 	'dnsp_name' => 1,
-	'dnsp_string' => 1
+	'dnsp_string' => 1,
+	'HRESULT' => 4,
 };
 
 sub GetElementLevelTable($$$)
