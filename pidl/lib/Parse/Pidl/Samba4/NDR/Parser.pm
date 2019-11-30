@@ -84,8 +84,8 @@ sub has_fast_array($$)
 
 	my $t = getType($nl->{DATA_TYPE});
 
-	# Only uint8 and string have fast array functions at the moment
-	return ($t->{NAME} eq "uint8") or ($t->{NAME} eq "string");
+	# Only uint8 has a fast array function at the moment
+	return ($t->{NAME} eq "uint8");
 }
 
 
