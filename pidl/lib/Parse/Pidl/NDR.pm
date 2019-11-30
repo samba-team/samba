@@ -469,7 +469,12 @@ sub align_type($)
 	my ($e) = @_;
 
 	if (ref($e) eq "HASH" and $e->{TYPE} eq "SCALAR") {
-		return $scalar_alignment->{$e->{NAME}};
+		my $ret = $scalar_alignment->{$e->{NAME}};
+		if (not defined $ret) {
+			warning($e, "no scalar alignment for $e->{NAME}!");
+			return 0;
+		}
+		return $ret;
 	}
 
 	return 0 if ($e eq "EMPTY");
