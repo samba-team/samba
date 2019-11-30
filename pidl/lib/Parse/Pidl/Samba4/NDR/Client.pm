@@ -26,7 +26,7 @@ sub indent($) { my ($self) = @_; $self->{tabs}.="\t"; }
 sub deindent($) { my ($self) = @_; $self->{tabs} = substr($self->{tabs}, 1); }
 sub pidl($$) { my ($self,$txt) = @_; $self->{res} .= $txt ? "$self->{tabs}$txt\n" : "\n"; }
 sub pidl_hdr($$) { my ($self, $txt) = @_; $self->{res_hdr} .= "$txt\n"; }
-sub pidl_both($$) { my ($self, $txt) = @_; $self->{hdr} .= "$txt\n"; $self->{res_hdr} .= "$txt\n"; }
+sub pidl_both($$) { my ($self, $txt) = @_; $self->{res} .= "$txt\n"; $self->{res_hdr} .= "$txt\n"; }
 sub fn_declare($$) { my ($self,$n) = @_; $self->pidl($n); $self->pidl_hdr("$n;"); }
 
 sub new($)
