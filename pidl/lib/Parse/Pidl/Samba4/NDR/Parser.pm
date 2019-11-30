@@ -980,7 +980,7 @@ sub ParseDataPull($$$$$$$)
 		my $pl = GetPrevLevel($e, $l);
 
 		my $range = has_property($e, "range");
-		if ($range and $pl->{TYPE} ne "ARRAY") {
+		if ($range and (not $pl or $pl->{TYPE} ne "ARRAY")) {
 			$var_name = get_value_of($var_name);
 			my $signed = Parse::Pidl::Typelist::is_signed($l->{DATA_TYPE});
 			my ($low, $high) = parse_range($range);
