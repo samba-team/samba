@@ -38,7 +38,7 @@ sub PrettifyTypeName($$)
 {
 	my ($name, $basename) = @_;
 
-	$basename =~ s/^.*\.([^.]+)$/\1/;
+	$basename =~ s/^.*\.([^.]+)$/$1/;
 
 	$name =~ s/^$basename\_//;
 
@@ -190,7 +190,6 @@ sub PythonElementGetSet($$$$$$) {
 	$self->indent;
 	$self->pidl("$cname *object = ($cname *)pytalloc_get_ptr(py_obj);");
 	my $mem_ctx = "pytalloc_get_mem_ctx(py_obj)";
-	my $l = $e->{LEVELS}[0];
 	my $nl = GetNextLevel($e, $l);
 	if ($l->{TYPE} eq "POINTER" and
 		not ($nl->{TYPE} eq "ARRAY" and ($nl->{IS_FIXED} or is_charset_array($e, $nl))) and
@@ -1479,9 +1478,9 @@ sub Interface($$$)
 
 		$self->pidl("");
 
-		my $signature = "\"$interface->{NAME}_abstract_syntax()\\n\"";
+		$signature = "\"$interface->{NAME}_abstract_syntax()\\n\"";
 
-		my $docstring = $self->DocString($interface, $interface->{NAME}."_syntax");
+		$docstring = $self->DocString($interface, $interface->{NAME}."_syntax");
 
 		if ($docstring) {
 			$docstring = "$signature$docstring";
