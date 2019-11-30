@@ -7,6 +7,7 @@ package Parse::Pidl::Samba4::Python;
 use parent Parse::Pidl::Base;
 
 use strict;
+use warnings;
 use Parse::Pidl qw(warning fatal error);
 use Parse::Pidl::Typelist qw(hasType resolveType getType mapTypeName expandAlias bitmap_type_fn enum_type_fn);
 use Parse::Pidl::Util qw(has_property ParseExpr unmake_str);

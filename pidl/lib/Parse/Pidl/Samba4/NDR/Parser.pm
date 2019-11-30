@@ -13,6 +13,7 @@ push @ISA, qw(Exporter);
 @EXPORT_OK = qw(check_null_pointer NeededFunction NeededElement NeededType $res NeededInterface TypeFunctionName ParseElementPrint);
 
 use strict;
+use warnings;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName typeHasBody);
 use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid unmake_str);
 use Parse::Pidl::CUtil qw(get_pointer_to get_value_of get_array_element);

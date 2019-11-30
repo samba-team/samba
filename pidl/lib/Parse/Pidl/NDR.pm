@@ -38,6 +38,7 @@ $VERSION = '0.01';
 @EXPORT_OK = qw(GetElementLevelTable ParseElement ReturnTypeElement ValidElement align_type mapToScalar ParseType can_contain_deferred is_charset_array);
 
 use strict;
+use warnings;
 use Parse::Pidl qw(warning fatal);
 use Parse::Pidl::Typelist qw(hasType getType typeIs expandAlias mapScalarType is_fixed_size_scalar);
 use Parse::Pidl::Util qw(has_property property_matches);

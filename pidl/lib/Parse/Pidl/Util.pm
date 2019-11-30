@@ -11,6 +11,7 @@ use vars qw($VERSION);
 $VERSION = '0.01';
 
 use strict;
+use warnings;
 
 use Parse::Pidl::Expr;
 use Parse::Pidl qw(error);
