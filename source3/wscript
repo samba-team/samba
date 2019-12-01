@@ -1899,7 +1899,7 @@ main() {
                                       vfs_commit vfs_worm vfs_crossrename vfs_linux_xfs_sgid
                                       vfs_time_audit vfs_offline vfs_virusfilter
                                   '''))
-    default_shared_modules.extend(TO_LIST('auth_script idmap_tdb2 idmap_script'))
+    default_shared_modules.extend(TO_LIST('idmap_tdb2 idmap_script'))
     # these have broken dependencies
     forced_shared_modules.extend(TO_LIST('idmap_autorid idmap_rid idmap_hash'))
 

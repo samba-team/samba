@@ -53,13 +53,6 @@ bld.SAMBA3_MODULE('auth_builtin',
                  init_function='',
                  internal_module=True)
 
-bld.SAMBA3_MODULE('auth_script',
-                 subsystem='auth',
-                 source='auth_script.c',
-                 init_function='',
-                 internal_module=bld.SAMBA3_IS_STATIC_MODULE('auth_script'),
-                 enabled=bld.SAMBA3_IS_ENABLED_MODULE('auth_script'))
-
 bld.SAMBA3_MODULE('auth_samba4',
                   subsystem='auth',
                   source='auth_samba4.c',
