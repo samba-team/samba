@@ -791,6 +791,70 @@ NTSTATUS cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
 			       (uint8_t *)data, data_len);
 }
 
+NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
+			     const struct timespec *create_time,
+			     const struct timespec *access_time,
+			     const struct timespec *write_time,
+			     const struct timespec *change_time,
+			     uint16_t mode)
+{
+	unsigned int data_len = 0;
+	char data[40];
+	char *p;
+
+	p = data;
+
+	/*
+	 * Add the create, last access, modification, and status change times
+	 */
+	put_long_date_full_timespec(TIMESTAMP_SET_NT_OR_BETTER, p, create_time);
+	p += 8;
+
+	put_long_date_full_timespec(TIMESTAMP_SET_NT_OR_BETTER, p, access_time);
+	p += 8;
+
+	put_long_date_full_timespec(TIMESTAMP_SET_NT_OR_BETTER, p, write_time);
+	p += 8;
+
+	put_long_date_full_timespec(TIMESTAMP_SET_NT_OR_BETTER, p, change_time);
+	p += 8;
+
+	if (mode == (uint16_t)-1 || mode == FILE_ATTRIBUTE_NORMAL) {
+		/* No change. */
+		mode = 0;
+	} else if (mode == 0) {
+		/* Clear all existing attributes. */
+		mode = FILE_ATTRIBUTE_NORMAL;
+	}
+
+	/* Add attributes */
+	SIVAL(p, 0, mode);
+
+	p += 4;
+
+	/* Add padding */
+	SIVAL(p, 0, 0);
+	p += 4;
+
+	data_len = PTR_DIFF(p, data);
+
+	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
+		DATA_BLOB in_data = data_blob_const(data, data_len);
+		/*
+		 * Split out SMB2 here as we need to select
+		 * the correct info type and level.
+		 */
+		return cli_smb2_setpathinfo(cli,
+				fname,
+				1, /* SMB2_SETINFO_FILE */
+				SMB_FILE_BASIC_INFORMATION - 1000,
+				&in_data);
+	}
+
+	return cli_setpathinfo(cli, SMB_FILE_BASIC_INFORMATION, fname,
+			       (uint8_t *)data, data_len);
+}
+
 /****************************************************************************
  Send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level.
 ****************************************************************************/

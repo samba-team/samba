@@ -64,6 +64,12 @@ NTSTATUS cli_setpathinfo_basic(struct cli_state *cli, const char *fname,
 			       time_t write_time,
 			       time_t change_time,
 			       uint16_t mode);
+NTSTATUS cli_setpathinfo_ext(struct cli_state *cli, const char *fname,
+			     const struct timespec *create_time,
+			     const struct timespec *access_time,
+			     const struct timespec *write_time,
+			     const struct timespec *change_time,
+			     uint16_t mode);
 struct tevent_req *cli_qpathinfo2_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct cli_state *cli,
