@@ -109,7 +109,7 @@ struct audit_private {
  */
 static bool has_password_changed(const struct ldb_message *message)
 {
-	int i;
+	unsigned int i;
 	if (message == NULL) {
 		return false;
 	}
