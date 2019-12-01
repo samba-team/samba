@@ -672,7 +672,8 @@ static void test_message_encryption_decryption(void **state)
 		struct es_data);
 	struct ldb_message_element *el = NULL;
 	int ret = LDB_SUCCESS;
-	int i, j;
+	size_t i;
+	unsigned int j;
 
 	msg->dn = ldb_dn_new(msg, ldb, "dc=test");
 	ldb_msg_add_string(msg, "cmocka_test_name01", "value01");

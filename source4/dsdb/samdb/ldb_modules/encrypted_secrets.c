@@ -263,7 +263,7 @@ static int load_keys(struct ldb_module *module, struct es_data *data)
  */
 static bool should_encrypt(const struct ldb_message_element *el)
 {
-	int i;
+	size_t i;
 
 	for (i = 0; i < ARRAY_SIZE(secret_attributes); i++) {
 		if (strcasecmp(secret_attributes[i], el->name) == 0) {
@@ -748,7 +748,7 @@ static struct ldb_message_element *encrypt_element(
 	const struct es_data *data)
 {
 	struct ldb_message_element* enc;
-	int i;
+	unsigned int i;
 
 	enc = talloc_zero(ctx, struct ldb_message_element);
 	if (enc == NULL) {
@@ -818,10 +818,9 @@ static const struct ldb_message *encrypt_secret_attributes(
 	const struct ldb_message *msg,
 	const struct es_data *data)
 {
-
 	struct ldb_message *encrypted_msg = NULL;
 
-	int i;
+	unsigned int i;
 
 	if (ldb_dn_is_special(msg->dn)) {
 		return NULL;
@@ -1003,7 +1002,7 @@ static struct ldb_message_element *decrypt_element(
 	struct ldb_message_element* el,
 	struct es_data *data)
 {
-	int i;
+	unsigned int i;
 	struct ldb_message_element* dec =
 		talloc_zero(ctx, struct ldb_message_element);
 
@@ -1069,8 +1068,8 @@ static int decrypt_secret_attributes(struct ldb_context *ldb,
 				      struct ldb_message *msg,
 				      struct es_data *data)
 {
-
-	int i, ret;
+	size_t i;
+	int ret;
 
 	if (ldb_dn_is_special(msg->dn)) {
 		return LDB_SUCCESS;
