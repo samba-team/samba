@@ -257,7 +257,7 @@ interface dnsp
 		[value(0)] uint32   flag;
 		[value(1)] uint32   version;
 		dns_property_id     id;
-		[switch_is(wDataLength?id:DSPROPERTY_ZONE_EMPTY)]     dnsPropertyData data;
+		[switch_is(id)]     dnsPropertyData data;
 		uint32              name;
 	} dnsp_DnsProperty;
 }
