@@ -397,7 +397,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
 
     HEIMDAL_LIBRARY('roken',
         ROKEN_SOURCE,
-        includes='../heimdal/lib/roken ../heimdal/include',
+        includes='../heimdal/lib/roken ../heimdal/include ../heimdal_build/include',
         deps='resolv util replace',
         vnum='19.0.1',
         version_script='lib/roken/version-script.map',
@@ -407,7 +407,7 @@ if not bld.CONFIG_SET('USING_SYSTEM_ROKEN'):
         ROKEN_HOSTCC_SOURCE,
         use_hostcc=True,
         use_global_deps=False,
-        includes='../heimdal/lib/roken',
+        includes='../heimdal/lib/roken ../heimdal/include ../heimdal_build/include',
         cflags='-DSOCKET_WRAPPER_DISABLE=1 -D_SAMBA_HOSTCC_',
         group='compiler_libraries',
         deps='LIBREPLACE_HOSTCC',
