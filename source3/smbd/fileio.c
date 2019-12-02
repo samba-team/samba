@@ -178,6 +178,8 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
 {
 	struct smb_file_time ft;
 
+	init_smb_file_time(&ft);
+
 	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 		/* Don't use delayed writes on POSIX files. */
 		return;
@@ -199,7 +201,7 @@ void trigger_write_time_update_immediate(struct files_struct *fsp)
 	fsp->update_write_time_triggered = true;
         fsp->update_write_time_on_close = false;
 
-	ft = (struct smb_file_time) { .mtime = timespec_current() };
+	ft.mtime = timespec_current();
 
 	/* Update the time in the open file db. */
 	(void)set_write_time(fsp->file_id, ft.mtime);

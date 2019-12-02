@@ -899,7 +899,7 @@ bool smbd_dirptr_get_entry(TALLOC_CTX *ctx,
 			fileid = vfs_file_id_from_sbuf(conn,
 						       &smb_fname.st);
 			get_file_infos(fileid, 0, NULL, &write_time_ts);
-			if (!null_timespec(write_time_ts)) {
+			if (!is_omit_timespec(&write_time_ts)) {
 				update_stat_ex_mtime(&smb_fname.st,
 						     write_time_ts);
 			}

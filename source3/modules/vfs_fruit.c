@@ -3801,7 +3801,7 @@ static int fruit_ntimes(vfs_handle_struct *handle,
 				return -1);
 
 	if ((config->meta != FRUIT_META_NETATALK) ||
-	    null_timespec(ft->create_time))
+	    is_omit_timespec(&ft->create_time))
 	{
 		return SMB_VFS_NEXT_NTIMES(handle, smb_fname, ft);
 	}

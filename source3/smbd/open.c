@@ -4035,7 +4035,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 */
 		struct timespec write_time = get_share_mode_write_time(lck);
 
-		if (!null_timespec(write_time)) {
+		if (!is_omit_timespec(&write_time)) {
 			update_stat_ex_mtime(&fsp->fsp_name->st, write_time);
 		}
 	}
@@ -4398,7 +4398,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	   we only update timestamps on file writes.
 	   See bug #9870.
 	*/
-	ZERO_STRUCT(mtimespec);
+	mtimespec = make_omit_timespec();
 
 #ifdef O_DIRECTORY
 	status = fd_open(conn, fsp, O_RDONLY|O_DIRECTORY, 0);
@@ -4523,7 +4523,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 		 */
 		struct timespec write_time = get_share_mode_write_time(lck);
 
-		if (!null_timespec(write_time)) {
+		if (!is_omit_timespec(&write_time)) {
 			update_stat_ex_mtime(&fsp->fsp_name->st, write_time);
 		}
 	}

@@ -417,7 +417,7 @@ static void recycle_do_touch(vfs_handle_struct *handle,
 	struct smb_file_time ft;
 	int ret, err;
 
-	ZERO_STRUCT(ft);
+	init_smb_file_time(&ft);
 
 	smb_fname_tmp = cp_smb_filename(talloc_tos(), smb_fname);
 	if (smb_fname_tmp == NULL) {

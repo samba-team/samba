@@ -1418,7 +1418,7 @@ static int vfs_gluster_ntimes(struct vfs_handle_struct *handle,
 
 	START_PROFILE(syscall_ntimes);
 
-	if (null_timespec(ft->atime)) {
+	if (is_omit_timespec(&ft->atime)) {
 		times[0].tv_sec = smb_fname->st.st_ex_atime.tv_sec;
 		times[0].tv_nsec = smb_fname->st.st_ex_atime.tv_nsec;
 	} else {
@@ -1426,7 +1426,7 @@ static int vfs_gluster_ntimes(struct vfs_handle_struct *handle,
 		times[0].tv_nsec = ft->atime.tv_nsec;
 	}
 
-	if (null_timespec(ft->mtime)) {
+	if (is_omit_timespec(&ft->mtime)) {
 		times[1].tv_sec = smb_fname->st.st_ex_mtime.tv_sec;
 		times[1].tv_nsec = smb_fname->st.st_ex_mtime.tv_nsec;
 	} else {

@@ -61,8 +61,8 @@ interface open_files
 		uint32 num_share_modes;
 		uint32 num_delete_tokens;
 		[size_is(num_delete_tokens)] delete_token delete_tokens[];
-		timespec old_write_time;
-		timespec changed_write_time;
+		NTTIME old_write_time;
+		NTTIME changed_write_time;
 		[skip] boolean8 fresh;
 		[skip] boolean8 modified;
 		[ignore] file_id id; /* In memory key used to lookup cache. */
@@ -105,7 +105,7 @@ interface open_files
 		boolean8 update_write_time_triggered;
 		boolean8 update_write_time_on_close;
 		boolean8 write_time_forced;
-		timespec close_write_time;
+		NTTIME close_write_time;
 		vfs_default_durable_stat stat_info;
 	} vfs_default_durable_cookie;
 

@@ -930,7 +930,7 @@ static void fetch_write_time_done(struct tevent_req *subreq)
 	write_time = get_share_mode_write_time(lck);
 	TALLOC_FREE(lck);
 
-	if (null_timespec(write_time)) {
+	if (is_omit_timespec(&write_time)) {
 		tevent_req_done(req);
 		return;
 	}

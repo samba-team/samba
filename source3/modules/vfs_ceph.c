@@ -782,15 +782,15 @@ static int cephwrap_ntimes(struct vfs_handle_struct *handle,
 	int result;
 	int mask = 0;
 
-	if (!null_timespec(ft->atime)) {
+	if (!is_omit_timespec(&ft->atime)) {
 		stx.stx_atime = ft->atime;
 		mask |= CEPH_SETATTR_ATIME;
 	}
-	if (!null_timespec(ft->mtime)) {
+	if (!is_omit_timespec(&ft->mtime)) {
 		stx.stx_mtime = ft->mtime;
 		mask |= CEPH_SETATTR_MTIME;
 	}
-	if (!null_timespec(ft->create_time)) {
+	if (!is_omit_timespec(&ft->create_time)) {
 		stx.stx_btime = ft->create_time;
 		mask |= CEPH_SETATTR_BTIME;
 	}
@@ -899,17 +899,17 @@ static int cephwrap_ntimes(struct vfs_handle_struct *handle,
 	struct utimbuf buf;
 	int result;
 
-	if (null_timespec(ft->atime)) {
+	if (is_omit_timespec(&ft->atime)) {
 		buf.actime = smb_fname->st.st_ex_atime.tv_sec;
 	} else {
 		buf.actime = ft->atime.tv_sec;
 	}
-	if (null_timespec(ft->mtime)) {
+	if (is_omit_timespec(&ft->mtime)) {
 		buf.modtime = smb_fname->st.st_ex_mtime.tv_sec;
 	} else {
 		buf.modtime = ft->mtime.tv_sec;
 	}
-	if (!null_timespec(ft->create_time)) {
+	if (!is_omit_timespec(&ft->create_time)) {
 		set_create_timespec_ea(handle->conn, smb_fname,
 				       ft->create_time);
 	}

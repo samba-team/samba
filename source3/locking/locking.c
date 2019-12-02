@@ -36,6 +36,7 @@
 */
 
 #include "includes.h"
+#include "lib/util/time_basic.h"
 #include "system/filesys.h"
 #include "lib/util/server_id.h"
 #include "locking/proto.h"
@@ -637,7 +638,7 @@ void get_file_infos(struct file_id id,
 	}
 
 	if (write_time) {
-		ZERO_STRUCTP(write_time);
+		*write_time = make_omit_timespec();
 	}
 
 	if (!(lck = fetch_share_mode_unlocked(talloc_tos(), id))) {
@@ -990,10 +991,11 @@ bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 {
 	struct share_mode_lock *lck;
 	struct file_id_buf ftmp;
+	struct timeval_buf tbuf;
+	NTTIME nt = full_timespec_to_nt_time(&write_time);
 
 	DBG_INFO("%s id=%s\n",
-		 timestring(talloc_tos(),
-			    convert_timespec_to_time_t(write_time)),
+		 timespec_string_buf(&write_time, true, &tbuf),
 		 file_id_str_buf(fileid, &ftmp));
 
 	lck = get_existing_share_mode_lock(talloc_tos(), fileid);
@@ -1001,9 +1003,9 @@ bool set_sticky_write_time(struct file_id fileid, struct timespec write_time)
 		return False;
 	}
 
-	if (timespec_compare(&lck->data->changed_write_time, &write_time) != 0) {
+	if (lck->data->changed_write_time != nt) {
 		lck->data->modified = True;
-		lck->data->changed_write_time = write_time;
+		lck->data->changed_write_time = nt;
 	}
 
 	TALLOC_FREE(lck);
@@ -1014,10 +1016,11 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 {
 	struct share_mode_lock *lck;
 	struct file_id_buf idbuf;
+	struct timeval_buf tbuf;
+	NTTIME nt = full_timespec_to_nt_time(&write_time);
 
 	DBG_INFO("%s id=%s\n",
-		 timestring(talloc_tos(),
-			    convert_timespec_to_time_t(write_time)),
+		 timespec_string_buf(&write_time, true, &tbuf),
 		 file_id_str_buf(fileid, &idbuf));
 
 	lck = get_existing_share_mode_lock(talloc_tos(), fileid);
@@ -1025,9 +1028,9 @@ bool set_write_time(struct file_id fileid, struct timespec write_time)
 		return False;
 	}
 
-	if (timespec_compare(&lck->data->old_write_time, &write_time) != 0) {
+	if (lck->data->old_write_time != nt) {
 		lck->data->modified = True;
-		lck->data->old_write_time = write_time;
+		lck->data->old_write_time = nt;
 	}
 
 	TALLOC_FREE(lck);
@@ -1038,10 +1041,10 @@ struct timespec get_share_mode_write_time(struct share_mode_lock *lck)
 {
 	struct share_mode_data *d = lck->data;
 
-	if (!null_timespec(d->changed_write_time)) {
-		return d->changed_write_time;
+	if (!null_nttime(d->changed_write_time)) {
+		return nt_time_to_full_timespec(d->changed_write_time);
 	}
-	return d->old_write_time;
+	return nt_time_to_full_timespec(d->old_write_time);
 }
 
 struct file_has_open_streams_state {

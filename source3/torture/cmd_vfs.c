@@ -1003,10 +1003,10 @@ static NTSTATUS cmd_utime(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_OK;
 	}
 
-	ZERO_STRUCT(ft);
+	init_smb_file_time(&ft);
 
-	ft.atime = convert_time_t_to_timespec(atoi(argv[2]));
-	ft.mtime = convert_time_t_to_timespec(atoi(argv[3]));
+	ft.atime = time_t_to_full_timespec(atoi(argv[2]));
+	ft.mtime = time_t_to_full_timespec(atoi(argv[3]));
 
 	smb_fname = synthetic_smb_fname_split(mem_ctx,
 					argv[1],

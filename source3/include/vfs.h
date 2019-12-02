@@ -287,6 +287,7 @@
 		Use SMB_VFS_UNLINKAT(.., AT_REMOVEDIR) instead. */
 /* Version 42 - Remove SMB_VFS_CHOWN */
 /* Version 42 - Remove struct write_cache *wcp from files_struct */
+/* Version 42 - SMB_VFS_NTIMES() receives null times based on UTIMES_OMIT */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 

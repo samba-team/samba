@@ -1934,7 +1934,7 @@ static int vfs_gpfs_lstat(struct vfs_handle_struct *handle,
 static void timespec_to_gpfs_time(struct timespec ts, gpfs_timestruc_t *gt,
 				  int idx, int *flags)
 {
-	if (!null_timespec(ts)) {
+	if (!is_omit_timespec(&ts)) {
 		*flags |= 1 << idx;
 		gt[idx].tv_sec = ts.tv_sec;
 		gt[idx].tv_nsec = ts.tv_nsec;
@@ -2004,7 +2004,7 @@ static int vfs_gpfs_ntimes(struct vfs_handle_struct *handle,
                 return -1;
         }
 
-        if(null_timespec(ft->create_time)){
+        if (is_omit_timespec(&ft->create_time)){
                 DEBUG(10,("vfs_gpfs_ntimes:Create Time is NULL\n"));
                 return 0;
         }

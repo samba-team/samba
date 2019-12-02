@@ -313,7 +313,7 @@ NTSTATUS parse_dos_attribute_blob(struct smb_filename *smb_fname,
 		if ((dosattrib.info.info3.valid_flags & XATTR_DOSINFO_CREATE_TIME) &&
 		    !null_nttime(dosattrib.info.info3.create_time)) {
 			struct timespec create_time =
-				nt_time_to_unix_timespec(
+				nt_time_to_full_timespec(
 					dosattrib.info.info3.create_time);
 
 			update_stat_ex_create_time(&smb_fname->st,
@@ -336,7 +336,7 @@ NTSTATUS parse_dos_attribute_blob(struct smb_filename *smb_fname,
 		{
 			struct timespec creat_time;
 
-			creat_time = nt_time_to_unix_timespec(info->create_time);
+			creat_time = nt_time_to_full_timespec(info->create_time);
 			update_stat_ex_create_time(&smb_fname->st, creat_time);
 
 			DBG_DEBUG("file [%s] creation time [%s]\n",
@@ -492,13 +492,13 @@ NTSTATUS set_ea_dos_attribute(connection_struct *conn,
 	dosattrib.info.info4.valid_flags = XATTR_DOSINFO_ATTRIB |
 					XATTR_DOSINFO_CREATE_TIME;
 	dosattrib.info.info4.attrib = dosmode;
-	dosattrib.info.info4.create_time = unix_timespec_to_nt_time(
-				smb_fname->st.st_ex_btime);
+	dosattrib.info.info4.create_time = full_timespec_to_nt_time(
+		&smb_fname->st.st_ex_btime);
 
 	if (!(smb_fname->st.st_ex_iflags & ST_EX_IFLAG_CALCULATED_ITIME)) {
 		dosattrib.info.info4.valid_flags |= XATTR_DOSINFO_ITIME;
-		dosattrib.info.info4.itime = unix_timespec_to_nt_time(
-			smb_fname->st.st_ex_itime);
+		dosattrib.info.info4.itime = full_timespec_to_nt_time(
+			&smb_fname->st.st_ex_itime);
 	}
 
 	DEBUG(10,("set_ea_dos_attributes: set attribute 0x%x, btime = %s on file %s\n",
@@ -1270,7 +1270,7 @@ int file_ntimes(connection_struct *conn, const struct smb_filename *smb_fname,
 
 bool set_sticky_write_time_path(struct file_id fileid, struct timespec mtime)
 {
-	if (null_timespec(mtime)) {
+	if (is_omit_timespec(&mtime)) {
 		return true;
 	}
 
@@ -1288,7 +1288,7 @@ bool set_sticky_write_time_path(struct file_id fileid, struct timespec mtime)
 
 bool set_sticky_write_time_fsp(struct files_struct *fsp, struct timespec mtime)
 {
-	if (null_timespec(mtime)) {
+	if (is_omit_timespec(&mtime)) {
 		return true;
 	}
 

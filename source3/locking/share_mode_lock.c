@@ -505,7 +505,7 @@ static struct share_mode_data *fresh_share_mode_lock(
 	if (d->servicepath == NULL) {
 		goto fail;
 	}
-	d->old_write_time = *old_write_time;
+	d->old_write_time = full_timespec_to_nt_time(old_write_time);
 	d->modified = false;
 	d->fresh = true;
 	return d;

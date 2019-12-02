@@ -1449,7 +1449,7 @@ void reply_getatr(struct smb_request *req)
 			ZERO_STRUCT(write_time_ts);
 			fileid = vfs_file_id_from_sbuf(conn, &smb_fname->st);
 			get_file_infos(fileid, 0, NULL, &write_time_ts);
-			if (!null_timespec(write_time_ts)) {
+			if (!is_omit_timespec(&write_time_ts)) {
 				update_stat_ex_mtime(&smb_fname->st, write_time_ts);
 			}
 		}
@@ -1503,6 +1503,7 @@ void reply_setatr(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBsetatr);
+	init_smb_file_time(&ft);
 
 	if (req->wct < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -1565,9 +1566,7 @@ void reply_setatr(struct smb_request *req)
 		}
 	}
 
-	ft = (struct smb_file_time) {
-		.mtime = convert_time_t_to_timespec(mtime)
-	};
+	ft.mtime = time_t_to_full_timespec(mtime);
 
 	status = smb_set_file_time(conn, NULL, smb_fname, &ft, true);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2688,7 +2687,7 @@ void reply_mknew(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 
 	START_PROFILE(SMBcreate);
-	ZERO_STRUCT(ft);
+	init_smb_file_time(&ft);
 
         if (req->wct < 3) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -2707,7 +2706,7 @@ void reply_mknew(struct smb_request *req)
 	}
 
 	/* mtime. */
-	ft.mtime = convert_time_t_to_timespec(srv_make_unix_date3(req->vwv+1));
+	ft.mtime = time_t_to_full_timespec(srv_make_unix_date3(req->vwv+1));
 
 	srvstr_get_path_req(ctx, req, &fname, (const char *)req->buf + 1,
 			    STR_TERMINATE, &status);
@@ -5633,7 +5632,7 @@ void reply_close(struct smb_request *req)
 		 */
 
 		t = srv_make_unix_date3(req->vwv+1);
-		set_close_write_time(fsp, convert_time_t_to_timespec(t));
+		set_close_write_time(fsp, time_t_to_full_timespec(t));
 	}
 
 	if (fsp->num_aio_requests != 0) {
@@ -5770,7 +5769,7 @@ void reply_writeclose(struct smb_request *req)
 
 	numtowrite = SVAL(req->vwv+1, 0);
 	startpos = IVAL_TO_SMB_OFF_T(req->vwv+2, 0);
-	mtime = convert_time_t_to_timespec(srv_make_unix_date3(req->vwv+4));
+	mtime = time_t_to_full_timespec(srv_make_unix_date3(req->vwv+4));
 	data = (const char *)req->buf + 1;
 
 	/*
@@ -8791,7 +8790,7 @@ void reply_setattrE(struct smb_request *req)
 	NTSTATUS status;
 
 	START_PROFILE(SMBsetattrE);
-	ZERO_STRUCT(ft);
+	init_smb_file_time(&ft);
 
 	if (req->wct < 7) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -8809,11 +8808,11 @@ void reply_setattrE(struct smb_request *req)
 	 * Convert the DOS times into unix times.
 	 */
 
-	ft.atime = convert_time_t_to_timespec(
+	ft.atime = time_t_to_full_timespec(
 	    srv_make_unix_date2(req->vwv+3));
-	ft.mtime = convert_time_t_to_timespec(
+	ft.mtime = time_t_to_full_timespec(
 	    srv_make_unix_date2(req->vwv+5));
-	ft.create_time = convert_time_t_to_timespec(
+	ft.create_time = time_t_to_full_timespec(
 	    srv_make_unix_date2(req->vwv+1));
 
 	reply_outbuf(req, 0, 0);

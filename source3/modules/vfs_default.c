@@ -2332,15 +2332,15 @@ static int vfswrap_ntimes(vfs_handle_struct *handle,
 	}
 
 	if (ft != NULL) {
-		if (null_timespec(ft->atime)) {
+		if (is_omit_timespec(&ft->atime)) {
 			ft->atime= smb_fname->st.st_ex_atime;
 		}
 
-		if (null_timespec(ft->mtime)) {
+		if (is_omit_timespec(&ft->mtime)) {
 			ft->mtime = smb_fname->st.st_ex_mtime;
 		}
 
-		if (!null_timespec(ft->create_time)) {
+		if (!is_omit_timespec(&ft->create_time)) {
 			set_create_timespec_ea(handle->conn,
 					       smb_fname,
 					       ft->create_time);

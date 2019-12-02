@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "ntioctl.h"
 #include "system/filesys.h"
+#include "lib/util/time_basic.h"
 #include "version.h"
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
@@ -5220,7 +5221,9 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 	dstart = pdata;
 	dend = dstart + data_size - 1;
 
-	if (!null_timespec(write_time_ts) && !INFO_LEVEL_IS_UNIX(info_level)) {
+	if (!is_omit_timespec(&write_time_ts) &&
+	    !INFO_LEVEL_IS_UNIX(info_level))
+	{
 		update_stat_ex_mtime(psbuf, write_time_ts);
 	}
 
@@ -6500,6 +6503,7 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 			   bool setting_write_time)
 {
 	struct smb_filename smb_fname_base;
+	struct timeval_buf tbuf[4];
 	uint32_t action =
 		FILE_NOTIFY_CHANGE_LAST_ACCESS
 		|FILE_NOTIFY_CHANGE_LAST_WRITE
@@ -6510,15 +6514,15 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 	}
 
 	/* get some defaults (no modifications) if any info is zero or -1. */
-	if (null_timespec(ft->create_time)) {
+	if (is_omit_timespec(&ft->create_time)) {
 		action &= ~FILE_NOTIFY_CHANGE_CREATION;
 	}
 
-	if (null_timespec(ft->atime)) {
+	if (is_omit_timespec(&ft->atime)) {
 		action &= ~FILE_NOTIFY_CHANGE_LAST_ACCESS;
 	}
 
-	if (null_timespec(ft->mtime)) {
+	if (is_omit_timespec(&ft->mtime)) {
 		action &= ~FILE_NOTIFY_CHANGE_LAST_WRITE;
 	}
 
@@ -6535,14 +6539,14 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 	round_timespec(conn->ts_res, &ft->atime);
 	round_timespec(conn->ts_res, &ft->mtime);
 
-	DEBUG(5,("smb_set_filetime: actime: %s\n ",
-		time_to_asc(convert_timespec_to_time_t(ft->atime))));
-	DEBUG(5,("smb_set_filetime: modtime: %s\n ",
-		time_to_asc(convert_timespec_to_time_t(ft->mtime))));
-	DEBUG(5,("smb_set_filetime: ctime: %s\n ",
-		time_to_asc(convert_timespec_to_time_t(ft->ctime))));
-	DEBUG(5,("smb_set_file_time: createtime: %s\n ",
-		time_to_asc(convert_timespec_to_time_t(ft->create_time))));
+	DBG_DEBUG("smb_set_filetime: actime: %s\n ",
+		  timespec_string_buf(&ft->atime, true, &tbuf[0]));
+	DBG_DEBUG("smb_set_filetime: modtime: %s\n ",
+		  timespec_string_buf(&ft->mtime, true, &tbuf[1]));
+	DBG_DEBUG("smb_set_filetime: ctime: %s\n ",
+		  timespec_string_buf(&ft->ctime, true, &tbuf[2]));
+	DBG_DEBUG("smb_set_file_time: createtime: %s\n ",
+		  timespec_string_buf(&ft->create_time, true, &tbuf[3]));
 
 	if (setting_write_time) {
 		/*
@@ -6555,8 +6559,8 @@ NTSTATUS smb_set_file_time(connection_struct *conn,
 		 * away and will set it on file close and after a write. JRA.
 		 */
 
-		DEBUG(10,("smb_set_file_time: setting pending modtime to %s\n",
-			  time_to_asc(convert_timespec_to_time_t(ft->mtime))));
+		DBG_DEBUG("setting pending modtime to %s\n",
+			  timespec_string_buf(&ft->mtime, true, &tbuf[0]));
 
 		if (fsp != NULL) {
 			if (fsp->base_fsp) {
@@ -7780,7 +7784,7 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 	uint32_t dosmode = 0;
 	NTSTATUS status = NT_STATUS_OK;
 
-	ZERO_STRUCT(ft);
+	init_smb_file_time(&ft);
 
 	if (total_data < 36) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -7830,18 +7834,18 @@ static NTSTATUS smb_set_info_standard(connection_struct *conn,
 	NTSTATUS status;
 	struct smb_file_time ft;
 
-	ZERO_STRUCT(ft);
+	init_smb_file_time(&ft);
 
 	if (total_data < 12) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* create time */
-	ft.create_time = convert_time_t_to_timespec(srv_make_unix_date2(pdata));
+	ft.create_time = time_t_to_full_timespec(srv_make_unix_date2(pdata));
 	/* access time */
-	ft.atime = convert_time_t_to_timespec(srv_make_unix_date2(pdata+4));
+	ft.atime = time_t_to_full_timespec(srv_make_unix_date2(pdata+4));
 	/* write time */
-	ft.mtime = convert_time_t_to_timespec(srv_make_unix_date2(pdata+8));
+	ft.mtime = time_t_to_full_timespec(srv_make_unix_date2(pdata+8));
 
 	DEBUG(10,("smb_set_info_standard: file %s\n",
 		smb_fname_str_dbg(smb_fname)));
@@ -8122,7 +8126,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	struct file_id id;
 	SMB_STRUCT_STAT sbuf;
 
-	ZERO_STRUCT(ft);
+	init_smb_file_time(&ft);
 
 	if (total_data < 100) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -8281,7 +8285,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	}
 
 	/* Deal with any time changes. */
-	if (null_timespec(ft.mtime) && null_timespec(ft.atime)) {
+	if (is_omit_timespec(&ft.mtime) && is_omit_timespec(&ft.atime)) {
 		/* No change, don't cancel anything. */
 		return status;
 	}
@@ -8303,7 +8307,7 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 	 * we need. Just remember if we modified
 	 * mtime and send the notify ourselves.
 	 */
-	if (null_timespec(ft.mtime)) {
+	if (is_omit_timespec(&ft.mtime)) {
 		modify_mtime = false;
 	}
 

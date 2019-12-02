@@ -1325,8 +1325,8 @@ static void smbd_smb2_create_after_exec(struct tevent_req *req)
 	if (state->mxac != NULL) {
 		NTTIME last_write_time;
 
-		last_write_time = unix_timespec_to_nt_time(
-			state->result->fsp_name->st.st_ex_mtime);
+		last_write_time = full_timespec_to_nt_time(
+			&state->result->fsp_name->st.st_ex_mtime);
 		if (last_write_time != state->max_access_time) {
 			uint8_t p[8];
 			uint32_t max_access_granted;

@@ -65,6 +65,7 @@ NTSTATUS fsp_new(struct connection_struct *conn, TALLOC_CTX *mem_ctx,
 
 	fsp->fnum = FNUM_FIELD_INVALID;
 	fsp->conn = conn;
+	fsp->close_write_time = make_omit_timespec();
 
 	DLIST_ADD(sconn->files, fsp);
 	sconn->num_files += 1;
