@@ -118,7 +118,7 @@ out:
 static PyMethodDef GPO_methods[] = {
 	{"get_unix_path", PY_DISCARD_FUNC_SIG(PyCFunction,
 					      py_gpo_get_unix_path),
-		METH_KEYWORDS,
+		METH_VARARGS | METH_KEYWORDS,
 		NULL },
 	{NULL}
 };
