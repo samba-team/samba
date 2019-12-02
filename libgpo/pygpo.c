@@ -117,7 +117,7 @@ out:
 }
 
 static PyMethodDef GPO_methods[] = {
-	{"get_unix_path", (PyCFunction)py_gpo_get_unix_path, METH_KEYWORDS,
+	{"get_unix_path", (PyCFunction)py_gpo_get_unix_path, METH_VARARGS | METH_KEYWORDS,
 		NULL },
 	{NULL}
 };
