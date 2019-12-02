@@ -1250,6 +1250,7 @@ NTSTATUS vfs_streaminfo(connection_struct *conn,
 			TALLOC_CTX *mem_ctx,
 			unsigned int *num_streams,
 			struct stream_struct **streams);
+void init_smb_file_time(struct smb_file_time *ft);
 
 /* The following definitions come from smbd/avahi_register.c */
 

@@ -1451,6 +1451,16 @@ NTSTATUS vfs_stat_fsp(files_struct *fsp)
 	return NT_STATUS_OK;
 }
 
+void init_smb_file_time(struct smb_file_time *ft)
+{
+	*ft = (struct smb_file_time) {
+		.atime = make_omit_timespec(),
+		.ctime = make_omit_timespec(),
+		.mtime = make_omit_timespec(),
+		.create_time = make_omit_timespec()
+	};
+}
+
 /**
  * Initialize num_streams and streams, then call VFS op streaminfo
  */
