@@ -2178,6 +2178,12 @@ static void mark_share_mode_disconnected_fn(
 	void *private_data)
 {
 	struct mark_share_mode_disconnected_state *state = private_data;
+
+	if (num_share_modes != 1) {
+		state->ok = false;
+		return;
+	}
+
 	server_id_set_disconnected(&e->pid);
 	e->share_file_id = state->open_persistent_id;
 	*modified = true;
@@ -2189,10 +2195,6 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 {
 	struct mark_share_mode_disconnected_state state;
 	bool ok;
-
-	if (lck->data->num_share_modes != 1) {
-		return false;
-	}
 
 	if (fsp->op == NULL) {
 		return false;
