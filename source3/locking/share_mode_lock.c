@@ -1262,6 +1262,8 @@ static bool share_mode_cleanup_disconnected_fn(
 		return true;
 	}
 
+	e->stale = true;
+
 	return false;
 }
 
