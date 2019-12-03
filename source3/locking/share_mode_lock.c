@@ -1888,6 +1888,7 @@ struct share_mode_entry_do_state {
 	struct server_id pid;
 	uint64_t share_file_id;
 	void (*fn)(struct share_mode_entry *e,
+		   size_t num_share_modes,
 		   bool *modified,
 		   void *private_data);
 	void *private_data;
@@ -1932,7 +1933,7 @@ static void share_mode_entry_do_fn(
 		return;
 	}
 
-	state->fn(&e, &modified, state->private_data);
+	state->fn(&e, state->num_share_modes, &modified, state->private_data);
 
 	if (!e.stale && !modified) {
 		state->status = NT_STATUS_OK;
@@ -1998,6 +1999,7 @@ static bool share_mode_entry_do(
 	struct server_id pid,
 	uint64_t share_file_id,
 	void (*fn)(struct share_mode_entry *e,
+		   size_t num_share_modes,
 		   bool *modified,
 		   void *private_data),
 	void *private_data)
@@ -2041,6 +2043,7 @@ struct del_share_mode_state {
 
 static void del_share_mode_fn(
 	struct share_mode_entry *e,
+	size_t num_share_modes,
 	bool *modified,
 	void *private_data)
 {
@@ -2077,6 +2080,7 @@ struct remove_share_oplock_state {
 
 static void remove_share_oplock_fn(
 	struct share_mode_entry *e,
+	size_t num_share_modes,
 	bool *modified,
 	void *private_data)
 {
@@ -2125,6 +2129,7 @@ struct downgrade_share_oplock_state {
 
 static void downgrade_share_oplock_fn(
 	struct share_mode_entry *e,
+	size_t num_share_modes,
 	bool *modified,
 	void *private_data)
 {
@@ -2168,6 +2173,7 @@ struct mark_share_mode_disconnected_state {
 
 static void mark_share_mode_disconnected_fn(
 	struct share_mode_entry *e,
+	size_t num_share_modes,
 	bool *modified,
 	void *private_data)
 {
@@ -2220,6 +2226,7 @@ bool mark_share_mode_disconnected(struct share_mode_lock *lck,
 
 static void reset_share_mode_entry_del_fn(
 	struct share_mode_entry *e,
+	size_t num_share_modes,
 	bool *modified,
 	void *private_data)
 {
