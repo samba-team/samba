@@ -1983,7 +1983,7 @@ sub ParseUnionPush($$$$)
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
 	$self->pidl("/* This token is not used again (except perhaps below in the NDR_BUFFERS case) */");
-	$self->pidl("level = ndr_push_steal_switch_value($ndr, $varname);");
+	$self->pidl("NDR_CHECK(ndr_push_steal_switch_value($ndr, $varname, &level));");
 
 	$self->ParseUnionPushPrimitives($e, $ndr, $varname);
 	$self->deindent;
@@ -1995,7 +1995,7 @@ sub ParseUnionPush($$$$)
                 $self->pidl("if (!(ndr_flags & NDR_SCALARS)) {");
                 $self->indent;
                 $self->pidl("/* We didn't get it above, and the token is not needed after this. */");
-                $self->pidl("level = ndr_push_steal_switch_value($ndr, $varname);");
+                $self->pidl("NDR_CHECK(ndr_push_steal_switch_value($ndr, $varname, &level));");
                 $self->deindent;
                 $self->pidl("}");
                 $self->ParseUnionPushDeferred($e, $ndr, $varname);
@@ -2171,7 +2171,7 @@ sub ParseUnionPull($$$$)
 	$self->pidl("if (ndr_flags & NDR_SCALARS) {");
 	$self->indent;
 	$self->pidl("/* This token is not used again (except perhaps below in the NDR_BUFFERS case) */");
-	$self->pidl("level = ndr_pull_steal_switch_value($ndr, $varname);");
+	$self->pidl("NDR_CHECK(ndr_pull_steal_switch_value($ndr, $varname, &level));");
 	$self->ParseUnionPullPrimitives($e,$ndr,$varname,$switch_type);
 	$self->deindent;
 	$self->pidl("}");
@@ -2182,7 +2182,7 @@ sub ParseUnionPull($$$$)
 		$self->pidl("if (!(ndr_flags & NDR_SCALARS)) {");
 		$self->indent;
 		$self->pidl("/* We didn't get it above, and the token is not needed after this. */");
-		$self->pidl("level = ndr_pull_steal_switch_value($ndr, $varname);");
+		$self->pidl("NDR_CHECK(ndr_pull_steal_switch_value($ndr, $varname, &level));");
 		$self->deindent;
 		$self->pidl("}");
 		$self->ParseUnionPullDeferred($e,$ndr,$varname);

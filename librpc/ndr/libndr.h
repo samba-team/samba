@@ -616,9 +616,16 @@ enum ndr_err_code ndr_check_pipe_chunk_trailer(struct ndr_pull *ndr, int ndr_fla
 enum ndr_err_code ndr_push_set_switch_value(struct ndr_push *ndr, const void *p, uint32_t val);
 enum ndr_err_code ndr_pull_set_switch_value(struct ndr_pull *ndr, const void *p, uint32_t val);
 enum ndr_err_code ndr_print_set_switch_value(struct ndr_print *ndr, const void *p, uint32_t val);
-uint32_t ndr_push_steal_switch_value(struct ndr_push *ndr, const void *p);
+/* retrieve a switch value (for push) and remove it from the list */
+enum ndr_err_code ndr_push_steal_switch_value(struct ndr_push *ndr,
+					      const void *p,
+					      uint32_t *v);
+/* retrieve a switch value and remove it from the list */
 uint32_t ndr_print_steal_switch_value(struct ndr_print *ndr, const void *p);
-uint32_t ndr_pull_steal_switch_value(struct ndr_pull *ndr, const void *p);
+/* retrieve a switch value and remove it from the list */
+enum ndr_err_code ndr_pull_steal_switch_value(struct ndr_pull *ndr,
+					      const void *p,
+					      uint32_t *v);
 enum ndr_err_code ndr_pull_struct_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p, ndr_pull_flags_fn_t fn);
 enum ndr_err_code ndr_pull_struct_blob_all(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx, void *p, ndr_pull_flags_fn_t fn);
 enum ndr_err_code ndr_pull_struct_blob_all_noalloc(const DATA_BLOB *blob,

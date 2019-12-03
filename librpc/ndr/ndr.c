@@ -1231,17 +1231,11 @@ _PUBLIC_ enum ndr_err_code ndr_print_set_switch_value(struct ndr_print *ndr, con
 }
 
 /* retrieve a switch value (for push) and remove it from the list */
-_PUBLIC_ uint32_t ndr_push_steal_switch_value(struct ndr_push *ndr, const void *p)
+_PUBLIC_ enum ndr_err_code ndr_push_steal_switch_value(struct ndr_push *ndr,
+						       const void *p,
+						       uint32_t *v)
 {
-	enum ndr_err_code status;
-	uint32_t v;
-
-	status = ndr_token_retrieve(&ndr->switch_list, p, &v);
-	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
-		return 0;
-	}
-
-	return v;
+	return ndr_token_retrieve(&ndr->switch_list, p, v);
 }
 
 /* retrieve a switch value and remove it from the list */
@@ -1259,17 +1253,11 @@ _PUBLIC_ uint32_t ndr_print_steal_switch_value(struct ndr_print *ndr, const void
 }
 
 /* retrieve a switch value and remove it from the list */
-_PUBLIC_ uint32_t ndr_pull_steal_switch_value(struct ndr_pull *ndr, const void *p)
+_PUBLIC_ enum ndr_err_code ndr_pull_steal_switch_value(struct ndr_pull *ndr,
+						       const void *p,
+						       uint32_t *v)
 {
-	enum ndr_err_code status;
-	uint32_t v;
-
-	status = ndr_token_retrieve(&ndr->switch_list, p, &v);
-	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
-		return 0;
-	}
-
-	return v;
+	return ndr_token_retrieve(&ndr->switch_list, p, v);
 }
 
 /*
