@@ -2058,7 +2058,9 @@ static bool test_durable_v2_reconnect_delay(struct torture_context *tctx,
 	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
 
 	/* Choose a random name in case the state is left a little funky. */
-	snprintf(fname, 256, "durable_v2_reconnect_delay_%s.dat",
+	snprintf(fname,
+		 sizeof(fname),
+		 "durable_v2_reconnect_delay_%s.dat",
 		 generate_random_str(tctx, 8));
 
 	smb2_util_unlink(tree, fname);
