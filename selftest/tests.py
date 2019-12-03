@@ -90,6 +90,7 @@ planpythontestsuite(
     "none", "wafsamba.tests.test_suite",
     extra_path=[os.path.join(samba4srcdir, "..", "buildtools"),
                 os.path.join(samba4srcdir, "..", "third_party", "waf")])
+planpythontestsuite("fileserver", "samba.tests.smbd_fuzztest")
 
 
 def cmdline(script, *args):
