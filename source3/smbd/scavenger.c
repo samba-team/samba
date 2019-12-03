@@ -250,6 +250,8 @@ static bool smbd_scavenger_start(struct smbd_scavenger_state *state)
 			return false;
 		}
 
+		reopen_logs();
+
 		state->am_scavenger = true;
 		*state->scavenger_id = messaging_server_id(state->msg);
 
