@@ -2120,12 +2120,103 @@ done:
 	return ret;
 }
 
+/**
+ * basic test for doing a durable open with 1msec cleanup time
+ * tcp disconnect, wait a bit, reconnect, do a durable reopen (fails)
+ */
+static bool test_durable_v2_reconnect_delay_msec(
+	struct torture_context *tctx, struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	char fname[256];
+	struct smb2_handle _h;
+	struct smb2_handle *h = NULL;
+	struct smb2_create io;
+	struct GUID create_guid = GUID_random();
+	struct smbcli_options options;
+	uint64_t previous_session_id;
+	uint8_t b = 0;
+	bool ret = true;
+
+	options = tree->session->transport->options;
+	previous_session_id = smb2cli_session_current_id(tree->session->smbXcli);
+
+	/* Choose a random name in case the state is left a little funky. */
+	snprintf(fname,
+		 sizeof(fname),
+		 "durable_v2_reconnect_delay_%s.dat",
+		 generate_random_str(tctx, 8));
+
+	smb2_util_unlink(tree, fname);
+
+	smb2_oplock_create_share(&io, fname,
+				 smb2_util_share_access(""),
+				 smb2_util_oplock_level("b"));
+	io.in.durable_open = false;
+	io.in.durable_open_v2 = true;
+	io.in.persistent_open = false;
+	io.in.create_guid = create_guid;
+	io.in.timeout = 1;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	_h = io.out.file.handle;
+	h = &_h;
+	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.durable_open_v2, true);
+
+	status = smb2_util_write(tree, *h, &b, 0, 1);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	/* disconnect, leaving the durable open */
+	TALLOC_FREE(tree);
+
+	if (!torture_smb2_connection_ext(tctx, previous_session_id,
+					 &options, &tree)) {
+		torture_warning(tctx, "couldn't reconnect, bailing\n");
+		ret = false;
+		goto done;
+	}
+
+	sleep(10);
+
+	ZERO_STRUCT(io);
+	io.in.fname = fname;
+	io.in.durable_open_v2 = false;
+	io.in.durable_handle_v2 = h;
+	io.in.create_guid = create_guid;
+	h = NULL;
+
+	status = smb2_create(tree, mem_ctx, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+	_h = io.out.file.handle;
+	h = &_h;
+
+done:
+	if (h != NULL) {
+		smb2_util_close(tree, *h);
+	}
+
+	smb2_util_unlink(tree, fname);
+
+	talloc_free(tree);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 struct torture_suite *torture_smb2_durable_v2_delay_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
 	    torture_suite_create(ctx, "durable-v2-delay");
 
 	torture_suite_add_1smb2_test(suite, "durable_v2_reconnect_delay", test_durable_v2_reconnect_delay);
+	torture_suite_add_1smb2_test(suite,
+				     "durable_v2_reconnect_delay_msec",
+				     test_durable_v2_reconnect_delay_msec);
 
 	return suite;
 }
