@@ -434,6 +434,11 @@ static NTSTATUS share_mode_data_store(
 	d->sequence_number += 1;
 
 	if (d->num_share_modes == 0) {
+		TDB_DATA key = dbwrap_record_get_key(rec);
+		bool share_entries_exist;
+		share_entries_exist = dbwrap_exists(share_entries_db, key);
+		SMB_ASSERT(!share_entries_exist);
+
 		TALLOC_FREE(d->delete_tokens);
 		d->num_delete_tokens = 0;
 
