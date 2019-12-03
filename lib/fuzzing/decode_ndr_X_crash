@@ -10,7 +10,7 @@ import os
 from base64 import b64encode
 import struct
 import argparse
-
+import re
 
 TYPE_MASK = 3
 TYPES = ['struct', 'in', 'out']
@@ -67,12 +67,14 @@ def main():
                         help='restrict to this type')
     parser.add_argument('-o', '--opnum', default=None, type=int,
                         help='restrict to this function/struct number')
-    parser.add_argument('FILES', nargs='*', default ='-',
+    parser.add_argument('FILES', nargs='*', default=(),
                         help="read from these files")
     parser.add_argument('-k', '--ignore-errors', action='store_true',
                         help='do not stop on errors')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='say more')
+    parser.add_argument('-H', '--honggfuzz-file',
+                        help="extract crashes from this honggfuzz report")
 
     args = parser.parse_args()
 
@@ -98,5 +100,26 @@ def main():
             if args.ignore_errors:
                 continue
             raise
+
+    if args.honggfuzz_file:
+        print_if_verbose(f"looking at {args.honggfuzz_file}")
+        with open(args.honggfuzz_file) as f:
+            pipe = None
+            crash = None
+            for line in f:
+                m = re.match(r'^\s*fuzzTarget\s*:\s*bin/fuzz_ndr_(\w+)\s*$', line)
+                if m:
+                    pipe = m.group(1)
+                    print_if_verbose(f"found pipe {pipe}")
+                m = re.match(r'^FUZZ_FNAME: (\S+)$', line)
+                if m:
+                    crash = m.group(1)
+                    print_if_verbose(f"found crash {crash}")
+                if pipe is not None and crash is not None:
+                    with open(crash, 'rb') as f:
+                        process_one_file(f)
+                    pipe = None
+                    crash = None
+
 
 main()
