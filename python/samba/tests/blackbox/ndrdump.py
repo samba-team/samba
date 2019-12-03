@@ -261,3 +261,16 @@ dump OK
         # check_output will return bytes
         # convert expected to bytes for python 3
         self.assertEqual(actual, expected.encode('utf-8'))
+
+    def test_ndrdump_fuzzed_PackagesBlob(self):
+        expected = 'ndr_pull_string: ndr_pull_error\\(Buffer Size Error\\):'
+        command = (
+            "ndrdump drsblobs package_PackagesBlob struct --input='aw=='"
+            " --base64-input")
+        try:
+            actual = self.check_exit_code(command, 2)
+        except BlackboxProcessError as e:
+            self.fail(e)
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertRegex(actual.decode('utf8'), expected)
