@@ -19,7 +19,16 @@ FLAGS = [
     (4, 'ndr64', '--ndr64'),
 ]
 
+
+def print_if_verbose(*args, **kwargs):
+    if verbose:
+        print(*args, **kwargs)
+
+
 def process_one_file(f):
+    print_if_verbose(f.name)
+    print_if_verbose('-' * len(f.name))
+
     b = f.read()
     flags, function = struct.unpack('<HH', b[:4])
     if opnum is not None and opnum != function:
@@ -29,23 +38,25 @@ def process_one_file(f):
     if ndr_type and ndr_type != t:
         return
 
-    print(f.name)
-    print('-' * len(f.name))
-
     payload = b[4:]
+    data64 = b64encode(payload).decode('utf-8')
 
-    cmd = ['bin/ndrdump', pipe, str(function), t]
+    cmd = ['bin/ndrdump',
+           pipe,
+           str(function),
+           t,
+           '--base64-input',
+           '--input', data64,
+    ]
+
     for flag, name, option in FLAGS:
         if flags & flag:
-            print("flag: %s" % name)
+            print_if_verbose("flag: %s" % name)
             cmd.append(option)
-    data64 = b64encode(payload)
-    print("length: %d" % len(payload))
-    cmdstr = ("echo -n '%s' | base64 -d | %s" % (data64.decode('utf-8'),
-                                                 ' '.join(cmd)))
-    print()
-    print(cmdstr)
-    print()
+
+    print_if_verbose("length: %d\n" % len(payload))
+    print(' '.join(cmd))
+    print_if_verbose()
 
 
 def main():
@@ -60,14 +71,16 @@ def main():
                         help="read from these files")
     parser.add_argument('-k', '--ignore-errors', action='store_true',
                         help='do not stop on errors')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='say more')
 
     args = parser.parse_args()
 
-    global pipe, opnum, ndr_type
+    global pipe, opnum, ndr_type, verbose
     pipe = args.pipe
     opnum = args.opnum
     ndr_type = args.type
-
+    verbose = args.verbose
 
     if not args.FILES and not args.honggfuzz_file:
         parser.print_usage()
@@ -81,7 +94,7 @@ def main():
                 with open(fn, 'rb') as f:
                     process_one_file(f)
         except Exception:
-            print("Error processing %s\n" % fn)
+            print_if_verbose("Error processing %s\n" % fn)
             if args.ignore_errors:
                 continue
             raise
