@@ -558,6 +558,9 @@ static NTSTATUS get_static_share_mode_data(
 		d = fresh_share_mode_lock(
 			lock_db, servicepath, smb_fname, old_write_time);
 		if (d == NULL) {
+			if (smb_fname == NULL) {
+				return NT_STATUS_NOT_FOUND;
+			}
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
