@@ -433,6 +433,8 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 		exit(1);
 	}
 
+	reopen_logs();
+
 	/* Set up sighup handler for notifyd */
 	se = tevent_add_signal(ev,
 			       ev,
