@@ -7799,16 +7799,16 @@ static NTSTATUS smb_set_file_basic_info(connection_struct *conn,
 	}
 
 	/* create time */
-	ft.create_time = interpret_long_date(pdata);
+	ft.create_time = pull_long_date_full_timespec(pdata);
 
 	/* access time */
-	ft.atime = interpret_long_date(pdata+8);
+	ft.atime = pull_long_date_full_timespec(pdata+8);
 
 	/* write time. */
-	ft.mtime = interpret_long_date(pdata+16);
+	ft.mtime = pull_long_date_full_timespec(pdata+16);
 
 	/* change time. */
-	ft.ctime = interpret_long_date(pdata+24);
+	ft.ctime = pull_long_date_full_timespec(pdata+24);
 
 	DEBUG(10, ("smb_set_file_basic_info: file %s\n",
 		   smb_fname_str_dbg(smb_fname)));
@@ -8134,8 +8134,8 @@ static NTSTATUS smb_set_file_unix_basic(connection_struct *conn,
 		size |= (((off_t)IVAL(pdata,4)) << 32);
 	}
 
-	ft.atime = interpret_long_date(pdata+24); /* access_time */
-	ft.mtime = interpret_long_date(pdata+32); /* modification_time */
+	ft.atime = pull_long_date_full_timespec(pdata+24); /* access_time */
+	ft.mtime = pull_long_date_full_timespec(pdata+32); /* modification_time */
 	set_owner = (uid_t)IVAL(pdata,40);
 	set_grp = (gid_t)IVAL(pdata,48);
 	raw_unixmode = IVAL(pdata,84);
