@@ -1812,16 +1812,16 @@ static int do_allinfo(const char *name)
 		return false;
 	}
 
-	tmp = unix_timespec_to_nt_time(b_time);
+	tmp = full_timespec_to_nt_time(&b_time);
 	d_printf("create_time:    %s\n", nt_time_string(talloc_tos(), tmp));
 
-	tmp = unix_timespec_to_nt_time(a_time);
+	tmp = full_timespec_to_nt_time(&a_time);
 	d_printf("access_time:    %s\n", nt_time_string(talloc_tos(), tmp));
 
-	tmp = unix_timespec_to_nt_time(m_time);
+	tmp = full_timespec_to_nt_time(&m_time);
 	d_printf("write_time:     %s\n", nt_time_string(talloc_tos(), tmp));
 
-	tmp = unix_timespec_to_nt_time(c_time);
+	tmp = full_timespec_to_nt_time(&c_time);
 	d_printf("change_time:    %s\n", nt_time_string(talloc_tos(), tmp));
 
 	d_printf("attributes: %s (%x)\n", attr_str(talloc_tos(), mode), mode);
