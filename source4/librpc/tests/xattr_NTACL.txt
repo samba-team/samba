@@ -1,0 +1,99 @@
+pull returned Success
+    xattr_NTACL: struct xattr_NTACL
+        version                  : 0x0004 (4)
+        info                     : union xattr_NTACL_Info(case 4)
+        sd_hs4                   : *
+            sd_hs4: struct security_descriptor_hash_v4
+                sd                       : *
+                    sd: struct security_descriptor
+                        revision                 : SECURITY_DESCRIPTOR_REVISION_1 (1)
+                        type                     : 0x9014 (36884)
+                               0: SEC_DESC_OWNER_DEFAULTED 
+                               0: SEC_DESC_GROUP_DEFAULTED 
+                               1: SEC_DESC_DACL_PRESENT    
+                               0: SEC_DESC_DACL_DEFAULTED  
+                               1: SEC_DESC_SACL_PRESENT    
+                               0: SEC_DESC_SACL_DEFAULTED  
+                               0: SEC_DESC_DACL_TRUSTED    
+                               0: SEC_DESC_SERVER_SECURITY 
+                               0: SEC_DESC_DACL_AUTO_INHERIT_REQ
+                               0: SEC_DESC_SACL_AUTO_INHERIT_REQ
+                               0: SEC_DESC_DACL_AUTO_INHERITED
+                               0: SEC_DESC_SACL_AUTO_INHERITED
+                               1: SEC_DESC_DACL_PROTECTED  
+                               0: SEC_DESC_SACL_PROTECTED  
+                               0: SEC_DESC_RM_CONTROL_VALID
+                               1: SEC_DESC_SELF_RELATIVE   
+                        owner_sid                : *
+                            owner_sid                : S-1-5-21-1804520304-2085550321-2220328753-500
+                        group_sid                : *
+                            group_sid                : S-1-5-32-544
+                        sacl                     : NULL
+                        dacl                     : *
+                            dacl: struct security_acl
+                                revision                 : SECURITY_ACL_REVISION_ADS (4)
+                                size                     : 0x0060 (96)
+                                num_aces                 : 0x00000004 (4)
+                                aces: ARRAY(4)
+                                    aces: struct security_ace
+                                        type                     : SEC_ACE_TYPE_ACCESS_ALLOWED (0)
+                                        flags                    : 0x03 (3)
+                                               1: SEC_ACE_FLAG_OBJECT_INHERIT
+                                               1: SEC_ACE_FLAG_CONTAINER_INHERIT
+                                               0: SEC_ACE_FLAG_NO_PROPAGATE_INHERIT
+                                               0: SEC_ACE_FLAG_INHERIT_ONLY
+                                               0: SEC_ACE_FLAG_INHERITED_ACE
+                                            0x03: SEC_ACE_FLAG_VALID_INHERIT (3)
+                                               0: SEC_ACE_FLAG_SUCCESSFUL_ACCESS
+                                               0: SEC_ACE_FLAG_FAILED_ACCESS
+                                        size                     : 0x0018 (24)
+                                        access_mask              : 0x001f01ff (2032127)
+                                        object                   : union security_ace_object_ctr(case 0)
+                                        trustee                  : S-1-5-32-544
+                                    aces: struct security_ace
+                                        type                     : SEC_ACE_TYPE_ACCESS_ALLOWED (0)
+                                        flags                    : 0x03 (3)
+                                               1: SEC_ACE_FLAG_OBJECT_INHERIT
+                                               1: SEC_ACE_FLAG_CONTAINER_INHERIT
+                                               0: SEC_ACE_FLAG_NO_PROPAGATE_INHERIT
+                                               0: SEC_ACE_FLAG_INHERIT_ONLY
+                                               0: SEC_ACE_FLAG_INHERITED_ACE
+                                            0x03: SEC_ACE_FLAG_VALID_INHERIT (3)
+                                               0: SEC_ACE_FLAG_SUCCESSFUL_ACCESS
+                                               0: SEC_ACE_FLAG_FAILED_ACCESS
+                                        size                     : 0x0018 (24)
+                                        access_mask              : 0x001200a9 (1179817)
+                                        object                   : union security_ace_object_ctr(case 0)
+                                        trustee                  : S-1-5-32-549
+                                    aces: struct security_ace
+                                        type                     : SEC_ACE_TYPE_ACCESS_ALLOWED (0)
+                                        flags                    : 0x03 (3)
+                                               1: SEC_ACE_FLAG_OBJECT_INHERIT
+                                               1: SEC_ACE_FLAG_CONTAINER_INHERIT
+                                               0: SEC_ACE_FLAG_NO_PROPAGATE_INHERIT
+                                               0: SEC_ACE_FLAG_INHERIT_ONLY
+                                               0: SEC_ACE_FLAG_INHERITED_ACE
+                                            0x03: SEC_ACE_FLAG_VALID_INHERIT (3)
+                                               0: SEC_ACE_FLAG_SUCCESSFUL_ACCESS
+                                               0: SEC_ACE_FLAG_FAILED_ACCESS
+                                        size                     : 0x0014 (20)
+                                        access_mask              : 0x001f01ff (2032127)
+                                        object                   : union security_ace_object_ctr(case 0)
+                                        trustee                  : S-1-5-18
+                                    aces: struct security_ace
+                                        type                     : SEC_ACE_TYPE_ACCESS_ALLOWED (0)
+                                        flags                    : 0x03 (3)
+                                               1: SEC_ACE_FLAG_OBJECT_INHERIT
+                                               1: SEC_ACE_FLAG_CONTAINER_INHERIT
+                                               0: SEC_ACE_FLAG_NO_PROPAGATE_INHERIT
+                                               0: SEC_ACE_FLAG_INHERIT_ONLY
+                                               0: SEC_ACE_FLAG_INHERITED_ACE
+                                            0x03: SEC_ACE_FLAG_VALID_INHERIT (3)
+                                               0: SEC_ACE_FLAG_SUCCESSFUL_ACCESS
+                                               0: SEC_ACE_FLAG_FAILED_ACCESS
+                                        size                     : 0x0014 (20)
+                                        access_mask              : 0x001200a9 (1179817)
+                                        object                   : union security_ace_object_ctr(case 0)
+                                        trustee                  : S-1-5-11
+                hash_type                : 0x0001 (1)
+                hash: ARRAY(64)

@@ -350,3 +350,20 @@ dump OK
         self.assertEqual(actual[:len(expected_head)],
                          expected_head)
         self.assertTrue(actual.endswith(expected_tail))
+
+    # This is a good example of a union with scalars and buffers
+    def test_ndrdump_xattr_NTACL(self):
+
+        expected_head =  open(self.data_path("xattr_NTACL.txt")).read().encode('utf8')
+        expected_tail = b'''dump OK
+'''
+        try:
+            actual = self.check_output(
+                "ndrdump xattr xattr_NTACL struct --hex-input %s --validate" %
+                self.data_path("xattr_NTACL.dat"))
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        self.assertEqual(actual[:len(expected_head)],
+                         expected_head)
+        self.assertTrue(actual.endswith(expected_tail))
