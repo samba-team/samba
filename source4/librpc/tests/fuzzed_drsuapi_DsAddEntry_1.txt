@@ -1,0 +1,508 @@
+pull returned Success
+WARNING! 47 unread bytes
+[0000] 01 3D 01 B1 01 69 3B 12   8D ED 27 92 69 1B 4B 71   .=...i;. ..'.i.Kq
+[0010] 67 85 6D 05 44 5A 6A 6D   AA 16 29 37 49 40 CD F5   g.m.DZjm ..)7I@..
+[0020] 06 AF 76 91 48 90 24 38   81 8A A2 70 0E 57 68      ..v.H.$8 ...p.Wh
+    drsuapi_DsAddEntry: struct drsuapi_DsAddEntry
+        in: struct drsuapi_DsAddEntry
+            bind_handle              : *
+                bind_handle: struct policy_handle
+                    handle_type              : 0x00000000 (0)
+                    uuid                     : ab1cfc6d-626b-4ad2-bbba-f6489df00630
+            level                    : 0x00000002 (2)
+            req                      : *
+                req                      : union drsuapi_DsAddEntryRequest(case 2)
+                req2: struct drsuapi_DsAddEntryRequest2
+                    first_object: struct drsuapi_DsReplicaObjectListItem
+                        next_object              : NULL
+                        object: struct drsuapi_DsReplicaObject
+                            identifier               : *
+                                identifier: struct drsuapi_DsReplicaObjectIdentifier
+                                    __ndr_size               : 0x0000013c (316)
+                                    __ndr_size_sid           : 0x00000000 (0)
+                                    guid                     : 00000000-0000-0000-0000-000000000000
+                                    sid                      : S-0-0
+                                    __ndr_size_dn            : 0x00000081 (129)
+                                    dn                       : 'CN=NTDS Settings,CN=smbtorturedc,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,ｄC=samba2008r2,DC=example,DC︽'
+                            flags                    : 0x00000000 (0)
+                                   0: DRSUAPI_DS_REPLICA_OBJECT_FROM_MASTER
+                                   0: DRSUAPI_DS_REPLICA_OBJECT_DYNAMIC
+                                   0: DRSUAPI_DS_REPLICA_OBJECT_REMOTE_MODIFY
+                            attribute_ctr: struct drsuapi_DsReplicaAttributeCtr
+                                num_attributes           : 0x0000000b (11)
+                                attributes               : *
+                                    attributes: ARRAY(11)
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_ntSecurityDescriptor (0x20119)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x000000a0 (160)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=160
+[0000] 01 00 04 80 14 00 00 00   30 00 00 00 00 00 00 00   ........ 0.......
+[0010] 4C 00 00 00 01 05 00 00   00 00 00 05 15 00 00 00   L....... ........
+[0020] 4B 7D 63 4C 74 4C AF E6   AD 78 E1 B1 00 02 00 00   K}cLtL.. .x......
+[0030] 01 05 00 00 00 00 00 05   15 00 00 00 4B 7D 63 4C   ........ ....K}cL
+[0040] 74 4C AF E6 AD 78 E1 B1   00 02 00 00 02 00 54 00   tL...x.. ......T.
+[0050] 03 00 00 00 00 00 14 00   94 00 02 00 01 01 00 00   ........ ........
+[0060] 00 00 00 05 0B 00 00 00   00 00 24 00 FD 01 0F 00   ........ ..$.....
+[0070] 01 05 00 00 00 00 00 05   15 00 00 00 4B 7D 63 4C   ........ ....K}cL
+[0080] 74 4C AF E6 AD 78 E1 B1   00 02 00 00 00 00 14 00   tL...x.. ........
+[0090] FF 01 0F 00 01 01 00 00   00 00 00 05 12 00 00 00   ........ ........
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_objectClass (0x0)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            attid                    : DATA_BLOB length=3
+[0000] 2F 00 17                                           /.. 
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_objectCategory (0x9030E)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x000000c8 (200)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=200
+[0000] C8 00 00 00 00 00 00 00   00 00 00 00 00 00 02 00   ........ ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 47 00 00 00   43 00 4E 00 3D 00 4E 00   ....G... C.N.=.N.
+[0040] 54 00 44 00 53 00 2D 00   44 00 53 00 41 05 9A 00   T.D.S.-. D.S.A...
+[0050] 43 00 4E 00 3D 00 53 00   63 00 68 00 65 00 6D 00   C.N.=.S. c.h.e.m.
+[0060] 61 00 2C 00 43 00 4E 00   3D 00 43 00 6F 00 6E 00   a.,.C.N. =.C.o.n.
+[0070] 66 00 69 00 67 00 75 00   72 00 61 00 74 00 69 00   f.i.g.u. r.a.t.i.
+[0080] 6F 00 6E 00 2C 00 44 00   43 00 3D 00 73 00 61 00   o.n.,.D. C.=.s.a.
+[0090] 6D 00 62 00 61 00 32 00   30 00 30 00 38 00 72 00   m.b.a.2. 0.0.8.r.
+[00A0] 32 00 2C 00 44 00 43 00   3D 00 65 00 78 00 61 00   2.,.D.C. =.e.x.a.
+[00B0] 6D 00 70 00 6C 00 65 00   2C 00 44 00 43 00 3D 00   m.p.l.e. ,.D.C.=.
+[00C0] 63 00 6F 00 6D 00 00 00                             c.o.m... 
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_invocationId (0x20073)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x00000010 (16)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=16
+[0000] 1B 70 EA 28 06 D8 59 47   A9 EC 5E 7D E5 52 16 DC   .p.(..YG ..^}.R..
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_hasMasterNCs (0x2000E)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000003 (3)
+                                                values                   : *
+                                                    values: ARRAY(3)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x0000009c (156)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=156
+[0000] 9C 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   ........ ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 31 00 00 00   43 00 4E 00 3D 00 43 00   ....1... C.N.=.C.
+[0040] 6F 00 6E 00 66 00 69 00   67 00 75 00 72 00 61 00   o.n.f.i. g.u.r.a.
+[0050] 74 00 69 00 6F 00 6E 00   2C 00 44 00 43 00 3D 00   t.i.o.n. ,.D.C.=.
+[0060] 73 00 61 00 6D 00 62 00   61 00 32 00 30 00 30 00   s.a.m.b. a.2.0.0.
+[0070] 38 00 72 00 32 00 2C 00   44 00 43 00 3D 00 65 00   8.r.2.,. D.C.=.e.
+[0080] 78 00 61 00 6D 00 70 00   6C 00 65 00 2C 00 44 00   x.a.m.p. l.e.,.D.
+[0090] 43 00 3D 00 63 00 6F 00   6D 00 00 00               C.=.c.o. m...
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x0000007a (122)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=122
+[0000] 7A 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   z....... ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 20 00 00 00   44 00 43 00 3D 00 73 00   .... ... D.C.=.s.
+[0040] 61 00 6D 00 62 00 61 00   32 00 30 00 30 00 38 00   a.m.b.a. 2.0.0.8.
+[0050] 72 00 32 00 2C 00 44 00   43 00 3D 00 65 00 78 00   r.2.,.D. C.=.e.x.
+[0060] 61 00 6D 00 70 00 6C 00   65 00 2C 00 44 00 43 00   a.m.p.l. e.,.D.C.
+[0070] 3D 00 63 00 6F 00 6D 00   00 00                     =.c.o.m. ..
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x000000b0 (176)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=176
+[0000] B0 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   ........ ........
+[0010] 00 00 00 00 00 00 00 00   08 00 00 00 00 00 00 00   ........ ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 3B 00 00 00   43 00 4E 00 3D 00 53 00   ....;... C.N.=.S.
+[0040] 63 00 68 00 65 00 6D 00   61 00 2C 00 43 00 4E 00   c.h.e.m. a.,.C.N.
+[0050] 3D 00 43 00 6F 00 6E 00   66 00 69 00 67 00 75 00   =.C.o.n. f.i.g.u.
+[0060] 72 00 61 00 74 00 69 00   6F 00 6E 00 2C 00 44 00   r.a.t.i. o.n.,.D.
+[0070] 43 00 3D 00 73 00 61 00   6D 00 62 00 61 00 32 00   C.=.s.a. m.b.a.2.
+[0080] 30 00 30 00 38 00 72 00   32 00 2C 00 44 00 43 00   0.0.8.r. 2.,.D.C.
+[0090] 3D 00 65 00 78 00 61 00   6D 00 70 00 6C 00 65 00   =.e.x.a. m.p.l.e.
+[00A0] 2C 00 44 00 43 00 3D 00   63 00 6F 00 6D 00 00 00   ,.D.C.=. c.o.m...
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_msDS_hasMasterNCs (0x9072C)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000003 (3)
+                                                values                   : *
+                                                    values: ARRAY(3)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x0000009c (156)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=156
+[0000] 9C 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   ........ ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 31 00 00 00   43 00 4E 00 3D 00 43 00   ....1... C.N.=.C.
+[0040] 6F 00 6E 00 66 00 69 00   67 00 75 00 72 00 61 00   o.n.f.i. g.u.r.a.
+[0050] 74 00 69 00 6F 00 6E 00   2C 00 44 00 43 00 3D 00   t.i.o.n. ,.D.C.=.
+[0060] 73 00 61 00 6D 00 62 00   61 00 32 00 30 00 30 00   s.a.m.b. a.2.0.0.
+[0070] 38 00 72 00 32 00 2C 00   44 00 43 00 3D 00 65 00   8.r.2.,. D.C.=.e.
+[0080] 78 00 61 00 6D 00 70 00   6C 00 65 00 2C 00 44 00   x.a.m.p. l.e.,.D.
+[0090] 43 00 3D 00 63 00 6F 00   6D 00 00 00               C.=.c.o. m...
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x0000007a (122)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=122
+[0000] 7A 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   z....... ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 20 00 00 00   44 00 43 00 3D 00 73 00   .... ... D.C.=.s.
+[0040] 61 00 6D 00 62 00 61 00   32 00 30 00 30 00 38 00   a.m.b.a. 2.0.0.8.
+[0050] 72 00 32 00 2C 00 44 00   43 00 3D 00 65 00 78 00   r.2.,.D. C.=.e.x.
+[0060] 61 00 6D 00 70 00 6C 00   65 00 2C 00 44 00 43 00   a.m.p.l. e.,.D.C.
+[0070] 3D 00 63 00 6F 00 6D 00   00 00                     =.c.o.m. ..
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x000000b0 (176)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=176
+[0000] B0 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   ........ ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 3B 00 00 00   43 00 4E 00 3D 00 53 00   ....;... C.N.=.S.
+[0040] 63 00 68 00 64 00 6D 00   61 00 2C 00 43 00 4E 00   c.h.d.m. a.,.C.N.
+[0050] 3D 00 43 00 6F 00 6E 00   66 00 69 00 67 00 75 00   =.C.o.n. f.i.g.u.
+[0060] 72 00 61 00 74 00 69 00   6F 00 6E 00 2C 00 44 00   r.a.t.i. o.n.,.D.
+[0070] 43 00 3D 00 73 00 61 00   6D 00 62 00 61 00 32 00   C.=.s.a. m.b.a.2.
+[0080] 30 00 30 00 38 00 72 00   32 00 2C 00 44 00 43 00   0.0.8.r. 2.,.D.C.
+[0090] 3D 00 65 00 78 00 61 00   6D 00 70 00 6C 00 65 00   =.e.x.a. m.p.l.e.
+[00A0] 2C 00 44 00 43 00 3D 00   63 00 6F 00 6D 00 00 00   ,.D.C.=. c.o.m...
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_dMDLocation (0x20024)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            string                   : '°'
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_msDS_HasDomainNCs (0x9071C)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x0000007a (122)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=122
+[0000] 7A 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   z....... ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 20 00 00 00   44 00 43 00 3D 00 73 00   .... ... D.C.=.s.
+[0040] 61 00 6D 00 62 00 61 00   32 00 30 00 30 00 38 00   a.m.b.a. 2.0.0.8.
+[0050] 72 00 32 00 2C 00 44 00   43 00 3D 00 65 00 78 00   r.2.,.D. C.=.e.x.
+[0060] 61 00 6D 00 70 00 6C 00   65 00 2C 00 44 00 43 00   a.m.p.l. e.,.D.C.
+[0070] 3D 00 63 00 6F 00 6D 00   00 00                     =.c.o.m. ..
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_msDS_Behavior_Version (0x905B3)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x00000004 (4)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=4
+[0000] 04 00 00 00                                        .... 
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_systemFlags (0x90177)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x00000004 (4)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=4
+[0000] 00 00 00 02                                        .... 
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_replPropertyMetaData (0x90003)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x000000b4 (180)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=180
+[0000] B4 00 00 00 00 00 00 00   00 00 00 00 00 00 00 02   ........ ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 3D 00 00 00   43 00 4E 00 3D 00 73 00   ....=... C.N.=.s.
+[0040] 6D 00 62 00 74 00 6F 00   72 00 74 00 75 00 72 00   m.b.t.o. r.t.u.r.
+[0050] 65 00 64 00 63 00 2C 00   43 00 4E 00 3D 00 43 00   e.d.c.,. C.N.=.C.
+[0060] 6F 00 6D 00 70 00 75 00   74 00 65 00 72 00 73 00   o.m.p.u. t.e.r.s.
+[0070] 2C 00 44 00 43 00 3D 00   73 00 61 00 6D 00 62 00   ,.D.C.=. s.a.m.b.
+[0080] 61 00 32 00 30 00 30 00   38 00 72 00 32 00 2C 00   a.2.0.0. 8.r.2.,.
+[0090] 44 00 43 00 3D 00 65 00   78 00 61 00 6D 00 70 00   D.C.=.e. x.a.m.p.
+[00A0] 6C 00 65 00 2C 00 44 00   43 00 3D 00 63 00 6F 00   l.e.,.D. C.=.c.o.
+[00B0] 6D 00 EB 00                                        m... 
+push returned Success
+pull returned Success
+    drsuapi_DsAddEntry: struct drsuapi_DsAddEntry
+        in: struct drsuapi_DsAddEntry
+            bind_handle              : *
+                bind_handle: struct policy_handle
+                    handle_type              : 0x00000000 (0)
+                    uuid                     : ab1cfc6d-626b-4ad2-bbba-f6489df00630
+            level                    : 0x00000002 (2)
+            req                      : *
+                req                      : union drsuapi_DsAddEntryRequest(case 2)
+                req2: struct drsuapi_DsAddEntryRequest2
+                    first_object: struct drsuapi_DsReplicaObjectListItem
+                        next_object              : NULL
+                        object: struct drsuapi_DsReplicaObject
+                            identifier               : *
+                                identifier: struct drsuapi_DsReplicaObjectIdentifier
+                                    __ndr_size               : 0x00000136 (310)
+                                    __ndr_size_sid           : 0x00000000 (0)
+                                    guid                     : 00000000-0000-0000-0000-000000000000
+                                    sid                      : S-0-0
+                                    __ndr_size_dn            : 0x0000007e (126)
+                                    dn                       : 'CN=NTDS Settings,CN=smbtorturedc,CN=Servers,CN=Default-First-Site-Name,CN=Sites,CN=Configuration,ｄC=samba2008r2,DC=example,DC︽'
+                            flags                    : 0x00000000 (0)
+                                   0: DRSUAPI_DS_REPLICA_OBJECT_FROM_MASTER
+                                   0: DRSUAPI_DS_REPLICA_OBJECT_DYNAMIC
+                                   0: DRSUAPI_DS_REPLICA_OBJECT_REMOTE_MODIFY
+                            attribute_ctr: struct drsuapi_DsReplicaAttributeCtr
+                                num_attributes           : 0x0000000b (11)
+                                attributes               : *
+                                    attributes: ARRAY(11)
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_ntSecurityDescriptor (0x20119)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x000000a0 (160)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=160
+[0000] 01 00 04 80 14 00 00 00   30 00 00 00 00 00 00 00   ........ 0.......
+[0010] 4C 00 00 00 01 05 00 00   00 00 00 05 15 00 00 00   L....... ........
+[0020] 4B 7D 63 4C 74 4C AF E6   AD 78 E1 B1 00 02 00 00   K}cLtL.. .x......
+[0030] 01 05 00 00 00 00 00 05   15 00 00 00 4B 7D 63 4C   ........ ....K}cL
+[0040] 74 4C AF E6 AD 78 E1 B1   00 02 00 00 02 00 54 00   tL...x.. ......T.
+[0050] 03 00 00 00 00 00 14 00   94 00 02 00 01 01 00 00   ........ ........
+[0060] 00 00 00 05 0B 00 00 00   00 00 24 00 FD 01 0F 00   ........ ..$.....
+[0070] 01 05 00 00 00 00 00 05   15 00 00 00 4B 7D 63 4C   ........ ....K}cL
+[0080] 74 4C AF E6 AD 78 E1 B1   00 02 00 00 00 00 14 00   tL...x.. ........
+[0090] FF 01 0F 00 01 01 00 00   00 00 00 05 12 00 00 00   ........ ........
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_objectClass (0x0)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            attid                    : DATA_BLOB length=3
+[0000] 2F 00 17                                           /.. 
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_objectCategory (0x9030E)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x000000c8 (200)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=200
+[0000] C8 00 00 00 00 00 00 00   00 00 00 00 00 00 02 00   ........ ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 47 00 00 00   43 00 4E 00 3D 00 4E 00   ....G... C.N.=.N.
+[0040] 54 00 44 00 53 00 2D 00   44 00 53 00 41 05 9A 00   T.D.S.-. D.S.A...
+[0050] 43 00 4E 00 3D 00 53 00   63 00 68 00 65 00 6D 00   C.N.=.S. c.h.e.m.
+[0060] 61 00 2C 00 43 00 4E 00   3D 00 43 00 6F 00 6E 00   a.,.C.N. =.C.o.n.
+[0070] 66 00 69 00 67 00 75 00   72 00 61 00 74 00 69 00   f.i.g.u. r.a.t.i.
+[0080] 6F 00 6E 00 2C 00 44 00   43 00 3D 00 73 00 61 00   o.n.,.D. C.=.s.a.
+[0090] 6D 00 62 00 61 00 32 00   30 00 30 00 38 00 72 00   m.b.a.2. 0.0.8.r.
+[00A0] 32 00 2C 00 44 00 43 00   3D 00 65 00 78 00 61 00   2.,.D.C. =.e.x.a.
+[00B0] 6D 00 70 00 6C 00 65 00   2C 00 44 00 43 00 3D 00   m.p.l.e. ,.D.C.=.
+[00C0] 63 00 6F 00 6D 00 00 00                             c.o.m... 
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_invocationId (0x20073)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x00000010 (16)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=16
+[0000] 1B 70 EA 28 06 D8 59 47   A9 EC 5E 7D E5 52 16 DC   .p.(..YG ..^}.R..
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_hasMasterNCs (0x2000E)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000003 (3)
+                                                values                   : *
+                                                    values: ARRAY(3)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x0000009c (156)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=156
+[0000] 9C 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   ........ ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 31 00 00 00   43 00 4E 00 3D 00 43 00   ....1... C.N.=.C.
+[0040] 6F 00 6E 00 66 00 69 00   67 00 75 00 72 00 61 00   o.n.f.i. g.u.r.a.
+[0050] 74 00 69 00 6F 00 6E 00   2C 00 44 00 43 00 3D 00   t.i.o.n. ,.D.C.=.
+[0060] 73 00 61 00 6D 00 62 00   61 00 32 00 30 00 30 00   s.a.m.b. a.2.0.0.
+[0070] 38 00 72 00 32 00 2C 00   44 00 43 00 3D 00 65 00   8.r.2.,. D.C.=.e.
+[0080] 78 00 61 00 6D 00 70 00   6C 00 65 00 2C 00 44 00   x.a.m.p. l.e.,.D.
+[0090] 43 00 3D 00 63 00 6F 00   6D 00 00 00               C.=.c.o. m...
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x0000007a (122)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=122
+[0000] 7A 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   z....... ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 20 00 00 00   44 00 43 00 3D 00 73 00   .... ... D.C.=.s.
+[0040] 61 00 6D 00 62 00 61 00   32 00 30 00 30 00 38 00   a.m.b.a. 2.0.0.8.
+[0050] 72 00 32 00 2C 00 44 00   43 00 3D 00 65 00 78 00   r.2.,.D. C.=.e.x.
+[0060] 61 00 6D 00 70 00 6C 00   65 00 2C 00 44 00 43 00   a.m.p.l. e.,.D.C.
+[0070] 3D 00 63 00 6F 00 6D 00   00 00                     =.c.o.m. ..
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x000000b0 (176)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=176
+[0000] B0 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   ........ ........
+[0010] 00 00 00 00 00 00 00 00   08 00 00 00 00 00 00 00   ........ ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 3B 00 00 00   43 00 4E 00 3D 00 53 00   ....;... C.N.=.S.
+[0040] 63 00 68 00 65 00 6D 00   61 00 2C 00 43 00 4E 00   c.h.e.m. a.,.C.N.
+[0050] 3D 00 43 00 6F 00 6E 00   66 00 69 00 67 00 75 00   =.C.o.n. f.i.g.u.
+[0060] 72 00 61 00 74 00 69 00   6F 00 6E 00 2C 00 44 00   r.a.t.i. o.n.,.D.
+[0070] 43 00 3D 00 73 00 61 00   6D 00 62 00 61 00 32 00   C.=.s.a. m.b.a.2.
+[0080] 30 00 30 00 38 00 72 00   32 00 2C 00 44 00 43 00   0.0.8.r. 2.,.D.C.
+[0090] 3D 00 65 00 78 00 61 00   6D 00 70 00 6C 00 65 00   =.e.x.a. m.p.l.e.
+[00A0] 2C 00 44 00 43 00 3D 00   63 00 6F 00 6D 00 00 00   ,.D.C.=. c.o.m...
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_msDS_hasMasterNCs (0x9072C)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000003 (3)
+                                                values                   : *
+                                                    values: ARRAY(3)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x0000009c (156)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=156
+[0000] 9C 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   ........ ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 31 00 00 00   43 00 4E 00 3D 00 43 00   ....1... C.N.=.C.
+[0040] 6F 00 6E 00 66 00 69 00   67 00 75 00 72 00 61 00   o.n.f.i. g.u.r.a.
+[0050] 74 00 69 00 6F 00 6E 00   2C 00 44 00 43 00 3D 00   t.i.o.n. ,.D.C.=.
+[0060] 73 00 61 00 6D 00 62 00   61 00 32 00 30 00 30 00   s.a.m.b. a.2.0.0.
+[0070] 38 00 72 00 32 00 2C 00   44 00 43 00 3D 00 65 00   8.r.2.,. D.C.=.e.
+[0080] 78 00 61 00 6D 00 70 00   6C 00 65 00 2C 00 44 00   x.a.m.p. l.e.,.D.
+[0090] 43 00 3D 00 63 00 6F 00   6D 00 00 00               C.=.c.o. m...
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x0000007a (122)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=122
+[0000] 7A 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   z....... ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 20 00 00 00   44 00 43 00 3D 00 73 00   .... ... D.C.=.s.
+[0040] 61 00 6D 00 62 00 61 00   32 00 30 00 30 00 38 00   a.m.b.a. 2.0.0.8.
+[0050] 72 00 32 00 2C 00 44 00   43 00 3D 00 65 00 78 00   r.2.,.D. C.=.e.x.
+[0060] 61 00 6D 00 70 00 6C 00   65 00 2C 00 44 00 43 00   a.m.p.l. e.,.D.C.
+[0070] 3D 00 63 00 6F 00 6D 00   00 00                     =.c.o.m. ..
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x000000b0 (176)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=176
+[0000] B0 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   ........ ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 3B 00 00 00   43 00 4E 00 3D 00 53 00   ....;... C.N.=.S.
+[0040] 63 00 68 00 64 00 6D 00   61 00 2C 00 43 00 4E 00   c.h.d.m. a.,.C.N.
+[0050] 3D 00 43 00 6F 00 6E 00   66 00 69 00 67 00 75 00   =.C.o.n. f.i.g.u.
+[0060] 72 00 61 00 74 00 69 00   6F 00 6E 00 2C 00 44 00   r.a.t.i. o.n.,.D.
+[0070] 43 00 3D 00 73 00 61 00   6D 00 62 00 61 00 32 00   C.=.s.a. m.b.a.2.
+[0080] 30 00 30 00 38 00 72 00   32 00 2C 00 44 00 43 00   0.0.8.r. 2.,.D.C.
+[0090] 3D 00 65 00 78 00 61 00   6D 00 70 00 6C 00 65 00   =.e.x.a. m.p.l.e.
+[00A0] 2C 00 44 00 43 00 3D 00   63 00 6F 00 6D 00 00 00   ,.D.C.=. c.o.m...
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_dMDLocation (0x20024)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            string                   : '°'
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_msDS_HasDomainNCs (0x9071C)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x0000007a (122)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=122
+[0000] 7A 00 00 00 00 00 00 00   00 00 00 00 00 00 00 00   z....... ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 20 00 00 00   44 00 43 00 3D 00 73 00   .... ... D.C.=.s.
+[0040] 61 00 6D 00 62 00 61 00   32 00 30 00 30 00 38 00   a.m.b.a. 2.0.0.8.
+[0050] 72 00 32 00 2C 00 44 00   43 00 3D 00 65 00 78 00   r.2.,.D. C.=.e.x.
+[0060] 61 00 6D 00 70 00 6C 00   65 00 2C 00 44 00 43 00   a.m.p.l. e.,.D.C.
+[0070] 3D 00 63 00 6F 00 6D 00   00 00                     =.c.o.m. ..
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_msDS_Behavior_Version (0x905B3)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x00000004 (4)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=4
+[0000] 04 00 00 00                                        .... 
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_systemFlags (0x90177)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x00000004 (4)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=4
+[0000] 00 00 00 02                                        .... 
+                                        attributes: struct drsuapi_DsReplicaAttribute
+                                            attid                    : DRSUAPI_ATTID_replPropertyMetaData (0x90003)
+                                            value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                num_values               : 0x00000001 (1)
+                                                values                   : *
+                                                    values: ARRAY(1)
+                                                        values: struct drsuapi_DsAttributeValue
+                                                            __ndr_size               : 0x000000b4 (180)
+                                                            blob                     : *
+                                                                blob                     : DATA_BLOB length=180
+[0000] B4 00 00 00 00 00 00 00   00 00 00 00 00 00 00 02   ........ ........
+skipping zero buffer bytes
+[0030] 00 00 00 00 3D 00 00 00   43 00 4E 00 3D 00 73 00   ....=... C.N.=.s.
+[0040] 6D 00 62 00 74 00 6F 00   72 00 74 00 75 00 72 00   m.b.t.o. r.t.u.r.
+[0050] 65 00 64 00 63 00 2C 00   43 00 4E 00 3D 00 43 00   e.d.c.,. C.N.=.C.
+[0060] 6F 00 6D 00 70 00 75 00   74 00 65 00 72 00 73 00   o.m.p.u. t.e.r.s.
+[0070] 2C 00 44 00 43 00 3D 00   73 00 61 00 6D 00 62 00   ,.D.C.=. s.a.m.b.
+[0080] 61 00 32 00 30 00 30 00   38 00 72 00 32 00 2C 00   a.2.0.0. 8.r.2.,.
+[0090] 44 00 43 00 3D 00 65 00   78 00 61 00 6D 00 70 00   D.C.=.e. x.a.m.p.
+[00A0] 6C 00 65 00 2C 00 44 00   43 00 3D 00 63 00 6F 00   l.e.,.D. C.=.c.o.
+[00B0] 6D 00 EB 00                                        m... 
+WARNING! orig bytes:2555 validated pushed bytes:2504
+WARNING! orig pulled bytes:2508 validated pulled bytes:2504
+WARNING! orig and validated differ at byte 0x30 (48)
+WARNING! orig byte[0x30] = 0x82 validated byte[0x30] = 0x7F
+dump OK

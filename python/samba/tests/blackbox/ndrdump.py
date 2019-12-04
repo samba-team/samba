@@ -274,3 +274,27 @@ dump OK
         # check_output will return bytes
         # convert expected to bytes for python 3
         self.assertRegex(actual.decode('utf8'), expected)
+
+    def test_ndrdump_fuzzed_drsuapi_DsAddEntry_1(self):
+        expected = open(self.data_path("fuzzed_drsuapi_DsAddEntry_1.txt")).read()
+        try:
+            actual = self.check_output(
+                "ndrdump drsuapi drsuapi_DsAddEntry in --base64-input --validate %s" %
+                self.data_path("fuzzed_drsuapi_DsAddEntry_1.b64.txt"))
+        except BlackboxProcessError as e:
+            self.fail(e)
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertEqual(actual, expected.encode('utf-8'))
+
+    def test_ndrdump_fuzzed_drsuapi_DsReplicaAttribute(self):
+        expected = open(self.data_path("fuzzed_drsuapi_DsReplicaAttribute.txt")).read()
+        try:
+            actual = self.check_output(
+                "ndrdump drsuapi drsuapi_DsReplicaAttribute struct --base64-input --validate %s" %
+                self.data_path("fuzzed_drsuapi_DsReplicaAttribute.b64.txt"))
+        except BlackboxProcessError as e:
+            self.fail(e)
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertEqual(actual, expected.encode('utf-8'))

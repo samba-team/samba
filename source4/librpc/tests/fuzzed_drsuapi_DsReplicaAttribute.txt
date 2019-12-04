@@ -1,0 +1,31 @@
+pull returned Success
+WARNING! 179 unread bytes
+[0000] 00 00 00 00 00 FF 00 00   00 00 00 00 00 00 00 00   ........ ........
+skipping zero buffer bytes
+[0040] 00 00 00 00 00 00 00 00   00 40 00 00 00 00 00 00   ........ .@......
+[0060] 00 00 00 40 00 00 00 00   00 00 00 00 00 00 00 00   ...@.... ........
+[0080] 00 00 00 40 00 00 00 00   00 00 00 00 00 00 00 00   ...@.... ........
+[0090] 00 00 00 00 00 00 00 00   00 00 00 00 00 40 00 00   ........ .....@..
+[00B0] 00 00 00                                           ... 
+    drsuapi_DsReplicaAttribute: struct drsuapi_DsReplicaAttribute
+        attid                    : DRSUAPI_ATTID_objectClass (0x0)
+        value_ctr: struct drsuapi_DsAttributeValueCtr
+            num_values               : 0x00000001 (1)
+            values                   : *
+                values: ARRAY(1)
+                    values: struct drsuapi_DsAttributeValue
+                        attid                    : 'NULL'
+push returned Success
+pull returned Success
+    drsuapi_DsReplicaAttribute: struct drsuapi_DsReplicaAttribute
+        attid                    : DRSUAPI_ATTID_objectClass (0x0)
+        value_ctr: struct drsuapi_DsAttributeValueCtr
+            num_values               : 0x00000001 (1)
+            values                   : *
+                values: ARRAY(1)
+                    values: struct drsuapi_DsAttributeValue
+                        attid                    : 'NULL'
+WARNING! orig bytes:203 validated pushed bytes:24
+WARNING! orig and validated differ at byte 0x08 (8)
+WARNING! orig byte[0x08] = 0x01 validated byte[0x08] = 0x00
+dump OK
