@@ -341,5 +341,6 @@ NTTIME unix_timespec_to_nt_time(struct timespec ts);
  */
 bool is_omit_timespec(const struct timespec *ts);
 struct timespec make_omit_timespec(void);
+NTTIME full_timespec_to_nt_time(const struct timespec *ts);
 
 #endif /* _SAMBA_TIME_H_ */
