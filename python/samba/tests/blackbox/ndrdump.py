@@ -312,3 +312,41 @@ dump OK
         # check_output will return bytes
         # convert expected to bytes for python 3
         self.assertEqual(actual, expected.encode('utf-8'))
+
+    # This is a good example of a union with an empty default
+    # and no buffers to parse.
+    def test_ndrdump_fuzzed_spoolss_EnumForms(self):
+        expected_head = b'''pull returned Success
+WARNING! 2 unread bytes
+[0000] 00 00                                              .. ''' b'''
+    spoolss_EnumForms: struct spoolss_EnumForms
+        out: struct spoolss_EnumForms
+            count                    : *
+                count                    : 0x00000100 (256)
+            info                     : *
+                info                     : *
+                    info: ARRAY(256)
+                        info                     : union spoolss_FormInfo(case 0)
+                        info                     : union spoolss_FormInfo(case 0)
+'''
+        expected_tail = b'''info                     : union spoolss_FormInfo(case 0)
+                        info                     : union spoolss_FormInfo(case 0)
+                        info                     : union spoolss_FormInfo(case 0)
+                        info                     : union spoolss_FormInfo(case 0)
+                        info                     : union spoolss_FormInfo(case 0)
+                        info                     : union spoolss_FormInfo(case 0)
+            needed                   : *
+                needed                   : 0x00000000 (0)
+            result                   : DOS code 0xa9a9a900
+dump OK
+'''
+        try:
+            actual = self.check_output(
+                "ndrdump spoolss spoolss_EnumForms out --base64-input " +\
+                "--input AAAAAQAAAAAAAAAAAAEAAACpqakAAA="
+                )
+        except BlackboxProcessError as e:
+            self.fail(e)
+        self.assertEqual(actual[:len(expected_head)],
+                         expected_head)
+        self.assertTrue(actual.endswith(expected_tail))
