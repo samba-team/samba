@@ -216,6 +216,7 @@ sub check_env($$)
 
 	simpleserver        => [],
 	fileserver          => [],
+	fileserver_smb1     => [],
 	maptoguest          => [],
 	ktest               => [],
 
@@ -1197,7 +1198,7 @@ sub create_file_chmod($$)
 
 sub setup_fileserver
 {
-	my ($self, $path) = @_;
+	my ($self, $path, $more_conf, $server) = @_;
 	my $prefix_abs = abs_path($path);
 	my $srcdir_abs = abs_path($self->{srcdir});
 
@@ -1353,10 +1354,17 @@ sub setup_fileserver
 	read only = No
 ";
 
+	if (defined($more_conf)) {
+		$fileserver_options = $fileserver_options . $more_conf;
+	}
+	if (!defined($server)) {
+		$server = "FILESERVER";
+	}
+
 	my $vars = $self->provision(
 	    prefix => $path,
 	    domain => "WORKGROUP",
-	    server => "FILESERVER",
+	    server => $server,
 	    password => "fileserver",
 	    extra_options => $fileserver_options,
 	    no_delete_prefix => 1);
@@ -1415,6 +1423,16 @@ sub setup_fileserver
 	return $vars;
 }
 
+sub setup_fileserver_smb1
+{
+	my ($self, $path) = @_;
+	my $conf = "
+[global]
+	client min protocol = CORE
+	server min protocol = LANMAN1
+";
+	return $self->setup_fileserver($path, $conf, "FILESERVERSMB1");
+}
 sub setup_ktest
 {
 	my ($self, $prefix) = @_;
