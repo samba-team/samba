@@ -155,6 +155,9 @@ samba-libs:
 samba-static:
   extends: .shared_template
 
+samba-fuzz:
+  extends: .shared_template
+
 ctdb:
   extends: .shared_template
 
@@ -230,6 +233,7 @@ pages:
     - samba-ad-dc-6
     - samba-libs
     - samba-static
+    - samba-fuzz
     # - ctdb  # TODO
     - samba-ctdb
     - samba-ad-dc-ntvfs

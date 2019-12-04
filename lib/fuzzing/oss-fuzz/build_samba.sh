@@ -11,6 +11,9 @@
 #
 # CFLAGS are supplied by the caller, eg the oss-fuzz compile command
 #
+# Additional arguments are passed to configure, to allow this to be
+# tested in autobuild.py
+#
 ADDITIONAL_CFLAGS="$CFLAGS"
 export ADDITIONAL_CFLAGS
 CFLAGS=""
@@ -42,7 +45,9 @@ esac
 	    --disable-warnings-as-errors \
 	    --abi-check-disable \
 	    --fuzz-target-ldflags="$LIB_FUZZING_ENGINE" \
-	    --nonshared-binary=ALL LINK_CC="$CXX"
+	    --nonshared-binary=ALL \
+	    "$@" \
+	    LINK_CC="$CXX"
 
 make -j
 

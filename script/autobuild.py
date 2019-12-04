@@ -624,7 +624,14 @@ tasks = {
         # retry with nonshared smbd and smbtorture
         ("nonshared-distclean", "make distclean"),
         ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=talloc,tdb,pytdb,ldb,pyldb,tevent,pytevent --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd"),
-        ("nonshared-make", "make -j"),
+        ("nonshared-make", "make -j")
+        ],
+
+    "samba-fuzz": [
+        # build the fuzzers (static) via the oss-fuzz script
+        ("fuzzers-mkdir-prefix", "mkdir -p ${PREFIX_DIR}"),
+        ("fuzzers-build", "OUT=${PREFIX_DIR} LIB_FUZZING_ENGINE= SANITIZER=address CXX= CFLAGS= ./lib/fuzzing/oss-fuzz/build_samba.sh --enable-afl"),
+        ("fuzzers-check", "./lib/fuzzing/oss-fuzz/check_build.sh ${PREFIX_DIR}")
         ],
 
     # Test Samba without python still builds.  When this test fails
@@ -788,10 +795,11 @@ tasks = {
 }
 
 defaulttasks = list(tasks.keys())
+
 defaulttasks.remove("pass")
 defaulttasks.remove("fail")
 defaulttasks.remove("samba-test-only")
-
+defaulttasks.remove("samba-fuzz")
 if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
     defaulttasks.remove("samba-o3")
 
