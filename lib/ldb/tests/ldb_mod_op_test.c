@@ -4714,5 +4714,9 @@ int main(int argc, const char **argv)
 			ldbtest_teardown),
 	};
 
+	if (argc > 1) {
+		cmocka_set_test_filter(argv[1]);
+	}
+
 	return cmocka_run_group_tests(tests, NULL, NULL);
 }
