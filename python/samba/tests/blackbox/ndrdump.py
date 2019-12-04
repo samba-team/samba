@@ -367,3 +367,34 @@ dump OK
         self.assertEqual(actual[:len(expected_head)],
                          expected_head)
         self.assertTrue(actual.endswith(expected_tail))
+
+    # Test a --validate push of a NULL union pointer
+    def test_ndrdump_fuzzed_NULL_union_PAC_BUFFER(self):
+        expected = b'''pull returned Success
+WARNING! 13 unread bytes
+[0000] F5 FF 00 3C 3C 25 FF 70   16 1F A0 12 84            ...<<%.p .....
+    PAC_BUFFER: struct PAC_BUFFER
+        type                     : UNKNOWN_ENUM_VALUE (1094251328)
+        _ndr_size                : 0x048792c6 (75993798)
+        info                     : NULL
+        _pad                     : 0x06000000 (100663296)
+push returned Success
+pull returned Success
+    PAC_BUFFER: struct PAC_BUFFER
+        type                     : UNKNOWN_ENUM_VALUE (1094251328)
+        _ndr_size                : 0x00000000 (0)
+        info                     : NULL
+        _pad                     : 0x00000000 (0)
+WARNING! orig bytes:29 validated pushed bytes:16
+WARNING! orig and validated differ at byte 0x04 (4)
+WARNING! orig byte[0x04] = 0xC6 validated byte[0x04] = 0x00
+dump OK
+'''
+        try:
+            actual = self.check_output(
+                "ndrdump krb5pac PAC_BUFFER struct --validate --input " +\
+                "QPM4QcaShwQAAAAAAAAABvX/ADw8Jf9wFh+gEoQ= --base64-input")
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        self.assertEqual(actual, expected)
