@@ -1080,3 +1080,39 @@ struct timespec nt_time_to_full_timespec(NTTIME nt)
 	ret.tv_sec = (time_t)d;
 	return ret;
 }
+
+/**
+ * Note: this function uses the full time_t range as valid date values including
+ * (time_t)0 and -1. That means that struct timespec sentinel values (cf
+ * is_omit_timespec()) can't be converted to sentinel values in a time_t
+ * representation. Callers should therefor check the NTTIME value with
+ * null_nttime() before calling this function.
+ **/
+time_t full_timespec_to_time_t(const struct timespec *_ts)
+{
+	struct timespec ts = *_ts;
+
+	if (is_omit_timespec(_ts)) {
+		/*
+		 * Unfortunately there's no sensible sentinel value in the
+		 * time_t range that is not conflicting with a valid time value
+		 * ((time_t)0 and -1 are valid time values). Bite the bullit and
+		 * return 0.
+		 */
+		return 0;
+	}
+
+	/* Ensure tv_nsec is less than 1sec. */
+	while (ts.tv_nsec > 1000000000) {
+		ts.tv_sec += 1;
+		ts.tv_nsec -= 1000000000;
+	}
+
+	/* 1 ns == 1,000,000,000 - one thousand millionths of a second.
+	   increment if it's greater than 500 millionth of a second. */
+
+	if (ts.tv_nsec > 500000000) {
+		return ts.tv_sec + 1;
+	}
+	return ts.tv_sec;
+}
