@@ -350,5 +350,6 @@ NTTIME full_timespec_to_nt_time(const struct timespec *ts);
 struct timespec nt_time_to_full_timespec(NTTIME nt);
 time_t full_timespec_to_time_t(const struct timespec *ts);
 time_t nt_time_to_full_time_t(NTTIME nt);
+struct timespec time_t_to_full_timespec(time_t t);
 
 #endif /* _SAMBA_TIME_H_ */

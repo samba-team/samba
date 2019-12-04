@@ -1189,3 +1189,17 @@ time_t nt_time_to_full_time_t(NTTIME nt)
 	ts = nt_time_to_full_timespec(nt);
 	return full_timespec_to_time_t(&ts);
 }
+
+/**
+ * Like time_t_to_unix_timespec() but supports negative time_t values.
+ *
+ * This version converts (time_t)0 and -1 to an is_omit_timespec(), so 0 and -1
+ * can't be used as valid date values. The function supports values < -1 though.
+ **/
+struct timespec time_t_to_full_timespec(time_t t)
+{
+	if (null_time(t)) {
+		return (struct timespec){.tv_nsec = SAMBA_UTIME_OMIT};
+	}
+	return (struct timespec){.tv_sec = t};
+}
