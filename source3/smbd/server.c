@@ -419,7 +419,7 @@ static bool smbd_notifyd_init(struct messaging_context *msg, bool interactive,
 	}
 
 	if (pid != 0) {
-		if (am_parent != 0) {
+		if (am_parent != NULL) {
 			add_child_pid(am_parent, pid);
 		}
 		*ppid = pid_to_procid(pid);
