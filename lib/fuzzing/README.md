@@ -7,6 +7,7 @@ exceptions such as crashes, assertions or memory corruption.
 See [Wikipedia article on fuzzing](https://en.wikipedia.org/wiki/Fuzzing) for
 more information.
 
+# Hongfuzz
 
 ## Configure with fuzzing
 
@@ -15,7 +16,7 @@ Example command line to build binaries for use with
 
 ```sh
 buildtools/bin/waf -C --without-gettext --enable-debug --enable-developer \
-	--address-sanitizer --enable-libfuzzer \
+	--address-sanitizer --enable-libfuzzer --abi-check-disable \
 	CC=.../honggfuzz/hfuzz_cc/hfuzz-clang configure \
 	LINK_CC=.../honggfuzz/hfuzz_cc/hfuzz-clang
 ```
@@ -30,6 +31,29 @@ options):
 buildtools/bin/waf --targets=fuzz_tiniparser build && \
 .../honggfuzz/honggfuzz --sanitizers --timeout 3 --max_file_size 256 \
   --rlimit_rss 100 -f .../tiniparser-corpus -- bin/fuzz_tiniparser
+```
+
+# AFL (american fuzzy lop)
+
+## Configure with fuzzing
+
+Example command line to build binaries for use with
+[afl](http://lcamtuf.coredump.cx/afl/)
+
+```sh
+buildtools/bin/waf -C --without-gettext --enable-debug --enable-developer \
+	--enable-afl-fuzzer --abi-check-disable \
+	CC=afl-gcc configure
+```
+
+## Fuzzing tiniparser
+
+Example for fuzzing `tiniparser` using `afl-fuzz` (see `--help` for more
+options):
+
+```sh
+buildtools/bin/waf --targets=fuzz_tiniparser build && \
+afl-fuzz -m 200 -i inputdir -o outputdir -- bin/fuzz_tiniparser
 ```
 
 # oss-fuzz

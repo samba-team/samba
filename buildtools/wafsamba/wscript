@@ -133,8 +133,11 @@ def options(opt):
         dest='undefined_sanitizer',
         default=False)
     gr.add_option('--enable-libfuzzer',
-                  help=("Build fuzzing binaries (use ADDITIONAL_CFLAGS to specify compiler options for libFuzzer or use a compiler wrapper such as honggfuzz/hfuzz-cc)"),
+                  help=("Build fuzzing binaries (use ADDITIONAL_CFLAGS to specify compiler options for libFuzzer or use CC=honggfuzz/hfuzz-cc)"),
                   action="store_true", dest='enable_libfuzzer', default=False)
+    gr.add_option('--enable-afl-fuzzer',
+                  help=("Build fuzzing binaries AFL-style (typically use with CC=afl-gcc)"),
+                  action="store_true", dest='enable_afl_fuzzer', default=False)
 
     # Fuzz targets may need additional LDFLAGS that we can't use on
     # internal binaries like asn1_compile
@@ -603,8 +606,12 @@ struct foo bar = { .y = 'X', .x = 1 };
                     eprintf("bla", "bar")
                     ''', define='HAVE__VA_ARGS__MACRO')
 
+    conf.env.enable_fuzzing = False
+
     conf.env.enable_libfuzzer = Options.options.enable_libfuzzer
-    if conf.env.enable_libfuzzer:
+    conf.env.enable_afl_fuzzer = Options.options.enable_afl_fuzzer
+    if conf.env.enable_libfuzzer or conf.env.enable_afl_fuzzer:
+        conf.env.enable_fuzzing = True
         conf.DEFINE('FUZZING_BUILD_MODE_UNSAFE_FOR_PRODUCTION', 1)
         conf.env.FUZZ_TARGET_LDFLAGS = Options.options.FUZZ_TARGET_LDFLAGS
 

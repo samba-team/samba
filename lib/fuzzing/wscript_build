@@ -3,44 +3,48 @@
 from waflib import Build
 
 bld.SAMBA_SUBSYSTEM('fuzzing',
-    source='fuzzing.c',
-    deps='talloc',
-    enabled=bld.env.enable_libfuzzer
+                    source='fuzzing.c',
+                    deps='talloc')
+
+bld.SAMBA_SUBSYSTEM('afl-fuzz-main',
+    source='afl-fuzz-main.c',
+    deps='samba-util',
+    enabled=bld.env.enable_afl_fuzzer
     )
 
 bld.SAMBA_BINARY('fuzz_tiniparser',
                  source='fuzz_tiniparser.c',
-                 deps='fuzzing tiniparser talloc',
+                 deps='fuzzing tiniparser talloc afl-fuzz-main',
                  fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_oLschema2ldif',
                  source='fuzz_oLschema2ldif.c',
-                 deps='fuzzing oLschema2ldif-lib',
+                 deps='fuzzing oLschema2ldif-lib afl-fuzz-main',
                  fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_reg_parse',
                  source='fuzz_reg_parse.c',
-                 deps='fuzzing samba3-util smbconf REGFIO',
+                 deps='fuzzing samba3-util smbconf REGFIO afl-fuzz-main',
                  fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_regfio',
                  source='fuzz_regfio.c',
-                 deps='fuzzing samba3-util smbconf REGFIO',
+                 deps='fuzzing samba3-util smbconf REGFIO afl-fuzz-main',
                  fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_lzxpress',
                  source='fuzz_lzxpress.c',
-                 deps='fuzzing LZXPRESS',
+                 deps='fuzzing LZXPRESS afl-fuzz-main',
                  fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_ldap_decode',
                  source='fuzz_ldap_decode.c',
-                 deps='fuzzing cli-ldap',
+                 deps='fuzzing cli-ldap afl-fuzz-main',
                  fuzzer=True)
 
 bld.SAMBA_BINARY('fuzz_ldb_parse_tree',
                  source='fuzz_ldb_parse_tree.c',
-                 deps='fuzzing ldb',
+                 deps='fuzzing ldb afl-fuzz-main',
                  fuzzer=True)
 
 # The fuzz_type and fuzz_function parameters make the built
@@ -71,9 +75,9 @@ def SAMBA_NDR_FUZZ(bld, interface, auto_deps=False,
                         rule='cp ${SRC} ${TGT}')
 
     if auto_deps:
-        deps = "talloc ndr NDR_%s" % interface.upper()
+        deps = "afl-fuzz-main talloc ndr NDR_%s" % interface.upper()
     else:
-        deps = "ndr-table NDR_DCERPC"
+        deps = "afl-fuzz-main ndr-table NDR_DCERPC"
 
     bld.SAMBA_BINARY(name, source=fuzz_named_src,
                      cflags = cflags,
