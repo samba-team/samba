@@ -12,7 +12,7 @@ A pure python3 module with CLI to bootstrap Samba envs for multiple distribution
 
 ## Supported Distributions
 
-deb: Debian 7|8|9, Ubuntu 1404|1604|1804
+deb: Debian 7|8|9|10, Ubuntu 1404|1604|1804
 rpm: CentOS 6|7, Fedora 28|29, openSUSE Leap 15.0|15.1
 
 Easy to add more.

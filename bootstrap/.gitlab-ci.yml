@@ -92,6 +92,9 @@ ubuntu1604:
 ubuntu1404:
   extends: .build_image_template_force_broken
 
+debian10:
+  extends: .build_image_template
+
 debian9:
   extends: .build_image_template
 

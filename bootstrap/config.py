@@ -403,6 +403,13 @@ DEB_DISTS = {
             'language-pack-en': '',   # included in locales
         }
     },
+    'debian10': {
+        'docker_image': 'debian:10',
+        'vagrant_box': 'debian/buster64',
+        'replace': {
+            'language-pack-en': '',   # included in locales
+        }
+    },
     'ubuntu1404': {
         'docker_image': 'ubuntu:14.04',
         'vagrant_box': 'ubuntu/trusty64',
