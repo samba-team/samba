@@ -462,6 +462,7 @@ sub realm_to_ip_mappings
 		'samba2003.example.com'           => 'dc6',
 		'samba2008r2.example.com'         => 'dc7',
 		'addom.samba.example.com'         => 'addc',
+		'addom2.samba.example.com'        => 'addcsmb1',
 		'sub.samba.example.com'           => 'localsubdc',
 		'chgdcpassword.samba.example.com' => 'chgdcpass',
 		'backupdom.samba.example.com'     => 'backupfromdc',
@@ -549,6 +550,7 @@ sub get_interface($)
 		ctdb1             => 51,
 		ctdb2             => 52,
 		fileserversmb1    => 53,
+		addcsmb1	  => 54,
 
 		rootdnsforwarder  => 64,
 

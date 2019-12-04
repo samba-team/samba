@@ -2105,6 +2105,7 @@ sub check_env($$)
 	dns_hub              => [],
 	ad_dc_ntvfs          => ["dns_hub"],
 	ad_dc                => ["dns_hub"],
+	ad_dc_smb1           => ["dns_hub"],
 	ad_dc_no_nss         => ["dns_hub"],
 	ad_dc_no_ntlm        => ["dns_hub"],
 
@@ -2470,15 +2471,26 @@ sub setup_rodc
 
 sub setup_ad_dc
 {
-	my ($self, $path) = @_;
+	my ($self, $path, $conf_opts, $server, $dom) = @_;
 
 	# If we didn't build with ADS, pretend this env was never available
 	if (not $self->{target3}->have_ads()) {
 	       return "UNKNOWN";
 	}
 
-	my $env = $self->provision_ad_dc($path, "addc", "ADDOMAIN",
-					 "addom.samba.example.com", "", undef);
+	if (!defined($conf_opts)) {
+		$conf_opts = "";
+	}
+	if (!defined($server)) {
+		$server = "addc";
+	}
+	if (!defined($dom)) {
+		$dom = "addom.samba.example.com";
+	}
+	my $env = $self->provision_ad_dc($path, $server, "ADDOMAIN",
+					 $dom,
+					 $conf_opts,
+					 undef);
 	unless ($env) {
 		return undef;
 	}
@@ -2493,6 +2505,17 @@ sub setup_ad_dc
 	$self->setup_namespaces($env, $upn_array, $spn_array);
 
 	return $env;
+}
+
+sub setup_ad_dc_smb1
+{
+	my ($self, $path) = @_;
+	my $conf_opts = "
+[global]
+	client min protocol = CORE
+	server min protocol = LANMAN1
+";
+	return setup_ad_dc($self, $path, $conf_opts, "addcsmb1", "addom2.samba.example.com");
 }
 
 sub setup_ad_dc_no_nss
