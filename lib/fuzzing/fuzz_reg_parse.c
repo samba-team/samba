@@ -34,14 +34,13 @@ int LLVMFuzzerInitialize(int *argc, char ***argv)
 int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 {
 	const reg_parse_callback cb = {0};
-	int ret;
 
 	rewind(fp);
 	(void)fwrite(buf, len, 1, fp);
 	(void)fflush(fp);
 	rewind(fp);
 
-	ret = reg_parse_fd(fileno(fp), &cb, "");
+	(void)reg_parse_fd(fileno(fp), &cb, "");
 
 	return 0;
 }
