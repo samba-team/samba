@@ -53,6 +53,7 @@ struct ldbtest_ctx {
 	const char *lockfile;   /* lockfile is separate */
 
 	const char *dbpath;
+	char *debug_string;
 };
 
 static void unlink_old_db(struct ldbtest_ctx *test_ctx)
@@ -3747,9 +3748,11 @@ static void test_ldb_add_to_index_unique_values_required(void **state)
 static void ldb_debug_string(void *context, enum ldb_debug_level level,
 			     const char *fmt, va_list ap)
 {
+	struct ldbtest_ctx *test_ctx =
+		talloc_get_type_abort(context, struct ldbtest_ctx);
 
 	if (level <= LDB_DEBUG_WARNING) {
-		*((char **)context) = talloc_vasprintf(NULL, fmt, ap);
+		test_ctx->debug_string = talloc_vasprintf(test_ctx, fmt, ap);
 	}
 }
 
@@ -3761,7 +3764,6 @@ static void test_ldb_unique_index_duplicate_logging(void **state)
 	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
 							struct ldbtest_ctx);
 	TALLOC_CTX *tmp_ctx;
-	char *debug_string = NULL;
 	char *p = NULL;
 
 	/* The GUID mode is not compatible with this test */
@@ -3769,7 +3771,7 @@ static void test_ldb_unique_index_duplicate_logging(void **state)
 	return;
 #endif
 
-	ldb_set_debug(test_ctx->ldb, ldb_debug_string, &debug_string);
+	ldb_set_debug(test_ctx->ldb, ldb_debug_string, test_ctx);
 	tmp_ctx = talloc_new(test_ctx);
 	assert_non_null(tmp_ctx);
 
@@ -3803,14 +3805,14 @@ static void test_ldb_unique_index_duplicate_logging(void **state)
 	ret = ldb_add(test_ctx->ldb, msg02);
 	assert_int_equal(ret, LDB_ERR_CONSTRAINT_VIOLATION);
 
-	assert_non_null(debug_string);
+	assert_non_null(test_ctx->debug_string);
 	p = strstr(
-		debug_string,
+		test_ctx->debug_string,
 		"unique index violation on cn "
 		"in dc=test02, conflicts with dc=test01 in "
 		"@INDEX:CN:test_unique_index");
 	assert_non_null(p);
-	TALLOC_FREE(debug_string);
+	TALLOC_FREE(test_ctx->debug_string);
 	talloc_free(tmp_ctx);
 }
 
@@ -3822,14 +3824,13 @@ static void test_ldb_duplicate_dn_logging(void **state)
 	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
 							struct ldbtest_ctx);
 	TALLOC_CTX *tmp_ctx;
-	char *debug_string = NULL;
 
 	/* The GUID mode is not compatible with this test */
 #ifdef GUID_IDX
 	return;
 #endif
 
-	ldb_set_debug(test_ctx->ldb, ldb_debug_string, &debug_string);
+	ldb_set_debug(test_ctx->ldb, ldb_debug_string, test_ctx);
 	tmp_ctx = talloc_new(test_ctx);
 	assert_non_null(tmp_ctx);
 
@@ -3863,7 +3864,7 @@ static void test_ldb_duplicate_dn_logging(void **state)
 	ret = ldb_add(test_ctx->ldb, msg02);
 	assert_int_equal(ret, LDB_ERR_ENTRY_ALREADY_EXISTS);
 
-	assert_null(debug_string);
+	assert_null(test_ctx->debug_string);
 	talloc_free(tmp_ctx);
 }
 
@@ -3951,10 +3952,9 @@ static void test_ldb_unique_index_duplicate_with_guid(void **state)
 	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
 							struct ldbtest_ctx);
 	TALLOC_CTX *tmp_ctx;
-	char *debug_string = NULL;
 	char *p = NULL;
 
-	ldb_set_debug(test_ctx->ldb, ldb_debug_string, &debug_string);
+	ldb_set_debug(test_ctx->ldb, ldb_debug_string, test_ctx);
 	tmp_ctx = talloc_new(test_ctx);
 	assert_non_null(tmp_ctx);
 
@@ -3988,15 +3988,14 @@ static void test_ldb_unique_index_duplicate_with_guid(void **state)
 	ret = ldb_add(test_ctx->ldb, msg02);
 	assert_int_equal(ret, LDB_ERR_CONSTRAINT_VIOLATION);
 
-	assert_non_null(debug_string);
+	assert_non_null(test_ctx->debug_string);
 	p = strstr(
-		debug_string,
+		test_ctx->debug_string,
 		"unique index violation on cn in dc=test02, conflicts with "
 		"objectUUID 0123456789abcdef in @INDEX:CN:test_unique_index");
 	assert_non_null(p);
-	TALLOC_FREE(debug_string);
+	TALLOC_FREE(test_ctx->debug_string);
 	talloc_free(tmp_ctx);
-	ldb_set_debug(test_ctx->ldb, NULL, NULL);
 }
 
 static void test_ldb_guid_index_duplicate_dn_logging(void **state)
@@ -4007,9 +4006,8 @@ static void test_ldb_guid_index_duplicate_dn_logging(void **state)
 	struct ldbtest_ctx *test_ctx = talloc_get_type_abort(*state,
 							struct ldbtest_ctx);
 	TALLOC_CTX *tmp_ctx;
-	char *debug_string = NULL;
 
-	ldb_set_debug(test_ctx->ldb, ldb_debug_string, &debug_string);
+	ldb_set_debug(test_ctx->ldb, ldb_debug_string, test_ctx);
 	tmp_ctx = talloc_new(test_ctx);
 	assert_non_null(tmp_ctx);
 
@@ -4043,9 +4041,8 @@ static void test_ldb_guid_index_duplicate_dn_logging(void **state)
 	ret = ldb_add(test_ctx->ldb, msg02);
 	assert_int_equal(ret, LDB_ERR_ENTRY_ALREADY_EXISTS);
 
-	assert_null(debug_string);
+	assert_null(test_ctx->debug_string);
 	talloc_free(tmp_ctx);
-	ldb_set_debug(test_ctx->ldb, NULL, NULL);
 }
 
 static void test_ldb_talloc_destructor_transaction_cleanup(void **state)
