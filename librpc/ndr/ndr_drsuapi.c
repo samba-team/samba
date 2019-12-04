@@ -94,8 +94,14 @@ static void _print_drsuapi_DsAttributeValue_attid(struct ndr_print *ndr, const c
 
 	ndr_print_struct(ndr, name, "drsuapi_DsAttributeValue");
 	ndr->depth++;
-	v = IVAL(r->blob->data, 0);
-	ndr_print_uint32(ndr, "attid", v);
+	if (r->blob == NULL || r->blob->data == NULL) {
+		ndr_print_string(ndr, "attid", "NULL");
+	} else if (r->blob->length < 4) {
+		ndr_print_DATA_BLOB(ndr, "attid", *r->blob);
+	} else {
+		v = IVAL(r->blob->data, 0);
+		ndr_print_uint32(ndr, "attid", v);
+	}
 	ndr->depth--;
 }
 
