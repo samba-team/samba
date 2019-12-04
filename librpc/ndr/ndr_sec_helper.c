@@ -81,6 +81,7 @@ enum ndr_err_code ndr_pull_security_ace(struct ndr_pull *ndr, int ndr_flags, str
 		ndr->offset += pad;
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->object, r->type));
 		NDR_CHECK(ndr_pull_security_ace_object_ctr(ndr, NDR_BUFFERS, &r->object));
 	}
 	return NDR_ERR_SUCCESS;
