@@ -1240,6 +1240,9 @@ rpc_server:winreg = embedded
 rpc_server:spoolss = embedded
 rpc_daemon:spoolssd = embedded
 rpc_server:tcpip = no
+# override the new SMB2 only default
+client min protocol = CORE
+server min protocol = LANMAN1
 ";
 	if ($more_conf) {
 		$extra_smb_conf = $extra_smb_conf . $more_conf . "\n";
@@ -1290,7 +1293,9 @@ sub provision_rpc_proxy($$$)
 	dcerpc endpoint servers = epmapper, remote
 	dcerpc_remote:interfaces = rpcecho
 	dcerpc_remote:allow_anonymous_fallback = yes
-
+	# override the new SMB2 only default
+	client min protocol = CORE
+	server min protocol = LANMAN1
 [cifs_to_dc]
 	path = /tmp/_ignore_cifs_to_dc_/_none_
 	read only = no
