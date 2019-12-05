@@ -1175,7 +1175,7 @@ static struct ldb_dn *ldb_kv_index_key(struct ldb_context *ldb,
 		}
 	}
 
-	if (v.data != value->data && !empty_val) {
+	if (value != NULL && v.data != value->data && !empty_val) {
 		talloc_free(v.data);
 	}
 	talloc_free(attr_folded);
