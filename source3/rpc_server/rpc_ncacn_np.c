@@ -106,7 +106,7 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 {
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	struct dcerpc_ncacn_conn *ncacn_conn = NULL;
-	struct tevent_req *subreq;
+	struct dcesrv_connection *dcesrv_conn = NULL;
 	struct npa_state *npa;
 	NTSTATUS status;
 	int error;
@@ -192,7 +192,6 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 				      transport,
 				      ncacn_conn->remote_client_addr,
 				      ncacn_conn->local_server_addr,
-				      &ncacn_conn->session_info,
 				      &ncacn_conn->p,
 				      &error);
 	if (rc == -1) {
@@ -200,21 +199,49 @@ NTSTATUS make_internal_rpc_pipe_socketpair(
 		goto out;
 	}
 
-	ncacn_conn->send_queue = tevent_queue_create(ncacn_conn, "npa_server_write_queue");
-	if (ncacn_conn->send_queue == NULL) {
-		status = NT_STATUS_NO_MEMORY;
+	/*
+	 * This fills in dcesrv_conn->endpoint with the endpoint
+	 * associated with the socket.  From this point on we know
+	 * which (group of) services we are handling, but not the
+	 * specific interface.
+	 */
+	status = dcesrv_endpoint_connect(ncacn_conn->dce_ctx,
+					 ncacn_conn,
+					 ncacn_conn->endpoint,
+					 ncacn_conn->session_info,
+					 ncacn_conn->ev_ctx,
+					 DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
+					 &dcesrv_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to connect to endpoint: %s\n",
+			nt_errstr(status));
 		goto out;
 	}
 
-	subreq = dcerpc_read_ncacn_packet_send(ncacn_conn, ncacn_conn->ev_ctx,
-					       ncacn_conn->tstream);
-	if (subreq == NULL) {
-		DEBUG(2, ("Failed to start receiving packets\n"));
-		status = NT_STATUS_PIPE_BROKEN;
+	dcesrv_conn->transport.private_data = ncacn_conn;
+	dcesrv_conn->transport.report_output_data =
+		dcesrv_sock_report_output_data;
+	dcesrv_conn->transport.terminate_connection =
+		dcesrv_transport_terminate_connection;
+	dcesrv_conn->send_queue = tevent_queue_create(dcesrv_conn,
+						      "dcesrv send queue");
+	if (dcesrv_conn->send_queue == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		DBG_ERR("Failed to create send queue: %s\n",
+			nt_errstr(status));
 		goto out;
 	}
-	tevent_req_set_callback(subreq, dcerpc_ncacn_packet_process,
-				ncacn_conn);
+
+	dcesrv_conn->stream = talloc_move(dcesrv_conn, &ncacn_conn->tstream);
+	dcesrv_conn->local_address = ncacn_conn->local_server_addr;
+	dcesrv_conn->remote_address = ncacn_conn->remote_client_addr;
+
+	status = dcesrv_connection_loop_start(dcesrv_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to start dcesrv_connection loop: %s\n",
+			nt_errstr(status));
+		goto out;
+	}
 
 	*pnpa = talloc_move(mem_ctx, &npa);
 	status = NT_STATUS_OK;

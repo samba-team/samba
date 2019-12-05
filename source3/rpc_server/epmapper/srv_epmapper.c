@@ -29,6 +29,7 @@
 
 #include "librpc/rpc/dcesrv_core.h"
 #include "librpc/gen_ndr/ndr_epmapper_scompat.h"
+#include "rpc_server/rpc_server.h"
 
 typedef uint32_t error_status_t;
 
@@ -309,11 +310,31 @@ static bool is_privileged_pipe(struct auth_session_info *info) {
 	return true;
 }
 
-void srv_epmapper_delete_endpoints(struct pipes_struct *p, void *private_data)
+void srv_epmapper_delete_endpoints(struct dcesrv_connection *conn,
+				   void *private_data)
 {
+	struct pipes_struct *p = dcesrv_get_pipes_struct(conn);
+	struct dcesrv_auth *auth = NULL;
 	struct epm_Delete r;
 	struct dcesrv_ep_entry_list *el = p->ep_entries;
 	error_status_t result;
+
+	/* We have to set p->session_info to check if the connection is
+	 * privileged and delete the endpoints registered by this connection.
+	 * Set the default session info created at connection time as a
+	 * fallback.
+	 */
+	p->session_info = conn->default_auth_state->session_info;
+
+	/* Due to security context multiplexing we can have several states
+	 * in the connection. Search the one of type NCALRPC_AS_SYSTEM to
+	 * replace the default.
+	 */
+	for (auth = conn->auth_states; auth != NULL; auth = auth->next) {
+		if (auth->auth_type == DCERPC_AUTH_TYPE_NCALRPC_AS_SYSTEM) {
+			p->session_info = auth->session_info;
+		}
+	}
 
 	while (el) {
 		struct dcesrv_ep_entry_list *next = el->next;

@@ -337,7 +337,6 @@
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_no_auth_presentation_ctx_invalid4
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_spnego_change_auth_type2
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_spnego_change_transfer
-^samba.tests.dcerpc.raw_protocol.*\(ad_member\)
 # Association groups not implemented yet in s3 server implementation
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_assoc_group_fail1\(ad_member\)
 ^samba.tests.dcerpc.raw_protocol.*.TestDCERPC_BIND.test_assoc_group_fail2\(ad_member\)
@@ -348,8 +347,6 @@
 ^samba4.rpc.echo.*on.*with.object.echo.enum.*nt4_dc
 ^samba4.rpc.echo.*on.*with.object.echo.testcall.*nt4_dc
 ^samba4.rpc.echo.*on.*with.object.echo.testcall2.*nt4_dc
-^samba4.rpc.echo.*on.*with.object.echo.sinkdata.*nt4_dc
-^samba4.rpc.echo.*on.*with.object.echo.addone.*nt4_dc
 ^samba4.rpc.echo.*on.*ncacn_ip_tcp.*with.object.*nt4_dc
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_add_duplicate_different_type.*
 ^samba.tests.dcerpc.dnsserver.samba.tests.dcerpc.dnsserver.DnsserverTests.test_rank_none.*

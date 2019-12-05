@@ -28,7 +28,8 @@ struct pipes_struct;
 struct auth_session_info;
 struct cli_credentials;
 
-typedef void (*dcerpc_ncacn_termination_fn)(struct pipes_struct *, void *);
+typedef void (*dcerpc_ncacn_termination_fn)(struct dcesrv_connection *,
+					    void *);
 
 struct dcerpc_ncacn_conn {
 	int sock;
@@ -70,7 +71,6 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 			     enum dcerpc_transport_t transport,
 			     const struct tsocket_address *remote_address,
 			     const struct tsocket_address *local_address,
-			     struct auth_session_info **session_info,
 			     struct pipes_struct **_p,
 			     int *perrno);
 
@@ -125,5 +125,8 @@ NTSTATUS dcesrv_endpoint_by_ncacn_np_name(struct dcesrv_context *dce_ctx,
 					  struct dcesrv_endpoint **out);
 
 struct pipes_struct *dcesrv_get_pipes_struct(struct dcesrv_connection *conn);
+
+void dcesrv_transport_terminate_connection(struct dcesrv_connection *dce_conn,
+					   const char *reason);
 
 #endif /* _PRC_SERVER_H_ */

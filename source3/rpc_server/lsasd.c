@@ -332,7 +332,7 @@ static int lsasd_children_main(struct tevent_context *ev_ctx,
 	return ret;
 }
 
-static void lsasd_client_terminated(struct pipes_struct *p, void *pvt)
+static void lsasd_client_terminated(struct dcesrv_connection *conn, void *pvt)
 {
 	struct lsasd_children_data *data;
 

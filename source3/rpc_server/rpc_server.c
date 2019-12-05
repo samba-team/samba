@@ -47,11 +47,9 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 			     enum dcerpc_transport_t transport,
 			     const struct tsocket_address *remote_address,
 			     const struct tsocket_address *local_address,
-			     struct auth_session_info **psession_info,
 			     struct pipes_struct **_p,
 			     int *perrno)
 {
-	struct auth_session_info *session_info = *psession_info;
 	struct pipes_struct *p;
 	int ret;
 
@@ -62,18 +60,6 @@ int make_server_pipes_struct(TALLOC_CTX *mem_ctx,
 		*perrno = ret;
 		return -1;
 	}
-
-	if ((session_info->unix_token == NULL) ||
-	    (session_info->unix_info == NULL) ||
-	    (session_info->security_token == NULL)) {
-		DBG_ERR("Supplied session_info was incomplete!\n");
-		TALLOC_FREE(p);
-		*perrno = EINVAL;
-		return -1;
-	}
-
-	/* Don't call create_local_token(), we already have the full details here */
-	p->session_info = talloc_move(p, psession_info);
 
 	*_p = p;
 	return 0;
@@ -726,11 +712,14 @@ static void dcesrv_ncalrpc_listener(struct tevent_context *ev,
 			    state->termination_data);
 }
 
-static int dcerpc_ncacn_conn_destructor(struct dcerpc_ncacn_conn *ncacn_conn)
+static int dcesrv_connection_destructor(struct dcesrv_connection *conn)
 {
+	struct dcerpc_ncacn_conn *ncacn_conn = talloc_get_type_abort(
+			conn->transport.private_data,
+			struct dcerpc_ncacn_conn);
+
 	if (ncacn_conn->termination_fn != NULL) {
-		ncacn_conn->termination_fn(ncacn_conn->p,
-					   ncacn_conn->termination_data);
+		ncacn_conn->termination_fn(conn, ncacn_conn->termination_data);
 	}
 
 	return 0;
@@ -751,7 +740,6 @@ NTSTATUS dcerpc_ncacn_conn_init(TALLOC_CTX *mem_ctx,
 	if (ncacn_conn == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_set_destructor(ncacn_conn, dcerpc_ncacn_conn_destructor);
 
 	ncacn_conn->ev_ctx = ev_ctx;
 	ncacn_conn->msg_ctx = msg_ctx;
@@ -926,7 +914,6 @@ static void dcesrv_ncacn_np_accept_done(struct tevent_req *subreq)
 
 static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 {
-	struct tevent_req *subreq = NULL;
 	char *pipe_name = NULL;
 	uid_t uid;
 	gid_t gid;
@@ -936,6 +923,8 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 			ncacn_conn->endpoint->ep_description);
 	const char *endpoint = dcerpc_binding_get_string_option(
 			ncacn_conn->endpoint->ep_description, "endpoint");
+	struct dcesrv_connection *dcesrv_conn = NULL;
+	NTSTATUS status;
 
 	switch (transport) {
 		case NCACN_IP_TCP:
@@ -995,8 +984,6 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 	}
 
 	if (ncacn_conn->session_info == NULL) {
-		NTSTATUS status;
-
 		status = make_session_info_anonymous(ncacn_conn,
 						     &ncacn_conn->session_info);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -1014,7 +1001,6 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 				      transport,
 				      ncacn_conn->remote_client_addr,
 				      ncacn_conn->local_server_addr,
-				      &ncacn_conn->session_info,
 				      &ncacn_conn->p,
 				      &sys_errno);
 	if (rc < 0) {
@@ -1024,25 +1010,51 @@ static void dcesrv_ncacn_accept_step2(struct dcerpc_ncacn_conn *ncacn_conn)
 		return;
 	}
 
-	ncacn_conn->send_queue = tevent_queue_create(ncacn_conn,
-							"dcerpc send queue");
-	if (ncacn_conn->send_queue == NULL) {
-		DBG_ERR("No memory\n");
-		ncacn_terminate_connection(ncacn_conn, "No memory");
+	/*
+	 * This fills in dcesrv_conn->endpoint with the endpoint
+	 * associated with the socket.  From this point on we know
+	 * which (group of) services we are handling, but not the
+	 * specific interface.
+	 */
+	status = dcesrv_endpoint_connect(ncacn_conn->dce_ctx,
+					 ncacn_conn,
+					 ncacn_conn->endpoint,
+					 ncacn_conn->session_info,
+					 ncacn_conn->ev_ctx,
+					 DCESRV_CALL_STATE_FLAG_MAY_ASYNC,
+					 &dcesrv_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to connect to endpoint: %s\n",
+			nt_errstr(status));
+		ncacn_terminate_connection(ncacn_conn, nt_errstr(status));
+		return;
+	}
+	talloc_set_destructor(dcesrv_conn, dcesrv_connection_destructor);
+
+	dcesrv_conn->transport.private_data = ncacn_conn;
+	dcesrv_conn->transport.report_output_data =
+		dcesrv_sock_report_output_data;
+	dcesrv_conn->transport.terminate_connection =
+		dcesrv_transport_terminate_connection;
+	dcesrv_conn->send_queue = tevent_queue_create(dcesrv_conn,
+						      "dcesrv send queue");
+	if (dcesrv_conn->send_queue == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		DBG_ERR("Failed to create send queue: %s\n",
+			nt_errstr(status));
+		ncacn_terminate_connection(ncacn_conn, nt_errstr(status));
 		return;
 	}
 
-	subreq = dcerpc_read_ncacn_packet_send(ncacn_conn,
-					       ncacn_conn->ev_ctx,
-					       ncacn_conn->tstream);
-	if (subreq == NULL) {
-		DBG_ERR("No memory\n");
-		ncacn_terminate_connection(ncacn_conn, "No memory");
-		return;
+	dcesrv_conn->stream = talloc_move(dcesrv_conn, &ncacn_conn->tstream);
+	dcesrv_conn->local_address = ncacn_conn->local_server_addr;
+	dcesrv_conn->remote_address = ncacn_conn->remote_client_addr;
+	status = dcesrv_connection_loop_start(dcesrv_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("Failed to start dcesrv_connection loop: %s\n",
+				nt_errstr(status));
+		ncacn_terminate_connection(ncacn_conn, nt_errstr(status));
 	}
-
-	tevent_req_set_callback(subreq, dcerpc_ncacn_packet_process, ncacn_conn);
-
 	DBG_DEBUG("dcerpc_ncacn_accept done\n");
 
 	return;
@@ -1402,6 +1414,16 @@ NTSTATUS dcesrv_assoc_group_find(struct dcesrv_call_state *call)
 	}
 
 	return dcesrv_assoc_group_new(call, assoc_group_id);
+}
+
+void dcesrv_transport_terminate_connection(struct dcesrv_connection *dce_conn,
+					   const char *reason)
+{
+       struct dcerpc_ncacn_conn *ncacn_conn = talloc_get_type_abort(
+                       dce_conn->transport.private_data,
+                       struct dcerpc_ncacn_conn);
+
+       ncacn_terminate_connection(ncacn_conn, reason);
 }
 
 static void ncacn_terminate_connection(struct dcerpc_ncacn_conn *conn,

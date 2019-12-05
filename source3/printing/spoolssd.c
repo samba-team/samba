@@ -341,7 +341,8 @@ static int spoolss_children_main(struct tevent_context *ev_ctx,
 	return ret;
 }
 
-static void spoolss_client_terminated(struct pipes_struct *p, void *pvt)
+static void spoolss_client_terminated(struct dcesrv_connection *conn,
+				      void *pvt)
 {
 	struct spoolss_children_data *data;
 
