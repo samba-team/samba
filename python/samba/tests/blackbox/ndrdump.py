@@ -111,6 +111,20 @@ dump OK
         # convert expected to bytes for python 3
         self.assertEqual(actual, expected.encode('utf-8'))
 
+    def test_ndrdump_with_enum_not_struct(self):
+        expected = '''Public structure 'netr_SchannelType' not found
+'''
+        try:
+            actual = self.check_exit_code(
+                "ndrdump misc netr_SchannelType --input=x struct",
+                1)
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertEqual(actual, expected.encode('utf-8'))
+
     def test_ndrdump_input_cmdline_short_struct_name(self):
         expected = '''pull returned Buffer Size Error
 '''
