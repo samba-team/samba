@@ -1715,7 +1715,7 @@ static void test_get_size(void **state)
 	 * The tdb implementation of get_size over estimates for sparse files
 	 * which is perfectly acceptable for it's intended use.
 	 */
-	assert_true( size > 2500);
+	assert_in_range(size, 2500, 5000);
 #endif
 
 	/*
