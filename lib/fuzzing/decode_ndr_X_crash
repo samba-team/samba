@@ -75,6 +75,8 @@ def main():
                         help='say more')
     parser.add_argument('-H', '--honggfuzz-file',
                         help="extract crashes from this honggfuzz report")
+    parser.add_argument('-f', '--crash-filter',
+                        help="only print crashes matching this rexexp")
 
     args = parser.parse_args()
 
@@ -89,6 +91,10 @@ def main():
         sys.exit(1)
 
     for fn in args.FILES:
+        if args.crash_filter is not None:
+            if not re.search(args.crash_filter, fn):
+                print_if_verbose(f"skipping {fn}")
+                continue
         try:
             if fn == '-':
                 process_one_file(sys.stdin)
@@ -114,6 +120,12 @@ def main():
                 m = re.match(r'^FUZZ_FNAME: (\S+)$', line)
                 if m:
                     crash = m.group(1)
+                    if args.crash_filter is not None:
+                        if not re.search(args.crash_filter, crash):
+                            print_if_verbose(f"skipping {crash}")
+                            pipe = None
+                            crash = None
+                            continue
                     print_if_verbose(f"found crash {crash}")
                 if pipe is not None and crash is not None:
                     with open(crash, 'rb') as f:
