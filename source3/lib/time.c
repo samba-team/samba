@@ -183,6 +183,13 @@ void put_long_date_full_timespec(enum timestamp_set_resolution res,
 	SBVAL(p, 0, nt);
 }
 
+struct timespec pull_long_date_full_timespec(const char *p)
+{
+	NTTIME nt = BVAL(p, 0);
+
+	return nt_time_to_full_timespec(nt);
+}
+
 void put_long_date(char *p, time_t t)
 {
 	struct timespec ts;
