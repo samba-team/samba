@@ -1116,3 +1116,20 @@ time_t full_timespec_to_time_t(const struct timespec *_ts)
 	}
 	return ts.tv_sec;
 }
+
+/**
+ * Like nt_time_to_unix() but supports negative time_t values.
+ *
+ * Note: this function uses the full time_t range as valid date values including
+ * (time_t)0 and -1. That means that NTTIME sentinel values of 0 and -1 which
+ * represent a "not-set" value, can't be converted to sentinel values in a
+ * time_t representation. Callers should therefor check the NTTIME value with
+ * null_nttime() before calling this function.
+ **/
+time_t nt_time_to_full_time_t(NTTIME nt)
+{
+	struct timespec ts;
+
+	ts = nt_time_to_full_timespec(nt);
+	return full_timespec_to_time_t(&ts);
+}
