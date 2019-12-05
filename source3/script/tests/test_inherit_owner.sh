@@ -37,7 +37,7 @@ create_file() {
     local bname=$(basename $fname)
     touch $PREFIX/$bname
     $SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "cd $rem_dirname; rm $bname" 2>/dev/null
-    $SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "cd $rem_dirname; ls" 2>/dev/null | grep "$bname" && exit 1
+    $SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "cd $rem_dirname; allinfo $bname" 2>/dev/null | grep "NT_STATUS_OBJECT_NAME_NOT_FOUND" || exit 1
     $SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "lcd $PREFIX; cd $rem_dirname; put $bname" 2>/dev/null || exit 1
 }
 
@@ -47,7 +47,7 @@ create_dir() {
     local rem_dirname=$(dirname $dname)
     local bname=$(basename $dname)
     $SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "cd $rem_dirname; rmdir $bname" 2>/dev/null
-    $SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "cd $rem_dirname; ls" 2>/dev/null | grep "$dname" && exit 1
+    $SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "cd $rem_dirname; allinfo $bname" 2>/dev/null | grep "NT_STATUS_OBJECT_NAME_NOT_FOUND" || exit 1
     $SMBCLIENT //$SERVER/$share -U $USERNAME%$PASSWORD -c "cd $rem_dirname; mkdir $bname" 2>/dev/null || exit 1
 }
 
