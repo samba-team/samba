@@ -399,7 +399,10 @@ for env in ["fileserver:local"]:
 # TODO encrypted against member, with member creds, and with DC creds
 plantestsuite("samba3.blackbox.net.misc", "nt4_dc:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_misc.sh"),
-               scriptdir, "$SMB_CONF_PATH", net, configuration])
+               scriptdir, "$SMB_CONF_PATH", net, configuration, "NT1"])
+plantestsuite("samba3.blackbox.net.misc", "nt4_dc:local",
+              [os.path.join(samba3srcdir, "script/tests/test_net_misc.sh"),
+               scriptdir, "$SMB_CONF_PATH", net, configuration, "SMB3"])
 plantestsuite("samba3.blackbox.net.local.registry", "nt4_dc:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_registry.sh"),
                scriptdir, "$SMB_CONF_PATH", net, configuration])
