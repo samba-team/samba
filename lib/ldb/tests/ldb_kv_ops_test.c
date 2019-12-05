@@ -818,7 +818,7 @@ static void do_iterate_range_test(void **state, int range_start,
 	int ret;
 	struct test_ctx *test_ctx = talloc_get_type_abort(*state,
 							  struct test_ctx);
-	struct ldb_kv_private *ldb_kv = get_ldb_kv(test_ctx->ldb);
+	struct ldb_kv_private *ldb_kv = NULL;
 	int i;
 	int num_recs = 1024;
 	int skip_recs = 10;
@@ -826,6 +826,9 @@ static void do_iterate_range_test(void **state, int range_start,
 	struct ldb_val sk, ek;
 
 	TALLOC_CTX *tmp_ctx;
+
+	ldb_kv = get_ldb_kv(test_ctx->ldb);
+	assert_non_null(ldb_kv);
 
 	for (i = 0; i < num_recs; i++){
 		visits[i] = 0;
