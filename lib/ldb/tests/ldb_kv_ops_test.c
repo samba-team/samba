@@ -1739,6 +1739,12 @@ static void test_get_size(void **state)
 	size = ldb_kv->kv_ops->get_size(ldb_kv);
 #ifdef TEST_LMDB
 	assert_int_equal(3, size);
+#else
+	/*
+	 * The tdb implementation of get_size over estimates for sparse files
+	 * which is perfectly acceptable for it's intended use.
+	 */
+	assert_in_range(size, 2500, 5000);
 #endif
 	talloc_free(tmp_ctx);
 }
