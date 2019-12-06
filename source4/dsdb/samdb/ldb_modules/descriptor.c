@@ -1291,6 +1291,13 @@ static int descriptor_sd_propagation_recursive(struct ldb_module *module,
 
 		if (cur != NULL) {
 			DLIST_REMOVE(change->children, cur);
+		} else if (i == 0) {
+			/*
+			 * in the change->force_self case
+			 * res->msgs[0]->elements was not overwritten,
+			 * so set cur here
+			 */
+			cur = change;
 		}
 
 		for (c = stopped_stack; c; c = stopped_stack) {
