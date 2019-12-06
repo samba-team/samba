@@ -1080,23 +1080,37 @@ struct timespec make_omit_timespec(void)
  * Like unix_timespec_to_nt_time() but without the special casing of tv_sec=0
  * and -1. Also dealing with SAMBA_UTIME_OMIT.
  **/
-NTTIME full_timespec_to_nt_time(const struct timespec *ts)
+NTTIME full_timespec_to_nt_time(const struct timespec *_ts)
 {
+	struct timespec ts = *_ts;
 	uint64_t d;
 
-	if (ts->tv_sec == TIME_T_MAX) {
-		return 0x7fffffffffffffffLL;
+	if (is_omit_timespec(_ts)) {
+		return NTTIME_OMIT;
 	}
 
-	if (is_omit_timespec(ts)) {
-		return 0;
+	/* Ensure tv_nsec is less than 1 sec. */
+	while (ts.tv_nsec > 1000000000) {
+		if (ts.tv_sec > TIME_T_MAX) {
+			return NTTIME_MAX;
+		}
+		ts.tv_sec += 1;
+		ts.tv_nsec -= 1000000000;
 	}
 
-	d = ts->tv_sec;
-	d += TIME_FIXUP_CONSTANT_INT;
+	if (ts.tv_sec >= TIME_T_MAX) {
+		return NTTIME_MAX;
+	}
+	if ((ts.tv_sec + TIME_FIXUP_CONSTANT_INT) <= 0) {
+		return NTTIME_MIN;
+	}
+
+	d = TIME_FIXUP_CONSTANT_INT;
+	d += ts.tv_sec;
+
 	d *= 1000*1000*10;
 	/* d is now in 100ns units. */
-	d += (ts->tv_nsec / 100);
+	d += (ts.tv_nsec / 100);
 
 	return d;
 }
