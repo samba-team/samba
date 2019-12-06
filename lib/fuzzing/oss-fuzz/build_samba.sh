@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/sh -eux
 #
 # This is not a general-purpose build script, but instead one specific to the Google oss-fuzz compile environment.
 #
