@@ -873,7 +873,6 @@ bool lp_disable_spoolss( void );
 void lp_set_spoolss_state( uint32_t state );
 uint32_t lp_get_spoolss_state( void );
 struct smb_signing_state;
-bool lp_use_sendfile(int snum, struct smb_signing_state *signing_state);
 void set_use_sendfile(int snum, bool val);
 void lp_set_mangling_method(const char *new_method);
 bool lp_posix_pathnames(void);
