@@ -9,7 +9,17 @@ bld.SAMBA_LIBRARY('MESSAGING_SEND',
 
 bld.SAMBA_LIBRARY('MESSAGING',
 	source='messaging.c messaging_handlers.c',
-	public_deps='samba-util NDR_IRPC UNIX_PRIVS cluster ndr dcerpc messages_util server_id_db talloc_report',
+	public_deps='''
+            samba-util
+            NDR_IRPC
+            UNIX_PRIVS
+            cluster
+            ndr
+            dcerpc
+            messages_util
+            server_id_db
+            talloc_report
+            ''',
 	private_library=True
 	)
 
