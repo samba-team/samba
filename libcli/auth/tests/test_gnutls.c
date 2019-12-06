@@ -72,7 +72,9 @@ static void torture_gnutls_aes_128_cfb_flags(void **state,
 
 	DEBUG(0,("confounder before crypt:\n"));
 	dump_data(0, confounder, 8);
+	DEBUG(0,("initial seq num:\n"));
 	dump_data(0, seq_num_initial.data, 8);
+	DEBUG(0,("io data before crypt:\n"));
 	dump_data(0, io.data, io.length);
 
 	for (i = 0; i < key.size; i++) {
@@ -100,10 +102,12 @@ static void torture_gnutls_aes_128_cfb_flags(void **state,
 				   io.length);
 	assert_int_equal(rc, 0);
 
-	dump_data(0, io.data, io.length);
 	DEBUG(0,("confounder after crypt:\n"));
 	dump_data(0, confounder, 8);
+	DEBUG(0,("initial seq num:\n"));
 	dump_data(0, seq_num_initial.data, 8);
+	DEBUG(0,("io data after crypt:\n"));
+	dump_data(0, io.data, io.length);
 	assert_memory_equal(io.data, crypt_expected.data, crypt_expected.length);
 	assert_memory_equal(confounder, confounder_expected.data, confounder_expected.length);
 
@@ -118,10 +122,12 @@ static void torture_gnutls_aes_128_cfb_flags(void **state,
 	assert_int_equal(rc, 0);
 	gnutls_cipher_deinit(cipher_hnd);
 
-	dump_data(0, io.data, io.length);
 	DEBUG(0,("confounder after decrypt:\n"));
 	dump_data(0, confounder, 8);
+	DEBUG(0,("initial seq num:\n"));
 	dump_data(0, seq_num_initial.data, 8);
+	DEBUG(0,("io data after decrypt:\n"));
+	dump_data(0, io.data, io.length);
 	assert_memory_equal(io.data, clear_initial.data, clear_initial.length);
 	assert_memory_equal(confounder, confounder_initial.data, confounder_initial.length);
 }
