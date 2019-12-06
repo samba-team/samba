@@ -5888,7 +5888,7 @@ static int replmd_replicated_apply_search_for_parent(struct replmd_replicated_re
 static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 					   struct ldb_message *msg,
 					   struct ldb_request *parent,
-					   bool *renamed)
+					   bool *renamed_to_conflict)
 {
 	int ret;
 	TALLOC_CTX *tmp_ctx = talloc_new(msg);
@@ -5957,7 +5957,7 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 		}
 
 		msg->dn = new_dn;
-		*renamed = true;
+		*renamed_to_conflict = true;
 		talloc_free(tmp_ctx);
 		return LDB_SUCCESS;
 	}
@@ -6062,6 +6062,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	bool take_remote_isDeleted = false;
 	bool sd_updated = false;
 	bool renamed = false;
+	bool renamed_to_conflict = false;
 	bool is_schema_nc = false;
 	NTSTATUS nt_status;
 	const struct ldb_val *old_rdn, *new_rdn;
@@ -6162,7 +6163,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		 * the peer has an older name to what we have (see
 		 * replmd_replicated_apply_search_callback())
 		 */
-		ret = replmd_replicated_handle_rename(ar, msg, ar->req, &renamed);
+		ret = replmd_replicated_handle_rename(ar, msg, ar->req, &renamed_to_conflict);
 
 		/*
 		 * This looks strange, but we must set this after any
@@ -6170,10 +6171,8 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		 * happen (which might matter if we have a new parent)
 		 *
 		 * The additional case of calling
-		 * replmd_op_name_modify_callback (below) is:
-		 *  - a no-op if there was no name change
-		 * and
-		 *  - called in the default case regardless.
+		 * replmd_op_name_modify_callback (below) is
+		 * controlled by renamed_to_conflict.
 		 */
 		renamed = true;
 	}
@@ -6187,7 +6186,7 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		return replmd_replicated_request_werror(ar, WERR_DS_DRA_DB_ERROR);
 	}
 
-	if (renamed == true) {
+	if (renamed_to_conflict == true) {
 		/*
 		 * Set the callback to one that will fix up the name
 		 * metadata on the new conflict DN
