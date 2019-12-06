@@ -424,10 +424,10 @@ for env in ["fileserver:local"]:
     plantestsuite("samba3.blackbox.net_registry_import", env, [os.path.join(samba3srcdir, "script/tests/test_net_registry_import.sh"), '$SERVER', '$LOCAL_PATH', '$USERNAME', '$PASSWORD'])
 
 # TODO encrypted against member, with member creds, and with DC creds
-plantestsuite("samba3.blackbox.net.misc", "ad_dc:local",
+plantestsuite("samba3.blackbox.net.misc NT1", "ad_dc:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_misc.sh"),
                scriptdir, "$SMB_CONF_PATH", net, configuration, "NT1"])
-plantestsuite("samba3.blackbox.net.misc", "ad_dc:local",
+plantestsuite("samba3.blackbox.net.misc SMB3", "ad_dc:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_misc.sh"),
                scriptdir, "$SMB_CONF_PATH", net, configuration, "SMB3"])
 plantestsuite("samba3.blackbox.net.local.registry", "nt4_dc:local",
