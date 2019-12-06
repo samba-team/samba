@@ -6353,7 +6353,22 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		  ar->index_current, msg->num_elements);
 
 	if (renamed) {
-		sd_updated = true;
+		/*
+		 * This is an new name for this object, so we must
+		 * inherit from the parent
+		 *
+		 * This is needed because descriptor is above
+		 * repl_meta_data in the module stack, so this will
+		 * not be trigered 'naturally' by the flow of
+		 * operations.
+		 */
+		ret = dsdb_module_schedule_sd_propagation(ar->module,
+							  ar->objs->partition_dn,
+							  msg->dn,
+							  true);
+		if (ret != LDB_SUCCESS) {
+			return ldb_operr(ldb);
+		}
 	}
 
 	if (sd_updated && !isDeleted) {
