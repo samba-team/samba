@@ -1126,8 +1126,18 @@ struct timespec nt_time_to_full_timespec(NTTIME nt)
 	int64_t d;
 	struct timespec ret;
 
-	if ((nt == 0) || (nt == (int64_t)-1)) {
-		return (struct timespec){.tv_nsec = SAMBA_UTIME_OMIT};
+	if (nt == NTTIME_OMIT) {
+		return make_omit_timespec();
+	}
+	if (nt == NTTIME_FREEZE) {
+		/*
+		 * This should be returned as SAMBA_UTIME_FREEZE in the
+		 * future.
+		 */
+		return make_omit_timespec();
+	}
+	if (nt > NTTIME_MAX) {
+		nt = NTTIME_MAX;
 	}
 
 	d = (int64_t)nt;
