@@ -41,6 +41,29 @@
 #define TIME_T_MAX MIN(INT32_MAX,_TYPE_MAXIMUM(time_t))
 #endif
 
+/*
+ * According to Windows API FileTimeToSystemTime() documentation the highest
+ * allows value " ... must be less than 0x8000000000000000.".
+ */
+#define NTTIME_MAX INT64_MAX
+
+/*
+ * The lowest possible value when NTTIME=0 is used as sentinel value.
+ */
+#define NTTIME_MIN 1
+
+/*
+ * NTTIME_OMIT in a setinfo tells us to not modify the corresponding on-disk
+ * timestamp value.
+ */
+#define NTTIME_OMIT 0
+
+/*
+ * Disable automatic timestamp updates, as described in MS-FSA. Samba doesn't
+ * implement this yet.
+ */
+#define NTTIME_FREEZE UINT64_MAX
+
 #define SAMBA_UTIME_NOW UTIME_NOW
 #define SAMBA_UTIME_OMIT UTIME_OMIT
 
