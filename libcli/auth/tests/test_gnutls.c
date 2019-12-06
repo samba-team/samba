@@ -29,7 +29,7 @@
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
 
-#ifdef HAVE_GNUTLS_AES_CFB8
+#if defined(HAVE_GNUTLS_AES_CFB8) && GNUTLS_VERSION_NUMBER > 0x03060a
 static void torture_gnutls_aes_128_cfb_flags(void **state,
 					const DATA_BLOB session_key,
 					const DATA_BLOB seq_num_initial,
@@ -135,7 +135,7 @@ static void torture_gnutls_aes_128_cfb_flags(void **state,
 
 static void torture_gnutls_aes_128_cfb(void **state)
 {
-#ifdef HAVE_GNUTLS_AES_CFB8
+#if defined(HAVE_GNUTLS_AES_CFB8) && GNUTLS_VERSION_NUMBER > 0x03060a
 	const uint8_t _session_key[16] = {
 		0x8E, 0xE8, 0x27, 0x85, 0x83, 0x41, 0x3C, 0x8D,
 		0xC9, 0x54, 0x70, 0x75, 0x8E, 0xC9, 0x69, 0x91
