@@ -1,2 +1,1 @@
-^samba4.drs.repl_secdesc.python\(.*\).repl_secdesc.ReplAclTestCase.test_acl_inheirt_renamed_object_in_conflict
 ^samba4.drs.repl_secdesc.python\(.*\).repl_secdesc.ReplAclTestCase.test_acl_inheirt_renamed_child_object
