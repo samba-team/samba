@@ -433,6 +433,7 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                         talloc_report_printf
                         access
                         TDB_LIB
+                        z
                         ''')
 
 bld.SAMBA3_LIBRARY('smbd_shim',
