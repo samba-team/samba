@@ -595,7 +595,7 @@ bld.SAMBA3_LIBRARY('smbconf',
                         SAMBA_VERSION
                         cap
                         charset
-                        cli_smb_common
+                        samba-hostconfig
                         errors3
                         SMBCONF_PARAM
                         samba-util
