@@ -56,12 +56,31 @@ ctdb_nodes_stop ()
 {
 	local nodespec="${1:-all}"
 
-	$ctdb_local_daemons stop "$nodespec"
+	if $ctdb_local_daemons stop "$nodespec" ; then
+		return 0
+	fi
+
+	# Failed, dump logs?
+	if $CTDB_TEST_PRINT_LOGS_ON_ERROR ; then
+		_print_logs
+	fi
+
+	# Next level up can log the error...
+	return 1
 }
 
 onnode ()
 {
 	$ctdb_local_daemons onnode "$@"
+}
+
+
+
+_print_logs ()
+{
+	echo "*** LOG START --------------------"
+	$ctdb_local_daemons print-log all | tail -n 500
+	echo "*** LOG END   --------------------"
 }
 
 _print_logs_on_test_failure ()
@@ -72,7 +91,5 @@ _print_logs_on_test_failure ()
 		return
 	fi
 
-	echo "*** LOG START --------------------"
-	$ctdb_local_daemons print-log all | tail -n 500
-	echo "*** LOG END   --------------------"
+	_print_logs
 }
