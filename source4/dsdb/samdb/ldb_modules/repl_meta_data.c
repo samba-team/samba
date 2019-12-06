@@ -6160,6 +6160,19 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		 * replmd_replicated_apply_search_callback())
 		 */
 		ret = replmd_replicated_handle_rename(ar, msg, ar->req, &renamed);
+
+		/*
+		 * This looks strange, but we must set this after any
+		 * rename, otherwise the SD propegation will not
+		 * happen (which might matter if we have a new parent)
+		 *
+		 * The additional case of calling
+		 * replmd_op_name_modify_callback (below) is:
+		 *  - a no-op if there was no name change
+		 * and
+		 *  - called in the default case regardless.
+		 */
+		renamed = true;
 	}
 
 	if (ret != LDB_SUCCESS) {
