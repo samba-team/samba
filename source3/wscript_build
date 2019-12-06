@@ -507,6 +507,8 @@ bld.SAMBA3_LIBRARY('secrets3',
                         smbconf
                         samba3util
                         dbwrap
+                        krb5samba
+                        LIBCLI_AUTH
                         ''',
                    private_library=True)
 
