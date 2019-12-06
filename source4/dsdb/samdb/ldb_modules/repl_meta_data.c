@@ -5907,7 +5907,6 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 				 DSDB_FLAG_NEXT_MODULE, ar->req);
 	if (ret == LDB_SUCCESS) {
 		talloc_free(tmp_ctx);
-		*renamed = true;
 		return ret;
 	}
 
