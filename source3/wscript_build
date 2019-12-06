@@ -279,7 +279,7 @@ bld.SAMBA3_LIBRARY('popt_samba3_cmdline',
 
 bld.SAMBA3_LIBRARY('util_cmdline',
                    source='lib/util_cmdline.c',
-                   deps='secrets3',
+                   deps='secrets3 samba-credentials',
                    private_library=True)
 
 bld.SAMBA3_LIBRARY('cmdline_contexts',
