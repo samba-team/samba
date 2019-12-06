@@ -235,14 +235,14 @@ DO NOT ACCESS conn-&gt;vfs.ops.* directly !!!
 #define SMB_VFS_CLOSE(fsp, fd) \
 	((fsp)-&gt;conn-&gt;vfs.ops.close(\
 	(fsp)-&gt;conn-&gt;vfs.handles.close, (fsp), (fd)))
-#define SMB_VFS_READ(fsp, fd, data, n) \
+#define SMB_VFS_PREAD(fsp, fd, data, n, off) \
 	((fsp)-&gt;conn-&gt;vfs.ops.read(\
 	(fsp)-&gt;conn-&gt;vfs.handles.read,\
-	 (fsp), (fd), (data), (n)))
-#define SMB_VFS_WRITE(fsp, fd, data, n) \
+	 (fsp), (fd), (data), (n), (off)))
+#define SMB_VFS_PWRITE(fsp, fd, data, n, off) \
 	((fsp)-&gt;conn-&gt;vfs.ops.write(\
 	(fsp)-&gt;conn-&gt;vfs.handles.write,\
-	 (fsp), (fd), (data), (n)))
+	 (fsp), (fd), (data), (n), (off)))
 #define SMB_VFS_LSEEK(fsp, fd, offset, whence) \
 	((fsp)-&gt;conn-&gt;vfs.ops.lseek(\
 	(fsp)-&gt;conn-&gt;vfs.handles.lseek,\
