@@ -18,7 +18,7 @@ bld.SAMBA_LIBRARY('MESSAGING',
             dcerpc
             messages_util
             server_id_db
-            talloc_report
+            talloc_report_printf
             ''',
 	private_library=True
 	)
