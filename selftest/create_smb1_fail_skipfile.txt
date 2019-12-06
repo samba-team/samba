@@ -1,0 +1,190 @@
+From a85b0a942ef07b6188255b2fee2fc379e9310409 Mon Sep 17 00:00:00 2001
+From: Noel Power <noel.power@suse.com>
+Date: Fri, 27 Sep 2019 15:24:25 +0100
+Subject: [PATCH] selftest: Generate a list of skip entries for SMB1
+
+The following changes prepare the test system so we can generate
+the list of tests that fail when SMB1 can no longer be negotiated
+
+1.
+Change the values of 'min protocol' set for the various test
+environments to be SMB2_02.
+
+Servers will only offer protocols starting with the min specified in the
+conf files, we don't need to change the client value here yet (until SMB1 is
+truely gone)
+
+2.
+The following environments will still negotiate SMB1
+   ad_dc_ntvfs, rpc_proxy & s4member
+
+3.
+Make test wont stop on first error
+
+Once this patch is applied either
+a. Commit to gitlab or
+b. Run a private autobuild
+
+For the failing test jobs gather the stdout logs and run the parser
+
+   source4/scripting/devel/test_errors_regrex.py logfile
+
+over the output. This script will generate lines suitable for a
+skipfile.
+
+It is a good idea as a final step to say create a file e.g.
+
+    selftest/skip_smb1_fails
+
+and then exclude those tests, running CI with patch similar to wscript
+below will verify that the list of tests is complete.
+
+--- a/selftest/wscript
++++ b/selftest/wscript
+@@ -179,6 +179,9 @@ def cmd_testonly(opt):
+     else:
+         env.FILTER_OPTIONS = '${FILTER_XFAIL}'
+
++    # Maybe this should be optional
++    env.OPTIONS += ' --exclude=${srcdir}/selftest/skip_smb1_fails'
++
+---
+ script/autobuild.py                           |  2 +-
+ selftest/target/Samba3.pm                     |  4 +--
+ selftest/target/Samba4.pm                     | 14 ++++++--
+ source4/scripting/devel/test_errors_regrex.py | 49 +++++++++++++++++++++++++++
+ 4 files changed, 63 insertions(+), 6 deletions(-)
+ create mode 100755 source4/scripting/devel/test_errors_regrex.py
+
+diff --git a/script/autobuild.py b/script/autobuild.py
+index 85167cfa993..5bf087f652c 100755
+--- a/script/autobuild.py
++++ b/script/autobuild.py
+@@ -184,7 +184,7 @@ def format_option(name, value=None):
+ 
+ def make_test(
+         cmd='make test',
+-        FAIL_IMMEDIATELY=1,
++        FAIL_IMMEDIATELY=0,
+         TESTS='',
+         include_envs=None,
+         exclude_envs=None):
+diff --git a/selftest/target/Samba3.pm b/selftest/target/Samba3.pm
+index 41d439ea91a..ca14f86e0a4 100755
+--- a/selftest/target/Samba3.pm
++++ b/selftest/target/Samba3.pm
+@@ -1708,8 +1708,8 @@ sub provision($$$$$$$$$)
+ 	panic action = cd $self->{srcdir} && $self->{srcdir}/selftest/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
+ 	smbd:suicide mode = yes
+ 
+-	client min protocol = CORE
+-	server min protocol = LANMAN1
++       client min protocol = SMB2_02
++       server min protocol = SMB2_02
+ 
+ 	workgroup = $domain
+ 
+diff --git a/selftest/target/Samba4.pm b/selftest/target/Samba4.pm
+index 1310e2ff09f..dd7fc807703 100755
+--- a/selftest/target/Samba4.pm
++++ b/selftest/target/Samba4.pm
+@@ -713,8 +713,8 @@ sub provision_raw_step1($$)
+ 	log level = $ctx->{server_loglevel}
+ 	lanman auth = Yes
+ 	ntlm auth = Yes
+-	client min protocol = CORE
+-	server min protocol = LANMAN1
++       client min protocol = SMB2_02
++       server min protocol = SMB2_02
+ 	mangled names = yes
+ 	dns update command = $ctx->{samba_dnsupdate}
+ 	spn update command = $ctx->{python} $ENV{SRCDIR_ABS}/source4/scripting/bin/samba_spnupdate -s $ctx->{smb_conf}
+@@ -1188,6 +1188,9 @@ rpc_server:winreg = embedded
+ rpc_server:spoolss = embedded
+ rpc_daemon:spoolssd = embedded
+ rpc_server:tcpip = no
++       # override the new SMB2 only default
++       client min protocol = CORE
++       server min protocol = LANMAN1
+ ";
+ 	if ($more_conf) {
+ 		$extra_smb_conf = $extra_smb_conf . $more_conf . "\n";
+@@ -1238,7 +1241,9 @@ sub provision_rpc_proxy($$$)
+ 	dcerpc endpoint servers = epmapper, remote
+ 	dcerpc_remote:interfaces = rpcecho
+ 	dcerpc_remote:allow_anonymous_fallback = yes
+-
++	# override the new SMB2 only default
++	client min protocol = CORE
++	server min protocol = LANMAN1
+ [cifs_to_dc]
+ 	path = /tmp/_ignore_cifs_to_dc_/_none_
+ 	read only = no
+@@ -1470,6 +1475,9 @@ sub provision_ad_dc_ntvfs($$$)
+ 	dsdb password event notification = true
+ 	dsdb group change notification = true
+ 	server schannel = auto
++	# override the new SMB2 only default
++	client min protocol = CORE
++	server min protocol = LANMAN1
+ 	";
+ 	push (@{$extra_provision_options}, "--use-ntvfs");
+ 	my $ret = $self->provision($prefix,
+diff --git a/source4/scripting/devel/test_errors_regrex.py b/source4/scripting/devel/test_errors_regrex.py
+new file mode 100755
+index 00000000000..eedfdbb6c35
+--- /dev/null
++++ b/source4/scripting/devel/test_errors_regrex.py
+@@ -0,0 +1,49 @@
++#!/usr/bin/env python3
++#
++# Simple script to parse make test stdout results
++# to find the tests that are in error, the scrip
++# then creates a line for each error suitable for
++# putting into a skip file.
++# This scripts intended use is in SMB1 to SMB2 test
++# porting where it can be used to parse for failing
++# scripts in the case where the test envs are set
++# to not negotiate SMB1
++#
++import sys
++import re
++import os
++
++def parse_errors(infile):
++    all_tests = []
++    error_tests = []
++    # get all test lines
++    last_err = ""
++    for line in infile:
++        line = line.rstrip(os.linesep)
++        if re.match("^\[.* at .*\]", line):
++            test_info = line.split(',')
++            if len(test_info) > 1:
++                err = test_info[1].split()[0]
++                if err != last_err:
++                    error_tests.append(all_tests[-1])
++                last_err = err
++            all_tests.append(line.split(']',1)[1].lstrip())
++    return error_tests
++
++def main():
++    if len(sys.argv) < 2:
++        print ("no args passed")
++        sys.exit(1)
++    print ("processing %s" % sys.argv[1])
++    inputf = sys.argv[1]
++    f = open(inputf, "r")
++    failing_tests = parse_errors(f)
++    f.close()
++    for t in failing_tests:
++        # adust t fo regex
++        t = t.replace('(', '\\(').replace(')', '\\)')
++        t = t.replace('[', '\\[').replace(']', '\\]')
++        t = "^" + t
++        print("%s" % t)
++if __name__ == '__main__':
++    main()
+-- 
+2.16.4
+
