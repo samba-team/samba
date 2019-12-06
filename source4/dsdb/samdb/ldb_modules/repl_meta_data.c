@@ -6007,7 +6007,10 @@ static int replmd_replicated_handle_rename(struct replmd_replicated_request *ar,
 		 ldb_dn_get_linearized(ar->search_msg->dn),
 		 ldb_dn_get_linearized(msg->dn)));
 
-
+	/*
+	 * With the other record out of the way, do the rename we had
+	 * at the top again
+	 */
 	ret = dsdb_module_rename(ar->module, ar->search_msg->dn, msg->dn,
 				 DSDB_FLAG_NEXT_MODULE, ar->req);
 	if (ret != LDB_SUCCESS) {
