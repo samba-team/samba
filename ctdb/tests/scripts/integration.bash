@@ -50,7 +50,7 @@ ctdb_test_exit ()
     unset ctdb_test_exit_hook
 
     echo "Stopping cluster..."
-    ctdb_nodes_stop
+    ctdb_nodes_stop || ctdb_test_error "Cluster shutdown failed"
 
     exit $status
 }
@@ -95,10 +95,10 @@ ctdb_test_init ()
 	ctdb_nodes_stop >/dev/null 2>&1 || true
 
 	echo "Configuring cluster..."
-	setup_ctdb "$@" || exit 1
+	setup_ctdb "$@" || ctdb_test_error "Cluster configuration failed"
 
 	echo "Starting cluster..."
-	ctdb_init || exit 1
+	ctdb_init || ctdb_test_error "Cluster startup failed"
 
 	echo  "*** SETUP COMPLETE AT $(date '+%F %T'), RUNNING TEST..."
 }
