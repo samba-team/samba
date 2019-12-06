@@ -66,7 +66,6 @@
 ^samba3.base.xcopy\(ad_dc\)
 ^samba3.base.xcopy\(nt4_dc\)
 ^samba3.blackbox.net.misc\(nt4_dc:local\)
-^samba3.blackbox.shadow_copy2.NT1\(fileserver\)
 ^samba3.blackbox.smbclient_auth.plain.--option=clientusespnego=no --option=clientntlmv2auth=no -mNT1\(ad_member\)
 ^samba3.blackbox.smbclient_auth.plain.--option=clientusespnego=no --option=clientntlmv2auth=no -mNT1.member_creds\(ad_member\)
 ^samba3.blackbox.smbclient_auth.plain.--option=clientntlmv2auth=no --option=clientlanmanauth=yes --max-protocol=LANMAN2\(nt4_dc\)
