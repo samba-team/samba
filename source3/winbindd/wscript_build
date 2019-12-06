@@ -116,7 +116,7 @@ bld.SAMBA3_MODULE('idmap_autorid',
 
 bld.SAMBA3_LIBRARY('nss_info',
                    source='nss_info.c',
-                   deps='samba-util smbconf',
+                   deps='samba-util smbconf samba-modules',
                    private_library=True)
 
 bld.SAMBA3_MODULE('nss_info_template',
