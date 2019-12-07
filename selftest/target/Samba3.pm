@@ -50,7 +50,7 @@ sub get_fs_specific_conf($$)
 		return "vfs objects = $mods";
 	}
 
-	return undef;
+	return '';
 }
 
 sub new($$) {
