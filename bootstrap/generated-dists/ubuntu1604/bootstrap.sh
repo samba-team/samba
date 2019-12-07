@@ -19,6 +19,7 @@ apt-get -y install \
     binutils \
     bison \
     build-essential \
+    chrpath \
     curl \
     debhelper \
     dnsutils \

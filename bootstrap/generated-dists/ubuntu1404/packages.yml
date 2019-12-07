@@ -8,6 +8,7 @@ packages:
   - binutils
   - bison
   - build-essential
+  - chrpath
   - curl
   - debhelper
   - dnsutils

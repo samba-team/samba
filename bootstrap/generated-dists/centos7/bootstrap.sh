@@ -22,6 +22,7 @@ yum install -y \
     bind-utils \
     binutils \
     bison \
+    chrpath \
     compat-gnutls34-devel \
     cups-devel \
     curl \

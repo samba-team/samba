@@ -19,6 +19,7 @@ dnf install -y \
     bind-utils \
     binutils \
     bison \
+    chrpath \
     cups-devel \
     curl \
     dbus-devel \

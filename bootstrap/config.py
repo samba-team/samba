@@ -37,6 +37,7 @@ COMMON = [
     'binutils',
     'bison',
     'curl',
+    'chrpath',
     'flex',
     'gcc',
     'gdb',

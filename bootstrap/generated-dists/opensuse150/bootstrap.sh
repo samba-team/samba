@@ -19,6 +19,7 @@ zypper --non-interactive install \
     bind-utils \
     binutils \
     bison \
+    chrpath \
     cups-devel \
     curl \
     dbus-1-devel \
