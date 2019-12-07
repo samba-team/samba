@@ -1399,7 +1399,7 @@ sub check_or_start($$$$$) {
 	write_pid($env_vars, "smbd", $pid);
 
 	# close the parent's read-end of the pipe
-	close(STDIN_READER);
+	close($STDIN_READER);
 
 	return $self->wait_for_start($env_vars, $nmbd, $winbindd, $smbd);
 }
