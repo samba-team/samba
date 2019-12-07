@@ -57,6 +57,11 @@ for x in bin/fuzz_*
 do
     cp $x $OUT/
     bin=`basename $x`
+
+    # Copy any system libraries needed by this fuzzer to $OUT/lib
     ldd $OUT/$bin | cut -f 2 -d '>' | cut -f 1 -d \( | cut -f 2 -d  ' ' | xargs -i cp \{\} $OUT/lib/
+
+    # Change RUNPATH so that the copied libraries are found on the
+    # runner
     chrpath -r '$ORIGIN/lib' $OUT/$bin
 done
