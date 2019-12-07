@@ -323,9 +323,13 @@ sub setup_dns_hub_internal($$$)
 		FULL_CMD => [ @full_cmd ],
 		LOG_FILE => $env->{DNS_HUB_LOG},
 		TEE_STDOUT => 1,
-		PCAP_FILE => "$ENV{SOCKET_WRAPPER_PCAP_DIR}/env-$hostname$.pcap",
 		ENV_VARS => {},
 	};
+
+	my $pcap_dir = $ENV{SOCKET_WRAPPER_PCAP_DIR};
+	if (defined $pcap_dir) {
+		$daemon_ctx->{PCAP_FILE} = "$pcap_dir/env-$hostname$.pcap",
+	}
 
 	# use a pipe for stdin in the child processes. This allows
 	# those processes to monitor the pipe for EOF to ensure they
