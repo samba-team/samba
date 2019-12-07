@@ -64,4 +64,7 @@ do
     # Change RUNPATH so that the copied libraries are found on the
     # runner
     chrpath -r '$ORIGIN/lib' $OUT/$bin
+
+    # Truncate the original binary to save space
+    echo -n > $x
 done
