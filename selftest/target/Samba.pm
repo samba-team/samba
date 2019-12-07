@@ -95,6 +95,9 @@ sub setup_env($$$)
 	$target->{vars}->{$envname}->{target} = $target;
 
 	foreach(@{$ENV_DEPS_POST{$envname}}) {
+		if (not defined $_) {
+			continue;
+		}
 		my $vars = $self->setup_env($_, $path);
 		if (not defined($vars)) {
 			return undef;
