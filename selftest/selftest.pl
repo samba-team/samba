@@ -583,7 +583,7 @@ sub write_clientconf($$$)
 	# USER-${USER_PRINCIPAL_NAME}-private-key.pem symlink
 	# We make a copy here and make the certificated easily
 	# accessable in the client environment.
-	my $mask = umask;
+	$mask = umask;
 	umask 0077;
 	opendir USERS, "${ca_users_dir}" or die "Could not open dir '${ca_users_dir}': $!";
 	for my $d (readdir USERS) {

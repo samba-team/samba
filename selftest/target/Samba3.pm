@@ -349,7 +349,7 @@ sub setup_nt4_member
 	}
 
 	# Add hosts file for name lookups
-	my $cmd = "NSS_WRAPPER_HOSTS='$ret->{NSS_WRAPPER_HOSTS}' ";
+	$cmd = "NSS_WRAPPER_HOSTS='$ret->{NSS_WRAPPER_HOSTS}' ";
 	$cmd .= "SOCKET_WRAPPER_DEFAULT_IFACE=\"$ret->{SOCKET_WRAPPER_DEFAULT_IFACE}\" ";
 	$cmd .= "SELFTEST_WINBINDD_SOCKET_DIR=\"$ret->{SELFTEST_WINBINDD_SOCKET_DIR}\" ";
 	$cmd .= "$net $ret->{CONFIGURATION} primarytrust dumpinfo | grep -q 'REDACTED SECRET VALUES'";
@@ -1372,7 +1372,7 @@ sub check_or_start($$$$$) {
 	if ($winbindd ne "yes") {
 		$daemon_ctx->{SKIP_DAEMON} = 1;
 	}
-	my $pid = Samba::fork_and_exec($self, $env_vars, $daemon_ctx, $STDIN_READER);
+	$pid = Samba::fork_and_exec($self, $env_vars, $daemon_ctx, $STDIN_READER);
 
 	$env_vars->{WINBINDD_TL_PID} = $pid;
 	write_pid($env_vars, "winbindd", $pid);
@@ -1393,7 +1393,7 @@ sub check_or_start($$$$$) {
 		$daemon_ctx->{SKIP_DAEMON} = 1;
 	}
 
-	my $pid = Samba::fork_and_exec($self, $env_vars, $daemon_ctx, $STDIN_READER);
+	$pid = Samba::fork_and_exec($self, $env_vars, $daemon_ctx, $STDIN_READER);
 
 	$env_vars->{SMBD_TL_PID} = $pid;
 	write_pid($env_vars, "smbd", $pid);

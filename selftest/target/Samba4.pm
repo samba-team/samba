@@ -939,7 +939,7 @@ servicePrincipalName: host/testallowed
 		return undef;
 	}
 
-	my $user_dn = "cn=testdenied,cn=users,$base_dn";
+	$user_dn = "cn=testdenied,cn=users,$base_dn";
 	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
 	print LDIF "dn: $user_dn
 changetype: modify
@@ -959,7 +959,7 @@ userPrincipalName: testdenied_upn\@$ctx->{realm}.upn
 		return undef;
 	}
 
-	my $user_dn = "cn=testupnspn,cn=users,$base_dn";
+	$user_dn = "cn=testupnspn,cn=users,$base_dn";
 	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
 	print LDIF "dn: $user_dn
 changetype: modify
@@ -1013,7 +1013,7 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 	}
 
 	# Add user joe to group "Samba Users"
-	my $samba_tool_cmd = "";
+	$samba_tool_cmd = "";
 	my $group = "Samba Users";
 	my $user_account = "joe";
 
@@ -1026,9 +1026,9 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 		return undef;
 	}
 
-	my $samba_tool_cmd = "";
-	my $group = "Samba Users";
-	my $user_account = "joe";
+	$samba_tool_cmd = "";
+	$group = "Samba Users";
+	$user_account = "joe";
 
 	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
@@ -1040,13 +1040,13 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 	}
 
 	# Change the userPrincipalName for jane
-	my $ldbmodify = "";
+	$ldbmodify = "";
 	$ldbmodify .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$ldbmodify .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
 	$ldbmodify .= Samba::bindir_path($self, "ldbmodify");
 	$ldbmodify .=  " --configfile=$ctx->{smb_conf}";
-	my $base_dn = "DC=".join(",DC=", split(/\./, $ctx->{realm}));
-	my $user_dn = "cn=jane,cn=users,$base_dn";
+	$base_dn = "DC=".join(",DC=", split(/\./, $ctx->{realm}));
+	$user_dn = "cn=jane,cn=users,$base_dn";
 
 	open(LDIF, "|$ldbmodify -H $ctx->{privatedir}/sam.ldb");
 	print LDIF "dn: $user_dn
@@ -1408,8 +1408,8 @@ sub provision_promoted_dc($$$)
 		return undef;
 	}
 
-	my $samba_tool =  Samba::bindir_path($self, "samba-tool");
-	my $cmd = $self->get_cmd_env_vars($ret);
+	$samba_tool =  Samba::bindir_path($self, "samba-tool");
+	$cmd = $self->get_cmd_env_vars($ret);
 	$cmd .= "$samba_tool domain dcpromo $ret->{CONFIGURATION} $dcvars->{REALM} DC --realm=$dcvars->{REALM}";
 	$cmd .= " -U$dcvars->{DC_USERNAME}\%$dcvars->{DC_PASSWORD}";
 	$cmd .= " --machinepass=machine$ret->{PASSWORD} --dns-backend=BIND9_DLZ";
@@ -2344,13 +2344,13 @@ sub setup_generic_vampire_dc
 		}
 
 		# Pull in a full set of changes from the main DC
-		my $base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
+		$base_dn = "DC=".join(",DC=", split(/\./, $dc_vars->{REALM}));
 		$cmd = $self->get_cmd_env_vars($env);
 		$cmd .= " $samba_tool drs replicate $env->{SERVER} $env->{DC_SERVER}";
 		$cmd .= " $dc_vars->{CONFIGURATION}";
 		$cmd .= " -U$dc_vars->{DC_USERNAME}\%$dc_vars->{DC_PASSWORD}";
 		# replicate Configuration NC
-		my $cmd_repl = "$cmd \"CN=Configuration,$base_dn\"";
+		$cmd_repl = "$cmd \"CN=Configuration,$base_dn\"";
 		unless(system($cmd_repl) == 0) {
 			warn("Failed to replicate\n$cmd_repl");
 			return undef;
