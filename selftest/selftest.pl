@@ -856,17 +856,19 @@ sub setup_env($$)
 		}
 	} else {
 		$testenv_vars = $target->setup_env($envname, $prefix);
-		if (defined($testenv_vars) and $testenv_vars eq "UNKNOWN") {
-		    return $testenv_vars;
-		} elsif (defined($testenv_vars) && not defined($testenv_vars->{target})) {
-		        $testenv_vars->{target} = $target;
-		}
 		if (not defined($testenv_vars)) {
+			my $msg = "$opt_target can't start up known environment '$envname'";
 			if ($opt_one) {
-				die("$opt_target can't start up known environment '$envname'");
-			} else {
-				warn("$opt_target can't start up known environment '$envname'");
+				die($msg);
 			}
+			warn $msg;
+			return;
+		}
+		if (ref $testenv_vars ne "HASH") {
+			return $testenv_vars;
+		}
+		if (defined($testenv_vars->{target})) {
+			$testenv_vars->{target} = $target;
 		}
 	}
 
