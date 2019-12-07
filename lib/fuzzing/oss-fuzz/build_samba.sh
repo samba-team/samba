@@ -18,11 +18,27 @@ export CFLAGS
 LD="$CXX"
 export LD
 
+# $SANITIZER is provided by the oss-fuzz "compile" command
+#
+# We need to add the waf configure option as otherwise when we also
+# get (eg) -fsanitize=address via the CFLAGS we will fail to link
+# correctly
+
+case "$SANITIZER" in
+    address)
+	SANITIZER_ARG='--address-sanitizer'
+	;;
+    undefined)
+	SANITIZER_ARG='--undefined-sanitizer'
+	;;
+esac
+
 # $LIB_FUZZING_ENGINE is provided by the oss-fuzz "compile" command
 #
 
 ./configure -C --without-gettext --enable-debug --enable-developer \
-            --address-sanitizer --enable-libfuzzer \
+            --enable-libfuzzer \
+	    $SANITIZER_ARG \
 	    --disable-warnings-as-errors \
 	    --abi-check-disable \
 	    --fuzz-target-ldflags="$LIB_FUZZING_ENGINE" \
