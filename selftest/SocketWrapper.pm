@@ -24,6 +24,7 @@ use Exporter;
 @EXPORT_OK = qw(setup_dir setup_pcap set_default_iface);
 
 use strict;
+use warnings;
 use FindBin qw($RealBin);
 
 sub setup_dir($$)

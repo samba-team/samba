@@ -9,6 +9,7 @@
 package Samba4;
 
 use strict;
+use warnings;
 use Cwd qw(abs_path);
 use FindBin qw($RealBin);
 use POSIX;

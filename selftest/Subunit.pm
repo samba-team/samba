@@ -22,6 +22,7 @@ require Exporter;
 @ISA = qw(Exporter);
 
 use strict;
+use warnings;
 
 sub start_test($)
 {

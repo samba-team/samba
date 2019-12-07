@@ -6,6 +6,7 @@
 package Samba;
 
 use strict;
+use warnings;
 use target::Samba3;
 use target::Samba4;
 use POSIX;
