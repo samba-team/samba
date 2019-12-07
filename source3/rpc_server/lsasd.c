@@ -597,7 +597,7 @@ static bool lsasd_create_sockets(struct tevent_context *ev_ctx,
 	struct dcerpc_binding_vector *v, *v_orig;
 	TALLOC_CTX *tmp_ctx;
 	NTSTATUS status;
-	uint32_t i;
+	int i;
 	int fd = -1;
 	int rc;
 	bool ok = false;
