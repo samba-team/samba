@@ -104,6 +104,10 @@ def SAMBA_PYTHON(bld, name,
     if not bld.PYTHON_BUILD_IS_ENABLED():
         enabled = False
 
+    # Save time, no need to build python bindings when fuzzing
+    if bld.env.enable_fuzzing:
+        enabled = False
+
     # when we support static python modules we'll need to gather
     # the list from all the SAMBA_PYTHON() targets
     if init_function_sentinel is not None:
