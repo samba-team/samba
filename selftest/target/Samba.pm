@@ -162,9 +162,9 @@ sub prepare_keyblobs($)
 	my $admincert = "$admindir/USER-$adminprincipalname-cert.pem";
 	my $adminkey_private = "$admindir/USER-$adminprincipalname-private-key.pem";
 	my $pkinitprincipalname = "pkinit\@$ctx->{dnsname}";
-	my $pkinitdir = "$cadir/Users/$pkinitprincipalname";
-	my $pkinitcert = "$pkinitdir/USER-$pkinitprincipalname-cert.pem";
-	my $pkinitkey_private = "$pkinitdir/USER-$pkinitprincipalname-private-key.pem";
+	my $ca_pkinitdir = "$cadir/Users/$pkinitprincipalname";
+	my $pkinitcert = "$ca_pkinitdir/USER-$pkinitprincipalname-cert.pem";
+	my $pkinitkey_private = "$ca_pkinitdir/USER-$pkinitprincipalname-private-key.pem";
 
 	my $tlsdir = "$ctx->{tlsdir}";
 	my $pkinitdir = "$ctx->{prefix_abs}/pkinit";
