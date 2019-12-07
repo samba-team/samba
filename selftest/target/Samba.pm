@@ -926,4 +926,20 @@ sub ns_exec_preargs
 	}
 }
 
+
+sub check_env {
+	my ($self, $envvars) = @_;
+	return 1;
+}
+
+sub teardown_env {
+	my ($self, $env) = @_;
+	return 1;
+}
+
+
+sub getlog_env {
+	return '';
+}
+
 1;
