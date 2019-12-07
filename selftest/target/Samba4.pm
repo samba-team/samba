@@ -1756,7 +1756,7 @@ sub provision_rodc($$$)
 sub read_config_h($)
 {
 	my ($name) = @_;
-	my %ret = {};
+	my %ret;
 	open(LF, "<$name") or die("unable to read $name: $!");
 	while (<LF>) {
 		chomp;
