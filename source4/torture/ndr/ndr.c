@@ -35,6 +35,7 @@ struct ndr_pull_test_data {
 	ndr_print_function_t print_function;
 	int ndr_flags;
 	int flags;
+	enum ndr_err_code ndr_err;
 };
 
 static enum ndr_err_code torture_ndr_push_struct_blob_flags(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, uint32_t flags, uint32_t ndr_flags, const void *p, ndr_push_flags_fn_t fn)
@@ -294,6 +295,72 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 	data->print_function = print_function;
 	test->data = data;
 	test->fn = check_fn;
+	test->dangerous = false;
+
+	DLIST_ADD_END(tcase->tests, test);
+
+	return test;
+}
+
+static bool wrap_ndr_pull_invalid_data_test(struct torture_context *tctx,
+					    struct torture_tcase *tcase,
+					    struct torture_test *test)
+{
+	const struct ndr_pull_test_data *data = (const struct ndr_pull_test_data *)test->data;
+	struct ndr_pull *ndr = ndr_pull_init_blob(&(data->data), tctx);
+	void *ds = talloc_zero_size(ndr, data->struct_size);
+	bool ret = true;
+
+	torture_assert(tctx, data, "out of memory");
+	torture_assert(tctx, ndr, "out of memory");
+	torture_assert(tctx, ds, "out of memory");
+
+	ndr->flags |= data->flags;
+
+	ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
+
+	torture_assert_ndr_err_equal(
+		tctx,
+		data->pull_fn(ndr, data->ndr_flags, ds),
+		NDR_ERR_BUFSIZE,
+		"pulling invalid data");
+
+	talloc_free(ndr);
+	return ret;
+}
+
+_PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
+	struct torture_suite *suite,
+	const char *name,
+	ndr_pull_flags_fn_t pull_fn,
+	DATA_BLOB db,
+	size_t struct_size,
+	int ndr_flags,
+	int flags,
+	enum ndr_err_code ndr_err)
+{
+	struct torture_test *test;
+	struct torture_tcase *tcase;
+	struct ndr_pull_test_data *data;
+
+	tcase = torture_suite_add_tcase(suite, name);
+
+	test = talloc(tcase, struct torture_test);
+
+	test->name = talloc_strdup(test, name);
+	test->description = NULL;
+	test->run = wrap_ndr_pull_invalid_data_test;
+
+	data = talloc_zero(test, struct ndr_pull_test_data);
+	data->data = db;
+	data->ndr_flags = ndr_flags;
+	data->flags = flags;
+	data->struct_size = struct_size;
+	data->pull_fn = pull_fn;
+	data->ndr_err = ndr_err;
+
+	test->data = data;
+	test->fn = NULL;
 	test->dangerous = false;
 
 	DLIST_ADD_END(tcase->tests, test);

@@ -48,6 +48,16 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 					int flags,
 					bool (*check_fn) (struct torture_context *ctx, void *data));
 
+_PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_invalid_data_test(
+	struct torture_suite *suite,
+	const char *name,
+	ndr_pull_flags_fn_t pull_fn,
+	DATA_BLOB db,
+	size_t struct_size,
+	int ndr_flags,
+	int flags,
+	enum ndr_err_code ndr_err);
+
 #define torture_suite_add_ndr_pull_test(suite,name,data,check_fn) \
 		_torture_suite_add_ndr_pullpush_test(suite, #name, \
 			 (ndr_pull_flags_fn_t)ndr_pull_ ## name, \
@@ -58,6 +68,16 @@ _PUBLIC_ struct torture_test *_torture_suite_add_ndr_pull_inout_test(
 			 sizeof(struct name), \
 			 NDR_SCALARS|NDR_BUFFERS, 0, \
 			 (bool (*) (struct torture_context *, void *)) check_fn);
+
+#define torture_suite_add_ndr_pull_invalid_data_test(suite,name,data,ndr_err) \
+		_torture_suite_add_ndr_pull_invalid_data_test( \
+			suite, \
+			#name, \
+			(ndr_pull_flags_fn_t)ndr_pull_ ## name, \
+			data_blob_const(data, sizeof(data)), \
+			sizeof(struct name), \
+			NDR_SCALARS|NDR_BUFFERS, 0, \
+			ndr_err);
 
 #define torture_suite_add_ndr_pull_fn_test(suite,name,data,flags,check_fn) \
 		_torture_suite_add_ndr_pullpush_test(suite, #name "_" #flags, \

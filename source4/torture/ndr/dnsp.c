@@ -337,6 +337,23 @@ static bool dnsp_dnsProperty_deleted_by_check(struct torture_context *tctx,
 	return true;
 }
 
+/*
+ * Copy of dnsp_dnsProperty_deleted_by_b64 with wDataLength set to 0
+ * and no data in the data element.
+ * This is a reproducer for https://bugzilla.samba.org/show_bug.cgi?id=14206
+ * The dns_property_id was retained so once parsed this structure referenced
+ * memory past it's end.
+ *
+ * [0000] 00 00 00 00 01 EE C4 71   00 00 00 00 01 00 00 00   &......q ........
+ * [0010] 80 00 00 00 77 00 32 00   6B 00 33 00 2D 00 31 00   ....w.2. k.3.-.1.
+ * [0020] 39 00 31 00 2E 00 77 00   32 00 6B 00 33 00 2E 00   9.1...w. 2.k.3...
+ * [0030] 62 00 61 00 73 00 65 00   00 00 C4 71 EC F3         b.a.s.e. ...q..
+ */
+static const uint8_t dnsp_dnsProperty_deleted_by_zero_wDataLength[] = {
+	0x00, 0x00, 0x00, 0x00, 0x01, 0xEE, 0xC4, 0x71, 0x00, 0x00, 0x00,
+	0x00, 0x01, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00, 0x00,
+	0xC4, 0x71, 0xEC, 0xF3 };
+
 struct torture_suite *ndr_dnsp_suite(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "dnsp");
@@ -361,6 +378,12 @@ struct torture_suite *ndr_dnsp_suite(TALLOC_CTX *ctx)
 		"DELETED_FROM_HOSTNAME",
 		dnsp_dnsProperty_deleted_by_b64,
 		dnsp_dnsProperty_deleted_by_check);
+
+	torture_suite_add_ndr_pull_invalid_data_test(
+		suite,
+		dnsp_DnsProperty,
+		dnsp_dnsProperty_deleted_by_zero_wDataLength,
+		NDR_ERR_BUFSIZE);
 
 	return suite;
 }
