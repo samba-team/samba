@@ -40,6 +40,7 @@ def s3_fix_kwargs(bld, kwargs):
         extra_includes += [ '../source4/heimdal/lib/com_err',
                             '../source4/heimdal/lib/krb5',
                             '../source4/heimdal/lib/gssapi',
+                            '../source4/heimdal/lib/gssapi/gssapi',
                             '../source4/heimdal_build/include',
                             '../bin/default/source4/heimdal/lib/asn1' ]
 
