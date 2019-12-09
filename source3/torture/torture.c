@@ -3342,7 +3342,9 @@ static bool run_locktest12(int dummy)
 
 	ret = true;
 done:
-	torture_close_connection(cli);
+	if (cli != NULL) {
+		torture_close_connection(cli);
+	}
 	return ret;
 }
 
@@ -3543,7 +3545,9 @@ static bool run_locktest13(int dummy)
 
 	ret = true;
 done:
-	torture_close_connection(cli);
+	if (cli != NULL) {
+		torture_close_connection(cli);
+	}
 	return ret;
 }
 
