@@ -125,6 +125,7 @@ builddirs = {
     "samba-mitkrb5": ".",
     "samba-nt4": ".",
     "samba-fileserver": ".",
+    "samba-simpleserver": ".",
     "samba-ktest-heimdal": ".",
     "samba-admem": ".",
     "samba-admem-mit": ".",
