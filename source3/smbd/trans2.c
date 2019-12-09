@@ -5531,7 +5531,7 @@ NTSTATUS smbd_do_qfilepathinfo(connection_struct *conn,
 		{
 			char *nfname = NULL;
 
-			if (!fsp->conn->sconn->using_smb2) {
+			if (fsp == NULL || !fsp->conn->sconn->using_smb2) {
 				return NT_STATUS_INVALID_LEVEL;
 			}
 
