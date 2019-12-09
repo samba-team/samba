@@ -357,7 +357,6 @@
 ^samba4.blackbox.kinit_trust\(fl2003dc:local\)
 ^samba4.blackbox.kinit_trust\(fl2008r2dc:local\)
 ^samba4.blackbox.pkinit\(ad_dc:local\)
-^samba4.blackbox.samba_tool\(ad_dc_default:local\)\(ad_dc_default:local\)
 ^samba4.blackbox.smbclient\(ad_member:local\)\(ad_member:local\)
 ^samba4.blackbox.smbclient\(chgdcpass:local\)\(chgdcpass:local\)
 ^samba4.dfs.domain\(ad_dc\)
