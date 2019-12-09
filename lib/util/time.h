@@ -43,7 +43,7 @@
 
 /*
  * According to Windows API FileTimeToSystemTime() documentation the highest
- * allows value " ... must be less than 0x8000000000000000.".
+ * allowed value " ... must be less than 0x8000000000000000.".
  */
 #define NTTIME_MAX INT64_MAX
 
