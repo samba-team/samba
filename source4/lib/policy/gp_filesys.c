@@ -421,7 +421,7 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 	struct dirent *dirent;
 	char *entry_local_path = NULL;
 	char *entry_remote_path = NULL;
-	int local_fd, remote_fd;
+	int local_fd = -1, remote_fd = -1;
 	int buf[1024];
 	int nread, total_read;
 	struct stat s;
@@ -494,7 +494,9 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 			}
 
 			close(local_fd);
+			local_fd = -1;
 			smbcli_close(gp_ctx->cli->tree, remote_fd);
+			remote_fd = -1;
 		}
 		TALLOC_FREE(entry_local_path);
 		TALLOC_FREE(entry_remote_path);
@@ -502,6 +504,12 @@ static NTSTATUS push_recursive (struct gp_context *gp_ctx, const char *local_pat
 
 	status = NT_STATUS_OK;
 done:
+	if (local_fd != -1) {
+		close(local_fd);
+	}
+	if (remote_fd != -1) {
+		smbcli_close(gp_ctx->cli->tree, remote_fd);
+	}
 	talloc_free(entry_local_path);
 	talloc_free(entry_remote_path);
 
