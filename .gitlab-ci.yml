@@ -99,6 +99,10 @@ include:
     - echo "Running cmd script/autobuild.py $AUTOBUILD_JOB_NAME $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase"
     - script/autobuild.py $AUTOBUILD_JOB_NAME $SAMBA_CI_AUTOBUILD_ENABLE_COVERAGE  --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase
 
+# Ensure when adding a new job below that you also add it to
+# the dependencies for 'pages' below for the code coverage page
+# generation.
+
 others:
   extends: .shared_template
   script:
@@ -211,31 +215,34 @@ pages:
     - docker
     - shared
   dependencies:  # tell gitlab to download artifacts for these jobs
+    - others
     - samba
-    - samba-ad-dc-1
-    - samba-ad-dc-1-mitkrb5
-    - samba-ad-dc-2
-    - samba-ad-dc-3
-    - samba-ad-dc-4
-    - samba-ad-dc-4-mitkrb5
-    - samba-ad-dc-5
-    - samba-ad-dc-6
-    - samba-ad-dc-backup
-    - samba-ad-dc-ntvfs
-    - samba-admem
-    - samba-admem-mit
-    - samba-ctdb
-    - samba-fileserver
-    - samba-libs
+    - samba-mitkrb5
     - samba-none-env
     - samba-nopython
     - samba-nopython-py2
+    - samba-xc
+    - samba-admem
+    - samba-ad-dc-2
+    - samba-ad-dc-3
+    - samba-ad-dc-4
+    - samba-ad-dc-5
+    - samba-ad-dc-6
+    - samba-libs
+    - samba-static
+    # - ctdb  # TODO
+    - samba-ctdb
+    - samba-ad-dc-ntvfs
+    - samba-admem-mit
+    - samba-ad-dc-4-mitkrb5
+    - samba-ad-dc-backup
+    - samba-simpleserver
+    - samba-fileserver
+    - samba-ktest-heimdal
+    - samba-ad-dc-1
     - samba-nt4
     - samba-schemaupgrade
-    - samba-static
-    - samba-xc
-    # - ctdb  # TODO
-    - others
+    - samba-ad-dc-1-mitkrb5
   script:
     - ./configure.developer
     - make -j
