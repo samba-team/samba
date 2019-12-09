@@ -322,7 +322,6 @@ static int messaging_dgm_out_get(struct messaging_dgm_context *ctx, pid_t pid,
 		}
 	}
 
-	messaging_dgm_out_rearm_idle_timer(out);
 	/*
 	 * shouldn't be possible, should be set if messaging_dgm_out_create
 	 * succeeded. This check is to satisfy static checker
@@ -330,6 +329,7 @@ static int messaging_dgm_out_get(struct messaging_dgm_context *ctx, pid_t pid,
 	if (out == NULL) {
 		return EINVAL;
 	}
+	messaging_dgm_out_rearm_idle_timer(out);
 
 	*pout = out;
 	return 0;
