@@ -52,6 +52,7 @@ else:
 
 nmblookup4 = binpath('nmblookup4')
 smbclient4 = binpath('smbclient4')
+smbclient3 = binpath('smbclient')
 
 bbdir = os.path.join(srcdir(), "testprogs/blackbox")
 
