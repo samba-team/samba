@@ -272,7 +272,7 @@ for env in ["ad_dc_default", "nt4_dc"]:
         "-k no --option=clientusespnego=no"]:
         name = "rpc.lsa.secrets on %s with with %s" % (transport, ntlmoptions)
         plansmbtorture4testsuite('rpc.lsa.secrets', env, ["%s:$SERVER[]" % (transport), ntlmoptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=gensec:target_hostname=$NETBIOSNAME'], "samba4.%s" % name)
-    plantestsuite("samba.blackbox.pdbtest(%s)" % env, "%s:local" % env, [os.path.join(bbdir, "test_pdbtest.sh"), '$SERVER', "$PREFIX", "pdbtest", smbclient4, '$SMB_CONF_PATH', configuration])
+    plantestsuite("samba.blackbox.pdbtest(%s)" % env, "%s:local" % env, [os.path.join(bbdir, "test_pdbtest.sh"), '$SERVER', "$PREFIX", "pdbtest", smbclient3, '$SMB_CONF_PATH', configuration])
 
 gpo = smbtorture4_testsuites("gpo.")
 for t in gpo:

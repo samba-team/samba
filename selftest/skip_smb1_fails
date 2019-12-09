@@ -385,8 +385,6 @@
 ^samba4.smb.signing disabled on with -k yes --signing=off domain-creds\(ad_member\)
 ^samba4.smb.spnego.krb5.no_optimistic\(ad_dc\)
 ^samba4.smb.spnego.ntlmssp.no_optimistic\(ad_dc\)
-^samba.blackbox.pdbtest\(ad_dc_default\)\(ad_dc_default:local\)
-^samba.blackbox.pdbtest\(nt4_dc\)\(nt4_dc:local\)
 ^samba.tests.auth_log\(ad_dc:local\)
 ^samba.tests.auth_log_pass_change\(ad_dc\)
 ^samba.tests.libsmb\(nt4_dc\)
