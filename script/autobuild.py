@@ -121,33 +121,6 @@ cleanup_list = []
 
 builddirs = {
     "ctdb": "ctdb",
-    "samba": ".",
-    "samba-mitkrb5": ".",
-    "samba-nt4": ".",
-    "samba-fileserver": ".",
-    "samba-simpleserver": ".",
-    "samba-ktest-heimdal": ".",
-    "samba-admem": ".",
-    "samba-admem-mit": ".",
-    "samba-xc": ".",
-    "samba-o3": ".",
-    "samba-ctdb": ".",
-    "samba-libs": ".",
-    "samba-static": ".",
-    "samba-none-env": ".",
-    "samba-ad-dc-1": ".",
-    "samba-ad-dc-1-mitkrb5": ".",
-    "samba-ad-dc-2": ".",
-    "samba-ad-dc-3": ".",
-    "samba-ad-dc-4": ".",
-    "samba-ad-dc-4-mitkrb5": ".",
-    "samba-ad-dc-5": ".",
-    "samba-ad-dc-6": ".",
-    "samba-ad-dc-ntvfs": ".",
-    "samba-ad-dc-backup": ".",
-    "samba-nopython": ".",
-    "samba-nopython-py2": ".",
-    "samba-schemaupgrade": ".",
     "ldb": "lib/ldb",
     "tdb": "lib/tdb",
     "talloc": "lib/talloc",
@@ -155,11 +128,6 @@ builddirs = {
     "tevent": "lib/tevent",
     "pidl": "pidl"
 }
-
-defaulttasks = list(builddirs.keys())
-
-if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
-    defaulttasks.remove("samba-o3")
 
 ctdb_configure_params = " --enable-developer ${PREFIX}"
 samba_configure_params = " ${ENABLE_COVERAGE} ${PREFIX} --with-profiling-data"
@@ -207,6 +175,9 @@ def make_test(
 
     return ' '.join([cmd] + _options)
 
+
+# When updating this list, also update .gitlab-ci.yml to add the job
+# and to make it a dependency of 'page' for the coverage report.
 
 tasks = {
     "ctdb": [
@@ -815,6 +786,14 @@ tasks = {
     'pass': [("pass", 'echo passing && /bin/true')],
     'fail': [("fail", 'echo failing && /bin/false')],
 }
+
+defaulttasks = list(tasks.keys())
+defaulttasks.remove("pass")
+defaulttasks.remove("fail")
+defaulttasks.remove("samba-test-only")
+
+if os.environ.get("AUTOBUILD_SKIP_SAMBA_O3", "0") == "1":
+    defaulttasks.remove("samba-o3")
 
 
 def do_print(msg):
