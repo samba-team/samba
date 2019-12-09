@@ -79,7 +79,8 @@ static char **get_logged_on_userlist(TALLOC_CTX *mem_ctx)
 		for (i = 0; i < num_users; i++) {
 			/* getutxent can return multiple user entries for the
 			 * same user, so ignore any dups */
-			if (strcmp(u->ut_user, usr_infos[i].name) == 0) {
+			int cmp = strncmp(u->ut_user, usr_infos[i].name, sizeof(u->ut_user));
+			if (cmp == 0) {
 				break;
 			}
 		}
