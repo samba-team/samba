@@ -11,10 +11,10 @@ set -e
 
 ctdb_test_skip_on_cluster
 
-echo "Starting CTDB with failover disabled..."
-ctdb_test_init -F
+ctdb_test_init -n
 
-cluster_is_healthy
+echo "Starting CTDB with failover disabled..."
+ctdb_nodes_start_custom -F
 
 echo "Getting IP allocation..."
 try_command_on_node -v any "$CTDB ip all | tail -n +2"
@@ -30,9 +30,7 @@ echo "GOOD: All IP addresses are unassigned"
 echo "----------------------------------------"
 
 echo "Starting CTDB with an empty public addresses configuration..."
-ctdb_test_init -P /dev/null
-
-cluster_is_healthy
+ctdb_nodes_start_custom -P /dev/null
 
 echo "Trying explicit ipreallocate..."
 try_command_on_node any $CTDB ipreallocate

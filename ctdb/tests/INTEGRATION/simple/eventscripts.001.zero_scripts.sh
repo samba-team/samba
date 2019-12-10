@@ -9,8 +9,8 @@ set -e
 
 ctdb_test_skip_on_cluster
 
-ctdb_test_init --no-event-scripts
+ctdb_test_init -n
 
-cluster_is_healthy
+ctdb_nodes_start_custom --no-event-scripts
 
 echo "Good, that seems to work!"
