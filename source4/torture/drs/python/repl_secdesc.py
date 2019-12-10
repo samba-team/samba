@@ -211,6 +211,75 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                           self.sd_utils_dc2.get_sd_as_sddl(sub_ou_dn))
 
 
+    def test_acl_inheirt_renamed_child_object(self):
+        # Make a new OU
+        new_ou = samba.tests.create_test_ou(self.ldb_dc1,
+                                            "acl_test_l2")
+
+        # Here is where the new OU will end up at the end.
+        sub2_ou_dn_final = ldb.Dn(self.ldb_dc1, "OU=l2,%s" % self.ou)
+
+        sub3_ou_dn = ldb.Dn(self.ldb_dc1, "OU=l3,%s" % new_ou)
+        sub3_ou_dn_final = ldb.Dn(self.ldb_dc1, "OU=l3,%s" % sub2_ou_dn_final)
+
+        self.ldb_dc1.add({"dn": sub3_ou_dn,
+                          "objectclass": "organizationalUnit"})
+
+        sub4_ou_dn = ldb.Dn(self.ldb_dc1, "OU=l4,%s" % sub3_ou_dn)
+        sub4_ou_dn_final = ldb.Dn(self.ldb_dc1, "OU=l4,%s" % sub3_ou_dn_final)
+
+        self.ldb_dc1.add({"dn": sub4_ou_dn,
+                          "objectclass": "organizationalUnit"})
+
+        try:
+            self.ldb_dc2.search(scope=ldb.SCOPE_BASE,
+                                base=new_ou,
+                                attrs=[])
+            self.fail()
+        except LdbError as err:
+            enum = err.args[0]
+            self.assertEqual(enum, ldb.ERR_NO_SUCH_OBJECT)
+
+        self._net_drs_replicate(DC=self.dnsname_dc2,
+                                fromDC=self.dnsname_dc1,
+                                forced=True)
+
+        # Confirm it is now replicated
+        self.ldb_dc2.search(scope=ldb.SCOPE_BASE,
+                            base=new_ou,
+                            attrs=[])
+
+        #
+        # Given a tree new_ou -> l3 -> l4
+        #
+
+        # Set the inherited ACL on the grandchild OU (l3) on DC1
+        mod =  "(A;CIOI;GA;;;SY)"
+        self.sd_utils_dc1.dacl_add_ace(sub3_ou_dn, mod)
+
+        # Rename new_ou (l2) to under self.ou (this must happen second).  If the
+        # inheritence between l3 and l4 is name-based, this could
+        # break.
+
+        # The tree is now self.ou -> l2 -> l3 -> l4
+
+        self.ldb_dc1.rename(new_ou, sub2_ou_dn_final)
+
+        # Replicate to DC2
+
+        self._net_drs_replicate(DC=self.dnsname_dc2,
+                                fromDC=self.dnsname_dc1,
+                                forced=True)
+
+        # Confirm set ACLs (on l3 ) are identical.
+        self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(sub3_ou_dn_final),
+                          self.sd_utils_dc2.get_sd_as_sddl(sub3_ou_dn_final))
+
+        # Confirm inherited ACLs (from l3 to l4) are identical.
+        self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(sub4_ou_dn_final),
+                          self.sd_utils_dc2.get_sd_as_sddl(sub4_ou_dn_final))
+
+
     def test_acl_inheirt_renamed_object_in_conflict(self):
         # Make a new object to be renamed under self.ou
         new_ou = samba.tests.create_test_ou(self.ldb_dc1,
