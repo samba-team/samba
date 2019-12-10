@@ -33,19 +33,20 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 	char *filter;
 
 	if (len < 1) {
-		return 0;
+		goto out;
 	}
 
 	filter = talloc_strndup(mem_ctx, (const char*)buf, len);
 
 	if (filter == NULL) {
-		return 0;
+		goto out;
 	}
 
 	tree = ldb_parse_tree(mem_ctx, filter);
 
 	(void)ldb_filter_from_tree(tree, mem_ctx);
 
+out:
 	talloc_free(mem_ctx);
 
 	return 0;
