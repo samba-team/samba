@@ -1,19 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Verify the operation of "ctdb stop" and "ctdb continue"
-EOF
-}
+# Verify the operation of "ctdb stop" and "ctdb continue"
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 select_test_node_and_ips
 

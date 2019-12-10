@@ -1,32 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Verify that the ctdb ptrans works as expected
-
-Prerequisites:
-
-* An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. Pipe some operation to ctdb ptrans and validate the TDB contents with ctdb catdb
-
-Expected results:
-
-* ctdb ptrans works as expected.
-EOF
-}
+# Verify that the 'ctdb ptrans' works as expected
+#
+# Pipe some operation to ctdb ptrans and validate the TDB contents
+# with ctdb catdb
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 TESTDB="ptrans_test.tdb"
 

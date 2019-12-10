@@ -1,36 +1,17 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-The command 'ctdb wipedb' is used to clear a database across the whole
-cluster.
-
-Prerequisites:
-
-* An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. Create a persistent test database
-3. Add some records to node #0 and node #1
-4. Perform wipedb on node #0 and verify the database is empty on both node 0 and 1
-
-Expected results:
-
-* An empty database will result
-
-EOF
-}
+# Verify that 'ctdb wipedb' can clear a persistent database:
+# 1. Verify that the status on all of the ctdb nodes is 'OK'.
+# 2. Create a persistent test database
+# 3. Add some records to node 0 and node 1
+# 4. Run wipedb on node 0
+# 5. verify the database is empty on both node 0 and 1
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"

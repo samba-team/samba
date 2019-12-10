@@ -1,33 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-This test confirms that the deleted records are not resurrected after recovery.
-
-Steps:
-
-1. Create a persistent database
-2. Add a record and update it few times.
-3. Delete the record
-4. Turn off one of the nodes
-5. Add a record with same key.
-6. Turn on the stopped node
-
-Expected results:
-
-* Check that the deleted record is present after recovery.
-
-EOF
-}
+# Confirm that the deleted records are not resurrected after recovery
+#
+# 1. Create a persistent database
+# 2. Add a record and update it few times.
+# 3. Delete the record
+# 4. Use "ctdb stop" to stop one of the nodes
+# 5. Add a record with same key.
+# 6. Continue on the stopped node
+# 7. Confirm that the record still exists
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 do_test()
 {

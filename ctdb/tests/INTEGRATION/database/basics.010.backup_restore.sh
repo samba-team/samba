@@ -1,39 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-The command 'ctdb restoredb' is used to restore a database across the
-whole cluster.
-
-Prerequisites:
-
-* An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. Create a persistent test database
-3. Add some records to test database
-4. Backup database
-5. Wipe database and verify the database is empty on all nodes
-6. Restore database and make sure all the records are restored
-7. Make sure no recovery has been triggered
-
-Expected results:
-
-* Database operations should not cause a recovery
-
-EOF
-}
+# Confirm that 'ctdb restoredb' works correctly:
+# 1. Create a persistent test database
+# 2. Add some records to test database
+# 3. Backup database
+# 4. Wipe database and verify the database is empty on all nodes
+# 5. Restore database and make sure all the records are restored
+# 6. Make sure no recovery has been triggered
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 try_command_on_node 0 $CTDB status
 generation=$(sed -n -e 's/^Generation:\([0-9]*\)/\1/p' "$outfile")

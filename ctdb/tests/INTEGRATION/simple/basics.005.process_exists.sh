@@ -1,39 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Verify that 'ctdb process-exists' shows correct information.
+# Verify that 'ctdb process-exists' shows correct information
 
-The implementation is creative about how it gets PIDs for existing and
-non-existing processes.
-
-Prerequisites:
-
-* An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. On one of the cluster nodes, get the PID of a ctdb client.
-3. Run 'ctdb process-exists <pid>' on the node and verify that the
-   correct output is shown.
-4. Run 'ctdb process-exists <pid>' with a pid of ctdb daemon
-   process and verify that the correct output is shown.
-
-Expected results:
-
-* 'ctdb process-exists' shows the correct output.
-EOF
-}
+# The implementation is creative about how it gets PIDs for existing and
+# non-existing processes.
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 test_node=1
 srvid=0xAE00000012345678

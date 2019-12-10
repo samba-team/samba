@@ -1,34 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Test CTDB cluster wide traverse code.
-
-Prerequisites:
-
-* An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Create a test database
-2. Add records on different nodes
-3. Run traverse
-
-Expected results:
-
-* All records are retrieved.
-
-EOF
-}
+# Test cluster wide traverse code
+#
+# 1. Create a volatile test database
+# 2. Add records on different nodes
+# 3. Use "ctdb catdb" to confirm that all added records are present
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 try_command_on_node 0 "$CTDB listnodes"
 num_nodes=$(echo "$out" | wc -l)

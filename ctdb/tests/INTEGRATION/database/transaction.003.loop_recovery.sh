@@ -1,15 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Verify that the transaction_loop test succeeds with recoveries.
+# Verify that the transaction_loop test succeeds with recoveries.
 
-Prerequisites:
+. "${TEST_SCRIPTS_DIR}/integration.bash"
 
-* An active CTDB cluster with at least 2 active nodes.
-EOF
-}
+set -e
+
+ctdb_test_init
 
 recovery_loop()
 {
@@ -29,14 +26,6 @@ recovery_loop_start()
 	RECLOOP_PID=$!
 	ctdb_test_exit_hook_add "kill $RECLOOP_PID >/dev/null 2>&1"
 }
-
-. "${TEST_SCRIPTS_DIR}/integration.bash"
-
-ctdb_test_init
-
-set -e
-
-cluster_is_healthy
 
 TESTDB="persistent_trans.tdb"
 

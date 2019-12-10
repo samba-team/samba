@@ -1,23 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Run the fetch_ring test and sanity check the output.
-
-Prerequisites:
-
-* An active CTDB cluster with at least 2 active nodes.
-EOF
-}
+# Run the fetch_ring test and sanity check the output
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"

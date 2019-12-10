@@ -1,34 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Verify that 'ctdb listnodes' shows the list of nodes in a ctdb cluster.
-
-Prerequisites:
-
-* An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. Run 'ctdb listnodes' on all the nodes of the cluster.
-3. Verify that one all the nodes the command displays a list of
-   current cluster nodes.
-
-Expected results:
-
-* 'ctdb listnodes' displays the correct information.
-EOF
-}
+# Verify that 'ctdb listnodes' shows the list of nodes
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 try_command_on_node -v 0 "$CTDB listnodes"
 

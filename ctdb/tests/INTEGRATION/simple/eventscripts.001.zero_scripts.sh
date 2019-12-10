@@ -1,14 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Check that CTDB operated correctly if there are 0 event scripts
+# Check that CTDB operates correctly if there are 0 event scripts
 
-This test only does anything with local daemons.  On a real cluster it
-has no way of updating configuration.
-EOF
-}
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 

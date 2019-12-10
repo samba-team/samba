@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Confirm that a record is not vacuumed if it is locked on another
 # (non-lmaster, non-deleting) node when the 3rd fast vacuuming run

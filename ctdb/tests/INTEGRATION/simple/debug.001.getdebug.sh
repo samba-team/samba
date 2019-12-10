@@ -1,32 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Verify that 'ctdb getdebug' works as expected.
-
-Prerequisites:
-
-* An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. Get the current debug level on a node, using 'ctdb getdebug -n <node>'.
-
-Expected results:
-
-* 'ctdb getdebug' shows the debug level on all the nodes.
-EOF
-}
+# Verify that 'ctdb getdebug' works as expected
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"
