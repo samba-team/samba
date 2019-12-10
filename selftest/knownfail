@@ -106,6 +106,8 @@
 ^samba4.rpc.samr.passwords.validate.*ncacn_ip_tcp.*with.validate # should only work with seal
 ^samba4.rpc.samr.passwords.validate.*ncacn_ip_tcp.*with.bigendian # should only work with seal
 ^samba4.base.charset.*.Testing partial surrogate
+^samba4.smb2.charset.*.Testing partial surrogate # This test is currently broken
+^samba3.smb2.charset.*.Testing partial surrogate # This test is currently broken
 ^samba4.*.base.maximum_allowed		# broken until we implement NTCREATEX_OPTIONS_BACKUP_INTENT
 .*net.api.delshare.*				# DelShare isn't implemented yet
 ^samba4.smb2.oplock.doc
