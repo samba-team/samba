@@ -23,6 +23,5 @@
 #include "../lib/crypto/md4.h"
 #include "../lib/crypto/aes.h"
 #include "../lib/crypto/aes_cmac_128.h"
-#include "../lib/crypto/aes_gcm_128.h"
 
 #endif /* _SAMBA_CRYPTO_H_ */

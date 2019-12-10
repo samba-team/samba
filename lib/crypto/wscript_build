@@ -12,10 +12,6 @@ bld.SAMBA_SUBSYSTEM('GNUTLS_HELPERS',
                     ''',
                     deps='gnutls samba-errors');
 
-bld.SAMBA_SUBSYSTEM('LIBCRYPTO_AES_GCM',
-                    source='aes_gcm_128.c',
-                    deps='talloc')
-
 bld.SAMBA_SUBSYSTEM('LIBCRYPTO_AES',
                     source='aes.c rijndael-alg-fst.c',
                     deps='talloc')
@@ -32,14 +28,8 @@ bld.SAMBA_SUBSYSTEM('LIBCRYPTO',
         deps='''
              talloc
              LIBCRYPTO_AES
-             LIBCRYPTO_AES_GCM
              LIBCRYPTO_AES_CMAC
              ''' + extra_deps)
-
-bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO_AES_GCM',
-                    source='aes_gcm_128_test.c',
-                    autoproto='aes_gcm_test_proto.h',
-                    deps='talloc')
 
 bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO_AES_CMAC',
                     source='aes_cmac_128_test.c',
@@ -52,7 +42,6 @@ bld.SAMBA_SUBSYSTEM('TORTURE_LIBCRYPTO',
         autoproto='test_proto.h',
         deps='''
              LIBCRYPTO
-             TORTURE_LIBCRYPTO_AES_GCM
              TORTURE_LIBCRYPTO_AES_CMAC
              ''')
 

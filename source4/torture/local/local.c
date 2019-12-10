@@ -23,7 +23,6 @@
 #include "torture/ndr/proto.h"
 #include "torture/auth/proto.h"
 #include "../lib/crypto/test_proto.h"
-#include "../lib/crypto/aes_gcm_test_proto.h"
 #ifndef HAVE_GNUTLS_AES_CMAC
 #include "../lib/crypto/aes_cmac_test_proto.h"
 #endif
@@ -100,8 +99,6 @@ NTSTATUS torture_local_init(TALLOC_CTX *ctx)
 	torture_suite_add_simple_test(suite, "crypto.aes_cmac_128",
 				      torture_local_crypto_aes_cmac_128);
 #endif
-	torture_suite_add_simple_test(suite, "crypto.aes_gcm_128",
-				      torture_local_crypto_aes_gcm_128);
 
 	for (i = 0; suite_generators[i]; i++)
 		torture_suite_add_suite(suite,
