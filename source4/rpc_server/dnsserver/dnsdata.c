@@ -795,10 +795,11 @@ struct dns_tree *dns_build_tree(TALLOC_CTX *mem_ctx, const char *name, struct ld
 	for (i=0; i<res->count; i++) {
 		ptr = ldb_msg_find_attr_as_string(res->msgs[i], "name", NULL);
 
-		if (strcmp(ptr, "@") == 0) {
-			base->data = res->msgs[i];
-			continue;
-		} else if (strcasecmp(ptr, name) == 0) {
+		/*
+		 * This might be the sub-domain in the zone being
+		 * requested, or @ for the root of the zone
+		 */
+		if (strcasecmp(ptr, name) == 0) {
 			base->data = res->msgs[i];
 			continue;
 		}
@@ -1051,8 +1052,8 @@ WERROR dns_fill_records_array(TALLOC_CTX *mem_ctx,
 }
 
 
-int dns_name_compare(const struct ldb_message **m1, const struct ldb_message **m2,
-				char *search_name)
+int dns_name_compare(struct ldb_message * const *m1, struct ldb_message * const *m2,
+		     const char *search_name)
 {
 	const char *name1, *name2;
 	const char *ptr1, *ptr2;
@@ -1061,21 +1062,6 @@ int dns_name_compare(const struct ldb_message **m1, const struct ldb_message **m
 	name2 = ldb_msg_find_attr_as_string(*m2, "name", NULL);
 	if (name1 == NULL || name2 == NULL) {
 		return 0;
-	}
-
-	/* '@' record and the search_name record gets preference */
-	if (name1[0] == '@') {
-		return -1;
-	}
-	if (search_name && strcasecmp(name1, search_name) == 0) {
-		return -1;
-	}
-
-	if (name2[0] == '@') {
-		return 1;
-	}
-	if (search_name && strcasecmp(name2, search_name) == 0) {
-		return 1;
 	}
 
 	/* Compare the last components of names.

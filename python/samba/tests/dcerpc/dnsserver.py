@@ -156,6 +156,154 @@ class DnsserverTests(RpcInterfaceTestCase):
                                    None)
         super(DnsserverTests, self).tearDown()
 
+    def test_enum_is_sorted(self):
+        """
+        Confirm the zone is sorted
+        """
+
+        record_str = "192.168.50.50"
+        record_type_str = "A"
+        self.add_record(self.custom_zone, "atestrecord-1", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-2", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-3", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-4", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-0", record_type_str, record_str)
+
+        # This becomes an extra A on the zone itself by server-side magic
+        self.add_record(self.custom_zone, self.custom_zone, record_type_str, record_str)
+
+        _, result = self.conn.DnssrvEnumRecords2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                                 0,
+                                                 self.server,
+                                                 self.custom_zone,
+                                                 "@",
+                                                 None,
+                                                 self.record_type_int(record_type_str),
+                                                 dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA,
+                                                 None,
+                                                 None)
+
+        self.assertEqual(len(result.rec), 6)
+        self.assertEqual(result.rec[0].dnsNodeName.str, "")
+        self.assertEqual(result.rec[1].dnsNodeName.str, "atestrecord-0")
+        self.assertEqual(result.rec[2].dnsNodeName.str, "atestrecord-1")
+        self.assertEqual(result.rec[3].dnsNodeName.str, "atestrecord-2")
+        self.assertEqual(result.rec[4].dnsNodeName.str, "atestrecord-3")
+        self.assertEqual(result.rec[5].dnsNodeName.str, "atestrecord-4")
+
+    def test_enum_is_sorted_with_zone_dup(self):
+        """
+        Confirm the zone is sorted
+        """
+
+        record_str = "192.168.50.50"
+        record_type_str = "A"
+        self.add_record(self.custom_zone, "atestrecord-1", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-2", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-3", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-4", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-0", record_type_str, record_str)
+
+        # This triggers a bug in old Samba
+        self.add_record(self.custom_zone, self.custom_zone + "1", record_type_str, record_str)
+
+        dn, record = self.get_record_from_db(self.custom_zone, self.custom_zone + "1")
+
+        new_dn = ldb.Dn(self.samdb, str(dn))
+        new_dn.set_component(0, "dc", self.custom_zone)
+        self.samdb.rename(dn, new_dn)
+
+        _, result = self.conn.DnssrvEnumRecords2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                                 0,
+                                                 self.server,
+                                                 self.custom_zone,
+                                                 "@",
+                                                 None,
+                                                 self.record_type_int(record_type_str),
+                                                 dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA,
+                                                 None,
+                                                 None)
+
+        self.assertEqual(len(result.rec), 7)
+        self.assertEqual(result.rec[0].dnsNodeName.str, "")
+        self.assertEqual(result.rec[1].dnsNodeName.str, "atestrecord-0")
+        self.assertEqual(result.rec[2].dnsNodeName.str, "atestrecord-1")
+        self.assertEqual(result.rec[3].dnsNodeName.str, "atestrecord-2")
+        self.assertEqual(result.rec[4].dnsNodeName.str, "atestrecord-3")
+        self.assertEqual(result.rec[5].dnsNodeName.str, "atestrecord-4")
+
+        # Windows doesn't reload the zone fast enough, but doesn't
+        # have the bug anyway, it will sort last on both names (where
+        # it should)
+        if result.rec[6].dnsNodeName.str != (self.custom_zone + "1"):
+            self.assertEqual(result.rec[6].dnsNodeName.str, self.custom_zone)
+
+    def test_enum_is_sorted_children_prefix_first(self):
+        """
+        Confirm the zone returns the selected prefix first but no more
+        as Samba is flappy for the full sort
+        """
+
+        record_str = "192.168.50.50"
+        record_type_str = "A"
+        self.add_record(self.custom_zone, "atestrecord-1.a.b", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-2.a.b", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-3.a.b", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-4.a.b", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-0.a.b", record_type_str, record_str)
+
+        # Not expected to be returned
+        self.add_record(self.custom_zone, "atestrecord-0.b.b", record_type_str, record_str)
+
+        _, result = self.conn.DnssrvEnumRecords2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                                 0,
+                                                 self.server,
+                                                 self.custom_zone,
+                                                 "a.b",
+                                                 None,
+                                                 self.record_type_int(record_type_str),
+                                                 dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA,
+                                                 None,
+                                                 None)
+
+        self.assertEqual(len(result.rec), 6)
+        self.assertEqual(result.rec[0].dnsNodeName.str, "")
+
+    def test_enum_is_sorted_children(self):
+        """
+        Confirm the zone is sorted
+        """
+
+        record_str = "192.168.50.50"
+        record_type_str = "A"
+        self.add_record(self.custom_zone, "atestrecord-1.a.b", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-2.a.b", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-3.a.b", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-4.a.b", record_type_str, record_str)
+        self.add_record(self.custom_zone, "atestrecord-0.a.b", record_type_str, record_str)
+
+        # Not expected to be returned
+        self.add_record(self.custom_zone, "atestrecord-0.b.b", record_type_str, record_str)
+
+        _, result = self.conn.DnssrvEnumRecords2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
+                                                 0,
+                                                 self.server,
+                                                 self.custom_zone,
+                                                 "a.b",
+                                                 None,
+                                                 self.record_type_int(record_type_str),
+                                                 dnsserver.DNS_RPC_VIEW_AUTHORITY_DATA,
+                                                 None,
+                                                 None)
+
+        self.assertEqual(len(result.rec), 6)
+        self.assertEqual(result.rec[0].dnsNodeName.str, "")
+        self.assertEqual(result.rec[1].dnsNodeName.str, "atestrecord-0")
+        self.assertEqual(result.rec[2].dnsNodeName.str, "atestrecord-1")
+        self.assertEqual(result.rec[3].dnsNodeName.str, "atestrecord-2")
+        self.assertEqual(result.rec[4].dnsNodeName.str, "atestrecord-3")
+        self.assertEqual(result.rec[5].dnsNodeName.str, "atestrecord-4")
+
     # This test fails against Samba (but passes against Windows),
     # because Samba does not return the record when we enum records.
     # Records can be given DNS_RANK_NONE when the zone they are in
