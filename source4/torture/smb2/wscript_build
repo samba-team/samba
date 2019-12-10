@@ -27,6 +27,7 @@ bld.SAMBA_MODULE('TORTURE_SMB2',
         notify_disabled.c
         oplock.c
         read.c
+        read_write.c
         rename.c
         replay.c
         scan.c
