@@ -38,7 +38,7 @@ select_test_node_and_ips
 # the provided prefix.  Note that this is an IPv4-specific test.
 
 echo "Getting public IP information from CTDB..."
-try_command_on_node any "$CTDB ip -X -v all"
+ctdb_onnode "$test_node" "ip -X -v all"
 ctdb_ip_info=$(awk -F'|' 'NR > 1 { print $2, $3, $5 }' "$outfile")
 
 echo "Getting IP information from interfaces..."
@@ -215,7 +215,7 @@ do_ctdb_reloadips
 
 check_ips $test_node "$iface" "$prefix" 1 $new_ip_max
 
-try_command_on_node any $CTDB sync
+ctdb_onnode "$test_node" sync
 
 ####################
 
@@ -229,7 +229,7 @@ do_ctdb_reloadips
 
 check_ips $test_node "$iface" "$prefix" 2 $new_ip_max
 
-try_command_on_node any $CTDB sync
+ctdb_onnode "$test_node" sync
 
 ####################
 
@@ -244,7 +244,7 @@ do_ctdb_reloadips
 
 check_ips $test_node "$iface" "$prefix" $start $new_ip_max
 
-try_command_on_node any $CTDB sync
+ctdb_onnode "$test_node" sync
 
 ####################
 
