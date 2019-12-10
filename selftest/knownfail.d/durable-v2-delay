@@ -1,0 +1,2 @@
+# In the ad_dc env leases are disabled
+^samba3.smb2.durable-v2-delay.durable_v2_reconnect_delay_msec\(ad_dc\)

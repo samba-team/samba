@@ -2135,6 +2135,7 @@ static bool test_durable_v2_reconnect_delay_msec(
 	struct smb2_handle _h;
 	struct smb2_handle *h = NULL;
 	struct smb2_create io;
+	struct smb2_lease ls;
 	struct GUID create_guid = GUID_random();
 	struct smbcli_options options;
 	uint64_t previous_session_id;
@@ -2152,9 +2153,13 @@ static bool test_durable_v2_reconnect_delay_msec(
 
 	smb2_util_unlink(tree, fname);
 
-	smb2_oplock_create_share(&io, fname,
-				 smb2_util_share_access(""),
-				 smb2_util_oplock_level("b"));
+	smb2_lease_create(
+		&io,
+		&ls,
+		false /* dir */,
+		fname,
+		generate_random_u64(),
+		smb2_util_lease_state("RWH"));
 	io.in.durable_open = false;
 	io.in.durable_open_v2 = true;
 	io.in.persistent_open = false;
@@ -2166,7 +2171,7 @@ static bool test_durable_v2_reconnect_delay_msec(
 
 	_h = io.out.file.handle;
 	h = &_h;
-	CHECK_VAL(io.out.oplock_level, smb2_util_oplock_level("b"));
+	CHECK_VAL(io.out.oplock_level, SMB2_OPLOCK_LEVEL_LEASE);
 	CHECK_VAL(io.out.durable_open_v2, true);
 
 	status = smb2_util_write(tree, *h, &b, 0, 1);
