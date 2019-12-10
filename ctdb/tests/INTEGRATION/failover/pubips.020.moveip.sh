@@ -40,7 +40,10 @@ sanity_check_ips ()
 sanity_check_ips
 
 # Find a target node - it must be willing to host $test_ip
-try_command_on_node any "$CTDB listnodes | wc -l"
+
+# $test_node set above by select_test_node_and_ips()
+# shellcheck disable=SC2154
+try_command_on_node "$test_node" "$CTDB listnodes | wc -l"
 num_nodes="$out"
 to_node=""
 for i in $(seq 0 $(($num_nodes - 1)) ) ; do

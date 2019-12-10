@@ -27,11 +27,6 @@ set -e
 
 ctdb_test_init
 
-# We need this for later, so we know how long to run nc for.
-try_command_on_node any $CTDB getvar MonitorInterval
-monitor_interval="${out#*= }"
-#echo "Monitor interval on node $test_node is $monitor_interval seconds."
-
 select_test_node_and_ips
 try_command_on_node $test_node "$CTDB listnodes -X"
 listnodes_output="$out"
