@@ -1197,6 +1197,7 @@ int share_entry_forall(int (*fn)(struct file_id fid,
 struct cleanup_disconnected_state {
 	struct share_mode_lock *lck;
 	uint64_t open_persistent_id;
+	size_t num_disconnected;
 	bool found_connected;
 };
 
@@ -1264,6 +1265,8 @@ static bool share_mode_find_connected_fn(
 		state->found_connected = true;
 		return true;
 	}
+
+	state->num_disconnected += 1;
 
 	return false;
 }
@@ -1334,11 +1337,11 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 		goto done;
 	}
 
-	DBG_DEBUG("cleaning up %u entries for file "
+	DBG_DEBUG("cleaning up %zu entries for file "
 		  "(file-id='%s', servicepath='%s', "
 		  "base_name='%s%s%s') "
 		  "from open_persistent_id %"PRIu64"\n",
-		  data->num_share_modes,
+		  state.num_disconnected,
 		  file_id_str_buf(fid, &idbuf),
 		  data->servicepath,
 		  data->base_name,
