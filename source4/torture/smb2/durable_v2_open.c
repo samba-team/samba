@@ -1277,7 +1277,7 @@ bool test_durable_v2_open_reopen2_lease(struct torture_context *tctx,
 
 	smb2_util_unlink(tree, fname);
 
-	lease_key = random();
+	lease_key = generate_random_u64();
 	smb2_lease_create(&io, &ls, false /* dir */, fname,
 			  lease_key, smb2_util_lease_state("RWH"));
 	io.in.durable_open = false;
