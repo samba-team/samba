@@ -40,11 +40,16 @@ make_temp_db_filename ()
 
 try_command_on_node -v 0 "$CTDB getdbmap"
 
-db_map_pattern='^(Number of databases:[[:digit:]]+|dbid:0x[[:xdigit:]]+ name:[^[:space:]]+ path:[^[:space:]]+)$'
-
-sanity_check_output $(($num_db_init + 1)) "$dbmap_pattern"
+dbid='dbid:0x[[:xdigit:]]+'
+name='name:[^[:space:]]+'
+path='path:[^[:space:]]+'
+opts='( (PERSISTENT|STICKY|READONLY|REPLICATED|UNHEALTHY))*'
+line="${dbid} ${name} ${path}${opts}"
+dbmap_pattern="^(Number of databases:[[:digit:]]+|${line})\$"
 
 num_db_init=$(sed -n -e '1s/.*://p' "$outfile")
+
+sanity_check_output $(($num_db_init + 1)) "$dbmap_pattern"
 
 for i in $(seq 1 5) ; do
     f=$(make_temp_db_filename)
