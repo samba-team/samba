@@ -304,6 +304,11 @@ fetch_referral_principal:
 
 	sdb_free_entry(&sentry);
 
+	if ((kflags & KRB5_KDB_FLAG_CLIENT_REFERRALS_ONLY) == 0) {
+		kentry->attributes &= ~KRB5_KDB_DISALLOW_FORWARDABLE;
+		kentry->attributes &= ~KRB5_KDB_DISALLOW_PROXIABLE;
+	}
+
 done:
 	krb5_free_principal(ctx->context, referral_principal);
 	referral_principal = NULL;
