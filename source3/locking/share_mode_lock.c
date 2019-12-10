@@ -1508,7 +1508,7 @@ static size_t share_mode_entry_find(
 
 struct set_share_mode_state {
 	struct share_mode_entry e;
-	uint32_t num_share_modes;
+	bool created_share_mode_record;
 	NTSTATUS status;
 };
 
@@ -1588,7 +1588,7 @@ static void set_share_mode_fn(
 		}
 	}
 
-	state->num_share_modes = num_share_modes+1;
+	state->created_share_mode_record = (num_share_modes == 0);
 	state->status = dbwrap_record_storev(rec, dbufs, num_dbufs, 0);
 }
 
@@ -1641,8 +1641,10 @@ bool set_share_mode(struct share_mode_lock *lck,
 		return false;
 	}
 
-	d->num_share_modes = state.num_share_modes;
-	d->modified = true;
+	if (state.created_share_mode_record) {
+		d->num_share_modes = 1;
+		d->modified = true;
+	}
 
 	return true;
 }
@@ -1653,7 +1655,6 @@ struct share_mode_forall_entries_state {
 		   bool *modified,
 		   void *private_data);
 	void *private_data;
-	size_t num_share_modes;
 	bool ok;
 };
 
@@ -1788,12 +1789,11 @@ static void share_mode_forall_entries_fn(
 		return;
 	}
 
-	if (num_share_modes != d->num_share_modes) {
-		d->num_share_modes = num_share_modes;
-		d->modified = true;
-	}
-
 	if (num_share_modes == 0) {
+		if (data.dsize != 0) {
+			d->num_share_modes = 0;
+			d->modified = true;
+		}
 		status = dbwrap_record_delete(rec);
 	} else {
 		TDB_DATA value = {
@@ -2298,9 +2298,7 @@ bool reset_share_mode_entry(
 			    nt_errstr(state.status));
 		return false;
 	}
-
-	d->num_share_modes = state.num_share_modes;
-	d->modified = true;
+	d->num_share_modes = 1;
 
 	return true;
 }
