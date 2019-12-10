@@ -1217,7 +1217,7 @@ static bool cleanup_disconnected_lease(struct share_mode_entry *e,
 	return false;
 }
 
-static bool share_mode_cleanup_disconnected_fn(
+static bool share_mode_find_connected_fn(
 	struct share_mode_entry *e,
 	bool *modified,
 	void *private_data)
@@ -1265,8 +1265,6 @@ static bool share_mode_cleanup_disconnected_fn(
 		return true;
 	}
 
-	e->stale = true;
-
 	return false;
 }
 
@@ -1280,6 +1278,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 	bool ret = false;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct file_id_buf idbuf;
+	NTSTATUS status;
 	bool ok;
 
 	state.lck = get_existing_share_mode_lock(frame, fid);
@@ -1291,7 +1290,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 	data = state.lck->data;
 
 	ok = share_mode_forall_entries(
-		state.lck, share_mode_cleanup_disconnected_fn, &state);
+		state.lck, share_mode_find_connected_fn, &state);
 	if (!ok) {
 		DBG_DEBUG("share_mode_forall_entries failed\n");
 		goto done;
@@ -1348,6 +1347,16 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 		  (data->stream_name == NULL)
 		  ? "" : data->stream_name,
 		  open_persistent_id);
+
+	/*
+	 * No connected share entries left, wipe them all
+	 */
+	status = dbwrap_delete(share_entries_db, locking_key(&fid));
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_DEBUG("dbwrap_delete failed: %s\n",
+			  nt_errstr(status));
+		goto done;
+	}
 
 	data->num_share_modes = 0;
 	data->modified = true;
