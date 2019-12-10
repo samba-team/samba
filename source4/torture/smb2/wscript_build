@@ -3,6 +3,7 @@
 bld.SAMBA_MODULE('TORTURE_SMB2',
 	source='''
         acls.c
+        attr.c
         block.c
         compound.c
         connect.c
