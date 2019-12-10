@@ -21,7 +21,8 @@ def configure(conf):
             raise Errors.WafError('--accel-aes=intelaesni selected and linker rejects -z noexecstack')
 
 def build(bld):
-    if not bld.CONFIG_SET('HAVE_AESNI_INTEL'):
+    if (not bld.CONFIG_SET('HAVE_AESNI_INTEL') or
+        bld.CONFIG_SET('HAVE_GNUTLS_AES_CMAC')):
         return
 
     bld.SAMBA_LIBRARY('aesni-intel',
