@@ -1,34 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Verify that  'ctdb setvar NoIPTakeover 1' stops ip addresses from being failed 
-over onto the node.
-
-Prerequisites:
-
-* An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. Use 'ctdb ip' on one of the nodes to list the IP addresses being
-   served.
-3. Use 'ctdb moveip' to move an address from one node to another.
-4. Verify that the IP is no longer being hosted by the first node and is now being hosted by the second node.
-
-Expected results:
-
-* 'ctdb moveip' allows an IP address to be moved between cluster nodes.
-EOF
-}
+# Verify that 'ctdb setvar NoIPTakeover 1' stops IP addresses being taken over
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
+set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 try_command_on_node 0 "$CTDB listnodes | wc -l"
 num_nodes="$out"

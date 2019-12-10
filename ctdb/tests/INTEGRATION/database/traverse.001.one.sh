@@ -1,29 +1,17 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Confirm that traverses of volatile databases work as expected
+# Confirm that traverses of volatile databases work as expected
 
-This is a very simple example.  It writes a single record, updates it
-on another node and then confirms that the correct value is found when
-traversing.  It then repeats this after removing the LMASTER role from
-the node where the value is updated.
-
-Expected results:
-
-* The expected records should be found
-
-EOF
-}
+# This is a very simple example.  It writes a single record, updates it
+# on another node and then confirms that the correct value is found when
+# traversing.  It then repeats this after removing the LMASTER role from
+# the node where the value is updated.
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 #
 # Main test

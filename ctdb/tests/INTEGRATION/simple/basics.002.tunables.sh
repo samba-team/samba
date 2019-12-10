@@ -1,19 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Verify the operation of "ctdb listvars", "ctdb getvar", "ctdb setvar"
-EOF
-}
+# Verify the operation of "ctdb listvars", "ctdb getvar", "ctdb setvar"
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 try_command_on_node -v 0 "$CTDB listvars"
 

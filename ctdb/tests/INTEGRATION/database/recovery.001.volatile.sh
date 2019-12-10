@@ -1,45 +1,33 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Recovery can under certain circumstances lead to old record copies
-resurrecting: Recovery selects the newest record copy purely by RSN. At
-the end of the recovery, the recovery master is the dmaster for all
-records in all (non-persistent) databases. And the other nodes locally
-hold the complete copy of the databases. The bug is that the recovery
-process does not increment the RSN on the recovery master at the end of
-the recovery. Now clients acting directly on the Recovery master will
-directly change a record's content on the recmaster without migration
-and hence without RSN bump.  So a subsequent recovery can not tell that
-the recmaster's copy is newer than the copies on the other nodes, since
-their RSN is the same. Hence, if the recmaster is not node 0 (or more
-precisely not the active node with the lowest node number), the recovery
-will choose copies from nodes with lower number and stick to these.
+# Test that recovery correctly handles RSNs
 
-Steps:
+# Recovery can under certain circumstances lead to old record copies
+# resurrecting: Recovery selects the newest record copy purely by RSN. At
+# the end of the recovery, the recovery master is the dmaster for all
+# records in all (non-persistent) databases. And the other nodes locally
+# hold the complete copy of the databases. The bug is that the recovery
+# process does not increment the RSN on the recovery master at the end of
+# the recovery. Now clients acting directly on the Recovery master will
+# directly change a record's content on the recmaster without migration
+# and hence without RSN bump.  So a subsequent recovery can not tell that
+# the recmaster's copy is newer than the copies on the other nodes, since
+# their RSN is the same. Hence, if the recmaster is not node 0 (or more
+# precisely not the active node with the lowest node number), the recovery
+# will choose copies from nodes with lower number and stick to these.
 
-1. Create a test database
-2. Add a record with value value1 on recovery master
-3. Force a recovery
-4. Update the record with value value2 on recovery master
-5. Force a recovery
-6. Fetch the record
-
-Expected results:
-
-* The record should have value value2 and not value1
-
-EOF
-}
+# 1. Create a test database
+# 2. Add a record with value value1 on recovery master
+# 3. Force a recovery
+# 4. Update the record with value value2 on recovery master
+# 5. Force a recovery
+# 6. Confirm that the value is value2
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 #
 # Main test

@@ -1,15 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Check that CTDB operates correctly if the recovery lock is configured
-as a command.
+# Check that CTDB operates correctly if the recovery lock is configured
+# as a command.
 
-This test only does anything with local daemons.  On a real cluster it
-has no way of updating configuration.
-EOF
-}
+# This test works only with local daemons.  On a real cluster it has
+# no way of updating configuration.
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 

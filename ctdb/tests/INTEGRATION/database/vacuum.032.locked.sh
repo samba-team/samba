@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Confirm that a record is not vacuumed if it is locked on the lmaster
 # when the 3rd fast vacuuming run occurs, but is dropped from the

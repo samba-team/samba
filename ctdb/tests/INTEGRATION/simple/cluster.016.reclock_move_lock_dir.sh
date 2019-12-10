@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Verify that if the directory containing the recovery lock is moved
 # then all nodes are banned (because they can't take the lock).

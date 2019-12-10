@@ -1,34 +1,15 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Verify the operation of 'ctdb detach' command.
-
-Prerequisites:
-
-* An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. Attach test databases
-3. Detach test databases
-4. Verify that the databases are not attached.
-
-Expected results:
-
-* Command 'ctdb detach' command successfully removes attached databases.
-EOF
-}
+# Verify that 'ctdb detach' works as expected:
+# 1. Attach test databases
+# 2. Detach test databases
+# 3. Confirm test databases are not attached
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 ######################################################################
 

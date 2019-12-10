@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Confirm that a record is not vacuumed if it is locked when the 1st
 # fast vacuuming run occurs on the node on which it was deleted, but

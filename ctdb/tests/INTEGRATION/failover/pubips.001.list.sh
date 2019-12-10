@@ -1,35 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Verify that 'ctdb ip' shows the correct output.
-
-Prerequisites:
-
-* An active CTDB cluster with at least 2 active nodes.
-
-Steps:
-
-1. Verify that the status on all of the ctdb nodes is 'OK'.
-2. Run 'ctdb ip' on one of the nodes and verify the list of IP
-   addresses displayed (cross check the result with the output of
-   'ip addr show' on the node).
-3. Verify that pipe-separated output is generated with the -X option.
-
-Expected results:
-
-* 'ctdb ip' shows the list of public IPs being served by a node.
-EOF
-}
+# Verify that 'ctdb ip' shows the correct output
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 echo "Getting list of public IPs..."
 try_command_on_node -v 1 "$CTDB ip all | tail -n +2"

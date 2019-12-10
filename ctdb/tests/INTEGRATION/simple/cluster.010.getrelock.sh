@@ -1,21 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Verify that "ctdb getreclock" gets the recovery lock correctly.
+# Verify that "ctdb getreclock" gets the recovery lock correctly
 
-Make sure the recovery lock is consistent across all nodes.
-EOF
-}
+# Make sure the recovery lock is consistent across all nodes.
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 echo "Check that recovery lock is set the same on all nodes..."
 try_command_on_node -v -q all $CTDB getreclock

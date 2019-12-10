@@ -1,19 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Ensure recovery doesn't resurrect deleted records from recently inactive nodes
-EOF
-}
+# Ensure recovery doesn't resurrect deleted records from recently
+# inactive nodes
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 testdb="rec_test.tdb"
 

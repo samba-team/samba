@@ -1,23 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test_info()
-{
-    cat <<EOF
-Verify that 'ctdb setdebug' works as expected.
+# Verify that 'ctdb setdebug' works as expected.
 
-This is a little superficial.  It checks that CTDB thinks the debug
-level has been changed but doesn't actually check that logging occurs
-at the new level.
-EOF
-}
+# This is a little superficial.  It checks that CTDB thinks the debug
+# level has been changed but doesn't actually check that logging occurs
+# at the new level.
 
 . "${TEST_SCRIPTS_DIR}/integration.bash"
 
-ctdb_test_init
-
 set -e
 
-cluster_is_healthy
+ctdb_test_init
 
 select_test_node
 
