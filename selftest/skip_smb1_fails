@@ -1,8 +1,0 @@
-# This file contains a list of regular expressions matching testsuites that
-# should be skipped during "make test".
-# These testsuites are failing with min protocol set to SMB2_02 indicating
-# that these tests are SMB1 only or have some SMB1 dependency \(or fail\) for
-# so other odd reason. We need to either
-# a) remove the failing test
-# b) port the failing test to SMB2
-# c) fix the test

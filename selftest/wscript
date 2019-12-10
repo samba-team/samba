@@ -182,9 +182,6 @@ def cmd_testonly(opt):
     else:
         env.FILTER_OPTIONS = '${FILTER_XFAIL}'
 
-    # Maybe this should be optional
-    env.OPTIONS += ' --exclude=${srcdir}/selftest/skip_smb1_fails'
-
     if Options.options.VALGRIND:
         os.environ['VALGRIND'] = 'valgrind -q --num-callers=30'
         if Options.options.VALGRINDLOG is not None:
