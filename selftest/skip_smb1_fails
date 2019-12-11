@@ -223,8 +223,6 @@
 ^samba3.smbtorture_s3.vfs_aio_pthread\(simpleserver\).RW1\(simpleserver\)
 ^samba3.smbtorture_s3.vfs_aio_pthread\(simpleserver\).RW2\(simpleserver\)
 ^samba3.smbtorture_s3.vfs_aio_pthread\(simpleserver\).RW3\(simpleserver\)
-^samba3.unix.info2\(ad_dc\)
-^samba3.unix.info2\(nt4_dc\)
 ^samba3.unix.whoami\(ad_dc\)
 ^samba3.unix.whoami\(ad_member\)
 ^samba3.unix.whoami anonymous connection\(ad_member\)
