@@ -34,10 +34,10 @@ setup_ctdb ()
 	fi
 
 	if $no_event_scripts ; then
-		local pnn
-		for pnn in $(seq 0 $((CTDB_TEST_LOCAL_DAEMONS - 1))) ; do
-			rm -vf "${CTDB_BASE}/events/legacy/"*
-		done
+		# Want CTDB_BASE expanded when executed under onnode
+		# shellcheck disable=SC2016
+		$ctdb_local_daemons onnode -q all \
+				    'rm "${CTDB_BASE}/events/legacy/"*'
 	fi
 
 	if $CTDB_TEST_PRINT_LOGS_ON_ERROR ; then
