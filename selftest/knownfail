@@ -235,7 +235,7 @@
 ^samba3.rpc.eventlog.eventlog.ReadEventLog\(ad_dc\)
 ^samba3.rpc.eventlog.eventlog.GetNumRecords\(ad_dc\)
 ^samba3.rpc.eventlog.eventlog.OpenEventLog\(ad_dc\)
-^samba3.rap.basic.netsessiongetinfo\(ad_dc\)
+^samba3.rap.basic.netsessiongetinfo\(ad_dc_smb1\)
 # not implemented
 ^samba3.rpc.svcctl.svcctl.ChangeServiceConfigW\(ad_dc\)
 ^samba3.rpc.svcctl.svcctl.ChangeServiceConfigW\(nt4_dc\)
