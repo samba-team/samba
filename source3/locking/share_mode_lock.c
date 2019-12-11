@@ -410,7 +410,7 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 	 * otherwise we'd have paniced before in
 	 * share_mode_data_store()
 	 */
-	d->num_share_modes = 1;
+	d->have_share_modes = true;
 
 	return d;
 fail:
@@ -441,7 +441,7 @@ static NTSTATUS share_mode_data_store(
 
 	d->sequence_number += 1;
 
-	if (d->num_share_modes == 0) {
+	if (!d->have_share_modes) {
 		TDB_DATA key = dbwrap_record_get_key(rec);
 		bool share_entries_exist;
 		share_entries_exist = dbwrap_exists(share_entries_db, key);
@@ -692,7 +692,7 @@ static int share_mode_lock_destructor(struct share_mode_lock *lck)
 		TALLOC_FREE(static_share_mode_record);
 	}
 
-	if (static_share_mode_data->num_share_modes != 0) {
+	if (static_share_mode_data->have_share_modes) {
 		/*
 		 * This is worth keeping. Without share modes,
 		 * share_mode_data_store above has left nothing in the
@@ -815,7 +815,7 @@ NTSTATUS share_mode_wakeup_waiters(struct file_id id)
 
 bool share_mode_have_entries(struct share_mode_lock *lck)
 {
-	return (lck->data->num_share_modes != 0);
+	return lck->data->have_share_modes;
 }
 
 struct share_mode_watch_state {
@@ -1374,7 +1374,7 @@ bool share_mode_cleanup_disconnected(struct file_id fid,
 		goto done;
 	}
 
-	data->num_share_modes = 0;
+	data->have_share_modes = false;
 	data->modified = true;
 
 	ret = true;
@@ -1650,7 +1650,7 @@ bool set_share_mode(struct share_mode_lock *lck,
 	}
 
 	if (state.created_share_mode_record) {
-		d->num_share_modes = 1;
+		d->have_share_modes = true;
 		d->modified = true;
 	}
 
@@ -1799,7 +1799,7 @@ static void share_mode_forall_entries_fn(
 
 	if (num_share_modes == 0) {
 		if (data.dsize != 0) {
-			d->num_share_modes = 0;
+			d->have_share_modes = false;
 			d->modified = true;
 		}
 		status = dbwrap_record_delete(rec);
@@ -2028,6 +2028,7 @@ static bool share_mode_entry_do(
 		.private_data = private_data,
 	};
 	NTSTATUS status;
+	bool have_share_modes;
 
 	status = dbwrap_do_locked(
 		share_entries_db,
@@ -2045,8 +2046,9 @@ static bool share_mode_entry_do(
 		return false;
 	}
 
-	if (d->num_share_modes != state.num_share_modes) {
-		d->num_share_modes = state.num_share_modes;
+	have_share_modes = (state.num_share_modes != 0);
+	if (d->have_share_modes != have_share_modes) {
+		d->have_share_modes = have_share_modes;
 		d->modified = true;
 	}
 
@@ -2306,7 +2308,7 @@ bool reset_share_mode_entry(
 			    nt_errstr(state.status));
 		return false;
 	}
-	d->num_share_modes = 1;
+	d->have_share_modes = true;
 
 	return true;
 }

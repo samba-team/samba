@@ -58,13 +58,13 @@ interface open_files
 		[string,charset(UTF8)] char *servicepath;
 		[string,charset(UTF8)] char *base_name;
 		[string,charset(UTF8)] char *stream_name;
-		[skip] uint32 num_share_modes;
 		uint32 num_delete_tokens;
 		[size_is(num_delete_tokens)] delete_token delete_tokens[];
 		NTTIME old_write_time;
 		NTTIME changed_write_time;
 		[skip] boolean8 fresh;
 		[skip] boolean8 modified;
+		[skip] boolean8 have_share_modes;
 		[ignore] file_id id; /* In memory key used to lookup cache. */
 	} share_mode_data;
 
