@@ -41,7 +41,6 @@
 ^samba3.raw.acls nfs4acl_xattr-xdr-40\(nt4_dc\)
 ^samba3.raw.acls nfs4acl_xattr-xdr-41\(nt4_dc\)
 ^samba3.raw.acls\(nt4_dc\)
-^samba3.raw.chkpath\(ad_dc\)
 ^samba3.raw.chkpath\(nt4_dc\)
 ^samba3.raw.lock\(nt4_dc\)
 ^samba3.raw.notify\(nt4_dc\)
