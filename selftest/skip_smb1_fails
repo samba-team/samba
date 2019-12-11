@@ -43,7 +43,6 @@
 ^samba3.raw.lock\(nt4_dc\)
 ^samba3.raw.notify\(nt4_dc\)
 ^samba3.raw.oplock\(nt4_dc\)
-^samba3.raw.read\(ad_dc\)
 ^samba3.raw.read aio\(nt4_dc\)
 ^samba3.raw.read\(nt4_dc\)
 ^samba3.raw.samba3checkfsp\(nt4_dc\)
