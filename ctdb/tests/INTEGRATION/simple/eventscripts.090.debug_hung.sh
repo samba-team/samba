@@ -25,8 +25,7 @@ ctdb_test_init
 
 cluster_is_healthy
 
-# This is overkill but it at least provides a valid test node
-select_test_node_and_ips
+select_test_node
 
 ####################
 

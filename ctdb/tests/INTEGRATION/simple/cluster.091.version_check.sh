@@ -17,7 +17,7 @@ ctdb_test_init
 
 cluster_is_healthy
 
-select_test_node_and_ips
+select_test_node
 
 try_command_on_node -v "$test_node" ctdb version
 version="$out"
