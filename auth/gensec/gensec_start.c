@@ -32,6 +32,7 @@
 #include "lib/util/tsort.h"
 #include "lib/util/samba_modules.h"
 #include "lib/util/base64.h"
+#include "lib/crypto/gnutls_helpers.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -49,7 +50,17 @@ _PUBLIC_ const struct gensec_security_ops * const *gensec_security_all(void)
 
 bool gensec_security_ops_enabled(const struct gensec_security_ops *ops, struct gensec_security *security)
 {
-	return lpcfg_parm_bool(security->settings->lp_ctx, NULL, "gensec", ops->name, ops->enabled);
+	bool ok = lpcfg_parm_bool(security->settings->lp_ctx,
+				  NULL,
+				  "gensec",
+				  ops->name,
+				  ops->enabled);
+
+	if (!samba_gnutls_weak_crypto_allowed() && ops->weak_crypto) {
+		ok = false;
+	}
+
+	return ok;
 }
 
 /* Sometimes we want to force only kerberos, sometimes we want to

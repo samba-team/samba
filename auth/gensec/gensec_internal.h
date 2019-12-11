@@ -28,6 +28,7 @@ struct gensec_security;
 struct gensec_security_ops {
 	const char *name;
 	const char *sasl_name;
+	bool weak_crypto;
 	uint8_t auth_type;  /* 0 if not offered on DCE-RPC */
 	const char **oid;  /* NULL if not offered by SPNEGO */
 	NTSTATUS (*client_start)(struct gensec_security *gensec_security);
