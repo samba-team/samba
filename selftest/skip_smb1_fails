@@ -54,7 +54,6 @@
 ^samba3.raw.samba3posixtimedlock\(nt4_dc\)
 ^samba3.raw.samba3posixtimedlock brl_delay_inject1\(nt4_dc\)
 ^samba3.raw.samba3posixtimedlock brl_delay_inject2\(nt4_dc\)
-^samba3.raw.search\(ad_dc\)
 ^samba3.raw.search\(nt4_dc\)
 ^samba3.raw.session plain\(nt4_dc\)
 ^samba3.rpc.lsa.lookupsids over ncacn_np with \[spnego,smb1,bigendian\] \(nt4_dc\)
