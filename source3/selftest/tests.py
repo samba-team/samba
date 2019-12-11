@@ -572,7 +572,7 @@ for t in tests:
         for env in ["nt4_dc", "nt4_member"]:
             plansmbtorture4testsuite(t, env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
             plansmbtorture4testsuite(t, env, '//$SERVER/tmpguest -U%', description='anonymous connection')
-        for env in ["ad_dc", "ad_member"]:
+        for env in ["ad_dc_smb1", "ad_member"]:
             plansmbtorture4testsuite(t, env, '//$SERVER/tmp -U$DC_USERNAME@$REALM%$DC_PASSWORD --option=torture:addc=$DC_SERVER')
             plansmbtorture4testsuite(t, env, '//$SERVER/tmp -k yes -U$DC_USERNAME@$REALM%$DC_PASSWORD --option=torture:addc=$DC_SERVER', description='kerberos connection')
             plansmbtorture4testsuite(t, env, '//$SERVER/tmpguest -U% --option=torture:addc=$DC_SERVER', description='anonymous connection')
