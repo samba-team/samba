@@ -33,7 +33,7 @@ export CTDB_TEST_SAMBA_VERSION=$(( (major << 16) | minor ))
 printf '\nRestarting node %d with CTDB_TEST_SAMBA_VERSION=0x%08x\n' \
        "$test_node" \
        "$CTDB_TEST_SAMBA_VERSION"
-restart_ctdb_1 "$test_node"
+ctdb_nodes_restart "$test_node"
 wait_until_ready
 echo "GOOD: ctdbd restarted successfully on node ${test_node}"
 
@@ -46,7 +46,7 @@ export CTDB_TEST_SAMBA_VERSION=$(( ((major + 1) << 16) | minor ))
 printf '\nRestarting node %d with CTDB_TEST_SAMBA_VERSION=0x%08x\n' \
        "$test_node" \
        "$CTDB_TEST_SAMBA_VERSION"
-restart_ctdb_1 "$test_node"
+ctdb_nodes_restart "$test_node"
 echo "Will use PID file ${pidfile} to check for ctdbd exit"
 wait_until 30 ! test -f "$pidfile"
 echo "GOOD: ctdbd exited early on node ${test_node}"
@@ -56,7 +56,7 @@ export CTDB_TEST_SAMBA_VERSION=$(( (major << 16) | (minor + 1) ))
 printf '\nRestarting node %d with CTDB_TEST_SAMBA_VERSION=0x%08x\n' \
        "$test_node" \
        "$CTDB_TEST_SAMBA_VERSION"
-start_ctdb_1 "$test_node"
+ctdb_nodes_start "$test_node"
 echo "Will use PID file ${pidfile} to check for ctdbd exit"
 wait_until 30 ! test -f "$pidfile"
 echo "GOOD: ctdbd exited early on node ${test_node}"

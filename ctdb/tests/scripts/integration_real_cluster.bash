@@ -39,26 +39,15 @@ _service_ctdb ()
 }
 
 # Stop/start CTDB on all nodes.  Override for local daemons.
-ctdb_stop_all ()
+ctdb_nodes_stop ()
 {
-	onnode -p all "$CTDB_TEST_WRAPPER" _service_ctdb stop
-}
-ctdb_start_all ()
-{
-	onnode -p all "$CTDB_TEST_WRAPPER" _service_ctdb start
-}
+	local nodespec="${1:-all}"
 
-start_ctdb_1 ()
-{
-	onnode "$1" "$CTDB_TEST_WRAPPER" _service_ctdb start
+	onnode -p "$nodespec" "$CTDB_TEST_WRAPPER" _service_ctdb stop
 }
-
-stop_ctdb_1 ()
+ctdb_nodes_start ()
 {
-	onnode "$1" "$CTDB_TEST_WRAPPER" _service_ctdb stop
-}
+	local nodespec="${1:-all}"
 
-restart_ctdb_1 ()
-{
-	onnode "$1" "$CTDB_TEST_WRAPPER" _service_ctdb restart
+	onnode -p "$nodespec" "$CTDB_TEST_WRAPPER" _service_ctdb start
 }

@@ -50,7 +50,7 @@ ctdb_test_exit ()
     unset ctdb_test_exit_hook
 
     echo "Stopping cluster..."
-    ctdb_stop_all
+    ctdb_nodes_stop
 
     exit $status
 }
@@ -92,7 +92,7 @@ ctdb_test_init ()
 {
 	trap "ctdb_test_exit" 0
 
-	ctdb_stop_all >/dev/null 2>&1 || true
+	ctdb_nodes_stop >/dev/null 2>&1 || true
 
 	echo "Configuring cluster..."
 	setup_ctdb "$@" || exit 1
@@ -109,6 +109,13 @@ ctdb_test_skip_on_cluster ()
 		ctdb_test_skip \
 			"SKIPPING this test - only runs against local daemons"
 	fi
+}
+
+
+ctdb_nodes_restart ()
+{
+	ctdb_nodes_stop "$@"
+	ctdb_nodes_start "$@"
 }
 
 ########################################
@@ -568,9 +575,9 @@ wait_until_node_has_no_ips ()
 
 ctdb_init ()
 {
-	ctdb_stop_all >/dev/null 2>&1 || :
+	ctdb_nodes_stop >/dev/null 2>&1 || :
 
-	ctdb_start_all || ctdb_test_error "Cluster start failed"
+	ctdb_nodes_start || ctdb_test_error "Cluster start failed"
 
 	wait_until_ready || ctdb_test_error "Cluster didn't become ready"
 

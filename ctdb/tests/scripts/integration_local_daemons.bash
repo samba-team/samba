@@ -45,34 +45,18 @@ setup_ctdb ()
 	fi
 }
 
-start_ctdb_1 ()
+ctdb_nodes_start ()
 {
-	local pnn="$1"
+	local nodespec="${1:-all}"
 
-	$ctdb_local_daemons start "$pnn"
+	$ctdb_local_daemons start "$nodespec"
 }
 
-ctdb_start_all ()
+ctdb_nodes_stop ()
 {
-	$ctdb_local_daemons start "all"
-}
+	local nodespec="${1:-all}"
 
-stop_ctdb_1 ()
-{
-	local pnn="$1"
-
-	$ctdb_local_daemons stop "$pnn"
-}
-
-ctdb_stop_all ()
-{
-	$ctdb_local_daemons stop "all"
-}
-
-restart_ctdb_1 ()
-{
-	stop_ctdb_1 "$1"
-	start_ctdb_1 "$1"
+	$ctdb_local_daemons stop "$nodespec"
 }
 
 onnode ()

@@ -86,7 +86,7 @@ testdb3="test_replicated.tdb"
 test_node="0"
 
 echo "Shutting down node $test_node"
-stop_ctdb_1 "$test_node"
+ctdb_nodes_stop "$test_node"
 sleep 1
 wait_until_node_has_status 1 recovered
 try_command_on_node -v 1 $CTDB status
@@ -110,7 +110,7 @@ done
 
 echo
 echo "Start node $test_node"
-start_ctdb_1 "$test_node"
+ctdb_nodes_start "$test_node"
 sleep 1
 wait_until_ready
 
@@ -124,7 +124,7 @@ check_db $test_node $testdb3 REPLICATED
 
 echo
 echo "Restarting node $test_node"
-restart_ctdb_1 "$test_node"
+ctdb_nodes_restart "$test_node"
 sleep 1
 wait_until_ready
 
