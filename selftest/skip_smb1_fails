@@ -6,7 +6,6 @@
 # a) remove the failing test
 # b) port the failing test to SMB2
 # c) fix the test
-^samba3.base.createx_access\(ad_dc\)
 ^samba3.base.lock\(nt4_dc\)
 ^samba3.base.rw1\(ad_dc\)
 ^samba3.base.rw1\(nt4_dc\)
