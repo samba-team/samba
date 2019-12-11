@@ -502,8 +502,43 @@ static void gensec_update_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	state->status = status;
 	if (GENSEC_UPDATE_IS_NTERROR(status)) {
-		DBG_INFO("%s[%p]: %s%s%s\n", state->ops->name,
-			 state->gensec_security, nt_errstr(status),
+		NTSTATUS orig_status = status;
+		bool force_no_such_user = false;
+
+		/*
+		 * callers only expect NT_STATUS_NO_SUCH_USER.
+		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_ACCOUNT_NAME)) {
+			force_no_such_user = true;
+		} else if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_DOMAIN)) {
+			force_no_such_user = true;
+		}
+
+		if (state->gensec_security->subcontext) {
+			/*
+			 * We should only map on the outer
+			 * gensec_update exchange, spnego
+			 * needs the raw status.
+			 */
+			force_no_such_user = false;
+		}
+
+		if (force_no_such_user) {
+			/*
+			 * nt_status_squash() may map
+			 * to NT_STATUS_LOGON_FAILURE later
+			 */
+			status = NT_STATUS_NO_SUCH_USER;
+		}
+
+		DBG_INFO("%s[%p]: %s%s%s%s%s\n",
+			 state->ops->name,
+			 state->gensec_security,
+			 NT_STATUS_EQUAL(status, orig_status) ?
+			 "" : nt_errstr(orig_status),
+			 NT_STATUS_EQUAL(status, orig_status) ?
+			 "" : " ",
+			 nt_errstr(status),
 			 debug_subreq ? " " : "",
 			 debug_subreq ? debug_subreq : "");
 		tevent_req_nterror(req, status);
