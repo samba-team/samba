@@ -192,6 +192,20 @@ int LLVMFuzzerTestOneInput(uint8_t *data, size_t size) {
 	function = SVAL(data, 2);
 
 	type = fuzz_packet_flags & 3;
+
+#ifdef FUZZ_TYPE
+	/*
+	 * Fuzz targets should have as small an interface as possible.
+	 * This allows us to create 3 binaries for most pipes,
+	 * TYPE_IN, TYPE_OUT and TYPE_STRUCT
+	 *
+	 * We keep the header format, and just exit early if it does
+	 * not match.
+	 */
+	if (type != FUZZ_TYPE) {
+		return 0;
+	}
+#endif
 #endif
 
 	switch (type) {

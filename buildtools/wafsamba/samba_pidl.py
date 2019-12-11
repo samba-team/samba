@@ -123,7 +123,19 @@ def SAMBA_PIDL_LIST(bld, name, source,
         # the fuzzers rely
         if generate_tables and generate_fuzzers:
             interface = p[0:-4] # strip off the .idl suffix
-            bld.SAMBA_NDR_FUZZ(interface, auto_deps=True)
+            bld.SAMBA_NDR_FUZZ(interface,
+                               auto_deps=True,
+                               fuzz_type="TYPE_STRUCT")
+
+            # Only generate the TYPE_STRUCT fuzzer if this isn't
+            # really DCE/RPC
+            if '--client' in options:
+                bld.SAMBA_NDR_FUZZ(interface,
+                                   auto_deps=True,
+                                   fuzz_type="TYPE_IN")
+                bld.SAMBA_NDR_FUZZ(interface,
+                                   auto_deps=True,
+                                   fuzz_type="TYPE_OUT")
 Build.BuildContext.SAMBA_PIDL_LIST = SAMBA_PIDL_LIST
 
 

@@ -59,10 +59,12 @@ def SAMBA_NDR_FUZZ(bld, interface, auto_deps=False,
     fuzz_src = os.path.join(fuzz_reldir, 'fuzz_ndr_X.c')
 
     cflags = "-D FUZZ_PIPE_TABLE=ndr_table_%s" % interface
+    if fuzz_type:
+        name += "_%s" % (fuzz_type)
+        cflags += " -D FUZZ_TYPE=%s " % (fuzz_type)
     if fuzz_type and fuzz_function:
-        name += "_%s_%d" % (fuzz_type, fuzz_function)
-        cflags += " -D FUZZ_TYPE=%s -DFUZZ_FUNCTION=%d" % (fuzz_type,
-                                                           fuzz_function)
+        name += "_%d" % (fuzz_function)
+        cflags += " -D FUZZ_FUNCTION=%d" % (fuzz_function)
 
     fuzz_named_src = os.path.join(fuzz_reldir,
                                   '%s.c' % (name))
