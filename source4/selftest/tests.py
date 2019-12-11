@@ -245,7 +245,7 @@ for transport in ["ncacn_np", "ncacn_ip_tcp"]:
 # Tests for the DFS referral calls implementation
 for t in smbtorture4_testsuites("dfs."):
     plansmbtorture4testsuite(t, "ad_dc_ntvfs", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
-    plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
+    plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 
 # Tests for the NET API (net.api.become.dc tested below against all the roles)
 net_tests = list(filter(lambda x: "net.api.become.dc" not in x, smbtorture4_testsuites("net.")))

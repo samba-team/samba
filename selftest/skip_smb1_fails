@@ -172,7 +172,6 @@
 ^samba4.blackbox.pkinit\(ad_dc:local\)
 ^samba4.blackbox.smbclient\(ad_member:local\)\(ad_member:local\)
 ^samba4.blackbox.smbclient\(chgdcpass:local\)\(chgdcpass:local\)
-^samba4.dfs.domain\(ad_dc\)
 ^samba4.ldap.nested-search\(ad_dc_default\)
 ^samba4.libsmbclient.list_shares.NT1\(nt4_dc\)
 ^samba4.libsmbclient.readdirplus.NT1\(nt4_dc\)
