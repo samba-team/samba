@@ -368,8 +368,6 @@ int smb_krb5_create_key_from_string(krb5_context context,
 				    krb5_enctype enctype,
 				    krb5_keyblock *key);
 
-krb5_boolean smb_krb5_get_allowed_weak_crypto(krb5_context context);
-
 #ifndef krb5_princ_size
 #if defined(HAVE_KRB5_PRINCIPAL_GET_NUM_COMP)
 #define krb5_princ_size krb5_principal_get_num_comp
