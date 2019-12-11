@@ -38,11 +38,12 @@ ctdb_test_exit_hook_add "onnode $test_node rm -f $script_options"
 debug_output="${ctdb_base}/debug-hung-script.log"
 ctdb_test_exit_hook_add "onnode $test_node rm -f $debug_output"
 
-try_command_on_node -i $test_node tee "$script_options" <<<"\
+try_command_on_node -i "$test_node" tee "$script_options" <<EOF
 CTDB_RUN_TIMEOUT_MONITOR=yes
-CTDB_DEBUG_HUNG_SCRIPT_LOGFILE=\"$debug_output\"
+CTDB_DEBUG_HUNG_SCRIPT_LOGFILE='$debug_output'
 CTDB_DEBUG_HUNG_SCRIPT_STACKPAT='exportfs|rpcinfo|sleep'
-CTDB_SCRIPT_VARDIR=\"$ctdb_base\""
+CTDB_SCRIPT_VARDIR='$ctdb_base'
+EOF
 
 ####################
 
