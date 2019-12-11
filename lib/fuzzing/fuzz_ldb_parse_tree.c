@@ -44,7 +44,7 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 
 	tree = ldb_parse_tree(mem_ctx, filter);
 
-	(void)ldb_filter_from_tree(tree, mem_ctx);
+	(void)ldb_filter_from_tree(mem_ctx, tree);
 
 out:
 	talloc_free(mem_ctx);
