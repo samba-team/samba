@@ -385,7 +385,7 @@ for t in libsmbclient:
     for proto in protocols:
         plansmbtorture4testsuite(
             t,
-            "nt4_dc",
+            "nt4_dc" if proto == "SMB3" else "nt4_dc_smb1_done",
             libsmbclient_testargs +
             [ "--option=torture:clientprotocol=%s" % proto],
             "samba4.%s.%s" % (t, proto))
