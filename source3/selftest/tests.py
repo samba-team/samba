@@ -752,7 +752,17 @@ for t in tests:
         plansmbtorture4testsuite(t, "ad_member", '//$SERVER_IP/tmp -U$DC_USERNAME%$DC_PASSWORD')
     elif (t in base and t != "base.charset") \
         or (t in rap and t != "rap.printing") \
-        or (t in unix):
+        or (t in unix) \
+        or (t in ["rpc.authcontext",
+                  "rpc.join",
+                  "rpc.samba3.bind",
+                  "rpc.samba3.getusername",
+                  "rpc.samba3.sharesec",
+                  "rpc.samba3.smb1-pipe-name",
+                  "rpc.samba3.smb-reauth1",
+                  "rpc.samba3.smb-reauth2",
+                  "rpc.samba3.spoolss",
+                  "rpc.samba3.wkssvc",]):
         plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     else:
