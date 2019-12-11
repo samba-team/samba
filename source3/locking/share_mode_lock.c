@@ -404,6 +404,14 @@ static struct share_mode_data *parse_share_modes(TALLOC_CTX *mem_ctx,
 		NDR_PRINT_DEBUG(share_mode_data, d);
 	}
 
+	/*
+	 * We have a non-zero locking.tdb record that was correctly
+	 * parsed. This means a share_entries.tdb entry exists,
+	 * otherwise we'd have paniced before in
+	 * share_mode_data_store()
+	 */
+	d->num_share_modes = 1;
+
 	return d;
 fail:
 	TALLOC_FREE(d);
