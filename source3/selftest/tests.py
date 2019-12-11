@@ -558,7 +558,7 @@ tests = base + raw + smb2 + rpc + unix + local + rap + nbt + idmap + vfs
 
 for t in tests:
     if t == "base.delaywrite" or t == "base.deny1" or t == "base.deny2":
-        plansmbtorture4testsuite(t, "fileserver", '//$SERVER/tmp -U$USERNAME%$PASSWORD --maximum-runtime=900')
+        plansmbtorture4testsuite(t, "fileserver_smb1", '//$SERVER/tmp -U$USERNAME%$PASSWORD --maximum-runtime=900')
     elif t == "base.createx_access":
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD -k yes --maximum-runtime=900')
     elif t == "rap.sam":
