@@ -771,7 +771,7 @@ if have_heimdal_support:
     planoldpythontestsuite("ad_dc_ntvfs:local", "samba.tests.auth_log", extra_args=['-U"$USERNAME%$PASSWORD"'],
                            environ={'CLIENT_IP': '10.53.57.11',
                                     'SOCKET_WRAPPER_DEFAULT_IFACE': 11})
-    planoldpythontestsuite("ad_dc", "samba.tests.auth_log_pass_change",
+    planoldpythontestsuite("ad_dc_smb1", "samba.tests.auth_log_pass_change",
                            extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite("ad_dc_ntvfs", "samba.tests.auth_log_pass_change",
                            extra_args=['-U"$USERNAME%$PASSWORD"'])
