@@ -292,7 +292,7 @@ struct dsdb_fsmo_extended_op {
 #define DSDB_EXTENDED_SEC_DESC_PROPAGATION_OID "1.3.6.1.4.1.7165.4.4.7"
 struct dsdb_extended_sec_desc_propagation_op {
 	struct ldb_dn *nc_root;
-	struct ldb_dn *dn;
+	struct GUID guid;
 	bool include_self;
 };
 
