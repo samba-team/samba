@@ -28,6 +28,20 @@ int main(int argc, char *argv[]) {
 	size_t size = 0;
 #ifdef __AFL_LOOP
 	while (__AFL_LOOP(1000))
+#else
+	int i;
+	for (i = 0; i < argc; i++) {
+		uint8_t *buf = (uint8_t *)file_load(argv[i],
+						    &size,
+						    0,
+						    NULL);
+		ret = LLVMFuzzerTestOneInput(buf, size);
+		TALLOC_FREE(buf);
+		if (ret != 0) {
+			return ret;
+		}
+	}
+	if (i == 0)
 #endif
 	{
 		uint8_t *buf = (uint8_t *)fd_load(0, &size, 0, NULL);
