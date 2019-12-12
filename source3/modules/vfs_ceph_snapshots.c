@@ -390,8 +390,12 @@ static int ceph_snap_get_shadow_copy_data(struct vfs_handle_struct *handle,
 		parent_dir = tmp;
 	}
 
-	ret = snprintf(snaps_path, sizeof(snaps_path), "%s/%s",
-		       parent_dir, snapdir);
+	if (strlen(parent_dir) == 0) {
+		ret = strlcpy(snaps_path, snapdir, sizeof(snaps_path));
+	} else {
+		ret = snprintf(snaps_path, sizeof(snaps_path), "%s/%s",
+			       parent_dir, snapdir);
+	}
 	if (ret >= sizeof(snaps_path)) {
 		ret = -EINVAL;
 		goto err_out;
@@ -534,7 +538,11 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 	/*
 	 * Temporally use the caller's return buffer for this.
 	 */
-	ret = snprintf(_converted_buf, buflen, "%s/%s", name, snapdir);
+	if (strlen(name) == 0) {
+		ret = strlcpy(_converted_buf, snapdir, buflen);
+	} else {
+		ret = snprintf(_converted_buf, buflen, "%s/%s", name, snapdir);
+	}
 	if (ret >= buflen) {
 		ret = -EINVAL;
 		goto err_out;
