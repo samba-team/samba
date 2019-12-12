@@ -411,3 +411,15 @@ dump OK
             self.fail(e)
 
         self.assertEqual(actual, expected)
+
+    # Test a print of NULL pointer in manually-written ndr_drsuapi.c
+    def test_fuzzed_drsuapi_DsGetNCChanges(self):
+        expected =  open(self.data_path("fuzzed_drsuapi_DsGetNCChanges.txt"), 'rb').read()
+        try:
+            actual = self.check_output(
+                "ndrdump drsuapi 3 out --base64-input --input " +\
+                "AQAAAAEAAAAGAKoAAAAGAKoGAAMAAQAAAAYAEwAAAAAAAAAA/wAAAAAAAAA/AAAAAAAAAAAAAAAAAAAAAABbAAAAAAAAAAAAAAkRAAABAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPkAAAAAAAABAAD4BgATAAAAAAAAAAD/AAAAAAAAAD8AAAAAAAAAAAAAAAAAAAAAAFsAAAAAAAAAAAAABgAQAAEAAAABAAAAAQAAAAEAAAABAAAAAQAAAAMAAAABAAAACREAAAEAAAABAAAAAAAAAAYAEAABAAgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAA=")
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        self.assertEqual(actual, expected)

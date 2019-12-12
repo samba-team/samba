@@ -1,0 +1,76 @@
+pull returned Success
+WARNING! 4 unread bytes
+[0000] 00 00 00 00                                        .... 
+    drsuapi_DsGetNCChanges: struct drsuapi_DsGetNCChanges
+        out: struct drsuapi_DsGetNCChanges
+            level_out                : *
+                level_out                : 0x00000001 (1)
+            ctr                      : *
+                ctr                      : union drsuapi_DsGetNCChangesCtr(case 1)
+                ctr1: struct drsuapi_DsGetNCChangesCtr1
+                    source_dsa_guid          : 00aa0006-0000-0006-aa06-000300010000
+                    source_dsa_invocation_id : 13000600-0000-0000-0000-0000ff000000
+                    naming_context           : NULL
+                    old_highwatermark: struct drsuapi_DsReplicaHighWaterMark
+                        tmp_highest_usn          : 0x0000000000000000 (0)
+                        reserved_usn             : 0x005b000000000000 (25614222880669696)
+                        highest_usn              : 0x0000000000000000 (0)
+                    new_highwatermark: struct drsuapi_DsReplicaHighWaterMark
+                        tmp_highest_usn          : 0x0000010000110900 (1099512744192)
+                        reserved_usn             : 0x0000000000000100 (256)
+                        highest_usn              : 0x0000000000000000 (0)
+                    uptodateness_vector      : NULL
+                    mapping_ctr: struct drsuapi_DsReplicaOIDMapping_Ctr
+                        num_mappings             : 0x00000000 (0)
+                        mappings                 : NULL
+                    extended_ret             : UNKNOWN_ENUM_VALUE (0xF900)
+                    object_count             : 0x00000000 (0)
+                    __ndr_size               : 0xf8000001 (4160749569)
+                    first_object             : *
+                        first_object: struct drsuapi_DsReplicaObjectListItemEx
+                            next_object              : *
+                            object: struct drsuapi_DsReplicaObject
+                                identifier               : NULL
+                                flags                    : 0x3f000000 (1056964608)
+                                       0: DRSUAPI_DS_REPLICA_OBJECT_FROM_MASTER
+                                       0: DRSUAPI_DS_REPLICA_OBJECT_DYNAMIC
+                                       0: DRSUAPI_DS_REPLICA_OBJECT_REMOTE_MODIFY
+                                attribute_ctr: struct drsuapi_DsReplicaAttributeCtr
+                                    num_attributes           : 0x00000000 (0)
+                                    attributes               : NULL
+                            is_nc_prefix             : 0x00000000 (0)
+                            parent_object_guid       : NULL
+                            meta_data_ctr            : *
+                                meta_data_ctr: struct drsuapi_DsReplicaMetaDataCtr
+                                    count                    : 0x00000000 (0)
+                                    meta_data: ARRAY(0)
+                        next_object: struct drsuapi_DsReplicaObjectListItemEx
+                            next_object              : NULL
+                            object: struct drsuapi_DsReplicaObject
+                                identifier               : NULL
+                                flags                    : 0x00100006 (1048582)
+                                       0: DRSUAPI_DS_REPLICA_OBJECT_FROM_MASTER
+                                       1: DRSUAPI_DS_REPLICA_OBJECT_DYNAMIC
+                                       0: DRSUAPI_DS_REPLICA_OBJECT_REMOTE_MODIFY
+                                attribute_ctr: struct drsuapi_DsReplicaAttributeCtr
+                                    num_attributes           : 0x00000001 (1)
+                                    attributes               : *
+                                        attributes: ARRAY(1)
+                                            attributes: struct drsuapi_DsReplicaAttribute
+                                                attid                    : DRSUAPI_ATTID_cn (0x3)
+                                                value_ctr: struct drsuapi_DsAttributeValueCtr
+                                                    num_values               : 0x00000001 (1)
+                                                    values                   : *
+                                                        values: ARRAY(1)
+                                                            values: struct drsuapi_DsAttributeValue
+                                                                string                   : 'NULL'
+                            is_nc_prefix             : 0x00000001 (1)
+                            parent_object_guid       : *
+                                parent_object_guid       : 00100006-0001-0008-0100-000000000000
+                            meta_data_ctr            : *
+                                meta_data_ctr: struct drsuapi_DsReplicaMetaDataCtr
+                                    count                    : 0x00000000 (0)
+                                    meta_data: ARRAY(0)
+                    more_data                : 0x00000000 (0)
+            result                   : DOS code 0x00000100
+dump OK
