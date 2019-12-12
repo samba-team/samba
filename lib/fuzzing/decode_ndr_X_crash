@@ -115,7 +115,7 @@ def main():
             for line in f:
                 m = re.match(r'^\s*fuzzTarget\s*:\s*bin/fuzz_ndr_(\w+)\s*$', line)
                 if m:
-                    pipe = m.group(1)
+                    pipe = m.group(1).split('_TYPE_', 1)[0]
                     print_if_verbose(f"found pipe {pipe}")
                 m = re.match(r'^FUZZ_FNAME: (\S+)$', line)
                 if m:
