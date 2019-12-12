@@ -113,12 +113,15 @@ static void _print_drsuapi_DsAttributeValue_str(struct ndr_print *ndr, const cha
 
 	ndr_print_struct(ndr, name, "drsuapi_DsAttributeValue");
 	ndr->depth++;
-	if (!convert_string_talloc(ndr,
-	                           CH_UTF16, CH_UNIX,
-	                           r->blob->data,
-	                           r->blob->length,
-	                           &p, &converted_size)) {
-		ndr_print_string(ndr, "string", "INVALID CONVERSION");
+	if (r->blob == NULL || r->blob->data == NULL) {
+		ndr_print_string(ndr, "string", "NULL");
+	} else if (!convert_string_talloc(ndr,
+					  CH_UTF16, CH_UNIX,
+					  r->blob->data,
+					  r->blob->length,
+					  &p, &converted_size)) {
+		ndr_print_DATA_BLOB(ndr, "string (INVALID CONVERSION)",
+				    *r->blob);
 	} else {
 		char *str = (char *)p;
 		ndr_print_string(ndr, "string", str);
