@@ -801,7 +801,7 @@ planoldpythontestsuite("fl2008r2dc:local",
                        "samba.tests.getdcname",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
 
-planoldpythontestsuite("ad_dc",
+planoldpythontestsuite("ad_dc_smb1",
                        "samba.tests.net_join_no_spnego",
                        extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc",
