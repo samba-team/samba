@@ -184,7 +184,6 @@
 ^samba4.smb.signing disabled on with -k no --option=gensec:spengo=no --signing=off domain-creds\(ad_member\)
 ^samba4.smb.signing disabled on with -k no --signing=off domain-creds\(ad_member\)
 ^samba4.smb.signing disabled on with -k yes --signing=off domain-creds\(ad_member\)
-^samba.tests.auth_log\(ad_dc:local\)
 ^samba.tests.auth_log_pass_change\(ad_dc\)
 ^samba.tests.libsmb\(nt4_dc\)
 ^samba.tests.net_join_no_spnego\(ad_dc\)
