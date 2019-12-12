@@ -107,17 +107,15 @@
 #include <sys/uio.h>
 #endif
 
-#if defined(HAVE_SYS_ATTRIBUTES_H)
-#include <sys/attributes.h>
-#elif defined(HAVE_ATTR_ATTRIBUTES_H)
-#include <attr/attributes.h>
-#endif
-
 /* mutually exclusive (SuSE 8.2) */
 #if defined(HAVE_ATTR_XATTR_H)
 #include <attr/xattr.h>
 #elif defined(HAVE_SYS_XATTR_H)
 #include <sys/xattr.h>
+#elif defined(HAVE_SYS_ATTRIBUTES_H)
+#include <sys/attributes.h>
+#elif defined(HAVE_ATTR_ATTRIBUTES_H)
+#include <attr/attributes.h>
 #endif
 
 #ifdef HAVE_SYS_EA_H
