@@ -653,13 +653,7 @@ NTSTATUS downgrade_lease(struct smbXsrv_connection *xconn,
 		  lease_state,
 		  nt_errstr(status));
 
-	/*
-	 * No, we did not modify the share mode array. We did modify
-	 * the leases_db. But without this we don't notify a lease
-	 * break waiter via dbwrap_watch_record. We need to make
-	 * leases_db watched too.
-	 */
-	lck->data->modified = true;
+	share_mode_wakeup_waiters(id);
 
 	fsps_lease_update(sconn, &id, key);
 
