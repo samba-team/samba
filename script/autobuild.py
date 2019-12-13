@@ -198,6 +198,7 @@ tasks = {
         ("test", make_test(exclude_envs=[
             "none",
             "nt4_dc",
+            "nt4_dc_smb1",
             "nt4_dc_schannel",
             "nt4_member",
             "ad_dc",
@@ -252,6 +253,7 @@ tasks = {
         ("test", make_test(exclude_envs=[
             "none",
             "nt4_dc",
+            "nt4_dc_smb1",
             "nt4_dc_schannel",
             "nt4_member",
             "ad_dc",
@@ -304,6 +306,7 @@ tasks = {
         ("make", "make -j"),
         ("test", make_test(include_envs=[
             "nt4_dc",
+            "nt4_dc_smb1",
             "nt4_dc_schannel",
             "nt4_member",
             "simpleserver",
