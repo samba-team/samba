@@ -1004,6 +1004,7 @@ static NTSTATUS self_ref(TALLOC_CTX *ctx,
 **********************************************************************/
 
 NTSTATUS get_referred_path(TALLOC_CTX *ctx,
+			   struct auth_session_info *session_info,
 			   const char *dfs_path,
 			   const struct tsocket_address *remote_address,
 			   const struct tsocket_address *local_address,

@@ -471,6 +471,7 @@ bool is_msdfs_link(connection_struct *conn,
 		struct smb_filename *smb_fname);
 struct junction_map;
 NTSTATUS get_referred_path(TALLOC_CTX *ctx,
+			   struct auth_session_info *session_info,
 			   const char *dfs_path,
 			   const struct tsocket_address *remote_address,
 			   const struct tsocket_address *local_address,

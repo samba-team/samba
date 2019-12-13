@@ -225,7 +225,9 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 	}
 
 	/* The following call can change cwd. */
-	status = get_referred_path(r, pathnamep,
+	status = get_referred_path(r,
+				   handle->conn->session_info,
+				   pathnamep,
 				   handle->conn->sconn->remote_address,
 				   handle->conn->sconn->local_address,
 				   !handle->conn->sconn->using_smb2,

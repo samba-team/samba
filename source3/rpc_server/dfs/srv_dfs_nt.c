@@ -75,7 +75,9 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	}
 
 	/* The following call can change the cwd. */
-	status = get_referred_path(ctx, r->in.path,
+	status = get_referred_path(ctx,
+				   p->session_info,
+				   r->in.path,
 				   p->remote_address,
 				   p->local_address,
 				   true, /*allow_broken_path */
@@ -147,7 +149,9 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 			r->in.dfs_entry_path, r->in.servername, r->in.sharename));
 	}
 
-	status = get_referred_path(ctx, r->in.dfs_entry_path,
+	status = get_referred_path(ctx,
+				   p->session_info,
+				   r->in.dfs_entry_path,
 				   p->remote_address,
 				   p->local_address,
 				   true, /*allow_broken_path */
@@ -379,7 +383,9 @@ WERROR _dfs_GetInfo(struct pipes_struct *p, struct dfs_GetInfo *r)
 	}
 
 	/* The following call can change the cwd. */
-	status = get_referred_path(ctx, r->in.dfs_entry_path,
+	status = get_referred_path(ctx,
+				   p->session_info,
+				   r->in.dfs_entry_path,
 				   p->remote_address,
 				   p->local_address,
 				   true, /*allow_broken_path */
