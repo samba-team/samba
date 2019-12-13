@@ -5,12 +5,6 @@ bld.RECURSE('../../librpc/tools')
 bld.RECURSE('idl')
 
 
-bld.SAMBA_SUBSYSTEM('NDR_WINSTATION',
-	source='gen_ndr/ndr_winstation.c',
-	public_deps='ndr'
-	)
-
-
 bld.SAMBA_SUBSYSTEM('NDR_IRPC',
 	source='gen_ndr/ndr_irpc.c',
 	public_deps='ndr NDR_SECURITY ndr_nbt'

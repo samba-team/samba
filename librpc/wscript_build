@@ -449,6 +449,11 @@ bld.SAMBA_SUBSYSTEM('NDR_MESSAGING',
     public_deps='ndr NDR_SERVER_ID'
     )
 
+bld.SAMBA_SUBSYSTEM('NDR_WINSTATION',
+	source='gen_ndr/ndr_winstation.c',
+	public_deps='ndr'
+	)
+
 bld.SAMBA_SUBSYSTEM('RPC_NDR_ATSVC',
     source='gen_ndr/ndr_atsvc_c.c',
     public_deps='dcerpc-binding NDR_ATSVC'

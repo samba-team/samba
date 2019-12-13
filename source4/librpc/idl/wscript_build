@@ -7,7 +7,7 @@ topinclude=os.path.join(bld.srcnode.abspath(), 'librpc/idl')
 bld.SAMBA_PIDL_LIST('PIDL',
 		    source='''ntp_signd.idl
                               opendb.idl sasl_helpers.idl
-                              winsif.idl winsrepl.idl winstation.idl''',
+                              winsif.idl winsrepl.idl''',
                     options="--includedir=%s --header --ndr-parser" % topinclude,
                     output_dir='../gen_ndr')
 

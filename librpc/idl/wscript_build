@@ -92,6 +92,7 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     scerpc.idl
                     trkwks.idl
                     w32time.idl
+                    winstation.idl
                     wzcsvc.idl
                     ''',
                     options='--header --ndr-parser',
