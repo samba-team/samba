@@ -1500,7 +1500,7 @@ bool remove_msdfs_link(const struct junction_map *jucn)
  Return the number of DFS links at the root of this share.
 *********************************************************************/
 
-static int count_dfs_links(TALLOC_CTX *ctx, int snum)
+static size_t count_dfs_links(TALLOC_CTX *ctx, int snum)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	const struct loadparm_substitution *lp_sub =
@@ -1573,6 +1573,10 @@ static int count_dfs_links(TALLOC_CTX *ctx, int snum)
 			goto out;
 		}
 		if (is_msdfs_link(conn, smb_dname)) {
+			if (cnt + 1 < cnt) {
+				cnt = 0;
+				goto out;
+			}
 			cnt++;
 		}
 		TALLOC_FREE(talloced);
