@@ -132,12 +132,13 @@ bool torture_openattrtest(struct torture_context *tctx,
 						CHECK_MAX_FAILURES(error_exit);
 					}
 				}
-				torture_assert_ntstatus_equal(tctx, 
-					smbcli_nt_error(cli1->tree), NT_STATUS_ACCESS_DENIED, 
-					talloc_asprintf(tctx, "[%d] trunc open 0x%x -> 0x%x failed with wrong error code %s",
+				if (!NT_STATUS_EQUAL(smbcli_nt_error(cli1->tree), NT_STATUS_ACCESS_DENIED)) {
+					torture_result(tctx, TORTURE_FAIL,
+							"[%d] trunc open 0x%x -> 0x%x failed with wrong error code %s",
 							k, open_attrs_table[i], open_attrs_table[j],
-							smbcli_errstr(cli1->tree)));
+							smbcli_errstr(cli1->tree));
 					CHECK_MAX_FAILURES(error_exit);
+				}
 #if 0
 				torture_comment(tctx, "[%d] trunc open 0x%x -> 0x%x failed\n", k, open_attrs_table[i], open_attrs_table[j]);
 #endif
@@ -182,6 +183,9 @@ error_exit:
 	smbcli_setatr(cli1->tree, fname, 0, 0);
 	smbcli_unlink(cli1->tree, fname);
 
+	if (failures) {
+		return false;
+	}
 	return true;
 }
 
