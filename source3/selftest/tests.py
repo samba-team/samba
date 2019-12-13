@@ -711,6 +711,8 @@ for t in tests:
         plansmbtorture4testsuite(t, "simpleserver", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "smb2.notify" or t == "raw.notify" or t == "smb2.oplock" or t == "raw.oplock":
         tmp_env = "nt4_dc"
+        if t == "raw.notify" or t == "raw.oplock":
+            tmp_env = "nt4_dc_smb1"
         # These tests are a little slower so don't duplicate them with ad_dc
         plansmbtorture4testsuite(t, tmp_env, '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --signing=required')
     elif t == "smb2.dosmode":
