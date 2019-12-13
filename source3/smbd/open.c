@@ -4395,7 +4395,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	/* Don't store old timestamps for directory
 	   handles in the internal database. We don't
 	   update them in there if new objects
-	   are creaded in the directory. Currently
+	   are created in the directory. Currently
 	   we only update timestamps on file writes.
 	   See bug #9870.
 	*/
