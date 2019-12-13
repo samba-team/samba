@@ -732,6 +732,12 @@ NTSTATUS passwd_to_SamInfo3(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	info3->base.logon_domain.string = talloc_strdup(info3, domain_name);
+	if (info3->base.logon_domain.string == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
 	ZERO_STRUCT(domain_sid);
 
 	status = SamInfo3_handle_sids(unix_username,
