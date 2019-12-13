@@ -1357,38 +1357,38 @@ static bool junction_to_local_path_tos(const struct junction_map *jucn,
 	return True;
 }
 
-bool create_msdfs_link(const struct junction_map *jucn)
-{
-	TALLOC_CTX *frame = talloc_stackframe();
-	char *path = NULL;
-	char *msdfs_link = NULL;
-	connection_struct *conn;
-	size_t i = 0;
-	bool insert_comma = False;
-	bool ret = False;
-	struct smb_filename *smb_fname = NULL;
-	bool ok;
-	int retval;
+/*
+ * Create a msdfs string in Samba format we can store
+ * in a filesystem object (currently a symlink).
+ */
 
-	ok = junction_to_local_path_tos(jucn, &path, &conn);
-	if (!ok) {
-		TALLOC_FREE(frame);
-		return False;
-	}
+char *msdfs_link_string(TALLOC_CTX *ctx,
+			const struct referral *reflist,
+			size_t referral_count)
+{
+	char *refpath = NULL;
+	bool insert_comma = false;
+	char *msdfs_link = NULL;
+	size_t i;
 
 	/* Form the msdfs_link contents */
-	msdfs_link = talloc_strdup(conn, "msdfs:");
-	if (!msdfs_link) {
-		goto out;
+	msdfs_link = talloc_strdup(ctx, "msdfs:");
+	if (msdfs_link == NULL) {
+		goto err;
 	}
-	for(i=0; i<jucn->referral_count; i++) {
-		char *refpath = jucn->referral_list[i].alternate_path;
+
+	for( i= 0; i < referral_count; i++) {
+		refpath = talloc_strdup(ctx, reflist[i].alternate_path);
+
+		if (refpath == NULL) {
+			goto err;
+		}
 
 		/* Alternate paths always use Windows separators. */
 		trim_char(refpath, '\\', '\\');
-		if(*refpath == '\0') {
+		if (*refpath == '\0') {
 			if (i == 0) {
-				insert_comma = False;
+				insert_comma = false;
 			}
 			continue;
 		}
@@ -1402,12 +1402,49 @@ bool create_msdfs_link(const struct junction_map *jucn)
 					refpath);
 		}
 
-		if (!msdfs_link) {
-			goto out;
+		if (msdfs_link == NULL) {
+			goto err;
 		}
+
 		if (!insert_comma) {
-			insert_comma = True;
+			insert_comma = true;
 		}
+
+		TALLOC_FREE(refpath);
+	}
+
+	return msdfs_link;
+
+  err:
+
+	TALLOC_FREE(refpath);
+	TALLOC_FREE(msdfs_link);
+	return NULL;
+}
+
+bool create_msdfs_link(const struct junction_map *jucn)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	char *path = NULL;
+	char *msdfs_link = NULL;
+	connection_struct *conn;
+	bool ret = False;
+	struct smb_filename *smb_fname = NULL;
+	bool ok;
+	int retval;
+
+	ok = junction_to_local_path_tos(jucn, &path, &conn);
+	if (!ok) {
+		TALLOC_FREE(frame);
+		return False;
+	}
+
+	/* Form the msdfs_link contents */
+	msdfs_link = msdfs_link_string(frame,
+				jucn->referral_list,
+				jucn->referral_count);
+	if (msdfs_link == NULL) {
+		goto out;
 	}
 
 	DEBUG(5,("create_msdfs_link: Creating new msdfs link: %s -> %s\n",

@@ -486,6 +486,10 @@ bool create_junction(TALLOC_CTX *ctx,
 		const char *dfs_path,
 		bool allow_broken_path,
 		struct junction_map *jucn);
+struct referral;
+char *msdfs_link_string(TALLOC_CTX *ctx,
+		const struct referral *reflist,
+		size_t referral_count);
 bool create_msdfs_link(const struct junction_map *jucn);
 bool remove_msdfs_link(const struct junction_map *jucn);
 struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn);
