@@ -1121,7 +1121,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	status = create_conn_struct_tos_cwd(global_messaging_context(),
 					    snum,
 					    lp_path(frame, lp_sub, snum),
-					    NULL,
+					    session_info,
 					    &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(frame);
@@ -1340,7 +1340,7 @@ static bool junction_to_local_path_tos(const struct junction_map *jucn,
 	status = create_conn_struct_tos_cwd(global_messaging_context(),
 					    snum,
 					    lp_path(talloc_tos(), lp_sub, snum),
-					    NULL,
+					    session_info,
 					    &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
@@ -1571,7 +1571,7 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 	status = create_conn_struct_tos_cwd(global_messaging_context(),
 					    snum,
 					    connect_path,
-					    NULL,
+					    session_info,
 					    &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
@@ -1675,7 +1675,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 	status = create_conn_struct_tos_cwd(global_messaging_context(),
 					    snum,
 					    connect_path,
-					    NULL,
+					    session_info,
 					    &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3, ("create_conn_struct failed: %s\n",
