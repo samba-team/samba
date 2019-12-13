@@ -956,7 +956,10 @@ for options in options_list:
 
 options_list = ["-mNT1", "-mNT1 -e", "-mSMB3", "-mSMB3 -e"]
 for options in options_list:
-    plantestsuite("samba3.blackbox.smbclient_large_file %s NTLM" % options, "nt4_dc:local",
+    env = "nt4_dc"
+    if "NT1" in options:
+        env = "nt4_dc_smb1_done"
+    plantestsuite("samba3.blackbox.smbclient_large_file %s NTLM" % options, "%s:local" % env,
                   [os.path.join(samba3srcdir, "script/tests/test_smbclient_large_file.sh"),
                    "none",
                    smbclient3, "$SERVER", "$PREFIX", options, "-U$USERNAME%$PASSWORD " + configuration])
