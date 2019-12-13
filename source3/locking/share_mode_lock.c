@@ -2068,7 +2068,7 @@ bool remove_share_oplock(struct share_mode_lock *lck, files_struct *fsp)
 			&fsp->lease->lease.lease_key);
 	}
 
-	lck->data->modified = true; /* signal watchers */
+	share_mode_wakeup_waiters(fsp->file_id);
 
 	return true;
 }
