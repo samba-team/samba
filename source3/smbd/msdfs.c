@@ -1322,6 +1322,7 @@ bool create_junction(TALLOC_CTX *ctx,
  **********************************************************************/
 
 static bool junction_to_local_path_tos(const struct junction_map *jucn,
+				       struct auth_session_info *session_info,
 				       char **pp_path_out,
 				       connection_struct **conn_out)
 {
@@ -1435,7 +1436,7 @@ bool create_msdfs_link(const struct junction_map *jucn,
 	bool ok;
 	int retval;
 
-	ok = junction_to_local_path_tos(jucn, &path, &conn);
+	ok = junction_to_local_path_tos(jucn, session_info, &path, &conn);
 	if (!ok) {
 		TALLOC_FREE(frame);
 		return False;
@@ -1507,7 +1508,7 @@ bool remove_msdfs_link(const struct junction_map *jucn,
 	bool ok;
 	int retval;
 
-	ok = junction_to_local_path_tos(jucn, &path, &conn);
+	ok = junction_to_local_path_tos(jucn, session_info, &path, &conn);
 	if (!ok) {
 		TALLOC_FREE(frame);
 		return false;
