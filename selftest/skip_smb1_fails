@@ -22,7 +22,6 @@
 ^samba3.raw.samba3checkfsp\(simpleserver\)
 ^samba3.raw.samba3closeerr\(simpleserver\)
 ^samba3.raw.samba3hide\(simpleserver\)
-^samba3.raw.session plain\(nt4_dc\)
 ^samba3.rpc.lsa.lookupsids over ncacn_np with \[spnego,smb1,bigendian\] \(nt4_dc\)
 ^samba3.rpc.lsa.lookupsids over ncacn_np with \[spnego,smb1,connect,bigendian\] \(nt4_dc\)
 ^samba3.rpc.lsa.lookupsids over ncacn_np with \[spnego,smb1,connect\] \(nt4_dc\)
