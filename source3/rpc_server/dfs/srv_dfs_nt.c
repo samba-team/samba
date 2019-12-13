@@ -162,9 +162,11 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 			return WERR_NERR_DFSNOSUCHVOLUME;
 		}
 	} else {
-		int i=0;
+		size_t i = 0;
 		/* compare each referral in the list with the one to remove */
-		DEBUG(10,("altpath: .%s. refcnt: %d\n", altpath, jn->referral_count));
+		DBG_DEBUG("altpath: .%s. refcnt: %zu\n",
+				altpath,
+				jn->referral_count);
 		for(i=0;i<jn->referral_count;i++) {
 			char *refpath = talloc_strdup(ctx,
 					jn->referral_list[i].alternate_path);
@@ -226,7 +228,7 @@ static bool init_reply_dfs_info_2(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 
 static bool init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, struct dfs_Info3* dfs3)
 {
-	int ii;
+	size_t ii;
 	if (j->volume_name[0] == '\0')
 		dfs3->path = talloc_asprintf(mem_ctx, "\\\\%s\\%s",
 			lp_netbios_name(), j->service_name);
@@ -268,7 +270,7 @@ static bool init_reply_dfs_info_3(TALLOC_CTX *mem_ctx, struct junction_map* j, s
 			continue;
 		}
 		*p = '\0';
-		DEBUG(5,("storage %d: %s.%s\n",ii,path,p+1));
+		DBG_INFO("storage %zu: %s.%s\n",ii,path,p+1);
 		stor->state = 2; /* set all stores as ONLINE */
 		stor->server = talloc_strdup(mem_ctx, path);
 		stor->share = talloc_strdup(mem_ctx, p+1);

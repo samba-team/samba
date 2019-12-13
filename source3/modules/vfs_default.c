@@ -192,7 +192,7 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 	char *pathnamep = NULL;
 	char *local_dfs_path = NULL;
 	NTSTATUS status;
-	int i;
+	size_t i;
 	uint16_t max_referral_level = r->in.req.max_referral_level;
 
 	if (DEBUGLVL(10)) {

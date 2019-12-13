@@ -53,7 +53,7 @@ struct junction_map {
 	char *service_name;
 	char *volume_name;
 	const char *comment;
-	int referral_count;
+	size_t referral_count;
 	struct referral* referral_list;
 };
 

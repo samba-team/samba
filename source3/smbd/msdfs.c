@@ -535,12 +535,12 @@ static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 				int snum,
 				const char *target,
 				struct referral **preflist,
-				int *refcount)
+				size_t *refcount)
 {
 	char *temp = NULL;
 	char *prot;
 	char **alt_path = NULL;
-	int count = 0, i;
+	size_t count = 0, i;
 	struct referral *reflist;
 	char *saveptr;
 
@@ -570,7 +570,7 @@ static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 		shuffle_strlist(alt_path, count);
 	}
 
-	DEBUG(10,("parse_msdfs_symlink: count=%d\n", count));
+	DBG_DEBUG("count=%zu\n", count);
 
 	if (count) {
 		reflist = *preflist = talloc_zero_array(ctx,
@@ -1083,7 +1083,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	if (pdp->reqpath[0] == '\0') {
 		char *tmp;
 		struct referral *ref;
-		int refcount;
+		size_t refcount;
 
 		if (*lp_msdfs_proxy(talloc_tos(), lp_sub, snum) == '\0') {
 			TALLOC_FREE(frame);
@@ -1363,7 +1363,7 @@ bool create_msdfs_link(const struct junction_map *jucn)
 	char *path = NULL;
 	char *msdfs_link = NULL;
 	connection_struct *conn;
-	int i=0;
+	size_t i = 0;
 	bool insert_comma = False;
 	bool ret = False;
 	struct smb_filename *smb_fname = NULL;
