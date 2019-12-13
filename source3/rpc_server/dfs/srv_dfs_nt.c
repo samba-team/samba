@@ -108,7 +108,7 @@ WERROR _dfs_Add(struct pipes_struct *p, struct dfs_Add *r)
 	jn->referral_list[jn->referral_count-1].ttl = REFERRAL_TTL;
 	jn->referral_list[jn->referral_count-1].alternate_path = altpath;
 
-	if(!create_msdfs_link(jn)) {
+	if(!create_msdfs_link(jn, p->session_info)) {
 		return WERR_NERR_DFSCANTCREATEJUNCTIONPOINT;
 	}
 
@@ -197,7 +197,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 				return WERR_NERR_DFSNOSUCHVOLUME;
 			}
 		} else {
-			if(!create_msdfs_link(jn)) {
+			if(!create_msdfs_link(jn, p->session_info)) {
 				return WERR_NERR_DFSCANTCREATEJUNCTIONPOINT;
 			}
 		}

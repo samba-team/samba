@@ -1423,7 +1423,8 @@ char *msdfs_link_string(TALLOC_CTX *ctx,
 	return NULL;
 }
 
-bool create_msdfs_link(const struct junction_map *jucn)
+bool create_msdfs_link(const struct junction_map *jucn,
+		       struct auth_session_info *session_info)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *path = NULL;
