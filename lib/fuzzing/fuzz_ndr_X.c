@@ -251,6 +251,16 @@ int LLVMFuzzerTestOneInput(uint8_t *data, size_t size) {
 			TALLOC_FREE(mem_ctx);
 			return 0;
 		}
+
+		/*
+		 * We must initialise the buffer (even if we would
+		 * prefer not to for the sake of eg valgrind) as
+		 * otherwise the special handler for 'out pointer with
+		 * [size_is()] refers to in value with [ref]' fails to
+		 * trigger
+		 */
+		memset(st, '\0', sizeof(st));
+
 		ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 
 		if (type == TYPE_OUT) {
