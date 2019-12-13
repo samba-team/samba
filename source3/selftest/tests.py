@@ -650,14 +650,14 @@ for t in tests:
     elif t == "idmap.ad":
         plantestsuite(t, "ad_member_idmap_ad", [os.path.join(samba3srcdir, "../nsswitch/tests/test_idmap_ad.sh"), '$DOMAIN', '$DC_SERVER', '$DC_PASSWORD', '$TRUST_DOMAIN', '$TRUST_SERVER', '$TRUST_PASSWORD'])
     elif t == "raw.acls":
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/nfs4acl_simple_40 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-simple-40')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/nfs4acl_special_40 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-special-40')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/nfs4acl_simple_41 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-simple-41')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/nfs4acl_xdr_40 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-xdr-40')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/nfs4acl_xdr_41 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-xdr-41')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/nfs4acl_nfs_40 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-nfs-40')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/nfs4acl_nfs_41 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-nfs-41')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/nfs4acl_simple_40 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-simple-40')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/nfs4acl_special_40 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-special-40')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/nfs4acl_simple_41 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-simple-41')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/nfs4acl_xdr_40 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-xdr-40')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/nfs4acl_xdr_41 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-xdr-41')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/nfs4acl_nfs_40 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-nfs-40')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/nfs4acl_nfs_41 -U$USERNAME%$PASSWORD', description='nfs4acl_xattr-nfs-41')
         plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER_IP/tmpcase -U$USERNAME%$PASSWORD')
     elif t == "smb2.ioctl":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/fs_specific -U$USERNAME%$PASSWORD', 'fs_specific')
