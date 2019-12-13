@@ -621,9 +621,9 @@ for t in tests:
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER_IP/durable -U$USERNAME%$PASSWORD')
     elif t == "base.rw1":
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/valid-users-tmp -U$USERNAME%$PASSWORD')
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/write-list-tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/valid-users-tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/write-list-tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "idmap.rfc2307":
         plantestsuite(t, "ad_member_rfc2307",
