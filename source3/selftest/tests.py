@@ -817,7 +817,10 @@ for s in signseal_options:
         for a in auth_options:
             binding_string = "ncacn_np:$SERVER[%s%s%s]" % (a, s, e)
             options = binding_string + " -U$USERNAME%$PASSWORD"
-            plansmbtorture4testsuite(test, "nt4_dc", options, 'over ncacn_np with [%s%s%s] ' % (a, s, e))
+            if "smb1" in a:
+                plansmbtorture4testsuite(test, "nt4_dc_smb1_done", options, 'over ncacn_np with [%s%s%s] ' % (a, s, e))
+            else:
+                plansmbtorture4testsuite(test, "nt4_dc", options, 'over ncacn_np with [%s%s%s] ' % (a, s, e))
             plantestsuite("samba3.blackbox.rpcclient over ncacn_np with [%s%s%s] " % (a, s, e), "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/test_rpcclient.sh"),
                                                                                                                  "none", options, configuration])
 
