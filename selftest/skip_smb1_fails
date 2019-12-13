@@ -19,8 +19,6 @@
 ^samba3.blackbox.smbclient_s3.NT1.plain.member_creds\(nt4_member\)
 ^samba3.blackbox.smbclient_s3.NT1.sign.member_creds\(ad_member\)
 ^samba3.blackbox.smbclient_s3.NT1.sign.member_creds\(nt4_member\)
-^samba3.raw.read aio\(nt4_dc\)
-^samba3.raw.read\(nt4_dc\)
 ^samba3.raw.samba3checkfsp\(nt4_dc\)
 ^samba3.raw.samba3checkfsp\(simpleserver\)
 ^samba3.raw.samba3closeerr\(simpleserver\)
