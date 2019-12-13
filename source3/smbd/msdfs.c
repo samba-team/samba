@@ -1792,7 +1792,9 @@ out:
 	return cnt;
 }
 
-struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx, size_t *p_num_jn)
+struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx,
+				      struct auth_session_info *session_info,
+				      size_t *p_num_jn)
 {
 	struct junction_map *jn = NULL;
 	int i=0;

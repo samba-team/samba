@@ -295,7 +295,7 @@ WERROR _dfs_Enum(struct pipes_struct *p, struct dfs_Enum *r)
 	size_t i;
 	TALLOC_CTX *ctx = talloc_tos();
 
-	jn = enum_msdfs_links(ctx, &num_jn);
+	jn = enum_msdfs_links(ctx, p->session_info, &num_jn);
 	if (!jn || num_jn == 0) {
 		num_jn = 0;
 		jn = NULL;
