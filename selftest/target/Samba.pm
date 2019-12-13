@@ -551,6 +551,7 @@ sub get_interface($)
 		ctdb2             => 52,
 		fileserversmb1    => 53,
 		addcsmb1	  => 54,
+		lclnt4dc2smb1	  => 55,
 
 		rootdnsforwarder  => 64,
 

@@ -212,6 +212,7 @@ sub check_env($$)
 %Samba3::ENV_DEPS = (
 	# name              => [dep_1, dep_2, ...],
 	nt4_dc              => [],
+	nt4_dc_smb1         => [],
 	nt4_dc_schannel     => [],
 
 	simpleserver        => [],
@@ -234,7 +235,7 @@ sub check_env($$)
 
 sub setup_nt4_dc
 {
-	my ($self, $path) = @_;
+	my ($self, $path, $more_conf, $server) = @_;
 
 	print "PROVISIONING NT4 DC...";
 
@@ -262,10 +263,16 @@ sub setup_nt4_dc
 	check parent directory delete on close = yes
 ";
 
+	if (defined($more_conf)) {
+		$nt4_dc_options = $nt4_dc_options . $more_conf;
+	}
+	if (!defined($server)) {
+		$server = "LOCALNT4DC2";
+	}
 	my $vars = $self->provision(
 	    prefix => $path,
 	    domain => "SAMBA-TEST",
-	    server => "LOCALNT4DC2",
+	    server => $server,
 	    password => "localntdc2pass",
 	    extra_options => $nt4_dc_options);
 
@@ -288,6 +295,17 @@ sub setup_nt4_dc
 	$vars->{DC_PASSWORD} = $vars->{PASSWORD};
 
 	return $vars;
+}
+
+sub setup_nt4_dc_smb1
+{
+	my ($self, $path) = @_;
+	my $conf = "
+[global]
+	client min protocol = CORE
+	server min protocol = LANMAN1
+";
+	return $self->setup_nt4_dc($path, $conf, "LCLNT4DC2SMB1");
 }
 
 sub setup_nt4_dc_schannel
