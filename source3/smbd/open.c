@@ -4208,15 +4208,16 @@ static NTSTATUS open_directory(connection_struct *conn,
 		file_attributes |= FILE_ATTRIBUTE_DIRECTORY;
 	}
 
-	DEBUG(5,("open_directory: opening directory %s, access_mask = 0x%x, "
-		 "share_access = 0x%x create_options = 0x%x, "
-		 "create_disposition = 0x%x, file_attributes = 0x%x\n",
+	DBG_INFO("opening directory %s, access_mask = 0x%"PRIx32", "
+		 "share_access = 0x%"PRIx32" create_options = 0x%"PRIx32", "
+		 "create_disposition = 0x%"PRIx32", "
+		 "file_attributes = 0x%"PRIx32"\n",
 		 smb_fname_str_dbg(smb_dname),
-		 (unsigned int)access_mask,
-		 (unsigned int)share_access,
-		 (unsigned int)create_options,
-		 (unsigned int)create_disposition,
-		 (unsigned int)file_attributes));
+		 access_mask,
+		 share_access,
+		 create_options,
+		 create_disposition,
+		 file_attributes);
 
 	status = smbd_calculate_access_mask(conn, smb_dname, false,
 					    access_mask, &access_mask);
