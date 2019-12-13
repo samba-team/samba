@@ -337,8 +337,9 @@ plantestsuite("samba3.blackbox.smbclient_ntlm.plain.NT1", env, [os.path.join(sam
 plantestsuite("samba3.blackbox.smbclient_ntlm.plain.SMB3", env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_ntlm.sh"), '$SERVER', '$USERNAME', '$PASSWORD', "baduser", smbclient3, "SMB3", configuration])
 
 # plain
-env = "nt4_dc"
+env = "nt4_dc_smb1_done"
 plantestsuite("samba3.blackbox.smbclient_s3.NT1.plain", env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration, "NT1"])
+env = "nt4_dc"
 plantestsuite("samba3.blackbox.smbclient_s3.SMB3.plain", env, [os.path.join(samba3srcdir, "script/tests/test_smbclient_s3.sh"), '$SERVER', '$SERVER_IP', '$DOMAIN', '$DC_USERNAME', '$DC_PASSWORD', '$USERID', '$LOCAL_PATH', '$PREFIX', smbclient3, wbinfo, net, configuration, "SMB3"])
 
 for env in ["nt4_member", "ad_member"]:
