@@ -1637,6 +1637,7 @@ out:
 *********************************************************************/
 
 static int form_junctions(TALLOC_CTX *ctx,
+			  struct auth_session_info *session_info,
 				int snum,
 				struct junction_map *jucn,
 				size_t jn_remain)
@@ -1831,7 +1832,9 @@ struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx,
 			break;
 		}
 		if(lp_msdfs_root(i)) {
-			*p_num_jn += form_junctions(ctx, i,
+			*p_num_jn += form_junctions(ctx,
+					session_info,
+					i,
 					&jn[*p_num_jn],
 					jn_count - *p_num_jn);
 		}
