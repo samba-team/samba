@@ -34,6 +34,9 @@ case "$SANITIZER" in
     undefined)
 	SANITIZER_ARG='--undefined-sanitizer'
 	;;
+    coverage)
+       SANITIZER_ARG=''
+       ;;
 esac
 
 # $LIB_FUZZING_ENGINE is provided by the oss-fuzz "compile" command
