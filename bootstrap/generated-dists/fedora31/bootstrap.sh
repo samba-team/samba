@@ -83,7 +83,6 @@ dnf install -y \
     procps-ng \
     psmisc \
     python3 \
-    python3-crypto \
     python3-devel \
     python3-dns \
     python3-gpg \

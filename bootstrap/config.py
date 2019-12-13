@@ -133,7 +133,6 @@ PKGS = [
     ('python3-dbg', ''),
     ('python3-iso8601', ''),
     ('python3-gpg', 'python3-gpg'),  # defaults to ubuntu/fedora latest
-    ('python3-crypto', 'python3-crypto'),
     ('python3-markdown', 'python3-markdown'),
     ('python3-matplotlib', ''),
     ('python3-dnspython', 'python3-dns'),

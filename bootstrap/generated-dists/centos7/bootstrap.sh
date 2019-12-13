@@ -84,7 +84,6 @@ yum install -y \
     procps-ng \
     psmisc \
     python36 \
-    python36-crypto \
     python36-devel \
     python36-dns \
     python36-markdown \

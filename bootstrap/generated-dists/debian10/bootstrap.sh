@@ -82,7 +82,6 @@ apt-get -y install \
     procps \
     psmisc \
     python3 \
-    python3-crypto \
     python3-dbg \
     python3-dev \
     python3-dnspython \

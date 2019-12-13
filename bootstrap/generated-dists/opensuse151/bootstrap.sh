@@ -84,7 +84,6 @@ zypper --non-interactive install \
     python3-devel \
     python3-dnspython \
     python3-gpg \
-    python3-pycrypto \
     readline-devel \
     rng-tools \
     rpcgen \
