@@ -570,7 +570,7 @@ for t in tests:
     elif t == "base.createx_access":
         plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER/tmp -U$USERNAME%$PASSWORD -k yes --maximum-runtime=900')
     elif t == "rap.sam":
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
         plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=doscharset=ISO-8859-1')
     elif t == "winbind.pac":
         plansmbtorture4testsuite(t, "ad_member:local", '//$SERVER/tmp --realm=$REALM --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
