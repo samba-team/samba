@@ -19,7 +19,6 @@
 ^samba3.blackbox.smbclient_s3.NT1.plain.member_creds\(nt4_member\)
 ^samba3.blackbox.smbclient_s3.NT1.sign.member_creds\(ad_member\)
 ^samba3.blackbox.smbclient_s3.NT1.sign.member_creds\(nt4_member\)
-^samba3.raw.chkpath\(nt4_dc\)
 ^samba3.raw.notify\(nt4_dc\)
 ^samba3.raw.oplock\(nt4_dc\)
 ^samba3.raw.read aio\(nt4_dc\)
