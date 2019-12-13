@@ -680,9 +680,9 @@ for t in tests:
         plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/aio -U$USERNAME%$PASSWORD', 'aio')
         plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "raw.search":
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
 # test the dirsort module.
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmpsort -U$USERNAME%$PASSWORD')
+        plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/tmpsort -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     elif t == "vfs.fruit":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/vfs_fruit -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/nt4_dc/share --option=torture:share2=vfs_wo_fruit', 'metadata_netatalk')
