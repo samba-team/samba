@@ -162,7 +162,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 
 	/* if no server-share pair given, remove the msdfs link completely */
 	if(!r->in.servername && !r->in.sharename) {
-		if(!remove_msdfs_link(jn)) {
+		if(!remove_msdfs_link(jn, p->session_info)) {
 			return WERR_NERR_DFSNOSUCHVOLUME;
 		}
 	} else {
@@ -193,7 +193,7 @@ WERROR _dfs_Remove(struct pipes_struct *p, struct dfs_Remove *r)
 
 		/* Only one referral, remove it */
 		if(jn->referral_count == 1) {
-			if(!remove_msdfs_link(jn)) {
+			if(!remove_msdfs_link(jn, p->session_info)) {
 				return WERR_NERR_DFSNOSUCHVOLUME;
 			}
 		} else {

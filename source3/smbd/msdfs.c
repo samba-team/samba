@@ -1496,7 +1496,8 @@ out:
 	return ret;
 }
 
-bool remove_msdfs_link(const struct junction_map *jucn)
+bool remove_msdfs_link(const struct junction_map *jucn,
+		       struct auth_session_info *session_info)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *path = NULL;
