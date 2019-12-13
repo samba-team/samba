@@ -97,7 +97,6 @@ bld.SAMBA_NDR_FUZZ('FileServerVssAgent') # fsvrp.idl
 bld.SAMBA_NDR_FUZZ('lsarpc') # lsa.idl
 bld.SAMBA_NDR_FUZZ('netdfs') # dfs.idl
 bld.SAMBA_NDR_FUZZ('nfs4acl_interface') # nfs4acl.idl
-bld.SAMBA_NDR_FUZZ('ObjectRpcBaseTypes') # orpc.idl
 bld.SAMBA_NDR_FUZZ('rpcecho') # echo.idl
 
 # quota.idl
@@ -112,8 +111,6 @@ bld.SAMBA_NDR_FUZZ('netinterface')
 bld.SAMBA_NDR_FUZZ('sparse')
 bld.SAMBA_NDR_FUZZ('resiliency')
 bld.SAMBA_NDR_FUZZ('trim')
-
-# Skipped: dsbackup (all todo)
 
 # WMI tables
 bld.SAMBA_NDR_FUZZ('IWbemClassObject')

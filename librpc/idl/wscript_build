@@ -71,16 +71,22 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     generate_fuzzers=False)
 
 # DCE/RPC protocols which Samba does not implement a client or server
-# for
+# for.  We don't generate a fuzzer for these as they are unreachable
+#
+# Do not include IDL with public structures in this list as we want to
+# fuzz those
 
 bld.SAMBA_PIDL_LIST('PIDL',
                     '''
                     audiosrv.idl
+                    dbgidl.idl
+                    dsbackup.idl
                     efs.idl
                     frstrans.idl
                     frsrpc.idl
                     keysvc.idl
                     msgsvc.idl
+                    orpc.idl
                     policyagent.idl
                     rot.idl
                     scerpc.idl
@@ -89,19 +95,8 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     wzcsvc.idl
                     ''',
                     options='--header --ndr-parser',
+                    generate_fuzzers=False,
                     output_dir='../gen_ndr')
-
-# The interface names here are not the same as the IDL name, so the
-# auto-genration of the fuzzer fails to link
-
-bld.SAMBA_PIDL_LIST('PIDL',
-                    '''
-                    dsbackup.idl
-                    orpc.idl
-                    ''',
-                    options='--header --ndr-parser',
-                    output_dir='../gen_ndr',
-                    generate_fuzzers=False)
 
 # Non-DCE/RPC protocols encoded in IDL for Samba or helper IDLs for
 # DCE/RPC protocols (eg defining constands or structures but not
@@ -110,7 +105,6 @@ bld.SAMBA_PIDL_LIST('PIDL',
                     '''
                     bkupblobs.idl
                     cab.idl
-                    dbgidl.idl
                     file_id.idl
                     fscc.idl
                     fsrvp_state.idl
