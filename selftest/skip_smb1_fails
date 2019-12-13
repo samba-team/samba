@@ -23,7 +23,6 @@
 ^samba3.raw.samba3closeerr\(simpleserver\)
 ^samba3.raw.samba3hide\(simpleserver\)
 ^samba3.smbtorture_s3.hidenewfiles\(simpleserver\)\(simpleserver\)
-^samba3.smbtorture_s3.plain.MANGLE-ILLEGAL\(nt4_dc\)
 ^samba3.smbtorture_s3.plain.RENAME-ACCESS\(nt4_dc\)
 ^samba3.smbtorture_s3.vfs_aio_fork\(simpleserver\).RW1\(simpleserver\)
 ^samba3.smbtorture_s3.vfs_aio_fork\(simpleserver\).RW2\(simpleserver\)
