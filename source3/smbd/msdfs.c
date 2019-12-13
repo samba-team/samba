@@ -1541,7 +1541,9 @@ bool remove_msdfs_link(const struct junction_map *jucn,
  Return the number of DFS links at the root of this share.
 *********************************************************************/
 
-static size_t count_dfs_links(TALLOC_CTX *ctx, int snum)
+static size_t count_dfs_links(TALLOC_CTX *ctx,
+			      struct auth_session_info *session_info,
+			      int snum)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	const struct loadparm_substitution *lp_sub =
@@ -1814,7 +1816,7 @@ struct junction_map *enum_msdfs_links(TALLOC_CTX *ctx,
 
 	for(i=0;i < sharecount;i++) {
 		if(lp_msdfs_root(i)) {
-			jn_count += count_dfs_links(ctx, i);
+			jn_count += count_dfs_links(ctx, session_info, i);
 		}
 	}
 	if (jn_count == 0) {
