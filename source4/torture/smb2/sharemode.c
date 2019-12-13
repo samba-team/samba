@@ -545,7 +545,7 @@ done:
 
 /*
  * Test conflicting sharemodes through SMB2: First open file with
- * different access masks, second open requests potentially conflict
+ * different access masks, second open requests potentially conflicting
  * sharemode.
  */
 static bool test_smb2_access_sharemode(struct torture_context *tctx,
