@@ -28,6 +28,10 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
 
     def setUp(self):
         super(ReplAclTestCase, self).setUp()
+        self.mod = "(A;CIOI;GA;;;SY)"
+        self.mod_becomes = "(A;OICIIO;GA;;;SY)"
+        self.mod_inherits_as = "(A;OICIIOID;GA;;;SY)"
+
         self.sd_utils_dc1 = sd_utils.SDUtils(self.ldb_dc1)
         self.sd_utils_dc2 = sd_utils.SDUtils(self.ldb_dc2)
 
@@ -54,8 +58,11 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
 
     def test_acl_inheirt_new_object_1_pass(self):
         # Set the inherited ACL on the parent OU
-        mod =  "(A;CIOI;GA;;;SY)"
-        self.sd_utils_dc1.dacl_add_ace(self.ou, mod)
+        self.sd_utils_dc1.dacl_add_ace(self.ou, self.mod)
+
+        # Assert ACL set stuck as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc1.get_sd_as_sddl(self.ou))
 
         # Make a new object
         dn = ldb.Dn(self.ldb_dc1, "OU=l2,%s" % self.ou)
@@ -65,15 +72,24 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                                 fromDC=self.dnsname_dc1,
                                 forced=True)
 
-        # Confirm inherited ACLs are identical
+        # Assert ACL replicated as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc2.get_sd_as_sddl(self.ou))
 
+        # Confirm inherited ACLs are identical and were inherited
+
+        self.assertIn(self.mod_inherits_as,
+                      self.sd_utils_dc1.get_sd_as_sddl(dn))
         self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(dn),
                           self.sd_utils_dc2.get_sd_as_sddl(dn))
 
     def test_acl_inheirt_new_object(self):
         # Set the inherited ACL on the parent OU
-        mod =  "(A;CIOI;GA;;;SY)"
-        self.sd_utils_dc1.dacl_add_ace(self.ou, mod)
+        self.sd_utils_dc1.dacl_add_ace(self.ou, self.mod)
+
+        # Assert ACL set stuck as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc1.get_sd_as_sddl(self.ou))
 
         # Replicate to DC2
 
@@ -89,8 +105,14 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                                 fromDC=self.dnsname_dc1,
                                 forced=True)
 
-        # Confirm inherited ACLs are identical
+        # Assert ACL replicated as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc2.get_sd_as_sddl(self.ou))
 
+        # Confirm inherited ACLs are identical and were inheritied
+
+        self.assertIn(self.mod_inherits_as,
+                      self.sd_utils_dc1.get_sd_as_sddl(dn))
         self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(dn),
                           self.sd_utils_dc2.get_sd_as_sddl(dn))
 
@@ -118,8 +140,11 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                             attrs=[])
 
         # Set the inherited ACL on the parent OU
-        mod =  "(A;CIOI;GA;;;SY)"
-        self.sd_utils_dc1.dacl_add_ace(self.ou, mod)
+        self.sd_utils_dc1.dacl_add_ace(self.ou, self.mod)
+
+        # Assert ACL set stuck as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc1.get_sd_as_sddl(self.ou))
 
         # Replicate to DC2
 
@@ -127,8 +152,14 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                                 fromDC=self.dnsname_dc1,
                                 forced=True)
 
-        # Confirm inherited ACLs are identical
+        # Confirm inherited ACLs are identical and were inherited
 
+        # Assert ACL replicated as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc2.get_sd_as_sddl(self.ou))
+
+        self.assertIn(self.mod_inherits_as,
+                      self.sd_utils_dc1.get_sd_as_sddl(dn))
         self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(dn),
                           self.sd_utils_dc2.get_sd_as_sddl(dn))
 
@@ -147,8 +178,11 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
             self.assertEqual(enum, ldb.ERR_NO_SUCH_OBJECT)
 
         # Set the inherited ACL on the parent OU
-        mod =  "(A;CIOI;GA;;;SY)"
-        self.sd_utils_dc1.dacl_add_ace(self.ou, mod)
+        self.sd_utils_dc1.dacl_add_ace(self.ou, self.mod)
+
+        # Assert ACL set as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc1.get_sd_as_sddl(self.ou))
 
         # Replicate to DC2
 
@@ -156,8 +190,14 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                                 fromDC=self.dnsname_dc1,
                                 forced=True)
 
-        # Confirm inherited ACLs are identical
+        # Assert ACL replicated as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc2.get_sd_as_sddl(self.ou))
 
+        # Confirm inherited ACLs are identical and were inherited
+
+        self.assertIn(self.mod_inherits_as,
+                      self.sd_utils_dc1.get_sd_as_sddl(dn))
         self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(dn),
                           self.sd_utils_dc2.get_sd_as_sddl(dn))
 
@@ -187,14 +227,21 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                             attrs=[])
 
         # Set the inherited ACL on the parent OU on DC1
-        mod =  "(A;CIOI;GA;;;SY)"
-        self.sd_utils_dc1.dacl_add_ace(self.ou, mod)
+        self.sd_utils_dc1.dacl_add_ace(self.ou, self.mod)
+
+        # Assert ACL set as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc1.get_sd_as_sddl(self.ou))
 
         # Replicate to DC2
 
         self._net_drs_replicate(DC=self.dnsname_dc2,
                                 fromDC=self.dnsname_dc1,
                                 forced=True)
+
+        # Assert ACL replicated as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc2.get_sd_as_sddl(self.ou))
 
         # Rename to under self.ou
 
@@ -206,7 +253,9 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                                 fromDC=self.dnsname_dc1,
                                 forced=True)
 
-        # Confirm inherited ACLs are identical
+        # Confirm inherited ACLs are identical and were inherited
+        self.assertIn(self.mod_inherits_as,
+                      self.sd_utils_dc1.get_sd_as_sddl(sub_ou_dn))
         self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(sub_ou_dn),
                           self.sd_utils_dc2.get_sd_as_sddl(sub_ou_dn))
 
@@ -254,8 +303,11 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
         #
 
         # Set the inherited ACL on the grandchild OU (l3) on DC1
-        mod =  "(A;CIOI;GA;;;SY)"
-        self.sd_utils_dc1.dacl_add_ace(sub3_ou_dn, mod)
+        self.sd_utils_dc1.dacl_add_ace(sub3_ou_dn, self.mod)
+
+        # Assert ACL set stuck as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc1.get_sd_as_sddl(sub3_ou_dn))
 
         # Rename new_ou (l2) to under self.ou (this must happen second).  If the
         # inheritence between l3 and l4 is name-based, this could
@@ -265,17 +317,26 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
 
         self.ldb_dc1.rename(new_ou, sub2_ou_dn_final)
 
+        # Assert ACL set remained as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc1.get_sd_as_sddl(sub3_ou_dn_final))
+
         # Replicate to DC2
 
         self._net_drs_replicate(DC=self.dnsname_dc2,
                                 fromDC=self.dnsname_dc1,
                                 forced=True)
 
-        # Confirm set ACLs (on l3 ) are identical.
+        # Confirm set ACLs (on l3 ) are identical and were inherited
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc2.get_sd_as_sddl(sub3_ou_dn_final))
         self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(sub3_ou_dn_final),
                           self.sd_utils_dc2.get_sd_as_sddl(sub3_ou_dn_final))
 
-        # Confirm inherited ACLs (from l3 to l4) are identical.
+        # Confirm inherited ACLs (from l3 to l4) are identical
+        # and where inherited
+        self.assertIn(self.mod_inherits_as,
+                      self.sd_utils_dc1.get_sd_as_sddl(sub4_ou_dn_final))
         self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(sub4_ou_dn_final),
                           self.sd_utils_dc2.get_sd_as_sddl(sub4_ou_dn_final))
 
@@ -291,8 +352,11 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                           "objectclass": "organizationalUnit"})
 
         # Set the inherited ACL on the parent OU
-        mod =  "(A;CIOI;GA;;;SY)"
-        self.sd_utils_dc1.dacl_add_ace(self.ou, mod)
+        self.sd_utils_dc1.dacl_add_ace(self.ou, self.mod)
+
+        # Assert ACL set stuck as expected
+        self.assertIn(self.mod_becomes,
+                      self.sd_utils_dc1.get_sd_as_sddl(self.ou))
 
         # Replicate to DC2
 
@@ -302,6 +366,8 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
 
         # Rename to under self.ou
         self.ldb_dc1.rename(new_ou, sub_ou_dn)
+        self.assertIn(self.mod_inherits_as,
+                      self.sd_utils_dc1.get_sd_as_sddl(sub_ou_dn))
 
         # Replicate to DC2 (will cause a conflict, DC1 to win, version
         # is higher since named twice)
@@ -314,6 +380,8 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                                        base=self.ou,
                                        attrs=[])
         for child in children:
+            self.assertIn(self.mod_inherits_as,
+                          self.sd_utils_dc2.get_sd_as_sddl(child.dn))
             self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(sub_ou_dn),
                               self.sd_utils_dc2.get_sd_as_sddl(child.dn))
 
@@ -322,6 +390,11 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
                                 fromDC=self.dnsname_dc2,
                                 forced=True)
 
+        self.assertIn(self.mod_inherits_as,
+                      self.sd_utils_dc1.get_sd_as_sddl(sub_ou_dn))
+
         for child in children:
+            self.assertIn(self.mod_inherits_as,
+                          self.sd_utils_dc1.get_sd_as_sddl(child.dn))
             self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(child.dn),
                               self.sd_utils_dc2.get_sd_as_sddl(child.dn))
