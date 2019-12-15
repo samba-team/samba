@@ -679,7 +679,7 @@ static PyMethodDef py_gensec_security_methods[] = {
 		"S.have_feature()\n Return True if GENSEC negotiated a particular feature." },
 	{ "set_max_update_size",  (PyCFunction)py_gensec_set_max_update_size, METH_VARARGS,
 		"S.set_max_update_size(max_size) \n Some mechs can fragment update packets, needs to be use before the mech is started." },
-	{ "max_update_size",  (PyCFunction)py_gensec_max_update_size, 0,
+	{ "max_update_size",  (PyCFunction)py_gensec_max_update_size, METH_NOARGS,
 		"S.max_update_size() \n Return the current max_update_size." },
 	{ "update",  (PyCFunction)py_gensec_update, METH_VARARGS,
 		"S.update(blob_in) -> (finished, blob_out)\nPerform one step in a GENSEC dance.  Repeat with new packets until finished is true or exception." },
