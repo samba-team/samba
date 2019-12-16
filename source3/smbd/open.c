@@ -4197,7 +4197,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 			       files_struct **result)
 {
 	files_struct *fsp = NULL;
-	bool dir_existed = VALID_STAT(smb_dname->st) ? True : False;
+	bool dir_existed = VALID_STAT(smb_dname->st);
 	struct share_mode_lock *lck = NULL;
 	NTSTATUS status;
 	struct timespec mtimespec;
