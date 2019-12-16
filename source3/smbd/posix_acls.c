@@ -4639,7 +4639,9 @@ NTSTATUS set_unix_posix_acl(connection_struct *conn,
 
 ********************************************************************/
 
-NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx, const char *fname,
+NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx,
+			    struct auth_session_info *session_info,
+			    const char *fname,
 				uint32_t security_info_wanted,
 				struct security_descriptor **sd)
 {

@@ -94,6 +94,7 @@ static bool elog_check_access(EVENTLOG_INFO *info,
 	/* get the security descriptor for the file */
 
 	status = get_nt_acl_no_snum( info,
+			session_info,
 			tdbname,
 			SECINFO_OWNER | SECINFO_GROUP | SECINFO_DACL,
 			&sec_desc);

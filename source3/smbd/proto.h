@@ -802,7 +802,9 @@ NTSTATUS set_unix_posix_default_acl(connection_struct *conn,
 NTSTATUS set_unix_posix_acl(connection_struct *conn, files_struct *fsp,
 				uint16_t num_acls,
 				const char *pdata);
-NTSTATUS get_nt_acl_no_snum( TALLOC_CTX *ctx, const char *fname,
+NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx,
+			    struct auth_session_info *session_info,
+			    const char *fname,
 			     uint32_t security_info_wanted,
 			     struct security_descriptor **sd);
 int posix_sys_acl_blob_get_file(vfs_handle_struct *handle,
