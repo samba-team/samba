@@ -4667,7 +4667,7 @@ NTSTATUS get_nt_acl_no_snum(TALLOC_CTX *ctx,
 	status = create_conn_struct_tos(global_messaging_context(),
 					-1,
 					"/",
-					NULL,
+					session_info,
 					&c);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("create_conn_struct returned %s.\n",
