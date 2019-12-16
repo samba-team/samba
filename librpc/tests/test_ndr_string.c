@@ -127,12 +127,47 @@ static void test_pull_string_len_2_nul_term(void **state)
 
 }
 
+static void test_ndr_string_n_length(void **state)
+{
+	char test_str1[5] = "Test";
+	char test_str2[5] = {0};
+	char test_str3[32] = "This is a test too";
+	uint8_t test_str_u16[64] = {
+		0x5C, 0x00, 0x5C, 0x00, 0x4C, 0x00, 0x6F, 0x00,
+		0x67, 0x00, 0x6F, 0x00, 0x6E, 0x00, 0x2D, 0x00,
+		0x6D, 0x00, 0x75, 0x00, 0x63, 0x00, 0x5C, 0x00,
+		0x6B, 0x00, 0x79, 0x00, 0x6F, 0x00, 0x63, 0x00,
+		0x65, 0x00, 0x72, 0x00, 0x61, 0x00, 0x2D, 0x00,
+		0x6D, 0x00, 0x75, 0x00, 0x63, 0x00, 0x2D, 0x00,
+		0x6E, 0x00, 0x00, 0x00 };
+	size_t len;
+
+	len = ndr_string_n_length(test_str1, sizeof(test_str1), 1);
+	assert_int_equal(len, 5);
+
+	len = ndr_string_n_length(test_str1, sizeof(test_str1) - 1, 1);
+	assert_int_equal(len, 4);
+
+	len = ndr_string_n_length(test_str2, sizeof(test_str2), 1);
+	assert_int_equal(len, 1);
+
+	len = ndr_string_n_length(test_str3, sizeof(test_str3), 1);
+	assert_int_equal(len, 19);
+
+	len = ndr_string_n_length(test_str3, 0, 1);
+	assert_int_equal(len, 0);
+
+	len = ndr_string_n_length(test_str_u16, 32, 2);
+	assert_int_equal(len, 26);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_pull_string_zero_len_nul_term),
 		cmocka_unit_test(test_pull_string_len_1_nul_term),
-		cmocka_unit_test(test_pull_string_len_2_nul_term)
+		cmocka_unit_test(test_pull_string_len_2_nul_term),
+		cmocka_unit_test(test_ndr_string_n_length)
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
