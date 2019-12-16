@@ -2139,6 +2139,7 @@ sub check_env($$)
 	# aliases in order to split autbuild tasks
 	fl2008dc             => ["ad_dc"],
 	ad_dc_default        => ["ad_dc"],
+	ad_dc_default_smb1   => ["ad_dc_smb1"],
 	ad_dc_slowtests      => ["ad_dc"],
 	ad_dc_backup         => ["ad_dc"],
 
@@ -2176,6 +2177,12 @@ sub setup_fl2008dc
 }
 
 sub setup_ad_dc_default
+{
+	my ($self, $path, $dep_env) = @_;
+	return $self->return_alias_env($path, $dep_env)
+}
+
+sub setup_ad_dc_default_smb1
 {
 	my ($self, $path, $dep_env) = @_;
 	return $self->return_alias_env($path, $dep_env)
