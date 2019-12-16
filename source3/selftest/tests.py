@@ -592,7 +592,7 @@ for t in tests:
                                  description="brl_delay_inject1")
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/brl_delay_inject2 -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/nt4_dc/share',
                                  description="brl_delay_inject2")
-        plansmbtorture4testsuite(t, "ad_dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/ad_dc/share')
+        plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/ad_dc_smb1/share')
     elif t == "smb2.samba3misc":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmpguest -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/nt4_dc/share')
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/brl_delay_inject1 -U$USERNAME%$PASSWORD --option=torture:localdir=$SELFTEST_PREFIX/nt4_dc/share',

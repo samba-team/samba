@@ -22,7 +22,6 @@
 ^samba3.raw.samba3checkfsp\(simpleserver\)
 ^samba3.raw.samba3closeerr\(simpleserver\)
 ^samba3.raw.samba3hide\(simpleserver\)
-^samba3.raw.samba3posixtimedlock\(ad_dc\)
 ^samba3.raw.samba3posixtimedlock\(nt4_dc\)
 ^samba3.raw.samba3posixtimedlock brl_delay_inject1\(nt4_dc\)
 ^samba3.raw.samba3posixtimedlock brl_delay_inject2\(nt4_dc\)
