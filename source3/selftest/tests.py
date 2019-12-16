@@ -151,8 +151,13 @@ for t in tests:
 
 tests = ["RW1", "RW2", "RW3", "SMB2-BASIC"]
 for t in tests:
-    plantestsuite("samba3.smbtorture_s3.vfs_aio_pthread(simpleserver).%s" % t, "simpleserver", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/vfs_aio_pthread', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
-    plantestsuite("samba3.smbtorture_s3.vfs_aio_fork(simpleserver).%s" % t, "simpleserver", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/vfs_aio_fork', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
+    if t == "SMB2-BASIC":
+        env = "simpleserver"
+    else:
+        env = "fileserver_smb1"
+
+    plantestsuite("samba3.smbtorture_s3.vfs_aio_pthread(%s).%s" % (env, t), env, [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/vfs_aio_pthread', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
+    plantestsuite("samba3.smbtorture_s3.vfs_aio_fork(%s).%s" % (env, t), env, [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/vfs_aio_fork', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
 
 plantestsuite("samba3.smbtorture_s3.hidenewfiles(fileserver_smb1)",
               "fileserver_smb1",
