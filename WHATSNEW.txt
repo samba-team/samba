@@ -1,4 +1,85 @@
                    ==============================
+                   Release Notes for Samba 4.11.4
+                          December 16, 2019
+		   ==============================
+
+
+This is the latest stable release of the Samba 4.11 release series.
+
+
+Changes since 4.11.3:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14161: s3: libsmb: Ensure SMB1 cli_qpathinfo2() doesn't return an inode
+     number.
+   * BUG 14174: s3: utils: smbtree. Ensure we don't call cli_RNetShareEnum()
+     on an SMB1 connection.
+   * BUG 14176: NT_STATUS_ACCESS_DENIED becomes EINVAL when using SMB2 in
+     SMBC_opendir_ctx.
+   * BUG 14189: s3: smbd: SMB2 - Ensure we use the correct session_id if
+     encrypting an interim response.
+   * BUG 14205: Prevent smbd crash after invalid SMB1 negprot.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13745: s3:printing: Fix %J substition.
+   * BUG 13925: s3: Remove now unneeded call to cmdline_messaging_context().
+   * BUG 14069: Incomplete conversion of former parametric options.
+   * BUG 14070: Fix sync dosmode fallback in async dosmode codepath.
+   * BUG 14171: vfs_fruit returns capped resource fork length.
+
+o  Isaac Boukris <iboukris@gmail.com>
+   * BUG 14116: libnet_join: Add SPNs for additional-dns-hostnames entries.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14211: smbd: Increase a debug level.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14153: Prevent azure ad connect from reporting discovery errors:
+     reference-value-not-ldap-conformant.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 14179: krb5_plugin: Fix developer build with newer heimdal system
+     library.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14168: replace: Only link libnsl and libsocket if requrired.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14175: ctdb: Incoming queue can be orphaned causing communication
+     breakdown.
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 13846: ldb: Release ldb 2.0.8. Cross-compile will not take
+     cross-answers or cross-execute.
+   * BUG 13856: heimdal-build: Avoid hard-coded /usr/include/heimdal in
+     asn1_compile-generated code.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.11.3
                           December 10, 2019
 		   ==============================
@@ -57,8 +138,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.11.2
