@@ -1460,10 +1460,15 @@ sub setup_fileserver
 sub setup_fileserver_smb1
 {
 	my ($self, $path) = @_;
+	my $prefix_abs = abs_path($path);
 	my $conf = "
 [global]
 	client min protocol = CORE
 	server min protocol = LANMAN1
+
+[hidenewfiles]
+	path = $prefix_abs/share
+	hide new files timeout = 5
 ";
 	return $self->setup_fileserver($path, $conf, "FILESERVERSMB1");
 }
