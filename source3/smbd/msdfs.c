@@ -301,21 +301,19 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 	conn->params->service = snum;
 	conn->cnum = TID_FIELD_INVALID;
 
-	if (session_info != NULL) {
-		conn->session_info = copy_session_info(conn, session_info);
-		if (conn->session_info == NULL) {
-			DEBUG(0, ("copy_serverinfo failed\n"));
-			TALLOC_FREE(conn);
-			return NT_STATUS_NO_MEMORY;
-		}
-		/* unix_info could be NULL in session_info */
-		if (conn->session_info->unix_info != NULL) {
-			vfs_user = conn->session_info->unix_info->unix_name;
-		} else {
-			vfs_user = get_current_username();
-		}
+	SMB_ASSERT(session_info != NULL);
+
+	conn->session_info = copy_session_info(conn, session_info);
+	if (conn->session_info == NULL) {
+		DBG_ERR("copy_serverinfo failed\n");
+		TALLOC_FREE(conn);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* unix_info could be NULL in session_info */
+	if (conn->session_info->unix_info != NULL) {
+		vfs_user = conn->session_info->unix_info->unix_name;
 	} else {
-		/* use current authenticated user in absence of session_info */
 		vfs_user = get_current_username();
 	}
 
@@ -327,27 +325,21 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 	 * smb.conf checks are done as we need a uid and token. JRA.
 	 *
 	 */
-	if (conn->session_info) {
-		share_access_check(conn->session_info->security_token,
-				   servicename,
-				   MAXIMUM_ALLOWED_ACCESS,
-				   &conn->share_access);
+	share_access_check(conn->session_info->security_token,
+			   servicename,
+			   MAXIMUM_ALLOWED_ACCESS,
+			   &conn->share_access);
 
-		if ((conn->share_access & FILE_WRITE_DATA) == 0) {
-			if ((conn->share_access & FILE_READ_DATA) == 0) {
-				/* No access, read or write. */
-				DEBUG(3,("create_conn_struct: connection to %s "
-					 "denied due to security "
-					 "descriptor.\n",
-					 servicename));
-				conn_free(conn);
-				return NT_STATUS_ACCESS_DENIED;
-			} else {
-				conn->read_only = true;
-			}
+	if ((conn->share_access & FILE_WRITE_DATA) == 0) {
+		if ((conn->share_access & FILE_READ_DATA) == 0) {
+			/* No access, read or write. */
+			DBG_WARNING("connection to %s "
+				    "denied due to security "
+				    "descriptor.\n",
+				    servicename);
+			conn_free(conn);
+			return NT_STATUS_ACCESS_DENIED;
 		}
-	} else {
-		conn->share_access = 0;
 		conn->read_only = true;
 	}
 
