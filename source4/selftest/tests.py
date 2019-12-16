@@ -1025,7 +1025,7 @@ planoldpythontestsuite("rodc:local", "replica_sync_rodc",
                        environ={'DC1': '$DC_SERVER', 'DC2': '$SERVER'},
 		       extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
 
-planoldpythontestsuite("ad_dc_default", "password_settings",
+planoldpythontestsuite("ad_dc_default_smb1", "password_settings",
                        extra_path=[os.path.join(samba4srcdir, 'dsdb/tests/python')],
                        name="samba4.ldap.passwordsettings.python",
                        extra_args=['-U$DOMAIN/$DC_USERNAME%$DC_PASSWORD'])
