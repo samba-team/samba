@@ -210,6 +210,8 @@ for bindoptions in ["seal,padcheck"] + validate_list + ["bigendian"]:
         for t in tests:
             if t == "rpc.netlogon":
                 env = "ad_dc_ntvfs"
+            elif t == "rpc.join":
+                env = "ad_dc_default_smb1"
             plansmbtorture4testsuite(t, env + local, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s on %s with %s" % (t, transport, bindoptions))
         plansmbtorture4testsuite('rpc.samba3-sharesec', env + local, ["%s:$SERVER[%s]" % (transport, bindoptions), '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN', '--option=torture:share=tmp'], "samba4.rpc.samba3.sharesec on %s with %s" % (transport, bindoptions))
 
@@ -228,6 +230,8 @@ for bindoptions in [""] + validate_list + ["bigendian"]:
         env = "ad_dc_default"
         if t in ["rpc.srvsvc", "rpc.mgmt"]:
             env = "ad_dc_ntvfs"
+        elif t == "rpc.join":
+            env = "ad_dc_default_smb1"
         plansmbtorture4testsuite(t, env, ["$SERVER[%s]" % bindoptions, '-U$USERNAME%$PASSWORD', '--workgroup=$DOMAIN'], "samba4.%s with %s" % (t, bindoptions))
 
 t = "rpc.countcalls"
