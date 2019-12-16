@@ -26,7 +26,6 @@
 ^samba3.unix.whoami machine account\(ad_member:local\)
 ^samba3.unix.whoami\(nt4_member\)
 ^samba3.unix.whoami ntlm user@realm\(ad_member\)
-^samba4.blackbox.chgdcpass\(chgdcpass\)
 ^samba4.blackbox.smbclient\(ad_member:local\)\(ad_member:local\)
 ^samba4.blackbox.smbclient\(chgdcpass:local\)\(chgdcpass:local\)
 ^samba4.ldap.nested-search\(ad_dc_default\)
