@@ -154,7 +154,10 @@ for options in ['-U"$USERNAME%$PASSWORD"']:
                   "%s/test_ldb.sh ldapi $PREFIX_ABS/ad_dc_ntvfs/private/ldapi %s" % (bbdir, options))
 
 for t in smbtorture4_testsuites("ldap."):
-    plansmbtorture4testsuite(t, "ad_dc_default", '-U"$USERNAME%$PASSWORD" //$SERVER_IP/_none_')
+    if t == "ldap.nested-search":
+        plansmbtorture4testsuite(t, "ad_dc_default_smb1", '-U"$USERNAME%$PASSWORD" //$SERVER_IP/_none_')
+    else:
+        plansmbtorture4testsuite(t, "ad_dc_default", '-U"$USERNAME%$PASSWORD" //$SERVER_IP/_none_')
 
 for t in smbtorture4_testsuites("dsdb."):
     plansmbtorture4testsuite(t, "ad_dc:local", "localhost")
