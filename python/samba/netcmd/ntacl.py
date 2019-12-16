@@ -25,13 +25,10 @@ from samba.ndr import ndr_unpack, ndr_print
 from samba.samdb import SamDB
 from samba.samba3 import param as s3param, passdb, smbd
 from samba import provision
+from samba.auth_util import system_session_unix
 import os
 
-from samba.auth import (
-    system_session,
-    session_info_fill_unix,
-    copy_session_info,
-)
+from samba.auth import system_session
 
 from samba.netcmd import (
     Command,
@@ -39,13 +36,6 @@ from samba.netcmd import (
     SuperCommand,
     Option,
 )
-
-def system_session_unix():
-    session_info = system_session()
-    session_info_unix = copy_session_info(session_info)
-    session_info_fill_unix(session_info_unix, None)
-
-    return session_info_unix
 
 def get_local_domain_sid(lp):
     is_ad_dc = False
