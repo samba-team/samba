@@ -1811,7 +1811,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	struct share_mode_data *d = lck->data;
 	struct open_mode_check_state state;
 	uint16_t new_flags;
-	bool ok, conflict;
+	bool ok, conflict, have_share_entries;
 
 	if (is_stat_open(access_mask)) {
 		/* Stat open that doesn't trigger oplock breaks or share mode
@@ -1836,7 +1836,12 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	}
 #endif
 
-	if (d->num_share_modes == 0) {
+	have_share_entries = share_mode_have_entries(lck);
+	if (!have_share_entries) {
+		/*
+		 * This is a fresh share mode lock where no conflicts
+		 * can happen.
+		 */
 		return NT_STATUS_OK;
 	}
 
