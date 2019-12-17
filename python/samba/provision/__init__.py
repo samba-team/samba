@@ -1633,13 +1633,14 @@ SYSVOL_SERVICE = "sysvol"
 
 
 def set_dir_acl(path, acl, lp, domsid, use_ntvfs, passdb, service=SYSVOL_SERVICE):
-    setntacl(lp, path, acl, domsid, use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)
+    session_info = system_session_unix()
+    setntacl(lp, path, acl, domsid, session_info, use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)
     for root, dirs, files in os.walk(path, topdown=False):
         for name in files:
-            setntacl(lp, os.path.join(root, name), acl, domsid,
+            setntacl(lp, os.path.join(root, name), acl, domsid, session_info,
                      use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)
         for name in dirs:
-            setntacl(lp, os.path.join(root, name), acl, domsid,
+            setntacl(lp, os.path.join(root, name), acl, domsid, session_info,
                      use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=service)
 
 
@@ -1657,7 +1658,9 @@ def set_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp, use_ntvfs, p
 
     # Set ACL for GPO root folder
     root_policy_path = os.path.join(sysvol, dnsdomain, "Policies")
-    setntacl(lp, root_policy_path, POLICIES_ACL, str(domainsid),
+    session_info = system_session_unix()
+
+    setntacl(lp, root_policy_path, POLICIES_ACL, str(domainsid), session_info,
              use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=passdb, service=SYSVOL_SERVICE)
 
     res = samdb.search(base="CN=Policies,CN=System,%s" %(domaindn),
@@ -1759,9 +1762,9 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
     def _setntacl(path):
         """A helper to reuse args"""
         return setntacl(
-            lp, path, SYSVOL_ACL, str(domainsid),
+            lp, path, SYSVOL_ACL, str(domainsid), session_info,
             use_ntvfs=use_ntvfs, skip_invalid_chown=True, passdb=s4_passdb,
-            service=SYSVOL_SERVICE, session_info=session_info)
+            service=SYSVOL_SERVICE)
 
     # Set the SYSVOL_ACL on the sysvol folder and subfolder (first level)
     _setntacl(sysvol)

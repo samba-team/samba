@@ -69,21 +69,21 @@ class PosixAclMappingTests(SmbdBaseTests):
 
     def test_setntacl(self):
         acl = ACL
-        setntacl(self.lp, self.tempf, acl, DOM_SID, use_ntvfs=False,
-                 session_info=self.get_session_info())
+        setntacl(self.lp, self.tempf, acl, DOM_SID,
+                 self.get_session_info(), use_ntvfs=False)
 
     def test_setntacl_smbd_getntacl(self):
         acl = ACL
-        setntacl(self.lp, self.tempf, acl, DOM_SID, use_ntvfs=True,
-                 session_info=self.get_session_info())
+        setntacl(self.lp, self.tempf, acl, DOM_SID,
+                 self.get_session_info(), use_ntvfs=True)
         facl = getntacl(self.lp, self.tempf, direct_db_access=True)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(anysid), acl)
 
     def test_setntacl_smbd_setposixacl_getntacl(self):
         acl = ACL
-        setntacl(self.lp, self.tempf, acl, DOM_SID, use_ntvfs=True,
-                 session_info=self.get_session_info())
+        setntacl(self.lp, self.tempf, acl, DOM_SID,
+                 self.get_session_info(), use_ntvfs=True)
 
         # This will invalidate the ACL, as we have a hook!
         smbd.set_simple_acl(self.tempf, 0o640, self.get_session_info())
@@ -94,8 +94,8 @@ class PosixAclMappingTests(SmbdBaseTests):
 
     def test_setntacl_invalidate_getntacl(self):
         acl = ACL
-        setntacl(self.lp, self.tempf, acl, DOM_SID, use_ntvfs=True,
-                 session_info=self.get_session_info())
+        setntacl(self.lp, self.tempf, acl, DOM_SID,
+                 self.get_session_info(), use_ntvfs=True)
 
         # This should invalidate the ACL, as we include the posix ACL in the hash
         (backend_obj, dbname) = checkset_backend(self.lp, None, None)
@@ -109,8 +109,8 @@ class PosixAclMappingTests(SmbdBaseTests):
 
     def test_setntacl_invalidate_getntacl_smbd(self):
         acl = ACL
-        setntacl(self.lp, self.tempf, acl, DOM_SID, use_ntvfs=False,
-                 session_info=self.get_session_info())
+        setntacl(self.lp, self.tempf, acl, DOM_SID,
+                 self.get_session_info(), use_ntvfs=False)
 
         # This should invalidate the ACL, as we include the posix ACL in the hash
         (backend_obj, dbname) = checkset_backend(self.lp, None, None)
@@ -126,8 +126,8 @@ class PosixAclMappingTests(SmbdBaseTests):
         acl = ACL
         simple_acl_from_posix = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)(A;;0x001200a9;;;S-1-5-21-2212615479-2695158682-2101375467-513)(A;;;;;WD)"
         os.chmod(self.tempf, 0o750)
-        setntacl(self.lp, self.tempf, acl, DOM_SID, use_ntvfs=False,
-                 session_info=self.get_session_info())
+        setntacl(self.lp, self.tempf, acl, DOM_SID,
+                 self.get_session_info(), use_ntvfs=False)
 
         # This should invalidate the ACL, as we include the posix ACL in the hash
         (backend_obj, dbname) = checkset_backend(self.lp, None, None)
@@ -141,16 +141,16 @@ class PosixAclMappingTests(SmbdBaseTests):
 
     def test_setntacl_getntacl_smbd(self):
         acl = ACL
-        setntacl(self.lp, self.tempf, acl, DOM_SID, use_ntvfs=True,
-                 session_info=self.get_session_info())
+        setntacl(self.lp, self.tempf, acl, DOM_SID,
+                 self.get_session_info(), use_ntvfs=True)
         facl = getntacl(self.lp, self.tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(anysid), acl)
 
     def test_setntacl_smbd_getntacl_smbd(self):
         acl = ACL
-        setntacl(self.lp, self.tempf, acl, DOM_SID, use_ntvfs=False,
-                 session_info=self.get_session_info())
+        setntacl(self.lp, self.tempf, acl, DOM_SID,
+                 self.get_session_info(), use_ntvfs=False)
         facl = getntacl(self.lp, self.tempf, direct_db_access=False)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(anysid), acl)
@@ -158,8 +158,8 @@ class PosixAclMappingTests(SmbdBaseTests):
     def test_setntacl_smbd_setposixacl_getntacl_smbd(self):
         acl = ACL
         simple_acl_from_posix = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;;0x001f019f;;;S-1-5-21-2212615479-2695158682-2101375467-512)(A;;0x00120089;;;S-1-5-21-2212615479-2695158682-2101375467-513)(A;;;;;WD)"
-        setntacl(self.lp, self.tempf, acl, DOM_SID, use_ntvfs=False,
-                 session_info=self.get_session_info())
+        setntacl(self.lp, self.tempf, acl, DOM_SID,
+                 self.get_session_info(), use_ntvfs=False)
         # This invalidates the hash of the NT acl just set because there is a hook in the posix ACL set code
         smbd.set_simple_acl(self.tempf, 0o640, self.get_session_info())
         facl = getntacl(self.lp, self.tempf, direct_db_access=False)
@@ -170,8 +170,8 @@ class PosixAclMappingTests(SmbdBaseTests):
         acl = ACL
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
         simple_acl_from_posix = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;;0x001f019f;;;S-1-5-21-2212615479-2695158682-2101375467-512)(A;;0x00120089;;;BA)(A;;0x00120089;;;S-1-5-21-2212615479-2695158682-2101375467-513)(A;;;;;WD)"
-        setntacl(self.lp, self.tempf, acl, DOM_SID, use_ntvfs=False,
-                 session_info=self.get_session_info())
+        setntacl(self.lp, self.tempf, acl, DOM_SID,
+                 self.get_session_info(), use_ntvfs=False)
         # This invalidates the hash of the NT acl just set because there is a hook in the posix ACL set code
         s4_passdb = passdb.PDB(self.lp.get("passdb backend"))
         (BA_gid, BA_type) = s4_passdb.sid_to_id(BA_sid)
@@ -184,16 +184,16 @@ class PosixAclMappingTests(SmbdBaseTests):
 
     def test_setntacl_smbd_getntacl_smbd_gpo(self):
         acl = "O:DAG:DUD:P(A;OICI;0x001f01ff;;;DA)(A;OICI;0x001f01ff;;;EA)(A;OICIIO;0x001f01ff;;;CO)(A;OICI;0x001f01ff;;;DA)(A;OICI;0x001f01ff;;;SY)(A;OICI;0x001200a9;;;AU)(A;OICI;0x001200a9;;;ED)S:AI(OU;CIIDSA;WP;f30e3bbe-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)(OU;CIIDSA;WP;f30e3bbf-9ff0-11d1-b603-0000f80367c1;bf967aa5-0de6-11d0-a285-00aa003049e2;WD)"
-        setntacl(self.lp, self.tempf, acl, DOM_SID, use_ntvfs=False,
-                 session_info=self.get_session_info())
+        setntacl(self.lp, self.tempf, acl, DOM_SID,
+                 self.get_session_info(), use_ntvfs=False)
         facl = getntacl(self.lp, self.tempf, direct_db_access=False)
         domsid = security.dom_sid(DOM_SID)
         self.assertEquals(facl.as_sddl(domsid), acl)
 
     def test_setntacl_getposixacl(self):
         acl = ACL
-        setntacl(self.lp, self.tempf, acl, DOM_SID, use_ntvfs=False,
-                 session_info=self.get_session_info())
+        setntacl(self.lp, self.tempf, acl, DOM_SID,
+                 self.get_session_info(), use_ntvfs=False)
         facl = getntacl(self.lp, self.tempf)
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(anysid), acl)
@@ -310,8 +310,8 @@ class PosixAclMappingTests(SmbdBaseTests):
         acl = provision.SYSVOL_ACL
         domsid = passdb.get_global_sam_sid()
         session_info = self.get_session_info(domsid)
-        setntacl(self.lp, self.tempf, acl, str(domsid), use_ntvfs=False,
-                 session_info=session_info)
+        setntacl(self.lp, self.tempf, acl, str(domsid),
+                 session_info, use_ntvfs=False)
         facl = getntacl(self.lp, self.tempf)
         self.assertEquals(facl.as_sddl(domsid), acl)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
@@ -454,8 +454,8 @@ class PosixAclMappingTests(SmbdBaseTests):
         acl = provision.SYSVOL_ACL
         domsid = passdb.get_global_sam_sid()
         session_info = self.get_session_info(domsid)
-        setntacl(self.lp, self.tempdir, acl, str(domsid), use_ntvfs=False,
-                 session_info=session_info)
+        setntacl(self.lp, self.tempdir, acl, str(domsid),
+                 session_info, use_ntvfs=False)
         facl = getntacl(self.lp, self.tempdir)
         self.assertEquals(facl.as_sddl(domsid), acl)
         posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS)
@@ -547,8 +547,8 @@ class PosixAclMappingTests(SmbdBaseTests):
         acl = provision.POLICIES_ACL
         domsid = passdb.get_global_sam_sid()
         session_info = self.get_session_info(domsid)
-        setntacl(self.lp, self.tempdir, acl, str(domsid), use_ntvfs=False,
-                 session_info=session_info)
+        setntacl(self.lp, self.tempdir, acl, str(domsid),
+                 session_info, use_ntvfs=False)
         facl = getntacl(self.lp, self.tempdir)
         self.assertEquals(facl.as_sddl(domsid), acl)
         posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS)
@@ -653,8 +653,8 @@ class PosixAclMappingTests(SmbdBaseTests):
 
         domsid = passdb.get_global_sam_sid()
         session_info = self.get_session_info(domsid)
-        setntacl(self.lp, self.tempf, acl, str(domsid), use_ntvfs=False,
-                 session_info=session_info)
+        setntacl(self.lp, self.tempf, acl, str(domsid),
+                 session_info, use_ntvfs=False)
         facl = getntacl(self.lp, self.tempf)
         self.assertEquals(facl.as_sddl(domsid), acl)
         posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)

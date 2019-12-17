@@ -107,11 +107,11 @@ class cmd_ntacl_set(Command):
                  file,
                  acl,
                  str(domain_sid),
+                 system_session_unix(),
                  xattr_backend,
                  eadb_file,
                  use_ntvfs=use_ntvfs,
-                 service=service,
-                 session_info=system_session_unix())
+                 service=service)
 
         if use_ntvfs:
             logger.warning("Please note that POSIX permissions have NOT been changed, only the stored NT ACL")
@@ -323,11 +323,11 @@ class cmd_ntacl_changedomsid(Command):
                          file,
                          acl,
                          new_domain_sid,
+                         system_session_unix(),
                          xattr_backend,
                          eadb_file,
                          use_ntvfs=use_ntvfs,
-                         service=service,
-                         session_info=system_session_unix())
+                         service=service)
             except Exception as e:
                 raise CommandError("Could not set acl for %s: %s" % (file, e))
 

@@ -66,6 +66,7 @@ from samba.samba3 import param as s3param
 from samba.upgrade import upgrade_from_samba3
 from samba.drs_utils import drsuapi_connect
 from samba import remove_dc, arcfour_encrypt, string_to_byte_array
+from samba.auth_util import system_session_unix
 
 from samba.dsdb import (
     DS_DOMAIN_FUNCTION_2000,
@@ -463,7 +464,10 @@ class cmd_domain_provision(Command):
             try:
                 try:
                     samba.ntacls.setntacl(lp, file.name,
-                                          "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
+                                          "O:S-1-5-32G:S-1-5-32",
+                                          "S-1-5-32",
+                                          system_session_unix(),
+                                          "native")
                     eadb = False
                 except Exception:
                     self.logger.info("You are not root or your system does not support xattr, using tdb backend for attributes. ")
@@ -1607,7 +1611,10 @@ class cmd_domain_classicupgrade(Command):
             try:
                 try:
                     samba.ntacls.setntacl(lp, tmpfile.name,
-                                          "O:S-1-5-32G:S-1-5-32", "S-1-5-32", "native")
+                                          "O:S-1-5-32G:S-1-5-32",
+                                          "S-1-5-32",
+                                          system_session_unix(),
+                                          "native")
                     eadb = False
                 except Exception:
                     # FIXME: Don't catch all exceptions here

@@ -35,6 +35,7 @@ from samba.samba3 import smbd
 from samba.samba3 import libsmb_samba_internal as libsmb
 from samba.logger import get_samba_logger
 from samba import NTSTATUSError
+from samba.auth_util import system_session_unix
 
 # don't include volumes
 SMB_FILE_ATTRIBUTE_FLAGS = libsmb.FILE_ATTRIBUTE_SYSTEM | \
@@ -134,10 +135,10 @@ def getntacl(lp,
                                session_info=session_info)
 
 
-def setntacl(lp, file, sddl, domsid,
+def setntacl(lp, file, sddl, domsid, session_info,
              backend=None, eadbfile=None,
              use_ntvfs=True, skip_invalid_chown=False,
-             passdb=None, service=None, session_info=None):
+             passdb=None, service=None):
     """
     A wrapper for smbd set_nt_acl api.
 
@@ -190,7 +191,8 @@ def setntacl(lp, file, sddl, domsid,
 
                     smbd.set_nt_acl(
                         file, SECURITY_SECINFO_FLAGS, sd2,
-                        service=service, session_info=session_info)
+                        session_info,
+                        service=service)
 
                     # and then set an NTVFS ACL (which does not set the posix ACL) to pretend the owner really was set
                     use_ntvfs = True
@@ -208,7 +210,9 @@ def setntacl(lp, file, sddl, domsid,
                     security.SECINFO_GROUP |
                     security.SECINFO_DACL |
                     security.SECINFO_SACL,
-                    sd, service=service, session_info=session_info)
+                    sd,
+                    session_info,
+                    service=service)
 
     if use_ntvfs:
         (backend_obj, dbname) = checkset_backend(lp, backend, eadbfile)
@@ -456,9 +460,9 @@ class NtaclsHelper:
 
         return ntacl_sd.as_sddl(self.dom_sid) if as_sddl else ntacl_sd
 
-    def setntacl(self, path, ntacl_sd):
+    def setntacl(self, path, ntacl_sd, session_info):
         # ntacl_sd can be obj or str
-        return setntacl(self.lp, path, ntacl_sd, self.dom_sid,
+        return setntacl(self.lp, path, ntacl_sd, self.dom_sid, session_info,
                         use_ntvfs=self.use_ntvfs)
 
 
@@ -543,6 +547,7 @@ def backup_offline(src_service_path, dest_tarfile_path, samdb_conn, smb_conf_pat
     """
     service = src_service_path.rstrip('/').rsplit('/', 1)[-1]
     tempdir = tempfile.mkdtemp()
+    session_info = system_session_unix()
 
     dom_sid_str = samdb_conn.get_domain_sid()
     dom_sid = security.dom_sid(dom_sid_str)
@@ -599,6 +604,7 @@ def backup_restore(src_tarfile_path, dst_service_path, samdb_conn, smb_conf_path
     dom_sid = security.dom_sid(dom_sid_str)
 
     ntacls_helper = NtaclsHelper(service, smb_conf_path, dom_sid)
+    session_info = system_session_unix()
 
     with tarfile.open(src_tarfile_path) as f:
         f.extractall(path=tempdir)
@@ -619,7 +625,7 @@ def backup_restore(src_tarfile_path, dst_service_path, samdb_conn, smb_conf_path
 
                 ntacl_sddl_str = _read_ntacl_file(src)
                 if ntacl_sddl_str:
-                    ntacls_helper.setntacl(dst, ntacl_sddl_str)
+                    ntacls_helper.setntacl(dst, ntacl_sddl_str, session_info)
                 else:
                     logger.warning(
                         'Failed to restore ntacl for directory %s.' % dst
@@ -635,7 +641,7 @@ def backup_restore(src_tarfile_path, dst_service_path, samdb_conn, smb_conf_path
 
                 ntacl_sddl_str = _read_ntacl_file(src)
                 if ntacl_sddl_str:
-                    ntacls_helper.setntacl(dst, ntacl_sddl_str)
+                    ntacls_helper.setntacl(dst, ntacl_sddl_str, session_info)
                 else:
                     logger.warning('Failed to restore ntacl for file %s.' % dst
                                  + ' Please check the permissions are correct')
