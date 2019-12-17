@@ -478,7 +478,13 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args, PyObject
  */
 static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	const char * const kwnames[] = { "fname", "uid", "gid", "service", NULL };
+	const char * const kwnames[] = {
+		"fname",
+		"uid",
+		"gid",
+		"service",
+		NULL
+	};
 	connection_struct *conn;
 	int ret;
 	NTSTATUS status;
@@ -489,7 +495,10 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sii|z",
 					 discard_const_p(char *, kwnames),
-					 &fname, &uid, &gid, &service))
+					 &fname,
+					 &uid,
+					 &gid,
+					 &service))
 		return NULL;
 
 	frame = talloc_stackframe();
