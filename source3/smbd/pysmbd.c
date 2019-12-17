@@ -771,7 +771,13 @@ static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args, PyObject *kw
  */
 static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	const char * const kwnames[] = { "fname", "acl_type", "acl", "service", NULL };
+	const char * const kwnames[] = {
+		"fname",
+		"acl_type",
+		"acl",
+		"service",
+		NULL
+	};
 	TALLOC_CTX *frame = talloc_stackframe();
 	int ret;
 	char *fname, *service = NULL;
@@ -782,7 +788,10 @@ static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args, PyObject *k
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "siO|z",
 					 discard_const_p(char *, kwnames),
-					 &fname, &acl_type, &py_acl, &service)) {
+					 &fname,
+					 &acl_type,
+					 &py_acl,
+					 &service)) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
