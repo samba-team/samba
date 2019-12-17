@@ -111,7 +111,7 @@ class NtaclsBackupRestoreTests(SmbdBaseTests):
         """
 
         dirpath = os.path.join(self.service_root, 'a-dir')
-        smbd.mkdir(dirpath, self.service)
+        smbd.mkdir(dirpath, system_session_unix(), self.service)
         mode = os.stat(dirpath).st_mode
 
         # This works in conjunction with the TEST_UMASK in smbd_base

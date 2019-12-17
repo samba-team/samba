@@ -564,7 +564,7 @@ def backup_offline(src_service_path, dest_tarfile_path, samdb_conn, smb_conf_pat
             src = os.path.join(dirpath, dirname)
             dst = os.path.join(dst_dirpath, dirname)
             # mkdir with metadata
-            smbd.mkdir(dst, service)
+            smbd.mkdir(dst, session_info, service)
             ntacl_sddl_str = ntacls_helper.getntacl(src, session_info, as_sddl=True)
             _create_ntacl_file(dst, ntacl_sddl_str)
 
@@ -621,7 +621,7 @@ def backup_restore(src_tarfile_path, dst_service_path, samdb_conn, smb_conf_path
                 dst = os.path.join(dst_dirpath, dirname)
                 if not os.path.isdir(dst):
                     # dst must be absolute path for smbd API
-                    smbd.mkdir(dst, service)
+                    smbd.mkdir(dst, session_info, service)
 
                 ntacl_sddl_str = _read_ntacl_file(src)
                 if ntacl_sddl_str:
