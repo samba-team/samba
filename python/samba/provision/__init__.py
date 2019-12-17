@@ -46,6 +46,7 @@ import samba.dsdb
 import ldb
 
 from samba.auth import system_session, admin_session
+from samba.auth_util import system_session_unix
 import samba
 from samba import auth
 from samba.samba3 import smbd, passdb
@@ -1694,7 +1695,7 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
         file = tempfile.NamedTemporaryFile(dir=os.path.abspath(sysvol))
         try:
             try:
-                smbd.set_simple_acl(file.name, 0o755, gid)
+                smbd.set_simple_acl(file.name, 0o755, system_session_unix(), gid)
             except OSError:
                 if not smbd.have_posix_acls():
                     # This clue is only strictly correct for RPM and
