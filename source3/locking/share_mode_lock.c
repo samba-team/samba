@@ -805,6 +805,11 @@ NTSTATUS share_mode_wakeup_waiters(struct file_id id)
 	return share_mode_do_locked(id, share_mode_wakeup_waiters_fn, NULL);
 }
 
+bool share_mode_have_entries(struct share_mode_lock *lck)
+{
+	return (lck->data->num_share_modes != 0);
+}
+
 struct share_mode_watch_state {
 	struct tevent_context *ev;
 	bool blockerdead;
