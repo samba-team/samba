@@ -2106,6 +2106,7 @@ sub check_env($$)
 	ad_dc_ntvfs          => ["dns_hub"],
 	ad_dc                => ["dns_hub"],
 	ad_dc_smb1           => ["dns_hub"],
+	ad_dc_smb1_done      => ["ad_dc_smb1"],
 	ad_dc_no_nss         => ["dns_hub"],
 	ad_dc_no_ntlm        => ["dns_hub"],
 
@@ -2523,6 +2524,12 @@ sub setup_ad_dc_smb1
 	server min protocol = LANMAN1
 ";
 	return setup_ad_dc($self, $path, $conf_opts, "addcsmb1", "addom2.samba.example.com");
+}
+
+sub setup_ad_dc_smb1_done
+{
+	my ($self, $path, $dep_env) = @_;
+	return $self->return_alias_env($path, $dep_env);
 }
 
 sub setup_ad_dc_no_nss
