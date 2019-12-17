@@ -16,6 +16,14 @@ use POSIX;
 use target::Samba;
 use File::Path 'remove_tree';
 
+sub return_alias_env
+{
+	my ($self, $path, $env) = @_;
+
+	# just an alias
+	return $env;
+}
+
 sub have_ads($) {
         my ($self) = @_;
 	my $found_ads = 0;
