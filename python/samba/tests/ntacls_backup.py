@@ -126,7 +126,7 @@ class NtaclsBackupRestoreTests(SmbdBaseTests):
         """
 
         filepath = os.path.join(self.service_root, 'a-file')
-        smbd.create_file(filepath, self.service)
+        smbd.create_file(filepath, system_session_unix(), self.service)
         self.assertTrue(os.path.isfile(filepath))
 
         mode = os.stat(filepath).st_mode

@@ -1059,10 +1059,13 @@ static PyObject *py_smbd_create_file(PyObject *self, PyObject *args, PyObject *k
 {
 	const char * const kwnames[] = {
 		"fname",
+		"session_info",
 		"service",
 		NULL
 	};
 	char *fname, *service = NULL;
+	PyObject *py_session = Py_None;
+	struct auth_session_info *session_info = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct connection_struct *conn = NULL;
 	struct files_struct *fsp = NULL;
@@ -1070,16 +1073,33 @@ static PyObject *py_smbd_create_file(PyObject *self, PyObject *args, PyObject *k
 
 	if (!PyArg_ParseTupleAndKeywords(args,
 					 kwargs,
-					 "s|z",
+					 "sO|z",
 					 discard_const_p(char *,
 							 kwnames),
 					 &fname,
+					 &py_session,
 					 &service)) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
 
-	conn = get_conn_tos(service, NULL);
+	if (!py_check_dcerpc_type(py_session,
+				  "samba.dcerpc.auth",
+				  "session_info")) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+	session_info = pytalloc_get_type(py_session,
+					 struct auth_session_info);
+	if (session_info == NULL) {
+		PyErr_Format(PyExc_TypeError,
+			     "Expected auth_session_info for session_info argument got %s",
+			     pytalloc_get_name(py_session));
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	conn = get_conn_tos(service, session_info);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;
