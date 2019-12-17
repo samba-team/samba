@@ -27,6 +27,7 @@ from samba.samba3 import smbd, passdb
 from samba.samba3 import param as s3param
 from samba import auth
 from samba.samdb import SamDB
+from samba.auth_util import system_session_unix
 
 DOM_SID = "S-1-5-21-2212615479-2695158682-2101375467"
 ACL = "O:S-1-5-21-2212615479-2695158682-2101375467-512G:S-1-5-21-2212615479-2695158682-2101375467-513D:(A;OICI;0x001f01ff;;;S-1-5-21-2212615479-2695158682-2101375467-512)"
@@ -52,11 +53,8 @@ class PosixAclMappingTests(SmbdBaseTests):
     def get_session_info(self, domsid=DOM_SID):
         """
         Get session_info for setntacl.
-
-        This test case always return None, to run tests without session_info
-        like before. To be overridden in derived class.
         """
-        return None
+        return system_session_unix()
 
     def print_posix_acl(self, posix_acl):
         aclstr = ""
@@ -323,6 +321,7 @@ class PosixAclMappingTests(SmbdBaseTests):
 
         nwrap_winbind_active = (nwrap_module_so_path != "" and
                                 nwrap_module_fn_prefix == "winbind")
+        is_user_session = not session_info.security_token.is_system()
 
         LA_sid = security.dom_sid(str(domsid) + "-" + str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
@@ -353,7 +352,7 @@ class PosixAclMappingTests(SmbdBaseTests):
         self.assertEquals(posix_acl.acl[0].info.gid, BA_gid)
 
         self.assertEquals(posix_acl.acl[1].a_type, smb_acl.SMB_ACL_USER)
-        if nwrap_winbind_active or session_info:
+        if nwrap_winbind_active or is_user_session:
             self.assertEquals(posix_acl.acl[1].a_perm, 7)
         else:
             self.assertEquals(posix_acl.acl[1].a_perm, 6)
@@ -363,7 +362,7 @@ class PosixAclMappingTests(SmbdBaseTests):
         self.assertEquals(posix_acl.acl[2].a_perm, 0)
 
         self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_USER_OBJ)
-        if nwrap_winbind_active or session_info:
+        if nwrap_winbind_active or is_user_session:
             self.assertEquals(posix_acl.acl[3].a_perm, 7)
         else:
             self.assertEquals(posix_acl.acl[3].a_perm, 6)
@@ -665,6 +664,7 @@ class PosixAclMappingTests(SmbdBaseTests):
 
         nwrap_winbind_active = (nwrap_module_so_path != "" and
                                 nwrap_module_fn_prefix == "winbind")
+        is_user_session = not session_info.security_token.is_system()
 
         LA_sid = security.dom_sid(str(domsid) + "-" + str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
@@ -698,7 +698,7 @@ class PosixAclMappingTests(SmbdBaseTests):
         self.assertEquals(posix_acl.acl[0].info.gid, BA_gid)
 
         self.assertEquals(posix_acl.acl[1].a_type, smb_acl.SMB_ACL_USER)
-        if nwrap_winbind_active or session_info:
+        if nwrap_winbind_active or is_user_session:
             self.assertEquals(posix_acl.acl[1].a_perm, 7)
         else:
             self.assertEquals(posix_acl.acl[1].a_perm, 6)
@@ -708,7 +708,7 @@ class PosixAclMappingTests(SmbdBaseTests):
         self.assertEquals(posix_acl.acl[2].a_perm, 0)
 
         self.assertEquals(posix_acl.acl[3].a_type, smb_acl.SMB_ACL_USER_OBJ)
-        if nwrap_winbind_active or session_info:
+        if nwrap_winbind_active or is_user_session:
             self.assertEquals(posix_acl.acl[3].a_perm, 7)
         else:
             self.assertEquals(posix_acl.acl[3].a_perm, 6)
