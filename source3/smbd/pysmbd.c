@@ -700,11 +700,13 @@ static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args, PyObject *kw
  */
 static PyObject *py_smbd_get_nt_acl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	const char * const kwnames[] = { "fname",
-					 "security_info_wanted",
-					 "service",
-					 "session_info",
-					 NULL };
+	const char * const kwnames[] = {
+		"fname",
+		"security_info_wanted",
+		"service",
+		"session_info",
+		NULL
+	};
 	char *fname, *service = NULL;
 	int security_info_wanted;
 	PyObject *py_sd;
