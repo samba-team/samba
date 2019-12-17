@@ -1790,14 +1790,15 @@ def acl_type(direct_db_access):
 
 
 def check_dir_acl(path, acl, lp, domainsid, direct_db_access):
-    fsacl = getntacl(lp, path, direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
+    session_info = system_session_unix()
+    fsacl = getntacl(lp, path, session_info, direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
     fsacl_sddl = fsacl.as_sddl(domainsid)
     if fsacl_sddl != acl:
         raise ProvisioningError('%s ACL on GPO directory %s %s does not match expected value %s from GPO object' % (acl_type(direct_db_access), path, fsacl_sddl, acl))
 
     for root, dirs, files in os.walk(path, topdown=False):
         for name in files:
-            fsacl = getntacl(lp, os.path.join(root, name),
+            fsacl = getntacl(lp, os.path.join(root, name), session_info,
                              direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
             if fsacl is None:
                 raise ProvisioningError('%s ACL on GPO file %s not found!' %
@@ -1808,7 +1809,7 @@ def check_dir_acl(path, acl, lp, domainsid, direct_db_access):
                 raise ProvisioningError('%s ACL on GPO file %s %s does not match expected value %s from GPO object' % (acl_type(direct_db_access), os.path.join(root, name), fsacl_sddl, acl))
 
         for name in dirs:
-            fsacl = getntacl(lp, os.path.join(root, name),
+            fsacl = getntacl(lp, os.path.join(root, name), session_info,
                              direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
             if fsacl is None:
                 raise ProvisioningError('%s ACL on GPO directory %s not found!'
@@ -1834,7 +1835,8 @@ def check_gpos_acl(sysvol, dnsdomain, domainsid, domaindn, samdb, lp,
 
     # Set ACL for GPO root folder
     root_policy_path = os.path.join(sysvol, dnsdomain, "Policies")
-    fsacl = getntacl(lp, root_policy_path,
+    session_info = system_session_unix()
+    fsacl = getntacl(lp, root_policy_path, session_info,
                      direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
     if fsacl is None:
         raise ProvisioningError('DB ACL on policy root %s %s not found!' % (acl_type(direct_db_access), root_policy_path))
@@ -1887,10 +1889,11 @@ def checksysvolacl(samdb, netlogon, sysvol, domainsid, dnsdomain, domaindn,
         raise ProvisioningError('Realm as seen by pdb_samba_dsdb [%s] does not match Realm as seen by the provision script [%s]!' % (domain_info["dns_domain"].upper(), dnsdomain.upper()))
 
     # Ensure we can read this directly, and via the smbd VFS
+    session_info = system_session_unix()
     for direct_db_access in [True, False]:
         # Check the SYSVOL_ACL on the sysvol folder and subfolder (first level)
         for dir_path in [os.path.join(sysvol, dnsdomain), netlogon]:
-            fsacl = getntacl(lp, dir_path, direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
+            fsacl = getntacl(lp, dir_path, session_info, direct_db_access=direct_db_access, service=SYSVOL_SERVICE)
             if fsacl is None:
                 raise ProvisioningError('%s ACL on sysvol directory %s not found!' % (acl_type(direct_db_access), dir_path))
             fsacl_sddl = fsacl.as_sddl(domainsid)

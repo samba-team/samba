@@ -99,11 +99,11 @@ def getdosinfo(lp, file):
 
 def getntacl(lp,
              file,
+             session_info,
              backend=None,
              eadbfile=None,
              direct_db_access=True,
-             service=None,
-             session_info=None):
+             service=None):
     if direct_db_access:
         (backend_obj, dbname) = checkset_backend(lp, backend, eadbfile)
         if dbname is not None:
@@ -131,8 +131,8 @@ def getntacl(lp,
     else:
         return smbd.get_nt_acl(file,
                                SECURITY_SECINFO_FLAGS,
-                               service=service,
-                               session_info=session_info)
+                               session_info,
+                               service=service)
 
 
 def setntacl(lp, file, sddl, domsid, session_info,
@@ -449,12 +449,12 @@ class NtaclsHelper:
 
         self.use_ntvfs = "smb" in self.lp.get("server services")
 
-    def getntacl(self, path, as_sddl=False, direct_db_access=None):
+    def getntacl(self, path, session_info, as_sddl=False, direct_db_access=None):
         if direct_db_access is None:
             direct_db_access = self.use_ntvfs
 
         ntacl_sd = getntacl(
-            self.lp, path,
+            self.lp, path, session_info,
             direct_db_access=direct_db_access,
             service=self.service)
 
@@ -565,7 +565,7 @@ def backup_offline(src_service_path, dest_tarfile_path, samdb_conn, smb_conf_pat
             dst = os.path.join(dst_dirpath, dirname)
             # mkdir with metadata
             smbd.mkdir(dst, service)
-            ntacl_sddl_str = ntacls_helper.getntacl(src, as_sddl=True)
+            ntacl_sddl_str = ntacls_helper.getntacl(src, session_info, as_sddl=True)
             _create_ntacl_file(dst, ntacl_sddl_str)
 
         # create files and NTACL file, then copy data
@@ -574,7 +574,7 @@ def backup_offline(src_service_path, dest_tarfile_path, samdb_conn, smb_conf_pat
             dst = os.path.join(dst_dirpath, filename)
             # create an empty file with metadata
             smbd.create_file(dst, service)
-            ntacl_sddl_str = ntacls_helper.getntacl(src, as_sddl=True)
+            ntacl_sddl_str = ntacls_helper.getntacl(src, session_info, as_sddl=True)
             _create_ntacl_file(dst, ntacl_sddl_str)
 
             # now put data in

@@ -175,11 +175,11 @@ class cmd_ntacl_get(Command):
 
         acl = getntacl(lp,
                        file,
+                       system_session_unix(),
                        xattr_backend,
                        eadb_file,
                        direct_db_access=use_ntvfs,
-                       service=service,
-                       session_info=system_session_unix())
+                       service=service)
         if as_sddl:
             self.outf.write(acl.as_sddl(domain_sid) + "\n")
         else:
@@ -281,11 +281,11 @@ class cmd_ntacl_changedomsid(Command):
             try:
                 acl = getntacl(lp,
                                file,
+                               system_session_unix(),
                                xattr_backend,
                                eadb_file,
                                direct_db_access=use_ntvfs,
-                               service=service,
-                               session_info=system_session_unix())
+                               service=service)
             except Exception as e:
                 raise CommandError("Could not get acl for %s: %s" % (file, e))
 

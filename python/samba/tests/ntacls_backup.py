@@ -152,10 +152,10 @@ class NtaclsBackupRestoreTests(SmbdBaseTests):
         sd0 = self.smb_helper.get_acl(file_name, as_sddl=True)
 
         sd1 = self.ntacls_helper.getntacl(
-            file_path, as_sddl=True, direct_db_access=False)
+            file_path, system_session_unix(), as_sddl=True, direct_db_access=False)
 
         sd2 = self.ntacls_helper.getntacl(
-            file_path, as_sddl=True, direct_db_access=True)
+            file_path, system_session_unix(), as_sddl=True, direct_db_access=True)
 
         self.assertEquals(sd0, sd1)
         self.assertEquals(sd1, sd2)
