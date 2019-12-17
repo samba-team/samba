@@ -218,7 +218,7 @@ sudo samba-tool group addmembers supergroup User2
 Example2 shows how to add a single user account, User2, to the supergroup AD group.  It uses the sudo command to run as root when issuing the command.
 """
 
-    synopsis = "%prog <groupname> <listofmembers> [options]"
+    synopsis = "%prog <groupname> (<listofmembers>]|--member-dn=<member-dn>) [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -229,6 +229,10 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
+        Option("--member-dn",
+               help=("DN of the new group member to be added.\n"
+                     "The --object-types option will be ignored."),
+               type=str),
         Option("--object-types",
                help=("Comma separated list of object types.\n"
                      "The types are used to filter the search for the "
@@ -240,15 +244,16 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
                type=str),
     ]
 
-    takes_args = ["groupname", "listofmembers"]
+    takes_args = ["groupname", "listofmembers?"]
 
     def run(self,
             groupname,
-            listofmembers,
+            listofmembers=None,
             credopts=None,
             sambaopts=None,
             versionopts=None,
             H=None,
+            member_dn=None,
             object_types="user,group,computer"):
 
         lp = sambaopts.get_loadparm()
@@ -257,7 +262,10 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
         try:
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
-            groupmembers = listofmembers.split(',')
+            if member_dn is not None:
+                groupmembers = [ member_dn ]
+            else:
+                groupmembers = listofmembers.split(',')
             group_member_types = object_types.split(',')
             samdb.add_remove_group_members(groupname, groupmembers,
                                            add_members_operation=True,

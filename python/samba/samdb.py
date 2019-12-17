@@ -334,35 +334,42 @@ changetype: modify
 """ % (str(targetgroup[0].dn))
 
             for member in members:
-                filter = self.group_member_filter(member, member_types)
-                foreign_msg = None
+                targetmember_dn = None
+
                 try:
                     membersid = security.dom_sid(member)
+                    targetmember_dn = "<SID=%s>" % str(membersid)
                 except TypeError as e:
-                    membersid = None
+                    pass
 
-                if membersid is not None:
-                    filter = '(objectSid=%s)' % str(membersid)
-                    dn_str = "<SID=%s>" % str(membersid)
-                    foreign_msg = ldb.Message()
-                    foreign_msg.dn = ldb.Dn(self, dn_str)
+                if targetmember_dn is None:
+                    try:
+                        member_dn = ldb.Dn(self, member)
+                        if member_dn.get_linearized() == member_dn.extended_str(1):
+                            full_member_dn = self.normalize_dn_in_domain(member_dn)
+                        else:
+                            full_member_dn = member_dn
+                        targetmember_dn = full_member_dn.extended_str(1)
+                    except ValueError as e:
+                        pass
 
-                targetmember = self.search(base=self.domain_dn(),
-                                           scope=ldb.SCOPE_SUBTREE,
-                                           expression="%s" % filter,
-                                           attrs=[])
+                if targetmember_dn is None:
+                    filter = self.group_member_filter(member, member_types)
+                    targetmember = self.search(base=self.domain_dn(),
+                                               scope=ldb.SCOPE_SUBTREE,
+                                               expression=filter,
+                                               attrs=[])
 
-                if len(targetmember) > 1:
-                    memberlist_str = ""
-                    for msg in targetmember:
-                        memberlist_str += "%s\n" % msg.get("dn")
-                    raise Exception('Found multiple results for "%s":\n%s' %
-                                    (member, memberlist_str))
-                if len(targetmember) == 0 and foreign_msg is not None:
-                    targetmember = [foreign_msg]
-                if len(targetmember) != 1:
-                    raise Exception('Unable to find "%s". Operation cancelled.' % member)
-                targetmember_dn = targetmember[0].dn.extended_str(1)
+                    if len(targetmember) > 1:
+                        targetmemberlist_str = ""
+                        for msg in targetmember:
+                            targetmemberlist_str += "%s\n" % msg.get("dn")
+                        raise Exception('Found multiple results for "%s":\n%s' %
+                                        (member, targetmemberlist_str))
+                    if len(targetmember) != 1:
+                        raise Exception('Unable to find "%s". Operation cancelled.' % member)
+                    targetmember_dn = targetmember[0].dn.extended_str(1)
+
                 if add_members_operation is True and (targetgroup[0].get('member') is None or get_bytes(targetmember_dn) not in [str(x) for x in targetgroup[0]['member']]):
                     modified = True
                     addtargettogroup += """add: member
