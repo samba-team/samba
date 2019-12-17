@@ -295,7 +295,7 @@ sudo samba-tool group removemembers supergroup User1
 Example2 shows how to remove a single user account, User2, from the supergroup AD group.  It uses the sudo command to run as root when issuing the command.
 """
 
-    synopsis = "%prog <groupname> <listofmembers> [options]"
+    synopsis = "%prog <groupname> (<listofmembers>]|--member-dn=<member-dn>) [options]"
 
     takes_optiongroups = {
         "sambaopts": options.SambaOptions,
@@ -306,12 +306,32 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server", type=str,
                metavar="URL", dest="H"),
+        Option("--member-dn",
+               help=("DN of the group member to be removed.\n"
+                     "The --object-types option will be ignored."),
+               type=str),
+        Option("--object-types",
+               help=("Comma separated list of object types.\n"
+                     "The types are used to filter the search for the "
+                     "specified members.\n"
+                     "Valid values are: user, group, computer, serviceaccount, "
+                     "contact and all.\n"
+                     "Default: user,group,computer"),
+               default="user,group,computer",
+               type=str),
     ]
 
-    takes_args = ["groupname", "listofmembers"]
+    takes_args = ["groupname", "listofmembers?"]
 
-    def run(self, groupname, listofmembers, credopts=None, sambaopts=None,
-            versionopts=None, H=None):
+    def run(self,
+            groupname,
+            listofmembers=None,
+            credopts=None,
+            sambaopts=None,
+            versionopts=None,
+            H=None,
+            member_dn=None,
+            object_types="user,group,computer"):
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
@@ -319,8 +339,14 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
         try:
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
-            samdb.add_remove_group_members(groupname, listofmembers.split(","),
-                                           add_members_operation=False)
+            if member_dn is not None:
+                groupmembers = [ member_dn ]
+            else:
+                groupmembers = listofmembers.split(',')
+            samdb.add_remove_group_members(groupname,
+                                           groupmembers,
+                                           add_members_operation=False,
+                                           member_types=group_member_types)
         except Exception as e:
             # FIXME: Catch more specific exception
             raise CommandError('Failed to remove members "%s" from group "%s"' % (listofmembers, groupname), e)
