@@ -197,7 +197,7 @@ class PosixAclMappingTests(SmbdBaseTests):
         facl = getntacl(self.lp, self.tempf, self.get_session_info())
         anysid = security.dom_sid(security.SID_NT_SELF)
         self.assertEquals(facl.as_sddl(anysid), acl)
-        posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
+        posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS, self.get_session_info())
 
     def test_setposixacl_getntacl(self):
         smbd.set_simple_acl(self.tempf, 0o750, self.get_session_info())
@@ -248,7 +248,7 @@ class PosixAclMappingTests(SmbdBaseTests):
 
     def test_setposixacl_getposixacl(self):
         smbd.set_simple_acl(self.tempf, 0o640, self.get_session_info())
-        posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
+        posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS, self.get_session_info())
         self.assertEquals(posix_acl.count, 4, self.print_posix_acl(posix_acl))
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_USER_OBJ)
@@ -265,7 +265,7 @@ class PosixAclMappingTests(SmbdBaseTests):
 
     def test_setposixacl_dir_getposixacl(self):
         smbd.set_simple_acl(self.tempdir, 0o750, self.get_session_info())
-        posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS)
+        posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS, self.get_session_info())
         self.assertEquals(posix_acl.count, 4, self.print_posix_acl(posix_acl))
 
         self.assertEquals(posix_acl.acl[0].a_type, smb_acl.SMB_ACL_USER_OBJ)
@@ -286,7 +286,7 @@ class PosixAclMappingTests(SmbdBaseTests):
         (BA_gid, BA_type) = s4_passdb.sid_to_id(BA_sid)
         self.assertEquals(BA_type, idmap.ID_TYPE_BOTH)
         smbd.set_simple_acl(self.tempf, 0o670, self.get_session_info(), BA_gid)
-        posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
+        posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS, self.get_session_info())
 
         self.assertEquals(posix_acl.count, 5, self.print_posix_acl(posix_acl))
 
@@ -314,7 +314,7 @@ class PosixAclMappingTests(SmbdBaseTests):
                  session_info, use_ntvfs=False)
         facl = getntacl(self.lp, self.tempf, session_info)
         self.assertEquals(facl.as_sddl(domsid), acl)
-        posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
+        posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS, session_info)
 
         nwrap_module_so_path = os.getenv('NSS_WRAPPER_MODULE_SO_PATH')
         nwrap_module_fn_prefix = os.getenv('NSS_WRAPPER_MODULE_FN_PREFIX')
@@ -458,7 +458,7 @@ class PosixAclMappingTests(SmbdBaseTests):
                  session_info, use_ntvfs=False)
         facl = getntacl(self.lp, self.tempdir, session_info)
         self.assertEquals(facl.as_sddl(domsid), acl)
-        posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS)
+        posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS, session_info)
 
         LA_sid = security.dom_sid(str(domsid) + "-" + str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
@@ -551,7 +551,7 @@ class PosixAclMappingTests(SmbdBaseTests):
                  session_info, use_ntvfs=False)
         facl = getntacl(self.lp, self.tempdir, session_info)
         self.assertEquals(facl.as_sddl(domsid), acl)
-        posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS)
+        posix_acl = smbd.get_sys_acl(self.tempdir, smb_acl.SMB_ACL_TYPE_ACCESS, session_info)
 
         LA_sid = security.dom_sid(str(domsid) + "-" + str(security.DOMAIN_RID_ADMINISTRATOR))
         BA_sid = security.dom_sid(security.SID_BUILTIN_ADMINISTRATORS)
@@ -657,7 +657,7 @@ class PosixAclMappingTests(SmbdBaseTests):
                  session_info, use_ntvfs=False)
         facl = getntacl(self.lp, self.tempf, session_info)
         self.assertEquals(facl.as_sddl(domsid), acl)
-        posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS)
+        posix_acl = smbd.get_sys_acl(self.tempf, smb_acl.SMB_ACL_TYPE_ACCESS, session_info)
 
         nwrap_module_so_path = os.getenv('NSS_WRAPPER_MODULE_SO_PATH')
         nwrap_module_fn_prefix = os.getenv('NSS_WRAPPER_MODULE_FN_PREFIX')
