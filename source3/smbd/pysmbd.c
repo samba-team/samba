@@ -827,6 +827,7 @@ static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args, PyObject *k
 		"fname",
 		"acl_type",
 		"acl",
+		"session_info",
 		"service",
 		NULL
 	};
@@ -834,15 +835,18 @@ static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args, PyObject *k
 	int ret;
 	char *fname, *service = NULL;
 	PyObject *py_acl;
+	PyObject *py_session = Py_None;
+	struct auth_session_info *session_info = NULL;
 	struct smb_acl_t *acl;
 	int acl_type;
 	connection_struct *conn;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "siO|z",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "siOO|z",
 					 discard_const_p(char *, kwnames),
 					 &fname,
 					 &acl_type,
 					 &py_acl,
+					 &py_session,
 					 &service)) {
 		TALLOC_FREE(frame);
 		return NULL;
@@ -853,7 +857,23 @@ static PyObject *py_smbd_set_sys_acl(PyObject *self, PyObject *args, PyObject *k
 		return NULL;
 	}
 
-	conn = get_conn_tos(service, NULL);
+	if (!py_check_dcerpc_type(py_session,
+				  "samba.dcerpc.auth",
+				  "session_info")) {
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+	session_info = pytalloc_get_type(py_session,
+					 struct auth_session_info);
+	if (session_info == NULL) {
+		PyErr_Format(PyExc_TypeError,
+			     "Expected auth_session_info for session_info argument got %s",
+			     pytalloc_get_name(py_session));
+		TALLOC_FREE(frame);
+		return NULL;
+	}
+
+	conn = get_conn_tos(service, session_info);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;
