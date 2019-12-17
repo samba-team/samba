@@ -945,7 +945,11 @@ static PyObject *py_smbd_mkdir(PyObject *self, PyObject *args, PyObject *kwargs)
  */
 static PyObject *py_smbd_create_file(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	const char * const kwnames[] = { "fname", "service", NULL };
+	const char * const kwnames[] = {
+		"fname",
+		"service",
+		NULL
+	};
 	char *fname, *service = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct connection_struct *conn = NULL;
