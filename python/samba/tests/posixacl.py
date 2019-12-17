@@ -46,7 +46,7 @@ class PosixAclMappingTests(SmbdBaseTests):
         self.samdb = SamDB(lp=self.lp, session_info=auth.system_session())
 
     def tearDown(self):
-        smbd.unlink(self.tempf)
+        smbd.unlink(self.tempf, self.get_session_info())
         os.unlink(os.path.join(self.tempdir, "xattr.tdb"))
         super(PosixAclMappingTests, self).tearDown()
 

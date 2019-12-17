@@ -25,6 +25,7 @@ from samba import samdb
 from samba import ntacls
 
 from samba.auth import system_session
+from samba.auth_util import system_session_unix
 from samba.dcerpc import security
 from samba.tests import env_loadparm
 from samba.tests.smbd_base import SmbdBaseTests
@@ -137,7 +138,7 @@ class NtaclsBackupRestoreTests(SmbdBaseTests):
 
         # As well as checking that unlink works, this removes the
         # fake xattrs from the dev/inode based DB
-        smbd.unlink(filepath, self.service)
+        smbd.unlink(filepath, system_session_unix(), self.service)
         self.assertFalse(os.path.isfile(filepath))
 
     def test_compare_getntacl(self):
