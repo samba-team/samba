@@ -221,6 +221,7 @@ sub check_env($$)
 	# name              => [dep_1, dep_2, ...],
 	nt4_dc              => [],
 	nt4_dc_smb1         => [],
+	nt4_dc_smb1_done    => ["nt4_dc_smb1"],
 	nt4_dc_schannel     => [],
 
 	simpleserver        => [],
@@ -315,6 +316,12 @@ sub setup_nt4_dc_smb1
 	server min protocol = LANMAN1
 ";
 	return $self->setup_nt4_dc($path, $conf, "LCLNT4DC2SMB1");
+}
+
+sub setup_nt4_dc_smb1_done
+{
+	my ($self, $path, $dep_env) = @_;
+	return $self->return_alias_env($path, $dep_env);
 }
 
 sub setup_nt4_dc_schannel
