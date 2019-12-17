@@ -627,8 +627,13 @@ static PyObject *py_smbd_have_posix_acls(PyObject *self,
 static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
 	const char * const kwnames[] = {
-		"fname", "security_info_sent", "sd",
-		"service", "session_info", NULL };
+		"fname",
+		"security_info_sent",
+		"sd",
+		"service",
+		"session_info",
+		NULL
+	};
 
 	NTSTATUS status;
 	char *fname, *service = NULL;
@@ -644,8 +649,11 @@ static PyObject *py_smbd_set_nt_acl(PyObject *self, PyObject *args, PyObject *kw
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "siO|zO",
 				         discard_const_p(char *, kwnames),
-					 &fname, &security_info_sent, &py_sd,
-					 &service, &py_session)) {
+					 &fname,
+					 &security_info_sent,
+					 &py_sd,
+					 &service,
+					 &py_session)) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
