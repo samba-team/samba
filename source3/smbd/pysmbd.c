@@ -558,7 +558,11 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
  */
 static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	const char * const kwnames[] = { "fname", "service", NULL };
+	const char * const kwnames[] = {
+		"fname",
+		"service",
+		NULL
+	};
 	connection_struct *conn;
 	int ret;
 	struct smb_filename *smb_fname = NULL;
@@ -569,7 +573,8 @@ static PyObject *py_smbd_unlink(PyObject *self, PyObject *args, PyObject *kwargs
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|z",
 					 discard_const_p(char *, kwnames),
-					 &fname, &service)) {
+					 &fname,
+					 &service)) {
 		TALLOC_FREE(frame);
 		return NULL;
 	}
