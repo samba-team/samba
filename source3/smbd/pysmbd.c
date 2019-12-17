@@ -424,7 +424,13 @@ static SMB_ACL_T make_simple_acl(TALLOC_CTX *mem_ctx,
  */
 static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	const char * const kwnames[] = { "fname", "mode", "gid", "service", NULL };
+	const char * const kwnames[] = {
+		"fname",
+		"mode",
+		"gid",
+		"service",
+		NULL
+	};
 	char *fname, *service = NULL;
 	int ret;
 	int mode, gid = -1;
@@ -434,7 +440,10 @@ static PyObject *py_smbd_set_simple_acl(PyObject *self, PyObject *args, PyObject
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "si|iz",
 					 discard_const_p(char *, kwnames),
-					 &fname, &mode, &gid, &service))
+					 &fname,
+					 &mode,
+					 &gid,
+					 &service))
 		return NULL;
 
 	frame = talloc_stackframe();
