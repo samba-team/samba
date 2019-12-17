@@ -877,7 +877,11 @@ static PyObject *py_smbd_get_sys_acl(PyObject *self, PyObject *args, PyObject *k
 
 static PyObject *py_smbd_mkdir(PyObject *self, PyObject *args, PyObject *kwargs)
 {
-	const char * const kwnames[] = { "fname", "service", NULL };
+	const char * const kwnames[] = {
+		"fname",
+		"service",
+		NULL
+	};
 	char *fname, *service = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct connection_struct *conn = NULL;
