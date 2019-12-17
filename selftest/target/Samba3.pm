@@ -226,6 +226,7 @@ sub check_env($$)
 	simpleserver        => [],
 	fileserver          => [],
 	fileserver_smb1     => [],
+	fileserver_smb1_done => ["fileserver_smb1"],
 	maptoguest          => [],
 	ktest               => [],
 
@@ -1459,6 +1460,13 @@ sub setup_fileserver_smb1
 ";
 	return $self->setup_fileserver($path, $conf, "FILESERVERSMB1");
 }
+
+sub setup_fileserver_smb1_done
+{
+	my ($self, $path, $dep_env) = @_;
+	return $self->return_alias_env($path, $dep_env);
+}
+
 sub setup_ktest
 {
 	my ($self, $prefix) = @_;
