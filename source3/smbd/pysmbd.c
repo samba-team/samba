@@ -500,6 +500,7 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 		"fname",
 		"uid",
 		"gid",
+		"session_info",
 		"service",
 		NULL
 	};
@@ -507,21 +508,38 @@ static PyObject *py_smbd_chown(PyObject *self, PyObject *args, PyObject *kwargs)
 	int ret;
 	NTSTATUS status;
 	char *fname, *service = NULL;
+	PyObject *py_session = Py_None;
+	struct auth_session_info *session_info = NULL;
 	int uid, gid;
 	TALLOC_CTX *frame;
 	struct files_struct *fsp = NULL;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sii|z",
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "siiO|z",
 					 discard_const_p(char *, kwnames),
 					 &fname,
 					 &uid,
 					 &gid,
+					 &py_session,
 					 &service))
 		return NULL;
 
+	if (!py_check_dcerpc_type(py_session,
+				  "samba.dcerpc.auth",
+				  "session_info")) {
+		return NULL;
+	}
+	session_info = pytalloc_get_type(py_session,
+					 struct auth_session_info);
+	if (session_info == NULL) {
+		PyErr_Format(PyExc_TypeError,
+			     "Expected auth_session_info for session_info argument got %s",
+			     pytalloc_get_name(py_session));
+		return NULL;
+	}
+
 	frame = talloc_stackframe();
 
-	conn = get_conn_tos(service, NULL);
+	conn = get_conn_tos(service, session_info);
 	if (!conn) {
 		TALLOC_FREE(frame);
 		return NULL;

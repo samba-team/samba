@@ -1707,7 +1707,7 @@ def setsysvolacl(samdb, netlogon, sysvol, uid, gid, domainsid, dnsdomain,
                 raise ProvisioningError("Your filesystem or build does not support posix ACLs, which s3fs requires.  "
                                         "Try the mounting the filesystem with the 'acl' option.")
             try:
-                smbd.chown(file.name, uid, gid)
+                smbd.chown(file.name, uid, gid, system_session_unix())
             except OSError:
                 raise ProvisioningError("Unable to chown a file on your filesystem.  "
                                         "You may not be running provision as root.")
