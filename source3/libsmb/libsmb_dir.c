@@ -1276,6 +1276,15 @@ const struct libsmb_file_info *SMBC_readdirplus2_ctx(SMBCCTX *context,
 	struct smbc_dirplus_list *dp_list = NULL;
 	ino_t ino;
 	char *full_pathname = NULL;
+	char *workgroup = NULL;
+	char *server = NULL;
+	uint16_t port = 0;
+	char *share = NULL;
+	char *path = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	char *options = NULL;
+	int rc;
 	TALLOC_CTX *frame = NULL;
 
 	/*
@@ -1333,8 +1342,25 @@ const struct libsmb_file_info *SMBC_readdirplus2_ctx(SMBCCTX *context,
 		return NULL;
 	}
 
+	rc = SMBC_parse_path(frame,
+			     context,
+			     full_pathname,
+			     &workgroup,
+			     &server,
+			     &port,
+			     &share,
+			     &path,
+			     &user,
+			     &password,
+			     &options);
+	if (rc != 0) {
+		TALLOC_FREE(frame);
+		errno = ENOENT;
+		return NULL;
+	}
+
 	setup_stat(st,
-		full_pathname,
+		path,
 		smb_finfo->size,
 		smb_finfo->attrs,
 		ino,
