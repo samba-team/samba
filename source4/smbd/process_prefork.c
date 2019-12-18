@@ -518,7 +518,8 @@ static void prefork_child_pipe_handler(struct tevent_context *ev,
 		DBG_ERR("Parent %d, Child %d terminated with signal %d\n",
 			getpid(), pid, status);
 		if (status == SIGABRT || status == SIGBUS || status == SIGFPE ||
-		    status == SIGILL || status == SIGSYS || status == SIGSEGV) {
+		    status == SIGILL || status == SIGSYS || status == SIGSEGV ||
+		    status == SIGKILL) {
 
 			prefork_restart(ev, rc);
 		}
