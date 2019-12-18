@@ -122,6 +122,48 @@ testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG udg
 #testit "group removemembers" $samba_tool group removemembers $CONFIG gdg "User UT. Tester,User1 UT. Tester"
 #testit "group removemembers" $samba_tool group removemembers $CONFIG ugg "User UT. Tester,User1 UT. Tester"
 
+# delete test users
+testit "user delete" $PYTHON $samba_tool user delete $CONFIG testuser
+testit "user delete" $PYTHON $samba_tool user delete $CONFIG testuser1
+
+# creation of two new test users without spaces in cn
+# testit fails when spaces are used in arguments
+testit "user add" $PYTHON $samba_tool user create $CONFIG --given-name="User" --surname="Tester" --initial="UT" --use-username-as-cn testuser testp@ssw0Rd
+testit "user add" $PYTHON $samba_tool user create $CONFIG --given-name="User1" --surname="Tester" --initial="UT" --use-username-as-cn testuser1 testp@ssw0Rd
+
+# test adding test users to all groups by their DN
+testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG dsg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com
+
+testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG dsg --member-dn=CN=testuser1,CN=Users,DC=foo,DC=example,DC=com
+testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG gsg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com
+testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG gsg --member-dn=CN=testuser1,CN=Users,DC=foo,DC=example,DC=com
+testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG usg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com
+testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG usg --member-dn=CN=testuser1,CN=Users,DC=foo,DC=example,DC=com
+testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG ddg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com
+testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG ddg --member-dn=CN=testuser1,CN=Users,DC=foo,DC=example,DC=com
+
+# add two members by DN and listofmembers in one call
+testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG gdg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com testuser1
+
+# add two members by DN with one call
+testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG udg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com --member-dn=CN=testuser1,CN=Users,DC=foo,DC=example,DC=com
+
+# test removing test users from all groups by their DN
+testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG dsg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com
+testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG dsg --member-dn=CN=testuser1,CN=Users,DC=foo,DC=example,DC=com
+testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG gsg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com
+testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG gsg --member-dn=CN=testuser1,CN=Users,DC=foo,DC=example,DC=com
+testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG usg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com
+testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG usg --member-dn=CN=testuser1,CN=Users,DC=foo,DC=example,DC=com
+testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG ddg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com
+testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG ddg --member-dn=CN=testuser1,CN=Users,DC=foo,DC=example,DC=com
+
+# remove two members by DN and listofmembers in one call
+testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG gdg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com testuser1
+
+# remove two members by DN with one call
+testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG udg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com --member-dn=CN=testuser1,CN=Users,DC=foo,DC=example,DC=com
+
 #test deletion of the groups
 testit "group delete" $PYTHON $samba_tool group delete $CONFIG dsg
 testit "group delete" $PYTHON $samba_tool group delete $CONFIG gsg
@@ -129,6 +171,10 @@ testit "group delete" $PYTHON $samba_tool group delete $CONFIG usg
 testit "group delete" $PYTHON $samba_tool group delete $CONFIG ddg
 testit "group delete" $PYTHON $samba_tool group delete $CONFIG gdg
 testit "group delete" $PYTHON $samba_tool group delete $CONFIG udg
+
+# delete test users
+testit "user delete" $PYTHON $samba_tool user delete $CONFIG testuser
+testit "user delete" $PYTHON $samba_tool user delete $CONFIG testuser1
 
 #test listing of all groups
 testit "group list" $PYTHON $samba_tool group list $CONFIG
