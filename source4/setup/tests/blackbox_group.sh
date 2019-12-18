@@ -14,6 +14,7 @@ shift 1
 
 
 rm -rf $PREFIX/simple-dc
+mkdir -p $PREFIX
 testit "simple-dc" $PYTHON $BINDIR/samba-tool domain provision --server-role="dc" --domain=FOO --realm=foo.example.com --domain-sid=S-1-5-21-4177067393-1453636373-93818738 --targetdir=$PREFIX/simple-dc --use-ntvfs
 samba_tool="./bin/samba-tool"
 
