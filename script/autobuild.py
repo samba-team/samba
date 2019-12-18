@@ -223,6 +223,7 @@ tasks = {
             "fl2000dc",
             "fileserver",
             "fileserver_smb1",
+            "fileserver_smb1_done",
             "maptoguest",
             "simpleserver",
             "backupfromdc",
@@ -281,6 +282,7 @@ tasks = {
             "fl2000dc",
             "fileserver",
             "fileserver_smb1",
+            "fileserver_smb1_done",
             "maptoguest",
             "simpleserver",
             "backupfromdc",
@@ -330,6 +332,7 @@ tasks = {
         ("test", make_test(include_envs=[
             "fileserver",
             "fileserver_smb1",
+            "fileserver_smb1_done",
             "maptoguest",
             "ktest", # ktest is also tested in samba and samba-mitkrb5
                      # but is tested here against a system Heimdal
