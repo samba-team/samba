@@ -190,7 +190,7 @@ SMBC_stat_ctx(SMBCCTX *context,
 	}
 
 	setup_stat(st,
-		fname,
+		path,
 		size,
 		mode,
 		ino,
@@ -296,7 +296,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	}
 
 	setup_stat(st,
-		file->fname,
+		path,
 		size,
 		mode,
 		ino,
