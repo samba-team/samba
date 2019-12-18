@@ -20,7 +20,7 @@ samba_tool="./bin/samba-tool"
 
 CONFIG="--configfile=$PREFIX/simple-dc/etc/smb.conf"
 
-#creation of two test subjects
+#creation of two test users
 testit "user add" $PYTHON $samba_tool user create $CONFIG --given-name="User" --surname="Tester" --initial="UT" testuser testp@ssw0Rd
 testit "user add" $PYTHON $samba_tool user create $CONFIG --given-name="User1" --surname="Tester" --initial="UT" testuser1 testp@ssw0Rd
 
@@ -105,6 +105,64 @@ testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG usg
 testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG ddg testuser,testuser1
 testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG gdg testuser,testuser1
 testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG udg testuser,testuser1
+
+# creation of two test contacts
+testit "contact create" $PYTHON $samba_tool contact create $CONFIG --given-name="Con" --surname="Tester" --initial="CT" testcontact
+testit "contact create" $PYTHON $samba_tool contact create $CONFIG --given-name="Con1" --surname="Tester" --initial="CT" testcontact1
+
+# test adding test contacts to all groups by their cn
+testit "group addmembers contact" $PYTHON $samba_tool group addmembers $CONFIG dsg testcontact,testcontact1 --object-types=contact
+testit "group addmembers contact" $PYTHON $samba_tool group addmembers $CONFIG gsg testcontact,testcontact1 --object-types=contact
+testit "group addmembers contact" $PYTHON $samba_tool group addmembers $CONFIG usg testcontact,testcontact1 --object-types=contact
+testit "group addmembers contact" $PYTHON $samba_tool group addmembers $CONFIG ddg testcontact,testcontact1 --object-types=contact
+testit "group addmembers contact" $PYTHON $samba_tool group addmembers $CONFIG gdg testcontact,testcontact1 --object-types=contact
+testit "group addmembers contact" $PYTHON $samba_tool group addmembers $CONFIG udg testcontact,testcontact1 --object-types=contact
+
+# test removing test contacts from all groups by their cn
+testit "group removemembers contact" $PYTHON $samba_tool group removemembers $CONFIG dsg testcontact,testcontact1 --object-types=contact
+testit "group removemembers contact" $PYTHON $samba_tool group removemembers $CONFIG gsg testcontact,testcontact1 --object-types=contact
+testit "group removemembers contact" $PYTHON $samba_tool group removemembers $CONFIG usg testcontact,testcontact1 --object-types=contact
+testit "group removemembers contact" $PYTHON $samba_tool group removemembers $CONFIG ddg testcontact,testcontact1 --object-types=contact
+testit "group removemembers contact" $PYTHON $samba_tool group removemembers $CONFIG gdg testcontact,testcontact1 --object-types=contact
+testit "group removemembers contact" $PYTHON $samba_tool group removemembers $CONFIG udg testcontact,testcontact1 --object-types=contact
+
+# should not find test contact, because --object-types=user is specified
+testit_expect_failure "group addmembers contact failure" $PYTHON $samba_tool group addmembers $CONFIG dsg testcontact --object-types=user
+
+# test add contact with --object-types=all
+testit "group addmembers contact object-type all" $PYTHON $samba_tool group addmembers $CONFIG dsg testcontact --object-types=all
+
+# test remove contact with --object-types=all
+testit "group removemembers contact object-type all" $PYTHON $samba_tool group removemembers $CONFIG dsg testcontact --object-types=all
+
+# add test contact by DN
+testit "group addmembers contact dn" $PYTHON $samba_tool group addmembers $CONFIG dsg --member-dn=CN=testcontact,DC=foo,DC=example,DC=com
+
+# remove test contact by DN
+testit "group removemembers contact dn" $PYTHON $samba_tool group removemembers $CONFIG dsg --member-dn=CN=testcontact,DC=foo,DC=example,DC=com
+
+# delete test contacts
+testit "contact delete" $PYTHON $samba_tool contact delete $CONFIG testcontact
+testit "contact delete" $PYTHON $samba_tool contact delete $CONFIG testcontact1
+
+# creation of two test contacts with the same name in different OUs
+testit "ou create" $PYTHON $samba_tool ou create $CONFIG OU=tconou1
+testit "ou create" $PYTHON $samba_tool ou create $CONFIG OU=tconou2
+testit "contact create ou" $PYTHON $samba_tool contact create $CONFIG testcontact --ou=OU=tconou1
+testit "contact create ou" $PYTHON $samba_tool contact create $CONFIG testcontact --ou=OU=tconou2
+
+# expect failure here, since there are multiple results for testcontact
+testit_expect_failure "group addmembers contact same name failure" $PYTHON $samba_tool group addmembers $CONFIG dsg testcontact
+
+# add both contacts by DN
+testit "group addmembers contact dn" $PYTHON $samba_tool group addmembers $CONFIG dsg --member-dn=CN=testcontact,OU=tconou1,DC=foo,DC=example,DC=com --member-dn=CN=testcontact,OU=tconou2,DC=foo,DC=example,DC=com
+
+# remove both contacts by DN
+testit "group removemembers contact dn" $PYTHON $samba_tool group removemembers $CONFIG dsg --member-dn=CN=testcontact,OU=tconou1,DC=foo,DC=example,DC=com --member-dn=CN=testcontact,OU=tconou2,DC=foo,DC=example,DC=com
+
+# delete both contacts by DN
+testit "contact delete" $PYTHON $samba_tool contact delete $CONFIG CN=testcontact,OU=tconou1
+testit "contact delete" $PYTHON $samba_tool contact delete $CONFIG CN=testcontact,OU=tconou2
 
 #test adding test users to all groups by their cn
 #testit "group addmembers" $samba_tool group addmembers $CONFIG dsg "User UT. Tester,User1 UT. Tester"
