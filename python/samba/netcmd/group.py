@@ -232,7 +232,8 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
         Option("--member-dn",
                help=("DN of the new group member to be added.\n"
                      "The --object-types option will be ignored."),
-               type=str),
+               type=str,
+               action="append"),
         Option("--object-types",
                help=("Comma separated list of object types.\n"
                      "The types are used to filter the search for the "
@@ -259,21 +260,28 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
+        if member_dn is None and listofmembers is None:
+            self.usage()
+            raise CommandError(
+                'Either listofmembers or --member-dn must be specified.')
+
         try:
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
+            groupmembers = []
             if member_dn is not None:
-                groupmembers = [ member_dn ]
-            else:
-                groupmembers = listofmembers.split(',')
+                groupmembers += member_dn
+            if listofmembers is not None:
+                groupmembers += listofmembers.split(',')
             group_member_types = object_types.split(',')
+
             samdb.add_remove_group_members(groupname, groupmembers,
                                            add_members_operation=True,
                                            member_types=group_member_types)
         except Exception as e:
             # FIXME: catch more specific exception
-            raise CommandError('Failed to add members "%s" to group "%s"' % (
-                listofmembers, groupname), e)
+            raise CommandError('Failed to add members %r to group "%s"' % (
+                groupmembers, groupname), e)
         self.outf.write("Added members to group %s\n" % groupname)
 
 
@@ -309,7 +317,8 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
         Option("--member-dn",
                help=("DN of the group member to be removed.\n"
                      "The --object-types option will be ignored."),
-               type=str),
+               type=str,
+               action="append"),
         Option("--object-types",
                help=("Comma separated list of object types.\n"
                      "The types are used to filter the search for the "
@@ -336,20 +345,28 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp, fallback_machine=True)
 
+        if member_dn is None and listofmembers is None:
+            self.usage()
+            raise CommandError(
+                'Either listofmembers or --member-dn must be specified.')
+
         try:
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
+            groupmembers = []
             if member_dn is not None:
-                groupmembers = [ member_dn ]
-            else:
-                groupmembers = listofmembers.split(',')
+                groupmembers += member_dn
+            if listofmembers is not None:
+                groupmembers += listofmembers.split(',')
+            group_member_types = object_types.split(',')
+
             samdb.add_remove_group_members(groupname,
                                            groupmembers,
                                            add_members_operation=False,
                                            member_types=group_member_types)
         except Exception as e:
             # FIXME: Catch more specific exception
-            raise CommandError('Failed to remove members "%s" from group "%s"' % (listofmembers, groupname), e)
+            raise CommandError('Failed to remove members %r from group "%s"' % (listofmembers, groupname), e)
         self.outf.write("Removed members from group %s\n" % groupname)
 
 
