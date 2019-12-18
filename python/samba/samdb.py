@@ -334,6 +334,12 @@ changetype: modify
                                            expression="%s" % filter,
                                            attrs=[])
 
+                if len(targetmember) > 1:
+                    memberlist_str = ""
+                    for msg in targetmember:
+                        memberlist_str += "%s\n" % msg.get("dn")
+                    raise Exception('Found multiple results for "%s":\n%s' %
+                                    (member, memberlist_str))
                 if len(targetmember) == 0 and foreign_msg is not None:
                     targetmember = [foreign_msg]
                 if len(targetmember) != 1:
