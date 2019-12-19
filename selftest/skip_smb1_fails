@@ -9,6 +9,3 @@
 ^samba3.blackbox.smbclient_basic.NT1\(nt4_dc_schannel\)
 ^samba4.blackbox.smbclient\(ad_member:local\)\(ad_member:local\)
 ^samba4.blackbox.smbclient\(chgdcpass:local\)\(chgdcpass:local\)
-^samba4.smb.signing disabled on with -k no --option=gensec:spengo=no --signing=off domain-creds\(ad_member\)
-^samba4.smb.signing disabled on with -k no --signing=off domain-creds\(ad_member\)
-^samba4.smb.signing disabled on with -k yes --signing=off domain-creds\(ad_member\)
