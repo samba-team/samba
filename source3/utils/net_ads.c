@@ -40,6 +40,7 @@
 #include "libsmb/libsmb.h"
 #include "lib/param/loadparm.h"
 #include "utils/net_dns.h"
+#include "auth/kerberos/pac_utils.h"
 
 #ifdef HAVE_JANSSON
 #include <jansson.h>

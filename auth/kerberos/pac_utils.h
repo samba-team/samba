@@ -53,6 +53,16 @@ NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 				 time_t tgs_authtime,
 				 struct PAC_LOGON_INFO **logon_info);
 
+struct PAC_DATA;
+struct PAC_DATA_CTR {
+	DATA_BLOB pac_blob;
+	struct PAC_DATA *pac_data;
+};
+
+struct auth4_context *auth4_context_for_PAC_DATA_CTR(TALLOC_CTX *mem_ctx);
+struct PAC_DATA_CTR *auth4_context_get_PAC_DATA_CTR(struct auth4_context *auth_ctx,
+						    TALLOC_CTX *mem_ctx);
+
 NTSTATUS gssapi_obtain_pac_blob(TALLOC_CTX *mem_ctx,
 				gss_ctx_id_t gssapi_context,
 				gss_name_t gss_client_name,

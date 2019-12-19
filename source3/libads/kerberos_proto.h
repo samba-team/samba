@@ -32,12 +32,7 @@
 
 #include "system/kerberos.h"
 
-struct PAC_DATA;
-
-struct PAC_DATA_CTR {
-	DATA_BLOB pac_blob;
-	struct PAC_DATA *pac_data;
-};
+struct PAC_DATA_CTR;
 
 #define DEFAULT_KRB5_PORT 88
 
