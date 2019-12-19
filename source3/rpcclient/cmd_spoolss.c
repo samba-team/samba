@@ -1630,7 +1630,10 @@ static WERROR cmd_spoolss_getdriverpackagepath(struct rpc_pipe_client *cli,
 	}
 
 	offered = 1;
-	cab = talloc_array(mem_ctx, char, offered);
+	cab = talloc_zero_array(mem_ctx, char, offered);
+	if (cab == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
 	status = dcerpc_spoolss_GetPrinterDriverPackagePath(b, mem_ctx,
 							    cli->srv_name_slash,
 							    env,
@@ -1647,7 +1650,9 @@ static WERROR cmd_spoolss_getdriverpackagepath(struct rpc_pipe_client *cli,
 	if (W_ERROR_EQUAL(W_ERROR(WIN32_FROM_HRESULT(hresult)), WERR_INSUFFICIENT_BUFFER)) {
 		offered = needed;
 		cab = talloc_zero_array(mem_ctx, char, offered);
-
+		if (cab == NULL) {
+			return WERR_NOT_ENOUGH_MEMORY;
+		}
 		status = dcerpc_spoolss_GetPrinterDriverPackagePath(b, mem_ctx,
 								    cli->srv_name_slash,
 								    env,
