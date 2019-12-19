@@ -710,6 +710,8 @@ planpythontestsuite("none", "samba.tests.samba_tool.help")
 planpythontestsuite("ad_dc_default:local", "samba.tests.samba_tool.passwordsettings")
 planpythontestsuite("ad_dc:local", "samba.tests.samba_tool.dsacl")
 
+planpythontestsuite("none", "samba.tests.samba_upgradedns_lmdb")
+
 # Run these against chgdcpass to share the runtime load
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.sites")
 planpythontestsuite("chgdcpass:local", "samba.tests.samba_tool.dnscmd")
