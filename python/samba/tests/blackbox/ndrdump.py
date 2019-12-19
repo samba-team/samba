@@ -368,6 +368,20 @@ dump OK
                          expected_head)
         self.assertTrue(actual.endswith(expected_tail))
 
+    # Confirm parsing of dnsProperty records
+    def test_ndrdump_dnsp_DnssrvRpcRecord(self):
+
+        expected = open(self.data_path("dnsp-DnssrvRpcRecord.txt")).read().encode('utf8')
+        try:
+            actual = self.check_output(
+                "ndrdump dnsp dnsp_DnssrvRpcRecord struct " +\
+                "--input BQAPAAXwAAC3AAAAAAADhAAAAAAAAAAAAAoBAAA= "+\
+                "--base64-input --validate")
+        except BlackboxProcessError as e:
+            self.fail(e)
+
+        self.assertEqual(actual, expected)
+
     # Test a --validate push of a NULL union pointer
     def test_ndrdump_fuzzed_NULL_union_PAC_BUFFER(self):
         expected = b'''pull returned Success

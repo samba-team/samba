@@ -1,0 +1,32 @@
+pull returned Success
+    dnsp_DnssrvRpcRecord: struct dnsp_DnssrvRpcRecord
+        wDataLength              : 0x0005 (5)
+        wType                    : DNS_TYPE_MX (15)
+        version                  : 0x05 (5)
+        rank                     : DNS_RANK_ZONE (240)
+        flags                    : 0x0000 (0)
+        dwSerial                 : 0x000000b7 (183)
+        dwTtlSeconds             : 0x00000384 (900)
+        dwReserved               : 0x00000000 (0)
+        dwTimeStamp              : 0x00000000 (0)
+        data                     : union dnsRecordData(case 15)
+        mx: struct dnsp_mx
+            wPriority                : 0x000a (10)
+            nameTarget               : 
+push returned Success
+pull returned Success
+    dnsp_DnssrvRpcRecord: struct dnsp_DnssrvRpcRecord
+        wDataLength              : 0x0005 (5)
+        wType                    : DNS_TYPE_MX (15)
+        version                  : 0x05 (5)
+        rank                     : DNS_RANK_ZONE (240)
+        flags                    : 0x0000 (0)
+        dwSerial                 : 0x000000b7 (183)
+        dwTtlSeconds             : 0x00000384 (900)
+        dwReserved               : 0x00000000 (0)
+        dwTimeStamp              : 0x00000000 (0)
+        data                     : union dnsRecordData(case 15)
+        mx: struct dnsp_mx
+            wPriority                : 0x000a (10)
+            nameTarget               : 
+dump OK
