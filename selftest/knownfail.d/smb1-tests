@@ -40,3 +40,7 @@
 ^samba4.smb.signing disabled on with -k no --signing=off domain-creds.xcopy\(ad_member\)
 ^samba4.smb.signing disabled on with -k no --option=gensec:spengo=no --signing=off domain-creds.xcopy\(ad_member\)
 ^samba4.smb.signing disabled on with -k yes --signing=off domain-creds.xcopy\(ad_member\)
+^samba4.blackbox.smbclient\(ad_member:local\).Test login with --machine-pass without kerberos\(ad_member:local\)
+^samba4.blackbox.smbclient\(ad_member:local\).Test login with --machine-pass and kerberos\(ad_member:local\)
+^samba4.blackbox.smbclient\(chgdcpass:local\).Test login with --machine-pass without kerberos\(chgdcpass:local\)
+^samba4.blackbox.smbclient\(chgdcpass:local\).Test login with --machine-pass and kerberos\(chgdcpass:local\)
