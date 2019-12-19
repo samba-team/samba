@@ -447,6 +447,22 @@ class BlackboxTestCase(TestCaseInTempDir):
         if retcode:
             raise BlackboxProcessError(retcode, line, stdoutdata, stderrdata)
         return stdoutdata
+    #
+    # Run a command without checking the return code, returns the tuple
+    # (ret, stdout, stderr)
+    # where ret is the return code
+    #       stdout is a string containing the commands stdout
+    #       stderr is a string containing the commands stderr
+    def run_command(self, line):
+        line = self._make_cmdline(line)
+        use_shell = not isinstance(line, list)
+        p = subprocess.Popen(line,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             shell=use_shell)
+        stdoutdata, stderrdata = p.communicate()
+        retcode = p.returncode
+        return (retcode, stdoutdata.decode('UTF8'), stderrdata.decode('UTF8'))
 
     # Generate a random password that can be safely  passed on the command line
     # i.e. it does not contain any shell meta characters.
