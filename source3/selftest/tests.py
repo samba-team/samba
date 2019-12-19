@@ -587,7 +587,9 @@ for t in tests:
         plansmbtorture4testsuite(t, "ad_member:local", '//$SERVER/tmp --realm=$REALM --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
     elif t == "unix.whoami":
         plansmbtorture4testsuite(t, "nt4_member:local", '//$SERVER/tmp --machine-pass', description="machine account")
+        plansmbtorture4testsuite(t, "ad_dc_smb1:local", '//$SERVER/tmp --machine-pass', description="machine account")
         plansmbtorture4testsuite(t, "ad_member:local", '//$SERVER/tmp --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
+        plansmbtorture4testsuite(t, "ad_dc_smb1:local", '//$SERVER/tmp --machine-pass --option=torture:addc=$DC_SERVER', description="machine account")
         for env in ["nt4_dc_smb1", "nt4_member"]:
             plansmbtorture4testsuite(t, env, '//$SERVER/tmp -U$DC_USERNAME%$DC_PASSWORD')
             plansmbtorture4testsuite(t, env, '//$SERVER/tmpguest -U%', description='anonymous connection')
