@@ -1,0 +1,6 @@
+^samba3.blackbox.smbclient_ntlm.plain.*NT1.smbclient anonymous.badpassword.NT1NEW.guest\(maptoguest\)
+^samba3.blackbox.smbclient_ntlm.plain.*NT1.smbclient baduser.badpassword.NT1NEW.guest\(maptoguest\)
+^samba3.blackbox.smbclient_ntlm.plain.*NT1.smbclient username.password.NT1OLD\((ad_member|fl2000dc|maptoguest|nt4_member)\)
+^samba3.blackbox.smbclient_ntlm.plain.*NT1.smbclient username.password.NT1NEW\((ad_member|fl2000dc|maptoguest|nt4_member)\)
+^samba3.blackbox.smbclient_ntlm.plain.*NT1.smbclient anonymous.nopassword.NT1OLD\((ad_member|fl2000dc|maptoguest|nt4_member)\)
+^samba3.blackbox.smbclient_ntlm.plain.*NT1.smbclient anonymous.nopassword.NT1NEW\((ad_member|fl2000dc|maptoguest|nt4_member)\)
