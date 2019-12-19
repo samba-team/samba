@@ -40,70 +40,6 @@
 
 struct smb_krb5_context;
 
-/****************************************************************
-Callback to get the PAC_LOGON_INFO from the blob
-****************************************************************/
-static NTSTATUS kerberos_fetch_pac(struct auth4_context *auth_ctx,
-				   TALLOC_CTX *mem_ctx,
-				   struct smb_krb5_context *smb_krb5_context,
-				   DATA_BLOB *pac_blob,
-				   const char *princ_name,
-				   const struct tsocket_address *remote_address,
-				   uint32_t session_info_flags,
-				   struct auth_session_info **session_info)
-{
-	TALLOC_CTX *tmp_ctx;
-	struct PAC_DATA *pac_data = NULL;
-	struct PAC_DATA_CTR *pac_data_ctr = NULL;
-	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
-
-	tmp_ctx = talloc_new(mem_ctx);
-	if (!tmp_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (pac_blob != NULL) {
-		status = kerberos_decode_pac(tmp_ctx,
-					     *pac_blob,
-					     NULL,
-					     NULL,
-					     NULL,
-					     NULL,
-					     0,
-					     &pac_data);
-		if (!NT_STATUS_IS_OK(status)) {
-			goto done;
-		}
-
-		pac_data_ctr = talloc(mem_ctx, struct PAC_DATA_CTR);
-		if (pac_data_ctr == NULL) {
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-
-		talloc_set_name_const(pac_data_ctr, "struct PAC_DATA_CTR");
-
-		pac_data_ctr->pac_data = talloc_steal(pac_data_ctr, pac_data);
-		pac_data_ctr->pac_blob = data_blob_talloc(pac_data_ctr,
-							  pac_blob->data,
-							  pac_blob->length);
-
-		auth_ctx->private_data = talloc_steal(auth_ctx, pac_data_ctr);
-	}
-
-	*session_info = talloc_zero(mem_ctx, struct auth_session_info);
-	if (!*session_info) {
-		status = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-	status = NT_STATUS_OK;
-
-done:
-	TALLOC_FREE(tmp_ctx);
-
-	return status;
-}
-
 /*
  * Given the username/password, do a kinit, store the ticket in
  * cache_name if specified, and return the PAC_LOGON_INFO (the
@@ -226,12 +162,11 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	auth_context = talloc_zero(tmp_ctx, struct auth4_context);
+	auth_context = auth4_context_for_PAC_DATA_CTR(tmp_ctx);
 	if (auth_context == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
-	auth_context->generate_session_info_pac = kerberos_fetch_pac;
 
 	lp_ctx = loadparm_init_s3(tmp_ctx, loadparm_s3_helpers());
 	if (lp_ctx == NULL) {
@@ -296,8 +231,7 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 		goto out;
 	}
 
-	pac_data_ctr = talloc_get_type_abort(gensec_server_context->auth_context->private_data,
-					     struct PAC_DATA_CTR);
+	pac_data_ctr = auth4_context_get_PAC_DATA_CTR(auth_context, mem_ctx);
 	if (pac_data_ctr == NULL) {
 		DEBUG(1,("no PAC\n"));
 		status = NT_STATUS_INVALID_PARAMETER;
