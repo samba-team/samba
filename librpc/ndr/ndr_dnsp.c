@@ -106,8 +106,18 @@ enum ndr_err_code ndr_push_dnsp_name(struct ndr_push *ndr, int ndr_flags, const 
 	}
 	total_len = strlen(name) + 1;
 
-	/* cope with names ending in '.' */
-	if (name[strlen(name)-1] != '.') {
+	/*
+	 * cope with names ending in '.'
+	 */
+	if (name[0] == '\0') {
+		/*
+		 * Don't access name[-1] for the "" input, which has
+		 * the same meaning as a lone '.'.
+		 *
+		 * This allows a round-trip of a dnsRecord from
+		 * Windows of a MX record of '.'
+		 */
+	} else if (name[strlen(name)-1] != '.') {
 		total_len++;
 		count++;
 	}
