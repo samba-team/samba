@@ -27,8 +27,8 @@ we test with in our CI infrastructure.
 (Build time support for the file server with Python 2.6 has not
 changed)
 
-GnuTLS 3.4.7 required
----------------------
+Removing in-tree cryptography: GnuTLS 3.4.7 required
+----------------------------------------------------
 
 Samba is making efforts to remove in-tree cryptographic functionality,
 and to instead rely on externally maintained libraries.  To this end,
@@ -37,6 +37,11 @@ Samba has chosen GnuTLS as our standard cryptographic provider.
 Samba now requires GnuTLS 3.4.7 to be installed (including development
 headers at build time) for all configurations, not just the Samba AD
 DC.
+
+Thanks to this work Samba no longer ships an in-tree DES
+implementation and on GnuTLS 3.6.5 or later Samba will include no
+in-tree cryptography other than the MD4 hash and that
+implemented in our copy of Heimdal.
 
 Using GnuTLS for SMB3 encryption you will notice huge performance and copy
 speed improvements. Tests with the CIFS Kernel client from Linux Kernel 5.3
