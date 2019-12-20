@@ -129,6 +129,17 @@ Heimdal-DC: removal of weak-crypto.
 Following removal of DES encryption types from Samba, the embedded Heimdal
 build has been updated to not compile weak crypto code (HEIM_WEAK_CRYPTO).
 
+CTDB changes
+------------
+
+* The ctdb_mutex_fcntl_helper periodically re-checks the lock file
+
+  The re-check period is specified using a 2nd argument to this
+  helper.  The default re-check period is 5s.
+
+  If the file no longer exists or the inode number changes then the
+  helper exits.  This triggers an election.
+
 
 smb.conf changes
 ================
