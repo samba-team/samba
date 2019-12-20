@@ -44,3 +44,4 @@
 ^samba4.blackbox.smbclient\(ad_member:local\).Test login with --machine-pass and kerberos\(ad_member:local\)
 ^samba4.blackbox.smbclient\(chgdcpass:local\).Test login with --machine-pass without kerberos\(chgdcpass:local\)
 ^samba4.blackbox.smbclient\(chgdcpass:local\).Test login with --machine-pass and kerberos\(chgdcpass:local\)
+^samba3.blackbox.smbclient_basic.NT1.smbclient as NT4SCHANNEL.*\(nt4_dc_schannel\)

@@ -6,4 +6,3 @@
 # a) remove the failing test
 # b) port the failing test to SMB2
 # c) fix the test
-^samba3.blackbox.smbclient_basic.NT1\(nt4_dc_schannel\)
