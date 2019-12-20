@@ -6190,6 +6190,45 @@ static bool test_DeletePerMachineConnection(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_EnumPerMachineConnections(struct torture_context *tctx,
+					   struct dcerpc_binding_handle *b,
+					   const char *servername)
+{
+	struct spoolss_EnumPerMachineConnections r;
+	DATA_BLOB blob = data_blob_null;
+	DATA_BLOB info = data_blob_null;
+	uint32_t needed;
+	uint32_t count;
+
+	r.in.server = servername;
+	r.in.buffer = &blob;
+	r.in.offered = 0;
+
+	r.out.info = &info;
+	r.out.needed = &needed;
+	r.out.count = &count;
+
+	torture_comment(tctx, "Testing EnumPerMachineConnections(%s)\n",
+		servername);
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_spoolss_EnumPerMachineConnections_r(b, tctx, &r),
+		"spoolss_EnumPerMachineConnections failed");
+	if (W_ERROR_EQUAL(r.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		blob = data_blob_talloc_zero(tctx, needed);
+		r.in.buffer = &blob;
+		r.in.offered = needed;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_spoolss_EnumPerMachineConnections_r(b, tctx, &r),
+			"spoolss_EnumPerMachineConnections failed");
+	}
+	torture_assert_werr_ok(tctx, r.out.result,
+		"spoolss_EnumPerMachineConnections failed");
+
+	return true;
+}
+
 static bool test_addpermachineconnection(struct torture_context *tctx,
 					 void *private_data)
 {
@@ -6270,11 +6309,19 @@ static bool test_addpermachineconnection(struct torture_context *tctx,
 						     tests[i].expected_add_result),
 			"add per machine connection failed");
 		torture_assert(tctx,
+			test_EnumPerMachineConnections(tctx, b,
+						       tests[i].servername),
+			"enum per machine connections failed");
+		torture_assert(tctx,
 			test_DeletePerMachineConnection(tctx, b,
 							tests[i].servername,
 							tests[i].printername,
 							tests[i].expected_del_result),
 			"delete per machine connection failed");
+		torture_assert(tctx,
+			test_EnumPerMachineConnections(tctx, b,
+						       tests[i].servername),
+			"enum per machine connections failed");
 	}
 
 	return true;
