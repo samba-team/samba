@@ -419,6 +419,8 @@ static NTSTATUS g_lock_trylock(
 			return NT_STATUS_LOCK_NOT_GRANTED;
 		}
 
+		talloc_set_destructor(req_state, NULL);
+
 		/*
 		 * Retry after a conflicting lock was released
 		 */
