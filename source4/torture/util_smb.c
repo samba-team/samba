@@ -33,6 +33,7 @@
 #include "libcli/resolve/resolve.h"
 #include "param/param.h"
 #include "libcli/security/security.h"
+#include "libcli/smb2/smb2.h"
 #include "libcli/util/clilsa.h"
 #include "torture/util.h"
 #include "libcli/smb/smbXcli_base.h"

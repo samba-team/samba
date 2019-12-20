@@ -24,6 +24,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/libcli.h"
 #include "librpc/gen_ndr/lsa.h"
+#include "libcli/smb2/smb2.h"
 #include "libcli/util/clilsa.h"
 #include "libcli/security/security.h"
 #include "torture/util.h"

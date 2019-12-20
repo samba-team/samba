@@ -102,11 +102,22 @@ struct smb2_transport {
 
 
 /*
+  SMB2 LSA state
+*/
+struct smb2lsa_state {
+	struct dcerpc_binding_handle *binding_handle;
+	struct smb2_tree *ipc_tree;
+	struct policy_handle handle;
+};
+
+
+/*
   SMB2 tree context
 */
 struct smb2_tree {
 	struct smb2_session *session;
 	struct smbXcli_tcon *smbXcli;
+	struct smb2lsa_state *lsa;
 };
 
 /*

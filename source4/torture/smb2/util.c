@@ -34,6 +34,9 @@
 #include "torture/torture.h"
 #include "torture/smb2/proto.h"
 #include "source4/torture/util.h"
+#include "libcli/security/dom_sid.h"
+#include "librpc/gen_ndr/lsa.h"
+#include "libcli/util/clilsa.h"
 
 
 /*
@@ -979,3 +982,45 @@ void smb2_oplock_create(struct smb2_create *io, const char *name, uint8_t oplock
 				 oplock);
 }
 
+/*
+   a wrapper around smblsa_sid_check_privilege, that tries to take
+   account of the fact that the lsa privileges calls don't expand
+   group memberships, using an explicit check for administrator. There
+   must be a better way ...
+ */
+NTSTATUS torture_smb2_check_privilege(struct smb2_tree *tree,
+				     const char *sid_str,
+				     const char *privilege)
+{
+	struct dom_sid *sid = NULL;
+	TALLOC_CTX *tmp_ctx = NULL;
+	uint32_t rid;
+	NTSTATUS status;
+
+	tmp_ctx = talloc_new(tree);
+	if (tmp_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	sid = dom_sid_parse_talloc(tmp_ctx, sid_str);
+	if (sid == NULL) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_INVALID_SID;
+	}
+
+	status = dom_sid_split_rid(tmp_ctx, sid, NULL, &rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(tmp_ctx);
+		return status;
+	}
+
+	if (rid == DOMAIN_RID_ADMINISTRATOR) {
+		/* assume the administrator has them all */
+		TALLOC_FREE(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	talloc_free(tmp_ctx);
+
+	return smb2lsa_sid_check_privilege(tree, sid_str, privilege);
+}
