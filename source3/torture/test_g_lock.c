@@ -455,6 +455,7 @@ bool run_g_lock4(int dummy)
 	struct messaging_context *msg = NULL;
 	struct g_lock_ctx *ctx = NULL;
 	const char *lockname = "lock4";
+	TDB_DATA key = string_term_tdb_data(lockname);
 	pid_t child;
 	int ready_pipe[2];
 	int exit_pipe[2];
@@ -501,24 +502,23 @@ bool run_g_lock4(int dummy)
 		return false;
 	}
 
-	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_WRITE,
-			     (struct timeval) { .tv_usec = 1 });
+	status = g_lock_lock(
+		ctx, key, G_LOCK_WRITE, (struct timeval) { .tv_usec = 1 });
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		fprintf(stderr, "g_lock_lock returned %s\n",
 			nt_errstr(status));
 		goto fail;
 	}
 
-	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_READ,
-			     (struct timeval) { .tv_usec = 1 });
+	status = g_lock_lock(
+		ctx, key, G_LOCK_READ, (struct timeval) { .tv_usec = 1 });
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		fprintf(stderr, "g_lock_lock returned %s\n",
 			nt_errstr(status));
 		goto fail;
 	}
 
-	req = g_lock_lock_send(ev, ev, ctx, string_term_tdb_data(lockname),
-			       G_LOCK_WRITE);
+	req = g_lock_lock_send(ev, ev, ctx, key, G_LOCK_WRITE);
 	if (req == NULL) {
 		fprintf(stderr, "g_lock_lock send failed\n");
 		goto fail;
@@ -547,8 +547,7 @@ bool run_g_lock4(int dummy)
 			.me = messaging_server_id(msg)
 		};
 
-		status = g_lock_dump(ctx, string_term_tdb_data(lockname),
-				     lock4_check, &state);
+		status = g_lock_dump(ctx, key, lock4_check, &state);
 		if (!NT_STATUS_IS_OK(status)) {
 			fprintf(stderr, "g_lock_dump failed: %s\n",
 				nt_errstr(status));
