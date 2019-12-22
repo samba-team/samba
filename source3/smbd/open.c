@@ -2673,7 +2673,6 @@ static void defer_open_done(struct tevent_req *req);
 static void defer_open(struct share_mode_lock *lck,
 		       struct timeval timeout,
 		       struct smb_request *req,
-		       bool delayed_for_oplocks,
 		       struct file_id id)
 {
 	struct deferred_open_record *open_rec = NULL;
@@ -2687,11 +2686,10 @@ static void defer_open(struct share_mode_lock *lck,
 	abs_timeout = timeval_sum(&req->request_time, &timeout);
 
 	DBG_DEBUG("request time [%s] timeout [%s] mid [%" PRIu64 "] "
-		  "delayed_for_oplocks [%s] file_id [%s]\n",
+		  "file_id [%s]\n",
 		  timeval_str_buf(&req->request_time, false, true, &tvbuf1),
 		  timeval_str_buf(&abs_timeout, false, true, &tvbuf2),
 		  req->mid,
-		  delayed_for_oplocks ? "yes" : "no",
 		  file_id_str_buf(id, &fbuf));
 
 	open_rec = talloc_zero(NULL, struct deferred_open_record);
@@ -2980,7 +2978,7 @@ static void schedule_defer_open(struct share_mode_lock *lck,
 		return;
 	}
 
-	defer_open(lck, timeout, req, true, id);
+	defer_open(lck, timeout, req, id);
 }
 
 /****************************************************************************
