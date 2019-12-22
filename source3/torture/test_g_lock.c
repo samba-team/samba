@@ -333,7 +333,9 @@ fail:
 }
 
 static bool lock4_child(const char *lockname,
-			int ready_pipe, int exit_pipe)
+			enum g_lock_type lock_type,
+			int ready_pipe,
+			int exit_pipe)
 {
 	struct tevent_context *ev = NULL;
 	struct messaging_context *msg = NULL;
@@ -347,8 +349,11 @@ static bool lock4_child(const char *lockname,
 		return false;
 	}
 
-	status = g_lock_lock(ctx, string_term_tdb_data(lockname), G_LOCK_WRITE,
-			     (struct timeval) { .tv_sec = 1 });
+	status = g_lock_lock(
+		ctx,
+		string_term_tdb_data(lockname),
+		lock_type,
+		(struct timeval) { .tv_sec = 1 });
 	if (!NT_STATUS_IS_OK(status)) {
 		fprintf(stderr, "child: g_lock_lock returned %s\n",
 			nt_errstr(status));
@@ -485,7 +490,8 @@ bool run_g_lock4(int dummy)
 	if (child == 0) {
 		close(ready_pipe[0]);
 		close(exit_pipe[1]);
-		ok = lock4_child(lockname, ready_pipe[1], exit_pipe[0]);
+		ok = lock4_child(
+			lockname, G_LOCK_WRITE, ready_pipe[1], exit_pipe[0]);
 		exit(ok ? 0 : 1);
 	}
 
