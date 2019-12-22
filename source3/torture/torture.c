@@ -14812,6 +14812,10 @@ static struct {
 		.fn    = run_g_lock4,
 	},
 	{
+		.name  = "LOCAL-G-LOCK4A",
+		.fn    = run_g_lock4a,
+	},
+	{
 		.name  = "LOCAL-G-LOCK5",
 		.fn    = run_g_lock5,
 	},

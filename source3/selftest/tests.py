@@ -220,6 +220,7 @@ local_tests = [
     "LOCAL-G-LOCK2",
     "LOCAL-G-LOCK3",
     "LOCAL-G-LOCK4",
+    "LOCAL-G-LOCK4A",
     "LOCAL-G-LOCK5",
     "LOCAL-G-LOCK6",
     "LOCAL-G-LOCK7",

@@ -451,7 +451,7 @@ static void lock4_check(struct server_id exclusive,
 }
 
 /*
- * Test a lock conflict
+ * Test a lock conflict: Contend with a WRITE lock
  */
 
 bool run_g_lock4(int dummy)
@@ -520,6 +520,137 @@ bool run_g_lock4(int dummy)
 		ctx, key, G_LOCK_READ, (struct timeval) { .tv_usec = 1 });
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
 		fprintf(stderr, "g_lock_lock returned %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	req = g_lock_lock_send(ev, ev, ctx, key, G_LOCK_WRITE);
+	if (req == NULL) {
+		fprintf(stderr, "g_lock_lock send failed\n");
+		goto fail;
+	}
+	tevent_req_set_callback(req, lock4_done, &done);
+
+	req = tevent_wakeup_send(ev, ev, timeval_current_ofs(1, 0));
+	if (req == NULL) {
+		fprintf(stderr, "tevent_wakeup_send failed\n");
+		goto fail;
+	}
+	tevent_req_set_callback(req, lock4_waited, &exit_pipe[1]);
+
+	done = 0;
+
+	while (done == 0) {
+		int tevent_ret = tevent_loop_once(ev);
+		if (tevent_ret != 0) {
+			perror("tevent_loop_once failed");
+			goto fail;
+		}
+	}
+
+	{
+		struct lock4_check_state state = {
+			.me = messaging_server_id(msg)
+		};
+
+		status = g_lock_dump(ctx, key, lock4_check, &state);
+		if (!NT_STATUS_IS_OK(status)) {
+			fprintf(stderr, "g_lock_dump failed: %s\n",
+				nt_errstr(status));
+			goto fail;
+		}
+		if (!state.ok) {
+			fprintf(stderr, "lock4_check failed\n");
+			goto fail;
+		}
+	}
+
+	ret = true;
+fail:
+	TALLOC_FREE(ctx);
+	TALLOC_FREE(msg);
+	TALLOC_FREE(ev);
+	return ret;
+}
+
+/*
+ * Test a lock conflict: Contend with a READ lock
+ */
+
+bool run_g_lock4a(int dummy)
+{
+	struct tevent_context *ev = NULL;
+	struct messaging_context *msg = NULL;
+	struct g_lock_ctx *ctx = NULL;
+	const char *lockname = "lock4a";
+	TDB_DATA key = string_term_tdb_data(lockname);
+	pid_t child;
+	int ready_pipe[2];
+	int exit_pipe[2];
+	NTSTATUS status;
+	bool ret = false;
+	struct tevent_req *req;
+	bool ok;
+	int done;
+
+	if ((pipe(ready_pipe) != 0) || (pipe(exit_pipe) != 0)) {
+		perror("pipe failed");
+		return false;
+	}
+
+	child = fork();
+
+	ok = get_g_lock_ctx(talloc_tos(), &ev, &msg, &ctx);
+	if (!ok) {
+		goto fail;
+	}
+
+	if (child == -1) {
+		perror("fork failed");
+		return false;
+	}
+
+	if (child == 0) {
+		close(ready_pipe[0]);
+		close(exit_pipe[1]);
+		ok = lock4_child(
+			lockname, G_LOCK_READ, ready_pipe[1], exit_pipe[0]);
+		exit(ok ? 0 : 1);
+	}
+
+	close(ready_pipe[1]);
+	close(exit_pipe[0]);
+
+	if (sys_read(ready_pipe[0], &ok, sizeof(ok)) != sizeof(ok)) {
+		perror("read failed");
+		return false;
+	}
+
+	if (!ok) {
+		fprintf(stderr, "child returned error\n");
+		return false;
+	}
+
+	status = g_lock_lock(
+		ctx, key, G_LOCK_WRITE, (struct timeval) { .tv_usec = 1 });
+	if (!NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		fprintf(stderr, "g_lock_lock returned %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	status = g_lock_lock(
+		ctx, key, G_LOCK_READ, (struct timeval) { .tv_usec = 1 });
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr, "g_lock_lock returned %s\n",
+			nt_errstr(status));
+		goto fail;
+	}
+
+	status = g_lock_unlock(ctx, key);
+	if (!NT_STATUS_IS_OK(status)) {
+		fprintf(stderr,
+			"g_lock_unlock returned %s\n",
 			nt_errstr(status));
 		goto fail;
 	}
