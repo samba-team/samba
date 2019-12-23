@@ -4045,6 +4045,55 @@ static WERROR cmd_spoolss_enum_permachineconnections(struct rpc_pipe_client *cli
 	return result;
 }
 
+static WERROR cmd_spoolss_add_permachineconnection(struct rpc_pipe_client *cli,
+						   TALLOC_CTX *mem_ctx, int argc,
+						   const char **argv)
+{
+	NTSTATUS status;
+	WERROR result;
+	struct dcerpc_binding_handle *b = cli->binding_handle;
+	const char *servername = cli->srv_name_slash;
+	const char *printername = "Microsoft Print to PDF";
+	const char *printserver = "samba.org";
+	const char *provider = ""; /* refers to Win32spl.dll then */
+	const char *composed_printername;
+
+	if (argc > 5) {
+		printf("usage: %s [servername] [printername] [printserver] [provider]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc > 1) {
+		servername = argv[1];
+	}
+	if (argc > 2) {
+		printername = argv[2];
+	}
+	if (argc > 3) {
+		printserver = argv[3];
+	}
+	if (argc > 4) {
+		provider = argv[4];
+	}
+
+	composed_printername = talloc_asprintf(mem_ctx, "%s\\%s", servername,
+			printername);
+	if (composed_printername == NULL) {
+		return WERR_NOT_ENOUGH_MEMORY;
+	}
+	status = dcerpc_spoolss_AddPerMachineConnection(b, mem_ctx,
+							servername,
+							composed_printername,
+							printserver,
+							provider,
+							&result);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	return result;
+}
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -4451,6 +4500,16 @@ struct cmd_set spoolss_commands[] = {
 		.table              = &ndr_table_spoolss,
 		.rpc_pipe           = NULL,
 		.description        = "Enumerate Per Machine Connections",
+		.usage              = "",
+	},
+	{
+		.name               = "addpermachineconnection",
+		.returntype         = RPC_RTYPE_WERROR,
+		.ntfn               = NULL,
+		.wfn                = cmd_spoolss_add_permachineconnection,
+		.table              = &ndr_table_spoolss,
+		.rpc_pipe           = NULL,
+		.description        = "Add Per Machine Connection",
 		.usage              = "",
 	},
 	{
