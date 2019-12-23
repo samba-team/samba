@@ -6196,7 +6196,7 @@ static bool test_EnumPerMachineConnections(struct torture_context *tctx,
 {
 	struct spoolss_EnumPerMachineConnections r;
 	DATA_BLOB blob = data_blob_null;
-	DATA_BLOB info = data_blob_null;
+	struct spoolss_PrinterInfo4 *info;
 	uint32_t needed;
 	uint32_t count;
 

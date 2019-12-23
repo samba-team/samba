@@ -4003,7 +4003,7 @@ static WERROR cmd_spoolss_enum_permachineconnections(struct rpc_pipe_client *cli
 	struct dcerpc_binding_handle *b = cli->binding_handle;
 	const char *servername = cli->srv_name_slash;
 	DATA_BLOB in = data_blob_null;
-	DATA_BLOB out = data_blob_null;
+	struct spoolss_PrinterInfo4 *info;
 	uint32_t needed, count;
 
 	if (argc > 2) {
@@ -4019,9 +4019,9 @@ static WERROR cmd_spoolss_enum_permachineconnections(struct rpc_pipe_client *cli
 							  servername,
 							  &in,
 							  in.length,
-							  &out,
-							  &needed,
 							  &count,
+							  &info,
+							  &needed,
 							  &result);
 	if (!NT_STATUS_IS_OK(status)) {
 		return ntstatus_to_werror(status);
@@ -4030,13 +4030,13 @@ static WERROR cmd_spoolss_enum_permachineconnections(struct rpc_pipe_client *cli
 	if (W_ERROR_EQUAL(result, WERR_INSUFFICIENT_BUFFER)) {
 		in = data_blob_talloc_zero(mem_ctx, needed);
 		status = dcerpc_spoolss_EnumPerMachineConnections(b, mem_ctx,
-							  servername,
-							  &in,
-							  in.length,
-							  &out,
-							  &needed,
-							  &count,
-							  &result);
+								  servername,
+								  &in,
+								  in.length,
+								  &count,
+								  &info,
+								  &needed,
+								  &result);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ntstatus_to_werror(status);
 		}

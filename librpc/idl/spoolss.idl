@@ -3066,13 +3066,25 @@ cpp_quote("#define spoolss_security_descriptor security_descriptor")
 
 	/******************/
 	/* Function: 0x57 */
-	WERROR spoolss_EnumPerMachineConnections(
+	[public,noopnum,noprint] WERROR _spoolss_EnumPerMachineConnections(
 		[in,unique] [string,charset(UTF16)] uint16 *server,
 		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
 		[out,unique] DATA_BLOB *info,
 		[out,ref] uint32 *needed,
 		[out,ref] uint32 *count
+	);
+	[public,noopnum,noprint] void __spoolss_EnumPerMachineConnections(
+		[in] uint32 count,
+		[out] spoolss_PrinterInfo4 info[count]
+	);
+	[nopull,nopush] WERROR spoolss_EnumPerMachineConnections(
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in,unique] DATA_BLOB *buffer,
+		[in] uint32 offered,
+		[out,ref] uint32 *count,
+		[out,ref,size_is(,*count)] spoolss_PrinterInfo4 **info,
+		[out,ref] uint32 *needed
 	);
 
 	/******************/

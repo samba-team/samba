@@ -567,6 +567,34 @@ uint32_t ndr_size_spoolss_EnumPrintProcessorDataTypes_info(TALLOC_CTX *mem_ctx,
 }
 
 /*
+  spoolss_EnumPerMachineConnections
+*/
+enum ndr_err_code ndr_push_spoolss_EnumPerMachineConnections(struct ndr_push *ndr, int flags, const struct spoolss_EnumPerMachineConnections *r)
+{
+	NDR_SPOOLSS_PUSH_ENUM(spoolss_EnumPerMachineConnections,{
+		_r.in.server	= r->in.server;
+	},{
+		_r.in.server	= r->in.server;
+	});
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_spoolss_EnumPerMachineConnections(struct ndr_pull *ndr, int flags, struct spoolss_EnumPerMachineConnections *r)
+{
+	NDR_SPOOLSS_PULL_ENUM(spoolss_EnumPerMachineConnections,{
+		r->in.server	= _r.in.server;
+	},{
+		_r.in.server	= r->in.server;
+	});
+	return NDR_ERR_SUCCESS;
+}
+
+uint32_t ndr_size_spoolss_EnumPerMachineConnections_info(TALLOC_CTX *mem_ctx, uint32_t count, struct spoolss_PrinterInfo4 *info)
+{
+	NDR_SPOOLSS_SIZE_ENUM(spoolss_EnumPerMachineConnections);
+}
+
+/*
   spoolss_EnumPrinterDataEx
 */
 
