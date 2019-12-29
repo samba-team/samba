@@ -355,7 +355,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 		if (!session_claim(session)) {
 			DEBUG(1, ("smb1: Failed to claim session for vuid=%llu\n",
-				  (unsigned long long)session->compat->vuid));
+				  (unsigned long long)session->global->session_wire_id));
 			data_blob_free(&out_blob);
 			TALLOC_FREE(session);
 			reply_nterror(req, NT_STATUS_LOGON_FAILURE);
@@ -365,7 +365,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		status = smbXsrv_session_update(session);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("smb1: Failed to update session for vuid=%llu - %s\n",
-				  (unsigned long long)session->compat->vuid,
+				  (unsigned long long)session->global->session_wire_id,
 				  nt_errstr(status)));
 			data_blob_free(&out_blob);
 			TALLOC_FREE(session);
@@ -444,7 +444,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		status = smbXsrv_session_update(session);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("smb1: Failed to update session for vuid=%llu - %s\n",
-				  (unsigned long long)session->compat->vuid,
+				  (unsigned long long)session->global->session_wire_id,
 				  nt_errstr(status)));
 			data_blob_free(&out_blob);
 			TALLOC_FREE(session);
@@ -452,7 +452,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			return;
 		}
 
-		conn_clear_vuid_caches(sconn, session->compat->vuid);
+		conn_clear_vuid_caches(sconn, session->global->session_wire_id);
 
 		/* current_user_info is changed on new vuid */
 		reload_services(sconn, conn_snum_used, true);
@@ -1110,7 +1110,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	nt_status = smbXsrv_session_update(session);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("smb1: Failed to update session for vuid=%llu - %s\n",
-			  (unsigned long long)session->compat->vuid,
+			  (unsigned long long)session->global->session_wire_id,
 			  nt_errstr(nt_status)));
 		TALLOC_FREE(session);
 		reply_nterror(req, nt_status_squash(nt_status));
@@ -1120,7 +1120,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	if (!session_claim(session)) {
 		DEBUG(1, ("smb1: Failed to claim session for vuid=%llu\n",
-			  (unsigned long long)session->compat->vuid));
+			  (unsigned long long)session->global->session_wire_id));
 		TALLOC_FREE(session);
 		reply_nterror(req, NT_STATUS_LOGON_FAILURE);
 		END_PROFILE(SMBsesssetupX);

@@ -1669,7 +1669,7 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 		 * smbXsrv_tcon_disconnect() -> close_cnum() ->
 		 * file_close_conn().
 		 */
-		file_close_user(sconn, session->compat->vuid);
+		file_close_user(sconn, session->global->session_wire_id);
 	}
 
 	if (session->tcon_table != NULL) {
@@ -1687,7 +1687,7 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 	}
 
 	if (session->compat) {
-		invalidate_vuid(sconn, session->compat->vuid);
+		invalidate_vuid(sconn, session->global->session_wire_id);
 		session->compat = NULL;
 	}
 

@@ -615,7 +615,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 		goto err_root_exit;
 	}
 
-	conn->vuid = vuser->vuid;
+	conn->vuid = session->global->session_wire_id;
 
 	{
 		char *s = talloc_sub_full(talloc_tos(),

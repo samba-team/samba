@@ -43,7 +43,7 @@ static struct user_struct *get_valid_user_struct_internal(
 
 	usp=sconn->users;
 	for (;usp;usp=usp->next,count++) {
-		if (vuid == usp->vuid) {
+		if (vuid == usp->session->global->session_wire_id) {
 			switch (server_allocated) {
 				case SERVER_ALLOCATED_REQUIRED_YES:
 					if (usp->session_info == NULL) {

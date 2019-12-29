@@ -1168,13 +1168,7 @@ NTSTATUS smb2srv_tcon_lookup(struct smbXsrv_session *session,
 
 NTSTATUS smb2srv_tcon_disconnect_all(struct smbXsrv_session *session)
 {
-	uint64_t vuid;
-
-	if (session->compat) {
-		vuid = session->compat->vuid;
-	} else {
-		vuid = 0;
-	}
+	uint64_t vuid = session->global->session_wire_id;
 
 	return smbXsrv_tcon_disconnect_all(session->tcon_table, vuid);
 }

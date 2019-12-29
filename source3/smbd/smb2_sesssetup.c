@@ -563,7 +563,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	if (!session_claim(session)) {
 		DEBUG(1, ("smb2: Failed to claim session "
 			"for vuid=%llu\n",
-			(unsigned long long)session->compat->vuid));
+			(unsigned long long)session->global->session_wire_id));
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -571,7 +571,7 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	status = smbXsrv_session_update(session);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smb2: Failed to update session for vuid=%llu - %s\n",
-			  (unsigned long long)session->compat->vuid,
+			  (unsigned long long)session->global->session_wire_id,
 			  nt_errstr(status)));
 		return NT_STATUS_LOGON_FAILURE;
 	}
@@ -650,12 +650,13 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	status = smbXsrv_session_update(session);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smb2: Failed to update session for vuid=%llu - %s\n",
-			  (unsigned long long)session->compat->vuid,
+			  (unsigned long long)session->global->session_wire_id,
 			  nt_errstr(status)));
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	conn_clear_vuid_caches(xconn->client->sconn, session->compat->vuid);
+	conn_clear_vuid_caches(xconn->client->sconn,
+			       session->global->session_wire_id);
 
 	*out_session_id = session->global->session_wire_id;
 
@@ -790,7 +791,7 @@ static NTSTATUS smbd_smb2_bind_auth_return(struct smbXsrv_session *session,
 	status = smbXsrv_session_update(session);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("smb2: Failed to update session for vuid=%llu - %s\n",
-			  (unsigned long long)session->compat->vuid,
+			  (unsigned long long)session->global->session_wire_id,
 			  nt_errstr(status)));
 		return NT_STATUS_LOGON_FAILURE;
 	}
