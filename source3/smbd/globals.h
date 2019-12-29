@@ -836,7 +836,6 @@ struct pending_auth_data;
 
 struct user_struct {
 	struct user_struct *next, *prev;
-	uint64_t vuid; /* Tag for this entry. */
 
 	struct auth_session_info *session_info;
 

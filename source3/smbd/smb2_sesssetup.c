@@ -531,7 +531,6 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 	}
 	session->compat->session = session;
 	session->compat->session_info = session_info;
-	session->compat->vuid = session->global->session_wire_id;
 	DLIST_ADD(smb2req->sconn->users, session->compat);
 	smb2req->sconn->num_users++;
 
@@ -616,7 +615,6 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	talloc_keep_secret(session_info->session_key.data);
 
 	session->compat->session_info = session_info;
-	session->compat->vuid = session->global->session_wire_id;
 
 	session->homes_snum =
 			register_homes_share(session_info->unix_info->unix_name);

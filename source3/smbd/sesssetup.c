@@ -311,7 +311,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		}
 		session->compat->session = session;
 		session->compat->session_info = session_info;
-		session->compat->vuid = session->global->session_wire_id;
 		DLIST_ADD(sconn->users, session->compat);
 		sconn->num_users++;
 
@@ -414,8 +413,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		TALLOC_FREE(session->global->auth_session_info);
 
 		session->compat->session_info = session_info;
-
-		session->compat->vuid = session->global->session_wire_id;
 
 		if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
 			session->homes_snum =
@@ -1071,7 +1068,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 	}
 	session->compat->session = session;
 	session->compat->session_info = session_info;
-	session->compat->vuid = session->global->session_wire_id;
 	DLIST_ADD(sconn->users, session->compat);
 	sconn->num_users++;
 
