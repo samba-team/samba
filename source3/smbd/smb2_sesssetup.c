@@ -530,14 +530,13 @@ static NTSTATUS smbd_smb2_auth_generic_return(struct smbXsrv_session *session,
 		return NT_STATUS_NO_MEMORY;
 	}
 	session->compat->session = session;
-	session->compat->homes_snum = -1;
 	session->compat->session_info = session_info;
 	session->compat->vuid = session->global->session_wire_id;
 	DLIST_ADD(smb2req->sconn->users, session->compat);
 	smb2req->sconn->num_users++;
 
 	if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
-		session->compat->homes_snum =
+		session->homes_snum =
 			register_homes_share(session_info->unix_info->unix_name);
 	}
 
@@ -619,7 +618,7 @@ static NTSTATUS smbd_smb2_reauth_generic_return(struct smbXsrv_session *session,
 	session->compat->session_info = session_info;
 	session->compat->vuid = session->global->session_wire_id;
 
-	session->compat->homes_snum =
+	session->homes_snum =
 			register_homes_share(session_info->unix_info->unix_name);
 
 	set_current_user_info(session_info->unix_info->sanitized_username,

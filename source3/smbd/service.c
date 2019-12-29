@@ -1029,6 +1029,7 @@ connection_struct *make_connection(struct smb_request *req,
 				   NTSTATUS *status)
 {
 	struct smbd_server_connection *sconn = req->sconn;
+	struct smbXsrv_session *session = req->session;
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	uid_t euid;
@@ -1064,13 +1065,10 @@ connection_struct *make_connection(struct smb_request *req,
 	   without too many getpwnam() lookups.  This is particulary nasty for
 	   winbind usernames, where the share name isn't the same as unix
 	   username.
-
-	   The snum of the homes share is stored on the vuser at session setup
-	   time.
 	*/
 
 	if (strequal(service_in,HOMES_NAME)) {
-		if (vuser->homes_snum == -1) {
+		if (session->homes_snum == -1) {
 			DEBUG(2, ("[homes] share not available for "
 				  "this user because it was not found "
 				  "or created at session setup "
@@ -1081,16 +1079,16 @@ connection_struct *make_connection(struct smb_request *req,
 		DEBUG(5, ("making a connection to [homes] service "
 			  "created at session setup time\n"));
 		return make_connection_smb1(req, now,
-					    vuser->homes_snum,
+					    session->homes_snum,
 					    vuser,
 					    dev, status);
-	} else if ((vuser->homes_snum != -1)
+	} else if ((session->homes_snum != -1)
 		   && strequal(service_in,
-			       lp_const_servicename(vuser->homes_snum))) {
+			       lp_const_servicename(session->homes_snum))) {
 		DEBUG(5, ("making a connection to 'homes' service [%s] "
 			  "created at session setup time\n", service_in));
 		return make_connection_smb1(req, now,
-					    vuser->homes_snum,
+					    session->homes_snum,
 					    vuser,
 					    dev, status);
 	}

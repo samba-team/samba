@@ -1234,6 +1234,7 @@ NTSTATUS smbXsrv_session_create(struct smbXsrv_connection *conn,
 	session->idle_time = now;
 	session->status = NT_STATUS_MORE_PROCESSING_REQUIRED;
 	session->client = conn->client;
+	session->homes_snum = -1;
 
 	status = smbXsrv_session_global_allocate(table->global.db_ctx,
 						 session,

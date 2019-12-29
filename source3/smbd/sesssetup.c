@@ -310,7 +310,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			return;
 		}
 		session->compat->session = session;
-		session->compat->homes_snum = -1;
 		session->compat->session_info = session_info;
 		session->compat->vuid = session->global->session_wire_id;
 		DLIST_ADD(sconn->users, session->compat);
@@ -318,7 +317,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 		if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
 			is_authenticated = true;
-			session->compat->homes_snum =
+			session->homes_snum =
 				register_homes_share(session_info->unix_info->unix_name);
 		}
 
@@ -419,7 +418,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 		session->compat->vuid = session->global->session_wire_id;
 
 		if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
-			session->compat->homes_snum =
+			session->homes_snum =
 				register_homes_share(session_info->unix_info->unix_name);
 		}
 
@@ -1071,7 +1070,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		return;
 	}
 	session->compat->session = session;
-	session->compat->homes_snum = -1;
 	session->compat->session_info = session_info;
 	session->compat->vuid = session->global->session_wire_id;
 	DLIST_ADD(sconn->users, session->compat);
@@ -1079,7 +1077,7 @@ void reply_sesssetup_and_X(struct smb_request *req)
 
 	if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
 		is_authenticated = true;
-		session->compat->homes_snum =
+		session->homes_snum =
 			register_homes_share(session_info->unix_info->unix_name);
 	}
 

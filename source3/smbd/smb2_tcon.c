@@ -194,6 +194,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	struct smbXsrv_connection *conn = req->xconn;
+	struct smbXsrv_session *session = req->session;
 	const char *share = in_path;
 	char *service = NULL;
 	int snum = -1;
@@ -250,7 +251,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 
 	/* TODO: do more things... */
 	if (strequal(service,HOMES_NAME)) {
-		if (compat_vuser->homes_snum == -1) {
+		if (session->homes_snum == -1) {
 			DEBUG(2, ("[homes] share not available for "
 				"user %s because it was not found "
 				"or created at session setup "
@@ -258,11 +259,11 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				compat_vuser->session_info->unix_info->unix_name));
 			return NT_STATUS_BAD_NETWORK_NAME;
 		}
-		snum = compat_vuser->homes_snum;
-	} else if ((compat_vuser->homes_snum != -1)
+		snum = session->homes_snum;
+	} else if ((session->homes_snum != -1)
                    && strequal(service,
-			lp_servicename(talloc_tos(), lp_sub, compat_vuser->homes_snum))) {
-		snum = compat_vuser->homes_snum;
+			lp_servicename(talloc_tos(), lp_sub, session->homes_snum))) {
+		snum = session->homes_snum;
 	} else {
 		snum = find_service(talloc_tos(), service, &service);
 		if (!service) {
