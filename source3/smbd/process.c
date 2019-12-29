@@ -1701,6 +1701,8 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 		bool update_session_global = false;
 		bool update_tcon_global = false;
 
+		req->session = session;
+
 		smb1srv_update_crypto_flags(session, req, type,
 					    &update_session_global,
 					    &update_tcon_global);

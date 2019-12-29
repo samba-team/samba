@@ -580,6 +580,13 @@ struct smb_request {
 	connection_struct *conn;
 	struct smbd_server_connection *sconn;
 	struct smbXsrv_connection *xconn;
+
+	/*
+	 * Pointer to session, can be NULL,
+	 * eg during negprot and session setup.
+	 */
+	struct smbXsrv_session *session;
+
 	struct smb_perfcount_data pcd;
 
 	/*
