@@ -255,8 +255,8 @@ pwdLastSet: 0
         filter = ""
 
         if 'user' in member_types:
-            filter += ('(&(sAMAccountName=%s)(objectclass=user))' %
-                       ldb.binary_encode(member))
+            filter += ('(&(sAMAccountName=%s)(samAccountType=%d))' %
+                       (ldb.binary_encode(member), dsdb.ATYPE_NORMAL_ACCOUNT))
         if 'group' in member_types:
             filter += ('(&(sAMAccountName=%s)(objectclass=group))' %
                        ldb.binary_encode(member))
