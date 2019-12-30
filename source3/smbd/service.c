@@ -530,7 +530,7 @@ static NTSTATUS notify_init_sconn(struct smbd_server_connection *sconn)
 
 static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 					connection_struct *conn,
-					int snum, struct user_struct *vuser,
+					int snum,
 					struct smbXsrv_session *session,
 					const char *pdev)
 {
@@ -952,7 +952,6 @@ static connection_struct *make_connection_smb1(struct smb_request *req,
 	*pstatus = make_connection_snum(req->xconn,
 					conn,
 					snum,
-					vuser,
 					req->session,
 					pdev);
 	if (!NT_STATUS_IS_OK(*pstatus)) {
@@ -1009,7 +1008,6 @@ connection_struct *make_connection_smb2(struct smbd_smb2_request *req,
 	*pstatus = make_connection_snum(req->xconn,
 					conn,
 					snum,
-					vuser,
 					req->session,
 					pdev);
 	if (!NT_STATUS_IS_OK(*pstatus)) {
