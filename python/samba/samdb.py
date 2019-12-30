@@ -254,6 +254,16 @@ pwdLastSet: 0
     def group_member_filter(self, member, member_types):
         filter = ""
 
+        all_member_types = [ 'user',
+                             'group',
+                             'computer',
+                             'serviceaccount',
+                             'contact',
+                           ]
+
+        if 'all' in member_types:
+            member_types = all_member_types
+
         if 'user' in member_types:
             filter += ('(&(sAMAccountName=%s)(samAccountType=%d))' %
                        (ldb.binary_encode(member), dsdb.ATYPE_NORMAL_ACCOUNT))
