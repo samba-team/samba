@@ -243,6 +243,10 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
                      "Default: user,group,computer"),
                default="user,group,computer",
                type=str),
+        Option("--member-base-dn",
+               help=("Base DN for group member search.\n"
+                     "Default is the domain DN."),
+               type=str),
     ]
 
     takes_args = ["groupname", "listofmembers?"]
@@ -254,6 +258,7 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
             sambaopts=None,
             versionopts=None,
             H=None,
+            member_base_dn=None,
             member_dn=None,
             object_types="user,group,computer"):
 
@@ -275,9 +280,13 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
                 groupmembers += listofmembers.split(',')
             group_member_types = object_types.split(',')
 
+            if member_base_dn is not None:
+                member_base_dn = samdb.normalize_dn_in_domain(member_base_dn)
+
             samdb.add_remove_group_members(groupname, groupmembers,
                                            add_members_operation=True,
-                                           member_types=group_member_types)
+                                           member_types=group_member_types,
+                                           member_base_dn=member_base_dn)
         except Exception as e:
             # FIXME: catch more specific exception
             raise CommandError('Failed to add members %r to group "%s"' % (
@@ -328,6 +337,10 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
                      "Default: user,group,computer"),
                default="user,group,computer",
                type=str),
+        Option("--member-base-dn",
+               help=("Base DN for group member search.\n"
+                     "Default is the domain DN."),
+               type=str),
     ]
 
     takes_args = ["groupname", "listofmembers?"]
@@ -339,6 +352,7 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
             sambaopts=None,
             versionopts=None,
             H=None,
+            member_base_dn=None,
             member_dn=None,
             object_types="user,group,computer"):
 
@@ -360,10 +374,14 @@ Example2 shows how to remove a single user account, User2, from the supergroup A
                 groupmembers += listofmembers.split(',')
             group_member_types = object_types.split(',')
 
+            if member_base_dn is not None:
+                member_base_dn = samdb.normalize_dn_in_domain(member_base_dn)
+
             samdb.add_remove_group_members(groupname,
                                            groupmembers,
                                            add_members_operation=False,
-                                           member_types=group_member_types)
+                                           member_types=group_member_types,
+                                           member_base_dn=member_base_dn)
         except Exception as e:
             # FIXME: Catch more specific exception
             raise CommandError('Failed to remove members %r from group "%s"' % (listofmembers, groupname), e)

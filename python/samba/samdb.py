@@ -306,7 +306,8 @@ pwdLastSet: 0
 
     def add_remove_group_members(self, groupname, members,
                                  add_members_operation=True,
-                                 member_types=[ 'user', 'group', 'computer' ]):
+                                 member_types=[ 'user', 'group', 'computer' ],
+                                 member_base_dn=None):
         """Adds or removes group members
 
         :param groupname: Name of the target group
@@ -335,6 +336,8 @@ changetype: modify
 
             for member in members:
                 targetmember_dn = None
+                if member_base_dn is None:
+                    member_base_dn = self.domain_dn()
 
                 try:
                     membersid = security.dom_sid(member)
@@ -355,7 +358,7 @@ changetype: modify
 
                 if targetmember_dn is None:
                     filter = self.group_member_filter(member, member_types)
-                    targetmember = self.search(base=self.domain_dn(),
+                    targetmember = self.search(base=member_base_dn,
                                                scope=ldb.SCOPE_SUBTREE,
                                                expression=filter,
                                                attrs=[])
