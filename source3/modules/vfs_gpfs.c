@@ -77,6 +77,20 @@ static inline gpfs_ace_v4_t *gpfs_ace_ptr(gpfs_acl_t *gacl, unsigned int i)
 	return &gacl->ace_v4[i];
 }
 
+static unsigned int vfs_gpfs_access_mask_to_allow(uint32_t access_mask)
+{
+	unsigned int allow = GPFS_SHARE_NONE;
+
+	if (access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) {
+		allow |= GPFS_SHARE_WRITE;
+	}
+	if (access_mask & (FILE_READ_DATA|FILE_EXECUTE)) {
+		allow |= GPFS_SHARE_READ;
+	}
+
+	return allow;
+}
+
 static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 			       uint32_t share_access)
 {
@@ -84,10 +98,7 @@ static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 	unsigned int deny = GPFS_DENY_NONE;
 	int result;
 
-	allow |= (access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) ?
-		GPFS_SHARE_WRITE : 0;
-	allow |= (access_mask & (FILE_READ_DATA|FILE_EXECUTE)) ?
-		GPFS_SHARE_READ : 0;
+	allow = vfs_gpfs_access_mask_to_allow(access_mask);
 
 	if (allow == GPFS_SHARE_NONE) {
 		DEBUG(10, ("special case am=no_access:%x\n",access_mask));
