@@ -288,7 +288,7 @@ pwdLastSet: 0
 
     def add_remove_group_members(self, groupname, members,
                                  add_members_operation=True,
-                                 member_types=[ 'user', 'group' ]):
+                                 member_types=[ 'user', 'group', 'computer' ]):
         """Adds or removes group members
 
         :param groupname: Name of the target group
