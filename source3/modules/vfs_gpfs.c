@@ -84,11 +84,6 @@ static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 	unsigned int deny = GPFS_DENY_NONE;
 	int result;
 
-	if ((fsp == NULL) || (fsp->fh == NULL) || (fsp->fh->fd < 0)) {
-		/* No real file, don't disturb */
-		return True;
-	}
-
 	allow |= (access_mask & (FILE_WRITE_DATA|FILE_APPEND_DATA)) ?
 		GPFS_SHARE_WRITE : 0;
 	allow |= (access_mask & (FILE_READ_DATA|FILE_EXECUTE)) ?
