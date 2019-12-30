@@ -264,6 +264,12 @@ pwdLastSet: 0
         if 'all' in member_types:
             member_types = all_member_types
 
+        for member_type in member_types:
+            if member_type not in all_member_types:
+                raise Exception('Invalid group member type "%s". '
+                                'Valid types are %s and all.' %
+                                (member_type, ", ".join(all_member_types)))
+
         if 'user' in member_types:
             filter += ('(&(sAMAccountName=%s)(samAccountType=%d))' %
                        (ldb.binary_encode(member), dsdb.ATYPE_NORMAL_ACCOUNT))
