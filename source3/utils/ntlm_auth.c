@@ -1197,7 +1197,7 @@ static NTSTATUS ntlm_auth_prepare_gensec_server(TALLOC_CTX *mem_ctx,
 	 */
 	server_credentials = cli_credentials_init_anon(tmp_ctx);
 	if (!server_credentials) {
-		DEBUG(0, ("auth_generic_prepare: Failed to init server credentials\n"));
+		DBG_ERR("Failed to init server credentials\n");
 		return NT_STATUS_NO_MEMORY;
 	}
 
