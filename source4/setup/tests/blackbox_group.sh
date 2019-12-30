@@ -222,6 +222,13 @@ testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG gdg
 # remove two members by DN with one call
 testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG udg --member-dn=CN=testuser,CN=Users,DC=foo,DC=example,DC=com --member-dn=CN=testuser1,CN=Users,DC=foo,DC=example,DC=com
 
+# test --member-base-dn option - expect failure here, due to invalid base
+testit_expect_failure "group addmembers with invalid search member base" $PYTHON $samba_tool group addmembers $CONFIG dsg testcontact --member-base-dn=OU=doesnotexist,DC=foo,DC=example,DC=com
+
+# test --member-base-dn option
+testit "group addmembers with member search base" $PYTHON $samba_tool group addmembers $CONFIG dsg testuser --member-base-dn=CN=Users,DC=foo,DC=example,DC=com
+testit "group removemembers with member search base" $PYTHON $samba_tool group removemembers $CONFIG dsg testuser --member-base-dn=CN=Users,DC=foo,DC=example,DC=com
+
 #test deletion of the groups
 testit "group delete" $PYTHON $samba_tool group delete $CONFIG dsg
 testit "group delete" $PYTHON $samba_tool group delete $CONFIG gsg
