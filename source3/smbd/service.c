@@ -558,7 +558,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	conn->params->service = snum;
 
 	status = create_connection_session_info(sconn,
-		conn, snum, vuser->session_info,
+		conn, snum, session->global->auth_session_info,
 		&conn->session_info);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -654,7 +654,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 	 */
 
 	status = check_user_share_access(conn,
-					vuser->session_info,
+					session->global->auth_session_info,
 					&conn->share_access,
 					&conn->read_only);
 	if (!NT_STATUS_IS_OK(status)) {
