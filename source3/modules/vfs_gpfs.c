@@ -91,6 +91,29 @@ static unsigned int vfs_gpfs_access_mask_to_allow(uint32_t access_mask)
 	return allow;
 }
 
+static unsigned int vfs_gpfs_share_access_to_deny(uint32_t share_access)
+{
+	unsigned int deny = GPFS_DENY_NONE;
+
+	if (!(share_access & FILE_SHARE_WRITE)) {
+		deny |= GPFS_DENY_WRITE;
+	}
+	if (!(share_access & FILE_SHARE_READ)) {
+		deny |= GPFS_DENY_READ;
+	}
+
+	/*
+	 * GPFS_DENY_DELETE can only be set together with either
+	 * GPFS_DENY_WRITE or GPFS_DENY_READ.
+	 */
+	if ((deny & (GPFS_DENY_WRITE|GPFS_DENY_READ)) &&
+	    !(share_access & FILE_SHARE_DELETE)) {
+		deny |= GPFS_DENY_DELETE;
+	}
+
+	return deny;
+}
+
 static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 			       uint32_t share_access)
 {
@@ -104,19 +127,7 @@ static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 		DEBUG(10, ("special case am=no_access:%x\n",access_mask));
 	}
 	else {
-		deny |= (share_access & FILE_SHARE_WRITE) ?
-			0 : GPFS_DENY_WRITE;
-		deny |= (share_access & (FILE_SHARE_READ)) ?
-			0 : GPFS_DENY_READ;
-
-		/*
-		 * GPFS_DENY_DELETE can only be set together with either
-		 * GPFS_DENY_WRITE or GPFS_DENY_READ.
-		 */
-		if (deny & (GPFS_DENY_WRITE|GPFS_DENY_READ)) {
-			deny |= (share_access & (FILE_SHARE_DELETE)) ?
-				0 : GPFS_DENY_DELETE;
-		}
+		deny = vfs_gpfs_share_access_to_deny(share_access);
 	}
 	DEBUG(10, ("am=%x, allow=%d, sa=%x, deny=%d\n",
 		   access_mask, allow, share_access, deny));
