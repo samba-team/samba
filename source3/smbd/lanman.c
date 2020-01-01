@@ -4415,15 +4415,23 @@ static bool api_WWkstaUserLogon(struct smbd_server_connection *sconn,
 	int uLevel;
 	struct pack_desc desc;
 	char* name;
-	struct user_struct *vuser = get_valid_user_struct(sconn, vuid);
+	struct auth_session_info *si = NULL;
+	NTSTATUS status;
+
+	status = smbXsrv_session_info_lookup(conn->sconn->client,
+					     vuid,
+					     &si);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
 
 	if (!str1 || !str2 || !p) {
 		return False;
 	}
 
 	DBG_INFO("Username of UID %ju is %s\n",
-		 (uintmax_t)vuser->session_info->unix_token->uid,
-		 vuser->session_info->unix_info->unix_name);
+		 (uintmax_t)si->unix_token->uid,
+		 si->unix_info->unix_name);
 
 	uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	name = get_safe_str_ptr(param,tpscnt,p,2);
@@ -4483,8 +4491,7 @@ static bool api_WWkstaUserLogon(struct smbd_server_connection *sconn,
 		}
 
 		PACKS(&desc,"z",lp_workgroup());/* domain */
-		PACKS(&desc,"z",
-		      vuser->session_info->info->logon_script); /* script path */
+		PACKS(&desc,"z", si->info->logon_script); /* script path */
 		PACKI(&desc,"D",0x00000000);		/* reserved */
 	}
 
