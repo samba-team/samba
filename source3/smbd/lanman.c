@@ -4415,19 +4415,15 @@ static bool api_WWkstaUserLogon(struct smbd_server_connection *sconn,
 	int uLevel;
 	struct pack_desc desc;
 	char* name;
-		/* With share level security vuid will always be zero.
-		   Don't depend on vuser being non-null !!. JRA */
 	struct user_struct *vuser = get_valid_user_struct(sconn, vuid);
 
 	if (!str1 || !str2 || !p) {
 		return False;
 	}
 
-	if(vuser != NULL) {
-		DEBUG(3,("  Username of UID %d is %s\n",
-			 (int)vuser->session_info->unix_token->uid,
-			 vuser->session_info->unix_info->unix_name));
-	}
+	DBG_INFO("Username of UID %ju is %s\n",
+		 (uintmax_t)vuser->session_info->unix_token->uid,
+		 vuser->session_info->unix_info->unix_name);
 
 	uLevel = get_safe_SVAL(param,tpscnt,p,0,-1);
 	name = get_safe_str_ptr(param,tpscnt,p,2);
@@ -4487,9 +4483,8 @@ static bool api_WWkstaUserLogon(struct smbd_server_connection *sconn,
 		}
 
 		PACKS(&desc,"z",lp_workgroup());/* domain */
-		PACKS(&desc,"z", vuser ?
-		      vuser->session_info->info->logon_script
-			: ""); /* script path */
+		PACKS(&desc,"z",
+		      vuser->session_info->info->logon_script); /* script path */
 		PACKI(&desc,"D",0x00000000);		/* reserved */
 	}
 
