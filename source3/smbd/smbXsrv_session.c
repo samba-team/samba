@@ -1662,15 +1662,13 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 	session->client = NULL;
 	session->status = NT_STATUS_USER_SESSION_DELETED;
 
-	if (session->compat) {
-		/*
-		 * For SMB2 this is a bit redundant as files are also close
-		 * below via smb2srv_tcon_disconnect_all() -> ... ->
-		 * smbXsrv_tcon_disconnect() -> close_cnum() ->
-		 * file_close_conn().
-		 */
-		file_close_user(sconn, session->global->session_wire_id);
-	}
+	/*
+	 * For SMB2 this is a bit redundant as files are also close
+	 * below via smb2srv_tcon_disconnect_all() -> ... ->
+	 * smbXsrv_tcon_disconnect() -> close_cnum() ->
+	 * file_close_conn().
+	 */
+	file_close_user(sconn, session->global->session_wire_id);
 
 	if (session->tcon_table != NULL) {
 		/*
@@ -1686,10 +1684,8 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 		}
 	}
 
-	if (session->compat) {
-		invalidate_vuid(sconn, session->global->session_wire_id);
-		session->compat = NULL;
-	}
+	invalidate_vuid(sconn, session->global->session_wire_id);
+	session->compat = NULL;
 
 	global_rec = session->global->db_rec;
 	session->global->db_rec = NULL;
