@@ -437,8 +437,9 @@ static bool change_to_user_impersonate(connection_struct *conn,
  **/
 bool change_to_user_and_service(connection_struct *conn, uint64_t vuid)
 {
-	struct user_struct *vuser;
 	int snum = SNUM(conn);
+	struct auth_session_info *si = NULL;
+	NTSTATUS status;
 	bool ok;
 
 	if (conn == NULL) {
@@ -446,16 +447,17 @@ bool change_to_user_and_service(connection_struct *conn, uint64_t vuid)
 		return false;
 	}
 
-	vuser = get_valid_user_struct(conn->sconn, vuid);
-	if (vuser == NULL) {
-		/* Invalid vuid sent */
+	status = smbXsrv_session_info_lookup(conn->sconn->client,
+					     vuid,
+					     &si);
+	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("Invalid vuid %llu used on share %s.\n",
 			    (unsigned long long)vuid,
 			    lp_const_servicename(snum));
 		return false;
 	}
 
-	ok = change_to_user_impersonate(conn, vuser->session_info, vuid);
+	ok = change_to_user_impersonate(conn, si, vuid);
 	if (!ok) {
 		return false;
 	}
