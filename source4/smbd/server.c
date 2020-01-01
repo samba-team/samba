@@ -630,7 +630,7 @@ static int binary_smbd_main(const char *binary_name,
 		binary_name,
 		SAMBA_VERSION_STRING));
 	DEBUGADD(0,("Copyright Andrew Tridgell and the Samba Team"
-		" 1992-2019\n"));
+		" 1992-2020\n"));
 
 	if (sizeof(uint16_t) < 2 ||
 			sizeof(uint32_t) < 4 ||
