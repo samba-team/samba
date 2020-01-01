@@ -573,6 +573,9 @@ NTSTATUS smb1srv_session_table_init(struct smbXsrv_connection *conn);
 NTSTATUS smb1srv_session_lookup(struct smbXsrv_connection *conn,
 				uint16_t vuid, NTTIME now,
 				struct smbXsrv_session **session);
+NTSTATUS smbXsrv_session_info_lookup(struct smbXsrv_client *client,
+				     uint64_t session_wire_id,
+				     struct auth_session_info **si);
 NTSTATUS smb2srv_session_table_init(struct smbXsrv_connection *conn);
 NTSTATUS smb2srv_session_lookup_conn(struct smbXsrv_connection *conn,
 				     uint64_t session_id, NTTIME now,
