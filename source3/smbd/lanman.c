@@ -5792,9 +5792,18 @@ void api_reply(connection_struct *conn, uint64_t vuid,
 	/* Check whether this api call can be done anonymously */
 
 	if (api_commands[i].auth_user && lp_restrict_anonymous()) {
-		struct user_struct *user = get_valid_user_struct(req->sconn, vuid);
+		struct auth_session_info *si = NULL;
+		NTSTATUS status;
 
-		if (!user || security_session_user_level(user->session_info, NULL) < SECURITY_USER) {
+		status = smbXsrv_session_info_lookup(conn->sconn->client,
+						     vuid,
+						     &si);
+		if (!NT_STATUS_IS_OK(status)) {
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+
+		if (security_session_user_level(si, NULL) < SECURITY_USER) {
 			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
 			return;
 		}
