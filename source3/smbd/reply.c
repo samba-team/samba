@@ -2613,16 +2613,17 @@ void reply_open_and_X(struct smb_request *req)
 
 void reply_ulogoffX(struct smb_request *req)
 {
-	struct smbd_server_connection *sconn = req->sconn;
-	struct user_struct *vuser;
+	struct timeval now = timeval_current();
 	struct smbXsrv_session *session = NULL;
 	NTSTATUS status;
 
 	START_PROFILE(SMBulogoffX);
 
-	vuser = get_valid_user_struct(sconn, req->vuid);
-
-	if(vuser == NULL) {
+	status = smb1srv_session_lookup(req->xconn,
+					req->vuid,
+					timeval_to_nttime(&now),
+					&session);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("ulogoff, vuser id %llu does not map to user.\n",
 			 (unsigned long long)req->vuid));
 
@@ -2631,9 +2632,6 @@ void reply_ulogoffX(struct smb_request *req)
 		END_PROFILE(SMBulogoffX);
 		return;
 	}
-
-	session = vuser->session;
-	vuser = NULL;
 
 	/*
 	 * TODO: cancel all outstanding requests on the session
