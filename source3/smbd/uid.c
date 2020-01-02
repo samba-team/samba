@@ -627,8 +627,9 @@ void smbd_unbecome_root(void)
 
 bool become_user_without_service(connection_struct *conn, uint64_t vuid)
 {
-	struct user_struct *vuser;
+	struct auth_session_info *session_info = NULL;
 	int snum = SNUM(conn);
+	NTSTATUS status;
 	bool ok;
 
 	if (conn == NULL) {
@@ -636,8 +637,10 @@ bool become_user_without_service(connection_struct *conn, uint64_t vuid)
 		return false;
 	}
 
-	vuser = get_valid_user_struct(conn->sconn, vuid);
-	if (vuser == NULL) {
+	status = smbXsrv_session_info_lookup(conn->sconn->client,
+					     vuid,
+					     &session_info);
+	if (!NT_STATUS_IS_OK(status)) {
 		/* Invalid vuid sent */
 		DBG_WARNING("Invalid vuid %llu used on share %s.\n",
 			    (unsigned long long)vuid,
@@ -652,7 +655,7 @@ bool become_user_without_service(connection_struct *conn, uint64_t vuid)
 
 	push_conn_ctx();
 
-	ok = change_to_user_impersonate(conn, vuser->session_info, vuid);
+	ok = change_to_user_impersonate(conn, session_info, vuid);
 	if (!ok) {
 		pop_sec_ctx();
 		pop_conn_ctx();
