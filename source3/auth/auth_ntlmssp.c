@@ -24,6 +24,7 @@
 #include "includes.h"
 #include "auth.h"
 #include "libcli/security/security.h"
+#include "lib/util/tevent_ntstatus.h"
 
 NTSTATUS auth3_generate_session_info(struct auth4_context *auth_context,
 				     TALLOC_CTX *mem_ctx,
@@ -130,24 +131,38 @@ NTSTATUS auth3_set_challenge(struct auth4_context *auth4_context, const uint8_t 
  * Return the session keys used on the connection.
  */
 
-NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
-			      TALLOC_CTX *mem_ctx,
-			      const struct auth_usersupplied_info *user_info,
-			      uint8_t *pauthoritative,
-			      void **server_returned_info,
-			      DATA_BLOB *session_key, DATA_BLOB *lm_session_key)
+struct auth3_check_password_state {
+	uint8_t authoritative;
+	void *server_info;
+	DATA_BLOB nt_session_key;
+	DATA_BLOB lm_session_key;
+};
+
+struct tevent_req *auth3_check_password_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct auth4_context *auth4_context,
+	const struct auth_usersupplied_info *user_info)
 {
-	struct auth_context *auth_context = talloc_get_type_abort(auth4_context->private_data,
-								  struct auth_context);
+	struct tevent_req *req = NULL;
+	struct auth3_check_password_state *state = NULL;
+	struct auth_context *auth_context = talloc_get_type_abort(
+		auth4_context->private_data, struct auth_context);
 	struct auth_usersupplied_info *mapped_user_info = NULL;
-	struct auth_serversupplied_info *server_info;
+	struct auth_serversupplied_info *server_info = NULL;
 	NTSTATUS nt_status;
 	bool username_was_mapped;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct auth3_check_password_state);
+	if (req == NULL) {
+		return NULL;
+	}
 
 	/*
 	 * Be authoritative by default.
 	 */
-	*pauthoritative = 1;
+	state->authoritative = 1;
 
 	/* The client has given us its machine name (which we only get over NBT transport).
 	   We need to possibly reload smb.conf if smb.conf includes depend on the machine name. */
@@ -173,27 +188,27 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 				       NULL, NULL, NULL,
 				       AUTH_PASSWORD_RESPONSE);
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
+	if (tevent_req_nterror(req, nt_status)) {
+		return tevent_req_post(req, ev);
 	}
 
 	mapped_user_info->logon_parameters = user_info->logon_parameters;
 
 	mapped_user_info->flags = user_info->flags;
 
-	nt_status = auth_check_ntlm_password(mem_ctx,
+	nt_status = auth_check_ntlm_password(state,
 					     auth_context,
 					     mapped_user_info,
 					     &server_info,
-					     pauthoritative);
+					     &state->authoritative);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(5,("Checking NTLMSSP password for %s\\%s failed: "
-			 "%s, authoritative=%u\n",
+		DBG_INFO("Checking NTLMSSP password for %s\\%s failed: "
+			 "%s, authoritative=%"PRIu8"\n",
 			 user_info->client.domain_name,
 			 user_info->client.account_name,
 			 nt_errstr(nt_status),
-			 *pauthoritative));
+			 state->authoritative);
 	}
 
 	username_was_mapped = mapped_user_info->was_mapped;
@@ -201,16 +216,18 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 	TALLOC_FREE(mapped_user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		nt_status = do_map_to_guest_server_info(mem_ctx,
-							nt_status,
-							user_info->client.account_name,
-							user_info->client.domain_name,
-							&server_info);
-		if (NT_STATUS_IS_OK(nt_status)) {
-			*pauthoritative = 1;
-			*server_returned_info = talloc_steal(mem_ctx, server_info);
+		nt_status = do_map_to_guest_server_info(
+			state,
+			nt_status,
+			user_info->client.account_name,
+			user_info->client.domain_name,
+			&server_info);
+		if (!tevent_req_nterror(req, nt_status)) {
+			state->authoritative = 1;
+			tevent_req_done(req);
 		}
-		return nt_status;
+		state->server_info = server_info;
+		return tevent_req_post(req, ev);
 	}
 
 	server_info->nss_token |= username_was_mapped;
@@ -219,21 +236,68 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 	 * They will not be used in this form again - instead the
 	 * NTLMSSP code will decide on the final correct session key,
 	 * and supply it to create_local_token() */
-	if (session_key) {
-		DBG_DEBUG("Got NT session key of length %zu\n",
-			  server_info->session_key.length);
-		*session_key = server_info->session_key;
-		talloc_steal(mem_ctx, server_info->session_key.data);
-		server_info->session_key = data_blob_null;
-	}
-	if (lm_session_key) {
-		DBG_DEBUG("Got LM session key of length %zu\n",
-			  server_info->lm_session_key.length);
-		*lm_session_key = server_info->lm_session_key;
-		talloc_steal(mem_ctx, server_info->lm_session_key.data);
-		server_info->lm_session_key = data_blob_null;
+
+	DBG_DEBUG("Got NT session key of length %zu\n",
+		  server_info->session_key.length);
+	state->nt_session_key = (DATA_BLOB) {
+		.data = talloc_move(
+			state, &server_info->session_key.data),
+		.length = server_info->session_key.length,
+	};
+	server_info->session_key = data_blob_null;
+
+	DBG_DEBUG("Got LM session key of length %zu\n",
+		  server_info->lm_session_key.length);
+	state->lm_session_key = (DATA_BLOB) {
+		.data = talloc_move(
+			state, &server_info->lm_session_key.data),
+		.length = server_info->lm_session_key.length,
+	};
+	server_info->lm_session_key = data_blob_null;
+
+	state->server_info = server_info;
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+NTSTATUS auth3_check_password_recv(struct tevent_req *req,
+				   TALLOC_CTX *mem_ctx,
+				   uint8_t *pauthoritative,
+				   void **server_returned_info,
+				   DATA_BLOB *nt_session_key,
+				   DATA_BLOB *lm_session_key)
+{
+	struct auth3_check_password_state *state = tevent_req_data(
+		req, struct auth3_check_password_state);
+	NTSTATUS status;
+
+	if (pauthoritative != NULL) {
+		*pauthoritative = state->authoritative;
 	}
 
-	*server_returned_info = talloc_steal(mem_ctx, server_info);
-	return nt_status;
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	if (server_returned_info != NULL) {
+		*server_returned_info = talloc_move(
+			mem_ctx, &state->server_info);
+	}
+	if (nt_session_key != NULL) {
+		*nt_session_key = (DATA_BLOB) {
+			.data = talloc_move(
+				mem_ctx, &state->nt_session_key.data),
+			.length = state->nt_session_key.length,
+		};
+	}
+	if (lm_session_key != NULL) {
+		*lm_session_key = (DATA_BLOB) {
+			.data = talloc_move(
+				mem_ctx, &state->lm_session_key.data),
+			.length = state->lm_session_key.length,
+		};
+	}
+
+	return NT_STATUS_OK;
 }
