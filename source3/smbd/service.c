@@ -990,7 +990,6 @@ static connection_struct *make_connection_smb1(struct smb_request *req,
 connection_struct *make_connection_smb2(struct smbd_smb2_request *req,
 					struct smbXsrv_tcon *tcon,
 					int snum,
-					struct user_struct *vuser,
 					const char *pdev,
 					NTSTATUS *pstatus)
 {

@@ -333,7 +333,6 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 
 	compat_conn = make_connection_smb2(req,
 					tcon, snum,
-					req->session->compat,
 					"???",
 					&status);
 	if (compat_conn == NULL) {

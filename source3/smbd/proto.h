@@ -1078,7 +1078,6 @@ int find_service(TALLOC_CTX *ctx, const char *service, char **p_service_out);
 connection_struct *make_connection_smb2(struct smbd_smb2_request *req,
 					struct smbXsrv_tcon *tcon,
 					int snum,
-					struct user_struct *vuser,
 					const char *pdev,
 					NTSTATUS *pstatus);
 connection_struct *make_connection(struct smb_request *req,
