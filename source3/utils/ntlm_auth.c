@@ -941,53 +941,138 @@ static NTSTATUS ntlm_auth_set_challenge(struct auth4_context *auth_ctx, const ui
  * Return the session keys used on the connection.
  */
 
-static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
-				 TALLOC_CTX *mem_ctx,
-				 const struct auth_usersupplied_info *user_info,
-				 uint8_t *pauthoritative,
-				 void **server_returned_info,
-				 DATA_BLOB *session_key, DATA_BLOB *lm_session_key)
+struct winbind_pw_check_state {
+	uint8_t authoritative;
+	void *server_info;
+	DATA_BLOB nt_session_key;
+	DATA_BLOB lm_session_key;
+};
+
+static struct tevent_req *winbind_pw_check_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct auth4_context *auth4_context,
+	const struct auth_usersupplied_info *user_info)
 {
+	struct tevent_req *req = NULL;
+	struct winbind_pw_check_state *state = NULL;
 	NTSTATUS nt_status;
 	char *error_string = NULL;
 	uint8_t lm_key[8];
 	uint8_t user_sess_key[16];
 	char *unix_name = NULL;
 
-	nt_status = contact_winbind_auth_crap(user_info->client.account_name, user_info->client.domain_name,
-					      user_info->workstation_name,
-					      &auth4_context->challenge.data,
-					      &user_info->password.response.lanman,
-					      &user_info->password.response.nt,
-					      WBFLAG_PAM_LMKEY | WBFLAG_PAM_USER_SESSION_KEY | WBFLAG_PAM_UNIX_NAME,
-					      0,
-					      lm_key, user_sess_key,
-					      pauthoritative,
-					      &error_string, &unix_name);
-
-	if (NT_STATUS_IS_OK(nt_status)) {
-		if (!all_zero(lm_key, 8)) {
-			*lm_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-			memcpy(lm_session_key->data, lm_key, 8);
-			memset(lm_session_key->data+8, '\0', 8);
-		}
-
-		if (!all_zero(user_sess_key, 16)) {
-			*session_key = data_blob_talloc(mem_ctx, user_sess_key, 16);
-		}
-		*server_returned_info = talloc_strdup(mem_ctx,
-						      unix_name);
-	} else {
-		DEBUG(NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED) ? 0 : 3, 
-		      ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n",
-		       user_info->client.domain_name, user_info->client.account_name,
-		       user_info->workstation_name,
-		       error_string ? error_string : "unknown error (NULL)"));
+	req = tevent_req_create(
+		mem_ctx, &state, struct winbind_pw_check_state);
+	if (req == NULL) {
+		return NULL;
 	}
 
+	nt_status = contact_winbind_auth_crap(
+		user_info->client.account_name,
+		user_info->client.domain_name,
+		user_info->workstation_name,
+		&auth4_context->challenge.data,
+		&user_info->password.response.lanman,
+		&user_info->password.response.nt,
+		WBFLAG_PAM_LMKEY |
+		WBFLAG_PAM_USER_SESSION_KEY |
+		WBFLAG_PAM_UNIX_NAME,
+		0,
+		lm_key, user_sess_key,
+		&state->authoritative,
+		&error_string,
+		&unix_name);
+
+	if (tevent_req_nterror(req, nt_status)) {
+		if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
+			DBG_ERR("Login for user [%s]\\[%s]@[%s] failed due "
+				"to [%s]\n",
+				user_info->client.domain_name,
+				user_info->client.account_name,
+				user_info->workstation_name,
+				error_string ?
+				error_string :
+				"unknown error (NULL)");
+		} else {
+			DBG_NOTICE("Login for user [%s]\\[%s]@[%s] failed due "
+				   "to [%s]\n",
+				   user_info->client.domain_name,
+				   user_info->client.account_name,
+				   user_info->workstation_name,
+				   error_string ?
+				   error_string :
+				   "unknown error (NULL)");
+		}
+		goto done;
+	}
+
+	if (!all_zero(lm_key, 8)) {
+		state->lm_session_key = data_blob_talloc(state, NULL, 16);
+		if (tevent_req_nomem(state->lm_session_key.data, req)) {
+			goto done;
+		}
+		memcpy(state->lm_session_key.data, lm_key, 8);
+		memset(state->lm_session_key.data+8, '\0', 8);
+	}
+	if (!all_zero(user_sess_key, 16)) {
+		state->nt_session_key = data_blob_talloc(
+			state, user_sess_key, 16);
+		if (tevent_req_nomem(state->nt_session_key.data, req)) {
+			goto done;
+		}
+	}
+	state->server_info = talloc_strdup(state, unix_name);
+	if (tevent_req_nomem(state->server_info, req)) {
+		goto done;
+	}
+	tevent_req_done(req);
+
+done:
 	SAFE_FREE(error_string);
 	SAFE_FREE(unix_name);
-	return nt_status;
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS winbind_pw_check_recv(struct tevent_req *req,
+				      TALLOC_CTX *mem_ctx,
+				      uint8_t *pauthoritative,
+				      void **server_returned_info,
+				      DATA_BLOB *nt_session_key,
+				      DATA_BLOB *lm_session_key)
+{
+	struct winbind_pw_check_state *state = tevent_req_data(
+		req, struct winbind_pw_check_state);
+	NTSTATUS status;
+
+	if (pauthoritative != NULL) {
+		*pauthoritative = state->authoritative;
+	}
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	if (server_returned_info != NULL) {
+		*server_returned_info = talloc_move(
+			mem_ctx, &state->server_info);
+	}
+	if (nt_session_key != NULL) {
+		*nt_session_key = (DATA_BLOB) {
+			.data = talloc_move(
+				mem_ctx, &state->nt_session_key.data),
+			.length = state->nt_session_key.length,
+		};
+	}
+	if (lm_session_key != NULL) {
+		*lm_session_key = (DATA_BLOB) {
+			.data = talloc_move(
+				mem_ctx, &state->lm_session_key.data),
+			.length = state->lm_session_key.length,
+		};
+	}
+
+	return NT_STATUS_OK;
 }
 
 struct local_pw_check_state {
@@ -1185,7 +1270,10 @@ static struct auth4_context *make_auth4_context_ntlm_auth(TALLOC_CTX *mem_ctx, b
 		auth4_context->check_ntlm_password_send = local_pw_check_send;
 		auth4_context->check_ntlm_password_recv = local_pw_check_recv;
 	} else {
-		auth4_context->check_ntlm_password = winbind_pw_check;
+		auth4_context->check_ntlm_password_send =
+			winbind_pw_check_send;
+		auth4_context->check_ntlm_password_recv =
+			winbind_pw_check_recv;
 	}
 	auth4_context->private_data = NULL;
 	return auth4_context;
