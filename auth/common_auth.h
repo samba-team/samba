@@ -129,12 +129,6 @@ struct auth4_context {
 	/* Private data for the callbacks on this auth context */
 	void *private_data;
 
-	NTSTATUS (*check_ntlm_password)(struct auth4_context *auth_ctx,
-					TALLOC_CTX *mem_ctx,
-					const struct auth_usersupplied_info *user_info,
-					uint8_t *pauthoritative,
-					void **server_returned_info,
-					DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key);
 	struct tevent_req *(*check_ntlm_password_send)(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct auth4_context *auth_ctx,

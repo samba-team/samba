@@ -335,8 +335,8 @@ struct tevent_req *ntlmssp_server_auth_send(TALLOC_CTX *mem_ctx,
 				      struct gensec_ntlmssp_context);
 	struct auth4_context *auth_context = gensec_security->auth_context;
 	struct tevent_req *req = NULL;
+	struct tevent_req *subreq = NULL;
 	struct ntlmssp_server_auth_state *state = NULL;
-	uint8_t authoritative = 0;
 	NTSTATUS status;
 
 	req = tevent_req_create(mem_ctx, &state,
@@ -355,54 +355,13 @@ struct tevent_req *ntlmssp_server_auth_send(TALLOC_CTX *mem_ctx,
 		return tevent_req_post(req, ev);
 	}
 
-	if (auth_context->check_ntlm_password_send != NULL) {
-		struct tevent_req *subreq = NULL;
-
-		subreq = auth_context->check_ntlm_password_send(state, ev,
-						auth_context,
-						state->user_info);
-		if (tevent_req_nomem(subreq, req)) {
-			return tevent_req_post(req, ev);
-		}
-		tevent_req_set_callback(subreq,
-					ntlmssp_server_auth_done,
-					req);
-		return req;
-	}
-
-	if (auth_context->check_ntlm_password == NULL) {
-		tevent_req_nterror(req, NT_STATUS_INTERNAL_ERROR);
+	subreq = auth_context->check_ntlm_password_send(
+		state, ev, auth_context, state->user_info);
+	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-
-	status = auth_context->check_ntlm_password(auth_context,
-						   gensec_ntlmssp,
-						   state->user_info,
-						   &authoritative,
-						   &gensec_ntlmssp->server_returned_info,
-						   &state->user_session_key,
-						   &state->lm_session_key);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG_INFO("Checking NTLMSSP password for %s\\%s failed: %s\n",
-			 state->user_info->client.domain_name,
-			 state->user_info->client.account_name,
-			 nt_errstr(status));
-	}
-	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
-	}
-	talloc_steal(state, state->user_session_key.data);
-	talloc_steal(state, state->lm_session_key.data);
-
-	status = ntlmssp_server_postauth(gensec_security,
-					 gensec_ntlmssp,
-					 state, in);
-	if (tevent_req_nterror(req, status)) {
-		return tevent_req_post(req, ev);
-	}
-
-	tevent_req_done(req);
-	return tevent_req_post(req, ev);
+	tevent_req_set_callback(subreq,	ntlmssp_server_auth_done, req);
+	return req;
 }
 
 /**
