@@ -586,6 +586,11 @@ NTSTATUS smb2srv_session_lookup_client(struct smbXsrv_client *client,
 NTSTATUS get_valid_smbXsrv_session(struct smbXsrv_client *client,
 				   uint64_t session_wire_id,
 				   struct smbXsrv_session **session);
+NTSTATUS smbXsrv_session_local_traverse(
+	struct smbXsrv_client *client,
+	int (*caller_cb)(struct smbXsrv_session *session,
+			      void *caller_data),
+	void *caller_data);
 struct smbXsrv_session_global0;
 NTSTATUS smbXsrv_session_global_traverse(
 			int (*fn)(struct smbXsrv_session_global0 *, void *),

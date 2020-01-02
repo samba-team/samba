@@ -1830,6 +1830,77 @@ static int smbXsrv_session_logoff_all_callback(struct db_record *local_rec,
 	return 0;
 }
 
+struct smbXsrv_session_local_trav_state {
+	NTSTATUS status;
+	int (*caller_cb)(struct smbXsrv_session *session,
+			 void *caller_data);
+	void *caller_data;
+};
+
+static int smbXsrv_session_local_traverse_cb(struct db_record *local_rec,
+					     void *private_data);
+
+NTSTATUS smbXsrv_session_local_traverse(
+	struct smbXsrv_client *client,
+	int (*caller_cb)(struct smbXsrv_session *session,
+			 void *caller_data),
+	void *caller_data)
+{
+	struct smbXsrv_session_table *table = client->session_table;
+	struct smbXsrv_session_local_trav_state state;
+	NTSTATUS status;
+	int count = 0;
+
+	state = (struct smbXsrv_session_local_trav_state) {
+		.status = NT_STATUS_OK,
+		.caller_cb = caller_cb,
+		.caller_data = caller_data,
+	};
+
+	if (table == NULL) {
+		DBG_DEBUG("empty session_table, nothing to do.\n");
+		return NT_STATUS_OK;
+	}
+
+	status = dbwrap_traverse(table->local.db_ctx,
+				 smbXsrv_session_local_traverse_cb,
+				 &state,
+				 &count);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("dbwrap_traverse() failed: %s\n", nt_errstr(status));
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		DBG_ERR("count[%d] status[%s]\n",
+			count, nt_errstr(state.status));
+		return state.status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+static int smbXsrv_session_local_traverse_cb(struct db_record *local_rec,
+					     void *private_data)
+{
+	struct smbXsrv_session_local_trav_state *state =
+		(struct smbXsrv_session_local_trav_state *)private_data;
+	TDB_DATA val;
+	void *ptr = NULL;
+	struct smbXsrv_session *session = NULL;
+
+	val = dbwrap_record_get_value(local_rec);
+	if (val.dsize != sizeof(ptr)) {
+		state->status = NT_STATUS_INTERNAL_ERROR;
+		return -1;
+	}
+
+	memcpy(&ptr, val.dptr, val.dsize);
+	session = talloc_get_type_abort(ptr, struct smbXsrv_session);
+	session->db_rec = local_rec;
+
+	return state->caller_cb(session, state->caller_data);
+}
+
 NTSTATUS smb1srv_session_table_init(struct smbXsrv_connection *conn)
 {
 	/*
