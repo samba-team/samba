@@ -1033,7 +1033,6 @@ connection_struct *make_connection(struct smb_request *req,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	uid_t euid;
-	struct user_struct *vuser = NULL;
 	char *service = NULL;
 	fstring dev;
 	int snum = -1;
@@ -1053,8 +1052,7 @@ connection_struct *make_connection(struct smb_request *req,
 		return NULL;
 	}
 
-	vuser = get_valid_user_struct(sconn, vuid);
-	if (!vuser) {
+	if (session == NULL) {
 		DEBUG(1,("make_connection: refusing to connect with "
 			 "no session setup\n"));
 		*status = NT_STATUS_ACCESS_DENIED;
