@@ -97,6 +97,10 @@ NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
 	generate_random_buffer(tmp, sizeof(tmp));
 	auth_context->challenge = data_blob_talloc(auth_context,
 						   tmp, sizeof(tmp));
+	if (auth_context->challenge.data == NULL) {
+		DBG_WARNING("data_blob_talloc failed\n");
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	auth_context->challenge_set_by = "random";
 
