@@ -220,15 +220,15 @@ NTSTATUS auth3_check_password(struct auth4_context *auth4_context,
 	 * NTLMSSP code will decide on the final correct session key,
 	 * and supply it to create_local_token() */
 	if (session_key) {
-		DEBUG(10, ("Got NT session key of length %u\n",
-			(unsigned int)server_info->session_key.length));
+		DBG_DEBUG("Got NT session key of length %zu\n",
+			  server_info->session_key.length);
 		*session_key = server_info->session_key;
 		talloc_steal(mem_ctx, server_info->session_key.data);
 		server_info->session_key = data_blob_null;
 	}
 	if (lm_session_key) {
-		DEBUG(10, ("Got LM session key of length %u\n",
-			(unsigned int)server_info->lm_session_key.length));
+		DBG_DEBUG("Got LM session key of length %zu\n",
+			  server_info->lm_session_key.length);
 		*lm_session_key = server_info->lm_session_key;
 		talloc_steal(mem_ctx, server_info->lm_session_key.data);
 		server_info->lm_session_key = data_blob_null;
