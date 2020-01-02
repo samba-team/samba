@@ -46,16 +46,10 @@ struct security_token *security_token_initialise(TALLOC_CTX *mem_ctx)
 ****************************************************************************/
 void security_token_debug(int dbg_class, int dbg_lev, const struct security_token *token)
 {
-	TALLOC_CTX *mem_ctx;
 	uint32_t i;
 
 	if (!token) {
 		DEBUGC(dbg_class, dbg_lev, ("Security token: (NULL)\n"));
-		return;
-	}
-
-	mem_ctx = talloc_init("security_token_debug()");
-	if (!mem_ctx) {
 		return;
 	}
 
@@ -70,8 +64,6 @@ void security_token_debug(int dbg_class, int dbg_lev, const struct security_toke
 	}
 
 	security_token_debug_privileges(dbg_class, dbg_lev, token);
-
-	talloc_free(mem_ctx);
 }
 
 /* These really should be cheaper... */
