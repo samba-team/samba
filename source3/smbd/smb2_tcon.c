@@ -195,13 +195,14 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 		loadparm_s3_global_substitution();
 	struct smbXsrv_connection *conn = req->xconn;
 	struct smbXsrv_session *session = req->session;
+	struct auth_session_info *session_info =
+		session->global->auth_session_info;
 	const char *share = in_path;
 	char *service = NULL;
 	int snum = -1;
 	struct smbXsrv_tcon *tcon;
 	NTTIME now = timeval_to_nttime(&req->request_time);
 	connection_struct *compat_conn = NULL;
-	struct user_struct *compat_vuser = req->session->compat;
 	NTSTATUS status;
 	bool encryption_desired = req->session->global->encryption_flags & SMBXSRV_ENCRYPTION_DESIRED;
 	bool encryption_required = req->session->global->encryption_flags & SMBXSRV_ENCRYPTION_REQUIRED;
@@ -220,7 +221,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 	DEBUG(10,("smbd_smb2_tree_connect: path[%s] share[%s]\n",
 		  in_path, share));
 
-	if (security_session_user_level(compat_vuser->session_info, NULL) < SECURITY_USER) {
+	if (security_session_user_level(session_info, NULL) < SECURITY_USER) {
 		guest_session = true;
 	}
 
@@ -256,7 +257,7 @@ static NTSTATUS smbd_smb2_tree_connect(struct smbd_smb2_request *req,
 				"user %s because it was not found "
 				"or created at session setup "
 				"time\n",
-				compat_vuser->session_info->unix_info->unix_name));
+				session_info->unix_info->unix_name));
 			return NT_STATUS_BAD_NETWORK_NAME;
 		}
 		snum = session->homes_snum;
