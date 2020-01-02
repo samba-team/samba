@@ -919,7 +919,7 @@ static NTSTATUS make_connection_snum(struct smbXsrv_connection *xconn,
 
 static connection_struct *make_connection_smb1(struct smb_request *req,
 					NTTIME now,
-					int snum, struct user_struct *vuser,
+					int snum,
 					const char *pdev,
 					NTSTATUS *pstatus)
 {
@@ -1081,7 +1081,6 @@ connection_struct *make_connection(struct smb_request *req,
 			  "created at session setup time\n"));
 		return make_connection_smb1(req, now,
 					    session->homes_snum,
-					    vuser,
 					    dev, status);
 	} else if ((session->homes_snum != -1)
 		   && strequal(service_in,
@@ -1090,7 +1089,6 @@ connection_struct *make_connection(struct smb_request *req,
 			  "created at session setup time\n", service_in));
 		return make_connection_smb1(req, now,
 					    session->homes_snum,
-					    vuser,
 					    dev, status);
 	}
 
@@ -1140,7 +1138,7 @@ connection_struct *make_connection(struct smb_request *req,
 
 	DEBUG(5, ("making a connection to 'normal' service %s\n", service));
 
-	return make_connection_smb1(req, now, snum, vuser,
+	return make_connection_smb1(req, now, snum,
 				    dev, status);
 }
 
