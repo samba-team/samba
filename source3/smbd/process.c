@@ -1587,9 +1587,10 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 		}
 	}
 
-	if (session != NULL && !(flags & AS_USER)) {
-		struct user_struct *vuser = session->compat;
-
+	if (session != NULL &&
+	    session->global->auth_session_info != NULL &&
+	    !(flags & AS_USER))
+	{
 		/*
 		 * change_to_user() implies set_current_user_info()
 		 * and chdir_connect_service().
@@ -1597,12 +1598,10 @@ static connection_struct *switch_message(uint8_t type, struct smb_request *req)
 		 * So we only call set_current_user_info if
 		 * we don't have AS_USER specified.
 		 */
-		if (vuser) {
-			set_current_user_info(
-				vuser->session_info->unix_info->sanitized_username,
-				vuser->session_info->unix_info->unix_name,
-				vuser->session_info->info->domain_name);
-		}
+		set_current_user_info(
+			session->global->auth_session_info->unix_info->sanitized_username,
+			session->global->auth_session_info->unix_info->unix_name,
+			session->global->auth_session_info->info->domain_name);
 	}
 
 	/* Does this call need to be run as the connected user? */
