@@ -968,7 +968,7 @@ static connection_struct *make_connection_smb1(struct smb_request *req,
 		return NULL;
 	}
 	tcon->global->session_global_id =
-		vuser->session->global->session_global_id;
+		req->session->global->session_global_id;
 
 	tcon->compat = talloc_move(tcon, &conn);
 	tcon->status = NT_STATUS_OK;
