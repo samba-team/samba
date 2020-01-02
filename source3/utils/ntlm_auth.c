@@ -47,6 +47,7 @@
 #include "lib/param/loadparm.h"
 #include "lib/util/base64.h"
 #include "cmdline_contexts.h"
+#include "lib/util/tevent_ntstatus.h"
 
 #include <gnutls/gnutls.h>
 #include <gnutls/crypto.h>
@@ -989,42 +990,112 @@ static NTSTATUS winbind_pw_check(struct auth4_context *auth4_context,
 	return nt_status;
 }
 
-static NTSTATUS local_pw_check(struct auth4_context *auth4_context,
-				TALLOC_CTX *mem_ctx,
-				const struct auth_usersupplied_info *user_info,
-				uint8_t *pauthoritative,
-				void **server_returned_info,
-				DATA_BLOB *session_key, DATA_BLOB *lm_session_key)
+struct local_pw_check_state {
+	uint8_t authoritative;
+	void *server_info;
+	DATA_BLOB nt_session_key;
+	DATA_BLOB lm_session_key;
+};
+
+static struct tevent_req *local_pw_check_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct auth4_context *auth4_context,
+	const struct auth_usersupplied_info *user_info)
 {
-	NTSTATUS nt_status;
+	struct tevent_req *req = NULL;
+	struct local_pw_check_state *state = NULL;
 	struct samr_Password lm_pw, nt_pw;
+	NTSTATUS nt_status;
+
+	req = tevent_req_create(
+		mem_ctx, &state, struct local_pw_check_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->authoritative = 1;
 
 	nt_lm_owf_gen (opt_password, nt_pw.hash, lm_pw.hash);
 
-	*pauthoritative = 1;
+	nt_status = ntlm_password_check(
+		state,
+		true,
+		NTLM_AUTH_ON,
+		0,
+		&auth4_context->challenge.data,
+		&user_info->password.response.lanman,
+		&user_info->password.response.nt,
+		user_info->client.account_name,
+		user_info->client.account_name,
+		user_info->client.domain_name,
+		&lm_pw,
+		&nt_pw,
+		&state->nt_session_key,
+		&state->lm_session_key);
 
-	nt_status = ntlm_password_check(mem_ctx,
-					true, NTLM_AUTH_ON, 0,
-					&auth4_context->challenge.data,
-					&user_info->password.response.lanman,
-					&user_info->password.response.nt,
-					user_info->client.account_name,
-					user_info->client.account_name,
-					user_info->client.domain_name,
-					&lm_pw, &nt_pw, session_key, lm_session_key);
-
-	if (NT_STATUS_IS_OK(nt_status)) {
-		*server_returned_info = talloc_asprintf(mem_ctx,
-							"%s%c%s", user_info->client.domain_name,
-							*lp_winbind_separator(),
-							user_info->client.account_name);
-	} else {
-		DEBUG(3, ("Login for user [%s]\\[%s]@[%s] failed due to [%s]\n",
-			  user_info->client.domain_name, user_info->client.account_name,
-			  user_info->workstation_name,
-			  nt_errstr(nt_status)));
+	if (tevent_req_nterror(req, nt_status)) {
+		DBG_NOTICE("Login for user [%s]\\[%s]@[%s] failed due to "
+			   "[%s]\n",
+			   user_info->client.domain_name,
+			   user_info->client.account_name,
+			   user_info->workstation_name,
+			   nt_errstr(nt_status));
+		return tevent_req_post(req, ev);
 	}
-	return nt_status;
+
+	state->server_info = talloc_asprintf(
+		state,
+		"%s%c%s",
+		user_info->client.domain_name,
+		*lp_winbind_separator(),
+		user_info->client.account_name);
+	if (tevent_req_nomem(state->server_info, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	tevent_req_done(req);
+	return tevent_req_post(req, ev);
+}
+
+static NTSTATUS local_pw_check_recv(struct tevent_req *req,
+				    TALLOC_CTX *mem_ctx,
+				    uint8_t *pauthoritative,
+				    void **server_returned_info,
+				    DATA_BLOB *nt_session_key,
+				    DATA_BLOB *lm_session_key)
+{
+	struct local_pw_check_state *state = tevent_req_data(
+		req, struct local_pw_check_state);
+	NTSTATUS status;
+
+	if (pauthoritative != NULL) {
+		*pauthoritative = state->authoritative;
+	}
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+
+	if (server_returned_info != NULL) {
+		*server_returned_info = talloc_move(
+			mem_ctx, &state->server_info);
+	}
+	if (nt_session_key != NULL) {
+		*nt_session_key = (DATA_BLOB) {
+			.data = talloc_move(
+				mem_ctx, &state->nt_session_key.data),
+			.length = state->nt_session_key.length,
+		};
+	}
+	if (lm_session_key != NULL) {
+		*lm_session_key = (DATA_BLOB) {
+			.data = talloc_move(
+				mem_ctx, &state->lm_session_key.data),
+			.length = state->lm_session_key.length,
+		};
+	}
+
+	return NT_STATUS_OK;
 }
 
 static NTSTATUS ntlm_auth_prepare_gensec_client(TALLOC_CTX *mem_ctx,
@@ -1111,7 +1182,8 @@ static struct auth4_context *make_auth4_context_ntlm_auth(TALLOC_CTX *mem_ctx, b
 	auth4_context->get_ntlm_challenge = ntlm_auth_get_challenge;
 	auth4_context->set_ntlm_challenge = ntlm_auth_set_challenge;
 	if (local_pw) {
-		auth4_context->check_ntlm_password = local_pw_check;
+		auth4_context->check_ntlm_password_send = local_pw_check_send;
+		auth4_context->check_ntlm_password_recv = local_pw_check_recv;
 	} else {
 		auth4_context->check_ntlm_password = winbind_pw_check;
 	}
