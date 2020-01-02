@@ -3472,80 +3472,106 @@ fail:
 	return false;
 }
 
-static bool uid_in_use(const struct user_struct *user, uid_t uid)
+static bool uid_in_use(struct auth_session_info *session_info,
+		       uid_t uid)
 {
-	while (user) {
-		if (user->session_info &&
-		    (user->session_info->unix_token->uid == uid)) {
+	if (session_info->unix_token->uid == uid) {
+		return true;
+	}
+	return false;
+}
+
+static bool gid_in_use(struct auth_session_info *session_info,
+		       gid_t gid)
+{
+	int i;
+	struct security_unix_token *utok = NULL;
+
+	utok = session_info->unix_token;
+	if (utok->gid == gid) {
+		return true;
+	}
+
+	for(i = 0; i < utok->ngroups; i++) {
+		if (utok->groups[i] == gid) {
 			return true;
 		}
-		user = user->next;
 	}
 	return false;
 }
 
-static bool gid_in_use(const struct user_struct *user, gid_t gid)
-{
-	while (user) {
-		if (user->session_info != NULL) {
-			int i;
-			struct security_unix_token *utok;
-
-			utok = user->session_info->unix_token;
-			if (utok->gid == gid) {
-				return true;
-			}
-			for(i=0; i<utok->ngroups; i++) {
-				if (utok->groups[i] == gid) {
-					return true;
-				}
-			}
-		}
-		user = user->next;
-	}
-	return false;
-}
-
-static bool sid_in_use(const struct user_struct *user,
+static bool sid_in_use(struct auth_session_info *session_info,
 		       const struct dom_sid *psid)
 {
-	while (user) {
-		struct security_token *tok;
+	struct security_token *tok = NULL;
 
-		if (user->session_info == NULL) {
-			continue;
-		}
-		tok = user->session_info->security_token;
-		if (tok == NULL) {
-			/*
-			 * Not sure session_info->security_token can
-			 * ever be NULL. This check might be not
-			 * necessary.
-			 */
-			continue;
-		}
-		if (security_token_has_sid(tok, psid)) {
-			return true;
-		}
-		user = user->next;
+	tok = session_info->security_token;
+	if (tok == NULL) {
+		/*
+		 * Not sure session_info->security_token can
+		 * ever be NULL. This check might be not
+		 * necessary.
+		 */
+		return false;
+	}
+	if (security_token_has_sid(tok, psid)) {
+		return true;
 	}
 	return false;
 }
 
-static bool id_in_use(const struct user_struct *user,
-		      const struct id_cache_ref *id)
+struct id_in_use_state {
+	const struct id_cache_ref *id;
+	bool match;
+};
+
+static int id_in_use_cb(struct smbXsrv_session *session,
+			void *private_data)
 {
-	switch(id->type) {
+	struct id_in_use_state *state = (struct id_in_use_state *)
+		private_data;
+	struct auth_session_info *session_info =
+		session->global->auth_session_info;
+
+	switch(state->id->type) {
 	case UID:
-		return uid_in_use(user, id->id.uid);
+		state->match = uid_in_use(session_info, state->id->id.uid);
+		break;
 	case GID:
-		return gid_in_use(user, id->id.gid);
+		state->match = gid_in_use(session_info, state->id->id.gid);
+		break;
 	case SID:
-		return sid_in_use(user, &id->id.sid);
+		state->match = sid_in_use(session_info, &state->id->id.sid);
+		break;
 	default:
+		state->match = false;
 		break;
 	}
-	return false;
+	if (state->match) {
+		return -1;
+	}
+	return 0;
+}
+
+static bool id_in_use(struct smbd_server_connection *sconn,
+		      const struct id_cache_ref *id)
+{
+	struct id_in_use_state state;
+	NTSTATUS status;
+
+	state = (struct id_in_use_state) {
+		.id = id,
+		.match = false,
+	};
+
+	status = smbXsrv_session_local_traverse(sconn->client,
+						id_in_use_cb,
+						&state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	return state.match;
 }
 
 static void smbd_id_cache_kill(struct messaging_context *msg_ctx,
@@ -3566,7 +3592,7 @@ static void smbd_id_cache_kill(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	if (id_in_use(sconn->users, &id)) {
+	if (id_in_use(sconn, &id)) {
 		exit_server_cleanly(msg);
 	}
 	id_cache_delete_from_cache(&id);
