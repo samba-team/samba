@@ -127,8 +127,8 @@ static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 		allow = vfs_gpfs_access_mask_to_allow(access_mask);
 		deny = vfs_gpfs_share_access_to_deny(share_access);
 	}
-	DEBUG(10, ("am=%x, allow=%d, sa=%x, deny=%d\n",
-		   access_mask, allow, share_access, deny));
+	DBG_DEBUG("access_mask=0x%x, allow=0x%x, share_access=0x%x, "
+		  "deny=0x%x\n", access_mask, allow, share_access, deny);
 
 	result = gpfswrap_set_share(fsp->fh->fd, allow, deny);
 	if (result != 0) {
