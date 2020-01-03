@@ -2740,6 +2740,38 @@ static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 	}
 }
 
+
+static const char *ad_dc_req_vfs_mods[] = {"dfs_samba4", "acl_xattr", NULL};
+
+/*
+ * check that @vfs_objects includes all vfs modules required by an AD DC.
+ */
+static bool check_ad_dc_required_mods(const char **vfs_objects)
+{
+	int i;
+	int j;
+	int got_req;
+
+	for (i = 0; ad_dc_req_vfs_mods[i] != NULL; i++) {
+		got_req = false;
+		for (j = 0; vfs_objects[j] != NULL; j++) {
+			if (!strwicmp(ad_dc_req_vfs_mods[i], vfs_objects[j])) {
+				got_req = true;
+				break;
+			}
+		}
+		if (!got_req) {
+			DEBUG(0, ("vfs objects specified without required AD "
+				  "DC module: %s\n", ad_dc_req_vfs_mods[i]));
+			return false;
+		}
+	}
+
+	DEBUG(6, ("vfs objects specified with all required AD DC modules\n"));
+	return true;
+}
+
+
 /***************************************************************************
  Initialize any local variables in the sDefault table, after parsing a
  [globals] section.
@@ -2759,7 +2791,10 @@ static void init_locals(void)
 	 */
 	if (lp_server_role() == ROLE_ACTIVE_DIRECTORY_DC) {
 		const char **vfs_objects = lp_vfs_objects(-1);
-		if (!vfs_objects || !vfs_objects[0]) {
+		if (vfs_objects != NULL) {
+			/* ignore return, only warn if modules are missing */
+			check_ad_dc_required_mods(vfs_objects);
+		} else {
 			if (lp_parm_const_string(-1, "xattr_tdb", "file", NULL)) {
 				lp_do_parameter(-1, "vfs objects", "dfs_samba4 acl_xattr xattr_tdb");
 			} else if (lp_parm_const_string(-1, "posix", "eadb", NULL)) {
