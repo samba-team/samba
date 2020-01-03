@@ -86,7 +86,10 @@ static NTSTATUS check_anonymous_security(const struct auth_context *auth_context
 
 /* Guest modules initialisation */
 
-static NTSTATUS auth_init_anonymous(struct auth_context *auth_context, const char *options, auth_methods **auth_method)
+static NTSTATUS auth_init_anonymous(
+	struct auth_context *auth_context,
+	const char *options,
+	struct auth_methods **auth_method)
 {
 	struct auth_methods *result;
 
@@ -150,7 +153,10 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 
 /** Module initialisation function */
 
-static NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_name_to_ntstatus(
+	struct auth_context *auth_context,
+	const char *param,
+	struct auth_methods **auth_method)
 {
 	struct auth_methods *result;
 

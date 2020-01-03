@@ -83,7 +83,10 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-static NTSTATUS auth_init_unix(struct auth_context *auth_context, const char* param, auth_methods **auth_method) 
+static NTSTATUS auth_init_unix(
+	struct auth_context *auth_context,
+	const char* param,
+	struct auth_methods **auth_method)
 {
 	struct auth_methods *result;
 

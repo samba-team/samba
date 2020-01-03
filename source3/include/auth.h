@@ -98,7 +98,7 @@ struct auth_context {
 	const char *forced_samba4_methods;
 };
 
-typedef struct auth_methods
+struct auth_methods
 {
 	struct auth_methods *prev, *next;
 	const char *name; /* What name got this module */
@@ -117,7 +117,7 @@ typedef struct auth_methods
 
 	uint32_t flags;
 
-} auth_methods;
+};
 
 typedef NTSTATUS (*auth_init_function)(struct auth_context *, const char *, struct auth_methods **);
 

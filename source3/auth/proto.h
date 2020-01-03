@@ -37,7 +37,8 @@
 
 NTSTATUS smb_register_auth(int version, const char *name, auth_init_function init);
 bool load_auth_module(struct auth_context *auth_context,
-		      const char *module, auth_methods **ret) ;
+		      const char *module,
+		      struct auth_methods **ret) ;
 NTSTATUS make_auth3_context_for_ntlm(TALLOC_CTX *mem_ctx,
 				     struct auth_context **auth_context);
 NTSTATUS make_auth3_context_for_netlogon(TALLOC_CTX *mem_ctx,

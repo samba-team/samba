@@ -40,7 +40,10 @@ static NTSTATUS auth_sam_ignoredomain_auth(const struct auth_context *auth_conte
 }
 
 /* module initialisation */
-static NTSTATUS auth_init_sam_ignoredomain(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_sam_ignoredomain(
+	struct auth_context *auth_context,
+	const char *param,
+	struct auth_methods **auth_method)
 {
 	struct auth_methods *result;
 
@@ -108,7 +111,10 @@ static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-static NTSTATUS auth_init_sam(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_sam(
+	struct auth_context *auth_context,
+	const char *param,
+	struct auth_methods **auth_method)
 {
 	struct auth_methods *result;
 
@@ -168,8 +174,10 @@ static NTSTATUS auth_sam_netlogon3_auth(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-static NTSTATUS auth_init_sam_netlogon3(struct auth_context *auth_context,
-					const char *param, auth_methods **auth_method)
+static NTSTATUS auth_init_sam_netlogon3(
+	struct auth_context *auth_context,
+	const char *param,
+	struct auth_methods **auth_method)
 {
 	struct auth_methods *result;
 

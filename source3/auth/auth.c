@@ -177,7 +177,7 @@ NTSTATUS auth_check_ntlm_password(TALLOC_CTX *mem_ctx,
 	/* if all the modules say 'not for me' this is reasonable */
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 	const char *unix_username;
-	auth_methods *auth_method;
+	struct auth_methods *auth_method;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct dom_sid sid = {0};
 	struct imessaging_context *msg_ctx = NULL;
@@ -404,7 +404,8 @@ static NTSTATUS make_auth_context(TALLOC_CTX *mem_ctx,
 }
 
 bool load_auth_module(struct auth_context *auth_context, 
-		      const char *module, auth_methods **ret) 
+		      const char *module,
+		      struct auth_methods **ret)
 {
 	static bool initialised_static_modules = False;
 
@@ -465,8 +466,8 @@ static NTSTATUS make_auth_context_text_list(TALLOC_CTX *mem_ctx,
 					    struct auth_context **auth_context,
 					    char **text_list)
 {
-	auth_methods *list = NULL;
-	auth_methods *t, *method = NULL;
+	struct auth_methods *list = NULL;
+	struct auth_methods *t, *method = NULL;
 	NTSTATUS nt_status;
 
 	if (!text_list) {

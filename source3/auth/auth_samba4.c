@@ -364,8 +364,8 @@ static NTSTATUS make_auth4_context_s4(const struct auth_context *auth_context,
 
 /* module initialisation */
 static NTSTATUS auth_init_samba4(struct auth_context *auth_context,
-				    const char *param,
-				    auth_methods **auth_method)
+				 const char *param,
+				 struct auth_methods **auth_method)
 {
 	struct auth_methods *result;
 

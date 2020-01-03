@@ -42,7 +42,10 @@ static NTSTATUS check_skel_security(const struct auth_context *auth_context,
 }
 
 /* module initialisation */
-static NTSTATUS auth_init_skel(struct auth_context *auth_context, const char *param, auth_methods **auth_method)
+static NTSTATUS auth_init_skel(
+	struct auth_context *auth_context,
+	const char *param,
+	struct auth_methods **auth_method)
 {
 	struct auth_methods *result;
 
@@ -56,7 +59,7 @@ static NTSTATUS auth_init_skel(struct auth_context *auth_context, const char *pa
 	if (param && *param) {
 		/* we load the 'fallback' module - if skel isn't here, call this
 		   module */
-		auth_methods *priv;
+		struct auth_methods *priv;
 		if (!load_auth_module(auth_context, param, &priv)) {
 			return NT_STATUS_UNSUCCESSFUL;
 		}
