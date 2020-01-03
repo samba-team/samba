@@ -154,6 +154,10 @@ static bool smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 	if (memcmp(value_from_encryption, ntv2_response->data, 16) == 0) { 
 		if (user_sess_key != NULL) {
 			*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
+			if (user_sess_key->data == NULL) {
+				DBG_ERR("data_blob_talloc failed\n");
+				return false;
+			}
 
 			status = SMBsesskeygen_ntv2(kr,
 						    value_from_encryption,
