@@ -62,7 +62,7 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
                               server_use_winbind=False)
         self.assertTrue(ret)
 
-    def test_agaist_winbind(self):
+    def test_against_winbind(self):
         """ ntlm_auth against winbindd """
 
         ret = self.run_helper(client_username=self.username,
