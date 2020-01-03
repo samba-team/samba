@@ -1604,7 +1604,7 @@ out:
 }
 
 static int vfs_gluster_kernel_flock(struct vfs_handle_struct *handle,
-				    files_struct *fsp, uint32_t share_mode,
+				    files_struct *fsp, uint32_t share_access,
 				    uint32_t access_mask)
 {
 	errno = ENOSYS;
