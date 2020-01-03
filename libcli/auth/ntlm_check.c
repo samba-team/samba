@@ -46,14 +46,13 @@ static bool smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
 	}
 
 	if (sec_blob->length != 8) {
-		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect challenge size (%lu)\n", 
-			  (unsigned long)sec_blob->length));
+		DBG_ERR("incorrect challenge size (%zu)\n", sec_blob->length);
 		return false;
 	}
 
 	if (nt_response->length != 24) {
-		DEBUG(0, ("smb_pwd_check_ntlmv1: incorrect password length (%lu)\n", 
-			  (unsigned long)nt_response->length));
+		DBG_ERR("incorrect password length (%zu)\n",
+			nt_response->length);
 		return false;
 	}
 
@@ -113,8 +112,7 @@ static bool smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 	}
 
 	if (sec_blob->length != 8) {
-		DEBUG(0, ("smb_pwd_check_ntlmv2: incorrect challenge size (%lu)\n", 
-			  (unsigned long)sec_blob->length));
+		DBG_ERR("incorrect challenge size (%zu)\n", sec_blob->length);
 		return false;
 	}
 
@@ -122,8 +120,8 @@ static bool smb_pwd_check_ntlmv2(TALLOC_CTX *mem_ctx,
 		/* We MUST have more than 16 bytes, or the stuff below will go
 		   crazy.  No known implementation sends less than the 24 bytes
 		   for LMv2, let alone NTLMv2. */
-		DEBUG(0, ("smb_pwd_check_ntlmv2: incorrect password length (%lu)\n", 
-			  (unsigned long)ntv2_response->length));
+		DBG_ERR("incorrect password length (%zu)\n",
+			ntv2_response->length);
 		return false;
 	}
 
@@ -204,8 +202,7 @@ static bool smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 	}
 
 	if (sec_blob->length != 8) {
-		DEBUG(0, ("smb_sess_key_ntlmv2: incorrect challenge size (%lu)\n", 
-			  (unsigned long)sec_blob->length));
+		DBG_ERR("incorrect challenge size (%zu)\n", sec_blob->length);
 		return false;
 	}
 
@@ -213,8 +210,8 @@ static bool smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 		/* We MUST have more than 16 bytes, or the stuff below will go
 		   crazy.  No known implementation sends less than the 24 bytes
 		   for LMv2, let alone NTLMv2. */
-		DEBUG(0, ("smb_sess_key_ntlmv2: incorrect password length (%lu)\n", 
-			  (unsigned long)ntv2_response->length));
+		DBG_ERR("incorrect password length (%zu)\n",
+			ntv2_response->length);
 		return false;
 	}
 
@@ -397,8 +394,9 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	}
 
 	if (nt_response->length != 0 && nt_response->length < 24) {
-		DEBUG(2,("ntlm_password_check: invalid NT password length (%lu) for user %s\n", 
-			 (unsigned long)nt_response->length, username));		
+		DBG_NOTICE("invalid NT password length (%zu) for user %s\n",
+			   nt_response->length,
+			   username);
 	}
 
 	if (nt_response->length > 24 && stored_nt) {
@@ -484,8 +482,9 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 	}
 
 	if (lm_response->length < 24) {
-		DEBUG(2,("ntlm_password_check: invalid LanMan password length (%lu) for user %s\n", 
-			 (unsigned long)nt_response->length, username));		
+		DBG_NOTICE("invalid LanMan password length (%zu) for "
+			   "user %s\n",
+			   nt_response->length, username);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
