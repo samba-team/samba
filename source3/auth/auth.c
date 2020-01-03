@@ -84,9 +84,6 @@ static struct auth_init_function_entry *auth_find_backend_entry(const char *name
 NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
 				 uint8_t chal[8])
 {
-	uchar tmp[8];
-
-
 	if (auth_context->challenge.length) {
 		DEBUG(5, ("get_ntlm_challenge (auth subsystem): returning previous challenge by module %s (normal)\n", 
 			  auth_context->challenge_set_by));
@@ -94,13 +91,13 @@ NTSTATUS auth_get_ntlm_challenge(struct auth_context *auth_context,
 		return NT_STATUS_OK;
 	}
 
-	generate_random_buffer(tmp, sizeof(tmp));
-	auth_context->challenge = data_blob_talloc(auth_context,
-						   tmp, sizeof(tmp));
+	auth_context->challenge = data_blob_talloc(auth_context, NULL, 8);
 	if (auth_context->challenge.data == NULL) {
 		DBG_WARNING("data_blob_talloc failed\n");
 		return NT_STATUS_NO_MEMORY;
 	}
+	generate_random_buffer(
+		auth_context->challenge.data, auth_context->challenge.length);
 
 	auth_context->challenge_set_by = "random";
 
