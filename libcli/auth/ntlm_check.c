@@ -74,6 +74,10 @@ static bool smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
 	if (memcmp(p24, nt_response->data, 24) == 0) {
 		if (user_sess_key != NULL) {
 			*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
+			if (user_sess_key->data == NULL) {
+				DBG_ERR("data_blob_talloc failed\n");
+				return false;
+			}
 			SMBsesskeygen_ntv1(part_passwd, user_sess_key->data);
 		}
 		return true;
