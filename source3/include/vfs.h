@@ -808,7 +808,7 @@ struct vfs_fn_pointers {
 			    off_t len);
 	bool (*lock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, off_t offset, off_t count, int type);
 	int (*kernel_flock_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp,
-			       uint32_t share_mode, uint32_t access_mask);
+			       uint32_t share_access, uint32_t access_mask);
 	int (*fcntl_fn)(struct vfs_handle_struct *handle,
 			struct files_struct *fsp, int cmd, va_list cmd_arg);
 	int (*linux_setlease_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype);
@@ -1338,7 +1338,7 @@ bool smb_vfs_call_lock(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp, int op, off_t offset,
 		       off_t count, int type);
 int smb_vfs_call_kernel_flock(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp, uint32_t share_mode,
+			      struct files_struct *fsp, uint32_t share_access,
 			      uint32_t access_mask);
 int smb_vfs_call_fcntl(struct vfs_handle_struct *handle,
 		       struct files_struct *fsp, int cmd, ...);
