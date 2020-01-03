@@ -232,6 +232,10 @@ static bool smb_sess_key_ntlmv2(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 	*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
+	if (user_sess_key->data == NULL) {
+		DBG_ERR("data_blob_talloc failed\n");
+		return false;
+	}
 	status = SMBsesskeygen_ntv2(kr,
 				    value_from_encryption,
 				    user_sess_key->data);
