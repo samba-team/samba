@@ -157,12 +157,20 @@ class cmd_testparm(Command):
             valid = False
 
         role = lp.get("server role")
-        charset = lp.get("unix charset").upper()
 
-        if role in ["active directory domain controller", "domain controller", "dc"] and charset not in ["UTF-8", "UTF8"]:
-            logger.warning(
-                "When acting as Active Directory domain controller, "
-                "unix charset is expected to be UTF-8.")
+        if role in ["active directory domain controller", "domain controller", "dc"]:
+            charset = lp.get("unix charset").upper()
+            if charset not in ["UTF-8", "UTF8"]:
+                logger.warning(
+                    "When acting as Active Directory domain controller, "
+                    "unix charset is expected to be UTF-8.")
+            vfsobjects = lp.get("vfs objects")
+            if vfsobjects:
+                for entry in ['dfs_samba4', 'acl_xattr']:
+                    if entry not in vfsobjects:
+                        logger.warning(
+                            "When acting as Active Directory domain controller, " +
+                            entry + " should be in vfs objects.")
 
         return valid
 
