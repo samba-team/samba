@@ -2072,7 +2072,7 @@ static bool catia_lock(vfs_handle_struct *handle,
 
 static int catia_kernel_flock(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp,
-			      uint32_t share_mode,
+			      uint32_t share_access,
 			      uint32_t access_mask)
 {
 	struct catia_cache *cc = NULL;
@@ -2083,7 +2083,7 @@ static int catia_kernel_flock(struct vfs_handle_struct *handle,
 		return -1;
 	}
 
-	ret = SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_mode, access_mask);
+	ret = SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_access, access_mask);
 
 	CATIA_FETCH_FSP_POST_NEXT(&cc, fsp);
 
