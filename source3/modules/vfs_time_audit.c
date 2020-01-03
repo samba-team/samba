@@ -1281,14 +1281,15 @@ static bool smb_time_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
 
 static int smb_time_audit_kernel_flock(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp,
-				       uint32_t share_mode, uint32_t access_mask)
+				       uint32_t share_access,
+				       uint32_t access_mask)
 {
 	int result;
 	struct timespec ts1,ts2;
 	double timediff;
 
 	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_mode,
+	result = SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_access,
 					   access_mask);
 	clock_gettime_mono(&ts2);
 	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
