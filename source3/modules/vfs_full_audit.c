@@ -1693,11 +1693,15 @@ static bool smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
 
 static int smb_full_audit_kernel_flock(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp,
-				       uint32_t share_mode, uint32_t access_mask)
+				       uint32_t share_access,
+				       uint32_t access_mask)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp, share_mode, access_mask);
+	result = SMB_VFS_NEXT_KERNEL_FLOCK(handle,
+					   fsp,
+					   share_access,
+					   access_mask);
 
 	do_log(SMB_VFS_OP_KERNEL_FLOCK, (result >= 0), handle, "%s",
 	       fsp_str_do_log(fsp));
