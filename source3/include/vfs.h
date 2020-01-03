@@ -1770,7 +1770,7 @@ bool vfs_not_implemented_lock(vfs_handle_struct *handle, files_struct *fsp, int 
 			      off_t offset, off_t count, int type);
 int vfs_not_implemented_kernel_flock(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp,
-				     uint32_t share_mode, uint32_t access_mask);
+				     uint32_t share_access, uint32_t access_mask);
 int vfs_not_implemented_fcntl(struct vfs_handle_struct *handle,
 			      struct files_struct *fsp, int cmd, va_list cmd_arg);
 int vfs_not_implemented_linux_setlease(struct vfs_handle_struct *handle,

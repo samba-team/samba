@@ -420,7 +420,7 @@ bool vfs_not_implemented_lock(vfs_handle_struct *handle, files_struct *fsp, int 
 
 int vfs_not_implemented_kernel_flock(struct vfs_handle_struct *handle,
 				     struct files_struct *fsp,
-				     uint32_t share_mode, uint32_t access_mask)
+				     uint32_t share_access, uint32_t access_mask)
 {
 	errno = ENOSYS;
 	return -1;
