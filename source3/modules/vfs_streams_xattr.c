@@ -1585,7 +1585,7 @@ static bool streams_xattr_getlock(vfs_handle_struct *handle,
 
 static int streams_xattr_kernel_flock(vfs_handle_struct *handle,
 				      files_struct *fsp,
-				      uint32_t share_mode,
+				      uint32_t share_access,
 				      uint32_t access_mask)
 {
 	struct stream_io *sio =
@@ -1593,7 +1593,7 @@ static int streams_xattr_kernel_flock(vfs_handle_struct *handle,
 
 	if (sio == NULL) {
 		return SMB_VFS_NEXT_KERNEL_FLOCK(handle, fsp,
-						 share_mode, access_mask);
+						 share_access, access_mask);
 	}
 
 	return 0;
