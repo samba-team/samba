@@ -132,7 +132,7 @@ static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 }
 
 static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
-				 uint32_t share_mode, uint32_t access_mask)
+				 uint32_t share_access, uint32_t access_mask)
 {
 
 	struct gpfs_config_data *config;
@@ -158,9 +158,9 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 		return 0;
 	}
 
-	kernel_flock(fsp->fh->fd, share_mode, access_mask);
+	kernel_flock(fsp->fh->fd, share_access, access_mask);
 
-	if (!set_gpfs_sharemode(fsp, access_mask, share_mode)) {
+	if (!set_gpfs_sharemode(fsp, access_mask, share_access)) {
 		ret = -1;
 	}
 
