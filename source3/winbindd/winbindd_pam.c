@@ -1715,6 +1715,73 @@ static NTSTATUS winbind_samlogon_retry_loop(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS nt_dual_auth_passdb(TALLOC_CTX *mem_ctx,
+				    fstring name_user,
+				    fstring name_domain,
+				    const char *pass,
+				    uint64_t logon_id,
+				    const char *client_name,
+				    const int client_pid,
+				    const struct tsocket_address *remote,
+				    const struct tsocket_address *local,
+				    uint8_t *authoritative,
+				    struct netr_SamInfo3 **info3)
+{
+	unsigned char local_nt_response[24];
+	uchar chal[8];
+	DATA_BLOB chal_blob;
+	DATA_BLOB lm_resp;
+	DATA_BLOB nt_resp;
+
+	/* do password magic */
+
+	generate_random_buffer(chal, sizeof(chal));
+	chal_blob = data_blob_const(chal, sizeof(chal));
+
+	if (lp_client_ntlmv2_auth()) {
+		DATA_BLOB server_chal;
+		DATA_BLOB names_blob;
+		server_chal = data_blob_const(chal, 8);
+
+		/* note that the 'workgroup' here is for the local
+		   machine.  The 'server name' must match the
+		   'workstation' passed to the actual SamLogon call.
+		*/
+		names_blob = NTLMv2_generate_names_blob(mem_ctx,
+							lp_netbios_name(),
+							lp_workgroup());
+
+		if (!SMBNTLMv2encrypt(mem_ctx, name_user, name_domain,
+				      pass, &server_chal, &names_blob,
+				      &lm_resp, &nt_resp, NULL, NULL)) {
+			data_blob_free(&names_blob);
+			DEBUG(0, ("SMBNTLMv2encrypt() failed!\n"));
+			return NT_STATUS_NO_MEMORY;
+		}
+		data_blob_free(&names_blob);
+	} else {
+		int rc;
+		lm_resp = data_blob_null;
+
+		rc = SMBNTencrypt(pass, chal, local_nt_response);
+		if (rc != 0) {
+			DEBUG(0, ("SMBNTencrypt() failed!\n"));
+			return gnutls_error_to_ntstatus(rc,
+				    NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
+		}
+
+		nt_resp = data_blob_talloc(mem_ctx, local_nt_response,
+					   sizeof(local_nt_response));
+	}
+
+	return winbindd_dual_auth_passdb(talloc_tos(), 0, name_domain,
+					 name_user, logon_id, client_name,
+					 client_pid, &chal_blob, &lm_resp,
+					 &nt_resp, remote, local,
+					 true, /* interactive */
+					 authoritative, info3);
+}
+
 static NTSTATUS winbindd_dual_pam_auth_samlogon(
 	TALLOC_CTX *mem_ctx,
 	struct winbindd_domain *domain,
@@ -1729,11 +1796,6 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 	uint16_t *_validation_level,
 	union netr_Validation **_validation)
 {
-
-	uchar chal[8];
-	DATA_BLOB lm_resp;
-	DATA_BLOB nt_resp;
-	unsigned char local_nt_response[24];
 	fstring name_namespace, name_domain, name_user;
 	NTSTATUS result;
 	uint8_t authoritative = 0;
@@ -1762,61 +1824,12 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 	 * we need to check against domain->name.
 	 */
 	if (strequal(domain->name, get_global_sam_name())) {
-		DATA_BLOB chal_blob = data_blob_const(chal, sizeof(chal));
 		struct netr_SamInfo3 *info3 = NULL;
 
-		/* do password magic */
-
-		generate_random_buffer(chal, sizeof(chal));
-
-		if (lp_client_ntlmv2_auth()) {
-			DATA_BLOB server_chal;
-			DATA_BLOB names_blob;
-			server_chal = data_blob_const(chal, 8);
-
-			/* note that the 'workgroup' here is for the local
-			   machine.  The 'server name' must match the
-			   'workstation' passed to the actual SamLogon call.
-			*/
-			names_blob = NTLMv2_generate_names_blob(
-				mem_ctx, lp_netbios_name(), lp_workgroup());
-
-			if (!SMBNTLMv2encrypt(mem_ctx, name_user, name_domain,
-					      pass,
-					      &server_chal,
-					      &names_blob,
-					      &lm_resp, &nt_resp, NULL, NULL)) {
-				data_blob_free(&names_blob);
-				DEBUG(0, ("winbindd_pam_auth: SMBNTLMv2encrypt() failed!\n"));
-				result = NT_STATUS_NO_MEMORY;
-				goto done;
-			}
-			data_blob_free(&names_blob);
-		} else {
-			int rc;
-			lm_resp = data_blob_null;
-			rc = SMBNTencrypt(pass, chal, local_nt_response);
-			if (rc != 0) {
-				DEBUG(0, ("winbindd_pam_auth: SMBNTencrypt() failed!\n"));
-				result = gnutls_error_to_ntstatus(rc, NT_STATUS_ACCESS_DISABLED_BY_POLICY_OTHER);
-				goto done;
-			}
-
-			nt_resp = data_blob_talloc(mem_ctx, local_nt_response,
-						   sizeof(local_nt_response));
-		}
-
-		result = winbindd_dual_auth_passdb(
-			talloc_tos(), 0, name_domain, name_user,
-			logon_id,
-			client_name,
-			client_pid,
-			&chal_blob, &lm_resp, &nt_resp,
-			remote,
-			local,
-			true, /* interactive */
-			&authoritative,
-			&info3);
+		result = nt_dual_auth_passdb(mem_ctx, name_user, name_domain,
+					     pass, logon_id, client_name,
+					     client_pid, remote, local,
+					     &authoritative, &info3);
 
 		/*
 		 * We need to try the remote NETLOGON server if this is
