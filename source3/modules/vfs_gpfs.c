@@ -121,12 +121,10 @@ static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 	unsigned int deny = GPFS_DENY_NONE;
 	int result;
 
-	allow = vfs_gpfs_access_mask_to_allow(access_mask);
-
-	if (allow == GPFS_SHARE_NONE) {
-		DEBUG(10, ("special case am=no_access:%x\n",access_mask));
-	}
-	else {
+	if (access_mask == 0) {
+		DBG_DEBUG("Clearing file system share mode.\n");
+	} else {
+		allow = vfs_gpfs_access_mask_to_allow(access_mask);
 		deny = vfs_gpfs_share_access_to_deny(share_access);
 	}
 	DEBUG(10, ("am=%x, allow=%d, sa=%x, deny=%d\n",
