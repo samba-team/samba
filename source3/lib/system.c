@@ -575,15 +575,15 @@ int sys_fallocate(int fd, uint32_t mode, off_t offset, off_t len)
  A flock() wrapper that will perform the kernel flock.
 ********************************************************************/
 
-void kernel_flock(int fd, uint32_t share_mode, uint32_t access_mask)
+void kernel_flock(int fd, uint32_t share_access, uint32_t access_mask)
 {
 #ifdef HAVE_KERNEL_SHARE_MODES
 	int kernel_mode = 0;
-	if (share_mode == FILE_SHARE_WRITE) {
+	if (share_access == FILE_SHARE_WRITE) {
 		kernel_mode = LOCK_MAND|LOCK_WRITE;
-	} else if (share_mode == FILE_SHARE_READ) {
+	} else if (share_access == FILE_SHARE_READ) {
 		kernel_mode = LOCK_MAND|LOCK_READ;
-	} else if (share_mode == FILE_SHARE_NONE) {
+	} else if (share_access == FILE_SHARE_NONE) {
 		kernel_mode = LOCK_MAND;
 	}
 	if (kernel_mode) {
