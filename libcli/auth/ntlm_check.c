@@ -37,6 +37,7 @@ static bool smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
 	/* Finish the encryption of part_passwd. */
 	uint8_t p24[24];
 	int rc;
+	bool ok;
 
 	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));
@@ -71,18 +72,19 @@ static bool smb_pwd_check_ntlmv1(TALLOC_CTX *mem_ctx,
 	DEBUGADD(100,("Value from encryption was |\n"));
 	dump_data(100, p24, 24);
 #endif
-	if (memcmp(p24, nt_response->data, 24) == 0) {
-		if (user_sess_key != NULL) {
-			*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
-			if (user_sess_key->data == NULL) {
-				DBG_ERR("data_blob_talloc failed\n");
-				return false;
-			}
-			SMBsesskeygen_ntv1(part_passwd, user_sess_key->data);
+	ok = (memcmp(p24, nt_response->data, 24) == 0);
+	if (!ok) {
+		return false;
+	}
+	if (user_sess_key != NULL) {
+		*user_sess_key = data_blob_talloc(mem_ctx, NULL, 16);
+		if (user_sess_key->data == NULL) {
+			DBG_ERR("data_blob_talloc failed\n");
+			return false;
 		}
-		return true;
-	} 
-	return false;
+		SMBsesskeygen_ntv1(part_passwd, user_sess_key->data);
+	}
+	return true;
 }
 
 /****************************************************************************
