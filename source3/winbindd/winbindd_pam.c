@@ -1738,7 +1738,7 @@ static NTSTATUS winbindd_dual_pam_auth_samlogon(
 	NTSTATUS result;
 	uint8_t authoritative = 0;
 	uint32_t flags = 0;
-	uint16_t validation_level;
+	uint16_t validation_level = 0;
 	union netr_Validation *validation = NULL;
 	struct netr_SamBaseInfo *base_info = NULL;
 	bool ok;
