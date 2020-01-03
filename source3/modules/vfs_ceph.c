@@ -1085,8 +1085,10 @@ static bool cephwrap_lock(struct vfs_handle_struct *handle, files_struct *fsp, i
 	return true;
 }
 
-static int cephwrap_kernel_flock(struct vfs_handle_struct *handle, files_struct *fsp,
-				uint32_t share_mode, uint32_t access_mask)
+static int cephwrap_kernel_flock(struct vfs_handle_struct *handle,
+				 files_struct *fsp,
+				 uint32_t share_access,
+				 uint32_t access_mask)
 {
 	DBG_ERR("[CEPH] flock unsupported! Consider setting "
 		"\"kernel share modes = no\"\n");
