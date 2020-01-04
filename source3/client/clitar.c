@@ -153,6 +153,10 @@ struct tar {
 
 	/* archive handle */
 	struct archive *archive;
+
+	/* counters */
+	uint64_t numdir;
+	uint64_t numfile;
 };
 
 /**
@@ -211,8 +215,7 @@ static int make_remote_path(const char *full_path);
 static int max_token (const char *str);
 static NTSTATUS is_subpath(const char *sub, const char *full,
 			   bool *_subpath_match);
-
-/**
+ /*
  * tar_get_ctx - retrieve global tar context handle
  */
 struct tar *tar_get_ctx()
@@ -285,10 +288,8 @@ int cmd_tarmode(void)
 		{"nosystem",  &tar_ctx.mode.system,      false},
 		{"hidden",    &tar_ctx.mode.hidden,      true },
 		{"nohidden",  &tar_ctx.mode.hidden,      false},
-		{"verbose",   &tar_ctx.mode.verbose,     true },
-		{"noquiet",   &tar_ctx.mode.verbose,     true },
-		{"quiet",     &tar_ctx.mode.verbose,     false},
-		{"noverbose", &tar_ctx.mode.verbose,     false},
+		{"verbose",   &tar_ctx.mode.verbose,     false},
+		{"noverbose", &tar_ctx.mode.verbose,     true },
 	};
 
 	ctx = talloc_new(NULL);
@@ -313,7 +314,7 @@ int cmd_tarmode(void)
 				tar_ctx.mode.system      ? "system"      : "nosystem",
 				tar_ctx.mode.hidden      ? "hidden"      : "nohidden",
 				tar_ctx.mode.reset       ? "reset"       : "noreset",
-				tar_ctx.mode.verbose     ? "verbose"     : "quiet"));
+				tar_ctx.mode.verbose     ? "verbose"     : "noverbose"));
 
 	talloc_free(ctx);
 	return 0;
@@ -342,7 +343,7 @@ int cmd_tar(void)
 
 	ok = next_token_talloc(ctx, &cmd_ptr, &buf, NULL);
 	if (!ok) {
-		DBG(0, ("tar <c|x>[IXFbganN] [options] <tar file> [path list]\n"));
+		d_printf("tar <c|x>[IXFbgvanN] [options] <tar file> [path list]\n");
 		err = 1;
 		goto out;
 	}
@@ -517,7 +518,7 @@ int tar_parse_args(struct tar* t,
 			break;
 
 			/* verbose */
-		case 'q':
+		case 'v':
 			t->mode.verbose = true;
 			break;
 
@@ -642,11 +643,16 @@ static int tar_create(struct tar* t)
 	int err = 0;
 	NTSTATUS status;
 	const char *mask;
+	struct timespec tp_start, tp_end;
 	TALLOC_CTX *ctx = talloc_new(NULL);
 	if (ctx == NULL) {
 		return 1;
 	}
 
+	clock_gettime_mono(&tp_start);
+
+	t->numfile = 0;
+	t->numdir = 0;
 	t->archive = archive_write_new();
 
 	if (!t->mode.dry) {
@@ -713,8 +719,14 @@ static int tar_create(struct tar* t)
 		}
 	}
 
+	clock_gettime_mono(&tp_end);
+	d_printf("tar: dumped %"PRIu64" files and %"PRIu64" directories\n",
+	         t->numfile, t->numdir);
+	d_printf("Total bytes written: %"PRIu64" (%.1f MiB/s)\n",
+		t->total_size,
+		t->total_size/timespec_elapsed2(&tp_start, &tp_end)/1024/1024);
+
 out_close:
-	DBG(0, ("Total bytes received: %" PRIu64 "\n", t->total_size));
 
 	if (!t->mode.dry) {
 		r = archive_write_close(t->archive);
@@ -823,8 +835,11 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	char *remote_name;
+	char *old_dir = NULL;
+	char *new_dir = NULL;
 	const char *initial_dir = client_get_cur_dir();
 	bool skip = false;
+	bool isdir;
 	int rc;
 	TALLOC_CTX *ctx = talloc_new(NULL);
 	if (ctx == NULL) {
@@ -846,7 +861,19 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 		goto out;
 	}
 
-	status = tar_create_skip_path(&tar_ctx, remote_name, finfo, &skip);
+	isdir = finfo->mode & FILE_ATTRIBUTE_DIRECTORY;
+	if (isdir) {
+		old_dir = talloc_strdup(ctx, initial_dir);
+		new_dir = talloc_asprintf(ctx, "%s\\", remote_name);
+		if ((old_dir == NULL) || (new_dir == NULL)) {
+			status = NT_STATUS_NO_MEMORY;
+			goto out;
+		}
+	}
+
+	status = tar_create_skip_path(&tar_ctx,
+	                              isdir ? new_dir : remote_name,
+	                              finfo, &skip);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto out;
 	}
@@ -857,18 +884,8 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 		goto out;
 	}
 
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) {
-		char *old_dir;
-		char *new_dir;
+	if (isdir) {
 		char *mask;
-
-		old_dir = talloc_strdup(ctx, initial_dir);
-		new_dir = talloc_asprintf(ctx, "%s%s\\",
-					  initial_dir, finfo->name);
-		if ((old_dir == NULL) || (new_dir == NULL)) {
-			status = NT_STATUS_NO_MEMORY;
-			goto out;
-		}
 		mask = talloc_asprintf(ctx, "%s*", new_dir);
 		if (mask == NULL) {
 			status = NT_STATUS_NO_MEMORY;
@@ -889,6 +906,7 @@ static NTSTATUS get_file_callback(struct cli_state *cli,
 		client_set_cur_dir(new_dir);
 		do_list(mask, TAR_DO_LIST_ATTR, get_file_callback, false, true);
 		client_set_cur_dir(old_dir);
+		tar_ctx.numdir++;
 	} else {
 		rc = tar_get_file(&tar_ctx, remote_name, finfo);
 		if (rc != 0) {
@@ -922,6 +940,7 @@ static int tar_get_file(struct tar *t,
 	int err = 0, r;
 	const bool isdir = finfo->mode & FILE_ATTRIBUTE_DIRECTORY;
 	TALLOC_CTX *ctx = talloc_new(NULL);
+
 	if (ctx == NULL) {
 		return 1;
 	}
@@ -969,6 +988,28 @@ static int tar_get_file(struct tar *t,
 
 	archive_entry_set_size(entry, (int64_t)finfo->size);
 
+	if (isdir) {
+		/* It's a directory just write a header */
+		r = archive_write_header(t->archive, entry);
+		if (r != ARCHIVE_OK) {
+			DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
+			err = 1;
+		}
+		if (t->mode.verbose) {
+			d_printf("a %s\\\n", full_dos_path);
+		}
+		DBG(5, ("get_file skip dir %s\n", full_dos_path));
+		goto out_entry;
+	}
+
+	status = cli_open(cli, full_dos_path, O_RDONLY, DENY_NONE, &remote_fd);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("%s opening remote file %s\n",
+					nt_errstr(status), full_dos_path);
+		goto out_entry;
+	}
+
+	/* don't make tar file entry until after the file is open */
 	r = archive_write_header(t->archive, entry);
 	if (r != ARCHIVE_OK) {
 		DBG(0, ("Fatal: %s\n", archive_error_string(t->archive)));
@@ -976,16 +1017,8 @@ static int tar_get_file(struct tar *t,
 		goto out_entry;
 	}
 
-	if (isdir) {
-		DBG(5, ("get_file skip dir %s\n", full_dos_path));
-		goto out_entry;
-	}
-
-	status = cli_open(cli, full_dos_path, O_RDONLY, DENY_NONE, &remote_fd);
-	if (!NT_STATUS_IS_OK(status)) {
-		DBG(0,("%s opening remote file %s\n",
-					nt_errstr(status), full_dos_path));
-		goto out_entry;
+	if (t->mode.verbose) {
+		d_printf("a %s\n", full_dos_path);
 	}
 
 	do {
@@ -1007,6 +1040,7 @@ static int tar_get_file(struct tar *t,
 		}
 
 	} while (off < finfo->size);
+	t->numfile++;
 
 out_close:
 	cli_close(cli, remote_fd);
@@ -1074,8 +1108,11 @@ static int tar_extract(struct tar *t)
 			DBG(5, ("--- %s\n", archive_entry_pathname(entry)));
 			continue;
 		}
-
 		DBG(5, ("+++ %s\n", archive_entry_pathname(entry)));
+
+		if (t->mode.verbose) {
+			d_printf("x %s\n", archive_entry_pathname(entry));
+		}
 
 		rc = tar_send_file(t, entry);
 		if (rc != 0) {

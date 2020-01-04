@@ -5619,7 +5619,7 @@ static struct {
   {"scopy",cmd_scopy,"<src> <dest> server-side copy file",{COMPL_REMOTE,COMPL_REMOTE}},
   {"stat",cmd_stat,"<file name> Do a UNIX extensions stat call on a file",{COMPL_REMOTE,COMPL_NONE}},
   {"symlink",cmd_symlink,"<oldname> <newname> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
-  {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
+  {"tar",cmd_tar,"tar <c|x>[IXFvbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
   {"timeout",cmd_timeout,"timeout <number> - set the per-operation timeout in seconds (default 20)",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
@@ -6416,7 +6416,7 @@ int main(int argc,char *argv[])
 			.arg        = NULL,
 			.val        = 'T',
 			.descrip    = "Command line tar",
-			.argDescrip = "<c|x>IXFqgbNan",
+			.argDescrip = "<c|x>IXFvgbNan",
 		},
 		{
 			.longName   = "directory",

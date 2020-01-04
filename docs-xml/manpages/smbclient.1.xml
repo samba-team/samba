@@ -69,7 +69,7 @@
 		<arg choice="opt">-R &lt;name resolve order&gt;</arg>
 		<arg choice="opt">-s &lt;smb config file&gt;</arg>
 		<arg choice="opt">-t &lt;per-operation timeout in seconds&gt;</arg>
-		<arg choice="opt">-T&lt;c|x&gt;IXFqgbNan</arg>
+		<arg choice="opt">-T&lt;c|x&gt;IXFvgbNan</arg>
 		<arg choice="opt">-k</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
@@ -413,8 +413,9 @@
 			files that have the archive bit set. Useful only with the
 			<parameter>c</parameter> flag. </para></listitem>
 
-			<listitem><para><parameter>q</parameter> - Quiet. Keeps tar from printing
-			diagnostics as it works.  This is the same as tarmode quiet.
+			<listitem><para><parameter>v</parameter> - Verbose. Makes tar
+			print out the files being processed. By default tar is not verbose.
+			This is the same as tarmode verbose.
 			</para></listitem>
 
 			<listitem><para><parameter>r</parameter> - Use wildcard
@@ -1102,7 +1103,7 @@
 		</varlistentry>
 
 		<varlistentry>
-		<term>tarmode &lt;full|inc|reset|noreset|system|nosystem|hidden|nohidden&gt;</term>
+		<term>tarmode &lt;full|inc|reset|noreset|system|nosystem|hidden|nohidden|verbose|noverbose&gt;</term>
 		<listitem><para>Changes tar's behavior with regard to DOS
 		attributes. There are 4 modes which can be turned on or
 		off.</para>
