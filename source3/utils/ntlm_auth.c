@@ -1481,7 +1481,14 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	}
 
 	if (*private1) {
-		state = (struct gensec_ntlm_state *)*private1;
+		state = talloc_get_type(*private1, struct gensec_ntlm_state);
+		if (state == NULL) {
+			DBG_WARNING("*private1 is of type %s\n",
+				    talloc_get_name(*private1));
+			printf("BH *private1 is of type %s\n",
+			       talloc_get_name(*private1));
+			exit(1);
+		}
 	} else {
 		state = talloc_zero(NULL, struct gensec_ntlm_state);
 		if (!state) {
