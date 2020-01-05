@@ -1475,6 +1475,10 @@ static void manage_gensec_request(enum stdio_helper_mode stdio_helper_mode,
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_named(NULL, 0, "manage_gensec_request internal mem_ctx");
+	if (mem_ctx == NULL) {
+		printf("BH No Memory\n");
+		exit(1);
+	}
 
 	if (*private1) {
 		state = (struct gensec_ntlm_state *)*private1;
