@@ -754,8 +754,6 @@ struct kernel_oplocks *linux_init_kernel_oplocks(struct smbd_server_connection *
 
 /* The following definitions come from smbd/password.c  */
 
-struct user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,
-					  uint64_t vuid);
 void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid);
 int register_homes_share(const char *username);
 

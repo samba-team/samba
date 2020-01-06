@@ -840,18 +840,9 @@ struct smbd_smb2_request {
 };
 
 struct smbd_server_connection;
-struct user_struct;
 
 struct pending_message_list;
 struct pending_auth_data;
-
-struct user_struct {
-	struct user_struct *next, *prev;
-
-	struct auth_session_info *session_info;
-
-	struct smbXsrv_session *session;
-};
 
 struct pthreadpool_tevent;
 
@@ -866,7 +857,6 @@ struct smbd_server_connection {
 	int trans_num;
 
 	size_t num_users;
-	struct user_struct *users;
 
 	size_t num_connections;
 	struct connection_struct *connections;

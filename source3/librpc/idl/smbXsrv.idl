@@ -290,7 +290,6 @@ interface smbXsrv
 		hyper					nonce_high_max;
 		hyper					nonce_high;
 		hyper					nonce_low;
-		[ignore] user_struct			*compat;
 		[ignore] smbXsrv_tcon_table		*tcon_table;
 		[ignore] uint32				homes_snum;
 		smbXsrv_session_auth0			*pending_auth;

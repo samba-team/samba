@@ -1685,7 +1685,6 @@ NTSTATUS smbXsrv_session_logoff(struct smbXsrv_session *session)
 	}
 
 	invalidate_vuid(sconn, session->global->session_wire_id);
-	session->compat = NULL;
 
 	global_rec = session->global->db_rec;
 	session->global->db_rec = NULL;

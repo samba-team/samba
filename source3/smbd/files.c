@@ -661,10 +661,6 @@ struct files_struct *file_fsp_get(struct smbd_smb2_request *smb2req,
 		return NULL;
 	}
 
-	if (smb2req->session->compat == NULL) {
-		return NULL;
-	}
-
 	if (smb2req->session->global->session_wire_id != fsp->vuid) {
 		return NULL;
 	}

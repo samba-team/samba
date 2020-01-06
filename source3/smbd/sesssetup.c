@@ -302,16 +302,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			data_blob_clear_free(&session_info->session_key);
 		}
 
-		session->compat = talloc_zero(session, struct user_struct);
-		if (session->compat == NULL) {
-			data_blob_free(&out_blob);
-			TALLOC_FREE(session);
-			reply_nterror(req, NT_STATUS_NO_MEMORY);
-			return;
-		}
-		session->compat->session = session;
-		session->compat->session_info = session_info;
-		DLIST_ADD(sconn->users, session->compat);
 		sconn->num_users++;
 
 		if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
@@ -411,8 +401,6 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 			session->global->auth_session_info->session_key;
 		talloc_steal(session_info, session_info->session_key.data);
 		TALLOC_FREE(session->global->auth_session_info);
-
-		session->compat->session_info = session_info;
 
 		if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {
 			session->homes_snum =
@@ -1059,16 +1047,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		}
 	}
 
-	session->compat = talloc_zero(session, struct user_struct);
-	if (session->compat == NULL) {
-		TALLOC_FREE(session);
-		reply_nterror(req, NT_STATUS_NO_MEMORY);
-		END_PROFILE(SMBsesssetupX);
-		return;
-	}
-	session->compat->session = session;
-	session->compat->session_info = session_info;
-	DLIST_ADD(sconn->users, session->compat);
 	sconn->num_users++;
 
 	if (security_session_user_level(session_info, NULL) >= SECURITY_USER) {

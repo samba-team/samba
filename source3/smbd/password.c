@@ -27,47 +27,13 @@
 #include "../libcli/security/security.h"
 
 /****************************************************************************
- Check if a uid has been validated, and return an pointer to the user_struct
- if it has. NULL if not. vuid is biased by an offset. This allows us to
- tell random client vuid's (normally zero) from valid vuids.
-****************************************************************************/
-
-struct user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,
-					  uint64_t vuid)
-{
-	struct user_struct *usp;
-	int count=0;
-
-	if (vuid == UID_FIELD_INVALID)
-		return NULL;
-
-	usp=sconn->users;
-	for (;usp;usp=usp->next,count++) {
-		if (vuid == usp->session->global->session_wire_id) {
-			if (count > 10) {
-				DLIST_PROMOTE(sconn->users, usp);
-			}
-			return usp;
-		}
-	}
-
-	return NULL;
-}
-
-/****************************************************************************
  Invalidate a uid.
 ****************************************************************************/
 
 void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
 {
-	struct user_struct *vuser = NULL;
 	struct smbXsrv_session *session = NULL;
 	NTSTATUS status;
-
-	vuser = get_valid_user_struct(sconn, vuid);
-	if (vuser == NULL) {
-		return;
-	}
 
 	status = get_valid_smbXsrv_session(sconn->client, vuid, &session);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -76,15 +42,12 @@ void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
 
 	session_yield(session);
 
-	DLIST_REMOVE(sconn->users, vuser);
 	SMB_ASSERT(sconn->num_users > 0);
 	sconn->num_users--;
 
 	/* clear the vuid from the 'cache' on each connection, and
 	   from the vuid 'owner' of connections */
 	conn_clear_vuid_caches(sconn, vuid);
-
-	TALLOC_FREE(vuser);
 }
 
 int register_homes_share(const char *username)
