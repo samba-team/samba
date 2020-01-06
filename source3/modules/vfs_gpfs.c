@@ -139,6 +139,13 @@ static int set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 		DBG_NOTICE("GPFS share mode denied for %s/%s.\n",
 			   fsp->conn->connectpath,
 			   fsp->fsp_name->base_name);
+	} else if (errno == EPERM) {
+		DBG_ERR("Samba requested GPFS sharemode for %s/%s, but the "
+			"GPFS file system is not configured accordingly. "
+			"Configure file system with mmchfs -D nfs4 or "
+			"set gpfs:sharemodes=no in Samba.\n",
+			fsp->conn->connectpath,
+			fsp->fsp_name->base_name);
 	} else {
 		DEBUG(10, ("gpfs_set_share failed: %s\n", strerror(errno)));
 	}
