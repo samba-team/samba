@@ -132,15 +132,8 @@ static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 
 	result = gpfswrap_set_share(fsp->fh->fd, allow, deny);
 	if (result != 0) {
-		if (errno == ENOSYS) {
-			DEBUG(5, ("VFS module vfs_gpfs loaded, but gpfs "
-				  "set_share function support not available. "
-				  "Allowing access\n"));
-			return True;
-		} else {
-			DEBUG(10, ("gpfs_set_share failed: %s\n",
-				   strerror(errno)));
-		}
+		DEBUG(10, ("gpfs_set_share failed: %s\n",
+			   strerror(errno)));
 	}
 
 	return (result == 0);
