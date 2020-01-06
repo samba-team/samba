@@ -194,6 +194,11 @@ static int vfs_gpfs_close(vfs_handle_struct *handle, files_struct *fsp)
 				return -1);
 
 	if (config->sharemodes) {
+		/*
+		 * Always clear GPFS sharemode in case the actual
+		 * close gets deferred due to outstanding POSIX locks
+		 * (see fd_close_posix)
+		 */
 		set_gpfs_sharemode(fsp, 0, 0);
 	}
 
