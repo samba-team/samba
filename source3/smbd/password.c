@@ -87,6 +87,8 @@ struct user_struct *get_valid_user_struct(struct smbd_server_connection *sconn,
 void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
 {
 	struct user_struct *vuser = NULL;
+	struct smbXsrv_session *session = NULL;
+	NTSTATUS status;
 
 	vuser = get_valid_user_struct_internal(sconn, vuid,
 			SERVER_ALLOCATED_REQUIRED_ANY);
@@ -94,7 +96,12 @@ void invalidate_vuid(struct smbd_server_connection *sconn, uint64_t vuid)
 		return;
 	}
 
-	session_yield(vuser->session);
+	status = get_valid_smbXsrv_session(sconn->client, vuid, &session);
+	if (!NT_STATUS_IS_OK(status)) {
+		return;
+	}
+
+	session_yield(session);
 
 	DLIST_REMOVE(sconn->users, vuser);
 	SMB_ASSERT(sconn->num_users > 0);
