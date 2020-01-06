@@ -1895,6 +1895,60 @@ NTSTATUS smbXsrv_session_info_lookup(struct smbXsrv_client *client,
 	return NT_STATUS_OK;
 }
 
+/*
+ * In memory of get_valid_user_struct()
+ *
+ * This function is similar to smbXsrv_session_local_lookup() and it's wrappers,
+ * but it doesn't implement the state checks of
+ * those. get_valid_smbXsrv_session() is NOT meant to be called to validate the
+ * session wire-id of incoming SMB requests, it MUST only be used in later
+ * internal processing where the session wire-id has already been validated.
+ */
+NTSTATUS get_valid_smbXsrv_session(struct smbXsrv_client *client,
+				   uint64_t session_wire_id,
+				   struct smbXsrv_session **session)
+{
+	struct smbXsrv_session_table *table = client->session_table;
+	uint8_t key_buf[SMBXSRV_SESSION_LOCAL_TDB_KEY_SIZE];
+	struct smbXsrv_session_local_fetch_state state = {
+		.session = NULL,
+		.status = NT_STATUS_INTERNAL_ERROR,
+	};
+	TDB_DATA key;
+	NTSTATUS status;
+
+	if (session_wire_id == 0) {
+		return NT_STATUS_USER_SESSION_DELETED;
+	}
+
+	if (table == NULL) {
+		/* this might happen before the end of negprot */
+		return NT_STATUS_USER_SESSION_DELETED;
+	}
+
+	if (table->local.db_ctx == NULL) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	key = smbXsrv_session_local_id_to_key(session_wire_id, key_buf);
+
+	status = dbwrap_parse_record(table->local.db_ctx, key,
+				     smbXsrv_session_local_fetch_parser,
+				     &state);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	if (!NT_STATUS_IS_OK(state.status)) {
+		return state.status;
+	}
+	if (state.session->global->auth_session_info == NULL) {
+		return NT_STATUS_USER_SESSION_DELETED;
+	}
+
+	*session = state.session;
+	return NT_STATUS_OK;
+}
+
 NTSTATUS smb2srv_session_table_init(struct smbXsrv_connection *conn)
 {
 	/*
