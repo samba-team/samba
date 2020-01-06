@@ -176,7 +176,9 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 	 * kernel_flock and set_gpfs_sharemode for stream.
 	 */
 	if (is_named_stream(fsp->fsp_name)) {
-		DEBUG(2,("%s: kernel_flock on stream\n", fsp_str_dbg(fsp)));
+		DBG_NOTICE("Not requesting GPFS sharemode on stream: %s/%s\n",
+			   fsp->conn->connectpath,
+			   fsp_str_dbg(fsp));
 		return 0;
 	}
 
