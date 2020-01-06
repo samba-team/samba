@@ -135,7 +135,13 @@ static int set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 		return 0;
 	}
 
-	DEBUG(10, ("gpfs_set_share failed: %s\n", strerror(errno)));
+	if (errno == EACCES) {
+		DBG_NOTICE("GPFS share mode denied for %s/%s.\n",
+			   fsp->conn->connectpath,
+			   fsp->fsp_name->base_name);
+	} else {
+		DEBUG(10, ("gpfs_set_share failed: %s\n", strerror(errno)));
+	}
 
 	return result;
 }
