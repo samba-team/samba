@@ -205,6 +205,7 @@ NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 	torture_suite_add_suite(suite, torture_smb2_readwrite_init(suite));
 	torture_suite_add_1smb2_test(suite, "maximum_allowed", torture_smb2_maximum_allowed);
 	torture_suite_add_1smb2_test(suite, "mangle", torture_smb2_mangle);
+	torture_suite_add_1smb2_test(suite, "tcon", run_tcon_test);
 
 	torture_suite_add_suite(suite, torture_smb2_charset(suite));
 	suite->description = talloc_strdup(suite, "SMB2-specific tests");
