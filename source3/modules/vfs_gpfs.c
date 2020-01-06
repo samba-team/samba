@@ -193,7 +193,7 @@ static int vfs_gpfs_close(vfs_handle_struct *handle, files_struct *fsp)
 				struct gpfs_config_data,
 				return -1);
 
-	if (config->sharemodes && (fsp->fh != NULL) && (fsp->fh->fd != -1)) {
+	if (config->sharemodes) {
 		set_gpfs_sharemode(fsp, 0, 0);
 	}
 
