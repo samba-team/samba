@@ -147,7 +147,7 @@ static int set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 			fsp->conn->connectpath,
 			fsp->fsp_name->base_name);
 	} else {
-		DEBUG(10, ("gpfs_set_share failed: %s\n", strerror(errno)));
+		DBG_ERR("gpfs_set_share failed: %s\n", strerror(errno));
 	}
 
 	return result;
