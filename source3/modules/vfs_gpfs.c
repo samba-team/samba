@@ -131,10 +131,11 @@ static int set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 		  "deny=0x%x\n", access_mask, allow, share_access, deny);
 
 	result = gpfswrap_set_share(fsp->fh->fd, allow, deny);
-	if (result != 0) {
-		DEBUG(10, ("gpfs_set_share failed: %s\n",
-			   strerror(errno)));
+	if (result == 0) {
+		return 0;
 	}
+
+	DEBUG(10, ("gpfs_set_share failed: %s\n", strerror(errno)));
 
 	return result;
 }
