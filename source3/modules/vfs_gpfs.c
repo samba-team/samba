@@ -114,8 +114,8 @@ static unsigned int vfs_gpfs_share_access_to_deny(uint32_t share_access)
 	return deny;
 }
 
-static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
-			       uint32_t share_access)
+static int set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
+			      uint32_t share_access)
 {
 	unsigned int allow = GPFS_SHARE_NONE;
 	unsigned int deny = GPFS_DENY_NONE;
@@ -136,7 +136,7 @@ static bool set_gpfs_sharemode(files_struct *fsp, uint32_t access_mask,
 			   strerror(errno)));
 	}
 
-	return (result == 0);
+	return result;
 }
 
 static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
@@ -168,9 +168,7 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 
 	kernel_flock(fsp->fh->fd, share_access, access_mask);
 
-	if (!set_gpfs_sharemode(fsp, access_mask, share_access)) {
-		ret = -1;
-	}
+	ret = set_gpfs_sharemode(fsp, access_mask, share_access);
 
 	END_PROFILE(syscall_kernel_flock);
 
