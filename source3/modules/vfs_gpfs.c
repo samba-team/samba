@@ -199,7 +199,14 @@ static int vfs_gpfs_close(vfs_handle_struct *handle, files_struct *fsp)
 		 * close gets deferred due to outstanding POSIX locks
 		 * (see fd_close_posix)
 		 */
-		set_gpfs_sharemode(fsp, 0, 0);
+		int ret = gpfswrap_set_share(fsp->fh->fd, 0, 0);
+		if (ret != 0) {
+			DBG_ERR("Clearing GPFS sharemode on close failed for "
+				" %s/%s: %s\n",
+				fsp->conn->connectpath,
+				fsp->fsp_name->base_name,
+				strerror(errno));
+		}
 	}
 
 	return SMB_VFS_NEXT_CLOSE(handle, fsp);
