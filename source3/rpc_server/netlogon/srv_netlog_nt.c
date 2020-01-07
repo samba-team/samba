@@ -2451,10 +2451,10 @@ WERROR _netr_DsRGetForestTrustInformation(struct pipes_struct *p,
 {
 	NTSTATUS status;
 	struct lsa_ForestTrustInformation *info, **info_ptr;
+	enum security_user_level security_level;
 
-	if (!(p->pipe_bound && (p->auth.auth_type != DCERPC_AUTH_TYPE_NONE)
-		       && (p->auth.auth_level != DCERPC_AUTH_LEVEL_NONE))) {
-		p->fault_state = DCERPC_FAULT_ACCESS_DENIED;
+	security_level = security_session_user_level(p->session_info, NULL);
+	if (security_level < SECURITY_USER) {
 		return WERR_ACCESS_DENIED;
 	}
 
