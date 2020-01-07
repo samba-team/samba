@@ -762,7 +762,26 @@ for t in tests:
                   "rpc.samba3.smb-reauth1",
                   "rpc.samba3.smb-reauth2",
                   "rpc.samba3.spoolss",
-                  "rpc.samba3.wkssvc",]):
+                  "rpc.samba3.wkssvc",]) \
+        or (t in ["raw.close",
+                  "raw.composite",
+                  "raw.eas",
+                  "raw.mkdir",
+                  "raw.open",
+                  "raw.rename",
+                  "raw.samba3badnameblob",
+                  "raw.samba3badpath",
+                  "raw.samba3caseinsensitive",
+                  "raw.samba3oplocklogoff",
+                  "raw.samba3posixtimedlock",
+                  "raw.samba3rootdirfid",
+                  "raw.seek",
+                  "raw.sfileinfo.bug",
+                  "raw.sfileinfo.end-of-file",
+                  "raw.sfileinfo.rename",
+                  "raw.streams",
+                  "raw.unlink",
+                  "raw.write",]) :
         plansmbtorture4testsuite(t, "nt4_dc_smb1", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc_smb1", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
     else:
