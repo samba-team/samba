@@ -1469,6 +1469,60 @@ sub setup_fileserver_smb1
 [hidenewfiles]
 	path = $prefix_abs/share
 	hide new files timeout = 5
+[vfs_aio_pthread]
+	path = $prefix_abs/share
+	read only = no
+	vfs objects = aio_pthread
+	aio_pthread:aio open = yes
+	smbd:async dosmode = no
+
+[vfs_aio_pthread_async_dosmode_default1]
+	path = $prefix_abs/share
+	read only = no
+	vfs objects = aio_pthread
+	store dos attributes = yes
+	aio_pthread:aio open = yes
+	smbd:async dosmode = yes
+
+[vfs_aio_pthread_async_dosmode_default2]
+	path = $prefix_abs/share
+	read only = no
+	vfs objects = aio_pthread xattr_tdb
+	store dos attributes = yes
+	aio_pthread:aio open = yes
+	smbd:async dosmode = yes
+
+[vfs_aio_pthread_async_dosmode_force_sync1]
+	path = $prefix_abs/share
+	read only = no
+	vfs objects = aio_pthread
+	store dos attributes = yes
+	aio_pthread:aio open = yes
+	smbd:async dosmode = yes
+	# This simulates non linux systems
+	smbd:force sync user path safe threadpool = yes
+	smbd:force sync user chdir safe threadpool = yes
+	smbd:force sync root path safe threadpool = yes
+	smbd:force sync root chdir safe threadpool = yes
+
+[vfs_aio_pthread_async_dosmode_force_sync2]
+	path = $prefix_abs/share
+	read only = no
+	vfs objects = aio_pthread xattr_tdb
+	store dos attributes = yes
+	aio_pthread:aio open = yes
+	smbd:async dosmode = yes
+	# This simulates non linux systems
+	smbd:force sync user path safe threadpool = yes
+	smbd:force sync user chdir safe threadpool = yes
+	smbd:force sync root path safe threadpool = yes
+	smbd:force sync root chdir safe threadpool = yes
+
+[vfs_aio_fork]
+	path = $prefix_abs/share
+        vfs objects = aio_fork
+        read only = no
+        vfs_aio_fork:erratic_testing_mode=yes
 ";
 	return $self->setup_fileserver($path, $conf, "FILESERVERSMB1");
 }
