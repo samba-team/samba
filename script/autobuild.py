@@ -218,6 +218,7 @@ tasks = {
             "vampire_2000_dc",
             "fl2000dc",
             "fileserver",
+            "fileserver_smb1",
             "maptoguest",
             "simpleserver",
             "backupfromdc",
@@ -270,6 +271,7 @@ tasks = {
             "vampire_2000_dc",
             "fl2000dc",
             "fileserver",
+            "fileserver_smb1",
             "maptoguest",
             "simpleserver",
             "backupfromdc",
@@ -316,6 +318,7 @@ tasks = {
         ("make", "make -j"),
         ("test", make_test(include_envs=[
             "fileserver",
+            "fileserver_smb1",
             "maptoguest",
             "ktest", # ktest is also tested in samba and samba-mitkrb5
                      # but is tested here against a system Heimdal
