@@ -6341,10 +6341,6 @@ int main(int argc, const char *argv[])
 			options.maxruntime = 120;
 		}
 	}
-	if (options.maxruntime <= 120) {
-		/* default timeout is 120 seconds */
-		options.maxruntime = 120;
-	}
 
 	if (options.machineparsable) {
 		options.machinereadable = 1;
