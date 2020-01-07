@@ -22,11 +22,10 @@
 			Domain Controller does support the Microsoft "Services for Unix" (SFU)
 			LDAP schema, winbind can retrieve the login shell and the home
 			directory attributes directly from your Directory Server. For SFU 3.0 or 3.5 simply choose
-			"sfu", if you use SFU 2.0 please choose "sfu20". Note that
-			retrieving UID and GID from your ADS-Server requires to
-			use <parameter moreinfo="none">idmap config DOMAIN:backend</parameter> = ad
-			as well. The primary group membership is currently
-			always calculated via the "primaryGroupID" LDAP attribute.
+			"sfu", if you use SFU 2.0 please choose "sfu20".</para>
+			<para>Note that for the idmap backend <refentrytitle>idmap_ad</refentrytitle>
+			you need to configure those settings in the idmap configuration section.
+			Make sure to consult the documentation of the idmap backend that you are using.
 			</para>
 		</listitem>
 	</itemizedlist>
