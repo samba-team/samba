@@ -134,6 +134,7 @@ while getopts riavl:b:d:N:s:p:x:u:Xt: c; do
       ;;
    v) # be [v]erbose and display what's going on
       verbose=""
+      tarargs=${tarargs}v
       ;;
    '?') # any other switch
        Usage 2 "Invalid switch specified - abort."
