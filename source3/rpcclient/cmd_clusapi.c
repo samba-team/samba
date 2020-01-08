@@ -514,7 +514,7 @@ struct cmd_set clusapi_commands[] = {
 		.wfn                = cmd_clusapi_open_cluster,
 		.table              = &ndr_table_clusapi,
 		.rpc_pipe           = NULL,
-		.description        = "bla",
+		.description        = "Open cluster",
 		.usage              = "",
 	},
 	{
@@ -524,7 +524,7 @@ struct cmd_set clusapi_commands[] = {
 		.wfn                = cmd_clusapi_get_cluster_name,
 		.table              = &ndr_table_clusapi,
 		.rpc_pipe           = NULL,
-		.description        = "bla",
+		.description        = "Get cluster name",
 		.usage              = "",
 	},
 	{
@@ -534,7 +534,7 @@ struct cmd_set clusapi_commands[] = {
 		.wfn                = cmd_clusapi_get_cluster_version,
 		.table              = &ndr_table_clusapi,
 		.rpc_pipe           = NULL,
-		.description        = "bla",
+		.description        = "Get cluster version",
 		.usage              = "",
 	},
 	{
@@ -544,7 +544,7 @@ struct cmd_set clusapi_commands[] = {
 		.wfn                = cmd_clusapi_get_quorum_resource,
 		.table              = &ndr_table_clusapi,
 		.rpc_pipe           = NULL,
-		.description        = "bla",
+		.description        = "Get quorum resource",
 		.usage              = "",
 	},
 	{
@@ -554,7 +554,7 @@ struct cmd_set clusapi_commands[] = {
 		.wfn                = cmd_clusapi_create_enum,
 		.table              = &ndr_table_clusapi,
 		.rpc_pipe           = NULL,
-		.description        = "bla",
+		.description        = "Create enum query",
 		.usage              = "",
 	},
 	{
@@ -564,7 +564,7 @@ struct cmd_set clusapi_commands[] = {
 		.wfn                = cmd_clusapi_create_enumex,
 		.table              = &ndr_table_clusapi,
 		.rpc_pipe           = NULL,
-		.description        = "bla",
+		.description        = "Create enumex query",
 		.usage              = "",
 	},
 	{
@@ -574,7 +574,7 @@ struct cmd_set clusapi_commands[] = {
 		.wfn                = cmd_clusapi_open_resource,
 		.table              = &ndr_table_clusapi,
 		.rpc_pipe           = NULL,
-		.description        = "bla",
+		.description        = "Open cluster resource",
 		.usage              = "",
 	},
 	{
@@ -584,7 +584,7 @@ struct cmd_set clusapi_commands[] = {
 		.wfn                = cmd_clusapi_online_resource,
 		.table              = &ndr_table_clusapi,
 		.rpc_pipe           = NULL,
-		.description        = "bla",
+		.description        = "Set cluster resource online",
 		.usage              = "",
 	},
 	{
@@ -594,7 +594,7 @@ struct cmd_set clusapi_commands[] = {
 		.wfn                = cmd_clusapi_offline_resource,
 		.table              = &ndr_table_clusapi,
 		.rpc_pipe           = NULL,
-		.description        = "bla",
+		.description        = "Set cluster resource offline",
 		.usage              = "",
 	},
 	{
@@ -604,7 +604,7 @@ struct cmd_set clusapi_commands[] = {
 		.wfn                = cmd_clusapi_get_resource_state,
 		.table              = &ndr_table_clusapi,
 		.rpc_pipe           = NULL,
-		.description        = "bla",
+		.description        = "Get cluster resource state",
 		.usage              = "",
 	},
 	{
@@ -614,7 +614,7 @@ struct cmd_set clusapi_commands[] = {
 		.wfn                = cmd_clusapi_get_cluster_version2,
 		.table              = &ndr_table_clusapi,
 		.rpc_pipe           = NULL,
-		.description        = "bla",
+		.description        = "Get cluster version2",
 		.usage              = "",
 	},
 	{
