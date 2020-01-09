@@ -612,6 +612,9 @@ static int cephwrap_renameat(struct vfs_handle_struct *handle,
 		return result;
 	}
 
+	SMB_ASSERT(srcfsp == srcfsp->conn->cwd_fsp);
+	SMB_ASSERT(dstfsp == dstfsp->conn->cwd_fsp);
+
 	result = ceph_rename(handle->data, smb_fname_src->base_name, smb_fname_dst->base_name);
 	WRAP_RETURN(result);
 }
