@@ -1711,13 +1711,13 @@ main() {
     if (Options.options.with_cephfs and
         conf.CHECK_HEADERS('cephfs/libcephfs.h', False, False, 'cephfs') and
         conf.CHECK_LIB('cephfs', shlib=True)):
-        if Options.options.with_acl_support:
+        if (Options.options.with_acl_support and
+            conf.CHECK_FUNCS_IN('ceph_statx', 'cephfs',
+                                headers='cephfs/libcephfs.h')):
             conf.DEFINE('HAVE_CEPH', '1')
-            if conf.CHECK_FUNCS_IN('ceph_statx', 'cephfs',
-                                   headers='cephfs/libcephfs.h'):
-                conf.DEFINE('HAVE_CEPH_STATX', '1')
         else:
-            Logs.warn("ceph support disabled due to --without-acl-support")
+            Logs.warn('''Ceph support disabled due to --without-acl-support
+                      or lack of ceph_statx support''')
             conf.undefine('HAVE_CEPH')
 
     if Options.options.with_glusterfs:

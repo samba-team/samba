@@ -294,11 +294,7 @@ static uint32_t cephwrap_fs_capabilities(struct vfs_handle_struct *handle,
 {
 	uint32_t caps = FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
 
-#ifdef HAVE_CEPH_STATX
 	*p_ts_res = TIMESTAMP_SET_NT_OR_BETTER;
-#else
-	*p_ts_res = TIMESTAMP_SET_MSEC;
-#endif
 
 	return caps;
 }
@@ -669,7 +665,6 @@ static int cephwrap_fsync_recv(struct tevent_req *req,
 	return 0;
 }
 
-#ifdef HAVE_CEPH_STATX
 #define SAMBA_STATX_ATTR_MASK	(CEPH_STATX_BASIC_STATS|CEPH_STATX_BTIME)
 
 static void init_stat_ex_from_ceph_statx(struct stat_ex *dst, const struct ceph_statx *stx)
@@ -808,126 +803,6 @@ static int cephwrap_ntimes(struct vfs_handle_struct *handle,
 				ft->create_time.tv_sec, result);
 	return result;
 }
-
-#else /* HAVE_CEPH_STATX */
-
-static int cephwrap_stat(struct vfs_handle_struct *handle,
-			struct smb_filename *smb_fname)
-{
-	int result = -1;
-	struct stat stbuf;
-
-	DBG_DEBUG("[CEPH] stat(%p, %s)\n", handle, smb_fname_str_dbg(smb_fname));
-
-	if (smb_fname->stream_name) {
-		errno = ENOENT;
-		return result;
-	}
-
-	result = ceph_stat(handle->data, smb_fname->base_name, (struct stat *) &stbuf);
-	DBG_DEBUG("[CEPH] stat(...) = %d\n", result);
-	if (result < 0) {
-		WRAP_RETURN(result);
-	}
-
-	DBG_DEBUG("[CEPH]\tstbuf = {dev = %llu, ino = %llu, mode = 0x%x, nlink = %llu, "
-		   "uid = %d, gid = %d, rdev = %llu, size = %llu, blksize = %llu, "
-		   "blocks = %llu, atime = %llu, mtime = %llu, ctime = %llu}\n",
-		   llu(stbuf.st_dev), llu(stbuf.st_ino), stbuf.st_mode, llu(stbuf.st_nlink),
-		   stbuf.st_uid, stbuf.st_gid, llu(stbuf.st_rdev), llu(stbuf.st_size), llu(stbuf.st_blksize),
-		   llu(stbuf.st_blocks), llu(stbuf.st_atime), llu(stbuf.st_mtime), llu(stbuf.st_ctime));
-
-	init_stat_ex_from_stat(
-			&smb_fname->st, &stbuf,
-			lp_fake_directory_create_times(SNUM(handle->conn)));
-	DBG_DEBUG("[CEPH] mode = 0x%x\n", smb_fname->st.st_ex_mode);
-	return result;
-}
-
-static int cephwrap_fstat(struct vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
-{
-	int result = -1;
-	struct stat stbuf;
-
-	DBG_DEBUG("[CEPH] fstat(%p, %d)\n", handle, fsp->fh->fd);
-	result = ceph_fstat(handle->data, fsp->fh->fd, (struct stat *) &stbuf);
-	DBG_DEBUG("[CEPH] fstat(...) = %d\n", result);
-	if (result < 0) {
-		WRAP_RETURN(result);
-	}
-
-	DBG_DEBUG("[CEPH]\tstbuf = {dev = %llu, ino = %llu, mode = 0x%x, nlink = %llu, "
-		   "uid = %d, gid = %d, rdev = %llu, size = %llu, blksize = %llu, "
-		   "blocks = %llu, atime = %llu, mtime = %llu, ctime = %llu}\n",
-		   llu(stbuf.st_dev), llu(stbuf.st_ino), stbuf.st_mode, llu(stbuf.st_nlink),
-		   stbuf.st_uid, stbuf.st_gid, llu(stbuf.st_rdev), llu(stbuf.st_size), llu(stbuf.st_blksize),
-		   llu(stbuf.st_blocks), llu(stbuf.st_atime), llu(stbuf.st_mtime), llu(stbuf.st_ctime));
-
-	init_stat_ex_from_stat(
-			sbuf, &stbuf,
-			lp_fake_directory_create_times(SNUM(handle->conn)));
-	DBG_DEBUG("[CEPH] mode = 0x%x\n", sbuf->st_ex_mode);
-	return result;
-}
-
-static int cephwrap_lstat(struct vfs_handle_struct *handle,
-			 struct smb_filename *smb_fname)
-{
-	int result = -1;
-	struct stat stbuf;
-
-	DBG_DEBUG("[CEPH] lstat(%p, %s)\n", handle, smb_fname_str_dbg(smb_fname));
-
-	if (smb_fname->stream_name) {
-		errno = ENOENT;
-		return result;
-	}
-
-	result = ceph_lstat(handle->data, smb_fname->base_name, &stbuf);
-	DBG_DEBUG("[CEPH] lstat(...) = %d\n", result);
-	if (result < 0) {
-		WRAP_RETURN(result);
-	}
-
-	init_stat_ex_from_stat(
-			&smb_fname->st, &stbuf,
-			lp_fake_directory_create_times(SNUM(handle->conn)));
-	return result;
-}
-
-static int cephwrap_ntimes(struct vfs_handle_struct *handle,
-			 const struct smb_filename *smb_fname,
-			 struct smb_file_time *ft)
-{
-	struct utimbuf buf;
-	int result;
-
-	if (is_omit_timespec(&ft->atime)) {
-		buf.actime = smb_fname->st.st_ex_atime.tv_sec;
-	} else {
-		buf.actime = ft->atime.tv_sec;
-	}
-	if (is_omit_timespec(&ft->mtime)) {
-		buf.modtime = smb_fname->st.st_ex_mtime.tv_sec;
-	} else {
-		buf.modtime = ft->mtime.tv_sec;
-	}
-	if (!is_omit_timespec(&ft->create_time)) {
-		set_create_timespec_ea(handle->conn, smb_fname,
-				       ft->create_time);
-	}
-	if (buf.actime == smb_fname->st.st_ex_atime.tv_sec &&
-	    buf.modtime == smb_fname->st.st_ex_mtime.tv_sec) {
-		return 0;
-	}
-
-	result = ceph_utime(handle->data, smb_fname->base_name, &buf);
-	DBG_DEBUG("[CEPH] ntimes(%p, %s, {%ld, %ld, %ld, %ld}) = %d\n", handle, smb_fname_str_dbg(smb_fname),
-				ft->mtime.tv_sec, ft->atime.tv_sec, ft->ctime.tv_sec,
-				ft->create_time.tv_sec, result);
-	return result;
-}
-#endif /* HAVE_CEPH_STATX */
 
 static int cephwrap_unlinkat(struct vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
