@@ -101,6 +101,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_STATVFS,
 	SMB_VFS_OP_FS_CAPABILITIES,
 	SMB_VFS_OP_GET_DFS_REFERRALS,
+	SMB_VFS_OP_CREATE_DFS_PATHAT,
 
 	/* Directory operations */
 
@@ -249,6 +250,7 @@ static struct {
 	{ SMB_VFS_OP_STATVFS,	"statvfs" },
 	{ SMB_VFS_OP_FS_CAPABILITIES,	"fs_capabilities" },
 	{ SMB_VFS_OP_GET_DFS_REFERRALS,	"get_dfs_referrals" },
+	{ SMB_VFS_OP_CREATE_DFS_PATHAT,	"create_dfs_pathat" },
 	{ SMB_VFS_OP_OPENDIR,	"opendir" },
 	{ SMB_VFS_OP_FDOPENDIR,	"fdopendir" },
 	{ SMB_VFS_OP_READDIR,	"readdir" },
@@ -886,6 +888,29 @@ static NTSTATUS smb_full_audit_get_dfs_referrals(
 
 	do_log(SMB_VFS_OP_GET_DFS_REFERRALS, NT_STATUS_IS_OK(status),
 	       handle, "");
+
+	return status;
+}
+
+static NTSTATUS smb_full_audit_create_dfs_pathat(struct vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				const struct referral *reflist,
+				size_t referral_count)
+{
+	NTSTATUS status;
+
+	status = SMB_VFS_NEXT_CREATE_DFS_PATHAT(handle,
+			dirfsp,
+			smb_fname,
+			reflist,
+			referral_count);
+
+	do_log(SMB_VFS_OP_CREATE_DFS_PATHAT,
+		NT_STATUS_IS_OK(status),
+		handle,
+		"%s",
+		smb_fname_str_do_log(handle->conn, smb_fname));
 
 	return status;
 }
@@ -2935,6 +2960,7 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.statvfs_fn = smb_full_audit_statvfs,
 	.fs_capabilities_fn = smb_full_audit_fs_capabilities,
 	.get_dfs_referrals_fn = smb_full_audit_get_dfs_referrals,
+	.create_dfs_pathat_fn = smb_full_audit_create_dfs_pathat,
 	.opendir_fn = smb_full_audit_opendir,
 	.fdopendir_fn = smb_full_audit_fdopendir,
 	.readdir_fn = smb_full_audit_readdir,
