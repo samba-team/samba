@@ -1563,6 +1563,20 @@ NTSTATUS smb_vfs_call_get_dfs_referrals(struct vfs_handle_struct *handle,
 	return handle->fns->get_dfs_referrals_fn(handle, r);
 }
 
+NTSTATUS smb_vfs_call_create_dfs_pathat(struct vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				const struct referral *reflist,
+				size_t referral_count)
+{
+	VFS_FIND(create_dfs_pathat);
+	return handle->fns->create_dfs_pathat_fn(handle,
+						dirfsp,
+						smb_fname,
+						reflist,
+						referral_count);
+}
+
 DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname,
 					const char *mask,

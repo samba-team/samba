@@ -288,6 +288,7 @@
 /* Version 42 - Remove SMB_VFS_CHOWN */
 /* Version 42 - Remove struct write_cache *wcp from files_struct */
 /* Version 42 - SMB_VFS_NTIMES() receives null times based on UTIMES_OMIT */
+/* Version 42 - Add SMB_VFS_CREATE_DFS_PATHAT() */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -547,6 +548,7 @@ typedef struct connection_struct {
 
 struct smbd_smb2_request;
 struct privilege_paths;
+struct referral;
 
 struct smb_request {
 	uint8_t cmd;
@@ -702,6 +704,11 @@ struct vfs_fn_pointers {
 	 */
 	NTSTATUS (*get_dfs_referrals_fn)(struct vfs_handle_struct *handle,
 					 struct dfs_GetDFSReferral *r);
+	NTSTATUS (*create_dfs_pathat_fn)(struct vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				const struct referral *reflist,
+				size_t referral_count);
 
 	/* Directory operations */
 
@@ -1205,6 +1212,11 @@ uint32_t smb_vfs_call_fs_capabilities(struct vfs_handle_struct *handle,
  */
 NTSTATUS smb_vfs_call_get_dfs_referrals(struct vfs_handle_struct *handle,
 					struct dfs_GetDFSReferral *r);
+NTSTATUS smb_vfs_call_create_dfs_pathat(struct vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				const struct referral *reflist,
+				size_t referral_count);
 DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			const char *mask,
@@ -1642,6 +1654,11 @@ uint32_t vfs_not_implemented_fs_capabilities(struct vfs_handle_struct *handle,
 				enum timestamp_set_resolution *p_ts_res);
 NTSTATUS vfs_not_implemented_get_dfs_referrals(struct vfs_handle_struct *handle,
 					       struct dfs_GetDFSReferral *r);
+NTSTATUS vfs_not_implemented_create_dfs_pathat(struct vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				const struct referral *reflist,
+				size_t referral_count);
 DIR *vfs_not_implemented_opendir(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			const char *mask,

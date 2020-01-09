@@ -368,6 +368,42 @@ static NTSTATUS vfswrap_get_dfs_referrals(struct vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
+static NTSTATUS vfswrap_create_dfs_pathat(struct vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				const struct referral *reflist,
+				size_t referral_count)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	int ret;
+	char *msdfs_link = NULL;
+
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	/* Form the msdfs_link contents */
+	msdfs_link = msdfs_link_string(frame,
+					reflist,
+					referral_count);
+	if (msdfs_link == NULL) {
+		goto out;
+	}
+
+	ret = symlinkat(msdfs_link,
+			dirfsp->fh->fd,
+			smb_fname->base_name);
+	if (ret == 0) {
+		status = NT_STATUS_OK;
+	} else {
+		status = map_nt_error_from_unix(errno);
+	}
+
+  out:
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
 static NTSTATUS vfswrap_snap_check_path(struct vfs_handle_struct *handle,
 					TALLOC_CTX *mem_ctx,
 					const char *service_path,
@@ -3480,6 +3516,7 @@ static struct vfs_fn_pointers vfs_default_fns = {
 	.statvfs_fn = vfswrap_statvfs,
 	.fs_capabilities_fn = vfswrap_fs_capabilities,
 	.get_dfs_referrals_fn = vfswrap_get_dfs_referrals,
+	.create_dfs_pathat_fn = vfswrap_create_dfs_pathat,
 	.snap_check_path_fn = vfswrap_snap_check_path,
 	.snap_create_fn = vfswrap_snap_create,
 	.snap_delete_fn = vfswrap_snap_delete,

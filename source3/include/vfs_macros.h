@@ -78,6 +78,19 @@
 #define SMB_VFS_NEXT_GET_DFS_REFERRALS(handle, r) \
 	smb_vfs_call_get_dfs_referrals((handle)->next, (r))
 
+#define SMB_VFS_CREATE_DFS_PATHAT(conn, dirfsp, smb_fname, reflist, count) \
+	smb_vfs_call_create_dfs_pathat((conn)->vfs_handles, \
+		(dirfsp), \
+		(smb_fname), \
+		(reflist), \
+		(count))
+#define SMB_VFS_NEXT_CREATE_DFS_PATHAT(handle, dirfsp, smb_fname, reflist, count) \
+	smb_vfs_call_create_dfs_pathat((handle)->next, \
+		(dirfsp), \
+		(smb_fname), \
+		(reflist), \
+		(count))
+
 /* Directory operations */
 #define SMB_VFS_OPENDIR(conn, smb_fname, mask, attr) \
 	smb_vfs_call_opendir((conn)->vfs_handles, (smb_fname), (mask), (attr))
