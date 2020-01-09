@@ -42,6 +42,11 @@ bld.SAMBA_BINARY('fuzz_ldap_decode',
                  deps='fuzzing cli-ldap afl-fuzz-main',
                  fuzzer=True)
 
+bld.SAMBA_BINARY('fuzz_ldb_parse_control',
+                 source='fuzz_ldb_parse_control.c',
+                 deps='fuzzing ldb afl-fuzz-main',
+                 fuzzer=True)
+
 bld.SAMBA_BINARY('fuzz_ldb_parse_tree',
                  source='fuzz_ldb_parse_tree.c',
                  deps='fuzzing ldb afl-fuzz-main',
