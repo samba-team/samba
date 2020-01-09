@@ -1167,11 +1167,7 @@ static ssize_t cephwrap_fgetxattr(struct vfs_handle_struct *handle, struct files
 {
 	int ret;
 	DBG_DEBUG("[CEPH] fgetxattr(%p, %p, %s, %p, %llu)\n", handle, fsp, name, value, llu(size));
-#if LIBCEPHFS_VERSION_CODE >= LIBCEPHFS_VERSION(0, 94, 0)
 	ret = ceph_fgetxattr(handle->data, fsp->fh->fd, name, value, size);
-#else
-	ret = ceph_getxattr(handle->data, fsp->fsp_name->base_name, name, value, size);
-#endif
 	DBG_DEBUG("[CEPH] fgetxattr(...) = %d\n", ret);
 	if (ret < 0) {
 		WRAP_RETURN(ret);
@@ -1200,11 +1196,7 @@ static ssize_t cephwrap_flistxattr(struct vfs_handle_struct *handle, struct file
 	int ret;
 	DBG_DEBUG("[CEPH] flistxattr(%p, %p, %p, %llu)\n",
 		  handle, fsp, list, llu(size));
-#if LIBCEPHFS_VERSION_CODE >= LIBCEPHFS_VERSION(0, 94, 0)
 	ret = ceph_flistxattr(handle->data, fsp->fh->fd, list, size);
-#else
-	ret = ceph_listxattr(handle->data, fsp->fsp_name->base_name, list, size);
-#endif
 	DBG_DEBUG("[CEPH] flistxattr(...) = %d\n", ret);
 	if (ret < 0) {
 		WRAP_RETURN(ret);
@@ -1228,11 +1220,7 @@ static int cephwrap_fremovexattr(struct vfs_handle_struct *handle, struct files_
 {
 	int ret;
 	DBG_DEBUG("[CEPH] fremovexattr(%p, %p, %s)\n", handle, fsp, name);
-#if LIBCEPHFS_VERSION_CODE >= LIBCEPHFS_VERSION(0, 94, 0)
 	ret = ceph_fremovexattr(handle->data, fsp->fh->fd, name);
-#else
-	ret = ceph_removexattr(handle->data, fsp->fsp_name->base_name, name);
-#endif
 	DBG_DEBUG("[CEPH] fremovexattr(...) = %d\n", ret);
 	WRAP_RETURN(ret);
 }
@@ -1257,12 +1245,8 @@ static int cephwrap_fsetxattr(struct vfs_handle_struct *handle, struct files_str
 {
 	int ret;
 	DBG_DEBUG("[CEPH] fsetxattr(%p, %p, %s, %p, %llu, %d)\n", handle, fsp, name, value, llu(size), flags);
-#if LIBCEPHFS_VERSION_CODE >= LIBCEPHFS_VERSION(0, 94, 0)
 	ret = ceph_fsetxattr(handle->data, fsp->fh->fd,
 			     name, value, size, flags);
-#else
-	ret = ceph_setxattr(handle->data, fsp->fsp_name->base_name, name, value, size, flags);
-#endif
 	DBG_DEBUG("[CEPH] fsetxattr(...) = %d\n", ret);
 	WRAP_RETURN(ret);
 }
