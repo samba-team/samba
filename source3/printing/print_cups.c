@@ -573,9 +573,9 @@ static void cups_async_callback(struct tevent_context *event_ctx,
 err_out:
 	pcap_cache_destroy_specific(&tmp_pcap_cache);
 	TALLOC_FREE(frame);
+	TALLOC_FREE(cache_fd_event);
 	close(cb_args->pipe_fd);
 	TALLOC_FREE(cb_args);
-	TALLOC_FREE(cache_fd_event);
 }
 
 bool cups_cache_reload(struct tevent_context *ev,
