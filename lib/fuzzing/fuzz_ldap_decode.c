@@ -47,7 +47,6 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 	}
 
 	status = ldap_decode(asn1, samba_ldap_control_handlers(), ldap_msg);
-	printf("%s\n", nt_errstr(status));
 
 out:
 	talloc_free(mem_ctx);
