@@ -527,7 +527,7 @@ static void cups_async_callback(struct tevent_context *event_ctx,
 	struct pcap_data pcap_data;
 	DATA_BLOB pcap_blob;
 	enum ndr_err_code ndr_ret;
-	int i;
+	uint32_t i;
 
 	DEBUG(5,("cups_async_callback: callback received for printer data. "
 		"fd = %d\n", cb_args->pipe_fd));
