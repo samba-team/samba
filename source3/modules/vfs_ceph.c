@@ -1404,6 +1404,46 @@ static bool cephwrap_aio_force(struct vfs_handle_struct *handle, struct files_st
 	return false;
 }
 
+static NTSTATUS cephwrap_create_dfs_pathat(struct vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				const struct referral *reflist,
+				size_t referral_count)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	int ret;
+	char *msdfs_link = NULL;
+
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	/* Form the msdfs_link contents */
+	msdfs_link = msdfs_link_string(frame,
+					reflist,
+					referral_count);
+	if (msdfs_link == NULL) {
+		goto out;
+	}
+
+	ret = ceph_symlink(handle->data,
+			msdfs_link,
+			smb_fname->base_name);
+	if (ret == 0) {
+		status = NT_STATUS_OK;
+	} else {
+		status = map_nt_error_from_unix(-ret);
+        }
+
+  out:
+
+	DBG_DEBUG("[CEPH] create_dfs_pathat(%s) = %s\n",
+			smb_fname->base_name,
+			nt_errstr(status));
+
+	TALLOC_FREE(frame);
+	return status;
+}
+
 static struct vfs_fn_pointers ceph_fns = {
 	/* Disk operations */
 
@@ -1428,6 +1468,7 @@ static struct vfs_fn_pointers ceph_fns = {
 
 	/* File operations */
 
+	.create_dfs_pathat_fn = cephwrap_create_dfs_pathat,
 	.open_fn = cephwrap_open,
 	.close_fn = cephwrap_close,
 	.pread_fn = cephwrap_pread,
