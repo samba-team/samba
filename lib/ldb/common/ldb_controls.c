@@ -814,7 +814,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 		ret = sscanf(p, "%d", &crit);
 		if ((ret != 1) || (crit < 0) || (crit > 1)) {
 			ldb_set_errstring(ldb,
-					  "invalid bypassopreational control syntax\n"
+					  "invalid bypassoperational control syntax\n"
 					  " syntax: crit(b)\n"
 					  "   note: b = boolean");
 			talloc_free(ctrl);
