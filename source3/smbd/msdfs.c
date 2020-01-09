@@ -1421,29 +1421,16 @@ bool create_msdfs_link(const struct junction_map *jucn,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 	char *path = NULL;
-	char *msdfs_link = NULL;
 	connection_struct *conn;
-	bool ret = False;
 	struct smb_filename *smb_fname = NULL;
 	bool ok;
-	int retval;
+	NTSTATUS status;
+	bool ret = false;
 
 	ok = junction_to_local_path_tos(jucn, session_info, &path, &conn);
 	if (!ok) {
-		TALLOC_FREE(frame);
-		return False;
-	}
-
-	/* Form the msdfs_link contents */
-	msdfs_link = msdfs_link_string(frame,
-				jucn->referral_list,
-				jucn->referral_count);
-	if (msdfs_link == NULL) {
 		goto out;
 	}
-
-	DEBUG(5,("create_msdfs_link: Creating new msdfs link: %s -> %s\n",
-		path, msdfs_link));
 
 	smb_fname = synthetic_smb_fname(frame,
 				path,
@@ -1451,38 +1438,39 @@ bool create_msdfs_link(const struct junction_map *jucn,
 				NULL,
 				0);
 	if (smb_fname == NULL) {
-		errno = ENOMEM;
 		goto out;
 	}
 
-	retval = SMB_VFS_SYMLINKAT(conn,
-			msdfs_link,
-			conn->cwd_fsp,
-			smb_fname);
-	if (retval < 0) {
-		if (errno == EEXIST) {
-			retval = SMB_VFS_UNLINKAT(conn,
+	status = SMB_VFS_CREATE_DFS_PATHAT(conn,
+				conn->cwd_fsp,
+				smb_fname,
+				jucn->referral_list,
+				jucn->referral_count);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
+			int retval = SMB_VFS_UNLINKAT(conn,
 						conn->cwd_fsp,
 						smb_fname,
 						0);
 			if (retval != 0) {
-				TALLOC_FREE(smb_fname);
 				goto out;
 			}
 		}
-		retval = SMB_VFS_SYMLINKAT(conn,
-				msdfs_link,
+		status = SMB_VFS_CREATE_DFS_PATHAT(conn,
 				conn->cwd_fsp,
-				smb_fname);
-		if (retval < 0) {
-			DEBUG(1,("create_msdfs_link: symlinkat failed "
-				 "%s -> %s\nError: %s\n",
-				 path, msdfs_link, strerror(errno)));
+				smb_fname,
+				jucn->referral_list,
+				jucn->referral_count);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("SMB_VFS_CREATE_DFS_PATHAT failed "
+				"%s - Error: %s\n",
+				path,
+				nt_errstr(status));
 			goto out;
 		}
 	}
 
-	ret = True;
+	ret = true;
 
 out:
 	TALLOC_FREE(frame);
