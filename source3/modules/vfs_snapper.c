@@ -2849,12 +2849,37 @@ static int snapper_gmt_get_quota(vfs_handle_struct *handle,
 	return ret;
 }
 
+static NTSTATUS snapper_create_dfs_pathat(struct vfs_handle_struct *handle,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				const struct referral *reflist,
+				size_t referral_count)
+{
+	time_t timestamp = 0;
+
+	if (!snapper_gmt_strip_snapshot(talloc_tos(),
+					handle,
+					smb_fname->base_name,
+					&timestamp,
+					NULL)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (timestamp != 0) {
+		return NT_STATUS_MEDIA_WRITE_PROTECTED;
+	}
+	return SMB_VFS_NEXT_CREATE_DFS_PATHAT(handle,
+			dirfsp,
+			smb_fname,
+			reflist,
+			referral_count);
+}
 
 static struct vfs_fn_pointers snapper_fns = {
 	.snap_check_path_fn = snapper_snap_check_path,
 	.snap_create_fn = snapper_snap_create,
 	.snap_delete_fn = snapper_snap_delete,
 	.get_shadow_copy_data_fn = snapper_get_shadow_copy_data,
+	.create_dfs_pathat_fn = snapper_create_dfs_pathat,
 	.opendir_fn = snapper_gmt_opendir,
 	.disk_free_fn = snapper_gmt_disk_free,
 	.get_quota_fn = snapper_gmt_get_quota,
