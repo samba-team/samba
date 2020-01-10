@@ -98,7 +98,9 @@ bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 		for (k = 0; ext_strings[k] != NULL; k++) {
 			/* no op */
 		}
-
+		if (k == 0) {
+			goto parse_error;
+		}
 		q = ext_strings[0];
 
 		if (q[0] == '{') {
