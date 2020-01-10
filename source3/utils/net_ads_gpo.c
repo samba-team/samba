@@ -134,29 +134,7 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 		d_printf(_("* dumping GPO list\n"));
 
 		for (gpo = gpo_list; gpo; gpo = gpo->next) {
-
 			dump_gpo(gpo, 0);
-#if 0
-		char *server, *share, *nt_path, *unix_path;
-
-		d_printf("--------------------------------------\n");
-		d_printf("Name:\t\t\t%s\n", gpo->display_name);
-		d_printf("LDAP GPO version:\t%d (user: %d, machine: %d)\n",
-			gpo->version,
-			GPO_VERSION_USER(gpo->version),
-			GPO_VERSION_MACHINE(gpo->version));
-
-		result = gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path,
-						 &server, &share, &nt_path,
-						 &unix_path);
-		if (!NT_STATUS_IS_OK(result)) {
-			d_printf("got: %s\n", nt_errstr(result));
-		}
-
-		d_printf("GPO stored on server: %s, share: %s\n", server, share);
-		d_printf("\tremote path:\t%s\n", nt_path);
-		d_printf("\tlocal path:\t%s\n", unix_path);
-#endif
 		}
 	}
 
@@ -179,30 +157,7 @@ static int net_ads_gpo_refresh(struct net_context *c, int argc, const char **arg
 		d_printf(_("* dumping GPO list from registry\n"));
 
 		for (gpo = read_list; gpo; gpo = gpo->next) {
-
 			dump_gpo(gpo, 0);
-
-#if 0
-		char *server, *share, *nt_path, *unix_path;
-
-		d_printf("--------------------------------------\n");
-		d_printf("Name:\t\t\t%s\n", gpo->display_name);
-		d_printf("LDAP GPO version:\t%d (user: %d, machine: %d)\n",
-			gpo->version,
-			GPO_VERSION_USER(gpo->version),
-			GPO_VERSION_MACHINE(gpo->version));
-
-		result = gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path,
-						 &server, &share, &nt_path,
-						 &unix_path);
-		if (!NT_STATUS_IS_OK(result)) {
-			d_printf("got: %s\n", nt_errstr(result));
-		}
-
-		d_printf("GPO stored on server: %s, share: %s\n", server, share);
-		d_printf("\tremote path:\t%s\n", nt_path);
-		d_printf("\tlocal path:\t%s\n", unix_path);
-#endif
 		}
 	}
 
