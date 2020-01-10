@@ -27,6 +27,11 @@ bld.SAMBA_BINARY('fuzz_reg_parse',
                  deps='fuzzing samba3-util smbconf REGFIO afl-fuzz-main',
                  fuzzer=True)
 
+bld.SAMBA_BINARY('fuzz_nmblib_parse_packet',
+                 source='fuzz_nmblib_parse_packet.c',
+                 deps='fuzzing libsmb afl-fuzz-main',
+                 fuzzer=True)
+
 bld.SAMBA_BINARY('fuzz_regfio',
                  source='fuzz_regfio.c',
                  deps='fuzzing samba3-util smbconf REGFIO afl-fuzz-main',
