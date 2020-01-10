@@ -398,7 +398,7 @@ int main(int argc, char *argv[])
 
 	file = argv[1];
 
-	recheck_time = 60;
+	recheck_time = 5;
 	if (argc == 3) {
 		recheck_time = smb_strtoul(argv[2],
 					   NULL,
