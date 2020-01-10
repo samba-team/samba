@@ -534,6 +534,7 @@ static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ct
 	}
 	if (pull_newest_from_marshall_buffer(ctx->transaction->m_write, key,
 					     NULL, result, &result->value)) {
+		result->value_valid = true;
 		return result;
 	}
 
