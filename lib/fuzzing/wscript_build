@@ -57,6 +57,11 @@ bld.SAMBA_BINARY('fuzz_ldb_ldif_read',
                  deps='fuzzing ldb afl-fuzz-main',
                  fuzzer=True)
 
+bld.SAMBA_BINARY('fuzz_ldb_parse_binary_decode',
+                 source='fuzz_ldb_parse_binary_decode.c',
+                 deps='fuzzing ldb afl-fuzz-main',
+                 fuzzer=True)
+
 bld.SAMBA_BINARY('fuzz_ldb_parse_tree',
                  source='fuzz_ldb_parse_tree.c',
                  deps='fuzzing ldb afl-fuzz-main',
