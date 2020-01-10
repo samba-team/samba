@@ -10,6 +10,7 @@ import "winreg.idl", "misc.idl";
 	authservice("MSServerClusterMgmtAPI"),
 	helpstring("Failover Cluster Management API (clusapi)")
 ]
+#define MAX_CLUSTER_CONTROL_CODE_BUFFER_SIZE 0x7FFFFFFF
 	interface clusapi
 {
 #if 0
@@ -2598,4 +2599,354 @@ import "winreg.idl", "misc.idl";
 		DiskIdUnKnown = 0x00001388
 	} CLUSDSK_DISKID_ENUM;
 #endif
+
+	/*****************/
+	/* Function 0x94 */
+
+	WERROR
+	Opnum148NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x95 */
+
+	WERROR
+	Opnum149otUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x96 */
+
+	WERROR
+	Opnum150NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x97 */
+
+	WERROR
+	Opnum151NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x98 */
+
+	WERROR
+	Opnum152NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x99 */
+
+	WERROR
+	Opnum153NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x9A */
+
+	WERROR
+	Opnum154NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x9B */
+
+	WERROR
+	clusapi_AddNotifyResourceTypeV2(
+		[ in ] HNOTIFY_RPC hNotify,
+		[ in ] hyper filter,
+		[ in ] uint32 dwNotifyKey,
+		[ in, string ] [charset(UTF16)] uint16 *resTypeName,
+		[ in ] uint32 dwVersion,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0x9C */
+
+	WERROR
+	Opnum156NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x9D */
+
+	WERROR
+	clusapi_ExecuteReadBatchEx(
+		[in] HKEY_RPC hKey,
+		[in] uint32 cbInData,
+		[in, size_is(cbInData)] uint8* lpInData,
+		[in] uint32 flags,
+		[out] uint32* cbOutData,
+		[out, size_is(,*cbOutData)] uint8** lpOutData,
+		[out] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0x9E */
+
+	WERROR
+	Opnum158NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x9F */
+
+	WERROR
+	Opnum159NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0xA0 */
+
+	WERROR
+	Opnum160NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0xA1 */
+
+	WERROR
+	Opnum161NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0xA2 */
+
+	WERROR
+	Opnum162NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0xA3 */
+
+#define HGROUPSET_RPC policy_handle
+#if 0
+	typedef [context_handle] void *HGROUPSET_RPC;
+#endif
+#if 0
+	HGROUPSET_RPC
+	clusapi_CreateGroupSet (
+		[ in, string ] [charset(UTF16)] uint16 *lpszGroupSetName,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
+	);
+#else
+	void
+	clusapi_CreateGroupSet (
+		[ in, string ] [charset(UTF16)] uint16 *lpszGroupSetName,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
+		[ out ] HGROUPSET_RPC *hGroupSet
+	);
+#endif
+
+	/*****************/
+	/* Function 0xA4 */
+#if 0
+	HGROUPSET_RPC
+	clusapi_OpenGroupSet(
+		[ in, string ] [charset(UTF16)] uint16 *lpszGroupSetName,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status
+	);
+#else
+	void
+	clusapi_OpenGroupSet(
+		[ in, string ] [charset(UTF16)] uint16 *lpszGroupSetName,
+		[ out ] WERROR *Status,
+		[ out ] WERROR *rpc_status,
+		[ out ] HGROUPSET_RPC *hGroupSet
+	);
+#endif
+
+	/*****************/
+	/* Function 0xA5 */
+
+	WERROR
+	clusapi_CloseGroupSet(
+		[ in, out ] HGROUPSET_RPC *GroupSet
+	);
+
+	/*****************/
+	/* Function 0xA6 */
+
+	WERROR
+	clusapi_DeleteGroupSet(
+		[ in ] HGROUPSET_RPC GroupSet,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xA7 */
+
+	WERROR
+	clusapi_AddGroupToGroupSet(
+		[ in ] HGROUPSET_RPC GroupSet,
+		[ in ] HGROUP_RPC Group,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xA8 */
+
+	WERROR
+	clusapi_RemoveGroupFromGroupSet(
+		[ in ] HGROUP_RPC Group,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xA9 */
+
+	WERROR
+	clusapi_MoveGroupToGroupSet(
+		[ in ] HGROUPSET_RPC GroupSet,
+		[ in ] HGROUP_RPC Group,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xAA */
+
+	WERROR
+	Opnum170NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0xAB */
+
+	WERROR
+	clusapi_AddGroupSetDependency(
+		[ in ] HGROUPSET_RPC DependentGroupSet,
+		[ in ] HGROUPSET_RPC ProviderGroupSet,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xAC */
+
+	WERROR
+	clusapi_AddGroupToGroupSetDependency(
+		[ in ] HGROUP_RPC DependentGroup,
+		[ in ] HGROUPSET_RPC ProviderGroupSet,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xAD */
+
+	WERROR
+	clusapi_NodeGroupSetControl(
+		[ in ] HGROUPSET_RPC hGroupSet,
+		[ in ] HNODE_RPC hNode,
+		[ in ] uint32 dwControlCode,
+		[ in, unique, size_is(nInBufferSize) ] uint8 *lpInBuffer,
+		[ in ] uint32 nInBufferSize,
+		[ out, size_is(nOutBufferSize), length_is (*lpBytesReturned)] uint8 *lpOutBuffer,
+		[ in, range(0, MAX_CLUSTER_CONTROL_CODE_BUFFER_SIZE)] uint32 nOutBufferSize,
+		[ out ] uint32 *lpBytesReturned,
+		[ out ] uint32 *lpcbRequired,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xAE */
+
+	WERROR
+	clusapi_GroupSetControl(
+		[ in ] HGROUPSET_RPC hGroupSet,
+		[ in ] uint32 dwControlCode,
+		[ in, unique, size_is(nInBufferSize) ] uint8 *lpInBuffer,
+		[ in ] uint32 nInBufferSize,
+		[ out, size_is(nOutBufferSize), length_is (*lpBytesReturned)] uint8 *lpOutBuffer,
+		[ in, range(0, 0x7FFFFFFF)] uint32 nOutBufferSize,
+		[ out ] uint32 *lpBytesReturned,
+		[ out ] uint32 *lpcbRequired,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xAF */
+
+	WERROR
+	clusapi_SetGroupDependencyExpression(
+		[ in ] HGROUP_RPC hGroup,
+		[ in, string ] [charset(UTF16)] uint16 *lpszDependencyExpression,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xB0 */
+
+	WERROR
+	clusapi_RemoveClusterGroupDependency(
+		[ in ] HGROUP_RPC hGroup,
+		[ in ] HGROUP_RPC hDependsOn,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xB1 */
+
+	WERROR
+	clusapi_SetGroupSetDependencyExpression(
+		[ in ] HGROUPSET_RPC hGroupSet,
+		[ in, string ] [charset(UTF16)] uint16 *lpszDependencyExpression,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xB2 */
+
+	WERROR
+	clusapi_RemoveGroupSetDependency(
+		[ in ] HGROUPSET_RPC hGroupSet,
+		[ in ] HGROUPSET_RPC hDependsOn,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xB3 */
+
+	WERROR
+	clusapi_RemoveClusterGroupToGroupSetDependency(
+		[ in ] HGROUP_RPC hGroup,
+		[ in ] HGROUPSET_RPC hDependsOn,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xB4 */
+
+	WERROR
+	clusapi_CreateGroupSetEnum(
+		[ in ] HCLUSTER_RPC hCluster,
+		[ out ] ENUM_LIST **ReturnEnum,
+		[ out ] WERROR * rpc_status
+	);
+
+	/*****************/
+	/* Function 0xB5 */
+
+	WERROR
+	clusapi_CreateNetInterfaceEnum(
+		[in] HCLUSTER_RPC hCluster,
+		[in, string] [charset(UTF16)] uint16 *lpszNodeName,
+		[in, string] [charset(UTF16)] uint16 *lpszNetworkName,
+		[out] ENUM_LIST **ReturnEnum,
+		[out] WERROR * rpc_status
+	);
+
+	/*****************/
+	/* Function 0xB6 */
+
+	WERROR
+	clusapi_ChangeCsvStateEx(
+		[ in ] HRES_RPC hResource,
+		[ in ] uint32 dwState,
+		[ in, string ] [charset(UTF16)] uint16 *lpszVolumeName,
+		[ out ] WERROR *rpc_status
+	);
+
+	/*****************/
+	/* Function 0xB7 */
+
+	WERROR
+	clusapi_AddGroupToGroupSetEx(
+		[ in ] HGROUPSET_RPC GroupSet,
+		[ in ] HGROUP_RPC Group,
+		[ in ] uint32 FaultDomain,
+		[ in ] uint32 UpdateDomain,
+		[ in ] boolean8 UseDomains,
+		[ in ] uint32 *Reserved,
+		[ out ] WERROR *rpc_status
+	);
 }
