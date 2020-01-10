@@ -191,7 +191,9 @@ local_daemons_setup ()
 				       $_use_ipv6 >"$_public_addresses_all"
 	fi
 
-	_recovery_lock="${directory}/rec.lock"
+	_recovery_lock_dir="${directory}/shared/.ctdb"
+	mkdir -p "$_recovery_lock_dir"
+	_recovery_lock="${_recovery_lock_dir}/rec.lock"
 	if $_recovery_lock_use_command ; then
 		_helper="${CTDB_SCRIPTS_HELPER_BINDIR}/ctdb_mutex_fcntl_helper"
 		_t="! ${_helper} ${_recovery_lock}"
