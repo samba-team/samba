@@ -417,14 +417,14 @@ def data_to_dns_record(record_type, data):
     elif record_type == dnsp.DNS_TYPE_NS:
         rec = NSRecord(data)
     elif record_type == dnsp.DNS_TYPE_MX:
-        tmp = data.split(' ')
+        tmp = data.split()
         if len(tmp) != 2:
             raise CommandError('Data requires 2 elements - mail_server, preference')
         mail_server = tmp[0]
         preference = int(tmp[1])
         rec = MXRecord(mail_server, preference)
     elif record_type == dnsp.DNS_TYPE_SRV:
-        tmp = data.split(' ')
+        tmp = data.split()
         if len(tmp) != 4:
             raise CommandError('Data requires 4 elements - server, port, priority, weight')
         server = tmp[0]
@@ -433,7 +433,7 @@ def data_to_dns_record(record_type, data):
         weight = int(tmp[3])
         rec = SRVRecord(server, port, priority=priority, weight=weight)
     elif record_type == dnsp.DNS_TYPE_SOA:
-        tmp = data.split(' ')
+        tmp = data.split()
         if len(tmp) != 7:
             raise CommandError('Data requires 7 elements - nameserver, email, serial, '
                                'refresh, retry, expire, minimumttl')
