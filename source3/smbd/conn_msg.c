@@ -41,5 +41,10 @@ void msg_force_tdis(struct messaging_context *msg,
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
 
+	if ((data->length == 0) || (data->data[data->length-1] != 0)) {
+		DBG_WARNING("Ignoring invalid sharename\n");
+		return;
+	}
+
 	conn_force_tdis(sconn, sharename);
 }
