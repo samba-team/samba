@@ -119,6 +119,16 @@
 	</listitem>
 	</varlistentry>
 
+	<varlistentry><term>close-denied-share</term>
+	<listitem><para>Behave like <constant>close-share</constant>,
+	but don't disconnect users that are still allowed to access
+	the share. It can safely be sent to all smbds after changing
+	share access controls. It will only affect users who have been
+	denied access since having connected initially. This message
+	can only be sent to <constant>smbd</constant>.</para>
+	</listitem>
+	</varlistentry>
+
 	<varlistentry>
 	<term>debug</term>
 	<listitem><para>Set debug level to the value specified by the 

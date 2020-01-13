@@ -807,6 +807,30 @@ static bool do_closeshare(struct tevent_context *ev_ctx,
 			    strlen(argv[1]) + 1);
 }
 
+/*
+ * Close a share if access denied by now
+ **/
+
+static bool do_close_denied_share(
+	struct tevent_context *ev_ctx,
+	struct messaging_context *msg_ctx,
+	const struct server_id pid,
+	const int argc, const char **argv)
+{
+	if (argc != 2) {
+		fprintf(stderr, "Usage: smbcontrol <dest> close-denied-share "
+			"<sharename>\n");
+		return False;
+	}
+
+	return send_message(
+		msg_ctx,
+		pid,
+		MSG_SMB_FORCE_TDIS_DENIED,
+		argv[1],
+		strlen(argv[1]) + 1);
+}
+
 /* Kill a client by IP address */
 static bool do_kill_client_by_ip(struct tevent_context *ev_ctx,
 				 struct messaging_context *msg_ctx,
@@ -1432,6 +1456,11 @@ static const struct {
 		.name = "close-share",
 		.fn   = do_closeshare,
 		.help = "Forcibly disconnect a share",
+	},
+	{
+		.name = "close-denied-share",
+		.fn   = do_close_denied_share,
+		.help = "Forcibly disconnect users from shares disallowed now",
 	},
 	{
 		.name = "kill-client-ip",

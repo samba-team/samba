@@ -111,6 +111,9 @@ interface messaging
 		MSG_SMB_NOTIFY_STARTED          = 0x031F,
 		MSG_SMB_SLEEP			= 0x0320,
 
+		/* smbd message */
+		MSG_SMB_FORCE_TDIS_DENIED	= 0x0321,
+
 		/* winbind messages */
 		MSG_WINBIND_FINISHED		= 0x0401,
 		MSG_WINBIND_FORGET_STATE	= 0x0402,
