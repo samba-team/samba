@@ -416,8 +416,12 @@ static void ctdb_check_health(struct tevent_context *ev,
 */
 void ctdb_stop_monitoring(struct ctdb_context *ctdb)
 {
-	talloc_free(ctdb->monitor->monitor_context);
-	ctdb->monitor->monitor_context = NULL;
+	if (ctdb->monitor == NULL) {
+		D_NOTICE("Monitoring not yet initialised\n");
+		return;
+	}
+
+	TALLOC_FREE(ctdb->monitor->monitor_context);
 
 	ctdb->monitor->next_interval = 5;
 	DEBUG(DEBUG_NOTICE,("Monitoring has been stopped\n"));
