@@ -1660,8 +1660,8 @@ static bool test_NodeControl_int(struct torture_context *tctx,
 		const char *str;
 		DATA_BLOB blob = data_blob_const(r.out.lpOutBuffer, *r.out.lpBytesReturned);
 
-		torture_assert(tctx, *r.out.lpBytesReturned < 4, "unexpected size");
-		torture_assert(tctx, *r.out.lpBytesReturned % 2, "must be a multiple of 2");
+		torture_assert(tctx, *r.out.lpBytesReturned >= 4, "must be at least 4 bytes long");
+		torture_assert(tctx, (*r.out.lpBytesReturned % 2) == 0, "must be a multiple of 2");
 
 		torture_assert(tctx,
 			pull_reg_sz(tctx, &blob, &str),
