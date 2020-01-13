@@ -47,7 +47,6 @@ class DnsCmdTestCase(SambaToolCmdTest):
                     "1.EXAMPLE.COM",
                     "%sEXAMPLE.COM" % ("1." * 100),
                     "EXAMPLE",
-                    "\n.COM",
                     "!@#$%^&*()_",
                     "HIGH\xFFBYTE",
                     "@.EXAMPLE.COM",
