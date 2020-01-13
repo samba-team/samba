@@ -254,6 +254,7 @@ static NTSTATUS pvfs_map_fileinfo(struct pvfs_state *pvfs,
 
 	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
+	case RAW_FILEINFO_SMB2_ALT_NAME_INFORMATION:
 		info->name_info.out.fname.s = pvfs_short_name(pvfs, name, name);
 		return NT_STATUS_OK;
 

@@ -862,6 +862,7 @@ NTSTATUS ntvfs_map_fileinfo(TALLOC_CTX *mem_ctx,
 		
 	case RAW_FILEINFO_ALT_NAME_INFO:
 	case RAW_FILEINFO_ALT_NAME_INFORMATION:
+	case RAW_FILEINFO_SMB2_ALT_NAME_INFORMATION:
 		info->alt_name_info.out.fname.s = talloc_strdup(mem_ctx, info2->generic.out.alt_fname.s);
 		NT_STATUS_HAVE_NO_MEMORY(info->alt_name_info.out.fname.s);
 		info->alt_name_info.out.fname.private_length = info2->generic.out.alt_fname.private_length;

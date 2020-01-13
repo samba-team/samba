@@ -464,7 +464,8 @@ enum smb_fileinfo_level {
 		     RAW_FILEINFO_NORMALIZED_NAME_INFORMATION= SMB_QFILEINFO_NORMALIZED_NAME_INFORMATION,
 		     /* SMB2 specific levels */
 		     RAW_FILEINFO_SMB2_ALL_EAS               = 0x0f01,
-		     RAW_FILEINFO_SMB2_ALL_INFORMATION       = 0x1201
+		     RAW_FILEINFO_SMB2_ALL_INFORMATION       = 0x1201,
+		     RAW_FILEINFO_SMB2_ALT_NAME_INFORMATION  = 0x1501
 };
 
 /* union used in qfileinfo() and qpathinfo() backend calls */
@@ -646,6 +647,7 @@ union smb_fileinfo {
 	/* RAW_FILEINFO_NAME_INFO and RAW_FILEINFO_NAME_INFORMATION interfaces */
 	/* RAW_FILEINFO_ALT_NAME_INFO and RAW_FILEINFO_ALT_NAME_INFORMATION interfaces */
 	/* RAW_FILEINFO_NORMALIZED_NAME_INFORMATION interface */
+	/* RAW_FILEINFO_SMB2_ALT_NAME_INFORMATION interface */
 	struct {
 		enum smb_fileinfo_level level;
 		struct {
