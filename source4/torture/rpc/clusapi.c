@@ -28,6 +28,9 @@ struct torture_clusapi_context {
 	struct dcerpc_pipe *p;
 	const char *NodeName;
 	const char *ClusterName;
+	uint16_t lpwMajorVersion;
+	uint16_t lpwMinorVersion;
+	uint16_t lpwBuildNumber;
 };
 
 static bool test_OpenCluster_int(struct torture_context *tctx,
@@ -3705,10 +3708,10 @@ static bool torture_rpc_clusapi_setup_common(struct torture_context *tctx,
 		torture_rpc_connection(tctx, &t->p, &ndr_table_clusapi),
 		"Error connecting to server");
 
+	b = t->p->binding_handle;
+
 	{
 		struct clusapi_GetClusterName r;
-
-		b = t->p->binding_handle;
 
 		r.out.ClusterName = &t->ClusterName;
 		r.out.NodeName = &t->NodeName;
@@ -3719,6 +3722,28 @@ static bool torture_rpc_clusapi_setup_common(struct torture_context *tctx,
 		torture_assert_werr_ok(tctx,
 			r.out.result,
 			"GetClusterName failed");
+	}
+	{
+		struct clusapi_GetClusterVersion2 r;
+		const char *lpszVendorId;
+		const char *lpszCSDVersion;
+		struct CLUSTER_OPERATIONAL_VERSION_INFO *ppClusterOpVerInfo;
+		WERROR rpc_status;
+
+		r.out.lpwMajorVersion = &t->lpwMajorVersion;
+		r.out.lpwMinorVersion = &t->lpwMinorVersion;
+		r.out.lpwBuildNumber = &t->lpwBuildNumber;
+		r.out.lpszVendorId = &lpszVendorId;
+		r.out.lpszCSDVersion = &lpszCSDVersion;
+		r.out.ppClusterOpVerInfo = &ppClusterOpVerInfo;
+		r.out.rpc_status = &rpc_status;
+
+		torture_assert_ntstatus_ok(tctx,
+			dcerpc_clusapi_GetClusterVersion2_r(b, tctx, &r),
+			"GetClusterVersion2 failed");
+		torture_assert_werr_ok(tctx,
+			r.out.result,
+			"GetClusterVersion2 failed");
 	}
 
 	return true;
