@@ -154,7 +154,11 @@ connection_struct *conn_new(struct smbd_server_connection *sconn);
 bool conn_idle_all(struct smbd_server_connection *sconn, time_t t);
 void conn_clear_vuid_caches(struct smbd_server_connection *sconn, uint64_t vuid);
 void conn_free(connection_struct *conn);
-void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename);
+void conn_force_tdis(
+	struct smbd_server_connection *sconn,
+	bool (*check_fn)(struct connection_struct *conn,
+			 void *private_data),
+	void *private_data);
 void msg_force_tdis(struct messaging_context *msg,
 		    void *private_data,
 		    uint32_t msg_type,

@@ -30,13 +30,42 @@
  The special sharename '*' forces unmount of all shares.
 ****************************************************************************/
 
+struct force_tdis_state {
+	const char *sharename;
+};
+
+static bool force_tdis_check(
+	struct connection_struct *conn,
+	void *private_data)
+{
+	struct force_tdis_state *state = private_data;
+	const struct loadparm_substitution *lp_sub =
+		loadparm_s3_global_substitution();
+	char *servicename = NULL;
+	bool do_close;
+
+	if (strcmp(state->sharename, "*") == 0) {
+		DBG_WARNING("Forcing close of all shares\n");
+		return true;
+	}
+
+	servicename = lp_servicename(talloc_tos(), lp_sub, SNUM(conn));
+	do_close = strequal(servicename, state->sharename);
+
+	TALLOC_FREE(servicename);
+
+	return do_close;
+}
+
 void msg_force_tdis(struct messaging_context *msg,
 		    void *private_data,
 		    uint32_t msg_type,
 		    struct server_id server_id,
 		    DATA_BLOB *data)
 {
-	const char *sharename = (const char *)data->data;
+	struct force_tdis_state state = {
+		.sharename = (const char *)data->data,
+	};
 	struct smbd_server_connection *sconn =
 		talloc_get_type_abort(private_data,
 		struct smbd_server_connection);
@@ -46,5 +75,5 @@ void msg_force_tdis(struct messaging_context *msg,
 		return;
 	}
 
-	conn_force_tdis(sconn, sharename);
+	conn_force_tdis(sconn, force_tdis_check, &state);
 }

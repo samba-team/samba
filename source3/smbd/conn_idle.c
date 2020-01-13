@@ -81,17 +81,13 @@ bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
  The special sharename '*' forces unmount of all shares.
 ****************************************************************************/
 
-void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename)
+void conn_force_tdis(
+	struct smbd_server_connection *sconn,
+	bool (*check_fn)(struct connection_struct *conn,
+			 void *private_data),
+	void *private_data)
 {
-	const struct loadparm_substitution *lp_sub =
-		loadparm_s3_global_substitution();
 	connection_struct *conn, *next;
-	bool close_all = false;
-
-	if (strcmp(sharename, "*") == 0) {
-		close_all = true;
-		DEBUG(1, ("conn_force_tdis: Forcing close of all shares\n"));
-	}
 
 	/* SMB1 and SMB 2*/
 	for (conn = sconn->connections; conn; conn = next) {
@@ -107,20 +103,15 @@ void conn_force_tdis(struct smbd_server_connection *sconn, const char *sharename
 		}
 		tcon = conn->tcon;
 
-		if (close_all) {
-			do_close = true;
-		} else if (strequal(lp_servicename(talloc_tos(), lp_sub, SNUM(conn)),
-				    sharename)) {
-			DEBUG(1, ("conn_force_tdis: Forcing close of "
-				  "share '%s' (wire_id=0x%08x)\n",
-				  tcon->global->share_name,
-				  tcon->global->tcon_wire_id));
-			do_close = true;
-		}
-
+		do_close = check_fn(conn, private_data);
 		if (!do_close) {
 			continue;
 		}
+
+		DBG_WARNING("Forcing close of "
+			    "share '%s' (wire_id=0x%08x)\n",
+			    tcon->global->share_name,
+			    tcon->global->tcon_wire_id);
 
 		if (sconn->using_smb2) {
 			vuid = conn->vuid;
