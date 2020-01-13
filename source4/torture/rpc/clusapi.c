@@ -3699,6 +3699,150 @@ static bool test_all_keys(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_OpenGroupSet_int(struct torture_context *tctx,
+				  struct dcerpc_pipe *p,
+				  const char *lpszGroupSetName,
+				  struct policy_handle *hGroupSet)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_OpenGroupSet r;
+	WERROR Status;
+	WERROR rpc_status;
+
+	r.in.lpszGroupSetName = lpszGroupSetName;
+	r.out.rpc_status = &rpc_status;
+	r.out.Status = &Status;
+	r.out.hGroupSet = hGroupSet;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_OpenGroupSet_r(b, tctx, &r),
+		"OpenGroupSet failed");
+	torture_assert_werr_ok(tctx,
+		*r.out.Status,
+		"OpenGroupSet failed");
+
+	return true;
+}
+
+static bool test_CloseGroupSet_int(struct torture_context *tctx,
+				   struct dcerpc_pipe *p,
+				   struct policy_handle *GroupSet)
+{
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct clusapi_CloseGroupSet r;
+
+	r.in.GroupSet = GroupSet;
+	r.out.GroupSet = GroupSet;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CloseGroupSet_r(b, tctx, &r),
+		"CloseGroupSet failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CloseGroupSet failed");
+	torture_assert(tctx,
+		ndr_policy_handle_empty(GroupSet),
+		"policy_handle non empty after CloseGroupSet");
+
+	return true;
+}
+
+static bool test_OpenGroupSet(struct torture_context *tctx,
+			      void *data)
+{
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct policy_handle hGroupSet;
+
+	if (t->lpwMajorVersion < 0x000a) {
+		torture_skip(tctx, "GroupSet fn not available on old clusters");
+		return true;
+	}
+
+	if (!test_OpenGroupSet_int(tctx, t->p, "Cluster Group", &hGroupSet)) {
+		return false;
+	}
+
+	test_CloseGroupSet_int(tctx, t->p, &hGroupSet);
+
+	return true;
+}
+
+static bool test_CloseGroupSet(struct torture_context *tctx,
+			       void *data)
+{
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct policy_handle hGroupSet;
+
+	if (t->lpwMajorVersion < 0x000a) {
+		torture_skip(tctx, "GroupSet fn not available on old clusters");
+		return true;
+	}
+
+	if (!test_OpenGroupSet_int(tctx, t->p, "Cluster Group", &hGroupSet)) {
+		return false;
+	}
+
+	return test_CloseGroupSet_int(tctx, t->p, &hGroupSet);
+}
+
+static bool test_one_groupset(struct torture_context *tctx,
+			      struct dcerpc_pipe *p,
+			      const char *groupset_name)
+{
+	struct policy_handle hGroupSet;
+
+	torture_assert(tctx,
+		test_OpenGroupSet_int(tctx, p, groupset_name, &hGroupSet),
+		"failed to open groupset");
+
+	test_CloseGroupSet_int(tctx, p, &hGroupSet);
+
+	return true;
+}
+
+static bool test_all_groupsets(struct torture_context *tctx,
+			       void *data)
+{
+	struct torture_clusapi_context *t =
+		talloc_get_type_abort(data, struct torture_clusapi_context);
+	struct dcerpc_binding_handle *b = t->p->binding_handle;
+	struct clusapi_CreateGroupSetEnum r;
+	struct ENUM_LIST *ReturnEnum;
+	struct policy_handle Cluster;
+	WERROR rpc_status;
+	int i;
+
+	if (!test_OpenCluster_int(tctx, t->p, &Cluster)) {
+		return false;
+	}
+
+	r.in.hCluster = Cluster;
+	r.out.ReturnEnum = &ReturnEnum;
+	r.out.rpc_status = &rpc_status;
+
+	torture_assert_ntstatus_ok(tctx,
+		dcerpc_clusapi_CreateGroupSetEnum_r(b, tctx, &r),
+		"CreateGroupSetEnum failed");
+	torture_assert_werr_ok(tctx,
+		r.out.result,
+		"CreateGroupSetEnum failed");
+
+	test_CloseCluster_int(tctx, t->p, &Cluster);
+
+	for (i=0; i < ReturnEnum->EntryCount; i++) {
+
+		struct ENUM_ENTRY e = ReturnEnum->Entry[i];
+
+		torture_assert(tctx,
+			test_one_groupset(tctx, t->p, e.Name),
+			"failed to test one groupset");
+	}
+
+	return true;
+}
+
 static bool torture_rpc_clusapi_setup_common(struct torture_context *tctx,
 					     struct torture_clusapi_context *t)
 {
@@ -3949,6 +4093,16 @@ void torture_tcase_registry(struct torture_tcase *tcase)
 				      test_all_keys);
 }
 
+void torture_tcase_groupset(struct torture_tcase *tcase)
+{
+	torture_tcase_add_simple_test(tcase, "OpenGroupSet",
+				      test_OpenGroupSet);
+	torture_tcase_add_simple_test(tcase, "CloseGroupSet",
+				      test_CloseGroupSet);
+	torture_tcase_add_simple_test(tcase, "all_groupsets",
+				      test_all_groupsets);
+}
+
 struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 {
 	struct torture_tcase *tcase;
@@ -4018,6 +4172,14 @@ struct torture_suite *torture_rpc_clusapi(TALLOC_CTX *mem_ctx)
 				  torture_rpc_clusapi_teardown);
 
 	torture_tcase_registry(tcase);
+
+	tcase = torture_suite_add_tcase(suite, "groupset");
+
+	torture_tcase_set_fixture(tcase,
+				  torture_rpc_clusapi_setup,
+				  torture_rpc_clusapi_teardown);
+
+	torture_tcase_groupset(tcase);
 
 	return suite;
 }
