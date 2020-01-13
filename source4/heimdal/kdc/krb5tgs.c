@@ -866,6 +866,12 @@ tgs_make_reply(krb5_context context,
     et.flags.anonymous   = tgt->flags.anonymous;
     et.flags.ok_as_delegate = server->entry.flags.ok_as_delegate;
 
+    /* See MS-KILE 3.3.5.1 */
+    if (!server->entry.flags.forwardable)
+        et.flags.forwardable = 0;
+    if (!server->entry.flags.proxiable)
+        et.flags.proxiable = 0;
+
     if(rspac->length) {
 	/*
 	 * No not need to filter out the any PAC from the
