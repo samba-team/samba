@@ -57,14 +57,16 @@ class DnsCmdTestCase(SambaToolCmdTest):
                    "",
                    "SAMDOM..EXAMPLE.COM"]
 
-        good_mx = ["SAMDOM.EXAMPLE.COM 65530"]
+        good_mx = ["SAMDOM.EXAMPLE.COM 65530",
+                   "SAMDOM.EXAMPLE.COM     0"]
         bad_mx = ["SAMDOM.EXAMPLE.COM -1",
                   "SAMDOM.EXAMPLE.COM",
                   " ",
                   "SAMDOM.EXAMPLE.COM 1 1",
                   "SAMDOM.EXAMPLE.COM SAMDOM.EXAMPLE.COM"]
 
-        good_srv = ["SAMDOM.EXAMPLE.COM 65530 65530 65530"]
+        good_srv = ["SAMDOM.EXAMPLE.COM 65530 65530 65530",
+                    "SAMDOM.EXAMPLE.COM     1     1     1"]
         bad_srv = ["SAMDOM.EXAMPLE.COM 0 65536 0",
                    "SAMDOM.EXAMPLE.COM 0 0 65536",
                    "SAMDOM.EXAMPLE.COM 65536 0 0"]
@@ -449,7 +451,7 @@ class DnsCmdTestCase(SambaToolCmdTest):
             self.assertCmdSuccess(result, out, err, "Failed to add "
                                   "record %s with type 'SRV'." % record)
 
-            split = record.split(' ')
+            split = record.split()
             new_bit = str(int(split[3]) + 1)
             new_record = '%s %s %s %s' % (split[0], split[1], split[2], new_bit)
 
