@@ -1556,6 +1556,9 @@ static krb5_error_code samba_kdc_trust_message2entry(krb5_context context,
 
 	entry_ex->entry.max_renew = NULL;
 
+	/* Match Windows behavior and allow forwardable flag in cross-realm. */
+	entry_ex->entry.flags.forwardable = 1;
+
 	ret = samba_kdc_sort_encryption_keys(entry_ex);
 	if (ret != 0) {
 		krb5_clear_error_message(context);
