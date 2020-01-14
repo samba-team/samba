@@ -286,7 +286,7 @@ static NTSTATUS nfs4acli_to_smb4acl(struct vfs_handle_struct *handle,
 	unsigned nfsacl41_flag = 0;
 	uint16_t smb4acl_flags = 0;
 	unsigned naces = nfs4acli_get_naces(nacl);
-	int i;
+	unsigned i;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
 				struct nfs4acl_config,
