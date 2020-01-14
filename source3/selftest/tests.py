@@ -784,6 +784,16 @@ plantestsuite("samba3.blackbox.sharesec", "simpleserver:local",
                configuration, os.path.join(bindir(), "sharesec"),
                os.path.join(bindir(), "net"), "tmp"])
 
+plantestsuite("samba3.blackbox.close-denied-share", "simpleserver:local",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_close_denied_share.sh"),
+               configuration,
+               os.path.join(bindir(), "sharesec"),
+               os.path.join(bindir(), "smbclient"),
+               os.path.join(bindir(), "smbcontrol"),
+               '$SERVER_IP',
+               "tmp"])
+
 plantestsuite("samba3.blackbox.net_tdb", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_tdb.sh"),
                smbclient3, '$SERVER', 'tmp', '$USERNAME', '$PASSWORD',
