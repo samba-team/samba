@@ -941,7 +941,7 @@ struct tevent_req *dbwrap_watched_watch_send(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(state, dbwrap_watched_watch_state_destructor);
 
 	if (blocker.pid != 0) {
-		subreq = server_id_watch_send(state, ev, ctx->msg, blocker);
+		subreq = server_id_watch_send(state, ev, blocker);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}

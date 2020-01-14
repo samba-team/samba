@@ -25,11 +25,8 @@
 #include <talloc.h>
 #include "librpc/gen_ndr/server_id.h"
 
-struct messaging_context;
-
 struct tevent_req *server_id_watch_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
-					struct messaging_context *msg,
 					struct server_id pid);
 int server_id_watch_recv(struct tevent_req *req, struct server_id *pid);
 

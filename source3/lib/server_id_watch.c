@@ -34,7 +34,6 @@ static void server_id_watch_waited(struct tevent_req *subreq);
 
 struct tevent_req *server_id_watch_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
-					struct messaging_context *msg,
 					struct server_id pid)
 {
 	struct tevent_req *req, *subreq;
