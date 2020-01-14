@@ -64,6 +64,23 @@ user_getgroups() {
 }
 testit "user getgroups" user_getgroups
 
+# test settings a users primary group
+user_getgroups_primary_first() {
+	expected_primary_group=$1
+	res=$($PYTHON $samba_tool user getgroups $CONFIG testuser)
+
+	# the users primary group is expected in the first line
+	primary_group=$(echo "$res" | head -1)
+	echo $primary_group | grep -q "^${expected_primary_group}$" || return 1
+}
+testit "user setprimarygroup" $PYTHON $samba_tool user setprimarygroup $CONFIG testuser dsg
+testit "user getgroups primary first" user_getgroups_primary_first dsg
+testit "user setprimarygroup" $PYTHON $samba_tool user setprimarygroup $CONFIG testuser gsg
+testit "user getgroups primary first" user_getgroups_primary_first gsg
+
+# reset group (without testit, because I do not know how to quote the groupname)
+$PYTHON $samba_tool user setprimarygroup $CONFIG testuser 'Domain Users'
+
 #test removing test users from all groups by their username
 testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG dsg testuser,testuser1
 testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG gsg testuser,testuser1
