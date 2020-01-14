@@ -1,2 +1,1 @@
-^samba.tests.blackbox.ndrdump.samba.tests.blackbox.ndrdump.NdrDumpTests.test_ndrdump_fuzzed_ndr_compression
-^librpc.ndr.ndr.test_ndr_pull_advance
+^samba.tests.blackbox.ndrdump.samba.tests.blackbox.ndrdump.NdrDumpTests.test_ndrdump_fuzzed_NULL_struct_ntlmssp_CHALLENGE_MESSAGE

@@ -199,12 +199,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_pop(struct ndr_pull *ndr)
 */
 _PUBLIC_ enum ndr_err_code ndr_pull_advance(struct ndr_pull *ndr, uint32_t size)
 {
+	NDR_PULL_NEED_BYTES(ndr, size);
 	ndr->offset += size;
-	if (ndr->offset > ndr->data_size) {
-		return ndr_pull_error(ndr, NDR_ERR_BUFSIZE,
-				      "ndr_pull_advance by %u failed",
-				      size);
-	}
 	return NDR_ERR_SUCCESS;
 }
 
