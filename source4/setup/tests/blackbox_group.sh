@@ -24,6 +24,15 @@ CONFIG="--configfile=$PREFIX/simple-dc/etc/smb.conf"
 testit "user add" $PYTHON $samba_tool user create $CONFIG --given-name="User" --surname="Tester" --initial="UT" testuser testp@ssw0Rd
 testit "user add" $PYTHON $samba_tool user create $CONFIG --given-name="User1" --surname="Tester" --initial="UT" testuser1 testp@ssw0Rd
 
+# test samba-tool user getgroups command
+user_getgroups_primary_only() {
+	res=$($PYTHON $samba_tool user getgroups $CONFIG testuser)
+
+	primary_group=$(echo $res)
+	echo $primary_group | grep -q "^Domain Users$" || return 1
+}
+testit "user getgroups primary only" user_getgroups_primary_only
+
 #test creation of six different groups
 testit "group add" $PYTHON $samba_tool group add $CONFIG --group-scope='Domain' --group-type='Security' --description='DomainSecurityGroup' --mail-address='dsg@samba.org' --notes='Notes' dsg
 testit "group add" $PYTHON $samba_tool group add $CONFIG --group-scope='Global' --group-type='Security' --description='GlobalSecurityGroup' --mail-address='gsg@samba.org' --notes='Notes' gsg
@@ -39,6 +48,21 @@ testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG usg testu
 testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG ddg testuser,testuser1
 testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG gdg testuser,testuser1
 testit "group addmembers" $PYTHON $samba_tool group addmembers $CONFIG udg testuser,testuser1
+
+# test samba-tool user getgroups command
+user_getgroups() {
+	groups="dsg gsg usg ddg gdg udg"
+
+	res=$($PYTHON $samba_tool user getgroups $CONFIG testuser)
+	for g in $groups ; do
+		echo "$res" | grep -q "^${g}$" || return 1
+	done
+
+	# the users primary group is expected in the first line
+	primary_group=$(echo "$res" | head -1)
+	echo $primary_group | grep -q "^Domain Users$" || return 1
+}
+testit "user getgroups" user_getgroups
 
 #test removing test users from all groups by their username
 testit "group removemembers" $PYTHON $samba_tool group removemembers $CONFIG dsg testuser,testuser1
