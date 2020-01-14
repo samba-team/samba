@@ -22,7 +22,6 @@
 #include <talloc.h>
 #include "serverid.h"
 #include "server_id_watch.h"
-#include "messages.h"
 #include "lib/util/tevent_unix.h"
 
 struct server_id_watch_state {
