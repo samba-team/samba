@@ -1221,6 +1221,7 @@ struct name_query_state {
 	struct sockaddr_storage my_addr;
 	struct sockaddr_storage addr;
 	bool bcast;
+	bool bcast_star_query;
 
 
 	uint8_t buf[1024];
@@ -1287,6 +1288,16 @@ struct tevent_req *name_query_send(TALLOC_CTX *mem_ctx,
 	nmb->header.ancount = 0;
 	nmb->header.nscount = 0;
 	nmb->header.arcount = 0;
+
+	if (bcast && (strcmp(name, "*")==0)) {
+		/*
+		 * We're doing a broadcast query for all
+		 * names in the area. Remember this so
+		 * we will wait for all names within
+		 * the timeout period.
+		 */
+		state->bcast_star_query = true;
+	}
 
 	make_nmb_name(&nmb->question.question_name,name,name_type);
 
@@ -1445,9 +1456,12 @@ static bool name_query_validator(struct packet_struct *p, void *private_data)
 	if (state->bcast) {
 		/*
 		 * We have to collect all entries coming in from broadcast
-		 * queries. If we got a unique name, we're done.
+		 * queries. If we got a unique name and we are not querying
+		 * all names registered within broadcast area (query
+		 * for the name '*', so state->bcast_star_query is set),
+		 * we're done.
 		 */
-		return got_unique_netbios_name;
+		return (got_unique_netbios_name && !state->bcast_star_query);
 	}
 	/*
 	 * WINS responses are accepted when they are received
