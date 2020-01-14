@@ -9,7 +9,7 @@
 #
 # Copyright (C) 2015, 2019 Christof Schmitt
 
-if [ $# -lt 3 ]; then
+if [ $# -lt 4 ]; then
 	echo Usage: test_sharesec.sh SERVERCONFFILE SHARESEC NET SHARE
 exit 1
 fi
