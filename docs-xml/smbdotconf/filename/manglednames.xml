@@ -15,14 +15,14 @@
 	<para>Possible option settings are</para>
 
 	<itemizedlist>
-		<listitem><para><emphasis>yes (default)</emphasis> -
+		<listitem><para><emphasis>yes</emphasis> -
 		enables name mangling for all not DOS 8.3 conforming
 		names.</para></listitem>
 
 		<listitem><para><emphasis>no</emphasis> - disables any
 		name mangling.</para></listitem>
 
-		<listitem><para><emphasis>illegal</emphasis> - does
+		<listitem><para><emphasis>illegal (default)</emphasis> - does
 		mangling for names with illegal NTFS characters. This
 		is the most sensible setting for modern clients that
 		don't use the shortname anymore.</para></listitem>
