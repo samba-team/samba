@@ -1282,6 +1282,7 @@ struct ldb_control *ldb_parse_control_from_string(struct ldb_context *ldb, TALLO
 	/*
 	 * When no matching control has been found.
 	 */
+	TALLOC_FREE(ctrl);
 	return NULL;
 }
 
