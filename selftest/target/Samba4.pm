@@ -981,7 +981,7 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 	}
 
 	# Create to users alice and bob!
-	my $user_account_array = ["alice", "bob", "jane"];
+	my $user_account_array = ["alice", "bob", "jane", "joe"];
 
 	foreach my $user_account (@{$user_account_array}) {
 		my $samba_tool_cmd = "";
