@@ -1680,7 +1680,7 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32_t flags)
 
 	d_printf("plaintext kerberos password authentication for [%s] %s "
 		 "(requesting cctype: %s)\n",
-		 username, WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed",
+		 name, WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed",
 		 cctype);
 
 	if (error) {
