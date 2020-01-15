@@ -278,6 +278,16 @@ plantestsuite("samba3.wbinfo_name_lookup", env,
                             "nsswitch/tests/test_wbinfo_name_lookup.sh"),
                '$DOMAIN', '$REALM', '$DC_USERNAME'])
 
+env = "ad_member"
+plantestsuite("samba3.wbinfo_user_info_cached", env,
+              [os.path.join(srcdir(),
+                            "nsswitch/tests/test_wbinfo_user_info_cached.sh"),
+               '$DOMAIN', '$REALM', 'joe', 'Secret007', '"Samba Users"', env])
+plantestsuite("samba3.wbinfo_user_info_cached.trustdom", env,
+              [os.path.join(srcdir(),
+                            "nsswitch/tests/test_wbinfo_user_info_cached.sh"),
+               '$TRUST_F_BOTH_DOMAIN', '$TRUST_F_BOTH_REALM', 'joe', 'Secret007', '"Samba Users"', env])
+
 env = "ad_member:local"
 plantestsuite("samba3.wbinfo_user_info", env,
               [os.path.join(srcdir(),
