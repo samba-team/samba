@@ -1011,6 +1011,34 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 		}
 	}
 
+	# Add user joe to group "Samba Users"
+	my $samba_tool_cmd = "";
+	my $group = "Samba Users";
+	my $user_account = "joe";
+
+	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
+	    . " group addmembers --configfile=$ctx->{smb_conf} \"$group\" $user_account";
+	unless (system($samba_tool_cmd) == 0) {
+		warn("Unable to add " . $user_account . "to group group : $group\n$samba_tool_cmd\n");
+		return undef;
+	}
+
+	my $samba_tool_cmd = "";
+	my $group = "Samba Users";
+	my $user_account = "joe";
+
+	$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+	$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+	$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
+	    . " user setprimarygroup --configfile=$ctx->{smb_conf} $user_account \"$group\"";
+	unless (system($samba_tool_cmd) == 0) {
+		warn("Unable to set primary group of user: $user_account\n$samba_tool_cmd\n");
+		return undef;
+	}
+
+	# Change the userPrincipalName for jane
 	my $ldbmodify = "";
 	$ldbmodify .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$ldbmodify .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
