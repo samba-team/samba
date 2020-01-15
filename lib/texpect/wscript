@@ -6,5 +6,5 @@ def configure(conf):
 def build(bld):
     bld.SAMBA_BINARY('texpect',
                      'texpect.c',
-                     deps='popt util replace',
+                     deps='popt util replace sys_rw',
                      for_selftest=True)

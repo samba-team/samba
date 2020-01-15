@@ -34,6 +34,7 @@
 #include "replace.h"
 #include "system/filesys.h"
 #include "system/wait.h"
+#include "lib/util/sys_rw.h"
 
 #ifdef HAVE_PTY_H
 #include <pty.h>
@@ -174,24 +175,6 @@ static char *iscmd(const char *buf, const char *s)
 	}
 
 	return strdup(buf + len);
-}
-
-/*******************************************************************
-A write wrapper that will deal with EINTR.
-********************************************************************/
-
-static ssize_t sys_write(int fd, const void *buf, size_t count)
-{
-	ssize_t ret;
-
-	do {
-		ret = write(fd, buf, count);
-#if defined(EWOULDBLOCK)
-	} while (ret == -1 && (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK));
-#else
-	} while (ret == -1 && (errno == EINTR || errno == EAGAIN));
-#endif
-	return ret;
 }
 
 static void parse_configuration(const char *fn)
