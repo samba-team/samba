@@ -996,6 +996,21 @@ servicePrincipalName: http/testupnspn.$ctx->{dnsname}
 		}
 	}
 
+	my $group_array = ["Samba Users"];
+
+	foreach my $group (@{$group_array}) {
+		my $samba_tool_cmd = "";
+
+		$samba_tool_cmd .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
+		$samba_tool_cmd .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
+		$samba_tool_cmd .= Samba::bindir_path($self, "samba-tool")
+		    . " group add --configfile=$ctx->{smb_conf} \"$group\"";
+		unless (system($samba_tool_cmd) == 0) {
+			warn("Unable to create group: $group\n$samba_tool_cmd\n");
+			return undef;
+		}
+	}
+
 	my $ldbmodify = "";
 	$ldbmodify .= "KRB5_CONFIG=\"$ret->{KRB5_CONFIG}\" ";
 	$ldbmodify .= "KRB5CCNAME=\"$ret->{KRB5_CCACHE}\" ";
