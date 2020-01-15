@@ -6512,7 +6512,10 @@ int main(int argc,char *argv[])
 
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 
-		/* if the tar option has been called previouslt, now we need to eat out the leftovers */
+		/*
+		 * if the tar option has been called previously, now
+		 * we need to eat out the leftovers
+		 */
 		/* I see no other way to keep things sane --SSS */
 		if (tar_opt == true) {
 			while (poptPeekArg(pc)) {
