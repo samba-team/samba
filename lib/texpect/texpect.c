@@ -235,23 +235,6 @@ static void parse_configuration(const char *fn)
 	fclose(cmd);
 }
 
-/* A wrapper to close als file descriptors above the given fd */
-static int sys_closefrom(int fd)
-{
-	int num = getdtablesize();
-
-	if (num < 0) {
-		num = 1024;
-	}
-
-	for (; fd <= num; fd++) {
-		close(fd);
-	}
-
-	return 0;
-}
-
-
 /*
  *
  */
@@ -463,7 +446,7 @@ int main(int argc, const char **argv)
 			dup2(slave, STDOUT_FILENO);
 			dup2(slave, STDERR_FILENO);
 
-			sys_closefrom(STDERR_FILENO + 1);
+			closefrom(STDERR_FILENO + 1);
 
 			/* texpect <expect_instructions> <progname> [<args>] */
 			execvp(program, program_args);
