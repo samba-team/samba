@@ -2358,8 +2358,9 @@ sub provision($$)
 	$cmd .= "SMB_CONF_PATH=\"$conffile\" ";
 	$cmd .= "$net setlocalsid $samsid";
 
-	if (system($cmd) != 0) {
-	    warn("Join failed\n$cmd");
+	my $net_ret = system($cmd);
+	if ($net_ret != 0) {
+	    warn("net setlocalsid failed: $net_ret\n$cmd");
 	    return undef;
 	}
 
