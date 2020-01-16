@@ -233,7 +233,8 @@ static int set_gpfs_lease(int fd, int leasetype)
 	return gpfswrap_set_lease(fd, gpfs_type);
 }
 
-static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp, 
+static int vfs_gpfs_setlease(vfs_handle_struct *handle,
+			     files_struct *fsp,
 			     int leasetype)
 {
 	struct gpfs_config_data *config;
