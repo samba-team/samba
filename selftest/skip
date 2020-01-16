@@ -156,6 +156,7 @@ nbt.bench-wins
 ^samba4.*base.defer_open
 ^samba4.smb2.acls # new test which doesn't pass yet
 ^samba4.smb2.sdread
+^samba4.smb2.samba3error\(ad_dc_ntvfs\) # don't run against ntvfs
 # ktutil might not be installed or from mit...
 # we should build a samba4ktutil and use that instead
 ^samba4.blackbox.ktpass # this test isn't portable ...

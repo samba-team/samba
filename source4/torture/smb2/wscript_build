@@ -44,6 +44,7 @@ bld.SAMBA_MODULE('TORTURE_SMB2',
         setinfo.c
         sharemode.c
         smb2.c
+        smb3error.c
         streams.c
         samba3misc.c
         tcon.c
