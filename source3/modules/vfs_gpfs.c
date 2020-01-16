@@ -246,8 +246,8 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle,
 				struct gpfs_config_data,
 				return -1);
 
-	if (linux_set_lease_sighandler(fsp->fh->fd) == -1) {
-		ret = -1;
+	ret = linux_set_lease_sighandler(fsp->fh->fd);
+	if (ret == -1) {
 		goto failure;
 	}
 
