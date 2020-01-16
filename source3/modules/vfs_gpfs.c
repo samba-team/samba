@@ -230,12 +230,6 @@ static int set_gpfs_lease(int fd, int leasetype)
 		gpfs_type = GPFS_LEASE_WRITE;
 	}
 
-	/* we unconditionally set CAP_LEASE, rather than looking for
-	   -1/EACCES as there is a bug in some versions of
-	   libgpfs_gpl.so which results in a leaked fd on /dev/ss0
-	   each time we try this with the wrong capabilities set
-	*/
-	linux_set_lease_capability();
 	return gpfswrap_set_lease(fd, gpfs_type);
 }
 
