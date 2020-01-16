@@ -252,6 +252,7 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle,
 
 	if (config->leases) {
 		int gpfs_lease_type = lease_type_to_gpfs(leasetype);
+		int saved_errno = 0;
 
 		/*
 		 * Ensure the lease owner is root to allow
@@ -259,7 +260,14 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle,
 		 */
 		become_root();
 		ret = gpfswrap_set_lease(fsp->fh->fd, gpfs_lease_type);
+		if (ret < 0) {
+			saved_errno = errno;
+		}
 		unbecome_root();
+
+		if (saved_errno != 0) {
+			errno = saved_errno;
+		}
 	}
 
 failure:
