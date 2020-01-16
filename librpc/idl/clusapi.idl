@@ -2823,11 +2823,21 @@ import "winreg.idl", "misc.idl";
 	/*****************/
 	/* Function 0xAD */
 
+	typedef [v1_enum] enum {
+		CLUSCTL_GROUPSET_GET_ID				= 0x08000039,
+		CLUSCTL_GROUPSET_GET_RO_COMMON_PROPERTIES	= 0x08000055,
+		CLUSCTL_GROUPSET_GET_COMMON_PROPERTIES		= 0x08000059,
+		CLUSCTL_GROUPSET_GET_GROUPS			= 0x08002D71,
+		CLUSCTL_GROUPSET_GET_PROVIDER_GROUPS		= 0x08002D75,
+		CLUSCTL_GROUPSET_GET_PROVIDER_GROUPSETS		= 0x08002D79,
+		CLUSCTL_GROUPSET_SET_COMMON_PROPERTIES		= 0x0840005E
+	} clusapi_GroupSetControlCode;
+
 	WERROR
 	clusapi_NodeGroupSetControl(
 		[ in ] HGROUPSET_RPC hGroupSet,
 		[ in ] HNODE_RPC hNode,
-		[ in ] uint32 dwControlCode,
+		[ in ] clusapi_GroupSetControlCode dwControlCode,
 		[ in, unique, size_is(nInBufferSize) ] uint8 *lpInBuffer,
 		[ in ] uint32 nInBufferSize,
 		[ out, size_is(nOutBufferSize), length_is (*lpBytesReturned)] uint8 *lpOutBuffer,
@@ -2843,7 +2853,7 @@ import "winreg.idl", "misc.idl";
 	WERROR
 	clusapi_GroupSetControl(
 		[ in ] HGROUPSET_RPC hGroupSet,
-		[ in ] uint32 dwControlCode,
+		[ in ] clusapi_GroupSetControlCode dwControlCode,
 		[ in, unique, size_is(nInBufferSize) ] uint8 *lpInBuffer,
 		[ in ] uint32 nInBufferSize,
 		[ out, size_is(nOutBufferSize), length_is (*lpBytesReturned)] uint8 *lpOutBuffer,
