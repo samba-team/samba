@@ -142,6 +142,9 @@ def cmd_testonly(opt):
                         '--flapping=${srcdir}/selftest/flapping '
                         '--flapping=${srcdir}/selftest/flapping.d')
 
+    if CONFIG_GET(opt, 'HAVE_MIT_KRB5_PRE_1_18'):
+        env.FILTER_XFAIL += ' --expected-failures=${srcdir}/selftest/knownfail_mit_krb5_pre_1_18'
+
     if Options.options.FAIL_IMMEDIATELY:
         env.FILTER_XFAIL += ' --fail-immediately'
 

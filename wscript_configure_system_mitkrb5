@@ -77,6 +77,9 @@ if conf.env.KRB5_CONFIG:
     else:
         Logs.info('MIT Kerberos %s detected, MIT krb5 build can proceed' % (krb5_version))
 
+    if parse_version(krb5_version) < parse_version('1.18'):
+        conf.DEFINE('HAVE_MIT_KRB5_PRE_1_18', 1)
+
 conf.CHECK_CFG(args="--cflags --libs", package="com_err", uselib_store="com_err")
 conf.CHECK_FUNCS_IN('_et_list', 'com_err')
 conf.CHECK_HEADERS('com_err.h', lib='com_err')
