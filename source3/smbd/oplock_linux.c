@@ -45,14 +45,6 @@
 #define F_SETSIG 10
 #endif
 
-/*
- * public function to get linux lease capability. Needed by some VFS modules (eg. gpfs.c)
- */
-void linux_set_lease_capability(void)
-{
-	set_effective_capability(LEASE_CAPABILITY);
-}
-
 /* 
  * Call to set the kernel lease signal handler
  */
