@@ -33,10 +33,6 @@
 #define F_GETLEASE	1025
 #endif
 
-#ifndef CAP_LEASE
-#define CAP_LEASE 28
-#endif
-
 #ifndef RT_SIGNAL_LEASE
 #define RT_SIGNAL_LEASE (SIGRTMIN+1)
 #endif
