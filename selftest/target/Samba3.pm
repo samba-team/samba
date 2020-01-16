@@ -2405,6 +2405,7 @@ sub provision($$)
 
 	my $net = Samba::bindir_path($self, "net");
 	my $cmd = "";
+	$cmd .= "UID_WRAPPER_ROOT=1 ";
 	$cmd .= "SMB_CONF_PATH=\"$conffile\" ";
 	$cmd .= "$net setlocalsid $samsid";
 
