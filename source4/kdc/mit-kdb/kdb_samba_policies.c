@@ -323,7 +323,6 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 					    krb5_authdata ***signed_auth_data)
 {
 #endif
-	krb5_const_principal ks_client_princ;
 	krb5_authdata **authdata = NULL;
 	krb5_boolean is_as_req;
 	krb5_error_code code;
@@ -334,13 +333,6 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 	krbtgt = krbtgt == NULL ? local_krbtgt : krbtgt;
 	krbtgt_key = krbtgt_key == NULL ? local_krbtgt_key : krbtgt_key;
 #endif
-
-	/* Prefer canonicalised name from client entry */
-	if (client != NULL) {
-		ks_client_princ = client->princ;
-	} else {
-		ks_client_princ = client_princ;
-	}
 
 	is_as_req = ((flags & KRB5_KDB_FLAG_CLIENT_REFERRALS_ONLY) != 0);
 
@@ -354,7 +346,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 	if (!is_as_req) {
 		code = ks_verify_pac(context,
 				     flags,
-				     ks_client_princ,
+				     client_princ,
 				     client,
 				     server,
 				     krbtgt,
@@ -381,7 +373,7 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 		goto done;
 	}
 
-	code = krb5_pac_sign(context, pac, authtime, ks_client_princ,
+	code = krb5_pac_sign(context, pac, authtime, client_princ,
 			server_key, krbtgt_key, &pac_data);
 	if (code != 0) {
 		DBG_ERR("krb5_pac_sign failed: %d\n", code);
