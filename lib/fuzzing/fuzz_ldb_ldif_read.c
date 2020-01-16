@@ -26,8 +26,11 @@ char buf[MAX_LENGTH + 1] = {0};
 int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
 {
 	struct ldb_ldif *ldif = NULL;
-	struct ldb_context *ldb = ldb_init(NULL, NULL);
 	const char *s = NULL;
+	struct ldb_context *ldb = ldb_init(NULL, NULL);
+	if (ldb == NULL) {
+		return 0;
+	}
 	
 	if (len > MAX_LENGTH) {
 		len = MAX_LENGTH;

@@ -27,6 +27,9 @@ int LLVMFuzzerTestOneInput(uint8_t *input, size_t len)
 {
 	struct ldb_dn *dn = NULL;
 	struct ldb_context *ldb = ldb_init(NULL, NULL);
+	if (ldb == NULL) {
+		return 0;
+	}
 	/*
 	 * We copy the buffer in order to NUL-terminate, because running off
 	 *  the end of the string would be an uninteresting crash.
