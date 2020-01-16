@@ -2325,17 +2325,17 @@ static bool test_OfflineGroup(struct torture_context *tctx,
 
 static bool test_one_group(struct torture_context *tctx,
 			   struct dcerpc_pipe *p,
-			   const char *node_name)
+			   const char *group_name)
 {
 	struct policy_handle hGroup;
 
 	torture_assert(tctx,
-		test_OpenGroup_int(tctx, p, node_name, &hGroup),
+		test_OpenGroup_int(tctx, p, group_name, &hGroup),
 		"failed to open group");
 	test_CloseGroup_int(tctx, p, &hGroup);
 
 	torture_assert(tctx,
-		test_OpenGroupEx_int(tctx, p, node_name, &hGroup),
+		test_OpenGroupEx_int(tctx, p, group_name, &hGroup),
 		"failed to openex group");
 
 	torture_assert(tctx,
