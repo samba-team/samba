@@ -43,12 +43,23 @@ int LLVMFuzzerTestOneInput(uint8_t *buf, size_t len)
 	}
 
 	mem_ctx = talloc_init(__FUNCTION__);
+	if (mem_ctx == NULL) {
+		return 0;
+	}
 
 	opt.in = fmemopen(buf, len, "r");
 	opt.out = devnull;
 	opt.ldb_ctx = ldb_init(mem_ctx, NULL);
+	if (opt.ldb_ctx == NULL || opt.in == NULL) {
+		talloc_free(mem_ctx);
+		return 0;
+	}
 
 	opt.basedn = ldb_dn_new(mem_ctx, opt.ldb_ctx, "");
+	if (opt.basedn == NULL) {
+		talloc_free(mem_ctx);
+		return 0;
+	}
 
 	process_file(mem_ctx, &opt);
 
