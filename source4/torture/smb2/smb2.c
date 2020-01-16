@@ -210,6 +210,7 @@ NTSTATUS torture_smb2_init(TALLOC_CTX *ctx)
 
 	torture_suite_add_suite(suite, torture_smb2_charset(suite));
 	torture_suite_add_1smb2_test(suite, "secleak", torture_smb2_sec_leak);
+	torture_suite_add_1smb2_test(suite, "session-id", run_sessidtest);
 
 	suite->description = talloc_strdup(suite, "SMB2-specific tests");
 
