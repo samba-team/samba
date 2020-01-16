@@ -1212,7 +1212,7 @@ static bool test_ResourceTypeControl_int(struct torture_context *tctx,
 	/* now try what happens when we query with a buffer large enough to hold
 	 * the entire packet */
 
-	r.in.nOutBufferSize = 0x400;
+	r.in.nOutBufferSize = 0x4000;
 	r.out.lpOutBuffer = talloc_zero_array(tctx, uint8_t, r.in.nOutBufferSize);
 
 	torture_assert_ntstatus_ok(tctx,
@@ -1644,7 +1644,7 @@ static bool test_NodeControl_int(struct torture_context *tctx,
 	/* now try what happens when we query with a buffer large enough to hold
 	 * the entire packet */
 
-	r.in.nOutBufferSize = 0x400;
+	r.in.nOutBufferSize = 0x4000;
 	r.out.lpOutBuffer = talloc_zero_array(tctx, uint8_t, r.in.nOutBufferSize);
 
 	torture_assert_ntstatus_ok(tctx,
@@ -3409,7 +3409,7 @@ static bool test_EnumValue_int(struct torture_context *tctx,
 	int i = 0;
 
 	do {
-		uint32_t lpcbData = 1024;
+		uint32_t lpcbData = 2048;
 
 		r.in.hKey = *hKey;
 		r.in.dwIndex = i++;
