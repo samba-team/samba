@@ -235,15 +235,16 @@ def del_gpo_link(samdb, container_dn, gpo):
 
 def parse_unc(unc):
     '''Parse UNC string into a hostname, a service, and a filepath'''
-    if unc.startswith('\\\\') and unc.startswith('//'):
-        raise ValueError("UNC doesn't start with \\\\ or //")
-    tmp = unc[2:].split('/', 2)
-    if len(tmp) == 3:
-        return tmp
-    tmp = unc[2:].split('\\', 2)
-    if len(tmp) == 3:
-        return tmp
-    raise ValueError("Invalid UNC string: %s" % unc)
+    tmp = []
+    if unc.startswith('\\\\'):
+        tmp = unc[2:].split('\\', 2)
+    elif unc.startswith('//'):
+        tmp = unc[2:].split('/', 2)
+
+    if len(tmp) != 3:
+        raise ValueError("Invalid UNC string: %s" % unc)
+
+    return tmp
 
 
 def find_parser(name, flags=re.IGNORECASE):
