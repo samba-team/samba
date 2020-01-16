@@ -219,7 +219,7 @@ static int vfs_gpfs_close(vfs_handle_struct *handle, files_struct *fsp)
 	return SMB_VFS_NEXT_CLOSE(handle, fsp);
 }
 
-static int set_gpfs_lease(int fd, int leasetype)
+static int lease_type_to_gpfs(int leasetype)
 {
 	int gpfs_type = GPFS_LEASE_NONE;
 
@@ -230,7 +230,7 @@ static int set_gpfs_lease(int fd, int leasetype)
 		gpfs_type = GPFS_LEASE_WRITE;
 	}
 
-	return gpfswrap_set_lease(fd, gpfs_type);
+	return gpfs_type;
 }
 
 static int vfs_gpfs_setlease(vfs_handle_struct *handle,
@@ -252,12 +252,14 @@ static int vfs_gpfs_setlease(vfs_handle_struct *handle,
 	}
 
 	if (config->leases) {
+		int gpfs_lease_type = lease_type_to_gpfs(leasetype);
+
 		/*
 		 * Ensure the lease owner is root to allow
 		 * correct delivery of lease-break signals.
 		 */
 		become_root();
-		ret = set_gpfs_lease(fsp->fh->fd,leasetype);
+		ret = gpfswrap_set_lease(fsp->fh->fd, gpfs_lease_type);
 		unbecome_root();
 	}
 
