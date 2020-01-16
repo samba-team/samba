@@ -221,16 +221,15 @@ static int vfs_gpfs_close(vfs_handle_struct *handle, files_struct *fsp)
 
 static int lease_type_to_gpfs(int leasetype)
 {
-	int gpfs_type = GPFS_LEASE_NONE;
-
 	if (leasetype == F_RDLCK) {
-		gpfs_type = GPFS_LEASE_READ;
-	}
-	if (leasetype == F_WRLCK) {
-		gpfs_type = GPFS_LEASE_WRITE;
+		return GPFS_LEASE_READ;
 	}
 
-	return gpfs_type;
+	if (leasetype == F_WRLCK) {
+		return GPFS_LEASE_WRITE;
+	}
+
+	return GPFS_LEASE_NONE;
 }
 
 static int vfs_gpfs_setlease(vfs_handle_struct *handle,
