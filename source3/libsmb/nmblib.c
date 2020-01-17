@@ -192,10 +192,14 @@ static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
 
 	m = ubuf[offset];
 
-	if (!m)
-		return(0);
-	if ((m & 0xC0) || offset+m+2 > length)
-		return(0);
+	/* m must be 32 to exactly fill in the 16 bytes of the netbios name */
+	if (m != 32) {
+		return 0;
+	}
+	/* Cannot go past length. */
+	if (offset+m+2 > length) {
+		return 0;
+	}
 
 	memset((char *)name,'\0',sizeof(*name));
 
