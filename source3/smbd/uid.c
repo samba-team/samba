@@ -413,14 +413,10 @@ static bool change_to_user_impersonate(connection_struct *conn,
 		}
 	}
 
-	/*Set current_user since we will immediately also call set_sec_ctx() */
-	current_user.ut.ngroups = num_groups;
-	current_user.ut.groups  = group_list;
-
 	set_sec_ctx(uid,
 		    gid,
-		    current_user.ut.ngroups,
-		    current_user.ut.groups,
+		    num_groups,
+		    group_list,
 		    conn->session_info->security_token);
 
 	current_user.conn = conn;
