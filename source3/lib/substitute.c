@@ -44,7 +44,6 @@ bool set_local_machine_name(const char *local_name, bool perm)
 {
 	static bool already_perm = false;
 	char *tmp_local_machine = NULL;
-	size_t len;
 
 	if (already_perm) {
 		return true;
@@ -57,15 +56,12 @@ bool set_local_machine_name(const char *local_name, bool perm)
 	trim_char(tmp_local_machine,' ',' ');
 
 	TALLOC_FREE(local_machine);
-	len = strlen(tmp_local_machine);
-	local_machine = (char *)TALLOC_ZERO(NULL, len+1);
-	if (!local_machine) {
-		TALLOC_FREE(tmp_local_machine);
+	local_machine = talloc_alpha_strcpy(NULL,
+					    tmp_local_machine,
+					    SAFE_NETBIOS_CHARS);
+	if (local_machine == NULL) {
 		return false;
 	}
-	/* alpha_strcpy includes the space for the terminating nul. */
-	alpha_strcpy(local_machine,tmp_local_machine,
-			SAFE_NETBIOS_CHARS,len+1);
 	if (!strlower_m(local_machine)) {
 		TALLOC_FREE(tmp_local_machine);
 		return false;
