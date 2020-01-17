@@ -478,7 +478,6 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	struct dom_sid tmp_sid;
 	struct auth_session_info *session_info;
 	struct unixid *ids;
-	fstring tmp;
 
 	/* Ensure we can't possible take a code path leading to a
 	 * null defref. */
@@ -494,9 +493,10 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 		}
 
 		/* This is a potentially untrusted username for use in %U */
-		alpha_strcpy(tmp, smb_username, ". _-$", sizeof(tmp));
 		session_info->unix_info->sanitized_username =
-				talloc_strdup(session_info->unix_info, tmp);
+			talloc_alpha_strcpy(session_info->unix_info,
+					    smb_username,
+					    SAFE_NETBIOS_CHARS "$");
 		if (session_info->unix_info->sanitized_username == NULL) {
 			TALLOC_FREE(session_info);
 			return NT_STATUS_NO_MEMORY;
@@ -535,9 +535,14 @@ NTSTATUS create_local_token(TALLOC_CTX *mem_ctx,
 	}
 
 	/* This is a potentially untrusted username for use in %U */
-	alpha_strcpy(tmp, smb_username, ". _-$", sizeof(tmp));
 	session_info->unix_info->sanitized_username =
-				talloc_strdup(session_info->unix_info, tmp);
+		talloc_alpha_strcpy(session_info->unix_info,
+				    smb_username,
+				    SAFE_NETBIOS_CHARS "$");
+	if (session_info->unix_info->sanitized_username == NULL) {
+		TALLOC_FREE(session_info);
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (session_key) {
 		data_blob_free(&session_info->session_key);
