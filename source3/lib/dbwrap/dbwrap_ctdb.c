@@ -542,6 +542,7 @@ static struct db_record *db_ctdb_fetch_locked_transaction(struct db_ctdb_ctx *ct
 	if (ctdb_data.dptr == NULL) {
 		/* create the record */
 		result->value = tdb_null;
+		result->value_valid = true;
 		return result;
 	}
 
