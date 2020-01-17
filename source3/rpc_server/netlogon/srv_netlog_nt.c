@@ -1517,6 +1517,7 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	NTSTATUS status = NT_STATUS_OK;
 	union netr_LogonLevel *logon = r->in.logon;
 	const char *nt_username, *nt_domain, *nt_workstation;
+	char *sanitized_username = NULL;
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_context *auth_context = NULL;
@@ -1603,8 +1604,6 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 	} /* end switch */
 
 	DEBUG(3,("User:[%s@%s] Requested Domain:[%s]\n", nt_username, nt_workstation, nt_domain));
-	fstrcpy(current_user_info.smb_name, nt_username);
-	sub_set_smb_name(nt_username);
 
 	DEBUG(5,("Attempting validation level %d for unmapped username %s.\n",
 		r->in.validation_level, nt_username));
@@ -1744,6 +1743,19 @@ static NTSTATUS _netr_LogonSamLogon_base(struct pipes_struct *p,
 		TALLOC_FREE(server_info);
 		return NT_STATUS_LOGON_FAILURE;
 	}
+
+	sanitized_username = talloc_alpha_strcpy(talloc_tos(),
+						 nt_username,
+						 SAFE_NETBIOS_CHARS "$");
+	if (sanitized_username == NULL) {
+		TALLOC_FREE(server_info);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	set_current_user_info(sanitized_username,
+			      server_info->unix_name,
+			      server_info->info3->base.logon_domain.string);
+	TALLOC_FREE(sanitized_username);
 
 	/* This is the point at which, if the login was successful, that
            the SAM Local Security Authority should record that the user is
