@@ -112,6 +112,9 @@ size_t strlen_m(const char *s);
 size_t strlen_m_term(const char *s);
 size_t strlen_m_term_null(const char *s);
 char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength);
+char *talloc_alpha_strcpy(TALLOC_CTX *mem_ctx,
+			  const char *src,
+			  const char *other_safe_chars);
 void string_replace_m(char *s, char oldc, char newc);
 bool strcsequal(const char *s1,const char *s2);
 bool strequal_m(const char *s1, const char *s2);

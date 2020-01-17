@@ -159,3 +159,25 @@ char *alpha_strcpy(char *dest,
 
 	return dest;
 }
+
+char *talloc_alpha_strcpy(TALLOC_CTX *mem_ctx,
+			  const char *src,
+			  const char *other_safe_chars)
+{
+	char *dest = NULL;
+	size_t slen;
+
+	if (src == NULL) {
+		return NULL;
+	}
+
+	slen = strlen(src);
+
+	dest = talloc_zero_size(mem_ctx, slen + 1);
+	if (dest == NULL) {
+		return NULL;
+	}
+
+	alpha_strcpy(dest, src, other_safe_chars, slen + 1);
+	return dest;
+}
