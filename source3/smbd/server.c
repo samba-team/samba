@@ -1508,7 +1508,7 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 		return status;
 	}
 
-	status = g_lock_lock(ctx, string_term_tdb_data(name), G_LOCK_READ,
+	status = g_lock_lock(ctx, string_term_tdb_data(name), G_LOCK_DOWNGRADE,
 			     (struct timeval) { .tv_sec = 60 });
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_lock(G_LOCK_READ) failed: %s\n",
