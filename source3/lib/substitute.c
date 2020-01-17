@@ -172,18 +172,13 @@ void sub_set_smb_name(const char *name)
 	}
 
 	TALLOC_FREE(smb_user_name);
-	smb_user_name = (char *)TALLOC_ZERO(NULL, len+1);
-	if (!smb_user_name) {
-		TALLOC_FREE(tmp);
+	smb_user_name = talloc_alpha_strcpy(NULL,
+					    tmp,
+					    SAFE_NETBIOS_CHARS);
+	TALLOC_FREE(tmp);
+	if (smb_user_name == NULL) {
 		return;
 	}
-
-	/* alpha_strcpy includes the space for the terminating nul. */
-	alpha_strcpy(smb_user_name, tmp,
-			SAFE_NETBIOS_CHARS,
-			len+1);
-
-	TALLOC_FREE(tmp);
 
 	if (is_machine_account) {
 		len = strlen(smb_user_name);
