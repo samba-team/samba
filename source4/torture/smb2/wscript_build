@@ -35,6 +35,7 @@ bld.SAMBA_MODULE('TORTURE_SMB2',
         rename.c
         replay.c
         scan.c
+        secleak.c
         session.c
         setinfo.c
         sharemode.c
