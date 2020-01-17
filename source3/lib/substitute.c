@@ -94,7 +94,6 @@ bool set_remote_machine_name(const char *remote_name, bool perm)
 {
 	static bool already_perm = False;
 	char *tmp_remote_machine;
-	size_t len;
 
 	if (already_perm) {
 		return true;
@@ -107,16 +106,12 @@ bool set_remote_machine_name(const char *remote_name, bool perm)
 	trim_char(tmp_remote_machine,' ',' ');
 
 	TALLOC_FREE(remote_machine);
-	len = strlen(tmp_remote_machine);
-	remote_machine = (char *)TALLOC_ZERO(NULL, len+1);
-	if (!remote_machine) {
-		TALLOC_FREE(tmp_remote_machine);
+	remote_machine = talloc_alpha_strcpy(NULL,
+					     tmp_remote_machine,
+					     SAFE_NETBIOS_CHARS);
+	if (remote_machine == NULL) {
 		return false;
 	}
-
-	/* alpha_strcpy includes the space for the terminating nul. */
-	alpha_strcpy(remote_machine,tmp_remote_machine,
-			SAFE_NETBIOS_CHARS,len+1);
 	if (!strlower_m(remote_machine)) {
 		TALLOC_FREE(tmp_remote_machine);
 		return false;
