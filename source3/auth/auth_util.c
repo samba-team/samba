@@ -772,7 +772,6 @@ NTSTATUS auth3_session_info_create(TALLOC_CTX *mem_ctx,
 	uint32_t num_gids = 0;
 	gid_t *gids = NULL;
 	struct dom_sid tmp_sid = { 0, };
-	fstring tmp = { 0, };
 	NTSTATUS status;
 	size_t i;
 	bool ok;
@@ -1088,9 +1087,10 @@ NTSTATUS auth3_session_info_create(TALLOC_CTX *mem_ctx,
 	}
 
 	/* This is a potentially untrusted username for use in %U */
-	alpha_strcpy(tmp, original_user_name, ". _-$", sizeof(tmp));
 	session_info->unix_info->sanitized_username =
-				talloc_strdup(session_info->unix_info, tmp);
+		talloc_alpha_strcpy(session_info->unix_info,
+				    original_user_name,
+				    SAFE_NETBIOS_CHARS "$");
 	if (session_info->unix_info->sanitized_username == NULL) {
 		TALLOC_FREE(frame);
 		return NT_STATUS_NO_MEMORY;
