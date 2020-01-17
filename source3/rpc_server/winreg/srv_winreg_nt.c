@@ -522,7 +522,6 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	char *shutdown_script = NULL;
-	char *msg = NULL;
 	char *chkmsg = NULL;
 	fstring str_timeout;
 	fstring str_reason;
@@ -542,14 +541,12 @@ WERROR _winreg_InitiateSystemShutdownEx(struct pipes_struct *p,
 	/* pull the message string and perform necessary sanity checks on it */
 
 	if ( r->in.message && r->in.message->string ) {
-		if ( (msg = talloc_strdup(p->mem_ctx, r->in.message->string )) == NULL ) {
+		chkmsg = talloc_alpha_strcpy(p->mem_ctx,
+					     r->in.message->string,
+					     NULL);
+		if (chkmsg == NULL) {
 			return WERR_NOT_ENOUGH_MEMORY;
 		}
-		chkmsg = talloc_array(p->mem_ctx, char, strlen(msg)+1);
-		if (!chkmsg) {
-			return WERR_NOT_ENOUGH_MEMORY;
-		}
-		alpha_strcpy(chkmsg, msg, NULL, strlen(msg)+1);
 	}
 
 	fstr_sprintf(str_timeout, "%d", r->in.timeout);
