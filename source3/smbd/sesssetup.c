@@ -871,10 +871,6 @@ void reply_sesssetup_and_X(struct smb_request *req)
 		fstrcpy(sub_user, "");
 	}
 
-	sub_set_smb_name(sub_user);
-
-	reload_services(sconn, conn_snum_used, true);
-
 	if (!*state->user) {
 		DEBUG(3,("Got anonymous request\n"));
 
