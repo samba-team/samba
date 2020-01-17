@@ -1173,7 +1173,7 @@ static void ctdb_accept_client(struct tevent_context *ev,
 */
 static int ux_socket_bind(struct ctdb_context *ctdb)
 {
-	struct sockaddr_un addr;
+	struct sockaddr_un addr = { .sun_family = AF_UNIX };
 	int ret;
 
 	ctdb->daemon.sd = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -1181,8 +1181,6 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 		return -1;
 	}
 
-	memset(&addr, 0, sizeof(addr));
-	addr.sun_family = AF_UNIX;
 	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path)-1);
 
 	if (! sock_clean(ctdb->daemon.name)) {
