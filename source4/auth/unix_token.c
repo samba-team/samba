@@ -142,8 +142,6 @@ NTSTATUS auth_session_info_fill_unix(struct loadparm_context *lp_ctx,
 				     const char *original_user_name,
 				     struct auth_session_info *session_info)
 {
-	char *su;
-	size_t len;
 	NTSTATUS status = security_token_to_unix_token(session_info,
 						       session_info->security_token,
 						       &session_info->unix_token);
@@ -164,12 +162,11 @@ NTSTATUS auth_session_info_fill_unix(struct loadparm_context *lp_ctx,
 		original_user_name = session_info->unix_info->unix_name;
 	}
 
-	len = strlen(original_user_name) + 1;
-	session_info->unix_info->sanitized_username = su = talloc_array(session_info->unix_info, char, len);
-	NT_STATUS_HAVE_NO_MEMORY(su);
-
-	alpha_strcpy(su, original_user_name,
-		     ". _-$", len);
+	session_info->unix_info->sanitized_username =
+		talloc_alpha_strcpy(session_info->unix_info,
+				    original_user_name,
+				    ". _-$");
+	NT_STATUS_HAVE_NO_MEMORY(session_info->unix_info->sanitized_username);
 
 	return NT_STATUS_OK;
 }
