@@ -3596,7 +3596,15 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
+	if (VALID_STAT(smb_fname->st)) {
+		/*
+		 * Only try and create a file id before open
+		 * for an existing file. For a file being created
+		 * this won't do anything useful until the file
+		 * exists and has a valid stat struct.
+		 */
+		fsp->file_id = vfs_file_id_from_sbuf(conn, &smb_fname->st);
+	}
 	fsp->fh->private_options = private_flags;
 	fsp->access_mask = open_access_mask; /* We change this to the
 					      * requested access_mask after
