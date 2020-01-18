@@ -57,16 +57,16 @@ def HEIMDAL_ASN1(name, source,
     # SRC[0].abspath(env) gives the absolute path to the source directory for the first
     # source file. Note that in the case of a option_file, we have more than
     # one source file
-    cd_rule = 'cd "${TGT[0].parent.abspath(env)}"'
+    cd_rule = 'cd "${TGT[0].parent.abspath(env)}" &&'
     env = LOAD_ENVIRONMENT()
     if env.ADDRESS_SANITIZER:
         # If address sanitizer is enabled, we need to suppress leak checking
         # in the asn1 tool.
-        no_leak_check = " && export ASAN_OPTIONS=detect_leaks=0"
+        no_leak_check = " ASAN_OPTIONS=detect_leaks=0"
     else:
         no_leak_check = ""
 
-    asn1_rule = cd_rule + no_leak_check + ' && "${ASN1_COMPILE}" ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file "${SRC[0].abspath(env)}" ${ASN1NAME}'
+    asn1_rule = cd_rule + no_leak_check + ' "${ASN1_COMPILE}" ${OPTION_FILE} ${ASN1OPTIONS} --one-code-file "${SRC[0].abspath(env)}" ${ASN1NAME}'
 
     source = to_list(source)
 
