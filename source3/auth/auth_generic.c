@@ -159,12 +159,6 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 		}
 	}
 
-	/* setup the string used by %U */
-	sub_set_smb_name(username);
-
-	/* reload services so that the new %U is taken into account */
-	lp_load_with_shares(get_dyn_CONFIGFILE());
-
 	status = make_session_info_krb5(mem_ctx,
 					ntuser, ntdomain, username, pw,
 					info3_copy, is_guest, is_mapped, NULL /* No session key for now, caller will sort it out */,
@@ -175,6 +169,14 @@ static NTSTATUS auth3_generate_session_info_pac(struct auth4_context *auth_ctx,
 		status = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
+
+	/* setup the string used by %U */
+	set_current_user_info((*session_info)->unix_info->sanitized_username,
+			      (*session_info)->unix_info->unix_name,
+			      (*session_info)->info->domain_name);
+
+	/* reload services so that the new %U is taken into account */
+	lp_load_with_shares(get_dyn_CONFIGFILE());
 
 	DEBUG(5, (__location__ "OK: user: %s domain: %s client: %s\n",
 		  ntuser, ntdomain, rhost));
