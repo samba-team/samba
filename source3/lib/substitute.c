@@ -128,64 +128,6 @@ const char *get_remote_machine_name(void)
 	return remote_machine ? remote_machine : "";
 }
 
-/*******************************************************************
- Setup the string used by %U substitution.
-********************************************************************/
-
-static char *smb_user_name;
-
-void sub_set_smb_name(const char *name)
-{
-	char *tmp;
-	size_t len;
-	bool is_machine_account = false;
-
-	/* don't let anonymous logins override the name */
-	if (!name || !*name) {
-		return;
-	}
-
-	tmp = talloc_strdup(NULL, name);
-	if (!tmp) {
-		return;
-	}
-	trim_char(tmp, ' ', ' ');
-	if (!strlower_m(tmp)) {
-		TALLOC_FREE(tmp);
-		return;
-	}
-
-	len = strlen(tmp);
-
-	if (len == 0) {
-		TALLOC_FREE(tmp);
-		return;
-	}
-
-	/* long story but here goes....we have to allow usernames
-	   ending in '$' as they are valid machine account names.
-	   So check for a machine account and re-add the '$'
-	   at the end after the call to alpha_strcpy().   --jerry  */
-
-	if (tmp[len-1] == '$') {
-		is_machine_account = True;
-	}
-
-	TALLOC_FREE(smb_user_name);
-	smb_user_name = talloc_alpha_strcpy(NULL,
-					    tmp,
-					    SAFE_NETBIOS_CHARS);
-	TALLOC_FREE(tmp);
-	if (smb_user_name == NULL) {
-		return;
-	}
-
-	if (is_machine_account) {
-		len = strlen(smb_user_name);
-		smb_user_name[len-1] = '$';
-	}
-}
-
 static char sub_peeraddr[INET6_ADDRSTRLEN];
 static const char *sub_peername = NULL;
 static char sub_sockaddr[INET6_ADDRSTRLEN];
@@ -218,11 +160,6 @@ void sub_set_socket_ids(const char *peeraddr, const char *peername,
 	strlcpy(sub_sockaddr, sockaddr, sizeof(sub_sockaddr));
 }
 
-static const char *get_smb_user_name(void)
-{
-	return smb_user_name ? smb_user_name : "";
-}
-
 /*******************************************************************
  Setup the strings used by substitutions. Called per packet. Ensure
  %U name is set correctly also.
@@ -248,11 +185,6 @@ void set_current_user_info(const char *smb_name, const char *unix_name,
 	fstrcpy(current_user_info.unix_name, unix_name);
 	fstrcpy(current_user_info.domain, domain);
 
-	/* The following is safe as current_user_info.smb_name
-	 * has already been sanitised in register_existing_vuid. */
-
-	sub_set_smb_name(current_user_info.smb_name);
-
 	last_smb_name = smb_name;
 	last_unix_name = unix_name;
 	last_domain = domain;
@@ -264,10 +196,6 @@ void set_current_user_info(const char *smb_name, const char *unix_name,
 
 const char *get_current_username(void)
 {
-	if (current_user_info.smb_name[0] == '\0' ) {
-		return get_smb_user_name();
-	}
-
 	return current_user_info.smb_name;
 }
 
