@@ -150,6 +150,7 @@ struct tevent_req *auth3_check_password_send(
 		auth4_context->private_data, struct auth_context);
 	struct auth_usersupplied_info *mapped_user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
+	char *sanitized_username = NULL;
 	NTSTATUS nt_status;
 	bool username_was_mapped;
 
@@ -168,12 +169,6 @@ struct tevent_req *auth3_check_password_send(
 	   We need to possibly reload smb.conf if smb.conf includes depend on the machine name. */
 
 	set_remote_machine_name(user_info->workstation_name, True);
-
-	/* setup the string used by %U */
-	/* sub_set_smb_name checks for weird internally */
-	sub_set_smb_name(user_info->client.account_name);
-
-	lp_load_with_shares(get_dyn_CONFIGFILE());
 
 	nt_status = make_user_info_map(talloc_tos(),
                                        &mapped_user_info,
@@ -195,6 +190,15 @@ struct tevent_req *auth3_check_password_send(
 	mapped_user_info->logon_parameters = user_info->logon_parameters;
 
 	mapped_user_info->flags = user_info->flags;
+
+	sanitized_username = talloc_alpha_strcpy(
+		state,
+		user_info->client.account_name,
+		SAFE_NETBIOS_CHARS "$");
+	if (sanitized_username == NULL) {
+		tevent_req_nterror(req, NT_STATUS_NO_MEMORY);
+		return tevent_req_post(req, ev);
+	}
 
 	nt_status = auth_check_ntlm_password(state,
 					     auth_context,
@@ -224,6 +228,15 @@ struct tevent_req *auth3_check_password_send(
 			&server_info);
 		if (!tevent_req_nterror(req, nt_status)) {
 			state->authoritative = 1;
+
+			/* setup the string used by %U */
+			set_current_user_info(
+				sanitized_username,
+				server_info->unix_name,
+				server_info->info3->base.logon_domain.string);
+
+			lp_load_with_shares(get_dyn_CONFIGFILE());
+
 			tevent_req_done(req);
 		}
 		state->server_info = server_info;
@@ -231,6 +244,13 @@ struct tevent_req *auth3_check_password_send(
 	}
 
 	server_info->nss_token |= username_was_mapped;
+
+	/* setup the string used by %U */
+	set_current_user_info(sanitized_username,
+			      server_info->unix_name,
+			      server_info->info3->base.logon_domain.string);
+
+	lp_load_with_shares(get_dyn_CONFIGFILE());
 
 	/* Clear out the session keys, and pass them to the caller.
 	 * They will not be used in this form again - instead the
