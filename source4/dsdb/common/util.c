@@ -5439,7 +5439,8 @@ NTSTATUS dsdb_update_bad_pwd_count(TALLOC_CTX *mem_ctx,
 				   struct ldb_message *pso_msg,
 				   struct ldb_message **_mod_msg)
 {
-	int i, ret, badPwdCount;
+	int ret, badPwdCount;
+	unsigned int i;
 	int64_t lockoutThreshold, lockOutObservationWindow;
 	struct dom_sid *sid;
 	struct timeval tv_now = timeval_current();
@@ -5537,7 +5538,8 @@ int dsdb_user_obj_set_defaults(struct ldb_context *ldb,
 			       struct ldb_message *usr_obj,
 			       struct ldb_request *req)
 {
-	int i, ret;
+	size_t i;
+	int ret;
 	const struct attribute_values {
 		const char *name;
 		const char *value;
