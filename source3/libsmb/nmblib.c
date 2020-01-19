@@ -160,6 +160,9 @@ static bool handle_name_ptrs(unsigned char *ubuf,int *offset,int length,
 		if (!*got_pointer)
 			(*ret) += 2;
 		(*got_pointer)=True;
+		if (*offset > length - 2) {
+			return False;
+		}
 		(*offset) = ((ubuf[*offset] & ~0xC0)<<8) | ubuf[(*offset)+1];
 		if (loop_count++ == 10 ||
 				(*offset) < 0 || (*offset)>(length-2)) {
