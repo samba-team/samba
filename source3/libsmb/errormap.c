@@ -283,7 +283,7 @@ convert a dos eclas/ecode to a NT status32 code
  *****************************************************************************/
 NTSTATUS dos_to_ntstatus(uint8_t eclass, uint32_t ecode)
 {
-	int i;
+	size_t i;
 	if (eclass == 0) return NT_STATUS_OK;
 	for (i=0; i < ARRAY_SIZE(dos_to_ntstatus_map); i++) {
 		if (eclass == dos_to_ntstatus_map[i].dos_class &&

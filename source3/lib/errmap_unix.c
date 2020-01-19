@@ -126,7 +126,7 @@ static const struct {
 
 NTSTATUS map_nt_error_from_unix(int unix_error)
 {
-	int i = 0;
+	size_t i = 0;
 
 	if (unix_error == 0) {
 		/* we map this to an error, not success, as this
@@ -264,7 +264,7 @@ static const struct {
 
 int map_errno_from_nt_status(NTSTATUS status)
 {
-	int i;
+	size_t i;
 	DEBUG(10,("map_errno_from_nt_status: 32 bit codes: code=%08x\n",
 		NT_STATUS_V(status)));
 
