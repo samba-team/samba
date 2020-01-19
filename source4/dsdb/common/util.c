@@ -47,6 +47,7 @@
 #include "libds/common/flag_mapping.h"
 #include "lib/util/access.h"
 #include "lib/util/util_str_hex.h"
+#include "lib/util/sys_rw_data.h"
 #include "libcli/util/ntstatus.h"
 
 /*
@@ -2143,9 +2144,9 @@ enum samr_ValidationStatus samdb_check_password(TALLOC_CTX *mem_ctx,
 
 		cps_stdin = samba_runcmd_export_stdin(req);
 
-		nwritten = write(cps_stdin, utf8_blob->data,
-				 utf8_blob->length);
-		if (nwritten != utf8_blob->length) {
+		nwritten = write_data(
+			cps_stdin, utf8_blob->data, utf8_blob->length);
+		if (nwritten == -1) {
 			close(cps_stdin);
 			TALLOC_FREE(password_script);
 			TALLOC_FREE(event_ctx);
