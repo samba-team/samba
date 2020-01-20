@@ -5,12 +5,6 @@ export TMPDIR="$SELFTEST_TMPDIR"
 SERVERNAME="$ENVNAME"
 [ -z "$SERVERNAME" ] && SERVERNAME="base"
 basedir=$TMPDIR
-osname=$(uname)
-if [ "$osname" = "Linux" ]; then
-	vars=$(mktemp)
-else
-	vars=$(mktemp -t tmpsmb)
-fi
 
 [ -r $basedir/$SERVERNAME.pid ] && {
     for i in {2..100}; do
