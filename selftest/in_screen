@@ -29,7 +29,7 @@ fi
     done
 }
 
-rm -f $basedir/$SERVERNAME.*
+rm -f $basedir/$SERVERNAME.{launch,log,parent.pid,pid,status}
 
 # set most of the environment vars we have in the screen session too
 _ENV=""
@@ -66,7 +66,6 @@ cleanup() {
     exit 1
 }
 
-rm -f $basedir/$SERVERNAME.status $basedir/$SERVERNAME.log
 echo $$ > $basedir/$SERVERNAME.parent.pid
 trap cleanup SIGINT SIGTERM SIGPIPE
 
