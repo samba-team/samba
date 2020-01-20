@@ -749,14 +749,8 @@ static NTSTATUS db_ctdb_store_db_seqnum(struct db_ctdb_transaction_handle *h,
 					uint64_t seqnum)
 {
 	NTSTATUS status;
-	const char *keyname = CTDB_DB_SEQNUM_KEY;
-	TDB_DATA key;
-	TDB_DATA data;
-
-	key = string_term_tdb_data(keyname);
-
-	data.dptr = (uint8_t *)&seqnum;
-	data.dsize = sizeof(uint64_t);
+	TDB_DATA key = string_term_tdb_data(CTDB_DB_SEQNUM_KEY);
+	TDB_DATA data = { .dptr=(uint8_t *)&seqnum, .dsize=sizeof(seqnum) };
 
 	status = db_ctdb_transaction_store(h, key, data);
 
