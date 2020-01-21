@@ -128,6 +128,8 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 	struct ldb_message_element *el = NULL;
 	struct ldb_message_element *tombstone_el = NULL;
 	struct ldb_message_element *old_el = NULL;
+	struct ldb_message *new_msg = NULL;
+	struct ldb_message *old_msg = NULL;
 	int ret;
 	struct GUID guid;
 	struct GUID_txt_buf buf_guid;
@@ -184,12 +186,29 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 	 * change.  This prevents race conditions.
 	 */
 	for (i = 0; i < res->count; i++) {
-		old_el = ldb_msg_find_element(res->msgs[i], "dnsRecord");
+		old_msg = ldb_msg_copy(mem_ctx, res->msgs[i]);
+		if (old_msg == NULL) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
+		old_el = ldb_msg_find_element(old_msg, "dnsRecord");
+		if (old_el == NULL) {
+			TALLOC_FREE(old_msg);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+
 		old_el->flags = LDB_FLAG_MOD_DELETE;
+		new_msg = ldb_msg_copy(mem_ctx, old_msg);
+		if (new_msg == NULL) {
+			TALLOC_FREE(old_msg);
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 
 		ret = ldb_msg_add_empty(
-		    res->msgs[i], "dnsRecord", LDB_FLAG_MOD_ADD, &el);
+		    new_msg, "dnsRecord", LDB_FLAG_MOD_ADD, &el);
 		if (ret != LDB_SUCCESS) {
+			TALLOC_FREE(old_msg);
+			TALLOC_FREE(new_msg);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
@@ -197,12 +216,16 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 		status = copy_current_records(mem_ctx, old_el, el, t);
 
 		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(old_msg);
+			TALLOC_FREE(new_msg);
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		/* If nothing was expired, do nothing. */
 		if (el->num_values == old_el->num_values &&
 		    el->num_values != 0) {
+			TALLOC_FREE(old_msg);
+			TALLOC_FREE(new_msg);
 			continue;
 		}
 
@@ -213,14 +236,16 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 			el->values = tombstone_blob;
 			el->num_values = 1;
 
-			tombstone_el = ldb_msg_find_element(res->msgs[i],
+			tombstone_el = ldb_msg_find_element(new_msg,
 						  "dnsTombstoned");
 			if (tombstone_el == NULL) {
-				ret = ldb_msg_add_value(res->msgs[i],
+				ret = ldb_msg_add_value(new_msg,
 							"dnsTombstoned",
 							true_struct,
 							&tombstone_el);
 				if (ret != LDB_SUCCESS) {
+					TALLOC_FREE(old_msg);
+					TALLOC_FREE(new_msg);
 					return NT_STATUS_INTERNAL_ERROR;
 				}
 				tombstone_el->flags = LDB_FLAG_MOD_ADD;
@@ -234,13 +259,15 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 			 * Do not change the status of dnsTombstoned
 			 * if we found any live records
 			 */
-			ldb_msg_remove_attr(res->msgs[i],
+			ldb_msg_remove_attr(new_msg,
 					    "dnsTombstoned");
 		}
 
 		/* Set DN to the GUID in case the object was moved. */
-		el = ldb_msg_find_element(res->msgs[i], "objectGUID");
+		el = ldb_msg_find_element(new_msg, "objectGUID");
 		if (el == NULL) {
+			TALLOC_FREE(old_msg);
+			TALLOC_FREE(new_msg);
 			*error_string =
 			    talloc_asprintf(mem_ctx,
 					    "record has no objectGUID "
@@ -251,20 +278,24 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 
 		status = GUID_from_ndr_blob(el->values, &guid);
 		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(old_msg);
+			TALLOC_FREE(new_msg);
 			*error_string =
 			    discard_const_p(char, "Error: Invalid GUID.\n");
 			return NT_STATUS_INTERNAL_ERROR;
 		}
 
 		GUID_buf_string(&guid, &buf_guid);
-		res->msgs[i]->dn =
+		new_msg->dn =
 		    ldb_dn_new_fmt(mem_ctx, samdb, "<GUID=%s>", buf_guid.buf);
 
 		/* Remove the GUID so we're not trying to modify it. */
-		ldb_msg_remove_attr(res->msgs[i], "objectGUID");
+		ldb_msg_remove_attr(new_msg, "objectGUID");
 
-		ret = ldb_modify(samdb, res->msgs[i]);
+		ret = ldb_modify(samdb, new_msg);
 		if (ret != LDB_SUCCESS) {
+			TALLOC_FREE(old_msg);
+			TALLOC_FREE(new_msg);
 			*error_string =
 			    talloc_asprintf(mem_ctx,
 					    "Failed to modify dns record "
@@ -273,6 +304,8 @@ NTSTATUS dns_tombstone_records_zone(TALLOC_CTX *mem_ctx,
 					    ldb_errstring(samdb));
 			return NT_STATUS_INTERNAL_ERROR;
 		}
+		TALLOC_FREE(old_msg);
+		TALLOC_FREE(new_msg);
 	}
 
 	return NT_STATUS_OK;
