@@ -25,7 +25,7 @@
 ########################################################
 SAMBA_VERSION_MAJOR=4
 SAMBA_VERSION_MINOR=11
-SAMBA_VERSION_RELEASE=5
+SAMBA_VERSION_RELEASE=6
 
 ########################################################
 # If a official release has a serious bug              #
