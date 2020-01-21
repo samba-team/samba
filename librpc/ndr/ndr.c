@@ -1326,11 +1326,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all_noalloc(const DATA_BLOB *blo
 	};
 	uint32_t highest_ofs;
 	NDR_CHECK(fn(&ndr, NDR_SCALARS|NDR_BUFFERS, p));
-	if (ndr.offset > ndr.relative_highest_offset) {
-		highest_ofs = ndr.offset;
-	} else {
-		highest_ofs = ndr.relative_highest_offset;
-	}
+	highest_ofs = MAX(ndr.offset, ndr.relative_highest_offset);
 	if (highest_ofs < ndr.data_size) {
 		enum ndr_err_code ret;
 		ret = ndr_pull_error(&ndr, NDR_ERR_UNREAD_BYTES,
