@@ -46,9 +46,8 @@
 
 struct descriptor_changes {
 	struct descriptor_changes *prev, *next;
-	struct descriptor_changes *children;
 	struct ldb_dn *nc_root;
-	struct ldb_dn *dn;
+	struct GUID guid;
 	bool force_self;
 	bool force_children;
 	struct ldb_dn *stopped_dn;
@@ -771,7 +770,8 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 				    current_attrs,
 				    DSDB_FLAG_NEXT_MODULE |
 				    DSDB_FLAG_AS_SYSTEM |
-				    DSDB_SEARCH_SHOW_RECYCLED,
+				    DSDB_SEARCH_SHOW_RECYCLED |
+				    DSDB_SEARCH_SHOW_EXTENDED_DN,
 				    req);
 	if (ret != LDB_SUCCESS) {
 		ldb_debug(ldb, LDB_DEBUG_ERROR,"descriptor_modify: Could not find %s\n",
@@ -832,7 +832,7 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 		user_sd = old_sd;
 	}
 
-	sd = get_new_descriptor(module, dn, req,
+	sd = get_new_descriptor(module, current_res->msgs[0]->dn, req,
 				objectclass, parent_sd,
 				user_sd, old_sd, sd_flags);
 	if (sd == NULL) {
@@ -869,15 +869,32 @@ static int descriptor_modify(struct ldb_module *module, struct ldb_request *req)
 			return ldb_oom(ldb);
 		}
 	} else if (cmp_ret != 0) {
+		struct GUID guid;
 		struct ldb_dn *nc_root;
+		NTSTATUS status;
 
-		ret = dsdb_find_nc_root(ldb, msg, dn, &nc_root);
+		ret = dsdb_find_nc_root(ldb,
+					msg,
+					current_res->msgs[0]->dn,
+					&nc_root);
 		if (ret != LDB_SUCCESS) {
 			return ldb_oom(ldb);
 		}
 
-		ret = dsdb_module_schedule_sd_propagation(module, nc_root,
-							  dn, false);
+		status = dsdb_get_extended_dn_guid(current_res->msgs[0]->dn,
+						   &guid,
+						   "GUID");
+		if (!NT_STATUS_IS_OK(status)) {
+			return ldb_operr(ldb);
+		}
+
+		/*
+		 * Force SD propagation on children of this record
+		 */
+		ret = dsdb_module_schedule_sd_propagation(module,
+							  nc_root,
+							  guid,
+							  false);
 		if (ret != LDB_SUCCESS) {
 			return ldb_operr(ldb);
 		}
@@ -960,16 +977,31 @@ static int descriptor_rename(struct ldb_module *module, struct ldb_request *req)
 
 	if (ldb_dn_compare(olddn, newdn) != 0) {
 		struct ldb_dn *nc_root;
+		struct GUID guid;
 
 		ret = dsdb_find_nc_root(ldb, req, newdn, &nc_root);
 		if (ret != LDB_SUCCESS) {
 			return ldb_oom(ldb);
 		}
 
-		ret = dsdb_module_schedule_sd_propagation(module, nc_root,
-							  newdn, true);
-		if (ret != LDB_SUCCESS) {
-			return ldb_operr(ldb);
+		ret = dsdb_module_guid_by_dn(module,
+					     olddn,
+					     &guid,
+					     req);
+		if (ret == LDB_SUCCESS) {
+			/*
+			 * Without disturbing any errors if the olddn
+			 * does not exit, force SD propagation on
+			 * this record (get a new inherited SD from
+			 * the potentially new parent
+			 */
+			ret = dsdb_module_schedule_sd_propagation(module,
+								  nc_root,
+								  guid,
+								  true);
+			if (ret != LDB_SUCCESS) {
+				return ldb_operr(ldb);
+			}
 		}
 	}
 
@@ -985,9 +1017,7 @@ static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 	struct ldb_context *ldb = ldb_module_get_ctx(module);
 	struct dsdb_extended_sec_desc_propagation_op *op;
 	TALLOC_CTX *parent_mem = NULL;
-	struct descriptor_changes *parent_change = NULL;
 	struct descriptor_changes *c;
-	int ret;
 
 	op = talloc_get_type(req->op.extended.data,
 			     struct dsdb_extended_sec_desc_propagation_op);
@@ -1004,32 +1034,6 @@ static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 
 	parent_mem = descriptor_private->trans_mem;
 
-	for (c = descriptor_private->changes; c; c = c->next) {
-		ret = ldb_dn_compare(c->nc_root, op->nc_root);
-		if (ret != 0) {
-			continue;
-		}
-
-		ret = ldb_dn_compare(c->dn, op->dn);
-		if (ret == 0) {
-			if (op->include_self) {
-				c->force_self = true;
-			} else {
-				c->force_children = true;
-			}
-			return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
-		}
-
-		ret = ldb_dn_compare_base(c->dn, op->dn);
-		if (ret != 0) {
-			continue;
-		}
-
-		parent_mem = c;
-		parent_change = c;
-		break;
-	}
-
 	c = talloc_zero(parent_mem, struct descriptor_changes);
 	if (c == NULL) {
 		return ldb_module_oom(module);
@@ -1038,21 +1042,14 @@ static int descriptor_extended_sec_desc_propagation(struct ldb_module *module,
 	if (c->nc_root == NULL) {
 		return ldb_module_oom(module);
 	}
-	c->dn = ldb_dn_copy(c, op->dn);
-	if (c->dn == NULL) {
-		return ldb_module_oom(module);
-	}
+	c->guid = op->guid;
 	if (op->include_self) {
 		c->force_self = true;
 	} else {
 		c->force_children = true;
 	}
 
-	if (parent_change != NULL) {
-		DLIST_ADD_END(parent_change->children, c);
-	} else {
-		DLIST_ADD_END(descriptor_private->changes, c);
-	}
+	DLIST_ADD_END(descriptor_private->changes, c);
 
 	return ldb_module_done(req, NULL, NULL, LDB_SUCCESS);
 }
@@ -1172,38 +1169,75 @@ static int descriptor_sd_propagation_msg_sort(struct ldb_message **m1,
 	return ldb_dn_compare(dn2, dn1);
 }
 
-static int descriptor_sd_propagation_dn_sort(struct ldb_dn *dn1,
-					     struct ldb_dn *dn2)
-{
-	/*
-	 * This sorts in tree order, parents first
-	 */
-	return ldb_dn_compare(dn2, dn1);
-}
-
 static int descriptor_sd_propagation_recursive(struct ldb_module *module,
 					       struct descriptor_changes *change)
 {
-	struct ldb_context *ldb = ldb_module_get_ctx(module);
+	struct ldb_result *guid_res = NULL;
 	struct ldb_result *res = NULL;
 	unsigned int i;
 	const char * const no_attrs[] = { "@__NONE__", NULL };
-	struct descriptor_changes *c;
-	struct descriptor_changes *stopped_stack = NULL;
-	enum ldb_scope scope;
+	struct ldb_dn *stopped_dn = NULL;
+	struct GUID_txt_buf guid_buf;
 	int ret;
+	bool stop = false;
 
 	/*
-	 * First confirm this object has children, or exists (depending on change->force_self)
+	 * First confirm this object has children, or exists
+	 * (depending on change->force_self)
 	 * 
 	 * LDB_SCOPE_SUBTREE searches are expensive.
 	 *
-	 * Note: that we do not search for deleted/recycled objects
+	 * We know this is safe against a rename race as we are in the
+	 * prepare_commit(), so must be in a transaction.
+	 */
+
+	/* Find the DN by GUID, as this is stable under rename */
+	ret = dsdb_module_search(module,
+				 change,
+				 &guid_res,
+				 change->nc_root,
+				 LDB_SCOPE_SUBTREE,
+				 no_attrs,
+				 DSDB_FLAG_NEXT_MODULE |
+				 DSDB_FLAG_AS_SYSTEM |
+				 DSDB_SEARCH_SHOW_DELETED |
+				 DSDB_SEARCH_SHOW_RECYCLED,
+				 NULL, /* parent_req */
+				 "(objectGUID=%s)",
+				 GUID_buf_string(&change->guid,
+						 &guid_buf));
+
+	if (ret != LDB_SUCCESS) {
+		return ret;
+	}
+
+	if (guid_res->count != 1) {
+		/*
+		 * We were just given this GUID during the same
+		 * transaction, if it is missing this is a big
+		 * problem.
+		 *
+		 * Cleanup of tombstones does not trigger this module
+		 * as it just does a delete.
+		 */
+		ldb_asprintf_errstring(ldb_module_get_ctx(module),
+				       "failed to find GUID %s under %s "
+				       "for transaction-end SD inheritance: %d results",
+				       GUID_buf_string(&change->guid,
+						       &guid_buf),
+				       ldb_dn_get_linearized(change->nc_root),
+				       guid_res->count);
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	/*
+	 * OK, so there was a parent, are there children?  Note: that
+	 * this time we do not search for deleted/recycled objects
 	 */
 	ret = dsdb_module_search(module,
 				 change,
 				 &res,
-				 change->dn,
+				 guid_res->msgs[0]->dn,
 				 LDB_SCOPE_ONELEVEL,
 				 no_attrs,
 				 DSDB_FLAG_NEXT_MODULE |
@@ -1211,26 +1245,55 @@ static int descriptor_sd_propagation_recursive(struct ldb_module *module,
 				 NULL, /* parent_req */
 				 "(objectClass=*)");
 	if (ret != LDB_SUCCESS) {
+		/*
+		 * LDB_ERR_NO_SUCH_OBJECT, say if the DN was a deleted
+		 * object, is ignored by the caller
+		 */
 		return ret;
 	}
 
 	if (res->count == 0 && !change->force_self) {
+		/* All done, no children */
 		TALLOC_FREE(res);
 		return LDB_SUCCESS;
-	} else if (res->count == 0 && change->force_self) {
-		scope = LDB_SCOPE_BASE;
-	} else {
-		scope = LDB_SCOPE_SUBTREE;
 	}
 
 	/*
+	 * First, if we are in force_self mode (eg renamed under new
+	 * parent) then apply the SD to the top object
+	 */
+	if (change->force_self) {
+		ret = descriptor_sd_propagation_object(module,
+						       guid_res->msgs[0],
+						       &stop);
+		if (ret != LDB_SUCCESS) {
+			TALLOC_FREE(guid_res);
+			return ret;
+		}
+
+		if (stop == true && !change->force_children) {
+			/* There was no change, nothing more to do */
+			TALLOC_FREE(guid_res);
+			return LDB_SUCCESS;
+		}
+
+		if (res->count == 0) {
+			/* All done! */
+			TALLOC_FREE(guid_res);
+			return LDB_SUCCESS;
+		}
+	}
+
+	/*
+	 * Look for children
+	 *
 	 * Note: that we do not search for deleted/recycled objects
 	 */
 	ret = dsdb_module_search(module,
 				 change,
 				 &res,
-				 change->dn,
-				 scope,
+				 guid_res->msgs[0]->dn,
+				 LDB_SCOPE_SUBTREE,
 				 no_attrs,
 				 DSDB_FLAG_NEXT_MODULE |
 				 DSDB_FLAG_AS_SYSTEM,
@@ -1243,83 +1306,39 @@ static int descriptor_sd_propagation_recursive(struct ldb_module *module,
 	TYPESAFE_QSORT(res->msgs, res->count,
 		       descriptor_sd_propagation_msg_sort);
 
-	for (c = change->children; c; c = c->next) {
-		struct ldb_message *msg = NULL;
-
-		BINARY_ARRAY_SEARCH_P(res->msgs, res->count, dn, c->dn,
-				      descriptor_sd_propagation_dn_sort,
-				      msg);
-
-		if (msg == NULL) {
-			ldb_debug(ldb, LDB_DEBUG_WARNING,
-				"descriptor_sd_propagation_recursive: "
-				"%s not found under %s",
-				ldb_dn_get_linearized(c->dn),
-				ldb_dn_get_linearized(change->dn));
-			continue;
-		}
-
-		msg->elements = (struct ldb_message_element *)c;
-	}
-
-	DLIST_ADD(stopped_stack, change);
-
-	if (change->force_self) {
-		i = 0;
-	} else {
-		i = 1;
-	}
-
-	for (; i < res->count; i++) {
-		struct descriptor_changes *cur;
-		bool stop = false;
-
-		cur = talloc_get_type(res->msgs[i]->elements,
-				      struct descriptor_changes);
-		res->msgs[i]->elements = NULL;
-		res->msgs[i]->num_elements = 0;
-
-		if (cur != NULL) {
-			DLIST_REMOVE(change->children, cur);
-		}
-
-		for (c = stopped_stack; c; c = stopped_stack) {
-			ret = ldb_dn_compare_base(c->dn,
+	/* We start from 1, the top object has been done */
+	for (i = 1; i < res->count; i++) {
+		/*
+		 * ldb_dn_compare_base() does not match for NULL but
+		 * this is clearer
+		 */
+		if (stopped_dn != NULL) {
+			ret = ldb_dn_compare_base(stopped_dn,
 						  res->msgs[i]->dn);
-			if (ret == 0) {
-				break;
-			}
-
-			c->stopped_dn = NULL;
-			DLIST_REMOVE(stopped_stack, c);
-		}
-
-		if (cur != NULL) {
-			DLIST_ADD(stopped_stack, cur);
-		}
-
-		if (stopped_stack->stopped_dn != NULL) {
-			ret = ldb_dn_compare_base(stopped_stack->stopped_dn,
-						  res->msgs[i]->dn);
+			/*
+			 * Skip further processing of this
+			 * sub-subtree
+			 */
 			if (ret == 0) {
 				continue;
 			}
-			stopped_stack->stopped_dn = NULL;
 		}
-
-		ret = descriptor_sd_propagation_object(module, res->msgs[i],
+		ret = descriptor_sd_propagation_object(module,
+						       res->msgs[i],
 						       &stop);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
 
-		if (cur != NULL && cur->force_children) {
-			continue;
-		}
-
 		if (stop) {
-			stopped_stack->stopped_dn = res->msgs[i]->dn;
-			continue;
+			/*
+			 * If this child didn't change, then nothing
+			 * under it needs to change
+			 *
+			 * res has been sorted into tree order so the
+			 * next few entries can be skipped
+			 */
+			stopped_dn = res->msgs[i]->dn;
 		}
 	}
 

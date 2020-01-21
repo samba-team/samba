@@ -1,4 +1,76 @@
                    ==============================
+                   Release Notes for Samba 4.11.5
+                          January 21, 2020
+		   ==============================
+
+
+This is a security release in order to address the following defects:
+
+o CVE-2019-14902: Replication of ACLs set to inherit down a subtree on AD
+		  Directory not automatic.        
+o CVE-2019-14907: Crash after failed character conversion at log level 3 or
+		  above.                                               
+o CVE-2019-19344: Use after free during DNS zone scavenging in Samba AD DC.
+                                                                                
+                                                                                
+=======                                                                         
+Details                                                                         
+=======                                                                         
+                                                                                
+o  CVE-2019-14902:                                                                                
+   The implementation of ACL inheritance in the Samba AD DC was not complete,
+   and so absent a 'full-sync' replication, ACLs could get out of sync between
+   domain controllers. 
+
+o  CVE-2019-14907:
+   When processing untrusted string input Samba can read past the end of the
+   allocated buffer when printing a "Conversion error" message to the logs.
+
+o  CVE-2019-19344:                                                                                
+   During DNS zone scavenging (of expired dynamic entries) there is a read of
+   memory after it has been freed.
+
+For more details and workarounds, please refer to the security advisories.
+
+
+Changes since 4.11.4:
+---------------------
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 12497: CVE-2019-14902: Replication of ACLs down subtree on AD Directory
+     not automatic.
+   * BUG 14208: CVE-2019-14907: lib/util: Do not print the failed to convert
+     string into the logs.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 14050: CVE-2019-19344: kcc dns scavenging: Fix use after free in
+     dns_tombstone_records_zone.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.11.4
                           December 16, 2019
 		   ==============================
@@ -76,8 +148,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.11.3

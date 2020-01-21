@@ -293,31 +293,31 @@ bool convert_string_handle(struct smb_iconv_handle *ic,
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
-				DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",
-					 reason, (const char *)src));
+				DBG_NOTICE("Conversion error: %s\n",
+					 reason);
 				break;
 			case E2BIG:
 			{
 				reason="No more room";
 				if (from == CH_UNIX) {
-					DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u - '%s' error: %s\n",
-						 charset_name(ic, from), charset_name(ic, to),
-						 (unsigned int)srclen, (unsigned int)destlen, (const char *)src, reason));
+					DBG_NOTICE("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u error: %s\n",
+						   charset_name(ic, from), charset_name(ic, to),
+						   (unsigned int)srclen, (unsigned int)destlen, reason);
 				} else {
-					DEBUG(3,("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u error: %s\n",
-						 charset_name(ic, from), charset_name(ic, to),
-						 (unsigned int)srclen, (unsigned int)destlen, reason));
+					DBG_NOTICE("E2BIG: convert_string(%s,%s): srclen=%u destlen=%u error: %s\n",
+						   charset_name(ic, from), charset_name(ic, to),
+						   (unsigned int)srclen, (unsigned int)destlen, reason);
 				}
 				break;
 			}
 			case EILSEQ:
 				reason="Illegal multibyte sequence";
-				DEBUG(3,("convert_string_internal: Conversion error: %s(%s)\n",
-					 reason, (const char *)src));
+				DBG_NOTICE("convert_string_internal: Conversion error: %s\n",
+					   reason);
 				break;
 			default:
-				DEBUG(0,("convert_string_internal: Conversion error: %s(%s)\n",
-					 reason, (const char *)src));
+				DBG_ERR("convert_string_internal: Conversion error: %s\n",
+					reason);
 				break;
 		}
 		/* smb_panic(reason); */
@@ -427,20 +427,22 @@ bool convert_string_talloc_handle(TALLOC_CTX *ctx, struct smb_iconv_handle *ic,
 		switch(errno) {
 			case EINVAL:
 				reason="Incomplete multibyte sequence";
-				DEBUG(3,("convert_string_talloc: Conversion error: %s(%s)\n",reason,inbuf));
+				DBG_NOTICE("Conversion error: %s\n",
+					   reason);
 				break;
 			case E2BIG:
 				reason = "output buffer is too small";
-				DBG_NOTICE("convert_string_talloc: "
-					   "Conversion error: %s(%s)\n",
-					   reason, inbuf);
+				DBG_NOTICE("Conversion error: %s\n",
+					   reason);
 				break;
 			case EILSEQ:
 				reason="Illegal multibyte sequence";
-				DEBUG(3,("convert_string_talloc: Conversion error: %s(%s)\n",reason,inbuf));
+				DBG_NOTICE("Conversion error: %s\n",
+					   reason);
 				break;
 			default:
-				DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
+				DBG_ERR("Conversion error: %s\n",
+					reason);
 				break;
 		}
 		/* smb_panic(reason); */

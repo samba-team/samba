@@ -5590,9 +5590,19 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	replmd_ldb_message_sort(msg, ar->schema);
 
 	if (!remote_isDeleted) {
+		/*
+		 * Ensure any local ACL inheritence is applied from
+		 * the parent object.
+		 *
+		 * This is needed because descriptor is above
+		 * repl_meta_data in the module stack, so this will
+		 * not be trigered 'naturally' by the flow of
+		 * operations.
+		 */
 		ret = dsdb_module_schedule_sd_propagation(ar->module,
 							  ar->objs->partition_dn,
-							  msg->dn, true);
+							  ar->objs->objects[ar->index_current].object_guid,
+							  true);
 		if (ret != LDB_SUCCESS) {
 			return replmd_replicated_request_error(ar, ret);
 		}
@@ -6188,6 +6198,19 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		 * replmd_replicated_apply_search_callback())
 		 */
 		ret = replmd_replicated_handle_rename(ar, msg, ar->req, &renamed);
+
+		/*
+		 * This looks strange, but we must set this after any
+		 * rename, otherwise the SD propegation will not
+		 * happen (which might matter if we have a new parent)
+		 *
+		 * The additional case of calling
+		 * replmd_op_name_modify_callback (below) is:
+		 *  - a no-op if there was no name change
+		 * and
+		 *  - called in the default case regardless.
+		 */
+		renamed = true;
 	}
 
 	if (ret != LDB_SUCCESS) {
@@ -6353,13 +6376,39 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 		  ar->index_current, msg->num_elements);
 
 	if (renamed) {
-		sd_updated = true;
+		/*
+		 * This is an new name for this object, so we must
+		 * inherit from the parent
+		 *
+		 * This is needed because descriptor is above
+		 * repl_meta_data in the module stack, so this will
+		 * not be trigered 'naturally' by the flow of
+		 * operations.
+		 */
+		ret = dsdb_module_schedule_sd_propagation(ar->module,
+							  ar->objs->partition_dn,
+							  ar->objs->objects[ar->index_current].object_guid,
+							  true);
+		if (ret != LDB_SUCCESS) {
+			return ldb_operr(ldb);
+		}
 	}
 
 	if (sd_updated && !isDeleted) {
+		/*
+		 * This is an existing object, so there is no need to
+		 * inherit from the parent, but we must inherit any
+		 * incoming changes to our child objects.
+		 *
+		 * This is needed because descriptor is above
+		 * repl_meta_data in the module stack, so this will
+		 * not be trigered 'naturally' by the flow of
+		 * operations.
+		 */
 		ret = dsdb_module_schedule_sd_propagation(ar->module,
 							  ar->objs->partition_dn,
-							  msg->dn, true);
+							  ar->objs->objects[ar->index_current].object_guid,
+							  false);
 		if (ret != LDB_SUCCESS) {
 			return ldb_operr(ldb);
 		}
