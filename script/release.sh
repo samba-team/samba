@@ -17,19 +17,26 @@ CONF_UPLOAD_URL="samba-bugs@download-master.samba.org:/home/data/ftp/pub"
 CONF_DOWNLOAD_URL="https://download.samba.org/pub"
 CONF_HISTORY_URL="https://www.samba.org"
 
-test -d ".git" || {
+test -d ".git" -o -r ".git" || {
 	echo "Run this script from the top-level directory in the"
 	echo "repository"
 	exit 1
 }
 
 usage() {
-	echo "Usage: release.sh <PRODUCT> <COMMAND>"
+	echo "Usage: script/release.sh <PRODUCT> <COMMAND>"
 	echo ""
 	echo "PRODUCT: ldb, talloc, tevent, tdb, samba-rc, samba-stable"
 	echo "COMMAND: fullrelease, create, push, upload, announce"
 	echo ""
 	return 0
+}
+
+test -x "script/release.sh" || {
+	usage
+	echo "Run this script from the top-level directory in the"
+	echo "repository: as 'script/release.sh'"
+	exit 1
 }
 
 check_args() {
