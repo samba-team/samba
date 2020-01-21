@@ -1621,6 +1621,34 @@ static int vfs_gluster_kernel_flock(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+static int vfs_gluster_fcntl(vfs_handle_struct *handle,
+			     files_struct *fsp, int cmd, va_list cmd_arg)
+{
+	/*
+	 * SMB_VFS_FCNTL() is currently only called by vfs_set_blocking() to
+	 * clear O_NONBLOCK, etc for LOCK_MAND and FIFOs. Ignore it.
+	 */
+	if (cmd == F_GETFL) {
+		return 0;
+	} else if (cmd == F_SETFL) {
+		va_list dup_cmd_arg;
+		int opt;
+
+		va_copy(dup_cmd_arg, cmd_arg);
+		opt = va_arg(dup_cmd_arg, int);
+		va_end(dup_cmd_arg);
+		if (opt == 0) {
+			return 0;
+		}
+		DBG_ERR("unexpected fcntl SETFL(%d)\n", opt);
+		goto err_out;
+	}
+	DBG_ERR("unexpected fcntl: %d\n", cmd);
+err_out:
+	errno = EINVAL;
+	return -1;
+}
+
 static int vfs_gluster_linux_setlease(struct vfs_handle_struct *handle,
 				      files_struct *fsp, int leasetype)
 {
@@ -1975,6 +2003,7 @@ static struct vfs_fn_pointers glusterfs_fns = {
 	.fallocate_fn = vfs_gluster_fallocate,
 	.lock_fn = vfs_gluster_lock,
 	.kernel_flock_fn = vfs_gluster_kernel_flock,
+	.fcntl_fn = vfs_gluster_fcntl,
 	.linux_setlease_fn = vfs_gluster_linux_setlease,
 	.getlock_fn = vfs_gluster_getlock,
 	.symlinkat_fn = vfs_gluster_symlinkat,
