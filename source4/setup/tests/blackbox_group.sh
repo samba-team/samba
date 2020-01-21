@@ -64,6 +64,23 @@ user_getgroups() {
 }
 testit "user getgroups" user_getgroups
 
+# test samba-tool user getgroups --full-dn command
+user_getgroups_full_dn() {
+	groups="dsg gsg usg ddg gdg udg"
+
+	res=$($PYTHON $samba_tool user getgroups --full-dn $CONFIG testuser)
+	for g in $groups ; do
+		group_dn=$($PYTHON $samba_tool group show $CONFIG $g --attributes=dn)
+		echo "$res" | grep -q "^${group_dn}$" || return 1
+	done
+
+	# the users primary group is expected in the first line
+	primary_group=$(echo "$res" | head -1)
+	group_dn=$($PYTHON $samba_tool group show $CONFIG "Domain Users" --attributes=dn)
+	echo $primary_group | grep -q "^${group_dn}$" || return 1
+}
+testit "user getgroups full-dn" user_getgroups
+
 # test settings a users primary group
 user_getgroups_primary_first() {
 	expected_primary_group=$1
