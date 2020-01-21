@@ -289,8 +289,8 @@ Example2 shows how to add a single user account, User2, to the supergroup AD gro
                                            member_base_dn=member_base_dn)
         except Exception as e:
             # FIXME: catch more specific exception
-            raise CommandError('Failed to add members %r to group "%s"' % (
-                groupmembers, groupname), e)
+            raise CommandError('Failed to add members %r to group "%s" - %s' % (
+                groupmembers, groupname, e))
         self.outf.write("Added members to group %s\n" % groupname)
 
 
