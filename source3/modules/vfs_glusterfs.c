@@ -630,7 +630,6 @@ static int vfs_gluster_open(struct vfs_handle_struct *handle,
 {
 	glfs_fd_t *glfd;
 	glfs_fd_t **p_tmp;
-	int fakefd[2];
 
 	START_PROFILE(syscall_open);
 
@@ -660,15 +659,8 @@ static int vfs_gluster_open(struct vfs_handle_struct *handle,
 	*p_tmp = glfd;
 
 	END_PROFILE(syscall_open);
-
-	if (pipe(fakefd) == -1) {
-		DBG_ERR("pipe failed: %s\n", strerror(errno));
-		return -1;
-	}
-
-	close(fakefd[1]);
-
-	return fakefd[0];
+	/* An arbitrary value for error reporting, so you know its us. */
+	return 13371337;
 }
 
 static int vfs_gluster_close(struct vfs_handle_struct *handle,
@@ -685,8 +677,6 @@ static int vfs_gluster_close(struct vfs_handle_struct *handle,
 		DBG_ERR("Failed to fetch gluster fd\n");
 		return -1;
 	}
-
-	close(fsp->fh->fd);
 
 	VFS_REMOVE_FSP_EXTENSION(handle, fsp);
 
