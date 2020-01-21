@@ -764,12 +764,21 @@ The username specified on the command is the sAMAccountName."""
     takes_options = [
         Option("-H", "--URL", help="LDB URL for database or target server",
                type=str, metavar="URL", dest="H"),
+        Option("--full-dn", dest="full_dn",
+               default=False,
+               action='store_true',
+               help="Display DN instead of the sAMAccountName."),
         ]
 
     takes_args = ["username"]
 
-    def run(self, username, credopts=None, sambaopts=None,
-            versionopts=None, H=None):
+    def run(self,
+            username,
+            credopts=None,
+            sambaopts=None,
+            versionopts=None,
+            H=None,
+            full_dn=False):
 
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
@@ -809,6 +818,12 @@ The username specified on the command is the sAMAccountName."""
             primary_group_name = res[0].get('sAMAccountName')
         except IndexError:
             raise CommandError("Unable to find primary group '%s'" % (primarygroup_sid_dn))
+
+        if full_dn:
+            self.outf.write("%s\n" % primary_group_dn)
+            for group_dn in user_groups:
+                self.outf.write("%s\n" % group_dn)
+            return
 
         group_names = []
         for gdn in user_groups:
