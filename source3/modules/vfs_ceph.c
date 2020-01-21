@@ -975,6 +975,34 @@ static int cephwrap_kernel_flock(struct vfs_handle_struct *handle,
 	return -1;
 }
 
+static int cephwrap_fcntl(vfs_handle_struct *handle,
+			  files_struct *fsp, int cmd, va_list cmd_arg)
+{
+	/*
+	 * SMB_VFS_FCNTL() is currently only called by vfs_set_blocking() to
+	 * clear O_NONBLOCK, etc for LOCK_MAND and FIFOs. Ignore it.
+	 */
+	if (cmd == F_GETFL) {
+		return 0;
+	} else if (cmd == F_SETFL) {
+		va_list dup_cmd_arg;
+		int opt;
+
+		va_copy(dup_cmd_arg, cmd_arg);
+		opt = va_arg(dup_cmd_arg, int);
+		va_end(dup_cmd_arg);
+		if (opt == 0) {
+			return 0;
+		}
+		DBG_ERR("unexpected fcntl SETFL(%d)\n", opt);
+		goto err_out;
+	}
+	DBG_ERR("unexpected fcntl: %d\n", cmd);
+err_out:
+	errno = EINVAL;
+	return -1;
+}
+
 static bool cephwrap_getlock(struct vfs_handle_struct *handle, files_struct *fsp, off_t *poffset, off_t *pcount, int *ptype, pid_t *ppid)
 {
 	DBG_DEBUG("[CEPH] getlock returning false and errno=0\n");
@@ -1357,6 +1385,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	.fallocate_fn = cephwrap_fallocate,
 	.lock_fn = cephwrap_lock,
 	.kernel_flock_fn = cephwrap_kernel_flock,
+	.fcntl_fn = cephwrap_fcntl,
 	.linux_setlease_fn = cephwrap_linux_setlease,
 	.getlock_fn = cephwrap_getlock,
 	.symlinkat_fn = cephwrap_symlinkat,
