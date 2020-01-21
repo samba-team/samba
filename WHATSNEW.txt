@@ -1,12 +1,12 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.12.  This is *not*
+This is the first preview release of Samba 4.13.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
 
-Samba 4.12 will be the next version of the Samba suite.
+Samba 4.13 will be the next version of the Samba suite.
 
 
 UPGRADING
@@ -16,129 +16,9 @@ UPGRADING
 NEW FEATURES/CHANGES
 ====================
 
-Python 3.5 Required
--------------------
-
-Samba's minimum runtime requirement for python was raised to Python
-3.4 with samba 4.11.  Samba 4.12 raises this minimum version to Python
-3.5 both to access new features and because this is the oldest version
-we test with in our CI infrastructure.
-
-(Build time support for the file server with Python 2.6 has not
-changed)
-
-Removing in-tree cryptography: GnuTLS 3.4.7 required
-----------------------------------------------------
-
-Samba is making efforts to remove in-tree cryptographic functionality,
-and to instead rely on externally maintained libraries.  To this end,
-Samba has chosen GnuTLS as our standard cryptographic provider.
-
-Samba now requires GnuTLS 3.4.7 to be installed (including development
-headers at build time) for all configurations, not just the Samba AD
-DC.
-
-Thanks to this work Samba no longer ships an in-tree DES
-implementation and on GnuTLS 3.6.5 or later Samba will include no
-in-tree cryptography other than the MD4 hash and that
-implemented in our copy of Heimdal.
-
-Using GnuTLS for SMB3 encryption you will notice huge performance and copy
-speed improvements. Tests with the CIFS Kernel client from Linux Kernel 5.3
-show a 3x speed improvement for writing and a 2.5x speed improvement for reads!
-
-NOTE WELL: The use of GnuTLS means that Samba will honour the
-system-wide 'FIPS mode' (a reference to the US FIPS-140 cryptographic
-standard) and so will not operate in many still common situations if
-this system-wide parameter is in effect, as many of our protocols rely
-on outdated cryptography.
-
-A future Samba version will mitigate this to some extent where good
-cryptography effectively wraps bad cryptography, but for now that above
-applies.
-
-
-"net ads kerberos pac save" and "net eventlog export"
------------------------------------------------------
-
-The "net ads kerberos pac save" and "net eventlog export" tools will
-no longer silently overwrite an existing file during data export.  If
-the filename given exits, an error will be shown.
-
-VFS
-===
-
-SMB_VFS_NTIMES
---------------
-
-Samba now uses a sentinel value based on utimensat(2) UTIME_OMIT to denote
-to-be-ignored timestamp variables passed to the SMB_VFS_NTIMES() VFS function.
-
-VFS modules can check whether any of the time values inside a struct
-smb_file_time is to be ignored by calling is_omit_timespec() on the value.
 
 REMOVED FEATURES
 ================
-
-The smb.conf parameter "write cache size" has been removed.
-
-Since the in-memory write caching code was written, our write path has
-changed significantly. In particular we have gained very flexible
-support for async I/O, with the new linux io_uring interface in
-development.  The old write cache concept which cached data in main
-memory followed by a blocking pwrite no longer gives any improvement
-on modern systems, and may make performance worse on memory-contrained
-systems, so this functionality should not be enabled in core smbd
-code.
-
-In addition, it complicated the write code, which is a performance
-critical code path.
-
-If required for specialist purposes, it can be recreated as a VFS
-module.
-
-BIND9_FLATFILE deprecated
--------------------------
-
-The BIND9_FLATFILE DNS backend is deprecated in this release and will
-be removed in the future.  This was only practically useful on a single
-domain controller or under expert care and supervision.
-
-This release removes the "rndc command" smb.conf parameter, which
-supported this configuration by writing out a list of DCs permitted to
-make changes to the DNS Zone and nudging the 'named' server if a new
-DC was added to the domain.  Administrators using BIND9_FLATFILE will
-need to maintain this manually from now on.
-
-
-Retiring DES encryption types in Kerberos.
-------------------------------------------
-With this release, support for DES encryption types has been removed from
-Samba, and setting DES_ONLY flag for an account will cause Kerberos
-authentication to fail for that account (see RFC-6649).
-
-Samba-DC: DES keys no longer saved in DB.
------------------------------------------
-When a new password is set for an account, Samba DC will store random keys
-in DB instead of DES keys derived from the password.  If the account is being
-migrated to Windbows or to an older version of Samba in order to use DES keys,
-the password must be reset to make it work.
-
-Heimdal-DC: removal of weak-crypto.
------------------------------------
-Following removal of DES encryption types from Samba, the embedded Heimdal
-build has been updated to not compile weak crypto code (HEIM_WEAK_CRYPTO).
-
-CTDB changes
-------------
-
-* The ctdb_mutex_fcntl_helper periodically re-checks the lock file
-
-  The re-check period is specified using a 2nd argument to this
-  helper.  The default re-check period is 5s.
-
-  If the file no longer exists or the inode number changes then the
-  helper exits.  This triggers an election.
 
 
 smb.conf changes
@@ -147,14 +27,11 @@ smb.conf changes
   Parameter Name                     Description                Default
   --------------                     -----------                -------
 
-  nfs4:acedup                        Changed default            merge
-  rndc command                       Removed
-  write cache size                   Removed
 
 KNOWN ISSUES
 ============
 
-https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.12#Release_blocking_bugs
+https://wiki.samba.org/index.php/Release_Planning_for_Samba_4.13#Release_blocking_bugs
 
 
 #######################################
