@@ -1930,7 +1930,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_relative_ptr2(struct ndr_pull *ndr, const vo
 	return ndr_pull_set_offset(ndr, rel_offset);
 }
 
-const static struct {
+static const struct {
 	enum ndr_err_code err;
 	const char *string;
 } ndr_err_code_strings[] = {
