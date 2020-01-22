@@ -146,27 +146,30 @@ bool chdir_current_service(connection_struct *conn)
 	const struct smb_filename origpath_fname = {
 		.base_name = conn->origpath,
 	};
+	int saved_errno = 0;
 	int ret;
 
 	conn->lastused_count++;
 
 	ret = vfs_ChDir(conn, &connectpath_fname);
-	if (ret != 0) {
-		DEBUG(((errno!=EACCES)?0:3),
-		      ("chdir (%s) failed, reason: %s\n",
-		       conn->connectpath, strerror(errno)));
-		return false;
+	if (ret == 0) {
+		return true;
 	}
+	saved_errno = errno;
+	DEBUG(((errno!=EACCES)?0:3),
+	      ("chdir (%s) failed, reason: %s\n",
+	       conn->connectpath, strerror(errno)));
 
 	ret = vfs_ChDir(conn, &origpath_fname);
-	if (ret != 0) {
-		DEBUG(((errno!=EACCES)?0:3),
-			("chdir (%s) failed, reason: %s\n",
-			conn->origpath, strerror(errno)));
-		return false;
+	if (ret == 0) {
+		return true;
 	}
+	DEBUG(((errno!=EACCES)?0:3),
+	      ("chdir (%s) failed, reason: %s\n",
+	       conn->origpath, strerror(errno)));
 
-	return true;
+	errno = saved_errno;
+	return false;
 }
 
 /****************************************************************************
