@@ -44,7 +44,7 @@ static void ndr_dump_data(struct ndr_print *ndr, const uint8_t *buf, int len);
 _PUBLIC_ void ndr_check_padding(struct ndr_pull *ndr, size_t n)
 {
 	size_t ofs2 = (ndr->offset + (n-1)) & ~(n-1);
-	int i;
+	size_t i;
 	for (i=ndr->offset;i<ofs2;i++) {
 		if (ndr->data[i] != 0) {
 			break;
