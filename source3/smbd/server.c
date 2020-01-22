@@ -1447,6 +1447,7 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 				   const char *version)
 {
 	const char *name = "samba_version_string";
+	const TDB_DATA key = string_term_tdb_data(name);
 	struct smbd_claim_version_state state;
 	struct g_lock_ctx *ctx;
 	NTSTATUS status;
@@ -1457,8 +1458,8 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	status = g_lock_lock(ctx, string_term_tdb_data(name), G_LOCK_READ,
-			     (struct timeval) { .tv_sec = 60 });
+	status = g_lock_lock(
+		ctx, key, G_LOCK_READ, (struct timeval) { .tv_sec = 60 });
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_lock(G_LOCK_READ) failed: %s\n",
 			    nt_errstr(status));
@@ -1468,12 +1469,11 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 
 	state = (struct smbd_claim_version_state) { .mem_ctx = ctx };
 
-	status = g_lock_dump(ctx, string_term_tdb_data(name),
-			     smbd_claim_version_parser, &state);
+	status = g_lock_dump(ctx, key, smbd_claim_version_parser, &state);
 	if (!NT_STATUS_IS_OK(status) &&
 	    !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		DBG_ERR("Could not read samba_version_string\n");
-		g_lock_unlock(ctx, string_term_tdb_data(name));
+		g_lock_unlock(ctx, key);
 		TALLOC_FREE(ctx);
 		return status;
 	}
@@ -1487,8 +1487,8 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 		return NT_STATUS_OK;
 	}
 
-	status = g_lock_lock(ctx, string_term_tdb_data(name), G_LOCK_UPGRADE,
-			     (struct timeval) { .tv_sec = 60 });
+	status = g_lock_lock(
+		ctx, key, G_LOCK_UPGRADE, (struct timeval) { .tv_sec = 60 });
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_lock(G_LOCK_WRITE) failed: %s\n",
 			    nt_errstr(status));
@@ -1498,9 +1498,8 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 		return NT_STATUS_SXS_VERSION_CONFLICT;
 	}
 
-	status = g_lock_write_data(ctx, string_term_tdb_data(name),
-				   (const uint8_t *)version,
-				   strlen(version)+1);
+	status = g_lock_write_data(
+		ctx, key, (const uint8_t *)version, strlen(version)+1);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_write_data failed: %s\n",
 			    nt_errstr(status));
@@ -1508,8 +1507,8 @@ static NTSTATUS smbd_claim_version(struct messaging_context *msg,
 		return status;
 	}
 
-	status = g_lock_lock(ctx, string_term_tdb_data(name), G_LOCK_DOWNGRADE,
-			     (struct timeval) { .tv_sec = 60 });
+	status = g_lock_lock(
+		ctx, key, G_LOCK_DOWNGRADE, (struct timeval) { .tv_sec = 60 });
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("g_lock_lock(G_LOCK_READ) failed: %s\n",
 			    nt_errstr(status));
