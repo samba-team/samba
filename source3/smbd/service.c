@@ -146,55 +146,46 @@ bool chdir_current_service(connection_struct *conn)
 	const struct smb_filename origpath_fname = {
 		.base_name = conn->origpath,
 	};
+	int saved_errno = 0;
+	char *utok_str = NULL;
 	int ret;
 
 	conn->lastused_count++;
 
 	ret = vfs_ChDir(conn, &connectpath_fname);
-	if (ret != 0) {
-		int saved_errno = errno;
+	if (ret == 0) {
+		return true;
+	}
+	saved_errno = errno;
 
-		if (saved_errno == EACCES) {
-			char *str = utok_string(
-				talloc_tos(),
-				conn->session_info->unix_token);
-			DBG_WARNING("vfs_ChDir(%s) got "
-				    "permission denied, current "
-				    "token: %s\n",
-				    conn->connectpath, str);
-			TALLOC_FREE(str);
-		} else {
-			DBG_ERR("vfs_ChDir(%s) failed: "
-				"%s!\n",
-				conn->connectpath,
-				strerror(saved_errno));
-		}
+	utok_str = utok_string(talloc_tos(),
+			       conn->session_info->unix_token);
+	if (utok_str == NULL) {
+		errno = saved_errno;
 		return false;
 	}
+
+	DBG_ERR("vfs_ChDir(%s) failed: %s. Current token: %s\n",
+		conn->connectpath,
+		strerror(saved_errno),
+		utok_str);
 
 	ret = vfs_ChDir(conn, &origpath_fname);
-	if (ret != 0) {
-		int saved_errno = errno;
-
-		if (saved_errno == EACCES) {
-			char *str = utok_string(
-				talloc_tos(),
-				conn->session_info->unix_token);
-			DBG_WARNING("vfs_ChDir(%s) got "
-				    "permission denied, current "
-				    "token: %s\n",
-				    conn->origpath, str);
-			TALLOC_FREE(str);
-		} else {
-			DBG_ERR("vfs_ChDir(%s) failed: "
-				"%s!\n",
-				conn->origpath,
-				strerror(saved_errno));
-		}
-		return false;
+	if (ret == 0) {
+		TALLOC_FREE(utok_str);
+		return true;
 	}
+	saved_errno = errno;
 
-	return true;
+	DBG_ERR("vfs_ChDir(%s) failed: %s. Current token: %s\n",
+		conn->origpath,
+		strerror(saved_errno),
+		utok_str);
+
+	if (saved_errno != 0) {
+		errno = saved_errno;
+	}
+	return false;
 }
 
 /****************************************************************************
