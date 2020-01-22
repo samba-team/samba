@@ -1329,9 +1329,13 @@ _PUBLIC_ enum ndr_err_code ndr_pull_struct_blob_all_noalloc(const DATA_BLOB *blo
 	highest_ofs = MAX(ndr.offset, ndr.relative_highest_offset);
 	if (highest_ofs < ndr.data_size) {
 		enum ndr_err_code ret;
-		ret = ndr_pull_error(&ndr, NDR_ERR_UNREAD_BYTES,
-				     "not all bytes consumed ofs[%u] size[%u]",
-				     highest_ofs, ndr.data_size);
+		ret = ndr_pull_error(
+			&ndr,
+			NDR_ERR_UNREAD_BYTES,
+			"not all bytes consumed ofs[%"PRIu32"] "
+			"size[%"PRIu32"]",
+			highest_ofs,
+			ndr.data_size);
 		return ret;
 	}
 	return NDR_ERR_SUCCESS;
