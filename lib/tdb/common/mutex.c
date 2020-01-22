@@ -149,7 +149,7 @@ static bool tdb_mutex_index(struct tdb_context *tdb, off_t off, off_t len,
 
 static bool tdb_have_mutex_chainlocks(struct tdb_context *tdb)
 {
-	size_t i;
+	int i;
 
 	for (i=0; i < tdb->num_lockrecs; i++) {
 		bool ret;
@@ -559,7 +559,8 @@ int tdb_mutex_init(struct tdb_context *tdb)
 {
 	struct tdb_mutexes *m;
 	pthread_mutexattr_t ma;
-	int i, ret;
+	uint32_t i;
+	int ret;
 
 	ret = tdb_mutex_mmap(tdb);
 	if (ret == -1) {
