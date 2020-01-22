@@ -331,6 +331,13 @@ enum ndr_compression_alg {
 		if (unlikely(ndr->flags & LIBNDR_FLAG_PAD_CHECK)) {	\
 			ndr_check_padding(ndr, n); \
 		} \
+		if(unlikely( \
+			((ndr->offset + (n-1)) & (~(n-1))) < ndr->offset)) {\
+			return ndr_pull_error( \
+				ndr, \
+				NDR_ERR_BUFSIZE, \
+				"Pull align (overflow) %u", (unsigned)n); \
+		} \
 		ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
 	} \
 	if (unlikely(ndr->offset > ndr->data_size)) {			\
