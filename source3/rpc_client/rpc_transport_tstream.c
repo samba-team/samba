@@ -89,7 +89,6 @@ struct rpc_tstream_next_vector_state {
 	uint8_t *buf;
 	size_t len;
 	off_t ofs;
-	size_t remaining;
 };
 
 static void rpc_tstream_next_vector_init(
@@ -111,8 +110,6 @@ static int rpc_tstream_next_vector(struct tstream_context *stream,
 	struct rpc_tstream_next_vector_state *state =
 		(struct rpc_tstream_next_vector_state *)private_data;
 	struct iovec *vector;
-	ssize_t pending;
-	size_t wanted;
 
 	if (state->ofs == state->len) {
 		*_vector = NULL;
@@ -120,42 +117,15 @@ static int rpc_tstream_next_vector(struct tstream_context *stream,
 		return 0;
 	}
 
-	pending = tstream_pending_bytes(stream);
-	if (pending == -1) {
-		return -1;
-	}
-
-	if (pending == 0 && state->ofs != 0) {
-		/* return a short read */
-		*_vector = NULL;
-		*count = 0;
-		return 0;
-	}
-
-	if (pending == 0) {
-		/* we want at least one byte and recheck again */
-		wanted = 1;
-	} else {
-		size_t missing = state->len - state->ofs;
-		if (pending > missing) {
-			/* there's more available */
-			state->remaining = pending - missing;
-			wanted = missing;
-		} else {
-			/* read what we can get and recheck in the next cycle */
-			wanted = pending;
-		}
-	}
-
 	vector = talloc_array(mem_ctx, struct iovec, 1);
 	if (!vector) {
 		return -1;
 	}
 
-	vector[0].iov_base = state->buf + state->ofs;
-	vector[0].iov_len = wanted;
+	vector[0].iov_base = state->buf;
+	vector[0].iov_len = state->len;
 
-	state->ofs += wanted;
+	state->ofs = state->len;
 
 	*_vector = vector;
 	*count = 1;
