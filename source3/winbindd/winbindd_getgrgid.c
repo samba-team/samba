@@ -79,6 +79,10 @@ static void winbindd_getgrgid_gid2sid_done(struct tevent_req *subreq)
 	if (tevent_req_nterror(req, status)) {
 		return;
 	}
+	if (is_null_sid(state->sid)) {
+		tevent_req_nterror(req, NT_STATUS_NO_SUCH_GROUP);
+		return;
+	}
 
 	subreq = wb_getgrsid_send(state, state->ev, state->sid,
 				  lp_winbind_expand_groups());
