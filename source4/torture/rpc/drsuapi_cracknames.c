@@ -201,8 +201,11 @@ static bool test_DsCrackNamesMatrix(struct torture_context *tctx,
 		for (j = 0; j < ARRAY_SIZE(formats); j++) {
 			torture_comment(tctx, "Converting %s (format %d)"
 						" to %d gave %s\n",
-						n_from[i], formats[i],
-						formats[j], n_matrix[i][j]);
+					n_from[i] == NULL ? "NULL" : n_from[i],
+					formats[i], formats[j],
+					n_matrix[i][j] == NULL ?
+						"NULL" : n_matrix[i][j]);
+
 			if (n_matrix[i][j] == n_from[j]) {
 				
 			/* We don't have a from name for these yet (and we can't map to them to find it out) */
