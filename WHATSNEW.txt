@@ -1,4 +1,105 @@
                    ===============================
+                   Release Notes for Samba 4.10.13
+                          January 23, 2020
+                   ===============================
+
+
+This is the latest stable release of the Samba 4.10 release series.
+
+
+Changes since 4.10.12
+----------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14161: s3: libsmb: Ensure SMB1 cli_qpathinfo2() doesn't return an
+     inode number.
+   * BUG 14174: s3: utils: smbtree. Ensure we don't call cli_RNetShareEnum()
+     on an SMB1 connection.
+   * BUG 14176: s3: libsmb: Ensure return from net_share_enum_rpc() sets
+     cli->raw_status on error.
+   * BUG 14189: s3: smbd: SMB2 - Ensure we use the correct session_id if
+     encrypting an interim response.
+   * BUG 14205: s3: smbd: Only set xconn->smb1.negprot.done = true after
+     supported_protocols[protocol].proto_reply_fn() succeeds.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14209: pygpo: Use correct method flags.
+
+o  Ralph Boehme <slow@samba.org>
+   * BUG 13925: s3: Remove now unneeded call to cmdline_messaging_context().
+   * BUG 14069: Incomplete conversion of former parametric options.
+   * BUG 14070: Fix sync dosmode fallback in async dosmode codepath.
+   * BUG 14171: vfs_fruit returns capped resource fork length.
+   * BUG 13745: s3:printing: Fix %J substition.
+
+o  Isaac Boukris <iboukris@gmail.com>
+   * BUG 14116: libnet_join: Add SPNs for additional-dns-hostnames entries.
+
+o  Torsten Fohrer <torsten.fohrer@sbe.de>
+   * BUG 14209: Avoiding bad call flags with python 3.8, using METH_NOARGS
+     instead of zero.
+
+o  Björn Jacke <bjacke@samba.org>
+   * BUG 14122: docs-xml/winbindnssinfo: Clarify interaction with idmap_ad etc.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14175: ctdb-tcp: Close inflight connecting TCP sockets after fork.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14153: s4:dirsync: Fix interaction of dirsync and extended_dn controls.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 14199: upgradedns: Ensure lmdb lock files linked.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 14182: s3: VFS: glusterfs: Reset nlinks for symlink entries during
+     readdir.
+
+o  Christof Schmitt <cs@samba.org>
+   * BUG 14140: wscript: Remove checks for shm_open and shmget.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14101: libsmbclient: smbc_stat() doesn't return the correct st_mode
+     and also the uid/gid is not filled (SMBv1).
+   * BUG 14168: replace: Only link libnsl and libsocket if required.
+   * BUG 14219: librpc: Fix string length checking in
+     ndr_pull_charset_to_null().
+
+o  Uri Simchoni <uri@samba.org>
+   * BUG 13856: heimdal-build: Avoid hard-coded /usr/include/heimdal in
+     asn1_compile-generated code.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14175: ctdb-tcp: Drop tracking of file descriptor for incoming
+     connections.
+   * BUG 14227: ctdb-scripts: Strip square brackets when gathering connection
+     info.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ===============================
                    Release Notes for Samba 4.10.12
                           January 21, 2020
                    ===============================
@@ -67,8 +168,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ===============================
                    Release Notes for Samba 4.10.11
