@@ -322,7 +322,7 @@ class AuthLogTestsWinbind(AuthLogTestBase, BlackboxTestCase):
         self.assertEquals("unix:", msg["Authentication"]["localAddress"])
         self.assertEquals('', msg["Authentication"]["clientDomain"])
         # This is what the existing winbind implementation returns.
-        self.assertEquals("NT_STATUS_INVALID_HANDLE",
+        self.assertEquals("NT_STATUS_NO_SUCH_USER",
                           msg["Authentication"]["status"])
         self.assertEquals(self.credentials.get_username(),
                           msg["Authentication"]["clientAccount"])
@@ -425,7 +425,7 @@ class AuthLogTestsWinbind(AuthLogTestBase, BlackboxTestCase):
         self.assertEquals("unix:", msg["Authentication"]["localAddress"])
         self.assertEquals('', msg["Authentication"]["clientDomain"])
         # This is what the existing winbind implementation returns.
-        self.assertEquals("NT_STATUS_INVALID_HANDLE",
+        self.assertEquals("NT_STATUS_NO_SUCH_USER",
                           msg["Authentication"]["status"])
         self.assertEquals(self.credentials.get_username(),
                           msg["Authentication"]["clientAccount"])
