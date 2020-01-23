@@ -1,5 +1,5 @@
 ^samba3.blackbox.smbclient_auth.empty_domain.domain_creds.smbclient.*as.user.*nt4_member
-^samba3.blackbox.smbclient_auth.empty_domain.member_creds.smbclient.*as.user.*ad_member
+^samba3.blackbox.smbclient_auth.empty_domain.domain_creds.smbclient.*as.user.*ad_member
 ^samba3.blackbox.smbclient_auth.dot_domain.domain_creds.smbclient.*as.user.*nt4_member
 ^samba3.blackbox.smbclient_auth.dot_domain.domain_creds.smbclient.*as.user.*ad_member
 ^samba3.blackbox.smbclient_auth.upn.domain_creds.smbclient.*as.*user.*nt4_member
