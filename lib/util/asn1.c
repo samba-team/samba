@@ -1024,9 +1024,10 @@ bool asn1_read_BitString(struct asn1_data *data, TALLOC_CTX *mem_ctx, DATA_BLOB 
 	return true;
 }
 
-/* read an integer */
+/* read a non-negative enumerated value */
 bool asn1_read_enumerated(struct asn1_data *data, int *v)
 {
+	unsigned int val_will_wrap = (0xFF << ((sizeof(int)*8)-8));
 	*v = 0;
 
 	if (!asn1_start_tag(data, ASN1_ENUMERATED)) return false;
@@ -1035,7 +1036,22 @@ bool asn1_read_enumerated(struct asn1_data *data, int *v)
 		if (!asn1_read_uint8(data, &b)) {
 			return false;
 		}
+		if (*v & val_will_wrap) {
+			/*
+			 * There is something already in
+			 * the top byte of the int. If we
+			 * shift left by 8 it's going to
+			 * wrap. Prevent this.
+			 */
+			data->has_error = true;
+			return false;
+		}
 		*v = (*v << 8) + b;
+		if (*v < 0) {
+			/* ASN1_ENUMERATED can't be -ve. */
+			data->has_error = true;
+			return false;
+		}
 	}
 	return asn1_end_tag(data);
 }
