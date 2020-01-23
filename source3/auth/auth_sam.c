@@ -36,6 +36,12 @@ static NTSTATUS auth_sam_ignoredomain_auth(const struct auth_context *auth_conte
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	if (user_info->mapped.account_name == NULL ||
+	    user_info->mapped.account_name[0] == '\0')
+	{
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+
 	DBG_DEBUG("Check auth for: [%s]\\[%s]\n",
 		  user_info->mapped.domain_name,
 		  user_info->mapped.account_name);
@@ -75,6 +81,12 @@ static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
 
 	if (!user_info || !auth_context) {
 		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	if (user_info->mapped.account_name == NULL ||
+	    user_info->mapped.account_name[0] == '\0')
+	{
+		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
 	DBG_DEBUG("Check auth for: [%s]\\[%s]\n",
@@ -146,6 +158,12 @@ static NTSTATUS auth_sam_netlogon3_auth(const struct auth_context *auth_context,
 
 	if (!user_info || !auth_context) {
 		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	if (user_info->mapped.account_name == NULL ||
+	    user_info->mapped.account_name[0] == '\0')
+	{
+		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
 	DBG_DEBUG("Check auth for: [%s]\\[%s]\n",
