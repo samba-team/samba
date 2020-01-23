@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
 
-   SMB2 create context specifc stuff
+   SMB2 create context specific stuff
 
    Copyright (C) Ralph Boehme 2014
 
