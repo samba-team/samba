@@ -92,7 +92,7 @@ static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
 				return NT_STATUS_NOT_IMPLEMENTED;
 			}
 
-			FALL_THROUGH;
+			break;
 		case ROLE_DOMAIN_PDC:
 		case ROLE_DOMAIN_BDC:
 			if ( !is_local_name && !is_my_domain ) {
@@ -101,7 +101,7 @@ static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
 				return NT_STATUS_NOT_IMPLEMENTED;
 			}
 
-			FALL_THROUGH;
+			break;
 		default: /* name is ok */
 			break;
 	}
