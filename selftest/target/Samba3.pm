@@ -905,6 +905,18 @@ sub setup_simpleserver
 	return $vars;
 }
 
+sub create_file_chmod($$)
+{
+    my ($name, $mode) = @_;
+    my $fh;
+
+    unless (open($fh, '>', $name)) {
+	warn("Unable to open $name");
+	return undef;
+    }
+    chmod($mode, $fh);
+}
+
 sub setup_fileserver
 {
 	my ($self, $path) = @_;
@@ -1099,13 +1111,7 @@ sub setup_fileserver
 	##
 	## create a listable file in valid_users_share
 	##
-        my $valid_users_target = "$valid_users_sharedir/foo";
-        unless (open(VALID_USERS_TARGET, ">$valid_users_target")) {
-                warn("Unable to open $valid_users_target");
-                return undef;
-        }
-        close(VALID_USERS_TARGET);
-        chmod 0644, $valid_users_target;
+	create_file_chmod("$valid_users_sharedir/foo", 0644) or return undef;
 
 	return $vars;
 }
@@ -1546,21 +1552,10 @@ sub provision($$$$$$$$$)
 	##
 
 	chmod 0755, $ro_shrdir;
-	my $unreadable_file = "$ro_shrdir/unreadable_file";
-	unless (open(UNREADABLE_FILE, ">$unreadable_file")) {
-	        warn("Unable to open $unreadable_file");
-		return undef;
-	}
-	close(UNREADABLE_FILE);
-	chmod 0600, $unreadable_file;
 
-	my $msdfs_target = "$ro_shrdir/msdfs-target";
-	unless (open(MSDFS_TARGET, ">$msdfs_target")) {
-	        warn("Unable to open $msdfs_target");
-		return undef;
-	}
-	close(MSDFS_TARGET);
-	chmod 0666, $msdfs_target;
+	create_file_chmod("$ro_shrdir/unreadable_file", 0600) or return undef;
+
+	create_file_chmod("$ro_shrdir/msdfs-target", 0600) or return undef;
 	symlink "msdfs:$server_ip\\ro-tmp,$server_ipv6\\ro-tmp",
 		"$msdfs_shrdir/msdfs-src1";
 	symlink "msdfs:$server_ipv6\\ro-tmp", "$msdfs_shrdir/deeppath/msdfs-src2";
@@ -1569,31 +1564,16 @@ sub provision($$$$$$$$$)
 	## create bad names in $badnames_shrdir
 	##
 	## (An invalid name, would be mangled to 8.3).
-        my $badname_target = "$badnames_shrdir/\340|\231\216\377\177";
-        unless (open(BADNAME_TARGET, ">$badname_target")) {
-                warn("Unable to open $badname_target");
-                return undef;
-        }
-        close(BADNAME_TARGET);
-        chmod 0666, $badname_target;
+	create_file_chmod("$badnames_shrdir/\340|\231\216\377\177",
+			  0600) or return undef;
 
 	## (A bad name, would not be mangled to 8.3).
-        my $badname_target = "$badnames_shrdir/\240\276\346\327\377\177";
-        unless (open(BADNAME_TARGET, ">$badname_target")) {
-                warn("Unable to open $badname_target");
-                return undef;
-        }
-        close(BADNAME_TARGET);
-        chmod 0666, $badname_target;
+	create_file_chmod("$badnames_shrdir/\240\276\346\327\377\177",
+			  0666) or return undef;
 
 	## (A bad good name).
-        my $badname_target = "$badnames_shrdir/blank.txt";
-        unless (open(BADNAME_TARGET, ">$badname_target")) {
-                warn("Unable to open $badname_target");
-                return undef;
-        }
-        close(BADNAME_TARGET);
-        chmod 0666, $badname_target;
+	create_file_chmod("$badnames_shrdir/blank.txt",
+			  0666) or return undef;
 
 	##
 	## create mangleable directory names in $manglenames_shrdir
@@ -1605,12 +1585,8 @@ sub provision($$$$$$$$$)
 	## create symlinks for widelinks tests.
 	##
 	my $widelinks_target = "$widelinks_linkdir/target";
-	unless (open(WIDELINKS_TARGET, ">$widelinks_target")) {
-		warn("Unable to open $widelinks_target");
-		return undef;
-	}
-	close(WIDELINKS_TARGET);
-	chmod 0666, $widelinks_target;
+	create_file_chmod("$widelinks_target", 0666) or return undef;
+
 	##
 	## This link should get ACCESS_DENIED
 	##
