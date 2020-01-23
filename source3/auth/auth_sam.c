@@ -35,6 +35,11 @@ static NTSTATUS auth_sam_ignoredomain_auth(const struct auth_context *auth_conte
 	if (!user_info || !auth_context) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	DBG_DEBUG("Check auth for: [%s]\\[%s]\n",
+		  user_info->mapped.domain_name,
+		  user_info->mapped.account_name);
+
 	return check_sam_security(&auth_context->challenge, mem_ctx,
 				  user_info, server_info);
 }
@@ -72,7 +77,9 @@ static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	DEBUG(10, ("Check auth for: [%s]\n", user_info->mapped.account_name));
+	DBG_DEBUG("Check auth for: [%s]\\[%s]\n",
+		  user_info->mapped.domain_name,
+		  user_info->mapped.account_name);
 
 	is_local_name = is_myname(user_info->mapped.domain_name);
 	is_my_domain  = strequal(user_info->mapped.domain_name, lp_workgroup());
