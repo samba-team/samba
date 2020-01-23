@@ -171,7 +171,8 @@ conf.CHECK_STRUCTURE_MEMBER('krb5_ap_req', 'ticket', headers='krb5.h',
                             define='HAVE_TICKET_POINTER_IN_KRB5_AP_REQ')
 conf.CHECK_STRUCTURE_MEMBER('krb5_prompt', 'type', headers='krb5.h',
                             define='HAVE_KRB5_PROMPT_TYPE')
-
+conf.CHECK_CODE('krb5_trace_info', 'HAVE_KRB5_TRACE_INFO', headers='krb5.h')
+conf.CHECK_CODE('struct krb5_trace_info', 'HAVE_KRB5_TRACE_INFO_STRUCT', headers='krb5.h')
 conf.CHECK_TYPE('krb5_encrypt_block', headers='krb5.h')
 
 conf.CHECK_CODE('''

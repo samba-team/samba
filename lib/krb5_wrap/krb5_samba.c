@@ -3528,7 +3528,13 @@ failed:
 
 #ifndef SAMBA4_USES_HEIMDAL /* MITKRB5 tracing callback */
 static void smb_krb5_trace_cb(krb5_context ctx,
+#ifdef HAVE_KRB5_TRACE_INFO
 			      const krb5_trace_info *info,
+#elif defined(HAVE_KRB5_TRACE_INFO_STRUCT)
+			      const struct krb5_trace_info *info,
+#else
+#error unknown krb5_trace_info
+#endif
 			      void *data)
 {
 	if (info != NULL) {
