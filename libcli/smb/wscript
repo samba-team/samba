@@ -43,6 +43,7 @@ def build(bld):
            smb2cli_query_directory.c
            smb2cli_ioctl.c
            smb2cli_echo.c
+           smb2_posix.c
            tstream_smbXcli_np.c
     ''',
     deps='''
@@ -62,6 +63,7 @@ def build(bld):
                     smb2_lease.h
                     smb_util.h
                     smb_unix_ext.h
+                    smb_posix.h
                     tstream_smbXcli_np.h
     ''',
     )
