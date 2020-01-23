@@ -90,9 +90,35 @@ static NTSTATUS auth_samstrict_auth(const struct auth_context *auth_context,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
+	if (lp_server_role() == ROLE_DOMAIN_MEMBER) {
+		const char *p = NULL;
+
+		p = strchr_m(user_info->mapped.account_name, '@');
+		if (p != NULL) {
+			/*
+			 * This needs to go to the DC,
+			 * even if @ is the last character
+			 */
+			return NT_STATUS_NOT_IMPLEMENTED;
+		}
+	}
+
+	if (effective_domain == NULL) {
+		effective_domain = "";
+	}
+
 	DBG_DEBUG("Check auth for: [%s]\\[%s]\n",
 		  effective_domain,
 		  user_info->mapped.account_name);
+
+
+	if (strequal(effective_domain, "") || strequal(effective_domain, ".")) {
+		/*
+		 * An empty domain name or '.' should be handled
+		 * as the local SAM name.
+		 */
+		effective_domain = lp_netbios_name();
+	}
 
 	is_local_name = is_myname(effective_domain);
 	is_my_domain  = strequal(effective_domain, lp_workgroup());
@@ -168,6 +194,10 @@ static NTSTATUS auth_sam_netlogon3_auth(const struct auth_context *auth_context,
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
+	if (effective_domain == NULL) {
+		effective_domain = "";
+	}
+
 	DBG_DEBUG("Check auth for: [%s]\\[%s]\n",
 		  effective_domain,
 		  user_info->mapped.account_name);
@@ -181,6 +211,14 @@ static NTSTATUS auth_sam_netlogon3_auth(const struct auth_context *auth_context,
 	default:
 		DBG_ERR("Invalid server role\n");
 		return NT_STATUS_INVALID_SERVER_STATE;
+	}
+
+	if (strequal(effective_domain, "") || strequal(effective_domain, ".")) {
+		/*
+		 * An empty domain name or '.' should be handled
+		 * as the local SAM name.
+		 */
+		effective_domain = lp_workgroup();
 	}
 
 	is_my_domain = strequal(user_info->mapped.domain_name, lp_workgroup());
