@@ -437,3 +437,16 @@ dump OK
             self.fail(e)
 
         self.assertEqual(actual, expected)
+
+    def test_ndrdump_fuzzed_ndr_compression(self):
+        expected = 'pull returned Buffer Size Error'
+        command = (
+            "ndrdump drsuapi 3 out --base64-input "
+            "--input BwAAAAcAAAAGAAAAAwAgICAgICAJAAAAICAgIAkAAAAgIAAA//////8=")
+        try:
+            actual = self.check_exit_code(command, 2)
+        except BlackboxProcessError as e:
+            self.fail(e)
+        # check_output will return bytes
+        # convert expected to bytes for python 3
+        self.assertRegex(actual.decode('utf8'), expected + '$')

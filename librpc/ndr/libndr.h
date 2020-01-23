@@ -309,7 +309,10 @@ enum ndr_compression_alg {
 } while (0)
 
 #define NDR_PULL_NEED_BYTES(ndr, n) do { \
-	if (unlikely((n) > ndr->data_size || ndr->offset + (n) > ndr->data_size)) { \
+	if (unlikely(\
+		(n) > ndr->data_size || \
+		ndr->offset + (n) > ndr->data_size || \
+		ndr->offset + (n) < ndr->offset)) { \
 		if (ndr->flags & LIBNDR_FLAG_INCOMPLETE_BUFFER) { \
 			uint32_t _available = ndr->data_size - ndr->offset; \
 			uint32_t _missing = n - _available; \

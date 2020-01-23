@@ -1334,6 +1334,8 @@ plantestsuite("libcli.drsuapi.repl_decrypt", "none",
               [os.path.join(bindir(), "test_repl_decrypt")])
 plantestsuite("librpc.ndr.ndr_string", "none",
               [os.path.join(bindir(), "test_ndr_string")])
+plantestsuite("librpc.ndr.ndr", "none",
+              [os.path.join(bindir(), "test_ndr")])
 
 # process restart and limit tests, these break the environment so need to run
 # in their own specific environment
