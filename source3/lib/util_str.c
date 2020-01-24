@@ -680,8 +680,7 @@ int ipstr_list_parse(const char *ipstr_list, struct ip_service **ip_list)
 {
 	TALLOC_CTX *frame;
 	char *token_str = NULL;
-	size_t count;
-	int i;
+	size_t i, count;
 
 	if (!ipstr_list || !ip_list)
 		return 0;
