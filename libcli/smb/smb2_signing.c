@@ -478,9 +478,7 @@ NTSTATUS smb2_signing_encrypt_pdu(struct smb2_signing_key *encryption_key,
 	       0,
 	       16 - iv_size);
 
-/* gnutls_aead_cipher_encryptv2() has a bug in version 3.6.10 */
-#if defined(HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2) && \
-    GNUTLS_VERSION_NUMBER > 0x03060a
+#if defined(HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2)
 	{
 		uint8_t tag[tag_size];
 		giovec_t auth_iov[1];
@@ -682,8 +680,7 @@ NTSTATUS smb2_signing_decrypt_pdu(struct smb2_signing_key *decryption_key,
 	}
 
 /* gnutls_aead_cipher_encryptv2() has a bug in version 3.6.10 */
-#if defined(HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2) && \
-    GNUTLS_VERSION_NUMBER > 0x03060a
+#if defined(HAVE_GNUTLS_AEAD_CIPHER_ENCRYPTV2)
 	{
 		giovec_t auth_iov[1];
 
