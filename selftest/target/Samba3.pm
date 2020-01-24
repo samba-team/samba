@@ -1460,6 +1460,7 @@ sub provision($$)
 	my $dc_server_ip = $args{dc_server_ip};
 	my $dc_server_ipv6 = $args{dc_server_ipv6};
 	my $no_delete_prefix= $args{no_delete_prefix};
+	my $netbios_name = $args{netbios_name} // $server;
 
 	##
 	## setup the various environment variables we need
@@ -1735,7 +1736,7 @@ sub provision($$)
 	print CONF "
 [global]
         dcesrv:fuzz directory = $cachedir/fuzz
-	netbios name = $server
+	netbios name = $netbios_name
 	interfaces = $interfaces
 	bind interfaces only = yes
 	panic action = cd $self->{srcdir} && $self->{srcdir}/selftest/gdb_backtrace %d %\$(MAKE_TEST_BINARY)
