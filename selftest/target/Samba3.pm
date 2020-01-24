@@ -219,10 +219,12 @@ sub setup_nt4_dc
 	check parent directory delete on close = yes
 ";
 
-	my $vars = $self->provision($path, "SAMBA-TEST",
-				    "LOCALNT4DC2",
-				    "localntdc2pass",
-				    $nt4_dc_options);
+	my $vars = $self->provision(
+	    prefix => $path,
+	    domain => "SAMBA-TEST",
+	    server => "LOCALNT4DC2",
+	    password => "localntdc2pass",
+	    extra_options => $nt4_dc_options);
 
 	$vars or return undef;
 
@@ -268,10 +270,12 @@ sub setup_nt4_dc_schannel
 	server max protocol = SMB2_02
 ";
 
-	my $vars = $self->provision($path, "NT4SCHANNEL",
-				    "LOCALNT4DC9",
-				    "localntdc9pass",
-				    $pdc_options);
+	my $vars = $self->provision(
+	    prefix => $path,
+	    domain => "NT4SCHANNEL",
+	    server => "LOCALNT4DC9",
+	    password => "localntdc9pass",
+	    extra_options => $pdc_options);
 
 	$vars or return undef;
 
@@ -306,10 +310,12 @@ sub setup_nt4_member
 	dbwrap_tdb_mutexes:* = yes
 	${require_mutexes}
 ";
-	my $ret = $self->provision($prefix, $nt4_dc_vars->{DOMAIN},
-				   "LOCALNT4MEMBER3",
-				   "localnt4member3pass",
-				   $member_options);
+	my $ret = $self->provision(
+	    prefix => $prefix,
+	    domain => $nt4_dc_vars->{DOMAIN},
+	    server => "LOCALNT4MEMBER3",
+	    password => "localnt4member3pass",
+	    extra_options => $member_options);
 
 	$ret or return undef;
 
@@ -429,12 +435,14 @@ sub setup_ad_member
 
 ";
 
-	my $ret = $self->provision($prefix, $dcvars->{DOMAIN},
-				   "LOCALADMEMBER",
-				   "loCalMemberPass",
-				   $member_options,
-				   $dcvars->{SERVER_IP},
-				   $dcvars->{SERVER_IPV6});
+	my $ret = $self->provision(
+	    prefix => $prefix,
+	    domain => $dcvars->{DOMAIN},
+	    server => "LOCALADMEMBER",
+	    password => "loCalMemberPass",
+	    extra_options => $member_options,
+	    dc_server_ip => $dcvars->{SERVER_IP},
+	    dc_server_ipv6 => $dcvars->{SERVER_IPV6});
 
 	$ret or return undef;
 
@@ -547,12 +555,14 @@ sub setup_ad_member_rfc2307
         password server = $dcvars->{SERVER}
 ";
 
-	my $ret = $self->provision($prefix, $dcvars->{DOMAIN},
-				   "RFC2307MEMBER",
-				   "loCalMemberPass",
-				   $member_options,
-				   $dcvars->{SERVER_IP},
-				   $dcvars->{SERVER_IPV6});
+	my $ret = $self->provision(
+	    prefix => $prefix,
+	    domain => $dcvars->{DOMAIN},
+	    server => "RFC2307MEMBER",
+	    password => "loCalMemberPass",
+	    extra_options => $member_options,
+	    dc_server_ip => $dcvars->{SERVER_IP},
+	    dc_server_ipv6 => $dcvars->{SERVER_IPV6});
 
 	$ret or return undef;
 
@@ -639,12 +649,14 @@ sub setup_ad_member_idmap_rid
         map to guest = bad user
 ";
 
-	my $ret = $self->provision($prefix, $dcvars->{DOMAIN},
-				   "IDMAPRIDMEMBER",
-				   "loCalMemberPass",
-				   $member_options,
-				   $dcvars->{SERVER_IP},
-				   $dcvars->{SERVER_IPV6});
+	my $ret = $self->provision(
+	    prefix => $prefix,
+	    domain => $dcvars->{DOMAIN},
+	    server => "IDMAPRIDMEMBER",
+	    password => "loCalMemberPass",
+	    extra_options => $member_options,
+	    dc_server_ip => $dcvars->{SERVER_IP},
+	    dc_server_ipv6 => $dcvars->{SERVER_IPV6});
 
 	$ret or return undef;
 
@@ -730,12 +742,14 @@ sub setup_ad_member_idmap_ad
 	idmap config $dcvars->{TRUST_DOMAIN} : range = 2000000-2999999
 ";
 
-	my $ret = $self->provision($prefix, $dcvars->{DOMAIN},
-				   "IDMAPADMEMBER",
-				   "loCalMemberPass",
-				   $member_options,
-				   $dcvars->{SERVER_IP},
-				   $dcvars->{SERVER_IPV6});
+	my $ret = $self->provision(
+	    prefix => $prefix,
+	    domain => $dcvars->{DOMAIN},
+	    server => "IDMAPADMEMBER",
+	    password => "loCalMemberPass",
+	    extra_options => $member_options,
+	    dc_server_ip => $dcvars->{SERVER_IP},
+	    dc_server_ipv6 => $dcvars->{SERVER_IPV6});
 
 	$ret or return undef;
 
@@ -891,10 +905,12 @@ sub setup_simpleserver
 	hide new files timeout = 5
 ";
 
-	my $vars = $self->provision($path, "WORKGROUP",
-				    "LOCALSHARE4",
-				    "local4pass",
-				    $simpleserver_options);
+	my $vars = $self->provision(
+	    prefix => $path,
+	    domain => "WORKGROUP",
+	    server => "LOCALSHARE4",
+	    password => "local4pass",
+	    extra_options => $simpleserver_options);
 
 	$vars or return undef;
 
@@ -1057,13 +1073,13 @@ sub setup_fileserver
 	read only = No
 ";
 
-	my $vars = $self->provision($path, "WORKGROUP",
-				    "FILESERVER",
-				    "fileserver",
-				    $fileserver_options,
-				    undef,
-				    undef,
-				    1);
+	my $vars = $self->provision(
+	    prefix => $path,
+	    domain => "WORKGROUP",
+	    server => "FILESERVER",
+	    password => "fileserver",
+	    extra_options => $fileserver_options,
+	    no_delete_prefix => 1);
 
 	$vars or return undef;
 
@@ -1141,10 +1157,12 @@ sub setup_ktest
         ntlm auth = disabled
 ";
 
-	my $ret = $self->provision($prefix, "KTEST",
-				   "LOCALKTEST6",
-				   "localktest6pass",
-				   $ktest_options);
+	my $ret = $self->provision(
+	    prefix => $prefix,
+	    domain => "KTEST",
+	    server => "LOCALKTEST6",
+	    password => "localktest6pass",
+	    extra_options => $ktest_options);
 
 	$ret or return undef;
 
@@ -1233,10 +1251,12 @@ map to guest = bad user
 ntlm auth = yes
 ";
 
-	my $vars = $self->provision($path, "WORKGROUP",
-				    "maptoguest",
-				    "maptoguestpass",
-				    $options);
+	my $vars = $self->provision(
+	    prefix => $path,
+	    domain => "WORKGROUP",
+	    server => "maptoguest",
+	    password => "maptoguestpass",
+	    extra_options => $options);
 
 	$vars or return undef;
 
@@ -1404,9 +1424,18 @@ sub createuser($$$$$)
 	}
 }
 
-sub provision($$$$$$$$$)
+sub provision($$)
 {
-	my ($self, $prefix, $domain, $server, $password, $extra_options, $dc_server_ip, $dc_server_ipv6, $no_delete_prefix) = @_;
+        my ($self, %args) = @_;
+
+	my $prefix = $args{prefix};
+	my $domain = $args{domain};
+	my $server = $args{server};
+	my $password = $args{password};
+	my $extra_options = $args{extra_options};
+	my $dc_server_ip = $args{dc_server_ip};
+	my $dc_server_ipv6 = $args{dc_server_ipv6};
+	my $no_delete_prefix= $args{no_delete_prefix};
 
 	##
 	## setup the various environment variables we need
