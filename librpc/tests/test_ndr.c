@@ -73,10 +73,44 @@ static void test_NDR_PULL_NEED_BYTES(void **state)
 	assert_int_equal(NDR_ERR_BUFSIZE, err);
 }
 
+/*
+ * Test NDR_PULL_ALIGN integer overflow handling.
+ */
+static enum ndr_err_code wrap_NDR_PULL_ALIGN(
+	struct ndr_pull *ndr,
+	uint32_t bytes) {
+
+	NDR_PULL_ALIGN(ndr, bytes);
+	return NDR_ERR_SUCCESS;
+}
+
+static void test_NDR_PULL_ALIGN(void **state)
+{
+	struct ndr_pull ndr = {0};
+	enum ndr_err_code err;
+
+	ndr.data_size = UINT32_MAX;
+	ndr.offset = UINT32_MAX -1;
+
+	/*
+	 * This will not cause an overflow
+	 */
+	err = wrap_NDR_PULL_ALIGN(&ndr, 2);
+	assert_int_equal(NDR_ERR_SUCCESS, err);
+
+	/*
+	 * This will cause an overflow
+	 * and (offset + n) will be less than data_size
+	 */
+	err = wrap_NDR_PULL_ALIGN(&ndr, 4);
+	assert_int_equal(NDR_ERR_BUFSIZE, err);
+}
+
 int main(int argc, const char **argv)
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_NDR_PULL_NEED_BYTES),
+		cmocka_unit_test(test_NDR_PULL_ALIGN),
 	};
 
 	cmocka_set_message_output(CM_OUTPUT_SUBUNIT);
