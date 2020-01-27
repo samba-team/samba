@@ -131,8 +131,9 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 
 		sockname = lp_ctdbd_socket();
 		if (!socket_exist(sockname)) {
-			DEBUG(1, ("ctdb socket does not exist - is ctdb not "
-				  "running?\n"));
+			DBG_WARNING("ctdb socket does %s not exist - "
+				    "is ctdb not running?\n",
+				    sockname);
 			return NULL;
 		}
 
