@@ -529,7 +529,7 @@ static bool test_handles_random_assoc(struct torture_context *torture)
 	 * And make sure it doesn't wrap.
 	 */
 	assoc_group_id = dcerpc_binding_get_assoc_group_id(p1->binding);
-	assoc_group_id = MIN(~assoc_group_id, UINT32_MAX - 3);
+	assoc_group_id = ~MIN(assoc_group_id, UINT32_MAX - 3);
 
 	torture_comment(torture, "connect samr pipe2 with assoc_group_id[0x%08X]- should fail\n", ++assoc_group_id);
 	status = torture_rpc_connection_transport(torture, &p2, &ndr_table_samr,
