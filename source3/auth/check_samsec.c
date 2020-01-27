@@ -290,7 +290,7 @@ static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 /**
  * Check whether the given password is one of the last two
  * password history entries. If so, the bad pwcount should
- * not be incremented even thought the actual password check
+ * not be incremented even though the actual password check
  * failed.
  */
 static bool need_to_increment_bad_pw_count(
