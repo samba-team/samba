@@ -1484,7 +1484,7 @@ sub provision($$)
 
 	my @dirs = ();
 
-	my $shrdir="$prefix_abs/share";
+	my $shrdir=$args{share_dir} // "$prefix_abs/share";
 	push(@dirs,$shrdir);
 
 	my $libdir="$prefix_abs/lib";
