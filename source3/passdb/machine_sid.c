@@ -65,11 +65,11 @@ static void generate_random_sid(struct dom_sid *sid)
 	int i;
 	uchar raw_sid_data[12];
 
-	ZERO_STRUCTP(sid);
+	*sid = (struct dom_sid) {
+		.sid_rev_num = 1,
+		.id_auth[5] = 5,
+	};
 
-	sid->sid_rev_num = 1;
-	sid->id_auth[5] = 5;
-	sid->num_auths = 0;
 	sid->sub_auths[sid->num_auths++] = 21;
 
 	generate_random_buffer(raw_sid_data, 12);
