@@ -353,9 +353,12 @@ _PUBLIC_ bool directory_create_or_exist(const char *dname,
 	old_umask = umask(0);
 	ret = mkdir(dname, dir_perms);
 	if (ret == -1 && errno != EEXIST) {
-		DBG_WARNING("mkdir failed on directory %s: %s\n",
+		int dbg_level = geteuid() == 0 ? DBGLVL_ERR : DBGLVL_NOTICE;
+
+		DBG_PREFIX(dbg_level,
+			   ("mkdir failed on directory %s: %s\n",
 			    dname,
-			    strerror(errno));
+			    strerror(errno)));
 		umask(old_umask);
 		return false;
 	}
