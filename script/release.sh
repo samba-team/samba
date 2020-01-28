@@ -193,26 +193,6 @@ verify_samba_stable() {
 
 	load_samba_stable_versions
 
-	test x"${product}" = x"samba-stable" && {
-		test -f "announce.${tagname}.quotation.txt" || {
-			echo ""
-			echo "announce.${tagname}.quotation.txt missing!"
-			echo ""
-			echo "Please create it and retry"
-			echo ""
-			echo "The content should look like this:"
-			echo "cat announce.${tagname}.quotation.txt"
-			echo '======================================================'
-			echo '                "Some text'
-			echo '                 from someone."'
-			echo ''
-			echo '                 The author'
-			echo '======================================================'
-			echo ""
-			return 1
-		}
-	}
-
 	test -n "${oldtagname}" || {
 		return 0
 	}
@@ -793,11 +773,6 @@ announcement_samba_stable() {
 		return 1
 	}
 
-	test -f "announce.${tagname}.quotation.txt" || {
-		echo "announce.${tagname}.quotation.txt missing!"
-		return 1
-	}
-
 	local release_url="${download_url}samba/stable/"
 	local patch_url="${download_url}samba/patches/"
 
@@ -840,7 +815,6 @@ announcement_samba_stable() {
 		local headlimit=$(expr ${top} - 1 )
 		local taillimit=$(expr ${headlimit} - \( ${skip} - 1 \))
 
-		cat "announce.${tagname}.quotation.txt"
 		echo ""
 		echo ""
 		echo "Release Announcements"
