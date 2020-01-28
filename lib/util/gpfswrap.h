@@ -34,7 +34,8 @@ int gpfswrap_putacl(const char *pathname, int flags, void *acl);
 int gpfswrap_get_realfilename_path(const char *pathname,
 				   char *filenamep,
 				   int *len);
-int gpfswrap_set_winattrs_path(char *pathname, int flags,
+int gpfswrap_set_winattrs_path(const char *pathname,
+			       int flags,
 			       struct gpfs_winattr *attrs);
 int gpfswrap_set_winattrs(int fd, int flags, struct gpfs_winattr *attrs);
 int gpfswrap_get_winattrs_path(char *pathname, struct gpfs_winattr *attrs);
