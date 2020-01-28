@@ -90,6 +90,20 @@
 		(smb_fname), \
 		(reflist), \
 		(count))
+#define SMB_VFS_READ_DFS_PATHAT(conn, mem_ctx, dirfsp, smb_fname, ppreflist, pcount) \
+	smb_vfs_call_read_dfs_pathat((conn)->vfs_handles, \
+		(mem_ctx), \
+		(dirfsp), \
+		(smb_fname), \
+		(ppreflist), \
+		(pcount))
+#define SMB_VFS_NEXT_READ_DFS_PATHAT(handle, mem_ctx, dirfsp, smb_fname, ppreflist, pcount) \
+        smb_vfs_call_read_dfs_pathat((handle)->next, \
+		(mem_ctx), \
+                (dirfsp), \
+                (smb_fname), \
+                (ppreflist), \
+                (pcount))
 
 /* Directory operations */
 #define SMB_VFS_OPENDIR(conn, smb_fname, mask, attr) \

@@ -1577,6 +1577,22 @@ NTSTATUS smb_vfs_call_create_dfs_pathat(struct vfs_handle_struct *handle,
 						referral_count);
 }
 
+NTSTATUS smb_vfs_call_read_dfs_pathat(struct vfs_handle_struct *handle,
+				TALLOC_CTX *mem_ctx,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				struct referral **ppreflist,
+				size_t *preferral_count)
+{
+	VFS_FIND(read_dfs_pathat);
+	return handle->fns->read_dfs_pathat_fn(handle,
+						mem_ctx,
+						dirfsp,
+						smb_fname,
+						ppreflist,
+						preferral_count);
+}
+
 DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 					const struct smb_filename *smb_fname,
 					const char *mask,

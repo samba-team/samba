@@ -106,6 +106,16 @@ NTSTATUS vfs_not_implemented_create_dfs_pathat(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
+NTSTATUS vfs_not_implemented_read_dfs_pathat(struct vfs_handle_struct *handle,
+				TALLOC_CTX *mem_ctx,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				struct referral **ppreflist,
+				size_t *preferral_count)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
 DIR *vfs_not_implemented_opendir(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			const char *mask,
@@ -1047,6 +1057,7 @@ static struct vfs_fn_pointers vfs_not_implemented_fns = {
 	.fs_capabilities_fn = vfs_not_implemented_fs_capabilities,
 	.get_dfs_referrals_fn = vfs_not_implemented_get_dfs_referrals,
 	.create_dfs_pathat_fn = vfs_not_implemented_create_dfs_pathat,
+	.read_dfs_pathat_fn = vfs_not_implemented_read_dfs_pathat,
 	.snap_check_path_fn = vfs_not_implemented_snap_check_path,
 	.snap_create_fn = vfs_not_implemented_snap_create,
 	.snap_delete_fn = vfs_not_implemented_snap_delete,

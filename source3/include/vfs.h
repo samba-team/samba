@@ -289,6 +289,7 @@
 /* Version 42 - Remove struct write_cache *wcp from files_struct */
 /* Version 42 - SMB_VFS_NTIMES() receives null times based on UTIMES_OMIT */
 /* Version 42 - Add SMB_VFS_CREATE_DFS_PATHAT() */
+/* Version 42 - Add SMB_VFS_READ_DFS_PATHAT() */
 
 #define SMB_VFS_INTERFACE_VERSION 42
 
@@ -716,6 +717,12 @@ struct vfs_fn_pointers {
 				const struct smb_filename *smb_fname,
 				const struct referral *reflist,
 				size_t referral_count);
+	NTSTATUS (*read_dfs_pathat_fn)(struct vfs_handle_struct *handle,
+				TALLOC_CTX *mem_ctx,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				struct referral **ppreflist,
+				size_t *preferral_count);
 
 	/* Directory operations */
 
@@ -1224,6 +1231,12 @@ NTSTATUS smb_vfs_call_create_dfs_pathat(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				const struct referral *reflist,
 				size_t referral_count);
+NTSTATUS smb_vfs_call_read_dfs_pathat(struct vfs_handle_struct *handle,
+				TALLOC_CTX *mem_ctx,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				struct referral **ppreflist,
+				size_t *preferral_count);
 DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			const char *mask,
@@ -1666,6 +1679,12 @@ NTSTATUS vfs_not_implemented_create_dfs_pathat(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				const struct referral *reflist,
 				size_t referral_count);
+NTSTATUS vfs_not_implemented_read_dfs_pathat(struct vfs_handle_struct *handle,
+				TALLOC_CTX *mem_ctx,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				struct referral **ppreflist,
+				size_t *preferral_count);
 DIR *vfs_not_implemented_opendir(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			const char *mask,
