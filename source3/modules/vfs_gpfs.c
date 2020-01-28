@@ -2310,8 +2310,7 @@ static int get_gpfs_quota(const char *pathname, int type, int id,
 {
 	int ret;
 
-	ret = gpfswrap_quotactl(discard_const_p(char, pathname),
-				GPFS_QCMD(Q_GETQUOTA, type), id, qi);
+	ret = gpfswrap_quotactl(pathname, GPFS_QCMD(Q_GETQUOTA, type), id, qi);
 
 	if (ret) {
 		if (errno == GPFS_E_NO_QUOTA_INST) {
