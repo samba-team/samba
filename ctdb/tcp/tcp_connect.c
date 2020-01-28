@@ -183,16 +183,14 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 	tnode->out_fd = socket(sock_out.sa.sa_family, SOCK_STREAM, IPPROTO_TCP);
 	if (tnode->out_fd == -1) {
 		DBG_ERR("Failed to create socket\n");
-		return;
+		goto failed;
 	}
 
 	ret = set_blocking(tnode->out_fd, false);
 	if (ret != 0) {
 		DBG_ERR("Failed to set socket non-blocking (%s)\n",
 			strerror(errno));
-		close(tnode->out_fd);
-		tnode->out_fd = -1;
-		return;
+		goto failed;
 	}
 
 	set_close_on_exec(tnode->out_fd);
@@ -224,32 +222,22 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 		sockout_size = sizeof(sock_out.ip6);
 		break;
 	default:
-		DEBUG(DEBUG_ERR, (__location__ " unknown family %u\n",
-			sock_in.sa.sa_family));
-		close(tnode->out_fd);
-		tnode->out_fd = -1;
-		return;
+		DBG_ERR("Unknown address family %u\n", sock_in.sa.sa_family);
+		/* Can't happen to due to address parsing restrictions */
+		goto failed;
 	}
 
 	ret = bind(tnode->out_fd, (struct sockaddr *)&sock_in, sockin_size);
 	if (ret == -1) {
 		DBG_ERR("Failed to bind socket (%s)\n", strerror(errno));
-		close(tnode->out_fd);
-		tnode->out_fd = -1;
-		return;
+		goto failed;
 	}
 
 	ret = connect(tnode->out_fd,
 		      (struct sockaddr *)&sock_out,
 		      sockout_size);
 	if (ret != 0 && errno != EINPROGRESS) {
-		ctdb_tcp_stop_connection(node);
-		tnode->connect_te = tevent_add_timer(ctdb->ev,
-						     tnode,
-						     timeval_current_ofs(1, 0),
-						     ctdb_tcp_node_connect,
-						     node);
-		return;
+		goto failed;
 	}
 
 	/* non-blocking connect - wait for write event */
@@ -263,6 +251,16 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 	/* don't give it long to connect - retry in one second. This ensures
 	   that we find a node is up quickly (tcp normally backs off a syn reply
 	   delay by quite a lot) */
+	tnode->connect_te = tevent_add_timer(ctdb->ev,
+					     tnode,
+					     timeval_current_ofs(1, 0),
+					     ctdb_tcp_node_connect,
+					     node);
+
+	return;
+
+failed:
+	ctdb_tcp_stop_connection(node);
 	tnode->connect_te = tevent_add_timer(ctdb->ev,
 					     tnode,
 					     timeval_current_ofs(1, 0),
