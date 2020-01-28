@@ -565,14 +565,14 @@ bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 	DBG_DEBUG("count=%zu\n", count);
 
 	if (count) {
-		reflist = *preflist = talloc_zero_array(ctx,
+		reflist = talloc_zero_array(ctx,
 				struct referral, count);
 		if(reflist == NULL) {
 			TALLOC_FREE(alt_path);
 			return false;
 		}
 	} else {
-		reflist = *preflist = NULL;
+		reflist = NULL;
 	}
 
 	for(i=0;i<count;i++) {
@@ -601,8 +601,12 @@ bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 			reflist[i].alternate_path);
 	}
 
-	*refcount = count;
-
+	if (preflist != NULL) {
+		*preflist = reflist;
+	}
+	if (refcount != NULL) {
+		*refcount = count;
+	}
 	TALLOC_FREE(alt_path);
 	return true;
 }
