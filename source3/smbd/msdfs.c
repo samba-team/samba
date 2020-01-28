@@ -524,7 +524,7 @@ static void shuffle_strlist(char **list, int count)
  **********************************************************************/
 
 static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
-				int snum,
+				bool shuffle_referrals,
 				const char *target,
 				struct referral **preflist,
 				size_t *refcount)
@@ -558,7 +558,7 @@ static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 	}
 
 	/* shuffle alternate paths */
-	if (lp_msdfs_shuffle_referrals(snum)) {
+	if (shuffle_referrals) {
 		shuffle_strlist(alt_path, count);
 	}
 
@@ -1100,7 +1100,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		}
 
 		if (!parse_msdfs_symlink(ctx,
-				snum,
+				lp_msdfs_shuffle_referrals(snum),
 				tmp,
 				&ref,
 				&refcount)) {
@@ -1175,7 +1175,7 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 
 	/* We know this is a valid dfs link. Parse the targetpath. */
 	if (!parse_msdfs_symlink(ctx,
-				snum,
+				lp_msdfs_shuffle_referrals(snum),
 				targetpath,
 				&jucn->referral_list,
 				&jucn->referral_count)) {
@@ -1770,7 +1770,7 @@ static int form_junctions(TALLOC_CTX *ctx,
 					conn,
 					smb_dname, &link_target)) {
 			if (parse_msdfs_symlink(ctx,
-					snum,
+					lp_msdfs_shuffle_referrals(snum),
 					link_target,
 					&jucn[cnt].referral_list,
 					&jucn[cnt].referral_count)) {
