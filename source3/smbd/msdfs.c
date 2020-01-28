@@ -538,17 +538,17 @@ bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 
 	temp = talloc_strdup(ctx, target);
 	if (!temp) {
-		return False;
+		return false;
 	}
 	prot = strtok_r(temp, ":", &saveptr);
 	if (!prot) {
 		DEBUG(0,("parse_msdfs_symlink: invalid path !\n"));
-		return False;
+		return false;
 	}
 
 	alt_path = talloc_array(ctx, char *, MAX_REFERRAL_COUNT);
 	if (!alt_path) {
-		return False;
+		return false;
 	}
 
 	/* parse out the alternate paths */
@@ -569,7 +569,7 @@ bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 				struct referral, count);
 		if(reflist == NULL) {
 			TALLOC_FREE(alt_path);
-			return False;
+			return false;
 		}
 	} else {
 		reflist = *preflist = NULL;
@@ -592,19 +592,19 @@ bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 				"\\%s",
 				p);
 		if (!reflist[i].alternate_path) {
-			return False;
+			return false;
 		}
 
 		reflist[i].proximity = 0;
 		reflist[i].ttl = REFERRAL_TTL;
-		DEBUG(10, ("parse_msdfs_symlink: Created alt path: %s\n",
-					reflist[i].alternate_path));
+		DBG_DEBUG("Created alt path: %s\n",
+			reflist[i].alternate_path);
 	}
 
 	*refcount = count;
 
 	TALLOC_FREE(alt_path);
-	return True;
+	return true;
 }
 
 /**********************************************************************
