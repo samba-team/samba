@@ -477,6 +477,11 @@ void reply_sendend(struct smb_request *req);
 
 /* The following definitions come from smbd/msdfs.c  */
 
+bool parse_msdfs_symlink(TALLOC_CTX *ctx,
+			bool shuffle_referrals,
+			const char *target,
+			struct referral **preflist,
+			size_t *refcount);
 bool is_msdfs_link(connection_struct *conn,
 		struct smb_filename *smb_fname);
 struct junction_map;

@@ -523,11 +523,11 @@ static void shuffle_strlist(char **list, int count)
  server we're referring to understands posix paths.
  **********************************************************************/
 
-static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
-				bool shuffle_referrals,
-				const char *target,
-				struct referral **preflist,
-				size_t *refcount)
+bool parse_msdfs_symlink(TALLOC_CTX *ctx,
+			bool shuffle_referrals,
+			const char *target,
+			struct referral **preflist,
+			size_t *refcount)
 {
 	char *temp = NULL;
 	char *prot;
