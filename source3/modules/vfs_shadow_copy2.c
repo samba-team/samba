@@ -2467,6 +2467,60 @@ static NTSTATUS shadow_copy2_create_dfs_pathat(struct vfs_handle_struct *handle,
 			referral_count);
 }
 
+static NTSTATUS shadow_copy2_read_dfs_pathat(struct vfs_handle_struct *handle,
+				TALLOC_CTX *mem_ctx,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				struct referral **ppreflist,
+				size_t *preferral_count)
+{
+	time_t timestamp = 0;
+	char *stripped = NULL;
+	struct smb_filename *conv = NULL;
+	NTSTATUS status;
+
+	if (!shadow_copy2_strip_snapshot(mem_ctx,
+					handle,
+					smb_fname->base_name,
+					&timestamp,
+					&stripped)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	if (timestamp == 0) {
+		return SMB_VFS_NEXT_READ_DFS_PATHAT(handle,
+					mem_ctx,
+					dirfsp,
+					smb_fname,
+					ppreflist,
+					preferral_count);
+	}
+
+	conv = cp_smb_filename(mem_ctx, smb_fname);
+	if (conv == NULL) {
+		TALLOC_FREE(stripped);
+		return NT_STATUS_NO_MEMORY;
+	}
+	conv->base_name = shadow_copy2_convert(conv,
+					handle,
+					stripped,
+					timestamp);
+	TALLOC_FREE(stripped);
+	if (conv->base_name == NULL) {
+		TALLOC_FREE(conv);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_READ_DFS_PATHAT(handle,
+				mem_ctx,
+				dirfsp,
+				conv,
+				ppreflist,
+				preferral_count);
+
+	TALLOC_FREE(conv);
+	return status;
+}
+
 static int shadow_copy2_get_real_filename(struct vfs_handle_struct *handle,
 					  const char *path,
 					  const char *name,
@@ -3149,6 +3203,7 @@ static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.disk_free_fn = shadow_copy2_disk_free,
 	.get_quota_fn = shadow_copy2_get_quota,
 	.create_dfs_pathat_fn = shadow_copy2_create_dfs_pathat,
+	.read_dfs_pathat_fn = shadow_copy2_read_dfs_pathat,
 	.renameat_fn = shadow_copy2_renameat,
 	.linkat_fn = shadow_copy2_linkat,
 	.symlinkat_fn = shadow_copy2_symlinkat,
