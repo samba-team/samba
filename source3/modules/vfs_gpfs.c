@@ -1325,8 +1325,9 @@ static int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	result = gpfswrap_putacl(discard_const_p(char, smb_fname->base_name),
-				 GPFS_PUTACL_STRUCT|GPFS_ACL_SAMBA, gpfs_acl);
+	result = gpfswrap_putacl(smb_fname->base_name,
+				 GPFS_PUTACL_STRUCT|GPFS_ACL_SAMBA,
+				 gpfs_acl);
 
 	SAFE_FREE(gpfs_acl);
 	return result;
