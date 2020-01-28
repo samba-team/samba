@@ -33,7 +33,7 @@ static int (*gpfs_set_winattrs_path_fn)(const char *pathname,
 					struct gpfs_winattr *attrs);
 static int (*gpfs_set_winattrs_fn)(int fd, int flags,
 				   struct gpfs_winattr *attrs);
-static int (*gpfs_get_winattrs_path_fn)(char *pathname,
+static int (*gpfs_get_winattrs_path_fn)(const char *pathname,
 					struct gpfs_winattr *attrs);
 static int (*gpfs_get_winattrs_fn)(int fd, struct gpfs_winattr *attrs);
 static int (*gpfs_ftruncate_fn)(int fd, gpfs_off64_t length);
@@ -160,7 +160,8 @@ int gpfswrap_set_winattrs(int fd, int flags, struct gpfs_winattr *attrs)
 	return gpfs_set_winattrs_fn(fd, flags, attrs);
 }
 
-int gpfswrap_get_winattrs_path(char *pathname, struct gpfs_winattr *attrs)
+int gpfswrap_get_winattrs_path(const char *pathname,
+			       struct gpfs_winattr *attrs)
 {
 	if (gpfs_get_winattrs_path_fn == NULL) {
 		errno = ENOSYS;
