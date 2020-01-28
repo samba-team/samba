@@ -1,4 +1,76 @@
                    ==============================
+                   Release Notes for Samba 4.11.6
+                          January 28, 2020
+		   ==============================
+
+
+This is the latest stable release of the Samba 4.11 release series.
+
+
+Changes since 4.11.5:
+---------------------
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14209: pygpo: Use correct method flags.
+
+o  David Disseldorp <ddiss@samba.org>
+   * BUG 14216: vfs_ceph_snapshots: Fix root relative path handling.
+
+o  Torsten Fohrer <torsten.fohrer@sbe.de>
+   * BUG 14209: Avoiding bad call flags with python 3.8, using METH_NOARGS
+     instead of zero.
+
+o  Fabrice Fontaine <fontaine.fabrice@gmail.com>
+   * BUG 14218: source4/utils/oLschema2ldif: Include stdint.h before cmocka.h.
+
+o  Björn Jacke <bjacke@samba.org>
+   * BUG 14122: docs-xml/winbindnssinfo: Clarify interaction with idmap_ad etc.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14251: smbd: Fix the build with clang.
+
+o  Gary Lockyer <gary@catalyst.net.nz>
+   * BUG 14199: upgradedns: Ensure lmdb lock files linked.
+
+o  Anoop C S <anoopcs@redhat.com>
+   * BUG 14182: s3: VFS: glusterfs: Reset nlinks for symlink entries during
+     readdir.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14101: smbc_stat() doesn't return the correct st_mode and also the
+     uid/gid is not filled (SMBv1) file.
+   * BUG 14219: librpc: Fix string length checking in
+     ndr_pull_charset_to_null().
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14227: ctdb-scripts: Strip square brackets when gathering connection
+     info.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.11.5
                           January 21, 2020
 		   ==============================
@@ -67,8 +139,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.11.4
