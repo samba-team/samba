@@ -10,6 +10,7 @@ use target::Samba3;
 use target::Samba4;
 use POSIX;
 use Cwd qw(abs_path);
+use IO::Poll qw(POLLIN);
 
 sub new($$$$$) {
 	my ($classname, $bindir, $srcdir, $server_maxtime) = @_;
@@ -677,7 +678,9 @@ sub fork_and_exec
 				print("Skip $daemon_ctx->{NAME} received signal $signame");
 				exit 0;
 			};
-			sleep($self->{server_maxtime});
+			my $poll = IO::Poll->new();
+			$poll->mask($STDIN_READER, POLLIN);
+			$poll->poll($self->{server_maxtime});
 			exit 0;
 		}
 
