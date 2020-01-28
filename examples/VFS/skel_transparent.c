@@ -113,6 +113,21 @@ static NTSTATUS skel_create_dfs_pathat(struct vfs_handle_struct *handle,
 					referral_count);
 }
 
+static NTSTATUS skel_read_dfs_pathat(struct vfs_handle_struct *handle,
+				TALLOC_CTX *mem_ctx,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				struct referral **ppreflist,
+				size_t *preferral_count)
+{
+	return SMB_VFS_NEXT_READ_DFS_PATHAT(handle,
+					mem_ctx,
+					dirfsp,
+					smb_fname,
+					ppreflist,
+					preferral_count);
+}
+
 static DIR *skel_opendir(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			const char *mask,
@@ -1344,6 +1359,7 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 	.fs_capabilities_fn = skel_fs_capabilities,
 	.get_dfs_referrals_fn = skel_get_dfs_referrals,
 	.create_dfs_pathat_fn = skel_create_dfs_pathat,
+	.read_dfs_pathat_fn = skel_read_dfs_pathat,
 	.snap_check_path_fn = skel_snap_check_path,
 	.snap_create_fn = skel_snap_create,
 	.snap_delete_fn = skel_snap_delete,
