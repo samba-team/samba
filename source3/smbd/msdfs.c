@@ -526,14 +526,14 @@ static void shuffle_strlist(char **list, int count)
 bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 			bool shuffle_referrals,
 			const char *target,
-			struct referral **preflist,
-			size_t *refcount)
+			struct referral **ppreflist,
+			size_t *prefcount)
 {
 	char *temp = NULL;
 	char *prot;
 	char **alt_path = NULL;
 	size_t count = 0, i;
-	struct referral *reflist;
+	struct referral *reflist = NULL;
 	char *saveptr;
 
 	temp = talloc_strdup(ctx, target);
@@ -601,11 +601,11 @@ bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 			reflist[i].alternate_path);
 	}
 
-	if (preflist != NULL) {
-		*preflist = reflist;
+	if (ppreflist != NULL) {
+		*ppreflist = reflist;
 	}
-	if (refcount != NULL) {
-		*refcount = count;
+	if (prefcount != NULL) {
+		*prefcount = count;
 	}
 	TALLOC_FREE(alt_path);
 	return true;
