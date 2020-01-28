@@ -1099,7 +1099,11 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if (!parse_msdfs_symlink(ctx, snum, tmp, &ref, &refcount)) {
+		if (!parse_msdfs_symlink(ctx,
+				snum,
+				tmp,
+				&ref,
+				&refcount)) {
 			TALLOC_FREE(frame);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
@@ -1170,7 +1174,9 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	}
 
 	/* We know this is a valid dfs link. Parse the targetpath. */
-	if (!parse_msdfs_symlink(ctx, snum, targetpath,
+	if (!parse_msdfs_symlink(ctx,
+				snum,
+				targetpath,
 				&jucn->referral_list,
 				&jucn->referral_count)) {
 		DEBUG(3,("get_referred_path: failed to parse symlink "
@@ -1763,7 +1769,8 @@ static int form_junctions(TALLOC_CTX *ctx,
 		if (is_msdfs_link_internal(ctx,
 					conn,
 					smb_dname, &link_target)) {
-			if (parse_msdfs_symlink(ctx, snum,
+			if (parse_msdfs_symlink(ctx,
+					snum,
 					link_target,
 					&jucn[cnt].referral_list,
 					&jucn[cnt].referral_count)) {
