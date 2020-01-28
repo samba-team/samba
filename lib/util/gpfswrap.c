@@ -23,7 +23,7 @@
 
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
 static int (*gpfs_set_lease_fn)(int fd, unsigned int type);
-static int (*gpfs_getacl_fn)(char *pathname, int flags, void *acl);
+static int (*gpfs_getacl_fn)(const char *pathname, int flags, void *acl);
 static int (*gpfs_putacl_fn)(char *pathname, int flags, void *acl);
 static int (*gpfs_get_realfilename_path_fn)(char *pathname, char *filenamep,
 					    int *len);
@@ -104,7 +104,7 @@ int gpfswrap_set_lease(int fd, unsigned int type)
 	return gpfs_set_lease_fn(fd, type);
 }
 
-int gpfswrap_getacl(char *pathname, int flags, void *acl)
+int gpfswrap_getacl(const char *pathname, int flags, void *acl)
 {
 	if (gpfs_getacl_fn == NULL) {
 		errno = ENOSYS;
