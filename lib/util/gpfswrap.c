@@ -25,7 +25,8 @@ static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
 static int (*gpfs_set_lease_fn)(int fd, unsigned int type);
 static int (*gpfs_getacl_fn)(const char *pathname, int flags, void *acl);
 static int (*gpfs_putacl_fn)(const char *pathname, int flags, void *acl);
-static int (*gpfs_get_realfilename_path_fn)(char *pathname, char *filenamep,
+static int (*gpfs_get_realfilename_path_fn)(const char *pathname,
+					    char *filenamep,
 					    int *len);
 static int (*gpfs_set_winattrs_path_fn)(char *pathname, int flags,
 					struct gpfs_winattr *attrs);
@@ -124,7 +125,9 @@ int gpfswrap_putacl(const char *pathname, int flags, void *acl)
 	return gpfs_putacl_fn(pathname, flags, acl);
 }
 
-int gpfswrap_get_realfilename_path(char *pathname, char *filenamep, int *len)
+int gpfswrap_get_realfilename_path(const char *pathname,
+				   char *filenamep,
+				   int *len)
 {
 	if (gpfs_get_realfilename_path_fn == NULL) {
 		errno = ENOSYS;
