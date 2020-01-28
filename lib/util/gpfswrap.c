@@ -40,7 +40,10 @@ static int (*gpfs_ftruncate_fn)(int fd, gpfs_off64_t length);
 static int (*gpfs_lib_init_fn)(int flags);
 static int (*gpfs_set_times_path_fn)(char *pathname, int flags,
 				     gpfs_timestruc_t times[4]);
-static int (*gpfs_quotactl_fn)(char *pathname, int cmd, int id, void *bufp);
+static int (*gpfs_quotactl_fn)(const char *pathname,
+			       int cmd,
+			       int id,
+			       void *bufp);
 static int (*gpfs_init_trace_fn)(void);
 static int (*gpfs_query_trace_fn)(void);
 static void (*gpfs_add_trace_fn)(int level, const char *msg);
@@ -212,7 +215,7 @@ int gpfswrap_set_times_path(char *pathname, int flags,
 	return gpfs_set_times_path_fn(pathname, flags, times);
 }
 
-int gpfswrap_quotactl(char *pathname, int cmd, int id, void *bufp)
+int gpfswrap_quotactl(const char *pathname, int cmd, int id, void *bufp)
 {
 	if (gpfs_quotactl_fn == NULL) {
 		errno = ENOSYS;

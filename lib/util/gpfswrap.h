@@ -45,7 +45,7 @@ int gpfswrap_ftruncate(int fd, gpfs_off64_t length);
 int gpfswrap_lib_init(int flags);
 int gpfswrap_set_times_path(char *pathname, int flags,
 			    gpfs_timestruc_t times[4]);
-int gpfswrap_quotactl(char *pathname, int cmd, int id, void *bufp);
+int gpfswrap_quotactl(const char *pathname, int cmd, int id, void *bufp);
 int gpfswrap_init_trace(void);
 int gpfswrap_query_trace(void);
 void gpfswrap_add_trace(int level, const char *msg);
