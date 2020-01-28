@@ -1331,6 +1331,105 @@ static NTSTATUS cephwrap_create_dfs_pathat(struct vfs_handle_struct *handle,
 	return status;
 }
 
+/*
+ * Read and return the contents of a DFS redirect given a
+ * pathname. A caller can pass in NULL for ppreflist and
+ * preferral_count but still determine if this was a
+ * DFS redirect point by getting NT_STATUS_OK back
+ * without incurring the overhead of reading and parsing
+ * the referral contents.
+ */
+
+static NTSTATUS cephwrap_read_dfs_pathat(struct vfs_handle_struct *handle,
+				TALLOC_CTX *mem_ctx,
+				struct files_struct *dirfsp,
+				const struct smb_filename *smb_fname,
+				struct referral **ppreflist,
+				size_t *preferral_count)
+{
+	NTSTATUS status = NT_STATUS_NO_MEMORY;
+	size_t bufsize;
+	char *link_target = NULL;
+	int referral_len;
+	bool ok;
+#if defined(HAVE_BROKEN_READLINK)
+	char link_target_buf[PATH_MAX];
+#else
+	char link_target_buf[7];
+#endif
+
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	if (ppreflist == NULL && preferral_count == NULL) {
+		/*
+		 * We're only checking if this is a DFS
+		 * redirect. We don't need to return data.
+		 */
+		bufsize = sizeof(link_target_buf);
+		link_target = link_target_buf;
+	} else {
+		bufsize = PATH_MAX;
+		link_target = talloc_array(mem_ctx, char, bufsize);
+		if (!link_target) {
+			goto err;
+		}
+	}
+
+        referral_len = ceph_readlink(handle->data,
+                                smb_fname->base_name,
+                                link_target,
+                                bufsize - 1);
+        if (referral_len < 0) {
+		/* ceph errors are -errno. */
+		if (-referral_len == EINVAL) {
+			DBG_INFO("%s is not a link.\n",
+				smb_fname->base_name);
+			status = NT_STATUS_OBJECT_TYPE_MISMATCH;
+		} else {
+	                status = map_nt_error_from_unix(-referral_len);
+			DBG_ERR("Error reading "
+				"msdfs link %s: %s\n",
+				smb_fname->base_name,
+			strerror(errno));
+		}
+                goto err;
+        }
+        link_target[referral_len] = '\0';
+
+        DBG_INFO("%s -> %s\n",
+                        smb_fname->base_name,
+                        link_target);
+
+        if (!strnequal(link_target, "msdfs:", 6)) {
+                status = NT_STATUS_OBJECT_TYPE_MISMATCH;
+                goto err;
+        }
+
+        if (ppreflist == NULL && preferral_count == NULL) {
+                /* Early return for checking if this is a DFS link. */
+                return NT_STATUS_OK;
+        }
+
+        ok = parse_msdfs_symlink(mem_ctx,
+                        lp_msdfs_shuffle_referrals(SNUM(handle->conn)),
+                        link_target,
+                        ppreflist,
+                        preferral_count);
+
+        if (ok) {
+                status = NT_STATUS_OK;
+        } else {
+                status = NT_STATUS_NO_MEMORY;
+        }
+
+  err:
+
+        if (link_target != link_target_buf) {
+                TALLOC_FREE(link_target);
+        }
+        return status;
+}
+
 static struct vfs_fn_pointers ceph_fns = {
 	/* Disk operations */
 
@@ -1356,6 +1455,7 @@ static struct vfs_fn_pointers ceph_fns = {
 	/* File operations */
 
 	.create_dfs_pathat_fn = cephwrap_create_dfs_pathat,
+	.read_dfs_pathat_fn = cephwrap_read_dfs_pathat,
 	.open_fn = cephwrap_open,
 	.close_fn = cephwrap_close,
 	.pread_fn = cephwrap_pread,
