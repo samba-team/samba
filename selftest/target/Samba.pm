@@ -664,6 +664,11 @@ sub fork_and_exec
 		set_env_for_process($daemon_ctx->{NAME}, $env_vars,
 				    $daemon_ctx->{ENV_VARS});
 
+		# we close the child's write-end of the pipe and redirect the read-end
+		# to its stdin. That way the daemon will receive an EOF on stdin when
+		# parent selftest process closes its write-end.
+		close($env_vars->{STDIN_PIPE});
+
 		# not all s3 daemons run in all testenvs (e.g. fileserver doesn't
 		# run winbindd). In which case, the child process just sleeps
 		if (defined($daemon_ctx->{SKIP_DAEMON})) {
@@ -678,10 +683,6 @@ sub fork_and_exec
 
 		$ENV{MAKE_TEST_BINARY} = $daemon_ctx->{BINARY_PATH};
 
-		# we close the child's write-end of the pipe and redirect the read-end
-		# to its stdin. That way the daemon will receive an EOF on stdin when
-		# parent selftest process closes its write-end.
-		close($env_vars->{STDIN_PIPE});
 		open STDIN, ">&", $STDIN_READER or die "can't dup STDIN_READER to STDIN: $!";
 
 		# if using kernel namespaces, prepend the command so the process runs in
