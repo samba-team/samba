@@ -2365,6 +2365,45 @@ static NTSTATUS catia_set_dos_attributes(struct vfs_handle_struct *handle,
 	return status;
 }
 
+static NTSTATUS catia_create_dfs_pathat(struct vfs_handle_struct *handle,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			const struct referral *reflist,
+			size_t referral_count)
+{
+	char *mapped_name = NULL;
+	const char *path = smb_fname->base_name;
+	struct smb_filename *mapped_smb_fname = NULL;
+	NTSTATUS status;
+
+	status = catia_string_replace_allocate(handle->conn,
+					path,
+					&mapped_name,
+					vfs_translate_to_unix);
+	if (!NT_STATUS_IS_OK(status)) {
+		errno = map_errno_from_nt_status(status);
+		return status;
+	}
+	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
+					mapped_name,
+					NULL,
+					&smb_fname->st,
+					smb_fname->flags);
+	if (mapped_smb_fname == NULL) {
+		TALLOC_FREE(mapped_name);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_CREATE_DFS_PATHAT(handle,
+					dirfsp,
+					mapped_smb_fname,
+					reflist,
+					referral_count);
+	TALLOC_FREE(mapped_name);
+	TALLOC_FREE(mapped_smb_fname);
+	return status;
+}
+
 static struct vfs_fn_pointers vfs_catia_fns = {
 	.connect_fn = catia_connect,
 
@@ -2415,6 +2454,7 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 	.fget_dos_attributes_fn = catia_fget_dos_attributes,
 	.get_compression_fn = catia_get_compression,
 	.set_compression_fn = catia_set_compression,
+	.create_dfs_pathat_fn = catia_create_dfs_pathat,
 
 	/* NT ACL operations. */
 	.get_nt_acl_fn = catia_get_nt_acl,
