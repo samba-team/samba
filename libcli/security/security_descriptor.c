@@ -680,7 +680,7 @@ struct security_ace *security_ace_create(TALLOC_CTX *mem_ctx,
 *******************************************************************/
 bool security_descriptor_with_ms_nfs(const struct security_descriptor *psd)
 {
-	int i;
+	uint32_t i;
 
 	if (psd->dacl == NULL) {
 		return false;
