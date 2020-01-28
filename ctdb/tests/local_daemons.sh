@@ -103,7 +103,7 @@ setup_socket_wrapper ()
 		die "$0 setup: Unable to find ${_socket_wrapper_so}"
 	fi
 
-	# Find absoluate path if only relative is given
+	# Find absolute path if only relative is given
 	case "$_socket_wrapper_so" in
 	/*) : ;;
 	*) _socket_wrapper_so="${PWD}/${_socket_wrapper_so}" ;;
