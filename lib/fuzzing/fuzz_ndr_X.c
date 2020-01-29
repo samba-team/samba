@@ -262,6 +262,7 @@ int LLVMFuzzerTestOneInput(uint8_t *data, size_t size) {
 		memset(st, '\0', sizeof(st));
 
 		ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
+		ndr_pull->global_max_recursion = 128;
 
 		if (type == TYPE_OUT) {
 			status = pull_chunks(ndr_pull,
