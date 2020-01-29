@@ -394,11 +394,8 @@ int main(int argc, const char *argv[])
 		fast_start = true;
 	}
 
-	/* Don't fork when running in test mode */
-	interactive = interactive || test_mode != NULL;
-
 	/* start the protocol running (as a child) */
-	return ctdb_start_daemon(ctdb, !interactive);
+	return ctdb_start_daemon(ctdb, interactive, test_mode != NULL);
 
 fail:
 	talloc_free(ctdb);

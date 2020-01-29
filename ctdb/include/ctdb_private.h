@@ -556,7 +556,9 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb,
 void daemon_tunnel_handler(uint64_t tunnel_id, TDB_DATA data,
 			   void *private_data);
 
-int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork);
+int ctdb_start_daemon(struct ctdb_context *ctdb,
+		      bool interactive,
+		      bool test_mode_enabled);
 
 struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
 						 TALLOC_CTX *mem_ctx,

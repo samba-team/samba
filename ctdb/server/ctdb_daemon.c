@@ -1442,10 +1442,13 @@ static int setup_stdin_handler(struct ctdb_context *ctdb)
 /*
   start the protocol going as a daemon
 */
-int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
+int ctdb_start_daemon(struct ctdb_context *ctdb,
+		      bool interactive,
+		      bool test_mode_enabled)
 {
 	int res, ret = -1;
 	struct tevent_fd *fde;
+	bool do_fork = !(interactive || test_mode_enabled);
 
 	become_daemon(do_fork, !do_fork, false);
 
