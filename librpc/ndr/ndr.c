@@ -1950,6 +1950,8 @@ static const struct {
 	{ NDR_ERR_UNREAD_BYTES, "Unread Bytes" },
 	{ NDR_ERR_NDR64, "NDR64 assertion error" },
 	{ NDR_ERR_INCOMPLETE_BUFFER, "Incomplete Buffer" },
+	{ NDR_ERR_MAX_RECURSION_EXCEEDED, "Maximum Recursion Exceeded" },
+	{ NDR_ERR_UNDERFLOW, "Underflow" },
 	{ 0, NULL }
 };
 

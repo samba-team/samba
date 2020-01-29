@@ -79,6 +79,14 @@ struct ndr_pull {
 	/* this is used to ensure we generate unique reference IDs
 	   between request and reply */
 	uint32_t ptr_count;
+	uint32_t recursion_depth;
+	/*
+	 * The global maximum depth for recursion. When set it overrides the
+	 * value supplied by the max_recursion idl attribute.  This is needed
+	 * for fuzzing as ASAN uses a low threshold for stack depth to check
+	 * for stack overflow.
+	 */
+	uint32_t global_max_recursion;
 };
 
 /* structure passed to functions that generate NDR formatted data */
@@ -249,7 +257,9 @@ enum ndr_err_code {
 	NDR_ERR_UNREAD_BYTES,
 	NDR_ERR_NDR64,
 	NDR_ERR_FLAGS,
-	NDR_ERR_INCOMPLETE_BUFFER
+	NDR_ERR_INCOMPLETE_BUFFER,
+	NDR_ERR_MAX_RECURSION_EXCEEDED,
+	NDR_ERR_UNDERFLOW
 };
 
 #define NDR_ERR_CODE_IS_SUCCESS(x) (x == NDR_ERR_SUCCESS)
@@ -356,6 +366,31 @@ enum ndr_compression_alg {
 		while (_pad--) NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, 0)); \
 	} \
 } while(0)
+
+#define NDR_RECURSION_CHECK(ndr, d) do { \
+	uint32_t _ndr_min_ = (d); \
+	if (ndr->global_max_recursion &&  ndr->global_max_recursion < (d)) { \
+		_ndr_min_ = ndr->global_max_recursion; \
+	} \
+	ndr->recursion_depth++; \
+	if (unlikely(ndr->recursion_depth > _ndr_min_)) { \
+		return ndr_pull_error( \
+			ndr, \
+			NDR_ERR_MAX_RECURSION_EXCEEDED, \
+			"Depth of recursion exceeds (%u)", \
+			(unsigned) d); \
+	} \
+} while (0)
+
+#define NDR_RECURSION_UNWIND(ndr) do { \
+	if (unlikely(ndr->recursion_depth == 0)) { \
+		return ndr_pull_error( \
+			ndr, \
+			NDR_ERR_UNDERFLOW, \
+			"ndr_pull.recursion_depth is 0"); \
+	} \
+	ndr->recursion_depth--; \
+} while (0)
 
 /* these are used to make the error checking on each element in libndr
    less tedious, hopefully making the code more readable */

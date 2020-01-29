@@ -690,6 +690,15 @@ bld.SAMBA_SUBSYSTEM('NDR_FSRVP_STATE',
 #
 # Cmocka tests
 #
+
+bld.SAMBA_BINARY('test_ndr_macros',
+                 source='tests/test_ndr_macros.c',
+                 deps='''
+                      cmocka
+                      ndr
+                      ''',
+                 for_selftest=True)
+
 bld.SAMBA_BINARY('test_ndr_string',
                  source='tests/test_ndr_string.c',
                  deps='''

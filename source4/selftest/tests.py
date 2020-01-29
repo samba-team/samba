@@ -1346,6 +1346,8 @@ plantestsuite("librpc.ndr.ndr_string", "none",
               [os.path.join(bindir(), "test_ndr_string")])
 plantestsuite("librpc.ndr.ndr", "none",
               [os.path.join(bindir(), "test_ndr")])
+plantestsuite("librpc.ndr.ndr_macros", "none",
+              [os.path.join(bindir(), "test_ndr_macros")])
 
 # process restart and limit tests, these break the environment so need to run
 # in their own specific environment
