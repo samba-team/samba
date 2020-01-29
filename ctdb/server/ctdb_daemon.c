@@ -1439,6 +1439,22 @@ static int setup_stdin_handler(struct ctdb_context *ctdb)
 	return 0;
 }
 
+static void fork_only(void)
+{
+	pid_t pid;
+
+	pid = fork();
+	if (pid == -1) {
+		D_ERR("Fork failed (errno=%d)\n", errno);
+		exit(1);
+	}
+
+	if (pid != 0) {
+		/* Parent simply exits... */
+		exit(0);
+	}
+}
+
 /*
   start the protocol going as a daemon
 */
@@ -1448,9 +1464,17 @@ int ctdb_start_daemon(struct ctdb_context *ctdb,
 {
 	int res, ret = -1;
 	struct tevent_fd *fde;
-	bool do_fork = !(interactive || test_mode_enabled);
 
-	become_daemon(do_fork, !do_fork, false);
+	/* Fork if not interactive */
+	if (!interactive) {
+		if (test_mode_enabled) {
+			/* Keep stdin open */
+			fork_only();
+		} else {
+			/* Fork, close stdin, start a session */
+			become_daemon(true, false, false);
+		}
+	}
 
 	ignore_signal(SIGPIPE);
 	ignore_signal(SIGUSR1);
