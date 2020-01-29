@@ -1452,7 +1452,7 @@ interface drsuapi
 	/* list of network names of the DCs
 	 * to which the referral is directed */
 	typedef struct  {
-		drsuapi_DsaAddressListItem_V1 *next;
+		[max_recursion(1024)] drsuapi_DsaAddressListItem_V1 *next;
 		lsa_String *address;
 	} drsuapi_DsaAddressListItem_V1;
 
