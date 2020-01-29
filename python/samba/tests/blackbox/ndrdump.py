@@ -301,6 +301,18 @@ dump OK
         # convert expected to bytes for python 3
         self.assertEqual(actual, expected.encode('utf-8'))
 
+    def test_ndrdump_fuzzed_drsuapi_DsaAddressListItem_V1(self):
+        expected = "Maximum Recursion Exceeded"
+        try:
+            self.check_output(
+                "ndrdump drsuapi 17 out --base64-input %s" %
+                self.data_path(
+                    "fuzzed_drsuapi_DsaAddressListItem_V1-in.b64.txt"))
+            self.fail("Input should have been rejected with %s" % expected)
+        except BlackboxProcessError as e:
+            if expected not in str(e):
+                self.fail(e)
+
     def test_ndrdump_fuzzed_drsuapi_DsReplicaAttribute(self):
         expected = open(self.data_path("fuzzed_drsuapi_DsReplicaAttribute.txt")).read()
         try:
