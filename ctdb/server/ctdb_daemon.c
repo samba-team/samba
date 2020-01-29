@@ -1497,12 +1497,12 @@ int ctdb_start_daemon(struct ctdb_context *ctdb,
 		exit(1);
 	}
 
-	if (do_fork) {
+	if (!interactive) {
 		ctdb_set_child_logging(ctdb);
 	}
 
 	/* Exit if stdin is closed */
-	if (!do_fork) {
+	if (test_mode_enabled) {
 		ret = setup_stdin_handler(ctdb);
 		if (ret != 0) {
 			DBG_ERR("Failed to setup stdin handler\n");
