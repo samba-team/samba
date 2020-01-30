@@ -133,7 +133,16 @@ static int oc_auto_normalise(struct ldb_context *ldb, const struct dsdb_attribut
 	for (i=0; i<el->num_values; i++) {
 		struct ldb_val v;
 		int ret;
-		ret = attr->ldb_schema_attribute->syntax->canonicalise_fn(ldb, el->values, &el->values[i], &v);
+		/*
+		 * We use msg->elements (owned by this module due to
+		 * ldb_msg_copy_shallow()) as a memory context and
+		 * then steal from there to the right spot if we don't
+		 * free it.
+		 */
+		ret = attr->ldb_schema_attribute->syntax->canonicalise_fn(ldb,
+									  msg->elements,
+									  &el->values[i],
+									  &v);
 		if (ret != LDB_SUCCESS) {
 			return ret;
 		}
@@ -156,6 +165,12 @@ static int oc_auto_normalise(struct ldb_context *ldb, const struct dsdb_attribut
 		}
 
 		el->values[i] = v;
+
+		/*
+		 * By now el->values is a talloc pointer under
+		 * msg->elements and may now be used
+		 */
+		talloc_steal(el->values, v.data);
 	}
 	return LDB_SUCCESS;
 }
