@@ -305,7 +305,7 @@ local_daemons_ssh ()
 	fi
 
 	if $_close_stdin ; then
-		exec sh -c "$*" <&-
+		exec sh -c "$*" </dev/null
 	else
 		exec sh -c "$*"
 	fi
