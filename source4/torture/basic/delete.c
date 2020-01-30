@@ -1865,6 +1865,10 @@ static bool deltest20(struct torture_context *tctx, struct smbcli_state *cli1, s
 	NTSTATUS status;
 	int ret;
 
+	if (geteuid() == 0) {
+		torture_skip(tctx, "This test doesn't work as user root.");
+	}
+
 	del_clean_area(cli1, cli2);
 
 	/* Test 20 -- non-empty directory hardest to get right... */
