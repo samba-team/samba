@@ -1387,6 +1387,7 @@ sub check_or_start($$) {
 	my $nmbd = $args{nmbd} // "no";
 	my $winbindd = $args{winbindd} // "no";
 	my $smbd = $args{smbd} // "no";
+	my $child_cleanup = $args{child_cleanup};
 
 	my $STDIN_READER;
 
@@ -1415,7 +1416,8 @@ sub check_or_start($$) {
 	if ($nmbd ne "yes") {
 		$daemon_ctx->{SKIP_DAEMON} = 1;
 	}
-	my $pid = Samba::fork_and_exec($self, $env_vars, $daemon_ctx, $STDIN_READER);
+	my $pid = Samba::fork_and_exec(
+	    $self, $env_vars, $daemon_ctx, $STDIN_READER, $child_cleanup);
 
 	$env_vars->{NMBD_TL_PID} = $pid;
 	write_pid($env_vars, "nmbd", $pid);
@@ -1439,7 +1441,9 @@ sub check_or_start($$) {
 	if ($winbindd ne "yes") {
 		$daemon_ctx->{SKIP_DAEMON} = 1;
 	}
-	$pid = Samba::fork_and_exec($self, $env_vars, $daemon_ctx, $STDIN_READER);
+
+	$pid = Samba::fork_and_exec(
+	    $self, $env_vars, $daemon_ctx, $STDIN_READER, $child_cleanup);
 
 	$env_vars->{WINBINDD_TL_PID} = $pid;
 	write_pid($env_vars, "winbindd", $pid);
@@ -1461,7 +1465,8 @@ sub check_or_start($$) {
 		$daemon_ctx->{SKIP_DAEMON} = 1;
 	}
 
-	$pid = Samba::fork_and_exec($self, $env_vars, $daemon_ctx, $STDIN_READER);
+	$pid = Samba::fork_and_exec(
+	    $self, $env_vars, $daemon_ctx, $STDIN_READER, $child_cleanup);
 
 	$env_vars->{SMBD_TL_PID} = $pid;
 	write_pid($env_vars, "smbd", $pid);
