@@ -230,7 +230,11 @@ sub setup_nt4_dc
 
 	$vars or return undef;
 
-	if (not $self->check_or_start($vars, "yes", "yes", "yes")) {
+	if (not $self->check_or_start(
+		env_vars => $vars,
+		nmbd => "yes",
+		winbindd => "yes",
+		smbd => "yes")) {
 	       return undef;
 	}
 
@@ -281,7 +285,11 @@ sub setup_nt4_dc_schannel
 
 	$vars or return undef;
 
-	if (not $self->check_or_start($vars, "yes", "yes", "yes")) {
+	if (not $self->check_or_start(
+		env_vars => $vars,
+		nmbd => "yes",
+		winbindd => "yes",
+		smbd => "yes")) {
 	       return undef;
 	}
 
@@ -362,7 +370,11 @@ sub setup_nt4_member
 	    return undef;
 	}
 
-	if (not $self->check_or_start($ret, "yes", "yes", "yes")) {
+	if (not $self->check_or_start(
+		env_vars => $ret,
+		nmbd => "yes",
+		winbindd => "yes",
+		smbd => "yes")) {
 	       return undef;
 	}
 
@@ -495,7 +507,11 @@ sub setup_ad_member
 	# access the share for tests.
 	chmod 0777, "$prefix/share";
 
-	if (not $self->check_or_start($ret, "yes", "yes", "yes")) {
+	if (not $self->check_or_start(
+		env_vars => $ret,
+		nmbd => "yes",
+		winbindd => "yes",
+		smbd => "yes")) {
 		return undef;
 	}
 
@@ -614,7 +630,11 @@ sub setup_ad_member_rfc2307
 	# access the share for tests.
 	chmod 0777, "$prefix/share";
 
-	if (not $self->check_or_start($ret, "yes", "yes", "yes")) {
+	if (not $self->check_or_start(
+		env_vars => $ret,
+		nmbd => "yes",
+		winbindd => "yes",
+		smbd => "yes")) {
 		return undef;
 	}
 
@@ -708,7 +728,11 @@ sub setup_ad_member_idmap_rid
 	# access the share for tests.
 	chmod 0777, "$prefix/share";
 
-	if (not $self->check_or_start($ret, "yes", "yes", "yes")) {
+	if (not $self->check_or_start(
+		env_vars => $ret,
+		nmbd => "yes",
+		winbindd => "yes",
+		smbd => "yes")) {
 		return undef;
 	}
 
@@ -801,7 +825,11 @@ sub setup_ad_member_idmap_ad
 	# access the share for tests.
 	chmod 0777, "$prefix/share";
 
-	if (not $self->check_or_start($ret, "yes", "yes", "yes")) {
+	if (not $self->check_or_start(
+		env_vars => $ret,
+		nmbd => "yes",
+		winbindd => "yes",
+		smbd => "yes")) {
 		return undef;
 	}
 
@@ -918,7 +946,10 @@ sub setup_simpleserver
 
 	$vars or return undef;
 
-	if (not $self->check_or_start($vars, "yes", "no", "yes")) {
+	if (not $self->check_or_start(
+		env_vars => $vars,
+		nmbd => "yes",
+		smbd => "yes")) {
 	       return undef;
 	}
 
@@ -1104,7 +1135,10 @@ sub setup_fileserver
 
 	$vars or return undef;
 
-	if (not $self->check_or_start($vars, "yes", "no", "yes")) {
+	if (not $self->check_or_start(
+		env_vars => $vars,
+		nmbd => "yes",
+		smbd => "yes")) {
 	       return undef;
 	}
 
@@ -1255,7 +1289,10 @@ $ret->{USERNAME} = KTEST\\Administrator
 	# access the share for tests.
 	chmod 0777, "$prefix/share";
 
-	if (not $self->check_or_start($ret, "yes", "no", "yes")) {
+	if (not $self->check_or_start(
+		env_vars => $ret,
+		nmbd => "yes",
+		smbd => "yes")) {
 	       return undef;
 	}
 	return $ret;
@@ -1281,7 +1318,10 @@ ntlm auth = yes
 
 	$vars or return undef;
 
-	if (not $self->check_or_start($vars, "yes", "no", "yes")) {
+	if (not $self->check_or_start(
+		env_vars => $vars,
+		nmbd => "yes",
+		smbd => "yes")) {
 	       return undef;
 	}
 
@@ -1341,8 +1381,13 @@ sub make_bin_cmd
 	return (@preargs, $binary, @args, @optargs);
 }
 
-sub check_or_start($$$$$) {
-	my ($self, $env_vars, $nmbd, $winbindd, $smbd) = @_;
+sub check_or_start($$) {
+	my ($self, %args) = @_;
+	my $env_vars = $args{env_vars};
+	my $nmbd = $args{nmbd} // "no";
+	my $winbindd = $args{winbindd} // "no";
+	my $smbd = $args{smbd} // "no";
+
 	my $STDIN_READER;
 
 	# use a pipe for stdin in the child processes. This allows
