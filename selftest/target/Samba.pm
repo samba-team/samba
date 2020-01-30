@@ -672,9 +672,15 @@ sub get_env_for_process
 
 sub fork_and_exec
 {
-	my ($self, $env_vars, $daemon_ctx, $STDIN_READER) = @_;
+	my ($self, $env_vars, $daemon_ctx, $STDIN_READER, $child_cleanup) = @_;
 	my $SambaCtx = $self;
 	$SambaCtx = $self->{SambaCtx} if defined($self->{SambaCtx});
+
+	# we close the child's write-end of the pipe and redirect the
+	# read-end to its stdin. That way the daemon will receive an
+	# EOF on stdin when parent selftest process closes its
+	# write-end.
+	$child_cleanup //= sub { close($env_vars->{STDIN_PIPE}) };
 
 	unlink($daemon_ctx->{LOG_FILE});
 	print "STARTING $daemon_ctx->{NAME} for $ENV{ENVNAME}...";
@@ -706,10 +712,7 @@ sub fork_and_exec
 		set_env_for_process($daemon_ctx->{NAME}, $env_vars,
 				    $daemon_ctx->{ENV_VARS});
 
-		# we close the child's write-end of the pipe and redirect the read-end
-		# to its stdin. That way the daemon will receive an EOF on stdin when
-		# parent selftest process closes its write-end.
-		close($env_vars->{STDIN_PIPE});
+		$child_cleanup->();
 
 		# not all s3 daemons run in all testenvs (e.g. fileserver doesn't
 		# run winbindd). In which case, the child process just sleeps
