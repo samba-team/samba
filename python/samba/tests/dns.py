@@ -1504,26 +1504,51 @@ class TestZones(DNSTest):
         name, txt = 'agingtest', ['test txt']
         name2, txt2 = 'agingtest2', ['test txt2']
         name3, txt3 = 'agingtest3', ['test txt3']
+        name4, txt4 = 'agingtest4', ['test txt4']
+        name5, txt5 = 'agingtest5', ['test txt5']
         self.dns_update_record(name, txt)
         self.dns_update_record(name2, txt)
         self.dns_update_record(name2, txt2)
         self.dns_update_record(name3, txt)
         self.dns_update_record(name3, txt2)
+
+        # Create a tomb stoned record.
+        self.dns_update_record(name4, txt4)
+        self.dns_tombstone(name4, txt4, self.zone)
+        records = self.ldap_get_records(name4)
+        self.assertTrue("dNSTombstoned" in records[0])
+        self.assertEqual(records[0]["dNSTombstoned"][0], b"TRUE")
+
+        # Create an un-tombstoned record, with dnsTombstoned: FALSE
+        self.dns_update_record(name5, txt5)
+        self.dns_tombstone(name5, txt5, self.zone)
+        self.dns_update_record(name5, txt5)
+        records = self.ldap_get_records(name5)
+        self.assertTrue("dNSTombstoned" in records[0])
+        self.assertEqual(records[0]["dNSTombstoned"][0], b"FALSE")
+
         last_add = self.dns_update_record(name3, txt3)
 
         def mod_ts(rec):
             self.assertTrue(rec.dwTimeStamp > 0)
             if rec.data.str == txt:
                 rec.dwTimeStamp -= interval * 5
+
+        def mod_ts_all(rec):
+            rec.dwTimeStamp -= interval * 5
         self.ldap_modify_dnsrecs(name, mod_ts)
         self.ldap_modify_dnsrecs(name2, mod_ts)
         self.ldap_modify_dnsrecs(name3, mod_ts)
+        self.ldap_modify_dnsrecs(name5, mod_ts_all)
         self.assertTrue(callable(getattr(dsdb, '_scavenge_dns_records', None)))
         dsdb._scavenge_dns_records(self.samdb)
 
         recs = self.ldap_get_dns_records(name)
         self.assertEqual(len(recs), 1)
         self.assertEqual(recs[0].wType, dnsp.DNS_TYPE_TOMBSTONE)
+        records = self.ldap_get_records(name)
+        self.assertTrue("dNSTombstoned" in records[0])
+        self.assertEqual(records[0]["dNSTombstoned"][0], b"TRUE")
 
         recs = self.ldap_get_dns_records(name2)
         self.assertEqual(len(recs), 1)
@@ -1536,6 +1561,20 @@ class TestZones(DNSTest):
         self.assertEqual(txts, {str(txt2), str(txt3)})
         self.assertEqual(recs[0].wType, dnsp.DNS_TYPE_TXT)
         self.assertEqual(recs[1].wType, dnsp.DNS_TYPE_TXT)
+
+        recs = self.ldap_get_dns_records(name4)
+        self.assertEqual(len(recs), 1)
+        self.assertEqual(recs[0].wType, dnsp.DNS_TYPE_TOMBSTONE)
+        records = self.ldap_get_records(name4)
+        self.assertTrue("dNSTombstoned" in records[0])
+        self.assertEqual(records[0]["dNSTombstoned"][0], b"TRUE")
+
+        recs = self.ldap_get_dns_records(name5)
+        self.assertEqual(len(recs), 1)
+        self.assertEqual(recs[0].wType, dnsp.DNS_TYPE_TOMBSTONE)
+        records = self.ldap_get_records(name5)
+        self.assertTrue("dNSTombstoned" in records[0])
+        self.assertEqual(records[0]["dNSTombstoned"][0], b"TRUE")
 
         for make_it_work in [False, True]:
             inc = -1 if make_it_work else 1
