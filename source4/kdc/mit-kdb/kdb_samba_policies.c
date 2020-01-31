@@ -334,6 +334,11 @@ krb5_error_code kdb_samba_db_sign_auth_data(krb5_context context,
 	krbtgt_key = krbtgt_key == NULL ? local_krbtgt_key : krbtgt_key;
 #endif
 
+	/* FIXME: We don't support S4U yet */
+	if (flags & KRB5_KDB_FLAGS_S4U) {
+		return KRB5_KDB_DBTYPE_NOSUP;
+	}
+
 	is_as_req = ((flags & KRB5_KDB_FLAG_CLIENT_REFERRALS_ONLY) != 0);
 
 	if (is_as_req && (flags & KRB5_KDB_FLAG_INCLUDE_PAC)) {
