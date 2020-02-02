@@ -623,7 +623,7 @@ tasks = {
 
         # retry with nonshared smbd and smbtorture
         ("nonshared-distclean", "make distclean"),
-        ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=talloc,tdb,pytdb,ldb,pyldb,tevent,pytevent --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd"),
+        ("nonshared-configure", "./configure.developer " + samba_configure_params + " --bundled-libraries=ALL --with-static-modules=ALL --nonshared-binary=smbtorture,smbd/smbd"),
         ("nonshared-make", "make -j")
         ],
 
