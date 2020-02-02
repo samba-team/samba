@@ -2,7 +2,7 @@
 
 import os, string
 from samba_utils import MODE_755
-from waflib import Logs
+from waflib import Logs, Errors
 
 # This function checks if a perl module is installed on the system.
 def check_system_perl_module(conf, module, version=None):
@@ -30,10 +30,14 @@ def options(opt):
 
 def configure(conf):
     # Check if perl(Parse::Yapp::Driver) is available.
-    check_system_perl_module(conf, "Parse::Yapp::Driver", 1.05)
+    if not check_system_perl_module(conf,
+                                    "Parse::Yapp::Driver",
+                                    1.05):
+        raise Errors.WafError('perl module "Parse::Yapp::Driver" not found')
 
     # yapp is used for building the parser
-    conf.find_program('yapp', var='YAPP')
+    if not conf.find_program('yapp', var='YAPP'):
+        raise Errors.WafError('yapp not found')
 
 def build(bld):
 
