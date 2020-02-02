@@ -304,7 +304,9 @@ sub setup_nt4_member
 	print "PROVISIONING MEMBER...";
 
 	my $require_mutexes = "dbwrap_tdb_require_mutexes:* = yes";
-	$require_mutexes = "" if ($ENV{SELFTEST_DONT_REQUIRE_TDB_MUTEX_SUPPORT} eq "1");
+	if ($ENV{SELFTEST_DONT_REQUIRE_TDB_MUTEX_SUPPORT} // '' eq "1") {
+		$require_mutexes = "";
+	}
 
 	my $member_options = "
 	security = domain

@@ -1790,7 +1790,9 @@ sub provision_ad_dc($$$$$$)
         my $conffile="$prefix_abs/etc/smb.conf";
 
 	my $require_mutexes = "dbwrap_tdb_require_mutexes:* = yes";
-	$require_mutexes = "" if ($ENV{SELFTEST_DONT_REQUIRE_TDB_MUTEX_SUPPORT} eq "1");
+	if ($ENV{SELFTEST_DONT_REQUIRE_TDB_MUTEX_SUPPORT} // '' eq "1") {
+		$require_mutexes = "";
+	}
 
 	my $config_h = {};
 
