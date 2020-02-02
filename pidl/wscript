@@ -6,22 +6,15 @@ from waflib import Logs, Errors
 
 # This function checks if a perl module is installed on the system.
 def check_system_perl_module(conf, module, version=None):
-    bundle_name = module.replace('::', '_')
     module_check = module
 
     # Create module string with version
     if version:
         module_check = module + ' ' + str(version)
 
-    # Check if we have to bundle it.
-    if conf.LIB_MUST_BE_BUNDLED(bundle_name.lower()):
-        return False
-
     # Check for system perl module
     if conf.check_perl_module(module_check) is None:
         return False
-
-    conf.define('USING_SYSTEM_%s' % bundle_name.upper(), 1)
 
     return True
 
