@@ -213,6 +213,10 @@ struct smb2_create_blob *smb2_create_blob_find(const struct smb2_create_blobs *b
 {
 	uint32_t i;
 
+	if (b == NULL) {
+		return NULL;
+	}
+
 	for (i=0; i < b->num_blobs; i++) {
 		if (strcmp(b->blobs[i].tag, tag) == 0) {
 			return &b->blobs[i];
