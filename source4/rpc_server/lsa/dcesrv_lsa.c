@@ -3230,7 +3230,6 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 	struct lsa_secret_state *secret_state;
 	struct dcesrv_handle *handle;
 	struct ldb_message **msgs, *msg;
-	struct ldb_context *samdb = NULL;
 	const char *attrs[] = {
 		NULL
 	};
@@ -3291,8 +3290,8 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 		 * logging to report the remote users details, rather than the
 		 * system users details.
 		 */
-		samdb = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
-		secret_state->sam_ldb = talloc_reference(secret_state, samdb);
+		secret_state->sam_ldb =
+			dcesrv_samdb_connect_as_system(secret_state, dce_call);
 		NT_STATUS_HAVE_NO_MEMORY(secret_state->sam_ldb);
 
 		/* search for the secret record */
@@ -3326,8 +3325,8 @@ static NTSTATUS dcesrv_lsa_CreateSecret(struct dcesrv_call_state *dce_call, TALL
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		secret_state->sam_ldb = talloc_reference(secret_state,
-							 secrets_db_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
+		secret_state->sam_ldb = secrets_db_connect(secret_state,
+					dce_call->conn->dce_ctx->lp_ctx);
 		NT_STATUS_HAVE_NO_MEMORY(secret_state->sam_ldb);
 
 		/* search for the secret record */
@@ -3396,7 +3395,6 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 	struct lsa_secret_state *secret_state;
 	struct dcesrv_handle *handle;
 	struct ldb_message **msgs;
-	struct ldb_context *samdb = NULL;
 	const char *attrs[] = {
 		NULL
 	};
@@ -3439,8 +3437,9 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 		 * logging to report the remote users details, rather than the
 		 * system users details.
 		 */
-		samdb = dcesrv_samdb_connect_as_system(mem_ctx, dce_call);
-		secret_state->sam_ldb = talloc_reference(secret_state, samdb);
+		secret_state->sam_ldb =
+			dcesrv_samdb_connect_as_system(secret_state, dce_call);
+		NT_STATUS_HAVE_NO_MEMORY(secret_state->sam_ldb);
 		secret_state->global = true;
 
 		if (strlen(name) < 1) {
@@ -3463,8 +3462,9 @@ static NTSTATUS dcesrv_lsa_OpenSecret(struct dcesrv_call_state *dce_call, TALLOC
 		}
 	} else {
 		secret_state->global = false;
-		secret_state->sam_ldb = talloc_reference(secret_state,
-							 secrets_db_connect(mem_ctx, dce_call->conn->dce_ctx->lp_ctx));
+		secret_state->sam_ldb = secrets_db_connect(secret_state,
+					dce_call->conn->dce_ctx->lp_ctx);
+		NT_STATUS_HAVE_NO_MEMORY(secret_state->sam_ldb);
 
 		name = r->in.name.string;
 		if (strlen(name) < 1) {
