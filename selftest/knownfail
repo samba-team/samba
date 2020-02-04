@@ -150,6 +150,7 @@
 ^samba4.smb2.acls-with-sysacl.*.inheritflags
 ^samba4.smb2.acls-with-sysacl.*.owner
 ^samba4.smb2.acls-with-sysacl.*.ACCESSBASED
+^samba4.smb2.streams.perms\(ad_dc_ntvfs\) # fails against ntvfs.
 ^samba4.ldap.dirsync.python.ad_dc_ntvfs..__main__.SimpleDirsyncTests.test_dirsync_deleted_items_OBJECT_SECURITY
 #^samba4.ldap.dirsync.python.ad_dc_ntvfs..__main__.ExtendedDirsyncTests.*
 ^samba4.libsmbclient.opendir.(NT1|SMB3).opendir # This requires netbios browsing
@@ -206,7 +207,11 @@
 ^samba3.smb2.dir.modify
 ^samba3.smb2.oplock.stream1
 ^samba3.smb2.streams.rename2
+# https://bugzilla.samba.org/show_bug.cgi?id=16157
+^samba3.smb2.streams.perms\(simpleserver\) # POSIX ACL backend doesn't apply DENY ACE for S-1-1-0 to all ALLOW ACE
 ^samba3.smb2.streams streams_xattr.rename2\(nt4_dc\)
+^samba3.smb2.streams streams_xattr.attributes\(nt4_dc\)
+^samba3.smb2.streams streams_xattr.perms\(nt4_dc\) # We don't run the equiv raw.stream test against the streams_xattr test, but if we did, it would fail in the same way.
 ^samba3.smb2.getinfo.complex
 ^samba3.smb2.getinfo.fsinfo # quotas don't work yet
 ^samba3.smb2.setinfo.setinfo

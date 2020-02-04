@@ -30,6 +30,7 @@
 #include "system/filesys.h"
 #include "system/locale.h"
 #include "lib/util/tsort.h"
+#include "libcli/security/dom_sid.h"
 #include "libcli/security/security_descriptor.h"
 
 #define DNAME "teststreams"
@@ -2370,6 +2371,240 @@ done:
 	return ret;
 }
 
+static bool test_stream_permissions(struct torture_context *tctx,
+					   struct smb2_tree *tree)
+{
+	NTSTATUS status;
+	bool ret = true;
+	const char *fname = DNAME "\\stream_permissions.txt";
+	const char *stream = "Stream One:$DATA";
+	const char *fname_stream = NULL;
+	union smb_fileinfo finfo;
+	union smb_setfileinfo sfinfo;
+	struct security_ace ace = {0};
+	struct security_descriptor *sd = NULL;
+	struct smb2_handle h = {{0}};
+	struct smb2_handle h1 = {{0}};
+	TALLOC_CTX *mem_ctx = NULL;
+
+
+	mem_ctx = talloc_new(tctx);
+	torture_assert_goto(tctx,
+			mem_ctx != NULL,
+			ret,
+			done,
+			"out of memory");
+
+	/* make sure we start clean */
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, fname);
+	smb2_deltree(tree, DNAME);
+
+	torture_assert_ntstatus_ok_goto(tctx,
+		torture_smb2_testdir(tree, DNAME, &h),
+		ret,
+		done,
+		"Failed to setup up test directory: " DNAME);
+
+	torture_comment(tctx, "(%s) testing permissions on streams\n", __location__);
+
+	fname_stream = talloc_asprintf(tctx, "%s:%s", fname, stream);
+	torture_assert_goto(tctx,
+			fname_stream != NULL,
+			ret,
+			done,
+			"out of memory");
+
+
+	/* Create a file with a stream with attribute FILE_ATTRIBUTE_ARCHIVE. */
+	torture_assert_goto(tctx,
+		create_file_with_stream(tctx,
+			tree, mem_ctx, fname, fname_stream),
+		ret,
+		done,
+		"failed to create stream");
+
+	/* open base name file */
+	status = torture_smb2_open(tree, fname, SEC_RIGHTS_FILE_ALL, &h1);
+	torture_assert_ntstatus_ok_goto(tctx,
+			status,
+			ret,
+			done,
+			"failed to open base name for stream");
+
+	finfo.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	finfo.generic.in.file.handle = h1;
+	status = smb2_getinfo_file(tree, tctx, &finfo);
+
+	torture_assert_ntstatus_ok_goto(tctx,
+			status,
+			ret,
+			done,
+			"failed to getinfo for stream");
+
+	torture_assert_int_equal_goto(tctx,
+		finfo.basic_info.out.attrib,
+		FILE_ATTRIBUTE_ARCHIVE,
+		ret,
+		done,
+		"attrib incorrect");
+
+	sfinfo.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	sfinfo.generic.in.file.handle = h1;
+	/* Change the attributes on the base file name. */
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_READONLY;
+	sfinfo.basic_info.in.create_time = finfo.basic_info.out.create_time,
+	sfinfo.basic_info.in.access_time = finfo.basic_info.out.access_time,
+	sfinfo.basic_info.in.write_time = finfo.basic_info.out.write_time,
+	sfinfo.basic_info.in.change_time = finfo.basic_info.out.change_time,
+
+	status = smb2_setinfo_file(tree, &sfinfo);
+
+	torture_assert_ntstatus_ok_goto(tctx,
+			status,
+			ret,
+			done,
+			"failed to set readonly attribute for stream");
+
+	smb2_util_close(tree, h1);
+
+	/* Try and open the stream name for WRITE_DATA. Should
+	   fail with ACCESS_DENIED. */
+
+	status = torture_smb2_open(tree, fname, SEC_FILE_WRITE_DATA, &h1);
+
+	torture_assert_ntstatus_equal_goto(tctx,
+			status,
+			NT_STATUS_ACCESS_DENIED,
+			ret,
+			done,
+			"expected open of stream would fail");
+
+	status = torture_smb2_open(tree,
+				fname,
+				SEC_FILE_READ_DATA | SEC_FILE_WRITE_ATTRIBUTE,
+				&h1);
+
+	torture_assert_ntstatus_ok_goto(tctx,
+			status,
+			ret,
+			done,
+			"failed to open base file for write_attribute");
+
+	/* Change the attributes on the base file back. */
+
+	sfinfo.generic.level = RAW_FILEINFO_BASIC_INFORMATION;
+	sfinfo.generic.in.file.handle = h1;
+	/*
+	 * this differs from the SMB1 raw.streams test which
+	 * sets the attrib to 0. Setting attrib to 0 here
+	 * results in the setinfo call succeeding but the
+	 * subsequent attempt to (re)open the file fails
+	 * with ACCESS_DENIED. Some deeper examination of the
+	 * SMB1 test shows that after the smb_raw_setpathinfo
+	 * call that sets attrib to 0 if we call smb_raw_pathinfo
+	 * then the attribs returned shows the NORMAL flag is set.
+	 *
+	 * if we set in SMB2 the attrib to FILE_ATTRIBUTE_NORMAL
+	 * (which according to MS-FSCC is the flag used to
+	 * clear all other flags by specifying it with no other flags set.)
+	 * Using that we can open the file and continue the test (which
+	 * will then pass)
+	 */
+	sfinfo.basic_info.in.attrib = FILE_ATTRIBUTE_NORMAL;
+
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx,
+			status,
+			ret,
+			done,
+			"failed to change back attributes for stream");
+
+	smb2_util_close(tree, h1);
+
+	/* Re-open the base file name. */
+
+	status = torture_smb2_open(tree, fname,
+		(SEC_FILE_READ_DATA|SEC_FILE_WRITE_DATA|
+		SEC_STD_READ_CONTROL|SEC_STD_WRITE_DAC|
+		SEC_FILE_WRITE_ATTRIBUTE),
+		&h1);
+	torture_assert_ntstatus_ok_goto(tctx,
+			status,
+			ret,
+			done,
+			"failed to reopen for stream");
+
+	/* Get the existing security descriptor. */
+	finfo.query_secdesc.level = RAW_FILEINFO_SEC_DESC;
+	finfo.query_secdesc.in.file.handle = h1;
+	finfo.query_secdesc.in.secinfo_flags =
+		SECINFO_OWNER |
+		SECINFO_GROUP |
+		SECINFO_DACL;
+	status = smb2_getinfo_file(tree, tctx, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx,
+			status,
+			ret,
+			done,
+			"failed to dacl for base file of stream");
+	sd = finfo.query_secdesc.out.sd;
+
+	/* Now add a DENY WRITE security descriptor for Everyone. */
+	torture_comment(tctx, "add a new ACE to the DACL\n");
+
+	ace.type = SEC_ACE_TYPE_ACCESS_DENIED;
+	ace.flags = 0;
+	ace.access_mask = SEC_FILE_WRITE_DATA;
+	ace.trustee = *dom_sid_parse_talloc(tctx, SID_WORLD);
+
+	status = security_descriptor_dacl_add(sd, &ace);
+	torture_assert_ntstatus_ok_goto(tctx,
+			status,
+			ret,
+			done,
+			"security_descriptor_dacl_add failed");
+
+	/* security_descriptor_dacl_add adds to the *end* of
+	   the ace array, we need it at the start. Swap.. */
+	ace = sd->dacl->aces[0];
+	sd->dacl->aces[0] = sd->dacl->aces[sd->dacl->num_aces-1];
+	sd->dacl->aces[sd->dacl->num_aces-1] = ace;
+
+	sfinfo.set_secdesc.level = RAW_SFILEINFO_SEC_DESC;
+	sfinfo.set_secdesc.in.file.handle = h1;
+	sfinfo.set_secdesc.in.secinfo_flags = SECINFO_DACL;
+	sfinfo.set_secdesc.in.sd = sd;
+
+	status = smb2_setinfo_file(tree, &sfinfo);
+	torture_assert_ntstatus_ok_goto(tctx,
+			status,
+			ret,
+			done,
+			"setinfo_file for new dacl failed");
+
+	smb2_util_close(tree, h1);
+
+	/* Try and open the stream name for WRITE_DATA. Should
+	   fail with ACCESS_DENIED. */
+	status = torture_smb2_open(tree,
+			fname_stream, SEC_FILE_WRITE_DATA, &h1);
+	torture_assert_ntstatus_equal_goto(tctx,
+			status,
+			NT_STATUS_ACCESS_DENIED,
+			ret,
+			done,
+			"expected open of stream would fail");
+ done:
+
+	smb2_util_close(tree, h1);
+	smb2_util_close(tree,h);
+	smb2_util_unlink(tree, fname);
+	smb2_deltree(tree, DNAME);
+	return ret;
+}
+
+
 /*
  * Simple test creating a stream on a share with "inherit permissions"
  * enabled. This tests specifically bug 15695.
@@ -2465,6 +2700,7 @@ struct torture_suite *torture_smb2_streams_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "zero-byte", test_zero_byte_stream);
 	torture_suite_add_1smb2_test(suite, "basefile-rename-with-open-stream",
 					test_basefile_rename_with_open_stream);
+	torture_suite_add_1smb2_test(suite, "perms", test_stream_permissions);
 
 	suite->description = talloc_strdup(suite, "SMB2-STREAM tests");
 	return suite;
