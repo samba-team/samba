@@ -1197,6 +1197,19 @@ void reply_findnclose(struct smb_request *req);
 void reply_trans2(struct smb_request *req);
 void reply_transs2(struct smb_request *req);
 
+enum perm_type {
+	PERM_NEW_FILE,
+	PERM_NEW_DIR,
+	PERM_EXISTING_FILE,
+	PERM_EXISTING_DIR
+};
+
+NTSTATUS unix_perms_from_wire(connection_struct *conn,
+			      const SMB_STRUCT_STAT *psbuf,
+			      uint32_t perms,
+			      enum perm_type ptype,
+			      mode_t *ret_perms);
+
 /* The following definitions come from smbd/uid.c  */
 
 bool change_to_guest(void);

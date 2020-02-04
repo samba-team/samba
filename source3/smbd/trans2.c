@@ -1583,13 +1583,11 @@ static uint32_t unix_filetype(mode_t mode)
  Map wire perms onto standard UNIX permissions. Obey share restrictions.
 ****************************************************************************/
 
-enum perm_type { PERM_NEW_FILE, PERM_NEW_DIR, PERM_EXISTING_FILE, PERM_EXISTING_DIR};
-
-static NTSTATUS unix_perms_from_wire( connection_struct *conn,
-				const SMB_STRUCT_STAT *psbuf,
-				uint32_t perms,
-				enum perm_type ptype,
-				mode_t *ret_perms)
+NTSTATUS unix_perms_from_wire(connection_struct *conn,
+			      const SMB_STRUCT_STAT *psbuf,
+			      uint32_t perms,
+			      enum perm_type ptype,
+			      mode_t *ret_perms)
 {
 	mode_t ret = 0;
 
