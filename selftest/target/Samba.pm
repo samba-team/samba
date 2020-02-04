@@ -14,11 +14,14 @@ use Cwd qw(abs_path);
 use IO::Poll qw(POLLIN);
 
 sub new($$$$$) {
-	my ($classname, $bindir, $srcdir, $server_maxtime) = @_;
+	my ($classname, $bindir, $srcdir, $server_maxtime,
+	    $opt_socket_wrapper_pcap, $opt_socket_wrapper_keep_pcap) = @_;
 
 	my $self = {
 	    samba3 => new Samba3($bindir, $srcdir, $server_maxtime),
 	    samba4 => new Samba4($bindir, $srcdir, $server_maxtime),
+	    opt_socket_wrapper_pcap => $opt_socket_wrapper_pcap,
+	    opt_socket_wrapper_keep_pcap => $opt_socket_wrapper_keep_pcap,
 	};
 	bless $self;
 	return $self;
@@ -42,6 +45,35 @@ our %ENV_TARGETS;
 our %ENV_NEEDS_AD_DC;
 foreach my $env (keys %Samba3::ENV_DEPS) {
     $ENV_NEEDS_AD_DC{$env} = ($env =~ /^ad_/);
+}
+
+sub setup_pcap($$)
+{
+	my ($self, $name) = @_;
+
+	return unless ($self->{opt_socket_wrapper_pcap});
+	return unless defined($ENV{SOCKET_WRAPPER_PCAP_DIR});
+
+	my $fname = $name;
+	$fname =~ s%[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\-]%_%g;
+
+	my $pcap_file = "$ENV{SOCKET_WRAPPER_PCAP_DIR}/$fname.pcap";
+
+	SocketWrapper::setup_pcap($pcap_file);
+
+	return $pcap_file;
+}
+
+sub cleanup_pcap($$$)
+{
+	my ($self, $pcap_file, $exitcode) = @_;
+
+	return unless ($self->{opt_socket_wrapper_pcap});
+	return if ($self->{opt_socket_wrapper_keep_pcap});
+	return unless ($exitcode == 0);
+	return unless defined($pcap_file);
+
+	unlink($pcap_file);
 }
 
 sub setup_env($$$)

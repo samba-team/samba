@@ -105,35 +105,6 @@ sub skip
 
 sub getlog_env($);
 
-sub setup_pcap($)
-{
-	my ($name) = @_;
-
-	return unless ($opt_socket_wrapper_pcap);
-	return unless defined($ENV{SOCKET_WRAPPER_PCAP_DIR});
-
-	my $fname = $name;
-	$fname =~ s%[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\-]%_%g;
-
-	my $pcap_file = "$ENV{SOCKET_WRAPPER_PCAP_DIR}/$fname.pcap";
-
-	SocketWrapper::setup_pcap($pcap_file);
-
-	return $pcap_file;
-}
-
-sub cleanup_pcap($$)
-{
-	my ($pcap_file, $exitcode) = @_;
-
-	return unless ($opt_socket_wrapper_pcap);
-	return if ($opt_socket_wrapper_keep_pcap);
-	return unless ($exitcode == 0);
-	return unless defined($pcap_file);
-
-	unlink($pcap_file);
-}
-
 # expand strings from %ENV
 sub expand_environment_strings($)
 {
@@ -145,10 +116,12 @@ sub expand_environment_strings($)
 	return $s;
 }
 
+my $target;
+
 sub run_testsuite($$$$$)
 {
 	my ($envname, $name, $cmd, $i, $totalsuites) = @_;
-	my $pcap_file = setup_pcap($name);
+	my $pcap_file = $target->setup_pcap($name);
 
 	Subunit::start_testsuite($name);
 	Subunit::progress_push();
@@ -186,7 +159,7 @@ sub run_testsuite($$$$$)
 		Subunit::end_testsuite($name, "failure", "Exit code was $exitcode");
 	}
 
-	cleanup_pcap($pcap_file, $exitcode);
+	$target->cleanup_pcap($pcap_file, $exitcode);
 
 	if (not $opt_socket_wrapper_keep_pcap and defined($pcap_file)) {
 		print "PCAP FILE: $pcap_file\n";
@@ -449,7 +422,6 @@ if ($opt_use_dns_faking) {
 	$ENV{SAMBA_DNS_FAKING} = 1;
 }
 
-my $target;
 my $testenv_default = "none";
 
 if ($opt_mitkrb5 == 1) {
@@ -473,7 +445,9 @@ if (defined($ENV{SMBD_MAXTIME}) and $ENV{SMBD_MAXTIME} ne "") {
     $server_maxtime = $ENV{SMBD_MAXTIME};
 }
 
-$target = new Samba($bindir, $srcdir, $server_maxtime);
+$target = new Samba($bindir, $srcdir, $server_maxtime,
+		    $opt_socket_wrapper_pcap,
+		    $opt_socket_wrapper_keep_pcap);
 unless ($opt_list) {
 	if ($opt_target eq "samba") {
 		$testenv_default = "ad_dc";
