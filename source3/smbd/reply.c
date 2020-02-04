@@ -46,6 +46,7 @@
 #include "lib/util/sys_rw_data.h"
 #include "librpc/gen_ndr/open_files.h"
 #include "smb1_utils.h"
+#include "libcli/smb/smb2_posix.h"
 
 /****************************************************************************
  Ensure we check the path in *exactly* the same way as W2K for a findfirst/findnext
@@ -3035,6 +3036,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	NTSTATUS status;
 	int ret;
 	bool posix_paths = (req != NULL && req->posix_pathnames);
+	struct smb2_create_blobs *posx = NULL;
 
 	DEBUG(10,("do_unlink: %s, dirtype = %d\n",
 		  smb_fname_str_dbg(smb_fname),
@@ -3106,6 +3108,16 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		return NT_STATUS_OBJECT_NAME_INVALID;
 #endif /* JRATEST */
 
+	if (posix_paths) {
+		status = make_smb2_posix_create_ctx(
+			talloc_tos(), &posx, 0777);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("make_smb2_posix_create_ctx failed: %s\n",
+				    nt_errstr(status));
+			return status;
+		}
+	}
+
 	/* On open checks the open itself will check the share mode, so
 	   don't do it here as we'll get it wrong. */
 
@@ -3129,7 +3141,10 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		 NULL,			/* ea_list */
 		 &fsp,			/* result */
 		 NULL,			/* pinfo */
-		 NULL, NULL);		/* create context */
+		 posx,			/* in_context_blobs */
+		 NULL);			/* out_context_blobs */
+
+	TALLOC_FREE(posx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("SMB_VFS_CREATEFILE failed: %s\n",
@@ -7295,6 +7310,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	long offset = 0;
 	int create_options = 0;
 	bool posix_pathnames = (req != NULL && req->posix_pathnames);
+	struct smb2_create_blobs *posx = NULL;
 	int rc;
 
 	/*
@@ -7331,6 +7347,15 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		if (new_mask) {
 			TALLOC_FREE(fname_src_mask);
 			fname_src_mask = new_mask;
+		}
+	}
+
+	if (posix_pathnames) {
+		status = make_smb2_posix_create_ctx(talloc_tos(), &posx, 0777);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_WARNING("make_smb2_posix_create_ctx failed: %s\n",
+				    nt_errstr(status));
+			goto out;
 		}
 	}
 
@@ -7420,7 +7445,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			NULL,				/* ea_list */
 			&fsp,				/* result */
 			NULL,				/* pinfo */
-			NULL, NULL);			/* create context */
+			posx,				/* in_context_blobs */
+			NULL);				/* out_context_blobs */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("Could not open rename source %s: %s\n",
@@ -7578,7 +7604,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			NULL,				/* ea_list */
 			&fsp,				/* result */
 			NULL,				/* pinfo */
-			NULL, NULL);			/* create context */
+			posx,				/* in_context_blobs */
+			NULL);				/* out_context_blobs */
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3,("rename_internals: SMB_VFS_CREATE_FILE "
@@ -7623,6 +7650,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 	}
 
  out:
+	TALLOC_FREE(posx);
 	TALLOC_FREE(talloced);
 	TALLOC_FREE(smb_fname_src_dir);
 	TALLOC_FREE(fname_src_dir);

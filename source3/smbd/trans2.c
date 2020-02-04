@@ -43,6 +43,7 @@
 #include "lib/readdir_attr.h"
 #include "messages.h"
 #include "smb1_utils.h"
+#include "libcli/smb/smb2_posix.h"
 
 #define DIR_ENTRY_SAFETY_MARGIN 4096
 
@@ -118,6 +119,8 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 	uint32_t share_access = FILE_SHARE_READ|
 				FILE_SHARE_WRITE|
 				FILE_SHARE_DELETE;
+	struct smb2_create_blobs *posx = NULL;
+
 	/*
 	 * Only FILE_FLAG_POSIX_SEMANTICS matters on existing files,
 	 * but set reasonable defaults.
@@ -152,6 +155,16 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 		goto done;
 	}
 
+	status = make_smb2_posix_create_ctx(
+		talloc_tos(),
+		&posx,
+		file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("make_smb2_posix_create_ctx failed: %s\n",
+			    nt_errstr(status));
+		goto done;
+	}
+
 	status = SMB_VFS_CREATE_FILE(
 		conn,           /* conn */
 		req,            /* req */
@@ -170,10 +183,11 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 		NULL,           /* ea_list */
 		ret_fsp,	/* result */
 		NULL,           /* pinfo */
-		NULL,           /* in_context */
+		posx,           /* in_context */
 		NULL);          /* out_context */
 
 done:
+	TALLOC_FREE(posx);
 	TALLOC_FREE(smb_fname_tmp);
 	return status;
 }
@@ -8404,6 +8418,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	uint16_t info_level_return = 0;
 	int info;
 	char *pdata = *ppdata;
+	struct smb2_create_blobs *posx = NULL;
 
 	if (total_data < 18) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -8419,6 +8434,13 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 	}
 
 	mod_unixmode = (uint32_t)unixmode | FILE_FLAG_POSIX_SEMANTICS;
+
+	status = make_smb2_posix_create_ctx(talloc_tos(), &posx, unixmode);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("make_smb2_posix_create_ctx failed: %s\n",
+			    nt_errstr(status));
+		return status;
+	}
 
 	DEBUG(10,("smb_posix_mkdir: file %s, mode 0%o\n",
 		  smb_fname_str_dbg(smb_fname), (unsigned int)unixmode));
@@ -8441,7 +8463,10 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 		NULL,					/* ea_list */
 		&fsp,					/* result */
 		&info,					/* pinfo */
-		NULL, NULL);				/* create context */
+		posx,					/* in_context_blobs */
+		NULL);					/* out_context_blobs */
+
+	TALLOC_FREE(posx);
 
         if (NT_STATUS_IS_OK(status)) {
                 close_file(req, fsp, NORMAL_CLOSE);
@@ -8520,6 +8545,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	int oplock_request = 0;
 	int info = 0;
 	uint16_t info_level_return = 0;
+	struct smb2_create_blobs *posx = NULL;
 
 	if (total_data < 18) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -8630,6 +8656,13 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		return status;
 	}
 
+	status = make_smb2_posix_create_ctx(talloc_tos(), &posx, unixmode);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("make_smb2_posix_create_ctx failed: %s\n",
+			    nt_errstr(status));
+		return status;
+	}
+
 	mod_unixmode = (uint32_t)unixmode | FILE_FLAG_POSIX_SEMANTICS;
 
 	if (wire_open_mode & SMB_O_SYNC) {
@@ -8675,7 +8708,10 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		NULL,					/* ea_list */
 		&fsp,					/* result */
 		&info,					/* pinfo */
-		NULL, NULL);				/* create context */
+		posx,					/* in_context_blobs */
+		NULL);					/* out_context_blobs */
+
+	TALLOC_FREE(posx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -8764,6 +8800,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	int create_options = 0;
 	struct share_mode_lock *lck = NULL;
 	bool other_nonposix_opens;
+	struct smb2_create_blobs *posx = NULL;
 
 	if (total_data < 2) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -8788,6 +8825,13 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		create_options |= FILE_DIRECTORY_FILE;
 	}
 
+	status = make_smb2_posix_create_ctx(talloc_tos(), &posx, 0777);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("make_smb2_posix_create_ctx failed: %s\n",
+			    nt_errstr(status));
+		return status;
+	}
+
         status = SMB_VFS_CREATE_FILE(
 		conn,					/* conn */
 		req,					/* req */
@@ -8807,7 +8851,10 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		NULL,					/* ea_list */
 		&fsp,					/* result */
 		&info,					/* pinfo */
-		NULL, NULL);				/* create context */
+		posx,					/* in_context_blobs */
+		NULL);					/* out_context_blobs */
+
+	TALLOC_FREE(posx);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
