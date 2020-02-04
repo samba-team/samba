@@ -551,6 +551,14 @@ static NTSTATUS smbd_smb2_create_fetch_create_ctx(
 	struct smbd_smb2_create_state *state = tevent_req_data(
 		req, struct smbd_smb2_create_state);
 
+	/*
+	 * For now, remove the posix create context from the wire. We
+	 * are using it inside smbd and will properly use it once
+	 * smb3.11 unix extensions will be done. So in the future we
+	 * will remove it only if unix extensions are not negotiated.
+	 */
+	smb2_create_blob_remove(in_context_blobs, SMB2_CREATE_TAG_POSIX);
+
 	state->dhnq = smb2_create_blob_find(in_context_blobs,
 					    SMB2_CREATE_TAG_DHNQ);
 	state->dhnc = smb2_create_blob_find(in_context_blobs,
