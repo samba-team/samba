@@ -5884,6 +5884,7 @@ NTSTATUS create_file_default(connection_struct *conn,
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 	bool stream_name = false;
+	struct smb2_create_blob *posx = NULL;
 
 	DBG_DEBUG("create_file: access_mask = 0x%x "
 		  "file_attributes = 0x%x, share_access = 0x%x, "
@@ -5983,6 +5984,36 @@ NTSTATUS create_file_default(connection_struct *conn,
 			status = NT_STATUS_FILE_IS_A_DIRECTORY;
 			goto fail;
 		}
+	}
+
+	posx = smb2_create_blob_find(
+		in_context_blobs, SMB2_CREATE_TAG_POSIX);
+	if (posx != NULL) {
+		uint32_t wire_mode_bits = 0;
+		mode_t mode_bits = 0;
+		SMB_STRUCT_STAT sbuf = { 0 };
+		enum perm_type ptype =
+			(create_options & FILE_DIRECTORY_FILE) ?
+			PERM_NEW_DIR : PERM_NEW_FILE;
+
+		if (posx->data.length != 4) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto fail;
+		}
+
+		wire_mode_bits = IVAL(posx->data.data, 0);
+		status = unix_perms_from_wire(
+			conn, &sbuf, wire_mode_bits, ptype, &mode_bits);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
+		/*
+		 * Remove type info from mode, leaving only the
+		 * permissions and setuid/gid bits.
+		 */
+		mode_bits &= ~S_IFMT;
+
+		file_attributes = (FILE_FLAG_POSIX_SEMANTICS | mode_bits);
 	}
 
 	status = create_file_unixpath(
