@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the first release candidate of Samba 4.12.  This is *not*
+This is the second release candidate of Samba 4.12.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -150,6 +150,17 @@ smb.conf changes
   nfs4:acedup                        Changed default            merge
   rndc command                       Removed
   write cache size                   Removed
+
+
+CHANGES SINCE 4.12.0rc1
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14239: s3: lib: nmblib. Clean up and harden nmb packet processing.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14253: lib:util: Log mkdir error on correct debug levels.
+
 
 KNOWN ISSUES
 ============
