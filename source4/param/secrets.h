@@ -37,6 +37,8 @@ struct ldb_context;
 
 bool randseed_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
 
+struct ldb_context *secrets_db_create(TALLOC_CTX *mem_ctx,
+				      struct loadparm_context *lp_ctx);
 struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx);
 struct dom_sid *secrets_get_domain_sid(TALLOC_CTX *mem_ctx,
 				       struct loadparm_context *lp_ctx,

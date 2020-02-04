@@ -33,6 +33,16 @@
 #include "dsdb/samdb/samdb.h"
 
 /**
+  create or connect to the secrets ldb
+*/
+struct ldb_context *secrets_db_create(TALLOC_CTX *mem_ctx,
+				      struct loadparm_context *lp_ctx)
+{
+	return ldb_wrap_connect(mem_ctx, NULL, lp_ctx, "secrets.ldb",
+			       NULL, NULL, 0);
+}
+
+/**
   connect to the secrets ldb
 */
 struct ldb_context *secrets_db_connect(TALLOC_CTX *mem_ctx,
