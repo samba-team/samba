@@ -553,6 +553,48 @@ sub setup_clusteredmember
 		}
 	}
 
+	#
+	# Build a unclist for every share
+	#
+	unless (open(NODES, "<$ret->{CTDB_NODES_FILE}")) {
+		warn("Unable to open CTDB nodes file");
+		teardown_env($self, $ret);
+		return undef;
+	}
+	my @nodes = <NODES>;
+	close(NODES);
+	chomp @nodes;
+
+	my $conffile = $ret->{SERVERCONFFILE};
+	$cmd = "";
+	$cmd .= 'sed -n -e \'s|^\[\(.*\)\]$|\1|p\'';
+	$cmd .= " \"$conffile\"";
+	$cmd .= " | grep -vx 'global'";
+
+	my @shares = `$cmd`;
+	$rc = $?;
+	if ($rc != 0) {
+		warn("Listing shares failed\n$cmd");
+		teardown_env($self, $ret);
+		return undef;
+	}
+	chomp @shares;
+
+	my $unclistdir = "${prefix_abs}/unclists";
+	mkdir($unclistdir, 0777);
+	foreach my $share (@shares) {
+		my $l = "${unclistdir}/${share}.txt";
+		unless (open(UNCLIST, ">${l}")) {
+			warn("Unable to open UNC list ${l}");
+			teardown_env($self, $ret);
+			return undef;
+		}
+		foreach my $node (@nodes) {
+			print UNCLIST "//${node}/${share}\n";
+		}
+		close(UNCLIST);
+	}
+
 	$ret->{DOMSID} = $nt4_dc_vars->{DOMSID};
 	$ret->{DC_SERVER} = $nt4_dc_vars->{SERVER};
 	$ret->{DC_SERVER_IP} = $nt4_dc_vars->{SERVER_IP};
@@ -3091,6 +3133,7 @@ sub provision_ctdb($$$$)
 	$ret{CTDB_PREFIX} = "$prefix";
 	$ret{NUM_NODES} = $num_nodes;
 	$ret{CTDB_NODES} = \@nodes;
+	$ret{CTDB_NODES_FILE} = $nodes_file;
 
 	return \%ret;
 }
