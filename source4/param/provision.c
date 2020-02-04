@@ -345,8 +345,8 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 		goto out;
 	}
 
-	/* Open the secrets database */
-	ldb = secrets_db_connect(tmp_mem, lp_ctx);
+	/* Create/Open the secrets database */
+	ldb = secrets_db_create(tmp_mem, lp_ctx);
 	if (!ldb) {
 		*error_string
 			= talloc_asprintf(mem_ctx, 
