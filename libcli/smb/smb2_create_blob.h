@@ -23,6 +23,11 @@
 #ifndef _LIBCLI_SMB_SMB2_CREATE_BLOB_H_
 #define _LIBCLI_SMB_SMB2_CREATE_BLOB_H_
 
+#include "replace.h"
+#include "lib/util/data_blob.h"
+#include "lib/util/time.h"
+#include "libcli/util/ntstatus.h"
+
 struct smb2_create_blob {
 	char *tag;
 	DATA_BLOB data;
