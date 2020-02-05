@@ -1182,7 +1182,7 @@ class GetPasswordCommand(Command):
             add_sAMAcountName = True
 
         add_userPrincipalName = False
-        upn = "usePrincipalName"
+        upn = "userPrincipalName"
         if upn.lower() not in lower_attrs:
             search_attrs += [upn]
             add_userPrincipalName = True
