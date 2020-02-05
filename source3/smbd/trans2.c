@@ -125,7 +125,7 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 	 * Only FILE_FLAG_POSIX_SEMANTICS matters on existing files,
 	 * but set reasonable defaults.
 	 */
-	uint32_t file_attributes = 0664|FILE_FLAG_POSIX_SEMANTICS;
+	uint32_t file_attributes = 0664;
 	uint32_t oplock = NO_OPLOCK;
 	uint32_t create_options = FILE_NON_DIRECTORY_FILE;
 
@@ -143,7 +143,7 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 		 * Only FILE_FLAG_POSIX_SEMANTICS matters on existing
 		 * directories, but set reasonable defaults.
 		 */
-		file_attributes = 0775|FILE_FLAG_POSIX_SEMANTICS;
+		file_attributes = 0775;
 		create_options = FILE_DIRECTORY_FILE;
 	}
 
@@ -156,9 +156,7 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 	}
 
 	status = make_smb2_posix_create_ctx(
-		talloc_tos(),
-		&posx,
-		file_attributes & ~FILE_FLAG_POSIX_SEMANTICS);
+		talloc_tos(), &posx, file_attributes);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("make_smb2_posix_create_ctx failed: %s\n",
 			    nt_errstr(status));
@@ -8412,7 +8410,6 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 {
 	NTSTATUS status = NT_STATUS_OK;
 	uint32_t raw_unixmode = 0;
-	uint32_t mod_unixmode = 0;
 	mode_t unixmode = (mode_t)0;
 	files_struct *fsp = NULL;
 	uint16_t info_level_return = 0;
@@ -8433,8 +8430,6 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 		return status;
 	}
 
-	mod_unixmode = (uint32_t)unixmode | FILE_FLAG_POSIX_SEMANTICS;
-
 	status = make_smb2_posix_create_ctx(talloc_tos(), &posx, unixmode);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_WARNING("make_smb2_posix_create_ctx failed: %s\n",
@@ -8454,7 +8449,7 @@ static NTSTATUS smb_posix_mkdir(connection_struct *conn,
 		FILE_SHARE_NONE,			/* share_access */
 		FILE_CREATE,				/* create_disposition*/
 		FILE_DIRECTORY_FILE,			/* create_options */
-		mod_unixmode,				/* file_attributes */
+		0,					/* file_attributes */
 		0,					/* oplock_request */
 		NULL,					/* lease */
 		0,					/* allocation_size */
@@ -8535,7 +8530,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 	uint32_t flags = 0;
 	uint32_t wire_open_mode = 0;
 	uint32_t raw_unixmode = 0;
-	uint32_t mod_unixmode = 0;
+	uint32_t attributes = 0;
 	uint32_t create_disp = 0;
 	uint32_t access_mask = 0;
 	uint32_t create_options = FILE_NON_DIRECTORY_FILE;
@@ -8663,8 +8658,6 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		return status;
 	}
 
-	mod_unixmode = (uint32_t)unixmode | FILE_FLAG_POSIX_SEMANTICS;
-
 	if (wire_open_mode & SMB_O_SYNC) {
 		create_options |= FILE_WRITE_THROUGH;
 	}
@@ -8672,7 +8665,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		access_mask |= FILE_APPEND_DATA;
 	}
 	if (wire_open_mode & SMB_O_DIRECT) {
-		mod_unixmode |= FILE_FLAG_NO_BUFFERING;
+		attributes |= FILE_FLAG_NO_BUFFERING;
 	}
 
 	if ((wire_open_mode & SMB_O_DIRECTORY) ||
@@ -8699,7 +8692,7 @@ static NTSTATUS smb_posix_open(connection_struct *conn,
 		    FILE_SHARE_DELETE),
 		create_disp,				/* create_disposition*/
 		create_options,				/* create_options */
-		mod_unixmode,				/* file_attributes */
+		attributes,				/* file_attributes */
 		oplock_request,				/* oplock_request */
 		NULL,					/* lease */
 		0,					/* allocation_size */
@@ -8842,7 +8835,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 		    FILE_SHARE_DELETE),
 		FILE_OPEN,				/* create_disposition*/
 		create_options,				/* create_options */
-		FILE_FLAG_POSIX_SEMANTICS|0777,		/* file_attributes */
+		0,					/* file_attributes */
 		0,					/* oplock_request */
 		NULL,					/* lease */
 		0,					/* allocation_size */

@@ -3130,9 +3130,7 @@ static NTSTATUS do_unlink(connection_struct *conn,
 		 FILE_SHARE_NONE,	/* share_access */
 		 FILE_OPEN,		/* create_disposition*/
 		 FILE_NON_DIRECTORY_FILE, /* create_options */
-		 			/* file_attributes */
-		 posix_paths ? FILE_FLAG_POSIX_SEMANTICS|0777 :
-				FILE_ATTRIBUTE_NORMAL,
+		 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
 		 0,			/* oplock_request */
 		 NULL,			/* lease */
 		 0,			/* allocation_size */
@@ -7436,7 +7434,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			    FILE_SHARE_WRITE),
 			FILE_OPEN,			/* create_disposition*/
 			create_options,			/* create_options */
-			posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0, /* file_attributes */
+			0,				/* file_attributes */
 			0,				/* oplock_request */
 			NULL,				/* lease */
 			0,				/* allocation_size */
@@ -7595,7 +7593,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			    FILE_SHARE_WRITE),
 			FILE_OPEN,			/* create_disposition*/
 			create_options,			/* create_options */
-			posix_pathnames ? FILE_FLAG_POSIX_SEMANTICS|0777 : 0, /* file_attributes */
+			0,				/* file_attributes */
 			0,				/* oplock_request */
 			NULL,				/* lease */
 			0,				/* allocation_size */
