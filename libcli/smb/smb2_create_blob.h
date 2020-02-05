@@ -24,7 +24,7 @@
 #define _LIBCLI_SMB_SMB2_CREATE_BLOB_H_
 
 struct smb2_create_blob {
-	const char *tag;
+	char *tag;
 	DATA_BLOB data;
 };
 
