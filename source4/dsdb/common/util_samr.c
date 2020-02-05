@@ -495,7 +495,7 @@ NTSTATUS dsdb_enum_group_mem(struct ldb_context *ldb,
 		++j;
 	}
 
-	*members_out = talloc_steal(mem_ctx, members);
+	*members_out = members;
 	*pnum_members = j;
 	talloc_free(tmp_ctx);
 	return NT_STATUS_OK;

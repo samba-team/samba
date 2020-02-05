@@ -1752,9 +1752,8 @@ static NTSTATUS pdb_samba_dsdb_enum_aliasmem(struct pdb_methods *m,
 	}
 
 	status = dsdb_enum_group_mem(state->ldb, mem_ctx, dn, pmembers, &num_members);
-	*pnum_members = num_members;
 	if (NT_STATUS_IS_OK(status)) {
-		talloc_steal(mem_ctx, pmembers);
+		*pnum_members = num_members;
 	}
 	talloc_free(tmp_ctx);
 	return status;
