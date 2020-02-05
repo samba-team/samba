@@ -110,7 +110,6 @@ make changes to the DNS Zone and nudging the 'named' server if a new
 DC was added to the domain.  Administrators using BIND9_FLATFILE will
 need to maintain this manually from now on.
 
-
 Retiring DES encryption types in Kerberos.
 ------------------------------------------
 With this release, support for DES encryption types has been removed from
@@ -128,6 +127,12 @@ Heimdal-DC: removal of weak-crypto.
 -----------------------------------
 Following removal of DES encryption types from Samba, the embedded Heimdal
 build has been updated to not compile weak crypto code (HEIM_WEAK_CRYPTO).
+
+vfs_netatalk: The netatalk VFS module has been removed.
+-------------------------------------------------------
+
+The netatalk VFS module has been removed. It was unmaintained and is not needed
+any more.
 
 CTDB changes
 ------------
@@ -150,6 +155,7 @@ smb.conf changes
   nfs4:acedup                        Changed default            merge
   rndc command                       Removed
   write cache size                   Removed
+  spotlight backend		     New			noindex
 
 
 CHANGES SINCE 4.12.0rc1
