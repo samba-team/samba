@@ -148,7 +148,8 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 	smb_fname_tmp = cp_smb_filename(talloc_tos(),
 					smb_fname);
 	if (smb_fname_tmp == NULL) {
-		return NT_STATUS_NO_MEMORY;
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
 	}
 
 	status = SMB_VFS_CREATE_FILE(
@@ -172,6 +173,7 @@ static NTSTATUS get_posix_fsp(connection_struct *conn,
 		NULL,           /* in_context */
 		NULL);          /* out_context */
 
+done:
 	TALLOC_FREE(smb_fname_tmp);
 	return status;
 }
