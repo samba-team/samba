@@ -19,6 +19,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "replace.h"
+#include "system/filesys.h"
+#include "smb_constants.h"
+#include <talloc.h>
+
 const char *smb_protocol_types_string(enum protocol_types protocol);
 char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib);
 uint32_t unix_perms_to_wire(mode_t perms);
