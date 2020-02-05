@@ -700,7 +700,7 @@ def PROCESS_SEPARATE_RULE(self, rule):
             cache[node] = True
             self.pre_recurse(node)
             try:
-                function_code = node.read('rU', None)
+                function_code = node.read('r', None)
                 exec(compile(function_code, node.abspath(), 'exec'), self.exec_dict)
             finally:
                 self.post_recurse(node)
