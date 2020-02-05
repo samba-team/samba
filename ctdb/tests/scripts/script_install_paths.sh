@@ -5,9 +5,9 @@ if ! $CTDB_TESTS_ARE_INSTALLED ; then
 		die "Tests not installed but can't find run_tests.sh"
 	fi
 
-	ctdb_dir=$(dirname "$CTDB_TEST_DIR")
+	ctdb_dir=$(cd -P "$(dirname "$CTDB_TEST_DIR")" && pwd) # real path
 
-	top_dir=$(cd -P "$ctdb_dir" && echo "$PWD") # real path
+	top_dir="$ctdb_dir"
 	if [ ! -d "${top_dir}/bin" ] ; then
 		top_dir=$(dirname "$top_dir")
 	fi
