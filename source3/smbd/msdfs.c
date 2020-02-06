@@ -1396,6 +1396,16 @@ bool create_msdfs_link(const struct junction_map *jucn,
 		goto out;
 	}
 
+	if (!CAN_WRITE(conn)) {
+		const struct loadparm_substitution *lp_sub =
+			loadparm_s3_global_substitution();
+		int snum = lp_servicenumber(jucn->service_name);
+
+		DBG_WARNING("Can't create DFS entry on read-only share %s\n",
+			lp_servicename(frame, lp_sub, snum));
+		goto out;
+	}
+
 	smb_fname = synthetic_smb_fname(frame,
 				path,
 				NULL,
