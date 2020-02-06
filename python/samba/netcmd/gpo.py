@@ -248,29 +248,29 @@ def parse_unc(unc):
 
 
 def find_parser(name, flags=re.IGNORECASE):
-    if re.match('fdeploy1\.ini$', name, flags=flags):
+    if re.match(r'fdeploy1\.ini$', name, flags=flags):
         return GPFDeploy1IniParser()
-    if re.match('audit\.csv$', name, flags=flags):
+    if re.match(r'audit\.csv$', name, flags=flags):
         return GPAuditCsvParser()
-    if re.match('GptTmpl\.inf$', name, flags=flags):
+    if re.match(r'GptTmpl\.inf$', name, flags=flags):
         return GptTmplInfParser()
-    if re.match('GPT\.INI$', name, flags=flags):
+    if re.match(r'GPT\.INI$', name, flags=flags):
         return GPTIniParser()
     if re.match('scripts.ini$', name, flags=flags):
         return GPScriptsIniParser()
     if re.match('psscripts.ini$', name, flags=flags):
         return GPScriptsIniParser()
-    if re.match('GPE\.INI$', name, flags=flags):
+    if re.match(r'GPE\.INI$', name, flags=flags):
         # This file does not appear in the protocol specifications!
         #
         # It appears to be a legacy file used to maintain gPCUserExtensionNames
         # and gPCMachineExtensionNames. We should just copy the file as binary.
         return GPParser()
-    if re.match('.*\.ini$', name, flags=flags):
+    if re.match(r'.*\.ini$', name, flags=flags):
         return GPIniParser()
-    if re.match('.*\.pol$', name, flags=flags):
+    if re.match(r'.*\.pol$', name, flags=flags):
         return GPPolParser()
-    if re.match('.*\.aas$', name, flags=flags):
+    if re.match(r'.*\.aas$', name, flags=flags):
         return GPAasParser()
 
     return GPParser()

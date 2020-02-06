@@ -37,7 +37,7 @@ from samba.netcmd import (
     Option,
 )
 
-RE_RANGED_RESULT = re.compile("^([^;]+);range=(\d+)-(\d+|\*)$")
+RE_RANGED_RESULT = re.compile(r"^([^;]+);range=(\d+)-(\d+|\*)$")
 
 
 class LDAPBase(object):
@@ -274,9 +274,9 @@ class Descriptor(object):
         """
         try:
             if "S:" in self.sddl:
-                res = re.search("D:(.*?)(\(.*?\))S:", self.sddl).group(2)
+                res = re.search(r"D:(.*?)(\(.*?\))S:", self.sddl).group(2)
             else:
-                res = re.search("D:(.*?)(\(.*\))", self.sddl).group(2)
+                res = re.search(r"D:(.*?)(\(.*\))", self.sddl).group(2)
         except AttributeError:
             return []
         return re.findall("(\(.*?\))", res)

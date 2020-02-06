@@ -319,7 +319,7 @@ class GptTmplInfParser(GPParser):
         current_header_name = None
 
         for line in inf_file.splitlines():
-            match = re.match('\[(.*)\]', line)
+            match = re.match(r'\[(.*)\]', line)
             if match:
                 header_name = match.group(1)
                 if header_name in self.sections:

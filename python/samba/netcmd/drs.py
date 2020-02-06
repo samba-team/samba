@@ -156,7 +156,7 @@ class cmd_drs_showrepl(Command):
                 raise
         try:
             (site, server) = drs_parse_ntds_dn(n.source_dsa_obj_dn)
-            d["DSA"] = "%s\%s" % (site, server)
+            d["DSA"] = "%s\\%s" % (site, server)
         except RuntimeError:
             pass
         return d
