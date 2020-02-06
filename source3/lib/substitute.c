@@ -532,9 +532,7 @@ char *talloc_sub_basic(TALLOC_CTX *mem_ctx,
 			break;
 		case 'm' :
 			a_string = realloc_string_sub(a_string, "%m",
-						      remote_machine
-						      ? remote_machine
-						      : "");
+						      remote_machine);
 			break;
 		case 'v' :
 			a_string = realloc_string_sub(a_string, "%v", samba_version_string());
