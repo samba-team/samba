@@ -20,6 +20,9 @@
 
 #include "includes.h"
 #include "system/filesys.h"
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
+#define SMB2_SIGNING_KEY_GNUTLS_TYPES 1
 #include "../libcli/smb/smb_common.h"
 #include "../lib/crypto/crypto.h"
 #include "lib/util/iov_buf.h"
@@ -30,8 +33,6 @@
 #endif
 
 #include "lib/crypto/gnutls_helpers.h"
-#include <gnutls/gnutls.h>
-#include <gnutls/crypto.h>
 
 int smb2_signing_key_destructor(struct smb2_signing_key *key)
 {
