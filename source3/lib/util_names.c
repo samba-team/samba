@@ -81,7 +81,6 @@ static bool set_my_netbios_names(const char *name, int i)
 void gfree_names(void)
 {
 	free_netbios_names_array();
-	free_local_machine_name();
 }
 
 const char *my_netbios_names(int i)

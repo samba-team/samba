@@ -24,6 +24,12 @@
 #include "secrets.h"
 #include "auth.h"
 
+/* Max DNS name is 253 + '\0' */
+#define MACHINE_NAME_SIZE 254
+
+static char local_machine[MACHINE_NAME_SIZE];
+static char remote_machine[MACHINE_NAME_SIZE];
+
 userdom_struct current_user_info;
 fstring remote_proto="UNKNOWN";
 
@@ -32,41 +38,25 @@ fstring remote_proto="UNKNOWN";
  * @param local_name the name we are being called
  * @param if this is the 'final' name for us, not be be changed again
  */
-
-static char *local_machine;
-
-void free_local_machine_name(void)
-{
-	TALLOC_FREE(local_machine);
-}
-
 bool set_local_machine_name(const char *local_name, bool perm)
 {
 	static bool already_perm = false;
-	char *tmp_local_machine = NULL;
+	char tmp[MACHINE_NAME_SIZE];
 
 	if (already_perm) {
 		return true;
 	}
 
-	tmp_local_machine = talloc_strdup(NULL, local_name);
-	if (!tmp_local_machine) {
-		return false;
-	}
-	trim_char(tmp_local_machine,' ',' ');
+	strlcpy(tmp, local_name, sizeof(tmp));
+	trim_char(tmp, ' ', ' ');
 
-	TALLOC_FREE(local_machine);
-	local_machine = talloc_alpha_strcpy(NULL,
-					    tmp_local_machine,
-					    SAFE_NETBIOS_CHARS);
-	if (local_machine == NULL) {
-		return false;
-	}
+	alpha_strcpy(local_machine,
+		     tmp,
+		     SAFE_NETBIOS_CHARS,
+		     sizeof(local_machine) - 1);
 	if (!strlower_m(local_machine)) {
-		TALLOC_FREE(tmp_local_machine);
 		return false;
 	}
-	TALLOC_FREE(tmp_local_machine);
 
 	already_perm = perm;
 
@@ -75,7 +65,7 @@ bool set_local_machine_name(const char *local_name, bool perm)
 
 const char *get_local_machine_name(void)
 {
-	if (!local_machine || !*local_machine) {
+	if (local_machine[0] == '\0') {
 		return lp_netbios_name();
 	}
 
@@ -84,39 +74,29 @@ const char *get_local_machine_name(void)
 
 /**
  * Set the 'remote' machine name
+ *
  * @param remote_name the name our client wants to be called by
  * @param if this is the 'final' name for them, not be be changed again
  */
-
-static char *remote_machine;
-
 bool set_remote_machine_name(const char *remote_name, bool perm)
 {
 	static bool already_perm = False;
-	char *tmp_remote_machine;
+	char tmp[MACHINE_NAME_SIZE];
 
 	if (already_perm) {
 		return true;
 	}
 
-	tmp_remote_machine = talloc_strdup(NULL, remote_name);
-	if (!tmp_remote_machine) {
-		return false;
-	}
-	trim_char(tmp_remote_machine,' ',' ');
+	strlcpy(tmp, remote_name, sizeof(tmp));
+	trim_char(tmp, ' ', ' ');
 
-	TALLOC_FREE(remote_machine);
-	remote_machine = talloc_alpha_strcpy(NULL,
-					     tmp_remote_machine,
-					     SAFE_NETBIOS_CHARS);
-	if (remote_machine == NULL) {
-		return false;
-	}
+	alpha_strcpy(remote_machine,
+		     tmp,
+		     SAFE_NETBIOS_CHARS,
+		     sizeof(remote_machine) - 1);
 	if (!strlower_m(remote_machine)) {
-		TALLOC_FREE(tmp_remote_machine);
 		return false;
 	}
-	TALLOC_FREE(tmp_remote_machine);
 
 	already_perm = perm;
 
@@ -125,7 +105,7 @@ bool set_remote_machine_name(const char *remote_name, bool perm)
 
 const char *get_remote_machine_name(void)
 {
-	return remote_machine ? remote_machine : "";
+	return remote_machine;
 }
 
 static char sub_peeraddr[INET6_ADDRSTRLEN];

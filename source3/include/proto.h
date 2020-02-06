@@ -159,7 +159,6 @@ int smbrunsecret(const char *cmd, const char *secret);
 
 /* The following definitions come from lib/substitute.c  */
 
-void free_local_machine_name(void);
 bool set_local_machine_name(const char *local_name, bool perm);
 const char *get_local_machine_name(void);
 bool set_remote_machine_name(const char *remote_name, bool perm);
