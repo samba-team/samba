@@ -38,6 +38,6 @@ pull returned Success
         TargetInfoLen            : 0x0000 (0)
         TargetInfoMaxLen         : 0x0000 (0)
         TargetInfo               : NULL
-ndr_push_subcontext_end: ndr_push_error(Subcontext Error): Bad subcontext (PUSH) content_size 1 is larger than size_is(0) at ../../librpc/ndr/ndr.c:905
+ndr_push_subcontext_end: ndr_push_error(Subcontext Error): Bad subcontext (PUSH) content_size 1 is larger than size_is(0) at ../../librpc/ndr/ndr.c:901
 push returned Subcontext Error
 validate push FAILED
