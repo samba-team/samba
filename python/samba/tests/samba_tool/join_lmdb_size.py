@@ -92,7 +92,7 @@ class JoinLmdbSizeTestCase(SambaToolCmdTest):
     # 8Gb is used
     def test_join_as_dc_default(self):
         (result, out, err) = self.join(role="DC")
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(8 * 1024 * 1024 * 1024)
         self.assertFalse(self.is_rodc())
 
@@ -100,7 +100,7 @@ class JoinLmdbSizeTestCase(SambaToolCmdTest):
     # Join as an DC with the lmdb backend size set to 1Gb
     def test_join_as_dc(self):
         (result, out, err) = self.join("1Gb", "DC")
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(1 * 1024 * 1024 * 1024)
         self.assertFalse(self.is_rodc())
 
@@ -108,7 +108,7 @@ class JoinLmdbSizeTestCase(SambaToolCmdTest):
     # Join as an RODC with the lmdb backend size set to 128Mb
     def test_join_as_rodc(self):
         (result, out, err) = self.join("128Mb", "RODC")
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(128 * 1024 * 1024)
         self.assertTrue(self.is_rodc())
 
@@ -116,7 +116,7 @@ class JoinLmdbSizeTestCase(SambaToolCmdTest):
     # Join as an RODC with --backend-store-size
     def test_join_as_rodc_default(self):
         (result, out, err) = self.join(role="RODC")
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(8 * 1024 * 1024 * 1024)
         self.assertTrue(self.is_rodc())
 

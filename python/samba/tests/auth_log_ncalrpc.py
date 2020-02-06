@@ -58,30 +58,30 @@ class AuthLogTestsNcalrpc(samba.tests.auth_log_base.AuthLogTestBase):
     def rpc_ncacn_np_ntlm_check(self, messages, authTypes, protection):
 
         expected_messages = len(authTypes)
-        self.assertEquals(expected_messages,
+        self.assertEqual(expected_messages,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # Check the first message it should be an Authorization
         msg = messages[0]
-        self.assertEquals("Authorization", msg["type"])
-        self.assertEquals("DCE/RPC",
+        self.assertEqual("Authorization", msg["type"])
+        self.assertEqual("DCE/RPC",
                           msg["Authorization"]["serviceDescription"])
-        self.assertEquals(authTypes[1], msg["Authorization"]["authType"])
-        self.assertEquals("NONE", msg["Authorization"]["transportProtection"])
+        self.assertEqual(authTypes[1], msg["Authorization"]["authType"])
+        self.assertEqual("NONE", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
         # Check the second message it should be an Authentication
         msg = messages[1]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("DCE/RPC",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("DCE/RPC",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals(authTypes[2],
+        self.assertEqual(authTypes[2],
                           msg["Authentication"]["authDescription"])
-        self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
+        self.assertEqual(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
-        self.assertEquals(EVT_LOGON_NETWORK,
+        self.assertEqual(EVT_LOGON_NETWORK,
                           msg["Authentication"]["logonType"])
 
     def test_ncalrpc_ntlm_dns_sign(self):

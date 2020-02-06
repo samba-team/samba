@@ -71,7 +71,7 @@ class LDAPNotificationTest(samba.tests.TestCase):
         self.base_dn = self.ldb.domain_dn()
 
         res = self.ldb.search("", scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         self.user_sid_dn = "<SID=%s>" % str(ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["tokenGroups"][0]))
 
@@ -146,7 +146,7 @@ otherLoginWorkstations: AFTER"
             self.fail()
         except LdbError as e10:
             (num, _) = e10.args
-            self.assertEquals(num, ERR_TIME_LIMIT_EXCEEDED)
+            self.assertEqual(num, ERR_TIME_LIMIT_EXCEEDED)
         self.assertIsNotNone(msg3)
 
         self.ldb.modify_ldif("""
@@ -211,7 +211,7 @@ delete: otherLoginWorkstations
                 self.fail()
             except LdbError as e1:
                 (num, _) = e1.args
-                self.assertEquals(num, ERR_TIME_LIMIT_EXCEEDED)
+                self.assertEqual(num, ERR_TIME_LIMIT_EXCEEDED)
 
             try:
                 hnd = self.ldb.search_iterator(base=self.base_dn,
@@ -226,7 +226,7 @@ delete: otherLoginWorkstations
                 self.fail()
             except LdbError as e2:
                 (num, _) = e2.args
-                self.assertEquals(num, ERR_TIME_LIMIT_EXCEEDED)
+                self.assertEqual(num, ERR_TIME_LIMIT_EXCEEDED)
 
             try:
                 hnd = self.ldb.search_iterator(base=self.base_dn,
@@ -241,7 +241,7 @@ delete: otherLoginWorkstations
                 self.fail()
             except LdbError as e3:
                 (num, _) = e3.args
-                self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+                self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
             try:
                 hnd = self.ldb.search_iterator(base=self.base_dn,
@@ -256,7 +256,7 @@ delete: otherLoginWorkstations
                 self.fail()
             except LdbError as e4:
                 (num, _) = e4.args
-                self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+                self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
             try:
                 hnd = self.ldb.search_iterator(base=self.base_dn,
@@ -271,7 +271,7 @@ delete: otherLoginWorkstations
                 self.fail()
             except LdbError as e5:
                 (num, _) = e5.args
-                self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+                self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
             try:
                 hnd = self.ldb.search_iterator(base=self.base_dn,
@@ -286,7 +286,7 @@ delete: otherLoginWorkstations
                 self.fail()
             except LdbError as e6:
                 (num, _) = e6.args
-                self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+                self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
             try:
                 hnd = self.ldb.search_iterator(base=self.base_dn,
@@ -301,7 +301,7 @@ delete: otherLoginWorkstations
                 self.fail()
             except LdbError as e7:
                 (num, _) = e7.args
-                self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+                self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
             try:
                 hnd = self.ldb.search_iterator(base=self.base_dn,
@@ -316,7 +316,7 @@ delete: otherLoginWorkstations
                 self.fail()
             except LdbError as e8:
                 (num, _) = e8.args
-                self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+                self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
         res = self.ldb.search(base=self.ldb.get_schema_basedn(),
                               expression="(objectClass=attributeSchema)",
@@ -343,7 +343,7 @@ delete: otherLoginWorkstations
                 (num, _) = e9.args
                 if num != ERR_UNWILLING_TO_PERFORM:
                     print("va[%s]" % va)
-                self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+                self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
         try:
             va = "noneAttributeName"
@@ -361,7 +361,7 @@ delete: otherLoginWorkstations
             (num, _) = e11.args
             if num != ERR_UNWILLING_TO_PERFORM:
                 print("va[%s]" % va)
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
 
 if "://" not in url:

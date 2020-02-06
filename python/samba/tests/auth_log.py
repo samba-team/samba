@@ -97,9 +97,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
 
         # Handle explicit smb2, smb1 or auto negotiation
         if "smb2" in binding_list:
-            self.assertEquals(serviceDescription, "SMB2")
+            self.assertEqual(serviceDescription, "SMB2")
         elif "smb1" in binding_list:
-            self.assertEquals(serviceDescription, "SMB")
+            self.assertEqual(serviceDescription, "SMB")
         else:
             self.assertIn(serviceDescription, ["SMB", "SMB2"])
 
@@ -107,30 +107,30 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                                 binding, protection):
 
         expected_messages = len(authTypes)
-        self.assertEquals(expected_messages,
+        self.assertEqual(expected_messages,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # Check the first message it should be an Authentication
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals(
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
         self._assert_ncacn_np_serviceDescription(
             binding, msg["Authentication"]["serviceDescription"])
-        self.assertEquals(authTypes[1],
+        self.assertEqual(authTypes[1],
                           msg["Authentication"]["authDescription"])
 
         # Check the second message it should be an Authorization
         msg = messages[1]
-        self.assertEquals("Authorization", msg["type"])
+        self.assertEqual("Authorization", msg["type"])
         self._assert_ncacn_np_serviceDescription(
             binding, msg["Authorization"]["serviceDescription"])
-        self.assertEquals(authTypes[2], msg["Authorization"]["authType"])
-        self.assertEquals("SMB", msg["Authorization"]["transportProtection"])
+        self.assertEqual(authTypes[2], msg["Authorization"]["authType"])
+        self.assertEqual("SMB", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
         # Check the third message it should be an Authentication
@@ -140,17 +140,17 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                 return (desc == "DCE/RPC" or desc == service)
 
             msg = messages[2]
-            self.assertEquals("Authentication", msg["type"])
-            self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
+            self.assertEqual("Authentication", msg["type"])
+            self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
             self.assertTrue(
                 checkServiceDescription(
                     msg["Authentication"]["serviceDescription"]))
 
-            self.assertEquals(authTypes[3],
+            self.assertEqual(authTypes[3],
                               msg["Authentication"]["authDescription"])
-            self.assertEquals(
+            self.assertEqual(
                 EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
-            self.assertEquals(
+            self.assertEqual(
                 EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
     def rpc_ncacn_np_krb5_check(
@@ -162,7 +162,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
             protection):
 
         expected_messages = len(authTypes)
-        self.assertEquals(expected_messages,
+        self.assertEqual(expected_messages,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -170,39 +170,39 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         # This is almost certainly Authentication over UDP, and is probably
         # returning message too big,
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("Kerberos KDC",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("Kerberos KDC",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals(authTypes[1],
+        self.assertEqual(authTypes[1],
                           msg["Authentication"]["authDescription"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
         # Check the second message it should be an Authentication
         # This this the TCP Authentication in response to the message too big
         # response to the UDP Authentication
         msg = messages[1]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("Kerberos KDC",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("Kerberos KDC",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals(authTypes[2],
+        self.assertEqual(authTypes[2],
                           msg["Authentication"]["authDescription"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
         # Check the third message it should be an Authorization
         msg = messages[2]
-        self.assertEquals("Authorization", msg["type"])
+        self.assertEqual("Authorization", msg["type"])
         self._assert_ncacn_np_serviceDescription(
             binding, msg["Authorization"]["serviceDescription"])
-        self.assertEquals(authTypes[3], msg["Authorization"]["authType"])
-        self.assertEquals("SMB", msg["Authorization"]["transportProtection"])
+        self.assertEqual(authTypes[3], msg["Authorization"]["authType"])
+        self.assertEqual("SMB", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
     def test_rpc_ncacn_np_ntlm_dns_sign(self):
@@ -321,73 +321,73 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                                     binding, protection):
 
         expected_messages = len(authTypes)
-        self.assertEquals(expected_messages,
+        self.assertEqual(expected_messages,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # Check the first message it should be an Authorization
         msg = messages[0]
-        self.assertEquals("Authorization", msg["type"])
-        self.assertEquals("DCE/RPC",
+        self.assertEqual("Authorization", msg["type"])
+        self.assertEqual("DCE/RPC",
                           msg["Authorization"]["serviceDescription"])
-        self.assertEquals(authTypes[1], msg["Authorization"]["authType"])
-        self.assertEquals("NONE", msg["Authorization"]["transportProtection"])
+        self.assertEqual(authTypes[1], msg["Authorization"]["authType"])
+        self.assertEqual("NONE", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
         # Check the second message it should be an Authentication
         msg = messages[1]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("DCE/RPC",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("DCE/RPC",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals(authTypes[2],
+        self.assertEqual(authTypes[2],
                           msg["Authentication"]["authDescription"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
     def rpc_ncacn_ip_tcp_krb5_check(self, messages, authTypes, service,
                                     binding, protection):
 
         expected_messages = len(authTypes)
-        self.assertEquals(expected_messages,
+        self.assertEqual(expected_messages,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # Check the first message it should be an Authorization
         msg = messages[0]
-        self.assertEquals("Authorization", msg["type"])
-        self.assertEquals("DCE/RPC",
+        self.assertEqual("Authorization", msg["type"])
+        self.assertEqual("DCE/RPC",
                           msg["Authorization"]["serviceDescription"])
-        self.assertEquals(authTypes[1], msg["Authorization"]["authType"])
-        self.assertEquals("NONE", msg["Authorization"]["transportProtection"])
+        self.assertEqual(authTypes[1], msg["Authorization"]["authType"])
+        self.assertEqual("NONE", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
         # Check the second message it should be an Authentication
         msg = messages[1]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("Kerberos KDC",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("Kerberos KDC",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals(authTypes[2],
+        self.assertEqual(authTypes[2],
                           msg["Authentication"]["authDescription"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
         # Check the third message it should be an Authentication
         msg = messages[2]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("Kerberos KDC",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("Kerberos KDC",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals(authTypes[2],
+        self.assertEqual(authTypes[2],
                           msg["Authentication"]["authDescription"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
     def test_rpc_ncacn_ip_tcp_ntlm_dns_sign(self):
@@ -479,36 +479,36 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                            credentials=self.get_credentials())
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(3,
+        self.assertEqual(3,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # Check the first message it should be an Authentication
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("Kerberos KDC",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("Kerberos KDC",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("ENC-TS Pre-authentication",
+        self.assertEqual("ENC-TS Pre-authentication",
                           msg["Authentication"]["authDescription"])
         self.assertTrue(msg["Authentication"]["duration"] > 0)
-        self.assertEquals(
+        self.assertEqual(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
         # Check the second message it should be an Authentication
         msg = messages[1]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("Kerberos KDC",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("Kerberos KDC",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("ENC-TS Pre-authentication",
+        self.assertEqual("ENC-TS Pre-authentication",
                           msg["Authentication"]["authDescription"])
         self.assertTrue(msg["Authentication"]["duration"] > 0)
-        self.assertEquals(
+        self.assertEqual(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
     def test_ldap_ntlm(self):
@@ -524,20 +524,20 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                            credentials=self.get_credentials())
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(2,
+        self.assertEqual(2,
                           len(messages),
                           "Did not receive the expected number of messages")
         # Check the first message it should be an Authentication
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("LDAP",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("LDAP",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("NTLMSSP", msg["Authentication"]["authDescription"])
+        self.assertEqual("NTLMSSP", msg["Authentication"]["authDescription"])
         self.assertTrue(msg["Authentication"]["duration"] > 0)
-        self.assertEquals(
+        self.assertEqual(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_LOGON_NETWORK, msg["Authentication"]["logonType"])
 
     def test_ldap_simple_bind(self):
@@ -556,21 +556,21 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                            credentials=creds)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(2,
+        self.assertEqual(2,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # Check the first message it should be an Authentication
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("LDAP",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("LDAP",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("simple bind",
+        self.assertEqual("simple bind",
                           msg["Authentication"]["authDescription"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_ID_SUCCESSFUL_LOGON, msg["Authentication"]["eventId"])
-        self.assertEquals(
+        self.assertEqual(
             EVT_LOGON_NETWORK_CLEAR_TEXT, msg["Authentication"]["logonType"])
 
     def test_ldap_simple_bind_bad_password(self):
@@ -598,10 +598,10 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                                credentials=creds)
         except LdbError:
             thrown = True
-        self.assertEquals(thrown, True)
+        self.assertEqual(thrown, True)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -628,10 +628,10 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                                credentials=creds)
         except LdbError:
             thrown = True
-        self.assertEquals(thrown, True)
+        self.assertEqual(thrown, True)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -658,10 +658,10 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                                credentials=creds)
         except LdbError:
             thrown = True
-        self.assertEquals(thrown, True)
+        self.assertEqual(thrown, True)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -683,7 +683,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                            credentials=creds)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(0,
+        self.assertEqual(0,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -709,7 +709,7 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
             pass
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -724,33 +724,33 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.smb_connection(creds)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(3,
+        self.assertEqual(3,
                           len(messages),
                           "Did not receive the expected number of messages")
         # Check the first message it should be an Authentication
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("Kerberos KDC",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("Kerberos KDC",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("ENC-TS Pre-authentication",
+        self.assertEqual("ENC-TS Pre-authentication",
                           msg["Authentication"]["authDescription"])
-        self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
+        self.assertEqual(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
-        self.assertEquals(EVT_LOGON_NETWORK,
+        self.assertEqual(EVT_LOGON_NETWORK,
                           msg["Authentication"]["logonType"])
 
         # Check the second message it should be an Authentication
         msg = messages[1]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("Kerberos KDC",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("Kerberos KDC",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("ENC-TS Pre-authentication",
+        self.assertEqual("ENC-TS Pre-authentication",
                           msg["Authentication"]["authDescription"])
-        self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
+        self.assertEqual(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
-        self.assertEquals(EVT_LOGON_NETWORK,
+        self.assertEqual(EVT_LOGON_NETWORK,
                           msg["Authentication"]["logonType"])
 
     def test_smb_bad_password(self):
@@ -772,10 +772,10 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
             self.smb_connection(creds)
         except NTSTATUSError:
             thrown = True
-        self.assertEquals(thrown, True)
+        self.assertEqual(thrown, True)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -802,10 +802,10 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
             self.smb_connection(creds)
         except NTSTATUSError:
             thrown = True
-        self.assertEquals(thrown, True)
+        self.assertEqual(thrown, True)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -824,42 +824,42 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/smbclient", path, auth, "-mNT1", "-c quit"])
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(3,
+        self.assertEqual(3,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # Check the first message it should be an Authentication
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_NO_SUCH_USER",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_NO_SUCH_USER",
                           msg["Authentication"]["status"])
-        self.assertEquals("SMB",
+        self.assertEqual("SMB",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("NTLMSSP",
+        self.assertEqual("NTLMSSP",
                           msg["Authentication"]["authDescription"])
-        self.assertEquals("No-Password",
+        self.assertEqual("No-Password",
                           msg["Authentication"]["passwordType"])
-        self.assertEquals(EVT_ID_UNSUCCESSFUL_LOGON,
+        self.assertEqual(EVT_ID_UNSUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
-        self.assertEquals(EVT_LOGON_NETWORK,
+        self.assertEqual(EVT_LOGON_NETWORK,
                           msg["Authentication"]["logonType"])
 
         # Check the second message it should be an Authentication
         msg = messages[1]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK",
                           msg["Authentication"]["status"])
-        self.assertEquals("SMB",
+        self.assertEqual("SMB",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("NTLMSSP",
+        self.assertEqual("NTLMSSP",
                           msg["Authentication"]["authDescription"])
-        self.assertEquals("No-Password",
+        self.assertEqual("No-Password",
                           msg["Authentication"]["passwordType"])
-        self.assertEquals("ANONYMOUS LOGON",
+        self.assertEqual("ANONYMOUS LOGON",
                           msg["Authentication"]["becameAccount"])
-        self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
+        self.assertEqual(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
-        self.assertEquals(EVT_LOGON_NETWORK,
+        self.assertEqual(EVT_LOGON_NETWORK,
                           msg["Authentication"]["logonType"])
 
     def test_smb2_anonymous(self):
@@ -877,42 +877,42 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         call(["bin/smbclient", path, auth, "-mSMB3", "-c quit"])
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(3,
+        self.assertEqual(3,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # Check the first message it should be an Authentication
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_NO_SUCH_USER",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_NO_SUCH_USER",
                           msg["Authentication"]["status"])
-        self.assertEquals("SMB2",
+        self.assertEqual("SMB2",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("NTLMSSP",
+        self.assertEqual("NTLMSSP",
                           msg["Authentication"]["authDescription"])
-        self.assertEquals("No-Password",
+        self.assertEqual("No-Password",
                           msg["Authentication"]["passwordType"])
-        self.assertEquals(EVT_ID_UNSUCCESSFUL_LOGON,
+        self.assertEqual(EVT_ID_UNSUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
-        self.assertEquals(EVT_LOGON_NETWORK,
+        self.assertEqual(EVT_LOGON_NETWORK,
                           msg["Authentication"]["logonType"])
 
         # Check the second message it should be an Authentication
         msg = messages[1]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK",
                           msg["Authentication"]["status"])
-        self.assertEquals("SMB2",
+        self.assertEqual("SMB2",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("NTLMSSP",
+        self.assertEqual("NTLMSSP",
                           msg["Authentication"]["authDescription"])
-        self.assertEquals("No-Password",
+        self.assertEqual("No-Password",
                           msg["Authentication"]["passwordType"])
-        self.assertEquals("ANONYMOUS LOGON",
+        self.assertEqual("ANONYMOUS LOGON",
                           msg["Authentication"]["becameAccount"])
-        self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
+        self.assertEqual(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
-        self.assertEquals(EVT_LOGON_NETWORK,
+        self.assertEqual(EVT_LOGON_NETWORK,
                           msg["Authentication"]["logonType"])
 
     def test_smb_no_krb_spnego(self):
@@ -927,22 +927,22 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
         self.smb_connection(creds)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(2,
+        self.assertEqual(2,
                           len(messages),
                           "Did not receive the expected number of messages")
         # Check the first message it should be an Authentication
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
         self.assertIn(msg["Authentication"]["serviceDescription"],
                       ["SMB", "SMB2"])
-        self.assertEquals("NTLMSSP",
+        self.assertEqual("NTLMSSP",
                           msg["Authentication"]["authDescription"])
-        self.assertEquals("NTLMv2",
+        self.assertEqual("NTLMv2",
                           msg["Authentication"]["passwordType"])
-        self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
+        self.assertEqual(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
-        self.assertEquals(EVT_LOGON_NETWORK,
+        self.assertEqual(EVT_LOGON_NETWORK,
                           msg["Authentication"]["logonType"])
 
     def test_smb_no_krb_spnego_bad_password(self):
@@ -967,10 +967,10 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
             self.smb_connection(creds)
         except NTSTATUSError:
             thrown = True
-        self.assertEquals(thrown, True)
+        self.assertEqual(thrown, True)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -996,10 +996,10 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
             self.smb_connection(creds)
         except NTSTATUSError:
             thrown = True
-        self.assertEquals(thrown, True)
+        self.assertEqual(thrown, True)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -1018,22 +1018,22 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                             use_spnego="no")
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(2,
+        self.assertEqual(2,
                           len(messages),
                           "Did not receive the expected number of messages")
         # Check the first message it should be an Authentication
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals("SMB",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual("SMB",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("bare-NTLM",
+        self.assertEqual("bare-NTLM",
                           msg["Authentication"]["authDescription"])
-        self.assertEquals("NTLMv1",
+        self.assertEqual("NTLMv1",
                           msg["Authentication"]["passwordType"])
-        self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
+        self.assertEqual(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
-        self.assertEquals(EVT_LOGON_NETWORK,
+        self.assertEqual(EVT_LOGON_NETWORK,
                           msg["Authentication"]["logonType"])
 
     def test_smb_no_krb_no_spnego_no_ntlmv2_bad_password(self):
@@ -1061,10 +1061,10 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                                 use_spnego="no")
         except NTSTATUSError:
             thrown = True
-        self.assertEquals(thrown, True)
+        self.assertEqual(thrown, True)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -1093,10 +1093,10 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
                                 use_spnego="no")
         except NTSTATUSError:
             thrown = True
-        self.assertEquals(thrown, True)
+        self.assertEqual(thrown, True)
 
         messages = self.waitForMessages(isLastExpectedMessage)
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -1427,11 +1427,11 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
 
         # Check the second to last message it should be an Authorization
         msg = messages[-2]
-        self.assertEquals("Authorization", msg["type"])
-        self.assertEquals("DCE/RPC",
+        self.assertEqual("Authorization", msg["type"])
+        self.assertEqual("DCE/RPC",
                           msg["Authorization"]["serviceDescription"])
-        self.assertEquals("schannel", msg["Authorization"]["authType"])
-        self.assertEquals("SEAL", msg["Authorization"]["transportProtection"])
+        self.assertEqual("schannel", msg["Authorization"]["authType"])
+        self.assertEqual("SEAL", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
     # Signed logons get promoted to sealed, this test ensures that
@@ -1470,9 +1470,9 @@ class AuthLogTests(samba.tests.auth_log_base.AuthLogTestBase):
 
         # Check the second to last message it should be an Authorization
         msg = messages[-2]
-        self.assertEquals("Authorization", msg["type"])
-        self.assertEquals("DCE/RPC",
+        self.assertEqual("Authorization", msg["type"])
+        self.assertEqual("DCE/RPC",
                           msg["Authorization"]["serviceDescription"])
-        self.assertEquals("schannel", msg["Authorization"]["authType"])
-        self.assertEquals("SEAL", msg["Authorization"]["transportProtection"])
+        self.assertEqual("schannel", msg["Authorization"]["authType"])
+        self.assertEqual("SEAL", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))

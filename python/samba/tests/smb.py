@@ -194,14 +194,14 @@ class SMBTests(samba.tests.TestCase):
         self.smb_conn.savefile(test_file, test_contents.encode('utf8'))
 
         contents = self.smb_conn.loadfile(test_file)
-        self.assertEquals(contents.decode('utf8'), test_contents,
+        self.assertEqual(contents.decode('utf8'), test_contents,
                           msg='contents of test file did not match what was written')
 
         # check we can overwrite the file with new contents
         new_contents = 'wxyz' * 128
         self.smb_conn.savefile(test_file, new_contents.encode('utf8'))
         contents = self.smb_conn.loadfile(test_file)
-        self.assertEquals(contents.decode('utf8'), new_contents,
+        self.assertEqual(contents.decode('utf8'), new_contents,
                           msg='contents of test file did not match what was written')
 
     # with python2 this will save/load str type (with embedded nulls)
@@ -210,7 +210,7 @@ class SMBTests(samba.tests.TestCase):
         self.smb_conn.savefile(test_file, test_literal_bytes_embed_nulls)
 
         contents = self.smb_conn.loadfile(test_file)
-        self.assertEquals(contents, test_literal_bytes_embed_nulls,
+        self.assertEqual(contents, test_literal_bytes_embed_nulls,
                           msg='contents of test file did not match what was written')
 
     # python3 only this will save/load unicode
@@ -219,7 +219,7 @@ class SMBTests(samba.tests.TestCase):
             self.smb_conn.savefile(test_file, utf_contents.encode('utf8'))
 
             contents = self.smb_conn.loadfile(test_file)
-            self.assertEquals(contents.decode('utf8'), utf_contents,
+            self.assertEqual(contents.decode('utf8'), utf_contents,
                               msg='contents of test file did not match what was written')
 
     # with python2 this will save/load str type
@@ -228,7 +228,7 @@ class SMBTests(samba.tests.TestCase):
         self.smb_conn.savefile(test_file, binary_contents)
 
         contents = self.smb_conn.loadfile(test_file)
-        self.assertEquals(contents, binary_contents,
+        self.assertEqual(contents, binary_contents,
                           msg='contents of test file did not match what was written')
 
     def make_sysvol_path(self, dirpath, filename):

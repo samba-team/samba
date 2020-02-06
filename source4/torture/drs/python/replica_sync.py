@@ -70,12 +70,12 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             self.ldb_dc2.delete(dn, ["tree_delete:1"])
         except LdbError as e:
             (num, _) = e.args
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+            self.assertEqual(num, ERR_NO_SUCH_OBJECT)
         try:
             self.ldb_dc1.delete(dn, ["tree_delete:1"])
         except LdbError as e1:
             (num, _) = e1.args
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+            self.assertEqual(num, ERR_NO_SUCH_OBJECT)
 
     def _cleanup_object(self, guid):
         """Cleans up a test object, if it still exists"""
@@ -133,13 +133,13 @@ objectClass: organizationalUnit
         res = sam_ldb.search(base='<GUID=%s>' % guid,
                              controls=["show_deleted:1"],
                              attrs=["isDeleted", "objectCategory", "ou"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         ou_cur = res[0]
         # Deleted Object base DN
         dodn = self._deleted_objects_dn(sam_ldb)
         # now check properties of the user
         name_cur = ou_cur["ou"][0]
-        self.assertEquals(ou_cur["isDeleted"][0], b"TRUE")
+        self.assertEqual(ou_cur["isDeleted"][0], b"TRUE")
         self.assertTrue(not(b"objectCategory" in ou_cur))
         self.assertTrue(dodn in str(ou_cur["dn"]),
                         "OU %s is deleted but it is not located under %s!" % (name_cur, dodn))

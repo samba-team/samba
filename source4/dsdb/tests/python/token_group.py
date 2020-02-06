@@ -67,7 +67,7 @@ class StaticTokenTest(samba.tests.TestCase):
         self.base_dn = self.ldb.domain_dn()
 
         res = self.ldb.search("", scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         self.user_sid_dn = "<SID=%s>" % str(ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["tokenGroups"][0]))
 
@@ -91,7 +91,7 @@ class StaticTokenTest(samba.tests.TestCase):
             self.fail(msg="This test is only valid on ldap")
 
         res = self.ldb.search("", scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         print("Getting tokenGroups from rootDSE")
         tokengroups = []
@@ -110,7 +110,7 @@ class StaticTokenTest(samba.tests.TestCase):
     def test_dn_tokenGroups(self):
         print("Getting tokenGroups from user DN")
         res = self.ldb.search(self.user_sid_dn, scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         dn_tokengroups = []
         for sid in res[0]['tokenGroups']:
@@ -273,13 +273,13 @@ class DynamicTokenTest(samba.tests.TestCase):
         self.ldb = self.get_ldb_connection(self.test_user, self.test_user_pass)
 
         res = self.ldb.search("", scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         self.user_sid = ndr_unpack(samba.dcerpc.security.dom_sid, res[0]["tokenGroups"][0])
         self.user_sid_dn = "<SID=%s>" % str(self.user_sid)
 
         res = self.ldb.search(self.user_sid_dn, scope=ldb.SCOPE_BASE, attrs=[])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         self.test_user_dn = res[0].dn
 
@@ -323,7 +323,7 @@ class DynamicTokenTest(samba.tests.TestCase):
             self.fail(msg="This test is only valid on ldap")
 
         res = self.ldb.search("", scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         print("Getting tokenGroups from rootDSE")
         tokengroups = []
@@ -342,7 +342,7 @@ class DynamicTokenTest(samba.tests.TestCase):
     def test_dn_tokenGroups(self):
         print("Getting tokenGroups from user DN")
         res = self.ldb.search(self.user_sid_dn, scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         dn_tokengroups = []
         for sid in res[0]['tokenGroups']:
@@ -450,7 +450,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         tokenGroupsSet = set()
 
         res = self.ldb.search(self.user_sid_dn, scope=ldb.SCOPE_BASE, attrs=["tokenGroups"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         dn_tokengroups = []
         for sid in res[0]['tokenGroups']:
@@ -537,7 +537,7 @@ class DynamicTokenTest(samba.tests.TestCase):
         tokenGroupsSet = set()
 
         res = self.ldb.search(self.user_sid_dn, scope=ldb.SCOPE_BASE, attrs=["tokenGroupsGlobalAndUniversal"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         dn_tokengroups = []
         for sid in res[0]['tokenGroupsGlobalAndUniversal']:

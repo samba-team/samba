@@ -359,7 +359,7 @@ class VLVTests(TestsWithUserOU):
         print("start %d end %d" % (start, end))
         print("expected: %s" % expected_results)
         print("got     : %s" % results)
-        self.assertEquals(expected_results, results)
+        self.assertEqual(expected_results, results)
 
     def test_server_vlv_with_cookie(self):
         attrs = [x for x in self.users[0].keys() if x not in
@@ -490,7 +490,7 @@ class VLVTests(TestsWithUserOU):
 
                         expected_results = expected_order[start: end]
 
-                        self.assertEquals(expected_results, results)
+                        self.assertEqual(expected_results, results)
 
     def test_vlv_gte_with_expression(self):
         """What happens when we run the VLV with an expression?"""
@@ -570,7 +570,7 @@ class VLVTests(TestsWithUserOU):
                         if expected_results != results:
                             print("attr %s before %d after %d offset %d" %
                                   (attr, before, after, offset))
-                        self.assertEquals(expected_results, results)
+                        self.assertEqual(expected_results, results)
 
                         n = len(self.users)
                         if random.random() < 0.1 + (n < 5) * 0.05:
@@ -619,7 +619,7 @@ class VLVTests(TestsWithUserOU):
                                   controls=[sort_control, vlv_search])
 
             results = [x[attr][0].upper() for x in res]
-            #self.assertEquals(expected_order, results)
+            #self.assertEqual(expected_order, results)
 
             dn_order = [str(x['dn']) for x in res]
             values = results[:]
@@ -642,7 +642,7 @@ class VLVTests(TestsWithUserOU):
                         dn_expected = dn_order[offset - before - 1:
                                                offset + after]
 
-                        self.assertEquals(dn_expected, dn_results)
+                        self.assertEqual(dn_expected, dn_results)
 
                         results = [x[attr][0].upper() for x in res]
 
@@ -976,7 +976,7 @@ class VLVTests(TestsWithUserOU):
 
                         expected_results = expected_order[start: end]
 
-                        self.assertEquals(expected_results, results)
+                        self.assertEqual(expected_results, results)
 
     def test_server_vlv_gte_no_cookie(self):
         attrs = [x for x in self.users[0].keys() if x not in
@@ -1020,7 +1020,7 @@ class VLVTests(TestsWithUserOU):
                             print("\nattr %s offset %d before %d "
                                   "after %d gte %s" %
                                   (attr, offset, before, after, gte))
-                        self.assertEquals(expected_results, results)
+                        self.assertEqual(expected_results, results)
 
     def test_multiple_searches(self):
         """The maximum number of concurrent vlv searches per connection is

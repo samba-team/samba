@@ -64,8 +64,8 @@ class UpgradeProvisionBasicLdbHelpersTestCase(TestCaseInTempDir):
         ldbs = get_ldbs(paths, creds, system_session(), lp)
         names = find_provision_key_parameters(ldbs.sam, ldbs.secrets, ldbs.idmap,
                                               paths, smb_conf_path, lp)
-        self.assertEquals(names.realm, "SAMBA.EXAMPLE.COM")
-        self.assertEquals(str(names.rootdn).lower(), rootdn.lower())
+        self.assertEqual(names.realm, "SAMBA.EXAMPLE.COM")
+        self.assertEqual(str(names.rootdn).lower(), rootdn.lower())
         self.assertNotEquals(names.policyid_dc, None)
         self.assertNotEquals(names.ntdsguid, "")
 
@@ -125,8 +125,8 @@ class UpgradeProvisionWithLdbTestCase(TestCaseInTempDir):
         identic_rename(self.ldbs.sam, guestDN)
         res = self.ldbs.sam.search(expression="(name=Guest)", base=rootdn,
                                    scope=ldb.SCOPE_SUBTREE, attrs=["dn"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(str(res[0]["dn"]), "CN=Guest,CN=Users,%s" % rootdn)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0]["dn"]), "CN=Guest,CN=Users,%s" % rootdn)
 
     def test_delta_update_basesamdb(self):
         dummysampath = self._getEmptyDbName()

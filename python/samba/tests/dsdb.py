@@ -59,7 +59,7 @@ class DsdbTests(TestCase):
 
     def test_get_oid_from_attrid(self):
         oid = self.samdb.get_oid_from_attid(591614)
-        self.assertEquals(oid, "1.2.840.113556.1.4.1790")
+        self.assertEqual(oid, "1.2.840.113556.1.4.1790")
 
     def test_error_replpropertymetadata(self):
         res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
@@ -144,16 +144,16 @@ class DsdbTests(TestCase):
         self.samdb.modify(msg, ["local_oid:1.3.6.1.4.1.7165.4.3.14:0"])
 
     def test_ok_get_attribute_from_attid(self):
-        self.assertEquals(self.samdb.get_attribute_from_attid(13), "description")
+        self.assertEqual(self.samdb.get_attribute_from_attid(13), "description")
 
     def test_ko_get_attribute_from_attid(self):
-        self.assertEquals(self.samdb.get_attribute_from_attid(11979), None)
+        self.assertEqual(self.samdb.get_attribute_from_attid(11979), None)
 
     def test_get_attribute_replmetadata_version(self):
         res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
                                 base=self.account_dn,
                                 attrs=["dn"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         dn = str(res[0].dn)
         self.assertEqual(self.samdb.get_attribute_replmetadata_version(dn, "unicodePwd"), 2)
 
@@ -161,7 +161,7 @@ class DsdbTests(TestCase):
         res = self.samdb.search(scope=ldb.SCOPE_SUBTREE,
                                 base=self.account_dn,
                                 attrs=["dn"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         dn = str(res[0].dn)
         version = self.samdb.get_attribute_replmetadata_version(dn, "description")
         self.samdb.set_attribute_replmetadata_version(dn, "description", version + 2)

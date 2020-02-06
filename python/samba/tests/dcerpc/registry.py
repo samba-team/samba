@@ -40,12 +40,12 @@ class WinregTests(RpcInterfaceTestCase):
     def test_getversion(self):
         handle = self.get_hklm()
         version = self.conn.GetVersion(handle)
-        self.assertEquals(int, version.__class__)
+        self.assertEqual(int, version.__class__)
         self.conn.CloseKey(handle)
 
     def test_getkeyinfo(self):
         handle = self.conn.OpenHKLM(None,
                                     winreg.KEY_QUERY_VALUE | winreg.KEY_ENUMERATE_SUB_KEYS)
         x = self.conn.QueryInfoKey(handle, winreg.String())
-        self.assertEquals(9, len(x))  # should return a 9-tuple
+        self.assertEqual(9, len(x))  # should return a 9-tuple
         self.conn.CloseKey(handle)

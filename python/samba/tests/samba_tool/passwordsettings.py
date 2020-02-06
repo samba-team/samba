@@ -56,7 +56,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                      'msDS-LockoutObservationWindow',
                      'msDS-LockoutThreshold', 'msDS-LockoutDuration']
         res = self.ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=pso_attrs)
-        self.assertEquals(len(res), 1, "PSO lookup failed")
+        self.assertEqual(len(res), 1, "PSO lookup failed")
 
         # convert types in the PSO-settings to what the search returns, i.e.
         # boolean --> string, seconds --> timestamps in -100 nanosecond units
@@ -68,23 +68,23 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         max_age = -int(pso.password_age_max * (1e7))
 
         # check the PSO's settings match the search results
-        self.assertEquals(str(res[0]['msDS-PasswordComplexityEnabled'][0]),
+        self.assertEqual(str(res[0]['msDS-PasswordComplexityEnabled'][0]),
                           complexity_str)
         plaintext_res = res[0]['msDS-PasswordReversibleEncryptionEnabled'][0]
-        self.assertEquals(str(plaintext_res), plaintext_str)
-        self.assertEquals(int(res[0]['msDS-PasswordHistoryLength'][0]),
+        self.assertEqual(str(plaintext_res), plaintext_str)
+        self.assertEqual(int(res[0]['msDS-PasswordHistoryLength'][0]),
                           pso.history_len)
-        self.assertEquals(int(res[0]['msDS-MinimumPasswordLength'][0]),
+        self.assertEqual(int(res[0]['msDS-MinimumPasswordLength'][0]),
                           pso.password_len)
-        self.assertEquals(int(res[0]['msDS-MinimumPasswordAge'][0]), min_age)
-        self.assertEquals(int(res[0]['msDS-MaximumPasswordAge'][0]), max_age)
-        self.assertEquals(int(res[0]['msDS-LockoutObservationWindow'][0]),
+        self.assertEqual(int(res[0]['msDS-MinimumPasswordAge'][0]), min_age)
+        self.assertEqual(int(res[0]['msDS-MaximumPasswordAge'][0]), max_age)
+        self.assertEqual(int(res[0]['msDS-LockoutObservationWindow'][0]),
                           lockout_window)
-        self.assertEquals(int(res[0]['msDS-LockoutDuration'][0]),
+        self.assertEqual(int(res[0]['msDS-LockoutDuration'][0]),
                           lockout_duration)
-        self.assertEquals(int(res[0]['msDS-LockoutThreshold'][0]),
+        self.assertEqual(int(res[0]['msDS-LockoutThreshold'][0]),
                           pso.lockout_attempts)
-        self.assertEquals(int(res[0]['msDS-PasswordSettingsPrecedence'][0]),
+        self.assertEqual(int(res[0]['msDS-PasswordSettingsPrecedence'][0]),
                           pso.precedence)
 
         # check we can also display the PSO via the show command
@@ -121,7 +121,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
         self.obj_cleanup.append("CN=%s,%s" % (pso_name, self.pso_container))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("successfully created", out)
         self.check_pso(pso_name, expected_pso)
 
@@ -163,7 +163,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  self.user_auth)
         self.obj_cleanup.append("CN=%s,%s" % (pso_name, self.pso_container))
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("successfully created", out)
         self.check_pso(pso_name, expected_pso)
 
@@ -195,7 +195,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
 
         # sanity-check the cmd was successful
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("successfully created", out)
         self.check_pso(pso_name, pso_settings)
 
@@ -219,7 +219,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                               "-H", self.server,
                                               self.user_auth)
         self.assertCmdSuccess(res, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("Successfully updated", out)
 
         # check the PSO's settings now reflect the new values
@@ -237,7 +237,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("Deleted PSO", out)
         dn = "CN=%s,%s" % (pso_name, self.pso_container)
         self.obj_cleanup.remove(dn)
@@ -248,7 +248,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
             self.fail("PSO shouldn't exist")
         except ldb.LdbError as e:
             (enum, estr) = e.args
-            self.assertEquals(enum, ldb.ERR_NO_SUCH_OBJECT)
+            self.assertEqual(enum, ldb.ERR_NO_SUCH_OBJECT)
 
         # run the same cmd again - it should fail because PSO no longer exists
         (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
@@ -267,7 +267,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  user.name, "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         if pso is None:
             self.assertIn("No PSO applies to user", out)
         else:
@@ -275,9 +275,9 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
 
         # then check the DB tells us the same thing
         if pso is None:
-            self.assertEquals(user.get_resultant_PSO(), None)
+            self.assertEqual(user.get_resultant_PSO(), None)
         else:
-            self.assertEquals(user.get_resultant_PSO(), pso.dn)
+            self.assertEqual(user.get_resultant_PSO(), pso.dn)
 
     def test_pso_apply_to_user(self):
         """Checks we can apply/unapply a PSO to a user"""
@@ -307,7 +307,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  group_name, "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.check_pso_applied(user, pso=test_pso)
 
         # we should fail if we try to apply the same PSO/group twice though
@@ -324,7 +324,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  user.name, "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.check_pso_applied(user, pso=test_pso)
 
         # check samba-tool can successfully unlink a group from a PSO
@@ -333,7 +333,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  group_name, "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         # PSO still applies directly to the user, even though group was removed
         self.check_pso_applied(user, pso=test_pso)
 
@@ -343,7 +343,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  user.name, "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.check_pso_applied(user, pso=None)
 
     def test_pso_unpriv(self):
@@ -418,7 +418,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "show"), "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
 
         # check an arbitrary setting is displayed correctly
         min_pwd_len = self.ldb.get_minPwdLength()
@@ -433,16 +433,16 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("successful", out)
-        self.assertEquals(new_len, self.ldb.get_minPwdLength())
+        self.assertEqual(new_len, self.ldb.get_minPwdLength())
 
         # check the updated value is now displayed
         (result, out, err) = self.runsublevelcmd("domain", ("passwordsettings",
                                                  "show"), "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("Minimum password length: %u" % new_len, out)
 
     def test_domain_passwordsettings_pwdage(self):
@@ -457,7 +457,7 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("successful", out)
         self.assertNotEquals(max_pwd_age, self.ldb.get_maxPwdAge())
 
@@ -479,6 +479,6 @@ class PwdSettingsCmdTestCase(SambaToolCmdTest):
                                                  "-H", self.server,
                                                  self.user_auth)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("successful", out)
         self.assertNotEquals(min_pwd_age, self.ldb.get_minPwdAge())

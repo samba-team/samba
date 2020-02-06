@@ -118,9 +118,9 @@ class RawDCERPCTest(TestCase):
 
     def _connect_smb(self):
         a = self.primary_address.split('\\')
-        self.assertEquals(len(a), 3)
-        self.assertEquals(a[0], "")
-        self.assertEquals(a[1], "pipe")
+        self.assertEqual(len(a), 3)
+        self.assertEqual(a[0], "")
+        self.assertEqual(a[1], "pipe")
         pipename = a[2]
         self.s = smb_pipe_socket(self.target_hostname,
                                  pipename,
@@ -319,20 +319,20 @@ class RawDCERPCTest(TestCase):
                                 samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                                 auth_length=0)
                 self.assertNotEquals(rep.u.alloc_hint, 0)
-                self.assertEquals(rep.u.context_id, 0)
-                self.assertEquals(rep.u.cancel_count, 0)
-                self.assertEquals(rep.u.flags, 0)
-                self.assertEquals(rep.u.status, alter_fault)
-                self.assertEquals(rep.u.reserved, 0)
-                self.assertEquals(len(rep.u.error_and_verifier), 0)
+                self.assertEqual(rep.u.context_id, 0)
+                self.assertEqual(rep.u.cancel_count, 0)
+                self.assertEqual(rep.u.flags, 0)
+                self.assertEqual(rep.u.status, alter_fault)
+                self.assertEqual(rep.u.reserved, 0)
+                self.assertEqual(len(rep.u.error_and_verifier), 0)
                 return None
             self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_ALTER_RESP, req.call_id,
                             pfc_flags=req.pfc_flags)
-            self.assertEquals(rep.u.max_xmit_frag, req.u.max_xmit_frag)
-            self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
-            self.assertEquals(rep.u.assoc_group_id, assoc_group_id)
-            self.assertEquals(rep.u.secondary_address_size, 0)
-            self.assertEquals(rep.u.secondary_address, '')
+            self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
+            self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
+            self.assertEqual(rep.u.assoc_group_id, assoc_group_id)
+            self.assertEqual(rep.u.secondary_address_size, 0)
+            self.assertEqual(rep.u.secondary_address, '')
             self.assertPadding(rep.u._pad1, 2)
         else:
             req = self.generate_bind(call_id=call_id,
@@ -345,18 +345,18 @@ class RawDCERPCTest(TestCase):
             if nak_reason is not None:
                 self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_BIND_NAK, req.call_id,
                                 auth_length=0)
-                self.assertEquals(rep.u.reject_reason, nak_reason)
-                self.assertEquals(rep.u.num_versions, 1)
-                self.assertEquals(rep.u.versions[0].rpc_vers, req.rpc_vers)
-                self.assertEquals(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
+                self.assertEqual(rep.u.reject_reason, nak_reason)
+                self.assertEqual(rep.u.num_versions, 1)
+                self.assertEqual(rep.u.versions[0].rpc_vers, req.rpc_vers)
+                self.assertEqual(rep.u.versions[0].rpc_vers_minor, req.rpc_vers_minor)
                 self.assertPadding(rep.u._pad, 3)
                 return
             self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_BIND_ACK, req.call_id,
                             pfc_flags=pfc_flags)
-            self.assertEquals(rep.u.max_xmit_frag, req.u.max_xmit_frag)
-            self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
+            self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
+            self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
             if assoc_group_id != 0:
-                self.assertEquals(rep.u.assoc_group_id, assoc_group_id)
+                self.assertEqual(rep.u.assoc_group_id, assoc_group_id)
             else:
                 self.assertNotEquals(rep.u.assoc_group_id, 0)
                 assoc_group_id = rep.u.assoc_group_id
@@ -367,24 +367,24 @@ class RawDCERPCTest(TestCase):
                 sda_pad = 4 - mod_len
             else:
                 sda_pad = 0
-            self.assertEquals(rep.u.secondary_address_size, sda_len)
-            self.assertEquals(rep.u.secondary_address, sda_str)
+            self.assertEqual(rep.u.secondary_address_size, sda_len)
+            self.assertEqual(rep.u.secondary_address, sda_str)
             self.assertPadding(rep.u._pad1, sda_pad)
 
-        self.assertEquals(rep.u.num_results, 1)
-        self.assertEquals(rep.u.ctx_list[0].result,
+        self.assertEqual(rep.u.num_results, 1)
+        self.assertEqual(rep.u.ctx_list[0].result,
                           samba.dcerpc.dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
-        self.assertEquals(rep.u.ctx_list[0].reason,
+        self.assertEqual(rep.u.ctx_list[0].reason,
                           samba.dcerpc.dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ctx.transfer_syntaxes[0])
         ack = rep
         if auth_context is None:
-            self.assertEquals(rep.auth_length, 0)
-            self.assertEquals(len(rep.u.auth_info), 0)
+            self.assertEqual(rep.auth_length, 0)
+            self.assertEqual(len(rep.u.auth_info), 0)
             return ack
         self.assertNotEquals(rep.auth_length, 0)
         self.assertGreater(len(rep.u.auth_info), samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
-        self.assertEquals(rep.auth_length, len(rep.u.auth_info) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
+        self.assertEqual(rep.auth_length, len(rep.u.auth_info) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
 
         a = self.parse_auth(rep.u.auth_info, auth_context=auth_context)
 
@@ -424,33 +424,33 @@ class RawDCERPCTest(TestCase):
                             samba.dcerpc.dcerpc.DCERPC_PFC_FLAG_DID_NOT_EXECUTE,
                             auth_length=0)
             self.assertNotEquals(rep.u.alloc_hint, 0)
-            self.assertEquals(rep.u.context_id, 0)
-            self.assertEquals(rep.u.cancel_count, 0)
-            self.assertEquals(rep.u.flags, 0)
-            self.assertEquals(rep.u.status, alter_fault)
-            self.assertEquals(rep.u.reserved, 0)
-            self.assertEquals(len(rep.u.error_and_verifier), 0)
+            self.assertEqual(rep.u.context_id, 0)
+            self.assertEqual(rep.u.cancel_count, 0)
+            self.assertEqual(rep.u.flags, 0)
+            self.assertEqual(rep.u.status, alter_fault)
+            self.assertEqual(rep.u.reserved, 0)
+            self.assertEqual(len(rep.u.error_and_verifier), 0)
             return None
         self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_ALTER_RESP, req.call_id,
                         pfc_flags=req.pfc_flags)
-        self.assertEquals(rep.u.max_xmit_frag, req.u.max_xmit_frag)
-        self.assertEquals(rep.u.max_recv_frag, req.u.max_recv_frag)
-        self.assertEquals(rep.u.assoc_group_id, assoc_group_id)
-        self.assertEquals(rep.u.secondary_address_size, 0)
-        self.assertEquals(rep.u.secondary_address, '')
+        self.assertEqual(rep.u.max_xmit_frag, req.u.max_xmit_frag)
+        self.assertEqual(rep.u.max_recv_frag, req.u.max_recv_frag)
+        self.assertEqual(rep.u.assoc_group_id, assoc_group_id)
+        self.assertEqual(rep.u.secondary_address_size, 0)
+        self.assertEqual(rep.u.secondary_address, '')
         self.assertPadding(rep.u._pad1, 2)
-        self.assertEquals(rep.u.num_results, 1)
-        self.assertEquals(rep.u.ctx_list[0].result,
+        self.assertEqual(rep.u.num_results, 1)
+        self.assertEqual(rep.u.ctx_list[0].result,
                           samba.dcerpc.dcerpc.DCERPC_BIND_ACK_RESULT_ACCEPTANCE)
-        self.assertEquals(rep.u.ctx_list[0].reason,
+        self.assertEqual(rep.u.ctx_list[0].reason,
                           samba.dcerpc.dcerpc.DCERPC_BIND_ACK_REASON_NOT_SPECIFIED)
         self.assertNDRSyntaxEquals(rep.u.ctx_list[0].syntax, ctx.transfer_syntaxes[0])
         if finished:
-            self.assertEquals(rep.auth_length, 0)
+            self.assertEqual(rep.auth_length, 0)
         else:
             self.assertNotEquals(rep.auth_length, 0)
         self.assertGreaterEqual(len(rep.u.auth_info), samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
-        self.assertEquals(rep.auth_length, len(rep.u.auth_info) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
+        self.assertEqual(rep.auth_length, len(rep.u.auth_info) - samba.dcerpc.dcerpc.DCERPC_AUTH_TRAILER_LENGTH)
 
         a = self.parse_auth(rep.u.auth_info, auth_context=auth_context)
 
@@ -545,12 +545,12 @@ class RawDCERPCTest(TestCase):
                 self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_FAULT, req.call_id,
                                 pfc_flags=fault_pfc_flags, auth_length=0)
                 self.assertNotEquals(rep.u.alloc_hint, 0)
-                self.assertEquals(rep.u.context_id, fault_context_id)
-                self.assertEquals(rep.u.cancel_count, 0)
-                self.assertEquals(rep.u.flags, 0)
-                self.assertEquals(rep.u.status, fault_status)
-                self.assertEquals(rep.u.reserved, 0)
-                self.assertEquals(len(rep.u.error_and_verifier), 0)
+                self.assertEqual(rep.u.context_id, fault_context_id)
+                self.assertEqual(rep.u.cancel_count, 0)
+                self.assertEqual(rep.u.flags, 0)
+                self.assertEqual(rep.u.status, fault_status)
+                self.assertEqual(rep.u.reserved, 0)
+                self.assertEqual(len(rep.u.error_and_verifier), 0)
                 return
 
             expected_auth_length = 0
@@ -561,8 +561,8 @@ class RawDCERPCTest(TestCase):
             self.verify_pdu(rep, samba.dcerpc.dcerpc.DCERPC_PKT_RESPONSE, req.call_id,
                             auth_length=expected_auth_length)
             self.assertNotEquals(rep.u.alloc_hint, 0)
-            self.assertEquals(rep.u.context_id, req.u.context_id & 0xff)
-            self.assertEquals(rep.u.cancel_count, 0)
+            self.assertEqual(rep.u.context_id, req.u.context_id & 0xff)
+            self.assertEqual(rep.u.cancel_count, 0)
             self.assertGreaterEqual(len(rep.u.stub_and_verifier), rep.u.alloc_hint)
             stub_out = self.check_response_auth(rep, rep_blob, auth_context)
             self.assertEqual(len(stub_out), rep.u.alloc_hint)
@@ -783,10 +783,10 @@ class RawDCERPCTest(TestCase):
             sys.stderr.write("parse_auth: %s" % samba.ndr.ndr_print(a))
 
         if auth_context is not None:
-            self.assertEquals(a.auth_type, auth_context["auth_type"])
-            self.assertEquals(a.auth_level, auth_context["auth_level"])
-            self.assertEquals(a.auth_reserved, 0)
-            self.assertEquals(a.auth_context_id, auth_context["auth_context_id"])
+            self.assertEqual(a.auth_type, auth_context["auth_type"])
+            self.assertEqual(a.auth_level, auth_context["auth_level"])
+            self.assertEqual(a.auth_reserved, 0)
+            self.assertEqual(a.auth_context_id, auth_context["auth_context_id"])
 
             self.assertLessEqual(a.auth_pad_length, dcerpc.DCERPC_AUTH_PAD_ALIGNMENT)
             self.assertLessEqual(a.auth_pad_length, stub_len)
@@ -797,11 +797,11 @@ class RawDCERPCTest(TestCase):
                             auth_pad_length=None):
 
         if auth_context is None:
-            self.assertEquals(rep.auth_length, 0)
+            self.assertEqual(rep.auth_length, 0)
             return rep.u.stub_and_verifier
 
         if auth_context["auth_level"] == dcerpc.DCERPC_AUTH_LEVEL_CONNECT:
-            self.assertEquals(rep.auth_length, 0)
+            self.assertEqual(rep.auth_length, 0)
             return rep.u.stub_and_verifier
 
         self.assertGreater(rep.auth_length, 0)
@@ -818,8 +818,8 @@ class RawDCERPCTest(TestCase):
                                         auth_context=auth_context,
                                         stub_len=len(rep_data))
         if auth_pad_length is not None:
-            self.assertEquals(rep_auth_info.auth_pad_length, auth_pad_length)
-        self.assertEquals(rep_auth_info.credentials, rep_sig)
+            self.assertEqual(rep_auth_info.auth_pad_length, auth_pad_length)
+        self.assertEqual(rep_auth_info.credentials, rep_sig)
 
         if auth_context["auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_PRIVACY:
             # TODO: not yet supported here
@@ -925,13 +925,13 @@ class RawDCERPCTest(TestCase):
         elif auth_context["auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_PACKET:
             req_sig = auth_context["gensec"].sign_packet(req_data, req_whole)
         elif auth_context["auth_level"] >= dcerpc.DCERPC_AUTH_LEVEL_CONNECT:
-            self.assertEquals(auth_context["auth_type"],
+            self.assertEqual(auth_context["auth_type"],
                               dcerpc.DCERPC_AUTH_TYPE_NTLMSSP)
             req_sig = b"\x01" +b"\x00" *15
         else:
             return req
-        self.assertEquals(len(req_sig), req.auth_length)
-        self.assertEquals(len(req_sig), sig_size)
+        self.assertEqual(len(req_sig), req.auth_length)
+        self.assertEqual(len(req_sig), sig_size)
 
         stub_sig_ofs = len(req.u.stub_and_verifier) - sig_size
         stub = req.u.stub_and_verifier[0:stub_sig_ofs] + req_sig
@@ -1147,7 +1147,7 @@ class RawDCERPCTest(TestCase):
         return
 
     def assertPadding(self, pad, length):
-        self.assertEquals(len(pad), length)
+        self.assertEqual(len(pad), length)
         #
         # sometimes windows sends random bytes
         #
@@ -1157,7 +1157,7 @@ class RawDCERPCTest(TestCase):
         if self.ignore_random_pad:
             return
         zero_pad = b'\0' * length
-        self.assertEquals(pad, zero_pad)
+        self.assertEqual(pad, zero_pad)
 
     def assertEqualsStrLower(self, s1, s2):
-        self.assertEquals(str(s1).lower(), str(s2).lower())
+        self.assertEqual(str(s1).lower(), str(s2).lower())

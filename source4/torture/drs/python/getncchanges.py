@@ -83,7 +83,7 @@ class DrsReplicaSyncIntegrityTestCase(drs_base.DrsBaseTestCase):
         """Adds an OU object"""
         self.test_ldb_dc.add({"dn": dn, "objectclass": objectclass})
         res = self.test_ldb_dc.search(base=dn, scope=SCOPE_BASE)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
     def modify_object(self, dn, attr, value):
         """Modifies an object's USN by adding an attribute value to it"""

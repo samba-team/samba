@@ -32,23 +32,23 @@ import samba.tests
 class KerberosOptionTests(samba.tests.TestCase):
 
     def test_parse_true(self):
-        self.assertEquals(
+        self.assertEqual(
             MUST_USE_KERBEROS, parse_kerberos_arg("yes", "--kerberos"))
-        self.assertEquals(
+        self.assertEqual(
             MUST_USE_KERBEROS, parse_kerberos_arg("true", "--kerberos"))
-        self.assertEquals(
+        self.assertEqual(
             MUST_USE_KERBEROS, parse_kerberos_arg("1", "--kerberos"))
 
     def test_parse_false(self):
-        self.assertEquals(
+        self.assertEqual(
             DONT_USE_KERBEROS, parse_kerberos_arg("no", "--kerberos"))
-        self.assertEquals(
+        self.assertEqual(
             DONT_USE_KERBEROS, parse_kerberos_arg("false", "--kerberos"))
-        self.assertEquals(
+        self.assertEqual(
             DONT_USE_KERBEROS, parse_kerberos_arg("0", "--kerberos"))
 
     def test_parse_auto(self):
-        self.assertEquals(
+        self.assertEqual(
             AUTO_USE_KERBEROS, parse_kerberos_arg("auto", "--kerberos"))
 
     def test_parse_invalid(self):

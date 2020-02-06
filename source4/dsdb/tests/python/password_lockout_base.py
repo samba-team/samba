@@ -24,7 +24,7 @@ class BasePasswordTestCase(PasswordTestCase):
         self.assertTrue("objectSid" in res[0])
 
         (domain_sid, rid) = ndr_unpack(security.dom_sid, res[0]["objectSid"][0]).split()
-        self.assertEquals(self.domain_sid, domain_sid)
+        self.assertEqual(self.domain_sid, domain_sid)
 
         return self.samr.OpenUser(self.samr_domain, security.SEC_FLAG_MAXIMUM_ALLOWED, rid)
 
@@ -163,9 +163,9 @@ class BasePasswordTestCase(PasswordTestCase):
             if msDSUserAccountControlComputed & dsdb.UF_PASSWORD_EXPIRED:
                 expected_acb_info |= samr.ACB_PW_EXPIRED
 
-            self.assertEquals(uinfo3.acct_flags, expected_acb_info)
-            self.assertEquals(uinfo3.last_logon, lastLogon)
-            self.assertEquals(uinfo3.logon_count, logonCount)
+            self.assertEqual(uinfo3.acct_flags, expected_acb_info)
+            self.assertEqual(uinfo3.last_logon, lastLogon)
+            self.assertEqual(uinfo3.logon_count, logonCount)
 
         expected_bad_password_count = 0
         if badPwdCount is not None:
@@ -173,25 +173,25 @@ class BasePasswordTestCase(PasswordTestCase):
         if effective_bad_password_count is None:
             effective_bad_password_count = expected_bad_password_count
 
-        self.assertEquals(uinfo3.bad_password_count, expected_bad_password_count)
+        self.assertEqual(uinfo3.bad_password_count, expected_bad_password_count)
 
         if not badPwdCountOnly:
-            self.assertEquals(uinfo5.acct_flags, expected_acb_info)
-            self.assertEquals(uinfo5.bad_password_count, effective_bad_password_count)
-            self.assertEquals(uinfo5.last_logon, lastLogon)
-            self.assertEquals(uinfo5.logon_count, logonCount)
+            self.assertEqual(uinfo5.acct_flags, expected_acb_info)
+            self.assertEqual(uinfo5.bad_password_count, effective_bad_password_count)
+            self.assertEqual(uinfo5.last_logon, lastLogon)
+            self.assertEqual(uinfo5.logon_count, logonCount)
 
-            self.assertEquals(uinfo16.acct_flags, expected_acb_info)
+            self.assertEqual(uinfo16.acct_flags, expected_acb_info)
 
-            self.assertEquals(uinfo21.acct_flags, expected_acb_info)
-            self.assertEquals(uinfo21.bad_password_count, effective_bad_password_count)
-            self.assertEquals(uinfo21.last_logon, lastLogon)
-            self.assertEquals(uinfo21.logon_count, logonCount)
+            self.assertEqual(uinfo21.acct_flags, expected_acb_info)
+            self.assertEqual(uinfo21.bad_password_count, effective_bad_password_count)
+            self.assertEqual(uinfo21.last_logon, lastLogon)
+            self.assertEqual(uinfo21.logon_count, logonCount)
 
         # check LDAP again and make sure the samr.QueryUserInfo
         # doesn't have any impact.
         res2 = self.ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
-        self.assertEquals(res[0], res2[0])
+        self.assertEqual(res[0], res2[0])
 
         # in order to prevent some time resolution problems we sleep for
         # 10 micro second
@@ -252,7 +252,7 @@ userPassword: """ + userpass + """
             self.fail()
         except LdbError as e:
             (num, msg) = e.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         # Succeed to reset everything to 0
         ldb = SamDB(url=self.host_url, credentials=creds, lp=self.lp)
@@ -266,7 +266,7 @@ userPassword: """ + userpass + """
         except LdbError as e1:
             (num, msg) = e1.args
             if errno is not None:
-                self.assertEquals(num, errno, ("Login failed in the wrong way"
+                self.assertEqual(num, errno, ("Login failed in the wrong way"
                                                "(got err %d, expected %d)" %
                                                (num, errno)))
 
@@ -467,7 +467,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
 
         except LdbError as e2:
             (num, msg) = e2.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=2,
@@ -490,7 +490,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
 
         except LdbError as e3:
             (num, msg) = e3.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=3,
@@ -511,7 +511,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
             self.fail()
         except LdbError as e4:
             (num, msg) = e4.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=3,
@@ -530,7 +530,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
             self.fail()
         except LdbError as e5:
             (num, msg) = e5.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=3,
@@ -549,7 +549,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
             self.fail()
         except LdbError as e6:
             (num, msg) = e6.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=3,
@@ -609,7 +609,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
             self.fail()
         except LdbError as e7:
             (num, msg) = e7.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=1,
@@ -629,7 +629,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
             self.fail()
         except LdbError as e8:
             (num, msg) = e8.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=2,
@@ -661,7 +661,7 @@ lockoutThreshold: """ + str(lockoutThreshold) + """
             self.fail()
         except LdbError as e9:
             (num, msg) = e9.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=1,

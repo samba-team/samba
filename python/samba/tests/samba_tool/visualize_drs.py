@@ -223,7 +223,7 @@ class SambaToolVisualizeDrsTest(SambaToolCmdTest):
             self.assertCmdSuccess(result, out, err)
 
             lines = out.splitlines()
-            self.assertEquals(len(lines), 1)
+            self.assertEqual(len(lines), 1)
 
             line = lines[0]
             self.assertTrue(line.startswith('DOMAIN'))

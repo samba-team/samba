@@ -137,18 +137,18 @@ class AuditLogDsdbTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1, net, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["dsdbChange"]
-        self.assertEquals("Modify", audit["operation"])
+        self.assertEqual("Modify", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
         self.assertTrue(dn.lower(), audit["dn"].lower())
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         # We skip the check for self.get_service_description() as this
         # is subject to a race between smbd and the s4 rpc_server code
         # as to which will set the description as it is DCE/RPC over SMB
@@ -156,11 +156,11 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertTrue(self.is_guid(audit["transactionId"]))
 
         attributes = audit["attributes"]
-        self.assertEquals(1, len(attributes))
+        self.assertEqual(1, len(attributes))
         actions = attributes["clearTextPassword"]["actions"]
-        self.assertEquals(1, len(actions))
+        self.assertEqual(1, len(actions))
         self.assertTrue(actions[0]["redacted"])
-        self.assertEquals("replace", actions[0]["action"])
+        self.assertEqual("replace", actions[0]["action"])
 
     def test_net_set_password(self):
 
@@ -179,17 +179,17 @@ class AuditLogDsdbTests(AuditLogTestBase):
                          domain_name=domain)
         messages = self.waitForMessages(1, net, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
         audit = messages[0]["dsdbChange"]
-        self.assertEquals("Modify", audit["operation"])
+        self.assertEqual("Modify", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
-        self.assertEquals(dn, audit["dn"])
+        self.assertEqual(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         # We skip the check for self.get_service_description() as this
         # is subject to a race between smbd and the s4 rpc_server code
         # as to which will set the description as it is DCE/RPC over SMB
@@ -197,11 +197,11 @@ class AuditLogDsdbTests(AuditLogTestBase):
         self.assertTrue(self.is_guid(audit["transactionId"]))
 
         attributes = audit["attributes"]
-        self.assertEquals(1, len(attributes))
+        self.assertEqual(1, len(attributes))
         actions = attributes["clearTextPassword"]["actions"]
-        self.assertEquals(1, len(actions))
+        self.assertEqual(1, len(actions))
         self.assertTrue(actions[0]["redacted"])
-        self.assertEquals("replace", actions[0]["action"])
+        self.assertEqual("replace", actions[0]["action"])
 
     def test_ldap_change_password(self):
 
@@ -220,30 +220,30 @@ class AuditLogDsdbTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["dsdbChange"]
-        self.assertEquals("Modify", audit["operation"])
+        self.assertEqual("Modify", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
-        self.assertEquals(dn, audit["dn"])
+        self.assertEqual(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
 
         attributes = audit["attributes"]
-        self.assertEquals(1, len(attributes))
+        self.assertEqual(1, len(attributes))
         actions = attributes["userPassword"]["actions"]
-        self.assertEquals(2, len(actions))
+        self.assertEqual(2, len(actions))
         self.assertTrue(actions[0]["redacted"])
-        self.assertEquals("delete", actions[0]["action"])
+        self.assertEqual("delete", actions[0]["action"])
         self.assertTrue(actions[1]["redacted"])
-        self.assertEquals("add", actions[1]["action"])
+        self.assertEqual("add", actions[1]["action"])
 
     def test_ldap_replace_password(self):
 
@@ -259,29 +259,29 @@ class AuditLogDsdbTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["dsdbChange"]
-        self.assertEquals("Modify", audit["operation"])
+        self.assertEqual("Modify", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
         self.assertTrue(dn.lower(), audit["dn"].lower())
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
         self.assertTrue(self.is_guid(audit["transactionId"]))
 
         attributes = audit["attributes"]
-        self.assertEquals(1, len(attributes))
+        self.assertEqual(1, len(attributes))
         actions = attributes["userPassword"]["actions"]
-        self.assertEquals(1, len(actions))
+        self.assertEqual(1, len(actions))
         self.assertTrue(actions[0]["redacted"])
-        self.assertEquals("replace", actions[0]["action"])
+        self.assertEqual("replace", actions[0]["action"])
 
     def test_ldap_add_user(self):
 
@@ -290,41 +290,41 @@ class AuditLogDsdbTests(AuditLogTestBase):
         dn = "cn=" + USER_NAME + ",cn=users," + self.base_dn
         messages = self.waitForMessages(2, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(2,
+        self.assertEqual(2,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[1]["dsdbChange"]
-        self.assertEquals("Add", audit["operation"])
+        self.assertEqual("Add", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
-        self.assertEquals(dn, audit["dn"])
+        self.assertEqual(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
         self.assertTrue(self.is_guid(audit["sessionId"]))
         self.assertTrue(self.is_guid(audit["transactionId"]))
 
         attributes = audit["attributes"]
-        self.assertEquals(3, len(attributes))
+        self.assertEqual(3, len(attributes))
 
         actions = attributes["objectclass"]["actions"]
-        self.assertEquals(1, len(actions))
-        self.assertEquals("add", actions[0]["action"])
-        self.assertEquals(1, len(actions[0]["values"]))
-        self.assertEquals("user", actions[0]["values"][0]["value"])
+        self.assertEqual(1, len(actions))
+        self.assertEqual("add", actions[0]["action"])
+        self.assertEqual(1, len(actions[0]["values"]))
+        self.assertEqual("user", actions[0]["values"][0]["value"])
 
         actions = attributes["sAMAccountName"]["actions"]
-        self.assertEquals(1, len(actions))
-        self.assertEquals("add", actions[0]["action"])
-        self.assertEquals(1, len(actions[0]["values"]))
-        self.assertEquals(USER_NAME, actions[0]["values"][0]["value"])
+        self.assertEqual(1, len(actions))
+        self.assertEqual("add", actions[0]["action"])
+        self.assertEqual(1, len(actions[0]["values"]))
+        self.assertEqual(USER_NAME, actions[0]["values"][0]["value"])
 
         actions = attributes["userPassword"]["actions"]
-        self.assertEquals(1, len(actions))
-        self.assertEquals("add", actions[0]["action"])
+        self.assertEqual(1, len(actions))
+        self.assertEqual("add", actions[0]["action"])
         self.assertTrue(actions[0]["redacted"])
 
     def test_samdb_delete_user(self):
@@ -336,28 +336,28 @@ class AuditLogDsdbTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["dsdbChange"]
-        self.assertEquals("Delete", audit["operation"])
+        self.assertEqual("Delete", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
         self.assertTrue(dn.lower(), audit["dn"].lower())
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
-        self.assertEquals(0, audit["statusCode"])
-        self.assertEquals("Success", audit["status"])
+        self.assertEqual(0, audit["statusCode"])
+        self.assertEqual("Success", audit["status"])
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
 
         transactionId = audit["transactionId"]
         message = self.waitForTransaction(transactionId)
         audit = message["dsdbTransaction"]
-        self.assertEquals("commit", audit["action"])
+        self.assertEqual("commit", audit["action"])
         self.assertTrue(self.is_guid(audit["transactionId"]))
         self.assertTrue(audit["duration"] > 0)
 
@@ -376,28 +376,28 @@ class AuditLogDsdbTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["dsdbChange"]
-        self.assertEquals("Delete", audit["operation"])
+        self.assertEqual("Delete", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
         self.assertTrue(dn.lower(), audit["dn"].lower())
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
-        self.assertEquals(ERR_NO_SUCH_OBJECT, audit["statusCode"])
-        self.assertEquals("No such object", audit["status"])
+        self.assertEqual(ERR_NO_SUCH_OBJECT, audit["statusCode"])
+        self.assertEqual("No such object", audit["status"])
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
 
         transactionId = audit["transactionId"]
         message = self.waitForTransaction(transactionId)
         audit = message["dsdbTransaction"]
-        self.assertEquals("rollback", audit["action"])
+        self.assertEqual("rollback", audit["action"])
         self.assertTrue(self.is_guid(audit["transactionId"]))
         self.assertTrue(audit["duration"] > 0)
 
@@ -424,42 +424,42 @@ class AuditLogDsdbTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["dsdbChange"]
-        self.assertEquals("Add", audit["operation"])
+        self.assertEqual("Add", audit["operation"])
         self.assertTrue(audit["performedAsSystem"])
         self.assertTrue(dn.lower(), audit["dn"].lower())
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
 
         # We skip the check for self.get_service_description() as this
         # is subject to a race between smbd and the s4 rpc_server code
         # as to which will set the description as it is DCE/RPC over SMB
 
         attributes = audit["attributes"]
-        self.assertEquals(2, len(attributes))
+        self.assertEqual(2, len(attributes))
 
         object_class = attributes["objectClass"]
-        self.assertEquals(1, len(object_class["actions"]))
+        self.assertEqual(1, len(object_class["actions"]))
         action = object_class["actions"][0]
-        self.assertEquals("add", action["action"])
+        self.assertEqual("add", action["action"])
         values = action["values"]
-        self.assertEquals(1, len(values))
-        self.assertEquals("secret", values[0]["value"])
+        self.assertEqual(1, len(values))
+        self.assertEqual("secret", values[0]["value"])
 
         cn = attributes["cn"]
-        self.assertEquals(1, len(cn["actions"]))
+        self.assertEqual(1, len(cn["actions"]))
         action = cn["actions"][0]
-        self.assertEquals("add", action["action"])
+        self.assertEqual("add", action["action"])
         values = action["values"]
-        self.assertEquals(1, len(values))
-        self.assertEquals("Test Secret", values[0]["value"])
+        self.assertEqual(1, len(values))
+        self.assertEqual("Test Secret", values[0]["value"])
 
         #
         # Now delete the secret.
@@ -472,20 +472,20 @@ class AuditLogDsdbTests(AuditLogTestBase):
         lsa_conn.DeleteObject(h)
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         dn = "cn=Test Secret,CN=System," + self.base_dn
         audit = messages[0]["dsdbChange"]
-        self.assertEquals("Delete", audit["operation"])
+        self.assertEqual("Delete", audit["operation"])
         self.assertTrue(audit["performedAsSystem"])
         self.assertTrue(dn.lower(), audit["dn"].lower())
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
 
         # We skip the check for self.get_service_description() as this
         # is subject to a race between smbd and the s4 rpc_server code
@@ -507,30 +507,30 @@ class AuditLogDsdbTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["dsdbChange"]
-        self.assertEquals("Modify", audit["operation"])
+        self.assertEqual("Modify", audit["operation"])
         self.assertFalse(audit["performedAsSystem"])
-        self.assertEquals(dn, audit["dn"])
+        self.assertEqual(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
 
         attributes = audit["attributes"]
-        self.assertEquals(1, len(attributes))
+        self.assertEqual(1, len(attributes))
         actions = attributes["carLicense"]["actions"]
-        self.assertEquals(1, len(actions))
-        self.assertEquals("add", actions[0]["action"])
+        self.assertEqual(1, len(actions))
+        self.assertEqual("add", actions[0]["action"])
         values = actions[0]["values"]
-        self.assertEquals(1, len(values))
-        self.assertEquals("license-01", values[0]["value"])
+        self.assertEqual(1, len(values))
+        self.assertEqual("license-01", values[0]["value"])
 
         #
         # Add an another value to the attribute
@@ -544,17 +544,17 @@ class AuditLogDsdbTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
         attributes = messages[0]["dsdbChange"]["attributes"]
-        self.assertEquals(1, len(attributes))
+        self.assertEqual(1, len(attributes))
         actions = attributes["carLicense"]["actions"]
-        self.assertEquals(1, len(actions))
-        self.assertEquals("add", actions[0]["action"])
+        self.assertEqual(1, len(actions))
+        self.assertEqual("add", actions[0]["action"])
         values = actions[0]["values"]
-        self.assertEquals(1, len(values))
-        self.assertEquals("license-02", values[0]["value"])
+        self.assertEqual(1, len(values))
+        self.assertEqual("license-02", values[0]["value"])
 
         #
         # Add an another two values to the attribute
@@ -569,18 +569,18 @@ class AuditLogDsdbTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
         attributes = messages[0]["dsdbChange"]["attributes"]
-        self.assertEquals(1, len(attributes))
+        self.assertEqual(1, len(attributes))
         actions = attributes["carLicense"]["actions"]
-        self.assertEquals(1, len(actions))
-        self.assertEquals("add", actions[0]["action"])
+        self.assertEqual(1, len(actions))
+        self.assertEqual("add", actions[0]["action"])
         values = actions[0]["values"]
-        self.assertEquals(2, len(values))
-        self.assertEquals("license-03", values[0]["value"])
-        self.assertEquals("license-04", values[1]["value"])
+        self.assertEqual(2, len(values))
+        self.assertEqual("license-03", values[0]["value"])
+        self.assertEqual("license-04", values[1]["value"])
 
         #
         # delete two values to the attribute
@@ -595,18 +595,18 @@ class AuditLogDsdbTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
         attributes = messages[0]["dsdbChange"]["attributes"]
-        self.assertEquals(1, len(attributes))
+        self.assertEqual(1, len(attributes))
         actions = attributes["carLicense"]["actions"]
-        self.assertEquals(1, len(actions))
-        self.assertEquals("delete", actions[0]["action"])
+        self.assertEqual(1, len(actions))
+        self.assertEqual("delete", actions[0]["action"])
         values = actions[0]["values"]
-        self.assertEquals(2, len(values))
-        self.assertEquals("license-03", values[0]["value"])
-        self.assertEquals("license-04", values[1]["value"])
+        self.assertEqual(2, len(values))
+        self.assertEqual("license-03", values[0]["value"])
+        self.assertEqual("license-04", values[1]["value"])
 
         #
         # replace two values to the attribute
@@ -621,15 +621,15 @@ class AuditLogDsdbTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
         attributes = messages[0]["dsdbChange"]["attributes"]
-        self.assertEquals(1, len(attributes))
+        self.assertEqual(1, len(attributes))
         actions = attributes["carLicense"]["actions"]
-        self.assertEquals(1, len(actions))
-        self.assertEquals("replace", actions[0]["action"])
+        self.assertEqual(1, len(actions))
+        self.assertEqual("replace", actions[0]["action"])
         values = actions[0]["values"]
-        self.assertEquals(2, len(values))
-        self.assertEquals("license-05", values[0]["value"])
-        self.assertEquals("license-06", values[1]["value"])
+        self.assertEqual(2, len(values))
+        self.assertEqual("license-05", values[0]["value"])
+        self.assertEqual("license-06", values[1]["value"])

@@ -80,7 +80,7 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
 
         self.assertIn(self.mod_inherits_as,
                       self.sd_utils_dc1.get_sd_as_sddl(dn))
-        self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(dn),
+        self.assertEqual(self.sd_utils_dc1.get_sd_as_sddl(dn),
                           self.sd_utils_dc2.get_sd_as_sddl(dn))
 
     def test_acl_inheirt_new_object(self):
@@ -113,7 +113,7 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
 
         self.assertIn(self.mod_inherits_as,
                       self.sd_utils_dc1.get_sd_as_sddl(dn))
-        self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(dn),
+        self.assertEqual(self.sd_utils_dc1.get_sd_as_sddl(dn),
                           self.sd_utils_dc2.get_sd_as_sddl(dn))
 
     def test_acl_inherit_existing_object(self):
@@ -160,7 +160,7 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
 
         self.assertIn(self.mod_inherits_as,
                       self.sd_utils_dc1.get_sd_as_sddl(dn))
-        self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(dn),
+        self.assertEqual(self.sd_utils_dc1.get_sd_as_sddl(dn),
                           self.sd_utils_dc2.get_sd_as_sddl(dn))
 
     def test_acl_inheirt_existing_object_1_pass(self):
@@ -198,7 +198,7 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
 
         self.assertIn(self.mod_inherits_as,
                       self.sd_utils_dc1.get_sd_as_sddl(dn))
-        self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(dn),
+        self.assertEqual(self.sd_utils_dc1.get_sd_as_sddl(dn),
                           self.sd_utils_dc2.get_sd_as_sddl(dn))
 
     def test_acl_inheirt_renamed_object(self):
@@ -256,7 +256,7 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
         # Confirm inherited ACLs are identical and were inherited
         self.assertIn(self.mod_inherits_as,
                       self.sd_utils_dc1.get_sd_as_sddl(sub_ou_dn))
-        self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(sub_ou_dn),
+        self.assertEqual(self.sd_utils_dc1.get_sd_as_sddl(sub_ou_dn),
                           self.sd_utils_dc2.get_sd_as_sddl(sub_ou_dn))
 
 
@@ -330,14 +330,14 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
         # Confirm set ACLs (on l3 ) are identical and were inherited
         self.assertIn(self.mod_becomes,
                       self.sd_utils_dc2.get_sd_as_sddl(sub3_ou_dn_final))
-        self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(sub3_ou_dn_final),
+        self.assertEqual(self.sd_utils_dc1.get_sd_as_sddl(sub3_ou_dn_final),
                           self.sd_utils_dc2.get_sd_as_sddl(sub3_ou_dn_final))
 
         # Confirm inherited ACLs (from l3 to l4) are identical
         # and where inherited
         self.assertIn(self.mod_inherits_as,
                       self.sd_utils_dc1.get_sd_as_sddl(sub4_ou_dn_final))
-        self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(sub4_ou_dn_final),
+        self.assertEqual(self.sd_utils_dc1.get_sd_as_sddl(sub4_ou_dn_final),
                           self.sd_utils_dc2.get_sd_as_sddl(sub4_ou_dn_final))
 
 
@@ -382,7 +382,7 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
         for child in children:
             self.assertIn(self.mod_inherits_as,
                           self.sd_utils_dc2.get_sd_as_sddl(child.dn))
-            self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(sub_ou_dn),
+            self.assertEqual(self.sd_utils_dc1.get_sd_as_sddl(sub_ou_dn),
                               self.sd_utils_dc2.get_sd_as_sddl(child.dn))
 
         # Replicate back
@@ -396,5 +396,5 @@ class ReplAclTestCase(drs_base.DrsBaseTestCase):
         for child in children:
             self.assertIn(self.mod_inherits_as,
                           self.sd_utils_dc1.get_sd_as_sddl(child.dn))
-            self.assertEquals(self.sd_utils_dc1.get_sd_as_sddl(child.dn),
+            self.assertEqual(self.sd_utils_dc1.get_sd_as_sddl(child.dn),
                               self.sd_utils_dc2.get_sd_as_sddl(child.dn))

@@ -840,21 +840,21 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                 self.server,
                                                 None,
                                                 'ServerInfo')
-        self.assertEquals(dnsserver.DNSSRV_TYPEID_SERVER_INFO_W2K, typeid)
+        self.assertEqual(dnsserver.DNSSRV_TYPEID_SERVER_INFO_W2K, typeid)
 
         typeid, result = self.conn.DnssrvQuery2(dnsserver.DNS_CLIENT_VERSION_DOTNET,
                                                 0,
                                                 self.server,
                                                 None,
                                                 'ServerInfo')
-        self.assertEquals(dnsserver.DNSSRV_TYPEID_SERVER_INFO_DOTNET, typeid)
+        self.assertEqual(dnsserver.DNSSRV_TYPEID_SERVER_INFO_DOTNET, typeid)
 
         typeid, result = self.conn.DnssrvQuery2(dnsserver.DNS_CLIENT_VERSION_LONGHORN,
                                                 0,
                                                 self.server,
                                                 None,
                                                 'ServerInfo')
-        self.assertEquals(dnsserver.DNSSRV_TYPEID_SERVER_INFO, typeid)
+        self.assertEqual(dnsserver.DNSSRV_TYPEID_SERVER_INFO, typeid)
 
 
     # This test is to confirm that we do not support multizone operations,
@@ -936,7 +936,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                      'EnumZones',
                                                      dnsserver.DNSSRV_TYPEID_DWORD,
                                                      request_filter)
-        self.assertEquals(1, zones.dwZoneCount)
+        self.assertEqual(1, zones.dwZoneCount)
 
         # Delete zone
         self.conn.DnssrvOperation2(client_version,
@@ -955,7 +955,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                           'EnumZones',
                                                           dnsserver.DNSSRV_TYPEID_DWORD,
                                                           request_filter)
-        self.assertEquals(0, zones.dwZoneCount)
+        self.assertEqual(0, zones.dwZoneCount)
 
     def test_complexoperation2(self):
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
@@ -969,8 +969,8 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                           'EnumZones',
                                                           dnsserver.DNSSRV_TYPEID_DWORD,
                                                           request_filter)
-        self.assertEquals(dnsserver.DNSSRV_TYPEID_ZONE_LIST, typeid)
-        self.assertEquals(3, zones.dwZoneCount)
+        self.assertEqual(dnsserver.DNSSRV_TYPEID_ZONE_LIST, typeid)
+        self.assertEqual(3, zones.dwZoneCount)
 
         request_filter = (dnsserver.DNS_ZONE_REQUEST_REVERSE |
                           dnsserver.DNS_ZONE_REQUEST_PRIMARY)
@@ -981,8 +981,8 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                           'EnumZones',
                                                           dnsserver.DNSSRV_TYPEID_DWORD,
                                                           request_filter)
-        self.assertEquals(dnsserver.DNSSRV_TYPEID_ZONE_LIST, typeid)
-        self.assertEquals(0, zones.dwZoneCount)
+        self.assertEqual(dnsserver.DNSSRV_TYPEID_ZONE_LIST, typeid)
+        self.assertEqual(0, zones.dwZoneCount)
 
     def test_enumrecords2(self):
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
@@ -999,7 +999,7 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                     select_flags,
                                                     None,
                                                     None)
-        self.assertEquals(14, roothints.count)  # 1 NS + 13 A records (a-m)
+        self.assertEqual(14, roothints.count)  # 1 NS + 13 A records (a-m)
 
     def test_updaterecords2(self):
         client_version = dnsserver.DNS_CLIENT_VERSION_LONGHORN
@@ -1031,10 +1031,10 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                  select_flags,
                                                  None,
                                                  None)
-        self.assertEquals(1, result.count)
-        self.assertEquals(1, result.rec[0].wRecordCount)
-        self.assertEquals(dnsp.DNS_TYPE_A, result.rec[0].records[0].wType)
-        self.assertEquals('1.2.3.4', result.rec[0].records[0].data)
+        self.assertEqual(1, result.count)
+        self.assertEqual(1, result.rec[0].wRecordCount)
+        self.assertEqual(dnsp.DNS_TYPE_A, result.rec[0].records[0].wType)
+        self.assertEqual('1.2.3.4', result.rec[0].records[0].data)
 
         # Update record
         add_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()
@@ -1059,10 +1059,10 @@ class DnsserverTests(RpcInterfaceTestCase):
                                                       select_flags,
                                                       None,
                                                       None)
-        self.assertEquals(1, result.count)
-        self.assertEquals(1, result.rec[0].wRecordCount)
-        self.assertEquals(dnsp.DNS_TYPE_A, result.rec[0].records[0].wType)
-        self.assertEquals('5.6.7.8', result.rec[0].records[0].data)
+        self.assertEqual(1, result.count)
+        self.assertEqual(1, result.rec[0].wRecordCount)
+        self.assertEqual(dnsp.DNS_TYPE_A, result.rec[0].records[0].wType)
+        self.assertEqual('5.6.7.8', result.rec[0].records[0].data)
 
         # Delete record
         del_rec_buf = dnsserver.DNS_RPC_RECORD_BUF()

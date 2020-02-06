@@ -83,12 +83,12 @@ class DrsCloneDcDataLmdbSizeTestCase(SambaToolCmdTest):
     # 8Gb is used
     def test_default(self):
         (result, out, err) = self.clone()
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(8 * 1024 * 1024 * 1024)
 
     def test_64Mb(self):
         (result, out, err) = self.clone("64Mb")
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(64 * 1024 * 1024)
 
     def test_no_unit_suffix(self):

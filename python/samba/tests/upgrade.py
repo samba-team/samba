@@ -29,12 +29,12 @@ class WinsUpgradeTests(LdbTestCase):
         }
         import_wins(self.ldb, winsdb)
 
-        self.assertEquals(
+        self.assertEqual(
             ['name=FOO,type=0x20'],
             [str(m.dn) for m in
                 self.ldb.search(expression="(objectClass=winsRecord)")])
 
     def test_version(self):
         import_wins(self.ldb, {})
-        self.assertEquals("VERSION",
+        self.assertEqual("VERSION",
                           str(self.ldb.search(expression="(objectClass=winsMaxVersion)")[0]["cn"]))

@@ -217,7 +217,7 @@ userPassword: thatsAcomplPASS2
             self.fail()
         except LdbError as e:
             (num, msg) = e.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
         res = self._check_account(userdn,
@@ -262,7 +262,7 @@ userPassword: thatsAcomplPASS2
             self.fail()
         except LdbError as e1:
             (num, msg) = e1.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
         res = self._check_account(userdn,
@@ -290,7 +290,7 @@ userPassword: thatsAcomplPASS2
             self.fail()
         except LdbError as e2:
             (num, msg) = e2.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
         res = self._check_account(userdn,
@@ -318,7 +318,7 @@ userPassword: thatsAcomplPASS2
             self.fail()
         except LdbError as e3:
             (num, msg) = e3.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
         res = self._check_account(userdn,
@@ -344,7 +344,7 @@ userPassword: thatsAcomplPASS2
             self.fail()
         except LdbError as e4:
             (num, msg) = e4.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
         res = self._check_account(userdn,
@@ -370,7 +370,7 @@ userPassword: thatsAcomplPASS2x
             self.fail()
         except LdbError as e5:
             (num, msg) = e5.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
         res = self._check_account(userdn,
@@ -414,7 +414,7 @@ userPassword: thatsAcomplPASS2x
             self.fail()
         except LdbError as e6:
             (num, msg) = e6.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
         res = self._check_account(userdn,
@@ -460,7 +460,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2x\"".encode('utf-16-le'))
             self.fail()
         except LdbError as e7:
             (num, msg) = e7.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
         res = self._check_account(userdn,
@@ -522,7 +522,7 @@ userPassword: thatsAcomplPASS2XYZ
             self.fail()
         except LdbError as e8:
             (num, msg) = e8.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
         res = self._check_account(userdn,
@@ -549,7 +549,7 @@ userPassword: thatsAcomplPASS2XYZ
             self.fail()
         except LdbError as e9:
             (num, msg) = e9.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
         res = self._check_account(userdn,
@@ -679,7 +679,7 @@ userPassword: thatsAcomplPASS2XYZ
                 self.fail("Invalid SAMR change_password accepted")
             except NTSTATUSError as e:
                 enum = ctypes.c_uint32(e.args[0]).value
-                self.assertEquals(enum, ntstatus.NT_STATUS_WRONG_PASSWORD)
+                self.assertEqual(enum, ntstatus.NT_STATUS_WRONG_PASSWORD)
 
             # check the status of the account is updated after each bad attempt
             account_flags = 0
@@ -713,7 +713,7 @@ userPassword: thatsAcomplPASS2XYZ
                 self.fail("Invalid SAMR change_password accepted")
             except NTSTATUSError as e:
                 enum = ctypes.c_uint32(e.args[0]).value
-                self.assertEquals(enum, ntstatus.NT_STATUS_ACCOUNT_LOCKED_OUT)
+                self.assertEqual(enum, ntstatus.NT_STATUS_ACCOUNT_LOCKED_OUT)
 
             res = self._check_account(userdn,
                                       badPwdCount=lockout_threshold,
@@ -801,7 +801,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).
             self.fail()
         except LdbError as e10:
             (num, msg) = e10.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
         res = self._check_account(userdn,
@@ -852,7 +852,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
             self.fail()
         except LdbError as e11:
             (num, msg) = e11.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
         res = self._check_account(userdn,
@@ -894,7 +894,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
             self.fail()
         except LdbError as e12:
             (num, msg) = e12.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
         # this is strange, why do we have lockoutTime=badPasswordTime here?
@@ -923,7 +923,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
             self.fail()
         except LdbError as e13:
             (num, msg) = e13.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
         res = self._check_account(userdn,
@@ -949,7 +949,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
             self.fail()
         except LdbError as e14:
             (num, msg) = e14.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
         res = self._check_account(userdn,
@@ -975,7 +975,7 @@ unicodePwd:: """ + base64.b64encode(invalid_utf16).decode('utf8') + """
             self.fail()
         except LdbError as e15:
             (num, msg) = e15.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000775' in msg, msg)
 
         res = self._check_account(userdn,
@@ -1040,7 +1040,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
             self.fail()
         except LdbError as e16:
             (num, msg) = e16.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
         res = self._check_account(userdn,
@@ -1067,7 +1067,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
             self.fail()
         except LdbError as e17:
             (num, msg) = e17.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
         res = self._check_account(userdn,
@@ -1108,7 +1108,7 @@ unicodePwd:: """ + base64.b64encode(new_utf16).decode('utf8') + """
             self.fail()
         except LdbError as e18:
             (num, msg) = e18.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             self.assertTrue('00000056' in msg, msg)
 
         res = self._check_account(userdn,
@@ -1240,7 +1240,7 @@ userPassword: thatsAcomplPASS2
             self.fail()
         except LdbError as e19:
             (num, msg) = e19.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
             # Windows (2008 at least) seems to have some small bug here: it
             # returns "0000056A" on longer (always wrong) previous passwords.
             self.assertTrue('00000056' in msg, msg)

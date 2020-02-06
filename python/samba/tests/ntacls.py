@@ -56,7 +56,7 @@ class NtaclsTests(TestCaseInTempDir):
         setntacl(lp, self.tempf, NTACL_SDDL, DOMAIN_SID, self.session_info)
         facl = getntacl(lp, self.tempf, self.session_info)
         anysid = security.dom_sid(security.SID_NT_SELF)
-        self.assertEquals(facl.as_sddl(anysid), NTACL_SDDL)
+        self.assertEqual(facl.as_sddl(anysid), NTACL_SDDL)
         os.unlink(os.path.join(self.tempdir, "eadbtest.tdb"))
 
     def test_setntacl_getntacl_param(self):
@@ -67,7 +67,7 @@ class NtaclsTests(TestCaseInTempDir):
         facl = getntacl(lp, self.tempf, self.session_info, "tdb", os.path.join(
             self.tempdir, "eadbtest.tdb"))
         domsid = security.dom_sid(security.SID_NT_SELF)
-        self.assertEquals(facl.as_sddl(domsid), NTACL_SDDL)
+        self.assertEqual(facl.as_sddl(domsid), NTACL_SDDL)
         os.unlink(os.path.join(self.tempdir, "eadbtest.tdb"))
 
     def test_setntacl_invalidbackend(self):

@@ -24,4 +24,4 @@ from wafsamba.samba_bundled import (
 class TuplizeVersionTests(TestCase):
 
     def test_simple(self):
-        self.assertEquals((1, 2, 10), tuplize_version("1.2.10"))
+        self.assertEqual((1, 2, 10), tuplize_version("1.2.10"))

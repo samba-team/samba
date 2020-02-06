@@ -117,11 +117,11 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         for o in repl.ctr.array:
             e = expected[i]
             (attid, orig_dsa, version) = e
-            self.assertEquals(attid, o.attid,
+            self.assertEqual(attid, o.attid,
                               "(LDAP) Wrong attid "
                               "for expected value %d, wanted 0x%08x got 0x%08x"
                               % (i, attid, o.attid))
-            self.assertEquals(o.originating_invocation_id,
+            self.assertEqual(o.originating_invocation_id,
                               misc.GUID(orig_dsa),
                               "(LDAP) Wrong originating_invocation_id "
                               "for expected value %d, attid 0x%08x, wanted %s got %s"
@@ -130,7 +130,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                  o.originating_invocation_id))
             # Allow version to be skipped when it does not matter
             if version is not None:
-                self.assertEquals(o.version, version,
+                self.assertEqual(o.version, version,
                                   "(LDAP) Wrong version for expected value %d, "
                                   "attid 0x%08x, "
                                   "wanted %d got %d"
@@ -184,12 +184,12 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                 e = expected[i]
                 (attid, orig_dsa, version) = e
 
-            self.assertEquals(attid, drs_attid.attid,
+            self.assertEqual(attid, drs_attid.attid,
                               "(DRS) Wrong attid "
                               "for expected value %d, wanted 0x%08x got 0x%08x"
                               % (i, attid, drs_attid.attid))
 
-            self.assertEquals(o.originating_invocation_id,
+            self.assertEqual(o.originating_invocation_id,
                               misc.GUID(orig_dsa),
                               "(DRS) Wrong originating_invocation_id "
                               "for expected value %d, attid 0x%08x, wanted %s got %s"
@@ -198,7 +198,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                  o.originating_invocation_id))
             # Allow version to be skipped when it does not matter
             if version is not None:
-                self.assertEquals(o.version, version,
+                self.assertEqual(o.version, version,
                                   "(DRS) Wrong version for expected value %d, "
                                   "attid 0x%08x, "
                                   "wanted %d got %d"
@@ -215,7 +215,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                              controls=["show_deleted:1"],
                              attrs=["*", "parentGUID",
                                     "replPropertyMetaData"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         user_cur = res[0]
         rdn_orig = str(obj_orig[user_cur.dn.get_rdn_name()][0])
         rdn_cur  = str(user_cur[user_cur.dn.get_rdn_name()][0])
@@ -226,16 +226,16 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         # now check properties of the user
         if is_deleted:
             self.assertTrue("isDeleted" in user_cur)
-            self.assertEquals(rdn_cur.split('\n')[0], rdn_orig)
-            self.assertEquals(name_cur.split('\n')[0], name_orig)
-            self.assertEquals(dn_cur.get_rdn_value().split('\n')[0],
+            self.assertEqual(rdn_cur.split('\n')[0], rdn_orig)
+            self.assertEqual(name_cur.split('\n')[0], name_orig)
+            self.assertEqual(dn_cur.get_rdn_value().split('\n')[0],
                               dn_orig.get_rdn_value())
             self.assertEqual(name_cur, rdn_cur)
         else:
             self.assertFalse("isDeleted" in user_cur)
-            self.assertEquals(rdn_cur, rdn_orig)
-            self.assertEquals(name_cur, name_orig)
-            self.assertEquals(dn_cur, dn_orig)
+            self.assertEqual(rdn_cur, rdn_orig)
+            self.assertEqual(name_cur, name_orig)
+            self.assertEqual(dn_cur, dn_orig)
             self.assertEqual(name_cur, rdn_cur)
             parent_cur  = user_cur["parentGUID"][0]
             try:
@@ -277,7 +277,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -318,7 +318,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -550,7 +550,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -591,7 +591,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_moved_orig = ldb_res[0]
 
         moved_metadata = [
@@ -629,7 +629,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 0)
+        self.assertEqual(len(ldb_res), 0)
 
         # delete user on DC1
         self.ldb_dc1.delete('<GUID=%s>' % self._GUID_string(user_orig["objectGUID"][0]))
@@ -733,7 +733,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -774,7 +774,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -913,7 +913,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -954,7 +954,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -1094,7 +1094,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -1167,7 +1167,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -1418,7 +1418,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -1438,7 +1438,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -1483,7 +1483,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_BASE,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         ou_orig = ldb_res[0]
         ou_dn   = ldb_res[0]["dn"]
 
@@ -1502,7 +1502,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=new_dn,
                                       scope=SCOPE_BASE,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         ou_moved_orig = ldb_res[0]
         ou_moved_dn   = ldb_res[0]["dn"]
@@ -1548,7 +1548,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_BASE,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         ou_orig = ldb_res[0]
         ou_dn   = ldb_res[0]["dn"]
 
@@ -1567,7 +1567,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=new_dn,
                                       scope=SCOPE_BASE,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         ou_moved_orig = ldb_res[0]
         ou_moved_dn   = ldb_res[0]["dn"]
@@ -1613,7 +1613,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_BASE,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         ou_orig = ldb_res[0]
         ou_dn   = ldb_res[0]["dn"]
 
@@ -1632,7 +1632,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=new_dn,
                                       scope=SCOPE_BASE,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         ou_moved_orig = ldb_res[0]
         ou_moved_dn   = ldb_res[0]["dn"]
@@ -1679,7 +1679,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_BASE,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         ou_orig = ldb_res[0]
         ou_dn   = ldb_res[0]["dn"]
 
@@ -1698,7 +1698,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=new_dn,
                                       scope=SCOPE_BASE,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         ou_moved_orig = ldb_res[0]
         ou_moved_dn   = ldb_res[0]["dn"]
@@ -1744,7 +1744,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_BASE,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         ou_orig = ldb_res[0]
         ou_dn   = ldb_res[0]["dn"]
 
@@ -1792,7 +1792,7 @@ class DrsMoveObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_BASE,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         ou_orig = ldb_res[0]
         ou_dn   = ldb_res[0]["dn"]
 
@@ -1911,7 +1911,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         res = sam_ldb.search(base='<GUID=%s>' % guid_str,
                              controls=["show_deleted:1"],
                              attrs=["*", "parentGUID"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         user_cur = res[0]
         cn_orig = str(obj_orig["cn"][0])
         cn_cur  = str(user_cur["cn"][0])
@@ -1922,16 +1922,16 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         # now check properties of the user
         if is_deleted:
             self.assertTrue("isDeleted" in user_cur)
-            self.assertEquals(cn_cur.split('\n')[0], cn_orig)
-            self.assertEquals(name_cur.split('\n')[0], name_orig)
-            self.assertEquals(dn_cur.get_rdn_value().split('\n')[0],
+            self.assertEqual(cn_cur.split('\n')[0], cn_orig)
+            self.assertEqual(name_cur.split('\n')[0], name_orig)
+            self.assertEqual(dn_cur.get_rdn_value().split('\n')[0],
                               dn_orig.get_rdn_value())
             self.assertEqual(name_cur, cn_cur)
         else:
             self.assertFalse("isDeleted" in user_cur)
-            self.assertEquals(cn_cur, cn_orig)
-            self.assertEquals(name_cur, name_orig)
-            self.assertEquals(dn_cur, dn_orig)
+            self.assertEqual(cn_cur, cn_orig)
+            self.assertEqual(name_cur, name_orig)
+            self.assertEqual(dn_cur, dn_orig)
             self.assertEqual(name_cur, cn_cur)
         self.assertEqual(name_cur, user_cur.dn.get_rdn_value())
 
@@ -1958,7 +1958,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -1977,7 +1977,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou2_dn,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -2015,7 +2015,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -2038,7 +2038,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=new_dn3,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -2062,7 +2062,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -2110,7 +2110,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -2133,7 +2133,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=new_dn3,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -2155,7 +2155,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -2165,7 +2165,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         # check user info on DC2 - should be valid user
         user_cur = self._check_obj(sam_ldb=self.ldb_dc2, obj_orig=user_moved_orig, is_deleted=False)
 
-        self.assertEquals(user_cur["parentGUID"], user_moved_orig["parentGUID"])
+        self.assertEqual(user_cur["parentGUID"], user_moved_orig["parentGUID"])
 
         # delete user on DC1
         self.ldb_dc1.delete('<GUID=%s>' % self._GUID_string(user_orig["objectGUID"][0]))
@@ -2200,7 +2200,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -2219,7 +2219,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou2_dn,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -2261,7 +2261,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -2270,7 +2270,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         self._net_drs_replicate(DC=self.dnsname_dc2, fromDC=self.dnsname_dc1, forced=True)
         # check user info on DC2 - should be valid user
         user_cur = self._check_obj(sam_ldb=self.ldb_dc2, obj_orig=user_moved_orig, is_deleted=False)
-        self.assertEquals(user_cur["parentGUID"][0], user_moved_orig["parentGUID"][0])
+        self.assertEqual(user_cur["parentGUID"][0], user_moved_orig["parentGUID"][0])
 
         # delete user on DC1
         self.ldb_dc1.delete('<GUID=%s>' % self._GUID_string(user_orig["objectGUID"][0]))
@@ -2301,7 +2301,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou1_dn,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -2323,7 +2323,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.ou2_dn,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
 
         user_moved_orig = ldb_res[0]
         user_moved_dn   = ldb_res[0]["dn"]
@@ -2363,7 +2363,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -2377,7 +2377,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         # check user info on DC2 - should be valid user
         user_cur = self._check_obj(sam_ldb=self.ldb_dc2, obj_orig=user_orig, is_deleted=False)
 
-        self.assertEquals(user_cur["parentGUID"], user_orig["parentGUID"])
+        self.assertEqual(user_cur["parentGUID"], user_orig["parentGUID"])
 
         # delete user on DC1
         self.ldb_dc1.delete('<GUID=%s>' % self._GUID_string(user_orig["objectGUID"][0]))
@@ -2410,7 +2410,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -2424,7 +2424,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_moved = ldb_res[0]
         user_moved_dn = ldb_res[0]["dn"]
 
@@ -2433,7 +2433,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         # check user info on DC2 - should be valid user
         user_cur = self._check_obj(sam_ldb=self.ldb_dc2, obj_orig=user_moved, is_deleted=False)
 
-        self.assertEquals(user_cur["parentGUID"], user_moved["parentGUID"])
+        self.assertEqual(user_cur["parentGUID"], user_moved["parentGUID"])
 
         # delete user on DC1
         self.ldb_dc1.delete('<GUID=%s>' % self._GUID_string(user_orig["objectGUID"][0]))
@@ -2466,7 +2466,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -2505,7 +2505,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_moved = ldb_res[0]
         user_moved_dn = ldb_res[0]["dn"]
 
@@ -2514,7 +2514,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         # check user info on DC2 - should be under the OU2 from DC1
         user_cur = self._check_obj(sam_ldb=self.ldb_dc2, obj_orig=user_moved, is_deleted=False)
 
-        self.assertEquals(user_cur["parentGUID"], user_moved["parentGUID"])
+        self.assertEqual(user_cur["parentGUID"], user_moved["parentGUID"])
 
         # delete user on DC1
         self.ldb_dc1.delete('<GUID=%s>' % self._GUID_string(user_orig["objectGUID"][0]))
@@ -2546,7 +2546,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -2583,7 +2583,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username,
                                       attrs=["*", "parentGUID"])
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_moved = ldb_res[0]
         user_moved_dn = ldb_res[0]["dn"]
 
@@ -2592,7 +2592,7 @@ class DrsMoveBetweenTreeOfObjectTestCase(drs_base.DrsBaseTestCase):
         # check user info on DC2 - should be under the OU2 from DC1
         user_cur = self._check_obj(sam_ldb=self.ldb_dc2, obj_orig=user_moved, is_deleted=False)
 
-        self.assertEquals(user_cur["parentGUID"], user_moved["parentGUID"])
+        self.assertEqual(user_cur["parentGUID"], user_moved["parentGUID"])
 
         # delete user on DC1
         self.ldb_dc1.delete('<GUID=%s>' % self._GUID_string(user_orig["objectGUID"][0]))

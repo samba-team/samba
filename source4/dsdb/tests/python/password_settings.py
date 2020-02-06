@@ -107,7 +107,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
             self.fail("Password '%s' should have been rejected" % password)
         except ldb.LdbError as e:
             (num, msg) = e.args
-            self.assertEquals(num, ldb.ERR_CONSTRAINT_VIOLATION, msg)
+            self.assertEqual(num, ldb.ERR_CONSTRAINT_VIOLATION, msg)
             self.assertTrue('0000052D' in msg, msg)
 
     def assert_password_valid(self, user, password):
@@ -415,7 +415,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
             self.fail()
         except ldb.LdbError as e:
             (num, msg) = e.args
-            self.assertEquals(num, ldb.ERR_NAMING_VIOLATION, msg)
+            self.assertEqual(num, ldb.ERR_NAMING_VIOLATION, msg)
             # Windows returns 2099 (Illegal superior), Samba returns 2037
             # (Naming violation - "not a valid child class")
             self.assertTrue('00002099' in msg or '00002037' in msg, msg)
@@ -428,7 +428,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
             self.fail()
         except ldb.LdbError as e:
             (num, msg) = e.args
-            self.assertEquals(num, ldb.ERR_NAMING_VIOLATION, msg)
+            self.assertEqual(num, ldb.ERR_NAMING_VIOLATION, msg)
             self.assertTrue('00002099' in msg or '00002037' in msg, msg)
 
         base_dn = self.ldb.get_default_basedn()
@@ -645,7 +645,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
             self.fail()
         except ldb.LdbError as e:
             (num, msg) = e.args
-            self.assertEquals(num, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, msg)
+            self.assertEqual(num, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, msg)
 
         # create a PSO as the admin user
         priv_pso = PasswordSettings("priv-PSO", self.ldb, password_len=20)
@@ -658,7 +658,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
             self.fail()
         except ldb.LdbError as e:
             (num, msg) = e.args
-            self.assertEquals(num, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, msg)
+            self.assertEqual(num, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, msg)
             self.assertTrue('00002098' in msg, msg)
 
         self.set_attribute(priv_pso.dn, "msDS-PSOAppliesTo", user.dn,
@@ -670,7 +670,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
             self.fail()
         except ldb.LdbError as e:
             (num, msg) = e.args
-            self.assertEquals(num, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, msg)
+            self.assertEqual(num, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, msg)
             self.assertTrue('00002098' in msg, msg)
 
         priv_pso.set_precedence(100, samdb=self.ldb)
@@ -703,7 +703,7 @@ class PasswordSettingsTestCase(PasswordTestCase):
                 self.fail()
             except ldb.LdbError as e:
                 (num, msg) = e.args
-                self.assertEquals(num, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, msg)
+                self.assertEqual(num, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS, msg)
                 self.assertTrue('00002098' in msg, msg)
 
             # ...but can be performed by the admin user
@@ -796,7 +796,7 @@ unicodePwd:: %s
             self.fail()
         except ldb.LdbError as e:
                 (num, msg) = e.args
-                self.assertEquals(num, ldb.ERR_CONSTRAINT_VIOLATION, msg)
+                self.assertEqual(num, ldb.ERR_CONSTRAINT_VIOLATION, msg)
                 self.assertTrue('0000052D' in msg, msg)
 
         # check setting a password that meets the PSO settings works

@@ -65,7 +65,7 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
         res = self.samdb.search(base="<GUID=%s>" % self.GUID_string(guid),
                                 scope=SCOPE_BASE, attrs=attrs,
                                 controls=["show_deleted:1"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         return res[0]
 
     def search_dn(self, dn):
@@ -73,7 +73,7 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
                                 base=dn,
                                 scope=SCOPE_BASE,
                                 controls=["show_recycled:1"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         return res[0]
 
     def _create_object(self, msg):
@@ -160,14 +160,14 @@ class RestoredObjectAttributesBaseTestCase(samba.tests.TestCase):
         for o in repl.ctr.array:
             e = expected[i]
             (attid, version) = e
-            self.assertEquals(attid, o.attid,
+            self.assertEqual(attid, o.attid,
                               "(LDAP) Wrong attid "
                               "for expected value %d, wanted 0x%08x got 0x%08x, "
                               "repl: \n%s"
                               % (i, attid, o.attid, ndr_print(repl)))
             # Allow version to be skipped when it does not matter
             if version is not None:
-                self.assertEquals(o.version, version,
+                self.assertEqual(o.version, version,
                                   "(LDAP) Wrong version for expected value %d, "
                                   "attid 0x%08x, "
                                   "wanted %d got %d, repl: \n%s"
@@ -208,7 +208,7 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
             self.samdb.modify(msg)
         except LdbError as e:
             (num, _) = e.args
-            self.assertEquals(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
+            self.assertEqual(num, ERR_ATTRIBUTE_OR_VALUE_EXISTS)
 
     def test_undelete(self):
         print("Testing standard undelete operation")
@@ -246,14 +246,14 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
             self.fail()
         except LdbError as e1:
             (num, _) = e1.args
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+            self.assertEqual(num, ERR_NO_SUCH_OBJECT)
 
         try:
             self.samdb.rename(str(objDeleted1.dn), usr1, ["show_deleted:1"])
             self.fail()
         except LdbError as e2:
             (num, _) = e2.args
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
     def test_undelete_with_mod(self):
         print("Testing standard undelete operation with modification of additional attributes")
@@ -313,7 +313,7 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
             self.fail()
         except LdbError as e3:
             (num, _) = e3.args
-            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+            self.assertEqual(num, ERR_ENTRY_ALREADY_EXISTS)
 
     def test_undelete_cross_nc(self):
         print("Cross NC undelete")
@@ -345,14 +345,14 @@ class BaseRestoreObjectTestCase(RestoredObjectAttributesBaseTestCase):
             self.fail()
         except LdbError as e4:
             (num, _) = e4.args
-            self.assertEquals(num, ERR_OPERATIONS_ERROR)
+            self.assertEqual(num, ERR_OPERATIONS_ERROR)
         # try to undelete from config to base dn
         try:
             self.restore_deleted_object(self.samdb, objDeleted2.dn, c4)
             self.fail()
         except LdbError as e5:
             (num, _) = e5.args
-            self.assertEquals(num, ERR_OPERATIONS_ERROR)
+            self.assertEqual(num, ERR_OPERATIONS_ERROR)
         # assert undeletion will work in same nc
         self.restore_deleted_object(self.samdb, objDeleted1.dn, c4)
         self.restore_deleted_object(self.samdb, objDeleted2.dn, c3)

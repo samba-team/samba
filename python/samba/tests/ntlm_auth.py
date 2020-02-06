@@ -228,11 +228,11 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
         lines = out.split(b"\n")
 
         self.assertEqual(len(lines), 4)
-        self.assertEquals(lines[0], b"Authenticated: Yes")
-        self.assertEquals(
+        self.assertEqual(lines[0], b"Authenticated: Yes")
+        self.assertEqual(
             lines[1], b"User-Session-Key: 3F373EA8E4AF954F14FAA506F8EEBDC4")
-        self.assertEquals(lines[2], b".")
-        self.assertEquals(lines[3], b"")
+        self.assertEqual(lines[2], b".")
+        self.assertEqual(lines[3], b"")
 
         # Break the password with a leading A on the challenge
         ntlm_cmds[0] = "LANMAN-Challenge: A123456789abcdef"
@@ -247,7 +247,7 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
 
         lines = out.split(b"\n")
         self.assertEqual(len(lines), 5)
-        self.assertEquals(lines[0], b"Authenticated: No")
+        self.assertEqual(lines[0], b"Authenticated: No")
 
     def test_ntlm_server_1_with_plaintext_winbind(self):
         """ ntlm_auth ntlm-server-1 with plaintext password against winbind """
@@ -270,9 +270,9 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
         lines = out.split(b"\n")
 
         self.assertEqual(len(lines), 3)
-        self.assertEquals(lines[0], b"Authenticated: Yes")
-        self.assertEquals(lines[1], b".")
-        self.assertEquals(lines[2], b"")
+        self.assertEqual(lines[0], b"Authenticated: Yes")
+        self.assertEqual(lines[1], b".")
+        self.assertEqual(lines[2], b"")
 
         # Check membership failure
 
@@ -287,9 +287,9 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
         lines = out.split(b"\n")
 
         self.assertEqual(len(lines), 3)
-        self.assertEquals(lines[0], b"Authenticated: No")
-        self.assertEquals(lines[1], b".")
-        self.assertEquals(lines[2], b"")
+        self.assertEqual(lines[0], b"Authenticated: No")
+        self.assertEqual(lines[1], b".")
+        self.assertEqual(lines[2], b"")
 
     def test_ntlm_server_1_with_incorrect_password_winbind(self):
         """ ntlm_auth ntlm-server-1 with incorrect fixed password against
@@ -313,7 +313,7 @@ class NTLMAuthHelpersTests(NTLMAuthTestCase):
         lines = out.split(b"\n")
 
         self.assertEqual(len(lines), 5)
-        self.assertEquals(lines[0], b"Authenticated: No")
+        self.assertEqual(lines[0], b"Authenticated: No")
 
     def test_diagnostics(self):
         """ ntlm_auth diagnostics """

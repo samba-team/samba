@@ -78,8 +78,8 @@ systemOnly: FALSE
         # search for created attribute
         res = []
         res = self.ldb.search("cn=%s,%s" % (attr_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_display_name)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0]["lDAPDisplayName"][0], attr_ldap_display_name)
         self.assertTrue("schemaIDGUID" in res[0])
 
         class_name = "test-Class-DN-String" + time.strftime("%s", time.gmtime())
@@ -104,9 +104,9 @@ systemOnly: FALSE
         # search for created objectclass
         res = []
         res = self.ldb.search("cn=%s,%s" % (class_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], class_ldap_display_name)
-        self.assertEquals(res[0]["defaultObjectCategory"][0], res[0]["distinguishedName"][0])
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0]["lDAPDisplayName"][0], class_ldap_display_name)
+        self.assertEqual(res[0]["defaultObjectCategory"][0], res[0]["distinguishedName"][0])
         self.assertTrue("schemaIDGUID" in res[0])
 
         # store the class and the attribute
@@ -138,8 +138,8 @@ systemOnly: FALSE
         # search for created attribute
         res = []
         res = self.ldb.search("cn=%s,%s" % (attr_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], attr_ldap_display_name)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0]["lDAPDisplayName"][0], attr_ldap_display_name)
         self.assertTrue("schemaIDGUID" in res[0])
 
         class_name = "test-Class-DN-Binary" + time.strftime("%s", time.gmtime())
@@ -164,9 +164,9 @@ systemOnly: FALSE
         # search for created objectclass
         res = []
         res = self.ldb.search("cn=%s,%s" % (class_name, self.schema_dn), scope=SCOPE_BASE, attrs=["*"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(res[0]["lDAPDisplayName"][0], class_ldap_display_name)
-        self.assertEquals(res[0]["defaultObjectCategory"][0], res[0]["distinguishedName"][0])
+        self.assertEqual(len(res), 1)
+        self.assertEqual(res[0]["lDAPDisplayName"][0], class_ldap_display_name)
+        self.assertEqual(res[0]["defaultObjectCategory"][0], res[0]["distinguishedName"][0])
         self.assertTrue("schemaIDGUID" in res[0])
 
         # store the class and the attribute
@@ -202,19 +202,19 @@ name: """ + object_name + """
         res = self.ldb.search(base=self.base_dn,
                               scope=SCOPE_SUBTREE,
                               expression="(%s=%s)" % (self.dn_string_attribute, self.base_dn))
-        self.assertEquals(len(res), 0)
+        self.assertEqual(len(res), 0)
 
         # search by specifying the string part only
         res = self.ldb.search(base=self.base_dn,
                               scope=SCOPE_SUBTREE,
                               expression="(%s=S:5:ABCDE)" % self.dn_string_attribute)
-        self.assertEquals(len(res), 0)
+        self.assertEqual(len(res), 0)
 
         # search by DN+Stirng
         res = self.ldb.search(base=self.base_dn,
                               scope=SCOPE_SUBTREE,
                               expression="(%s=S:5:ABCDE:%s)" % (self.dn_string_attribute, self.base_dn))
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         # add object with wrong format
         object_name2 = "obj-DN-String2" + time.strftime("%s", time.gmtime())
@@ -224,7 +224,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e:
             (num, _) = e.args
-            self.assertEquals(num, ERR_INVALID_ATTRIBUTE_SYNTAX)
+            self.assertEqual(num, ERR_INVALID_ATTRIBUTE_SYNTAX)
 
         # add object with the same dn but with different string value in case
         ldif = self._get_object_ldif(object_name1, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
@@ -233,7 +233,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e1:
             (num, _) = e1.args
-            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+            self.assertEqual(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with the same dn but with different string value
         ldif = self._get_object_ldif(object_name1, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
@@ -242,7 +242,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e2:
             (num, _) = e2.args
-            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+            self.assertEqual(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with the same dn but with different dn and string value
         ldif = self._get_object_ldif(object_name1, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
@@ -251,7 +251,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e3:
             (num, _) = e3.args
-            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+            self.assertEqual(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with the same dn but with different dn value
         ldif = self._get_object_ldif(object_name1, self.dn_string_class_name, self.dn_string_class_ldap_display_name,
@@ -260,7 +260,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e4:
             (num, _) = e4.args
-            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+            self.assertEqual(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with GUID instead of DN
         object_name3 = "obj-DN-String3" + time.strftime("%s", time.gmtime())
@@ -270,7 +270,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e5:
             (num, _) = e5.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
 
         # add object with SID instead of DN
         object_name4 = "obj-DN-String4" + time.strftime("%s", time.gmtime())
@@ -280,7 +280,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e6:
             (num, _) = e6.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
 
         # add object with random string instead of DN
         object_name5 = "obj-DN-String5" + time.strftime("%s", time.gmtime())
@@ -290,7 +290,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e7:
             (num, _) = e7.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
 
     def test_dn_binary(self):
         # add obeject with correct value
@@ -303,19 +303,19 @@ name: """ + object_name + """
         res = self.ldb.search(base=self.base_dn,
                               scope=SCOPE_SUBTREE,
                               expression="(%s=%s)" % (self.dn_binary_attribute, self.base_dn))
-        self.assertEquals(len(res), 0)
+        self.assertEqual(len(res), 0)
 
         # search by specifying the binary part
         res = self.ldb.search(base=self.base_dn,
                               scope=SCOPE_SUBTREE,
                               expression="(%s=B:4:1234)" % self.dn_binary_attribute)
-        self.assertEquals(len(res), 0)
+        self.assertEqual(len(res), 0)
 
         # search by DN+Binary
         res = self.ldb.search(base=self.base_dn,
                               scope=SCOPE_SUBTREE,
                               expression="(%s=B:4:1234:%s)" % (self.dn_binary_attribute, self.base_dn))
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         # add object with wrong format - 5 bytes instead of 4, 8, 16, 32...
         object_name2 = "obj-DN-Binary2" + time.strftime("%s", time.gmtime())
@@ -325,7 +325,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e8:
             (num, _) = e8.args
-            self.assertEquals(num, ERR_INVALID_ATTRIBUTE_SYNTAX)
+            self.assertEqual(num, ERR_INVALID_ATTRIBUTE_SYNTAX)
 
         # add object with the same dn but with different binary value
         ldif = self._get_object_ldif(object_name1, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
@@ -334,7 +334,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e9:
             (num, _) = e9.args
-            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+            self.assertEqual(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with the same dn but with different binary and dn value
         ldif = self._get_object_ldif(object_name1, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
@@ -343,7 +343,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e10:
             (num, _) = e10.args
-            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+            self.assertEqual(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with the same dn but with different dn value
         ldif = self._get_object_ldif(object_name1, self.dn_binary_class_name, self.dn_binary_class_ldap_display_name,
@@ -352,7 +352,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e11:
             (num, _) = e11.args
-            self.assertEquals(num, ERR_ENTRY_ALREADY_EXISTS)
+            self.assertEqual(num, ERR_ENTRY_ALREADY_EXISTS)
 
         # add object with GUID instead of DN
         object_name3 = "obj-DN-Binary3" + time.strftime("%s", time.gmtime())
@@ -362,7 +362,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e12:
             (num, _) = e12.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
 
         # add object with SID instead of DN
         object_name4 = "obj-DN-Binary4" + time.strftime("%s", time.gmtime())
@@ -372,7 +372,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e13:
             (num, _) = e13.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
 
         # add object with random string instead of DN
         object_name5 = "obj-DN-Binary5" + time.strftime("%s", time.gmtime())
@@ -382,7 +382,7 @@ name: """ + object_name + """
             self.ldb.add_ldif(ldif)
         except LdbError as e14:
             (num, _) = e14.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
 
 
 TestProgram(module=__name__, opts=subunitopts)

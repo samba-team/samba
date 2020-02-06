@@ -166,7 +166,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
         res_dc1 = self.ldb_dc1.search(base=obj_dn,
                                       scope=SCOPE_BASE,
                                       attrs=["*"])
-        self.assertEquals(len(res_dc1), 1,
+        self.assertEqual(len(res_dc1), 1,
                           "%s doesn't exists on %s" % (obj_dn, self.dnsname_dc1))
         try:
             res_dc2 = self.ldb_dc2.search(base=obj_dn,
@@ -177,7 +177,7 @@ class DrsReplSchemaTestCase(drs_base.DrsBaseTestCase):
             if enum == ERR_NO_SUCH_OBJECT:
                 self.fail("%s doesn't exists on %s" % (obj_dn, self.dnsname_dc2))
             raise
-        self.assertEquals(len(res_dc2), 1,
+        self.assertEqual(len(res_dc2), 1,
                           "%s doesn't exists on %s" % (obj_dn, self.dnsname_dc2))
 
     def test_class(self):

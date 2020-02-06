@@ -83,8 +83,8 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
                                             drsuapi.DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
                                             drsuapi.DRSUAPI_DS_NAME_FORMAT_GUID)
 
-        self.assertEquals(ctr.count, 1)
-        self.assertEquals(ctr.array[0].status,
+        self.assertEqual(ctr.count, 1)
+        self.assertEqual(ctr.array[0].status,
                           drsuapi.DRSUAPI_DS_NAME_STATUS_OK)
 
         user_guid = ctr.array[0].result_name
@@ -94,8 +94,8 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
                                                 drsuapi.DRSUAPI_DS_NAME_FORMAT_GUID,
                                                 name_format)
 
-            self.assertEquals(ctr.count, 1)
-            self.assertEquals(ctr.array[0].status,
+            self.assertEqual(ctr.count, 1)
+            self.assertEqual(ctr.array[0].status,
                               drsuapi.DRSUAPI_DS_NAME_STATUS_OK,
                               "Expected 0, got %s, desired format is %s"
                               % (ctr.array[0].status, name_format))
@@ -104,8 +104,8 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
                                                 name_format,
                                                 drsuapi.DRSUAPI_DS_NAME_FORMAT_GUID)
 
-            self.assertEquals(ctr.count, 1)
-            self.assertEquals(ctr.array[0].status,
+            self.assertEqual(ctr.count, 1)
+            self.assertEqual(ctr.array[0].status,
                               drsuapi.DRSUAPI_DS_NAME_STATUS_OK,
                               "Expected 0, got %s, offered format is %s"
                               % (ctr.array[0].status, name_format))
@@ -134,8 +134,8 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
                                             drsuapi.DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
                                             drsuapi.DRSUAPI_DS_NAME_FORMAT_GUID)
 
-        self.assertEquals(ctr.count, 1)
-        self.assertEquals(ctr.array[0].status,
+        self.assertEqual(ctr.count, 1)
+        self.assertEqual(ctr.array[0].status,
                           drsuapi.DRSUAPI_DS_NAME_STATUS_OK)
 
         user_guid = ctr.array[0].result_name
@@ -144,8 +144,8 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
                                             drsuapi.DRSUAPI_DS_NAME_FORMAT_GUID,
                                             drsuapi.DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL)
 
-        self.assertEquals(ctr.count, 1)
-        self.assertEquals(ctr.array[0].status,
+        self.assertEqual(ctr.count, 1)
+        self.assertEqual(ctr.array[0].status,
                           drsuapi.DRSUAPI_DS_NAME_STATUS_NOT_UNIQUE)
 
         self.ldb_dc1.delete(user)
@@ -172,8 +172,8 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
                                             drsuapi.DRSUAPI_DS_NAME_FORMAT_FQDN_1779,
                                             drsuapi.DRSUAPI_DS_NAME_FORMAT_GUID)
 
-        self.assertEquals(ctr.count, 1)
-        self.assertEquals(ctr.array[0].status,
+        self.assertEqual(ctr.count, 1)
+        self.assertEqual(ctr.array[0].status,
                           drsuapi.DRSUAPI_DS_NAME_STATUS_OK)
 
         user_guid = ctr.array[0].result_name
@@ -182,8 +182,8 @@ class DrsCracknamesTestCase(drs_base.DrsBaseTestCase):
                                             drsuapi.DRSUAPI_DS_NAME_FORMAT_GUID,
                                             drsuapi.DRSUAPI_DS_NAME_FORMAT_SERVICE_PRINCIPAL)
 
-        self.assertEquals(ctr.count, 1)
-        self.assertEquals(ctr.array[0].status,
+        self.assertEqual(ctr.count, 1)
+        self.assertEqual(ctr.array[0].status,
                           drsuapi.DRSUAPI_DS_NAME_STATUS_NOT_FOUND)
 
         self.ldb_dc1.delete(user)

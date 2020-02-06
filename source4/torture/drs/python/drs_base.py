@@ -98,14 +98,14 @@ class DrsBaseTestCase(SambaToolCmdTest):
         res = sam_ldb.search(base=wkdn,
                              scope=SCOPE_BASE,
                              controls=["show_deleted:1"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         return str(res[0]["dn"])
 
     def _lost_and_found_dn(self, sam_ldb, nc):
         wkdn = "<WKGUID=%s,%s>" % (dsdb.DS_GUID_LOSTANDFOUND_CONTAINER, nc)
         res = sam_ldb.search(base=wkdn,
                              scope=SCOPE_BASE)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         return str(res[0]["dn"])
 
     def _make_obj_name(self, prefix):
@@ -147,7 +147,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
 
         (result, out, err) = self.runsubcmd(*samba_tool_cmdline)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
 
     def _enable_inbound_repl(self, DC):
         # make base command line
@@ -156,7 +156,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         samba_tool_cmd += [DC, "--dsa-option=-DISABLE_INBOUND_REPL"]
         (result, out, err) = self.runsubcmd(*samba_tool_cmd)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
 
     def _disable_inbound_repl(self, DC):
         # make base command line
@@ -165,7 +165,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         samba_tool_cmd += [DC, "--dsa-option=+DISABLE_INBOUND_REPL"]
         (result, out, err) = self.runsubcmd(*samba_tool_cmd)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
 
     def _enable_all_repl(self, DC):
         self._enable_inbound_repl(DC)
@@ -175,7 +175,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         samba_tool_cmd += [DC, "--dsa-option=-DISABLE_OUTBOUND_REPL"]
         (result, out, err) = self.runsubcmd(*samba_tool_cmd)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
 
     def _disable_all_repl(self, DC):
         self._disable_inbound_repl(DC)
@@ -185,7 +185,7 @@ class DrsBaseTestCase(SambaToolCmdTest):
         samba_tool_cmd += [DC, "--dsa-option=+DISABLE_OUTBOUND_REPL"]
         (result, out, err) = self.runsubcmd(*samba_tool_cmd)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
 
     def _get_highest_hwm_utdv(self, ldb_conn):
         res = ldb_conn.search("", scope=ldb.SCOPE_BASE, attrs=["highestCommittedUSN"])

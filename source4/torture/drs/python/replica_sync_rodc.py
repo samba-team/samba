@@ -70,13 +70,13 @@ objectClass: organizationalUnit
         res = sam_ldb.search(base='<GUID=%s>' % guid,
                              controls=["show_deleted:1"],
                              attrs=["isDeleted", "objectCategory", "ou"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         ou_cur = res[0]
         # Deleted Object base DN
         dodn = self._deleted_objects_dn(sam_ldb)
         # now check properties of the user
         name_cur = ou_cur["ou"][0]
-        self.assertEquals(ou_cur["isDeleted"][0], "TRUE")
+        self.assertEqual(ou_cur["isDeleted"][0], "TRUE")
         self.assertTrue(not("objectCategory" in ou_cur))
         self.assertTrue(dodn in str(ou_cur["dn"]),
                         "OU %s is deleted but it is not located under %s!" % (name_cur, dodn))

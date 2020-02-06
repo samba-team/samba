@@ -36,11 +36,11 @@ class GUIDTests(samba.tests.TestCase):
 
     def test_str(self):
         guid = misc.GUID(text1)
-        self.assertEquals(text1, str(guid))
+        self.assertEqual(text1, str(guid))
 
     def test_repr(self):
         guid = misc.GUID(text1)
-        self.assertEquals("GUID('%s')" % text1, repr(guid))
+        self.assertEqual("GUID('%s')" % text1, repr(guid))
 
     def test_compare_different(self):
         guid1 = misc.GUID(text1)
@@ -53,8 +53,8 @@ class GUIDTests(samba.tests.TestCase):
         guid1 = misc.GUID(text1)
         guid2 = misc.GUID(text1)
         self.assertTrue(guid1 == guid2)
-        self.assertEquals(guid1, guid2)
-        self.assertEquals(0, cmp(guid1, guid2))
+        self.assertEqual(guid1, guid2)
+        self.assertEqual(0, cmp(guid1, guid2))
 
     def test_valid_formats(self):
         fmts = [
@@ -70,7 +70,7 @@ class GUIDTests(samba.tests.TestCase):
         ]
         for fmt in fmts:
             guid = misc.GUID(fmt)
-            self.assertEquals(text3, str(guid))
+            self.assertEqual(text3, str(guid))
 
     def test_invalid_formats(self):
         fmts = [
@@ -95,13 +95,13 @@ class PolicyHandleTests(samba.tests.TestCase):
 
     def test_init(self):
         x = misc.policy_handle(text1, 1)
-        self.assertEquals(1, x.handle_type)
-        self.assertEquals(text1, str(x.uuid))
+        self.assertEqual(1, x.handle_type)
+        self.assertEqual(text1, str(x.uuid))
 
     def test_repr(self):
         x = misc.policy_handle(text1, 42)
-        self.assertEquals("policy_handle(%d, '%s')" % (42, text1), repr(x))
+        self.assertEqual("policy_handle(%d, '%s')" % (42, text1), repr(x))
 
     def test_str(self):
         x = misc.policy_handle(text1, 42)
-        self.assertEquals("%d, %s" % (42, text1), str(x))
+        self.assertEqual("%d, %s" % (42, text1), str(x))

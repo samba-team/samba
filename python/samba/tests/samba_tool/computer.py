@@ -78,10 +78,10 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             expectedsamaccountname = computer["name"]
             if not computer["name"].endswith('$'):
                 expectedsamaccountname = "%s$" % computer["name"]
-            self.assertEquals("%s" % found.get("name"), expectedname)
-            self.assertEquals("%s" % found.get("sAMAccountName"),
+            self.assertEqual("%s" % found.get("name"), expectedname)
+            self.assertEqual("%s" % found.get("sAMAccountName"),
                               expectedsamaccountname)
-            self.assertEquals("%s" % found.get("description"),
+            self.assertEqual("%s" % found.get("description"),
                               computer["description"])
 
     def tearDown(self):
@@ -155,7 +155,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
                 "--description=%s" % computer["description"])
 
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err, "", "There shouldn't be any error message")
+            self.assertEqual(err, "", "There shouldn't be any error message")
             self.assertIn("Computer '%s' created successfully" %
                           computer["name"], out)
 
@@ -165,10 +165,10 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             expectedsamaccountname = computer["name"]
             if not computer["name"].endswith('$'):
                 expectedsamaccountname = "%s$" % computer["name"]
-            self.assertEquals("%s" % found.get("name"), expectedname)
-            self.assertEquals("%s" % found.get("sAMAccountName"),
+            self.assertEqual("%s" % found.get("name"), expectedname)
+            self.assertEqual("%s" % found.get("sAMAccountName"),
                               expectedsamaccountname)
-            self.assertEquals("%s" % found.get("description"),
+            self.assertEqual("%s" % found.get("description"),
                               computer["description"])
 
     def test_list(self):
@@ -243,7 +243,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
             self.assertCmdSuccess(result, out, err,
                                   "Failed to move computer '%s'" %
                                   computer["name"])
-            self.assertEquals(err, "", "There shouldn't be any error message")
+            self.assertEqual(err, "", "There shouldn't be any error message")
             self.assertIn('Moved computer "%s"' % computer["name"], out)
 
             found = self._find_computer(computer["name"])
@@ -255,7 +255,7 @@ class ComputerCmdTestCase(SambaToolCmdTest):
                                    "CN=%s,OU=%s,%s" %
                                    (computername, parentou["name"],
                                     self.samdb.domain_dn()))
-            self.assertEquals(found.get("dn"), newexpecteddn,
+            self.assertEqual(found.get("dn"), newexpecteddn,
                               "Moved computer '%s' does not exist" %
                               computer["name"])
 

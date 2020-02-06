@@ -32,12 +32,12 @@ class SamDBApiTestCase(TestCaseInTempDir):
         try:
             os.remove(self.tempdir + "/test.db")
         except OSError as e:
-            self.assertEquals(e.errno, errno.ENOENT)
+            self.assertEqual(e.errno, errno.ENOENT)
 
         try:
             os.remove(self.tempdir + "/existing.db")
         except OSError as e:
-            self.assertEquals(e.errno, errno.ENOENT)
+            self.assertEqual(e.errno, errno.ENOENT)
 
         super(SamDBApiTestCase, self).tearDown()
 
@@ -58,11 +58,11 @@ class SamDBApiTestCase(TestCaseInTempDir):
             self.fail("Exception not thrown ")
         except LdbError as e:
             (err, _) = e.args
-            self.assertEquals(err, ERR_OPERATIONS_ERROR)
+            self.assertEqual(err, ERR_OPERATIONS_ERROR)
 
         existing = open(existing_name, "r")
         contents = existing.readline()
-        self.assertEquals("This is not a tdb file!!!!!!\n", contents)
+        self.assertEqual("This is not a tdb file!!!!!!\n", contents)
 
     # Attempt to open and existing non tdb file as a tdb file.
     # Don't create new db is cleared
@@ -80,7 +80,7 @@ class SamDBApiTestCase(TestCaseInTempDir):
 
         existing = open(existing_name, "rb")
         contents = existing.readline()
-        self.assertEquals(b"TDB file\n", contents)
+        self.assertEqual(b"TDB file\n", contents)
 
     #
     # Attempt to open an existing tdb file as a tdb file.
@@ -99,11 +99,11 @@ class SamDBApiTestCase(TestCaseInTempDir):
         })
 
         cn = initial.searchone("cn", dn)
-        self.assertEquals(b"test_dont_create_db_existing_tdb_file", cn)
+        self.assertEqual(b"test_dont_create_db_existing_tdb_file", cn)
 
         second = SamDB(url="tdb://" + existing_name)
         cn = second.searchone("cn", dn)
-        self.assertEquals(b"test_dont_create_db_existing_tdb_file", cn)
+        self.assertEqual(b"test_dont_create_db_existing_tdb_file", cn)
 
     #
     # Attempt to open an existing tdb file as a tdb file.
@@ -122,11 +122,11 @@ class SamDBApiTestCase(TestCaseInTempDir):
         })
 
         cn = initial.searchone("cn", dn)
-        self.assertEquals(b"test_dont_create_db_existing_tdb_file", cn)
+        self.assertEqual(b"test_dont_create_db_existing_tdb_file", cn)
 
         second = SamDB(url="tdb://" + existing_name, flags=0)
         cn = second.searchone("cn", dn)
-        self.assertEquals(b"test_dont_create_db_existing_tdb_file", cn)
+        self.assertEqual(b"test_dont_create_db_existing_tdb_file", cn)
 
     # Open a non existent TDB file.
     # Don't create new db is set, the default
@@ -139,13 +139,13 @@ class SamDBApiTestCase(TestCaseInTempDir):
             self.fail("Exception not thrown ")
         except LdbError as e1:
             (err, _) = e1.args
-            self.assertEquals(err, ERR_OPERATIONS_ERROR)
+            self.assertEqual(err, ERR_OPERATIONS_ERROR)
 
         try:
             file = open(self.tempdir + "/test.db", "r")
             self.fail("New database file created")
         except IOError as e:
-            self.assertEquals(e.errno, errno.ENOENT)
+            self.assertEqual(e.errno, errno.ENOENT)
 
     # Open a SamDB with the don't create new DB flag cleared.
     # The underlying database file does not exist.
@@ -157,4 +157,4 @@ class SamDBApiTestCase(TestCaseInTempDir):
         SamDB(url="tdb://" + self.tempdir + "/test.db", flags=0)
         existing = open(self.tempdir + "/test.db", mode="rb")
         contents = existing.readline()
-        self.assertEquals(b"TDB file\n", contents)
+        self.assertEqual(b"TDB file\n", contents)

@@ -75,7 +75,7 @@ class DescriptorTests(samba.tests.TestCase):
                 self.ldb_admin.search(base=class_dn, attrs=["name"])
             except LdbError as e:
                 (num, _) = e.args
-                self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+                self.assertEqual(num, ERR_NO_SUCH_OBJECT)
                 break
 
         ldif = """
@@ -1985,31 +1985,31 @@ class RightsAttributesTests(DescriptorTests):
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["sDRightsEffective"])
         # user whould have no rights at all
-        self.assertEquals(len(res), 1)
-        self.assertEquals(str(res[0]["sDRightsEffective"][0]), "0")
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0]["sDRightsEffective"][0]), "0")
         # give the user Write DACL and see what happens
         mod = "(A;CI;WD;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["sDRightsEffective"])
         # user whould have DACL_SECURITY_INFORMATION
-        self.assertEquals(len(res), 1)
-        self.assertEquals(str(res[0]["sDRightsEffective"][0]), ("%d") % SECINFO_DACL)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0]["sDRightsEffective"][0]), ("%d") % SECINFO_DACL)
         # give the user Write Owners and see what happens
         mod = "(A;CI;WO;;;%s)" % str(user_sid)
         self.sd_utils.dacl_add_ace(object_dn, mod)
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["sDRightsEffective"])
         # user whould have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
-        self.assertEquals(len(res), 1)
-        self.assertEquals(str(res[0]["sDRightsEffective"][0]), ("%d") % (SECINFO_DACL | SECINFO_GROUP | SECINFO_OWNER))
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0]["sDRightsEffective"][0]), ("%d") % (SECINFO_DACL | SECINFO_GROUP | SECINFO_OWNER))
         # no way to grant security privilege bu adding ACE's so we use a memeber of Domain Admins
         _ldb = self.get_ldb_connection("testuser_attr2", "samba123@")
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["sDRightsEffective"])
         # user whould have DACL_SECURITY_INFORMATION, OWNER_SECURITY_INFORMATION, GROUP_SECURITY_INFORMATION
-        self.assertEquals(len(res), 1)
-        self.assertEquals(str(res[0]["sDRightsEffective"][0]),
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0]["sDRightsEffective"][0]),
                           ("%d") % (SECINFO_DACL | SECINFO_GROUP | SECINFO_OWNER | SECINFO_SACL))
 
     def test_allowedChildClassesEffective(self):
@@ -2024,7 +2024,7 @@ class RightsAttributesTests(DescriptorTests):
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["allowedChildClassesEffective"])
         # there should be no allowed child classes
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         self.assertFalse("allowedChildClassesEffective" in res[0].keys())
         # give the user the right to create children of type user
         mod = "(OA;CI;CC;bf967aba-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
@@ -2032,9 +2032,9 @@ class RightsAttributesTests(DescriptorTests):
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["allowedChildClassesEffective"])
         # allowedChildClassesEffective should only have one value, user
-        self.assertEquals(len(res), 1)
-        self.assertEquals(len(res[0]["allowedChildClassesEffective"]), 1)
-        self.assertEquals(str(res[0]["allowedChildClassesEffective"][0]), "user")
+        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res[0]["allowedChildClassesEffective"]), 1)
+        self.assertEqual(str(res[0]["allowedChildClassesEffective"][0]), "user")
 
     def test_allowedAttributesEffective(self):
         object_dn = "OU=test_domain_ou1," + self.base_dn
@@ -2048,7 +2048,7 @@ class RightsAttributesTests(DescriptorTests):
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["allowedAttributesEffective"])
         # there should be no allowed attributes
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         self.assertFalse("allowedAttributesEffective" in res[0].keys())
         # give the user the right to write displayName and managedBy
         mod2 = "(OA;CI;WP;bf967953-0de6-11d0-a285-00aa003049e2;;%s)" % str(user_sid)
@@ -2059,8 +2059,8 @@ class RightsAttributesTests(DescriptorTests):
         res = _ldb.search(base=object_dn, expression="", scope=SCOPE_BASE,
                           attrs=["allowedAttributesEffective"])
         # value should only contain user and managedBy
-        self.assertEquals(len(res), 1)
-        self.assertEquals(len(res[0]["allowedAttributesEffective"]), 2)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res[0]["allowedAttributesEffective"]), 2)
         self.assertTrue(b"displayName" in res[0]["allowedAttributesEffective"])
         self.assertTrue(b"managedBy" in res[0]["allowedAttributesEffective"])
 

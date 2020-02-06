@@ -106,17 +106,17 @@ class AuthLogTestsNetLogonBadCreds(samba.tests.auth_log_base.AuthLogTestBase):
     def netlogon_check(self, messages):
 
         expected_messages = 4
-        self.assertEquals(expected_messages,
+        self.assertEqual(expected_messages,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # Check the first message it should be an Authorization
         msg = messages[0]
-        self.assertEquals("Authorization", msg["type"])
-        self.assertEquals("DCE/RPC",
+        self.assertEqual("Authorization", msg["type"])
+        self.assertEqual("DCE/RPC",
                           msg["Authorization"]["serviceDescription"])
-        self.assertEquals("ncalrpc", msg["Authorization"]["authType"])
-        self.assertEquals("NONE", msg["Authorization"]["transportProtection"])
+        self.assertEqual("ncalrpc", msg["Authorization"]["authType"])
+        self.assertEqual("NONE", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
     def test_netlogon_bad_machine_name(self):

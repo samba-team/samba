@@ -197,8 +197,8 @@ class SamrTests(RpcInterfaceTestCase):
         (ts, rs, actual) = self.conn.QueryDisplayInfo(
             self.domain_handle, level, 0, 1024, 4294967295)
 
-        self.assertEquals(len(expected), ts)
-        self.assertEquals(len(expected), rs)
+        self.assertEqual(len(expected), ts)
+        self.assertEqual(len(expected), rs)
         check_results(expected, actual.entries)
 
         #
@@ -206,8 +206,8 @@ class SamrTests(RpcInterfaceTestCase):
         # results returned from the first query, should return the same results
         (ts1, rs1, actual1) = self.conn.QueryDisplayInfo(
             self.domain_handle, level, 0, rs, 4294967295)
-        self.assertEquals(ts, ts1)
-        self.assertEquals(rs, rs1)
+        self.assertEqual(ts, ts1)
+        self.assertEqual(rs, rs1)
         check_results(expected, actual1.entries)
 
         #
@@ -216,8 +216,8 @@ class SamrTests(RpcInterfaceTestCase):
         self.assertTrue(ts > 2)
         (ts2, rs2, actual2) = self.conn.QueryDisplayInfo(
             self.domain_handle, level, (ts - 2), 2, 4294967295)
-        self.assertEquals(ts, ts2)
-        self.assertEquals(2, rs2)
+        self.assertEqual(ts, ts2)
+        self.assertEqual(2, rs2)
         check_results(list(expected)[-2:], actual2.entries)
 
         #
@@ -226,8 +226,8 @@ class SamrTests(RpcInterfaceTestCase):
         self.assertTrue(ts > 2)
         (ts2, rs2, actual2) = self.conn.QueryDisplayInfo(
             self.domain_handle, level, 0, 2, 4294967295)
-        self.assertEquals(ts, ts2)
-        self.assertEquals(2, rs2)
+        self.assertEqual(ts, ts2)
+        self.assertEqual(2, rs2)
         check_results(list(expected)[:2], actual2.entries)
 
         #
@@ -237,8 +237,8 @@ class SamrTests(RpcInterfaceTestCase):
         self.assertTrue(ts > 3)
         (ts2, rs2, actual2) = self.conn.QueryDisplayInfo(
             self.domain_handle, level, 1, 2, 4294967295)
-        self.assertEquals(ts, ts2)
-        self.assertEquals(2, rs2)
+        self.assertEqual(ts, ts2)
+        self.assertEqual(2, rs2)
         check_results(list(expected)[1:2], actual2.entries)
 
         #
@@ -254,8 +254,8 @@ class SamrTests(RpcInterfaceTestCase):
         # should not be present
         (ts3, rs3, actual3) = self.conn.QueryDisplayInfo(
             self.domain_handle, level, 1, 1024, 4294967295)
-        self.assertEquals(ts, ts3)
-        self.assertEquals(len(expected) - 1, rs3)
+        self.assertEqual(ts, ts3)
+        self.assertEqual(len(expected) - 1, rs3)
         check_results(list(expected)[1:], actual3.entries)
 
         #
@@ -265,8 +265,8 @@ class SamrTests(RpcInterfaceTestCase):
         new = self.samdb.search(expression=select, attrs=attributes)
         (ts4, rs4, actual4) = self.conn.QueryDisplayInfo(
             self.domain_handle, level, 0, 1024, 4294967295)
-        self.assertEquals(len(expected) + len(dns), ts4)
-        self.assertEquals(len(expected) + len(dns), rs4)
+        self.assertEqual(len(expected) + len(dns), ts4)
+        self.assertEqual(len(expected) + len(dns), rs4)
         check_results(new, actual4.entries)
 
         # Delete the added DN's and query all but the first entry.
@@ -275,7 +275,7 @@ class SamrTests(RpcInterfaceTestCase):
         self.delete_dns(dns)
         (ts5, rs5, actual5) = self.conn.QueryDisplayInfo(
             self.domain_handle, level, 1, 1024, 4294967295)
-        self.assertEquals(len(expected) + len(dns), ts5)
+        self.assertEqual(len(expected) + len(dns), ts5)
         # The deleted results will be filtered from the result set so should
         # be missing from the returned results.
         # Note: depending on the GUID order, the first result in the cache may
@@ -295,8 +295,8 @@ class SamrTests(RpcInterfaceTestCase):
         # Should return no data.
         (ts6, rs6, actual6) = self.conn.QueryDisplayInfo(
             self.domain_handle, level, ts5, 1, 4294967295)
-        self.assertEquals(ts5, ts6)
-        self.assertEquals(0, rs6)
+        self.assertEqual(ts5, ts6)
+        self.assertEqual(0, rs6)
 
         self.conn.Close(self.handle)
 
@@ -310,7 +310,7 @@ class SamrTests(RpcInterfaceTestCase):
             # in the same order
             for (e, a) in zip(expected, actual):
                 self.assertTrue(isinstance(a, samr.DispEntryGeneral))
-                self.assertEquals(str(e["sAMAccountName"]),
+                self.assertEqual(str(e["sAMAccountName"]),
                                   str(a.account_name))
 
                 # The displayName and description are optional.
@@ -321,12 +321,12 @@ class SamrTests(RpcInterfaceTestCase):
                 if a.full_name.length == 0:
                     self.assertFalse("displayName" in e)
                 else:
-                    self.assertEquals(str(e["displayName"]), str(a.full_name))
+                    self.assertEqual(str(e["displayName"]), str(a.full_name))
 
                 if a.description.length == 0:
                     self.assertFalse("description" in e)
                 else:
-                    self.assertEquals(str(e["description"]),
+                    self.assertEqual(str(e["description"]),
                                       str(a.description))
         # Create four user accounts
         # to ensure that we have the minimum needed for the tests.
@@ -350,7 +350,7 @@ class SamrTests(RpcInterfaceTestCase):
             # in the same order
             for (e, a) in zip(expected, actual):
                 self.assertTrue(isinstance(a, samr.DispEntryFull))
-                self.assertEquals(str(e["sAMAccountName"]),
+                self.assertEqual(str(e["sAMAccountName"]),
                                   str(a.account_name))
 
                 # The description is optional.
@@ -361,7 +361,7 @@ class SamrTests(RpcInterfaceTestCase):
                 if a.description.length == 0:
                     self.assertFalse("description" in e)
                 else:
-                    self.assertEquals(str(e["description"]),
+                    self.assertEqual(str(e["description"]),
                                       str(a.description))
 
         # Create four computer accounts
@@ -386,7 +386,7 @@ class SamrTests(RpcInterfaceTestCase):
             # in the same order
             for (e, a) in zip(expected, actual):
                 self.assertTrue(isinstance(a, samr.DispEntryFullGroup))
-                self.assertEquals(str(e["sAMAccountName"]),
+                self.assertEqual(str(e["sAMAccountName"]),
                                   str(a.account_name))
 
                 # The description is optional.
@@ -397,7 +397,7 @@ class SamrTests(RpcInterfaceTestCase):
                 if a.description.length == 0:
                     self.assertFalse("description" in e)
                 else:
-                    self.assertEquals(str(e["description"]),
+                    self.assertEqual(str(e["description"]),
                                       str(a.description))
 
         # Create four groups
@@ -425,7 +425,7 @@ class SamrTests(RpcInterfaceTestCase):
                 self.assertTrue(isinstance(a, samr.DispEntryAscii))
                 self.assertTrue(
                     isinstance(a.account_name, lsa.AsciiStringLarge))
-                self.assertEquals(
+                self.assertEqual(
                     str(e["sAMAccountName"]), str(a.account_name.string))
 
         # Create four user accounts
@@ -452,7 +452,7 @@ class SamrTests(RpcInterfaceTestCase):
                 self.assertTrue(isinstance(a, samr.DispEntryAscii))
                 self.assertTrue(
                     isinstance(a.account_name, lsa.AsciiStringLarge))
-                self.assertEquals(
+                self.assertEqual(
                     str(e["sAMAccountName"]), str(a.account_name.string))
 
         # Create four groups
@@ -472,7 +472,7 @@ class SamrTests(RpcInterfaceTestCase):
         def check_results(expected, actual):
             for (e, a) in zip(expected, actual):
                 self.assertTrue(isinstance(a, samr.SamEntry))
-                self.assertEquals(
+                self.assertEqual(
                     str(e["sAMAccountName"]), str(a.name.string))
 
         # Create four groups
@@ -501,7 +501,7 @@ class SamrTests(RpcInterfaceTestCase):
         max_size = calc_max_size(len(expected) + 10)
         (resume_handle, actual, num_entries) = self.conn.EnumDomainGroups(
             self.domain_handle, 0, max_size)
-        self.assertEquals(len(expected), num_entries)
+        self.assertEqual(len(expected), num_entries)
         check_results(expected, actual.entries)
 
         #
@@ -511,7 +511,7 @@ class SamrTests(RpcInterfaceTestCase):
         max_size = calc_max_size(4)
         (resume_handle, actual, num_entries) = self.conn.EnumDomainGroups(
             self.domain_handle, 0, max_size)
-        self.assertEquals(4, num_entries)
+        self.assertEqual(4, num_entries)
         check_results(expected[:4], actual.entries)
 
         #
@@ -523,8 +523,8 @@ class SamrTests(RpcInterfaceTestCase):
         (resume_handle, a, num_entries) = self.conn.EnumDomainGroups(
             self.domain_handle, rh, max_size)
 
-        self.assertEquals(0, num_entries)
-        self.assertEquals(0, resume_handle)
+        self.assertEqual(0, num_entries)
+        self.assertEqual(0, resume_handle)
 
         #
         # Enumerate through the domain groups one element at a time.
@@ -534,7 +534,7 @@ class SamrTests(RpcInterfaceTestCase):
         (resume_handle, a, num_entries) = self.conn.EnumDomainGroups(
             self.domain_handle, 0, max_size)
         while resume_handle:
-            self.assertEquals(1, num_entries)
+            self.assertEqual(1, num_entries)
             actual.append(a.entries[0])
             (resume_handle, a, num_entries) = self.conn.EnumDomainGroups(
                 self.domain_handle, resume_handle, max_size)
@@ -552,14 +552,14 @@ class SamrTests(RpcInterfaceTestCase):
             self.domain_handle, 0, max_size)
         extra_dns = self.create_groups([1000, 1002, 1003, 1004])
         while resume_handle:
-            self.assertEquals(1, num_entries)
+            self.assertEqual(1, num_entries)
             actual.append(a.entries[0])
             (resume_handle, a, num_entries) = self.conn.EnumDomainGroups(
                 self.domain_handle, resume_handle, max_size)
         if num_entries:
             actual.append(a.entries[0])
 
-        self.assertEquals(len(expected), len(actual))
+        self.assertEqual(len(expected), len(actual))
         check_results(expected, actual)
 
         #
@@ -568,7 +568,7 @@ class SamrTests(RpcInterfaceTestCase):
         max_size = calc_max_size(len(expected) + len(extra_dns) + 10)
         (resume_handle, actual, num_entries) = self.conn.EnumDomainGroups(
             self.domain_handle, 0, max_size)
-        self.assertEquals(len(expected) + len(extra_dns), num_entries)
+        self.assertEqual(len(expected) + len(extra_dns), num_entries)
 
         #
         # Get a new expected result set by querying the database directly
@@ -594,14 +594,14 @@ class SamrTests(RpcInterfaceTestCase):
             self.domain_handle, 0, max_size)
         self.delete_dns(extra_dns)
         while resume_handle and num_entries:
-            self.assertEquals(1, num_entries)
+            self.assertEqual(1, num_entries)
             actual.append(a.entries[0])
             (resume_handle, a, num_entries) = self.conn.EnumDomainGroups(
                 self.domain_handle, resume_handle, max_size)
         if num_entries:
             actual.append(a.entries[0])
 
-        self.assertEquals(len(expected), len(actual))
+        self.assertEqual(len(expected), len(actual))
         check_results(expected, actual)
 
         self.delete_dns(dns)
@@ -610,7 +610,7 @@ class SamrTests(RpcInterfaceTestCase):
         def check_results(expected, actual):
             for (e, a) in zip(expected, actual):
                 self.assertTrue(isinstance(a, samr.SamEntry))
-                self.assertEquals(
+                self.assertEqual(
                     str(e["sAMAccountName"]), str(a.name.string))
 
         # Create four users
@@ -637,7 +637,7 @@ class SamrTests(RpcInterfaceTestCase):
         max_size = calc_max_size(len(expected) + 10)
         (resume_handle, actual, num_entries) = self.conn.EnumDomainUsers(
             self.domain_handle, 0, 0, max_size)
-        self.assertEquals(len(expected), num_entries)
+        self.assertEqual(len(expected), num_entries)
         check_results(expected, actual.entries)
 
         #
@@ -646,7 +646,7 @@ class SamrTests(RpcInterfaceTestCase):
         max_size = calc_max_size(4)
         (resume_handle, actual, num_entries) = self.conn.EnumDomainUsers(
             self.domain_handle, 0, 0, max_size)
-        self.assertEquals(4, num_entries)
+        self.assertEqual(4, num_entries)
         check_results(expected[:4], actual.entries)
 
         #
@@ -658,8 +658,8 @@ class SamrTests(RpcInterfaceTestCase):
         (resume_handle, a, num_entries) = self.conn.EnumDomainUsers(
             self.domain_handle, rh, 0, max_size)
 
-        self.assertEquals(0, num_entries)
-        self.assertEquals(0, resume_handle)
+        self.assertEqual(0, num_entries)
+        self.assertEqual(0, resume_handle)
 
         #
         # Enumerate through the domain users one element at a time.
@@ -670,14 +670,14 @@ class SamrTests(RpcInterfaceTestCase):
         (resume_handle, a, num_entries) = self.conn.EnumDomainUsers(
             self.domain_handle, 0, 0, max_size)
         while resume_handle:
-            self.assertEquals(1, num_entries)
+            self.assertEqual(1, num_entries)
             actual.append(a.entries[0])
             (resume_handle, a, num_entries) = self.conn.EnumDomainUsers(
                 self.domain_handle, resume_handle, 0, max_size)
         if num_entries:
             actual.append(a.entries[0])
 
-        self.assertEquals(len(expected), len(actual))
+        self.assertEqual(len(expected), len(actual))
         check_results(expected, actual)
 
         #
@@ -692,14 +692,14 @@ class SamrTests(RpcInterfaceTestCase):
             self.domain_handle, 0, 0, max_size)
         extra_dns = self.create_users([1000, 1002, 1003, 1004])
         while resume_handle:
-            self.assertEquals(1, num_entries)
+            self.assertEqual(1, num_entries)
             actual.append(a.entries[0])
             (resume_handle, a, num_entries) = self.conn.EnumDomainUsers(
                 self.domain_handle, resume_handle, 0, max_size)
         if num_entries:
             actual.append(a.entries[0])
 
-        self.assertEquals(len(expected), len(actual))
+        self.assertEqual(len(expected), len(actual))
         check_results(expected, actual)
 
         #
@@ -709,7 +709,7 @@ class SamrTests(RpcInterfaceTestCase):
         max_size = calc_max_size(len(expected) + len(extra_dns) + 10)
         (resume_handle, actual, num_entries) = self.conn.EnumDomainUsers(
             self.domain_handle, 0, 0, max_size)
-        self.assertEquals(len(expected) + len(extra_dns), num_entries)
+        self.assertEqual(len(expected) + len(extra_dns), num_entries)
 
         #
         # Get a new expected result set by querying the database directly
@@ -723,7 +723,7 @@ class SamrTests(RpcInterfaceTestCase):
         #
         # Now check that we read the new entries.
         #
-        self.assertEquals(len(expected01), num_entries)
+        self.assertEqual(len(expected01), num_entries)
         check_results(expected01, actual.entries)
 
         self.delete_dns(dns + extra_dns)
@@ -739,12 +739,12 @@ class SamrTests(RpcInterfaceTestCase):
             self.domain_handle, 0, 0, max_size)
         count = num_entries
         while resume_handle:
-            self.assertEquals(1, num_entries)
+            self.assertEqual(1, num_entries)
             (resume_handle, a, num_entries) = self.conn.EnumDomainUsers(
                 self.domain_handle, resume_handle, 0, max_size)
             count += num_entries
 
-        self.assertEquals(count, info.num_users)
+        self.assertEqual(count, info.num_users)
 
     def test_DomGeneralInformation_num_groups(self):
         info = self.conn.QueryDomainInfo(
@@ -757,12 +757,12 @@ class SamrTests(RpcInterfaceTestCase):
             self.domain_handle, 0, max_size)
         count = num_entries
         while resume_handle:
-            self.assertEquals(1, num_entries)
+            self.assertEqual(1, num_entries)
             (resume_handle, a, num_entries) = self.conn.EnumDomainGroups(
                 self.domain_handle, resume_handle, max_size)
             count += num_entries
 
-        self.assertEquals(count, info.num_groups)
+        self.assertEqual(count, info.num_groups)
 
     def test_DomGeneralInformation_num_aliases(self):
         info = self.conn.QueryDomainInfo(
@@ -775,9 +775,9 @@ class SamrTests(RpcInterfaceTestCase):
             self.domain_handle, 0, max_size)
         count = num_entries
         while resume_handle:
-            self.assertEquals(1, num_entries)
+            self.assertEqual(1, num_entries)
             (resume_handle, a, num_entries) = self.conn.EnumDomainAliases(
                 self.domain_handle, resume_handle, max_size)
             count += num_entries
 
-        self.assertEquals(count, info.num_aliases)
+        self.assertEqual(count, info.num_aliases)

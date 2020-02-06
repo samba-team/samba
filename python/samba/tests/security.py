@@ -59,11 +59,11 @@ class SecurityDescriptorTests(samba.tests.TestCase):
 
     def test_from_sddl(self):
         desc = security.descriptor.from_sddl("O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)", security.dom_sid("S-2-0-0"))
-        self.assertEquals(desc.group_sid, security.dom_sid('S-2-0-0-512'))
-        self.assertEquals(desc.owner_sid, security.dom_sid('S-1-5-32-548'))
-        self.assertEquals(desc.revision, 1)
-        self.assertEquals(desc.sacl, None)
-        self.assertEquals(desc.type, 0x8004)
+        self.assertEqual(desc.group_sid, security.dom_sid('S-2-0-0-512'))
+        self.assertEqual(desc.owner_sid, security.dom_sid('S-1-5-32-548'))
+        self.assertEqual(desc.revision, 1)
+        self.assertEqual(desc.sacl, None)
+        self.assertEqual(desc.type, 0x8004)
 
     def test_from_sddl_invalidsddl(self):
         self.assertRaises(TypeError, security.descriptor.from_sddl, "foo", security.dom_sid("S-2-0-0"))
@@ -81,10 +81,10 @@ class SecurityDescriptorTests(samba.tests.TestCase):
         dom = security.dom_sid("S-2-0-0")
         desc1 = security.descriptor.from_sddl(text, dom)
         desc2 = security.descriptor.from_sddl(desc1.as_sddl(dom), dom)
-        self.assertEquals(desc1.group_sid, desc2.group_sid)
-        self.assertEquals(desc1.owner_sid, desc2.owner_sid)
-        self.assertEquals(desc1.sacl, desc2.sacl)
-        self.assertEquals(desc1.type, desc2.type)
+        self.assertEqual(desc1.group_sid, desc2.group_sid)
+        self.assertEqual(desc1.owner_sid, desc2.owner_sid)
+        self.assertEqual(desc1.sacl, desc2.sacl)
+        self.assertEqual(desc1.type, desc2.type)
 
     def test_as_sddl_invalid(self):
         text = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
@@ -97,10 +97,10 @@ class SecurityDescriptorTests(samba.tests.TestCase):
         text = "O:AOG:DAD:(A;;RPWPCCDCLCSWRCWDWOGA;;;S-1-0-0)"
         desc1 = security.descriptor.from_sddl(text, dom)
         desc2 = security.descriptor.from_sddl(desc1.as_sddl(), dom)
-        self.assertEquals(desc1.group_sid, desc2.group_sid)
-        self.assertEquals(desc1.owner_sid, desc2.owner_sid)
-        self.assertEquals(desc1.sacl, desc2.sacl)
-        self.assertEquals(desc1.type, desc2.type)
+        self.assertEqual(desc1.group_sid, desc2.group_sid)
+        self.assertEqual(desc1.owner_sid, desc2.owner_sid)
+        self.assertEqual(desc1.sacl, desc2.sacl)
+        self.assertEqual(desc1.type, desc2.type)
 
     def test_domsid_nodomsid_as_sddl(self):
         dom = security.dom_sid("S-2-0-0")
@@ -110,20 +110,20 @@ class SecurityDescriptorTests(samba.tests.TestCase):
 
     def test_split(self):
         dom = security.dom_sid("S-2-0-7")
-        self.assertEquals((security.dom_sid("S-2-0"), 7), dom.split())
+        self.assertEqual((security.dom_sid("S-2-0"), 7), dom.split())
 
 
 class DomSidTests(samba.tests.TestCase):
 
     def test_parse_sid(self):
         sid = security.dom_sid("S-1-5-21")
-        self.assertEquals("S-1-5-21", str(sid))
+        self.assertEqual("S-1-5-21", str(sid))
 
     def test_sid_equal(self):
         sid1 = security.dom_sid("S-1-5-21")
         sid2 = security.dom_sid("S-1-5-21")
-        self.assertEquals(sid1, sid1)
-        self.assertEquals(sid1, sid2)
+        self.assertEqual(sid1, sid1)
+        self.assertEqual(sid1, sid2)
 
     def test_random(self):
         sid = security.random_sid()
@@ -137,11 +137,11 @@ class DomSidTests(samba.tests.TestCase):
 class PrivilegeTests(samba.tests.TestCase):
 
     def test_privilege_name(self):
-        self.assertEquals("SeShutdownPrivilege",
+        self.assertEqual("SeShutdownPrivilege",
                           security.privilege_name(security.SEC_PRIV_SHUTDOWN))
 
     def test_privilege_id(self):
-        self.assertEquals(security.SEC_PRIV_SHUTDOWN,
+        self.assertEqual(security.SEC_PRIV_SHUTDOWN,
                           security.privilege_id("SeShutdownPrivilege"))
 
 

@@ -39,12 +39,12 @@ class LoadParmTestCase(samba.tests.TestCaseInTempDir):
 
     def test_length(self):
         file = param.LoadParm()
-        self.assertEquals(0, len(file))
+        self.assertEqual(0, len(file))
 
     def test_set_workgroup(self):
         file = param.LoadParm()
         file.set("workgroup", "bla")
-        self.assertEquals("BLA", file.get("workgroup"))
+        self.assertEqual("BLA", file.get("workgroup"))
 
     def test_is_mydomain(self):
         file = param.LoadParm()
@@ -70,16 +70,16 @@ class LoadParmTestCase(samba.tests.TestCaseInTempDir):
     def test_log_level(self):
         samba_lp = param.LoadParm()
         samba_lp.set("log level", "5 auth:4")
-        self.assertEquals(5, samba_lp.log_level())
+        self.assertEqual(5, samba_lp.log_level())
 
     def test_dump(self):
         samba_lp = param.LoadParm()
         # Just test successfull method execution (outputs to stdout)
-        self.assertEquals(None, samba_lp.dump())
+        self.assertEqual(None, samba_lp.dump())
 
     def test_dump_to_file(self):
         samba_lp = param.LoadParm()
-        self.assertEquals(None, samba_lp.dump(False, self.tempf))
+        self.assertEqual(None, samba_lp.dump(False, self.tempf))
         content = open(self.tempf, 'r').read()
         self.assertIn('[global]', content)
         self.assertIn('interfaces', content)
@@ -88,12 +88,12 @@ class LoadParmTestCase(samba.tests.TestCaseInTempDir):
         samba_lp = param.LoadParm()
         samba_lp.load_default()
         # Just test successfull method execution
-        self.assertEquals(None, samba_lp.dump_a_parameter('interfaces'))
+        self.assertEqual(None, samba_lp.dump_a_parameter('interfaces'))
 
     def test_dump_a_parameter_to_file(self):
         samba_lp = param.LoadParm()
         samba_lp.load_default()
-        self.assertEquals(None,
+        self.assertEqual(None,
                           samba_lp.dump_a_parameter('interfaces',
                                                     'global',
                                                     self.tempf))

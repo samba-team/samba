@@ -207,7 +207,7 @@ class AclAddTests(AclTests):
                                    grouptype=samba.dsdb.GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)
         except LdbError as e:
             (num, _) = e.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
         # Make sure we HAVEN'T created any of two objects -- user or group
@@ -232,7 +232,7 @@ class AclAddTests(AclTests):
                                    grouptype=samba.dsdb.GTYPE_DISTRIBUTION_DOMAIN_LOCAL_GROUP)
         except LdbError as e1:
             (num, _) = e1.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
         # Make sure we HAVE created the one of two objects -- user
@@ -269,7 +269,7 @@ class AclAddTests(AclTests):
             anonymous.newuser("test_add_anonymous", self.user_pass)
         except LdbError as e2:
             (num, _) = e2.args
-            self.assertEquals(num, ERR_OPERATIONS_ERROR)
+            self.assertEqual(num, ERR_OPERATIONS_ERROR)
         else:
             self.fail()
 
@@ -383,7 +383,7 @@ url: www.samba.org"""
             self.ldb_user.modify_ldif(ldif)
         except LdbError as e3:
             (num, _) = e3.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
@@ -412,7 +412,7 @@ url: www.samba.org"""
             self.ldb_user.modify_ldif(ldif)
         except LdbError as e4:
             (num, _) = e4.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
@@ -428,7 +428,7 @@ displayName: test_changed"""
             self.ldb_user.modify_ldif(ldif)
         except LdbError as e5:
             (num, _) = e5.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
@@ -456,7 +456,7 @@ url: www.samba.org"""
             self.ldb_user.modify_ldif(ldif)
         except LdbError as e6:
             (num, _) = e6.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
@@ -476,7 +476,7 @@ url: www.samba.org"""
             self.ldb_user.modify_ldif(ldif)
         except LdbError as e7:
             (num, _) = e7.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
@@ -495,7 +495,7 @@ url: www.samba.org"""
             self.ldb_user.modify_ldif(ldif)
         except LdbError as e8:
             (num, _) = e8.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
@@ -514,7 +514,7 @@ url: www.samba.org"""
             self.ldb_user.modify_ldif(ldif)
         except LdbError as e9:
             (num, _) = e9.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
@@ -530,7 +530,7 @@ adminDescription: blah blah blah"""
             self.ldb_user.modify_ldif(ldif)
         except LdbError as e10:
             (num, _) = e10.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
@@ -555,7 +555,7 @@ Member: """ + self.get_user_dn(self.user_with_sm)
             self.ldb_user2.modify_ldif(ldif)
         except LdbError as e11:
             (num, _) = e11.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             # This 'modify' operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
@@ -578,7 +578,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
             self.ldb_user2.modify_ldif(ldif)
         except LdbError as e12:
             (num, _) = e12.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
 
@@ -599,7 +599,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
             self.ldb_user2.modify_ldif(ldif)
         except LdbError as e13:
             (num, _) = e13.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
 
@@ -647,7 +647,7 @@ Member: CN=test_modify_user2,CN=Users,""" + self.base_dn
             anonymous.modify(m)
         except LdbError as e14:
             (num, _) = e14.args
-            self.assertEquals(num, ERR_OPERATIONS_ERROR)
+            self.assertEqual(num, ERR_OPERATIONS_ERROR)
         else:
             self.fail()
 
@@ -732,7 +732,7 @@ class AclSearchTests(AclTests):
         """Verify access of rootDSE with the correct request"""
         anonymous = SamDB(url=ldaphost, credentials=self.creds_tmp, lp=lp)
         res = anonymous.search("", expression="(objectClass=*)", scope=SCOPE_BASE)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         # verify some of the attributes
         # don't care about values
         self.assertTrue("ldapServiceName" in res[0])
@@ -751,14 +751,14 @@ class AclSearchTests(AclTests):
             res = anonymous.search("", expression="(objectClass=*)", scope=SCOPE_SUBTREE)
         except LdbError as e15:
             (num, _) = e15.args
-            self.assertEquals(num, ERR_OPERATIONS_ERROR)
+            self.assertEqual(num, ERR_OPERATIONS_ERROR)
         else:
             self.fail()
         try:
             res = anonymous.search(self.base_dn, expression="(objectClass=*)", scope=SCOPE_SUBTREE)
         except LdbError as e16:
             (num, _) = e16.args
-            self.assertEquals(num, ERR_OPERATIONS_ERROR)
+            self.assertEqual(num, ERR_OPERATIONS_ERROR)
         else:
             self.fail()
         try:
@@ -766,7 +766,7 @@ class AclSearchTests(AclTests):
                                    scope=SCOPE_SUBTREE)
         except LdbError as e17:
             (num, _) = e17.args
-            self.assertEquals(num, ERR_OPERATIONS_ERROR)
+            self.assertEqual(num, ERR_OPERATIONS_ERROR)
         else:
             self.fail()
 
@@ -780,13 +780,13 @@ class AclSearchTests(AclTests):
         anonymous = SamDB(url=ldaphost, credentials=self.creds_tmp, lp=lp)
         res = anonymous.search("OU=test_search_ou2,OU=test_search_ou1," + self.base_dn,
                                expression="(objectClass=*)", scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         self.assertTrue("dn" in res[0])
         self.assertTrue(res[0]["dn"] == Dn(self.ldb_admin,
                                            "OU=test_search_ou2,OU=test_search_ou1," + self.base_dn))
         res = anonymous.search(anonymous.get_config_basedn(), expression="(objectClass=*)",
                                scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         self.assertTrue("dn" in res[0])
         self.assertTrue(res[0]["dn"] == Dn(self.ldb_admin, self.configuration_dn))
 
@@ -806,25 +806,25 @@ class AclSearchTests(AclTests):
         # regular users must see only ou1 and ou2
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), 2)
+        self.assertEqual(len(res), 2)
         ok_list = [Dn(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn),
                    Dn(self.ldb_admin, "OU=ou1," + self.base_dn)]
 
         res_list = [x["dn"] for x in res if x["dn"] in ok_list]
-        self.assertEquals(sorted(res_list), sorted(ok_list))
+        self.assertEqual(sorted(res_list), sorted(ok_list))
 
         # these users should see all ous
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), 6)
+        self.assertEqual(len(res), 6)
         res_list = [x["dn"] for x in res if x["dn"] in self.full_list]
-        self.assertEquals(sorted(res_list), sorted(self.full_list))
+        self.assertEqual(sorted(res_list), sorted(self.full_list))
 
         res = self.ldb_user2.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), 6)
+        self.assertEqual(len(res), 6)
         res_list = [x["dn"] for x in res if x["dn"] in self.full_list]
-        self.assertEquals(sorted(res_list), sorted(self.full_list))
+        self.assertEqual(sorted(res_list), sorted(self.full_list))
 
     def test_search2(self):
         """Make sure users can't see us if access is explicitly denied"""
@@ -840,7 +840,7 @@ class AclSearchTests(AclTests):
                                     scope=SCOPE_SUBTREE)
         # this user should see all ous
         res_list = [x["dn"] for x in res if x["dn"] in self.full_list]
-        self.assertEquals(sorted(res_list), sorted(self.full_list))
+        self.assertEqual(sorted(res_list), sorted(self.full_list))
 
         # these users should see ou1, 2, 5 and 6 but not 3 and 4
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
@@ -850,13 +850,13 @@ class AclSearchTests(AclTests):
                    Dn(self.ldb_admin, "OU=ou5,OU=ou3,OU=ou2,OU=ou1," + self.base_dn),
                    Dn(self.ldb_admin, "OU=ou6,OU=ou4,OU=ou2,OU=ou1," + self.base_dn)]
         res_list = [x["dn"] for x in res if x["dn"] in ok_list]
-        self.assertEquals(sorted(res_list), sorted(ok_list))
+        self.assertEqual(sorted(res_list), sorted(ok_list))
 
         res = self.ldb_user2.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), 4)
+        self.assertEqual(len(res), 4)
         res_list = [x["dn"] for x in res if x["dn"] in ok_list]
-        self.assertEquals(sorted(res_list), sorted(ok_list))
+        self.assertEqual(sorted(res_list), sorted(ok_list))
 
     def test_search3(self):
         """Make sure users can't see ous if access is explicitly denied - 2"""
@@ -877,7 +877,7 @@ class AclSearchTests(AclTests):
                                   scope=SCOPE_BASE)
         except LdbError as e18:
             (num, _) = e18.args
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+            self.assertEqual(num, ERR_NO_SUCH_OBJECT)
         else:
             self.fail()
 
@@ -890,7 +890,7 @@ class AclSearchTests(AclTests):
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
         res_list = [x["dn"] for x in res if x["dn"] in ok_list]
-        self.assertEquals(sorted(res_list), sorted(ok_list))
+        self.assertEqual(sorted(res_list), sorted(ok_list))
 
         ok_list = [Dn(self.ldb_admin, "OU=ou2,OU=ou1," + self.base_dn),
                    Dn(self.ldb_admin, "OU=ou1," + self.base_dn),
@@ -900,15 +900,15 @@ class AclSearchTests(AclTests):
         # should not see ou3 and ou4, but should see ou5 and ou6
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), 4)
+        self.assertEqual(len(res), 4)
         res_list = [x["dn"] for x in res if x["dn"] in ok_list]
-        self.assertEquals(sorted(res_list), sorted(ok_list))
+        self.assertEqual(sorted(res_list), sorted(ok_list))
 
         res = self.ldb_user2.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), 4)
+        self.assertEqual(len(res), 4)
         res_list = [x["dn"] for x in res if x["dn"] in ok_list]
-        self.assertEquals(sorted(res_list), sorted(ok_list))
+        self.assertEqual(sorted(res_list), sorted(ok_list))
 
     def test_search4(self):
         """There is no difference in visibility if the user is also creator"""
@@ -927,15 +927,15 @@ class AclSearchTests(AclTests):
                    Dn(self.ldb_admin, "OU=ou1," + self.base_dn)]
         res = self.ldb_user3.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                     scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), 2)
+        self.assertEqual(len(res), 2)
         res_list = [x["dn"] for x in res if x["dn"] in ok_list]
-        self.assertEquals(sorted(res_list), sorted(ok_list))
+        self.assertEqual(sorted(res_list), sorted(ok_list))
 
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), 2)
+        self.assertEqual(len(res), 2)
         res_list = [x["dn"] for x in res if x["dn"] in ok_list]
-        self.assertEquals(sorted(res_list), sorted(ok_list))
+        self.assertEqual(sorted(res_list), sorted(ok_list))
 
     def test_search5(self):
         """Make sure users can see only attributes they are allowed to see"""
@@ -949,16 +949,16 @@ class AclSearchTests(AclTests):
         res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_SUBTREE)
         ok_list = ['dn']
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         res_list = list(res[0].keys())
-        self.assertEquals(res_list, ok_list)
+        self.assertEqual(res_list, ok_list)
 
         res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_BASE, attrs=["ou"])
 
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         res_list = list(res[0].keys())
-        self.assertEquals(res_list, ok_list)
+        self.assertEqual(res_list, ok_list)
 
         # give read property on ou and assert user can only see dn and ou
         mod = "(OA;;RP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % (str(self.user_sid))
@@ -967,9 +967,9 @@ class AclSearchTests(AclTests):
         res = self.ldb_user.search("OU=ou2,OU=ou1," + self.base_dn, expression="(objectClass=*)",
                                    scope=SCOPE_SUBTREE)
         ok_list = ['dn', 'ou']
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         res_list = list(res[0].keys())
-        self.assertEquals(sorted(res_list), sorted(ok_list))
+        self.assertEqual(sorted(res_list), sorted(ok_list))
 
         # give read property on Public Information and assert user can see ou and other members
         mod = "(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;%s)" % (str(self.user_sid))
@@ -980,7 +980,7 @@ class AclSearchTests(AclTests):
 
         ok_list = ['dn', 'objectClass', 'ou', 'distinguishedName', 'name', 'objectGUID', 'objectCategory']
         res_list = list(res[0].keys())
-        self.assertEquals(sorted(res_list), sorted(ok_list))
+        self.assertEqual(sorted(res_list), sorted(ok_list))
 
     def test_search6(self):
         """If an attribute that cannot be read is used in a filter, it is as if the attribute does not exist"""
@@ -995,36 +995,36 @@ class AclSearchTests(AclTests):
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou3)",
                                    scope=SCOPE_SUBTREE)
         # nothing should be returned as ou is not accessible
-        self.assertEquals(len(res), 0)
+        self.assertEqual(len(res), 0)
 
         # give read property on ou and assert user can only see dn and ou
         mod = "(OA;;RP;bf9679f0-0de6-11d0-a285-00aa003049e2;;%s)" % (str(self.user_sid))
         self.sd_utils.dacl_add_ace("OU=ou3,OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou3)",
                                    scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         ok_list = ['dn', 'ou']
         res_list = list(res[0].keys())
-        self.assertEquals(sorted(res_list), sorted(ok_list))
+        self.assertEqual(sorted(res_list), sorted(ok_list))
 
         # give read property on Public Information and assert user can see ou and other members
         mod = "(OA;;RP;e48d0154-bcf8-11d1-8702-00c04fb96050;;%s)" % (str(self.user_sid))
         self.sd_utils.dacl_add_ace("OU=ou2,OU=ou1," + self.base_dn, mod)
         res = self.ldb_user.search("OU=ou1," + self.base_dn, expression="(ou=ou2)",
                                    scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         ok_list = ['dn', 'objectClass', 'ou', 'distinguishedName', 'name', 'objectGUID', 'objectCategory']
         res_list = list(res[0].keys())
-        self.assertEquals(sorted(res_list), sorted(ok_list))
+        self.assertEqual(sorted(res_list), sorted(ok_list))
 
     def assert_search_on_attr(self, dn, samdb, attr, expected_list):
 
         expected_num = len(expected_list)
         res = samdb.search(dn, expression="(%s=*)" % attr, scope=SCOPE_SUBTREE)
-        self.assertEquals(len(res), expected_num)
+        self.assertEqual(len(res), expected_num)
 
         res_list = [ x["dn"] for x in res if x["dn"] in expected_list ]
-        self.assertEquals(sorted(res_list), sorted(expected_list))
+        self.assertEqual(sorted(res_list), sorted(expected_list))
 
     def test_search7(self):
         """Checks object search visibility when users don't have full rights"""
@@ -1115,7 +1115,7 @@ class AclDeleteTests(AclTests):
             self.ldb_user.delete(self.get_user_dn("test_delete_user1"))
         except LdbError as e19:
             (num, _) = e19.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
 
@@ -1154,7 +1154,7 @@ class AclDeleteTests(AclTests):
             anonymous.delete(self.get_user_dn("test_anonymous"))
         except LdbError as e20:
             (num, _) = e20.args
-            self.assertEquals(num, ERR_OPERATIONS_ERROR)
+            self.assertEqual(num, ERR_OPERATIONS_ERROR)
         else:
             self.fail()
 
@@ -1210,7 +1210,7 @@ class AclRenameTests(AclTests):
                                  "CN=%s,%s,%s" % (self.testuser5, self.ou1, self.base_dn))
         except LdbError as e21:
             (num, _) = e21.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
 
@@ -1368,7 +1368,7 @@ class AclRenameTests(AclTests):
             self.ldb_user.rename(ou2_dn, ou3_dn)
         except LdbError as e22:
             (num, _) = e22.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             # This rename operation should always throw ERR_INSUFFICIENT_ACCESS_RIGHTS
             self.fail()
@@ -1400,7 +1400,7 @@ class AclRenameTests(AclTests):
             self.ldb_admin.rename(user_dn, rename_user_dn)
         except LdbError as e23:
             (num, _) = e23.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
         # add an allow ace so we can delete this ou
@@ -1461,7 +1461,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).
 """)
         except LdbError as e24:
             (num, _) = e24.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
         else:
             # for some reason we get constraint violation instead of insufficient access error
             self.fail()
@@ -1488,7 +1488,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS2\"".encode('utf-16-le')).
 """)
         except LdbError as e25:
             (num, _) = e25.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
         else:
             # for some reason we get constraint violation instead of insufficient access error
             self.fail()
@@ -1528,7 +1528,7 @@ dBCSPwd: YYYYYYYYYYYYYYYY
 """)
         except LdbError as e26:
             (num, _) = e26.args
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
         else:
             self.fail()
 
@@ -1547,7 +1547,7 @@ userPassword: thatsAcomplPASS2
 """)
         except LdbError as e27:
             (num, _) = e27.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
         mod = "(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
@@ -1607,7 +1607,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')).
 """)
         except LdbError as e29:
             (num, _) = e29.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
         mod = "(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
@@ -1630,7 +1630,7 @@ userPassword: thatsAcomplPASS1
 """)
         except LdbError as e30:
             (num, _) = e30.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
         mod = "(OA;;CR;00299570-246d-11d0-a768-00aa006e0529;;PS)"
@@ -1645,7 +1645,7 @@ userPassword: thatsAcomplPASS1
             # This fails on Windows 2000 domain level with constraint violation
         except LdbError as e31:
             (num, _) = e31.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
 
     def test_reset_password3(self):
         """Grant WP and see what happens (unicodePwd)"""
@@ -1660,7 +1660,7 @@ unicodePwd:: """ + base64.b64encode("\"thatsAcomplPASS1\"".encode('utf-16-le')).
 """)
         except LdbError as e32:
             (num, _) = e32.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
 
@@ -1677,7 +1677,7 @@ userPassword: thatsAcomplPASS1
 """)
         except LdbError as e33:
             (num, _) = e33.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
 
@@ -1706,7 +1706,7 @@ userPassword: thatsAcomplPASS1
             # This fails on Windows 2000 domain level with constraint violation
         except LdbError as e34:
             (num, _) = e34.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
 
 
 class AclExtendedTests(AclTests):
@@ -1836,7 +1836,7 @@ class AclUndeleteTests(AclTests):
         self.ldb_admin.delete(self.get_user_dn(new_user))
         res = self.ldb_admin.search(base="<GUID=%s>" % self.GUID_string(guid),
                                     scope=SCOPE_BASE, controls=["show_deleted:1"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         return str(res[0].dn)
 
     def undelete_deleted(self, olddn, newdn):
@@ -1867,7 +1867,7 @@ class AclUndeleteTests(AclTests):
             self.fail()
         except LdbError as e35:
             (num, _) = e35.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         # seems that permissions on isDeleted and distinguishedName are irrelevant
         mod = "(OD;;WP;bf96798f-0de6-11d0-a285-00aa003049e2;;%s)" % str(self.sid)
@@ -1884,7 +1884,7 @@ class AclUndeleteTests(AclTests):
             self.fail()
         except LdbError as e36:
             (num, _) = e36.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         # undelete in an ou, in which we have no right to create children
         mod = "(D;;CC;;;%s)" % str(self.sid)
@@ -1894,7 +1894,7 @@ class AclUndeleteTests(AclTests):
             self.fail()
         except LdbError as e37:
             (num, _) = e37.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         # delete is not required
         mod = "(D;;SD;;;%s)" % str(self.sid)
@@ -1909,7 +1909,7 @@ class AclUndeleteTests(AclTests):
             self.fail()
         except LdbError as e38:
             (num, _) = e38.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
 
 class AclSPNTests(AclTests):
@@ -2022,7 +2022,7 @@ class AclSPNTests(AclTests):
             self.replace_spn(self.ldb_user1, ctx.acct_dn, "HOST/%s/%s" % (ctx.myname, netbiosdomain))
         except LdbError as e39:
             (num, _) = e39.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         mod = "(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;%s)" % str(self.user_sid1)
         self.sd_utils.dacl_add_ace(ctx.acct_dn, mod)
@@ -2060,30 +2060,30 @@ class AclSPNTests(AclTests):
                              (ctx.myname, ctx.dnsdomain, ctx.dnsdomain))
         except LdbError as e40:
             (num, _) = e40.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
         try:
             self.replace_spn(self.ldb_user1, ctx.acct_dn, "ldap/%s.%s/DomainDnsZones.%s" %
                              (ctx.myname, ctx.dnsdomain, ctx.dnsdomain))
         except LdbError as e41:
             (num, _) = e41.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
         try:
             self.replace_spn(self.ldb_user1, ctx.acct_dn, "nosuchservice/%s/%s" % ("abcd", "abcd"))
         except LdbError as e42:
             (num, _) = e42.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
         try:
             self.replace_spn(self.ldb_user1, ctx.acct_dn, "GC/%s.%s/%s" %
                              (ctx.myname, ctx.dnsdomain, netbiosdomain))
         except LdbError as e43:
             (num, _) = e43.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
         try:
             self.replace_spn(self.ldb_user1, ctx.acct_dn, "E3514235-4B06-11D1-AB04-00C04FC2DCD2/%s/%s" %
                              (ctx.ntds_guid, ctx.dnsdomain))
         except LdbError as e44:
             (num, _) = e44.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
 
     def test_computer_spn(self):
         # with WP, any value can be set
@@ -2128,7 +2128,7 @@ class AclSPNTests(AclTests):
             self.replace_spn(self.ldb_user1, self.computerdn, "HOST/%s/%s" % (self.computername, netbiosdomain))
         except LdbError as e45:
             (num, _) = e45.args
-            self.assertEquals(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ERR_INSUFFICIENT_ACCESS_RIGHTS)
 
         mod = "(OA;;SW;f3a64788-5306-11d1-a9c5-0000f80367c1;;%s)" % str(self.user_sid1)
         self.sd_utils.dacl_add_ace(self.computerdn, mod)
@@ -2146,42 +2146,42 @@ class AclSPNTests(AclTests):
             self.replace_spn(self.ldb_user1, self.computerdn, "HOST/%s/%s" % (self.computername, netbiosdomain))
         except LdbError as e46:
             (num, _) = e46.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "HOST/%s.%s/%s" %
                              (self.computername, self.dcctx.dnsdomain, netbiosdomain))
         except LdbError as e47:
             (num, _) = e47.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "HOST/%s/%s" %
                              (self.computername, self.dcctx.dnsdomain))
         except LdbError as e48:
             (num, _) = e48.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "HOST/%s.%s/%s" %
                              (self.computername, self.dcctx.dnsdomain, self.dcctx.dnsdomain))
         except LdbError as e49:
             (num, _) = e49.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "GC/%s.%s/%s" %
                              (self.computername, self.dcctx.dnsdomain, self.dcctx.dnsforest))
         except LdbError as e50:
             (num, _) = e50.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "ldap/%s/%s" % (self.computername, netbiosdomain))
         except LdbError as e51:
             (num, _) = e51.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
         try:
             self.replace_spn(self.ldb_user1, self.computerdn, "ldap/%s.%s/ForestDnsZones.%s" %
                              (self.computername, self.dcctx.dnsdomain, self.dcctx.dnsdomain))
         except LdbError as e52:
             (num, _) = e52.args
-            self.assertEquals(num, ERR_CONSTRAINT_VIOLATION)
+            self.assertEqual(num, ERR_CONSTRAINT_VIOLATION)
 
     def test_spn_rwdc(self):
         self.dc_spn_test(self.dcctx)

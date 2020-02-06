@@ -65,7 +65,7 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         res = sam_ldb.search(base=self.domain_dn,
                              expression=expression,
                              controls=["show_deleted:1"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         user_cur = res[0]
         # Deleted Object base DN
         dodn = self._deleted_objects_dn(sam_ldb)
@@ -75,7 +75,7 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         name_orig = str(obj_orig["name"][0])
         name_cur  = str(user_cur["name"][0])
         if is_deleted:
-            self.assertEquals(str(user_cur["isDeleted"][0]), "TRUE")
+            self.assertEqual(str(user_cur["isDeleted"][0]), "TRUE")
             self.assertFalse("objectCategory" in user_cur)
             self.assertFalse("sAMAccountType" in user_cur)
             self.assertFalse("description" in user_cur)
@@ -83,17 +83,17 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
             self.assertFalse("member" in user_cur)
             self.assertTrue(dodn in str(user_cur["dn"]),
                             "User %s is deleted but it is not located under %s (found at %s)!" % (name_orig, dodn, user_cur["dn"]))
-            self.assertEquals(name_cur, name_orig + "\nDEL:" + guid_str)
-            self.assertEquals(name_cur, user_cur.dn.get_rdn_value())
-            self.assertEquals(cn_cur, cn_orig + "\nDEL:" + guid_str)
-            self.assertEquals(name_cur, cn_cur)
+            self.assertEqual(name_cur, name_orig + "\nDEL:" + guid_str)
+            self.assertEqual(name_cur, user_cur.dn.get_rdn_value())
+            self.assertEqual(cn_cur, cn_orig + "\nDEL:" + guid_str)
+            self.assertEqual(name_cur, cn_cur)
         else:
             self.assertFalse("isDeleted" in user_cur)
-            self.assertEquals(name_cur, name_orig)
-            self.assertEquals(name_cur, user_cur.dn.get_rdn_value())
-            self.assertEquals(cn_cur, cn_orig)
-            self.assertEquals(name_cur, cn_cur)
-            self.assertEquals(obj_orig["dn"], user_cur["dn"])
+            self.assertEqual(name_cur, name_orig)
+            self.assertEqual(name_cur, user_cur.dn.get_rdn_value())
+            self.assertEqual(cn_cur, cn_orig)
+            self.assertEqual(name_cur, cn_cur)
+            self.assertEqual(obj_orig["dn"], user_cur["dn"])
             self.assertTrue(dodn not in str(user_cur["dn"]))
         return user_cur
 
@@ -118,7 +118,7 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.domain_dn,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 
@@ -274,7 +274,7 @@ class DrsDeleteObjectTestCase(drs_base.DrsBaseTestCase):
         ldb_res = self.ldb_dc1.search(base=self.domain_dn,
                                       scope=SCOPE_SUBTREE,
                                       expression="(samAccountName=%s)" % username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_orig = ldb_res[0]
         user_dn   = ldb_res[0]["dn"]
 

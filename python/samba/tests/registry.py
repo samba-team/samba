@@ -27,11 +27,11 @@ from subprocess import Popen, PIPE
 class HelperTests(samba.tests.TestCase):
 
     def test_predef_to_name(self):
-        self.assertEquals("HKEY_LOCAL_MACHINE",
+        self.assertEqual("HKEY_LOCAL_MACHINE",
                           registry.get_predef_name(0x80000002))
 
     def test_str_regtype(self):
-        self.assertEquals("REG_DWORD", registry.str_regtype(4))
+        self.assertEqual("REG_DWORD", registry.str_regtype(4))
 
 
 class HiveTests(samba.tests.TestCaseInTempDir):

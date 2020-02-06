@@ -35,7 +35,7 @@ class WinsDatabaseTestCase(TestCase):
         self.winsdb = WinsDatabase(os.path.join(DATADIR, "wins.dat"))
 
     def test_length(self):
-        self.assertEquals(22, len(self.winsdb))
+        self.assertEqual(22, len(self.winsdb))
 
     def test_first_entry(self):
         self.assertEqual((1124185120, ["192.168.1.5"], 0x64), self.winsdb["ADMINISTRATOR#03"])

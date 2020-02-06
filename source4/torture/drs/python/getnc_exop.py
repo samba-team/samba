@@ -238,7 +238,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             self.fail("Expected DsGetNCChanges to fail with WERR_DS_CANT_FIND_EXPECTED_NC")
         except WERRORError as e1:
             (enum, estr) = e1.args
-            self.assertEquals(enum, werror.WERR_DS_CANT_FIND_EXPECTED_NC)
+            self.assertEqual(enum, werror.WERR_DS_CANT_FIND_EXPECTED_NC)
 
     def test_link_utdv_hwm(self):
         """Test verify the DRS_GET_ANC behavior."""

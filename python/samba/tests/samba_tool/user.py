@@ -60,7 +60,7 @@ class UserCmdTestCase(SambaToolCmdTest):
             (result, out, err) = user["createUserFn"](user)
 
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err, "", "Shouldn't be any error messages")
+            self.assertEqual(err, "", "Shouldn't be any error messages")
             if 'unix' in user["name"]:
                 self.assertIn("Modified User '%s' successfully" % user["name"],
                               out)
@@ -112,13 +112,13 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err, "", "Shouldn't be any error messages")
+            self.assertEqual(err, "", "Shouldn't be any error messages")
             self.assertIn("User '%s' created successfully" % user["name"], out)
 
             found = self._find_user(user["name"])
 
-            self.assertEquals("%s" % found.get("cn"), "%(name)s" % user)
-            self.assertEquals("%s" % found.get("name"), "%(name)s" % user)
+            self.assertEqual("%s" % found.get("cn"), "%(name)s" % user)
+            self.assertEqual("%s" % found.get("name"), "%(name)s" % user)
 
     def _verify_supplementalCredentials(self, ldif,
                                         min_packages=3,
@@ -212,7 +212,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
             self.assertCmdSuccess(result, out, err, "Ensure setpassword runs")
-            self.assertEquals(err, "", "setpassword with url")
+            self.assertEqual(err, "", "setpassword with url")
             self.assertMatch(out, "Changed password OK", "setpassword with url")
 
         attributes = "sAMAccountName,unicodePwd,supplementalCredentials,virtualClearTextUTF8,virtualClearTextUTF16,virtualSSHA,virtualSambaGPG"
@@ -260,7 +260,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 user["name"],
                                                 "--newpassword=%s" % newpasswd)
             self.assertCmdSuccess(result, out, err, "Ensure setpassword runs")
-            self.assertEquals(err, "", "setpassword without url")
+            self.assertEqual(err, "", "setpassword without url")
             self.assertMatch(out, "Changed password OK", "setpassword without url")
 
             (result, out, err) = self.runsubcmd("user", "syncpasswords", "--no-wait")
@@ -317,7 +317,7 @@ class UserCmdTestCase(SambaToolCmdTest):
                                                 "-H", "ldap://%s" % os.environ["DC_SERVER"],
                                                 "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
             self.assertCmdSuccess(result, out, err, "Ensure setpassword runs")
-            self.assertEquals(err, "", "setpassword with forced change")
+            self.assertEqual(err, "", "setpassword with forced change")
             self.assertMatch(out, "Changed password OK", "setpassword with forced change")
 
     def test_setexpiry(self):
@@ -451,7 +451,7 @@ sAMAccountName: %s
         full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest"))
         (result, out, err) = self.runsubcmd("ou", "create", full_ou_dn)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "There shouldn't be any error message")
+        self.assertEqual(err, "", "There shouldn't be any error message")
         self.assertIn('Created ou "%s"' % full_ou_dn, out)
 
         for user in self.users:
@@ -524,7 +524,7 @@ sAMAccountName: %s
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("User '%s' created successfully" % user["name"], out)
 
         self._check_posix_user(user)
@@ -553,7 +553,7 @@ sAMAccountName: %s
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"], os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("User '%s' created successfully" % user["name"], out)
 
         self._check_posix_user(user)
@@ -616,21 +616,21 @@ sAMAccountName: %s
         """ check if a user from SamDB has the same attributes as its template """
         found = self._find_user(user["name"])
 
-        self.assertEquals("%s" % found.get("name"), "%(given-name)s %(surname)s" % user)
-        self.assertEquals("%s" % found.get("title"), user["job-title"])
-        self.assertEquals("%s" % found.get("company"), user["company"])
-        self.assertEquals("%s" % found.get("description"), user["description"])
-        self.assertEquals("%s" % found.get("department"), user["department"])
+        self.assertEqual("%s" % found.get("name"), "%(given-name)s %(surname)s" % user)
+        self.assertEqual("%s" % found.get("title"), user["job-title"])
+        self.assertEqual("%s" % found.get("company"), user["company"])
+        self.assertEqual("%s" % found.get("description"), user["description"])
+        self.assertEqual("%s" % found.get("department"), user["department"])
 
     def _check_posix_user(self, user):
         """ check if a posix_user from SamDB has the same attributes as its template """
         found = self._find_user(user["name"])
 
-        self.assertEquals("%s" % found.get("loginShell"), user["loginShell"])
-        self.assertEquals("%s" % found.get("gecos"), user["gecos"])
-        self.assertEquals("%s" % found.get("uidNumber"), "%s" % user["uidNumber"])
-        self.assertEquals("%s" % found.get("gidNumber"), "%s" % user["gidNumber"])
-        self.assertEquals("%s" % found.get("uid"), user["uid"])
+        self.assertEqual("%s" % found.get("loginShell"), user["loginShell"])
+        self.assertEqual("%s" % found.get("gecos"), user["gecos"])
+        self.assertEqual("%s" % found.get("uidNumber"), "%s" % user["uidNumber"])
+        self.assertEqual("%s" % found.get("gidNumber"), "%s" % user["gidNumber"])
+        self.assertEqual("%s" % found.get("uid"), user["uid"])
         self._check_user(user)
 
     def _check_unix_user(self, user):
@@ -638,13 +638,13 @@ sAMAccountName: %s
 template """
         found = self._find_user(user["name"])
 
-        self.assertEquals("%s" % found.get("loginShell"), user["loginShell"])
-        self.assertEquals("%s" % found.get("gecos"), user["gecos"])
-        self.assertEquals("%s" % found.get("uidNumber"), "%s" %
+        self.assertEqual("%s" % found.get("loginShell"), user["loginShell"])
+        self.assertEqual("%s" % found.get("gecos"), user["gecos"])
+        self.assertEqual("%s" % found.get("uidNumber"), "%s" %
                           user["uidNumber"])
-        self.assertEquals("%s" % found.get("gidNumber"), "%s" %
+        self.assertEqual("%s" % found.get("gidNumber"), "%s" %
                           user["gidNumber"])
-        self.assertEquals("%s" % found.get("uid"), user["uid"])
+        self.assertEqual("%s" % found.get("uid"), user["uid"])
         self._check_user(user)
 
     def _create_user(self, user):

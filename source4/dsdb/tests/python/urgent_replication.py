@@ -41,7 +41,7 @@ class UrgentReplicationTests(samba.tests.TestCase):
             ldb.delete(dn, ["relax:0"])
         except LdbError as e:
             (num, _) = e.args
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+            self.assertEqual(num, ERR_NO_SUCH_OBJECT)
 
     def setUp(self):
         super(UrgentReplicationTests, self).setUp()
@@ -96,7 +96,7 @@ systemFlags: 33554432""", ["relax:0"])
 
         # urgent replication should be enabled when creation
         res = self.ldb.load_partition_usn("cn=Configuration," + self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should NOT be enabled when modifying
         m = Message()
@@ -110,7 +110,7 @@ systemFlags: 33554432""", ["relax:0"])
         # urgent replication should be enabled when deleting
         self.delete_force(self.ldb, "cn=NTDS Settings test,cn=test server,cn=Servers,cn=Default-First-Site-Name,cn=Sites,cn=Configuration," + self.base_dn)
         res = self.ldb.load_partition_usn("cn=Configuration," + self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
         self.delete_force(self.ldb, "cn=test server,cn=Servers,cn=Default-First-Site-Name,cn=Sites,cn=Configuration," + self.base_dn)
 
@@ -129,7 +129,7 @@ systemFlags: 33554432""", ["relax:0"])
 
         # urgent replication should be enabled when creating
         res = self.ldb.load_partition_usn("cn=Configuration," + self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should NOT be enabled when modifying
         m = Message()
@@ -143,7 +143,7 @@ systemFlags: 33554432""", ["relax:0"])
         # urgent replication should be enabled when deleting
         self.delete_force(self.ldb, "cn=test crossRef,CN=Partitions,CN=Configuration," + self.base_dn)
         res = self.ldb.load_partition_usn("cn=Configuration," + self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
     def test_attributeSchema_object(self):
         """Test if the urgent replication is activated when handling an attributeSchema object"""
@@ -167,7 +167,7 @@ name: test attributeSchema""")
 
         # urgent replication should be enabled when creating
         res = self.ldb.load_partition_usn("cn=Schema,cn=Configuration," + self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should be enabled when modifying
         m = Message()
@@ -176,7 +176,7 @@ name: test attributeSchema""")
                                               "lDAPDisplayName")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn("cn=Schema,cn=Configuration," + self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
     def test_classSchema_object(self):
         """Test if the urgent replication is activated when handling a classSchema object."""
@@ -205,7 +205,7 @@ defaultHidingValue: TRUE""")
 
             # urgent replication should be enabled when creating
             res = self.ldb.load_partition_usn("cn=Schema,cn=Configuration," + self.base_dn)
-            self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+            self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
         except LdbError:
             print("Not testing urgent replication when creating classSchema object ...\n")
@@ -217,7 +217,7 @@ defaultHidingValue: TRUE""")
                                               "lDAPDisplayName")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn("cn=Schema,cn=Configuration," + self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
     def test_secret_object(self):
         """Test if the urgent replication is activated when handling a secret object."""
@@ -231,7 +231,7 @@ defaultHidingValue: TRUE""")
 
         # urgent replication should be enabled when creating
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should be enabled when modifying
         m = Message()
@@ -240,7 +240,7 @@ defaultHidingValue: TRUE""")
                                            "currentValue")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should NOT be enabled when deleting
         self.delete_force(self.ldb, "cn=test secret,cn=System," + self.base_dn)
@@ -262,7 +262,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
 
         # urgent replication should be enabled when creating
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should be enabled when modifying
         m = Message()
@@ -271,7 +271,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
                                           "systemFlags")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should NOT be enabled when deleting
         self.delete_force(self.ldb, "CN=RID Manager test,CN=System," + self.base_dn)
@@ -301,7 +301,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
                                                  "userAccountControl")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should be enabled when modifying lockoutTime
         m = Message()
@@ -310,7 +310,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
                                           "lockoutTime")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should be enabled when modifying pwdLastSet
         m = Message()
@@ -319,7 +319,7 @@ rIDAvailablePool: 133001-1073741823""", ["relax:0"])
                                          "pwdLastSet")
         self.ldb.modify(m)
         res = self.ldb.load_partition_usn(self.base_dn)
-        self.assertEquals(res["uSNHighest"], res["uSNUrgent"])
+        self.assertEqual(res["uSNHighest"], res["uSNUrgent"])
 
         # urgent replication should NOT be enabled when modifying a not-urgent
         # attribute

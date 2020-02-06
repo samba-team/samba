@@ -52,18 +52,18 @@ class ShareTests(TestCase):
 
     def test_len_no_global(self):
         shares = self._get_shares({})
-        self.assertEquals(0, len(shares))
+        self.assertEqual(0, len(shares))
 
     def test_iter(self):
-        self.assertEquals([], list(self._get_shares({})))
-        self.assertEquals([], list(self._get_shares({"global": {}})))
-        self.assertEquals(
+        self.assertEqual([], list(self._get_shares({})))
+        self.assertEqual([], list(self._get_shares({"global": {}})))
+        self.assertEqual(
             ["bla"],
             list(self._get_shares({"global": {}, "bla": {}})))
 
     def test_len(self):
         shares = self._get_shares({"global": {}})
-        self.assertEquals(0, len(shares))
+        self.assertEqual(0, len(shares))
 
     def test_getitem_nonexistent(self):
         shares = self._get_shares({"global": {}})

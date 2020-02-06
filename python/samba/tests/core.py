@@ -27,22 +27,22 @@ from samba.tests import TestCase, TestCaseInTempDir
 class SubstituteVarTestCase(TestCase):
 
     def test_empty(self):
-        self.assertEquals("", samba.substitute_var("", {}))
+        self.assertEqual("", samba.substitute_var("", {}))
 
     def test_nothing(self):
-        self.assertEquals("foo bar",
+        self.assertEqual("foo bar",
                           samba.substitute_var("foo bar", {"bar": "bla"}))
 
     def test_replace(self):
-        self.assertEquals("foo bla",
+        self.assertEqual("foo bla",
                           samba.substitute_var("foo ${bar}", {"bar": "bla"}))
 
     def test_broken(self):
-        self.assertEquals("foo ${bdkjfhsdkfh sdkfh ",
+        self.assertEqual("foo ${bdkjfhsdkfh sdkfh ",
                           samba.substitute_var("foo ${bdkjfhsdkfh sdkfh ", {"bar": "bla"}))
 
     def test_unknown_var(self):
-        self.assertEquals("foo ${bla} gsff",
+        self.assertEqual("foo ${bla} gsff",
                           samba.substitute_var("foo ${bla} gsff", {"bar": "bla"}))
 
     def test_check_all_substituted(self):
@@ -58,7 +58,7 @@ class ArcfourTestCase(TestCase):
         plain = b'abcdefghi'
         crypt_expected = b'\xda\x91Z\xb0l\xd7\xb9\xcf\x99'
         crypt_calculated = arcfour_encrypt(key, plain)
-        self.assertEquals(crypt_expected, crypt_calculated)
+        self.assertEqual(crypt_expected, crypt_calculated)
 
 
 class StringToByteArrayTestCase(TestCase):
@@ -66,7 +66,7 @@ class StringToByteArrayTestCase(TestCase):
     def test_byte_array(self):
         expected = [218, 145, 90, 176, 108, 215, 185, 207, 153]
         calculated = string_to_byte_array('\xda\x91Z\xb0l\xd7\xb9\xcf\x99')
-        self.assertEquals(expected, calculated)
+        self.assertEqual(expected, calculated)
 
 
 class LdbExtensionTests(TestCaseInTempDir):
@@ -76,7 +76,7 @@ class LdbExtensionTests(TestCaseInTempDir):
         l = samba.Ldb(path)
         try:
             l.add({"dn": "foo=dc", "bar": "bla"})
-            self.assertEquals(b"bla",
+            self.assertEqual(b"bla",
                               l.searchone(basedn=ldb.Dn(l, "foo=dc"), attribute="bar"))
         finally:
             del l

@@ -35,22 +35,22 @@ class IdmapDbTestCase(TestCase):
                                                   "winbindd_idmap"))
 
     def test_user_hwm(self):
-        self.assertEquals(10000, self.idmapdb.get_user_hwm())
+        self.assertEqual(10000, self.idmapdb.get_user_hwm())
 
     def test_group_hwm(self):
-        self.assertEquals(10002, self.idmapdb.get_group_hwm())
+        self.assertEqual(10002, self.idmapdb.get_group_hwm())
 
     def test_uids(self):
-        self.assertEquals(1, len(list(self.idmapdb.uids())))
+        self.assertEqual(1, len(list(self.idmapdb.uids())))
 
     def test_gids(self):
-        self.assertEquals(3, len(list(self.idmapdb.gids())))
+        self.assertEqual(3, len(list(self.idmapdb.gids())))
 
     def test_get_user_sid(self):
-        self.assertEquals(b"S-1-5-21-58189338-3053988021-627566699-501", self.idmapdb.get_user_sid(65534))
+        self.assertEqual(b"S-1-5-21-58189338-3053988021-627566699-501", self.idmapdb.get_user_sid(65534))
 
     def test_get_group_sid(self):
-        self.assertEquals(b"S-1-5-21-2447931902-1787058256-3961074038-3007", self.idmapdb.get_group_sid(10001))
+        self.assertEqual(b"S-1-5-21-2447931902-1787058256-3961074038-3007", self.idmapdb.get_group_sid(10001))
 
     def tearDown(self):
         self.idmapdb.close()

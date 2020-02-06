@@ -39,15 +39,15 @@ class RegistryTestCase(TestCase):
         super(RegistryTestCase, self).tearDown()
 
     def test_length(self):
-        self.assertEquals(28, len(self.registry))
+        self.assertEqual(28, len(self.registry))
 
     def test_keys(self):
         self.assertTrue(b"HKLM" in self.registry.keys())
 
     def test_subkeys(self):
-        self.assertEquals([b"SOFTWARE", b"SYSTEM"], self.registry.subkeys(b"HKLM"))
+        self.assertEqual([b"SOFTWARE", b"SYSTEM"], self.registry.subkeys(b"HKLM"))
 
     def test_values(self):
-        self.assertEquals({b'DisplayName': (1, b'E\x00v\x00e\x00n\x00t\x00 \x00L\x00o\x00g\x00\x00\x00'),
+        self.assertEqual({b'DisplayName': (1, b'E\x00v\x00e\x00n\x00t\x00 \x00L\x00o\x00g\x00\x00\x00'),
                            b'ErrorControl': (4, b'\x01\x00\x00\x00')},
                           self.registry.values(b"HKLM/SYSTEM/CURRENTCONTROLSET/SERVICES/EVENTLOG"))

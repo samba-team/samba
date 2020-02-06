@@ -52,7 +52,7 @@ class GraphFunctionTests(samba.tests.TestCase):
                 ([0x03, 0x33] * 42, 42 * 6),
                 (list(range(7)) * 12, 12 * 9),
                 (list(range(4)) * 21, 21 * 4)):
-            self.assertEquals(total_schedule(schedule), total)
+            self.assertEqual(total_schedule(schedule), total)
 
     def test_convert_schedule_to_repltimes(self):
         for ntdsconn_times, repltimes in (
@@ -63,5 +63,5 @@ class GraphFunctionTests(samba.tests.TestCase):
                 (list(range(7)) * 24,
                  [0x01, 0x23, 0x45, 0x60, 0x12, 0x34, 0x56] * 12)):
             schedule = ntdsconn_schedule(ntdsconn_times)
-            self.assertEquals(convert_schedule_to_repltimes(schedule),
+            self.assertEqual(convert_schedule_to_repltimes(schedule),
                               repltimes)

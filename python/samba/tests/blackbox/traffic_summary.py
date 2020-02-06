@@ -50,4 +50,4 @@ class TrafficSummaryTests(BlackboxTestCase):
             self.check_run(command)
             expected = open(EXPECTED_FN).readlines()
             actual = open(output).readlines()
-            self.assertEquals(expected, actual)
+            self.assertEqual(expected, actual)

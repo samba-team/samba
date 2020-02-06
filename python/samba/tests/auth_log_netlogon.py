@@ -102,33 +102,33 @@ class AuthLogTestsNetLogon(samba.tests.auth_log_base.AuthLogTestBase):
     def netlogon_check(self, messages):
 
         expected_messages = 5
-        self.assertEquals(expected_messages,
+        self.assertEqual(expected_messages,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # Check the first message it should be an Authorization
         msg = messages[0]
-        self.assertEquals("Authorization", msg["type"])
-        self.assertEquals("DCE/RPC",
+        self.assertEqual("Authorization", msg["type"])
+        self.assertEqual("DCE/RPC",
                           msg["Authorization"]["serviceDescription"])
-        self.assertEquals("ncalrpc", msg["Authorization"]["authType"])
-        self.assertEquals("NONE", msg["Authorization"]["transportProtection"])
+        self.assertEqual("ncalrpc", msg["Authorization"]["authType"])
+        self.assertEqual("NONE", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
         # Check the fourth message it should be a NETLOGON Authentication
         msg = messages[3]
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals("NETLOGON",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual("NETLOGON",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("ServerAuthenticate",
+        self.assertEqual("ServerAuthenticate",
                           msg["Authentication"]["authDescription"])
-        self.assertEquals("NT_STATUS_OK",
+        self.assertEqual("NT_STATUS_OK",
                           msg["Authentication"]["status"])
-        self.assertEquals("HMAC-SHA256",
+        self.assertEqual("HMAC-SHA256",
                           msg["Authentication"]["passwordType"])
-        self.assertEquals(EVT_ID_SUCCESSFUL_LOGON,
+        self.assertEqual(EVT_ID_SUCCESSFUL_LOGON,
                           msg["Authentication"]["eventId"])
-        self.assertEquals(EVT_LOGON_NETWORK,
+        self.assertEqual(EVT_LOGON_NETWORK,
                           msg["Authentication"]["logonType"])
 
     def test_netlogon(self):

@@ -165,13 +165,13 @@ class PassWordHashTests(TestCase):
         error = "Digest expected[%s], actual[%s], " \
                 "user[%s], realm[%s], pass[%s]" % \
                 (expected, actual, user, realm, password)
-        self.assertEquals(expected, actual, error)
+        self.assertEqual(expected, actual, error)
 
     # Check all of the 29 expected WDigest values
     #
     def check_wdigests(self, digests):
 
-        self.assertEquals(29, digests.num_hashes)
+        self.assertEqual(29, digests.num_hashes)
 
         # Using the n-1 pattern in the array indexes to make it easier
         # to check the tests against the spec and the samba-tool user tests.
@@ -306,15 +306,15 @@ class PassWordHashTests(TestCase):
     def checkUserPassword(self, up, expected):
 
         # Check we've received the correct number of hashes
-        self.assertEquals(len(expected), up.num_hashes)
+        self.assertEqual(len(expected), up.num_hashes)
 
         i = 0
         for (tag, alg, rounds) in expected:
-            self.assertEquals(tag, up.hashes[i].scheme)
+            self.assertEqual(tag, up.hashes[i].scheme)
 
             data = up.hashes[i].value.decode('utf8').split("$")
             # Check we got the expected crypt algorithm
-            self.assertEquals(alg, data[1])
+            self.assertEqual(alg, data[1])
 
             if rounds is None:
                 cmd = "$%s$%s" % (alg, data[2])
@@ -323,7 +323,7 @@ class PassWordHashTests(TestCase):
 
             # Calculate the expected hash value
             expected = crypt.crypt(USER_PASS, cmd)
-            self.assertEquals(expected, up.hashes[i].value.decode('utf8'))
+            self.assertEqual(expected, up.hashes[i].value.decode('utf8'))
             i += 1
 
     # Check that the correct nt_hash was stored for userPassword
@@ -333,4 +333,4 @@ class PassWordHashTests(TestCase):
         creds.set_password(password)
         expected = creds.get_nt_hash()
         actual = bytearray(nt_hash)
-        self.assertEquals(expected, actual)
+        self.assertEqual(expected, actual)

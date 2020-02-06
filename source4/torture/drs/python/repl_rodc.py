@@ -199,7 +199,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
         except WERRORError as e:
             (enum, estr) = e.args
-            self.assertEquals(enum, 8630)  # ERROR_DS_DRA_SECRETS_DENIED
+            self.assertEqual(enum, 8630)  # ERROR_DS_DRA_SECRETS_DENIED
 
         # send the same request again and we should get the same response
         try:
@@ -207,7 +207,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
         except WERRORError as e1:
             (enum, estr) = e1.args
-            self.assertEquals(enum, 8630)  # ERROR_DS_DRA_SECRETS_DENIED
+            self.assertEqual(enum, 8630)  # ERROR_DS_DRA_SECRETS_DENIED
 
         # Retry with Administrator credentials, ignores password replication groups
         (level, ctr) = self.drs.DsGetNCChanges(self.drs_handle, 10, req10)
@@ -512,7 +512,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
         except WERRORError as e3:
             (enum, estr) = e3.args
-            self.assertEquals(enum, 8630)  # ERROR_DS_DRA_SECRETS_DENIED
+            self.assertEqual(enum, 8630)  # ERROR_DS_DRA_SECRETS_DENIED
 
         req10 = self._getnc_req10(dest_dsa=str(self.rodc_ctx.ntds_guid),
                                   invocation_id=self.ldb_dc1.get_invocation_id(),
@@ -527,7 +527,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
         except WERRORError as e4:
             (enum, estr) = e4.args
-            self.assertEquals(enum, 8630)  # ERROR_DS_DRA_SECRETS_DENIED
+            self.assertEqual(enum, 8630)  # ERROR_DS_DRA_SECRETS_DENIED
 
     def test_msDSRevealedUsers_local_deny_allow(self):
         """
@@ -597,7 +597,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
         except WERRORError as e5:
             (enum, estr) = e5.args
-            self.assertEquals(enum, 8630)  # ERROR_DS_DRA_SECRETS_DENIED
+            self.assertEqual(enum, 8630)  # ERROR_DS_DRA_SECRETS_DENIED
 
         m = ldb.Message()
         m.dn = ldb.Dn(self.ldb_dc1, self.computer_dn)
@@ -614,7 +614,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
             self.fail("Successfully replicated secrets to an RODC that shouldn't have been replicated.")
         except WERRORError as e6:
             (enum, estr) = e6.args
-            self.assertEquals(enum, 8630)  # ERROR_DS_DRA_SECRETS_DENIED
+            self.assertEqual(enum, 8630)  # ERROR_DS_DRA_SECRETS_DENIED
 
     def _assert_in_revealed_users(self, user_dn, attrlist):
         res = self.ldb_dc1.search(scope=ldb.SCOPE_BASE, base=self.computer_dn,
@@ -632,7 +632,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
                 packed_attrs.append(dsdb_dn.get_bytes())
                 actual_attrids.append(metadata.attid)
 
-        self.assertEquals(sorted(actual_attrids), sorted(attrlist))
+        self.assertEqual(sorted(actual_attrids), sorted(attrlist))
 
         return (packed_attrs, unpacked_attrs)
 
@@ -641,16 +641,16 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
 
     def _assert_attrlist_changed(self, list_1, list_2, changed_attributes, num_changes=1, expected_new_usn=True):
         for i in range(len(list_2)):
-            self.assertEquals(list_1[i].attid, list_2[i].attid)
-            self.assertEquals(list_1[i].originating_invocation_id, list_2[i].originating_invocation_id)
-            self.assertEquals(list_1[i].version + num_changes, list_2[i].version)
+            self.assertEqual(list_1[i].attid, list_2[i].attid)
+            self.assertEqual(list_1[i].originating_invocation_id, list_2[i].originating_invocation_id)
+            self.assertEqual(list_1[i].version + num_changes, list_2[i].version)
 
             if expected_new_usn:
                 self.assertTrue(list_1[i].originating_usn < list_2[i].originating_usn)
                 self.assertTrue(list_1[i].local_usn < list_2[i].local_usn)
             else:
-                self.assertEquals(list_1[i].originating_usn, list_2[i].originating_usn)
-                self.assertEquals(list_1[i].local_usn, list_2[i].local_usn)
+                self.assertEqual(list_1[i].originating_usn, list_2[i].originating_usn)
+                self.assertEqual(list_1[i].local_usn, list_2[i].local_usn)
 
             if list_1[i].attid in changed_attributes:
                 # We do the changes too quickly, so unless we put sleeps
@@ -659,7 +659,7 @@ class DrsRodcTestCase(drs_base.DrsBaseTestCase):
                 pass
                 #self.assertTrue(list_1[i].originating_change_time < list_2[i].originating_change_time)
             else:
-                self.assertEquals(list_1[i].originating_change_time, list_2[i].originating_change_time)
+                self.assertEqual(list_1[i].originating_change_time, list_2[i].originating_change_time)
 
     def _create_rodc(self, ctx):
         ctx.nc_list = [ctx.base_dn, ctx.config_dn, ctx.schema_dn]

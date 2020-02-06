@@ -60,7 +60,7 @@ class strcasecmp_m_Tests(samba.tests.TestCase):
                  (KATAKANA_LETTER_A, 'a', 1),
                  ]
         for a, b, expect in cases:
-            self.assertEquals(signum(strcasecmp_m(a, b)), expect)
+            self.assertEqual(signum(strcasecmp_m(a, b)), expect)
 
 
 class strstr_m_Tests(samba.tests.TestCase):
@@ -96,4 +96,4 @@ class strstr_m_Tests(samba.tests.TestCase):
                  (KATAKANA_LETTER_A * 3, 'a', None),
                  ]
         for a, b, expect in cases:
-            self.assertEquals(strstr_m(a, b), expect)
+            self.assertEqual(strstr_m(a, b), expect)

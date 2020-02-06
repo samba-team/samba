@@ -66,7 +66,7 @@ class XattrTests(TestCase):
         try:
             samba.xattr_native.wrap_setxattr(tempf, "user.unittests", reftxt)
             text = samba.xattr_native.wrap_getxattr(tempf, "user.unittests")
-            self.assertEquals(text, reftxt)
+            self.assertEqual(text, reftxt)
         except IOError:
             raise SkipTest("the filesystem where the tests are runned do not support XATTR")
         os.unlink(tempf)
@@ -106,7 +106,7 @@ class XattrTests(TestCase):
                                           reftxt)
             text = samba.xattr_tdb.wrap_getxattr(eadb_path, tempf,
                                                  "user.unittests")
-            self.assertEquals(text, reftxt)
+            self.assertEqual(text, reftxt)
         finally:
             os.unlink(tempf)
         os.unlink(eadb_path)
@@ -134,7 +134,7 @@ class XattrTests(TestCase):
                                            reftxt)
             text = samba.posix_eadb.wrap_getxattr(eadb_path, tempf,
                                                   "user.unittests")
-            self.assertEquals(text, reftxt)
+            self.assertEqual(text, reftxt)
         finally:
             os.unlink(tempf)
         os.unlink(eadb_path)

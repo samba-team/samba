@@ -127,4 +127,4 @@ class MdfindBlackboxTests(BlackboxTestCase):
 
         actual = output.decode('utf-8').splitlines()
         expected = ["%s/%s" % (self.sharepath, file) for file in testfiles]
-        self.assertEquals(expected, actual)
+        self.assertEqual(expected, actual)

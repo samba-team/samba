@@ -62,7 +62,7 @@ class BaseDeleteTests(samba.tests.TestCase):
                               scope=SCOPE_BASE,
                               controls=["show_deleted:1"],
                               attrs=["*", "parentGUID"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         return res[0]
 
     def search_dn(self, dn):
@@ -73,7 +73,7 @@ class BaseDeleteTests(samba.tests.TestCase):
                               scope=SCOPE_BASE,
                               controls=["show_deleted:1"],
                               attrs=["*", "parentGUID"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         return res[0]
 
 
@@ -85,7 +85,7 @@ class BasicDeleteTests(BaseDeleteTests):
     def del_attr_values(self, delObj):
         print("Checking attributes for %s" % delObj["dn"])
 
-        self.assertEquals(str(delObj["isDeleted"][0]), "TRUE")
+        self.assertEqual(str(delObj["isDeleted"][0]), "TRUE")
         self.assertTrue(not("objectCategory" in delObj))
         self.assertTrue(not("sAMAccountType" in delObj))
 
@@ -111,9 +111,9 @@ class BasicDeleteTests(BaseDeleteTests):
         name2 = delObj["name"][0]
         dn_rdn = delObj.dn.get_rdn_value()
         guid = liveObj["objectGUID"][0]
-        self.assertEquals(str(rdn2), ("%s\nDEL:%s" % (rdn, self.GUID_string(guid))))
-        self.assertEquals(str(name2), ("%s\nDEL:%s" % (rdn, self.GUID_string(guid))))
-        self.assertEquals(str(name2), dn_rdn)
+        self.assertEqual(str(rdn2), ("%s\nDEL:%s" % (rdn, self.GUID_string(guid))))
+        self.assertEqual(str(name2), ("%s\nDEL:%s" % (rdn, self.GUID_string(guid))))
+        self.assertEqual(str(name2), dn_rdn)
 
     def delete_deleted(self, ldb, dn):
         print("Testing the deletion of the already deleted dn %s" % dn)
@@ -123,7 +123,7 @@ class BasicDeleteTests(BaseDeleteTests):
             self.fail()
         except LdbError as e:
             (num, _) = e.args
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+            self.assertEqual(num, ERR_NO_SUCH_OBJECT)
 
     def test_delete_protection(self):
         """Delete protection tests"""
@@ -149,7 +149,7 @@ class BasicDeleteTests(BaseDeleteTests):
             self.fail()
         except LdbError as e1:
             (num, _) = e1.args
-            self.assertEquals(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
+            self.assertEqual(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
 
         self.ldb.delete("cn=ldaptestcontainer," + self.base_dn, ["tree_delete:1"])
 
@@ -159,21 +159,21 @@ class BasicDeleteTests(BaseDeleteTests):
             self.fail()
         except LdbError as e2:
             (num, _) = e2.args
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+            self.assertEqual(num, ERR_NO_SUCH_OBJECT)
         try:
             res = self.ldb.search("cn=entry1,cn=ldaptestcontainer," + self.base_dn,
                                   scope=SCOPE_BASE, attrs=[])
             self.fail()
         except LdbError as e3:
             (num, _) = e3.args
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+            self.assertEqual(num, ERR_NO_SUCH_OBJECT)
         try:
             res = self.ldb.search("cn=entry2,cn=ldaptestcontainer," + self.base_dn,
                                   scope=SCOPE_BASE, attrs=[])
             self.fail()
         except LdbError as e4:
             (num, _) = e4.args
-            self.assertEquals(num, ERR_NO_SUCH_OBJECT)
+            self.assertEqual(num, ERR_NO_SUCH_OBJECT)
 
         delete_force(self.ldb, "cn=entry1,cn=ldaptestcontainer," + self.base_dn)
         delete_force(self.ldb, "cn=entry2,cn=ldaptestcontainer," + self.base_dn)
@@ -183,7 +183,7 @@ class BasicDeleteTests(BaseDeleteTests):
 
         res = self.ldb.search(base="", expression="", scope=SCOPE_BASE,
                               attrs=["dsServiceName", "dNSHostName"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         # Delete failing since DC's nTDSDSA object is protected
         try:
@@ -191,11 +191,11 @@ class BasicDeleteTests(BaseDeleteTests):
             self.fail()
         except LdbError as e5:
             (num, _) = e5.args
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
         res = self.ldb.search(self.base_dn, attrs=["rIDSetReferences"],
                               expression="(&(objectClass=computer)(dNSHostName=" + str(res[0]["dNSHostName"][0]) + "))")
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         # Deletes failing since DC's rIDSet object is protected
         try:
@@ -203,13 +203,13 @@ class BasicDeleteTests(BaseDeleteTests):
             self.fail()
         except LdbError as e6:
             (num, _) = e6.args
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
         try:
             self.ldb.delete(res[0]["rIDSetReferences"][0], ["tree_delete:1"])
             self.fail()
         except LdbError as e7:
             (num, _) = e7.args
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
         # Deletes failing since three main crossRef objects are protected
 
@@ -218,43 +218,43 @@ class BasicDeleteTests(BaseDeleteTests):
             self.fail()
         except LdbError as e8:
             (num, _) = e8.args
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
         try:
             self.ldb.delete("cn=Enterprise Schema,cn=Partitions," + self.configuration_dn, ["tree_delete:1"])
             self.fail()
         except LdbError as e9:
             (num, _) = e9.args
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
         try:
             self.ldb.delete("cn=Enterprise Configuration,cn=Partitions," + self.configuration_dn)
             self.fail()
         except LdbError as e10:
             (num, _) = e10.args
-            self.assertEquals(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
+            self.assertEqual(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
         try:
             self.ldb.delete("cn=Enterprise Configuration,cn=Partitions," + self.configuration_dn, ["tree_delete:1"])
             self.fail()
         except LdbError as e11:
             (num, _) = e11.args
-            self.assertEquals(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
+            self.assertEqual(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
 
         res = self.ldb.search("cn=Partitions," + self.configuration_dn, attrs=[],
                               expression="(nCName=%s)" % self.base_dn)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         try:
             self.ldb.delete(res[0].dn)
             self.fail()
         except LdbError as e12:
             (num, _) = e12.args
-            self.assertEquals(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
+            self.assertEqual(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
         try:
             self.ldb.delete(res[0].dn, ["tree_delete:1"])
             self.fail()
         except LdbError as e13:
             (num, _) = e13.args
-            self.assertEquals(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
+            self.assertEqual(num, ERR_NOT_ALLOWED_ON_NON_LEAF)
 
         # Delete failing since "SYSTEM_FLAG_DISALLOW_DELETE"
         try:
@@ -262,7 +262,7 @@ class BasicDeleteTests(BaseDeleteTests):
             self.fail()
         except LdbError as e14:
             (num, _) = e14.args
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
         # Tree-delete failing since "isCriticalSystemObject"
         try:
@@ -270,7 +270,7 @@ class BasicDeleteTests(BaseDeleteTests):
             self.fail()
         except LdbError as e15:
             (num, _) = e15.args
-            self.assertEquals(num, ERR_UNWILLING_TO_PERFORM)
+            self.assertEqual(num, ERR_UNWILLING_TO_PERFORM)
 
 
 class BasicTreeDeleteTests(BasicDeleteTests):

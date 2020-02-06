@@ -57,13 +57,13 @@ class TrafficLearnerTests(BlackboxTestCase):
             actual_ngrams = {k: sorted(v) for k, v in actual.ngrams.items()}
             expected_ngrams = {k: sorted(v) for k, v in expected.ngrams.items()}
 
-            self.assertEquals(expected_ngrams, actual_ngrams)
+            self.assertEqual(expected_ngrams, actual_ngrams)
 
             actual_details = {k: sorted(v) for k, v in actual.query_details.items()}
             expected_details = {k: sorted(v) for k, v in expected.query_details.items()}
-            self.assertEquals(expected_details, actual_details)
-            self.assertEquals(expected.cumulative_duration, actual.cumulative_duration)
-            self.assertEquals(expected.packet_rate, actual.packet_rate)
+            self.assertEqual(expected_details, actual_details)
+            self.assertEqual(expected.cumulative_duration, actual.cumulative_duration)
+            self.assertEqual(expected.packet_rate, actual.packet_rate)
 
             with open(expected_fn) as f1, open(output) as f2:
                 expected_json = json.load(f1)

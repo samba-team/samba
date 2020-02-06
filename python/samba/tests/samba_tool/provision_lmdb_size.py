@@ -84,24 +84,24 @@ class ProvisionLmdbSizeTestCase(SambaToolCmdTest):
     # 8Gb is used
     def test_default(self):
         (result, out, err) = self.provision()
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(8 * 1024 * 1024 * 1024)
 
     def test_64Mb(self):
         (result, out, err) = self.provision("64Mb")
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(64 * 1024 * 1024)
 
     def test_1Gb(self):
         (result, out, err) = self.provision("1Gb")
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(1 * 1024 * 1024 * 1024)
 
     # 128Mb specified in bytes.
     #
     def test_134217728b(self):
         (result, out, err) = self.provision("134217728b")
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(134217728)
 
     def test_no_unit_suffix(self):

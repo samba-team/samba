@@ -44,7 +44,7 @@ class ParamTestCase(TestCaseInTempDir):
         super(ParamTestCase, self).tearDown()
 
     def test_param(self):
-        self.assertEquals("BEDWYR", self.lp.get("netbios name"))
-        self.assertEquals("SAMBA", self.lp.get("workgroup"))
-        self.assertEquals("USER", self.lp.get("security"))
-        self.assertEquals("/mnt/cd1", self.lp.get("path", "cd1"))
+        self.assertEqual("BEDWYR", self.lp.get("netbios name"))
+        self.assertEqual("SAMBA", self.lp.get("workgroup"))
+        self.assertEqual("USER", self.lp.get("security"))
+        self.assertEqual("/mnt/cd1", self.lp.get("path", "cd1"))

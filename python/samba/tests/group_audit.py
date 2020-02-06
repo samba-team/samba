@@ -105,7 +105,7 @@ class GroupAuditTests(AuditLogTestBase):
         #
         messages = self.waitForMessages(2)
         print("Received %d messages" % len(messages))
-        self.assertEquals(2,
+        self.assertEqual(2,
                           len(messages),
                           "Did not receive the expected number of messages")
         audit = messages[0]["groupChange"]
@@ -119,9 +119,9 @@ class GroupAuditTests(AuditLogTestBase):
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
 
         # Check the Add message for the new users primary group
         audit = messages[1]["groupChange"]
@@ -135,8 +135,8 @@ class GroupAuditTests(AuditLogTestBase):
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
-        self.assertEquals(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
+        self.assertEqual(session_id, audit["sessionId"])
+        self.assertEqual(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
                           audit["eventId"])
         #
         # Add the user to a group
@@ -146,7 +146,7 @@ class GroupAuditTests(AuditLogTestBase):
         self.ldb.add_remove_group_members(GROUP_NAME_01, [USER_NAME])
         messages = self.waitForMessages(1)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
         audit = messages[0]["groupChange"]
@@ -160,9 +160,9 @@ class GroupAuditTests(AuditLogTestBase):
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
 
         #
         # Add the user to another group
@@ -172,7 +172,7 @@ class GroupAuditTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
         audit = messages[0]["groupChange"]
@@ -186,9 +186,9 @@ class GroupAuditTests(AuditLogTestBase):
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
 
         #
         # Remove the user from a group
@@ -200,7 +200,7 @@ class GroupAuditTests(AuditLogTestBase):
             add_members_operation=False)
         messages = self.waitForMessages(1)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
         audit = messages[0]["groupChange"]
@@ -214,9 +214,9 @@ class GroupAuditTests(AuditLogTestBase):
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
 
         #
         # Re-add the user to a group
@@ -226,7 +226,7 @@ class GroupAuditTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
         audit = messages[0]["groupChange"]
@@ -240,9 +240,9 @@ class GroupAuditTests(AuditLogTestBase):
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
 
     def test_change_primary_group(self):
 
@@ -251,7 +251,7 @@ class GroupAuditTests(AuditLogTestBase):
         #
         messages = self.waitForMessages(2)
         print("Received %d messages" % len(messages))
-        self.assertEquals(2,
+        self.assertEqual(2,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -267,9 +267,9 @@ class GroupAuditTests(AuditLogTestBase):
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
 
         # Check the Add message for the new users primary group
         audit = messages[1]["groupChange"]
@@ -283,8 +283,8 @@ class GroupAuditTests(AuditLogTestBase):
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
-        self.assertEquals(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
+        self.assertEqual(session_id, audit["sessionId"])
+        self.assertEqual(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
                           audit["eventId"])
 
         #
@@ -296,7 +296,7 @@ class GroupAuditTests(AuditLogTestBase):
         self.ldb.add_remove_group_members(GROUP_NAME_01, [USER_NAME])
         messages = self.waitForMessages(1)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
         audit = messages[0]["groupChange"]
@@ -310,10 +310,10 @@ class GroupAuditTests(AuditLogTestBase):
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
-        self.assertEquals(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
+        self.assertEqual(service_description, "LDAP")
+        self.assertEqual(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
                           audit["eventId"])
 
         #
@@ -344,7 +344,7 @@ class GroupAuditTests(AuditLogTestBase):
         #
         messages = self.waitForMessages(3)
         print("Received %d messages" % len(messages))
-        self.assertEquals(3,
+        self.assertEqual(3,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -358,10 +358,10 @@ class GroupAuditTests(AuditLogTestBase):
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
-        self.assertEquals(EVT_ID_USER_REMOVED_FROM_GLOBAL_SEC_GROUP,
+        self.assertEqual(service_description, "LDAP")
+        self.assertEqual(EVT_ID_USER_REMOVED_FROM_GLOBAL_SEC_GROUP,
                           audit["eventId"])
 
         audit = messages[1]["groupChange"]
@@ -375,10 +375,10 @@ class GroupAuditTests(AuditLogTestBase):
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
-        self.assertEquals(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
+        self.assertEqual(service_description, "LDAP")
+        self.assertEqual(EVT_ID_USER_ADDED_TO_GLOBAL_SEC_GROUP,
                           audit["eventId"])
 
         audit = messages[2]["groupChange"]
@@ -392,6 +392,6 @@ class GroupAuditTests(AuditLogTestBase):
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")

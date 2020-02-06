@@ -68,7 +68,7 @@ class EncryptedSecretsTests(TestCase):
         # Now verify that the header contains the correct magic value.
         encrypted = ndr_unpack(drsblobs.EncryptedSecret, blob)
         magic = 0xca5caded
-        self.assertEquals(magic, encrypted.header.magic)
+        self.assertEqual(magic, encrypted.header.magic)
 
     def test_required_features(self):
         """Test that databases are provisioned with encryptedSecrets as a

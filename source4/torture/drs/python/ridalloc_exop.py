@@ -295,7 +295,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
 
             (result, out, err) = self.runsubcmd("fsmo", "seize", "--role", "rid", "-H", ldb_url, "-s", smbconf, "--force")
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err, "", "Shouldn't be any error messages")
+            self.assertEqual(err, "", "Shouldn't be any error messages")
 
             # 3. Assert we get the RID Set
             res = new_ldb.search(base=server_ref_dn,
@@ -580,7 +580,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
                                          scope=ldb.SCOPE_BASE, attrs=['rIDNextRid',
                                                                       'rIDAllocationPool'])
             last_allocated_rid = int(rid_set_res[0]["rIDNextRid"][0])
-            self.assertEquals(last_allocated_rid, last_rid - 10)
+            self.assertEqual(last_allocated_rid, last_rid - 10)
 
             # 9. Assert that the range wasn't thrown away
 
@@ -623,7 +623,7 @@ class DrsReplicaSyncTestCase(drs_base.DrsBaseTestCase):
             # 4. Seize the RID Manager role
             (result, out, err) = self.runsubcmd("fsmo", "seize", "--role", "rid", "-H", ldb_url, "-s", smbconf, "--force")
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err, "", "Shouldn't be any error messages")
+            self.assertEqual(err, "", "Shouldn't be any error messages")
 
             # 5. Add a new user (triggers RID set work)
             new_ldb.newuser("ridalloctestuser", "P@ssword!")

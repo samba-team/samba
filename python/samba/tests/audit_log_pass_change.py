@@ -119,19 +119,19 @@ class AuditLogPassChangeTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1, net, dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
         audit = messages[0]["passwordChange"]
-        self.assertEquals(EVT_ID_PASSWORD_CHANGE, audit["eventId"])
-        self.assertEquals("Change", audit["action"])
-        self.assertEquals(dn, audit["dn"])
+        self.assertEqual(EVT_ID_PASSWORD_CHANGE, audit["eventId"])
+        self.assertEqual("Change", audit["action"])
+        self.assertEqual(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "DCE/RPC")
+        self.assertEqual(service_description, "DCE/RPC")
         self.assertTrue(self.is_guid(audit["transactionId"]))
 
     def test_net_set_password_user_without_permission(self):
@@ -147,23 +147,23 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         dn = "CN=" + SECOND_USER_NAME + ",CN=Users," + self.base_dn
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["passwordChange"]
-        self.assertEquals(EVT_ID_PASSWORD_RESET, audit["eventId"])
-        self.assertEquals("Reset", audit["action"])
-        self.assertEquals(dn, audit["dn"])
+        self.assertEqual(EVT_ID_PASSWORD_RESET, audit["eventId"])
+        self.assertEqual("Reset", audit["action"])
+        self.assertEqual(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
         self.assertTrue(self.is_guid(audit["transactionId"]))
-        self.assertEquals(0, audit["statusCode"])
-        self.assertEquals("Success", audit["status"])
+        self.assertEqual(0, audit["statusCode"])
+        self.assertEqual("Success", audit["status"])
         self.discardMessages()
 
         creds = self.insta_creds(
@@ -188,23 +188,23 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         dn = "CN=" + USER_NAME + ",CN=Users," + self.base_dn
         messages = self.waitForMessages(1, net, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["passwordChange"]
-        self.assertEquals(EVT_ID_PASSWORD_RESET, audit["eventId"])
-        self.assertEquals("Reset", audit["action"])
-        self.assertEquals(dn, audit["dn"])
+        self.assertEqual(EVT_ID_PASSWORD_RESET, audit["eventId"])
+        self.assertEqual("Reset", audit["action"])
+        self.assertEqual(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "DCE/RPC")
+        self.assertEqual(service_description, "DCE/RPC")
         self.assertTrue(self.is_guid(audit["transactionId"]))
-        self.assertEquals(ERR_INSUFFICIENT_ACCESS_RIGHTS, audit["statusCode"])
-        self.assertEquals("insufficient access rights", audit["status"])
+        self.assertEqual(ERR_INSUFFICIENT_ACCESS_RIGHTS, audit["statusCode"])
+        self.assertEqual("insufficient access rights", audit["status"])
 
     def test_net_set_password(self):
 
@@ -225,22 +225,22 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         dn = "CN=" + USER_NAME + ",CN=Users," + self.base_dn
         messages = self.waitForMessages(1, net, dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["passwordChange"]
-        self.assertEquals(EVT_ID_PASSWORD_RESET, audit["eventId"])
-        self.assertEquals("Reset", audit["action"])
-        self.assertEquals(dn, audit["dn"])
+        self.assertEqual(EVT_ID_PASSWORD_RESET, audit["eventId"])
+        self.assertEqual("Reset", audit["action"])
+        self.assertEqual(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "DCE/RPC")
+        self.assertEqual(service_description, "DCE/RPC")
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         self.assertTrue(self.is_guid(audit["transactionId"]))
 
     def test_ldap_change_password(self):
@@ -259,21 +259,21 @@ class AuditLogPassChangeTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["passwordChange"]
-        self.assertEquals(EVT_ID_PASSWORD_CHANGE, audit["eventId"])
-        self.assertEquals("Change", audit["action"])
-        self.assertEquals(dn, audit["dn"])
+        self.assertEqual(EVT_ID_PASSWORD_CHANGE, audit["eventId"])
+        self.assertEqual("Change", audit["action"])
+        self.assertEqual(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
         self.assertTrue(self.is_guid(audit["transactionId"]))
 
     def test_ldap_replace_password(self):
@@ -290,21 +290,21 @@ class AuditLogPassChangeTests(AuditLogTestBase):
 
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         audit = messages[0]["passwordChange"]
-        self.assertEquals(EVT_ID_PASSWORD_RESET, audit["eventId"])
-        self.assertEquals("Reset", audit["action"])
-        self.assertEquals(dn, audit["dn"])
+        self.assertEqual(EVT_ID_PASSWORD_RESET, audit["eventId"])
+        self.assertEqual("Reset", audit["action"])
+        self.assertEqual(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         self.assertTrue(self.is_guid(audit["sessionId"]))
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
         self.assertTrue(self.is_guid(audit["transactionId"]))
 
     def test_ldap_add_user(self):
@@ -314,7 +314,7 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         dn = "cn=" + USER_NAME + ",cn=users," + self.base_dn
         messages = self.waitForMessages(1, dn=dn)
         print("Received %d messages" % len(messages))
-        self.assertEquals(1,
+        self.assertEqual(1,
                           len(messages),
                           "Did not receive the expected number of messages")
 
@@ -322,14 +322,14 @@ class AuditLogPassChangeTests(AuditLogTestBase):
         # The first message should be the reset from the Setup code.
         #
         audit = messages[0]["passwordChange"]
-        self.assertEquals(EVT_ID_PASSWORD_RESET, audit["eventId"])
-        self.assertEquals("Reset", audit["action"])
-        self.assertEquals(dn, audit["dn"])
+        self.assertEqual(EVT_ID_PASSWORD_RESET, audit["eventId"])
+        self.assertEqual("Reset", audit["action"])
+        self.assertEqual(dn, audit["dn"])
         self.assertRegexpMatches(audit["remoteAddress"],
                                  self.remoteAddress)
         session_id = self.get_session()
-        self.assertEquals(session_id, audit["sessionId"])
+        self.assertEqual(session_id, audit["sessionId"])
         service_description = self.get_service_description()
-        self.assertEquals(service_description, "LDAP")
+        self.assertEqual(service_description, "LDAP")
         self.assertTrue(self.is_guid(audit["sessionId"]))
         self.assertTrue(self.is_guid(audit["transactionId"]))

@@ -474,7 +474,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
 
         except LdbError as e1:
             (num, msg) = e1.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=2,
@@ -497,7 +497,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
 
         except LdbError as e2:
             (num, msg) = e2.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=3,
@@ -518,7 +518,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
             self.fail()
         except LdbError as e3:
             (num, msg) = e3.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=3,
@@ -537,7 +537,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
             self.fail()
         except LdbError as e4:
             (num, msg) = e4.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=3,
@@ -556,7 +556,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
             self.fail()
         except LdbError as e5:
             (num, msg) = e5.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=3,
@@ -609,7 +609,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
             self.fail()
         except LdbError as e6:
             (num, msg) = e6.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=1,
@@ -629,7 +629,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
             self.fail()
         except LdbError as e7:
             (num, msg) = e7.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=2,
@@ -661,7 +661,7 @@ class RodcRwdcCachedTests(password_lockout_base.BasePasswordTestCase):
             self.fail()
         except LdbError as e8:
             (num, msg) = e8.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         res = self._check_account(userdn,
                                   badPwdCount=1,
@@ -1173,7 +1173,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
             self.fail()
         except LdbError as e11:
             (num, msg) = e11.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         # Succeed to reset everything to 0
         success_creds = self.insta_creds(self.template_creds,
@@ -1203,7 +1203,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
             self.fail()
         except LdbError as e12:
             (num, msg) = e12.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         # Succeed to reset everything to 0
         ldb = SamDB(url=self.host_url, credentials=self.lockout1ntlm_creds, lp=self.lp)
@@ -1228,7 +1228,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
             self.fail()
         except LdbError as e13:
             (num, msg) = e13.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         # Succeed to reset everything to 0
         success_creds = self.insta_creds(self.template_creds,
@@ -1258,7 +1258,7 @@ class RodcRwdcTests(password_lockout_base.BasePasswordTestCase):
             self.fail()
         except LdbError as e14:
             (num, msg) = e14.args
-            self.assertEquals(num, ERR_INVALID_CREDENTIALS)
+            self.assertEqual(num, ERR_INVALID_CREDENTIALS)
 
         # Succeed to reset everything to 0
         ldb = SamDB(url=self.host_url, credentials=self.lockout1ntlm_creds, lp=self.lp)

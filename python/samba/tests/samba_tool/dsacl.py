@@ -43,7 +43,7 @@ class DSaclSetSddlTestCase(SambaToolCmdTest):
         """Tests if a sddl string can be added 'the normal way'"""
         (result, out, err) = self.runsubcmd("dsacl", "set","--objectdn=%s" % self.dn, "--sddl=%s" % self.sddl)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         #extract only the two sddl strings from samba-tool output
         acl_list=re.findall('.*descriptor for.*:\n(.*?)\n',out)
         self.assertNotEqual(acl_list[0], acl_list[1], "new and old SDDL string differ")
@@ -54,7 +54,7 @@ class DSaclSetSddlTestCase(SambaToolCmdTest):
         (result, out, err) = self.runsubcmd("dsacl", "get",
                                             "--objectdn=%s" % self.dn)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         #extract only the two sddl strings from samba-tool output
         acl_list_get=re.findall('^descriptor for.*:\n(.*?)\n', out)
 
@@ -62,7 +62,7 @@ class DSaclSetSddlTestCase(SambaToolCmdTest):
                                             "--objectdn=%s" % self.dn,
                                             "--sddl=%s" % self.sddl)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         #extract only the two sddl strings from samba-tool output
         acl_list_old=re.findall('old descriptor for.*:\n(.*?)\n', out)
         self.assertEqual(acl_list_old, acl_list_get,
@@ -73,7 +73,7 @@ class DSaclSetSddlTestCase(SambaToolCmdTest):
         (result, out, err) = self.runsubcmd("dsacl", "get",
                                             "--objectdn=%s" % self.dn)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         #extract only the two sddl strings from samba-tool output
         acl_list_get2=re.findall('^descriptor for.*:\n(.*?)\n', out)
         self.assertEqual(acl_list, acl_list_get2,
@@ -83,7 +83,7 @@ class DSaclSetSddlTestCase(SambaToolCmdTest):
         """Tests if we can add multiple, different sddl strings at the same time"""
         (result, out, err) = self.runsubcmd("dsacl", "set","--objectdn=%s" % self.dn, "--sddl=%s" % self.sddl_multi)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         #extract only the two sddl strings from samba-tool output
         acl_list=re.findall('.*descriptor for.*:\n(.*?)\n',out)
         for ace in re.findall('\(.*?\)',self.sddl_multi):
@@ -92,33 +92,33 @@ class DSaclSetSddlTestCase(SambaToolCmdTest):
     def test_duplicatesddl(self):
         """Tests if an already existing sddl string can be added causing duplicate entry"""
         acl_list = self._double_sddl_check(self.sddl,self.sddl)
-        self.assertEquals(acl_list[0],acl_list[1])
+        self.assertEqual(acl_list[0],acl_list[1])
 
     def test_casesensitivesddl(self):
         """Tests if an already existing sddl string can be added in different cases causing duplicate entry"""
         acl_list = self._double_sddl_check(self.sddl_lc,self.sddl_uc)
-        self.assertEquals(acl_list[0],acl_list[1])
+        self.assertEqual(acl_list[0],acl_list[1])
 
     def test_sidsddl(self):
         """Tests if an already existing sddl string can be added with SID instead of SDDL SIDString causing duplicate entry"""
         acl_list = self._double_sddl_check(self.sddl,self.sddl_sid)
-        self.assertEquals(acl_list[0],acl_list[1])
+        self.assertEqual(acl_list[0],acl_list[1])
 
     def test_twosddl(self):
         """Tests if an already existing sddl string can be added by using it twice/in combination with non existing sddl string causing duplicate entry"""
         acl_list = self._double_sddl_check(self.sddl,self.sddl + self.sddl)
-        self.assertEquals(acl_list[0],acl_list[1])
+        self.assertEqual(acl_list[0],acl_list[1])
 
     def _double_sddl_check(self,sddl1,sddl2):
         """Adds two sddl strings and checks if there was an ace change after the second adding"""
         (result, out, err) = self.runsubcmd("dsacl", "set","--objectdn=%s" % self.dn, "--sddl=%s" % sddl1)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         acl_list = re.findall('.*descriptor for.*:\n(.*?)\n',out)
         self.assertMatch(acl_list[1], sddl1, "new SDDL string should be contained within second sddl output - is not")
         #add sddl2
         (result, out, err) = self.runsubcmd("dsacl", "set","--objectdn=%s" % self.dn, "--sddl=%s" % sddl2)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         acl_list = re.findall('.*descriptor for.*:\n(.*?)\n',out)
         return acl_list

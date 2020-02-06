@@ -159,17 +159,17 @@ class AuthLogTestsSamLogon(samba.tests.auth_log_base.AuthLogTestBase):
 
         messages = self.remove_netlogon_messages(messages)
         expected_messages = 5
-        self.assertEquals(expected_messages,
+        self.assertEqual(expected_messages,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # Check the first message it should be an Authorization
         msg = messages[0]
-        self.assertEquals("Authorization", msg["type"])
-        self.assertEquals("DCE/RPC",
+        self.assertEqual("Authorization", msg["type"])
+        self.assertEqual("DCE/RPC",
                           msg["Authorization"]["serviceDescription"])
-        self.assertEquals("ncalrpc", msg["Authorization"]["authType"])
-        self.assertEquals("NONE", msg["Authorization"]["transportProtection"])
+        self.assertEqual("ncalrpc", msg["Authorization"]["authType"])
+        self.assertEqual("NONE", msg["Authorization"]["transportProtection"])
         self.assertTrue(self.is_guid(msg["Authorization"]["sessionId"]))
 
     def test_ncalrpc_samlogon(self):

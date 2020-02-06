@@ -50,7 +50,7 @@ class ForestCmdTestCase(SambaToolCmdTest):
                                                                os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("dsheuristics: <NO VALUE>", out)
 
     def test_modify_dsheuristics(self):
@@ -63,5 +63,5 @@ class ForestCmdTestCase(SambaToolCmdTest):
                                                                os.environ["DC_PASSWORD"]))
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("set dsheuristics: 0000002", out)

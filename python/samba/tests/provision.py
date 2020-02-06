@@ -66,7 +66,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
         paths.dns_keytab = "no.dns.keytab"
         ldb = setup_secretsdb(paths, None, None, lp=env_loadparm())
         try:
-            self.assertEquals("LSA Secrets",
+            self.assertEqual("LSA Secrets",
                               ldb.searchone(basedn="CN=LSA Secrets", attribute="CN").decode('utf8'))
         finally:
             del ldb
@@ -84,14 +84,14 @@ class FindNssTests(TestCase):
         self.assertRaises(KeyError, findnss, x, [])
 
     def test_first(self):
-        self.assertEquals("bla", findnss(lambda x: "bla", ["bla"]))
+        self.assertEqual("bla", findnss(lambda x: "bla", ["bla"]))
 
     def test_skip_first(self):
         def x(y):
             if y != "bla":
                 raise KeyError
             return "ha"
-        self.assertEquals("ha", findnss(x, ["bloe", "bla"]))
+        self.assertEqual("ha", findnss(x, ["bloe", "bla"]))
 
 
 class Disabled(object):
@@ -124,22 +124,22 @@ class Disabled(object):
 class SanitizeServerRoleTests(TestCase):
 
     def test_same(self):
-        self.assertEquals("standalone server",
+        self.assertEqual("standalone server",
                           sanitize_server_role("standalone server"))
-        self.assertEquals("member server",
+        self.assertEqual("member server",
                           sanitize_server_role("member server"))
 
     def test_invalid(self):
         self.assertRaises(ValueError, sanitize_server_role, "foo")
 
     def test_valid(self):
-        self.assertEquals(
+        self.assertEqual(
             "standalone server",
             sanitize_server_role("ROLE_STANDALONE"))
-        self.assertEquals(
+        self.assertEqual(
             "standalone server",
             sanitize_server_role("standalone"))
-        self.assertEquals(
+        self.assertEqual(
             "active directory domain controller",
             sanitize_server_role("domain controller"))
 
@@ -174,7 +174,7 @@ class ProvisionResultTests(TestCase):
     def test_basic_report_logger(self):
         result = self.base_result()
         entries = self.report_logger(result)
-        self.assertEquals(entries, [
+        self.assertEqual(entries, [
             ('INFO', 'Once the above files are installed, your Samba AD server '
                 'will be ready to use'),
             ('INFO', 'Server Role:           domain controller'),
@@ -188,14 +188,14 @@ class ProvisionResultTests(TestCase):
         result.adminpass_generated = True
         result.adminpass = "geheim"
         entries = self.report_logger(result)
-        self.assertEquals(entries[1],
+        self.assertEqual(entries[1],
                           ("INFO", 'Admin password:        geheim'))
 
 
 class DetermineNetbiosNameTests(TestCase):
 
     def test_limits_to_15(self):
-        self.assertEquals("A" * 15, determine_netbios_name("a" * 30))
+        self.assertEqual("A" * 15, determine_netbios_name("a" * 30))
 
     def test_strips_invalid(self):
-        self.assertEquals("BLABLA", determine_netbios_name("bla/bla"))
+        self.assertEqual("BLABLA", determine_netbios_name("bla/bla"))

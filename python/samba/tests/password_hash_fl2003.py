@@ -49,19 +49,19 @@ class PassWordHashFl2003Tests(PassWordHashTests):
         # Check that we got all the expected supplemental credentials
         # And they are in the expected order.
         size = len(sc.sub.packages)
-        self.assertEquals(3, size)
+        self.assertEqual(3, size)
 
         (pos, package) = get_package(sc, "Primary:Kerberos")
-        self.assertEquals(1, pos)
-        self.assertEquals("Primary:Kerberos", package.name)
+        self.assertEqual(1, pos)
+        self.assertEqual("Primary:Kerberos", package.name)
 
         (pos, package) = get_package(sc, "Packages")
-        self.assertEquals(2, pos)
-        self.assertEquals("Packages", package.name)
+        self.assertEqual(2, pos)
+        self.assertEqual("Packages", package.name)
 
         (pos, package) = get_package(sc, "Primary:WDigest")
-        self.assertEquals(3, pos)
-        self.assertEquals("Primary:WDigest", package.name)
+        self.assertEqual(3, pos)
+        self.assertEqual("Primary:WDigest", package.name)
 
         # Check that the WDigest values are correct.
         #
@@ -78,23 +78,23 @@ class PassWordHashFl2003Tests(PassWordHashTests):
         # Check that we got all the expected supplemental credentials
         # And they are in the expected order.
         size = len(sc.sub.packages)
-        self.assertEquals(4, size)
+        self.assertEqual(4, size)
 
         (pos, package) = get_package(sc, "Primary:Kerberos")
-        self.assertEquals(1, pos)
-        self.assertEquals("Primary:Kerberos", package.name)
+        self.assertEqual(1, pos)
+        self.assertEqual("Primary:Kerberos", package.name)
 
         (pos, wd_package) = get_package(sc, "Primary:WDigest")
-        self.assertEquals(2, pos)
-        self.assertEquals("Primary:WDigest", wd_package.name)
+        self.assertEqual(2, pos)
+        self.assertEqual("Primary:WDigest", wd_package.name)
 
         (pos, package) = get_package(sc, "Packages")
-        self.assertEquals(3, pos)
-        self.assertEquals("Packages", package.name)
+        self.assertEqual(3, pos)
+        self.assertEqual("Packages", package.name)
 
         (pos, up_package) = get_package(sc, "Primary:userPassword")
-        self.assertEquals(4, pos)
-        self.assertEquals("Primary:userPassword", up_package.name)
+        self.assertEqual(4, pos)
+        self.assertEqual("Primary:userPassword", up_package.name)
 
         # Check that the WDigest values are correct.
         #
@@ -119,23 +119,23 @@ class PassWordHashFl2003Tests(PassWordHashTests):
         # Check that we got all the expected supplemental credentials
         # And they are in the expected order.
         size = len(sc.sub.packages)
-        self.assertEquals(4, size)
+        self.assertEqual(4, size)
 
         (pos, package) = get_package(sc, "Primary:Kerberos")
-        self.assertEquals(1, pos)
-        self.assertEquals("Primary:Kerberos", package.name)
+        self.assertEqual(1, pos)
+        self.assertEqual("Primary:Kerberos", package.name)
 
         (pos, wd_package) = get_package(sc, "Primary:WDigest")
-        self.assertEquals(2, pos)
-        self.assertEquals("Primary:WDigest", wd_package.name)
+        self.assertEqual(2, pos)
+        self.assertEqual("Primary:WDigest", wd_package.name)
 
         (pos, package) = get_package(sc, "Packages")
-        self.assertEquals(3, pos)
-        self.assertEquals("Packages", package.name)
+        self.assertEqual(3, pos)
+        self.assertEqual("Packages", package.name)
 
         (pos, ct_package) = get_package(sc, "Primary:CLEARTEXT")
-        self.assertEquals(4, pos)
-        self.assertEquals("Primary:CLEARTEXT", ct_package.name)
+        self.assertEqual(4, pos)
+        self.assertEqual("Primary:CLEARTEXT", ct_package.name)
 
         # Check that the WDigest values are correct.
         #
@@ -146,7 +146,7 @@ class PassWordHashFl2003Tests(PassWordHashTests):
         # Check the clear text  value is correct.
         ct = ndr_unpack(drsblobs.package_PrimaryCLEARTEXTBlob,
                         binascii.a2b_hex(ct_package.data))
-        self.assertEquals(USER_PASS.encode('utf-16-le'), ct.cleartext)
+        self.assertEqual(USER_PASS.encode('utf-16-le'), ct.cleartext)
 
     def test_userPassword_cleartext_sha512(self):
         self.add_user(clear_text=True,
@@ -158,27 +158,27 @@ class PassWordHashFl2003Tests(PassWordHashTests):
         # Check that we got all the expected supplemental credentials
         # And they are in the expected order.
         size = len(sc.sub.packages)
-        self.assertEquals(5, size)
+        self.assertEqual(5, size)
 
         (pos, package) = get_package(sc, "Primary:Kerberos")
-        self.assertEquals(1, pos)
-        self.assertEquals("Primary:Kerberos", package.name)
+        self.assertEqual(1, pos)
+        self.assertEqual("Primary:Kerberos", package.name)
 
         (pos, wd_package) = get_package(sc, "Primary:WDigest")
-        self.assertEquals(2, pos)
-        self.assertEquals("Primary:WDigest", wd_package.name)
+        self.assertEqual(2, pos)
+        self.assertEqual("Primary:WDigest", wd_package.name)
 
         (pos, ct_package) = get_package(sc, "Primary:CLEARTEXT")
-        self.assertEquals(3, pos)
-        self.assertEquals("Primary:CLEARTEXT", ct_package.name)
+        self.assertEqual(3, pos)
+        self.assertEqual("Primary:CLEARTEXT", ct_package.name)
 
         (pos, package) = get_package(sc, "Packages")
-        self.assertEquals(4, pos)
-        self.assertEquals("Packages", package.name)
+        self.assertEqual(4, pos)
+        self.assertEqual("Packages", package.name)
 
         (pos, up_package) = get_package(sc, "Primary:userPassword")
-        self.assertEquals(5, pos)
-        self.assertEquals("Primary:userPassword", up_package.name)
+        self.assertEqual(5, pos)
+        self.assertEqual("Primary:userPassword", up_package.name)
 
         # Check that the WDigest values are correct.
         #
@@ -189,7 +189,7 @@ class PassWordHashFl2003Tests(PassWordHashTests):
         # Check the clear text  value is correct.
         ct = ndr_unpack(drsblobs.package_PrimaryCLEARTEXTBlob,
                         binascii.a2b_hex(ct_package.data))
-        self.assertEquals(USER_PASS.encode('utf-16-le'), ct.cleartext)
+        self.assertEqual(USER_PASS.encode('utf-16-le'), ct.cleartext)
 
         # Check that the userPassword hashes are computed correctly
         #

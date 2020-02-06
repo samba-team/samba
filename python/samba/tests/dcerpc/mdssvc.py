@@ -118,7 +118,7 @@ class MdssvcTests(RpcInterfaceTestCase):
         time.sleep(1)
 
         results = search.get_results(self.pipe)
-        self.assertEquals(results, expect)
+        self.assertEqual(results, expect)
 
         search.close(self.pipe)
         self.conn.disconnect(self.pipe)

@@ -31,7 +31,7 @@ class BareTestCase(samba.tests.TestCase):
         x = ClientConnection("ncalrpc:localhost[DEFAULT]",
                              ("60a15ec5-4de8-11d7-a637-005056a20182", 1),
                              lp_ctx=samba.tests.env_loadparm())
-        self.assertEquals(b"\x01\x00\x00\x00", x.request(0, chr(0) * 4))
+        self.assertEqual(b"\x01\x00\x00\x00", x.request(0, chr(0) * 4))
 
     def test_two_contexts(self):
         x = ClientConnection("ncalrpc:localhost[DEFAULT]",
@@ -40,15 +40,15 @@ class BareTestCase(samba.tests.TestCase):
         y = ClientConnection("ncalrpc:localhost",
                              ("60a15ec5-4de8-11d7-a637-005056a20182", 1),
                              basis_connection=x, lp_ctx=samba.tests.env_loadparm())
-        self.assertEquals(24, len(x.request(0, chr(0) * 8)))
-        self.assertEquals(b"\x01\x00\x00\x00", y.request(0, chr(0) * 4))
+        self.assertEqual(24, len(x.request(0, chr(0) * 8)))
+        self.assertEqual(b"\x01\x00\x00\x00", y.request(0, chr(0) * 4))
 
     def test_bare_tcp(self):
         # Connect to the echo pipe
         x = ClientConnection("ncacn_ip_tcp:%s" % os.environ["SERVER"],
                              ("60a15ec5-4de8-11d7-a637-005056a20182", 1),
                              lp_ctx=samba.tests.env_loadparm())
-        self.assertEquals(b"\x01\x00\x00\x00", x.request(0, chr(0) * 4))
+        self.assertEqual(b"\x01\x00\x00\x00", x.request(0, chr(0) * 4))
 
     def test_two_contexts_tcp(self):
         x = ClientConnection("ncacn_ip_tcp:%s" % os.environ["SERVER"],
@@ -57,5 +57,5 @@ class BareTestCase(samba.tests.TestCase):
         y = ClientConnection("ncacn_ip_tcp:%s" % os.environ["SERVER"],
                              ("60a15ec5-4de8-11d7-a637-005056a20182", 1),
                              basis_connection=x, lp_ctx=samba.tests.env_loadparm())
-        self.assertEquals(24, len(x.request(0, chr(0) * 8)))
-        self.assertEquals(b"\x01\x00\x00\x00", y.request(0, chr(0) * 4))
+        self.assertEqual(24, len(x.request(0, chr(0) * 8)))
+        self.assertEqual(b"\x01\x00\x00\x00", y.request(0, chr(0) * 4))

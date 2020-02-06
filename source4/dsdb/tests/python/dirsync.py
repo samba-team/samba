@@ -249,7 +249,7 @@ class SimpleDirsyncTests(DirsyncBaseTests):
                                     expression="(distinguishedName=%s)" % str(self.base_dn),
                                     attrs=["objectGUID"],
                                     controls=["dirsync:1:0:1"])
-        self.assertEquals(len(res.msgs), 0)
+        self.assertEqual(len(res.msgs), 0)
 
         # a request on the root of a NC didn't return parentGUID
         res = self.ldb_admin.search(self.base_dn,
@@ -610,7 +610,7 @@ class ExtendedDirsyncTests(SimpleDirsyncTests):
                                         controls=["dirsync:1:0:0"])
         except LdbError as e:
             (num, _) = e.args
-            self.assertEquals(num, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS)
+            self.assertEqual(num, ldb.ERR_INSUFFICIENT_ACCESS_RIGHTS)
         else:
             self.fail()
 

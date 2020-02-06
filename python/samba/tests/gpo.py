@@ -102,11 +102,11 @@ class GPOTests(tests.TestCase):
         file_sys_paths = [None, '%s\\%s' % (poldir, guid)]
         ds_paths = [None, 'CN=%s,%s' % (guid, dspath)]
         for i in range(0, len(gpos)):
-            self.assertEquals(gpos[i].name, names[i],
+            self.assertEqual(gpos[i].name, names[i],
                               'The gpo name did not match expected name %s' % gpos[i].name)
-            self.assertEquals(gpos[i].file_sys_path, file_sys_paths[i],
+            self.assertEqual(gpos[i].file_sys_path, file_sys_paths[i],
                               'file_sys_path did not match expected %s' % gpos[i].file_sys_path)
-            self.assertEquals(gpos[i].ds_path, ds_paths[i],
+            self.assertEqual(gpos[i].ds_path, ds_paths[i],
                               'ds_path did not match expected %s' % gpos[i].ds_path)
 
     def test_gpo_ads_does_not_segfault(self):
@@ -124,12 +124,12 @@ class GPOTests(tests.TestCase):
 
         with open(os.path.join(gpo_path, 'GPT.INI'), 'w') as gpt:
             gpt.write(gpt_data % 42)
-        self.assertEquals(gpo.gpo_get_sysvol_gpt_version(gpo_path)[1], 42,
+        self.assertEqual(gpo.gpo_get_sysvol_gpt_version(gpo_path)[1], 42,
                           'gpo_get_sysvol_gpt_version() did not return the expected version')
 
         with open(os.path.join(gpo_path, 'GPT.INI'), 'w') as gpt:
             gpt.write(gpt_data % old_vers)
-        self.assertEquals(gpo.gpo_get_sysvol_gpt_version(gpo_path)[1], old_vers,
+        self.assertEqual(gpo.gpo_get_sysvol_gpt_version(gpo_path)[1], old_vers,
                           'gpo_get_sysvol_gpt_version() did not return the expected version')
 
     def test_check_refresh_gpo_list(self):
@@ -162,7 +162,7 @@ class GPOTests(tests.TestCase):
         after = realm + '/Policies/' \
             '{31B2F340-016D-11D2-945F-00C04FB984F9}/GPT.INI'
         result = check_safe_path(before)
-        self.assertEquals(result, after, 'check_safe_path() didn\'t'
+        self.assertEqual(result, after, 'check_safe_path() didn\'t'
                           ' correctly convert \\ to /')
 
     def test_gpt_ext_register(self):
@@ -177,7 +177,7 @@ class GPOTests(tests.TestCase):
         gp_exts = list_gp_extensions(self.lp.configfile)
         self.assertTrue(ext_guid in gp_exts.keys(),
                         'Failed to list gp exts')
-        self.assertEquals(gp_exts[ext_guid]['DllName'], ext_path,
+        self.assertEqual(gp_exts[ext_guid]['DllName'], ext_path,
                           'Failed to list gp exts')
 
         unregister_gp_extension(ext_guid)
@@ -197,7 +197,7 @@ class GPOTests(tests.TestCase):
         lp, parser = parse_gpext_conf(self.lp.configfile)
         self.assertTrue('test_section' in parser.sections(),
                         'test_section not found in gpext.conf')
-        self.assertEquals(parser.get('test_section', 'test_var'), ext_guid,
+        self.assertEqual(parser.get('test_section', 'test_var'), ext_guid,
                           'Failed to find test variable in gpext.conf')
         parser.remove_section('test_section')
         atomic_write_conf(lp, parser)
@@ -217,12 +217,12 @@ class GPOTests(tests.TestCase):
             self.assertTrue(ret, 'Could not create the target %s' % gpttmpl)
 
         ret = gpupdate_force(self.lp)
-        self.assertEquals(ret, 0, 'gpupdate force failed')
+        self.assertEqual(ret, 0, 'gpupdate force failed')
 
         gp_db = store.get_gplog(self.dc_account)
 
         applied_guids = gp_db.get_applied_guids()
-        self.assertEquals(len(applied_guids), 2, 'The guids were not found')
+        self.assertEqual(len(applied_guids), 2, 'The guids were not found')
         self.assertIn(guids[0], applied_guids,
                       '%s not in applied guids' % guids[0])
         self.assertIn(guids[1], applied_guids,
@@ -260,7 +260,7 @@ class GPOTests(tests.TestCase):
             unstage_file(gpttmpl)
 
         ret = gpupdate_unapply(self.lp)
-        self.assertEquals(ret, 0, 'gpupdate unapply failed')
+        self.assertEqual(ret, 0, 'gpupdate unapply failed')
 
     def test_process_group_policy(self):
         local_path = self.lp.cache_path('gpo_cache')

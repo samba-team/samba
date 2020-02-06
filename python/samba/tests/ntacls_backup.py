@@ -117,7 +117,7 @@ class NtaclsBackupRestoreTests(SmbdBaseTests):
         # This works in conjunction with the TEST_UMASK in smbd_base
         # to ensure that permissions are not related to the umask
         # but instead the smb.conf settings
-        self.assertEquals(mode & 0o777, 0o755)
+        self.assertEqual(mode & 0o777, 0o755)
         self.assertTrue(os.path.isdir(dirpath))
 
     def test_smbd_create_file(self):
@@ -134,7 +134,7 @@ class NtaclsBackupRestoreTests(SmbdBaseTests):
         # This works in conjunction with the TEST_UMASK in smbd_base
         # to ensure that permissions are not related to the umask
         # but instead the smb.conf settings
-        self.assertEquals(mode & 0o777, 0o644)
+        self.assertEqual(mode & 0o777, 0o644)
 
         # As well as checking that unlink works, this removes the
         # fake xattrs from the dev/inode based DB
@@ -157,8 +157,8 @@ class NtaclsBackupRestoreTests(SmbdBaseTests):
         sd2 = self.ntacls_helper.getntacl(
             file_path, system_session_unix(), as_sddl=True, direct_db_access=True)
 
-        self.assertEquals(sd0, sd1)
-        self.assertEquals(sd1, sd2)
+        self.assertEqual(sd0, sd1)
+        self.assertEqual(sd1, sd2)
 
     def test_backup_online(self):
         """

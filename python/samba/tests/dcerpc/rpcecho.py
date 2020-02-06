@@ -30,33 +30,33 @@ class RpcEchoTests(RpcInterfaceTestCase):
 
     def test_two_contexts(self):
         self.conn2 = echo.rpcecho("ncalrpc:", self.get_loadparm(), basis_connection=self.conn)
-        self.assertEquals(3, self.conn2.AddOne(2))
+        self.assertEqual(3, self.conn2.AddOne(2))
 
     def test_abstract_syntax(self):
-        self.assertEquals(("60a15ec5-4de8-11d7-a637-005056a20182", 1),
+        self.assertEqual(("60a15ec5-4de8-11d7-a637-005056a20182", 1),
                           self.conn.abstract_syntax)
 
     def test_addone(self):
-        self.assertEquals(2, self.conn.AddOne(1))
+        self.assertEqual(2, self.conn.AddOne(1))
 
     def test_echodata(self):
-        self.assertEquals([1, 2, 3], self.conn.EchoData([1, 2, 3]))
+        self.assertEqual([1, 2, 3], self.conn.EchoData([1, 2, 3]))
 
     def test_call(self):
-        self.assertEquals(u"foobar", self.conn.TestCall(u"foobar"))
+        self.assertEqual(u"foobar", self.conn.TestCall(u"foobar"))
 
     def test_surrounding(self):
         surrounding_struct = echo.Surrounding()
         surrounding_struct.x = 4
         surrounding_struct.surrounding = [1, 2, 3, 4]
         y = self.conn.TestSurrounding(surrounding_struct)
-        self.assertEquals(8 * [0], y.surrounding)
+        self.assertEqual(8 * [0], y.surrounding)
 
     def test_manual_request(self):
-        self.assertEquals(b"\x01\x00\x00\x00", self.conn.request(0, chr(0) * 4))
+        self.assertEqual(b"\x01\x00\x00\x00", self.conn.request(0, chr(0) * 4))
 
     def test_server_name(self):
-        self.assertEquals(None, self.conn.server_name)
+        self.assertEqual(None, self.conn.server_name)
 
 
 class NdrEchoTests(TestCase):
@@ -64,8 +64,8 @@ class NdrEchoTests(TestCase):
     def test_info1_push(self):
         x = echo.info1()
         x.v = 42
-        self.assertEquals(b"\x2a", ndr_pack(x))
+        self.assertEqual(b"\x2a", ndr_pack(x))
 
     def test_info1_pull(self):
         x = ndr_unpack(echo.info1, b"\x42")
-        self.assertEquals(x.v, 66)
+        self.assertEqual(x.v, 66)

@@ -125,7 +125,7 @@ class PassWordHashLDAPTests(PassWordHashTests):
         sc = self.get_supplemental_creds_drs()
 
         (pos, package) = get_package(sc, "Primary:WDigest")
-        self.assertEquals("Primary:WDigest", package.name)
+        self.assertEqual("Primary:WDigest", package.name)
 
         # Check that the WDigest values are correct.
         #

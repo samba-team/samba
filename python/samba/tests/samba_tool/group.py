@@ -53,7 +53,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
             (result, out, err) = group["createGroupFn"](group)
 
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err, "", "There shouldn't be any error message")
+            self.assertEqual(err, "", "There shouldn't be any error message")
 
             if 'unix' in group["name"]:
                 self.assertIn("Modified Group '%s' successfully"
@@ -67,8 +67,8 @@ class GroupCmdTestCase(SambaToolCmdTest):
 
             self.assertIsNotNone(found)
 
-            self.assertEquals("%s" % found.get("name"), group["name"])
-            self.assertEquals("%s" % found.get("description"), group["description"])
+            self.assertEqual("%s" % found.get("name"), group["name"])
+            self.assertEqual("%s" % found.get("description"), group["description"])
 
     def tearDown(self):
         super(GroupCmdTestCase, self).tearDown()
@@ -103,12 +103,12 @@ class GroupCmdTestCase(SambaToolCmdTest):
                                                               os.environ["DC_PASSWORD"]))
 
             self.assertCmdSuccess(result, out, err)
-            self.assertEquals(err, "", "There shouldn't be any error message")
+            self.assertEqual(err, "", "There shouldn't be any error message")
             self.assertIn("Added group %s" % group["name"], out)
 
             found = self._find_group(group["name"])
 
-            self.assertEquals("%s" % found.get("samaccountname"),
+            self.assertEqual("%s" % found.get("samaccountname"),
                               "%s" % group["name"])
 
     def test_list(self):
@@ -263,7 +263,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
         full_ou_dn = str(self.samdb.normalize_dn_in_domain("OU=movetest"))
         (result, out, err) = self.runsubcmd("ou", "create", full_ou_dn)
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "There shouldn't be any error message")
+        self.assertEqual(err, "", "There shouldn't be any error message")
         self.assertIn('Created ou "%s"' % full_ou_dn, out)
 
         for group in self.groups:
@@ -298,7 +298,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
                                             "-U%s%%%s" % (os.environ["DC_USERNAME"],
                                                           os.environ["DC_PASSWORD"]))
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
         self.assertIn("dn: CN=Domain Users,CN=Users,DC=addom,DC=samba,DC=example,DC=com", out)
 
     def _randomGroup(self, base={}):
@@ -347,15 +347,15 @@ class GroupCmdTestCase(SambaToolCmdTest):
  its template """
         found = self._find_group(group["name"])
 
-        self.assertEquals("%s" % found.get("name"), group["name"])
-        self.assertEquals("%s" % found.get("description"), group["description"])
+        self.assertEqual("%s" % found.get("name"), group["name"])
+        self.assertEqual("%s" % found.get("description"), group["description"])
 
     def _check_posix_group(self, group):
         """ check if a posix_group from SamDB has the same attributes as
  its template """
         found = self._find_group(group["name"])
 
-        self.assertEquals("%s" % found.get("gidNumber"), "%s" %
+        self.assertEqual("%s" % found.get("gidNumber"), "%s" %
                           group["gidNumber"])
         self._check_group(group)
 
@@ -364,7 +364,7 @@ class GroupCmdTestCase(SambaToolCmdTest):
 template """
         found = self._find_group(group["name"])
 
-        self.assertEquals("%s" % found.get("gidNumber"), "%s" %
+        self.assertEqual("%s" % found.get("gidNumber"), "%s" %
                           group["gidNumber"])
         self._check_group(group)
 

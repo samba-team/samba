@@ -105,9 +105,9 @@ class PromoteDcLmdbSizeTestCase(SambaToolCmdTest):
     # 8Gb is used
     def test_promote_dc_default(self):
         (result, out, err) = self.join_member()
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         (result, out, err) = self.promote(role="DC")
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(8 * 1024 * 1024 * 1024)
         self.assertFalse(self.is_rodc())
 
@@ -116,9 +116,9 @@ class PromoteDcLmdbSizeTestCase(SambaToolCmdTest):
     # 8Gb is used
     def test_promote_rodc_default(self):
         (result, out, err) = self.join_member()
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         (result, out, err) = self.promote(role="RODC")
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(8 * 1024 * 1024 * 1024)
         self.assertTrue(self.is_rodc())
 
@@ -126,9 +126,9 @@ class PromoteDcLmdbSizeTestCase(SambaToolCmdTest):
     # Promote to a DC with a backend size of 96Mb
     def test_promote_dc_96Mb(self):
         (result, out, err) = self.join_member()
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         (result, out, err) = self.promote(role="DC", size="96Mb")
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(96 * 1024 * 1024)
         self.assertFalse(self.is_rodc())
 
@@ -136,9 +136,9 @@ class PromoteDcLmdbSizeTestCase(SambaToolCmdTest):
     # Promote to an RODC with a backend size of 256Mb
     def test_promote_rodc_256Mb(self):
         (result, out, err) = self.join_member()
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         (result, out, err) = self.promote(role="RODC", size="256Mb")
-        self.assertEquals(0, result)
+        self.assertEqual(0, result)
         self.check_lmdb_environment_sizes(256 * 1024 * 1024)
         self.assertTrue(self.is_rodc())
 

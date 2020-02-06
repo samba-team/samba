@@ -99,7 +99,7 @@ class JoinTestCase(DNSTKeyTest):
         (response, response_packet) = self.dns_transaction_tcp(p, host=self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
-        self.assertEquals(response.ancount, len(IPs))
+        self.assertEqual(response.ancount, len(IPs))
 
         questions = []
         name = "%s._msdcs.%s" % (self.join_ctx.ntds_guid, self.join_ctx.dnsforest)
@@ -111,10 +111,10 @@ class JoinTestCase(DNSTKeyTest):
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
 
-        self.assertEquals(response.ancount, 1 + len(IPs))
-        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_CNAME)
-        self.assertEquals(response.answers[0].rdata, self.join_ctx.dnshostname)
-        self.assertEquals(response.answers[1].rr_type, dns.DNS_QTYPE_A)
+        self.assertEqual(response.ancount, 1 + len(IPs))
+        self.assertEqual(response.answers[0].rr_type, dns.DNS_QTYPE_CNAME)
+        self.assertEqual(response.answers[0].rdata, self.join_ctx.dnshostname)
+        self.assertEqual(response.answers[1].rr_type, dns.DNS_QTYPE_A)
 
     def test_join_records_can_update(self):
         dc_creds = Credentials()
@@ -174,4 +174,4 @@ class JoinTestCase(DNSTKeyTest):
         (response, response_packet) = self.dns_transaction_tcp(p, host=self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
-        self.assertEquals(response.ancount, 1)
+        self.assertEqual(response.ancount, 1)

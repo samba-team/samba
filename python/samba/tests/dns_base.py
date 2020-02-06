@@ -63,19 +63,19 @@ class DNSTest(TestCaseInTempDir):
 
     def assert_rcode_equals(self, rcode, expected):
         "Helper function to check return code"
-        self.assertEquals(rcode, expected, "Expected RCODE %s, got %s" %
+        self.assertEqual(rcode, expected, "Expected RCODE %s, got %s" %
                           (self.errstr(expected), self.errstr(rcode)))
 
     def assert_dns_rcode_equals(self, packet, rcode):
         "Helper function to check return code"
         p_errcode = packet.operation & dns.DNS_RCODE
-        self.assertEquals(p_errcode, rcode, "Expected RCODE %s, got %s" %
+        self.assertEqual(p_errcode, rcode, "Expected RCODE %s, got %s" %
                           (self.errstr(rcode), self.errstr(p_errcode)))
 
     def assert_dns_opcode_equals(self, packet, opcode):
         "Helper function to check opcode"
         p_opcode = packet.operation & dns.DNS_OPCODE
-        self.assertEquals(p_opcode, opcode, "Expected OPCODE %s, got %s" %
+        self.assertEqual(p_opcode, opcode, "Expected OPCODE %s, got %s" %
                           (opcode, p_opcode))
 
     def make_name_packet(self, opcode, qid=None):
@@ -164,7 +164,7 @@ class DNSTest(TestCaseInTempDir):
 
         # unpacking and packing again should produce same bytestream
         my_packet = ndr.ndr_pack(response)
-        self.assertEquals(my_packet, recv_packet[2:])
+        self.assertEqual(my_packet, recv_packet[2:])
         return (response, recv_packet[2:])
 
     def make_txt_update(self, prefix, txt_array, domain=None):
@@ -203,8 +203,8 @@ class DNSTest(TestCaseInTempDir):
         (response, response_packet) =\
             self.dns_transaction_udp(p, host=self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
-        self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rdata.txt.str, txt_array)
+        self.assertEqual(response.ancount, 1)
+        self.assertEqual(response.answers[0].rdata.txt.str, txt_array)
 
 
 class DNSTKeyTest(DNSTest):

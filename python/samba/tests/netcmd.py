@@ -33,7 +33,7 @@ class NetCmdTestCase(samba.tests.TestCase):
         except Exception as e:
             cmd.show_command_error(e)
             retval = 1
-        self.assertEquals(retcode, retval)
+        self.assertEqual(retcode, retval)
         return cmd.outf.getvalue(), cmd.errf.getvalue()
 
     def iter_all_subcommands(self):
@@ -51,8 +51,8 @@ class TestParmTests(NetCmdTestCase):
     def test_no_client_ip(self):
         out, err = self.run_netcmd(cmd_testparm, ["--client-name=foo"],
                                    retcode=-1)
-        self.assertEquals("", out)
-        self.assertEquals(
+        self.assertEqual("", out)
+        self.assertEqual(
             "ERROR: Both a DNS name and an IP address are "
             "required for the host access check\n", err)
 
@@ -62,12 +62,12 @@ class CommandTests(NetCmdTestCase):
     def test_description(self):
         class cmd_foo(Command):
             """Mydescription"""
-        self.assertEquals("Mydescription", cmd_foo().short_description)
+        self.assertEqual("Mydescription", cmd_foo().short_description)
 
     def test_name(self):
         class cmd_foo(Command):
             pass
-        self.assertEquals("foo", cmd_foo().name)
+        self.assertEqual("foo", cmd_foo().name)
 
     def test_synopsis_everywhere(self):
         missing = []

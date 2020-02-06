@@ -51,7 +51,7 @@ class SitesCmdTestCase(BaseSitesCmdTestCase):
 
         ret = self.samdb.search(base=dnsites, scope=ldb.SCOPE_ONELEVEL,
                                 expression='(cn=%s)' % sitename)
-        self.assertEquals(len(ret), 1)
+        self.assertEqual(len(ret), 1)
 
         # now delete it
         self.samdb.delete(dnsite, ["tree_delete:0"])

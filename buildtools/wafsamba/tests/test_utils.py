@@ -26,33 +26,33 @@ from wafsamba.samba_utils import (
 class ToListTests(TestCase):
 
     def test_none(self):
-        self.assertEquals([], TO_LIST(None))
+        self.assertEqual([], TO_LIST(None))
 
     def test_already_list(self):
-        self.assertEquals(["foo", "bar", 1], TO_LIST(["foo", "bar", 1]))
+        self.assertEqual(["foo", "bar", 1], TO_LIST(["foo", "bar", 1]))
 
     def test_default_delimiter(self):
-        self.assertEquals(["foo", "bar"], TO_LIST("foo bar"))
-        self.assertEquals(["foo", "bar"], TO_LIST("  foo bar  "))
-        self.assertEquals(["foo ", "bar"], TO_LIST("  \"foo \" bar  "))
+        self.assertEqual(["foo", "bar"], TO_LIST("foo bar"))
+        self.assertEqual(["foo", "bar"], TO_LIST("  foo bar  "))
+        self.assertEqual(["foo ", "bar"], TO_LIST("  \"foo \" bar  "))
 
     def test_delimiter(self):
-        self.assertEquals(["foo", "bar"], TO_LIST("foo,bar", ","))
-        self.assertEquals(["  foo", "bar  "], TO_LIST("  foo,bar  ", ","))
-        self.assertEquals(["  \" foo\"", " bar  "], TO_LIST("  \" foo\", bar  ", ","))
+        self.assertEqual(["foo", "bar"], TO_LIST("foo,bar", ","))
+        self.assertEqual(["  foo", "bar  "], TO_LIST("  foo,bar  ", ","))
+        self.assertEqual(["  \" foo\"", " bar  "], TO_LIST("  \" foo\", bar  ", ","))
 
 
 class UniqueListTests(TestCase):
 
     def test_unique_list(self):
-        self.assertEquals(["foo", "bar"], unique_list(["foo", "bar", "foo"]))
+        self.assertEqual(["foo", "bar"], unique_list(["foo", "bar", "foo"]))
 
 
 class SubstVarsErrorTests(TestCase):
 
     def test_valid(self):
-        self.assertEquals("", subst_vars_error("", {}))
-        self.assertEquals("FOO bar", subst_vars_error("${F} bar", {"F": "FOO"}))
+        self.assertEqual("", subst_vars_error("", {}))
+        self.assertEqual("FOO bar", subst_vars_error("${F} bar", {"F": "FOO"}))
 
     def test_invalid(self):
         self.assertRaises(KeyError, subst_vars_error, "${F}", {})
@@ -63,14 +63,14 @@ class DictConcatTests(TestCase):
     def test_empty(self):
         ret = {}
         dict_concat(ret, {})
-        self.assertEquals({}, ret)
+        self.assertEqual({}, ret)
 
     def test_same(self):
         ret = {"foo": "bar"}
         dict_concat(ret, {"foo": "bla"})
-        self.assertEquals({"foo": "bar"}, ret)
+        self.assertEqual({"foo": "bar"}, ret)
 
     def test_simple(self):
         ret = {"foo": "bar"}
         dict_concat(ret, {"blie": "bla"})
-        self.assertEquals({"foo": "bar", "blie": "bla"}, ret)
+        self.assertEqual({"foo": "bar", "blie": "bla"}, ret)

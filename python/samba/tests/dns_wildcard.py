@@ -168,9 +168,9 @@ class TestWildCardQueries(DNSTest):
             self.dns_transaction_udp(p, host=self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
-        self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_A)
-        self.assertEquals(response.answers[0].rdata, WILDCARD_IP)
+        self.assertEqual(response.ancount, 1)
+        self.assertEqual(response.answers[0].rr_type, dns.DNS_QTYPE_A)
+        self.assertEqual(response.answers[0].rdata, WILDCARD_IP)
 
     def test_one_a_query_match_wildcard_2_labels(self):
         """ Query an A record, should match the wild card entry
@@ -192,9 +192,9 @@ class TestWildCardQueries(DNSTest):
             self.dns_transaction_udp(p, host=self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
-        self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_A)
-        self.assertEquals(response.answers[0].rdata, WILDCARD_IP)
+        self.assertEqual(response.ancount, 1)
+        self.assertEqual(response.answers[0].rr_type, dns.DNS_QTYPE_A)
+        self.assertEqual(response.answers[0].rdata, WILDCARD_IP)
 
     def test_one_a_query_wildcard_entry(self):
         "Query the wildcard entry"
@@ -214,9 +214,9 @@ class TestWildCardQueries(DNSTest):
             self.dns_transaction_udp(p, host=self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
-        self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_A)
-        self.assertEquals(response.answers[0].rdata, WILDCARD_IP)
+        self.assertEqual(response.ancount, 1)
+        self.assertEqual(response.answers[0].rr_type, dns.DNS_QTYPE_A)
+        self.assertEqual(response.answers[0].rdata, WILDCARD_IP)
 
     def test_one_a_query_exact_match(self):
         """Query an entry that matches the wild card but has an exact match as
@@ -237,9 +237,9 @@ class TestWildCardQueries(DNSTest):
             self.dns_transaction_udp(p, host=self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
-        self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_A)
-        self.assertEquals(response.answers[0].rdata, EXACT_IP)
+        self.assertEqual(response.ancount, 1)
+        self.assertEqual(response.answers[0].rr_type, dns.DNS_QTYPE_A)
+        self.assertEqual(response.answers[0].rdata, EXACT_IP)
 
     def test_one_a_query_match_wildcard_l2(self):
         "Query an A record, should match the level 2 wildcard entry"
@@ -259,9 +259,9 @@ class TestWildCardQueries(DNSTest):
             self.dns_transaction_udp(p, host=self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
-        self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_A)
-        self.assertEquals(response.answers[0].rdata, LEVEL2_WILDCARD_IP)
+        self.assertEqual(response.ancount, 1)
+        self.assertEqual(response.answers[0].rr_type, dns.DNS_QTYPE_A)
+        self.assertEqual(response.answers[0].rdata, LEVEL2_WILDCARD_IP)
 
     def test_one_a_query_match_wildcard_l2_2_labels(self):
         """Query an A record, should match the level 2 wild card entry
@@ -283,9 +283,9 @@ class TestWildCardQueries(DNSTest):
             self.dns_transaction_udp(p, host=self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
-        self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_A)
-        self.assertEquals(response.answers[0].rdata, LEVEL2_WILDCARD_IP)
+        self.assertEqual(response.ancount, 1)
+        self.assertEqual(response.answers[0].rr_type, dns.DNS_QTYPE_A)
+        self.assertEqual(response.answers[0].rdata, LEVEL2_WILDCARD_IP)
 
     def test_one_a_query_exact_match_l2(self):
         """Query an entry that matches the wild card but has an exact match as
@@ -306,9 +306,9 @@ class TestWildCardQueries(DNSTest):
             self.dns_transaction_udp(p, host=self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
-        self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_A)
-        self.assertEquals(response.answers[0].rdata, LEVEL2_EXACT_IP)
+        self.assertEqual(response.ancount, 1)
+        self.assertEqual(response.answers[0].rr_type, dns.DNS_QTYPE_A)
+        self.assertEqual(response.answers[0].rdata, LEVEL2_EXACT_IP)
 
     def test_one_a_query_wildcard_entry_l2(self):
         "Query the level 2 wildcard entry"
@@ -328,9 +328,9 @@ class TestWildCardQueries(DNSTest):
             self.dns_transaction_udp(p, host=self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_OK)
         self.assert_dns_opcode_equals(response, dns.DNS_OPCODE_QUERY)
-        self.assertEquals(response.ancount, 1)
-        self.assertEquals(response.answers[0].rr_type, dns.DNS_QTYPE_A)
-        self.assertEquals(response.answers[0].rdata, LEVEL2_WILDCARD_IP)
+        self.assertEqual(response.ancount, 1)
+        self.assertEqual(response.answers[0].rr_type, dns.DNS_QTYPE_A)
+        self.assertEqual(response.answers[0].rdata, LEVEL2_WILDCARD_IP)
 
 
 TestProgram(module=__name__, opts=subunitopts)

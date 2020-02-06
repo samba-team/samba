@@ -28,7 +28,7 @@ class FsmoCmdTestCase(SambaToolCmdTest):
         (result, out, err) = self.runsubcmd("fsmo", "show")
 
         self.assertCmdSuccess(result, out, err)
-        self.assertEquals(err, "", "Shouldn't be any error messages")
+        self.assertEqual(err, "", "Shouldn't be any error messages")
 
         # Check that the output is sensible
         samdb = self.getSamDB("-H", "ldap://%s" % os.environ["SERVER"],

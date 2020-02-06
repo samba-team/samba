@@ -190,11 +190,11 @@ class AuthLogTestsWinbind(AuthLogTestBase, BlackboxTestCase):
         #
         # Validate that message contains the expected data
         #
-        self.assertEquals("Authentication", msg["type"])
-        self.assertEquals(logon_id, msg["Authentication"]["logonId"])
-        self.assertEquals("SamLogon",
+        self.assertEqual("Authentication", msg["type"])
+        self.assertEqual(logon_id, msg["Authentication"]["logonId"])
+        self.assertEqual("SamLogon",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals(description,
+        self.assertEqual(description,
                           msg["Authentication"]["authDescription"])
 
     def test_ntlm_auth(self):
@@ -218,30 +218,30 @@ class AuthLogTestsWinbind(AuthLogTestBase, BlackboxTestCase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.filter_messages(messages)
         expected_messages = 1
-        self.assertEquals(expected_messages,
+        self.assertEqual(expected_messages,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # Check the first message it should be an Authentication
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
+        self.assertEqual("Authentication", msg["type"])
         self.assertTrue(
             msg["Authentication"]["authDescription"].startswith(
                 "PAM_AUTH, ntlm_auth,"))
-        self.assertEquals("winbind",
+        self.assertEqual("winbind",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("Plaintext", msg["Authentication"]["passwordType"])
+        self.assertEqual("Plaintext", msg["Authentication"]["passwordType"])
         # Logon type should be NetworkCleartext
-        self.assertEquals(8, msg["Authentication"]["logonType"])
+        self.assertEqual(8, msg["Authentication"]["logonType"])
         # Event code should be Successful logon
-        self.assertEquals(4624, msg["Authentication"]["eventId"])
-        self.assertEquals("unix:", msg["Authentication"]["remoteAddress"])
-        self.assertEquals("unix:", msg["Authentication"]["localAddress"])
-        self.assertEquals(self.domain, msg["Authentication"]["clientDomain"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
-        self.assertEquals(self.credentials.get_username(),
+        self.assertEqual(4624, msg["Authentication"]["eventId"])
+        self.assertEqual("unix:", msg["Authentication"]["remoteAddress"])
+        self.assertEqual("unix:", msg["Authentication"]["localAddress"])
+        self.assertEqual(self.domain, msg["Authentication"]["clientDomain"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual(self.credentials.get_username(),
                           msg["Authentication"]["clientAccount"])
-        self.assertEquals(self.credentials.get_domain(),
+        self.assertEqual(self.credentials.get_domain(),
                           msg["Authentication"]["clientDomain"])
         self.assertTrue(msg["Authentication"]["workstation"] is None)
 
@@ -275,76 +275,76 @@ class AuthLogTestsWinbind(AuthLogTestBase, BlackboxTestCase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.filter_messages(messages)
         expected_messages = 3
-        self.assertEquals(expected_messages,
+        self.assertEqual(expected_messages,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # The 1st message should be an Authentication against the local
         # password database
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
+        self.assertEqual("Authentication", msg["type"])
         self.assertTrue(msg["Authentication"]["authDescription"].startswith(
             "PASSDB, wbinfo,"))
-        self.assertEquals("winbind",
+        self.assertEqual("winbind",
                           msg["Authentication"]["serviceDescription"])
         # Logon type should be Interactive
-        self.assertEquals(2, msg["Authentication"]["logonType"])
+        self.assertEqual(2, msg["Authentication"]["logonType"])
         # Event code should be Unsuccessful logon
-        self.assertEquals(4625, msg["Authentication"]["eventId"])
-        self.assertEquals("unix:", msg["Authentication"]["remoteAddress"])
-        self.assertEquals("unix:", msg["Authentication"]["localAddress"])
-        self.assertEquals('', msg["Authentication"]["clientDomain"])
+        self.assertEqual(4625, msg["Authentication"]["eventId"])
+        self.assertEqual("unix:", msg["Authentication"]["remoteAddress"])
+        self.assertEqual("unix:", msg["Authentication"]["localAddress"])
+        self.assertEqual('', msg["Authentication"]["clientDomain"])
         # This is what the existing winbind implementation returns.
-        self.assertEquals("NT_STATUS_NO_SUCH_USER",
+        self.assertEqual("NT_STATUS_NO_SUCH_USER",
                           msg["Authentication"]["status"])
-        self.assertEquals("NTLMv2", msg["Authentication"]["passwordType"])
-        self.assertEquals(self.credentials.get_username(),
+        self.assertEqual("NTLMv2", msg["Authentication"]["passwordType"])
+        self.assertEqual(self.credentials.get_username(),
                           msg["Authentication"]["clientAccount"])
-        self.assertEquals("", msg["Authentication"]["clientDomain"])
+        self.assertEqual("", msg["Authentication"]["clientDomain"])
 
         logon_id = msg["Authentication"]["logonId"]
 
         # The 2nd message should be a PAM_AUTH with the same logon id as the
         # 1st message
         msg = messages[1]
-        self.assertEquals("Authentication", msg["type"])
+        self.assertEqual("Authentication", msg["type"])
         self.assertTrue(msg["Authentication"]["authDescription"].startswith(
             "PAM_AUTH"))
-        self.assertEquals("winbind",
+        self.assertEqual("winbind",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals(logon_id, msg["Authentication"]["logonId"])
+        self.assertEqual(logon_id, msg["Authentication"]["logonId"])
         # Logon type should be NetworkCleartext
-        self.assertEquals(8, msg["Authentication"]["logonType"])
+        self.assertEqual(8, msg["Authentication"]["logonType"])
         # Event code should be Unsuccessful logon
-        self.assertEquals(4625, msg["Authentication"]["eventId"])
-        self.assertEquals("unix:", msg["Authentication"]["remoteAddress"])
-        self.assertEquals("unix:", msg["Authentication"]["localAddress"])
-        self.assertEquals('', msg["Authentication"]["clientDomain"])
+        self.assertEqual(4625, msg["Authentication"]["eventId"])
+        self.assertEqual("unix:", msg["Authentication"]["remoteAddress"])
+        self.assertEqual("unix:", msg["Authentication"]["localAddress"])
+        self.assertEqual('', msg["Authentication"]["clientDomain"])
         # This is what the existing winbind implementation returns.
-        self.assertEquals("NT_STATUS_NO_SUCH_USER",
+        self.assertEqual("NT_STATUS_NO_SUCH_USER",
                           msg["Authentication"]["status"])
-        self.assertEquals(self.credentials.get_username(),
+        self.assertEqual(self.credentials.get_username(),
                           msg["Authentication"]["clientAccount"])
-        self.assertEquals("", msg["Authentication"]["clientDomain"])
+        self.assertEqual("", msg["Authentication"]["clientDomain"])
 
         # The 3rd message should be an NTLM_AUTH
         msg = messages[2]
-        self.assertEquals("Authentication", msg["type"])
+        self.assertEqual("Authentication", msg["type"])
         self.assertTrue(msg["Authentication"]["authDescription"].startswith(
             "NTLM_AUTH, wbinfo,"))
-        self.assertEquals("winbind",
+        self.assertEqual("winbind",
                           msg["Authentication"]["serviceDescription"])
         # Logon type should be Network
-        self.assertEquals(3, msg["Authentication"]["logonType"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual(3, msg["Authentication"]["logonType"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
         # Event code should be successful logon
-        self.assertEquals(4624, msg["Authentication"]["eventId"])
-        self.assertEquals("NTLMv2", msg["Authentication"]["passwordType"])
-        self.assertEquals("unix:", msg["Authentication"]["remoteAddress"])
-        self.assertEquals("unix:", msg["Authentication"]["localAddress"])
-        self.assertEquals(self.credentials.get_username(),
+        self.assertEqual(4624, msg["Authentication"]["eventId"])
+        self.assertEqual("NTLMv2", msg["Authentication"]["passwordType"])
+        self.assertEqual("unix:", msg["Authentication"]["remoteAddress"])
+        self.assertEqual("unix:", msg["Authentication"]["localAddress"])
+        self.assertEqual(self.credentials.get_username(),
                           msg["Authentication"]["clientAccount"])
-        self.assertEquals(self.credentials.get_domain(),
+        self.assertEqual(self.credentials.get_domain(),
                           msg["Authentication"]["clientDomain"])
 
         logon_id = msg["Authentication"]["logonId"]
@@ -377,78 +377,78 @@ class AuthLogTestsWinbind(AuthLogTestBase, BlackboxTestCase):
         messages = self.waitForMessages(isLastExpectedMessage)
         messages = self.filter_messages(messages)
         expected_messages = 3
-        self.assertEquals(expected_messages,
+        self.assertEqual(expected_messages,
                           len(messages),
                           "Did not receive the expected number of messages")
 
         # The 1st message should be an Authentication against the local
         # password database
         msg = messages[0]
-        self.assertEquals("Authentication", msg["type"])
+        self.assertEqual("Authentication", msg["type"])
         self.assertTrue(msg["Authentication"]["authDescription"].startswith(
             "PASSDB, wbinfo,"))
-        self.assertEquals("winbind",
+        self.assertEqual("winbind",
                           msg["Authentication"]["serviceDescription"])
         # Logon type should be Interactive
-        self.assertEquals(2, msg["Authentication"]["logonType"])
+        self.assertEqual(2, msg["Authentication"]["logonType"])
         # Event code should be Unsuccessful logon
-        self.assertEquals(4625, msg["Authentication"]["eventId"])
-        self.assertEquals("unix:", msg["Authentication"]["remoteAddress"])
-        self.assertEquals("unix:", msg["Authentication"]["localAddress"])
-        self.assertEquals('', msg["Authentication"]["clientDomain"])
+        self.assertEqual(4625, msg["Authentication"]["eventId"])
+        self.assertEqual("unix:", msg["Authentication"]["remoteAddress"])
+        self.assertEqual("unix:", msg["Authentication"]["localAddress"])
+        self.assertEqual('', msg["Authentication"]["clientDomain"])
         # This is what the existing winbind implementation returns.
-        self.assertEquals("NT_STATUS_NO_SUCH_USER",
+        self.assertEqual("NT_STATUS_NO_SUCH_USER",
                           msg["Authentication"]["status"])
-        self.assertEquals("NTLMv2", msg["Authentication"]["passwordType"])
-        self.assertEquals(self.credentials.get_username(),
+        self.assertEqual("NTLMv2", msg["Authentication"]["passwordType"])
+        self.assertEqual(self.credentials.get_username(),
                           msg["Authentication"]["clientAccount"])
-        self.assertEquals("", msg["Authentication"]["clientDomain"])
+        self.assertEqual("", msg["Authentication"]["clientDomain"])
 
         logon_id = msg["Authentication"]["logonId"]
 
         # The 2nd message should be a PAM_AUTH with the same logon id as the
         # 1st message
         msg = messages[1]
-        self.assertEquals("Authentication", msg["type"])
+        self.assertEqual("Authentication", msg["type"])
         self.assertTrue(msg["Authentication"]["authDescription"].startswith(
             "PAM_AUTH"))
-        self.assertEquals("winbind",
+        self.assertEqual("winbind",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals(logon_id, msg["Authentication"]["logonId"])
-        self.assertEquals("Plaintext", msg["Authentication"]["passwordType"])
+        self.assertEqual(logon_id, msg["Authentication"]["logonId"])
+        self.assertEqual("Plaintext", msg["Authentication"]["passwordType"])
         # Logon type should be NetworkCleartext
-        self.assertEquals(8, msg["Authentication"]["logonType"])
+        self.assertEqual(8, msg["Authentication"]["logonType"])
         # Event code should be Unsuccessful logon
-        self.assertEquals(4625, msg["Authentication"]["eventId"])
-        self.assertEquals("unix:", msg["Authentication"]["remoteAddress"])
-        self.assertEquals("unix:", msg["Authentication"]["localAddress"])
-        self.assertEquals('', msg["Authentication"]["clientDomain"])
+        self.assertEqual(4625, msg["Authentication"]["eventId"])
+        self.assertEqual("unix:", msg["Authentication"]["remoteAddress"])
+        self.assertEqual("unix:", msg["Authentication"]["localAddress"])
+        self.assertEqual('', msg["Authentication"]["clientDomain"])
         # This is what the existing winbind implementation returns.
-        self.assertEquals("NT_STATUS_NO_SUCH_USER",
+        self.assertEqual("NT_STATUS_NO_SUCH_USER",
                           msg["Authentication"]["status"])
-        self.assertEquals(self.credentials.get_username(),
+        self.assertEqual(self.credentials.get_username(),
                           msg["Authentication"]["clientAccount"])
-        self.assertEquals("", msg["Authentication"]["clientDomain"])
+        self.assertEqual("", msg["Authentication"]["clientDomain"])
 
         # The 3rd message should be an NTLM_AUTH
         msg = messages[2]
-        self.assertEquals("Authentication", msg["type"])
+        self.assertEqual("Authentication", msg["type"])
         self.assertTrue(msg["Authentication"]["authDescription"].startswith(
             "NTLM_AUTH, wbinfo,"))
-        self.assertEquals("winbind",
+        self.assertEqual("winbind",
                           msg["Authentication"]["serviceDescription"])
-        self.assertEquals("NTLMv1",
+        self.assertEqual("NTLMv1",
                           msg["Authentication"]["passwordType"])
         # Logon type should be Network
-        self.assertEquals(3, msg["Authentication"]["logonType"])
-        self.assertEquals("NT_STATUS_OK", msg["Authentication"]["status"])
+        self.assertEqual(3, msg["Authentication"]["logonType"])
+        self.assertEqual("NT_STATUS_OK", msg["Authentication"]["status"])
         # Event code should be successful logon
-        self.assertEquals(4624, msg["Authentication"]["eventId"])
-        self.assertEquals("unix:", msg["Authentication"]["remoteAddress"])
-        self.assertEquals("unix:", msg["Authentication"]["localAddress"])
-        self.assertEquals(self.credentials.get_username(),
+        self.assertEqual(4624, msg["Authentication"]["eventId"])
+        self.assertEqual("unix:", msg["Authentication"]["remoteAddress"])
+        self.assertEqual("unix:", msg["Authentication"]["localAddress"])
+        self.assertEqual(self.credentials.get_username(),
                           msg["Authentication"]["clientAccount"])
-        self.assertEquals(self.credentials.get_domain(),
+        self.assertEqual(self.credentials.get_domain(),
                           msg["Authentication"]["clientDomain"])
 
         logon_id = msg["Authentication"]["logonId"]

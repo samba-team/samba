@@ -130,7 +130,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                                 username=USER_NAME)
         except Exception:
             exception_thrown = True
-        self.assertEquals(True, exception_thrown,
+        self.assertEqual(True, exception_thrown,
                           "Expected exception not thrown")
         self.assertTrue(self.waitForMessages(isLastExpectedMessage),
                         "Did not receive the expected message")
@@ -162,7 +162,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                                 username="badUser")
         except Exception:
             exception_thrown = True
-        self.assertEquals(True, exception_thrown,
+        self.assertEqual(True, exception_thrown,
                           "Expected exception not thrown")
 
         self.assertTrue(self.waitForMessages(isLastExpectedMessage),
@@ -195,7 +195,7 @@ class AuthLogPassChangeTests(samba.tests.auth_log_base.AuthLogTestBase):
                                 username=USER_NAME)
         except Exception:
             exception_thrown = True
-        self.assertEquals(True, exception_thrown,
+        self.assertEqual(True, exception_thrown,
                           "Expected exception not thrown")
 
         self.assertTrue(self.waitForMessages(isLastExpectedMessage),

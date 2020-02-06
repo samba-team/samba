@@ -41,7 +41,7 @@ class SchemaAttributesTestCase(samba.tests.TestCase):
 
         # fetch rootDSE
         res = self.samdb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         self.schema_dn = res[0]["schemaNamingContext"][0]
         self.base_dn = res[0]["defaultNamingContext"][0]
         self.forest_level = int(res[0]["forestFunctionality"][0])
@@ -100,8 +100,8 @@ systemOnly: FALSE
         attr_res = self.samdb.search(base="@ATTRIBUTES", scope=ldb.SCOPE_BASE)
 
         self.assertIn(attr_ldap_name, attr_res[0])
-        self.assertEquals(len(attr_res[0][attr_ldap_name]), 1)
-        self.assertEquals(str(attr_res[0][attr_ldap_name][0]), "CASE_INSENSITIVE")
+        self.assertEqual(len(attr_res[0][attr_ldap_name]), 1)
+        self.assertEqual(str(attr_res[0][attr_ldap_name][0]), "CASE_INSENSITIVE")
 
         # Check @INDEXLIST
 
@@ -123,8 +123,8 @@ systemOnly: FALSE
         attr_res = self.samdb.search(base="@ATTRIBUTES", scope=ldb.SCOPE_BASE)
 
         self.assertIn(attr_ldap_name, attr_res[0])
-        self.assertEquals(len(attr_res[0][attr_ldap_name]), 1)
-        self.assertEquals(str(attr_res[0][attr_ldap_name][0]), "CASE_INSENSITIVE")
+        self.assertEqual(len(attr_res[0][attr_ldap_name]), 1)
+        self.assertEqual(str(attr_res[0][attr_ldap_name][0]), "CASE_INSENSITIVE")
 
         # Check @INDEXLIST
 
@@ -156,12 +156,12 @@ systemOnly: FALSE
         attr_res = self.samdb.search(base="@ATTRIBUTES", scope=ldb.SCOPE_BASE)
 
         self.assertIn(attr_ldap_name, attr_res[0])
-        self.assertEquals(len(attr_res[0][attr_ldap_name]), 1)
-        self.assertEquals(str(attr_res[0][attr_ldap_name][0]), "CASE_INSENSITIVE")
+        self.assertEqual(len(attr_res[0][attr_ldap_name]), 1)
+        self.assertEqual(str(attr_res[0][attr_ldap_name][0]), "CASE_INSENSITIVE")
 
         self.assertIn(attr_ldap_name2, attr_res[0])
-        self.assertEquals(len(attr_res[0][attr_ldap_name2]), 1)
-        self.assertEquals(str(attr_res[0][attr_ldap_name2][0]), "CASE_INSENSITIVE")
+        self.assertEqual(len(attr_res[0][attr_ldap_name2]), 1)
+        self.assertEqual(str(attr_res[0][attr_ldap_name2][0]), "CASE_INSENSITIVE")
 
         # Check @INDEXLIST
 
@@ -180,12 +180,12 @@ systemOnly: FALSE
 
         res = self.samdb.search(base="@ATTRIBUTES", scope=ldb.SCOPE_BASE,
                                 attrs=["@TEST_EXTRA"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(str(res[0].dn), "@ATTRIBUTES")
-        self.assertEquals(len(res[0]), 1)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0].dn), "@ATTRIBUTES")
+        self.assertEqual(len(res[0]), 1)
         self.assertTrue("@TEST_EXTRA" in res[0])
-        self.assertEquals(len(res[0]["@TEST_EXTRA"]), 1)
-        self.assertEquals(str(res[0]["@TEST_EXTRA"][0]), "HIDDEN")
+        self.assertEqual(len(res[0]["@TEST_EXTRA"]), 1)
+        self.assertEqual(str(res[0]["@TEST_EXTRA"][0]), "HIDDEN")
 
         samdb2 = samba.tests.connect_samdb(self.lp.samdb_url())
 
@@ -199,9 +199,9 @@ systemOnly: FALSE
 
         res = self.samdb.search(base="@ATTRIBUTES", scope=ldb.SCOPE_BASE,
                                 attrs=["@TEST_EXTRA"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(str(res[0].dn), "@ATTRIBUTES")
-        self.assertEquals(len(res[0]), 0)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0].dn), "@ATTRIBUTES")
+        self.assertEqual(len(res[0]), 0)
         self.assertFalse("@TEST_EXTRA" in res[0])
 
     def test_modify_at_indexlist(self):
@@ -214,12 +214,12 @@ systemOnly: FALSE
 
         res = self.samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE,
                                 attrs=["@TEST_EXTRA"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(str(res[0].dn), "@INDEXLIST")
-        self.assertEquals(len(res[0]), 1)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0].dn), "@INDEXLIST")
+        self.assertEqual(len(res[0]), 1)
         self.assertTrue("@TEST_EXTRA" in res[0])
-        self.assertEquals(len(res[0]["@TEST_EXTRA"]), 1)
-        self.assertEquals(str(res[0]["@TEST_EXTRA"][0]), "1")
+        self.assertEqual(len(res[0]["@TEST_EXTRA"]), 1)
+        self.assertEqual(str(res[0]["@TEST_EXTRA"][0]), "1")
 
         samdb2 = samba.tests.connect_samdb(self.lp.samdb_url())
 
@@ -233,9 +233,9 @@ systemOnly: FALSE
 
         res = self.samdb.search(base="@INDEXLIST", scope=ldb.SCOPE_BASE,
                                 attrs=["@TEST_EXTRA"])
-        self.assertEquals(len(res), 1)
-        self.assertEquals(str(res[0].dn), "@INDEXLIST")
-        self.assertEquals(len(res[0]), 0)
+        self.assertEqual(len(res), 1)
+        self.assertEqual(str(res[0].dn), "@INDEXLIST")
+        self.assertEqual(len(res[0]), 0)
         self.assertFalse("@TEST_EXTRA" in res[0])
 
     def test_modify_fail_of_at_indexlist(self):
@@ -249,4 +249,4 @@ systemOnly: FALSE
             self.fail("modify of @INDEXLIST with a failed constraint should fail")
         except LdbError as err:
             enum = err.args[0]
-            self.assertEquals(enum, ldb.ERR_NO_SUCH_ATTRIBUTE)
+            self.assertEqual(enum, ldb.ERR_NO_SUCH_ATTRIBUTE)

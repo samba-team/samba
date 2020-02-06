@@ -65,7 +65,7 @@ class BindTests(samba.tests.TestCase):
 
         if self.info_dc is None:
             res = self.ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
-            self.assertEquals(len(res), 1)
+            self.assertEqual(len(res), 1)
             BindTests.info_dc = res[0]
         # cache some of RootDSE props
         self.schema_dn = self.info_dc["schemaNamingContext"][0]
@@ -120,7 +120,7 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
         ldb_res = self.ldb.search(base=self.domain_dn,
                                   scope=SCOPE_SUBTREE,
                                   expression="(samAccountName=%s)" % self.username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_dn = ldb_res[0]["dn"]
         self.addCleanup(delete_force, self.ldb, user_dn)
 
@@ -154,7 +154,7 @@ unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode(
         ldb_res = self.ldb.search(base=self.domain_dn,
                                   scope=SCOPE_SUBTREE,
                                   expression="(samAccountName=%s)" % self.username)
-        self.assertEquals(len(ldb_res), 1)
+        self.assertEqual(len(ldb_res), 1)
         user_dn = ldb_res[0]["dn"]
         self.addCleanup(delete_force, self.ldb, user_dn)
 

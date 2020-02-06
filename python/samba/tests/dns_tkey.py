@@ -80,8 +80,8 @@ class TestDNSUpdates(DNSTKeyTest):
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NOTAUTH)
         tsig_record = response.additional[0].rdata
-        self.assertEquals(tsig_record.error, dns.DNS_RCODE_BADKEY)
-        self.assertEquals(tsig_record.mac_size, 0)
+        self.assertEqual(tsig_record.error, dns.DNS_RCODE_BADKEY)
+        self.assertEqual(tsig_record.mac_size, 0)
 
         rcode = self.search_record(self.newrecname)
         self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)
@@ -96,8 +96,8 @@ class TestDNSUpdates(DNSTKeyTest):
         (response, response_p) = self.dns_transaction_udp(p, self.server_ip)
         self.assert_dns_rcode_equals(response, dns.DNS_RCODE_NOTAUTH)
         tsig_record = response.additional[0].rdata
-        self.assertEquals(tsig_record.error, dns.DNS_RCODE_BADSIG)
-        self.assertEquals(tsig_record.mac_size, 0)
+        self.assertEqual(tsig_record.error, dns.DNS_RCODE_BADSIG)
+        self.assertEqual(tsig_record.mac_size, 0)
 
         rcode = self.search_record(self.newrecname)
         self.assert_rcode_equals(rcode, dns.DNS_RCODE_NXDOMAIN)

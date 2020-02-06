@@ -117,29 +117,29 @@ class SambaToolDrsNoDnsTests(drs_base.DrsBaseTestCase):
         # Show that Has-Master-NCs is fixed by samba_upgradedns
         res = samdb.search(base=server_ds_name,
                            expression="(msds-hasmasterncs=%s)" % forestdns_dn)
-        self.assertEquals(len(res), 0)
+        self.assertEqual(len(res), 0)
         res = samdb.search(base=server_ds_name,
                            expression="(msds-hasmasterncs=%s)" % domaindns_dn)
-        self.assertEquals(len(res), 0)
+        self.assertEqual(len(res), 0)
 
         self.check_output("samba_upgradedns -s %s" % (new_dc_config_file))
 
         res = samdb.search(base=server_ds_name,
                            expression="(msds-hasmasterncs=%s)" % forestdns_dn)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         res = samdb.search(base=server_ds_name,
                            expression="(msds-hasmasterncs=%s)" % domaindns_dn)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         # Show that replica locations is fixed by dbcheck
         res = samdb.search(controls=["search_options:1:2"],
                            expression="(&(msds-nc-replica-locations=%s)(ncname=%s))"
                            % (server_ds_name, forestdns_dn))
-        self.assertEquals(len(res), 0)
+        self.assertEqual(len(res), 0)
         res = samdb.search(controls=["search_options:1:2"],
                            expression="(&(msds-nc-replica-locations=%s)(ncname=%s))"
                            % (server_ds_name, domaindns_dn))
-        self.assertEquals(len(res), 0)
+        self.assertEqual(len(res), 0)
 
         try:
             # This fixes any forward-link-backward-link issues with the tools
@@ -157,26 +157,26 @@ class SambaToolDrsNoDnsTests(drs_base.DrsBaseTestCase):
         # Check all ForestDNS connections and backlinks
         res = samdb.search(base=server_ds_name,
                            expression="(msds-hasmasterncs=%s)" % forestdns_dn)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         res = samdb.search(base=forestdns_dn,
                            expression="(msds-masteredby=%s)" % server_ds_name)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         res = samdb.search(controls=["search_options:1:2"],
                            expression="(&(msds-nc-replica-locations=%s)(ncname=%s))"
                            % (server_ds_name, forestdns_dn))
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         # Check all DomainDNS connections and backlinks
         res = samdb.search(base=server_ds_name,
                            expression="(msds-hasmasterncs=%s)" % domaindns_dn)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         res = samdb.search(base=domaindns_dn,
                            expression="(msds-masteredby=%s)" % server_ds_name)
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
         res = samdb.search(controls=["search_options:1:2"],
                            expression="(&(msds-nc-replica-locations=%s)(ncname=%s))"
                            % (server_ds_name, domaindns_dn))
-        self.assertEquals(len(res), 1)
+        self.assertEqual(len(res), 1)
 
         # Demote the DC we created in the test
         self.check_output("samba-tool domain demote --remove-other-dead-server=%s -H ldap://%s %s -s %s"

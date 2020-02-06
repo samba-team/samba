@@ -54,11 +54,11 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
         # higher level comes after lower even if lexicographicaly closer
         # ie dc=tata,dc=toto (2 levels), comes after dc=toto
         # even if dc=toto is lexicographicaly after dc=tata, dc=toto
-        self.assertEquals(dn_sort("dc=tata,dc=toto", "dc=toto"), 1)
-        self.assertEquals(dn_sort("dc=zata", "dc=tata"), 1)
-        self.assertEquals(dn_sort("dc=toto,dc=tata",
+        self.assertEqual(dn_sort("dc=tata,dc=toto", "dc=toto"), 1)
+        self.assertEqual(dn_sort("dc=zata", "dc=tata"), 1)
+        self.assertEqual(dn_sort("dc=toto,dc=tata",
                                   "cn=foo,dc=toto,dc=tata"), -1)
-        self.assertEquals(dn_sort("cn=bar, dc=toto,dc=tata",
+        self.assertEqual(dn_sort("cn=bar, dc=toto,dc=tata",
                                   "cn=foo, dc=toto,dc=tata"), -1)
 
     def test_get_diff_sds(self):
@@ -81,17 +81,17 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
 (A;CI;RPWPCRCCLCLORCWOWDSW;;;SA)\
 (A;CI;RP LCLORC;;;AU)(A;CI;RPWPCRCCDCLCLORCWOWDSDDTSW;;;SY)S:AI(AU;CISA;WP;;;WD)(AU;CIIDSA;WP;;;WD)"
 
-        self.assertEquals(get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
+        self.assertEqual(get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
                                        security.descriptor.from_sddl(sddl1, domsid),
                                        domsid), "")
         txt = get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
                            security.descriptor.from_sddl(sddl2, domsid),
                            domsid)
-        self.assertEquals(txt, "\tOwner mismatch: SA (in ref) BA(in current)\n")
+        self.assertEqual(txt, "\tOwner mismatch: SA (in ref) BA(in current)\n")
         txt = get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
                            security.descriptor.from_sddl(sddl3, domsid),
                            domsid)
-        self.assertEquals(txt, "\tGroup mismatch: DU (in ref) BA(in current)\n")
+        self.assertEqual(txt, "\tGroup mismatch: DU (in ref) BA(in current)\n")
         txt = get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
                            security.descriptor.from_sddl(sddl4, domsid),
                            domsid)
@@ -99,25 +99,25 @@ class UpgradeProvisionTestCase(TestCaseInTempDir):
  is the detail:\n\t\t(A;CI;RPWPCRCCLCLORCWOWDSW;;;BA) ACE is not present in\
  the reference\n\t\t(A;CI;RPWPCRCCLCLORCWOWDSW;;;SA) ACE is not present in\
  the current\n"
-        self.assertEquals(txt, txtmsg)
+        self.assertEqual(txt, txtmsg)
 
         txt = get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
                            security.descriptor.from_sddl(sddl5, domsid),
                            domsid)
-        self.assertEquals(txt, "\tCurrent ACL hasn't a sacl part\n")
-        self.assertEquals(get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
+        self.assertEqual(txt, "\tCurrent ACL hasn't a sacl part\n")
+        self.assertEqual(get_diff_sds(security.descriptor.from_sddl(sddl, domsid),
                                        security.descriptor.from_sddl(sddl6, domsid),
                                        domsid), "")
 
     def test_construct_existor_expr(self):
         res = construct_existor_expr([])
-        self.assertEquals(res, "")
+        self.assertEqual(res, "")
 
         res = construct_existor_expr(["foo"])
-        self.assertEquals(res, "(|(foo=*))")
+        self.assertEqual(res, "(|(foo=*))")
 
         res = construct_existor_expr(["foo", "bar"])
-        self.assertEquals(res, "(|(foo=*)(bar=*))")
+        self.assertEqual(res, "(|(foo=*)(bar=*))")
 
 
 class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
@@ -137,7 +137,7 @@ class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
     def test_trivial(self):
         # Test that updating an already up-to-date secretsdb works fine
         self.secretsdb = self._getCurrentFormatDb()
-        self.assertEquals(None,
+        self.assertEqual(None,
                           update_secrets(self.referencedb, self.secretsdb, dummymessage))
 
     def test_update_modules(self):
@@ -145,7 +145,7 @@ class UpdateSecretsTests(samba.tests.TestCaseInTempDir):
         update_secrets(self.referencedb, empty_db, dummymessage)
         newmodules = empty_db.search(base="@MODULES", scope=SCOPE_BASE)
         refmodules = self.referencedb.search(base="@MODULES", scope=SCOPE_BASE)
-        self.assertEquals(newmodules.msgs, refmodules.msgs)
+        self.assertEqual(newmodules.msgs, refmodules.msgs)
 
     def tearDown(self):
         for name in ["ref.ldb", "secrets.ldb", "secrets.tdb", "secrets.tdb.bak", "secrets.ntdb"]:

@@ -33,8 +33,8 @@ class ScheduleTests(samba.tests.TestCase):
     def test_new_connection_schedule(self):
         schedule = new_connection_schedule()
         self.assertIsInstance(schedule, drsblobs.schedule)
-        self.assertEquals(schedule.size, 188)
-        self.assertEquals(len(schedule.dataArray[0].slots), 168)
+        self.assertEqual(schedule.size, 188)
+        self.assertEqual(len(schedule.dataArray[0].slots), 168)
 
 
 # OK, this is pathetic, but the rest of it looks really hard, with the

@@ -45,7 +45,7 @@ class TallocTests(samba.tests.TestCase):
         nblocks = talloc.total_blocks(object)
         if object is None:
             nblocks -= self.initial_blocks
-        self.assertEquals(nblocks, num_expected)
+        self.assertEqual(nblocks, num_expected)
 
     def get_rodc_partial_attribute_set(self):
         '''get a list of attributes for RODC replication'''

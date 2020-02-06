@@ -298,7 +298,7 @@ class TestCaseInTempDir(TestCase):
 
     def _remove_tempdir(self):
         # Note asserting here is treated as an error rather than a test failure
-        self.assertEquals([], os.listdir(self.tempdir))
+        self.assertEqual([], os.listdir(self.tempdir))
         os.rmdir(self.tempdir)
         self.tempdir = None
 

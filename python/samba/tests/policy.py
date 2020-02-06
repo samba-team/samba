@@ -26,9 +26,9 @@ from samba import policy
 class PolicyTests(TestCase):
 
     def test_get_gpo_flags(self):
-        self.assertEquals(["GPO_FLAG_USER_DISABLE"],
+        self.assertEqual(["GPO_FLAG_USER_DISABLE"],
                           policy.get_gpo_flags(policy.GPO_FLAG_USER_DISABLE))
 
     def test_get_gplink_options(self):
-        self.assertEquals(["GPLINK_OPT_DISABLE"],
+        self.assertEqual(["GPLINK_OPT_DISABLE"],
                           policy.get_gplink_options(policy.GPLINK_OPT_DISABLE))
