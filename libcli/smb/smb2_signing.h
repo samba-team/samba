@@ -22,16 +22,21 @@
 #define _LIBCLI_SMB_SMB2_SIGNING_H_
 
 struct iovec;
- /* Forward declaration of GnuTLS typedefs */
-struct hmac_hd_st;
-typedef struct hmac_hd_st* gnutls_hmac_hd_t;
-struct  api_aead_cipher_hd_st;
-typedef struct api_aead_cipher_hd_st *gnutls_aead_cipher_hd_t;
 
 struct smb2_signing_key {
-	gnutls_hmac_hd_t hmac_hnd;
-	gnutls_aead_cipher_hd_t cipher_hnd;
 	DATA_BLOB blob;
+	union {
+#ifdef SMB2_SIGNING_KEY_GNUTLS_TYPES
+		gnutls_hmac_hd_t hmac_hnd;
+#endif
+		void *__hmac_hnd;
+	};
+	union {
+#ifdef SMB2_SIGNING_KEY_GNUTLS_TYPES
+		gnutls_aead_cipher_hd_t cipher_hnd;
+#endif
+		void *__cipher_hnd;
+	};
 };
 
 int smb2_signing_key_destructor(struct smb2_signing_key *key);
