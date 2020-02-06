@@ -256,9 +256,9 @@ def find_parser(name, flags=re.IGNORECASE):
         return GptTmplInfParser()
     if re.match(r'GPT\.INI$', name, flags=flags):
         return GPTIniParser()
-    if re.match('scripts.ini$', name, flags=flags):
+    if re.match(r'scripts\.ini$', name, flags=flags):
         return GPScriptsIniParser()
-    if re.match('psscripts.ini$', name, flags=flags):
+    if re.match(r'psscripts\.ini$', name, flags=flags):
         return GPScriptsIniParser()
     if re.match(r'GPE\.INI$', name, flags=flags):
         # This file does not appear in the protocol specifications!
