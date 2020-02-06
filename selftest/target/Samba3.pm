@@ -2591,8 +2591,8 @@ sub wait_for_start($$$$$)
 	    $cmd .= Samba::bindir_path($self, "wbinfo") . " --ping-dc";
 
 	    do {
+		$ret = system($cmd);
 		if ($ret != 0) {
-		    $ret = system($cmd);
 		    sleep(1);
 		}
 		$count++;
