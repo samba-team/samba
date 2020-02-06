@@ -146,8 +146,6 @@ bool init_names(void)
 		return False;
 	}
 
-	set_local_machine_name(lp_netbios_name(),false);
-
 	DEBUG( 5, ("Netbios name list:-\n") );
 	for( n=0; my_netbios_names(n); n++ ) {
 		DEBUGADD( 5, ("my_netbios_names[%d]=\"%s\"\n",
