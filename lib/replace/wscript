@@ -67,7 +67,7 @@ def configure(conf):
                         headers='sys/inotify.h')
 
     conf.CHECK_HEADERS('security/pam_appl.h zlib.h asm/unistd.h')
-    conf.CHECK_HEADERS('aio.h sys/unistd.h alloca.h float.h')
+    conf.CHECK_HEADERS('sys/unistd.h alloca.h float.h')
 
     conf.SET_TARGET_TYPE('tirpc', 'EMPTY')
 
