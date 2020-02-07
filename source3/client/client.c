@@ -3814,7 +3814,7 @@ static int cmd_getfacl(void)
 	}
 
 	status = cli_posix_stat(targetcli, targetname, &sbuf);
-	if (!NT_STATUS_IS_OK(cli_posix_stat(targetcli, targetname, &sbuf))) {
+	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("%s getfacl doing a stat on file %s\n",
 			 nt_errstr(status), src);
 		return 1;
