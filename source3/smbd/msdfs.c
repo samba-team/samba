@@ -1504,6 +1504,17 @@ bool remove_msdfs_link(const struct junction_map *jucn,
 		return false;
 	}
 
+	if (!CAN_WRITE(conn)) {
+		const struct loadparm_substitution *lp_sub =
+			loadparm_s3_global_substitution();
+		int snum = lp_servicenumber(jucn->service_name);
+
+		DBG_WARNING("Can't remove DFS entry on read-only share %s\n",
+			lp_servicename(frame, lp_sub, snum));
+		TALLOC_FREE(frame);
+		return false;
+	}
+
 	smb_fname = synthetic_smb_fname(frame,
 					path,
 					NULL,
