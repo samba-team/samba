@@ -690,7 +690,8 @@ interface drsuapi
 	} drsuapi_DsReplicaMetaDataCtr;
 
 	typedef [public,noprint] struct {
-		drsuapi_DsReplicaObjectListItemEx *next_object;
+		[max_recursion(20000)]
+			drsuapi_DsReplicaObjectListItemEx *next_object;
 		drsuapi_DsReplicaObject object;
 		boolean32 is_nc_prefix;
 		GUID *parent_object_guid;
@@ -1308,7 +1309,8 @@ interface drsuapi
 	/*****************/
         /* Function 0x11 */
 	typedef [public,noprint] struct {
-		drsuapi_DsReplicaObjectListItem *next_object;
+		[max_recursion(20000)]
+			drsuapi_DsReplicaObjectListItem *next_object;
 		drsuapi_DsReplicaObject object;
 	} drsuapi_DsReplicaObjectListItem;
 
@@ -1408,7 +1410,8 @@ interface drsuapi
 	} drsuapi_DsAddEntry_AttrErr_V1;
 
 	typedef [noprint] struct {
-		drsuapi_DsAddEntry_AttrErrListItem_V1 *next;
+		[max_recursion(20000)]
+			drsuapi_DsAddEntry_AttrErrListItem_V1 *next;
 		drsuapi_DsAddEntry_AttrErr_V1 err_data;
 	} drsuapi_DsAddEntry_AttrErrListItem_V1;
 
@@ -1464,7 +1467,8 @@ interface drsuapi
 		drsuapi_DsAddEntry_RefType ref_type;
 		uint16 addr_list_count;
 		drsuapi_DsaAddressListItem_V1 *addr_list;
-		drsuapi_DsAddEntry_RefErrListItem_V1 *next;
+		[max_recursion(20000)]
+			drsuapi_DsAddEntry_RefErrListItem_V1 *next;
 		boolean32 is_choice_set;
 		drsuapi_DsAddEntry_ChoiceType choice;
 	} drsuapi_DsAddEntry_RefErrListItem_V1;

@@ -151,7 +151,7 @@ interface netinterface
 	} fsctl_sockaddr_storage;
 
 	typedef [public,relative_base,noprint] struct {
-		[relative] fsctl_net_iface_info *next;
+		[relative,max_recursion(20000)] fsctl_net_iface_info *next;
 		uint32 ifindex;
 		fsctl_net_iface_capability capability;
 		[value(0)] uint32 reserved;

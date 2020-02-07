@@ -267,7 +267,7 @@ interface smbXsrv
 
 	typedef struct {
 		[ignore] smbXsrv_session_auth0		*prev;
-		smbXsrv_session_auth0			*next;
+		[max_recursion(20000)] smbXsrv_session_auth0 *next;
 		[ignore] smbXsrv_session		*session;
 		[ignore] smbXsrv_connection		*connection;
 		[ignore] gensec_security		*gensec;

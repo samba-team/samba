@@ -579,7 +579,7 @@ interface drsblobs {
 	} ExtendedErrorParam;
 
 	typedef [public] struct {
-		ExtendedErrorInfo *next;
+		[max_recursion(20000)] ExtendedErrorInfo *next;
 		ExtendedErrorComputerName computer_name;
 		hyper pid;
 		NTTIME time;
