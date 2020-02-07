@@ -6301,6 +6301,7 @@ int main(int argc, const char *argv[])
 	const char **extra_argv;
 	int extra_argc;
 	const struct ctdb_cmd *cmd;
+	const char *test_mode;
 	int loglevel;
 	bool ok;
 	int ret = 0;
@@ -6374,6 +6375,16 @@ int main(int argc, const char *argv[])
 		loglevel = DEBUG_ERR;
 	}
 	debuglevel_set(loglevel);
+
+	/* Stop process group kill in alarm_handler() from killing tests */
+	test_mode = getenv("CTDB_TEST_MODE");
+	if (test_mode != NULL) {
+		const char *have_setpgid = getenv("CTDB_TOOL_SETPGID");
+		if (have_setpgid == NULL) {
+			setpgid(0, 0);
+			setenv("CTDB_TOOL_SETPGID", "1", 1);
+		}
+	}
 
 	signal(SIGALRM, alarm_handler);
 	alarm(options.maxruntime);
