@@ -69,7 +69,7 @@ PKGS = [
     ('mingw-w64', 'mingw64-gcc'),
     ('zlib1g-dev', 'zlib-devel'),
     ('libbsd-dev', 'libbsd-devel'),
-    ('libaio-dev', 'libaio-devel'),
+    ('liburing-dev', 'liburing-devel'),
     ('libarchive-dev', 'libarchive-devel'),
     ('libblkid-dev', 'libblkid-devel'),
     ('libcap-dev', 'libcap-devel'),
@@ -385,6 +385,7 @@ DEB_DISTS = {
             'python-gpg': 'python-gpgme',
             'python3-gpg': '',  # no python3 gpg pkg available, remove
             'language-pack-en': '',   # included in locales
+            'liburing-dev': '',   # not available
         }
     },
     'debian8': {
@@ -394,6 +395,7 @@ DEB_DISTS = {
             'python-gpg': 'python-gpgme',
             'python3-gpg': 'python3-gpgme',
             'language-pack-en': '',   # included in locales
+            'liburing-dev': '',   # not available
         }
     },
     'debian9': {
@@ -401,6 +403,7 @@ DEB_DISTS = {
         'vagrant_box': 'debian/stretch64',
         'replace': {
             'language-pack-en': '',   # included in locales
+            'liburing-dev': '',   # not available
         }
     },
     'debian10': {
@@ -408,6 +411,7 @@ DEB_DISTS = {
         'vagrant_box': 'debian/buster64',
         'replace': {
             'language-pack-en': '',   # included in locales
+            'liburing-dev': '',   # not available
         }
     },
     'ubuntu1404': {
@@ -423,6 +427,7 @@ DEB_DISTS = {
             'libunwind-dev': 'libunwind8-dev',
             'glusterfs-common': '',
             'libcephfs-dev': '',
+            'liburing-dev': '',   # not available
         }
     },
     'ubuntu1604': {
@@ -433,11 +438,15 @@ DEB_DISTS = {
             'python3-gpg': 'python3-gpgme',
             'glusterfs-common': '',
             'libcephfs-dev': '',
+            'liburing-dev': '',   # not available
         }
     },
     'ubuntu1804': {
         'docker_image': 'ubuntu:18.04',
         'vagrant_box': 'ubuntu/bionic64',
+        'replace': {
+            'liburing-dev': '',   # not available
+        }
     },
 }
 
@@ -464,6 +473,7 @@ RPM_DISTS = {
             'glusterfs-api-devel': '',
             'glusterfs-devel': '',
             'libcephfs-devel': '',
+            'liburing-devel': '',   # not available
         }
     },
     'centos7': {
@@ -495,6 +505,7 @@ RPM_DISTS = {
             'glusterfs-devel': '',
             'libcephfs-devel': '',
             'gnutls-devel': 'compat-gnutls34-devel',
+            'liburing-devel': '',   # not available
         }
     },
     'centos8': {
@@ -511,6 +522,7 @@ RPM_DISTS = {
             'policycoreutils-python': 'python3-policycoreutils',
             'python3-crypto': '',
             'quota-devel': '', # FIXME: Add me back, once available!
+            'liburing-devel': '', # not available yet, Add me back, once available!
         }
     },
     'fedora29': {
@@ -519,6 +531,7 @@ RPM_DISTS = {
         'bootstrap': DNF_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
+            'liburing-devel': '',   # not available
         }
     },
     'fedora30': {
@@ -527,6 +540,7 @@ RPM_DISTS = {
         'bootstrap': DNF_BOOTSTRAP,
         'replace': {
             'lsb-release': 'redhat-lsb',
+            'liburing-devel': '',   # not available
         }
     },
     'fedora31': {
@@ -569,6 +583,7 @@ RPM_DISTS = {
             'glusterfs-api-devel': '',
             'libtasn1-tools': '', # asn1Parser is part of libtasn1
             'mingw64-gcc': '', # doesn't exist
+            'liburing-devel': '',   # not available
         }
     },
     'opensuse151': {
@@ -601,6 +616,7 @@ RPM_DISTS = {
             'glusterfs-api-devel': '',
             'libtasn1-tools': '', # asn1Parser is part of libtasn1
             'mingw64-gcc': '', # doesn't exist
+            'liburing-devel': '',   # not available, will be added in 15.2
         }
     }
 }

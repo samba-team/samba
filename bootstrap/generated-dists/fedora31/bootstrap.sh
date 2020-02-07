@@ -46,7 +46,6 @@ dnf install -y \
     krb5-server \
     lcov \
     libacl-devel \
-    libaio-devel \
     libarchive-devel \
     libattr-devel \
     libblkid-devel \
@@ -60,6 +59,7 @@ dnf install -y \
     libtasn1-tools \
     libtirpc-devel \
     libunwind-devel \
+    liburing-devel \
     libuuid-devel \
     libxslt \
     lmdb \

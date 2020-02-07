@@ -49,7 +49,6 @@ yum install -y \
     krb5-devel \
     krb5-server \
     libacl-devel \
-    libaio-devel \
     libarchive-devel \
     libattr-devel \
     libblkid-devel \

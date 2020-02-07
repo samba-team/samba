@@ -39,7 +39,6 @@ apt-get -y install \
     krb5-user \
     lcov \
     libacl1-dev \
-    libaio-dev \
     libarchive-dev \
     libattr1-dev \
     libavahi-common-dev \
