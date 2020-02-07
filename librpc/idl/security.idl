@@ -282,6 +282,9 @@ interface security
 	const string SID_SAMBA_UNIX_USER_OWNER		= "S-1-22-1";
 	const string SID_SAMBA_UNIX_GROUP_OWNER		= "S-1-22-2";
 
+	/* Information passing via security token */
+	const string SID_SAMBA_SMB3			= "S-1-22-1397571891";
+
 	/* SECURITY_NT_SERVICE */
 	const string NAME_NT_SERVICE            = "NT SERVICE";
 
