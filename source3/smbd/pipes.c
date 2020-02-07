@@ -30,13 +30,16 @@
 #include "smbd/globals.h"
 #include "libcli/security/security.h"
 #include "rpc_server/srv_pipe_hnd.h"
+#include "auth/auth_util.h"
 
 NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 		      struct files_struct **pfsp)
 {
+	struct smbXsrv_connection *xconn = smb_req->xconn;
 	struct connection_struct *conn = smb_req->conn;
 	struct files_struct *fsp;
 	struct smb_filename *smb_fname = NULL;
+	struct auth_session_info *session_info = conn->session_info;
 	NTSTATUS status;
 
 	status = file_new(smb_req, conn, &fsp);
@@ -68,10 +71,87 @@ NTSTATUS open_np_file(struct smb_request *smb_req, const char *name,
 		return status;
 	}
 
+	if (smb_req->smb2req != NULL && smb_req->smb2req->was_encrypted) {
+		struct security_token *security_token = NULL;
+		uint16_t dialect = xconn->smb2.server.dialect;
+		uint16_t srv_smb_encrypt = 0x0002;
+		uint16_t cipher = xconn->smb2.server.cipher;
+		char smb3_sid_str[SID_MAX_SIZE];
+		struct dom_sid smb3_dom_sid;
+		struct dom_sid smb3_sid;
+		uint32_t i;
+		bool ok;
+		int rc;
+
+		session_info = copy_session_info(fsp, conn->session_info);
+		if (session_info == NULL) {
+			DBG_ERR("Failed to copy session info\n");
+			file_free(smb_req, fsp);
+			return NT_STATUS_NO_MEMORY;
+		}
+		security_token = session_info->security_token;
+
+		ok = dom_sid_parse(SID_SAMBA_SMB3, &smb3_dom_sid);
+		if (!ok) {
+			file_free(smb_req, fsp);
+			return NT_STATUS_BUFFER_TOO_SMALL;
+		}
+
+		/*
+		 * Security check:
+		 *
+		 * Make sure we don't have a SMB3 SID in the security token!
+		 */
+		for (i = 0; i < security_token->num_sids; i++) {
+			int cmp;
+
+			cmp = dom_sid_compare_domain(&security_token->sids[i],
+						     &smb3_dom_sid);
+			if (cmp == 0) {
+				DBG_ERR("ERROR: An SMB3 SID has already been "
+					"detected in the security token!\n");
+				file_free(smb_req, fsp);
+				return NT_STATUS_ACCESS_DENIED;
+			}
+		}
+
+		rc = snprintf(smb3_sid_str,
+			      sizeof(smb3_sid_str),
+			      "%s-%u-%u-%u",
+			      SID_SAMBA_SMB3,
+			      dialect,
+			      srv_smb_encrypt,
+			      cipher);
+		if (rc < 0) {
+			DBG_ERR("Buffer too small\n");
+			file_free(smb_req, fsp);
+			return NT_STATUS_BUFFER_TOO_SMALL;
+		}
+
+		ok = dom_sid_parse(smb3_sid_str, &smb3_sid);
+		if (!ok) {
+			DBG_ERR("Failed to parse SMB3 SID\n");
+			file_free(smb_req, fsp);
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		status = add_sid_to_array_unique(security_token,
+						 &smb3_sid,
+						 &security_token->sids,
+						 &security_token->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("Failed to add SMB3 SID to security token\n");
+			file_free(smb_req, fsp);
+			return status;
+		}
+
+		fsp->fsp_flags.encryption_required = true;
+	}
+
 	status = np_open(fsp, name,
 			 conn->sconn->remote_address,
 			 conn->sconn->local_address,
-			 conn->session_info,
+			 session_info,
 			 conn->sconn->ev_ctx,
 			 conn->sconn->msg_ctx,
 			 conn->sconn->dce_ctx,
