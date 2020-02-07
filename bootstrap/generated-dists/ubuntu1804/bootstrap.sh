@@ -40,7 +40,6 @@ apt-get -y install \
     language-pack-en \
     lcov \
     libacl1-dev \
-    libaio-dev \
     libarchive-dev \
     libattr1-dev \
     libavahi-common-dev \
