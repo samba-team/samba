@@ -2113,16 +2113,19 @@ static int ldb_kv_index_dn_one(struct ldb_module *module,
 			       struct dn_list *list,
 			       enum key_truncation *truncation)
 {
-	/*
-	 * Ensure we do not shortcut on intersection for this list.
-	 * We must never be lazy and return an entry not in this
-	 * list.  This allows the index for
-	 * SCOPE_ONELEVEL to be trusted.
-	 */
-
-	list->strict = true;
-	return ldb_kv_index_dn_attr(
+	int ret = ldb_kv_index_dn_attr(
 	    module, ldb_kv, LDB_KV_IDXONE, parent_dn, list, truncation);
+	if (ret == LDB_SUCCESS) {
+		/*
+		 * Ensure we do not shortcut on intersection for this
+		 * list.  We must never be lazy and return an entry
+		 * not in this list.  This allows the index for
+		 * SCOPE_ONELEVEL to be trusted.
+		 */
+
+		list->strict = true;
+	}
+	return ret;
 }
 
 /*
