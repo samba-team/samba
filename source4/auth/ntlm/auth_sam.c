@@ -644,7 +644,27 @@ static NTSTATUS authsam_check_password_internals(struct auth_method_context *ctx
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	p = strchr_m(account_name, '@');
+	/*
+	 * If we have not already mapped this user, then now is a good
+	 * time to do so, before we look it up.  We used to do this
+	 * earlier, but in a multi-forest environment we want to do
+	 * this mapping at the final domain.
+	 *
+	 * However, on the flip side we may have already mapped the
+	 * user if this was an LDAP simple bind, in which case we
+	 * really, really want to get back to exactly the same account
+	 * we got the DN for.
+	 */
+	if (user_info->mapped_state == false) {
+		p = strchr_m(account_name, '@');
+	} else {
+		/*
+		 * This is slightly nicer than double-indenting the
+		 * block below
+		 */
+		p = NULL;
+	}
+
 	if (p != NULL) {
 		const char *nt4_domain = NULL;
 		const char *nt4_account = NULL;
