@@ -14,7 +14,7 @@ from samba.tests.subunitrun import SubunitOptions, TestProgram
 
 import samba.getopt as options
 
-from ldb import SCOPE_BASE, SCOPE_SUBTREE
+from ldb import SCOPE_BASE, SCOPE_SUBTREE, LdbError, ERR_INVALID_CREDENTIALS
 
 from samba import gensec
 import samba.tests
@@ -48,6 +48,7 @@ creds = credopts.get_credentials(lp)
 creds.set_gensec_features(creds.get_gensec_features() | gensec.FEATURE_SEAL)
 
 creds_machine = create_credential(lp, creds)
+creds_virtual = create_credential(lp, creds)
 creds_user1 = create_credential(lp, creds)
 creds_user2 = create_credential(lp, creds)
 creds_user3 = create_credential(lp, creds)
@@ -71,12 +72,61 @@ class BindTests(samba.tests.TestCase):
         self.schema_dn = self.info_dc["schemaNamingContext"][0]
         self.domain_dn = self.info_dc["defaultNamingContext"][0]
         self.config_dn = self.info_dc["configurationNamingContext"][0]
+        self.realm = self.info_dc["ldapServiceName"][0].split(b'@')[1].decode('utf-8')
         self.computer_dn = "CN=centos53,CN=Computers,%s" % self.domain_dn
+        self.virtual_user_dn = "CN=frednurk@%s,CN=Computers,%s" % (self.realm, self.domain_dn)
         self.password = "P@ssw0rd"
         self.username = "BindTestUser"
 
     def tearDown(self):
+        delete_force(self.ldb, self.virtual_user_dn)
         super(BindTests, self).tearDown()
+
+    def test_virtual_email_account_style_bind(self):
+        # create a user in the style often deployed for authentication
+        # of virtual email account at a hosting provider
+        #
+        # The userPrincipalName must not match the samAccountName for
+        # this test to detect when the LDAP DN is being double-parsed
+        # but must be in the user@realm style to allow the account to
+        # be created
+        self.ldb.add_ldif("""
+dn: """ + self.virtual_user_dn + """
+cn: frednurk@""" + self.realm + """
+displayName: Fred Nurk
+sAMAccountName: frednurk@""" + self.realm + """
+userPrincipalName: frednurk@NOT.""" + self.realm + """
+countryCode: 0
+objectClass: computer
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+objectClass: user
+""")
+        self.addCleanup(delete_force, self.ldb, self.virtual_user_dn)
+        self.ldb.modify_ldif("""
+dn: """ + self.virtual_user_dn + """
+changetype: modify
+replace: unicodePwd
+unicodePwd:: """ + base64.b64encode(u"\"P@ssw0rd\"".encode('utf-16-le')).decode('utf8') + """
+""")
+
+        self.ldb.enable_account('distinguishedName=%s' % self.virtual_user_dn)
+
+        # do a simple bind and search with the machine account
+        creds_virtual.set_bind_dn(self.virtual_user_dn)
+        creds_virtual.set_password(self.password)
+        print("BindTest with: " + creds_virtual.get_bind_dn())
+        try:
+            ldb_virtual = samba.tests.connect_samdb(host, credentials=creds_virtual,
+                                                    lp=lp, ldap_only=True)
+        except LdbError as e:
+            (num, msg) = e.args
+            if num != ERR_INVALID_CREDENTIALS:
+                raise
+            self.fail(msg)
+
+        res = ldb_virtual.search(base="", expression="", scope=SCOPE_BASE, attrs=["*"])
 
     def test_computer_account_bind(self):
         # create a computer acocount for the test
