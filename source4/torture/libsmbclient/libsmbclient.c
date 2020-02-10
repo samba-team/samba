@@ -53,17 +53,27 @@ static void auth_callback(const char *srv,
 		cli_credentials_get_username(popt_get_cmdline_credentials());
 	const char *password =
 		cli_credentials_get_password(popt_get_cmdline_credentials());
+	ssize_t ret;
 
 	if (workgroup != NULL) {
-		snprintf(wg, wglen, "%s", workgroup);
+		ret = strlcpy(wg, workgroup, wglen);
+		if (ret >= wglen) {
+			abort();
+		}
 	}
 
 	if (username != NULL) {
-		snprintf(un, unlen, "%s", username);
+		ret = strlcpy(un, username, unlen);
+		if (ret >= unlen) {
+			abort();
+		}
 	}
 
 	if (password != NULL) {
-		snprintf(pw, pwlen, "%s", password);
+		ret = strlcpy(pw, password, pwlen);
+		if (ret >= pwlen) {
+			abort();
+		}
 	}
 };
 
