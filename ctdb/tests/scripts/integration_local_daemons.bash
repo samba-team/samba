@@ -89,6 +89,6 @@ _print_logs_on_test_failure ()
 	fi
 
 	echo "*** LOG START --------------------"
-	$ctdb_local_daemons print-log all | tail -n 100
+	$ctdb_local_daemons print-log all | tail -n 500
 	echo "*** LOG END   --------------------"
 }
