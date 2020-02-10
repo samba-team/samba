@@ -41,7 +41,7 @@ from samba import werror
 from getpass import getpass
 from samba.net import Net, LIBNET_JOIN_AUTOMATIC
 import samba.ntacls
-from samba.join import join_RODC, join_DC, join_subdomain
+from samba.join import join_RODC, join_DC
 from samba.auth import system_session
 from samba.samdb import SamDB, get_default_backend_store
 from samba.ndr import ndr_pack, ndr_print
@@ -571,7 +571,7 @@ class cmd_domain_dcpromo(Command):
 
     def run(self, domain, role=None, sambaopts=None, credopts=None,
             versionopts=None, server=None, site=None, targetdir=None,
-            domain_critical_only=False, parent_domain=None, machinepass=None,
+            domain_critical_only=False, machinepass=None,
             use_ntvfs=False, dns_backend=None,
             quiet=False, verbose=False, plaintext_secrets=False,
             backend_store=None, backend_store_size=None):
@@ -618,16 +618,13 @@ class cmd_domain_join(Command):
         "credopts": options.CredentialsOptions,
     }
 
-    takes_options = [
-        Option("--parent-domain", help="parent domain to create subdomain under", type=str),
-        Option("--adminpass", type="string", metavar="PASSWORD",
-               help="choose adminstrator password when joining as a subdomain (otherwise random)"),
+    ntvfs_options = [
+        Option(
+            "--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
+            action="store_true")
     ]
 
-    ntvfs_options = [
-        Option("--use-ntvfs", help="Use NTVFS for the fileserver (default = no)",
-               action="store_true")
-    ]
+    takes_options = []
     takes_options.extend(common_join_options)
     takes_options.extend(common_provision_join_options)
 
@@ -638,11 +635,11 @@ class cmd_domain_join(Command):
 
     def run(self, domain, role=None, sambaopts=None, credopts=None,
             versionopts=None, server=None, site=None, targetdir=None,
-            domain_critical_only=False, parent_domain=None, machinepass=None,
-            use_ntvfs=False, dns_backend=None, adminpass=None,
+            domain_critical_only=False, machinepass=None,
+            use_ntvfs=False, dns_backend=None,
             quiet=False, verbose=False,
             plaintext_secrets=False,
-            backend_store=None,backend_store_size=None):
+            backend_store=None, backend_store_size=None):
         lp = sambaopts.get_loadparm()
         creds = credopts.get_credentials(lp)
         net = Net(creds, lp, server=credopts.ipaddress)
@@ -678,9 +675,6 @@ class cmd_domain_join(Command):
                       plaintext_secrets=plaintext_secrets,
                       backend_store=backend_store,
                       backend_store_size=backend_store_size)
-        # elif role == "SUBDOMAIN":
-        # subdomain command removed by Gary Lockyer <gary@catalyst.net.nz>
-        # on the 28th June 2019.
         else:
             raise CommandError("Invalid role '%s' (possible values: MEMBER, DC, RODC)" % role)
 

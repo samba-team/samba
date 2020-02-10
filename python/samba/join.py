@@ -1581,62 +1581,6 @@ def join_clone(logger=None, server=None, creds=None, lp=None,
     return ctx
 
 
-def join_subdomain(logger=None, server=None, creds=None, lp=None, site=None,
-                   netbios_name=None, targetdir=None, parent_domain=None, dnsdomain=None,
-                   netbios_domain=None, machinepass=None, adminpass=None, use_ntvfs=False,
-                   dns_backend=None, plaintext_secrets=False,
-                   backend_store=None, backend_store_size=None):
-    """Join as a DC."""
-    ctx = DCJoinContext(logger, server, creds, lp, site, netbios_name,
-                        targetdir, parent_domain, machinepass, use_ntvfs,
-                        dns_backend, plaintext_secrets,
-                        backend_store=backend_store,
-                        backend_store_size=backend_store_size)
-    ctx.subdomain = True
-    if adminpass is None:
-        ctx.adminpass = samba.generate_random_password(12, 32)
-    else:
-        ctx.adminpass = adminpass
-    ctx.parent_domain_name = ctx.domain_name
-    ctx.domain_name = netbios_domain
-    ctx.realm = dnsdomain
-    ctx.parent_dnsdomain = ctx.dnsdomain
-    ctx.parent_partition_dn = ctx.get_parent_partition_dn()
-    ctx.dnsdomain = dnsdomain
-    ctx.partition_dn = "CN=%s,CN=Partitions,%s" % (ctx.domain_name, ctx.config_dn)
-    ctx.naming_master = ctx.get_naming_master()
-    if ctx.naming_master != ctx.server:
-        logger.info("Reconnecting to naming master %s" % ctx.naming_master)
-        ctx.server = ctx.naming_master
-        ctx.samdb = SamDB(url="ldap://%s" % ctx.server,
-                          session_info=system_session(),
-                          credentials=ctx.creds, lp=ctx.lp)
-        res = ctx.samdb.search(base="", scope=ldb.SCOPE_BASE, attrs=['dnsHostName'],
-                               controls=[])
-        ctx.server = res[0]["dnsHostName"]
-        logger.info("DNS name of new naming master is %s" % ctx.server)
-
-    ctx.base_dn = samba.dn_from_dns_name(dnsdomain)
-    ctx.forestsid = ctx.domsid
-    ctx.domsid = security.random_sid()
-    ctx.acct_dn = None
-    ctx.dnshostname = "%s.%s" % (ctx.myname.lower(), ctx.dnsdomain)
-    # Windows uses 240 bytes as UTF16 so we do
-    ctx.trustdom_pass = samba.generate_random_machine_password(120, 120)
-
-    ctx.userAccountControl = samba.dsdb.UF_SERVER_TRUST_ACCOUNT | samba.dsdb.UF_TRUSTED_FOR_DELEGATION
-
-    ctx.SPNs.append('E3514235-4B06-11D1-AB04-00C04FC2DCD2/$NTDSGUID/%s' % ctx.dnsdomain)
-    ctx.secure_channel_type = misc.SEC_CHAN_BDC
-
-    ctx.replica_flags |= (drsuapi.DRSUAPI_DRS_WRIT_REP |
-                          drsuapi.DRSUAPI_DRS_FULL_SYNC_IN_PROGRESS)
-    ctx.domain_replica_flags = ctx.replica_flags
-
-    ctx.do_join()
-    ctx.logger.info("Created domain %s (SID %s) as a DC" % (ctx.domain_name, ctx.domsid))
-
-
 class DCCloneContext(DCJoinContext):
     """Clones a remote DC."""
 
