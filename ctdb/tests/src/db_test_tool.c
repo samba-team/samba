@@ -305,7 +305,7 @@ static int db_test_fetch_local_delete(TALLOC_CTX *mem_ctx,
 done:
 	TALLOC_FREE(h);
 
-	return 0;
+	return ret;
 }
 
 #define ISASCII(x) (isprint(x) && ! strchr("\"\\", (x)))
