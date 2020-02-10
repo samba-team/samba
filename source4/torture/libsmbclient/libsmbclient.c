@@ -253,7 +253,7 @@ static bool test_opendir(struct torture_context *tctx,
 
 static bool torture_libsmbclient_opendir(struct torture_context *tctx)
 {
-	int i;
+	size_t i;
 	SMBCCTX *ctx;
 	bool ret = true;
 	const char *bad_urls[] = {
