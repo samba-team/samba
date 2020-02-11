@@ -266,7 +266,8 @@ bool getgroups_unix_user(TALLOC_CTX *mem_ctx, const char *user,
 
 /* The following definitions come from lib/tallocmsg.c  */
 
-void register_msg_pool_usage(struct messaging_context *msg_ctx);
+void register_msg_pool_usage(TALLOC_CTX *mem_ctx,
+			     struct messaging_context *msg_ctx);
 
 /* The following definitions come from lib/time.c  */
 

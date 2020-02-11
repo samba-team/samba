@@ -590,7 +590,7 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 
 	/* Register some debugging related messages */
 
-	register_msg_pool_usage(ctx);
+	register_msg_pool_usage(ctx, ctx);
 	register_dmalloc_msgs(ctx);
 	debug_register_msgs(ctx);
 

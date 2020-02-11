@@ -69,12 +69,13 @@ static bool pool_usage_filter(struct messaging_rec *rec, void *private_data)
 /**
  * Register handler for MSG_REQ_POOL_USAGE
  **/
-void register_msg_pool_usage(struct messaging_context *msg_ctx)
+void register_msg_pool_usage(
+	TALLOC_CTX *mem_ctx, struct messaging_context *msg_ctx)
 {
 	struct tevent_req *req = NULL;
 
 	req = messaging_filtered_read_send(
-		msg_ctx,
+		mem_ctx,
 		messaging_tevent_context(msg_ctx),
 		msg_ctx,
 		pool_usage_filter,
