@@ -732,6 +732,7 @@ _PUBLIC_ NTSTATUS gensec_subcontext_start(TALLOC_CTX *mem_ctx,
 	(*gensec_security)->auth_context = talloc_reference(*gensec_security, parent->auth_context);
 	(*gensec_security)->settings = talloc_reference(*gensec_security, parent->settings);
 	(*gensec_security)->auth_context = talloc_reference(*gensec_security, parent->auth_context);
+	(*gensec_security)->channel_bindings = talloc_reference(*gensec_security, parent->channel_bindings);
 
 	talloc_set_destructor((*gensec_security), gensec_security_destructor);
 	return NT_STATUS_OK;
