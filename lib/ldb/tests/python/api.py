@@ -817,6 +817,17 @@ class SearchTests(LdbBaseTest):
                     "x": "y", "y": "a",
                     "objectUUID": b"0023456789abcdea"})
 
+        self.l.add({"dn": "DC=EXAMPLE,DC=COM",
+                    "name": b"org",
+                    "objectUUID": b"0000000011abcdef"})
+
+        self.l.add({"dn": "DC=EXAMPLE,DC=NET",
+                    "name": b"org",
+                    "objectUUID": b"0000000021abcdef"})
+
+        self.l.add({"dn": "OU=UNIQUE,DC=EXAMPLE,DC=NET",
+                    "objectUUID": b"0000000022abcdef"})
+
         self.l.add({"dn": "DC=SAMBA,DC=ORG",
                     "name": b"samba.org",
                     "objectUUID": b"0123456789abcdef"})
@@ -1184,6 +1195,86 @@ class SearchTests(LdbBaseTest):
                               expression="(&(ou=ou10)(y=a))")
         self.assertEqual(len(res11), 1)
 
+    def test_subtree_unique(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=SAMBA,DC=ORG",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(ou=ou10)")
+        self.assertEqual(len(res11), 1)
+
+    def test_subtree_unique_elsewhere(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=EXAMPLE,DC=ORG",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(ou=ou10)")
+        self.assertEqual(len(res11), 0)
+
+    def test_subtree_unique_elsewhere2(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=EXAMPLE,DC=COM",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(ou=ou10)")
+        self.assertEqual(len(res11), 0)
+
+    def test_subtree_unique_elsewhere2(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=EXAMPLE,DC=NET",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(ou=unique)")
+        self.assertEqual(len(res11), 1)
+
+    def test_subtree_unique_elsewhere3(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=EXAMPLE,DC=ORG",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(ou=unique)")
+        self.assertEqual(len(res11), 0)
+
+    def test_subtree_unique_elsewhere4(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=SAMBA,DC=ORG",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(ou=unique)")
+        self.assertEqual(len(res11), 0)
+
+    def test_subtree_unique_elsewhere5(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=EXAMPLE,DC=COM",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(ou=unique)")
+        self.assertEqual(len(res11), 0)
+
+    def test_subtree_unique_elsewhere6(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=EXAMPLE,DC=ORG",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(ou=unique)")
+        self.assertEqual(len(res11), 0)
+
+    def test_subtree_unique_here(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="OU=UNIQUE,DC=EXAMPLE,DC=NET",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(ou=unique)")
+        self.assertEqual(len(res11), 1)
+
+    def test_subtree_unique(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=SAMBA,DC=ORG",
+                              scope=ldb.SCOPE_SUBTREE,
+                              expression="(ou=ou10)")
+        self.assertEqual(len(res11), 1)
+
     def test_subtree_and_none(self):
         """Testing a search"""
 
@@ -1263,6 +1354,62 @@ class SearchTests(LdbBaseTest):
                               scope=ldb.SCOPE_ONELEVEL,
                               expression="(&(ou=ou10)(y=a))")
         self.assertEqual(len(res11), 1)
+
+    def test_onelevel_unique(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=SAMBA,DC=ORG",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(ou=ou10)")
+        self.assertEqual(len(res11), 1)
+
+    def test_onelevel_unique_elsewhere(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=EXAMPLE,DC=ORG",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(ou=ou10)")
+        self.assertEqual(len(res11), 0)
+
+    def test_onelevel_unique_elsewhere2(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=EXAMPLE,DC=COM",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(ou=ou10)")
+        self.assertEqual(len(res11), 0)
+
+    def test_onelevel_unique_elsewhere2(self):
+        """Testing a search (showing that onelevel is not subtree)"""
+
+        res11 = self.l.search(base="DC=EXAMPLE,DC=NET",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(ou=unique)")
+        self.assertEqual(len(res11), 1)
+
+    def test_onelevel_unique_elsewhere3(self):
+        """Testing a search (showing that onelevel is not subtree)"""
+
+        res11 = self.l.search(base="DC=EXAMPLE,DC=ORG",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(ou=unique)")
+        self.assertEqual(len(res11), 0)
+
+    def test_onelevel_unique_elsewhere5(self):
+        """Testing a search (showing that onelevel is not subtree)"""
+
+        res11 = self.l.search(base="DC=EXAMPLE,DC=COM",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(ou=unique)")
+        self.assertEqual(len(res11), 0)
+
+    def test_onelevel_unique_here(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="OU=UNIQUE,DC=EXAMPLE,DC=NET",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(ou=unique)")
+        self.assertEqual(len(res11), 0)
 
     def test_onelevel_and_none(self):
         """Testing a search"""
@@ -1363,6 +1510,22 @@ class SearchTests(LdbBaseTest):
                               expression="(&(ou=ou10)(y=a))")
         self.assertEqual(len(res11), 0)
 
+    def test_onelevel_only_unique(self):
+        """Testing a search (showing that onelevel is not subtree)"""
+
+        res11 = self.l.search(base="DC=ORG",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(ou=ou10)")
+        self.assertEqual(len(res11), 0)
+
+    def test_onelevel_only_unique2(self):
+        """Testing a search"""
+
+        res11 = self.l.search(base="DC=ORG",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(ou=unique)")
+        self.assertEqual(len(res11), 0)
+
     def test_onelevel_only_and_none(self):
         """Testing a search (showing that onelevel is not subtree)"""
 
@@ -1426,6 +1589,14 @@ class SearchTests(LdbBaseTest):
                               scope=ldb.SCOPE_ONELEVEL,
                               expression="(&(ou=ou9)(y=a))")
         self.assertEqual(len(res11), 1)
+
+    def test_onelevel_small_unique_elsewhere(self):
+        """Testing a search (showing that onelevel is not subtree)"""
+
+        res11 = self.l.search(base="DC=EXAMPLE,DC=ORG",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(ou=ou10)")
+        self.assertEqual(len(res11), 0)
 
     def test_onelevel_small_and_none(self):
         """Testing a search (showing that onelevel is not subtree)"""
