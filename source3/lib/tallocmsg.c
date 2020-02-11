@@ -25,6 +25,9 @@
 
 static bool pool_usage_filter(struct messaging_rec *rec, void *private_data)
 {
+	FILE *f = NULL;
+	int fd;
+
 	if (rec->msg_type != MSG_REQ_POOL_USAGE) {
 		return false;
 	}
@@ -36,52 +39,31 @@ static bool pool_usage_filter(struct messaging_rec *rec, void *private_data)
 		return false;
 	}
 
-	return true;
-}
-
-
-static void msg_pool_usage_do(struct tevent_req *req)
-{
-	struct messaging_context *msg_ctx = tevent_req_callback_data(
-		req, struct messaging_context);
-	struct messaging_rec *rec = NULL;
-	FILE *f = NULL;
-	int ret;
-
-	ret = messaging_filtered_read_recv(req, talloc_tos(), &rec);
-	TALLOC_FREE(req);
-	if (ret != 0) {
-		DBG_DEBUG("messaging_filtered_read_recv returned %s\n",
-			  strerror(ret));
-		return;
+	fd = dup(rec->fds[0]);
+	if (fd == -1) {
+		DBG_DEBUG("dup(%"PRIi64") failed: %s\n",
+			  rec->fds[0],
+			  strerror(errno));
+		return false;
 	}
 
-	f = fdopen(rec->fds[0], "w");
+	f = fdopen(fd, "w");
 	if (f == NULL) {
-		close(rec->fds[0]);
-		TALLOC_FREE(rec);
 		DBG_DEBUG("fdopen failed: %s\n", strerror(errno));
-		return;
+		close(fd);
+		return false;
 	}
-
-	TALLOC_FREE(rec);
 
 	talloc_full_report_printf(NULL, f);
 
 	fclose(f);
-	f = NULL;
-
-	req = messaging_filtered_read_send(
-		msg_ctx,
-		messaging_tevent_context(msg_ctx),
-		msg_ctx,
-		pool_usage_filter,
-		NULL);
-	if (req == NULL) {
-		DBG_WARNING("messaging_filtered_read_send failed\n");
-		return;
-	}
-	tevent_req_set_callback(req, msg_pool_usage_do, msg_ctx);
+	/*
+	 * Returning false, means messaging_dispatch_waiters()
+	 * won't call messaging_filtered_read_done() and
+	 * our messaging_filtered_read_send() stays alive
+	 * and will get messages.
+	 */
+	return false;
 }
 
 /**
@@ -101,6 +83,5 @@ void register_msg_pool_usage(struct messaging_context *msg_ctx)
 		DBG_WARNING("messaging_filtered_read_send failed\n");
 		return;
 	}
-	tevent_req_set_callback(req, msg_pool_usage_do, msg_ctx);
 	DEBUG(2, ("Registered MSG_REQ_POOL_USAGE\n"));
 }
