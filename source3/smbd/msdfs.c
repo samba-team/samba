@@ -699,10 +699,13 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 bool is_msdfs_link(connection_struct *conn,
 		struct smb_filename *smb_fname)
 {
-	return is_msdfs_link_internal(talloc_tos(),
-					conn,
+	NTSTATUS status = SMB_VFS_READ_DFS_PATHAT(conn,
+					talloc_tos(),
+					conn->cwd_fsp,
 					smb_fname,
+					NULL,
 					NULL);
+	return (NT_STATUS_IS_OK(status));
 }
 
 /*****************************************************************
