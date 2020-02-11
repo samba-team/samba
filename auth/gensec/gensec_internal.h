@@ -95,6 +95,23 @@ struct gensec_security_ops_wrapper {
 	const char *oid;
 };
 
+/*
+ * typedef struct gss_channel_bindings_struct {
+ *       OM_uint32 initiator_addrtype;
+ *       gss_buffer_desc initiator_address;
+ *       OM_uint32 acceptor_addrtype;
+ *       gss_buffer_desc acceptor_address;
+ *       gss_buffer_desc application_data;
+ * } *gss_channel_bindings_t;
+ */
+struct gensec_channel_bindings {
+	uint32_t initiator_addrtype;
+	DATA_BLOB initiator_address;
+	uint32_t acceptor_addrtype;
+	DATA_BLOB acceptor_address;
+	DATA_BLOB application_data;
+};
+
 struct gensec_security {
 	const struct gensec_security_ops *ops;
 	void *private_data;
@@ -106,6 +123,7 @@ struct gensec_security {
 	uint32_t max_update_size;
 	uint8_t dcerpc_auth_level;
 	struct tsocket_address *local_addr, *remote_addr;
+	struct gensec_channel_bindings *channel_bindings;
 	struct gensec_settings *settings;
 
 	/* When we are a server, this may be filled in to provide an

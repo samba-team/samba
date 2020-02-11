@@ -854,3 +854,66 @@ _PUBLIC_ const char *gensec_get_target_principal(struct gensec_security *gensec_
 
 	return NULL;
 }
+
+static int gensec_channel_bindings_destructor(struct gensec_channel_bindings *cb)
+{
+	data_blob_clear_free(&cb->initiator_address);
+	data_blob_clear_free(&cb->acceptor_address);
+	data_blob_clear_free(&cb->application_data);
+	*cb = (struct gensec_channel_bindings) { .initiator_addrtype = 0, };
+	return 0;
+}
+
+_PUBLIC_ NTSTATUS gensec_set_channel_bindings(struct gensec_security *gensec_security,
+					      uint32_t initiator_addrtype,
+					      const DATA_BLOB *initiator_address,
+					      uint32_t acceptor_addrtype,
+					      const DATA_BLOB *acceptor_address,
+					      const DATA_BLOB *application_data)
+{
+	struct gensec_channel_bindings *cb = NULL;
+
+	if (gensec_security->subcontext) {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	if (gensec_security->channel_bindings != NULL) {
+		return NT_STATUS_ALREADY_REGISTERED;
+	}
+
+	cb = talloc_zero(gensec_security, struct gensec_channel_bindings);
+	if (cb == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	talloc_set_destructor(cb, gensec_channel_bindings_destructor);
+
+	cb->initiator_addrtype = initiator_addrtype;
+	if (initiator_address != NULL) {
+		cb->initiator_address = data_blob_dup_talloc(cb,
+							     *initiator_address);
+		if (cb->initiator_address.length != initiator_address->length) {
+			TALLOC_FREE(cb);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	cb->acceptor_addrtype = acceptor_addrtype;
+	if (acceptor_address != NULL) {
+		cb->acceptor_address = data_blob_dup_talloc(cb,
+						            *acceptor_address);
+		if (cb->acceptor_address.length != acceptor_address->length) {
+			TALLOC_FREE(cb);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+	if (application_data != NULL) {
+		cb->application_data = data_blob_dup_talloc(cb,
+							    *application_data);
+		if (cb->application_data.length != application_data->length) {
+			TALLOC_FREE(cb);
+			return NT_STATUS_NO_MEMORY;
+		}
+	}
+
+	gensec_security->channel_bindings = cb;
+	return NT_STATUS_OK;
+}
