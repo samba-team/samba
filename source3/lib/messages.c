@@ -97,10 +97,9 @@ struct messaging_context {
 	struct tevent_req **waiters;
 	size_t num_waiters;
 
-	void *msg_dgm_ref;
-	void *msg_ctdb_ref;
-
 	struct server_id_db *names_db;
+
+	TALLOC_CTX *per_process_talloc_ctx;
 };
 
 static struct messaging_rec *messaging_rec_dup(TALLOC_CTX *mem_ctx,
@@ -484,6 +483,7 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 	int ret;
 	const char *lck_path;
 	const char *priv_path;
+	void *ref;
 	bool ok;
 
 	/*
@@ -537,21 +537,28 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 
 	ctx->event_ctx = ev;
 
+	ctx->per_process_talloc_ctx = talloc_new(ctx);
+	if (ctx->per_process_talloc_ctx == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
 	ok = messaging_register_event_context(ctx, ev);
 	if (!ok) {
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	ctx->msg_dgm_ref = messaging_dgm_ref(ctx,
-					     ctx->event_ctx,
-					     &ctx->id.unique_id,
-					     priv_path,
-					     lck_path,
-					     messaging_recv_cb,
-					     ctx,
-					     &ret);
-	if (ctx->msg_dgm_ref == NULL) {
+	ref = messaging_dgm_ref(
+		ctx->per_process_talloc_ctx,
+		ctx->event_ctx,
+		&ctx->id.unique_id,
+		priv_path,
+		lck_path,
+		messaging_recv_cb,
+		ctx,
+		&ret);
+	if (ref == NULL) {
 		DEBUG(2, ("messaging_dgm_ref failed: %s\n", strerror(ret)));
 		status = map_nt_error_from_unix(ret);
 		goto done;
@@ -560,11 +567,16 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 
 #ifdef CLUSTER_SUPPORT
 	if (lp_clustering()) {
-		ctx->msg_ctdb_ref = messaging_ctdb_ref(
-			ctx, ctx->event_ctx,
-			lp_ctdbd_socket(), lp_ctdb_timeout(),
-			ctx->id.unique_id, messaging_recv_cb, ctx, &ret);
-		if (ctx->msg_ctdb_ref == NULL) {
+		ref = messaging_ctdb_ref(
+			ctx->per_process_talloc_ctx,
+			ctx->event_ctx,
+			lp_ctdbd_socket(),
+			lp_ctdb_timeout(),
+			ctx->id.unique_id,
+			messaging_recv_cb,
+			ctx,
+			&ret);
+		if (ref == NULL) {
 			DBG_NOTICE("messaging_ctdb_ref failed: %s\n",
 				   strerror(ret));
 			status = map_nt_error_from_unix(ret);
@@ -636,9 +648,14 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 {
 	int ret;
 	char *lck_path;
+	void *ref;
 
-	TALLOC_FREE(msg_ctx->msg_dgm_ref);
-	TALLOC_FREE(msg_ctx->msg_ctdb_ref);
+	TALLOC_FREE(msg_ctx->per_process_talloc_ctx);
+
+	msg_ctx->per_process_talloc_ctx = talloc_new(msg_ctx);
+	if (msg_ctx->per_process_talloc_ctx == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	msg_ctx->id = (struct server_id) {
 		.pid = getpid(), .vnn = msg_ctx->id.vnn
@@ -649,23 +666,32 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	msg_ctx->msg_dgm_ref = messaging_dgm_ref(
-		msg_ctx, msg_ctx->event_ctx, &msg_ctx->id.unique_id,
-		private_path("msg.sock"), lck_path,
-		messaging_recv_cb, msg_ctx, &ret);
+	ref = messaging_dgm_ref(
+		msg_ctx->per_process_talloc_ctx,
+		msg_ctx->event_ctx,
+		&msg_ctx->id.unique_id,
+		private_path("msg.sock"),
+		lck_path,
+		messaging_recv_cb,
+		msg_ctx,
+		&ret);
 
-	if (msg_ctx->msg_dgm_ref == NULL) {
+	if (ref == NULL) {
 		DEBUG(2, ("messaging_dgm_ref failed: %s\n", strerror(ret)));
 		return map_nt_error_from_unix(ret);
 	}
 
 	if (lp_clustering()) {
-		msg_ctx->msg_ctdb_ref = messaging_ctdb_ref(
-			msg_ctx, msg_ctx->event_ctx,
-			lp_ctdbd_socket(), lp_ctdb_timeout(),
-			msg_ctx->id.unique_id, messaging_recv_cb, msg_ctx,
+		ref = messaging_ctdb_ref(
+			msg_ctx->per_process_talloc_ctx,
+			msg_ctx->event_ctx,
+			lp_ctdbd_socket(),
+			lp_ctdb_timeout(),
+			msg_ctx->id.unique_id,
+			messaging_recv_cb,
+			msg_ctx,
 			&ret);
-		if (msg_ctx->msg_ctdb_ref == NULL) {
+		if (ref == NULL) {
 			DBG_NOTICE("messaging_ctdb_ref failed: %s\n",
 				   strerror(ret));
 			return map_nt_error_from_unix(ret);
