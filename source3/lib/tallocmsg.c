@@ -19,9 +19,6 @@
 #include "includes.h"
 #include "messages.h"
 #include "lib/util/talloc_report_printf.h"
-#ifdef HAVE_MALLINFO
-#include <malloc.h>
-#endif /* HAVE_MALLINFO */
 
 static bool pool_usage_filter(struct messaging_rec *rec, void *private_data)
 {
