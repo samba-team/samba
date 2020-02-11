@@ -602,7 +602,7 @@ static NTSTATUS messaging_init_internal(TALLOC_CTX *mem_ctx,
 
 	/* Register some debugging related messages */
 
-	register_msg_pool_usage(ctx, ctx);
+	register_msg_pool_usage(ctx->per_process_talloc_ctx, ctx);
 	register_dmalloc_msgs(ctx);
 	debug_register_msgs(ctx);
 
@@ -699,6 +699,7 @@ NTSTATUS messaging_reinit(struct messaging_context *msg_ctx)
 	}
 
 	server_id_db_reinit(msg_ctx->names_db, msg_ctx->id);
+	register_msg_pool_usage(msg_ctx->per_process_talloc_ctx, msg_ctx);
 
 	return NT_STATUS_OK;
 }
