@@ -1008,6 +1008,41 @@ static NTSTATUS cap_create_dfs_pathat(vfs_handle_struct *handle,
 	return status;
 }
 
+static NTSTATUS cap_read_dfs_pathat(struct vfs_handle_struct *handle,
+			TALLOC_CTX *mem_ctx,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			struct referral **ppreflist,
+			size_t *preferral_count)
+{
+	char *cappath = capencode(talloc_tos(), smb_fname->base_name);
+	struct smb_filename *cap_smb_fname = NULL;
+	NTSTATUS status;
+
+	if (cappath == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
+				cappath,
+				NULL,
+				NULL,
+				smb_fname->flags);
+	if (cap_smb_fname == NULL) {
+		TALLOC_FREE(cappath);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = SMB_VFS_NEXT_READ_DFS_PATHAT(handle,
+			mem_ctx,
+			dirfsp,
+			cap_smb_fname,
+			ppreflist,
+			preferral_count);
+	TALLOC_FREE(cappath);
+	TALLOC_FREE(cap_smb_fname);
+	return status;
+}
+
 static struct vfs_fn_pointers vfs_cap_fns = {
 	.disk_free_fn = cap_disk_free,
 	.get_quota_fn = cap_get_quota,
@@ -1040,7 +1075,8 @@ static struct vfs_fn_pointers vfs_cap_fns = {
 	.fremovexattr_fn = cap_fremovexattr,
 	.setxattr_fn = cap_setxattr,
 	.fsetxattr_fn = cap_fsetxattr,
-	.create_dfs_pathat_fn = cap_create_dfs_pathat
+	.create_dfs_pathat_fn = cap_create_dfs_pathat,
+	.read_dfs_pathat_fn = cap_read_dfs_pathat
 };
 
 static_decl_vfs;
