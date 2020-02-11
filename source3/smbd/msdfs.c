@@ -855,6 +855,31 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 
 	status = NT_STATUS_OK;
  out:
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
+		/*
+		 * We're returning a DFS redirect. If we have
+		 * the targetpath, parse it here. This will ease
+		 * the code transition to SMB_VFS_READ_DFS_PATHAT().
+		 * (which will make this code redundent).
+		 */
+		if (pp_targetpath != NULL) {
+			struct referral *preflist = NULL;
+			size_t referral_count = 0;
+
+			bool ok = parse_msdfs_symlink(ctx,
+				lp_msdfs_shuffle_referrals(SNUM(conn)),
+				*pp_targetpath,
+				&preflist,
+				&referral_count);
+			TALLOC_FREE(preflist);
+			if (!ok) {
+				status = NT_STATUS_NO_MEMORY;
+			}
+		}
+
+	}
+
 	TALLOC_FREE(smb_fname);
 	return status;
 }
