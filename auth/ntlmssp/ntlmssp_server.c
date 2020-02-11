@@ -386,6 +386,9 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 	DATA_BLOB version_blob = data_blob_null;
 	const unsigned int mic_len = NTLMSSP_MIC_SIZE;
 	DATA_BLOB mic_blob = data_blob_null;
+	const uint8_t zero_channel_bindings[16] = { 0, };
+	const uint8_t *client_channel_bindings = zero_channel_bindings;
+	uint8_t server_channel_bindings[16] = { 0, };
 	const char *parse_string;
 	bool ok;
 	struct timeval endtime;
@@ -523,6 +526,7 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 		uint32_t i = 0;
 		uint32_t count = 0;
 		const struct AV_PAIR *flags = NULL;
+		const struct AV_PAIR *cb = NULL;
 		const struct AV_PAIR *eol = NULL;
 		uint32_t av_flags = 0;
 
@@ -596,6 +600,12 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 			}
 
 			ntlmssp_state->new_spnego = true;
+		}
+
+		cb = ndr_ntlmssp_find_av(&v2_resp.Challenge.AvPairs,
+					 MsvChannelBindings);
+		if (cb != NULL) {
+			client_channel_bindings = cb->Value.ChannelBindings;
 		}
 
 		count = ntlmssp_state->server.av_pair_list.count;
@@ -697,6 +707,43 @@ static NTSTATUS ntlmssp_server_preauth(struct gensec_security *gensec_security,
 				 */
 				return NT_STATUS_INTERNAL_ERROR;
 			}
+		}
+	}
+
+	if (gensec_security->channel_bindings != NULL) {
+		nt_status = ntlmssp_hash_channel_bindings(gensec_security,
+							  server_channel_bindings);
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			return nt_status;
+		}
+
+		ok = mem_equal_const_time(client_channel_bindings,
+					  server_channel_bindings,
+					  16);
+		if (!ok && gensec_security->want_features & GENSEC_FEATURE_CB_OPTIONAL) {
+			/*
+			 * Unlike kerberos, explicit 16 zeros in
+			 * MsvChannelBindings are not enough to
+			 * pass the optional check.
+			 *
+			 * So we only let it through without explicit
+			 * MsvChannelBindings.
+			 */
+			ok = (client_channel_bindings == zero_channel_bindings);
+		}
+		if (!ok) {
+			DBG_WARNING("Invalid channel bindings for "
+				    "user=[%s] domain=[%s] workstation=[%s]\n",
+				    ntlmssp_state->user,
+				    ntlmssp_state->domain,
+				    ntlmssp_state->client.netbios_name);
+			dump_data(DBGLVL_WARNING,
+				  client_channel_bindings,
+				  16);
+			dump_data(DBGLVL_WARNING,
+				  server_channel_bindings,
+				  16);
+			return NT_STATUS_BAD_BINDINGS;
 		}
 	}
 

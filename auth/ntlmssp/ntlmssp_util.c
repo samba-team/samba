@@ -22,8 +22,14 @@
 */
 
 #include "includes.h"
+#include "auth/gensec/gensec.h"
+#include "auth/gensec/gensec_internal.h"
 #include "../auth/ntlmssp/ntlmssp.h"
 #include "../auth/ntlmssp/ntlmssp_private.h"
+
+#include "lib/crypto/gnutls_helpers.h"
+#include <gnutls/gnutls.h>
+#include <gnutls/crypto.h>
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
@@ -217,4 +223,96 @@ const DATA_BLOB ntlmssp_version_blob(void)
 	};
 
 	return data_blob_const(version_buffer, ARRAY_SIZE(version_buffer));
+}
+
+NTSTATUS ntlmssp_hash_channel_bindings(struct gensec_security *gensec_security,
+				       uint8_t cb_hash[16])
+{
+	const struct gensec_channel_bindings *cb =
+		gensec_security->channel_bindings;
+	gnutls_hash_hd_t hash_hnd = NULL;
+	uint8_t uint32buf[4];
+	int rc;
+
+	if (cb == NULL) {
+		memset(cb_hash, 0, 16);
+		return NT_STATUS_OK;
+	}
+
+	GNUTLS_FIPS140_SET_LAX_MODE();
+	rc = gnutls_hash_init(&hash_hnd, GNUTLS_DIG_MD5);
+	if (rc < 0) {
+		GNUTLS_FIPS140_SET_STRICT_MODE();
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+
+	SIVAL(uint32buf, 0, cb->initiator_addrtype);
+	rc = gnutls_hash(hash_hnd, uint32buf, sizeof(uint32buf));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		GNUTLS_FIPS140_SET_STRICT_MODE();
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+	SIVAL(uint32buf, 0, cb->initiator_address.length);
+	rc = gnutls_hash(hash_hnd, uint32buf, sizeof(uint32buf));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		GNUTLS_FIPS140_SET_STRICT_MODE();
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+	if (cb->initiator_address.length > 0) {
+		rc = gnutls_hash(hash_hnd,
+				 cb->initiator_address.data,
+				 cb->initiator_address.length);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			GNUTLS_FIPS140_SET_STRICT_MODE();
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+		}
+	}
+	SIVAL(uint32buf, 0, cb->acceptor_addrtype);
+	rc = gnutls_hash(hash_hnd, uint32buf, sizeof(uint32buf));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		GNUTLS_FIPS140_SET_STRICT_MODE();
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+	SIVAL(uint32buf, 0, cb->acceptor_address.length);
+	rc = gnutls_hash(hash_hnd, uint32buf, sizeof(uint32buf));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		GNUTLS_FIPS140_SET_STRICT_MODE();
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+	if (cb->acceptor_address.length > 0) {
+		rc = gnutls_hash(hash_hnd,
+				 cb->acceptor_address.data,
+				 cb->acceptor_address.length);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			GNUTLS_FIPS140_SET_STRICT_MODE();
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+		}
+	}
+	SIVAL(uint32buf, 0, cb->application_data.length);
+	rc = gnutls_hash(hash_hnd, uint32buf, sizeof(uint32buf));
+	if (rc < 0) {
+		gnutls_hash_deinit(hash_hnd, NULL);
+		GNUTLS_FIPS140_SET_STRICT_MODE();
+		return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+	}
+	if (cb->application_data.length > 0) {
+		rc = gnutls_hash(hash_hnd,
+				 cb->application_data.data,
+				 cb->application_data.length);
+		if (rc < 0) {
+			gnutls_hash_deinit(hash_hnd, NULL);
+			GNUTLS_FIPS140_SET_STRICT_MODE();
+			return gnutls_error_to_ntstatus(rc, NT_STATUS_HMAC_NOT_SUPPORTED);
+		}
+	}
+
+	gnutls_hash_deinit(hash_hnd, cb_hash);
+	GNUTLS_FIPS140_SET_STRICT_MODE();
+	return NT_STATUS_OK;
 }
