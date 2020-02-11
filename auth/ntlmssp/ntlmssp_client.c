@@ -599,6 +599,8 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			SingleHost->Value.AvSingleHost.remaining = data_blob_null;
 		}
 
+		if (!(gensec_security->want_features & GENSEC_FEATURE_CB_OPTIONAL)
+		    || gensec_security->channel_bindings != NULL)
 		{
 			struct AV_PAIR *ChannelBindings = NULL;
 
@@ -607,13 +609,12 @@ NTSTATUS ntlmssp_client_challenge(struct gensec_security *gensec_security,
 			count++;
 			*eol = *ChannelBindings;
 
-			/*
-			 * gensec doesn't support channel bindings yet,
-			 * but we want to match Windows on the wire
-			 */
 			ChannelBindings->AvId = MsvChannelBindings;
-			memset(ChannelBindings->Value.ChannelBindings, 0,
-			       sizeof(ChannelBindings->Value.ChannelBindings));
+			nt_status = ntlmssp_hash_channel_bindings(gensec_security,
+					ChannelBindings->Value.ChannelBindings);
+			if (!NT_STATUS_IS_OK(nt_status)) {
+				return nt_status;
+			}
 		}
 
 		service = gensec_get_target_service(gensec_security);

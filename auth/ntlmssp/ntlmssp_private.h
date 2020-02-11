@@ -56,6 +56,8 @@ void debug_ntlmssp_flags(uint32_t neg_flags);
 NTSTATUS ntlmssp_handle_neg_flags(struct ntlmssp_state *ntlmssp_state,
 				  uint32_t neg_flags, const char *name);
 const DATA_BLOB ntlmssp_version_blob(void);
+NTSTATUS ntlmssp_hash_channel_bindings(struct gensec_security *gensec_security,
+				       uint8_t cb_hash[16]);
 
 /* The following definitions come from auth/ntlmssp_server.c  */
 
