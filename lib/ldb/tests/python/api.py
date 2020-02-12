@@ -1462,6 +1462,14 @@ class SearchTests(LdbBaseTest):
                               expression="(ou=unique)")
         self.assertEqual(len(res11), 0)
 
+    def test_onelevel_unique_elsewhere4(self):
+        """Testing a search (showing that onelevel is not subtree)"""
+
+        res11 = self.l.search(base="DC=SAMBA,DC=ORG",
+                              scope=ldb.SCOPE_ONELEVEL,
+                              expression="(ou=unique)")
+        self.assertEqual(len(res11), 0)
+
     def test_onelevel_unique_elsewhere5(self):
         """Testing a search (showing that onelevel is not subtree)"""
 
