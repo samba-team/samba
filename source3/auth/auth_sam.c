@@ -182,12 +182,13 @@ static NTSTATUS auth_sam_netlogon3_auth(const struct auth_context *auth_context,
 					const struct auth_usersupplied_info *user_info,
 					struct auth_serversupplied_info **server_info)
 {
-	const char *effective_domain = user_info->mapped.domain_name;
+	const char *effective_domain = NULL;
 	bool is_my_domain;
 
 	if (!user_info || !auth_context) {
 		return NT_STATUS_LOGON_FAILURE;
 	}
+	effective_domain = user_info->mapped.domain_name;
 
 	if (user_info->mapped.account_name == NULL ||
 	    user_info->mapped.account_name[0] == '\0')
