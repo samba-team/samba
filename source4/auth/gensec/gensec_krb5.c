@@ -148,9 +148,8 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 		struct samba_sockaddr addr;
 		bool ok;
 
-		addr.sa_socklen = tsocket_address_bsd_sockaddr(tlocal_addr,
-							       &addr.u.sa,
-							       sizeof(addr.u));
+		addr.sa_socklen = tsocket_address_bsd_sockaddr(
+			tlocal_addr, &addr.u.sa, sizeof(addr.u.sa));
 		if (addr.sa_socklen < 0) {
 			talloc_free(gensec_krb5_state);
 			return NT_STATUS_INTERNAL_ERROR;
@@ -168,9 +167,8 @@ static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security, bool 
 		struct samba_sockaddr addr;
 		bool ok;
 
-		addr.sa_socklen = tsocket_address_bsd_sockaddr(tremote_addr,
-							       &addr.u.sa,
-							       sizeof(addr.u));
+		addr.sa_socklen = tsocket_address_bsd_sockaddr(
+			tremote_addr, &addr.u.sa, sizeof(addr.u.sa));
 		if (addr.sa_socklen < 0) {
 			talloc_free(gensec_krb5_state);
 			return NT_STATUS_INTERNAL_ERROR;
