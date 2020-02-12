@@ -620,6 +620,7 @@ bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 	return true;
 }
 
+#if 0
 /**********************************************************************
  Returns true if the unix path is a valid msdfs symlink and also
  returns the target string from inside the link.
@@ -691,6 +692,7 @@ static bool is_msdfs_link_internal(TALLOC_CTX *ctx,
 	}
 	return False;
 }
+#endif
 
 /**********************************************************************
  Returns true if the unix path is a valid msdfs symlink.
@@ -1757,7 +1759,6 @@ static int form_junctions(TALLOC_CTX *ctx,
 
 	while ((dname = vfs_readdirname(conn, dirp, NULL, &talloced))
 	       != NULL) {
-		char *link_target = NULL;
 		struct smb_filename *smb_dname = NULL;
 
 		if (cnt >= jn_remain) {
@@ -1775,28 +1776,24 @@ static int form_junctions(TALLOC_CTX *ctx,
 			TALLOC_FREE(talloced);
 			goto out;
 		}
-		if (is_msdfs_link_internal(ctx,
-					conn,
-					smb_dname, &link_target)) {
-			if (parse_msdfs_symlink(ctx,
-					lp_msdfs_shuffle_referrals(snum),
-					link_target,
-					&jucn[cnt].referral_list,
-					&jucn[cnt].referral_count)) {
 
-				jucn[cnt].service_name = talloc_strdup(ctx,
-								service_name);
-				jucn[cnt].volume_name = talloc_strdup(ctx,
-								dname);
-				if (!jucn[cnt].service_name ||
-						!jucn[cnt].volume_name) {
-					TALLOC_FREE(talloced);
-					goto out;
-				}
-				jucn[cnt].comment = "";
-				cnt++;
+		status = SMB_VFS_READ_DFS_PATHAT(conn,
+				ctx,
+				conn->cwd_fsp,
+				smb_dname,
+				&jucn[cnt].referral_list,
+				&jucn[cnt].referral_count);
+
+		if (NT_STATUS_IS_OK(status)) {
+			jucn[cnt].service_name = talloc_strdup(ctx,
+							service_name);
+			jucn[cnt].volume_name = talloc_strdup(ctx, dname);
+			if (!jucn[cnt].service_name || !jucn[cnt].volume_name) {
+				TALLOC_FREE(talloced);
+				goto out;
 			}
-			TALLOC_FREE(link_target);
+			jucn[cnt].comment = "";
+			cnt++;
 		}
 		TALLOC_FREE(talloced);
 		TALLOC_FREE(smb_dname);
