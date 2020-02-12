@@ -730,7 +730,8 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 					       server+share+extrapath. */
 		uint32_t ucf_flags,
 		int *consumedcntp,
-		char **pp_targetpath)
+		struct referral **ppreflist,
+		size_t *preferral_count)
 {
 	char *p = NULL;
 	char *q = NULL;
@@ -738,6 +739,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	struct smb_filename *smb_fname = NULL;
 	char *canon_dfspath = NULL; /* Canonicalized dfs path. (only '/'
 				  components). */
+	char *targetpath = NULL;
 
 	DEBUG(10,("dfs_path_lookup: Conn path = %s reqpath = %s\n",
 		conn->connectpath, pdp->reqpath));
@@ -764,7 +766,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 
 	/* Optimization - check if we can redirect the whole path. */
 
-	if (is_msdfs_link_internal(ctx, conn, smb_fname, pp_targetpath)) {
+	if (is_msdfs_link_internal(ctx, conn, smb_fname, &targetpath)) {
 		/* XX_ALLOW_WCARD_XXX is called from search functions. */
 		if (ucf_flags &
 				(UCF_COND_ALLOW_WCARD_LCOMP|
@@ -777,7 +779,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 
 		DEBUG(6,("dfs_path_lookup: %s resolves to a "
 			"valid dfs link %s.\n", dfspath,
-			pp_targetpath ? *pp_targetpath : ""));
+			targetpath != NULL ? targetpath : ""));
 
 		if (consumedcntp) {
 			*consumedcntp = strlen(dfspath);
@@ -827,7 +829,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		}
 
 		if (is_msdfs_link_internal(ctx, conn,
-					   smb_fname, pp_targetpath)) {
+					   smb_fname, &targetpath)) {
 			DEBUG(4, ("dfs_path_lookup: Redirecting %s because "
 				  "parent %s is dfs link\n", dfspath,
 				  smb_fname_str_dbg(smb_fname)));
@@ -863,16 +865,12 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 		 * the code transition to SMB_VFS_READ_DFS_PATHAT().
 		 * (which will make this code redundent).
 		 */
-		if (pp_targetpath != NULL) {
-			struct referral *preflist = NULL;
-			size_t referral_count = 0;
-
+		if (targetpath != NULL) {
 			bool ok = parse_msdfs_symlink(ctx,
 				lp_msdfs_shuffle_referrals(SNUM(conn)),
-				*pp_targetpath,
-				&preflist,
-				&referral_count);
-			TALLOC_FREE(preflist);
+				targetpath,
+				ppreflist,
+				preferral_count);
 			if (!ok) {
 				status = NT_STATUS_NO_MEMORY;
 			}
@@ -880,6 +878,7 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 
 	}
 
+	TALLOC_FREE(targetpath);
 	TALLOC_FREE(smb_fname);
 	return status;
 }
@@ -971,8 +970,14 @@ static NTSTATUS dfs_redirect(TALLOC_CTX *ctx,
 		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 
-	status = dfs_path_lookup(ctx, conn, path_in, pdp,
-				 ucf_flags, NULL, NULL);
+	status = dfs_path_lookup(ctx,
+				conn,
+				path_in,
+				pdp,
+				ucf_flags,
+				NULL, /* int *consumedcntp */
+				NULL, /* struct referral **ppreflist */
+				NULL); /* size_t *preferral_count */
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
 			DEBUG(3,("dfs_redirect: Redirecting %s\n", path_in));
@@ -1051,7 +1056,6 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 		loadparm_s3_global_substitution();
 	struct conn_struct_tos *c = NULL;
 	struct connection_struct *conn = NULL;
-	char *targetpath = NULL;
 	int snum;
 	NTSTATUS status = NT_STATUS_NOT_FOUND;
 	bool dummy;
@@ -1192,8 +1196,14 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 	/* If this is a DFS path dfs_lookup should return
 	 * NT_STATUS_PATH_NOT_COVERED. */
 
-	status = dfs_path_lookup(ctx, conn, dfs_path, pdp,
-				 0, consumedcntp, &targetpath);
+	status = dfs_path_lookup(ctx,
+				conn,
+				dfs_path,
+				pdp,
+				0, /* ucf_flags */
+				consumedcntp,
+				&jucn->referral_list,
+				&jucn->referral_count);
 
 	if (!NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
 		DEBUG(3,("get_referred_path: No valid referrals for path %s\n",
@@ -1211,18 +1221,6 @@ NTSTATUS get_referred_path(TALLOC_CTX *ctx,
 			 */
 			status = NT_STATUS_NOT_FOUND;
 		}
-		goto err_exit;
-	}
-
-	/* We know this is a valid dfs link. Parse the targetpath. */
-	if (!parse_msdfs_symlink(ctx,
-				lp_msdfs_shuffle_referrals(snum),
-				targetpath,
-				&jucn->referral_list,
-				&jucn->referral_count)) {
-		DEBUG(3,("get_referred_path: failed to parse symlink "
-			"target %s\n", targetpath ));
-		status = NT_STATUS_NOT_FOUND;
 		goto err_exit;
 	}
 
