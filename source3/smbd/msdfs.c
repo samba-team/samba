@@ -739,7 +739,6 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	struct smb_filename *smb_fname = NULL;
 	char *canon_dfspath = NULL; /* Canonicalized dfs path. (only '/'
 				  components). */
-	char *targetpath = NULL;
 
 	DEBUG(10,("dfs_path_lookup: Conn path = %s reqpath = %s\n",
 		conn->connectpath, pdp->reqpath));
@@ -766,7 +765,14 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 
 	/* Optimization - check if we can redirect the whole path. */
 
-	if (is_msdfs_link_internal(ctx, conn, smb_fname, &targetpath)) {
+	status = SMB_VFS_READ_DFS_PATHAT(conn,
+					ctx,
+					conn->cwd_fsp,
+					smb_fname,
+					ppreflist,
+					preferral_count);
+
+	if (NT_STATUS_IS_OK(status)) {
 		/* XX_ALLOW_WCARD_XXX is called from search functions. */
 		if (ucf_flags &
 				(UCF_COND_ALLOW_WCARD_LCOMP|
@@ -777,9 +783,8 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 			goto out;
 		}
 
-		DEBUG(6,("dfs_path_lookup: %s resolves to a "
-			"valid dfs link %s.\n", dfspath,
-			targetpath != NULL ? targetpath : ""));
+		DBG_INFO("%s resolves to a valid dfs link\n",
+			dfspath);
 
 		if (consumedcntp) {
 			*consumedcntp = strlen(dfspath);
@@ -828,11 +833,18 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 			*q = '\0';
 		}
 
-		if (is_msdfs_link_internal(ctx, conn,
-					   smb_fname, &targetpath)) {
-			DEBUG(4, ("dfs_path_lookup: Redirecting %s because "
-				  "parent %s is dfs link\n", dfspath,
-				  smb_fname_str_dbg(smb_fname)));
+		status = SMB_VFS_READ_DFS_PATHAT(conn,
+					ctx,
+					conn->cwd_fsp,
+					smb_fname,
+					ppreflist,
+					preferral_count);
+
+		if (NT_STATUS_IS_OK(status)) {
+			DBG_INFO("Redirecting %s because "
+				"parent %s is a dfs link\n",
+				dfspath,
+				smb_fname_str_dbg(smb_fname));
 
 			if (consumedcntp) {
 				*consumedcntp = strlen(canon_dfspath);
@@ -858,27 +870,6 @@ static NTSTATUS dfs_path_lookup(TALLOC_CTX *ctx,
 	status = NT_STATUS_OK;
  out:
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_PATH_NOT_COVERED)) {
-		/*
-		 * We're returning a DFS redirect. If we have
-		 * the targetpath, parse it here. This will ease
-		 * the code transition to SMB_VFS_READ_DFS_PATHAT().
-		 * (which will make this code redundent).
-		 */
-		if (targetpath != NULL) {
-			bool ok = parse_msdfs_symlink(ctx,
-				lp_msdfs_shuffle_referrals(SNUM(conn)),
-				targetpath,
-				ppreflist,
-				preferral_count);
-			if (!ok) {
-				status = NT_STATUS_NO_MEMORY;
-			}
-		}
-
-	}
-
-	TALLOC_FREE(targetpath);
 	TALLOC_FREE(smb_fname);
 	return status;
 }
