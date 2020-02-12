@@ -1071,6 +1071,14 @@ sub setup_fileserver
 	path = $share_dir
 	comment = force group test
 #	force group = everyone
+
+[create_mode_664]
+	path = $share_dir
+	comment = smb username is [%U]
+	create mask = 0644
+	force create mode = 0664
+	vfs objects = dirsort
+
 [homes]
 	comment = Home directories
 	browseable = No
