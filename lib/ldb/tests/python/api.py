@@ -1011,6 +1011,38 @@ class SearchTests(LdbBaseTest):
             enum = err.args[0]
             self.assertEqual(enum, ldb.ERR_NO_SUCH_OBJECT)
 
+    def test_subtree(self):
+        """Testing a search"""
+
+        try:
+            res11 = self.l.search(base="DC=SAMBA,DC=ORG",
+                                  scope=ldb.SCOPE_SUBTREE)
+            if hasattr(self, 'IDXCHECK'):
+                self.fail()
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            estr = err.args[1]
+            self.assertEqual(enum, ldb.ERR_INAPPROPRIATE_MATCHING)
+            self.assertIn(estr, "ldb FULL SEARCH disabled")
+        else:
+            self.assertEqual(len(res11), 25)
+
+    def test_subtree2(self):
+        """Testing a search"""
+
+        try:
+            res11 = self.l.search(base="DC=ORG",
+                                  scope=ldb.SCOPE_SUBTREE)
+            if hasattr(self, 'IDXCHECK'):
+                self.fail()
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            estr = err.args[1]
+            self.assertEqual(enum, ldb.ERR_INAPPROPRIATE_MATCHING)
+            self.assertIn(estr, "ldb FULL SEARCH disabled")
+        else:
+            self.assertEqual(len(res11), 36)
+
     def test_subtree_and(self):
         """Testing a search"""
 
@@ -1298,6 +1330,41 @@ class SearchTests(LdbBaseTest):
                               scope=ldb.SCOPE_SUBTREE,
                               expression="(@IDXONE=DC=SAMBA,DC=ORG)")
         self.assertEqual(len(res11), 0)
+
+    def test_onelevel(self):
+        """Testing a search"""
+
+        try:
+            res11 = self.l.search(base="DC=SAMBA,DC=ORG",
+                                  scope=ldb.SCOPE_ONELEVEL)
+            if hasattr(self, 'IDXCHECK') \
+               and not hasattr(self, 'IDXONE'):
+                self.fail()
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            estr = err.args[1]
+            self.assertEqual(enum, ldb.ERR_INAPPROPRIATE_MATCHING)
+            self.assertIn(estr, "ldb FULL SEARCH disabled")
+        else:
+            self.assertEqual(len(res11), 24)
+
+    def test_onelevel2(self):
+        """Testing a search"""
+
+        try:
+            res11 = self.l.search(base="DC=EXAMPLE,DC=ORG",
+                                  scope=ldb.SCOPE_ONELEVEL)
+            if hasattr(self, 'IDXCHECK') \
+               and not hasattr(self, 'IDXONE'):
+                self.fail()
+                self.fail()
+        except ldb.LdbError as err:
+            enum = err.args[0]
+            estr = err.args[1]
+            self.assertEqual(enum, ldb.ERR_INAPPROPRIATE_MATCHING)
+            self.assertIn(estr, "ldb FULL SEARCH disabled")
+        else:
+            self.assertEqual(len(res11), 9)
 
     def test_onelevel_and_or(self):
         """Testing a search"""
@@ -1914,7 +1981,6 @@ class GUIDIndexedSearchTests(SearchTests):
         super(GUIDIndexedSearchTests, self).setUp()
 
         self.IDXGUID = True
-        self.IDXONE = True
 
 
 class GUIDIndexedDNFilterSearchTests(SearchTests):
@@ -1943,6 +2009,7 @@ class GUIDAndOneLevelIndexedSearchTests(SearchTests):
     def setUp(self):
         self.index = {"dn": "@INDEXLIST",
                       "@IDXATTR": [b"x", b"y", b"ou"],
+                      "@IDXONE": [b"1"],
                       "@IDXGUID": [b"objectUUID"],
                       "@IDX_DN_GUID": [b"GUID"]}
         super(GUIDAndOneLevelIndexedSearchTests, self).setUp()
