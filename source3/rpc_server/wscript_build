@@ -158,18 +158,42 @@ if bld.env.spotlight_backend_tracker:
                           mdssvc/mdssvc_tracker.c
                           mdssvc/sparql_mapping.c
                           mdssvc/sparql_parser.y
-                          mdssvc/sparql_lexer.l
                           '''
     rpc_mdssvc_deps += 'tevent-glib-glue ' + bld.env['libtracker']
+    # flex adds "#line nnn <stdout>" to the generated source
+    # which then causes issues with lcov, so need to filter out those
+    # lines. We need to use a different target name, as the default flex rule
+    # will also build sparql_lexer.lex.c
+    bld.SAMBA_GENERATOR(
+        "sparql_lexer.gcov.lex.c",
+        group='build_source',
+        source="mdssvc/sparql_lexer.l",
+        target="mdssvc/sparql_lexer.gcov.lex.c",
+        rule='${FLEX} ${FLEXFLAGS} ${SRC} |'
+             'grep -v "#line.*<stdout>" >${TGT}')
+    rpc_mdssvc_sources += ' mdssvc/sparql_lexer.gcov.lex.c'
 
 if bld.env.spotlight_backend_es:
     rpc_mdssvc_sources += '''
                           mdssvc/mdssvc_es.c
                           mdssvc/es_mapping.c
                           mdssvc/es_parser.y
-                          mdssvc/es_lexer.l
                           '''
     rpc_mdssvc_deps += ' http jansson'
+
+    # flex adds "#line nnn <stdout>" to the generated source
+    # which then causes issues with lcov, so need to filter out those
+    # lines. We need to use a different target name, as the default flex rule
+    # will also build es_lexer.lex.c
+    bld.SAMBA_GENERATOR(
+        "es_lexer.gcov.lex.c",
+        group='build_source',
+        source="mdssvc/es_lexer.l",
+        target="mdssvc/es_lexer.gcov.lex.c",
+        rule='${FLEX} ${FLEXFLAGS} ${SRC} |'
+             'grep -v "#line.*<stdout>" >${TGT}')
+    rpc_mdssvc_sources += ' mdssvc/es_lexer.gcov.lex.c'
+
     if bld.SAMBA3_IS_ENABLED_MODULE('rpc_mdssvc_module'):
         bld.INSTALL_FILES(bld.env.SAMBA_DATADIR,
                           'mdssvc/elasticsearch_mappings.json')

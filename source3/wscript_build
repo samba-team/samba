@@ -1277,7 +1277,7 @@ bld.SAMBA3_BINARY('test_mdsparser_es',
                  source='''
                  rpc_server/mdssvc/test_mdsparser_es.c
                  rpc_server/mdssvc/es_parser.y
-                 rpc_server/mdssvc/es_lexer.l
+                 rpc_server/mdssvc/es_lexer.gcov.lex.c
                  rpc_server/mdssvc/es_mapping.c
                  ''',
                  deps='''
@@ -1369,7 +1369,7 @@ bld.SAMBA3_BINARY('spotlight2sparql',
                  source='''
                  rpc_server/mdssvc/sparql_parser_test.c
                  rpc_server/mdssvc/sparql_parser.y
-                 rpc_server/mdssvc/sparql_lexer.l
+                 rpc_server/mdssvc/sparql_lexer.gcov.lex.c
                  rpc_server/mdssvc/sparql_mapping.c''',
                  deps='samba3-util talloc ' + bld.env['libtracker'],
                  enabled=bld.env.spotlight_backend_tracker,
@@ -1379,7 +1379,7 @@ bld.SAMBA3_BINARY('spotlight2es',
                  source='''
                  rpc_server/mdssvc/es_parser_test.c
                  rpc_server/mdssvc/es_parser.y
-                 rpc_server/mdssvc/es_lexer.l
+                 rpc_server/mdssvc/es_lexer.gcov.lex.c
                  rpc_server/mdssvc/es_mapping.c''',
                  deps='samba3-util talloc jansson smbconf',
                  enabled=bld.env.spotlight_backend_es,
