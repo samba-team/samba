@@ -1147,7 +1147,7 @@ bool reopen_logs_internal(void)
 	oldumask = umask( 022 );
 
 	for (i = DBGC_ALL; i < debug_num_classes; i++) {
-		if (dbgc_config[DBGC_ALL].logfile != NULL) {
+		if (dbgc_config[i].logfile != NULL) {
 			break;
 		}
 	}
