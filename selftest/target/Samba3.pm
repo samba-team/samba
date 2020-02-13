@@ -991,6 +991,9 @@ sub setup_fileserver
 	my $usershare_sharedir="$share_dir/usershares";
 	push(@dirs,$usershare_sharedir);
 
+	my $dropbox_sharedir="$share_dir/dropbox";
+	push(@dirs,$dropbox_sharedir);
+
 	my $fileserver_options = "
 	kernel change notify = yes
 	rpc_server:mdssvc = embedded
@@ -1078,6 +1081,12 @@ sub setup_fileserver
 	create mask = 0644
 	force create mode = 0664
 	vfs objects = dirsort
+
+[dropbox]
+	path = $dropbox_sharedir
+	comment = smb username is [%U]
+	writeable = yes
+	vfs objects =
 
 [homes]
 	comment = Home directories
