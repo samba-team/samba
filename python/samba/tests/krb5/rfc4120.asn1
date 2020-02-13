@@ -25,14 +25,22 @@ UInt32          ::= INTEGER (0..4294967295)
 Microseconds    ::= INTEGER (0..999999)
                     -- microseconds
 
-KerberosString  ::= GeneralString (IA5String)
+--
+-- asn1ate doesn't support 'GeneralString (IA5String)'
+-- only 'GeneralString' or 'IA5String', on the wire
+-- GeneralString is used.
+--
+-- KerberosString  ::= GeneralString (IA5String)
+KerberosString  ::= GeneralString
 
 Realm           ::= KerberosString
 
 PrincipalName   ::= SEQUENCE {
-        name-type       [0] Int32,
+        name-type       [0] NameType, -- Int32,
         name-string     [1] SEQUENCE OF KerberosString
 }
+
+NameType ::= Int32
 
 KerberosTime    ::= GeneralizedTime -- with no fractional seconds
 
@@ -50,35 +58,47 @@ HostAddresses   -- NOTE: subtly different from rfc1510,
 -- NOTE: AuthorizationData is always used as an OPTIONAL field and
 -- should not be empty.
 AuthorizationData       ::= SEQUENCE OF SEQUENCE {
-        ad-type         [0] Int32,
+        ad-type         [0] AuthDataType, -- Int32,
         ad-data         [1] OCTET STRING
 }
 
+AuthDataType ::= Int32
+
 PA-DATA         ::= SEQUENCE {
         -- NOTE: first tag is [1], not [0]
-        padata-type     [1] Int32,
+        padata-type     [1] PADataType, -- Int32
         padata-value    [2] OCTET STRING -- might be encoded AP-REQ
 }
 
-KerberosFlags   ::= BIT STRING (SIZE (32..MAX))
+PADataType ::= Int32
+
+--
+-- asn1ate doesn't support 'MAX' nor a lower range != 1.
+-- We'll use a custom enodeValue() hooks for BitString
+-- in order to encode them with at least 32-Bit.
+--
+-- KerberosFlags   ::= BIT STRING (SIZE (32..MAX))
+KerberosFlags   ::= BIT STRING (SIZE (1..32))
                     -- minimum number of bits shall be sent,
                     -- but no fewer than 32
 
 EncryptedData   ::= SEQUENCE {
-        etype   [0] Int32 -- EncryptionType --,
+        etype   [0] EncryptionType, --Int32 EncryptionType --
         kvno    [1] UInt32 OPTIONAL,
         cipher  [2] OCTET STRING -- ciphertext
 }
 
 EncryptionKey   ::= SEQUENCE {
-        keytype         [0] Int32 -- actually encryption type --,
+        keytype         [0] EncryptionType, -- Int32 actually encryption type --
         keyvalue        [1] OCTET STRING
 }
 
 Checksum        ::= SEQUENCE {
-        cksumtype       [0] Int32,
+        cksumtype       [0] ChecksumType, -- Int32,
         checksum        [1] OCTET STRING
 }
+
+ChecksumType ::= Int32
 
 Ticket          ::= [APPLICATION 1] SEQUENCE {
         tkt-vno         [0] INTEGER (5),
@@ -150,7 +170,7 @@ KDC-REQ-BODY    ::= SEQUENCE {
         till                    [5] KerberosTime,
         rtime                   [6] KerberosTime OPTIONAL,
         nonce                   [7] UInt32,
-        etype                   [8] SEQUENCE OF Int32 -- EncryptionType
+        etype                   [8] SEQUENCE OF EncryptionType -- Int32 - EncryptionType
                                     -- in preference order --,
         addresses               [9] HostAddresses OPTIONAL,
         enc-authorization-data  [10] EncryptedData OPTIONAL
@@ -158,6 +178,8 @@ KDC-REQ-BODY    ::= SEQUENCE {
         additional-tickets      [11] SEQUENCE OF Ticket OPTIONAL
                                         -- NOTE: not empty
 }
+
+EncryptionType ::= Int32
 
 KDCOptions      ::= KerberosFlags
         -- reserved(0),
@@ -344,7 +366,11 @@ KRB-ERROR       ::= [APPLICATION 30] SEQUENCE {
 
 METHOD-DATA     ::= SEQUENCE OF PA-DATA
 
-TYPED-DATA      ::= SEQUENCE SIZE (1..MAX) OF SEQUENCE {
+--
+-- asn1ate doesn't support 'MAX'
+--
+-- TYPED-DATA      ::= SEQUENCE SIZE (1..MAX) OF SEQUENCE {
+TYPED-DATA      ::= SEQUENCE SIZE (1..256) OF SEQUENCE {
         data-type       [0] Int32,
         data-value      [1] OCTET STRING OPTIONAL
 }
@@ -371,7 +397,7 @@ ETYPE-INFO2-ENTRY       ::= SEQUENCE {
         s2kparams       [2] OCTET STRING OPTIONAL
 }
 
-ETYPE-INFO2             ::= SEQUENCE SIZE (1..MAX) OF ETYPE-INFO2-ENTRY
+ETYPE-INFO2             ::= SEQUENCE SIZE (1..256) OF ETYPE-INFO2-ENTRY
 
 AD-IF-RELEVANT          ::= AuthorizationData
 
@@ -388,5 +414,250 @@ AD-AND-OR               ::= SEQUENCE {
 }
 
 AD-MANDATORY-FOR-KDC    ::= AuthorizationData
+
+
+
+
+
+
+--
+--
+-- prettyPrint values
+--
+--
+
+NameTypeValues ::= INTEGER { -- Int32
+        kRB5-NT-UNKNOWN(0),        -- Name type not known
+        kRB5-NT-PRINCIPAL(1),      -- Just the name of the principal as in
+        kRB5-NT-SRV-INST(2),       -- Service and other unique instance (krbtgt)
+        kRB5-NT-SRV-HST(3),        -- Service with host name as instance
+        kRB5-NT-SRV-XHST(4),       -- Service with host as remaining components
+        kRB5-NT-UID(5),            -- Unique ID
+        kRB5-NT-X500-PRINCIPAL(6), -- PKINIT
+        kRB5-NT-SMTP-NAME(7),      -- Name in form of SMTP email name
+        kRB5-NT-ENTERPRISE-PRINCIPAL(10), -- Windows 2000 UPN
+        kRB5-NT-WELLKNOWN(11),     -- Wellknown
+        kRB5-NT-ENT-PRINCIPAL-AND-ID(-130), -- Windows 2000 UPN and SID
+        kRB5-NT-MS-PRINCIPAL(-128), -- NT 4 style name
+        kRB5-NT-MS-PRINCIPAL-AND-ID(-129) -- NT style name and SID
+}
+NameTypeSequence ::= SEQUENCE {
+        dummy [0] NameTypeValues
+}
+
+TicketFlagsValues     ::= BIT STRING { -- KerberosFlags
+        reserved(0),
+        forwardable(1),
+        forwarded(2),
+        proxiable(3),
+        proxy(4),
+        may-postdate(5),
+        postdated(6),
+        invalid(7),
+        renewable(8),
+        initial(9),
+        pre-authent(10),
+        hw-authent(11),
+-- the following are new since 1510
+        transited-policy-checked(12),
+        ok-as-delegate(13)
+}
+TicketFlagsSequence ::= SEQUENCE {
+        dummy [0] TicketFlagsValues
+}
+
+KDCOptionsValues      ::= BIT STRING { -- KerberosFlags
+        reserved(0),
+        forwardable(1),
+        forwarded(2),
+        proxiable(3),
+        proxy(4),
+        allow-postdate(5),
+        postdated(6),
+        unused7(7),
+        renewable(8),
+        unused9(9),
+        unused10(10),
+        opt-hardware-auth(11),
+        unused12(12),
+        unused13(13),
+-- 15 is reserved for canonicalize
+        unused15(15),
+-- 26 was unused in 1510
+        disable-transited-check(26),
+--
+        renewable-ok(27),
+        enc-tkt-in-skey(28),
+        renew(30),
+        validate(31)
+}
+KDCOptionsSequence ::= SEQUENCE {
+        dummy [0] KDCOptionsValues
+}
+
+MessageTypeValues ::= INTEGER {
+        krb-as-req(10), -- Request for initial authentication
+        krb-as-rep(11), -- Response to KRB_AS_REQ request
+        krb-tgs-req(12), -- Request for authentication based on TGT
+        krb-tgs-rep(13), -- Response to KRB_TGS_REQ request
+        krb-ap-req(14), -- application request to server
+        krb-ap-rep(15), -- Response to KRB_AP_REQ_MUTUAL
+        krb-safe(20), -- Safe (checksummed) application message
+        krb-priv(21), -- Private (encrypted) application message
+        krb-cred(22), -- Private (encrypted) message to forward credentials
+        krb-error(30) -- Error response
+}
+MessageTypeSequence ::= SEQUENCE {
+        dummy [0] MessageTypeValues
+}
+
+PADataTypeValues ::= INTEGER {
+	kRB5-PADATA-NONE(0),
+	-- kRB5-PADATA-TGS-REQ(1),
+	-- kRB5-PADATA-AP-REQ(1),
+	kRB5-PADATA-KDC-REQ(1),
+	kRB5-PADATA-ENC-TIMESTAMP(2),
+	kRB5-PADATA-PW-SALT(3),
+	kRB5-PADATA-ENC-UNIX-TIME(5),
+	kRB5-PADATA-SANDIA-SECUREID(6),
+	kRB5-PADATA-SESAME(7),
+	kRB5-PADATA-OSF-DCE(8),
+	kRB5-PADATA-CYBERSAFE-SECUREID(9),
+	kRB5-PADATA-AFS3-SALT(10),
+	kRB5-PADATA-ETYPE-INFO(11),
+	kRB5-PADATA-SAM-CHALLENGE(12), -- (sam/otp)
+	kRB5-PADATA-SAM-RESPONSE(13), -- (sam/otp)
+	kRB5-PADATA-PK-AS-REQ-19(14), -- (PKINIT-19)
+	kRB5-PADATA-PK-AS-REP-19(15), -- (PKINIT-19)
+	-- kRB5-PADATA-PK-AS-REQ-WIN(15), - (PKINIT - old number)
+	kRB5-PADATA-PK-AS-REQ(16), -- (PKINIT-25)
+	kRB5-PADATA-PK-AS-REP(17), -- (PKINIT-25)
+	kRB5-PADATA-PA-PK-OCSP-RESPONSE(18),
+	kRB5-PADATA-ETYPE-INFO2(19),
+	-- kRB5-PADATA-USE-SPECIFIED-KVNO(20),
+	kRB5-PADATA-SVR-REFERRAL-INFO(20), --- old ms referral number
+	kRB5-PADATA-SAM-REDIRECT(21), -- (sam/otp)
+	kRB5-PADATA-GET-FROM-TYPED-DATA(22),
+	kRB5-PADATA-SAM-ETYPE-INFO(23),
+	kRB5-PADATA-SERVER-REFERRAL(25),
+	kRB5-PADATA-ALT-PRINC(24),		-- (crawdad@fnal.gov)
+	kRB5-PADATA-SAM-CHALLENGE2(30),		-- (kenh@pobox.com)
+	kRB5-PADATA-SAM-RESPONSE2(31),		-- (kenh@pobox.com)
+	kRB5-PA-EXTRA-TGT(41),			-- Reserved extra TGT
+	kRB5-PADATA-TD-KRB-PRINCIPAL(102),	-- PrincipalName
+	kRB5-PADATA-PK-TD-TRUSTED-CERTIFIERS(104), -- PKINIT
+	kRB5-PADATA-PK-TD-CERTIFICATE-INDEX(105), -- PKINIT
+	kRB5-PADATA-TD-APP-DEFINED-ERROR(106),	-- application specific
+	kRB5-PADATA-TD-REQ-NONCE(107),		-- INTEGER
+	kRB5-PADATA-TD-REQ-SEQ(108),		-- INTEGER
+	kRB5-PADATA-PA-PAC-REQUEST(128),	-- jbrezak@exchange.microsoft.com
+	kRB5-PADATA-FOR-USER(129),		-- MS-KILE
+	kRB5-PADATA-FOR-X509-USER(130),		-- MS-KILE
+	kRB5-PADATA-FOR-CHECK-DUPS(131),	-- MS-KILE
+	kRB5-PADATA-AS-CHECKSUM(132),		-- MS-KILE
+	-- kRB5-PADATA-PK-AS-09-BINDING(132),	- client send this to
+						-- tell KDC that is supports
+						-- the asCheckSum in the
+						--  PK-AS-REP
+	kRB5-PADATA-FX-COOKIE(133),		-- krb-wg-preauth-framework
+	kRB5-PADATA-AUTHENTICATION-SET(134),	-- krb-wg-preauth-framework
+	kRB5-PADATA-AUTH-SET-SELECTED(135),	-- krb-wg-preauth-framework
+	kRB5-PADATA-FX-FAST(136),		-- krb-wg-preauth-framework
+	kRB5-PADATA-FX-ERROR(137),		-- krb-wg-preauth-framework
+	kRB5-PADATA-ENCRYPTED-CHALLENGE(138),	-- krb-wg-preauth-framework
+	kRB5-PADATA-OTP-CHALLENGE(141),		-- (gareth.richards@rsa.com)
+	kRB5-PADATA-OTP-REQUEST(142),		-- (gareth.richards@rsa.com)
+	kBB5-PADATA-OTP-CONFIRM(143),		-- (gareth.richards@rsa.com)
+	kRB5-PADATA-OTP-PIN-CHANGE(144),	-- (gareth.richards@rsa.com)
+	kRB5-PADATA-EPAK-AS-REQ(145),
+	kRB5-PADATA-EPAK-AS-REP(146),
+	kRB5-PADATA-PKINIT-KX(147),		-- krb-wg-anon
+	kRB5-PADATA-PKU2U-NAME(148),		-- zhu-pku2u
+	kRB5-PADATA-REQ-ENC-PA-REP(149),	--
+	kRB5-PADATA-SUPPORTED-ETYPES(165)	-- MS-KILE
+}
+PADataTypeSequence ::= SEQUENCE {
+        dummy [0] PADataTypeValues
+}
+
+AuthDataTypeValues ::= INTEGER {
+	kRB5-AUTHDATA-IF-RELEVANT(1),
+	kRB5-AUTHDATA-INTENDED-FOR-SERVER(2),
+	kRB5-AUTHDATA-INTENDED-FOR-APPLICATION-CLASS(3),
+	kRB5-AUTHDATA-KDC-ISSUED(4),
+	kRB5-AUTHDATA-AND-OR(5),
+	kRB5-AUTHDATA-MANDATORY-TICKET-EXTENSIONS(6),
+	kRB5-AUTHDATA-IN-TICKET-EXTENSIONS(7),
+	kRB5-AUTHDATA-MANDATORY-FOR-KDC(8),
+	kRB5-AUTHDATA-INITIAL-VERIFIED-CAS(9),
+	kRB5-AUTHDATA-OSF-DCE(64),
+	kRB5-AUTHDATA-SESAME(65),
+	kRB5-AUTHDATA-OSF-DCE-PKI-CERTID(66),
+	kRB5-AUTHDATA-WIN2K-PAC(128),
+	kRB5-AUTHDATA-GSS-API-ETYPE-NEGOTIATION(129), -- Authenticator only
+	kRB5-AUTHDATA-SIGNTICKET-OLDER(-17),
+	kRB5-AUTHDATA-SIGNTICKET-OLD(142),
+	kRB5-AUTHDATA-SIGNTICKET(512)
+}
+AuthDataTypeSequence ::= SEQUENCE {
+        dummy [0] AuthDataTypeValues
+}
+
+ChecksumTypeValues ::= INTEGER {
+	kRB5-CKSUMTYPE-NONE(0),
+	kRB5-CKSUMTYPE-CRC32(1),
+	kRB5-CKSUMTYPE-RSA-MD4(2),
+	kRB5-CKSUMTYPE-RSA-MD4-DES(3),
+	kRB5-CKSUMTYPE-DES-MAC(4),
+	kRB5-CKSUMTYPE-DES-MAC-K(5),
+	kRB5-CKSUMTYPE-RSA-MD4-DES-K(6),
+	kRB5-CKSUMTYPE-RSA-MD5(7),
+	kRB5-CKSUMTYPE-RSA-MD5-DES(8),
+	kRB5-CKSUMTYPE-RSA-MD5-DES3(9),
+	kRB5-CKSUMTYPE-SHA1-OTHER(10),
+	kRB5-CKSUMTYPE-HMAC-SHA1-DES3(12),
+	kRB5-CKSUMTYPE-SHA1(14),
+	kRB5-CKSUMTYPE-HMAC-SHA1-96-AES-128(15),
+	kRB5-CKSUMTYPE-HMAC-SHA1-96-AES-256(16),
+	kRB5-CKSUMTYPE-GSSAPI(32771), -- 0x8003
+	kRB5-CKSUMTYPE-HMAC-MD5(-138),	-- unofficial microsoft number
+	kRB5-CKSUMTYPE-HMAC-MD5-ENC(-1138)	-- even more unofficial
+}
+ChecksumTypeSequence ::= SEQUENCE {
+        dummy [0] ChecksumTypeValues
+}
+
+EncryptionTypeValues ::= INTEGER {
+	kRB5-ENCTYPE-NULL(0),
+	kRB5-ENCTYPE-DES-CBC-CRC(1),
+	kRB5-ENCTYPE-DES-CBC-MD4(2),
+	kRB5-ENCTYPE-DES-CBC-MD5(3),
+	kRB5-ENCTYPE-DES3-CBC-MD5(5),
+	kRB5-ENCTYPE-OLD-DES3-CBC-SHA1(7),
+	kRB5-ENCTYPE-SIGN-DSA-GENERATE(8),
+	kRB5-ENCTYPE-ENCRYPT-RSA-PRIV(9),
+	kRB5-ENCTYPE-ENCRYPT-RSA-PUB(10),
+	kRB5-ENCTYPE-DES3-CBC-SHA1(16),	-- with key derivation
+	kRB5-ENCTYPE-AES128-CTS-HMAC-SHA1-96(17),
+	kRB5-ENCTYPE-AES256-CTS-HMAC-SHA1-96(18),
+	kRB5-ENCTYPE-ARCFOUR-HMAC-MD5(23),
+	kRB5-ENCTYPE-ARCFOUR-HMAC-MD5-56(24),
+	kRB5-ENCTYPE-ENCTYPE-PK-CROSS(48),
+-- some "old" windows types
+	kRB5-ENCTYPE-ARCFOUR-MD4(-128),
+	kRB5-ENCTYPE-ARCFOUR-HMAC-OLD(-133),
+	kRB5-ENCTYPE-ARCFOUR-HMAC-OLD-EXP(-135),
+-- these are for Heimdal internal use
+--	kRB5-ENCTYPE-DES-CBC-NONE(-0x1000),
+--	kRB5-ENCTYPE-DES3-CBC-NONE(-0x1001),
+--	kRB5-ENCTYPE-DES-CFB64-NONE(-0x1002),
+--	kRB5-ENCTYPE-DES-PCBC-NONE(-0x1003),
+--	kRB5-ENCTYPE-DIGEST-MD5-NONE(-0x1004),		- private use, lukeh@padl.com
+--	kRB5-ENCTYPE-CRAM-MD5-NONE(-0x1005)		- private use, lukeh@padl.com
+	kRB5-ENCTYPE-DUMMY(-1111)
+}
+EncryptionTypeSequence ::= SEQUENCE {
+        dummy [0] EncryptionTypeValues
+}
 
 END
