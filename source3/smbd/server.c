@@ -1042,7 +1042,7 @@ static void smbd_accept_connection(struct tevent_context *ev,
 	 * writes only two messages for each child
 	 * started/finished. But each child writes,
 	 * say, 50 messages also in logserver.smb,
-	 * begining with the debug_count of the
+	 * beginning with the debug_count of the
 	 * parent, before the child opens its own log
 	 * file logserver.client. In a worst case
 	 * scenario the size of logserver.smb would be
