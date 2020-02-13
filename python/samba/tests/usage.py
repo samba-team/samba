@@ -86,6 +86,7 @@ EXCLUDE_USAGE = {
     'bin/python/samba/subunit/run.py',
     'python/samba/tests/dcerpc/raw_protocol.py',
     'python/samba/tests/krb5/kcrypto.py',
+    'python/samba/tests/krb5/simple_tests.py',
 }
 
 EXCLUDE_HELP = {
