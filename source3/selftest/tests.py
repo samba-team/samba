@@ -924,3 +924,33 @@ for env in ["ad_member_idmap_rid:local", "maptoguest:local"]:
                    '$SERVER', smbclient3, smbcontrol, net, configuration])
 
 plantestsuite("samba3.blackbox.itime", "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_itime.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$LOCAL_PATH', smbclient3, 'xattr'])
+
+
+def planclusteredmembertestsuite(tname, prefix):
+    '''Define a clustered test for the clusteredmember environment'''
+
+    tshare = 'tmp'
+
+    autharg = '-U${DOMAIN}/${DC_USERNAME}%${DC_PASSWORD}'
+    namearg = 'clustered.%s' % tname
+    modnamearg = 'samba3.%s' % namearg
+    extraargs = ''
+
+    prefix = os.path.join(prefix, 'clusteredmember')
+    unclist = os.path.join(prefix, 'unclists/%s.txt' % tshare)
+
+    unclistarg = '--unclist=%s' % unclist
+    sharearg = '//$SERVER_IP/%s' % tshare
+
+    return selftesthelpers.plansmbtorture4testsuite(
+        namearg,
+        'clusteredmember',
+        [extraargs, unclistarg, sharearg, autharg, tname],
+        target='samba3',
+        modname=modnamearg)
+
+
+CLUSTERED_TESTS = [ 'base.ntdeny2' ]
+
+for test in CLUSTERED_TESTS:
+    planclusteredmembertestsuite(test, "$PREFIX")
