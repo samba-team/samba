@@ -566,6 +566,7 @@ tasks = {
          "./configure.developer ${PREFIX} "
          "--with-selftest-prefix=./bin/ab "
          "--with-cluster-support "
+         "--without-ad-dc "
          "--bundled-libraries=!tdb"),
         ("samba-make", "make"),
         ("samba-check", "./bin/smbd -b | grep CLUSTER_SUPPORT"),
