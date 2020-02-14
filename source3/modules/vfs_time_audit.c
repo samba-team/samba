@@ -349,6 +349,34 @@ static NTSTATUS smb_time_audit_create_dfs_pathat(struct vfs_handle_struct *handl
 	return result;
 }
 
+static NTSTATUS smb_time_audit_read_dfs_pathat(struct vfs_handle_struct *handle,
+			TALLOC_CTX *mem_ctx,
+			struct files_struct *dirfsp,
+			const struct smb_filename *smb_fname,
+			struct referral **ppreflist,
+			size_t *preferral_count)
+{
+	NTSTATUS result;
+	struct timespec ts1,ts2;
+	double timediff;
+
+	clock_gettime_mono(&ts1);
+	result = SMB_VFS_NEXT_READ_DFS_PATHAT(handle,
+			mem_ctx,
+			dirfsp,
+			smb_fname,
+			ppreflist,
+			preferral_count);
+	clock_gettime_mono(&ts2);
+	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
+
+	if (timediff > audit_timeout) {
+		smb_time_audit_log("read_dfs_pathat", timediff);
+	}
+
+	return result;
+}
+
 static NTSTATUS smb_time_audit_snap_check_path(struct vfs_handle_struct *handle,
 					       TALLOC_CTX *mem_ctx,
 					       const char *service_path,
@@ -2834,6 +2862,7 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.fs_capabilities_fn = smb_time_audit_fs_capabilities,
 	.get_dfs_referrals_fn = smb_time_audit_get_dfs_referrals,
 	.create_dfs_pathat_fn = smb_time_audit_create_dfs_pathat,
+	.read_dfs_pathat_fn = smb_time_audit_read_dfs_pathat,
 	.opendir_fn = smb_time_audit_opendir,
 	.fdopendir_fn = smb_time_audit_fdopendir,
 	.readdir_fn = smb_time_audit_readdir,
