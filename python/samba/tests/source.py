@@ -90,6 +90,9 @@ class TestSource(TestCase):
             if "wafsamba" in fname:
                 # FIXME: No copyright headers in wafsamba
                 continue
+            if fname.endswith("python/samba/tests/krb5/kcrypto.py"):
+                # Imported from MIT testing repo
+                continue
             match = copyright_re.search(text)
             if not match:
                 incorrect.append((fname, 'no copyright line found\n'))
@@ -131,6 +134,9 @@ class TestSource(TestCase):
             if fname.endswith("/python/samba/subunit/run.py"):
                 # Imported from subunit/testtools, which are dual
                 # Apache2/BSD-3.
+                continue
+            if fname.endswith("python/samba/tests/krb5/kcrypto.py"):
+                # Imported from MIT testing repo
                 continue
             if not gpl_re.search(text):
                 incorrect.append(fname)

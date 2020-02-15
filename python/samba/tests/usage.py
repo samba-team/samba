@@ -84,7 +84,8 @@ EXCLUDE_USAGE = {
     'selftest/tests.py',
     'python/samba/subunit/run.py',
     'bin/python/samba/subunit/run.py',
-    'python/samba/tests/dcerpc/raw_protocol.py'
+    'python/samba/tests/dcerpc/raw_protocol.py',
+    'python/samba/tests/krb5/kcrypto.py',
 }
 
 EXCLUDE_HELP = {
@@ -101,6 +102,7 @@ EXCLUDE_DIRS = {
     'bin/ab',
     'bin/python/samba/tests',
     'bin/python/samba/tests/dcerpc',
+    'bin/python/samba/tests/krb5',
 }
 
 
