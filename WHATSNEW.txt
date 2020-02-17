@@ -77,6 +77,25 @@ to-be-ignored timestamp variables passed to the SMB_VFS_NTIMES() VFS function.
 VFS modules can check whether any of the time values inside a struct
 smb_file_time is to be ignored by calling is_omit_timespec() on the value.
 
+'io_uring' vfs module
+---------------------
+
+The module makes use of the new io_uring infrastructure
+(intruduced in Linux 5.1), see https://lwn.net/Articles/776703/
+
+Currently this implements SMB_VFS_{PREAD,PWRITE,FSYNC}_SEND/RECV
+and avoids the overhead of the userspace threadpool in the default
+vfs backend. See also vfs_io_uring(8).
+
+In order to build the module you need the liburing userspace library
+and its developement headers installed, see
+https://git.kernel.dk/cgit/liburing/
+
+At runtime you'll need a Linux kernel with version 5.1 or higher.
+Note that 5.4.14 and 5.4.15 have a regression that breaks the Samba
+module! The regression was fixed in Linux 5.4.16 again.
+
+
 REMOVED FEATURES
 ================
 
