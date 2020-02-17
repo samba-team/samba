@@ -39,7 +39,7 @@ struct cmdline_context {
 	struct poptOption *options;
 	struct cmdline_section *section;
 	int num_sections;
-	int max_len;
+	size_t max_len;
 	poptContext pc;
 	int argc, arg0;
 	const char **argv;
@@ -178,7 +178,7 @@ static bool cmdline_command_check(struct cmdline_command *cmd, size_t *max_len)
 	}
 
 	if (len > *max_len) {
-		*max_len = (int)len;
+		*max_len = len;
 	}
 
 	len = strlen(cmd->msg_help);
@@ -490,14 +490,14 @@ static void cmdline_usage_command(struct cmdline_context *cmdline,
 				  struct cmdline_command *cmd,
 				  bool print_all)
 {
-	int len;
+	size_t len;
 
-	len = (int)strlen(cmd->name);
+	len = strlen(cmd->name);
 
 	printf("  %s ", cmd->name);
 	if (print_all) {
 		printf("%-*s",
-		       cmdline->max_len-len,
+		       (int)(cmdline->max_len-len),
 		       cmd->msg_args == NULL ? "" : cmd->msg_args);
 	} else {
 		printf("%s", cmd->msg_args == NULL ? "" : cmd->msg_args);
