@@ -198,6 +198,9 @@ static int ctdb_lock_context_destructor(struct lock_context *lock_ctx)
 		} else {
 			DLIST_REMOVE(lock_ctx->ctdb->lock_current, lock_ctx);
 		}
+		if (lock_ctx->ctdb_db->lock_num_current == 0) {
+			ctdb_fatal(NULL, "Lock count is 0 before decrement\n");
+		}
 		lock_ctx->ctdb_db->lock_num_current--;
 		CTDB_DECREMENT_STAT(lock_ctx->ctdb, locks.num_current);
 		CTDB_DECREMENT_DB_STAT(lock_ctx->ctdb_db, locks.num_current);
