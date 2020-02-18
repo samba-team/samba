@@ -112,12 +112,33 @@
 
     <para>
       The recovery lock can also be implemented using an arbitrary
-      cluster mutex call-out by using an exclamation point ('!') as
-      the first character of <parameter>recovery lock</parameter>.
-      For example, a value of <command>!/usr/local/bin/myhelper
-      recovery</command> would run the given helper with the specified
-      arguments.  See the source code relating to cluster mutexes for
-      clues about writing call-outs.
+      cluster mutex helper (or call-out).  This is indicated by using
+      an exclamation point ('!') as the first character of the
+      <parameter>recovery lock</parameter> parameter.  For example, a
+      value of <command>!/usr/local/bin/myhelper recovery</command>
+      would run the given helper with the specified arguments.  The
+      helper will continue to run as long as it holds its mutex.  See
+      <filename>ctdb/doc/cluster_mutex_helper.txt</filename> in the
+      source tree, and related code, for clues about writing helpers.
+    </para>
+
+    <para>
+      When a file is specified for the <parameter>recovery
+      lock</parameter> parameter (i.e. no leading '!') the file lock
+      is implemented by a default helper
+      (<command>/usr/local/libexec/ctdb/ctdb_mutex_fcntl_helper</command>).
+      This helper has arguments as follows:
+
+      <!-- cmdsynopsis would not require long line but does not work :-( -->
+      <synopsis>
+<command>ctdb_mutex_fcntl_helper</command> <parameter>FILE</parameter> <optional><parameter>RECHECK-INTERVAL</parameter></optional>
+      </synopsis>
+
+      <command>ctdb_mutex_fcntl_helper</command> will take a lock on
+      FILE and then check every RECHECK-INTERVAL seconds to ensure
+      that FILE still exists and that its inode number is unchanged
+      from when the lock was taken.  The default value for
+      RECHECK-INTERVAL is 5.
     </para>
 
     <para>
