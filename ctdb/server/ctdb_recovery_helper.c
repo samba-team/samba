@@ -2168,7 +2168,7 @@ static bool db_recovery_recv(struct tevent_req *req, unsigned int *count)
  * Run the parallel database recovery
  *
  * - Get tunables
- * - Get nodemap
+ * - Get nodemap from all nodes
  * - Get capabilities from all nodes
  * - Get dbmap
  * - Set RECOVERY_ACTIVE
@@ -2192,6 +2192,7 @@ struct recovery_state {
 
 static void recovery_tunables_done(struct tevent_req *subreq);
 static void recovery_nodemap_done(struct tevent_req *subreq);
+static void recovery_nodemap_verify(struct tevent_req *subreq);
 static void recovery_capabilities_done(struct tevent_req *subreq);
 static void recovery_dbmap_done(struct tevent_req *subreq);
 static void recovery_active_done(struct tevent_req *subreq);
@@ -2309,12 +2310,121 @@ static void recovery_nodemap_done(struct tevent_req *subreq)
 	}
 
 	for (i=0; i<nodemap->num; i++) {
-		if (nodemap->node[i].flags & NODE_FLAGS_INACTIVE) {
+		bool ok;
+
+		if (nodemap->node[i].flags & NODE_FLAGS_DISCONNECTED) {
 			continue;
 		}
 
-		node_list_add(state->nlist, nodemap->node[i].pnn);
+		ok = node_list_add(state->nlist, nodemap->node[i].pnn);
+		if (!ok) {
+			tevent_req_error(req, EINVAL);
+			return;
+		}
 	}
+
+	talloc_free(nodemap);
+	talloc_free(reply);
+
+	/* Verify flags by getting local node information from each node */
+	ctdb_req_control_get_nodemap(&request);
+	subreq = ctdb_client_control_multi_send(state,
+						state->ev,
+						state->client,
+						state->nlist->pnn_list,
+						state->nlist->count,
+						TIMEOUT(),
+						&request);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, recovery_nodemap_verify, req);
+}
+
+static void recovery_nodemap_verify(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct recovery_state *state = tevent_req_data(
+		req, struct recovery_state);
+	struct ctdb_req_control request;
+	struct ctdb_reply_control **reply;
+	struct node_list *nlist;
+	unsigned int i;
+	int *err_list;
+	int ret;
+	bool status;
+
+	status = ctdb_client_control_multi_recv(subreq,
+						&ret,
+						state,
+						&err_list,
+						&reply);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		int ret2;
+		uint32_t pnn;
+
+		ret2 = ctdb_client_control_multi_error(state->nlist->pnn_list,
+						       state->nlist->count,
+						       err_list,
+						       &pnn);
+		if (ret2 != 0) {
+			D_ERR("control GET_NODEMAP failed on node %u,"
+			      " ret=%d\n", pnn, ret2);
+		} else {
+			D_ERR("control GET_NODEMAP failed, ret=%d\n", ret);
+		}
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	nlist = node_list_init(state, state->nlist->size);
+	if (tevent_req_nomem(nlist, req)) {
+		return;
+	}
+
+	for (i=0; i<state->nlist->count; i++) {
+		struct ctdb_node_map *nodemap = NULL;
+		uint32_t pnn, flags;
+		unsigned int j;
+		bool ok;
+
+		pnn = state->nlist->pnn_list[i];
+		ret = ctdb_reply_control_get_nodemap(reply[i],
+						     state,
+						     &nodemap);
+		if (ret != 0) {
+			D_ERR("control GET_NODEMAP failed on node %u\n", pnn);
+			tevent_req_error(req, EPROTO);
+			return;
+		}
+
+		flags = NODE_FLAGS_DISCONNECTED;
+		for (j=0; j<nodemap->num; j++) {
+			if (nodemap->node[j].pnn == pnn) {
+				flags = nodemap->node[j].flags;
+				break;
+			}
+		}
+
+		TALLOC_FREE(nodemap);
+
+		if (flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+
+		ok = node_list_add(nlist, pnn);
+		if (!ok) {
+			tevent_req_error(req, EINVAL);
+			return;
+		}
+	}
+
+	talloc_free(reply);
+
+	talloc_free(state->nlist);
+	state->nlist = nlist;
 
 	ctdb_req_control_get_capabilities(&request);
 	subreq = ctdb_client_control_multi_send(state,
