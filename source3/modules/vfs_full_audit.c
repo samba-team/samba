@@ -478,6 +478,7 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 {
 	char *prefix = NULL;
 	char *result;
+	const struct auth_session_info *session_info = conn->session_info;
 
 	prefix = talloc_strdup(ctx,
 			lp_parm_const_string(SNUM(conn), "full_audit",
@@ -485,13 +486,24 @@ static char *audit_prefix(TALLOC_CTX *ctx, connection_struct *conn)
 	if (!prefix) {
 		return NULL;
 	}
+
+	if (session_info == NULL) {
+		/*
+		 * conn->session_info can be NULL if we're
+		 * called from a temporary conn created in
+		 * the MSDFS and other code. It's been created
+		 * by root so just use the system session.
+		 */
+		session_info = get_session_info_system();
+	}
+
 	result = talloc_sub_full(ctx,
 			lp_servicename(talloc_tos(), SNUM(conn)),
-			conn->session_info->unix_info->unix_name,
+			session_info->unix_info->unix_name,
 			conn->connectpath,
-			conn->session_info->unix_token->gid,
-			conn->session_info->unix_info->sanitized_username,
-			conn->session_info->info->domain_name,
+			session_info->unix_token->gid,
+			session_info->unix_info->sanitized_username,
+			session_info->info->domain_name,
 			prefix);
 	TALLOC_FREE(prefix);
 	return result;
