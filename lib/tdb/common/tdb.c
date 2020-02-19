@@ -770,12 +770,15 @@ _PUBLIC_ int tdb_storev(struct tdb_context *tdb, TDB_DATA key,
 
 	/* find which hash bucket it is in */
 	hash = tdb->hash_fn(&key);
-	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
+	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1) {
+		tdb_trace_1plusn_rec_flag_ret(tdb, "tdb_storev", key,
+					      dbufs, num_dbufs, flag, -1);
 		return -1;
+	}
 
 	ret = _tdb_storev(tdb, key, dbufs, num_dbufs, flag, hash);
 	tdb_trace_1plusn_rec_flag_ret(tdb, "tdb_storev", key,
-				      dbufs, num_dbufs, flag, -1);
+				      dbufs, num_dbufs, flag, ret);
 	tdb_unlock(tdb, BUCKET(hash), F_WRLCK);
 	return ret;
 }
