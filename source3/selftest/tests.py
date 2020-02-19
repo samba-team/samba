@@ -802,6 +802,15 @@ plantestsuite("samba3.blackbox.close-denied-share", "simpleserver:local",
                '$SERVER_IP',
                "tmp"])
 
+plantestsuite("samba3.blackbox.open-eintr", "simpleserver:local",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_open_eintr.sh"),
+               configuration,
+               os.path.join(bindir(), "smbclient"),
+               os.path.join(bindir(), "smbcontrol"),
+               '$SERVER_IP',
+               "error_inject"])
+
 plantestsuite("samba3.blackbox.net_tdb", "simpleserver:local",
               [os.path.join(samba3srcdir, "script/tests/test_net_tdb.sh"),
                smbclient3, '$SERVER', 'tmp', '$USERNAME', '$PASSWORD',
