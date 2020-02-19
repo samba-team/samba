@@ -2,12 +2,7 @@
 #
 # Test smbcontrol close-denied-share command.
 #
-# Verify that changing and querying the security descriptor works. Also
-# ensure that the output format for ACL entries does not change.
-#
-# The test uses well-known SIDs to not require looking up names and SIDs
-#
-# Copyright (C) 2015, 2019 Christof Schmitt
+# Copyright (C) 2020 Volker Lendecke
 
 if [ $# -lt 6 ]; then
     echo Usage: test_close_denied_share.sh \
