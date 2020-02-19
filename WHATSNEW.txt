@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the second release candidate of Samba 4.12.  This is *not*
+This is the third release candidate of Samba 4.12.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -193,6 +193,32 @@ smb.conf changes
   rndc command                       Removed
   write cache size                   Removed
   spotlight backend		     New			noindex
+
+
+CHANGES SINCE 4.12.0rc2
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14282: Set getting and setting of MS-DFS redirects on the filesystem
+     to go through two new VFS functions SMB_VFS_CREATE_DFS_PATHAT() and
+     SMB_VFS_READ_DFS_PATHAT().
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14255: bootstrap: Remove un-used dependency python3-crypto.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14247: Fix CID 1458418 and 1458420.
+   * BUG 14281: lib: Fix a shutdown crash with "clustering = yes".
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14247: Winbind member (source3) fails local SAM auth with empty domain
+     name.
+   * BUG 14265: winbindd: Handle missing idmap in getgrgid().
+   * BUG 14271: Don't use forward declaration for GnuTLS typedefs.
+   * BUG 14280: Add io_uring vfs module.
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14250: libcli:smb: Improve check for gnutls_aead_cipher_(en|de)cryptv2.
 
 
 CHANGES SINCE 4.12.0rc1
