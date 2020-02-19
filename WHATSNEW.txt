@@ -95,6 +95,24 @@ At runtime you'll need a Linux kernel with version 5.1 or higher.
 Note that 5.4.14 and 5.4.15 have a regression that breaks the Samba
 module! The regression was fixed in Linux 5.4.16 again.
 
+MS-DFS changes in the VFS
+-------------------------
+
+This release changes set getting and setting of MS-DFS redirects
+on the filesystem to go through two new VFS functions:
+
+SMB_VFS_CREATE_DFS_PATHAT()
+SMB_VFS_READ_DFS_PATHAT()
+
+instead of smbd explicitly storing MS-DFS redirects inside
+symbolic links on the filesystem. The underlying default
+implementations of this has not changed, the redirects are
+still stored inside symbolic links on the filesystem, but
+moving the creation and reading of these links into the VFS
+as first-class functions now allows alternate methods of
+storing them (maybe in extended attributes) for OEMs who
+don't want to mis-use filesystem symbolic links in this
+way.
 
 REMOVED FEATURES
 ================
