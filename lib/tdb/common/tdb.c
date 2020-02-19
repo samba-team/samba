@@ -790,10 +790,17 @@ _PUBLIC_ int tdb_append(struct tdb_context *tdb, TDB_DATA key, TDB_DATA new_dbuf
 	TDB_DATA dbufs[2];
 	int ret = -1;
 
+	if (tdb->read_only || tdb->traverse_read) {
+		tdb->ecode = TDB_ERR_RDONLY;
+		tdb_trace_2rec_flag_ret(tdb, "tdb_append", key, new_dbuf, 0, -1);
+		return -1;
+	}
+
 	/* find which hash bucket it is in */
 	hash = tdb->hash_fn(&key);
-	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1)
+	if (tdb_lock(tdb, BUCKET(hash), F_WRLCK) == -1) {
 		return -1;
+	}
 
 	dbufs[0] = _tdb_fetch(tdb, key);
 	dbufs[1] = new_dbuf;
