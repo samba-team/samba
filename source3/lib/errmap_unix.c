@@ -118,6 +118,7 @@ static const struct {
 #ifdef EOVERFLOW
 	{ EOVERFLOW,      NT_STATUS_ALLOTTED_SPACE_EXCEEDED },
 #endif
+	{ EINPROGRESS,	NT_STATUS_MORE_PROCESSING_REQUIRED },
 };
 
 /*********************************************************************
