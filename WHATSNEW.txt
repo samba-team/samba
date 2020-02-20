@@ -57,6 +57,12 @@ A future Samba version will mitigate this to some extent where good
 cryptography effectively wraps bad cryptography, but for now that above
 applies.
 
+zlib library is now required to build Samba
+-------------------------------------------
+
+Samba no longer includes a local copy of zlib in our source tarball.
+By removing this we do not need to ship (even where we did not
+build) the old, broken zip encryption code found there.
 
 "net ads kerberos pac save" and "net eventlog export"
 -----------------------------------------------------
@@ -64,6 +70,17 @@ applies.
 The "net ads kerberos pac save" and "net eventlog export" tools will
 no longer silently overwrite an existing file during data export.  If
 the filename given exits, an error will be shown.
+
+Fuzzing
+-------
+
+A large number of fuzz targets have been added to Samba, and Samba has
+been registered in Google's oss-fuzz cloud fuzzing service.  In
+particular, we now have good fuzzing coverage of our generated NDR
+parsing code.
+
+A large number of issues have been found and fixed thanks to this
+effort.
 
 VFS
 ===
