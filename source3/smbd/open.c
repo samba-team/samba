@@ -3301,6 +3301,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	SMB_STRUCT_STAT saved_stat = smb_fname->st;
 	struct timespec old_write_time;
 	struct file_id id;
+	bool setup_poll = false;
 	bool ok;
 
 	if (conn->printer) {
@@ -3645,6 +3646,14 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 			     open_access_mask, &new_file_created);
 
 	if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_NETWORK_BUSY)) {
+		if (file_existed && S_ISFIFO(fsp->fsp_name->st.st_ex_mode)) {
+			DEBUG(10, ("FIFO busy\n"));
+			return NT_STATUS_NETWORK_BUSY;
+		}
+		if (req == NULL) {
+			DEBUG(10, ("Internal open busy\n"));
+			return NT_STATUS_NETWORK_BUSY;
+		}
 		/*
 		 * This handles the kernel oplock case:
 		 *
@@ -3654,15 +3663,20 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * "Samba locking.tdb oplocks" are handled below after acquiring
 		 * the sharemode lock with get_share_mode_lock().
 		 */
-		if (file_existed && S_ISFIFO(fsp->fsp_name->st.st_ex_mode)) {
-			DEBUG(10, ("FIFO busy\n"));
-			return NT_STATUS_NETWORK_BUSY;
-		}
-		if (req == NULL) {
-			DEBUG(10, ("Internal open busy\n"));
-			return NT_STATUS_NETWORK_BUSY;
-		}
+		setup_poll = true;
+	}
 
+	if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_RETRY)) {
+		/*
+		 * EINTR from the open(2) syscall. Just setup a retry
+		 * in a bit. We can't use the sys_write() tight retry
+		 * loop here, as we might have to actually deal with
+		 * lease-break signals to avoid a deadlock.
+		 */
+		setup_poll = true;
+	}
+
+	if (setup_poll) {
 		/*
 		 * From here on we assume this is an oplock break triggered
 		 */
@@ -3693,7 +3707,9 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 
 	if (!NT_STATUS_IS_OK(fsp_open)) {
-		if (NT_STATUS_EQUAL(fsp_open, NT_STATUS_RETRY)) {
+		bool wait_for_aio = NT_STATUS_EQUAL(
+			fsp_open, NT_STATUS_MORE_PROCESSING_REQUIRED);
+		if (wait_for_aio) {
 			schedule_async_open(req);
 		}
 		return fsp_open;
