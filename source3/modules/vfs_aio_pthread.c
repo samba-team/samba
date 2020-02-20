@@ -318,7 +318,7 @@ static int open_async(const files_struct *fsp,
 		opd->fname));
 
 	/* Cause the calling code to reschedule us. */
-	errno = EINTR; /* Maps to NT_STATUS_RETRY. */
+	errno = EINPROGRESS; /* Maps to NT_STATUS_MORE_PROCESSING_REQUIRED. */
 	return -1;
 }
 
