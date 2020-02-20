@@ -64,6 +64,29 @@ Samba no longer includes a local copy of zlib in our source tarball.
 By removing this we do not need to ship (even where we did not
 build) the old, broken zip encryption code found there.
 
+New Spotlight backend for Elasticsearch
+---------------------------------------
+
+Support for the macOS specific Spotlight search protocol has been enhanced
+significantly. Starting with 4.12 Samba supports using Elasticsearch as search
+backend. Various new parameters have been added to configure this:
+
+  spotlight backend = noindex | elasticsearch | tracker
+  elasticsearch:address = ADDRESS
+  elasticsearch:port = PORT
+  elasticsearch:use tls = BOOLEAN
+  elasticsearch:index = INDEXNAME
+  elasticsearch:mappings = PATH
+  elasticsearch:max results = NUMBER
+
+Samba also ships a Spotlight client command "mdfind" which can be used to search
+any SMB server that runs the Spotlight RPC service. See the manpage of mdfind
+for details.
+
+Note that when upgrading existing installations that are using the previous
+default Spotlight backend Gnome Tracker must explicitly set "spotlight backend =
+tracker" as the new default is "noindex".
+
 "net ads kerberos pac save" and "net eventlog export"
 -----------------------------------------------------
 
@@ -233,6 +256,12 @@ smb.conf changes
   Parameter Name                     Description                Default
   --------------                     -----------                -------
 
+  elasticsearch:address              New                        localhost
+  elasticsearch:port                 New                        9200
+  elasticsearch:use tls              New                        No
+  elasticsearch:index                New                        _all
+  elasticsearch:mappings             New                        DATADIR/elasticsearch_mappings.json
+  elasticsearch:max results          New                        100
   nfs4:acedup                        Changed default            merge
   rndc command                       Removed
   write cache size                   Removed
