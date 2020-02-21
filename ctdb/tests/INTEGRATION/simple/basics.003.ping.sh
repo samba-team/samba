@@ -41,7 +41,7 @@ sanity_check_output \
     1 \
     '^response from 1 time=-?[.0-9]+ sec[[:space:]]+\([[:digit:]]+ clients\)$'
 
-try_command_on_node -v 0 "$CTDB shutdown -n 1"
+ctdb_onnode -v 1 "shutdown"
 
 wait_until_node_has_status 1 disconnected 30 0
 
