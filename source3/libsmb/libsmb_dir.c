@@ -546,6 +546,12 @@ SMBC_opendir_ctx(SMBCCTX *context,
 
 	dir->cli_fd   = 0;
 	dir->fname    = SMB_STRDUP(fname);
+	if (dir->fname == NULL) {
+		SAFE_FREE(dir);
+		TALLOC_FREE(frame);
+		errno = ENOMEM;
+		return NULL;
+	}
 	dir->srv      = NULL;
 	dir->offset   = 0;
 	dir->file     = False;
