@@ -27,6 +27,7 @@
 #include <libgen.h>
 
 #include "lib/tdb_wrap/tdb_wrap.h"
+#include "lib/util/dlinklist.h"
 #include "lib/util/sys_rw.h"
 #include "lib/util/time.h"
 #include "lib/util/tevent_unix.h"
@@ -167,6 +168,130 @@ static void node_list_ban_credits(struct node_list *nlist, uint32_t pnn)
 			break;
 		}
 	}
+}
+
+/*
+ * Database list functions
+ *
+ * Simple, naive implementation that could be updated to a db_hash or similar
+ */
+
+struct db {
+	struct db *prev, *next;
+
+	uint32_t db_id;
+	uint32_t db_flags;
+	uint32_t *pnn_list;
+	unsigned int num_nodes;
+};
+
+struct db_list {
+	unsigned int num_dbs;
+	struct db *db;
+	unsigned int num_nodes;
+};
+
+static struct db_list *db_list_init(TALLOC_CTX *mem_ctx, unsigned int num_nodes)
+{
+	struct db_list *l;
+
+	l = talloc_zero(mem_ctx, struct db_list);
+	l->num_nodes = num_nodes;
+
+	return l;
+}
+
+static struct db *db_list_find(struct db_list *dblist, uint32_t db_id)
+{
+	struct db *db;
+
+	if (dblist == NULL) {
+		return NULL;
+	}
+
+	db = dblist->db;
+	while (db != NULL && db->db_id != db_id) {
+		db = db->next;
+	}
+
+	return db;
+}
+
+static int db_list_add(struct db_list *dblist,
+		       uint32_t db_id,
+		       uint32_t db_flags,
+		       uint32_t node)
+{
+	struct db *db = NULL;
+
+	if (dblist == NULL) {
+		return EINVAL;
+	}
+
+	db = talloc_zero(dblist, struct db);
+	if (db == NULL) {
+		return ENOMEM;
+	}
+
+	db->db_id = db_id;
+	db->db_flags = db_flags;
+	db->pnn_list = talloc_zero_array(db, uint32_t, dblist->num_nodes);
+	if (db->pnn_list == NULL) {
+		talloc_free(db);
+		return ENOMEM;
+	}
+	db->pnn_list[0] = node;
+	db->num_nodes = 1;
+
+	DLIST_ADD_END(dblist->db, db);
+	dblist->num_dbs++;
+
+	return 0;
+}
+
+static int db_list_check_and_add(struct db_list *dblist,
+		       uint32_t db_id,
+		       uint32_t db_flags,
+		       uint32_t node)
+{
+	struct db *db = NULL;
+	int ret;
+
+	/*
+	 * These flags are masked out because they are only set on a
+	 * node when a client attaches to that node, so they might not
+	 * be set yet.  They can't be passed as part of the attch, so
+	 * they're no use here.
+	 */
+	db_flags &= ~(CTDB_DB_FLAGS_READONLY | CTDB_DB_FLAGS_STICKY);
+
+	if (dblist == NULL) {
+		return EINVAL;
+	}
+
+	db = db_list_find(dblist, db_id);
+	if (db == NULL) {
+		ret = db_list_add(dblist, db_id, db_flags, node);
+		return ret;
+	}
+
+	if (db->db_flags != db_flags) {
+		D_ERR("Incompatible database flags for 0x%"PRIx32" "
+		      "(0x%"PRIx32" != 0x%"PRIx32")\n",
+		      db_id,
+		      db_flags,
+		      db->db_flags);
+		return EINVAL;
+	}
+
+	if (db->num_nodes >= dblist->num_nodes) {
+		return EINVAL;
+	}
+
+	db->pnn_list[db->num_nodes] = node;
+	db->num_nodes++;
+
+	return 0;
 }
 
 /*
@@ -2014,7 +2139,7 @@ static bool recover_db_recv(struct tevent_req *req)
 
 struct db_recovery_state {
 	struct tevent_context *ev;
-	struct ctdb_dbid_map *dbmap;
+	struct db_list *dblist;
 	unsigned int num_replies;
 	unsigned int num_failed;
 };
@@ -2022,7 +2147,7 @@ struct db_recovery_state {
 struct db_recovery_one_state {
 	struct tevent_req *req;
 	struct ctdb_client_context *client;
-	struct ctdb_dbid_map *dbmap;
+	struct db_list *dblist;
 	struct ctdb_tunable_list *tun_list;
 	struct node_list *nlist;
 	uint32_t generation;
@@ -2036,14 +2161,14 @@ static void db_recovery_one_done(struct tevent_req *subreq);
 static struct tevent_req *db_recovery_send(TALLOC_CTX *mem_ctx,
 					   struct tevent_context *ev,
 					   struct ctdb_client_context *client,
-					   struct ctdb_dbid_map *dbmap,
+					   struct db_list *dblist,
 					   struct ctdb_tunable_list *tun_list,
 					   struct node_list *nlist,
 					   uint32_t generation)
 {
 	struct tevent_req *req, *subreq;
 	struct db_recovery_state *state;
-	unsigned int i;
+	struct db *db;
 
 	req = tevent_req_create(mem_ctx, &state, struct db_recovery_state);
 	if (req == NULL) {
@@ -2051,16 +2176,16 @@ static struct tevent_req *db_recovery_send(TALLOC_CTX *mem_ctx,
 	}
 
 	state->ev = ev;
-	state->dbmap = dbmap;
+	state->dblist = dblist;
 	state->num_replies = 0;
 	state->num_failed = 0;
 
-	if (dbmap->num == 0) {
+	if (dblist->num_dbs == 0) {
 		tevent_req_done(req);
 		return tevent_req_post(req, ev);
 	}
 
-	for (i=0; i<dbmap->num; i++) {
+	for (db = dblist->db; db != NULL; db = db->next) {
 		struct db_recovery_one_state *substate;
 
 		substate = talloc_zero(state, struct db_recovery_one_state);
@@ -2070,12 +2195,12 @@ static struct tevent_req *db_recovery_send(TALLOC_CTX *mem_ctx,
 
 		substate->req = req;
 		substate->client = client;
-		substate->dbmap = dbmap;
+		substate->dblist = dblist;
 		substate->tun_list = tun_list;
 		substate->nlist = nlist;
 		substate->generation = generation;
-		substate->db_id = dbmap->dbs[i].db_id;
-		substate->db_flags = dbmap->dbs[i].flags;
+		substate->db_id = db->db_id;
+		substate->db_flags = db->db_flags;
 
 		subreq = recover_db_send(state,
 					 ev,
@@ -2138,7 +2263,7 @@ failed:
 done:
 	state->num_replies += 1;
 
-	if (state->num_replies == state->dbmap->num) {
+	if (state->num_replies == state->dblist->num_dbs) {
 		tevent_req_done(req);
 	}
 }
@@ -2387,7 +2512,7 @@ struct recovery_state {
 	struct node_list *nlist;
 	struct ctdb_tunable_list *tun_list;
 	struct ctdb_vnn_map *vnnmap;
-	struct ctdb_dbid_map *dbmap;
+	struct db_list *dblist;
 };
 
 static void recovery_tunables_done(struct tevent_req *subreq);
@@ -2709,6 +2834,8 @@ static void recovery_dbmap_done(struct tevent_req *subreq)
 		req, struct recovery_state);
 	struct ctdb_reply_control *reply;
 	struct ctdb_req_control request;
+	struct ctdb_dbid_map *dbmap = NULL;
+	unsigned int j;
 	int ret;
 	bool status;
 
@@ -2721,11 +2848,30 @@ static void recovery_dbmap_done(struct tevent_req *subreq)
 		return;
 	}
 
-	ret = ctdb_reply_control_get_dbmap(reply, state, &state->dbmap);
+	state->dblist = db_list_init(state, state->nlist->count);
+	if (tevent_req_nomem(state->dblist, req)) {
+		D_ERR("memory allocation error\n");
+		return;
+	}
+
+	ret = ctdb_reply_control_get_dbmap(reply, state, &dbmap);
 	if (ret != 0) {
 		D_ERR("control GET_DBMAP failed, ret=%d\n", ret);
 		tevent_req_error(req, ret);
 		return;
+	}
+
+	for (j = 0; j < dbmap->num; j++) {
+		ret = db_list_check_and_add(state->dblist,
+					    dbmap->dbs[j].db_id,
+					    dbmap->dbs[j].flags,
+					    state->destnode);
+		if (ret != 0) {
+			D_ERR("failed to add database list entry, ret=%d\n",
+			      ret);
+			tevent_req_error(req, ret);
+			return;
+		}
 	}
 
 	ctdb_req_control_set_recmode(&request, CTDB_RECOVERY_ACTIVE);
@@ -2898,7 +3044,7 @@ static void recovery_vnnmap_update_done(struct tevent_req *subreq)
 	subreq = db_recovery_send(state,
 				  state->ev,
 				  state->client,
-				  state->dbmap,
+				  state->dblist,
 				  state->tun_list,
 				  state->nlist,
 				  state->vnnmap->generation);
@@ -2921,7 +3067,7 @@ static void recovery_db_recovery_done(struct tevent_req *subreq)
 	status = db_recovery_recv(subreq, &count);
 	TALLOC_FREE(subreq);
 
-	D_ERR("%d of %d databases recovered\n", count, state->dbmap->num);
+	D_ERR("%d of %d databases recovered\n", count, state->dblist->num_dbs);
 
 	if (! status) {
 		subreq = ban_node_send(state,
