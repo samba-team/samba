@@ -31,6 +31,7 @@
 #include "lib/messaging/messaging.h"
 #include "lib/util/debug.h"
 #include "source3/lib/messages_dgm.h"
+#include "lib/util/util_process.h"
 
 static unsigned connections_active = 0;
 static unsigned smbd_max_processes = 0;
@@ -342,6 +343,12 @@ static void standard_accept_connection(
 	pid = getpid();
 	setproctitle("task[%s] standard worker", proc_ctx->name);
 
+	/*
+	 * We must fit within 15 chars of text or we will truncate, so
+	 * we put the constant part last
+	 */
+	prctl_set_comment("%s[work]", proc_ctx->name);
+
 	/* This is now the child code. We need a completely new event_context to work with */
 
 	if (tevent_re_initialise(ev) != 0) {
@@ -501,6 +508,11 @@ static void standard_new_task(struct tevent_context *ev,
 	}
 
 	setproctitle("task[%s]", service_name);
+	/*
+	 * We must fit within 15 chars of text or we will truncate, so
+	 * we put the constant part last
+	 */
+	prctl_set_comment("%s[task]", service_name);
 
 	/*
 	 * Set up the process context to be passed through to the terminate

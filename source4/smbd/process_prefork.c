@@ -44,6 +44,7 @@
 #include "ldb_wrap.h"
 #include "lib/util/tfork.h"
 #include "lib/messaging/irpc.h"
+#include "lib/util/util_process.h"
 
 #define min(a, b) (((a) < (b)) ? (a) : (b))
 
@@ -290,6 +291,11 @@ static void prefork_fork_master(
 
 	pid = getpid();
 	setproctitle("task[%s] pre-fork master", service_name);
+	/*
+	 * We must fit within 15 chars of text or we will truncate, so
+	 * we put the constant part last
+	 */
+	prctl_set_comment("%s[master]", service_name);
 
 	/*
 	 * this will free all the listening sockets and all state that
@@ -690,6 +696,13 @@ static void prefork_fork_worker(struct task_server *task,
 		setproctitle("task[%s] pre-forked worker(%d)",
 			     service_name,
 			     pd->instances);
+		/*
+		 * We must fit within 15 chars of text or we will truncate, so
+		 * we put child number last
+		 */
+		prctl_set_comment("%s(%d)",
+				  service_name,
+				  pd->instances);
 		prefork_reload_after_fork();
 		if (service_details->post_fork != NULL) {
 			service_details->post_fork(task, pd);
