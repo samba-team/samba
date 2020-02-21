@@ -170,7 +170,7 @@ static void wb_sids2xids_lookupsids_done(struct tevent_req *subreq)
 	struct lsa_TransNameArray *names = NULL;
 	struct dcerpc_binding_handle *child_binding_handle = NULL;
 	NTSTATUS status;
-	int i;
+	uint32_t i;
 
 	status = wb_lookupsids_recv(subreq, state, &domains, &names);
 	TALLOC_FREE(subreq);
