@@ -82,6 +82,33 @@ parsing code.
 A large number of issues have been found and fixed thanks to this
 effort.
 
+samba-tool improvements add contacts as member to groups
+--------------------------------------------------------
+
+Previously "samba-tool group addmemers" can just add users, groups and
+computers as members to groups. But also contacts can be members of
+groups. Samba 4.12 adds the functionality to add contacts to
+groups. Since contacts have no sAMAccountName, it's possible that
+there are more than one contact with the same name in different
+organizational units. Therefore it's necessary to have an option to
+handle group members by their DN.
+
+To get the DN of an object there is now the --full-dn option available
+for all necessary commands.
+
+The MS Windows UI allows to search for specific types of group members
+when searching for new members for a group. This feature is included
+here with the new samba-tool group addmembers --object-type=OBJECTYPE
+option. The different types are selected accordingly to the Windows
+UI. The default samba-toole behaviour shouldn't be changed.
+
+Allow filtering by OU or subtree in samba-tool
+----------------------------------------------
+
+A new --base-dn and --member-base-dn option is added to relevant
+samba-tool user, group and ou management commands to allow operation
+on just one part of the AD tree, such as a single OU.
+
 VFS
 ===
 
