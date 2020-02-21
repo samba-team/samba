@@ -944,6 +944,7 @@ struct ctdb_req_control {
 #define CTDB_CTRL_FLAG_OPCODE_SPECIFIC   0xFFFF0000
 /* Ugly overloading of this field... */
 #define CTDB_PUBLIC_IP_FLAGS_ONLY_AVAILABLE 0x00010000
+#define CTDB_CTRL_FLAG_ATTACH_RECOVERY      0x00020000
 	uint32_t flags;
 	struct ctdb_req_control_data rdata;
 };
