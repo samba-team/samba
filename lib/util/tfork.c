@@ -26,6 +26,7 @@
 #include "lib/util/sys_rw.h"
 #include "lib/util/tfork.h"
 #include "lib/util/debug.h"
+#include "lib/util/util_process.h"
 
 #ifdef HAVE_PTHREAD
 #include <pthread.h>
@@ -572,6 +573,7 @@ static pid_t tfork_start_waiter_and_worker(struct tfork_state *state,
 	 * The "waiter" child.
 	 */
 	setproctitle("tfork waiter process");
+	prctl_set_comment("tfork waiter");
 	CatchSignal(SIGCHLD, SIG_DFL);
 
 	close(status_sp_caller_fd);
@@ -603,6 +605,8 @@ static pid_t tfork_start_waiter_and_worker(struct tfork_state *state,
 		return 0;
 	}
 	state->worker_pid = pid;
+	setproctitle("tfork waiter process(%d)", pid);
+	prctl_set_comment("tfork(%d)", pid);
 
 	close(ready_pipe_worker_fd);
 
