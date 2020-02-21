@@ -31,15 +31,18 @@
 /*
  * check if an element is part of the list.
  */
-int
-SMBC_dlist_contains(SMBCFILE * list, SMBCFILE *p)
+bool SMBC_dlist_contains(SMBCFILE * list, SMBCFILE *p)
 {
-	if (!p || !list) return False;
+	if ((p == NULL) || (list == NULL)) {
+		return false;
+	}
 	do {
-		if (p == list) return True;
+		if (p == list) {
+			return true;
+		}
 		list = list->next;
-	} while (list);
-	return False;
+	} while (list != NULL);
+	return false;
 }
 
 

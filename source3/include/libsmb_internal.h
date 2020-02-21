@@ -430,8 +430,7 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
 
 
 /* Functions in libsmb_misc.c */
-int
-SMBC_dlist_contains(SMBCFILE * list, SMBCFILE *p);
+bool SMBC_dlist_contains(SMBCFILE * list, SMBCFILE *p);
 
 int
 SMBC_errno(SMBCCTX *context,
