@@ -571,6 +571,10 @@ plantestsuite("samba3.test_vfs_posixacl", "none",
               [os.path.join(bindir(), "test_vfs_posixacl"),
                "$SMB_CONF_PATH"])
 
+if is_module_enabled("vfs_gpfs"):
+    plantestsuite("samba3.test_vfs_gpfs", "none",
+                  [os.path.join(bindir(), "test_vfs_gpfs")])
+
 plantestsuite(
     "samba3.resolvconf", "none",
     [os.path.join(samba3srcdir, "script/tests/test_resolvconf.sh")])

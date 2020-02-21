@@ -370,6 +370,13 @@ bld.SAMBA3_MODULE('vfs_gpfs',
                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_gpfs'),
                  includes=bld.CONFIG_GET('CPPPATH_GPFS'))
 
+bld.SAMBA3_BINARY('test_vfs_gpfs',
+                  source='test_vfs_gpfs.c',
+                  deps='NFS4_ACLS non_posix_acls gpfswrap cmocka',
+                  for_selftest=True,
+                  enabled=bld.SAMBA3_IS_ENABLED_MODULE('vfs_gpfs'),
+                  includes=bld.CONFIG_GET('CPPPATH_GPFS'))
+
 bld.SAMBA3_MODULE('vfs_readahead',
                  subsystem='vfs',
                  source='vfs_readahead.c',
