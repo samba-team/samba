@@ -22,6 +22,8 @@
 #ifndef _SAMBA_UTIL_PROCESS_H
 #define _SAMBA_UTIL_PROCESS_H
 
+#include "replace.h"
+
 /**
  * @brief Set the process comment name.
  *
@@ -30,6 +32,6 @@
  *
  * @return              -1 on error, 0 on success.
  */
-int prctl_set_comment(const char *comment);
+int prctl_set_comment(const char *comment_format, ...) PRINTF_ATTRIBUTE(1,2);
 
 #endif

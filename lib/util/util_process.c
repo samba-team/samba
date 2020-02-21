@@ -20,15 +20,21 @@
  */
 
 #include "util_process.h"
-#include "config.h"
+#include "replace.h"
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
 
-int prctl_set_comment(const char *comment)
+int prctl_set_comment(const char *comment_format, ...)
 {
 #if defined(HAVE_PRCTL) && defined(PR_SET_NAME)
+	char comment[16];
+	va_list ap;
+	va_start(ap, comment_format);
+	vsnprintf(comment, sizeof(comment), comment_format, ap);
+	va_end(ap);
+
 	return prctl(PR_SET_NAME, (unsigned long) comment, 0, 0, 0);
 #endif
 	return 0;

@@ -513,7 +513,7 @@ NTSTATUS reinit_after_fork(struct messaging_context *msg_ctx,
 	}
 
 	if (comment) {
-		prctl_set_comment(comment);
+		prctl_set_comment("%s", comment);
 	}
 
  done:
