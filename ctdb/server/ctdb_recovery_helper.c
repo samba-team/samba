@@ -2817,9 +2817,13 @@ static void recovery_capabilities_done(struct tevent_req *subreq)
 	talloc_free(reply);
 
 	ctdb_req_control_get_dbmap(&request);
-	subreq = ctdb_client_control_send(state, state->ev, state->client,
-					  state->destnode, TIMEOUT(),
-					  &request);
+	subreq = ctdb_client_control_multi_send(state,
+						state->ev,
+						state->client,
+						state->nlist->pnn_list,
+						state->nlist->count,
+						TIMEOUT(),
+						&request);
 	if (tevent_req_nomem(subreq, req)) {
 		return;
 	}
@@ -2832,18 +2836,34 @@ static void recovery_dbmap_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct recovery_state *state = tevent_req_data(
 		req, struct recovery_state);
-	struct ctdb_reply_control *reply;
+	struct ctdb_reply_control **reply;
 	struct ctdb_req_control request;
-	struct ctdb_dbid_map *dbmap = NULL;
-	unsigned int j;
+	int *err_list;
+	unsigned int i, j;
 	int ret;
 	bool status;
 
-	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	status = ctdb_client_control_multi_recv(subreq,
+						&ret,
+						state,
+						&err_list,
+						&reply);
 	TALLOC_FREE(subreq);
 	if (! status) {
-		D_ERR("control GET_DBMAP failed to node %u, ret=%d\n",
-		      state->destnode, ret);
+		int ret2;
+		uint32_t pnn;
+
+		ret2 = ctdb_client_control_multi_error(state->nlist->pnn_list,
+						       state->nlist->count,
+						       err_list,
+						       &pnn);
+		if (ret2 != 0) {
+			D_ERR("control GET_DBMAP failed on node %u,"
+			      " ret=%d\n", pnn, ret2);
+		} else {
+			D_ERR("control GET_DBMAP failed, ret=%d\n",
+			      ret);
+		}
 		tevent_req_error(req, ret);
 		return;
 	}
@@ -2854,24 +2874,35 @@ static void recovery_dbmap_done(struct tevent_req *subreq)
 		return;
 	}
 
-	ret = ctdb_reply_control_get_dbmap(reply, state, &dbmap);
-	if (ret != 0) {
-		D_ERR("control GET_DBMAP failed, ret=%d\n", ret);
-		tevent_req_error(req, ret);
-		return;
-	}
+	for (i = 0; i < state->nlist->count; i++) {
+		struct ctdb_dbid_map *dbmap = NULL;
+		uint32_t pnn;
 
-	for (j = 0; j < dbmap->num; j++) {
-		ret = db_list_check_and_add(state->dblist,
-					    dbmap->dbs[j].db_id,
-					    dbmap->dbs[j].flags,
-					    state->destnode);
+		pnn = state->nlist->pnn_list[i];
+
+		ret = ctdb_reply_control_get_dbmap(reply[i], state, &dbmap);
 		if (ret != 0) {
-			D_ERR("failed to add database list entry, ret=%d\n",
-			      ret);
-			tevent_req_error(req, ret);
+			D_ERR("control GET_DBMAP failed on node %u\n",
+			      pnn);
+			tevent_req_error(req, EPROTO);
 			return;
 		}
+
+		for (j = 0; j < dbmap->num; j++) {
+			ret = db_list_check_and_add(state->dblist,
+						    dbmap->dbs[j].db_id,
+						    dbmap->dbs[j].flags,
+						    pnn);
+			if (ret != 0) {
+				D_ERR("failed to add database list entry, "
+				      "ret=%d\n",
+				      ret);
+				tevent_req_error(req, ret);
+				return;
+			}
+		}
+
+		TALLOC_FREE(dbmap);
 	}
 
 	ctdb_req_control_set_recmode(&request, CTDB_RECOVERY_ACTIVE);
