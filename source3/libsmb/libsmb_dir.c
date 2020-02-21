@@ -1232,9 +1232,7 @@ SMBC_readdirplus_ctx(SMBCCTX *context,
 		return NULL;
 	}
 
-	if (dir == NULL ||
-	    SMBC_dlist_contains(context->internal->files,
-				dir) == 0) {
+	if (dir == NULL || !SMBC_dlist_contains(context->internal->files, dir)) {
 		DBG_ERR("Invalid dir in SMBC_readdirplus_ctx()\n");
 		TALLOC_FREE(frame);
 		errno = EBADF;
@@ -1313,10 +1311,7 @@ const struct libsmb_file_info *SMBC_readdirplus2_ctx(SMBCCTX *context,
 		return NULL;
 	}
 
-	if (dir == NULL ||
-	    SMBC_dlist_contains(context->internal->files,
-					dir) == 0)
-	{
+	if (dir == NULL || !SMBC_dlist_contains(context->internal->files, dir)) {
 		DBG_ERR("Invalid dir in SMBC_readdirplus2_ctx()\n");
 		TALLOC_FREE(frame);
 		errno = EBADF;
