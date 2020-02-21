@@ -258,7 +258,7 @@ SMBC_read_ctx(SMBCCTX *context,
 
 	DEBUG(4, ("smbc_read(%p, %d)\n", file, (int)count));
 
-	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
+	if (!SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -308,17 +308,13 @@ SMBC_splice_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!srcfile ||
-	    !SMBC_dlist_contains(context->internal->files, srcfile))
-	{
+	if (!SMBC_dlist_contains(context->internal->files, srcfile)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	if (!dstfile ||
-	    !SMBC_dlist_contains(context->internal->files, dstfile))
-	{
+	if (!SMBC_dlist_contains(context->internal->files, dstfile)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -363,7 +359,7 @@ SMBC_write_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
+	if (!SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -409,7 +405,7 @@ SMBC_close_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
+	if (!SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -701,7 +697,7 @@ SMBC_lseek_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
+	if (!SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -764,7 +760,7 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
+	if (!SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
