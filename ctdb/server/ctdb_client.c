@@ -1160,8 +1160,17 @@ int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout,
 		opcode = CTDB_CONTROL_DB_ATTACH;
 	}
 
-	ret = ctdb_control(ctdb, destnode, 0, opcode, 0, data,
-			   mem_ctx, &data, &res, &timeout, NULL);
+	ret = ctdb_control(ctdb,
+			   destnode,
+			   0,
+			   opcode,
+			   CTDB_CTRL_FLAG_ATTACH_RECOVERY,
+			   data,
+			   mem_ctx,
+			   &data,
+			   &res,
+			   &timeout,
+			   NULL);
 
 	if (ret != 0 || res != 0) {
 		return -1;
