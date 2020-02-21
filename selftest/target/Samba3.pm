@@ -226,7 +226,7 @@ sub check_env($$)
 	ad_member_idmap_rid => ["ad_dc"],
 	ad_member_idmap_ad  => ["fl2008r2dc"],
 
-	clusteredmember     => ["nt4_dc"],
+	clusteredmember_smb1 => ["nt4_dc"],
 );
 
 %Samba3::ENV_DEPS_POST = ();
@@ -429,7 +429,7 @@ sub setup_nt4_member
 	return $ret;
 }
 
-sub setup_clusteredmember
+sub setup_clusteredmember_smb1
 {
 	my ($self, $prefix, $nt4_dc_vars) = @_;
 	my $count = 0;
@@ -479,6 +479,8 @@ sub setup_clusteredmember
        server signing = on
        clustering = yes
        ctdbd socket = ${socket}
+       client min protocol = CORE
+       server min protocol = LANMAN1
        dbwrap_tdb_mutexes:* = yes
        ${require_mutexes}
 ";

@@ -234,7 +234,7 @@ tasks = {
             "ad_dc_slowtests",
             "schema_pair_dc",
             "schema_dc",
-            "clusteredmember",
+            "clusteredmember_smb1",
             ])),
         ("lcov", LCOV_CMD),
         ("install", "make install"),
@@ -286,7 +286,7 @@ tasks = {
             "ad_dc_slowtests",
             "schema_pair_dc",
             "schema_dc",
-            "clusteredmember",
+            "clusteredmember_smb1",
             ])),
         ("lcov", LCOV_CMD),
         ("install", "make install"),
@@ -557,7 +557,7 @@ tasks = {
 
         ("test",
          make_test(cmd='make test',
-                   include_envs=["clusteredmember"])
+                   include_envs=["clusteredmember_smb1"])
         ),
 
         # clean up:

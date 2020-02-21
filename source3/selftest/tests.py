@@ -948,7 +948,7 @@ def planclusteredmembertestsuite(tname, prefix):
     modnamearg = 'samba3.%s' % namearg
     extraargs = ''
 
-    prefix = os.path.join(prefix, 'clusteredmember')
+    prefix = os.path.join(prefix, 'clusteredmember_smb1')
     unclist = os.path.join(prefix, 'unclists/%s.txt' % tshare)
 
     unclistarg = '--unclist=%s' % unclist
@@ -956,7 +956,7 @@ def planclusteredmembertestsuite(tname, prefix):
 
     return selftesthelpers.plansmbtorture4testsuite(
         namearg,
-        'clusteredmember',
+        'clusteredmember_smb1',
         [extraargs, unclistarg, sharearg, autharg, tname],
         target='samba3',
         modname=modnamearg)
