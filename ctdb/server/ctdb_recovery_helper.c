@@ -1672,8 +1672,7 @@ struct recover_db_state {
 	struct ctdb_client_context *client;
 	struct ctdb_tunable_list *tun_list;
 	struct node_list *nlist;
-	uint32_t db_id;
-	uint8_t db_flags;
+	struct db *db;
 
 	uint32_t destnode;
 	struct ctdb_transdb transdb;
@@ -1698,8 +1697,7 @@ static struct tevent_req *recover_db_send(TALLOC_CTX *mem_ctx,
 					  struct ctdb_tunable_list *tun_list,
 					  struct node_list *nlist,
 					  uint32_t generation,
-					  uint32_t db_id,
-					  uint8_t db_flags)
+					  struct db *db)
 {
 	struct tevent_req *req, *subreq;
 	struct recover_db_state *state;
@@ -1714,14 +1712,13 @@ static struct tevent_req *recover_db_send(TALLOC_CTX *mem_ctx,
 	state->client = client;
 	state->tun_list = tun_list;
 	state->nlist = nlist;
-	state->db_id = db_id;
-	state->db_flags = db_flags;
+	state->db = db;
 
 	state->destnode = ctdb_client_pnn(client);
-	state->transdb.db_id = db_id;
+	state->transdb.db_id = db->db_id;
 	state->transdb.tid = generation;
 
-	ctdb_req_control_get_dbname(&request, db_id);
+	ctdb_req_control_get_dbname(&request, db->db_id);
 	subreq = ctdb_client_control_send(state, ev, client, state->destnode,
 					  TIMEOUT(), &request);
 	if (tevent_req_nomem(subreq, req)) {
@@ -1747,7 +1744,7 @@ static void recover_db_name_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	if (! status) {
 		D_ERR("control GET_DBNAME failed for db=0x%x, ret=%d\n",
-		      state->db_id, ret);
+		      state->db->db_id, ret);
 		tevent_req_error(req, ret);
 		return;
 	}
@@ -1755,14 +1752,14 @@ static void recover_db_name_done(struct tevent_req *subreq)
 	ret = ctdb_reply_control_get_dbname(reply, state, &state->db_name);
 	if (ret != 0) {
 		D_ERR("control GET_DBNAME failed for db=0x%x, ret=%d\n",
-		      state->db_id, ret);
+		      state->db->db_id, ret);
 		tevent_req_error(req, EPROTO);
 		return;
 	}
 
 	talloc_free(reply);
 
-	ctdb_req_control_getdbpath(&request, state->db_id);
+	ctdb_req_control_getdbpath(&request, state->db->db_id);
 	subreq = ctdb_client_control_send(state, state->ev, state->client,
 					  state->destnode, TIMEOUT(),
 					  &request);
@@ -1802,7 +1799,7 @@ static void recover_db_path_done(struct tevent_req *subreq)
 
 	talloc_free(reply);
 
-	ctdb_req_control_db_freeze(&request, state->db_id);
+	ctdb_req_control_db_freeze(&request, state->db->db_id);
 	subreq = ctdb_client_control_multi_send(state,
 						state->ev,
 						state->client,
@@ -1873,6 +1870,7 @@ static void recover_db_transaction_started(struct tevent_req *subreq)
 	struct recover_db_state *state = tevent_req_data(
 		req, struct recover_db_state);
 	int *err_list;
+	uint32_t flags;
 	int ret;
 	bool status;
 
@@ -1899,28 +1897,31 @@ static void recover_db_transaction_started(struct tevent_req *subreq)
 		return;
 	}
 
-	state->recdb = recdb_create(state, state->db_id, state->db_name,
+	flags = state->db->db_flags;
+	state->recdb = recdb_create(state,
+				    state->db->db_id,
+				    state->db_name,
 				    state->db_path,
 				    state->tun_list->database_hash_size,
-				    state->db_flags & CTDB_DB_FLAGS_PERSISTENT);
+				    flags & CTDB_DB_FLAGS_PERSISTENT);
 	if (tevent_req_nomem(state->recdb, req)) {
 		return;
 	}
 
-	if ((state->db_flags & CTDB_DB_FLAGS_PERSISTENT) ||
-	    (state->db_flags & CTDB_DB_FLAGS_REPLICATED)) {
+	if ((flags & CTDB_DB_FLAGS_PERSISTENT) ||
+	    (flags & CTDB_DB_FLAGS_REPLICATED)) {
 		subreq = collect_highseqnum_db_send(state,
 						    state->ev,
 						    state->client,
 						    state->nlist,
-						    state->db_id,
+						    state->db->db_id,
 						    state->recdb);
 	} else {
 		subreq = collect_all_db_send(state,
 					     state->ev,
 					     state->client,
 					     state->nlist,
-					     state->db_id,
+					     state->db->db_id,
 					     state->recdb);
 	}
 	if (tevent_req_nomem(subreq, req)) {
@@ -1939,8 +1940,8 @@ static void recover_db_collect_done(struct tevent_req *subreq)
 	int ret;
 	bool status;
 
-	if ((state->db_flags & CTDB_DB_FLAGS_PERSISTENT) ||
-	    (state->db_flags & CTDB_DB_FLAGS_REPLICATED)) {
+	if ((state->db->db_flags & CTDB_DB_FLAGS_PERSISTENT) ||
+	    (state->db->db_flags & CTDB_DB_FLAGS_REPLICATED)) {
 		status = collect_highseqnum_db_recv(subreq, &ret);
 	} else {
 		status = collect_all_db_recv(subreq, &ret);
@@ -2076,7 +2077,7 @@ static void recover_db_transaction_committed(struct tevent_req *subreq)
 		return;
 	}
 
-	ctdb_req_control_db_thaw(&request, state->db_id);
+	ctdb_req_control_db_thaw(&request, state->db->db_id);
 	subreq = ctdb_client_control_multi_send(state,
 						state->ev,
 						state->client,
@@ -2151,8 +2152,7 @@ struct db_recovery_one_state {
 	struct ctdb_tunable_list *tun_list;
 	struct node_list *nlist;
 	uint32_t generation;
-	uint32_t db_id;
-	uint8_t db_flags;
+	struct db *db;
 	int num_fails;
 };
 
@@ -2199,8 +2199,7 @@ static struct tevent_req *db_recovery_send(TALLOC_CTX *mem_ctx,
 		substate->tun_list = tun_list;
 		substate->nlist = nlist;
 		substate->generation = generation;
-		substate->db_id = db->db_id;
-		substate->db_flags = db->db_flags;
+		substate->db = db;
 
 		subreq = recover_db_send(state,
 					 ev,
@@ -2208,14 +2207,13 @@ static struct tevent_req *db_recovery_send(TALLOC_CTX *mem_ctx,
 					 tun_list,
 					 nlist,
 					 generation,
-					 substate->db_id,
-					 substate->db_flags);
+					 substate->db);
 		if (tevent_req_nomem(subreq, req)) {
 			return tevent_req_post(req, ev);
 		}
 		tevent_req_set_callback(subreq, db_recovery_one_done,
 					substate);
-		D_NOTICE("recover database 0x%08x\n", substate->db_id);
+		D_NOTICE("recover database 0x%08x\n", substate->db->db_id);
 	}
 
 	return req;
@@ -2246,14 +2244,13 @@ static void db_recovery_one_done(struct tevent_req *subreq)
 					 substate->tun_list,
 					 substate->nlist,
 					 substate->generation,
-					 substate->db_id,
-					 substate->db_flags);
+					 substate->db);
 		if (tevent_req_nomem(subreq, req)) {
 			goto failed;
 		}
 		tevent_req_set_callback(subreq, db_recovery_one_done, substate);
 		D_NOTICE("recover database 0x%08x, attempt %d\n",
-			 substate->db_id, substate->num_fails+1);
+			 substate->db->db_id, substate->num_fails+1);
 		return;
 	}
 
