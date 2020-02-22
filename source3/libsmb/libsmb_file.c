@@ -256,7 +256,7 @@ SMBC_read_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	DEBUG(4, ("smbc_read(%p, %d)\n", file, (int)count));
+	DEBUG(4, ("smbc_read(%p, %zu)\n", file, count));
 
 	if (!SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
@@ -284,7 +284,7 @@ SMBC_read_ctx(SMBCCTX *context,
 
 	file->offset += ret;
 
-	DEBUG(4, ("  --> %ld\n", (unsigned long)ret));
+	DEBUG(4, ("  --> %zu\n", ret));
 
 	TALLOC_FREE(frame);
 	return ret;  /* Success, ret bytes of data ... */
