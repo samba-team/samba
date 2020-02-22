@@ -741,7 +741,7 @@ NTSTATUS cli_posix_setacl(struct cli_state *cli,
 ****************************************************************************/
 
 struct stat_state {
-	SMB_STRUCT_STAT *sbuf;
+	SMB_STRUCT_STAT sbuf;
 };
 
 static void cli_posix_stat_done(struct tevent_req *subreq);
@@ -749,8 +749,7 @@ static void cli_posix_stat_done(struct tevent_req *subreq);
 struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct cli_state *cli,
-				       const char *fname,
-				       SMB_STRUCT_STAT *sbuf)
+				       const char *fname)
 {
 	struct tevent_req *req = NULL, *subreq = NULL;
 	struct stat_state *state = NULL;
@@ -759,7 +758,6 @@ struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
 	if (req == NULL) {
 		return NULL;
 	}
-	state->sbuf = sbuf;
 
 	subreq = cli_qpathinfo_send(state, ev, cli, fname,
 				    SMB_QUERY_FILE_UNIX_BASIC, 100, 100);
@@ -775,7 +773,7 @@ static void cli_posix_stat_done(struct tevent_req *subreq)
 	struct tevent_req *req = tevent_req_callback_data(
 				subreq, struct tevent_req);
 	struct stat_state *state = tevent_req_data(req, struct stat_state);
-	SMB_STRUCT_STAT *sbuf = state->sbuf;
+	SMB_STRUCT_STAT *sbuf = &state->sbuf;
 	uint8_t *data;
 	uint32_t num_data = 0;
 	NTSTATUS status;
@@ -794,8 +792,6 @@ static void cli_posix_stat_done(struct tevent_req *subreq)
 		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
 		return;
 	}
-
-	*sbuf = (SMB_STRUCT_STAT) { 0 };
 
 	/* total size, in bytes */
 	sbuf->st_ex_size = IVAL2_TO_SMB_BIG_UINT(data, 0);
@@ -840,9 +836,20 @@ static void cli_posix_stat_done(struct tevent_req *subreq)
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_posix_stat_recv(struct tevent_req *req)
+NTSTATUS cli_posix_stat_recv(struct tevent_req *req,
+			     SMB_STRUCT_STAT *sbuf)
 {
-	return tevent_req_simple_recv_ntstatus(req);
+	struct stat_state *state = tevent_req_data(req, struct stat_state);
+	NTSTATUS status;
+
+	if (tevent_req_is_nterror(req, &status)) {
+		return status;
+	}
+	if (sbuf != NULL) {
+		*sbuf = state->sbuf;
+	}
+	tevent_req_received(req);
+	return NT_STATUS_OK;
 }
 
 NTSTATUS cli_posix_stat(struct cli_state *cli,
@@ -868,7 +875,7 @@ NTSTATUS cli_posix_stat(struct cli_state *cli,
 		goto fail;
 	}
 
-	req = cli_posix_stat_send(frame, ev, cli, fname, sbuf);
+	req = cli_posix_stat_send(frame, ev, cli, fname);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -878,7 +885,7 @@ NTSTATUS cli_posix_stat(struct cli_state *cli,
 		goto fail;
 	}
 
-	status = cli_posix_stat_recv(req);
+	status = cli_posix_stat_recv(req, sbuf);
 
  fail:
 	TALLOC_FREE(frame);

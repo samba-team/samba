@@ -310,9 +310,9 @@ NTSTATUS cli_posix_setacl(struct cli_state *cli,
 struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
 				       struct tevent_context *ev,
 				       struct cli_state *cli,
-				       const char *fname,
-				       SMB_STRUCT_STAT *sbuf);
-NTSTATUS cli_posix_stat_recv(struct tevent_req *req);
+				       const char *fname);
+NTSTATUS cli_posix_stat_recv(struct tevent_req *req,
+			     SMB_STRUCT_STAT *sbuf);
 NTSTATUS cli_posix_stat(struct cli_state *cli,
 			const char *fname,
 			SMB_STRUCT_STAT *sbuf);
