@@ -471,7 +471,7 @@ SMBC_getatr(SMBCCTX * context,
  	}
 
 	/* path fixup for . and .. */
-	if (strequal(path, ".") || strequal(path, "..")) {
+	if (ISDOT(path) || ISDOTDOT(path)) {
 		fixedpath = talloc_strdup(frame, "\\");
 		if (!fixedpath) {
 			errno = ENOMEM;
