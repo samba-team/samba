@@ -4664,6 +4664,11 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 						      el->name,
 						      ldb_attr_cmp,
 						      attr);
+				/*
+				 * If we are preserving, do not do the
+				 * ldb_msg_add_empty() below, continue
+				 * to the next element
+				 */
 				if (attr != NULL) {
 					continue;
 				}
