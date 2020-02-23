@@ -376,7 +376,11 @@ for t in libsmbclient:
         libsmbclient_testargs = ["--option=torture:smburl=" + url,
                                  "--option=torture:replace_smbconf=%s/testdata/samba3/smb_new.conf" % srcdir(),
                                  "--option=torture:clientprotocol=%s" % proto]
-        plansmbtorture4testsuite(t, "ad_dc", ['//$SERVER/tmp', '-U$USERNAME%$PASSWORD'] + libsmbclient_testargs, "samba4.%s.%s" % (t, proto))
+        plansmbtorture4testsuite(
+            t,
+            "nt4_dc",
+            ['//$SERVER/tmp', '-U$USERNAME%$PASSWORD'] + libsmbclient_testargs,
+            "samba4.%s.%s" % (t, proto))
 
 plansmbtorture4testsuite("raw.qfileinfo.ipc", "ad_dc_ntvfs", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 
