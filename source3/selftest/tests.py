@@ -539,13 +539,6 @@ unix = ["unix.info2", "unix.whoami"]
 
 nbt = ["nbt.dgram"]
 
-libsmbclient = ["libsmbclient.version", "libsmbclient.initialize",
-                "libsmbclient.configuration", "libsmbclient.setConfiguration",
-                "libsmbclient.options", "libsmbclient.opendir",
-                "libsmbclient.list_shares", "libsmbclient.readdirplus",
-		"libsmbclient.readdirplus_seek",
-		"libsmbclient.readdirplus2"]
-
 vfs = [
     "vfs.fruit",
     "vfs.acl_xattr",
@@ -556,7 +549,7 @@ vfs = [
     "vfs.unfruit",
 ]
 
-tests = base + raw + smb2 + rpc + unix + local + rap + nbt + libsmbclient + idmap + vfs
+tests = base + raw + smb2 + rpc + unix + local + rap + nbt + idmap + vfs
 
 for t in tests:
     if t == "base.delaywrite" or t == "base.deny1" or t == "base.deny2":
@@ -729,17 +722,6 @@ for t in tests:
     elif t == "rpc.samba3.netlogon" or t == "rpc.samba3.sessionkey":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD --option=torture:wksname=samba3rpctest')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD --option=torture:wksname=samba3rpctest')
-    elif t.startswith("libsmbclient"):
-        url = "smb://$USERNAME:$PASSWORD@$SERVER/tmp"
-        if t == "libsmbclient.list_shares":
-            url = "smb://$USERNAME:$PASSWORD@$SERVER"
-
-        plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%%$PASSWORD '
-                                    '--option=torture:smburl=' + url +
-                                    ' --option=torture:replace_smbconf=%s' % os.path.join(srcdir(), "testdata/samba3/smb_new.conf"))
-        plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%%$PASSWORD '
-                                    '--option=torture:smburl=' + url +
-                                    ' --option=torture:replace_smbconf=%s' % os.path.join(srcdir(), "testdata/samba3/smb_new.conf"))
     elif t == "smb2.streams":
         plansmbtorture4testsuite(t, "nt4_dc", '//$SERVER_IP/tmp -U$USERNAME%$PASSWORD')
         plansmbtorture4testsuite(t, "ad_dc", '//$SERVER/tmp -U$USERNAME%$PASSWORD')
