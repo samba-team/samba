@@ -175,9 +175,10 @@ static bool torture_libsmbclient_setConfiguration(struct torture_context *tctx)
 				"");
 
 	ctx = smbc_new_context();
-	torture_assert(tctx, ctx, "failed to get new context");
+	torture_assert_not_null(tctx, ctx, "failed to get new context");
 
-	torture_assert(tctx, smbc_init_context(ctx), "failed to init context");
+	torture_assert_not_null(
+		tctx, smbc_init_context(ctx), "failed to init context");
 
 	torture_comment(tctx, "Testing smbc_setConfiguration - new file %s\n",
 		new_smb_conf);
