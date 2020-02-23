@@ -1656,7 +1656,7 @@ static bool collect_all_db_recv(struct tevent_req *req, int *perr)
 
 /**
  * For each database do the following:
- *  - Get DB name
+ *  - Get DB name from all nodes
  *  - Get DB path
  *  - Freeze database on all nodes
  *  - Start transaction on all nodes
@@ -1719,8 +1719,13 @@ static struct tevent_req *recover_db_send(TALLOC_CTX *mem_ctx,
 	state->transdb.tid = generation;
 
 	ctdb_req_control_get_dbname(&request, db->db_id);
-	subreq = ctdb_client_control_send(state, ev, client, state->destnode,
-					  TIMEOUT(), &request);
+	subreq = ctdb_client_control_multi_send(state,
+						ev,
+						client,
+						state->db->pnn_list,
+						state->db->num_nodes,
+						TIMEOUT(),
+						&request);
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
@@ -1735,26 +1740,75 @@ static void recover_db_name_done(struct tevent_req *subreq)
 		subreq, struct tevent_req);
 	struct recover_db_state *state = tevent_req_data(
 		req, struct recover_db_state);
-	struct ctdb_reply_control *reply;
+	struct ctdb_reply_control **reply;
 	struct ctdb_req_control request;
+	int *err_list;
+	unsigned int i;
 	int ret;
 	bool status;
 
-	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	status = ctdb_client_control_multi_recv(subreq,
+						&ret,
+						state,
+						&err_list,
+						&reply);
 	TALLOC_FREE(subreq);
 	if (! status) {
-		D_ERR("control GET_DBNAME failed for db=0x%x, ret=%d\n",
-		      state->db->db_id, ret);
+		int ret2;
+		uint32_t pnn;
+
+		ret2 = ctdb_client_control_multi_error(state->db->pnn_list,
+						       state->db->num_nodes,
+						       err_list,
+						       &pnn);
+		if (ret2 != 0) {
+			D_ERR("control GET_DBNAME failed on node %u,"
+			      " ret=%d\n",
+			      pnn,
+			      ret2);
+		} else {
+			D_ERR("control GET_DBNAME failed, ret=%d\n",
+			      ret);
+		}
 		tevent_req_error(req, ret);
 		return;
 	}
 
-	ret = ctdb_reply_control_get_dbname(reply, state, &state->db_name);
-	if (ret != 0) {
-		D_ERR("control GET_DBNAME failed for db=0x%x, ret=%d\n",
-		      state->db->db_id, ret);
-		tevent_req_error(req, EPROTO);
-		return;
+	for (i = 0; i < state->db->num_nodes; i++) {
+		const char *db_name;
+		uint32_t pnn;
+
+		pnn = state->nlist->pnn_list[i];
+
+		ret = ctdb_reply_control_get_dbname(reply[i],
+						    state,
+						    &db_name);
+		if (ret != 0) {
+			D_ERR("control GET_DBNAME failed on node %u "
+			      "for db=0x%x, ret=%d\n",
+			      pnn,
+			      state->db->db_id,
+			      ret);
+			tevent_req_error(req, EPROTO);
+			return;
+		}
+
+		if (state->db_name == NULL) {
+			state->db_name = db_name;
+			continue;
+		}
+
+		if (strcmp(state->db_name, db_name) != 0) {
+			D_ERR("Incompatible database name for 0x%"PRIx32" "
+			      "(%s != %s) on node %"PRIu32"\n",
+			      state->db->db_id,
+			      db_name,
+			      state->db_name,
+			      pnn);
+			node_list_ban_credits(state->nlist, pnn);
+			tevent_req_error(req, ret);
+			return;
+		}
 	}
 
 	talloc_free(reply);
