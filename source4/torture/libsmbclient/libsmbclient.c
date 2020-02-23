@@ -411,11 +411,11 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 	struct stat st = {0};
 	struct stat st2 = {0};
 
-	if (smburl == NULL) {
-		torture_fail(tctx,
-			"option --option=torture:smburl="
-			"smb://user:password@server/share missing\n");
-	}
+	torture_assert_not_null(
+		tctx,
+		smburl,
+		"option --option=torture:smburl="
+		"smb://user:password@server/share missing\n");
 
 	DEBUG(0,("torture_libsmbclient_readdirplus_seek start\n"));
 
@@ -425,31 +425,22 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 	dname = talloc_asprintf(tctx,
 				"%s/rd_seek",
 				smburl);
-	if (dname == NULL) {
-		torture_fail_goto(tctx,
-			done,
-			"talloc fail\n");
-	}
+	torture_assert_not_null_goto(
+		tctx, dname, success, done, "talloc fail\n");
 
 	/* Ensure the files don't exist. */
 	for (i = 0; i < 100; i++) {
 		filename[i] = talloc_asprintf(tctx,
 				"test_readdirplus_%u.txt",
 				i);
-		if (filename[i] == NULL) {
-			torture_fail_goto(tctx,
-				done,
-				"talloc fail\n");
-		}
+		torture_assert_not_null_goto(
+			tctx, filename[i], success, done, "talloc fail");
 		full_filename[i] = talloc_asprintf(tctx,
 				"%s/%s",
 				dname,
 				filename[i]);
-		if (full_filename[i] == NULL) {
-			torture_fail_goto(tctx,
-				done,
-				"talloc fail\n");
-		}
+		torture_assert_not_null_goto(
+			tctx, full_filename[i], success, done, "talloc fail");
 		(void)smbc_unlink(full_filename[i]);
 	}
 	/* Ensure the directory doesn't exist. */
@@ -457,14 +448,15 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 
 	/* Create containing directory. */
 	ret = smbc_mkdir(dname, 0777);
-	if (ret != 0) {
-		torture_fail_goto(tctx,
-			done,
-			talloc_asprintf(tctx,
+	torture_assert_goto(
+		tctx,
+		ret == 0,
+		success,
+		done,
+		talloc_asprintf(tctx,
 				"failed to create directory '%s': %s",
 				dname,
 				strerror(errno)));
-	}
 
 	DEBUG(0,("torture_libsmbclient_readdirplus_seek create\n"));
 
@@ -494,15 +486,16 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 
 	/* Now enumerate the directory. */
 	dhandle = smbc_opendir(dname);
-	if (dhandle < 0) {
-		torture_fail_goto(tctx,
-			done,
-			talloc_asprintf(tctx,
+	torture_assert_goto(
+		tctx,
+		dhandle >= 0,
+		success,
+		done,
+		talloc_asprintf(tctx,
 				"failed to obtain "
 				"directory handle for '%s' : %s",
 				dname,
 				strerror(errno)));
-	}
 
 	/* Read all the files. 100 we created plus . and .. */
 	for (i = 0; i < 102; i++) {
@@ -517,13 +510,14 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 		/* Store at offset 50. */
 		if (i == 50) {
 			telldir_50 = smbc_telldir(dhandle);
-			if (telldir_50 == (off_t)-1) {
-				torture_fail_goto(tctx,
-					done,
-					talloc_asprintf(tctx,
+			torture_assert_goto(
+				tctx,
+				telldir_50 != (off_t)-1,
+				success,
+				done,
+				talloc_asprintf(tctx,
 						"telldir failed file %s\n",
 						direntries[i]->name));
-			}
 		}
 
 		if (ISDOT(direntries[i]->name)) {
@@ -540,13 +534,14 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 				found = true;
 			}
 		}
-		if (!found) {
-			torture_fail_goto(tctx,
-				done,
-				talloc_asprintf(tctx,
+		torture_assert_goto(
+			tctx,
+			found,
+			success,
+			done,
+			talloc_asprintf(tctx,
 					"failed to find file %s\n",
 					direntries[i]->name));
-		}
 	}
 
 	/*
@@ -570,15 +565,16 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 	for (i = 51; i < 102; i++) {
 		const struct libsmb_file_info *entry =
 				smbc_readdirplus(dhandle);
-		if (entry != direntries[i]) {
-			torture_fail_goto(tctx,
-				done,
-				talloc_asprintf(tctx,
+		torture_assert_goto(
+			tctx,
+			entry == direntries[i],
+			success,
+			done,
+			talloc_asprintf(tctx,
 					"after seek - failed to find "
 					"file %s - got %s\n",
 					direntries[i]->name,
 					entry->name));
-		}
 	}
 
 	/* Seek back to the start. */
@@ -607,6 +603,12 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 	getdentries = (struct smbc_dirent *)talloc_array_size(tctx,
 						getdentries_size,
 						1);
+	torture_assert_not_null_goto(
+		tctx,
+		getdentries,
+		success,
+		done,
+		"talloc fail");
 
 	ret = smbc_getdents(dhandle, getdentries, getdentries_size);
 	torture_assert_goto(tctx,
@@ -618,12 +620,13 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 			dname));
 
 	telldir_20 = smbc_telldir(dhandle);
-	if (telldir_20 == (off_t)-1) {
-		torture_fail_goto(tctx,
-			done,
-			talloc_asprintf(tctx,
-				"telldir (20) failed\n"));
-	}
+	torture_assert_goto(
+		tctx,
+		telldir_20 != (off_t)-1,
+		success,
+		done,
+		"telldir (20) failed\n");
+
 	/* Read another 20. */
 	ret = smbc_getdents(dhandle, getdentries, getdentries_size);
 	torture_assert_goto(tctx,
@@ -647,24 +650,25 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 
 	/* Read with readdir. */
 	dirent_20 = smbc_readdir(dhandle);
-	if (dirent_20 == NULL) {
-		torture_fail_goto(tctx,
-			done,
-			talloc_asprintf(tctx,
-				"smbc_readdir (20) failed\n"));
-	}
+	torture_assert_not_null_goto(
+		tctx,
+		dirent_20,
+		success,
+		done,
+		"smbc_readdir (20) failed\n");
 
 	/* Ensure the getdents and readdir names are the same. */
 	ret = strcmp(dirent_20->name, getdentries[0].name);
-	if (ret != 0) {
-		torture_fail_goto(tctx,
-			done,
-			talloc_asprintf(tctx,
+	torture_assert_goto(
+		tctx,
+		ret == 0,
+		success,
+		done,
+		talloc_asprintf(tctx,
 				"after seek (20) readdir name missmatch "
 				"file %s - got %s\n",
 				dirent_20->name,
 				getdentries[0].name));
-	}
 
 	/* Seek back to 20. */
 	ret = smbc_lseekdir(dhandle, telldir_20);
@@ -678,24 +682,25 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 			dname));
 	/* Read with readdirplus. */
 	direntries_20 = smbc_readdirplus(dhandle);
-	if (direntries_20 == NULL) {
-		torture_fail_goto(tctx,
-			done,
-			talloc_asprintf(tctx,
-				"smbc_readdirplus (20) failed\n"));
-	}
+	torture_assert_not_null_goto(
+		tctx,
+		direntries_20,
+		success,
+		done,
+		"smbc_readdirplus (20) failed\n");
 
 	/* Ensure the readdirplus and readdir names are the same. */
 	ret = strcmp(dirent_20->name, direntries_20->name);
-	if (ret != 0) {
-		torture_fail_goto(tctx,
-			done,
-			talloc_asprintf(tctx,
+	torture_assert_goto(
+		tctx,
+		ret == 0,
+		success,
+		done,
+		talloc_asprintf(tctx,
 				"after seek (20) readdirplus name missmatch "
 				"file %s - got %s\n",
 				dirent_20->name,
 				direntries_20->name));
-	}
 
 	/* Seek back to 20. */
 	ret = smbc_lseekdir(dhandle, telldir_20);
@@ -710,35 +715,37 @@ static bool torture_libsmbclient_readdirplus_seek(struct torture_context *tctx)
 
 	/* Read with readdirplus2. */
 	direntriesplus_20 = smbc_readdirplus2(dhandle, &st2);
-	if (direntriesplus_20 == NULL) {
-		torture_fail_goto(tctx,
-			done,
-			talloc_asprintf(tctx,
-				"smbc_readdirplus2 (20) failed\n"));
-	}
+	torture_assert_not_null_goto(
+		tctx,
+		direntriesplus_20,
+		success,
+		done,
+		"smbc_readdirplus2 (20) failed\n");
 
 	/* Ensure the readdirplus2 and readdirplus names are the same. */
 	ret = strcmp(direntries_20->name, direntriesplus_20->name);
-	if (ret != 0) {
-		torture_fail_goto(tctx,
-			done,
-			talloc_asprintf(tctx,
+	torture_assert_goto(
+		tctx,
+		ret == 0,
+		success,
+		done,
+		talloc_asprintf(tctx,
 				"after seek (20) readdirplus2 name missmatch "
 				"file %s - got %s\n",
 				dirent_20->name,
 				direntries_20->name));
-	}
 
 	/* Ensure doing stat gets the same data. */
 	plus2_stat_path = talloc_asprintf(tctx,
 				"%s/%s",
 				dname,
 				direntriesplus_20->name);
-	if (plus2_stat_path == NULL) {
-		torture_fail_goto(tctx,
-			done,
-			"talloc fail\n");
-	}
+	torture_assert_not_null_goto(
+		tctx,
+		plus2_stat_path,
+		success,
+		done,
+		"talloc fail\n");
 
 	ret = smbc_stat(plus2_stat_path, &st);
 	torture_assert_int_equal_goto(tctx,
