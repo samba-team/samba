@@ -283,6 +283,8 @@ NTSTATUS cli_posix_hardlink(struct cli_state *cli,
 			const char *newname);
 uint32_t unix_perms_to_wire(mode_t perms);
 mode_t wire_perms_to_unix(uint32_t perms);
+void fetch_file_unix_basic_info2(
+	const uint8_t data[116], SMB_STRUCT_STAT *sbuf);
 struct tevent_req *cli_posix_getacl_send(TALLOC_CTX *mem_ctx,
 					struct tevent_context *ev,
 					struct cli_state *cli,

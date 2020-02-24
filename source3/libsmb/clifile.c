@@ -782,6 +782,13 @@ static void fetch_file_unix_basic_info(
 	sbuf->st_ex_nlink = BIG_UINT(data, 92);
 }
 
+void fetch_file_unix_basic_info2(
+	const uint8_t data[116], SMB_STRUCT_STAT *sbuf)
+{
+	fetch_file_unix_basic_info(data, sbuf);
+	sbuf->st_ex_btime = interpret_long_date((const char *)(data + 100));
+}
+
 /****************************************************************************
  Stat a file (UNIX extensions).
 ****************************************************************************/
