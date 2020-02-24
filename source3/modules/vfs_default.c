@@ -1638,7 +1638,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
-static bool vfswrap_is_offline(struct vfs_handle_struct *handle,
+static bool vfswrap_is_offline(struct connection_struct *conn,
 			       const struct smb_filename *fname,
 			       SMB_STRUCT_STAT *sbuf);
 
@@ -1648,7 +1648,7 @@ static NTSTATUS vfswrap_get_dos_attributes(struct vfs_handle_struct *handle,
 {
 	bool offline;
 
-	offline = vfswrap_is_offline(handle, smb_fname, &smb_fname->st);
+	offline = vfswrap_is_offline(handle->conn, smb_fname, &smb_fname->st);
 	if (offline) {
 		*dosmode |= FILE_ATTRIBUTE_OFFLINE;
 	}
@@ -1798,7 +1798,9 @@ static NTSTATUS vfswrap_fget_dos_attributes(struct vfs_handle_struct *handle,
 {
 	bool offline;
 
-	offline = vfswrap_is_offline(handle, fsp->fsp_name, &fsp->fsp_name->st);
+	offline = vfswrap_is_offline(handle->conn,
+				     fsp->fsp_name,
+				     &fsp->fsp_name->st);
 	if (offline) {
 		*dosmode |= FILE_ATTRIBUTE_OFFLINE;
 	}
@@ -3543,7 +3545,7 @@ static bool vfswrap_aio_force(struct vfs_handle_struct *handle, struct files_str
 	return false;
 }
 
-static bool vfswrap_is_offline(struct vfs_handle_struct *handle,
+static bool vfswrap_is_offline(struct connection_struct *conn,
 			       const struct smb_filename *fname,
 			       SMB_STRUCT_STAT *sbuf)
 {
@@ -3555,7 +3557,7 @@ static bool vfswrap_is_offline(struct vfs_handle_struct *handle,
 		return false;
 	}
 
-	if (!lp_dmapi_support(SNUM(handle->conn)) || !dmapi_have_session()) {
+	if (!lp_dmapi_support(SNUM(conn)) || !dmapi_have_session()) {
 #if defined(ENOTSUP)
 		errno = ENOTSUP;
 #endif
