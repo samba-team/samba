@@ -295,6 +295,150 @@ static int db_list_check_and_add(struct db_list *dblist,
 }
 
 /*
+ * Create database on nodes where it is missing
+ */
+
+struct db_create_missing_state {
+	struct tevent_context *ev;
+	struct ctdb_client_context *client;
+
+	struct node_list *nlist;
+
+	const char *db_name;
+	uint32_t *missing_pnn_list;
+	int missing_num_nodes;
+};
+
+static void db_create_missing_done(struct tevent_req *subreq);
+
+static struct tevent_req *db_create_missing_send(
+					TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct ctdb_client_context *client,
+					struct node_list *nlist,
+					const char *db_name,
+					struct db *db)
+{
+	struct tevent_req *req, *subreq;
+	struct db_create_missing_state *state;
+	struct ctdb_req_control request;
+	unsigned int i, j;
+
+	req = tevent_req_create(mem_ctx,
+				&state,
+				struct db_create_missing_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->ev = ev;
+	state->client = client;
+	state->nlist = nlist;
+	state->db_name = db_name;
+
+	if (nlist->count == db->num_nodes) {
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	state->missing_pnn_list = talloc_array(mem_ctx, uint32_t, nlist->count);
+	if (tevent_req_nomem(state->missing_pnn_list, req)) {
+		return tevent_req_post(req, ev);
+	}
+
+	for (i = 0; i < nlist->count; i++) {
+		uint32_t pnn = nlist->pnn_list[i] ;
+
+		for (j = 0; j < db->num_nodes; j++) {
+			if (pnn == db->pnn_list[j]) {
+				break;
+			}
+		}
+
+		if (j < db->num_nodes) {
+			continue;
+		}
+
+		DBG_INFO("Create database %s on node %u\n",
+			 state->db_name,
+			 pnn);
+		state->missing_pnn_list[state->missing_num_nodes] = pnn;
+		state->missing_num_nodes++;
+	}
+
+	if (db->db_flags & CTDB_DB_FLAGS_PERSISTENT) {
+		ctdb_req_control_db_attach_persistent(&request, db_name);
+	} else if (db->db_flags & CTDB_DB_FLAGS_REPLICATED) {
+		ctdb_req_control_db_attach_replicated(&request, db_name);
+	} else {
+		ctdb_req_control_db_attach(&request, db_name);
+	}
+	request.flags = CTDB_CTRL_FLAG_ATTACH_RECOVERY;
+	subreq = ctdb_client_control_multi_send(state,
+						state->ev,
+						state->client,
+						state->missing_pnn_list,
+						state->missing_num_nodes,
+						TIMEOUT(),
+						&request);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, db_create_missing_done, req);
+
+	return req;
+}
+
+static void db_create_missing_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct db_create_missing_state *state = tevent_req_data(
+		req, struct db_create_missing_state);
+	int *err_list;
+	int ret;
+	bool status;
+
+	status = ctdb_client_control_multi_recv(subreq,
+						&ret,
+						NULL,
+						&err_list,
+						NULL);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		int ret2;
+		uint32_t pnn;
+
+		ret2 = ctdb_client_control_multi_error(
+						state->missing_pnn_list,
+						state->missing_num_nodes,
+						err_list,
+						&pnn);
+		if (ret2 != 0) {
+			D_ERR("control DB_ATTACH failed for db %s"
+			      " on node %u, ret=%d\n",
+			      state->db_name,
+			      pnn,
+			      ret2);
+			node_list_ban_credits(state->nlist, pnn);
+		} else {
+			D_ERR("control DB_ATTACH failed for db %s, ret=%d\n",
+			      state->db_name,
+			      ret);
+		}
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	tevent_req_done(req);
+}
+
+static bool db_create_missing_recv(struct tevent_req *req, int *perr)
+{
+	return generic_recv(req, perr);
+}
+
+/*
  * Recovery database functions
  */
 
@@ -1657,6 +1801,7 @@ static bool collect_all_db_recv(struct tevent_req *req, int *perr)
 /**
  * For each database do the following:
  *  - Get DB name from all nodes
+ *  - Attach database on missing nodes
  *  - Get DB path
  *  - Freeze database on all nodes
  *  - Start transaction on all nodes
@@ -1682,6 +1827,7 @@ struct recover_db_state {
 };
 
 static void recover_db_name_done(struct tevent_req *subreq);
+static void recover_db_create_missing_done(struct tevent_req *subreq);
 static void recover_db_path_done(struct tevent_req *subreq);
 static void recover_db_freeze_done(struct tevent_req *subreq);
 static void recover_db_transaction_started(struct tevent_req *subreq);
@@ -1741,7 +1887,6 @@ static void recover_db_name_done(struct tevent_req *subreq)
 	struct recover_db_state *state = tevent_req_data(
 		req, struct recover_db_state);
 	struct ctdb_reply_control **reply;
-	struct ctdb_req_control request;
 	int *err_list;
 	unsigned int i;
 	int ret;
@@ -1812,6 +1957,37 @@ static void recover_db_name_done(struct tevent_req *subreq)
 	}
 
 	talloc_free(reply);
+
+	subreq = db_create_missing_send(state,
+					state->ev,
+					state->client,
+					state->nlist,
+					state->db_name,
+					state->db);
+
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, recover_db_create_missing_done, req);
+}
+
+static void recover_db_create_missing_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct recover_db_state *state = tevent_req_data(
+		req, struct recover_db_state);
+	struct ctdb_req_control request;
+	int ret;
+	bool status;
+
+	/* Could sanity check the db_id here */
+	status = db_create_missing_recv(subreq, &ret);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		tevent_req_error(req, ret);
+		return;
+	}
 
 	ctdb_req_control_getdbpath(&request, state->db->db_id);
 	subreq = ctdb_client_control_send(state, state->ev, state->client,
