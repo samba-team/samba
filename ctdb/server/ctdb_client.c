@@ -1030,30 +1030,6 @@ int ctdb_ctrl_setrecmaster(struct ctdb_context *ctdb, struct timeval timeout, ui
 
 
 /*
-  get a list of databases off a remote node
- */
-int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode,
-		       TALLOC_CTX *mem_ctx, struct ctdb_dbid_map_old **dbmap)
-{
-	int ret;
-	TDB_DATA outdata;
-	int32_t res;
-
-	ret = ctdb_control(ctdb, destnode, 0,
-			   CTDB_CONTROL_GET_DBMAP, 0, tdb_null,
-			   mem_ctx, &outdata, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getdbmap failed ret:%d res:%d\n", ret, res));
-		return -1;
-	}
-
-	*dbmap = (struct ctdb_dbid_map_old *)talloc_memdup(mem_ctx, outdata.dptr, outdata.dsize);
-	talloc_free(outdata.dptr);
-
-	return 0;
-}
-
-/*
   get a list of nodes (vnn and flags ) from a remote node
  */
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
@@ -1103,87 +1079,6 @@ int ctdb_ctrl_get_runstate(struct ctdb_context *ctdb,
 		*runstate = *(uint32_t *)outdata.dptr;
 	}
 	talloc_free(outdata.dptr);
-
-	return 0;
-}
-
-/*
-  find the name of a db
- */
-int ctdb_ctrl_getdbname(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, uint32_t dbid, TALLOC_CTX *mem_ctx,
-		   const char **name)
-{
-	int ret;
-	int32_t res;
-	TDB_DATA data;
-
-	data.dptr = (uint8_t *)&dbid;
-	data.dsize = sizeof(dbid);
-
-	ret = ctdb_control(ctdb, destnode, 0,
-			   CTDB_CONTROL_GET_DBNAME, 0, data,
-			   mem_ctx, &data, &res, &timeout, NULL);
-	if (ret != 0 || res != 0) {
-		return -1;
-	}
-
-	(*name) = talloc_strndup(mem_ctx, (const char *)data.dptr, data.dsize);
-	if ((*name) == NULL) {
-		return -1;
-	}
-
-	talloc_free(data.dptr);
-
-	return 0;
-}
-
-/*
-  create a database
- */
-int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout,
-		       uint32_t destnode, TALLOC_CTX *mem_ctx,
-		       const char *name, uint8_t db_flags, uint32_t *db_id)
-{
-	int ret;
-	int32_t res;
-	TDB_DATA data;
-	uint32_t opcode;
-
-	data.dptr = discard_const(name);
-	data.dsize = strlen(name)+1;
-
-	if (db_flags & CTDB_DB_FLAGS_PERSISTENT) {
-		opcode = CTDB_CONTROL_DB_ATTACH_PERSISTENT;
-	} else if (db_flags & CTDB_DB_FLAGS_REPLICATED) {
-		opcode = CTDB_CONTROL_DB_ATTACH_REPLICATED;
-	} else {
-		opcode = CTDB_CONTROL_DB_ATTACH;
-	}
-
-	ret = ctdb_control(ctdb,
-			   destnode,
-			   0,
-			   opcode,
-			   CTDB_CTRL_FLAG_ATTACH_RECOVERY,
-			   data,
-			   mem_ctx,
-			   &data,
-			   &res,
-			   &timeout,
-			   NULL);
-
-	if (ret != 0 || res != 0) {
-		return -1;
-	}
-
-	if (data.dsize != sizeof(uint32_t)) {
-		TALLOC_FREE(data.dptr);
-		return -1;
-	}
-	if (db_id != NULL) {
-		*db_id = *(uint32_t *)data.dptr;
-	}
-	talloc_free(data.dptr);
 
 	return 0;
 }
