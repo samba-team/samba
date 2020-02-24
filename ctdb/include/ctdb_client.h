@@ -165,24 +165,12 @@ int ctdb_ctrl_getrecmaster(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 int ctdb_ctrl_setrecmaster(struct ctdb_context *ctdb, struct timeval timeout,
 			   uint32_t destnode, uint32_t recmaster);
 
-int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, struct timeval timeout,
-		       uint32_t destnode, TALLOC_CTX *mem_ctx,
-		       struct ctdb_dbid_map_old **dbmap);
-
 int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, struct timeval timeout,
 			 uint32_t destnode, TALLOC_CTX *mem_ctx,
 			 struct ctdb_node_map_old **nodemap);
 
 int ctdb_ctrl_get_runstate(struct ctdb_context *ctdb, struct timeval timeout,
 			   uint32_t destnode, uint32_t *runstate);
-
-int ctdb_ctrl_getdbname(struct ctdb_context *ctdb, struct timeval timeout,
-			uint32_t destnode, uint32_t dbid,
-			TALLOC_CTX *mem_ctx, const char **name);
-
-int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout,
-		       uint32_t destnode, TALLOC_CTX *mem_ctx,
-		       const char *name, uint8_t db_flags, uint32_t *db_id);
 
 int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode,
 			     int32_t *level);
