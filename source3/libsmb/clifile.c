@@ -736,6 +736,52 @@ NTSTATUS cli_posix_setacl(struct cli_state *cli,
 	return status;
 }
 
+static void fetch_file_unix_basic_info(
+	const uint8_t data[100], SMB_STRUCT_STAT *sbuf)
+{
+	ZERO_STRUCTP(sbuf);
+
+	/* total size, in bytes */
+	sbuf->st_ex_size = IVAL2_TO_SMB_BIG_UINT(data, 0);
+
+	/* number of blocks allocated */
+	sbuf->st_ex_blocks = IVAL2_TO_SMB_BIG_UINT(data,8);
+#if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
+	sbuf->st_ex_blocks /= STAT_ST_BLOCKSIZE;
+#else
+	/* assume 512 byte blocks */
+	sbuf->st_ex_blocks /= 512;
+#endif
+	/* time of last change */
+	sbuf->st_ex_ctime = interpret_long_date((const char *)(data + 16));
+
+	/* time of last access */
+	sbuf->st_ex_atime = interpret_long_date((const char *)(data + 24));
+
+	/* time of last modification */
+	sbuf->st_ex_mtime = interpret_long_date((const char *)(data + 32));
+
+	sbuf->st_ex_uid = (uid_t) IVAL(data, 40); /* user ID of owner */
+	sbuf->st_ex_gid = (gid_t) IVAL(data, 48); /* group ID of owner */
+	sbuf->st_ex_mode = unix_filetype_from_wire(IVAL(data, 56));
+
+#if defined(HAVE_MAKEDEV)
+	{
+		uint32_t dev_major = IVAL(data,60);
+		uint32_t dev_minor = IVAL(data,68);
+		sbuf->st_ex_rdev = makedev(dev_major, dev_minor);
+	}
+#endif
+	/* inode */
+	sbuf->st_ex_ino = (SMB_INO_T)IVAL2_TO_SMB_BIG_UINT(data, 76);
+
+	/* protection */
+	sbuf->st_ex_mode |= wire_perms_to_unix(IVAL(data, 84));
+
+	/* number of hard links */
+	sbuf->st_ex_nlink = BIG_UINT(data, 92);
+}
+
 /****************************************************************************
  Stat a file (UNIX extensions).
 ****************************************************************************/
@@ -793,45 +839,7 @@ static void cli_posix_stat_done(struct tevent_req *subreq)
 		return;
 	}
 
-	/* total size, in bytes */
-	sbuf->st_ex_size = IVAL2_TO_SMB_BIG_UINT(data, 0);
-
-	/* number of blocks allocated */
-	sbuf->st_ex_blocks = IVAL2_TO_SMB_BIG_UINT(data,8);
-#if defined (HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
-	sbuf->st_ex_blocks /= STAT_ST_BLOCKSIZE;
-#else
-	/* assume 512 byte blocks */
-	sbuf->st_ex_blocks /= 512;
-#endif
-	/* time of last change */
-	sbuf->st_ex_ctime = interpret_long_date((char *)(data + 16));
-
-	/* time of last access */
-	sbuf->st_ex_atime = interpret_long_date((char *)(data + 24));
-
-	/* time of last modification */
-	sbuf->st_ex_mtime = interpret_long_date((char *)(data + 32));
-
-	sbuf->st_ex_uid = (uid_t) IVAL(data, 40); /* user ID of owner */
-	sbuf->st_ex_gid = (gid_t) IVAL(data, 48); /* group ID of owner */
-	sbuf->st_ex_mode = unix_filetype_from_wire(IVAL(data, 56));
-
-#if defined(HAVE_MAKEDEV)
-	{
-		uint32_t dev_major = IVAL(data,60);
-		uint32_t dev_minor = IVAL(data,68);
-		sbuf->st_ex_rdev = makedev(dev_major, dev_minor);
-	}
-#endif
-	/* inode */
-	sbuf->st_ex_ino = (SMB_INO_T)IVAL2_TO_SMB_BIG_UINT(data, 76);
-
-	/* protection */
-	sbuf->st_ex_mode |= wire_perms_to_unix(IVAL(data, 84));
-
-	/* number of hard links */
-	sbuf->st_ex_nlink = BIG_UINT(data, 92);
+	fetch_file_unix_basic_info(data, sbuf);
 
 	tevent_req_done(req);
 }
