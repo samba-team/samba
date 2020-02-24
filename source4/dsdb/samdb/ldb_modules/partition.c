@@ -346,9 +346,11 @@ static int partition_prep_request(struct partition_context *ac,
 	}
 
 	if (req->operation == LDB_SEARCH) {
-		/* If the search is for 'more' than this partition,
-		 * then change the basedn, so a remote LDAP server
-		 * doesn't object */
+		/*
+		 * If the search is for 'more' than this partition,
+		 * then change the basedn, so the check of the BASE DN
+		 * still passes in the ldb_key_value layer
+		 */
 		if (ldb_dn_compare_base(partition->ctrl->dn,
 					req->op.search.base) != 0) {
 			req->op.search.base = partition->ctrl->dn;
