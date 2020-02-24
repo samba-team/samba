@@ -1500,8 +1500,7 @@ static NTSTATUS vfswrap_fsctl(struct vfs_handle_struct *handle,
 }
 
 static bool vfswrap_is_offline(struct connection_struct *conn,
-			       const struct smb_filename *fname,
-			       SMB_STRUCT_STAT *sbuf);
+			       const struct smb_filename *fname);
 
 static NTSTATUS vfswrap_get_dos_attributes(struct vfs_handle_struct *handle,
 					   struct smb_filename *smb_fname,
@@ -1509,7 +1508,7 @@ static NTSTATUS vfswrap_get_dos_attributes(struct vfs_handle_struct *handle,
 {
 	bool offline;
 
-	offline = vfswrap_is_offline(handle->conn, smb_fname, &smb_fname->st);
+	offline = vfswrap_is_offline(handle->conn, smb_fname);
 	if (offline) {
 		*dosmode |= FILE_ATTRIBUTE_OFFLINE;
 	}
@@ -1659,9 +1658,7 @@ static NTSTATUS vfswrap_fget_dos_attributes(struct vfs_handle_struct *handle,
 {
 	bool offline;
 
-	offline = vfswrap_is_offline(handle->conn,
-				     fsp->fsp_name,
-				     &fsp->fsp_name->st);
+	offline = vfswrap_is_offline(handle->conn, fsp->fsp_name);
 	if (offline) {
 		*dosmode |= FILE_ATTRIBUTE_OFFLINE;
 	}
@@ -3335,8 +3332,7 @@ static bool vfswrap_aio_force(struct vfs_handle_struct *handle, struct files_str
 }
 
 static bool vfswrap_is_offline(struct connection_struct *conn,
-			       const struct smb_filename *fname,
-			       SMB_STRUCT_STAT *sbuf)
+			       const struct smb_filename *fname)
 {
 	NTSTATUS status;
 	char *path;
