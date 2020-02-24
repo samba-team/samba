@@ -505,6 +505,7 @@ SMBC_getatr(SMBCCTX * context,
 
 		status = cli_posix_stat(targetcli, targetpath, &sbuf);
 		if (NT_STATUS_IS_OK(status)) {
+			sbuf.st_ex_dev = srv->dev;
 			setup_stat_from_stat_ex(&sbuf, path, sb);
 
 			TALLOC_FREE(frame);
