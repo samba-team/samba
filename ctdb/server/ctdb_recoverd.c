@@ -425,140 +425,6 @@ static int set_recovery_mode(struct ctdb_context *ctdb,
 }
 
 /*
-  ensure all other nodes have attached to any databases that we have
- */
-static int create_missing_remote_databases(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, 
-					   uint32_t pnn, struct ctdb_dbid_map_old *dbmap, TALLOC_CTX *mem_ctx)
-{
-	unsigned int i, j, db;
-	int ret;
-	struct ctdb_dbid_map_old *remote_dbmap;
-
-	/* verify that all other nodes have all our databases */
-	for (j=0; j<nodemap->num; j++) {
-		/* we don't need to ourself ourselves */
-		if (nodemap->nodes[j].pnn == pnn) {
-			continue;
-		}
-		/* don't check nodes that are unavailable */
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-
-		ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					 mem_ctx, &remote_dbmap);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to get dbids from node %u\n", pnn));
-			return -1;
-		}
-
-		/* step through all local databases */
-		for (db=0; db<dbmap->num;db++) {
-			const char *name;
-
-
-			for (i=0;i<remote_dbmap->num;i++) {
-				if (dbmap->dbs[db].db_id == remote_dbmap->dbs[i].db_id) {
-					break;
-				}
-			}
-			/* the remote node already have this database */
-			if (i!=remote_dbmap->num) {
-				continue;
-			}
-			/* ok so we need to create this database */
-			ret = ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), pnn,
-						  dbmap->dbs[db].db_id, mem_ctx,
-						  &name);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR, (__location__ " Unable to get dbname from node %u\n", pnn));
-				return -1;
-			}
-			ret = ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(),
-						 nodemap->nodes[j].pnn,
-						 mem_ctx, name,
-						 dbmap->dbs[db].flags, NULL);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR, (__location__ " Unable to create remote db:%s\n", name));
-				return -1;
-			}
-		}
-	}
-
-	return 0;
-}
-
-
-/*
-  ensure we are attached to any databases that anyone else is attached to
- */
-static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, 
-					  uint32_t pnn, struct ctdb_dbid_map_old **dbmap, TALLOC_CTX *mem_ctx)
-{
-	unsigned int i, j, db;
-	int ret;
-	struct ctdb_dbid_map_old *remote_dbmap;
-
-	/* verify that we have all database any other node has */
-	for (j=0; j<nodemap->num; j++) {
-		/* we don't need to ourself ourselves */
-		if (nodemap->nodes[j].pnn == pnn) {
-			continue;
-		}
-		/* don't check nodes that are unavailable */
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-
-		ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					 mem_ctx, &remote_dbmap);
-		if (ret != 0) {
-			DEBUG(DEBUG_ERR, (__location__ " Unable to get dbids from node %u\n", pnn));
-			return -1;
-		}
-
-		/* step through all databases on the remote node */
-		for (db=0; db<remote_dbmap->num;db++) {
-			const char *name;
-
-			for (i=0;i<(*dbmap)->num;i++) {
-				if (remote_dbmap->dbs[db].db_id == (*dbmap)->dbs[i].db_id) {
-					break;
-				}
-			}
-			/* we already have this db locally */
-			if (i!=(*dbmap)->num) {
-				continue;
-			}
-			/* ok so we need to create this database and
-			   rebuild dbmap
-			 */
-			ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					    remote_dbmap->dbs[db].db_id, mem_ctx, &name);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR, (__location__ " Unable to get dbname from node %u\n", 
-					  nodemap->nodes[j].pnn));
-				return -1;
-			}
-			ctdb_ctrl_createdb(ctdb, CONTROL_TIMEOUT(), pnn,
-					   mem_ctx, name,
-					   remote_dbmap->dbs[db].flags, NULL);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR, (__location__ " Unable to create local db:%s\n", name));
-				return -1;
-			}
-			ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, dbmap);
-			if (ret != 0) {
-				DEBUG(DEBUG_ERR, (__location__ " Unable to reread dbmap on node %u\n", pnn));
-				return -1;
-			}
-		}
-	}
-
-	return 0;
-}
-
-/*
   update flags on all active nodes
  */
 static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map_old *nodemap, uint32_t pnn, uint32_t flags)
@@ -1165,7 +1031,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	struct ctdb_context *ctdb = rec->ctdb;
 	unsigned int i;
 	int ret;
-	struct ctdb_dbid_map_old *dbmap;
 	bool self_ban;
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
@@ -1244,32 +1109,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
 	DEBUG(DEBUG_NOTICE, (__location__ " Recovery initiated due to problem with node %u\n", rec->last_culprit_node));
-
-	/* get a list of all databases */
-	ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, &dbmap);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get dbids from node :%u\n", pnn));
-		goto fail;
-	}
-
-	/* we do the db creation before we set the recovery mode, so the freeze happens
-	   on all databases we will be dealing with. */
-
-	/* verify that we have all the databases any other node has */
-	ret = create_missing_local_databases(ctdb, nodemap, pnn, &dbmap, mem_ctx);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to create missing local databases\n"));
-		goto fail;
-	}
-
-	/* verify that all other nodes have all our databases */
-	ret = create_missing_remote_databases(ctdb, nodemap, pnn, dbmap, mem_ctx);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to create missing remote databases\n"));
-		goto fail;
-	}
-	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - created remote databases\n"));
-
 
 	/* Retrieve capabilities from all connected nodes */
 	ret = update_capabilities(rec, nodemap);
