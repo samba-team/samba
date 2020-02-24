@@ -2829,12 +2829,10 @@ static int replmd_modify_la_delete(struct ldb_module *module,
 		return ret;
 	}
 
-	if (parent) {
-		vanish_links_ctrl = ldb_request_get_control(parent, DSDB_CONTROL_REPLMD_VANISH_LINKS);
-		if (vanish_links_ctrl) {
-			vanish_links = true;
-			vanish_links_ctrl->critical = false;
-		}
+	vanish_links_ctrl = ldb_request_get_control(parent, DSDB_CONTROL_REPLMD_VANISH_LINKS);
+	if (vanish_links_ctrl) {
+		vanish_links = true;
+		vanish_links_ctrl->critical = false;
 	}
 
 	/* we empty out el->values here to avoid damage if we return early. */
@@ -3344,20 +3342,18 @@ static int replmd_modify_handle_linked_attribs(struct ldb_module *module,
 			continue;
 		}
 		if ((schema_attr->linkID & 1) == 1) {
-			if (parent) {
-				struct ldb_control *ctrl;
+			struct ldb_control *ctrl;
 
-				ctrl = ldb_request_get_control(parent,
-						DSDB_CONTROL_REPLMD_VANISH_LINKS);
-				if (ctrl != NULL) {
-					ctrl->critical = false;
-					continue;
-				}
-				ctrl = ldb_request_get_control(parent,
-						DSDB_CONTROL_DBCHECK);
-				if (ctrl != NULL) {
-					continue;
-				}
+			ctrl = ldb_request_get_control(parent,
+						       DSDB_CONTROL_REPLMD_VANISH_LINKS);
+			if (ctrl != NULL) {
+				ctrl->critical = false;
+				continue;
+			}
+			ctrl = ldb_request_get_control(parent,
+						       DSDB_CONTROL_DBCHECK);
+			if (ctrl != NULL) {
+				continue;
 			}
 
 			/* Odd is for the target.  Illegal to modify */
