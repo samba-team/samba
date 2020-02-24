@@ -752,7 +752,6 @@ static int partition_replicate(struct ldb_module *module, struct ldb_request *re
 /* search */
 static int partition_search(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_control **saved_controls;
 	/* Find backend */
 	struct partition_private_data *data = talloc_get_type(ldb_module_get_private(module),
 							      struct partition_private_data);
@@ -785,12 +784,6 @@ static int partition_search(struct ldb_module *module, struct ldb_request *req)
 		search_options = talloc_get_type(search_control->data, struct ldb_search_options_control);
 		search_control->critical = 0;
 
-	}
-
-	/* Remove the "domain_scope" control, so we don't confuse a backend
-	 * server */
-	if (domain_scope_control && !ldb_save_controls(domain_scope_control, req, &saved_controls)) {
-		return ldb_oom(ldb_module_get_ctx(module));
 	}
 
 	/* if we aren't initialised yet go further */
