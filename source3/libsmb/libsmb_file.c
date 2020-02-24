@@ -503,7 +503,7 @@ SMBC_getatr(SMBCCTX * context,
 	if (srv->try_posixinfo) {
 		SMB_STRUCT_STAT sbuf;
 
-		status = cli_posix_stat(targetcli, frame, &sbuf);
+		status = cli_posix_stat(targetcli, targetpath, &sbuf);
 		if (NT_STATUS_IS_OK(status)) {
 			setup_stat_from_stat_ex(&sbuf, path, sb);
 
