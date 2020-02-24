@@ -3119,7 +3119,7 @@ static void vfswrap_getxattrat_do_sync(struct tevent_req *req)
 	char *path = NULL;
 	char *tofree = NULL;
 	char pathbuf[PATH_MAX+1];
-	size_t pathlen;
+	ssize_t pathlen;
 	int err;
 
 	pathlen = full_path_tos(state->dir_fsp->fsp_name->base_name,
