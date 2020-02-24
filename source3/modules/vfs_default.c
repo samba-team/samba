@@ -3325,7 +3325,7 @@ static struct tevent_req *vfswrap_getxattrat_send(
 
 static void vfswrap_getxattrat_do_sync(struct tevent_req *req)
 {
-	struct vfswrap_getxattrat_state *state = talloc_get_type_abort(
+	struct vfswrap_getxattrat_state *state = tevent_req_data(
 		req, struct vfswrap_getxattrat_state);
 	char *path = NULL;
 	char *tofree = NULL;
