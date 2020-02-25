@@ -1,7 +1,7 @@
 Release Announcements
 =====================
 
-This is the third release candidate of Samba 4.12.  This is *not*
+This is the fourth release candidate of Samba 4.12.  This is *not*
 intended for production environments and is designed for testing
 purposes only.  Please report any defects via the Samba bug reporting
 system at https://bugzilla.samba.org/.
@@ -87,10 +87,10 @@ Note that when upgrading existing installations that are using the previous
 default Spotlight backend Gnome Tracker must explicitly set "spotlight backend =
 tracker" as the new default is "noindex".
 
-"net ads kerberos pac save" and "net eventlog export"
+'net ads kerberos pac save' and 'net eventlog export'
 -----------------------------------------------------
 
-The "net ads kerberos pac save" and "net eventlog export" tools will
+The 'net ads kerberos pac save' and 'net eventlog export' tools will
 no longer silently overwrite an existing file during data export.  If
 the filename given exits, an error will be shown.
 
@@ -105,10 +105,10 @@ parsing code.
 A large number of issues have been found and fixed thanks to this
 effort.
 
-samba-tool improvements add contacts as member to groups
---------------------------------------------------------
+'samba-tool' improvements add contacts as member to groups
+----------------------------------------------------------
 
-Previously "samba-tool group addmemers" can just add users, groups and
+Previously 'samba-tool group addmemers' can just add users, groups and
 computers as members to groups. But also contacts can be members of
 groups. Samba 4.12 adds the functionality to add contacts to
 groups. Since contacts have no sAMAccountName, it's possible that
@@ -116,19 +116,19 @@ there are more than one contact with the same name in different
 organizational units. Therefore it's necessary to have an option to
 handle group members by their DN.
 
-To get the DN of an object there is now the --full-dn option available
+To get the DN of an object there is now the "--full-dn" option available
 for all necessary commands.
 
 The MS Windows UI allows to search for specific types of group members
 when searching for new members for a group. This feature is included
-here with the new samba-tool group addmembers --object-type=OBJECTYPE
+here with the new samba-tool group addmembers "--object-type=OBJECTYPE"
 option. The different types are selected accordingly to the Windows
 UI. The default samba-toole behaviour shouldn't be changed.
 
 Allow filtering by OU or subtree in samba-tool
 ----------------------------------------------
 
-A new --base-dn and --member-base-dn option is added to relevant
+A new "--base-dn" and "--member-base-dn" option is added to relevant
 samba-tool user, group and ou management commands to allow operation
 on just one part of the AD tree, such as a single OU.
 
@@ -181,6 +181,19 @@ storing them (maybe in extended attributes) for OEMs who
 don't want to mis-use filesystem symbolic links in this
 way.
 
+
+CTDB changes
+============
+
+* The ctdb_mutex_fcntl_helper periodically re-checks the lock file
+
+  The re-check period is specified using a 2nd argument to this
+  helper.  The default re-check period is 5s.
+
+  If the file no longer exists or the inode number changes then the
+  helper exits.  This triggers an election.
+
+
 REMOVED FEATURES
 ================
 
@@ -200,19 +213,6 @@ critical code path.
 
 If required for specialist purposes, it can be recreated as a VFS
 module.
-
-BIND9_FLATFILE deprecated
--------------------------
-
-The BIND9_FLATFILE DNS backend is deprecated in this release and will
-be removed in the future.  This was only practically useful on a single
-domain controller or under expert care and supervision.
-
-This release removes the "rndc command" smb.conf parameter, which
-supported this configuration by writing out a list of DCs permitted to
-make changes to the DNS Zone and nudging the 'named' server if a new
-DC was added to the domain.  Administrators using BIND9_FLATFILE will
-need to maintain this manually from now on.
 
 Retiring DES encryption types in Kerberos.
 ------------------------------------------
@@ -238,16 +238,18 @@ vfs_netatalk: The netatalk VFS module has been removed.
 The netatalk VFS module has been removed. It was unmaintained and is not needed
 any more.
 
-CTDB changes
-------------
+BIND9_FLATFILE deprecated
+-------------------------
 
-* The ctdb_mutex_fcntl_helper periodically re-checks the lock file
+The BIND9_FLATFILE DNS backend is deprecated in this release and will
+be removed in the future.  This was only practically useful on a single
+domain controller or under expert care and supervision.
 
-  The re-check period is specified using a 2nd argument to this
-  helper.  The default re-check period is 5s.
-
-  If the file no longer exists or the inode number changes then the
-  helper exits.  This triggers an election.
+This release removes the 'rndc command' smb.conf parameter, which
+supported this configuration by writing out a list of DCs permitted to
+make changes to the DNS Zone and nudging the 'named' server if a new
+DC was added to the domain.  Administrators using BIND9_FLATFILE will
+need to maintain this manually from now on.
 
 
 smb.conf changes
@@ -266,6 +268,26 @@ smb.conf changes
   rndc command                       Removed
   write cache size                   Removed
   spotlight backend		     New			noindex
+
+
+CHANGES SINCE 4.12.0rc3
+=======================
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14269: s3: DFS: Don't allow link deletion on a read-only share.
+
+o  Douglas Bagnall <douglas.bagnall@catalyst.net.nz>
+   * BUG 14284: pidl/wscript: configure should insist on Parse::Yapp::Driver.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14270: ldb: Fix search with scope ONE and small result sets. 
+   * BUG 14284: build: Do not check if system perl modules should be bundled.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14285: smbd fails to handle EINTR from open(2) properly.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14270: ldb: version 2.1.1.
 
 
 CHANGES SINCE 4.12.0rc2
