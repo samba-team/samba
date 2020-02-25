@@ -1,0 +1,64 @@
+#!/bin/sh
+# ctdb event script for Netbios Name Services
+
+[ -n "$CTDB_BASE" ] || \
+    CTDB_BASE=$(d=$(dirname "$0") ; cd -P "$d" ; dirname "$PWD")
+
+. "${CTDB_BASE}/functions"
+
+detect_init_style
+
+case $CTDB_INIT_STYLE in
+	suse)
+		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-nmb}
+		;;
+	debian)
+		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-nmbd}
+		;;
+	*)
+		# Use redhat style as default:
+		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-""}
+		;;
+esac
+
+service_name="netbios"
+
+load_script_options
+
+ctdb_setup_state_dir "service" "$service_name"
+
+service_start ()
+{
+    # make sure nmbd is not already started
+    service "$CTDB_SERVICE_NMB" stop > /dev/null 2>&1
+    killall -0 -q nmbd && {
+	sleep 1
+	# make absolutely sure nmbd is dead
+	killall -q -9 nmbd
+    }
+
+    # start Samba nmbd service. Start it reniced, as under very heavy load
+    # the number of smbd processes will mean that it leaves few cycles
+    # for anything else
+    nice_service "$CTDB_SERVICE_NMB" start || die "Failed to start nmbd"
+}
+
+service_stop ()
+{
+    service "$CTDB_SERVICE_NMB" stop
+}
+
+###########################
+
+case "$1" in
+startup)
+	service_start
+	;;
+
+shutdown)
+	service_stop
+	;;
+
+esac
+
+exit 0

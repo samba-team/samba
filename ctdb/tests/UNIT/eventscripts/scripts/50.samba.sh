@@ -7,7 +7,7 @@ setup ()
 		debug "Marking Samba services as up, listening and managed by CTDB"
 
 		# All possible service names for all known distros.
-		for i in "smb" "nmb" "samba" "smbd" "nmbd" ; do
+		for i in "smb" "samba" "smbd" ; do
 			service "$i" force-started
 		done
 
@@ -21,7 +21,7 @@ setup ()
 		debug "Marking Samba services as down, not listening and not managed by CTDB"
 
 		# All possible service names for all known distros.
-		for i in "smb" "nmb" "samba" "smbd" "nmbd" ; do
+		for i in "smb" "samba" "smbd" ; do
 			service "$i" force-stopped
 		done
 

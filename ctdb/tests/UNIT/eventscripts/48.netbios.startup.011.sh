@@ -9,6 +9,6 @@ setup
 export EVENTSCRIPT_TESTS_INIT_STYLE="debian"
 
 ok <<EOF
-Starting smbd: OK
+Starting nmbd: OK
 EOF
 simple_test

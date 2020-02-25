@@ -11,16 +11,13 @@ detect_init_style
 case $CTDB_INIT_STYLE in
 	suse)
 		CTDB_SERVICE_SMB=${CTDB_SERVICE_SMB:-smb}
-		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-nmb}
 		;;
 	debian)
 		CTDB_SERVICE_SMB=${CTDB_SERVICE_SMB:-smbd}
-		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-nmbd}
 		;;
 	*)
 		# Use redhat style as default:
 		CTDB_SERVICE_SMB=${CTDB_SERVICE_SMB:-smb}
-		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-""}
 		;;
 esac
 
@@ -34,27 +31,14 @@ service_start ()
 {
     # make sure samba is not already started
     service "$CTDB_SERVICE_SMB" stop > /dev/null 2>&1
-    if [ -n "$CTDB_SERVICE_NMB" ] ; then
-	service "$CTDB_SERVICE_NMB" stop > /dev/null 2>&1
-    fi
     killall -0 -q smbd && {
 	sleep 1
 	# make absolutely sure samba is dead
 	killall -q -9 smbd
     }
-    killall -0 -q nmbd && {
-	sleep 1
-	# make absolutely sure samba is dead
-	killall -q -9 nmbd
-    }
-
     # start Samba service. Start it reniced, as under very heavy load
     # the number of smbd processes will mean that it leaves few cycles
     # for anything else
-    if [ -n "$CTDB_SERVICE_NMB" ] ; then
-	nice_service "$CTDB_SERVICE_NMB" start || die "Failed to start nmbd"
-    fi
-
     nice_service "$CTDB_SERVICE_SMB" start || die "Failed to start samba"
 }
 
@@ -62,9 +46,6 @@ service_stop ()
 {
     service "$CTDB_SERVICE_SMB" stop
     program_stack_traces "smbd" 5
-    if [ -n "$CTDB_SERVICE_NMB" ] ; then
-	service "$CTDB_SERVICE_NMB" stop
-    fi
 }
 
 ######################################################################
