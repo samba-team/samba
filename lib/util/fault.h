@@ -52,6 +52,7 @@ void fault_configure(smb_panic_handler_t panic_handler);
 void fault_setup(void);
 void fault_setup_disable(void);
 _NORETURN_ void smb_panic(const char *reason);
+void smb_panic_log(const char *reason);
 
 void log_stack_trace(void);
 

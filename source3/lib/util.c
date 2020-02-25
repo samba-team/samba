@@ -826,10 +826,6 @@ void smb_panic_s3(const char *why)
 	char *cmd;
 	int result;
 
-	DEBUG(0,("PANIC (pid %llu): %s\n",
-		    (unsigned long long)getpid(), why));
-	log_stack_trace();
-
 #if defined(HAVE_PRCTL) && defined(PR_SET_PTRACER)
 	/*
 	 * Make sure all children can attach a debugger.

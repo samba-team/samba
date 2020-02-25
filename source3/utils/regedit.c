@@ -681,6 +681,7 @@ int regedit_getch(void)
 static void regedit_panic_handler(const char *msg)
 {
 	endwin();
+	smb_panic_log(msg);
 	smb_panic_s3(msg);
 }
 
