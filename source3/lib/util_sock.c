@@ -477,14 +477,16 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	state->fd = socket(state->ss.ss_family, SOCK_STREAM, 0);
 	if (state->fd == -1) {
 		status = map_nt_error_from_unix(errno);
-		goto post_status;
+		tevent_req_nterror(req, status);
+		return tevent_req_post(req, ev);
 	}
 
 	tevent_req_set_cleanup_fn(req, open_socket_out_cleanup);
 
 	if (!tevent_req_set_endtime(
 		    req, ev, timeval_current_ofs_msec(timeout))) {
-		goto fail;
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
 	}
 
 #if defined(HAVE_IPV6)
@@ -517,22 +519,18 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 	state->connect_subreq = async_connect_send(
 		state, state->ev, state->fd, (struct sockaddr *)&state->ss,
 		state->salen, NULL, NULL, NULL);
-	if ((state->connect_subreq == NULL)
-	    || !tevent_req_set_endtime(
+	if (tevent_req_nomem(state->connect_subreq, NULL)) {
+		return tevent_req_post(req, ev);
+	}
+	if (!tevent_req_set_endtime(
 		    state->connect_subreq, state->ev,
 		    timeval_current_ofs(0, state->wait_usec))) {
-		goto fail;
+		tevent_req_oom(req);
+		return tevent_req_post(req, ev);
 	}
 	tevent_req_set_callback(state->connect_subreq,
 				open_socket_out_connected, req);
 	return req;
-
- post_status:
-	tevent_req_nterror(req, status);
-	return tevent_req_post(req, ev);
- fail:
-	TALLOC_FREE(req);
-	return NULL;
 }
 
 static void open_socket_out_connected(struct tevent_req *subreq)
