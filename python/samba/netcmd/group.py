@@ -607,7 +607,7 @@ class cmd_group_move(Command):
         domain_dn = ldb.Dn(samdb, samdb.domain_dn())
 
         filter = ("(&(sAMAccountName=%s)(objectClass=group))" %
-                  groupname)
+                  ldb.binary_encode(groupname))
         try:
             res = samdb.search(base=domain_dn,
                                expression=filter,
