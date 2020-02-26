@@ -459,13 +459,13 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 					int timeout)
 {
 	char addr[INET6_ADDRSTRLEN];
-	struct tevent_req *result;
+	struct tevent_req *req;
 	struct open_socket_out_state *state;
 	NTSTATUS status;
 
-	result = tevent_req_create(mem_ctx, &state,
-				   struct open_socket_out_state);
-	if (result == NULL) {
+	req = tevent_req_create(mem_ctx, &state,
+				struct open_socket_out_state);
+	if (req == NULL) {
 		return NULL;
 	}
 	state->ev = ev;
@@ -480,10 +480,10 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 		goto post_status;
 	}
 
-	tevent_req_set_cleanup_fn(result, open_socket_out_cleanup);
+	tevent_req_set_cleanup_fn(req, open_socket_out_cleanup);
 
 	if (!tevent_req_set_endtime(
-		    result, ev, timeval_current_ofs_msec(timeout))) {
+		    req, ev, timeval_current_ofs_msec(timeout))) {
 		goto fail;
 	}
 
@@ -524,14 +524,14 @@ struct tevent_req *open_socket_out_send(TALLOC_CTX *mem_ctx,
 		goto fail;
 	}
 	tevent_req_set_callback(state->connect_subreq,
-				open_socket_out_connected, result);
-	return result;
+				open_socket_out_connected, req);
+	return req;
 
  post_status:
-	tevent_req_nterror(result, status);
-	return tevent_req_post(result, ev);
+	tevent_req_nterror(req, status);
+	return tevent_req_post(req, ev);
  fail:
-	TALLOC_FREE(result);
+	TALLOC_FREE(req);
 	return NULL;
 }
 
