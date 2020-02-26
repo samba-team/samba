@@ -179,7 +179,7 @@ Example2 deletes group Group2 from the local server.  The command is run under r
                       credentials=creds, lp=lp)
 
         filter = ("(&(sAMAccountName=%s)(objectClass=group))" %
-                  groupname)
+                  ldb.binary_encode(groupname))
 
         try:
             res = samdb.search(base=samdb.domain_dn(),
