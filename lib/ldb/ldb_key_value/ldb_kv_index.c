@@ -1282,7 +1282,9 @@ static int ldb_kv_index_dn_simple(struct ldb_module *module,
 	 * as ltdb_search_indexed will filter out the wrong one in
 	 * ltdb_index_filter() which calls ldb_match_message().
 	 */
-	if (!dn) return LDB_ERR_OPERATIONS_ERROR;
+	if (!dn) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
 
 	ret = ldb_kv_dn_list_load(module, ldb_kv, dn, list,
 				  DN_LIST_WILL_BE_READ_ONLY);
