@@ -1135,7 +1135,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb,
 			return -1;
 		}
 
-		if (client->pid != ctdb->recoverd_pid &&
+		if (!(c->flags & CTDB_CTRL_FLAG_ATTACH_RECOVERY) &&
 		    (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE ||
 		     ctdb->runstate < CTDB_RUNSTATE_STARTUP)) {
 			struct ctdb_deferred_attach_context *da_ctx = talloc(client, struct ctdb_deferred_attach_context);
