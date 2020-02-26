@@ -549,7 +549,8 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
                 self.outf.write("%s\n" % member_name)
 
         except Exception as e:
-            raise CommandError('Failed to list members of "%s" group ' % groupname, e)
+            raise CommandError('Failed to list members of "%s" group - %s' %
+                               (groupname, e))
 
 
 class cmd_group_move(Command):
