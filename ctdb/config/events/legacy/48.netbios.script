@@ -17,7 +17,7 @@ case $CTDB_INIT_STYLE in
 		;;
 	*)
 		# Use redhat style as default:
-		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-""}
+		CTDB_SERVICE_NMB=${CTDB_SERVICE_NMB:-nmb}
 		;;
 esac
 
