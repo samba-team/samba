@@ -873,7 +873,8 @@ class cmd_group_edit(Command):
         samdb = SamDB(url=H, session_info=system_session(),
                       credentials=creds, lp=lp)
 
-        filter = ("(&(sAMAccountName=%s)(objectClass=group))" % groupname)
+        filter = ("(&(sAMAccountName=%s)(objectClass=group))" %
+                  ldb.binary_encode(groupname))
 
         domaindn = samdb.domain_dn()
 
