@@ -1910,7 +1910,7 @@ static int ldb_kv_index_dn_ordered(struct ldb_module *module,
 	struct ldb_kv_ordered_index_context ctx;
 	int ret;
 
-	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	TALLOC_CTX *tmp_ctx = NULL;
 
 	if (!ldb_kv_is_indexed(module, ldb_kv, tree->u.comparison.attr)) {
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1950,39 +1950,50 @@ static int ldb_kv_index_dn_ordered(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	tmp_ctx = talloc_new(NULL);
+	if (tmp_ctx == NULL) {
+		return ldb_module_oom(module);
+	}
+
 	key_dn = ldb_kv_index_key(ldb, ldb_kv, tree->u.comparison.attr,
 				  &tree->u.comparison.value,
 				  NULL, &truncation);
 	if (!key_dn) {
+		TALLOC_FREE(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	} else if (truncation == KEY_TRUNCATED) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING,
 			  __location__
 			  ": ordered index violation: key dn truncated: %s\n",
 			  ldb_dn_get_linearized(key_dn));
+		TALLOC_FREE(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	ldb_key = ldb_kv_key_dn(tmp_ctx, key_dn);
 	talloc_free(key_dn);
 	if (ldb_key.data == NULL) {
+		TALLOC_FREE(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	key_dn = ldb_kv_index_key(ldb, ldb_kv, tree->u.comparison.attr,
 				  NULL, NULL, &truncation);
 	if (!key_dn) {
+		TALLOC_FREE(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	} else if (truncation == KEY_TRUNCATED) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING,
 			  __location__
 			  ": ordered index violation: key dn truncated: %s\n",
 			  ldb_dn_get_linearized(key_dn));
+		TALLOC_FREE(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	ldb_key2 = ldb_kv_key_dn(tmp_ctx, key_dn);
 	talloc_free(key_dn);
 	if (ldb_key2.data == NULL) {
+		TALLOC_FREE(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -2022,13 +2033,14 @@ static int ldb_kv_index_dn_ordered(struct ldb_module *module,
 					    traverse_range_index, &ctx);
 
 	if (ret != LDB_SUCCESS || ctx.error != LDB_SUCCESS) {
+		TALLOC_FREE(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
 	TYPESAFE_QSORT(ctx.dn_list->dn, ctx.dn_list->count,
 		       ldb_val_equal_exact_for_qsort);
 
-	talloc_free(tmp_ctx);
+	TALLOC_FREE(tmp_ctx);
 
 	return LDB_SUCCESS;
 }
