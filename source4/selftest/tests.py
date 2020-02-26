@@ -365,6 +365,16 @@ netapi = smbtorture4_testsuites("netapi.")
 for t in base + raw + smb2 + netapi:
     plansmbtorture4testsuite(t, "ad_dc_ntvfs", ['//$SERVER/tmp', '-U$USERNAME%$PASSWORD'] + ntvfsargs)
 
+def planlibsmbclienttest(name, testargs, proto):
+    env = "nt4_dc"
+    cmdarray = selftesthelpers.smbtorture4testsuite_cmdarray(
+        name,
+        env,
+        testargs + [ "--option=torture:clientprotocol=%s" % proto],
+        'samba4')
+    plantestsuite_loadlist(
+        "samba4.%s.%s" % (t, proto), env, " ".join(cmdarray))
+
 libsmbclient = smbtorture4_testsuites("libsmbclient.")
 protocols = [ 'NT1', 'SMB3' ]
 for t in libsmbclient:
@@ -381,12 +391,7 @@ for t in libsmbclient:
         ]
 
     for proto in protocols:
-        plansmbtorture4testsuite(
-            t,
-            "nt4_dc",
-            libsmbclient_testargs +
-            [ "--option=torture:clientprotocol=%s" % proto],
-            "samba4.%s.%s" % (t, proto))
+        planlibsmbclienttest(t, libsmbclient_testargs, proto)
 
 plansmbtorture4testsuite("raw.qfileinfo.ipc", "ad_dc_ntvfs", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 
