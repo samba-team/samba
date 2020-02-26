@@ -516,7 +516,8 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
             samdb = SamDB(url=H, session_info=system_session(),
                           credentials=creds, lp=lp)
 
-            search_filter = "(&(objectClass=group)(samaccountname=%s))" % groupname
+            search_filter = ("(&(objectClass=group)(sAMAccountName=%s))" %
+                             ldb.binary_encode(groupname))
             try:
                 res = samdb.search(samdb.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                                    expression=(search_filter),
