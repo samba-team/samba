@@ -521,15 +521,16 @@ samba-tool group listmembers \"Domain Users\" -H ldap://samba.samdom.example.com
                 res = samdb.search(samdb.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                                    expression=(search_filter),
                                    attrs=["objectSid"])
-                group_dn = res[0].get('dn', idx=0)
-                object_sid = res[0].get('objectSid', idx=0)
+                group_sid_binary = res[0].get('objectSid', idx=0)
             except IndexError:
                 raise CommandError('Unable to find group "%s"' % (groupname))
 
-            object_sid = ndr_unpack(security.dom_sid, object_sid)
-            (group_dom_sid, rid) = object_sid.split()
+            group_sid = ndr_unpack(security.dom_sid, group_sid_binary)
+            (group_dom_sid, rid) = group_sid.split()
+            group_sid_dn = "<SID=%s>" % (group_sid)
 
-            search_filter = "(|(primaryGroupID=%s)(memberOf=%s))" % (rid, group_dn)
+            search_filter = ("(|(primaryGroupID=%s)(memberOf=%s))" %
+                             (rid, group_sid_dn))
             res = samdb.search(samdb.domain_dn(), scope=ldb.SCOPE_SUBTREE,
                                expression=(search_filter),
                                attrs=["samAccountName", "cn"])
