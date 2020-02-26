@@ -36,6 +36,8 @@ struct ctdb_tcp_array {
 /*
   an installed ctdb remote call
 */
+typedef int (*ctdb_fn_t)(struct ctdb_call_info *);
+
 struct ctdb_registered_call {
 	struct ctdb_registered_call *next, *prev;
 	uint32_t id;

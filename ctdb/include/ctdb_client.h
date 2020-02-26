@@ -176,9 +176,6 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb, struct timeval timeout,
 int ctdb_ctrl_get_runstate(struct ctdb_context *ctdb, struct timeval timeout,
 			   uint32_t destnode, uint32_t *runstate);
 
-int ctdb_ctrl_getdbpath(struct ctdb_context *ctdb, struct timeval timeout,
-			uint32_t destnode, uint32_t dbid,
-			TALLOC_CTX *mem_ctx, const char **path);
 int ctdb_ctrl_getdbname(struct ctdb_context *ctdb, struct timeval timeout,
 			uint32_t destnode, uint32_t dbid,
 			TALLOC_CTX *mem_ctx, const char **name);
@@ -189,25 +186,6 @@ int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout,
 
 int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode,
 			     int32_t *level);
-
-/*
-  attach to a ctdb database
-*/
-int ctdb_ctrl_db_open_flags(struct ctdb_context *ctdb, uint32_t db_id,
-			    int *tdb_flags);
-
-struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb,
-				    struct timeval timeout,
-				    const char *name,
-				    uint8_t db_flags);
-
-/* a ctdb call function */
-typedef int (*ctdb_fn_t)(struct ctdb_call_info *);
-
-/*
-  setup a ctdb call function
-*/
-int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id);
 
 int ctdb_ctrl_freeze(struct ctdb_context *ctdb, struct timeval timeout,
 		     uint32_t destnode);
