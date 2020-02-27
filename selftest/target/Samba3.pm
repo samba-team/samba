@@ -686,8 +686,7 @@ sub setup_ad_member
 	    server => "LOCALADMEMBER",
 	    password => "loCalMemberPass",
 	    extra_options => $member_options,
-	    dc_server_ip => $dcvars->{SERVER_IP},
-	    dc_server_ipv6 => $dcvars->{SERVER_IPV6});
+	    resolv_conf => $dcvars->{RESOLV_CONF});
 
 	$ret or return undef;
 
@@ -710,7 +709,6 @@ sub setup_ad_member
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
-	$ret->{RESOLV_CONF} = $dcvars->{RESOLV_CONF};
 
 	my $net = Samba::bindir_path($self, "net");
 	# Add hosts file for name lookups
@@ -811,8 +809,7 @@ sub setup_ad_member_rfc2307
 	    server => "RFC2307MEMBER",
 	    password => "loCalMemberPass",
 	    extra_options => $member_options,
-	    dc_server_ip => $dcvars->{SERVER_IP},
-	    dc_server_ipv6 => $dcvars->{SERVER_IPV6});
+	    resolv_conf => $dcvars->{RESOLV_CONF});
 
 	$ret or return undef;
 
@@ -834,7 +831,6 @@ sub setup_ad_member_rfc2307
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
-	$ret->{RESOLV_CONF} = $dcvars->{RESOLV_CONF};
 
 	my $net = Samba::bindir_path($self, "net");
 	# Add hosts file for name lookups
@@ -910,8 +906,7 @@ sub setup_ad_member_idmap_rid
 	    server => "IDMAPRIDMEMBER",
 	    password => "loCalMemberPass",
 	    extra_options => $member_options,
-	    dc_server_ip => $dcvars->{SERVER_IP},
-	    dc_server_ipv6 => $dcvars->{SERVER_IPV6});
+	    resolv_conf => $dcvars->{RESOLV_CONF});
 
 	$ret or return undef;
 
@@ -933,7 +928,6 @@ sub setup_ad_member_idmap_rid
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
-	$ret->{RESOLV_CONF} = $dcvars->{RESOLV_CONF};
 
 	my $net = Samba::bindir_path($self, "net");
 	# Add hosts file for name lookups
@@ -1008,8 +1002,7 @@ sub setup_ad_member_idmap_ad
 	    server => "IDMAPADMEMBER",
 	    password => "loCalMemberPass",
 	    extra_options => $member_options,
-	    dc_server_ip => $dcvars->{SERVER_IP},
-	    dc_server_ipv6 => $dcvars->{SERVER_IPV6});
+	    resolv_conf => $dcvars->{RESOLV_CONF});
 
 	$ret or return undef;
 
@@ -1031,7 +1024,6 @@ sub setup_ad_member_idmap_ad
 	Samba::mk_krb5_conf($ctx, "");
 
 	$ret->{KRB5_CONFIG} = $ctx->{krb5_conf};
-	$ret->{RESOLV_CONF} = $dcvars->{RESOLV_CONF};
 
 	my $net = Samba::bindir_path($self, "net");
 	# Add hosts file for name lookups
@@ -1740,8 +1732,7 @@ sub provision($$)
 	my $server = $args{server};
 	my $password = $args{password};
 	my $extra_options = $args{extra_options};
-	my $dc_server_ip = $args{dc_server_ip};
-	my $dc_server_ipv6 = $args{dc_server_ipv6};
+	my $resolv_conf = $args{resolv_conf};
 	my $no_delete_prefix= $args{no_delete_prefix};
 	my $netbios_name = $args{netbios_name} // $server;
 
@@ -1943,7 +1934,6 @@ sub provision($$)
 	my $nss_wrapper_passwd = "$privatedir/passwd";
 	my $nss_wrapper_group = "$privatedir/group";
 	my $nss_wrapper_hosts = "$ENV{SELFTEST_PREFIX}/hosts";
-	my $resolv_conf = "$privatedir/resolv.conf";
 	my $dns_host_file = "$ENV{SELFTEST_PREFIX}/dns_host_file";
 
 	my $mod_printer_pl = "$ENV{PERL} $self->{srcdir}/source3/script/tests/printing/modprinter.pl";
@@ -2730,23 +2720,7 @@ force_user:x:$gid_force_user:
 	print HOSTS "${server_ipv6} ${hostname}.samba.example.com ${hostname}\n";
 	close(HOSTS);
 
-	## hosts
-	unless (open(RESOLV_CONF, ">$resolv_conf")) {
-		warn("Unable to open $resolv_conf");
-		return undef;
-	}
-	if (defined($dc_server_ip) or defined($dc_server_ipv6)) {
-		if (defined($dc_server_ip)) {
-			print RESOLV_CONF "nameserver $dc_server_ip\n";
-		}
-		if (defined($dc_server_ipv6)) {
-			print RESOLV_CONF "nameserver $dc_server_ipv6\n";
-		}
-	} else {
-		print RESOLV_CONF "nameserver ${server_ip}\n";
-		print RESOLV_CONF "nameserver ${server_ipv6}\n";
-	}
-	close(RESOLV_CONF);
+	$resolv_conf = "$privatedir/no_resolv.conf" unless defined($resolv_conf);
 
 	foreach my $evlog (@eventlog_list) {
 		my $evlogtdb = "$eventlogdir/$evlog.tdb";
