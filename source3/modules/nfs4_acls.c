@@ -996,6 +996,10 @@ NTSTATUS smb_set_nt_acl_nfs4(vfs_handle_struct *handle, files_struct *fsp,
 				      * refined... */
 	}
 
+	if (security_descriptor_with_ms_nfs(psd)) {
+		return NT_STATUS_OK;
+	}
+
 	if (pparams == NULL) {
 		/* Special behaviours */
 		if (smbacl4_get_vfs_params(fsp->conn, &params)) {
