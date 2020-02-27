@@ -32,9 +32,7 @@
  * library functions and types.
  *
  */
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "replace.h"
 #include <setjmp.h>
 #include <cmocka.h>
 
