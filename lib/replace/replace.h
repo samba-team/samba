@@ -844,6 +844,9 @@ typedef unsigned long long ptrdiff_t ;
 /**
  * Work out how many elements there are in a static array.
  */
+#ifdef ARRAY_SIZE
+#undef ARRAY_SIZE
+#endif
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
 /**
