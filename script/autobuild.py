@@ -848,7 +848,7 @@ class builder(object):
         run_cmd("rm -rf %s" % self.test_source_dir)
         run_cmd("rm -rf %s" % self.prefix)
         if cp:
-            run_cmd("cp --recursive --link --archive %s %s" % (test_master, self.test_source_dir), dir=test_master, show=True)
+            run_cmd("cp -R -a -l %s %s" % (test_master, self.test_source_dir), dir=test_master, show=True)
         else:
             run_cmd("git clone --recursive --shared %s %s" % (test_master, self.test_source_dir), dir=test_master, show=True)
         self.start_next()
