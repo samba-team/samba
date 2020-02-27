@@ -39,16 +39,19 @@ class GroupCmdTestCase(SambaToolCmdTest):
         self.groups.append(self._randomGroup({"name": "testgroup2"}))
         self.groups.append(self._randomGroup({"name": "testgroup3"}))
         self.groups.append(self._randomGroup({"name": "testgroup4"}))
+        self.groups.append(self._randomGroup({"name": "testgroup5 (with brackets)"}))
         self.groups.append(self._randomPosixGroup({"name": "posixgroup1"}))
         self.groups.append(self._randomPosixGroup({"name": "posixgroup2"}))
         self.groups.append(self._randomPosixGroup({"name": "posixgroup3"}))
         self.groups.append(self._randomPosixGroup({"name": "posixgroup4"}))
+        self.groups.append(self._randomPosixGroup({"name": "posixgroup5 (with brackets)"}))
         self.groups.append(self._randomUnixGroup({"name": "unixgroup1"}))
         self.groups.append(self._randomUnixGroup({"name": "unixgroup2"}))
         self.groups.append(self._randomUnixGroup({"name": "unixgroup3"}))
         self.groups.append(self._randomUnixGroup({"name": "unixgroup4"}))
+        self.groups.append(self._randomUnixGroup({"name": "unixgroup5 (with brackets)"}))
 
-        # setup the 12 groups and ensure they are correct
+        # setup the groups and ensure they are correct
         for group in self.groups:
             (result, out, err) = group["createGroupFn"](group)
 
