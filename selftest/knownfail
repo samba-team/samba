@@ -19,7 +19,6 @@
 ^samba3.nbt.dgram.*netlogon2\(nt4_dc\)
 ^samba3.*rap.sam.*.useradd # Not provided by Samba 3
 ^samba3.*rap.sam.*.userdelete # Not provided by Samba 3
-^samba3.libsmbclient.opendir # This requires a workgroup called 'WORKGROUP' and for netbios browse lists to have been registered
 # see bug 8412
 ^samba3.smb2.rename.*.simple_nodelete
 ^samba3.smb2.rename.*.no_share_delete_no_delete_access
