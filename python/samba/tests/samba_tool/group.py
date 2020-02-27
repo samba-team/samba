@@ -39,8 +39,9 @@ class GroupCmdTestCase(SambaToolCmdTest):
         self.groups.append(self._randomGroup({"name": "testgroup2"}))
         self.groups.append(self._randomGroup({"name": "testgroup3"}))
         self.groups.append(self._randomGroup({"name": "testgroup4"}))
+        self.groups.append(self._randomGroup({"name": "testgroup5 (with brackets)"}))
 
-        # setup the 4 groups and ensure they are correct
+        # setup the 5 groups and ensure they are correct
         for group in self.groups:
             (result, out, err) = self._create_group(group)
 
