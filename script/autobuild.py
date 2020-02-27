@@ -967,7 +967,10 @@ class buildlist(object):
                         'cc --version',
                         'df -m .',
                         'df -m %s' % testbase]:
-                out = run_cmd(cmd, output=True, checkfail=False)
+                try:
+                    out = run_cmd(cmd, output=True, checkfail=False)
+                except subprocess.CalledProcessError as e:
+                    out = "<failed: %s>" % str(e)
                 print('### %s' % cmd, file=f)
                 print(out, file=f)
                 print(file=f)
