@@ -453,6 +453,8 @@ sub realm_to_ip_mappings
 		'renamedom.samba.example.com'     => 'renamedc',
 		'labdom.samba.example.com'        => 'labdc',
 		'schema.samba.example.com'        => 'liveupgrade1dc',
+		'prockilldom.samba.example.com'   => 'prockilldc',
+		'proclimit.samba.example.com'     => 'proclimitdc',
 		'samba.example.com'               => 'localdc',
 	);
 
