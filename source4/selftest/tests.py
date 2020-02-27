@@ -373,7 +373,16 @@ def planlibsmbclienttest(name, testargs, proto):
         testargs + [ "--option=torture:clientprotocol=%s" % proto],
         'samba4')
     plantestsuite_loadlist(
-        "samba4.%s.%s" % (t, proto), env, " ".join(cmdarray))
+        "samba4.unix_ext.%s.%s" % (t, proto), env, " ".join(cmdarray))
+
+    plantestsuite_loadlist(
+        "samba4.non_unix_ext.%s.%s" % (t, proto),
+        env,
+        "(inject=\"${SERVERCONFFILE%/*}/global_inject.conf\"; " +
+        "echo \"unix extensions = no\" > ${inject} ; " +
+        " ".join(cmdarray) +
+        "; > ${inject})")
+
 
 libsmbclient = smbtorture4_testsuites("libsmbclient.")
 protocols = [ 'NT1', 'SMB3' ]
