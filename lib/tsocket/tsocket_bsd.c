@@ -282,13 +282,13 @@ int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
 }
 
 int _tsocket_address_bsd_from_samba_sockaddr(TALLOC_CTX *mem_ctx,
-					 const struct samba_sockaddr *s_addr,
+					 const struct samba_sockaddr *xs_addr,
 					 struct tsocket_address **t_addr,
 					 const char *location)
 {
 	return _tsocket_address_bsd_from_sockaddr(mem_ctx,
-						  &s_addr->u.sa,
-						  s_addr->sa_socklen,
+						  &xs_addr->u.sa,
+						  xs_addr->sa_socklen,
 						  t_addr,
 						  location);
 }

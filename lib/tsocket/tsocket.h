@@ -996,16 +996,16 @@ int _tsocket_address_bsd_from_sockaddr(TALLOC_CTX *mem_ctx,
  * @return              0 on success, -1 on error with errno set.
  */
 int tsocket_address_bsd_from_samba_sockaddr(TALLOC_CTX *mem_ctx,
-					const struct samba_sockaddr *s_addr,
+					const struct samba_sockaddr *xs_addr,
 					struct tsocket_address **t_addr);
 #else
 int _tsocket_address_bsd_from_samba_sockaddr(TALLOC_CTX *mem_ctx,
-					 const struct samba_sockaddr *s_addr,
+					 const struct samba_sockaddr *xs_addr,
 					 struct tsocket_address **t_addr,
 					 const char *location);
 
-#define tsocket_address_bsd_from_samba_sockaddr(mem_ctx, s_addr, t_addr) \
-	_tsocket_address_bsd_from_samba_sockaddr(mem_ctx, s_addr, t_addr, \
+#define tsocket_address_bsd_from_samba_sockaddr(mem_ctx, xs_addr, t_addr) \
+	_tsocket_address_bsd_from_samba_sockaddr(mem_ctx, xs_addr, t_addr, \
 						 __location__)
 #endif
 
