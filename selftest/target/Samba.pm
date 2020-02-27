@@ -653,6 +653,7 @@ sub get_env_for_process
 {
 	my ($proc_name, $env_vars) = @_;
 	my $proc_envs = {
+		RESOLV_CONF => $env_vars->{RESOLV_CONF},
 		KRB5_CONFIG => $env_vars->{KRB5_CONFIG},
 		KRB5CCNAME => "$env_vars->{KRB5_CCACHE}.$proc_name",
 		SELFTEST_WINBINDD_SOCKET_DIR => $env_vars->{SELFTEST_WINBINDD_SOCKET_DIR},

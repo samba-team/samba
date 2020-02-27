@@ -77,7 +77,6 @@ sub check_or_start($$$)
 
 	# the samba process takes some additional env variables (compared to s3)
 	my $samba_envs = Samba::get_env_for_process("samba", $env_vars);
-	$samba_envs->{RESOLV_CONF} = $env_vars->{RESOLV_CONF};
 	$samba_envs->{UID_WRAPPER} = "1";
 	if (defined($ENV{MITKRB5})) {
 		$samba_envs->{KRB5_KDC_PROFILE} = $env_vars->{MITKDC_CONFIG};
