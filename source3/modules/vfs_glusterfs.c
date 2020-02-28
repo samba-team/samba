@@ -873,6 +873,7 @@ static ssize_t vfs_gluster_pread_recv(struct tevent_req *req,
 }
 
 struct vfs_gluster_pwrite_state {
+	struct tevent_req *req;
 	ssize_t ret;
 	glfs_fd_t *fd;
 	const void *buf;
@@ -908,6 +909,7 @@ static struct tevent_req *vfs_gluster_pwrite_send(struct vfs_handle_struct
 		return NULL;
 	}
 
+	state->req = req;
 	state->ret = -1;
 	state->fd = glfd;
 	state->buf = data;
