@@ -780,6 +780,7 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 }
 
 struct vfswrap_pread_state {
+	struct tevent_req *req;
 	ssize_t ret;
 	int fd;
 	void *buf;
@@ -809,6 +810,7 @@ static struct tevent_req *vfswrap_pread_send(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 
+	state->req = req;
 	state->ret = -1;
 	state->fd = fsp->fh->fd;
 	state->buf = data;
