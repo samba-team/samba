@@ -125,8 +125,21 @@ SMBC_open_ctx(SMBCCTX *context,
 		}
 		/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
 
-		status = cli_open(targetcli, targetpath, flags,
-                                   context->internal->share_mode, &fd);
+		if (srv->try_posixinfo) {
+			status = cli_posix_open(
+				targetcli,
+				targetpath,
+				flags,
+				mode,
+				&fd);
+		} else {
+			status = cli_open(
+				targetcli,
+				targetpath,
+				flags,
+				context->internal->share_mode,
+				&fd);
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 
 			/* Handle the error ... */
