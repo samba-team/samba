@@ -4601,6 +4601,17 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 			el = &old_msg->elements[i];
 			sa = dsdb_attribute_by_lDAPDisplayName(schema, el->name);
 			if (!sa) {
+				const char *old_dn_str
+					= ldb_dn_get_linearized(old_dn);
+
+				ldb_asprintf_errstring(ldb,
+						       __location__
+						       ": Attribute %s "
+						       "not found in schema "
+						       "when deleting %s. "
+						       "Existing record is invalid",
+						       el->name,
+						       old_dn_str);
 				talloc_free(tmp_ctx);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
