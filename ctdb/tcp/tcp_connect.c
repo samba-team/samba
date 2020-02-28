@@ -38,9 +38,9 @@
 #include "ctdb_tcp.h"
 
 /*
-  stop any connecting (established or pending) to a node
+  stop any outgoing connection (established or pending) to a node
  */
-void ctdb_tcp_stop_connection(struct ctdb_node *node)
+void ctdb_tcp_stop_outgoing(struct ctdb_node *node)
 {
 	struct ctdb_tcp_node *tnode = talloc_get_type(
 		node->transport_data, struct ctdb_tcp_node);
@@ -89,7 +89,7 @@ static void ctdb_node_connect_write(struct tevent_context *ev,
 
 	ret = getsockopt(tnode->out_fd, SOL_SOCKET, SO_ERROR, &error, &len);
 	if (ret != 0 || error != 0) {
-		ctdb_tcp_stop_connection(node);
+		ctdb_tcp_stop_outgoing(node);
 		tnode->connect_te = tevent_add_timer(ctdb->ev, tnode,
 						    timeval_current_ofs(1, 0),
 						    ctdb_tcp_node_connect, node);
@@ -126,7 +126,7 @@ static void ctdb_node_connect_write(struct tevent_context *ev,
 					    node->name);
 	if (tnode->out_queue == NULL) {
 		DBG_ERR("Failed to set up outgoing queue\n");
-		ctdb_tcp_stop_connection(node);
+		ctdb_tcp_stop_outgoing(node);
 		tnode->connect_te = tevent_add_timer(ctdb->ev,
 						     tnode,
 						     timeval_current_ofs(1, 0),
@@ -166,7 +166,7 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
         ctdb_sock_addr sock_out;
 	int ret;
 
-	ctdb_tcp_stop_connection(node);
+	ctdb_tcp_stop_outgoing(node);
 
 	sock_out = node->address;
 
@@ -250,7 +250,7 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 	return;
 
 failed:
-	ctdb_tcp_stop_connection(node);
+	ctdb_tcp_stop_outgoing(node);
 	tnode->connect_te = tevent_add_timer(ctdb->ev,
 					     tnode,
 					     timeval_current_ofs(1, 0),
