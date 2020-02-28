@@ -305,6 +305,63 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			}
 			return calc_next_entry_offset(base, pdata_end);
 		}
+		case SMB_FIND_FILE_UNIX_INFO2:
+		{
+			SMB_STRUCT_STAT *sbuf = &finfo->posix_sbuf;
+			size_t namelen;
+
+			if (pdata_end - base < 128) {
+				return pdata_end - base;
+			}
+
+			p += 4; /* next entry offset */
+
+			if (p_resume_key) {
+				*p_resume_key = IVAL(p,0);
+			}
+			p += 4; /* fileindex */
+
+			fetch_file_unix_basic_info2((const uint8_t *)p, sbuf);
+			p += 116;
+
+			finfo->mode = S_ISDIR(sbuf->st_ex_mode) ?
+				FILE_ATTRIBUTE_DIRECTORY :
+				FILE_ATTRIBUTE_NORMAL;
+			if (sbuf->st_ex_mode & S_IXUSR) {
+				finfo->mode |= FILE_ATTRIBUTE_ARCHIVE;
+			}
+
+			finfo->size = sbuf->st_ex_size;
+			finfo->allocated_size =
+				sbuf->st_ex_blksize * sbuf->st_ex_blocks;
+			finfo->uid = sbuf->st_ex_uid;
+			finfo->gid = sbuf->st_ex_gid;
+			finfo->ino = sbuf->st_ex_ino;
+			finfo->btime_ts = sbuf->st_ex_btime;
+			finfo->mtime_ts = sbuf->st_ex_mtime;
+			finfo->atime_ts = sbuf->st_ex_atime;
+			finfo->ctime_ts = sbuf->st_ex_ctime;
+
+			namelen = IVAL(p, 0);
+			p += 4;
+
+			if (namelen > (pdata_end - p)) {
+				return pdata_end - base;
+			}
+
+			ret = clistr_pull_talloc(
+				ctx,
+				base_ptr,
+				recv_flags2,
+				&finfo->name,
+				p,
+				namelen,
+				0);
+			if (ret == (size_t)-1) {
+				return pdata_end - base;
+			}
+			return calc_next_entry_offset(base, pdata_end);
+		}
 	}
 
 	DEBUG(1,("Unknown long filename format %d\n",level));
@@ -1043,6 +1100,7 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16_t attribute,
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	struct file_info *finfo;
 	size_t i, num_finfo = 0;
+	uint32_t caps;
 	uint16_t info_level;
 
 	if (smbXcli_conn_protocol(cli->conn) >= PROTOCOL_SMB2_02) {
@@ -1063,8 +1121,15 @@ NTSTATUS cli_list(struct cli_state *cli, const char *mask, uint16_t attribute,
 		goto fail;
 	}
 
-	info_level = (smb1cli_conn_capabilities(cli->conn) & CAP_NT_SMBS)
-		? SMB_FIND_FILE_BOTH_DIRECTORY_INFO : SMB_FIND_INFO_STANDARD;
+	caps = smb1cli_conn_capabilities(cli->conn);
+
+	if (caps & CAP_UNIX) {
+		info_level = SMB_FIND_FILE_UNIX_INFO2;
+	} else if (caps & CAP_NT_SMBS) {
+		info_level = SMB_FIND_FILE_BOTH_DIRECTORY_INFO;
+	} else {
+		info_level = SMB_FIND_INFO_STANDARD;
+	}
 
 	req = cli_list_send(frame, ev, cli, mask, attribute, info_level);
 	if (req == NULL) {

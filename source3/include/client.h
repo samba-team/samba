@@ -114,6 +114,12 @@ struct file_info {
 	struct timespec mtime_ts;
 	struct timespec atime_ts;
 	struct timespec ctime_ts;
+
+	/*
+	 * Native sbuf from posix extensions. Valid if st_ex_nlink!=0.
+	 */
+	SMB_STRUCT_STAT posix_sbuf;
+
 	char *name;
 	char *short_name;
 };
