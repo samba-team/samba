@@ -4777,8 +4777,42 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 
 	ret = dsdb_module_modify(module, msg, dsdb_flags|DSDB_FLAG_OWN_MODULE, req);
 	if (ret != LDB_SUCCESS) {
-		ldb_asprintf_errstring(ldb, "replmd_delete: Failed to modify object %s in delete - %s",
-				       ldb_dn_get_linearized(old_dn), ldb_errstring(ldb));
+		char *s = NULL;
+		/*
+		 * This should not fail, so be quite verbose in the
+		 * error handling if it fails
+		 */
+		if (strcmp(ldb_dn_get_linearized(old_dn),
+			   ldb_dn_get_linearized(new_dn)) != 0) {
+			DBG_NOTICE("Failure to handle '%s' of object %s "
+				   "after successful rename to %s.  "
+				   "Error during tombstone modificaton was: %s\n",
+				   re_delete ? "re-delete" : "delete",
+				   ldb_dn_get_linearized(new_dn),
+				   ldb_dn_get_linearized(old_dn),
+				   ldb_errstring(ldb));
+		} else {
+			DBG_NOTICE("Failure to handle '%s' of object %s. "
+				   "Error during tombstone modificaton was: %s\n",
+				   re_delete ? "re-delete" : "delete",
+				   ldb_dn_get_linearized(new_dn),
+				   ldb_errstring(ldb));
+		}
+		s = ldb_ldif_message_redacted_string(ldb_module_get_ctx(module),
+						     tmp_ctx,
+						     LDB_CHANGETYPE_MODIFY,
+						     msg);
+
+		DBG_INFO("Failed tombstone modify%s was:\n%s\n",
+			 (dsdb_flags & DSDB_REPLMD_VANISH_LINKS) ?
+			 " with VANISH_LINKS" : "",
+			 s);
+		ldb_asprintf_errstring(ldb,
+				       "replmd_delete: Failed to modify"
+				       " object %s in '%s' - %s",
+				       ldb_dn_get_linearized(old_dn),
+				       re_delete ? "re-delete" : "delete",
+				       ldb_errstring(ldb));
 		talloc_free(tmp_ctx);
 		return ret;
 	}
