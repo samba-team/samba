@@ -3,3 +3,6 @@ V	360311232904Z		01	unknown	/C=US/ST=SambaState/O=SambaSelfTesting/OU=Users/CN=a
 V	360311232925Z		02	unknown	/C=US/ST=SambaState/O=SambaSelfTesting/OU=Domain Controllers/CN=addc.addom.samba.example.com/emailAddress=ca-samba.example.com@samba.example.com
 V	360311232941Z		03	unknown	/C=US/ST=SambaState/O=SambaSelfTesting/OU=Users/CN=administrator@addom.samba.example.com/emailAddress=administrator@addom.samba.example.com
 V	360529193029Z		04	unknown	/C=US/ST=SambaState/O=SambaSelfTesting/OU=Users/CN=pkinit@samba.example.com/emailAddress=pkinit@samba.example.com
+V	360529193047Z		05	unknown	/C=US/ST=SambaState/O=SambaSelfTesting/OU=Users/CN=pkinit@addom.samba.example.com/emailAddress=pkinit@addom.samba.example.com
+V	400223133028Z		06	unknown	/C=US/ST=SambaState/O=SambaSelfTesting/OU=Domain Controllers/CN=addcsmb1.addom2.samba.example.com/emailAddress=ca-samba.example.com@samba.example.com
+V	400223133101Z		07	unknown	/C=US/ST=SambaState/O=SambaSelfTesting/OU=Users/CN=administrator@addom2.samba.example.com/emailAddress=administrator@addom2.samba.example.com
