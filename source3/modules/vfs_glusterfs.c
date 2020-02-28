@@ -766,7 +766,7 @@ static struct tevent_req *vfs_gluster_pread_send(struct vfs_handle_struct
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, vfs_gluster_pread_done, req);
+	tevent_req_set_callback(subreq, vfs_gluster_pread_done, state);
 
 	talloc_set_destructor(state, vfs_gluster_pread_state_destructor);
 
@@ -812,10 +812,9 @@ static int vfs_gluster_pread_state_destructor(struct vfs_gluster_pread_state *st
 
 static void vfs_gluster_pread_done(struct tevent_req *subreq)
 {
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct vfs_gluster_pread_state *state = tevent_req_data(
-		req, struct vfs_gluster_pread_state);
+	struct vfs_gluster_pread_state *state = tevent_req_callback_data(
+		subreq, struct vfs_gluster_pread_state);
+	struct tevent_req *req = state->req;
 	int ret;
 
 	ret = pthreadpool_tevent_job_recv(subreq);
