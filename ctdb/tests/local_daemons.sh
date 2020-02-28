@@ -438,6 +438,22 @@ local_daemons_print_log ()
 
 }
 
+local_daemons_tail_log ()
+{
+	if [ $# -ne 1 ] || [ "$1" = "-h" ] ; then
+		local_daemons_generic_usage "tail-log"
+	fi
+
+	_nodes="$1"
+	shift
+
+	onnode_common
+
+	# shellcheck disable=SC2016
+	# $CTDB_BASE must only be expanded under onnode, not in top-level shell
+	tail -f $(onnode -q "$_nodes" 'echo ${CTDB_BASE}/log.ctdb')
+}
+
 usage ()
 {
 	cat <<EOF
@@ -450,6 +466,7 @@ Commands:
   onnode         Run a command in the environment of specified daemon(s)
   print-socket   Print the Unix domain socket used by specified daemon(s)
   print-log      Print logs for specified daemon(s) to stdout
+  tail-log       Follow logs for specified daemon(s) to stdout
 
 All commands use <directory> for daemon configuration
 
@@ -475,5 +492,6 @@ stop) local_daemons_stop "$@" ;;
 onnode) local_daemons_onnode "$@" ;;
 print-socket) local_daemons_print_socket "$@" ;;
 print-log) local_daemons_print_log "$@" ;;
+tail-log) local_daemons_tail_log "$@" ;;
 *) usage ;;
 esac
