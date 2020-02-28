@@ -1114,6 +1114,7 @@ static int vfs_gluster_renameat(struct vfs_handle_struct *handle,
 }
 
 struct vfs_gluster_fsync_state {
+	struct tevent_req *req;
 	ssize_t ret;
 	glfs_fd_t *fd;
 
@@ -1144,6 +1145,7 @@ static struct tevent_req *vfs_gluster_fsync_send(struct vfs_handle_struct
 		return NULL;
 	}
 
+	state->req = req;
 	state->ret = -1;
 	state->fd = glfd;
 
