@@ -48,7 +48,7 @@ void ctdb_tcp_node_connect(struct tevent_context *ev, struct tevent_timer *te,
 			   struct timeval t, void *private_data);
 void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args);
 void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data);
-void ctdb_tcp_stop_connection(struct ctdb_node *node);
+void ctdb_tcp_stop_outgoing(struct ctdb_node *node);
 
 #define CTDB_TCP_ALIGNMENT 8
 
