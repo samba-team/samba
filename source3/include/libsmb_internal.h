@@ -98,6 +98,7 @@ struct smbc_dir_list {
 struct smbc_dirplus_list {
 	struct smbc_dirplus_list *next;
 	struct libsmb_file_info *smb_finfo;
+	SMB_STRUCT_STAT *posix_sbuf;
 	uint64_t ino;
 };
 

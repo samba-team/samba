@@ -49,6 +49,7 @@ static void remove_dirplus(SMBCFILE *dir)
 		struct smbc_dirplus_list *f = d;
 		d = d->next;
 
+		SAFE_FREE(f->posix_sbuf);
 		SAFE_FREE(f->smb_finfo->short_name);
 		SAFE_FREE(f->smb_finfo->name);
 		SAFE_FREE(f->smb_finfo);
@@ -211,6 +212,20 @@ static int add_dirplus(SMBCFILE *dir, struct file_info *finfo)
 		return -1;
 	}
 	new_entry->smb_finfo = info;
+
+	if (finfo->posix_sbuf.st_ex_nlink != 0) {
+		new_entry->posix_sbuf = SMB_MALLOC_P(SMB_STRUCT_STAT);
+		if (new_entry->posix_sbuf == NULL) {
+			SAFE_FREE(info->short_name);
+			SAFE_FREE(info->name);
+			SAFE_FREE(info);
+			SAFE_FREE(new_entry);
+			dir->dir_error = ENOMEM;
+			return -1;
+		}
+		*new_entry->posix_sbuf = finfo->posix_sbuf;
+		new_entry->posix_sbuf->st_ex_dev = dir->srv->dev;
+	}
 
 	/* Now add to the list. */
 	if (dir->dirplus_list == NULL) {
@@ -1360,15 +1375,20 @@ const struct libsmb_file_info *SMBC_readdirplus2_ctx(SMBCCTX *context,
 		return NULL;
 	}
 
-	setup_stat(st,
-		path,
-		smb_finfo->size,
-		smb_finfo->attrs,
-		ino,
-		dir->srv->dev,
-		smb_finfo->atime_ts,
-		smb_finfo->ctime_ts,
-		smb_finfo->mtime_ts);
+	if (dp_list->posix_sbuf != NULL) {
+		setup_stat_from_stat_ex(dp_list->posix_sbuf, path, st);
+	} else {
+		setup_stat(
+			st,
+			path,
+			smb_finfo->size,
+			smb_finfo->attrs,
+			ino,
+			dir->srv->dev,
+			smb_finfo->atime_ts,
+			smb_finfo->ctime_ts,
+			smb_finfo->mtime_ts);
+	}
 
 	TALLOC_FREE(full_pathname);
 
