@@ -65,9 +65,7 @@ void ctdb_tcp_tnode_cb(uint8_t *data, size_t cnt, void *private_data)
 	struct ctdb_tcp_node *tnode = talloc_get_type(
 		node->transport_data, struct ctdb_tcp_node);
 
-	if (data == NULL) {
-		node->ctdb->upcalls->node_dead(node);
-	}
+	node->ctdb->upcalls->node_dead(node);
 
 	ctdb_tcp_stop_connection(node);
 	tnode->connect_te = tevent_add_timer(node->ctdb->ev, tnode,
