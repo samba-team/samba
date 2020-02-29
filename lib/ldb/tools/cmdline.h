@@ -49,6 +49,9 @@ struct ldb_cmdline {
 struct ldb_cmdline *ldb_cmdline_process_search(struct ldb_context *ldb,
 					       int argc, const char **argv,
 					       void (*usage)(struct ldb_context *));
+struct ldb_cmdline *ldb_cmdline_process_edit(struct ldb_context *ldb,
+					     int argc, const char **argv,
+					     void (*usage)(struct ldb_context *));
 struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb, int argc,
 					const char **argv,
 					void (*usage)(struct ldb_context *));

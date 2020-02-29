@@ -96,6 +96,7 @@ static bool add_control(TALLOC_CTX *mem_ctx, const char *control)
 static struct ldb_cmdline *ldb_cmdline_process_internal(struct ldb_context *ldb,
 					int argc, const char **argv,
 					void (*usage)(struct ldb_context *),
+					bool dont_create,
 					bool search)
 {
 	struct ldb_cmdline *ret=NULL;
@@ -326,14 +327,21 @@ struct ldb_cmdline *ldb_cmdline_process_search(struct ldb_context *ldb,
 					       int argc, const char **argv,
 					       void (*usage)(struct ldb_context *))
 {
-	return ldb_cmdline_process_internal(ldb, argc, argv, usage, true);
+	return ldb_cmdline_process_internal(ldb, argc, argv, usage, true, true);
+}
+
+struct ldb_cmdline *ldb_cmdline_process_edit(struct ldb_context *ldb,
+					     int argc, const char **argv,
+					     void (*usage)(struct ldb_context *))
+{
+	return ldb_cmdline_process_internal(ldb, argc, argv, usage, false, true);
 }
 
 struct ldb_cmdline *ldb_cmdline_process(struct ldb_context *ldb,
 					int argc, const char **argv,
 					void (*usage)(struct ldb_context *))
 {
-	return ldb_cmdline_process_internal(ldb, argc, argv, usage, false);
+	return ldb_cmdline_process_internal(ldb, argc, argv, usage, false, false);
 }
 
 /* this function check controls reply and determines if more

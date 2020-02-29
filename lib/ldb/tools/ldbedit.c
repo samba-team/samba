@@ -327,7 +327,7 @@ int main(int argc, const char **argv)
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	options = ldb_cmdline_process(ldb, argc, argv, usage);
+	options = ldb_cmdline_process_edit(ldb, argc, argv, usage);
 
 	/* the check for '=' is for compatibility with ldapsearch */
 	if (options->argc > 0 &&
