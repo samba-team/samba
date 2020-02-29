@@ -121,7 +121,7 @@ static void ctdb_tcp_restart(struct ctdb_node *node)
 		node->transport_data, struct ctdb_tcp_node);
 
 	DEBUG(DEBUG_NOTICE,("Tearing down connection to dead node :%d\n", node->pnn));
-	TALLOC_FREE(tnode->in_queue);
+	ctdb_tcp_stop_incoming(node);
 	ctdb_tcp_stop_outgoing(node);
 
 	tnode->connect_te = tevent_add_timer(node->ctdb->ev, tnode,

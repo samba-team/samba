@@ -54,6 +54,16 @@ void ctdb_tcp_stop_outgoing(struct ctdb_node *node)
 	}
 }
 
+/*
+  stop incoming connection to a node
+ */
+void ctdb_tcp_stop_incoming(struct ctdb_node *node)
+{
+	struct ctdb_tcp_node *tnode = talloc_get_type(
+		node->transport_data, struct ctdb_tcp_node);
+
+	TALLOC_FREE(tnode->in_queue);
+}
 
 /*
   called when a complete packet has come in - should not happen on this socket
