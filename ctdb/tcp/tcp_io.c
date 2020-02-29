@@ -75,7 +75,6 @@ void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 	return;
 
 failed:
-	TALLOC_FREE(tnode->in_queue);
 	node->ctdb->upcalls->node_dead(node);
 
 	TALLOC_FREE(data);
