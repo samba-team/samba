@@ -449,8 +449,9 @@ local_daemons_tail_log ()
 
 	onnode_common
 
-	# shellcheck disable=SC2016
+	# shellcheck disable=SC2016,SC2046
 	# $CTDB_BASE must only be expanded under onnode, not in top-level shell
+	# Intentional word splitting to separate log filenames
 	tail -f $(onnode -q "$_nodes" 'echo ${CTDB_BASE}/log.ctdb')
 }
 
