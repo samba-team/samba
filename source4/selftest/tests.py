@@ -367,34 +367,43 @@ for t in base + raw + smb2 + netapi:
 
 def planlibsmbclienttest(name, testargs, proto):
     env = "nt4_dc"
+
+    url = "--option=torture:smburl=smb://$USERNAME:$PASSWORD@$SERVER"
+
     cmdarray = selftesthelpers.smbtorture4testsuite_cmdarray(
         name,
         env,
         testargs + [ "--option=torture:clientprotocol=%s" % proto],
         'samba4')
+
+    urloption = url
+    if name != "libsmbclient.list_shares":
+        urloption += "/posix_share"
+
     plantestsuite_loadlist(
-        "samba4.unix_ext.%s.%s" % (t, proto), env, " ".join(cmdarray))
+        "samba4.unix_ext.%s.%s" % (t, proto),
+        env,
+        " ".join(cmdarray + [urloption]))
+
+    urloption = url
+    if name != "libsmbclient.list_shares":
+        urloption += "/tmp"
 
     plantestsuite_loadlist(
         "samba4.non_unix_ext.%s.%s" % (t, proto),
         env,
         "(inject=\"${SERVERCONFFILE%/*}/global_inject.conf\"; " +
         "echo \"unix extensions = no\" > ${inject} ; " +
-        " ".join(cmdarray) +
+        " ".join(cmdarray + [urloption]) +
         "; > ${inject})")
 
 
 libsmbclient = smbtorture4_testsuites("libsmbclient.")
 protocols = [ 'NT1', 'SMB3' ]
 for t in libsmbclient:
-    url = "smb://$USERNAME:$PASSWORD@$SERVER/tmp"
-    if t == "libsmbclient.list_shares":
-        url = "smb://$USERNAME:$PASSWORD@$SERVER"
-
     libsmbclient_testargs = [
         '//$SERVER/tmp',
         '-U$USERNAME%$PASSWORD',
-        "--option=torture:smburl=" + url,
         "--option=torture:replace_smbconf="
         "%s/testdata/samba3/smb_new.conf" % srcdir()
         ]
