@@ -703,7 +703,7 @@ smbc_init_context(SMBCCTX *context)
 }
 
 
-/* Return the verion of samba, and thus libsmbclient */
+/* Return the version of samba, and thus libsmbclient */
 const char *
 smbc_version(void)
 {
