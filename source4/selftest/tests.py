@@ -383,7 +383,9 @@ def planlibsmbclienttest(name, testargs, proto):
     plantestsuite_loadlist(
         "samba4.unix_ext.%s.%s" % (t, proto),
         env,
-        " ".join(cmdarray + [urloption]))
+        " ".join(cmdarray +
+                 ["--option=torture:unix_extensions=true"] +
+                 [urloption]))
 
     urloption = url
     if name != "libsmbclient.list_shares":
