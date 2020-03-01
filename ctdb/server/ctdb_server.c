@@ -302,11 +302,11 @@ done:
 void ctdb_node_dead(struct ctdb_node *node)
 {
 	if (node->ctdb->methods == NULL) {
-		DEBUG(DEBUG_ERR,(__location__ " Can not restart transport while shutting down daemon.\n"));
+		DBG_ERR("Can not restart transport while shutting down\n");
 		return;
 	}
-
 	node->ctdb->methods->restart(node);
+
 	if (node->flags & NODE_FLAGS_DISCONNECTED) {
 		DEBUG(DEBUG_INFO,("%s: node %s is already marked disconnected: %u connected\n", 
 			 node->ctdb->name, node->name, 
