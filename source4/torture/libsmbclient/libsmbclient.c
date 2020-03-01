@@ -824,6 +824,9 @@ static bool torture_libsmbclient_readdirplus2(struct torture_context *tctx)
 	struct stat st = {0};
 	int ret;
 	const char *smburl = torture_setting_string(tctx, "smburl", NULL);
+	bool unix_extensions = torture_setting_bool(
+		tctx, "unix_extensions", false);
+	mode_t expected_mode = 0;
 
 	if (smburl == NULL) {
 		torture_fail(tctx,
@@ -900,21 +903,26 @@ static bool torture_libsmbclient_readdirplus2(struct torture_context *tctx)
 				filename));
 	}
 
-	/* Ensure mode is as expected. */
-	/*
-	 * New file gets SMBC_FILE_MODE plus
-	 * archive bit -> S_IXUSR
-	 * !READONLY -> S_IWUSR.
-	 */
+	if (unix_extensions) {
+		expected_mode = S_IFREG | 0666;
+	} else {
+		/*
+		 * New file gets SMBC_FILE_MODE plus
+		 * archive bit -> S_IXUSR
+		 * !READONLY -> S_IWUSR.
+		 */
+		expected_mode = SMBC_FILE_MODE|S_IXUSR|S_IWUSR;
+	}
+
 	torture_assert_int_equal_goto(tctx,
 		st2.st_mode,
-		SMBC_FILE_MODE|S_IXUSR|S_IWUSR,
+		expected_mode,
 		success,
 		done,
 		talloc_asprintf(tctx,
 			"file %s st_mode should be 0%o, got 0%o'",
 			filename,
-			SMBC_FILE_MODE|S_IXUSR|S_IWUSR,
+			expected_mode,
 			(unsigned int)st2.st_mode));
 
 	/* Ensure smbc_stat() gets the same data. */
