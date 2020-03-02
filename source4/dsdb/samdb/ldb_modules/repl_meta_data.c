@@ -4025,7 +4025,8 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 				     struct GUID *guid,
 				     struct ldb_message_element *el,
 				     const struct dsdb_attribute *sa,
-				     struct ldb_request *parent)
+				     struct ldb_request *parent,
+				     bool *caller_should_vanish)
 {
 	unsigned int i;
 	TALLOC_CTX *tmp_ctx = talloc_new(module);
@@ -4065,7 +4066,6 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 
-
 		msg->dn = dsdb_dn->dn;
 
 		target_attr = dsdb_attribute_by_linkID(schema, sa->linkID ^ 1);
@@ -4089,6 +4089,16 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 					    DSDB_SEARCH_SHOW_RECYCLED,
 					    parent);
 
+		if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+			DBG_WARNING("Failed to find forward link object %s "
+				    "to remove backlink %s on %s",
+				    ldb_dn_get_linearized(msg->dn),
+				    sa->lDAPDisplayName,
+				    ldb_dn_get_linearized(dn));
+			*caller_should_vanish = true;
+			continue;
+		}
+
 		if (ret != LDB_SUCCESS) {
 			talloc_free(tmp_ctx);
 			return ret;
@@ -4098,8 +4108,14 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 		link_el = ldb_msg_find_element(link_msg,
 					       target_attr->lDAPDisplayName);
 		if (link_el == NULL) {
-			talloc_free(tmp_ctx);
-			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+			DBG_WARNING("Failed to find forward link on %s "
+				    "as %s to remove backlink %s on %s",
+				    ldb_dn_get_linearized(msg->dn),
+				    target_attr->lDAPDisplayName,
+				    sa->lDAPDisplayName,
+				    ldb_dn_get_linearized(dn));
+			*caller_should_vanish = true;
+			continue;
 		}
 
 		/*
@@ -4129,17 +4145,29 @@ static int replmd_delete_remove_link(struct ldb_module *module,
 		}
 
 		if (p == NULL) {
-			ldb_asprintf_errstring(ldb_module_get_ctx(module),
-					       "Failed to find forward link on %s "
-					       "as %s to remove backlink %s on %s",
-					       ldb_dn_get_linearized(msg->dn),
-					       target_attr->lDAPDisplayName,
-					       sa->lDAPDisplayName,
-					       ldb_dn_get_linearized(dn));
-			talloc_free(tmp_ctx);
-			return LDB_ERR_NO_SUCH_ATTRIBUTE;
+			DBG_WARNING("Failed to find forward link on %s "
+				    "as %s to remove backlink %s on %s",
+				    ldb_dn_get_linearized(msg->dn),
+				    target_attr->lDAPDisplayName,
+				    sa->lDAPDisplayName,
+				    ldb_dn_get_linearized(dn));
+			*caller_should_vanish = true;
+			continue;
 		}
 
+		/*
+		 * If we find a backlink to ourself, we will delete
+		 * the forward link before we get to process that
+		 * properly, so just let the caller process this via
+		 * the forward link.
+		 *
+		 * We do this once we are sure we have the forward
+		 * link (to ourself) in case something is very wrong
+		 * and they are out of sync.
+		 */
+		if (ldb_dn_compare(dsdb_dn->dn, dn) == 0) {
+			continue;
+		}
 
 		/* This needs to get the Binary DN, by first searching */
 		dn_str = dsdb_dn_get_linearized(tmp_ctx,
@@ -4621,6 +4649,7 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 			}
 
 			if (sa->linkID & 1) {
+				bool caller_should_vanish = false;
 				/*
 				 * we have a backlink in this object
 				 * that needs to be removed. We're not
@@ -4632,17 +4661,9 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 				ret = replmd_delete_remove_link(module, schema,
 								replmd_private,
 								old_dn, &guid,
-								el, sa, req);
-				if (ret == LDB_SUCCESS) {
-					/*
-					 * now we continue, which means we
-					 * won't remove this backlink
-					 * directly
-					 */
-					continue;
-				}
-
-				if (ret != LDB_ERR_NO_SUCH_ATTRIBUTE) {
+								el, sa, req,
+								&caller_should_vanish);
+				if (ret != LDB_SUCCESS) {
 					const char *old_dn_str
 						= ldb_dn_get_linearized(old_dn);
 					ldb_asprintf_errstring(ldb,
@@ -4654,6 +4675,15 @@ static int replmd_delete_internals(struct ldb_module *module, struct ldb_request
 							       ldb_errstring(ldb));
 					talloc_free(tmp_ctx);
 					return LDB_ERR_OPERATIONS_ERROR;
+				}
+
+				if (caller_should_vanish == false) {
+					/*
+					 * now we continue, which means we
+					 * won't remove this backlink
+					 * directly
+					 */
+					continue;
 				}
 
 				/*
