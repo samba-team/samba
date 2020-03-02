@@ -796,15 +796,35 @@ static void test_audit_get_timestamp(_UNUSED_ void **state)
 	time_t before;
 	time_t after;
 	time_t actual;
+	char *env_tz = NULL;
+	char *orig_tz = NULL;
 
 	TALLOC_CTX *ctx = talloc_new(NULL);
+
+	/*
+	 * Explicitly set the time zone to UTC to make the test easier
+	 */
+	env_tz = getenv("TZ");
+	if (env_tz != NULL) {
+		orig_tz = talloc_strdup(ctx, env_tz);
+	}
+	setenv("TZ", "UTC", 1);
 
 	before = time(NULL);
 	t = audit_get_timestamp(ctx);
 	after = time(NULL);
 
-
 	c = strptime(t, "%a, %d %b %Y %H:%M:%S", &tm);
+
+	/*
+	 * Restore the time zone if we changed it
+	 */
+	if (orig_tz != NULL) {
+		setenv("TZ", orig_tz, 1);
+		TALLOC_FREE(orig_tz);
+	}
+
+	assert_non_null(c);
 	tm.tm_isdst = -1;
 	if (c != NULL && *c == '.') {
 		char *e;
@@ -812,10 +832,9 @@ static void test_audit_get_timestamp(_UNUSED_ void **state)
 		c = e;
 	}
 	if (c != NULL && *c == ' ') {
-		struct tm tz;
-		c = strptime(c, " %Z", &tz);
+		assert_string_equal(" UTC", c);
+		c += 4;
 	}
-	assert_non_null(c);
 	assert_int_equal(0, strlen(c));
 
 	actual = mktime(&tm);
