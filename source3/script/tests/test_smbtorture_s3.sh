@@ -2,7 +2,7 @@
 
 # this runs the file serving tests that are expected to pass with samba3
 
-if [ $# -lt 4 ]; then
+if [ $# -lt 5 ]; then
 cat <<EOF
 Usage: test_smbtorture_s3.sh TEST UNC USERNAME PASSWORD SMBTORTURE <smbtorture args>
 EOF
