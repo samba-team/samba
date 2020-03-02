@@ -31,6 +31,7 @@
 #include "auth.h"
 #include "messages.h"
 #include "../librpc/gen_ndr/open_files.h"
+#include "lib/util/tevent_ntstatus.h"
 
 /****************************************************************************
  Run a file if it is a magic script.
@@ -635,6 +636,20 @@ static NTSTATUS ntstatus_keeperror(NTSTATUS s1, NTSTATUS s2)
 	return s2;
 }
 
+static void assert_no_pending_aio(struct files_struct *fsp,
+				  enum file_close_type close_type)
+{
+	unsigned num_requests = fsp->num_aio_requests;
+
+	if (num_requests == 0) {
+		return;
+	}
+
+	DBG_ERR("fsp->num_aio_requests=%u\n", num_requests);
+	smb_panic("can not close with outstanding aio requests");
+	return;
+}
+
 /****************************************************************************
  Close a file.
 
@@ -651,45 +666,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	connection_struct *conn = fsp->conn;
 	bool is_durable = false;
 
-	if (fsp->num_aio_requests != 0) {
-
-		if (close_type != SHUTDOWN_CLOSE) {
-			/*
-			 * reply_close and the smb2 close must have
-			 * taken care of this. No other callers of
-			 * close_file should ever have created async
-			 * I/O.
-			 *
-			 * We need to panic here because if we close()
-			 * the fd while we have outstanding async I/O
-			 * requests, in the worst case we could end up
-			 * writing to the wrong file.
-			 */
-			DEBUG(0, ("fsp->num_aio_requests=%u\n",
-				  fsp->num_aio_requests));
-			smb_panic("can not close with outstanding aio "
-				  "requests");
-		}
-
-		/*
-		 * For shutdown close, just drop the async requests
-		 * including a potential close request pending for
-		 * this fsp. Drop the close request first, the
-		 * destructor for the aio_requests would execute it.
-		 */
-		TALLOC_FREE(fsp->deferred_close);
-
-		while (fsp->num_aio_requests != 0) {
-			/*
-			 * The destructor of the req will remove
-			 * itself from the fsp.
-			 * Don't use TALLOC_FREE here, this will overwrite
-			 * what the destructor just wrote into
-			 * aio_requests[0].
-			 */
-			talloc_free(fsp->aio_requests[0]);
-		}
-	}
+	assert_no_pending_aio(fsp, close_type);
 
 	while (talloc_array_length(fsp->blocked_smb1_lock_reqs) != 0) {
 		smbd_smb1_brl_finish_by_req(
@@ -1134,30 +1111,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		notify_status = NT_STATUS_OK;
 	}
 
-	if (fsp->num_aio_requests != 0) {
-		if (close_type != SHUTDOWN_CLOSE) {
-			/*
-			 * We panic here because if we close() the fd while we
-			 * have outstanding async I/O requests, an async IO
-			 * request might use the fd. For directories the fd is
-			 * read-only, so this is not as bad as with files, but
-			 * still, better safe then sorry.
-			 */
-			DBG_ERR("fsp->num_aio_requests=%u\n",
-				fsp->num_aio_requests);
-			smb_panic("close with outstanding aio requests");
-			return NT_STATUS_INTERNAL_ERROR;
-		}
-
-		while (fsp->num_aio_requests != 0) {
-			/*
-			 * The destructor of the req will remove itself from the
-			 * fsp.  Don't use TALLOC_FREE here, this will overwrite
-			 * what the destructor just wrote into aio_requests[0].
-			 */
-			talloc_free(fsp->aio_requests[0]);
-		}
-	}
+	assert_no_pending_aio(fsp, close_type);
 
 	/*
 	 * NT can set delete_on_close of the last open
