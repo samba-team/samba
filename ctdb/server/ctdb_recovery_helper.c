@@ -2163,6 +2163,206 @@ static bool db_recovery_recv(struct tevent_req *req, unsigned int *count)
 	return true;
 }
 
+struct ban_node_state {
+	struct tevent_context *ev;
+	struct ctdb_client_context *client;
+	struct ctdb_tunable_list *tun_list;
+	struct node_list *nlist;
+	uint32_t destnode;
+
+	uint32_t max_pnn;
+};
+
+static bool ban_node_check(struct tevent_req *req);
+static void ban_node_check_done(struct tevent_req *subreq);
+static void ban_node_done(struct tevent_req *subreq);
+
+static struct tevent_req *ban_node_send(TALLOC_CTX *mem_ctx,
+					struct tevent_context *ev,
+					struct ctdb_client_context *client,
+					struct ctdb_tunable_list *tun_list,
+					struct node_list *nlist)
+{
+	struct tevent_req *req;
+	struct ban_node_state *state;
+	bool ok;
+
+	req = tevent_req_create(mem_ctx, &state, struct ban_node_state);
+	if (req == NULL) {
+		return NULL;
+	}
+
+	state->ev = ev;
+	state->client = client;
+	state->tun_list = tun_list;
+	state->nlist = nlist;
+	state->destnode = ctdb_client_pnn(client);
+
+	/* Bans are not enabled */
+	if (state->tun_list->enable_bans == 0) {
+		D_ERR("Bans are not enabled\n");
+		tevent_req_done(req);
+		return tevent_req_post(req, ev);
+	}
+
+	ok = ban_node_check(req);
+	if (!ok) {
+		return tevent_req_post(req, ev);
+	}
+
+	return req;
+}
+
+static bool ban_node_check(struct tevent_req *req)
+{
+	struct tevent_req *subreq;
+	struct ban_node_state *state = tevent_req_data(
+		req, struct ban_node_state);
+	struct ctdb_req_control request;
+	unsigned max_credits = 0, i;
+
+	for (i=0; i<state->nlist->count; i++) {
+		if (state->nlist->ban_credits[i] > max_credits) {
+			state->max_pnn = state->nlist->pnn_list[i];
+			max_credits = state->nlist->ban_credits[i];
+		}
+	}
+
+	if (max_credits < NUM_RETRIES) {
+		tevent_req_done(req);
+		return false;
+	}
+
+	ctdb_req_control_get_nodemap(&request);
+	subreq = ctdb_client_control_send(state,
+					  state->ev,
+					  state->client,
+					  state->max_pnn,
+					  TIMEOUT(),
+					  &request);
+	if (tevent_req_nomem(subreq, req)) {
+		return false;
+	}
+	tevent_req_set_callback(subreq, ban_node_check_done, req);
+
+	return true;
+}
+
+static void ban_node_check_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct ban_node_state *state = tevent_req_data(
+		req, struct ban_node_state);
+	struct ctdb_reply_control *reply;
+	struct ctdb_node_map *nodemap;
+	struct ctdb_req_control request;
+	struct ctdb_ban_state ban;
+	unsigned int i;
+	int ret;
+	bool ok;
+
+	ok = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	TALLOC_FREE(subreq);
+	if (!ok) {
+		D_ERR("control GET_NODEMAP failed to node %u, ret=%d\n",
+		      state->max_pnn, ret);
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = ctdb_reply_control_get_nodemap(reply, state, &nodemap);
+	if (ret != 0) {
+		D_ERR("control GET_NODEMAP failed, ret=%d\n", ret);
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	for (i=0; i<nodemap->num; i++) {
+		if (nodemap->node[i].pnn != state->max_pnn) {
+			continue;
+		}
+
+		/* If the node became inactive, reset ban_credits */
+		if (nodemap->node[i].flags & NODE_FLAGS_INACTIVE) {
+			unsigned int j;
+
+			for (j=0; j<state->nlist->count; j++) {
+				if (state->nlist->pnn_list[j] ==
+						state->max_pnn) {
+					state->nlist->ban_credits[j] = 0;
+					break;
+				}
+			}
+			state->max_pnn = CTDB_UNKNOWN_PNN;
+		}
+	}
+
+	talloc_free(nodemap);
+	talloc_free(reply);
+
+	/* If node becames inactive during recovery, pick next */
+	if (state->max_pnn == CTDB_UNKNOWN_PNN) {
+		(void) ban_node_check(req);
+		return;
+	}
+
+	ban = (struct ctdb_ban_state) {
+		.pnn = state->max_pnn,
+		.time = state->tun_list->recovery_ban_period,
+	};
+
+	D_ERR("Banning node %u for %u seconds\n", ban.pnn, ban.time);
+
+	ctdb_req_control_set_ban_state(&request, &ban);
+	subreq = ctdb_client_control_send(state,
+					  state->ev,
+					  state->client,
+					  ban.pnn,
+					  TIMEOUT(),
+					  &request);
+	if (tevent_req_nomem(subreq, req)) {
+		return;
+	}
+	tevent_req_set_callback(subreq, ban_node_done, req);
+}
+
+static void ban_node_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct node_ban_state *state = tevent_req_data(
+		req, struct node_ban_state);
+	struct ctdb_reply_control *reply;
+	int ret;
+	bool status;
+
+	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	TALLOC_FREE(subreq);
+	if (! status) {
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	ret = ctdb_reply_control_set_ban_state(reply);
+	if (ret != 0) {
+		D_ERR("control SET_BAN_STATE failed, ret=%d\n", ret);
+		tevent_req_error(req, ret);
+		return;
+	}
+
+	talloc_free(reply);
+	tevent_req_done(req);
+}
+
+static bool ban_node_recv(struct tevent_req *req, int *perr)
+{
+	if (tevent_req_is_unix_error(req, perr)) {
+		return false;
+	}
+
+	return true;
+}
 
 /*
  * Run the parallel database recovery
@@ -2724,50 +2924,15 @@ static void recovery_db_recovery_done(struct tevent_req *subreq)
 	D_ERR("%d of %d databases recovered\n", count, state->dbmap->num);
 
 	if (! status) {
-		uint32_t max_pnn = CTDB_UNKNOWN_PNN, max_credits = 0;
-		unsigned int i;
-
-		/* Bans are not enabled */
-		if (state->tun_list->enable_bans == 0) {
-			tevent_req_error(req, EIO);
+		subreq = ban_node_send(state,
+				       state->ev,
+				       state->client,
+				       state->tun_list,
+				       state->nlist);
+		if (tevent_req_nomem(subreq, req)) {
 			return;
 		}
-
-		for (i=0; i<state->nlist->count; i++) {
-			if (state->nlist->ban_credits[i] > max_credits) {
-				max_pnn = state->nlist->pnn_list[i];
-				max_credits = state->nlist->ban_credits[i];
-			}
-		}
-
-		/* If pulling database fails multiple times */
-		if (max_credits >= NUM_RETRIES) {
-			struct ctdb_ban_state ban_state = {
-				.pnn = max_pnn,
-				.time = state->tun_list->recovery_ban_period,
-			};
-
-			D_ERR("Banning node %u for %u seconds\n",
-			      ban_state.pnn,
-			      ban_state.time);
-
-			ctdb_req_control_set_ban_state(&request,
-						       &ban_state);
-			subreq = ctdb_client_control_send(state,
-							  state->ev,
-							  state->client,
-							  ban_state.pnn,
-							  TIMEOUT(),
-							  &request);
-			if (tevent_req_nomem(subreq, req)) {
-				return;
-			}
-			tevent_req_set_callback(subreq,
-						recovery_failed_done,
-						req);
-		} else {
-			tevent_req_error(req, EIO);
-		}
+		tevent_req_set_callback(subreq, recovery_failed_done, req);
 		return;
 	}
 
@@ -2789,25 +2954,15 @@ static void recovery_failed_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
-	struct recovery_state *state = tevent_req_data(
-		req, struct recovery_state);
-	struct ctdb_reply_control *reply;
 	int ret;
 	bool status;
 
-	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
+	status = ban_node_recv(subreq, &ret);
 	TALLOC_FREE(subreq);
 	if (! status) {
 		D_ERR("failed to ban node, ret=%d\n", ret);
-		goto done;
 	}
 
-	ret = ctdb_reply_control_set_ban_state(reply);
-	if (ret != 0) {
-		D_ERR("control SET_BAN_STATE failed, ret=%d\n", ret);
-	}
-
-done:
 	tevent_req_error(req, EIO);
 }
 
