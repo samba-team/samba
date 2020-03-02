@@ -90,7 +90,7 @@ tests = ["FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7"
          "OPEN", "XCOPY", "RENAME", "DELETE", "DELETE-LN", "WILDDELETE", "PROPERTIES", "W2K",
          "TCON2", "IOCTL", "CHKPATH", "FDSESS", "CHAIN1", "CHAIN2", "OWNER-RIGHTS",
          "CHAIN3", "PIDHIGH", "CLI_SPLICE",
-         "UID-REGRESSION-TEST", "SHORTNAME-TEST",
+         "UID-REGRESSION-TEST",
          "CASE-INSENSITIVE-CREATE", "SMB2-BASIC", "NTTRANS-FSCTL", "SMB2-NEGPROT",
          "SMB2-SESSION-REAUTH", "SMB2-SESSION-RECONNECT", "SMB2-FTRUNCATE",
          "SMB2-ANONYMOUS", "SMB2-DIR-FSYNC",
@@ -112,6 +112,26 @@ for t in tests:
         # We must test this against the SMB1 fallback.
         plantestsuite("samba3.smbtorture_s3.plain.%s" % t, "fileserver", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH", "-mNT1"])
     plantestsuite("samba3.smbtorture_s3.plain.%s" % t, "ad_dc_ntvfs", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
+
+nonunix_tests = [
+    "SHORTNAME-TEST"
+    ]
+
+for t in nonunix_tests:
+    plantestsuite(
+        "samba3.smbtorture_s3.plain.%s" % t,
+        "fileserver",
+        [os.path.join(samba3srcdir,
+                      "script/tests/test_smbtorture_s3_no_unix_ext.sh"),
+         t,
+         '//$SERVER_IP/tmp',
+         '$USERNAME',
+         '$PASSWORD',
+         smbtorture3,
+         "",
+         "-l $LOCAL_PATH"])
+    # Can't run SMB1 encrypted tests without unix extensions. This
+    # will have to be added once we do SMB3 unix extensions.
 
 t = "TLDAP"
 plantestsuite("samba3.smbtorture_s3.plain.%s" % t, "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER/tmp', '$DC_USERNAME', '$DC_PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
