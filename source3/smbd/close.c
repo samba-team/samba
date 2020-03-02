@@ -652,6 +652,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	bool is_durable = false;
 
 	if (fsp->num_aio_requests != 0) {
+		unsigned num_requests = fsp->num_aio_requests;
 
 		if (close_type != SHUTDOWN_CLOSE) {
 			/*
@@ -681,13 +682,30 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 
 		while (fsp->num_aio_requests != 0) {
 			/*
-			 * The destructor of the req will remove
-			 * itself from the fsp.
-			 * Don't use TALLOC_FREE here, this will overwrite
-			 * what the destructor just wrote into
-			 * aio_requests[0].
+			 * Previously we just called talloc_free()
+			 * on the outstanding request, but this
+			 * caused crashes (before the async callback
+			 * functions were fixed not to reference req
+			 * directly) and also leaves the SMB2 request
+			 * outstanding on the processing queue.
+			 *
+			 * Using tevent_req_error() instead
+			 * causes the outstanding SMB1/2/3 request to
+			 * return with NT_STATUS_INVALID_HANDLE
+			 * and removes it from the processing queue.
+			 *
+			 * The callback function called from this
+			 * calls talloc_free(req). The destructor will remove
+			 * itself from the fsp and the aio_requests array.
 			 */
-			talloc_free(fsp->aio_requests[0]);
+			tevent_req_error(fsp->aio_requests[0], EBADF);
+
+			/* Paranoia to ensure we don't spin. */
+			num_requests--;
+			if (fsp->num_aio_requests != num_requests) {
+				smb_panic("cannot cancel outstanding aio "
+					"requests");
+			}
 		}
 	}
 
