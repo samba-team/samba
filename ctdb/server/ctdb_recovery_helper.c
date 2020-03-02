@@ -2048,7 +2048,6 @@ static bool db_recovery_recv(struct tevent_req *req, unsigned int *count)
  *
  * - Get tunables
  * - Get nodemap
- * - Get vnnmap
  * - Get capabilities from all nodes
  * - Get dbmap
  * - Set RECOVERY_ACTIVE
@@ -2076,7 +2075,6 @@ struct recovery_state {
 
 static void recovery_tunables_done(struct tevent_req *subreq);
 static void recovery_nodemap_done(struct tevent_req *subreq);
-static void recovery_vnnmap_done(struct tevent_req *subreq);
 static void recovery_capabilities_done(struct tevent_req *subreq);
 static void recovery_dbmap_done(struct tevent_req *subreq);
 static void recovery_active_done(struct tevent_req *subreq);
@@ -2196,43 +2194,6 @@ static void recovery_nodemap_done(struct tevent_req *subreq)
 	state->ban_credits = talloc_zero_array(state, uint32_t,
 					       state->nodemap->num);
 	if (tevent_req_nomem(state->ban_credits, req)) {
-		return;
-	}
-
-	ctdb_req_control_getvnnmap(&request);
-	subreq = ctdb_client_control_send(state, state->ev, state->client,
-					  state->destnode, TIMEOUT(),
-					  &request);
-	if (tevent_req_nomem(subreq, req)) {
-		return;
-	}
-	tevent_req_set_callback(subreq, recovery_vnnmap_done, req);
-}
-
-static void recovery_vnnmap_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-		subreq, struct tevent_req);
-	struct recovery_state *state = tevent_req_data(
-		req, struct recovery_state);
-	struct ctdb_reply_control *reply;
-	struct ctdb_req_control request;
-	bool status;
-	int ret;
-
-	status = ctdb_client_control_recv(subreq, &ret, state, &reply);
-	TALLOC_FREE(subreq);
-	if (! status) {
-		D_ERR("control GETVNNMAP failed to node %u, ret=%d\n",
-		      state->destnode, ret);
-		tevent_req_error(req, ret);
-		return;
-	}
-
-	ret = ctdb_reply_control_getvnnmap(reply, state, &state->vnnmap);
-	if (ret != 0) {
-		D_ERR("control GETVNNMAP failed, ret=%d\n", ret);
-		tevent_req_error(req, ret);
 		return;
 	}
 
@@ -2435,7 +2396,6 @@ static void recovery_active_done(struct tevent_req *subreq)
 
 	vnnmap->generation = state->generation;
 
-	talloc_free(state->vnnmap);
 	state->vnnmap = vnnmap;
 
 	ctdb_req_control_start_recovery(&request);
