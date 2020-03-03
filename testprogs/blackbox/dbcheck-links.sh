@@ -823,6 +823,56 @@ EOF
     fi
 }
 
+dangling_link_to_known_and_unknown_does_not_prevent_delete() {
+
+    #
+    # Step1: add user "dangling"
+    #
+    ldif=$PREFIX_ABS/${RELEASE}/backlink_can_be_vanished1.ldif
+    dn='CN=dangling-for-vanish,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp'
+    cat > $ldif <<EOF
+dn: $dn
+changetype: add
+objectclass: user
+samaccountname: dangling-v
+objectGUID: 2882ffb1-31c3-485e-a7fc-184dfafc32d4
+EOF
+
+    out=$(TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb --relax $ldif)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+
+    #
+    # Step2: add a dangling backlink from
+    # "CN=dangling-for-vanish" to "CN=Enterprise Admins",
+    # "CN=dangling-for-vanish" to "CN=NOT Enterprise Admins" and
+    # back to ourselves
+    #
+    ldif=$PREFIX_ABS/${RELEASE}/backlink_can_be_vanished2.ldif
+    {
+	echo "dn: $dn"
+	echo "changetype: modify"
+	echo "add: memberOf"
+	echo "memberOf: <GUID=304ad703-468b-465e-9787-470b3dfd7d75>;<SID=S-1-5-21-4177067393-1453636373-93818738-519>;CN=Enterprise Admins,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp"
+	echo "memberOf: <GUID=09a47bff-0227-44e1-a8e4-63f9e726515d>;<SID=S-1-5-21-4177067393-1453636373-93818738-588>;CN=NOT Enterprise Admins,CN=Users,DC=release-4-5-0-pre1,DC=samba,DC=corp"
+	echo "memberOf: <GUID=2882ffb1-31c3-485e-a7fc-184dfafc32d4>;CN=dangling-for-vanish,CN=users,DC=release-4-5-0-pre1,DC=samba,DC=corp"
+    } > $ldif
+
+    out=$(TZ=UTC $ldbmodify -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb.d/DC%3DRELEASE-4-5-0-PRE1,DC%3DSAMBA,DC%3DCORP.ldb $ldif)
+    if [ "$?" != "0" ]; then
+	echo "ldbmodify returned:\n$out"
+	return 1
+    fi
+
+    out=$(TZ=UTC $ldbdel -H tdb://$PREFIX_ABS/${RELEASE}/private/sam.ldb "$dn")
+    if [ "$?" != "0" ]; then
+	echo "ldbdel returned:\n$out"
+	return 1
+    fi
+}
+
 if [ -d $release_dir ]; then
     testit $RELEASE undump
     testit "add_two_more_users" add_two_more_users
@@ -884,6 +934,8 @@ if [ -d $release_dir ]; then
     testit "dbcheck_dangling_multi_valued_clean" dbcheck_clean
     testit "dangling_link_does_not_prevent_delete" dangling_link_does_not_prevent_delete
     testit "dangling_link_to_unknown_does_not_prevent_delete" dangling_link_to_unknown_does_not_prevent_delete
+    testit "dangling_link_to_known_and_unknown_does_not_prevent_delete" dangling_link_to_known_and_unknown_does_not_prevent_delete
+
 else
     subunit_start_test $RELEASE
     subunit_skip_test $RELEASE <<EOF
