@@ -38,6 +38,7 @@
 #include "torture/smb2/proto.h"
 
 #include "lib/util/sys_rw.h"
+#include "libcli/security/security.h"
 
 #define CHECK_RANGE(v, min, max) do { \
 	if ((v) < (min) || (v) > (max)) { \
@@ -3968,6 +3969,159 @@ static bool test_smb2_oplock_levelII502(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_oplock_statopen1_do(struct torture_context *tctx,
+				     struct smb2_tree *tree,
+				     uint32_t access_mask,
+				     bool expect_stat_open)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create cr;
+	struct smb2_handle h1 = {{0}};
+	struct smb2_handle h2 = {{0}};
+	NTSTATUS status;
+	const char *fname = "oplock_statopen1.dat";
+	bool ret = true;
+
+	/* Open file with exclusive oplock. */
+	cr = (struct smb2_create) {
+		.in.desired_access = SEC_FILE_ALL,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION,
+		.in.fname = fname,
+		.in.oplock_level = SMB2_OPLOCK_LEVEL_BATCH,
+	};
+	status = smb2_create(tree, mem_ctx, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = cr.out.file.handle;
+	CHECK_VAL(cr.out.oplock_level, SMB2_OPLOCK_LEVEL_BATCH);
+
+	/* Stat open */
+	cr = (struct smb2_create) {
+		.in.desired_access = access_mask,
+		.in.share_access = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.file_attributes = FILE_ATTRIBUTE_NORMAL,
+		.in.create_disposition = NTCREATEX_DISP_OPEN,
+		.in.impersonation_level = SMB2_IMPERSONATION_IMPERSONATION,
+		.in.fname = fname,
+	};
+	status = smb2_create(tree, mem_ctx, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h2 = cr.out.file.handle;
+
+	if (expect_stat_open) {
+		torture_wait_for_oplock_break(tctx);
+		CHECK_VAL(break_info.count, 0);
+		CHECK_VAL(break_info.level, 0);
+		CHECK_VAL(break_info.failures, 0);
+		if (!ret) {
+			goto done;
+		}
+	} else {
+		CHECK_VAL(break_info.count, 1);
+	}
+
+done:
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+static bool test_smb2_oplock_statopen1(struct torture_context *tctx,
+				       struct smb2_tree *tree)
+{
+	const char *fname = "oplock_statopen1.dat";
+	size_t i;
+	bool ret = true;
+	struct {
+		uint32_t access_mask;
+		bool expect_stat_open;
+	} tests[] = {
+		{
+			.access_mask = FILE_READ_DATA,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = FILE_WRITE_DATA,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = FILE_READ_EA,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = FILE_WRITE_EA,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = FILE_EXECUTE,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = FILE_READ_ATTRIBUTES,
+			.expect_stat_open = true,
+		},
+		{
+			.access_mask = FILE_WRITE_ATTRIBUTES,
+			.expect_stat_open = true,
+		},
+		{
+			.access_mask = DELETE_ACCESS,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = READ_CONTROL_ACCESS,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = WRITE_DAC_ACCESS,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = WRITE_OWNER_ACCESS,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = SYNCHRONIZE_ACCESS,
+			.expect_stat_open = true,
+		},
+	};
+
+	tree->session->transport->oplock.handler = torture_oplock_handler;
+	tree->session->transport->oplock.private_data = tree;
+
+	for (i = 0; i < ARRAY_SIZE(tests); i++) {
+		ZERO_STRUCT(break_info);
+
+		ret = test_oplock_statopen1_do(tctx,
+					       tree,
+					       tests[i].access_mask,
+					       tests[i].expect_stat_open);
+		if (ret == true) {
+			continue;
+		}
+		torture_result(tctx, TORTURE_FAIL,
+			       "test %zu: access_mask: %s, "
+			       "expect_stat_open: %s\n",
+			       i,
+			       get_sec_mask_str(tree, tests[i].access_mask),
+			       tests[i].expect_stat_open ? "yes" : "no");
+		goto done;
+	}
+
+done:
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
 struct torture_suite *torture_smb2_oplocks_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite =
@@ -4016,6 +4170,7 @@ struct torture_suite *torture_smb2_oplocks_init(TALLOC_CTX *ctx)
 				     test_smb2_oplock_levelII501);
 	torture_suite_add_2smb2_test(suite, "levelii502",
 				     test_smb2_oplock_levelII502);
+	torture_suite_add_1smb2_test(suite, "statopen1", test_smb2_oplock_statopen1);
 	suite->description = talloc_strdup(suite, "SMB2-OPLOCK tests");
 
 	return suite;
