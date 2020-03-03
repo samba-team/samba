@@ -22,6 +22,7 @@ from __future__ import print_function
 """Blackbox tests for ndrdump."""
 
 import os
+import re
 from samba.tests import BlackboxTestCase, BlackboxProcessError
 
 for p in ["../../../../../source4/librpc/tests",
@@ -435,6 +436,11 @@ dump OK
                 1)
         except BlackboxProcessError as e:
             self.fail(e)
+
+        # Filter out the C source file and line number
+        regex = rb"\.\./\.\./librpc/ndr/ndr\.c:[0-9]+"
+        actual = re.sub(regex, b"", actual)
+        expected = re.sub(regex, b"", expected)
 
         self.assertEqual(actual, expected)
 
