@@ -78,7 +78,8 @@ plantestsuite("samba3.local_s3", "nt4_dc:local", [os.path.join(samba3srcdir, "sc
 
 plantestsuite("samba3.blackbox.registry.upgrade", "nt4_dc:local", [os.path.join(samba3srcdir, "script/tests/test_registry_upgrade.sh"), net, dbwrap_tool])
 
-tests = ["FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7",
+fileserver_tests = [
+         "FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7",
          "LOCK9A", "LOCK9B",
          "LOCK10",
          "LOCK11",
@@ -101,8 +102,11 @@ tests = ["FDPASS", "LOCK1", "LOCK2", "LOCK3", "LOCK4", "LOCK5", "LOCK6", "LOCK7"
          "DELETE-STREAM",
          "BAD-NBT-SESSION"]
 
-for t in tests:
-    plantestsuite("samba3.smbtorture_s3.plain.%s" % t, "fileserver", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
+for t in fileserver_tests:
+    fileserver_env = "fileserver_smb1"
+    if "SMB2" in t:
+        fileserver_env = "fileserver"
+    plantestsuite("samba3.smbtorture_s3.plain.%s" % t, fileserver_env, [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
     plantestsuite("samba3.smbtorture_s3.crypt_client.%s" % t, "nt4_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "-e", "-l $LOCAL_PATH"])
     if t == "TORTURE":
         # this is a negative test to verify that the server rejects
@@ -110,7 +114,7 @@ for t in tests:
         plantestsuite("samba3.smbtorture_s3.crypt_server.%s" % t, "nt4_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmpenc', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
     if t == "CLI_SPLICE":
         # We must test this against the SMB1 fallback.
-        plantestsuite("samba3.smbtorture_s3.plain.%s" % t, "fileserver", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH", "-mNT1"])
+        plantestsuite("samba3.smbtorture_s3.plain.%s" % t, "fileserver_smb1", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH", "-mNT1"])
     plantestsuite("samba3.smbtorture_s3.plain.%s" % t, "ad_dc_ntvfs", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
 
 t = "TLDAP"
@@ -118,7 +122,7 @@ plantestsuite("samba3.smbtorture_s3.plain.%s" % t, "ad_dc", [os.path.join(samba3
 
 t = "OPLOCK5"
 plantestsuite("samba3.smbtorture_s3.plain.%s" % t,
-              "fileserver",
+              "fileserver_smb1",
               [os.path.join(samba3srcdir,
                             "script/tests/test_smbtorture_s3.sh"),
                t,
