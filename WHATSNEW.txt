@@ -1,16 +1,11 @@
-Release Announcements
-=====================
-
-This is the fourth release candidate of Samba 4.12.  This is *not*
-intended for production environments and is designed for testing
-purposes only.  Please report any defects via the Samba bug reporting
-system at https://bugzilla.samba.org/.
-
-Samba 4.12 will be the next version of the Samba suite.
+                   ==============================
+                   Release Notes for Samba 4.12.0
+                           March 03, 2019
+		   ==============================
 
 
-UPGRADING
-=========
+This is the first stable release of the Samba 4.12 release series.
+Please read the release notes carefully before upgrading.
 
 
 NEW FEATURES/CHANGES
@@ -268,6 +263,13 @@ smb.conf changes
   rndc command                       Removed
   write cache size                   Removed
   spotlight backend		     New			noindex
+
+
+CHANGES SINCE 4.12.0rc4
+=======================
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14258: dsdb: Correctly handle memory in objectclass_attrs.
 
 
 CHANGES SINCE 4.12.0rc3
