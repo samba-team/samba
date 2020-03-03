@@ -954,6 +954,190 @@ done:
 	return ret;
 }
 
+static bool test_lease_statopen4_do(struct torture_context *tctx,
+				    struct smb2_tree *tree,
+				    uint32_t access_mask,
+				    bool expect_stat_open)
+{
+	TALLOC_CTX *mem_ctx = talloc_new(tctx);
+	struct smb2_create io;
+	struct smb2_lease ls;
+	struct smb2_handle h1 = {{0}};
+	struct smb2_handle h2 = {{0}};
+	struct smb2_handle h3 = {{0}};
+	NTSTATUS status;
+	const char *fname = "lease_statopen2.dat";
+	bool ret = true;
+
+	/* Open file with RWH lease. */
+	smb2_lease_create_share(&io, &ls, false, fname,
+				smb2_util_share_access("RWD"),
+				LEASE1,
+				smb2_util_lease_state("RWH"));
+	io.in.desired_access = SEC_FILE_ALL;
+	status = smb2_create(tree, mem_ctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h1 = io.out.file.handle;
+	CHECK_LEASE(&io, "RWH", true, LEASE1, 0);
+
+	/* Stat open */
+	ZERO_STRUCT(io);
+	io.in.desired_access = access_mask;
+	io.in.share_access = NTCREATEX_SHARE_ACCESS_MASK;
+	io.in.file_attributes = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
+	io.in.fname = fname;
+	status = smb2_create(tree, mem_ctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h2 = io.out.file.handle;
+
+	if (expect_stat_open) {
+		CHECK_NO_BREAK(tctx);
+		if (!ret) {
+			goto done;
+		}
+	} else {
+		CHECK_VAL(lease_break_info.count, 1);
+		if (!ret) {
+			goto done;
+		}
+		/*
+		 * Don't bother checking the lease state of an additional open
+		 * below...
+		 */
+		goto done;
+	}
+
+	/* Open file with RWH lease. */
+	smb2_lease_create_share(&io, &ls, false, fname,
+				smb2_util_share_access("RWD"),
+				LEASE1,
+				smb2_util_lease_state("RWH"));
+	io.in.desired_access = SEC_FILE_WRITE_DATA;
+	status = smb2_create(tree, mem_ctx, &io);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	h3 = io.out.file.handle;
+	CHECK_LEASE(&io, "RWH", true, LEASE1, 0);
+
+done:
+	if (!smb2_util_handle_empty(h3)) {
+		smb2_util_close(tree, h3);
+	}
+	if (!smb2_util_handle_empty(h2)) {
+		smb2_util_close(tree, h2);
+	}
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+static bool test_lease_statopen4(struct torture_context *tctx,
+				 struct smb2_tree *tree)
+{
+	const char *fname = "lease_statopen4.dat";
+	struct smb2_handle h1 = {{0}};
+	uint32_t caps;
+	size_t i;
+	NTSTATUS status;
+	bool ret = true;
+	struct {
+		uint32_t access_mask;
+		bool expect_stat_open;
+	} tests[] = {
+		{
+			.access_mask = FILE_READ_DATA,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = FILE_WRITE_DATA,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = FILE_READ_EA,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = FILE_WRITE_EA,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = FILE_EXECUTE,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = FILE_READ_ATTRIBUTES,
+			.expect_stat_open = true,
+		},
+		{
+			.access_mask = FILE_WRITE_ATTRIBUTES,
+			.expect_stat_open = true,
+		},
+		{
+			.access_mask = DELETE_ACCESS,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = READ_CONTROL_ACCESS,
+			.expect_stat_open = true,
+		},
+		{
+			.access_mask = WRITE_DAC_ACCESS,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = WRITE_OWNER_ACCESS,
+			.expect_stat_open = false,
+		},
+		{
+			.access_mask = SYNCHRONIZE_ACCESS,
+			.expect_stat_open = true,
+		},
+	};
+
+	caps = smb2cli_conn_server_capabilities(tree->session->transport->conn);
+	if (!(caps & SMB2_CAP_LEASING)) {
+		torture_skip(tctx, "leases are not supported");
+	}
+
+	smb2_util_unlink(tree, fname);
+	tree->session->transport->lease.handler	= torture_lease_handler;
+	tree->session->transport->lease.private_data = tree;
+
+	status = torture_smb2_testfile(tree, fname, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"smb2_create failed\n");
+	smb2_util_close(tree, h1);
+	ZERO_STRUCT(h1);
+
+	for (i = 0; i < ARRAY_SIZE(tests); i++) {
+		ZERO_STRUCT(lease_break_info);
+
+		ret = test_lease_statopen4_do(tctx,
+					      tree,
+					      tests[i].access_mask,
+					      tests[i].expect_stat_open);
+		if (ret == true) {
+			continue;
+		}
+		torture_result(tctx, TORTURE_FAIL,
+			       "test %zu: access_mask: %s, "
+			       "expect_stat_open: %s\n",
+			       i,
+			       get_sec_mask_str(tree, tests[i].access_mask),
+			       tests[i].expect_stat_open ? "yes" : "no");
+		goto done;
+	}
+
+done:
+	smb2_util_unlink(tree, fname);
+	return ret;
+}
+
 static void torture_oplock_break_callback(struct smb2_request *req)
 {
 	NTSTATUS status;
@@ -3980,6 +4164,7 @@ struct torture_suite *torture_smb2_lease_init(TALLOC_CTX *ctx)
 	torture_suite_add_1smb2_test(suite, "statopen", test_lease_statopen);
 	torture_suite_add_1smb2_test(suite, "statopen2", test_lease_statopen2);
 	torture_suite_add_1smb2_test(suite, "statopen3", test_lease_statopen3);
+	torture_suite_add_1smb2_test(suite, "statopen4", test_lease_statopen4);
 	torture_suite_add_1smb2_test(suite, "upgrade", test_lease_upgrade);
 	torture_suite_add_1smb2_test(suite, "upgrade2", test_lease_upgrade2);
 	torture_suite_add_1smb2_test(suite, "upgrade3", test_lease_upgrade3);
