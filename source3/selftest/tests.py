@@ -111,7 +111,7 @@ for t in fileserver_tests:
     if t == "TORTURE":
         # this is a negative test to verify that the server rejects
         # access without encryption
-        plantestsuite("samba3.smbtorture_s3.crypt_server.%s" % t, "nt4_dc", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmpenc', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
+        plantestsuite("samba3.smbtorture_s3.crypt_server.%s" % t, "nt4_dc_smb1", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmpenc', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH"])
     if t == "CLI_SPLICE":
         # We must test this against the SMB1 fallback.
         plantestsuite("samba3.smbtorture_s3.plain.%s" % t, "fileserver_smb1", [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"), t, '//$SERVER_IP/tmp', '$USERNAME', '$PASSWORD', smbtorture3, "", "-l $LOCAL_PATH", "-mNT1"])
