@@ -816,6 +816,15 @@ plantestsuite("samba3.blackbox.close-denied-share", "simpleserver:local",
                '$SERVER_IP',
                "tmp"])
 
+plantestsuite("samba3.blackbox.force-close-share", "simpleserver:local",
+              [os.path.join(samba3srcdir,
+                            "script/tests/test_force_close_share.sh"),
+               configuration,
+               os.path.join(bindir(), "smbclient"),
+               os.path.join(bindir(), "smbcontrol"),
+               '$SERVER_IP',
+               "aio_delay_inject"])
+
 plantestsuite("samba3.blackbox.open-eintr", "simpleserver:local",
               [os.path.join(samba3srcdir,
                             "script/tests/test_open_eintr.sh"),
