@@ -31,7 +31,7 @@ shellcheck_test ()
 		_excludes="SC1090,SC1091,SC2162,SC2164"
 		unit_test shellcheck --exclude="$_excludes" "$@"
 	else
-		echo "WARNING: shellcheck not installed, skipping test"
+		ctdb_test_skip "shellcheck not installed"
 		unit_test true
 	fi
 }
