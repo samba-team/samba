@@ -4,6 +4,8 @@
 
 define_test "ctdbd process with multiple connections on node 0"
 
+ctdb_test_check_supported_OS "Linux"
+
 setup_ctdbd <<EOF
 NODEMAP
 0       192.168.20.41   0x0     CURRENT RECMASTER
