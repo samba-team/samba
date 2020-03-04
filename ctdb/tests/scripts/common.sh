@@ -47,6 +47,19 @@ ctdb_test_skip ()
 	exit 77
 }
 
+# "$@" is supported OSes
+ctdb_test_check_supported_OS ()
+{
+	_os=$(uname -s)
+	for _i ; do
+		if [ "$_os" = "$_i" ] ; then
+			return
+		fi
+	done
+
+	ctdb_test_skip "This test is not supported on ${_os}"
+}
+
 # Wait until either timeout expires or command succeeds.  The command
 # will be tried once per second, unless timeout has format T/I, where
 # I is the recheck interval.
