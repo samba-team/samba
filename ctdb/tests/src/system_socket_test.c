@@ -36,6 +36,23 @@
 
 #include "protocol/protocol_util.h"
 
+static void hexdump(uint8_t *buf, size_t len)
+{
+	size_t i;
+
+	for (i = 0; i < len; i++) {
+		if (i % 16 == 0) {
+			if (i != 0) {
+				printf("\n");
+			}
+			printf("%06zx", i);
+		}
+		printf(" %02x", buf[i]);
+	}
+
+	printf("\n%06zx\n", i);
+}
+
 static void test_types(void)
 {
 	/*
@@ -59,7 +76,6 @@ static void test_arp(const char *addr_str, const char *hwaddr_str, bool reply)
 	uint8_t buf[512];
 	size_t buflen = sizeof(buf);
 	size_t len;
-	ssize_t num_written;
 	int ret;
 
 	ret = ctdb_sock_addr_from_string(addr_str, &addr, false);
@@ -81,8 +97,7 @@ static void test_arp(const char *addr_str, const char *hwaddr_str, bool reply)
 
 	assert(ret == 0);
 
-	num_written = write(STDOUT_FILENO, buf, len);
-	assert(num_written != -1 && (size_t)num_written == len);
+	hexdump(buf, len);
 }
 
 #else /* HAVE_PACKETSOCKET  */
@@ -106,7 +121,6 @@ static void test_tcp(const char *src_str,
 	uint8_t buf[512];
 	struct ether_header *eth;
 	size_t expected_len, len;
-	ssize_t num_written;
 	char src_str_out[64], dst_str_out[64];
 	uint32_t seq_out, ack_out;
 	int rst_out = 0;
@@ -159,10 +173,7 @@ static void test_tcp(const char *src_str,
 	assert(ret == 0);
 	assert(len == expected_len);
 
-	num_written = write(STDOUT_FILENO,
-			    buf + sizeof(struct ether_header),
-			    len);
-	assert(num_written != -1 && (size_t)num_written == len);
+	hexdump(buf + sizeof(struct ether_header), len);
 
 	switch (ntohs(eth->ether_type)) {
 	case ETHERTYPE_IP:

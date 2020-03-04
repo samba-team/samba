@@ -2,29 +2,9 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-out_file="${CTDB_TEST_TMP_DIR}/packet.out"
-
-remove_file ()
-{
-	rm -f "$out_file"
-}
-
-test_cleanup remove_file
-
-d=$(dirname "$out_file")
-mkdir -p "$d"
-
-########################################
-
-tcp_run ()
-{
-	$VALGRIND system_socket_test tcp "$@" >"$out_file" || exit $?
-	od -A x -t x1 "$out_file"
-}
-
 tcp_test ()
 {
-	unit_test_notrace tcp_run "$@"
+	unit_test system_socket_test tcp "$@"
 }
 
 ok <<EOF

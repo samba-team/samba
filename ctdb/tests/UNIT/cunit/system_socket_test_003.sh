@@ -2,35 +2,11 @@
 
 . "${TEST_SCRIPTS_DIR}/unit.sh"
 
-out_file="${CTDB_TEST_TMP_DIR}/packet.out"
-
-remove_file ()
-{
-	rm -f "$out_file"
-}
-
-test_cleanup remove_file
-
-d=$(dirname "$out_file")
-mkdir -p "$d"
-
-########################################
-
-arp_run ()
-{
-	$VALGRIND system_socket_test arp "$@" >"$out_file" || exit $?
-	od -A x -t x1 "$out_file"
-}
+ctdb_test_check_supported_OS "Linux"
 
 arp_test ()
 {
-	os=$(uname)
-	if [ "$os" = "Linux" ] ; then
-		unit_test_notrace arp_run "$@"
-	else
-		ok "PACKETSOCKET not supported"
-		unit_test system_socket_test arp "$@"
-	fi
+	unit_test system_socket_test arp "$@"
 }
 
 ok <<EOF
