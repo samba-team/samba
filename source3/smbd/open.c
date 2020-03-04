@@ -1150,6 +1150,16 @@ static NTSTATUS open_file(files_struct *fsp,
 	int accmode = (flags & O_ACCMODE);
 	int local_flags = flags;
 	bool file_existed = VALID_STAT(fsp->fsp_name->st);
+	uint32_t need_fd_mask =
+		FILE_READ_DATA |
+		FILE_WRITE_DATA |
+		FILE_APPEND_DATA |
+		FILE_EXECUTE |
+		WRITE_DAC_ACCESS |
+		WRITE_OWNER_ACCESS |
+		READ_CONTROL_ACCESS;
+	bool creating = !file_existed && (flags & O_CREAT);
+	bool truncating = (flags & O_TRUNC);
 
 	fsp->fh->fd = -1;
 	errno = EPERM;
@@ -1201,12 +1211,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		local_flags = (flags & ~O_ACCMODE)|O_RDWR;
 	}
 
-	if ((open_access_mask & (FILE_READ_DATA|FILE_WRITE_DATA|
-				 FILE_APPEND_DATA|FILE_EXECUTE|
-				 WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
-				 READ_CONTROL_ACCESS))||
-	    (!file_existed && (local_flags & O_CREAT)) ||
-	    ((local_flags & O_TRUNC) == O_TRUNC) ) {
+	if ((open_access_mask & need_fd_mask) || creating || truncating) {
 		const char *wild;
 		int ret;
 
@@ -1220,6 +1225,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		if (file_existed && S_ISFIFO(smb_fname->st.st_ex_mode)) {
 			local_flags &= ~O_TRUNC; /* Can't truncate a FIFO. */
 			local_flags |= O_NONBLOCK;
+			truncating = false;
 		}
 #endif
 
