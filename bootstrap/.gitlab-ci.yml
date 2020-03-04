@@ -86,13 +86,7 @@ services:
 ubuntu1804:
   extends: .build_image_template
 
-ubuntu1604:
-  extends: .build_image_template
-
 debian10:
-  extends: .build_image_template
-
-debian9:
   extends: .build_image_template
 
 fedora31:

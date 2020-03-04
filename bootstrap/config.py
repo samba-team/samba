@@ -374,30 +374,11 @@ end
 
 
 DEB_DISTS = {
-    'debian9': {
-        'docker_image': 'debian:9',
-        'vagrant_box': 'debian/stretch64',
-        'replace': {
-            'language-pack-en': '',   # included in locales
-            'liburing-dev': '',   # not available
-        }
-    },
     'debian10': {
         'docker_image': 'debian:10',
         'vagrant_box': 'debian/buster64',
         'replace': {
             'language-pack-en': '',   # included in locales
-            'liburing-dev': '',   # not available
-        }
-    },
-    'ubuntu1604': {
-        'docker_image': 'ubuntu:16.04',
-        'vagrant_box': 'ubuntu/xenial64',
-        'replace': {
-            'python-gpg': 'python-gpgme',
-            'python3-gpg': 'python3-gpgme',
-            'glusterfs-common': '',
-            'libcephfs-dev': '',
             'liburing-dev': '',   # not available
         }
     },
