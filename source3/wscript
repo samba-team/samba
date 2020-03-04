@@ -63,6 +63,7 @@ def options(opt):
     opt.samba_add_onoff_option('cluster-support', default=False)
 
     opt.samba_add_onoff_option('regedit', default=None)
+    opt.samba_add_onoff_option('winexe', default=None)
 
     opt.samba_add_onoff_option('fake-kaserver',
                           help=("Include AFS fake-kaserver support"), default=False)
@@ -1781,6 +1782,22 @@ main() {
 
     if conf.CHECK_HEADERS('ftw.h') and conf.CHECK_FUNCS('nftw'):
         conf.env.build_mvxattr = True
+
+    conf.env.build_winexe = False
+    if not Options.options.with_winexe == False:
+        if conf.CONFIG_SET('HAVE_WINEXE_CC_WIN32') or conf.CONFIG_SET('HAVE_WINEXE_CC_WIN64'):
+            conf.env.build_winexe = True
+
+    if conf.env.build_winexe:
+        Logs.info("building winexe")
+    else:
+        if Options.options.with_winexe == False:
+            Logs.info("not building winexe (--without-winexe)")
+        elif Options.options.with_winexe == True:
+            Logs.error("mingw not available, cannot build winexe")
+            conf.fatal("mingw not available, but --with-winexe was specified")
+        else:
+            Logs.info("mingw not available, not building winexe")
 
     conf.CHECK_FUNCS_IN('DES_pcbc_encrypt', 'crypto')
     if Options.options.with_fake_kaserver == True:

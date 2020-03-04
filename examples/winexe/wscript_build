@@ -106,4 +106,5 @@ if winexesvc_binaries != '':
                           LOADPARM_CTX
                           libsmb
                           msrpc3
-                      ''')
+                      ''',
+                      enabled=bld.env.build_winexe)
