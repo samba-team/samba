@@ -820,11 +820,14 @@ NTSTATUS fd_open(struct connection_struct *conn,
 			}
 		}
 
+		DBG_DEBUG("name %s, flags = 0%o mode = 0%o, fd = %d. %s\n",
+			  smb_fname_str_dbg(smb_fname), flags, (int)mode,
+			  fsp->fh->fd, strerror(errno));
+		return status;
 	}
 
-	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n",
-		  smb_fname_str_dbg(smb_fname), flags, (int)mode, fsp->fh->fd,
-		(fsp->fh->fd == -1) ? strerror(errno) : "" ));
+	DBG_DEBUG("name %s, flags = 0%o mode = 0%o, fd = %d\n",
+		  smb_fname_str_dbg(smb_fname), flags, (int)mode, fsp->fh->fd);
 
 	return status;
 }
