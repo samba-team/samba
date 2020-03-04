@@ -374,30 +374,6 @@ end
 
 
 DEB_DISTS = {
-    'debian7': {
-        'docker_image': 'debian:7',
-        'vagrant_box': 'debian/wheezy64',
-        'replace': {
-            'libgnutls28-dev': 'libgnutls-dev',
-            'libsystemd-dev': '',  # not available, remove
-            'lmdb-utils': '',  # not available, remove
-            'liblmdb-dev': '',  # not available, remove
-            'python-gpg': 'python-gpgme',
-            'python3-gpg': '',  # no python3 gpg pkg available, remove
-            'language-pack-en': '',   # included in locales
-            'liburing-dev': '',   # not available
-        }
-    },
-    'debian8': {
-        'docker_image': 'debian:8',
-        'vagrant_box': 'debian/jessie64',
-        'replace': {
-            'python-gpg': 'python-gpgme',
-            'python3-gpg': 'python3-gpgme',
-            'language-pack-en': '',   # included in locales
-            'liburing-dev': '',   # not available
-        }
-    },
     'debian9': {
         'docker_image': 'debian:9',
         'vagrant_box': 'debian/stretch64',
@@ -411,22 +387,6 @@ DEB_DISTS = {
         'vagrant_box': 'debian/buster64',
         'replace': {
             'language-pack-en': '',   # included in locales
-            'liburing-dev': '',   # not available
-        }
-    },
-    'ubuntu1404': {
-        'docker_image': 'ubuntu:14.04',
-        'vagrant_box': 'ubuntu/trusty64',
-        'replace': {
-            'libsystemd-dev': '',  # remove
-            'libgnutls28-dev': 'libgnutls-dev',
-            'python-gpg': 'python-gpgme',
-            'python3-gpg': 'python3-gpgme',
-            'lmdb-utils': 'lmdb-utils/trusty-backports',
-            'liblmdb-dev': 'liblmdb-dev/trusty-backports',
-            'libunwind-dev': 'libunwind8-dev',
-            'glusterfs-common': '',
-            'libcephfs-dev': '',
             'liburing-dev': '',   # not available
         }
     },
@@ -452,30 +412,6 @@ DEB_DISTS = {
 
 
 RPM_DISTS = {
-    'centos6': {
-        'docker_image': 'centos:6',
-        'vagrant_box': 'centos/6',
-        'bootstrap': YUM_BOOTSTRAP,
-        'replace': {
-            'lsb-release': 'redhat-lsb',
-            'python3': 'python36',
-            'python3-devel': 'python36-devel',
-            'python2-gpg': 'pygpgme',
-            'python3-gpg': '',  # no python3-gpg yet
-            '@development-tools': '"@Development Tools"',  # add quotes
-            'glibc-langpack-en': '',  # included in glibc-common
-            'glibc-locale-source': '',  # included in glibc-common
-            'procps-ng': 'procps',  # centos6 still use old name
-            # update perl core modules on centos
-            # fix: Can't locate Archive/Tar.pm in @INC
-            'perl': 'perl-core',
-            'rpcsvc-proto-devel': '',
-            'glusterfs-api-devel': '',
-            'glusterfs-devel': '',
-            'libcephfs-devel': '',
-            'liburing-devel': '',   # not available
-        }
-    },
     'centos7': {
         'docker_image': 'centos:7',
         'vagrant_box': 'centos/7',

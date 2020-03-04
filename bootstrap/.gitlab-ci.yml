@@ -89,20 +89,11 @@ ubuntu1804:
 ubuntu1604:
   extends: .build_image_template
 
-ubuntu1404:
-  extends: .build_image_template_force_broken
-
 debian10:
   extends: .build_image_template
 
 debian9:
   extends: .build_image_template
-
-debian8:
-  extends: .build_image_template_force_broken
-
-debian7:
-  extends: .build_image_template_force_broken
 
 fedora31:
   extends: .build_image_template
@@ -123,9 +114,6 @@ centos7:
     GIT_DEPTH: ""
     # We install a compat-gnutls34 package for GnuTLS >= 3.4.7
     PKG_CONFIG_PATH: /usr/lib64/compat-gnutls34/pkgconfig:/usr/lib64/compat-nettle32/pkgconfig
-
-centos6:
-  extends: .build_image_template_force_broken
 
 opensuse150:
   extends: .build_image_template

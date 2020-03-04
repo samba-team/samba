@@ -10,13 +10,6 @@ Vagrant.configure("2") do |config|
     config.ssh.insert_key = false
 
 
-    config.vm.define "centos6" do |v|
-        v.vm.box = "centos/6"
-        v.vm.hostname = "centos6"
-        v.vm.provision :shell, path: "centos6/bootstrap.sh"
-        v.vm.provision :shell, path: "centos6/locale.sh"
-    end
-
     config.vm.define "centos7" do |v|
         v.vm.box = "centos/7"
         v.vm.hostname = "centos7"
@@ -36,20 +29,6 @@ Vagrant.configure("2") do |config|
         v.vm.hostname = "debian10"
         v.vm.provision :shell, path: "debian10/bootstrap.sh"
         v.vm.provision :shell, path: "debian10/locale.sh"
-    end
-
-    config.vm.define "debian7" do |v|
-        v.vm.box = "debian/wheezy64"
-        v.vm.hostname = "debian7"
-        v.vm.provision :shell, path: "debian7/bootstrap.sh"
-        v.vm.provision :shell, path: "debian7/locale.sh"
-    end
-
-    config.vm.define "debian8" do |v|
-        v.vm.box = "debian/jessie64"
-        v.vm.hostname = "debian8"
-        v.vm.provision :shell, path: "debian8/bootstrap.sh"
-        v.vm.provision :shell, path: "debian8/locale.sh"
     end
 
     config.vm.define "debian9" do |v|
@@ -92,13 +71,6 @@ Vagrant.configure("2") do |config|
         v.vm.hostname = "opensuse151"
         v.vm.provision :shell, path: "opensuse151/bootstrap.sh"
         v.vm.provision :shell, path: "opensuse151/locale.sh"
-    end
-
-    config.vm.define "ubuntu1404" do |v|
-        v.vm.box = "ubuntu/trusty64"
-        v.vm.hostname = "ubuntu1404"
-        v.vm.provision :shell, path: "ubuntu1404/bootstrap.sh"
-        v.vm.provision :shell, path: "ubuntu1404/locale.sh"
     end
 
     config.vm.define "ubuntu1604" do |v|
