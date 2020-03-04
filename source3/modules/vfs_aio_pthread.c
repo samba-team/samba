@@ -308,6 +308,7 @@ static int open_async(const files_struct *fsp,
 					     fsp->conn->sconn->pool,
 					     aio_open_worker, opd);
 	if (subreq == NULL) {
+		TALLOC_FREE(opd);
 		return -1;
 	}
 	tevent_req_set_callback(subreq, aio_open_handle_completion, opd);
