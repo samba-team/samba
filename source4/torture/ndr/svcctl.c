@@ -45,9 +45,12 @@ static bool svcctl_ChangeServiceConfigW_req_check(struct torture_context *tctx,
 	torture_assert_u32_equal(tctx, r->in.error_control, SVCCTL_SVC_ERROR_NORMAL, "error_control");
 	torture_assert_str_equal(tctx, r->in.binary_path, NULL, "binary_path");
 	torture_assert_str_equal(tctx, r->in.load_order_group, NULL, "load_order_group");
+	torture_assert(tctx, r->in.tag_id == NULL, "tag_id");
 	torture_assert_str_equal(tctx, r->in.dependencies, NULL, "dependencies");
+	torture_assert_u32_equal(tctx, r->in.dwDependSize, 0, "dwDependSize");
 	torture_assert_str_equal(tctx, r->in.service_start_name, NULL, "service_start_name");
 	torture_assert_str_equal(tctx, r->in.password, NULL, "password");
+	torture_assert_u32_equal(tctx, r->in.dwPwSize, 0, "dwPwSize");
 	torture_assert_str_equal(tctx, r->in.display_name, NULL, "display_name");
 
 	return true;

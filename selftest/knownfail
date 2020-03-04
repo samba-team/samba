@@ -235,11 +235,6 @@
 # not implemented
 ^samba3.rpc.svcctl.svcctl.ChangeServiceConfigW\(ad_dc\)
 ^samba3.rpc.svcctl.svcctl.ChangeServiceConfigW\(nt4_dc\)
-# broken IDL
-^samba4.local.ndr.svcctl_ChangeServiceConfigW_NDR_IN
-^samba4.local.ndr.svcctl_ChangeServiceConfigW_NDR_OUT
-^samba4.local.ndr.system.iconv.svcctl_ChangeServiceConfigW_NDR_IN
-^samba4.local.ndr.system.iconv.svcctl_ChangeServiceConfigW_NDR_OUT
 #
 # This makes less sense when not running against an AD DC
 #
