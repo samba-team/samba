@@ -62,6 +62,7 @@ struct aio_open_private_data {
 static struct aio_open_private_data *open_pd_list;
 
 static void aio_open_do(struct aio_open_private_data *opd);
+static void opd_free(struct aio_open_private_data *opd);
 
 /************************************************************************
  Find the open private data by mid.
@@ -145,7 +146,7 @@ static void aio_open_handle_completion(struct tevent_req *subreq)
 			close(opd->ret_fd);
 			opd->ret_fd = -1;
 		}
-		TALLOC_FREE(opd);
+		opd_free(opd);
 	}
 }
 
@@ -207,16 +208,16 @@ static void aio_open_do(struct aio_open_private_data *opd)
 }
 
 /************************************************************************
- Open private data destructor.
+ Open private data teardown.
 ***********************************************************************/
 
-static int opd_destructor(struct aio_open_private_data *opd)
+static void opd_free(struct aio_open_private_data *opd)
 {
 	if (opd->dir_fd != -1) {
 		close(opd->dir_fd);
 	}
 	DLIST_REMOVE(open_pd_list, opd);
-	return 0;
+	TALLOC_FREE(opd);
 }
 
 /************************************************************************
@@ -250,7 +251,7 @@ static struct aio_open_private_data *create_private_open_data(const files_struct
 	/* Copy our current credentials. */
 	opd->ux_tok = copy_unix_token(opd, get_current_utok(fsp->conn));
 	if (opd->ux_tok == NULL) {
-		TALLOC_FREE(opd);
+		opd_free(opd);
 		return NULL;
 	}
 
@@ -262,12 +263,12 @@ static struct aio_open_private_data *create_private_open_data(const files_struct
 			fsp->fsp_name->base_name,
 			&opd->dname,
 			&fname) == false) {
-		TALLOC_FREE(opd);
+		opd_free(opd);
 		return NULL;
 	}
 	opd->fname = talloc_strdup(opd, fname);
 	if (opd->fname == NULL) {
-		TALLOC_FREE(opd);
+		opd_free(opd);
 		return NULL;
 	}
 
@@ -277,11 +278,10 @@ static struct aio_open_private_data *create_private_open_data(const files_struct
 	opd->dir_fd = open(opd->dname, O_RDONLY);
 #endif
 	if (opd->dir_fd == -1) {
-		TALLOC_FREE(opd);
+		opd_free(opd);
 		return NULL;
 	}
 
-	talloc_set_destructor(opd, opd_destructor);
 	DLIST_ADD_END(open_pd_list, opd);
 	return opd;
 }
@@ -308,7 +308,7 @@ static int open_async(const files_struct *fsp,
 					     fsp->conn->sconn->pool,
 					     aio_open_worker, opd);
 	if (subreq == NULL) {
-		TALLOC_FREE(opd);
+		opd_free(opd);
 		return -1;
 	}
 	tevent_req_set_callback(subreq, aio_open_handle_completion, opd);
@@ -365,7 +365,7 @@ static bool find_completed_open(files_struct *fsp,
 		smb_fname_str_dbg(fsp->fsp_name)));
 
 	/* Now we can free the opd. */
-	TALLOC_FREE(opd);
+	opd_free(opd);
 	return true;
 }
 
