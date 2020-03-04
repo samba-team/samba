@@ -1228,15 +1228,15 @@ WERROR _svcctl_QueryServiceConfig2A(struct pipes_struct *p,
 	return WERR_NOT_SUPPORTED;
 }
 
-WERROR _EnumServicesStatusExA(struct pipes_struct *p,
-			      struct EnumServicesStatusExA *r)
+WERROR _svcctl_EnumServicesStatusExA(struct pipes_struct *p,
+				     struct svcctl_EnumServicesStatusExA *r)
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;
 }
 
-WERROR _EnumServicesStatusExW(struct pipes_struct *p,
-			      struct EnumServicesStatusExW *r)
+WERROR _svcctl_EnumServicesStatusExW(struct pipes_struct *p,
+				     struct svcctl_EnumServicesStatusExW *r)
 {
 	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
 	return WERR_NOT_SUPPORTED;

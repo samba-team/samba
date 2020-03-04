@@ -638,7 +638,7 @@ import "misc.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x29 */
-	WERROR EnumServicesStatusExA(
+	WERROR svcctl_EnumServicesStatusExA(
 		[in,ref] policy_handle *scmanager,
 		[in] uint32 info_level,
 		[in] uint32 type,
@@ -653,7 +653,7 @@ import "misc.idl", "security.idl";
 
 	/*****************/
 	/* Function 0x2a */
-	WERROR EnumServicesStatusExW(
+	WERROR svcctl_EnumServicesStatusExW(
 		[in,ref] policy_handle *scmanager,
 		[in] uint32 info_level,
 		[in] uint32 type,
