@@ -13,6 +13,17 @@ import "misc.idl", "security.idl";
   helpstring("Service Control")
 ] interface svcctl
 {
+	const int MAX_SERVICE_NAME_LENGTH = 256;
+	const short SC_MAX_DEPEND_SIZE = 4 * 1024;
+	const short SC_MAX_NAME_LENGTH = MAX_SERVICE_NAME_LENGTH + 1;
+	const short SC_MAX_PATH_LENGTH = 32 * 1024;
+	const short SC_MAX_PWD_SIZE = 514;
+	const short SC_MAX_COMPUTER_NAME_LENGTH = 1024;
+	const short SC_MAX_ACCOUNT_NAME_LENGTH = 2 * 1024;
+	const short SC_MAX_COMMENT_LENGTH = 128;
+	const short SC_MAX_ARGUMENT_LENGTH = 1024;
+	const short SC_MAX_ARGUMENTS = 1024;
+
 	typedef struct {
 		uint32 is_locked;
 		[string,charset(UTF16)] uint16 *lock_owner;
@@ -195,11 +206,13 @@ import "misc.idl", "security.idl";
 		[in] svcctl_ErrorControl error_control,
 		[in,unique] [string,charset(UTF16)] uint16 *binary_path,
 		[in,unique] [string,charset(UTF16)] uint16 *load_order_group,
-		[out,ref] uint32 *tag_id,
-		[in,unique] [string,charset(UTF16)] uint16 *dependencies,
-		[in,unique] [string,charset(UTF16)] uint16 *service_start_name,
-		[in,unique] [string,charset(UTF16)] uint16 *password,
-		[in,unique] [string,charset(UTF16)] uint16 *display_name
+		[in,out,unique] uint32 *tag_id,
+		[in,unique,size_is(dwDependSize)] [string,charset(UTF16)] uint16 *dependencies,
+		[in,range(0, SC_MAX_DEPEND_SIZE)] uint32 dwDependSize,
+		[in,unique,range(0, SC_MAX_ACCOUNT_NAME_LENGTH)] [string,charset(UTF16)] uint16 *service_start_name,
+		[in,unique,size_is(dwPwSize)] [string,charset(UTF16)] uint16 *password,
+		[in,range(0, SC_MAX_PWD_SIZE)] uint32 dwPwSize,
+		[in,unique,range(0, SC_MAX_NAME_LENGTH)] [string,charset(UTF16)] uint16 *display_name
 	);
 
 	/*****************/

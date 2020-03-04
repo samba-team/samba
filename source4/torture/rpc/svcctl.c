@@ -675,9 +675,12 @@ static bool test_ChangeServiceConfigW(struct torture_context *tctx,
 	r.in.binary_path	= NULL;
 	r.in.load_order_group	= NULL;
 	r.in.dependencies	= NULL;
+	r.in.dwDependSize	= 0;
 	r.in.service_start_name	= NULL;
 	r.in.password		= NULL;
+	r.in.dwPwSize		= 0;
 	r.in.display_name	= NULL;
+	r.in.tag_id		= NULL;
 	r.out.tag_id		= NULL;
 
 	status = dcerpc_svcctl_ChangeServiceConfigW_r(b, tctx, &r);

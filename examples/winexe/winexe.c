@@ -625,8 +625,10 @@ static NTSTATUS winexe_svc_install(
 			NULL,	    /* load_order_group */
 			NULL,	    /* tag_id */
 			NULL,	    /* dependencies */
+			0,	    /* dwDependSize */
 			NULL,	    /* service_start_name */
 			NULL,	    /* password */
+			0,	    /* dwPwSize */
 			NULL,	    /* display_name */
 			&werr);
 
