@@ -4276,6 +4276,7 @@ static NTSTATUS open_directory(connection_struct *conn,
 	NTSTATUS status;
 	struct timespec mtimespec;
 	int info = 0;
+	int flags;
 	bool ok;
 
 	if (is_ntfs_stream_smb_fname(smb_dname)) {
@@ -4487,12 +4488,13 @@ static NTSTATUS open_directory(connection_struct *conn,
 	*/
 	mtimespec = make_omit_timespec();
 
-#ifdef O_DIRECTORY
-	status = fd_open(conn, fsp, O_RDONLY|O_DIRECTORY, 0);
-#else
 	/* POSIX allows us to open a directory with O_RDONLY. */
-	status = fd_open(conn, fsp, O_RDONLY, 0);
+	flags = O_RDONLY;
+#ifdef O_DIRECTORY
+	flags |= O_DIRECTORY;
 #endif
+
+	status = fd_open(conn, fsp, flags, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DBG_INFO("Could not open fd for "
 			"%s (%s)\n",
