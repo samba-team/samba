@@ -2,12 +2,17 @@
 
 /*
   svcctl interface definitions
+
+  The below was initially obtained from MS-SCMR which is
+  Copyright © 2022 Microsoft Corporation as permitted
+  by the Open Specifications terms reproduced in IDL_LICENCE.txt
 */
 
 import "misc.idl", "security.idl";
 [ uuid("367abb81-9844-35f1-ad32-98f038001003"),
   version(2.0),
   pointer_default(unique),
+  ms_union,
   endpoint("ncacn_np:[\\pipe\\svcctl]", "ncalrpc:"),
   helper("../librpc/ndr/ndr_svcctl.h"),
   helpstring("Service Control")
@@ -24,6 +29,23 @@ import "misc.idl", "security.idl";
 	const short SC_MAX_ARGUMENT_LENGTH = 1024;
 	const short SC_MAX_ARGUMENTS = 1024;
 
+#define BOUNDED_DWORD_4K   [range(0, 1024 * 4)] uint32
+#define BOUNDED_DWORD_8K   [range(0, 1024 * 8)] uint32
+#define BOUNDED_DWORD_256K [range(0, 1024 * 256)] uint32
+
+#if 0
+	/*
+	 * pidl does not yet have a real [context_handle] implementation, so we
+	 * just use some defines here.
+	 */
+
+	typedef [context_handle] void *SC_RPC_HANDLE;
+	typedef [context_handle] void *SC_NOTIFY_RPC_HANDLE;
+#else
+#define SC_RPC_HANDLE policy_handle
+#define SC_NOTIFY_RPC_HANDLE policy_handle
+#define handle_t policy_handle
+#endif
 	typedef struct {
 		uint32 is_locked;
 		[string,charset(UTF16)] uint16 *lock_owner;
@@ -669,5 +691,304 @@ import "misc.idl", "security.idl";
 	/*****************/
 	/* Function 0x2b */
 	[todo] WERROR svcctl_SCSendTSMessage(
+	);
+
+	/*****************/
+	/* Function 0x2c */
+	WERROR svcctl_CreateServiceWOW64A(
+		[in] SC_RPC_HANDLE hSCManager,
+		[in,string,range(0, SC_MAX_NAME_LENGTH),charset(DOS)] char *lpServiceName,
+		[in,string,unique,range(0, SC_MAX_NAME_LENGTH),charset(DOS)] char *lpDisplayName,
+		[in] uint32 dwDesiredAccess,
+		[in] uint32 dwServiceType,
+		[in] uint32 dwStartType,
+		[in] uint32 dwErrorControl,
+		[in,string, range(0, SC_MAX_PATH_LENGTH),charset(DOS)] char *lpBinaryPathName,
+		[in,string,unique,range(0, SC_MAX_NAME_LENGTH),charset(DOS)] char *lpLoadOrderGroup,
+		[in,out,unique] uint32 *lpdwTagId,
+		[in,unique,size_is(dwDependSize)] uint8 *lpDependencies,
+		[in, range (0, SC_MAX_DEPEND_SIZE)] uint32 dwDependSize,
+		[in,string,unique,range(0, SC_MAX_ACCOUNT_NAME_LENGTH),charset(DOS)] char *lpServiceStartName,
+		[in,unique,size_is(dwPwSize)] uint8 *lpPassword,
+		[in, range(0, SC_MAX_PWD_SIZE)] uint32 dwPwSize,
+		[out] SC_RPC_HANDLE *lpServiceHandle
+	);
+
+	/*****************/
+	/* Function 0x2d */
+	WERROR svcctl_CreateServiceWOW64W(
+		[in] SC_RPC_HANDLE hSCManager,
+		[in,string,range(0, SC_MAX_NAME_LENGTH),charset(UTF16)] uint16 *lpServiceName,
+		[in,string,unique,range(0, SC_MAX_NAME_LENGTH),charset(UTF16)] uint16 *lpDisplayName,
+		[in] uint32 dwDesiredAccess,
+		[in] uint32 dwServiceType,
+		[in] uint32 dwStartType,
+		[in] uint32 dwErrorControl,
+		[in,string,range(0, SC_MAX_PATH_LENGTH),charset(UTF16)] uint16 *lpBinaryPathName,
+		[in,string,unique,range(0, SC_MAX_NAME_LENGTH),charset(UTF16)] uint16 *lpLoadOrderGroup,
+		[in,out,unique] uint32 *lpdwTagId,
+		[in,unique,size_is(dwDependSize)] uint8 *lpDependencies,
+		[in, range (0, SC_MAX_DEPEND_SIZE)] uint32 dwDependSize,
+		[in,string,unique,range(0, SC_MAX_ACCOUNT_NAME_LENGTH),charset(UTF16)] uint16 *lpServiceStartName,
+		[in,unique,size_is(dwPwSize)] uint8 *lpPassword,
+		[in, range(0, SC_MAX_PWD_SIZE)] uint32 dwPwSize,
+		[out] SC_RPC_HANDLE *lpServiceHandle
+	);
+
+	/*****************/
+	/* Function 0x2e */
+	void Opnum46NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x2f */
+
+	typedef struct {
+		hyper ullThreadId;
+		uint32 dwNotifyMask;
+		char CallbackAddressArray[16];
+		char CallbackParamAddressArray[16];
+		SERVICE_STATUS_PROCESS ServiceStatus;
+		uint32 dwNotificationStatus;
+		uint32 dwSequence;
+	} SERVICE_NOTIFY_STATUS_CHANGE_PARAMS_1;
+
+	typedef struct {
+		hyper ullThreadId;
+		uint32 dwNotifyMask;
+		char CallbackAddressArray[16];
+		char CallbackParamAddressArray[16];
+		SERVICE_STATUS_PROCESS ServiceStatus;
+		uint32 dwNotificationStatus;
+		uint32 dwSequence;
+		uint32 dwNotificationTriggered;
+		[string, range(0, 64*1024), charset(UTF16)] uint16 *pszServiceNames;
+	} SERVICE_NOTIFY_STATUS_CHANGE_PARAMS_2;
+
+	typedef SERVICE_NOTIFY_STATUS_CHANGE_PARAMS_2
+		SERVICE_NOTIFY_STATUS_CHANGE_PARAMS;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] SERVICE_NOTIFY_STATUS_CHANGE_PARAMS_1 *pStatusChangeParam1;
+		[case(2)] SERVICE_NOTIFY_STATUS_CHANGE_PARAMS_2 *pStatusChangeParams;
+	} SC_RPC_NOTIFY_PARAMS_u;
+
+	typedef struct {
+		uint32 dwInfoLevel;
+		[switch_is(dwInfoLevel)] SC_RPC_NOTIFY_PARAMS_u u;
+	} SC_RPC_NOTIFY_PARAMS;
+
+	typedef struct {
+		BOUNDED_DWORD_4K cElements;
+		[size_is(cElements)] SC_RPC_NOTIFY_PARAMS NotifyParamsArray[*];
+	} SC_RPC_NOTIFY_PARAMS_LIST;
+
+	 WERROR svcctl_NotifyServiceStatusChange(
+		[in] SC_RPC_HANDLE hService,
+		[in] SC_RPC_NOTIFY_PARAMS NotifyParams,
+		[in] GUID *pClientProcessGuid,
+		[out] GUID *pSCMProcessGuid,
+		[out] boolean32 *pfCreateRemoteQueue,
+		[out] SC_NOTIFY_RPC_HANDLE *phNotify
+	);
+
+	/*****************/
+	/* Function 0x30 */
+	WERROR svcctl_GetNotifyResults(
+		[in] SC_NOTIFY_RPC_HANDLE hNotify,
+		[out,ref] SC_RPC_NOTIFY_PARAMS_LIST *ppNotifyParams
+	);
+
+	/*****************/
+	/* Function 0x31 */
+	WERROR svcctl_CloseNotifyHandle(
+		[in, out] SC_NOTIFY_RPC_HANDLE *phNotify,
+		[out] boolean32 *pfApcFired
+	);
+
+	/*****************/
+	/* Function 0x32 */
+
+	typedef struct {
+		uint32 dwReason;
+		[string,range(0, SC_MAX_COMMENT_LENGTH),charset(DOS)] char *szComment;
+	} SERVICE_CONTROL_STATUS_REASON_IN_PARAMSA;
+
+	typedef struct {
+		SERVICE_STATUS_PROCESS ServiceStatus;
+	} SERVICE_CONTROL_STATUS_REASON_OUT_PARAMS;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] SERVICE_CONTROL_STATUS_REASON_IN_PARAMSA *psrInParams;
+	} SC_RPC_SERVICE_CONTROL_IN_PARAMSA;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] SERVICE_CONTROL_STATUS_REASON_OUT_PARAMS *psrOutParams;
+	} SC_RPC_SERVICE_CONTROL_OUT_PARAMSA;
+
+	WERROR svcctl_ControlServiceExA (
+		[in] SC_RPC_HANDLE hService,
+		[in] uint32 dwControl,
+		[in] uint32 dwInfoLevel,
+		[in, switch_is(dwInfoLevel)] SC_RPC_SERVICE_CONTROL_IN_PARAMSA *pControlInParams,
+		[out, switch_is(dwInfoLevel)] SC_RPC_SERVICE_CONTROL_OUT_PARAMSA *pControlOutParams
+	);
+
+	/*****************/
+	/* Function 0x33 */
+
+	typedef struct {
+		uint32 dwReason;
+		[string,range(0, SC_MAX_COMMENT_LENGTH),charset(UTF16)] uint16 *pszComment;
+	} SERVICE_CONTROL_STATUS_REASON_IN_PARAMSW;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] SERVICE_CONTROL_STATUS_REASON_IN_PARAMSW *psrInParams;
+	} SC_RPC_SERVICE_CONTROL_IN_PARAMSW;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] SERVICE_CONTROL_STATUS_REASON_OUT_PARAMS *psrOutParams;
+	} SC_RPC_SERVICE_CONTROL_OUT_PARAMSW;
+
+	WERROR svcctl_ControlServiceExW (
+		[in] SC_RPC_HANDLE hService,
+		[in] uint32 dwControl,
+		[in] uint32 dwInfoLevel,
+		[in, ref, switch_is(dwInfoLevel)] SC_RPC_SERVICE_CONTROL_IN_PARAMSW *pControlInParams,
+		[out,ref, switch_is(dwInfoLevel)] SC_RPC_SERVICE_CONTROL_OUT_PARAMSW *pControlOutParams
+	);
+
+	/*****************/
+	/* Function 0x34 */
+	void Opnum52NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x35 */
+	void Opnum53NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x36 */
+	void Opnum54NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x37 */
+	void Opnum55NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x38 */
+
+	typedef struct {
+		[string,range(0, 8 * 1024), charset(UTF16)] uint16 *lpDescription;
+	} SERVICE_DESCRIPTIONW;
+
+	typedef struct {
+		boolean32 fDelayedAutostart;
+	} SERVICE_DELAYED_AUTO_START_INFO;
+
+	typedef struct {
+		boolean32 fFailureActionsOnNonCrashFailures;
+	} SERVICE_FAILURE_ACTIONS_FLAG;
+
+	typedef struct {
+		uint32 dwServiceSidType;
+	} SERVICE_SID_INFO;
+
+	typedef struct {
+		[range(0, 1024 * 4)] uint32 cbRequiredPrivileges;
+		[size_is(cbRequiredPrivileges)] uint8 *pRequiredPrivileges;
+	} SERVICE_RPC_REQUIRED_PRIVILEGES_INFO;
+
+	typedef struct {
+		uint32 dwPreshutdownTimeout;
+	} SERVICE_PRESHUTDOWN_INFO;
+
+	typedef struct {
+		uint32 dwDataType;
+		[range(0, 1024)] uint32 cbData;
+		[size_is(cbData)] uint8 *pData;
+	} SERVICE_TRIGGER_SPECIFIC_DATA_ITEM;
+
+	typedef struct {
+		uint32 dwTriggerType;
+		uint32 dwAction;
+		GUID *pTriggerSubtype;
+		[range(0, 64)] uint32 cDataItems;
+		[size_is(cDataItems)] SERVICE_TRIGGER_SPECIFIC_DATA_ITEM *pDataItems;
+	} SERVICE_TRIGGER;
+
+	typedef struct {
+		[range(0, 64)] uint32 cTriggers;
+		[size_is(cTriggers)] SERVICE_TRIGGER *pTriggers;
+		uint8 *pReserved;
+	} SERVICE_TRIGGER_INFO;
+
+	typedef struct {
+		uint16 usPreferredNode;
+		boolean32 fDelete;
+	} SERVICE_PREFERRED_NODE_INFO;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] SERVICE_DESCRIPTIONW *psd;
+		[case(2)] SERVICE_FAILURE_ACTIONSW *psfa;
+		[case(3)] SERVICE_DELAYED_AUTO_START_INFO *psda;
+		[case(4)] SERVICE_FAILURE_ACTIONS_FLAG *psfaf;
+		[case(5)] SERVICE_SID_INFO *pssid;
+		[case(6)] SERVICE_RPC_REQUIRED_PRIVILEGES_INFO *psrp;
+		[case(7)] SERVICE_PRESHUTDOWN_INFO *psps;
+		[case(8)] SERVICE_TRIGGER_INFO *psti;
+		[case(9)] SERVICE_PREFERRED_NODE_INFO *pspn;
+	} SC_RPC_CONFIG_INFOW_u;
+
+	typedef struct {
+		uint32 dwInfoLevel;
+		[switch_is(dwInfoLevel)] SC_RPC_CONFIG_INFOW_u u;
+	} SC_RPC_CONFIG_INFOW;
+
+	WERROR svcctl_QueryServiceConfigEx (
+		[in] SC_RPC_HANDLE hService,
+		[in] uint32 dwInfoLevel,
+		[out,ref] SC_RPC_CONFIG_INFOW *pInfo
+	);
+
+	/*****************/
+	/* Function 0x39 */
+	void Opnum57NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x3a */
+	void Opnum58NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x3b */
+	void Opnum59NotUsedOnWire(void);
+
+	/*****************/
+	/* Function 0x3c */
+	WERROR svcctl_CreateWowService(
+		[in] SC_RPC_HANDLE hSCManager,
+		[in,string,range(0, SC_MAX_NAME_LENGTH),charset(UTF16)] uint16 *lpServiceName,
+		[in,string,unique,range(0, SC_MAX_NAME_LENGTH),charset(UTF16)] uint16 *lpDisplayName,
+		[in] uint32 dwDesiredAccess,
+		[in] uint32 dwServiceType,
+		[in] uint32 dwStartType,
+		[in] uint32 dwErrorControl,
+		[in,string,range(0, SC_MAX_PATH_LENGTH),charset(UTF16)] uint16 *lpBinaryPathName,
+		[in,string,unique,range(0, SC_MAX_NAME_LENGTH),charset(UTF16)] uint16 *lpLoadOrderGroup,
+		[in,out,unique] uint32 *lpdwTagId,
+		[in,unique,size_is(dwDependSize)] uint8 *lpDependencies,
+		[in, range (0, SC_MAX_DEPEND_SIZE)] uint32 dwDependSize,
+		[in,string,unique,range(0, SC_MAX_ACCOUNT_NAME_LENGTH),charset(UTF16)] uint16 *lpServiceStartName,
+		[in,unique,size_is(dwPwSize)] uint8 *lpPassword,
+		[in, range(0, SC_MAX_PWD_SIZE)] uint32 dwPwSize,
+		[in] uint16 dwServiceWowType,
+		[out,ref] SC_RPC_HANDLE *lpServiceHandle
+	);
+
+	/*****************/
+	/* Function 0x3d */
+	WERROR svcctl_OpenSCManager2(
+		[in] handle_t BindingHandle,
+		[in,string,unique,range(0, SC_MAX_NAME_LENGTH),charset(UTF16)] uint16 *DatabaseName,
+		[in] uint32 DesiredAccess,
+		[out,ref] SC_RPC_HANDLE *ScmHandle
 	);
 }

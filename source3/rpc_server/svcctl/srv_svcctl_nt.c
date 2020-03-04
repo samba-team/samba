@@ -1249,6 +1249,213 @@ WERROR _svcctl_SCSendTSMessage(struct pipes_struct *p,
 	return WERR_NOT_SUPPORTED;
 }
 
+/****************************************************************
+ _svcctl_CreateServiceWOW64A
+****************************************************************/
+
+WERROR _svcctl_CreateServiceWOW64A(struct pipes_struct *p,
+				   struct svcctl_CreateServiceWOW64A *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+
+/****************************************************************
+ _svcctl_CreateServiceWOW64W
+****************************************************************/
+
+WERROR _svcctl_CreateServiceWOW64W(struct pipes_struct *p,
+				   struct svcctl_CreateServiceWOW64W *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+
+/****************************************************************
+ _Opnum46NotUsedOnWire
+****************************************************************/
+
+void _Opnum46NotUsedOnWire(struct pipes_struct *p,
+			   struct Opnum46NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+
+/****************************************************************
+ _svcctl_NotifyServiceStatusChange
+****************************************************************/
+
+WERROR _svcctl_NotifyServiceStatusChange(struct pipes_struct *p,
+					 struct svcctl_NotifyServiceStatusChange *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+
+/****************************************************************
+ _svcctl_GetNotifyResults
+****************************************************************/
+
+WERROR _svcctl_GetNotifyResults(struct pipes_struct *p,
+				struct svcctl_GetNotifyResults *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+
+/****************************************************************
+ _svcctl_CloseNotifyHandle
+****************************************************************/
+
+WERROR _svcctl_CloseNotifyHandle(struct pipes_struct *p,
+				 struct svcctl_CloseNotifyHandle *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+
+/****************************************************************
+ _svcctl_ControlServiceExA
+****************************************************************/
+
+WERROR _svcctl_ControlServiceExA(struct pipes_struct *p,
+				 struct svcctl_ControlServiceExA *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+
+/****************************************************************
+ _svcctl_ControlServiceExW
+****************************************************************/
+
+WERROR _svcctl_ControlServiceExW(struct pipes_struct *p,
+				 struct svcctl_ControlServiceExW *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+
+/****************************************************************
+ _Opnum52NotUsedOnWire
+****************************************************************/
+
+void _Opnum52NotUsedOnWire(struct pipes_struct *p,
+			   struct Opnum52NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+
+/****************************************************************
+ _Opnum53NotUsedOnWire
+****************************************************************/
+
+void _Opnum53NotUsedOnWire(struct pipes_struct *p,
+			   struct Opnum53NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+
+/****************************************************************
+ _Opnum54NotUsedOnWire
+****************************************************************/
+
+void _Opnum54NotUsedOnWire(struct pipes_struct *p,
+			   struct Opnum54NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+
+/****************************************************************
+ _Opnum55NotUsedOnWire
+****************************************************************/
+
+void _Opnum55NotUsedOnWire(struct pipes_struct *p,
+			   struct Opnum55NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+
+/****************************************************************
+ _svcctl_QueryServiceConfigEx
+****************************************************************/
+
+WERROR _svcctl_QueryServiceConfigEx(struct pipes_struct *p,
+				    struct svcctl_QueryServiceConfigEx *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+
+/****************************************************************
+ _Opnum57NotUsedOnWire
+****************************************************************/
+
+void _Opnum57NotUsedOnWire(struct pipes_struct *p,
+			   struct Opnum57NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+
+/****************************************************************
+ _Opnum58NotUsedOnWire
+****************************************************************/
+
+void _Opnum58NotUsedOnWire(struct pipes_struct *p,
+			   struct Opnum58NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+
+/****************************************************************
+ _Opnum59NotUsedOnWire
+****************************************************************/
+
+void _Opnum59NotUsedOnWire(struct pipes_struct *p,
+			   struct Opnum59NotUsedOnWire *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+}
+
+
+/****************************************************************
+ _svcctl_CreateWowService
+****************************************************************/
+
+WERROR _svcctl_CreateWowService(struct pipes_struct *p,
+				struct svcctl_CreateWowService *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
+
+/****************************************************************
+ _svcctl_OpenSCManager2
+****************************************************************/
+
+WERROR _svcctl_OpenSCManager2(struct pipes_struct *p,
+			      struct svcctl_OpenSCManager2 *r)
+{
+	p->fault_state = DCERPC_FAULT_OP_RNG_ERROR;
+	return WERR_NOT_SUPPORTED;
+}
+
 static NTSTATUS svcctl__op_init_server(struct dcesrv_context *dce_ctx,
 		const struct dcesrv_endpoint_server *ep_server);
 
