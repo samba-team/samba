@@ -3,7 +3,7 @@
    test suite for svcctl rpc operations
 
    Copyright (C) Jelmer Vernooij 2004
-   Copyright (C) Guenther Deschner 2008,2009
+   Copyright (C) Guenther Deschner 2008,2009,2020
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -623,6 +623,80 @@ static bool test_SCManager(struct torture_context *tctx,
 	return true;
 }
 
+static bool test_ChangeServiceConfigW(struct torture_context *tctx,
+				      struct dcerpc_pipe *p)
+{
+	struct svcctl_ChangeServiceConfigW r;
+	struct svcctl_QueryServiceConfigW q;
+	struct policy_handle h, s;
+	NTSTATUS status;
+	struct dcerpc_binding_handle *b = p->binding_handle;
+	struct QUERY_SERVICE_CONFIG query;
+	bool ok;
+
+	uint32_t offered = 0;
+	uint32_t needed = 0;
+
+	ok = test_OpenSCManager(b, tctx, &h);
+	if (!ok) {
+		return false;
+	}
+
+	ok = test_OpenService(b, tctx, &h, TORTURE_DEFAULT_SERVICE, &s);
+	if (!ok) {
+		return false;
+	}
+
+	q.in.handle = &s;
+	q.in.offered = offered;
+	q.out.query = &query;
+	q.out.needed = &needed;
+
+	status = dcerpc_svcctl_QueryServiceConfigW_r(b, tctx, &q);
+	torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfigW failed!");
+
+	if (W_ERROR_EQUAL(q.out.result, WERR_INSUFFICIENT_BUFFER)) {
+		q.in.offered = needed;
+		status = dcerpc_svcctl_QueryServiceConfigW_r(b, tctx, &q);
+		torture_assert_ntstatus_ok(tctx, status, "QueryServiceConfigW failed!");
+	}
+	torture_assert_werr_ok(tctx, q.out.result, "QueryServiceConfigW failed!");
+
+	r.in.handle = &s;
+	r.in.type		= query.service_type;
+	r.in.start_type		= query.start_type;
+	r.in.error_control	= query.error_control;
+
+	/*
+	 * according to MS-SCMR 3.1.4.11 NULL params are supposed to leave the
+	 * existing values intact.
+	 */
+
+	r.in.binary_path	= NULL;
+	r.in.load_order_group	= NULL;
+	r.in.dependencies	= NULL;
+	r.in.service_start_name	= NULL;
+	r.in.password		= NULL;
+	r.in.display_name	= NULL;
+	r.out.tag_id		= NULL;
+
+	status = dcerpc_svcctl_ChangeServiceConfigW_r(b, tctx, &r);
+	torture_assert_ntstatus_ok(tctx, status, "ChangeServiceConfigW failed!");
+	torture_assert_werr_ok(tctx, r.out.result, "ChangeServiceConfigW failed!");
+
+	ok = test_CloseServiceHandle(b, tctx, &s);
+	if (!ok) {
+		return false;
+	}
+
+	ok = test_CloseServiceHandle(b, tctx, &h);
+	if (!ok) {
+		return false;
+	}
+
+	return true;
+}
+
 struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "svcctl");
@@ -652,6 +726,8 @@ struct torture_suite *torture_rpc_svcctl(TALLOC_CTX *mem_ctx)
 				   test_StartServiceW);
 	torture_rpc_tcase_add_test(tcase, "ControlService",
 				   test_ControlService);
+	torture_rpc_tcase_add_test(tcase, "ChangeServiceConfigW",
+				   test_ChangeServiceConfigW);
 
 	return suite;
 }

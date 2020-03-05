@@ -234,6 +234,9 @@
 ^samba3.rpc.eventlog.eventlog.GetNumRecords\(ad_dc\)
 ^samba3.rpc.eventlog.eventlog.OpenEventLog\(ad_dc\)
 ^samba3.rap.basic.netsessiongetinfo\(ad_dc\)
+# not implemented
+^samba3.rpc.svcctl.svcctl.ChangeServiceConfigW\(ad_dc\)
+^samba3.rpc.svcctl.svcctl.ChangeServiceConfigW\(nt4_dc\)
 #
 # This makes less sense when not running against an AD DC
 #
