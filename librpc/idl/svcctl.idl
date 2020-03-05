@@ -188,7 +188,7 @@ import "misc.idl", "security.idl";
 		SVCCTL_DISABLED			= 0x00000004
 	} svcctl_StartType;
 
-	WERROR svcctl_ChangeServiceConfigW(
+	[public] WERROR svcctl_ChangeServiceConfigW(
 		[in,ref] policy_handle *handle,
 		[in] uint32 type,
 		[in] svcctl_StartType start_type,
