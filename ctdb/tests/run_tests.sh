@@ -176,6 +176,13 @@ ctdb_test_run ()
 		printf '%-10s %s\n' "$t" "$f" >>"$summary_file"
 	fi
 
+	# Skipped tests should not cause failure
+	case "$status" in
+	77)
+		status=0
+		;;
+	esac
+
 	return $status
 }
 
