@@ -7,10 +7,10 @@
 export CTDB_TIMEOUT=60
 
 if [ -n "$CTDB_TEST_REMOTE_DIR" ] ; then
-    CTDB_TEST_WRAPPER="${CTDB_TEST_REMOTE_DIR}/test_wrap"
+	CTDB_TEST_WRAPPER="${CTDB_TEST_REMOTE_DIR}/test_wrap"
 else
-    _d=$(cd ${TEST_SCRIPTS_DIR}; echo $PWD)
-    CTDB_TEST_WRAPPER="$_d/test_wrap"
+	_d=$(cd "$TEST_SCRIPTS_DIR" &&  echo "$PWD")
+	CTDB_TEST_WRAPPER="$_d/test_wrap"
 fi
 export CTDB_TEST_WRAPPER
 
@@ -153,6 +153,8 @@ try_command_on_node ()
     local cmd="$*"
 
     local status=0
+    # Intentionally unquoted - might be empty
+    # shellcheck disable=SC2086
     onnode -q $onnode_opts "$nodespec" "$cmd" >"$outfile" 2>&1 || status=$?
     out=$(dd if="$outfile" bs=1k count=1 2>/dev/null)
 
@@ -215,11 +217,11 @@ sanity_check_output ()
 
     local ret=0
 
-    local num_lines=$(wc -l <"$outfile")
+    local num_lines
+    num_lines=$(wc -l <"$outfile" | tr -d '[:space:]')
     echo "There are $num_lines lines of output"
-    if [ $num_lines -lt $min_lines ] ; then
-	echo "BAD: that's less than the required number (${min_lines})"
-	ret=1
+    if [ "$num_lines" -lt "$min_lines" ] ; then
+	ctdb_test_fail "BAD: that's less than the required number (${min_lines})"
     fi
 
     local status=0
@@ -250,7 +252,7 @@ select_test_node ()
 all_ips_on_node()
 {
     local node="$1"
-    try_command_on_node $node \
+    try_command_on_node "$node" \
 	"$CTDB ip -X | awk -F'|' 'NR > 1 { print \$2, \$3 }'"
 }
 
@@ -262,8 +264,8 @@ _select_test_node_and_ips ()
     test_node=""  # this matches no PNN
     test_node_ips=""
     local ip pnn
-    while read ip pnn ; do
-	if [ -z "$test_node" -a "$pnn" != "-1" ] ; then
+    while read -r ip pnn ; do
+	if [ -z "$test_node" ] && [ "$pnn" != "-1" ] ; then
 	    test_node="$pnn"
 	fi
 	if [ "$pnn" = "$test_node" ] ; then
@@ -274,6 +276,8 @@ _select_test_node_and_ips ()
     echo "Selected node ${test_node} with IPs: ${test_node_ips}."
     test_ip="${test_node_ips%% *}"
 
+    # test_prefix used by caller
+    # shellcheck disable=SC2034
     case "$test_ip" in
 	*:*) test_prefix="${test_ip}/128" ;;
 	*)   test_prefix="${test_ip}/32"  ;;
@@ -288,11 +292,11 @@ select_test_node_and_ips ()
     while ! _select_test_node_and_ips ; do
 	echo "Unable to find a test node with IPs assigned"
 	if [ $timeout -le 0 ] ; then
-	    echo "BAD: Too many attempts"
+	    ctdb_test_error "BAD: Too many attempts"
 	    return 1
 	fi
 	sleep_for 1
-	timeout=$(($timeout - 1))
+	timeout=$((timeout - 1))
     done
 
     return 0
@@ -302,12 +306,12 @@ select_test_node_and_ips ()
 get_test_ip_mask_and_iface ()
 {
     # Find the interface
-    try_command_on_node $test_node "$CTDB ip -v -X | awk -F'|' -v ip=$test_ip '\$2 == ip { print \$4 }'"
-    iface="$out"
+    ctdb_onnode "$test_node" "ip -v -X"
+    iface=$(awk -F'|' -v ip="$test_ip" '$2 == ip { print $4 }' "$outfile")
 
     if ctdb_test_on_cluster ; then
 	# Find the netmask
-	try_command_on_node $test_node ip addr show to $test_ip
+	try_command_on_node "$test_node" ip addr show to "$test_ip"
 	mask="${out##*/}"
 	mask="${mask%% *}"
     else
@@ -334,8 +338,8 @@ delete_ip_from_all_nodes ()
     _nodes=""
 
     for _pnn in $all_pnns ; do
-	all_ips_on_node $_pnn
-	while read _i _n ; do
+	all_ips_on_node "$_pnn"
+	while read -r _i _ ; do
 	    if [ "$_ip" = "$_i" ] ; then
 		_nodes="${_nodes}${_nodes:+,}${_pnn}"
 	    fi
@@ -350,7 +354,7 @@ delete_ip_from_all_nodes ()
 sleep_for ()
 {
     echo -n "=${1}|"
-    for i in $(seq 1 $1) ; do
+    for i in $(seq 1 "$1") ; do
 	echo -n '.'
 	sleep 1
     done
@@ -374,9 +378,9 @@ _cluster_is_ready ()
 
 cluster_is_healthy ()
 {
-	if onnode 0 $CTDB_TEST_WRAPPER _cluster_is_healthy ; then
+	if onnode 0 "$CTDB_TEST_WRAPPER" _cluster_is_healthy ; then
 		echo "Cluster is HEALTHY"
-		if ! onnode 0 $CTDB_TEST_WRAPPER _cluster_is_recovered ; then
+		if ! onnode 0 "$CTDB_TEST_WRAPPER" _cluster_is_recovered ; then
 			echo "WARNING: cluster in recovery mode!"
 		fi
 		return 0
@@ -401,7 +405,7 @@ wait_until_ready ()
 
     echo "Waiting for cluster to become ready..."
 
-    wait_until $timeout onnode -q any $CTDB_TEST_WRAPPER _cluster_is_ready
+    wait_until "$timeout" onnode -q any "$CTDB_TEST_WRAPPER" _cluster_is_ready
 }
 
 # This function is becoming nicely overloaded.  Soon it will collapse!  :-)
@@ -438,13 +442,13 @@ node_has_status ()
 		echo "node_has_status: unknown status \"$status\""
 		return 1
 	esac
-	local out x line
+	local out _ line
 
 	out=$($CTDB -X status 2>&1) || return 1
 
 	{
-		read x
-		while read line ; do
+		read -r _
+		while read -r line ; do
 			# This needs to be done in 2 steps to
 			# avoid false matches.
 			local line_bits="${line#|${pnn}|*|}"
@@ -465,7 +469,9 @@ wait_until_node_has_status ()
 
     echo "Waiting until node $pnn has status \"$status\"..."
 
-    if ! wait_until $timeout onnode $proxy_pnn $CTDB_TEST_WRAPPER node_has_status "$pnn" "$status" ; then
+    if ! wait_until "$timeout" onnode "$proxy_pnn" \
+	 "$CTDB_TEST_WRAPPER" node_has_status "$pnn" "$status" ; then
+
 	for i in "onnode -q any $CTDB status" "onnode -q any onnode all $CTDB scriptstatus" ; do
 	    echo "$i"
 	    $i || true
@@ -490,12 +496,12 @@ ips_are_on_node ()
 
     local out
 
-    all_ips_on_node $node
+    all_ips_on_node "$node"
 
     local check
     for check in $ips ; do
 	local ip pnn
-	while read ip pnn ; do
+	while read -r ip pnn ; do
 	    if [ "$check" = "$ip" ] ; then
 		if [ "$pnn" = "$node" ] ; then
 		    if $negating ; then return 1 ; fi
@@ -546,9 +552,9 @@ node_has_some_ips ()
 
     local out
 
-    all_ips_on_node $node
+    all_ips_on_node "$node"
 
-    while read ip pnn ; do
+    while read -r ip pnn ; do
 	if [ "$node" = "$pnn" ] ; then
 	    return 0
 	fi
@@ -579,7 +585,7 @@ ctdb_init ()
 
 	ctdb_nodes_start || ctdb_test_error "Cluster start failed"
 
-	wait_until_ready || ctdb_test_error "Cluster didn't become ready"
+	wait_until_ready 120 || ctdb_test_error "Cluster didn't become ready"
 
 	echo "Setting RerecoveryTimeout to 1"
 	onnode -pq all "$CTDB setvar RerecoveryTimeout 1"
@@ -620,7 +626,7 @@ wait_for_monitor_event ()
 
     echo "Waiting for a monitor event on node ${pnn}..."
 
-    try_command_on_node "$pnn" $CTDB scriptstatus || {
+    ctdb_onnode "$pnn" scriptstatus || {
 	echo "Unable to get scriptstatus from node $pnn"
 	return 1
     }
@@ -632,7 +638,7 @@ wait_for_monitor_event ()
 
 _ctdb_scriptstatus_changed ()
 {
-    try_command_on_node "$pnn" $CTDB scriptstatus || {
+    ctdb_onnode "$pnn" scriptstatus || {
 	echo "Unable to get scriptstatus from node $pnn"
 	return 1
     }
@@ -652,6 +658,8 @@ ip_maskbits_iface ()
 	*)   _family="inet"  ; _bits=32  ;;
     esac
 
+    # Literal backslashes in awk script
+    # shellcheck disable=SC1004
     ip addr show to "${_addr}/${_bits}" 2>/dev/null | \
 	awk -v family="${_family}" \
 	    'NR == 1 { iface = $2; sub(":$", "", iface) } \
@@ -663,6 +671,8 @@ drop_ip ()
 {
     _addr="${1%/*}"  # Remove optional maskbits
 
+    # Intentional word splitting
+    # shellcheck disable=SC2046,SC2086
     set -- $(ip_maskbits_iface $_addr)
     if [ -n "$1" ] ; then
 	_maskbits="$1"
@@ -684,8 +694,7 @@ drop_ips ()
 # $1: pnn, $2: DB name
 db_get_path ()
 {
-    try_command_on_node -v $1 $CTDB getdbstatus "$2" |
-    sed -n -e "s@^path: @@p"
+	ctdb_onnode -v "$1" "getdbstatus $2" | sed -n -e "s@^path: @@p"
 }
 
 # $1: pnn, $2: DB name
@@ -695,17 +704,16 @@ db_ctdb_cattdb_count_records ()
 	# This excludes at least the sequence number record in
 	# persistent/replicated databases.  The trailing "|| :" forces
 	# the command to succeed when no records are matched.
-	try_command_on_node $1 \
-		"$CTDB cattdb $2 | grep -c '^key([0-9][0-9]*) = \"[^_]' || :"
+	ctdb_onnode "$1" "cattdb $2 | grep -c '^key([0-9][0-9]*) = \"[^_]' || :"
 	echo "$out"
 }
 
 # $1: pnn, $2: DB name, $3: key string, $4: value string, $5: RSN (default 7)
 db_ctdb_tstore ()
 {
-    _tdb=$(db_get_path $1 "$2")
+    _tdb=$(db_get_path "$1" "$2")
     _rsn="${5:-7}"
-    try_command_on_node $1 $CTDB tstore "$_tdb" "$3" "$4" "$_rsn"
+    ctdb_onnode "$1" tstore "$_tdb" "$3" "$4" "$_rsn"
 }
 
 # $1: pnn, $2: DB name, $3: dbseqnum (must be < 255!!!!!)
@@ -716,15 +724,17 @@ db_ctdb_tstore_dbseqnum ()
 
     # Construct 8 byte (unit64_t) database sequence number.  This
     # probably breaks if $3 > 255
-    _value=$(printf "0x%02x%014x" $3 0)
+    _value=$(printf "0x%02x%014x" "$3" 0)
 
-    db_ctdb_tstore $1 "$2" "$_key" "$_value"
+    db_ctdb_tstore "$1" "$2" "$_key" "$_value"
 }
 
 ########################################
 
 # Make sure that $CTDB is set.
-: ${CTDB:=ctdb}
+if [ -z "$CTDB" ] ; then
+	CTDB="ctdb"
+fi
 
 if ctdb_test_on_cluster ; then
 	. "${TEST_SCRIPTS_DIR}/integration_real_cluster.bash"
