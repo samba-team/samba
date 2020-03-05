@@ -1563,7 +1563,10 @@ static bool validate_my_share_entries_fn(
 }
 #endif
 
-bool is_stat_open(uint32_t access_mask)
+/**
+ * Allowed access mask for stat opens relevant to oplocks
+ **/
+bool is_oplock_stat_open(uint32_t access_mask)
 {
 	const uint32_t stat_open_bits =
 		(SYNCHRONIZE_ACCESS|
@@ -1771,7 +1774,7 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	uint16_t new_flags;
 	bool ok, conflict, have_share_entries;
 
-	if (is_stat_open(access_mask)) {
+	if (is_oplock_stat_open(access_mask)) {
 		/* Stat open that doesn't trigger oplock breaks or share mode
 		 * checks... ! JRA. */
 		return NT_STATUS_OK;
@@ -1928,7 +1931,7 @@ static bool validate_oplock_types_fn(
 		return false;
 	}
 
-	if (e->op_type == NO_OPLOCK && is_stat_open(e->access_mask)) {
+	if (e->op_type == NO_OPLOCK && is_oplock_stat_open(e->access_mask)) {
 		/*
 		 * We ignore stat opens in the table - they always
 		 * have NO_OPLOCK and never get or cause breaks. JRA.
@@ -2422,7 +2425,7 @@ static NTSTATUS delay_for_oplock(files_struct *fsp,
 	NTSTATUS status;
 	bool ok;
 
-	if (is_stat_open(fsp->access_mask)) {
+	if (is_oplock_stat_open(fsp->access_mask)) {
 		goto grant;
 	}
 
@@ -3491,7 +3494,7 @@ static NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * FILE_OVERWRITE and FILE_OVERWRITE_IF add in O_TRUNC,
 		 * which adds FILE_WRITE_DATA to open_access_mask.
 		 */
-		if (is_stat_open(open_access_mask) && lease == NULL) {
+		if (is_oplock_stat_open(open_access_mask) && lease == NULL) {
 			oplock_request = NO_OPLOCK;
 		}
 	}
