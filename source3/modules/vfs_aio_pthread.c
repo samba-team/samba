@@ -51,6 +51,7 @@ struct aio_open_private_data {
 	const char *fname;
 	char *dname;
 	connection_struct *conn;
+	struct smbXsrv_connection *xconn;
 	const struct security_unix_token *ux_tok;
 	uint64_t initial_allocation_size;
 	/* Returns. */
@@ -91,7 +92,6 @@ static void aio_open_handle_completion(struct tevent_req *subreq)
 		tevent_req_callback_data(subreq,
 		struct aio_open_private_data);
 	int ret;
-	struct smbXsrv_connection *xconn;
 
 	ret = pthreadpool_tevent_job_recv(subreq);
 	TALLOC_FREE(subreq);
@@ -128,15 +128,8 @@ static void aio_open_handle_completion(struct tevent_req *subreq)
 
 	opd->in_progress = false;
 
-	/*
-	 * TODO: In future we need a proper algorithm
-	 * to find the correct connection for a fsp.
-	 * For now we only have one connection, so this is correct...
-	 */
-	xconn = opd->conn->sconn->client->connections;
-
 	/* Find outstanding event and reschedule. */
-	if (!schedule_deferred_open_message_smb(xconn, opd->mid)) {
+	if (!schedule_deferred_open_message_smb(opd->xconn, opd->mid)) {
 		/*
 		 * Outstanding event didn't exist or was
 		 * cancelled. Free up the fd and throw
@@ -245,6 +238,12 @@ static struct aio_open_private_data *create_private_open_data(const files_struct
 		.mid = fsp->mid,
 		.in_progress = true,
 		.conn = fsp->conn,
+		/*
+		 * TODO: In future we need a proper algorithm
+		 * to find the correct connection for a fsp.
+		 * For now we only have one connection, so this is correct...
+		 */
+		.xconn = fsp->conn->sconn->client->connections,
 		.initial_allocation_size = fsp->initial_allocation_size,
 	};
 
