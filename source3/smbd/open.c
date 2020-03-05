@@ -1577,6 +1577,21 @@ bool is_oplock_stat_open(uint32_t access_mask)
 		((access_mask & ~stat_open_bits) == 0));
 }
 
+/**
+ * Allowed access mask for stat opens relevant to leases
+ **/
+bool is_lease_stat_open(uint32_t access_mask)
+{
+	const uint32_t stat_open_bits =
+		(SYNCHRONIZE_ACCESS|
+		 FILE_READ_ATTRIBUTES|
+		 FILE_WRITE_ATTRIBUTES|
+		 READ_CONTROL_ACCESS);
+
+	return (((access_mask &  stat_open_bits) != 0) &&
+		((access_mask & ~stat_open_bits) == 0));
+}
+
 struct has_delete_on_close_state {
 	bool ret;
 };

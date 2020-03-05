@@ -714,6 +714,7 @@ void change_file_owner_to_parent(connection_struct *conn,
 				 struct smb_filename *inherit_from_dir,
 				 files_struct *fsp);
 bool is_oplock_stat_open(uint32_t access_mask);
+bool is_lease_stat_open(uint32_t access_mask);
 NTSTATUS send_break_message(struct messaging_context *msg_ctx,
 			    const struct file_id *id,
 			    const struct share_mode_entry *exclusive,
