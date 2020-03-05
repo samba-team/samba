@@ -25,5 +25,6 @@ shellcheck_test -s sh \
 
 shellcheck_test -s bash \
 	"${TEST_SCRIPTS_DIR}/cluster.bash" \
+	"${TEST_SCRIPTS_DIR}/integration.bash" \
 	"${TEST_SCRIPTS_DIR}/integration_local_daemons.bash" \
 	"${TEST_SCRIPTS_DIR}/integration_real_cluster.bash"
