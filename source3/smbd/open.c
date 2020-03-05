@@ -2371,6 +2371,10 @@ static bool delay_for_oplock_fn(
 		state->have_other_lease = true;
 	}
 
+	if (e_is_lease && is_lease_stat_open(fsp->access_mask)) {
+		return false;
+	}
+
 	break_to = e_lease_type & ~state->delay_mask;
 
 	if (state->will_overwrite) {
