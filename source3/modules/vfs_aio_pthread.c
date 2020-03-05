@@ -95,6 +95,37 @@ static void aio_open_handle_completion(struct tevent_req *subreq)
 
 	ret = pthreadpool_tevent_job_recv(subreq);
 	TALLOC_FREE(subreq);
+
+	/*
+	 * We're no longer in flight. Remove the
+	 * destructor used to preserve opd so
+	 * a talloc_free actually removes it.
+	 */
+	talloc_set_destructor(opd, NULL);
+
+	if (opd->conn == NULL) {
+		/*
+		 * We were shutdown closed in flight. No one
+		 * wants the result, and state has been reparented
+		 * to the NULL context, so just free it so we
+		 * don't leak memory.
+		 */
+		DBG_NOTICE("aio open request for %s/%s abandoned in flight\n",
+			opd->dname,
+			opd->fname);
+		if (opd->ret_fd != -1) {
+			close(opd->ret_fd);
+			opd->ret_fd = -1;
+		}
+		/*
+		 * Find outstanding event and reschedule so the client
+		 * gets an error message return from the open.
+		 */
+		schedule_deferred_open_message_smb(opd->xconn, opd->mid);
+		opd_free(opd);
+		return;
+	}
+
 	if (ret != 0) {
 		bool ok;
 
@@ -286,6 +317,22 @@ static struct aio_open_private_data *create_private_open_data(TALLOC_CTX *ctx,
 	return opd;
 }
 
+static int opd_inflight_destructor(struct aio_open_private_data *opd)
+{
+	/*
+	 * Setting conn to NULL allows us to
+	 * discover the connection was torn
+	 * down which kills the fsp that owns
+	 * opd.
+	 */
+	DBG_NOTICE("aio open request for %s/%s cancelled\n",
+		opd->dname,
+		opd->fname);
+	opd->conn = NULL;
+	/* Don't let opd go away. */
+	return -1;
+}
+
 /*****************************************************************
  Setup an async open.
 *****************************************************************/
@@ -297,7 +344,18 @@ static int open_async(const files_struct *fsp,
 	struct aio_open_private_data *opd = NULL;
 	struct tevent_req *subreq = NULL;
 
-	opd = create_private_open_data(NULL, fsp, flags, mode);
+	/*
+	 * Allocate off fsp->conn, not NULL or fsp. As we're going
+	 * async fsp will get talloc_free'd when we return
+	 * EINPROGRESS/NT_STATUS_MORE_PROCESSING_REQUIRED. A new fsp
+	 * pointer gets allocated on every re-run of the
+	 * open code path. Allocating on fsp->conn instead
+	 * of NULL allows use to get notified via destructor
+	 * if the conn is force-closed or we shutdown.
+	 * opd is always safely freed in all codepath so no
+	 * memory leaks.
+	 */
+	opd = create_private_open_data(fsp->conn, fsp, flags, mode);
 	if (opd == NULL) {
 		DEBUG(10, ("open_async: Could not create private data.\n"));
 		return -1;
@@ -317,6 +375,12 @@ static int open_async(const files_struct *fsp,
 		(unsigned long long)opd->mid,
 		opd->dname,
 		opd->fname));
+
+	/*
+	 * Add a destructor to protect us from connection
+	 * teardown whilst the open thread is in flight.
+	 */
+	talloc_set_destructor(opd, opd_inflight_destructor);
 
 	/* Cause the calling code to reschedule us. */
 	errno = EINPROGRESS; /* Maps to NT_STATUS_MORE_PROCESSING_REQUIRED. */
