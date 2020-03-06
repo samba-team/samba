@@ -217,11 +217,12 @@ static void opd_free(struct aio_open_private_data *opd)
  Create and initialize a private data struct for async open.
 ***********************************************************************/
 
-static struct aio_open_private_data *create_private_open_data(const files_struct *fsp,
+static struct aio_open_private_data *create_private_open_data(TALLOC_CTX *ctx,
+					const files_struct *fsp,
 					int flags,
 					mode_t mode)
 {
-	struct aio_open_private_data *opd = talloc_zero(NULL,
+	struct aio_open_private_data *opd = talloc_zero(ctx,
 					struct aio_open_private_data);
 	const char *fname = NULL;
 
@@ -296,7 +297,7 @@ static int open_async(const files_struct *fsp,
 	struct aio_open_private_data *opd = NULL;
 	struct tevent_req *subreq = NULL;
 
-	opd = create_private_open_data(fsp, flags, mode);
+	opd = create_private_open_data(NULL, fsp, flags, mode);
 	if (opd == NULL) {
 		DEBUG(10, ("open_async: Could not create private data.\n"));
 		return -1;
