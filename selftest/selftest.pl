@@ -426,6 +426,7 @@ my $testenv_default = "none";
 
 if ($opt_mitkrb5 == 1) {
 	$ENV{MITKRB5} = $opt_mitkrb5;
+	$ENV{KRB5RCACHETYPE} = "none";
 }
 
 # After this many seconds, the server will self-terminate.  All tests
