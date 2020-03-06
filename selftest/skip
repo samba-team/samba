@@ -75,6 +75,8 @@
 ^samba3.smb2.durable-open-disconnect    # Not a test, but a way to create a disconnected durable
 ^samba3.smb2.scan                       # No tests
 ^samba3.smb2.oplock.levelii501		# No test yet
+^samba3.smb2.timestamp_resolution       # See the comment on the test
+^samba4.smb2.timestamp_resolution
 ^samba3.rpc.samr.passwords.lockout\(ad_dc\) # No point running this version, it just waits 12 times longer the samba4 version of this test, covering the same code
 ^samba4.base.iometer
 ^samba4.base.casetable
