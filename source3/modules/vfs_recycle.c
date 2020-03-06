@@ -236,8 +236,8 @@ static off_t recycle_get_file_size(vfs_handle_struct *handle,
 	}
 
 	if (SMB_VFS_STAT(handle->conn, smb_fname_tmp) != 0) {
-		DEBUG(0,("recycle: stat for %s returned %s\n",
-			 smb_fname_str_dbg(smb_fname_tmp), strerror(errno)));
+		DBG_DEBUG("stat for %s returned %s\n",
+			 smb_fname_str_dbg(smb_fname_tmp), strerror(errno));
 		size = (off_t)0;
 		goto out;
 	}
