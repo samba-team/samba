@@ -727,3 +727,148 @@ struct torture_suite *torture_smb2_timestamps_init(TALLOC_CTX *ctx)
 
 	return suite;
 }
+
+/*
+ * This test shows that Windows has a timestamp resolution of ~15ms. When so
+ * when a smaller amount of time than that has passed it's not necessarily
+ * detectable on a Windows 2019 and newer who implement immediate timestamp
+ * updates.
+ *
+ * Note that this test relies on a low latency SMB connection. Even with a low
+ * latency connection of eg 1m there's a chance of 1/15 that the first part of
+ * the test expecting no timestamp change fails as the writetime is updated.
+ *
+ * Due to this timing dependency this test is skipped in Samba CI, but it is
+ * preserved here for future SMB2 timestamps behaviour archealogists.
+ *
+ * See also: https://lists.samba.org/archive/cifs-protocol/2019-December/003358.html
+ */
+static bool test_timestamp_resolution1(struct torture_context *tctx,
+				       struct smb2_tree *tree)
+{
+	union smb_fileinfo finfo1;
+	const char *fname = BASEDIR "\\" FNAME;
+	struct smb2_create cr;
+	struct smb2_handle h = {{0}};
+	struct smb2_close cl;
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree, BASEDIR);
+	status = torture_smb2_testdir(tree, BASEDIR, &h);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	status = smb2_util_close(tree, h );
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+
+	torture_comment(tctx, "Write without delay, expect no "
+			"write-time change\n");
+
+	smb2_generic_create(&cr, NULL, false, fname,
+			    NTCREATEX_DISP_CREATE,
+			    smb2_util_oplock_level(""), 0, 0);
+	status = smb2_create(tree, tree, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	h = cr.out.file.handle;
+
+	finfo1 = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h,
+	};
+	status = smb2_getinfo_file(tree, tree, &finfo1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"getinfo failed\n");
+
+	status = smb2_util_write(tree, h, "123456789", 0, 9);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"write failed\n");
+
+	cl = (struct smb2_close) {
+		.in.file.handle = h,
+		.in.flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION,
+	};
+
+	status = smb2_close(tree, &cl);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+	ZERO_STRUCT(h);
+
+	torture_comment(tctx, "Initial: %s\nClose: %s\n",
+			nt_time_string(tctx, finfo1.basic_info.out.write_time),
+			nt_time_string(tctx, cl.out.write_time));
+
+	torture_assert_u64_equal_goto(tctx,
+				      finfo1.basic_info.out.write_time,
+				      cl.out.write_time,
+				      ret, done,
+				      "Write time changed (wrong!)\n");
+
+	torture_comment(tctx, "Write with 20 ms delay, expect "
+			"write-time change\n");
+
+	smb2_generic_create(&cr, NULL, false, fname,
+			    NTCREATEX_DISP_OPEN,
+			    smb2_util_oplock_level(""), 0, 0);
+	status = smb2_create(tree, tree, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	h = cr.out.file.handle;
+
+	finfo1 = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h,
+	};
+	status = smb2_getinfo_file(tree, tree, &finfo1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"getinfo failed\n");
+
+	smb_msleep(20);
+
+	status = smb2_util_write(tree, h, "123456789", 0, 9);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"write failed\n");
+
+	cl = (struct smb2_close) {
+		.in.file.handle = h,
+		.in.flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION,
+	};
+
+	status = smb2_close(tree, &cl);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+	ZERO_STRUCT(h);
+
+	torture_comment(tctx, "Initial: %s\nClose: %s\n",
+			nt_time_string(tctx, finfo1.basic_info.out.write_time),
+			nt_time_string(tctx, cl.out.write_time));
+
+	torture_assert_u64_not_equal_goto(
+		tctx,
+		finfo1.basic_info.out.write_time,
+		cl.out.write_time,
+		ret, done,
+		"Write time did not change (wrong!)\n");
+
+done:
+	if (!smb2_util_handle_empty(h)) {
+		smb2_util_close(tree, h);
+	}
+	smb2_deltree(tree, BASEDIR);
+	return ret;
+}
+
+/*
+   basic testing of SMB2 timestamps
+*/
+struct torture_suite *torture_smb2_timestamp_resolution_init(TALLOC_CTX *ctx)
+{
+	struct torture_suite *suite = torture_suite_create(ctx, "timestamp_resolution");
+
+	torture_suite_add_1smb2_test(suite, "resolution1", test_timestamp_resolution1);
+
+	suite->description = talloc_strdup(suite, "SMB2 timestamp tests");
+
+	return suite;
+}
