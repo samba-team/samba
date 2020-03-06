@@ -159,6 +159,11 @@ static void ctdb_node_connect_write(struct tevent_context *ev,
 }
 
 
+static void ctdb_tcp_node_connect_timeout(struct tevent_context *ev,
+					  struct tevent_timer *te,
+					  struct timeval t,
+					  void *private_data);
+
 /*
   called when we should try and establish a tcp connection to a node
 */
@@ -249,7 +254,7 @@ static void ctdb_tcp_start_outgoing(struct ctdb_node *node)
 	tnode->connect_te = tevent_add_timer(ctdb->ev,
 					     tnode,
 					     timeval_current_ofs(1, 0),
-					     ctdb_tcp_node_connect,
+					     ctdb_tcp_node_connect_timeout,
 					     node);
 
 	return;
@@ -267,6 +272,17 @@ void ctdb_tcp_node_connect(struct tevent_context *ev,
 			   struct tevent_timer *te,
 			   struct timeval t,
 			   void *private_data)
+{
+	struct ctdb_node *node = talloc_get_type_abort(private_data,
+						       struct ctdb_node);
+
+	ctdb_tcp_start_outgoing(node);
+}
+
+static void ctdb_tcp_node_connect_timeout(struct tevent_context *ev,
+					  struct tevent_timer *te,
+					  struct timeval t,
+					  void *private_data)
 {
 	struct ctdb_node *node = talloc_get_type_abort(private_data,
 						       struct ctdb_node);
