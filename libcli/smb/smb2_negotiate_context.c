@@ -125,7 +125,7 @@ static NTSTATUS smb2_negotiate_context_push_one(TALLOC_CTX *mem_ctx, DATA_BLOB *
 NTSTATUS smb2_negotiate_context_push(TALLOC_CTX *mem_ctx, DATA_BLOB *buffer,
 				     const struct smb2_negotiate_contexts contexts)
 {
-	int i;
+	uint32_t i;
 	NTSTATUS status;
 
 	*buffer = data_blob(NULL, 0);
