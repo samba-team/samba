@@ -860,6 +860,11 @@ plantestsuite("samba3.blackbox.rpcclient_srvsvc", "simpleserver",
                "$USERNAME", "$PASSWORD", "$SERVER",
                os.path.join(bindir(), "rpcclient"), "tmp"])
 
+plantestsuite("samba3.blackbox.rpcclient_lookup", "simpleserver",
+              [os.path.join(samba3srcdir, "script/tests/test_rpcclient_lookup.sh"),
+               "$USERNAME", "$PASSWORD", "$SERVER",
+               os.path.join(bindir(), "rpcclient")])
+
 plantestsuite("samba3.blackbox.rpcclient.pw-nt-hash", "simpleserver",
               [os.path.join(samba3srcdir, "script/tests/test_rpcclient_pw_nt_hash.sh"),
                "$USERNAME", "$PASSWORD", "$SERVER",
