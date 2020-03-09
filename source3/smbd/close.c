@@ -31,6 +31,7 @@
 #include "auth.h"
 #include "messages.h"
 #include "../librpc/gen_ndr/open_files.h"
+#include "lib/util/tevent_ntstatus.h"
 
 /****************************************************************************
  Run a file if it is a magic script.
@@ -678,7 +679,7 @@ static void close_free_pending_aio(struct files_struct *fsp,
 		 * directly) and also leaves the SMB2 request
 		 * outstanding on the processing queue.
 		 *
-		 * Using tevent_req_error() instead
+		 * Using tevent_req_[nt]error() instead
 		 * causes the outstanding SMB1/2/3 request to
 		 * return with NT_STATUS_INVALID_HANDLE
 		 * and removes it from the processing queue.
@@ -687,7 +688,12 @@ static void close_free_pending_aio(struct files_struct *fsp,
 		 * calls talloc_free(req). The destructor will remove
 		 * itself from the fsp and the aio_requests array.
 		 */
-		tevent_req_error(fsp->aio_requests[0], EBADF);
+		if (fsp->is_directory) {
+			tevent_req_nterror(fsp->aio_requests[0],
+					   NT_STATUS_INVALID_HANDLE);
+		} else {
+			tevent_req_error(fsp->aio_requests[0], EBADF);
+		}
 
 		/* Paranoia to ensure we don't spin. */
 		num_requests--;
