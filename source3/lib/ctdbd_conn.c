@@ -1327,7 +1327,7 @@ static void ctdb_pkt_send_cleanup(struct tevent_req *req,
  *
  * This function will modify the iov array! But
  * this is a static function and our only caller
- * ctdb_parse_send/recv is preparared for this to
+ * ctdb_parse_send/recv is prepared for this to
  * happen!
  **/
 static struct tevent_req *ctdb_pkt_send_send(TALLOC_CTX *mem_ctx,
