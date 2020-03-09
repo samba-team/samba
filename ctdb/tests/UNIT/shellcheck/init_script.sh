@@ -12,8 +12,7 @@ if [ -z "$script" ] ; then
 		script="/usr/local/etc/init.d/ctdb"
 	fi
 	if [ ! -r "$script" ] ; then
-		echo "WARNING: Unable to find ctdb init script, skipping test"
-		exit 0
+		ctdb_test_skip "Unable to find ctdb init script"
 	fi
 fi
 
