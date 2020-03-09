@@ -207,7 +207,7 @@ static void share_mode_memcache_store(struct share_mode_data *d)
  * NB. We use ndr_pull_hyper on a stack-created
  * struct ndr_pull with no talloc allowed, as we
  * need this to be really fast as an ndr-peek into
- * the first 9 bytes of the blob.
+ * the first 10 bytes of the blob.
  */
 
 static enum ndr_err_code get_share_mode_blob_header(
