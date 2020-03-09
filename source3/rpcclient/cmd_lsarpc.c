@@ -237,8 +237,8 @@ static NTSTATUS cmd_lsa_lookup_names(struct rpc_pipe_client *cli,
 	}
 
 	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &pol);
+					LSA_POLICY_LOOKUP_NAMES,
+					&pol);
 
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
@@ -288,8 +288,8 @@ static NTSTATUS cmd_lsa_lookup_names_level(struct rpc_pipe_client *cli,
 	}
 
 	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &pol);
+					LSA_POLICY_LOOKUP_NAMES,
+					&pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -406,8 +406,8 @@ static NTSTATUS cmd_lsa_lookup_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	}
 
 	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &pol);
+					LSA_POLICY_LOOKUP_NAMES,
+					&pol);
 
 	if (!NT_STATUS_IS_OK(status))
 		goto done;
@@ -481,8 +481,8 @@ static NTSTATUS cmd_lsa_lookup_sids_level(struct rpc_pipe_client *cli,
 	}
 
 	status = rpccli_lsa_open_policy(cli, mem_ctx, True,
-				     SEC_FLAG_MAXIMUM_ALLOWED,
-				     &pol);
+					LSA_POLICY_LOOKUP_NAMES,
+					&pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
