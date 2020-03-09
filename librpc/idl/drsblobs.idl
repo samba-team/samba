@@ -157,7 +157,7 @@ interface drsblobs {
         typedef [public] struct {
 		uint32             size;
 		[value(0)] uint32  bandwidth;         /* ignored */
-		[value(1)] uint32  numberOfSchedules; /* always 1 */
+		uint32             numberOfSchedules; /* typically 1 */
 		scheduleHeader     headerArray[numberOfSchedules];
 		scheduleSlots      dataArray[numberOfSchedules];
 	} schedule;
