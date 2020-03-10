@@ -1,2 +1,0 @@
-# We don't have SMB3 unix extensions yet
-samba4.unix_ext.libsmbclient.readdirplus2.SMB3.readdirplus2.*

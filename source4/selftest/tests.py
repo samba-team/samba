@@ -365,53 +365,28 @@ netapi = smbtorture4_testsuites("netapi.")
 for t in base + raw + smb2 + netapi:
     plansmbtorture4testsuite(t, "ad_dc_ntvfs", ['//$SERVER/tmp', '-U$USERNAME%$PASSWORD'] + ntvfsargs)
 
-def planlibsmbclienttest(name, testargs, proto):
-    env = "nt4_dc"
-
-    url = "--option=torture:smburl=smb://$USERNAME:$PASSWORD@$SERVER"
-
-    cmdarray = selftesthelpers.smbtorture4testsuite_cmdarray(
-        name,
-        env,
-        testargs + [ "--option=torture:clientprotocol=%s" % proto],
-        'samba4')
-
-    urloption = url
-    if name != "libsmbclient.list_shares":
-        urloption += "/posix_share"
-
-    plantestsuite_loadlist(
-        "samba4.unix_ext.%s.%s" % (t, proto),
-        env,
-        " ".join(cmdarray +
-                 ["--option=torture:unix_extensions=true"] +
-                 [urloption]))
-
-    urloption = url
-    if name != "libsmbclient.list_shares":
-        urloption += "/tmp"
-
-    plantestsuite_loadlist(
-        "samba4.non_unix_ext.%s.%s" % (t, proto),
-        env,
-        "(inject=\"${SERVERCONFFILE%/*}/global_inject.conf\"; " +
-        "echo \"unix extensions = no\" > ${inject} ; " +
-        " ".join(cmdarray + [urloption]) +
-        "; > ${inject})")
-
-
 libsmbclient = smbtorture4_testsuites("libsmbclient.")
 protocols = [ 'NT1', 'SMB3' ]
 for t in libsmbclient:
+    url = "smb://$USERNAME:$PASSWORD@$SERVER/tmp"
+    if t == "libsmbclient.list_shares":
+        url = "smb://$USERNAME:$PASSWORD@$SERVER"
+
     libsmbclient_testargs = [
         '//$SERVER/tmp',
         '-U$USERNAME%$PASSWORD',
+        "--option=torture:smburl=" + url,
         "--option=torture:replace_smbconf="
         "%s/testdata/samba3/smb_new.conf" % srcdir()
         ]
 
     for proto in protocols:
-        planlibsmbclienttest(t, libsmbclient_testargs, proto)
+        plansmbtorture4testsuite(
+            t,
+            "nt4_dc",
+            libsmbclient_testargs +
+            [ "--option=torture:clientprotocol=%s" % proto],
+            "samba4.%s.%s" % (t, proto))
 
 plansmbtorture4testsuite("raw.qfileinfo.ipc", "ad_dc_ntvfs", '//$SERVER/ipc\$ -U$USERNAME%$PASSWORD')
 

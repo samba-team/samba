@@ -736,10 +736,66 @@ NTSTATUS cli_posix_setacl(struct cli_state *cli,
 	return status;
 }
 
-static void fetch_file_unix_basic_info(
-	const uint8_t data[100], SMB_STRUCT_STAT *sbuf)
+/****************************************************************************
+ Stat a file (UNIX extensions).
+****************************************************************************/
+
+struct stat_state {
+	SMB_STRUCT_STAT *sbuf;
+};
+
+static void cli_posix_stat_done(struct tevent_req *subreq);
+
+struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
+				       struct tevent_context *ev,
+				       struct cli_state *cli,
+				       const char *fname,
+				       SMB_STRUCT_STAT *sbuf)
 {
-	ZERO_STRUCTP(sbuf);
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct stat_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct stat_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->sbuf = sbuf;
+
+	subreq = cli_qpathinfo_send(state, ev, cli, fname,
+				    SMB_QUERY_FILE_UNIX_BASIC, 100, 100);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, cli_posix_stat_done, req);
+	return req;
+}
+
+static void cli_posix_stat_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+				subreq, struct tevent_req);
+	struct stat_state *state = tevent_req_data(req, struct stat_state);
+	SMB_STRUCT_STAT *sbuf = state->sbuf;
+	uint8_t *data;
+	uint32_t num_data = 0;
+	NTSTATUS status;
+
+	status = cli_qpathinfo_recv(subreq, state, &data, &num_data);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status)) {
+		return;
+	}
+
+	if (num_data != 100) {
+		/*
+		 * Paranoia, cli_qpathinfo should have guaranteed
+		 * this, but you never know...
+		 */
+		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
+		return;
+	}
+
+	*sbuf = (SMB_STRUCT_STAT) { 0 };
 
 	/* total size, in bytes */
 	sbuf->st_ex_size = IVAL2_TO_SMB_BIG_UINT(data, 0);
@@ -753,13 +809,13 @@ static void fetch_file_unix_basic_info(
 	sbuf->st_ex_blocks /= 512;
 #endif
 	/* time of last change */
-	sbuf->st_ex_ctime = interpret_long_date((const char *)(data + 16));
+	sbuf->st_ex_ctime = interpret_long_date((char *)(data + 16));
 
 	/* time of last access */
-	sbuf->st_ex_atime = interpret_long_date((const char *)(data + 24));
+	sbuf->st_ex_atime = interpret_long_date((char *)(data + 24));
 
 	/* time of last modification */
-	sbuf->st_ex_mtime = interpret_long_date((const char *)(data + 32));
+	sbuf->st_ex_mtime = interpret_long_date((char *)(data + 32));
 
 	sbuf->st_ex_uid = (uid_t) IVAL(data, 40); /* user ID of owner */
 	sbuf->st_ex_gid = (gid_t) IVAL(data, 48); /* group ID of owner */
@@ -780,91 +836,13 @@ static void fetch_file_unix_basic_info(
 
 	/* number of hard links */
 	sbuf->st_ex_nlink = BIG_UINT(data, 92);
-}
-
-void fetch_file_unix_basic_info2(
-	const uint8_t data[116], SMB_STRUCT_STAT *sbuf)
-{
-	fetch_file_unix_basic_info(data, sbuf);
-	sbuf->st_ex_btime = interpret_long_date((const char *)(data + 100));
-}
-
-/****************************************************************************
- Stat a file (UNIX extensions).
-****************************************************************************/
-
-struct stat_state {
-	SMB_STRUCT_STAT sbuf;
-};
-
-static void cli_posix_stat_done(struct tevent_req *subreq);
-
-struct tevent_req *cli_posix_stat_send(TALLOC_CTX *mem_ctx,
-				       struct tevent_context *ev,
-				       struct cli_state *cli,
-				       const char *fname)
-{
-	struct tevent_req *req = NULL, *subreq = NULL;
-	struct stat_state *state = NULL;
-
-	req = tevent_req_create(mem_ctx, &state, struct stat_state);
-	if (req == NULL) {
-		return NULL;
-	}
-
-	subreq = cli_qpathinfo_send(state, ev, cli, fname,
-				    SMB_QUERY_FILE_UNIX_BASIC, 100, 100);
-	if (tevent_req_nomem(subreq, req)) {
-		return tevent_req_post(req, ev);
-	}
-	tevent_req_set_callback(subreq, cli_posix_stat_done, req);
-	return req;
-}
-
-static void cli_posix_stat_done(struct tevent_req *subreq)
-{
-	struct tevent_req *req = tevent_req_callback_data(
-				subreq, struct tevent_req);
-	struct stat_state *state = tevent_req_data(req, struct stat_state);
-	SMB_STRUCT_STAT *sbuf = &state->sbuf;
-	uint8_t *data;
-	uint32_t num_data = 0;
-	NTSTATUS status;
-
-	status = cli_qpathinfo_recv(subreq, state, &data, &num_data);
-	TALLOC_FREE(subreq);
-	if (tevent_req_nterror(req, status)) {
-		return;
-	}
-
-	if (num_data != 100) {
-		/*
-		 * Paranoia, cli_qpathinfo should have guaranteed
-		 * this, but you never know...
-		 */
-		tevent_req_nterror(req, NT_STATUS_INVALID_NETWORK_RESPONSE);
-		return;
-	}
-
-	fetch_file_unix_basic_info(data, sbuf);
 
 	tevent_req_done(req);
 }
 
-NTSTATUS cli_posix_stat_recv(struct tevent_req *req,
-			     SMB_STRUCT_STAT *sbuf)
+NTSTATUS cli_posix_stat_recv(struct tevent_req *req)
 {
-	struct stat_state *state = tevent_req_data(req, struct stat_state);
-	NTSTATUS status;
-
-	if (tevent_req_is_nterror(req, &status)) {
-		return status;
-	}
-	if (sbuf != NULL) {
-		*sbuf = state->sbuf;
-	}
-	tevent_req_received(req);
-	return NT_STATUS_OK;
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 NTSTATUS cli_posix_stat(struct cli_state *cli,
@@ -890,7 +868,7 @@ NTSTATUS cli_posix_stat(struct cli_state *cli,
 		goto fail;
 	}
 
-	req = cli_posix_stat_send(frame, ev, cli, fname);
+	req = cli_posix_stat_send(frame, ev, cli, fname, sbuf);
 	if (req == NULL) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
@@ -900,7 +878,7 @@ NTSTATUS cli_posix_stat(struct cli_state *cli,
 		goto fail;
 	}
 
-	status = cli_posix_stat_recv(req, sbuf);
+	status = cli_posix_stat_recv(req);
 
  fail:
 	TALLOC_FREE(frame);

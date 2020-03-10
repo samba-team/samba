@@ -296,6 +296,7 @@ SMBC_server_internal(TALLOC_CTX *ctx,
 	bool use_ccache = false;
 	bool pw_nt_hash = false;
 
+	ZERO_STRUCT(c);
 	*in_cache = false;
 
 	if (server[0] == 0) {

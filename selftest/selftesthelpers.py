@@ -172,21 +172,14 @@ smbtorture4_options = [
     "--format=subunit"
 ] + get_env_torture_options()
 
-def smbtorture4testsuite_cmdarray(name, env, options, target):
-    cmdarray = [ valgrindify(smbtorture4), "$LISTOPT", "$LOADLIST" ]
-    cmdarray += smbtorture4_options
-    cmdarray += [ "--target=%s" % target ]
-    cmdarray += options
-    cmdarray += [ name ]
-    return cmdarray
 
 def plansmbtorture4testsuite(name, env, options, target, modname=None):
     if modname is None:
         modname = "samba4.%s" % name
-    if isinstance(options, str):
-        options = options.split()
-    cmdarray = smbtorture4testsuite_cmdarray(name, env, options, target)
-    cmdline = " ".join(cmdarray)
+    if isinstance(options, list):
+        options = " ".join(options)
+    options = " ".join(smbtorture4_options + ["--target=%s" % target]) + " " + options
+    cmdline = "%s $LISTOPT $LOADLIST %s %s" % (valgrindify(smbtorture4), options, name)
     plantestsuite_loadlist(modname, env, cmdline)
 
 

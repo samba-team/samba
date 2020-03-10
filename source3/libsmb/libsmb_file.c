@@ -125,21 +125,8 @@ SMBC_open_ctx(SMBCCTX *context,
 		}
 		/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
 
-		if (srv->try_posixinfo) {
-			status = cli_posix_open(
-				targetcli,
-				targetpath,
-				flags,
-				mode,
-				&fd);
-		} else {
-			status = cli_open(
-				targetcli,
-				targetpath,
-				flags,
-				context->internal->share_mode,
-				&fd);
-		}
+		status = cli_open(targetcli, targetpath, flags,
+                                   context->internal->share_mode, &fd);
 		if (!NT_STATUS_IS_OK(status)) {
 
 			/* Handle the error ... */
@@ -269,9 +256,9 @@ SMBC_read_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	DEBUG(4, ("smbc_read(%p, %zu)\n", file, count));
+	DEBUG(4, ("smbc_read(%p, %d)\n", file, (int)count));
 
-	if (!SMBC_dlist_contains(context->internal->files, file)) {
+	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -297,7 +284,7 @@ SMBC_read_ctx(SMBCCTX *context,
 
 	file->offset += ret;
 
-	DEBUG(4, ("  --> %zu\n", ret));
+	DEBUG(4, ("  --> %ld\n", (unsigned long)ret));
 
 	TALLOC_FREE(frame);
 	return ret;  /* Success, ret bytes of data ... */
@@ -321,13 +308,17 @@ SMBC_splice_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!SMBC_dlist_contains(context->internal->files, srcfile)) {
+	if (!srcfile ||
+	    !SMBC_dlist_contains(context->internal->files, srcfile))
+	{
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	if (!SMBC_dlist_contains(context->internal->files, dstfile)) {
+	if (!dstfile ||
+	    !SMBC_dlist_contains(context->internal->files, dstfile))
+	{
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -372,7 +363,7 @@ SMBC_write_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!SMBC_dlist_contains(context->internal->files, file)) {
+	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -418,7 +409,7 @@ SMBC_close_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!SMBC_dlist_contains(context->internal->files, file)) {
+	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -484,7 +475,7 @@ SMBC_getatr(SMBCCTX * context,
  	}
 
 	/* path fixup for . and .. */
-	if (ISDOT(path) || ISDOTDOT(path)) {
+	if (strequal(path, ".") || strequal(path, "..")) {
 		fixedpath = talloc_strdup(frame, "\\");
 		if (!fixedpath) {
 			errno = ENOMEM;
@@ -516,9 +507,8 @@ SMBC_getatr(SMBCCTX * context,
 	if (srv->try_posixinfo) {
 		SMB_STRUCT_STAT sbuf;
 
-		status = cli_posix_stat(targetcli, targetpath, &sbuf);
+		status = cli_posix_stat(targetcli, frame, &sbuf);
 		if (NT_STATUS_IS_OK(status)) {
-			sbuf.st_ex_dev = srv->dev;
 			setup_stat_from_stat_ex(&sbuf, path, sb);
 
 			TALLOC_FREE(frame);
@@ -711,7 +701,7 @@ SMBC_lseek_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!SMBC_dlist_contains(context->internal->files, file)) {
+	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -774,7 +764,7 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!SMBC_dlist_contains(context->internal->files, file)) {
+	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;

@@ -251,7 +251,7 @@ SMBC_fstat_ctx(SMBCCTX *context,
 		return -1;
 	}
 
-	if (!SMBC_dlist_contains(context->internal->files, file)) {
+	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
