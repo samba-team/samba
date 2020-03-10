@@ -1,4 +1,68 @@
                    ==============================
+                   Release Notes for Samba 4.11.7
+                           March 10, 2020
+		   ==============================
+
+
+This is the latest stable release of the Samba 4.11 release series.
+
+
+Changes since 4.11.6:
+---------------------
+
+o  Jeremy Allison <jra@samba.org>
+   * BUG 14239: s3: lib: nmblib. Clean up and harden nmb packet processing.
+   * BUG 14283: s3: VFS: full_audit. Use system session_info if called from a
+     temporary share definition.
+
+o  Andrew Bartlett <abartlet@samba.org>
+   * BUG 14258: dsdb: Correctly handle memory in objectclass_attrs.
+   * BUG 14270: ldb: version 2.0.9, Samba 4.11 and later give incorrect results
+     for SCOPE_ONE searches.
+
+o  Volker Lendecke <vl@samba.org>
+   * BUG 14247: auth: Fix CIDs 1458418 and 1458420 Null pointer dereferences.
+   * BUG 14285: smbd: Handle EINTR from open(2) properly.
+
+o  Stefan Metzmacher <metze@samba.org>
+   * BUG 14247: winbind member (source3) fails local SAM auth with empty domain
+     name.
+   * BUG 14265: winbindd: Handling missing idmap in getgrgid().
+
+o  Andreas Schneider <asn@samba.org>
+   * BUG 14253: lib:util: Log mkdir error on correct debug levels.
+   * BUG 14266: wafsamba: Do not use 'rU' as the 'U' is deprecated in
+     Python 3.9.
+
+o  Martin Schwenke <martin@meltin.net>
+   * BUG 14274: ctdb-tcp: Make error handling for outbound connection
+     consistent.
+
+
+#######################################
+Reporting bugs & Development Discussion
+#######################################
+
+Please discuss this release on the samba-technical mailing list or by
+joining the #samba-technical IRC channel on irc.freenode.net.
+
+If you do report problems then please try to send high quality
+feedback. If you don't provide vital information to help us track down
+the problem then you will probably be ignored.  All bug reports should
+be filed under the "Samba 4.1 and newer" product in the project's Bugzilla
+database (https://bugzilla.samba.org/).
+
+
+======================================================================
+== Our Code, Our Bugs, Our Responsibility.
+== The Samba Team
+======================================================================
+
+
+Release notes for older releases follow:
+----------------------------------------
+
+                   ==============================
                    Release Notes for Samba 4.11.6
                           January 28, 2020
 		   ==============================
@@ -67,8 +131,8 @@ database (https://bugzilla.samba.org/).
 ======================================================================
 
 
-Release notes for older releases follow:
-----------------------------------------
+----------------------------------------------------------------------
+
 
                    ==============================
                    Release Notes for Samba 4.11.5
