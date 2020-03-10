@@ -1192,6 +1192,94 @@ static void swrap_bind_symbol_all(void)
  * SWRAP HELPER FUNCTIONS
  *********************************************************/
 
+/*
+ * We return 127.0.0.0 (default) or 10.53.57.0.
+ *
+ * This can be controlled by:
+ * SOCKET_WRAPPER_IPV4_NETWORK=127.0.0.0 (default)
+ * or
+ * SOCKET_WRAPPER_IPV4_NETWORK=10.53.57.0
+ */
+static in_addr_t swrap_ipv4_net(void)
+{
+	static int initialized;
+	static in_addr_t hv;
+	const char *net_str = NULL;
+	struct in_addr nv;
+	int ret;
+
+	if (initialized) {
+		return hv;
+	}
+	initialized = 1;
+
+	net_str = getenv("SOCKET_WRAPPER_IPV4_NETWORK");
+	if (net_str == NULL) {
+		net_str = "127.0.0.0";
+	}
+
+	ret = inet_pton(AF_INET, net_str, &nv);
+	if (ret <= 0) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "INVALID IPv4 Network [%s]\n",
+			  net_str);
+		abort();
+	}
+
+	hv = ntohl(nv.s_addr);
+
+	switch (hv) {
+	case 0x7f000000:
+		/* 127.0.0.0 */
+		break;
+	case 0x0a353900:
+		/* 10.53.57.0 */
+		break;
+	default:
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "INVALID IPv4 Network [%s][0x%x] should be "
+			  "127.0.0.0 or 10.53.57.0\n",
+			  net_str, (unsigned)hv);
+		abort();
+	}
+
+	return hv;
+}
+
+/*
+ * This returns 127.255.255.255 or 10.255.255.255
+ */
+static in_addr_t swrap_ipv4_bcast(void)
+{
+	in_addr_t hv;
+
+	hv = swrap_ipv4_net();
+	hv |= IN_CLASSA_HOST;
+
+	return hv;
+}
+
+/*
+ * This returns 127.0.0.${iface} or 10.53.57.${iface}
+ */
+static in_addr_t swrap_ipv4_iface(unsigned int iface)
+{
+	in_addr_t hv;
+
+	if (iface == 0 || iface > MAX_WRAPPED_INTERFACES) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "swrap_ipv4_iface(%u) invalid!\n",
+			  iface);
+		abort();
+		return -1;
+	}
+
+	hv = swrap_ipv4_net();
+	hv |= iface;
+
+	return hv;
+}
+
 #ifdef HAVE_IPV6
 /*
  * FD00::5357:5FXX
@@ -1442,6 +1530,12 @@ static void socket_wrapper_init_sockets(void)
 		return;
 	}
 
+	/*
+	 * Intialize the static cache early before
+	 * any thread is able to start.
+	 */
+	(void)swrap_ipv4_net();
+
 	socket_wrapper_init_fds_idx();
 
 	/* Needs to be called inside the sockets_mutex lock here. */
@@ -1536,6 +1630,9 @@ static unsigned int socket_wrapper_default_iface(void)
 
 static void set_socket_info_index(int fd, int idx)
 {
+	SWRAP_LOG(SWRAP_LOG_TRACE,
+		  "fd=%d idx=%d\n",
+		  fd, idx);
 	socket_fds_idx[fd] = idx;
 	/* This builtin issues a full memory barrier. */
 	__sync_synchronize();
@@ -1543,6 +1640,9 @@ static void set_socket_info_index(int fd, int idx)
 
 static void reset_socket_info_index(int fd)
 {
+	SWRAP_LOG(SWRAP_LOG_TRACE,
+		  "fd=%d idx=%d\n",
+		  fd, -1);
 	set_socket_info_index(fd, -1);
 }
 
@@ -1678,7 +1778,7 @@ static int convert_un_in(const struct sockaddr_un *un, struct sockaddr *in, sock
 
 		memset(in2, 0, sizeof(*in2));
 		in2->sin_family = AF_INET;
-		in2->sin_addr.s_addr = htonl((127<<24) | iface);
+		in2->sin_addr.s_addr = htonl(swrap_ipv4_iface(iface));
 		in2->sin_port = htons(prt);
 
 		*len = sizeof(*in2);
@@ -1731,6 +1831,8 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 		char u_type = '\0';
 		char b_type = '\0';
 		char a_type = '\0';
+		const unsigned int sw_net_addr = swrap_ipv4_net();
+		const unsigned int sw_bcast_addr = swrap_ipv4_bcast();
 
 		switch (si->type) {
 		case SOCK_STREAM:
@@ -1753,13 +1855,18 @@ static int convert_in_un_remote(struct socket_info *si, const struct sockaddr *i
 			is_bcast = 2;
 			type = a_type;
 			iface = socket_wrapper_default_iface();
-		} else if (b_type && addr == 0x7FFFFFFF) {
-			/* 127.255.255.255 only udp */
+		} else if (b_type && addr == sw_bcast_addr) {
+			/*
+			 * 127.255.255.255
+			 * or
+			 * 10.255.255.255
+			 * only udp
+			 */
 			is_bcast = 1;
 			type = b_type;
 			iface = socket_wrapper_default_iface();
-		} else if ((addr & 0xFFFFFF00) == 0x7F000000) {
-			/* 127.0.0.X */
+		} else if ((addr & 0xFFFFFF00) == sw_net_addr) {
+			/* 127.0.0.X or 10.53.57.X */
 			is_bcast = 0;
 			type = u_type;
 			iface = (addr & 0x000000FF);
@@ -1863,6 +1970,8 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 		char d_type = '\0';
 		char b_type = '\0';
 		char a_type = '\0';
+		const unsigned int sw_net_addr = swrap_ipv4_net();
+		const unsigned int sw_bcast_addr = swrap_ipv4_bcast();
 
 		prt = ntohs(in->sin_port);
 
@@ -1893,12 +2002,12 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			is_bcast = 2;
 			type = a_type;
 			iface = socket_wrapper_default_iface();
-		} else if (b_type && addr == 0x7FFFFFFF) {
+		} else if (b_type && addr == sw_bcast_addr) {
 			/* 127.255.255.255 only udp */
 			is_bcast = 1;
 			type = b_type;
 			iface = socket_wrapper_default_iface();
-		} else if ((addr & 0xFFFFFF00) == 0x7F000000) {
+		} else if ((addr & 0xFFFFFF00) == sw_net_addr) {
 			/* 127.0.0.X */
 			is_bcast = 0;
 			type = u_type;
@@ -1916,8 +2025,7 @@ static int convert_in_un_alloc(struct socket_info *si, const struct sockaddr *in
 			ZERO_STRUCT(bind_in);
 			bind_in.sin_family = in->sin_family;
 			bind_in.sin_port = in->sin_port;
-			bind_in.sin_addr.s_addr = htonl(0x7F000000 | iface);
-
+			bind_in.sin_addr.s_addr = htonl(swrap_ipv4_iface(iface));
 			si->bindname.sa_socklen = blen;
 			memcpy(&si->bindname.sa.in, &bind_in, blen);
 		}
@@ -2455,6 +2563,7 @@ static const char *swrap_pcap_init_file(void)
 	if (strncmp(s, "./", 2) == 0) {
 		s += 2;
 	}
+	SWRAP_LOG(SWRAP_LOG_TRACE, "SOCKET_WRAPPER_PCAP_FILE: %s", s);
 	return s;
 }
 
@@ -3140,7 +3249,15 @@ static int swrap_socket(int family, int type, int protocol)
 	case AF_PACKET:
 #endif /* AF_PACKET */
 	case AF_UNIX:
-		return libc_socket(family, type, protocol);
+		fd = libc_socket(family, type, protocol);
+		if (fd != -1) {
+			/* Check if we have a stale fd and remove it */
+			swrap_remove_stale(fd);
+			SWRAP_LOG(SWRAP_LOG_TRACE,
+				  "Unix socket fd=%d",
+				  fd);
+		}
+		return fd;
 	default:
 		errno = EAFNOSUPPORT;
 		return -1;
@@ -3384,6 +3501,9 @@ static int swrap_accept(int s,
 
 	fd = ret;
 
+	/* Check if we have a stale fd and remove it */
+	swrap_remove_stale(fd);
+
 	SWRAP_LOCK_SI(parent_si);
 
 	ret = sockaddr_convert_from_un(parent_si,
@@ -3536,8 +3656,8 @@ static int swrap_auto_bind(int fd, struct socket_info *si, int family)
 
 		memset(&in, 0, sizeof(in));
 		in.sin_family = AF_INET;
-		in.sin_addr.s_addr = htonl(127<<24 |
-					   socket_wrapper_default_iface());
+		in.sin_addr.s_addr = htonl(swrap_ipv4_iface(
+					   socket_wrapper_default_iface()));
 
 		si->myname = (struct swrap_address) {
 			.sa_socklen = sizeof(in),
@@ -3666,6 +3786,9 @@ static int swrap_connect(int s, const struct sockaddr *serv_addr,
 	}
 
 	if (si->family != serv_addr->sa_family) {
+		SWRAP_LOG(SWRAP_LOG_ERROR,
+			  "called for fd=%d (family=%d) called with invalid family=%d\n",
+			  s, si->family, serv_addr->sa_family);
 		errno = EINVAL;
 		ret = -1;
 		goto done;
@@ -6076,6 +6199,7 @@ static int swrap_close(int fd)
 		return libc_close(fd);
 	}
 
+	SWRAP_LOG(SWRAP_LOG_TRACE, "Close wrapper for fd=%d", fd);
 	reset_socket_info_index(fd);
 
 	si = swrap_get_socket_info(si_index);
@@ -6410,3 +6534,54 @@ void swrap_destructor(void)
 		dlclose(swrap.libc.socket_handle);
 	}
 }
+
+#if defined(HAVE__SOCKET) && defined(HAVE__CLOSE)
+/*
+ * On FreeBSD 12 (and maybe other platforms)
+ * system libraries like libresolv prefix there
+ * syscalls with '_' in order to always use
+ * the symbols from libc.
+ *
+ * In the interaction with resolv_wrapper,
+ * we need to inject socket wrapper into libresolv,
+ * which means we need to private all socket
+ * related syscalls also with the '_' prefix.
+ *
+ * This is tested in Samba's 'make test',
+ * there we noticed that providing '_read'
+ * and '_open' would cause errors, which
+ * means we skip '_read', '_write' and
+ * all non socket related calls without
+ * further analyzing the problem.
+ */
+#define SWRAP_SYMBOL_ALIAS(__sym, __aliassym) \
+	extern typeof(__sym) __aliassym __attribute__ ((alias(#__sym)))
+
+#ifdef HAVE_ACCEPT4
+SWRAP_SYMBOL_ALIAS(accept4, _accept4);
+#endif
+SWRAP_SYMBOL_ALIAS(accept, _accept);
+SWRAP_SYMBOL_ALIAS(bind, _bind);
+SWRAP_SYMBOL_ALIAS(close, _close);
+SWRAP_SYMBOL_ALIAS(connect, _connect);
+SWRAP_SYMBOL_ALIAS(dup, _dup);
+SWRAP_SYMBOL_ALIAS(dup2, _dup2);
+SWRAP_SYMBOL_ALIAS(fcntl, _fcntl);
+SWRAP_SYMBOL_ALIAS(getpeername, _getpeername);
+SWRAP_SYMBOL_ALIAS(getsockname, _getsockname);
+SWRAP_SYMBOL_ALIAS(getsockopt, _getsockopt);
+SWRAP_SYMBOL_ALIAS(ioctl, _ioctl);
+SWRAP_SYMBOL_ALIAS(listen, _listen);
+SWRAP_SYMBOL_ALIAS(readv, _readv);
+SWRAP_SYMBOL_ALIAS(recv, _recv);
+SWRAP_SYMBOL_ALIAS(recvfrom, _recvfrom);
+SWRAP_SYMBOL_ALIAS(recvmsg, _recvmsg);
+SWRAP_SYMBOL_ALIAS(send, _send);
+SWRAP_SYMBOL_ALIAS(sendmsg, _sendmsg);
+SWRAP_SYMBOL_ALIAS(sendto, _sendto);
+SWRAP_SYMBOL_ALIAS(setsockopt, _setsockopt);
+SWRAP_SYMBOL_ALIAS(socket, _socket);
+SWRAP_SYMBOL_ALIAS(socketpair, _socketpair);
+SWRAP_SYMBOL_ALIAS(writev, _writev);
+
+#endif /* SOCKET_WRAPPER_EXPORT_UNDERSCORE_SYMBOLS */

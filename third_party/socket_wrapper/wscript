@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.2.3"
+VERSION="1.2.4"
 
 def configure(conf):
     if conf.CHECK_SOCKET_WRAPPER():
@@ -70,6 +70,14 @@ def configure(conf):
             conf.CHECK_C_PROTOTYPE('eventfd',
                                    'int eventfd(unsigned int count, int flags)',
                                    define='HAVE_EVENTFD_UNSIGNED_INT', headers='sys/eventfd.h')
+
+        # FreeBSD exports each syscall also with '_' as prefix
+        # and these symbols are used if called by system libraries itself.
+        # That means socket_wrapper needs to implement these too
+        # in order to inject itself into system libraries,
+        # we just check for _socket and _close and assume the rest
+        # is also there...
+        conf.CHECK_FUNCS('_socket _close')
 
         # Create full path to socket_wrapper
         blddir = os.path.realpath(conf.bldnode.abspath())
