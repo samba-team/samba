@@ -103,6 +103,11 @@ void conn_force_tdis(
 		}
 		tcon = conn->tcon;
 
+		if (!NT_STATUS_IS_OK(tcon->status)) {
+			/* In the process of already being disconnected. */
+			continue;
+		}
+
 		do_close = check_fn(conn, private_data);
 		if (!do_close) {
 			continue;
