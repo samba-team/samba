@@ -235,11 +235,11 @@ done:
 	return ret;
 }
 
-static bool test_time_t_100000000000(struct torture_context *tctx,
+static bool test_time_t_15032385535(struct torture_context *tctx,
 				    struct smb2_tree *tree)
 {
-	return test_time_t(tctx, tree, "test_time_t_100000000000.txt",
-			   100000000000 /* >> INT32_MAX */);
+	return test_time_t(tctx, tree, "test_time_t_15032385535.txt",
+			   15032385535 /* >> INT32_MAX, limit on ext */);
 }
 
 static bool test_time_t_10000000000(struct torture_context *tctx,
@@ -294,7 +294,7 @@ struct torture_suite *torture_smb2_timestamps_init(TALLOC_CTX *ctx)
 {
 	struct torture_suite *suite = torture_suite_create(ctx, "timestamps");
 
-	torture_suite_add_1smb2_test(suite, "time_t_100000000000", test_time_t_100000000000);
+	torture_suite_add_1smb2_test(suite, "time_t_15032385535", test_time_t_15032385535);
 	torture_suite_add_1smb2_test(suite, "time_t_10000000000", test_time_t_10000000000);
 	torture_suite_add_1smb2_test(suite, "time_t_4294967295", test_time_t_4294967295);
 	torture_suite_add_1smb2_test(suite, "time_t_1", test_time_t_1);
