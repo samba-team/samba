@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE refentry PUBLIC "-//Samba-Team//DTD DocBook V4.2-Based Variant V1.0//EN" "http://www.samba.org/samba/DTD/samba-doc">
+<refentry id="winexe.1">
+
+<refmeta>
+	<refentrytitle>winexe</refentrytitle>
+	<manvolnum>1</manvolnum>
+	<refmiscinfo class="source">Samba</refmiscinfo>
+	<refmiscinfo class="manual">User Commands</refmiscinfo>
+	<refmiscinfo class="version">&doc.version;</refmiscinfo>
+</refmeta>
+
+
+<refnamediv>
+	<refname>winexe</refname>
+	<refpurpose>Winexe is a Remote Windows-command executor</refpurpose>
+</refnamediv>
+
+<refsynopsisdiv>
+	<cmdsynopsis>
+		<command>winexe</command>
+		<arg choice="opt">-h</arg>
+		<arg choice="opt">-V</arg>
+		<arg choice="opt">-U [DOMAIN/]USERNAME[%PASSWORD]</arg>
+		<arg choice="opt">-A FILE</arg>
+		<arg choice="opt">-N</arg>
+		<arg choice="opt">-k</arg>
+		<arg choice="opt">-d DEBUGLEVEL</arg>
+		<arg choice="opt">--uninstall</arg>
+		<arg choice="opt">--reinstall</arg>
+		<arg choice="opt">--runas [DOMAIN/]USERNAME[%PASSWORD]</arg>
+		<arg choice="opt">--runas-file FILE</arg>
+		<arg choice="opt">--interactive [0|1]</arg>
+		<arg choice="opt">--ostype [0|1]</arg>
+	</cmdsynopsis>
+</refsynopsisdiv>
+
+<refsect1>
+	<title>DESCRIPTION</title>
+
+	<para>This tool is part of the <citerefentry><refentrytitle>samba</refentrytitle>
+	<manvolnum>7</manvolnum></citerefentry> suite.</para>
+
+	<para>The <command>winexe</command> allows remote command execution on native
+	Windows operating systems.</para>
+</refsect1>
+
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+
+		&stdarg.help;
+		&stdarg.version;
+		&stdarg.username;
+		&stdarg.authfile;
+		&stdarg.nopass;
+		&stdarg.kerberos;
+		&stdarg.client.debug;
+
+		<varlistentry>
+		<term>--uninstall</term>
+		<listitem>
+			<para>
+				Uninstall winexe service after remote execution.
+			</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--reinstall</term>
+		<listitem>
+			<para>
+				Reinstall winexe service before remote execution.
+			</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--runas <replaceable>[DOMAIN/]USERNAME[%PASSWORD]]</replaceable></term>
+		<listitem>
+			<para>
+				Run as the given user (BEWARE: this password is sent in cleartext over the network!)
+			</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--runas-file <replaceable>FILE</replaceable></term>
+		<listitem>
+			<para>
+				Run as user options defined in a file.
+			</para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>--interactive <replaceable>[0|1]</replaceable></term>
+		<listitem>
+		<para>
+			Desktop interaction.
+		</para>
+
+			<para>There are two options:</para>
+			<itemizedlist>
+				<listitem>
+				<para>
+					0 - disallow
+				</para>
+				</listitem>
+
+				<listitem>
+				<para>
+					1 - allow. If allow, also use the --system switch (Windows requirement). Vista does not support this optoin.
+				</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+			<term>--ostype <replaceable>[0|1|2]</replaceable></term>
+			<listitem>
+			<para>
+				Determines which version (32-bit or 64-bit) of service will be installed.
+			</para>
+
+			<para>There are three options:</para>
+			<itemizedlist>
+				<listitem>
+				<para>
+					0 - 32-bit
+				</para>
+				</listitem>
+
+				<listitem>
+				<para>
+					1 - 64-bit
+				</para>
+				</listitem>
+
+				<listitem>
+				<para>
+					2 - winexe will decide
+				</para>
+				</listitem>
+			</itemizedlist>
+		</listitem>
+		</varlistentry>
+
+	</variablelist>
+</refsect1>
+
+
+<refsect1>
+	<title>EXIT STATUS</title>
+
+	<para>The winexe program returns 0 if the operation
+	succeeded, or 1 if the operation failed. </para>
+</refsect1>
+
+
+<refsect1>
+	<title>VERSION</title>
+
+	<para>This man page is part of version &doc.version; of
+	the Samba suite.</para>
+</refsect1>
+
+<refsect1>
+	<title>AUTHOR</title>
+
+	<para>The original Samba software and related utilities
+	were created by Andrew Tridgell. Samba is now developed
+	by the Samba Team as an Open Source project similar
+	to the way the Linux kernel is developed.</para>
+
+	<para>The <command>winexe</command> and it's native Windows counterpart were written by Andrzej Hajda.
+	The Samba client tool winexe was later rewritten by Volker Lendecke.</para>
+
+	<para>This manpage was written by Guenther Deschner.</para>
+</refsect1>
+
+</refentry>

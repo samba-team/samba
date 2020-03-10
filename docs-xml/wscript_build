@@ -64,6 +64,8 @@ pam_winbind_manpages = '''
 krb5_locator_manpages = 'manpages/winbind_krb5_locator.8'
 krb5_localauth_manpages = 'manpages/winbind_krb5_localauth.8'
 
+winexe_manpages = 'manpages/winexe.1'
+
 vfs_module_manpages = ['vfs_acl_tdb',
                        'vfs_acl_xattr',
                        'vfs_aio_fork',
@@ -169,6 +171,9 @@ if ('XSLTPROC_MANPAGES' in bld.env and bld.env['XSLTPROC_MANPAGES']):
 
     if bld.CONFIG_SET('HAVE_KRB5_LOCALAUTH_PLUGIN_H'):
         bld.SAMBAMANPAGES(krb5_localauth_manpages)
+
+    if conf.env.build_winexe == True:
+        bld.SAMBAMANPAGES(winexe_manpages)
 
     for manpage in vfs_module_manpages:
         if bld.SAMBA3_IS_ENABLED_MODULE(manpage):
