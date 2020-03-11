@@ -483,8 +483,14 @@ paged_results_copy_down_controls(TALLOC_CTX *mem_ctx,
 		if (control->oid == NULL) {
 			continue;
 		}
-		if (strncmp(control->oid, LDB_CONTROL_PAGED_RESULTS_OID,
-		    sizeof(LDB_CONTROL_PAGED_RESULTS_OID)) == 0) {
+		if (strcmp(control->oid, LDB_CONTROL_PAGED_RESULTS_OID) == 0) {
+			continue;
+		}
+		/*
+		 * ASQ changes everything, do not copy it down for the
+		 * per-GUID search
+		 */
+		if (strcmp(control->oid, LDB_CONTROL_ASQ_OID) == 0) {
 			continue;
 		}
 		new_controls[j] = talloc_steal(new_controls, control);
@@ -534,21 +540,23 @@ static bool paged_controls_same(struct ldb_request *req,
 
 	num_non_null_req_controls = 0;
 	for (i=0; req->controls[i] != NULL; i++) {
-		if (req->controls[i]->oid != NULL) {
+		if (req->controls[i]->oid != NULL &&
+		    strcmp(req->controls[i]->oid,
+			   LDB_CONTROL_ASQ_OID) != 0) {
 			num_non_null_req_controls++;
 		}
 	}
 
 	/* At this point we have the number of non-null entries for both
 	 * control lists and we know that:
-	 * 1. down_controls does not contain the paged control
+	 * 1. down_controls does not contain the paged control or ASQ
 	 * 	(because paged_results_copy_down_controls excludes it)
 	 * 2. req->controls does contain the paged control
 	 * 	(because this function is only called if this is true)
 	 * 3. down_controls is a subset of non-null controls in req->controls
 	 * 	(checked above)
 	 * So to confirm that the two lists are identical except for the paged
-	 * control, all we need to check is: */
+	 * control and possibly ASQ, all we need to check is: */
 	if (num_non_null_req_controls == num_down_controls + 1) {
 		return true;
 	}
