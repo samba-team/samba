@@ -280,6 +280,16 @@ NTSTATUS vfs_offload_token_check_handles(uint32_t fsctl,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	if (src_fsp->closing) {
+		DBG_INFO("copy chunk src handle with closing in progress.\n");
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (dst_fsp->closing) {
+		DBG_INFO("copy chunk dst handle with closing in progress.\n");
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
 	if (src_fsp->is_directory) {
 		DBG_INFO("copy chunk no read on src directory handle (%s).\n",
 			 smb_fname_str_dbg(src_fsp->fsp_name));
