@@ -477,7 +477,8 @@ sub realm_to_ip_mappings
 
 	# convert the hashmap to a list of key=value strings, where key is the
 	# realm and value is the IP address
-	while (my ($realm, $pdc) = each(%realm_to_pdc_mapping)) {
+	foreach my $realm (sort(keys %realm_to_pdc_mapping)) {
+		my $pdc = $realm_to_pdc_mapping{$realm};
 		my $ipaddr = get_ipv4_addr($pdc);
 		push(@mapping, "$realm=$ipaddr");
 	}
