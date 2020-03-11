@@ -122,9 +122,19 @@ bool aio_add_req_to_fsp(files_struct *fsp, struct tevent_req *req)
 	if (array_len <= fsp->num_aio_requests) {
 		struct tevent_req **tmp;
 
+		if (fsp->num_aio_requests + 10 < 10) {
+			/* Integer wrap. */
+			TALLOC_FREE(lnk);
+			return false;
+		}
+
+		/*
+		 * Allocate in blocks of 10 so we don't allocate
+		 * on every aio request.
+		 */
 		tmp = talloc_realloc(
 			fsp, fsp->aio_requests, struct tevent_req *,
-			fsp->num_aio_requests+1);
+			fsp->num_aio_requests+10);
 		if (tmp == NULL) {
 			TALLOC_FREE(lnk);
 			return false;
