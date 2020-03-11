@@ -311,11 +311,8 @@ static int asq_build_multiple_requests(struct asq_context *ac, bool *terminated)
 
 static int asq_search_continue(struct asq_context *ac)
 {
-	struct ldb_context *ldb;
 	bool terminated = false;
 	int ret;
-
-	ldb = ldb_module_get_ctx(ac->module);
 
 	switch (ac->step) {
 	case ASQ_SEARCH_BASE:
@@ -328,7 +325,7 @@ static int asq_search_continue(struct asq_context *ac)
 
 		ac->step = ASQ_SEARCH_MULTI;
 
-		return ldb_request(ldb, ac->reqs[ac->cur_req]);
+		return ldb_next_request(ac->module, ac->reqs[ac->cur_req]);
 
 	case ASQ_SEARCH_MULTI:
 
@@ -339,7 +336,7 @@ static int asq_search_continue(struct asq_context *ac)
 			return asq_search_terminate(ac);
 		}
 
-		return ldb_request(ldb, ac->reqs[ac->cur_req]);
+		return ldb_next_request(ac->module, ac->reqs[ac->cur_req]);
 	}
 
 	return LDB_ERR_OPERATIONS_ERROR;
@@ -347,13 +344,10 @@ static int asq_search_continue(struct asq_context *ac)
 
 static int asq_search(struct ldb_module *module, struct ldb_request *req)
 {
-	struct ldb_context *ldb;
 	struct ldb_request *base_req;
 	struct ldb_control *control;
 	struct asq_context *ac;
 	int ret;
-
-	ldb = ldb_module_get_ctx(module);
 
 	/* check if there's an ASQ control */
 	control = ldb_request_get_control(req, LDB_CONTROL_ASQ_OID);
@@ -385,7 +379,7 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac->step = ASQ_SEARCH_BASE;
 
-	return ldb_request(ldb, base_req);
+	return ldb_next_request(ac->module, base_req);
 }
 
 static int asq_init(struct ldb_module *module)
