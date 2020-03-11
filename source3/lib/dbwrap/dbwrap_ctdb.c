@@ -92,22 +92,16 @@ static int ctdb_async_ctx_init_internal(TALLOC_CTX *mem_ctx,
 	}
 
 	become_root();
-	ret = ctdbd_init_connection(mem_ctx,
-				    lp_ctdbd_socket(),
-				    lp_ctdb_timeout(),
-				    &ctdb_async_ctx.async_conn);
+	ret = ctdbd_init_async_connection(
+		mem_ctx,
+		lp_ctdbd_socket(),
+		lp_ctdb_timeout(),
+		&ctdb_async_ctx.async_conn);
 	unbecome_root();
 
 	if (ret != 0 || ctdb_async_ctx.async_conn == NULL) {
 		DBG_ERR("ctdbd_init_connection failed\n");
 		return EIO;
-	}
-
-	ret = ctdbd_setup_fde(ctdb_async_ctx.async_conn, ev);
-	if (ret != 0) {
-		DBG_ERR("ctdbd_setup_fde failed\n");
-		TALLOC_FREE(ctdb_async_ctx.async_conn);
-		return ret;
 	}
 
 	ctdb_async_ctx.initialized = true;
