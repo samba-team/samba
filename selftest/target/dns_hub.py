@@ -58,11 +58,18 @@ class DnsHandler(sserver.BaseRequestHandler):
     def dns_transaction_udp(self, packet, host):
         "send a DNS query and read the reply"
         s = None
+        flags = socket.AddressInfo.AI_NUMERICHOST
+        flags |= socket.AddressInfo.AI_NUMERICSERV
+        flags |= socket.AddressInfo.AI_PASSIVE
+        addr_info = socket.getaddrinfo(host, int(53),
+                                       type=socket.SocketKind.SOCK_DGRAM,
+                                       flags=flags)
+        assert len(addr_info) == 1
         try:
             send_packet = ndr.ndr_pack(packet)
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, 0)
+            s = socket.socket(addr_info[0][0], addr_info[0][1], 0)
             s.settimeout(DNS_REQUEST_TIMEOUT)
-            s.connect((host, 53))
+            s.connect(addr_info[0][4])
             s.sendall(send_packet, 0)
             recv_packet = s.recv(2048, 0)
             return ndr.ndr_unpack(dns.name_packet, recv_packet)
