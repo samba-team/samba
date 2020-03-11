@@ -314,7 +314,7 @@ sub setup_dns_hub_internal($$$)
 	}
 	my $binary = "$self->{srcdir}/selftest/target/dns_hub.py";
 	push (@args, "$self->{server_maxtime}");
-	push (@args, "$env->{SERVER_IP}");
+	push (@args, "$env->{SERVER_IP},$env->{SERVER_IPV6}");
 	push (@args, Samba::realm_to_ip_mappings());
 	my @full_cmd = (@preargs, $binary, @args);
 
