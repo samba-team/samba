@@ -5418,6 +5418,10 @@ static struct files_struct *file_sync_one_fn(struct files_struct *fsp,
 	}
 	sync_file(conn, fsp, True /* write through */);
 
+	if (fsp->modified) {
+		trigger_write_time_update_immediate(fsp);
+	}
+
 	return NULL;
 }
 
@@ -5455,6 +5459,9 @@ void reply_flush(struct smb_request *req)
 			reply_nterror(req, status);
 			END_PROFILE(SMBflush);
 			return;
+		}
+		if (fsp->modified) {
+			trigger_write_time_update_immediate(fsp);
 		}
 	}
 
