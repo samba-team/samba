@@ -2613,7 +2613,7 @@ void reply_open_and_X(struct smb_request *req)
  Reply to a SMBulogoffX.
 ****************************************************************************/
 
-void reply_ulogoffX(struct smb_request *req)
+void reply_ulogoffX(struct smb_request *smb1req)
 {
 	struct timeval now = timeval_current();
 	struct smbXsrv_session *session = NULL;
@@ -2621,16 +2621,16 @@ void reply_ulogoffX(struct smb_request *req)
 
 	START_PROFILE(SMBulogoffX);
 
-	status = smb1srv_session_lookup(req->xconn,
-					req->vuid,
+	status = smb1srv_session_lookup(smb1req->xconn,
+					smb1req->vuid,
 					timeval_to_nttime(&now),
 					&session);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(3,("ulogoff, vuser id %llu does not map to user.\n",
-			 (unsigned long long)req->vuid));
+			 (unsigned long long)smb1req->vuid));
 
-		req->vuid = UID_FIELD_INVALID;
-		reply_force_doserror(req, ERRSRV, ERRbaduid);
+		smb1req->vuid = UID_FIELD_INVALID;
+		reply_force_doserror(smb1req, ERRSRV, ERRbaduid);
 		END_PROFILE(SMBulogoffX);
 		return;
 	}
@@ -2654,15 +2654,15 @@ void reply_ulogoffX(struct smb_request *req)
 
 	TALLOC_FREE(session);
 
-	reply_outbuf(req, 2, 0);
-	SSVAL(req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
-	SSVAL(req->outbuf, smb_vwv1, 0);    /* no andx offset */
+	reply_outbuf(smb1req, 2, 0);
+	SSVAL(smb1req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
+	SSVAL(smb1req->outbuf, smb_vwv1, 0);    /* no andx offset */
 
 	DEBUG(3, ("ulogoffX vuid=%llu\n",
-		  (unsigned long long)req->vuid));
+		  (unsigned long long)smb1req->vuid));
 
 	END_PROFILE(SMBulogoffX);
-	req->vuid = UID_FIELD_INVALID;
+	smb1req->vuid = UID_FIELD_INVALID;
 }
 
 #if 0
