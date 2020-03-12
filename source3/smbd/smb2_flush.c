@@ -112,6 +112,7 @@ static void smbd_smb2_request_flush_done(struct tevent_req *subreq)
 
 struct smbd_smb2_flush_state {
 	struct smbd_smb2_request *smb2req;
+	struct files_struct *fsp;
 };
 
 static void smbd_smb2_flush_done(struct tevent_req *subreq);
@@ -132,6 +133,7 @@ static struct tevent_req *smbd_smb2_flush_send(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	state->smb2req = smb2req;
+	state->fsp = fsp;
 
 	DEBUG(10,("smbd_smb2_flush: %s - %s\n",
 		  fsp_str_dbg(fsp), fsp_fnum_dbg(fsp)));
@@ -207,6 +209,8 @@ static void smbd_smb2_flush_done(struct tevent_req *subreq)
 {
 	struct tevent_req *req = tevent_req_callback_data(
 		subreq, struct tevent_req);
+	struct smbd_smb2_flush_state *state = tevent_req_data(
+		req, struct smbd_smb2_flush_state);
 	int ret;
 	struct vfs_aio_state vfs_aio_state;
 
@@ -215,6 +219,9 @@ static void smbd_smb2_flush_done(struct tevent_req *subreq)
 	if (ret == -1) {
 		tevent_req_nterror(req, map_nt_error_from_unix(vfs_aio_state.error));
 		return;
+	}
+	if (state->fsp->modified) {
+		trigger_write_time_update_immediate(state->fsp);
 	}
 	tevent_req_done(req);
 }
