@@ -2626,8 +2626,8 @@ void reply_ulogoffX(struct smb_request *smb1req)
 					timeval_to_nttime(&now),
 					&session);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3,("ulogoff, vuser id %llu does not map to user.\n",
-			 (unsigned long long)smb1req->vuid));
+		DBG_WARNING("ulogoff, vuser id %llu does not map to user.\n",
+			 (unsigned long long)smb1req->vuid);
 
 		smb1req->vuid = UID_FIELD_INVALID;
 		reply_force_doserror(smb1req, ERRSRV, ERRbaduid);
