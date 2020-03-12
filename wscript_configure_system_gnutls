@@ -29,6 +29,10 @@ conf.CHECK_FUNCS_IN('gnutls_pkcs7_get_embedded_data_oid', 'gnutls')
 if (parse_version('3.6.10') != parse_version(gnutls_version)):
     conf.CHECK_FUNCS_IN('gnutls_aead_cipher_encryptv2', 'gnutls')
 
+# Check if we have support for crypto policies
+if conf.CHECK_FUNCS_IN('gnutls_get_system_config_file', 'gnutls'):
+    conf.DEFINE('HAVE_GNUTLS_CRYPTO_POLICIES', 1)
+
 if conf.CHECK_VALUEOF('GNUTLS_CIPHER_AES_128_CFB8', headers='gnutls/gnutls.h'):
     conf.DEFINE('HAVE_GNUTLS_AES_CFB8', 1)
 else:
