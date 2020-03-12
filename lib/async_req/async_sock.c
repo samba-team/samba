@@ -312,25 +312,17 @@ static bool writev_cancel(struct tevent_req *req)
 {
 	struct writev_state *state = tevent_req_data(req, struct writev_state);
 
-	TALLOC_FREE(state->queue_entry);
-	TALLOC_FREE(state->fde);
-
-	if (state->count == 0) {
-		/*
-		 * already completed.
-		 */
-		return false;
-	}
-
-	tevent_req_defer_callback(req, state->ev);
 	if (state->total_size > 0) {
 		/*
 		 * We've already started to write :-(
 		 */
-		tevent_req_error(req, EIO);
 		return false;
 	}
 
+	TALLOC_FREE(state->queue_entry);
+	TALLOC_FREE(state->fde);
+
+	tevent_req_defer_callback(req, state->ev);
 	tevent_req_error(req, ECANCELED);
 	return true;
 }
