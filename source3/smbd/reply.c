@@ -2613,19 +2613,31 @@ void reply_open_and_X(struct smb_request *req)
  Reply to a SMBulogoffX.
 ****************************************************************************/
 
+static struct tevent_req *reply_ulogoffX_send(struct smb_request *smb1req,
+				struct smbXsrv_session *session);
+static void reply_ulogoffX_done(struct tevent_req *req);
+
 void reply_ulogoffX(struct smb_request *smb1req)
 {
 	struct timeval now = timeval_current();
 	struct smbXsrv_session *session = NULL;
+	struct tevent_req *req;
 	NTSTATUS status;
 
-	START_PROFILE(SMBulogoffX);
+	/*
+	 * Don't setup the profile charge here, take
+	 * it in reply_ulogoffX_done(). Not strictly correct
+	 * but better than the other SMB1 async
+	 * code that double-charges at the moment.
+	 */
 
 	status = smb1srv_session_lookup(smb1req->xconn,
 					smb1req->vuid,
 					timeval_to_nttime(&now),
 					&session);
 	if (!NT_STATUS_IS_OK(status)) {
+		/* Not going async, profile here. */
+		START_PROFILE(SMBulogoffX);
 		DBG_WARNING("ulogoff, vuser id %llu does not map to user.\n",
 			 (unsigned long long)smb1req->vuid);
 
@@ -2635,37 +2647,20 @@ void reply_ulogoffX(struct smb_request *smb1req)
 		return;
 	}
 
-	/*
-	 * TODO: cancel all outstanding requests on the session
-	 */
-	status = smbXsrv_session_logoff(session);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("reply_ulogoff: "
-			  "smbXsrv_session_logoff() failed: %s\n",
-			  nt_errstr(status)));
-		/*
-		 * If we hit this case, there is something completely
-		 * wrong, so we better disconnect the transport connection.
-		 */
+	req = reply_ulogoffX_send(smb1req, session);
+	if (req == NULL) {
+		/* Not going async, profile here. */
+		START_PROFILE(SMBulogoffX);
+		reply_force_doserror(smb1req, ERRDOS, ERRnomem);
 		END_PROFILE(SMBulogoffX);
-		exit_server(__location__ ": smbXsrv_session_logoff failed");
 		return;
 	}
 
-	TALLOC_FREE(session);
-
-	reply_outbuf(smb1req, 2, 0);
-	SSVAL(smb1req->outbuf, smb_vwv0, 0xff); /* andx chain ends */
-	SSVAL(smb1req->outbuf, smb_vwv1, 0);    /* no andx offset */
-
-	DEBUG(3, ("ulogoffX vuid=%llu\n",
-		  (unsigned long long)smb1req->vuid));
-
-	END_PROFILE(SMBulogoffX);
-	smb1req->vuid = UID_FIELD_INVALID;
+	/* We're async. This will complete later. */
+	tevent_req_set_callback(req, reply_ulogoffX_done, smb1req);
+	return;
 }
 
-#if 0
 struct reply_ulogoffX_state {
 	struct tevent_queue *wait_queue;
 	struct smbXsrv_session *session;
@@ -2831,7 +2826,6 @@ static void reply_ulogoffX_done(struct tevent_req *req)
 	smb_request_done(smb1req);
 	END_PROFILE(SMBulogoffX);
 }
-#endif
 
 /****************************************************************************
  Reply to a mknew or a create.
