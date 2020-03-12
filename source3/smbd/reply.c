@@ -6039,49 +6039,43 @@ void reply_unlock(struct smb_request *req)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
+static struct tevent_req *reply_tdis_send(struct smb_request *smb1req);
+static void reply_tdis_done(struct tevent_req *req);
+
 void reply_tdis(struct smb_request *smb1req)
 {
-	NTSTATUS status;
 	connection_struct *conn = smb1req->conn;
-	struct smbXsrv_tcon *tcon;
+	struct tevent_req *req;
 
-	START_PROFILE(SMBtdis);
+	/*
+	 * Don't setup the profile charge here, take
+	 * it in reply_tdis_done(). Not strictly correct
+	 * but better than the other SMB1 async
+	 * code that double-charges at the moment.
+	 */
 
 	if (conn == NULL) {
+		/* Not going async, profile here. */
+		START_PROFILE(SMBtdis);
 		DBG_INFO("Invalid connection in tdis\n");
 		reply_force_doserror(smb1req, ERRSRV, ERRinvnid);
 		END_PROFILE(SMBtdis);
 		return;
 	}
 
-	tcon = conn->tcon;
-	smb1req->conn = NULL;
-
-	/*
-	 * TODO: cancel all outstanding requests on the tcon
-	 */
-	status = smbXsrv_tcon_disconnect(tcon, smb1req->vuid);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("reply_tdis: "
-			  "smbXsrv_tcon_disconnect() failed: %s\n",
-			  nt_errstr(status)));
-		/*
-		 * If we hit this case, there is something completely
-		 * wrong, so we better disconnect the transport connection.
-		 */
+	req = reply_tdis_send(smb1req);
+	if (req == NULL) {
+		/* Not going async, profile here. */
+		START_PROFILE(SMBtdis);
+		reply_force_doserror(smb1req, ERRDOS, ERRnomem);
 		END_PROFILE(SMBtdis);
-		exit_server(__location__ ": smbXsrv_tcon_disconnect failed");
 		return;
 	}
-
-	TALLOC_FREE(tcon);
-
-	reply_outbuf(smb1req, 0, 0);
-	END_PROFILE(SMBtdis);
+	/* We're async. This will complete later. */
+	tevent_req_set_callback(req, reply_tdis_done, smb1req);
 	return;
 }
 
-#if 0
 struct reply_tdis_state {
 	struct tevent_queue *wait_queue;
 };
@@ -6251,7 +6245,6 @@ static void reply_tdis_done(struct tevent_req *req)
 	smb_request_done(smb1req);
 	END_PROFILE(SMBtdis);
 }
-#endif
 
 /****************************************************************************
  Reply to a echo.
