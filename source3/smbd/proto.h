@@ -379,8 +379,6 @@ void fsp_set_gen_id(files_struct *fsp);
 NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 		  files_struct **result);
 void file_close_conn(connection_struct *conn);
-void file_close_pid(struct smbd_server_connection *sconn, uint16_t smbpid,
-		    uint64_t vuid);
 bool file_init_global(void);
 bool file_init(struct smbd_server_connection *sconn);
 void file_close_user(struct smbd_server_connection *sconn, uint64_t vuid);
