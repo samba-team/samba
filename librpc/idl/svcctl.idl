@@ -601,7 +601,7 @@ import "misc.idl", "security.idl";
 		[relative] nstring *command;
 		[range(0,1024)] uint32 num_actions;
 		[relative] [size_is(num_actions)] SC_ACTION *actions;
-	} SERVICE_FAILURE_ACTIONS;
+	} SERVICE_FAILURE_ACTIONSW;
 
 	WERROR svcctl_QueryServiceConfig2A(
 		[in,ref] policy_handle *handle,

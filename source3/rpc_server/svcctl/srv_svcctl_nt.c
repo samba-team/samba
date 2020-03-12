@@ -856,7 +856,7 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 		break;
 	case SERVICE_CONFIG_FAILURE_ACTIONS:
 		{
-			struct SERVICE_FAILURE_ACTIONS actions;
+			struct SERVICE_FAILURE_ACTIONSW actions;
 			enum ndr_err_code ndr_err;
 
 			/* nothing to say...just service the request */
@@ -864,7 +864,7 @@ WERROR _svcctl_QueryServiceConfig2W(struct pipes_struct *p,
 			ZERO_STRUCT( actions );
 
 			ndr_err = ndr_push_struct_blob(&blob, p->mem_ctx, &actions,
-						       (ndr_push_flags_fn_t)ndr_push_SERVICE_FAILURE_ACTIONS);
+						       (ndr_push_flags_fn_t)ndr_push_SERVICE_FAILURE_ACTIONSW);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				return WERR_INVALID_PARAMETER;
 			}
