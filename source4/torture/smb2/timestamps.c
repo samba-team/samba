@@ -433,6 +433,116 @@ done:
 	return ret;
 }
 
+static bool test_delayed_write_vs_flush(struct torture_context *tctx,
+					struct smb2_tree *tree)
+{
+	struct smb2_create cr;
+	struct smb2_handle h1 = {{0}};
+	union smb_fileinfo finfo;
+	struct smb2_flush f;
+	struct smb2_close c;
+	NTTIME create_time;
+	NTTIME flush_time;
+	NTSTATUS status;
+	bool ret = true;
+
+	smb2_deltree(tree, BASEDIR);
+	status = torture_smb2_testdir(tree, BASEDIR, &h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	status = smb2_util_close(tree, h1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+
+	torture_comment(tctx, "Open file-handle 1\n");
+
+	cr = (struct smb2_create) {
+		.in.desired_access     = SEC_FLAG_MAXIMUM_ALLOWED,
+		.in.create_disposition = NTCREATEX_DISP_OPEN_IF,
+		.in.share_access       = NTCREATEX_SHARE_ACCESS_MASK,
+		.in.fname              = BASEDIR "\\" FNAME,
+	};
+	status = smb2_create(tree, tctx, &cr);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"create failed\n");
+	h1 = cr.out.file.handle;
+	create_time = cr.out.create_time;
+	sleep(1);
+
+	torture_comment(tctx, "Write to file-handle 1\n");
+
+	status = smb2_util_write(tree, h1, "s", 0, 1);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"write failed\n");
+
+	torture_comment(tctx, "Check writetime hasn't been updated\n");
+
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+	status = smb2_getinfo_file(tree, tree, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"getinfo failed\n");
+
+	torture_assert_nttime_equal(tctx,
+				    finfo.all_info.out.write_time,
+				    create_time,
+				    "Writetime != create_time (wrong!)\n");
+
+	torture_comment(tctx, "Flush file, "
+			"should flush pending writetime update\n");
+
+	f = (struct smb2_flush) {
+		.in.file.handle = h1,
+	};
+
+	status = smb2_flush(tree, &f);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"flush failed\n");
+
+	torture_comment(tctx, "Check writetime has been updated "
+			"by the setinfo EOF\n");
+
+	finfo = (union smb_fileinfo) {
+		.generic.level = RAW_FILEINFO_SMB2_ALL_INFORMATION,
+		.generic.in.file.handle = h1,
+	};
+	status = smb2_getinfo_file(tree, tree, &finfo);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"getinfo failed\n");
+
+	flush_time = finfo.all_info.out.write_time;
+	if (!(flush_time > create_time)) {
+		ret = false;
+		torture_fail_goto(tctx, done, "flush hasn't updated writetime\n");
+	}
+
+	torture_comment(tctx, "Close file-handle 1, write-time should not be updated\n");
+
+	c = (struct smb2_close) {
+		.in.file.handle = h1,
+		.in.flags = SMB2_CLOSE_FLAGS_FULL_INFORMATION,
+	};
+
+	status = smb2_close(tree, &c);
+	torture_assert_ntstatus_ok_goto(tctx, status, ret, done,
+					"close failed\n");
+	ZERO_STRUCT(h1);
+
+	torture_assert_nttime_equal(tctx,
+				    c.out.write_time,
+				    flush_time,
+				    "writetime != flushtime (wrong!)\n");
+
+done:
+	if (!smb2_util_handle_empty(h1)) {
+		smb2_util_close(tree, h1);
+	}
+	smb2_deltree(tree, BASEDIR);
+	return ret;
+}
+
 /*
    basic testing of SMB2 timestamps
 */
@@ -453,6 +563,7 @@ struct torture_suite *torture_smb2_timestamps_init(TALLOC_CTX *ctx)
 	 * Testing of delayed write-time udpates
 	 */
 	torture_suite_add_1smb2_test(suite, "delayed-write-vs-seteof", test_delayed_write_vs_seteof);
+	torture_suite_add_1smb2_test(suite, "delayed-write-vs-flush", test_delayed_write_vs_flush);
 
 	suite->description = talloc_strdup(suite, "SMB2 timestamp tests");
 
