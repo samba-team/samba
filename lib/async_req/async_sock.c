@@ -291,8 +291,8 @@ struct tevent_req *writev_send(TALLOC_CTX *mem_ctx, struct tevent_context *ev,
 		return req;
 	}
 
-	state->queue_entry = tevent_queue_add_entry(queue, ev, req,
-						    writev_trigger, NULL);
+	state->queue_entry = tevent_queue_add_optimize_empty(
+		queue, ev, req, writev_trigger, NULL);
 	if (tevent_req_nomem(state->queue_entry, req)) {
 		return tevent_req_post(req, ev);
 	}
