@@ -9437,6 +9437,10 @@ void reply_setattrE(struct smb_request *req)
 		goto out;
 	}
 
+	if (fsp->modified) {
+		trigger_write_time_update_immediate(fsp);
+	}
+
 	DEBUG( 3, ( "reply_setattrE %s actime=%u modtime=%u "
 	       " createtime=%u\n",
 		fsp_fnum_dbg(fsp),
