@@ -6047,8 +6047,8 @@ void reply_tdis(struct smb_request *smb1req)
 
 	START_PROFILE(SMBtdis);
 
-	if (!conn) {
-		DEBUG(4,("Invalid connection in tdis\n"));
+	if (conn == NULL) {
+		DBG_INFO("Invalid connection in tdis\n");
 		reply_force_doserror(smb1req, ERRSRV, ERRinvnid);
 		END_PROFILE(SMBtdis);
 		return;
