@@ -77,10 +77,13 @@ bool conn_idle_all(struct smbd_server_connection *sconn, time_t t)
 }
 
 /****************************************************************************
- Forcibly unmount a share.
+ Forcibly unmount a share - async
  All instances of the parameter 'sharename' share are unmounted.
  The special sharename '*' forces unmount of all shares.
 ****************************************************************************/
+
+static struct tevent_req *conn_force_tdis_send(connection_struct *conn);
+static void conn_force_tdis_done(struct tevent_req *req);
 
 void conn_force_tdis(
 	struct smbd_server_connection *sconn,
@@ -88,16 +91,13 @@ void conn_force_tdis(
 			 void *private_data),
 	void *private_data)
 {
-	connection_struct *conn, *next;
+	connection_struct *conn;
 
 	/* SMB1 and SMB 2*/
-	for (conn = sconn->connections; conn; conn = next) {
+	for (conn = sconn->connections; conn; conn = conn->next) {
 		struct smbXsrv_tcon *tcon;
 		bool do_close = false;
-		NTSTATUS status;
-		uint64_t vuid = UID_FIELD_INVALID;
-
-		next = conn->next;
+		struct tevent_req *req;
 
 		if (conn->tcon == NULL) {
 			continue;
@@ -114,34 +114,23 @@ void conn_force_tdis(
 			continue;
 		}
 
+		req = conn_force_tdis_send(conn);
+		if (req == NULL) {
+			DBG_WARNING("talloc_fail forcing async close of "
+				"share '%s'\n",
+				tcon->global->share_name);
+			continue;
+		}
+
 		DBG_WARNING("Forcing close of "
 			    "share '%s' (wire_id=0x%08x)\n",
 			    tcon->global->share_name,
 			    tcon->global->tcon_wire_id);
 
-		if (sconn->using_smb2) {
-			vuid = conn->vuid;
-		}
-
-		conn = NULL;
-		status = smbXsrv_tcon_disconnect(tcon, vuid);
-		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(0, ("conn_force_tdis: "
-				  "smbXsrv_tcon_disconnect() of share '%s' "
-				  "(wire_id=0x%08x) failed: %s\n",
-				  tcon->global->share_name,
-				  tcon->global->tcon_wire_id,
-				  nt_errstr(status)));
-		}
-
-		TALLOC_FREE(tcon);
+		tevent_req_set_callback(req, conn_force_tdis_done, conn);
 	}
-
-	change_to_root_user();
-	reload_services(sconn, conn_snum_used, true);
 }
 
-#if 0
 struct conn_force_tdis_state {
 	struct tevent_queue *wait_queue;
 };
@@ -286,4 +275,3 @@ static void conn_force_tdis_done(struct tevent_req *req)
 	change_to_root_user();
 	reload_services(sconn, conn_snum_used, true);
 }
-#endif
