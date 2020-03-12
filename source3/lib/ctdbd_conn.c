@@ -80,6 +80,11 @@ struct ctdbd_connection {
 	/* Lists of pending async reads and writes */
 	struct ctdb_pkt_recv_state *recv_list;
 	struct ctdb_pkt_send_state *send_list;
+
+	/*
+	 * Outgoing queue for writev_send of asynchronous ctdb requests
+	 */
+	struct tevent_queue *outgoing;
 };
 
 static void ctdbd_async_socket_handler(struct tevent_context *ev,
@@ -569,6 +574,37 @@ int ctdbd_reinit_connection(TALLOC_CTX *mem_ctx,
 		return ret;
 	}
 
+	return 0;
+}
+
+int ctdbd_init_async_connection(
+	TALLOC_CTX *mem_ctx,
+	const char *sockname,
+	int timeout,
+	struct ctdbd_connection **pconn)
+{
+	struct ctdbd_connection *conn = NULL;
+	int ret;
+
+	ret = ctdbd_init_connection(mem_ctx, sockname, timeout, &conn);
+	if (ret != 0) {
+		return ret;
+	}
+
+	ret = set_blocking(conn->fd, false);
+	if (ret == -1) {
+		int err = errno;
+		TALLOC_FREE(conn);
+		return err;
+	}
+
+	conn->outgoing = tevent_queue_create(conn, "ctdb async outgoing");
+	if (conn->outgoing == NULL) {
+		TALLOC_FREE(conn);
+		return ENOMEM;
+	}
+
+	*pconn = conn;
 	return 0;
 }
 
