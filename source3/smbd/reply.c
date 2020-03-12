@@ -6039,28 +6039,28 @@ void reply_unlock(struct smb_request *req)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_tdis(struct smb_request *req)
+void reply_tdis(struct smb_request *smb1req)
 {
 	NTSTATUS status;
-	connection_struct *conn = req->conn;
+	connection_struct *conn = smb1req->conn;
 	struct smbXsrv_tcon *tcon;
 
 	START_PROFILE(SMBtdis);
 
 	if (!conn) {
 		DEBUG(4,("Invalid connection in tdis\n"));
-		reply_force_doserror(req, ERRSRV, ERRinvnid);
+		reply_force_doserror(smb1req, ERRSRV, ERRinvnid);
 		END_PROFILE(SMBtdis);
 		return;
 	}
 
 	tcon = conn->tcon;
-	req->conn = NULL;
+	smb1req->conn = NULL;
 
 	/*
 	 * TODO: cancel all outstanding requests on the tcon
 	 */
-	status = smbXsrv_tcon_disconnect(tcon, req->vuid);
+	status = smbXsrv_tcon_disconnect(tcon, smb1req->vuid);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("reply_tdis: "
 			  "smbXsrv_tcon_disconnect() failed: %s\n",
@@ -6076,7 +6076,7 @@ void reply_tdis(struct smb_request *req)
 
 	TALLOC_FREE(tcon);
 
-	reply_outbuf(req, 0, 0);
+	reply_outbuf(smb1req, 0, 0);
 	END_PROFILE(SMBtdis);
 	return;
 }
