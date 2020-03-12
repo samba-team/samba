@@ -5766,21 +5766,33 @@ void reply_flush(struct smb_request *req)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_exit(struct smb_request *req)
+static struct tevent_req *reply_exit_send(struct smb_request *smb1req);
+static void reply_exit_done(struct tevent_req *req);
+
+void reply_exit(struct smb_request *smb1req)
 {
-	START_PROFILE(SMBexit);
+	struct tevent_req *req;
 
-	file_close_pid(req->sconn, req->smbpid, req->vuid);
+	/*
+	 * Don't setup the profile charge here, take
+	 * it in reply_exit_done(). Not strictly correct
+	 * but better than the other SMB1 async
+	 * code that double-charges at the moment.
+	 */
+	req = reply_exit_send(smb1req);
+	if (req == NULL) {
+		/* Not going async, profile here. */
+		START_PROFILE(SMBexit);
+		reply_force_doserror(smb1req, ERRDOS, ERRnomem);
+		END_PROFILE(SMBexit);
+		return;
+	}
 
-	reply_outbuf(req, 0, 0);
-
-	DEBUG(3,("exit\n"));
-
-	END_PROFILE(SMBexit);
+	/* We're async. This will complete later. */
+	tevent_req_set_callback(req, reply_exit_done, smb1req);
 	return;
 }
 
-#if 0
 struct reply_exit_state {
 	struct tevent_queue *wait_queue;
 };
@@ -5979,7 +5991,6 @@ static void reply_exit_done(struct tevent_req *req)
 	END_PROFILE(SMBexit);
 	return;
 }
-#endif
 
 struct reply_close_state {
 	files_struct *fsp;
