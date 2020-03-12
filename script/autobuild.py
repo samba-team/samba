@@ -322,22 +322,13 @@ tasks = {
 
     "samba-fileserver": [
         ("random-sleep", random_sleep(300, 900)),
-        ("configure", "./configure.developer --without-ad-dc --with-selftest-prefix=./bin/ab" + samba_configure_params),
+        ("configure", "./configure.developer --without-ad-dc --with-system-heimdalkrb5 --with-selftest-prefix=./bin/ab" + samba_configure_params),
         ("make", "make -j"),
         ("test", make_test(include_envs=[
             "fileserver",
             "maptoguest",
-            ])),
-        ("lcov", LCOV_CMD),
-        ("check-clean-tree", "script/clean-source-tree.sh"),
-        ],
-
-    "samba-ktest-heimdal": [
-        ("random-sleep", random_sleep(300, 900)),
-        ("configure", "./configure.developer --without-ad-dc --with-system-heimdalkrb5 --with-selftest-prefix=./bin/ab" + samba_configure_params),
-        ("make", "make -j"),
-        ("test", make_test(include_envs=[
-            "ktest",
+            "ktest", # ktest is also tested in samba and samba-mitkrb5
+                     # but is tested here against a system Heimdal
             ])),
         ("lcov", LCOV_CMD),
         ("check-clean-tree", "script/clean-source-tree.sh"),

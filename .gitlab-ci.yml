@@ -190,9 +190,6 @@ samba-simpleserver:
 samba-fileserver:
   extends: .private_template
 
-samba-ktest-heimdal:
-  extends: .private_template
-
 samba-ad-dc-1:
   extends: .private_template
 
@@ -235,7 +232,6 @@ pages:
     - samba-ad-dc-backup
     - samba-simpleserver
     - samba-fileserver
-    - samba-ktest-heimdal
     - samba-ad-dc-1
     - samba-nt4
     - samba-schemaupgrade
