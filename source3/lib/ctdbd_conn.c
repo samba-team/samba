@@ -1380,7 +1380,7 @@ static struct tevent_req *ctdb_pkt_send_send(TALLOC_CTX *mem_ctx,
 	 */
 
 	nwritten = writev(conn->fd, state->iov, state->iovcnt);
-	if (nwritten == state->packet_len) {
+	if ((size_t)nwritten == state->packet_len) {
 		DBG_DEBUG("Finished sending reqid [%" PRIu32 "]\n", reqid);
 
 		*req_state = DBWRAP_REQ_DISPATCHED;
