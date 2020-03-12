@@ -5673,6 +5673,13 @@ void reply_close(struct smb_request *req)
 			   fsp->num_aio_requests));
 
 		/*
+		 * Flag the file as close in progress.
+		 * This will prevent any more IO being
+		 * done on it.
+		 */
+		fsp->closing = true;
+
+		/*
 		 * We depend on the aio_extra destructor to take care of this
 		 * close request once fsp->num_aio_request drops to 0.
 		 */
