@@ -5780,6 +5780,207 @@ void reply_exit(struct smb_request *req)
 	return;
 }
 
+#if 0
+struct reply_exit_state {
+	struct tevent_queue *wait_queue;
+};
+
+static void reply_exit_wait_done(struct tevent_req *subreq);
+
+/****************************************************************************
+ Async SMB1 exit.
+ Note, on failure here we deallocate and return NULL to allow the caller to
+ SMB1 return an error of ERRnomem immediately.
+****************************************************************************/
+
+static struct tevent_req *reply_exit_send(struct smb_request *smb1req)
+{
+	struct tevent_req *req;
+	struct reply_exit_state *state;
+	struct tevent_req *subreq;
+	files_struct *fsp;
+	struct smbd_server_connection *sconn = smb1req->sconn;
+
+	req = tevent_req_create(smb1req, &state,
+			struct reply_exit_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->wait_queue = tevent_queue_create(state,
+				"reply_exit_wait_queue");
+	if (tevent_req_nomem(state->wait_queue, req)) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
+
+	for (fsp = sconn->files; fsp; fsp = fsp->next) {
+		if (fsp->file_pid != smb1req->smbpid) {
+			continue;
+		}
+		if (fsp->vuid != smb1req->vuid) {
+			continue;
+		}
+		/*
+		 * Flag the file as close in progress.
+		 * This will prevent any more IO being
+		 * done on it.
+		 */
+		fsp->closing = true;
+
+		if (fsp->num_aio_requests > 0) {
+			/*
+			 * Now wait until all aio requests on this fsp are
+			 * finished.
+			 *
+			 * We don't set a callback, as we just want to block the
+			 * wait queue and the talloc_free() of fsp->aio_request
+			 * will remove the item from the wait queue.
+			 */
+			subreq = tevent_queue_wait_send(fsp->aio_requests,
+						sconn->ev_ctx,
+						state->wait_queue);
+			if (tevent_req_nomem(subreq, req)) {
+				TALLOC_FREE(req);
+				return NULL;
+			}
+		}
+	}
+
+	/*
+	 * Now we add our own waiter to the end of the queue,
+	 * this way we get notified when all pending requests are finished
+	 * and reply to the outstanding SMB1 request.
+	 */
+	subreq = tevent_queue_wait_send(state,
+				sconn->ev_ctx,
+				state->wait_queue);
+	if (tevent_req_nomem(subreq, req)) {
+		TALLOC_FREE(req);
+		return NULL;
+	}
+
+	/*
+	 * We're really going async - move the SMB1 request from
+	 * a talloc stackframe above us to the conn talloc-context.
+	 * We need this to stick around until the wait_done
+	 * callback is invoked.
+	 */
+	smb1req = talloc_move(sconn, &smb1req);
+
+	tevent_req_set_callback(subreq, reply_exit_wait_done, req);
+
+	return req;
+}
+
+static void reply_exit_wait_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+
+	tevent_queue_wait_recv(subreq);
+	TALLOC_FREE(subreq);
+	tevent_req_done(req);
+}
+
+static NTSTATUS reply_exit_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
+}
+
+static void reply_exit_done(struct tevent_req *req)
+{
+	struct smb_request *smb1req = tevent_req_callback_data(
+		req, struct smb_request);
+	struct smbd_server_connection *sconn = smb1req->sconn;
+	struct smbXsrv_connection *xconn = smb1req->xconn;
+	NTTIME now = timeval_to_nttime(&smb1req->request_time);
+	struct smbXsrv_session *session = NULL;
+	files_struct *fsp, *next;
+	NTSTATUS status;
+
+	/*
+	 * Take the profile charge here. Not strictly
+	 * correct but better than the other SMB1 async
+	 * code that double-charges at the moment.
+	 */
+	START_PROFILE(SMBexit);
+
+	status = reply_exit_recv(req);
+	TALLOC_FREE(req);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(smb1req);
+		END_PROFILE(SMBexit);
+		exit_server(__location__ ": reply_exit_recv failed");
+		return;
+	}
+
+	/*
+	 * Ensure the session is still valid.
+	 */
+	status = smb1srv_session_lookup(xconn,
+					smb1req->vuid,
+					now,
+					&session);
+	if (!NT_STATUS_IS_OK(status)) {
+		reply_force_doserror(smb1req, ERRSRV, ERRinvnid);
+		smb_request_done(smb1req);
+		END_PROFILE(SMBexit);
+	}
+
+	/*
+	 * Ensure the vuid is still valid - no one
+	 * called reply_ulogoffX() in the meantime.
+	 * reply_exit() doesn't have AS_USER set, so
+	 * use set_current_user_info() directly.
+	 * This is the same logic as in switch_message().
+	 */
+	if (session->global->auth_session_info != NULL) {
+		set_current_user_info(
+			session->global->auth_session_info->unix_info->sanitized_username,
+			session->global->auth_session_info->unix_info->unix_name,
+			session->global->auth_session_info->info->domain_name);
+	}
+
+	/* No more aio - do the actual closes. */
+	for (fsp = sconn->files; fsp; fsp = next) {
+		bool ok;
+		next = fsp->next;
+
+		if (fsp->file_pid != smb1req->smbpid) {
+			continue;
+		}
+		if (fsp->vuid != smb1req->vuid) {
+			continue;
+		}
+		if (!fsp->closing) {
+			continue;
+		}
+
+		/*
+		 * reply_exit() has the DO_CHDIR flag set.
+		 */
+		ok = chdir_current_service(fsp->conn);
+		if (!ok) {
+			reply_force_doserror(smb1req, ERRSRV, ERRinvnid);
+			smb_request_done(smb1req);
+			END_PROFILE(SMBexit);
+		}
+		close_file(NULL, fsp, SHUTDOWN_CLOSE);
+	}
+
+	reply_outbuf(smb1req, 0, 0);
+	/*
+	 * The following call is needed to push the
+	 * reply data back out the socket after async
+	 * return. Plus it frees smb1req.
+	 */
+	smb_request_done(smb1req);
+	DBG_INFO("reply_exit complete\n");
+	END_PROFILE(SMBexit);
+	return;
+}
+#endif
+
 struct reply_close_state {
 	files_struct *fsp;
 	struct smb_request *smbreq;
