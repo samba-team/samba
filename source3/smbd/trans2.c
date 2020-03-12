@@ -6687,6 +6687,13 @@ static NTSTATUS smb_set_file_size(connection_struct *conn,
 		 get_file_size_stat(psbuf));
 
 	if (size == get_file_size_stat(psbuf)) {
+		if (fsp == NULL) {
+			return NT_STATUS_OK;
+		}
+		if (!fsp->modified) {
+			return NT_STATUS_OK;
+		}
+		trigger_write_time_update_immediate(fsp);
 		return NT_STATUS_OK;
 	}
 
