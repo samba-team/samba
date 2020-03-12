@@ -669,6 +669,15 @@ bld.SAMBA_LIBRARY('dcerpc-server-core',
     autoproto='rpc/dcesrv_core_proto.h',
     vnum='0.0.1')
 
+bld.SAMBA_SUBSYSTEM('DCERPC_HELPER',
+                    source='rpc/dcerpc_helper.c',
+                    public_deps='''
+                                samba-hostconfig
+                                samba-security
+                                gnutls
+                                GNUTLS_HELPERS
+                                ''')
+
 bld.SAMBA_SUBSYSTEM('NDR_WINBIND',
 	source='gen_ndr/ndr_winbind.c',
 	public_deps='ndr NDR_LSA'
