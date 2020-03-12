@@ -1181,6 +1181,11 @@ bld.SAMBA3_BINARY('locktest2',
                       ''',
                  for_selftest=True)
 
+TORTURE3_ADDITIONAL_SOURCE=""
+
+if bld.env.with_ctdb:
+    TORTURE3_ADDITIONAL_SOURCE += ' torture/test_ctdbd_conn.c'
+
 bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                  source='''
                         torture/torture.c
@@ -1221,7 +1226,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                         torture/test_idmap_cache.c
                         torture/test_hidenewfiles.c
                         torture/test_readdir_timestamp.c
-                        ''',
+                        ''' + TORTURE3_ADDITIONAL_SOURCE,
                  deps='''
                       talloc
                       smbconf

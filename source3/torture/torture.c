@@ -14995,6 +14995,12 @@ static struct {
 		.name  = "hide-new-files-timeout",
 		.fn    = run_hidenewfiles,
 	},
+#ifdef CLUSTER_SUPPORT
+	{
+		.name  = "ctdbd-conn1",
+		.fn    = run_ctdbd_conn1,
+	},
+#endif
 	{
 		.name  = "readdir-timestamp",
 		.fn    = run_readdir_timestamp,

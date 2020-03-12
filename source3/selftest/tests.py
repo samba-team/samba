@@ -1067,6 +1067,7 @@ for test in CLUSTERED_TESTS:
     planclusteredmembertestsuite(test, "$PREFIX")
 
 CLUSTERED_LOCAL_TESTS = [
+    "ctdbd-conn1",
     "local-dbwrap-ctdb1"
 ]
 
@@ -1080,4 +1081,4 @@ for t in CLUSTERED_LOCAL_TESTS:
          '""',
          '""',
          smbtorture3,
-         ""])
+         "-N 1000 -o 2000"])
