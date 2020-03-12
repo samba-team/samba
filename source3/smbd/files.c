@@ -189,23 +189,6 @@ void file_close_conn(connection_struct *conn)
 }
 
 /****************************************************************************
- Close all open files for a pid and a vuid.
-****************************************************************************/
-
-void file_close_pid(struct smbd_server_connection *sconn, uint16_t smbpid,
-		    uint64_t vuid)
-{
-	files_struct *fsp, *next;
-
-	for (fsp=sconn->files;fsp;fsp=next) {
-		next = fsp->next;
-		if ((fsp->file_pid == smbpid) && (fsp->vuid == vuid)) {
-			close_file(NULL, fsp, SHUTDOWN_CLOSE);
-		}
-	}
-}
-
-/****************************************************************************
  Initialise file structures.
 ****************************************************************************/
 
