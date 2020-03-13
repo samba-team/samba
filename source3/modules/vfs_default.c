@@ -3408,7 +3408,7 @@ static struct tevent_req *vfswrap_getxattrat_send(
 	if (tevent_req_nomem(subreq, req)) {
 		return tevent_req_post(req, ev);
 	}
-	tevent_req_set_callback(subreq, vfswrap_getxattrat_done, state);
+	tevent_req_set_callback(subreq, vfswrap_getxattrat_done, req);
 
 	talloc_set_destructor(state, vfswrap_getxattrat_state_destructor);
 
@@ -3503,9 +3503,10 @@ end_profile:
 
 static void vfswrap_getxattrat_done(struct tevent_req *subreq)
 {
-	struct vfswrap_getxattrat_state *state = tevent_req_callback_data(
-		subreq, struct vfswrap_getxattrat_state);
-	struct tevent_req *req = state->req;
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct vfswrap_getxattrat_state *state = tevent_req_data(
+		req, struct vfswrap_getxattrat_state);
 	int ret;
 	bool ok;
 
