@@ -1802,10 +1802,16 @@ sub read_config_h($)
 	return \%ret;
 }
 
-sub provision_ad_dc($$$$$$)
+sub provision_ad_dc($$$$$$$)
 {
-	my ($self, $prefix, $hostname, $domain, $realm, $smbconf_args,
-		$extra_provision_options) = @_;
+	my ($self,
+	    $prefix,
+	    $hostname,
+	    $domain,
+	    $realm,
+	    $force_fips_mode,
+	    $smbconf_args,
+	    $extra_provision_options) = @_;
 
 	my $prefix_abs = abs_path($prefix);
 
@@ -2517,6 +2523,7 @@ sub setup_ad_dc
 	}
 	my $env = $self->provision_ad_dc($path, $server, "ADDOMAIN",
 					 $dom,
+					 undef,
 					 $conf_opts,
 					 undef);
 	unless ($env) {
@@ -2561,8 +2568,13 @@ sub setup_ad_dc_no_nss
 	       return "UNKNOWN";
 	}
 
-	my $env = $self->provision_ad_dc($path, "addc_no_nss", "ADNONSSDOMAIN",
-					 "adnonssdom.samba.example.com", "", undef);
+	my $env = $self->provision_ad_dc($path,
+					 "addc_no_nss",
+					 "ADNONSSDOMAIN",
+					 "adnonssdom.samba.example.com",
+					 undef,
+					 "",
+					 undef);
 	unless ($env) {
 		return undef;
 	}
@@ -2591,9 +2603,13 @@ sub setup_ad_dc_no_ntlm
 	       return "UNKNOWN";
 	}
 
-	my $env = $self->provision_ad_dc($path, "addc_no_ntlm", "ADNONTLMDOMAIN",
+	my $env = $self->provision_ad_dc($path,
+					 "addc_no_ntlm",
+					 "ADNONTLMDOMAIN",
 					 "adnontlmdom.samba.example.com",
-					 "ntlm auth = disabled", undef);
+					 undef,
+					 "ntlm auth = disabled",
+					 undef);
 	unless ($env) {
 		return undef;
 	}
@@ -2623,6 +2639,7 @@ sub setup_ad_dc_fips
 					 "fipsdc",
 					 "FIPSDOMAIN",
 					 "fips.samba.example.com",
+					 1,
 					 "",
 					 undef);
 	unless ($env) {
@@ -2655,12 +2672,13 @@ sub setup_preforkrestartdc
 
 	# note DC name must be <= 15 chars so we use 'prockill' instead of
 	# 'preforkrestart'
-	my $env = $self->provision_ad_dc(
-		$path,
-		"prockilldc",
-		"PROCKILLDOMAIN",
-		"prockilldom.samba.example.com",
-		"prefork backoff increment = 5\nprefork maximum backoff=10");
+	my $env = $self->provision_ad_dc($path,
+					 "prockilldc",
+					 "PROCKILLDOMAIN",
+					 "prockilldom.samba.example.com",
+					 undef,
+					 "prefork backoff increment = 5\nprefork maximum backoff=10",
+					 undef);
 	unless ($env) {
 		return undef;
 	}
@@ -2693,12 +2711,13 @@ sub setup_proclimitdc
 	       return "UNKNOWN";
 	}
 
-	my $env = $self->provision_ad_dc(
-		$path,
-		"proclimitdc",
-		"PROCLIMITDOM",
-		"proclimit.samba.example.com",
-		"max smbd processes = 20");
+	my $env = $self->provision_ad_dc($path,
+					 "proclimitdc",
+					 "PROCLIMITDOM",
+					 "proclimit.samba.example.com",
+					 undef,
+					 "max smbd processes = 20",
+					 undef);
 	unless ($env) {
 		return undef;
 	}
@@ -2726,8 +2745,11 @@ sub setup_schema_dc
 	# provision the PDC using an older base schema
 	my $provision_args = ["--base-schema=2008_R2", "--backend-store=mdb"];
 
-	my $env = $self->provision_ad_dc($path, "liveupgrade1dc", "SCHEMADOMAIN",
+	my $env = $self->provision_ad_dc($path,
+					 "liveupgrade1dc",
+					 "SCHEMADOMAIN",
 					 "schema.samba.example.com",
+					 undef,
 					 "drs: max link sync = 2",
 					 $provision_args);
 	unless ($env) {
@@ -2829,8 +2851,11 @@ sub setup_backupfromdc
 
 	my $provision_args = ["--site=Backup-Site"];
 
-	my $env = $self->provision_ad_dc($path, "backupfromdc", "BACKUPDOMAIN",
+	my $env = $self->provision_ad_dc($path,
+					 "backupfromdc",
+					 "BACKUPDOMAIN",
 					 "backupdom.samba.example.com",
+					 undef,
 					 "samba kcc command = /bin/true",
 					 $provision_args);
 	unless ($env) {
