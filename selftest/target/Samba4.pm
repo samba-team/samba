@@ -168,6 +168,9 @@ sub wait_for_start($$)
 			$cmd .= "RESOLV_WRAPPER_HOSTS='$testenv_vars->{RESOLV_WRAPPER_HOSTS}' ";
 		}
 		$cmd .= "RESOLV_CONF='$testenv_vars->{RESOLV_CONF}' ";
+		if (defined($testenv_vars->{GNUTLS_FORCE_FIPS_MODE})) {
+			$cmd .= "GNUTLS_FORCE_FIPS_MODE=$testenv_vars->{GNUTLS_FORCE_FIPS_MODE} ";
+		}
 
 		$cmd .= "$ldbsearch ";
 		$cmd .= "$testenv_vars->{CONFIGURATION} ";
@@ -380,6 +383,9 @@ sub get_cmd_env_vars
 		$cmd_env .= "RESOLV_WRAPPER_CONF=\"$localenv->{RESOLV_WRAPPER_CONF}\" ";
 	} else {
 		$cmd_env .= "RESOLV_WRAPPER_HOSTS=\"$localenv->{RESOLV_WRAPPER_HOSTS}\" ";
+	}
+	if (defined($localenv->{GNUTLS_FORCE_FIPS_MODE})) {
+		$cmd_env .= "GNUTLS_FORCE_FIPS_MODE=$localenv->{GNUTLS_FORCE_FIPS_MODE} ";
 	}
 	$cmd_env .= " KRB5_CONFIG=\"$localenv->{KRB5_CONFIG}\" ";
 	$cmd_env .= "KRB5CCNAME=\"$localenv->{KRB5_CCACHE}\" ";
@@ -608,6 +614,10 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	} else {
 		push (@provision_options, "RESOLV_WRAPPER_HOSTS=\"$ctx->{dns_host_file}\"");
 	}
+	if (defined($ctx->{force_fips_mode})) {
+		push (@provision_options, "GNUTLS_FORCE_FIPS_MODE=1");
+	}
+
 	if (defined($ENV{GDB_PROVISION})) {
 		push (@provision_options, "gdb --args");
 		if (!defined($ENV{PYTHON})) {
@@ -872,13 +882,16 @@ nogroup:x:65534:nobody
                 UID_RFC2307TEST => $uid_rfc2307test,
                 GID_RFC2307TEST => $gid_rfc2307test,
                 SERVER_ROLE => $ctx->{server_role},
-	        RESOLV_CONF => $ctx->{resolv_conf}
+	        RESOLV_CONF => $ctx->{resolv_conf},
 	};
 
 	if (defined($ctx->{use_resolv_wrapper})) {
 	        $ret->{RESOLV_WRAPPER_CONF} = $ctx->{resolv_conf};
 	} else {
 		$ret->{RESOLV_WRAPPER_HOSTS} = $ctx->{dns_host_file};
+	}
+	if (defined($ctx->{force_fips_mode})) {
+		$ret->{GNUTLS_FORCE_FIPS_MODE} = "1",
 	}
 
 	if ($ctx->{server_role} eq "domain controller") {

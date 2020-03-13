@@ -689,6 +689,9 @@ sub get_env_for_process
 	} else {
 		$proc_envs->{RESOLV_WRAPPER_HOSTS} = $env_vars->{RESOLV_WRAPPER_HOSTS};
 	}
+	if (defined($env_vars->{GNUTLS_FORCE_FIPS_MODE})) {
+		$proc_envs->{GNUTLS_FORCE_FIPS_MODE} = $env_vars->{GNUTLS_FORCE_FIPS_MODE};
+	}
 	return $proc_envs;
 }
 
@@ -872,6 +875,9 @@ my @exported_envvars = (
 	# resolv_wrapper
 	"RESOLV_WRAPPER_CONF",
 	"RESOLV_WRAPPER_HOSTS",
+
+	# crypto libraries
+	"GNUTLS_FORCE_FIPS_MODE",
 );
 
 sub exported_envvars_str
