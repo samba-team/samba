@@ -101,9 +101,9 @@ class GPPolParser(GPParser):
     def write_xml(self, filename):
         with open(filename, 'wb') as f:
             root = Element('PolFile')
+            root.attrib['num_entries'] = str(self.pol_file.num_entries)
             root.attrib['signature'] = self.pol_file.header.signature
             root.attrib['version'] = str(self.pol_file.header.version)
-            root.attrib['num_entries'] = str(self.pol_file.num_entries)
             for entry in self.pol_file.entries:
                 child = SubElement(root, 'Entry')
                 # child.attrib['size'] = str(entry.size)
