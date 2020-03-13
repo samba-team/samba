@@ -37,6 +37,11 @@ else:
 
 DNS_REQUEST_TIMEOUT = 10
 
+# make sure the script dies immediately when hitting control-C,
+# rather than raising KeyboardInterrupt. As we do all database
+# operations using transactions, this is safe.
+import signal
+signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 class DnsHandler(sserver.BaseRequestHandler):
     dns_qtype_strings = dict((v, k) for k, v in vars(dns).items() if k.startswith('DNS_QTYPE_'))
