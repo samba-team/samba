@@ -1012,15 +1012,6 @@ static void vfs_pwrite_do(void *private_data)
 
 static int vfs_pwrite_state_destructor(struct vfswrap_pwrite_state *state)
 {
-	/*
-	 * This destructor only gets called if the request is still
-	 * in flight, which is why we deny it by returning -1. We
-	 * also set the req pointer to NULL so the _done function
-	 * can detect the caller doesn't want the result anymore.
-	 *
-	 * Forcing the fsp closed by a SHUTDOWN_CLOSE can cause this.
-	 */
-	state->req = NULL;
 	return -1;
 }
 
@@ -1035,17 +1026,6 @@ static void vfs_pwrite_done(struct tevent_req *subreq)
 	TALLOC_FREE(subreq);
 	SMBPROFILE_BYTES_ASYNC_END(state->profile_bytes);
 	talloc_set_destructor(state, NULL);
-	if (req == NULL) {
-		/*
-		 * We were shutdown closed in flight. No one
-		 * wants the result, and state has been reparented
-		 * to the NULL context, so just free it so we
-		 * don't leak memory.
-		 */
-		DBG_NOTICE("pwrite request abandoned in flight\n");
-		TALLOC_FREE(state);
-		return;
-	}
 	if (ret != 0) {
 		if (ret != EAGAIN) {
 			tevent_req_error(req, ret);
