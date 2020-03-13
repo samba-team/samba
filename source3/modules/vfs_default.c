@@ -1078,7 +1078,6 @@ static ssize_t vfswrap_pwrite_recv(struct tevent_req *req,
 }
 
 struct vfswrap_fsync_state {
-	struct tevent_req *req;
 	ssize_t ret;
 	int fd;
 
@@ -1103,7 +1102,6 @@ static struct tevent_req *vfswrap_fsync_send(struct vfs_handle_struct *handle,
 		return NULL;
 	}
 
-	state->req = req;
 	state->ret = -1;
 	state->fd = fsp->fh->fd;
 
