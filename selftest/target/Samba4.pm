@@ -1081,11 +1081,21 @@ userPrincipalName: jane.doe\@$ctx->{realm}
 	return $ret;
 }
 
-sub provision($$$$$$$$$$)
+sub provision($$$$$$$$$$$)
 {
-	my ($self, $prefix, $server_role, $hostname,
-	    $domain, $realm, $functional_level,
-	    $password, $kdc_ipv4, $kdc_ipv6, $extra_smbconf_options, $extra_smbconf_shares,
+	my ($self,
+	    $prefix,
+	    $server_role,
+	    $hostname,
+	    $domain,
+	    $realm,
+	    $functional_level,
+	    $password,
+	    $kdc_ipv4,
+	    $kdc_ipv6,
+	    $force_fips_mode,
+	    $extra_smbconf_options,
+	    $extra_smbconf_shares,
 	    $extra_provision_options) = @_;
 
 	my $samsid = Samba::random_domain_sid();
@@ -1269,6 +1279,7 @@ server min protocol = LANMAN1
 				   "locMEMpass3",
 				   $dcvars->{SERVER_IP},
 				   $dcvars->{SERVER_IPV6},
+				   undef,
 				   $extra_smb_conf, "",
 				   $extra_provision_options);
 	unless ($ret) {
@@ -1331,6 +1342,7 @@ sub provision_rpc_proxy($$$)
 				   "locRPCproxypass4",
 				   $dcvars->{SERVER_IP},
 				   $dcvars->{SERVER_IPV6},
+				   undef,
 				   $extra_smbconf_options, "",
 				   $extra_provision_options);
 	unless ($ret) {
@@ -1549,6 +1561,7 @@ sub provision_ad_dc_ntvfs($$$)
 				   "locDCpass1",
 				   undef,
 				   undef,
+				   undef,
 				   $extra_conf_options,
 				   "",
 				   $extra_provision_options);
@@ -1590,6 +1603,7 @@ sub provision_fl2000dc($$)
 				   "locDCpass5",
 				   undef,
 				   undef,
+				   undef,
 				   $extra_conf_options,
 				   "",
 				   $extra_provision_options);
@@ -1625,6 +1639,7 @@ sub provision_fl2003dc($$$)
 				   "samba2003.example.com",
 				   "2003",
 				   "locDCpass6",
+				   undef,
 				   undef,
 				   undef,
 				   $extra_conf_options,
@@ -1675,6 +1690,7 @@ sub provision_fl2008r2dc($$$)
 				   "samba2008R2.example.com",
 				   "2008_R2",
 				   "locDCpass7",
+				   undef,
 				   undef,
 				   undef,
 				   $extra_conf_options,
@@ -1937,6 +1953,7 @@ sub provision_ad_dc($$$$$$$)
 				   "locDCpass1",
 				   undef,
 				   undef,
+				   $force_fips_mode,
 				   $extra_smbconf_options,
 				   $extra_smbconf_shares,
 				   $extra_provision_options);
@@ -1973,6 +1990,7 @@ sub provision_chgdcpass($$)
 				   "chgdcpassword.samba.example.com",
 				   "2008",
 				   "chgDCpass1",
+				   undef,
 				   undef,
 				   undef,
 				   $extra_smb_conf,
