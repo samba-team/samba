@@ -2104,6 +2104,7 @@ sub check_env($$)
 	# name               => [dep_1, dep_2, ...],
 	dns_hub              => [],
 	ad_dc_ntvfs          => ["dns_hub"],
+	ad_dc_fips           => ["dns_hub"],
 	ad_dc                => ["dns_hub"],
 	ad_dc_smb1           => ["dns_hub"],
 	ad_dc_smb1_done      => ["ad_dc_smb1"],
@@ -2581,6 +2582,37 @@ sub setup_ad_dc_no_ntlm
 	my $env = $self->provision_ad_dc($path, "addc_no_ntlm", "ADNONTLMDOMAIN",
 					 "adnontlmdom.samba.example.com",
 					 "ntlm auth = disabled", undef);
+	unless ($env) {
+		return undef;
+	}
+
+	if (not defined($self->check_or_start($env, "prefork"))) {
+	    return undef;
+	}
+
+	my $upn_array = ["$env->{REALM}.upn"];
+	my $spn_array = ["$env->{REALM}.spn"];
+
+	$self->setup_namespaces($env, $upn_array, $spn_array);
+
+	return $env;
+}
+
+sub setup_ad_dc_fips
+{
+	my ($self, $path) = @_;
+
+	# If we didn't build with ADS, pretend this env was never available
+	if (not $self->{target3}->have_ads()) {
+	       return "UNKNOWN";
+	}
+
+	my $env = $self->provision_ad_dc($path,
+					 "fipsdc",
+					 "FIPSDOMAIN",
+					 "fips.samba.example.com",
+					 "",
+					 undef);
 	unless ($env) {
 		return undef;
 	}

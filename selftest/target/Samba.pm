@@ -472,6 +472,7 @@ sub realm_to_ip_mappings
 		'prockilldom.samba.example.com'   => 'prockilldc',
 		'proclimit.samba.example.com'     => 'proclimitdc',
 		'samba.example.com'               => 'localdc',
+		'fips.samba.example.com'          => 'fipsdc',
 	);
 
 	my @mapping = ();
@@ -552,6 +553,7 @@ sub get_interface($)
 		fileserversmb1    => 53,
 		addcsmb1	  => 54,
 		lclnt4dc2smb1	  => 55,
+		fipsdc            => 56,
 
 		rootdnsforwarder  => 64,
 
