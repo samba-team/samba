@@ -112,9 +112,9 @@ class DnsHandler(sserver.BaseRequestHandler):
         forwarder = self.forwarder(name)
         response = None
 
-        if forwarder is 'ignore':
+        if forwarder == 'ignore':
             return
-        elif forwarder is 'fail':
+        elif forwarder == 'fail':
             pass
         elif forwarder in ['torture', None]:
             response = query
