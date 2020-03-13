@@ -32,7 +32,7 @@ mkfifo smbclient-stdin smbclient-stdout smbclient-stderr
 
 # Create a large-ish testfile
 rm testfile
-head -c 10MB /dev/zero >testfile
+head -c 20MB /dev/zero >testfile
 
 CLI_FORCE_INTERACTIVE=1; export CLI_FORCE_INTERACTIVE
 
