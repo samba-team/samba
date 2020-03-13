@@ -471,11 +471,20 @@ sub setup_trust($$$$$)
 	return $localenv
 }
 
-sub provision_raw_prepare($$$$$$$$$$$$)
+sub provision_raw_prepare($$$$$$$$$$$$$)
 {
-	my ($self, $prefix, $server_role, $hostname,
-	    $domain, $realm, $samsid, $functional_level,
-	    $password, $kdc_ipv4, $kdc_ipv6) = @_;
+	my ($self,
+	    $prefix,
+	    $server_role,
+	    $hostname,
+	    $domain,
+	    $realm,
+	    $samsid,
+	    $functional_level,
+	    $password,
+	    $kdc_ipv4,
+	    $kdc_ipv6,
+	    $extra_provision_options) = @_;
 	my $ctx;
 	my $python_cmd = "";
 	if (defined $ENV{PYTHON}) {
@@ -634,6 +643,10 @@ sub provision_raw_prepare($$$$$$$$$$$$)
 	push (@provision_options, "--function-level=\"$ctx->{functional_level}\"");
 
 	@{$ctx->{provision_options}} = @provision_options;
+
+	if (defined($extra_provision_options)) {
+		push (@{$ctx->{provision_options}}, @{$extra_provision_options});
+	}
 
 	return $ctx;
 }
@@ -1082,11 +1095,10 @@ sub provision($$$$$$$$$$)
 					       $domain, $realm,
 					       $samsid,
 					       $functional_level,
-					       $password, $kdc_ipv4, $kdc_ipv6);
-
-	if (defined($extra_provision_options)) {
-		push (@{$ctx->{provision_options}}, @{$extra_provision_options});
-	}
+					       $password,
+					       $kdc_ipv4,
+					       $kdc_ipv6,
+					       $extra_provision_options);
 
 	$ctx->{share} = "$ctx->{prefix_abs}/share";
 	push(@{$ctx->{directories}}, "$ctx->{share}");
