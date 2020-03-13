@@ -471,7 +471,7 @@ sub setup_trust($$$$$)
 	return $localenv
 }
 
-sub provision_raw_prepare($$$$$$$$$$$$$)
+sub provision_raw_prepare($$$$$$$$$$$$$$)
 {
 	my ($self,
 	    $prefix,
@@ -484,6 +484,7 @@ sub provision_raw_prepare($$$$$$$$$$$$$)
 	    $password,
 	    $kdc_ipv4,
 	    $kdc_ipv6,
+	    $force_fips_mode,
 	    $extra_provision_options) = @_;
 	my $ctx;
 	my $python_cmd = "";
@@ -519,6 +520,7 @@ sub provision_raw_prepare($$$$$$$$$$$$$)
 	$ctx->{password} = $password;
 	$ctx->{kdc_ipv4} = $kdc_ipv4;
 	$ctx->{kdc_ipv6} = $kdc_ipv6;
+	$ctx->{force_fips_mode} = $force_fips_mode;
 	$ctx->{krb5_ccname} = "$prefix_abs/krb5cc_%{uid}";
 	if ($functional_level eq "2000") {
 		$ctx->{supported_enctypes} = "arcfour-hmac-md5 des-cbc-md5 des-cbc-crc"
@@ -1108,6 +1110,7 @@ sub provision($$$$$$$$$$$)
 					       $password,
 					       $kdc_ipv4,
 					       $kdc_ipv6,
+					       $force_fips_mode,
 					       $extra_provision_options);
 
 	$ctx->{share} = "$ctx->{prefix_abs}/share";
