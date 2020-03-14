@@ -55,17 +55,6 @@
 /* description of bytes objects */
 #define PY_DESC_PY3_BYTES "bytes"
 
-/* Determine if object is really bytes, for code that runs
- * in python2 & python3 (note: PyBytes_Check is replaced by
- * PyString_Check in python2) so care needs to be taken when
- * writing code that will check if incoming type is bytes that
- * will work as expected in python2 & python3
- */
-
-#define IsPy3BytesOrString(pystr) \
-    (PyUnicode_Check(pystr) || PyBytes_Check(pystr))
-
-
 /* Module init */
 
 #define MODULE_INIT_FUNC(name) \
