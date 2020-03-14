@@ -131,7 +131,7 @@ static PyObject *py_nttime2unix(PyObject *self, PyObject *args)
 
 	t = nt_time_to_unix(nt);
 
-	return PyInt_FromLong((uint64_t)t);
+	return PyLong_FromLong((uint64_t)t);
 }
 
 static PyObject *py_nttime2string(PyObject *self, PyObject *args)
@@ -169,7 +169,7 @@ static PyObject *py_set_debug_level(PyObject *self, PyObject *args)
 static PyObject *py_get_debug_level(PyObject *self,
 		PyObject *Py_UNUSED(ignored))
 {
-	return PyInt_FromLong(debuglevel_get());
+	return PyLong_FromLong(debuglevel_get());
 }
 
 static PyObject *py_fault_setup(PyObject *self,
@@ -314,7 +314,7 @@ static PyObject *py_strcasecmp_m(PyObject *self, PyObject *args)
 	cmp_result = strcasecmp_m(s1, s2);
 	PyMem_Free(discard_const_p(char, s1));
 	PyMem_Free(discard_const_p(char, s2));
-	return PyInt_FromLong(cmp_result);
+	return PyLong_FromLong(cmp_result);
 }
 
 static PyObject *py_strstr_m(PyObject *self, PyObject *args)

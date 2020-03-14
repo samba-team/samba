@@ -456,7 +456,7 @@ static PyObject *py_privilege_id(PyObject *self, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &name))
 		return NULL;
 
-	return PyInt_FromLong(sec_privilege_id(name));
+	return PyLong_FromLong(sec_privilege_id(name));
 }
 
 static PyObject *py_random_sid(PyObject *self,

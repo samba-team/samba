@@ -556,7 +556,7 @@ static PyObject *py_creds_get_kerberos_state(PyObject *self, PyObject *unused)
 		return NULL;
 	}
 	state = cli_credentials_get_kerberos_state(creds);
-	return PyInt_FromLong(state);
+	return PyLong_FromLong(state);
 }
 
 static PyObject *py_creds_set_kerberos_state(PyObject *self, PyObject *args)
@@ -822,7 +822,7 @@ static PyObject *py_creds_get_gensec_features(PyObject *self, PyObject *args)
 	}
 
 	gensec_features = cli_credentials_get_gensec_features(creds);
-	return PyInt_FromLong(gensec_features);
+	return PyLong_FromLong(gensec_features);
 }
 
 static PyObject *py_creds_new_client_authenticator(PyObject *self,
@@ -893,7 +893,7 @@ static PyObject *py_creds_get_secure_channel_type(PyObject *self, PyObject *args
 
 	channel_type = cli_credentials_get_secure_channel_type(creds);
 
-	return PyInt_FromLong(channel_type);
+	return PyLong_FromLong(channel_type);
 }
 
 static PyObject *py_creds_encrypt_netr_crypt_password(PyObject *self,
@@ -1274,25 +1274,25 @@ MODULE_INIT_FUNC(credentials)
 	if (m == NULL)
 		return NULL;
 
-	PyModule_AddObject(m, "UNINITIALISED", PyInt_FromLong(CRED_UNINITIALISED));
-	PyModule_AddObject(m, "CALLBACK", PyInt_FromLong(CRED_CALLBACK));
-	PyModule_AddObject(m, "GUESS_ENV", PyInt_FromLong(CRED_GUESS_ENV));
-	PyModule_AddObject(m, "GUESS_FILE", PyInt_FromLong(CRED_GUESS_FILE));
-	PyModule_AddObject(m, "CALLBACK_RESULT", PyInt_FromLong(CRED_CALLBACK_RESULT));
-	PyModule_AddObject(m, "SPECIFIED", PyInt_FromLong(CRED_SPECIFIED));
+	PyModule_AddObject(m, "UNINITIALISED", PyLong_FromLong(CRED_UNINITIALISED));
+	PyModule_AddObject(m, "CALLBACK", PyLong_FromLong(CRED_CALLBACK));
+	PyModule_AddObject(m, "GUESS_ENV", PyLong_FromLong(CRED_GUESS_ENV));
+	PyModule_AddObject(m, "GUESS_FILE", PyLong_FromLong(CRED_GUESS_FILE));
+	PyModule_AddObject(m, "CALLBACK_RESULT", PyLong_FromLong(CRED_CALLBACK_RESULT));
+	PyModule_AddObject(m, "SPECIFIED", PyLong_FromLong(CRED_SPECIFIED));
 
-	PyModule_AddObject(m, "AUTO_USE_KERBEROS", PyInt_FromLong(CRED_AUTO_USE_KERBEROS));
-	PyModule_AddObject(m, "DONT_USE_KERBEROS", PyInt_FromLong(CRED_DONT_USE_KERBEROS));
-	PyModule_AddObject(m, "MUST_USE_KERBEROS", PyInt_FromLong(CRED_MUST_USE_KERBEROS));
+	PyModule_AddObject(m, "AUTO_USE_KERBEROS", PyLong_FromLong(CRED_AUTO_USE_KERBEROS));
+	PyModule_AddObject(m, "DONT_USE_KERBEROS", PyLong_FromLong(CRED_DONT_USE_KERBEROS));
+	PyModule_AddObject(m, "MUST_USE_KERBEROS", PyLong_FromLong(CRED_MUST_USE_KERBEROS));
 
-	PyModule_AddObject(m, "AUTO_KRB_FORWARDABLE",  PyInt_FromLong(CRED_AUTO_KRB_FORWARDABLE));
-	PyModule_AddObject(m, "NO_KRB_FORWARDABLE",    PyInt_FromLong(CRED_NO_KRB_FORWARDABLE));
-	PyModule_AddObject(m, "FORCE_KRB_FORWARDABLE", PyInt_FromLong(CRED_FORCE_KRB_FORWARDABLE));
-	PyModule_AddObject(m, "CLI_CRED_NTLM2", PyInt_FromLong(CLI_CRED_NTLM2));
-	PyModule_AddObject(m, "CLI_CRED_NTLMv2_AUTH", PyInt_FromLong(CLI_CRED_NTLMv2_AUTH));
-	PyModule_AddObject(m, "CLI_CRED_LANMAN_AUTH", PyInt_FromLong(CLI_CRED_LANMAN_AUTH));
-	PyModule_AddObject(m, "CLI_CRED_NTLM_AUTH", PyInt_FromLong(CLI_CRED_NTLM_AUTH));
-	PyModule_AddObject(m, "CLI_CRED_CLEAR_AUTH", PyInt_FromLong(CLI_CRED_CLEAR_AUTH));
+	PyModule_AddObject(m, "AUTO_KRB_FORWARDABLE",  PyLong_FromLong(CRED_AUTO_KRB_FORWARDABLE));
+	PyModule_AddObject(m, "NO_KRB_FORWARDABLE",    PyLong_FromLong(CRED_NO_KRB_FORWARDABLE));
+	PyModule_AddObject(m, "FORCE_KRB_FORWARDABLE", PyLong_FromLong(CRED_FORCE_KRB_FORWARDABLE));
+	PyModule_AddObject(m, "CLI_CRED_NTLM2", PyLong_FromLong(CLI_CRED_NTLM2));
+	PyModule_AddObject(m, "CLI_CRED_NTLMv2_AUTH", PyLong_FromLong(CLI_CRED_NTLMv2_AUTH));
+	PyModule_AddObject(m, "CLI_CRED_LANMAN_AUTH", PyLong_FromLong(CLI_CRED_LANMAN_AUTH));
+	PyModule_AddObject(m, "CLI_CRED_NTLM_AUTH", PyLong_FromLong(CLI_CRED_NTLM_AUTH));
+	PyModule_AddObject(m, "CLI_CRED_CLEAR_AUTH", PyLong_FromLong(CLI_CRED_CLEAR_AUTH));
 
 	Py_INCREF(&PyCredentials);
 	PyModule_AddObject(m, "Credentials", (PyObject *)&PyCredentials);

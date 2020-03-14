@@ -27,7 +27,7 @@
 #include <tevent.h>
 
 #if PY_MAJOR_VERSION >= 3
-#define PyInt_FromLong PyLong_FromLong
+#define PyLong_FromLong PyLong_FromLong
 #endif
 
 /* discard signature of 'func' in favour of 'target_sig' */
@@ -709,7 +709,7 @@ static PyTypeObject TeventReq_Type = {
 static PyObject *py_tevent_queue_get_length(TeventQueue_Object *self,
 			PyObject *Py_UNUSED(ignored))
 {
-	return PyInt_FromLong(tevent_queue_length(self->queue));
+	return PyLong_FromLong(tevent_queue_length(self->queue));
 }
 
 static PyGetSetDef py_tevent_queue_getsetters[] = {

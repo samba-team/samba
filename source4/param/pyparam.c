@@ -348,7 +348,7 @@ static PyObject *py_lp_dump_a_parameter(PyObject *self, PyObject *args)
 static PyObject *py_lp_log_level(PyObject *self, PyObject *unused)
 {
 	int ret = debuglevel_get();
-	return PyInt_FromLong(ret);
+	return PyLong_FromLong(ret);
 }
 
 

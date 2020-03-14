@@ -32,7 +32,6 @@
 #include <tdb.h>
 
 #if PY_MAJOR_VERSION >= 3
-#define PyInt_FromLong PyLong_FromLong
 #define Py_TPFLAGS_HAVE_ITER 0
 #endif
 
@@ -547,7 +546,7 @@ static PyMethodDef tdb_object_methods[] = {
 static PyObject *obj_get_hash_size(PyTdbObject *self, void *closure)
 {
 	PyErr_TDB_RAISE_IF_CLOSED(self);
-	return PyInt_FromLong(tdb_hash_size(self->ctx));
+	return PyLong_FromLong(tdb_hash_size(self->ctx));
 }
 
 static int obj_set_max_dead(PyTdbObject *self, PyObject *max_dead, void *closure)
@@ -562,19 +561,19 @@ static int obj_set_max_dead(PyTdbObject *self, PyObject *max_dead, void *closure
 static PyObject *obj_get_map_size(PyTdbObject *self, void *closure)
 {
 	PyErr_TDB_RAISE_IF_CLOSED(self);
-	return PyInt_FromLong(tdb_map_size(self->ctx));
+	return PyLong_FromLong(tdb_map_size(self->ctx));
 }
 
 static PyObject *obj_get_freelist_size(PyTdbObject *self, void *closure)
 {
 	PyErr_TDB_RAISE_IF_CLOSED(self);
-	return PyInt_FromLong(tdb_freelist_size(self->ctx));
+	return PyLong_FromLong(tdb_freelist_size(self->ctx));
 }
 
 static PyObject *obj_get_flags(PyTdbObject *self, void *closure)
 {
 	PyErr_TDB_RAISE_IF_CLOSED(self);
-	return PyInt_FromLong(tdb_get_flags(self->ctx));
+	return PyLong_FromLong(tdb_get_flags(self->ctx));
 }
 
 static PyObject *obj_get_filename(PyTdbObject *self, void *closure)
@@ -586,7 +585,7 @@ static PyObject *obj_get_filename(PyTdbObject *self, void *closure)
 static PyObject *obj_get_seqnum(PyTdbObject *self, void *closure)
 {
 	PyErr_TDB_RAISE_IF_CLOSED(self);
-	return PyInt_FromLong(tdb_get_seqnum(self->ctx));
+	return PyLong_FromLong(tdb_get_seqnum(self->ctx));
 }
 
 static PyObject *obj_get_text(PyTdbObject *self, void *closure)

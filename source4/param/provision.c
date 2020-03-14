@@ -253,14 +253,14 @@ NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
 
 	if (!dict_insert(parameters,
 			 "debuglevel",
-			 PyInt_FromLong(DEBUGLEVEL))) {
+			 PyLong_FromLong(DEBUGLEVEL))) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
 
 	if (!dict_insert(parameters,
 			 "use_ntvfs",
-			 PyInt_FromLong(settings->use_ntvfs))) {
+			 PyLong_FromLong(settings->use_ntvfs))) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
@@ -441,14 +441,14 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 
 	if (!dict_insert(parameters,
 			 "secure_channel_type",
-			 PyInt_FromLong(settings->secure_channel_type))) {
+			 PyLong_FromLong(settings->secure_channel_type))) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
 
 	if (!dict_insert(parameters,
 			 "key_version_number",
-			 PyInt_FromLong(settings->key_version_number))) {
+			 PyLong_FromLong(settings->key_version_number))) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}

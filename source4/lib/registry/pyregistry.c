@@ -471,15 +471,15 @@ MODULE_INIT_FUNC(registry)
 	if (m == NULL)
 		return NULL;
 
-	PyModule_AddObject(m, "HKEY_CLASSES_ROOT", PyInt_FromLong(HKEY_CLASSES_ROOT));
-	PyModule_AddObject(m, "HKEY_CURRENT_USER", PyInt_FromLong(HKEY_CURRENT_USER));
-	PyModule_AddObject(m, "HKEY_LOCAL_MACHINE", PyInt_FromLong(HKEY_LOCAL_MACHINE));
-	PyModule_AddObject(m, "HKEY_USERS", PyInt_FromLong(HKEY_USERS));
-	PyModule_AddObject(m, "HKEY_PERFORMANCE_DATA", PyInt_FromLong(HKEY_PERFORMANCE_DATA));
-	PyModule_AddObject(m, "HKEY_CURRENT_CONFIG", PyInt_FromLong(HKEY_CURRENT_CONFIG));
-	PyModule_AddObject(m, "HKEY_DYN_DATA", PyInt_FromLong(HKEY_DYN_DATA));
-	PyModule_AddObject(m, "HKEY_PERFORMANCE_TEXT", PyInt_FromLong(HKEY_PERFORMANCE_TEXT));
-	PyModule_AddObject(m, "HKEY_PERFORMANCE_NLSTEXT", PyInt_FromLong(HKEY_PERFORMANCE_NLSTEXT));
+	PyModule_AddObject(m, "HKEY_CLASSES_ROOT", PyLong_FromLong(HKEY_CLASSES_ROOT));
+	PyModule_AddObject(m, "HKEY_CURRENT_USER", PyLong_FromLong(HKEY_CURRENT_USER));
+	PyModule_AddObject(m, "HKEY_LOCAL_MACHINE", PyLong_FromLong(HKEY_LOCAL_MACHINE));
+	PyModule_AddObject(m, "HKEY_USERS", PyLong_FromLong(HKEY_USERS));
+	PyModule_AddObject(m, "HKEY_PERFORMANCE_DATA", PyLong_FromLong(HKEY_PERFORMANCE_DATA));
+	PyModule_AddObject(m, "HKEY_CURRENT_CONFIG", PyLong_FromLong(HKEY_CURRENT_CONFIG));
+	PyModule_AddObject(m, "HKEY_DYN_DATA", PyLong_FromLong(HKEY_DYN_DATA));
+	PyModule_AddObject(m, "HKEY_PERFORMANCE_TEXT", PyLong_FromLong(HKEY_PERFORMANCE_TEXT));
+	PyModule_AddObject(m, "HKEY_PERFORMANCE_NLSTEXT", PyLong_FromLong(HKEY_PERFORMANCE_NLSTEXT));
 
 	Py_INCREF(&PyRegistry);
 	PyModule_AddObject(m, "Registry", (PyObject *)&PyRegistry);

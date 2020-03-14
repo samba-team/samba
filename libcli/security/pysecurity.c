@@ -65,7 +65,7 @@ static PyObject *py_se_access_check(PyObject *module, PyObject *args, PyObject *
 		PyErr_NTSTATUS_IS_ERR_RAISE(nt_status);
 	}
 
-	return PyInt_FromLong(access_granted);
+	return PyLong_FromLong(access_granted);
 }
 
 static PyMethodDef py_security_methods[] = {

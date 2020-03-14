@@ -85,7 +85,6 @@ static struct ldb_message_element *PyObject_AsMessageElement(
 static PyTypeObject PyLdbBytesType;
 
 #if PY_MAJOR_VERSION >= 3
-#define PyInt_FromLong PyLong_FromLong
 
 #define PYARG_STR_UNI "es"
 
@@ -2541,7 +2540,7 @@ static PyObject *py_ldb_result_get_count(PyLdbResultObject *self, void *closure)
 		return NULL;
 	}
 	size = PyList_Size(self->msgs);
-	return PyInt_FromLong(size);
+	return PyLong_FromLong(size);
 }
 
 static PyGetSetDef py_ldb_result_getset[] = {
@@ -3080,7 +3079,7 @@ static PyObject *py_ldb_msg_element_get(PyLdbMessageElementObject *self, PyObjec
 static PyObject *py_ldb_msg_element_flags(PyLdbMessageElementObject *self, PyObject *args)
 {
 	struct ldb_message_element *el = pyldb_MessageElement_AsMessageElement(self);
-	return PyInt_FromLong(el->flags);
+	return PyLong_FromLong(el->flags);
 }
 
 static PyObject *py_ldb_msg_element_set_flags(PyLdbMessageElementObject *self, PyObject *args)
@@ -4204,7 +4203,7 @@ static PyObject *py_string_to_time(PyObject *module, PyObject *args)
 	if (!PyArg_ParseTuple(args, "s", &str))
 		return NULL;
 
-	return PyInt_FromLong(ldb_string_to_time(str));
+	return PyLong_FromLong(ldb_string_to_time(str));
 }
 
 static PyObject *py_valid_attr_name(PyObject *self, PyObject *args)

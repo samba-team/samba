@@ -322,7 +322,7 @@ static PyObject *py_nbt_name_register(PyObject *self, PyObject *args, PyObject *
 
 	PyTuple_SetItem(ret, 2, PyUnicode_FromString(io.out.reply_addr));
 
-	PyTuple_SetItem(ret, 3, PyInt_FromLong(io.out.rcode));
+	PyTuple_SetItem(ret, 3, PyLong_FromLong(io.out.rcode));
 
 	return ret;
 }
@@ -378,7 +378,7 @@ static PyObject *py_nbt_name_refresh(PyObject *self, PyObject *args, PyObject *k
 
 	PyTuple_SetItem(ret, 2, PyUnicode_FromString(io.out.reply_addr));
 
-	PyTuple_SetItem(ret, 3, PyInt_FromLong(io.out.rcode));
+	PyTuple_SetItem(ret, 3, PyLong_FromLong(io.out.rcode));
 
 	return ret;
 }

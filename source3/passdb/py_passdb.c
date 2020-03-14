@@ -62,7 +62,7 @@ static PyObject *py_samu_get_logon_time(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_logon_time;
 
-	py_logon_time = PyInt_FromLong(pdb_get_logon_time(sam_acct));
+	py_logon_time = PyLong_FromLong(pdb_get_logon_time(sam_acct));
 	talloc_free(frame);
 	return py_logon_time;
 }
@@ -87,7 +87,7 @@ static PyObject *py_samu_get_logoff_time(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_logoff_time;
 
-	py_logoff_time = PyInt_FromLong(pdb_get_logoff_time(sam_acct));
+	py_logoff_time = PyLong_FromLong(pdb_get_logoff_time(sam_acct));
 	talloc_free(frame);
 	return py_logoff_time;
 }
@@ -112,7 +112,7 @@ static PyObject *py_samu_get_kickoff_time(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_kickoff_time;
 
-	py_kickoff_time = PyInt_FromLong(pdb_get_kickoff_time(sam_acct));
+	py_kickoff_time = PyLong_FromLong(pdb_get_kickoff_time(sam_acct));
 	talloc_free(frame);
 	return py_kickoff_time;
 }
@@ -137,7 +137,7 @@ static PyObject *py_samu_get_bad_password_time(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_bad_password_time;
 
-	py_bad_password_time = PyInt_FromLong(pdb_get_bad_password_time(sam_acct));
+	py_bad_password_time = PyLong_FromLong(pdb_get_bad_password_time(sam_acct));
 	talloc_free(frame);
 	return py_bad_password_time;
 }
@@ -162,7 +162,7 @@ static PyObject *py_samu_get_pass_last_set_time(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_pass_last_set_time;
 
-	py_pass_last_set_time = PyInt_FromLong(pdb_get_pass_last_set_time(sam_acct));
+	py_pass_last_set_time = PyLong_FromLong(pdb_get_pass_last_set_time(sam_acct));
 	talloc_free(frame);
 	return py_pass_last_set_time;
 }
@@ -187,7 +187,7 @@ static PyObject *py_samu_get_pass_can_change_time(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_pass_can_change_time;
 
-	py_pass_can_change_time = PyInt_FromLong(pdb_get_pass_can_change_time(sam_acct));
+	py_pass_can_change_time = PyLong_FromLong(pdb_get_pass_can_change_time(sam_acct));
 	talloc_free(frame);
 	return py_pass_can_change_time;
 }
@@ -212,7 +212,7 @@ static PyObject *py_samu_get_pass_must_change_time(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_pass_must_change_time;
 
-	py_pass_must_change_time = PyInt_FromLong(pdb_get_pass_must_change_time(sam_acct));
+	py_pass_must_change_time = PyLong_FromLong(pdb_get_pass_must_change_time(sam_acct));
 	talloc_free(frame);
 	return py_pass_must_change_time;
 }
@@ -819,7 +819,7 @@ static PyObject *py_samu_get_acct_ctrl(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_acct_ctrl;
 
-	py_acct_ctrl = PyInt_FromLong(pdb_get_acct_ctrl(sam_acct));
+	py_acct_ctrl = PyLong_FromLong(pdb_get_acct_ctrl(sam_acct));
 	talloc_free(frame);
 	return py_acct_ctrl;
 }
@@ -844,7 +844,7 @@ static PyObject *py_samu_get_logon_divs(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_logon_divs;
 
-	py_logon_divs = PyInt_FromLong(pdb_get_logon_divs(sam_acct));
+	py_logon_divs = PyLong_FromLong(pdb_get_logon_divs(sam_acct));
 	talloc_free(frame);
 	return py_logon_divs;
 }
@@ -869,7 +869,7 @@ static PyObject *py_samu_get_hours_len(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_hours_len;
 
-	py_hours_len = PyInt_FromLong(pdb_get_hours_len(sam_acct));
+	py_hours_len = PyLong_FromLong(pdb_get_hours_len(sam_acct));
 	talloc_free(frame);
 	return py_hours_len;
 }
@@ -909,7 +909,7 @@ static PyObject *py_samu_get_hours(PyObject *obj, void *closure)
 	}
 
 	for (i=0; i<hours_len; i++) {
-		PyList_SetItem(py_hours, i, PyInt_FromLong(hours[i]));
+		PyList_SetItem(py_hours, i, PyLong_FromLong(hours[i]));
 	}
 	talloc_free(frame);
 	return py_hours;
@@ -957,7 +957,7 @@ static PyObject *py_samu_get_bad_password_count(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_bad_password_count;
 
-	py_bad_password_count = PyInt_FromLong(pdb_get_bad_password_count(sam_acct));
+	py_bad_password_count = PyLong_FromLong(pdb_get_bad_password_count(sam_acct));
 	talloc_free(frame);
 	return py_bad_password_count;
 }
@@ -982,7 +982,7 @@ static PyObject *py_samu_get_logon_count(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_logon_count;
 
-	py_logon_count = PyInt_FromLong(pdb_get_logon_count(sam_acct));
+	py_logon_count = PyLong_FromLong(pdb_get_logon_count(sam_acct));
 	talloc_free(frame);
 	return py_logon_count;
 }
@@ -1007,7 +1007,7 @@ static PyObject *py_samu_get_country_code(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_country_code;
 
-	py_country_code = PyInt_FromLong(pdb_get_country_code(sam_acct));
+	py_country_code = PyLong_FromLong(pdb_get_country_code(sam_acct));
 	talloc_free(frame);
 	return py_country_code;
 }
@@ -1032,7 +1032,7 @@ static PyObject *py_samu_get_code_page(PyObject *obj, void *closure)
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 	PyObject *py_code_page;
 
-	py_code_page = PyInt_FromLong(pdb_get_code_page(sam_acct));
+	py_code_page = PyLong_FromLong(pdb_get_code_page(sam_acct));
 	talloc_free(frame);
 	return py_code_page;
 }
@@ -1321,7 +1321,7 @@ static PyObject *py_groupmap_get_sid_name_use(PyObject *obj, void *closure)
 	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
 	PyObject *py_sid_name_use;
 
-	py_sid_name_use = PyInt_FromLong(group_map->sid_name_use);
+	py_sid_name_use = PyLong_FromLong(group_map->sid_name_use);
 	talloc_free(frame);
 	return py_sid_name_use;
 }
@@ -1631,7 +1631,7 @@ static PyObject *py_pdb_create_user(PyObject *self, PyObject *args)
 	}
 
 	talloc_free(frame);
-	return PyInt_FromLong(rid);
+	return PyLong_FromLong(rid);
 }
 
 static PyObject *py_pdb_delete_user(PyObject *self, PyObject *args)
@@ -1933,7 +1933,7 @@ static PyObject *py_pdb_create_dom_group(PyObject *self, PyObject *args)
 	}
 
 	talloc_free(frame);
-	return PyInt_FromLong(group_rid);
+	return PyLong_FromLong(group_rid);
 }
 
 
@@ -2330,7 +2330,7 @@ static PyObject *py_pdb_create_alias(PyObject *self, PyObject *args)
 	}
 
 	talloc_free(frame);
-	return PyInt_FromLong(rid);
+	return PyLong_FromLong(rid);
 }
 
 
@@ -3007,7 +3007,7 @@ static PyObject *py_pdb_new_rid(PyObject *self, PyObject *unused)
 	}
 
 	talloc_free(frame);
-	return PyInt_FromLong(rid);
+	return PyLong_FromLong(rid);
 }
 
 

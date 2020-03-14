@@ -538,7 +538,7 @@ sub PythonFunctionStruct($$$$)
 	$self->indent;
 	$self->pidl("");
 	$self->pidl("");
-	$self->pidl("return PyInt_FromLong($fn->{OPNUM});");
+	$self->pidl("return PyLong_FromLong($fn->{OPNUM});");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
@@ -2039,7 +2039,7 @@ sub ConvertScalarToPython($$$$)
 	}
 
 	if ($ctypename =~ /^(char|int|int8|int16|int32|time_t)$/) {
-		return "PyInt_FromLong($cvar)";
+		return "PyLong_FromLong($cvar)";
 	}
 
 	# Needed to ensure unsigned values in a 32 or 16 bit enum is
@@ -2051,7 +2051,7 @@ sub ConvertScalarToPython($$$$)
 	}
 
 	if ($ctypename =~ /^(uint|uint8|uint16|uint1632)$/) {
-		return "PyInt_FromLong((uint16_t)$cvar)";
+		return "PyLong_FromLong((uint16_t)$cvar)";
 	}
 
 	if ($ctypename eq "DATA_BLOB") {

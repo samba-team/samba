@@ -544,8 +544,8 @@ MODULE_INIT_FUNC(messaging)
 
 	Py_INCREF((PyObject *)&imessaging_Type);
 	PyModule_AddObject(mod, "Messaging", (PyObject *)&imessaging_Type);
-	PyModule_AddObject(mod, "IRPC_CALL_TIMEOUT", PyInt_FromLong(IRPC_CALL_TIMEOUT));
-	PyModule_AddObject(mod, "IRPC_CALL_TIMEOUT_INF", PyInt_FromLong(IRPC_CALL_TIMEOUT_INF));
+	PyModule_AddObject(mod, "IRPC_CALL_TIMEOUT", PyLong_FromLong(IRPC_CALL_TIMEOUT));
+	PyModule_AddObject(mod, "IRPC_CALL_TIMEOUT_INF", PyLong_FromLong(IRPC_CALL_TIMEOUT_INF));
 
 	return mod;
 }

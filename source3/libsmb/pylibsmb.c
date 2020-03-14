@@ -682,7 +682,7 @@ static PyObject *py_cli_settimeout(struct py_cli_state *self, PyObject *args)
 
 	omsecs = cli_set_timeout(self->cli, nmsecs);
 
-	return PyInt_FromLong(omsecs);
+	return PyLong_FromLong(omsecs);
 }
 
 static PyObject *py_cli_create(struct py_cli_state *self, PyObject *args,
@@ -1683,7 +1683,7 @@ MODULE_INIT_FUNC(libsmb_samba_internal)
 	Py_INCREF(&py_cli_state_type);
 	PyModule_AddObject(m, "Conn", (PyObject *)&py_cli_state_type);
 
-#define ADD_FLAGS(val)	PyModule_AddObject(m, #val, PyInt_FromLong(val))
+#define ADD_FLAGS(val)	PyModule_AddObject(m, #val, PyLong_FromLong(val))
 
 	ADD_FLAGS(FILE_ATTRIBUTE_READONLY);
 	ADD_FLAGS(FILE_ATTRIBUTE_HIDDEN);
