@@ -97,20 +97,19 @@ static int py_GUID_init(PyObject *self, PyObject *args, PyObject *kwargs)
 		DATA_BLOB guid_val;
 		Py_ssize_t _size;
 
-		if (!(PyUnicode_Check(str) || PyBytes_Check(str)) && !PyUnicode_Check(str)) {
-			PyErr_SetString(PyExc_TypeError, "Expected a string or bytes argument to GUID()");
-			return -1;
-		}
-
-		if (!PyBytes_Check(str)) {
+		if (PyUnicode_Check(str)) {
 			guid_val.data =
 				discard_const_p(uint8_t,
 						PyUnicode_AsUTF8AndSize(str, &_size));
-		} else {
+		} else if (PyBytes_Check(str)) {
 			guid_val.data =
 				discard_const_p(uint8_t,
 						PyBytes_AsString(str));
 			_size = PyBytes_Size(str);
+		} else {
+			PyErr_SetString(PyExc_TypeError,
+					"Expected a string or bytes argument to GUID()");
+			return -1;
 		}
 		guid_val.length = _size;
 		status = GUID_from_data_blob(&guid_val, guid);
