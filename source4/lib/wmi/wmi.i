@@ -302,7 +302,7 @@ typedef struct IEnumWbemClassObject {
 %typemap(in, numinputs=1) (uint32_t uCount, struct WbemClassObject **apObjects, uint32_t *puReturned) (uint32_t uReturned) {
         if (PyLong_Check($input))
     		$1 = PyLong_AsUnsignedLong($input);
-        else if (PyInt_Check($input))
+        else if (PyLong_Check($input))
     		$1 = PyInt_AsLong($input);
         else {
             PyErr_SetString(PyExc_TypeError,"Expected a long or an int");

@@ -79,7 +79,7 @@ static bool PyObject_AsDestinationTuple(PyObject *obj, const char **dest_addr, u
 		if (PyTuple_Size(obj) == 1) {
 			*dest_port = NBT_NAME_SERVICE_PORT;
 			return true;
-		} else if (PyInt_Check(PyTuple_GetItem(obj, 1))) {
+		} else if (PyLong_Check(PyTuple_GetItem(obj, 1))) {
 			*dest_port = PyInt_AsLong(PyTuple_GetItem(obj, 1));
 			return true;
 		} else {

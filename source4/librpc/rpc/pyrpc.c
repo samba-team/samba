@@ -73,7 +73,7 @@ static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *sy
 		}
 
 		item = PyTuple_GetItem(object, 1);
-		if (!PyInt_Check(item)) {
+		if (!PyLong_Check(item)) {
 			PyErr_SetString(PyExc_ValueError, "Expected version as second element in tuple");
 			return false;
 		}

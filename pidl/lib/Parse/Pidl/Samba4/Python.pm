@@ -1754,7 +1754,7 @@ sub ConvertObjectFromPythonData($$$$$$;$$)
 		$self->pidl("}");
 		$self->pidl("$target = test_var;");
 		$self->deindent;
-		$self->pidl("} else if (PyInt_Check($cvar)) {");
+		$self->pidl("} else if (PyLong_Check($cvar)) {");
 		$self->indent;
 		$self->pidl("long test_var;");
 		$self->pidl("test_var = PyInt_AsLong($cvar);");
@@ -1806,7 +1806,7 @@ sub ConvertObjectFromPythonData($$$$$$;$$)
 		$self->pidl("}");
 		$self->pidl("$target = test_var;");
 		$self->deindent;
-		$self->pidl("} else if (PyInt_Check($cvar)) {");
+		$self->pidl("} else if (PyLong_Check($cvar)) {");
 		$self->indent;
 		$self->pidl("long test_var;");
 		$self->pidl("test_var = PyInt_AsLong($cvar);");
