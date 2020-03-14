@@ -72,7 +72,7 @@ static int py_samu_set_logon_time(PyObject *obj, PyObject *value, void *closure)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_logon_time(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -97,7 +97,7 @@ static int py_samu_set_logoff_time(PyObject *obj, PyObject *value, void *closure
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_logoff_time(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -122,7 +122,7 @@ static int py_samu_set_kickoff_time(PyObject *obj, PyObject *value, void *closur
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_kickoff_time(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -147,7 +147,7 @@ static int py_samu_set_bad_password_time(PyObject *obj, PyObject *value, void *c
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_bad_password_time(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -172,7 +172,7 @@ static int py_samu_set_pass_last_set_time(PyObject *obj, PyObject *value, void *
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_pass_last_set_time(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -197,7 +197,7 @@ static int py_samu_set_pass_can_change_time(PyObject *obj, PyObject *value, void
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_pass_can_change_time(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -220,7 +220,7 @@ static PyObject *py_samu_get_pass_must_change_time(PyObject *obj, void *closure)
 static int py_samu_set_pass_must_change_time(PyObject *obj, PyObject *value, void *closure)
 {
 	TALLOC_CTX *frame = talloc_stackframe();
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 
 	/* TODO: make this not a get/set or give a better exception */
 	talloc_free(frame);
@@ -829,7 +829,7 @@ static int py_samu_set_acct_ctrl(PyObject *obj, PyObject *value, void *closure)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_acct_ctrl(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -854,7 +854,7 @@ static int py_samu_set_logon_divs(PyObject *obj, PyObject *value, void *closure)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_logon_divs(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -879,7 +879,7 @@ static int py_samu_set_hours_len(PyObject *obj, PyObject *value, void *closure)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_hours_len(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -936,7 +936,7 @@ static int py_samu_set_hours(PyObject *obj, PyObject *value, void *closure)
 	}
 
 	for (i=0; i < hours_len; i++) {
-		PY_CHECK_TYPE(&PyInt_Type, PyList_GET_ITEM(value,i), return -1;);
+		PY_CHECK_TYPE(&PyLong_Type, PyList_GET_ITEM(value,i), return -1;);
 		hours[i] = PyInt_AsLong(PyList_GET_ITEM(value, i));
 	}
 
@@ -967,7 +967,7 @@ static int py_samu_set_bad_password_count(PyObject *obj, PyObject *value, void *
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_bad_password_count(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -992,7 +992,7 @@ static int py_samu_set_logon_count(PyObject *obj, PyObject *value, void *closure
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_logon_count(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -1017,7 +1017,7 @@ static int py_samu_set_country_code(PyObject *obj, PyObject *value, void *closur
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_country_code(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -1042,7 +1042,7 @@ static int py_samu_set_code_page(PyObject *obj, PyObject *value, void *closure)
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct samu *sam_acct = (struct samu *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	if (!pdb_set_code_page(sam_acct, PyInt_AsLong(value), PDB_CHANGED)) {
 		talloc_free(frame);
 		return -1;
@@ -1267,7 +1267,7 @@ static int py_groupmap_set_gid(PyObject *obj, PyObject *value, void *closure)
 	TALLOC_CTX *frame = talloc_stackframe();
 	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	group_map->gid = PyInt_AsLong(value);
 	talloc_free(frame);
 	return 0;
@@ -1331,7 +1331,7 @@ static int py_groupmap_set_sid_name_use(PyObject *obj, PyObject *value, void *cl
 	TALLOC_CTX *frame = talloc_stackframe();
 	GROUP_MAP *group_map = (GROUP_MAP *)pytalloc_get_ptr(obj);
 
-	PY_CHECK_TYPE(&PyInt_Type, value, return -1;);
+	PY_CHECK_TYPE(&PyLong_Type, value, return -1;);
 	group_map->sid_name_use = PyInt_AsLong(value);
 	talloc_free(frame);
 	return 0;

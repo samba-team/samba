@@ -72,7 +72,6 @@
 
 /* Ints */
 
-#define PyInt_Type PyLong_Type
 #define PyInt_FromLong PyLong_FromLong
 #define PyInt_AsLong PyLong_AsLong
 
