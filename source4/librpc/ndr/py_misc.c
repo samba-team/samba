@@ -102,7 +102,7 @@ static int py_GUID_init(PyObject *self, PyObject *args, PyObject *kwargs)
 			return -1;
 		}
 
-		if (!IsPy3Bytes(str)) {
+		if (!PyBytes_Check(str)) {
 			guid_val.data =
 				discard_const_p(uint8_t,
 						PyUnicode_AsUTF8AndSize(str, &_size));

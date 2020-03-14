@@ -62,8 +62,6 @@
  * will work as expected in python2 & python3
  */
 
-#define IsPy3Bytes PyBytes_Check
-
 #define IsPy3BytesOrString(pystr) \
     (PyUnicode_Check(pystr) || PyBytes_Check(pystr))
 
