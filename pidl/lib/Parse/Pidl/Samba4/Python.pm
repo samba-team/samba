@@ -1747,8 +1747,8 @@ sub ConvertObjectFromPythonData($$$$$$;$$)
 		$self->pidl("}");
 		$self->pidl("if (test_var > uint_max) {");
 		$self->indent;
-		$self->pidl("PyErr_Format(PyExc_OverflowError, \"Expected type %s or %s within range 0 - %llu, got %llu\",\\");
-		$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name, uint_max, test_var);");
+		$self->pidl("PyErr_Format(PyExc_OverflowError, \"Expected type %s within range 0 - %llu, got %llu\",\\");
+		$self->pidl("  PyLong_Type.tp_name, uint_max, test_var);");
 		$self->pidl($fail);
 		$self->deindent;
 		$self->pidl("}");
@@ -1756,8 +1756,8 @@ sub ConvertObjectFromPythonData($$$$$$;$$)
 		$self->deindent;
 		$self->pidl("} else {");
 		$self->indent;
-		$self->pidl("PyErr_Format(PyExc_TypeError, \"Expected type %s or %s\",\\");
-		$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name);");
+		$self->pidl("PyErr_Format(PyExc_TypeError, \"Expected type %s\",\\");
+		$self->pidl("  PyLong_Type.tp_name);");
 		$self->pidl($fail);
 		$self->deindent;
 		$self->pidl("}");
@@ -1786,8 +1786,8 @@ sub ConvertObjectFromPythonData($$$$$$;$$)
 		$self->pidl("}");
 		$self->pidl("if (test_var < int_min || test_var > int_max) {");
 		$self->indent;
-		$self->pidl("PyErr_Format(PyExc_OverflowError, \"Expected type %s or %s within range %lld - %lld, got %lld\",\\");
-		$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name, int_min, int_max, test_var);");
+		$self->pidl("PyErr_Format(PyExc_OverflowError, \"Expected type %s within range %lld - %lld, got %lld\",\\");
+		$self->pidl("  PyLong_Type.tp_name, int_min, int_max, test_var);");
 		$self->pidl($fail);
 		$self->deindent;
 		$self->pidl("}");
@@ -1795,8 +1795,8 @@ sub ConvertObjectFromPythonData($$$$$$;$$)
 		$self->deindent;
 		$self->pidl("} else {");
 		$self->indent;
-		$self->pidl("PyErr_Format(PyExc_TypeError, \"Expected type %s or %s\",\\");
-		$self->pidl("  PyInt_Type.tp_name, PyLong_Type.tp_name);");
+		$self->pidl("PyErr_Format(PyExc_TypeError, \"Expected type %s\",\\");
+		$self->pidl("  PyLong_Type.tp_name);");
 		$self->pidl($fail);
 		$self->deindent;
 		$self->pidl("}");
