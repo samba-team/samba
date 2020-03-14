@@ -33,7 +33,6 @@
 
 #if PY_MAJOR_VERSION >= 3
 #define PyInt_FromLong PyLong_FromLong
-#define PyInt_AsLong PyLong_AsLong
 #define Py_TPFLAGS_HAVE_ITER 0
 #endif
 
@@ -556,7 +555,7 @@ static int obj_set_max_dead(PyTdbObject *self, PyObject *max_dead, void *closure
 	PyErr_TDB_RAISE_RETURN_MINUS_1_IF_CLOSED(self);
 	if (!PyLong_Check(max_dead))
 		return -1;
-	tdb_set_max_dead(self->ctx, PyInt_AsLong(max_dead));
+	tdb_set_max_dead(self->ctx, PyLong_AsLong(max_dead));
 	return 0;
 }
 

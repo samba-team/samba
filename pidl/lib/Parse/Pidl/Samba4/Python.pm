@@ -1856,17 +1856,17 @@ sub ConvertObjectFromPythonData($$$$$$;$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "NTSTATUS") {
-		$self->pidl("$target = NT_STATUS(PyInt_AsLong($cvar));");
+		$self->pidl("$target = NT_STATUS(PyLong_AsLong($cvar));");
 		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "WERROR") {
-		$self->pidl("$target = W_ERROR(PyInt_AsLong($cvar));");
+		$self->pidl("$target = W_ERROR(PyLong_AsLong($cvar));");
 		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "HRESULT") {
-		$self->pidl("$target = HRES_ERROR(PyInt_AsLong($cvar));");
+		$self->pidl("$target = HRES_ERROR(PyLong_AsLong($cvar));");
 		return;
 	}
 

@@ -73,7 +73,6 @@
 /* Ints */
 
 #define PyInt_FromLong PyLong_FromLong
-#define PyInt_AsLong PyLong_AsLong
 
 /* Module init */
 

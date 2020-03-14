@@ -78,7 +78,7 @@ static bool ndr_syntax_from_py_object(PyObject *object, struct ndr_syntax_id *sy
 			return false;
 		}
 
-		syntax_id->if_version = PyInt_AsLong(item);
+		syntax_id->if_version = PyLong_AsLong(item);
 		return true;
 	}
 

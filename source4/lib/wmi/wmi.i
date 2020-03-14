@@ -303,7 +303,7 @@ typedef struct IEnumWbemClassObject {
         if (PyLong_Check($input))
     		$1 = PyLong_AsUnsignedLong($input);
         else if (PyLong_Check($input))
-    		$1 = PyInt_AsLong($input);
+    		$1 = PyLong_AsLong($input);
         else {
             PyErr_SetString(PyExc_TypeError,"Expected a long or an int");
             return NULL;

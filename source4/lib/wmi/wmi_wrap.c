@@ -2671,7 +2671,7 @@ SWIG_AsVal_double (PyObject *obj, double *val)
     if (val) *val = PyFloat_AsDouble(obj);
     return SWIG_OK;
   } else if (PyLong_Check(obj)) {
-    if (val) *val = PyInt_AsLong(obj);
+    if (val) *val = PyLong_AsLong(obj);
     return SWIG_OK;
   } else if (PyLong_Check(obj)) {
     double v = PyLong_AsDouble(obj);
@@ -2747,7 +2747,7 @@ SWIGINTERN int
 SWIG_AsVal_unsigned_SS_long (PyObject *obj, unsigned long *val) 
 {
   if (PyLong_Check(obj)) {
-    long v = PyInt_AsLong(obj);
+    long v = PyLong_AsLong(obj);
     if (v >= 0) {
       if (val) *val = v;
       return SWIG_OK;
@@ -2825,7 +2825,7 @@ SWIGINTERN int
 SWIG_AsVal_long (PyObject *obj, long* val)
 {
   if (PyLong_Check(obj)) {
-    if (val) *val = PyInt_AsLong(obj);
+    if (val) *val = PyLong_AsLong(obj);
     return SWIG_OK;
   } else if (PyLong_Check(obj)) {
     long v = PyLong_AsLong(obj);
@@ -2839,7 +2839,7 @@ SWIG_AsVal_long (PyObject *obj, long* val)
 #ifdef SWIG_PYTHON_CAST_MODE
   {
     int dispatch = 0;
-    long v = PyInt_AsLong(obj);
+    long v = PyLong_AsLong(obj);
     if (!PyErr_Occurred()) {
       if (val) *val = v;
       return SWIG_AddCast(SWIG_OK);
@@ -3608,7 +3608,7 @@ SWIGINTERN PyObject *_wrap_IEnumWbemClassObject_SmartNext(PyObject *SWIGUNUSEDPA
     if (PyLong_Check(obj2))
     arg4 = PyLong_AsUnsignedLong(obj2);
     else if (PyLong_Check(obj2))
-    arg4 = PyInt_AsLong(obj2);
+    arg4 = PyLong_AsLong(obj2);
     else {
       PyErr_SetString(PyExc_TypeError,"Expected a long or an int");
       return NULL;
