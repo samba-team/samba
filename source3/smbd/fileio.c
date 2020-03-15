@@ -277,13 +277,13 @@ void mark_file_modified(files_struct *fsp)
 {
 	int dosmode;
 
+	trigger_write_time_update(fsp);
+
 	if (fsp->modified) {
 		return;
 	}
 
 	fsp->modified = true;
-
-	trigger_write_time_update(fsp);
 
 	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
 		return;
