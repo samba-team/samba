@@ -104,15 +104,7 @@ void fsp_flush_write_time_update(struct files_struct *fsp)
 
 	DEBUG(5, ("Update write time on %s\n", fsp_str_dbg(fsp)));
 
-	/* change the write time in the open file db. */
-	(void)set_write_time(fsp->file_id, timespec_current());
-
-	/* And notify. */
-        notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
-                     FILE_NOTIFY_CHANGE_LAST_WRITE, fsp->fsp_name->base_name);
-
-	/* Remove the timed event handler. */
-	TALLOC_FREE(fsp->update_write_time_event);
+	trigger_write_time_update_immediate(fsp);
 }
 
 static void update_write_time_handler(struct tevent_context *ctx,
