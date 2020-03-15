@@ -220,9 +220,6 @@ void mark_file_modified(files_struct *fsp)
 
 	fsp->modified = true;
 
-	if (SMB_VFS_FSTAT(fsp, &fsp->fsp_name->st) != 0) {
-		return;
-	}
 	trigger_write_time_update(fsp);
 
 	if (fsp->posix_flags & FSP_POSIX_FLAGS_OPEN) {
