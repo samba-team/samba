@@ -38,6 +38,8 @@
 #include "ctdb_private.h"
 #include "ctdb_client.h"
 
+#include "protocol/protocol_basic.h"
+
 #include "common/system_socket.h"
 #include "common/common.h"
 #include "common/logging.h"
@@ -1845,6 +1847,42 @@ static void push_flags_handler(uint64_t srvid, TDB_DATA data,
 	talloc_free(tmp_ctx);
 }
 
+static void leader_handler(uint64_t srvid, TDB_DATA data, void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type_abort(
+		private_data, struct ctdb_recoverd);
+	struct ctdb_context *ctdb = rec->ctdb;
+	uint32_t pnn;
+	size_t npull;
+	int ret;
+
+	ret = ctdb_uint32_pull(data.dptr, data.dsize, &pnn, &npull);
+	if (ret != 0) {
+		DBG_WARNING("Unable to parse leader broadcast, ret=%d\n", ret);
+		return;
+	}
+
+	if (pnn == rec->leader) {
+		return;
+	}
+
+	if (pnn == CTDB_UNKNOWN_PNN) {
+		return;
+	}
+
+	D_NOTICE("Received leader broadcast, leader=%"PRIu32"\n", pnn);
+
+	ret = ctdb_ctrl_setrecmaster(ctdb,
+				     CONTROL_TIMEOUT(),
+				     CTDB_CURRENT_NODE,
+				     pnn);
+	if (ret != 0) {
+		DBG_WARNING("Failed to set leader\n");
+		return;
+	}
+
+	rec->leader = pnn;
+}
 
 struct verify_recmode_normal_data {
 	uint32_t count;
@@ -3011,6 +3049,11 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	ctdb_client_set_message_handler(ctdb,
 					CTDB_SRVID_DISABLE_RECOVERIES,
 					disable_recoveries_handler, rec);
+
+	ctdb_client_set_message_handler(ctdb,
+					CTDB_SRVID_LEADER,
+					leader_handler,
+					rec);
 
 	for (;;) {
 		TALLOC_CTX *mem_ctx = talloc_new(ctdb);
