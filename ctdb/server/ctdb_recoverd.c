@@ -249,6 +249,7 @@ struct ctdb_recovery_lock_handle;
 struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
 	uint32_t leader;
+	struct tevent_timer *leader_broadcast_te;
 	uint32_t pnn;
 	uint32_t last_culprit_node;
 	struct ctdb_node_map_old *nodemap;
@@ -524,6 +525,93 @@ static void ctdb_wait_timeout(struct ctdb_context *ctdb, double secs)
 	while (!timed_out) {
 		tevent_loop_once(ctdb->ev);
 	}
+}
+
+/*
+ * Broadcast cluster leader
+ */
+
+static int leader_broadcast_send(struct ctdb_recoverd *rec, uint32_t pnn)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+	TDB_DATA data;
+	int ret;
+
+	data.dptr = (uint8_t *)&pnn;
+	data.dsize = sizeof(pnn);
+
+	ret = ctdb_client_send_message(ctdb,
+				       CTDB_BROADCAST_CONNECTED,
+				       CTDB_SRVID_LEADER,
+				       data);
+	return ret;
+}
+
+static int leader_broadcast_loop(struct ctdb_recoverd *rec);
+static void ctdb_recovery_unlock(struct ctdb_recoverd *rec);
+
+/* This runs continously but only sends the broadcast when leader */
+static void leader_broadcast_loop_handler(struct tevent_context *ev,
+					  struct tevent_timer *te,
+					  struct timeval current_time,
+					  void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type_abort(
+		private_data, struct ctdb_recoverd);
+	int ret;
+
+	if (!this_node_can_be_leader(rec)) {
+		if (this_node_is_leader(rec)) {
+			rec->leader = CTDB_UNKNOWN_PNN;
+		}
+		if (rec->ctdb->recovery_lock != NULL &&
+		    rec->recovery_lock_handle != NULL) {
+			ctdb_recovery_unlock(rec);
+		}
+		goto done;
+	}
+
+	if (!this_node_is_leader(rec)) {
+		goto done;
+	}
+
+	if (rec->election_in_progress) {
+		goto done;
+	}
+
+	ret = leader_broadcast_send(rec, rec->leader);
+	if (ret != 0) {
+		DBG_WARNING("Failed to send leader broadcast\n");
+	}
+
+done:
+	ret = leader_broadcast_loop(rec);
+	if (ret != 0) {
+		D_WARNING("Failed to set up leader broadcast\n");
+	}
+}
+
+static int leader_broadcast_loop(struct ctdb_recoverd *rec)
+{
+	struct ctdb_context *ctdb = rec->ctdb;
+
+	TALLOC_FREE(rec->leader_broadcast_te);
+	rec->leader_broadcast_te =
+		tevent_add_timer(ctdb->ev,
+				 rec,
+				 timeval_current_ofs(1, 0),
+				 leader_broadcast_loop_handler,
+				 rec);
+	if (rec->leader_broadcast_te == NULL) {
+		return ENOMEM;
+	}
+
+	return 0;
+}
+
+static bool leader_broadcast_loop_active(struct ctdb_recoverd *rec)
+{
+	return rec->leader_broadcast_te != NULL;
 }
 
 /*
@@ -2458,6 +2546,18 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	if (rec->election_in_progress) {
 		/* an election is in progress */
 		return;
+	}
+
+	/*
+	 * Start leader broadcasts if they are not active (1st time
+	 * through main loop?  Memory allocation error?)
+	 */
+	if (!leader_broadcast_loop_active(rec)) {
+		ret = leader_broadcast_loop(rec);
+		if (ret != 0) {
+			D_ERR("Failed to set up leader broadcast\n");
+			ctdb_set_culprit(rec, rec->pnn);
+		}
 	}
 
 	/* read the debug level from the parent and update locally */
