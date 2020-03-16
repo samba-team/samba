@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.1.7"
+VERSION="1.1.10"
 
 def configure(conf):
     if conf.CHECK_NSS_WRAPPER():
@@ -28,6 +28,7 @@ def configure(conf):
             msg='Checking for printf format validation support')
 
         conf.CHECK_FUNCS('gethostbyaddr_r gethostbyname_r')
+        conf.CHECK_FUNCS('gethostbyname2 gethostbyname2_r')
         # Solaris
         conf.CHECK_FUNCS('__posix_getpwnam_r __posix_getpwuid_r')
         conf.CHECK_FUNCS('__posix_getgrgid_r __posix_getgrnam_r')
