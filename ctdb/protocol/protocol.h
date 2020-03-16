@@ -128,6 +128,9 @@ struct ctdb_call {
 /* SRVID to inform of election data */
 #define CTDB_SRVID_ELECTION	0xF100000000000000LL
 
+/* SRVID for broadcasting leader */
+#define CTDB_SRVID_LEADER 0xF101000000000000LL
+
 /* SRVID to inform clients that the cluster has been reconfigured */
 #define CTDB_SRVID_RECONFIGURE 0xF200000000000000LL
 
@@ -998,7 +1001,7 @@ union ctdb_message_data {
 	uint32_t db_id;
 	/* SRVID_MEM_DUMP, SRVID_TAKEOVER_RUN */
 	struct ctdb_srvid_message *msg;
-	/* SRVID_BANNING, SRVID_REBALANCE_NODE */
+	/* SRVID_BANNING, SRVID_REBALANCE_NODE, SRVID_LEADER */
 	uint32_t pnn;
 	/* SRVID_DISABLE_TAKEOVER_RUNS, SRVID_DISABLE_RECOVERIES */
 	struct ctdb_disable_message *disable;

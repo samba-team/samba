@@ -1818,6 +1818,7 @@ void fill_ctdb_message_data(TALLOC_CTX *mem_ctx, union ctdb_message_data *md,
 		fill_ctdb_srvid_message(md->msg, md->msg);
 		break;
 
+	case CTDB_SRVID_LEADER:
 	case CTDB_SRVID_BANNING:
 	case CTDB_SRVID_REBALANCE_NODE:
 		md->pnn = rand32();
@@ -1881,6 +1882,7 @@ void verify_ctdb_message_data(union ctdb_message_data *md,
 		verify_ctdb_srvid_message(md->msg, md2->msg);
 		break;
 
+	case CTDB_SRVID_LEADER:
 	case CTDB_SRVID_BANNING:
 	case CTDB_SRVID_REBALANCE_NODE:
 		assert(md->pnn == md2->pnn);

@@ -42,6 +42,10 @@ static size_t ctdb_message_data_len(union ctdb_message_data *mdata,
 		len = ctdb_election_message_len(mdata->election);
 		break;
 
+	case CTDB_SRVID_LEADER:
+		len = ctdb_uint32_len(&mdata->pnn);
+		break;
+
 	case CTDB_SRVID_RECONFIGURE:
 		break;
 
@@ -127,6 +131,10 @@ static void ctdb_message_data_push(union ctdb_message_data *mdata,
 
 	case CTDB_SRVID_ELECTION:
 		ctdb_election_message_push(mdata->election, buf, &np);
+		break;
+
+	case CTDB_SRVID_LEADER:
+		ctdb_uint32_push(&mdata->pnn, buf, &np);
 		break;
 
 	case CTDB_SRVID_RECONFIGURE:
@@ -217,6 +225,10 @@ static int ctdb_message_data_pull(uint8_t *buf, size_t buflen,
 	case CTDB_SRVID_ELECTION:
 		ret = ctdb_election_message_pull(buf, buflen, mem_ctx,
 						 &mdata->election, &np);
+		break;
+
+	case CTDB_SRVID_LEADER:
+		ret = ctdb_uint32_pull(buf, buflen, &mdata->pnn, &np);
 		break;
 
 	case CTDB_SRVID_RECONFIGURE:

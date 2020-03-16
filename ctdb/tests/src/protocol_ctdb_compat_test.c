@@ -1218,6 +1218,7 @@ int main(int argc, char *argv[])
 	uint64_t test_srvid[] = {
 		CTDB_SRVID_BANNING,
 		CTDB_SRVID_ELECTION,
+		CTDB_SRVID_LEADER,
 		CTDB_SRVID_RECONFIGURE,
 		CTDB_SRVID_RELEASE_IP,
 		CTDB_SRVID_TAKE_IP,
