@@ -630,13 +630,13 @@ def test(ctx):
 
     if env.HAVE_LMDB:
         test_exes += ['ldb_mdb_mod_op_test',
-                     'ldb_lmdb_test',
-                     # we don't want to run ldb_lmdb_size_test (which proves we can
-                     # fit > 4G of data into the DB), it would fill up the disk on
-                     # many of our test instances
-                     'ldb_mdb_kv_ops_test',
-                     'ldb_key_value_sub_txn_mdb_test',
-                     'ldb_lmdb_free_list_test']
+                      'ldb_lmdb_test',
+                      # we don't want to run ldb_lmdb_size_test (which proves
+                      # we can fit > 4G of data into the DB), it would fill up
+                      # the disk on many of our test instances
+                      'ldb_mdb_kv_ops_test',
+                      'ldb_key_value_sub_txn_mdb_test',
+                      'ldb_lmdb_free_list_test']
     else:
         test_exes += ['ldb_no_lmdb_test']
 
