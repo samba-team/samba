@@ -551,6 +551,11 @@ def build(bld):
                              deps='cmocka ldb',
                              install=False)
 
+            bld.SAMBA_BINARY('ldb_lmdb_free_list_test',
+                             source='tests/ldb_lmdb_free_list_test.c',
+                             cflags='-DTEST_BE=\"mdb\" -DTEST_LMDB=1',
+                             deps='cmocka ldb',
+                             install=False)
             #
             # We rely on the versions of the ldb_key_value functions included
             # in ldb_key_value_sub_txn_test.c taking priority over the versions
@@ -630,7 +635,8 @@ def test(ctx):
                      # fit > 4G of data into the DB), it would fill up the disk on
                      # many of our test instances
                      'ldb_mdb_kv_ops_test',
-                     'ldb_key_value_sub_txn_mdb_test']
+                     'ldb_key_value_sub_txn_mdb_test',
+                     'ldb_lmdb_free_list_test']
     else:
         test_exes += ['ldb_no_lmdb_test']
 
