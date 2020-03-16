@@ -477,7 +477,6 @@ out:
 	talloc_free(tmp_mem);
 	Py_CLEAR(parameters);
 	Py_CLEAR(provision_mod);
-	Py_CLEAR(provision_fn);
 	Py_CLEAR(provision_dict);
 	Py_CLEAR(py_result);
 	Py_CLEAR(py_sid);
