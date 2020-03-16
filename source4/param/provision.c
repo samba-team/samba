@@ -336,7 +336,7 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 	int ret;
 	PyObject *provision_mod = NULL, *provision_dict = NULL;
 	PyObject *provision_fn = NULL, *py_result = NULL;
-	PyObject *parameters = NULL, *py_sid = NULL;
+	PyObject *parameters = NULL;
 	struct ldb_context *ldb = NULL;
 	TALLOC_CTX *tmp_mem = talloc_new(mem_ctx);
 
@@ -431,15 +431,10 @@ NTSTATUS provision_store_self_join(TALLOC_CTX *mem_ctx, struct loadparm_context 
 		goto out;
 	}
 
-	py_sid = py_dom_sid_FromSid(settings->domain_sid);
-	if (py_sid == NULL) {
-		status = NT_STATUS_UNSUCCESSFUL;
-		goto out;
-	}
 
 	if (!dict_insert(parameters,
 			 "domainsid",
-			 py_sid)) {
+			 py_dom_sid_FromSid(settings->domain_sid))) {
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto out;
 	}
@@ -482,7 +477,6 @@ out:
 	Py_CLEAR(provision_mod);
 	Py_CLEAR(provision_dict);
 	Py_CLEAR(py_result);
-	Py_CLEAR(py_sid);
 	if (!NT_STATUS_IS_OK(status)) {
 		PyErr_Print();
 		PyErr_Clear();
