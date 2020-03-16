@@ -35,6 +35,9 @@ static bool dict_insert(PyObject* dict,
 			const char* key,
 			PyObject* value)
 {
+	if (value == NULL) {
+		return false;
+	}
 	if (PyDict_SetItemString(dict, key, value) == -1) {
 		Py_XDECREF(value);
 		return false;
