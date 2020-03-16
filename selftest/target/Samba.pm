@@ -692,6 +692,9 @@ sub get_env_for_process
 	if (defined($env_vars->{GNUTLS_FORCE_FIPS_MODE})) {
 		$proc_envs->{GNUTLS_FORCE_FIPS_MODE} = $env_vars->{GNUTLS_FORCE_FIPS_MODE};
 	}
+	if (defined($env_vars->{OPENSSL_FORCE_FIPS_MODE})) {
+		$proc_envs->{OPENSSL_FORCE_FIPS_MODE} = $env_vars->{OPENSSL_FORCE_FIPS_MODE};
+	}
 	return $proc_envs;
 }
 
@@ -878,6 +881,7 @@ my @exported_envvars = (
 
 	# crypto libraries
 	"GNUTLS_FORCE_FIPS_MODE",
+	"OPENSSL_FORCE_FIPS_MODE",
 );
 
 sub exported_envvars_str

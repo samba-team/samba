@@ -171,6 +171,9 @@ sub wait_for_start($$)
 		if (defined($testenv_vars->{GNUTLS_FORCE_FIPS_MODE})) {
 			$cmd .= "GNUTLS_FORCE_FIPS_MODE=$testenv_vars->{GNUTLS_FORCE_FIPS_MODE} ";
 		}
+		if (defined($testenv_vars->{OPENSSL_FORCE_FIPS_MODE})) {
+			$cmd .= "OPENSSL_FORCE_FIPS_MODE=$testenv_vars->{OPENSSL_FORCE_FIPS_MODE} ";
+		}
 
 		$cmd .= "$ldbsearch ";
 		$cmd .= "$testenv_vars->{CONFIGURATION} ";
@@ -386,6 +389,9 @@ sub get_cmd_env_vars
 	}
 	if (defined($localenv->{GNUTLS_FORCE_FIPS_MODE})) {
 		$cmd_env .= "GNUTLS_FORCE_FIPS_MODE=$localenv->{GNUTLS_FORCE_FIPS_MODE} ";
+	}
+	if (defined($localenv->{OPENSSL_FORCE_FIPS_MODE})) {
+		$cmd_env .= "OPENSSL_FORCE_FIPS_MODE=$localenv->{OPENSSL_FORCE_FIPS_MODE} ";
 	}
 	$cmd_env .= " KRB5_CONFIG=\"$localenv->{KRB5_CONFIG}\" ";
 	$cmd_env .= "KRB5CCNAME=\"$localenv->{KRB5_CCACHE}\" ";
@@ -616,6 +622,7 @@ sub provision_raw_prepare($$$$$$$$$$$$$$)
 	}
 	if (defined($ctx->{force_fips_mode})) {
 		push (@provision_options, "GNUTLS_FORCE_FIPS_MODE=1");
+		push (@provision_options, "OPENSSL_FORCE_FIPS_MODE=1");
 	}
 
 	if (defined($ENV{GDB_PROVISION})) {
@@ -892,6 +899,7 @@ nogroup:x:65534:nobody
 	}
 	if (defined($ctx->{force_fips_mode})) {
 		$ret->{GNUTLS_FORCE_FIPS_MODE} = "1",
+		$ret->{OPENSSL_FORCE_FIPS_MODE} = "1",
 	}
 
 	if ($ctx->{server_role} eq "domain controller") {
