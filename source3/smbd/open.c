@@ -612,16 +612,9 @@ static int non_widelink_open(struct connection_struct *conn,
 	char *parent_dir = NULL;
 	struct smb_filename parent_dir_fname = {0};
 	const char *final_component = NULL;
-	bool is_directory = false;
 	bool ok;
 
-#ifdef O_DIRECTORY
-	if (flags & O_DIRECTORY) {
-		is_directory = true;
-	}
-#endif
-
-	if (is_directory) {
+	if (fsp->is_directory) {
 		parent_dir = talloc_strdup(talloc_tos(), smb_fname->base_name);
 		if (parent_dir == NULL) {
 			saved_errno = errno;
