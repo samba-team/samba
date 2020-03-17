@@ -1452,13 +1452,8 @@ static bool ctdb_election_win(struct ctdb_recoverd *rec, struct election_message
 		return false;
 	}
 
-	/* we will automatically win if the other node is banned */
-	if (em->node_flags & NODE_FLAGS_BANNED) {
-		return true;
-	}
-
-	/* we will automatically win if the other node is banned */
-	if (em->node_flags & NODE_FLAGS_STOPPED) {
+	/* Automatically win if other node is banned or stopped */
+	if (em->node_flags & NODE_FLAGS_INACTIVE) {
 		return true;
 	}
 
@@ -2630,7 +2625,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	/* if the local daemon is STOPPED or BANNED, we verify that the databases are
 	   also frozen and that the recmode is set to active.
 	*/
-	if (rec->node_flags & (NODE_FLAGS_STOPPED | NODE_FLAGS_BANNED)) {
+	if (rec->node_flags & NODE_FLAGS_INACTIVE) {
 		/* If this node has become inactive then we want to
 		 * reduce the chances of it taking over the leader
 		 * role when it becomes active again.  This
