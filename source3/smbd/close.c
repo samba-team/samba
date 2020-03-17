@@ -636,8 +636,8 @@ static NTSTATUS ntstatus_keeperror(NTSTATUS s1, NTSTATUS s2)
 	return s2;
 }
 
-static void close_free_pending_aio(struct files_struct *fsp,
-				   enum file_close_type close_type)
+static void assert_no_pending_aio(struct files_struct *fsp,
+				  enum file_close_type close_type)
 {
 	unsigned num_requests = fsp->num_aio_requests;
 
@@ -645,63 +645,9 @@ static void close_free_pending_aio(struct files_struct *fsp,
 		return;
 	}
 
-	if (close_type != SHUTDOWN_CLOSE) {
-		/*
-		 * reply_close and the smb2 close must have
-		 * taken care of this. No other callers of
-		 * close_file should ever have created async
-		 * I/O.
-		 *
-		 * We need to panic here because if we close()
-		 * the fd while we have outstanding async I/O
-		 * requests, in the worst case we could end up
-		 * writing to the wrong file.
-		 */
-		DBG_ERR("fsp->num_aio_requests=%u\n", num_requests);
-		smb_panic("can not close with outstanding aio requests");
-		return;
-	}
-
-	/*
-	 * For shutdown close, just drop the async requests
-	 * including a potential close request pending for
-	 * this fsp. Drop the close request first, the
-	 * destructor for the aio_requests would execute it.
-	 */
-	TALLOC_FREE(fsp->deferred_close);
-
-	while (fsp->num_aio_requests != 0) {
-		/*
-		 * Previously we just called talloc_free()
-		 * on the outstanding request, but this
-		 * caused crashes (before the async callback
-		 * functions were fixed not to reference req
-		 * directly) and also leaves the SMB2 request
-		 * outstanding on the processing queue.
-		 *
-		 * Using tevent_req_[nt]error() instead
-		 * causes the outstanding SMB1/2/3 request to
-		 * return with NT_STATUS_INVALID_HANDLE
-		 * and removes it from the processing queue.
-		 *
-		 * The callback function called from this
-		 * calls talloc_free(req). The destructor will remove
-		 * itself from the fsp and the aio_requests array.
-		 */
-		if (fsp->is_directory) {
-			tevent_req_nterror(fsp->aio_requests[0],
-					   NT_STATUS_INVALID_HANDLE);
-		} else {
-			tevent_req_error(fsp->aio_requests[0], EBADF);
-		}
-
-		/* Paranoia to ensure we don't spin. */
-		num_requests--;
-		if (fsp->num_aio_requests != num_requests) {
-			smb_panic("cannot cancel outstanding aio "
-				  "requests");
-		}
-	}
+	DBG_ERR("fsp->num_aio_requests=%u\n", num_requests);
+	smb_panic("can not close with outstanding aio requests");
+	return;
 }
 
 /****************************************************************************
@@ -720,7 +666,7 @@ static NTSTATUS close_normal_file(struct smb_request *req, files_struct *fsp,
 	connection_struct *conn = fsp->conn;
 	bool is_durable = false;
 
-	close_free_pending_aio(fsp, close_type);
+	assert_no_pending_aio(fsp, close_type);
 
 	while (talloc_array_length(fsp->blocked_smb1_lock_reqs) != 0) {
 		smbd_smb1_brl_finish_by_req(
@@ -1165,7 +1111,7 @@ static NTSTATUS close_directory(struct smb_request *req, files_struct *fsp,
 		notify_status = NT_STATUS_OK;
 	}
 
-	close_free_pending_aio(fsp, close_type);
+	assert_no_pending_aio(fsp, close_type);
 
 	/*
 	 * NT can set delete_on_close of the last open
