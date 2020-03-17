@@ -2081,108 +2081,22 @@ static int fruit_chmod(vfs_handle_struct *handle,
 	return rc;
 }
 
-static int fruit_rmdir_internal(struct vfs_handle_struct *handle,
-			struct files_struct *dirfsp,
-			const struct smb_filename *smb_fname)
-{
-	DIR *dh = NULL;
-	struct dirent *de;
-	struct fruit_config_data *config;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	if (config->rsrc != FRUIT_RSRC_ADFILE) {
-		goto exit_rmdir;
-	}
-
-	/*
-	 * Due to there is no way to change bDeleteVetoFiles variable
-	 * from this module, need to clean up ourselves
-	 */
-
-	dh = SMB_VFS_OPENDIR(handle->conn, smb_fname, NULL, 0);
-	if (dh == NULL) {
-		goto exit_rmdir;
-	}
-
-	while ((de = SMB_VFS_READDIR(handle->conn, dh, NULL)) != NULL) {
-		struct adouble *ad = NULL;
-		char *p = NULL;
-		struct smb_filename *ad_smb_fname = NULL;
-		int ret;
-
-		if (!is_adouble_file(de->d_name)) {
-			continue;
-		}
-
-		p = talloc_asprintf(talloc_tos(), "%s/%s",
-				    smb_fname->base_name, de->d_name);
-		if (p == NULL) {
-			DBG_ERR("talloc_asprintf failed\n");
-			return -1;
-		}
-
-		ad_smb_fname = synthetic_smb_fname(talloc_tos(), p,
-						    NULL, NULL,
-						    smb_fname->flags);
-		TALLOC_FREE(p);
-		if (ad_smb_fname == NULL) {
-			DBG_ERR("synthetic_smb_fname failed\n");
-			return -1;
-		}
-
-		/*
-		 * Check whether it's a valid AppleDouble file, if
-		 * yes, delete it, ignore it otherwise.
-		 */
-		ad = ad_get(talloc_tos(), handle, ad_smb_fname, ADOUBLE_RSRC);
-		if (ad == NULL) {
-			TALLOC_FREE(ad_smb_fname);
-			TALLOC_FREE(p);
-			continue;
-		}
-		TALLOC_FREE(ad);
-
-		ret = SMB_VFS_NEXT_UNLINKAT(handle,
-				dirfsp,
-				ad_smb_fname,
-				0);
-		if (ret != 0) {
-			DBG_ERR("Deleting [%s] failed\n",
-				smb_fname_str_dbg(ad_smb_fname));
-		}
-		TALLOC_FREE(ad_smb_fname);
-	}
-
-exit_rmdir:
-	if (dh) {
-		SMB_VFS_CLOSEDIR(handle->conn, dh);
-	}
-	return SMB_VFS_NEXT_UNLINKAT(handle,
-				dirfsp,
-				smb_fname,
-				AT_REMOVEDIR);
-}
-
 static int fruit_unlinkat(vfs_handle_struct *handle,
 			struct files_struct *dirfsp,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
-	int ret;
-
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
 	if (flags & AT_REMOVEDIR) {
-		ret = fruit_rmdir_internal(handle,
-				dirfsp,
-				smb_fname);
-	} else {
-		ret = fruit_unlink_internal(handle,
-				dirfsp,
-				smb_fname);
+		return SMB_VFS_NEXT_UNLINKAT(handle,
+					     dirfsp,
+					     smb_fname,
+					     AT_REMOVEDIR);
 	}
-	return ret;
+	return fruit_unlink_internal(handle,
+				     dirfsp,
+				     smb_fname);
 }
 
 static ssize_t fruit_pread_meta_stream(vfs_handle_struct *handle,
