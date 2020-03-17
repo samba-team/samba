@@ -189,7 +189,7 @@ static int debug_level_to_priority(int level)
 	};
 	int priority;
 
-	if( level >= ARRAY_SIZE(priority_map) || level < 0)
+	if (level < 0 || (size_t)level >= ARRAY_SIZE(priority_map))
 		priority = LOG_DEBUG;
 	else
 		priority = priority_map[level];
