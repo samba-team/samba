@@ -60,6 +60,19 @@ echo "Set ban period to 30s"
 ctdb_onnode all setvar RecoveryBanPeriod 30
 echo
 
+# Avoid a race where the election handler can be called before the
+# tunables are updated in the recovery daemon.  Ideally, since
+# everything is idle, this should take one RecoverInterval
+# (i.e. iteration of the monitor loop in the recovery daemon).
+# However, this is the interval between loops and each loop can take
+# an arbitrary amount of time.  The only way to be sure that the
+# tunables have definitely been updated is to do 2 recoveries - this
+# guarantees the tunables were read at the top of the loop between the
+# 2 recoveries.
+echo "2 recoveries to ensure that tunables have been re-read"
+ctdb_onnode "$test_node" "recover"
+ctdb_onnode "$test_node" "recover"
+
 dir=$(dirname "$reclock")
 
 echo "Rename recovery lock directory"
