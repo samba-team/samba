@@ -9,6 +9,7 @@ services:
     - gce
   variables:
     SAMBA_CI_IS_BROKEN_IMAGE: "no"
+    SAMBA_CI_TEST_JOB: "samba-o3"
   before_script:
     # Ensure we are generating correct the container
     - uname -a
@@ -40,9 +41,9 @@ services:
     docker run --volume $(pwd):${samba_repo_root} --workdir ${samba_repo_root} ${ci_image_name} \
         bootstrap/template.py --sha1sum > /tmp/sha1sum-template.txt
     diff -u bootstrap/sha1sum.txt /tmp/sha1sum-template.txt
-    # run smoke test with samba-o3
+    # run smoke test with samba-o3 or samba-fuzz
     docker run --volume $(pwd):${samba_repo_root} --workdir ${samba_repo_root} ${ci_image_name} \
-        /bin/bash -c "sudo chown -R samba:samba ./** && export PKG_CONFIG_PATH=/usr/lib64/compat-gnutls34/pkgconfig:/usr/lib64/compat-nettle32/pkgconfig && script/autobuild.py samba-o3 --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase"
+        /bin/bash -c "sudo chown -R samba:samba ./** && export PKG_CONFIG_PATH=/usr/lib64/compat-gnutls34/pkgconfig:/usr/lib64/compat-nettle32/pkgconfig && script/autobuild.py ${SAMBA_CI_TEST_JOB} --verbose --nocleanup --keeplogs --tail --testbase /tmp/samba-testbase"
     docker tag ${ci_image_name} ${ci_image_path}:${SAMBA_CI_CONTAINER_TAG}
     docker tag ${ci_image_name} ${ci_image_path}:${timestamp_tag}
     # We build all images, but only upload is it's not marked as broken
@@ -82,6 +83,12 @@ services:
       # https://gitlab.com/samba-team/devel/samba/pipelines/new
       #
       - $SAMBA_CI_REBUILD_BROKEN_IMAGES == "yes"
+
+# This is ONLY for oss-fuzz, so we test a fuzz build not a real one
+ubuntu1604:
+  extends: .build_image_template
+  variables:
+    SAMBA_CI_TEST_JOB: "samba-fuzz"
 
 ubuntu1804:
   extends: .build_image_template
