@@ -1831,6 +1831,37 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	return;
 }
 
+static void cluster_lock_election(struct ctdb_recoverd *rec)
+{
+	bool ok;
+
+	if (!this_node_can_be_leader(rec)) {
+		if (cluster_lock_held(rec)) {
+			cluster_lock_release(rec);
+		}
+		return;
+	}
+
+	/*
+	 * Don't need to unconditionally release the lock and then
+	 * attempt to retake it.  This provides stability.
+	 */
+	if (cluster_lock_held(rec)) {
+		return;
+	}
+
+	rec->leader = CTDB_UNKNOWN_PNN;
+	rec->election_in_progress = true;
+
+	ok = cluster_lock_take(rec);
+	if (ok) {
+		rec->leader = rec->pnn;
+		D_WARNING("Took cluster lock, leader=%"PRIu32"\n", rec->leader);
+	}
+
+	rec->election_in_progress = false;
+}
+
 /*
   force the start of the election process
  */
@@ -1845,6 +1876,11 @@ static void force_election(struct ctdb_recoverd *rec)
 	ret = set_recovery_mode(ctdb, rec, rec->nodemap, CTDB_RECOVERY_ACTIVE);
 	if (ret != 0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to active on cluster\n"));
+		return;
+	}
+
+	if (cluster_lock_enabled(rec)) {
+		cluster_lock_election(rec);
 		return;
 	}
 
@@ -2007,12 +2043,23 @@ static void leader_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 	}
 
 	if (pnn == CTDB_UNKNOWN_PNN) {
+		bool was_election_in_progress = rec->election_in_progress;
+
 		/*
 		 * Leader broadcast timeout was cancelled above - stop
 		 * main loop from restarting it until election is
 		 * complete
 		 */
 		rec->election_in_progress = true;
+
+		/*
+		 * This is the only notification for a cluster lock
+		 * election, so handle it here...
+		 */
+		if (cluster_lock_enabled(rec) && !was_election_in_progress) {
+			cluster_lock_election(rec);
+		}
+
 		return;
 	}
 
