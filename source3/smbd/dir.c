@@ -1317,8 +1317,10 @@ static int smb_Dir_destructor(struct smb_Dir *dir_hnd)
 
 	SMB_VFS_CLOSEDIR(dir_hnd->conn, dir_hnd->dir);
 	fsp->fh->fd = -1;
-	SMB_ASSERT(fsp->dptr->dir_hnd == dir_hnd);
-	fsp->dptr->dir_hnd = NULL;
+	if (fsp->dptr != NULL) {
+		SMB_ASSERT(fsp->dptr->dir_hnd == dir_hnd);
+		fsp->dptr->dir_hnd = NULL;
+	}
 	dir_hnd->fsp = NULL;
 	return 0;
 }
