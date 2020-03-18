@@ -270,16 +270,6 @@ NTSTATUS vfs_offload_token_check_handles(uint32_t fsctl,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (src_fsp->deferred_close != NULL) {
-		DBG_INFO("copy chunk src handle with deferred close.\n");
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	if (dst_fsp->deferred_close != NULL) {
-		DBG_INFO("copy chunk dst handle with deferred close.\n");
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
 	if (src_fsp->closing) {
 		DBG_INFO("copy chunk src handle with closing in progress.\n");
 		return NT_STATUS_ACCESS_DENIED;

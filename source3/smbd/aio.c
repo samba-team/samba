@@ -102,7 +102,6 @@ static int aio_del_req_from_fsp(struct aio_req_fsp_link *lnk)
 	fsp->aio_requests[i] = fsp->aio_requests[fsp->num_aio_requests];
 
 	if (fsp->num_aio_requests == 0) {
-		tevent_wait_done(fsp->deferred_close);
 		TALLOC_FREE(fsp->aio_requests);
 	}
 	return 0;
