@@ -5999,12 +5999,9 @@ static void reply_exit_done(struct tevent_req *req)
 	return;
 }
 
-struct reply_close_state {
-	files_struct *fsp;
-	struct smb_request *smb1req;
-};
-
-static void do_smb1_close(struct tevent_req *req);
+static struct tevent_req *reply_close_send(struct smb_request *smb1req,
+				files_struct *fsp);
+static void reply_close_done(struct tevent_req *req);
 
 void reply_close(struct smb_request *smb1req)
 {
@@ -6048,41 +6045,15 @@ void reply_close(struct smb_request *smb1req)
 	}
 
 	if (fsp->num_aio_requests != 0) {
+		struct tevent_req *req;
 
-		struct reply_close_state *state;
-
-		DBG_DEBUG("closing with aio %u requests pending\n",
-			   fsp->num_aio_requests);
-
-		/*
-		 * Flag the file as close in progress.
-		 * This will prevent any more IO being
-		 * done on it.
-		 */
-		fsp->closing = true;
-
-		/*
-		 * We depend on the aio_extra destructor to take care of this
-		 * close request once fsp->num_aio_request drops to 0.
-		 */
-
-		fsp->deferred_close = tevent_wait_send(
-			fsp, fsp->conn->sconn->ev_ctx);
-		if (fsp->deferred_close == NULL) {
+		req = reply_close_send(smb1req, fsp);
+		if (req == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
-
-		state = talloc(fsp, struct reply_close_state);
-		if (state == NULL) {
-			TALLOC_FREE(fsp->deferred_close);
-			status = NT_STATUS_NO_MEMORY;
-			goto done;
-		}
-		state->fsp = fsp;
-		state->smb1req = talloc_move(fsp, &smb1req);
-		tevent_req_set_callback(fsp->deferred_close, do_smb1_close,
-					state);
+		/* We're async. This will complete later. */
+		tevent_req_set_callback(req, reply_close_done, smb1req);
 		END_PROFILE(SMBclose);
 		return;
 	}
@@ -6106,46 +6077,6 @@ done:
 	return;
 }
 
-static void do_smb1_close(struct tevent_req *req)
-{
-	struct reply_close_state *state = tevent_req_callback_data(
-		req, struct reply_close_state);
-	struct smb_request *smb1req;
-	NTSTATUS status;
-	int ret;
-
-	ret = tevent_wait_recv(req);
-	TALLOC_FREE(req);
-	if (ret != 0) {
-		DBG_DEBUG("tevent_wait_recv returned %s\n",
-			   strerror(ret));
-		/*
-		 * Continue anyway, this should never happen
-		 */
-	}
-
-	/*
-	 * fsp->smb2_close_request right now is a talloc grandchild of
-	 * fsp. When we close_file(fsp), it would go with it. No chance to
-	 * reply...
-	 */
-	smb1req = talloc_move(talloc_tos(), &state->smb1req);
-
-	status = close_file(smb1req, state->fsp, NORMAL_CLOSE);
-	if (NT_STATUS_IS_OK(status)) {
-		reply_outbuf(smb1req, 0, 0);
-	} else {
-		reply_nterror(smb1req, status);
-	}
-	/*
-	 * The following call is needed to push the
-	 * reply data back out the socket after async
-	 * return. Plus it frees smb1req.
-	 */
-	smb_request_done(smb1req);
-}
-
-#if 0
 struct reply_close_state {
 	files_struct *fsp;
 	struct tevent_queue *wait_queue;
@@ -6272,7 +6203,6 @@ static void reply_close_done(struct tevent_req *req)
 	 */
 	smb_request_done(smb1req);
 }
-#endif
 
 /****************************************************************************
  Reply to a writeclose (Core+ protocol).
