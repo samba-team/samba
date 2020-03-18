@@ -213,6 +213,16 @@ failed:
 	return NULL;
 }
 
+static void print_pnn(uint32_t pnn)
+{
+	if (pnn == CTDB_UNKNOWN_PNN) {
+		printf("UNKNOWN\n");
+		return;
+	}
+
+	printf("%u\n", pnn);
+}
+
 static bool verify_pnn(struct ctdb_context *ctdb, int pnn)
 {
 	struct ctdb_node_map *nodemap;
@@ -862,7 +872,8 @@ static void print_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	printf("Recovery mode:%s (%d)\n",
 	       recmode == CTDB_RECOVERY_NORMAL ? "NORMAL" : "RECOVERY",
 	       recmode);
-	printf("Recovery master:%d\n", recmaster);
+	printf("Recovery master:");
+	print_pnn(recmaster);
 }
 
 static int control_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
@@ -4536,7 +4547,8 @@ static int control_recmaster(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	printf("%u\n", recmaster);
+	print_pnn(recmaster);
+
 	return 0;
 }
 
