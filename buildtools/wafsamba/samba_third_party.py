@@ -34,7 +34,7 @@ Build.BuildContext.CHECK_NSS_WRAPPER = CHECK_NSS_WRAPPER
 
 @conf
 def CHECK_RESOLV_WRAPPER(conf):
-    return conf.CHECK_BUNDLED_SYSTEM_PKG('resolv_wrapper', minversion='1.1.4')
+    return conf.CHECK_BUNDLED_SYSTEM_PKG('resolv_wrapper', minversion='1.1.6')
 Build.BuildContext.CHECK_RESOLV_WRAPPER = CHECK_RESOLV_WRAPPER
 
 @conf

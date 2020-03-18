@@ -2,7 +2,7 @@
 
 import os
 
-VERSION="1.1.4"
+VERSION="1.1.6"
 
 def configure(conf):
     if conf.CHECK_RESOLV_WRAPPER():
@@ -30,8 +30,16 @@ def configure(conf):
 
         conf.CHECK_STRUCTURE_MEMBER('struct __res_state',
                                     '_u._ext.nsaddrs',
-                                    headers='resolv.h',
-                                    define='HAVE_RESOLV_IPV6_NSADDRS')
+                                    headers='sys/socket.h netinet/in.h resolv.h',
+                                    define='HAVE_RES_STATE_U_EXT_NSADDRS')
+        conf.CHECK_STRUCTURE_MEMBER('union res_sockaddr_union',
+                                    'sin',
+                                    headers='sys/socket.h netinet/in.h resolv.h',
+                                    define='HAVE_RES_SOCKADDR_UNION_SIN')
+        conf.CHECK_STRUCTURE_MEMBER('union res_sockaddr_union',
+                                    'sin6',
+                                    headers='sys/socket.h netinet/in.h resolv.h',
+                                    define='HAVE_RES_SOCKADDR_UNION_SIN6')
 
         conf.CHECK_FUNCS_IN('res_ninit', 'resolv')
         if conf.CONFIG_SET('HAVE_RES_NINIT'):
