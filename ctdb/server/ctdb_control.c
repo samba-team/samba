@@ -89,6 +89,90 @@ static int32_t control_not_implemented(const char *unsupported,
 	return -1;
 }
 
+struct ctdb_echo_data_state {
+	struct ctdb_context *ctdb;
+	struct ctdb_req_control_old *c;
+	struct ctdb_echo_data *data;
+};
+
+static void ctdb_echo_data_timeout(
+	struct tevent_context *ev,
+	struct tevent_timer *te,
+	struct timeval now,
+	void *private_data);
+
+static int32_t ctdb_control_echo_data(
+	struct ctdb_context *ctdb,
+	struct ctdb_req_control_old *c,
+	TDB_DATA indata,
+	bool *async_reply)
+{
+	struct ctdb_echo_data_state *state = NULL;
+	struct tevent_timer *te = NULL;
+	uint32_t delay = 0;
+	size_t np = 0;
+	int ret;
+
+	state = talloc_zero(ctdb, struct ctdb_echo_data_state);
+	CTDB_NO_MEMORY(ctdb, state);
+	state->ctdb = ctdb;
+
+	ret = ctdb_echo_data_pull(
+		indata.dptr, indata.dsize, state, &state->data, &np);
+	if (ret != 0) {
+		DBG_DEBUG("ctdb_echo_data_pull failed: %s\n",
+			  strerror(ret));
+		TALLOC_FREE(state);
+		return -1;
+	}
+
+	te = tevent_add_timer(
+		ctdb->ev,
+		state,
+		timeval_current_ofs_msec(delay),
+		ctdb_echo_data_timeout,
+		state);
+	if (te == NULL) {
+		DBG_DEBUG("tevent_add_timer failed\n");
+		TALLOC_FREE(state);
+		return -1;
+	}
+
+	state->c = talloc_move(state, &c);
+	*async_reply = true;
+
+	return 0;
+}
+
+static void ctdb_echo_data_timeout(
+	struct tevent_context *ev,
+	struct tevent_timer *te,
+	struct timeval now,
+	void *private_data)
+{
+	struct ctdb_echo_data_state *state = talloc_get_type_abort(
+		private_data, struct ctdb_echo_data_state);
+	size_t len = ctdb_echo_data_len(state->data);
+	uint8_t *buf = NULL;
+	size_t np;
+	TDB_DATA data;
+
+	DBG_DEBUG("reqid=%"PRIu32" len=%zu\n", state->c->hdr.reqid, len);
+
+	buf = talloc_array(state, uint8_t, len);
+	if (buf == NULL) {
+		DBG_WARNING("talloc_array(%zu) failed\n", len);
+		goto done;
+	}
+	ctdb_echo_data_push(state->data, buf, &np);
+	data = (TDB_DATA) { .dptr = buf, .dsize = np };
+
+	ctdb_request_control_reply(state->ctdb, state->c, &data, 0, NULL);
+
+done:
+	TALLOC_FREE(state);
+}
+
 /*
   process a control request
  */
@@ -739,6 +823,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 		CHECK_CONTROL_DATA_SIZE(ctdb_db_vacuum_len(&db_vacuum));
 		return ctdb_control_db_vacuum(ctdb, c, indata, async_reply);
+	}
+	case CTDB_CONTROL_ECHO_DATA: {
+		return ctdb_control_echo_data(ctdb, c, indata, async_reply);
 	}
 
 	default:
