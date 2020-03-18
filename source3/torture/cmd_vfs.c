@@ -163,12 +163,14 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	vfs->currentdir = SMB_VFS_OPENDIR(vfs->conn, smb_fname, NULL, 0);
+	vfs->currentdir = OpenDir(vfs->conn, vfs->conn, smb_fname, NULL, 0);
 	if (vfs->currentdir == NULL) {
 		printf("opendir error=%d (%s)\n", errno, strerror(errno));
 		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+
+	vfs->currentdir_offset = 0;
 
 	TALLOC_FREE(smb_fname);
 	printf("opendir: ok\n");
@@ -179,20 +181,24 @@ static NTSTATUS cmd_opendir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	SMB_STRUCT_STAT st;
-	struct dirent *dent = NULL;
+	const char *dname = NULL;
+	char *talloced = NULL;
 
 	if (vfs->currentdir == NULL) {
 		printf("readdir: error=-1 (no open directory)\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	dent = SMB_VFS_READDIR(vfs->conn, vfs->currentdir, &st);
-	if (dent == NULL) {
+        dname = ReadDirName(vfs->currentdir,
+			    &vfs->currentdir_offset,
+			    &st,
+			    &talloced);
+	if (dname == NULL) {
 		printf("readdir: NULL\n");
 		return NT_STATUS_OK;
 	}
 
-	printf("readdir: %s\n", dent->d_name);
+	printf("readdir: %s\n", dname);
 	if (VALID_STAT(st)) {
 		time_t tmp_time;
 		printf("  stat available");
@@ -225,6 +231,7 @@ static NTSTATUS cmd_readdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc
 		printf("  Change: %s", ctime(&tmp_time));
 	}
 
+	TALLOC_FREE(talloced);
 	return NT_STATUS_OK;
 }
 
@@ -265,21 +272,15 @@ static NTSTATUS cmd_mkdir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 
 static NTSTATUS cmd_closedir(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	int ret;
-
 	if (vfs->currentdir == NULL) {
 		printf("closedir: failure (no directory open)\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	ret = SMB_VFS_CLOSEDIR(vfs->conn, vfs->currentdir);
-	if (ret == -1) {
-		printf("closedir failure: %s\n", strerror(errno));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	TALLOC_FREE(vfs->currentdir);
+	vfs->currentdir_offset = 0;
 
 	printf("closedir: ok\n");
-	vfs->currentdir = NULL;
 	return NT_STATUS_OK;
 }
 
@@ -1870,8 +1871,8 @@ static NTSTATUS cmd_sys_acl_delete_def_file(struct vfs_state *vfs, TALLOC_CTX *m
 static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 					    int argc, const char **argv)
 {
-	int ret;
-	struct dirent *dent = NULL;
+	const char *dname = NULL;
+	char *dname_talloced = NULL;
 	SMB_STRUCT_STAT st;
 	bool found = false;
 	char *translated = NULL;
@@ -1892,23 +1893,50 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	vfs->currentdir = SMB_VFS_OPENDIR(vfs->conn, smb_fname, NULL, 0);
+	vfs->currentdir = OpenDir(talloc_tos(),
+				  vfs->conn,
+				  smb_fname,
+				  NULL,
+				  0);
 	if (vfs->currentdir == NULL) {
 		DEBUG(0, ("cmd_translate_name: opendir error=%d (%s)\n",
 			  errno, strerror(errno)));
 		TALLOC_FREE(smb_fname);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+	vfs->currentdir_offset = 0;
 
 	while (true) {
-		dent = SMB_VFS_READDIR(vfs->conn, vfs->currentdir, &st);
-		if (dent == NULL) {
+		/* ReadDirName() returns Windows "encoding" */
+		dname = ReadDirName(vfs->currentdir,
+				    &vfs->currentdir_offset,
+				    &st,
+				    &dname_talloced);
+		if (dname == NULL) {
 			break;
 		}
-		if (strcmp (dent->d_name, argv[1]) == 0) {
+
+		/* Convert Windows "encoding" from ReadDirName() to UNIX */
+		status = SMB_VFS_TRANSLATE_NAME(vfs->conn,
+						dname,
+						vfs_translate_to_unix,
+						talloc_tos(),
+						&translated);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_ERR("file '%s' cannot be translated\n", argv[1]);
+			goto cleanup;
+		}
+
+		/*
+		 * argv[1] uses UNIX "encoding", so compare with translation
+		 * result.
+		 */
+		if (strcmp(translated, argv[1]) == 0) {
 			found = true;
 			break;
 		}
+		TALLOC_FREE(dname_talloced);
+		TALLOC_FREE(translated);
 	};
 
 	if (!found) {
@@ -1917,35 +1945,20 @@ static NTSTATUS cmd_translate_name(struct vfs_state *vfs, TALLOC_CTX *mem_ctx,
 		status = NT_STATUS_UNSUCCESSFUL;
 		goto cleanup;
 	}
-	status = SMB_VFS_TRANSLATE_NAME(vfs->conn, dent->d_name,
-					vfs_translate_to_windows,
-					talloc_tos(), &translated);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED)) {
-		DEBUG(0, ("cmd_translate_name: file '%s' cannot be "
-			  "translated\n", argv[1]));
-		TALLOC_FREE(translated);
-		goto cleanup;
-	}
+
 	/* translation success. But that could also mean
 	   that translating "aaa" to "aaa" was successful :-(
 	*/ 
-	DEBUG(0, ("cmd_translate_name: file '%s' --> '%s'\n", 
-		  argv[1], translated));
-
-	TALLOC_FREE(smb_fname);
-	TALLOC_FREE(translated);
+	DBG_ERR("file '%s' --> '%s'\n", argv[1], dname);
+	status = NT_STATUS_OK;
 
 cleanup:
+	TALLOC_FREE(dname_talloced);
+	TALLOC_FREE(translated);
 	TALLOC_FREE(smb_fname);
-	ret = SMB_VFS_CLOSEDIR(vfs->conn, vfs->currentdir);
-	if (ret == -1) {
-		DEBUG(0, ("cmd_translate_name: closedir failure: %s\n",
-			  strerror(errno)));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	vfs->currentdir = NULL;
-	return status;;
+	TALLOC_FREE(vfs->currentdir);
+	vfs->currentdir_offset = 0;
+	return status;
 }
 
 

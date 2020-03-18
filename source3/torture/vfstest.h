@@ -31,7 +31,8 @@ struct vfs_state {
 	struct connection_struct *conn;
 	uint64_t mid;
 	struct files_struct *files[1024];
-	DIR *currentdir;
+	struct smb_Dir *currentdir;
+	long currentdir_offset;
 	void *data;
 	size_t data_size;
 };
