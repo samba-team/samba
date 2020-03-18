@@ -23,7 +23,6 @@
 #include "smbd/globals.h"
 #include "../libcli/smb/smb_common.h"
 #include "../lib/util/tevent_ntstatus.h"
-#include "lib/tevent_wait.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_SMB2

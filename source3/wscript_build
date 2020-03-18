@@ -408,7 +408,6 @@ bld.SAMBA3_SUBSYSTEM('samba3core',
                           lib/ldap_escape.c
                           lib/system_smbd.c
                           lib/audit.c
-                          lib/tevent_wait.c
                           lib/idmap_cache.c
                           lib/namemap_cache.c
                           lib/util_ea.c

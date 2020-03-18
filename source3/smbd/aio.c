@@ -23,7 +23,6 @@
 #include "smbd/globals.h"
 #include "../lib/util/tevent_ntstatus.h"
 #include "../lib/util/tevent_unix.h"
-#include "lib/tevent_wait.h"
 
 /****************************************************************************
  The buffer we keep around whilst an aio request is in process.

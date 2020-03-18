@@ -41,7 +41,6 @@
 #include "auth.h"
 #include "smbprofile.h"
 #include "../lib/tsocket/tsocket.h"
-#include "lib/tevent_wait.h"
 #include "lib/util/tevent_ntstatus.h"
 #include "libcli/smb/smb_signing.h"
 #include "lib/util/sys_rw_data.h"
