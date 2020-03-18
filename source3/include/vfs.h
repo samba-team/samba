@@ -290,8 +290,10 @@
 /* Version 42 - SMB_VFS_NTIMES() receives null times based on UTIMES_OMIT */
 /* Version 42 - Add SMB_VFS_CREATE_DFS_PATHAT() */
 /* Version 42 - Add SMB_VFS_READ_DFS_PATHAT() */
+/* Change to Version 43 - will ship with 4.13. */
+/* Version 43 - Remove deferred_close from struct files_struct */
 
-#define SMB_VFS_INTERFACE_VERSION 42
+#define SMB_VFS_INTERFACE_VERSION 43
 
 /*
     All intercepted VFS operations must be declared as static functions inside module source
@@ -441,15 +443,6 @@ typedef struct files_struct {
 	 */
 	bool lock_failure_seen;
 	uint64_t lock_failure_offset;
-
-	/*
-	 * If a close request comes in while we still have aio_requests
-	 * around, we need to hold back the close. When all aio_requests are
-	 * done, the aio completion routines need tevent_wait_done() on
-	 * this. A bit ugly, but before we have close_file() fully async
-	 * possibly the simplest approach. Thanks, Jeremy for the idea.
-	 */
-	struct tevent_req *deferred_close;
 } files_struct;
 
 #define FSP_POSIX_FLAGS_OPEN		0x01
