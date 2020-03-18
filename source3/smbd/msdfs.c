@@ -1514,7 +1514,6 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 	const struct loadparm_substitution *lp_sub =
 		loadparm_s3_global_substitution();
 	size_t cnt = 0;
-	DIR *dirp = NULL;
 	const char *dname = NULL;
 	char *talloced = NULL;
 	const char *connect_path = lp_path(frame, lp_sub, snum);
@@ -1523,6 +1522,8 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 	connection_struct *conn = NULL;
 	NTSTATUS status;
 	struct smb_filename *smb_fname = NULL;
+	struct smb_Dir *dir_hnd = NULL;
+	long offset = 0;
 
 	if(*connect_path == '\0') {
 		TALLOC_FREE(frame);
@@ -1564,13 +1565,14 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 	}
 
 	/* Now enumerate all dfs links */
-	dirp = SMB_VFS_OPENDIR(conn, smb_fname, NULL, 0);
-	if(!dirp) {
+	dir_hnd = OpenDir(frame, conn, smb_fname, NULL, 0);
+	if (dir_hnd == NULL) {
 		goto out;
 	}
 
-	while ((dname = vfs_readdirname(conn, dirp, NULL, &talloced))
-	       != NULL) {
+        while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
+	       != NULL)
+	{
 		struct smb_filename *smb_dname =
 			synthetic_smb_fname(frame,
 					dname,
@@ -1590,8 +1592,6 @@ static size_t count_dfs_links(TALLOC_CTX *ctx,
 		TALLOC_FREE(talloced);
 		TALLOC_FREE(smb_dname);
 	}
-
-	SMB_VFS_CLOSEDIR(conn,dirp);
 
 out:
 	TALLOC_FREE(frame);
