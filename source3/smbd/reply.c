@@ -6001,32 +6001,32 @@ static void reply_exit_done(struct tevent_req *req)
 
 struct reply_close_state {
 	files_struct *fsp;
-	struct smb_request *smbreq;
+	struct smb_request *smb1req;
 };
 
 static void do_smb1_close(struct tevent_req *req);
 
-void reply_close(struct smb_request *req)
+void reply_close(struct smb_request *smb1req)
 {
-	connection_struct *conn = req->conn;
+	connection_struct *conn = smb1req->conn;
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp = NULL;
 	START_PROFILE(SMBclose);
 
-	if (req->wct < 3) {
-		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
+	if (smb1req->wct < 3) {
+		reply_nterror(smb1req, NT_STATUS_INVALID_PARAMETER);
 		END_PROFILE(SMBclose);
 		return;
 	}
 
-	fsp = file_fsp(req, SVAL(req->vwv+0, 0));
+	fsp = file_fsp(smb1req, SVAL(smb1req->vwv+0, 0));
 
 	/*
 	 * We can only use check_fsp if we know it's not a directory.
 	 */
 
-	if (!check_fsp_open(conn, req, fsp)) {
-		reply_nterror(req, NT_STATUS_INVALID_HANDLE);
+	if (!check_fsp_open(conn, smb1req, fsp)) {
+		reply_nterror(smb1req, NT_STATUS_INVALID_HANDLE);
 		END_PROFILE(SMBclose);
 		return;
 	}
@@ -6043,7 +6043,7 @@ void reply_close(struct smb_request *req)
 		 * Take care of any time sent in the close.
 		 */
 
-		t = srv_make_unix_date3(req->vwv+1);
+		t = srv_make_unix_date3(smb1req->vwv+1);
 		set_close_write_time(fsp, time_t_to_full_timespec(t));
 	}
 
@@ -6080,7 +6080,7 @@ void reply_close(struct smb_request *req)
 			goto done;
 		}
 		state->fsp = fsp;
-		state->smbreq = talloc_move(fsp, &req);
+		state->smb1req = talloc_move(fsp, &smb1req);
 		tevent_req_set_callback(fsp->deferred_close, do_smb1_close,
 					state);
 		END_PROFILE(SMBclose);
@@ -6093,15 +6093,15 @@ void reply_close(struct smb_request *req)
 	 * was probably an I/O error.
 	 */
 
-	status = close_file(req, fsp, NORMAL_CLOSE);
+	status = close_file(smb1req, fsp, NORMAL_CLOSE);
 done:
 	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
+		reply_nterror(smb1req, status);
 		END_PROFILE(SMBclose);
 		return;
 	}
 
-	reply_outbuf(req, 0, 0);
+	reply_outbuf(smb1req, 0, 0);
 	END_PROFILE(SMBclose);
 	return;
 }
@@ -6110,7 +6110,7 @@ static void do_smb1_close(struct tevent_req *req)
 {
 	struct reply_close_state *state = tevent_req_callback_data(
 		req, struct reply_close_state);
-	struct smb_request *smbreq;
+	struct smb_request *smb1req;
 	NTSTATUS status;
 	int ret;
 
@@ -6129,24 +6129,24 @@ static void do_smb1_close(struct tevent_req *req)
 	 * fsp. When we close_file(fsp), it would go with it. No chance to
 	 * reply...
 	 */
-	smbreq = talloc_move(talloc_tos(), &state->smbreq);
+	smb1req = talloc_move(talloc_tos(), &state->smb1req);
 
-	status = close_file(smbreq, state->fsp, NORMAL_CLOSE);
+	status = close_file(smb1req, state->fsp, NORMAL_CLOSE);
 	if (NT_STATUS_IS_OK(status)) {
-		reply_outbuf(smbreq, 0, 0);
+		reply_outbuf(smb1req, 0, 0);
 	} else {
-		reply_nterror(smbreq, status);
+		reply_nterror(smb1req, status);
 	}
-	if (!srv_send_smb(smbreq->xconn,
-			(char *)smbreq->outbuf,
+	if (!srv_send_smb(smb1req->xconn,
+			(char *)smb1req->outbuf,
 			true,
-			smbreq->seqnum+1,
-			IS_CONN_ENCRYPTED(smbreq->conn)||smbreq->encrypted,
+			smb1req->seqnum+1,
+			IS_CONN_ENCRYPTED(smb1req->conn)||smb1req->encrypted,
 			NULL)) {
 		exit_server_cleanly("handle_aio_read_complete: srv_send_smb "
 				    "failed.");
 	}
-	TALLOC_FREE(smbreq);
+	TALLOC_FREE(smb1req);
 }
 
 /****************************************************************************
