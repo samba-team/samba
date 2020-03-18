@@ -85,11 +85,6 @@ static struct smb_Dir *OpenDir_fsp(TALLOC_CTX *mem_ctx, connection_struct *conn,
 
 static void DirCacheAdd(struct smb_Dir *dir_hnd, const char *name, long offset);
 
-static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
-					connection_struct *conn,
-					const struct smb_filename *smb_dname,
-					const char *wcard,
-					uint32_t attr);
 static int smb_Dir_destructor(struct smb_Dir *dir_hnd);
 
 #define INVALID_DPTR_KEY (-3)
@@ -1329,153 +1324,12 @@ static int smb_Dir_destructor(struct smb_Dir *dir_hnd)
  Open a directory.
 ********************************************************************/
 
-static struct smb_Dir *OpenDir_internal(TALLOC_CTX *mem_ctx,
-			connection_struct *conn,
-			const struct smb_filename *smb_dname,
-			const char *mask,
-			uint32_t attr)
-{
-	struct smb_Dir *dir_hnd = talloc_zero(mem_ctx, struct smb_Dir);
-
-	if (!dir_hnd) {
-		return NULL;
-	}
-
-	dir_hnd->dir = SMB_VFS_OPENDIR(conn, smb_dname, mask, attr);
-
-	if (!dir_hnd->dir) {
-		DEBUG(5,("OpenDir: Can't open %s. %s\n",
-			smb_dname->base_name,
-			strerror(errno) ));
-		goto fail;
-	}
-
-	dir_hnd->conn = conn;
-
-	if (!conn->sconn->using_smb2) {
-		/*
-		 * The dircache is only needed for SMB1 because SMB1 uses a name
-		 * for the resume wheras SMB2 always continues from the next
-		 * position (unless it's told to restart or close-and-reopen the
-		 * listing).
-		 */
-		dir_hnd->name_cache_size =
-			lp_directory_name_cache_size(SNUM(conn));
-	}
-
-	return dir_hnd;
-
-  fail:
-	TALLOC_FREE(dir_hnd);
-	return NULL;
-}
-
-/**
- * @brief Open a directory handle by pathname, ensuring it's under the share path.
- *
- * First stores the $cwd, then changes directory to the passed in pathname
- * uses check_name() to ensure this is under the connection struct share path,
- * then operates on a pathname of "." to ensure we're in the same place.
- *
- * The returned struct smb_Dir * should have a talloc destrctor added to
- * ensure that when the struct is freed the internal POSIX DIR * pointer
- * is closed.
- *
- * @code
- *
- * static int sample_smb_Dir_destructor(struct smb_Dir *dirp)
- * {
- *     SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
- * }
- * ..
- *     struct smb_Dir *dir_hnd = open_dir_safely(mem_ctx,
- *                              conn,
- *                              smb_dname,
- *                              mask,
- *                              attr);
- *      if (dir_hnd == NULL) {
- *              return NULL;
- *      }
- *      talloc_set_destructor(dir_hnd, smb_Dir_destructor);
- * ..
- * @endcode
- */
-
-static struct smb_Dir *open_dir_safely(TALLOC_CTX *ctx,
-					connection_struct *conn,
-					const struct smb_filename *smb_dname,
-					const char *wcard,
-					uint32_t attr)
-{
-	struct smb_Dir *dir_hnd = NULL;
-	struct smb_filename *smb_fname_cwd = NULL;
-	struct smb_filename *saved_dir_fname = vfs_GetWd(ctx, conn);
-	NTSTATUS status;
-
-	if (saved_dir_fname == NULL) {
-		return NULL;
-	}
-
-	if (vfs_ChDir(conn, smb_dname) == -1) {
-		goto out;
-	}
-
-	smb_fname_cwd = synthetic_smb_fname(talloc_tos(),
-					".",
-					NULL,
-					NULL,
-					smb_dname->flags);
-	if (smb_fname_cwd == NULL) {
-		goto out;
-	}
-
-	/*
-	 * Now the directory is pinned, use
-	 * REALPATH to ensure we can access it.
-	 */
-	status = check_name(conn, smb_fname_cwd);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto out;
-	}
-
-	dir_hnd = OpenDir_internal(ctx,
-				conn,
-				smb_fname_cwd,
-				wcard,
-				attr);
-
-	if (dir_hnd == NULL) {
-		goto out;
-	}
-
-	/*
-	 * OpenDir_internal only gets "." as the dir name.
-	 * Store the real dir name here.
-	 */
-
-	dir_hnd->dir_smb_fname = cp_smb_filename(dir_hnd, smb_dname);
-	if (!dir_hnd->dir_smb_fname) {
-		TALLOC_FREE(dir_hnd);
-		SMB_VFS_CLOSEDIR(conn, dir_hnd->dir);
-		errno = ENOMEM;
-	}
-
-  out:
-
-	vfs_ChDir(conn, saved_dir_fname);
-	TALLOC_FREE(saved_dir_fname);
-	return dir_hnd;
-}
-
-/*
- * Simple destructor for OpenDir() use. Don't need to
- * care about fsp back pointer as we know we have never
- * set it in the OpenDir() code path.
- */
-
 static int smb_Dir_OpenDir_destructor(struct smb_Dir *dir_hnd)
 {
-	SMB_VFS_CLOSEDIR(dir_hnd->conn, dir_hnd->dir);
+	files_struct *fsp = dir_hnd->fsp;
+
+	smb_Dir_destructor(dir_hnd);
+	file_free(NULL, fsp);
 	return 0;
 }
 
@@ -1485,14 +1339,24 @@ struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
 			const char *mask,
 			uint32_t attr)
 {
-	struct smb_Dir *dir_hnd = open_dir_safely(mem_ctx,
-				conn,
-				smb_dname,
-				mask,
-				attr);
+	struct files_struct *fsp = NULL;
+	struct smb_Dir *dir_hnd = NULL;
+	NTSTATUS status;
+
+	status = open_internal_dirfsp_at(conn, conn->cwd_fsp, smb_dname, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NULL;
+	}
+
+	dir_hnd = OpenDir_fsp(mem_ctx, conn, fsp, mask, attr);
 	if (dir_hnd == NULL) {
 		return NULL;
 	}
+
+	/*
+	 * This overwrites the destructor set by smb_Dir_OpenDir_destructor(),
+	 * but smb_Dir_OpenDir_destructor() calls the OpenDir_fsp() destructor.
+	 */
 	talloc_set_destructor(dir_hnd, smb_Dir_OpenDir_destructor);
 	return dir_hnd;
 }
