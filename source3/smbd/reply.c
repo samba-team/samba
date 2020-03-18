@@ -6137,16 +6137,12 @@ static void do_smb1_close(struct tevent_req *req)
 	} else {
 		reply_nterror(smb1req, status);
 	}
-	if (!srv_send_smb(smb1req->xconn,
-			(char *)smb1req->outbuf,
-			true,
-			smb1req->seqnum+1,
-			IS_CONN_ENCRYPTED(smb1req->conn)||smb1req->encrypted,
-			NULL)) {
-		exit_server_cleanly("handle_aio_read_complete: srv_send_smb "
-				    "failed.");
-	}
-	TALLOC_FREE(smb1req);
+	/*
+	 * The following call is needed to push the
+	 * reply data back out the socket after async
+	 * return. Plus it frees smb1req.
+	 */
+	smb_request_done(smb1req);
 }
 
 /****************************************************************************
