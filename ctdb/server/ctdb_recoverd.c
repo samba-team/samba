@@ -255,6 +255,7 @@ struct ctdb_recoverd {
 	bool need_recovery;
 	uint32_t node_flags;
 	struct tevent_timer *send_election_te;
+	bool election_in_progress;
 	struct tevent_timer *election_timeout;
 	struct srvid_requests *reallocate_requests;
 	struct ctdb_op_state *takeover_run;
@@ -531,6 +532,7 @@ static void ctdb_election_timeout(struct tevent_context *ev,
 				  struct timeval t, void *p)
 {
 	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
+	rec->election_in_progress = false;
 	rec->election_timeout = NULL;
 	fast_start = false;
 
@@ -545,7 +547,7 @@ static void ctdb_election_timeout(struct tevent_context *ev,
 static void ctdb_wait_election(struct ctdb_recoverd *rec)
 {
 	struct ctdb_context *ctdb = rec->ctdb;
-	while (rec->election_timeout) {
+	while (rec->election_in_progress) {
 		tevent_loop_once(ctdb->ev);
 	}
 }
@@ -1135,7 +1137,7 @@ static int do_recovery(struct ctdb_recoverd *rec, TALLOC_CTX *mem_ctx)
 		return -1;
 	}
 
-	if (rec->election_timeout) {
+	if (rec->election_in_progress) {
 		/* an election is in progress */
 		DEBUG(DEBUG_ERR, ("do_recovery called while election in progress - try again later\n"));
 		goto fail;
@@ -1699,6 +1701,7 @@ static void election_handler(uint64_t srvid, TDB_DATA data, void *private_data)
 
 	/* we got an election packet - update the timeout for the election */
 	talloc_free(rec->election_timeout);
+	rec->election_in_progress = true;
 	rec->election_timeout = tevent_add_timer(
 			ctdb->ev, ctdb,
 			fast_start ?
@@ -1759,6 +1762,7 @@ static void force_election(struct ctdb_recoverd *rec)
 	}
 
 	talloc_free(rec->election_timeout);
+	rec->election_in_progress = true;
 	rec->election_timeout = tevent_add_timer(
 			ctdb->ev, ctdb,
 			fast_start ?
@@ -2413,7 +2417,7 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	/* ping the local daemon to tell it we are alive */
 	ctdb_ctrl_recd_ping(ctdb);
 
-	if (rec->election_timeout) {
+	if (rec->election_in_progress) {
 		/* an election is in progress */
 		return;
 	}
