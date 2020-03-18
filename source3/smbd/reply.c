@@ -6031,10 +6031,10 @@ void reply_close(struct smb_request *smb1req)
 		return;
 	}
 
-	DEBUG(3, ("Close %s fd=%d %s (numopen=%d)\n",
+	DBG_NOTICE("Close %s fd=%d %s (numopen=%d)\n",
 		  fsp->is_directory ? "directory" : "file",
 		  fsp->fh->fd, fsp_fnum_dbg(fsp),
-		  conn->num_files_open));
+		  conn->num_files_open);
 
 	if (!fsp->is_directory) {
 		time_t t;
@@ -6051,8 +6051,8 @@ void reply_close(struct smb_request *smb1req)
 
 		struct reply_close_state *state;
 
-		DEBUG(10, ("closing with aio %u requests pending\n",
-			   fsp->num_aio_requests));
+		DBG_DEBUG("closing with aio %u requests pending\n",
+			   fsp->num_aio_requests);
 
 		/*
 		 * Flag the file as close in progress.
@@ -6117,8 +6117,8 @@ static void do_smb1_close(struct tevent_req *req)
 	ret = tevent_wait_recv(req);
 	TALLOC_FREE(req);
 	if (ret != 0) {
-		DEBUG(10, ("tevent_wait_recv returned %s\n",
-			   strerror(ret)));
+		DBG_DEBUG("tevent_wait_recv returned %s\n",
+			   strerror(ret));
 		/*
 		 * Continue anyway, this should never happen
 		 */
