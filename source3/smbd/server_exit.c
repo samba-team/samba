@@ -26,6 +26,7 @@
 #include "smbd/smbd.h"
 #include "smbd/globals.h"
 #include "ntdomain.h"
+#include "librpc/rpc/dcesrv_core.h"
 #include "../librpc/gen_ndr/srv_dfs.h"
 #include "../librpc/gen_ndr/srv_dssetup.h"
 #include "../librpc/gen_ndr/srv_echo.h"
@@ -195,7 +196,9 @@ static void exit_server_common(enum server_exit_reason how,
 	}
 #endif
 
-	if (am_parent) {
+	if (am_parent && sconn != NULL) {
+		dcesrv_shutdown_registered_ep_servers(sconn->dce_ctx);
+
 		rpc_wkssvc_shutdown();
 		rpc_dssetup_shutdown();
 #ifdef DEVELOPER
