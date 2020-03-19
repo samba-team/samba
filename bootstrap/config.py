@@ -453,15 +453,6 @@ RPM_DISTS = {
             'liburing-devel': '', # not available yet, Add me back, once available!
         }
     },
-    'fedora30': {
-        'docker_image': 'fedora:30',
-        'vagrant_box': 'fedora/30-cloud-base',
-        'bootstrap': DNF_BOOTSTRAP,
-        'replace': {
-            'lsb-release': 'redhat-lsb',
-            'liburing-devel': '',   # not available
-        }
-    },
     'fedora31': {
         'docker_image': 'fedora:31',
         'vagrant_box': 'fedora/31-cloud-base',

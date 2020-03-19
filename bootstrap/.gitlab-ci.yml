@@ -99,9 +99,6 @@ debian10:
 fedora31:
   extends: .build_image_template
 
-fedora30:
-  extends: .build_image_template
-
 centos8:
   extends: .build_image_template
 
