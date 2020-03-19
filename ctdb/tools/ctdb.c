@@ -744,24 +744,36 @@ static void leader_handler(uint64_t srvid,
 	ctdb->leader_pnn = leader_pnn;
 }
 
+static bool get_leader_done(void *private_data)
+{
+	struct ctdb_context *ctdb = talloc_get_type_abort(
+		private_data, struct ctdb_context);
+
+	return ctdb->leader_pnn != CTDB_UNKNOWN_PNN;
+}
+
 static int get_leader(TALLOC_CTX *mem_ctx,
 			 struct ctdb_context *ctdb,
 			 uint32_t *leader)
 {
-	uint32_t pnn;
 	int ret;
 
-	ret = ctdb_ctrl_get_recmaster(mem_ctx,
-				      ctdb->ev,
-				      ctdb->client,
-				      ctdb->cmd_pnn,
-				      TIMEOUT(),
-				      &pnn);
-	if (ret != 0) {
+	ret = ctdb_client_wait_func_timeout(ctdb->ev,
+					    get_leader_done,
+					    ctdb,
+					    TIMEOUT());
+	/*
+	 * If ETIMEDOUT then assume there is no leader and succeed so
+	 * initial value of CTDB_UNKNOWN_PNN is returned
+	 */
+	if (ret == ETIMEDOUT) {
+		ret = 0;
+	} else if (ret != 0) {
+		fprintf(stderr, "Error getting recovery master\n");
 		return ret;
 	}
 
-	*leader = pnn;
+	*leader = ctdb->leader_pnn;
 	return 0;
 }
 
