@@ -31,13 +31,6 @@ Vagrant.configure("2") do |config|
         v.vm.provision :shell, path: "debian10/locale.sh"
     end
 
-    config.vm.define "fedora29" do |v|
-        v.vm.box = "fedora/29-cloud-base"
-        v.vm.hostname = "fedora29"
-        v.vm.provision :shell, path: "fedora29/bootstrap.sh"
-        v.vm.provision :shell, path: "fedora29/locale.sh"
-    end
-
     config.vm.define "fedora30" do |v|
         v.vm.box = "fedora/30-cloud-base"
         v.vm.hostname = "fedora30"
