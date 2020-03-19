@@ -463,6 +463,16 @@ RPM_DISTS = {
             'policycoreutils-python': 'python3-policycoreutils',
         }
     },
+    'fedora32': {
+        'docker_image': 'fedora:32',
+        'vagrant_box': 'fedora/32-cloud-base',
+        'bootstrap': DNF_BOOTSTRAP,
+        'replace': {
+            'lsb-release': 'redhat-lsb',
+            'libsemanage-python': 'python3-libsemanage',
+            'policycoreutils-python': 'python3-policycoreutils',
+        }
+    },
     'opensuse150': {
         'docker_image': 'opensuse/leap:15.0',
         'vagrant_box': 'opensuse/openSUSE-15.0-x86_64',
