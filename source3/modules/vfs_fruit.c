@@ -4933,11 +4933,12 @@ static uint64_t fruit_disk_free(vfs_handle_struct *handle,
 {
 	struct fruit_config_data *config = NULL;
 	struct fruit_disk_free_state state = {0};
-	DIR *d = NULL;
-	struct dirent *e = NULL;
+	struct smb_Dir *dir_hnd = NULL;
+	const char *dname = NULL;
+	char *talloced = NULL;
+	long offset = 0;
 	uint64_t dfree;
 	uint64_t dsize;
-	int ret;
 	bool ok;
 
 	SMB_VFS_HANDLE_GET_DATA(handle, config,
@@ -4954,26 +4955,24 @@ static uint64_t fruit_disk_free(vfs_handle_struct *handle,
 					      _dsize);
 	}
 
-	d = SMB_VFS_NEXT_OPENDIR(handle, smb_fname, NULL, 0);
-	if (d == NULL) {
+	dir_hnd = OpenDir(talloc_tos(), handle->conn, smb_fname, NULL, 0);
+	if (dir_hnd == NULL) {
 		return UINT64_MAX;
 	}
 
-	for (e = SMB_VFS_NEXT_READDIR(handle, d, NULL);
-	     e != NULL;
-	     e = SMB_VFS_NEXT_READDIR(handle, d, NULL))
+        while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
+	       != NULL)
 	{
-		ok = fruit_tmsize_do_dirent(handle, &state, e->d_name);
+		ok = fruit_tmsize_do_dirent(handle, &state, dname);
 		if (!ok) {
-			SMB_VFS_NEXT_CLOSEDIR(handle, d);
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(dir_hnd);
 			return UINT64_MAX;
 		}
+		TALLOC_FREE(talloced);
 	}
 
-	ret = SMB_VFS_NEXT_CLOSEDIR(handle, d);
-	if (ret != 0) {
-		return UINT64_MAX;
-	}
+	TALLOC_FREE(dir_hnd);
 
 	dsize = config->time_machine_max_size / 512;
 	dfree = dsize - (state.total_size / 512);
