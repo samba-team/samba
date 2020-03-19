@@ -475,8 +475,9 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 {
 	char *dirname;
 	struct smb_filename *dir_smb_fname = NULL;
-	DIR *dirhandle = NULL;
-	const char *dirent = NULL;
+	struct smb_Dir *dir_hnd = NULL;
+	const char *dname = NULL;
+	long offset = 0;
 	char *talloced = NULL;
 
 	dirname = stream_dir(handle, smb_fname_base, &smb_fname_base->st,
@@ -504,33 +505,31 @@ static NTSTATUS walk_streams(vfs_handle_struct *handle,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	dirhandle = SMB_VFS_NEXT_OPENDIR(handle, dir_smb_fname, NULL, 0);
-
+	dir_hnd = OpenDir(talloc_tos(), handle->conn, dir_smb_fname, NULL, 0);
 	TALLOC_FREE(dir_smb_fname);
-
-	if (dirhandle == NULL) {
+	if (dir_hnd == NULL) {
 		TALLOC_FREE(dirname);
 		return map_nt_error_from_unix(errno);
 	}
 
-	while ((dirent = vfs_readdirname(handle->conn, dirhandle, NULL,
-					 &talloced)) != NULL) {
-
-		if (ISDOT(dirent) || ISDOTDOT(dirent)) {
+        while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
+	       != NULL)
+	{
+		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			TALLOC_FREE(talloced);
 			continue;
 		}
 
-		DEBUG(10, ("walk_streams: dirent=%s\n", dirent));
+		DBG_DEBUG("dirent=%s\n", dname);
 
-		if (!fn(dirname, dirent, private_data)) {
+		if (!fn(dirname, dname, private_data)) {
 			TALLOC_FREE(talloced);
 			break;
 		}
 		TALLOC_FREE(talloced);
 	}
 
-	SMB_VFS_NEXT_CLOSEDIR(handle, dirhandle);
+	TALLOC_FREE(dir_hnd);
 
 	if (pdirname != NULL) {
 		*pdirname = dirname;
