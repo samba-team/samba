@@ -226,7 +226,10 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 					    struct shadow_copy_data *shadow_copy_data,
 					    bool labels)
 {
-	DIR *p = NULL;
+	struct smb_Dir *dir_hnd = NULL;
+	const char *dname = NULL;
+	char *talloced = NULL;
+	long offset = 0;
 	struct smb_filename *smb_fname = synthetic_smb_fname(talloc_tos(),
 						fsp->conn->connectpath,
 						NULL,
@@ -237,38 +240,38 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 		return -1;
 	}
 
-	p = SMB_VFS_NEXT_OPENDIR(handle,smb_fname,NULL,0);
-
+	dir_hnd = OpenDir(talloc_tos(), handle->conn, smb_fname, NULL, 0);
 	TALLOC_FREE(smb_fname);
+	if (dir_hnd == NULL) {
+		DBG_ERR("SMB_VFS_NEXT_OPENDIR() failed for [%s]\n",
+			fsp->conn->connectpath);
+		return -1;
+	}
 
 	shadow_copy_data->num_volumes = 0;
 	shadow_copy_data->labels = NULL;
 
-	if (!p) {
-		DEBUG(0,("shadow_copy_get_shadow_copy_data: SMB_VFS_NEXT_OPENDIR() failed for [%s]\n",fsp->conn->connectpath));
-		return -1;
-	}
-
 	while (True) {
 		SHADOW_COPY_LABEL *tlabels;
-		struct dirent *d;
 		int ret;
 
-		d = SMB_VFS_NEXT_READDIR(handle, p, NULL);
-		if (d == NULL) {
+		dname = ReadDirName(dir_hnd, &offset, NULL, &talloced);
+		if (dname == NULL) {
 			break;
 		}
 
 		/* */
-		if (!shadow_copy_match_name(d->d_name)) {
-			DEBUG(10,("shadow_copy_get_shadow_copy_data: ignore [%s]\n",d->d_name));
+		if (!shadow_copy_match_name(dname)) {
+			DBG_DEBUG("ignore [%s]\n", dname);
+			TALLOC_FREE(talloced);
 			continue;
 		}
 
-		DEBUG(7,("shadow_copy_get_shadow_copy_data: not ignore [%s]\n",d->d_name));
+		DBG_DEBUG("not ignore [%s]\n", dname);
 
 		if (!labels) {
 			shadow_copy_data->num_volumes++;
+			TALLOC_FREE(talloced);
 			continue;
 		}
 
@@ -277,24 +280,26 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 									(shadow_copy_data->num_volumes+1)*sizeof(SHADOW_COPY_LABEL));
 		if (tlabels == NULL) {
 			DEBUG(0,("shadow_copy_get_shadow_copy_data: Out of memory\n"));
-			SMB_VFS_NEXT_CLOSEDIR(handle,p);
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(dir_hnd);
 			return -1;
 		}
 
-		ret = strlcpy(tlabels[shadow_copy_data->num_volumes], d->d_name,
+		ret = strlcpy(tlabels[shadow_copy_data->num_volumes], dname,
 			      sizeof(tlabels[shadow_copy_data->num_volumes]));
 		if (ret != sizeof(tlabels[shadow_copy_data->num_volumes]) - 1) {
-			DEBUG(0,("shadow_copy_get_shadow_copy_data: malformed label %s\n",
-				 d->d_name));
-			SMB_VFS_NEXT_CLOSEDIR(handle, p);
+			DBG_ERR("malformed label %s\n", dname);
+			TALLOC_FREE(talloced);
+			TALLOC_FREE(dir_hnd);
 			return -1;
 		}
 		shadow_copy_data->num_volumes++;
 
 		shadow_copy_data->labels = tlabels;
+		TALLOC_FREE(talloced);
 	}
 
-	SMB_VFS_NEXT_CLOSEDIR(handle,p);
+	TALLOC_FREE(dir_hnd);
 	return 0;
 }
 
