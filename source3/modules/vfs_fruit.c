@@ -4845,7 +4845,7 @@ static bool fruit_get_num_bands(vfs_handle_struct *handle,
 
 static bool fruit_tmsize_do_dirent(vfs_handle_struct *handle,
 				   struct fruit_disk_free_state *state,
-				   struct dirent *e)
+				   const char *name)
 {
 	bool ok;
 	char *p = NULL;
@@ -4854,7 +4854,7 @@ static bool fruit_tmsize_do_dirent(vfs_handle_struct *handle,
 	size_t nbands;
 	off_t tm_size;
 
-	p = strstr(e->d_name, "sparsebundle");
+	p = strstr(name, "sparsebundle");
 	if (p == NULL) {
 		return true;
 	}
@@ -4863,27 +4863,27 @@ static bool fruit_tmsize_do_dirent(vfs_handle_struct *handle,
 		return true;
 	}
 
-	DBG_DEBUG("Processing sparsebundle [%s]\n", e->d_name);
+	DBG_DEBUG("Processing sparsebundle [%s]\n", name);
 
-	ok = fruit_get_bandsize(handle, e->d_name, &bandsize);
+	ok = fruit_get_bandsize(handle, name, &bandsize);
 	if (!ok) {
 		/*
 		 * Beware of race conditions: this may be an uninitialized
 		 * Info.plist that a client is just creating. We don't want let
 		 * this to trigger complete failure.
 		 */
-		DBG_ERR("Processing sparsebundle [%s] failed\n", e->d_name);
+		DBG_ERR("Processing sparsebundle [%s] failed\n", name);
 		return true;
 	}
 
-	ok = fruit_get_num_bands(handle, e->d_name, &nbands);
+	ok = fruit_get_num_bands(handle, name, &nbands);
 	if (!ok) {
 		/*
 		 * Beware of race conditions: this may be a backup sparsebundle
 		 * in an early stage lacking a bands subdirectory. We don't want
 		 * let this to trigger complete failure.
 		 */
-		DBG_ERR("Processing sparsebundle [%s] failed\n", e->d_name);
+		DBG_ERR("Processing sparsebundle [%s] failed\n", name);
 		return true;
 	}
 
@@ -4909,7 +4909,7 @@ static bool fruit_tmsize_do_dirent(vfs_handle_struct *handle,
 	state->total_size += tm_size;
 
 	DBG_DEBUG("[%s] tm_size [%jd] total_size [%jd]\n",
-		  e->d_name, (intmax_t)tm_size, (intmax_t)state->total_size);
+		  name, (intmax_t)tm_size, (intmax_t)state->total_size);
 
 	return true;
 }
@@ -4963,7 +4963,7 @@ static uint64_t fruit_disk_free(vfs_handle_struct *handle,
 	     e != NULL;
 	     e = SMB_VFS_NEXT_READDIR(handle, d, NULL))
 	{
-		ok = fruit_tmsize_do_dirent(handle, &state, e);
+		ok = fruit_tmsize_do_dirent(handle, &state, e->d_name);
 		if (!ok) {
 			SMB_VFS_NEXT_CLOSEDIR(handle, d);
 			return UINT64_MAX;
