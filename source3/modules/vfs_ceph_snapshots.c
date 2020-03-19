@@ -526,8 +526,10 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 {
 	int ret;
 	NTSTATUS status;
-	DIR *d = NULL;
-	struct dirent *e = NULL;
+	struct smb_Dir *dir_hnd = NULL;
+	const char *dname = NULL;
+	char *talloced = NULL;
+	long offset = 0;
 	struct smb_filename *snaps_dname = NULL;
 	const char *snapdir = lp_parm_const_string(SNUM(handle->conn),
 						   "ceph", "snapdir",
@@ -584,39 +586,40 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 	DBG_DEBUG("enumerating shadow copy dir at %s\n",
 		  snaps_dname->base_name);
 
-	d = SMB_VFS_NEXT_OPENDIR(handle, snaps_dname, NULL, 0);
-	if (d == NULL) {
+	dir_hnd = OpenDir(tmp_ctx, handle->conn, snaps_dname, NULL, 0);
+	if (dir_hnd == NULL) {
 		ret = -errno;
 		goto err_out;
 	}
 
-	for (e = SMB_VFS_NEXT_READDIR(handle, d, NULL);
-	     e != NULL;
-	     e = SMB_VFS_NEXT_READDIR(handle, d, NULL)) {
+        while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
+	       != NULL)
+	{
 		struct smb_filename *smb_fname;
 		time_t snap_secs;
 
-		if (ISDOT(e->d_name) || ISDOTDOT(e->d_name)) {
+		if (ISDOT(dname) || ISDOTDOT(dname)) {
+			TALLOC_FREE(talloced);
 			continue;
 		}
 
 		ret = snprintf(_converted_buf, buflen, "%s/%s",
-			       snaps_dname->base_name, e->d_name);
+			       snaps_dname->base_name, dname);
 		if (ret >= buflen) {
 			ret = -EINVAL;
-			goto err_closedir;
+			goto err_out;
 		}
 
 		smb_fname = synthetic_smb_fname(tmp_ctx, _converted_buf,
 						NULL, NULL, 0);
 		if (smb_fname == NULL) {
 			ret = -ENOMEM;
-			goto err_closedir;
+			goto err_out;
 		}
 
 		ret = ceph_snap_get_btime(handle, smb_fname, &snap_secs);
 		if (ret < 0) {
-			goto err_closedir;
+			goto err_out;
 		}
 
 		/*
@@ -627,14 +630,15 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 		}
 		DBG_DEBUG("[connectpath %s] %s@%lld no match for snap %s@%lld\n",
 			  handle->conn->connectpath, name, (long long)timestamp,
-			  e->d_name, (long long)snap_secs);
+			  dname, (long long)snap_secs);
+		TALLOC_FREE(talloced);
 	}
 
-	if (e == NULL) {
+	if (dname == NULL) {
 		DBG_INFO("[connectpath %s] failed to find %s @ time %lld\n",
 			 handle->conn->connectpath, name, (long long)timestamp);
 		ret = -ENOENT;
-		goto err_closedir;
+		goto err_out;
 	}
 
 	/* found, _converted_buf already contains path of interest */
@@ -642,17 +646,12 @@ static int ceph_snap_gmt_convert_dir(struct vfs_handle_struct *handle,
 		  handle->conn->connectpath, name, (long long)timestamp,
 		  _converted_buf);
 
-	ret = SMB_VFS_NEXT_CLOSEDIR(handle, d);
-	if (ret != 0) {
-		ret = -errno;
-		goto err_out;
-	}
+	TALLOC_FREE(talloced);
 	talloc_free(tmp_ctx);
 	return 0;
 
-err_closedir:
-	SMB_VFS_NEXT_CLOSEDIR(handle, d);
 err_out:
+	TALLOC_FREE(talloced);
 	talloc_free(tmp_ctx);
 	return ret;
 }
