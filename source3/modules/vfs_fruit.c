@@ -4793,10 +4793,11 @@ static bool fruit_get_num_bands(vfs_handle_struct *handle,
 {
 	char *path = NULL;
 	struct smb_filename *bands_dir = NULL;
-	DIR *d = NULL;
-	struct dirent *e = NULL;
+	struct smb_Dir *dir_hnd = NULL;
+	const char *dname = NULL;
+	char *talloced = NULL;
+	long offset = 0;
 	size_t nbands;
-	int ret;
 
 	path = talloc_asprintf(talloc_tos(),
 			       "%s/%s/bands",
@@ -4816,29 +4817,23 @@ static bool fruit_get_num_bands(vfs_handle_struct *handle,
 		return false;
 	}
 
-	d = SMB_VFS_NEXT_OPENDIR(handle, bands_dir, NULL, 0);
-	if (d == NULL) {
+	dir_hnd = OpenDir(talloc_tos(), handle->conn, bands_dir, NULL, 0);
+	if (dir_hnd == NULL) {
 		TALLOC_FREE(bands_dir);
 		return false;
 	}
 
 	nbands = 0;
 
-	for (e = SMB_VFS_NEXT_READDIR(handle, d, NULL);
-	     e != NULL;
-	     e = SMB_VFS_NEXT_READDIR(handle, d, NULL))
+        while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
+	       != NULL)
 	{
-		if (ISDOT(e->d_name) || ISDOTDOT(e->d_name)) {
+		if (ISDOT(dname) || ISDOTDOT(dname)) {
 			continue;
 		}
 		nbands++;
 	}
-
-	ret = SMB_VFS_NEXT_CLOSEDIR(handle, d);
-	if (ret != 0) {
-		TALLOC_FREE(bands_dir);
-		return false;
-	}
+	TALLOC_FREE(dir_hnd);
 
 	DBG_DEBUG("%zu bands in [%s]\n", nbands, smb_fname_str_dbg(bands_dir));
 
