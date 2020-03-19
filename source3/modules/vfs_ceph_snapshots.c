@@ -176,10 +176,13 @@ static int ceph_snap_enum_snapdir(struct vfs_handle_struct *handle,
 				  bool labels,
 				  struct shadow_copy_data *sc_data)
 {
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct smb_Dir *dir_hnd = NULL;
+	const char *dname = NULL;
+	char *talloced = NULL;
+	long offset = 0;
 	NTSTATUS status;
 	int ret;
-	DIR *d = NULL;
-	struct dirent *e = NULL;
 	uint32_t slots;
 
 	status = smbd_check_access_rights(handle->conn,
@@ -203,8 +206,9 @@ static int ceph_snap_enum_snapdir(struct vfs_handle_struct *handle,
 	 * place we need it (dir=.snap), so we need to dynamically determine it
 	 * via readdir.
 	 */
-	d = SMB_VFS_NEXT_OPENDIR(handle, snaps_dname, NULL, 0);
-	if (d == NULL) {
+
+	dir_hnd = OpenDir(frame, handle->conn, snaps_dname, NULL, 0);
+	if (dir_hnd == NULL) {
 		ret = -errno;
 		goto err_out;
 	}
@@ -213,14 +217,16 @@ static int ceph_snap_enum_snapdir(struct vfs_handle_struct *handle,
 	sc_data->num_volumes = 0;
 	sc_data->labels = NULL;
 
-	for (e = SMB_VFS_NEXT_READDIR(handle, d, NULL);
-	     e != NULL;
-	     e = SMB_VFS_NEXT_READDIR(handle, d, NULL)) {
-		if (ISDOT(e->d_name) || ISDOTDOT(e->d_name)) {
+        while ((dname = ReadDirName(dir_hnd, &offset, NULL, &talloced))
+	       != NULL)
+	{
+		if (ISDOT(dname) || ISDOTDOT(dname)) {
+			TALLOC_FREE(talloced);
 			continue;
 		}
 		sc_data->num_volumes++;
 		if (!labels) {
+			TALLOC_FREE(talloced);
 			continue;
 		}
 		if (sc_data->num_volumes > slots) {
@@ -231,6 +237,7 @@ static int ceph_snap_enum_snapdir(struct vfs_handle_struct *handle,
 							 SHADOW_COPY_LABEL,
 							 new_slot_count);
 			if (sc_data->labels == NULL) {
+				TALLOC_FREE(talloced);
 				ret = -ENOMEM;
 				goto err_closedir;
 			}
@@ -242,28 +249,25 @@ static int ceph_snap_enum_snapdir(struct vfs_handle_struct *handle,
 			slots = new_slot_count;
 		}
 		DBG_DEBUG("filling shadow copy label for %s/%s\n",
-			  snaps_dname->base_name, e->d_name);
+			  snaps_dname->base_name, dname);
 		ret = ceph_snap_fill_label(handle, snaps_dname,
-				snaps_dname->base_name, e->d_name,
+				snaps_dname->base_name, dname,
 				sc_data->labels[sc_data->num_volumes - 1]);
 		if (ret < 0) {
+			TALLOC_FREE(talloced);
 			goto err_closedir;
 		}
-	}
-
-	ret = SMB_VFS_NEXT_CLOSEDIR(handle, d);
-	if (ret != 0) {
-		ret = -errno;
-		goto err_out;
+		TALLOC_FREE(talloced);
 	}
 
 	DBG_DEBUG("%s shadow copy enumeration found %d labels \n",
 		  snaps_dname->base_name, sc_data->num_volumes);
 
+	TALLOC_FREE(frame);
 	return 0;
 
 err_closedir:
-	SMB_VFS_NEXT_CLOSEDIR(handle, d);
+	TALLOC_FREE(frame);
 err_out:
 	TALLOC_FREE(sc_data->labels);
 	return ret;
