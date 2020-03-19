@@ -34,7 +34,7 @@
 #include "lib/afs/afs_funcs.h"
 #include "lib/util_path.h"
 
-static bool canonicalize_connect_path(connection_struct *conn)
+bool canonicalize_connect_path(connection_struct *conn)
 {
 	bool ret;
 	struct smb_filename con_fname = { .base_name = conn->connectpath };
