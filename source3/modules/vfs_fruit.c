@@ -4788,7 +4788,7 @@ struct fruit_disk_free_state {
 };
 
 static bool fruit_get_num_bands(vfs_handle_struct *handle,
-				char *bundle,
+				const char *bundle,
 				size_t *_nbands)
 {
 	char *path = NULL;
