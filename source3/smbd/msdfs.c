@@ -357,6 +357,14 @@ static NTSTATUS create_conn_struct_as_root(TALLOC_CTX *ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
+	if (!lp_widelinks(snum)) {
+		if (!canonicalize_connect_path(conn)) {
+			DBG_ERR("Failed to canonicalize sharepath\n");
+			conn_free(conn);
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
+
 	talloc_free(conn->origpath);
 	conn->origpath = talloc_strdup(conn, conn->connectpath);
 	if (conn->origpath == NULL) {
