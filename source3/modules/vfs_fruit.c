@@ -1975,68 +1975,6 @@ static int fruit_unlink_rsrc(vfs_handle_struct *handle,
 	return rc;
 }
 
-static int fruit_unlink_internal(vfs_handle_struct *handle,
-			struct files_struct *dirfsp,
-			const struct smb_filename *smb_fname)
-{
-	int rc;
-	struct fruit_config_data *config = NULL;
-	struct smb_filename *rsrc_smb_fname = NULL;
-
-	SMB_VFS_HANDLE_GET_DATA(handle, config,
-				struct fruit_config_data, return -1);
-
-	if (is_afpinfo_stream(smb_fname->stream_name)) {
-		return fruit_unlink_meta(handle,
-				dirfsp,
-				smb_fname);
-	} else if (is_afpresource_stream(smb_fname->stream_name)) {
-		return fruit_unlink_rsrc(handle,
-				dirfsp,
-				smb_fname,
-				false);
-	} else if (is_named_stream(smb_fname)) {
-		return SMB_VFS_NEXT_UNLINKAT(handle,
-				dirfsp,
-				smb_fname,
-				0);
-	} else if (is_adouble_file(smb_fname->base_name)) {
-		return SMB_VFS_NEXT_UNLINKAT(handle,
-				dirfsp,
-				smb_fname,
-				0);
-	}
-
-	/*
-	 * A request to delete the base file. Because 0 byte resource
-	 * fork streams are not listed by fruit_streaminfo,
-	 * delete_all_streams() can't remove 0 byte resource fork
-	 * streams, so we have to cleanup this here.
-	 */
-	rsrc_smb_fname = synthetic_smb_fname(talloc_tos(),
-					     smb_fname->base_name,
-					     AFPRESOURCE_STREAM_NAME,
-					     NULL,
-					     smb_fname->flags);
-	if (rsrc_smb_fname == NULL) {
-		return -1;
-	}
-
-	rc = fruit_unlink_rsrc(handle, dirfsp, rsrc_smb_fname, true);
-	if ((rc != 0) && (errno != ENOENT)) {
-		DBG_ERR("Forced unlink of [%s] failed [%s]\n",
-			smb_fname_str_dbg(rsrc_smb_fname), strerror(errno));
-		TALLOC_FREE(rsrc_smb_fname);
-		return -1;
-	}
-	TALLOC_FREE(rsrc_smb_fname);
-
-	return SMB_VFS_NEXT_UNLINKAT(handle,
-			dirfsp,
-			smb_fname,
-			0);
-}
-
 static int fruit_chmod(vfs_handle_struct *handle,
 		       const struct smb_filename *smb_fname,
 		       mode_t mode)
@@ -2086,6 +2024,10 @@ static int fruit_unlinkat(vfs_handle_struct *handle,
 			const struct smb_filename *smb_fname,
 			int flags)
 {
+	struct fruit_config_data *config = NULL;
+	struct smb_filename *rsrc_smb_fname = NULL;
+	int ret;
+
 	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
 
 	if (flags & AT_REMOVEDIR) {
@@ -2094,9 +2036,59 @@ static int fruit_unlinkat(vfs_handle_struct *handle,
 					     smb_fname,
 					     AT_REMOVEDIR);
 	}
-	return fruit_unlink_internal(handle,
-				     dirfsp,
-				     smb_fname);
+
+	SMB_VFS_HANDLE_GET_DATA(handle, config,
+				struct fruit_config_data, return -1);
+
+	if (is_afpinfo_stream(smb_fname->stream_name)) {
+		return fruit_unlink_meta(handle,
+				dirfsp,
+				smb_fname);
+	} else if (is_afpresource_stream(smb_fname->stream_name)) {
+		return fruit_unlink_rsrc(handle,
+				dirfsp,
+				smb_fname,
+				false);
+	} else if (is_named_stream(smb_fname)) {
+		return SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				0);
+	} else if (is_adouble_file(smb_fname->base_name)) {
+		return SMB_VFS_NEXT_UNLINKAT(handle,
+				dirfsp,
+				smb_fname,
+				0);
+	}
+
+	/*
+	 * A request to delete the base file. Because 0 byte resource
+	 * fork streams are not listed by fruit_streaminfo,
+	 * delete_all_streams() can't remove 0 byte resource fork
+	 * streams, so we have to cleanup this here.
+	 */
+	rsrc_smb_fname = synthetic_smb_fname(talloc_tos(),
+					     smb_fname->base_name,
+					     AFPRESOURCE_STREAM_NAME,
+					     NULL,
+					     smb_fname->flags);
+	if (rsrc_smb_fname == NULL) {
+		return -1;
+	}
+
+	ret = fruit_unlink_rsrc(handle, dirfsp, rsrc_smb_fname, true);
+	if ((ret != 0) && (errno != ENOENT)) {
+		DBG_ERR("Forced unlink of [%s] failed [%s]\n",
+			smb_fname_str_dbg(rsrc_smb_fname), strerror(errno));
+		TALLOC_FREE(rsrc_smb_fname);
+		return -1;
+	}
+	TALLOC_FREE(rsrc_smb_fname);
+
+	return SMB_VFS_NEXT_UNLINKAT(handle,
+			dirfsp,
+			smb_fname,
+			0);
 }
 
 static ssize_t fruit_pread_meta_stream(vfs_handle_struct *handle,
