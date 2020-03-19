@@ -744,6 +744,27 @@ static void leader_handler(uint64_t srvid,
 	ctdb->leader_pnn = leader_pnn;
 }
 
+static int get_leader(TALLOC_CTX *mem_ctx,
+			 struct ctdb_context *ctdb,
+			 uint32_t *leader)
+{
+	uint32_t pnn;
+	int ret;
+
+	ret = ctdb_ctrl_get_recmaster(mem_ctx,
+				      ctdb->ev,
+				      ctdb->client,
+				      ctdb->cmd_pnn,
+				      TIMEOUT(),
+				      &pnn);
+	if (ret != 0) {
+		return ret;
+	}
+
+	*leader = pnn;
+	return 0;
+}
+
 /*
  * Command Functions
  */
@@ -931,8 +952,7 @@ static int control_status(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 		return ret;
 	}
 
-	ret = ctdb_ctrl_get_recmaster(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), &recmaster);
+	ret = get_leader(mem_ctx, ctdb, &recmaster);
 	if (ret != 0) {
 		return ret;
 	}
@@ -2897,8 +2917,7 @@ static int get_generation(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	int ret;
 
 again:
-	ret = ctdb_ctrl_get_recmaster(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), &recmaster);
+	ret = get_leader(mem_ctx, ctdb, &recmaster);
 	if (ret != 0) {
 		fprintf(stderr, "Failed to find recovery master\n");
 		return ret;
@@ -4561,8 +4580,7 @@ static int control_recmaster(TALLOC_CTX *mem_ctx, struct ctdb_context *ctdb,
 	uint32_t recmaster;
 	int ret;
 
-	ret = ctdb_ctrl_get_recmaster(mem_ctx, ctdb->ev, ctdb->client,
-				      ctdb->cmd_pnn, TIMEOUT(), &recmaster);
+	ret = get_leader(mem_ctx, ctdb, &recmaster);
 	if (ret != 0) {
 		return ret;
 	}
