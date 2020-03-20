@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+#
 # Copyright (C) 2013 by the Massachusetts Institute of Technology.
 # All rights reserved.
 #
@@ -40,14 +42,26 @@
 #   - Cipher state only needed for kcmd suite
 #   - Nonstandard enctypes and cksumtypes like des-hmac-sha1
 
+import sys
+import os
+
+sys.path.insert(0, "bin/python")
+os.environ["PYTHONUNBUFFERED"] = "1"
+
 from math import gcd
 from functools import reduce
 from struct import pack, unpack
-from Crypto.Cipher import AES, DES3, ARC4
-from Crypto.Hash import HMAC, MD4, MD5, SHA
-from Crypto.Protocol.KDF import PBKDF2
-from Crypto.Random import get_random_bytes
-
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hmac
+from cryptography.hazmat.primitives.ciphers import algorithms as ciphers
+from cryptography.hazmat.primitives.ciphers import modes
+from cryptography.hazmat.primitives.ciphers.base import Cipher
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from samba.tests import TestCase
+from samba.credentials import Credentials
+from samba import generate_random_bytes as get_random_bytes
+from samba.compat import get_string, get_bytes
 
 class Enctype(object):
     DES_CRC = 1
@@ -97,6 +111,15 @@ def _mac_equal(mac1, mac2):
         res |= x ^ y
     return res == 0
 
+def SIMPLE_HASH(string, algo_cls):
+    hash_ctx = hashes.Hash(algo_cls(), default_backend())
+    hash_ctx.update(string)
+    return hash_ctx.finalize()
+
+def HMAC_HASH(key, string, algo_cls):
+    hmac_ctx = hmac.HMAC(key, algo_cls(), default_backend())
+    hmac_ctx.update(string)
+    return hmac_ctx.finalize()
 
 def _nfold(str, nbytes):
     # Convert str to a string of length nbytes using the RFC 3961 nfold
@@ -199,7 +222,7 @@ class _SimplifiedEnctype(_EnctypeProfile):
         if confounder is None:
             confounder = get_random_bytes(cls.blocksize)
         basic_plaintext = confounder + _zeropad(plaintext, cls.padsize)
-        hmac = HMAC.new(ki.contents, basic_plaintext, cls.hashmod).digest()
+        hmac = HMAC_HASH(ki.contents, basic_plaintext, cls.hashalgo)
         return cls.basic_encrypt(ke, basic_plaintext) + hmac[:cls.macsize]
 
     @classmethod
@@ -212,7 +235,7 @@ class _SimplifiedEnctype(_EnctypeProfile):
         if len(basic_ctext) % cls.padsize != 0:
             raise ValueError('ciphertext does not meet padding requirement')
         basic_plaintext = cls.basic_decrypt(ke, basic_ctext)
-        hmac = HMAC.new(ki.contents, basic_plaintext, cls.hashmod).digest()
+        hmac = HMAC_HASH(ki.contents, basic_plaintext, cls.hashalgo)
         expmac = hmac[:cls.macsize]
         if not _mac_equal(mac, expmac):
             raise InvalidChecksum('ciphertext integrity failure')
@@ -223,7 +246,7 @@ class _SimplifiedEnctype(_EnctypeProfile):
     def prf(cls, key, string):
         # Hash the input.  RFC 3961 says to truncate to the padding
         # size, but implementations truncate to the block size.
-        hashval = cls.hashmod.new(string).digest()
+        hashval = SIMPLE_HASH(string, cls.hashalgo)
         truncated = hashval[:-(len(hashval) % cls.blocksize)]
         # Encrypt the hash with a derived key.
         kp = cls.derive(key, b'prf')
@@ -237,7 +260,7 @@ class _DES3CBC(_SimplifiedEnctype):
     blocksize = 8
     padsize = 8
     macsize = 20
-    hashmod = SHA
+    hashalgo = hashes.SHA1
 
     @classmethod
     def random_to_key(cls, seed):
@@ -272,14 +295,20 @@ class _DES3CBC(_SimplifiedEnctype):
     @classmethod
     def basic_encrypt(cls, key, plaintext):
         assert len(plaintext) % 8 == 0
-        des3 = DES3.new(key.contents, AES.MODE_CBC, bytes(8))
-        return des3.encrypt(plaintext)
+        algo = ciphers.TripleDES(key.contents)
+        cbc = modes.CBC(bytes(8))
+        encryptor = Cipher(algo, cbc, default_backend()).encryptor()
+        ciphertext = encryptor.update(plaintext)
+        return ciphertext
 
     @classmethod
     def basic_decrypt(cls, key, ciphertext):
         assert len(ciphertext) % 8 == 0
-        des3 = DES3.new(key.contents, AES.MODE_CBC, bytes(8))
-        return des3.decrypt(ciphertext)
+        algo = ciphers.TripleDES(key.contents)
+        cbc = modes.CBC(bytes(8))
+        decryptor = Cipher(algo, cbc, default_backend()).decryptor()
+        plaintext = decryptor.update(ciphertext)
+        return plaintext
 
 
 class _AESEnctype(_SimplifiedEnctype):
@@ -287,21 +316,35 @@ class _AESEnctype(_SimplifiedEnctype):
     blocksize = 16
     padsize = 1
     macsize = 12
-    hashmod = SHA
+    hashalgo = hashes.SHA1
 
     @classmethod
     def string_to_key(cls, string, salt, params):
         (iterations,) = unpack('>L', params or b'\x00\x00\x10\x00')
-        prf = lambda p, s: HMAC.new(p, s, SHA).digest()
-        seed = PBKDF2(string, salt, cls.seedsize, iterations, prf)
+        pwbytes = get_bytes(string)
+        kdf = PBKDF2HMAC(algorithm=hashes.SHA1(),
+                         length=cls.seedsize,
+                         salt=salt,
+                         iterations=iterations,
+                         backend=default_backend())
+        seed = kdf.derive(pwbytes)
         tkey = cls.random_to_key(seed)
         return cls.derive(tkey, b'kerberos')
 
     @classmethod
     def basic_encrypt(cls, key, plaintext):
         assert len(plaintext) >= 16
-        aes = AES.new(key.contents, AES.MODE_CBC, bytes(16))
-        ctext = aes.encrypt(_zeropad(plaintext, 16))
+
+        algo = ciphers.AES(key.contents)
+        cbc = modes.CBC(bytes(16))
+        aes_ctx = Cipher(algo, cbc, default_backend())
+
+        def aes_encrypt(plaintext):
+            encryptor = aes_ctx.encryptor()
+            ciphertext = encryptor.update(plaintext)
+            return ciphertext
+
+        ctext = aes_encrypt(_zeropad(plaintext, 16))
         if len(plaintext) > 16:
             # Swap the last two ciphertext blocks and truncate the
             # final block to match the plaintext length.
@@ -312,9 +355,18 @@ class _AESEnctype(_SimplifiedEnctype):
     @classmethod
     def basic_decrypt(cls, key, ciphertext):
         assert len(ciphertext) >= 16
-        aes = AES.new(key.contents, AES.MODE_ECB)
+
+        algo = ciphers.AES(key.contents)
+        cbc = modes.CBC(bytes(16))
+        aes_ctx = Cipher(algo, cbc, default_backend())
+
+        def aes_decrypt(ciphertext):
+            decryptor = aes_ctx.decryptor()
+            plaintext = decryptor.update(ciphertext)
+            return plaintext
+
         if len(ciphertext) == 16:
-            return aes.decrypt(ciphertext)
+            return aes_decrypt(ciphertext)
         # Split the ciphertext into blocks.  The last block may be partial.
         cblocks = [ciphertext[p:p+16] for p in range(0, len(ciphertext), 16)]
         lastlen = len(cblocks[-1])
@@ -322,19 +374,19 @@ class _AESEnctype(_SimplifiedEnctype):
         prev_cblock = bytes(16)
         plaintext = b''
         for b in cblocks[:-2]:
-            plaintext += _xorbytes(aes.decrypt(b), prev_cblock)
+            plaintext += _xorbytes(aes_decrypt(b), prev_cblock)
             prev_cblock = b
         # Decrypt the second-to-last cipher block.  The left side of
         # the decrypted block will be the final block of plaintext
         # xor'd with the final partial cipher block; the right side
         # will be the omitted bytes of ciphertext from the final
         # block.
-        b = aes.decrypt(cblocks[-2])
+        b = aes_decrypt(cblocks[-2])
         lastplaintext =_xorbytes(b[:lastlen], cblocks[-1])
         omitted = b[lastlen:]
         # Decrypt the final cipher block plus the omitted bytes to get
         # the second-to-last plaintext block.
-        plaintext += _xorbytes(aes.decrypt(cblocks[-1] + omitted), prev_cblock)
+        plaintext += _xorbytes(aes_decrypt(cblocks[-1] + omitted), prev_cblock)
         return plaintext + lastplaintext
 
 
@@ -365,32 +417,43 @@ class _RC4(_EnctypeProfile):
 
     @classmethod
     def string_to_key(cls, string, salt, params):
-        utf16string = string.decode('UTF-8').encode('UTF-16LE')
-        return Key(cls.enctype, MD4.new(utf16string).digest())
+        utf8string = get_string(string)
+        tmp = Credentials()
+        tmp.set_anonymous()
+        tmp.set_password(utf8string)
+        nthash = tmp.get_nt_hash()
+        return Key(cls.enctype, nthash)
 
     @classmethod
     def encrypt(cls, key, keyusage, plaintext, confounder):
         if confounder is None:
             confounder = get_random_bytes(8)
-        ki = HMAC.new(key.contents, cls.usage_str(keyusage), MD5).digest()
-        cksum = HMAC.new(ki, confounder + plaintext, MD5).digest()
-        ke = HMAC.new(ki, cksum, MD5).digest()
-        return cksum + ARC4.new(ke).encrypt(confounder + plaintext)
+        ki = HMAC_HASH(key.contents, cls.usage_str(keyusage), hashes.MD5)
+        cksum = HMAC_HASH(ki, confounder + plaintext, hashes.MD5)
+        ke = HMAC_HASH(ki, cksum, hashes.MD5)
+
+        encryptor = Cipher(ciphers.ARC4(ke), None, default_backend()).encryptor()
+        ctext = encryptor.update(confounder + plaintext)
+
+        return cksum + ctext
 
     @classmethod
     def decrypt(cls, key, keyusage, ciphertext):
         if len(ciphertext) < 24:
             raise ValueError('ciphertext too short')
         cksum, basic_ctext = ciphertext[:16], ciphertext[16:]
-        ki = HMAC.new(key.contents, cls.usage_str(keyusage), MD5).digest()
-        ke = HMAC.new(ki, cksum, MD5).digest()
-        basic_plaintext = ARC4.new(ke).decrypt(basic_ctext)
-        exp_cksum = HMAC.new(ki, basic_plaintext, MD5).digest()
+        ki = HMAC_HASH(key.contents, cls.usage_str(keyusage), hashes.MD5)
+        ke = HMAC_HASH(ki, cksum, hashes.MD5)
+
+        decryptor = Cipher(ciphers.ARC4(ke), None, default_backend()).decryptor()
+        basic_plaintext = decryptor.update(basic_ctext)
+
+        exp_cksum = HMAC_HASH(ki, basic_plaintext, hashes.MD5)
         ok = _mac_equal(cksum, exp_cksum)
         if not ok and keyusage == 9:
             # Try again with usage 8, due to RFC 4757 errata.
-            ki = HMAC.new(key.contents, pack('<i', 8), MD5).digest()
-            exp_cksum = HMAC.new(ki, basic_plaintext, MD5).digest()
+            ki = HMAC_HASH(key.contents, pack('<i', 8), hashes.MD5)
+            exp_cksum = HMAC_HASH(ki, basic_plaintext, hashes.MD5)
             ok = _mac_equal(cksum, exp_cksum)
         if not ok:
             raise InvalidChecksum('ciphertext integrity failure')
@@ -399,7 +462,7 @@ class _RC4(_EnctypeProfile):
 
     @classmethod
     def prf(cls, key, string):
-        return HMAC.new(key.contents, string, SHA).digest()
+        return HMAC_HASH(key.contents, string, hashes.SHA1)
 
 
 class _ChecksumProfile(object):
@@ -424,7 +487,7 @@ class _SimplifiedChecksum(_ChecksumProfile):
     @classmethod
     def checksum(cls, key, keyusage, text):
         kc = cls.enc.derive(key, pack('>iB', keyusage, 0x99))
-        hmac = HMAC.new(kc.contents, text, cls.enc.hashmod).digest()
+        hmac = HMAC_HASH(kc.contents, text, cls.enc.hashalgo)
         return hmac[:cls.macsize]
 
     @classmethod
@@ -452,9 +515,9 @@ class _SHA1DES3(_SimplifiedChecksum):
 class _HMACMD5(_ChecksumProfile):
     @classmethod
     def checksum(cls, key, keyusage, text):
-        ksign = HMAC.new(key.contents, b'signaturekey\0', MD5).digest()
-        md5hash = MD5.new(_RC4.usage_str(keyusage) + text).digest()
-        return HMAC.new(ksign, md5hash, MD5).digest()
+        ksign = HMAC_HASH(key.contents, b'signaturekey\0', hashes.MD5)
+        md5hash = SIMPLE_HASH(_RC4.usage_str(keyusage) + text, hashes.MD5)
+        return HMAC_HASH(ksign, md5hash, hashes.MD5)
 
     @classmethod
     def verify(cls, key, keyusage, text, cksum):
@@ -564,150 +627,173 @@ def cf2(enctype, key1, key2, pepper1, pepper2):
     return e.random_to_key(_xorbytes(prfplus(key1, pepper1, e.seedsize),
                                      prfplus(key2, pepper2, e.seedsize)))
 
+def h(hexstr):
+    return bytes.fromhex(hexstr)
 
-if __name__ == '__main__':
-    def h(hexstr):
-        return bytes.fromhex(hexstr)
+class KcrytoTest(TestCase):
+    """kcrypto Test case."""
 
-    # AES128 encrypt and decrypt
-    kb = h('9062430C8CDA3388922E6D6A509F5B7A')
-    conf = h('94B491F481485B9A0678CD3C4EA386AD')
-    keyusage = 2
-    plain = b'9 bytesss'
-    ctxt = h('68FB9679601F45C78857B2BF820FD6E53ECA8D42FD4B1D7024A09205ABB7CD2E'
-             'C26C355D2F')
-    k = Key(Enctype.AES128, kb)
-    assert(encrypt(k, keyusage, plain, conf) == ctxt)
-    assert(decrypt(k, keyusage, ctxt) == plain)
+    def test_aes128_crypr(self):
+        # AES128 encrypt and decrypt
+        kb = h('9062430C8CDA3388922E6D6A509F5B7A')
+        conf = h('94B491F481485B9A0678CD3C4EA386AD')
+        keyusage = 2
+        plain = b'9 bytesss'
+        ctxt = h('68FB9679601F45C78857B2BF820FD6E53ECA8D42FD4B1D7024A09205ABB7CD2E'
+                 'C26C355D2F')
+        k = Key(Enctype.AES128, kb)
+        self.assertEqual(encrypt(k, keyusage, plain, conf), ctxt)
+        self.assertEqual(decrypt(k, keyusage, ctxt), plain)
 
-    # AES256 encrypt and decrypt
-    kb = h('F1C795E9248A09338D82C3F8D5B567040B0110736845041347235B1404231398')
-    conf = h('E45CA518B42E266AD98E165E706FFB60')
-    keyusage = 4
-    plain = b'30 bytes bytes bytes bytes byt'
-    ctxt = h('D1137A4D634CFECE924DBC3BF6790648BD5CFF7DE0E7B99460211D0DAEF3D79A'
-             '295C688858F3B34B9CBD6EEBAE81DAF6B734D4D498B6714F1C1D')
-    k = Key(Enctype.AES256, kb)
-    assert(encrypt(k, keyusage, plain, conf) == ctxt)
-    assert(decrypt(k, keyusage, ctxt) == plain)
+    def test_aes256_crypt(self):
+        # AES256 encrypt and decrypt
+        kb = h('F1C795E9248A09338D82C3F8D5B567040B0110736845041347235B1404231398')
+        conf = h('E45CA518B42E266AD98E165E706FFB60')
+        keyusage = 4
+        plain = b'30 bytes bytes bytes bytes byt'
+        ctxt = h('D1137A4D634CFECE924DBC3BF6790648BD5CFF7DE0E7B99460211D0DAEF3D79A'
+                 '295C688858F3B34B9CBD6EEBAE81DAF6B734D4D498B6714F1C1D')
+        k = Key(Enctype.AES256, kb)
+        self.assertEqual(encrypt(k, keyusage, plain, conf), ctxt)
+        self.assertEqual(decrypt(k, keyusage, ctxt), plain)
 
-    # AES128 checksum
-    kb = h('9062430C8CDA3388922E6D6A509F5B7A')
-    keyusage = 3
-    plain = b'eight nine ten eleven twelve thirteen'
-    cksum = h('01A4B088D45628F6946614E3')
-    k = Key(Enctype.AES128, kb)
-    verify_checksum(Cksumtype.SHA1_AES128, k, keyusage, plain, cksum)
+    def test_aes128_checksum(self):
+        # AES128 checksum
+        kb = h('9062430C8CDA3388922E6D6A509F5B7A')
+        keyusage = 3
+        plain = b'eight nine ten eleven twelve thirteen'
+        cksum = h('01A4B088D45628F6946614E3')
+        k = Key(Enctype.AES128, kb)
+        verify_checksum(Cksumtype.SHA1_AES128, k, keyusage, plain, cksum)
 
-    # AES256 checksum
-    kb = h('B1AE4CD8462AFF1677053CC9279AAC30B796FB81CE21474DD3DDBCFEA4EC76D7')
-    keyusage = 4
-    plain = b'fourteen'
-    cksum = h('E08739E3279E2903EC8E3836')
-    k = Key(Enctype.AES256, kb)
-    verify_checksum(Cksumtype.SHA1_AES256, k, keyusage, plain, cksum)
+    def test_aes256_checksum(self):
+        # AES256 checksum
+        kb = h('B1AE4CD8462AFF1677053CC9279AAC30B796FB81CE21474DD3DDBCFEA4EC76D7')
+        keyusage = 4
+        plain = b'fourteen'
+        cksum = h('E08739E3279E2903EC8E3836')
+        k = Key(Enctype.AES256, kb)
+        verify_checksum(Cksumtype.SHA1_AES256, k, keyusage, plain, cksum)
 
-    # AES128 string-to-key
-    string = b'password'
-    salt = b'ATHENA.MIT.EDUraeburn'
-    params = h('00000002')
-    kb = h('C651BF29E2300AC27FA469D693BDDA13')
-    k = string_to_key(Enctype.AES128, string, salt, params)
-    assert(k.contents == kb)
+    def test_aes128_string_to_key(self):
+        # AES128 string-to-key
+        string = b'password'
+        salt = b'ATHENA.MIT.EDUraeburn'
+        params = h('00000002')
+        kb = h('C651BF29E2300AC27FA469D693BDDA13')
+        k = string_to_key(Enctype.AES128, string, salt, params)
+        self.assertEqual(k.contents, kb)
 
-    # AES256 string-to-key
-    string = b'X' * 64
-    salt = b'pass phrase equals block size'
-    params = h('000004B0')
-    kb = h('89ADEE3608DB8BC71F1BFBFE459486B05618B70CBAE22092534E56C553BA4B34')
-    k = string_to_key(Enctype.AES256, string, salt, params)
-    assert(k.contents == kb)
+    def test_aes256_string_to_key(self):
+        # AES256 string-to-key
+        string = b'X' * 64
+        salt = b'pass phrase equals block size'
+        params = h('000004B0')
+        kb = h('89ADEE3608DB8BC71F1BFBFE459486B05618B70CBAE22092534E56C553BA4B34')
+        k = string_to_key(Enctype.AES256, string, salt, params)
+        self.assertEqual(k.contents, kb)
 
-    # AES128 prf
-    kb = h('77B39A37A868920F2A51F9DD150C5717')
-    k = string_to_key(Enctype.AES128, b'key1', b'key1')
-    assert(prf(k, b'\x01\x61') == kb)
+    def test_aes128_prf(self):
+        # AES128 prf
+        kb = h('77B39A37A868920F2A51F9DD150C5717')
+        k = string_to_key(Enctype.AES128, b'key1', b'key1')
+        self.assertEqual(prf(k, b'\x01\x61'), kb)
 
-    # AES256 prf
-    kb = h('0D674DD0F9A6806525A4D92E828BD15A')
-    k = string_to_key(Enctype.AES256, b'key2', b'key2')
-    assert(prf(k, b'\x02\x62') == kb)
+    def test_aes256_prf(self):
+        # AES256 prf
+        kb = h('0D674DD0F9A6806525A4D92E828BD15A')
+        k = string_to_key(Enctype.AES256, b'key2', b'key2')
+        self.assertEqual(prf(k, b'\x02\x62'), kb)
 
-    # AES128 cf2
-    kb = h('97DF97E4B798B29EB31ED7280287A92A')
-    k1 = string_to_key(Enctype.AES128, b'key1', b'key1')
-    k2 = string_to_key(Enctype.AES128, b'key2', b'key2')
-    k = cf2(Enctype.AES128, k1, k2, b'a', b'b')
-    assert(k.contents == kb)
+    def test_aes128_cf2(self):
+        # AES128 cf2
+        kb = h('97DF97E4B798B29EB31ED7280287A92A')
+        k1 = string_to_key(Enctype.AES128, b'key1', b'key1')
+        k2 = string_to_key(Enctype.AES128, b'key2', b'key2')
+        k = cf2(Enctype.AES128, k1, k2, b'a', b'b')
+        self.assertEqual(k.contents, kb)
 
-    # AES256 cf2
-    kb = h('4D6CA4E629785C1F01BAF55E2E548566B9617AE3A96868C337CB93B5E72B1C7B')
-    k1 = string_to_key(Enctype.AES256, b'key1', b'key1')
-    k2 = string_to_key(Enctype.AES256, b'key2', b'key2')
-    k = cf2(Enctype.AES256, k1, k2, b'a', b'b')
-    assert(k.contents == kb)
+    def test_aes256_cf2(self):
+        # AES256 cf2
+        kb = h('4D6CA4E629785C1F01BAF55E2E548566B9617AE3A96868C337CB93B5E72B1C7B')
+        k1 = string_to_key(Enctype.AES256, b'key1', b'key1')
+        k2 = string_to_key(Enctype.AES256, b'key2', b'key2')
+        k = cf2(Enctype.AES256, k1, k2, b'a', b'b')
+        self.assertEqual(k.contents, kb)
 
-    # DES3 encrypt and decrypt
-    kb = h('0DD52094E0F41CECCB5BE510A764B35176E3981332F1E598')
-    conf = h('94690A17B2DA3C9B')
-    keyusage = 3
-    plain = b'13 bytes byte'
-    ctxt = h('839A17081ECBAFBCDC91B88C6955DD3C4514023CF177B77BF0D0177A16F705E8'
-             '49CB7781D76A316B193F8D30')
-    k = Key(Enctype.DES3, kb)
-    assert(encrypt(k, keyusage, plain, conf) == ctxt)
-    assert(decrypt(k, keyusage, ctxt) == _zeropad(plain, 8))
+    def test_des3_crypt(self):
+        # DES3 encrypt and decrypt
+        kb = h('0DD52094E0F41CECCB5BE510A764B35176E3981332F1E598')
+        conf = h('94690A17B2DA3C9B')
+        keyusage = 3
+        plain = b'13 bytes byte'
+        ctxt = h('839A17081ECBAFBCDC91B88C6955DD3C4514023CF177B77BF0D0177A16F705E8'
+                 '49CB7781D76A316B193F8D30')
+        k = Key(Enctype.DES3, kb)
+        self.assertEqual(encrypt(k, keyusage, plain, conf), ctxt)
+        self.assertEqual(decrypt(k, keyusage, ctxt), _zeropad(plain, 8))
 
-    # DES3 string-to-key
-    string = b'password'
-    salt = b'ATHENA.MIT.EDUraeburn'
-    kb = h('850BB51358548CD05E86768C313E3BFEF7511937DCF72C3E')
-    k = string_to_key(Enctype.DES3, string, salt)
-    assert(k.contents == kb)
+    def test_des3_string_to_key(self):
+        # DES3 string-to-key
+        string = b'password'
+        salt = b'ATHENA.MIT.EDUraeburn'
+        kb = h('850BB51358548CD05E86768C313E3BFEF7511937DCF72C3E')
+        k = string_to_key(Enctype.DES3, string, salt)
+        self.assertEqual(k.contents, kb)
 
-    # DES3 checksum
-    kb = h('7A25DF8992296DCEDA0E135BC4046E2375B3C14C98FBC162')
-    keyusage = 2
-    plain = b'six seven'
-    cksum = h('0EEFC9C3E049AABC1BA5C401677D9AB699082BB4')
-    k = Key(Enctype.DES3, kb)
-    verify_checksum(Cksumtype.SHA1_DES3, k, keyusage, plain, cksum)
+    def test_des3_checksum(self):
+        # DES3 checksum
+        kb = h('7A25DF8992296DCEDA0E135BC4046E2375B3C14C98FBC162')
+        keyusage = 2
+        plain = b'six seven'
+        cksum = h('0EEFC9C3E049AABC1BA5C401677D9AB699082BB4')
+        k = Key(Enctype.DES3, kb)
+        verify_checksum(Cksumtype.SHA1_DES3, k, keyusage, plain, cksum)
 
-    # DES3 cf2
-    kb = h('E58F9EB643862C13AD38E529313462A7F73E62834FE54A01')
-    k1 = string_to_key(Enctype.DES3, b'key1', b'key1')
-    k2 = string_to_key(Enctype.DES3, b'key2', b'key2')
-    k = cf2(Enctype.DES3, k1, k2, b'a', b'b')
-    assert(k.contents == kb)
+    def test_des3_cf2(self):
+        # DES3 cf2
+        kb = h('E58F9EB643862C13AD38E529313462A7F73E62834FE54A01')
+        k1 = string_to_key(Enctype.DES3, b'key1', b'key1')
+        k2 = string_to_key(Enctype.DES3, b'key2', b'key2')
+        k = cf2(Enctype.DES3, k1, k2, b'a', b'b')
+        self.assertEqual(k.contents, kb)
 
-    # RC4 encrypt and decrypt
-    kb = h('68F263DB3FCE15D031C9EAB02D67107A')
-    conf = h('37245E73A45FBF72')
-    keyusage = 4
-    plain = b'30 bytes bytes bytes bytes byt'
-    ctxt = h('95F9047C3AD75891C2E9B04B16566DC8B6EB9CE4231AFB2542EF87A7B5A0F260'
-             'A99F0460508DE0CECC632D07C354124E46C5D2234EB8')
-    k = Key(Enctype.RC4, kb)
-    assert(encrypt(k, keyusage, plain, conf) == ctxt)
-    assert(decrypt(k, keyusage, ctxt) == plain)
+    def test_rc4_crypt(self):
+        # RC4 encrypt and decrypt
+        kb = h('68F263DB3FCE15D031C9EAB02D67107A')
+        conf = h('37245E73A45FBF72')
+        keyusage = 4
+        plain = b'30 bytes bytes bytes bytes byt'
+        ctxt = h('95F9047C3AD75891C2E9B04B16566DC8B6EB9CE4231AFB2542EF87A7B5A0F260'
+                 'A99F0460508DE0CECC632D07C354124E46C5D2234EB8')
+        k = Key(Enctype.RC4, kb)
+        self.assertEqual(encrypt(k, keyusage, plain, conf), ctxt)
+        self.assertEqual(decrypt(k, keyusage, ctxt), plain)
 
-    # RC4 string-to-key
-    string = b'foo'
-    kb = h('AC8E657F83DF82BEEA5D43BDAF7800CC')
-    k = string_to_key(Enctype.RC4, string, None)
-    assert(k.contents == kb)
+    def test_rc4_string_to_key(self):
+        # RC4 string-to-key
+        string = b'foo'
+        kb = h('AC8E657F83DF82BEEA5D43BDAF7800CC')
+        k = string_to_key(Enctype.RC4, string, None)
+        self.assertEqual(k.contents, kb)
 
-    # RC4 checksum
-    kb = h('F7D3A155AF5E238A0B7A871A96BA2AB2')
-    keyusage = 6
-    plain = b'seventeen eighteen nineteen twenty'
-    cksum = h('EB38CC97E2230F59DA4117DC5859D7EC')
-    k = Key(Enctype.RC4, kb)
-    verify_checksum(Cksumtype.HMAC_MD5, k, keyusage, plain, cksum)
+    def test_rc4_checksum(self):
+        # RC4 checksum
+        kb = h('F7D3A155AF5E238A0B7A871A96BA2AB2')
+        keyusage = 6
+        plain = b'seventeen eighteen nineteen twenty'
+        cksum = h('EB38CC97E2230F59DA4117DC5859D7EC')
+        k = Key(Enctype.RC4, kb)
+        verify_checksum(Cksumtype.HMAC_MD5, k, keyusage, plain, cksum)
 
-    # RC4 cf2
-    kb = h('24D7F6B6BAE4E5C00D2082C5EBAB3672')
-    k1 = string_to_key(Enctype.RC4, b'key1', b'key1')
-    k2 = string_to_key(Enctype.RC4, b'key2', b'key2')
-    k = cf2(Enctype.RC4, k1, k2, b'a', b'b')
-    assert(k.contents == kb)
+    def test_rc4_cf2(self):
+        # RC4 cf2
+        kb = h('24D7F6B6BAE4E5C00D2082C5EBAB3672')
+        k1 = string_to_key(Enctype.RC4, b'key1', b'key1')
+        k2 = string_to_key(Enctype.RC4, b'key2', b'key2')
+        k = cf2(Enctype.RC4, k1, k2, b'a', b'b')
+        self.assertEqual(k.contents, kb)
+
+if __name__ == "__main__":
+    import unittest
+    unittest.main()
