@@ -108,6 +108,21 @@ struct ctdb_req_header;
 void ctdbd_prep_hdr_next_reqid(
 	struct ctdbd_connection *conn, struct ctdb_req_header *hdr);
 
+/*
+ * Async ctdb_request. iov[0] must start with an initialized
+ * struct ctdb_req_header
+ */
+struct tevent_req *ctdbd_req_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct ctdbd_connection *conn,
+	struct iovec *iov,
+	size_t num_iov);
+int ctdbd_req_recv(
+	struct tevent_req *req,
+	TALLOC_CTX *mem_ctx,
+	struct ctdb_req_header **reply);
+
 struct tevent_req *ctdbd_parse_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct ctdbd_connection *conn,
