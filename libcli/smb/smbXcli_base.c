@@ -338,6 +338,7 @@ struct smbXcli_conn *smbXcli_conn_create(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
+	set_blocking(fd, false);
 	conn->sock_fd = fd;
 
 	conn->remote_name = talloc_strdup(conn, remote_name);
