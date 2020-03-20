@@ -81,11 +81,9 @@ static NTSTATUS ip_connect_complete(struct socket_context *sock, uint32_t flags)
 		return map_nt_error_from_unix_common(error);
 	}
 
-	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, false);
-		if (ret == -1) {
-			return map_nt_error_from_unix_common(errno);
-		}
+	ret = set_blocking(sock->fd, false);
+	if (ret == -1) {
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	sock->state = SOCKET_STATE_CLIENT_CONNECTED;
@@ -201,11 +199,9 @@ static NTSTATUS ipv4_listen(struct socket_context *sock,
 		}
 	}
 
-	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, false);
-		if (ret == -1) {
-			return map_nt_error_from_unix_common(errno);
-		}
+	ret = set_blocking(sock->fd, false);
+	if (ret == -1) {
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	sock->state= SOCKET_STATE_SERVER_LISTEN;
@@ -217,7 +213,7 @@ static NTSTATUS ipv4_accept(struct socket_context *sock, struct socket_context *
 {
 	struct sockaddr_in cli_addr;
 	socklen_t cli_addr_len = sizeof(cli_addr);
-	int new_fd;
+	int new_fd, ret;
 
 	if (sock->type != SOCKET_TYPE_STREAM) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -228,13 +224,12 @@ static NTSTATUS ipv4_accept(struct socket_context *sock, struct socket_context *
 		return map_nt_error_from_unix_common(errno);
 	}
 
-	if (!(sock->flags & SOCKET_FLAG_BLOCK)) {
-		int ret = set_blocking(new_fd, false);
-		if (ret == -1) {
-			close(new_fd);
-			return map_nt_error_from_unix_common(errno);
-		}
+	ret = set_blocking(new_fd, false);
+	if (ret == -1) {
+		close(new_fd);
+		return map_nt_error_from_unix_common(errno);
 	}
+
 	smb_set_close_on_exec(new_fd);
 
 
@@ -731,11 +726,9 @@ static NTSTATUS ipv6_listen(struct socket_context *sock,
 		}
 	}
 
-	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, false);
-		if (ret == -1) {
-			return map_nt_error_from_unix_common(errno);
-		}
+	ret = set_blocking(sock->fd, false);
+	if (ret == -1) {
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	sock->state= SOCKET_STATE_SERVER_LISTEN;
@@ -747,7 +740,7 @@ static NTSTATUS ipv6_tcp_accept(struct socket_context *sock, struct socket_conte
 {
 	struct sockaddr_in6 cli_addr;
 	socklen_t cli_addr_len = sizeof(cli_addr);
-	int new_fd;
+	int new_fd, ret;
 	
 	if (sock->type != SOCKET_TYPE_STREAM) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -758,12 +751,10 @@ static NTSTATUS ipv6_tcp_accept(struct socket_context *sock, struct socket_conte
 		return map_nt_error_from_unix_common(errno);
 	}
 
-	if (!(sock->flags & SOCKET_FLAG_BLOCK)) {
-		int ret = set_blocking(new_fd, false);
-		if (ret == -1) {
-			close(new_fd);
-			return map_nt_error_from_unix_common(errno);
-		}
+	ret = set_blocking(new_fd, false);
+	if (ret == -1) {
+		close(new_fd);
+		return map_nt_error_from_unix_common(errno);
 	}
 	smb_set_close_on_exec(new_fd);
 

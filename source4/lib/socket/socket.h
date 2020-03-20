@@ -98,7 +98,6 @@ enum socket_state {
 	SOCKET_STATE_SERVER_ERROR
 };
 
-#define SOCKET_FLAG_BLOCK        0x00000001
 #define SOCKET_FLAG_PEEK         0x00000002
 #define SOCKET_FLAG_TESTNONBLOCK 0x00000004
 #define SOCKET_FLAG_ENCRYPT      0x00000008 /* This socket

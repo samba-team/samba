@@ -79,15 +79,14 @@ _PUBLIC_ NTSTATUS socket_create_with_ops(TALLOC_CTX *mem_ctx, const struct socke
 	   send calls on non-blocking sockets will randomly recv/send
 	   less data than requested */
 
-	if (!(flags & SOCKET_FLAG_BLOCK) &&
-	    type == SOCKET_TYPE_STREAM &&
+	if (type == SOCKET_TYPE_STREAM &&
 		getenv("SOCKET_TESTNONBLOCK") != NULL) {
 		(*new_sock)->flags |= SOCKET_FLAG_TESTNONBLOCK;
 	}
 
 	/* we don't do a connect() on dgram sockets, so need to set
 	   non-blocking at socket create time */
-	if (!(flags & SOCKET_FLAG_BLOCK) && type == SOCKET_TYPE_DGRAM) {
+	if (type == SOCKET_TYPE_DGRAM) {
 		set_blocking(socket_get_fd(*new_sock), false);
 	}
 

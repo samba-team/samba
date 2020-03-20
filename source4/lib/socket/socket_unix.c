@@ -84,11 +84,9 @@ static NTSTATUS unixdom_connect_complete(struct socket_context *sock, uint32_t f
 		return map_nt_error_from_unix_common(error);
 	}
 
-	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, false);
-		if (ret == -1) {
-			return map_nt_error_from_unix_common(errno);
-		}
+	ret = set_blocking(sock->fd, false);
+	if (ret == -1) {
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	sock->state = SOCKET_STATE_CLIENT_CONNECTED;
@@ -163,11 +161,9 @@ static NTSTATUS unixdom_listen(struct socket_context *sock,
 		}
 	}
 
-	if (!(flags & SOCKET_FLAG_BLOCK)) {
-		ret = set_blocking(sock->fd, false);
-		if (ret == -1) {
-			return unixdom_error(errno);
-		}
+	ret = set_blocking(sock->fd, false);
+	if (ret == -1) {
+		return unixdom_error(errno);
 	}
 
 	sock->state = SOCKET_STATE_SERVER_LISTEN;
@@ -181,7 +177,7 @@ static NTSTATUS unixdom_accept(struct socket_context *sock,
 {
 	struct sockaddr_un cli_addr;
 	socklen_t cli_addr_len = sizeof(cli_addr);
-	int new_fd;
+	int new_fd, ret;
 
 	if (sock->type != SOCKET_TYPE_STREAM) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -192,12 +188,10 @@ static NTSTATUS unixdom_accept(struct socket_context *sock,
 		return unixdom_error(errno);
 	}
 
-	if (!(sock->flags & SOCKET_FLAG_BLOCK)) {
-		int ret = set_blocking(new_fd, false);
-		if (ret == -1) {
-			close(new_fd);
-			return map_nt_error_from_unix_common(errno);
-		}
+	ret = set_blocking(new_fd, false);
+	if (ret == -1) {
+		close(new_fd);
+		return map_nt_error_from_unix_common(errno);
 	}
 
 	smb_set_close_on_exec(new_fd);
