@@ -1688,6 +1688,7 @@ static bool fork_domain_child(struct winbindd_child *child)
 		}
 
 		child->sock = fdpair[1];
+		set_blocking(child->sock, false);
 		return True;
 	}
 
