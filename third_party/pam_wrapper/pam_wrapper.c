@@ -36,6 +36,8 @@
 #include <limits.h>
 #include <ctype.h>
 
+#include <pthread.h>
+
 #include <ftw.h>
 
 #ifdef HAVE_SECURITY_PAM_APPL_H
@@ -97,6 +99,19 @@
  * LOGGING
  *****************/
 
+#ifndef HAVE_GETPROGNAME
+static const char *getprogname(void)
+{
+#if defined(HAVE_PROGRAM_INVOCATION_SHORT_NAME)
+	return program_invocation_short_name;
+#elif defined(HAVE_GETEXECNAME)
+	return getexecname();
+#else
+	return NULL;
+#endif /* HAVE_PROGRAM_INVOCATION_SHORT_NAME */
+}
+#endif /* HAVE_GETPROGNAME */
+
 enum pwrap_dbglvl_e {
 	PWRAP_LOG_ERROR = 0,
 	PWRAP_LOG_WARN,
@@ -123,6 +138,7 @@ static void pwrap_vlog(enum pwrap_dbglvl_e dbglvl,
 	const char *d;
 	unsigned int lvl = 0;
 	const char *prefix = "PWRAP";
+	const char *progname = getprogname();
 
 	d = getenv("PAM_WRAPPER_DEBUGLEVEL");
 	if (d != NULL) {
@@ -136,24 +152,29 @@ static void pwrap_vlog(enum pwrap_dbglvl_e dbglvl,
 	vsnprintf(buffer, sizeof(buffer), format, args);
 
 	switch (dbglvl) {
-	case PWRAP_LOG_ERROR:
-		prefix = "PWRAP_ERROR";
-		break;
-	case PWRAP_LOG_WARN:
-		prefix = "PWRAP_WARN";
-		break;
-	case PWRAP_LOG_DEBUG:
-		prefix = "PWRAP_DEBUG";
-		break;
-	case PWRAP_LOG_TRACE:
-		prefix = "PWRAP_TRACE";
-		break;
+		case PWRAP_LOG_ERROR:
+			prefix = "PWRAP_ERROR";
+			break;
+		case PWRAP_LOG_WARN:
+			prefix = "PWRAP_WARN";
+			break;
+		case PWRAP_LOG_DEBUG:
+			prefix = "PWRAP_DEBUG";
+			break;
+		case PWRAP_LOG_TRACE:
+			prefix = "PWRAP_TRACE";
+			break;
+	}
+
+	if (progname == NULL) {
+		progname = "<unknown>";
 	}
 
 	fprintf(stderr,
-		"%s(%d) - %s: %s\n",
+		"%s[%s (%u)] - %s: %s\n",
 		prefix,
-		(int)getpid(),
+		progname,
+		(unsigned int)getpid(),
 		function,
 		buffer);
 }
@@ -179,6 +200,12 @@ typedef int (*__libpam_pam_start)(const char *service_name,
 				  const char *user,
 				  const struct pam_conv *pam_conversation,
 				  pam_handle_t **pamh);
+
+typedef int (*__libpam_pam_start_confdir)(const char *service_name,
+					  const char *user,
+					  const struct pam_conv *pam_conversation,
+					  const char *confdir,
+					  pam_handle_t **pamh);
 
 typedef int (*__libpam_pam_end)(pam_handle_t *pamh, int pam_status);
 
@@ -243,6 +270,7 @@ typedef void (*__libpam_pam_vsyslog)(const pam_handle_t *pamh,
 
 struct pwrap_libpam_symbols {
 	PWRAP_SYMBOL_ENTRY(pam_start);
+	PWRAP_SYMBOL_ENTRY(pam_start_confdir);
 	PWRAP_SYMBOL_ENTRY(pam_end);
 	PWRAP_SYMBOL_ENTRY(pam_authenticate);
 	PWRAP_SYMBOL_ENTRY(pam_chauthtok);
@@ -300,14 +328,24 @@ static void *pwrap_load_lib_handle(enum pwrap_lib lib)
 	void *handle = NULL;
 
 #ifdef RTLD_DEEPBIND
-	const char *env = getenv("LD_PRELOAD");
+	const char *env_preload = getenv("LD_PRELOAD");
+	const char *env_deepbind = getenv("UID_WRAPPER_DISABLE_DEEPBIND");
+	bool enable_deepbind = true;
 
 	/* Don't do a deepbind if we run with libasan */
-	if (env != NULL && strlen(env) < PATH_MAX) {
-		const char *p = strstr(env, "libasan.so");
-		if (p == NULL) {
-			flags |= RTLD_DEEPBIND;
+	if (env_preload != NULL && strlen(env_preload) < 1024) {
+		const char *p = strstr(env_preload, "libasan.so");
+		if (p != NULL) {
+			enable_deepbind = false;
 		}
+	}
+
+	if (env_deepbind != NULL && strlen(env_deepbind) >= 1) {
+		enable_deepbind = false;
+	}
+
+	if (enable_deepbind) {
+		flags |= RTLD_DEEPBIND;
 	}
 #endif
 
@@ -368,6 +406,22 @@ static void *_pwrap_bind_symbol(enum pwrap_lib lib, const char *fn_name)
  * valgrind and has probably something todo with with the linker.
  * So we need load each function at the point it is called the first time.
  */
+#ifdef HAVE_PAM_START_CONFDIR
+static int libpam_pam_start_confdir(const char *service_name,
+				    const char *user,
+				    const struct pam_conv *pam_conversation,
+				    const char *confdir,
+				    pam_handle_t **pamh)
+{
+	pwrap_bind_symbol_libpam(pam_start_confdir);
+
+	return pwrap.libpam.symbols._libpam_pam_start_confdir.f(service_name,
+								user,
+								pam_conversation,
+								confdir,
+								pamh);
+}
+#else
 static int libpam_pam_start(const char *service_name,
 			    const char *user,
 			    const struct pam_conv *pam_conversation,
@@ -380,6 +434,8 @@ static int libpam_pam_start(const char *service_name,
 							pam_conversation,
 							pamh);
 }
+
+#endif
 
 static int libpam_pam_end(pam_handle_t *pamh, int pam_status)
 {
@@ -748,14 +804,151 @@ static void pwrap_clean_stale_dirs(const char *dir)
 	return;
 }
 
+#ifdef HAVE_PAM_START_CONFDIR
+static void pwrap_init(void)
+{
+	char tmp_config_dir[] = "/tmp/pam.X";
+	size_t len = strlen(tmp_config_dir);
+	const char *env;
+	struct stat sb;
+	int rc;
+	unsigned i;
+	ssize_t ret;
+	FILE *pidfile;
+	char pidfile_path[1024] = { 0 };
+	char letter;
+
+	if (!pam_wrapper_enabled()) {
+		return;
+	}
+
+	if (pwrap.initialised) {
+		return;
+	}
+
+	/*
+	 * The name is selected to match/replace /etc/pam.d
+	 * We start from a random alphanum trying letters until
+	 * an available directory is found.
+	 */
+	letter = 48 + (getpid() % 70);
+	for (i = 0; i < 127; i++) {
+		if (isalpha(letter) || isdigit(letter)) {
+			tmp_config_dir[len - 1] = letter;
+
+			rc = lstat(tmp_config_dir, &sb);
+			if (rc == 0) {
+				PWRAP_LOG(PWRAP_LOG_TRACE,
+					  "Check if pam_wrapper dir %s is a "
+					  "stale directory",
+					  tmp_config_dir);
+				pwrap_clean_stale_dirs(tmp_config_dir);
+			} else if (rc < 0) {
+				if (errno != ENOENT) {
+					continue;
+				}
+				break; /* found */
+			}
+		}
+
+		letter++;
+		letter %= 127;
+	}
+
+	if (i == 127) {
+		PWRAP_LOG(PWRAP_LOG_ERROR,
+			  "Failed to find a possible path to create "
+			  "pam_wrapper config dir: %s",
+			  tmp_config_dir);
+		exit(1);
+	}
+
+	PWRAP_LOG(PWRAP_LOG_DEBUG, "Initialize pam_wrapper");
+
+	pwrap.config_dir = strdup(tmp_config_dir);
+	if (pwrap.config_dir == NULL) {
+		PWRAP_LOG(PWRAP_LOG_ERROR,
+			  "No memory");
+		exit(1);
+	}
+	PWRAP_LOG(PWRAP_LOG_TRACE,
+		  "pam_wrapper config dir: %s",
+		  tmp_config_dir);
+
+	rc = mkdir(pwrap.config_dir, 0755);
+	if (rc != 0) {
+		PWRAP_LOG(PWRAP_LOG_ERROR,
+			  "Failed to create pam_wrapper config dir: %s - %s",
+			  tmp_config_dir, strerror(errno));
+	}
+
+	/* Create file with the PID of the the process */
+	ret = snprintf(pidfile_path, sizeof(pidfile_path),
+		       "%s/pid", pwrap.config_dir);
+	if (ret < 0) {
+		p_rmdirs(pwrap.config_dir);
+		exit(1);
+	}
+
+	pidfile = fopen(pidfile_path, "w");
+	if (pidfile == NULL) {
+		p_rmdirs(pwrap.config_dir);
+		exit(1);
+	}
+
+	rc = fprintf(pidfile, "%d", getpid());
+	fclose(pidfile);
+	if (rc <= 0) {
+		p_rmdirs(pwrap.config_dir);
+		exit(1);
+	}
+
+	pwrap.libpam_so = strdup(PAM_LIBRARY);
+	if (pwrap.libpam_so == NULL) {
+		PWRAP_LOG(PWRAP_LOG_ERROR, "No memory");
+		p_rmdirs(pwrap.config_dir);
+		exit(1);
+	}
+
+	PWRAP_LOG(PWRAP_LOG_TRACE, "Using libpam path: %s", pwrap.libpam_so);
+
+	pwrap.initialised = true;
+
+	env = getenv("PAM_WRAPPER_SERVICE_DIR");
+	if (env == NULL) {
+		PWRAP_LOG(PWRAP_LOG_ERROR, "No config file");
+		p_rmdirs(pwrap.config_dir);
+		exit(1);
+	}
+
+	rc = copy_confdir(env);
+	if (rc != 0) {
+		PWRAP_LOG(PWRAP_LOG_ERROR, "Failed to copy config files");
+		p_rmdirs(pwrap.config_dir);
+		exit(1);
+	}
+
+	setenv("PAM_WRAPPER_RUNTIME_DIR", pwrap.config_dir, 1);
+
+	PWRAP_LOG(PWRAP_LOG_DEBUG, "Successfully initialized pam_wrapper");
+}
+
+#else /* HAVE_PAM_START_CONFDIR */
+
+#ifdef HAVE_PAM_MODUTIL_SEARCH_KEY
+/*
+ * This is needed to workaround Tumbleweed which packages a libpam git version.
+ */
 static int pso_copy(const char *src, const char *dst, const char *pdir, mode_t mode)
 {
+#define PSO_COPY_READ_SIZE 16
 	int srcfd = -1;
 	int dstfd = -1;
 	int rc = -1;
 	ssize_t bread, bwritten;
 	struct stat sb;
-	char buf[10];
+	char buf[PSO_COPY_READ_SIZE + 1];
+	size_t pso_copy_read_size = PSO_COPY_READ_SIZE;
 	int cmp;
 	size_t to_read;
 	bool found_slash;
@@ -802,13 +995,35 @@ static int pso_copy(const char *src, const char *dst, const char *pdir, mode_t m
 		to_read = 1;
 		if (!found_slash && buf[0] == '/') {
 			found_slash = true;
-			to_read = 9;
+			to_read = pso_copy_read_size;
 		}
 
-		if (found_slash && bread == 9) {
-			cmp = memcmp(buf, "etc/pam.d", 9);
+		if (found_slash && bread == PSO_COPY_READ_SIZE) {
+			cmp = memcmp(buf, "usr/etc/pam.d/%s", 16);
 			if (cmp == 0) {
-				memcpy(buf, pdir + 1, 9);
+				char tmp[16] = {0};
+
+				snprintf(tmp, sizeof(tmp), "%s/%%s", pdir + 1);
+
+				memcpy(buf, tmp, 12);
+				memset(&buf[12], '\0', 4);
+
+				/*
+				 * If we found this string, we need to reduce
+				 * the read size to not miss, the next one.
+				 */
+				pso_copy_read_size = 13;
+			} else {
+				cmp = memcmp(buf, "usr/etc/pam.d", 13);
+				if (cmp == 0) {
+					memcpy(buf, pdir + 1, 9);
+					memset(&buf[9], '\0', 4);
+				} else {
+					cmp = memcmp(buf, "etc/pam.d", 9);
+					if (cmp == 0) {
+						memcpy(buf, pdir + 1, 9);
+					}
+				}
 			}
 			found_slash = false;
 		}
@@ -840,7 +1055,106 @@ out:
 	}
 
 	return rc;
+#undef PSO_COPY_READ_SIZE
 }
+#else /* HAVE_PAM_MODUTIL_SEARCH_KEY */
+
+static int pso_copy(const char *src, const char *dst, const char *pdir, mode_t mode)
+{
+#define PSO_COPY_READ_SIZE 9
+	int srcfd = -1;
+	int dstfd = -1;
+	int rc = -1;
+	ssize_t bread, bwritten;
+	struct stat sb;
+	char buf[PSO_COPY_READ_SIZE + 1];
+	int cmp;
+	size_t to_read;
+	bool found_slash;
+
+	cmp = strcmp(src, dst);
+	if (cmp == 0) {
+		return -1;
+	}
+
+	srcfd = open(src, O_RDONLY, 0);
+	if (srcfd < 0) {
+		return -1;
+	}
+
+	if (mode == 0) {
+		rc = fstat(srcfd, &sb);
+		if (rc != 0) {
+			rc = -1;
+			goto out;
+		}
+		mode = sb.st_mode;
+	}
+
+	dstfd = open(dst, O_CREAT|O_WRONLY|O_TRUNC, mode);
+	if (dstfd < 0) {
+		rc = -1;
+		goto out;
+	}
+
+	found_slash = false;
+	to_read = 1;
+
+	for (;;) {
+		bread = read(srcfd, buf, to_read);
+		if (bread == 0) {
+			/* done */
+			break;
+		} else if (bread < 0) {
+			errno = EIO;
+			rc = -1;
+			goto out;
+		}
+
+		to_read = 1;
+		if (!found_slash && buf[0] == '/') {
+			found_slash = true;
+			to_read = PSO_COPY_READ_SIZE;
+		}
+
+		if (found_slash && bread == PSO_COPY_READ_SIZE) {
+			cmp = memcmp(buf, "etc/pam.d", PSO_COPY_READ_SIZE);
+			if (cmp == 0) {
+				memcpy(buf, pdir + 1, PSO_COPY_READ_SIZE);
+			}
+			found_slash = false;
+		}
+
+		bwritten = write(dstfd, buf, bread);
+		if (bwritten < 0) {
+			errno = EIO;
+			rc = -1;
+			goto out;
+		}
+
+		if (bread != bwritten) {
+			errno = EFAULT;
+			rc = -1;
+			goto out;
+		}
+	}
+
+	rc = 0;
+out:
+	if (srcfd != -1) {
+		close(srcfd);
+	}
+	if (dstfd != -1) {
+		close(dstfd);
+	}
+	if (rc < 0) {
+		unlink(dst);
+	}
+
+	return rc;
+#undef PSO_COPY_READ_SIZE
+}
+#endif /* HAVE_PAM_MODUTIL_SEARCH_KEY */
 
 static void pwrap_init(void)
 {
@@ -1027,6 +1341,8 @@ static void pwrap_init(void)
 		exit(1);
 	}
 
+	PWRAP_LOG(PWRAP_LOG_TRACE, "Using libpam path: %s", pwrap.libpam_so);
+
 	pwrap.initialised = true;
 
 	env = getenv("PAM_WRAPPER_SERVICE_DIR");
@@ -1047,6 +1363,7 @@ static void pwrap_init(void)
 
 	PWRAP_LOG(PWRAP_LOG_DEBUG, "Successfully initialized pam_wrapper");
 }
+#endif /* HAVE_PAM_START_CONFDIR */
 
 bool pam_wrapper_enabled(void)
 {
@@ -1070,19 +1387,6 @@ bool pam_wrapper_enabled(void)
 
 	return pwrap.enabled;
 }
-
-/****************************
- * CONSTRUCTOR
- ***************************/
-void pwrap_constructor(void)
-{
-	/*
-	 * Here is safe place to call pwrap_init() and initialize data
-	 * for main process.
-	 */
-	pwrap_init();
-}
-
 
 #ifdef HAVE_OPENPAM
 static int pwrap_openpam_start(const char *service_name,
@@ -1139,22 +1443,35 @@ static int pwrap_pam_start(const char *service_name,
 			   const struct pam_conv *pam_conversation,
 			   pam_handle_t **pamh)
 {
+	int rc;
+
+	pwrap_init();
+
 	PWRAP_LOG(PWRAP_LOG_TRACE,
 		  "pam_start service=%s, user=%s",
 		  service_name,
 		  user);
 
-#ifdef HAVE_OPENPAM
-	return pwrap_openpam_start(service_name,
-				   user,
-				   pam_conversation,
-				   pamh);
+#if defined(HAVE_OPENPAM)
+	rc = pwrap_openpam_start(service_name,
+				 user,
+				 pam_conversation,
+				 pamh);
+#elif defined (HAVE_PAM_START_CONFDIR)
+	rc = libpam_pam_start_confdir(service_name,
+				      user,
+				      pam_conversation,
+				      pwrap.config_dir,
+				      pamh);
 #else
-	return libpam_pam_start(service_name,
-				user,
-				pam_conversation,
-				pamh);
+	rc = libpam_pam_start(service_name,
+			      user,
+			      pam_conversation,
+			      pamh);
 #endif
+	PWRAP_LOG(PWRAP_LOG_TRACE, "pam_start rc=%d", rc);
+
+	return rc;
 }
 
 
@@ -1679,20 +1996,76 @@ int cannot_audit(int x)
 }
 
 /****************************
+ * CONSTRUCTOR
+ ***************************/
+
+/*
+ * Handler executed before fork(2) processing starts.
+ */
+static void pwrap_thread_prepare(void)
+{
+}
+
+/*
+ * Handler that is executed in the parent process after fork(2) processing
+ * completes.
+ */
+static void pwrap_thread_parent(void)
+{
+}
+
+/*
+ * Handler that is executed in the child process after fork(2) processing
+ * completes.
+ */
+static void pwrap_thread_child(void)
+{
+	pwrap.initialised = false;
+}
+
+void pwrap_constructor(void)
+{
+	/*
+	* If we hold a lock and the application forks, then the child
+	* is not able to unlock the mutex and we are in a deadlock.
+	* This should prevent such deadlocks.
+	*/
+	pthread_atfork(&pwrap_thread_prepare,
+		       &pwrap_thread_parent,
+		       &pwrap_thread_child);
+
+	/*
+	 * Here is safe place to call pwrap_init() and initialize data
+	 * for main process.
+	 */
+	pwrap_init();
+}
+
+/****************************
  * DESTRUCTOR
  ***************************/
 
 static int p_rmdirs_at(const char *path, int parent_fd)
 {
-	DIR *d;
-	struct dirent *dp;
+	DIR *d = NULL;
+	struct dirent *dp = NULL;
 	struct stat sb;
+	char fd_str[64] = { 0 };
 	int path_fd;
 	int rc;
 
+	switch(parent_fd) {
+	case AT_FDCWD:
+		snprintf(fd_str, sizeof(fd_str), "CWD");
+		break;
+	default:
+		snprintf(fd_str, sizeof(fd_str), "fd=%d", parent_fd);
+		break;
+	}
+
 	/* If path is absolute, parent_fd is ignored. */
 	PWRAP_LOG(PWRAP_LOG_TRACE,
-		  "p_rmdirs_at removing %s at %d\n", path, parent_fd);
+		  "p_rmdirs_at removing %s at %s\n", path, fd_str);
 
 	path_fd = openat(parent_fd,
 			 path, O_RDONLY | O_DIRECTORY | O_NOFOLLOW);
@@ -1773,6 +2146,7 @@ void pwrap_destructor(void)
 	if (!pwrap.initialised) {
 		return;
 	}
+	pwrap.initialised = false;
 
 	PWRAP_LOG(PWRAP_LOG_TRACE,
 		  "destructor called for pam_wrapper dir %s",

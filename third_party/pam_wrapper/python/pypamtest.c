@@ -166,11 +166,13 @@ static char **new_conv_list(const size_t list_size)
 	return list;
 }
 
-static const char **sequence_as_string_list(PyObject *seq,
-					    const char *paramname)
+static int sequence_as_string_list(PyObject *seq,
+				   const char *paramname,
+				   const char **str_list[],
+				   size_t *num_str_list)
 {
 	const char *p = paramname ? paramname : "attribute values";
-	const char **ret;
+	const char **result;
 	PyObject *utf_item;
 	int i;
 	Py_ssize_t len;
@@ -179,18 +181,18 @@ static const char **sequence_as_string_list(PyObject *seq,
 	if (!PySequence_Check(seq)) {
 		PyErr_Format(PyExc_TypeError,
 			     "The object must be a sequence\n");
-		return NULL;
+		return -1;
 	}
 
 	len = PySequence_Size(seq);
 	if (len == -1) {
-		return NULL;
+		return -1;
 	}
 
-	ret = PyMem_New(const char *, (len + 1));
-	if (!ret) {
+	result = PyMem_New(const char *, (len + 1));
+	if (result == NULL) {
 		PyErr_NoMemory();
-		return NULL;
+		return -1;
 	}
 
 	for (i = 0; i < len; i++) {
@@ -202,20 +204,24 @@ static const char **sequence_as_string_list(PyObject *seq,
 		utf_item = get_utf8_string(item, p);
 		if (utf_item == NULL) {
 			Py_DECREF(item);
-			return NULL;
+			return -1;
 		}
 
-		ret[i] = py_strdup(PyBytes_AsString(utf_item));
+		result[i] = py_strdup(PyBytes_AsString(utf_item));
 		Py_DECREF(utf_item);
-		if (!ret[i]) {
+		if (result[i] == NULL) {
 			Py_DECREF(item);
-			return NULL;
+			return -1;
 		}
 		Py_DECREF(item);
 	}
 
-	ret[i] = NULL;
-	return ret;
+	result[i] = NULL;
+
+	*str_list = result;
+	*num_str_list = (size_t)len;
+
+	return 0;
 }
 
 static PyObject *string_list_as_tuple(char **str_list)
@@ -225,7 +231,7 @@ static PyObject *string_list_as_tuple(char **str_list)
 	PyObject *tup;
 	PyObject *py_str;
 
-	for (len=0; len < PAM_CONV_MSG_MAX; len++) {
+	for (len=0; str_list[len] != NULL; len++) {
 		if (str_list[len][0] == '\0') {
 			/* unused string, stop counting */
 			break;
@@ -297,7 +303,7 @@ set_pypamtest_exception(PyObject *exc,
 
 	if (test_repr[0] != '\0' && failed != NULL) {
 		PyErr_Format(exc,
-			     "Error [%d]: Test case %s retured [%d]",
+			     "Error [%d]: Test case %s returned [%d]",
 			     perr, test_repr, failed->op_rv);
 	} else {
 		obj = Py_BuildValue(discard_const_p(char, "(i,s)"),
@@ -808,27 +814,42 @@ static int fill_conv_data(PyObject *py_echo_off,
 			  PyObject *py_echo_on,
 			  struct pamtest_conv_data *conv_data)
 {
+	size_t conv_count = 0;
+	size_t count = 0;
+	int rc;
+
 	conv_data->in_echo_on = NULL;
 	conv_data->in_echo_off = NULL;
 	conv_data->out_err = NULL;
 	conv_data->out_info = NULL;
 
 	if (py_echo_off != NULL) {
-		conv_data->in_echo_off = sequence_as_string_list(py_echo_off,
-								 "echo_off");
-		if (conv_data->in_echo_off == NULL) {
+		rc = sequence_as_string_list(py_echo_off,
+					     "echo_off",
+					     &conv_data->in_echo_off,
+					     &count);
+		if (rc != 0) {
 			free_conv_data(conv_data);
 			return ENOMEM;
 		}
+		conv_count += count;
 	}
 
 	if (py_echo_on != NULL) {
-		conv_data->in_echo_on = sequence_as_string_list(py_echo_on,
-								"echo_on");
-		if (conv_data->in_echo_on == NULL) {
+		rc = sequence_as_string_list(py_echo_on,
+					     "echo_on",
+					     &conv_data->in_echo_on,
+					     &count);
+		if (rc != 0) {
 			free_conv_data(conv_data);
 			return ENOMEM;
 		}
+		conv_count += count;
+	}
+
+	if (conv_count > PAM_CONV_MSG_MAX) {
+		free_conv_data(conv_data);
+		return ENOMEM;
 	}
 
 	conv_data->out_info = new_conv_list(PAM_CONV_MSG_MAX);
@@ -885,7 +906,7 @@ static int py_tc_list_to_cstruct_list(PyObject *py_test_list,
 PyDoc_STRVAR(RunPamTest__doc__,
 "Run PAM tests\n\n"
 "This function runs PAM test cases and reports result\n"
-"Paramaters:\n"
+"Parameters:\n"
 "service: The PAM service to use in the conversation (string)\n"
 "username: The user to run PAM conversation as\n"
 "test_list: Sequence of pypamtest.TestCase objects\n"
