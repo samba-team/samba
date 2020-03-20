@@ -134,10 +134,14 @@ static void ctdb_packet_dump(struct ctdb_req_header *hdr)
 	if (DEBUGLEVEL < 11) {
 		return;
 	}
-	DEBUGADD(11, ("len=%d, magic=%x, vers=%d, gen=%d, op=%d, reqid=%d\n",
-		      (int)hdr->length, (int)hdr->ctdb_magic,
-		      (int)hdr->ctdb_version, (int)hdr->generation,
-		      (int)hdr->operation, (int)hdr->reqid));
+	DEBUGADD(11, ("len=%"PRIu32", magic=%"PRIu32", vers=%"PRIu32", "
+		      "gen=%"PRIu32", op=%"PRIu32", reqid=%"PRIu32"\n",
+		      hdr->length,
+		      hdr->ctdb_magic,
+		      hdr->ctdb_version,
+		      hdr->generation,
+		      hdr->operation,
+		      hdr->reqid));
 }
 
 /*
