@@ -1839,6 +1839,17 @@ static int ctdbd_connection_destructor(struct ctdbd_connection *c)
 	return 0;
 }
 
+void ctdbd_prep_hdr_next_reqid(
+	struct ctdbd_connection *conn, struct ctdb_req_header *hdr)
+{
+	*hdr = (struct ctdb_req_header) {
+		.ctdb_magic = CTDB_MAGIC,
+		.ctdb_version = CTDB_PROTOCOL,
+		.reqid = ctdbd_next_reqid(conn),
+		.destnode = CTDB_CURRENT_NODE,
+	};
+}
+
 struct ctdbd_parse_state {
 	struct tevent_context *ev;
 	struct ctdbd_connection *conn;

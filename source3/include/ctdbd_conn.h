@@ -104,6 +104,10 @@ int register_with_ctdbd(struct ctdbd_connection *conn, uint64_t srvid,
 			void *private_data);
 int ctdbd_probe(const char *sockname, int timeout);
 
+struct ctdb_req_header;
+void ctdbd_prep_hdr_next_reqid(
+	struct ctdbd_connection *conn, struct ctdb_req_header *hdr);
+
 struct tevent_req *ctdbd_parse_send(TALLOC_CTX *mem_ctx,
 				    struct tevent_context *ev,
 				    struct ctdbd_connection *conn,
