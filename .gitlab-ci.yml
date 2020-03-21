@@ -184,9 +184,6 @@ samba-ad-dc-4-mitkrb5:
 samba-ad-dc-backup:
   extends: .private_template
 
-samba-simpleserver:
-  extends: .private_template
-
 samba-fileserver:
   extends: .private_template
 
@@ -230,7 +227,6 @@ pages:
     - samba-admem-mit
     - samba-ad-dc-4-mitkrb5
     - samba-ad-dc-backup
-    - samba-simpleserver
     - samba-fileserver
     - samba-ad-dc-1
     - samba-nt4
