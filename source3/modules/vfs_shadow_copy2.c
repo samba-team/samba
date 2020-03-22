@@ -2027,16 +2027,19 @@ static int shadow_copy2_get_shadow_copy_data(
 	struct shadow_copy_data *shadow_copy2_data,
 	bool labels)
 {
-	DIR *p;
+	DIR *p = NULL;
 	const char *snapdir;
 	struct smb_filename *snapdir_smb_fname = NULL;
+	struct files_struct *dirfsp = NULL;
 	struct dirent *d;
 	TALLOC_CTX *tmp_ctx = talloc_stackframe();
 	struct shadow_copy2_private *priv = NULL;
 	struct shadow_copy2_snapentry *tmpentry = NULL;
 	bool get_snaplist = false;
 	bool access_granted = false;
+	int open_flags = O_RDONLY;
 	int ret = -1;
+	NTSTATUS status;
 
 	snapdir = shadow_copy2_find_snapdir(tmp_ctx, handle, fsp->fsp_name);
 	if (snapdir == NULL) {
@@ -2063,8 +2066,34 @@ static int shadow_copy2_get_shadow_copy_data(
 		goto done;
 	}
 
-	p = SMB_VFS_NEXT_OPENDIR(handle, snapdir_smb_fname, NULL, 0);
+	status = create_internal_dirfsp_at(handle->conn,
+					   handle->conn->cwd_fsp,
+					   snapdir_smb_fname,
+					   &dirfsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_WARNING("create_internal_dir_fsp() failed for '%s'"
+			    " - %s\n", snapdir, nt_errstr(status));
+		errno = ENOSYS;
+		goto done;
+	}
 
+#ifdef O_DIRECTORY
+	open_flags |= O_DIRECTORY;
+#endif
+
+	dirfsp->fh->fd = SMB_VFS_NEXT_OPEN(handle,
+					   snapdir_smb_fname,
+					   dirfsp,
+					   open_flags,
+					   0);
+	if (dirfsp->fh->fd == -1) {
+		DBG_WARNING("SMB_VFS_NEXT_OPEN failed for '%s'"
+			    " - %s\n", snapdir, strerror(errno));
+		errno = ENOSYS;
+		goto done;
+	}
+
+	p = SMB_VFS_NEXT_FDOPENDIR(handle, dirfsp, NULL, 0);
 	if (!p) {
 		DEBUG(2,("shadow_copy2: SMB_VFS_NEXT_OPENDIR() failed for '%s'"
 			 " - %s\n", snapdir, strerror(errno)));
@@ -2148,7 +2177,6 @@ static int shadow_copy2_get_shadow_copy_data(
 					 shadow_copy2_data->num_volumes+1);
 		if (tlabels == NULL) {
 			DEBUG(0,("shadow_copy2: out of memory\n"));
-			SMB_VFS_NEXT_CLOSEDIR(handle, p);
 			goto done;
 		}
 
@@ -2159,12 +2187,18 @@ static int shadow_copy2_get_shadow_copy_data(
 		shadow_copy2_data->labels = tlabels;
 	}
 
-	SMB_VFS_NEXT_CLOSEDIR(handle,p);
-
 	shadow_copy2_sort_data(handle, shadow_copy2_data);
 	ret = 0;
 
 done:
+	if (p != NULL) {
+		SMB_VFS_NEXT_CLOSEDIR(handle, p);
+		p = NULL;
+	}
+	if (dirfsp != NULL) {
+		fd_close(dirfsp);
+		file_free(NULL, dirfsp);
+	}
 	TALLOC_FREE(tmp_ctx);
 	return ret;
 }
