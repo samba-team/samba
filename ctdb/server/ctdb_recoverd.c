@@ -2353,13 +2353,13 @@ static void main_loop(struct ctdb_context *ctdb, struct ctdb_recoverd *rec,
 	pnn = ctdb_get_pnn(ctdb);
 
 	/* get nodemap */
-	TALLOC_FREE(rec->nodemap);
-	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), pnn, rec, &rec->nodemap);
+	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), pnn, rec, &nodemap);
 	if (ret != 0) {
-		DEBUG(DEBUG_ERR, (__location__ " Unable to get nodemap from node %u\n", pnn));
+		DBG_ERR("Unable to get nodemap from node %"PRIu32"\n", pnn);
 		return;
 	}
-	nodemap = rec->nodemap;
+	talloc_free(rec->nodemap);
+	rec->nodemap = nodemap;
 
 	/* remember our own node flags */
 	rec->node_flags = nodemap->nodes[pnn].flags;
