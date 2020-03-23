@@ -1065,3 +1065,19 @@ CLUSTERED_TESTS = [ 'base.ntdeny2' ]
 
 for test in CLUSTERED_TESTS:
     planclusteredmembertestsuite(test, "$PREFIX")
+
+CLUSTERED_LOCAL_TESTS = [
+    "local-dbwrap-ctdb1"
+]
+
+for t in CLUSTERED_LOCAL_TESTS:
+    plantestsuite(
+        "samba3.%s" % t,
+        "clusteredmember_smb1:local",
+        [os.path.join(samba3srcdir, "script/tests/test_smbtorture_s3.sh"),
+         t,
+         '//foo/bar',
+         '""',
+         '""',
+         smbtorture3,
+         ""])
