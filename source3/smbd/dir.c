@@ -1479,7 +1479,8 @@ static int smb_Dir_OpenDir_destructor(struct smb_Dir *dir_hnd)
 	return 0;
 }
 
-struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
+struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx,
+			connection_struct *conn,
 			const struct smb_filename *smb_dname,
 			const char *mask,
 			uint32_t attr)
