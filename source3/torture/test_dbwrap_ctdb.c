@@ -36,9 +36,16 @@ bool run_local_dbwrap_ctdb(int dummy)
 
 	msg_ctx = global_messaging_context();
 
-	db = db_open_ctdb(talloc_tos(), msg_ctx, "torture.tdb",
-			  0, TDB_DEFAULT,
-			  O_RDWR, 0755, DBWRAP_LOCK_ORDER_1, DBWRAP_FLAG_NONE);
+	db = db_open_ctdb(
+		talloc_tos(),
+		msg_ctx,
+		"torture.tdb",
+		0,
+		TDB_DEFAULT,
+		O_RDWR|O_CREAT,
+		0755,
+		DBWRAP_LOCK_ORDER_1,
+		DBWRAP_FLAG_NONE);
 	if (db == NULL) {
 		perror("db_open_ctdb failed");
 		goto fail;
