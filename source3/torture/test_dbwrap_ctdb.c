@@ -25,7 +25,7 @@
 #include "messages.h"
 #include "lib/messages_ctdb.h"
 
-bool run_local_dbwrap_ctdb(int dummy)
+bool run_local_dbwrap_ctdb1(int dummy)
 {
 	struct db_context *db = NULL;
 	int res;

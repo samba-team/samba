@@ -14928,8 +14928,8 @@ static struct {
 		.fn    = run_local_tdb_writer,
 	},
 	{
-		.name  = "LOCAL-DBWRAP-CTDB",
-		.fn    = run_local_dbwrap_ctdb,
+		.name  = "LOCAL-DBWRAP-CTDB1",
+		.fn    = run_local_dbwrap_ctdb1,
 	},
 	{
 		.name  = "LOCAL-BENCH-PTHREADPOOL",
