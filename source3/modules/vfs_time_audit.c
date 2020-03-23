@@ -446,26 +446,6 @@ static NTSTATUS smb_time_audit_snap_delete(struct vfs_handle_struct *handle,
 	return status;
 }
 
-static DIR *smb_time_audit_opendir(vfs_handle_struct *handle,
-				   const struct smb_filename *smb_fname,
-				   const char *mask, uint32_t attr)
-{
-	DIR *result;
-	struct timespec ts1,ts2;
-	double timediff;
-
-	clock_gettime_mono(&ts1);
-	result = SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
-	clock_gettime_mono(&ts2);
-	timediff = nsec_time_diff(&ts2,&ts1)*1.0e-9;
-
-	if (timediff > audit_timeout) {
-		smb_time_audit_log_smb_fname("opendir", timediff, smb_fname);
-	}
-
-	return result;
-}
-
 static DIR *smb_time_audit_fdopendir(vfs_handle_struct *handle,
 					      files_struct *fsp,
 					      const char *mask, uint32_t attr)
@@ -2863,7 +2843,6 @@ static struct vfs_fn_pointers vfs_time_audit_fns = {
 	.get_dfs_referrals_fn = smb_time_audit_get_dfs_referrals,
 	.create_dfs_pathat_fn = smb_time_audit_create_dfs_pathat,
 	.read_dfs_pathat_fn = smb_time_audit_read_dfs_pathat,
-	.opendir_fn = smb_time_audit_opendir,
 	.fdopendir_fn = smb_time_audit_fdopendir,
 	.readdir_fn = smb_time_audit_readdir,
 	.seekdir_fn = smb_time_audit_seekdir,

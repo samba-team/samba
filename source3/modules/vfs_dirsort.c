@@ -130,67 +130,6 @@ static bool open_and_sort_dir(vfs_handle_struct *handle,
 	return true;
 }
 
-static DIR *dirsort_opendir(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *mask,
-				uint32_t attr)
-{
-	struct dirsort_privates *list_head = NULL;
-	struct dirsort_privates *data = NULL;
-
-	if (SMB_VFS_HANDLE_TEST_DATA(handle)) {
-		/* Find the list head of all open directories. */
-		SMB_VFS_HANDLE_GET_DATA(handle, list_head, struct dirsort_privates,
-				return NULL);
-	}
-
-	/* set up our private data about this directory */
-	data = talloc_zero(handle->conn, struct dirsort_privates);
-	if (!data) {
-		return NULL;
-	}
-
-	data->smb_fname = cp_smb_filename(data, smb_fname);
-	if (data->smb_fname == NULL) {
-		TALLOC_FREE(data);
-		return NULL;
-	}
-
-	if (ISDOT(data->smb_fname->base_name)) {
-		struct smb_filename *cwd_fname = vfs_GetWd(data, handle->conn);
-		if (cwd_fname == NULL) {
-			TALLOC_FREE(data);
-			return NULL;
-		}
-		TALLOC_FREE(data->smb_fname->base_name);
-		data->smb_fname->base_name = talloc_move(data->smb_fname,
-						&cwd_fname->base_name);
-		TALLOC_FREE(cwd_fname);
-	}
-
-	/* Open the underlying directory and count the number of entries */
-	data->source_directory = SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask,
-						      attr);
-
-	if (data->source_directory == NULL) {
-		TALLOC_FREE(data);
-		return NULL;
-	}
-
-	if (!open_and_sort_dir(handle, data)) {
-		SMB_VFS_NEXT_CLOSEDIR(handle,data->source_directory);
-		TALLOC_FREE(data);
-		return NULL;
-	}
-
-	/* Add to the private list of all open directories. */
-	DLIST_ADD(list_head, data);
-	SMB_VFS_HANDLE_SET_DATA(handle, list_head, NULL,
-				struct dirsort_privates, return NULL);
-
-	return data->source_directory;
-}
-
 static DIR *dirsort_fdopendir(vfs_handle_struct *handle,
 					files_struct *fsp,
 					const char *mask,
@@ -380,7 +319,6 @@ static int dirsort_closedir(vfs_handle_struct *handle, DIR *dirp)
 }
 
 static struct vfs_fn_pointers vfs_dirsort_fns = {
-	.opendir_fn = dirsort_opendir,
 	.fdopendir_fn = dirsort_fdopendir,
 	.readdir_fn = dirsort_readdir,
 	.seekdir_fn = dirsort_seekdir,

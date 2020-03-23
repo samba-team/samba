@@ -171,44 +171,6 @@ static int catia_connect(struct vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_CONNECT(handle, service, user);
 }
 
-static DIR *catia_opendir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *mask,
-			uint32_t attr)
-{
-	char *name_mapped = NULL;
-	NTSTATUS status;
-	DIR *ret;
-	struct smb_filename *mapped_smb_fname = NULL;
-
-	status = catia_string_replace_allocate(handle->conn,
-				smb_fname->base_name,
-				&name_mapped,
-				vfs_translate_to_unix);
-	if (!NT_STATUS_IS_OK(status)) {
-		errno = map_errno_from_nt_status(status);
-		return NULL;
-	}
-
-	mapped_smb_fname = synthetic_smb_fname(talloc_tos(),
-				name_mapped,
-				NULL,
-				&smb_fname->st,
-				smb_fname->flags);
-	if (mapped_smb_fname == NULL) {
-		TALLOC_FREE(mapped_smb_fname);
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	ret = SMB_VFS_NEXT_OPENDIR(handle, mapped_smb_fname, mask, attr);
-
-	TALLOC_FREE(name_mapped);
-	TALLOC_FREE(mapped_smb_fname);
-
-	return ret;
-}
-
 /*
  * TRANSLATE_NAME call which converts the given name to
  * "WINDOWS displayable" name
@@ -2450,7 +2412,6 @@ static struct vfs_fn_pointers vfs_catia_fns = {
 
 	/* Directory operations */
 	.mkdirat_fn = catia_mkdirat,
-	.opendir_fn = catia_opendir,
 	.readdir_attr_fn = catia_readdir_attr,
 
 	/* File operations */

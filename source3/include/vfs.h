@@ -292,6 +292,7 @@
 /* Version 42 - Add SMB_VFS_READ_DFS_PATHAT() */
 /* Change to Version 43 - will ship with 4.13. */
 /* Version 43 - Remove deferred_close from struct files_struct */
+/* Version 43 - Remove SMB_VFS_OPENDIR() */
 
 #define SMB_VFS_INTERFACE_VERSION 43
 
@@ -719,10 +720,6 @@ struct vfs_fn_pointers {
 
 	/* Directory operations */
 
-	DIR *(*opendir_fn)(struct vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					const char *mask,
-					uint32_t attributes);
 	DIR *(*fdopendir_fn)(struct vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32_t attributes);
 	struct dirent *(*readdir_fn)(struct vfs_handle_struct *handle,
 					 DIR *dirp,
@@ -1230,10 +1227,6 @@ NTSTATUS smb_vfs_call_read_dfs_pathat(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				struct referral **ppreflist,
 				size_t *preferral_count);
-DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *mask,
-			uint32_t attributes);
 DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					const char *mask,
@@ -1678,10 +1671,6 @@ NTSTATUS vfs_not_implemented_read_dfs_pathat(struct vfs_handle_struct *handle,
 				const struct smb_filename *smb_fname,
 				struct referral **ppreflist,
 				size_t *preferral_count);
-DIR *vfs_not_implemented_opendir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *mask,
-			uint32_t attr);
 NTSTATUS vfs_not_implemented_snap_check_path(struct vfs_handle_struct *handle,
 				TALLOC_CTX *mem_ctx,
 				const char *service_path,

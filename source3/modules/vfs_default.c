@@ -535,19 +535,6 @@ static NTSTATUS vfswrap_snap_delete(struct vfs_handle_struct *handle,
 
 /* Directory operations */
 
-static DIR *vfswrap_opendir(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *mask,
-				uint32_t attr)
-{
-	DIR *result;
-
-	START_PROFILE(syscall_opendir);
-	result = opendir(smb_fname->base_name);
-	END_PROFILE(syscall_opendir);
-	return result;
-}
-
 static DIR *vfswrap_fdopendir(vfs_handle_struct *handle,
 			files_struct *fsp,
 			const char *mask,
@@ -3653,7 +3640,6 @@ static struct vfs_fn_pointers vfs_default_fns = {
 
 	/* Directory operations */
 
-	.opendir_fn = vfswrap_opendir,
 	.fdopendir_fn = vfswrap_fdopendir,
 	.readdir_fn = vfswrap_readdir,
 	.readdir_attr_fn = vfswrap_readdir_attr,

@@ -106,11 +106,6 @@
                 (pcount))
 
 /* Directory operations */
-#define SMB_VFS_OPENDIR(conn, smb_fname, mask, attr) \
-	smb_vfs_call_opendir((conn)->vfs_handles, (smb_fname), (mask), (attr))
-#define SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr) \
-	smb_vfs_call_opendir((handle)->next, (smb_fname), (mask), (attr))
-
 #define SMB_VFS_FDOPENDIR(fsp, mask, attr) \
 	smb_vfs_call_fdopendir((fsp)->conn->vfs_handles, (fsp), (mask), (attr))
 #define SMB_VFS_NEXT_FDOPENDIR(handle, fsp, mask, attr) \

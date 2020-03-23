@@ -720,53 +720,6 @@ static int ceph_snap_gmt_convert(struct vfs_handle_struct *handle,
 	return 0;
 }
 
-static DIR *ceph_snap_gmt_opendir(vfs_handle_struct *handle,
-				const struct smb_filename *csmb_fname,
-				const char *mask,
-				uint32_t attr)
-{
-	time_t timestamp = 0;
-	char stripped[PATH_MAX + 1];
-	int ret;
-	DIR *dir;
-	int saved_errno;
-	struct smb_filename *conv_smb_fname = NULL;
-	char conv[PATH_MAX + 1];
-
-	ret = ceph_snap_gmt_strip_snapshot(handle,
-			csmb_fname->base_name,
-			&timestamp,
-			stripped, sizeof(stripped));
-	if (ret < 0) {
-		errno = -ret;
-		return NULL;
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_OPENDIR(handle, csmb_fname, mask, attr);
-	}
-	ret = ceph_snap_gmt_convert_dir(handle, stripped,
-					timestamp, conv, sizeof(conv));
-	if (ret < 0) {
-		errno = -ret;
-		return NULL;
-	}
-	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					csmb_fname->flags);
-	if (conv_smb_fname == NULL) {
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	dir = SMB_VFS_NEXT_OPENDIR(handle, conv_smb_fname, mask, attr);
-	saved_errno = errno;
-	TALLOC_FREE(conv_smb_fname);
-	errno = saved_errno;
-	return dir;
-}
-
 static int ceph_snap_gmt_renameat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
@@ -1601,7 +1554,6 @@ static int ceph_snap_gmt_get_quota(vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers ceph_snap_fns = {
 	.get_shadow_copy_data_fn = ceph_snap_get_shadow_copy_data,
-	.opendir_fn = ceph_snap_gmt_opendir,
 	.disk_free_fn = ceph_snap_gmt_disk_free,
 	.get_quota_fn = ceph_snap_gmt_get_quota,
 	.renameat_fn = ceph_snap_gmt_renameat,

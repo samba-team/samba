@@ -556,58 +556,6 @@ err:
 	return status;
 }
 
-/* Success: return a um_dirinfo_struct cast as a DIR
- * Failure: set errno, return NULL
- */
-static DIR *um_opendir(vfs_handle_struct *handle,
-		       const struct smb_filename *smb_fname,
-		       const char *mask,
-		       uint32_t attr)
-{
-	struct um_dirinfo_struct *dirInfo;
-
-	DEBUG(10, ("Entering with fname '%s'\n", smb_fname->base_name));
-
-	if (alloc_set_client_dirinfo(handle, smb_fname->base_name, &dirInfo)) {
-		goto err;
-	}
-
-	if (!dirInfo->isInMediaFiles) {
-		dirInfo->dirstream = SMB_VFS_NEXT_OPENDIR(
-			handle, smb_fname, mask, attr);
-	} else {
-		struct smb_filename *client_smb_fname =
-			synthetic_smb_fname(talloc_tos(),
-					dirInfo->clientPath,
-					NULL,
-					NULL,
-					smb_fname->flags);
-		if (client_smb_fname == NULL) {
-			goto err;
-		}
-
-		dirInfo->dirstream = SMB_VFS_NEXT_OPENDIR(
-			handle, client_smb_fname, mask, attr);
-
-		TALLOC_FREE(client_smb_fname);
-	}
-
-	if (dirInfo->dirstream == NULL) {
-		goto err;
-	}
-
-	DEBUG(10, ("Leaving with dirInfo->dirpath '%s', "
-			      "dirInfo->clientPath '%s'\n",
-			      dirInfo->dirpath,
-			      dirInfo->clientPath));
-	return (DIR*)dirInfo;
-
-err:
-	DEBUG(1, ("Failing with fname '%s'\n", smb_fname->base_name));
-	TALLOC_FREE(dirInfo);
-	return NULL;
-}
-
 static DIR *um_fdopendir(vfs_handle_struct *handle,
 			 files_struct *fsp,
 			 const char *mask,
@@ -1868,7 +1816,6 @@ static struct vfs_fn_pointers vfs_um_fns = {
 
 	/* Directory operations */
 
-	.opendir_fn = um_opendir,
 	.fdopendir_fn = um_fdopendir,
 	.readdir_fn = um_readdir,
 	.seekdir_fn = um_seekdir,

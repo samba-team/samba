@@ -106,7 +106,6 @@ typedef enum _vfs_op_type {
 
 	/* Directory operations */
 
-	SMB_VFS_OP_OPENDIR,
 	SMB_VFS_OP_FDOPENDIR,
 	SMB_VFS_OP_READDIR,
 	SMB_VFS_OP_SEEKDIR,
@@ -253,7 +252,6 @@ static struct {
 	{ SMB_VFS_OP_GET_DFS_REFERRALS,	"get_dfs_referrals" },
 	{ SMB_VFS_OP_CREATE_DFS_PATHAT,	"create_dfs_pathat" },
 	{ SMB_VFS_OP_READ_DFS_PATHAT,	"read_dfs_pathat" },
-	{ SMB_VFS_OP_OPENDIR,	"opendir" },
 	{ SMB_VFS_OP_FDOPENDIR,	"fdopendir" },
 	{ SMB_VFS_OP_READDIR,	"readdir" },
 	{ SMB_VFS_OP_SEEKDIR,   "seekdir" },
@@ -986,24 +984,6 @@ static NTSTATUS smb_full_audit_snap_delete(struct vfs_handle_struct *handle,
 	do_log(SMB_VFS_OP_SNAP_DELETE, NT_STATUS_IS_OK(status), handle, "");
 
 	return status;
-}
-
-static DIR *smb_full_audit_opendir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *mask,
-			uint32_t attr)
-{
-	DIR *result;
-
-	result = SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
-
-	do_log(SMB_VFS_OP_OPENDIR,
-	       (result != NULL),
-	       handle,
-	       "%s",
-	       smb_fname_str_do_log(handle->conn, smb_fname));
-
-	return result;
 }
 
 static DIR *smb_full_audit_fdopendir(vfs_handle_struct *handle,
@@ -2989,7 +2969,6 @@ static struct vfs_fn_pointers vfs_full_audit_fns = {
 	.get_dfs_referrals_fn = smb_full_audit_get_dfs_referrals,
 	.create_dfs_pathat_fn = smb_full_audit_create_dfs_pathat,
 	.read_dfs_pathat_fn = smb_full_audit_read_dfs_pathat,
-	.opendir_fn = smb_full_audit_opendir,
 	.fdopendir_fn = smb_full_audit_fdopendir,
 	.readdir_fn = smb_full_audit_readdir,
 	.seekdir_fn = smb_full_audit_seekdir,

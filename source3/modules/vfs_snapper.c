@@ -1963,52 +1963,6 @@ err_out:
 	return NULL;
 }
 
-static DIR *snapper_gmt_opendir(vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *mask,
-				uint32_t attr)
-{
-	time_t timestamp;
-	char *stripped;
-	DIR *ret;
-	int saved_errno;
-	char *conv;
-	struct smb_filename *conv_smb_fname = NULL;
-
-	if (!snapper_gmt_strip_snapshot(talloc_tos(),
-			handle,
-			smb_fname->base_name,
-			&timestamp,
-			&stripped)) {
-		return NULL;
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
-	}
-	conv = snapper_gmt_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv == NULL) {
-		return NULL;
-	}
-	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					smb_fname->flags);
-	if (conv_smb_fname == NULL) {
-		TALLOC_FREE(conv);
-		errno = ENOMEM;
-		return NULL;
-	}
-
-	ret = SMB_VFS_NEXT_OPENDIR(handle, conv_smb_fname, mask, attr);
-	saved_errno = errno;
-	TALLOC_FREE(conv);
-	TALLOC_FREE(conv_smb_fname);
-	errno = saved_errno;
-	return ret;
-}
-
 static int snapper_gmt_renameat(vfs_handle_struct *handle,
 			files_struct *srcfsp,
 			const struct smb_filename *smb_fname_src,
@@ -2880,7 +2834,6 @@ static struct vfs_fn_pointers snapper_fns = {
 	.snap_delete_fn = snapper_snap_delete,
 	.get_shadow_copy_data_fn = snapper_get_shadow_copy_data,
 	.create_dfs_pathat_fn = snapper_create_dfs_pathat,
-	.opendir_fn = snapper_gmt_opendir,
 	.disk_free_fn = snapper_gmt_disk_free,
 	.get_quota_fn = snapper_gmt_get_quota,
 	.renameat_fn = snapper_gmt_renameat,

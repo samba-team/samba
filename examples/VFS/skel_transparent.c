@@ -128,14 +128,6 @@ static NTSTATUS skel_read_dfs_pathat(struct vfs_handle_struct *handle,
 					preferral_count);
 }
 
-static DIR *skel_opendir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *mask,
-			uint32_t attr)
-{
-	return SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
-}
-
 static NTSTATUS skel_snap_check_path(struct vfs_handle_struct *handle,
 				     TALLOC_CTX *mem_ctx,
 				     const char *service_path,
@@ -1366,7 +1358,6 @@ static struct vfs_fn_pointers skel_transparent_fns = {
 
 	/* Directory operations */
 
-	.opendir_fn = skel_opendir,
 	.fdopendir_fn = skel_fdopendir,
 	.readdir_fn = skel_readdir,
 	.seekdir_fn = skel_seekdir,

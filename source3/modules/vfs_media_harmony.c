@@ -755,62 +755,6 @@ err:
 	return status;
 }
 
-/* Success: return a mh_dirinfo_struct cast as a DIR
- * Failure: set errno, return NULL
- */
-static DIR *mh_opendir(vfs_handle_struct *handle,
-		const struct smb_filename *smb_fname,
-		const char *mask,
-		uint32_t attr)
-{
-	struct mh_dirinfo_struct *dirInfo;
-
-	DEBUG(MH_INFO_DEBUG, ("Entering with fname '%s'\n",
-		smb_fname->base_name));
-
-	if (alloc_set_client_dirinfo(handle, smb_fname->base_name, &dirInfo))
-	{
-		goto err;
-	}
-
-	if (!dirInfo->isInMediaFiles)
-	{
-		dirInfo->dirstream = SMB_VFS_NEXT_OPENDIR(handle,
-			smb_fname, mask, attr);
-	} else {
-		struct smb_filename *smb_fname_clientpath =
-				synthetic_smb_fname(talloc_tos(),
-					dirInfo->clientPath,
-					NULL,
-					NULL,
-					smb_fname->flags);
-		if (smb_fname_clientpath == NULL) {
-			goto err;
-		}
-
-		dirInfo->dirstream = SMB_VFS_NEXT_OPENDIR(handle,
-			smb_fname_clientpath, mask, attr);
-		TALLOC_FREE(smb_fname_clientpath);
-	}
-
-	if (dirInfo->dirstream == NULL) {
-		goto err;
-	}
-
-	/* Success is freed in closedir. */
-	DEBUG(MH_INFO_DEBUG, ("Leaving with dirInfo->dirpath '%s', "
-				"dirInfo->clientPath '%s'\n",
-				dirInfo->dirpath,
-				dirInfo->clientPath));
-	return (DIR*)dirInfo;
-err:
-	/* Failure is freed here. */
-	DEBUG(MH_ERR_DEBUG, ("Failing with fname '%s'\n",
-		smb_fname->base_name));
-	TALLOC_FREE(dirInfo);
-	return NULL;
-}
-
 static DIR *mh_fdopendir(vfs_handle_struct *handle,
 		files_struct *fsp,
 		const char *mask,
@@ -2253,7 +2197,6 @@ static struct vfs_fn_pointers vfs_mh_fns = {
 
 	/* Directory operations */
 
-	.opendir_fn = mh_opendir,
 	.fdopendir_fn = mh_fdopendir,
 	.readdir_fn = mh_readdir,
 	.seekdir_fn = mh_seekdir,

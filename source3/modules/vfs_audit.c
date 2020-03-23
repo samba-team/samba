@@ -177,23 +177,6 @@ static void audit_disconnect(vfs_handle_struct *handle)
 	return;
 }
 
-static DIR *audit_opendir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *mask,
-			uint32_t attr)
-{
-	DIR *result;
-	
-	result = SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
-
-	syslog(audit_syslog_priority(handle), "opendir %s %s%s\n",
-	       smb_fname->base_name,
-	       (result == NULL) ? "failed: " : "",
-	       (result == NULL) ? strerror(errno) : "");
-
-	return result;
-}
-
 static int audit_mkdirat(vfs_handle_struct *handle,
 		struct files_struct *dirfsp,
 		const struct smb_filename *smb_fname,
@@ -321,7 +304,6 @@ static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mod
 static struct vfs_fn_pointers vfs_audit_fns = {
 	.connect_fn = audit_connect,
 	.disconnect_fn = audit_disconnect,
-	.opendir_fn = audit_opendir,
 	.mkdirat_fn = audit_mkdirat,
 	.open_fn = audit_open,
 	.close_fn = audit_close,

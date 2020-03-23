@@ -1087,54 +1087,6 @@ static void convert_sbuf(vfs_handle_struct *handle, const char *fname,
 	}
 }
 
-static DIR *shadow_copy2_opendir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *mask,
-			uint32_t attr)
-{
-	time_t timestamp = 0;
-	char *stripped = NULL;
-	DIR *ret;
-	int saved_errno = 0;
-	char *conv;
-	struct smb_filename *conv_smb_fname = NULL;
-
-	if (!shadow_copy2_strip_snapshot(talloc_tos(),
-				handle,
-				smb_fname->base_name,
-				&timestamp,
-				&stripped)) {
-		return NULL;
-	}
-	if (timestamp == 0) {
-		return SMB_VFS_NEXT_OPENDIR(handle, smb_fname, mask, attr);
-	}
-	conv = shadow_copy2_convert(talloc_tos(), handle, stripped, timestamp);
-	TALLOC_FREE(stripped);
-	if (conv == NULL) {
-		return NULL;
-	}
-	conv_smb_fname = synthetic_smb_fname(talloc_tos(),
-					conv,
-					NULL,
-					NULL,
-					smb_fname->flags);
-	if (conv_smb_fname == NULL) {
-		TALLOC_FREE(conv);
-		return NULL;
-	}
-	ret = SMB_VFS_NEXT_OPENDIR(handle, conv_smb_fname, mask, attr);
-	if (ret == NULL) {
-		saved_errno = errno;
-	}
-	TALLOC_FREE(conv);
-	TALLOC_FREE(conv_smb_fname);
-	if (saved_errno != 0) {
-		errno = saved_errno;
-	}
-	return ret;
-}
-
 static int shadow_copy2_renameat(vfs_handle_struct *handle,
 				files_struct *srcfsp,
 				const struct smb_filename *smb_fname_src,
@@ -3233,7 +3185,6 @@ static int shadow_copy2_connect(struct vfs_handle_struct *handle,
 
 static struct vfs_fn_pointers vfs_shadow_copy2_fns = {
 	.connect_fn = shadow_copy2_connect,
-	.opendir_fn = shadow_copy2_opendir,
 	.disk_free_fn = shadow_copy2_disk_free,
 	.get_quota_fn = shadow_copy2_get_quota,
 	.create_dfs_pathat_fn = shadow_copy2_create_dfs_pathat,

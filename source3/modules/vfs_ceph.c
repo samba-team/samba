@@ -301,25 +301,6 @@ static uint32_t cephwrap_fs_capabilities(struct vfs_handle_struct *handle,
 
 /* Directory operations */
 
-static DIR *cephwrap_opendir(struct vfs_handle_struct *handle,
-			     const struct smb_filename *smb_fname,
-			     const char *mask, uint32_t attr)
-{
-	int ret = 0;
-	struct ceph_dir_result *result;
-	DBG_DEBUG("[CEPH] opendir(%p, %s)\n", handle, smb_fname->base_name);
-
-	/* Returns NULL if it does not exist or there are problems ? */
-	ret = ceph_opendir(handle->data, smb_fname->base_name, &result);
-	if (ret < 0) {
-		result = NULL;
-		errno = -ret; /* We return result which is NULL in this case */
-	}
-
-	DBG_DEBUG("[CEPH] opendir(...) = %d\n", ret);
-	return (DIR *) result;
-}
-
 static DIR *cephwrap_fdopendir(struct vfs_handle_struct *handle,
 			       struct files_struct *fsp,
 			       const char *mask,
@@ -1443,7 +1424,6 @@ static struct vfs_fn_pointers ceph_fns = {
 
 	/* Directory operations */
 
-	.opendir_fn = cephwrap_opendir,
 	.fdopendir_fn = cephwrap_fdopendir,
 	.readdir_fn = cephwrap_readdir,
 	.seekdir_fn = cephwrap_seekdir,

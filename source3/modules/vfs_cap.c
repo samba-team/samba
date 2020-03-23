@@ -82,31 +82,6 @@ static int cap_get_quota(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_GET_QUOTA(handle, cap_smb_fname, qtype, id, dq);
 }
 
-static DIR *cap_opendir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *mask,
-			uint32_t attr)
-{
-	char *capname = capencode(talloc_tos(), smb_fname->base_name);
-	struct smb_filename *cap_smb_fname = NULL;
-
-	if (!capname) {
-		errno = ENOMEM;
-		return NULL;
-	}
-	cap_smb_fname = synthetic_smb_fname(talloc_tos(),
-					capname,
-					NULL,
-					NULL,
-					smb_fname->flags);
-	if (cap_smb_fname == NULL) {
-		TALLOC_FREE(capname);
-		errno = ENOMEM;
-		return NULL;
-	}
-	return SMB_VFS_NEXT_OPENDIR(handle, cap_smb_fname, mask, attr);
-}
-
 static struct dirent *cap_readdir(vfs_handle_struct *handle,
 				      DIR *dirp,
 				      SMB_STRUCT_STAT *sbuf)
@@ -1046,7 +1021,6 @@ static NTSTATUS cap_read_dfs_pathat(struct vfs_handle_struct *handle,
 static struct vfs_fn_pointers vfs_cap_fns = {
 	.disk_free_fn = cap_disk_free,
 	.get_quota_fn = cap_get_quota,
-	.opendir_fn = cap_opendir,
 	.readdir_fn = cap_readdir,
 	.mkdirat_fn = cap_mkdirat,
 	.open_fn = cap_open,

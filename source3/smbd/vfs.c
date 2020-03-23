@@ -1593,15 +1593,6 @@ NTSTATUS smb_vfs_call_read_dfs_pathat(struct vfs_handle_struct *handle,
 						preferral_count);
 }
 
-DIR *smb_vfs_call_opendir(struct vfs_handle_struct *handle,
-					const struct smb_filename *smb_fname,
-					const char *mask,
-					uint32_t attributes)
-{
-	VFS_FIND(opendir);
-	return handle->fns->opendir_fn(handle, smb_fname, mask, attributes);
-}
-
 DIR *smb_vfs_call_fdopendir(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					const char *mask,

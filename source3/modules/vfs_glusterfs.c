@@ -491,26 +491,6 @@ static uint32_t vfs_gluster_fs_capabilities(struct vfs_handle_struct *handle,
 	return caps;
 }
 
-static DIR *vfs_gluster_opendir(struct vfs_handle_struct *handle,
-				const struct smb_filename *smb_fname,
-				const char *mask,
-				uint32_t attributes)
-{
-	glfs_fd_t *fd;
-
-	START_PROFILE(syscall_opendir);
-
-	fd = glfs_opendir(handle->data, smb_fname->base_name);
-	if (fd == NULL) {
-		DEBUG(0, ("glfs_opendir(%s) failed: %s\n",
-			  smb_fname->base_name, strerror(errno)));
-	}
-
-	END_PROFILE(syscall_opendir);
-
-	return (DIR *) fd;
-}
-
 static glfs_fd_t *vfs_gluster_fetch_glfd(struct vfs_handle_struct *handle,
 					 files_struct *fsp)
 {
@@ -2046,7 +2026,6 @@ static struct vfs_fn_pointers glusterfs_fns = {
 
 	/* Directory Operations */
 
-	.opendir_fn = vfs_gluster_opendir,
 	.fdopendir_fn = vfs_gluster_fdopendir,
 	.readdir_fn = vfs_gluster_readdir,
 	.seekdir_fn = vfs_gluster_seekdir,

@@ -73,58 +73,6 @@ static bool shadow_copy_match_name(const char *name)
 	return False;
 }
 
-static DIR *shadow_copy_opendir(vfs_handle_struct *handle,
-			const struct smb_filename *smb_fname,
-			const char *mask,
-			uint32_t attr)
-{
-	shadow_copy_Dir *dirp;
-	DIR *p = SMB_VFS_NEXT_OPENDIR(handle,smb_fname,mask,attr);
-
-	if (!p) {
-		DEBUG(0,("shadow_copy_opendir: SMB_VFS_NEXT_OPENDIR() "
-			"failed for [%s]\n",
-			smb_fname->base_name));
-		return NULL;
-	}
-
-	dirp = SMB_MALLOC_P(shadow_copy_Dir);
-	if (!dirp) {
-		DEBUG(0,("shadow_copy_opendir: Out of memory\n"));
-		SMB_VFS_NEXT_CLOSEDIR(handle,p);
-		return NULL;
-	}
-
-	ZERO_STRUCTP(dirp);
-
-	while (True) {
-		struct dirent *d;
-
-		d = SMB_VFS_NEXT_READDIR(handle, p, NULL);
-		if (d == NULL) {
-			break;
-		}
-
-		if (shadow_copy_match_name(d->d_name)) {
-			DEBUG(8,("shadow_copy_opendir: hide [%s]\n",d->d_name));
-			continue;
-		}
-
-		DEBUG(10,("shadow_copy_opendir: not hide [%s]\n",d->d_name));
-
-		dirp->dirs = SMB_REALLOC_ARRAY(dirp->dirs,struct dirent, dirp->num+1);
-		if (!dirp->dirs) {
-			DEBUG(0,("shadow_copy_opendir: Out of memory\n"));
-			break;
-		}
-
-		dirp->dirs[dirp->num++] = *d;
-	}
-
-	SMB_VFS_NEXT_CLOSEDIR(handle,p);
-	return((DIR *)dirp);
-}
-
 static DIR *shadow_copy_fdopendir(vfs_handle_struct *handle, files_struct *fsp, const char *mask, uint32_t attr)
 {
 	shadow_copy_Dir *dirp;
@@ -304,7 +252,6 @@ static int shadow_copy_get_shadow_copy_data(vfs_handle_struct *handle,
 }
 
 static struct vfs_fn_pointers vfs_shadow_copy_fns = {
-	.opendir_fn = shadow_copy_opendir,
 	.fdopendir_fn = shadow_copy_fdopendir,
 	.readdir_fn = shadow_copy_readdir,
 	.seekdir_fn = shadow_copy_seekdir,
