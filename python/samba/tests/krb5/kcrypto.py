@@ -526,6 +526,13 @@ class _HMACMD5(_ChecksumProfile):
         super(_HMACMD5, cls).verify(key, keyusage, text, cksum)
 
 
+class _MD5(_ChecksumProfile):
+    @classmethod
+    def checksum(cls, key, keyusage, text):
+        # This is unkeyed!
+        return SIMPLE_HASH(text, hashes.MD5)
+
+
 _enctype_table = {
     Enctype.DES3: _DES3CBC,
     Enctype.AES128: _AES128CTS,
@@ -538,7 +545,8 @@ _checksum_table = {
     Cksumtype.SHA1_DES3: _SHA1DES3,
     Cksumtype.SHA1_AES128: _SHA1AES128,
     Cksumtype.SHA1_AES256: _SHA1AES256,
-    Cksumtype.HMAC_MD5: _HMACMD5
+    Cksumtype.HMAC_MD5: _HMACMD5,
+    Cksumtype.MD5: _MD5,
 }
 
 
@@ -793,6 +801,39 @@ class KcrytoTest(TestCase):
         k2 = string_to_key(Enctype.RC4, b'key2', b'key2')
         k = cf2(Enctype.RC4, k1, k2, b'a', b'b')
         self.assertEqual(k.contents, kb)
+
+    def _test_md5_unkeyed_checksum(self, etype, usage):
+        # MD5 unkeyed checksum
+        pw = b'pwd'
+        salt = b'bytes'
+        key = string_to_key(etype, pw, salt)
+        plain = b'seventeen eighteen nineteen twenty'
+        cksum = h('9d9588cdef3a8cefc9d2c208d978f60c')
+        verify_checksum(Cksumtype.MD5, key, usage, plain, cksum)
+
+    def test_md5_unkeyed_checksum_des3_usage_40(self):
+        return self._test_md5_unkeyed_checksum(Enctype.DES3, 40)
+
+    def test_md5_unkeyed_checksum_des3_usage_50(self):
+        return self._test_md5_unkeyed_checksum(Enctype.DES3, 50)
+
+    def test_md5_unkeyed_checksum_rc4_usage_40(self):
+        return self._test_md5_unkeyed_checksum(Enctype.RC4, 40)
+
+    def test_md5_unkeyed_checksum_rc4_usage_50(self):
+        return self._test_md5_unkeyed_checksum(Enctype.RC4, 50)
+
+    def test_md5_unkeyed_checksum_aes128_usage_40(self):
+        return self._test_md5_unkeyed_checksum(Enctype.AES128, 40)
+
+    def test_md5_unkeyed_checksum_aes128_usage_50(self):
+        return self._test_md5_unkeyed_checksum(Enctype.AES128, 50)
+
+    def test_md5_unkeyed_checksum_aes256_usage_40(self):
+        return self._test_md5_unkeyed_checksum(Enctype.AES256, 40)
+
+    def test_md5_unkeyed_checksum_aes256_usage_50(self):
+        return self._test_md5_unkeyed_checksum(Enctype.AES256, 50)
 
 if __name__ == "__main__":
     import unittest
