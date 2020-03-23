@@ -165,6 +165,55 @@ NTSTATUS file_new(struct smb_request *req, connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
+/*
+ * Create an internal fsp for an *existing* directory.
+ *
+ * This should only be used by callers in the VFS that need to control the
+ * opening of the directory.
+ */
+NTSTATUS create_internal_dirfsp_at(connection_struct *conn,
+				   struct files_struct *dirfsp,
+				   const struct smb_filename *smb_dname,
+				   struct files_struct **_fsp)
+{
+	struct files_struct *fsp = NULL;
+	NTSTATUS status;
+
+	SMB_ASSERT(dirfsp == dirfsp->conn->cwd_fsp);
+
+	status = file_new(NULL, conn, &fsp);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = fsp_set_smb_fname(fsp, smb_dname);
+	if (!NT_STATUS_IS_OK(status)) {
+		file_free(NULL, fsp);
+		return status;
+	}
+
+	if (!VALID_STAT(fsp->fsp_name->st)) {
+		status = vfs_stat_fsp(fsp);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
+	if (!S_ISDIR(fsp->fsp_name->st.st_ex_mode)) {
+		DBG_ERR("%s is not a directory!\n",
+			smb_fname_str_dbg(smb_dname));
+                file_free(NULL, fsp);
+		return NT_STATUS_NOT_A_DIRECTORY;
+	}
+
+	fsp->file_id = vfs_file_id_from_sbuf(conn, &fsp->fsp_name->st);
+	fsp->access_mask = FILE_LIST_DIRECTORY;
+	fsp->is_directory = true;
+
+	*_fsp = fsp;
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Close all open files for a connection.
 ****************************************************************************/

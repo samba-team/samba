@@ -419,6 +419,15 @@ NTSTATUS fsp_set_smb_fname(struct files_struct *fsp,
 			   const struct smb_filename *smb_fname_in);
 size_t fsp_fullbasepath(struct files_struct *fsp, char *buf, size_t buflen);
 
+NTSTATUS create_internal_dirfsp_at(connection_struct *conn,
+				   struct files_struct *dirfsp,
+				   const struct smb_filename *smb_dname,
+				   struct files_struct **_fsp);
+
+NTSTATUS open_internal_dir_fsp(connection_struct *conn,
+			       const struct smb_filename *smb_dname,
+			       struct files_struct **_fsp);
+
 /* The following definitions come from smbd/ipc.c  */
 
 NTSTATUS nt_status_np_pipe(NTSTATUS status);
