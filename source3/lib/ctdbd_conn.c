@@ -50,9 +50,6 @@ struct ctdbd_srvid_cb {
 	void *private_data;
 };
 
-struct ctdb_pkt_send_state;
-struct ctdb_pkt_recv_state;
-
 struct ctdbd_connection {
 	uint32_t reqid;
 	uint32_t our_vnn;
@@ -60,24 +57,6 @@ struct ctdbd_connection {
 	struct ctdbd_srvid_cb *callbacks;
 	int fd;
 	int timeout;
-
-	/* State to track in-progress read */
-	struct ctdb_read_state {
-		/* Receive buffer for the initial packet length */
-		uint32_t msglen;
-
-		/* iovec state for current read */
-		struct iovec iov;
-		struct iovec *iovs;
-		int iovcnt;
-
-		/* allocated receive buffer based on packet length */
-		struct ctdb_req_header *hdr;
-	} read_state;
-
-	/* Lists of pending async reads and writes */
-	struct ctdb_pkt_recv_state *recv_list;
-	struct ctdb_pkt_send_state *send_list;
 
 	/*
 	 * Outgoing queue for writev_send of asynchronous ctdb requests
@@ -1267,67 +1246,12 @@ int ctdbd_probe(const char *sockname, int timeout)
 	return ret;
 }
 
-struct ctdb_pkt_send_state {
-	struct ctdb_pkt_send_state *prev, *next;
-	struct tevent_context *ev;
-	struct ctdbd_connection *conn;
-
-	/* ctdb request id */
-	uint32_t reqid;
-
-	/* the associated tevent request */
-	struct tevent_req *req;
-
-	/* iovec array with data to send */
-	struct iovec _iov;
-	struct iovec *iov;
-	int iovcnt;
-
-	/* Initial packet length */
-	size_t packet_len;
-};
-
-struct ctdb_pkt_recv_state {
-	struct ctdb_pkt_recv_state *prev, *next;
-	struct tevent_context *ev;
-	struct ctdbd_connection *conn;
-
-	/* ctdb request id */
-	uint32_t reqid;
-
-	/* the associated tevent_req */
-	struct tevent_req *req;
-
-	/* pointer to allocated ctdb packet buffer */
-	struct ctdb_req_header *hdr;
-};
-
 static int ctdbd_connection_destructor(struct ctdbd_connection *c)
 {
 	if (c->fd != -1) {
 		close(c->fd);
 		c->fd = -1;
 	}
-
-	TALLOC_FREE(c->read_state.hdr);
-	ZERO_STRUCT(c->read_state);
-
-	while (c->send_list != NULL) {
-		struct ctdb_pkt_send_state *send_state = c->send_list;
-		DLIST_REMOVE(c->send_list, send_state);
-		send_state->conn = NULL;
-		tevent_req_defer_callback(send_state->req, send_state->ev);
-		tevent_req_error(send_state->req, EIO);
-	}
-
-	while (c->recv_list != NULL) {
-		struct ctdb_pkt_recv_state *recv_state = c->recv_list;
-		DLIST_REMOVE(c->recv_list, recv_state);
-		recv_state->conn = NULL;
-		tevent_req_defer_callback(recv_state->req, recv_state->ev);
-		tevent_req_error(recv_state->req, EIO);
-	}
-
 	return 0;
 }
 
