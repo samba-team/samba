@@ -61,9 +61,6 @@ struct ctdbd_connection {
 	int fd;
 	int timeout;
 
-	/* For async connections, enabled via ctdbd_setup_fde() */
-	struct tevent_fd *fde;
-
 	/* State to track in-progress read */
 	struct ctdb_read_state {
 		/* Receive buffer for the initial packet length */
@@ -93,7 +90,7 @@ struct ctdbd_connection {
 static bool ctdbd_conn_has_async_reqs(struct ctdbd_connection *conn)
 {
 	size_t len = talloc_array_length(conn->pending);
-	return ((len != 0) || (conn->fde != NULL));
+	return (len != 0);
 }
 
 static uint32_t ctdbd_next_reqid(struct ctdbd_connection *conn)
@@ -1307,7 +1304,6 @@ struct ctdb_pkt_recv_state {
 
 static int ctdbd_connection_destructor(struct ctdbd_connection *c)
 {
-	TALLOC_FREE(c->fde);
 	if (c->fd != -1) {
 		close(c->fd);
 		c->fd = -1;
