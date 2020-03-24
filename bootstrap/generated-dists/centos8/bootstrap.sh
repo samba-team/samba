@@ -84,12 +84,14 @@ yum install -y \
     procps-ng \
     psmisc \
     python3 \
+    python3-cryptography \
     python3-devel \
     python3-dns \
     python3-gpg \
     python3-libsemanage \
     python3-markdown \
     python3-policycoreutils \
+    python3-pyasn1 \
     readline-devel \
     redhat-lsb \
     rng-tools \

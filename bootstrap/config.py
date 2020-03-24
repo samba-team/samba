@@ -129,6 +129,7 @@ PKGS = [
     ('mawk', 'gawk'),
 
     ('python3', 'python3'),
+    ('python3-cryptography', 'python3-cryptography'), # for krb5 tests
     ('python3-dev', 'python3-devel'),
     ('python3-dbg', ''),
     ('python3-iso8601', ''),
@@ -137,6 +138,7 @@ PKGS = [
     ('python3-matplotlib', ''),
     ('python3-dnspython', 'python3-dns'),
     ('python3-pexpect', ''),  # for wintest only
+    ('python3-pyasn1', 'python3-pyasn1'), # for krb5 tests
 
     ('', 'libsemanage-python'),
     ('', 'policycoreutils-python'),
@@ -418,9 +420,10 @@ RPM_DISTS = {
         'replace': {
             'lsb-release': 'redhat-lsb',
             'python3': 'python36',
-            'python3-crypto': 'python36-crypto',
+            'python3-cryptography': 'python36-cryptography',
             'python3-devel': 'python36-devel',
             'python3-dns': 'python36-dns',
+            'python3-pyasn1': 'python36-pyasn1',
             'python3-gpg': 'python36-gpg',
             'python3-iso8601' : 'python36-iso8601',
             'python3-markdown': 'python36-markdown',
@@ -455,7 +458,6 @@ RPM_DISTS = {
             'perl-JSON-Parse': '', # does not exist?
             'perl-Test-Base': 'perl-Test-Simple',
             'policycoreutils-python': 'python3-policycoreutils',
-            'python3-crypto': '',
             'quota-devel': '', # FIXME: Add me back, once available!
             'liburing-devel': '', # not available yet, Add me back, once available!
         }
@@ -503,7 +505,6 @@ RPM_DISTS = {
             'perl-interpreter': '',
             'procps-ng': 'procps',
             'python-dns': 'python2-dnspython',
-            'python3-crypto': 'python3-pycrypto',
             'python3-dns': 'python3-dnspython',
             'python3-markdown': 'python3-Markdown',
             'quota-devel': '',
@@ -536,7 +537,6 @@ RPM_DISTS = {
             'perl-interpreter': '',
             'procps-ng': 'procps',
             'python-dns': 'python2-dnspython',
-            'python3-crypto': 'python3-pycrypto',
             'python3-dns': 'python3-dnspython',
             'python3-markdown': 'python3-Markdown',
             'quota-devel': '',

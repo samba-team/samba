@@ -83,9 +83,11 @@ yum install -y \
     procps-ng \
     psmisc \
     python36 \
+    python36-cryptography \
     python36-devel \
     python36-dns \
     python36-markdown \
+    python36-pyasn1 \
     quota-devel \
     readline-devel \
     redhat-lsb \
