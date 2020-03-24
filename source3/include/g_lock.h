@@ -62,6 +62,19 @@ NTSTATUS g_lock_write_data(struct g_lock_ctx *ctx, TDB_DATA key,
 int g_lock_locks(struct g_lock_ctx *ctx,
 		 int (*fn)(TDB_DATA key, void *private_data),
 		 void *private_data);
+struct tevent_req *g_lock_dump_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct g_lock_ctx *ctx,
+	TDB_DATA key,
+	void (*fn)(struct server_id exclusive,
+		   size_t num_shared,
+		   struct server_id *shared,
+		   const uint8_t *data,
+		   size_t datalen,
+		   void *private_data),
+	void *private_data);
+NTSTATUS g_lock_dump_recv(struct tevent_req *req);
 NTSTATUS g_lock_dump(struct g_lock_ctx *ctx,
 		     TDB_DATA key,
 		     void (*fn)(struct server_id exclusive,

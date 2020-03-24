@@ -1057,6 +1057,7 @@ struct g_lock_dump_state {
 		   void *private_data);
 	void *private_data;
 	NTSTATUS status;
+	enum dbwrap_req_state req_state;
 };
 
 static void g_lock_dump_fn(TDB_DATA key, TDB_DATA data,
@@ -1129,6 +1130,70 @@ NTSTATUS g_lock_dump(struct g_lock_ctx *ctx, TDB_DATA key,
 		return state.status;
 	}
 	return NT_STATUS_OK;
+}
+
+static void g_lock_dump_done(struct tevent_req *subreq);
+
+struct tevent_req *g_lock_dump_send(
+	TALLOC_CTX *mem_ctx,
+	struct tevent_context *ev,
+	struct g_lock_ctx *ctx,
+	TDB_DATA key,
+	void (*fn)(struct server_id exclusive,
+		   size_t num_shared,
+		   struct server_id *shared,
+		   const uint8_t *data,
+		   size_t datalen,
+		   void *private_data),
+	void *private_data)
+{
+	struct tevent_req *req = NULL, *subreq = NULL;
+	struct g_lock_dump_state *state = NULL;
+
+	req = tevent_req_create(mem_ctx, &state, struct g_lock_dump_state);
+	if (req == NULL) {
+		return NULL;
+	}
+	state->mem_ctx = state;
+	state->key = key;
+	state->fn = fn;
+	state->private_data = private_data;
+
+	subreq = dbwrap_parse_record_send(
+		state,
+		ev,
+		ctx->db,
+		key,
+		g_lock_dump_fn,
+		state,
+		&state->req_state);
+	if (tevent_req_nomem(subreq, req)) {
+		return tevent_req_post(req, ev);
+	}
+	tevent_req_set_callback(subreq, g_lock_dump_done, req);
+	return req;
+}
+
+static void g_lock_dump_done(struct tevent_req *subreq)
+{
+	struct tevent_req *req = tevent_req_callback_data(
+		subreq, struct tevent_req);
+	struct g_lock_dump_state *state = tevent_req_data(
+		req, struct g_lock_dump_state);
+	NTSTATUS status;
+
+	status = dbwrap_parse_record_recv(subreq);
+	TALLOC_FREE(subreq);
+	if (tevent_req_nterror(req, status) ||
+	    tevent_req_nterror(req, state->status)) {
+		return;
+	}
+	tevent_req_done(req);
+}
+
+NTSTATUS g_lock_dump_recv(struct tevent_req *req)
+{
+	return tevent_req_simple_recv_ntstatus(req);
 }
 
 int g_lock_seqnum(struct g_lock_ctx *ctx)
