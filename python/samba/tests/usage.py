@@ -331,8 +331,9 @@ class HelpTestSuper(TestCase):
 
                     if self.check_return_code:
                         self.assertEqual(p.returncode, 0,
-                                         "%s %s\nreturncode should not be %d" %
-                                         (filename, h, p.returncode))
+                                         "%s %s\nreturncode should not be %d\n"
+                                         "err:\n%s\nout:\n%s" %
+                                         (filename, h, p.returncode, err, out))
                     if self.check_contains_usage:
                         self.assertIn('usage', outl, 'lacks "Usage:"\n')
                     if self.check_multiline:
