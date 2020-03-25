@@ -739,6 +739,8 @@ planoldpythontestsuite("nt4_dc", "samba.tests.netbios", extra_args=['-U"$USERNAM
 planoldpythontestsuite("ad_dc:local", "samba.tests.gpo", extra_args=['-U"$USERNAME%$PASSWORD"'])
 planoldpythontestsuite("ad_dc:local", "samba.tests.dckeytab", extra_args=['-U"$USERNAME%$PASSWORD"'])
 
+planoldpythontestsuite("none", "samba.tests.krb5.kcrypto")
+
 for env in ["ad_dc", smbv1_disabled_testenv]:
     planoldpythontestsuite(env, "samba.tests.smb", extra_args=['-U"$USERNAME%$PASSWORD"'])
     planoldpythontestsuite(env + ":local", "samba.tests.ntacls_backup",
