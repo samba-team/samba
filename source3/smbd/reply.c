@@ -7575,6 +7575,7 @@ static NTSTATUS parent_dirname_compatible_open(connection_struct *conn,
 NTSTATUS rename_internals_fsp(connection_struct *conn,
 			files_struct *fsp,
 			const struct smb_filename *smb_fname_dst_in,
+			const char *dst_original_lcomp,
 			uint32_t attrs,
 			bool replace_if_exists)
 {
@@ -7627,7 +7628,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		/*
 		 * Split off the last component of the processed
 		 * destination name. We will compare this to
-		 * the split components of smb_fname_dst->original_lcomp.
+		 * the split components of dst_original_lcomp.
 		 */
 		if (!parent_dirname(ctx,
 				smb_fname_dst->base_name,
@@ -7638,7 +7639,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		}
 
 		/*
-		 * The original_lcomp component contains
+		 * The dst_original_lcomp component contains
 		 * the last_component of the path + stream
 		 * name (if a stream exists).
 		 *
@@ -7649,13 +7650,13 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		if (fsp->posix_flags & FSP_POSIX_FLAGS_PATHNAMES) {
 			/* POSIX - no stream component. */
 			orig_lcomp_path = talloc_strdup(ctx,
-						smb_fname_dst->original_lcomp);
+						dst_original_lcomp);
 			if (orig_lcomp_path == NULL) {
 				ok = false;
 			}
 		} else {
 			ok = split_stream_filename(ctx,
-					smb_fname_dst->original_lcomp,
+					dst_original_lcomp,
 					&orig_lcomp_path,
 					&orig_lcomp_stream);
 		}
@@ -8064,6 +8065,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		status = rename_internals_fsp(conn,
 					fsp,
 					smb_fname_dst,
+					smb_fname_dst->original_lcomp,
 					attrs,
 					replace_if_exists);
 
@@ -8235,6 +8237,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		status = rename_internals_fsp(conn,
 					fsp,
 					smb_fname_dst,
+					smb_fname_dst->original_lcomp,
 					attrs,
 					replace_if_exists);
 
