@@ -478,9 +478,10 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	DEBUG(5, ("unix_convert called on file \"%s\"\n", orig_path));
 
-#ifdef DEVELOPER
-	SMB_ASSERT(*orig_path != '/');
-#endif
+	if (orig_path[0] == '/') {
+		DBG_ERR("Path [%s] starts with '/'\n", orig_path);
+		return NT_STATUS_OBJECT_NAME_INVALID;
+	}
 
 	/*
 	 * If we trimmed down to a single '\0' character
