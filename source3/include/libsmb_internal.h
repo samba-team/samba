@@ -38,7 +38,7 @@
 /*
  * DOS Attribute values (used internally)
  */
-typedef struct DOS_ATTR_DESC {
+struct DOS_ATTR_DESC {
 	int mode;
 	off_t size;
 	time_t create_time;
@@ -46,7 +46,7 @@ typedef struct DOS_ATTR_DESC {
 	time_t write_time;
 	time_t change_time;
 	SMB_INO_T inode;
-} DOS_ATTR_DESC;
+};
 
 /*
  * Extension of libsmbclient.h's #defines

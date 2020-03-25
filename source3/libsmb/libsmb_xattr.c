@@ -544,16 +544,16 @@ done:
 
 
 /* Obtain the current dos attributes */
-static DOS_ATTR_DESC *
+static struct DOS_ATTR_DESC *
 dos_attr_query(SMBCCTX *context,
                TALLOC_CTX *ctx,
                const char *filename,
                SMBCSRV *srv)
 {
 	struct stat sb = {0};
-        DOS_ATTR_DESC *ret;
+        struct DOS_ATTR_DESC *ret = NULL;
 
-        ret = talloc(ctx, DOS_ATTR_DESC);
+        ret = talloc(ctx, struct DOS_ATTR_DESC);
         if (!ret) {
                 errno = ENOMEM;
                 return NULL;
@@ -582,7 +582,7 @@ dos_attr_query(SMBCCTX *context,
 /* parse a ascii version of a security descriptor */
 static void
 dos_attr_parse(SMBCCTX *context,
-               DOS_ATTR_DESC *dad,
+               struct DOS_ATTR_DESC *dad,
                SMBCSRV *srv,
                char *str)
 {
@@ -1698,7 +1698,7 @@ SMBC_setxattr_ctx(SMBCCTX *context,
 	char *password = NULL;
 	char *workgroup = NULL;
 	char *path = NULL;
-        DOS_ATTR_DESC *dad = NULL;
+        struct DOS_ATTR_DESC *dad = NULL;
         struct {
                 const char * create_time_attr;
                 const char * access_time_attr;
