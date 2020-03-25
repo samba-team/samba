@@ -808,7 +808,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	 */
 
 	if (mangle_is_mangled(start, conn->params)) {
-		component_was_mangled = True;
+		component_was_mangled = true;
 	}
 
 	/*
