@@ -2847,7 +2847,14 @@ close_if_end = %d requires_resume_key = %d backup_priv = %d level = 0x%x, max_da
 		goto out;
 	}
 
-	mask = smb_dname->original_lcomp;
+	mask = get_original_lcomp(talloc_tos(),
+				conn,
+				directory,
+				ucf_flags);
+	if (mask == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		goto out;
+	}
 
 	directory = smb_dname->base_name;
 
