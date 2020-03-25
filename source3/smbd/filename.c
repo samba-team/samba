@@ -476,7 +476,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	smb_fname->flags = posix_pathnames ? SMB_FILENAME_POSIX_PATH : 0;
 
-	DEBUG(5, ("unix_convert called on file \"%s\"\n", orig_path));
+	DBG_DEBUG("Called on file [%s]\n", orig_path);
 
 	if (orig_path[0] == '/') {
 		DBG_ERR("Path [%s] starts with '/'\n", orig_path);
@@ -500,8 +500,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			status = map_nt_error_from_unix(errno);
 			goto err;
 		}
-		DEBUG(5, ("conversion finished \"\" -> %s\n",
-			  smb_fname->base_name));
+		DBG_DEBUG("conversion finished [] -> [%s]\n",
+			  smb_fname->base_name);
 		goto done;
 	}
 
@@ -520,7 +520,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	/* Start with the full orig_path as given by the caller. */
 	if (!(smb_fname->base_name = talloc_strdup(smb_fname, orig_path))) {
-		DEBUG(0, ("talloc_strdup failed\n"));
+		DBG_ERR("talloc_strdup failed\n");
 		status = NT_STATUS_NO_MEMORY;
 		goto err;
 	}
@@ -545,7 +545,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	if (conn->case_sensitive && !conn->case_preserve &&
 			!conn->short_case_preserve) {
 		if (!strnorm(smb_fname->base_name, lp_default_case(SNUM(conn)))) {
-			DEBUG(0, ("strnorm %s failed\n", smb_fname->base_name));
+			DBG_ERR("strnorm [%s] failed\n", smb_fname->base_name);
 			status = NT_STATUS_INVALID_PARAMETER;
 			goto err;
 		}
@@ -613,9 +613,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 					status = NT_STATUS_NO_MEMORY;
 					goto err;
 				}
-				DEBUG(5, ("conversion finished %s -> %s\n",
-					orig_path,
-					smb_fname->base_name));
+				DBG_INFO("conversion finished [%s] -> [%s]\n",
+					 orig_path,
+					 smb_fname->base_name);
 				goto done;
 			}
 		}
@@ -646,7 +646,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	 */
 
 	if ((dirpath == NULL) && (!(dirpath = talloc_strdup(ctx,".")))) {
-		DEBUG(0, ("talloc_strdup failed\n"));
+		DBG_ERR("talloc_strdup failed\n");
 		status = NT_STATUS_NO_MEMORY;
 		goto err;
 	}
@@ -667,8 +667,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		}
 	}
 
-	DEBUG(5,("unix_convert begin: name = %s, dirpath = %s, start = %s\n",
-		 smb_fname->base_name, dirpath, start));
+	DBG_DEBUG("Begin: name [%s] dirpath [%s] start [%s]\n",
+		  smb_fname->base_name, dirpath, start);
 
 	if (!name_has_wildcard) {
 		/*
@@ -690,8 +690,9 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			/* Add the path (not including the stream) to the cache. */
 			stat_cache_add(orig_path, smb_fname->base_name,
 				       conn->case_sensitive);
-			DEBUG(5,("conversion of base_name finished %s -> %s\n",
-				 orig_path, smb_fname->base_name));
+			DBG_DEBUG("Conversion of base_name finished "
+				  "[%s] -> [%s]\n",
+				  orig_path, smb_fname->base_name);
 			goto done;
 		}
 
@@ -836,7 +837,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			smb_fname->original_lcomp = talloc_strdup(smb_fname,
 							end ? end + 1 : start);
 			if (!smb_fname->original_lcomp) {
-				DEBUG(0, ("talloc failed\n"));
+				DBG_ERR("talloc failed\n");
 				status = NT_STATUS_NO_MEMORY;
 				goto err;
 			}
@@ -871,7 +872,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 		/* Skip the stat call if it's a wildcard end. */
 		if (name_has_wildcard) {
-			DEBUG(5,("Wildcard %s\n",start));
+			DBG_DEBUG("Wildcard [%s]\n", start);
 			goto done;
 		}
 
@@ -895,7 +896,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 * An intermediate part of the name isn't
 				 * a directory.
 				 */
-				DEBUG(5,("Not a dir %s\n",start));
+				DBG_DEBUG("Not a dir [%s]\n", start);
 				*end = '/';
 				/*
 				 * We need to return the fact that the
@@ -979,8 +980,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 					 * An intermediate part of the name
 					 * can't be found.
 					 */
-					DEBUG(5,("Intermediate not found %s\n",
-							start));
+					DBG_DEBUG("Intermediate [%s] missing\n",
+						  start);
 					*end = '/';
 
 					/*
@@ -1067,8 +1068,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 						 !conn->short_case_preserve)) {
 					if (!strnorm(start,
 							lp_default_case(SNUM(conn)))) {
-						DEBUG(0, ("strnorm %s failed\n",
-							start));
+						DBG_DEBUG("strnorm %s failed\n",
+							  start);
 						status = NT_STATUS_INVALID_PARAMETER;
 						goto err;
 					}
@@ -1098,7 +1099,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 						tmp = unmangled;
 					}
 					if (tmp == NULL) {
-						DEBUG(0, ("talloc failed\n"));
+						DBG_ERR("talloc failed\n");
 						status = NT_STATUS_NO_MEMORY;
 						goto err;
 					}
@@ -1109,7 +1110,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 					end = start + strlen(start);
 				}
 
-				DEBUG(5,("New file %s\n",start));
+				DBG_DEBUG("New file [%s]\n", start);
 				goto done;
 			}
 
@@ -1134,7 +1135,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 						end+1);
 				}
 				if (tmp == NULL) {
-					DEBUG(0, ("talloc_asprintf failed\n"));
+					DBG_ERR("talloc_asprintf failed\n");
 					status = NT_STATUS_NO_MEMORY;
 					goto err;
 				}
@@ -1157,7 +1158,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 						found_name);
 				}
 				if (tmp == NULL) {
-					DEBUG(0, ("talloc failed\n"));
+					DBG_ERR("talloc failed\n");
 					status = NT_STATUS_NO_MEMORY;
 					goto err;
 				}
@@ -1193,7 +1194,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 			char *tmp = talloc_asprintf(ctx,
 					"%s/%s", dirpath, start);
 			if (!tmp) {
-				DEBUG(0, ("talloc_asprintf failed\n"));
+				DBG_ERR("talloc_asprintf failed\n");
 				status = NT_STATUS_NO_MEMORY;
 				goto err;
 			}
@@ -1203,7 +1204,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		else {
 			TALLOC_FREE(dirpath);
 			if (!(dirpath = talloc_strdup(ctx,start))) {
-				DEBUG(0, ("talloc_strdup failed\n"));
+				DBG_ERR("talloc_strdup failed\n");
 				status = NT_STATUS_NO_MEMORY;
 				goto err;
 			}
@@ -1240,8 +1241,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	 * The name has been resolved.
 	 */
 
-	DEBUG(5,("conversion finished %s -> %s\n", orig_path,
-		 smb_fname->base_name));
+	DBG_DEBUG("Conversion finished [%s] -> [%s]\n",
+		   orig_path, smb_fname->base_name);
 
  done:
 	/* Add back the stream if one was stripped off originally. */
@@ -1258,7 +1259,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	*smb_fname_out = smb_fname;
 	return NT_STATUS_OK;
  fail:
-	DEBUG(10, ("dirpath = [%s] start = [%s]\n", dirpath, start));
+	DBG_DEBUG("Conversion failed: dirpath [%s] start [%s]\n",
+		  dirpath, start);
 	if (dirpath && !ISDOT(dirpath)) {
 		smb_fname->base_name = talloc_asprintf(smb_fname, "%s/%s",
 						       dirpath, start);
@@ -1266,7 +1268,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		smb_fname->base_name = talloc_strdup(smb_fname, start);
 	}
 	if (!smb_fname->base_name) {
-		DEBUG(0, ("talloc_asprintf failed\n"));
+		DBG_ERR("talloc_asprintf failed\n");
 		status = NT_STATUS_NO_MEMORY;
 		goto err;
 	}
