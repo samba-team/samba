@@ -1023,6 +1023,19 @@ for env in ["ad_member_idmap_rid:local", "maptoguest:local"]:
 
 plantestsuite("samba3.blackbox.itime", "ad_dc", [os.path.join(samba3srcdir, "script/tests/test_itime.sh"), '$SERVER', '$USERNAME', '$PASSWORD', '$LOCAL_PATH', smbclient3, 'xattr'])
 
+t = "readdir-timestamp"
+plantestsuite(
+    "samba3.smbtorture_s3.plain.%s" % t,
+    "clusteredmember_smb1",
+    [os.path.join(samba3srcdir,
+                  "script/tests/test_smbtorture_s3.sh"),
+     t,
+     '//foo/bar',
+     '$DOMAIN\\\\$DC_USERNAME',
+     '$DC_PASSWORD',
+     smbtorture3,
+     "",
+     "-b $PREFIX/clusteredmember_smb1/unclists/tmp.txt -N 5 -o 10"])
 
 def planclusteredmembertestsuite(tname, prefix):
     '''Define a clustered test for the clusteredmember environment'''

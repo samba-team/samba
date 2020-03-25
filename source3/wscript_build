@@ -1220,6 +1220,7 @@ bld.SAMBA3_BINARY('smbtorture' + bld.env.suffix3,
                         torture/test_namemap_cache.c
                         torture/test_idmap_cache.c
                         torture/test_hidenewfiles.c
+                        torture/test_readdir_timestamp.c
                         ''',
                  deps='''
                       talloc

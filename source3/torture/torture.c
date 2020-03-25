@@ -14996,6 +14996,10 @@ static struct {
 		.fn    = run_hidenewfiles,
 	},
 	{
+		.name  = "readdir-timestamp",
+		.fn    = run_readdir_timestamp,
+	},
+	{
 		.name = NULL,
 	},
 };
