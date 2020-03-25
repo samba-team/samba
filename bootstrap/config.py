@@ -400,6 +400,13 @@ DEB_DISTS = {
             'liburing-dev': '',   # not available
         }
     },
+    'ubuntu2004': {
+        'docker_image': 'ubuntu:20.04',
+        'vagrant_box': 'ubuntu/focal64',
+        'replace': {
+            'liburing-dev': '',   # not available
+        }
+    },
 }
 
 

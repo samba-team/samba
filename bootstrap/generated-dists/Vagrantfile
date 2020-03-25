@@ -73,5 +73,12 @@ Vagrant.configure("2") do |config|
         v.vm.provision :shell, path: "ubuntu1804/locale.sh"
     end
 
+    config.vm.define "ubuntu2004" do |v|
+        v.vm.box = "ubuntu/focal64"
+        v.vm.hostname = "ubuntu2004"
+        v.vm.provision :shell, path: "ubuntu2004/bootstrap.sh"
+        v.vm.provision :shell, path: "ubuntu2004/locale.sh"
+    end
+
 
 end
