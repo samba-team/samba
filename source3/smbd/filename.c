@@ -1692,6 +1692,90 @@ static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+/*
+ * Lightweight function to just get last component
+ * for rename / enumerate directory calls.
+ */
+
+char *get_original_lcomp(TALLOC_CTX *ctx,
+			connection_struct *conn,
+			const char *filename_in,
+			uint32_t ucf_flags)
+{
+	struct smb_filename *smb_fname = NULL;
+	char *last_slash = NULL;
+	char *orig_lcomp;
+	char *fname = NULL;
+	NTSTATUS status;
+
+	if (ucf_flags & UCF_DFS_PATHNAME) {
+		status = resolve_dfspath_wcard(ctx,
+				conn,
+				filename_in,
+				ucf_flags,
+				!conn->sconn->using_smb2,
+				&fname,
+				NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			DBG_DEBUG("resolve_dfspath "
+				"failed for name %s with %s\n",
+				filename_in,
+				nt_errstr(status));
+			return NULL;
+		}
+		filename_in = fname;
+		ucf_flags &= ~UCF_DFS_PATHNAME;
+	}
+
+	/*
+	 * NB. We don't need to care about
+	 * is_fake_file_path(filename_in) here as these
+	 * code paths don't ever return original_lcomp
+	 * or use it anyway.
+	 */
+
+	if (ucf_flags & UCF_GMT_PATHNAME) {
+		/*
+		 * Ensure we don't return a @GMT
+		 * value as the last component.
+		 */
+		smb_fname = synthetic_smb_fname(ctx,
+					filename_in,
+					NULL,
+					NULL,
+					0);
+		if (smb_fname == NULL) {
+			TALLOC_FREE(fname);
+			return NULL;
+		}
+		status = canonicalize_snapshot_path(smb_fname);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(fname);
+			TALLOC_FREE(smb_fname);
+			return NULL;
+		}
+		filename_in = smb_fname->base_name;
+	}
+	last_slash = strrchr(filename_in, '/');
+	if (last_slash != NULL) {
+		orig_lcomp = talloc_strdup(ctx, last_slash+1);
+	} else {
+		orig_lcomp = talloc_strdup(ctx, filename_in);
+	}
+	/* We're done with any temp names here. */
+	TALLOC_FREE(smb_fname);
+	TALLOC_FREE(fname);
+	if (orig_lcomp == NULL) {
+		return NULL;
+	}
+	status = normalize_filename_case(conn, orig_lcomp);
+	if (!NT_STATUS_IS_OK(status)) {
+		TALLOC_FREE(orig_lcomp);
+		return NULL;
+	}
+	return orig_lcomp;
+}
+
 /**
  * Go through all the steps to validate a filename.
  *
