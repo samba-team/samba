@@ -441,8 +441,8 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	char *end = NULL;
 	char *dirpath = NULL;
 	char *stream = NULL;
-	bool component_was_mangled = False;
-	bool name_has_wildcard = False;
+	bool component_was_mangled = false;
+	bool name_has_wildcard = false;
 	bool posix_pathnames = (ucf_flags & UCF_POSIX_PATHNAMES);
 	bool allow_wcard_last_component =
 	    (ucf_flags & UCF_ALWAYS_ALLOW_WCARD_LCOMP);
@@ -1066,7 +1066,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 				 * Thomas Neumann <t.neumann@iku-ag.de>.
 				 */
 				if (!conn->case_preserve ||
-				    (mangle_is_8_3(start, False,
+				    (mangle_is_8_3(start, false,
 						   conn->params) &&
 						 !conn->short_case_preserve)) {
 					if (!strnorm(start,
