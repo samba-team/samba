@@ -438,7 +438,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 {
 	struct smb_filename *smb_fname = NULL;
 	char *start = NULL;
-	char *end;
+	char *end = NULL;
 	char *dirpath = NULL;
 	char *stream = NULL;
 	bool component_was_mangled = False;
