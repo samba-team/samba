@@ -1035,17 +1035,6 @@ NTSTATUS brl_lock(
 	return ret;
 }
 
-static void brl_delete_lock_struct(struct lock_struct *locks,
-				   unsigned num_locks,
-				   unsigned del_idx)
-{
-	if (del_idx >= num_locks) {
-		return;
-	}
-	memmove(&locks[del_idx], &locks[del_idx+1],
-		sizeof(*locks) * (num_locks - del_idx - 1));
-}
-
 /****************************************************************************
  Unlock a range of bytes - Windows semantics.
 ****************************************************************************/
@@ -1108,7 +1097,7 @@ bool brl_unlock_windows_default(struct byte_range_lock *br_lck,
   unlock_continue:
 #endif
 
-	brl_delete_lock_struct(locks, br_lck->num_locks, i);
+	ARRAY_DEL_ELEMENT(locks, i, br_lck->num_locks);
 	br_lck->num_locks -= 1;
 	br_lck->modified = True;
 
