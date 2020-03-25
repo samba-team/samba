@@ -1327,12 +1327,8 @@ static bool messaging_dispatch_waiters(struct messaging_context *msg_ctx,
 			 * to keep the order of waiters, as
 			 * other code may depend on this.
 			 */
-			if (i < msg_ctx->num_waiters - 1) {
-				memmove(&msg_ctx->waiters[i],
-					&msg_ctx->waiters[i+1],
-					sizeof(struct tevent_req *) *
-					    (msg_ctx->num_waiters - i - 1));
-			}
+			ARRAY_DEL_ELEMENT(
+				msg_ctx->waiters, i, msg_ctx->num_waiters);
 			msg_ctx->num_waiters -= 1;
 			continue;
 		}
