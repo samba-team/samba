@@ -407,6 +407,11 @@ streams etc.
 We assume that we have already done a chdir() to the right "root" directory
 for this service.
 
+Conversion to basic unix format is already done in check_path_syntax().
+
+Names must be relative to the root of the service - any leading /.  and
+trailing /'s should have been trimmed by check_path_syntax().
+
 The function will return an NTSTATUS error if some part of the name except for
 the last part cannot be resolved, else NT_STATUS_OK.
 
@@ -472,16 +477,6 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	smb_fname->flags = posix_pathnames ? SMB_FILENAME_POSIX_PATH : 0;
 
 	DEBUG(5, ("unix_convert called on file \"%s\"\n", orig_path));
-
-	/*
-	 * Conversion to basic unix format is already done in
-	 * check_path_syntax().
-	 */
-
-	/*
-	 * Names must be relative to the root of the service - any leading /.
-	 * and trailing /'s should have been trimmed by check_path_syntax().
-	 */
 
 #ifdef DEVELOPER
 	SMB_ASSERT(*orig_path != '/');
