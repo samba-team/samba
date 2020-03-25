@@ -8061,8 +8061,11 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			goto out;
 		}
 
-		status = rename_internals_fsp(conn, fsp, smb_fname_dst,
-					      attrs, replace_if_exists);
+		status = rename_internals_fsp(conn,
+					fsp,
+					smb_fname_dst,
+					attrs,
+					replace_if_exists);
 
 		close_file(req, fsp, NORMAL_CLOSE);
 
@@ -8229,8 +8232,11 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			goto out;
 		}
 
-		status = rename_internals_fsp(conn, fsp, smb_fname_dst,
-					      attrs, replace_if_exists);
+		status = rename_internals_fsp(conn,
+					fsp,
+					smb_fname_dst,
+					attrs,
+					replace_if_exists);
 
 		close_file(req, fsp, NORMAL_CLOSE);
 
@@ -8379,9 +8385,16 @@ void reply_mv(struct smb_request *req)
 	DEBUG(3,("reply_mv : %s -> %s\n", smb_fname_str_dbg(smb_fname_src),
 		 smb_fname_str_dbg(smb_fname_dst)));
 
-	status = rename_internals(ctx, conn, req, smb_fname_src, smb_fname_dst,
-				  attrs, False, src_has_wcard, dest_has_wcard,
-				  DELETE_ACCESS);
+	status = rename_internals(ctx,
+				conn,
+				req,
+				smb_fname_src,
+				smb_fname_dst,
+				attrs,
+				false,
+				src_has_wcard,
+				dest_has_wcard,
+				DELETE_ACCESS);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->xconn, req->mid)) {
 			/* We have re-scheduled this call. */

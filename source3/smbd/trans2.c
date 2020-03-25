@@ -7174,7 +7174,9 @@ static NTSTATUS smb2_file_rename_information(connection_struct *conn,
 		  "SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
 		  fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
 		  smb_fname_str_dbg(smb_fname_dst)));
-	status = rename_internals_fsp(conn, fsp, smb_fname_dst,
+	status = rename_internals_fsp(conn,
+				fsp,
+				smb_fname_dst,
 				(FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM),
 				overwrite);
 
@@ -7444,17 +7446,26 @@ static NTSTATUS smb_file_rename_information(connection_struct *conn,
 			  "SMB_FILE_RENAME_INFORMATION (%s) %s -> %s\n",
 			  fsp_fnum_dbg(fsp), fsp_str_dbg(fsp),
 			  smb_fname_str_dbg(smb_fname_dst)));
-		status = rename_internals_fsp(conn, fsp, smb_fname_dst, 0,
-					      overwrite);
+		status = rename_internals_fsp(conn,
+					fsp,
+					smb_fname_dst,
+					0,
+					overwrite);
 	} else {
 		DEBUG(10,("smb_file_rename_information: "
 			  "SMB_FILE_RENAME_INFORMATION %s -> %s\n",
 			  smb_fname_str_dbg(smb_fname_src),
 			  smb_fname_str_dbg(smb_fname_dst)));
-		status = rename_internals(ctx, conn, req, smb_fname_src,
-					  smb_fname_dst, 0, overwrite, false,
-					  dest_has_wcard,
-					  FILE_WRITE_ATTRIBUTES);
+		status = rename_internals(ctx,
+					conn,
+					req,
+					smb_fname_src,
+					smb_fname_dst,
+					0,
+					overwrite,
+					false,
+					dest_has_wcard,
+					FILE_WRITE_ATTRIBUTES);
 	}
  out:
 	TALLOC_FREE(smb_fname_dst);
