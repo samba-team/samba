@@ -850,6 +850,12 @@ typedef unsigned long long ptrdiff_t ;
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
 /**
+ * Remove an array element by moving the rest one down
+ */
+#define ARRAY_DEL_ELEMENT(a,i,n) \
+if((i)<((n)-1)){memmove(&((a)[(i)]),&((a)[(i)+1]),(sizeof(*(a))*((n)-(i)-1)));}
+
+/**
  * Pointer difference macro
  */
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((const char *)(p1)) - (const char *)(p2)))

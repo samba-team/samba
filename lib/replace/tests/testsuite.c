@@ -1095,6 +1095,47 @@ static bool test_closefrom(void)
 	return true;
 }
 
+static bool test_array_del_element(void)
+{
+	int a[] = { 1,2,3,4,5 };
+
+	printf("test: array_del_element\n");
+
+	ARRAY_DEL_ELEMENT(a, 4, ARRAY_SIZE(a));
+
+	if ((a[0] != 1) ||
+	    (a[1] != 2) ||
+	    (a[2] != 3) ||
+	    (a[3] != 4) ||
+	    (a[4] != 5)) {
+		return false;
+	}
+
+	ARRAY_DEL_ELEMENT(a, 0, ARRAY_SIZE(a));
+
+	if ((a[0] != 2) ||
+	    (a[1] != 3) ||
+	    (a[2] != 4) ||
+	    (a[3] != 5) ||
+	    (a[4] != 5)) {
+		return false;
+	}
+
+	ARRAY_DEL_ELEMENT(a, 2, ARRAY_SIZE(a));
+
+	if ((a[0] != 2) ||
+	    (a[1] != 3) ||
+	    (a[2] != 5) ||
+	    (a[3] != 5) ||
+	    (a[4] != 5)) {
+		return false;
+	}
+
+	printf("success: array_del_element\n");
+
+	return true;
+}
+
 bool torture_local_replace(struct torture_context *ctx)
 {
 	bool ret = true;
@@ -1145,6 +1186,7 @@ bool torture_local_replace(struct torture_context *ctx)
 	ret &= test_utimes();
 	ret &= test_memmem();
 	ret &= test_closefrom();
+	ret &= test_array_del_element();
 
 	return ret;
 }
