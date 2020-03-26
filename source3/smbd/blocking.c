@@ -312,7 +312,7 @@ static void smbd_smb1_blocked_locks_cleanup(
 	struct files_struct *fsp = state->fsp;
 	struct tevent_req **blocked = fsp->blocked_smb1_lock_reqs;
 	size_t num_blocked = talloc_array_length(blocked);
-	size_t i, num_after;
+	size_t i;
 
 	DBG_DEBUG("req=%p, state=%p, req_state=%d\n",
 		  req,
@@ -331,17 +331,8 @@ static void smbd_smb1_blocked_locks_cleanup(
 	}
 	SMB_ASSERT(i<num_blocked);
 
-	num_after = num_blocked - (i+1);
+	ARRAY_DEL_ELEMENT(blocked, i, num_blocked);
 
-	if (num_after > 0) {
-		/*
-		 * The locks need to be kept in order, see
-		 * raw.lock.multilock2
-		 */
-		memmove(&blocked[i],
-			&blocked[i+1],
-			sizeof(*blocked) * num_after);
-	}
 	fsp->blocked_smb1_lock_reqs = talloc_realloc(
 		fsp, blocked, struct tevent_req *, num_blocked-1);
 }
