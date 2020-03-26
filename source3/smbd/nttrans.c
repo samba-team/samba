@@ -1702,11 +1702,16 @@ void reply_ntrename(struct smb_request *req)
 
 	switch(rename_type) {
 		case RENAME_FLAG_RENAME:
-			status = rename_internals(ctx, conn, req,
-						  smb_fname_old, smb_fname_new,
-						  attrs, False, src_has_wcard,
-						  dest_has_wcard,
-						  DELETE_ACCESS);
+			status = rename_internals(ctx,
+						conn,
+						req,
+						smb_fname_old,
+						smb_fname_new,
+						attrs,
+						false,
+						src_has_wcard,
+						dest_has_wcard,
+						DELETE_ACCESS);
 			break;
 		case RENAME_FLAG_HARD_LINK:
 			if (src_has_wcard || dest_has_wcard) {
