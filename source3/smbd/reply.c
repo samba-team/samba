@@ -8228,9 +8228,8 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 			break;
 		}
 
-		smb_fname_dst->original_lcomp = talloc_strdup(smb_fname_dst,
-							      dname);
-		if (!smb_fname_dst->original_lcomp) {
+		dst_original_lcomp = talloc_strdup(smb_fname_dst, dname);
+		if (dst_original_lcomp == NULL) {
 			status = NT_STATUS_NO_MEMORY;
 			goto out;
 		}
@@ -8238,7 +8237,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		status = rename_internals_fsp(conn,
 					fsp,
 					smb_fname_dst,
-					smb_fname_dst->original_lcomp,
+					dst_original_lcomp,
 					attrs,
 					replace_if_exists);
 
