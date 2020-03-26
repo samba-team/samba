@@ -183,7 +183,6 @@ struct smb_filename *cp_smb_filename(TALLOC_CTX *mem_ctx,
 	struct smb_filename *out;
 	size_t base_len = 0;
 	size_t stream_len = 0;
-	size_t lcomp_len = 0;
 	int num = 0;
 
 	/* stream_name must always be NULL if there is no stream. */
@@ -199,13 +198,9 @@ struct smb_filename *cp_smb_filename(TALLOC_CTX *mem_ctx,
 		stream_len = strlen(in->stream_name) + 1;
 		num += 1;
 	}
-	if (in->original_lcomp != NULL) {
-		lcomp_len = strlen(in->original_lcomp) + 1;
-		num += 1;
-	}
 
 	out = talloc_pooled_object(mem_ctx, struct smb_filename,
-				num, stream_len + base_len + lcomp_len);
+				num, stream_len + base_len);
 	if (out == NULL) {
 		return NULL;
 	}
@@ -227,12 +222,6 @@ struct smb_filename *cp_smb_filename(TALLOC_CTX *mem_ctx,
 				out, in->stream_name, stream_len);
 		talloc_set_name_const(out->stream_name,
 				      out->stream_name);
-	}
-	if (in->original_lcomp != NULL) {
-		out->original_lcomp = talloc_memdup(
-				out, in->original_lcomp, lcomp_len);
-		talloc_set_name_const(out->original_lcomp,
-				      out->original_lcomp);
 	}
 	out->flags = in->flags;
 	out->st = in->st;
