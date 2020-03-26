@@ -399,6 +399,32 @@ static NTSTATUS canonicalize_snapshot_path(struct smb_filename *smb_fname)
 				endp);
 }
 
+/*
+ * Utility function to normalize case on an incoming client filename
+ * if required on this connection struct.
+ * Performs an in-place case conversion guaranteed to stay the same size.
+ */
+
+static NTSTATUS normalize_filename_case(connection_struct *conn, char *filename)
+{
+	bool ok;
+
+	if (!conn->case_sensitive) {
+		return NT_STATUS_OK;
+	}
+	if (conn->case_preserve) {
+		return NT_STATUS_OK;
+	}
+	if (conn->short_case_preserve) {
+		return NT_STATUS_OK;
+	}
+	ok = strnorm(filename, lp_default_case(SNUM(conn)));
+	if (!ok) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
 This routine is called to convert names from the dos namespace to unix
 namespace. It needs to handle any case conversions, mangling, format changes,
@@ -542,13 +568,11 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	 * the man page. Thanks to jht@samba.org for finding this. JRA.
 	 */
 
-	if (conn->case_sensitive && !conn->case_preserve &&
-			!conn->short_case_preserve) {
-		if (!strnorm(smb_fname->base_name, lp_default_case(SNUM(conn)))) {
-			DBG_ERR("strnorm [%s] failed\n", smb_fname->base_name);
-			status = NT_STATUS_INVALID_PARAMETER;
-			goto err;
-		}
+	status = normalize_filename_case(conn, smb_fname->base_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		DBG_ERR("normalize_filename_case %s failed\n",
+				smb_fname->base_name);
+		goto err;
 	}
 
 	/*
