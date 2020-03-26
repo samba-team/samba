@@ -8290,6 +8290,7 @@ void reply_mv(struct smb_request *req)
 	TALLOC_CTX *ctx = talloc_tos();
 	struct smb_filename *smb_fname_src = NULL;
 	struct smb_filename *smb_fname_dst = NULL;
+	const char *dst_original_lcomp = NULL;
 	uint32_t src_ucf_flags = ucf_flags_from_smb_request(req) |
 		(req->posix_pathnames ?
 			UCF_UNIX_NAME_LOOKUP :
@@ -8373,6 +8374,16 @@ void reply_mv(struct smb_request *req)
 		goto out;
 	}
 
+	/* Get the last component of the destination for rename_internals(). */
+	dst_original_lcomp = get_original_lcomp(ctx,
+					conn,
+					newname,
+					dst_ucf_flags);
+	if (dst_original_lcomp == NULL) {
+		reply_nterror(req, NT_STATUS_NO_MEMORY);
+		goto out;
+	}
+
 	if (stream_rename) {
 		/* smb_fname_dst->base_name must be the same as
 		   smb_fname_src->base_name. */
@@ -8393,7 +8404,7 @@ void reply_mv(struct smb_request *req)
 				req,
 				smb_fname_src,
 				smb_fname_dst,
-				smb_fname_dst->original_lcomp,
+				dst_original_lcomp,
 				attrs,
 				false,
 				src_has_wcard,
